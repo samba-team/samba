@@ -26,8 +26,8 @@
 #define BIT_BACKEND	0x00000004
 #define BIT_VERBOSE	0x00000008
 #define BIT_SPSTYLE	0x00000010
-#define BIT_RESERV_1	0x00000020
-#define BIT_RESERV_2	0x00000040
+#define BIT_CAN_CHANGE	0x00000020
+#define BIT_MUST_CHANGE	0x00000040
 #define BIT_RESERV_3	0x00000080
 #define BIT_FULLNAME	0x00000100
 #define BIT_HOMEDIR	0x00000200
@@ -52,7 +52,7 @@
 #define BIT_LOGONHOURS	0x10000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
-#define MASK_USER_GOOD		0x00401F00
+#define MASK_USER_GOOD		0x00401F60
 
 /*********************************************************
  Add all currently available users to another db
@@ -302,7 +302,8 @@ static int set_user_info (struct pdb_context *in, const char *username,
 			  const char *drive, const char *script, 
 			  const char *profile, const char *account_control,
 			  const char *user_sid, const char *group_sid,
-			  const BOOL badpw, const BOOL hours)
+			  const BOOL badpw, const BOOL hours,
+			  time_t pwd_can_change, time_t pwd_must_change)
 {
 	BOOL updated_autolock = False, updated_badpw = False;
 	SAM_ACCOUNT *sam_pwent=NULL;
@@ -326,7 +327,15 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		
 		pdb_set_hours(sam_pwent, hours_array, PDB_CHANGED);
 	}
-	
+
+	if (pwd_can_change != -1) {
+		pdb_set_pass_can_change_time(sam_pwent, pwd_can_change, PDB_CHANGED);
+	}
+
+	if (pwd_must_change != -1) {
+		pdb_set_pass_must_change_time(sam_pwent, pwd_must_change, PDB_CHANGED);
+	}
+
 	if (!pdb_update_autolock_flag(sam_pwent, &updated_autolock)) {
 		DEBUG(2,("pdb_update_autolock_flag failed.\n"));
 	}
@@ -650,6 +659,9 @@ int main (int argc, char **argv)
 	BOOL account_policy_value_set = False;
 	static BOOL badpw_reset = False;
 	static BOOL hours_reset = False;
+	static char *pwd_can_change_time = NULL;
+	static char *pwd_must_change_time = NULL;
+	static char *pwd_time_format = NULL;
 
 	struct pdb_context *bin;
 	struct pdb_context *bout;
@@ -682,6 +694,9 @@ int main (int argc, char **argv)
 		{"force-initialized-passwords", 0, POPT_ARG_NONE, &force_initialised_password, 0, "Force initialization of corrupt password strings in a passdb backend", NULL},
 		{"bad-password-count-reset", 'z', POPT_ARG_NONE, &badpw_reset, 0, "reset bad password count", NULL},
 		{"logon-hours-reset", 'Z', POPT_ARG_NONE, &hours_reset, 0, "reset logon hours", NULL},
+		{"pwd-can-change-time", 0, POPT_ARG_STRING, &pwd_can_change_time, 0, "Set password can change time (unix time if time format no provided)", NULL },
+		{"pwd-must-change-time", 0, POPT_ARG_STRING, &pwd_must_change_time, 0, "Set password can change time (unix time if time format no provided)", NULL },
+		{"time-format", 0, POPT_ARG_STRING, &pwd_time_format, 0, "The time format for time parameters", NULL },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -736,7 +751,9 @@ int main (int argc, char **argv)
 			(backend_in ? BIT_IMPORT : 0) +
 			(backend_out ? BIT_EXPORT : 0) +
 			(badpw_reset ? BIT_BADPWRESET : 0) +
-			(hours_reset ? BIT_LOGONHOURS : 0);
+			(hours_reset ? BIT_LOGONHOURS : 0) +
+			(pwd_can_change_time ? BIT_CAN_CHANGE: 0) +
+			(pwd_must_change_time ? BIT_MUST_CHANGE: 0);
 
 	if (setparms & BIT_BACKEND) {
 		if (!NT_STATUS_IS_OK(make_pdb_context_string(&bdef, backend))) {
@@ -887,13 +904,71 @@ int main (int argc, char **argv)
 
 		/* account modification operations */
 		if (!(checkparms & ~(BIT_MODIFY + BIT_USER))) {
+			time_t pwd_can_change = -1;
+			time_t pwd_must_change = -1;
+			char *errstr;
+
+			if (pwd_can_change_time) {
+				errstr = "can";
+				if (pwd_time_format) {
+					struct tm tm;
+					char *ret;
+
+					memset(&tm, 0, sizeof(struct tm));
+					ret = strptime(pwd_can_change_time, pwd_time_format, &tm);
+					if (ret == NULL || *ret != '\0') {
+						goto error;
+					}
+
+					pwd_can_change = mktime(&tm);
+
+					if (pwd_can_change == -1) {
+						goto error;
+					}
+				} else { /* assume it is unix time */
+					errno = 0;
+					pwd_can_change = strtol(pwd_can_change_time, NULL, 10);
+					if (errno) {
+						goto error;
+					}
+				}	
+			}
+			if (pwd_must_change_time) {
+				errstr = "must";
+				if (pwd_time_format) {
+					struct tm tm;
+					char *ret;
+
+					memset(&tm, 0, sizeof(struct tm));
+					ret = strptime(pwd_must_change_time, pwd_time_format, &tm);
+					if (ret == NULL || *ret != '\0') {
+						goto error;
+					}
+
+					pwd_must_change = mktime(&tm);
+
+					if (pwd_must_change == -1) {
+						goto error;
+					}
+				} else { /* assume it is unix time */
+					errno = 0;
+					pwd_must_change = strtol(pwd_must_change_time, NULL, 10);
+					if (errno) {
+						goto error;
+					}
+				}	
+			}
 			return set_user_info (bdef, user_name, full_name,
 					      home_dir,
 					      home_drive,
 					      logon_script,
 					      profile_path, account_control,
 					      user_sid, group_sid,
-					      badpw_reset, hours_reset);
+					      badpw_reset, hours_reset,
+					      pwd_can_change, pwd_must_change);
+error:
+			fprintf (stderr, "Error parsing the time in pwd-%s-change-time!\n", errstr);
+			return -1;
 		}
 	}
 
