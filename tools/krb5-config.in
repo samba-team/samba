@@ -87,19 +87,21 @@ if test "$print_exec_prefix" = "yes"; then
 fi
 
 if test "$do_libs" = "yes"; then
-    echo -n "-L${libdir}"
+    lib_flags="-L${libdir}"
     case $library in
     gssapi)
-	echo -n " -lgssapi"
+	lib_flags="$lib_flags -lgssapi"
 	;;
     kadm-client)
-	echo -n " -lkadm5clnt"
+	lib_flags="$lib_flags -lkadm5clnt"
 	;;
     kadm-server)
-	echo -n " -lkadm5srv"
+	lib_flags="$lib_flags -lkadm5srv"
 	;;
     esac
-    echo " -lkrb5 -lasn1 -ldes -lroken @LIB_crypt@ @LIB_dbopen@ @LIBS@"
+    lib_flags="$lib_flags -lkrb5 -lasn1 -ldes -lroken"
+    lib_flags="$lib_flags @LIB_crypt@ @LIB_dbopen@ @LIBS@"
+    echo $lib_flags
 fi
 if test "$do_cflags" = "yes"; then
     echo "-I${includedir}"
