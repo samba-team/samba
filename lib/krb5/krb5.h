@@ -385,6 +385,7 @@ typedef struct krb5_context_data {
     const char *date_fmt;
     char *error_string;
     char error_buf[256];
+    krb5_addresses *ignore_addresses;
 } krb5_context_data;
 
 typedef struct krb5_ticket {
