@@ -1380,9 +1380,11 @@ do_checksum (krb5_context context,
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL)
 	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
-    if(keyed_checksum)
+    if(keyed_checksum) {
 	ret = get_checksum_key(context, crypto, usage, ct, &dkey);
-    else
+	if (ret)
+	    return ret;
+    } else
 	dkey = NULL;
     result->cksumtype = ct->type;
     krb5_data_alloc(&result->checksum, ct->checksumsize);
