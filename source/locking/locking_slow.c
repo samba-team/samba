@@ -290,7 +290,8 @@ static int read_share_file(connection_struct *conn, int fd, char *fname, char **
   /* Allocate space for the file */
   if((buf = (char *)malloc(sb.st_size)) == NULL)
   {
-    DEBUG(0,("read_share_file: malloc for file size %d fail !\n", sb.st_size));
+    DEBUG(0,("read_share_file: malloc for file size %d fail !\n", 
+	     (int)sb.st_size));
     return -1;
   }
   
@@ -399,7 +400,7 @@ static int slow_get_share_modes(connection_struct *conn, int token, uint32 dev, 
   if(num_entries < 0)
   {
     DEBUG(0,("PANIC ERROR:get_share_mode: num_share_mode_entries < 0 (%d) \
-for share file %d\n", num_entries, fname));
+for share file %s\n", num_entries, fname));
     return 0;
   }
 
@@ -573,7 +574,7 @@ static void slow_del_share_mode(int token, files_struct *fsp)
   if(num_entries < 0)
   {
     DEBUG(0,("PANIC ERROR:del_share_mode: num_share_mode_entries < 0 (%d) \
-for share file %d\n", num_entries, fname));
+for share file %s\n", num_entries, fname));
     return;
   }
 
@@ -703,7 +704,7 @@ static BOOL slow_set_share_mode(int token,files_struct *fsp, uint16 port, uint16
     if((buf = (char *)malloc(sb.st_size + SMF_ENTRY_LENGTH)) == NULL)
     {
       DEBUG(0,("set_share_mode: malloc for file size %d fail !\n", 
-                  sb.st_size + SMF_ENTRY_LENGTH));
+	       (int)(sb.st_size + SMF_ENTRY_LENGTH)));
       return False;
     }
  
@@ -754,15 +755,15 @@ deleting it.\n", fname));
   {
     /* New file - just use a single_entry. */
     if((buf = (char *)malloc(SMF_HEADER_LENGTH + 
-                  strlen(fsp->name) + 1 + SMF_ENTRY_LENGTH)) == NULL)
+                  strlen(fsp->fsp_name) + 1 + SMF_ENTRY_LENGTH)) == NULL)
     {
       DEBUG(0,("ERROR: set_share_mode: malloc failed for single entry.\n"));
       return False;
     }
     SIVAL(buf,SMF_VERSION_OFFSET,LOCKING_VERSION);
     SIVAL(buf,SMF_NUM_ENTRIES_OFFSET,0);
-    SSVAL(buf,SMF_FILENAME_LEN_OFFSET,strlen(fsp->name) + 1);
-    pstrcpy(buf + SMF_HEADER_LENGTH, fsp->name);
+    SSVAL(buf,SMF_FILENAME_LEN_OFFSET,strlen(fsp->fsp_name) + 1);
+    pstrcpy(buf + SMF_HEADER_LENGTH, fsp->fsp_name);
   }
 
   num_entries = IVAL(buf,SMF_NUM_ENTRIES_OFFSET);
@@ -863,7 +864,7 @@ deleting it.\n", fname));
   if(num_entries < 0)
   {
     DEBUG(0,("PANIC ERROR:remove_share_oplock: num_share_mode_entries < 0 (%d) \
-for share file %d\n", num_entries, fname));
+for share file %s\n", num_entries, fname));
     return False;
   }
 
