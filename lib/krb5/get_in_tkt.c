@@ -52,35 +52,6 @@ decrypt_tkt (krb5_context context,
       return ASN1_PARSE_ERROR;
     return 0;
 }
-#if 0
-
-(unsigned char*)buf + 12, len - 12, &dec_rep->part2);
-    free (buf);
-    if (i < 0)
-	return ASN1_PARSE_ERROR;
-    return 0;
-
-
-
-    des_set_key (key->contents.data, sched);
-    buf = malloc (len);
-    if (buf == NULL)
-	return ENOMEM;
-    des_cbc_encrypt ((des_cblock *)dec_rep->part1.enc_part.cipher.data,
-		     (des_cblock *)buf,
-		     len,
-		     sched,
-		     key->contents.data,
-		     DES_DECRYPT);
-    /* XXX: Check CRC */
-
-    i = decode_EncTGSRepPart((unsigned char*)buf + 12, len - 12, &dec_rep->part2);
-    free (buf);
-    if (i < 0)
-	return ASN1_PARSE_ERROR;
-    return 0;
-}
-#endif
 
 /*
  *

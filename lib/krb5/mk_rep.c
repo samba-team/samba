@@ -31,21 +31,6 @@ krb5_mk_rep(krb5_context context,
   if (ret)
     return ret;
 
-#if 0
-  len += 12;			/* XXX */
-  ap.enc_part.cipher.length = len;
-  ap.enc_part.cipher.data   = malloc(len);
-  memcpy(ap.enc_part.cipher.data, buf +sizeof(buf) - len, len);
-
-  memcpy(&key, (*auth_context)->key.contents.data, sizeof(key));
-  des_set_key (&key, schedule);
-
-  des_cbc_encrypt (ap.enc_part.cipher.data,
-		   ap.enc_part.cipher.data,
-		   ap.enc_part.cipher.length,
-		   schedule, &key, DES_ENCRYPT);
-#endif
-
   len = encode_AP_REP (buf + sizeof(buf) - 1,
 		       sizeof(buf), &ap);
   free (ap.enc_part.cipher.data);
