@@ -465,7 +465,7 @@ kadm_ser_cpw(krb5_context context,
     char *password = NULL;
     krb5_error_code ret;
     
-    krb5_warnx(context, "v4-compat %s: cpw %s",
+    krb5_warnx(context, "v4-compat %s: CHPASS %s",
 	       principal_string, principal_string); 
 
     ret = message->fetch(message, key + 4, 4);
@@ -515,7 +515,7 @@ kadm_ser_cpw(krb5_context context,
     }
     return 0;
 fail:
-    krb5_warn(context, ret, "v4-compat cpw");
+    krb5_warn(context, ret, "v4-compat CHPASS");
     return error_code(ret);
 }
 
@@ -540,7 +540,7 @@ kadm_ser_add(krb5_context context,
 	goto fail;
 
     krb5_unparse_name_fixed(context, ent.principal, name, sizeof(name));
-    krb5_warnx(context, "v4-compat %s: add %s",
+    krb5_warnx(context, "v4-compat %s: ADD %s",
 	       principal_string, name);
 
     ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_ADD,
@@ -564,7 +564,7 @@ kadm_ser_add(krb5_context context,
     store_vals(reply, &values);
     return 0;
 fail:
-    krb5_warn(context, ret, "v4-compat add");
+    krb5_warn(context, ret, "v4-compat ADD");
     return error_code(ret);
 }
 
@@ -595,7 +595,7 @@ kadm_ser_get(krb5_context context,
 	goto fail;
 
     krb5_unparse_name_fixed(context, ent.principal, name, sizeof(name));
-    krb5_warnx(context, "v4-compat %s: get %s",
+    krb5_warnx(context, "v4-compat %s: GET %s",
 	       principal_string, name);
 
     ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_GET,
@@ -618,7 +618,7 @@ kadm_ser_get(krb5_context context,
     store_vals(reply, &values);
     return 0;
 fail:
-    krb5_warn(context, ret, "v4-compat get");
+    krb5_warn(context, ret, "v4-compat GET");
     return error_code(ret);
 }
 
@@ -646,7 +646,7 @@ kadm_ser_mod(krb5_context context,
 	goto fail;
 
     krb5_unparse_name_fixed(context, ent.principal, name, sizeof(name));
-    krb5_warnx(context, "v4-compat %s: mod %s",
+    krb5_warnx(context, "v4-compat %s: MOD %s",
 	       principal_string, name);
 
     ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_MODIFY,
@@ -676,7 +676,7 @@ kadm_ser_mod(krb5_context context,
     store_vals(reply, &values1);
     return 0;
 fail:
-    krb5_warn(context, ret, "v4-compat mod");
+    krb5_warn(context, ret, "v4-compat MOD");
     return error_code(ret);
 }
 
@@ -701,7 +701,7 @@ kadm_ser_del(krb5_context context,
 	goto fail;
     
     krb5_unparse_name_fixed(context, ent.principal, name, sizeof(name));
-    krb5_warnx(context, "v4-compat %s: del %s",
+    krb5_warnx(context, "v4-compat %s: DEL %s",
 	       principal_string, name);
 
     ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_DELETE,
@@ -718,7 +718,7 @@ kadm_ser_del(krb5_context context,
 
     return 0;
 fail:
-    krb5_warn(context, ret, "v4-compat add");
+    krb5_warn(context, ret, "v4-compat ADD");
     return error_code(ret);
 }
 
