@@ -1156,10 +1156,18 @@ BOOL sid_peek_rid(DOM_SID *sid, uint32 *rid);
 void sid_copy(DOM_SID *dst, const DOM_SID *src);
 DOM_SID *sid_dup(DOM_SID *src);
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
+BOOL sid_parse(char *inbuf, size_t len, DOM_SID *sid);
+int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2);
 int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2);
+int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
+BOOL sid_check_is_domain(const DOM_SID *sid);
+BOOL sid_check_is_builtin(const DOM_SID *sid);
+BOOL sid_check_is_in_our_domain(const DOM_SID *sid);
+BOOL sid_check_is_in_builtin(const DOM_SID *sid);
 size_t sid_size(DOM_SID *sid);
 BOOL non_mappable_sid(DOM_SID *sid);
+char *sid_binstring(DOM_SID *sid);
 
 /*The following definitions come from  lib/util_sock.c  */
 
@@ -1226,6 +1234,7 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
 void split_at_last_component(char *path, char *front, char sep, char *back);
 char *octal_string(int i);
 char *string_truncate(char *s, int length);
+char *binary_string(char *buf, int len);
 
 /*The following definitions come from  lib/util_unistr.c  */
 

@@ -611,6 +611,11 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 	fstring dom_name, name, sid_str;
 	enum SID_NAME_USE name_type;
 
+
+	/* if we know its local then don't try winbindd */
+	if (sid_compare_domain(&global_sam_sid, psid) == 0)
+		return local_sid_to_uid(puid, psid, sidtype);
+
 	*sidtype = SID_NAME_UNKNOWN;
 
 	/*
@@ -643,7 +648,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 	if (!winbind_sid_to_uid(puid, psid)) {
 		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed.\n",
 				sid_to_string(sid_str, psid) ));
-		return False;
+		return local_sid_to_uid(puid, psid, sidtype);;
 	}
 
 	DEBUG(10,("sid_to_uid: winbindd %s -> %u\n",

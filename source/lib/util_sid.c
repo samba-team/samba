@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Luke Kenneth Caseson Leighton 1998-1999
@@ -22,7 +21,6 @@
 */
 
 #include "includes.h"
-
 
 /* NOTE! the global_sam_sid is the SID of our local SAM. This is only
    equal to the domain SID when we are a DC, otherwise its our
@@ -64,7 +62,6 @@ static known_sid_users everyone_users[] = {
 
 static known_sid_users creator_owner_users[] = {
 	{ 0, SID_NAME_ALIAS, "Creator Owner" },
-	{ 1, SID_NAME_ALIAS, "Creator Group" },
 	{0, (enum SID_NAME_USE)0, NULL}};
 
 static known_sid_users nt_authority_users[] = {
@@ -383,21 +380,20 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
   char *p, *q;
   /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
   uint32 ia;
-
-
+  
   if (StrnCaseCmp( sidstr, "S-", 2)) {
     DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
     return False;
   }
 
   memset((char *)sidout, '\0', sizeof(DOM_SID));
-  
+
   q = p = strdup(sidstr + 2);
   if (p == NULL) {
     DEBUG(0, ("string_to_sid: out of memory!\n"));
     return False;
   }
-  
+
   if (!next_token(&p, tok, "-", sizeof(tok))) {
     DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
     SAFE_FREE(q);
@@ -434,8 +430,6 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
      */
 	sid_append_rid(sidout, (uint32)strtoul(tok, NULL, 10));
   }
-
-  DEBUG(7,("string_to_sid: converted SID %s ok\n", sidstr));
 
   SAFE_FREE(q);
   return True;
@@ -522,12 +516,11 @@ DOM_SID *sid_dup(DOM_SID *src)
 /*****************************************************************
  Write a sid out into on-the-wire format.
 *****************************************************************/  
-
 BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid)
 {
 	size_t i;
 
-	if(len < sid_size(sid))
+	if (len < sid_size(sid))
 		return False;
 
 	SCVAL(outbuf,0,sid->sid_rev_num);
@@ -537,6 +530,45 @@ BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid)
 		SIVAL(outbuf, 8 + (i*4), sid->sub_auths[i]);
 
 	return True;
+}
+
+/*****************************************************************
+ parse a on-the-wire SID to a DOM_SID
+*****************************************************************/  
+BOOL sid_parse(char *inbuf, size_t len, DOM_SID *sid)
+{
+	int i;
+	if (len < 8) return False;
+	sid->sid_rev_num = CVAL(inbuf, 0);
+	sid->num_auths = CVAL(inbuf, 1);
+	memcpy(sid->id_auth, inbuf+2, 6);
+	if (len < 8 + sid->num_auths*4) return False;
+	for (i=0;i<sid->num_auths;i++) {
+		sid->sub_auths[i] = IVAL(inbuf, 8+i*4);
+	}
+	return True;
+}
+
+
+/*****************************************************************
+ Compare the auth portion of two sids.
+*****************************************************************/  
+int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2)
+{
+	int i;
+
+	if (sid1 == sid2) return 0;
+	if (!sid1) return -1;
+	if (!sid2) return 1;
+
+	if (sid1->sid_rev_num != sid2->sid_rev_num)
+		return sid1->sid_rev_num - sid2->sid_rev_num;
+
+	for (i = 0; i < 6; i++)
+		if (sid1->id_auth[i] != sid2->id_auth[i])
+			return sid1->id_auth[i] - sid2->id_auth[i];
+
+	return 0;
 }
 
 /*****************************************************************
@@ -551,31 +583,86 @@ int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2)
 	if (!sid2) return 1;
 
 	/* compare most likely different rids, first: i.e start at end */
+	if (sid1->num_auths != sid2->num_auths)
+		return sid1->num_auths - sid2->num_auths;
+
 	for (i = sid1->num_auths-1; i >= 0; --i)
 		if (sid1->sub_auths[i] != sid2->sub_auths[i])
 			return sid1->sub_auths[i] - sid2->sub_auths[i];
 
-	if (sid1->num_auths != sid2->num_auths)
-		return sid1->num_auths - sid2->num_auths;
-
-	if (sid1->sid_rev_num != sid2->sid_rev_num)
-		return sid1->sid_rev_num - sid2->sid_rev_num;
-
-	for (i = 0; i < 6; i++)
-		if (sid1->id_auth[i] != sid2->id_auth[i])
-			return sid1->id_auth[i] - sid2->id_auth[i];
-
-	return 0;
+	return sid_compare_auth(sid1, sid2);
 }
 
+/*****************************************************************
+see if 2 SIDs are in the same domain
+this just compares the leading sub-auths
+*****************************************************************/  
+int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
+{
+	int n, i;
+
+	n = MIN(sid1->num_auths, sid2->num_auths);
+
+	for (i = n-1; i >= 0; --i)
+		if (sid1->sub_auths[i] != sid2->sub_auths[i])
+			return sid1->sub_auths[i] - sid2->sub_auths[i];
+
+	return sid_compare_auth(sid1, sid2);
+}
 
 /*****************************************************************
  Compare two sids.
 *****************************************************************/  
-
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	return sid_compare(sid1, sid2) == 0;
+}
+
+
+/*****************************************************************
+ Check if the SID is our domain SID (S-1-5-21-x-y-z).
+*****************************************************************/  
+BOOL sid_check_is_domain(const DOM_SID *sid)
+{
+	return sid_equal(sid, &global_sam_sid);
+}
+
+
+/*****************************************************************
+ Check if the SID is the builtin SID (S-1-5-32).
+*****************************************************************/  
+BOOL sid_check_is_builtin(const DOM_SID *sid)
+{
+	return sid_equal(sid, &global_sid_Builtin);
+}
+
+
+/*****************************************************************
+ Check if the SID is our domain SID (S-1-5-21-x-y-z).
+*****************************************************************/  
+BOOL sid_check_is_in_our_domain(const DOM_SID *sid)
+{
+	DOM_SID dom_sid;
+	uint32 rid;
+
+	sid_copy(&dom_sid, sid);
+	sid_split_rid(&dom_sid, &rid);
+	
+	return sid_equal(&dom_sid, &global_sam_sid);
+}
+
+/*****************************************************************
+ Check if the SID is our domain SID (S-1-5-21-x-y-z).
+*****************************************************************/  
+BOOL sid_check_is_in_builtin(const DOM_SID *sid)
+{
+	DOM_SID dom_sid;
+	uint32 rid;
+
+	sid_copy(&dom_sid, sid);
+	sid_split_rid(&dom_sid, &rid);
+	
+	return sid_equal(&dom_sid, &global_sid_Builtin);
 }
 
 
@@ -606,7 +693,7 @@ BOOL non_mappable_sid(DOM_SID *sid)
 	if (sid_equal(&dom, &global_sid_Builtin))
 		return True;
 
-    if (sid_equal(&dom, &global_sid_Creator_Owner_Domain))
+	if (sid_equal(&dom, &global_sid_Creator_Owner_Domain))
 		return True;
  
 	if (sid_equal(&dom, &global_sid_NT_Authority))
@@ -614,3 +701,20 @@ BOOL non_mappable_sid(DOM_SID *sid)
 
 	return False;
 }
+
+/*
+  return the binary string representation of a DOM_SID
+  caller must free
+*/
+char *sid_binstring(DOM_SID *sid)
+{
+	char *buf, *s;
+	int len = sid_size(sid);
+	buf = malloc(len);
+	if (!buf) return NULL;
+	sid_linearize(buf, len, sid);
+	s = binary_string(buf, len);
+	free(buf);
+	return s;
+}
+
