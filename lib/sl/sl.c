@@ -169,7 +169,7 @@ sl_loop (SL_cmd *cmds, char *prompt)
 		    if (ptr == NULL) {
 			printf ("sl_loop: failed to allocate %u "
 				"bytes of memory\n",
-				(int) max_count * sizeof(*ptr));
+				(unsigned) max_count * sizeof(*ptr));
 			return -1;
 		    }
 		}
