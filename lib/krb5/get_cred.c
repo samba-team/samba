@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -297,7 +297,7 @@ get_krbtgt(krb5_context context,
     ret = krb5_make_principal(context, 
 			      &tmp_cred.server,
 			      realm,
-			      "krbtgt",
+			      KRB5_TGS_NAME,
 			      realm,
 			      NULL);
     if(ret)
@@ -621,7 +621,7 @@ get_cred_from_kdc_flags(krb5_context context,
     ret = krb5_make_principal(context,
 			      &tmp_creds.server,
 			      client_realm,
-			      "krbtgt",
+			      KRB5_TGS_NAME,
 			      server_realm,
 			      NULL);
     if(ret){
@@ -660,7 +660,7 @@ get_cred_from_kdc_flags(krb5_context context,
 	    break;
 	krb5_free_principal(context, tmp_creds.server);
 	ret = krb5_make_principal(context, &tmp_creds.server, 
-				  tgt_inst, "krbtgt", server_realm, NULL);
+				  tgt_inst, KRB5_TGS_NAME, server_realm, NULL);
 	if(ret) return ret;
 	ret = krb5_free_creds(context, tgt);
 	if(ret) return ret;

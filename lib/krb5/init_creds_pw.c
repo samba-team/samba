@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -144,7 +144,7 @@ init_cred (krb5_context context,
 	krb5_princ_set_realm (context, cred->server, &server_realm);
     } else {
 	ret = krb5_make_principal(context, &cred->server, 
-				  *client_realm, "krbtgt", *client_realm,
+				  *client_realm, KRB5_TGS_NAME, *client_realm,
 				  NULL);
 	if (ret)
 	    goto out;
