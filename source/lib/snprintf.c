@@ -84,6 +84,12 @@
 # endif
 #endif
 
+#ifdef HAVE_LONG_DOUBLE
+#define LDOUBLE long double
+#else
+#define LDOUBLE double
+#endif
+
 /*int snprintf (char *str, size_t count, const char *fmt, ...);*/
 /*int vsnprintf (char *str, size_t count, const char *fmt, va_list arg);*/
 
@@ -94,7 +100,7 @@ static void fmtstr (char *buffer, size_t *currlen, size_t maxlen,
 static void fmtint (char *buffer, size_t *currlen, size_t maxlen,
 		    long value, int base, int min, int max, int flags);
 static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
-		   long double fvalue, int min, int max, int flags);
+		   LDOUBLE fvalue, int min, int max, int flags);
 static void dopr_outch (char *buffer, size_t *currlen, size_t maxlen, char c );
 
 /*
@@ -132,7 +138,7 @@ static void dopr (char *buffer, size_t maxlen, const char *format, va_list args)
 {
   char ch;
   long value;
-  long double fvalue;
+  LDOUBLE fvalue;
   char *strvalue;
   int min;
   int max;
@@ -297,7 +303,7 @@ static void dopr (char *buffer, size_t maxlen, const char *format, va_list args)
 	break;
       case 'f':
 	if (cflags == DP_C_LDOUBLE)
-	  fvalue = va_arg (args, long double);
+	  fvalue = va_arg (args, LDOUBLE);
 	else
 	  fvalue = va_arg (args, double);
 	/* um, floating point? */
@@ -307,7 +313,7 @@ static void dopr (char *buffer, size_t maxlen, const char *format, va_list args)
 	flags |= DP_F_UP;
       case 'e':
 	if (cflags == DP_C_LDOUBLE)
-	  fvalue = va_arg (args, long double);
+	  fvalue = va_arg (args, LDOUBLE);
 	else
 	  fvalue = va_arg (args, double);
 	break;
@@ -315,7 +321,7 @@ static void dopr (char *buffer, size_t maxlen, const char *format, va_list args)
 	flags |= DP_F_UP;
       case 'g':
 	if (cflags == DP_C_LDOUBLE)
-	  fvalue = va_arg (args, long double);
+	  fvalue = va_arg (args, LDOUBLE);
 	else
 	  fvalue = va_arg (args, double);
 	break;
@@ -510,9 +516,9 @@ static void fmtint (char *buffer, size_t *currlen, size_t maxlen,
   }
 }
 
-static long double abs_val (long double value)
+static LDOUBLE abs_val (LDOUBLE value)
 {
-  long double result = value;
+  LDOUBLE result = value;
 
   if (value < 0)
     result = -value;
@@ -520,9 +526,9 @@ static long double abs_val (long double value)
   return result;
 }
 
-static long double pow10 (int exp)
+static LDOUBLE pow10 (int exp)
 {
-  long double result = 1;
+  LDOUBLE result = 1;
 
   while (exp)
   {
@@ -533,7 +539,7 @@ static long double pow10 (int exp)
   return result;
 }
 
-static long round (long double value)
+static long round (LDOUBLE value)
 {
   long intpart;
 
@@ -546,10 +552,10 @@ static long round (long double value)
 }
 
 static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
-		   long double fvalue, int min, int max, int flags)
+		   LDOUBLE fvalue, int min, int max, int flags)
 {
   int signvalue = 0;
-  long double ufvalue;
+  LDOUBLE ufvalue;
   char iconvert[20];
   char fconvert[20];
   int iplace = 0;
