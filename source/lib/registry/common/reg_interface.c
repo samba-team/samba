@@ -158,7 +158,7 @@ WERROR reg_open(struct registry_context **ret, const char *backend, const char *
 		} else if (!W_ERROR_IS_OK(reterror)) reterror = error;
 	}
 
-	return WERR_OK;
+	return reterror;
 }
 
 WERROR reg_close (struct registry_context *ctx)
