@@ -1,0 +1,30 @@
+/*
+  wkssvc interface definitions
+*/
+
+[ uuid(6bffd098-a112-3610-9833-46c3f87e345a),
+  version(1.0),
+  pointer_default(unique)
+] interface wkssvc
+{
+	/******************/
+	/* Function: 0x00 */
+	typedef struct {
+		uint32 platform_id;          /* 0x0000 01f4 - unknown */
+		unistr *uni_compname;      /* unicode server name */
+		unistr *uni_lan_grp;      /* unicode domain name */
+		uint32 ver_major;          /* 4 - unknown */
+		uint32 ver_minor;          /* 0 - unknown */
+	} wks_Info100;
+
+	typedef union {
+		case (100) wks_Info100 *info100;
+	} wks_Info;
+
+	NTSTATUS wks_QueryInfo(
+		[in]   unistr *server_name,
+		[in]   uint32 level,
+		[out,switch_is(level)]  wks_Info info
+		);
+
+}
