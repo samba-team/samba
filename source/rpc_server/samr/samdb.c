@@ -380,6 +380,28 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, struct ldb_message *ms
 }
 
 /*
+  pull a guid structure from a objectGUID in a result set. 
+*/
+struct GUID samdb_result_guid(struct ldb_message *msg, const char *attr)
+{
+	NTSTATUS status;
+	struct GUID guid;
+	const char *guidstr = ldb_msg_find_string(msg, attr, NULL);
+
+	ZERO_STRUCT(guid);
+
+	if (!guidstr) return guid;
+
+	status = GUID_from_string(guidstr, &guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		ZERO_STRUCT(guid);
+		return guid;
+	}
+
+	return guid;
+}
+
+/*
   pull a sid prefix from a objectSid in a result set. 
   this is used to find the domain sid for a user
 */

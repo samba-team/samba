@@ -27,6 +27,8 @@ objectClass: top
 objectClass: domain
 objectClass: domainDNS
 name: ${DOMAIN}
+realm: ${REALM}
+dnsDomain: ${REALM}
 dc: ${DOMAIN}
 objectGUID: ${NEWGUID}
 creationTime: ${NTTIME}

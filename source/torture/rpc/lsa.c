@@ -675,6 +675,40 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static BOOL test_QueryInfoPolicy2(struct dcerpc_pipe *p, 
+				  TALLOC_CTX *mem_ctx, 
+				  struct policy_handle *handle)
+{
+	struct lsa_QueryInfoPolicy2 r;
+	NTSTATUS status;
+	int i;
+	BOOL ret = True;
+	printf("\nTesting QueryInfoPolicy2\n");
+
+	for (i=1;i<13;i++) {
+		r.in.handle = handle;
+		r.in.level = i;
+
+		printf("\ntrying QueryInfoPolicy2 level %d\n", i);
+
+		status = dcerpc_lsa_QueryInfoPolicy2(p, mem_ctx, &r);
+
+		if ((i == 9 || i == 10 || i == 11) &&
+		    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			printf("server failed level %u (OK)\n", i);
+			continue;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryInfoPolicy2 failed - %s\n", nt_errstr(status));
+			ret = False;
+			continue;
+		}
+	}
+
+	return ret;
+}
+
 static BOOL test_Close(struct dcerpc_pipe *p, 
 		       TALLOC_CTX *mem_ctx, 
 		       struct policy_handle *handle)
@@ -757,6 +791,10 @@ BOOL torture_rpc_lsa(int dummy)
 	}
 
 	if (!test_QueryInfoPolicy(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_QueryInfoPolicy2(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 	
