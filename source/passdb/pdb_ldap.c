@@ -411,12 +411,35 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	}
 
 	get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive);
+	DEBUG(0,("homeDrive is set to %s\n",dir_drive));
+	if (!*dir_drive) {
+		pstrcpy(dir_drive, lp_logon_drive());
+		DEBUG(5,("homeDrive fell back to %s\n",dir_drive));
+	}
+
 	get_single_attribute(ldap_struct, entry, "smbHome", homedir);
+	DEBUG(0,("smbHome is set to %s\n",homedir));
+	if (!*homedir) {
+		pstrcpy(homedir, lp_logon_home());
+		DEBUG(5,("smbHome fell back to %s\n",homedir));
+	}
+
 	get_single_attribute(ldap_struct, entry, "scriptPath", logon_script);
+	DEBUG(0,("scriptPath is set to %s\n",logon_script));
+	if (!*logon_script) {
+		pstrcpy(logon_script, lp_logon_script());
+		DEBUG(5,("scriptPath fell back to %s\n",logon_script));
+	}
+
 	get_single_attribute(ldap_struct, entry, "profilePath", profile_path);
+	DEBUG(0,("profilePath is set to %s\n",profile_path));
+	if (!*profile_path) {
+		pstrcpy(profile_path, lp_logon_path());
+		DEBUG(5,("profilePath fell back to %s\n",profile_path));
+	}
+
 	get_single_attribute(ldap_struct, entry, "description", acct_desc);
 	get_single_attribute(ldap_struct, entry, "userWorkstations", workstations);
-
 	get_single_attribute(ldap_struct, entry, "rid", temp);
 	user_rid = (uint32)strtol(temp, NULL, 16);
 	get_single_attribute(ldap_struct, entry, "primaryGroupID", temp);
@@ -549,7 +572,7 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * 
 	make_a_mod(mods, ldap_state, "displayName", pdb_get_fullname(sampass));
 	make_a_mod(mods, ldap_state, "cn", pdb_get_fullname(sampass));
 
-	make_a_mod(mods, ldap_state, "homeDirectory", pdb_get_homedir(sampass));
+	make_a_mod(mods, ldap_state, "smbHome", pdb_get_homedir(sampass));
 	make_a_mod(mods, ldap_state, "homeDrive", pdb_get_dirdrive(sampass));
 	make_a_mod(mods, ldap_state, "scriptPath", pdb_get_logon_script(sampass));
 	make_a_mod(mods, ldap_state, "profilePath", pdb_get_profile_path(sampass));
