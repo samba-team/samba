@@ -403,7 +403,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 }
 
 /* find the sequence number for a domain */
-static uint32 sequence_number(struct winbindd_domain *domain)
+static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
 	TALLOC_CTX *mem_ctx;
 	CLI_POLICY_HND *hnd;
@@ -415,8 +415,10 @@ static uint32 sequence_number(struct winbindd_domain *domain)
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 
+	*seq = DOM_SEQUENCE_NONE;
+
 	if (!(mem_ctx = talloc_init()))
-		return DOM_SEQUENCE_NONE;
+		return NT_STATUS_NO_MEMORY;
 
 	/* Get sam handle */
 
@@ -426,7 +428,7 @@ static uint32 sequence_number(struct winbindd_domain *domain)
 	/* Get domain handle */
 
 	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol, 
-							des_access, &domain->sid, &dom_pol);
+				      des_access, &domain->sid, &dom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -436,7 +438,7 @@ static uint32 sequence_number(struct winbindd_domain *domain)
 	/* Query domain info */
 
 	result = cli_samr_query_dom_info(hnd->cli, mem_ctx, &dom_pol,
-							switch_value, &ctr);
+					 switch_value, &ctr);
 
 	if (NT_STATUS_IS_OK(result)) {
 		seqnum = ctr.info.inf2.seq_num;
@@ -453,7 +455,9 @@ static uint32 sequence_number(struct winbindd_domain *domain)
 
 	talloc_destroy(mem_ctx);
 
-	return seqnum;
+	*seq = seqnum;
+
+	return result;
 }
 
 

@@ -29,6 +29,7 @@ extern pstring debugf;
 
 struct winbindd_cli_state *client_list;
 static int num_clients;
+BOOL opt_nocache;
 
 /* Reload configuration */
 
@@ -132,7 +133,6 @@ static void print_winbindd_status(void)
 {
 	winbindd_status();
 	winbindd_idmap_status();
-	winbindd_cache_status();
 	winbindd_cm_status();
 }
 
@@ -140,9 +140,8 @@ static void print_winbindd_status(void)
 
 static void flush_caches(void)
 {
-	/* Clear cached user and group enumation info */
-	
-	winbindd_flush_cache();
+	/* Clear cached user and group enumation info */	
+	wcache_flush_cache();
 }
 
 /* Handle the signal by unlinking socket and exiting */
@@ -748,23 +747,25 @@ int main(int argc, char **argv)
 
 	/* Initialise samba/rpc client stuff */
 
-	while ((opt = getopt(argc, argv, "id:s:")) != EOF) {
+	while ((opt = getopt(argc, argv, "id:s:n")) != EOF) {
 		switch (opt) {
 
-		/* Don't become a daemon */
-
+			/* Don't become a daemon */
 		case 'i':
 			interactive = True;
 			break;
 
-			/* Run with specified debug level */
+			/* disable cacheing */
+		case 'n':
+			opt_nocache = True;
+			break;
 
+			/* Run with specified debug level */
 		case 'd':
 			new_debuglevel = atoi(optarg);
 			break;
 
 			/* Load a different smb.conf file */
-
 		case 's':
 			pstrcpy(dyn_CONFIGFILE,optarg);
 			break;
@@ -822,8 +823,6 @@ int main(int argc, char **argv)
 
 	if (!winbindd_idmap_init())
 		return 1;
-
-	winbindd_cache_init();
 
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */

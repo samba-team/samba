@@ -641,17 +641,20 @@ done:
 }
 
 /* find the sequence number for a domain */
-static uint32 sequence_number(struct winbindd_domain *domain)
+static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
-	uint32 usn;
 	ADS_STRUCT *ads = NULL;
 
+	*seq = DOM_SEQUENCE_NONE;
+
 	ads = ads_cached_connection(domain);
-	if (!ads) return DOM_SEQUENCE_NONE;
+	if (!ads) return NT_STATUS_UNSUCCESSFUL;
 
-	if (!ads_USN(ads, &usn)) return DOM_SEQUENCE_NONE;
+	if (!ads_USN(ads, seq)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
-	return usn;
+	return NT_STATUS_OK;
 }
 
 /* the ADS backend methods are exposed via this structure */

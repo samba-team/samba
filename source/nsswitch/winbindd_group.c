@@ -28,8 +28,6 @@
  Empty static struct for negative caching.
 ****************************************************************/
 
-static struct winbindd_gr negative_gr_cache_entry;
-
 /* Fill a grent structure from various other information */
 
 static BOOL fill_grent(struct winbindd_gr *gr, char *gr_name,
@@ -200,7 +198,7 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *sta
 	fstring name_domain, name_group, name;
 	char *tmp, *gr_mem;
 	gid_t gid;
-	int extra_data_len, gr_mem_len;
+	int gr_mem_len;
 	
 	DEBUG(3, ("[%5d]: getgrnam %s\n", state->pid,
 		  state->request.data.groupname));
@@ -221,23 +219,6 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *sta
 		return WINBINDD_ERROR;
 	}
 
-	/* Check for cached group entry */
-
-	if (winbindd_fetch_group_cache_entry(domain, name_group,
-					     &state->response.data.gr,
-					     &state->response.extra_data,
-					     &extra_data_len)) {
-
-		/* Check if this is a negative cache entry. */
-
-		if (memcmp(&negative_gr_cache_entry, &state->response.data.gr,
-				sizeof(state->response.data.gr)) == 0)
-            return WINBINDD_ERROR;
-
-		state->response.length += extra_data_len;
-		return WINBINDD_OK;
-	}
-
 	snprintf(name, sizeof(name), "%s\\%s", name_domain, name_group);
 
 	/* Get rid and name type from name */
@@ -245,20 +226,12 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *sta
 	if (!winbindd_lookup_sid_by_name(domain, name, &group_sid, &name_type)) {
 		DEBUG(1, ("group %s in domain %s does not exist\n", 
 			  name_group, name_domain));
-
-		winbindd_store_group_cache_entry(domain, name_group, 
-					 &negative_gr_cache_entry, NULL, 0);
-
 		return WINBINDD_ERROR;
 	}
 
 	if ((name_type != SID_NAME_ALIAS) && (name_type != SID_NAME_DOM_GRP)) {
 		DEBUG(1, ("from_group: name '%s' is not a local or domain "
 			  "group: %d\n", name_group, name_type));
-
-		winbindd_store_group_cache_entry(domain, name_group, 
-					 &negative_gr_cache_entry, NULL, 0);
-
 		return WINBINDD_ERROR;
 	}
 
@@ -268,10 +241,6 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *sta
 
 	if (!winbindd_idmap_get_gid_from_rid(domain->name, group_rid, &gid)) {
 		DEBUG(1, ("error sursing unix gid for sid\n"));
-
-		winbindd_store_group_cache_entry(domain, name_group, 
-					 &negative_gr_cache_entry, NULL, 0);
-
 		return WINBINDD_ERROR;
 	}
 
@@ -280,10 +249,6 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *sta
 	    !fill_grent_mem(domain, group_rid, name_type,
 			    &state->response.data.gr.num_gr_mem,
 			    &gr_mem, &gr_mem_len)) {
-
-		winbindd_store_group_cache_entry(domain, name_group, 
-					 &negative_gr_cache_entry, NULL, 0);
-
 		return WINBINDD_ERROR;
 	}
 
@@ -293,13 +258,6 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *sta
 
 	state->response.length += gr_mem_len;
 	state->response.extra_data = gr_mem;
-
-	/* Update cached group info */
-
-	winbindd_store_group_cache_entry(domain, name_group, 
-					 &state->response.data.gr,
-					 state->response.extra_data,
-					 gr_mem_len);
 
 	return WINBINDD_OK;
 }
@@ -314,7 +272,7 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 	enum SID_NAME_USE name_type;
 	fstring group_name;
 	uint32 group_rid;
-	int extra_data_len, gr_mem_len;
+	int gr_mem_len;
 	char *gr_mem;
 
 	DEBUG(3, ("[%5d]: getgrgid %d\n", state->pid, 
@@ -333,24 +291,6 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 		DEBUG(1, ("Could not convert gid %d to rid\n", 
 			  state->request.data.gid));
 		return WINBINDD_ERROR;
-	}
-
-	/* Try a cached entry */
-
-	if (winbindd_fetch_gid_cache_entry(domain, 
-					   state->request.data.gid,
-					   &state->response.data.gr,
-					   &state->response.extra_data,
-					   &extra_data_len)) {
-
-		/* Check if this is a negative cache entry. */
-
-		if (memcmp(&negative_gr_cache_entry, &state->response.data.gr,
-				sizeof(state->response.data.gr)) == 0)
-            return WINBINDD_ERROR;
-
-		state->response.length += extra_data_len;
-		return WINBINDD_OK;
 	}
 
 	/* Get sid from gid */
@@ -389,13 +329,6 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 
 	state->response.length += gr_mem_len;
 	state->response.extra_data = gr_mem;
-
-	/* Update cached group info */
-
-	winbindd_store_gid_cache_entry(domain, state->request.data.gid,
-				       &state->response.data.gr,
-				       state->response.extra_data,
-				       gr_mem_len);
 
 	return WINBINDD_OK;
 }
@@ -487,13 +420,6 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	if (ent->got_all_sam_entries)
 		return False;
 
-#if 0
-	if (winbindd_fetch_group_cache(ent->domain, 
-				       &ent->sam_entries,
-				       &ent->num_sam_entries))
-		return True;
-#endif
-
 	if (!(mem_ctx = talloc_init()))
 		return False;
 		
@@ -547,13 +473,6 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 
 	} while (ent->num_sam_entries < MAX_FETCH_SAM_ENTRIES);
 		
-#if 0
-	/* Fill cache with received entries */
-
-	winbindd_store_group_cache(ent->domain, ent->sam_entries,
-				   ent->num_sam_entries);
-#endif
-
 	/* Fill in remaining fields */
 
 	ent->sam_entries = name_list;
