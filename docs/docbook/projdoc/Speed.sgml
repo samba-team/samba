@@ -117,7 +117,7 @@ pointless and will cause you to allocate memory unnecessarily.
 At startup the client and server negotiate a <command>maximum transmit</command> size,
 which limits the size of nearly all SMB commands. You can set the
 maximum size that Samba will negotiate using the <command>max xmit = </command> option
-in &smb.conf;. Note that this is the maximum size of SMB request that 
+in &smb.conf;. Note that this is the maximum size of SMB requests that 
 Samba will accept, but not the maximum size that the *client* will accept.
 The client maximum receive size is sent to Samba by the client and Samba
 honours this limit.

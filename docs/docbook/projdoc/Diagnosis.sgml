@@ -216,7 +216,7 @@ To solve this problem change these lines to:
 Do NOT use the <command>bind interfaces only</command> parameter where you 
 may wish to
 use the samba password change facility, or where &smbclient; may need to
-access local service for name resolution or for local resource
+access a local service for name resolution or for local resource
 connections. (Note: the <command>bind interfaces only</command> parameter deficiency
 where it will not allow connections to the loopback address will be
 fixed soon).
@@ -302,7 +302,7 @@ address, broadcast and netmask.
 
 <para>
 If your PC and server aren't on the same subnet then you will need to
-use the <parameter>-B</parameter> option to set the broadcast address to the that of the PCs
+use the <parameter>-B</parameter> option to set the broadcast address to that of the PCs
 subnet.
 </para>
 

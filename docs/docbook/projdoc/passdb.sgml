@@ -867,13 +867,15 @@ identifier:pass must change time column  - int(9)
 identifier:username column               - varchar(255) - unix username
 identifier:domain column                 - varchar(255) - NT domain user is part of
 identifier:nt username column            - varchar(255) - NT username
-identifier:fullname column            - varchar(255) - Full name of user
+identifier:fullname column               - varchar(255) - Full name of user
 identifier:home dir column               - varchar(255) - Unix homedir path
-identifier:dir drive column              - varchar(2) - Directory drive path (eg: 'H:')
-identifier:logon script column           - varchar(255) - Batch file to run on client side when logging on
+identifier:dir drive column              - varchar(2)   - Directory drive path (eg: 'H:')
+identifier:logon script column           - varchar(255)
+					 - Batch file to run on client side when logging on
 identifier:profile path column           - varchar(255) - Path of profile
 identifier:acct desc column              - varchar(255) - Some ASCII NT user data
-identifier:workstations column           - varchar(255) - Workstations user can logon to (or NULL for all)
+identifier:workstations column           - varchar(255)
+					 - Workstations user can logon to (or NULL for all)
 identifier:unknown string column         - varchar(255) - unknown string
 identifier:munged dial column            - varchar(255) - ?
 identifier:uid column                    - int(9) - Unix user ID (uid)
@@ -908,11 +910,15 @@ I strongly discourage the use of plaintext passwords, however, you can use them:
 </para>
 
 <para>
-If you would like to use plaintext passwords, set 'identifier:lanman pass column' and 'identifier:nt pass column' to 'NULL' (without the quotes) and 'identifier:plain pass column' to the name of the column containing the plaintext passwords. 
+If you would like to use plaintext passwords, set
+'identifier:lanman pass column' and 'identifier:nt pass column' to
+'NULL' (without the quotes) and 'identifier:plain pass column' to the
+name of the column containing the plaintext passwords. 
 </para>
 
 <para>
-If you use encrypted passwords, set the 'identifier:plain pass column' to 'NULL' (without the quotes). This is the default.
+If you use encrypted passwords, set the 'identifier:plain pass
+column' to 'NULL' (without the quotes). This is the default.
 </para>
 
 </sect2>
@@ -944,16 +950,21 @@ Or, set 'identifier:workstations column' to :
 <para>This module requires libxml2 to be installed.</para>
 
 <para>The usage of pdb_xml is pretty straightforward. To export data, use:
+</para>
 
-<userinput>pdbedit -e xml:filename</userinput>
+<para>
+	<userinput>pdbedit -e xml:filename</userinput>
+</para>
 
+<para>
 (where filename is the name of the file to put the data in)
 </para>
 
 <para>
 To import data, use:
 <userinput>pdbedit -i xml:filename -e current-pdb</userinput>
-
+</para>
+<para>
 Where filename is the name to read the data from and current-pdb to put it in.
 </para>
 </sect1>

@@ -99,9 +99,9 @@ following information will be recorded:
 <sect2>
 <title>recycle</title>
 <para>
-A recycle-bin like modules. When used any unlink call
+A recycle-bin like module. When used any unlink call
 will be intercepted and files moved to the recycle
-directory instead of beeing deleted.
+directory instead of being deleted.
 </para>
 
 <para>Supported options:
@@ -159,7 +159,7 @@ netatalk file sharing services.
 
 <para>Advantages compared to the old netatalk module:
 <simplelist>
-<member>it doesn't care about creating of .AppleDouble forks, just keeps ones in sync</member>
+<member>it doesn't care about creating of .AppleDouble forks, just keeps them in sync</member>
 <member>if share in smb.conf doesn't contain .AppleDouble item in hide or veto list, it will be added automatically</member>
 </simplelist>
 </para>
@@ -174,12 +174,12 @@ netatalk file sharing services.
 <para>
 This section contains a listing of various other VFS modules that 
 have been posted but don't currently reside in the Samba CVS 
-tree for one reason ot another (e.g. it is easy for the maintainer 
+tree for one reason or another (e.g. it is easy for the maintainer 
 to have his or her own CVS tree).
 </para>
 
 <para>
-No statemets about the stability or functionality any module
+No statemets about the stability or functionality of any module
 should be implied due to its presence here.
 </para>
 

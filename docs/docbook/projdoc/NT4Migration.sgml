@@ -129,7 +129,7 @@ includes:
 	<para>Ability to implement a full single-signon architecture</para>
 </listitem>
 <listitem>
-	<para>Ability to distribute authentication systems for absolute minimum wide are network bandwidth demand</para>
+	<para>Ability to distribute authentication systems for absolute minimum wide area network bandwidth demand</para>
 </listitem>
 </itemizedlist>
 
@@ -462,8 +462,9 @@ Policies (migrate or create new ones)
 	Watch out for Tattoo effect
 
 User and Group Profiles
-	Platform specific so use platform tool to change from a Local to a Roaming profile
-	Can use new profiles tool to change SIDs (NTUser.DAT)
+	Platform specific so use platform tool to change from a Local
+	to a Roaming profile Can use new profiles tool to change SIDs
+	(NTUser.DAT)
 
 Logon Scripts (Know how they work)
 
@@ -472,7 +473,8 @@ User and Group mapping to Unix/Linux
 	Use 'net groupmap' to connect NT4 groups to Unix groups
 	Use pdbedit to set/change user configuration
 NOTE:
-If migrating to LDAP back end it may be easier to dump initial LDAP database to LDIF, then edit, then reload into LDAP
+If migrating to LDAP back end it may be easier to dump initial LDAP database
+to LDIF, then edit, then reload into LDAP
 
 	OS specific scripts / programs may be needed
 		Add / delete Users
@@ -482,7 +484,8 @@ If migrating to LDAP back end it may be easier to dump initial LDAP database to 
 			Applied only to domain members (note up to 16 chars)
 		Add / delete Groups
 			Note OS limits on size and nature
-				Linux limit is 16 char, no spaces and no upper case chars (groupadd)
+				Linux limit is 16 char,
+				no spaces and no upper case chars (groupadd)
 
 Migration Tools
 	Domain Control (NT4 Style)
