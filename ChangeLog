@@ -9,6 +9,10 @@
 
 	* configure.in: add stdio.h in dbopen test
 
+2000-05-16  Assar Westerlund  <assar@assaris.sics.se>
+
+	* Release 0.2t
+
 2000-05-16  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): set version to 11:1:0
