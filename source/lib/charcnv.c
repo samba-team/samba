@@ -405,7 +405,7 @@ ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len,
 	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
 
-	if (flags & STR_TERMINATE) {
+	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII)) {
 		if (src_len == (size_t)-1) {
 			src_len = strlen(src) + 1;
 		} else {
