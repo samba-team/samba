@@ -97,9 +97,8 @@ can be contacted by email at <jpm@mens.de> or via phone at +49 521
 CANBERRA - AUSTRALIA
 
 Ben Elliston
-Faculty of Information Sciences and Engineering
-University of Canberra AUSTRALIA
-E-mail: ben@ise.canberra.edu.au (Uni)
+E-mail: bje@air.net.au
+Samba systems: Solaris 2.x, Linux, HP-UX.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
