@@ -30,16 +30,17 @@ extern uint16 global_oplock_port;
 /****************************************************************************
 fd support routines - attempt to do a dos_open
 ****************************************************************************/
-static int fd_attempt_open(char *fname, int flags, mode_t mode)
+static int fd_attempt_open(struct connection_struct *conn, char *fname, 
+			   int flags, mode_t mode)
 {
-  int fd = dos_open(fname,flags,mode);
+  int fd = conn->vfs_ops.open(fname,flags,mode);
 
   /* Fix for files ending in '.' */
   if((fd == -1) && (errno == ENOENT) &&
      (strchr(fname,'.')==NULL))
     {
       pstrcat(fname,".");
-      fd = dos_open(fname,flags,mode);
+      fd = conn->vfs_ops.open(fname,flags,mode);
     }
 
 #if (defined(ENAMETOOLONG) && defined(HAVE_PATHCONF))
@@ -70,7 +71,7 @@ static int fd_attempt_open(char *fname, int flags, mode_t mode)
           char tmp = p[max_len];
 
           p[max_len] = '\0';
-          if ((fd = dos_open(fname,flags,mode)) == -1)
+          if ((fd = conn->vfs_ops.open(fname,flags,mode)) == -1)
             p[max_len] = tmp;
         }
     }
@@ -191,7 +192,9 @@ This is really ugly code, as due to POSIX locking braindamage we must
 fork and then attempt to open the file, and return success or failure
 via an exit code.
 ****************************************************************************/
-static BOOL check_access_allowed_for_current_user( char *fname, int accmode )
+static BOOL check_access_allowed_for_current_user(struct connection_struct
+						  *conn, char *fname, 
+						  int accmode )
 {
   pid_t child_pid;
 
@@ -242,7 +245,7 @@ static BOOL check_access_allowed_for_current_user( char *fname, int accmode )
      */
     int fd;
     DEBUG(9,("check_access_allowed_for_current_user: Child - attempting to open %s with mode %d.\n", fname, accmode ));
-    if((fd = fd_attempt_open( fname, accmode, 0)) < 0) {
+    if((fd = fd_attempt_open(conn, fname, accmode, 0)) < 0) {
       /* Access denied. */
       _exit(EACCES);
     }
@@ -373,7 +376,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
      */
 
     if(!fd_is_in_uid_cache(fd_ptr, (uid_t)current_user.uid)) {
-      if(!check_access_allowed_for_current_user( fname, accmode )) {
+      if(!check_access_allowed_for_current_user(conn, fname, accmode )) {
         /* Error - permission denied. */
         DEBUG(3,("Permission denied opening file %s (flags=%d, accmode = %d)\n",
               fname, flags, accmode));
@@ -430,7 +433,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     fd_ptr->real_open_flags = O_RDWR;
     /* Set the flags as needed without the read/write modes. */
     open_flags = flags & ~(O_RDWR|O_WRONLY|O_RDONLY);
-    fd_ptr->fd = conn->vfs_ops.open(fname, open_flags|O_RDWR, mode);
+    fd_ptr->fd = fd_attempt_open(conn, fname, open_flags|O_RDWR, mode);
     /*
      * On some systems opening a file for R/W access on a read only
      * filesystems sets errno to EROFS.
@@ -441,7 +444,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     if((fd_ptr->fd == -1) && (errno == EACCES)) {
 #endif /* EROFS */
       if(accmode != O_RDWR) {
-        fd_ptr->fd = conn->vfs_ops.open(fname, open_flags|accmode, mode);
+        fd_ptr->fd = fd_attempt_open(conn, fname, open_flags|accmode, mode);
         fd_ptr->real_open_flags = accmode;
       }
     }
