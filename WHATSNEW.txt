@@ -107,6 +107,16 @@ Ability to delete users added
 SWAT and smbpasswd can now delete users from the Samba smbpasswd file.
 See the man page for smbpasswd for details.
 
+Roving profile behavior finalized
+---------------------------------
+
+The change in behavior with roving profiles (using the "logon home"
+parameter instead of the "logon path" parameter) introduced in 2.0.6
+has been discovered to be consistant with the way Windows NT behaves,
+and has been left as the default action. Please see the additional
+notes in the "logon home" parameter description in the smb.conf man
+page for more details.
+
 Changes in 2.0.7
 -----------------
 
