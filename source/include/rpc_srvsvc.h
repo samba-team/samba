@@ -40,6 +40,7 @@
 #define SRV_NET_REMOTE_TOD     0x1c
 #define SRV_NET_NAME_VALIDATE  0x21
 #define SRV_NETSHAREENUM       0x24
+#define SRV_NETFILEQUERYSECDESC 0x27
 
 #define MAX_SERVER_DISK_ENTRIES 15
 
@@ -763,5 +764,28 @@ typedef struct r_net_remote_tod
 
 } SRV_R_NET_REMOTE_TOD;
 
+/* SRV_Q_NET_FILE_QUERY_SECDESC */
+typedef struct q_net_file_query_secdesc
+{
+	uint32  ptr_srv_name;
+	UNISTR2 uni_srv_name;
+	uint32  ptr_qual_name;
+	UNISTR2 uni_qual_name;
+	UNISTR2 uni_file_name;
+	uint32  unknown1;
+	uint32  unknown2;
+	uint32  unknown3;
+} SRV_Q_NET_FILE_QUERY_SECDESC;
+
+/* SRV_R_NET_FILE_QUERY_SECDESC */
+typedef struct r_net_file_query_secdesc
+{
+	uint32 ptr_response;
+	uint32 size_response;
+	uint32 ptr_secdesc;
+	uint32 size_secdesc;
+	SEC_DESC *sec_desc;
+	uint32 status;
+} SRV_R_NET_FILE_QUERY_SECDESC;
 
 #endif /* _RPC_SRVSVC_H */
