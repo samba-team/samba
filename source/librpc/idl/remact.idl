@@ -14,14 +14,6 @@
 ]
 interface IRemoteActivation
 {
-	typedef [public] struct {
-		MInterfacePointer *ppInterfaceData;
-	} ppInterfaceDataArray;
-
-	typedef [public] struct {
-		DUALSTRINGARRAY *dualstringarray;
-	} REF_DUALSTRINGARRAY;
-
 	typedef struct {
 		/* Looks very much like a protocol tower to me, but it appears 
 		   to be aligned differently then it is in epmapper -jelmer
@@ -31,6 +23,8 @@ interface IRemoteActivation
 
 	const uint32 MODE_GET_CLASS_OBJECT = 0xffffffff;
 	HRESULT RemoteActivation (
+			[in] ORPCTHIS ORPCthis,
+			[out] ORPCTHAT ORPCthat,
 			[in] GUID Clsid,
 			[in, unique] unistr *pwszObjectName,
 			[in, unique] MInterfacePointer *pObjectStorage,
@@ -40,13 +34,13 @@ interface IRemoteActivation
 			[in, unique,size_is(Interfaces)] GUID *pIIDs,
 			[in] uint16 num_protseqs,
 			[in, size_is(num_protseqs)] floor_tmp protseq[],
-			[out] GUID pOxid,
+			[out] HYPER_T pOxid,
 			[out] DUALSTRINGARRAY *pdsaOxidBindings,
 			[out] IPID ipidRemUnknown,
 			[out] uint32 pAuthnHint,
 			[out] COMVERSION pServerVersion,
-			[out] HRESULT *phr,
-			[out,size_is(Interfaces)] ppInterfaceDataArray *ppInterfaceData,
-			[out,size_is(Interfaces)] HRESULT *pResults
+			[out] HRESULT phr,
+			[out,size_is(Interfaces)] MInterfacePointer ifaces[],
+			[out,size_is(Interfaces)] HRESULT results[]
 			);
 }
