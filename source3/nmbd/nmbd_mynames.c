@@ -197,7 +197,7 @@ void refresh_my_names(time_t t)
         if( !is_refresh_already_queued( subrec, namerec) )
           refresh_name( subrec, namerec, NULL, NULL, NULL );
         namerec->data.death_time += lp_max_ttl();
-        namerec->data.refresh_time += lp_max_ttl();
+        namerec->data.refresh_time += MIN(lp_max_ttl(), MAX_REFRESH_TIME);
       }
     }
   }

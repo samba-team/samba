@@ -546,6 +546,10 @@ struct packet_struct
 /* Do all remote announcements this often. */
 #define REMOTE_ANNOUNCE_INTERVAL 180
 
+/* what is the maximum period between name refreshes. Note that this only
+   affects non-permanent self names */
+#define MAX_REFRESH_TIME (60*20)
+
 /* Types of machine we can announce as. */
 #define ANNOUNCE_AS_NT 1
 #define ANNOUNCE_AS_WIN95 2
