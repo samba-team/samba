@@ -495,11 +495,10 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 				print_status_struct* status)
 {
 	int i;
-	BOOL ok = False;
+	BOOL ok;
 	pstring tok,driver,datafile,langmon,helpfile,datatype;
 	char *p;
-	char **lines;
-	char *line = NULL;
+	char **lines = NULL;
 	pstring gen_line;
 	
 	/*
@@ -512,23 +511,18 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
         p = gen_line;
 		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", lp_printerdriver(snum), gen_line));
     } else {
-		/* didn't find driver in tdb either... oh well */
-		DEBUG(10,("9x driver not found in tdb\n"));
-	}
+		/* didn't find driver in tdb */
 
 	DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
 			  snum, lp_printerdriver(snum), lp_driverfile(snum)));
 
 	lines = file_lines_load(lp_driverfile(snum),NULL);
-
 	if (!lines) {
-		DEBUG(3,("fill_printq_info: Can't open %s - %s\n",
-			 lp_driverfile(snum),strerror(errno)));
+			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),strerror(errno)));
 		desc->errcode=NERR_notsupported;
 		return;
 	} else {
-		/* lookup the long printer driver name in the file
-			description */
+			/* lookup the long printer driver name in the file description */
 		for (i=0;lines[i] && !ok;i++) {
 			p = lines[i];
 			if (next_token(&p,tok,":",sizeof(tok)) &&
@@ -537,16 +531,10 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 				ok = True;
 		}
 	}
+	}
 
-	if (!ok)
-		goto err;
-
-	if ((line = strdup(p)) == NULL)
-		goto err;
-
-	p = line;
-	file_lines_free(lines);
-	
+	if (ok)
+	{
 	/* driver file name */
 	if (!next_token(&p,driver,":",sizeof(driver)))
 		goto err;
@@ -588,9 +576,11 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 	PACKS(desc,"z",datatype);			 /* default data type */
 	PACKS(desc,"z",helpfile);                  /* helpfile name */
 	PACKS(desc,"z",driver);                    /* driver name */
+		DEBUG(3,("lp_printerdriver:%s:\n",lp_printerdriver(snum)));
 	DEBUG(3,("Driver:%s:\n",driver));
 	DEBUG(3,("Data File:%s:\n",datafile));
 	DEBUG(3,("Language Monitor:%s:\n",langmon));
+		DEBUG(3,("lp_driverlocation:%s:\n",lp_driverlocation(snum)));
 	DEBUG(3,("Data Type:%s:\n",datatype));
 	DEBUG(3,("Help File:%s:\n",helpfile));
 	PACKI(desc,"N",count);                     /* number of files to copy */
@@ -607,15 +597,16 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 	DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",
 		 SERVICE(snum),count));
 
-	free(line);
+        desc->errcode=NERR_Success;
+		file_lines_free(lines);
 	return;
+	}
 
   err:
 
 	DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
 	desc->errcode=NERR_notsupported;
-	if (line)
-		free(line);
+	file_lines_free(lines);	
 }
 
 
@@ -697,64 +688,67 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 /* This function returns the number of files for a given driver */
 static int get_printerdrivernumber(int snum)
 {
-	int i=0,ok=0;
+	int i;
+	BOOL ok;
 	pstring tok;
 	char *p;
-	char **lines, *line;
+	char **lines = NULL;
 	pstring gen_line;
 
+	/*
+	 * Check in the tdb *first* before checking the legacy
+	 * files. This allows an NT upload to take precedence over
+	 * the existing fileset. JRA.
+	 */
+	
+	if ((ok = get_a_printer_driver_9x_compatible(gen_line, lp_printerdriver(snum))) == True ) {
+		p = gen_line;
+		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", lp_printerdriver(snum), gen_line));
+	} else {
+		/* didn't find driver in tdb */
+	
 	DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
 			  snum, lp_printerdriver(snum), lp_driverfile(snum)));
+		
 	lines = file_lines_load(lp_driverfile(snum), NULL);
 	if (!lines) {
-		DEBUG(3,("get_printerdrivernumber: Can't open %s - %s\n",
-			 lp_driverfile(snum),strerror(errno)));
+			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),strerror(errno)));
 	}
 	else
 	{
-		/* lookup the long printer driver name in the file
-		   description */
+			/* lookup the long printer driver name in the file description */
 		for (i=0;lines[i] && !ok;i++) {
 		p = lines[i];
 		if (next_token(&p,tok,":",sizeof(tok)) &&
 				(strlen(lp_printerdriver(snum)) == strlen(tok)) &&
 		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
-			ok=1;
+					ok = True;
 	}
-	}
-
-	if( !ok ) {
-		/* no printers.def, or driver not found, check the NT driver tdb */
-		if ((ok = get_a_printer_driver_9x_compatible(gen_line, lp_printerdriver(snum)))==True ) {
-	        p = gen_line;
-			DEBUG(10,("9x compatable driver line for [%s]: [%s]\n",
-					  lp_printerdriver(snum), gen_line));
-	    } else {
-			/* didn't find driver in tdb either... oh well */
-			DEBUG(10,("9x driver not found in tdb\n"));
-		    return (0);
 		}
 	}
-	line = strdup(p);
-	p = line;
-	file_lines_free(lines);
 	
-	if (ok) {
+	if( ok ) {
 		/* skip 5 fields */
 		i = 5;
 		while (*p && i) {
 			if (*p++ == ':') i--;
 		}
 		if (!*p || i)
-			return(0);
+			goto err;
 		
 		/* count the number of files */
 		while (next_token(&p,tok,",",sizeof(tok)))
 			i++;
-	}
-	free(line);
 	
+		file_lines_free(lines);
 	return(i);
+	}
+
+  err:
+
+	DEBUG(3,("Can't determine number of printer driver files\n"));
+	file_lines_free(lines);
+	return (0);
 }
 
 static BOOL api_DosPrintQGetInfo(connection_struct *conn,

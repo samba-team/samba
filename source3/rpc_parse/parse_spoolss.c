@@ -1778,7 +1778,7 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 {
 	uint32 sec_offset;
 	prs_struct *ps=&buffer->prs;
-	int i = 0;
+	uint32 dummy = 0;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_2");
 	depth++;	
@@ -1814,7 +1814,7 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 		return False;
 
 #if 1 /* JFMTEST */
-	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, &i, &sec_offset))
+	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, &dummy, &sec_offset))
 		return False;
 #else
 	if (!new_smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))

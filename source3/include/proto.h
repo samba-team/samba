@@ -1302,6 +1302,9 @@ char *lp_configfile(void);
 char *lp_smb_passwd_file(void);
 char *lp_serverstring(void);
 char *lp_printcapname(void);
+char *lp_enumports_cmd(void);
+char *lp_addprinter_cmd(void);
+char *lp_deleteprinter_cmd(void);
 char *lp_lockdir(void);
 char *lp_utmpdir(void);
 char *lp_rootdir(void);
@@ -1530,6 +1533,7 @@ BOOL lp_snum_ok(int iService);
 void lp_add_one_printer(char *name, char *comment);
 BOOL lp_loaded(void);
 void lp_killunused(BOOL (*snumused) (int));
+void lp_killservice(int iServiceIn);
 BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
 	     BOOL add_ipc);
 void lp_resetnumservices(void);
@@ -1654,6 +1658,7 @@ BOOL trust_password_delete(char *domain);
 
 /*The following definitions come from  printing/load.c  */
 
+void add_all_printers(void);
 void load_printers(void);
 
 /*The following definitions come from  printing/lpq_parse.c  */

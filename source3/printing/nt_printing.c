@@ -387,7 +387,6 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 	fstring architecture;
-	fstring clean_driver_name;
 	pstring new_dir;
 	pstring old_name;
 	pstring new_name;
@@ -406,10 +405,6 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	
 	get_short_archi(architecture, driver->environment);
 
-	/* clean up the driver's name */
-	fstrcpy(clean_driver_name, driver->name);
-	all_string_sub(clean_driver_name, "/", "#", 0);
-	
 	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
 	fstrcpy(user_name, uidtoname(user->uid));
 	DEBUG(10,("move_driver_to_download_area: uid %d -> user %s\n", (int)user->uid, user_name));
@@ -447,18 +442,22 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	slprintf(new_dir, sizeof(new_dir), "%s\\%d", architecture, driver->cversion);
 	mkdir_internal(conn, inbuf, outbuf, new_dir);
 
-	slprintf(new_dir, sizeof(new_dir), "%s\\%d\\%s", architecture, driver->cversion, clean_driver_name);
-	mkdir_internal(conn, inbuf, outbuf, new_dir);
-
 	/* move all the files, one by one, 
 	 * from archi\filexxx.yyy to
-	 * archi\version\driver name\filexxx.yyy 
+	 * archi\version\filexxx.yyy
+	 *
+	 * Note: drivers may list the same file name in several places. This
+	 * causes problems on a second attempt to move the file. JRR
+	 *
+	 * Note: use the replace flag on rename_internals() call, otherwise it
+	 * is very difficult to change previously installed drivers... the Windows
+	 * GUI offers the user the choice to replace or keep exisitng driver. JRR
 	 */
 
 	DEBUG(5,("Moving file now !\n"));
 	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->driverpath);	
 	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->driverpath);	
-	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
+	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
 		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
 				old_name, new_name ));
 		close_cnum(conn, user->vuid);
@@ -466,45 +465,61 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 		return False;
 	}
 
+	if (!strequal(driver->datafile, driver->driverpath)) {
 	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->datafile);	
 	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->datafile);	
-	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
+		if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
 		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
 				old_name, new_name ));
 		close_cnum(conn, user->vuid);
 		unbecome_root();
 		return False;
 	}
+	}
 
+	if (!strequal(driver->configfile, driver->driverpath) &&
+		!strequal(driver->configfile, driver->datafile)) {
 	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->configfile);	
 	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->configfile);	
-	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
+		if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
 		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
 			old_name, new_name ));
 		close_cnum(conn, user->vuid);
 		unbecome_root();
 		return False;
 	}
+	}
 
+	if (!strequal(driver->helpfile, driver->driverpath) &&
+		!strequal(driver->helpfile, driver->datafile) &&
+		!strequal(driver->helpfile, driver->configfile)) {
 	slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->helpfile);	
 	slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->helpfile);	
-	if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, False)) != 0) {
+		if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
 		DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
 			old_name, new_name ));
 		close_cnum(conn, user->vuid);
 		unbecome_root();
 		return False;
+	}
 	}
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
+			if (!strequal(driver->dependentfiles[i], driver->driverpath) &&
+				!strequal(driver->dependentfiles[i], driver->datafile) &&
+				!strequal(driver->dependentfiles[i], driver->configfile) &&
+				!strequal(driver->dependentfiles[i], driver->helpfile)) {
 			slprintf(old_name, sizeof(old_name), "%s\\%s", architecture, driver->dependentfiles[i]);	
 			slprintf(new_name, sizeof(new_name), "%s\\%s", new_dir, driver->dependentfiles[i]);	
-			/*
-			 * We don't check the error returns here as several of these
-			 * files may have already been moved in the list above...
-			 */
-			rename_internals(conn, inbuf, outbuf, old_name, new_name, False);
+				if ((outsize = rename_internals(conn, inbuf, outbuf, old_name, new_name, True)) != 0) {
+					DEBUG(0,("move_driver_to_download_area: Unable to rename %s to %s\n",
+						old_name, new_name ));
+					close_cnum(conn, user->vuid);
+					unbecome_root();
+					return False;
+				}
+			}
 		}
 	}
 
@@ -521,7 +536,6 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	int len, buflen;
 	fstring architecture;
 	pstring directory;
-	fstring clean_driver_name;
 	pstring temp_name;
 	pstring key;
 	char *buf;
@@ -530,16 +544,12 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 
 	get_short_archi(architecture, driver->environment);
 
-	/* The names are relative. We store them in the form: \print$\arch\version\printer-name\driver.xxx
+	/* The names are relative. We store them in the form: \print$\arch\version\driver.xxx
 	 * \\server is added in the rpc server layer.
 	 * It does make sense to NOT store the server's name in the printer TDB.
 	 */
 
-	/* clean up the driver's name */
-	fstrcpy(clean_driver_name, driver->name);
-	all_string_sub(clean_driver_name, "/", "#", 0);
-	
-	slprintf(directory, sizeof(directory), "\\print$\\%s\\%d\\%s\\", architecture, driver->cversion, clean_driver_name);
+	slprintf(directory, sizeof(directory), "\\print$\\%s\\%d\\", architecture, driver->cversion);
 
 	
 	fstrcpy(temp_name, driver->driverpath);
@@ -752,12 +762,16 @@ uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
     DEBUGADD(10,("info3->configfile      [%s]\n", info3->configfile));
 
 	/*pstrcat(line, info3->name);             pstrcat(line, ":");*/
+	trim_string(info3->configfile, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->configfile);
     pstrcat(line, ":");
+	trim_string(info3->datafile, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->datafile);
     pstrcat(line, ":");
+	trim_string(info3->helpfile, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->helpfile);
     pstrcat(line, ":");
+	trim_string(info3->monitorname, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->monitorname);
     pstrcat(line, ":");
 	pstrcat(line, "RAW");                /*info3->defaultdatatype);*/
@@ -766,6 +780,7 @@ uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
 	for (i=0; info3->dependentfiles &&
 		 *info3->dependentfiles[i]; i++) {
 		if (i) pstrcat(line, ",");               /* don't end in a "," */
+		trim_string(info3->dependentfiles[i], "\\print$\\WIN40\\0\\", 0);
 		pstrcat(line, info3->dependentfiles[i]);
 	}
 	
@@ -969,7 +984,7 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
  again:	
 	len = 0;
-	len += tdb_pack(buf+len, buflen-len, "dddddddddddfffffffffff",
+	len += tdb_pack(buf+len, buflen-len, "dddddddddddfffffPfffff",
 			info->attributes,
 			info->priority,
 			info->default_priority,
@@ -1367,7 +1382,7 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	fstrcpy(info.printername, sharename);
 	fstrcpy(info.portname, sharename);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
-	fstrcpy(info.comment, "");
+	pstrcpy(info.comment, "");
 	fstrcpy(info.printprocessor, "winprint");
 	fstrcpy(info.datatype, "RAW");
 
@@ -1428,7 +1443,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	if (!dbuf.dptr) return 1;
 #endif
 
-	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffffffff",
+	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
 			&info.attributes,
 			&info.priority,
 			&info.default_priority,

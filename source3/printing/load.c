@@ -25,7 +25,7 @@
 /***************************************************************************
 auto-load printer services
 ***************************************************************************/
-static void add_all_printers(void)
+void add_all_printers(void)
 {
 	int printers = lp_servicenumber(PRINTERS_NAME);
 
