@@ -59,4 +59,6 @@ LDAP using Samba-2.x systems can continue to operate with the following entry
 <emphasis>passdb backend = ldapsam_compat, guest</emphasis>.
 </para>
 
+</sect1>
+
 </chapter>
