@@ -253,6 +253,7 @@ krb4_auth(void *app_data, char *host)
 	return AUTH_CONTINUE;
     }
 
+#ifdef HAVE_KRB_GET_OUR_IP_FOR_REALM
     if (krb_get_config_bool("nat_in_use")) {
       struct in_addr natAddr;
 
@@ -277,6 +278,7 @@ krb4_auth(void *app_data, char *host)
 	}
       }
     }
+#endif
 
     printf("Local address is %s\n", inet_ntoa(localaddr->sin_addr));
     printf("Remote address is %s\n", inet_ntoa(remoteaddr->sin_addr));

@@ -76,6 +76,7 @@ krb4_authenticate (kx_context *kc, int s)
     krb4_kx_context *c = (krb4_kx_context *)kc->data;
     const char *host = kc->host;
 
+#ifdef HAVE_KRB_GET_OUR_IP_FOR_REALM
     if (krb_get_config_bool("nat_in_use")) {
 	struct in_addr natAddr;
 
@@ -83,6 +84,7 @@ krb4_authenticate (kx_context *kc, int s)
 				     &natAddr) == KSUCCESS)
 	    kc->thisaddr.sin_addr = natAddr;
     }
+#endif
 
     status = krb_sendauth (KOPT_DO_MUTUAL, s, &text, "rcmd",
 			   (char *)host, krb_realmofhost (host),
