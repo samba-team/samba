@@ -993,7 +993,7 @@ FN_LOCAL_STRING(lp_volume,volume)
 FN_LOCAL_STRING(lp_mangled_map,szMangledMap)
 FN_LOCAL_STRING(lp_veto_files,szVetoFiles)
 FN_LOCAL_STRING(lp_hide_files,szHideFiles)
-FN_LOCAL_STRING(lp_veto_oplocks,szVetoFiles)
+FN_LOCAL_STRING(lp_veto_oplocks,szVetoOplockFiles)
 FN_LOCAL_STRING(lp_driverlocation,szPrinterDriverLocation)
 
 FN_LOCAL_BOOL(lp_alternate_permissions,bAlternatePerm)

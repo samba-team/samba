@@ -2268,10 +2268,7 @@ int read_smb_length(int fd,char *inbuf,int timeout)
       msg_type = CVAL(buffer,0);
 
       if (msg_type == 0x85) 
-	{
-	  DEBUG(5,("Got keepalive packet\n"));
-	  ok = False;
-	}
+        DEBUG(5,("Got keepalive packet\n"));
     }
 
   DEBUG(10,("got smb length of %d\n",len));
@@ -2295,7 +2292,7 @@ BOOL receive_smb(int fd,char *buffer, int timeout)
   bzero(buffer,smb_size + 100);
 
   len = read_smb_length(fd,buffer,timeout);
-  if (len == -1)
+  if (len < 0)
     return(False);
 
   if (len > BUFFER_SIZE) {
@@ -2304,12 +2301,13 @@ BOOL receive_smb(int fd,char *buffer, int timeout)
       exit(1);
   }
 
-  ret = read_data(fd,buffer+4,len);
-  if (ret != len) {
-    smb_read_error = READ_ERROR;
-    return False;
+  if(len > 0) {
+    ret = read_data(fd,buffer+4,len);
+    if (ret != len) {
+      smb_read_error = READ_ERROR;
+      return False;
+    }
   }
-
   return(True);
 }
 

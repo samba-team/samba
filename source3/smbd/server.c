@@ -2595,6 +2595,8 @@ static void process_smb(char *inbuf, char *outbuf)
 
   if (msg_type == 0)
     show_msg(inbuf);
+  else if(msg_type == 0x85)
+    return; /* Keepalive packet. */
 
   nread = construct_reply(inbuf,outbuf,nread,max_send);
       
@@ -3142,6 +3144,13 @@ BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int tim
       process_local_message(oplock_sock, inbuf, bufsize);
       continue;
     }
+
+    if(ret && (CVAL(inbuf,0) == 0x85))
+    {
+      /* Keepalive packet. */
+      got_smb = False;
+    }
+
   }
   while(ret && !got_smb);
 
