@@ -385,6 +385,16 @@ v5_loop (krb5_context context,
     }
 }
 
+static krb5_boolean
+match_appl_version(void *data, const char *appl_version)
+{
+    unsigned minor;
+    if(sscanf(appl_version, "KADM0.%u", &minor) != 1)
+	return 0;
+    *(unsigned*)data = minor;
+    return 1;
+}
+
 static void
 handle_v5(krb5_context context,
 	  krb5_auth_context ac,
@@ -400,6 +410,9 @@ handle_v5(krb5_context context,
     void *kadm_handle;
     ssize_t n;
 
+    unsigned kadm_version;
+    kadm5_config_params realm_params;
+
     if (len != sizeof(KRB5_SENDAUTH_VERSION))
 	krb5_errx(context, 1, "bad sendauth len %d", len);
     n = krb5_net_read(context, &fd, version, len);
@@ -413,9 +426,10 @@ handle_v5(krb5_context context,
     ret = krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_parse_name %s", KADM5_ADMIN_SERVICE);
-    ret = krb5_recvauth(context, &ac, &fd, KADMIN_APPL_VERSION, 
-			server, KRB5_RECVAUTH_IGNORE_VERSION, 
-			keytab, &ticket);
+    ret = krb5_recvauth_match_version(context, &ac, &fd, 
+				      match_appl_version, &kadm_version,
+				      server, KRB5_RECVAUTH_IGNORE_VERSION, 
+				      keytab, &ticket);
     if(ret == KRB5_KT_NOTFOUND) {
 	char *name;
 	krb5_unparse_name(context, server, &name);
@@ -427,6 +441,18 @@ handle_v5(krb5_context context,
 	    
     if(ret)
 	krb5_err(context, 1, ret, "krb5_recvauth");
+
+    memset(&realm_params, 0, sizeof(realm_params));
+
+    if(kadm_version == 1) {
+	krb5_data enc_data, params;
+	ret = krb5_read_message(context, &fd, &enc_data);
+	ret = krb5_rd_priv(context, ac, &enc_data, &params, NULL);
+	krb5_data_free(&enc_data);
+	_kadm5_unmarshal_params(context, &params, &realm_params);
+    }
+
+    ticket->ticket.flags.initial;
     ret = krb5_unparse_name(context, ticket->client, &client);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_unparse_name");
@@ -434,7 +460,8 @@ handle_v5(krb5_context context,
 				       client, 
 				       NULL,
 				       KADM5_ADMIN_SERVICE,
-				       NULL, 0, 0, 
+				       &realm_params, 
+				       0, 0, 
 				       &kadm_handle);
     if(ret)
 	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
