@@ -316,9 +316,10 @@ static BOOL get_cmd_args(char *line)
 	do
 	{
 		add_chars_to_array(&cmd_argc, &cmd_argv, tok);
-
 	}
 	while (next_token(NULL, tok, NULL, sizeof(tok)));
+
+	add_chars_to_array(&cmd_argc, &cmd_argv, NULL);
 
 	return True;
 }
@@ -345,7 +346,7 @@ static BOOL do_command(struct client_info *info, char *line)
 
 	if ((i = process_tok(cmd_argv[0])) >= 0)
 	{
-		int argc = (int)cmd_argc;
+		int argc = ((int)cmd_argc)-1;
 		char **argv = cmd_argv;
 		optind = 0;
 

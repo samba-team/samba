@@ -687,7 +687,7 @@ user %s attempted down-level SMB connection\n",
 	 * If name ends in $ it's a trust account.
 	 */
 
-	if ((user[strlen(user) - 1] == '$') && (smb_apasslen == 24)
+	if (*user && (user[strlen(user) - 1] == '$') && (smb_apasslen == 24)
 	    && (smb_ntpasslen == 24))
 	{
 		return session_trust_account(conn, inbuf, outbuf, user, domain,

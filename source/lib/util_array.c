@@ -147,11 +147,20 @@ void free_char_array(uint32 num_entries, char **entries)
 	free_void_array(num_entries, (void**)entries, *fn);
 }
 
+static char *Strdup(const char *name)
+{
+	if (name == NULL)
+	{
+		return name;
+	}
+	return strdup(name);
+}
+
 char* add_chars_to_array(uint32 *len, char ***array, const char *name)
 {
-	void*(*fn)(const void*) = (void*(*)(const void*))&strdup;
+	void*(*fn)(const void*) = (void*(*)(const void*))&Strdup;
 	return (char*)add_copy_to_array(len,
-	                     (void***)array, (const void*)name, *fn, False);
+	                     (void***)array, (const void*)name, *fn, True);
 				
 }
 

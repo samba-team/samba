@@ -29,7 +29,7 @@ extern int DEBUGLEVEL;
  Convert a SID to an ascii string.
 *****************************************************************/
 
-char *sid_to_string(pstring sidstr_out, const DOM_SID *sid)
+char *sid_to_string(fstring sidstr_out, const DOM_SID *sid)
 {
   char subauth[16];
   int i;
@@ -39,12 +39,12 @@ char *sid_to_string(pstring sidstr_out, const DOM_SID *sid)
               (sid->id_auth[3] << 16) +
               (sid->id_auth[2] << 24);
 
-  slprintf(sidstr_out, sizeof(pstring) - 1, "S-%u-%lu", (unsigned int)sid->sid_rev_num, (unsigned long)ia);
+  slprintf(sidstr_out, sizeof(sidstr_out) - 1, "S-%u-%lu", (unsigned int)sid->sid_rev_num, (unsigned long)ia);
 
   for (i = 0; i < sid->num_auths; i++)
   {
     slprintf(subauth, sizeof(subauth)-1, "-%lu", (unsigned long)sid->sub_auths[i]);
-    pstrcat(sidstr_out, subauth);
+    fstrcat(sidstr_out, subauth);
   }
 
   DEBUG(20, ("sid_to_string returning %s\n", sidstr_out));

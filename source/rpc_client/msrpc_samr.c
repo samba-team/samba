@@ -281,6 +281,7 @@ BOOL req_user_info( const POLICY_HND *pol_dom,
 		{
 			usr_inf(domain, sid, user_rid, &ctr);
 		}
+		free_samr_userinfo_ctr(&ctr);
 		return True;
 	}
 	return False;
