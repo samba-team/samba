@@ -94,6 +94,7 @@ struct slave {
     time_t seen;
     unsigned long flags;
 #define SLAVE_F_DEAD	0x1
+#define SLAVE_F_AYT	0x2
     struct slave *next;
 };
 
@@ -124,6 +125,7 @@ check_acl (krb5_context context, const char *name)
 static void
 slave_seen(slave *s)
 {
+    s->flags &= ~SLAVE_F_AYT;
     s->seen = time(NULL);
 }
 
@@ -365,8 +367,10 @@ send_are_you_there (krb5_context context, slave *s)
     char buf[4];
     int ret;
 
-    if (s->flags & SLAVE_F_DEAD)
+    if (s->flags & (SLAVE_F_DEAD|SLAVE_F_AYT))
 	return 0;
+
+    s->flags |= SLAVE_F_AYT;
 
     data.data = buf;
     data.length = 4;
@@ -739,17 +743,19 @@ main(int argc, char **argv)
 		continue;
 	    }
 	    --ret;
+	    assert(ret >= 0);
 	    old_version = current_version;
 	    kadm5_log_get_version_fd (log_fd, &current_version);
 	    for (p = slaves; p != NULL; p = p->next)
 		send_diffs (context, p, log_fd, database, current_version);
         }
 
-	for(p = slaves; ret && p != NULL; p = p->next) {
+	for(p = slaves; p != NULL; p = p->next) {
 	    if (p->flags & SLAVE_F_DEAD)
 	        continue;
-	    if (FD_ISSET(p->fd, &readset)) {
+	    if (ret && FD_ISSET(p->fd, &readset)) {
 		--ret;
+		assert(ret >= 0);
 		if(process_msg (context, p, log_fd, database, current_version))
 		    slave_dead(p);
 	    } else if (slave_gone_p (p))
@@ -761,6 +767,7 @@ main(int argc, char **argv)
 	if (ret && FD_ISSET(listen_fd, &readset)) {
 	    add_slave (context, keytab, &slaves, listen_fd);
 	    --ret;
+	    assert(ret >= 0);
 	}
 	write_stats(context, slaves, current_version);
     }
