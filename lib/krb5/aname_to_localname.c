@@ -86,7 +86,7 @@ krb5_aname_to_localname (krb5_context context,
     len = strlen (res);
     if (len >= lnsize)
 	return ERANGE;
-    strcpy (lname, res);
+    strlcpy (lname, res, lnsize);
 
     return 0;
 }
