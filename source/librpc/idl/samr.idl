@@ -1056,7 +1056,18 @@
 
 	/************************/
 	/* Function    0x3f     */
-	NTSTATUS samr_UNICODE_CHANGE_PASSWORD_USER3();
+	NTSTATUS samr_ChangePasswordUser3(
+		[in]              samr_Name *server,
+		[in,ref]          samr_Name *account,
+		[in]              samr_CryptPassword *nt_password,
+		[in]              samr_Hash *nt_verifier,
+		[in]              bool8 lm_change,
+		[in]              samr_CryptPassword *lm_password,
+		[in]              samr_Hash *lm_verifier,
+		[in]              samr_CryptPassword *password3,
+		[out]             uint32 unknown1,
+		[out]             uint32 unknown2
+		);
 
 	/************************/
 	/* Function    0x40      */

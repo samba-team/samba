@@ -27,9 +27,6 @@
 #define TEST_GROUPNAME "samrtorturetestgroup"
 #define TEST_MACHINENAME "samrtorturetestmach$"
 #define TEST_DOMAINNAME "samrtorturetestdom$"
-#define TEST_PASSWORD "Caamei2n"
-#define TEST_PASSWORD2 "ipei8Thi"
-#define TEST_PASSWORD3 "Vohxoim1"
 
 
 static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -253,20 +250,32 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+/*
+  generate a random password for password change tests
+*/
+static char *samr_rand_pass(TALLOC_CTX *mem_ctx)
+{
+	size_t len = 8 + (random() % 6);
+	char *s = generate_random_str(len);
+	printf("Generated password '%s'\n", s);
+	return talloc_strdup(mem_ctx, s);
+}
+
 static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			     struct policy_handle *handle)
+			     struct policy_handle *handle, char **password)
 {
 	NTSTATUS status;
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	BOOL ret = True;
 	uint8 session_key[16];
+	char *newpass = samr_rand_pass(mem_ctx);	
 
 	s.in.handle = handle;
 	s.in.info = &u;
 	s.in.level = 24;
 
-	encode_pw_buffer(u.info24.password.data, TEST_PASSWORD, STR_UNICODE);
+	encode_pw_buffer(u.info24.password.data, newpass, STR_UNICODE);
 	u.info24.pw_len = 24;
 
 	status = dcerpc_fetch_session_key(p, session_key);
@@ -285,6 +294,8 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("SetUserInfo level %u failed - %s\n",
 		       s.in.level, nt_errstr(status));
 		ret = False;
+	} else {
+		*password = newpass;
 	}
 
 	return ret;
@@ -445,15 +456,17 @@ static NTSTATUS test_OpenUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				    struct policy_handle *handle)
+				    struct policy_handle *handle, char **password)
 {
 	NTSTATUS status;
 	struct samr_ChangePasswordUser r;
 	BOOL ret = True;
 	struct samr_Hash hash1, hash2, hash3, hash4;
-	const char *test_pass1 = "";
-	const char *test_pass2 = "newpass";
 	struct policy_handle user_handle;
+	char *oldpass = *password;
+	char *newpass = samr_rand_pass(mem_ctx);	
+	uint8 old_nt_hash[16], new_nt_hash[16];
+	uint8 old_lm_hash[16], new_lm_hash[16];
 
 	status = test_OpenUser_byname(p, mem_ctx, handle, TEST_USERNAME, &user_handle);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -462,8 +475,19 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("Testing ChangePasswordUser\n");
 
-	nt_lm_owf_gen(test_pass1, hash1.hash, hash2.hash);
-	nt_lm_owf_gen(test_pass2, hash3.hash, hash4.hash);
+	E_md4hash(oldpass, old_nt_hash);
+	E_md4hash(newpass, new_nt_hash);
+
+	E_deshash(oldpass, old_lm_hash);
+	E_deshash(newpass, new_lm_hash);
+
+	memcpy(hash1.hash, new_lm_hash, 16);
+	SamOEMhash(hash1.hash, old_lm_hash, 16);
+	E_old_pw_hash(new_lm_hash, old_lm_hash, hash2.hash);
+
+	memcpy(hash3.hash, new_lm_hash, 16);
+	SamOEMhash(hash3.hash, old_nt_hash, 16);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, hash4.hash);
 
 	r.in.handle = &user_handle;
 	r.in.unknown1 = 1;
@@ -473,7 +497,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.hash3 = &hash3;
 	r.in.hash4 = &hash4;
 	r.in.unknown3 = 1;
-	r.in.hash5 = &hash3;
+	r.in.hash5 = &hash1;
 	r.in.unknown4 = 1;
 	r.in.hash6 = &hash3;
 
@@ -481,6 +505,8 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ChangePasswordUser failed - %s\n", nt_errstr(status));
 		ret = False;
+	} else {
+		*password = newpass;
 	}
 
 	if (!test_Close(p, mem_ctx, &user_handle)) {
@@ -492,7 +518,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-					struct policy_handle *handle)
+					struct policy_handle *handle, char **password)
 {
 	NTSTATUS status;
 	struct samr_OemChangePasswordUser2 r;
@@ -500,8 +526,8 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	struct samr_Hash lm_verifier;
 	struct samr_CryptPassword lm_pass;
 	struct samr_AsciiName server, account;
-	const char *oldpass = TEST_PASSWORD2;
-	const char *newpass = TEST_PASSWORD3;
+	char *oldpass = *password;
+	char *newpass = samr_rand_pass(mem_ctx);	
 	uint8 old_lm_hash[16], new_lm_hash[16];
 
 	printf("Testing OemChangePasswordUser2\n");
@@ -512,7 +538,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	E_deshash(oldpass, old_lm_hash);
 	E_deshash(newpass, new_lm_hash);
 
-	encode_pw_buffer(lm_pass.data, newpass, 516);
+	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII);
 	SamOEMhash(lm_pass.data, old_lm_hash, 516);
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
@@ -525,13 +551,16 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OemChangePasswordUser2 failed - %s\n", nt_errstr(status));
 		ret = False;
+	} else {
+		*password = newpass;
 	}
 
 	return ret;
 }
 
+
 static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				     struct policy_handle *handle)
+				     struct policy_handle *handle, char **password)
 {
 	NTSTATUS status;
 	struct samr_ChangePasswordUser2 r;
@@ -539,8 +568,8 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_Name server, account;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Hash nt_verifier, lm_verifier;
-	const char *oldpass = TEST_PASSWORD;
-	const char *newpass = TEST_PASSWORD2;
+	char *oldpass = *password;
+	char *newpass = samr_rand_pass(mem_ctx);	
 	uint8 old_nt_hash[16], new_nt_hash[16];
 	uint8 old_lm_hash[16], new_lm_hash[16];
 
@@ -555,7 +584,7 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	E_deshash(oldpass, old_lm_hash);
 	E_deshash(newpass, new_lm_hash);
 
-	encode_pw_buffer(lm_pass.data, newpass, 516);
+	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII|STR_TERMINATE);
 	SamOEMhash(lm_pass.data, old_lm_hash, 516);
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
@@ -575,6 +604,62 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ChangePasswordUser2 failed - %s\n", nt_errstr(status));
 		ret = False;
+	} else {
+		*password = newpass;
+	}
+
+	return ret;
+}
+
+
+static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				     struct policy_handle *handle, char **password)
+{
+	NTSTATUS status;
+	struct samr_ChangePasswordUser3 r;
+	BOOL ret = True;
+	struct samr_Name server, account;
+	struct samr_CryptPassword nt_pass, lm_pass;
+	struct samr_Hash nt_verifier, lm_verifier;
+	char *oldpass = *password;
+	char *newpass = samr_rand_pass(mem_ctx);	
+	uint8 old_nt_hash[16], new_nt_hash[16];
+	uint8 old_lm_hash[16], new_lm_hash[16];
+
+	printf("Testing ChangePasswordUser3\n");
+
+	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	init_samr_Name(&account, TEST_USERNAME);
+
+	E_md4hash(oldpass, old_nt_hash);
+	E_md4hash(newpass, new_nt_hash);
+
+	E_deshash(oldpass, old_lm_hash);
+	E_deshash(newpass, new_lm_hash);
+
+	encode_pw_buffer(lm_pass.data, newpass, STR_UNICODE);
+	SamOEMhash(lm_pass.data, old_lm_hash, 516);
+	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+
+	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
+	SamOEMhash(nt_pass.data, old_nt_hash, 516);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+
+	r.in.server = &server;
+	r.in.account = &account;
+	r.in.nt_password = &nt_pass;
+	r.in.nt_verifier = &nt_verifier;
+	r.in.lm_change = 1;
+	r.in.lm_password = &lm_pass;
+	r.in.lm_verifier = &lm_verifier;
+	r.in.password3 = NULL;
+
+	status = dcerpc_samr_ChangePasswordUser3(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ChangePasswordUser3 failed - %s\n", nt_errstr(status));
+		ret = False;
+	} else {
+		*password = newpass;
 	}
 
 	return ret;
@@ -734,10 +819,6 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_SetUserInfo(p, mem_ctx, handle)) {
-		ret = False;
-	}	
-
-	if (!test_SetUserPass(p, mem_ctx, handle)) {
 		ret = False;
 	}	
 
@@ -960,6 +1041,34 @@ static BOOL test_CreateAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				struct policy_handle *domain_handle, char **password)
+{
+	BOOL ret = True;
+
+	if (!*password) {
+		return False;
+	}
+
+	if (!test_ChangePasswordUser(p, mem_ctx, domain_handle, password)) {
+		ret = False;
+	}
+
+	if (!test_ChangePasswordUser2(p, mem_ctx, domain_handle, password)) {
+		ret = False;
+	}
+
+	if (!test_OemChangePasswordUser2(p, mem_ctx, domain_handle, password)) {
+		ret = False;
+	}
+
+	if (!test_ChangePasswordUser3(p, mem_ctx, domain_handle, password)) {
+		ret = False;
+	}
+
+	return ret;
+}
+
 static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *domain_handle, struct policy_handle *user_handle)
 {
@@ -967,6 +1076,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_CreateUser r;
 	struct samr_QueryUserInfo q;
 	uint32 rid;
+	char *password = NULL;
 
 	/* This call creates a 'normal' account - check that it really does */
 	const uint32 acct_flags = ACB_NORMAL;
@@ -1024,17 +1134,20 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_ChangePasswordUser(p, mem_ctx, domain_handle)) {
+	if (!test_SetUserPass(p, mem_ctx, user_handle, &password)) {
 		ret = False;
-	}
+	}	
 
-	if (!test_ChangePasswordUser2(p, mem_ctx, domain_handle)) {
+	/* we change passwords twice - this has the effect of verifying
+	   they were changed correctly */
+	if (!test_ChangePassword(p, mem_ctx, domain_handle, &password)) {
 		ret = False;
-	}
+	}	
 
-	if (!test_OemChangePasswordUser2(p, mem_ctx, domain_handle)) {
+	if (!test_ChangePassword(p, mem_ctx, domain_handle, &password)) {
 		ret = False;
-	}
+	}	
+
 
 	return ret;
 }
