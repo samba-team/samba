@@ -151,6 +151,7 @@ void mdfour(unsigned char *out, unsigned char *in, int n);
 /*The following definitions come from  lib/messages.c  */
 
 void ping_message(int msg_type, pid_t src, void *buf, size_t len);
+void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len);
 BOOL message_init(void);
 BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len);
 void message_dispatch(void);
@@ -1783,6 +1784,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode);
 
 /*The following definitions come from  profile/profile.c  */
 
+void profile_message(int msg_type, pid_t src, void *buf, size_t len);
 BOOL profile_setup(BOOL rdonly);
 
 /*The following definitions come from  rpc_client/cli_connect.c  */
