@@ -130,7 +130,7 @@ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	lck->odb = odb;
+	lck->odb = talloc_reference(lck, odb);
 	lck->key.dptr = talloc_memdup(lck, file_key->data, file_key->length);
 	lck->key.dsize = file_key->length;
 	if (lck->key.dptr == NULL) {
