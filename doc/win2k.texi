@@ -16,16 +16,16 @@ This information should apply to Heimdal @value{VERSION} and Windows
 our not so inspired guesses.  Hopefully it's still somewhat useful.
 
 @menu
-* Configuring Windows 2000 to use a Heimdal KDC::
-* Interrealm trust between Windows 2000 and a Heimdal KDC::
-* Create account mappings::
+* Configuring Windows 2000 to use a Heimdal KDC::  
+* Interrealm keys (trust) between Windows 2000 and a Heimdal KDC::  
+* Create account mappings::     
 * Encryption types::            
 * Authorization data::          
-* Quirks of Windows 2000 KDC::
-* Useful links when reading about the Windows 2000::
+* Quirks of Windows 2000 KDC::  
+* Useful links when reading about the Windows 2000::  
 @end menu
 
-@node Configuring Windows 2000 to use a Heimdal KDC, Interrealm trust between Windows 2000 and a Heimdal KDC, Windows 2000 compatability, Windows 2000 compatability
+@node Configuring Windows 2000 to use a Heimdal KDC, Interrealm keys (trust) between Windows 2000 and a Heimdal KDC, Windows 2000 compatability, Windows 2000 compatability
 @comment node-name, next, precious, up
 @section Configuring Windows 2000 to use a Heimdal KDC
 
@@ -148,7 +148,7 @@ Do not forget to reboot before trying the new realm-trust (after running
 @code{ksetup}). It looks like it might work, but packets are never sent to the
 non-Windows KDC.
 
-@node Create account mappings, Encryption types, Interrealm trust between Windows 2000 and a Heimdal KDC, Windows 2000 compatability
+@node Create account mappings, Encryption types, Interrealm keys (trust) between Windows 2000 and a Heimdal KDC, Windows 2000 compatability
 @comment node-name, next, precious, up
 @section Create account mappings
 
@@ -175,7 +175,7 @@ key.
 Heimdal implements both of these encryption types, but since DES is the
 standard and the hmac-code is somewhat newer, it is likely to work better.
 
-@node Authorization data, Quirks of Windows 2000 KDC , Encryption types, Windows 2000 compatability
+@node Authorization data, Quirks of Windows 2000 KDC, Encryption types, Windows 2000 compatability
 @comment  node-name,  next,  previous,  up
 @section Authorization data
 
@@ -236,7 +236,7 @@ You should also add the following entries to the @file{krb5.conf} file:
 These configuration options will make sure that no checksums of the
 unsupported types are generated.
 
-@node Useful links when reading about the Windows 2000, , Quirks of Windows 2000 KDC, Windows 2000 compatability
+@node Useful links when reading about the Windows 2000,  , Quirks of Windows 2000 KDC, Windows 2000 compatability
 @comment  node-name,  next,  previous,  up
 @section Useful links when reading about the Windows 2000
 
