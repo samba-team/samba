@@ -234,12 +234,12 @@ int regsubkey_ctr_numkeys( REGSUBKEY_CTR *ctr )
  Retreive a specific key string
  **********************************************************************/
 
-char* regsubkey_ctr_specific_key( REGSUBKEY_CTR *ctr, uint32 index )
+char* regsubkey_ctr_specific_key( REGSUBKEY_CTR *ctr, uint32 key_index )
 {
-	if ( ! (index < ctr->num_subkeys) )
+	if ( ! (key_index < ctr->num_subkeys) )
 		return NULL;
 		
-	return ctr->subkeys[index];
+	return ctr->subkeys[key_index];
 }
 
 /***********************************************************************
