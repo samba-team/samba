@@ -32,7 +32,6 @@
 #include "smb.h"
 
 extern int DEBUGLEVEL;
-extern pstring scope;
 
 struct sync_record {
 	struct sync_record *next, *prev;
@@ -40,7 +39,7 @@ struct sync_record {
 	fstring server;
 	pstring fname;
 	struct in_addr ip;
-	int pid;
+	pid_t pid;
 };
 
 /* a linked list of current sync connections */
@@ -77,8 +76,8 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	make_nmb_name(&calling, local_machine, 0x0    , scope);
-	make_nmb_name(&called , name         , nm_type, scope);
+	make_nmb_name(&calling, local_machine, 0x0);
+	make_nmb_name(&called , name         , nm_type);
 
 	if (!cli_session_request(&cli, &calling, &called))
 	{
@@ -103,7 +102,7 @@ static void sync_child(char *name, int nm_type,
 	}
 
 	/* Fetch a workgroup list. */
-	cli_NetServerEnum(&cli, workgroup, 
+	cli_NetServerEnum(&cli, cli.server_domain?cli.server_domain:workgroup, 
 			  local_type|SV_TYPE_DOMAIN_ENUM,
 			  callback);
 	
@@ -147,7 +146,7 @@ void sync_browse_lists(struct work_record *work,
 
 	slprintf(s->fname, sizeof(pstring)-1,
 		 "%s/sync.%d", lp_lockdir(), counter++);
-	string_sub(s->fname,"//", "/");
+	all_string_sub(s->fname,"//", "/", 0);
 	
 	DLIST_ADD(syncs, s);
 
