@@ -114,7 +114,7 @@ in workgroup %s on subnet %s\n",
   /* Tell the namelist writer to write out a change. */
   subrec->work_changed = True;
 
-  DEBUG(0,("become_logon_server_success: Samba is now a logon server\
+  DEBUG(0,("become_logon_server_success: Samba is now a logon server \
 for workgroup %s on subnet %s\n", work->work_group, subrec->subnet_name));
 }
 

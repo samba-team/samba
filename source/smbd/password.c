@@ -91,7 +91,7 @@ BOOL set_challenge(char *challenge)
 /*******************************************************************
 get the last challenge sent
 ********************************************************************/
-BOOL last_challenge(char *challenge)
+BOOL last_challenge(unsigned char *challenge)
 {
   if (!challenge_sent) return(False);
   memcpy(challenge,saved_challenge,8);
@@ -1036,7 +1036,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass,
        use it (ie. does it exist in the smbpasswd file).
      */
     DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
-    if (smb_password_check(nt_pass, smb_pass->smb_nt_passwd, challenge))
+    if (smb_password_check(nt_pass, (uchar *)smb_pass->smb_nt_passwd, challenge))
     {
       DEBUG(4,("smb_password_ok: NT MD4 password check succeeded\n"));
       return(True);
@@ -1055,7 +1055,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass,
     return True;
   }
 
-  if((smb_pass->smb_passwd != NULL) && smb_password_check(lm_pass, smb_pass->smb_passwd, challenge))
+  if((smb_pass->smb_passwd != NULL) && smb_password_check(lm_pass, (uchar *)smb_pass->smb_passwd, challenge))
   {
     DEBUG(4,("smb_password_ok: LM MD4 password check succeeded\n"));
     return(True);
@@ -1074,7 +1074,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   pstring pass2;
   int level = lp_passwordlevel();
   struct passwd *pass;
-  char challenge[8];
+  uchar challenge[8];
   struct smb_passwd *smb_pass;
   BOOL update_encrypted = lp_update_encrypted();
   BOOL challenge_done = False;
@@ -1846,12 +1846,6 @@ use this machine as the password server.\n"));
 		return(False);
 	}
 
-	if (!cli_send_tconX(&pw_cli, "IPC$", "IPC", "", 1)) {
-		DEBUG(1,("password server %s refused IPC$ connect\n", pw_cli.desthost));
-                cli_ulogoff(&pw_cli);
-		return False;
-	}
-
         /*
          * This patch from Rob Nielsen <ran@adc.com> makes doing
          * the NetWksaUserLogon a dynamic, rather than compile-time
@@ -1863,28 +1857,36 @@ use this machine as the password server.\n"));
 
 	if (lp_net_wksta_user_logon()) {
 		DEBUG(3,("trying NetWkstaUserLogon with password server %s\n", pw_cli.desthost));
+
+                if (!cli_send_tconX(&pw_cli, "IPC$", "IPC", "", 1)) {
+                        DEBUG(0,("password server %s refused IPC$ connect\n", pw_cli.desthost));
+                        cli_ulogoff(&pw_cli);
+                        return False;
+                }
+
 		if (!cli_NetWkstaUserLogon(&pw_cli,user,local_machine)) {
-			DEBUG(1,("password server %s failed NetWkstaUserLogon\n", pw_cli.desthost));
+			DEBUG(0,("password server %s failed NetWkstaUserLogon\n", pw_cli.desthost));
 			cli_tdis(&pw_cli);
                         cli_ulogoff(&pw_cli);
 			return False;
 		}
 
 		if (pw_cli.privilages == 0) {
-			DEBUG(1,("password server %s gave guest privilages\n", pw_cli.desthost));
+			DEBUG(0,("password server %s gave guest privilages\n", pw_cli.desthost));
 			cli_tdis(&pw_cli);
                         cli_ulogoff(&pw_cli);
 			return False;
 		}
 
 		if (!strequal(pw_cli.eff_name, user)) {
-			DEBUG(1,("password server %s gave different username %s\n", 
+			DEBUG(0,("password server %s gave different username %s\n", 
 			 	pw_cli.desthost,
 			 	pw_cli.eff_name));
 			cli_tdis(&pw_cli);
                         cli_ulogoff(&pw_cli);
 			return False;
 		}
+                cli_tdis(&pw_cli);
 	}
         else {
 		DEBUG(3,("skipping NetWkstaUserLogon with password server %s\n", pw_cli.desthost));
@@ -1892,7 +1894,6 @@ use this machine as the password server.\n"));
 
 	DEBUG(3,("password server %s accepted the password\n", pw_cli.desthost));
 
-	cli_tdis(&pw_cli);
         cli_ulogoff(&pw_cli);
 
 	return(True);

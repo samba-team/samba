@@ -669,6 +669,7 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
       fgets(p,8191,f);
       p[strlen(p)-1]='\0';
       if (next_token(&p,tok,":") &&
+        (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
         (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
 	ok=1;
     }

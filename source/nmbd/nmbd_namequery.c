@@ -76,7 +76,7 @@ from IP %s for name %s. Error code was %d.\n", subrec->subnet_name, inet_ntoa(p-
       success = True;
 
       putip((char *)&answer_ip,&nmb->answers->rdata[2]);
-      DEBUG(5,("query_name_response: On subnet %s - positive response from IP %s\
+      DEBUG(5,("query_name_response: On subnet %s - positive response from IP %s \
 for name %s. IP of that name is %s\n", subrec->subnet_name, inet_ntoa(p->ip),
                     namestr(question_name), inet_ntoa(answer_ip)));
 
