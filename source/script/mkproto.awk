@@ -110,7 +110,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^hash_element/ ) {
+  if( $0 ~ /^hash_element|^enum winbindd_result/ ) {
     gotstart = 1;
   }
 
