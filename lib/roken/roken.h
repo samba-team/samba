@@ -34,9 +34,11 @@ char * strdup(const char *old);
 int getdtablesize(void);
 #endif
 
+#if IRIX != 4 /* fix for compiler bug */
 #ifdef RETSIGTYPE
 typedef RETSIGTYPE (*SigAction)(/* int??? */);
 SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
+#endif
 #endif
 
 #if !defined(HAVE_STRERROR) && !defined(strerror)
