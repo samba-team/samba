@@ -151,7 +151,6 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
         
 	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
         
-	uni_group_cache_store_netlogon(mem_ctx, &info3);
 done:
 	
 	/* give us a more useful (more correct?) error code */
@@ -313,11 +312,13 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
         
 	if (NT_STATUS_IS_OK(result)) {
-		uni_group_cache_store_netlogon(mem_ctx, &info3);
+		netsamlogon_cache_store( cli->mem_ctx, &info3 );
+		wcache_invalidate_samlogon(find_domain_from_name(domain), &info3);
+		
 		if (state->request.data.auth_crap.flags & WINBIND_PAM_INFO3_NDR) {
 			result = append_info3_as_ndr(mem_ctx, state, &info3);
 		}
-
+		
 		if (state->request.data.auth_crap.flags & WINBIND_PAM_NTKEY) {
 			memcpy(state->response.data.auth.nt_session_key, info3.user_sess_key, sizeof(state->response.data.auth.nt_session_key) /* 16 */);
 		}
@@ -382,9 +383,8 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
 	/* Get sam handle */
 
-	if (!(hnd = cm_get_sam_handle(domain))) {
+	if ( NT_STATUS_IS_ERR(result = cm_get_sam_handle(domain, &hnd)) ) {
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		goto done;
 	}
 

@@ -112,6 +112,7 @@ struct winbindd_domain {
 
 	time_t last_seq_check;
 	uint32 sequence_number;
+	NTSTATUS last_status;
 
 	/* Linked list info */
 
