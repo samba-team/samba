@@ -188,6 +188,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 		default:
 			DEBUG(0,("Unknown tdb_pack format %c in %s\n", 
 				 c, fmt));
+			len = 0;
 			break;
 		}
 
@@ -271,6 +272,8 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 		default:
 			DEBUG(0,("Unknown tdb_unpack format %c in %s\n", 
 				 c, fmt));
+
+			len = 0;
 			break;
 		}
 
