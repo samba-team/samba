@@ -224,7 +224,7 @@ init_sockets(struct descr **desc)
     int num = 0;
     krb5_addresses addresses;
 
-    ret = krb5_get_all_server_addrs (&addresses);
+    ret = krb5_get_all_server_addrs (context, &addresses);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_get_all_server_addrs");
     parse_ports(port_str);
