@@ -20,14 +20,15 @@
 
 #include "python/py_spoolss.h"
 
-static BOOL py_from_printerdata(PyObject **dict, char *value,
+static BOOL py_from_printerdata(PyObject **dict, char *key, char *value,
 				uint32 data_type, char *data, 
 				uint32 data_size) 
 {
 	*dict = PyDict_New();
 
-	PyDict_SetItemString(*dict, "type", Py_BuildValue("i", data_type));
+	PyDict_SetItemString(*dict, "key", Py_BuildValue("s", key ? key : ""));
 	PyDict_SetItemString(*dict, "value", Py_BuildValue("s", value));
+	PyDict_SetItemString(*dict, "type", Py_BuildValue("i", data_type));
 
 	PyDict_SetItemString(*dict, "data", 
 			     Py_BuildValue("s#", data, data_size));
@@ -35,25 +36,26 @@ static BOOL py_from_printerdata(PyObject **dict, char *value,
 	return True;
 }
 
-static BOOL py_to_printerdata(char **value, uint32 *data_type, 
+static BOOL py_to_printerdata(char **key, char **value, uint32 *data_type, 
 			      char **data, uint32 *data_size, 
 			      PyObject *dict)
 {
 	PyObject *obj;
 
-	if ((obj = PyDict_GetItemString(dict, "type"))) {
+	if ((obj = PyDict_GetItemString(dict, "key"))) {
 
-		if (!PyInt_Check(obj)) {
+		if (!PyString_Check(obj)) {
 			PyErr_SetString(spoolss_error,
-					"type not an integer");
+					"key not a string");
 			return False;
 		}
 
-		*data_type = PyInt_AsLong(obj);
-	} else {
-		PyErr_SetString(spoolss_error, "no type present");
-		return False;
-	}
+		*key = PyString_AsString(obj);
+
+		if (!key[0])
+			*key = NULL;
+	} else
+		*key = NULL;
 
 	if ((obj = PyDict_GetItemString(dict, "value"))) {
 
@@ -69,6 +71,20 @@ static BOOL py_to_printerdata(char **value, uint32 *data_type,
 		return False;
 	}
 
+	if ((obj = PyDict_GetItemString(dict, "type"))) {
+
+		if (!PyInt_Check(obj)) {
+			PyErr_SetString(spoolss_error,
+					"type not an integer");
+			return False;
+		}
+
+		*data_type = PyInt_AsLong(obj);
+	} else {
+		PyErr_SetString(spoolss_error, "no type present");
+		return False;
+	}
+	
 	if ((obj = PyDict_GetItemString(dict, "data"))) {
 
 		if (!PyString_Check(obj)) {
@@ -118,7 +134,7 @@ PyObject *spoolss_hnd_getprinterdata(PyObject *self, PyObject *args, PyObject *k
 		return NULL;
 	}
 
-	py_from_printerdata(&result, value, data_type, data, needed);
+	py_from_printerdata(&result, NULL, value, data_type, data, needed);
 
 	return result;
 }
@@ -128,7 +144,7 @@ PyObject *spoolss_hnd_setprinterdata(PyObject *self, PyObject *args, PyObject *k
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	static char *kwlist[] = { "data", NULL };
 	PyObject *py_data;
-	char *value, *data;
+	char *key, *value, *data;
 	uint32 data_size, data_type;
 	WERROR werror;
 
@@ -136,7 +152,7 @@ PyObject *spoolss_hnd_setprinterdata(PyObject *self, PyObject *args, PyObject *k
 		    args, kw, "O!", kwlist, &PyDict_Type, &py_data))
 		return NULL;
 	
-	if (!py_to_printerdata(&value, &data_type, &data, &data_size, py_data))
+	if (!py_to_printerdata(&key, &value, &data_type, &data, &data_size, py_data))
 		return NULL;
 
 	/* Call rpc function */
@@ -189,8 +205,8 @@ PyObject *spoolss_hnd_enumprinterdata(PyObject *self, PyObject *args, PyObject *
 			value_needed, data_needed, NULL, NULL,
 			&value, &data_type, &data, &data_size); 
 
-		if (py_from_printerdata(&obj, value, data_type, data, 
-					data_size))
+		if (py_from_printerdata(
+			    &obj, NULL, value, data_type, data, data_size))
 			PyDict_SetItemString(result, value, obj);
 
 		ndx++;
@@ -225,10 +241,110 @@ PyObject *spoolss_hnd_deleteprinterdata(PyObject *self, PyObject *args, PyObject
 	return Py_None;
 }
 
+PyObject *spoolss_hnd_getprinterdataex(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	static char *kwlist[] = { "key", "value", NULL };
+	char *key, *value;
+	WERROR werror;
+	uint32 needed, data_type, data_size;
+	char *data;
+	PyObject *result;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "ss", kwlist, &key, &value))
+		return NULL;
+
+	/* Call rpc function */
+
+	werror = cli_spoolss_getprinterdataex(
+		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, key,
+		value, &data_type, &data, &data_size);
+
+	if (W_ERROR_V(werror) == ERRmoredata) 
+		werror = cli_spoolss_getprinterdataex(
+			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, key,
+			value, &data_type, &data, &data_size);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
+	py_from_printerdata(&result, key, value, data_type, data, needed);
+
+	return result;
+}
+
+PyObject *spoolss_hnd_setprinterdataex(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	static char *kwlist[] = { "data", NULL };
+	PyObject *py_data;
+	char *key, *value, *data;
+	uint32 data_size, data_type;
+	WERROR werror;
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "O!", kwlist, &PyDict_Type, &py_data))
+		return NULL;
+	
+	if (!py_to_printerdata(&key, &value, &data_type, &data, &data_size, py_data))
+		return NULL;
+
+	/* Call rpc function */
+
+	werror = cli_spoolss_setprinterdataex(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, key, value, data_type,
+		data, data_size);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	static char *kwlist[] = { NULL };
+	uint32 needed;
+	char *key, *value, *data;
+	WERROR werror;
+	PyObject *result;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &key))
+		return NULL;
+
+	/* Get max buffer sizes for value and data */
+
+	werror = cli_spoolss_enumprinterdataex(
+		hnd->cli, hnd->mem_ctx, 0, &needed, &hnd->pol, key);
+
+	if (W_ERROR_V(werror) == ERRmoredata) 
+		werror = cli_spoolss_enumprinterdataex(
+			hnd->cli, hnd->mem_ctx, needed, NULL, &hnd->pol, key);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
+	/* Iterate over all printerdata */
+
+	result = PyDict_New();
+
+	
+
+	return result;
+}
+
 PyObject *spoolss_hnd_deleteprinterdataex(PyObject *self, PyObject *args, PyObject *kw)
 {
-	/* Not supported by Samba server */
-
 	PyErr_SetString(spoolss_error, "Not implemented");
 	return NULL;
 }
