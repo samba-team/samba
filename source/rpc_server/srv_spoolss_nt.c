@@ -5489,9 +5489,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 
 	job_info->jobid=queue->job;
 	
-	slprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", get_called_name(), ntprinter->info_2->printername);
-
-	init_unistr(&job_info->printername, chaine);
+	init_unistr(&job_info->printername, ntprinter->info_2->printername);
 	
 	init_unistr(&job_info->machinename, temp_name);
 	init_unistr(&job_info->username, queue->fs_user);
