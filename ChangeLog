@@ -1,5 +1,14 @@
 Mon Sep 22 11:44:27 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* kdc/kerberos5.c: Somewhat fix the etype usage. The list sent by
+ 	the client is used to select wich key to encrypt the kdc rep with
+ 	(in case of as-req), and with the server info to select the
+ 	session key type. The server key the ticket is encrypted is based
+ 	purely on the keys in the database.
+
+	* kdc/string2key.c: Add keytype support. Default to version 5
+ 	keys.
+
 	* lib/krb5/get_in_tkt.c: Fix a lot of etype/keytype misuse.
 
 	* lib/krb5/encrypt.c: Add des3-cbc-md5, and des3-cbc-sha1. Add
