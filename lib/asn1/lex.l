@@ -44,6 +44,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#undef ECHO
 #include "symbol.h"
 #include "parse.h"
 #include "lex.h"
