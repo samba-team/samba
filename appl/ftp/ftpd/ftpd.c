@@ -224,7 +224,7 @@ curdir(void)
 #define LINE_MAX 1024
 #endif
 
-static void gurka(void)
+static void conn_wait(void)
 {
   int s, t;
   struct sockaddr_in sa;
@@ -258,7 +258,9 @@ main(int argc, char **argv, char **envp)
 	char *cp, line[LINE_MAX];
 	FILE *fd;
 
-	gurka();
+#if 0
+	conn_wait();
+#endif
 
 	/*
 	 * LOG_NDELAY sets up the logging connection immediately,
