@@ -53,12 +53,20 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	char *nt_password;
 	unsigned char trust_passwd[16];
 	fstring trust_acct;
+	fstring domain;
+	char *p;
 
 	fstring srv_name;
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
+	fstrcpy(domain, usr_creds->domain);
+
+	if (domain[0] == 0)
+	{
+		fstrcpy(domain, info->dom.level3_dom);
+	}
 #if 0
 	/* machine account passwords */
 	pstring new_mach_pwd;
@@ -76,12 +84,31 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 		if (nt_user_name[0] == 0)
 		{
 			report(out_hnd,"ntlogin: must specify username with anonymous connection\n");
+			report(out_hnd,"ntlogin [[DOMAIN\\]user] [password]\n");
 			return;
 		}
 	}
 	else
 	{
 		fstrcpy(nt_user_name, argv[0]);
+	}
+
+	p = strchr(nt_user_name, '\\');
+	if (p != NULL)
+	{
+		fstrcpy(domain, nt_user_name);
+		p = strchr(domain, '\\');
+		if (p != NULL)
+		{
+			*p = 0;
+			fstrcpy(nt_user_name, p+1);
+		}
+		
+	}
+
+	if (domain[0] == 0)
+	{
+		report(out_hnd,"no domain specified.\n");
 	}
 
 	argc--;
@@ -102,7 +129,7 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	fstrcpy(trust_acct, info->myhostname);
 	fstrcat(trust_acct, "$");
 
-	res = res ? trust_get_passwd(trust_passwd, usr_creds->domain, info->myhostname) : False;
+	res = res ? trust_get_passwd(trust_passwd, domain, info->myhostname) : False;
 
 #if 0
 	/* check whether the user wants to change their machine password */

@@ -2675,8 +2675,18 @@ initialise a client structure
 ****************************************************************************/
 void cli_init_creds(struct cli_state *cli, const struct user_credentials *usr)
 {
-	copy_user_creds(&cli->usr, usr);
-	cli->ntlmssp_cli_flgs = usr->ntlmssp_flags;
+	if (usr != NULL)
+	{
+		copy_user_creds(&cli->usr, usr);
+		cli->ntlmssp_cli_flgs = usr->ntlmssp_flags;
+	}
+	else
+	{
+		cli->usr.domain[0] = 0;
+		cli->usr.user_name[0] = 0;
+		pwd_set_nullpwd(&cli->usr.pwd);
+		cli->ntlmssp_cli_flgs = 0;
+	}
 }
 
 /****************************************************************************
@@ -2715,7 +2725,10 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	}
 
 	cli->initialised = 1;
-	cli->capabilities = CAP_DFS;
+	cli->capabilities = CAP_DFS | CAP_NT_SMBS | CAP_STATUS32;
+	cli->use_ntlmv2 = Auto;
+
+	cli_init_creds(cli, NULL);
 
 	return cli;
 }
@@ -2984,6 +2997,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	if (IS_BITS_SET_ALL(cli->capabilities, CAP_EXTENDED_SECURITY))
 	{
 		/* common to both session setups */
+		uint32 ntlmssp_flgs;
 		char pwd_buf[128];
 		int buf_len;
 		char *p;
@@ -3024,9 +3038,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		p = skip_string(p, 1);
 		CVAL(p, 0) = 0x1;
 		p += 4;
-		if (cli->ntlmssp_cli_flgs == 0)
-		{
-			cli->ntlmssp_cli_flgs =
+		ntlmssp_flgs = 
 				NTLMSSP_NEGOTIATE_UNICODE |
 				NTLMSSP_NEGOTIATE_OEM |
 				NTLMSSP_NEGOTIATE_SIGN |
@@ -3036,11 +3048,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
 				NTLMSSP_NEGOTIATE_00001000 |
 				NTLMSSP_NEGOTIATE_00002000;
-#if 0
-			cli->ntlmssp_cli_flgs = 0x80008207;
-#endif
-		}
-		SIVAL(p, 0, cli->ntlmssp_cli_flgs);
+		SIVAL(p, 0, ntlmssp_flgs);
 		p += 4;
 		p += 16; /* skip some NULL space */
 		CVAL(p, 0) = 0; p++; /* alignment */
@@ -3072,12 +3080,12 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		}
 	
 		p = smb_buf(cli->inbuf) + 0x2f;
-		cli->ntlmssp_cli_flgs = IVAL(p, 0); /* 0x80808a05; */
+		ntlmssp_flgs = IVAL(p, 0); /* 0x80808a05; */
 		p += 4;
 		memcpy(cli->cryptkey, p, 8);
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("cli_session_setup_x: ntlmssp %8x\n",
-			    cli->ntlmssp_cli_flgs));
+			    ntlmssp_flgs));
 			   
 		DEBUG(100,("cli_session_setup_x: crypt key\n"));
 		dump_data(100, cli->cryptkey, 8);
@@ -3098,7 +3106,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
 		create_ntlmssp_resp(&cli->usr.pwd, cli->usr.domain,
 				     cli->usr.user_name, cli->calling.name,
-				     cli->ntlmssp_cli_flgs,
+				     ntlmssp_flgs,
 				     &auth_resp);
 		prs_link(NULL, &auth_resp, NULL);
 

@@ -318,7 +318,7 @@ struct command_set commands[] =
 	{
 		"ntlogin",
 		cmd_netlogon_login_test,
-		"[username] [password] NT Domain login test",
+		"[[DOMAIN\\]username] [password] NT Domain login test",
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
