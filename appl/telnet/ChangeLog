@@ -2,6 +2,12 @@
 
 	* libtelnet/enc_des.c: learn to live with libcrypto (from openssl)
 
+2001-02-20  Assar Westerlund  <assar@sics.se>
+
+	* telnet/commands.c (tn): copy the hostname so it doesn't get
+	overwritten while reading ~/.telnetrc
+	(*): removed some unneeded externs
+
 2001-02-08  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/sys_term.c (startslave, start_login): re-write code to
