@@ -358,13 +358,16 @@ static void usage(void)
  int main(int argc, char * const argv[])
 {
 	struct ldb_context *ldb;
+	const char **options = NULL;
+	int ldbopts;
 	int opt;
 	int nrecords = 5000;
 	int nsearches = 2000;
 
 	ldb_url = getenv("LDB_URL");
 
-	while ((opt = getopt(argc, argv, "hH:r:s:b:")) != EOF) {
+	ldbopts = 0;
+	while ((opt = getopt(argc, argv, "hH:r:s:b:o:")) != EOF) {
 		switch (opt) {
 		case 'H':
 			ldb_url = optarg;
@@ -382,6 +385,21 @@ static void usage(void)
 			nsearches = atoi(optarg);
 			break;
 
+		case 'o':
+			ldbopts++;
+			if (options == NULL) {
+				options = (const char **)malloc(sizeof(char *) * (ldbopts + 1));
+			} else {
+				options = (const char **)realloc(options, sizeof(char *) * (ldbopts + 1));
+				if (options == NULL) {
+					fprintf(stderr, "Out of memory!\n");
+					exit(-1);
+				}
+			}
+			options[ldbopts - 1] = optarg;
+			options[ldbopts] = NULL;
+			break;
+
 		case 'h':
 		default:
 			usage();
@@ -397,7 +415,7 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
-	ldb = ldb_connect(ldb_url, 0, NULL);
+	ldb = ldb_connect(ldb_url, 0, options);
 
 	if (!ldb) {
 		perror("ldb_connect");

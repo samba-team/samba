@@ -51,14 +51,32 @@ static void usage(void)
 {
 	struct ldb_context *ldb;
 	const char *ldb_url;
+	const char **options = NULL;
+	int ldbopts;
 	int opt, ret;
 
 	ldb_url = getenv("LDB_URL");
 
-	while ((opt = getopt(argc, argv, "hH:")) != EOF) {
+	ldbopts = 0;
+	while ((opt = getopt(argc, argv, "hH:o:")) != EOF) {
 		switch (opt) {
 		case 'H':
 			ldb_url = optarg;
+			break;
+
+		case 'o':
+			ldbopts++;
+			if (options == NULL) {
+				options = (const char **)malloc(sizeof(char *) * (ldbopts + 1));
+			} else {
+				options = (const char **)realloc(options, sizeof(char *) * (ldbopts + 1));
+				if (options == NULL) {
+					fprintf(stderr, "Out of memory!\n");
+					exit(-1);
+				}
+			}
+			options[ldbopts - 1] = optarg;
+			options[ldbopts] = NULL;
 			break;
 
 		case 'h':
@@ -76,7 +94,7 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
-	ldb = ldb_connect(ldb_url, 0, NULL);
+	ldb = ldb_connect(ldb_url, 0, options);
 
 	if (!ldb) {
 		perror("ldb_connect");
