@@ -121,7 +121,6 @@ _krb_time_to_life(time_t start, time_t end)
 
 krb5_error_code
 krb524_convert_creds_kdc(krb5_context context, 
-			 krb5_ccache ccache,
 			 krb5_creds *in_cred,
 			 struct credentials *v4creds)
 {
@@ -132,33 +131,20 @@ krb524_convert_creds_kdc(krb5_context context,
     krb5_data ticket;
     char realm[REALM_SZ];
     krb5_creds *v5_creds = in_cred;
-    krb5_keytype keytype;
 
-    keytype = v5_creds->session.keytype;
-
-    if (keytype != ENCTYPE_DES_CBC_CRC) {
-	/* MIT krb524d doesn't like nothing but des-cbc-crc tickets,
-           so go get one */
-	krb5_creds template;
-
-	memset (&template, 0, sizeof(template));
-	template.session.keytype = ENCTYPE_DES_CBC_CRC;
-	ret = krb5_copy_principal (context, in_cred->client, &template.client);
-	if (ret) {
-	    krb5_free_creds_contents (context, &template);
-	    return ret;
+    if (v5_creds->session.keytype != ENCTYPE_DES_CBC_CRC) {
+	char *enctype;
+	ret = krb5_enctype_to_string(context, v5_creds->session.keytype, 
+				     &enctype);
+	if(ret == 0) {
+	    krb5_set_error_string(context, "attempt to 524-convert ticket "
+				  "of type `%s'", enctype);
+	    free(enctype);
+	} else {
+	    krb5_set_error_string(context, "attempt to 524-convert ticket "
+				  "of type `%d'", v5_creds->session.keytype);
 	}
-	ret = krb5_copy_principal (context, in_cred->server, &template.server);
-	if (ret) {
-	    krb5_free_creds_contents (context, &template);
-	    return ret;
-	}
-
-	ret = krb5_get_credentials (context, 0, ccache,
-				    &template, &v5_creds);
-	krb5_free_creds_contents (context, &template);
-	if (ret)
-	    return ret;
+	return KRB524_BADKEY;
     }
 
     ret = check_ticket_flags(v5_creds->flags.b);
@@ -226,6 +212,55 @@ out:
     krb5_storage_free(sp);
     krb5_data_free(&reply);
 out2:
+    if (v5_creds != in_cred)
+	krb5_free_creds (context, v5_creds);
+    return ret;
+}
+
+krb5_error_code
+krb524_convert_creds_kdc_ccache(krb5_context context, 
+				krb5_ccache ccache,
+				krb5_creds *in_cred,
+				struct credentials *v4creds)
+{
+    krb5_error_code ret;
+    krb5_data reply;
+    krb5_storage *sp;
+    int32_t tmp;
+    krb5_data ticket;
+    char realm[REALM_SZ];
+    krb5_creds *v5_creds = in_cred;
+    krb5_keytype keytype;
+
+    keytype = v5_creds->session.keytype;
+
+    if (keytype != ENCTYPE_DES_CBC_CRC) {
+	/* MIT krb524d doesn't like nothing but des-cbc-crc tickets,
+           so go get one */
+	krb5_creds template;
+
+	memset (&template, 0, sizeof(template));
+	template.session.keytype = ENCTYPE_DES_CBC_CRC;
+	ret = krb5_copy_principal (context, in_cred->client, &template.client);
+	if (ret) {
+	    krb5_free_creds_contents (context, &template);
+	    return ret;
+	}
+	ret = krb5_copy_principal (context, in_cred->server, &template.server);
+	if (ret) {
+	    krb5_free_creds_contents (context, &template);
+	    return ret;
+	}
+
+	ret = krb5_get_credentials (context, 0, ccache,
+				    &template, &v5_creds);
+	krb5_free_creds_contents (context, &template);
+	if (ret)
+	    return ret;
+    }
+
+    ret = krb524_convert_creds_kdc(context, v5_creds, v4creds);
+
     if (v5_creds != in_cred)
 	krb5_free_creds (context, v5_creds);
     return ret;
