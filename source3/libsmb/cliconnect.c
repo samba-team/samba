@@ -385,10 +385,8 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
-	DATA_BLOB blob2;
+	DATA_BLOB blob2 = data_blob(NULL, 0);
 	uint32 len;
-
-	blob2 = data_blob(NULL, 0);
 
 	capabilities |= CAP_EXTENDED_SECURITY;
 
@@ -449,7 +447,7 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
  Use in-memory credentials cache
 ****************************************************************************/
 static void use_in_memory_ccache() {
-	setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads_testjoin", 1);
+	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
 }
 
 /****************************************************************************
@@ -489,128 +487,83 @@ static BOOL cli_session_setup_kerberos(struct cli_state *cli, const char *princi
 static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user, 
 				      const char *pass, const char *workgroup)
 {
-	DATA_BLOB msg1, struct_blob;
-	DATA_BLOB blob, chal1, chal2, auth, challenge_blob;
-	uint8 challenge[8];
-	uint8 nthash[24], lmhash[24], sess_key[16];
-	uint32 neg_flags, chal_flags, ntlmssp_command, unkn1, unkn2;
-	pstring server_domain;  /* FIX THIS, SHOULD be UCS2-LE */
+	struct ntlmssp_client_state *ntlmssp_state;
+	NTSTATUS nt_status;
+	int turn = 1;
+	DATA_BLOB msg1;
+	DATA_BLOB blob;
+	DATA_BLOB blob_in = data_blob(NULL, 0);
+	DATA_BLOB blob_out;
 
-	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
-	       	NTLMSSP_NEGOTIATE_128 | 
-		NTLMSSP_NEGOTIATE_NTLM |
-		NTLMSSP_REQUEST_TARGET;
-
-	memset(sess_key, 0, 16);
-
-	DEBUG(10, ("sending NTLMSSP_NEGOTIATE\n"));
-
-	/* generate the ntlmssp negotiate packet */
-	msrpc_gen(&blob, "CddAA",
-		  "NTLMSSP",
-		  NTLMSSP_NEGOTIATE,
-		  neg_flags,
-		  workgroup, 
-		  cli->calling.name);
-	DEBUG(10, ("neg_flags: %0X, workgroup: %s, calling name %s\n",
-		  neg_flags, workgroup, cli->calling.name));
-	/* and wrap it in a SPNEGO wrapper */
-	msg1 = gen_negTokenInit(OID_NTLMSSP, blob);
-	data_blob_free(&blob);
-
-	/* now send that blob on its way */
-	blob = cli_session_setup_blob(cli, msg1);
-
-	data_blob_free(&msg1);
-
-	if (!NT_STATUS_EQUAL(cli_nt_error(cli), NT_STATUS_MORE_PROCESSING_REQUIRED))
-		return False;
-
-#if 0
-	file_save("chal.dat", blob.data, blob.length);
-#endif
-
-	/* the server gives us back two challenges */
-	if (!spnego_parse_challenge(blob, &chal1, &chal2)) {
-		DEBUG(3,("Failed to parse challenges\n"));
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_client_start(&ntlmssp_state))) {
 		return False;
 	}
 
-	data_blob_free(&blob);
-
-	/*
-	 * Ok, chal1 and chal2 are actually two identical copies of
-	 * the NTLMSSP Challenge BLOB, and they contain, encoded in them
-	 * the challenge to use.
-	 */
-
-	if (!msrpc_parse(&chal1, "CdUdbddB",
-			 "NTLMSSP",
-			 &ntlmssp_command, 
-			 &server_domain,
-			 &chal_flags,
-			 &challenge_blob, 8,
-			 &unkn1, &unkn2,
-			 &struct_blob)) {
-	  DEBUG(0, ("Failed to parse the NTLMSSP Challenge\n"));
-	  return False;
-	}
-			
-	if (ntlmssp_command != NTLMSSP_CHALLENGE) {
-		DEBUG(0, ("NTLMSSP Response != NTLMSSP_CHALLENGE. Got %0X\n", 
-			ntlmssp_command));
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, user))) {
 		return False;
 	}
- 
-	if (challenge_blob.length < 8) {
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, workgroup))) {
+		return False;
+	}
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_password(ntlmssp_state, pass))) {
 		return False;
 	}
 
-	DEBUG(10, ("Challenge:\n"));
-	dump_data(10, challenge_blob.data, 8);
+	ntlmssp_state->use_ntlmv2 = lp_client_ntlmv2_auth();
 
-	/* encrypt the password with the challenge which is in the blob */
-	memcpy(challenge, challenge_blob.data, 8); 
-	SMBencrypt(pass, challenge,lmhash);
-	SMBNTencrypt(pass, challenge,nthash);
-	data_blob_free(&challenge_blob);
+	do {
+		nt_status = ntlmssp_client_update(ntlmssp_state, 
+						  blob_in, &blob_out);
+		data_blob_free(&blob_in);
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			if (turn == 1) {
+				/* and wrap it in a SPNEGO wrapper */
+				msg1 = gen_negTokenInit(OID_NTLMSSP, blob_out);
+			} else {
+				/* wrap it in SPNEGO */
+				msg1 = spnego_gen_auth(blob_out);
+			}
+		
+			/* now send that blob on its way */
+			blob = cli_session_setup_blob(cli, msg1);
+			data_blob_free(&msg1);
+			nt_status = cli_nt_error(cli);
+		}
+		
+		if (!blob.length) {
+			if (NT_STATUS_IS_OK(nt_status)) {
+				nt_status = NT_STATUS_UNSUCCESSFUL;
+			}
+		} else if ((turn == 1) && 
+			   NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DATA_BLOB tmp_blob = data_blob(NULL, 0);
+			/* the server might give us back two challenges */
+			if (!spnego_parse_challenge(blob, &blob_in, 
+						    &tmp_blob)) {
+				DEBUG(3,("Failed to parse challenges\n"));
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+			}
+			data_blob_free(&tmp_blob);
+		} else {
+			/* the server might give us back two challenges */
+			if (!spnego_parse_auth_response(blob, nt_status, 
+							&blob_in)) {
+				DEBUG(3,("Failed to parse auth response\n"));
+				if (NT_STATUS_IS_OK(nt_status) 
+				    || NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) 
+					nt_status = NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+		data_blob_free(&blob);
+		data_blob_free(&blob_out);
+		turn++;
+	} while (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED));
 
-#if 0
-	file_save("nthash.dat", nthash, 24);
-	file_save("lmhash.dat", lmhash, 24);
-	file_save("chal1.dat", chal1.data, chal1.length);
-#endif
-
-	data_blob_free(&chal1);
-	data_blob_free(&chal2);
-
-	/* this generates the actual auth packet */
-	msrpc_gen(&blob, "CdBBUUUBd", 
-		  "NTLMSSP", 
-		  NTLMSSP_AUTH, 
-		  lmhash, 24,
-		  nthash, 24,
-		  workgroup, 
-		  user, 
-		  cli->calling.name,
-		  sess_key, 0,
-		  neg_flags);
-
-	/* wrap it in SPNEGO */
-	auth = spnego_gen_auth(blob);
-
-	data_blob_free(&blob);
-
-	/* now send the auth packet and we should be done */
-	blob = cli_session_setup_blob(cli, auth);
-
-	data_blob_free(&auth);
-	data_blob_free(&blob);
-
-	if (cli_is_error(cli))
+	if (!NT_STATUS_IS_OK(ntlmssp_client_end(&ntlmssp_state))) {
 		return False;
+	}
 
-	return True;
+	return (NT_STATUS_IS_OK(nt_status));
 }
 
 /****************************************************************************

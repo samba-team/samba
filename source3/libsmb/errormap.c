@@ -1410,7 +1410,7 @@ static const struct {
 /*****************************************************************************
 convert a dos eclas/ecode to a NT status32 code
  *****************************************************************************/
-NTSTATUS dos_to_ntstatus(int eclass, int ecode)
+NTSTATUS dos_to_ntstatus(uint8 eclass, uint32 ecode)
 {
 	int i;
 	if (eclass == 0 && ecode == 0) return NT_STATUS_OK;
