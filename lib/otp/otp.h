@@ -50,8 +50,8 @@ typedef unsigned char OtpKey[OTPKEYSIZE];
 #define OTP_MIN_PASSPHRASE 10
 #define OTP_MAX_PASSPHRASE 63
 
-#define OTP_USER_TIMEOUT   60
-#define OTP_DB_TIMEOUT     60
+#define OTP_USER_TIMEOUT   120
+#define OTP_DB_TIMEOUT      60
 
 #define OTP_HEXPREFIX "hex:"
 #define OTP_WORDPREFIX "word:"
