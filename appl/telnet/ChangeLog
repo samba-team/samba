@@ -1,3 +1,8 @@
+2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
+
+	* libtelnet/kerberos5.c: de-pointerise auth_context parameter to
+	krb5_mk_rep
+
 2000-11-23  Johan Danielsson  <joda@pdc.kth.se>
 
 	* libtelnet/kerberos5.c: print the principal we're trying to use

@@ -1,3 +1,8 @@
+2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
+
+	* accept_sec_context.c: de-pointerise auth_context parameter to
+	krb5_mk_rep
+
 2000-11-15  Assar Westerlund  <assar@sics.se>
 
 	* init_sec_context.c (init_auth): update to new
