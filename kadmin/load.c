@@ -42,11 +42,43 @@ RCSID("$Id$");
 
 struct entry{
     char *principal;
-    char *key;
     char *kvno;
+    char *keytype;
+    char *key;
     char *max_life;
     char *max_renew;
+    char *last_change;
+    char *changed_by;
+    char *expires;
+    char *flags;
 };
+
+static char *
+skip_next(char *p)
+{
+    while(*p && !isspace(*p)) 
+	p++;
+    *p++ = 0;
+    while(*p && isspace(*p)) p++;
+    return p;
+}
+
+time_t
+str2time(char *s)
+{
+    int year, month, date, hour, minute, second;
+    struct tm tm;
+    sscanf(s, "%04d%02d%02d%02d%02d%02d", 
+	   &year, &month, &date, &hour, &minute, &second);
+    tm.tm_year = year - 1900;
+    tm.tm_mon = month - 1;
+    tm.tm_mday = date;
+    tm.tm_hour = hour;
+    tm.tm_min = minute;
+    tm.tm_sec = second;
+    tm.tm_isdst = 0;
+    return timegm(&tm);
+}
 
 static void
 doit(char *filename, int merge)
@@ -88,28 +120,33 @@ doit(char *filename, int merge)
 		break;
 	    }
 	}
-	*p++ = 0;
-	while(*p && isspace(*p)) p++;
-	e.key = p;
-	while(*p && !isspace(*p)) 
-	    *p++;
-	*p++ = 0;
-	while(*p && isspace(*p)) p++;
+	p = skip_next(p);
 	e.kvno = p;
-
-	while(*p && !isspace(*p)) 
-	    *p++;
+	while(*p && isdigit(*p)) p++;
 	*p++ = 0;
-	while(*p && isspace(*p)) p++;
+	e.keytype = p;
+	while(*p && isdigit(*p)) p++;
+	*p++ = 0;
+	e.key = p;
+	p = skip_next(p);
+
 	e.max_life = p;
+	p = skip_next(p);
 
-	while(*p && !isspace(*p)) 
-	    *p++;
-	*p++ = 0;
 	e.max_renew = p;
-	while(*p && !isspace(*p)) 
-	    *p++;
-	*p++ = 0;
+	p = skip_next(p);
+
+	e.last_change = p;
+	p = skip_next(p);
+
+	e.changed_by = p;
+	p = skip_next(p);
+
+	e.expires = p;
+	p = skip_next(p);
+
+	e.flags = p;
+	p = skip_next(p);
 
 	err = krb5_parse_name(context, e.principal, &ent.principal);
 	if(err){
@@ -123,7 +160,7 @@ doit(char *filename, int merge)
 	
 	ent.keyblock.keytype = KEYTYPE_DES;
 	ent.keyblock.keyvalue.data = malloc(strlen(e.key)/2+1);
-	for(i = 1; i < strlen(e.key) - 1; i += 2){
+	for(i = 0; i < strlen(e.key); i += 2){
 	    unsigned tmp;
 	    sscanf(e.key + i, "%2x", &tmp);
 	    ((unsigned char *)ent.keyblock.keyvalue.data)[i/2] = tmp;
@@ -132,11 +169,10 @@ doit(char *filename, int merge)
 	ent.kvno = atoi(e.kvno);
 	ent.max_life = atoi(e.max_life);
 	ent.max_renew = atoi(e.max_renew);
-	krb5_build_principal(context, &ent.changed_by,
-			     0,
-			     ""
-			     "kadmin",
-			     NULL);
+	ent.last_change = str2time(e.last_change);
+	krb5_parse_name(context, e.changed_by, &ent.changed_by);
+	ent.expires = str2time(e.expires);
+	ent.flags.i = atoi(e.flags); /* XXX */
 	db->store(context, db, &ent);
 	hdb_free_entry (context, &ent);
     }
