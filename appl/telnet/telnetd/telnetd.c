@@ -847,9 +847,7 @@ doit(who)
 	if (hp == NULL && registerd_host_only) {
 		fatal(net, "Couldn't resolve your address into a host name.\r\n\
 	 Please contact your net administrator");
-	} else if (hp &&
-	    (strlen(hp->h_name) <= (unsigned int)((utmp_len < 0) ? -utmp_len
-								 : utmp_len))) {
+	} else if (hp) {
 		host = hp->h_name;
 	} else {
 		host = inet_ntoa(who->sin_addr);
@@ -864,6 +862,27 @@ doit(who)
 
 	(void) gethostname(host_name, sizeof (host_name));
 	hostname = host_name;
+
+#define abs(x) ((x < 0) ? (-x) : x)
+
+#define TRIM_HOSTNAME
+#ifdef  TRIM_HOSTNAME
+      /* Only trim if too long (and possible) */
+      if (strlen(remote_host_name) > abs(utmp_len)) {
+              char *domain = strchr(host_name, '.');
+              char *p = strchr(remote_host_name, '.');
+              if (domain && p && (strcmp(p, domain) == 0))
+                      *p = 0; /* remove domain part */
+      }
+#endif /* TRIM_HOSTNAME */
+
+      /*
+       * If hostname still doesn't fit utmp, use ipaddr.
+       */
+      if (strlen(remote_host_name) > abs(utmp_len))
+              strncpy(remote_host_name,
+                      inet_ntoa(who->sin_addr),
+                      sizeof(remote_host_name)-1);
 
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
 	auth_encrypt_init(hostname, host, "TELNETD", 1);
