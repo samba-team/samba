@@ -2124,6 +2124,11 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 	DEBUG(10,("set_nt_acl: called for file %s\n", fsp->fsp_name ));
 
+	if (!CAN_WRITE(conn)) {
+		DEBUG(10,("set acl rejected on read-only share\n"));
+		return False;
+	}
+
 	/*
 	 * Get the current state of the file.
 	 */
