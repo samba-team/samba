@@ -84,6 +84,11 @@ NTSTATUS pvfs_open(struct smbsrv_request *req, union smb_open *io)
 	
 	flags |= O_RDWR;
 
+/* we need to do this differently to support systems without O_DIRECTORY */
+#ifndef O_DIRECTORY
+#define O_DIRECTORY 0
+#endif
+
 	if (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY) {
 		flags = O_RDONLY | O_DIRECTORY;
 		if (pvfs->flags & PVFS_FLAG_READONLY) {
