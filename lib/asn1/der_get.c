@@ -128,9 +128,8 @@ der_match_tag (unsigned char *p, int len, Der_class class, Der_type type,
 }
 
 int
-decode_integer (unsigned char *p, int len, void *data)
+decode_integer (unsigned char *p, int len, unsigned *num)
 {
-  unsigned *num = (unsigned *)data;
   int ret = 0;
   int l, reallen;
 
@@ -156,9 +155,8 @@ decode_integer (unsigned char *p, int len, void *data)
 }
 
 int
-decode_general_string (unsigned char *p, int len, void *data)
+decode_general_string (unsigned char *p, int len, char **str)
 {
-  char **str = (char **)data;
   int ret = 0;
   int l;
 
@@ -178,9 +176,8 @@ decode_general_string (unsigned char *p, int len, void *data)
 }
 
 int
-decode_octet_string (unsigned char *p, int len, void *data)
+decode_octet_string (unsigned char *p, int len, krb5_data *k)
 {
-  krb5_data *k = (krb5_data *)data;
   int ret = 0;
   int l;
 
@@ -222,9 +219,8 @@ generalizedtime2time (char *s, time_t *t)
 }
 
 int
-decode_generalized_time (unsigned char *p, int len, void *data)
+decode_generalized_time (unsigned char *p, int len, time_t *t)
 {
-  time_t *t = (time_t *)data;
   krb5_data k;
   char times[32]; /* XXX */
   int ret = 0;

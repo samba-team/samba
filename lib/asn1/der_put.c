@@ -105,9 +105,9 @@ der_put_tag (unsigned char *p, int len, Der_class class, Der_type type,
 }
 
 int
-encode_integer (unsigned char *p, int len, void *data)
+encode_integer (unsigned char *p, int len, unsigned *data)
 {
-  unsigned num = *((unsigned *)data);
+  unsigned num = *data;
   int ret = 0;
   int l;
 
@@ -133,9 +133,9 @@ encode_integer (unsigned char *p, int len, void *data)
 }
 
 int
-encode_general_string (unsigned char *p, int len, void *data)
+encode_general_string (unsigned char *p, int len, char **data)
 {
-  char *str = *((char **)data);
+  char *str = *data;
   int ret = 0;
   int l;
 
@@ -155,9 +155,8 @@ encode_general_string (unsigned char *p, int len, void *data)
 }
 
 int
-encode_octet_string (unsigned char *p, int len, void *data)
+encode_octet_string (unsigned char *p, int len, krb5_data *k)
 {
-  krb5_data *k = (krb5_data *)data;
   int ret = 0;
   int l;
 
@@ -190,9 +189,8 @@ time2generalizedtime (time_t t, krb5_data *s)
 }
 
 int
-encode_generalized_time (unsigned char *p, int len, void *data)
+encode_generalized_time (unsigned char *p, int len, time_t *t)
 {
-  time_t *t = (time_t *)data;
   krb5_data k;
   int l;
   int ret = 0;
