@@ -862,9 +862,8 @@ static void reply_read_and_X_send(struct request_context *req)
 
 	CHECK_ASYNC_STATUS;
 
-	/* trim the packet to the right size */
-	io->readx.out.nread = MIN(io->readx.out.nread,
-		req_max_data(req) - 1);
+	/* readx reply packets can be over-sized */
+	req->control_flags |= REQ_CONTROL_LARGE;
 	req_grow_data(req, 1 + io->readx.out.nread);
 
 	/* construct reply */
