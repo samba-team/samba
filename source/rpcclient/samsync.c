@@ -26,12 +26,16 @@ extern int DEBUGLEVEL;
 
 /* Synchronise sam database */
 
-static int sam_sync(struct cli_state *cli, unsigned char trust_passwd[16])
+static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
+                         BOOL do_smbpasswd_output)
 {
         TALLOC_CTX *mem_ctx;
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
-        uint32 database_id = 0, num_deltas, result;
+        uint32 database_id = 0, num_deltas;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+        /* Initialise */
 
 	if (!(mem_ctx = talloc_init())) {
 		DEBUG(0,("talloc_init failed\n"));
@@ -43,11 +47,49 @@ static int sam_sync(struct cli_state *cli, unsigned char trust_passwd[16])
 		goto done;
 	}
 
-	if ((result = cli_netlogon_sam_sync(cli, mem_ctx, database_id,
-                                            &num_deltas, &hdr_deltas, &deltas))
-            != NT_STATUS_NOPROBLEMO) {
+        /* Request a challenge */
+
+        if (!NT_STATUS_IS_OK(new_cli_nt_setup_creds(cli, trust_passwd))) {
+                DEBUG(0, ("Error initialising session creds\n"));
+                goto done;
+        }
+
+        /* Do sam synchronisation */
+
+	result = cli_netlogon_sam_sync(cli, mem_ctx, database_id,
+                                       &num_deltas, &hdr_deltas, &deltas);
+        
+        if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
+
+        /* Produce smbpasswd output - good for migrating from NT! */
+
+        if (do_smbpasswd_output) {
+                int i;
+
+                for (i = 0; i < num_deltas; i++) {
+                        fstring acct_name;
+
+                        /* Skip non-user accounts */
+
+                        if (hdr_deltas[i].type != SAM_DELTA_ACCOUNT_INFO)
+                                continue;
+
+                        unistr2_to_ascii(acct_name, 
+                                         &deltas[i].account_info.uni_acct_name,
+                                         sizeof(acct_name) - 1);
+
+                        printf("%s:-1:%s:%s:%s:LCT-0\n", acct_name,
+                               "nt", "lm",
+                               smbpasswd_encode_acb_info(
+                                       deltas[i].account_info.acb_info));
+                }
+                               
+                goto done;
+        }
+
+        /* Update sam tdb */
 
  done:
 	cli_nt_session_close(cli);
@@ -58,12 +100,12 @@ static int sam_sync(struct cli_state *cli, unsigned char trust_passwd[16])
 
 /* Replicate sam deltas */
 
-static int sam_repl(struct cli_state *cli, unsigned char trust_passwde[16],
-                    uint32 low_serial)
+static NTSTATUS sam_repl(struct cli_state *cli, unsigned char trust_passwde[16],
+                         uint32 low_serial)
 {
-        uint32 result;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-        return 0;
+        return result;
 }
 
 /* Print usage information */
@@ -77,6 +119,8 @@ static void usage(void)
 	printf("\t-s configfile         specify an alternative config file\n");
 	printf("\t-S                    synchronise sam database\n");
 	printf("\t-R                    replicate sam deltas\n");
+	printf("\t-U username           username and password\n");
+        printf("\t-p                    produce smbpasswd output\n");
 	printf("\n");
 }
 
@@ -103,7 +147,9 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 
 /* Connect to primary domain controller */
 
-static struct cli_state *init_connection(struct cli_state *cli)
+static struct cli_state *init_connection(struct cli_state *cli,
+                                         char *username, char *domain,
+                                         char *password)
 {
         struct ntuser_creds creds;
         extern pstring global_myname;
@@ -120,7 +166,7 @@ static struct cli_state *init_connection(struct cli_state *cli)
 		return NULL;
 	}
 
-        init_rpcclient_creds(&creds, "Administrator", "FOO", "samba");
+        init_rpcclient_creds(&creds, username, domain, password);
 	cli_init_creds(cli, &creds);
 
         /* Look up name of PDC controller */
@@ -161,20 +207,26 @@ static struct cli_state *init_connection(struct cli_state *cli)
         BOOL do_sam_sync = False, do_sam_repl = False;
         pstring servicesf = CONFIGFILE;
         struct cli_state cli;
-        int result = 0, opt;
+        NTSTATUS result;
+        int opt;
         extern pstring debugf;
-        BOOL interactive = False;
+        BOOL interactive = False, do_smbpasswd_output = False;
         uint32 low_serial = 0;
         unsigned char trust_passwd[16];
+        fstring username, domain, password;
 
         if (argc == 1) {
                 usage();
                 return 1;
         }
 
+        ZERO_STRUCT(username);
+        ZERO_STRUCT(domain);
+        ZERO_STRUCT(password);
+
         /* Parse command line options */
 
-        while((opt = getopt(argc, argv, "s:d:SR:hi")) != EOF) {
+        while((opt = getopt(argc, argv, "s:d:SR:hiU:W:p")) != EOF) {
                 switch (opt) {
                 case 's':
                         pstrcpy(servicesf, optarg);
@@ -191,6 +243,24 @@ static struct cli_state *init_connection(struct cli_state *cli)
                         break;
                 case 'i':
                         interactive = True;
+                        break;
+                case 'U': {
+                        char *lp;
+
+                        fstrcpy(username,optarg);
+                        if ((lp=strchr_m(username,'%'))) {
+                                *lp = 0;
+                                fstrcpy(password,lp+1);
+                                memset(strchr_m(optarg, '%') + 1, 'X',
+                                       strlen(password));
+			}
+                        break;
+                }
+                case 'W':
+                        pstrcpy(domain, optarg);
+                        break;
+                case 'p':
+                        do_smbpasswd_output = True;
                         break;
                 case 'h':
                 default:
@@ -257,14 +327,19 @@ static struct cli_state *init_connection(struct cli_state *cli)
 
         /* Perform sync or replication */
 
-        if (!init_connection(&cli))
+        if (!init_connection(&cli, username, domain, password))
                 return 1;
 
         if (do_sam_sync)
-                result = sam_sync(&cli, trust_passwd);
+                result = sam_sync(&cli, trust_passwd, do_smbpasswd_output);
 
         if (do_sam_repl)
                 result = sam_repl(&cli, trust_passwd, low_serial);
 
-	return result;
+        if (!NT_STATUS_IS_OK(result)) {
+                DEBUG(0, ("%s\n", get_nt_error_msg(result)));
+                return 1;
+        }
+
+	return 0;
 }
