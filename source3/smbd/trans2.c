@@ -2920,9 +2920,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
 	DEBUG(6,("size: %.0f ", (double)size));
 
-	if (dosmode == FILE_ATTRIBUTE_NORMAL)
-		dosmode = 0;
-
 	if (dosmode) {
 		if (S_ISDIR(sbuf.st_mode))
 			dosmode |= aDIR;
