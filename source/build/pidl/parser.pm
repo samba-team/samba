@@ -106,6 +106,17 @@ sub find_size_var($$$)
 	die "invalid variable in $size for element $e->{NAME} in $fn->{NAME}\n";
 }
 
+#####################################################################
+# check that a variable we get from find_size_var isn't a null pointer
+sub check_null_pointer($)
+{
+	my $size = shift;
+	if ($size =~ /^\*/) {
+		my $size2 = substr($size, 1);
+		pidl "\tif ($size2 == NULL) return NT_STATUS_INVALID_PARAMETER_MIX;\n";
+	}
+}
+
 
 #####################################################################
 # work out is a parse function should be declared static or not
@@ -277,11 +288,13 @@ sub CheckArraySizes($$)
 
 	if (util::has_property($e, "size_is")) {
 		my $size = find_size_var($e, util::array_size($e), $var_prefix);
+		check_null_pointer($size);
 		pidl "\tNDR_CHECK(ndr_check_array_size(ndr, (void*)&$var_prefix$e->{NAME}, $size));\n";
 	}
 
 	if (my $length = util::has_property($e, "length_is")) {
 		$length = find_size_var($e, $length, $var_prefix);
+		check_null_pointer($length);
 		pidl "\tNDR_CHECK(ndr_check_array_length(ndr, (void*)&$var_prefix$e->{NAME}, $length));\n";
 	}
 }
@@ -302,7 +315,7 @@ sub ParseArrayPull($$$)
 	# we allocate enough to pull the elements
 	if (defined $e->{CONFORMANT_SIZE}) {
 		$alloc_size = $e->{CONFORMANT_SIZE};
-
+		check_null_pointer($size);
 		pidl "\tif ($size > $alloc_size) {\n";
 		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
 		pidl "\t}\n";
@@ -337,6 +350,7 @@ sub ParseArrayPull($$$)
 		$size = "ndr_get_array_length(ndr, &$var_prefix$e->{NAME})";
 	}
 
+	check_null_pointer($size);
 	if (util::is_scalar_type($e->{TYPE})) {
 		pidl "\t\tNDR_CHECK(ndr_pull_array_$e->{TYPE}(ndr, $ndr_flags, $var_prefix$e->{NAME}, $size));\n";
 	} else {
@@ -431,6 +445,9 @@ sub ParseElementPullSwitch($$$$)
 	my $cprefix = util::c_pull_prefix($e);
 
 	my $utype = $structs{$e->{TYPE}};
+
+	check_null_pointer($switch_var);
+
 	if (!defined $utype ||
 	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
@@ -473,6 +490,8 @@ sub ParseElementPushSwitch($$$$)
 	my $switch_var = find_size_var($e, $switch, $var_prefix);
 	my $cprefix = util::c_push_prefix($e);
 
+	check_null_pointer($switch_var);
+
 	my $utype = $structs{$e->{TYPE}};
 	if (!defined $utype ||
 	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
@@ -501,6 +520,8 @@ sub ParseElementPrintSwitch($$$)
 	my $switch = shift;
 	my $switch_var = find_size_var($e, $switch, $var_prefix);
 	my $cprefix = util::c_push_prefix($e);
+
+	check_null_pointer($switch_var);
 
 	pidl "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $switch_var, $cprefix$var_prefix$e->{NAME});\n";
 }
@@ -718,6 +739,7 @@ sub ParseStructPush($)
 	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
 		my $size = find_size_var($e, util::array_size($e), "r->");
 		$e->{CONFORMANT_SIZE} = $size;
+		check_null_pointer($size);
 		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, $size));\n";
 	}
 
@@ -878,6 +900,7 @@ sub ParseStructNdrSize($)
 			pidl "\tret = ndr_size_ptr(ret, &r->$e->{NAME}, flags); \n";
 		} elsif (util::is_inline_array($e)) {
 			$sizevar = find_size_var($e, util::array_size($e), "r->");
+			check_null_pointer($sizevar);
 			pidl "\t{\n";
 			pidl "\t\tint i;\n";
 			pidl "\t\tfor(i = 0; i < $sizevar; i++) {\n";
@@ -1399,6 +1422,7 @@ sub AllocateRefVars($)
 
 	# its an array
 	my $size = find_size_var($e, $asize, "r->out.");
+	check_null_pointer($size);
 	pidl "\tNDR_ALLOC_N(ndr, r->out.$e->{NAME}, $size);\n";
 	if (util::has_property($e, "in")) {
 		pidl "\tmemcpy(r->out.$e->{NAME},r->in.$e->{NAME},$size * sizeof(*r->in.$e->{NAME}));\n";
