@@ -241,6 +241,49 @@ Changes since 3.0beta1
 
 
 ######################################################################
+Upgrading from a previous Samba 3.0 beta
+########################################
+
+Beginning with Samba 3.0.0beta3, the RID allocation functions
+have been moved into winbindd.  Previously these were handled
+by each passdb backend.  This means that winbindd must be running
+to automatically allocate RIDs for users and/or groups.  Otherwise,
+smbd will use the 2.2 algorithm for generating new RIDs.
+
+If you are using 'passdb backend = tdbsam' with a previous Samba 
+3.0 beta release (or possibly alpha), it may be necessary to 
+move the RID_COUNTER entry from /usr/local/samba/private/passdb.tdb
+to winbindd_idmap.tdb.  To do this:
+
+1)  Ensure that winbindd_idmap.tdb exists (launch winbindd at least 
+    once)
+2)  build tdbtool by executing 'make tdbtool' in the source/tdb/ 
+    directory
+3)  run:
+
+       root# ./tdbtool /usr/local/samba/private/passdb.tdb
+       tdb > show RID_COUNTER
+       key 12 bytes
+       RID_COUNTER
+       data 4 bytes
+       [000] 0A 52 00 00                                       .R.
+
+       tdb > move RID_COUNTER /usr/local/samba/var/locks/winbindd_idmap.tdb
+       ....
+       record moved
+
+If the RID_COUNTER record does not exist, then these instructions are
+unneccessary and the new RID_COUNTER record will be correctly generated
+if needed.  
+
+If you are using 'passdb backend = ldapsam', it will be necessary to 
+store idmap entries in the LDAP directory as well (i.e. idmap backend 
+= ldap).  Refer to the 'net idmap' command for more information on 
+migrating SID<->UNIX id mappings from one backend to another.
+
+
+
+########################
 Upgrading from Samba 2.2
 ########################
 
