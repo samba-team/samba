@@ -245,7 +245,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
 	     libsmb/clistr.o lib/util_seaccess.o \
-	     libsmb/cliquota.o libsmb/clifsinfo.o \
+	     libsmb/cliquota.o libsmb/clifsinfo.o libsmb/clidfs.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o $(ERRORMAP_OBJ) libsmb/clirap2.o \
 	     $(DOSERR_OBJ) \
@@ -522,7 +522,7 @@ LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) $(SECRETS_OBJ
 
 LIBBIGBALLOFMUD_PICOBJS = $(LIBBIGBALLOFMUD_OBJ:.o=.@PICSUFFIX@)
 
-CLIENT_OBJ1 = client/client.o client/clitar.o libsmb/clidfs.o
+CLIENT_OBJ1 = client/client.o client/clitar.o 
 
 CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	     $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
