@@ -594,6 +594,7 @@ extern const krb5_cc_ops krb5_mcc_ops;
 extern const krb5_kt_ops krb5_fkt_ops;
 extern const krb5_kt_ops krb5_mkt_ops;
 extern const krb5_kt_ops krb5_akf_ops;
+extern const krb5_kt_ops krb4_fkt_ops;
 
 #define KRB5_KPASSWD_SUCCESS	0
 #define KRB5_KPASSWD_MALFORMED	0
