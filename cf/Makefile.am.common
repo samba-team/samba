@@ -6,6 +6,8 @@ SUFFIXES = .et .h
 
 INCLUDES = -I$(top_builddir)/include $(INCLUDES_roken)
 
+ROKEN_RENAME = -DROKEN_RENAME
+
 AM_CFLAGS = $(WFLAGS)
 
 CP	= cp
