@@ -841,3 +841,84 @@ Clients for whom we have installed and supported Samba.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+Honduras - CENTRAL AMERICA
+
+Open Systems, S.A.
+
+Open Systems, S.A. provides support to SAMBA in SCO UnixWare 2.X:
+
+Server Platform: SCO UnixWare 2.X
+Client Platform: Windows NT, Windows 95, WFW (3.11), DOS.
+
+Open Systems, S.A. also provides consulting services and technical
+support in the following server platforms since 1987:
+
+SCO Open Server 3.0 and 5.0
+SCO UnixWare 2.X (SVR4.2MP)
+UNIX SVR4 (NCR, UNISYS)
+
+Contact:
+Selim Jose Miselem
+Open Systems, S.A.
+Centro Comercial Dallas
+San Pedro Sula, Honduras, Central America
+Tel/Fax 011 (504) 529868
+e-mail: selim@opensys.hn
+URL: http://www.opensys.hn
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+HUNGARY
+
+           Name: Geza Makay                                            
+      Institute: Jozsef Attila University of Szeged                   
+           Mail: Bolyai Institute, Aradi vertanuk tere 1.            
+                 H-6720, Szeged, Hungary                            
+            Tel: (62) 454-091 (Hungary's code: 36)                 
+    Fax/Message: (62) 326-246 (Hungary's code: 36)                
+         E-mail: makayg@math.u-szeged.hu                         
+ World Wide Web: http://www.math.u-szeged.hu/                   
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+Ontario - CANADA
+
+Sound Software Ltd.
+20 Abelard Avenue
+Brampton, Ontario Canada
+905 452 0504
+sales@telly.org
+www.telly.org
+
+Sound Software company is a Caldera Business Partner, providing support for
+Samba and other applications running under Caldera Linux.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+AUSTRALIA
+
+BITcom Telecommunications               Phone: (02) 9747 0011
+P.O. Box 15                             Int'l: +61 2 9747 0011
+Burwood  NSW  2134  Australia           Fax:   (02) 9747 6918
+Contact: Craig Bevins                   Email: consult@bitcom.net.au
+
+BITcom is an open systems and networking consultancy.  We have been
+doing Open Systems since long before the term was coined, a key staff
+member having participated in the IEEE working group which produced
+the POSIX standard for Un*x-like systems in 1988.
+
+We tend to have a Unix orientation (all flavours) but our focus is on
+getting the job done and we are happy to employ other technologies which
+fit.  Heck, we even use and support Microsoft's products!  Our areas
+of expertise cover general Unix consultancy, support for public domain
+and GNUish software, PC LAN -> Unix integration, Internet, WWW and local
+and wide-area network design, implementation and security.  We have a
+collective masochistic streak and actually enjoy hacking on sendmail
+configuration.  We are an AUSTEL-licenced telecommunications and data
+cabler and hold a NSW security industry licence.
+
+We know Windows NT, LANMAN, PC-NFS and others.  We use, recommend and
+support Samba and have done so since 1994.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
