@@ -32,6 +32,7 @@
  */
 
 #include "kadmin_locl.h"
+#include "kadmin-commands.h"
 #include <sl.h>
 
 RCSID("$Id$");

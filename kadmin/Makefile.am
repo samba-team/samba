@@ -34,7 +34,7 @@ kadmin_SOURCES =				\
 	kadmin-commands.c			\
 	kadmin_locl.h
 
-$(kadmind_OBJECTS) $(kadmin_OBJECTS): kadmin-commands.h
+$(kadmin_OBJECTS): kadmin-commands.h
 
 CLEANFILES = kadmin-commands.h kadmin-commands.c
 

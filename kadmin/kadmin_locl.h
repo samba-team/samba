@@ -96,8 +96,6 @@
 #include <parse_time.h>
 #include <getarg.h>
 
-#include "kadmin-commands.h"
-
 extern krb5_context context;
 extern void * kadm_handle;
 
