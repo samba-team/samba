@@ -20,6 +20,113 @@
 #include "includes.h"
 #include "utils/net.h"
 
+
+/********************************************************************
+********************************************************************/
+
+static WERROR query_service_state( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                             POLICY_HND *hSCM, const char *service, uint32 *state )
+{
+	POLICY_HND hService;
+	SERVICE_STATUS service_status;
+	WERROR result = WERR_GENERAL_FAILURE;
+	
+	/* now cycle until the status is actually 'watch_state' */
+	
+	result = cli_svcctl_open_service( cli, mem_ctx, hSCM, &hService, 
+		service, SC_RIGHT_SVC_QUERY_STATUS );
+
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Failed to open service.  [%s]\n", dos_errstr(result));
+		return result;
+	}
+
+	result = cli_svcctl_query_status( cli, mem_ctx, &hService, &service_status  );
+	if ( W_ERROR_IS_OK(result) ) {
+		*state = service_status.state;
+	}
+	
+	cli_svcctl_close_service( cli, mem_ctx, &hService );
+	
+	return result;
+}
+
+/********************************************************************
+********************************************************************/
+
+static WERROR watch_service_state( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                   POLICY_HND *hSCM, const char *service, 
+				   uint32 watch_state, uint32 *final_state )
+{
+	uint32 i;
+	uint32 state = 0;
+	WERROR result = WERR_GENERAL_FAILURE;
+	
+	
+	i = 0;
+	while ( (state != watch_state ) && i<30 ) {
+		/* get the status */
+
+		result = query_service_state( cli, mem_ctx, hSCM, service, &state  );
+		if ( !W_ERROR_IS_OK(result) ) {
+			break;
+		}
+		
+		d_printf(".");
+		i++;
+		usleep( 100 );
+	}
+	d_printf("\n");
+	
+	*final_state = state;
+	
+	return result;
+}
+
+/********************************************************************
+********************************************************************/
+
+static WERROR control_service( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                             POLICY_HND *hSCM, const char *service, 
+			     uint32 control, uint32 watch_state )
+{
+	POLICY_HND hService;
+	WERROR result = WERR_GENERAL_FAILURE;
+	SERVICE_STATUS service_status;
+	uint32 state = 0;
+	
+	/* Open the Service */
+	
+	result = cli_svcctl_open_service( cli, mem_ctx, hSCM, &hService, 
+		service, (SC_RIGHT_SVC_STOP|SC_RIGHT_SVC_PAUSE_CONTINUE) );
+
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Failed to open service.  [%s]\n", dos_errstr(result));
+		goto done;
+	}
+	
+	/* get the status */
+
+	result = cli_svcctl_control_service( cli, mem_ctx, &hService, 
+		control, &service_status  );
+		
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Control service request failed.  [%s]\n", dos_errstr(result));
+		goto done;
+	}
+	
+	/* loop -- checking the state until we are where we want to be */
+	
+	result = watch_service_state( cli, mem_ctx, hSCM, service, watch_state, &state );
+		
+	d_printf("%s service is %s.\n", service, svc_status_string(state));
+
+done:	
+	cli_svcctl_close_service( cli, mem_ctx, &hService  );
+		
+	return result;
+}	
+
 /********************************************************************
 ********************************************************************/
 
@@ -65,7 +172,7 @@ static NTSTATUS rpc_service_list_internal( const DOM_SID *domain_sid, const char
 	}
 
 done:	
-	close_service_handle( cli, mem_ctx, &hSCM  );
+	cli_svcctl_close_service( cli, mem_ctx, &hSCM  );
 		
 	return werror_to_ntstatus(result);
 }	
@@ -161,11 +268,173 @@ static NTSTATUS rpc_service_status_internal( const DOM_SID *domain_sid, const ch
 	}
 
 done:	
-	close_service_handle( cli, mem_ctx, &hService  );
-	close_service_handle( cli, mem_ctx, &hSCM  );
+	cli_svcctl_close_service( cli, mem_ctx, &hService  );
+	cli_svcctl_close_service( cli, mem_ctx, &hSCM  );
 		
 	return werror_to_ntstatus(result);
 }	
+
+
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS rpc_service_stop_internal( const DOM_SID *domain_sid, const char *domain_name, 
+                                           struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                           int argc, const char **argv )
+{
+	POLICY_HND hSCM;
+	WERROR result = WERR_GENERAL_FAILURE;
+	fstring servicename;
+	
+	if (argc != 1 ) {
+		d_printf("Usage: net rpc service status <service>\n");
+		return NT_STATUS_OK;
+	}
+
+	fstrcpy( servicename, argv[0] );
+
+	/* Open the Service Control Manager */
+	
+	result = cli_svcctl_open_scm( cli, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		return werror_to_ntstatus(result);
+	}
+	
+	result = control_service( cli, mem_ctx, &hSCM, servicename, 
+		SVCCTL_CONTROL_STOP, SVCCTL_STOPPED );
+		
+	cli_svcctl_close_service( cli, mem_ctx, &hSCM  );
+		
+	return werror_to_ntstatus(result);
+}	
+
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS rpc_service_pause_internal( const DOM_SID *domain_sid, const char *domain_name, 
+                                           struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                           int argc, const char **argv )
+{
+	POLICY_HND hSCM;
+	WERROR result = WERR_GENERAL_FAILURE;
+	fstring servicename;
+	
+	if (argc != 1 ) {
+		d_printf("Usage: net rpc service status <service>\n");
+		return NT_STATUS_OK;
+	}
+
+	fstrcpy( servicename, argv[0] );
+
+	/* Open the Service Control Manager */
+	
+	result = cli_svcctl_open_scm( cli, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		return werror_to_ntstatus(result);
+	}
+	
+	result = control_service( cli, mem_ctx, &hSCM, servicename, 
+		SVCCTL_CONTROL_PAUSE, SVCCTL_PAUSED );
+		
+	cli_svcctl_close_service( cli, mem_ctx, &hSCM  );
+		
+	return werror_to_ntstatus(result);
+}	
+
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS rpc_service_resume_internal( const DOM_SID *domain_sid, const char *domain_name, 
+                                           struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                           int argc, const char **argv )
+{
+	POLICY_HND hSCM;
+	WERROR result = WERR_GENERAL_FAILURE;
+	fstring servicename;
+	
+	if (argc != 1 ) {
+		d_printf("Usage: net rpc service status <service>\n");
+		return NT_STATUS_OK;
+	}
+
+	fstrcpy( servicename, argv[0] );
+
+	/* Open the Service Control Manager */
+	
+	result = cli_svcctl_open_scm( cli, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		return werror_to_ntstatus(result);
+	}
+	
+	result = control_service( cli, mem_ctx, &hSCM, servicename, 
+		SVCCTL_CONTROL_CONTINUE, SVCCTL_RUNNING );
+		
+	cli_svcctl_close_service( cli, mem_ctx, &hSCM  );
+		
+	return werror_to_ntstatus(result);
+}	
+
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS rpc_service_start_internal( const DOM_SID *domain_sid, const char *domain_name, 
+                                           struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                           int argc, const char **argv )
+{
+	POLICY_HND hSCM, hService;
+	WERROR result = WERR_GENERAL_FAILURE;
+	fstring servicename;
+	uint32 state = 0;
+	
+	if (argc != 1 ) {
+		d_printf("Usage: net rpc service status <service>\n");
+		return NT_STATUS_OK;
+	}
+
+	fstrcpy( servicename, argv[0] );
+
+	/* Open the Service Control Manager */
+	
+	result = cli_svcctl_open_scm( cli, mem_ctx, &hSCM, SC_RIGHT_MGR_ENUMERATE_SERVICE  );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		return werror_to_ntstatus(result);
+	}
+	
+	/* Open the Service */
+	
+	result = cli_svcctl_open_service( cli, mem_ctx, &hSCM, &hService, 
+		servicename, SC_RIGHT_SVC_START );
+
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Failed to open service.  [%s]\n", dos_errstr(result));
+		goto done;
+	}
+	
+	/* get the status */
+
+	result = cli_svcctl_start_service( cli, mem_ctx, &hService, NULL, 0 );
+	if ( !W_ERROR_IS_OK(result) ) {
+		d_printf("Query status request failed.  [%s]\n", dos_errstr(result));
+		goto done;
+	}
+	
+	result = watch_service_state( cli, mem_ctx, &hSCM, servicename, SVCCTL_RUNNING, &state  );
+	
+	if ( W_ERROR_IS_OK(result) && (state == SVCCTL_RUNNING) )
+		d_printf("Successfully started service: %s\n", servicename );
+	else
+		d_printf("Failed to start service: %s [%s]\n", servicename, dos_errstr(result) );
+	
+done:	
+	cli_svcctl_close_service( cli, mem_ctx, &hService  );
+	cli_svcctl_close_service( cli, mem_ctx, &hSCM  );
+		
+	return werror_to_ntstatus(result);
+}
 
 /********************************************************************
 ********************************************************************/
@@ -181,8 +450,8 @@ static int rpc_service_list( int argc, const char **argv )
 
 static int rpc_service_start( int argc, const char **argv )
 {
-	d_printf("not implemented\n");
-	return 0;
+	return run_rpc_command( NULL, PI_SVCCTL, 0, 
+		rpc_service_start_internal, argc, argv );
 }
 
 /********************************************************************
@@ -190,8 +459,17 @@ static int rpc_service_start( int argc, const char **argv )
 
 static int rpc_service_stop( int argc, const char **argv )
 {
-	d_printf("not implemented\n");
-	return 0;
+	return run_rpc_command( NULL, PI_SVCCTL, 0, 
+		rpc_service_stop_internal, argc, argv );
+}
+
+/********************************************************************
+********************************************************************/
+
+static int rpc_service_resume( int argc, const char **argv )
+{
+	return run_rpc_command( NULL, PI_SVCCTL, 0, 
+		rpc_service_resume_internal, argc, argv );
 }
 
 /********************************************************************
@@ -199,8 +477,8 @@ static int rpc_service_stop( int argc, const char **argv )
 
 static int rpc_service_pause( int argc, const char **argv )
 {
-	d_printf("not implemented\n");
-	return 0;
+	return run_rpc_command( NULL, PI_SVCCTL, 0, 
+		rpc_service_pause_internal, argc, argv );
 }
 
 /********************************************************************
@@ -221,6 +499,7 @@ static int net_help_service( int argc, const char **argv )
 	d_printf("net rpc service start <service>    Start a service\n");
 	d_printf("net rpc service stop <service>     Stop a service\n");
 	d_printf("net rpc service pause <service>    Pause a service\n");
+	d_printf("net rpc service resume <service>   Resume a paused a service\n");
 	d_printf("net rpc service status <service>   View the current status of a service\n");
 	
 	return -1;
@@ -236,6 +515,7 @@ int net_rpc_service(int argc, const char **argv)
 		{"start", rpc_service_start},
 		{"stop", rpc_service_stop},
 		{"pause", rpc_service_pause},
+		{"resume", rpc_service_resume},
 		{"status", rpc_service_status},
 		{NULL, NULL}
 	};
