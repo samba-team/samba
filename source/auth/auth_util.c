@@ -869,8 +869,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	struct passwd *passwd;
 
-	uid_t uid;
-	gid_t gid;
+	unid_t u_id, g_id;
+	int u_type, g_type;
 
 	int n_lgroupSIDs;
 	DOM_SID *lgroupSIDs   = NULL;
@@ -907,9 +907,11 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		domain = domain;
 	}
 
-	if (winbind_sid_to_uid(&uid, &user_sid) 
-	    && winbind_sid_to_gid(&gid, &group_sid) 
-	    && ((passwd = getpwuid_alloc(uid)))) {
+	u_type = ID_USERID;
+	g_type = ID_GROUPID;
+	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&u_id, &u_type, &user_sid))
+	    && NT_STATUS_IS_OK(idmap_get_id_from_sid(&g_id, &g_type, &group_sid))
+	    && ((passwd = getpwuid_alloc(u_id.uid)))) {
 		nt_status = pdb_init_sam_pw(&sam_account, passwd);
 		passwd_free(&passwd);
 	} else {

@@ -261,12 +261,12 @@ static PyObject *py_config_dict(void)
 
 	/* Winbind uid/gid range */
 
-	if (lp_winbind_uid(&ulow, &uhi)) {
+	if (lp_idmap_uid(&ulow, &uhi)) {
 		PyDict_SetItemString(result, "uid_low", PyInt_FromLong(ulow));
 		PyDict_SetItemString(result, "uid_high", PyInt_FromLong(uhi));
 	}
 
-	if (lp_winbind_gid(&glow, &ghi)) {
+	if (lp_idmap_gid(&glow, &ghi)) {
 		PyDict_SetItemString(result, "gid_low", PyInt_FromLong(glow));
 		PyDict_SetItemString(result, "gid_high", PyInt_FromLong(ghi));
 	}
