@@ -1369,11 +1369,15 @@ login_tty(t)
 	 * setsid() call above may have set our pgrp, so clear
 	 * it out before opening the tty...
 	 */
+#if defined HAVE_SETPGID
+	(void) setpgid(0, 0);
+#else
 #  if defined(SOLARIS) || defined(__hpux) || defined(__sgi) || defined(_AIX)
 	(void) setpgrp();
 #  else
 	(void) setpgrp(0, 0);
 #  endif
+#endif
 	close(open(line, O_RDWR));
 # endif
 	if (t != 0)
