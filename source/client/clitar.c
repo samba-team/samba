@@ -39,6 +39,7 @@
 #include "clitar.h"
 #include "system/time.h"
 #include "system/iconv.h"
+#include "system/filesys.h"
 
 /**
  Convert list of tokens to array; dependent on above routine.

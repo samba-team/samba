@@ -81,3 +81,12 @@
 #ifndef HAVE_SOCKLEN_T_TYPE
 typedef int socklen_t;
 #endif
+
+#ifndef INADDR_LOOPBACK
+#define INADDR_LOOPBACK 0x7f000001
+#endif
+
+#ifndef INADDR_NONE
+#define INADDR_NONE 0xffffffff
+#endif
+

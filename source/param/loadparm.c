@@ -56,6 +56,7 @@
 #include "system/time.h"
 #include "system/iconv.h"
 #include "system/network.h"
+#include "system/printing.h"
 #include "librpc/gen_ndr/ndr_svcctl.h"
 #include "include/dlinklist.h"
 

@@ -180,3 +180,15 @@ int rename(const char *zfrom, const char *zto);
 #define UINT16_MAX 65535
 #endif
 
+#ifndef HAVE_FTRUNCATE
+int ftruncate(int f,long l);
+#endif
+
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 256
+#endif
+
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#endif
+

@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include "libnet/libnet.h"
+#include "utils/net/net.h"
 #include "system/time.h"
 
 /*
