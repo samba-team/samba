@@ -77,34 +77,32 @@ tninit()
 #endif
 }
 
-	void
-usage()
+void usage(void)
 {
-	fprintf(stderr, "Usage: %s %s%s%s%s\n",
-	    prompt,
+  fprintf(stderr, "Usage: %s %s%s%s%s\n", prompt,
 #ifdef	AUTHENTICATION
-	    "[-8] [-E] [-K] [-L] [-S tos] [-X atype] [-a] [-c] [-d] [-e char]",
-	    "\n\t[-k realm] [-l user] [-f/-F] [-n tracefile] ",
+	  "[-8] [-E] [-K] [-L] [-S tos] [-X atype] [-a] [-c] [-d] [-e char]",
+	  "\n\t[-k realm] [-l user] [-f/-F] [-n tracefile] ",
 #else
-	    "[-8] [-E] [-L] [-S tos] [-a] [-c] [-d] [-e char] [-l user]",
-	    "\n\t[-n tracefile]",
+	  "[-8] [-E] [-L] [-S tos] [-a] [-c] [-d] [-e char] [-l user]",
+	  "\n\t[-n tracefile]",
 #endif
 #if defined(TN3270) && defined(unix)
 # ifdef AUTHENTICATION
-	    "[-noasynch] [-noasynctty]\n\t[-noasyncnet] [-r] [-t transcom] ",
+	  "[-noasynch] [-noasynctty]\n\t[-noasyncnet] [-r] [-t transcom] ",
 # else
-	    "[-noasynch] [-noasynctty] [-noasyncnet] [-r]\n\t[-t transcom]",
+	  "[-noasynch] [-noasynctty] [-noasyncnet] [-r]\n\t[-t transcom]",
 # endif
 #else
-	    "[-r] ",
+	  "[-r] ",
 #endif
 #ifdef	ENCRYPTION
-	    "[-x] [host-name [port]]"
+	  "[-x] [host-name [port]]"
 #else
-	    "[host-name [port]]"
+	  "[host-name [port]]"
 #endif
-	);
-	exit(1);
+    );
+  exit(1);
 }
 
 /*
@@ -112,9 +110,7 @@ usage()
  */
 
 
-main(argc, argv)
-	int argc;
-	char *argv[];
+int main(int argc, char **argv)
 {
 	extern char *optarg;
 	extern int optind;
@@ -242,7 +238,10 @@ main(argc, argv)
 #endif
 			break;
 		case 'l':
-			autologin = 1;
+		  if(autologin == 0){
+		    fprintf(stderr, "%s: Warning: -K ignored\n", prompt);
+		    autologin = -1;
+		  }
 			user = optarg;
 			break;
 		case 'n':
