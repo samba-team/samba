@@ -68,6 +68,7 @@ an inherent feature of ADS domains.
 
 <para>
 There are two steps to creating an inter-domain trust relationship.
+</para>
 
 <sect2>
 <title>NT4 as the Trusting Domain</title>
@@ -94,7 +95,7 @@ with the trusted domain. To consumate the trust relationship the administrator w
 Domain User Manager, from the menu select Policies, then select Trust Relationships, then click on the
 "Add" button that is next to the box that is labelled "Trusted Domains". A panel will open in
 which must be entered the name of the remote domain as well as the password assigned to that trust.
-<para>
+</para>
 
 </sect2>
 </sect1>

@@ -227,7 +227,7 @@ on this system just substitute the correct package name
 	<simplelist>
 	<member>the MIT kerberos development libraries (either install from the sources or use a package). The heimdal libraries will not work.</member>
 	<member>the OpenLDAP development libraries.</member>
-	</simplelist>
+</simplelist></para>
 
 	<para>If your kerberos libraries are in a non-standard location then
 	  remember to add the configure option --with-krb5=DIR.</para>
