@@ -1,3 +1,16 @@
+1999-11-04  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.h (krb5_context_data): add `etypes_des'
+
+	* lib/krb5/get_cred.c (init_tgs_req): use
+ 	krb5_keytype_to_enctypes_default
+
+	* lib/krb5/crypto.c (krb5_keytype_to_enctypes_default): new
+ 	function
+
+	* lib/krb5/context.c (set_etypes): new function
+	(init_context_from_config_file): set both `etypes' and `etypes_des'
+
 1999-11-02  Assar Westerlund  <assar@sics.se>
 
 	* configure.in (VERSION): bump to 0.2d-pre
