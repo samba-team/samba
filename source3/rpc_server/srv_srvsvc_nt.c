@@ -1662,7 +1662,6 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	psd->dacl->revision = (uint16) NT4_ACL_REVISION;
 
 	close_file(fsp, True);
-	file_free(fsp);
 
 	close_cnum(conn, user.vuid);
 	return r_u->status;
@@ -1671,7 +1670,6 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	if(fsp) {
 		close_file(fsp, True);
-		file_free(fsp);
 	}
 
 	if (conn) 
