@@ -355,3 +355,4 @@ int pop_maildir_update (POP*);
 int changeuser(POP*, struct passwd*);
 void parse_header(MsgInfoList*, char*);
 int add_missing_headers(POP*, MsgInfoList*);
+int login_user(POP *p);
