@@ -1421,7 +1421,8 @@ static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
 	return HDB_ERR_NOENTRY;
     }
 
-    rc = ldap_set_option(HDB2LDAP(db), LDAP_OPT_PROTOCOL_VERSION, (const void *)&version);
+    rc = ldap_set_option(HDB2LDAP(db), LDAP_OPT_PROTOCOL_VERSION,
+			 (const void *)&version);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_set_option: %s",
 			      ldap_err2string(rc));
