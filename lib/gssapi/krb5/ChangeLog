@@ -1,3 +1,8 @@
+2001-03-12  Assar Westerlund  <assar@sics.se>
+
+	* acquire_cred.c (gss_acquire_cred): remove memory leaks.  from
+	Jason R Thorpe <thorpej@zembu.com>
+
 2001-02-18  Assar Westerlund  <assar@sics.se>
 
 	* accept_sec_context.c (gss_accept_sec_context): either return
