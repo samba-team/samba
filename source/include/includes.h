@@ -216,15 +216,6 @@
 #include <sys/sem.h>
 #endif
 
-/*
- * Seems to be needed by some OS's that complain
- * about struct rtentry not being defined.
- */
- 
-#ifdef HAVE_NET_ROUTE_H
-#include <net/route.h>
-#endif
-
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
 #endif

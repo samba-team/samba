@@ -1582,7 +1582,7 @@ else
 fi
 done
 
-for ac_hdr in unistd.h utime.h grp.h sys/id.h limits.h memory.h net/route.h net/if.h
+for ac_hdr in unistd.h utime.h grp.h sys/id.h limits.h memory.h net/if.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6

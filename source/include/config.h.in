@@ -654,9 +654,6 @@
 /* Define if you have the <net/if.h> header file.  */
 #undef HAVE_NET_IF_H
 
-/* Define if you have the <net/route.h> header file.  */
-#undef HAVE_NET_ROUTE_H
-
 /* Define if you have the <netinet/tcp.h> header file.  */
 #undef HAVE_NETINET_TCP_H
 

@@ -1348,7 +1348,6 @@ static BOOL api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid, char *pa
   if (!prefix_ok(str1,"zWrLeh")) return False;
   
   *rdata_len = 0;
-  *rdata = NULL;
   
   *rparam_len = 8;
   *rparam = REALLOC(*rparam,*rparam_len);
