@@ -100,6 +100,8 @@ static BOOL fetch_ldapsam_pw(char **dn, char** pw)
 	}
 	
 	*pw=secrets_fetch(key, &size);
+	SAFE_FREE(key);
+
 	if (!size) {
 		/* Upgrade 2.2 style entry */
 		char *p;
@@ -1315,7 +1317,7 @@ Initialize SAM_ACCOUNT from an LDAP query
 *********************************************************************/
 static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state, 
 				LDAPMessage *existing,
-				LDAPMod *** mods, const SAM_ACCOUNT * sampass,
+				LDAPMod *** mods, SAM_ACCOUNT * sampass,
 				BOOL (*need_update)(const SAM_ACCOUNT *,
 						    enum pdb_elements))
 {
@@ -1361,18 +1363,21 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			return False;
 		}
 
-		slprintf(temp, sizeof(temp) - 1, "%i", rid);
-		
-		make_ldap_mod(ldap_state->ldap_struct, existing, mods,
-			      "rid", temp);
-	} else {
-		slprintf(temp, sizeof(temp) - 1, "%i", rid);
-
-		if (need_update(sampass, PDB_USERSID))
-			make_ldap_mod(ldap_state->ldap_struct, existing, mods,
-				      "rid", temp);
+		/* now that we have figured out the RID, always store it, as
+		   the schema requires it */
+		if (!pdb_set_user_sid_from_rid(sampass, rid, PDB_CHANGED)) {
+			DEBUG(0, ("Could not store RID back onto SAM_ACCOUNT for user %s!\n", 
+				  pdb_get_username(sampass)));
+			ldap_mods_free(*mods, 1);
+			return False;
+		}
 	}
 
+	/* only update the RID if we actually need to */
+	slprintf(temp, sizeof(temp) - 1, "%i", rid);
+	if (need_update(sampass, PDB_USERSID))
+		make_ldap_mod(ldap_state->ldap_struct, existing, mods,
+			      "rid", temp);
 
 	rid = pdb_get_group_rid(sampass);
 
