@@ -47,7 +47,7 @@ char *myfgets(char *s, int n, FILE *stream)
   int i;
 
   fgets(s,n,stream);
-  while (LString1 = strchr(s,'%')) {
+  while ((LString1 = strchr(s,'%')) != NULL) {
     if (!(LString2 = strchr(LString1+1,'%'))) break;
     *LString2 = '\0';
     strcpy(String,LString1+1);
@@ -56,7 +56,7 @@ char *myfgets(char *s, int n, FILE *stream)
       if (strncmp(sbuffer[i],String,strlen(String))==0)
       {
 	strcpy(String,sbuffer[i]);
-	if (temp = strchr(String,'=')) ++temp;
+	if ((temp = strchr(String,'=')) != NULL) ++temp;
 	strcpy(String,temp);
 	break;
       }
@@ -330,7 +330,7 @@ void scan_copyfiles(FILE *fichier, char *chaine)
 	} else {
 	  part = strchr(buffer[i],',');
 	  if (part) {
-	    if (mpart = strrchr(part+1,',')) {
+	    if ((mpart = strrchr(part+1,','))!=NULL) {
 		strcpy(buffer[i],mpart+1);
 	    } else
 		*part = '\0';
@@ -423,7 +423,7 @@ void scan_short_desc(FILE *fichier, char *short_desc)
 	temp = strtok(languagemonitor,",");
 	if (*temp == '"') ++temp;
 	strcpy(languagemonitor,temp);
-	if (temp = strchr(languagemonitor,'"')) *temp = '\0';
+	if ((temp = strchr(languagemonitor,'"'))!=NULL) *temp = '\0';
   }
 
   if (i) fprintf(stderr,"End of section found\n");
