@@ -42,8 +42,8 @@ RCSID("$Id$");
 #include <string.h>
 
 /*
- * Implemented from Peter Gutmann's
- *   Specification for Ron Rivests Cipher No.2
+ * Implemented from Peter Gutmann's "Specification for Ron Rivests Cipher No.2"
+ * rfc2268 and "On the Design and Security of RC2" was also useful.
  */
 
 static unsigned int Sbox[256] = {
@@ -85,13 +85,28 @@ void
 RC2_set_key(RC2_KEY *key, int len, const unsigned char *data, int bits)
 {
     unsigned char k[128];
-    int j;
+    int j, T8, TM;
+
+    if (len > 128)
+	len = 128;
+    if (bits <= 0 || bits > 1024)
+	bits = 1024;
 
     for (j = 0; j < len; j++)
 	k[j] = data[j];
     for (; j < 128; j++)
 	k[j] = Sbox[(k[j - len] + k[j - 1]) & 0xff];
-    k[0] = Sbox[k[0] & 0xff];
+
+    T8 = (bits + 7) / 8;
+    j = 8 - (8*T8 - bits);
+    TM = 0;
+    while (j-- > 0)
+	TM = TM << 1 | 1;
+
+    k[128 - T8] = Sbox[k[128 - T8] & TM];
+
+    for (j = 127 - T8; j >= 0; j--)
+	k[j] = Sbox[k[j + 1] ^ k[j + T8]];
 
     for (j = 0; j < 64; j++)
 	key->data[j] = k[(j * 2) + 0] | (k[(j * 2) + 1] << 8);	
