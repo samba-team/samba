@@ -78,7 +78,7 @@ NTSTATUS check_unix_security(const auth_usersupplied_info *user_info, auth_serve
 	pass = Get_Pwnam(user_info->unix_username.str, False);
 
 	nt_status = (pass_check(pass,
-				user_info->unix_username.str, 
+				pass ? pass->pw_name : user_info->unix_username.str, 
 				user_info->plaintext_password.str,
 				user_info->plaintext_password.len,
 				lp_update_encrypted() ? 
