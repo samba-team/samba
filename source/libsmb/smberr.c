@@ -176,11 +176,10 @@ char *smb_err_msg(uint8 class, uint32 num)
 					}
 				}
 			}
-
+			slprintf(ret, sizeof(ret) - 1, "%s - %d",err_classes[i].class, num);
+			return ret;
 		}
 
-		slprintf(ret, sizeof(ret) - 1, "%s - %d",err_classes[i].class, num);
-		return ret;
 	}
 	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error (%d,%d)",class,num);
 	return(ret);
