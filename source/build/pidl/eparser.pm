@@ -154,6 +154,8 @@ sub NeededFunction($)
 
 	$needed{"pull_$fn->{NAME}"} = 1;
 
+	# Add entries for function arguments
+
 	foreach my $e (@{$fn->{DATA}}) {
 
 		$e->{PARENT} = $fn;
@@ -161,12 +163,28 @@ sub NeededFunction($)
 
 		if (util::is_scalar_type($e->{TYPE})) {
 
-		    $needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
+		    if (defined($e->{ARRAY_LEN}) or 
+			util::has_property($e, "size_is")) {
+
+			# Array of scalar types
+
+			$needed{"hf_$fn->{NAME}_$e->{NAME}_array"} = {
+			    'name' => field2name($e->{NAME}),
+			    'type' => $e->{TYPE},
+			    'ft'   => "FT_BYTES",
+			    'base' => elementbase($e)
+			    };
+
+		    } else {
+
+			$needed{"hf_$fn->{NAME}_$e->{NAME}"} = {
 			'name' => field2name($e->{NAME}),
 			'type' => $e->{TYPE},
 			'ft'   => type2ft($e->{TYPE}),
 			'base' => elementbase($e)
-			}, if !defined($needed{"hf_$e->{NAME}_$e->{TYPE}"});
+			};
+
+		    }
 
 		    $e->{PARENT} = $fn;
 
@@ -174,6 +192,15 @@ sub NeededFunction($)
 		    $needed{"ett_$e->{TYPE}"} = 1;
 		}
 	}
+
+	# Add entry for return value
+
+	$needed{"hf_$fn->{NAME}_result"} = {
+	    'name' => field2name('result'),
+	    'type' => $fn->{RETURN_TYPE},
+	    'ft' => type2ft($fn->{RETURN_TYPE}),
+	    'base' => elementbase($fn)
+	};
 }
 
 sub NeededTypedef($)
@@ -201,7 +228,7 @@ sub NeededTypedef($)
 
 			# Arrays of scalar types are FT_BYTES
 		    
-			$needed{"hf_$e->{NAME}_$e->{TYPE}_array"} = {
+			$needed{"hf_$t->{NAME}_$e->{NAME}_array"} = {
 			    'name' => field2name($e->{NAME}),
 			    'type' => $e->{TYPE},
 			    'ft'   => "FT_BYTES",
@@ -210,7 +237,7 @@ sub NeededTypedef($)
 
 		    } else {
 
-			$needed{"hf_$e->{NAME}_$e->{TYPE}"} = {
+			$needed{"hf_$t->{NAME}_$e->{NAME}"} = {
 			    'name' => field2name($e->{NAME}),
 			    'type' => $e->{TYPE},
 			    'ft'   => type2ft($e->{TYPE}),
@@ -419,6 +446,8 @@ sub RewriteC($$$)
     pidl "static int hf_array_size = -1;\n";
     pidl "static int hf_result_NTSTATUS = -1;\n";
 
+    pidl "\n";
+
     foreach my $y (keys(%needed)) {
 	pidl "static int $y = -1;\n", if $y =~ /^hf_/;
     }
@@ -432,6 +461,8 @@ sub RewriteC($$$)
     pidl "\n";
 
     # Read through file
+
+    my $cur_fn;
 
     while(<IN>) {
 
@@ -466,6 +497,12 @@ sub RewriteC($$$)
 
 	s/^\#include \".*?ndr_(.*?).h\"$/\#include \"packet-dcerpc-$1.h\"/smg;
 
+        #
+        # Remember which structure or function we are processing.
+        #
+
+        $cur_fn = $1, if /NTSTATUS ndr_pull_(.*?)\(struct/;
+
 	#
 	# OK start wrapping the ndr_pull functions that actually
 	# implement the NDR decoding routines.  This mainly consists
@@ -499,13 +536,29 @@ sub RewriteC($$$)
  	   ([^,]*?),\                               # NDR_SCALARS etc
  	   (r->((in|out).)?([^,]*?)),\              # Pointer to array elements
 	   (.*?)\);)                                # Number of elements
-	    /ndr_pull_array_$2( ndr, $3, tree, hf_$7_$2_array, $4, $8);/smgx;
+	    /ndr_pull_array_$2( ndr, $3, tree, hf_${cur_fn}_$7_array, $4, $8);/smgx;
  
 	# Save ndr_pull_relative{1,2}() calls from being wrapped by the
 	# proceeding regexp by adding a leading space.
 
 	s/ndr_pull_(relative1|relative2)\((.*?)\);/
 	    ndr_pull_$1( $2);/smgx;
+
+	# Enums
+
+        s/(^static\ NTSTATUS\ ndr_pull_(.+?),\ (enum\ .+?)\))
+	    /static NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, $3)/smgx;
+	s/uint(8|16|32) v;/uint$1_t v;/smg;
+	s/(ndr_pull_([^\)]*?)\(ndr,\ &v\);)
+	    /ndr_pull_$2(ndr, tree, hf, &v);/smgx;
+
+	s/(ndr_pull_([^\(]+?)\(ndr,\ &_level\);)
+	    /ndr_pull_$2(ndr, tree, hf_${cur_fn}_level, &_level);/smgx;
+
+	# Bitmaps
+
+        s/(^(static\ )?NTSTATUS\ ndr_pull_(.+?),\ uint32\ \*r\))
+	    /NTSTATUS ndr_pull_$3, pidl_tree *tree, int hf, uint32_t *r)/smgx;
 
 	# Call ethereal wrappers for pull of scalar values in
 	# structures and functions, e.g
@@ -518,7 +571,7 @@ sub RewriteC($$$)
 	   (&?r->((in|out)\.)?         # Function args contain leading junk
 	    ([^\)]*?))                 # Element name
 	   \);)          
-	    /ndr_pull_$2(ndr, tree, hf_$6_$2, $3);/smgx;
+	    /ndr_pull_$2(ndr, tree, hf_${cur_fn}_$6, $3);/smgx;
 
 	# Add tree and hf argument to pulls of "internal" scalars like
 	# array sizes, levels, etc.
@@ -572,26 +625,10 @@ sub RewriteC($$$)
 
 	# Fix some internal variable declarations
 
-        s/uint(16|32) _level/uint$1_t _level/smg;
+        s/uint(16|32) _level;/uint$1_t _level;/smg;
         s/ndr_pull_([^\(]*)\(ndr,\ tree,\ hf_level,\ &_level\);
-	/ndr_pull_$1(ndr, tree, hf_level_$1, &_level);/smgx;
+            /ndr_pull_$1(ndr, tree, hf_level_$1, &_level);/smgx;
 				
-	# Enums
-
-        s/(^static\ NTSTATUS\ ndr_pull_(.+?),\ (enum\ .+?)\))
-	    /static NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, $3)/smgx;
-	s/uint(8|16|32) v;/uint$1_t v;/smg;
-	s/(ndr_pull_([^\)]*?)\(ndr,\ &v\);)
-	    /ndr_pull_$2(ndr, tree, hf, &v);/smgx;
-
-	s/(ndr_pull_([^\(]+?)\(ndr,\ &_level\);)
-	    /ndr_pull_$2(ndr, tree, hf_$2, &_level);/smgx;
-
-	# Bitmaps
-
-s/(^(static\ )?NTSTATUS\ ndr_pull_(.+?),\ uint32\ \*r\))
-	    /NTSTATUS ndr_pull_$3, pidl_tree *tree, int hf, uint32_t *r)/smgx;
-
 	pidl $_;
     }
 
