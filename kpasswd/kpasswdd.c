@@ -691,7 +691,8 @@ main (int argc, char **argv)
 	krb5_error_code ret = krb5_kt_resolve(context, keytab_str, &keytab);
 	if(ret)
 	    krb5_err(context, 1, ret, "%s", keytab_str);
-    }
+    } else
+	keytab = NULL;
 
     setup_passwd_quality_check(context);
 
