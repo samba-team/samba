@@ -566,9 +566,6 @@ static BOOL handle_netbios_aliases( const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_scope( const char *pszParmValue, char **ptr );
 static BOOL handle_charset( const char *pszParmValue, char **ptr );
 
-static BOOL handle_ldap_suffix ( const char *pszParmValue, char **ptr );
-static BOOL handle_ldap_sub_suffix ( const char *pszParmValue, char **ptr );
-
 static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
@@ -1067,11 +1064,11 @@ static struct parm_struct parm_table[] = {
 	{"ldap server", P_STRING, P_GLOBAL, &Globals.szLdapServer, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap port", P_INTEGER, P_GLOBAL, &Globals.ldap_port, NULL, NULL, FLAG_ADVANCED}, 
 #endif
-	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, handle_ldap_suffix, NULL, FLAG_ADVANCED}, 
-	{"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, handle_ldap_sub_suffix, NULL, FLAG_ADVANCED}, 
-	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, handle_ldap_sub_suffix, NULL, FLAG_ADVANCED}, 
-	{"ldap group suffix", P_STRING, P_GLOBAL, &Globals.szLdapGroupSuffix, handle_ldap_sub_suffix, NULL, FLAG_ADVANCED}, 
-	{"ldap idmap suffix", P_STRING, P_GLOBAL, &Globals.szLdapIdmapSuffix, handle_ldap_sub_suffix, NULL, FLAG_ADVANCED}, 
+	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, NULL, NULL, FLAG_ADVANCED}, 
+	{"ldap machine suffix", P_STRING, P_GLOBAL, &Globals.szLdapMachineSuffix, NULL, NULL, FLAG_ADVANCED}, 
+	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, NULL, NULL, FLAG_ADVANCED}, 
+	{"ldap group suffix", P_STRING, P_GLOBAL, &Globals.szLdapGroupSuffix, NULL, NULL, FLAG_ADVANCED}, 
+	{"ldap idmap suffix", P_STRING, P_GLOBAL, &Globals.szLdapIdmapSuffix, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, FLAG_ADVANCED}, 
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, FLAG_ADVANCED}, 
@@ -1696,10 +1693,6 @@ FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
 FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
 #endif
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
-FN_GLOBAL_STRING(lp_ldap_machine_suffix, &Globals.szLdapMachineSuffix)
-FN_GLOBAL_STRING(lp_ldap_user_suffix, &Globals.szLdapUserSuffix)
-FN_GLOBAL_STRING(lp_ldap_idmap_suffix, &Globals.szLdapIdmapSuffix)
-FN_GLOBAL_STRING(lp_ldap_group_suffix, &Globals.szLdapGroupSuffix)
 FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
@@ -2998,56 +2991,56 @@ static BOOL handle_debug_list( const char *pszParmValueIn, char **ptr )
 }
 
 /***************************************************************************
- Handle setting ldap suffix and determines whether ldap machine suffix needs
- to be set as well.
- 
- Set all of the sub suffix strings to be the 'ldap suffix' by default
+ Handle ldap suffixes - default to ldapsuffix if sub-suffixes are not defined.
 ***************************************************************************/
 
-static BOOL handle_ldap_suffix( const char *pszParmValue, char **ptr )
+static char* append_ldap_suffix( const char *str )
 {
-	pstring suffix;
-               
-	pstrcpy(suffix, pszParmValue);
+	char *suffix_string;
 
-	/* set defaults for the the sub-suffixes */
-	
-	if (! *Globals.szLdapMachineSuffix )
-		string_set(&Globals.szLdapMachineSuffix, suffix);
-	if (! *Globals.szLdapUserSuffix ) 
-		string_set(&Globals.szLdapUserSuffix, suffix);
-	if (! *Globals.szLdapGroupSuffix ) 
-		string_set(&Globals.szLdapGroupSuffix, suffix);
-	if (! *Globals.szLdapIdmapSuffix ) 
-		string_set(&Globals.szLdapIdmapSuffix, suffix);
 
-	string_set(ptr, suffix); 
-	return True;
+	if (!lp_talloc)
+		lp_talloc = talloc_init("lp_talloc");
+
+	suffix_string = talloc_asprintf( lp_talloc, "%s,%s", str, Globals.szLdapSuffix );
+	if ( !suffix_string ) {
+		DEBUG(0,("append_ldap_suffix: talloc_asprintf() failed!\n"));
+		return NULL;
+	}
+
+	return suffix_string;
 }
 
-/***************************************************************************
- Handle the ldap sub suffix option.
- Always append the 'ldap suffix' if it is set
-***************************************************************************/
-
-static BOOL handle_ldap_sub_suffix( const char *pszParmValue, char **ptr)
+char *lp_ldap_machine_suffix()
 {
-	pstring suffix;
-       
-	pstrcpy(suffix, pszParmValue);
+	if (Globals.szLdapMachineSuffix[0])
+		return append_ldap_suffix(Globals.szLdapMachineSuffix);
 
-	if (! *Globals.szLdapSuffix ) {
-		string_set( ptr, suffix );
-		return True;
-	}
-	else {
-		if ( *pszParmValue )
-			pstrcat(suffix, ",");
-		pstrcat(suffix, Globals.szLdapSuffix);
-	}
-	
-	string_set( ptr, suffix );
-	return True;
+	return lp_string(Globals.szLdapSuffix);
+}
+
+char *lp_ldap_user_suffix()
+{
+	if (Globals.szLdapUserSuffix[0])
+		return append_ldap_suffix(Globals.szLdapUserSuffix);
+
+	return lp_string(Globals.szLdapSuffix);
+}
+
+char *lp_ldap_group_suffix()
+{
+	if (Globals.szLdapGroupSuffix[0])
+		return append_ldap_suffix(Globals.szLdapGroupSuffix);
+
+	return lp_string(Globals.szLdapSuffix);
+}
+
+char *lp_ldap_idmap_suffix()
+{
+	if (Globals.szLdapIdmapSuffix[0])
+		return append_ldap_suffix(Globals.szLdapIdmapSuffix);
+
+	return lp_string(Globals.szLdapSuffix);
 }
 
 /***************************************************************************
