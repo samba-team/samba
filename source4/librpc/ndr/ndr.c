@@ -55,7 +55,8 @@ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 	ndr->data_size = blob->length;
 	ndr->offset = 0;
 	ndr->mem_ctx = mem_ctx;
-	ndr->ofs_list = NULL;
+	ndr->ptr_count = 0;
+	ndr->relative_list = NULL;
 
 	return ndr;
 }
@@ -139,9 +140,7 @@ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 	ndr->offset = 0;
 	ndr->ptr_count = 0;
 	ndr->relative_list = NULL;
-	ndr->relative_list_end = NULL;
-	ndr->ofs_list = NULL;
-	
+
 	return ndr;
 }
 
@@ -604,12 +603,6 @@ NTSTATUS ndr_push_subcontext_union_fn(struct ndr_push *ndr,
 */
 NTSTATUS ndr_pull_struct_start(struct ndr_pull *ndr)
 {
-	struct ndr_ofs_list *ofs;
-	NDR_ALLOC(ndr, ofs);
-	ofs->offset = ndr->offset;
-	ofs->next = ndr->ofs_list;
-	ofs->base = 0;
-	ndr->ofs_list = ofs;
 	return NT_STATUS_OK;
 }
 
@@ -618,7 +611,6 @@ NTSTATUS ndr_pull_struct_start(struct ndr_pull *ndr)
 */
 void ndr_pull_struct_end(struct ndr_pull *ndr)
 {
-	ndr->ofs_list = ndr->ofs_list->next;
 }
 
 /*
@@ -626,12 +618,6 @@ void ndr_pull_struct_end(struct ndr_pull *ndr)
 */
 NTSTATUS ndr_push_struct_start(struct ndr_push *ndr)
 {
-	struct ndr_ofs_list *ofs;
-	NDR_PUSH_ALLOC(ndr, ofs);
-	ofs->offset = ndr->offset;
-	ofs->next = ndr->ofs_list;
-	ofs->base = 0;
-	ndr->ofs_list = ofs;
 	return NT_STATUS_OK;
 }
 
@@ -640,7 +626,6 @@ NTSTATUS ndr_push_struct_start(struct ndr_push *ndr)
 */
 void ndr_push_struct_end(struct ndr_push *ndr)
 {
-	ndr->ofs_list = ndr->ofs_list->next;
 }
 
 
@@ -665,11 +650,7 @@ NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size,
 	   wrong, and there doesn't seem to be anything relying on it,
 	   but I am keeping the code around in case I missed a
 	   critical use for it (tridge, august 2004) */
-#if OLD_RELATIVE_BEHAVIOUR
-	NDR_CHECK(ndr_pull_set_offset(ndr, ofs + ndr->ofs_list->offset));
-#else
 	NDR_CHECK(ndr_pull_set_offset(ndr, ofs));
-#endif
 	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, ndr->data_size - ndr->offset));
 	/* strings must be allocated by the backend functions */
 	if (ndr->flags & LIBNDR_STRING_FLAGS) {
@@ -683,53 +664,98 @@ NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size,
 	return NT_STATUS_OK;
 }
 
+
 /*
-  push a relative structure
+  store a token in the ndr context, for later retrieval
 */
-NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p)
+static NTSTATUS ndr_token_store(TALLOC_CTX *mem_ctx, 
+				struct ndr_token_list **list, 
+				const void *key, 
+				uint32_t value)
 {
-	struct ndr_ofs_list *ofs;
-	if (ndr_flags & NDR_SCALARS) {
-		if (!p) {
-			NDR_CHECK(ndr_push_uint32(ndr, 0));
-			return NT_STATUS_OK;
-		}
-		NDR_PUSH_ALLOC(ndr, ofs);
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		ofs->offset = ndr->offset;
-#if OLD_RELATIVE_BEHAVIOUR
-		ofs->base = ndr->ofs_list->offset;
-#else
-		ofs->base = 0;
-#endif
-		NDR_CHECK(ndr_push_uint32(ndr, 0xFFFFFFFF));
-		ofs->next = NULL;
-		if (ndr->relative_list_end) {
-			ndr->relative_list_end->next = ofs;
-		} else {
-			ndr->relative_list = ofs;
-		}
-		ndr->relative_list_end = ofs;
+	struct ndr_token_list *tok;
+	tok = talloc_p(mem_ctx, struct ndr_token_list);
+	if (tok == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
-	if (ndr_flags & NDR_BUFFERS) {
-		struct ndr_push_save save;
-		if (!p) {
-			return NT_STATUS_OK;
+	tok->key = key;
+	tok->value = value;
+	DLIST_ADD((*list), tok);
+	return NT_STATUS_OK;
+}
+
+/*
+  retrieve a token from a ndr context
+*/
+static uint32_t ndr_token_retrieve(struct ndr_token_list **list, const void *key)
+{
+	struct ndr_token_list *tok;
+	for (tok=*list;tok;tok=tok->next) {
+		if (tok->key == key) {
+			DLIST_REMOVE((*list), tok);
+			return tok->value;
 		}
-		ofs = ndr->relative_list;
-		if (!ofs) {
-			return ndr_push_error(ndr, NDR_ERR_RELATIVE, "Empty relative stack");
-		}
-		ndr->relative_list = ndr->relative_list->next;
-		if (ndr->relative_list == NULL) {
-			ndr->relative_list_end = NULL;
-		}
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		ndr_push_save(ndr, &save);
-		ndr->offset = ofs->offset;
-		NDR_CHECK(ndr_push_uint32(ndr, save.offset - ofs->base));
-		ndr_push_restore(ndr, &save);
 	}
+	return 0;
+}
+
+
+/*
+  pull a relative object - stage1
+  called during SCALARS processing
+*/
+NTSTATUS ndr_pull_relative1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
+{
+	return ndr_token_store(ndr->mem_ctx, &ndr->relative_list, p, rel_offset);
+}
+
+/*
+  pull a relative object - stage2
+  called during BUFFERS processing
+*/
+NTSTATUS ndr_pull_relative2(struct ndr_pull *ndr, const void *p)
+{
+	uint32_t rel_offset;
+	rel_offset = ndr_token_retrieve(&ndr->relative_list, p);
+	if (rel_offset == 0) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return ndr_pull_set_offset(ndr, rel_offset);
+}
+
+/*
+  push a relative object - stage1
+  this is called during SCALARS processing
+*/
+NTSTATUS ndr_push_relative1(struct ndr_push *ndr, const void *p)
+{
+	if (p == NULL) {
+		NDR_CHECK(ndr_push_uint32(ndr, 0));
+		return NT_STATUS_OK;
+	}
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	NDR_CHECK(ndr_token_store(ndr->mem_ctx, &ndr->relative_list, p, ndr->offset));
+	return ndr_push_uint32(ndr, 0xFFFFFFFF);
+}
+
+/*
+  push a relative object - stage2
+  this is called during buffers processing
+*/
+NTSTATUS ndr_push_relative2(struct ndr_push *ndr, const void *p)
+{
+	struct ndr_push_save save;
+	if (p == NULL) {
+		return NT_STATUS_OK;
+	}
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	ndr_push_save(ndr, &save);
+	ndr->offset = ndr_token_retrieve(&ndr->relative_list, p);
+	if (ndr->offset == 0) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, save.offset));
+	ndr_push_restore(ndr, &save);
 	return NT_STATUS_OK;
 }
 

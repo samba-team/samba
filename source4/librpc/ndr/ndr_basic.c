@@ -72,6 +72,9 @@ NTSTATUS ndr_pull_ptr(struct ndr_pull *ndr, uint32_t *v)
 {
 	NTSTATUS status;
 	status = ndr_pull_uint32(ndr, v);
+	if (*v != 0) {
+		ndr->ptr_count++;
+	}
 	return status;
 }
 
