@@ -74,5 +74,6 @@ dist: $(DISTFILES)
 $(OBJECTS): ../../../config.h
 
 $(LIB): $(OBJECTS)
+	rm -f $(LIB)
 	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS) $(LD_FLAGS) -L../../kafs -L../../krb -L../../des -L../../roken -lkafs -lkrb -ldes -lroken
 #	ld -shared -expect_unresolved \* -o $(LIB) $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a
