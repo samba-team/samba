@@ -330,7 +330,9 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					uint8 first_8_lm_hash[16];
 					memcpy(first_8_lm_hash, lm_pw, 8);
 					memset(first_8_lm_hash + 8, '\0', 8);
-					*lm_sess_key = data_blob(first_8_lm_hash, 16);
+					if (lm_sess_key) {
+						*lm_sess_key = data_blob(first_8_lm_hash, 16);
+					}
 				}
 				return NT_STATUS_OK;
 			} else {
@@ -371,8 +373,13 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			uint8 first_8_lm_hash[16];
 			memcpy(first_8_lm_hash, lm_pw, 8);
 			memset(first_8_lm_hash + 8, '\0', 8);
-			*user_sess_key = data_blob(first_8_lm_hash, 16);
-			*lm_sess_key = data_blob(first_8_lm_hash, 16);
+			if (user_sess_key) {
+				*user_sess_key = data_blob(first_8_lm_hash, 16);
+			}
+
+			if (lm_sess_key) {
+				*lm_sess_key = data_blob(first_8_lm_hash, 16);
+			}
 			return NT_STATUS_OK;
 		}
 	}
@@ -431,8 +438,13 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				uint8 first_8_lm_hash[16];
 				memcpy(first_8_lm_hash, lm_pw, 8);
 				memset(first_8_lm_hash + 8, '\0', 8);
-				*user_sess_key = data_blob(first_8_lm_hash, 16);
-				*lm_sess_key = data_blob(first_8_lm_hash, 16);
+				if (user_sess_key) {
+					*user_sess_key = data_blob(first_8_lm_hash, 16);
+				}
+
+				if (lm_sess_key) {
+					*lm_sess_key = data_blob(first_8_lm_hash, 16);
+				}
 			}
 			return NT_STATUS_OK;
 		}
