@@ -103,7 +103,7 @@ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 		sizeof(struct ntvfs_ops),
 		sizeof(SMB_OFF_T),
 		sizeof(struct smbsrv_tcon),
-		sizeof(struct request_context),
+		sizeof(struct smbsrv_request),
 	};
 
 	return &critical_sizes;
@@ -133,7 +133,7 @@ BOOL ntvfs_init(void)
 /*
   initialise a connection structure to point at a NTVFS backend
 */
-NTSTATUS ntvfs_init_connection(struct request_context *req)
+NTSTATUS ntvfs_init_connection(struct smbsrv_request *req)
 {
 	const char *handler = lp_ntvfs_handler(req->tcon->service);
 

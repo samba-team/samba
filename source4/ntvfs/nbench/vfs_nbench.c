@@ -90,7 +90,7 @@ static void nbench_log(struct nbench_private *private,
 /*
   connect to a share - used when a tree_connect operation comes in.
 */
-static NTSTATUS nbench_connect(struct request_context *req, const char *sharename)
+static NTSTATUS nbench_connect(struct smbsrv_request *req, const char *sharename)
 {
 	struct nbench_private *private;
 	const char *passthru;
@@ -146,7 +146,7 @@ static NTSTATUS nbench_disconnect(struct smbsrv_tcon *tcon)
   delete a file - the dirtype specifies the file types to include in the search. 
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
 */
-static NTSTATUS nbench_unlink(struct request_context *req, struct smb_unlink *unl)
+static NTSTATUS nbench_unlink(struct smbsrv_request *req, struct smb_unlink *unl)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -163,7 +163,7 @@ static NTSTATUS nbench_unlink(struct request_context *req, struct smb_unlink *un
 /*
   ioctl interface
 */
-static NTSTATUS nbench_ioctl(struct request_context *req, union smb_ioctl *io)
+static NTSTATUS nbench_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -178,7 +178,7 @@ static NTSTATUS nbench_ioctl(struct request_context *req, union smb_ioctl *io)
 /*
   check if a directory exists
 */
-static NTSTATUS nbench_chkpath(struct request_context *req, struct smb_chkpath *cp)
+static NTSTATUS nbench_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -195,7 +195,7 @@ static NTSTATUS nbench_chkpath(struct request_context *req, struct smb_chkpath *
 /*
   return info on a pathname
 */
-static NTSTATUS nbench_qpathinfo(struct request_context *req, union smb_fileinfo *info)
+static NTSTATUS nbench_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -213,7 +213,7 @@ static NTSTATUS nbench_qpathinfo(struct request_context *req, union smb_fileinfo
 /*
   query info on a open file
 */
-static NTSTATUS nbench_qfileinfo(struct request_context *req, union smb_fileinfo *info)
+static NTSTATUS nbench_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -232,7 +232,7 @@ static NTSTATUS nbench_qfileinfo(struct request_context *req, union smb_fileinfo
 /*
   set info on a pathname
 */
-static NTSTATUS nbench_setpathinfo(struct request_context *req, union smb_setfileinfo *st)
+static NTSTATUS nbench_setpathinfo(struct smbsrv_request *req, union smb_setfileinfo *st)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -250,7 +250,7 @@ static NTSTATUS nbench_setpathinfo(struct request_context *req, union smb_setfil
 /*
   open a file
 */
-static NTSTATUS nbench_open(struct request_context *req, union smb_open *io)
+static NTSTATUS nbench_open(struct smbsrv_request *req, union smb_open *io)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -279,7 +279,7 @@ static NTSTATUS nbench_open(struct request_context *req, union smb_open *io)
 /*
   create a directory
 */
-static NTSTATUS nbench_mkdir(struct request_context *req, union smb_mkdir *md)
+static NTSTATUS nbench_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -294,7 +294,7 @@ static NTSTATUS nbench_mkdir(struct request_context *req, union smb_mkdir *md)
 /*
   remove a directory
 */
-static NTSTATUS nbench_rmdir(struct request_context *req, struct smb_rmdir *rd)
+static NTSTATUS nbench_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -311,7 +311,7 @@ static NTSTATUS nbench_rmdir(struct request_context *req, struct smb_rmdir *rd)
 /*
   rename a set of files
 */
-static NTSTATUS nbench_rename(struct request_context *req, union smb_rename *ren)
+static NTSTATUS nbench_rename(struct smbsrv_request *req, union smb_rename *ren)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -338,7 +338,7 @@ static NTSTATUS nbench_rename(struct request_context *req, union smb_rename *ren
 /*
   copy a set of files
 */
-static NTSTATUS nbench_copy(struct request_context *req, struct smb_copy *cp)
+static NTSTATUS nbench_copy(struct smbsrv_request *req, struct smb_copy *cp)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -353,7 +353,7 @@ static NTSTATUS nbench_copy(struct request_context *req, struct smb_copy *cp)
 /*
   read from a file
 */
-static NTSTATUS nbench_read(struct request_context *req, union smb_read *rd)
+static NTSTATUS nbench_read(struct smbsrv_request *req, union smb_read *rd)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -381,7 +381,7 @@ static NTSTATUS nbench_read(struct request_context *req, union smb_read *rd)
 /*
   write to a file
 */
-static NTSTATUS nbench_write(struct request_context *req, union smb_write *wr)
+static NTSTATUS nbench_write(struct smbsrv_request *req, union smb_write *wr)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -419,7 +419,7 @@ static NTSTATUS nbench_write(struct request_context *req, union smb_write *wr)
 /*
   seek in a file
 */
-static NTSTATUS nbench_seek(struct request_context *req, struct smb_seek *io)
+static NTSTATUS nbench_seek(struct smbsrv_request *req, struct smb_seek *io)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -434,7 +434,7 @@ static NTSTATUS nbench_seek(struct request_context *req, struct smb_seek *io)
 /*
   flush a file
 */
-static NTSTATUS nbench_flush(struct request_context *req, struct smb_flush *io)
+static NTSTATUS nbench_flush(struct smbsrv_request *req, struct smb_flush *io)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -451,7 +451,7 @@ static NTSTATUS nbench_flush(struct request_context *req, struct smb_flush *io)
 /*
   close a file
 */
-static NTSTATUS nbench_close(struct request_context *req, union smb_close *io)
+static NTSTATUS nbench_close(struct smbsrv_request *req, union smb_close *io)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -477,7 +477,7 @@ static NTSTATUS nbench_close(struct request_context *req, union smb_close *io)
 /*
   exit - closing files
 */
-static NTSTATUS nbench_exit(struct request_context *req)
+static NTSTATUS nbench_exit(struct smbsrv_request *req)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -490,7 +490,7 @@ static NTSTATUS nbench_exit(struct request_context *req)
 /*
   lock a byte range
 */
-static NTSTATUS nbench_lock(struct request_context *req, union smb_lock *lck)
+static NTSTATUS nbench_lock(struct smbsrv_request *req, union smb_lock *lck)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -522,7 +522,7 @@ static NTSTATUS nbench_lock(struct request_context *req, union smb_lock *lck)
 /*
   set info on a open file
 */
-static NTSTATUS nbench_setfileinfo(struct request_context *req, 
+static NTSTATUS nbench_setfileinfo(struct smbsrv_request *req, 
 				 union smb_setfileinfo *info)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
@@ -542,7 +542,7 @@ static NTSTATUS nbench_setfileinfo(struct request_context *req,
 /*
   return filesystem space info
 */
-static NTSTATUS nbench_fsinfo(struct request_context *req, union smb_fsinfo *fs)
+static NTSTATUS nbench_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -559,7 +559,7 @@ static NTSTATUS nbench_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 /*
   return print queue info
 */
-static NTSTATUS nbench_lpq(struct request_context *req, union smb_lpq *lpq)
+static NTSTATUS nbench_lpq(struct smbsrv_request *req, union smb_lpq *lpq)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -574,7 +574,7 @@ static NTSTATUS nbench_lpq(struct request_context *req, union smb_lpq *lpq)
 /* 
    list files in a directory matching a wildcard pattern
 */
-static NTSTATUS nbench_search_first(struct request_context *req, union smb_search_first *io, 
+static NTSTATUS nbench_search_first(struct smbsrv_request *req, union smb_search_first *io, 
 				  void *search_private, 
 				  BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -602,7 +602,7 @@ static NTSTATUS nbench_search_first(struct request_context *req, union smb_searc
 }
 
 /* continue a search */
-static NTSTATUS nbench_search_next(struct request_context *req, union smb_search_next *io, 
+static NTSTATUS nbench_search_next(struct smbsrv_request *req, union smb_search_next *io, 
 				 void *search_private, 
 				 BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -617,7 +617,7 @@ static NTSTATUS nbench_search_next(struct request_context *req, union smb_search
 }
 
 /* close a search */
-static NTSTATUS nbench_search_close(struct request_context *req, union smb_search_close *io)
+static NTSTATUS nbench_search_close(struct smbsrv_request *req, union smb_search_close *io)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;
@@ -630,7 +630,7 @@ static NTSTATUS nbench_search_close(struct request_context *req, union smb_searc
 }
 
 /* SMBtrans - not used on file shares */
-static NTSTATUS nbench_trans(struct request_context *req, struct smb_trans2 *trans2)
+static NTSTATUS nbench_trans(struct smbsrv_request *req, struct smb_trans2 *trans2)
 {
 	struct nbench_private *private = req->tcon->ntvfs_private;
 	NTSTATUS status;

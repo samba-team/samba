@@ -35,7 +35,7 @@
   directory exists (tho it doesn't need to be accessible by the user,
   that comes later)
 */
-static NTSTATUS svfs_connect(struct request_context *req, const char *sharename)
+static NTSTATUS svfs_connect(struct smbsrv_request *req, const char *sharename)
 {
 	struct stat st;
 	struct tcon_context *conn = req->conn;
@@ -63,7 +63,7 @@ static NTSTATUS svfs_connect(struct request_context *req, const char *sharename)
 /*
   disconnect from a share
 */
-static NTSTATUS svfs_disconnect(struct request_context *req)
+static NTSTATUS svfs_disconnect(struct smbsrv_request *req)
 {
 	return NT_STATUS_OK;
 }
@@ -72,7 +72,7 @@ static NTSTATUS svfs_disconnect(struct request_context *req)
   delete a file - the dirtype specifies the file types to include in the search. 
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
 */
-static NTSTATUS svfs_unlink(struct request_context *req, struct smb_unlink *unl)
+static NTSTATUS svfs_unlink(struct smbsrv_request *req, struct smb_unlink *unl)
 {
 	char *unix_path;
 
@@ -90,7 +90,7 @@ static NTSTATUS svfs_unlink(struct request_context *req, struct smb_unlink *unl)
 /*
   ioctl interface - we don't do any
 */
-static NTSTATUS svfs_ioctl(struct request_context *req, struct smb_ioctl *io)
+static NTSTATUS svfs_ioctl(struct smbsrv_request *req, struct smb_ioctl *io)
 {
 	return NT_STATUS_INVALID_PARAMETER;
 }
@@ -98,7 +98,7 @@ static NTSTATUS svfs_ioctl(struct request_context *req, struct smb_ioctl *io)
 /*
   check if a directory exists
 */
-static NTSTATUS svfs_chkpath(struct request_context *req, struct smb_chkpath *cp)
+static NTSTATUS svfs_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
 {
 	char *unix_path;
 	struct stat st;
@@ -119,7 +119,7 @@ static NTSTATUS svfs_chkpath(struct request_context *req, struct smb_chkpath *cp
 /*
   approximately map a struct stat to a fileinfo struct
 */
-static NTSTATUS map_fileinfo(struct request_context *req, union smb_fileinfo *info, struct stat *st)
+static NTSTATUS map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info, struct stat *st)
 {
 	switch (info->generic.level) {
 	case SMB_FILEINFO_NETWORK_OPEN_INFORMATION:
@@ -222,7 +222,7 @@ static NTSTATUS map_fileinfo(struct request_context *req, union smb_fileinfo *in
 /*
   return info on a pathname
 */
-static NTSTATUS svfs_qpathinfo(struct request_context *req, union smb_fileinfo *info)
+static NTSTATUS svfs_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
 	char *unix_path;
 	struct stat st;
@@ -239,7 +239,7 @@ static NTSTATUS svfs_qpathinfo(struct request_context *req, union smb_fileinfo *
 /*
   query info on a open file
 */
-static NTSTATUS svfs_qfileinfo(struct request_context *req, union smb_fileinfo *info)
+static NTSTATUS svfs_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
 	struct stat st;
 
@@ -254,7 +254,7 @@ static NTSTATUS svfs_qfileinfo(struct request_context *req, union smb_fileinfo *
 /*
   set info on a pathname
 */
-static NTSTATUS svfs_setpathinfo(struct request_context *req, union smb_setfileinfo *st)
+static NTSTATUS svfs_setpathinfo(struct smbsrv_request *req, union smb_setfileinfo *st)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -262,7 +262,7 @@ static NTSTATUS svfs_setpathinfo(struct request_context *req, union smb_setfilei
 /*
   open a file
 */
-static NTSTATUS svfs_open(struct request_context *req, union smb_open *io)
+static NTSTATUS svfs_open(struct smbsrv_request *req, union smb_open *io)
 {
 	char *unix_path;
 	struct stat st;
@@ -342,7 +342,7 @@ static NTSTATUS svfs_open(struct request_context *req, union smb_open *io)
 /*
   create a directory
 */
-static NTSTATUS svfs_mkdir(struct request_context *req, union smb_mkdir *md)
+static NTSTATUS svfs_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
 {
 	char *unix_path;
 
@@ -362,7 +362,7 @@ static NTSTATUS svfs_mkdir(struct request_context *req, union smb_mkdir *md)
 /*
   remove a directory
 */
-static NTSTATUS svfs_rmdir(struct request_context *req, struct smb_rmdir *rd)
+static NTSTATUS svfs_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
 {
 	char *unix_path;
 
@@ -378,7 +378,7 @@ static NTSTATUS svfs_rmdir(struct request_context *req, struct smb_rmdir *rd)
 /*
   rename a set of files
 */
-static NTSTATUS svfs_rename(struct request_context *req, union smb_rename *ren)
+static NTSTATUS svfs_rename(struct smbsrv_request *req, union smb_rename *ren)
 {
 	char *unix_path1, *unix_path2;
 
@@ -395,7 +395,7 @@ static NTSTATUS svfs_rename(struct request_context *req, union smb_rename *ren)
 /*
   copy a set of files
 */
-static NTSTATUS svfs_copy(struct request_context *req, struct smb_copy *cp)
+static NTSTATUS svfs_copy(struct smbsrv_request *req, struct smb_copy *cp)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -403,7 +403,7 @@ static NTSTATUS svfs_copy(struct request_context *req, struct smb_copy *cp)
 /*
   read from a file
 */
-static NTSTATUS svfs_read(struct request_context *req, union smb_read *rd)
+static NTSTATUS svfs_read(struct smbsrv_request *req, union smb_read *rd)
 {
 	ssize_t ret;
 
@@ -428,7 +428,7 @@ static NTSTATUS svfs_read(struct request_context *req, union smb_read *rd)
 /*
   write to a file
 */
-static NTSTATUS svfs_write(struct request_context *req, union smb_write *wr)
+static NTSTATUS svfs_write(struct smbsrv_request *req, union smb_write *wr)
 {
 	ssize_t ret;
 
@@ -472,7 +472,7 @@ static NTSTATUS svfs_write(struct request_context *req, union smb_write *wr)
 /*
   seek in a file
 */
-static NTSTATUS svfs_seek(struct request_context *req, struct smb_seek *io)
+static NTSTATUS svfs_seek(struct smbsrv_request *req, struct smb_seek *io)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -480,7 +480,7 @@ static NTSTATUS svfs_seek(struct request_context *req, struct smb_seek *io)
 /*
   flush a file
 */
-static NTSTATUS svfs_flush(struct request_context *req, struct smb_flush *io)
+static NTSTATUS svfs_flush(struct smbsrv_request *req, struct smb_flush *io)
 {
 	fsync(io->in.fnum);
 	return NT_STATUS_OK;
@@ -489,7 +489,7 @@ static NTSTATUS svfs_flush(struct request_context *req, struct smb_flush *io)
 /*
   close a file
 */
-static NTSTATUS svfs_close(struct request_context *req, union smb_close *io)
+static NTSTATUS svfs_close(struct smbsrv_request *req, union smb_close *io)
 {
 	if (io->generic.level != SMB_CLOSE_CLOSE) {
 		/* we need a mapping function */
@@ -506,7 +506,7 @@ static NTSTATUS svfs_close(struct request_context *req, union smb_close *io)
 /*
   exit - closing files?
 */
-static NTSTATUS svfs_exit(struct request_context *req)
+static NTSTATUS svfs_exit(struct smbsrv_request *req)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -514,7 +514,7 @@ static NTSTATUS svfs_exit(struct request_context *req)
 /*
   lock a byte range
 */
-static NTSTATUS svfs_lock(struct request_context *req, union smb_lock *lck)
+static NTSTATUS svfs_lock(struct smbsrv_request *req, union smb_lock *lck)
 {
 	DEBUG(0,("REWRITE: not doing byte range locking!\n"));
 	return NT_STATUS_OK;
@@ -523,7 +523,7 @@ static NTSTATUS svfs_lock(struct request_context *req, union smb_lock *lck)
 /*
   set info on a open file
 */
-static NTSTATUS svfs_setfileinfo(struct request_context *req, 
+static NTSTATUS svfs_setfileinfo(struct smbsrv_request *req, 
 				 union smb_setfileinfo *info)
 {
 	DEBUG(0,("REWRITE: svfs_setfileinfo: not doing setfileinfo level %d\n", 
@@ -549,7 +549,7 @@ static NTSTATUS svfs_setfileinfo(struct request_context *req,
 /*
   return filesystem space info
 */
-static NTSTATUS svfs_fsinfo(struct request_context *req, union smb_fsinfo *fs)
+static NTSTATUS svfs_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
 {
 	struct svfs_private *private = req->conn->ntvfs_private;
 
@@ -571,7 +571,7 @@ static NTSTATUS svfs_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 /*
   return filesystem attribute info
 */
-static NTSTATUS svfs_fsattr(struct request_context *req, union smb_fsattr *fs)
+static NTSTATUS svfs_fsattr(struct smbsrv_request *req, union smb_fsattr *fs)
 {
 	struct stat st;
 	struct svfs_private *private = req->conn->ntvfs_private;
@@ -601,7 +601,7 @@ static NTSTATUS svfs_fsattr(struct request_context *req, union smb_fsattr *fs)
 /*
   return print queue info
 */
-static NTSTATUS svfs_lpq(struct request_context *req, union smb_lpq *lpq)
+static NTSTATUS svfs_lpq(struct smbsrv_request *req, union smb_lpq *lpq)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -609,7 +609,7 @@ static NTSTATUS svfs_lpq(struct request_context *req, union smb_lpq *lpq)
 /* 
    list files in a directory matching a wildcard pattern
 */
-NTSTATUS svfs_search_first(struct request_context *req, union smb_search_first *io, 
+NTSTATUS svfs_search_first(struct smbsrv_request *req, union smb_search_first *io, 
 			   void *search_private, 
 			   BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -683,7 +683,7 @@ NTSTATUS svfs_search_first(struct request_context *req, union smb_search_first *
 }
 
 /* continue a search */
-NTSTATUS svfs_search_next(struct request_context *req, union smb_search_next *io, 
+NTSTATUS svfs_search_next(struct smbsrv_request *req, union smb_search_next *io, 
 			   void *search_private, 
 			   BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -770,7 +770,7 @@ found:
 }
 
 /* close a search */
-NTSTATUS svfs_search_close(struct request_context *req, union smb_search_close *io)
+NTSTATUS svfs_search_close(struct smbsrv_request *req, union smb_search_close *io)
 {
 	struct svfs_private *private = req->conn->ntvfs_private;
 	struct search_state *search;

@@ -135,7 +135,7 @@ static int find_service(const char *service)
   Make a connection, given the snum to connect to, and the vuser of the
   connecting user if appropriate.
 ****************************************************************************/
-static NTSTATUS make_connection_snum(struct request_context *req,
+static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 				     int snum, enum ntvfs_type type,
 				     DATA_BLOB password, 
 				     const char *dev)
@@ -208,7 +208,7 @@ static NTSTATUS make_connection_snum(struct request_context *req,
  *
  * @param service 
 ****************************************************************************/
-static NTSTATUS make_connection(struct request_context *req,
+static NTSTATUS make_connection(struct smbsrv_request *req,
 				const char *service, DATA_BLOB password, 
 				const char *dev, uint16_t vuid)
 {
@@ -274,7 +274,7 @@ void close_cnum(struct smbsrv_tcon *tcon)
 /*
   backend for tree connect call
 */
-NTSTATUS tcon_backend(struct request_context *req, union smb_tcon *con)
+NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 {
 	NTSTATUS status;
 

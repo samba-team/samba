@@ -23,7 +23,7 @@
 /*
   mark the flags2 field in a packet as signed
 */
-static void mark_packet_signed(struct request_context *req) 
+static void mark_packet_signed(struct smbsrv_request *req) 
 {
 	uint16_t flags2;
 	flags2 = SVAL(req->out.hdr, HDR_FLG2);
@@ -51,7 +51,7 @@ static void calc_signature(uint8_t *buffer, size_t length,
 /*
   sign an outgoing packet
 */
-void req_sign_packet(struct request_context *req)
+void req_sign_packet(struct smbsrv_request *req)
 {
 	/* check if we are doing signing on this connection */
 	if (req->smb_ctx->signing.signing_state != SMB_SIGNING_REQUIRED) {
@@ -90,7 +90,7 @@ void srv_setup_signing(struct smbsrv_context *smb_ctx,
 /*
   allocate a sequence number to a request
 */
-static void req_signing_alloc_seq_num(struct request_context *req)
+static void req_signing_alloc_seq_num(struct smbsrv_request *req)
 {
 	req->seq_num = req->smb_ctx->signing.next_seq_num;
 
@@ -104,7 +104,7 @@ static void req_signing_alloc_seq_num(struct request_context *req)
 /*
   check the signature of an incoming packet
 */
-BOOL req_signing_check_incoming(struct request_context *req)
+BOOL req_signing_check_incoming(struct smbsrv_request *req)
 {
 	uint8_t client_md5_mac[8], signature[8];
 
