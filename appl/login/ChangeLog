@@ -1,3 +1,7 @@
+1999-09-01  Johan Danielsson  <joda@pdc.kth.se>
+
+	* login.c: SGI capability mumbo-jumbo
+
 1999-08-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* login.c (start_logout_process): call setproctitle
