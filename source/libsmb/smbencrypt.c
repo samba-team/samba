@@ -322,7 +322,7 @@ void SMBgenclientchals(char *lm_cli_chal,
 	strupper(server);
 	strupper(domain);
 
-#if 0 EXPERIMENTATION_THIS_ACTUALLY_WORKS
+#ifdef EXPERIMENTATION_THIS_ACTUALLY_WORKS
 	generate_random_buffer(nt_cli_chal, 64, False);
 	(*nt_cli_chal_len) = 64;
 	memcpy(lm_cli_chal, nt_cli_chal + 16, 8);
