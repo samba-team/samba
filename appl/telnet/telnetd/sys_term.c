@@ -1402,9 +1402,13 @@ startslave(host, autologin, autoname)
 #endif
 
       {
-              char *tbuf =
-"\r\n*** Connection not encrypted! Communication may be eavesdropped.***\r\n";
-                      writenet(tbuf, strlen(tbuf));
+	char *tbuf =
+	  "\r\n*** Connection not encrypted! "
+	  "Communication may be eavesdropped.***\r\n";
+#ifdef ENCRYPTION
+	if(!decrypt_input)
+#endif
+	  writenet(tbuf, strlen(tbuf));
       }
 #ifndef	NEWINIT
 # ifdef	PARENT_DOES_UTMP
