@@ -535,23 +535,24 @@ krb5_524_conv_principal(krb5_context context,
 	i = principal->name.name_string.val[1];
 	break;
     default:
-	return -1;
+	return KRB5_PARSE_MALFORMED;
     }
     
     if(strcmp(n, "host") == 0){
 	char *p;
 	n = "rcmd";
 	strncpy(tmpinst, i, sizeof(tmpinst));
+	tmpinst[sizeof(tmpinst) - 1] = 0;
 	p = strchr(tmpinst, '.');
 	if(p) *p = 0;
 	i = tmpinst;
     }
     if(strlen(r) >= 40)
-	return -1;
+	return KRB5_PARSE_MALFORMED;
     if(strlen(n) >= 40)
-	return -1;
+	return KRB5_PARSE_MALFORMED;
     if(strlen(i) >= 40)
-	return -1;
+	return KRB5_PARSE_MALFORMED;
     strcpy(realm, r);
     strcpy(name, n);
     strcpy(instance, i);
