@@ -149,10 +149,10 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname, BOOL allow_w
 					return NT_STATUS_INVALID_PARAMETER;
 			}
 		}
-		start_of_name_component = False;
-		if (num_bad_components) {
+		if (start_of_name_component && num_bad_components) {
 			num_bad_components++;
 		}
+		start_of_name_component = False;
 	}
 
 	if (NT_STATUS_EQUAL(ret, NT_STATUS_OBJECT_NAME_INVALID)) {
