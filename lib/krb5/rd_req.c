@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -488,9 +488,15 @@ krb5_rd_req(krb5_context context,
 				     ap_req.ticket.realm);
 	server = service;
     }
+    if (ap_req.ap_options.use_session_key &&
+	(*auth_context)->keyblock == NULL) {
+	krb5_set_error_string(context, "krb5_rd_req: user to user auth "
+			      "without session key given");
+	ret = KRB5KRB_AP_ERR_NOKEY;
+	goto out;
+    }
 
-    if(ap_req.ap_options.use_session_key == 0 || 
-       (*auth_context)->keyblock == NULL){
+    if((*auth_context)->keyblock == NULL){
 	ret = get_key_from_keytab(context, 
 				  auth_context, 
 				  &ap_req,
