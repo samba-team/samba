@@ -2839,11 +2839,17 @@ static void remember_query_host(const char *arg,
 			pstrcpy(new_name_resolve_order, optarg);
 			break;
 		case 'M':
-			name_type = 0x03; /* messages are sent to NetBIOS name type 0x3 */
+			/* Messages are sent to NetBIOS name type 0x3
+			 * (Messenger Service).  Make sure we default
+			 * to port 139 instead of port 445. srl,crh
+			 */
+			name_type = 0x03; 
 			pstrcpy(desthost,optarg);
-			message = True;
-			break;
-		case 'i':
+			if( 0 == port )
+				port = 139;
+ 			message = True;
+ 			break;
+ 		case 'i':
 			set_global_scope(optarg);
 			break;
 		case 'N':
