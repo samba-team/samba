@@ -147,7 +147,7 @@ AC_CANONICAL_SYSTEM
 
 dnl Add #include for broken IRIX header files
   case "$host_os" in
-	*irix*) AC_ADD_INCLUDE(<standards.h>)
+	*irix6*) AC_ADD_INCLUDE(<standards.h>)
 	;;
 esac
 
