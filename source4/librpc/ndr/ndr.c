@@ -292,10 +292,10 @@ static void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ..
 	va_end(ap);
 
 	for (i=0;i<ndr->depth;i++) {
-		DEBUG(2,("    "));
+		DEBUG(0,("    "));
 	}
 
-	DEBUG(2,("%s\n", s));
+	DEBUG(0,("%s\n", s));
 	free(s);
 }
 
@@ -308,10 +308,6 @@ void ndr_print_debug(void (*fn)(struct ndr_print *, const char *, void *),
 {
 	struct ndr_print ndr;
 
-	if (!DEBUGLVL(2)) {
-		return;
-	}
-
 	ndr.mem_ctx = talloc_init("ndr_print_debug");
 	if (!ndr.mem_ctx) return;
 	ndr.print = ndr_print_debug_helper;
@@ -319,6 +315,7 @@ void ndr_print_debug(void (*fn)(struct ndr_print *, const char *, void *),
 	fn(&ndr, name, ptr);
 	talloc_destroy(ndr.mem_ctx);
 }
+
 
 /*
   a useful helper function for printing idl unions via DEBUG()
@@ -347,6 +344,10 @@ void ndr_print_function_debug(void (*fn)(struct ndr_print *, const char *, int ,
 			      void *ptr)
 {
 	struct ndr_print ndr;
+
+	if (!DEBUGLVL(2)) {
+		return;
+	}
 
 	ndr.mem_ctx = talloc_init("ndr_print_function");
 	if (!ndr.mem_ctx) return;
