@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,7 +45,9 @@ static char *op_names[] = {
     "modify",
     "randkey",
     "get_privs",
-    "get_princs"
+    "get_princs",
+    "chpass_with_key",
+    "nop"
 };
 
 static void
@@ -196,6 +198,8 @@ print_entry(kadm5_server_context *server_context,
 	    printf("    tl data\n");
 	}
 	hdb_free_entry(context, &ent);
+	break;
+    case kadm_nop :
 	break;
     default:
 	abort();
