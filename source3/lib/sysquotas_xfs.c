@@ -21,19 +21,20 @@
 
 #include "includes.h"
 
-#ifdef HAVE_XFS_QUOTA
-#include "samba_xfs_quota.h"
-#define HAVE_LINUX_XFS_QUOTA
+#ifndef HAVE_SYS_QUOTAS
+#ifdef HAVE_XFS_QUOTAS
+#undef HAVE_XFS_QUOTAS
+#endif
 #endif
 
-#ifdef HAVE_LINUX_XFS_QUOTA
+#ifdef HAVE_XFS_QUOTAS
 
-/* Linux has BBSIZE in <linux/xfs_fs.h>
- * or <xfs/xfs_fs.h>
- * IRIX has BBSIZE in <sys/param.h>
- */
-#ifdef HAVE_XFS_FS_HEADER
-#include HAVE_XFS_FS_HEADER
+#ifdef HAVE_LINUX_XFS_QUOTAS
+#include "samba_linux_quota.h"
+#include "samba_xfs_quota.h"
+#define HAVE_GROUP_QUOTA
+#else /* IRIX */
+#include <sys/quota.h> 
 #endif
 
 /* on IRIX */
@@ -47,19 +48,22 @@
 #define Q_XGETQSTAT Q_GETQSTAT
 #endif /* Q_XGETQSTAT */
 
+/* currently doesn't support Group and Project quotas on IRIX 
+ */
 
+#ifndef QCMD
+#define QCMD(x,y) x
+#endif
+
+/*
+ * IRIX has BBSIZE in <sys/param.h>
+ */
 #ifndef BBSHIFT
 #define	BBSHIFT		9
 #endif /* BBSHIFT */
 #ifndef BBSIZE
 #define	BBSIZE		(1<<BBSHIFT)
 #endif /* BBSIZE */
-
-#ifdef IRIX6
-#ifndef QUOTABLOCK_SIZE
-#define QUOTABLOCK_SIZE BBSIZE
-#endif
-#endif
 
 /****************************************************************************
  Abstract out the XFS Quota Manager quota get call.
@@ -108,10 +112,10 @@ int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 		case SMB_GROUP_FS_QUOTA_TYPE:	
 			quotactl(QCMD(Q_XGETQSTAT,XFS_GROUP_QUOTA), bdev, -1, (caddr_t)&F);
 
-			if (F.qs_flags & XFS_QUOTA_UDQ_ENFD) {
+			if (F.qs_flags & XFS_QUOTA_GDQ_ENFD) {
 				qflags |= QUOTAS_DENY_DISK;
 			}
-			else if (F.qs_flags & XFS_QUOTA_UDQ_ACCT) {
+			else if (F.qs_flags & XFS_QUOTA_GDQ_ACCT) {
 				qflags |= QUOTAS_ENABLED;
 			}
 
@@ -238,10 +242,10 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			quotactl(QCMD(Q_XGETQSTAT,XFS_GROUP_QUOTA), bdev, -1, (caddr_t)&F);
 			
 			if (qflags & QUOTAS_DENY_DISK) {
-				if (!(F.qs_flags & XFS_QUOTA_UDQ_ENFD))
-					q_on |= XFS_QUOTA_UDQ_ENFD;
-				if (!(F.qs_flags & XFS_QUOTA_UDQ_ACCT))
-					q_on |= XFS_QUOTA_UDQ_ACCT;
+				if (!(F.qs_flags & XFS_QUOTA_GDQ_ENFD))
+					q_on |= XFS_QUOTA_GDQ_ENFD;
+				if (!(F.qs_flags & XFS_QUOTA_GDQ_ACCT))
+					q_on |= XFS_QUOTA_GDQ_ACCT;
 				
 				if (q_on != 0) {
 					ret = quotactl(QCMD(Q_XQUOTAON,XFS_GROUP_QUOTA),bdev, -1, (caddr_t)&q_on);
@@ -250,8 +254,8 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 				}
 
 			} else if (qflags & QUOTAS_ENABLED) {
-				if (F.qs_flags & XFS_QUOTA_UDQ_ENFD)
-					q_off |= XFS_QUOTA_UDQ_ENFD;
+				if (F.qs_flags & XFS_QUOTA_GDQ_ENFD)
+					q_off |= XFS_QUOTA_GDQ_ENFD;
 
 				if (q_off != 0) {
 					ret = quotactl(QCMD(Q_XQUOTAOFF,XFS_GROUP_QUOTA),bdev, -1, (caddr_t)&q_off);
@@ -259,8 +263,8 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					ret = 0;
 				}
 
-				if (!(F.qs_flags & XFS_QUOTA_UDQ_ACCT))
-					q_on |= XFS_QUOTA_UDQ_ACCT;
+				if (!(F.qs_flags & XFS_QUOTA_GDQ_ACCT))
+					q_on |= XFS_QUOTA_GDQ_ACCT;
 
 				if (q_on != 0) {
 					ret = quotactl(QCMD(Q_XQUOTAON,XFS_GROUP_QUOTA),bdev, -1, (caddr_t)&q_on);
@@ -272,10 +276,10 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			/* Switch on XFS_QUOTA_UDQ_ACCT didn't work!
 			 * only swittching off XFS_QUOTA_UDQ_ACCT work
 			 */
-				if (F.qs_flags & XFS_QUOTA_UDQ_ENFD)
-					q_off |= XFS_QUOTA_UDQ_ENFD;
-				if (F.qs_flags & XFS_QUOTA_UDQ_ACCT)
-					q_off |= XFS_QUOTA_UDQ_ACCT;
+				if (F.qs_flags & XFS_QUOTA_GDQ_ENFD)
+					q_off |= XFS_QUOTA_GDQ_ENFD;
+				if (F.qs_flags & XFS_QUOTA_GDQ_ACCT)
+					q_off |= XFS_QUOTA_GDQ_ACCT;
 
 				if (q_off !=0) {
 					ret = quotactl(QCMD(Q_XQUOTAOFF,XFS_GROUP_QUOTA),bdev, -1, (caddr_t)&q_off);
@@ -297,4 +301,6 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	return ret;
 }
 
-#endif /* HAVE_LINUX_XFS_QUOTA */
+#else /* HAVE_XFS_QUOTAS */
+ void dummy_sysquotas_xfs(void){}
+#endif /* HAVE_XFS_QUOTAS */

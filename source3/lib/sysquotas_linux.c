@@ -312,9 +312,6 @@ static int sys_set_linux_gen_quota(const char *path, const char *bdev, enum SMB_
 	struct if_dqblk D;
 	SMB_BIG_UINT bsize = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
 
-	if (!path||!bdev||!dp)
-		smb_panic("sys_set_linux_gen_quota: called with NULL pointer");
-
 	ZERO_STRUCT(D);
 
 	if (bsize == dp->bsize) {
@@ -366,7 +363,7 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	int ret = -1;
 
 	if (!path||!bdev||!dp)
-		smb_panic("sys_get_linux_quota: called with NULL pointer");
+		smb_panic("sys_set_vfs_quota: called with NULL pointer");
 
 	ZERO_STRUCT(*dp);
 	dp->qtype = qtype;
@@ -429,7 +426,7 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	uint32 oldqflags = 0;
 
 	if (!path||!bdev||!dp)
-		smb_panic("sys_set_linux_v1_quota: called with NULL pointer");
+		smb_panic("sys_set_vfs_quota: called with NULL pointer");
 
 	oldqflags = dp->qflags;
 
@@ -483,4 +480,6 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	return ret;
 }
 
+#else /* HAVE_QUOTACTL_LINUX */
+ void dummy_sysquotas_linux(void){}
 #endif /* HAVE_QUOTACTL_LINUX */

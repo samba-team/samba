@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   System QUOTA function wrappers for LINUX
+   System QUOTA function wrappers for QUOTACTL_4A
    Copyright (C) Stefan (metze) Metzmacher	2003
    
    This program is free software; you can redistribute it and/or modify
@@ -39,6 +39,10 @@
 
 #ifndef Q_SETQLIM
 #define Q_SETQLIM Q_SETQUOTA
+#endif
+
+#ifndef QCMD
+#define QCMD(x,y) x
 #endif
 
 #ifndef QCMD
@@ -309,4 +313,6 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	return ret;
 }
 
+#else /* HAVE_QUOTACTL_4A */
+ void dummy_sysquotas_4A(void){}
 #endif /* HAVE_QUOTACTL_4A */
