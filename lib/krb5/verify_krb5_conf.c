@@ -42,9 +42,12 @@ RCSID("$Id$");
 static int dumpconfig_flag = 0;
 static int version_flag = 0;
 static int help_flag	= 0;
+static int warn_mit_syntax_flag = 0;
 
 static struct getargs args[] = {
     {"dumpconfig", 0,      arg_flag,       &dumpconfig_flag, 
+     "show the parsed config files", NULL },
+    {"warn-mit-syntax", 0, arg_flag,       &warn_mit_syntax_flag, 
      "show the parsed config files", NULL },
     {"version",	0,	arg_flag,	&version_flag,
      "print version", NULL },
@@ -165,14 +168,13 @@ check_host(krb5_context context, const char *path, char *data)
     return 0;
 }
 
-#if 0
 static int
 mit_entry(krb5_context context, const char *path, char *data)
 {
-    krb5_warnx(context, "%s is only used by MIT Kerberos", path);
+    if (warn_mit_syntax_flag)
+	krb5_warnx(context, "%s is only used by MIT Kerberos", path);
     return 0;
 }
-#endif
 
 struct s2i {
     char *s;
@@ -354,6 +356,10 @@ struct entry libdefaults_entries[] = {
     { "v4_instance_resolve", krb5_config_string, check_boolean },
     { "v4_name_convert", krb5_config_list, v4_name_convert_entries },
     { "verify_ap_req_nofail", krb5_config_string, check_boolean },
+    /* MIT stuff */
+    { "permitted_enctypes", krb5_config_string, mit_entry },
+    { "default_tgs_enctypes", krb5_config_string, mit_entry },
+    { "default_tkt_enctypes", krb5_config_string, mit_entry },
     { NULL }
 };
 
@@ -387,7 +393,6 @@ struct entry realms_entries[] = {
     { "v4_instance_convert", krb5_config_list, all_strings },
     { "v4_domains", krb5_config_string, NULL },
     { "default_domain", krb5_config_string, NULL },
-#if 0
     /* MIT stuff */
     { "admin_keytab", krb5_config_string, mit_entry },
     { "acl_file", krb5_config_string, mit_entry },
@@ -403,7 +408,6 @@ struct entry realms_entries[] = {
     { "default_principal_flags", krb5_config_string, mit_entry },
     { "supported_enctypes", krb5_config_string, mit_entry },
     { "database_name", krb5_config_string, mit_entry },
-#endif
     { NULL }
 };
 
@@ -454,13 +458,12 @@ struct entry log_strings[] = {
 };
 
 
-#if 0
+/* MIT stuff */
 struct entry kdcdefaults_entries[] = {
     { "kdc_ports", krb5_config_string, mit_entry },
     { "v4_mode", krb5_config_string, mit_entry },
     { NULL }
 };
-#endif
 
 struct entry toplevel_sections[] = {
     { "libdefaults" , krb5_config_list, libdefaults_entries },
@@ -471,10 +474,8 @@ struct entry toplevel_sections[] = {
     { "kadmin", krb5_config_list, kadmin_entries },
     { "appdefaults", krb5_config_list, appdefaults_entries },
     { "gssapi", krb5_config_list, NULL },
-#if 0
     /* MIT stuff */
     { "kdcdefaults", krb5_config_list, kdcdefaults_entries },
-#endif
     { NULL }
 };
 
