@@ -248,7 +248,7 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		struct spoolss_SetForm sf;
 
 		sf.in.handle = handle;
-		sf.in.form_name = formname;
+		sf.in.formname = formname;
 		sf.in.level = 1;
 		sf.in.info.info1 = &form;
 		form.width = 1234;
