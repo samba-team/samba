@@ -2205,7 +2205,6 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 	char *devicename = NULL, *unc_name = NULL, *url = NULL;
 	fstring longname;
 
-	const char *keyname = NULL;
 	uint16 *keylist = NULL, *curkey;
 
 	ZERO_STRUCT(ctr_enum);
@@ -2242,7 +2241,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 			sizeof(printername), -1, STR_TERMINATE);
 		rpcstr_pull(sharename, ctr_enum.printers_2[i].sharename.buffer, 
 			sizeof(sharename), -1, STR_TERMINATE);
-		keyname = "";
+		
 		/* we can reset NT_STATUS here because we do not 
 		   get any real NT_STATUS-codes anymore from now on */
 		nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -2305,14 +2304,6 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 		/* do not copy security descriptor (we have another command for that) */
 		ctr_dst.printers_2->secdesc = NULL;
 
-
-		/* devmode->devicename is possibly broken at the moment for all 
-		   strlen(longprinternames) > MAXDEVICENAME (that is 32 chars) 
-		   this fires up thousands of safe_strncpy-debug0-messages 
-		   on my test-servers
-		   TODO: tell jerry, jra, etc. again.
-		*/
-
 #if 0
 		if (asprintf(&devicename, "\\\\%s\\%s", longname, printername) < 0) {
 			nt_status = NT_STATUS_NO_MEMORY;
@@ -2333,7 +2324,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 	
 		/* please keep in mind that samba parse_spools gives horribly 
 		   crippled results when used to cli_spoolss_enumprinterdataex 
-		   a win2k3-server.  
+		   a win2k3-server.  (Bugzilla #1851)
 		   FIXME: IIRC I've seen it too on a win2k-server 
 		*/
 
@@ -2341,7 +2332,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 		result = cli_spoolss_enumprinterdata(cli, mem_ctx, &hnd_src, p, 0, 0,
 			&val_needed, &data_needed, NULL);
 
-		/* loop for all printerdata */
+		/* loop for all printerdata of "PrinterDriverData" */
 		while (W_ERROR_IS_OK(result)) {
 			
 			REGISTRY_VALUE value;
@@ -2355,7 +2346,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 
 				/* display_value */
 				if (opt_verbose) 
-					display_reg_value(NULL, value);
+					display_reg_value(SPOOL_PRINTERDATA_KEY, value);
 
 				/* set_value */
 				if (!net_spoolss_setprinterdata(cli_dst, mem_ctx, 
@@ -2374,7 +2365,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 		   respond to enumprinterkey, win2k does, so continue 
 		   in case of an error */
 
-		if (!net_spoolss_enumprinterkey(cli, mem_ctx, &hnd_src, keyname, &keylist)) {
+		if (!net_spoolss_enumprinterkey(cli, mem_ctx, &hnd_src, "", &keylist)) {
 			printf("got no key-data\n");
 			continue;
 		}
