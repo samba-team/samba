@@ -114,7 +114,7 @@ BOOL se_priv_copy( SE_PRIV *dst, const SE_PRIV *src )
  combine 2 SE_PRIV structures and store the resulting set in mew_mask
 ****************************************************************************/
 
-static void se_priv_add( SE_PRIV *mask, const SE_PRIV *addpriv )
+void se_priv_add( SE_PRIV *mask, const SE_PRIV *addpriv )
 {
 	int i;
 
@@ -128,7 +128,7 @@ static void se_priv_add( SE_PRIV *mask, const SE_PRIV *addpriv )
  in mew_mask
 ****************************************************************************/
 
-static void se_priv_remove( SE_PRIV *mask, const SE_PRIV *removepriv )
+void se_priv_remove( SE_PRIV *mask, const SE_PRIV *removepriv )
 {	
 	int i;
 
@@ -159,6 +159,23 @@ static BOOL se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 )
 	return ( memcmp(mask1, mask2, sizeof(SE_PRIV)) == 0 );
 }
 
+/***************************************************************************
+ check if a SE_PRIV has any assigned privileges
+****************************************************************************/
+
+static BOOL se_priv_empty( const SE_PRIV *mask )
+{
+	SE_PRIV p1;
+	int i;
+	
+	se_priv_copy( &p1, mask );
+
+	for ( i=0; i<SE_PRIV_MASKSIZE; i++ ) {
+		p1.mask[i] &= se_priv_all.mask[i];
+	}
+	
+	return se_priv_equal( &p1, &se_priv_none );
+}
 
 /***************************************************************************
  dump an SE_PRIV structure to the log files
@@ -252,12 +269,19 @@ static BOOL set_privileges( const DOM_SID *sid, SE_PRIV *mask )
  check if the privilege is in the privilege list
 ****************************************************************************/
 
-static BOOL is_privilege_assigned( SE_PRIV *privileges, SE_PRIV *check )
+static BOOL is_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check )
 {
 	SE_PRIV p1, p2;
 
 	if ( !privileges || !check )
 		return False;
+	
+	/* everyone has privileges if you aren't checking for any */
+	
+	if ( se_priv_empty( check ) ) {
+		DEBUG(1,("is_privilege_assigned: no privileges in check_mask!\n"));
+		return True;
+	}
 	
 	se_priv_copy( &p1, check );
 	
@@ -270,6 +294,39 @@ static BOOL is_privilege_assigned( SE_PRIV *privileges, SE_PRIV *check )
 	se_priv_remove( &p2, &p1 );
 	
 	return se_priv_equal( &p2, check );
+}
+
+/****************************************************************************
+ check if the privilege is in the privilege list
+****************************************************************************/
+
+static BOOL is_any_privilege_assigned( SE_PRIV *privileges, const SE_PRIV *check )
+{
+	SE_PRIV p1, p2;
+
+	if ( !privileges || !check )
+		return False;
+	
+	/* everyone has privileges if you aren't checking for any */
+	
+	if ( se_priv_empty( check ) ) {
+		DEBUG(1,("is_any_privilege_assigned: no privileges in check_mask!\n"));
+		return True;
+	}
+	
+	se_priv_copy( &p1, check );
+	
+	/* invert the SE_PRIV we want to check for and remove that from the 
+	   original set.  If we are left with the SE_PRIV we are checking 
+	   for then return True */
+	   
+	se_priv_invert( &p1, check );
+	se_priv_copy( &p2, privileges );
+	se_priv_remove( &p2, &p1 );
+	
+	/* see if we have any bits left */
+	
+	return !se_priv_empty( &p2 );
 }
 
 /****************************************************************************
@@ -633,12 +690,25 @@ NTSTATUS dup_luid_attr(TALLOC_CTX *mem_ctx, LUID_ATTR **new_la, LUID_ATTR *old_l
  at a time here.
 *****************************************************************************/
 
-BOOL user_has_privileges(NT_USER_TOKEN *token, SE_PRIV *privilege)
+BOOL user_has_privileges(NT_USER_TOKEN *token, const SE_PRIV *privilege)
 {
 	if ( !token )
 		return False;
 
 	return is_privilege_assigned( &token->privileges, privilege );
+}
+
+/****************************************************************************
+ Does the user have any of the specified privileges ?  We only deal with one privilege
+ at a time here.
+*****************************************************************************/
+
+BOOL user_has_any_privilege(NT_USER_TOKEN *token, const SE_PRIV *privilege)
+{
+	if ( !token )
+		return False;
+
+	return is_any_privilege_assigned( &token->privileges, privilege );
 }
 
 /****************************************************************************
