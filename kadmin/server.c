@@ -423,6 +423,8 @@ v5_loop (krb5_context context,
 
     for (;;) {
 	ret = krb5_read_priv_message(context, ac, &fd, &in);
+	if(ret == HEIM_ERR_EOF)
+	    exit(0);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_read_priv_message");
 	kadmind_dispatch(kadm_handle, initial, &in, &out);
@@ -494,10 +496,10 @@ handle_v5(krb5_context context,
     memset(&realm_params, 0, sizeof(realm_params));
 
     if(kadm_version == 1) {
-	krb5_data enc_data, params;
-	ret = krb5_read_message(context, &fd, &enc_data);
-	ret = krb5_rd_priv(context, ac, &enc_data, &params, NULL);
-	krb5_data_free(&enc_data);
+	krb5_data params;
+	ret = krb5_read_priv_message(context, ac, &fd, &params);
+	if(ret)
+	    krb5_err(context, 1, ret, "krb5_read_priv_message");
 	_kadm5_unmarshal_params(context, &params, &realm_params);
     }
 
