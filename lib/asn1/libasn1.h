@@ -43,7 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include "asn1.h"
+#include "krb5_asn1.h"
 #include "der.h"
 #include "asn1_err.h"
 #include <parse_units.h>

@@ -93,20 +93,20 @@ asn1_print_LDADD = $(check_der_LDADD)
 
 TESTS = check-der
 
-CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) \
+CLEANFILES = lex.c parse.c parse.h krb5_asn1.h $(BUILT_SOURCES) \
 	$(gen_files) asn1_files
 
-include_HEADERS = asn1.h asn1_err.h der.h
+include_HEADERS = krb5_asn1.h asn1_err.h der.h
 
 $(asn1_compile_OBJECTS): parse.h
 
-$(gen_files) asn1.h: asn1_files
+$(gen_files) krb5_asn1.h: asn1_files
 
 asn1_files: asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
-	./asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
+	./asn1_compile$(EXEEXT) $(srcdir)/k5.asn1 krb5_asn1
 
-$(libasn1_la_OBJECTS): asn1.h asn1_err.h
+$(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h
 
-$(asn1_print_OBJECTS): asn1.h
+$(asn1_print_OBJECTS): krb5_asn1.h
 
 EXTRA_DIST = asn1_err.et
