@@ -25,7 +25,7 @@
 #include "winbind_nss_config.h"
 #include "winbindd_nss.h"
 
-#define DEBUG_STUFF 1
+#define DEBUG_STUFF 0
 
 /* Prototypes from common.c */
 
@@ -724,7 +724,7 @@ _nss_winbind_getgrnam_r(const char *name,
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
-				*errnop = ERANGE;
+				*errnop = errno = ERANGE;
 				return ret;
 			}
 		}
@@ -738,7 +738,7 @@ _nss_winbind_getgrnam_r(const char *name,
 		
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
-			*errnop = ERANGE;
+			*errnop = errno = ERANGE;
 			return ret;
 		}
 
@@ -784,7 +784,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 			if (ret == NSS_STATUS_TRYAGAIN) {
 				keep_response = True;
-				*errnop = ERANGE;
+				*errnop = errno = ERANGE;
 				return ret;
 			}
 		}
@@ -798,7 +798,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 
 		if (ret == NSS_STATUS_TRYAGAIN) {
 			keep_response = True;
-			*errnop = ERANGE;
+			*errnop = errno = ERANGE;
 			return ret;
 		}
 
