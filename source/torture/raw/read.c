@@ -48,7 +48,7 @@
 /*
   setup a random buffer based on a seed
 */
-static void setup_buffer(char *buf, unsigned seed, int len)
+static void setup_buffer(char *buf, uint_t seed, int len)
 {
 	int i;
 	srandom(seed);
@@ -58,7 +58,7 @@ static void setup_buffer(char *buf, unsigned seed, int len)
 /*
   check a random buffer based on a seed
 */
-static BOOL check_buffer(char *buf, unsigned seed, int len, int line)
+static BOOL check_buffer(char *buf, uint_t seed, int len, int line)
 {
 	int i;
 	srandom(seed);
@@ -86,7 +86,7 @@ static BOOL test_read(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
-	unsigned seed = time(NULL);
+	uint_t seed = time(NULL);
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
@@ -212,7 +212,7 @@ static BOOL test_lockread(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
-	unsigned seed = time(NULL);
+	uint_t seed = time(NULL);
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
@@ -355,7 +355,7 @@ static BOOL test_readx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
-	unsigned seed = time(NULL);
+	uint_t seed = time(NULL);
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
@@ -540,7 +540,7 @@ static BOOL test_readbraw(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	const int maxsize = 90000;
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
-	unsigned seed = time(NULL);
+	uint_t seed = time(NULL);
 
 	buf = talloc_zero(mem_ctx, maxsize);
 

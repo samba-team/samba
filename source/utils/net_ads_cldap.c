@@ -57,14 +57,14 @@ struct cldap_netlogon_reply {
   length encoded strings, terminated by either 1) a zero length string or 2)
   a 0xc0 byte with what appears to be a one byte flags immediately following.
 */
-static unsigned pull_netlogon_string(struct netlogon_string *ret,const char *d)
+static uint_t pull_netlogon_string(struct netlogon_string *ret,const char *d)
 {
 	char *p = (char *)d;
 
 	ZERO_STRUCTP(ret);
 
 	do {
-		unsigned len = (uint8_t)*p;
+		uint_t len = (uint8_t)*p;
 		p++;
 
 		if (len > 0 && len != 0xc0) {
@@ -91,7 +91,7 @@ static unsigned pull_netlogon_string(struct netlogon_string *ret,const char *d)
   do a cldap netlogon query
 */
 static int send_cldap_netlogon(int sock, const char *domain, 
-			       const char *hostname, unsigned ntversion)
+			       const char *hostname, uint_t ntversion)
 {
 	ASN1_DATA data;
 	char ntver[4];

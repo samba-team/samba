@@ -28,8 +28,8 @@
 static uid_t mount_uid;
 static gid_t mount_gid;
 static int mount_ro;
-static unsigned mount_fmask;
-static unsigned mount_dmask;
+static uint_t mount_fmask;
+static uint_t mount_dmask;
 static int user_mount;
 static char *options;
 

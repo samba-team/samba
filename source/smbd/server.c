@@ -39,7 +39,7 @@ void exit_server(struct server_context *smb, const char *reason)
 static void setup_listen(struct event_context *events,
 			 const struct model_ops *model_ops, 
 			 void (*accept_handler)(struct event_context *,struct fd_event *,time_t,uint16_t),
-			 struct in_addr *ifip, unsigned port)
+			 struct in_addr *ifip, uint_t port)
 {
 	struct fd_event fde;
 	fde.fd = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
@@ -81,7 +81,7 @@ static void add_socket(struct event_context *events,
 	for (tok=strtok_r(lp_smb_ports(), delim, &ptr); 
 	     tok; 
 	     tok=strtok_r(NULL, delim, &ptr)) {
-		unsigned port = atoi(tok);
+		uint_t port = atoi(tok);
 		if (port == 0) continue;
 		setup_listen(events, model_ops, model_ops->accept_connection, ifip, port);
 	}

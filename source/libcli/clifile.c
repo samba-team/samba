@@ -268,8 +268,8 @@ int cli_open(struct cli_tree *tree, const char *fname, int flags,
 	     int share_mode)
 {
 	union smb_open open_parms;
-	unsigned openfn=0;
-	unsigned accessmode=0;
+	uint_t openfn=0;
+	uint_t accessmode=0;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 

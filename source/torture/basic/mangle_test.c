@@ -24,7 +24,7 @@ static TDB_CONTEXT *tdb;
 
 #define NAME_LENGTH 20
 
-static unsigned total, collisions, failures;
+static uint_t total, collisions, failures;
 
 static BOOL test_one(struct cli_state *cli, const char *name)
 {
@@ -108,8 +108,8 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 static void gen_name(char *name)
 {
 	const char *chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz._-$~...";
-	unsigned max_idx = strlen(chars);
-	unsigned len;
+	uint_t max_idx = strlen(chars);
+	uint_t len;
 	int i;
 	char *p;
 

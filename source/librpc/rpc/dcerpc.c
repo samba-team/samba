@@ -434,7 +434,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 /* perform a dcerpc bind, using the uuid as the key */
 NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p, 
 			    TALLOC_CTX *mem_ctx,
-			    const char *uuid, unsigned version)
+			    const char *uuid, uint_t version)
 {
 	struct dcerpc_syntax_id syntax;
 	struct dcerpc_syntax_id transfer_syntax;

@@ -23,8 +23,8 @@
 static struct {
 	const char *name;
 	enum fileinfo_level level;
-	unsigned only_paths:1;
-	unsigned only_handles:1;
+	uint_t only_paths:1;
+	uint_t only_handles:1;
 	uint32_t capability_mask;
 	NTSTATUS fnum_status, fname_status;
 	union smb_fileinfo fnum_finfo, fname_finfo;
@@ -416,21 +416,21 @@ BOOL torture_raw_qfileinfo(int dummy)
 	s1 = fnum_find(sname); \
 	if (s1 && s1->stype.out.tfield != correct_size) { \
 		printf("(%d) handle %s/%s incorrect - %u should be %u\n", __LINE__, #stype, #tfield,  \
-		       (unsigned)s1->stype.out.tfield, \
-		       (unsigned)correct_size); \
+		       (uint_t)s1->stype.out.tfield, \
+		       (uint_t)correct_size); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
 	if (s1 && s1->stype.out.tfield != correct_size) { \
 		printf("(%d) path %s/%s incorrect - %u should be %u\n", __LINE__, #stype, #tfield,  \
-		       (unsigned)s1->stype.out.tfield, \
-		       (unsigned)correct_size); \
+		       (uint_t)s1->stype.out.tfield, \
+		       (uint_t)correct_size); \
 		ret = False; \
 	}} while (0)
 
 	s1 = fnum_find("STANDARD_INFO");
 	correct_size = s1->standard_info.out.size;
-	printf("size: %u\n", (unsigned)correct_size);
+	printf("size: %u\n", (uint_t)correct_size);
 	
 	SIZE_CHECK("GETATTR",                  getattr,                  size);
 	SIZE_CHECK("GETATTRE",                 getattre,                 size);
@@ -451,7 +451,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 
 	s1 = fnum_find("STANDARD_INFO");
 	correct_size = s1->standard_info.out.alloc_size;
-	printf("alloc_size: %u\n", (unsigned)correct_size);
+	printf("alloc_size: %u\n", (uint_t)correct_size);
 	
 	SIZE_CHECK("GETATTRE",                 getattre,                 alloc_size);
 	SIZE_CHECK("STANDARD",                 standard,                 alloc_size);
@@ -470,21 +470,21 @@ BOOL torture_raw_qfileinfo(int dummy)
 	s1 = fnum_find(sname); \
 	if (s1 && s1->stype.out.tfield != correct_attrib) { \
 		printf("(%d) handle %s/%s incorrect - 0x%x should be 0x%x\n", __LINE__, #stype, #tfield,  \
-		       (unsigned)s1->stype.out.tfield, \
-		       (unsigned)correct_attrib); \
+		       (uint_t)s1->stype.out.tfield, \
+		       (uint_t)correct_attrib); \
 		ret = False; \
 	} \
 	s1 = fname_find(sname); \
 	if (s1 && s1->stype.out.tfield != correct_attrib) { \
 		printf("(%d) path %s/%s incorrect - 0x%x should be 0x%x\n", __LINE__, #stype, #tfield,  \
-		       (unsigned)s1->stype.out.tfield, \
-		       (unsigned)correct_attrib); \
+		       (uint_t)s1->stype.out.tfield, \
+		       (uint_t)correct_attrib); \
 		ret = False; \
 	}} while (0)
 
 	s1 = fnum_find("BASIC_INFO");
 	correct_attrib = s1->basic_info.out.attrib;
-	printf("attrib: 0x%x\n", (unsigned)correct_attrib);
+	printf("attrib: 0x%x\n", (uint_t)correct_attrib);
 	
 	ATTRIB_CHECK("GETATTR",                   getattr,                   attrib);
 	ATTRIB_CHECK("GETATTRE",                  getattre,                  attrib);
@@ -688,13 +688,13 @@ BOOL torture_raw_qfileinfo(int dummy)
 	if (s1 && s1->stype.out.tfield != 0) { \
 		printf("(%d) handle %s/%s unknown != 0 (0x%x)\n", __LINE__, \
                        #stype, #tfield, \
-		       (unsigned)s1->stype.out.tfield); \
+		       (uint_t)s1->stype.out.tfield); \
 	} \
 	s1 = fname_find(sname); \
 	if (s1 && s1->stype.out.tfield != 0) { \
 		printf("(%d) path %s/%s unknown != 0 (0x%x)\n", __LINE__, \
                        #stype, #tfield, \
-		       (unsigned)s1->stype.out.tfield); \
+		       (uint_t)s1->stype.out.tfield); \
 	}} while (0)
 
 	/* now get a bit fancier .... */

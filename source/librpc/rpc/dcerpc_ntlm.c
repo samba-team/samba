@@ -83,7 +83,7 @@ static void ntlm_security_end(struct dcerpc_security *dcerpc_security)
   do ntlm style authentication on a dcerpc pipe
 */
 NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
-			       const char *uuid, unsigned version,
+			       const char *uuid, uint_t version,
 			       const char *domain,
 			       const char *username,
 			       const char *password)

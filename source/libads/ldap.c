@@ -45,7 +45,7 @@
   TODO : add a negative connection cache in here leveraged off of the one
   found in the rpc code.  --jerry
  */
-static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
+static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, uint_t port)
 {
 	char *srv;
 
@@ -997,8 +997,8 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 				     "user", "computer", NULL};
 	const char *servicePrincipalName[5] = {NULL, NULL, NULL, NULL, NULL};
 	char *psp, *psp2;
-	unsigned acct_control;
-	unsigned exists=0;
+	uint_t acct_control;
+	uint_t exists=0;
 	LDAPMessage *res;
 
 	status = ads_find_machine_acct(ads, (void **)&res, hostname);

@@ -13,7 +13,7 @@ struct MD5Context {
 
 void MD5Init(struct MD5Context *context);
 void MD5Update(struct MD5Context *context, uint8_t const *buf,
-	       unsigned len);
+	       uint_t len);
 void MD5Final(uint8_t digest[16], struct MD5Context *context);
 
 /*

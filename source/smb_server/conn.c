@@ -53,7 +53,7 @@ BOOL conn_snum_used(struct server_context *smb, int snum)
 /****************************************************************************
 find a conn given a cnum
 ****************************************************************************/
-struct tcon_context *conn_find(struct server_context *smb, unsigned cnum)
+struct tcon_context *conn_find(struct server_context *smb, uint_t cnum)
 {
 	int count=0;
 	struct tcon_context *conn;

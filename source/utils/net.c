@@ -161,7 +161,7 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 	}
 }
 
-BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_name)
+BOOL net_find_server(uint_t flags, struct in_addr *server_ip, char **server_name)
 {
 
 	if (opt_host) {
@@ -248,7 +248,7 @@ BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, const char *dom
 }
 
 
-struct cli_state *net_make_ipc_connection(unsigned flags)
+struct cli_state *net_make_ipc_connection(uint_t flags)
 {
 	char *server_name = NULL;
 	struct in_addr server_ip;

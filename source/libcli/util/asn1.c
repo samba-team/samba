@@ -122,7 +122,7 @@ BOOL asn1_write_Integer(ASN1_DATA *data, int i)
 /* write an object ID to a ASN1 buffer */
 BOOL asn1_write_OID(ASN1_DATA *data, const char *OID)
 {
-	unsigned v, v2;
+	uint_t v, v2;
 	const char *p = (const char *)OID;
 	char *newp;
 
@@ -328,7 +328,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 	pstrcat(aoid, el);
 
 	while (asn1_tag_remaining(data) > 0) {
-		unsigned v = 0;
+		uint_t v = 0;
 		do {
 			asn1_read_uint8(data, &b);
 			v = (v<<7) | (b&0x7f);

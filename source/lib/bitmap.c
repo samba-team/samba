@@ -86,7 +86,7 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
 /****************************************************************************
 set a bit in a bitmap
 ****************************************************************************/
-BOOL bitmap_set(struct bitmap *bm, unsigned i)
+BOOL bitmap_set(struct bitmap *bm, uint_t i)
 {
 	if (i >= bm->n) {
 		DEBUG(0,("Setting invalid bitmap entry %d (of %d)\n",
@@ -100,7 +100,7 @@ BOOL bitmap_set(struct bitmap *bm, unsigned i)
 /****************************************************************************
 clear a bit in a bitmap
 ****************************************************************************/
-BOOL bitmap_clear(struct bitmap *bm, unsigned i)
+BOOL bitmap_clear(struct bitmap *bm, uint_t i)
 {
 	if (i >= bm->n) {
 		DEBUG(0,("clearing invalid bitmap entry %d (of %d)\n",
@@ -114,7 +114,7 @@ BOOL bitmap_clear(struct bitmap *bm, unsigned i)
 /****************************************************************************
 query a bit in a bitmap
 ****************************************************************************/
-BOOL bitmap_query(struct bitmap *bm, unsigned i)
+BOOL bitmap_query(struct bitmap *bm, uint_t i)
 {
 	if (i >= bm->n) return False;
 	if (bm->b[i/32] & (1<<(i%32))) {
@@ -127,7 +127,7 @@ BOOL bitmap_query(struct bitmap *bm, unsigned i)
 find a zero bit in a bitmap starting at the specified offset, with
 wraparound
 ****************************************************************************/
-int bitmap_find(struct bitmap *bm, unsigned ofs)
+int bitmap_find(struct bitmap *bm, uint_t ofs)
 {
 	uint_t i, j;
 

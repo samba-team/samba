@@ -248,7 +248,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	uint8_t *p;
 	uint32_t max_msg_size;
 	char *sname;
-	unsigned sec_layer;
+	uint_t sec_layer;
 	ADS_STATUS status;
 	krb5_principal principal;
 	krb5_context ctx;

@@ -2131,7 +2131,7 @@ static int rpc_trustdom(int argc, const char **argv)
  *		if the host is not explicitly specified
  * @return  BOOL (true means rpc supported)
  */
-BOOL net_rpc_check(unsigned flags)
+BOOL net_rpc_check(uint_t flags)
 {
 	struct cli_state cli;
 	BOOL ret = False;

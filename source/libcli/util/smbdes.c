@@ -46,8 +46,6 @@
 */
 
 
-#define uint8_t unsigned char
-
 static const uint8_t perm1[56] = {57, 49, 41, 33, 25, 17,  9,
 			 1, 58, 50, 42, 34, 26, 18,
 			10,  2, 59, 51, 43, 35, 27,
@@ -306,7 +304,7 @@ void smbhash(uint8_t *out, const uint8_t *in, const uint8_t *key, int forw)
 
 void E_P16(const uint8_t *p14,uint8_t *p16)
 {
-	unsigned const char sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
+	const uint8_t sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
 	smbhash(p16, sp8, p14, 1);
 	smbhash(p16+8, sp8, p14+7, 1);
 }

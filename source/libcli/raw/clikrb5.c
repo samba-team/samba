@@ -278,9 +278,9 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	}
 
 	/* cope with the ticket being in the future due to clock skew */
-	if ((unsigned)credsp->times.starttime > time(NULL)) {
+	if ((uint_t)credsp->times.starttime > time(NULL)) {
 		time_t t = time(NULL);
-		int time_offset = (unsigned)credsp->times.starttime - t;
+		int time_offset = (uint_t)credsp->times.starttime - t;
 		DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
 		krb5_set_real_time(context, t + time_offset + 1, 0);
 	}

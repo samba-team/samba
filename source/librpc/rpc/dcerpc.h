@@ -50,7 +50,7 @@ struct dcerpc_pipe {
 	uint32_t call_id;
 	uint32_t srv_max_xmit_frag;
 	uint32_t srv_max_recv_frag;
-	unsigned flags;
+	uint_t flags;
 	struct dcerpc_security *security_state;
 	struct dcerpc_auth *auth_info;
 	const char *binding_string;

@@ -541,7 +541,7 @@ static tdb_off tdb_dump_record(TDB_CONTEXT *tdb, tdb_off offset)
 
 	if (tailer != rec.rec_len + sizeof(rec)) {
 		printf("ERROR: tailer does not match record! tailer=%u totalsize=%u\n",
-				(unsigned)tailer, (unsigned)(rec.rec_len + sizeof(rec)));
+				(uint_t)tailer, (uint_t)(rec.rec_len + sizeof(rec)));
 	}
 	return rec.next;
 }

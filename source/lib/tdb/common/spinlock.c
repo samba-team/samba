@@ -420,7 +420,7 @@ int tdb_spinunlock(TDB_CONTEXT *tdb, int list, int rw_type)
 
 int tdb_create_rwlocks(int fd, uint_t hash_size)
 {
-	unsigned size, i;
+	uint_t size, i;
 	tdb_rwlock_t *rwlocks;
 
 	size = TDB_SPINLOCK_SIZE(hash_size);
@@ -446,7 +446,7 @@ int tdb_create_rwlocks(int fd, uint_t hash_size)
 int tdb_clear_spinlocks(TDB_CONTEXT *tdb)
 {
 	tdb_rwlock_t *rwlocks;
-	unsigned i;
+	uint_t i;
 
 	if (tdb->header.rwlocks == 0) return 0;
 	if (!tdb->map_ptr) return -1;
