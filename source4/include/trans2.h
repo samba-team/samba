@@ -258,7 +258,7 @@ Found 0 aliased levels
 #define SMB_FIND_BOTH_DIRECTORY_INFO	0x104
 #define SMB_FIND_ID_FULL_DIRECTORY_INFO	0x105
 #define SMB_FIND_ID_BOTH_DIRECTORY_INFO 0x106
-#define SMB_FIND_UNIX_INFO              0x200
+#define SMB_FIND_UNIX_INFO              0x202
 
 /* flags on trans2 findfirst/findnext that control search */
 #define FLAG_TRANS2_FIND_CLOSE          0x1
