@@ -2949,7 +2949,6 @@ static int cli_init_redirect(struct cli_state *cli,
 				const struct user_credentials *usr)
 {
 	int sock;
-	struct sockaddr_un sa;
 	fstring ip_name;
 	struct cli_state cli_redir;
 	fstring path;
@@ -2969,28 +2968,12 @@ static int cli_init_redirect(struct cli_state *cli,
 		srv_name = ip_name;
 	}
 
-	sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	sock = open_pipe_sock(path);
 
 	if (sock < 0)
 	{
-		DEBUG(0, ("unix socket open failed\n"));
 		return sock;
 	}
-
-	ZERO_STRUCT(sa);
-	sa.sun_family = AF_UNIX;
-	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
-
-	DEBUG(10, ("socket open succeeded.  file name: %s\n", sa.sun_path));
-
-	if (connect(sock, (struct sockaddr*) &sa, sizeof(sa)) < 0)
-	{
-		DEBUG(0,("socket connect to %s failed\n", sa.sun_path));
-		close(sock);
-		return False;
-	}
-
-	DEBUG(10,("connect succeeded\n"));
 
 	ZERO_STRUCT(data);
 

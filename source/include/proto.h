@@ -613,6 +613,7 @@ int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
 void reset_globals_after_fork(void);
 char *client_name(int fd);
 char *client_addr(int fd);
+int open_pipe_sock(char *path);
 
 /*The following definitions come from  lib/util_status.c  */
 
@@ -838,6 +839,8 @@ BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
 BOOL send_packet(struct packet_struct *p);
 struct packet_struct *receive_packet(int fd,enum packet_type type,int t);
 void sort_query_replies(char *data, int n, struct in_addr ip);
+BOOL read_nmb_sock(int c, struct nmb_state *con);
+int get_nmb_sock(void);
 
 /*The following definitions come from  libsmb/nterr.c  */
 

@@ -862,3 +862,35 @@ char *client_addr(int fd)
 	global_client_addr_done = True;
 	return addr_buf;
 }
+
+/*******************************************************************
+ opens and connects to a unix pipe socket
+ ******************************************************************/
+int open_pipe_sock(char *path)
+{
+	int sock;
+	struct sockaddr_un sa;
+
+	sock = socket(AF_UNIX, SOCK_STREAM, 0);
+
+	if (sock < 0)
+	{
+		DEBUG(0, ("unix socket open failed\n"));
+		return sock;
+	}
+
+	ZERO_STRUCT(sa);
+	sa.sun_family = AF_UNIX;
+	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
+
+	DEBUG(10, ("socket open succeeded.  file name: %s\n", sa.sun_path));
+
+	if (connect(sock, (struct sockaddr*) &sa, sizeof(sa)) < 0)
+	{
+		DEBUG(0,("socket connect to %s failed\n", sa.sun_path));
+		close(sock);
+		return -1;
+	}
+
+	return sock;
+}

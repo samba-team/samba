@@ -651,14 +651,37 @@ void free_packet(struct packet_struct *packet)
 struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 {
   extern struct in_addr lastip;
+	struct nmb_state con;
   extern int lastport;
   struct packet_struct *packet;
   char buf[MAX_DGRAM_SIZE];
   int length;
   BOOL ok=False;
   
-  length = read_udp_socket(fd,buf,sizeof(buf));
+	if (packet_type == NMB_SOCK_PACKET || packet_type == DGRAM_SOCK_PACKET)
+	{
+		uint16 trn_id = 0;
+		if (!read_nmb_sock(fd, &con))
+		{
+			return False;
+		}
+		if (write(fd, &trn_id, sizeof(trn_id)) != sizeof(trn_id))
+		{
+			return False;
+		}
+	}
+	
+	length = read_udp_socket(fd,buf,sizeof(buf));
+
+	dump_data(100, buf, length);
+
   if (length < MIN_DGRAM_SIZE) return(NULL);
+
+	if (packet_type == NMB_SOCK_PACKET || packet_type == DGRAM_SOCK_PACKET)
+	{
+		lastip = con.ip;
+		lastport = con.port;
+	}
 
   packet = (struct packet_struct *)malloc(sizeof(*packet));
   if (!packet) return(NULL);
@@ -674,15 +697,17 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
   switch (packet_type) 
     {
     case NMB_PACKET:
+    case NMB_SOCK_PACKET:
       ok = parse_nmb(buf,length,&packet->packet.nmb);
       break;
 
     case DGRAM_PACKET:
+    case DGRAM_SOCK_PACKET:
       ok = parse_dgram(buf,length,&packet->packet.dgram);
       break;
     }
   if (!ok) {
-    DEBUG(10,("parse_nmb: discarding packet id = %d\n", 
+    DEBUG(10,("read_packet: discarding packet id = %d\n", 
                  packet->packet.nmb.header.name_trn_id));
     free(packet);
     return(NULL);
@@ -880,18 +905,65 @@ BOOL send_packet(struct packet_struct *p)
   switch (p->packet_type) 
     {
     case NMB_PACKET:
+    case NMB_SOCK_PACKET:
       len = build_nmb(buf,p);
       debug_nmb_packet(p);
       break;
 
     case DGRAM_PACKET:
+    case DGRAM_SOCK_PACKET:
       len = build_dgram(buf,p);
       break;
     }
 
   if (!len) return(False);
 
-  return(send_udp(p->fd,buf,len,p->ip,p->port));
+  switch (p->packet_type) 
+    {
+    case DGRAM_PACKET:
+    case NMB_PACKET:
+	  return(send_udp(p->fd,buf,len,p->ip,p->port));
+      break;
+
+    case NMB_SOCK_PACKET:
+    case DGRAM_SOCK_PACKET:
+	{
+		fstring qbuf;
+		struct nmb_state nmb;
+		int qlen;
+		uint16 trn_id;
+		char *q = qbuf + 4;
+
+		nmb.ip = p->ip;
+		nmb.port = p->port;
+
+		SSVAL(q, 0, 0);
+		q += 2;
+		SSVAL(q, 0, 0);
+		q += 2;
+		memcpy(q, &nmb, sizeof(nmb));
+		q += sizeof(nmb);
+
+		qlen = PTR_DIFF(q, qbuf);
+		SIVAL(qbuf, 0, qlen);
+
+		dump_data(100, qbuf, qlen);
+
+		  if (write(p->fd,qbuf,qlen) != qlen)
+		{
+			return False;
+		}
+		qlen = read(p->fd, &trn_id, sizeof(trn_id));
+
+		if (qlen != sizeof(trn_id))
+		{
+			return False;
+		}
+	  	return write(p->fd,buf,len) == len;
+	}
+    }
+
+	return False;
 }
 
 /****************************************************************************
@@ -960,4 +1032,77 @@ void sort_query_replies(char *data, int n, struct in_addr ip)
 	putip(sort_ip, (char *)&ip);
 
 	qsort(data, n, 6, QSORT_CAST name_query_comp);
+}
+
+BOOL read_nmb_sock(int c, struct nmb_state *con)
+{
+	fstring buf;
+	char *p = buf;
+	int rl;
+	uint32 len;
+	uint16 version;
+	uint16 command;
+
+	ZERO_STRUCTP(con);
+
+	rl = read(c, &buf, sizeof(len));
+
+	if (rl < 0)
+	{
+		DEBUG(0,("read_nmb_sock: error\n"));
+		return False;
+	}
+	if (rl != sizeof(len))
+	{
+		DEBUG(0,("Unable to read length\n"));
+		dump_data(0, buf, sizeof(len));
+		return False;
+	}
+
+	len = IVAL(buf, 0);
+
+	if (len > sizeof(buf))
+	{
+		DEBUG(0,("length %d too long\n", len));
+		return False;
+	}
+
+	rl = read(c, buf, len);
+
+	if (rl < 0)
+	{
+		DEBUG(0,("Unable to read from connection\n"));
+		return False;
+	}
+	
+#ifdef DEBUG_PASSWORD
+	dump_data(100, buf, rl);
+#endif
+	version = SVAL(p, 0);
+	p += 2;
+	command = SVAL(p, 0);
+	p += 2;
+
+	memcpy(con, p, sizeof(*con));
+	p += sizeof(*con);
+
+	DEBUG(10,("read_nmb_sock: ip %s port: %d\n",
+	           inet_ntoa(con->ip), con->port));
+
+	if (PTR_DIFF(p, buf) != rl)
+	{
+		DEBUG(0,("Buffer size %d %d!\n",
+			PTR_DIFF(p, buf), rl));
+		return False;
+	}
+
+	return True;
+}
+
+int get_nmb_sock(void)
+{
+	fstring path;
+	slprintf(path, sizeof(path)-1, "/tmp/.nmb/agent");
+
+	return open_pipe_sock(path);
 }
