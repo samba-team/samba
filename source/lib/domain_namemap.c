@@ -4,6 +4,7 @@
    Groupname handling
    Copyright (C) Jeremy Allison               1998-2000.
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000.
+   Copyright (C) Elrond                            2000.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,6 +50,7 @@
 
 #include "includes.h"
 #include "rpc_client.h"
+#include "nterr.h"
 #include "sids.h"
 
 extern int DEBUGLEVEL;
@@ -103,7 +105,7 @@ static void delete_map_list(ubi_slList * map_list)
 	}
 }
 
-static void map_posix_to_nt_type( DOM_NAME_MAP * gmep, int type)
+static void map_posix_to_nt_type(DOM_NAME_MAP * gmep, int type)
 {
 	if (type == SURS_POSIX_UID)
 	{
@@ -128,7 +130,7 @@ static void map_posix_to_nt_type( DOM_NAME_MAP * gmep, int type)
 /************************************************************************
  Routine to look up a remote nt name
 *************************************************************************/
-static BOOL get_sid( DOM_NAME_MAP * gmep, int type)
+static BOOL get_sid(DOM_NAME_MAP * gmep, int type)
 {
 	SURS_POSIX_ID id;
 
@@ -147,7 +149,7 @@ static BOOL get_sid( DOM_NAME_MAP * gmep, int type)
 /************************************************************************
  
 *************************************************************************/
-static BOOL get_uid( DOM_NAME_MAP * gmep, int type)
+static BOOL get_uid(DOM_NAME_MAP * gmep, int type)
 {
 	SURS_POSIX_ID id;
 
@@ -172,10 +174,26 @@ static BOOL get_uid( DOM_NAME_MAP * gmep, int type)
 /**************************************************************************
  makes a group sid out of an nt domain, nt group name or a unix group name.
 ***************************************************************************/
+static BOOL map_wk_name_to_sid(const char *domain, const char *name,
+			       DOM_SID *sid, uint32 *type)
+{
+	uint32 status = NT_STATUS_NONE_MAPPED;
+
+	if (status != 0x0)
+		status = lookup_wk_user_name(name, domain, sid, type);
+	if (status != 0x0)
+		status = lookup_wk_group_name(name, domain, sid, type);
+	if (status != 0x0)
+		status = lookup_builtin_alias_name(name, domain, sid, type);
+
+	return (status == 0x0);
+}
+
 static BOOL unix_name_to_nt_name_info(DOM_NAME_MAP * map, DOM_MAP_TYPE type)
 {
 	DOM_SID dom_sid;
 	uint32 rid;
+	uint32 sid_type;
 	int surs_type;
 	const char *ret_name;
 
@@ -190,11 +208,11 @@ static BOOL unix_name_to_nt_name_info(DOM_NAME_MAP * map, DOM_MAP_TYPE type)
 	{
 		const struct passwd *pwptr = Get_Pwnam(map->unix_name, False);
 		surs_type = SURS_POSIX_UID;
+		sid_type = SID_NAME_USER;
 		if (pwptr == NULL)
 		{
 			DEBUG(0,
-			      ("unix_name_to_nt_name_info: Get_Pwnam for user %s\
-failed. Error was %s.\n",
+			      ("unix_name_to_nt_name_info: Get_Pwnam for user %s failed. Error was %s.\n",
 			       map->unix_name, strerror(errno)));
 			return False;
 		}
@@ -205,11 +223,18 @@ failed. Error was %s.\n",
 	{
 		struct group *gptr = getgrnam(map->unix_name);
 		surs_type = SURS_POSIX_GID;
+		if (type == DOM_MAP_DOMAIN)
+		{
+			sid_type = SID_NAME_DOM_GRP;
+		}
+		else
+		{
+			sid_type = SID_NAME_ALIAS;
+		}
 		if (gptr == NULL)
 		{
 			DEBUG(0,
-			      ("unix_name_to_nt_name_info: getgrnam for group %s\
-failed. Error was %s.\n",
+			      ("unix_name_to_nt_name_info: getgrnam for group %s failed. Error was %s.\n",
 			       map->unix_name, strerror(errno)));
 			return False;
 		}
@@ -223,17 +248,43 @@ failed. Error was %s.\n",
 	 * Now map the name to an NT SID+RID.
 	 */
 
-	if (!get_sid(map, surs_type))
+	/* first see, if it's a well known name */
+
+	if (map_wk_name_to_sid(map->nt_domain, map->nt_name,
+			       &map->sid, &map->type))
 	{
-		DEBUG(0, ("get_sid: unknown unix id %x\n", map->unix_id));
-		return False;
+		if (map->type != sid_type)
+		{
+			DEBUG(0, ("unix_name_to_nt_name_info: "
+				  "type (%d: %s) of wellknown NT name "
+				  "%s\\%s does not match expected type %s\n",
+				  map->type, get_sid_name_use_str(map->type),
+				  map->nt_domain, map->nt_name,
+				  get_sid_name_use_str(sid_type)));
+
+			return False;
+		}
+	}
+	else
+	{
+		if (!get_sid(map, surs_type))
+		{
+			DEBUG(0, ("get_sid: unknown unix id %x\n",
+				  map->unix_id));
+			return False;
+		}
+		/* XXX
+		 * Overwrite the type, surs does not know anything
+		 * about sid_types currently
+		 */
+		map->type = sid_type;
 	}
 
 	sid_copy(&dom_sid, &map->sid);
 	sid_split_rid(&dom_sid, &rid);
 
 	ret_name = map_wk_sid_to_name(&dom_sid, NULL, NULL);
-	
+
 	if (!ret_name)
 	{
 		fstring sid_str;
@@ -249,9 +300,9 @@ failed. Error was %s.\n",
 	{
 		fstring sid_str;
 		sid_to_string(sid_str, &map->sid);
-		DEBUG(10, ("nt name %s\\%s gid %d mapped to %s\n",
+		DEBUG(10, ("nt name %s\\%s unixid %d mapped to %s (%s)\n",
 			   map->nt_domain, map->nt_name, map->unix_id,
-			   sid_str));
+			   sid_str, get_sid_name_use_str(map->type)));
 	}
 	return True;
 }
@@ -264,9 +315,8 @@ static BOOL make_name_entry(name_map_entry ** new_ep,
 	 * Create the list entry and add it onto the list.
 	 */
 
-	DEBUG(5,
-	      ("make_name_entry:%s,%s,%s\n", nt_domain, nt_group,
-	       unix_group));
+	DEBUG(5, ("make_name_entry: %s\\%s, %s\n",
+		  nt_domain, nt_group, unix_group));
 
 	(*new_ep) = (name_map_entry *) malloc(sizeof(name_map_entry));
 	if ((*new_ep) == NULL)
@@ -419,6 +469,7 @@ static ubi_slList *load_name_map(DOM_MAP_TYPE type)
 		if (!*unixname)
 			continue;
 
+#if 0
 		p = strchr(nt_name, '\\');
 
 		if (p == NULL)
@@ -433,15 +484,20 @@ static ubi_slList *load_name_map(DOM_MAP_TYPE type)
 			fstrcpy(nt_domain, nt_name);
 			fstrcpy(ntname, p);
 		}
+#else
+		if (!split_domain_name(nt_name, nt_domain, ntname))
+			continue;
+#endif
 
-		if (make_name_entry
-		    (&new_ep, nt_domain, ntname, unixname, type))
+		if (make_name_entry(&new_ep, nt_domain, ntname,
+				    unixname, type))
 		{
 			ubi_slAddTail(map_list, (ubi_slNode *) new_ep);
-			DEBUG(5,
-			      ("unixname = %s, ntname = %s\\%s type = %d\n",
-			       new_ep->grp.unix_name, new_ep->grp.nt_domain,
-			       new_ep->grp.nt_name, new_ep->grp.type));
+			DEBUG(5, ("load_name_map: Added entry: "
+				  "unixname=%s, ntname=%s\\%s type=%s\n",
+				  new_ep->grp.unix_name,
+				  new_ep->grp.nt_domain, new_ep->grp.nt_name,
+				  get_sid_name_use_str(new_ep->grp.type)));
 		}
 	}
 
@@ -673,7 +729,7 @@ static BOOL map_username_uid(uid_t gid, DOM_NAME_MAP * grp_info)
 /***********************************************************
  Lookup an Alias SID entry by name.
 ************************************************************/
-BOOL map_alias_sid(DOM_SID *psid, DOM_NAME_MAP * grp_info)
+static BOOL map_alias_sid(DOM_SID *psid, DOM_NAME_MAP * grp_info)
 {
 	return map_sid(DOM_MAP_LOCAL, psid, grp_info);
 }
@@ -681,7 +737,7 @@ BOOL map_alias_sid(DOM_SID *psid, DOM_NAME_MAP * grp_info)
 /***********************************************************
  Lookup a Group entry by sid.
 ************************************************************/
-BOOL map_group_sid(DOM_SID *psid, DOM_NAME_MAP * grp_info)
+static BOOL map_group_sid(DOM_SID *psid, DOM_NAME_MAP * grp_info)
 {
 	return map_sid(DOM_MAP_DOMAIN, psid, grp_info);
 }

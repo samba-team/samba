@@ -203,9 +203,9 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 	{
 		DOM_NAME_MAP gmep;
 
-		memcpy(&unix_grp, &grps->grps[grps->grp_idx], sizeof(unix_grp));
+		unix_grp = grps->grps[grps->grp_idx];
 
-		DEBUG(10,("getgrpunixpwent: enum unix group entry %s\n",
+		DEBUG(10, ("getgrpunixpwent: enum unix group entry %s\n",
 		           unix_grp.gr_name));
 			
 		if (!lookupsmbgrpgid(unix_grp.gr_gid, &gmep))
@@ -241,7 +241,7 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 		(*mem) = NULL;
 		(*num_mem) = 0;
 
-		memcpy(&unix_grp, getgrgid(unix_grp.gr_gid), sizeof(unix_grp));
+		unix_grp = *(getgrgid(unix_grp.gr_gid));
 		get_unixgroup_members(&unix_grp, num_mem, mem);
 	}
 

@@ -202,7 +202,7 @@ static LOCAL_GRP *getalsfilepwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 			continue;
 		}
 		if (gmep.type != SID_NAME_DOM_GRP &&
-		    gmep.type != SID_NAME_WKN_GRP))
+		    gmep.type != SID_NAME_WKN_GRP)
 		{
 			continue;
 		}
