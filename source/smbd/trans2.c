@@ -377,7 +377,7 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       pstring newname;
       pstrcpy( newname, fname);
       name_map_mangle( newname, True, SNUM(conn));
-      got_match = mask_match(newname, mask, case_sensitive, False);
+      got_match = mask_match(newname, mask, case_sensitive, True);
     }
 
     if(got_match)
