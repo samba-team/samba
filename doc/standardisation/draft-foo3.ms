@@ -180,8 +180,9 @@ Specification
 Security considerations
 
 .in 3
-This memo does not introduce any known security considerations in
-addition to those mentioned in [RFC1510].
+Since the whole network behind a NAT-type firewall looks like one
+computer from the outside, any security added by the addresses in the
+ticket will be lost.
 
 .ti 0
 References
