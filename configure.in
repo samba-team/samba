@@ -356,6 +356,8 @@ AC_CHECK_HEADERS([\
 	tmpdir.h				\
 	udb.h					\
 	unistd.h				\
+	userconf.h				\
+	usersec.h				\
 	util.h					\
 	utmp.h					\
 	utmpx.h					\
@@ -539,19 +541,73 @@ AC_NEED_PROTO([
 vasnprintf)dnl
 fi
 
-AC_BROKEN(chown copyhostent daemon err errx fchown flock fnmatch)
-AC_BROKEN(freeaddrinfo freehostent gai_strerror getaddrinfo)
-AC_BROKEN(getcwd getdtablesize gethostname getipnodebyaddr getipnodebyname)
-AC_BROKEN(geteuid getgid getegid)
-AC_BROKEN(getnameinfo getopt getusershell)
-AC_BROKEN(inet_aton inet_ntop inet_pton initgroups innetgr iruserok lstat)
-AC_BROKEN(memmove)
-AC_BROKEN(mkstemp putenv rcmd readv recvmsg sendmsg setegid setenv seteuid)
-AC_BROKEN(strcasecmp strncasecmp strdup strerror strftime)
-AC_BROKEN(strlcat strlcpy strlwr)
-AC_BROKEN(strndup strnlen strptime strsep strtok_r strupr)
-AC_BROKEN(swab unsetenv verr verrx vsyslog)
-AC_BROKEN(vwarn vwarnx warn warnx writev)
+AC_BROKEN([					\
+	chown					\
+	copyhostent				\
+	daemon					\
+	err					\
+	errx					\
+	fchown					\
+	flock					\
+	fnmatch					\
+	freeaddrinfo				\
+	freehostent				\
+	gai_strerror				\
+	getaddrinfo				\
+	getconfattr				\
+	getcwd					\
+	getdtablesize				\
+	getegid					\
+	geteuid					\
+	getgid					\
+	gethostname				\
+	getipnodebyaddr				\
+	getipnodebyname				\
+	getnameinfo				\
+	getopt					\
+	getusershell				\
+	inet_aton				\
+	inet_ntop				\
+	inet_pton				\
+	initgroups				\
+	innetgr					\
+	iruserok				\
+	lstat					\
+	memmove					\
+	mkstemp					\
+	putenv					\
+	rcmd					\
+	readv					\
+	recvmsg					\
+	sendmsg					\
+	setegid					\
+	setenv					\
+	seteuid					\
+	strcasecmp				\
+	strdup					\
+	strerror				\
+	strftime				\
+	strlcat					\
+	strlcpy					\
+	strlwr					\
+	strncasecmp				\
+	strndup					\
+	strnlen					\
+	strptime				\
+	strsep					\
+	strtok_r				\
+	strupr					\
+	swab					\
+	unsetenv				\
+	verr					\
+	verrx					\
+	vsyslog					\
+	vwarn					\
+	vwarnx					\
+	warn					\
+	warnx					\
+	writev					\
+])
 
 AC_NEED_PROTO([#include <stdlib.h>], setenv)
 AC_NEED_PROTO([#include <stdlib.h>], unsetenv)
