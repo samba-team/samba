@@ -299,13 +299,13 @@ interface netlogon
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
-	} DELTA_DELETE_USER;
+	} netr_DELTA_DELETE_USER;
 
 	typedef struct {
 		bool8  SensitiveDataFlag;
 		uint32 DataLength;
 		[size_is(DataLength)] uint8 *SensitiveData;
-	} USER_PRIVATE_INFO;
+	} netr_USER_PRIVATE_INFO;
 
 	typedef struct {
 		netr_String username;
@@ -334,7 +334,7 @@ interface netlogon
 		netr_String Parameters;
 		uint16 CountryCode;
 		uint16 CodePage;
-		USER_PRIVATE_INFO user_private_info;
+		netr_USER_PRIVATE_INFO user_private_info;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
 		netr_String unknown1;
@@ -345,7 +345,7 @@ interface netlogon
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
-	} DELTA_USER;
+	} netr_DELTA_USER;
 
 	typedef struct {
 		netr_String DomainName;
@@ -367,7 +367,7 @@ interface netlogon
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
-	} DELTA_DOMAIN;
+	} netr_DELTA_DOMAIN;
 
 	typedef struct {
 		netr_String groupname;
@@ -383,7 +383,7 @@ interface netlogon
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
-	} DELTA_GROUP;
+	} netr_DELTA_GROUP;
 
 	typedef struct {
 		netr_String OldName;
@@ -396,7 +396,7 @@ interface netlogon
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
-	} DELTA_RENAME;
+	} netr_DELTA_RENAME;
 
 	typedef struct {
 		[size_is(num_rids)] uint32 *rids;
@@ -406,7 +406,7 @@ interface netlogon
 		uint32 unknown2;
 		uint32 unknown3;
 		uint32 unknown4;
-	} DELTA_GROUP_MEMBER;
+	} netr_DELTA_GROUP_MEMBER;
 
 	typedef struct {
 		netr_String alias_name;
@@ -421,7 +421,7 @@ interface netlogon
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
-	} DELTA_ALIAS;
+	} netr_DELTA_ALIAS;
 
 	typedef struct {
 		lsa_SidArray sids;
@@ -429,7 +429,7 @@ interface netlogon
 		uint32 unknown2;
 		uint32 unknown3;
 		uint32 unknown4;
-	} DELTA_ALIAS_MEMBER;
+	} netr_DELTA_ALIAS_MEMBER;
 
 	typedef struct {
 		uint32 pagedpoollimit;
@@ -438,7 +438,7 @@ interface netlogon
 		uint32 maximumworkingsetsize;
 		uint32 pagefilelimit;
 		NTTIME timelimit;
-	} QUOTA_LIMITS;
+	} netr_QUOTA_LIMITS;
 
 	typedef struct {
 		uint32 maxlogsize;
@@ -448,7 +448,7 @@ interface netlogon
 		[size_is(maxauditeventcount+1)] uint32 *eventauditoptions;
 		netr_String primarydomainname;
 		dom_sid2 *sid;
-		QUOTA_LIMITS quota_limits;
+		netr_QUOTA_LIMITS quota_limits;
 		NTTIME db_modify_time;
 		NTTIME db_create_time;
 		uint32 SecurityInformation;
@@ -461,7 +461,7 @@ interface netlogon
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
-	} DELTA_POLICY;
+	} netr_DELTA_POLICY;
 
 	typedef struct {
 		netr_String DomainName;
@@ -477,14 +477,14 @@ interface netlogon
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
-	} DELTA_TRUSTED_DOMAINS;
+	} netr_DELTA_TRUSTED_DOMAINS;
 
 	typedef struct {
 		uint32 privilege_entries;
 		uint32 privilege_control;
 		[size_is(privilege_entries)] uint32 *privilege_attrib;
 		[size_is(privilege_entries)] netr_String *privilege_name;
-		QUOTA_LIMITS quotalimits;
+		netr_QUOTA_LIMITS quotalimits;
 		uint32 system_flags;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
@@ -496,18 +496,18 @@ interface netlogon
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
-	} DELTA_ACCOUNTS;
+	} netr_DELTA_ACCOUNTS;
 
 	typedef struct {
 		uint32 len;
 		uint32 maxlen;
 		[size_is(maxlen)][length_is(len)] uint8 *cipher_data;
-	} CIPHER_VALUE;
+	} netr_CIPHER_VALUE;
 
 	typedef struct {
-		CIPHER_VALUE current_cipher;
+		netr_CIPHER_VALUE current_cipher;
 		NTTIME current_cipher_set_time;
-		CIPHER_VALUE old_cipher;
+		netr_CIPHER_VALUE old_cipher;
 		NTTIME old_cipher_set_time;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
@@ -519,61 +519,61 @@ interface netlogon
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
-	} DELTA_SECRET;
+	} netr_DELTA_SECRET;
 
 	typedef union {
-		[case(1)] DELTA_DOMAIN *domain;
-		[case(2)] DELTA_GROUP *group;
-		[case(4)] DELTA_RENAME *rename_group;
-		[case(5)] DELTA_USER *user;
-		[case(7)] DELTA_RENAME *rename_user;
-		[case(8)] DELTA_GROUP_MEMBER *group_member;
-		[case(9)] DELTA_ALIAS *alias;
-		[case(11)] DELTA_RENAME *rename_alias;
-		[case(12)] DELTA_ALIAS_MEMBER *alias_member;
-		[case(13)] DELTA_POLICY *policy;
-		[case(14)] DELTA_TRUSTED_DOMAINS *trusted_domains;
-		[case(16)] DELTA_ACCOUNTS *accounts;
-		[case(18)] DELTA_SECRET *secret;
-		[case(20)] DELTA_DELETE_USER *delete_group;
-		[case(21)] DELTA_DELETE_USER *delete_user;
+		[case(1)] netr_DELTA_DOMAIN *domain;
+		[case(2)] netr_DELTA_GROUP *group;
+		[case(4)] netr_DELTA_RENAME *rename_group;
+		[case(5)] netr_DELTA_USER *user;
+		[case(7)] netr_DELTA_RENAME *rename_user;
+		[case(8)] netr_DELTA_GROUP_MEMBER *group_member;
+		[case(9)] netr_DELTA_ALIAS *alias;
+		[case(11)] netr_DELTA_RENAME *rename_alias;
+		[case(12)] netr_DELTA_ALIAS_MEMBER *alias_member;
+		[case(13)] netr_DELTA_POLICY *policy;
+		[case(14)] netr_DELTA_TRUSTED_DOMAINS *trusted_domains;
+		[case(16)] netr_DELTA_ACCOUNTS *accounts;
+		[case(18)] netr_DELTA_SECRET *secret;
+		[case(20)] netr_DELTA_DELETE_USER *delete_group;
+		[case(21)] netr_DELTA_DELETE_USER *delete_user;
 		[case(22)] HYPER_T *modified_count;
-	} DELTA_UNION;
+	} netr_DELTA_UNION;
 
 	typedef union {
-		[case(1)] uint32 rid;
-		[case(2)] uint32 rid;
-		[case(3)] uint32 rid;
-		[case(4)] uint32 rid;
-		[case(5)] uint32 rid;
-		[case(6)] uint32 rid;
-		[case(7)] uint32 rid;
-		[case(8)] uint32 rid;
-		[case(9)] uint32 rid;
+		[case(1)]  uint32 rid;
+		[case(2)]  uint32 rid;
+		[case(3)]  uint32 rid;
+		[case(4)]  uint32 rid;
+		[case(5)]  uint32 rid;
+		[case(6)]  uint32 rid;
+		[case(7)]  uint32 rid;
+		[case(8)]  uint32 rid;
+		[case(9)]  uint32 rid;
 		[case(10)] uint32 rid;
 		[case(11)] uint32 rid;
 		[case(12)] uint32 rid;
-		[case(13)]  dom_sid2 *sid;
-		[case(14)]  dom_sid2 *sid;
-		[case(15)]  dom_sid2 *sid;
-		[case(16)]  dom_sid2 *sid;
-		[case(17)]  dom_sid2 *sid;
-		[case(18)] unistr *Name ;
-		[case(19)] unistr *Name ;
+		[case(13)] dom_sid2 *sid;
+		[case(14)] dom_sid2 *sid;
+		[case(15)] dom_sid2 *sid;
+		[case(16)] dom_sid2 *sid;
+		[case(17)] dom_sid2 *sid;
+		[case(18)] unistr *Name;
+		[case(19)] unistr *Name;
 		[case(20)] uint32 rid;
 		[case(21)] uint32 rid;
-	} DELTA_ID_UNION;
+	} netr_DELTA_ID_UNION;
 
 	typedef struct {
 		uint16 delta_type;
-		[switch_is(delta_type)] DELTA_ID_UNION delta_id_union;
-		[switch_is(delta_type)] DELTA_UNION delta_union;
-	} DELTA_ENUM;
+		[switch_is(delta_type)] netr_DELTA_ID_UNION delta_id_union;
+		[switch_is(delta_type)] netr_DELTA_UNION delta_union;
+	} netr_DELTA_ENUM;
 
 	typedef struct {
 		uint32 num_deltas;
-		[size_is(num_deltas)] DELTA_ENUM *delta_enum;
-	} DELTA_ENUM_ARRAY;
+		[size_is(num_deltas)] netr_DELTA_ENUM *delta_enum;
+	} netr_DELTA_ENUM_ARRAY;
 
 
 	NTSTATUS netr_DatabaseDeltas(
@@ -584,7 +584,7 @@ interface netlogon
 		[in]      uint32 database_id,
 		[in,out]  HYPER_T domain_modify_count,
 		[in]      uint32 preferredmaximumlength,
-		[out]     DELTA_ENUM_ARRAY *delta_enum_array
+		[out]     netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
 
 
@@ -599,7 +599,7 @@ interface netlogon
 		[in]     uint32 database_id,
 		[in,out] uint32 sync_context,
 		[in]     uint32 preferredmaximumlength,
-		[out]    DELTA_ENUM_ARRAY *delta_enum_array
+		[out]    netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
 
 #if 0
@@ -753,7 +753,7 @@ interface netlogon
 		[in] uint16 restart_state,
 		[in][out][ref] uint32 *sync_context,
 		[in] uint32 preferredmaximumlength,
-		[out] DELTA_ENUM_ARRAY *delta_enum_array
+		[out] netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
 
 
@@ -763,11 +763,11 @@ interface netlogon
 	NTSTATUS netr_DatabaseRedo(
 		[in][string][ref] wchar_t *logonserver, # REF!!!
 		[in][string][ref] wchar_t *computername,
-		[in][ref] AUTHENTICATOR credential,
-		[in][out][ref] AUTHENTICATOR return_authenticator,
+		[in][ref] netr_Authenticator credential,
+		[in][out][ref] netr_Authenticator return_authenticator,
 		[in][ref][size_is(change_log_entry_size)] uint8 *change_log_entry,
 		[in] uint32 change_log_entry_size,
-		[out] DELTA_ENUM_ARRAY *delta_enum_array
+		[out] netr_DELTA_ENUM_ARRAY *delta_enum_array
 		);
 
 
