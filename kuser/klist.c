@@ -78,8 +78,7 @@ print_cred(krb5_context context, krb5_creds *cred)
 	printf ("%-15s  ", ">>>Expired<<<");
     ret = krb5_unparse_name (context, cred->server, &str);
     if (ret)
-	errx (1, "krb5_unparse_name: %s", 
-	      krb5_get_err_text(context,ret));
+	krb5_err(context, 1, ret, "krb5_unparse_name");
     printf ("%s\n", str);
     free (str);
 }
@@ -232,19 +231,22 @@ main (int argc, char **argv)
 
     ret = krb5_init_context (&context);
     if (ret)
-	errx (1, "krb5_init_context: %s", krb5_get_err_text(context,ret));
+	krb5_err(context, 1, ret, "krb5_init_context");
 
     ret = krb5_cc_default (context, &ccache);
     if (ret)
-	errx (1, "krb5_cc_default: %s", krb5_get_err_text(context,ret));
+	krb5_err (context, 1, ret, "krb5_cc_default");
 
     ret = krb5_cc_get_principal (context, ccache, &principal);
+    if(ret == ENOENT)
+	krb5_errx(context, 1, "No ticket file: %s", 
+		  krb5_cc_get_name(context, ccache));
     if (ret)
-	errx (1, "krb5_cc_get_principal: %s", krb5_get_err_text(context,ret));
+	krb5_err (context, 1, ret, "krb5_cc_get_principal");
 
     ret = krb5_unparse_name (context, principal, &str);
     if (ret)
-	errx (1, "krb5_unparse_name: %s", krb5_get_err_text(context,ret));
+	krb5_err (context, 1, ret, "krb5_unparse_name");
 
     printf ("Credentials cache: %s\n", krb5_cc_get_name(context, ccache));
     printf ("\tPrincipal: %s\n\n", str);
@@ -270,7 +272,7 @@ main (int argc, char **argv)
 
     ret = krb5_cc_start_seq_get (context, ccache, &cursor);
     if (ret)
-	errx (1, "krb5_cc_start_seq_get: %s", krb5_get_err_text(context,ret));
+	krb5_err(context, 1, ret, "krb5_cc_start_seq_get");
 
     if(!do_verbose)
 	printf("  %-15s  %-15s  %s\n", "Issued", "Expires", "Principal");
@@ -288,11 +290,11 @@ main (int argc, char **argv)
     }
     ret = krb5_cc_end_seq_get (context, ccache, &cursor);
     if (ret)
-	errx (1, "krb5_cc_end_seq_get: %s", krb5_get_err_text(context,ret));
+	krb5_err (context, 1, ret, "krb5_cc_end_seq_get");
 
     ret = krb5_cc_close (context, ccache);
     if (ret)
-	errx (1, "krb5_cc_close: %s", krb5_get_err_text(context,ret));
+	krb5_err (context, 1, ret, "krb5_cc_close");
 
     krb5_free_principal (context, principal);
     krb5_free_context (context);
