@@ -65,3 +65,30 @@ int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v)
 {
 	return tdb_store_int_byblob(tdb, keystr, strlen(keystr), v);
 }
+
+/* Store a buffer by a null terminated string key.  Return 0 on success, -1
+   on failure */
+int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len)
+{
+    TDB_DATA key, data;
+
+    key.dptr = keystr;
+    key.dsize = strlen(keystr) + 1;
+
+    data.dptr = buffer;
+    data.dsize = len;
+
+    return tdb_store(tdb, key, data, TDB_REPLACE);
+}
+
+/* Fetch a buffer using a null terminated string key.  Don't forget to call
+   free() on the result dptr. */
+TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
+{
+    TDB_DATA key;
+
+    key.dptr = keystr;
+    key.dsize = strlen(keystr) + 1;
+
+    return tdb_fetch(tdb, key);
+}
