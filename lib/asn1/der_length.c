@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,7 +41,7 @@
 RCSID("$Id$");
 
 static size_t
-length_int (unsigned val)
+length_unsigned (unsigned val)
 {
   size_t ret = 0;
 
@@ -52,17 +52,37 @@ length_int (unsigned val)
   return ret;
 }
 
+static size_t
+length_int (int val)
+{
+  size_t ret = 0;
+
+  if (val == 0)
+    return 1;
+  while (abs(val) > 255) {
+    ++ret;
+    val /= 256;
+  }
+  if (abs(val) > 0) {
+    ++ret;
+    if ((signed char)val != val)
+      ++ret;
+    val /= 256;
+  }
+  return ret;
+}
+
 size_t
 length_len (size_t len)
 {
   if (len < 128)
     return 1;
   else
-    return length_int (len) + 1;
+    return length_unsigned (len) + 1;
 }
 
 size_t
-length_integer (unsigned *data)
+length_integer (int *data)
 {
   size_t len = length_int (*data);
 
