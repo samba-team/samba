@@ -38,13 +38,14 @@ extern struct poptOption popt_common_credentials[];
 #define POPT_COMMON_VERSION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version, 0, "Common samba options:", NULL },
 #define POPT_COMMON_CREDENTIALS { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_credentials, 0, "Authentication options:", NULL },
 
-struct user_auth_info {
+struct cmdline_auth_info {
 	pstring username;
 	pstring password;
+	pstring domain;
 	BOOL got_pass;
 	BOOL use_kerberos;
 };
 
-extern struct user_auth_info cmdline_auth_info;
+extern struct cmdline_auth_info cmdline_auth_info;
 
 #endif /* _POPT_COMMON_H */
