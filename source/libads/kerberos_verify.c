@@ -109,9 +109,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	}
 
 	/*
-	 * JRA. We must set the rcache and the allowed addresses in the auth_context
-	 * here. This will prevent replay attacks and ensure the client has got a key from
-	 * the correct IP address.
+	 * JRA. We must set the rcache here. This will prevent replay attacks.
 	 */
 
 	ret = krb5_get_server_rcache(context, krb5_princ_component(context, host_princ, 0), &rcache);
@@ -142,7 +140,16 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		goto out;
 	}
 
-	/* we need to setup a auth context with each possible encoding type in turn */
+	/* Lock a mutex surrounding the replay as there is no locking in the MIT krb5
+	 * code surrounding the replay cache... */
+
+	if (!grab_server_mutex("replay cache mutex")) {
+		DEBUG(1,("ads_verify_ticket: unable to protect replay cache with mutex.\n"));
+		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
+	}
+
+	/* We need to setup a auth context with each possible encoding type in turn. */
 	for (i=0;enctypes[i];i++) {
 		if (create_kerberos_key_from_string(context, host_princ, &password, key, enctypes[i])) {
 			continue;
@@ -166,6 +173,8 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 				("ads_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
 				(unsigned int)enctypes[i], error_message(ret)));
 	}
+
+	release_server_mutex();
 
 	if (!auth_ok) {
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
