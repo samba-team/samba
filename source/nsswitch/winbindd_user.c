@@ -40,7 +40,7 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	
 	if (!winbindd_idmap_get_uid_from_rid(domain_name, user_rid, 
 					     &pw->pw_uid)) {
-		DEBUG(1, ("error getting user id for user %s\n", name_user));
+		DEBUG(1, ("error getting user id for rid %d\n", user_rid));
 		return False;
 	}
 	
@@ -48,7 +48,7 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	
 	if (!winbindd_idmap_get_gid_from_rid(domain_name, group_rid, 
 					     &pw->pw_gid)) {
-		DEBUG(1, ("error getting group id for user %s\n", name_user));
+		DEBUG(1, ("error getting group id for rid %d\n", group_rid));
 		return False;
 	}
 
@@ -80,7 +80,7 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	   Authentication can be done using the pam_ntdom module. */
 
 	safe_strcpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
-
+	
 	return True;
 }
 
@@ -329,6 +329,9 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	fstring group_name;
 	enum SID_NAME_USE name_type;
 
+	ZERO_STRUCT(info1);
+	ZERO_STRUCT(ctr);
+
 	ctr.sam.info1 = &info1;
 			
 	/* Look in cache for entries, else get them direct */
@@ -356,7 +359,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	}
 
 	/* Call query_dispinfo to get a list of usernames and user rids */
-	
+
 	do {
 		int i;
 					
@@ -365,7 +368,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 					
 		name_list = Realloc(name_list, sizeof(struct getpwent_user) *
 				    (ent->num_sam_entries + num_entries));
-				
+
 		for (i = 0; i < num_entries; i++) {
 
 			/* Store account name and gecos */
@@ -387,11 +390,10 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 
 			name_list[ent->num_sam_entries + i].
 				group_rid = group_rid;
-
 		}
 		
 		ent->num_sam_entries += num_entries;
-		
+
 	} while (status == STATUS_MORE_ENTRIES);
 	
 	/* Fill cache with received entries */
@@ -413,6 +415,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 {
 	struct winbindd_pw *user_list;
 	int i, num_users, user_list_ndx = 0;
+	char *sep;
 
 	if (state == NULL) return WINBINDD_ERROR;
 
@@ -429,105 +432,101 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 	       sizeof(struct winbindd_pw));
 
 	user_list = (struct winbindd_pw *)state->response.extra_data;
+	sep = lp_winbind_separator();
 
 	/* Start sending back users */
 
-	for (i = 0; i < num_users; i++) {
-
-		/* Add a user entry to client response structure */
-
-		while(state->getpwent_state != NULL) {
-			struct getent_state *ent = state->getpwent_state;
-			struct getpwent_user *name_list;
-			enum winbindd_result result;
+	while(state->getpwent_state != NULL) {
+		struct getent_state *ent = state->getpwent_state;
+		struct getpwent_user *name_list;
+		enum winbindd_result result;
 			fstring domain_user_name;
 
-			/* Get list of user entries for this pipe */
+		/* Get list of user entries for this pipe */
 		
-			if (!ent->got_sam_entries && 
-			    !get_sam_user_entries(ent)) {
-				goto cleanup;
-			}
-		
-			/* Cleanup if we have no entries */
-
-			if (!(name_list = ent->sam_entries)) {
-				goto cleanup;
-			}
-
-			/* Ignore machine accounts */
-
-			if (name_list[ent->sam_entry_index].
-			    name[strlen(name_list[ent->sam_entry_index].name)
-				- 1] == '$') {
-				ent->sam_entry_index++;
-				goto check_cleanup;
-			}
-
-			/* Prepend domain to name */
-			
-			slprintf(domain_user_name, sizeof(domain_user_name),
-				 "%s%s%s", ent->domain->name, 
-				 lp_winbind_separator(), 
-				 name_list[ent->sam_entry_index].name);
-	
-			result = winbindd_fill_pwent(
-				ent->domain->name, 
-				domain_user_name,
-				name_list[ent->sam_entry_index].user_rid,
-				name_list[ent->sam_entry_index].group_rid,
-				name_list[ent->sam_entry_index].gecos,
-				&user_list[user_list_ndx]);
-
-			ent->sam_entry_index++;
-
-			/* Add user to return list */
-
-			if (result == WINBINDD_OK) {
-
-				/* We've got a user.  Update client
-				   response structure and break out of
-				   while loop */
-
-				user_list_ndx++;
-				state->response.data.num_entries++;
-				state->response.length += 
-					sizeof(struct winbindd_pw);
-			} else {
-				DEBUG(1, ("could not getpwnam_from_user "
-					  "for username %s\n", 
-					  domain_user_name));
-			}
-
-			/* Check to see if we should move on to the next
-                           pipe */
-
-		check_cleanup:
-
-			if (ent->sam_entry_index == ent->num_sam_entries) {
-				struct getent_state *old_ent;
-		
-				/* Free mallocated memory for sam entries.
-				   The data stored here may have been
-				   allocated from the cache. */
-			
-			cleanup:
-		
-				if (ent->sam_entries != NULL) {
-					free(ent->sam_entries);
-				}
-
-				ent->sam_entries = NULL;
-		
-				/* Free state information for this domain */
-				
-				old_ent = state->getpwent_state;
-				DLIST_REMOVE(state->getpwent_state, 
-					     state->getpwent_state);
-				free(old_ent);
-			}
-
+		if (!ent->got_sam_entries && 
+		    !get_sam_user_entries(ent)) {
+			goto cleanup;
 		}
+		
+		/* Cleanup if we have no entries */
+		
+		if (!(name_list = ent->sam_entries)) {
+			goto cleanup;
+		}
+		
+		/* Ignore machine accounts */
+		
+		if (name_list[ent->sam_entry_index].
+		    name[strlen(name_list[ent->sam_entry_index].name)
+			- 1] == '$') {
+			ent->sam_entry_index++;
+			goto check_cleanup;
+		}
+		
+		/* Prepend domain to name */
+		
+		slprintf(domain_user_name, sizeof(domain_user_name),
+			 "%s%s%s", ent->domain->name, sep,
+			 name_list[ent->sam_entry_index].name);
+		
+		result = winbindd_fill_pwent(ent->domain->name, 
+			domain_user_name,
+			name_list[ent->sam_entry_index].user_rid,
+			name_list[ent->sam_entry_index].group_rid,
+			name_list[ent->sam_entry_index].gecos,
+			&user_list[user_list_ndx]);
+		
+		ent->sam_entry_index++;
+		
+		/* Add user to return list */
+		
+		if (result == WINBINDD_OK) {
+			
+			/* We've got a user.  Update client response
+			   structure and break out of while loop */
+			
+			user_list_ndx++;
+			state->response.data.num_entries++;
+			state->response.length += 
+				sizeof(struct winbindd_pw);
+		} else {
+			DEBUG(1, ("could not getpwnam_from_user "
+				  "for username %s\n", domain_user_name));
+		}
+		
+		/* Check to see if we should move on to the next
+		   pipe or quit sending off users */
+		
+	check_cleanup:
+		
+		if (user_list_ndx == num_users) {
+			break;
+		}
+		
+		if (ent->sam_entry_index == ent->num_sam_entries) {
+			struct getent_state *old_ent;
+			
+                        /* Free mallocated memory for sam entries.  The
+			   data stored here may have been allocated from
+			   the cache. */
+			
+		cleanup:
+		
+			if (ent->sam_entries != NULL) {
+				free(ent->sam_entries);
+			}
+			
+			ent->sam_entries = NULL;
+			
+				/* Free state information for this domain */
+			
+			old_ent = state->getpwent_state;
+			DLIST_REMOVE(state->getpwent_state, 
+				     state->getpwent_state);
+			free(old_ent);
+		}
+		
 	}
 	
 	/* Out of pipes so we're done */
