@@ -1198,7 +1198,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
       /* NT4 always serves this up as unicode but expects it to be
        * delivered as ascii! (tridge && JRA)
        */
-      if (global_client_caps & CAP_NT_SMBS) {
+      if ((get_remote_arch() != RA_WIN2K) && (global_client_caps & CAP_NT_SMBS)) {
 	      data_len = 18 + strlen(vname);
 	      SIVAL(pdata,12,strlen(vname));
 	      pstrcpy(pdata+18,vname);      
@@ -1206,6 +1206,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 	      data_len = 18 + 2*strlen(vname);
 	      SIVAL(pdata,12,strlen(vname)*2);
 	      dos_PutUniCode(pdata+18,unix_to_dos(vname,False),sizeof(pstring), False);
+		  SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
       }
 
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", 

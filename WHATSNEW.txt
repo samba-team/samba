@@ -44,7 +44,7 @@ Windows 2000 Issues
 -------------------
 
 This version of Samba has been tested with Windows 2000 and
-the four known incompatibilities with Windows 2000 have been
+the five known incompatibilities with Windows 2000 have been
 fixed. See the "Changes in 2.0.7" list below for details.
 
 New/Changed parameters in 2.0.7
@@ -208,6 +208,7 @@ Windows NT.
 56). nmbd now should process logon packets from Win95, Win98 and both
 versions of the NT logon packet.
 57). Correctly set parameter offset value for first trans2 reply.
+58). Win2K will only accept volume labels in UNICODE.
 
 Older release notes for Samba 2.0.x follow.
 
