@@ -62,47 +62,49 @@ mangle the localpath and store it.
 static void mangle_dfs_path(dfs_internal_table *buf)
 {
 	char *p;
-	char *s;
+	char *mp;
 	char *q;
-	int i;
+	int mlen;
 	
 	fstring temp;
 	
-	p=buf->localpath;
-	s=buf->mangledpath;
+	p = buf->localpath;
+	mp =buf->mangledpath;
+	mlen = sizeof(buf->mangledpath);
 	
-	ZERO_STRUCTP(s);
-	DEBUG(0, ("DFS name is:[%s]\n", buf->localpath));
+	ZERO_STRUCTP(mp);
+	DEBUG(2, ("DFS name is: [%s]\n", buf->localpath));
 
 	/* copy the head: \server-name\ */	
-	q=strchr(p+1, '\\');
-	strncpy(s, p, q-p+1);	
-	p=q+1;
+	q = strchr(p + 1, '\\');
+	safe_strcpy(mp, p, mlen);	
+	p = q + 1;
 	
-	while (q!=NULL)
+	while (q != NULL)
 	{
-		q=strchr(p, '\\');	
-		if (q!=NULL)
-			i=PTR_DIFF(q,p);
-		else
-			i=strlen(p);
+		q = strchr(p, '\\');	
 		
-		strncpy(temp, p, i);
+		safe_strcpy(temp, p, sizeof(temp));
 		
 		if (!is_8_3(temp, True))
+		{
 			mangle_name_83(temp);
+		}
 		
-		strncat(s, temp, i);
-		if (q!=NULL)
-			strncat(s, "\\", 1);
-		p=q+1;	
+		safe_strcat(mp, temp, mlen);
+
+		if (q != NULL)
+		{
+			safe_strcat(mp, "\\", mlen);
+		}
+		p = q + 1;	
 	}
 
 /*	
-	strupper(buf->mangledpath);
+	strupper(mp);
 */
-	buf->mangledpath_length=strlen(buf->mangledpath);
-	DEBUGADD(0, ("DFS mangled name is: [%s]\n", buf->mangledpath));
+	buf->mangledpath_length = strlen(mp);
+	DEBUGADD(2, ("DFS mangled name is: [%s]\n", mp));
 }
 
 /****************************************************************************
