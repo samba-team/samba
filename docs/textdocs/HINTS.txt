@@ -1,5 +1,5 @@
 !==
-!== HINTS.txt for Samba release TNG-prealpha 24 Mar 2000
+!== HINTS.txt for Samba release TNG-prealpha 29 Mar 2000
 !==
 Contributor:	Many
 Updated:	Not for a long time!
