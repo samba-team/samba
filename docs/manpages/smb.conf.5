@@ -266,6 +266,10 @@ personality".
 
 %M = the internet name of the client machine
 
+%N = the name of your NIS home directory server.  This is obtained from
+your NIS auto.map entry.  If you have not compiled Samba with -DAUTOMOUNT
+then this value will be the same as %L.
+
 %d = The process id of the current server process
 
 %a = the architecture of the remote machine. Only some are recognised,
@@ -349,6 +353,10 @@ dns proxy
 
 domain controller
 
+domain sid
+
+domain group
+
 domain logons
 
 domain master
@@ -380,6 +388,10 @@ lock directory
 log file
 
 log level
+
+logon drive
+
+logon home
 
 logon path
 
@@ -1153,6 +1165,7 @@ files.
 
 .B Example:
  	directory mask = 0775
+
 .SS directory mode (S)
 See
 .B directory mask.
@@ -1182,6 +1195,37 @@ logons from Win95 machines to. You should never need to set this parameter.
 
 .B Default:
 	 domain controller = no
+
+.SS domain groups (G)
+
+Specifies the NT Domain groups that the user belongs to, and the attributes
+associated with that group.  This parameter is a white-space separated list
+of group ids (in decimal), followed by an option attribute (in decimal) which
+defaults to a value of 7 if not specified.  A group id and the user attributes
+associated with it are separated by "/".
+
+.B
+It is known that attributes are ignored by NT 4.0 Workstation, but not by
+NT 3.51 Workstation.  Furthermore, no information on the exact meaning of
+NT Domain groups is presently known.  
+
+.B Default:
+	 domain groups = 776/7
+
+.B Example:
+ 	 domain groups = 776 1024/7 777
+
+.SS domain sid (G)
+
+Specifies the SID when using Samba as a Logon Server for NT Workstations.
+The format of SIDs supported by samba at present is S-1-N-nnn-nnn-nnn-nnn-nnn.
+The number N indicates the number of sub-authorities (nnn).
+
+.B Default:
+	 domain sid = none
+
+.B Example:
+ 	 domain sid = S-1-5-21-123-456-789-123
 
 .SS domain logons (G)
 
@@ -1583,6 +1627,7 @@ The lock files are used to implement the "max connections" option.
 
 .B Example: 
 	lock directory = /usr/local/samba/var/locks
+
 .SS locking (S)
 This controls whether or not locking will be performed by the server in 
 response to lock requests from the client.
@@ -1618,6 +1663,30 @@ separate log files for each user or machine.
 .SS log level (G)
 see "debug level"
 
+.SS logon drive (G)
+
+This parameter specifies the local path to which the home directory
+will be connected (see "logon home") and is only used by NT Workstations.
+
+.B Example:
+	logon drive = h:
+
+.SS logon home (G)
+
+This parameter specifies the home directory location when a Win95 or
+NT Workstation logs into a Samba PDC.  It allows you to do "NET USE
+H: /HOME" from a command prompt, for example.
+
+.B
+This option takes the standard substitutions, allowing you to have
+separate logon scripts for each user or machine.
+
+.B Example:
+	logon home = "\\\\remote_smb_server\\%U"
+
+.B Default:
+	logon home = "\\\\%N\\%U"
+
 .SS logon path (G)
 
 This parameter specifies the home directory where roaming profiles 
@@ -1642,10 +1711,14 @@ read-only - rename it to USER.MAN to achieve the desired effect
 Windows clients can sometimes maintain a connection to the [homes]
 share, even though there is no user logged in.  Therefore, it is
 vital that the logon path does not include a reference to the
-homes share (i.e \\\\%L\\HOMES\profile_path will cause problems).
+homes share (i.e \\\\%N\\HOMES\profile_path will cause problems).
+
+.B
+This option takes the standard substitutions, allowing you to have
+separate logon scripts for each user or machine.
 
 .B Default:
- 	logon path = \\\\%L\\%U\\profile
+ 	logon path = \\\\%N\\%U\\profile
 
 .B Example:
 	logon path = \\\\PROFILESERVER\\HOME_DIR\\%U\\PROFILE
