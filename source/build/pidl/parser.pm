@@ -1,7 +1,7 @@
 ###################################################
-# Ethereal parser generator for IDL structures
+# Samba4 parser generator for IDL structures
+# Copyright tridge@samba.org 2000-2003
 # Copyright tpot@samba.org 2001
-# Copyright tridge@samba.org 2000
 # released under the GNU GPL
 
 package IdlParser;
