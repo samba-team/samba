@@ -1,7 +1,7 @@
 dnl # Server process model subsystem
 
-SMB_MODULE(process_model_single,PROCESS_MODEL,STATIC,[smbd/process_single.o])
-SMB_MODULE(process_model_standard,PROCESS_MODEL,STATIC,[smbd/process_standard.o])
+SMB_MODULE_MK(process_model_single,PROCESS_MODEL,STATIC,smbd/process_model.mk)
+SMB_MODULE_MK(process_model_standard,PROCESS_MODEL,STATIC,smbd/process_model.mk)
 
 #################################################
 # check for pthread support
@@ -26,7 +26,6 @@ AC_MSG_RESULT(no)
 
 SMB_EXT_LIB(PTHREAD,[-lpthread])
 
-SMB_MODULE(process_model_thread,PROCESS_MODEL,NOT,
-		[smbd/process_thread.o],[],[PTHREAD])
+SMB_MODULE_MK(process_model_thread,PROCESS_MODEL,NOT,smbd/process_model.mk)
 
-SMB_SUBSYSTEM(PROCESS_MODEL,smbd/process_model.o)
+SMB_SUBSYSTEM_MK(PROCESS_MODEL,smbd/process_model.mk)
