@@ -648,6 +648,7 @@ void fill_domain_username(fstring name, const char *domain, const char *user)
 			 domain, lp_winbind_separator(),
 			 user);
 	}
+	strlower_m(name);
 }
 
 /*

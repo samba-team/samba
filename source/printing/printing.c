@@ -1184,10 +1184,6 @@ void start_background_queue(void)
 			exit(1);
 		}
 
-		if (!print_backend_init()) {
-			exit(1);
-		}
-
 		message_register(MSG_PRINTER_UPDATE, print_queue_receive);
 		
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));

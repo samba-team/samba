@@ -58,6 +58,8 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 		return False;
 	}
 
+	strlower_m(user_name);
+
 	/* Username */
 
 	fill_domain_username(output_username, dom_name, user_name); 
