@@ -23,3 +23,16 @@
 #define DCERPC_SAMR_UUID "12345778-1234-abcd-ef00-0123456789ac"
 const int DCERPC_SAMR_VERSION = 1.0;
 #define DCERPC_SAMR_NAME "samr"
+
+%typemap(in) struct samr_Connect2 * (struct samr_Connect2 temp) {
+	if (!PyDict_Check($input)) {
+		PyErr_SetString(PyExc_TypeError, "dict arg expected");
+		return NULL;
+	}
+	temp.in.system_name = get_string_property($input, "system_name");
+	temp.in.access_mask = get_uint32_property($input, "access_mask");
+	$1 = &temp;
+}
+
+%rename(samr_Connect2) dcerpc_samr_Connect2;
+NTSTATUS dcerpc_samr_Connect2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_Connect2 *r);

@@ -50,6 +50,26 @@ void set_ntstatus_exception(int status)
 	PyErr_SetObject(ntstatus_exception, obj);
 }
 
+char *get_string_property(PyObject *dict, char *key)
+{
+	PyObject *item = PyDict_GetItem(dict, PyString_FromString(key));
+
+	if (!item)
+		return 0; /* TODO: throw exception */
+
+	return PyString_AsString(item);
+}
+
+uint32 get_uint32_property(PyObject *dict, char *key)
+{
+	PyObject *item = PyDict_GetItem(dict, PyString_FromString(key));
+
+	if (!item)
+		return 0; /* TODO: throw exception */
+
+	return (uint32)PyInt_AsLong(item);
+}
+
 %}
 
 %include "samba.i"
@@ -61,8 +81,12 @@ void set_ntstatus_exception(int status)
 	ntstatus_exception = PyErr_NewException("dcerpc.NTSTATUS", NULL, NULL);
 %}
 
-%typemap(in, numinputs=0) struct dcerpc_pipe **OUT (struct dcerpc_pipe *temp) {
-        $1 = &temp;
+%typemap(in, numinputs=0) struct dcerpc_pipe **OUT (struct dcerpc_pipe *temp_dcerpc_pipe) {
+        $1 = &temp_dcerpc_pipe;
+}
+
+%typemap(in, numinputs=0) TALLOC_CTX * {
+	$1 = talloc_init("foo");
 }
 
 %typemap(argout) struct dcerpc_pipe ** {
