@@ -957,8 +957,8 @@ const char *ReadDirName(void *p, long *poffset)
 
 			if (dirp->hide_unreadable || dirp->hide_unwriteable || dirp->hide_special) {
 				SMB_STRUCT_STAT st;
-				ZERO_STRUCT(st);
 				char *entry = NULL;
+				ZERO_STRUCT(st);
 
 				if (asprintf(&entry, "%s/%s/%s", conn->origpath, dirp->dir_path, n) == -1) {
 					return NULL;
