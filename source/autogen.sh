@@ -15,7 +15,7 @@ AUTOCONFFOUND="0"
 ## Look for autoheader 
 ##
 for i in $TESTAUTOHEADER; do
-	if which $i > /dev/null; then
+	if which $i > /dev/null 2>&1; then
 		if [ `$i --version | head -1 | cut -d.  -f 2` -ge 53 ]; then
 			AUTOHEADER=$i
 			AUTOHEADERFOUND="1"
@@ -29,7 +29,7 @@ done
 ##
 
 for i in $TESTAUTOCONF; do
-	if which $i > /dev/null; then
+	if which $i > /dev/null 2>&1; then
 		if [ `$i --version | head -1 | cut -d.  -f 2` -ge 53 ]; then
 			AUTOCONF=$i
 			AUTOCONFFOUND="1"
