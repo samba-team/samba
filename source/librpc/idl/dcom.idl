@@ -26,66 +26,66 @@ interface ObjectRpcBaseTypes
 {
 	WERROR stub();
 	
-    /* Machine Identifier */
+	// Machine Identifier
 #define MID HYPER_T
 
-    /* Object Exporter Identifier */
+	 // Object Exporter Identifier
 #define OXID HYPER_T
 	
-    /* Object Identifer */
+	 // Object Identifer
 #define OID HYPER_T
 	
-    /* Ping Set Identifier */
+	// Ping Set Identifier
 #define SETID HYPER_T
 
-    /* Interface Pointer Identifier */
+	// Interface Pointer Identifier
 #define IPID GUID
 	
-    /* Causality Identifier */
+	// Causality Identifier
 #define CID GUID
 
-    /* Class ID */
+	// Class ID
 #define CLSID GUID
 
-    /* Interface identifier */
+	// Interface identifier
 #define IID GUID
 
 #define LCID uint32
 
 #define DISPID uint32
 
-    /*//////////////////////////////////////////////////////////////// */
-    /* ORPC Call Packet Format */
-    /*//////////////////////////////////////////////////////////////// */
-    /* COM_MINOR_VERSION = 1 (NT4.0, SP1, SP2, DCOM95). */
-    /* - Initial Release */
-    /* - Must be used when talking to downlevel machines, including */
-    /* on Remote Activation calls. */
-    /* COM_MINOR_VERSION = 2 (NT4.0 SP3 and beyond). */
-    /* - Added ResolveOxid2 to IObjectExporter to retrieve the */
-    /* COM version number of the server. Passed to the NDR engine */
-    /* to fix fatal endian-ness flaw in the way OLEAUTOMATION marshals */
-    /* BSTRS. Previous way used trailing padding, which is not NDR */
-    /* compatible. See Bug# 69189. */
-    /* COM_MINOR_VERSION = 3 (NT4.0 SP4 and DCOM95 builds 1018 and beyond) */
-    /* - OLEAUT32 added two new types to the SAFEARRAY, but SAFEARRAY */
-    /* previously included the "default" keyword, which prevented */
-    /* downlevel NDR engines from correctly handling any extensions. */
-    /* Machines with version >=5.3 don't use "default" and will */
-    /* gracefully handle future extensions to SAFEARRAY. */
-    /* old constants (for convenience) */
+	//////////////////////////////////////////////////////////////////
+	// ORPC Call Packet Format
+	//////////////////////////////////////////////////////////////////
+	// COM_MINOR_VERSION = 1 (NT4.0, SP1, SP2, DCOM95).
+	// - Initial Release
+	// - Must be used when talking to downlevel machines, including
+	// on Remote Activation calls.
+	// COM_MINOR_VERSION = 2 (NT4.0 SP3 and beyond).
+	// - Added ResolveOxid2 to IObjectExporter to retrieve the
+	// COM version number of the server. Passed to the NDR engine
+	// to fix fatal endian-ness flaw in the way OLEAUTOMATION marshals
+	// BSTRS. Previous way used trailing padding, which is not NDR
+	// compatible. See Bug# 69189.
+	// COM_MINOR_VERSION = 3 (NT4.0 SP4 and DCOM95 builds 1018 and beyond)
+	// - OLEAUT32 added two new types to the SAFEARRAY, but SAFEARRAY
+	// previously included the "default" keyword, which prevented
+	// downlevel NDR engines from correctly handling any extensions.
+	// Machines with version >=5.3 don't use "default" and will
+	// gracefully handle future extensions to SAFEARRAY.
+	// old constants (for convenience)
 	const uint16 COM_MINOR_VERSION_1 = 1;
 	const uint16 COM_MINOR_VERSION_2 = 2;
 
-    /* current version */
+	// current version
 	const uint16 COM_MAJOR_VERSION = 5;
 	const uint16 COM_MINOR_VERSION = 3;
-    /* Component Object Model version number */
+	// Component Object Model version number
 
 	typedef [public] struct 
 	{
-	    uint16 MajorVersion; /* Major version number */
-	    uint16 MinorVersion; /* Minor version number */
+		uint16 MajorVersion; // Major version number
+		uint16 MinorVersion; // Minor version number
 	} COMVERSION;
 
 	typedef [public] struct 
@@ -99,145 +99,145 @@ interface ObjectRpcBaseTypes
 		uint32 FIXME;
 	} MULTI_QI;
 
-    /* enumeration of additional information present in the call packet. */
-    /* Should be an enum but DCE IDL does not support sparse enumerators. */
+	// enumeration of additional information present in the call packet.
+	// Should be an enum but DCE IDL does not support sparse enumerators.
 	typedef enum {
-	    ORPCF_NULL = 0, /* no additional info in packet */
-	    ORPCF_LOCAL = 1, /* call is local to this machine */
-	    ORPCF_RESERVED1 = 2, /* reserved for local use */
-	    ORPCF_RESERVED2 = 4, /* reserved for local use */
-	    ORPCF_RESERVED3 = 8, /* reserved for local use */
-	    ORPCF_RESERVED4 = 16 /* reserved for local use */
+		ORPCF_NULL = 0, // no additional info in packet
+		ORPCF_LOCAL = 1, // call is local to this machine
+		ORPCF_RESERVED1 = 2, // reserved for local use
+		ORPCF_RESERVED2 = 4, // reserved for local use
+		ORPCF_RESERVED3 = 8, // reserved for local use
+		ORPCF_RESERVED4 = 16 // reserved for local use
 	} ORPC_FLAGS;
 
-    /* Extension to implicit parameters. */
+	// Extension to implicit parameters.
 	typedef [public] struct 
 	{ 	
-	    GUID id; /* Extension identifier. */
-	    uint32 size; /* Extension size. */
-	    /*FIXME[size_is((size+7)&~7)] uint8 data[]; // Extension data. */
+		GUID id; // Extension identifier.
+		uint32 size; // Extension size.
+		//FIXME[size_is((size+7)&~7)] uint8 data[]; // Extension data.
 		[size_is(size)] uint8 data[];
 	} 	ORPC_EXTENT;
 
 
-    /* Array of extensions. */
+	// Array of extensions.
 	typedef struct 
 	{
-	    uint32 size; /* Num extents. */
-	    uint32 reserved; /* Must be zero. */
-	    /*FIXME[size_is((size+1)&~1,), unique] ORPC_EXTENT **extent; // extents */
+		uint32 size; // Num extents.
+		uint32 reserved; // Must be zero.
+		//FIXME[size_is((size+1)&~1,), unique] ORPC_EXTENT **extent; // extents
 		[size_is(size),unique] ORPC_EXTENT extent[];
 	} 	ORPC_EXTENT_ARRAY;
 
 
-    /* implicit 'this' pointer which is the first [in] parameter on */
-    /* every ORPC call. */
+	// implicit 'this' pointer which is the first [in] parameter on
+	// every ORPC call.
 	typedef [public] struct 
 	{
-	    COMVERSION version; /* COM version number */
-	    uint32 flags; /* ORPCF flags for presence of other data */
-	    uint32 reserved1; /* set to zero */
-	    CID cid; /* causality id of caller */
-	    /* Extensions. */
+		COMVERSION version; // COM version number
+		uint32 flags; // ORPCF flags for presence of other data
+		uint32 reserved1; // set to zero
+		CID cid; // causality id of caller
+		// Extensions.
 		[unique] ORPC_EXTENT_ARRAY *extensions;
 	} 	ORPCTHIS;
 
 
-    /* implicit 'that' pointer which is the first [out] parameter on */
-    /* every ORPC call. */
+	// implicit 'that' pointer which is the first [out] parameter on
+	// every ORPC call.
 	typedef [public] struct 
 	{
-	    uint32 flags; /* ORPCF flags for presence of other data */
-	    /* Extensions. */
+		uint32 flags; // ORPCF flags for presence of other data
+		// Extensions.
 		[unique] ORPC_EXTENT_ARRAY *extensions;
 	} 	ORPCTHAT;
 
 
-    /* DUALSTRINGARRAYS are the return type for arrays of network addresses, */
-    /* arrays of endpoints and arrays of both used in many ORPC interfaces */
+	// DUALSTRINGARRAYS are the return type for arrays of network addresses,
+	// arrays of endpoints and arrays of both used in many ORPC interfaces
 	typedef struct 
 	{
-	    uint16 wTowerId; /* Cannot be zero. */
-	    uint16 aNetworkAddr; /* Zero terminated. */
+		uint16 wTowerId; // Cannot be zero.
+		uint16 aNetworkAddr; // Zero terminated.
 	} 	STRINGBINDING;
 
 
 	const uint16 COM_C_AUTHZ_NONE = 0xffff;
 	typedef struct 
 	{
-	    uint16 wAuthnSvc; /* Cannot be zero. */
-	    uint16 wAuthzSvc; /* Must not be zero. */
-	    uint16 aPrincName; /* Zero terminated. */
+		uint16 wAuthnSvc; // Cannot be zero.
+		uint16 wAuthzSvc; // Must not be zero.
+		uint16 aPrincName; // Zero terminated.
 	} 	SECURITYBINDING;
 
 
 	typedef [public] struct 
 	{
-	    uint16 wNumEntries; /* Number of entries in array. */
-	    uint16 wSecurityOffset; /* Offset of security info. */
-	    /* The array contains two parts, a set of STRINGBINDINGs */
-	    /* and a set of SECURITYBINDINGs. Each set is terminated by an */
-	    /* extra zero. The shortest array contains four zeros. */
+		uint16 wNumEntries; // Number of entries in array.
+		uint16 wSecurityOffset; // Offset of security info.
+		// The array contains two parts, a set of STRINGBINDINGs
+		// and a set of SECURITYBINDINGs. Each set is terminated by an
+		// extra zero. The shortest array contains four zeros.
 		[size_is(wNumEntries)] uint16 aStringArray[];
 	} 	DUALSTRINGARRAY;
 
 
-    /* signature value for OBJREF (object reference, actually the */
-    /* marshaled form of a COM interface). */
-    const uint32 OBJREF_SIGNATURE = 0x574f454d; /* 'MEOW' */
+	// signature value for OBJREF (object reference, actually the
+	// marshaled form of a COM interface).
+	const uint32 OBJREF_SIGNATURE = 0x574f454d; // 'MEOW'
 
-    /* flag values for OBJREF */
+	// flag values for OBJREF
 	typedef enum {
-	    OBJREF_STANDARD = 0x1, /* standard marshaled objref */
-	    OBJREF_HANDLER = 0x2, /* handler marshaled objref */
-	    OBJREF_CUSTOM = 0x4 /* custom marshaled objref */
+		OBJREF_STANDARD = 0x1, // standard marshaled objref
+		OBJREF_HANDLER = 0x2, // handler marshaled objref
+		OBJREF_CUSTOM = 0x4 // custom marshaled objref
 	} OBJREF_FLAGS;
 
-    /* Flag values for a STDOBJREF (standard part of an OBJREF). */
-    /* SORF_OXRES1 - SORF_OXRES8 are reserved for the object exporters */
-    /* use only, object importers must ignore them and must not enforce MBZ. */
+	// Flag values for a STDOBJREF (standard part of an OBJREF).
+	// SORF_OXRES1 - SORF_OXRES8 are reserved for the object exporters
+	// use only, object importers must ignore them and must not enforce MBZ.
 	typedef enum {
-	    SORF_NULL   = 0x0000, /* convenient for initializing SORF */
-	    SORF_OXRES1 = 0x0001, /* reserved for exporter */
-	    SORF_OXRES2 = 0x0020, /* reserved for exporter */
-	    SORF_OXRES3 = 0x0040, /* reserved for exporter */
-	    SORF_OXRES4 = 0x0080, /* reserved for exporter */
-	    SORF_OXRES5 = 0x0100, /* reserved for exporter */
-	    SORF_OXRES6 = 0x0200, /* reserved for exporter */
-	    SORF_OXRES7 = 0x0400, /* reserved for exporter */
-	    SORF_OXRES8 = 0x0800, /* reserved for exporter */
-	    SORF_NOPING = 0x1000  /* Pinging is not required  */
+		SORF_NULL   = 0x0000, // convenient for initializing SORF
+		SORF_OXRES1 = 0x0001, // reserved for exporter
+		SORF_OXRES2 = 0x0020, // reserved for exporter
+		SORF_OXRES3 = 0x0040, // reserved for exporter
+		SORF_OXRES4 = 0x0080, // reserved for exporter
+		SORF_OXRES5 = 0x0100, // reserved for exporter
+		SORF_OXRES6 = 0x0200, // reserved for exporter
+		SORF_OXRES7 = 0x0400, // reserved for exporter
+		SORF_OXRES8 = 0x0800, // reserved for exporter
+		SORF_NOPING = 0x1000  // Pinging is not required 
 	} STDOBJREF_FLAGS;
 
-    /* standard object reference */
+	// standard object reference
 	typedef [public] struct 
 	{
-	    uint32 flags; /* STDOBJREF flags (see above) */
-	    uint32 cPublicRefs; /* count of references passed */
-	    OXID oxid; /* oxid of server with this oid */
-	    OID oid; /* oid of object with this ipid */
-	    IPID ipid; /* ipid of Interface */
+		uint32 flags; // STDOBJREF flags (see above)
+		uint32 cPublicRefs; // count of references passed
+		OXID oxid; // oxid of server with this oid
+		OID oid; // oid of object with this ipid
+		IPID ipid; // ipid of Interface
 	} 	STDOBJREF;
 
 	typedef struct
 	{
-	    STDOBJREF std; /* standard objref */
-	    DUALSTRINGARRAY saResAddr; /* resolver address */
+		STDOBJREF std; // standard objref
+		DUALSTRINGARRAY saResAddr; // resolver address
 	} u_standard;
 
 	typedef struct
 		{
-		    STDOBJREF std; /* standard objref */
-		    CLSID clsid; /* Clsid of handler code */
-		    DUALSTRINGARRAY saResAddr; /* resolver address */
+			STDOBJREF std; // standard objref
+			CLSID clsid; // Clsid of handler code
+			DUALSTRINGARRAY saResAddr; // resolver address
 		} u_handler;
 
 	typedef struct
 		{
-		    CLSID clsid; /* Clsid of unmarshaling code */
-		    uint32 cbExtension; /* size of extension data */
-		    uint32 size; /* size of data that follows */
-		    [size_is(size), ref] uint8 *pData; /* extension + class specific data */
+			CLSID clsid; // Clsid of unmarshaling code
+			uint32 cbExtension; // size of extension data
+			uint32 size; // size of data that follows
+			[size_is(size), ref] uint8 *pData; // extension + class specific data
 		} u_custom;
 
 
@@ -249,19 +249,19 @@ interface ObjectRpcBaseTypes
 		[case(OBJREF_CUSTOM)] u_custom u_custom;
 	} OBJREF_Types;
 
-    /* OBJREF is the format of a marshaled interface pointer. */
+	// OBJREF is the format of a marshaled interface pointer.
 	typedef struct 
 	{
-	    uint32 flags; /* OBJREF flags (see above) */
-	    GUID iid; /* interface identifier */
+		uint32 flags; // OBJREF flags (see above)
+		GUID iid; // interface identifier
 		[switch_is(flags), switch_type(uint32)] OBJREF_Types u_objref;
 	} OBJREF;
 
-    /* wire representation of a marshalled interface pointer */
+	// wire representation of a marshalled interface pointer
 	typedef [public] struct 
 	{
-	    uint32 ulCntData; /* size of data */
-	    [size_is(ulCntData)] uint8 abData[]; /* data (OBJREF) */
+		uint32 ulCntData; // size of data
+		[size_is(ulCntData)] uint8 abData[]; // data (OBJREF)
 	} MInterfacePointer;
 }
 
@@ -305,15 +305,15 @@ interface IUnknown
 	HRESULT RemoteLockServer();
 }
 
-/*//////////////////////////////////////////////////////////////// */
+//////////////////////////////////////////////////////////////////
 
-/* The remote version of IUnknown. This interface exists on every */
-/* OXID (whether an OXID represents either a thread or a process is */
-/* implementation specific). It is used by clients to query for new */
-/* interfaces, get additional references (for marshaling), and release */
-/* outstanding references. */
-/* This interface is passed along during OXID resolution. */
-/* */
+// The remote version of IUnknown. This interface exists on every
+// OXID (whether an OXID represents either a thread or a process is
+// implementation specific). It is used by clients to query for new
+// interfaces, get additional references (for marshaling), and release
+// outstanding references.
+// This interface is passed along during OXID resolution.
+//
 [
 	uuid(00000131-0000-0000-C000-000000000046),
 	object,
@@ -324,23 +324,23 @@ interface IRemUnknown : IUnknown
 {
 	typedef struct 
 	{
-	    HRESULT hResult; /* result of call */
-	    STDOBJREF std; /* data for returned interface */
+		HRESULT hResult; // result of call
+		STDOBJREF std; // data for returned interface
 	}
 	REMQIRESULT;
 
 	HRESULT RemQueryInterface (
-	    [in] IPID *ripid, /* interface to QI on */
-	    [in] uint32 cRefs, /* count of AddRefs requested */
-	    [in] uint16 cIids, /* count of IIDs that follow */
+		 [in] IPID *ripid, // interface to QI on
+		 [in] uint32 cRefs, // count of AddRefs requested
+		 [in] uint16 cIids, // count of IIDs that follow
 		 [in, size_is(cIids)]
-	    IID* iids/*, // IIDs to QI for */
+		 IID* iids//, // IIDs to QI for
 		 /*FIXME: [out, size_is(,cIids)]
-		 REMQIRESULT** ppQIResults /* results returned*/ */
+		 REMQIRESULT** ppQIResults // results returned*/
 		);
 	typedef struct 
 	{
-	    IPID ipid; /* ipid to AddRef/Release */
+		IPID ipid; // ipid to AddRef/Release
 		uint32 cPublicRefs;
 		uint32 cPrivateRefs;
 	} REMINTERFACEREF;
@@ -359,9 +359,9 @@ interface IRemUnknown : IUnknown
 
 
 
-/* Derived from IRemUnknown, this interface supports Remote Query interface */
-/* for objects that supply additional data beyond the STDOBJREF in their */
-/* marshaled interface packets. */
+// Derived from IRemUnknown, this interface supports Remote Query interface
+// for objects that supply additional data beyond the STDOBJREF in their
+// marshaled interface packets.
 [
 	object,
 	uuid(00000143-0000-0000-C000-000000000046),
@@ -386,8 +386,8 @@ interface IRemUnknown2 : IRemUnknown
 ]
 interface IOXIDResolver
 {
-    /* Method to get the protocol sequences, string bindings */
-    /* and machine id for an object server given its OXID. */
+	// Method to get the protocol sequences, string bindings
+	// and machine id for an object server given its OXID.
 
 	typedef [public] struct {
 		DUALSTRINGARRAY *ppdsaOxidBindings;
@@ -402,40 +402,40 @@ interface IOXIDResolver
 		 [out, ref] uint32 *pAuthnHint
 			 );
 
-    /* Simple ping is used to ping a Set. Client machines use this */
-    /* to inform the object exporter that it is still using the */
-    /* members of the set. */
-    /* Returns S_TRUE if the SetId is known by the object exporter, */
-    /* S_FALSE if not. */
+	// Simple ping is used to ping a Set. Client machines use this
+	// to inform the object exporter that it is still using the
+	// members of the set.
+	// Returns S_TRUE if the SetId is known by the object exporter,
+	// S_FALSE if not.
 	[idempotent] WERROR SimplePing (
-	    [in] SETID *pSetId /* Must not be zero */
+		 [in] SETID *pSetId // Must not be zero
 		);
 	
-    /* Complex ping is used to create sets of OIDs to ping. The */
-    /* whole set can subsequently be pinged using SimplePing, */
-    /* thus reducing network traffic. */
+	// Complex ping is used to create sets of OIDs to ping. The
+	// whole set can subsequently be pinged using SimplePing,
+	// thus reducing network traffic.
 	[idempotent] WERROR ComplexPing (
-	    [in, out] SETID *pSetId, /* In of 0 on first call for new set. */
+		 [in, out] SETID *pSetId, // In of 0 on first call for new set.
 		 [in] uint16 SequenceNum,
 		 [in] uint16 cAddToSet,
 		 [in] uint16 cDelFromSet,
-	    /* add these OIDs to the set */
+		 // add these OIDs to the set
 		 [in, unique, size_is(cAddToSet)] OID AddToSet[],
-	    /*remove these OIDs from the set */
+		 //remove these OIDs from the set
 		 [in, unique, size_is(cDelFromSet)] OID DelFromSet[],
-	    [out] uint16 *pPingBackoffFactor/* 2^factor = multipler */
+		 [out] uint16 *pPingBackoffFactor// 2^factor = multipler
 			 );
-    /* In some cases the client maybe unsure that a particular */
-    /* binding will reach the server. (For example, when the oxid */
-    /* bindings have more then one TCP/IP binding) This call */
-    /* can be used to validate the binding */
-    /* from the client. */
+	// In some cases the client maybe unsure that a particular
+	// binding will reach the server. (For example, when the oxid
+	// bindings have more then one TCP/IP binding) This call
+	// can be used to validate the binding
+	// from the client.
 	[idempotent] WERROR ServerAlive ();
 
-    /* Method to get the protocol sequences, string bindings, */
-    /* RemoteUnknown IPID and COM version for an object server */
-    /* given its OXID. Supported by DCOM */
-    /* version 5.2 and above. */
+	// Method to get the protocol sequences, string bindings,
+	// RemoteUnknown IPID and COM version for an object server
+	// given its OXID. Supported by DCOM
+	// version 5.2 and above.
 	[idempotent] WERROR ResolveOxid2 (
 											  [in] OXID *pOxid,
 											  [in] uint16 cRequestedProtseqs,
@@ -530,7 +530,7 @@ interface ISystemActivator : IUnknown
 }
 
 
-/* Service Control Manager */
+// Service Control Manager
 
 [
 	uuid(),

@@ -206,7 +206,7 @@
 	/*****************/
 	/* Function 0x11 */
 	WERROR svcctl_QueryServiceConfigW([in,ref] policy_handle *handle,
-					  [out] uint8 query[buf_size], /*QUERY_SERVICE_CONFIG */
+									 [out] uint8 query[buf_size], //QUERY_SERVICE_CONFIG
 									 [in] uint32 buf_size,
 									 [out] uint32 bytes_needed
 									 );
@@ -316,7 +316,7 @@
 	/*****************/
 	/* Function 0x1d */
 	WERROR svcctl_QueryServiceConfigA([in,ref] policy_handle *handle,
-					  [out] uint8 query[buf_size], /*QUERYU_SERVICE_CONFIG */
+									 [out] uint8 query[buf_size], //QUERYU_SERVICE_CONFIG
 									 [in] uint32 buf_size,
 									 [out] uint32 bytes_needed
 									 );
