@@ -252,73 +252,16 @@ static BOOL test_Delete(struct dcerpc_pipe *p,
 }
 
 
-static BOOL find_domain_sid(struct dcerpc_pipe *p, 
-			    TALLOC_CTX *mem_ctx,
-			    struct policy_handle *handle,
-			    struct dom_sid2 **sid)
-{
-	struct lsa_QueryInfoPolicy r;
-	NTSTATUS status;
-
-	r.in.handle = handle;
-	r.in.level = LSA_POLICY_INFO_DOMAIN;
-
-	status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LSA_POLICY_INFO_DOMAIN failed - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	*sid = r.out.info->domain.sid;
-
-	return True;
-}
-
-static struct dom_sid *sid_add_auth(TALLOC_CTX *mem_ctx, 
-				    const struct dom_sid *sid,
-				    uint32 sub_auth)
-{
-	struct dom_sid *ret;
-
-	ret = talloc_p(mem_ctx, struct dom_sid);
-	if (!ret) {
-		return NULL;
-	}
-
-	*ret = *sid;
-
-	ret->sub_auths = talloc_array_p(mem_ctx, uint32, ret->num_auths+1);
-	if (!ret->sub_auths) {
-		return NULL;
-	}
-
-	memcpy(ret->sub_auths, sid->sub_auths, 
-	       ret->num_auths * sizeof(sid->sub_auths[0]));
-	ret->sub_auths[ret->num_auths] = sub_auth;
-	ret->num_auths++;
-
-	return ret;
-}
-
 static BOOL test_CreateAccount(struct dcerpc_pipe *p, 
 			       TALLOC_CTX *mem_ctx, 
 			       struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct lsa_CreateAccount r;
-	struct dom_sid2 *domsid, *newsid;
+	struct dom_sid2 *newsid;
 	struct policy_handle acct_handle;
 
-	if (!find_domain_sid(p, mem_ctx, handle, &domsid)) {
-		return False;
-	}
-
-	newsid = sid_add_auth(mem_ctx, domsid, 0x1234abcd);
-	if (!newsid) {
-		printf("Failed to create newsid\n");
-		return False;
-	}
+	newsid = dom_sid_parse_talloc(mem_ctx, "S-1-5-12349876-4321-2854");
 
 	printf("Testing CreateAccount\n");
 
@@ -353,11 +296,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 
 	printf("Testing CreateTrustedDomain\n");
 
-	if (!find_domain_sid(p, mem_ctx, handle, &domsid)) {
-		return False;
-	}
-
-	domsid->sub_auths[domsid->num_auths-1] ^= 0xF0F0F0F0;
+	domsid = dom_sid_parse_talloc(mem_ctx, "S-1-5-697-97398-3797956");
 
 	trustinfo.sid = domsid;
 	init_lsa_Name(&trustinfo.name, "torturedomain");
@@ -387,12 +326,26 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_CreateSecret r;
 	struct lsa_OpenSecret r2;
+	struct lsa_SetSecret r3;
+	struct lsa_QuerySecret r4;
 	struct policy_handle sec_handle, sec_handle2;
 	struct lsa_Delete d;
+	struct lsa_DATA_BUF buf1;
+	struct lsa_DATA_BUF_PTR bufp1;
+	DATA_BLOB enc_key;
+	BOOL ret = True;
+	uint8 session_key[16];
+	NTTIME old_mtime, new_mtime;
+	DATA_BLOB blob1, blob2;
+	const char *secret1 = "abcdef12345699qwerty";
+	char *secret2;
+	char *secname;
 
 	printf("Testing CreateSecret\n");
 
-	init_lsa_Name(&r.in.name, "torturesecret");
+	asprintf(&secname, "torturesecret-%u", (unsigned)random());
+
+	init_lsa_Name(&r.in.name, secname);
 
 	r.in.handle = handle;
 	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -406,7 +359,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 
 	r2.in.handle = handle;
 	r2.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	init_lsa_Name(&r2.in.name, "torturesecret");
+	r2.in.name = r.in.name;
 	r2.out.sec_handle = &sec_handle2;
 
 	printf("Testing OpenSecret\n");
@@ -414,21 +367,78 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	status = dcerpc_lsa_OpenSecret(p, mem_ctx, &r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenSecret failed - %s\n", nt_errstr(status));
-		return False;
+		ret = False;
+	}
+
+	status = dcerpc_fetch_session_key(p, session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	enc_key = sess_encrypt_string(secret1, session_key);
+
+	r3.in.handle = &sec_handle;
+	r3.in.new_val = &buf1;
+	r3.in.old_val = NULL;
+	r3.in.new_val->data = enc_key.data;
+	r3.in.new_val->length = enc_key.length;
+	r3.in.new_val->size = enc_key.length;
+
+	printf("Testing SetSecret\n");
+
+	status = dcerpc_lsa_SetSecret(p, mem_ctx, &r3);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetSecret failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	data_blob_free(&enc_key);
+
+	ZERO_STRUCT(new_mtime);
+	ZERO_STRUCT(old_mtime);
+
+	/* fetch the secret back again */
+	r4.in.handle = &sec_handle;
+	r4.in.new_val = &bufp1;
+	r4.in.new_mtime = &new_mtime;
+	r4.in.old_val = NULL;
+	r4.in.old_mtime = NULL;
+
+	bufp1.buf = NULL;
+
+	status = dcerpc_lsa_QuerySecret(p, mem_ctx, &r4);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QuerySecret failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	blob1.data = r4.out.new_val->buf->data;
+	blob1.length = r4.out.new_val->buf->length;
+
+	blob2 = data_blob(NULL, blob1.length);
+
+	secret2 = sess_decrypt_string(&blob1, session_key);
+
+	printf("returned secret '%s'\n", secret2);
+
+	if (strcmp(secret1, secret2) != 0) {
+		printf("Returned secret doesn't match\n");
+		ret = False;
 	}
 
 	if (!test_Delete(p, mem_ctx, &sec_handle)) {
-		return False;
+		ret = False;
 	}
 
 	d.in.handle = &sec_handle2;
 	status = dcerpc_lsa_Delete(p, mem_ctx, &d);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		printf("Second delete expected INVALID_HANDLE - %s\n", nt_errstr(status));
-		return False;
+		ret = False;
 	}
 
-	return True;
+	return ret;
 }
 
 static BOOL test_EnumAccountRights(struct dcerpc_pipe *p, 
