@@ -125,7 +125,9 @@ After creating a reference you can free it in one of the following
 ways:
 
   - you can talloc_free() a parent of the original pointer. That will
-    destroy the reference and make the pointer a child of "context".
+    destroy the reference and make the pointer a child of the
+    "context" argument from the most recently called
+    talloc_reference() on the pointer.
 
   - you can talloc_free() the pointer itself. That will destroy the
     most recently established reference to the pointer and leave the

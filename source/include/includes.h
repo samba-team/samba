@@ -1068,7 +1068,9 @@ time_t timegm(struct tm *tm);
 #include <sys/xattr.h>
 #endif
 
-#define discard_const_p(type, ptr) (type *)discard_const(ptr)
+#define discard_const_p(type, ptr) ((type *)discard_const(ptr))
+
+#define TALLOC_ABORT(reason) smb_panic(reason)
 
 #endif /* _INCLUDES_H */
 
