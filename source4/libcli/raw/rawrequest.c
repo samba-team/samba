@@ -224,7 +224,7 @@ static void smbcli_req_grow_allocation(struct smbcli_request *req, uint_t new_si
 
 	/* we need to realloc */
 	req->out.allocated = req->out.size + delta + REQ_OVER_ALLOCATION;
-	buf2 = talloc_realloc(req->mem_ctx, req->out.buffer, req->out.allocated);
+	buf2 = talloc_realloc(req->out.buffer, req->out.allocated);
 	if (buf2 == NULL) {
 		smb_panic("out of memory in req_grow_allocation");
 	}
@@ -915,7 +915,7 @@ size_t smbcli_blob_append_string(struct smbcli_session *session,
 
 	max_len = (strlen(str)+2) * MAX_BYTES_PER_CHAR;		
 
-	blob->data = talloc_realloc(mem_ctx, blob->data, blob->length + max_len);
+	blob->data = talloc_realloc(blob->data, blob->length + max_len);
 	if (!blob->data) {
 		return 0;
 	}

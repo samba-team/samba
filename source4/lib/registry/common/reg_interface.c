@@ -214,7 +214,7 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 	(*result)->path = talloc_asprintf((*result)->mem_ctx, "%s\\%s", 
 								 reg_key_get_path_abs(parent), (*result)->name);
 	(*result)->hive = parent->hive;
-	talloc_steal(mem_ctx, (*result)->mem_ctx, fullname);
+	talloc_steal((*result)->mem_ctx, fullname);
 
 	talloc_destroy(mem_ctx);
 

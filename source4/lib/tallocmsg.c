@@ -33,15 +33,16 @@
 void msg_pool_usage(int msg_type, pid_t src_pid,
 		    void *UNUSED(buf), size_t UNUSED(len))
 {
-	char *reply;
+	const char *reply="NOT IMPLEMENTED\n";
 	TALLOC_CTX *reply_pool = talloc_init("msg_pool_usage");
 
 	SMB_ASSERT(msg_type == MSG_REQ_POOL_USAGE);
 	
 	DEBUG(2,("Got POOL_USAGE\n"));
 
+#if 0
 	reply = talloc_describe_all(reply_pool);
-	
+#endif
 	message_send_pid(src_pid, MSG_POOL_USAGE,
 			 reply, strlen(reply)+1, True);
 

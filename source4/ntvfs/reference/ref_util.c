@@ -104,7 +104,7 @@ struct svfs_dir *svfs_list(TALLOC_CTX *mem_ctx, struct smbsrv_request *req, cons
 		
 		if (dir->count >= allocated) {
 			allocated = (allocated + 100) * 1.2;
-			dir->files = talloc_realloc(mem_ctx, dir->files, allocated * sizeof(dir->files[0]));
+			dir->files = talloc_realloc(dir->files, allocated * sizeof(dir->files[0]));
 			if (!dir->files) { 
 				closedir(odir);
 				return NULL;

@@ -377,8 +377,7 @@ static BOOL multiple_search_callback(void *private, union smb_search_data *file)
 
 
 	data->count++;
-	data->list = talloc_realloc(data->mem_ctx, 
-				    data->list, 
+	data->list = talloc_realloc(data->list, 
 				    data->count * (sizeof(data->list[0])));
 
 	data->list[data->count-1] = *file;

@@ -734,7 +734,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 	}
 	call = talloc_p(mem_ctx, struct dcesrv_call_state);
 	if (!call) {
-		talloc_free(dce_conn->mem_ctx, dce_conn->partial_input.data);
+		talloc_free(dce_conn->partial_input.data);
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -747,7 +747,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 	if (!ndr) {
-		talloc_free(dce_conn->mem_ctx, dce_conn->partial_input.data);
+		talloc_free(dce_conn->partial_input.data);
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -758,7 +758,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 
 	status = ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(dce_conn->mem_ctx, dce_conn->partial_input.data);
+		talloc_free(dce_conn->partial_input.data);
 		talloc_destroy(mem_ctx);
 		return status;
 	}
@@ -801,8 +801,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 		}
 
 		call->pkt.u.request.stub_and_verifier.data = 
-			talloc_realloc(call->mem_ctx,
-				       call->pkt.u.request.stub_and_verifier.data, alloc_size);
+			talloc_realloc(call->pkt.u.request.stub_and_verifier.data, alloc_size);
 		if (!call->pkt.u.request.stub_and_verifier.data) {
 			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
 		}

@@ -188,7 +188,7 @@ static WERROR ldb_open_key(REG_HANDLE *h, int num, const char *name, REG_KEY **k
 	}
 
 	*key = reg_key_new_abs(name, h, ldap_path);
-	talloc_steal(mem_ctx, (*key)->mem_ctx, ldap_path);
+	talloc_steal((*key)->mem_ctx, ldap_path);
 	printf("Got something!\n");
 	/* FIXME */
 
