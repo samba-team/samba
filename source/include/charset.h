@@ -57,5 +57,9 @@ extern void charset_initialise(void);
 #define islower(c) (((char)(c)) != toupper(c))
 #define isdoschar(c) (dos_char_map[(char)(c)] != 0)
 #define isspace(c) ((c)==' ' || (c) == '\t')
+
+/* this is used to determine if a character is safe to use in
+   something that may be put on a command line */
+#define issafe(c) (isalnum(c) || strchr("-._",c))
 #endif
 
