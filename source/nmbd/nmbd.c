@@ -384,6 +384,14 @@ static void process(void)
     initiate_wins_processing(t);
 
     /*
+     * If we are a domain master browser, attempt to contact the
+     * WINS server to get a list of all known WORKGROUPS/DOMAINS.
+     * This will only work to a Samba WINS server.
+     * (nmbd_browsesync.c)
+     */
+    collect_all_workgroup_names_from_wins_server(t);
+
+    /*
      * Go through the response record queue and time out or re-transmit
      * and expired entries.
      * (nmbd_packets.c)
