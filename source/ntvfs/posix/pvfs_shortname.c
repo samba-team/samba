@@ -63,7 +63,7 @@ char *pvfs_short_name_component(struct pvfs_state *pvfs, const char *name)
 	char c1, c2;
 	const char *ext;
 
-	if (strlen(name) < 12) {
+	if (strlen(name) <= 12) {
 		return talloc_strdup(pvfs, name);
 	}
 
