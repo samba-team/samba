@@ -57,13 +57,15 @@ cp -a *.patch.bz2 *.xpm.bz2 smb.* samba.xinetd samba.log $SRCDIR
 #create new snapshots of the patches from distributions tree:
 PATCHES=$(find . -name '*.patch')
 ICONS=$(find '.' -name '*.xpm')
-CONFIGS=$(find `pwd` -name '*'|grep -v ".patch"|grep -v ".xpm"|grep -v "CVS")
+SCRIPTS=$(find '.' -name '*.sh')
+CONFIGS=$(find `pwd` -name '*'|grep -v ".patch$"|grep -v ".xpm$"|grep -v "CVS"|grep -v "*.sh$")
 #for PATCH in $PATCHES;do
 bzip2 -kf $PATCHES
 bzip2 -kf $ICONS
+bzip2 -kf $SCRIPTS
 
 #Copy bzip2'ed new snapshots to SOURCES:
-for PATCH in $PATCHES $ICONS;do
+for PATCH in $PATCHES $ICONS $SCRIPTS;do
 	echo "Updating patch or icon: `basename $PATCH`"
 	cp -f $PATCH.bz2 $SRCDIR
 	rm -f $PATCH.bz2;
@@ -77,6 +79,6 @@ done
 
 echo Getting Ready to build release package
 cd ${SPECDIR}
-rpm -ba -v --clean --rmsource samba.spec
+rpm -ba -v --clean --rmsource samba.spec --with tarball $@
 
 echo Done.

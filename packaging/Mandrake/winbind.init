@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# chkconfig: - 91 35
+# chkconfig: 345 81 45
 # description: Starts and stops the Samba winbind daemon to provide \
 # user and group information from a domain controller to linux.
 
@@ -26,33 +26,26 @@ RETVAL=0
 
 
 start() {
-	export TMPDIR="/var/tmp"
-	#Is nmbd running? If not, we need to start it first.
-	if ! killall -0 nmbd 2>/dev/null; then 
-		echo -n "Starting NMB services: "
-		daemon nmbd -D
-		RETVAL=$?;
-		echo
-	fi
 	echo -n "Starting Winbind services: "
-	daemon winbindd 	
-	RETVAL=$?
+	RETVAL=1
+	if [ "`grep -i 'winbind uid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
+		daemon winbindd
+		RETVAL=$?
+	else
+		echo "Winbind is not configured in /etc/samba/smb.conf, not starting"
+	fi
 	echo
 	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/winbind || \
 	   RETVAL=1
 	return $RETVAL
 }	
 stop() {
-	#Is smbd running? If not, we need to stop nmbd, since we must have started it.
-	if ! killall -0 smbd 2>/dev/null; then 
-		echo -n "Stopping NMB services: "
-		killproc nmbd
-		RETVAL=$?;
-		echo
-	fi;
 	echo -n "Shutting down Winbind services: "
-	killproc winbindd
-	RETVAL=$?
+	RETVAL=1
+	if [ "`grep -i 'winbind uid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
+		killproc winbindd
+		RETVAL=$?
+	fi
 	echo
 	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/winbind
 	return $RETVAL
