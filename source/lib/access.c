@@ -302,7 +302,7 @@ BOOL check_access(int sock, char *allow_list, char *deny_list)
 		{
 			only_ip = True;
 			DEBUG (3, ("check_access: no hostnames in host allow/deny list.\n"));
-			ret = allow_access(deny_list,allow_list, NULL, get_socket_addr(sock));
+			ret = allow_access(deny_list,allow_list, "", get_socket_addr(sock));
 		}
 		else
 		{
