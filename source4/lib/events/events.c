@@ -317,8 +317,8 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 		DLIST_ADD(ev->timed_events, e);
 	} else {
 		for (te=ev->timed_events;te && te->next;te=te->next) {
-			if (!timeval_is_zero(&te->next_event) &&
-			    timeval_compare(&te->next_event, &e->next_event) < 0) {
+			if (!timeval_is_zero(&te->next->next_event) &&
+			    timeval_compare(&te->next->next_event, &e->next_event) < 0) {
 				break;
 			}
 		}
