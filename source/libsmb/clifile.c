@@ -182,7 +182,10 @@ int cli_nt_create(struct cli_state *cli, char *fname)
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
-	SIVAL(cli->outbuf,smb_ntcreate_Flags, 0x06);
+	if (cli->use_oplocks)
+		SIVAL(cli->outbuf,smb_ntcreate_Flags, REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
+	else
+		SIVAL(cli->outbuf,smb_ntcreate_Flags, 0);
 	SIVAL(cli->outbuf,smb_ntcreate_RootDirectoryFid, 0x0);
 	SIVAL(cli->outbuf,smb_ntcreate_DesiredAccess, 0x2019f);
 	SIVAL(cli->outbuf,smb_ntcreate_FileAttributes, 0x0);

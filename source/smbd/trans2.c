@@ -1969,17 +1969,32 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
           fname, (double)size ));
 
     if (fd == -1) {
-      fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),O_RDWR,0);
-      if (fd == -1)
-        return(UNIXERROR(ERRDOS,ERRbadpath));
-      set_filelen(fd, size); /* tpot vfs */
-      conn->vfs_ops.close(fsp,fd);
-    } else {
-        set_filelen(fd, size); /* tpot vfs */
-    }
+      files_struct *new_fsp = NULL;
+      int access_mode = 0;
+      int action = 0;
 
-    if(fsp)
-      set_filelen_write_cache(fsp, size);
+      if(global_oplock_break) {
+        /* Queue this file modify as we are the process of an oplock break.  */
+
+        DEBUG(2,("call_trans2setfilepathinfo: queueing message due to being "));
+        DEBUGADD(2,( "in oplock break state.\n"));
+
+        push_oplock_pending_smb_message(inbuf, length);
+        return -1;
+      }
+
+      new_fsp = open_file_shared(conn, fname, &sbuf,
+                           SET_OPEN_MODE(DOS_OPEN_RDWR),
+                           (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+                           0, 0, &access_mode, &action);
+	
+      if (new_fsp == NULL)
+        return(UNIXERROR(ERRDOS,ERRbadpath));
+      vfs_set_filelen(new_fsp, size);
+      close_file(new_fsp,True);
+    } else {
+        vfs_set_filelen(fsp, size);
+    }
   }
 
   SSVAL(params,0,0);

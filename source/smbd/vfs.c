@@ -385,6 +385,24 @@ ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
 }
 
 /****************************************************************************
+ A vfs set_filelen call.
+ set the length of a file from a filedescriptor.
+ Returns 0 on success, -1 on failure.
+****************************************************************************/
+
+int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
+{
+	int ret;
+
+	release_level_2_oplocks_on_change(fsp);
+	if ((ret = fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, len)) != -1) {
+		set_filelen_write_cache(fsp, len);
+	}
+
+	return ret;
+}
+
+/****************************************************************************
  Transfer some data between two file_struct's.
 ****************************************************************************/
 

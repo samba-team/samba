@@ -121,13 +121,19 @@ static void cli_process_oplock(struct cli_state *cli)
 	char *oldbuf = cli->outbuf;
 	pstring buf;
 	int fnum;
+	unsigned char level;
 
 	fnum = SVAL(cli->inbuf,smb_vwv2);
+	level = CVAL(cli->inbuf,smb_vwv3+1);
 
 	/* damn, we really need to keep a record of open files so we
 	   can detect a oplock break and a close crossing on the
 	   wire. for now this swallows the errors */
 	if (fnum == 0) return;
+
+	/* Ignore level II break to none's. */
+	if (level == OPLOCKLEVEL_NONE)
+		return;
 
 	cli->outbuf = buf;
 
@@ -140,7 +146,10 @@ static void cli_process_oplock(struct cli_state *cli)
 	SSVAL(buf,smb_vwv0,0xFF);
 	SSVAL(buf,smb_vwv1,0);
 	SSVAL(buf,smb_vwv2,fnum);
-	SSVAL(buf,smb_vwv3,2); /* oplock break ack */
+	if (cli->use_level_II_oplocks)
+		SSVAL(buf,smb_vwv3,0x102); /* levelII oplock break ack */
+	else
+		SSVAL(buf,smb_vwv3,2); /* exclusive oplock break ack */
 	SIVAL(buf,smb_vwv4,0); /* timoeut */
 	SSVAL(buf,smb_vwv6,0); /* unlockcount */
 	SSVAL(buf,smb_vwv7,0); /* lockcount */
