@@ -29,6 +29,16 @@
 
 #include <config.h>
 
+#ifdef RELIANTUNIX
+/*
+ * <unistd.h> has to be included before any other to get
+ * large file support on Reliant UNIX. Yes, it's broken :-).
+ */
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#endif /* RELIANTUNIX */
+
 #include <stdio.h>
 
 #ifdef HAVE_STDLIB_H
