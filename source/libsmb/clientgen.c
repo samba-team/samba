@@ -2685,12 +2685,18 @@ void cli_shutdown(struct cli_state *cli)
 ****************************************************************************/
 int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_error)
 {
-	int  flgs2 = SVAL(cli->inbuf,smb_flg2);
+	int  flgs2;
 	char rcls;
 	int code;
 
 	if (eclass) *eclass = 0;
 	if (num   ) *num = 0;
+	if (nt_rpc_error) *nt_rpc_error = 0;
+
+	if(!cli || !cli->initialised || !cli->inbuf)
+		return EINVAL;
+
+	flgs2 = SVAL(cli->inbuf,smb_flg2);
 	if (nt_rpc_error) *nt_rpc_error = cli->nt_error;
 
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
