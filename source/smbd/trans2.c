@@ -1485,12 +1485,18 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	/* 
 	 * If there are no matching entries we must return ERRDOS/ERRbadfile - 
-	 * from observation of NT.
+	 * from observation of NT. NB. This changes to ERRDOS,ERRnofiles if
+	 * the protocol level is less than NT1. Tested with smbclient. JRA.
+	 * This should fix the OS/2 client bug #2335.
 	 */
 
 	if(numentries == 0) {
 		dptr_close(&dptr_num);
-		return ERROR_DOS(ERRDOS,ERRbadfile);
+		if (protocol < PROTOCOL_NT1) {
+			return ERROR_DOS(ERRDOS,ERRnofiles);
+		} else {
+			return ERROR_BOTH(NT_STATUS_NO_SUCH_FILE,ERRDOS,ERRbadfile);
+		}
 	}
 
 	/* At this point pdata points to numentries directory entries. */
