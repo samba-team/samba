@@ -1,4 +1,4 @@
-PIDL_idl.pm: idl.gram
+idl.pm: idl.gram
 	perl -MParse::RecDescent - idl.gram idl
 
 clean:
