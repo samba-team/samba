@@ -109,6 +109,9 @@
 /* For traditional Chinese (known as Big5 encoding - code page 950). */
 #define is_big5_c1(c) ((0xa1 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xf9)) 
 
+/* For simplified Chinese (code page - 936). */
+#define is_simpch_c1(c) ((0xa1 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xf7))
+
 #else /* not _KANJI_C_ */
 
 /*
@@ -143,6 +146,7 @@ extern char *(*multibyte_strtok)(char *s1, char *s2);
 extern char *(*_dos_to_unix)(char *str, BOOL overwrite);
 extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
 extern BOOL (*is_multibyte_char)(char c);
+extern int (*_skip_multibyte_char)(char c);
 
 #define strchr(s1, c) ((*multibyte_strchr)((s1), (c)))
 #define strrchr(s1, c) ((*multibyte_strrchr)((s1), (c)))
@@ -150,7 +154,7 @@ extern BOOL (*is_multibyte_char)(char c);
 #define strtok(s1, s2) ((*multibyte_strtok)((s1), (s2)))
 #define dos_to_unix(x,y) ((*_dos_to_unix)((x), (y)))
 #define unix_to_dos(x,y) ((*_unix_to_dos)((x), (y)))
-#define skip_multibyte_char(c) ((*is_multibyte_char)((c)))
+#define skip_multibyte_char(c) ((*_skip_multibyte_char)((c)))
 
 #endif /* _KANJI_C_ */
 
