@@ -3563,7 +3563,7 @@ static void set_server_role(void)
 		case SEC_USER:
 			if (lp_domain_logons()) {
 
-				if (lp_domain_master())
+				if (Globals.bDomainMaster) /* auto or yes */ 
 					server_role = ROLE_DOMAIN_PDC;
 				else
 					server_role = ROLE_DOMAIN_BDC;
