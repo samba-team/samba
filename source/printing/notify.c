@@ -88,6 +88,7 @@ void print_notify_send_messages(void)
 
 	message_send_all(tdb, MSG_PRINTER_NOTIFY2, buf, offset, False, NULL);
 	talloc_destroy_pool(send_ctx);
+	notify_queue_head = NULL;
 }
 
 /*******************************************************************
