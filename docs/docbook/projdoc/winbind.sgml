@@ -624,7 +624,7 @@ CEO+TsInternetUser
 </programlisting></para>
 
 <para>
-Obviously, I have named my domain 'CEO' and my <parameter>winbindd
+Obviously, I have named my domain 'CEO' and my <parameter>winbind
 separator</parameter> is '+'.
 </para>
 
