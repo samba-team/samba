@@ -58,11 +58,9 @@ decrypt_tkt_enc_part (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = decode_EncTicketPart(plain.data, plain.length, decr_part, &len);
+    ret = krb5_decode_EncTicketPart(context, plain.data, plain.length, 
+				    decr_part, &len);
     krb5_data_free (&plain);
-    if (ret)
-	return ret;
-    ret = krb5_convert_etype(context, &decr_part->key.keytype);
     return ret;
 }
 
@@ -84,11 +82,10 @@ decrypt_authenticator (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = decode_Authenticator(plain.data, plain.length, authenticator, &len);
+    ret = krb5_decode_Authenticator(context, plain.data, plain.length, 
+				    authenticator, &len);
     krb5_data_free (&plain);
-    if (ret) 
-	return ret;
-    return 0;
+    return ret;
 }
 
 krb5_error_code
