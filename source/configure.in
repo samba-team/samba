@@ -1765,6 +1765,7 @@ SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt  -I${srcdir-.}/smbwrapper"
 AC_TRY_COMPILE([
 #define REPLACE_GETPASS 1
+#define NO_PROTO_H 1
 #define NO_CONFIG_H 1
 #define main dont_declare_main
 #include "${srcdir-.}/lib/getsmbpass.c"

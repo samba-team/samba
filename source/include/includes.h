@@ -828,7 +828,9 @@ struct functable {
 struct printjob;
 
 /***** automatically generated prototypes *****/
+#ifndef NO_PROTO_H
 #include "proto.h"
+#endif
 
 /* String routines */
 
