@@ -210,7 +210,7 @@ struct winbindd_request {
 
 enum winbindd_result {
 	WINBINDD_ERROR,
-	WINBINDD_DUAL,
+	WINBINDD_PENDING,
 	WINBINDD_OK
 };
 

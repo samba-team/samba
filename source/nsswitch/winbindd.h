@@ -32,18 +32,25 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/* Client state structure */
+/* bits for fd_event.flags */
+#define EVENT_FD_READ 1
+#define EVENT_FD_WRITE 2
 
-struct winbindd_child {
-	struct winbindd_child *next, *prev;
+struct fd_event {
+	struct fd_event *next, *prev;
 	int fd;
-	pid_t pid;
-	int to_write;
+	int flags; /* see EVENT_FD_* flags */
+	void (*handler)(struct fd_event *fde, int flags);
+	void *data;
+	size_t length, done;
+	void (*finished)(void *private, BOOL success);
+	void *private;
 };
 
 struct winbindd_cli_state {
 	struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
 	int sock;                                 /* Open socket from client */
+	struct fd_event fd_event;
 	pid_t pid;                                /* pid of client */
 	int read_buf_len, write_buf_len;          /* Indexes in request/response */
 	BOOL finished;                            /* Can delete from list */
@@ -51,19 +58,13 @@ struct winbindd_cli_state {
 	time_t last_access;                       /* Time of last access (read or write) */
 	BOOL privileged;                           /* Is the client 'privileged' */
 
-	struct winbindd_child *child; /* Child process handling our stateful
-				       * requests */
-
-	BOOL outstanding_getpwent, outstanding_getgrent;
-
-	int msgid;		/* Expecting this msgid */
-	enum winbindd_result (*continuation)(struct winbindd_cli_state *state);
-	void *continuation_private;
-
+	TALLOC_CTX *mem_ctx;			  /* memory per request */
 	struct winbindd_request request;          /* Request from client */
 	struct winbindd_response response;        /* Respose to client */
-	BOOL getpwent_initialized;                /* Has getpwent_state been initialized? */
-	BOOL getgrent_initialized;                /* Has getgrent_state been initialized? */
+	BOOL getpwent_initialized;                /* Has getpwent_state been
+						   * initialized? */
+	BOOL getgrent_initialized;                /* Has getgrent_state been
+						   * initialized? */
 	struct getent_state *getpwent_state;      /* State for getpwent() */
 	struct getent_state *getgrent_state;      /* State for getgrent() */
 };
@@ -97,6 +98,12 @@ struct winbindd_state {
 	gid_t gid_low, gid_high;               /* Range of gids to allocate */
 };
 
+struct winbindd_dispatch_table {
+	enum winbindd_cmd cmd;
+	enum winbindd_result (*fn)(struct winbindd_cli_state *state);
+	const char *winbindd_cmd_name;
+};
+
 extern struct winbindd_state server_state;  /* Server information */
 
 typedef struct {
@@ -124,6 +131,16 @@ struct winbindd_cm_conn {
 	unsigned char sess_key[16];        /* Current session key. */
 	DOM_CRED clnt_cred;                /* Client NETLOGON credential. */
 	struct rpc_pipe_client *netlogon_pipe;
+};
+
+struct winbindd_async_request;
+
+/* Async child */
+
+struct winbindd_child {
+	pid_t pid;
+	struct fd_event event;
+	struct winbindd_async_request *requests;
 };
 
 /* Structures to hold per domain information */
@@ -162,6 +179,10 @@ struct winbindd_domain {
 	/* The smb connection */
 
 	struct winbindd_cm_conn conn;
+
+	/* The child pid we're talking to */
+
+	struct winbindd_child child;
 
 	/* Linked list info */
 

@@ -28,7 +28,6 @@
 
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = True;
-BOOL opt_ldap_proxy = False;
 
 extern BOOL override_logfile;
 
@@ -191,34 +190,13 @@ static void sighup_handler(int signum)
 	sys_select_signal();
 }
 
-static void child_died(pid_t pid)
-{
-	struct winbindd_cli_state *state;
-
-	for (state = winbindd_client_list(); state; state = state->next) {
-		if ((state->child != NULL) && (state->child->pid == pid)) {
-			state->child->pid = 0;
-			return;
-		}
-	}
-
-	idle_child_died(pid);
-}
-
-static int childpid_pipe[2];
-
 static void sigchld_handler(int signum)
 {
 	pid_t pid;
 	int status;
 
-	DEBUG(10, ("Got SIGCHLD\n"));
-
-	while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-		/* During the pipe initialization we checked that PIPE_BUF
-		 * holds WINBINDD_MAX_SIMULANEOUS_CLIENTS*sizeof(pid_t). So we
-		 * can't block here. */
-		write(childpid_pipe[1], &pid, sizeof(pid));
+	while ((pid = wait(&status)) != -1 || errno == EINTR) {
+		continue; /* Reap children */
 	}
 	sys_select_signal();
 }
@@ -237,157 +215,7 @@ static void msg_shutdown(int msg_type, pid_t src, void *buf, size_t len)
 	terminate();
 }
 
-static void dual_send(struct winbindd_cli_state *state)
-{
-	static int msgid;
-	BOOL need_netlogon_child;
-
-	msgid += 1;
-
-	state->msgid = msgid;
-	state->request.msgid = msgid;
-
-	switch(state->request.cmd) {
-	case WINBINDD_PAM_AUTH:
-	case WINBINDD_PAM_AUTH_CRAP:
-	case WINBINDD_CHECK_MACHACC:
-		need_netlogon_child = True;
-		break;
-	default:
-		need_netlogon_child = False;
-	}
-
-	if (state->child == NULL)
-		state->child = claim_child(need_netlogon_child);
-
-	if (state->child == NULL)
-		return;
-
-	state->child->to_write = sizeof(struct winbindd_request);
-}
-
-/* Dual daemon finished a request */
-static void msg_finished(int msg_type, pid_t src, void *buf, size_t len)
-{
-	struct winbindd_cli_state *state;
-	int *msgid;
-
-	DEBUG(5, ("Got finished message\n"));
-
-	if (len != sizeof(*msgid)) {
-		DEBUG(0, ("Wrong buffer size in message: %d\n", len));
-		return;
-	}
-
-	msgid = (int *)buf;
-
-	DEBUGADD(10, ("got msgid %d\n", *msgid));
-
-	for (state = winbindd_client_list(); state; state = state->next) {
-		if (state->msgid == *msgid)
-			break;
-	}
-
-	if (state == NULL) {
-		DEBUG(10, ("Discarding msgid %d\n", *msgid));
-		return;
-	}
-
-	if (!cache_retrieve_response(src, &state->response)) {
-		ZERO_STRUCT(state->response);
-		state->response.result = WINBINDD_ERROR;
-		goto done;
-	}
-
-	if (state->continuation != NULL)
-		state->response.result = state->continuation(state);
-
-	if ((state->child != NULL) &&
-	    (!state->outstanding_getpwent) &&
-	    (!state->outstanding_getgrent)) {
-		release_child(state->child);
-		state->child = NULL;
-	}
-
- done:
-
-	state->read_buf_len = 0;
-	state->write_buf_len = sizeof(struct winbindd_response);
-}
-
-struct dispatch_table {
-	enum winbindd_cmd cmd;
-	enum winbindd_result (*fn)(struct winbindd_cli_state *state);
-	const char *winbindd_cmd_name;
-};
-
-static enum winbindd_result parent_setpwent(struct winbindd_cli_state *state)
-{
-	state->outstanding_getpwent = True;
-	return WINBINDD_DUAL;
-}
-
-static enum winbindd_result parent_getpwent(struct winbindd_cli_state *state)
-{
-	state->outstanding_getpwent = True;
-	return WINBINDD_DUAL;
-}
-
-static enum winbindd_result endpwent_cont(struct winbindd_cli_state *state)
-{
-	state->outstanding_getpwent = False;
-	return WINBINDD_OK;
-}
-
-static enum winbindd_result parent_endpwent(struct winbindd_cli_state *state)
-{
-	state->continuation = endpwent_cont;
-	return WINBINDD_DUAL;
-}
-
-static enum winbindd_result parent_setgrent(struct winbindd_cli_state *state)
-{
-	state->outstanding_getgrent = True;
-	return WINBINDD_DUAL;
-}
-
-static enum winbindd_result parent_getgrent(struct winbindd_cli_state *state)
-{
-	state->outstanding_getgrent = True;
-	return WINBINDD_DUAL;
-}
-
-static enum winbindd_result endgrent_cont(struct winbindd_cli_state *state)
-{
-	state->outstanding_getgrent = False;
-	return WINBINDD_OK;
-}
-
-static enum winbindd_result parent_endgrent(struct winbindd_cli_state *state)
-{
-	state->continuation = endgrent_cont;
-	return WINBINDD_DUAL;
-}
-
-static struct dispatch_table parent_dispatch_table[] = {
-	{ WINBINDD_PING, winbindd_ping, "PING" },
-	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version,
-	  "INTERFACE_VERSION" },
-	{ WINBINDD_SETPWENT, parent_setpwent, "SETPWENT" },
-	{ WINBINDD_ENDPWENT, parent_endpwent, "ENDPWENT" },
-	{ WINBINDD_GETPWENT, parent_getpwent, "GETPWENT" },
-	{ WINBINDD_SETGRENT, parent_setgrent, "SETGRENT" },
-	{ WINBINDD_ENDGRENT, parent_endgrent, "ENDGRENT" },
-	{ WINBINDD_GETGRENT, parent_getgrent, "GETGRENT" },
-	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
-	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
-	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },
-	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir,
-	  "WINBINDD_PRIV_PIPE_DIR" },
-	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
-};
-
-static struct dispatch_table dispatch_table[] = {
+static struct winbindd_dispatch_table dispatch_table[] = {
 	
 	/* User functions */
 
@@ -420,13 +248,13 @@ static struct dispatch_table dispatch_table[] = {
 
 	{ WINBINDD_LIST_USERS, winbindd_list_users, "LIST_USERS" },
 	{ WINBINDD_LIST_GROUPS, winbindd_list_groups, "LIST_GROUPS" },
-	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains, "LIST_TRUSTDOM" },
+	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains_async, "LIST_TRUSTDOM" },
 	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence, "SHOW_SEQUENCE" },
 
 	/* SID related functions */
 
-	{ WINBINDD_LOOKUPSID, winbindd_lookupsid, "LOOKUPSID" },
-	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
+	{ WINBINDD_LOOKUPSID, winbindd_lookupsid_async, "LOOKUPSID" },
+	{ WINBINDD_LOOKUPNAME, winbindd_lookupname_async, "LOOKUPNAME" },
 
 	/* Lookup related functions */
 
@@ -466,6 +294,238 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
 };
 
+static void process_request(struct winbindd_cli_state *state)
+{
+	struct winbindd_dispatch_table *table = dispatch_table;
+
+	/* Free response data - we may be interrupted and receive another
+	   command before being able to send this data off. */
+
+	SAFE_FREE(state->response.extra_data);  
+
+	ZERO_STRUCT(state->response);
+
+	state->response.result = WINBINDD_PENDING;
+	state->response.length = sizeof(struct winbindd_response);
+
+	state->mem_ctx = talloc_init("winbind request");
+	if (state->mem_ctx == NULL)
+		return;
+
+	/* Process command */
+
+	for (table = dispatch_table; table->fn; table++) {
+		if (state->request.cmd == table->cmd) {
+			DEBUG(10,("process_request: request fn %s\n",
+				  table->winbindd_cmd_name ));
+			state->response.result = table->fn(state);
+			break;
+		}
+	}
+
+	if (!table->fn) {
+		DEBUG(10,("process_request: unknown request fn number %d\n",
+			  (int)state->request.cmd ));
+		state->response.result = WINBINDD_ERROR;
+	}
+}
+
+/*
+ * A list of file descriptors being monitored by select in the main processing
+ * loop. fd_event->handler is called whenever the socket is readable/writable.
+ */
+
+static struct fd_event *fd_events = NULL;
+
+void add_fd_event(struct fd_event *ev)
+{
+	DLIST_ADD(fd_events, ev);
+}
+
+void remove_fd_event(struct fd_event *ev)
+{
+	DLIST_REMOVE(fd_events, ev);
+}
+
+/*
+ * Handler for fd_events to complete a read/write request, set up by
+ * setup_async_read/setup_async_write.
+ */
+
+static void rw_callback(struct fd_event *event, int flags)
+{
+	size_t todo;
+	ssize_t done;
+
+	todo = event->length - event->done;
+
+	if (event->flags & EVENT_FD_WRITE) {
+		SMB_ASSERT(flags == EVENT_FD_WRITE);
+		done = write(event->fd, &((char *)event->data)[event->done],
+			     todo);
+
+		if (done <= 0) {
+			event->flags = 0;
+			event->finished(event->private, False);
+			return;
+		}
+	}
+
+	if (event->flags & EVENT_FD_READ) {
+		SMB_ASSERT(flags == EVENT_FD_READ);
+		done = read(event->fd, &((char *)event->data)[event->done],
+			    todo);
+
+		if (done <= 0) {
+			event->flags = 0;
+			event->finished(event->private, False);
+			return;
+		}
+	}
+
+	event->done += done;
+
+	if (event->done == event->length) {
+		event->flags = 0;
+		event->finished(event->private, True);
+	}
+}
+
+/*
+ * Request an async read/write on a fd_event structure. (*finished) is called
+ * when the request is completed or an error had occurred.
+ */
+
+void setup_async_read(struct fd_event *event, void *data, size_t length,
+		      void (*finished)(void *private, BOOL success),
+		      void *private)
+{
+	SMB_ASSERT(event->flags == 0);
+	event->data = data;
+	event->length = length;
+	event->done = 0;
+	event->handler = rw_callback;
+	event->finished = finished;
+	event->private = private;
+	event->flags = EVENT_FD_READ;
+}
+
+void setup_async_write(struct fd_event *event, void *data, size_t length,
+		       void (*finished)(void *private, BOOL success),
+		       void *private)
+{
+	SMB_ASSERT(event->flags == 0);
+	event->data = data;
+	event->length = length;
+	event->done = 0;
+	event->handler = rw_callback;
+	event->finished = finished;
+	event->private = private;
+	event->flags = EVENT_FD_WRITE;
+}
+
+/*
+ * This is the main event loop of winbind requests. It goes through a
+ * state-machine of 3 read/write requests, 4 if you have extra data to send.
+ *
+ * An idle winbind client has a read request of 4 bytes outstanding,
+ * finalizing function is request_len_recv, checking the length. request_recv
+ * then processes the packet. The processing function then at some point has
+ * to call request_finished which schedules sending the response.
+ */
+
+static void request_len_recv(void *private, BOOL success);
+static void request_recv(void *private, BOOL success);
+void request_finished(struct winbindd_cli_state *state);
+void request_finished_cont(void *private);
+static void response_main_sent(void *private, BOOL success);
+static void response_extra_sent(void *private, BOOL success);
+
+static void response_extra_sent(void *private, BOOL success)
+{
+	struct winbindd_cli_state *state = private;
+
+	if (!success) {
+		state->finished = True;
+		return;
+	}
+
+	SAFE_FREE(state->response.extra_data);
+
+	setup_async_read(&state->fd_event, &state->request, sizeof(uint32),
+			 request_len_recv, state);
+}
+
+static void response_main_sent(void *private, BOOL success)
+{
+	struct winbindd_cli_state *state = private;
+
+	if (!success) {
+		state->finished = True;
+		return;
+	}
+
+	if (state->response.length == sizeof(state->response)) {
+		setup_async_read(&state->fd_event, &state->request,
+				 sizeof(uint32), request_len_recv, state);
+		return;
+	}
+
+	setup_async_write(&state->fd_event, state->response.extra_data,
+			  state->response.length - sizeof(state->response),
+			  response_extra_sent, state);
+}
+
+void request_finished(struct winbindd_cli_state *state)
+{
+	talloc_destroy(state->mem_ctx);
+	state->mem_ctx = NULL;
+	setup_async_write(&state->fd_event, &state->response,
+			  sizeof(state->response), response_main_sent, state);
+}
+
+void request_finished_cont(void *private)
+{
+	struct winbindd_cli_state *state = private;
+	return request_finished(state);
+}
+
+static void request_recv(void *private, BOOL success)
+{
+	struct winbindd_cli_state *state = private;
+
+	if (!success) {
+		state->finished = True;
+		return;
+	}
+
+	process_request(state);
+
+	if (state->response.result != WINBINDD_PENDING)
+		request_finished(state);
+}
+
+static void request_len_recv(void *private, BOOL success)
+{
+	struct winbindd_cli_state *state = private;
+
+	if (!success) {
+		state->finished = True;
+		return;
+	}
+
+	if (*(uint32 *)(&state->request) != sizeof(state->request)) {
+		DEBUG(0,("process_loop: Invalid request size received: %d\n",
+			 *(uint32 *)(&state->request)));
+		state->finished = True;
+		return;
+	}
+
+	setup_async_read(&state->fd_event, (uint32 *)(&state->request)+1,
+			 sizeof(state->request) - sizeof(uint32),
+			 request_recv, state);
+}
+
 /* Process a new connection by adding it to the client connection list */
 
 static void new_connection(int listen_sock, BOOL privileged)
@@ -500,6 +560,13 @@ static void new_connection(int listen_sock, BOOL privileged)
 
 	state->privileged = privileged;
 
+	state->fd_event.fd = state->sock;
+	state->fd_event.flags = 0;
+	add_fd_event(&state->fd_event);
+
+	setup_async_read(&state->fd_event, &state->request, sizeof(uint32),
+			 request_len_recv, state);
+
 	/* Add to connection list */
 	
 	winbindd_add_client(state);
@@ -509,36 +576,36 @@ static void new_connection(int listen_sock, BOOL privileged)
 
 static void remove_client(struct winbindd_cli_state *state)
 {
-	if (state == NULL)
-		return;
-
 	/* It's a dead client - hold a funeral */
+	
+	if (state != NULL) {
+		
+		/* Close socket */
+		
+		close(state->sock);
+		
+		/* Free any getent state */
+		
+		free_getent_state(state->getpwent_state);
+		free_getent_state(state->getgrent_state);
+		
+		/* We may have some extra data that was not freed if the
+		   client was killed unexpectedly */
 
-	/* Close socket */
-		
-	close(state->sock);
-		
-	/* Free any getent state */
-		
-	free_getent_state(state->getpwent_state);
-	free_getent_state(state->getgrent_state);
-		
-	/* We may have some extra data that was not freed if the
-	   client was killed unexpectedly */
+		SAFE_FREE(state->response.extra_data);
 
-	SAFE_FREE(state->response.extra_data);
+		if (state->mem_ctx != NULL) {
+			talloc_destroy(state->mem_ctx);
+			state->mem_ctx = NULL;
+		}
 
-	if (state->child != NULL) {
-		message_send_pid(state->child->pid, MSG_WINBIND_FORGET_STATE,
-				 NULL, 0, False);
-		release_child(state->child);
-		state->child = NULL;
+		remove_fd_event(&state->fd_event);
+		
+		/* Remove from list and free */
+		
+		winbindd_remove_client(state);
+		SAFE_FREE(state);
 	}
-		
-	/* Remove from list and free */
-		
-	winbindd_remove_client(state);
-	SAFE_FREE(state);
 }
 
 
@@ -575,192 +642,23 @@ static BOOL remove_idle_client(void)
 
 void winbind_process_packet(struct winbindd_cli_state *state)
 {
-	struct dispatch_table *table = dispatch_table;
-
 	/* Process request */
 	
 	/* Ensure null termination of entire request */
 	state->request.null_term = '\0';
 
 	state->pid = state->request.pid;
-	
-	/* Free response data - we may be interrupted and receive another
-	   command before being able to send this data off. */
 
-	SAFE_FREE(state->response.extra_data);  
-	ZERO_STRUCT(state->response);
-
-	state->response.length = sizeof(struct winbindd_response);
-
-	/* Process command */
-
-	if (opt_dual_daemon) {
-
-		/* In the parent see if we can find non-blocking versions of
-		 * the request */
-
-		state->response.result = WINBINDD_DUAL;
-
-		for (table = parent_dispatch_table; table->fn != NULL;
-		     table++)
-		{
-			if (state->request.cmd == table->cmd) {
-				state->response.result = table->fn(state);
-				break;
-			}
-		}
-
-		if (state->response.result == WINBINDD_DUAL) {
-			dual_send(state);
-			return;
-		}
-
-		goto done;
-	} 
-
-	state->response.result = WINBINDD_ERROR;
-
-	for (table = dispatch_table; table->fn; table++) {
-		if (state->request.cmd == table->cmd) {
-			DEBUG(10,("process_request: request fn %s\n",
-				  table->winbindd_cmd_name ));
-			state->response.result = table->fn(state);
-			break;
-		}
-	}
-
-	if (!table->fn)
-		DEBUG(10,("process_request: unknown request fn number %d\n",
-			  (int)state->request.cmd ));
-
-	/* In case extra data pointer is NULL */
-
- done:
-
-	if (!state->response.extra_data)
-		state->response.length = sizeof(struct winbindd_response);
+	process_request(state);
 
 	/* Update client state */
 	
 	state->read_buf_len = 0;
 	state->write_buf_len = sizeof(struct winbindd_response);
-}
 
-/* Read some data from a client connection */
-
-void winbind_client_read(struct winbindd_cli_state *state)
-{
-	int n;
-    
-	/* Read data */
-
-	n = sys_read(state->sock, state->read_buf_len + 
-		 (char *)&state->request, 
-		 sizeof(state->request) - state->read_buf_len);
-	
-	DEBUG(10,("client_read: read %d bytes. Need %ld more for a full request.\n", n, (unsigned long)(sizeof(state->request) - n - state->read_buf_len) ));
-
-	/* Read failed, kill client */
-	
-	if (n == -1 || n == 0) {
-		DEBUG(5,("read failed on sock %d, pid %lu: %s\n",
-			 state->sock, (unsigned long)state->pid, 
-			 (n == -1) ? strerror(errno) : "EOF"));
-		
-		state->finished = True;
-		return;
-	}
-	
-	/* Update client state */
-	
-	state->read_buf_len += n;
-	state->last_access = time(NULL);
-}
-
-/* Write some data to a client connection */
-
-static void client_write(struct winbindd_cli_state *state)
-{
-	char *data;
-	int num_written;
-	
-	/* Write some data */
-	/*
-	 * The fancy calculation of data below allows us to handle the 
-	 * case where write (sys_write) does not write all the data we 
-	 * gave it. In that case, we will come back through here again
-	 * because of the loop above us, and we want to pick up where
-	 * we left off.
-	 */
-	
-	if (!state->write_extra_data) {
-
-		/* Write response structure */
-		
-		data = (char *)&state->response + sizeof(state->response) - 
-			state->write_buf_len;
-
-	} else {
-
-		/* Write extra data */
-		
-		data = (char *)state->response.extra_data + 
-			state->response.length - 
-			sizeof(struct winbindd_response) - 
-			state->write_buf_len;
-	}
-	
-	num_written = sys_write(state->sock, data, state->write_buf_len);
-	
-	DEBUG(10,("client_write: wrote %d bytes.\n", num_written ));
-
-	/* Write failed, kill cilent */
-	
-	if (num_written == -1 || num_written == 0) {
-		
-		DEBUG(3,("write failed on sock %d, pid %lu: %s\n",
-			 state->sock, (unsigned long)state->pid, 
-			 (num_written == -1) ? strerror(errno) : "EOF"));
-		
-		state->finished = True;
-
-		SAFE_FREE(state->response.extra_data);
-
-		return;
-	}
-	
-	/* Update client state */
-	
-	state->write_buf_len -= num_written;
-	state->last_access = time(NULL);
-
-	/* Have we written all data? */
-	
-	if (state->write_buf_len == 0) {
-		
-		/* Take care of extra data */
-		
-		if (state->write_extra_data) {
-
-			SAFE_FREE(state->response.extra_data);
-
-			state->write_extra_data = False;
-
-			DEBUG(10,("client_write: client_write: complete response written.\n"));
-
-		} else if (state->response.length > 
-			   sizeof(struct winbindd_response)) {
-			
-			/* Start writing extra data */
-
-			state->write_buf_len = 
-				state->response.length -
-				sizeof(struct winbindd_response);
-			
-			DEBUG(10,("client_write: need to write %d extra data bytes.\n", (int)state->write_buf_len));
-
-			state->write_extra_data = True;
-		}
+	/* we might need to send it to the dual daemon */
+	if (opt_dual_daemon) {
+		dual_send_request(state);
 	}
 }
 
@@ -771,240 +669,173 @@ static void client_write(struct winbindd_cli_state *state)
 
 static void process_loop(void)
 {
+	struct winbindd_cli_state *state;
+	struct fd_event *ev;
+	fd_set r_fds, w_fds;
+	int maxfd, listen_sock, listen_priv_sock, selret;
+	struct timeval timeout;
+
 	/* We'll be doing this a lot */
 
-	while (1) {
-		struct winbindd_cli_state *state;
-		fd_set r_fds, w_fds;
-		int maxfd, listen_sock, listen_priv_sock, selret;
-		struct timeval timeout;
+	/* Handle messages */
 
-	again:
-		/* Handle messages */
+	message_dispatch();
 
-		message_dispatch();
-
-		/* refresh the trusted domain cache */
+	/* refresh the trusted domain cache */
 		   
-		rescan_trusted_domains();
+	rescan_trusted_domains();
 
-		/* Free up temporary memory */
+	/* Free up temporary memory */
 
-		lp_talloc_free();
-		main_loop_talloc_free();
+	lp_talloc_free();
+	main_loop_talloc_free();
 
-		/* Initialise fd lists for select() */
+	/* Initialise fd lists for select() */
 
-		listen_sock = open_winbindd_socket();
-		listen_priv_sock = open_winbindd_priv_socket();
+	listen_sock = open_winbindd_socket();
+	listen_priv_sock = open_winbindd_priv_socket();
 
-		if (listen_sock == -1 || listen_priv_sock == -1) {
-			perror("open_winbind_socket");
-			exit(1);
+	if (listen_sock == -1 || listen_priv_sock == -1) {
+		perror("open_winbind_socket");
+		exit(1);
+	}
+
+	maxfd = MAX(listen_sock, listen_priv_sock);
+
+	FD_ZERO(&r_fds);
+	FD_ZERO(&w_fds);
+	FD_SET(listen_sock, &r_fds);
+	FD_SET(listen_priv_sock, &r_fds);
+
+	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
+	timeout.tv_usec = 0;
+
+	if (opt_dual_daemon) {
+		maxfd = dual_select_setup(&w_fds, maxfd);
+	}
+
+	/* Set up client readers and writers */
+
+	state = winbindd_client_list();
+
+	while (state) {
+
+		struct winbindd_cli_state *next = state->next;
+
+		/* Dispose of client connection if it is marked as 
+		   finished */ 
+
+		if (state->finished)
+			remove_client(state);
+
+		state = next;
+	}
+
+	for (ev = fd_events; ev; ev = ev->next) {
+		if (ev->flags & EVENT_FD_READ) {
+			FD_SET(ev->fd, &r_fds);
+			maxfd = MAX(ev->fd, maxfd);
 		}
-
-		maxfd = MAX(listen_sock, listen_priv_sock);
-
-		FD_ZERO(&r_fds);
-		FD_ZERO(&w_fds);
-		FD_SET(listen_sock, &r_fds);
-		FD_SET(listen_priv_sock, &r_fds);
-
-		FD_SET(childpid_pipe[0], &r_fds);
-		maxfd = MAX(childpid_pipe[0], maxfd);
-
-		timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
-		timeout.tv_usec = 0;
-
-		/* Set up client readers and writers */
-
-		state = winbindd_client_list();
-
-		while (state) {
-
-			/* Dispose of client connection if it is marked as 
-			   finished */ 
-
-			if (state->finished) {
-				struct winbindd_cli_state *next = state->next;
-
-				remove_client(state);
-				state = next;
-				continue;
-			}
-
-			/* Select requires we know the highest fd used */
-
-			/* Add fd for reading */
-
-			if (state->read_buf_len != sizeof(state->request)) {
-				FD_SET(state->sock, &r_fds);
-				maxfd = MAX(state->sock, maxfd);
-			}
-
-			/* Add fd for writing */
-
-			if (state->write_buf_len) {
-				FD_SET(state->sock, &w_fds);
-				maxfd = MAX(state->sock, maxfd);
-			}
-
-			/* Find a child for a pending request */
-
-			if ((state->response.result == WINBINDD_DUAL) &&
-			    (state->child == NULL))
-				dual_send(state);
-
-			/* Add child fd for writing */
-
-			if ((state->child != NULL) &&
-			    (state->child->to_write > 0)) {
-				FD_SET(state->child->fd, &w_fds);
-				maxfd = MAX(state->child->fd, maxfd);
-			}
-
-			state = state->next;
+		if (ev->flags & EVENT_FD_WRITE) {
+			FD_SET(ev->fd, &w_fds);
+			maxfd = MAX(ev->fd, maxfd);
 		}
+	}
 
-		/* Call select */
+	/* Call select */
         
-		selret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
+	selret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
 
-		if (selret == 0)
-			continue;
+	if (selret == 0)
+		goto no_fds_ready;
 
-		if ((selret == -1 && errno != EINTR) || selret == 0) {
+	if ((selret == -1 && errno != EINTR) || selret == 0) {
 
-			/* Select error, something is badly wrong */
+		/* Select error, something is badly wrong */
 
-			perror("select");
-			exit(1);
-		}
+		perror("select");
+		exit(1);
+	}
 
-		/* Create a new connection if listen_sock readable */
+	/* Create a new connection if listen_sock readable */
 
-		if (selret > 0) {
+	if (opt_dual_daemon) {
+		dual_select(&w_fds);
+	}
 
-			if (FD_ISSET(listen_sock, &r_fds)) {
-				while (winbindd_num_clients() > WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
-					DEBUG(5,("winbindd: Exceeding %d client connections, removing idle connection.\n",
-						WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
-					if (!remove_idle_client()) {
-						DEBUG(0,("winbindd: Exceeding %d client connections, no idle connection found\n",
-							WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
-						break;
-					}
-				}
-				/* new, non-privileged connection */
-				new_connection(listen_sock, False);
-			}
-            
-			if (FD_ISSET(listen_priv_sock, &r_fds)) {
-				while (winbindd_num_clients() > WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
-					DEBUG(5,("winbindd: Exceeding %d client connections, removing idle connection.\n",
-						WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
-					if (!remove_idle_client()) {
-						DEBUG(0,("winbindd: Exceeding %d client connections, no idle connection found\n",
-							WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
-						break;
-					}
-				}
-				/* new, privileged connection */
-				new_connection(listen_priv_sock, True);
-			}
+	ev = fd_events;
+	while (ev != NULL) {
+		struct fd_event *next = ev->next;
+		int flags = 0;
+		if (FD_ISSET(ev->fd, &r_fds))
+			flags |= EVENT_FD_READ;
+		if (FD_ISSET(ev->fd, &w_fds))
+			flags |= EVENT_FD_WRITE;
+		if (flags)
+			ev->handler(ev, flags);
+		ev = next;
+	}
 
-			if (FD_ISSET(childpid_pipe[0], &r_fds)) {
-				/* A child died, get the pid the signal
-				 * handler wrote into the pipe */
-				pid_t child;
-				if (read(childpid_pipe[0], &child, sizeof(child)) !=
-				    sizeof(child)) {
-					smb_panic("Could not read pid of dead child\n");
-				}
-
-				child_died(child);
-			}
-            
-			/* Process activity on client connections */
-            
-			for (state = winbindd_client_list(); state; 
-			     state = state->next) {
-                
-				/* Data available for writing */
-                
-				if (FD_ISSET(state->sock, &w_fds))
-					client_write(state);
-
-				if ((state->child != NULL) &&
-				    FD_ISSET(state->child->fd, &w_fds))
-					child_write(state);
-			}
-                
-			for (state = winbindd_client_list(); state; 
-			     state = state->next) {
-                
-				/* Data available for reading */
-                
-				if (FD_ISSET(state->sock, &r_fds)) {
-                    
-					/* Read data */
-                    
-					winbind_client_read(state);
-
-					/* 
-					 * If we have the start of a
-					 * packet, then check the
-					 * length field to make sure
-					 * the client's not talking
-					 * Mock Swedish.
-					 */
-
-					if (state->read_buf_len >= sizeof(uint32)
-					    && *(uint32 *) &state->request != sizeof(state->request)) {
-						DEBUG(0,("process_loop: Invalid request size from pid %lu: %d bytes sent, should be %ld\n",
-								(unsigned long)state->request.pid, *(uint32 *) &state->request, (unsigned long)sizeof(state->request)));
-						DEBUGADD(0, ("This usually means that you are running old wbinfo, pam_winbind or libnss_winbind clients\n"));
-
-						remove_client(state);
-						break;
-					}
-
-					/* A request packet might be 
-					   complete */
-                    
-					if (state->read_buf_len == 
-					    sizeof(state->request)) {
-						state->request.flags &= ~WBFLAG_IS_PRIVILEGED;
-
-						winbind_process_packet(state);
-						winbindd_demote_client(state);
-						goto again;
-					}
-				}
+	if (FD_ISSET(listen_sock, &r_fds)) {
+		while (winbindd_num_clients() >
+		       WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
+			DEBUG(5,("winbindd: Exceeding %d client "
+				 "connections, removing idle "
+				 "connection.\n",
+				 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+			if (!remove_idle_client()) {
+				DEBUG(0,("winbindd: Exceeding %d "
+					 "client connections, no idle "
+					 "connection found\n",
+					 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+				break;
 			}
 		}
+		/* new, non-privileged connection */
+		new_connection(listen_sock, False);
+	}
+            
+	if (FD_ISSET(listen_priv_sock, &r_fds)) {
+		while (winbindd_num_clients() >
+		       WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
+			DEBUG(5,("winbindd: Exceeding %d client "
+				 "connections, removing idle "
+				 "connection.\n",
+				 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+			if (!remove_idle_client()) {
+				DEBUG(0,("winbindd: Exceeding %d "
+					 "client connections, no idle "
+					 "connection found\n",
+					 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+				break;
+			}
+		}
+		/* new, privileged connection */
+		new_connection(listen_priv_sock, True);
+	}
+
+ no_fds_ready:
 
 #if 0
-		winbindd_check_cache_size(time(NULL));
+	winbindd_check_cache_size(time(NULL));
 #endif
 
-		/* Check signal handling things */
+	/* Check signal handling things */
 
-		if (do_sigterm)
-			terminate();
+	if (do_sigterm)
+		terminate();
 
-		if (do_sighup) {
+	if (do_sighup) {
 
-			DEBUG(3, ("got SIGHUP\n"));
+		DEBUG(3, ("got SIGHUP\n"));
 
-			msg_reload_services(MSG_SMB_CONF_UPDATED, (pid_t) 0, NULL, 0);
-			do_sighup = False;
-		}
+		msg_reload_services(MSG_SMB_CONF_UPDATED, (pid_t) 0, NULL, 0);
+		do_sighup = False;
+	}
 
-		if (do_sigusr2) {
-			print_winbindd_status();
-			do_sigusr2 = False;
-		}
+	if (do_sigusr2) {
+		print_winbindd_status();
+		do_sigusr2 = False;
 	}
 }
 
@@ -1024,7 +855,6 @@ int main(int argc, char **argv)
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
 		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
-		{ "ldap-proxy", 'L', POPT_ARG_VAL, &opt_ldap_proxy, True, "ldap proxy" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
@@ -1157,28 +987,8 @@ int main(int argc, char **argv)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
-	SMB_ASSERT(PIPE_BUF >=
-		   (WINBINDD_MAX_SIMULTANEOUS_CLIENTS * sizeof(pid_t)));
-
-	if (pipe(childpid_pipe) < 0)
-		smb_panic("Could not create childpid_pipe\n");
-
-	/* See lib/select.c for an explanatory comment on the following */
-
-	if(set_blocking(childpid_pipe[0],0)==-1)
-		smb_panic("childpid_pipe[0]: O_NONBLOCK failed.\n");
-	if(set_blocking(childpid_pipe[1],0)==-1)
-		smb_panic("childpid_pipe[1]: O_NONBLOCK failed.\n");
-
 	if (opt_dual_daemon) {
-		if (!init_children()) {
-			DEBUG(0,("Could not init children\n"));
-			exit(1);
-		}
-	}
-
-	if (opt_ldap_proxy) {
-		do_ldap_proxy();
+		do_dual_daemon();
 	}
 
 	/* Initialise messaging system */
@@ -1192,7 +1002,6 @@ int main(int argc, char **argv)
 	   as to SIGHUP signal */
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
 	message_register(MSG_SHUTDOWN, msg_shutdown);
-	message_register(MSG_WINBIND_FINISHED, msg_finished);
 	
 	poptFreeContext(pc);
 
@@ -1202,7 +1011,8 @@ int main(int argc, char **argv)
 
 	/* Loop waiting for requests */
 
-	process_loop();
+	while (1)
+		process_loop();
 
 	trustdom_cache_shutdown();
 

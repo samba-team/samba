@@ -293,8 +293,8 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	/* Get rid and name type from name */
         
-	if (!winbindd_lookup_sid_by_name(domain, domain->name, name_group, &group_sid, 
-					 &name_type)) {
+	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, domain->name,
+					 name_group, &group_sid, &name_type)) {
 		DEBUG(1, ("group %s in domain %s does not exist\n", 
 			  name_group, name_domain));
 		return WINBINDD_ERROR;
@@ -378,7 +378,8 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 
 	/* Get name from sid */
 
-	if (!winbindd_lookup_name_by_sid(&group_sid, dom_name, group_name, &name_type)) {
+	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &group_sid, dom_name,
+					 group_name, &name_type)) {
 		DEBUG(1, ("could not lookup sid\n"));
 		return WINBINDD_ERROR;
 	}
@@ -994,7 +995,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	enum winbindd_result result = WINBINDD_ERROR;
 	gid_t *gid_list = NULL;
 	unsigned int i;
-	TALLOC_CTX *mem_ctx;
 	NET_USER_INFO_3 *info3 = NULL;
 	
 	/* Ensure null termination */
@@ -1002,10 +1002,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5lu]: getgroups %s\n", (unsigned long)state->pid,
 		  state->request.data.username));
-
-	if (!(mem_ctx = talloc_init("winbindd_getgroups(%s)",
-					  state->request.data.username)))
-		return WINBINDD_ERROR;
 
 	/* Parse domain and username */
 
@@ -1028,8 +1024,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	
 	/* Get rid and name type from name.  The following costs 1 packet */
 
-	if (!winbindd_lookup_sid_by_name(domain, domain->name, name_user, &user_sid, 
-					 &name_type)) {
+	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, domain->name,
+					 name_user, &user_sid, &name_type)) {
 		DEBUG(4, ("user '%s' does not exist\n", name_user));
 		goto done;
 	}
@@ -1045,7 +1041,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	/* Treat the info3 cache as authoritative as the
 	   lookup_usergroups() function may return cached data. */
 
-	if ( !opt_nocache && (info3 = netsamlogon_cache_get(mem_ctx, &user_sid))) {
+	if ( !opt_nocache && (info3 = netsamlogon_cache_get(state->mem_ctx,
+							    &user_sid))) {
 
 		DEBUG(10, ("winbindd_getgroups: info3 has %d groups, %d other sids\n",
 			   info3->num_groups2, info3->num_other_sids));
@@ -1062,7 +1059,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			/* Is this sid known to us?  It can either be
                            a trusted domain sid or a foreign sid. */
 
-			if (!winbindd_lookup_name_by_sid( &info3->other_sids[i].sid, 
+			if (!winbindd_lookup_name_by_sid(state->mem_ctx,
+							 &info3->other_sids[i].sid, 
 				dom_name, name, &sid_type))
 			{
 				DEBUG(10, ("winbindd_getgroups: could not lookup name for %s\n", 
@@ -1102,9 +1100,11 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		SAFE_FREE(info3);
 
 	} else {
-		status = domain->methods->lookup_usergroups(domain, mem_ctx, 
-						    &user_sid, &num_groups, 
-						    &user_grpsids);
+		status = domain->methods->lookup_usergroups(domain,
+							    state->mem_ctx, 
+							    &user_sid,
+							    &num_groups, 
+							    &user_grpsids);
 		if (!NT_STATUS_IS_OK(status)) 
 			goto done;
 
@@ -1132,8 +1132,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	result = WINBINDD_OK;
 
  done:
-
-	talloc_destroy(mem_ctx);
 
 	return result;
 }
@@ -1200,7 +1198,6 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 	enum winbindd_result result = WINBINDD_ERROR;
 	unsigned int i;
-	TALLOC_CTX *mem_ctx;
 	char *ret = NULL;
 	uint32 num_groups;
 	unsigned ofs, ret_size = 0;
@@ -1213,11 +1210,6 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if (!(mem_ctx = talloc_init("winbindd_getusersids(%s)",
-				    state->request.data.username))) {
-		return WINBINDD_ERROR;
-	}
-
 	/* Get info for the domain */	
 	if ((domain = find_domain_from_sid(&user_sid)) == NULL) {
 		DEBUG(0,("could not find domain entry for sid %s\n", 
@@ -1225,7 +1217,7 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 		goto done;
 	}
 	
-	status = domain->methods->lookup_usergroups(domain, mem_ctx, 
+	status = domain->methods->lookup_usergroups(domain, state->mem_ctx, 
 						    &user_sid, &num_groups, 
 						    &user_grpsids);
 	if (!NT_STATUS_IS_OK(status)) 
@@ -1250,11 +1242,13 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 		int num_aliases;
 
 		/* We need to include the user SID to expand */
-		user_grpsids = TALLOC_REALLOC_ARRAY(mem_ctx, user_grpsids,
+		user_grpsids = TALLOC_REALLOC_ARRAY(state->mem_ctx,
+						    user_grpsids,
 						    DOM_SID *, num_groups+1);
 		user_grpsids[num_groups] = &user_sid;
 
-		status = domain->methods->lookup_useraliases(domain, mem_ctx,
+		status = domain->methods->lookup_useraliases(domain,
+							     state->mem_ctx,
 							     num_groups,
 							     user_grpsids+1,
 							     &num_aliases,
@@ -1270,8 +1264,8 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 			DOM_SID sid;
 			sid_copy(&sid, &domain->sid);
 			sid_append_rid(&sid, alias_rids[i]);
-			add_sid_to_parray_unique(mem_ctx, &sid, &user_grpsids,
-						 &num_groups);
+			add_sid_to_parray_unique(state->mem_ctx, &sid,
+						 &user_grpsids, &num_groups);
 		}
 	}
 
@@ -1281,12 +1275,13 @@ enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
 		   to count down here.*/
 
 		for (k=num_groups-1; k>=0; k--) {
-			add_local_sids_from_sid(mem_ctx, user_grpsids[k],
+			add_local_sids_from_sid(state->mem_ctx,
+						user_grpsids[k],
 						&user_grpsids, &num_groups);
 		}
 
-		add_local_sids_from_sid(mem_ctx, &user_sid, &user_grpsids,
-					&num_groups);
+		add_local_sids_from_sid(state->mem_ctx, &user_sid,
+					&user_grpsids, &num_groups);
 	}
 
 	/* work out the response size */
@@ -1313,8 +1308,6 @@ no_groups:
 	result = WINBINDD_OK;
 
  done:
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 

@@ -751,6 +751,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
+					   const char *server_name_slash,
 					   DOM_CRED *clnt_creds,
 					   DOM_CRED *ret_creds,
 					   const char *username,
@@ -779,7 +780,6 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(dummy_rtn_creds);
 
 	workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
-	
 	if (!workstation_name_slash) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -805,7 +805,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 		      username, workstation_name_slash, (const uchar*)chal,
 		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
  
-        init_sam_info(&q.sam_id, cli->cli->srv_name_slash, global_myname(),
+        init_sam_info(&q.sam_id, server_name_slash, global_myname(),
                       clnt_creds, ret_creds, NET_LOGON_TYPE,
                       &ctr);
 
@@ -872,7 +872,8 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli,
 	gen_next_creds(cli, &clnt_creds);
 
 	return rpccli_netlogon_sam_network_logon(&cli->pipes[PI_NETLOGON],
-						 mem_ctx, &clnt_creds,
+						 mem_ctx, cli->srv_name_slash,
+						 &clnt_creds,
 						 ret_creds, username,
 						 domain, workstation, chal, 
 						 lm_response, nt_response,

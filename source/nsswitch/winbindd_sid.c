@@ -28,6 +28,34 @@
 
 /* Convert a string  */
 
+enum winbindd_result winbindd_lookupsid_async(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	DOM_SID sid;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	DEBUG(3, ("[%5lu]: lookupsid %s\n", (unsigned long)state->pid, 
+		  state->request.data.sid));
+
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
+	domain = find_lookup_domain_from_sid(&sid);
+
+	if (domain == NULL) {
+		DEBUG(1,("Can't find domain from sid\n"));
+		return False;
+	}
+
+	return async_request(state->mem_ctx, &domain->child,
+			     &state->request, &state->response,
+			     request_finished_cont, state);
+}
+
 enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 {
 	enum SID_NAME_USE type;
@@ -50,7 +78,8 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 
 	/* Lookup the sid */
 
-	if (!winbindd_lookup_name_by_sid(&sid, dom_name, name, &type)) {
+	if (!winbindd_lookup_name_by_sid(state->mem_ctx, &sid, dom_name, name,
+					 &type)) {
 		return WINBINDD_ERROR;
 	}
 
@@ -62,10 +91,46 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
-
 /**
  * Look up the SID for a qualified name.  
  **/
+enum winbindd_result winbindd_lookupname_async(struct winbindd_cli_state *state)
+{
+	char *name_domain, *name_user;
+	struct winbindd_domain *domain;
+	char *p;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.name.dom_name)-1]='\0';
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.name.name)-1]='\0';
+
+	/* cope with the name being a fully qualified name */
+	p = strstr(state->request.data.name.name, lp_winbind_separator());
+	if (p) {
+		*p = 0;
+		name_domain = state->request.data.name.name;
+		name_user = p+1;
+	} else {
+		name_domain = state->request.data.name.dom_name;
+		name_user = state->request.data.name.name;
+	}
+
+	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
+		  name_domain, lp_winbind_separator(), name_user));
+
+	if ((domain = find_lookup_domain_from_name(name_domain)) == NULL) {
+		DEBUG(0, ("could not find domain entry for domain %s\n", 
+			  name_domain));
+		return WINBINDD_ERROR;
+	}
+
+	return async_request(state->mem_ctx, &domain->child,
+			     &state->request, &state->response,
+			     request_finished_cont, state);
+}
+
 enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 {
 	enum SID_NAME_USE type;
@@ -102,7 +167,8 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	}
 
 	/* Lookup name from PDC using lsa_lookup_names() */
-	if (!winbindd_lookup_sid_by_name(domain, name_domain, name_user, &sid, &type)) {
+	if (!winbindd_lookup_sid_by_name(state->mem_ctx, domain, name_domain,
+					 name_user, &sid, &type)) {
 		return WINBINDD_ERROR;
 	}
 
@@ -171,7 +237,9 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 				
 			/* now fall back to the hard way */
 			
-			if ( !winbindd_lookup_name_by_sid(&sid, domain_name, user, &type) )
+			if ( !winbindd_lookup_name_by_sid(state->mem_ctx, &sid,
+							  domain_name, user,
+							  &type) )
 				return WINBINDD_ERROR;
 				
 			if ( !(pw = getpwnam(user)) ) {
@@ -207,7 +275,8 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 		fstring dom_name, name;
 		enum SID_NAME_USE type;
 
-		if (!winbindd_lookup_name_by_sid(&sid, dom_name, name, &type))
+		if (!winbindd_lookup_name_by_sid(state->mem_ctx, &sid,
+						 dom_name, name, &type))
 			return WINBINDD_ERROR;
 
 		if ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER))
@@ -280,7 +349,9 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 				
 			/* now fall back to the hard way */
 			
-			if ( !winbindd_lookup_name_by_sid(&sid, domain_name, group, &type) )
+			if ( !winbindd_lookup_name_by_sid(state->mem_ctx, &sid,
+							  domain_name, group,
+							  &type) )
 				return WINBINDD_ERROR;
 				
 			if ( !(grp = getgrnam(group)) ) {
@@ -322,7 +393,8 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 		} else {
 			/* Foreign domains need to be looked up by the DC if
 			 * it's the right type */
-			if (!winbindd_lookup_name_by_sid(&sid, dom_name, name,
+			if (!winbindd_lookup_name_by_sid(state->mem_ctx, &sid,
+							 dom_name, name,
 							 &type))
 				return WINBINDD_ERROR;
 		}
@@ -383,7 +455,9 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 			return WINBINDD_ERROR;
 		}
 
-		if ( !winbindd_lookup_sid_by_name(domain, domain->name, pw->pw_name, &sid, &type) )
+		if ( !winbindd_lookup_sid_by_name(state->mem_ctx, domain,
+						  domain->name, pw->pw_name,
+						  &sid, &type) )
 			return WINBINDD_ERROR;
 		
 		if ( type != SID_NAME_USER )
@@ -453,7 +527,9 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 			return WINBINDD_ERROR;
 		}
 
-		if ( !winbindd_lookup_sid_by_name(domain, domain->name, grp->gr_name, &sid, &type) )
+		if ( !winbindd_lookup_sid_by_name(state->mem_ctx, domain,
+						  domain->name, grp->gr_name,
+						  &sid, &type) )
 			return WINBINDD_ERROR;
 		
 		if ( type!=SID_NAME_DOM_GRP && type!=SID_NAME_ALIAS )

@@ -812,6 +812,19 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 	conn->cli = NULL;
 }
 
+void close_conns_after_fork(void)
+{
+	struct winbindd_domain *domain;
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		if (domain->conn.cli == NULL)
+			continue;
+
+		close(domain->conn.cli->fd);
+		domain->conn.cli->fd = -1;
+	}
+}
+
 static BOOL connection_ok(struct winbindd_domain *domain)
 {
 	if (domain->conn.cli == NULL) {

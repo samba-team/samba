@@ -54,20 +54,12 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 	invalidate_cm_connection(&contact_domain->conn);
 
 	{
-		TALLOC_CTX *mem_ctx;
 		struct rpc_pipe_client *cli;
 		unsigned char *session_key;
 		DOM_CRED *creds;
 
-		result = NT_STATUS_NO_MEMORY;
-
-		mem_ctx = talloc_init("winbindd_check_machine_acct");
-		if (mem_ctx != NULL) {
-			result = cm_connect_netlogon(contact_domain, mem_ctx,
-						     &cli, &session_key,
-						     &creds);
-			talloc_destroy(mem_ctx);
-		}
+		result = cm_connect_netlogon(contact_domain, state->mem_ctx,
+					     &cli, &session_key, &creds);
 	}
 
         if (!NT_STATUS_IS_OK(result)) {
@@ -106,56 +98,70 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
-enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
-						   *state)
+enum winbindd_result winbindd_list_trusted_domains_async(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
-	int total_entries = 0, extra_data_len = 0;
-	char *ted, *extra_data = NULL;
 
-	DEBUG(3, ("[%5lu]: list trusted domains\n", (unsigned long)state->pid));
+	DEBUG(3, ("[%5lu]: list trusted domains\n",
+		  (unsigned long)state->pid));
 
-	/* We need to refresh the trusted domain list as the domains may
-	   have changed since we last looked.  There may be a sequence
-	   number or something we should use but I haven't found it yet. */
+	domain = find_our_domain();
 
-	if (!init_domain_list()) {
-		DEBUG(1, ("winbindd_list_trusted_domains: could not "
-			  "refresh trusted domain list\n"));
+	if (domain == NULL) {
+		DEBUG(0, ("Could not find our domain\n"));
 		return WINBINDD_ERROR;
 	}
 
-	for(domain = domain_list(); domain; domain = domain->next) {
+	return async_request(state->mem_ctx, &domain->child,
+			     &state->request, &state->response,
+			     request_finished_cont, state);
+}
 
-		/* Skip own domain */
+enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	uint32 i, num_domains;
+	char **names, **alt_names;
+	DOM_SID *sids;
+	int extra_data_len = 0;
+	char *extra_data;
+	NTSTATUS result;
 
-		if (domain->primary) continue;
+	DEBUG(3, ("[%5lu]: list trusted domains\n",
+		  (unsigned long)state->pid));
 
-		/* Add domain to list */
+	domain = find_our_domain();
 
-		total_entries++;
-		ted = SMB_REALLOC(extra_data, sizeof(fstring) * 
-                              total_entries);
-
-		if (!ted) {
-			DEBUG(0,("winbindd_list_trusted_domains: failed to enlarge buffer!\n"));
-			SAFE_FREE(extra_data);
-			return WINBINDD_ERROR;
-		} else 
-                        extra_data = ted;
-
-		memcpy(&extra_data[extra_data_len], domain->name,
-		       strlen(domain->name));
-
-		extra_data_len  += strlen(domain->name);
-		extra_data[extra_data_len++] = ',';
+	if (domain == NULL) {
+		DEBUG(0, ("Could not find our domain\n"));
+		return WINBINDD_ERROR;
 	}
 
-	if (extra_data) {
-		if (extra_data_len > 1) 
-                        extra_data[extra_data_len - 1] = '\0';
-		state->response.extra_data = extra_data;
-		state->response.length += extra_data_len;
+	result = domain->backend->trusted_domains(domain, state->mem_ctx,
+						  &num_domains, &names,
+						  &alt_names, &sids);
+
+	extra_data = talloc_strdup(state->mem_ctx, "");
+
+	if (num_domains > 0)
+		extra_data = talloc_asprintf(state->mem_ctx, "%s\\%s\n",
+					     names[0],
+					     sid_string_static(&sids[0]));
+
+	for (i=1; i<num_domains; i++)
+		extra_data = talloc_asprintf(state->mem_ctx, "%s\n%s\\%s\\%s",
+					     extra_data,
+					     names[i], alt_names[i],
+					     sid_string_static(&sids[i]));
+
+	/* This is a bit excessive, but the extra data sooner or later will be
+	   talloc'ed */
+
+	extra_data_len = strlen(extra_data);
+
+	if (extra_data_len > 0) {
+		state->response.extra_data = strdup(extra_data);
+		state->response.length += extra_data_len+1;
 	}
 
 	return WINBINDD_OK;
