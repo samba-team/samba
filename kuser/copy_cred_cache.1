@@ -31,10 +31,6 @@
 .\"
 .\" $Id$
 .\"
-.\" Things to fix:
-.\"   * remove Op from mandatory flags
-.\"   * use better macros for arguments (like .Pa for files)
-.\"
 .Dd April 24, 2004
 .Dt COPY_CRED_CACHE 1
 .Os HEIMDAL
@@ -48,6 +44,7 @@ copy credentials from one cache to another
 .Op Fl -service= Ns Ar principal
 .Op Fl -enctype= Ns Ar enctype
 .Op Fl -flags= Ns Ar ticketflags
+.Op Fl -valid-for= Ns Ar time
 .Op Fl -fcache-version= Ns Ar integer
 .Op Aq Ar from-cache
 .Aq Ar to-cache
@@ -70,6 +67,9 @@ Copies only credentials matching this service principal.
 Copies only credentials a matching enctype.
 .It Fl -flags= Ns Ar ticketflags
 Copies only credentials with these ticket flags set.
+.It Fl -valid-for= Ns Ar time
+Copies only credentials that are valid for at least this long. This
+does not take renewable creds into account.
 .It Fl -fcache-version= Ns Ar integer
 The created cache, If a standard
 .Li FILE
@@ -78,11 +78,12 @@ cache is created, it will have this file format version.
 .\".Sh ENVIRONMENT
 .\".Sh FILES
 .Sh EXAMPLES
-To copy only credentials with the
+To copy only credentials that are valid for at least one day and with
+the
 .Li initial
 flag set, try something like:
 .Bd -literal -offset indent
-$ copy_cred_cache --flags=initial FILE:/some/cache
+$ copy_cred_cache --valid-for=1d --flags=initial FILE:/some/cache
 .Ed
 .Sh DIAGNOSTICS
 The

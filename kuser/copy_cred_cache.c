@@ -41,11 +41,13 @@ RCSID("$Id$");
 #include <roken.h>
 #include <getarg.h>
 #include <parse_units.h>
+#include <parse_time.h>
 
 static int krbtgt_only_flag;
 static char *service_string;
 static char *enctype_string;
 static char *flags_string;
+static char *valid_string;
 static int fcache_version;
 static int help_flag;
 static int version_flag;
@@ -59,6 +61,8 @@ static struct getargs args[] = {
       "limit to this enctype", "enctype" },
     { "flags", 0, arg_string, &flags_string,
       "limit to these flags", "ticketflags" },
+    { "valid-for", 0, arg_string, &valid_string, 
+      "limit to creds valid for at least this long", "time" },
     { "fcache-version", 0, arg_integer, &fcache_version,
       "file cache version to create" },
     { "version", 0, arg_flag, &version_flag },
@@ -83,6 +87,24 @@ usage(int ret)
 #define KRB5_TC_MATCH_TIMES		(1 << 25)
 #define KRB5_TC_MATCH_AUTHDATA		(1 << 24)
 #define KRB5_TC_MATCH_2ND_TKT		(1 << 23)
+#define KRB5_TC_MATCH_IS_SKEY		(1 << 22)
+
+static krb5_boolean
+krb5_data_equal(const krb5_data *a, const krb5_data *b)
+{
+    if(a->length != b->length)
+	return FALSE;
+    return memcmp(a->data, b->data, a->length) == 0;
+}
+
+static krb5_boolean
+krb5_times_equal(const krb5_times *a, const krb5_times *b)
+{
+    return a->starttime == b->starttime &&
+	a->authtime == b->authtime &&
+	a->endtime == b->endtime &&
+	a->renew_till == b->renew_till;
+}
 
 static krb5_boolean
 krb5_compare_creds2(krb5_context context, krb5_flags whichfields,
@@ -108,19 +130,42 @@ krb5_compare_creds2(krb5_context context, krb5_flags whichfields,
 					    creds->client);
     }
 	    
-    if (match && (whichfields & KRB5_TC_MATCH_KEYTYPE) &&
-	!krb5_enctypes_compatible_keys(context,
-				       mcreds->session.keytype,
-				       creds->session.keytype))
-	match = FALSE;
+    if (match && (whichfields & KRB5_TC_MATCH_KEYTYPE))
+	match = krb5_enctypes_compatible_keys(context,
+					      mcreds->session.keytype,
+					      creds->session.keytype);
 
-    if (match && (whichfields & KRB5_TC_MATCH_FLAGS_EXACT) &&
-	mcreds->flags.i != creds->flags.i)
-	match = FALSE;
+    if (match && (whichfields & KRB5_TC_MATCH_FLAGS_EXACT))
+	match = mcreds->flags.i == creds->flags.i;
 
-    if (match && (whichfields & KRB5_TC_MATCH_FLAGS) &&
-	(creds->flags.i & mcreds->flags.i) != mcreds->flags.i)
-	match = FALSE;
+    if (match && (whichfields & KRB5_TC_MATCH_FLAGS))
+	match = (creds->flags.i & mcreds->flags.i) == mcreds->flags.i;
+
+    if (match && (whichfields & KRB5_TC_MATCH_TIMES_EXACT))
+	match = krb5_times_equal(&mcreds->times, &creds->times);
+    
+    if (match && (whichfields & KRB5_TC_MATCH_TIMES))
+	/* compare only expiration times */
+	match = (mcreds->times.renew_till <= creds->times.renew_till) &&
+	    (mcreds->times.endtime <= creds->times.endtime);
+
+    if (match && (whichfields & KRB5_TC_MATCH_AUTHDATA)) {
+	unsigned int i;
+	if(mcreds->authdata.len != creds->authdata.len)
+	    match = FALSE;
+	else
+	    for(i = 0; match && i < mcreds->authdata.len; i++)
+		match = (mcreds->authdata.val[i].ad_type == 
+			 creds->authdata.val[i].ad_type) &&
+		    krb5_data_equal(&mcreds->authdata.val[i].ad_data,
+				    &creds->authdata.val[i].ad_data);
+    }
+    if (match && (whichfields & KRB5_TC_MATCH_2ND_TKT))
+	match = krb5_data_equal(&mcreds->second_ticket, &creds->second_ticket);
+
+    if (match && (whichfields & KRB5_TC_MATCH_IS_SKEY))
+	match = ((mcreds->second_ticket.length == 0) == 
+		 (creds->second_ticket.length == 0));
 
     return match;
 }
@@ -265,6 +310,13 @@ main(int argc, char **argv)
     if (flags_string) {
 	parse_ticket_flags(context, flags_string, &mcreds.flags);
 	whichfields |= KRB5_TC_MATCH_FLAGS;
+    }
+    if (valid_string) {
+	time_t t = parse_time(valid_string, "s");
+	if(t < 0)
+	    errx(1, "unknown time \"%s\"", valid_string);
+	mcreds.times.endtime = time(NULL) + t;
+	whichfields |= KRB5_TC_MATCH_TIMES;
     }
     if (fcache_version)
 	krb5_set_fcache_version(context, fcache_version);
