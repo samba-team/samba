@@ -1179,12 +1179,14 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 
 BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count)
 {
+	int name_type = pdc_only ? 0x1B : 0x1C;
+
 	/*
-	 * If we're looking for a PDC and it's our domain then
+	 * If it's our domain then
 	 * use the 'password server' parameter.
 	 */
 
-	if (pdc_only && strequal(group, lp_workgroup())) {
+	if (strequal(group, lp_workgroup())) {
 		char *p;
 		char *pserver = lp_passwordserver();
 		fstring name;
@@ -1192,16 +1194,16 @@ BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *coun
 		struct in_addr *return_iplist = NULL;
 
 		if (! *pserver)
-			return internal_resolve_name(group, 0x1B, ip_list, count);
+			return internal_resolve_name(group, name_type, ip_list, count);
 
 		p = pserver;
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
 			if (strequal(name, "*"))
-				return internal_resolve_name(group, 0x1B, ip_list, count);
+				return internal_resolve_name(group, name_type, ip_list, count);
 			num_adresses++;
 		}
 		if (num_adresses == 0)
-			return internal_resolve_name(group, 0x1B, ip_list, count);
+			return internal_resolve_name(group, name_type, ip_list, count);
 
 		return_iplist = (struct in_addr *)malloc(num_adresses * sizeof(struct in_addr));
 		if(return_iplist == NULL) {
@@ -1219,7 +1221,7 @@ BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *coun
 		*ip_list = return_iplist;
 		return (*count != 0);
 	} else
-		return internal_resolve_name(group, pdc_only ? 0x1B : 0x1C, ip_list, count);
+		return internal_resolve_name(group, name_type, ip_list, count);
 }
 
 /********************************************************
