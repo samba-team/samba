@@ -221,6 +221,8 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 		return ret;
 	}
 	
+	init_account_policy();
+	
 	ret = local_password_change(user_name, local_flags, new_passwd, 
 				     err_str, sizeof(err_str), msg_str, sizeof(msg_str));
 
