@@ -107,7 +107,7 @@ char *get_server_type_str(uint32 type)
 		{
 			if (IS_BITS_SET_ALL(type, 1 << i))
 			{
-				switch (1 << i)
+				switch (((unsigned)1) << i)
 				{
 					case SV_TYPE_WORKSTATION      : fstrcat(typestr, "Wk " ); break;
 					case SV_TYPE_SERVER           : fstrcat(typestr, "Sv " ); break;
@@ -985,7 +985,7 @@ char *get_sec_mask_str(uint32 type)
 	{
 		if (IS_BITS_SET_ALL(type, 1 << i))
 		{
-			switch (1 << i)
+			switch (((unsigned)1) << i)
 			{
 				case SEC_RIGHTS_QUERY_VALUE    : fstrcat(typestr, "Query " ); break;
 				case SEC_RIGHTS_SET_VALUE      : fstrcat(typestr, "Set " ); break;
