@@ -28,9 +28,22 @@
  * rmkey/rmdir - remove key
  * mkkey/mkdir - make key
  * ch - change hive
+ * info - show key info
  * help
  * exit
  */
+
+static REG_KEY *cmd_info(REG_KEY *cur, int argc, char **argv)
+{
+	time_t last_mod;
+	printf("Name: %s\n", reg_key_name(cur));
+	printf("Full path: %s\n", reg_key_get_path(cur));
+	printf("Key Class: %s\n", reg_key_class(cur));
+	last_mod = nt_time_to_unix(reg_key_last_modified(cur));
+	printf("Time Last Modified: %s\n", ctime(&last_mod));
+	/* FIXME: Security info */
+	return cur;
+}
 
 static REG_KEY *cmd_pwd(REG_KEY *cur, int argc, char **argv)
 {
@@ -180,6 +193,7 @@ struct {
 } regshell_cmds[] = {
 	{"ck", "cd", "Change current key", cmd_ck },
 	{"ch", "hive", "Change current hive", cmd_hive },
+	{"info", "i", "Show detailed information of a key", cmd_info },
 	{"list", "ls", "List values/keys in current key", cmd_ls },
 	{"mkkey", "mkdir", "Make new key", cmd_mkkey },
 	{"rmval", "rm", "Remove value", cmd_rmval },
@@ -224,6 +238,104 @@ static REG_KEY *process_cmd(REG_KEY *k, char *line)
 	return k;
 }
 
+#define MAX_COMPLETIONS 100
+
+static REG_KEY *current_key = NULL;
+
+static char **reg_complete_command(const char *text, int end)
+{
+	/* Complete command */
+	char **matches;
+	int i, len, samelen, count=1;
+
+	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+	if (!matches) return NULL;
+	matches[0] = NULL;
+
+	len = strlen(text);
+	for (i=0;regshell_cmds[i].handle && count < MAX_COMPLETIONS-1;i++) {
+		if (strncmp(text, regshell_cmds[i].name, len) == 0) {
+			matches[count] = strdup(regshell_cmds[i].name);
+			if (!matches[count])
+				goto cleanup;
+			if (count == 1)
+				samelen = strlen(matches[count]);
+			else
+				while (strncmp(matches[count], matches[count-1], samelen) != 0)
+					samelen--;
+			count++;
+		}
+	}
+
+	switch (count) {
+	case 0:	/* should never happen */
+	case 1:
+		goto cleanup;
+	case 2:
+		matches[0] = strdup(matches[1]);
+		break;
+	default:
+		matches[0] = malloc(samelen+1);
+		if (!matches[0])
+			goto cleanup;
+		strncpy(matches[0], matches[1], samelen);
+		matches[0][samelen] = 0;
+	}
+	matches[count] = NULL;
+	return matches;
+
+cleanup:
+	while (i >= 0) {
+		free(matches[i]);
+		i--;
+	}
+	free(matches);
+	return NULL;
+}
+
+static char **reg_complete_key(const char *text, int end)
+{
+	REG_KEY *subkey;
+	int i, j = 0;
+	int len;
+	char **matches;
+	/* Complete argument */
+
+	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+	if (!matches) return NULL;
+	matches[0] = NULL;
+
+	len = strlen(text);
+	for(i = 0; j < MAX_COMPLETIONS-1; i++) {
+		WERROR status = reg_key_get_subkey_by_index(current_key, i, &subkey);
+		if(W_ERROR_IS_OK(status)) {
+			if(!strncmp(text, reg_key_name(subkey), len)) {
+				matches[j] = strdup(reg_key_name(subkey));
+				j++;
+			}
+			reg_key_free(subkey);
+		} else if(W_ERROR_EQUAL(status, WERR_NO_MORE_ITEMS)) {
+			break;
+		} else {
+			printf("Error creating completion list: %s\n", win_errstr(status));
+			return NULL;
+		}
+	}
+	matches[j] = NULL;
+	return matches;
+}
+
+static char **reg_completion(const char *text, int start, int end)
+{
+	smb_readline_ca_char(' ');
+
+	if (start == 0) {
+		return reg_complete_command(text, end);
+	} else {
+		return reg_complete_key(text, end);
+	}
+}
+
  int main(int argc, char **argv)
 {
 	int opt;
@@ -264,7 +376,9 @@ static REG_KEY *process_cmd(REG_KEY *k, char *line)
 		
 		asprintf(&prompt, "%s> ", reg_key_get_path_abs(curkey));
 		
-		line = smb_readline(prompt, NULL, NULL);
+		current_key = curkey; 		/* No way to pass a void * pointer 
+									   via readline :-( */
+		line = smb_readline(prompt, NULL, reg_completion);
 
 		if(!line)
 			break;
