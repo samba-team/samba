@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -60,6 +60,15 @@ int convert_524;
 int fcache_version;
 
 static struct getargs args[] = {
+    /* 
+     * used by MIT
+     * a: ~A
+     * V: verbose
+     * F: ~f
+     * P: ~p
+     * C: v4 cache name?
+     * 5: 
+     */
 #ifdef KRB4
     { "524init", 	'4', arg_flag, &get_v4_tgt,
       "obtain version 4 TGT" },
@@ -112,7 +121,7 @@ static struct getargs args[] = {
     { "fcache-version", 0,   arg_integer, &fcache_version,
       "file cache version to create" },
 
-    { "addresses",	0,   arg_negative_flag,	&addrs_flag,
+    { "addresses",	'A',   arg_negative_flag,	&addrs_flag,
       "request a ticket with no addresses" },
 
     { "extra-addresses",'a', arg_strings,	&extra_addresses,
