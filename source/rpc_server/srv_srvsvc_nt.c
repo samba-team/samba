@@ -343,6 +343,38 @@ BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 d
 }
 
 /*******************************************************************
+ Fill in a share info level 501 structure.
+********************************************************************/
+
+static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, int snum)
+{
+	int len_net_name;
+	pstring net_name;
+	pstring remark;
+	uint32 type;
+	uint32 csc_policy;
+
+	pstrcpy(net_name, lp_servicename(snum));
+	pstrcpy(remark, lp_comment(snum));
+	standard_sub_conn(p->conn, remark);
+
+	len_net_name = strlen(net_name);
+
+	/* work out the share type */
+	type = STYPE_DISKTREE;
+
+	if (lp_print_ok(snum))
+		type = STYPE_PRINTQ;
+	if (strequal("IPC$", net_name) || strequal("ADMIN$", net_name))
+		type = STYPE_IPC;
+	if (net_name[len_net_name] == '$')
+		type |= STYPE_HIDDEN;
+	
+	init_srv_share_info501(&sh501->info_501, net_name, type, remark, (lp_csc_policy(snum) << 4));
+	init_srv_share_info501_str(&sh501->info_501_str, net_name, remark);
+}
+
+/*******************************************************************
  Fill in a share info level 502 structure.
  ********************************************************************/
 
@@ -484,6 +516,23 @@ static BOOL init_srv_share_info_ctr(pipes_struct *p, SRV_SHARE_INFO_CTR *ctr,
 		break;
 	}
 
+	case 501:
+	{
+		SRV_SHARE_INFO_501 *info501;
+		int i = 0;
+	
+		info501 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_501));
+
+		for (snum = *resume_hnd; snum < num_services; snum++) {
+			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_admin_share(snum)) ) {
+				init_srv_share_info_501(p, &info501[i++], snum);
+			}
+		}
+	
+		ctr->share.info501 = info501;
+		break;
+	}
+
 	case 502:
 	{
 		SRV_SHARE_INFO_502 *info502;
@@ -551,6 +600,9 @@ static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_I
 			break;
 		case 2:
 			init_srv_share_info_2(p, &r_n->info.share.info2, snum);
+			break;
+		case 501:
+			init_srv_share_info_501(p, &r_n->info.share.info501, snum);
 			break;
 		case 502:
 			init_srv_share_info_502(p, &r_n->info.share.info502, snum);

@@ -348,6 +348,27 @@ typedef struct share_info_2_info
 
 } SRV_SHARE_INFO_2;
 
+typedef struct ptr_share_info501
+{
+	uint32 ptr_netname; /* pointer to net name */
+	uint32 type;     /* ipc, print, disk */
+	uint32 ptr_remark;  /* pointer to comment */
+	uint32 csc_policy;  /* client-side offline caching policy << 4 */
+} SH_INFO_501;
+
+typedef struct str_share_info501
+{
+	UNISTR2 uni_netname; /* unicode string of net name */
+	UNISTR2 uni_remark;  /* unicode string of comment */
+} SH_INFO_501_STR;
+
+/* SRV_SHARE_INFO_501 */
+typedef struct share_info_501_info
+{
+	SH_INFO_501 info_501;
+	SH_INFO_501_STR info_501_str;
+} SRV_SHARE_INFO_501;
+
 /* SH_INFO_502 (pointers to level 502 share info strings) */
 typedef struct ptr_share_info502
 {
@@ -413,6 +434,7 @@ typedef struct srv_share_info_ctr_info
 	union {
 		SRV_SHARE_INFO_1 *info1; /* share info level 1 */
 		SRV_SHARE_INFO_2 *info2; /* share info level 2 */
+		SRV_SHARE_INFO_501 *info501; /* share info level 501 */
 		SRV_SHARE_INFO_502 *info502; /* share info level 502 */
 		void *info;
 
@@ -469,9 +491,10 @@ typedef struct srv_share_info {
 	union {
 		SRV_SHARE_INFO_1 info1;
 		SRV_SHARE_INFO_2 info2;
+		SRV_SHARE_INFO_501 info501;
 		SRV_SHARE_INFO_502 info502;
-        SRV_SHARE_INFO_1005 info1005;
-        SRV_SHARE_INFO_1501 info1501;
+		SRV_SHARE_INFO_1005 info1005;
+		SRV_SHARE_INFO_1501 info1501;
 	} share;
 } SRV_SHARE_INFO;
 
