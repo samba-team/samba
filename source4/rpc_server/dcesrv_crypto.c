@@ -34,8 +34,6 @@
 NTSTATUS dcesrv_crypto_select_type(struct dcesrv_connection *dce_conn,
 			       struct dcesrv_auth *auth)
 {
-	NTSTATUS status;
-
 	if (auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
 	    auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
 		DEBUG(2,("auth_level %d not supported in dcesrv auth\n", 
@@ -58,24 +56,13 @@ NTSTATUS dcesrv_crypto_select_type(struct dcesrv_connection *dce_conn,
 	 * maybe a dcesrv_crypto_find_backend_by_type() whould be better here
 	 * to make thinks more generic
 	 */
-	switch (auth->auth_info->auth_type) {
-
-/*	case DCERPC_AUTH_TYPE_SCHANNEL:
-		status = dcesrv_crypto_schannel_get_ops(dce_conn, auth);
-		break;
-*/
-	case DCERPC_AUTH_TYPE_NTLMSSP:
-		status = dcesrv_crypto_ntlmssp_get_ops(dce_conn, auth);
-		break;
-
-	default:
+	auth->crypto_ctx.ops = dcesrv_crypto_backend_bytype(auth->auth_info->auth_type);
+	if (auth->crypto_ctx.ops == NULL) {
 		DEBUG(2,("dcesrv auth_type %d not supported\n", auth->auth_info->auth_type));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	DEBUG(4,("dcesrv_crypto_startup: %s\n", nt_errstr(status)));
-
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -138,4 +125,18 @@ NTSTATUS dcesrv_crypto_unseal(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
 void dcesrv_crypto_end(struct dcesrv_auth *auth) 
 {
 	auth->crypto_ctx.ops->end(auth);
+}
+
+const struct dcesrv_crypto_ops *dcesrv_crypto_backend_bytype(uint8_t auth_type)
+{
+	switch (auth_type) {
+#if 0
+		case DCERPC_AUTH_TYPE_SCHANNEL:
+			return dcesrv_crypto_schannel_get_ops();
+#endif
+		case DCERPC_AUTH_TYPE_NTLMSSP:
+			return dcesrv_crypto_ntlmssp_get_ops();
+	}
+
+	return NULL;
 }
