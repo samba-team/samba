@@ -49,6 +49,10 @@
 #define BIT_EXPORT	0x02000000
 #define BIT_FIX_INIT    0x04000000
 #define BIT_BADPWRESET	0x08000000
+#define BIT_TRUSTDOM    0x10000000
+#define BIT_TRUSTPW     0x20000000
+#define BIT_TRUSTSID    0x40000000
+#define BIT_TRUSTFLAGS  0x80000000
 
 #define MASK_ALWAYS_GOOD	0x0000001F
 #define MASK_USER_GOOD		0x00401F00
@@ -538,6 +542,143 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 	return 0;
 }
 
+
+/**
+ * Add new trusting domain account
+ *
+ * @param in initialised pdb_context
+ * @param dom_name trusted domain name given in command line
+ *
+ * @return 0 on success, -1 otherwise
+ **/
+ 
+static int new_trustdom(struct pdb_context *in, const char *dom_name)
+{
+	/* TODO */
+	return -1;
+}
+
+
+/**
+ * Add new trust relationship password
+ *
+ * @param in initialised pdb_context
+ * @param dom_name trusting domain name given in command line
+ * @param dom_sid domain sid given in command line
+ * @param flag trust password type flag given in command line
+ *
+ * @return 0 on success, -1 otherwise
+ **/
+
+static int new_trustpw(struct pdb_context *in, const char *dom_name,
+                       const char *dom_sid, const char* flag)
+{
+	const int flag_num = 5;
+	typedef struct { const char *name; int val; } flag_conv;
+	flag_conv flags[] = {{ "PASS_MACHINE_TRUST_NT", PASS_MACHINE_TRUST_NT  },
+	                     { "PASS_SERVER_TRUST_NT",  PASS_SERVER_TRUST_NT   },
+	                     { "PASS_DOMAIN_TRUST_NT",  PASS_DOMAIN_TRUST_NT   },
+	                     { "PASS_MACHINE_TRUST_ADS",PASS_MACHINE_TRUST_ADS },
+	                     { "PASS_DOMAIN_TRUST_ADS", PASS_DOMAIN_TRUST_ADS  }};
+	
+	TALLOC_CTX *mem_ctx = NULL;
+	SAM_TRUST_PASSWD trust;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	POLICY_HND connect_hnd;
+	DOM_SID *domain_sid = NULL;
+	smb_ucs2_t *uni_name = NULL;
+	char *givenpass, *domain_name = NULL;
+	struct in_addr srv_ip;
+	fstring srv_name, myname;
+	struct cli_state *cli;
+	int i;
+	time_t lct;
+	
+	if (!dom_name) return -1;
+	
+	mem_ctx = talloc_init("pdbedit: adding new trust password");
+	
+	/* unicode name */
+	trust.private.uni_name_len = strnlen(dom_name, 32);
+	push_ucs2_talloc(mem_ctx, &uni_name, dom_name);
+	strncpy_w(trust.private.uni_name, uni_name, 32);
+	
+	/* flags */
+	for (i = 0; i < flag_num; i++) {
+		if (!StrCaseCmp(flags[i].name, flag)) {
+			trust.private.flags = flags[i].val;
+			i = flag_num; /* stop comparing */
+		}
+	}
+
+	/* trusting SID */
+	if (!dom_sid) {
+		/* if sid is not specified in command line, do our best
+		   to establish it */
+
+		/* find domain PDC */
+		if (!get_pdc_ip(dom_name, &srv_ip))
+			return -1;
+		if (is_zero_ip(srv_ip))
+			return -1;
+		if (!name_status_find(dom_name, 0x1b, 0x20, srv_ip, srv_name))
+			return -1;
+			
+		get_myname(myname);
+			
+		/* Connect the domain pdc...  */
+		nt_status = cli_full_connection(&cli, myname, srv_name, &srv_ip, 139,
+		                                "IPC$", "IPC", "", "", "", 0, Undefined, NULL);
+		if (NT_STATUS_IS_ERR(nt_status))
+			return -1;
+		if (!cli_nt_session_open(cli, PI_LSARPC))
+			return -1;
+		
+		/* ...and query the domain sid */
+		nt_status = cli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
+		                                 &connect_hnd);
+		if (NT_STATUS_IS_ERR(nt_status)) return -1;
+
+		nt_status = cli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
+		                                      5, &domain_name, &domain_sid);
+		if (NT_STATUS_IS_ERR(nt_status)) return -1;
+		
+		nt_status = cli_lsa_close(cli, mem_ctx, &connect_hnd);
+		if (NT_STATUS_IS_ERR(nt_status)) return -1;
+		
+		cli_nt_session_close(cli);
+		cli_shutdown(cli);
+		
+		/* copying sid to trust password structure */
+		sid_copy(&trust.private.domain_sid, domain_sid);
+			
+	} else {
+		if (!string_to_sid(&trust.private.domain_sid, dom_sid)) {
+			printf("Error: wrong SID specified !\n");
+			return -1;
+		}
+	}
+		
+	/* password */
+	givenpass = getpass("password:");
+	memset(trust.private.pass, '\0', FSTRING_LEN);
+	strncpy(trust.private.pass, givenpass, FSTRING_LEN);
+	
+	/* last change time */
+	lct = time(NULL);
+	trust.private.mod_time = lct;
+	
+	/* store trust password in passdb */
+	nt_status = in->pdb_add_trust_passwd(in, &trust);
+			
+	talloc_destroy(mem_ctx);
+	if (NT_STATUS_IS_OK(nt_status))
+		return 0;
+	
+	return -1;
+}
+
+
 /*********************************************************
  Delete user entry
 **********************************************************/
@@ -603,6 +744,7 @@ int main (int argc, char **argv)
 	static BOOL verbose = False;
 	static BOOL spstyle = False;
 	static BOOL machine = False;
+	static BOOL trustdom = False;
 	static BOOL add_user = False;
 	static BOOL delete_user = False;
 	static BOOL modify_user = False;
@@ -626,6 +768,10 @@ int main (int argc, char **argv)
 	static long int account_policy_value = 0;
 	BOOL account_policy_value_set = False;
 	static BOOL badpw_reset = False;
+	/* trust password parameters */
+	static char *trustpw = NULL;
+	static char *trustsid = NULL;
+	static char *trustflags = NULL;
 
 	struct pdb_context *bin;
 	struct pdb_context *bout;
@@ -646,8 +792,12 @@ int main (int argc, char **argv)
 		{"group SID",	'G', POPT_ARG_STRING, &group_sid, 0, "set group SID or RID", NULL},
 		{"create",	'a', POPT_ARG_NONE, &add_user, 0, "create user", NULL},
 		{"modify",	'r', POPT_ARG_NONE, &modify_user, 0, "modify user", NULL},
-		{"machine",	'm', POPT_ARG_NONE, &machine, 0, "account is a machine account", NULL},
 		{"delete",	'x', POPT_ARG_NONE, &delete_user, 0, "delete user", NULL},
+		{"machine",	'm', POPT_ARG_NONE, &machine, 0, "account is a machine account", NULL},
+		{"trustdom",    'I', POPT_ARG_NONE, &trustdom, 0, "account is a domain trust account", NULL},
+		{"trustpw",     'N', POPT_ARG_STRING, &trustpw, 0, "trust password's domain name", NULL},
+		{"trustsid",    'T', POPT_ARG_STRING, &trustsid, 0, "trust password's domain sid", NULL},
+		{"trustflags",  'F', POPT_ARG_STRING, &trustflags, 0, "trust password flags", NULL},
 		{"backend",	'b', POPT_ARG_STRING, &backend, 0, "use different passdb backend as default backend", NULL},
 		{"import",	'i', POPT_ARG_STRING, &backend_in, 0, "import user accounts from this backend", NULL},
 		{"export",	'e', POPT_ARG_STRING, &backend_out, 0, "export user accounts to this backend", NULL},
@@ -699,6 +849,10 @@ int main (int argc, char **argv)
 			(logon_script ? BIT_LOGSCRIPT : 0) +
 			(profile_path ? BIT_PROFILE : 0) +
 			(machine ? BIT_MACHINE : 0) +
+			(trustdom ? BIT_TRUSTDOM : 0) +
+			(trustpw ? BIT_TRUSTPW : 0) +
+			(trustsid ? BIT_TRUSTSID : 0) +
+			(trustflags ? BIT_TRUSTFLAGS : 0) +
 			(user_name ? BIT_USER : 0) +
 			(list_users ? BIT_LIST : 0) +
 			(force_initialised_password ? BIT_FIX_INIT : 0) +
@@ -817,15 +971,21 @@ int main (int argc, char **argv)
 	/* account operation */
 	if ((checkparms & BIT_CREATE) || (checkparms & BIT_MODIFY) || (checkparms & BIT_DELETE)) {
 		/* check use of -u option */
-		if (!(checkparms & BIT_USER)) {
+		if (!(checkparms & (BIT_USER + BIT_TRUSTPW))) {
 			fprintf (stderr, "Username not specified! (use -u option)\n");
 			return -1;
 		}
 
 		/* account creation operations */
-		if (!(checkparms & ~(BIT_CREATE + BIT_USER + BIT_MACHINE))) {
+		if (!(checkparms & ~(BIT_CREATE + BIT_USER + BIT_MACHINE + BIT_TRUSTDOM))) {
+			/* machine trust account */
 		       	if (checkparms & BIT_MACHINE) {
 				return new_machine (bdef, user_name);
+			/* interdomain trust account */
+			} else if (checkparms & BIT_TRUSTDOM) {
+				return new_trustdom(bdef, user_name);
+
+			/* ordinary user account */
 			} else {
 				return new_user (bdef, user_name, full_name, home_dir, 
 						 home_drive, logon_script, 
@@ -854,6 +1014,15 @@ int main (int argc, char **argv)
 		}
 	}
 
+	/* trust password operation */
+	if ((checkparms & BIT_CREATE) || (checkparms & BIT_MODIFY) || (checkparms & BIT_DELETE)) {
+		/* trust password creation */
+		if (!(checkparms & ~(BIT_CREATE + BIT_TRUSTPW + BIT_TRUSTSID + BIT_TRUSTFLAGS))) {
+			return new_trustpw(bdef, trustpw, trustsid, trustflags);
+		}
+	}
+	
+	
 	if (setparms >= 0x20) {
 		fprintf (stderr, "Incompatible or insufficient options on command line!\n");
 	}
@@ -861,3 +1030,4 @@ int main (int argc, char **argv)
 
 	return 1;
 }
+
