@@ -39,7 +39,7 @@
   this allows the user to choose their own allocation function
 */
 int ldb_set_alloc(struct ldb_context *ldb,
-		  void *(*alloc)(void *context, void *ptr, size_t size),
+		  void *(*alloc)(const void *context, void *ptr, size_t size),
 		  void *context)
 {
 	ldb->alloc_ops.alloc = alloc;
@@ -50,7 +50,7 @@ int ldb_set_alloc(struct ldb_context *ldb,
 /*
   this is the default memory allocation function
 */
-static void *ldb_default_alloc(void *context, void *ptr, size_t size)
+static void *ldb_default_alloc(const void *context, void *ptr, size_t size)
 {
 	/* by setting LDB_ALLOC_OFS to non-zero the test suite can
 	   catch any places where we incorrectly use the libc alloc

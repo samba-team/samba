@@ -43,7 +43,7 @@ static struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	ldb_set_alloc(ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(ldb, talloc_realloc_fn, mem_ctx);
 	
 	return ldb;
 }
