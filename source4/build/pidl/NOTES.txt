@@ -67,6 +67,85 @@ This will look like this on the wire:
 [abc] [count] [foo] [PTR_s]    [count] [s...]
 
 
+FIXED ARRAYS
+------------
+
+A fixed array looks like this:
+
+    typedef struct {
+	    long s[10];
+    } Struct1;
+
+It appears on the wire with no array length.
+
+pidl also supports "inline" arrays, which are not part of the IDL/NDR
+standard. These are declared like this:
+
+    typedef struct {
+	    uint32 foo;
+	    uint32 count;
+	    uint32 bar;
+	    long s[count];
+    } Struct1;
+
+This appears like this:
+
+[foo] [count] [bar] [s...]
+
+Fixed arrays are an extension added to support some of the strange
+embedded structures in security descriptors and spoolss. 
+
+
+[public] property
+-----------------
+
+The [public] property on a structure or union is a pidl extension that
+forces the generated pull/push functions to be non-static. This allows
+you to declare types that can be used between modules. If you don't
+specify [public] then pull/push functions for other than top-level
+functions are declared static.
+
+[relative] property
+-------------------
+
+The [relative] property can be supplied on a pointer. When it is used
+it declares the pointer as a spoolss style "relative" pointer, which
+means it appears on the wire as an offset within the current
+encapsulating structure. This is not part of normal IDL/NDR, but it is
+a very useful extension as it avoids the manual encoding of many
+complex structures.
+
+
+[noprint] property
+------------------
+
+The [noprint] property is a pidl extension that allows you to specify
+that pidl should not generate a ndr_print_*() function for that
+structure or union. This is used when you wish to define your own
+print function that prints a structure in a nicer manner. A good
+example is the use of [noprint] on dom_sid, which allows the
+pretty-printing of SIDs.
+
+[value] property
+----------------
+
+The [value(expression)] property is a pidl extension that allows you
+to specify the value of a field when it is put on the wire. This
+allows fields that always have a well-known value to be automatically
+filled in, thus making the API more programmer friendly. The
+expression can be any C expression, although if you refer to variables
+in the current structure you will need to dereference them with
+r->. See samr_Name as a good example.
+
+
+[nodiscriminant] property
+-------------------------
+
+The [nodiscriminant] property on a union means that the usual uint16
+discriminent field at the start of the union on the wire is
+omitted. This is not normally allowed in IDL/NDR, but is used for some
+spoolss structures.
+
 VALIDATOR
 ---------
 
