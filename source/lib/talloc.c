@@ -75,7 +75,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 		t->list = c;
 	}
 
-	p = t->list->ptr + t->list->alloc_size;
+	p = ((char *)t->list->ptr) + t->list->alloc_size;
 	t->list->alloc_size += size;
 	return p;
 }
