@@ -262,7 +262,7 @@ typedef struct sam_trust_passwd {
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 5
+#define PASSDB_INTERFACE_VERSION 6
 
 typedef struct pdb_context 
 {
@@ -352,8 +352,12 @@ typedef struct pdb_context
 	NTSTATUS (*pdb_get_group_uids)(struct pdb_context *context, const DOM_SID *group, uid_t **members, int *num_members);
 
 	/* trust password functions */
+	
+	NTSTATUS (*pdb_settrustpwent)(struct pdb_context *context);
 
 	NTSTATUS (*pdb_gettrustpwent)(struct pdb_context *context, SAM_TRUST_PASSWD *trust);
+	
+	NTSTATUS (*pdb_gettrustpwnam)(struct pdb_context *context, SAM_TRUST_PASSWD *trust, const char *dom_name);
 	
 	NTSTATUS (*pdb_gettrustpwsid)(struct pdb_context *context, SAM_TRUST_PASSWD *trust, const DOM_SID *sid);
 	
@@ -467,7 +471,11 @@ typedef struct pdb_methods
 	
 	/* trust password functions */
 
+	NTSTATUS (*settrustpwent)(struct pdb_methods *methods);
+
 	NTSTATUS (*gettrustpwent)(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust);
+	
+	NTSTATUS (*gettrustpwnam)(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const char *name);
 	
 	NTSTATUS (*gettrustpwsid)(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const DOM_SID *sid);
 	

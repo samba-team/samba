@@ -228,6 +228,88 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 	
 	return ret;
 }
+
+
+static int trustpw_flag(const char* flag_name)
+{
+	const int flag_num = 5;
+	typedef struct { const char *name; int val; } flag_conv;
+	flag_conv flags[] = {{ "PASS_MACHINE_TRUST_NT", PASS_MACHINE_TRUST_NT  },
+	                     { "PASS_SERVER_TRUST_NT",  PASS_SERVER_TRUST_NT   },
+	                     { "PASS_DOMAIN_TRUST_NT",  PASS_DOMAIN_TRUST_NT   },
+	                     { "PASS_MACHINE_TRUST_ADS",PASS_MACHINE_TRUST_ADS },
+	                     { "PASS_DOMAIN_TRUST_ADS", PASS_DOMAIN_TRUST_ADS  }};
+	int i;
+
+	for (i = 0; i < flag_num; i++) {
+		if (!StrCaseCmp(flags[i].name, flag_name)) {
+			return flags[i].val;
+		}
+	}
+		
+	return 0;
+}
+
+
+static char* trustpw_flag_name(const int val)
+{
+	const int flag_num = 5;
+	typedef struct { const char *name; int val; } flag_conv;
+	flag_conv flags[] = {{ "PASS_MACHINE_TRUST_NT", PASS_MACHINE_TRUST_NT  },
+	                     { "PASS_SERVER_TRUST_NT",  PASS_SERVER_TRUST_NT   },
+	                     { "PASS_DOMAIN_TRUST_NT",  PASS_DOMAIN_TRUST_NT   },
+	                     { "PASS_MACHINE_TRUST_ADS",PASS_MACHINE_TRUST_ADS },
+	                     { "PASS_DOMAIN_TRUST_ADS", PASS_DOMAIN_TRUST_ADS  }};
+	int i;
+	
+	for (i = 0; i < flag_num; i++) {
+		if (flags[i].val == val) {
+			return strdup(flags[i].name);
+		}
+	}
+	
+	return strdup("unknown flag");
+}
+
+
+static int print_trustpw_info(TALLOC_CTX *mem_ctx, SAM_TRUST_PASSWD *trust, BOOL verbose)
+{
+	char *dom_name;
+	if (!mem_ctx || !trust) return -1;
+
+	/* convert unicode domain name to char* */
+	if (!pull_ucs2_talloc(mem_ctx, &dom_name, trust->private.uni_name)) return -1;
+	dom_name[trust->private.uni_name_len] = 0;
+
+	/* different output depending on level of verbosity */
+	if (verbose) {
+		printf("Domain name:          %s\n", dom_name);
+		printf("Domain SID:           %s\n", sid_string_static(&trust->private.domain_sid));
+		printf("Trust password        %s\n", trust->private.pass);
+		printf("Trust type:           %s\n", trustpw_flag_name(trust->private.flags));
+		printf("Last modified         %s\n", trust->private.mod_time ? http_timestring(trust->private.mod_time) : "0");
+	
+	} else {
+		printf("%s:%s\n", dom_name, sid_string_static(&trust->private.domain_sid));
+	}
+	
+	return 0;
+}
+
+
+static int print_trust_info(struct pdb_context *in, const char *name, BOOL verbose, BOOL smbpwdstyle)
+{
+	SAM_TRUST_PASSWD trust;
+	TALLOC_CTX *mem_ctx = NULL;
+	
+	mem_ctx = talloc_init("pdbedit: trust passwords listing");
+	
+	if (NT_STATUS_IS_OK(in->pdb_gettrustpwnam(in, &trust, name))) {
+		return print_trustpw_info(mem_ctx, &trust, verbose);
+	}
+	
+	return -1;
+}
 	
 /*********************************************************
  List Users
@@ -257,6 +339,46 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 	in->pdb_endsampwent(in);
 	return 0;
 }
+
+/**
+ * List trust passwords
+ * 
+ * @param in initialised pdb context
+ * @param verbose turn on/off verbose mode
+ * @param smbpwdstyle ignored here (there was no trust passwords in smbpasswd file)
+ * @return 0 on success, otherwise failure
+ **/
+ 
+static int print_trustpw_list(struct pdb_context *in, BOOL verbose, BOOL smbpwdstyle)
+{
+	SAM_TRUST_PASSWD trust;
+	TALLOC_CTX *mem_ctx = NULL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	
+	/* start enumeration and initialise memory context */
+	status = in->pdb_settrustpwent(in);
+	if (NT_STATUS_IS_ERR(status)) return -1;
+	mem_ctx = talloc_init("pdbedit: trust passwords listing");
+	
+	/* small separation to make it clear these are not regular accounts */
+	if (!verbose) printf("---\n");
+	
+	do {
+		/* fetch next trust password */
+		status = in->pdb_gettrustpwent(in, &trust);
+
+		if (trust.private.uni_name_len) {
+			/* print trust password info */
+			if (verbose) printf ("---------------\n");
+			print_trustpw_info(mem_ctx, &trust, verbose);
+		}
+
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) || NT_STATUS_EQUAL(status, NT_STATUS_OK));
+	
+	talloc_destroy(mem_ctx);
+	return 0;
+}
+
 
 /*********************************************************
  Fix a list of Users for uninitialised passwords
@@ -573,14 +695,6 @@ static int new_trustdom(struct pdb_context *in, const char *dom_name)
 static int new_trustpw(struct pdb_context *in, const char *dom_name,
                        const char *dom_sid, const char* flag)
 {
-	const int flag_num = 5;
-	typedef struct { const char *name; int val; } flag_conv;
-	flag_conv flags[] = {{ "PASS_MACHINE_TRUST_NT", PASS_MACHINE_TRUST_NT  },
-	                     { "PASS_SERVER_TRUST_NT",  PASS_SERVER_TRUST_NT   },
-	                     { "PASS_DOMAIN_TRUST_NT",  PASS_DOMAIN_TRUST_NT   },
-	                     { "PASS_MACHINE_TRUST_ADS",PASS_MACHINE_TRUST_ADS },
-	                     { "PASS_DOMAIN_TRUST_ADS", PASS_DOMAIN_TRUST_ADS  }};
-	
 	TALLOC_CTX *mem_ctx = NULL;
 	SAM_TRUST_PASSWD trust;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -591,7 +705,6 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 	struct in_addr srv_ip;
 	fstring srv_name, myname;
 	struct cli_state *cli;
-	int i;
 	time_t lct;
 	
 	if (!dom_name) return -1;
@@ -604,12 +717,7 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 	strncpy_w(trust.private.uni_name, uni_name, 32);
 	
 	/* flags */
-	for (i = 0; i < flag_num; i++) {
-		if (!StrCaseCmp(flags[i].name, flag)) {
-			trust.private.flags = flags[i].val;
-			i = flag_num; /* stop comparing */
-		}
-	}
+	trust.private.flags = trustpw_flag(flag);
 
 	/* trusting SID */
 	if (!dom_sid) {
@@ -952,10 +1060,14 @@ int main (int argc, char **argv)
 	/* list users operations */
 	if (checkparms & BIT_LIST) {
 		if (!(checkparms & ~BIT_LIST)) {
-			return print_users_list (bdef, verbose, spstyle);
+			print_users_list (bdef, verbose, spstyle);
+			return print_trustpw_list(bdef, verbose, spstyle);
 		}
 		if (!(checkparms & ~(BIT_USER + BIT_LIST))) {
 			return print_user_info (bdef, user_name, verbose, spstyle);
+
+		} else if (!(checkparms & ~(BIT_TRUSTPW + BIT_LIST))) {
+			return print_trust_info(bdef, trustpw, verbose, spstyle);
 		}
 	}
 	
@@ -1019,7 +1131,7 @@ int main (int argc, char **argv)
 		/* trust password creation */
 		if (!(checkparms & ~(BIT_CREATE + BIT_TRUSTPW + BIT_TRUSTSID + BIT_TRUSTFLAGS))) {
 			return new_trustpw(bdef, trustpw, trustsid, trustflags);
-		}
+		}		
 	}
 	
 	

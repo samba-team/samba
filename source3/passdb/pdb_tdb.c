@@ -699,8 +699,22 @@ static void free_private_data(void **vp)
 }
 
 /**
- * Start enumerating through trust passwords (machine and
- * interdomain nt/ads)
+ * Start trust passwords enumeration. This function is a simple
+ * wrapper for calling gettrustpwent with null pointer passed.
+ *
+ * @param methods methods belonging in pdb context (module)
+ * @return nt status of performed operation
+ **/
+
+static NTSTATUS tdbsam_settrustpwent(struct pdb_methods *methods)
+{
+	/* rewind enumeration from beginning */
+	return methods->gettrustpwent(methods, NULL);
+}
+
+
+/**
+ * Enumerate across trust passwords (machine and interdomain nt/ads)
  *
  * @param methods methods belonging in pdb context (module)
  * @param trust trust password structure
@@ -782,7 +796,7 @@ static NTSTATUS tdbsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASS
 			
 			talloc_destroy(mem_ctx);
 			trust->private = t;
-			return NT_STATUS_OK;
+			return NT_STATUS_NO_MORE_ENTRIES;
 		}
 		secrets_lock_trust_account_password(lp_workgroup(), False);
 	} else {
@@ -793,10 +807,54 @@ static NTSTATUS tdbsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASS
 	/*
 	 * ADS machine trust password (TODO)
 	 */
+	 
+
+	/*
+	 * if nothing is to be returned then reset domain name
+	 * and return "no more entries"
+	 */
+	nt_status = NT_STATUS_NO_MORE_ENTRIES;
+	trust->private.uni_name_len = 0;
+	trust->private.uni_name[t.uni_name_len] = 0;
 
 	talloc_destroy(mem_ctx);
 	return nt_status;
 }
+
+
+/**
+ * Get trust password by trusted party name
+ *
+ * @param methods methods belonging to pdb context (module)
+ * @param trust trust password structure
+ * @param sid trusted party name
+ *
+ * @return nt status of performed operation
+ **/
+
+static NTSTATUS tdbsam_gettrustpwnam(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust,
+                                     const char *name)
+{
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	char domain_name[32];
+	
+	if (!methods || !trust || !name) return nt_status;
+	
+	do {
+		/* get trust password (next in turn) */
+		nt_status = tdbsam_gettrustpwent(methods, trust);
+		
+		/* convert unicode name and do case insensitive compare */
+		pull_ucs2(NULL, domain_name, trust->private.uni_name, sizeof(domain_name),
+		          trust->private.uni_name_len, STR_TERMINATE);
+		if (!StrnCaseCmp(domain_name, name, sizeof(domain_name)))
+			return NT_STATUS_OK;
+
+	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
+	
+	return nt_status;
+}
+
 
 /**
  * Get trust password by trusted party sid
@@ -811,7 +869,18 @@ static NTSTATUS tdbsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASS
 static NTSTATUS tdbsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust,
                                      const DOM_SID *sid)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;	
+	
+	if (!methods || !trust || !sid) return nt_status;
+	
+	do {
+		nt_status = tdbsam_gettrustpwent(methods, trust);
+
+		if (sid_equal(&trust->private.domain_sid, sid))
+			return NT_STATUS_OK;
+	
+	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
+	
 	return nt_status;
 }
 
@@ -1263,7 +1332,9 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->add_sam_account = tdbsam_add_sam_account;
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
+	(*pdb_method)->settrustpwent = tdbsam_settrustpwent;
 	(*pdb_method)->gettrustpwent = tdbsam_gettrustpwent;
+	(*pdb_method)->gettrustpwnam = tdbsam_gettrustpwnam;
 	(*pdb_method)->gettrustpwsid = tdbsam_gettrustpwsid;
 	(*pdb_method)->add_trust_passwd = tdbsam_add_trust_passwd;
 	(*pdb_method)->update_trust_passwd = tdbsam_update_trust_passwd;
