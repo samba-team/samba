@@ -148,8 +148,8 @@ main(int argc, char **argv)
 	    struct sshfp_record *sshfp = rr->u.sshfp;
 	    int i;
 
-	    printf ("alg %u type %u length %u data ",
-		    sshfp->algorithm, sshfp->type, sshfp->sshfp_len);
+	    printf ("alg %u type %u length %lu data ", sshfp->algorithm, 
+		    sshfp->type,  (unsigned long)sshfp->sshfp_len);
 	    for (i = 0; i < sshfp->sshfp_len; i++)
 		printf("%02X", sshfp->sshfp_data[i]);
 	    printf("\n");
