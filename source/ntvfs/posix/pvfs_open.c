@@ -70,6 +70,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	struct pvfs_file *f;
 	int fnum;
 	NTSTATUS status;
+	uint32_t create_action;
 
 	/* if the client says it must be a directory, and it isn't,
 	   then fail */
@@ -133,6 +134,9 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+		create_action = NTCREATEX_ACTION_CREATED;
+	} else {
+		create_action = NTCREATEX_ACTION_EXISTED;
 	}
 
 	if (!name->exists) {
@@ -144,17 +148,19 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	/* the open succeeded, keep this handle permanently */
 	talloc_steal(pvfs, f);
 
-	ZERO_STRUCT(io->generic.out);
-	
-	io->generic.out.create_time  = name->dos.create_time;
-	io->generic.out.access_time  = name->dos.access_time;
-	io->generic.out.write_time   = name->dos.write_time;
-	io->generic.out.change_time  = name->dos.change_time;
-	io->generic.out.fnum         = f->fnum;
-	io->generic.out.alloc_size   = 0;
-	io->generic.out.size         = 0;
-	io->generic.out.attrib       = name->dos.attrib;
-	io->generic.out.is_directory = 1;
+	io->generic.out.oplock_level  = NO_OPLOCK;
+	io->generic.out.fnum          = f->fnum;
+	io->generic.out.create_action = create_action;
+	io->generic.out.create_time   = name->dos.create_time;
+	io->generic.out.access_time   = name->dos.access_time;
+	io->generic.out.write_time    = name->dos.write_time;
+	io->generic.out.change_time   = name->dos.change_time;
+	io->generic.out.attrib        = name->dos.attrib;
+	io->generic.out.alloc_size    = 0;
+	io->generic.out.size          = 0;
+	io->generic.out.file_type     = FILE_TYPE_DISK;
+	io->generic.out.ipc_state     = 0;
+	io->generic.out.is_directory  = 1;
 
 	return NT_STATUS_OK;
 }
@@ -283,19 +289,19 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	   abnormal termination */
 	talloc_set_destructor(f, pvfs_fd_destructor);
 
-	ZERO_STRUCT(io->generic.out);
-	
-	io->generic.out.create_time = name->dos.create_time;
-	io->generic.out.access_time = name->dos.access_time;
-	io->generic.out.write_time = name->dos.write_time;
-	io->generic.out.change_time = name->dos.change_time;
-	io->generic.out.fnum = f->fnum;
-	io->generic.out.alloc_size = name->dos.alloc_size;
-	io->generic.out.size = name->st.st_size;
-	io->generic.out.attrib = name->dos.attrib;
+	io->generic.out.oplock_level  = NO_OPLOCK;
+	io->generic.out.fnum          = f->fnum;
 	io->generic.out.create_action = NTCREATEX_ACTION_CREATED;
-	io->generic.out.is_directory = 0;
-	io->generic.out.file_type = FILE_TYPE_DISK;
+	io->generic.out.create_time   = name->dos.create_time;
+	io->generic.out.access_time   = name->dos.access_time;
+	io->generic.out.write_time    = name->dos.write_time;
+	io->generic.out.change_time   = name->dos.change_time;
+	io->generic.out.attrib        = name->dos.attrib;
+	io->generic.out.alloc_size    = name->dos.alloc_size;
+	io->generic.out.size          = name->st.st_size;
+	io->generic.out.file_type     = FILE_TYPE_DISK;
+	io->generic.out.ipc_state     = 0;
+	io->generic.out.is_directory  = 0;
 
 	/* success - keep the file handle */
 	talloc_steal(pvfs, f);
@@ -464,19 +470,19 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	   abnormal termination */
 	talloc_set_destructor(f, pvfs_fd_destructor);
 
-	ZERO_STRUCT(io->generic.out);
-	
-	io->generic.out.create_time = name->dos.create_time;
-	io->generic.out.access_time = name->dos.access_time;
-	io->generic.out.write_time = name->dos.write_time;
-	io->generic.out.change_time = name->dos.change_time;
-	io->generic.out.fnum = f->fnum;
-	io->generic.out.alloc_size = name->dos.alloc_size;
-	io->generic.out.size = name->st.st_size;
-	io->generic.out.attrib = name->dos.attrib;
+	io->generic.out.oplock_level  = NO_OPLOCK;
+	io->generic.out.fnum          = f->fnum;
 	io->generic.out.create_action = NTCREATEX_ACTION_EXISTED;
-	io->generic.out.is_directory = 0;
-	io->generic.out.file_type = FILE_TYPE_DISK;
+	io->generic.out.create_time   = name->dos.create_time;
+	io->generic.out.access_time   = name->dos.access_time;
+	io->generic.out.write_time    = name->dos.write_time;
+	io->generic.out.change_time   = name->dos.change_time;
+	io->generic.out.attrib        = name->dos.attrib;
+	io->generic.out.alloc_size    = name->dos.alloc_size;
+	io->generic.out.size          = name->st.st_size;
+	io->generic.out.file_type     = FILE_TYPE_DISK;
+	io->generic.out.ipc_state     = 0;
+	io->generic.out.is_directory  = 0;
 
 	/* success - keep the file handle */
 	talloc_steal(pvfs, f);
