@@ -27,7 +27,6 @@
 #include "includes.h"
 
 extern pstring global_myname;
-extern DOM_SID global_sam_sid;
 
 /*************************************************************************
  init_net_r_req_chal:
@@ -705,7 +704,9 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 				    NULL, /* uchar sess_key[16] */
 				    my_name     , /* char *logon_srv */
 				    my_workgroup, /* char *logon_dom */
-				    &global_sam_sid,     /* DOM_SID *dom_sid */
+				    get_global_sam_sid(),     /* DOM_SID *dom_sid */  
+				    /* Should be users domain sid, not servers - for trusted domains */
+				  
 				    NULL); /* char *other_sids */
 	}
 	free_server_info(&server_info);

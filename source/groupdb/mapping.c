@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern DOM_SID global_sam_sid;
-
 static TDB_CONTEXT *tdb; /* used for driver files */
 
 #define DATABASE_VERSION_V1 1 /* native byte format. */
@@ -186,17 +184,17 @@ static BOOL default_group_mapping(void)
 
 	/* Add the defaults domain groups */
 
-	sid_copy(&sid_admins, &global_sam_sid);
+	sid_copy(&sid_admins, get_global_sam_sid());
 	sid_append_rid(&sid_admins, DOMAIN_GROUP_RID_ADMINS);
 	sid_to_string(str_admins, &sid_admins);
 	add_initial_entry(-1, str_admins, SID_NAME_DOM_GRP, "Domain Admins", "", privilege_all, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
 
-	sid_copy(&sid_users,  &global_sam_sid);
+	sid_copy(&sid_users,  get_global_sam_sid());
 	sid_append_rid(&sid_users,  DOMAIN_GROUP_RID_USERS);
 	sid_to_string(str_users, &sid_users);
 	add_initial_entry(-1, str_users,  SID_NAME_DOM_GRP, "Domain Users",  "", privilege_none, PR_ACCESS_FROM_NETWORK|PR_LOG_ON_LOCALLY);
 
-	sid_copy(&sid_guests, &global_sam_sid);
+	sid_copy(&sid_guests, get_global_sam_sid());
 	sid_append_rid(&sid_guests, DOMAIN_GROUP_RID_GUESTS);
 	sid_to_string(str_guests, &sid_guests);
 	add_initial_entry(-1, str_guests, SID_NAME_DOM_GRP, "Domain Guests", "", privilege_none, PR_ACCESS_FROM_NETWORK);
@@ -1070,7 +1068,7 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 
 		/* interim solution until we have a last RID allocated */
 
-		sid_copy(&map->sid, &global_sam_sid);
+		sid_copy(&map->sid, get_global_sam_sid());
 		sid_append_rid(&map->sid, pdb_gid_to_group_rid(gid));
 
 		fstrcpy(map->nt_name, grp->gr_name);

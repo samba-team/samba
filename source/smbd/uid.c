@@ -504,7 +504,7 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 		sid_copy(&tmp_sid, sid);
 		sid_split_rid(&tmp_sid, &rid);
 
-		if (sid_equal(&global_sam_sid, &tmp_sid)) {
+		if (sid_equal(get_global_sam_sid(), &tmp_sid)) {
 
 			return map_domain_sid_to_name(&tmp_sid, dom_name) &&
 				local_lookup_sid(sid, name, name_type);
@@ -598,7 +598,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 	fstring sid_str;
 
 	/* if we know its local then don't try winbindd */
-	if (sid_compare_domain(&global_sam_sid, psid) == 0) {
+	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
 		return local_sid_to_uid(puid, psid, sidtype);
 	}
 

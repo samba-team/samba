@@ -860,7 +860,7 @@ static void usage(char *pname)
 	/* possibly reload the services file. */
 	reload_services(True);
 
-	if(!pdb_generate_sam_sid()) {
+	if(!get_global_sam_sid()) {
 		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
 		exit(1);
 	}

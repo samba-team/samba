@@ -23,7 +23,6 @@
 
 extern pstring global_myname;
 extern pstring global_myworkgroup;
-extern DOM_SID global_sam_sid;
 
 /*
  * Next two lines needed for SunOS and don't
@@ -306,7 +305,7 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 	
-	if(pdb_generate_sam_sid()==False) {
+	if(get_global_sam_sid()==False) {
 		fprintf(stderr, "Can not read machine SID\n");
 		return 0;
 	}

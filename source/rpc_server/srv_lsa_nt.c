@@ -26,7 +26,6 @@
 
 #include "includes.h"
 
-extern DOM_SID global_sam_sid;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 extern PRIVS privs[];
@@ -320,7 +319,7 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 	init_sec_access(&mask, POLICY_EXECUTE);
 	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
-	sid_copy(&adm_sid, &global_sam_sid);
+	sid_copy(&adm_sid, get_global_sam_sid());
 	sid_append_rid(&adm_sid, DOMAIN_GROUP_RID_ADMINS);
 	init_sec_access(&mask, POLICY_ALL_ACCESS);
 	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
@@ -367,7 +366,7 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(info);
-	info->sid = global_sam_sid;
+	sid_copy(&info->sid,get_global_sam_sid());
 	info->access = acc_granted;
 
 	/* set up the LSA QUERY INFO response */
@@ -405,7 +404,7 @@ NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(info);
-	info->sid = global_sam_sid;
+	sid_copy(&info->sid,get_global_sam_sid());
 	info->access = acc_granted;
 
 	/* set up the LSA QUERY INFO response */
@@ -502,7 +501,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
 				name = global_myworkgroup;
-				sid = &global_sam_sid;
+				sid = get_global_sam_sid();
 				break;
 			case ROLE_DOMAIN_MEMBER:
 				name = global_myworkgroup;
@@ -532,15 +531,15 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 			case ROLE_DOMAIN_PDC:
 			case ROLE_DOMAIN_BDC:
 				name = global_myworkgroup;
-				sid = &global_sam_sid;
+				sid = get_global_sam_sid();
 				break;
 			case ROLE_DOMAIN_MEMBER:
 				name = global_myname;
-				sid = &global_sam_sid;
+				sid = get_global_sam_sid();
 				break;
 			case ROLE_STANDALONE:
 				name = global_myname;
-				sid = &global_sam_sid;
+				sid = get_global_sam_sid();
 				break;
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

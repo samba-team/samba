@@ -22,10 +22,6 @@
 
 #include "includes.h"
 
-/* NOTE! the global_sam_sid is the SID of our local SAM. This is only
-   equal to the domain SID when we are a DC, otherwise its our
-   workstation SID */
-extern DOM_SID global_sam_sid;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
