@@ -18,8 +18,6 @@ static char SccsId[] = "@(#)@(#)pop_dropinfo.c	2.1  2.1 3/18/91";
 #include "popper.h"
 
 extern int      errno;
-extern int      sys_nerr;
-extern char    *sys_errlist[];
 
 /* 
  *  dropinfo:   Extract information about the POP maildrop and store 
