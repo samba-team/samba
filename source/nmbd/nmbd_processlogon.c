@@ -180,7 +180,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       domainsidsize = IVAL(q, 0);
       q += 4;
       q += domainsidsize;
+
       q = align4(q, buf);
+      q += 2;
 
       ntversion = IVAL(q, 0);
       q += 4;
