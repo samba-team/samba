@@ -28,7 +28,14 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_BinTree.h,v 
+ * Log: ubi_BinTree.h,v
+ * Revision 4.7  1998/10/21 06:15:07  crh
+ * Fixed bugs in FirstOf() and LastOf() reported by Massimo Campostrini.
+ * See function comments.
+ *
+ * Revision 4.6  1998/07/25 17:02:10  crh
+ * Added the ubi_trNewTree() macro.
+ *
  * Revision 4.5  1998/06/04 21:29:27  crh
  * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
  * This is more "standard", and is what people expect.  Weird, eh?
@@ -245,14 +252,27 @@ typedef enum {
         ((ubi_trOVERWRITE & ((A)->flags))?(ubi_trTRUE):(ubi_trFALSE))
 
 /* -------------------------------------------------------------------------- **
- * A quickie for consistency.
- *  ubi_trCount() - Given a pointer to a tree root, this macro returns the
- *                  number of nodes currently in the tree.
+ * Additional Macros...
+ *
+ *  ubi_trCount()   - Given a pointer to a tree root, this macro returns the
+ *                    number of nodes currently in the tree.
+ *
+ *  ubi_trNewTree() - This macro makes it easy to declare and initialize a
+ *                    tree header in one step.  The line
+ *
+ *                      static ubi_trNewTree( MyTree, cmpfn, ubi_trDUPKEY );
+ *
+ *                    is equivalent to
+ *
+ *                      static ubi_trRoot MyTree[1]
+ *                        = {{ NULL, cmpfn, 0, ubi_trDUPKEY }};
  *
  * -------------------------------------------------------------------------- **
  */
 
 #define ubi_trCount( R ) (((ubi_trRootPtr)(R))->count)
+
+#define ubi_trNewTree( N, C, F ) ubi_trRoot (N)[1] = {{ NULL, (C), 0, (F) }}
 
 /* -------------------------------------------------------------------------- **
  * Typedefs...
@@ -620,6 +640,10 @@ ubi_btNodePtr ubi_btFirstOf( ubi_btRootPtr RootPtr,
    *          matching <FindMe>.
    *  Notes:  Node *p MUST be in the set of nodes with keys matching
    *          <FindMe>.  If not, this function will return NULL.
+   *
+   *          4.7: Bug found & fixed by Massimo Campostrini,
+   *               Istituto Nazionale di Fisica Nucleare, Sezione di Pisa.
+   *
    * ------------------------------------------------------------------------ **
    */
 
@@ -639,6 +663,10 @@ ubi_btNodePtr ubi_btLastOf( ubi_btRootPtr RootPtr,
    *          matching <FindMe>.
    *  Notes:  Node *p MUST be in the set of nodes with keys matching
    *          <FindMe>.  If not, this function will return NULL.
+   *
+   *          4.7: Bug found & fixed by Massimo Campostrini,
+   *               Istituto Nazionale di Fisica Nucleare, Sezione di Pisa.
+   *
    * ------------------------------------------------------------------------ **
    */
 
