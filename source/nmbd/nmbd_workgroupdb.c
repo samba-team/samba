@@ -48,6 +48,8 @@ static struct work_record *create_workgroup(const char *name, int ttl)
 {
 	struct work_record *work;
 	struct subnet_record *subrec;
+        nstring nname;
+                                                                                                                         
 	int t = -1;
   
 	if((work = (struct work_record *)malloc(sizeof(*work))) == NULL) {
@@ -55,15 +57,18 @@ static struct work_record *create_workgroup(const char *name, int ttl)
 		return NULL;
 	}
 	memset((char *)work, '\0', sizeof(*work));
- 
-	if (strlen(name)+1 > sizeof(nstring)) {
-		memcpy(work->work_group,name,sizeof(nstring)-1);
-		work->work_group[sizeof(nstring)-1] = '\0';
-		DEBUG(0,("create_workgroup: workgroup name %s is too long. Truncating to %s\n",
-				name, work->work_group ));
-	} else {
-		nstrcpy(work->work_group,name);
-	}
+
+        errno = 0;
+        push_ascii_nstring(nname, name);
+        if (errno == E2BIG) {
+        	fstring tname;
+                pull_ascii_nstring(tname, sizeof(tname), nname);
+		fstrcpy(work->work_group,tname);
+                DEBUG(0,("create_workgroup: workgroup name %s is too long. Truncating to %s\n",
+			name, tname));
+        } else {
+		fstrcpy(work->work_group,name);
+        }
 	work->serverlist = NULL;
   
 	work->RunningElection = False;

@@ -704,7 +704,7 @@ querying for name %s in order to replace it and this reply.\n", nmb_namestr(ques
 void wins_process_name_registration_request(struct subnet_record *subrec,
                                             struct packet_struct *p)
 {
-	nstring name;
+	fstring name;
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
 	BOOL bcast = nmb->header.nm_flags.bcast;
@@ -866,7 +866,7 @@ already exists in WINS as a GROUP name.\n", nmb_namestr(question) ));
 	 */
 
 	if ( namerec != NULL )
-		pull_ascii_nstring(name, namerec->name.name);
+		pull_ascii_nstring(name, sizeof(name), namerec->name.name);
 		
 	if( is_myname(name) ) {
 		if(!ismyip(from_ip)) {
@@ -943,7 +943,7 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
 		 * code. JRA.
 		 */
 
-		pull_ascii_nstring(name, question->name);
+		pull_ascii_nstring(name, sizeof(name), question->name);
 		query_name_from_wins_server( *namerec->data.ip,
 				name,
 				question->name_type, 
@@ -957,7 +957,7 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
 	 * Name did not exist - add it.
 	 */
 
-	pull_ascii_nstring(name, question->name);
+	pull_ascii_nstring(name, sizeof(name), question->name);
 	add_name_to_subnet( subrec, name, question->name_type,
 			nb_flags, ttl, REGISTER_NAME, 1, &from_ip);
 
@@ -1079,7 +1079,7 @@ void wins_process_multihomed_name_registration_request( struct subnet_record *su
 	struct in_addr from_ip;
 	BOOL group = (nb_flags & NB_GROUP) ? True : False;
 	struct in_addr our_fake_ip = *interpret_addr2("0.0.0.0");
-	nstring qname;
+	fstring qname;
 
 	putip((char *)&from_ip,&nmb->additional->rdata[2]);
 
@@ -1278,7 +1278,7 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
 		 * not the person who sent the packet 
 		 */
 
-		pull_ascii_nstring( qname, question->name);
+		pull_ascii_nstring( qname, sizeof(qname), question->name);
 		query_name_from_wins_server( namerec->data.ip[0],
 				qname,
 				question->name_type, 
@@ -1293,7 +1293,7 @@ is one of our (WINS server) names. Denying registration.\n", nmb_namestr(questio
 	 * Name did not exist - add it.
 	 */
 
-	pull_ascii_nstring( qname, question->name);
+	pull_ascii_nstring( qname, sizeof(qname), question->name);
 	add_name_to_subnet( subrec, qname, question->name_type,
 			nb_flags, ttl, REGISTER_NAME, 1, &from_ip);
 
@@ -1439,7 +1439,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
 	struct name_record *namerec = NULL;
-	nstring qname;
+	fstring qname;
 
 	DEBUG(3,("wins_process_name_query: name query for name %s from IP %s\n", 
 		nmb_namestr(question), inet_ntoa(p->ip) ));
@@ -1451,7 +1451,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
 	 * to discover other domains that may not have a presence on their subnet.
 	 */
 
-	pull_ascii_nstring(qname, question->name);
+	pull_ascii_nstring(qname, sizeof(qname), question->name);
 	if(strequal( qname, "*") && (question->name_type == 0x1b)) {
 		process_wins_dmb_query_request( subrec, p);
 		return;
@@ -1805,8 +1805,8 @@ void wins_write_database(BOOL background)
 		DEBUGADD(4,("%2x\n", namerec->data.nb_flags ));
 
 		if( namerec->data.source == REGISTER_NAME ) {
-			nstring name;
-			pull_ascii_nstring(name, namerec->name.name);
+			fstring name;
+			pull_ascii_nstring(name, sizeof(name), namerec->name.name);
 			x_fprintf(fp, "\"%s#%02x\" %d ", name,namerec->name.name_type, /* Ignore scope. */
 				(int)namerec->data.death_time);
 

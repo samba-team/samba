@@ -27,9 +27,9 @@
 static struct name_record *add_dns_result(struct nmb_name *question, struct in_addr addr)
 {
 	int name_type = question->name_type;
-	nstring qname;
+	fstring qname;
 
-	pull_ascii_nstring(qname, question->name);
+	pull_ascii_nstring(qname, sizeof(qname), question->name);
   
 	if (!addr.s_addr) {
 		/* add the fail to WINS cache of names. give it 1 hour in the cache */
