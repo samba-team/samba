@@ -66,6 +66,14 @@ struct fileinfo {
 #define S_ISTXT S_ISVTX
 #endif
 
+#ifndef S_ISSOCK
+#define S_ISSOCK(mode)  (((mode) & _S_IFMT) == S_IFSOCK)
+#endif
+
+#ifndef S_ISLNK
+#define S_ISLNK(mode)   (((mode) & _S_IFMT) == S_IFLNK)
+#endif
+
 static void
 make_fileinfo(const char *filename, struct fileinfo *file, int flags)
 {
