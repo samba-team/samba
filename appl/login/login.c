@@ -468,6 +468,10 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 	    exit(1);
     }
 #endif
+#ifdef HAVE_SETPCRED
+    if (setpcred (pwd->pw_name, NULL) == -1)
+	warn("setpcred(%s)", pwd->pw_name);
+#endif /* HAVE_SETPCRED */
 #ifdef HAVE_INITGROUPS
     if(initgroups(pwd->pw_name, pwd->pw_gid)){
 	warn("initgroups(%s, %u)", pwd->pw_name, (unsigned)pwd->pw_gid);
