@@ -48,6 +48,8 @@ typedef struct krb5_get_init_creds_ctx {
 
     const char *password;
     krb5_s2k_proc key_proc;
+
+    krb5_get_init_creds_req_pac req_pac;
 } krb5_get_init_creds_ctx;
 
 static krb5_error_code
@@ -88,7 +90,10 @@ init_init_creds_ctx(krb5_context context,
     if (init_cred_opts->private) {
 	ctx->password = init_cred_opts->private->password;
 	ctx->key_proc = init_cred_opts->private->key_proc;
-    }
+	ctx->req_pac = init_cred_opts->private->req_pac;
+    } else
+	ctx->req_pac = KRB5_PA_PAC_DONT_CARE;
+
     if (ctx->key_proc == NULL)
 	ctx->key_proc = default_s2k_func;
 
@@ -992,6 +997,51 @@ pa_data_to_key_plain(krb5_context context,
     return ret;
 }
 
+static krb5_error_code
+pa_data_add_pac_request(krb5_context context,
+			krb5_get_init_creds_ctx *ctx,
+			METHOD_DATA *md)
+{
+    size_t len, length;
+    krb5_error_code ret;
+    PA_PAC_REQUEST req;
+    PA_DATA *pa;
+    void *buf;
+    
+    switch (ctx->req_pac) {
+    case KRB5_PA_PAC_DONT_CARE:
+	return 0; /* don't bother */
+    case KRB5_PA_PAC_REQ_TRUE:
+	req.include_pac = 1;
+	break;
+    case KRB5_PA_PAC_REQ_FALSE:
+	req.include_pac = 0;
+    }	
+
+    ASN1_MALLOC_ENCODE(PA_PAC_REQUEST, buf, length, 
+		       &req, &len, ret);
+    if (ret)
+	return ret;
+    
+    if(len != length)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
+
+    pa = realloc (md->val, (md->len + 1) * sizeof(*md->val));
+    if (pa == NULL) {
+	free(buf);
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+    md->val = pa;
+
+    pa[md->len].padata_type = KRB5_PADATA_PA_PAC_REQUEST;
+    pa[md->len].padata_value.length = len;
+    pa[md->len].padata_value.data = buf;
+
+    md->len++;    
+
+    return 0;
+}
 
 static krb5_error_code
 process_pa_data_to_md(krb5_context context,
@@ -1031,6 +1081,9 @@ process_pa_data_to_md(krb5_context context,
     pa_data_to_md_ts_enc(context, a, creds->client, ctx, ppaid, *out_md);
     if (ppaid)
 	free_paid(context, ppaid);
+
+    pa_data_add_pac_request(context, ctx, *out_md);
+
     return 0;
 }
 
@@ -1149,6 +1202,7 @@ init_cred_loop(krb5_context context,
 	ret = decode_AS_REP(resp.data, resp.length, &rep.kdc_rep, &size);
 	if (ret == 0) {
 	    krb5_data_free(&resp);
+	    krb5_clear_error_string(context);
 	    break;
 	} else {
 	    /* let's try to parse it as a KRB-ERROR */
