@@ -584,6 +584,7 @@ char *mktemp(char *); /* No standard include */
 #define mode_t int
 #define GID_TYPE int
 #define gid_t int
+#define pid_t int
 #define SIGNAL_CAST (void (*)(int))
 #define WAIT3_CAST1 (union wait *)
 #define HAVE_GMTOFF

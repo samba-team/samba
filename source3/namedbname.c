@@ -156,24 +156,17 @@ struct name_record *find_name_search(struct subnet_record **d,
 	{
 		if (*d != NULL)
         {
+			struct name_record *n = find_name((*d)->namelist, name, search);
 			DEBUG(4,("find_name on local: %s %s search %x\n",
 						namestr(name),inet_ntoa(ip), search));
-			return find_name((*d)->namelist, name, search);
-		}
-        else
-        {
-			DEBUG(4,("local find_name_search with a NULL subnet pointer\n"));
-            return NULL;
+			if (n) return n;
 		}
 	}
 
 	if ((search & FIND_WINS) != FIND_WINS) return NULL;
 
-	if (*d == NULL)
-	{
-		/* find WINS subnet record */
-		*d = find_subnet(ipgrp);
-    }
+	/* find WINS subnet record. */
+	*d = find_subnet(ipgrp);
 
 	if (*d == NULL) return NULL;
 
@@ -222,7 +215,7 @@ void dump_names(void)
          anything other than as a hexadecimal number :-) */
 
         sprintf(data, "%s#%02x %s %2x %ld",
-	       n->name.name,n->name.name_type, /* XXXX ignore the scope for now */
+	       n->name.name,n->name.name_type, /* XXXX ignore scope for now */
 	       inet_ntoa(n->ip),
 	       n->nb_flags,
 	       n->death_time);
