@@ -11,7 +11,13 @@ SMB_MODULE(dcerpc_epmapper,DCERPC,STATIC,[rpc_server/epmapper/rpc_epmapper.o])
 SMB_MODULE(dcerpc_remote,DCERPC,STATIC,[rpc_server/remote/dcesrv_remote.o],[],[],[LIBSMB])
 SMB_MODULE(dcerpc_srvsvc,DCERPC,STATIC,[rpc_server/srvsvc/dcesrv_srvsvc.o],[],[],[DCERPC_COMMON])
 SMB_MODULE(dcerpc_wkssvc,DCERPC,STATIC,[rpc_server/wkssvc/dcesrv_wkssvc.o],[],[],[DCERPC_COMMON])
-SMB_MODULE(dcerpc_samr,DCERPC,STATIC,[rpc_server/samr/dcesrv_samr.o],[],[],[SAMDB DCERPC_COMMON])
+
+SMB_MODULE(dcerpc_samr,DCERPC,STATIC,
+	[rpc_server/samr/dcesrv_samr.o
+	rpc_server/samr/samr_password.o],
+	[],[],
+	[SAMDB DCERPC_COMMON])
+
 SMB_MODULE(dcerpc_winreg,DCERPC,STATIC,[rpc_server/winreg/rpc_winreg.o],[],[],[REGISTRY])
 SMB_MODULE(dcerpc_netlogon,DCERPC,STATIC,[rpc_server/netlogon/dcerpc_netlogon.o],[],[],[SAMDB DCERPC_COMMON])
 
