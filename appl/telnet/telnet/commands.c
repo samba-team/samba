@@ -1589,7 +1589,8 @@ env_init(void)
 
 			error = getaddrinfo (hbuf, NULL, &hints, &ai);
 			if (error == 0) {
-				strlcpy (hbuf, ai->ai_canonname, 256);
+				if (ai->ai_canonname != NULL)
+					strlcpy (hbuf, ai->ai_canonname, 256);
 				freeaddrinfo (ai);
 			}
 		}
@@ -2175,7 +2176,10 @@ tn(int argc, char **argv)
 	    setuid (getuid ());
 	    return 0;
 	}
-	strlcpy (_hostname, ai->ai_canonname, sizeof(_hostname));
+	if (ai->ai_canonname != NULL)
+		strlcpy (_hostname, ai->ai_canonname, sizeof(_hostname));
+	else
+		strlcpy (_hostname, hostp, sizeof(_hostname));
 	hostname = _hostname;
 
 	for (a = ai; a != NULL && connected == 0; a = a->ai_next) {
