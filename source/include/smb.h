@@ -622,6 +622,7 @@ typedef struct files_struct
 	write_bmpx_struct *wbmpx_ptr;
 	struct timeval open_time;
 	int share_mode;
+	time_t pending_modtime;
 	BOOL open;
 	BOOL can_lock;
 	BOOL can_read;

@@ -6,8 +6,6 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 mandir=@mandir@
-INSTALL_BIN=$(exec_prefix)/bin
-INSTALL_MAN=$(prefix)/man
 
 LIBS=@LIBS@
 CC=@CC@

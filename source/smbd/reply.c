@@ -2490,6 +2490,17 @@ int reply_close(connection_struct *conn,
 		/*
 		 * Close ordinary file.
 		 */
+
+		/*
+		 * If there was a modify time outstanding,
+		 * try and set it here.
+		 */
+		if(fsp->pending_modtime)
+			set_filetime(conn, fsp->fsp_name, fsp->pending_modtime);
+
+		/*
+		 * Now take care of any time sent in the close.
+		 */
 		mtime = make_unix_date3(inbuf+smb_vwv1);
 		
 		/* try and set the date */
