@@ -182,6 +182,16 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 
 #################################
+# Start SUBSYSTEM TORTURE_NET
+[SUBSYSTEM::TORTURE_NET]
+ADD_OBJ_FILES = \
+		torture/libnet/userinfo.o
+REQUIRED_SUBSYSTEMS = \
+		NDR_ALL RPC_NDR_SAMR
+# End SUBSYSTEM TORTURE_NET
+#################################
+
+#################################
 # Start BINARY smbtorture
 [BINARY::smbtorture]
 OBJ_FILES = \
@@ -198,6 +208,7 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_LDAP \
 		TORTURE_COM \
 		TORTURE_NBT \
+		TORTURE_NET \
 		CONFIG \
 		LIBCMDLINE \
 		LIBBASIC
