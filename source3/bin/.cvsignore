@@ -30,6 +30,7 @@ smbtree
 smbumount
 swat
 talloctort
+tdbbackup
 testparm
 testprns
 wbinfo
