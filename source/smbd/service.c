@@ -101,9 +101,9 @@ struct server_context *server_service_startup(const char *model)
   if you pass *port == 0, then a port > 1024 is used
  */
 struct server_socket *service_setup_socket(struct server_service *service,
-                        const struct model_ops *model_ops,
-                        const char *sock_addr,
-                        uint16_t *port)
+					   const struct model_ops *model_ops,
+					   const char *sock_addr,
+					   uint16_t *port)
 {
 	NTSTATUS status;
 	struct server_socket *srv_sock;
@@ -155,7 +155,7 @@ struct server_socket *service_setup_socket(struct server_service *service,
 		return NULL;
 	}
 
-	srv_sock = talloc_p(NULL, struct server_socket);
+	srv_sock = talloc_p(service, struct server_socket);
 	if (!srv_sock) {
 		DEBUG(0,("talloc_p(mem_ctx, struct server_socket) failed\n"));
 		socket_destroy(socket_ctx);
@@ -185,13 +185,16 @@ struct server_socket *service_setup_socket(struct server_service *service,
 	return srv_sock;
 }
 
-struct server_connection *server_setup_connection(struct event_context *ev, struct server_socket *server_socket, struct socket_context *sock, time_t t)
+struct server_connection *server_setup_connection(struct event_context *ev, 
+						  struct server_socket *server_socket, 
+						  struct socket_context *sock, 
+						  time_t t)
 {
 	struct fd_event fde;
 	struct timed_event idle;
 	struct server_connection *srv_conn;
 
-	srv_conn = talloc_p(NULL, struct server_connection);
+	srv_conn = talloc_p(server_socket, struct server_connection);
 	if (!srv_conn) {
 		DEBUG(0,("talloc_p(mem_ctx, struct server_service_connection) failed\n"));
 		return NULL;

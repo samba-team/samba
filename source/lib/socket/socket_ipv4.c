@@ -153,7 +153,7 @@ static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_conte
 	socklen_t cli_addr_len = 0;
 	int new_fd;
 
-	new_fd = accept(sock->fd, &cli_addr, &cli_addr_len);
+	new_fd = accept(sock->fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
 	if (new_fd == -1) {
 		/* TODO: we need to map from errno to NTSTATUS here! */
 		return NT_STATUS_FOOBAR;

@@ -40,7 +40,7 @@ static NTSTATUS unicode_open(struct smbcli_tree *tree,
 	int i;
 	NTSTATUS status;
 
-	ucs_name = talloc(NULL, (1+u_name_len)*2);
+	ucs_name = talloc(mem_ctx, (1+u_name_len)*2);
 	if (!ucs_name) {
 		printf("Failed to create UCS2 Name - talloc() failure\n");
 		return NT_STATUS_NO_MEMORY;
