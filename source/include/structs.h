@@ -42,10 +42,12 @@ struct samr_ChangePasswordUser;
 struct samr_OemChangePasswordUser2;
 struct samr_ChangePasswordUser3;
 struct samr_ChangePasswordUser2;
+struct samr_Password;
 struct samr_CryptPassword;
 struct samr_CryptPasswordEx;
 struct samr_LogonHours;
 
+struct netr_Credential;
 struct netr_Authenticator;
 union netr_Validation;
 

@@ -59,6 +59,7 @@
 #include "system/network.h"
 #include "system/printing.h"
 #include "librpc/gen_ndr/ndr_svcctl.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 #include "dlinklist.h"
 
 BOOL in_client = False;		/* Not in the client by default */
