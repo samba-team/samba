@@ -692,7 +692,6 @@ struct cli_state *connect_one(char *share)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
-	char *server_n;
 	struct in_addr ip;
 	extern struct in_addr ipzero;
 	extern pstring global_myname;
@@ -703,8 +702,6 @@ struct cli_state *connect_one(char *share)
 	*share = 0;
 	share++;
 
-	server_n = server;
-	
 	ip = ipzero;
 
 	make_nmb_name(&calling, global_myname, 0x0);
@@ -715,8 +712,8 @@ struct cli_state *connect_one(char *share)
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, 139) == 0) ||
-	    !cli_connect(c, server_n, &ip)) {
-		DEBUG(0,("Connection to %s failed\n", server_n));
+	    !cli_connect(c, server, &ip)) {
+		DEBUG(0,("Connection to %s failed\n", server));
 		cli_shutdown(c);
 		safe_free(c);
 		return NULL;
