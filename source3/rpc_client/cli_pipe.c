@@ -1253,8 +1253,9 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 
 	SMB_ASSERT(cli->nt_pipe_fnum == 0);
 	
-	if ( (pipe_idx < 0) || (pipe_idx >= PI_MAX_PIPES) )
-		return False;
+	/* The pipe index must fall within our array */
+
+	SMB_ASSERT((pipe_idx >= 0) && (pipe_idx < PI_MAX_PIPES));
 
 	if (cli->capabilities & CAP_NT_SMBS) {
 		if ((fnum = cli_nt_create(cli, &pipe_names[pipe_idx].client_pipe[5], DESIRED_ACCESS_PIPE)) == -1) {
