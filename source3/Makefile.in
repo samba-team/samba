@@ -357,7 +357,9 @@ SMBWRAPPER_OBJ1 = smbwrapper/wrapped.o
 
 SMBWRAPPER_OBJ = $(SMBW_OBJ) $(SMBWRAPPER_OBJ1)
 
-LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o $(LIB_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
+LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
+		   libsmb/libsmb_cache.o $(LIB_OBJ) \
+	  	   $(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o 
 
