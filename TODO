@@ -35,6 +35,8 @@ implement support for interoperability with kerberos V4.
 
 needs a configuration file.
 
+pre-authentication required per principal
+
 * kuser
 
 ** kinit
