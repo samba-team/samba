@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "nterr.h"
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;
@@ -424,7 +425,7 @@ int dfs_path_error(char* inbuf, char* outbuf)
   if(NT_arch && (global_client_caps & (CAP_NT_SMBS | CAP_STATUS32)) )
     {
       SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-      return(ERROR(0,0xc0000000|NT_STATUS_PATH_NOT_COVERED));
+      return(ERROR(0,NT_STATUS_PATH_NOT_COVERED));
     }
   return(ERROR(ERRSRV,ERRbadpath)); 
 }
