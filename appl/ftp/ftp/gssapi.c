@@ -117,6 +117,36 @@ gss_encode(void *app_data, void *from, int length, int level, void **to)
     return output.length;
 }
 
+static void
+sockaddr_to_gss_address (const struct sockaddr *sa,
+			 OM_uint32 *addr_type,
+			 gss_buffer_desc *gss_addr)
+{
+    switch (sa->sa_family) {
+#ifdef HAVE_IPV6
+    case AF_INET6 : {
+	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+
+	gss_addr->length = 16;
+	gss_addr->value  = &sin6->sin6_addr;
+	*addr_type       = GSS_C_AF_INET6;
+	break;
+    }
+#endif
+    case AF_INET : {
+	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+
+	gss_addr->length = 4;
+	gss_addr->value  = &sin->sin_addr;
+	*addr_type       = GSS_C_AF_INET;
+	break;
+    }
+    default :
+	errx (1, "unknown address family %d", sa->sa_family);
+	
+    }
+}
+
 /* end common stuff */
 
 #ifdef FTP_SERVER
@@ -131,12 +161,13 @@ gss_adat(void *app_data, void *buf, size_t len)
     struct gss_data *d = app_data;
 
     gss_channel_bindings_t bindings = malloc(sizeof(*bindings));
-    bindings->initiator_addrtype = GSS_C_AF_INET;
-    bindings->initiator_address.length = 4;
-    bindings->initiator_address.value = &his_addr.sin_addr;
-    bindings->acceptor_addrtype = GSS_C_AF_INET;
-    bindings->acceptor_address.length = 4;
-    bindings->acceptor_address.value = &ctrl_addr.sin_addr;
+    sockaddr_to_gss_address (his_addr,
+			     &bindings->initiator_addrtype,
+			     &bindings->initiator_address);
+    sockaddr_to_gss_address (ctrl_addr,
+			     &bindings->acceptor_addrtype,
+			     &bindings->acceptor_address);
+
     bindings->application_data.length = 0;
     bindings->application_data.value = NULL;
 
@@ -216,7 +247,7 @@ struct sec_server_mech gss_server_mech = {
 
 #else /* FTP_SERVER */
 
-extern struct sockaddr_in hisctladdr, myctladdr;
+extern struct sockaddr *hisctladdr, *myctladdr;
 
 static int
 gss_auth(void *app_data, char *host)
@@ -261,14 +292,13 @@ gss_auth(void *app_data, char *host)
     input.value = NULL;
 
     bindings = malloc(sizeof(*bindings));
-    bindings->initiator_addrtype = GSS_C_AF_INET;
-    bindings->initiator_address.length = 4;
-    bindings->initiator_address.value = &myctladdr.sin_addr;
-    bindings->acceptor_addrtype = GSS_C_AF_INET;
-    bindings->acceptor_address.length = 4;
-    bindings->acceptor_address.value = &hisctladdr.sin_addr;
-    bindings->application_data.length = 0;
-    bindings->application_data.value = NULL;
+
+    sockaddr_to_gss_address (myctladdr,
+			     &bindings->initiator_addrtype,
+			     &bindings->initiator_address);
+    sockaddr_to_gss_address (hisctladdr,
+			     &bindings->acceptor_addrtype,
+			     &bindings->acceptor_address);
 
     while(!context_established) {
 	maj_stat = gss_init_sec_context(&min_stat,
