@@ -1,8 +1,6 @@
 If you'd like to work on any of these, please contact jerry@samba.org or jelmer@samba.org.
 
 Outdated docs:
-docs/OID/allocated-arcs.txt - does this file really belong here?
-docs/OID/samba-oid.mail - does this file really belong here?
 docs/announce - out of date (announces 2.2.0) - should it go away?
 docs/history - needs updating (is current up to 1998 - merge with 10year.html ?)
 docs/docbook/devdoc/* - most of these docs are outdated and need updates...
@@ -45,7 +43,6 @@ docs/docbook/manpages/smbumount.8.sgml
 docs/docbook/manpages/swat.8.sgml
 docs/docbook/manpages/testparm.1.sgml
 docs/docbook/manpages/testprns.1.sgml
-docs/docbook/manpages/wbinfo.1.sgml
 
 Stuff that needs to be documented:
 Windows NT 4.0 Style Trust Relationship
