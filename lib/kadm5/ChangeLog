@@ -1,3 +1,8 @@
+2002-03-25  Jacques Vidrine  <n@nectar.com>
+
+	* init_c.c (get_cred_cache): bug fix: the default credentials
+	cache was not being used if a client name was specified.
+
 2002-03-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* init_c.c (get_cred_cache): when getting the default_client from
