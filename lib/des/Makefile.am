@@ -9,9 +9,9 @@ include_HEADERS = des.h md4.h md5.h sha.h rc2.h rc4.h aes.h
 
 build_HEADERZ = $(include_HEADERS)
 
-check_PROGRAMS = destest mdtest rctest rc2test destest #md5crypt_test 
+check_PROGRAMS = destest mdtest rctest rc2test #md5crypt_test 
 
-TESTS = destest mdtest rctest rc2test #md5crypt_test 
+TESTS = $(check_PROGRAMS)
 
 LDADD = $(lib_LTLIBRARIES)
 
