@@ -3103,7 +3103,7 @@ uint32 _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	fstring name;
 	
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumprinters\n"));
@@ -3284,7 +3284,7 @@ uint32 _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 	int snum;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
 	*needed=0;
@@ -3796,7 +3796,7 @@ uint32 _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	int snum;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_getprinterdriver2\n"));
@@ -4631,7 +4631,7 @@ uint32 _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 uint32 _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u)
 {
 	/* that's an [in out] buffer (despite appearences to the contrary) */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 
 	r_u->needed = 0;
 	return ERROR_INVALID_PARAMETER; /* this is what a NT server
@@ -4838,7 +4838,7 @@ uint32 _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	print_status_struct prt_status;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumjobs\n"));
@@ -5180,7 +5180,7 @@ uint32 _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 	fstring architecture;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumprinterdrivers\n"));
@@ -5222,7 +5222,7 @@ static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
 /****************************************************************************
 ****************************************************************************/
 
-uint32 _new_spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u)
+uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u)
 {
 /*	POLICY_HND *handle = &q_u->handle; - notused. */
 	uint32 level = q_u->level;
@@ -5237,10 +5237,10 @@ uint32 _new_spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_E
 	int i;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
-	DEBUG(4,("_new_spoolss_enumforms\n"));
+	DEBUG(4,("_spoolss_enumforms\n"));
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
 	DEBUGADD(5,("Info level [%d]\n",          level));
 
@@ -5318,7 +5318,7 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	int numofforms, i;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
 	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name)-1);
@@ -5603,7 +5603,7 @@ uint32 _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUM
 	uint32 *returned = &r_u->returned;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_enumports\n"));
@@ -5822,7 +5822,7 @@ uint32 _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRI
 	uint32 *needed = &r_u->needed;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
 	DEBUG(4,("_spoolss_getprinterdriverdirectory\n"));
@@ -6260,7 +6260,7 @@ uint32 _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS
 	uint32 *returned = &r_u->returned;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
  	DEBUG(5,("spoolss_enumprintprocessors\n"));
@@ -6328,7 +6328,7 @@ uint32 _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDAT
 	uint32 *returned = &r_u->returned;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
  	DEBUG(5,("_spoolss_enumprintprocdatatypes\n"));
@@ -6422,7 +6422,7 @@ uint32 _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 	uint32 *returned = &r_u->returned;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
  	DEBUG(5,("spoolss_enumprintmonitors\n"));
@@ -6572,7 +6572,7 @@ uint32 _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	print_status_struct prt_status;
 
 	/* that's an [in out] buffer */
-	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
 	DEBUG(5,("spoolss_getjob\n"));
