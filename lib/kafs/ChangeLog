@@ -1,3 +1,8 @@
+Sat Feb 27 19:46:21 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: remove EXTRA_DATA (as of autoconf 2.13/automake
+ 	1.4)
+
 Thu Feb 11 22:57:37 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: set AIX_SRC also if !AIX

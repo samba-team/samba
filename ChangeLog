@@ -1,3 +1,13 @@
+Sat Feb 27 19:44:49 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* appl/Makefile.am: OTP_dir
+
+Fri Feb 26 17:37:00 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* doc/setup.texi: add kadmin section
+
+	* lib/asn1/check-der.c: fix printf warnings
+
 Thu Feb 25 11:16:49 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* configure.in: -O does not belong in WFLAGS

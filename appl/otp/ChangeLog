@@ -1,3 +1,7 @@
+Sat Feb 27 19:44:25 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: add
+
 Sun Nov 22 10:32:50 1998  Assar Westerlund  <assar@sics.se>
 
 	* otpprint.c: more braces
