@@ -1,3 +1,9 @@
+2003-11-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* dump_log.c,ipropd_master.c,ipropd_slave.c,
+	replay_log.c,truncate_log.c: parse kdc.conf
+	From: Jeffrey Hutzelman <jhutz@cmu.edu>
+
 2003-10-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: += test_pw_quality
