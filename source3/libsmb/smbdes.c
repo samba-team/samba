@@ -401,3 +401,16 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
     data[ind] = data[ind] ^ s_box[t];
   }
 }
+
+void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw)
+{
+	unsigned char s[14];
+
+	s[0] = s[4] = s[8] = s[12] = (unsigned char)(rid & 0xFF);
+	s[1] = s[5] = s[9] = s[13] = (unsigned char)((rid >> 8) & 0xFF);
+	s[2] = s[6] = s[10]        = (unsigned char)((rid >> 16) & 0xFF);
+	s[3] = s[7] = s[11]        = (unsigned char)((rid >> 24) & 0xFF);
+
+	smbhash(out, in, s, forw);
+	smbhash(out+8, in+8, s+7, forw);
+}
