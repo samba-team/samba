@@ -285,7 +285,7 @@ MD5Init (MD5_CTX *mdContext)
 void
 MD5Update (MD5_CTX *mdContext, const unsigned char *inBuf, unsigned int inLen)
 {
-  md5_update(&mdContext->m.d5, (unsigned char *)inBuf, inLen);
+  md5_update(&mdContext->m.d5, (const unsigned char *)inBuf, inLen);
 }
 
 void
