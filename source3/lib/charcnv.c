@@ -51,6 +51,7 @@ static char *charset_name(charset_t ch)
 void init_iconv(void)
 {
 	int c1, c2;
+	BOOL did_reload = False;
 
 	/* so that charset_name() works we need to get the UNIX<->UCS2 going
 	   first */
@@ -66,6 +67,12 @@ void init_iconv(void)
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
 			char *n1 = charset_name((charset_t)c1);
 			char *n2 = charset_name((charset_t)c2);
+			if (conv_handles[c1][c2] &&
+			    strcmp(n1, conv_handles[c1][c2]->from_name) == 0 &&
+			    strcmp(n2, conv_handles[c1][c2]->to_name) == 0) continue;
+
+			did_reload = True;
+
 			if (conv_handles[c1][c2]) {
 				smb_iconv_close(conv_handles[c1][c2]);
 			}
@@ -76,6 +83,10 @@ void init_iconv(void)
 				conv_handles[c1][c2] = NULL;
 			}
 		}
+	}
+
+	if (did_reload) {
+		init_valid_table();
 	}
 }
 
@@ -105,6 +116,7 @@ size_t convert_string(charset_t from, charset_t to,
 		initialized = 1;
 		load_case_tables();
 		init_iconv();
+		init_valid_table();
 	}
 
 	descriptor = conv_handles[from][to];
@@ -136,7 +148,6 @@ size_t convert_string(charset_t from, charset_t to,
 		               break;
 		  case EILSEQ: reason="Illegal myltibyte sequence"; break;
 		}
-		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
 		/* smb_panic(reason); */
 	}
 	return destlen-o_len;
