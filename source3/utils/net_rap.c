@@ -732,17 +732,7 @@ int net_rap_user(int argc, const char **argv)
 
 int net_rap_group_usage(int argc, const char **argv)
 {
-	d_printf("net rap group [misc. options] [targets]"\
-		 "\n\tList user groups\n");
-	d_printf("\nnet rap group DELETE <name> [misc. options] [targets]"\
-		 "\n\tDelete specified group\n");
-	d_printf("\nnet rap group ADD <name> [-C comment] [misc. options]"\
-		 " [targets]\n\tCreate specified group\n");
-
-	net_common_flags_usage(argc, argv);
-	d_printf(
-	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
-	return -1;
+	return net_help_group(argc, argv);
 }
 
 static void long_group_fn(const char *group_name, const char *comment,

@@ -78,11 +78,27 @@ int net_help_user(int argc, const char **argv)
 	return -1;
 }
 
+int net_help_group(int argc, const char **argv)
+{
+	d_printf("net [method] group [misc. options] [targets]"\
+		 "\n\tList user groups\n\n");
+	d_printf("net [method] group DELETE <name> [misc. options] [targets]"\
+		 "\n\tDelete specified group\n");
+	d_printf("\nnet [method] group ADD <name> [-C comment]"\
+		 " [misc. options] [targets]\n\tCreate specified group\n");
+	net_common_methods_usage(argc, argv);
+	net_common_flags_usage(argc, argv);
+	d_printf(
+	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
+	return -1;
+}
+
 static int net_usage(int argc, const char **argv)
 {
 	d_printf("  net time\t\tto view or set time information\n"\
 		 "  net lookup\t\tto lookup host name or ip address\n"\
 		 "  net user\t\tto manage users\n"\
+		 "  net group\t\tto manage groups\n"\
 		 "  net join\t\tto join a domain\n"\
 		 "\n"\
 		 "  net ads [command]\tto run ADS commands\n"\
@@ -110,7 +126,7 @@ int net_help(int argc, const char **argv)
 		{"DOMAIN", net_rap_domain_usage},
 		{"PRINTQ", net_rap_printq_usage},
 		{"USER", net_help_user},
-		{"GROUP", net_rap_group_usage},
+		{"GROUP", net_help_group},
 		{"VALIDATE", net_rap_validate_usage},
 		{"GROUPMEMBER", net_rap_groupmember_usage},
 		{"ADMIN", net_rap_admin_usage},
