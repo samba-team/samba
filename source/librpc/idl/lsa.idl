@@ -658,7 +658,7 @@
 	NTSTATUS lsa_GetUserName(
 		[in] unistr *system_name,
 		[in,out] lsa_String *account_name,
-		[in,out] lsa_StringPointer *unknown_name
+		[in,out] lsa_StringPointer *authority_name
 		);
 
 	/**********************/
