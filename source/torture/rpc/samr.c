@@ -2705,6 +2705,8 @@ static BOOL test_RemoveMemberFromForeignDomain(struct dcerpc_pipe *p,
 
 
 
+static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			 struct policy_handle *handle);
 
 static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			    struct policy_handle *handle, struct dom_sid *sid)
@@ -2735,89 +2737,31 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (!test_QuerySecurity(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
+	/* run the domain tests with the main handle closed - this tests
+	   the servers reference counting */
+	ret &= test_Close(p, mem_ctx, handle);
 
-	if (!test_RemoveMemberFromForeignDomain(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_CreateUser2(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_CreateUser(p, mem_ctx, &domain_handle, &user_handle)) {
-		ret = False;
-	}
-
-	if (!test_CreateAlias(p, mem_ctx, &domain_handle, &alias_handle, sid)) {
-		ret = False;
-	}
-
-	if (!test_CreateDomainGroup(p, mem_ctx, &domain_handle, &group_handle)) {
-		ret = False;
-	}
-
-	if (!test_QueryDomainInfo(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_QueryDomainInfo2(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_EnumDomainUsers(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_EnumDomainUsers_async(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_EnumDomainGroups(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_EnumDomainAliases(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_QueryDisplayInfo(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_QueryDisplayInfo2(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_QueryDisplayInfo3(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_GetDisplayEnumerationIndex(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_GetDisplayEnumerationIndex2(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_GroupList(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_TestPrivateFunctionsDomain(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_RidToSid(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
-
-	if (!test_GetBootKeyInformation(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
+	ret &= test_QuerySecurity(p, mem_ctx, &domain_handle);
+	ret &= test_RemoveMemberFromForeignDomain(p, mem_ctx, &domain_handle);
+	ret &= test_CreateUser2(p, mem_ctx, &domain_handle);
+	ret &= test_CreateUser(p, mem_ctx, &domain_handle, &user_handle);
+	ret &= test_CreateAlias(p, mem_ctx, &domain_handle, &alias_handle, sid);
+	ret &= test_CreateDomainGroup(p, mem_ctx, &domain_handle, &group_handle);
+	ret &= test_QueryDomainInfo(p, mem_ctx, &domain_handle);
+	ret &= test_QueryDomainInfo2(p, mem_ctx, &domain_handle);
+	ret &= test_EnumDomainUsers(p, mem_ctx, &domain_handle);
+	ret &= test_EnumDomainUsers_async(p, mem_ctx, &domain_handle);
+	ret &= test_EnumDomainGroups(p, mem_ctx, &domain_handle);
+	ret &= test_EnumDomainAliases(p, mem_ctx, &domain_handle);
+	ret &= test_QueryDisplayInfo(p, mem_ctx, &domain_handle);
+	ret &= test_QueryDisplayInfo2(p, mem_ctx, &domain_handle);
+	ret &= test_QueryDisplayInfo3(p, mem_ctx, &domain_handle);
+	ret &= test_GetDisplayEnumerationIndex(p, mem_ctx, &domain_handle);
+	ret &= test_GetDisplayEnumerationIndex2(p, mem_ctx, &domain_handle);
+	ret &= test_GroupList(p, mem_ctx, &domain_handle);
+	ret &= test_TestPrivateFunctionsDomain(p, mem_ctx, &domain_handle);
+	ret &= test_RidToSid(p, mem_ctx, &domain_handle);
+	ret &= test_GetBootKeyInformation(p, mem_ctx, &domain_handle);
 
 	if (!policy_handle_empty(&user_handle) &&
 	    !test_DeleteUser(p, mem_ctx, &user_handle)) {
@@ -2834,9 +2778,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_Close(p, mem_ctx, &domain_handle)) {
-		ret = False;
-	}
+	ret &= test_Close(p, mem_ctx, &domain_handle);
+
+	/* reconnect the main handle */
+	ret &= test_Connect(p, mem_ctx, handle);
 
 	return ret;
 }
