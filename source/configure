@@ -15,15 +15,15 @@ ac_default_prefix=/usr/local/samba
 ac_help="$ac_help
   --with-fhs            use FHS-compliant paths [default=no]"
 ac_help="$ac_help
-  --with-privatedir=DIR     Where to put smbpasswd ($privatedir)"
+  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)"
 ac_help="$ac_help
-  --with-lockdir=DIR     Where to put lock files ($lockdir)"
+  --with-lockdir=DIR     Where to put lock files ($ac_default_prefix/var/locks)"
 ac_help="$ac_help
-  --with-swatdir=DIR     Where to put SWAT files ($swatdir)"
+  --with-swatdir=DIR     Where to put SWAT files ($ac_default_prefix/swat)"
 ac_help="$ac_help
-  --with-configdir=DIR     Where to put configuration files ($configdir)"
+  --with-configdir=DIR     Where to put configuration files (\$libdir)"
 ac_help="$ac_help
-  --with-codepagedir=DIR     Where to put codepage files ($codepagedir)"
+  --with-codepagedir=DIR     Where to put codepage files (\$libdir/codepages)"
 ac_help="$ac_help
   --enable-debug        turn on debugging [default=no]"
 ac_help="$ac_help
@@ -11180,7 +11180,7 @@ fi
 
 #################################################
 # check for a PAM password database
-with_pam=no
+with_pam_for_crypt=no
 echo $ac_n "checking whether to use PAM password database""... $ac_c" 1>&6
 echo "configure:11186: checking whether to use PAM password database" >&5
 # Check whether --with-pam or --without-pam was given.
@@ -11194,7 +11194,7 @@ if test "${with_pam+set}" = set; then
 EOF
 
     LIBS="$LIBS -lpam"
-    with_pam=yes
+    with_pam_for_crypt=yes
     ;;
   *)
     echo "$ac_t""no" 1>&6
@@ -11210,7 +11210,7 @@ fi
 ###############################################
 # test for where we get crypt() from, but only
 # if not using PAM
-if test $with_pam = no; then
+if test $with_pam_for_crypt = no; then
 for ac_func in crypt
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6

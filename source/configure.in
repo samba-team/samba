@@ -25,7 +25,7 @@ AC_ARG_WITH(fhs, [  --with-fhs            use FHS-compliant paths [default=no]],
 #################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
-[  --with-privatedir=DIR     Where to put smbpasswd ($privatedir)],
+[  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)],
 [ case "$withval" in
   yes|no)
   #
@@ -41,7 +41,7 @@ AC_ARG_WITH(privatedir,
 #################################################
 # set lock directory location
 AC_ARG_WITH(lockdir,
-[  --with-lockdir=DIR     Where to put lock files ($lockdir)],
+[  --with-lockdir=DIR     Where to put lock files ($ac_default_prefix/var/locks)],
 [ case "$withval" in
   yes|no)
   #
@@ -57,7 +57,7 @@ AC_ARG_WITH(lockdir,
 #################################################
 # set SWAT directory location
 AC_ARG_WITH(swatdir,
-[  --with-swatdir=DIR     Where to put SWAT files ($swatdir)],
+[  --with-swatdir=DIR     Where to put SWAT files ($ac_default_prefix/swat)],
 [ case "$withval" in
   yes|no)
   #
@@ -73,7 +73,7 @@ AC_ARG_WITH(swatdir,
 #################################################
 # set configuration directory location
 AC_ARG_WITH(configdir,
-[  --with-configdir=DIR     Where to put configuration files ($configdir)],
+[  --with-configdir=DIR     Where to put configuration files (\$libdir)],
 [ case "$withval" in
   yes|no)
   #
@@ -89,7 +89,7 @@ AC_ARG_WITH(configdir,
 #################################################
 # set codepage directory location
 AC_ARG_WITH(codepagedir,
-[  --with-codepagedir=DIR     Where to put codepage files ($codepagedir)],
+[  --with-codepagedir=DIR     Where to put codepage files (\$libdir/codepages)],
 [ case "$withval" in
   yes|no)
   #
