@@ -592,7 +592,7 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 	int i;
 	int num_share_modes;
 	int oplock_contention_count = 0;
-	share_mode_entry *old_shares = 0;
+	share_mode_entry *old_shares = NULL;
 	BOOL fcbopen = False;
 	BOOL broke_oplock;
 
@@ -601,12 +601,15 @@ static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T
 	
 	num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
 	
-	if(num_share_modes == 0)
+	if(num_share_modes == 0) {
+		SAFE_FREE(old_shares);
 		return 0;
+	}
 	
 	if (desired_access && ((desired_access & ~(SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES))==0) &&
 		((desired_access & (SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES)) != 0)) {
 		/* Stat open that doesn't trigger oplock breaks or share mode checks... ! JRA. */
+		SAFE_FREE(old_shares);
 		return num_share_modes;
 	}
 
@@ -758,9 +761,6 @@ after break ! For file %s, dev = %x, inode = %.0f. Deleting it to continue...\n"
 		free_broken_entry_list(broken_entry_list);
 	} while(broke_oplock);
 	
-	if(old_shares != 0)
-		SAFE_FREE(old_shares);
-	
 	/*
 	 * Refuse to grant an oplock in case the contention limit is
 	 * reached when going through the lock list multiple times.
@@ -772,6 +772,7 @@ after break ! For file %s, dev = %x, inode = %.0f. Deleting it to continue...\n"
 			 oplock_contention_count ));
 	}
 	
+	SAFE_FREE(old_shares);
 	return num_share_modes;
 }
 
