@@ -250,7 +250,6 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid)
     fstrcat(sidstr_out, subauth);
   }
 
-  DEBUG(7,("sid_to_string returning %s\n", sidstr_out));
   return sidstr_out;
 }
 
