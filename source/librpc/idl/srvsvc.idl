@@ -597,7 +597,6 @@
 	 	[in]	   uint32 level,
 		[in,out]   srvsvc_NetShareCtr ctr,
 		[in]       uint32 preferred_len,
-		[out]	   uint32 entriesread,  
 		[out]      uint32 totalentries,
 		[in,out]   uint32 *resume_handle
 		);
