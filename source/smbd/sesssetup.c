@@ -371,13 +371,24 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
+
+	/* only look at the first OID for determining the mechToken --
+	   accoirding to RFC2478, we should choose the one we want 
+	   and renegotiate, but i smell a client bug here..  
+	   
+	   Problem observed when connecting to a member (samba box) 
+	   of an AD domain as a user in a Samba domain.  Samba member 
+	   server sent back krb5/mskrb5/ntlmssp as mechtypes, but the 
+	   client (2ksp3) replied with ntlmssp/mskrb5/krb5 and an 
+	   NTLMSSP mechtoken.                 --jerry              */
 	
+	if (strcmp(OID_KERBEROS5, OIDs[0]) == 0 ||
+	    strcmp(OID_KERBEROS5_OLD, OIDs[0]) == 0) {
+		got_kerberos = True;
+	}
+		
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("Got OID %s\n", OIDs[i]));
-		if (strcmp(OID_KERBEROS5, OIDs[i]) == 0 ||
-		    strcmp(OID_KERBEROS5_OLD, OIDs[i]) == 0) {
-			got_kerberos = True;
-		}
 		free(OIDs[i]);
 	}
 	DEBUG(3,("Got secblob of size %lu\n", (unsigned long)secblob.length));
