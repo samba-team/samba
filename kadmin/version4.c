@@ -812,7 +812,7 @@ decode_packet(krb5_context context,
     char *client_str;
     krb5_keytab_entry entry;
     
-    if(message.length < KADM_VERSIZE
+    if(message.length < KADM_VERSIZE + 4
        || strncmp(msg, KADM_VERSTR, KADM_VERSIZE) != 0) {
 	make_you_loose_packet (KADM_BAD_VER, reply);
 	return;
@@ -823,7 +823,8 @@ decode_packet(krb5_context context,
     memset(&authent, 0, sizeof(authent));
     authent.length = message.length - rlen - KADM_VERSIZE - 4;
 
-    if(authent.length >= MAX_KTXT_LEN) {
+    if(rlen > message.length - KADM_VERSIZE - 4
+       || authent.length > MAX_KTXT_LEN) {
 	krb5_warnx(context, "received bad rlen (%lu)", (unsigned long)rlen);
 	make_you_loose_packet (KADM_LENGTH_ERROR, reply);
 	return;
