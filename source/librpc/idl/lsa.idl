@@ -191,7 +191,7 @@
 		LSA_POLICY_INFO_DNS=12
 	} lsaPolicyInfo;
 
-	typedef union {
+	typedef [switch_type(uint16)] union {
 		[case(LSA_POLICY_INFO_AUDIT_LOG)]        lsa_AuditLogInfo       audit_log;
 		[case(LSA_POLICY_INFO_AUDIT_EVENTS)]     lsa_AuditEventsInfo    audit_events;
 		[case(LSA_POLICY_INFO_DOMAIN)]           lsa_DomainInfo         domain;
@@ -515,7 +515,7 @@
 		lsa_TrustDomainInfoAuthInfo    auth_info;
 	} lsa_TrustDomainInfoInfoAll;
 
-	typedef union {
+	typedef [switch_type(lsa_TrustDomInfoEnum)] union {
 		[case(LSA_TRUSTED_DOMAIN_INFO_NAME)]         lsa_TrustDomainInfoName        name;
 		[case(LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET)] lsa_TrustDomainInfoPosixOffset posix_offset;
 		[case(LSA_TRUSTED_DOMAIN_INFO_PASSWORD)]     lsa_TrustDomainInfoPassword    password;

@@ -118,7 +118,7 @@ interface netlogon
 		netr_ChallengeResponse lm;
 	} netr_NetworkInfo;
 
-	typedef union {
+	typedef [switch_type(uint16)] union {
 		[case(1)] netr_PasswordInfo *password;
 		[case(2)] netr_NetworkInfo  *network;
 		[case(3)] netr_PasswordInfo *password;
@@ -208,7 +208,7 @@ interface netlogon
 		netr_String unknown4;
 	} netr_PacInfo;
 
-	typedef union {
+	typedef [switch_type(uint16)] union {
 		[case(2)] netr_SamInfo2 *sam2;
 		[case(3)] netr_SamInfo3 *sam3;
 		[case(4)] netr_PacInfo  *pac;
@@ -613,7 +613,7 @@ interface netlogon
 		NETR_DELTA_MODIFY_COUNT     = 22
 	} netr_DeltaEnum;
 
-	typedef union {
+	typedef [switch_type(netr_DeltaEnum)] union {
 		[case(NETR_DELTA_DOMAIN)]          netr_DELTA_DOMAIN          *domain;
 		[case(NETR_DELTA_GROUP)]           netr_DELTA_GROUP           *group;
 		[case(NETR_DELTA_DELETE_GROUP)]    ; /* rid only */
@@ -638,7 +638,7 @@ interface netlogon
 		[case(NETR_DELTA_MODIFY_COUNT)]    udlong                     *modified_count;
 	} netr_DELTA_UNION;
 
-	typedef union {
+	typedef [switch_type(netr_DeltaEnum)] union {
 		[case(NETR_DELTA_DOMAIN)]          uint32 rid;
 		[case(NETR_DELTA_GROUP)]           uint32 rid;
 		[case(NETR_DELTA_DELETE_GROUP)]    uint32 rid;
