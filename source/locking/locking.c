@@ -190,7 +190,7 @@ BOOL locking_end(void)
  Lock a hash bucket entry.
 ******************************************************************/
 BOOL lock_share_entry(connection_struct *conn,
-		      uint32 dev, uint32 inode, int *ptok)
+		      SMB_DEV_T dev, SMB_INO_T inode, int *ptok)
 {
 	return share_ops->lock_entry(conn, dev, inode, ptok);
 }
@@ -199,7 +199,7 @@ BOOL lock_share_entry(connection_struct *conn,
  Unlock a hash bucket entry.
 ******************************************************************/
 BOOL unlock_share_entry(connection_struct *conn,
-			uint32 dev, uint32 inode, int token)
+			SMB_DEV_T dev, SMB_INO_T inode, int token)
 {
 	return share_ops->unlock_entry(conn, dev, inode, token);
 }
@@ -208,7 +208,7 @@ BOOL unlock_share_entry(connection_struct *conn,
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 int get_share_modes(connection_struct *conn, 
-		    int token, uint32 dev, uint32 inode, 
+		    int token, SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares)
 {
 	return share_ops->get_entries(conn, token, dev, inode, shares);

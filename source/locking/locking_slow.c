@@ -81,7 +81,7 @@ static BOOL slow_stop_share_mode_mgmt(void)
   name a share file
   ******************************************************************/
 static BOOL share_name(connection_struct *conn, 
-		       uint32 dev, uint32 inode, char *name)
+		       SMB_DEV_T dev, SMB_INO_T inode, char *name)
 {
 	int len;
 	pstrcpy(name,lp_lockdir());
@@ -124,7 +124,7 @@ static int delete_share_file(connection_struct *conn, char *fname )
   lock a share mode file.
   ******************************************************************/
 static BOOL slow_lock_share_entry(connection_struct *conn,
-				  uint32 dev, uint32 inode, int *ptok)
+				  SMB_DEV_T dev, SMB_INO_T inode, int *ptok)
 {
   pstring fname;
   int fd;
@@ -217,9 +217,9 @@ static BOOL slow_lock_share_entry(connection_struct *conn,
   unlock a share mode file.
   ******************************************************************/
 static BOOL slow_unlock_share_entry(connection_struct *conn, 
-				    uint32 dev, uint32 inode, int token)
+				    SMB_DEV_T dev, SMB_INO_T inode, int token)
 {
-  int fd = (int)token;
+  int fd = token;
   int ret = True;
   struct stat sb;
   pstring fname;
@@ -348,10 +348,11 @@ deleting it.\n", fname));
 /*******************************************************************
 get all share mode entries in a share file for a dev/inode pair.
 ********************************************************************/
-static int slow_get_share_modes(connection_struct *conn, int token, uint32 dev, uint32 inode, 
+static int slow_get_share_modes(connection_struct *conn, int token, 
+                SMB_DEV_T dev, SMB_INO_T inode, 
 				share_mode_entry **old_shares)
 {
-  int fd = (int)token;
+  int fd = token;
   pstring fname;
   int i;
   int num_entries;
@@ -960,7 +961,8 @@ static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 		char *base;
 		int fd;
 		pstring lname;
-		uint32 dev,inode;
+		SMB_DEV_T dev;
+        SMB_INO_T inode;
 		BOOL new_file;
 		pstring fname;
 

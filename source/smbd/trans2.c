@@ -201,7 +201,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   pstring fname;
   int unixmode;
   int size=0,fmode=0,mtime=0,rmode;
-  int32 inode = 0;
+  SMB_INO_T inode = 0;
   struct stat sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
@@ -278,6 +278,9 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   }
 
   SSVAL(params,18,smb_action);
+  /*
+   * WARNING - this may need to be changed if SMB_INO_T <> 4 bytes.
+   */
   SIVAL(params,20,inode);
  
   /* Send the required number of replies */

@@ -105,8 +105,11 @@ should be %d).\n", msg_len, OPLOCK_BREAK_MSG_LEN));
       }
       {
         uint32 remotepid = IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
-        uint32 dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
-        uint32 inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
+        /*
+         * Warning - this will need to be changed if SMB_DEV_T/SMB_INO_T <> 4 bytes. !!
+         */
+        SMB_DEV_T dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
+        SMB_INO_T inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
         struct timeval tval;
         struct sockaddr_in toaddr;
 
@@ -176,8 +179,11 @@ reply - dumping info.\n"));
 
       {
         uint32 remotepid = IVAL(msg_start,OPLOCK_BREAK_PID_OFFSET);
-        uint32 dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
-        uint32 inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
+        /*
+         * Warning - this will need to be changed if SMB_DEV_T/SMB_INO_T <> 4 bytes. !!
+         */
+        SMB_DEV_T dev = IVAL(msg_start,OPLOCK_BREAK_DEV_OFFSET);
+        SMB_INO_T inode = IVAL(msg_start, OPLOCK_BREAK_INODE_OFFSET);
 
         DEBUG(0,("process_local_message: unsolicited oplock break reply from \
 pid %d, port %d, dev = %x, inode = %x\n", remotepid, from_port, dev, inode));
@@ -196,7 +202,7 @@ pid %d, port %d, dev = %x, inode = %x\n", remotepid, from_port, dev, inode));
 /****************************************************************************
  Process an oplock break directly.
 ****************************************************************************/
-BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
+BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 {
   extern struct current_user current_user;
   extern int Client;
@@ -458,7 +464,7 @@ by the local smbd then call the oplock break function directly.
 ****************************************************************************/
 
 BOOL request_oplock_break(share_mode_entry *share_entry, 
-                          uint32 dev, uint32 inode)
+                          SMB_DEV_T dev, SMB_INO_T inode)
 {
   char op_break_msg[OPLOCK_BREAK_MSG_LEN];
   struct sockaddr_in addr_out;
@@ -487,10 +493,13 @@ should be %d\n", pid, share_entry->op_port, oplock_port));
 
   SSVAL(op_break_msg,UDP_MESSAGE_CMD_OFFSET,OPLOCK_BREAK_CMD);
   SIVAL(op_break_msg,OPLOCK_BREAK_PID_OFFSET,pid);
-  SIVAL(op_break_msg,OPLOCK_BREAK_DEV_OFFSET,dev);
-  SIVAL(op_break_msg,OPLOCK_BREAK_INODE_OFFSET,inode);
   SIVAL(op_break_msg,OPLOCK_BREAK_SEC_OFFSET,(uint32)share_entry->time.tv_sec);
   SIVAL(op_break_msg,OPLOCK_BREAK_USEC_OFFSET,(uint32)share_entry->time.tv_usec);
+  /*
+   * WARNING - this will need to be changed if SMB_DEV_T/SMB_INO_T <> 4 bytes.
+   */
+  SIVAL(op_break_msg,OPLOCK_BREAK_DEV_OFFSET,dev);
+  SIVAL(op_break_msg,OPLOCK_BREAK_INODE_OFFSET,inode);
 
   /* set the address and port */
   bzero((char *)&addr_out,sizeof(addr_out));

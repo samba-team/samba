@@ -125,8 +125,8 @@ file_fd_struct *fd_get_already_open(struct stat *sbuf)
 
 	for (fd_ptr=FileFd;fd_ptr;fd_ptr=fd_ptr->next) {
 		if ((fd_ptr->ref_count > 0) &&
-		    (((uint32)sbuf->st_dev) == fd_ptr->dev) &&
-		    (((uint32)sbuf->st_ino) == fd_ptr->inode)) {
+		    (sbuf->st_dev == fd_ptr->dev) &&
+		    (sbuf->st_ino == fd_ptr->inode)) {
 			fd_ptr->ref_count++;
 			DEBUG(3,("Re-used file_fd_struct dev = %x, inode = %x, ref_count = %d\n",
 				 fd_ptr->dev, fd_ptr->inode, 
@@ -162,8 +162,8 @@ file_fd_struct *fd_get_new(void)
 	memset(fd_ptr, 0, sizeof(*fd_ptr));
 	
 	fd_ptr->fdnum = i;
-	fd_ptr->dev = (uint32)-1;
-	fd_ptr->inode = (uint32)-1;
+	fd_ptr->dev = (SMB_DEV_T)-1;
+	fd_ptr->inode = (SMB_INO_T)-1;
 	fd_ptr->fd = -1;
 	fd_ptr->fd_readonly = -1;
 	fd_ptr->fd_writeonly = -1;
@@ -254,7 +254,7 @@ void file_close_user(int vuid)
 /****************************************************************************
 find a fsp given a device, inode and timevalue
 ****************************************************************************/
-files_struct *file_find_dit(int dev, int inode, struct timeval *tval)
+files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 {
 	int count=0;
 	files_struct *fsp;

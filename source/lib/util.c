@@ -1216,8 +1216,8 @@ int ChDir(char *path)
 
 struct
 {
-  ino_t inode;
-  dev_t dev;
+  SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
+  SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
   char *text;
   BOOL valid;
 } ino_list[MAX_GETWDCACHE];
@@ -1226,6 +1226,8 @@ BOOL use_getwd_cache=True;
 
 /*******************************************************************
   return the absolute current directory path
+  Note that this path is returned in UNIX format, not DOS
+  format.
 ********************************************************************/
 char *GetWd(char *str)
 {
@@ -1241,59 +1243,59 @@ char *GetWd(char *str)
 
   /* init the cache */
   if (!getwd_cache_init)
+  {
+    getwd_cache_init = True;
+    for (i=0;i<MAX_GETWDCACHE;i++)
     {
-      getwd_cache_init = True;
-      for (i=0;i<MAX_GETWDCACHE;i++)
-	{
-	  string_init(&ino_list[i].text,"");
-	  ino_list[i].valid = False;
-	}
+      string_init(&ino_list[i].text,"");
+      ino_list[i].valid = False;
     }
+  }
 
   /*  Get the inode of the current directory, if this doesn't work we're
       in trouble :-) */
 
   if (stat(".",&st) == -1) 
-    {
-      DEBUG(0,("Very strange, couldn't stat \".\"\n"));
-      return(sys_getwd(str));
-    }
+  {
+    DEBUG(0,("Very strange, couldn't stat \".\"\n"));
+    return(sys_getwd(str));
+  }
 
 
   for (i=0; i<MAX_GETWDCACHE; i++)
     if (ino_list[i].valid)
-      {
+    {
 
-	/*  If we have found an entry with a matching inode and dev number
-	    then find the inode number for the directory in the cached string.
-	    If this agrees with that returned by the stat for the current
-	    directory then all is o.k. (but make sure it is a directory all
-	    the same...) */
+      /*  If we have found an entry with a matching inode and dev number
+          then find the inode number for the directory in the cached string.
+          If this agrees with that returned by the stat for the current
+          directory then all is o.k. (but make sure it is a directory all
+          the same...) */
       
-	if (st.st_ino == ino_list[i].inode &&
-	    st.st_dev == ino_list[i].dev)
-	  {
-	    if (stat(ino_list[i].text,&st2) == 0)
-	      {
-		if (st.st_ino == st2.st_ino &&
-		    st.st_dev == st2.st_dev &&
-		    (st2.st_mode & S_IFMT) == S_IFDIR)
-		  {
-		    pstrcpy (str, ino_list[i].text);
+      if (st.st_ino == ino_list[i].inode &&
+          st.st_dev == ino_list[i].dev)
+      {
+        if (stat(ino_list[i].text,&st2) == 0)
+        {
+          if (st.st_ino == st2.st_ino &&
+              st.st_dev == st2.st_dev &&
+              (st2.st_mode & S_IFMT) == S_IFDIR)
+          {
+            pstrcpy (str, ino_list[i].text);
 
-		    /* promote it for future use */
-		    array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-		    return (str);
-		  }
-		else
-		  {
-		    /*  If the inode is different then something's changed, 
-			scrub the entry and start from scratch. */
-		    ino_list[i].valid = False;
-		  }
-	      }
-	  }
+            /* promote it for future use */
+            array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
+            return (str);
+          }
+          else
+          {
+            /*  If the inode is different then something's changed, 
+                scrub the entry and start from scratch. */
+            ino_list[i].valid = False;
+          }
+        }
       }
+    }
 
 
   /*  We don't have the information to hand so rely on traditional methods.
@@ -1301,10 +1303,10 @@ char *GetWd(char *str)
       not quite so bad getwd. */
 
   if (!sys_getwd(s))
-    {
-      DEBUG(0,("Getwd failed, errno %s\n",strerror(errno)));
-      return (NULL);
-    }
+  {
+    DEBUG(0,("Getwd failed, errno %s\n",strerror(errno)));
+    return (NULL);
+  }
 
   pstrcpy(str,s);
 
@@ -4334,7 +4336,6 @@ void smb_panic(char *why)
 
 /*******************************************************************
 a readdir wrapper which just returns the file name
-also return the inode number if requested
 ********************************************************************/
 char *readdirname(void *p)
 {

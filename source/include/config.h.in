@@ -302,6 +302,9 @@
 /* Define if you have the <netinet/tcp.h> header file.  */
 #undef HAVE_NETINET_TCP_H
 
+/* Define if you have the <poll.h> header file.  */
+#undef HAVE_POLL_H
+
 /* Define if you have the <rpc/types.h> header file.  */
 #undef HAVE_RPC_TYPES_H
 
@@ -337,6 +340,9 @@
 
 /* Define if you have the <strings.h> header file.  */
 #undef HAVE_STRINGS_H
+
+/* Define if you have the <stropts.h> header file.  */
+#undef HAVE_STROPTS_H
 
 /* Define if you have the <sys/dir.h> header file.  */
 #undef HAVE_SYS_DIR_H

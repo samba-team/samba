@@ -3544,8 +3544,8 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE))
   {
     int token;
-    uint32 dev = fsp->fd_ptr->dev;
-    uint32 inode = fsp->fd_ptr->inode;
+    SMB_DEV_T dev = fsp->fd_ptr->dev;
+    SMB_INO_T inode = fsp->fd_ptr->inode;
 
     DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
               fsp->fnum));

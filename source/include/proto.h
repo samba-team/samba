@@ -498,11 +498,11 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 BOOL locking_init(int read_only);
 BOOL locking_end(void);
 BOOL lock_share_entry(connection_struct *conn,
-		      uint32 dev, uint32 inode, int *ptok);
+		      SMB_DEV_T dev, SMB_INO_T inode, int *ptok);
 BOOL unlock_share_entry(connection_struct *conn,
-			uint32 dev, uint32 inode, int token);
+			SMB_DEV_T dev, SMB_INO_T inode, int token);
 int get_share_modes(connection_struct *conn, 
-		    int token, uint32 dev, uint32 inode, 
+		    int token, SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares);
 void del_share_mode(int token, files_struct *fsp);
 BOOL set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type);
@@ -2027,7 +2027,7 @@ file_fd_struct *fd_get_new(void);
 void file_close_conn(connection_struct *conn);
 void file_init(void);
 void file_close_user(int vuid);
-files_struct *file_find_dit(int dev, int inode, struct timeval *tval);
+files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
 files_struct *file_find_print(void);
 void file_sync_all(connection_struct *conn);
 void file_free(files_struct *fsp);
@@ -2102,9 +2102,9 @@ int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
 
 BOOL open_oplock_ipc(void);
 BOOL process_local_message(int sock, char *buffer, int buf_size);
-BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval);
+BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
 BOOL request_oplock_break(share_mode_entry *share_entry, 
-                          uint32 dev, uint32 inode);
+                          SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
 
 /*The following definitions come from  smbd/password.c  */
