@@ -1,3 +1,8 @@
+1999-11-02  Assar Westerlund  <assar@sics.se>
+
+	* pop_debug.c (main): redo the v4/v5 selection for consistency.
+  	-4 -> try only v4 -5 -> try only v5 none, -45 -> try v5, v4
+
 1999-10-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* pop_init.c (krb5_authenticate): don't use the principal

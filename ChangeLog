@@ -1,3 +1,11 @@
+1999-11-02  Assar Westerlund  <assar@sics.se>
+
+	* configure.in (VERSION): bump to 0.2d-pre
+
+1999-10-29  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (krb5_parse_name): check memory allocations
+
 1999-10-28  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2c
