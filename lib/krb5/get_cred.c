@@ -834,10 +834,12 @@ krb5_get_credentials_with_flags(krb5_context context,
 	return ENOMEM;
     }
 
+    if (in_creds->session.keytype)
+	options |= KRB5_TC_MATCH_KEYTYPE;
+
     ret = krb5_cc_retrieve_cred(context,
 				ccache,
-				in_creds->session.keytype ?
-				KRB5_TC_MATCH_KEYTYPE : 0,
+				options,
 				in_creds, res_creds);
     if(ret == 0) {
 	*out_creds = res_creds;
