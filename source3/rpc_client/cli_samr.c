@@ -1043,6 +1043,96 @@ NTSTATUS cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* User change password */
+
+NTSTATUS cli_samr_chgpasswd_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				 const char *username, 
+				 const char *newpassword, 
+				 const char *oldpassword )
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_CHGPASSWD_USER q;
+	SAMR_R_CHGPASSWD_USER r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	uchar new_nt_password[516];
+	uchar new_lm_password[516];
+	uchar old_nt_hash[16];
+	uchar old_lanman_hash[16];
+	uchar old_nt_hash_enc[16];
+	uchar old_lanman_hash_enc[16];
+
+	uchar new_nt_hash[16];
+	uchar new_lanman_hash[16];
+
+	DEBUG(10,("cli_samr_query_dom_info\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	E_md4hash(oldpassword, old_nt_hash);
+	E_md4hash(newpassword, new_nt_hash);
+
+	if (lp_client_lanman_auth() 
+	    && E_deshash(newpassword, new_lanman_hash) 
+	    && E_deshash(oldpassword, old_lanman_hash)) {
+		/* E_deshash returns false for 'long' passwords (> 14
+		   DOS chars).  This allows us to match Win2k, which
+		   does not store a LM hash for these passwords (which
+		   would reduce the effective password length to 14) */
+
+		encode_pw_buffer(new_lm_password, newpassword, STR_UNICODE);
+
+		SamOEMhash( new_lm_password, old_nt_hash, 516);
+		E_old_pw_hash( new_nt_hash, old_lanman_hash, old_lanman_hash_enc);
+	} else {
+		ZERO_STRUCT(new_lm_password);
+		ZERO_STRUCT(old_lanman_hash_enc);
+	}
+
+	encode_pw_buffer(new_nt_password, newpassword, STR_UNICODE);
+	
+	SamOEMhash( new_nt_password, old_nt_hash, 516);
+	E_old_pw_hash( new_nt_hash, old_nt_hash, old_nt_hash_enc);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_chgpasswd_user(&q, cli->srv_name_slash, username, 
+				   new_nt_password, 
+				   old_nt_hash_enc, 
+				   new_lm_password,
+				   old_lanman_hash_enc);
+
+	if (!samr_io_q_chgpasswd_user("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_CHGPASSWD_USER, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_chgpasswd_user("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* This function returns the bizzare set of (max_entries, max_size) required
    for the QueryDisplayInfo RPC to actually work against a domain controller
    with large (10k and higher) numbers of users.  These values were 
