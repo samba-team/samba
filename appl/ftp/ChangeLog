@@ -1,3 +1,11 @@
+1999-10-29  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ls.c (make_fileinfo): cast uid's and gid's to unsigned in
+ 	printf, we don't know what types they might be.
+	(lstat_file): conditionalize the kafs part on KRB4
+
+	* ftpd/ftpd_locl.h: <sys/ioccom.h> is needed for kafs.h
+
 1999-10-28  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ls.c (lstat_file): don't set st_mode, it should already be
