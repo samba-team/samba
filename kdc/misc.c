@@ -9,25 +9,17 @@ db_fetch(krb5_context context, PrincipalName *principal, char *realm)
 {
     HDB *db;
     hdb_entry *ent;
+    krb5_error_code ret;
 
     ent = malloc(sizeof(*ent));
     principalname2krb5_principal(&ent->principal, *principal, realm);
     hdb_open(context, &db, NULL, O_RDONLY, 0);
-    db->fetch(context, db, ent);
+    ret = db->fetch(context, db, ent);
     db->close(context, db);
+    if(ret){
+	krb5_free_principal(context, ent->principal);
+	free(ent);
+	return NULL;
+    }
     return ent;
 }
-
-/* this should move someplace else */
-krb5_error_code
-mk_des_keyblock(EncryptionKey *kb)
-{
-    kb->keytype = KEYTYPE_DES;
-    kb->keyvalue.data = malloc(sizeof(des_cblock));
-    kb->keyvalue.length = sizeof(des_cblock);
-    des_new_random_key(kb->keyvalue.data);
-    return 0;
-}
-
-
-
