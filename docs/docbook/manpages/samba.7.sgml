@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="samba">
+<refentry id="samba.7">
 
 <refmeta>
 	<refentrytitle>samba</refentrytitle>
@@ -8,7 +8,7 @@
 
 
 <refnamediv>
-	<refname>SAMBA</refname>
+	<refname>Samba</refname>
 	<refpurpose>A Windows SMB/CIFS fileserver for UNIX</refpurpose>
 </refnamediv>
 
@@ -29,26 +29,30 @@
 	
 	<variablelist>
 		<varlistentry>
-		<term><command>smbd</command></term>
-		<listitem><para>The <command>smbd </command>
-		daemon provides the file and print services to 
+		<term><citerefentry><refentrytitle>smbd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry></term>
+		<listitem><para>The <command>smbd</command> daemon provides the file and print services to 
 		SMB clients, such as Windows 95/98, Windows NT, Windows 
 		for Workgroups or LanManager. The configuration file 
-		for this daemon is described in <filename>smb.conf</filename>
+		for this daemon is described in <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry>
 		</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term><command>nmbd</command></term>
+		<term><citerefentry><refentrytitle>nmbd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry></term>
 		<listitem><para>The <command>nmbd</command>
 		daemon provides NetBIOS nameservice and browsing
 		support. The configuration file for this daemon 
-		is described in <filename>smb.conf</filename></para>
+		is described in <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry></para>
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term><command>smbclient</command></term>
+		<term><citerefentry><refentrytitle>smbclient</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para>The <command>smbclient</command>
 		program implements a simple ftp-like client. This 
 		is useful for accessing SMB shares on other compatible
@@ -59,15 +63,17 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><command>testparm</command></term>
+		<term><citerefentry><refentrytitle>testparm</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para>The <command>testparm</command>
-		utility is a simple syntax checker for Samba's
-		<filename>smb.conf</filename>configuration file.</para>
+		utility is a simple syntax checker for Samba's <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> configuration file.</para>
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term><command>testprns</command></term>
+		<term><citerefentry><refentrytitle>testprns</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para>The <command>testprns</command>
 		utility supports testing printer names defined 
 		in your <filename>printcap</filename> file used 
@@ -76,7 +82,8 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><command>smbstatus</command></term>
+		<term><citerefentry><refentrytitle>smbstatus</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para>The <command>smbstatus</command>
 		tool provides access to information about the 
 		current connections to <command>smbd</command>.</para>
@@ -84,7 +91,8 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><command>nmblookup</command></term>
+		<term><citerefentry><refentrytitle>nmblookup</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para>The <command>nmblookup</command>
 		tools allows NetBIOS name queries to be made 
 		from a UNIX host.</para>
@@ -92,15 +100,18 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><command>make_smbcodepage</command></term>
-		<listitem><para>The <command>make_smbcodepage</command>
-		utility provides a means of creating SMB code page 
-		definition files for your <command>smbd</command> server.</para>
+		<term><citerefentry><refentrytitle>smbgroupedit</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry></term>
+		<listitem><para>The <command>smbgroupedit</command>
+		tool allows for mapping unix groups to NT Builtin,
+		Domain, or Local groups. Also it allows setting
+		priviledges for that group, such as saAddUser, etc.</para>
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term><command>smbpasswd</command></term>
+		<term><citerefentry><refentrytitle>smbpasswd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry></term>
 		<listitem><para>The <command>smbpasswd</command>
 		command is a tool for changing LanMan and Windows NT 
 		password hashes on Samba and Windows NT servers.</para>
@@ -147,8 +158,8 @@
 	list. Details on how to join the mailing list are given in 
 	the README file that comes with Samba.</para>
 	
-	<para>If you have access to a WWW viewer (such as Netscape 
-	or Mosaic) then you will also find lots of useful information, 
+	<para>If you have access to a WWW viewer (such as Mozilla
+	or Konqueror) then you will also find lots of useful information, 
 	including back issues of the Samba mailing list, at
 	<ulink url="http://lists.samba.org/">http://lists.samba.org</ulink>.</para>
 </refsect1>
@@ -156,7 +167,7 @@
 <refsect1>
 	<title>VERSION</title>
 	
-	<para>This man page is correct for version 2.2 of the 
+	<para>This man page is correct for version 3.0 of the 
 	Samba suite. </para>
 </refsect1>
 
@@ -170,8 +181,8 @@
 
 	<para>If you have patches to submit, visit
 	<ulink url="http://devel.samba.org/">http://devel.samba.org/</ulink>
-	for information on how to do it properly. We prefer patches in
-	<command>diff -u</command> format.</para>
+	for information on how to do it properly. We prefer patches 
+	in <command>diff -u</command> format.</para>
 </refsect1>
 
 <refsect1>
@@ -206,11 +217,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML
+	4.2 for Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

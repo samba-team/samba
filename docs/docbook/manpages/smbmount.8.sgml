@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbmount">
+<refentry id="smbmount.8">
 
 <refmeta>
 	<refentrytitle>smbmount</refentrytitle>
@@ -26,7 +26,8 @@
 
 	<para><command>smbmount</command> mounts a Linux SMB filesystem. It 
 	is usually invoked as <command>mount.smbfs</command> by
-	the <command>mount(8)</command> command when using the 
+	the <citerefentry><refentrytitle>mount</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> command when using the 
 	"-t smbfs" option. This command only works in Linux, and the kernel must
 	support the smbfs filesystem. </para>
 
@@ -39,11 +40,12 @@
 	<para><command>smbmount</command> is a daemon. After mounting it keeps running until
 	the mounted smbfs is umounted. It will log things that happen
 	when in daemon mode using the "machine name" smbmount, so
-	typically this output will end up in <filename>log.smbmount</filename>. The
-	<command>smbmount</command> process may also be called mount.smbfs.</para>
+	typically this output will end up in <filename>log.smbmount</filename>. The <command>
+	smbmount</command> process may also be called mount.smbfs.</para>
 
 	<para><emphasis>NOTE:</emphasis> <command>smbmount</command> 
-	calls <command>smbmnt(8)</command> to do the actual mount. You 
+	calls <citerefentry><refentrytitle>smbmnt</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> to do the actual mount. You 
 	must make sure that <command>smbmnt</command> is in the path so 
 	that it can be found. </para>
 	
@@ -84,15 +86,12 @@
 
 		<varlistentry>
 		<term>credentials=&lt;filename&gt;</term>
-		<listitem><para>specifies a file that contains a username
-		and/or password. The format of the file is:</para>
-
-		<para>
-		<programlisting>
-		username = &lt;value&gt;
-		password = &lt;value&gt;
-		</programlisting>
-		</para>
+		<listitem><para>specifies a file that contains a username and/or password. 
+The format of the file is:
+<programlisting>
+username = &lt;value&gt;
+password = &lt;value&gt;
+</programlisting></para>
 
 		<para>This is preferred over having passwords in plaintext in a
 		shared file, such as <filename>/etc/fstab</filename>. Be sure to protect any
@@ -174,8 +173,8 @@
 		<varlistentry>
 		<term>sockopt=&lt;arg&gt;</term>
 		<listitem><para>sets the TCP socket options. See the <ulink
-		url="smb.conf.5.html#SOCKETOPTIONS"><filename>smb.conf
-		</filename></ulink> <parameter>socket options</parameter> option.
+		url="smb.conf.5.html#SOCKETOPTIONS"><citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry></ulink> <parameter>socket options</parameter> option.
 		</para></listitem>
 		</varlistentry>
 
@@ -298,10 +297,9 @@
 
 	<para>FreeBSD also has a smbfs, but it is not related to smbmount</para>
 
-	<para>For Solaris, HP-UX and others you may want to look at
-	<ulink url="smbsh.1.html"><command>smbsh(1)</command></ulink> or at other
-	solutions, such as sharity or perhaps replacing the SMB server with
-	a NFS server.</para>
+	<para>For Solaris, HP-UX and others you may want to look at <citerefentry><refentrytitle>smbsh</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry> or at other solutions, such as 
+	Sharity or perhaps replacing the SMB server with a NFS server.</para>
 
 </refsect1>
 
@@ -321,7 +319,8 @@
 	</para>
 	
 	<para>The conversion of this manpage for Samba 2.2 was performed 
-	by Gerald Carter</para>
+	by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
+	was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

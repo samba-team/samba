@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="nmbd">
+<refentry id="nmbd.8">
 
 <refmeta>
 	<refentrytitle>nmbd</refentrytitle>
@@ -35,7 +35,8 @@
 
 <refsect1>
 	<title>DESCRIPTION</title>
-	<para>This program is part of the Samba suite.</para>
+	<para>This program is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>nmbd</command> is a server that understands 
 	and can reply to NetBIOS over IP name service requests, like 
@@ -57,8 +58,8 @@
 	option (see OPTIONS below). Thus <command>nmbd</command> will 
 	reply to broadcast queries for its own name(s). Additional
 	names for <command>nmbd</command> to respond on can be set 
-	via parameters in the <ulink url="smb.conf.5.html"><filename>
-	smb.conf(5)</filename></ulink> configuration file.</para>
+	via parameters in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> configuration file.</para>
 
 	<para><command>nmbd</command> can also be used as a WINS 
 	(Windows Internet Name Server) server. What this basically means 
@@ -124,7 +125,7 @@
 		server is executed on the command line of a shell. Setting this
 		parameter negates the implicit daemon mode when run from the
 		command line. <command>nmbd</command> also logs to standard
-		output, as if the <command>-S</command> parameter had been
+		output, as if the <constant>-S</constant> parameter had been
 		given. </para></listitem>
 		</varlistentry>
 
@@ -147,10 +148,10 @@
 		<listitem><para>NetBIOS lmhosts file.  The lmhosts 
 		file is a list of NetBIOS names to IP addresses that 
 		is loaded by the nmbd server and used via the name 
-		resolution mechanism <ulink url="smb.conf.5.html#nameresolveorder">
-		name resolve order</ulink> described in <ulink 
-		url="smb.conf.5.html"> <filename>smb.conf(5)</filename></ulink>
-		to resolve any NetBIOS name queries needed by the server. Note 
+		resolution mechanism <ulink url="smb.conf.5.html#nameresolveorder"><parameter>name resolve
+		order</parameter></ulink> described in <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> to resolve any 
+		NetBIOS name queries needed by the server. Note 
 		that the contents of this file are <emphasis>NOT</emphasis> 
 		used by <command>nmbd</command> to answer any name queries. 
 		Adding a line to this file affects name NetBIOS resolution 
@@ -160,9 +161,8 @@
 		Samba as part of the build process. Common defaults 
 		are <filename>/usr/local/samba/lib/lmhosts</filename>,
 		<filename>/usr/samba/lib/lmhosts</filename> or
-		<filename>/etc/lmhosts</filename>. See the
-		<ulink url="lmhosts.5.html"><filename>lmhosts(5)</filename></ulink>
-		man page for details on the contents of this file.</para></listitem>
+		<filename>/etc/samba/lmhosts</filename>. See the <citerefentry><refentrytitle>lmhosts</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> man page for details on the contents of this file.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -191,9 +191,9 @@
 		cryptic.</para>
 
 		<para>Note that specifying this parameter here will override 
-		the <ulink url="smb.conf.5.html#loglevel">log level</ulink> 
-		parameter in the <ulink url="smb.conf.5.html"><filename>
-		smb.conf(5)</filename></ulink> file.</para></listitem>
+		the <ulink url="smb.conf.5.html#loglevel"><parameter>log level</parameter></ulink> 
+		parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> file.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -216,11 +216,12 @@
 		<term>-n &lt;primary NetBIOS name&gt;</term>
 		<listitem><para>This option allows you to override
 		the NetBIOS name that Samba uses for itself. This is identical 
-		to setting the <ulink url="smb.conf.5.html#netbiosname">
-		NetBIOS name</ulink> parameter in the <ulink url="smb.conf.5.html">	
-		<filename>smb.conf</filename></ulink> file.  However, a command
+		to setting the <ulink url="smb.conf.5.html#netbiosname"><parameter>NetBIOS
+		name</parameter></ulink> parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> file.  However, a command
 		line setting will take precedence over settings in 
-		<filename>smb.conf</filename>.</para></listitem>
+		<citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>.</para></listitem>
 		</varlistentry>
 
 
@@ -241,8 +242,8 @@
 		this may be changed when Samba is autoconfigured.</para>
 
 		<para>The file specified contains the configuration details
-		required by the server. See <ulink url="smb.conf.5.html">
-		<filename>smb.conf(5)</filename></ulink> for more information.
+		required by the server. See <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> for more information.
 		</para></listitem>
 		</varlistentry>
 	</variablelist>
@@ -258,7 +259,7 @@
 		<command>inetd</command> meta-daemon, this file
 		must contain suitable startup information for the
 		meta-daemon. See the <ulink
-		url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink> document
+		url="install.html">install</ulink> document
 		for details.
 		</para></listitem>
 		</varlistentry>
@@ -271,7 +272,7 @@
 		<para>If running the server as a daemon at startup,
 		this file will need to contain an appropriate startup
 		sequence for the server. See the <ulink
-		url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink> document
+		url="install.html">"How to Install and Test SAMBA"</ulink> document
 		for details.</para></listitem>
 		</varlistentry>
 
@@ -281,21 +282,23 @@
 		meta-daemon <command>inetd</command>, this file
 		must contain a mapping of service name (e.g., netbios-ssn)
 		to service port (e.g., 139) and protocol type (e.g., tcp).
-		See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		See the <ulink url="install.html">"How to Install and Test SAMBA"</ulink>
 		document for details.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
 		<term><filename>/usr/local/samba/lib/smb.conf</filename></term>
-		<listitem><para>This is the default location of the
-		<ulink url="smb.conf.5.html"><filename>smb.conf</filename></ulink>
-		server configuration file. Other common places that systems
+		<listitem><para>This is the default location of 
+		the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> server
+		configuration file. Other common places that systems
 		install this file are <filename>/usr/samba/lib/smb.conf</filename>
-		and <filename>/etc/smb.conf</filename>.</para>
+		and <filename>/etc/samba/smb.conf</filename>.</para>
 
 		<para>When run as a WINS server (see the
-		<ulink url="smb.conf.5.html#WINSSUPPORT">wins support</ulink>
-		parameter in the <filename>smb.conf(5)</filename> man page),
+		<ulink url="smb.conf.5.html#WINSSUPPORT"><constant>wins support</constant></ulink>
+		parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> man page),
 		<command>nmbd</command>
 		will store the WINS database in the file <filename>wins.dat</filename>
 		in the <filename>var/locks</filename> directory configured under
@@ -303,9 +306,9 @@
 
 		<para>If <command>nmbd</command> is acting as a <emphasis>
 		browse master</emphasis> (see the <ulink
-		url="smb.conf.5.html#LOCALMASTER">local master</ulink>
-		parameter in the <filename>smb.conf(5)</filename> man page,
-		<command>nmbd</command>
+		url="smb.conf.5.html#LOCALMASTER"><constant>local master</constant></ulink>
+		parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> man page, <command>nmbd</command>
 		will store the browsing database in the file <filename>browse.dat
 		</filename> in the <filename>var/locks</filename> directory
 		configured under wherever Samba was configured to install itself.
@@ -331,10 +334,11 @@
 	cause <command>nmbd</command> to dump out its server database in
 	the <filename>log.nmb</filename> file.</para>
 
-	<para>The debug log level of nmbd may be raised or lowered using
-	<ulink url="smbcontrol.1.html"><command>smbcontrol(1)</command>
-	</ulink> (SIGUSR[1|2] signals are no longer used in Samba 2.2). This is
-	to allow transient problems to be diagnosed, whilst still running
+	<para>The debug log level of nmbd may be raised or lowered
+	using <citerefentry><refentrytitle>smbcontrol</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry> (SIGUSR[1|2] signals
+	are no longer used since Samba 2.2). This is to allow
+	transient problems to be diagnosed, whilst still running 
 	at a normally low log level.</para>
 </refsect1>
 
@@ -348,14 +352,15 @@
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para><command>inetd(8)</command>, <ulink
-	url="smbd.8.html"><command>smbd(8)</command></ulink>, 
-	<ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename>
-	</ulink>, <ulink url="smbclient.1.html"><command>smbclient(1)
-	</command></ulink>, <ulink url="testparm.1.html"><command>
-	testparm(1)</command></ulink>, <ulink url="testprns.1.html">
-	<command>testprns(1)</command></ulink>, and the Internet RFC's
-	<filename>rfc1001.txt</filename>, <filename>rfc1002.txt</filename>. 
+	<para>
+	<citerefentry><refentrytitle>inetd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbclient</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>testparm</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>testprns</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>, and the Internet 
+	RFC's <filename>rfc1001.txt</filename>, <filename>rfc1002.txt</filename>. 
 	In addition the CIFS (formerly SMB) specification is available 
 	as a link from the Web page <ulink url="http://samba.org/cifs/"> 
 	http://samba.org/cifs/</ulink>.</para>
@@ -371,11 +376,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
+	XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

@@ -1,8 +1,7 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
 <!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
-
-<refentry id="vfstest">
+<refentry id="vfstest.1">
 
 <refmeta>
 	<refentrytitle>vfstest</refentrytitle>
@@ -28,8 +27,8 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>vfstest</command> is a small command line
 	utility that has the ability to test dso samba VFS modules. It gives the

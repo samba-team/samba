@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbspool">
+<refentry id="smbspool.8">
 
 <refmeta>
 	<refentrytitle>smbspool</refentrytitle>
@@ -27,8 +27,8 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para>smbspool is a very small print spooling program that 
 	sends a print file to an SMB printer. The command-line arguments 
@@ -45,10 +45,8 @@
 	<itemizedlist>
 		<listitem><para>smb://server/printer</para></listitem>
 		<listitem><para>smb://workgroup/server/printer</para></listitem>
-		<listitem><para>smb://username:password@server/printer</para>
-		</listitem>
-		<listitem><para>smb://username:password@workgroup/server/printer
-		</para></listitem>
+		<listitem><para>smb://username:password@server/printer</para></listitem>
+		<listitem><para>smb://username:password@workgroup/server/printer</para></listitem>
 	</itemizedlist>
 
 	<para>smbspool tries to get the URI from argv[0]. If argv[0] 
@@ -97,15 +95,14 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
-	the Samba suite.</para>
+	<para>This man page is correct for version 2.2 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para><ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
-	and <ulink url="samba.7.html">samba(7)</ulink>.
-	</para>
+	<para><citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> and <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry>.</para>
 </refsect1>
 
 <refsect1>
@@ -121,11 +118,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

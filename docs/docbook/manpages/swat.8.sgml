@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="swat">
+<refentry id="swat.8">
 
 <refmeta>
 	<refentrytitle>swat</refentrytitle>
@@ -23,13 +23,13 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 
 	<para><command>swat</command> allows a Samba administrator to 
-	configure the complex <ulink url="smb.conf.5.html"><filename>
-	smb.conf(5)</filename></ulink> file via a Web browser. In addition, 
+	configure the complex <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry> file via a Web browser. In addition, 
 	a <command>swat</command> configuration page has help links 
 	to all the configurable options in the <filename>smb.conf</filename> file allowing an 
 	administrator to easily look up the effects of any change. </para>
@@ -46,8 +46,9 @@
 		<term>-s smb configuration file</term>
 		<listitem><para>The default configuration file path is 
 		determined at compile time.  The file specified contains 
-		the configuration details required by the <command>smbd
-		</command> server. This is the file that <command>swat</command> will modify. 
+		the configuration details required by the <citerefentry><refentrytitle>smbd</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry> server. This is the file 
+		that <command>swat</command> will modify. 
 		The information in this file includes server-specific 
 		information such as what printcap file to use, as well as 
 		descriptions of all the services that the server is to provide.
@@ -152,8 +153,9 @@
 
 		<varlistentry>
 		<term><filename>/usr/local/samba/lib/smb.conf</filename></term>
-		<listitem><para>This is the default location of the <filename>smb.conf(5)
-		</filename> server configuration file that swat edits. Other 
+		<listitem><para>This is the default location of the <citerefentry>
+		<refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
+		</citerefentry> server configuration file that swat edits. Other 
 		common places that systems install this file are <filename>
 		/usr/samba/lib/smb.conf</filename> and <filename>/etc/smb.conf
 		</filename>.  This file describes all the services the server 
@@ -166,8 +168,9 @@
 <refsect1>
 	<title>WARNINGS</title>
 
-	<para><command>swat</command> will rewrite your <filename>smb.conf
-	</filename> file. It will rearrange the entries and delete all 
+	<para><command>swat</command> will rewrite your <citerefentry>
+	<refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
+	</citerefentry> file. It will rearrange the entries and delete all 
 	comments, <parameter>include=</parameter> and <parameter>copy=
 	</parameter> options. If you have a carefully crafted <filename>
 	smb.conf</filename> then back it up or don't use swat! </para>
@@ -177,16 +180,15 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
-	the Samba suite.</para>
+	<para>This man page is correct for version 2.2 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para><command>inetd(5)</command>,
-	<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
-	<ulink url="smb.conf.5.html">smb.conf(5)</ulink>
-	</para>
+	<para><command>inetd(5)</command>, <citerefentry>
+	<refentrytitle>smbd</refentrytitle><manvolnum>8</manvolnum>
+	</citerefentry>, <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry></para>
 </refsect1>
 
 <refsect1>
@@ -199,11 +201,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+	Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbtar">
+<refentry id="smbtar.1">
 
 <refmeta>
 	<refentrytitle>smbtar</refentrytitle>
@@ -37,12 +37,12 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>smbtar</command> is a very small shell script on top 
-	of <ulink url="smbclient.1.html"><command>smbclient(1)</command></ulink> 
-	which dumps SMB shares directly to tape. </para>
+	of <citerefentry><refentrytitle>smbclient</refentrytitle><manvolnum>1</manvolnum>
+	</citerefentry> which dumps SMB shares directly to tape.</para>
 </refsect1>
 
 <refsect1>
@@ -144,8 +144,9 @@
 		<varlistentry>
 		<term>-l log level</term>
 		<listitem><para>Log (debug) level. Corresponds to the 
-		<parameter>-d</parameter> flag of <command>smbclient(1)
-		</command>. </para></listitem>
+		<parameter>-d</parameter> flag of <citerefentry>
+		<refentrytitle>smbclient</refentrytitle><manvolnum>1</manvolnum>
+		</citerefentry>.</para></listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
@@ -181,9 +182,9 @@
 <refsect1>
 	<title>DIAGNOSTICS</title>
 
-	<para>See the <emphasis>DIAGNOSTICS</emphasis> section for the 
-	<ulink url="smbclient.1.html"><command>smbclient(1)</command> 
-	</ulink> command.</para>
+	<para>See the <emphasis>DIAGNOSTICS</emphasis> section for the <citerefentry>
+	<refentrytitle>smbclient</refentrytitle><manvolnum>1</manvolnum>
+	</citerefentry> command.</para>
 </refsect1>
 
 
@@ -196,10 +197,11 @@
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para><ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
-	<ulink url="smbclient.1.html"><command>smbclient(1)</command></ulink>, 
-	<ulink url="smb.conf.5.html">smb.conf(5)</ulink>,
-	</para>
+	<para><citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry>
+	<refentrytitle>smbclient</refentrytitle><manvolnum>1</manvolnum>
+	</citerefentry>, <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>.</para>
 </refsect1>
 
 <refsect1>
@@ -216,11 +218,11 @@
 	url="mailto:Martin.Kraemer@mch.sni.de">Martin Kraemer</ulink>. Many 
 	thanks to everyone who suggested extensions, improvements, bug 
 	fixes, etc. The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter.</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for
+	Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

@@ -1,7 +1,7 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
 <!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
-<refentry id="rpcclient">
+<refentry id="rpcclient.1">
 
 <refmeta>
 	<refentrytitle>rpcclient</refentrytitle>
@@ -36,8 +36,8 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>rpcclient</command> is a utility initially developed
 	to test MS-RPC functionality in Samba itself.  It has undergone 
@@ -56,8 +56,8 @@
 		<listitem><para>NetBIOS name of Server to which to connect. 
 		The server can be  any SMB/CIFS server.  The name is 
 		resolved using the <ulink url="smb.conf.5.html#NAMERESOLVEORDER">
-		<parameter>name resolve order</parameter></ulink> line from 
-		<filename>smb.conf(5)</filename>.</para></listitem>
+		<parameter>name resolve order</parameter></ulink> line from <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>.</para></listitem>
 		</varlistentry>
 
 
@@ -68,11 +68,11 @@
 		password used in the connection.  The format of the file is 
 		</para>
 		
-		<para><programlisting>
-		username = &lt;value&gt; 
-		password = &lt;value&gt;
-		domain   = &lt;value&gt;
-		</programlisting></para>
+<para><programlisting>
+username = &lt;value&gt; 
+password = &lt;value&gt;
+domain   = &lt;value&gt;
+</programlisting></para>
 	
 		<para>Make certain that the permissions on the file restrict 
 		access from unwanted users. </para></listitem>
@@ -85,13 +85,10 @@
 		<listitem><para>execute semicolon separated commands (listed 
 		below)) </para></listitem>
 		</varlistentry>
-		
-				
-		
 
-		&stdarg.debuglevel;
 		&stdarg.help;
-
+		&stdarg.debuglevel;
+		
 		<varlistentry>
 		<term>-I IP-address</term>
 		<listitem><para><replaceable>IP address</replaceable> is the address of the server to connect to. 
@@ -163,9 +160,6 @@
 		it in directly. </para></listitem>
 		</varlistentry>
 		
-		
-		
-		
 		<varlistentry>
 		<term>-W|--workgroup=domain</term>
 		<listitem><para>Set the SMB domain of the username.   This 
@@ -175,7 +169,6 @@
 		opposed to the Domain SAM). </para></listitem>
 		</varlistentry>
 		
-						
 	</variablelist>
 </refsect1>
 
@@ -214,12 +207,10 @@
 	</itemizedlist>
 	<para> </para>
 
-
-
 	<para><emphasis>SPOOLSS</emphasis></para>
 
 	<itemizedlist>
-		<listitem><para><command>adddriver &lt;arch&gt &lt;config&gt;</command> 
+		<listitem><para><command>adddriver &lt;arch&gt; &lt;config&gt;</command> 
 		- Execute an AddPrinterDriver() RPC to install the printer driver 
 		information on the server.  Note that the driver files should 
 		already exist in the directory returned by  
@@ -229,16 +220,16 @@
 		The <parameter>config</parameter> parameter is defined as 
 		follows: </para>
 		
-		<para><programlisting>
-		Long Printer Name:\
-		Driver File Name:\
-		Data File Name:\
-		Config File Name:\
-		Help File Name:\
-		Language Monitor Name:\
-		Default Data Type:\
-		Comma Separated list of Files
-		</programlisting></para>
+<para><programlisting>
+Long Printer Name:\
+Driver File Name:\
+Data File Name:\
+Config File Name:\
+Help File Name:\
+Language Monitor Name:\
+Default Data Type:\
+Comma Separated list of Files
+</programlisting></para>
 
 		<para>Any empty fields should be enter as the string "NULL". </para>
 		
@@ -248,10 +239,7 @@
 		be "NULL".   On a remote NT print server, the Print Monitor for a 
 		driver must already be installed prior to adding the driver or 
 		else the RPC will fail. </para></listitem>
-
-
-		
-		
+	
 		<listitem><para><command>addprinter &lt;printername&gt; 
 		&lt;sharename&gt; &lt;drivername&gt; &lt;port&gt;</command> 
 		- Add a printer on the remote server.  This printer 
@@ -387,7 +375,7 @@
 
 	<para>From Luke Leighton's original rpcclient man page:</para>
 	
-	<para><emphasis>"WARNING!</emphasis> The MSRPC over SMB code has 
+	<para><emphasis>WARNING!</emphasis> The MSRPC over SMB code has 
 	been developed from examining  Network traces. No documentation is 
 	available from the original creators  (Microsoft) on how MSRPC over 
 	SMB works, or how the individual MSRPC services  work. Microsoft's 
@@ -395,12 +383,13 @@
 	to be... a bit flaky in places. </para>
 
 	<para>The development of Samba's implementation is also a bit rough, 
-	and as more  of the services are understood, it can even result in 
-	versions of  <command>smbd(8)</command> and <command>rpcclient(1)</command> 
-	that are incompatible for some commands or  services. Additionally, 
+	and as more of the services are understood, it can even result in 
+	versions of <citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> and <citerefentry><refentrytitle>rpcclient</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry> that are incompatible for some commands or  services. Additionally, 
 	the developers are sending reports to Microsoft,  and problems found 
 	or reported to Microsoft are fixed in Service Packs,  which may 
-	result in incompatibilities." </para>
+	result in incompatibilities.</para>
 </refsect1>
 
 
@@ -422,7 +411,8 @@
 	<para>The original rpcclient man page was written by Matthew 
 	Geddes, Luke Kenneth Casson Leighton, and rewritten by Gerald Carter.  
 	The conversion to DocBook for Samba 2.2 was done by Gerald 
-	Carter.</para>
+	Carter. The conversion to DocBook XML 4.2 for Samba 3.0 was
+	done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

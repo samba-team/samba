@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbumount">
+<refentry id="smbumount.8">
 
 <refmeta>
 	<refentrytitle>smbumount</refentrytitle>
@@ -47,8 +47,8 @@
 <refsect1>
 	<title>SEE ALSO</title>
 	
-	<para><ulink url="smbmount.8.html"><command>smbmount(8)</command>
-	</ulink></para>
+	<para><citerefentry><refentrytitle>smbmount</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry></para>
 </refsect1>
 
 
@@ -67,7 +67,8 @@
 	</para>
 	
 	<para>The conversion of this manpage for Samba 2.2 was performed 
-	by Gerald Carter</para>
+	by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
+	was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

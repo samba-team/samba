@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbcacls">
+<refentry id="smbcacls.1">
 
 <refmeta>
 	<refentrytitle>smbcacls</refentrytitle>
@@ -32,8 +32,8 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 	
 	<para>The <command>smbcacls</command> program manipulates NT Access Control
 	Lists (ACLs) on SMB file shares. </para>
@@ -90,7 +90,8 @@
 		<listitem><para>Specifies a username used to connect to the 
 		specified service.  The username may be of the form "username" in 
 		which case the user is prompted to enter in a password and the 
-		workgroup specified in the <filename>smb.conf</filename> file is 
+		workgroup specified in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file is 
 		used, or "username%password"  or "DOMAIN\username%password" and the 
 		password and workgroup names are used as provided. </para></listitem>
 		</varlistentry>
@@ -147,12 +148,12 @@
 	<para>The format of an ACL is one or more ACL entries separated by 
 	either commas or newlines.  An ACL entry is one of the following: </para>
 
-	<para><programlisting> 
+<para><programlisting> 
 REVISION:&lt;revision number&gt;
 OWNER:&lt;sid or name&gt;
 GROUP:&lt;sid or name&gt;
 ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
-	</programlisting></para>
+</programlisting></para>
   
 
 	<para>The revision of the ACL specifies the internal Windows 
@@ -165,24 +166,22 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 	otherwise the name specified is resolved using the server on which 
 	the file or directory resides. </para>
 
-		<para>ACLs specify permissions granted to the SID.  This SID again 
-		can be specified in CWS-1-x-y-z format or as a name in which case 
-		it is resolved against the server on which the file or directory 
-		resides.  The type, flags and mask values determine the type of 
-		access granted to the SID. </para>
+	<para>ACLs specify permissions granted to the SID.  This SID again 
+	can be specified in CWS-1-x-y-z format or as a name in which case 
+	it is resolved against the server on which the file or directory 
+	resides.  The type, flags and mask values determine the type of 
+	access granted to the SID. </para>
 
-		<para>The type can be either 0 or 1 corresponding to ALLOWED or 
-		DENIED access to the SID.  The flags values are generally
-		zero for file ACLs and either 9 or 2 for directory ACLs.  Some 
-		common flags are: </para>
+	<para>The type can be either 0 or 1 corresponding to ALLOWED or 
+	DENIED access to the SID.  The flags values are generally
+	zero for file ACLs and either 9 or 2 for directory ACLs.  Some 
+	common flags are: </para>
 
-		<itemizedlist> 
-			<listitem><para>#define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1</para></listitem>
-			<listitem><para>#define SEC_ACE_FLAG_CONTAINER_INHERIT  	0x2</para></listitem>
-			<listitem><para>#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT       0x4
-			</para></listitem>
-			<listitem><para>#define SEC_ACE_FLAG_INHERIT_ONLY       	0x8</para>
-			</listitem>
+	<itemizedlist> 
+		<listitem><para><constant>#define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1</constant></para></listitem>
+		<listitem><para><constant>#define SEC_ACE_FLAG_CONTAINER_INHERIT  	0x2</constant></para></listitem>
+		<listitem><para><constant>#define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT     0x4</constant></para></listitem>
+		<listitem><para><constant>#define SEC_ACE_FLAG_INHERIT_ONLY       	0x8</constant></para></listitem>
  	</itemizedlist>
   
 	<para>At present flags can only be specified as decimal or 
@@ -233,8 +232,7 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
-	the Samba suite.</para>
+	<para>This man page is correct for version 2.2 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
@@ -249,7 +247,8 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 	and Tim Potter.</para>
 	
 	<para>The conversion to DocBook for Samba 2.2 was done 
-	by Gerald Carter</para>
+	by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0 was done
+	by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="testprns">
+<refentry id="testprns.1">
 
 <refmeta>
 	<refentrytitle>testprns</refentrytitle>
@@ -23,13 +23,13 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>testprns</command> is a very simple test program 
 	to determine whether a given printer name is valid for use in 
-	a service to be provided by <ulink url="smbd.8.html"><command>
-	smbd(8)</command></ulink>. </para>
+	a service to be provided by <citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>.</para>
 
 	<para>"Valid" in this context means "can be found in the 
 	printcap specified". This program is very stupid - so stupid in 
@@ -54,8 +54,9 @@
 		done beyond that required to extract the printer name. It may
 		be that the print spooling system is more forgiving or less 
 		forgiving than <command>testprns</command>. However, if 
-		<command>testprns</command> finds the printer then 
-		<command>smbd</command> should do so as well. </para></listitem>
+		<command>testprns</command> finds the printer then <citerefentry>
+		<refentrytitle>smbd</refentrytitle><manvolnum>8</manvolnum>
+		</citerefentry> should do so as well. </para></listitem>
 		</varlistentry>
 		
 		<varlistentry>	
@@ -117,9 +118,9 @@
 <refsect1>
 	<title>SEE ALSO</title>
 	<para><filename>printcap(5)</filename>, 
-	<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
-	<ulink url="smbclient.1.html"><command>smbclient(1)</command></ulink>
-	</para>
+	<citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbclient</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry></para>
 </refsect1>
 
 <refsect1>
@@ -132,11 +133,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

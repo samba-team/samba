@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbsh">
+<refentry id="smbsh.1">
 
 <refmeta>
 	<refentrytitle>smbsh</refentrytitle>
@@ -29,8 +29,8 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><command>smbsh</command> allows you to access an NT filesystem 
 	using UNIX commands such as <command>ls</command>, <command>
@@ -46,7 +46,8 @@
 	    <varlistentry>
 		<term>-W WORKGROUP</term>
 		<listitem><para>Override the default workgroup specified in the 
-		workgroup parameter of the <filename>smb.conf</filename> file 
+		workgroup parameter of the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file 
 		for this session. This may be needed to connect to some 
 		servers. </para></listitem>
 	    </varlistentry>
@@ -61,7 +62,8 @@
 	    </varlistentry>
 
 	    <varlistentry>
-		<term>-P prefix</term><listitem><para>This option allows
+		<term>-P prefix</term>
+		<listitem><para>This option allows
 		the user to set the directory prefix for SMB access. The 
 		default value if this option is not specified is 
 		<emphasis>smb</emphasis>.
@@ -75,19 +77,20 @@
 		host names to IP addresses. The option takes a space-separated 
 		string of different name resolution options.</para>
 
-		<para>The options are :"lmhosts", "host", "wins" and "bcast". 
+		<para>The options are: "lmhosts", "host", "wins" and "bcast". 
 		They cause names to be resolved as follows :</para>
 
 		<itemizedlist>
-			<listitem><para><constant>lmhosts</constant> : 
+			<listitem><para><constant>lmhosts</constant>: 
 			Lookup an IP address in the Samba lmhosts file. If the 
 			line in lmhosts has no name type attached to the 
 			NetBIOS name 
-			(see the <ulink url="lmhosts.5.html">lmhosts(5)</ulink>
-			for details) then any name type matches for lookup.
+			(see the <citerefentry><refentrytitle>lmhosts</refentrytitle>
+			<manvolnum>5</manvolnum></citerefentry>	for details) 
+			then any name type matches for lookup.
 			</para></listitem>
 
-			<listitem><para><constant>host</constant> : 
+			<listitem><para><constant>host</constant>: 
 			Do a standard host name to IP address resolution, using
 			the system <filename>/etc/hosts</filename>, NIS, or DNS
 			lookups. This method of name resolution is operating 
@@ -98,14 +101,14 @@
 			(server) name type, otherwise it is ignored.
 			</para></listitem>
 
-			<listitem><para><constant>wins</constant> : 
+			<listitem><para><constant>wins</constant>: 
 			Query a name with the IP address listed in the 
 			<parameter>wins server</parameter> parameter.  If no 
 			WINS server has been specified this method will be 
 			ignored.
 			</para></listitem>
 
-			<listitem><para><constant>bcast</constant> : 
+			<listitem><para><constant>bcast</constant>: 
 			Do a broadcast on each of the known local interfaces 
 			listed in the <parameter>interfaces</parameter>
 			parameter. This is the least reliable of the name 
@@ -115,14 +118,15 @@
 		</itemizedlist>
 
 		<para>If this parameter is not set then the name resolve order 
-		defined in the <filename>smb.conf</filename> file parameter  
-		(name resolve order) will be used. </para>
+		defined in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file parameter  
+		(<parameter>name resolve order</parameter>) will be used. </para>
 
 		<para>The default order is lmhosts, host, wins, bcast. Without 
 		this parameter or any entry in the <parameter>name resolve order
-		</parameter> parameter of the <filename>smb.conf</filename> 
-		file, the name resolution methods will be attempted in this 
-		order. </para></listitem>
+		</parameter> parameter of the <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> file, the name resolution methods 
+		will be attempted in this order. </para></listitem>
 	    </varlistentry>
 
 	    <varlistentry>
@@ -133,7 +137,8 @@
 		is zero.</para>
 
 		<para>The higher this value, the more detail will be logged
-		about the activities of <command>nmblookup</command>. At level
+		about the activities of <citerefentry><refentrytitle>nmblookup</refentrytitle>
+		<manvolnum>1</manvolnum></citerefentry>. At level
 		0, only critical errors and serious warnings will be logged.
 		</para></listitem>
 	    </varlistentry>
@@ -164,13 +169,12 @@
 	<para>To use the <command>smbsh</command> command, execute <command>
 	smbsh</command> from the prompt and enter the username and password 
 	that authenticates you to the machine running the Windows NT 
-	operating system.</para>
-
-	<para><programlisting>
-	<prompt>system% </prompt><userinput>smbsh</userinput>
-	<prompt>Username: </prompt><userinput>user</userinput>
-	<prompt>Password: </prompt><userinput>XXXXXXX</userinput>
-	</programlisting></para>
+	operating system.
+<programlisting>
+<prompt>system% </prompt><userinput>smbsh</userinput>
+<prompt>Username: </prompt><userinput>user</userinput>
+<prompt>Password: </prompt><userinput>XXXXXXX</userinput>
+</programlisting></para>
 
 
 	<para>Any dynamically linked command you execute from 
@@ -188,8 +192,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 3.0 of 
-	the Samba suite.</para>
+	<para>This man page is correct for version 3.0 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
@@ -210,9 +213,9 @@
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para><ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
-	<ulink url="smb.conf.5.html">smb.conf(5)</ulink>
-	</para>
+	<para><citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry></para>
 </refsect1>
 
 <refsect1>
@@ -225,11 +228,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2
+	for Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

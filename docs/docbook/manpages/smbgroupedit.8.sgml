@@ -1,15 +1,11 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="smbgroupedit">
+<refentry id="smbgroupedit.8">
 
 <refmeta>
 	<refentrytitle>smbgroupedit</refentrytitle>
 	<manvolnum>8</manvolnum>
 </refmeta>
 
-
-<!-- ****************************************************
-**              Name and Options                       **
-**************************************************** -->
 <refnamediv>
 	<refname>smbgroupedit</refname>
 	<refpurpose>Query/set/change UNIX - Windows NT group mapping</refpurpose>
@@ -25,17 +21,13 @@
 
 
 
-<!-- ****************************************************
-**                     Description                     **
-**************************************************** -->
 <refsect1>
 
 <title>DESCRIPTION</title>
 
 <para>
-This program is part of the <ulink url="samba.7.html">Samba</ulink>
-suite.
-</para>
+This program is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 <para>
 The  smbgroupedit  command  allows for mapping unix groups
@@ -70,8 +62,8 @@ etc.
     Privilege      :
 </programlisting></para>
 
-<para>For examples,</para>
-<para><programlisting>
+<para>For example:
+<programlisting>
 Users
     SID       : S-1-5-32-545
     Unix group: -1
@@ -91,9 +83,8 @@ Users
 NTGroupName(SID) -> UnixGroupName
 </programlisting></para>
 
-<para>For example,</para>
-
-<para><programlisting>
+<para>For example:
+<programlisting>
 Users (S-1-5-32-545) -> -1
 </programlisting></para>
 
@@ -109,8 +100,6 @@ Users (S-1-5-32-545) -> -1
 
 
 
-<!-- ****************************************************
-**************************************************** -->
 <refsect1>
 <title>FILES</title>
 
@@ -120,8 +109,6 @@ Users (S-1-5-32-545) -> -1
 
 
 
-<!-- ****************************************************
-**************************************************** -->
 <refsect1>
 
 <title>EXIT STATUS</title>
@@ -163,65 +150,45 @@ the 'Domain Admins'  Global group:
 	<para>domadm:x:502:joe,john,mary</para>
 	</listitem>
 
-	<listitem><para>map this domadm group to the 'domain admins' group:
-	</para>
+	<listitem><para>map this domadm group to the 'domain admins' group:</para>
 	<orderedlist>
-		<listitem><para>Get the SID for the Windows NT "Domain Admins"
-		group:</para>
-
+		<listitem><para>Get the SID for the Windows NT "Domain Admins" group:</para>
 <para><programlisting>
 <prompt>root# </prompt><command>smbgroupedit -vs | grep "Domain Admins"</command>
 Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -> -1
-</programlisting></para>
-</listitem>
+</programlisting></para></listitem>
 
 		<listitem><para>map the unix domadm group to the Windows NT
 		"Domain Admins" group, by running the command:
-		</para>
-
-<para><programlisting>
+<programlisting>
 <prompt>root# </prompt><command>smbgroupedit \
 -c S-1-5-21-1108995562-3116817432-1375597819-512 \
 -u domadm -td</command>
 </programlisting></para>
 
-		<para>
-		<emphasis>warning:</emphasis> don't copy and paste this sample, the
+		<para><emphasis>warning:</emphasis> don't copy and paste this sample, the
 		Domain Admins SID (the S-1-5-21-...-512) is different for every PDC.
-		</para>
-		</listitem>
+		</para>	</listitem>
 	</orderedlist>
 	</listitem>
 </orderedlist>
 
 <para>
 To verify that your mapping has taken effect:
-</para>
-
-<para><programlisting>
+<programlisting>
 <prompt>root# </prompt><command>smbgroupedit -vs|grep "Domain Admins"</command>
 Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -> domadm
 </programlisting></para>
 
-<para>
-To give access to a certain directory on a domain member machine (an
+<para>To give access to a certain directory on a domain member machine (an
 NT/W2K or a samba server running winbind) to some users who are member
 of a group on your samba PDC, flag that group as a domain group:
-</para>
-
-<para><programlisting>
+<programlisting>
 <prompt>root# </prompt><command>smbgroupedit -a unixgroup -td</command>
 </programlisting></para>
 
-
-
 </refsect1>
 
-
-
-
-<!-- ****************************************************
-**************************************************** -->
 <refsect1>
 
 <title>VERSION</title>
@@ -232,21 +199,15 @@ the Samba suite.
 </para>
 </refsect1>
 
-<!-- ****************************************************
-**************************************************** -->
-
 <refsect1>
 <title>SEE ALSO</title>
 
 <para>
-<ulink url="smb.conf.5.html">smb.conf(5)</ulink>
-</para>
+<citerefentry><refentrytitle>smb.conf</refentrytitle>
+<manvolnum>5</manvolnum></citerefentry></para>
 
 </refsect1>
 
-
-<!-- ****************************************************
-**************************************************** -->
 
 <refsect1>
 <title>AUTHOR</title>
@@ -261,7 +222,8 @@ to the way the Linux kernel is developed.
 <para>
 <command>smbgroupedit</command> was written by Jean Francois Micouleau.
 The current set of manpages and documentation is maintained
-by the Samba Team in the same fashion as the Samba source code.</para>
+by the Samba Team in the same fashion as the Samba source code. The conversion
+to DocBook XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>

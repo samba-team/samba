@@ -1,7 +1,7 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
 <!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
-<refentry id="pdbedit">
+<refentry id="pdbedit.8">
 
 <refmeta>
 	<refentrytitle>pdbedit</refentrytitle>
@@ -42,8 +42,8 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <ulink url="samba.7.html">
-	Samba</ulink> suite.</para>
+	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para>The pdbedit program is used to manage the users accounts
 	stored in the sam database and can only be run by root.</para>
@@ -67,12 +67,11 @@
 		present in the users database.
 		This option prints a list of user/uid pairs separated by
 		the ':' character.</para>
-
 		<para>Example: <command>pdbedit -l</command></para>
-		<para><programlisting>
-		sorce:500:Simo Sorce
-		samba:45:Test User
-		</programlisting></para>
+		<para><screen>
+sorce:500:Simo Sorce
+samba:45:Test User
+</screen></para>
 		</listitem>
 		</varlistentry>
 		
@@ -85,26 +84,26 @@
 		out the account fields in a descriptive format.</para>
 
 		<para>Example: <command>pdbedit -l -v</command></para>
-		<para><programlisting>
-		---------------
-		username:       sorce
-		user ID/Group:  500/500
-		user RID/GRID:  2000/2001
-		Full Name:      Simo Sorce
-		Home Directory: \\BERSERKER\sorce
-		HomeDir Drive:  H:
-		Logon Script:   \\BERSERKER\netlogon\sorce.bat
-		Profile Path:   \\BERSERKER\profile
-		---------------
-		username:       samba
-		user ID/Group:  45/45
-		user RID/GRID:  1090/1091
-		Full Name:      Test User
-		Home Directory: \\BERSERKER\samba
-		HomeDir Drive:  
-		Logon Script:   
-		Profile Path:   \\BERSERKER\profile
-		</programlisting></para>
+		<para><screen>
+---------------
+username:       sorce
+user ID/Group:  500/500
+user RID/GRID:  2000/2001
+Full Name:      Simo Sorce
+Home Directory: \\BERSERKER\sorce
+HomeDir Drive:  H:
+Logon Script:   \\BERSERKER\netlogon\sorce.bat
+Profile Path:   \\BERSERKER\profile
+---------------
+username:       samba
+user ID/Group:  45/45
+user RID/GRID:  1090/1091
+Full Name:      Test User
+Home Directory: \\BERSERKER\samba
+HomeDir Drive:  
+Logon Script:   
+Profile Path:   \\BERSERKER\profile
+</screen></para>
 		</listitem>
 		</varlistentry>
 		
@@ -115,14 +114,15 @@
 		<listitem><para>This option sets the "smbpasswd" listing format.
 		It will make pdbedit list the users in the database, printing
 		out the account fields in a format compatible with the
-		<filename>smbpasswd</filename> file format. (see the <ulink
-		url="smbpasswd.5.html"><filename>smbpasswd(5)</filename></ulink> for details)</para>
+		<filename>smbpasswd</filename> file format. (see the
+		<citerefentry><refentrytitle>smbpasswd</refentrytitle>
+		<manvolnum>5</manvolnum></citerefentry> for details)</para>
 
 		<para>Example: <command>pdbedit -l -w</command></para>
-		<para><programlisting>
-		sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
-		samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
-		</programlisting></para>
+		<screen>
+sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
+samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
+</screen>
 		</listitem>
 		</varlistentry>
 		
@@ -136,8 +136,6 @@
 		operations.</para>
 		</listitem>
 		</varlistentry>
-		
-
 
 		<varlistentry>
 		<term>-f fullname</term>
@@ -161,7 +159,6 @@
 		</para>
 		</listitem>
 		</varlistentry>
-		
 		
 		<varlistentry>
 		<term>-D drive</term>
@@ -207,9 +204,10 @@
 		ask for the password to be used.</para>
 
 		<para>Example: <command>pdbedit -a -u sorce</command>
-		<programlisting>new password:
-		retype new password</programlisting>
-                </para>
+<programlisting>new password:
+retype new password
+</programlisting>
+</para>
 		</listitem>
 		</varlistentry>
 		
@@ -281,9 +279,9 @@
 		maximum password age and bad lockout attempt.</para>
 
 		<para>Example: <command>pdbedit -P "bad lockout attempt"</command></para>
-		<para><programlisting>
-		account policy value for bad lockout attempt is 0
-		</programlisting></para>
+<para><programlisting>
+account policy value for bad lockout attempt is 0
+</programlisting></para>
 
 		</listitem>
 		</varlistentry>
@@ -296,10 +294,10 @@
 		</para>
 
 		<para>Example: <command>pdbedit -P "bad lockout attempt" -V 3</command></para>
-		<para><programlisting>
-		account policy value for bad lockout attempt was 0
-		account policy value for bad lockout attempt is now 3
-		</programlisting></para>
+<para><programlisting>
+account policy value for bad lockout attempt was 0
+account policy value for bad lockout attempt is now 3
+</programlisting></para>
 		</listitem>
 		</varlistentry>
 		
@@ -327,9 +325,9 @@
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para><ulink url="smbpasswd.8.html">smbpasswd(8)</ulink>, 
-	<ulink url="samba.7.html">samba(7)</ulink>
-	</para>
+	<para><citerefentry><refentrytitle>smbpasswd</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>, <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry></para>
 </refsect1>
 
 <refsect1>
@@ -342,11 +340,11 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at
-	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
-	Samba 2.2 was done by Gerald Carter</para>
+	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
+	XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</para>
 </refsect1>
 
 </refentry>
