@@ -1,4 +1,4 @@
-.\" Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd April 11, 1999
+.Dd September  3, 2003
 .Dt KRB5_425_CONV_PRINCIPAL 3
 .Os HEIMDAL
 .Sh NAME
@@ -193,11 +193,11 @@ b-host.bar.com
 .Ed
 the following conversions will be made:
 .Bd -literal -offset indent
-rcmd.a-host	\(-*[Gt] host/a-host.foo.com
-ftp.b-host	\(-*[Gt] ftp/b-host.bar.com
-pop.foo		\(-*[Gt] pop/foo.com
-ftp.other	\(-*[Gt] ftp/other.foo.com
-other.a-host	\(-*[Gt] other/a-host
+rcmd.a-host	-\*(Gt host/a-host.foo.com
+ftp.b-host	-\*(Gt ftp/b-host.bar.com
+pop.foo		-\*(Gt pop/foo.com
+ftp.other	-\*(Gt ftp/other.foo.com
+other.a-host	-\*(Gt other/a-host
 .Ed
 .Pp
 The first three are what you expect. If you remove the
