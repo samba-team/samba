@@ -484,6 +484,51 @@ AC_ARG_WITH(mysql-exec-prefix,[  --with-mysql-exec-prefix=PFX Exec prefix where 
   AC_SUBST(MYSQL_LIBS)
 ])
 
+# =========================================================================
+# AM_PATH_PGSQL : pgSQL library
+
+dnl AM_PATH_PGSQL([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
+dnl Test for PGSQL, and define PGSQL_CFLAGS and PGSQL_LIBS
+dnl
+AC_DEFUN(AM_PATH_PGSQL,
+[dnl
+dnl Get the cflags and libraries from the pg_config script
+dnl
+AC_ARG_WITH(pgsql-prefix,[  --with-pgsql-prefix=PFX   Prefix where PostgreSQL is installed (optional)],
+            pgsql_prefix="$withval", pgsql_prefix="")
+AC_ARG_WITH(pgsql-exec-prefix,[  --with-pgsql-exec-prefix=PFX Exec prefix where PostgreSQL is installed (optional)],
+            pgsql_exec_prefix="$withval", pgsql_exec_prefix="")
+
+  if test x$pgsql_exec_prefix != x ; then
+     if test x${PGSQL_CONFIG+set} != xset ; then
+        PGSQL_CONFIG=$pgsql_exec_prefix/bin/pg_config
+     fi
+  fi
+  if test x$pgsql_prefix != x ; then
+     if test x${PGSQL_CONFIG+set} != xset ; then
+        PGSQL_CONFIG=$pgsql_prefix/bin/pg_config
+     fi
+  fi
+
+  AC_REQUIRE([AC_CANONICAL_TARGET])
+  AC_PATH_PROG(PGSQL_CONFIG, pg_config, no, [$PATH:/usr/lib/postgresql/bin])
+  AC_MSG_CHECKING(for PGSQL)
+  no_pgsql=""
+  if test "$PGSQL_CONFIG" = "no" ; then
+    PGSQL_CFLAGS=""
+    PGSQL_LIBS=""
+    AC_MSG_RESULT(no)
+     ifelse([$2], , :, [$2])
+  else
+    PGSQL_CFLAGS=-I`$PGSQL_CONFIG --includedir`
+    PGSQL_LIBS="-lpq -L`$PGSQL_CONFIG --libdir`"
+    AC_MSG_RESULT(yes)
+    ifelse([$1], , :, [$1])
+  fi
+  AC_SUBST(PGSQL_CFLAGS)
+  AC_SUBST(PGSQL_LIBS)
+])
+
 dnl Removes -I/usr/include/? from given variable
 AC_DEFUN(CFLAGS_REMOVE_USR_INCLUDE,[
   ac_new_flags=""

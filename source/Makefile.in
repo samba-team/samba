@@ -287,10 +287,11 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/util_sam_sid.o passdb/pdb_compat.o \
-		passdb/privileges.o passdb/lookup_sid.o @PDB_STATIC@ 
+		passdb/privileges.o passdb/lookup_sid.o @PDB_STATIC@ passdb/pdb_sql.o
 
 XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
+PGSQL_OBJ = passdb/pdb_pgsql.o
 DEVEL_HELP_WEIRD_OBJ = modules/weird.o
 CP850_OBJ = modules/CP850.o
 CP437_OBJ = modules/CP437.o
@@ -1074,6 +1075,11 @@ bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(MYSQL_OBJ:.o=.@PICSUFFIX@) @MYSQL_LIBS@ \
 		@SONAMEFLAG@`basename $@`
+
+bin/pgsql.@SHLIBEXT@: $(PGSQL_OBJ:.o=.po)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(PGSQL_OBJ:.o=.po) @PGSQL_LIBS@ \
+      @SONAMEFLAG@`basename $@`
 
 bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.@PICSUFFIX@
 	@echo "Building plugin $@"
