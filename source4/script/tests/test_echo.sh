@@ -14,6 +14,7 @@ domain="$4"
 shift 4
 
 testit() {
+   trap "rm -f test.$$" EXIT
    cmdline="$*"
    if ! $cmdline > test.$$ 2>&1; then
        cat test.$$;
