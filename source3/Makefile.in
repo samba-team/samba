@@ -551,9 +551,9 @@ nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
-everything: all libsmbclient debug2html smbfilter talloctort 
-
 modules: SHOWFLAGS $(MODULES)
+
+everything: all libsmbclient debug2html smbfilter talloctort modules
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
@@ -849,6 +849,8 @@ bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
 	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
 
 install: installbin installman installscripts installdat installswat 
+
+install-everything: install installmodules
 
 installdirs:
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR)
