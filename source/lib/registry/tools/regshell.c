@@ -395,7 +395,7 @@ static char **reg_completion(const char *text, int start, int end)
     setup_logging("regtree", True);
 
 	if (remote) {
-		error = reg_open_remote (&h, cmdline_get_username(), cmdline_get_userpassword(), remote); 
+		error = reg_open_remote (&h, cli_credentials_get_username(cmdline_credentials), cli_credentials_get_password(cmdline_credentials), remote); 
 	} else if (backend) {
 		error = reg_open_hive(NULL, backend, poptGetArg(pc), NULL, &curkey);
 	} else {

@@ -200,9 +200,7 @@ static int binary_net(int argc, const char **argv)
 
 	ZERO_STRUCTP(ctx);
 	ctx->mem_ctx = mem_ctx;
-	ctx->user.account_name = talloc_strdup(ctx->mem_ctx, cmdline_get_username());
-	ctx->user.domain_name = talloc_strdup(ctx->mem_ctx, cmdline_get_userdomain());
-	ctx->user.password = talloc_strdup(ctx->mem_ctx, cmdline_get_userpassword());
+	ctx->credentials = cmdline_credentials;
 
 	rc = net_run_function(ctx, argc_new-1, argv_new+1, net_functable, net_usage);
 

@@ -48,7 +48,8 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 		new_password = argv[0];
 	} else {
 		password_prompt = talloc_asprintf(ctx->mem_ctx, "Enter new password for account [%s\\%s]:", 
-							ctx->user.domain_name, ctx->user.account_name);
+							cli_credentials_get_domain(ctx->credentials), 
+							cli_credentials_get_username(ctx->credentials));
 		new_password = getpass(password_prompt);
 	}
 
@@ -56,15 +57,15 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 	if (!libnetctx) {
 		return -1;	
 	}
-	libnetctx->user.account_name	= ctx->user.account_name;
-	libnetctx->user.domain_name	= ctx->user.domain_name;
-	libnetctx->user.password	= ctx->user.password;
+	libnetctx->user.account_name= cli_credentials_get_username(ctx->credentials);
+	libnetctx->user.domain_name	= cli_credentials_get_domain(ctx->credentials);
+	libnetctx->user.password	= cli_credentials_get_password(ctx->credentials);
 
 	/* prepare password change */
 	r.generic.level			= LIBNET_CHANGE_PASSWORD_GENERIC;
-	r.generic.in.account_name	= ctx->user.account_name;
-	r.generic.in.domain_name	= ctx->user.domain_name;
-	r.generic.in.oldpassword	= ctx->user.password;
+	r.generic.in.account_name	= cli_credentials_get_username(ctx->credentials);
+	r.generic.in.domain_name	= cli_credentials_get_domain(ctx->credentials);
+	r.generic.in.oldpassword	= cli_credentials_get_password(ctx->credentials);
 	r.generic.in.newpassword	= new_password;
 
 	/* do password change */
@@ -120,7 +121,7 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 		account_name = talloc_strdup(ctx->mem_ctx, p+1);
 	} else {
 		account_name = tmp;
-		domain_name = ctx->user.domain_name;
+		domain_name = cli_credentials_get_domain(ctx->credentials);
 	}
 
 	if (!new_password) {
@@ -133,9 +134,9 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 	if (!libnetctx) {
 		return -1;	
 	}
-	libnetctx->user.account_name	= ctx->user.account_name;
-	libnetctx->user.domain_name	= ctx->user.domain_name;
-	libnetctx->user.password	= ctx->user.password;
+	libnetctx->user.account_name= cli_credentials_get_username(ctx->credentials);
+	libnetctx->user.domain_name	= cli_credentials_get_domain(ctx->credentials);
+	libnetctx->user.password	= cli_credentials_get_password(ctx->credentials);
 
 	/* prepare password change */
 	r.generic.level			= LIBNET_SET_PASSWORD_GENERIC;

@@ -2729,7 +2729,7 @@ static BOOL is_binding_string(const char *binding_string)
 	}
 
 	if (!lp_parm_string(-1,"torture","username")) {
-		lp_set_cmdline("torture:username", cmdline_get_username());
+		lp_set_cmdline("torture:username", cli_credentials_get_username(cmdline_credentials));
 	}
 	if (!lp_parm_string(-1,"torture","userdomain")) {
 		/* 
@@ -2738,13 +2738,13 @@ static BOOL is_binding_string(const char *binding_string)
 		 * for all cmdline tools
 		 * --metze
 		 */
-		if (strequal(lp_netbios_name(),cmdline_get_userdomain())) {
-			cmdline_set_userdomain(lp_workgroup());
+		if (strequal(lp_netbios_name(),cli_credentials_get_domain(cmdline_credentials))) {
+			cli_credentials_set_domain(cmdline_credentials, lp_workgroup(), CRED_SPECIFIED);
 		}
-		lp_set_cmdline("torture:userdomain", cmdline_get_userdomain());
+		lp_set_cmdline("torture:userdomain", cli_credentials_get_domain(cmdline_credentials));
 	}
 	if (!lp_parm_string(-1,"torture","password")) {
-		lp_set_cmdline("torture:password", cmdline_get_userpassword());
+		lp_set_cmdline("torture:password", cli_credentials_get_password(cmdline_credentials));
 	}
 
 	if (argc_new == 0) {

@@ -24,11 +24,7 @@
 
 struct net_context {
 	TALLOC_CTX *mem_ctx;
-	struct {
-		const char *account_name;
-		const char *domain_name;
-		const char *password;
-	} user;
+	struct cli_credentials *credentials;
 };
 
 struct net_functable {
