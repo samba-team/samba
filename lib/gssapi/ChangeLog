@@ -1,3 +1,10 @@
+2001-08-23  Assar Westerlund  <assar@sics.se>
+
+	*  *.c: handle minor_status more consistently
+
+	* display_status.c (gss_display_status): handle krb5_get_err_text
+	failing
+
 2001-08-15  Johan Danielsson  <joda@pdc.kth.se>
 
 	* gssapi_locl.h: fix prototype for gssapi_krb5_init
