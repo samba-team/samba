@@ -22,7 +22,9 @@ RCSID("$Id$");
 #include <X11/Shell.h>
 #include <X11/Xos.h>
 #include <ctype.h>
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 
 #include <krb.h>
 #include <kafs.h>
