@@ -10,6 +10,25 @@
 ## 1.3.6.1.4.1.7165.2.1.x - attributetypes
 ## 1.3.6.1.4.1.7165.2.2.x - objectclasses
 ##
+## ----- READ THIS WHEN ADDING A NEW ATTRIBUTE OR OBJECT CLASS ------
+##
+## Run the 'get_next_oid' bash script in this directory to find the 
+## next available OID for attribute type and object classes.
+##
+##   $ ./get_next_oid
+##   attributetype ( 1.3.6.1.4.1.7165.2.1.XX NAME ....
+##   objectclass ( 1.3.6.1.4.1.7165.2.2.XX NAME ....
+##
+## Also ensure that new entries adhere to the declaration style
+## used throughout this file
+##
+##    <attributetype|objectclass> ( 1.3.6.1.4.1.7165.2.XX.XX NAME ....
+##                               ^ ^                        ^
+##
+## The spaces are required for the get_next_oid script (and for 
+## readability).
+##
+## ------------------------------------------------------------------
 
 ########################################################################
 ##                            HISTORICAL                              ##
@@ -212,7 +231,7 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.49 NAME 'sambaBadPasswordTime'
 	EQUALITY integerMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.50 NAME 'sambaLogonHours'
+attributetype ( 1.3.6.1.4.1.7165.2.1.55 NAME 'sambaLogonHours'
 	DESC 'Logon Hours'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{42} SINGLE-VALUE )
@@ -255,7 +274,7 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.47 NAME 'sambaMungedDial'
 	EQUALITY caseExactMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{1050} )
 
-attributetype ( 1.3.6.1.4.1.7165.2.1.52 NAME 'sambaPasswordHistory'
+attributetype ( 1.3.6.1.4.1.7165.2.1.54 NAME 'sambaPasswordHistory'
 	DESC 'Concatenated MD4 hashes of the unicode passwords used on this account'
 	EQUALITY caseIgnoreIA5Match
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{32} )
@@ -315,6 +334,51 @@ attributetype ( 1.3.6.1.4.1.7165.2.1.40 NAME 'sambaAlgorithmicRidBase'
 	DESC 'Base at which the samba RID generation algorithm should operate'
 	EQUALITY integerMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.41 NAME 'sambaShareName'
+	DESC 'Share Name'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.42 NAME 'sambaOptionName'
+	DESC 'Option Name'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{256} )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.43 NAME 'sambaBoolOption'
+	DESC 'A boolean option'
+	EQUALITY booleanMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.44 NAME 'sambaIntegerOption'
+	DESC 'An integer option'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.45 NAME 'sambaStringOption'
+	DESC 'A string option'
+	EQUALITY caseExactIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.46 NAME 'sambaStringListOption'
+	DESC 'A string list option'
+	EQUALITY caseIgnoreMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.50 NAME 'sambaPrivName' 
+	SUP name )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.52 NAME 'sambaPrivilegeList'
+	DESC 'Privileges List'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{64} )
+
+attributetype ( 1.3.6.1.4.1.7165.2.1.53 NAME 'sambaTrustFlags'
+	DESC 'Trust Password Flags'
+	EQUALITY caseIgnoreIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
 
 
 #######################################################################
