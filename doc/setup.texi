@@ -164,6 +164,32 @@ Version  Type    Principal
      1   des3    host/my.host.name@@MY.REALM
 @end example
 
+@section Remote administration
+
+The administration server, @samp{kadmind}, is started by @samp{inetd}
+and you should add a line similar to the one below to your
+@file{/etc/inetd.conf}.
+
+@example
+kerberos-adm stream     tcp     nowait  root /usr/heimdal/libexec/kadmind kadmind
+@end example
+
+You might need to add @samp{kerberos-adm} to your @file{/etc/services}
+as 749/tcp.
+
+Access to the admin server is controlled by an acl-file, (default
+@file{/var/heimdal/kadmind.acl}.) The lines in the access file, has the
+following syntax:
+@smallexample
+principal       [priv1,priv2,...]
+@end smallexample
+
+The privileges you can assign to a principal are: @samp{add},
+@samp{change-password} (or @samp{cpw} for short), @samp{delete},
+@samp{get}, @samp{list}, and @samp{modify}, or the special privilege
+@samp{all}. All of these roughly corresponds to the different commands
+in @samp{kadmin}.
+
 @section Testing clients and servers
 
 Now you should be able to run all the clients and servers.  Refer to the
