@@ -100,7 +100,7 @@ static void on_dump_clicked (GtkButton *btn, gpointer user_data)
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx = talloc_init("dump");
 
-	status = dcerpc_pipe_connect(&p, gtk_entry_get_text(GTK_ENTRY(entry_binding)), DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, lp_workgroup(), NULL, NULL);
+	status = dcerpc_pipe_connect(&p, gtk_entry_get_text(GTK_ENTRY(entry_binding)), DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, lp_workgroup(), "", "");
 
 	if (NT_STATUS_IS_ERR(status)) {
 		gtk_show_ntstatus(mainwin, status);
@@ -306,6 +306,9 @@ static GtkWidget* create_mainwindow (void)
  int main(int argc, char **argv)
 {
 	gtk_init(&argc, &argv);
+    lp_load(dyn_CONFIGFILE,True,False,False);
+    load_interfaces();
+    setup_logging("gepdump", True);
 	mainwin = create_mainwindow();
 	gtk_widget_show(mainwin);
 	gtk_main();
