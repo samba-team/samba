@@ -1717,7 +1717,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
  Fail for readbraw.
 ****************************************************************************/
 
-void fail_readraw(void)
+static void fail_readraw(void)
 {
 	pstring errstr;
 	slprintf(errstr, sizeof(errstr)-1, "FAIL ! reply_readbraw: socket write fail (%s)",
@@ -1725,12 +1725,46 @@ void fail_readraw(void)
 	exit_server(errstr);
 }
 
+#if defined(WITH_SENDFILE)
+/****************************************************************************
+ Fake (read/write) sendfile. Returns -1 on read or write fail.
+****************************************************************************/
+
+static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread, char *buf, int bufsize)
+{
+	ssize_t ret=0;
+
+	/* Paranioa check... */
+	if (nread > bufsize) {
+		fail_readraw();
+	}
+
+	if (nread > 0) {
+		ret = read_file(fsp,buf,startpos,nread);
+		if (ret == -1) {
+			return -1;
+		}
+	}
+
+	/* If we had a short read, fill with zeros. */
+	if (ret < nread) {
+		memset(buf, '\0', nread - ret);
+	}
+
+	if (write_data(smbd_server_fd(),buf,nread) != nread) {
+		return -1;
+	}	
+
+	return (ssize_t)nread;
+}
+#endif
+
 /****************************************************************************
  Use sendfile in readbraw.
 ****************************************************************************/
 
 void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T startpos, size_t nread,
-		ssize_t mincount, char *outbuf)
+		ssize_t mincount, char *outbuf, int out_buffsize)
 {
 	ssize_t ret=0;
 
@@ -1752,12 +1786,21 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, nread) == -1) {
 			/*
-			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
-			 * return ENOSYS then pretend we just got a normal read.
+			 * Special hack for broken Linux with no working sendfile. If we
+			 * return EINTR we sent the header but not the rest of the data.
+			 * Fake this up by doing read/write calls.
 			 */
-			if (errno == ENOSYS) {
+			if (errno == EINTR) {
+				/* Ensure we don't do this again. */
 				set_use_sendfile(SNUM(conn), False);
-				goto normal_read;
+				DEBUG(0,("send_file_readbraw: sendfile not available. Faking..\n"));
+
+				if (fake_sendfile(fsp, startpos, nread, outbuf + 4, out_buffsize - 4) == -1) {
+					DEBUG(0,("send_file_readbraw: fake_sendfile failed for file %s (%s).\n",
+						fsp->fsp_name, strerror(errno) ));
+					exit_server("send_file_readbraw fake_sendfile failed");
+				}
+				return;
 			}
 
 			DEBUG(0,("send_file_readbraw: sendfile failed for file %s (%s). Terminating\n",
@@ -1767,7 +1810,6 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 	}
 
-  normal_read:
 #endif
 
 	if (nread > 0) {
@@ -1790,7 +1832,7 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
  Reply to a readbraw (core+ protocol).
 ****************************************************************************/
 
-int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
+int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int out_buffsize)
 {
 	extern struct current_user current_user;
 	ssize_t maxcount,mincount;
@@ -1905,7 +1947,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n", fsp->fnum, (double)startpos,
 				(int)maxcount, (int)mincount, (int)nread ) );
   
-	send_file_readbraw(conn, fsp, startpos, nread, mincount, outbuf);
+	send_file_readbraw(conn, fsp, startpos, nread, mincount, outbuf, out_buffsize);
 
 	DEBUG(5,("readbraw finished\n"));
 	END_PROFILE(SMBreadbraw);
@@ -2069,7 +2111,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
  Reply to a read and X - possibly using sendfile.
 ****************************************************************************/
 
-int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, 
+int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, int len_outbuf,
 		files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt)
 {
 	ssize_t nread = -1;
@@ -2117,12 +2159,22 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt) == -1) {
 			/*
-			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
-			 * return ENOSYS then pretend we just got a normal read.
+			 * Special hack for broken Linux with no working sendfile. If we
+			 * return EINTR we sent the header but not the rest of the data.
+			 * Fake this up by doing read/write calls.
 			 */
-			if (errno == ENOSYS) {
+			if (errno == EINTR) {
+				/* Ensure we don't do this again. */
 				set_use_sendfile(SNUM(conn), False);
-				goto normal_read;
+				DEBUG(0,("send_file_readX: sendfile not available. Faking..\n"));
+
+				if ((nread = fake_sendfile(fsp, startpos, smb_maxcnt, data,
+							len_outbuf - (data-outbuf))) == -1) {
+					DEBUG(0,("send_file_readX: fake_sendfile failed for file %s (%s).\n",
+						fsp->fsp_name, strerror(errno) ));
+					exit_server("send_file_readX: fake_sendfile failed");
+				}
+				return nread;
 			}
 
 			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
@@ -2223,7 +2275,7 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
 
-	nread = send_file_readX(conn, inbuf, outbuf, length, fsp, startpos, smb_maxcnt);
+	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt);
 	if (nread != -1)
 		nread = chain_reply(inbuf,outbuf,length,bufsize);
 
