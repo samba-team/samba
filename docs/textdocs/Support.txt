@@ -588,22 +588,6 @@ AUSTRALIA & NEW ZEALAND
 =======================
 
 ------------------------------------------------------------------------------
-ADELAIDE, AUSTRALIA
-
-NS Computer Software and Services P/L
-PO Box 86
-Ingle Farm
-SA 5098
-
-Contact: Richard Sharpe
-	 Ph: +61-8-281-0063 (08-281-0063) AH
-	 FAX:+61-8-250-2080 (08-250-2080)
-
-Experience with: ULTRIX, Digital UNIX, SunOS, WfW 3.11, Win95, WNT 3.51
-
-------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
 ADELAIDE - AUSTRALIA
 
 Richard Sharpe, sharpe@ns.aus.com
@@ -612,9 +596,29 @@ PO Box 86,
 Ingle Farm, SA 5098
 Australia
 
+Contact: Richard Sharpe
+	 Ph: +61-8-281-0063 (08-281-0063) AH
+	 FAX:+61-8-250-2080 (08-250-2080)
+
 Located in Adelaide, South Australia.
 
 Proficient with Digital UNIX, ULTRIX, SunOS, Linux, Win 95, WfWg, Win NT.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ADELAIDE - AUSTRALIA    
+
+Loftus Computing Services
+191 Flinders Street
+Adelaide 5000
+South Australia
+
+Phone: +61 8 8407 7577
+Fax:   +61 8 8407 7501
+Email: support@loftuscomp.com.au
+
+
+SAMBA Experience : SunOS, Solaris, SCO-Unix, Free BSD, Win95/NT/3.1
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
