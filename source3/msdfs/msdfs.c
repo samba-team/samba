@@ -330,8 +330,8 @@ BOOL dfs_redirect(char* pathname, connection_struct* conn,
 			 pathname));
 		return False;
 	}
+
 	/* never reached */
-	return False;
 }
 
 /**********************************************************************
