@@ -374,7 +374,7 @@ static void make_srv_share_502_info(SH_INFO_502_HDR * sh502,
  makes a SRV_R_NET_SHARE_ENUM structure.
 ********************************************************************/
 static uint32 make_srv_share_info_ctr(SRV_SHARE_INFO_CTR * ctr,
-				      int switch_value, uint32 *resume_hnd,
+				      uint32 switch_value, uint32 *resume_hnd,
 				      uint32 *total_entries)
 {
 	uint32 status = 0x0;
