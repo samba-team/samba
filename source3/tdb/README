@@ -1,0 +1,33 @@
+This is a simple database API. It was inspired by the realisation that
+in Samba we have several ad-hoc bits of code that essentially
+implement small databases for sharing structures between parts of
+Samba. As I was about to add another I realised that a generic
+database module was called for to replace all the ad-hoc bits.
+
+I based the interface on gdbm. I couldn't use gdbm as we need to be
+able to have multiple writers to the databases at one time.
+
+Compilation
+-----------
+
+add HAVE_MMAP=1 to use mmap instead of read/write
+add TDB_DEBUG for verbose debug info
+add NOLOCK=1 to disable locking code
+
+Testing
+-------
+
+Compile tdbtest.c and link with gdbm for testing. tdbtest will perform
+identical operations via tdb and gdbm then make sure the result is the
+same
+
+Interface
+---------
+
+The interface is very similar to gdbm except for the following:
+
+- different open interface. The tdb_open call is more similar to a
+  traditional open()
+- no tdbm_reorganise() function
+- no tdbm_sync() function. No operations are cached in the library anyway
+- added a tdb_traverse() function for traversing the whole database
