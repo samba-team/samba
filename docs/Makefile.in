@@ -58,7 +58,7 @@ PLUCKERDIR=$(OUTPUTDIR)/plucker
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
 MANPAGES_SOURCES = $(wildcard $(MANPAGEDIR)/*.?.xml)
 MANPAGES = $(patsubst $(MANPAGEDIR)/%.xml,$(MANDIR)/%,$(MANPAGES_SOURCES)) $(MANDIR)/smb.conf.5
-MANPAGES_HTML = $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES_SOURCES)) $(HTMLDIR)/smb.conf.5.html
+MANPAGES_HTML = $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES_SOURCES)) $(HTMLDIR)/smb.conf.5.html $(HTMLDIR)/manpages.html
 MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES_SOURCES)) $(PLUCKERDIR)/smb.conf.5.pdb
 
 HOWTODIR_IMAGES_PNG = $(wildcard $(IMAGEPROJDIR)/*.png)
@@ -124,6 +124,11 @@ $(HTMLDIR)/guide: $(HTMLDIR) $(HTMLDIR)/guide/samba.css Samba-Guide.xml
 	cp -R $(GUIDEDOC_IMAGES_PNG) $(HTMLDIR)/guide/images
 
 manpages: $(MANDIR) $(MANPAGES)
+
+manpages.xml: $(MANPAGES_SOURCES)
+	echo "<article><variablelist>" > $@
+	for I in $(MANPAGES_SOURCES); do $(XSLTPROC) xslt/manpage-summary.xsl $$I >> $@; done
+	echo "</variablelist></article>" >> $@
 
 tex: Samba-HOWTO-Collection.tex Samba-Developers-Guide.tex gpl.tex
 
