@@ -68,13 +68,17 @@ struct in_addr *lookup_backend(const char *name, int *count)
 {
 	int fd;
 	static int initialised;
-	struct in_addr *ret;
+	struct in_addr *ret = NULL;
 	struct in_addr  p;
 	int j;
 
 	if (!initialised) {
 		initialised = 1;
 		DEBUGLEVEL = 0;
+
+		/* needed for lp_xx() functions */
+		charset_initialise();
+
 		TimeInit();
 		setup_logging("nss_wins",True);
 		lp_load(CONFIGFILE,True,False,False);
@@ -137,7 +141,7 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 	struct in_addr *ip_list;
 	int i, count;
 	size_t namelen = strlen(name) + 1;
-
+		
 	memset(he, '\0', sizeof(*he));
 
 	ip_list = lookup_backend(name, &count);
