@@ -130,7 +130,7 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 		return NULL;
 	}
 
-	if (sys_fcntl(fd, F_SETSIG, RT_SIGNAL_NOTIFY) == -1) {
+	if (sys_fcntl_long(fd, F_SETSIG, RT_SIGNAL_NOTIFY) == -1) {
 		DEBUG(3,("Failed to set signal handler for change notify\n"));
 		return NULL;
 	}
@@ -147,7 +147,7 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 	if (flags & FILE_NOTIFY_CHANGE_EA)          kernel_flags |= DN_ATTRIB;
 	if (flags & FILE_NOTIFY_CHANGE_FILE_NAME)   kernel_flags |= DN_RENAME|DN_DELETE;
 
-	if (sys_fcntl(fd, F_NOTIFY, kernel_flags) == -1) {
+	if (sys_fcntl_long(fd, F_NOTIFY, kernel_flags) == -1) {
 		DEBUG(3,("Failed to set async flag for change notify\n"));
 		return NULL;
 	}
@@ -168,7 +168,7 @@ static BOOL kernel_notify_available(void)
 	int fd, ret;
 	fd = open("/tmp", O_RDONLY);
 	if (fd == -1) return False; /* uggh! */
-	ret = sys_fcntl(fd, F_NOTIFY, 0);
+	ret = sys_fcntl_long(fd, F_NOTIFY, 0);
 	close(fd);
 	return ret == 0;
 }

@@ -56,7 +56,7 @@ static BOOL irix_oplocks_available(void)
 
 	unlink(tmpname);
 
-	if(sys_fcntl(fd, F_OPLKREG, pfd[1]) == -1) {
+	if(sys_fcntl_long(fd, F_OPLKREG, pfd[1]) == -1) {
 		DEBUG(0,("check_kernel_oplocks: Kernel oplocks are not available on this machine. \
 Disabling kernel oplock support.\n" ));
 		close(pfd[0]);
@@ -65,7 +65,7 @@ Disabling kernel oplock support.\n" ));
 		return False;
 	}
 
-	if(sys_fcntl(fd, F_OPLKACK, OP_REVOKE) < 0 ) {
+	if(sys_fcntl_long(fd, F_OPLKACK, OP_REVOKE) < 0 ) {
 		DEBUG(0,("check_kernel_oplocks: Error when removing kernel oplock. Error was %s. \
 Disabling kernel oplock support.\n", strerror(errno) ));
 		close(pfd[0]);
@@ -111,7 +111,7 @@ Error was %s.\n", strerror(errno) ));
 	 * request outstanding.
 	 */
 
-	if(sys_fcntl(oplock_pipe_read, F_OPLKSTAT, &os) < 0) {
+	if(sys_fcntl_ptr(oplock_pipe_read, F_OPLKSTAT, &os) < 0) {
 		DEBUG(0,("receive_local_message: fcntl of kernel notification failed. \
 Error was %s.\n", strerror(errno) ));
 		if(errno == EAGAIN) {
@@ -164,7 +164,7 @@ dev = %x, inode = %.0f\n, file_id = %ul", (unsigned int)fsp->dev, (double)fsp->i
 
 static BOOL irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
-	if (sys_fcntl(fsp->fd, F_OPLKREG, oplock_pipe_write) == -1) {
+	if (sys_fcntl_long(fsp->fd, F_OPLKREG, oplock_pipe_write) == -1) {
 		if(errno != EAGAIN) {
 			DEBUG(0,("set_file_oplock: Unable to get kernel oplock on file %s, dev = %x, \
 inode = %.0f, file_id = %ul. Error was %s\n", 
@@ -195,7 +195,7 @@ static void irix_release_kernel_oplock(files_struct *fsp)
 		 * Check and print out the current kernel
 		 * oplock state of this file.
 		 */
-		int state = sys_fcntl(fsp->fd, F_OPLKACK, -1);
+		int state = sys_fcntl_long(fsp->fd, F_OPLKACK, -1);
 		dbgtext("release_kernel_oplock: file %s, dev = %x, inode = %.0f file_id = %ul, has kernel \
 oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
                         (double)fsp->inode, fsp->file_id, state );
@@ -204,7 +204,7 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
 	/*
 	 * Remove the kernel oplock on this file.
 	 */
-	if(sys_fcntl(fsp->fd, F_OPLKACK, OP_REVOKE) < 0) {
+	if(sys_fcntl_long(fsp->fd, F_OPLKACK, OP_REVOKE) < 0) {
 		if( DEBUGLVL( 0 )) {
 			dbgtext("release_kernel_oplock: Error when removing kernel oplock on file " );
 			dbgtext("%s, dev = %x, inode = %.0f, file_id = %ul. Error was %s\n",
