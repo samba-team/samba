@@ -5,6 +5,7 @@ manpagesynopsis()
 bf(Samba)
 
 
+label(DESCRIPTION)
 manpagedescription()
 
 The Samba software suite is a collection of programs that implements
@@ -12,6 +13,7 @@ the Server Message Block(commenly abbreviated as SMB) protocol for
 UNIX systems. This protocol is sometimes also referred to as the
 Common Internet File System (CIFS), LanManager or NetBIOS protocol.
 
+label(COMPONENTS)
 manpagesection(COMPONENTS)
 
 The Samba suite is made up of several components. Each component is
@@ -48,6 +50,7 @@ name queries to be made from the UNIX machine.
 
 enddit()
 
+label(AVAILABILITY)
 manpagesection(AVAILABILITY)
 
 The Samba software suite is licensed under the GNU Public License
@@ -68,10 +71,12 @@ you will also find lots of useful information, including back issues
 of the Samba mailing list, at
 url(http://samba.anu.edu.au/samba/)(http://samba.anu.edu.au/samba/).
 
+label(VERSION)
 manpagesection(VERSION)
 
 This man page is current for version 2.0 of Samba
 
+label(CONTRIBUTIONS)
 manpagesection(CONTRIBUTIONS)
 
 If you wish to contribute to the Samba project, then I suggest you
@@ -85,13 +90,7 @@ directly to email(samba-bugs@samba.anu.edu.au). Note, however, that due to
 the enormous popularity of this package the Samba Team may take some
 time to repond to mail. We prefer patches in em(diff -u) format.
 
-manpagesection(AUTHOR)
-
-The main author of the Samba suite is Andrew Tridgell. He may be
-contacted via e-mail at email(samba-bugs@samba.anu.edu.au). Samba is
-now maintained by a distributed group of people around the world
-collectively known as the Samba Team.
-
+label(CREDITS)
 manpagesection(CREDITS)
 
 Contributors to the project are now too numerous to mention here but
@@ -107,7 +106,13 @@ In addition, several commercial organisations now help fund the Samba
 Team with money and equipment. For details see the Samba Web pages at
 url(http://samba.anu.edu.au/samba/samba-thanks.html)(http://samba.anu.edu.au/samba/samba-thanks.html).
 
+label(AUTHOR)
 manpageauthor()
+
+The main author of the Samba suite is Andrew Tridgell. He may be
+contacted via e-mail at email(samba-bugs@samba.anu.edu.au). Samba is
+now maintained by a distributed group of people around the world
+collectively known as the Samba Team.
 
 The original Samba man pages were written by Karl Auer. The man page
 sources were converted to YODL format (another excellent piece of Open
