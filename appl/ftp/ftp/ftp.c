@@ -1360,7 +1360,7 @@ initconn (void)
 }
 
 FILE *
-dataconn (char *lmode)
+dataconn (const char *lmode)
 {
     struct sockaddr_storage from_ss;
     struct sockaddr *from = (struct sockaddr *)&from_ss;
