@@ -11,6 +11,9 @@ int main(int argc, char *argv[])
 	int i, ret;
 	int iters = 1;
 	
+	/* Needed to initialize character set */
+	lp_load("/dev/null", True, False, False);
+
 	if (argc < 3) {
 		fprintf(stderr, "usage: %s STRING1 STRING2 [ITERS]\n"
 			"Compares two strings, prints the results of StrCaseCmp\n",
