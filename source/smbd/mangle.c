@@ -63,11 +63,13 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
  *                  global.  There is a call to lp_magicchar() in server.c
  *                  that is used to override the initial value.
  *
- * basechars      - The set of 36 characters used for name mangling.  This
+ * MANGLE_BASE    - This is the number of characters we use for name mangling.
+ *
+ * basechars      - The set characters used for name mangling.  This
  *                  is static (scope is this file only).
  *
- * base36()       - Macro used to select a character from basechars (i.e.,
- *                  base36(n) will return the nth digit, modulo 36).
+ * mangle()       - Macro used to select a character from basechars (i.e.,
+ *                  mangle(n) will return the nth digit, modulo MANGLE_BASE).
  *
  * chartest       - array 0..255.  The index range is the set of all possible
  *                  values of a byte.  For each byte value, the content is a
@@ -110,12 +112,13 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
 
 char magic_char = '~';
 
-static char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
+#define MANGLE_BASE       (sizeof(basechars)/sizeof(char)-1)
 
 static unsigned char chartest[256]  = { 0 };
 static BOOL          ct_initialized = False;
 
-#define base36(V) ((char)(basechars[(V) % 36]))
+#define mangle(V) ((char)(basechars[(V) % MANGLE_BASE]))
 #define BASECHAR_MASK 0xf0
 #define ILLEGAL_MASK  0x0f
 #define isbasechar(C) ( (chartest[ ((C) & 0xff) ]) & BASECHAR_MASK )
@@ -876,7 +879,7 @@ void mangle_name_83( char *s)
               }
             else 
               {
-              extension[extlen++] = base36( (unsigned char)*p );
+              extension[extlen++] = mangle( (unsigned char)*p );
               }
             p += 2;
             break;
@@ -910,7 +913,7 @@ void mangle_name_83( char *s)
           }
         else 
           {
-          base[baselen++] = base36( (unsigned char)*p );
+          base[baselen++] = mangle( (unsigned char)*p );
           }
         p += 2;
         break;
@@ -927,10 +930,10 @@ void mangle_name_83( char *s)
     }
   base[baselen] = 0;
 
-  csum = csum % (36*36);
+  csum = csum % (MANGLE_BASE*MANGLE_BASE);
 
   (void)slprintf(s, 12, "%s%c%c%c",
-                 base, magic_char, base36( csum/36 ), base36( csum ) );
+                 base, magic_char, mangle( csum/MANGLE_BASE ), mangle( csum ) );
 
   if( *extension )
     {
