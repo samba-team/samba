@@ -34,6 +34,7 @@ parse_bytes_test_LDADD = $(common_LDADD)
 
 libroken_la_SOURCES =		\
 	base64.c		\
+	bswap.c			\
 	concat.c		\
 	emalloc.c		\
 	environment.c		\
