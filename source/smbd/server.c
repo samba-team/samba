@@ -370,7 +370,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon,const char *smb_ports)
 				reset_globals_after_fork();
 
 				/* tdb needs special fork handling */
-				tdb_reopen_all();
+				if (tdb_reopen_all() == -1) {
+					DEBUG(0,("tdb_reopen_all failed.\n"));
+					return False;
+				}
 
 				return True; 
 			}
@@ -859,6 +862,9 @@ static void usage(char *pname)
 	register_msg_pool_usage();
 	register_dmalloc_msgs();
 
+	if (!print_backend_init())
+		exit(1);
+
 	/* Setup the main smbd so that we can get messages. */
 	claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
 
@@ -879,9 +885,6 @@ static void usage(char *pname)
 	namecache_enable();
 
 	if (!locking_init(0))
-		exit(1);
-
-	if (!print_backend_init())
 		exit(1);
 
 	if (!share_info_db_init())
