@@ -380,3 +380,9 @@ PyObject *spoolss_hnd_writeprinter(PyObject *self, PyObject *args, PyObject *kw)
 	Py_INCREF(Py_None);
 	return Py_None;
 }
+
+PyObject *spoolss_hnd_addjob(PyObject *self, PyObject *args, PyObject *kw)
+{
+	PyErr_SetString(spoolss_error, "Not implemented");
+	return NULL;
+}

@@ -144,10 +144,10 @@ Example:
 
 Example:
 
->>> spoolss.set_debuglevel(10)"
+>>> spoolss.set_debuglevel(10)" },
 
 	/* Printer driver routines */
-
+	
 	{ "addprinterdriver", (PyCFunction)spoolss_addprinterdriver, 
 	  METH_VARARGS | METH_KEYWORDS, 
 	  "Add a printer driver." },
@@ -258,6 +258,10 @@ Set the form given by the dictionary argument."},
         { "writeprinter", (PyCFunction)spoolss_hnd_writeprinter,
           METH_VARARGS | METH_KEYWORDS,
           "Write job data to a printer." },
+
+        { "addjob", (PyCFunction)spoolss_hnd_addjob,
+          METH_VARARGS | METH_KEYWORDS,
+          "Add a job to the list of print jobs." },
 
         /* Printer data */
 
