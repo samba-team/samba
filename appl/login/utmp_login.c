@@ -40,7 +40,7 @@
 
 RCSID("$Id$");
 
-#ifdef UTMPX_DOES_UTMP_LOGGING
+#ifdef HAVE_UTMPX_H
 void utmp_login(char *tty, char *username, char *hostname) { return; }
 #else
 
@@ -124,4 +124,4 @@ void utmp_login(char *tty, char *username, char *hostname)
 	close(fd);
     }
 }
-#endif /* !UTMPX_DOES_UTMP_LOGGING */
+#endif /* !HAVE_UTMPX_H */
