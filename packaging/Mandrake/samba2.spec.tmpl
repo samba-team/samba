@@ -28,6 +28,8 @@
 
 %if %have_pversion
 %define source_ver 	%{pversion}
+%global	_unpackaged_files_terminate_build	0
+%global	_missing_doc_files_terminate_build	0
 %else
 %define source_ver 	%{ver}
 %endif
@@ -927,13 +929,6 @@ install -m 755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/%{_lib}/security/p
 		fi
 	done
 	
-#These scripts are not handled by make:
-#for i in addtosmbpass mksmbpasswd.sh smbtar convert_smbpasswd
-for i in addtosmbpass mksmbpasswd.sh convert_smbpasswd
-do
-  install -m755 source/script/$i $RPM_BUILD_ROOT/%{_bindir}
-done
-
 #libnss_* not handled by make:
 # Install the nsswitch library extension file
 for i in wins winbind; do
@@ -959,7 +954,7 @@ done
         install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb%{samba_major}
         install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/%{_sbindir}/%{name}
 	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind%{samba_major}
-	install -m755 packaging/Mandrake/wrepld.init $RPM_BUILD_ROOT/etc/rc.d/init.d/wrepld%{samba_major}
+#	install -m755 packaging/Mandrake/wrepld.init $RPM_BUILD_ROOT/etc/rc.d/init.d/wrepld%{samba_major}
 	install -m755 packaging/Mandrake/winbind.init $RPM_BUILD_ROOT/%{_sbindir}/winbind%{samba_major}
         install -m644 packaging/Mandrake/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/%{name}
 	install -m644 packaging/Mandrake/system-auth-winbind.pamd $RPM_BUILD_ROOT/etc/pam.d/system-auth-winbind%{samba_major}
@@ -1084,7 +1079,7 @@ rm -rf $RPM_BUILD_ROOT
 %post server
 
 %_post_service smb%{samba_major}
-%_post_service wrepld%{samba_major}
+#%_post_service wrepld%{samba_major}
 
 # Add a unix group for samba machine accounts
 groupadd -frg 421 machines
@@ -1198,7 +1193,7 @@ fi
 %preun server
 
 %_preun_service smb%{samba_major}
-%_preun_service wrepld%{samba_major}
+#%_preun_service wrepld%{samba_major}
 
 if [ $1 = 0 ] ; then
 #    /sbin/chkconfig --level 35 smb reset
@@ -1256,13 +1251,10 @@ fi
 %{_sbindir}/%{name}
 %{_sbindir}/smbd%{samba_major}
 %{_sbindir}/nmbd%{samba_major}
-%{_sbindir}/wrepld%{samba_major}
+#%{_sbindir}/wrepld%{samba_major}
 %{_bindir}/smbcontrol%{samba_major}
 #%{_sbindir}/mkntpwd
-%{_bindir}/addtosmbpass%{samba_major}
-%{_bindir}/mksmbpasswd.sh
 %{_bindir}/smbstatus%{samba_major}
-%{_bindir}/convert_smbpasswd%{samba_major}
 %{_bindir}/pdbedit%{samba_major}
 %{_bindir}/tdbbackup%{samba_major}
 %{_bindir}/profiles%{samba_major}
@@ -1275,7 +1267,7 @@ fi
 #/usr/share/swat
 %attr(-,root,root) %config(noreplace) /etc/%{name}/smbusers
 %attr(-,root,root) %config %{_initrddir}/smb%{samba_major}
-%attr(-,root,root) %config %{_initrddir}/wrepld%{samba_major}
+#%attr(-,root,root) %config %{_initrddir}/wrepld%{samba_major}
 %attr(-,root,root) %config(noreplace) /etc/logrotate.d/%{name}
 %attr(-,root,root) %config(noreplace) /etc/pam.d/%{name}
 #%attr(-,root,root) %config(noreplace) /etc/%{name}/samba-slapd.include
@@ -1511,6 +1503,11 @@ fi
 %endif
 
 %changelog
+* Wed Apr 30 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0-0.alpha24.1mdk
+- Remove some files removed upstream
+- In builds from source, don't terminate on missing docs or unpackaged files
+  (if only we could do it for other missing files ...)
+
 * Mon Apr 28 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0-0.alpha24.0mdk
 - Reenable debug package by (--without debug to not build it), fixed post-a23
 - Add bugzilla note for builds from source (also intended for packages made
