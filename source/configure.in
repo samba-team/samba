@@ -3960,8 +3960,11 @@ WINBIND_WINS_NSS="nsswitch/libnss_wins.$SHLIBEXT"
 WINBIND_NSS_LDSHFLAGS=$LDSHFLAGS
 
 case "$host_os" in
-	*linux*|*freebsd*)
+	*linux*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_linux.o"
+		;;
+	*freebsd5*)
+		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_freebsd.o"
 		;;
 	*irix*)
 		# IRIX has differently named shared libraries
