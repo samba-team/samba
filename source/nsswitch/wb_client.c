@@ -499,6 +499,9 @@ BOOL winbind_remove_user_from_group( const char *user, const char *group )
 		
 	ZERO_STRUCT(response);
 	
+	fstrcpy( request.data.acct_mgt.username, user );
+	fstrcpy( request.data.acct_mgt.groupname, group );
+	
 	result = winbindd_request( WINBINDD_REMOVE_USER_FROM_GROUP, &request, &response);
 	
 	return result == NSS_STATUS_SUCCESS;
