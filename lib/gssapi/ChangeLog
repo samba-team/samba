@@ -1,4 +1,9 @@
-2003-06-17  Love  <lha@stacken.kth.se>
+2003-07-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss_acquire_cred.3: add missing prototype and missing .Ft
+	arguments
+
+2003-06-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* verify_mic.c: reorder code so sequence numbers can can be used
 	
