@@ -307,7 +307,7 @@ static uint32 cmd_samr_query_usergroups(struct cli_state *cli, int argc, char **
 	fstring			server;
 	
 	if (argc != 2) {
-		printf("Usage: %s rid/name\n", argv[0]);
+		printf("Usage: %s rid\n", argv[0]);
 		return 0;
 	}
 
@@ -384,7 +384,7 @@ static uint32 cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **ar
 	fstring			server;
 	
 	if (argc != 2) {
-		printf("Usage: %s rid/name\n", argv[0]);
+		printf("Usage: %s rid\n", argv[0]);
 		return 0;
 	}
 
