@@ -392,12 +392,6 @@ _kafs_get_cred(kafs_data *data,
     ret = (*data->get_cred)(data, AUTH_SUPERUSER, cell, realm, c);
     if (ret == 0) return 0;
 
-    /* try this case again, if cell and realm differs */
-    if(strcmp(CELL, realm) != 0) {
-	ret = (*data->get_cred)(data, AUTH_SUPERUSER, "", realm, c);
-	if (ret == 0) return 0;
-    }
-
     /*
      * We failed to get ``first class tickets'' for afs,
      * fall back to cross-cell authentication.
