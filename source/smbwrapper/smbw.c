@@ -101,8 +101,7 @@ void smbw_init(void)
 	
 	p = smbw_getshared(line);
 	if (!p) {
-		DEBUG(0,("ERROR: %s is not set\n", line));
-		exit(1);
+		sys_getwd(smbw_cwd);
 	}
 	pstrcpy(smbw_cwd, p);
 	DEBUG(4,("Initial cwd is %s\n", smbw_cwd));
