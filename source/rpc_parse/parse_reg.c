@@ -6,7 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Marc Jacobsen                     1999.
  *  Copyright (C) Simo Sorce                        2000.
- *  Copyright (C) Gerald Carter                     2002.
+ *  Copyright (C) Gerald Carter                     2002-2005.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1763,10 +1763,8 @@ Inits a structure.
 ********************************************************************/
 void init_reg_q_abort_shutdown(REG_Q_ABORT_SHUTDOWN * q_s)
 {
-
 	q_s->server = TALLOC_P( get_talloc_ctx(), uint16 );
 	*q_s->server = 0x1;
-
 }
 
 /*******************************************************************
