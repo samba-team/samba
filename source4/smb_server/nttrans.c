@@ -51,19 +51,141 @@ static void nttrans_setup_reply(struct smbsrv_request *req,
 /* parse NTTRANS_CREATE request
  */
 static NTSTATUS nttrans_create(struct smbsrv_request *req, 
-		struct smb_nttrans *trans)
+			       struct smb_nttrans *trans)
 {
-	return NT_STATUS_FOOBAR;
+	union smb_open *io;
+	uint16_t fname_len;
+	uint32_t sd_length, ea_length;
+	NTSTATUS status;
+	uint8_t *params;
+
+	if (trans->in.params.length < 54) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* parse the request */
+	io = talloc_p(req, union smb_open);
+	if (io == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	io->ntcreatex.level = RAW_OPEN_NTTRANS_CREATE;
+
+	params = trans->in.params.data;
+
+	io->ntcreatex.in.flags            = IVAL(params,  0);
+	io->ntcreatex.in.root_fid         = IVAL(params,  4);
+	io->ntcreatex.in.access_mask      = IVAL(params,  8);
+	io->ntcreatex.in.alloc_size       = BVAL(params, 12);
+	io->ntcreatex.in.file_attr        = IVAL(params, 20);
+	io->ntcreatex.in.share_access     = IVAL(params, 24);
+	io->ntcreatex.in.open_disposition = IVAL(params, 28);
+	io->ntcreatex.in.create_options   = IVAL(params, 32);
+	sd_length                         = IVAL(params, 36);
+	ea_length                         = IVAL(params, 40);
+	fname_len                         = IVAL(params, 44);
+	io->ntcreatex.in.impersonation    = IVAL(params, 48);
+	io->ntcreatex.in.security_flags   = CVAL(params, 52);
+	io->ntcreatex.in.sec_desc         = NULL;
+	io->ntcreatex.in.ea_list          = NULL;
+
+	req_pull_string(req, &io->ntcreatex.in.fname, 
+			params + 54, 
+			trans->in.params.length - 54,
+			STR_NO_RANGE_CHECK | STR_TERMINATE);
+	if (!io->ntcreatex.in.fname) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (sd_length > trans->in.data.length ||
+	    ea_length > trans->in.data.length ||
+	    (sd_length+ea_length) > trans->in.data.length) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* this call has an optional security descriptor */
+	if (sd_length != 0) {
+		DATA_BLOB blob;
+		blob.data = trans->in.data.data;
+		blob.length = sd_length;
+		io->ntcreatex.in.sec_desc = talloc_p(io, struct security_descriptor);
+		if (io->ntcreatex.in.sec_desc == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		status = ndr_pull_struct_blob(&blob, io, 
+					      io->ntcreatex.in.sec_desc, 
+					      (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	/* and an optional ea_list */
+	if (ea_length > 4) {
+		DATA_BLOB blob;
+		blob.data = trans->in.data.data + sd_length;
+		blob.length = ea_length;
+		io->ntcreatex.in.ea_list = talloc_p(io, struct smb_ea_list);
+		if (io->ntcreatex.in.ea_list == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* w2k gets the length of the list wrong on the wire - auto-fix */
+		SIVAL(blob.data, 0, ea_length);
+
+		status = ea_pull_list(&blob, io, 
+				      &io->ntcreatex.in.ea_list->num_eas,
+				      &io->ntcreatex.in.ea_list->eas);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	/* call the backend - notice that we do it sync for now, until we support
+	   async nttrans requests */	
+	status = ntvfs_openfile(req, io);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	trans->out.setup_count = 0;
+	trans->out.setup       = NULL;
+	trans->out.params      = data_blob_talloc(req, NULL, 69);
+	trans->out.data        = data_blob(NULL, 0);
+
+	params = trans->out.params.data;
+	if (params == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	SSVAL(params,        0, io->ntcreatex.out.oplock_level);
+	SSVAL(params,        2, io->ntcreatex.out.fnum);
+	SIVAL(params,        4, io->ntcreatex.out.create_action);
+	SIVAL(params,        8, 0); /* ea error offset */
+	push_nttime(params, 12, io->ntcreatex.out.create_time);
+	push_nttime(params, 20, io->ntcreatex.out.access_time);
+	push_nttime(params, 28, io->ntcreatex.out.write_time);
+	push_nttime(params, 36, io->ntcreatex.out.change_time);
+	SIVAL(params,       44, io->ntcreatex.out.attrib);
+	SBVAL(params,       48, io->ntcreatex.out.alloc_size);
+	SBVAL(params,       56, io->ntcreatex.out.size);
+	SSVAL(params,       64, io->ntcreatex.out.file_type);
+	SSVAL(params,       66, io->ntcreatex.out.ipc_state);
+	SCVAL(params,       68, io->ntcreatex.out.is_directory);
+
+	return NT_STATUS_OK;
 }
 
 /* parse NTTRANS_RENAME request
  */
 static NTSTATUS nttrans_rename(struct smbsrv_request *req, 
-		struct smb_nttrans *trans)
+			       struct smb_nttrans *trans)
 {
 	return NT_STATUS_FOOBAR;
 }
-/* parse NTTRANS_IOCTL request
+
+/* 
+   parse NTTRANS_IOCTL request
  */
 static NTSTATUS nttrans_ioctl(struct smbsrv_request *req, 
 		struct smb_nttrans *trans)
@@ -105,13 +227,6 @@ static NTSTATUS nttrans_ioctl(struct smbsrv_request *req,
 static NTSTATUS nttrans_backend(struct smbsrv_request *req, 
 		struct smb_nttrans *trans)
 {
-	DEBUG(9,("nttrans_backend: setup_count=%d function=%d\n",
-		trans->in.setup_count, trans->in.function));
-	/* must have at least one setup word */
-	if (trans->in.setup_count < 1) {
-		return NT_STATUS_FOOBAR;
-	}
-	
 	/* the nttrans command is in function */
 	switch (trans->in.function) {
 	case NT_TRANSACT_CREATE:

@@ -28,7 +28,8 @@
   reply to a RAW_FILEINFO_ALL_EAS call
 */
 static NTSTATUS pvfs_query_all_eas(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
-				   struct pvfs_filename *name, int fd, struct smb_all_eas *eas)
+				   struct pvfs_filename *name, int fd, 
+				   struct smb_ea_list *eas)
 {
 	NTSTATUS status;
 	int i;

@@ -2294,6 +2294,8 @@ void reply_ntcreate_and_X(struct smbsrv_request *req)
 	io->ntcreatex.in.create_options =   IVAL(req->in.vwv, 39);
 	io->ntcreatex.in.impersonation =    IVAL(req->in.vwv, 43);
 	io->ntcreatex.in.security_flags =   CVAL(req->in.vwv, 47);
+	io->ntcreatex.in.ea_list          = NULL;
+	io->ntcreatex.in.sec_desc         = NULL;
 
 	/* we need a neater way to handle this alignment */
 	if ((req->flags2 & FLAGS2_UNICODE_STRINGS) && 
