@@ -99,9 +99,10 @@ BOOL to_struct(void *s, PyObject *dict, struct pyconv *conv)
 			UNISTR *u = (UNISTR *)((char *)s + conv[i].offset);
 			char *s = "";
 
-			if (obj && PyString_Check(obj))
-				s = PyString_AsString(obj);
+			if (!PyString_Check(obj))
+				goto done;
 
+			s = PyString_AsString(obj);
 			init_unistr(u, s);
 			
 			break;
@@ -109,21 +110,20 @@ BOOL to_struct(void *s, PyObject *dict, struct pyconv *conv)
 		case PY_UINT32: {
 			uint32 *u = (uint32 *)((char *)s + conv[i].offset);
 
-			if (obj && PyInt_Check(obj)) 
-				*u = PyInt_AsLong(obj);
-			else
-				*u = 0;
+			if (!PyInt_Check(obj))
+				goto done;
+
+			*u = PyInt_AsLong(obj);
 
 			break;
 		}
 		case PY_UINT16: {
 			uint16 *u = (uint16 *)((char *)s + conv[i].offset);
 
-			if (obj && PyInt_Check(obj)) 
-				*u = PyInt_AsLong(obj);
-			else
-				*u = 0;
+			if (!PyInt_Check(obj)) 
+				goto done;
 
+			*u = PyInt_AsLong(obj);
 			break;
 		}
 		default:
