@@ -4320,7 +4320,7 @@ int lp_maxprintjobs(int snum)
 
 BOOL lp_use_sendfile(int snum)
 {
-	return (_lp_use_sendfile(snum) && !srv_is_signing_active());
+	return (_lp_use_sendfile(snum) && (get_remote_arch() != RA_WIN95) && !srv_is_signing_active());
 }
 
 /*******************************************************************
