@@ -40,6 +40,7 @@ static void smbcli_transport_event_handler(struct event_context *ev, struct fd_e
 
 	if (flags & EVENT_FD_READ) {
 		smbcli_transport_process_recv(transport);
+		return;
 	}
 	if (flags & EVENT_FD_WRITE) {
 		smbcli_transport_process_send(transport);
