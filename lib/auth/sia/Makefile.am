@@ -80,11 +80,11 @@ OBJS = sia.o posix_getpw.o
 
 libsia_krb5.so: $(OBJS)
 	@if test -f $(top_builddir)/lib/krb5/.libs/libkrb5.a; then \
-		echo "$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`"; \
-		$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`; \
+		echo "$(CC) -shared -o $@ `$(SHELL) $(srcdir)/make-rpath $(LDFLAGS) $(OBJS) $(L)`"; \
+		$(CC) -shared -o $@ `$(SHELL) $(srcdir)/make-rpath $(LDFLAGS) $(OBJS) $(L)`; \
 	elif test -f $(top_builddir)/lib/krb5/.libs/libkrb5.so; then \
-		echo "$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`"; \
-		$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`; \
+		echo "$(CC) -shared -o $@ `$(SHELL) $(srcdir)/make-rpath $(LDFLAGS) $(OBJS) $(L_shared)`"; \
+		$(CC) -shared -o $@ `$(SHELL) $(srcdir)/make-rpath $(LDFLAGS) $(OBJS) $(L_shared)`; \
 	else \
 		echo "missing libraries"; exit 1; \
 	fi
@@ -92,11 +92,11 @@ libsia_krb5.so: $(OBJS)
 
 libsia_krb4.so: $(OBJS)
 	@if test -f $(top_builddir)/lib/krb/.libs/libkrb.a; then \
-		echo "$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`"; \
-		$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`; \
+		echo "$(CC) -shared -o $@ `$(SHELL) $(srcdir)/make-rpath $(LDFLAGS) $(OBJS) $(L)`"; \
+		$(CC) -shared -o $@ `$(SHELL) $(srcdir)/make-rpath $(LDFLAGS) $(OBJS) $(L)`; \
 	elif test -f $(top_builddir)/lib/krb/.libs/libkrb.so; then \
-		echo "$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`"; \
-		$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`; \
+		echo "$(CC) -shared -o $@ `$(SHELL) $(srcdir)/make-rpath $(LDFLAGS) $(OBJS) $(L_shared)`"; \
+		$(CC) -shared -o $@ `$(SHELL) $(srcdir)/make-rpath $(LDFLAGS) $(OBJS) $(L_shared)`; \
 	else \
 		echo "missing libraries"; exit 1; \
 	fi
