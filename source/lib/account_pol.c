@@ -271,7 +271,7 @@ static BOOL migrate_account_policy_names_to_passdb(void)
 		}
 
 		DEBUGADD(1,("\tmigrating account policy (#%d: %s with value: %d) to passdb\n", 
-			i, (char *)decode_account_policy_name(i), tmp_val));
+			i, decode_account_policy_name(i), tmp_val));
 
 		/* set policy via new passdb api */
 		if (!pdb_set_account_policy(i, tmp_val)) {
