@@ -51,7 +51,7 @@ struct stream_socket {
 */
 void stream_terminate_connection(struct stream_connection *srv_conn, const char *reason)
 {
-	struct event_ctx *event_ctx = srv_conn->event.ctx;
+	struct event_context *event_ctx = srv_conn->event.ctx;
 	const struct model_ops *model_ops = srv_conn->model_ops;
 	talloc_free(srv_conn);
 	model_ops->terminate(event_ctx, reason);
