@@ -26,65 +26,6 @@
 #ifdef HAVE_ADS
 
 /*
-  build a ADS_STATUS structure
-*/
-ADS_STATUS ads_build_error(enum ads_error_type etype, 
-			   int rc, int minor_status)
-{
-	ADS_STATUS ret;
-	ret.error_type = etype;
-	ret.rc = rc;
-	ret.minor_status = minor_status;
-	return ret;
-}
-
-/*
-  do a rough conversion between ads error codes and NT status codes
-  we'll need to fill this in more
-*/
-NTSTATUS ads_ntstatus(ADS_STATUS rc)
-{
-	if (ADS_ERR_OK(rc)) return NT_STATUS_OK;
-	return NT_STATUS_UNSUCCESSFUL;
-}
-
-/*
-  return a string for an error from a ads routine
-*/
-const char *ads_errstr(ADS_STATUS status)
-{
-	gss_buffer_desc msg1, msg2;
-	uint32 minor;
-	int msg_ctx;
-	static char *ret;
-
-	SAFE_FREE(ret);
-	msg_ctx = 0;
-
-	switch (status.error_type) {
-	case ADS_ERROR_KRB5: 
-		return error_message(status.rc);
-	case ADS_ERROR_LDAP:
-		return ldap_err2string(status.rc);
-	case ADS_ERROR_SYSTEM:
-		return strerror(status.rc);
-	case ADS_ERROR_GSS:
-		msg1.value = NULL;
-		msg2.value = NULL;
-		gss_display_status(&minor, status.rc, GSS_C_GSS_CODE,
-				   GSS_C_NULL_OID, &msg_ctx, &msg1);
-		gss_display_status(&minor, status.minor_status, GSS_C_MECH_CODE,
-				   GSS_C_NULL_OID, &msg_ctx, &msg2);
-		asprintf(&ret, "%s : %s", (char *)msg1.value, (char *)msg2.value);
-		gss_release_buffer(&minor, &msg1);
-		gss_release_buffer(&minor, &msg2);
-		return ret;
-	}
-
-	return "Unknown ADS error type!?";
-}
-
-/*
   connect to the LDAP server
 */
 ADS_STATUS ads_connect(ADS_STRUCT *ads)
