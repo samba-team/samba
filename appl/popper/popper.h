@@ -61,13 +61,28 @@
 #define POP_PRIORITY    LOG_NOTICE
 #define POP_DEBUG       LOG_DEBUG
 #define POP_LOGOPTS     0
-#define POP_MAILDIR     "/usr/spool/mail"
-#define POP_DROP        "/usr/spool/mail/.%s.pop"
+
+#ifdef HAVE_PATHS_H
+#include <paths.h>
+#endif
+#ifdef HAVE_MAILLOCK_H
+#include <maillock.h>
+#endif
+
+#if defined(_PATH_MAILDIR)
+#define POP_MAILDIR     _PATH_MAILDIR
+#elif defined(MAILDIR)
+#define POP_MAILDIR	MAILDIR
+#else
+#define POP_MAILDIR	"/var/spool/mail"
+#endif
+
+#define POP_DROP        POP_MAILDIR "/.%s.pop"
 	/* POP_TMPSIZE needs to be big enough to hold the string
 	 * defined by POP_TMPDROP.  POP_DROP and POP_TMPDROP
 	 * must be in the same filesystem.
 	 */
-#define POP_TMPDROP     "/usr/spool/mail/tmpXXXXXX"
+#define POP_TMPDROP     POP_MAILDIR "/tmpXXXXXX"
 #define POP_TMPSIZE	256
 #define POP_TMPXMIT     "/tmp/xmitXXXXXX"
 #define POP_OK          "+OK"

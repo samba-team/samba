@@ -244,32 +244,6 @@ AC_CHECK_FUNCS(cgetent getstr cgetstr uname vhangup)
 AC_CHECK_FUNCS(frevoke revoke setsid setpgid getmsg)
 AC_CHECK_FUNCS(tgetent setupterm mktime ptsname ttyname unlockpt grantpt)
 
-dnl if test $ac_cv_func_tgetent = no; then
-dnl   # tgetent is not in the default libraries.  See if it's in some other.
-dnl   for lib in termcap; do
-dnl     AC_CHECK_LIB($lib, tgetent, [AC_DEFINE(HAVE_TGETENT)
-dnl       LIBS="$LIBS -l$lib"; break])
-dnl   done
-dnl fi
-dnl 
-dnl if test $ac_cv_func_setupterm = no; then
-dnl   # setupterm is not in the default libraries.  See if it's in some other.
-dnl   for lib in curses; do
-dnl     AC_CHECK_LIB($lib, setupterm, [AC_DEFINE(HAVE_SETUPTERM)
-dnl       LIBS="$LIBS -l$lib"; break])
-dnl   done
-dnl fi
-
-dnl # these two are mainly here for solaris
-dnl AC_CHECK_FUNCS(socket)
-dnl if test "$ac_cv_func_socket" = no; then
-dnl 	AC_CHECK_LIB(socket, socket)
-dnl fi
-dnl AC_CHECK_FUNCS(gethostbyname)
-dnl if test "$ac_cv_func_gethostbyname" = no; then
-dnl 	AC_CHECK_LIB(nsl, gethostbyname)
-dnl fi
-
 AC_FIND_FUNC(logout, util)
 
 AC_SUBST(HAVE_LIBTERMCAP)
