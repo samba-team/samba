@@ -2201,7 +2201,7 @@ tn(int argc, char **argv)
 		perror("setsockopt (IP_OPTIONS)");
 #endif
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
-	    {
+	    if (a->ai_family == AF_INET) {
 # if	defined(HAVE_GETTOSBYNAME)
 		struct tosent *tp;
 		if (tos < 0 && (tp = gettosbyname("telnet", "tcp")))
