@@ -640,7 +640,7 @@ static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
 	/*srv_spoolss_receive_message(printer);*/
 	DEBUG(10,("srv_spoolss_sendnotify: Sending message about printer %s\n", printer ));
 
-	message_send_all(MSG_PRINTER_NOTIFY, printer, strlen(printer) + 1); /* Null terminate... */
+	message_send_all(MSG_PRINTER_NOTIFY, printer, strlen(printer) + 1, False); /* Null terminate... */
 
 	return True;
 }	

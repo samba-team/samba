@@ -86,7 +86,7 @@ void reqprofile_message(int msg_type, pid_t src, void *buf, size_t len)
 	level = 0;
 #endif
 	DEBUG(1,("INFO: Received REQ_PROFILELEVEL message from PID %d\n",src));
-	message_send_pid(src, MSG_PROFILELEVEL, &level, sizeof(int));
+	message_send_pid(src, MSG_PROFILELEVEL, &level, sizeof(int), True);
 }
 
 /*******************************************************************
