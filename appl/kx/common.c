@@ -277,16 +277,19 @@ connect_local_xsocket (unsigned dnr)
 {
      int fd;
      struct sockaddr_un addr;
+     char **path;
 
-     fd = socket (AF_UNIX, SOCK_STREAM, 0);
-     if (fd < 0)
-	 err (1, "socket AF_UNIX");
-     addr.sun_family = AF_UNIX;
-     snprintf (addr.sun_path, sizeof(addr.sun_path),
-	       X_UNIX_PATH "%u", dnr);
-     if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-	 err (1, "connect");
-     return fd;
+     for (path = x_paths; *path; ++path) {
+	 fd = socket (AF_UNIX, SOCK_STREAM, 0);
+	 if (fd < 0)
+	     err (1, "socket AF_UNIX");
+	 memset (&addr, 0, sizeof(addr));
+	 addr.sun_family = AF_UNIX;
+	 snprintf (addr.sun_path, sizeof(addr.sun_path), *path, dnr);
+	 if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) == 0)
+	     return fd;
+     }
+     err (1, "connecting to local display %u", dnr);
 }
 
 int
