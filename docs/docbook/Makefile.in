@@ -199,12 +199,12 @@ $(MANPROJDOC)/smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/p
 $(PROJDOC)/attributions.xml: $(PROJDOC)/samba-doc.xml
 	@echo > $@ # Make sure we don't get recursive dependencies, etc!
 	@echo "Generating attributions page"
-	@$(@XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
+	@$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
 
 $(DEVDOC)/attributions.xml: $(DEVDOC)/dev-doc.xml
 	@echo > $@ # Make sure we don't get recursive dependencies, etc!
 	@echo "Generating attributions page"
-	@$(@XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
+	@$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
 
 $(MANDIR): 
 	mkdir $(MANDIR)
