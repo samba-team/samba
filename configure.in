@@ -20,7 +20,7 @@ AC_PROG_AWK
 AC_KRB_PROG_LN_S
 
 if test "$GCC" = "yes"; then
-  WFLAGS="-Wall -Wno-unused -Wconversion -Wmissing-prototypes -Wredundant-decls"
+  WFLAGS="-Wall -Wno-unused -Wconversion -Wmissing-prototypes"
 fi
 AC_SUBST(WFLAGS)
 CFLAGS="-g"
