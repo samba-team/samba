@@ -63,8 +63,8 @@ BOOL torture_raw_sfileinfo(void)
 	if (fnum != -1) smbcli_close(cli->tree, fnum); \
 	fnum = create_complex_file(cli, mem_ctx, fname); \
 	if (fnum == -1) { \
-		printf("(%d) ERROR: open of %s failed (%s)\n", \
-		       __LINE__, fname, smbcli_errstr(cli->tree)); \
+		printf("(%s) ERROR: open of %s failed (%s)\n", \
+		       __location__, fname, smbcli_errstr(cli->tree)); \
 		ret = False; \
 		goto done; \
 	}} while (0)
@@ -84,7 +84,7 @@ BOOL torture_raw_sfileinfo(void)
 	sfinfo.generic.file.fnum = fnum; \
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo); \
 	if (!NT_STATUS_EQUAL(status, rightstatus)) { \
-		printf("(%d) %s - %s (should be %s)\n", __LINE__, #call, \
+		printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
 			nt_errstr(status), nt_errstr(rightstatus)); \
 		ret = False; \
 	} \
@@ -92,7 +92,7 @@ BOOL torture_raw_sfileinfo(void)
 	finfo1.generic.in.fnum = fnum; \
 	status2 = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1); \
 	if (!NT_STATUS_IS_OK(status2)) { \
-		printf("(%d) %s pathinfo - %s\n", __LINE__, #call, nt_errstr(status)); \
+		printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status)); \
 		ret = False; \
 	}} while (0)
 
@@ -107,7 +107,7 @@ BOOL torture_raw_sfileinfo(void)
 		status = smb_raw_setpathinfo(cli->tree, &sfinfo); \
 	} \
 	if (!NT_STATUS_EQUAL(status, rightstatus)) { \
-		printf("(%d) %s - %s (should be %s)\n", __LINE__, #call, \
+		printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
 			nt_errstr(status), nt_errstr(rightstatus)); \
 		ret = False; \
 	} \
@@ -119,7 +119,7 @@ BOOL torture_raw_sfileinfo(void)
 		status2 = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo1); \
 	} \
 	if (!NT_STATUS_IS_OK(status2)) { \
-		printf("(%d) %s pathinfo - %s\n", __LINE__, #call, nt_errstr(status2)); \
+		printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status2)); \
 		ret = False; \
 	}} while (0)
 
@@ -145,7 +145,7 @@ BOOL torture_raw_sfileinfo(void)
 #define CHECK_VALUE(call, stype, field, value) do { \
  	CHECK1(call); \
 	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && finfo2.stype.out.field != value) { \
-		printf("(%d) %s - %s/%s should be 0x%x - 0x%x\n", __LINE__, \
+		printf("(%s) %s - %s/%s should be 0x%x - 0x%x\n", __location__, \
 		       call_name, #stype, #field, \
 		       (uint_t)value, (uint_t)finfo2.stype.out.field); \
 		dump_all_info(mem_ctx, &finfo1); \
@@ -154,7 +154,7 @@ BOOL torture_raw_sfileinfo(void)
 #define CHECK_TIME(call, stype, field, value) do { \
  	CHECK1(call); \
 	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && nt_time_to_unix(finfo2.stype.out.field) != value) { \
-		printf("(%d) %s - %s/%s should be 0x%x - 0x%x\n", __LINE__, \
+		printf("(%s) %s - %s/%s should be 0x%x - 0x%x\n", __location__, \
 		        call_name, #stype, #field, \
 		        (uint_t)value, \
 			(uint_t)nt_time_to_unix(finfo2.stype.out.field)); \
@@ -166,7 +166,7 @@ BOOL torture_raw_sfileinfo(void)
 #define CHECK_STR(call, stype, field, value) do { \
  	CHECK1(call); \
 	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2) && strcmp(finfo2.stype.out.field, value) != 0) { \
-		printf("(%d) %s - %s/%s should be '%s' - '%s'\n", __LINE__, \
+		printf("(%s) %s - %s/%s should be '%s' - '%s'\n", __location__, \
 		        call_name, #stype, #field, \
 		        value, \
 			finfo2.stype.out.field); \
