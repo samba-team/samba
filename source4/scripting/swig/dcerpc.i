@@ -58,12 +58,15 @@ uint8 uint8_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyInt_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
+	if (!PyInt_Check(obj) && !PyLong_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int or long value for %s", name);
 		return 0;
 	}
 
-	return (uint8)PyInt_AsLong(obj);
+	if (PyLong_Check(obj))
+		return (uint8)PyLong_AsLong(obj);
+	else
+		return (uint8)PyInt_AsLong(obj);
 }
 
 PyObject *uint8_to_python(uint8 obj)
@@ -78,12 +81,15 @@ uint16 uint16_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyInt_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
+	if (!PyInt_Check(obj) && !PyLong_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int or long value for %s", name);
 		return 0;
 	}
 
-	return (uint16)PyInt_AsLong(obj);
+	if (PyLong_Check(obj))
+		return (uint16)PyLong_AsLong(obj);
+	else
+		return (uint16)PyInt_AsLong(obj);
 }
 
 PyObject *uint16_to_python(uint16 obj)
@@ -98,17 +104,20 @@ uint32 uint32_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyInt_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting int value for %s", name);
+	if (!PyLong_Check(obj) && !PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int or long value for %s", name);
 		return 0;
 	}
 
-	return (uint32)PyInt_AsLong(obj);
+	if (PyLong_Check(obj))
+		return (uint32)PyLong_AsLong(obj);
+	else
+		return (uint32)PyInt_AsLong(obj);
 }
 
 PyObject *uint32_to_python(uint32 obj)
 {
-	return PyInt_FromLong(obj);
+	return PyLong_FromLong(obj);
 }
 
 int64 int64_from_python(PyObject *obj, char *name)
@@ -118,12 +127,15 @@ int64 int64_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyLong_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting long value for %s", name);
+	if (!PyLong_Check(obj) && !PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int or long value for %s", name);
 		return 0;
 	}
 
-	return (int64)PyLong_AsLongLong(obj);
+	if (PyLong_Check(obj))
+		return (int64)PyLong_AsLongLong(obj);
+	else
+		return (int64)PyInt_AsLong(obj);
 }
 
 PyObject *int64_to_python(int64 obj)
@@ -138,12 +150,15 @@ uint64 uint64_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyLong_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting long value for %s", name);
+	if (!PyLong_Check(obj) && !PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int or long value for %s", name);
 		return 0;
 	}
 
-	return (uint64)PyLong_AsUnsignedLongLong(obj);
+	if (PyLong_Check(obj))
+		return (uint64)PyLong_AsUnsignedLongLong(obj);
+	else
+		return (uint64)PyInt_AsLong(obj);
 }
 
 PyObject *uint64_to_python(uint64 obj)
@@ -158,12 +173,15 @@ NTTIME NTTIME_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyLong_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting long value for %s", name);
+	if (!PyLong_Check(obj) && !PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int or long value for %s", name);
 		return 0;
 	}
 
-	return (NTTIME)PyLong_AsUnsignedLongLong(obj);
+	if (PyLong_Check(obj))
+		return (NTTIME)PyLong_AsUnsignedLongLong(obj);
+	else
+		return (NTTIME)PyInt_AsUnsignedLongMask(obj);
 }
 
 PyObject *NTTIME_to_python(NTTIME obj)
@@ -178,12 +196,15 @@ HYPER_T HYPER_T_from_python(PyObject *obj, char *name)
 		return 0;
 	}
 
-	if (!PyLong_Check(obj)) {
-		PyErr_Format(PyExc_TypeError, "Expecting long value for %s", name);
+	if (!PyLong_Check(obj) && !PyInt_Check(obj)) {
+		PyErr_Format(PyExc_TypeError, "Expecting int or long value for %s", name);
 		return 0;
 	}
 
-	return (HYPER_T)PyLong_AsUnsignedLongLong(obj);
+	if (PyLong_Check(obj))
+		return (HYPER_T)PyLong_AsUnsignedLongLong(obj);
+	else
+		return (HYPER_T)PyInt_AsUnsignedLongMask(obj);
 }
 
 PyObject *HYPER_T_to_python(HYPER_T obj)
