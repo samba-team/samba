@@ -49,11 +49,14 @@ krb5_mk_rep(krb5_context context,
   AP_REP ap;
   EncAPRepPart body;
   krb5_enctype etype;
-  u_char buf[1024];
+  u_char *buf = NULL;
+  size_t buf_size;
   size_t len;
 
   ap.pvno = 5;
   ap.msg_type = krb_ap_rep;
+
+  memset (&body, 0, sizeof(body));
 
   body.ctime = (*auth_context)->authenticator->ctime;
   body.cusec = (*auth_context)->authenticator->cusec;
@@ -63,6 +66,8 @@ krb5_mk_rep(krb5_context context,
 			      (*auth_context)->keyblock,
 			      &(*auth_context)->local_seqnumber);
     body.seq_number = malloc (sizeof(*body.seq_number));
+    if (body.seq_number == NULL)
+	return ENOMEM;
     *(body.seq_number) = (*auth_context)->local_seqnumber;
   } else
     body.seq_number = NULL;
@@ -70,20 +75,83 @@ krb5_mk_rep(krb5_context context,
   krb5_keytype_to_etype(context, (*auth_context)->keyblock->keytype, &etype);
   ap.enc_part.etype = etype;
   ap.enc_part.kvno  = NULL;
-  krb5_encode_EncAPRepPart (context, buf + sizeof(buf) - 1, sizeof(buf), 
-			    &body, &len);
-  ret = krb5_encrypt (context, buf + sizeof(buf) - len, len,
-		      ap.enc_part.etype,
-		      (*auth_context)->keyblock, &ap.enc_part.cipher);
-  if (ret)
-    return ret;
 
-  encode_AP_REP (buf + sizeof(buf) - 1, sizeof(buf), &ap, &len);
-  free (ap.enc_part.cipher.data);
+  buf_size = 1024;
+  buf = malloc (buf_size);
+  if (buf == NULL) {
+      free_EncAPRepPart (&body);
+      return ENOMEM;
+  }
+
+  do {
+      ret = krb5_encode_EncAPRepPart (context, buf + buf_size - 1,
+				      buf_size,
+				      &body, &len);
+      if (ret) {
+	  if (ret == ASN1_OVERFLOW) {
+	      u_char *tmp;
+
+	      buf_size *= 2;
+	      tmp = realloc (buf, buf_size);
+	      if (tmp == NULL) {
+		  free(buf);
+		  free_EncAPRepPart (&body);
+		  return ENOMEM;
+	      }
+	      buf = tmp;
+	  } else {
+	      free_EncAPRepPart (&body);
+	      free(buf);
+	      return ret;
+	  }
+      }
+  } while(ret == ASN1_OVERFLOW);
+
+  ret = krb5_encrypt (context,
+		      buf + buf_size - len, len,
+		      ap.enc_part.etype,
+		      (*auth_context)->keyblock,
+		      &ap.enc_part.cipher);
+  if (ret) {
+      free(buf);
+      free_EncAPRepPart (&body);
+      return ret;
+  }
+
+  do {
+      ret = encode_AP_REP (buf + buf_size - 1, buf_size, &ap, &len);
+      if (ret) {
+	  if (ret == ASN1_OVERFLOW) {
+	      u_char *tmp;
+
+	      buf_size *= 2;
+	      tmp = realloc (buf, buf_size);
+	      if (tmp == NULL) {
+		  free_AP_REP (&ap);
+		  free_EncAPRepPart (&body);
+		  free (buf);
+		  return ENOMEM;
+	      }
+	      buf = tmp;
+	  } else {
+	      free_AP_REP (&ap);
+	      free_EncAPRepPart (&body);
+	      free(buf);
+	      return ret;
+	  }
+      }
+  } while (ret == ASN1_OVERFLOW);
+
+  free_AP_REP (&ap);
+  free_EncAPRepPart (&body);
+
   outbuf->length = len;
   outbuf->data = malloc(len);
-  if (outbuf->data == NULL)
+  if (outbuf->data == NULL) {
+      free (buf);
       return ENOMEM;
-  memcpy(outbuf->data, buf + sizeof(buf) - len, len);
+  }
+  memcpy(outbuf->data, buf + buf_size - len, len);
+  free (buf);
   return 0;
 }

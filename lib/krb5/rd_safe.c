@@ -40,6 +40,62 @@
 
 RCSID("$Id$");
 
+static krb5_error_code
+verify_checksum(krb5_context context,
+		krb5_auth_context auth_context,
+		KRB_SAFE *safe)
+{
+    krb5_error_code ret;
+    u_char *buf;
+    size_t buf_size;
+    size_t len;
+    Checksum c;
+
+    c = safe->cksum;
+    safe->cksum.cksumtype       = 0;
+    safe->cksum.checksum.data   = NULL;
+    safe->cksum.checksum.length = 0;
+
+    buf_size = 1024;
+    buf = malloc (buf_size);
+    if (buf == NULL) {
+	free_Checksum(&c);
+	return ENOMEM;
+    }
+
+    do { 
+	ret = encode_KRB_SAFE (buf + buf_size - 1,
+			       buf_size,
+			       safe,
+			       &len);
+	if (ret) {
+	    if (ret == ASN1_OVERFLOW) {
+		u_char *tmp;
+
+		buf_size *= 2;
+		tmp = realloc (buf, buf_size);
+		if (tmp == NULL) {
+		    ret = ENOMEM;
+		    goto out;
+		}
+		buf = tmp;
+	    } else {
+		goto out;
+	    }
+	}
+    } while(ret == ASN1_OVERFLOW);
+
+    ret = krb5_verify_checksum (context,
+				buf + buf_size - len,
+				len,
+				auth_context->keyblock,
+				&c);
+out:
+    free_Checksum (&c);
+    free (buf);
+    return ret;
+}
+
 krb5_error_code
 krb5_rd_safe(krb5_context context,
 	     krb5_auth_context auth_context,
@@ -53,7 +109,7 @@ krb5_rd_safe(krb5_context context,
 
   ret = decode_KRB_SAFE (inbuf->data, inbuf->length, &safe, &len);
   if (ret) 
-      goto failure;
+      return ret;
   if (safe.pvno != 5) {
       ret = KRB5KRB_AP_ERR_BADVERSION;
       goto failure;
@@ -114,31 +170,10 @@ krb5_rd_safe(krb5_context context,
       }
   }
 
-  {
-      u_char buf[1024];
-      size_t len;
-      Checksum c;
-
-      copy_Checksum (&safe.cksum, &c);
-      
-      safe.cksum.cksumtype       = 0;
-      safe.cksum.checksum.data   = NULL;
-      safe.cksum.checksum.length = 0;
-
-      encode_KRB_SAFE (buf + sizeof(buf) - 1,
-		       sizeof(buf),
-		       &safe,
-		       &len);
-
-      ret = krb5_verify_checksum (context,
-				  buf + sizeof(buf) - len,
-				  len,
-				  auth_context->keyblock,
-				  &c);
-      free_Checksum (&c);
-      if (ret)
-	  goto failure;
-  }
+  ret = verify_checksum (context, auth_context, &safe);
+  if (ret)
+      goto failure;
+  
   outbuf->length = safe.safe_body.user_data.length;
   outbuf->data   = malloc(outbuf->length);
   if (outbuf->data == NULL) {

@@ -47,12 +47,13 @@ krb5_mk_safe(krb5_context context,
 	     krb5_data *outbuf,
 	     /*krb5_replay_data*/ void *outdata)
 {
-  krb5_error_code r;
+  krb5_error_code ret;
   KRB_SAFE s;
   int32_t sec, usec;
   KerberosTime sec2;
   unsigned usec2;
-  u_char buf[1024];
+  u_char *buf = NULL;
+  size_t buf_size;
   size_t len;
   unsigned tmp_seq;
   krb5_cksumtype cksumtype;
@@ -60,11 +61,11 @@ krb5_mk_safe(krb5_context context,
   if (auth_context->cksumtype)
       cksumtype = auth_context->cksumtype;
   else {
-      r = krb5_keytype_to_cksumtype (context,
-				     auth_context->keyblock->keytype,
-				     &cksumtype);
-      if (r)
-	  return r;
+      ret = krb5_keytype_to_cksumtype (context,
+				       auth_context->keyblock->keytype,
+				       &cksumtype);
+      if (ret)
+	  return ret;
   }
 
   s.pvno = 5;
@@ -90,31 +91,78 @@ krb5_mk_safe(krb5_context context,
   s.cksum.checksum.data   = NULL;
   s.cksum.checksum.length = 0;
 
-  r = encode_KRB_SAFE (buf + sizeof(buf) - 1,
-		       sizeof(buf),
-		       &s,
-		       &len);
 
-  if (r)
-    return r;
+  buf_size = 1024;
+  buf = malloc (buf_size);
+  if (buf == NULL) {
+      return ENOMEM;
+  }
 
-  r = krb5_create_checksum (context,
-			    cksumtype,
-			    buf + sizeof(buf) - len,
-			    len,
-			    auth_context->keyblock,
-			    &s.cksum);
-  if (r)
-    return r;
+  do {
+      ret = encode_KRB_SAFE (buf + buf_size - 1,
+			     buf_size,
+			     &s,
+			     &len);
+      if (ret) {
+	  if (ret == ASN1_OVERFLOW) {
+	      u_char *tmp;
 
-  r = encode_KRB_SAFE (buf + sizeof(buf) - 1, sizeof(buf), &s, &len);
-  if (r)
-    return r;
+	      buf_size *= 2;
+	      tmp = realloc (buf, buf_size);
+	      if (tmp == NULL) {
+		  free (buf);
+		  return ENOMEM;
+	      }
+	      buf = tmp;
+	  } else {
+	      free (buf);
+	      return ENOMEM;
+	  }
+      }
+  } while (ret == ASN1_OVERFLOW);
+
+  ret = krb5_create_checksum (context,
+			      cksumtype,
+			      buf + buf_size - len,
+			      len,
+			      auth_context->keyblock,
+			      &s.cksum);
+  if (ret) {
+      free (buf);
+      return ret;
+  }
+
+  do {
+      ret = encode_KRB_SAFE (buf + buf_size - 1, buf_size, &s, &len);
+      if (ret) {
+	  if (ret == ASN1_OVERFLOW) {
+	      u_char *tmp;
+
+	      buf_size *= 2;
+	      tmp = realloc (buf, buf_size);
+	      if (tmp == NULL) {
+		  free (buf);
+		  free_Checksum (&s.cksum);
+		  return ENOMEM;
+	      }
+	      buf = tmp;
+	  } else {
+	      free (buf);
+	      free_Checksum (&s.cksum);
+	      return ret;
+	  }
+      }
+  } while (ret == ASN1_OVERFLOW);
+
+  free_Checksum (&s.cksum);
 
   outbuf->length = len;
   outbuf->data   = malloc (len);
-  if (outbuf->data == NULL)
-    return ENOMEM;
+  if (outbuf->data == NULL) {
+      free (buf);
+      return ENOMEM;
+  }
   memcpy (outbuf->data, buf + sizeof(buf) - len, len);
+  free (buf);
   return 0;
 }

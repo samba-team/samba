@@ -50,7 +50,8 @@ krb5_build_authenticator (krb5_context context,
 			  krb5_data *result)
 {
   Authenticator *auth;
-  unsigned char buf[1024];
+  u_char *buf = NULL;
+  size_t buf_size;
   size_t len;
   krb5_error_code ret;
 
@@ -58,6 +59,7 @@ krb5_build_authenticator (krb5_context context,
   if (auth == NULL)
       return ENOMEM;
 
+  memset (auth, 0, sizeof(*auth));
   auth->authenticator_vno = 5;
   copy_Realm(&cred->client->realm, &auth->crealm);
   copy_PrincipalName(&cred->client->name, &auth->cname);
@@ -70,13 +72,14 @@ krb5_build_authenticator (krb5_context context,
       auth->cusec = usec;
   }
   ret = krb5_auth_con_getlocalsubkey(context, auth_context, &auth->subkey);
-  if(ret == ENOMEM)
-      /* XXX */;
+  if(ret)
+      goto fail;
+
   if(auth->subkey == NULL) {
       krb5_generate_subkey (context, &cred->session, &auth->subkey);
       ret = krb5_auth_con_setlocalsubkey(context, auth_context, auth->subkey);
-      if(ret == ENOMEM)
-	  /* XXX */;
+      if(ret)
+	  goto fail;
   }
 
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
@@ -97,14 +100,44 @@ krb5_build_authenticator (krb5_context context,
     auth_context->authenticator->cusec = auth->cusec;
   }
 
-  memset (buf, 0, sizeof(buf));
-  ret = krb5_encode_Authenticator (context, buf + sizeof(buf) - 1, sizeof(buf), 
-				   auth, &len);
+  buf_size = 1024;
+  buf = malloc (buf_size);
+  if (buf == NULL) {
+      ret = ENOMEM;
+      goto fail;
+  }
 
-  ret = krb5_encrypt (context, buf + sizeof(buf) - len, len,
+  do {
+      ret = krb5_encode_Authenticator (context,
+				       buf + buf_size - 1,
+				       buf_size,
+				       auth, &len);
+      if (ret) {
+	  if (ret == ASN1_OVERFLOW) {
+	      u_char *tmp;
+
+	      buf_size *= 2;
+	      tmp = realloc (tmp, buf_size);
+	      if (tmp == NULL) {
+		  ret = ENOMEM;
+		  goto fail;
+	      }
+	      buf = tmp;
+	  } else {
+	      goto fail;
+	  }
+      }
+  } while(ret == ASN1_OVERFLOW);
+
+  ret = krb5_encrypt (context, buf + buf_size - len, len,
 		      enctype,
 		      &cred->session,
 		      result);
+
+  if (ret)
+      goto fail;
+
+  free (buf);
 
   if (auth_result)
     *auth_result = auth;
@@ -114,5 +147,10 @@ krb5_build_authenticator (krb5_context context,
     free_Authenticator (auth);
     free (auth);
   }
+  return ret;
+fail:
+  free_Authenticator (auth);
+  free (auth);
+  free (buf);
   return ret;
 }

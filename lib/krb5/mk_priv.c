@@ -47,10 +47,11 @@ krb5_mk_priv(krb5_context context,
 	     krb5_data *outbuf,
 	     /*krb5_replay_data*/ void *outdata)
 {
-  krb5_error_code r;
+  krb5_error_code ret;
   KRB_PRIV s;
   EncKrbPrivPart part;
-  u_char buf[10240];
+  u_char *buf;
+  size_t buf_size;
   size_t len;
   unsigned tmp_seq;
   krb5_keyblock *key;
@@ -71,9 +72,9 @@ krb5_mk_priv(krb5_context context,
   if (auth_context->enctype)
       enctype = auth_context->enctype;
   else {
-      r = krb5_keytype_to_etype (context, key->keytype, &enctype);
-      if (r)
-	  return r;
+      ret = krb5_keytype_to_etype (context, key->keytype, &enctype);
+      if (ret)
+	  return ret;
   }
 
   krb5_us_timeofday (context, &sec, &usec);
@@ -93,28 +94,78 @@ krb5_mk_priv(krb5_context context,
   part.s_address = auth_context->local_address;
   part.r_address = auth_context->remote_address;
 
-  r = encode_EncKrbPrivPart (buf + sizeof(buf) - 1, sizeof(buf), &part, &len);
-  if (r)
-      return r;
+  buf_size = 1024;
+  buf = malloc (buf_size);
+  if (buf == NULL)
+      return ENOMEM;
+
+  krb5_data_zero (&s.enc_part.cipher);
+
+  do {
+      ret = encode_EncKrbPrivPart (buf + buf_size - 1, buf_size,
+				 &part, &len);
+      if (ret) {
+	  if (ret == ASN1_OVERFLOW) {
+	      u_char *tmp;
+
+	      buf_size *= 2;
+	      tmp = realloc (buf, buf_size);
+	      if (tmp == NULL) {
+		  ret = ENOMEM;
+		  goto fail;
+	      }
+	      buf = tmp;
+	  } else {
+	      goto fail;
+	  }
+      }
+  } while(ret == ASN1_OVERFLOW);
 
   s.pvno = 5;
   s.msg_type = krb_priv;
   s.enc_part.etype = enctype;
   s.enc_part.kvno = NULL;
 
-  r = krb5_encrypt (context, buf + sizeof(buf) - len, len,
+  ret = krb5_encrypt (context, buf + buf_size - len, len,
 		    enctype, key, &s.enc_part.cipher);
-  if (r)
-    return r;
+  if (ret) {
+      free(buf);
+      return ret;
+  }
 
-  r = encode_KRB_PRIV (buf + sizeof(buf) - 1, sizeof(buf), &s, &len);
+  do {
+      ret = encode_KRB_PRIV (buf + buf_size - 1, buf_size, &s, &len);
+
+      if (ret){
+	  if (ret == ASN1_OVERFLOW) {
+	      u_char *tmp;
+
+	      buf_size *= 2;
+	      tmp = realloc (tmp, buf_size);
+	      if (tmp == NULL) {
+		  ret = ENOMEM;
+		  goto fail;
+	      }
+	      buf = tmp;
+	  } else {
+	      goto fail;
+	  }
+      }
+  } while(ret == ASN1_OVERFLOW);
   krb5_data_free (&s.enc_part.cipher);
-  if (r)
-    return r;
+
   outbuf->length = len;
   outbuf->data   = malloc (len);
-  if (outbuf->data == NULL)
-    return ENOMEM;
-  memcpy (outbuf->data, buf + sizeof(buf) - len, len);
+  if (outbuf->data == NULL) {
+      free(buf);
+      return ENOMEM;
+  }
+  memcpy (outbuf->data, buf + buf_size - len, len);
+  free (buf);
   return 0;
+
+fail:
+  free (buf);
+  krb5_data_free (&s.enc_part.cipher);
+  return ret;
 }
