@@ -2,9 +2,12 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-2000
+   Copyright (C) Andrew Tridgell 1992-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Tim Potter 2001
+   Copyright (C) Paul Ashton                       1997.
+   Copyright (C) Jeremy Allison                    1998.
+   Copyright (C) Andrew Bartlett                   2001.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -492,3 +495,81 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  done:
         return result;
 }
+
+/***************************************************************************
+LSA Server Password Set.
+****************************************************************************/
+
+NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			   char* machine_name, uint8 hashed_mach_pwd[16])
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	DOM_CRED new_clnt_cred;
+	NET_Q_SRV_PWSET q_s;
+	uint16 sec_chan_type = 2;
+	NTSTATUS nt_status;
+	char *mach_acct;
+
+	gen_next_creds( cli, &new_clnt_cred);
+	
+	prs_init(&buf , 1024, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0,    mem_ctx, UNMARSHALL);
+	
+	/* create and send a MSRPC command with api NET_SRV_PWSET */
+	
+	mach_acct = talloc_asprintf(mem_ctx, "%s$", machine_name);
+	
+	if (!mach_acct) {
+		DEBUG(0,("talloc_asprintf failed!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DEBUG(4,("cli_net_srv_pwset: srv:%s acct:%s sc: %d mc: %s clnt %s %x\n",
+		 cli->srv_name_slash, mach_acct, sec_chan_type, machine_name,
+		 credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
+	
+        /* store the parameters */
+	init_q_srv_pwset(&q_s, cli->srv_name_slash, cli->sess_key,
+			 mach_acct, sec_chan_type, machine_name, 
+			 &new_clnt_cred, (char *)hashed_mach_pwd);
+	
+	/* turn parameters into data stream */
+	if(!net_io_q_srv_pwset("", &q_s,  &buf, 0)) {
+		DEBUG(0,("cli_net_srv_pwset: Error : failed to marshall NET_Q_SRV_PWSET struct.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, NET_SRVPWSET, &buf, &rbuf))
+	{
+		NET_R_SRV_PWSET r_s;
+		
+		if (!net_io_r_srv_pwset("", &r_s, &rbuf, 0)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		
+		nt_status = r_s.status;
+
+		if (!NT_STATUS_IS_OK(r_s.status))
+		{
+			/* report error code */
+			DEBUG(0,("cli_net_srv_pwset: %s\n", get_nt_error_msg(nt_status)));
+			return nt_status;
+		}
+
+		/* Update the credentials. */
+		if (!clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &(r_s.srv_cred)))
+		{
+			/*
+			 * Server replied with bad credential. Fail.
+			 */
+			DEBUG(0,("cli_net_srv_pwset: server %s replied with bad credential (bad machine \
+password ?).\n", cli->desthost ));
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+	
+	return nt_status;
+}
+

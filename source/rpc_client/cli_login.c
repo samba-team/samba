@@ -79,27 +79,6 @@ NTSTATUS cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
 }
 
 /****************************************************************************
- Set machine password.
- ****************************************************************************/
-
-BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd)
-{
-  unsigned char processed_new_pwd[16];
-
-  DEBUG(5,("cli_nt_srv_pwset: %d\n", __LINE__));
-
-#ifdef DEBUG_PASSWORD
-  dump_data(6, (char *)new_hashof_mach_pwd, 16);
-#endif
-
-  /* Process the new password. */
-  cred_hash3( processed_new_pwd, new_hashof_mach_pwd, cli->sess_key, 1);
-
-  /* send client srv_pwset challenge */
-  return cli_net_srv_pwset(cli, processed_new_pwd);
-}
-
-/****************************************************************************
 NT login - interactive.
 *NEVER* use this code. This method of doing a logon (sending the cleartext
 password equivalents, protected by the session key) is inherently insecure

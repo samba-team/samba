@@ -166,7 +166,7 @@ static int net_ads_join(int argc, const char **argv)
 	}
 	
 	
-	tmp_password = generate_random_str(15);
+	tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 	password = strdup(tmp_password);
 
 	if (!(ads = ads_startup())) return -1;

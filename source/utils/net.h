@@ -26,13 +26,13 @@
 
    For example, localhost is insane for a 'join' operation.
 */
-#define NET_FLAGS_LOCALHOST_DEFAULT_INSANE 3 
+#define NET_FLAGS_LOCALHOST_DEFAULT_INSANE 4 
 
 /* We want to find the PDC only */
-#define NET_FLAGS_PDC 4 
+#define NET_FLAGS_PDC 8 
 
 /* We want an anonymous connection */
-#define NET_FLAGS_ANONYMOUS 5 
+#define NET_FLAGS_ANONYMOUS 16 
 
 
 extern int opt_maxusers;

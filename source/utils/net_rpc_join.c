@@ -191,7 +191,7 @@ int net_rpc_join(int argc, const char **argv)
 
 	{ 
 		char *str;
-		str = generate_random_str(15);
+		str = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 		clear_trust_password = strdup(str);
 	}
 
@@ -256,8 +256,6 @@ int net_rpc_join(int argc, const char **argv)
 
 	strupper(domain);
 
-	secrets_init();
-
 	if (!secrets_store_domain_sid(domain, &domain_sid)) {
 		DEBUG(0, ("error storing domain sid for %s\n", domain));
 		goto done;
@@ -284,7 +282,7 @@ int net_rpc_join(int argc, const char **argv)
 		goto done;
 	}
 	
-	CHECK_RPC_ERR(cli_nt_setup_creds(cli, stored_md4_trust_password),
+	CHECK_RPC_ERR(new_cli_nt_setup_creds(cli, stored_md4_trust_password),
 			  "error in domain join verification");
 	
 	retval = 0;		/* Success! */
