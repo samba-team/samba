@@ -1,3 +1,7 @@
+2002-10-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* crypto.m4: do a better job at matching headers to libraries
+
 2002-10-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* sunos.m4: more quoting
