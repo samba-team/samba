@@ -371,6 +371,18 @@ static int schema_add_record(struct ldb_module *module, const struct ldb_message
 			return -1;
 		}
 
+		/* check we are not trying to delete a required attribute */
+		/* TODO: consider multivalued attrs */
+		if ((attr->flags & SCHEMA_FLAG_MOD_DELETE) != 0) {
+			ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+				  "Trying to delete the required attribute %s.\n",
+				  attr->name);
+
+			data->error_string = "Objectclass violation, a required attribute cannot be removed";
+			talloc_free(entry_structs);
+			return -1;
+		}
+
 		/* mark the attribute as checked */
 		attr->flags = SCHEMA_FLAG_CHECKED;
 	}
@@ -413,9 +425,7 @@ static int schema_modify_record(struct ldb_module *module, const struct ldb_mess
 		Retrieve the ldap entry and get the objectclasses,
 		add msg contained objectclasses if any.
 		Build up a list of required_attrs and optional_attrs attributes from each objectclass
-		Check all required_attrs one for the defined objectclass and all its parent
-		objectclasses.
-		Check all other the attributes are optional_attrs or required_attrs.
+		Check all the attributes are optional_attrs or required_attrs.
 		Throw an error in case a check fail.
 		Free all structures and commit the change.
 	*/
