@@ -175,7 +175,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 	DEBUG(3,("pdb: sid_to_name sid=%s\n", sid_string_static(sid)));
 
-	if (NT_STATUS_IS_OK(sid_to_uid(sid, &id))) { /* this is a user */
+	if (NT_STATUS_IS_OK(idmap_sid_to_uid(sid, &id, 0))) { /* this is a user */
 
 		if (!NT_STATUS_IS_OK(result = pdb_init_sam(&sam_account))) {
 			return result;
@@ -197,7 +197,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 		*type = SID_NAME_USER;
 		result = NT_STATUS_OK;
 
-	} else if (NT_STATUS_IS_OK(sid_to_gid(sid, &id))) { /* this is a group */
+	} else if (NT_STATUS_IS_OK(idmap_sid_to_gid(sid, &id, 0))) { /* this is a group */
 		
 		DEBUG(3,("pdb: sid_to_name: group support not implemented\n"));
 		result = NT_STATUS_UNSUCCESSFUL;

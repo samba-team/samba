@@ -85,7 +85,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	request.data.auth_crap.flags = WINBIND_PAM_INFO3_NDR;
+	request.flags = WBFLAG_PAM_INFO3_NDR;
 
 	push_utf8_fstring(request.data.auth_crap.user, 
 			  user_info->smb_name.str);

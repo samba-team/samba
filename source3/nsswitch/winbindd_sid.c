@@ -122,6 +122,7 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
+	uint32 flags = 0x0;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
@@ -131,15 +132,16 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 
 	/* Split sid into domain sid and user rid */
 	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(1, ("Could not get convert sid %s from string\n",
-			  state->request.data.sid));
+		DEBUG(1, ("Could not get convert sid %s from string\n", state->request.data.sid));
 		return WINBINDD_ERROR;
 	}
-
+	
+	if ( state->request.flags & WBFLAG_QUERY_ONLY ) 
+		flags = ID_QUERY_ONLY;
+	
 	/* Find uid for this sid and return it */
-	if (!NT_STATUS_IS_OK(sid_to_uid(&sid, &(state->response.data.uid)))) {
-		DEBUG(1, ("Could not get uid for sid %s\n",
-			  state->request.data.sid));
+	if ( !NT_STATUS_IS_OK(idmap_sid_to_uid(&sid, &(state->response.data.uid), flags)) ) {
+		DEBUG(1, ("Could not get uid for sid %s\n", state->request.data.sid));
 		return WINBINDD_ERROR;
 	}
 
@@ -152,6 +154,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
+	uint32 flags = 0x0;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
@@ -160,15 +163,16 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 		  state->request.data.sid));
 
 	if (!string_to_sid(&sid, state->request.data.sid)) {
-		DEBUG(1, ("Could not cvt string to sid %s\n",
-			  state->request.data.sid));
+		DEBUG(1, ("Could not cvt string to sid %s\n", state->request.data.sid));
 		return WINBINDD_ERROR;
 	}
 
+	if ( state->request.flags & WBFLAG_QUERY_ONLY ) 
+		flags = ID_QUERY_ONLY;
+		
 	/* Find gid for this sid and return it */
-	if (!NT_STATUS_IS_OK(sid_to_gid(&sid, &(state->response.data.gid)))) {
-		DEBUG(1, ("Could not get gid for sid %s\n",
-			  state->request.data.sid));
+	if ( !NT_STATUS_IS_OK(idmap_sid_to_gid(&sid, &(state->response.data.gid), flags)) ) {
+		DEBUG(1, ("Could not get gid for sid %s\n", state->request.data.sid));
 		return WINBINDD_ERROR;
 	}
 
@@ -192,7 +196,7 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 		  state->request.data.uid));
 
 	/* Lookup rid for this uid */
-	if (!NT_STATUS_IS_OK(uid_to_sid(&sid, state->request.data.uid))) {
+	if (!NT_STATUS_IS_OK(idmap_uid_to_sid(&sid, state->request.data.uid))) {
 		DEBUG(1, ("Could not convert uid %d to rid\n",
 			  state->request.data.uid));
 		return WINBINDD_ERROR;
@@ -221,7 +225,7 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 		  state->request.data.gid));
 
 	/* Lookup sid for this uid */
-	if (!NT_STATUS_IS_OK(gid_to_sid(&sid, state->request.data.gid))) {
+	if (!NT_STATUS_IS_OK(idmap_gid_to_sid(&sid, state->request.data.gid))) {
 		DEBUG(1, ("Could not convert gid %d to sid\n",
 			  state->request.data.gid));
 		return WINBINDD_ERROR;

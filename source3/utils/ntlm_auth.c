@@ -196,7 +196,7 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	request.data.auth_crap.flags = flags;
+	request.flags = flags;
 
 	fstrcpy(request.data.auth_crap.user, username);
 
@@ -233,13 +233,13 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 		return nt_status;
 	}
 
-	if ((flags & WINBIND_PAM_LMKEY) && lm_key 
+	if ((flags & WBFLAG_PAM_LMKEY) && lm_key 
 	    && (memcmp(zeros, response.data.auth.first_8_lm_hash, 
 		       sizeof(response.data.auth.first_8_lm_hash)) != 0)) {
 		memcpy(lm_key, response.data.auth.first_8_lm_hash, 
 			sizeof(response.data.auth.first_8_lm_hash));
 	}
-	if ((flags & WINBIND_PAM_NTKEY) && nt_key
+	if ((flags & WBFLAG_PAM_NTKEY) && nt_key
 		    && (memcmp(zeros, response.data.auth.nt_session_key, 
 			       sizeof(response.data.auth.nt_session_key)) != 0)) {
 		memcpy(nt_key, response.data.auth.nt_session_key, 
@@ -413,10 +413,10 @@ static BOOL check_auth_crap(void)
 	x_setbuf(x_stdout, NULL);
 
 	if (request_lm_key) 
-		flags |= WINBIND_PAM_LMKEY;
+		flags |= WBFLAG_PAM_LMKEY;
 
 	if (request_nt_key) 
-		flags |= WINBIND_PAM_NTKEY;
+		flags |= WBFLAG_PAM_NTKEY;
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -494,8 +494,8 @@ static BOOL test_lm(void)
 	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(nt_key);
 
-	flags |= WINBIND_PAM_LMKEY;
-	flags |= WINBIND_PAM_NTKEY;
+	flags |= WBFLAG_PAM_LMKEY;
+	flags |= WBFLAG_PAM_NTKEY;
 
 	SMBencrypt(opt_password, chall.data, lm_response.data);
 	E_deshash(opt_password, lm_hash); 
@@ -559,8 +559,8 @@ static BOOL test_lm_ntlm(void)
 	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(nt_key);
 
-	flags |= WINBIND_PAM_LMKEY;
-	flags |= WINBIND_PAM_NTKEY;
+	flags |= WBFLAG_PAM_LMKEY;
+	flags |= WBFLAG_PAM_NTKEY;
 
 	SMBencrypt(opt_password,chall.data,lm_response.data);
 	E_deshash(opt_password, lm_hash); 
@@ -633,8 +633,8 @@ static BOOL test_ntlm(void)
 	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(nt_key);
 
-	flags |= WINBIND_PAM_LMKEY;
-	flags |= WINBIND_PAM_NTKEY;
+	flags |= WBFLAG_PAM_LMKEY;
+	flags |= WBFLAG_PAM_NTKEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
 	E_md4hash(opt_password, nt_hash);
@@ -702,8 +702,8 @@ static BOOL test_ntlm_in_lm(void)
 	
 	ZERO_STRUCT(nt_key);
 
-	flags |= WINBIND_PAM_LMKEY;
-	flags |= WINBIND_PAM_NTKEY;
+	flags |= WBFLAG_PAM_LMKEY;
+	flags |= WBFLAG_PAM_NTKEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
 
@@ -771,8 +771,8 @@ static BOOL test_ntlm_in_both(void)
 	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(nt_key);
 
-	flags |= WINBIND_PAM_LMKEY;
-	flags |= WINBIND_PAM_NTKEY;
+	flags |= WBFLAG_PAM_LMKEY;
+	flags |= WBFLAG_PAM_NTKEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
 	E_md4hash(opt_password, nt_hash);
@@ -842,7 +842,7 @@ static BOOL test_ntlmv2(void)
 
 	ZERO_STRUCT(nt_key);
 	
-	flags |= WINBIND_PAM_NTKEY;
+	flags |= WBFLAG_PAM_NTKEY;
 
 	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, &chall,
 			      &names_blob,
@@ -905,7 +905,7 @@ static BOOL test_lmv2_ntlmv2(void)
 
 	ZERO_STRUCT(nt_key);
 	
-	flags |= WINBIND_PAM_NTKEY;
+	flags |= WBFLAG_PAM_NTKEY;
 
 	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, &chall,
 			      &names_blob,
@@ -1016,8 +1016,8 @@ static BOOL test_ntlm_broken(BOOL break_lm)
 	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(nt_key);
 
-	flags |= WINBIND_PAM_LMKEY;
-	flags |= WINBIND_PAM_NTKEY;
+	flags |= WBFLAG_PAM_LMKEY;
+	flags |= WBFLAG_PAM_NTKEY;
 
 	SMBencrypt(opt_password,chall.data,lm_response.data);
 	E_deshash(opt_password, lm_hash); 
@@ -1099,7 +1099,7 @@ static BOOL test_ntlmv2_broken(BOOL break_lmv2)
 
 	ZERO_STRUCT(nt_key);
 	
-	flags |= WINBIND_PAM_NTKEY;
+	flags |= WBFLAG_PAM_NTKEY;
 	 
 	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, &chall,
 			      &names_blob,

@@ -2217,7 +2217,7 @@ static NTSTATUS ldapsam_getgroup(struct pdb_methods *methods,
 	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
 
 	if (count < 1) {
-		DEBUG(4, ("Did not find group for filter %s\n", filter));
+		DEBUG(4, ("Did not find group\n"));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
@@ -2327,6 +2327,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		(struct ldapsam_privates *)methods->private_data;
 	LDAPMessage *result = NULL;
 	LDAPMod **mods = NULL;
+	int count;
 
 	char *tmp;
 	pstring dn;
@@ -2347,7 +2348,12 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) != 1) {
+	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result);
+
+	if ( count == 0 )
+		return NT_STATUS_UNSUCCESSFUL;
+
+	if (count > 1) {
 		DEBUG(2, ("Group %i must exist exactly once in LDAP\n",
 			  map->gid));
 		ldap_msgfree(result);

@@ -63,29 +63,11 @@ static BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
 	DOM_SID sid;
 	char *pwd;
 
-	if ( lp_server_role()==ROLE_DOMAIN_MEMBER || strequal(domain, lp_workgroup()) ) 
+	/* if we are a DC and this is not our domain, then lookup an account
+	   for the domain trust */
+	   
+	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) 
 	{
-		/*
-		 * Get the machine account password for the domain to contact.
-		 * This is either our own domain for a workstation, or possibly
-		 * any domain for a PDC with trusted domains.
-		 */
-
-		if ( !secrets_fetch_trust_account_password (domain, ret_pwd,
-			pass_last_set_time, channel) ) 
-		{
-			DEBUG(0, ("get_trust_pw: could not fetch trust account "
-				  "password for my domain %s\n", domain));
-			return False;
-		}
-		
-		return True;
-	}
-	else if ( lp_allow_trusted_domains() ) 
-	{
-		/* if we are not a domain member, then we must be a DC and 
-		   this must be a trusted domain */
-
 		if ( !secrets_fetch_trusted_domain_password(domain, &pwd, &sid, 
 			pass_last_set_time) ) 
 		{
@@ -98,6 +80,21 @@ static BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
 		E_md4hash(pwd, ret_pwd);
 		SAFE_FREE(pwd);
 
+		return True;
+	}
+	else 	/* just get the account for our domain (covers 
+		   ROLE_DOMAIN_MEMBER as well */
+	{
+		/* get the machine trust account for our domain */
+
+		if ( !secrets_fetch_trust_account_password (lp_workgroup(), ret_pwd,
+			pass_last_set_time, channel) ) 
+		{
+			DEBUG(0, ("get_trust_pw: could not fetch trust account "
+				  "password for my domain %s\n", domain));
+			return False;
+		}
+		
 		return True;
 	}
 	
@@ -126,6 +123,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	int attempts = 0;
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
+	const char *contact_domain;
 
 	/* Ensure null termination */
 	state->request.data.auth.user[sizeof(state->request.data.auth.user)-1]='\0';
@@ -166,6 +164,13 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		goto done;
 	}
 
+	/* what domain should we contact? */
+	
+	if ( IS_DC )
+		contact_domain = name_domain;
+	else
+		contact_domain = lp_workgroup();
+		
 	/* check authentication loop */
 
 	do {
@@ -173,7 +178,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		ZERO_STRUCT(ret_creds);
 	
 		/* Don't shut this down - it belongs to the connection cache code */
-		result = cm_get_netlogon_cli(name_domain, trust_passwd, 
+		result = cm_get_netlogon_cli(contact_domain, trust_passwd, 
 					     sec_channel_type, False, &cli);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -255,6 +260,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	char *user = NULL;
 	const char *domain = NULL;
 	const char *workstation;
+	const char *contact_domain;
 	DOM_CRED ret_creds;
 	int attempts = 0;
 
@@ -329,12 +335,19 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	lm_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.lm_resp, state->request.data.auth_crap.lm_resp_len);
 	nt_resp = data_blob_talloc(mem_ctx, state->request.data.auth_crap.nt_resp, state->request.data.auth_crap.nt_resp_len);
 	
+	/* what domain should we contact? */
+	
+	if ( IS_DC )
+		contact_domain = domain;
+	else
+		contact_domain = lp_workgroup();
+	
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
 
 		/* Don't shut this down - it belongs to the connection cache code */
-		result = cm_get_netlogon_cli(domain, trust_passwd, sec_channel_type, False, &cli);
+		result = cm_get_netlogon_cli(contact_domain, trust_passwd, sec_channel_type, False, &cli);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n",
@@ -376,14 +389,14 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		netsamlogon_cache_store( cli->mem_ctx, &info3 );
 		wcache_invalidate_samlogon(find_domain_from_name(domain), &info3);
 		
-		if (state->request.data.auth_crap.flags & WINBIND_PAM_INFO3_NDR) {
+		if (state->request.flags & WBFLAG_PAM_INFO3_NDR) {
 			result = append_info3_as_ndr(mem_ctx, state, &info3);
 		}
 		
-		if (state->request.data.auth_crap.flags & WINBIND_PAM_NTKEY) {
+		if (state->request.flags & WBFLAG_PAM_NTKEY) {
 			memcpy(state->response.data.auth.nt_session_key, info3.user_sess_key, sizeof(state->response.data.auth.nt_session_key) /* 16 */);
 		}
-		if (state->request.data.auth_crap.flags & WINBIND_PAM_LMKEY) {
+		if (state->request.flags & WBFLAG_PAM_LMKEY) {
 			memcpy(state->response.data.auth.first_8_lm_hash, info3.padding, sizeof(state->response.data.auth.first_8_lm_hash) /* 8 */);
 		}
 	}

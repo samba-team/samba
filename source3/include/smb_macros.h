@@ -252,7 +252,6 @@ copy an IP address from one buffer to another
  Check to see if we are a DO for this domain
 *****************************************************************************/
 
-#define IS_DC_FOR_DOMAIN(x) ( (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC) \
-                               && strequal((x), lp_workgroup()) )
+#define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC) 
 
 #endif /* _SMB_MACROS_H */

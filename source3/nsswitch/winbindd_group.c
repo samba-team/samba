@@ -214,10 +214,11 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	if (!parse_domain_user(tmp, name_domain, name_group))
 		return WINBINDD_ERROR;
 
-	/* don't handle our own domain if we are a DC.  This code handles cases where
+	/* don't handle our own domain if we are a DC ( or a member of a Samba domain 
+	   that shares UNIX accounts).  This code handles cases where
 	   the account doesn't exist anywhere and gets passed on down the NSS layer */
 
-	if ( IS_DC_FOR_DOMAIN(domain->name) ) {
+	if ( (IS_DC || lp_winbind_trusted_domains_only()) && strequal(name_domain, lp_workgroup()) ) {
 		DEBUG(7,("winbindd_getgrnam: rejecting getpwnam() for %s\\%s since I am on the PDC for this domain\n", 
 			name_domain, name_group));
 		return WINBINDD_ERROR;
@@ -248,7 +249,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid))) {
+	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid, &gid, 0))) {
 		DEBUG(1, ("error converting unix gid to sid\n"));
 		return WINBINDD_ERROR;
 	}
@@ -293,7 +294,7 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 
 	/* Get rid from gid */
-	if (!NT_STATUS_IS_OK(gid_to_sid(&group_sid, state->request.data.gid))) {
+	if (!NT_STATUS_IS_OK(idmap_gid_to_sid(&group_sid, state->request.data.gid))) {
 		DEBUG(1, ("could not convert gid %d to rid\n", 
 			  state->request.data.gid));
 		return WINBINDD_ERROR;
@@ -370,10 +371,14 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		struct getent_state *domain_state;
 		
 		
-		/* don't add our domaina if we are a PDC */
+		/* don't add our domaina if we are a PDC or if we 
+		   are a member of a Samba domain */
 		
-		if ( IS_DC_FOR_DOMAIN(domain->name) )
+		if ( (IS_DC || lp_winbind_trusted_domains_only())
+			&& strequal(domain->name, lp_workgroup()) )
+		{
 			continue;
+		}
 						
 		/* Create a state record for this domain */
 		
@@ -612,7 +617,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &group_gid))) {
+		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid, &group_gid, 0))) {
 			
 			DEBUG(1, ("could not look up gid for group %s\n", 
 				  name_list[ent->sam_entry_index].acct_name));
@@ -925,8 +930,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 			/* Map to a gid */
 
-			if (!NT_STATUS_IS_OK(sid_to_gid(&info3->other_sids[i].sid, 
-				&gid_list[num_gids])) )
+			if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&info3->other_sids[i].sid, &gid_list[num_gids], 0)) )
 			{
 				DEBUG(10, ("winbindd_getgroups: could not map sid %s to gid\n",
 					   sid_string_static(&info3->other_sids[i].sid)));
@@ -950,7 +954,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			sid_copy( &group_sid, &domain->sid );
 			sid_append_rid( &group_sid, info3->gids[i].g_rid );
 
-			if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid_list[num_gids])) ) {
+			if (!NT_STATUS_IS_OK(idmap_sid_to_gid(&group_sid, &gid_list[num_gids], 0)) ) {
 				DEBUG(10, ("winbindd_getgroups: could not map sid %s to gid\n",
 					   sid_string_static(&group_sid)));
 			}
@@ -973,7 +977,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			goto done;
 
 		for (i = 0; i < num_groups; i++) {
-			if (!NT_STATUS_IS_OK(sid_to_gid(user_grpsids[i], &gid_list[num_gids]))) {
+			if (!NT_STATUS_IS_OK(idmap_sid_to_gid(user_grpsids[i], &gid_list[num_gids], 0))) {
 				DEBUG(1, ("unable to convert group sid %s to gid\n", 
 					  sid_string_static(user_grpsids[i])));
 				continue;

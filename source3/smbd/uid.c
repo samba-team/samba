@@ -529,3 +529,411 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 	}
 	return True;
 }
+
+
+/*****************************************************************
+ Id mapping cache.  This is to avoid Winbind mappings already
+ seen by smbd to be queried too frequently, keeping winbindd
+ busy, and blocking smbd while winbindd is busy with other
+ stuff. Written by Michael Steffens <michael.steffens@hp.com>,
+ modified to use linked lists by jra.
+*****************************************************************/  
+
+#define MAX_UID_SID_CACHE_SIZE 100
+#define TURNOVER_UID_SID_CACHE_SIZE 10
+#define MAX_GID_SID_CACHE_SIZE 100
+#define TURNOVER_GID_SID_CACHE_SIZE 10
+
+static size_t n_uid_sid_cache = 0;
+static size_t n_gid_sid_cache = 0;
+
+static struct uid_sid_cache {
+	struct uid_sid_cache *next, *prev;
+	uid_t uid;
+	DOM_SID sid;
+	enum SID_NAME_USE sidtype;
+} *uid_sid_cache_head;
+
+static struct gid_sid_cache {
+	struct gid_sid_cache *next, *prev;
+	gid_t gid;
+	DOM_SID sid;
+	enum SID_NAME_USE sidtype;
+} *gid_sid_cache_head;
+
+/*****************************************************************
+  Find a SID given a uid.
+*****************************************************************/  
+
+static BOOL fetch_sid_from_uid_cache(const DOM_SID *psid, uid_t uid)
+{
+	struct uid_sid_cache *pc;
+
+	for (pc = uid_sid_cache_head; pc; pc = pc->next) {
+		if (pc->uid == uid) {
+			fstring sid;
+			*psid = pc->sid;
+			DEBUG(3,("fetch sid from uid cache %u -> %s\n",
+				(unsigned int)uid, sid_to_string(sid, psid)));
+			DLIST_PROMOTE(uid_sid_cache_head, pc);
+			return True;
+		}
+	}
+	return False;
+}
+
+/*****************************************************************
+  Find a uid given a SID.
+*****************************************************************/  
+
+static BOOL fetch_uid_from_cache( uid_t *puid, const DOM_SID *psid )
+{
+	struct uid_sid_cache *pc;
+
+	for (pc = uid_sid_cache_head; pc; pc = pc->next) {
+		if (sid_compare(&pc->sid, psid) == 0) {
+			fstring sid;
+			*puid = pc->uid;
+			DEBUG(3,("fetch uid from cache %u -> %s\n",
+				(unsigned int)*puid, sid_to_string(sid, psid)));
+			DLIST_PROMOTE(uid_sid_cache_head, pc);
+			return True;
+		}
+	}
+	return False;
+}
+
+/*****************************************************************
+ Store uid to SID mapping in cache.
+*****************************************************************/  
+
+static void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
+{
+	struct uid_sid_cache *pc;
+
+	if (n_uid_sid_cache >= MAX_UID_SID_CACHE_SIZE && n_uid_sid_cache > TURNOVER_UID_SID_CACHE_SIZE) {
+		/* Delete the last TURNOVER_UID_SID_CACHE_SIZE entries. */
+		struct uid_sid_cache *pc_next;
+		size_t i;
+
+		for (i = 0, pc = uid_sid_cache_head; i < (n_uid_sid_cache - TURNOVER_UID_SID_CACHE_SIZE); i++, pc = pc->next)
+			;
+		for(; pc; pc = pc_next) {
+			pc_next = pc->next;
+			DLIST_REMOVE(uid_sid_cache_head,pc);
+			SAFE_FREE(pc);
+			n_uid_sid_cache--;
+		}
+	}
+
+	pc = (struct uid_sid_cache *)malloc(sizeof(struct uid_sid_cache));
+	if (!pc)
+		return;
+	pc->uid = uid;
+	sid_copy(&pc->sid, psid);
+	DLIST_ADD(uid_sid_cache_head, pc);
+	n_uid_sid_cache++;
+}
+
+/*****************************************************************
+  Find a SID given a gid.
+*****************************************************************/  
+
+static BOOL fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
+{
+	struct gid_sid_cache *pc;
+
+	for (pc = gid_sid_cache_head; pc; pc = pc->next) {
+		if (pc->gid == gid) {
+			fstring sid;
+			*psid = pc->sid;
+			DEBUG(3,("fetch sid from gid cache %u -> %s\n",
+				(unsigned int)gid, sid_to_string(sid, psid)));
+			DLIST_PROMOTE(gid_sid_cache_head, pc);
+			return True;
+		}
+	}
+	return False;
+}
+
+/*****************************************************************
+  Find a gid given a SID.
+*****************************************************************/  
+
+static BOOL fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
+{
+	struct gid_sid_cache *pc;
+
+	for (pc = gid_sid_cache_head; pc; pc = pc->next) {
+		if (sid_compare(&pc->sid, psid) == 0) {
+			fstring sid;
+			*pgid = pc->gid;
+			DEBUG(3,("fetch uid from cache %u -> %s\n",
+				(unsigned int)*pgid, sid_to_string(sid, psid)));
+			DLIST_PROMOTE(gid_sid_cache_head, pc);
+			return True;
+		}
+	}
+	return False;
+}
+
+/*****************************************************************
+ Store gid to SID mapping in cache.
+*****************************************************************/  
+
+static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
+{
+	struct gid_sid_cache *pc;
+
+	if (n_gid_sid_cache >= MAX_GID_SID_CACHE_SIZE && n_gid_sid_cache > TURNOVER_GID_SID_CACHE_SIZE) {
+		/* Delete the last TURNOVER_GID_SID_CACHE_SIZE entries. */
+		struct gid_sid_cache *pc_next;
+		size_t i;
+
+		for (i = 0, pc = gid_sid_cache_head; i < (n_gid_sid_cache - TURNOVER_GID_SID_CACHE_SIZE); i++, pc = pc->next)
+			;
+		for(; pc; pc = pc_next) {
+			pc_next = pc->next;
+			DLIST_REMOVE(gid_sid_cache_head,pc);
+			SAFE_FREE(pc);
+			n_gid_sid_cache--;
+		}
+	}
+
+	pc = (struct gid_sid_cache *)malloc(sizeof(struct gid_sid_cache));
+	if (!pc)
+		return;
+	pc->gid = gid;
+	sid_copy(&pc->sid, psid);
+	DLIST_ADD(gid_sid_cache_head, pc);
+	n_gid_sid_cache++;
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert uid_t to SID function.
+ check idmap if uid is in idmap range, otherwise falls back to
+ the legacy algorithmic mapping.
+ A special cache is used for uids that maps to Wellknown SIDs
+ Returns SID pointer.
+*****************************************************************/  
+
+NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
+{
+	uid_t low, high;
+	fstring sid;
+
+	if (fetch_sid_from_uid_cache(psid, uid))
+		return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
+
+	if (lp_idmap_uid(&low, &high) && uid >= low && uid <= high) {
+		if (winbind_uid_to_sid(psid, uid)) {
+
+			DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
+				(unsigned int)uid, sid_to_string(sid, psid)));
+
+			if (psid)
+				store_uid_sid_cache(psid, uid);
+			return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
+		}
+	}
+
+	local_uid_to_sid(psid, uid);
+        
+	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid, sid_to_string(sid, psid)));
+
+	if (psid)
+		store_uid_sid_cache(psid, uid);
+
+	return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert gid_t to SID function.
+ check idmap if gid is in idmap range, otherwise falls back to
+ the legacy algorithmic mapping.
+ Group mapping is used for gids that maps to Wellknown SIDs
+ Returns SID pointer.
+*****************************************************************/  
+
+NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
+{
+	gid_t low, high;
+	fstring sid;
+
+	if (fetch_sid_from_gid_cache(psid, gid))
+		return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
+
+	if (lp_idmap_gid(&low, &high) && gid >= low && gid <= high) {
+		if (winbind_gid_to_sid(psid, gid)) {
+
+			DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
+				(unsigned int)gid, sid_to_string(sid, psid)));
+                        
+			if (psid)
+				store_gid_sid_cache(psid, gid);
+			return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
+		}
+	}
+
+	local_gid_to_sid(psid, gid);
+        
+	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid, sid_to_string(sid, psid)));
+
+	if (psid)
+		store_gid_sid_cache(psid, gid);
+
+	return ( psid ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert SID to uid function.
+ if it is a foreign sid or it is in idmap rid range check idmap,
+ otherwise falls back to the legacy algorithmic mapping.
+ A special cache is used for uids that maps to Wellknown SIDs
+ Returns True if this name is a user sid and the conversion
+ was done correctly, False if not.
+*****************************************************************/  
+
+NTSTATUS sid_to_uid(const DOM_SID *psid, uid_t *puid)
+{
+	fstring dom_name, name, sid_str;
+	enum SID_NAME_USE name_type;
+	BOOL ret;
+
+	if (fetch_uid_from_cache(puid, psid))
+		return NT_STATUS_OK;
+
+	/*
+	 * First we must look up the name and decide if this is a user sid.
+	 */
+
+	if ( (!winbind_lookup_sid(psid, dom_name, name, &name_type)) || (name_type != SID_NAME_USER) ) {
+		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed - trying local.\n",
+			sid_to_string(sid_str, psid) ));
+
+		ret = local_sid_to_uid(puid, psid, &name_type);
+		if (ret)
+			store_uid_sid_cache(psid, *puid);
+		return (ret ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
+	}
+
+	/*
+	 * Ensure this is a user sid.
+	 */
+
+	if (name_type != SID_NAME_USER) {
+		DEBUG(10,("sid_to_uid: winbind lookup succeeded but SID is not a uid (%u)\n",
+			(unsigned int)name_type ));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* query only first */
+	
+	if ( !winbind_sid_to_uid_query(puid, psid) ) 
+	{
+		DEBUG(10,("sid_to_uid: winbind query for sid %s failed.\n",
+			sid_to_string(sid_str, psid) ));
+		
+		/* see if we have a local mapping */
+			
+		if ( local_sid_to_uid(puid, psid, &name_type) ) {
+			store_uid_sid_cache(psid, *puid);
+			return NT_STATUS_OK;
+		}
+			
+		/* Call back to winbind to allocate a new uid */
+
+		if ( !winbind_sid_to_uid(puid, psid) ) {
+			DEBUG(10,("sid_to_uid: winbind failed to allocate a new uid for sid %s\n",
+				sid_to_string(sid_str, psid) ));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	DEBUG(10,("sid_to_uid: %s -> %u\n", sid_to_string(sid_str, psid),
+		(unsigned int)*puid ));
+
+	store_uid_sid_cache(psid, *puid);
+	
+	return NT_STATUS_OK;
+}
+/*****************************************************************
+ *THE CANONICAL* convert SID to gid function.
+ if it is a foreign sid or it is in idmap rid range check idmap,
+ otherwise falls back to the legacy algorithmic mapping.
+ Group mapping is used for gids that maps to Wellknown SIDs
+ Returns True if this name is a user sid and the conversion
+ was done correctly, False if not.
+*****************************************************************/  
+
+NTSTATUS sid_to_gid(const DOM_SID *psid, gid_t *pgid)
+{
+	fstring dom_name, name, sid_str;
+	enum SID_NAME_USE name_type;
+	BOOL ret;
+
+	if (fetch_gid_from_cache(pgid, psid))
+		return NT_STATUS_OK;
+
+	/*
+	 * First we must look up the name and decide if this is a group sid.
+	 */
+
+	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
+		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed - trying local.\n",
+			sid_to_string(sid_str, psid) ));
+
+		ret = local_sid_to_gid(pgid, psid, &name_type);
+		if (ret)
+			store_gid_sid_cache(psid, *pgid);
+			
+		return (ret ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL);
+	}
+
+	/*
+	 * Ensure this is a group sid.
+	 */
+
+	if ((name_type != SID_NAME_DOM_GRP) && (name_type != SID_NAME_ALIAS) && (name_type != SID_NAME_WKN_GRP)) {
+		DEBUG(10,("sid_to_gid: winbind lookup succeeded but SID is not a known group (%u)\n",
+			(unsigned int)name_type ));
+
+		ret = local_sid_to_gid(pgid, psid,  &name_type);
+		if (ret)
+			store_gid_sid_cache(psid, *pgid);
+		return (ret ? NT_STATUS_OK : NT_STATUS_INVALID_PARAMETER);
+	}
+
+	/* query only first */
+	
+	if ( !winbind_sid_to_gid_query(pgid, psid) ) 
+	{
+		DEBUG(10,("sid_to_gid: winbind query for sid %s failed.\n",
+			sid_to_string(sid_str, psid) ));
+			
+		/* see if we have a local mapping */
+			
+		if ( local_sid_to_gid(pgid, psid, &name_type) ) {
+			store_gid_sid_cache(psid, *pgid);
+			return NT_STATUS_OK;
+		}
+			
+		/* Call back to winbind to allocate a new uid */
+
+		if ( !winbind_sid_to_gid(pgid, psid) ) {
+			DEBUG(10,("sid_to_uid: winbind failed to allocate a new gid for sid %s\n",
+				sid_to_string(sid_str, psid) ));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		else
+			return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DEBUG(10,("sid_to_gid: %s -> %u\n", sid_to_string(sid_str, psid),
+		(unsigned int)*pgid ));
+
+	store_gid_sid_cache(psid, *pgid);
+	
+	return NT_STATUS_OK;
+}
+

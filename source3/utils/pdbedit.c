@@ -158,7 +158,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		char nt_passwd[33];
 
 		uid = -1;
-		sid_to_uid(pdb_get_user_sid(sam_pwent), &uid);
+		idmap_sid_to_uid(pdb_get_user_sid(sam_pwent), &uid, 0);
 		pdb_sethexpwd(lm_passwd, pdb_get_lanman_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 		pdb_sethexpwd(nt_passwd, pdb_get_nt_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 			
@@ -171,7 +171,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		       (uint32)pdb_get_pass_last_set_time(sam_pwent));
 	} else {
 		uid = -1;
-		sid_to_uid(pdb_get_user_sid(sam_pwent), &uid);
+		idmap_sid_to_uid(pdb_get_user_sid(sam_pwent), &uid, 0);
 		printf ("%s:%d:%s\n", pdb_get_username(sam_pwent), uid,	pdb_get_fullname(sam_pwent));
 	}
 

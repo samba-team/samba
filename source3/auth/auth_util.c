@@ -923,12 +923,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	DOM_SID user_sid;
 	DOM_SID group_sid;
 
-	struct passwd *passwd;
-
-	unid_t u_id, g_id;
 	uid_t uid;
 	gid_t gid;
-	int u_type, g_type;
 
 	int n_lgroupSIDs;
 	DOM_SID *lgroupSIDs   = NULL;
@@ -964,44 +960,20 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		/* If the server didn't give us one, just use the one we sent them */
 		domain = domain;
 	}
+	
+	/* try to fill the same account..  If getpwnam() fails, then try the 
+	   add user script (2.2.x behavior) */
+	   
+	nt_status = fill_sam_account(mem_ctx, nt_domain, internal_username,
+		&found_username, &uid, &gid, &sam_account);
 
-	u_type = ID_USERID;
-	g_type = ID_GROUPID;
- 
- 	/* we are trying to check that idmap isn't stuffing us over - does this
- 	   user actually exist? */
-	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&u_id, &u_type, &user_sid))
-	    && NT_STATUS_IS_OK(idmap_get_id_from_sid(&g_id, &g_type, &group_sid))
-	    && ((passwd = getpwuid_alloc(u_id.uid)))) {
-
-		nt_status = pdb_init_sam_pw(&sam_account, passwd);
-
- 		uid = passwd->pw_uid;
- 		gid = passwd->pw_gid;
- 
- 		/* we should check this is the same name */
-		found_username = talloc_strdup(mem_ctx, passwd->pw_name);
-		
-		passwd_free(&passwd);
-	} else {
-
- 		/* User not from winbind - try and find them by getpwnam() */
-		nt_status = fill_sam_account(mem_ctx, nt_domain,
-					     internal_username,
-					     &found_username,
-					     &uid, &gid,
-					     &sam_account);
-
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
-			DEBUG(3,("User %s does not exist, trying to add it\n",
-				 internal_username));
-			auth_add_user_script(nt_domain, internal_username);
-			nt_status = fill_sam_account(mem_ctx, nt_domain,
-						     internal_username,
-						     &found_username,
-						     &uid, &gid,
-						     &sam_account);
-		}
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
+		DEBUG(3,("User %s does not exist, trying to add it\n", 
+			internal_username));
+		auth_add_user_script(nt_domain, internal_username);
+		nt_status = fill_sam_account(mem_ctx, nt_domain, 
+			internal_username, &found_username,
+			&uid, &gid, &sam_account);
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1082,12 +1054,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	/* Store the user group information in the server_info 
 	   returned to the caller. */
 	
-	if (!NT_STATUS_IS_OK(nt_status 
-			     = get_user_groups_from_local_sam((*server_info)->unix_name,
-							      uid, gid, 
-							      &n_lgroupSIDs, 
-							      &lgroupSIDs, 
-							      &unix_groups)))
+	nt_status = get_user_groups_from_local_sam((*server_info)->unix_name,
+		uid, gid, &n_lgroupSIDs, &lgroupSIDs, &unix_groups);
+	if ( !NT_STATUS_IS_OK(nt_status) )
 	{
 		DEBUG(4,("get_user_groups_from_local_sam failed\n"));
 		return nt_status;
