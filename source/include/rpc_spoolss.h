@@ -332,6 +332,7 @@
 #define PRINTER_ENUM_NETWORK		0x00000040
 
 /* the flags of each printers */
+#define PRINTER_ENUM_UNKNOWN_8		0x00000008
 #define PRINTER_ENUM_EXPAND		0x00004000
 #define PRINTER_ENUM_CONTAINER		0x00008000
 #define PRINTER_ENUM_ICONMASK		0x00ff0000
@@ -711,35 +712,49 @@ typedef struct printer_info_0
 	UNISTR printername;
 	UNISTR servername;
 	uint32 cjobs;
-	uint32 attributes;
-	uint32 unknown0;
-	uint32 unknown1;
-	uint32 unknown2;
-	uint32 unknown3;
-	uint32 unknown4;
-	uint32 unknown5;
-	uint32 unknown6;
-	uint16 majorversion;
-	uint16 buildversion;
+	uint32 total_jobs;
+	uint32 total_bytes;
+	
+	uint16 year;
+	uint16 month;
+	uint16 dayofweek;
+	uint16 day;
+	uint16 hour;
+	uint16 minute;
+	uint16 second;
+	uint16 milliseconds;
+
+	uint32 global_counter;
+	uint32 total_pages;
+
+	uint16 major_version;
+	uint16 build_version;
+
 	uint32 unknown7;
 	uint32 unknown8;
 	uint32 unknown9;
-	uint32 unknown10;
+	uint32 session_counter;
 	uint32 unknown11;
-	uint32 unknown12;
+	uint32 printer_errors;
 	uint32 unknown13;
 	uint32 unknown14;
 	uint32 unknown15;
 	uint32 unknown16;
-	uint32 unknown17;
+	uint32 change_id;
 	uint32 unknown18;
 	uint32 status;
 	uint32 unknown20;
-	uint32 unknown21;
+	uint32 c_setprinter;
+
 	uint16 unknown22;
-	uint32 unknown23;
-}
-PRINTER_INFO_0;
+	uint16 unknown23;
+	uint16 unknown24;
+	uint16 unknown25;
+	uint16 unknown26;
+	uint16 unknown27;
+	uint16 unknown28;
+	uint16 unknown29;
+} PRINTER_INFO_0;
 
 typedef struct printer_info_1
 {
@@ -789,6 +804,7 @@ SPOOL_Q_ENUMPRINTERS;
 
 typedef struct printer_info_ctr_info
 {
+	PRINTER_INFO_0 *printers_0;
 	PRINTER_INFO_1 *printers_1;
 	PRINTER_INFO_2 *printers_2;
 }
@@ -829,9 +845,7 @@ typedef struct spool_r_getprinter
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 status;
-
-}
-SPOOL_R_GETPRINTER;
+} SPOOL_R_GETPRINTER;
 
 struct s_notify_info_data_table
 {
@@ -839,16 +853,15 @@ struct s_notify_info_data_table
 	uint16 field;
 	char *name;
 	uint32 size;
-	void (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA * data,
-		    print_queue_struct * queue,
-		    NT_PRINTER_INFO_LEVEL * printer);
+	void (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data,
+		    print_queue_struct *queue,
+		    NT_PRINTER_INFO_LEVEL *printer);
 };
 
 typedef struct driver_info_1
 {
 	UNISTR name;
-}
-DRIVER_INFO_1;
+} DRIVER_INFO_1;
 
 typedef struct driver_info_2
 {
@@ -858,8 +871,7 @@ typedef struct driver_info_2
 	UNISTR driverpath;
 	UNISTR datafile;
 	UNISTR configfile;
-}
-DRIVER_INFO_2;
+} DRIVER_INFO_2;
 
 typedef struct driver_info_3
 {
@@ -870,7 +882,7 @@ typedef struct driver_info_3
 	UNISTR datafile;
 	UNISTR configfile;
 	UNISTR helpfile;
-	UNISTR **dependentfiles;
+	uint16 *dependentfiles;
 	UNISTR monitorname;
 	UNISTR defaultdatatype;
 }
@@ -878,16 +890,11 @@ DRIVER_INFO_3;
 
 typedef struct driver_info_info
 {
-	union
-	{
-		DRIVER_INFO_1 *info1;
-		DRIVER_INFO_2 *info2;
-		DRIVER_INFO_3 *info3;
-	}
-	driver;
-
+	DRIVER_INFO_1 *info1;
+	DRIVER_INFO_2 *info2;
+	DRIVER_INFO_3 *info3;
 }
-DRIVER_INFO;
+PRINTER_DRIVER_CTR;
 
 typedef struct spool_q_getprinterdriver2
 {
@@ -897,7 +904,8 @@ typedef struct spool_q_getprinterdriver2
 	uint32 level;
 	NEW_BUFFER *buffer;
 	uint32 offered;
-	uint32 unknown;
+	uint32 clientmajorversion;
+	uint32 clientminorversion;
 }
 SPOOL_Q_GETPRINTERDRIVER2;
 
@@ -905,8 +913,8 @@ typedef struct spool_r_getprinterdriver2
 {
 	NEW_BUFFER *buffer;
 	uint32 needed;
-	uint32 unknown0;
-	uint32 unknown1;
+	uint32 servermajorversion;
+	uint32 serverminorversion;
 	uint32 status;
 }
 SPOOL_R_GETPRINTERDRIVER2;
@@ -1180,6 +1188,17 @@ typedef struct spool_r_enumforms
 SPOOL_R_ENUMFORMS;
 
 
+typedef struct spool_printer_info_level_1
+{
+	uint32 flags;
+	uint32 description_ptr;
+	uint32 name_ptr;
+	uint32 comment_ptr;
+	UNISTR2 description;
+	UNISTR2 name;
+	UNISTR2 comment;	
+} SPOOL_PRINTER_INFO_LEVEL_1;
+
 typedef struct spool_printer_info_level_2
 {
 	uint32 servername_ptr;
@@ -1222,6 +1241,7 @@ typedef struct spool_printer_info_level
 {
 	uint32 level;
 	uint32 info_ptr;
+	SPOOL_PRINTER_INFO_LEVEL_1 *info_1;
 	SPOOL_PRINTER_INFO_LEVEL_2 *info_2;
 }
 SPOOL_PRINTER_INFO_LEVEL;
@@ -1525,7 +1545,6 @@ typedef struct spool_q_setprinterdata
 	uint8 *data;
 	uint32 real_len;
 	uint32 numeric_data;
-
 }
 SPOOL_Q_SETPRINTERDATA;
 
@@ -1597,9 +1616,11 @@ typedef struct pjob_info_info
 		JOB_INFO_1 *job_info_1;
 		JOB_INFO_2 *job_info_2;
 		void *info;
-	} job;
+	}
+	job;
 
-} PJOB_INFO;
+}
+PJOB_INFO;
 
 typedef struct spool_r_getjob
 {

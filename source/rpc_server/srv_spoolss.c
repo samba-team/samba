@@ -320,9 +320,11 @@ static BOOL api_spoolss_getprinterdriver2(prs_struct *data, prs_struct *rdata)
 
 	r_u.status =
 		_spoolss_getprinterdriver2(&q_u.handle, &q_u.architecture,
-					   q_u.level, q_u.unknown, r_u.buffer,
+					   q_u.level, q_u.clientmajorversion,
+					   q_u.clientminorversion, r_u.buffer,
 					   q_u.offered, &r_u.needed,
-					   &r_u.unknown0, &r_u.unknown1);
+					   &r_u.servermajorversion,
+					   &r_u.serverminorversion);
 
 	if (!spoolss_io_r_getprinterdriver2("", &r_u, rdata, 0))
 	{
@@ -855,6 +857,19 @@ static BOOL api_spoolss_addprinterex(prs_struct *data, prs_struct *rdata)
 		DEBUG(0,
 		      ("spoolss_io_r_addprinterex: unable to marshall SPOOL_R_ADDPRINTEREX.\n"));
 		return False;
+	}
+
+	if (q_u.info.info_ptr != 0)
+	{
+		switch (q_u.info.level)
+		{
+			case 1:
+				safe_free(q_u.info.info_1);
+				break;
+			case 2:
+				safe_free(q_u.info.info_2);
+				break;
+		}
 	}
 
 	return True;

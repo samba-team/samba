@@ -576,7 +576,14 @@ void prs_force_dynamic(prs_struct *ps)
 /*******************************************************************
  Fetch the current offset (external interface).
  ********************************************************************/
+uint32 prs_data_size(prs_struct *ps)
+{
+	return ps->data_size;
+}
 
+/*******************************************************************
+ Fetch the current offset (external interface).
+ ********************************************************************/
 uint32 prs_offset(prs_struct *ps)
 {
 	return ps->offset;
@@ -585,7 +592,6 @@ uint32 prs_offset(prs_struct *ps)
 /*******************************************************************
  Set the current offset (external interface).
  ********************************************************************/
-
 BOOL prs_set_offset(prs_struct *ps, uint32 offset)
 {
 	if(offset <= ps->offset) {

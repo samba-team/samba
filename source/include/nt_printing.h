@@ -1,3 +1,28 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   SMB parameters and setup
+   Copyright (C) Andrew Tridgell              1992-2000,
+   Copyright (C) Jean Francois Micouleau      1998-2000.
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#ifndef NT_PRINTING_H_
+#define NT_PRINTING_H_
+
 #define ORIENTATION      0x00000001L
 #define PAPERSIZE        0x00000002L
 #define PAPERLENGTH      0x00000004L
@@ -192,7 +217,6 @@ typedef struct nt_printer_info_level_2
 	fstring sharename;
 	fstring portname;
 	fstring drivername;
-	fstring comment;
 	fstring location;
 	NT_DEVICEMODE *devmode;
 	fstring sepfile;
@@ -202,6 +226,9 @@ typedef struct nt_printer_info_level_2
 	NT_PRINTER_PARAM *specific;
 	/* SEC_DESC_BUF *secdesc; */
 	/* not used but ... and how ??? */
+	uint32 changeid;
+	uint32 c_setprinter;
+	time_t setuptime;	
 } NT_PRINTER_INFO_LEVEL_2;
 
 typedef struct nt_printer_info_level
@@ -235,3 +262,4 @@ typedef struct _form
        UNISTR2 name;
 } FORM;
 */
+#endif /* NT_PRINTING_H_ */

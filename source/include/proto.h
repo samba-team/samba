@@ -930,6 +930,11 @@ const char *get_sid_name_use_str(uint32 sid_name_use);
 BOOL do_file_lock(int fd, int waitsecs, int type);
 BOOL file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL file_unlock(int fd, int *plock_depth);
+uint32 map_lock_offset(uint32 high, uint32 low);
+SMB_OFF_T get_lock_count(char *data, int data_offset, BOOL large_file_format,
+			 BOOL *err);
+SMB_OFF_T get_lock_offset(char *data, int data_offset, BOOL large_file_format,
+			  BOOL *err);
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 void *startfileent(char *pfile, char *s_readbuf, int bufsize,
 				int *file_lock_depth, BOOL update);
@@ -3784,6 +3789,7 @@ BOOL prs_append_data(prs_struct * ps, const char *data, int len);
 BOOL prs_add_data(prs_struct * ps, const char *data, int len);
 void prs_switch_type(prs_struct *ps, BOOL io);
 void prs_force_dynamic(prs_struct *ps);
+uint32 prs_data_size(prs_struct *ps);
 uint32 prs_offset(prs_struct *ps);
 BOOL prs_set_offset(prs_struct *ps, uint32 offset);
 void prs_mem_free(prs_struct *ps);
@@ -4752,10 +4758,6 @@ int reply_copy(connection_struct * conn, char *inbuf, char *outbuf,
 	       int dum_size, int dum_buffsize);
 int reply_setdir(connection_struct * conn, char *inbuf, char *outbuf,
 		 int dum_size, int dum_buffsize);
-SMB_OFF_T get_lock_count(char *data, int data_offset, BOOL large_file_format,
-			 BOOL *err);
-SMB_OFF_T get_lock_offset(char *data, int data_offset, BOOL large_file_format,
-			  BOOL *err);
 int reply_lockingX(connection_struct * conn, char *inbuf, char *outbuf,
 		   int length, int bufsize);
 int reply_readbmpx(connection_struct * conn, char *inbuf, char *outbuf,
@@ -4956,9 +4958,10 @@ uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 le
 			      uint32 *needed, uint32 *returned);
 uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 			   NEW_BUFFER *buffer, uint32 offered, uint32 *needed);
-uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, uint32 unknown,
+uint32 _spoolss_getprinterdriver2(const POLICY_HND *handle, const UNISTR2 *uni_arch, uint32 level, 
+				uint32 clientmajorversion, uint32 clientminorversion,
 				NEW_BUFFER *buffer, uint32 offered,
-				uint32 *needed, uint32 *unknown0, uint32 *unknown1);
+				uint32 *needed, uint32 *servermajorversion, uint32 *serverminorversion);
 uint32 _spoolss_startpageprinter(const POLICY_HND *handle);
 uint32 _spoolss_endpageprinter(const POLICY_HND *handle);
 uint32 _spoolss_startdocprinter( const POLICY_HND *handle, uint32 level,
@@ -4996,7 +4999,7 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
 				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
-				uint32 user_switch, const  SPOOL_USER_CTR *user,
+				uint32 user_switch, const SPOOL_USER_CTR *user,
 				POLICY_HND *handle);
 uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 				uint32 level,
@@ -5008,7 +5011,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 				uint32 in_value_len, uint32 in_data_len,
 				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
 				uint32 *out_type,
-				uint32 *out_max_data_len, uint8  **out_pdata, uint32 *out_data_len);
+				uint32 *out_max_data_len, uint8  **data_out, uint32 *out_data_len);
 uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
 				const UNISTR2 *value,
 				uint32 type,

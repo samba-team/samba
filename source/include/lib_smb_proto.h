@@ -632,6 +632,7 @@ BOOL prs_append_data(prs_struct * ps, const char *data, int len);
 BOOL prs_add_data(prs_struct * ps, const char *data, int len);
 void prs_switch_type(prs_struct *ps, BOOL io);
 void prs_force_dynamic(prs_struct *ps);
+uint32 prs_data_size(prs_struct *ps);
 uint32 prs_offset(prs_struct *ps);
 BOOL prs_set_offset(prs_struct *ps, uint32 offset);
 void prs_mem_free(prs_struct *ps);
