@@ -348,7 +348,9 @@ krb4_get_afs_tokens (const struct passwd *pwd)
 
 static int f_flag;
 static int p_flag;
+#if 0
 static int r_flag;
+#endif
 static int version_flag;
 static int help_flag;
 static char *remote_host;
@@ -434,7 +436,7 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
     else
 	tty_gid = pwd->pw_gid;
 
-    if (chown (ttyn, pwd->pw_uid, pwd->pw_gid) < 0) {
+    if (chown (ttyn, pwd->pw_uid, tty_gid) < 0) {
 	warn("chown %s", ttyn);
 	if (rootlogin == 0)
 	    exit (1);
@@ -723,7 +725,10 @@ main(int argc, char **argv)
 #endif
 
 	if(ask){
-	    f_flag = r_flag = 0;
+	    f_flag = 0;
+#if 0
+	    r_flag = 0;
+#endif
 	    ret = read_string("login: ", username, sizeof(username), 1);
 	    if(ret == -3)
 		exit(0);
