@@ -34,3 +34,17 @@ AC_DEFUN(SAMBA_MAINTAINER_MODE,[
   AC_PATH_PROG(AUTOHEADER, autoheader, autoheader)
   AC_SUBST(AUTOHEADER)
 ])
+
+
+dnl test whether dirent has a d_off member
+AC_DEFUN(AC_DIRENT_D_OFF,
+[AC_CACHE_CHECK([for d_off in dirent], ac_cv_dirent_d_off,
+[AC_TRY_COMPILE([
+#include <unistd.h>
+#include <sys/types.h>
+#include <dirent.h>], [struct dirent d; d.d_off;],
+ac_cv_dirent_d_off=yes, ac_cv_dirent_d_off=no)])
+if test $ac_cv_dirent_d_off = yes; then
+  AC_DEFINE(HAVE_DIRENT_D_OFF)
+fi
+])

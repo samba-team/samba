@@ -24,6 +24,20 @@
 #ifndef NO_CONFIG_H /* for some tests */
 #include "config.h"
 #endif
+
+#ifdef NO_PROTO
+/* get rid of prototypes for smbwrapper */
+#define _NO_PROTO
+
+#ifdef HAVE_SYS_CDEFS_H
+#include <sys/cdefs.h>
+#ifdef __P
+#undef __P
+#define __P(x) ()
+#endif
+#endif
+#endif
+
 #include "local.h"
 
 #ifdef AIX
@@ -78,6 +92,12 @@
 
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
+#elif HAVE_SYSCALL_H
+#include <syscall.h>
 #endif
 
 #ifdef HAVE_STRING_H
@@ -670,5 +690,8 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #ifdef REPLACE_GETPASS
 #define getpass(prompt) getsmbpass((prompt))
 #endif
+
+/* yuck, I'd like a better way of doing this */
+#define DIRP_SIZE (256 + 32)
 
 #endif /* _INCLUDES_H */

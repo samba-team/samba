@@ -23,7 +23,12 @@
 /* we don't want prototypes for this code */
 #define NO_PROTO
 
-#include "wrapper.h"
+#include "includes.h"
+
+#ifdef LINUX
+#include "kernel_stat.h"
+#endif
+#include "realcalls.h"
 
  int open(const char *name, int flags, mode_t mode)
 {
@@ -203,7 +208,7 @@
 
 
 
-#ifdef HAVE_GETDENTS
+#ifdef real_getdents
  int getdents(int fd, struct dirent *dirp, unsigned int count)
 {
 	if (smbw_fd(fd)) {

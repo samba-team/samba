@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "wrapper.h"
+#include "realcalls.h"
 
 pstring smbw_cwd;
 
