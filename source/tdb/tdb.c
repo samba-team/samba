@@ -872,10 +872,10 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state)
 	struct tdb_traverse_lock tl = { NULL, 0, 0 };
 	int ret, count = 0;
 
-        /* This was in the initializaton, above, but the IRIX compiler
-         * did not like it.  crh
-         */
-        tl.next = tdb->travlocks.next;
+	/* This was in the initializaton, above, but the IRIX compiler
+	 * did not like it.  crh
+	 */
+	tl.next = tdb->travlocks.next;
 
 	/* fcntl locks don't stack: beware traverse inside traverse */
 	tdb->travlocks.next = &tl;
@@ -908,8 +908,10 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state)
 		free(key.dptr);
 	}
 	tdb->travlocks.next = tl.next;
-	if (ret < 0) return -1;
-	else return count;
+	if (ret < 0)
+		return -1;
+	else
+		return count;
 }
 
 /* find the first entry in the database and return its key */
