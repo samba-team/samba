@@ -31,5 +31,5 @@ enum drsuapi_handle {
   state asscoiated with a drsuapi_DsBind*() operation
 */
 struct drsuapi_bind_state {
-	uint8_t __dummy;
+	void *sam_ctx;
 };
