@@ -385,7 +385,7 @@ static int net_help_rights( int argc, const char **argv )
 	
 	d_printf("\nBoth 'grant' and 'revoke' require a SID and a list of privilege names.\n");
 	d_printf("For example\n");
-	d_printf("\n  net rpc grant 'VALE\\biddle' SePrintOperatorPrivilege SeDiskOperatorPrivlege\n");
+	d_printf("\n  net rpc rights grant 'VALE\\biddle' SePrintOperatorPrivilege SeDiskOperatorPrivilege\n");
 	d_printf("\nwould grant the printer admin and disk manager rights to the user 'VALE\\biddle'\n\n");
 	
 	
