@@ -34,7 +34,11 @@
 DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *ticket, const uint8 tok_id[2])
 {
 	struct asn1_data data;
-	DATA_BLOB ret;
+	DATA_BLOB ret = data_blob(NULL,0);
+
+	if (!ticket->data) {
+		return ret;
+	}
 
 	ZERO_STRUCT(data);
 
