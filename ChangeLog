@@ -1,3 +1,10 @@
+2003-12-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c: try handle ts preauth better, still
+	not good, but at least it work with older heimdal releases that
+	doesn't send back KRB5KDC_ERR_PREAUTH_REQUIRED when preauth was
+	sent
+
 2003-12-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb.asn1: remove enforce-transited-policy, its no longer
