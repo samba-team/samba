@@ -239,11 +239,17 @@ static char np_cli_chal[58] =
 
 void SMBgenclientchals(char *lm_cli_chal,
 				char *nt_cli_chal, int *nt_cli_chal_len,
-				const char *srv, const char *domain)
+				const char *srv, const char *dom)
 {
 	NTTIME nt_time;
 	int srv_len = strlen(srv);
-	int dom_len = strlen(domain);
+	int dom_len = strlen(dom);
+	fstring server;
+	fstring domain;
+	fstrcpy(server, srv);
+	fstrcpy(domain, dom);
+	strupper(server);
+	strupper(domain);
 
 	generate_random_buffer(lm_cli_chal, 8, False);
 	unix_to_nt_time(&nt_time, time(NULL));
@@ -271,13 +277,13 @@ void SMBgenclientchals(char *lm_cli_chal,
 	*nt_cli_chal_len += 2;
 	SSVAL(nt_cli_chal, 30, srv_len*2);
 	*nt_cli_chal_len += 2;
-	ascii_to_unibuf(nt_cli_chal+(*nt_cli_chal_len), srv, srv_len*2);
+	ascii_to_unibuf(nt_cli_chal+(*nt_cli_chal_len), server, srv_len*2);
 	*nt_cli_chal_len += srv_len*2;
 
 	SSVAL(nt_cli_chal, 24, (*nt_cli_chal_len)+16);
 	SSVAL(nt_cli_chal, 26, (*nt_cli_chal_len)+15);
 
-	DEBUG(100,("SMBgenclientchals: srv %s, dom %s\n", srv, domain));
+	DEBUG(100,("SMBgenclientchals: srv %s, dom %s\n", server, domain));
 	dump_data(100, nt_cli_chal, *nt_cli_chal_len);
 }
 
@@ -294,7 +300,7 @@ void ntv2_owf_gen(const uchar owf[16],
 	int domain_l = strlen(domain_n);
 
 	_my_mbstowcsupper((int16*)user_u, user_n  , user_l*2  );
-	_my_mbstowcs((int16*)dom_u , domain_n, domain_l*2);
+	_my_mbstowcsupper((int16*)dom_u , domain_n, domain_l*2);
 
 	hmac_md5_init_limK_to_64(owf, 16, &ctx);
 	hmac_md5_update(user_u, user_l*2, &ctx);
