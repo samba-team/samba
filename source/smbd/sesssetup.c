@@ -704,7 +704,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			pstring pass;
 			srvstr_pull(inbuf, pass, smb_buf(inbuf), 
 				    sizeof(pass),  passlen1, STR_TERMINATE);
-			plaintext_password = data_blob(pass, strlen(pass));
+			plaintext_password = data_blob(pass, strlen(pass)+1);
 		}
 		
 		p += passlen1 + passlen2;
