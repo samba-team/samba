@@ -70,6 +70,8 @@ struct winbindd_state {
     uid_t uid_low, uid_high;               /* Range of uids to allocate */
     gid_t gid_low, gid_high;               /* Range of gids to allocate */
 
+    BOOL got_trusted_domains;              /* Got list of trusted domains? */
+
     /* Cached handle to lsa pipe */
 
     POLICY_HND lsa_handle;
