@@ -26,7 +26,9 @@
 
 /* Include header files from data in config.h file */
 
+#ifndef NO_CONFIG_H
 #include <config.h>
+#endif
 
 #include <stdio.h>
 
