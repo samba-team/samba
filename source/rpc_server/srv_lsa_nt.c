@@ -1370,9 +1370,6 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 		return NT_STATUS_ACCESS_DENIED;
 
-	/* according to an NT4 PDC, you can add privileges to SIDs even without
-	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
-	   
 	sid_copy( &sid, &q_u->sid.sid );
 
 	if ( q_u->removeall ) {
@@ -1395,12 +1392,41 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 		/* only try to add non-null strings */
 		
 		if ( *privname && !revoke_privilege_by_name( &sid, privname ) ) {
-			DEBUG(2,("_lsa_remove_acct_rights: Failed to add privilege [%s]\n", privname ));
+			DEBUG(2,("_lsa_remove_acct_rights: Failed to revoke privilege [%s]\n", privname ));
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
 	}
 
 	return NT_STATUS_OK;
+}
+
+
+NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA_R_ENUM_ACCT_RIGHTS *r_u)
+{
+	struct lsa_info *info = NULL;
+	DOM_SID sid;
+	PRIVILEGE_SET privileges;
+	
+
+	/* find the connection policy handle. */
+	
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
+		
+	/* according to an NT4 PDC, you can add privileges to SIDs even without
+	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
+	   
+	sid_copy( &sid, &q_u->sid.sid );
+	
+	privilege_set_init( &privileges );
+
+	get_privileges_for_sids( &privileges, &sid, 1 );
+
+	r_u->status = init_r_enum_acct_rights( r_u, &privileges );
+
+	privilege_set_free( &privileges );
+
+	return r_u->status;
 }
 
 

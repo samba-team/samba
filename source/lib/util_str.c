@@ -2092,3 +2092,19 @@ void string_append(char **left, const char *right)
 
 	safe_strcat(*left, right, new_len-1);
 }
+
+BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
+			 const char *str, const char ***strings,
+			 int *num)
+{
+	char *dup_str = talloc_strdup(mem_ctx, str);
+
+	*strings = TALLOC_REALLOC_ARRAY(mem_ctx, *strings, const char *, (*num)+1);
+
+	if ((*strings == NULL) || (dup_str == NULL))
+		return False;
+
+	(*strings)[*num] = dup_str;
+	*num += 1;
+	return True;
+}
