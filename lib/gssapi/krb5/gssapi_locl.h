@@ -81,6 +81,11 @@ extern krb5_context gssapi_krb5_context;
 extern krb5_keytab gssapi_krb5_keytab;
 extern HEIMDAL_MUTEX gssapi_keytab_mutex;
 
+struct gssapi_thr_context {
+    HEIMDAL_MUTEX mutex;
+    char *error_string;
+};
+
 /*
  * Prototypes
  */
@@ -94,6 +99,9 @@ krb5_error_code gssapi_krb5_init (void);
 	return GSS_S_FAILURE;					\
     }								\
 } while (0)
+
+struct gssapi_thr_context *
+gssapi_get_thread_context(int);
 
 OM_uint32
 gssapi_krb5_create_8003_checksum (
