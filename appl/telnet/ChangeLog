@@ -1,3 +1,14 @@
+2004-06-20  Love  <lha@stacken.kth.se>
+
+	* telnet/network.c: make network rings larger From: MAAAAA MOOOR
+	<huaraz@btinternet.com>
+	
+	* telnetd/state.c: make subbuffer larger XXX resize dynamicly
+	From: MAAAAA MOOOR <huaraz@btinternet.com>
+	
+	* libtelnet/kerberos5.c (Data): allocate the data needed to be
+	send From: MAAAAA MOOOR <huaraz@btinternet.com>
+	
 2004-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnet/main.c: make encrypt, forwardable, forward use appdefault

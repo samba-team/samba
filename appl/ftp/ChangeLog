@@ -1,3 +1,8 @@
+2004-06-20  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftpd/ftpcmd.y: make cbuf 64k to handle lager tickets From:
+	MAAAAA MOOOR <huaraz@btinternet.com>
+	
 2004-03-14  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftpd/ftpd.c (main): setpag if there is krb4 OR krb5 support
