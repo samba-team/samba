@@ -82,7 +82,7 @@ getstring(void)
     int i = 0;
     int c;
     int quote = 0;
-    while((c = getc(yyin)) != EOF){
+    while((c = input()) != EOF){
 	if(quote) {
 	    x[i++] = c;
 	    quote = 0;
