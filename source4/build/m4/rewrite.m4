@@ -424,6 +424,8 @@ AC_CHECK_FUNCS(syscall)
 AC_CHECK_FUNCS(getdents)
 AC_CHECK_FUNCS(pread pwrite)
 
+# needed for lib/charcnv.c
+AC_CHECK_FUNCS(setlocale)
 
 #
 # stat64 family may need <sys/stat.h> on some systems, notably ReliantUNIX

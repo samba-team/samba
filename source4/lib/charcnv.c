@@ -88,6 +88,17 @@ static smb_iconv_t get_conv_handle(charset_t from, charset_t to)
 	   to look at */
 	if (initialised == 0) {
 		initialised = 1;
+		
+#ifdef HAVE_SETLOCALE
+		/* we set back the locale to C to get ASCII-compatible
+		   toupper/lower functions.  For now we do not need
+		   any other POSIX localisations anyway. When we
+		   should really need localized string functions one
+		   day we need to write our own ascii_tolower etc.
+		*/
+		setlocale(LC_ALL, "C");
+#endif
+
 		atexit(init_iconv);
 	}
 
