@@ -18,6 +18,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/* 
+   NOTE: Since tdb is licensed under the gdb, any program that uses these
+   bindings must also be licensed under the GPL. See the following URL for
+   details: 
+
+     http://www.gnu.org/licenses/gpl-faq.html#IfInterpreterIsGPL 
+*/
+
 #include "includes.h"
 #include "Python.h"
 
