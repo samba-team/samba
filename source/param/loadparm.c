@@ -909,7 +909,6 @@ static struct parm_struct parm_table[] = {
 
 	{"Printing Options", P_SEP, P_SEPARATOR},
 	
-	{"total print jobs", P_INTEGER, P_GLOBAL, &Globals.iTotalPrintJobs, NULL, NULL, FLAG_PRINT},
 	{"max reported print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxReportedPrintJobs, NULL, NULL, FLAG_PRINT},
 	{"max print jobs", P_INTEGER, P_LOCAL, &sDefault.iMaxPrintJobs, NULL, NULL, FLAG_PRINT},
 	{"load printers", P_BOOL, P_GLOBAL, &Globals.bLoadPrinters, NULL, NULL, FLAG_PRINT},
@@ -1735,7 +1734,6 @@ FN_GLOBAL_INTEGER(lp_maxdisksize, &Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, &Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_max_smbd_processes, &Globals.iMaxSmbdProcesses)
 FN_GLOBAL_INTEGER(lp_disable_spoolss, &Globals.bDisableSpoolss)
-FN_GLOBAL_INTEGER(lp_totalprintjobs, &Globals.iTotalPrintJobs)
 FN_GLOBAL_INTEGER(lp_syslog, &Globals.syslog)
 static FN_GLOBAL_INTEGER(lp_announce_as, &Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
