@@ -48,7 +48,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   uint16 lmnttoken = 0;
   uint16 lm20token = 0;
   uint32 domainsidsize;
-  BOOL short_request = 0;
+  BOOL short_request = False;
   char *getdc;
   char *uniuser; /* Unicode user name. */
   pstring ascuser;
@@ -123,7 +123,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       if ((buf - q) >= len) {    /* Check for a short request */
 
-        short_request = 1;
+        short_request = True;
 
       }
       else { /* A full length request */

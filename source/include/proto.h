@@ -2577,7 +2577,7 @@ int read_pipe(pipes_struct *p, char *data, int n);
 void set_pipe_handle_offset(int max_open_files);
 void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
-BOOL pipe_init_outgoing_data( pipes_struct *p);
+BOOL pipe_init_outgoing_data(output_data *out_data);
 pipes_struct *open_rpc_pipe_p(char *pipe_name, 
 			      connection_struct *conn, uint16 vuid);
 ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n);

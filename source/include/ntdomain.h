@@ -63,6 +63,52 @@ typedef struct _prs_struct
 #define MARSHALLING(ps) (!(ps)->io)
 #define UNMARSHALLING(ps) ((ps)->io)
 
+typedef struct _input_data {
+	/*
+	 * This is the current incoming pdu. The data here
+	 * is collected via multiple writes until a complete
+	 * pdu is seen, then the data is copied into the in_data
+	 * structure. The maximum size of this is 64k (2 byte length).
+	 */
+	prs_struct in_pdu;
+
+	/*
+	 * The amount of data needed to complete the in_pdu.
+	 * If this is zero, then we are at the start of a new
+	 * pdu.
+	 */
+	uint32 in_pdu_needed_len;
+
+	/*
+	 * This is the collection of input data with all
+	 * the rpc headers and auth footers removed.
+	 * The maximum length of this is strictly enforced.
+	 */
+	prs_struct in_data;
+} input_data;
+
+typedef struct _output_data {
+	/* 
+	 * Raw RPC output data. This does not include RPC headers or footers.
+	 */
+	prs_struct rdata;
+
+	/* The amount of data sent from the current rdata struct. */
+	uint32 data_sent_length;
+
+	/* 
+	 * The current PDU being returned. This inclues
+	 * headers, data and authentication footer.
+	 */
+	unsigned char current_pdu[MAX_PDU_FRAG_LEN];
+
+	/* The amount of data in the current_pdu buffer. */
+	uint32 current_pdu_len;
+
+	/* The amount of data sent from the current PDU. */
+	uint32 current_pdu_sent;
+} output_data;
+
 typedef struct pipes_struct
 {
 	struct pipes_struct *next, *prev;
@@ -99,25 +145,17 @@ typedef struct pipes_struct
 	uid_t uid;
 	gid_t gid;
 
-	/* 
-	 * Raw RPC output data. This does not include RPC headers or footers.
+	/*
+	 * Struct to deal with multiple pdu inputs.
 	 */
-	prs_struct rdata;
 
-	/* The amount of data sent from the current rdata struct. */
-	uint32 data_sent_length;
+	input_data in_data;
 
-	/* 
-	 * The current PDU being returned. This inclues
-	 * headers, data and authentication footer.
+	/*
+	 * Struct to deal with multiple pdu outputs.
 	 */
-	unsigned char current_pdu[MAX_PDU_FRAG_LEN];
 
-	/* The amount of data in the current_pdu buffer. */
-	uint32 current_pdu_len;
-
-	/* The amount of data sent from the current PDU. */
-	uint32 current_pdu_sent;
+	output_data out_data;
 
 	/* When replying to an SMBtrans, this is the maximum amount of
            data that can be sent in the initial reply. */
