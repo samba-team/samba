@@ -194,7 +194,7 @@ typedef struct lsa_trans_name_info
 
 } LSA_TRANS_NAME;
 
-#define MAX_LOOKUP_SIDS 10
+#define MAX_LOOKUP_SIDS 30
 
 /* LSA_TRANS_NAME_ENUM - LSA Translated Name Enumeration container */
 typedef struct lsa_trans_name_enum_info
