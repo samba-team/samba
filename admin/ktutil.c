@@ -35,8 +35,8 @@
 
 RCSID("$Id$");
 
-int help_flag;
-int version_flag;
+static int help_flag;
+static int version_flag;
 int verbose_flag;
 char *keytab_string; 
 
