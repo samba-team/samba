@@ -542,7 +542,7 @@ static service sDefault = {
 	False,			/* bFakeOplocks */
 	False,			/* bDeleteVetoFiles */
 	False,			/* bDosFilemode */
-	False,			/* bDosFiletimes */
+	True,			/* bDosFiletimes */
 	False,			/* bDosFiletimeResolution */
 	False,			/* bFakeDirCreateTimes */
 	True,			/* bBlockingLocks */
