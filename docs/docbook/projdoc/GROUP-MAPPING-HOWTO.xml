@@ -180,7 +180,7 @@
 	</para>
 
 	<sect2>
-	<title>Sample &smb.conf; <emphasis><parameter>add group script</parameter></emphasis></title>
+	<title>Sample smb.conf add group script</title>
 
 		<para>
 		A script to great complying group names for use by the samba group interfaces:
