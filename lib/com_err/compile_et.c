@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -135,7 +135,7 @@ generate_h(void)
 
     snprintf(fn, sizeof(fn), "__%s__", hfn);
     for(p = fn; *p; p++)
-	if(!isalnum(*p))
+	if(!isalnum((unsigned char)*p))
 	    *p = '_';
     
     fprintf(h_file, "/* Generated from %s */\n", filename);
