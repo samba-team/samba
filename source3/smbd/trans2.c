@@ -2622,6 +2622,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				if (conn->vfs_ops.mknod(conn,dos_to_unix_static(fname), unixmode, dev) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 
+				inherit_access_acl(conn, fname, unixmode);
+
 				SSVAL(params,0,0);
 				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 				return(-1);

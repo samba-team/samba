@@ -884,7 +884,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	uint32 num_entries = 0;
 	int i;
 	GROUP_MAP smap;
-	GROUP_MAP *map;
+	GROUP_MAP *map = NULL;
 
 	sid_to_string(sid_str, sid);
 	DEBUG(5, ("get_group_alias_entries: enumerating aliases on SID: %s\n", sid_str));
