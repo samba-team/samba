@@ -2618,16 +2618,21 @@ static int do_message_op(void)
 {
 	struct in_addr ip;
 	struct nmb_name called, calling;
-
-        zero_ip(&ip);
+	fstring server_name;
+	char name_type_hex[10];
 
 	make_nmb_name(&calling, global_myname, 0x0);
 	make_nmb_name(&called , desthost, name_type);
 
+	safe_strcpy(server_name, desthost, sizeof(server_name));
+	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
+	safe_strcat(server_name, name_type_hex, sizeof(server_name));
+
         zero_ip(&ip);
 	if (have_ip) ip = dest_ip;
 
-	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) != port) || !cli_connect(cli, desthost, &ip)) {
+	if (!(cli=cli_initialise(NULL)) || (cli_set_port(cli, port) != port) ||
+	    !cli_connect(cli, server_name, &ip)) {
 		d_printf("Connection to %s failed\n", desthost);
 		return 1;
 	}
