@@ -1,0 +1,7 @@
+ldbadd
+ldbsearch
+ldbdel
+test.ldb
+TAGS
+.*~
+*.o

@@ -1,0 +1,4 @@
+dn: @INDEXLIST
+@IDXATTR: drink
+@IDXATTR: title
+@IDXATTR: objectclass
