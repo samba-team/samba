@@ -125,6 +125,10 @@ extern "C" {
 
 #include <roken-common.h>
 
+#ifndef HAVE___ATTRIBUTE__
+#define __attribute__(x)
+#endif
+
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
 #define setsid _setsid
 #endif
