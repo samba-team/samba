@@ -3,7 +3,7 @@
 
    Winbind status program.
 
-   Copyright (C) Tim Potter      2000
+   Copyright (C) Tim Potter      2000-2002
    Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
@@ -625,7 +625,7 @@ static BOOL wbinfo_ping(void)
 static void usage(void)
 {
 	d_printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
-               "| -a user%%password\n");
+               "| -[aA] user%%password\n");
 	d_printf("\t-u\t\t\tlists all domain users\n");
 	d_printf("\t-g\t\t\tlists all domain groups\n");
 	d_printf("\t-n name\t\t\tconverts name to sid\n");
@@ -640,6 +640,7 @@ static void usage(void)
 	d_printf("\t-m\t\t\tlist trusted domains\n");
 	d_printf("\t-r user\t\t\tget user groups\n");
 	d_printf("\t-a user%%password\tauthenticate user\n");
+ 	d_printf("\t-A user%%password\tstore user and password used by winbindd (root only)\n");
 	d_printf("\t-p 'ping' winbindd to see if it is alive\n");
 	d_printf("\t--sequence\t\tshow sequence numbers of all domains\n");
 }
@@ -683,7 +684,7 @@ int main(int argc, char **argv)
 		{ "sequence", 0, POPT_ARG_NONE, 0, OPT_SEQUENCE },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
-		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
+		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p' },
 		{ 0, 0, 0, 0 }
 	};
