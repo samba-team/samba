@@ -1,5 +1,5 @@
-              WHATS NEW IN Samba 2.0.4
-              ========================
+              WHATS NEW IN Samba 2.0.4b
+              =========================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
@@ -87,6 +87,21 @@ Samba 2.0.4 is provided as :
 
 docs/textdocs/NT_Security.txt
 docs/htmldocs/NT_Security.html
+
+Changes in 2.0.4b
+-----------------
+
+A bug with MS-Word 97 saving files with zero UNIX permissions
+was fixed. Even though a workaround is available (set force
+create mode = 644 on the share) Word is such an important
+application that a point fix was neccessary.
+
+Changes in 2.0.4a
+-----------------
+
+The text and html versions of NT_Security were missing from
+the shipping tarball. Also a compile bug for platforms that
+don't have usleep was fixed.
 
 Bugfixes added since 2.0.3
 --------------------------
