@@ -97,7 +97,13 @@ struct get_dc_name_cache {
 static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring srv_name)
 {
 	ADS_STRUCT *ads;
-	ads = ads_init(domain, domain, NULL);
+	const char *realm = domain;
+
+	if (strcasecmp(realm, lp_workgroup()) == 0) {
+		realm = lp_realm();
+	}
+
+	ads = ads_init(realm, domain, NULL);
 	if (!ads) {
 		return False;
 	}
