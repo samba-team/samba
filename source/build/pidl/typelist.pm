@@ -7,7 +7,7 @@ package typelist;
 
 use strict;
 
-my %typedefs;
+my %typedefs = ();
 
 sub addType($)
 {
@@ -51,6 +51,88 @@ sub RegisterPrimitives()
 	}
 }
 
+sub enum_type_fn($)
+{
+	my $enum = shift;
+	if (util::has_property($enum->{PARENT}, "enum8bit")) {
+		return "uint8";
+	} elsif (util::has_property($enum->{PARENT}, "v1_enum")) {
+		return "uint32";
+	}
+	return "uint16";
+}
+
+sub bitmap_type_fn($)
+{
+	my $bitmap = shift;
+
+	if (util::has_property($bitmap, "bitmap8bit")) {
+		return "uint8";
+	} elsif (util::has_property($bitmap, "bitmap16bit")) {
+		return "uint16";
+	} elsif (util::has_property($bitmap, "bitmap64bit")) {
+		return "uint64";
+	}
+	return "uint32";
+}
+
+# provide mappings between IDL base types and types in our headers
+my %scalar_type_mappings = 
+    (
+     "int8"         => "int8_t",
+     "uint8"        => "uint8_t",
+     "short"        => "int16_t",
+     "wchar_t"      => "uint16_t",
+     "int16"        => "int16_t",
+     "uint16"       => "uint16_t",
+     "int32"        => "int32_t",
+     "uint32"       => "uint32_t",
+     "int64"        => "int64_t",
+     "uint64"       => "uint64_t",
+     "dlong"        => "int64_t",
+     "udlong"       => "uint64_t",
+     "udlongr"      => "uint64_t",
+     "hyper"        => "uint64_t",
+     "NTTIME_1sec"  => "NTTIME",
+     "NTTIME_hyper" => "NTTIME",
+     "ipv4address"  => "const char *"
+     );
+
+# map from a IDL type to a C header type
+sub mapScalarType($)
+{
+	my $name = shift;
+	if (my $ret = $scalar_type_mappings{$name}) {
+		return $ret;
+	}
+	return $name;
+}
+
+sub mapType($)
+{
+	my $e = shift;
+	my $dt;
+
+	return "const char *" if ($e->{TYPE} =~ "string");
+
+	if ($e->{TYPE} eq "ENUM" or $e->{TYPE} eq "BITMAP") {
+		$dt = getType($e->{PARENT}->{NAME});
+	}
+	
+	unless ($dt or $dt = getType($e->{TYPE})) {
+		# Best guess
+		return "struct $e->{TYPE}";
+	}
+	return mapScalarType($e->{TYPE}) if ($dt->{DATA}->{TYPE} eq "SCALAR");
+	return "enum $dt->{NAME}" if ($dt->{DATA}->{TYPE} eq "ENUM");
+	return "struct $dt->{NAME}" if ($dt->{DATA}->{TYPE} eq "STRUCT");
+	return "union $dt->{NAME}" if ($dt->{DATA}->{TYPE} eq "UNION");
+	return mapScalarType(bitmap_type_fn($dt->{DATA})) if ($dt->{DATA}->{TYPE} eq "BITMAP");
+
+	die("Unknown type $dt->{DATA}->{TYPE}");
+}
+
 RegisterPrimitives();
+
 
 1;

@@ -200,48 +200,6 @@ sub property_matches($$$)
 	return undef;
 }
 
-my %enum_list;
-
-sub enum_type_decl($)
-{
-	my $enum = shift;
-	return "enum $enum->{TYPE}";
-}
-
-sub enum_type_fn($)
-{
-	my $enum = shift;
-	if (util::has_property($enum->{PARENT}, "enum8bit")) {
-		return "uint8";
-	} elsif (util::has_property($enum->{PARENT}, "v1_enum")) {
-		return "uint32";
-	}
-	return "uint16";
-}
-
-my %bitmap_list;
-
-sub bitmap_type_fn($)
-{
-	my $bitmap = shift;
-
-	if (util::has_property($bitmap->{PARENT}, "bitmap8bit")) {
-		return "uint8";
-	} elsif (util::has_property($bitmap->{PARENT}, "bitmap16bit")) {
-		return "uint16";
-	} elsif (util::has_property($bitmap->{PARENT}, "bitmap64bit")) {
-		return "uint64";
-	}
-	return "uint32";
-}
-
-sub bitmap_type_decl($)
-{
-	my $bitmap = shift;
-	return map_type(bitmap_type_fn($bitmap));
-}
-
-
 # determine if an element is a pass-by-reference structure
 sub is_ref_struct($)
 {
@@ -286,39 +244,6 @@ sub make_str($)
 		return $str;
 	}
 	return "\"" . $str . "\"";
-}
-
-
-# provide mappings between IDL base types and types in our headers
-my %type_mappings = 
-    (
-     "int8"         => "int8_t",
-     "uint8"        => "uint8_t",
-     "short"        => "int16_t",
-     "wchar_t"      => "uint16_t",
-     "int16"        => "int16_t",
-     "uint16"       => "uint16_t",
-     "int32"        => "int32_t",
-     "uint32"       => "uint32_t",
-     "int64"        => "int64_t",
-     "uint64"       => "uint64_t",
-     "dlong"        => "int64_t",
-     "udlong"       => "uint64_t",
-     "udlongr"      => "uint64_t",
-     "hyper"        => "uint64_t",
-     "NTTIME_1sec"  => "NTTIME",
-     "NTTIME_hyper" => "NTTIME",
-     "ipv4address"  => "const char *"
-     );
-
-# map from a IDL type to a C header type
-sub map_type($)
-{
-	my $name = shift;
-	if (my $ret = $type_mappings{$name}) {
-		return $ret;
-	}
-	return $name;
 }
 
 1;
