@@ -54,4 +54,5 @@ clean cleandir:
 	rm -f *.o *.a telnet \#* *~ core
 
 distclean: clean
-	rm -f Makefile
+	rm -f Makefile *~
+	rm -rf CVS

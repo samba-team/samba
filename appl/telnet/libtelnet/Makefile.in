@@ -49,4 +49,5 @@ clean cleandir:
 	rm -f *.o *.a \#* *~ core
 
 distclean: clean
-	rm -f Makefile
+	rm -f Makefile *~
+	rm -rf CVS
