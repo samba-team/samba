@@ -165,7 +165,7 @@ READLINE_OBJ = lib/readline.o
 POPT_LIB_OBJ = lib/popt_common.o 
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
-            ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o ubiqx/debugparse.o
+            ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o 
 
 PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
 
