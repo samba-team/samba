@@ -477,6 +477,10 @@ do_authenticate (struct rx_header *hdr,
 
     /* life */
     max_life = end_time - kdc_time;
+    /* end_time - kdc_time can sometimes be non-positive due to slight
+       time skew between client and server. Let's make sure it is postive */
+    if(max_life < 1)
+	max_life = 1;
     if (client_entry->max_life)
 	max_life = min(max_life, *client_entry->max_life);
     if (server_entry->max_life)
@@ -710,6 +714,10 @@ do_getticket (struct rx_header *hdr,
 
     /* life */
     max_life = end_time - kdc_time;
+    /* end_time - kdc_time can sometimes be non-positive due to slight
+       time skew between client and server. Let's make sure it is postive */
+    if(max_life < 1)
+	max_life = 1;
     if (krbtgt_entry->max_life)
 	max_life = min(max_life, *krbtgt_entry->max_life);
     if (server_entry->max_life)
