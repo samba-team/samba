@@ -42,13 +42,10 @@ RCSID("$Id$");
 
 #ifdef HAVE_NDBM_H
 
-static krb5_error_code
-NDBM_close(krb5_context context, HDB *db)
-{
-    DBM *d = (DBM*)db->db;
-    dbm_close(d);
-    return 0;
-}
+struct ndbm_db {
+    DBM *db;
+    int lock_fd;
+};
 
 static krb5_error_code
 NDBM_destroy(krb5_context context, HDB *db)
@@ -61,21 +58,15 @@ NDBM_destroy(krb5_context context, HDB *db)
 static krb5_error_code
 NDBM_lock(krb5_context context, HDB *db, int operation)
 {
-#if 0
-    int fd = fd;
-    return hdb_lock(fd, operation);
-#endif
-    return 0;
+    struct ndbm_db *d = db->db;
+    return hdb_lock(d->lock_fd, operation);
 }
 
 static krb5_error_code
 NDBM_unlock(krb5_context context, HDB *db)
 {
-#if 0
-    int fd = fd;
-    return hdb_unlock(fd);
-#endif
-    return 0;
+    struct ndbm_db *d = db->db;
+    return hdb_unlock(d->lock_fd);
 }
 
 static krb5_error_code
@@ -128,21 +119,51 @@ static krb5_error_code
 NDBM_rename(krb5_context context, HDB *db, const char *new_name)
 {
     /* XXX this function will break */
+    struct ndbm_db *d = db->db;
 
     int ret;
     char *old_dir, *old_pag, *new_dir, *new_pag;
+    char *new_lock;
+    int lock_fd;
+
+    /* lock old and new databases */
+    ret = db->lock(context, db, HDB_WLOCK);
+    if(ret) return ret;
+    asprintf(&new_lock, "%s.lock", new_name);
+    lock_fd = open(new_lock, O_RDWR | O_CREAT, 0600);
+    free(new_lock);
+    if(lock_fd < 0) {
+	ret = errno;
+	db->unlock(context, db);
+	return ret;
+    }
+    ret = hdb_lock(lock_fd, HDB_WLOCK);
+    if(ret) {
+	db->unlock(context, db);
+	close(lock_fd);
+	return ret;
+    }
 
     asprintf(&old_dir, "%s.dir", db->name);
     asprintf(&old_pag, "%s.pag", db->name);
     asprintf(&new_dir, "%s.dir", new_name);
     asprintf(&new_pag, "%s.pag", new_name);
+
     ret = rename(old_dir, new_dir) || rename(old_pag, new_pag);
     free(old_dir);
     free(old_pag);
     free(new_dir);
     free(new_pag);
-    if(ret)
+    hdb_unlock(lock_fd);
+    db->unlock(context, db);
+
+    if(ret) {
+	close(lock_fd);
 	return errno;
+    }
+
+    close(d->lock_fd);
+    d->lock_fd = lock_fd;
     
     free(db->name);
     db->name = strdup(new_name);
@@ -217,9 +238,39 @@ NDBM__del(krb5_context context, HDB *db, krb5_data key)
 static krb5_error_code
 NDBM_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
-    db->db = dbm_open((char*)db->name, flags, mode);
-    if(db->db == NULL)
+    struct ndbm_db *d = malloc(sizeof(*d));
+    char *lock_file;
+    if(d == NULL)
+	return ENOMEM;
+    asprintf(&lock_file, "%s.lock", (char*)db->name);
+    if(lock_file == NULL) {
+	free(d);
+	return ENOMEM;
+    }
+    d->db = dbm_open((char*)db->name, flags, mode);
+    if(d->db == NULL){
+	free(d);
+	free(lock_file);
 	return errno;
+    }
+    d->lock_fd = open(lock_file, O_RDWR | O_CREAT, 0600);
+    free(lock_file);
+    if(d->lock_fd < 0){
+	dbm_close(d->db);
+	free(d);
+	return errno;
+    }
+    db->db = d;
+    return 0;
+}
+
+static krb5_error_code
+NDBM_close(krb5_context context, HDB *db)
+{
+    struct ndbm_db *d = db->db;
+    dbm_close(d->db);
+    close(d->lock_fd);
+    free(d);
     return 0;
 }
 
