@@ -146,10 +146,10 @@ size_t srvstr_get_path(char *inbuf, char *dest, const char *src, size_t dest_len
 {
 	pstring tmppath;
 	char *tmppath_ptr = tmppath;
+	size_t ret;
 #ifdef DEVELOPER
 	SMB_ASSERT(dest_len == sizeof(pstring));
 #endif
-	size_t ret;
 
 	if (src_len == 0) {
 		ret = srvstr_pull_buf( inbuf, tmppath_ptr, src, dest_len, flags);
