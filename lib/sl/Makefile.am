@@ -8,9 +8,12 @@ YFLAGS = -d
 
 include_HEADERS = sl.h
 
-lib_LTLIBRARIES = libsl.la
+lib_LTLIBRARIES = libsl.la libss.la
+libsl_la_LDFLAGS = -version-info 0:0:0
+libss_la_LDFLAGS = -version-info 0:0:0
 
-libsl_la_SOURCES = sl_locl.h sl.c ss.c ss.h roken_rename.h strtok_r.c snprintf.c
+libsl_la_SOURCES = sl_locl.h sl.c roken_rename.h strtok_r.c snprintf.c
+libss_la_SOURCES = $(libsl_la_SOURCES) ss.c ss.h
 
 # install these?
 
