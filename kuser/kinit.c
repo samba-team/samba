@@ -766,13 +766,14 @@ main (int argc, char **argv)
 		    krb4_cc_name = NULL;
 		}
 	    }
-	    if (k_hasafs ())
-		k_setpag();
 	} else
 	    ret = krb5_cc_default (context, &ccache);
     }
     if (ret)
 	krb5_err (context, 1, ret, "resolving credentials cache");
+
+    if(argc > 1 && k_hasafs ())
+	k_setpag();
 
     if (lifetime) {
 	int tmp = parse_time (lifetime, "s");
