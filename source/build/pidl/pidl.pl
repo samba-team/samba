@@ -17,7 +17,7 @@ use idl;
 use dump;
 use ndr_client;
 use ndr_header;
-use ndr;
+use ndr_parser;
 use server;
 use dcom_proxy;
 use dcom_stub;
