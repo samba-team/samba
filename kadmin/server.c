@@ -335,7 +335,6 @@ v5_loop (krb5_context context,
 	 void *kadm_handle,
 	 int fd)
 {
-    char *client;
     krb5_error_code ret;
     ssize_t n;
     unsigned long len;
