@@ -357,12 +357,14 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, void *sam_ctx,
 	const char *str;
 	int i;
 	uint_t rid;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	group_ret = samdb_search(sam_ctx,
-				 mem_ctx, NULL, &group_msgs, group_attrs,
+				 tmp_ctx, NULL, &group_msgs, group_attrs,
 				 "(&(member=%s)(sAMAccountType=*))", 
 				 msgs[0]->dn);
 	if (group_ret == -1) {
+		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -380,6 +382,8 @@ static NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, void *sam_ctx,
 		groupSIDs[i] = dom_sid_parse_talloc(groupSIDs, str);
 		NT_STATUS_HAVE_NO_MEMORY(groupSIDs[i]);
 	}
+
+	talloc_free(tmp_ctx);
 
 	str = ldb_msg_find_string(msgs[0], "objectSid", NULL);
 	account_sid = dom_sid_parse_talloc(server_info, str);
@@ -481,6 +485,9 @@ NTSTATUS sam_get_server_info(TALLOC_CTX *mem_ctx, const char *account_name, cons
 					     server_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
+	talloc_free(msgs);
+	talloc_free(domain_msgs);
+
 	return NT_STATUS_OK;
 }
 
@@ -518,6 +525,9 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 					     user_sess_key, lm_sess_key,
 					     server_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	talloc_free(msgs);
+	talloc_free(domain_msgs);
 
 	return NT_STATUS_OK;
 }
