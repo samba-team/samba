@@ -144,6 +144,8 @@ dit(link(samtest)(SAMTEST))
 dit(link(enumaliases)(ENUMALIASES))
 dit(link(enumdomains)(ENUMDOMAINS))
 dit(link(enumgroups)(ENUMGROUPS))
+dit(link(enumprivs)(ENUMPRIVS))
+dit(link(lsaenumsids)(LSAENUMSIDS))
 dit(link(dominfo)(DOMINFO))
 dit(link(dispinfo)(DISPINFO))
 dit(link(set)(SET))
@@ -201,6 +203,7 @@ Return a RID associated with the specified name(s) in the specified NT domain
 label(ENUMUSERS)
 dit(bf(enumusers))
 Experimental SAM database query command
+Shows all users in the current domain
 
 label(ADDGROUPMEM)
 dit(bf(addgroupmem <grouprid> [user...]))
@@ -289,6 +292,7 @@ encrypted RPC-based SAM test
 label(ENUMALIASES)
 dit(bf(enumaliases))
 experimental SAM alias query
+Shows all aliases in the SAM
 
 label(ENUMDOMAINS)
 dit(bf(enumdomains))
@@ -297,6 +301,17 @@ expermental domain query
 label(ENUMGROUPS)
 dit(bf(enumgroups))
 experimental SAM group query
+Shows all groups in the current domain
+
+label(ENUMPRIVS)
+dit(bf(enumprivs [-i]))
+Lists the short (internal) names of all the privileges/rights known by the
+current server. With the -i, it will also show the long textual
+representation (currently in German ;-)).
+
+label(LSAENUMSIDS)
+dit(bf(lsaenumsids))
+Show the SIDs that have privileges assigned to them
 
 label(DOMINFO)
 dit(bf(dominfo))

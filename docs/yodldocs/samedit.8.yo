@@ -139,6 +139,8 @@ dit(link(samtest)(SAMTEST))
 dit(link(enumaliases)(ENUMALIASES))
 dit(link(enumdomains)(ENUMDOMAINS))
 dit(link(enumgroups)(ENUMGROUPS))
+dit(link(enumprivs)(ENUMPRIVS))
+dit(link(lsaenumsids)(LSAENUMSIDS))
 dit(link(dominfo)(DOMINFO))
 dit(link(dispinfo)(DISPINFO))
 dit(link(set)(SET))
@@ -206,9 +208,11 @@ dit(bf(createalias <alias>))
 Creates a domain alias.
 
 label(CREATEUSER)
-dit(bf(createuser <accountname>))
+dit(bf(createuser <accountname> [-s] [-j] DOMAIN))
 Creates an account in the NT domain. This account can be either a user account
-or a machine trust account (ending in a `$` sign).
+or a machine trust account (ending in a `$` sign). The -s option is for
+server (BDC) account and -j will tell samba to try and join the specified
+machine account to the specified domain.
 
 label(DELUSER)
 dit(bf(deluser <accountname>))
@@ -273,6 +277,16 @@ expermental domain query
 label(ENUMGROUPS)
 dit(bf(enumgroups))
 experimental SAM group query
+
+label(ENUMPRIVS)
+dit(bf(enumprivs [-i]))
+Lists the short (internal) names of all the privileges/rights known by the
+current server. With the -i, it will also show the long textual
+representation (currently in German ;-)).
+
+label(LSAENUMSIDS)
+dit(bf(lsaenumsids))
+Show the SIDs that have privileges assigned to them
 
 label(DOMINFO)
 dit(bf(dominfo))
