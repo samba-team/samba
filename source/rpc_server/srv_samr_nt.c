@@ -123,7 +123,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 }
 
 static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
-                                int *total_entries, int *num_entries,
+                                int *total_entries, uint32 *num_entries,
                                 int max_num_entries, uint16 acb_mask)
 {
 	void *vp = NULL;
@@ -1179,7 +1179,7 @@ uint32 _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOK
         }
     }
 
-    init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, type, r_u->status);
+    init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, (uint32 *)type, r_u->status);
 
     DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
 
@@ -1634,7 +1634,6 @@ uint32 _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAM
 uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR_R_QUERY_DOMAIN_INFO *r_u)
 {
     SAM_UNK_CTR *ctr;
-    uint16 switch_value = 0;
 
 	if ((ctr = (SAM_UNK_CTR *)talloc(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -1651,33 +1650,26 @@ uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR
 
     switch (q_u->switch_value) {
         case 0x01:
-            switch_value = 0x1;
             init_unk_info1(&ctr->info.inf1);
             break;
         case 0x02:
-            switch_value = 0x2;
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
             init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL));
             break;
         case 0x03:
-            switch_value = 0x3;
             init_unk_info3(&ctr->info.inf3);
             break;
         case 0x06:
-            switch_value = 0x6;
             init_unk_info6(&ctr->info.inf6);
             break;
         case 0x07:
-            switch_value = 0x7;
             init_unk_info7(&ctr->info.inf7);
             break;
         case 0x0c:
-            switch_value = 0xc;
             init_unk_info12(&ctr->info.inf12);
             break;
         default:
             return NT_STATUS_INVALID_INFO_CLASS;
-            break;
     }
 
     init_samr_r_query_dom_info(r_u, q_u->switch_value, ctr, NT_STATUS_NOPROBLEMO);

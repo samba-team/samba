@@ -1754,13 +1754,11 @@ static void spoolss_notify_status(int snum,
 				  NT_PRINTER_INFO_LEVEL *printer,
 				  TALLOC_CTX *mem_ctx)
 {
-	int count;
-
 	print_queue_struct *q=NULL;
 	print_status_struct status;
 
 	memset(&status, 0, sizeof(status));
-	count = print_queue_status(snum, &q, &status);
+	print_queue_status(snum, &q, &status);
 	data->notify_data.value[0]=(uint32) status.status;
 	safe_free(q);
 }

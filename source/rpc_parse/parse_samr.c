@@ -5719,13 +5719,13 @@ void init_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, uchar * sess_key,
 	switch (switch_value) {
 	case 0x18:
 		SamOEMhash(ctr->info.id24->pass, sess_key, 1);
-		dump_data(100, sess_key, 16);
-		dump_data(100, ctr->info.id24->pass, 516);
+		dump_data(100, (char *)sess_key, 16);
+		dump_data(100, (char *)ctr->info.id24->pass, 516);
 		break;
 	case 0x17:
 		SamOEMhash(ctr->info.id23->pass, sess_key, 1);
-		dump_data(100, sess_key, 16);
-		dump_data(100, ctr->info.id23->pass, 516);
+		dump_data(100, (char *)sess_key, 16);
+		dump_data(100, (char *)ctr->info.id23->pass, 516);
 		break;
 	default:
 		DEBUG(4,("init_samr_userinfo_ctr: unsupported switch level\n"));
@@ -5979,9 +5979,9 @@ void init_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
 	case 0x12:
 		SamOEMhash(ctr->info.id12->lm_pwd, sess_key, 0);
 		SamOEMhash(ctr->info.id12->nt_pwd, sess_key, 0);
-		dump_data(100, sess_key, 16);
-		dump_data(100, ctr->info.id12->lm_pwd, 16);
-		dump_data(100, ctr->info.id12->nt_pwd, 16);
+		dump_data(100, (char *)sess_key, 16);
+		dump_data(100, (char *)ctr->info.id12->lm_pwd, 16);
+		dump_data(100, (char *)ctr->info.id12->nt_pwd, 16);
 		break;
 	}
 }
