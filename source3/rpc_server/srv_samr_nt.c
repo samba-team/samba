@@ -915,7 +915,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		struct sys_grent *grp;
 		struct passwd *pw;
 		gid_t winbind_gid_low, winbind_gid_high;
-		BOOL winbind_groups_exist = lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
+		BOOL winbind_groups_exist = lp_idmap_gid(&winbind_gid_low, &winbind_gid_high);
 
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */

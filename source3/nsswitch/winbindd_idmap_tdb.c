@@ -419,7 +419,7 @@ static void tdb_idmap_status(void)
 	/* Display complete mapping of users and groups to rids */
 }
 
-struct idmap_methods tdb_idmap_methods = {
+struct winbindd_idmap_methods tdb_idmap_methods = {
 	tdb_idmap_init,
 
 	tdb_get_sid_from_uid,
@@ -433,7 +433,7 @@ struct idmap_methods tdb_idmap_methods = {
 	tdb_idmap_status
 };
 
-BOOL winbind_idmap_reg_tdb(struct idmap_methods **meth)
+BOOL winbind_idmap_reg_tdb(struct winbindd_idmap_methods **meth)
 {
 	*meth = &tdb_idmap_methods;
 

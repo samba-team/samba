@@ -112,7 +112,7 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	*prids=NULL;
 	*numgroups=0;
 
-	winbind_groups_exist = lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
+	winbind_groups_exist = lp_idmap_gid(&winbind_gid_low, &winbind_gid_high);
 
 
 	DEBUG(10,("get_alias_user_groups: looking if SID %s is a member of groups in the SID domain %s\n", 

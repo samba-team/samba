@@ -37,7 +37,7 @@
 /* Globals */
 static TDB_CONTEXT *idmap_tdb;
 
-struct idmap_state {
+static struct idmap_state {
 
 	/* User and group id pool */
 
@@ -183,7 +183,7 @@ static BOOL tdb_idmap_convert(const char *idmap_name)
 #endif
 
 /* Allocate either a user or group id from the pool */
-static NTSTATUS tdb_allocate_id(unid_t *id, int id_type)
+static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 {
 	int hwm;
 
@@ -229,7 +229,7 @@ static NTSTATUS tdb_allocate_id(unid_t *id, int id_type)
 }
 
 /* Get a sid from an id */
-static NTSTATUS tdb_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 {
 	TDB_DATA key, data;
 	fstring keystr;
@@ -239,13 +239,13 @@ static NTSTATUS tdb_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 
 	switch (id_type & ID_TYPEMASK) {
 		case ID_USERID:
-		slprintf(keystr, sizeof(keystr), "UID %d", id.uid);
-		break;
+			slprintf(keystr, sizeof(keystr), "UID %d", id.uid);
+			break;
 		case ID_GROUPID:
-		slprintf(keystr, sizeof(keystr), "GID %d", id.gid);
-		break;
+			slprintf(keystr, sizeof(keystr), "GID %d", id.gid);
+			break;
 		default:
-		return NT_STATUS_UNSUCCESSFUL;
+			return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	key.dptr = keystr;
@@ -264,7 +264,7 @@ static NTSTATUS tdb_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 }
 
 /* Get an id from a sid */
-static NTSTATUS tdb_get_id_from_sid(unid_t *id, int *id_type, DOM_SID *sid)
+static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, DOM_SID *sid)
 {
 	TDB_DATA data, key;
 	fstring keystr;
@@ -288,7 +288,7 @@ static NTSTATUS tdb_get_id_from_sid(unid_t *id, int *id_type, DOM_SID *sid)
 			/* Parse and return existing uid */
 			fstrcpy(scanstr, "UID %d");
 
-			if (sscanf(data.dptr, scanstr, (*id).uid) == 1) {
+			if (sscanf(data.dptr, scanstr, &((*id).uid)) == 1) {
 				/* uid ok? */
 				if (type == ID_EMPTY) {
 					*id_type = ID_USERID;
@@ -302,7 +302,7 @@ static NTSTATUS tdb_get_id_from_sid(unid_t *id, int *id_type, DOM_SID *sid)
 			/* Parse and return existing gid */
 			fstrcpy(scanstr, "GID %d");
 
-			if (sscanf(data.dptr, scanstr, (*id).gid) == 1) {
+			if (sscanf(data.dptr, scanstr, &((*id).gid)) == 1) {
 				/* gid ok? */
 				if (type == ID_EMPTY) {
 					*id_type = ID_GROUPID;
@@ -318,7 +318,7 @@ idok:
 		    || (*id_type & ID_TYPEMASK) == ID_GROUPID)) {
 
 		/* Allocate a new id for this sid */
-		ret = tdb_allocate_id(id, *id_type);
+		ret = db_allocate_id(id, *id_type);
 		if (NT_STATUS_IS_OK(ret)) {
 			fstring keystr2;
 
@@ -332,11 +332,11 @@ idok:
 			data.dptr = keystr2;
 			data.dsize = strlen(keystr2) + 1;
 
-			if (tdb_store(idmap_tdb, key, data, TDB_INSERT) == -1) {
+			if (tdb_store(idmap_tdb, key, data, TDB_REPLACE) == -1) {
 				/* TODO: print tdb error !! */
 				return NT_STATUS_UNSUCCESSFUL;
 			}
-			if (tdb_store(idmap_tdb, data, key, TDB_INSERT) == -1) {
+			if (tdb_store(idmap_tdb, data, key, TDB_REPLACE) == -1) {
 				/* TODO: print tdb error !! */
 				return NT_STATUS_UNSUCCESSFUL;
 			}
@@ -344,11 +344,11 @@ idok:
 			ret = NT_STATUS_OK;
 		}
 	}
-
+	
 	return ret;
 }
 
-static NTSTATUS tdb_set_mapping(DOM_SID *sid, unid_t id, int id_type)
+static NTSTATUS db_set_mapping(DOM_SID *sid, unid_t id, int id_type)
 {
 	TDB_DATA ksid, kid;
 	fstring ksidstr;
@@ -387,7 +387,7 @@ static NTSTATUS tdb_set_mapping(DOM_SID *sid, unid_t id, int id_type)
 /*****************************************************************************
  Initialise idmap database. 
 *****************************************************************************/
-static NTSTATUS tdb_idmap_init(const char *db_name)
+static NTSTATUS db_idmap_init(const char *db_name)
 {
 	/* Open tdb cache */
 	if (!(idmap_tdb = tdb_open_log(lock_path(db_name), 0,
@@ -425,7 +425,7 @@ static NTSTATUS tdb_idmap_init(const char *db_name)
 }
 
 /* Close the tdb */
-static NTSTATUS tdb_idmap_close(void)
+static NTSTATUS db_idmap_close(void)
 {
 	if (idmap_tdb) {
 		if (tdb_close(idmap_tdb) == 0) {
@@ -449,7 +449,7 @@ static NTSTATUS tdb_idmap_close(void)
 
 #define DUMP_INFO 0
 
-static void tdb_idmap_status(void)
+static void db_idmap_status(void)
 {
 	int user_hwm, group_hwm;
 
@@ -506,20 +506,20 @@ static void tdb_idmap_status(void)
 	/* Display complete mapping of users and groups to rids */
 }
 
-struct idmap_methods tdb_idmap_methods = {
+struct idmap_methods db_methods = {
 
-	tdb_idmap_init,
-	tdb_get_sid_from_id,
-	tdb_get_id_from_sid,
-	tdb_set_mapping,
-	tdb_idmap_close,
-	tdb_idmap_status
+	db_idmap_init,
+	db_get_sid_from_id,
+	db_get_id_from_sid,
+	db_set_mapping,
+	db_idmap_close,
+	db_idmap_status
 
 };
 
 NTSTATUS idmap_reg_tdb(struct idmap_methods **meth)
 {
-	*meth = &tdb_idmap_methods;
+	*meth = &db_methods;
 
 	return NT_STATUS_OK;
 }

@@ -203,7 +203,7 @@ typedef struct {
 } CLI_POLICY_HND;
 
 /* Filled out by IDMAP backends */
-struct idmap_methods {
+struct winbindd_idmap_methods {
   /* Called when backend is first loaded */
   BOOL (*init)(void);
 
