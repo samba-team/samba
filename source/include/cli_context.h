@@ -29,22 +29,6 @@ struct smbcli_request;  /* forward declare */
 struct smbcli_session;  /* forward declare */
 struct smbcli_transport;  /* forward declare */
 
-enum smb_signing_engine_state {
-	SMB_SIGNING_ENGINE_OFF,
-	SMB_SIGNING_ENGINE_BSRSPYL,
-	SMB_SIGNING_ENGINE_ON
-};
-
-struct smb_signing_context {
-	enum smb_signing_engine_state signing_state;
-	DATA_BLOB mac_key;
-	uint32_t next_seq_num;
-	BOOL allow_smb_signing;
-	BOOL doing_signing;
-	BOOL mandatory_signing;
-	BOOL seen_valid; /* Have I ever seen a validly signed packet? */
-};
-
 /* context that will be and has been negotiated between the client and server */
 struct smbcli_negotiate {
 	/* 

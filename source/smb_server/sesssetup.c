@@ -160,9 +160,18 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 				 &sess->nt1.out.domain);
 	
 	req->session = smbsrv_session_find(req->smb_conn, sess->nt1.out.vuid);
-	if (!session_info->server_info->guest) {
-		srv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2);
+	if (session_info->server_info->guest) {
+		return NT_STATUS_OK;
 	}
+	if (!srv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2)) {
+		/* Already signing, or disabled */
+		return NT_STATUS_OK;
+	}
+		
+	/* Force check of the request packet, now we know the session key */
+	req_signing_check_incoming(req);
+
+	srv_signing_restart(req->smb_conn,  &session_info->session_key, &sess->nt1.in.password2);
 
 	return NT_STATUS_OK;
 }
@@ -227,7 +236,6 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 
 	if (NT_STATUS_IS_OK(status)) {
 		DATA_BLOB session_key;
-		DATA_BLOB null_data_blob = data_blob(NULL, 0);
 		
 		status = gensec_session_info(smb_sess->gensec_ctx, &smb_sess->session_info);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -235,12 +243,18 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 		}
 		
 		status = gensec_session_key(smb_sess->gensec_ctx, 
-						       &session_key);
-		if (NT_STATUS_IS_OK(status)) {
-			srv_setup_signing(req->smb_conn, &session_key, &null_data_blob);
-			req->seq_num = 0;
-			req->smb_conn->signing.next_seq_num = 2;
+					    &session_key);
+		if (NT_STATUS_IS_OK(status) 
+		    && !smb_sess->session_info->server_info->guest
+		    && srv_setup_signing(req->smb_conn, &session_key, NULL)) {
+			/* Force check of the request packet, now we know the session key */
+			req_signing_check_incoming(req);
+
+			srv_signing_restart(req->smb_conn, &session_key, NULL);
+
 		}
+	} else {
+		status = nt_status_squash(status);
 	}
 
 	sess->spnego.out.action = 0;
