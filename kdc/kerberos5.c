@@ -2,10 +2,6 @@
 
 RCSID("$Id$");
 
-#ifndef MIN
-#define MIN(A,B) ((A)<(B)?(A):(B))
-#endif
-
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
 krb5_error_code
@@ -152,11 +148,11 @@ as_rep(krb5_context context,
 	    b->till = MAX_TIME;
 	t = b->till;
 	if(client->max_life)
-	    t = MIN(t, start + client->max_life);
+	    t = min(t, start + client->max_life);
 	if(server->max_life)
-	    t = MIN(t, start + server->max_life);
+	    t = min(t, start + server->max_life);
 #if 0
-	t = MIN(t, start + realm->max_life);
+	t = min(t, start + realm->max_life);
 #endif
 	et->endtime = t;
 	if(f.renewable_ok && et->endtime < b->till){
@@ -173,11 +169,11 @@ as_rep(krb5_context context,
 	    if(t == 0)
 		t = MAX_TIME;
 	    if(client->max_renew)
-		t = MIN(t, start + client->max_renew);
+		t = min(t, start + client->max_renew);
 	    if(server->max_renew)
-		t = MIN(t, start + server->max_renew);
+		t = min(t, start + server->max_renew);
 #if 0
-	    t = MIN(t, start + realm->max_renew);
+	    t = min(t, start + realm->max_renew);
 #endif
 	    et->renew_till = malloc(sizeof(*et->renew_till));
 	    *et->renew_till = t;
@@ -391,7 +387,7 @@ tgs_rep(krb5_context context,
 	    et->starttime = malloc(sizeof(*et->starttime));
 	    *et->starttime = kdc_time;
 	    old_life = tgt->endtime - *tgt->starttime;
-	    et->endtime = MIN(*tgt->renew_till,
+	    et->endtime = min(*tgt->renew_till,
 			      *et->starttime + old_life);
 	}else{
 	    time_t till;
@@ -401,12 +397,12 @@ tgs_rep(krb5_context context,
 	    if(till == 0)
 		till = MAX_TIME;
 	    if(client->max_life)
-		till = MIN(till, *et->starttime + client->max_life);
+		till = min(till, *et->starttime + client->max_life);
 	    if(server->max_life)
-		till = MIN(till, *et->starttime + server->max_life);
-	    till = MIN(till, tgt->endtime);
+		till = min(till, *et->starttime + server->max_life);
+	    till = min(till, tgt->endtime);
 #if 0
-	    till = MIN(till, et->starttime + realm->max_life);
+	    till = min(till, et->starttime + realm->max_life);
 #endif
 	    et->endtime = till;
 	    if(f.renewable_ok && 
@@ -414,7 +410,7 @@ tgs_rep(krb5_context context,
 	       tgt->flags.renewable){
 		f.renewable = 1;
 		b->rtime = malloc(sizeof(*b->rtime));
-		*b->rtime = MIN(b->till, *tgt->renew_till);
+		*b->rtime = min(b->till, *tgt->renew_till);
 	    }
 	}
 	if(f.renewable && tgt->flags.renewable && b->rtime){
@@ -424,12 +420,12 @@ tgs_rep(krb5_context context,
 		rtime = MAX_TIME;
 	    et->flags.renewable = 1;
 	    if(client->max_renew)
-		rtime = MIN(rtime, *et->starttime + client->max_renew);
+		rtime = min(rtime, *et->starttime + client->max_renew);
 	    if(server->max_renew)
-		rtime = MIN(rtime, *et->starttime + server->max_renew);
-	    rtime = MIN(rtime, *tgt->renew_till);
+		rtime = min(rtime, *et->starttime + server->max_renew);
+	    rtime = min(rtime, *tgt->renew_till);
 #if 0
-	    rtime = MIN(rtime, *et->starttime + realm->max_renew);
+	    rtime = min(rtime, *et->starttime + realm->max_renew);
 #endif
 	    et->renew_till = malloc(sizeof(*et->renew_till));
 	    *et->renew_till = rtime;
