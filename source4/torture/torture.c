@@ -4281,6 +4281,7 @@ static BOOL run_test(const char *name)
 		if (gen_fnmatch(name, torture_ops[i].name) == 0) {
 			double t;
 			matched = True;
+			init_iconv();
 			printf("Running %s\n", torture_ops[i].name);
 			if (torture_ops[i].flags & FLAG_MULTIPROC) {
 				BOOL result;
