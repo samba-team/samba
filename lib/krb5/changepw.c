@@ -140,7 +140,7 @@ out2:
 
 static void
 str2data (krb5_data *d,
-	  char *fmt,
+	  const char *fmt,
 	  ...)
 {
     va_list args;
