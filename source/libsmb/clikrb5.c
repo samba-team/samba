@@ -255,7 +255,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	}
 	
 	/* obtain ticket & session key */
-	memset((char *)&creds, 0, sizeof(creds));
+	ZERO_STRUCT(creds);
 	if ((retval = krb5_copy_principal(context, server, &creds.server))) {
 		DEBUG(1,("krb5_copy_principal failed (%s)\n", 
 			 error_message(retval)));
