@@ -1,5 +1,7 @@
 Wed Jul 23 04:02:32 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* admin/dump.c: Include salt in dump.
+
 	* admin: Mostly updated for new db-format.
 
 	* kdc/kerberos5.c: Update to use new db format. Better checking of
