@@ -52,6 +52,8 @@ obtain AFS tokens
 .Fl -realm= Ns Ar realm
 .Xc
 .Oc
+.Op Fl -no-v4
+.Op Fl -no-v5
 .Op Fl u | Fl -unlog
 .Op Fl v | Fl -verbose
 .Op Fl -version
@@ -86,6 +88,14 @@ obtained.
 .Xc
 This is the Kerberos realm the AFS servers live in, this should
 normally not be specified.
+.It Fl -no-v4
+This makes
+.Nm
+not try using Kerberos 4.
+.It Fl -no-v5
+This makes
+.Nm
+not try using Kerberos 5.
 .It Xo
 .Fl u ,
 .Fl -unlog
