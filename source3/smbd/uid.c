@@ -599,7 +599,11 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 
 	/* if we know its local then don't try winbindd */
 	if (sid_compare_domain(get_global_sam_sid(), psid) == 0) {
-		return local_sid_to_uid(puid, psid, sidtype);
+		BOOL result;
+		become_root();
+		result = local_sid_to_uid(puid, psid, sidtype);
+		unbecome_root();
+		return result;
 	}
 
 /* (tridge) I commented out the slab of code below in order to support foreign SIDs
