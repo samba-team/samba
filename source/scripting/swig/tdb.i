@@ -136,8 +136,6 @@ TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[]);
-void tdb_unlockkeys(TDB_CONTEXT *tdb);
 int tdb_lockall(TDB_CONTEXT *tdb);
 void tdb_unlockall(TDB_CONTEXT *tdb);
 
