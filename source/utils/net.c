@@ -79,6 +79,8 @@ BOOL opt_domaingroup = False;
 const char *opt_newntname = "";
 int opt_rid = 0;
 int opt_acls = 0;
+int opt_attrs = 0;
+int opt_timestamps = 0;
 const char *opt_exclude = NULL;
 
 BOOL opt_have_ip = False;
@@ -209,9 +211,9 @@ NTSTATUS connect_to_ipc_anonymous(struct cli_state **c,
 /**
  * Connect the local server and open a given pipe
  *
- * @param cli_local		A cli_state to the local spoolss-server
+ * @param cli_local		A cli_state 
  * @param pipe			The pipe to open
- * @param got_pipe		boolean to that stores if got a pipe
+ * @param got_pipe		boolean that stores if we got a pipe
  *
  * @return Normal NTSTATUS return.
  **/
@@ -222,13 +224,13 @@ NTSTATUS connect_local_pipe(struct cli_state **cli_local, int pipe_num, BOOL *go
 	char *server_name = strdup("127.0.0.1");
 	struct cli_state *cli_tmp = NULL;
 
-	/* make a connection to smbd via loopback */
+	/* make a connection to local named pipe via loopback */
 	nt_status = connect_to_ipc(&cli_tmp, &loopback_ip, server_name);
 	if (!NT_STATUS_IS_OK(nt_status)) 
 		return nt_status;
 
 	if (!cli_nt_session_open(cli_tmp, pipe_num)) {
-		DEBUG(0, ("couldn't not initialise spoolss pipe\n"));
+		DEBUG(0, ("couldn't not initialize pipe\n"));
 		cli_shutdown(cli_tmp);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -738,7 +740,9 @@ static struct functable net_func[] = {
 		{"ntname",      'N', POPT_ARG_STRING, &opt_newntname},
 		{"rid",         'R', POPT_ARG_INT,    &opt_rid},
 		/* Options for 'net rpc share migrate' */
-		{"acls",	'a', POPT_ARG_NONE,   &opt_acls},
+		{"acls",	0, POPT_ARG_NONE,   &opt_acls},
+		{"attrs",	0, POPT_ARG_NONE,   &opt_attrs},
+		{"timestamps",	0, POPT_ARG_NONE,   &opt_timestamps},
 		{"exclude",	'e', POPT_ARG_STRING, &opt_exclude},
 
 		POPT_COMMON_SAMBA

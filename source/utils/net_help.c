@@ -139,8 +139,11 @@ int net_help_share(int argc, const char **argv)
 	d_printf(
 	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
 	 "\t-M or --maxusers=<num>\t\tmax users allowed for share\n"
-	 "\t-a or --acls\t\t\tcopies ACLs as well\n"
-	 "\t-e or --exclude\t\t\tlist of shares to be excluded from mirroring\n");
+	 "\t      --acls\t\t\tcopies ACLs as well\n"
+	 "\t      --attrs\t\t\tcopies DOS Attributes as well\n"
+	 "\t      --timestampes\t\tpreserve timestampes while copying files\n"
+	 "\t-e or --exclude\t\t\tlist of shares to be excluded from mirroring\n"
+	 "\t-v or --verbose\t\t\tgive verbose output\n");
 	return -1;
 }
 
@@ -163,25 +166,28 @@ int net_help_file(int argc, const char **argv)
 
 int net_help_printer(int argc, const char **argv)
 {
-	d_printf("net rpc printer LIST [printer]\n"\
+	d_printf("net rpc printer LIST [printer] [misc. options] [targets]\n"\
 		 "\tlists all printers on print-server\n\n");
-	d_printf("net rpc printer DRIVER [printer]\n"\
+	d_printf("net rpc printer DRIVER [printer] [misc. options] [targets]\n"\
 		 "\tlists all printer-drivers on print-server\n\n");
-	d_printf("net rpc printer MIGRATE PRINTERS [printer]"\
+	d_printf("net rpc printer MIGRATE PRINTERS [printer] [misc. options] [targets]"\
 		 "\n\tmigrates printers from remote to local server\n\n");
-	d_printf("net rpc printer MIGRATE SETTINGS [printer]"\
+	d_printf("net rpc printer MIGRATE SETTINGS [printer] [misc. options] [targets]"\
 		 "\n\tmigrates printer-settings from remote to local server\n\n");
-	d_printf("net rpc printer MIGRATE DRIVERS [printer]"\
+	d_printf("net rpc printer MIGRATE DRIVERS [printer] [misc. options] [targets]"\
 		 "\n\tmigrates printer-drivers from remote to local server\n\n");
-	d_printf("net rpc printer MIGRATE FORMS [printer]"\
+	d_printf("net rpc printer MIGRATE FORMS [printer] [misc. options] [targets]"\
 		 "\n\tmigrates printer-forms from remote to local server\n\n");
-	d_printf("net rpc printer MIGRATE SECURITY [printer]"\
+	d_printf("net rpc printer MIGRATE SECURITY [printer] [misc. options] [targets]"\
 		 "\n\tmigrates printer-ACLs from remote to local server\n\n");
-	d_printf("net rpc printer MIGRATE ALL [printer]\n"\
-		 "\tmigrates drivers, forms, queues, settings and acls from\n"\
+	d_printf("net rpc printer MIGRATE ALL [printer] [misc. options] [targets]"\
+		 "\n\tmigrates drivers, forms, queues, settings and acls from\n"\
 		 "\tremote to local print-server\n\n");
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
+	d_printf(
+	 "\t-v or --verbose\t\t\tgive verbose output\n");
+
 	return -1;
 }
 

@@ -2576,7 +2576,7 @@ rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain
 
 		/* only work with file-shares */
 		if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
-			d_printf("skipping [%s]. not a file share.\n", netname);
+			d_printf("skipping   [%s]: not a file share.\n", netname);
 			continue;
 		}
 
@@ -2600,10 +2600,10 @@ rpc_share_migrate_shares_internals(const DOM_SID *domain_sid, const char *domain
 						  level, share_sd);
 	
                 if (W_ERROR_V(result) == W_ERROR_V(WERR_ALREADY_EXISTS)) {
-			printf("share does already exist\n");
+			printf("           [%s] does already exist\n", netname);
 			continue;
-                }
-	
+		}
+
 		if (!W_ERROR_IS_OK(result)) {
 			printf("cannot add share: %s\n", dos_errstr(result));
 			goto done;
@@ -2634,6 +2634,11 @@ done:
  **/
 static int rpc_share_migrate_shares(int argc, const char **argv)
 {
+
+	if (!opt_host) {
+		printf("no server to migrate\n");
+		return -1;
+	}
 
 	return run_rpc_command(NULL, PI_SRVSVC, 0, 
 			       rpc_share_migrate_shares_internals,
@@ -2681,7 +2686,10 @@ static void copy_fn(file_info *f, const char *mask, void *state)
 					  local_state->cli_share_src, 
 					  local_state->cli_share_dst, 
 					  dir, dir, 
-					  opt_acls? True : False, False);
+					  opt_acls? True : False, 
+					  opt_attrs? True : False,
+					  opt_timestamps? True : False,
+					  False);
 
 		if (!NT_STATUS_IS_OK(nt_status)) 
 			printf("could not copy dir %s: %s\n", 
@@ -2713,7 +2721,10 @@ static void copy_fn(file_info *f, const char *mask, void *state)
 				  local_state->cli_share_src, 
 				  local_state->cli_share_dst, 
 				  filename, filename, 
-				  opt_acls? True : False, True);
+				  opt_acls? True : False, 
+				  opt_attrs? True : False,
+				  opt_timestamps? True: False,
+				  True);
 
 	if (!NT_STATUS_IS_OK(nt_status)) 
 		printf("could not copy file %s: %s\n", 
@@ -2826,26 +2837,29 @@ rpc_share_migrate_files_internals(const DOM_SID *domain_sid, const char *domain_
 			continue;
 		
 		if (strequal(netname, "print$") || netname[1] == '$') {
-			d_printf("skipping  [%s]: builtin/hidden share\n", netname);
+			d_printf("skipping   [%s]: builtin/hidden share\n", netname);
 			continue;
 		}
 
 		if (opt_exclude && in_list(netname, (char *)opt_exclude, False)) {
-			printf("excluding [%s]\n", netname);
+			printf("excluding  [%s]\n", netname);
 			continue;
 		} 
 
 		/* only work with file-shares */
 		if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
-			d_printf("skipping  [%s]: not a file share.\n", netname);
+			d_printf("skipping   [%s]: not a file share.\n", netname);
 			continue;
 		}
 
 		if (!cli_tdis(cli))
 			return NT_STATUS_UNSUCCESSFUL;
 
-		printf("syncing   [%s] files and directories %s ACLs\n", 
-			netname, opt_acls ? "including" : "without");
+		printf("syncing    [%s] files and directories %s ACLs, %s DOS Attributes %s\n", 
+			netname, 
+			opt_acls ? "including" : "without", 
+			opt_attrs ? "including" : "without",
+			opt_timestamps ? "(preserving timestamps)" : "");
 
 
 	        /* open share source */
@@ -2893,13 +2907,19 @@ done:
 
 static int rpc_share_migrate_files(int argc, const char **argv)
 {
+
+	if (!opt_host) {
+		printf("no server to migrate\n");
+		return -1;
+	}
+
 	return run_rpc_command(NULL, PI_SRVSVC, 0, 
 			       rpc_share_migrate_files_internals,
 			       argc, argv);
 }
 
 /** 
- * Migrate shares (including share-definitions, share-acls and files with acls)
+ * Migrate shares (including share-definitions, share-acls and files with acls/attrs)
  * from one server to another
  *
  * @param argc  Standard main() style argc
@@ -2912,6 +2932,11 @@ static int rpc_share_migrate_files(int argc, const char **argv)
 static int rpc_share_migrate_all(int argc, const char **argv)
 {
 	int ret;
+
+	if (!opt_host) {
+		printf("no server to migrate\n");
+		return -1;
+	}
 
 	ret = run_rpc_command(NULL, PI_SRVSVC, 0, rpc_share_migrate_shares_internals, argc, argv);
 	if (ret)
@@ -2937,6 +2962,7 @@ static int rpc_share_migrate(int argc, const char **argv)
 	struct functable func[] = {
 		{"all", 	rpc_share_migrate_all},
 		{"files", 	rpc_share_migrate_files},
+		{"help",	rpc_share_usage},
 /*		{"security", 	rpc_share_migrate_security},*/
 		{"shares", 	rpc_share_migrate_shares},
 		{NULL, NULL}
@@ -4044,6 +4070,11 @@ static int rpc_printer_migrate_all(int argc, const char **argv)
 {
 	int ret;
 
+	if (!opt_host) {
+		printf("no server to migrate\n");
+		return -1;
+	}
+
 	ret = run_rpc_command(NULL, PI_SPOOLSS, 0, rpc_printer_migrate_printers_internals, argc, argv);
 	if (ret)
 		return ret;
@@ -4075,6 +4106,10 @@ static int rpc_printer_migrate_all(int argc, const char **argv)
  **/
 static int rpc_printer_migrate_drivers(int argc, const char **argv)
 {
+	if (!opt_host) {
+		printf("no server to migrate\n");
+		return -1;
+	}
 
 	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
 			       rpc_printer_migrate_drivers_internals,
@@ -4092,6 +4127,10 @@ static int rpc_printer_migrate_drivers(int argc, const char **argv)
  **/
 static int rpc_printer_migrate_forms(int argc, const char **argv)
 {
+	if (!opt_host) {
+		printf("no server to migrate\n");
+		return -1;
+	}
 
 	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
 			       rpc_printer_migrate_forms_internals,
@@ -4109,6 +4148,10 @@ static int rpc_printer_migrate_forms(int argc, const char **argv)
  **/
 static int rpc_printer_migrate_printers(int argc, const char **argv)
 {
+	if (!opt_host) {
+		printf("no server to migrate\n");
+		return -1;
+	}
 
 	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
 			       rpc_printer_migrate_printers_internals,
@@ -4126,6 +4169,10 @@ static int rpc_printer_migrate_printers(int argc, const char **argv)
  **/
 static int rpc_printer_migrate_security(int argc, const char **argv)
 {
+	if (!opt_host) {
+		printf("no server to migrate\n");
+		return -1;
+	}
 
 	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
 			       rpc_printer_migrate_security_internals,
@@ -4143,6 +4190,10 @@ static int rpc_printer_migrate_security(int argc, const char **argv)
  **/
 static int rpc_printer_migrate_settings(int argc, const char **argv)
 {
+	if (!opt_host) {
+		printf("no server to migrate\n");
+		return -1;
+	}
 
 	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
 			       rpc_printer_migrate_settings_internals,
@@ -4265,7 +4316,7 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
         d_printf("  net rpc password <username> [<password>] -Uadmin_username%%admin_pass");
 	d_printf("  net rpc group \t\tto list groups\n");
-	d_printf("  net rpc share \t\tto add, delete, and list shares\n");
+	d_printf("  net rpc share \t\tto add, delete, list and migrate shares\n");
 	d_printf("  net rpc printer \t\tto list and migrate printers\n");
 	d_printf("  net rpc file \t\t\tto list open files\n");
 	d_printf("  net rpc changetrustpw \tto change the trust account password\n");
