@@ -1296,6 +1296,7 @@ receive_data(FILE *instr, FILE *outstr)
 	while ((cnt = auth_read(fileno(instr), buf+cr_flag, 
 				sizeof(buf)-cr_flag)) > 0){
 	    byte_count += cnt;
+	    cnt += cr_flag;
 	    cr_flag = 0;
 	    for(p = buf, q = buf; p < buf + cnt;){
 		if(*p == '\n')
