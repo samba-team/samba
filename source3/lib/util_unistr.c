@@ -285,7 +285,6 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	char *p;
 	uint16 *src;
 	size_t len;
-	int i;
 
 	if (str == NULL) {
 		*dest='\0';
