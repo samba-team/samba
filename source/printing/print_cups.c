@@ -54,14 +54,12 @@ struct printif	cups_printif =
  * 'cups_passwd_cb()' - The CUPS password callback...
  */
 
-const char *				/* O - Password or NULL */
+static const char *				/* O - Password or NULL */
 cups_passwd_cb(const char *prompt)	/* I - Prompt */
 {
  /*
   * Always return NULL to indicate that no password is available...
   */
-
-  (void)prompt;
 
   return (NULL);
 }
@@ -209,10 +207,10 @@ void cups_printer_fn(void (*fn)(char *, char *))
 /*
  * 'cups_printername_ok()' - Provide the equivalent of pcap_printername_ok()
  *                           for CUPS.
+ * O - 1 if printer name OK
+ * I - Name of printer 
  */
-
-int					/* O - 1 if printer name OK */
-cups_printername_ok(char *name)		/* I - Name of printer */
+int cups_printername_ok(const char *name)
 {
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
