@@ -1,5 +1,7 @@
 1999-10-28  Assar Westerlund  <assar@sics.se>
 
+	* ftpd/ls.c (builtin_ls): fix typo, 'd' shouldn't imply 'f'
+
 	* ftpd/ls.c (lstat_file): new function for avoiding stating AFS
  	mount points.  From Love <lha@s3.kth.se>
 	(list_files): use `lstat_file'
