@@ -514,7 +514,6 @@ void out_ascii(FILE *f, unsigned char *buf,int len);
 void out_data(FILE *f,char *buf1,int len, int per_line);
 void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
-void dump_datac(int class, int level, char *buf1, int len);
 char *tab_depth(int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
@@ -1079,10 +1078,9 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 BOOL cli_getatr(struct cli_state *cli, char *fname, 
 		uint16 *attr, size_t *size, time_t *t);
 BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t);
-BOOL cli_chkpath(struct cli_state *cli, char *path, BOOL *got_dfs_redirect);
+BOOL cli_chkpath(struct cli_state *cli, char *path);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path);
-BOOL cli_get_dfs_referral(struct cli_state *cli);
 
 /* The following definitions come from libsmb/clilist.c  */
 
@@ -1288,8 +1286,6 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
-BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
-		      int new_pw_len, BOOL nt_pass_set);
 BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32 *new_pw_len,
 		      uchar nt_p16[16], uchar p16[16]);
@@ -2711,7 +2707,7 @@ BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int 
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
 void prs_dump(char *name, int v, prs_struct *ps);
-void prs_debugc(int class,prs_struct *ps, int depth, char *desc, char *fn_name);
+void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
 BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io);
 BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
 void prs_mem_free(prs_struct *ps);
@@ -2735,9 +2731,9 @@ BOOL prs_align_needed(prs_struct *ps, uint32 needed);
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
 void prs_switch_type(prs_struct *ps, BOOL io);
 void prs_force_dynamic(prs_struct *ps);
-BOOL prs_uint8c(int class, char *name, prs_struct *ps, int depth, uint8 *data8);
-BOOL prs_uint16c(int class, char *name, prs_struct *ps, int depth, uint16 *data16);
-BOOL prs_uint32c(int class, char *name, prs_struct *ps, int depth, uint32 *data32);
+BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
+BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
+BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
 BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
 BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 BOOL prs_uint16uni(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
@@ -2757,10 +2753,6 @@ BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size);
 int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps);
 int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *mem_ctx);
-BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
-BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
-BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
-void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
 
 /* The following definitions come from rpc_parse/parse_reg.c  */
 
