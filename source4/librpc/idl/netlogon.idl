@@ -216,6 +216,15 @@ interface netlogon
 		[case(6)] netr_SamInfo6 *sam6;
 	} netr_Validation;
 
+	typedef [public, flag(NDR_PAHEX)] struct {
+		uint8 data[8];
+	} netr_Credential;
+
+	typedef [public] struct {
+		netr_Credential cred;
+		time_t timestamp;
+	} netr_Authenticator;
+
 	NTSTATUS netr_LogonSamLogon(
 		[in] unistr *server_name,
 		[in] unistr *workstation,
@@ -259,14 +268,16 @@ interface netlogon
 	/* secure channel types */
 	/* Only SEC_CHAN_WKSTA can forward requests to other domains. */
 
-	const int SEC_CHAN_WKSTA   = 2;
-	const int SEC_CHAN_DOMAIN  = 4;
-	const int SEC_CHAN_BDC     = 6;
+	typedef enum {
+		SEC_CHAN_WKSTA   = 2,
+		SEC_CHAN_DOMAIN  = 4,
+		SEC_CHAN_BDC     = 6
+	} netr_SchannelType;
 
 	NTSTATUS netr_ServerAuthenticate(
 		[in]         unistr *server_name,
 		[in]         unistr account_name,
-		[in]         uint16 secure_channel_type,
+		[in]         netr_SchannelType secure_channel_type,
 		[in]         unistr computer_name,
 		[in,out,ref] netr_Credential *credentials
 		);
@@ -278,7 +289,7 @@ interface netlogon
 	NTSTATUS netr_ServerPasswordSet(
 		[in]  unistr *server_name,
 		[in]  unistr account_name,
-		[in]  uint16 secure_channel_type,
+		[in]  netr_SchannelType secure_channel_type,
 		[in]  unistr computer_name,
 		[in]  netr_Authenticator credential,
 		[in]  samr_Password new_password,
@@ -290,9 +301,11 @@ interface netlogon
 	/* Function 0x07 */
 
 	/* SAM database types */
-	const int SAM_DATABASE_DOMAIN  = 0x00; /* Domain users and groups */
-	const int SAM_DATABASE_BUILTIN = 0x01; /* BUILTIN users and groups */
-	const int SAM_DATABASE_PRIVS   = 0x02; /* Privileges */
+	typedef [v1_enum] enum {
+		SAM_DATABASE_DOMAIN  = 0, /* Domain users and groups */
+		SAM_DATABASE_BUILTIN = 1, /* BUILTIN users and groups */
+		SAM_DATABASE_PRIVS   = 2 /* Privileges */
+	} netr_SamDatabaseID;
 
 	typedef struct {
 		unistr *account_name;
@@ -656,7 +669,7 @@ interface netlogon
 		[in]      unistr computername,
 		[in]      netr_Authenticator credential,
 		[in,out]  netr_Authenticator return_authenticator,
-		[in]      uint32 database_id,
+		[in]      netr_SamDatabaseID database_id,
 		[in,out]  uint64 sequence_num,
 		[in]      uint32 preferredmaximumlength,
 		[out]     netr_DELTA_ENUM_ARRAY *delta_enum_array
@@ -671,7 +684,7 @@ interface netlogon
 		[in]     unistr computername,
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
-		[in]     uint32 database_id,
+		[in]     netr_SamDatabaseID database_id,
 		[in,out] uint32 sync_context,
 		[in]     uint32 preferredmaximumlength,
 		[out]    netr_DELTA_ENUM_ARRAY *delta_enum_array
@@ -737,8 +750,6 @@ interface netlogon
 		[out] unistr *dcname
 		);
 
-
-
 	/*****************/
 	/* Function 0x0C */
 
@@ -771,14 +782,16 @@ interface netlogon
 	} netr_CONTROL_QUERY_INFORMATION;
 
 	/* function_code values */
-	const int NETLOGON_CONTROL_REDISCOVER       = 5;
-	const int NETLOGON_CONTROL_TC_QUERY         = 6;
-	const int NETLOGON_CONTROL_TRANSPORT_NOTIFY = 7;
-	const int NETLOGON_CONTROL_SET_DBFLAG       = 65534;
+	typedef [v1_enum] enum {
+		NETLOGON_CONTROL_REDISCOVER       = 5,
+		NETLOGON_CONTROL_TC_QUERY         = 6,
+		NETLOGON_CONTROL_TRANSPORT_NOTIFY = 7,
+		NETLOGON_CONTROL_SET_DBFLAG       = 65534
+	} netr_LogonControlCode;
 
 	WERROR netr_LogonControl(
 		[in]   unistr *logon_server,
-		[in]   uint32 function_code,
+		[in]   netr_LogonControlCode function_code,
 		[in]   uint32 level,
 		[out,switch_is(level)]  netr_CONTROL_QUERY_INFORMATION info
 		);
@@ -826,7 +839,7 @@ interface netlogon
 	NTSTATUS netr_ServerAuthenticate2(
 		[in]         unistr *server_name,
 		[in]         unistr account_name,
-		[in]         uint16 secure_channel_type,
+		[in]         netr_SchannelType secure_channel_type,
 		[in]         unistr computer_name,
 		[in,out,ref] netr_Credential *credentials,
 		[in,out,ref] uint32 *negotiate_flags
@@ -841,7 +854,7 @@ interface netlogon
 		[in]     unistr computername,
 		[in]     netr_Authenticator credential,
 		[in,out] netr_Authenticator return_authenticator,
-		[in]     uint32 database_id,
+		[in]     netr_SamDatabaseID database_id,
 		[in]     uint16 restart_state,
 		[in,out] uint32 sync_context,
 		[in]     uint32 preferredmaximumlength,
@@ -909,7 +922,7 @@ interface netlogon
 	NTSTATUS netr_ServerAuthenticate3(
 		[in]         unistr *server_name,
 		[in]         unistr account_name,
-		[in]         uint16 secure_channel_type,
+		[in]         netr_SchannelType secure_channel_type,
 		[in]         unistr computer_name,
 		[in,out,ref] netr_Credential *credentials,
 		[in,out,ref] uint32 *negotiate_flags,
@@ -1064,17 +1077,19 @@ interface netlogon
 	/****************/
 	/* Function 0x28 */
 
-	const int NETR_TRUST_FLAG_IN_FOREST = 0x01;
-	const int NETR_TRUST_FLAG_OUTBOUND  = 0x02;
-	const int NETR_TRUST_FLAG_TREEROOT  = 0x04;
-	const int NETR_TRUST_FLAG_PRIMARY   = 0x08;
-	const int NETR_TRUST_FLAG_NATIVE    = 0x10;
-	const int NETR_TRUST_FLAG_INBOUND   = 0x20;
+	typedef bitmap {
+		NETR_TRUST_FLAG_IN_FOREST = 0x00000001,
+		NETR_TRUST_FLAG_OUTBOUND  = 0x00000002,
+		NETR_TRUST_FLAG_TREEROOT  = 0x00000004,
+		NETR_TRUST_FLAG_PRIMARY   = 0x00000008,
+		NETR_TRUST_FLAG_NATIVE    = 0x00000010,
+		NETR_TRUST_FLAG_INBOUND   = 0x00000020
+	} netr_TrustFlags;
 
 	typedef struct {
 		unistr *netbios_name;
 		unistr *dns_name;
-		uint32 trust_flags;
+		netr_TrustFlags trust_flags;
 		uint32 parent_index;
 		uint32 trust_type;
 		uint32 trust_attributes;

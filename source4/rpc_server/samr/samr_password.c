@@ -648,13 +648,13 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 
 	/* the password is acceptable. Start forming the new fields */
 	if (lmNewHash) {
-		CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", *lmNewHash));
+		CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", lmNewHash));
 	} else {
 		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "lmPwdHash"));
 	}
 
 	if (ntNewHash) {
-		CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "ntPwdHash", *ntNewHash));
+		CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "ntPwdHash", ntNewHash));
 	} else {
 		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "ntPwdHash"));
 	}
