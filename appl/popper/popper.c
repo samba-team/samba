@@ -9,6 +9,10 @@ static char copyright[] = "Copyright (c) 1990 Regents of the University of Calif
 static char SccsId[] = "@(#)@(#)popper.c	2.1  2.1 3/18/91";
 #endif /* not lint */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif /* HAVE_CONFIG_H */
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <signal.h>
@@ -19,14 +23,14 @@ extern  state_table *   pop_get_command();
 
 int hangup = FALSE ;
 
-static int
+static RETSIGTYPE
 catchSIGHUP()
 {
     hangup = TRUE ;
 
     /* This should not be a problem on BSD systems */
-    signal(SIGHUP,  (void *)catchSIGHUP);
-    signal(SIGPIPE,  (void *)catchSIGHUP);
+    signal(SIGHUP,  catchSIGHUP);
+    signal(SIGPIPE, catchSIGHUP);
 }
 
 int     pop_timeout = POP_TIMEOUT;
