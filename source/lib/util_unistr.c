@@ -297,14 +297,14 @@ smb_ucs2_t *strdup_w(const smb_ucs2_t *src)
 	smb_ucs2_t *dest;
 	uint32 len;
 	
-	len = strlen_w(src);
-	dest = (smb_ucs2_t *)malloc((len+1)*sizeof(smb_ucs2_t));
+	len = strlen_w(src) + 1;
+	dest = (smb_ucs2_t *)malloc(len*sizeof(smb_ucs2_t));
 	if (!dest) {
 		DEBUG(0,("strdup_w: out of memory!\n"));
 		return NULL;
 	}
 
-	memcpy(dest, src, (len+1)*sizeof(smb_ucs2_t));
+	memcpy(dest, src, len*sizeof(smb_ucs2_t));
 	
 	return dest;
 }
@@ -343,8 +343,8 @@ smb_ucs2_t *strncat_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const size_t max)
 	len = strlen_w(src);
 	if (len > max) len = max;
 
-	memcpy(&dest[start], src, len);			
-	dest[start+len+1] = 0;
+	memcpy(&dest[start], src, len*sizeof(smb_ucs2_t));			
+	dest[start+len] = 0;
 	
 	return dest;
 }
