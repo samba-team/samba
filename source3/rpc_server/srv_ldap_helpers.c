@@ -159,4 +159,7 @@ BOOL ldap_get_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 	return(True);	
 }
 
+#else /* USE_LDAP */
+/* this keeps fussy compilers happy */
+void ldap_helper_dummy(void) {}
 #endif
