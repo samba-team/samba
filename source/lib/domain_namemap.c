@@ -889,7 +889,7 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 	uint32 num_sids;
 	DOM_SID *sids;
 	uint8 *types;
-	const char *names[1];
+	char *names[1];
 
 	DEBUG(5,("lookup_remote_ntname: %s\n", ntname));
 

@@ -215,7 +215,7 @@ do a SAMR query group members
 BOOL get_samr_query_groupmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 group_rid, uint32 *num_mem,
-				uint32 *rid, uint32 *attr)
+				uint32 **rid, uint32 **attr)
 {
 	POLICY_HND pol_open_group;
 	BOOL ret = True;
@@ -2142,7 +2142,7 @@ do a SAMR Query Group Members
 ****************************************************************************/
 BOOL samr_query_groupmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *group_pol, 
-				uint32 *num_mem, uint32 *rid, uint32 *attr)
+				uint32 *num_mem, uint32 **rid, uint32 **attr)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -2171,11 +2171,12 @@ BOOL samr_query_groupmem(struct cli_state *cli, uint16 fnum,
 		SAMR_R_QUERY_GROUPMEM r_o;
 		BOOL p;
 
-		/* get user info */
-		r_o.rid  = rid;
-		r_o.attr = attr;
+		r_o.rid  = NULL;
+		r_o.attr = NULL;
 
 		samr_io_r_query_groupmem("", &r_o, &rdata, 0);
+		*rid  = r_o.rid ;
+		*attr = r_o.attr;
 		p = rdata.offset != 0;
 		
 		if (p && r_o.status != 0)

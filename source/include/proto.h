@@ -1873,7 +1873,7 @@ BOOL delete_samr_dom_group(struct cli_state *cli, uint16 fnum,
 BOOL get_samr_query_groupmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 group_rid, uint32 *num_mem,
-				uint32 *rid, uint32 *attr);
+				uint32 **rid, uint32 **attr);
 BOOL delete_samr_dom_alias(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 alias_rid);
@@ -1977,7 +1977,7 @@ BOOL samr_query_useraliases(struct cli_state *cli, uint16 fnum,
 				uint32 *num_aliases, uint32 **rid);
 BOOL samr_query_groupmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *group_pol, 
-				uint32 *num_mem, uint32 *rid, uint32 *attr);
+				uint32 *num_mem, uint32 **rid, uint32 **attr);
 BOOL samr_query_usergroups(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 *num_groups,
 				DOM_GID **gid);
@@ -2585,6 +2585,7 @@ BOOL samr_io_q_query_groupmem(char *desc,  SAMR_Q_QUERY_GROUPMEM *q_u, prs_struc
 BOOL make_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM *r_u,
 		uint32 num_entries, uint32 *rid, uint32 *attr, uint32 status);
 BOOL samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struct *ps, int depth);
+void samr_free_r_query_groupmem(SAMR_R_QUERY_GROUPMEM *r_u);
 BOOL make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 				POLICY_HND *hnd);
 BOOL samr_io_q_query_usergroups(char *desc,  SAMR_Q_QUERY_USERGROUPS *q_u, prs_struct *ps, int depth);
@@ -2634,6 +2635,7 @@ BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 		POLICY_HND *pol, uint32 flags,
 		uint32 num_rids, uint32 *rid);
 BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps, int depth);
+void samr_free_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u);
 BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		uint32 num_names, fstring *name, uint8 *type,
 		uint32 status);
