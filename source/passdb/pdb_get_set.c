@@ -1321,6 +1321,23 @@ BOOL pdb_set_tp_domain_name(SAM_TRUST_PASSWD *trust, const smb_ucs2_t *dom_name)
 	return True;
 }
 
+
+BOOL pdb_set_tp_domain_name_c(SAM_TRUST_PASSWD *trust, const char *dom_name)
+{
+	int len;
+	if (!trust || !dom_name)
+		return False;
+	
+	trust->private.uni_name_len = strnlen(dom_name, 32);
+	len = push_ucs2(NULL, (void*)trust->private.uni_name, dom_name,
+			sizeof(trust->private.uni_name), STR_TERMINATE);
+	if (!len)
+		return False;
+
+	return True;
+}
+
+
 BOOL pdb_set_tp_flags(SAM_TRUST_PASSWD *trust, uint16 t_flags)
 {
 	if (!trust)
