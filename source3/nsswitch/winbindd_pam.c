@@ -513,11 +513,13 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	if (!NT_STATUS_IS_OK(result = cli_samr_chgpasswd_user(hnd->cli, mem_ctx, 
-							      user, newpass, oldpass))) {
-		DEBUG(1, ("password change failed for user %s/%s\n", domain, 
-			  user));
-	}
+	if (!cli_oem_change_password(hnd->cli, user, newpass, oldpass)) {
+ 		DEBUG(1, ("password change failed for user %s/%s\n", domain, 
+ 			  user));
+		result = NT_STATUS_WRONG_PASSWORD;
+	} else {
+		result = NT_STATUS_OK;
+ 	}
 
 done:    
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
