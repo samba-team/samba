@@ -2482,15 +2482,6 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
 
   bLoaded = True;
 
-  /* Now we check bWINSsupport and set szWINSserver to 127.0.0.1 */
-  /* if bWINSsupport is True                                     */
-
-  if (Globals.bWINSsupport) {
-
-    string_set(&Globals.szWINSserver, "127.0.0.1");
-
-  }
-
   return (bRetval);
 }
 
