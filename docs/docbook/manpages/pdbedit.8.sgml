@@ -1,0 +1,291 @@
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<refentry id="pdbedit">
+
+<refmeta>
+	<refentrytitle>pdbedit</refentrytitle>
+	<manvolnum>8</manvolnum>
+</refmeta>
+
+
+<refnamediv>
+	<refname>pdbedit</refname>
+	<refpurpose>manage the SAM database</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>pdbedit</command>
+		<arg choice="opt">-l</arg>	
+		<arg choice="opt">-v</arg>	
+		<arg choice="opt">-w</arg>	
+		<arg choice="opt">-u username</arg>	
+		<arg choice="opt">-f fullname</arg>	
+		<arg choice="opt">-h homedir</arg>	
+		<arg choice="opt">-d drive</arg>	
+		<arg choice="opt">-s script</arg>
+		<arg choice="opt">-p profile</arg>	
+		<arg choice="opt">-a</arg>	
+		<arg choice="opt">-m</arg>	
+		<arg choice="opt">-x</arg>	
+		<arg choice="opt">-i file</arg>	
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This tool is part of the <ulink url="samba.7.html">
+	Samba</ulink> suite.</para>
+
+	<para>The pdbedit program is used to manage the users accounts
+	stored in the sam database and can be run only by root.</para>
+
+	<para>The pdbedit tool use the passdb modular interface and is
+	independent from the kind of users database used (currently there
+	are smbpasswd, ldap, nis+ and tdb based and more can be addedd
+	without changing the tool).<para>
+
+	<para>There are five main ways to use pdbedit: adding a user account,
+	removing a user account, modifing a user account, listing user
+	accounts, importing users accounts.<para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+	<variablelist>
+		<varlistentry>
+		<term>-l</term>
+		<listitem><para>This option list all the user accounts
+		present in the users database.
+		This option prints a list of user/uid pairs separated by
+		the ':' character.</para>
+
+		<para>Example: <command>pdbedit -l</command></para>
+		<para><programlisting>
+		sorce:500:Simo Sorce
+		samba:45:Test User
+		</programlisting></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term>-v</term>
+		<listitem><para>This option sets the verbose listing format.
+		It will make pdbedit list the users in the database printing
+		out the account fields in a descriptive format.</para>
+
+		<para>Example: <command>pdbedit -l -v</command></para>
+		<para><programlisting>
+		---------------
+		username:       sorce
+		user ID/Group:  500/500
+		user RID/GRID:  2000/2001
+		Full Name:      Simo Sorce
+		Home Directory: \\BERSERKER\sorce
+		HomeDir Drive:  H:
+		Logon Script:   \\BERSERKER\netlogon\sorce.bat
+		Profile Path:   \\BERSERKER\profile
+		---------------
+		username:       samba
+		user ID/Group:  45/45
+		user RID/GRID:  1090/1091
+		Full Name:      Test User
+		Home Directory: \\BERSERKER\samba
+		HomeDir Drive:  
+		Logon Script:   
+		Profile Path:   \\BERSERKER\profile
+		</programlisting></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term>-w</term>
+		<listitem><para>This option sets the "smbpasswd" listing format.
+		It will make pdbedit list the users in the database printing
+		out the account fields in a format compatible with the
+		<filename>smbpasswd</filename> file format. (see the <ulink
+		url="smbpasswd.5.html"><filename>smbpasswd(5)</filename></ulink> for details)</para>
+
+		<para>Example: <command>pdbedit -l -w</command></para>
+		<para><programlisting>
+		sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
+		samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
+		</programlisting></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>-u username</term>
+		<listitem><para>This option specifies that the username to be
+		used for the operation requested (listing, adding, removing)
+		It is <emphasis>required</emphasis> in add, remove and modify
+		operations and <emphasis>optional</emphasis> in list
+		operations.</para>
+		
+		</para></listitem>
+		</varlistentry>
+		
+
+
+		<varlistentry>
+		<term>-f fullname</term>
+		<listitem><para>This option can be used while adding or
+		modifing a user account. It will specify the user's full
+		name. </para>
+
+		<para>Example: <command>-f "Simo Sorce"</command></para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term>-h homedir</term>
+		<listitem><para>This option can be used while adding or
+		modifing a user account. It will specify the user's home
+		directory network path.</para>
+
+		<para>Example: <command>-h "\\\\BERSERKER\\sorce"</command>
+		</para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term>-d drive</term>
+		<listitem><para>This option can be used while adding or
+		modifing a user account. It will specify the windows drive
+		letter to be used to map the home directory.</para>
+
+		<para>Example: <command>-d "H:"</command>
+		</para>
+		</listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>-s script</term>
+		<listitem><para>This option can be used while adding or
+		modifing a user account. It will specify the user's logon
+		script path.</para>
+
+		<para>Example: <command>-s "\\\\BERSERKER\\netlogon\\sorce.bat"</command>
+		</para>
+		</listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>-p profile<term>
+		<listitem><para>This option can be used while adding or
+		modifing a user account. It will specify the user's profile
+		directory.</para>
+
+		<para>Example: <command>-p "\\\\BERSERKER\\netlogon"</command>
+		</para>
+		</listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>-a</term>
+		<listitem><para>This option is used to add a user into the
+		database. This command need the user name be specified with
+		the -u switch. When adding a new user pdbedit will also
+		ask for the password to be used</para>
+
+		<para>Example: <command>pdbedit -a -u sorce</command>
+		<programlisting>new password:
+		retype new password</programlisting>
+                </para>
+		</listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term>-m</term>
+		<listitem><para>This option may only be used in conjunction 
+		with the <parameter>-a</parameter> option. It will make
+		pdbedit to add a machine trust account instead of a user
+		account (-u username will provide the machine name).</para>
+
+		<para>Example: <command>pdbedit -a -m -u w2k-wks</command>
+		</para>
+		</listitem>
+		</varlistentry>
+		
+		
+		<varlistentry>
+		<term>-x</term>
+		<listitem><para>This option causes pdbedit to delete an account
+		from the database. It need the username be specified with the
+		-u switch.</para>
+
+		<para>Example: <command>pdbedit -x -u bob</command></para>
+		</listitem>
+		</varlistentry>
+		
+
+		<varlistentry>
+		<term>-i file</term>
+		<listitem><para>This command is used to import a smbpasswd
+		file into the database.</para>
+
+		<para>This option will ease migration from the plain smbpasswd
+		file database to more powerful backend databases like tdb and
+		ldap.</para>
+
+		<para>Example: <command>pdbedit -i /etc/smbpasswd.old</command>
+		</para>
+		</listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+
+<refsect1>
+	<title>NOTES</title>
+	
+	<para>This command may be used only by root.</para>
+</refsect1>
+
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 2.2 of 
+	the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+	<para><ulink url="smbpasswd.8.html">smbpasswd(8)</ulink>, 
+	<ulink url="samba.7.html">samba(7)</ulink>
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+	
+	<para>The original Samba software and related utilities 
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar 
+	to the way the Linux kernel is developed.</para>
+	
+	<para>The original Samba man pages were written by Karl Auer. 
+	The man page sources were converted to YODL format (another 
+	excellent piece of Open Source software, available at
+	<ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
+	release by Jeremy Allison.  The conversion to DocBook for 
+	Samba 2.2 was done by Gerald Carter</para>
+</refsect1>
+
+</refentry>
