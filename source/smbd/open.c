@@ -1024,7 +1024,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 			ignored */
 		if (Access)
 			*Access = DOS_OPEN_WRONLY;
-		if (action)
+		if (paction)
 			*paction = FILE_WAS_CREATED;
 		return print_fsp_open(conn, fname);
 	}
