@@ -90,7 +90,7 @@ BOOL message_init(void)
 	if (tdb) return True;
 
 	tdb = tdb_open_log(lock_path("messages.tdb"), 
-		       0, TDB_CLEAR_IF_FIRST, 
+		       0, TDB_CLEAR_IF_FIRST|USE_TDB_MMAP_FLAG,
 		       O_RDWR|O_CREAT,0600);
 
 	if (!tdb) {
