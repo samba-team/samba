@@ -4,6 +4,11 @@ Thu Mar 18 12:55:42 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Makefile.am: include Makefile.am.common
 
+Wed Mar 17 23:36:21 1999  Assar Westerlund  <assar@sics.se>
+
+	* pop_pass.c (krb4_verify_password): use KRB_VERIFY_SECURE instead
+ 	of 1
+
 Tue Mar 16 22:28:52 1999  Assar Westerlund  <assar@sics.se>
 
 	* pop_pass.c: krb_verify_user_multiple -> krb_verify_user

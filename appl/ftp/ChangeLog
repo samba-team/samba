@@ -1,3 +1,7 @@
+Mon Mar 22 22:15:18 1999  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpd.c (pass): 1 -> KRB_VERIFY_SECURE
+
 Thu Mar 18 12:07:09 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* ftpd/Makefile.am: clean ftpcmd.c
