@@ -24,7 +24,6 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
-#include "librpc/gen_ndr/ndr_security.h"
 
 enum fetchfile_stage {FETCHFILE_CONNECT,
 		      FETCHFILE_READ};

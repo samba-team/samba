@@ -25,7 +25,6 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include "lib/crypto/crypto.h"
-#include "librpc/gen_ndr/ndr_netlogon.h"
 
 /*
   initialise the credentials state for old-style 64 bit session keys
