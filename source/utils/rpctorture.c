@@ -556,8 +556,8 @@ static void run_pipegobble(int numops, struct client_info *cli_info, char *pipe_
 
 static void run_handles(int numops, struct client_info *cli_info)
 {
-	run_samhandles(numops, cli_info);
 	run_lsahandles(numops, cli_info);
+	run_samhandles(numops, cli_info);
 }
 
 static void run_pipegobbler(int numops, struct client_info *cli_info)
@@ -634,6 +634,8 @@ static void usage(char *pname)
   fprintf(out_hnd, "\t-U username           set the network username\n");
   fprintf(out_hnd, "\t-W workgroup          set the workgroup name\n");
   fprintf(out_hnd, "\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n");
+  fprintf(out_hnd, "\t-N processes          number of processes\n");
+  fprintf(out_hnd, "\t-o operations         number of operations\n");
   fprintf(out_hnd, "\n");
 }
 
@@ -956,12 +958,12 @@ enum client_action
 	}
 */
 
-	create_procs(nprocs, numops, &cli_info, run_randomrpc);
 /*
+	create_procs(nprocs, numops, &cli_info, run_randomrpc);
 	create_procs(nprocs, numops, &cli_info, run_pipegobbler);
 	create_procs(nprocs, numops, &cli_info, run_tcpconnect);
-	create_procs(nprocs, numops, &cli_info, run_handles);
 */
+	create_procs(nprocs, numops, &cli_info, run_handles);
 
 	fflush(out_hnd);
 

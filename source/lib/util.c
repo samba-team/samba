@@ -85,6 +85,8 @@ char **my_netbios_names;
 
 static char *filename_dos(char *path,char *buf);
 
+char *daynames[] = {"Mon","Tue","Wed","Thu","Fri","Sat","Sun"};
+char *daynames_short[] = {"M", "Tu", "W", "Th", "F", "Sa", "Su"};
 
 /*************************************************************
  initialise password databases, domain names, domain sid.
