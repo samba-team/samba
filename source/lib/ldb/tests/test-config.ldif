@@ -1,0 +1,45 @@
+##############################
+# global configuration options
+dn: cn=Global,cn=Config,cn=Samba
+objectclass: globalconfig
+Workgroup: VNET3
+UnixCharset: UTF8
+Security: user
+Interfaces: vmnet* eth*
+NetbiosName: blu
+GuestAccount: tridge
+
+##############################
+# [test] share
+dn: cn=test,cn=Shares,cn=Config,cn=Samba
+objectclass: fileshare
+cn: test
+Comment: a test share
+Path: /home/tridge/samba4/prefix/test
+ReadOnly: no
+
+#####################################
+# [msdn] a remote proxy share, stored
+# on \\msdn\test
+dn: cn=msdn,cn=Shares,cn=Config,cn=Samba
+objectclass: fileshare
+cn: msdn
+NtvfsHandler: cifs
+ReadOnly: no
+_CifsServer: msdn
+_CifsUser: administrator
+_CifsPassword: penguin
+_CifsDomain: winxp
+_CifsShare: test
+
+
+##############################
+# [VisualC] share
+dn: cn=visualc,cn=Shares,cn=Config,cn=Samba
+objectclass: fileshare
+cn: VisualC
+Comment: VisualC development
+Path: /home/tridge/VisualC
+ReadOnly: no
+NtvfsHandler: simple
+
