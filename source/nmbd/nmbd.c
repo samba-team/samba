@@ -810,8 +810,6 @@ static void usage(char *pname)
   }
 #endif /* WITH_PROFILE */
 
-  namecache_disable();
-
   codepage_initialise(lp_client_code_page());
 
   if(!init_structs())

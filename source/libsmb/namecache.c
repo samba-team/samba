@@ -23,7 +23,7 @@
 #include "includes.h"
 
 static BOOL done_namecache_init;
-static BOOL disable_namecache;
+static BOOL enable_namecache;
 static TDB_CONTEXT *namecache_tdb;
 
 struct nc_value {
@@ -34,7 +34,7 @@ struct nc_value {
 
 /* Initialise namecache system */
 
-static void namecache_init(void)
+void namecache_enable(void)
 {
 	/* Check if we have been here before, or name caching disabled
            by setting the name cache timeout to zero. */ 
@@ -42,7 +42,9 @@ static void namecache_init(void)
 	if (done_namecache_init)
 		return;
 
-	if (disable_namecache || lp_name_cache_timeout() == 0) {
+	done_namecache_init = True;
+
+	if (lp_name_cache_timeout() == 0) {
 		DEBUG(5, ("namecache_init: disabling netbios name cache\n"));
 		return;
 	}
@@ -59,7 +61,10 @@ static void namecache_init(void)
 		return;
 	}
 
-	done_namecache_init = True;
+	DEBUG(5, ("namecache_init: enabling netbios namecache, timeout %d "
+		  "seconds\n", lp_name_cache_timeout()));
+
+	enable_namecache = True;
 }
 
 /* Return a key for a name and name type.  The caller must free
@@ -113,12 +118,7 @@ void namecache_store(const char *name, int name_type,
 	time_t expiry;
 	int i;
 
-	/* Init namecache */
-
-	if (!done_namecache_init)
-		namecache_init();
-
-	if (!done_namecache_init)
+	if (!enable_namecache)
 		return;
 
 	DEBUG(5, ("namecache_store: storing %d address%s for %s#%02x: ",
@@ -160,12 +160,7 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 	time_t now;
 	int i;
 
-	/* Init namecache */
-
-	if (!done_namecache_init)
-		namecache_init();
-
-	if (!done_namecache_init)
+	if (!enable_namecache)
 		return False;
 
 	/* Read value */
@@ -254,12 +249,4 @@ void namecache_flush(void)
 	else
 		DEBUG(5, ("namecache_flush: deleted %d cache entr%s\n", 
 			  result, result == 1 ? "y" : "ies"));
-}
-
-/* Disable the namecache */
-
-void namecache_disable(void)
-{
-	DEBUG(5, ("namecache_disable: namecache not used\n"));
-	disable_namecache = True;
 }
