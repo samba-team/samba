@@ -1082,3 +1082,49 @@ NTSTATUS cli_samr_delete_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+/* Query user security object */
+
+NTSTATUS cli_samr_query_sec_obj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                 POLICY_HND *user_pol, uint16 switch_value, 
+                                 TALLOC_CTX *ctx, SEC_DESC_BUF **sec_desc_buf)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_QUERY_SEC_OBJ q;
+	SAMR_R_QUERY_SEC_OBJ r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_query_sec_obj(&q, user_pol, switch_value);
+
+	if (!samr_io_q_query_sec_obj("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_QUERY_SEC_OBJECT, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_query_sec_obj("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	result = r.status;
+	*sec_desc_buf=dup_sec_desc_buf(ctx, r.buf);
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
