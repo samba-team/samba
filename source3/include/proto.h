@@ -249,7 +249,6 @@ BOOL lp_load(char *pszFname,BOOL global_only);
 int lp_numservices(void);
 void lp_dump(void);
 int lp_servicenumber(char *pszServiceName);
-char *my_workgroup(void);
 char *volume_label(int snum);
 
 /*The following definitions come from  locking.c  */

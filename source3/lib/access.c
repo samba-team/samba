@@ -15,7 +15,7 @@ should be sent to samba-bugs@samba.anu.edu.au
 extern int DEBUGLEVEL;
 
 #ifndef	INADDR_NONE
-#define	INADDR_NONE	((unsigned long)~0)
+#define	INADDR_NONE	((uint32)~0)
 #endif
 
 

@@ -3089,11 +3089,8 @@ BOOL process_exists(int pid)
     }
   }
 
-  /* a best guess for non root access */
-  if (geteuid() != 0) return(True);
-
-  /* otherwise use kill */
-  return(pid == getpid() || kill(pid,0) == 0);
+  /* CGH 8/16/96 - added ESRCH test */
+  return(pid == getpid() || kill(pid,0) == 0 || errno != ESRCH);
 #endif
 }
 

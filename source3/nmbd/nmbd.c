@@ -376,6 +376,7 @@ static BOOL init_structs()
     strcpy(myname,myhostname);
     p = strchr(myname,'.');
     if (p) *p = 0;
+    strupper(myname);
   }
 
   return True;
@@ -388,19 +389,14 @@ static void usage(char *pname)
 {
   DEBUG(0,("Incorrect program usage - is the command line correct?\n"));
 
-  printf("Usage: %s [-n name] [-B bcast address] [-D] [-p port] [-d debuglevel] [-l log basename]\n",pname);
+  printf("Usage: %s [-n name] [-D] [-p port] [-d debuglevel] [-l log basename]\n",pname);
   printf("Version %s\n",VERSION);
   printf("\t-D                    become a daemon\n");
   printf("\t-p port               listen on the specified port\n");
   printf("\t-d debuglevel         set the debuglevel\n");
   printf("\t-l log basename.      Basename for log/debug files\n");
   printf("\t-n netbiosname.       the netbios name to advertise for this host\n");
-  printf("\t-B broadcast address  the address to use for broadcasts\n");
-  printf("\t-N netmask           the netmask to use for subnet determination\n");
   printf("\t-H hosts file        load a netbios hosts file\n");
-  printf("\t-G group name        add a group name to be part of\n");
-  printf("\t-I ip-address        override the IP address\n");
-  printf("\t-C comment           sets the machine comment that appears in browse lists\n");
   printf("\n");
 }
 
@@ -416,7 +412,6 @@ static void usage(char *pname)
   extern char *optarg;
   fstring group;
 
-  *group = 0;
   *host_file = 0;
 
   StartupTime = time(NULL);
@@ -451,26 +446,19 @@ static void usage(char *pname)
 	case 's':
 	  strcpy(servicesf,optarg);
 	  break;	  
+	case 'N':
+	case 'B':
+	case 'I':
 	case 'C':
-	  strcpy(ServerComment,optarg);
-	  break;
 	case 'G':
-	  strcpy(group,optarg);
+	  DEBUG(0,("Obsolete option '%c' used\n",opt));
 	  break;
 	case 'H':
 	  strcpy(host_file,optarg);
 	  break;
-	case 'I':
-	  iface_set_default(optarg,NULL,NULL);
-	  break;
-	case 'B':
-	  iface_set_default(NULL,optarg,NULL);
-	  break;
-	case 'N':
-	  iface_set_default(NULL,NULL,optarg);
-	  break;
 	case 'n':
 	  strcpy(myname,optarg);
+	  strupper(myname);
 	  break;
 	case 'l':
 	  sprintf(debugf,"%s.nmb",optarg);
@@ -540,6 +528,11 @@ static void usage(char *pname)
   string_sub(ServerComment,"%h",myhostname);
 
   add_my_names();
+
+  if (strequal(lp_workgroup(),"*")) {
+    DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
+  }
+
   add_my_subnets(lp_workgroup());
 
   DEBUG(3,("Checked names\n"));

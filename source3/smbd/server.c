@@ -1670,7 +1670,7 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 	  if (Client == -1)
 	    {
 	      DEBUG(0,("accept: %s",strerror(errno)));
-	      return False;
+	      continue;
 	    }
 
 #ifdef NO_FORK_DEBUG
