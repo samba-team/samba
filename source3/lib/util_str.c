@@ -1247,3 +1247,23 @@ char *string_truncate(char *s, int length)
 	}
 	return s;
 }
+
+/* Parse a string of the form DOMAIN/user into a domain and a user */
+
+void parse_domain_user(char *domuser, fstring domain, fstring user)
+{
+	char *p;
+	char *sep = lp_winbind_separator();
+	if (!sep) sep = "\\";
+	p = strchr(domuser,*sep);
+	if (!p) p = strchr(domuser,'\\');
+	if (!p) {
+		fstrcpy(domain,"");
+		fstrcpy(user, domuser);
+		return;
+	}
+	
+	fstrcpy(user, p+1);
+	fstrcpy(domain, domuser);
+	domain[PTR_DIFF(p, domuser)] = 0;
+}
