@@ -634,6 +634,12 @@ static BOOL init_structs(void )
  main program.
 ****************************************************************************/
 
+/* Declare prototype for build_options() to avoid having to run it through
+   mkproto.h.  Mixing $(builddir) and $(srcdir) source files in the current
+   prototype generation system is too complicated. */
+
+void build_options(BOOL screen);
+
  int main(int argc,const char *argv[])
 {
 	/* shall I run as a daemon */
