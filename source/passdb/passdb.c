@@ -807,6 +807,8 @@ BOOL pdb_generate_sam_sid(char *domain_name, DOM_SID *sid)
 	pstring machine_sid_file;
 	fstring file_name;
 
+	generate_wellknown_sids();
+
 	if (sid == NULL)
 	{
 		sid = &global_sam_sid;
