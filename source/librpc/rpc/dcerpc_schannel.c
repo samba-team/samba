@@ -277,6 +277,10 @@ static NTSTATUS dcerpc_schannel_start(struct gensec_security *gensec_security)
 
 	dce_schan_state->state = DCERPC_SCHANNEL_STATE_START;
 	gensec_security->private_data = dce_schan_state;
+	gensec_security->have_features = 
+		GENSEC_FEATURE_SESSION_KEY | 
+		GENSEC_FEATURE_SIGN | 
+		GENSEC_FEATURE_SEAL;
 	
 	return NT_STATUS_OK;
 }
