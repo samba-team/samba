@@ -87,7 +87,8 @@ typedef enum krb5_enctype {
   ETYPE_DES_CBC_NONE		= -0x1000,
   ETYPE_DES3_CBC_NONE		= -0x1001,
   ETYPE_DES_CFB64_NONE		= -0x1002,
-  ETYPE_DES_PCBC_NONE		= -0x1003
+  ETYPE_DES_PCBC_NONE		= -0x1003,
+  ETYPE_DES3_CBC_NONE_IVEC	= -0x1004
 } krb5_enctype;
 
 typedef PADATA_TYPE krb5_preauthtype;
