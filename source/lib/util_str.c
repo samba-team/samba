@@ -1293,6 +1293,8 @@ char *strnrchr_m(const char *s, char c, unsigned int n)
 
 void strlower_m(char *s)
 {
+	size_t len;
+
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
@@ -1308,7 +1310,12 @@ void strlower_m(char *s)
 
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in UTF-8 encoding. (VIV) */
-	unix_strlower(s,strlen(s)+1,s,strlen(s)+1);	
+	len = strlen(s) + 1;
+	errno = 0;
+	unix_strlower(s,len,s,len);	
+	/* Catch mb conversion errors that may not terminate. */
+	if (errno)
+		s[len-1] = '\0';
 }
 
 /**
@@ -1317,6 +1324,8 @@ void strlower_m(char *s)
 
 void strupper_m(char *s)
 {
+	size_t len;
+
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
@@ -1332,7 +1341,12 @@ void strupper_m(char *s)
 
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in multibyte encoding. (VIV) */
-	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
+	len = strlen(s) + 1;
+	errno = 0;
+	unix_strupper(s,len,s,len);	
+	/* Catch mb conversion errors that may not terminate. */
+	if (errno)
+		s[len-1] = '\0';
 }
 
 /**
