@@ -538,7 +538,7 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 
 int smbc_open(const char *fname, int flags, mode_t mode)
 {
-  fstring server, share, user, password;
+  fstring server, share, user, password, workgroup;
   pstring path;
   struct smbc_server *srv = NULL;
   int fd;
@@ -561,7 +561,9 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 
   if (user[0] == (char)0) pstrcpy(user, smbc_user);
 
-  srv = smbc_server(server, share, lp_workgroup(), user, password);
+  pstrcpy(workgroup, lp_workgroup());
+
+  srv = smbc_server(server, share, workgroup, user, password);
 
   if (!srv) {
 
@@ -832,7 +834,7 @@ int smbc_close(int fd)
 
 int smbc_unlink(const char *fname)
 {
-  fstring server, share, user, password;
+  fstring server, share, user, password, workgroup;
   pstring path;
   struct smbc_server *srv = NULL;
 
@@ -854,7 +856,9 @@ int smbc_unlink(const char *fname)
 
   if (user[0] == (char)0) pstrcpy(user, smbc_user);
 
-  srv = smbc_server(server, share, lp_workgroup(), user, password);
+  pstrcpy(workgroup, lp_workgroup());
+
+  srv = smbc_server(server, share, workgroup, user, password);
 
   if (!srv) {
 
@@ -923,7 +927,7 @@ int smbc_unlink(const char *fname)
 
 int smbc_rename(const char *oname, const char *nname)
 {
-  fstring server1, share1, server2, share2, user1, user2, password1, password2;
+  fstring server1, share1, server2, share2, user1, user2, password1, password2, workgroup;
   pstring path1, path2;
   struct smbc_server *srv = NULL;
 
@@ -961,7 +965,9 @@ int smbc_rename(const char *oname, const char *nname)
 
   }
 
-  srv = smbc_server(server1, share1, lp_workgroup(), user1, password1);
+  pstrcpy(workgroup, lp_workgroup());
+
+  srv = smbc_server(server1, share1, workgroup, user1, password1);
   if (!srv) {
 
     return -1;
@@ -1152,7 +1158,7 @@ BOOL smbc_getatr(struct smbc_server *srv, char *path,
 int smbc_stat(const char *fname, struct stat *st)
 {
   struct smbc_server *srv;
-  fstring server, share, user, password;
+  fstring server, share, user, password, workgroup;
   pstring path;
   time_t m_time = 0, a_time = 0, c_time = 0;
   size_t size = 0;
@@ -1179,7 +1185,9 @@ int smbc_stat(const char *fname, struct stat *st)
 
   if (user[0] == (char)0) pstrcpy(user, smbc_user);
 
-  srv = smbc_server(server, share, lp_workgroup(), user, password);
+  pstrcpy(workgroup, lp_workgroup());
+
+  srv = smbc_server(server, share, workgroup, user, password);
 
   if (!srv) {
 
@@ -1454,7 +1462,7 @@ dir_list_fn(file_info *finfo, const char *mask, void *state)
 
 int smbc_opendir(const char *fname)
 {
-  fstring server, share, user, password;
+  fstring server, share, user, password, workgroup;
   pstring path;
   struct smbc_server *srv = NULL;
   struct in_addr rem_ip;
@@ -1482,6 +1490,8 @@ int smbc_opendir(const char *fname)
   }
 
   if (user[0] == (char)0) pstrcpy(user, smbc_user);
+
+  pstrcpy(workgroup, lp_workgroup());
 
   /* Get a file entry ... */
 
@@ -1531,7 +1541,7 @@ int smbc_opendir(const char *fname)
 
     /* We have server and share and path empty ... so list the workgroups */
 
-    /*cli_get_backup_server(my_netbios_name, lp_workgroup(), server, sizeof(server));*/
+    /*cli_get_backup_server(my_netbios_name, workgroup, server, sizeof(server));*/
 
     if (!resolve_name(lp_workgroup(), &rem_ip, 0x1d)) {
       
@@ -1556,7 +1566,7 @@ int smbc_opendir(const char *fname)
      * Get a connection to IPC$ on the server if we do not already have one
      */
 
-    srv = smbc_server(server, "IPC$", lp_workgroup(), user, password);
+    srv = smbc_server(server, "IPC$", workgroup, user, password);
 
     if (!srv) {
 
@@ -1572,7 +1582,7 @@ int smbc_opendir(const char *fname)
 
     /* Now, list the stuff ... */
 
-    if (!cli_NetServerEnum(&srv->cli, lp_workgroup(), 0x80000000, list_fn,
+    if (!cli_NetServerEnum(&srv->cli, workgroup, 0x80000000, list_fn,
 			   (void *)smbc_file_table[slot])) {
 
       if (smbc_file_table[slot]) {
@@ -1600,8 +1610,10 @@ int smbc_opendir(const char *fname)
       }
 
       /* Check to see if <server><1D> translates, or <server><20> translates */
+      /* However, we check to see if <server> is an IP address first */
 
-      if (resolve_name(server, &rem_ip, 0x1d)) { /* Found LMB */
+      if (!is_ipaddress(server) &&  /* Not an IP addr so check next */
+	  resolve_name(server, &rem_ip, 0x1d)) { /* Found LMB */
 	pstring buserver;
 
 	smbc_file_table[slot]->dir_type = SMBC_SERVER;
@@ -1624,7 +1636,7 @@ int smbc_opendir(const char *fname)
 	 * Get a connection to IPC$ on the server if we do not already have one
 	 */
 
-	srv = smbc_server(buserver, "IPC$", lp_workgroup(), user, password);
+	srv = smbc_server(buserver, "IPC$", workgroup, user, password);
 
 	if (!srv) {
 
@@ -1661,7 +1673,7 @@ int smbc_opendir(const char *fname)
 
 	  smbc_file_table[slot]->dir_type = SMBC_FILE_SHARE;
 
-	  srv = smbc_server(server, "IPC$", lp_workgroup(), user, password);
+	  srv = smbc_server(server, "IPC$", workgroup, user, password);
 
 	  if (!srv) {
 
@@ -1710,7 +1722,7 @@ int smbc_opendir(const char *fname)
 
       smbc_file_table[slot]->dir_type = SMBC_FILE_SHARE;
 
-      srv = smbc_server(server, share, lp_workgroup(), user, password);
+      srv = smbc_server(server, share, workgroup, user, password);
 
       if (!srv) {
 
@@ -1969,7 +1981,7 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 int smbc_mkdir(const char *fname, mode_t mode)
 {
   struct smbc_server *srv;
-  fstring server, share, user, password;
+  fstring server, share, user, password, workgroup;
   pstring path;
 
   if (!smbc_initialized) {
@@ -1992,7 +2004,9 @@ int smbc_mkdir(const char *fname, mode_t mode)
 
   if (user[0] == (char)0) pstrcpy(user, smbc_user);
 
-  srv = smbc_server(server, share, lp_workgroup(), user, password);
+  pstrcpy(workgroup, lp_workgroup());
+
+  srv = smbc_server(server, share, workgroup, user, password);
 
   if (!srv) {
 
@@ -2053,7 +2067,7 @@ static void rmdir_list_fn(file_info *finfo, const char *mask, void *state)
 int smbc_rmdir(const char *fname)
 {
   struct smbc_server *srv;
-  fstring server, share, user, password;
+  fstring server, share, user, password, workgroup;
   pstring path;
 
   if (!smbc_initialized) {
@@ -2076,7 +2090,9 @@ int smbc_rmdir(const char *fname)
 
   if (user[0] == (char)0) pstrcpy(user, smbc_user);
 
-  srv = smbc_server(server, share, lp_workgroup(), user, password);
+  pstrcpy(workgroup, lp_workgroup());
+
+  srv = smbc_server(server, share, workgroup, user, password);
 
   if (!srv) {
 
@@ -2418,7 +2434,7 @@ int smbc_open_print_job(const char *fname)
 int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
 {
   struct smbc_server *srv;
-  fstring server, share, user, password;
+  fstring server, share, user, password, workgroup;
   pstring path;
 
   if (!smbc_initialized) {
@@ -2441,7 +2457,9 @@ int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
 
   if (user[0] == (char)0) pstrcpy(user, smbc_user);
 
-  srv = smbc_server(server, share, lp_workgroup(), user, password);
+  pstrcpy(workgroup, lp_workgroup());
+
+  srv = smbc_server(server, share, workgroup, user, password);
 
   if (!srv) {
 
@@ -2467,7 +2485,7 @@ int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
 int smbc_unlink_print_job(const char *fname, int id)
 {
   struct smbc_server *srv;
-  fstring server, share, user, password;
+  fstring server, share, user, password, workgroup;
   pstring path;
   int err;
 
@@ -2491,7 +2509,9 @@ int smbc_unlink_print_job(const char *fname, int id)
 
   if (user[0] == (char)0) pstrcpy(user, smbc_user);
 
-  srv = smbc_server(server, share, lp_workgroup(), user, password);
+  pstrcpy(workgroup, lp_workgroup());
+
+  srv = smbc_server(server, share, workgroup, user, password);
 
   if (!srv) {
 
