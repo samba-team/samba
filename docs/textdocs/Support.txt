@@ -790,3 +790,54 @@ Samba to integrate Windows NT workstations in their Solaris
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+CORNWALL - ENGLAND
+
+Starstream Communications Ltd
+Unit 9
+Moss Side Industrial Estate
+Callington
+Cornwall
+PL17 7DU
+United Kingdom
+
+Phone +44 1579 384072  Fax +44 1579 384267
+
+Contact : Terry Moore-Read    terry@starstream.co.uk
+
+Website : http://www.ndu-star.demon.co.uk   shortly moving to
+http://www.starstream.co.uk
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+SOUTH AFRICA
+
+Company: Obsidian Systems
+Street Addr: Boskruin Office Park Unit 3, Bosbok street, Randpark Ridge
+             Gauteng, 2156, South Africa.
+Postal Addr: PO Box 4938, Cresta, South Africa, 2118
+Contact no's: +2711 792-6500/38, Fax: +2711-792-6522
+        Cell: +2783-379-6889/90/91 or +2783-377-4946 or +27832660199
+
+Our level of experience: Low level programming and support for all samba
+security and compatability issues. We use Samba in South African Schools
+and commercial companies as an affordable solution for LAN and WAN
+networking.
+
+For futher information, please consult our website www.obsidian.co.za
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+PERTH - AUSTRALIA
+
+Geoff Allan                     Phone:          +61 8 9325 9922
+Office Information              Fax:            +61 8 9325 9938
+Perth, Western Australia        Mobile:         0412 903 659
+Email:          geoffa@officeinfo.com.au
+
+Office Information has been in existence since 1991.  We are (amongst 
+other things) systems integrators with experts in Unix, Linux, Novell, 
+NT and the other DOS & Windows platforms.  We also have a number of 
+Clients for whom we have installed and supported Samba.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
