@@ -54,7 +54,7 @@ print_arg (char *string, size_t len, int mdoc, int longp, struct getargs *arg)
 
     *string = '\0';
 
-    if (ISFLAG(*arg))
+    if (ISFLAG(*arg) || (!longp && arg->type == arg_counter))
 	return 0;
 
     if(mdoc){
@@ -69,7 +69,7 @@ print_arg (char *string, size_t len, int mdoc, int longp, struct getargs *arg)
 
     if (arg->arg_help)
 	s = arg->arg_help;
-    else if (arg->type == arg_integer)
+    else if (arg->type == arg_integer || arg->type == arg_counter)
 	s = "integer";
     else if (arg->type == arg_string)
 	s = "string";
@@ -347,7 +347,10 @@ arg_match_long(struct getargs *args, size_t num_args,
 	    return ARG_ERR_NO_MATCH;
     }
     
-    if(*optarg == '\0' && !ISFLAG(*current) && current->type != arg_collect)
+    if(*optarg == '\0'
+       && !ISFLAG(*current)
+       && current->type != arg_collect
+       && current->type != arg_counter)
 	return ARG_ERR_NO_MATCH;
     switch(current->type){
     case arg_integer:
@@ -385,6 +388,22 @@ arg_match_long(struct getargs *args, size_t num_args,
 	}
 	return ARG_ERR_BAD_ARG;
     }
+    case arg_counter :
+    {
+	int val;
+
+	if (*optarg == '\0')
+	    val = 1;
+	else {
+	    char *endstr;
+
+	    val = strtol (optarg, &endstr, 0);
+	    if (endstr == optarg)
+		return ARG_ERR_BAD_ARG;
+	}
+	*(int *)current->value += val;
+	return 0;
+    }
     case arg_double:
     {
 	double tmp;
@@ -398,16 +417,86 @@ arg_match_long(struct getargs *args, size_t num_args,
 	int o = argv - rargv[*optind];
 	return (*c->func)(FALSE, argc, rargv, optind, &o, c->data);
     }
+
     default:
 	abort ();
     }
+}
+
+static int
+arg_match_short (struct getargs *args, size_t num_args,
+		 char *argv, int argc, char **rargv, int *optind)
+{
+    int j, k;
+
+    for(j = 1; j > 0 && j < strlen(rargv[*optind]); j++) {
+	for(k = 0; k < num_args; k++) {
+	    char *optarg;
+
+	    if(args[k].short_name == 0)
+		continue;
+	    if(argv[j] == args[k].short_name) {
+		if(args[k].type == arg_flag) {
+		    *(int*)args[k].value = 1;
+		    break;
+		}
+		if(args[k].type == arg_negative_flag) {
+		    *(int*)args[k].value = 0;
+		    break;
+		} 
+		if(args[k].type == arg_counter) {
+		    ++*(int *)args[k].value;
+		    break;
+		}
+		if(args[k].type == arg_collect) {
+		    struct getarg_collect_info *c = args[k].value;
+
+		    if((*c->func)(TRUE, argc, rargv, optind, &j, c->data))
+			return ARG_ERR_BAD_ARG;
+		    break;
+		}
+
+		if(argv[j + 1])
+		    optarg = &argv[j + 1];
+		else {
+		    ++*optind;
+		    optarg = rargv[*optind];
+		}
+		if(optarg == NULL)
+		    return ARG_ERR_NO_ARG;
+		if(args[k].type == arg_integer) {
+		    int tmp;
+		    if(sscanf(optarg, "%d", &tmp) != 1)
+			return ARG_ERR_BAD_ARG;
+		    *(int*)args[k].value = tmp;
+		    return 0;
+		} else if(args[k].type == arg_string) {
+		    *(char**)args[k].value = optarg;
+		    return 0;
+		} else if(args[k].type == arg_strings) {
+		    add_string((getarg_strings*)args[k].value, optarg);
+		    return 0;
+		} else if(args[k].type == arg_double) {
+		    double tmp;
+		    if(sscanf(optarg, "%lf", &tmp) != 1)
+			return ARG_ERR_BAD_ARG;
+		    *(double*)args[k].value = tmp;
+		    return 0;
+		}
+		return ARG_ERR_BAD_ARG;
+	    }
+	}
+	if (k == num_args)
+	    return ARG_ERR_NO_MATCH;
+    }
+    return 0;
 }
 
 int
 getarg(struct getargs *args, size_t num_args, 
        int argc, char **argv, int *optind)
 {
-    int i, j, k;
+    int i;
     int ret = 0;
 
     srand (time(NULL));
@@ -422,102 +511,15 @@ getarg(struct getargs *args, size_t num_args,
 	    }
 	    ret = arg_match_long (args, num_args, argv[i] + 2, 
 				  argc, argv, &i);
-	    if(ret) {
-		*optind = i;
-		return ret;
-	    }
 	} else {
-	    for(j = 1; argv[i] && j > 0 && j < strlen(argv[i]); j++) {
-		for(k = 0; k < num_args; k++) {
-		    char *optarg;
-		    if(args[k].short_name == 0)
-			continue;
-		    if(argv[i][j] == args[k].short_name){
-			if(args[k].type == arg_flag){
-			    *(int*)args[k].value = 1;
-			    break;
-			}
-			if(args[k].type == arg_negative_flag){
-			    *(int*)args[k].value = 0;
-			    break;
-			} 
-			if(args[k].type == arg_collect){
-			    struct getarg_collect_info *c = args[k].value;
-			    if((*c->func)(TRUE, argc, argv, &i, &j, c->data)) {
-				*optind = i;
-				return ARG_ERR_BAD_ARG;
-			    }
-			    break;
-			}
-			if(argv[i][j + 1])
-			    optarg = &argv[i][j + 1];
-			else{
-			    i++;
-			    optarg = argv[i];
-			}
-			if(optarg == NULL) {
-			    *optind = i;
-			    return ARG_ERR_NO_ARG;
-			}
-			if(args[k].type == arg_integer){
-			    int tmp;
-			    if(sscanf(optarg, "%d", &tmp) != 1) {
-				*optind = i;
-				return ARG_ERR_BAD_ARG;
-			    }
-			    *(int*)args[k].value = tmp;
-			    goto out;
-			}else if(args[k].type == arg_string){
-			    *(char**)args[k].value = optarg;
-			    goto out;
-			}else if(args[k].type == arg_strings){
-			    add_string((getarg_strings*)args[k].value, optarg);
-			    goto out;
-			} else if(args[k].type == arg_double){
-			    double tmp;
-			    if(sscanf(optarg, "%lf", &tmp) != 1) {
-				*optind = i;
-				return ARG_ERR_BAD_ARG;
-			    }
-			    *(double*)args[k].value = tmp;
-			    goto out;
-			}
-			*optind = i;
-			return ARG_ERR_BAD_ARG;
-		    }
-			
-		}
-		if (k == num_args) {
-		    *optind = i;
-		    return ARG_ERR_NO_MATCH;
-		}
-	    }
-	out:;
+	    ret = arg_match_short (args, num_args, argv[i],
+				   argc, argv, &i);
 	}
+	if(ret)
+	    break;
     }
     *optind = i;
-    return 0;
-}
-
-char *
-getarg_optarg(int short_flag, int argc, char **argv, int *optind, int *optarg)
-{
-    char *arg;
-    if(short_flag) {
-	if(argv[*optind][*optarg + 1] == '\0') {
-	    arg = argv[*optind + 1];
-	    *optarg = -1;
-	} else {
-	    arg = &argv[*optind][*optarg + 1];
-	    *optarg = -1;
-	}
-    } else {
-	arg = strchr(argv[*optind], '=');
-	if(arg)
-	    arg++;
-	*optarg = -1;
-    }
-    return arg;
+    return ret;
 }
 
 #if TEST
