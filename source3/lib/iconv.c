@@ -241,6 +241,7 @@ static size_t weird_pull(char **inbuf, size_t *inbytesleft,
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
 		int i;
+		int done = 0;
 		for (i=0;weird_table[i].from;i++) {
 			if (strncmp((*inbuf), 
 				    weird_table[i].to, 
@@ -256,17 +257,18 @@ static size_t weird_pull(char **inbuf, size_t *inbytesleft,
 					(*outbytesleft) -= 2;
 					(*inbuf)  += weird_table[i].len;
 					(*outbuf) += 2;
-					goto next;
+					done = 1;
+					break;
 				}
 			}
 		}
+		if (done) continue;
 		(*outbuf)[0] = (*inbuf)[0];
 		(*outbuf)[1] = 0;
 		(*inbytesleft)  -= 1;
 		(*outbytesleft) -= 2;
 		(*inbuf)  += 1;
 		(*outbuf) += 2;
-	next:
 	}
 
 	if (*inbytesleft > 0) {
@@ -284,6 +286,7 @@ static size_t weird_push(char **inbuf, size_t *inbytesleft,
 
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
 		int i;
+		int done=0;
 		for (i=0;weird_table[i].from;i++) {
 			if ((*inbuf)[0] == weird_table[i].from &&
 			    (*inbuf)[1] == 0) {
@@ -297,17 +300,19 @@ static size_t weird_push(char **inbuf, size_t *inbytesleft,
 					(*outbytesleft) -= weird_table[i].len;
 					(*inbuf)  += 2;
 					(*outbuf) += weird_table[i].len;
-					goto next;
+					done = 1;
+					break;
 				}
 			}
 		}
+		if (done) continue;
+
 		(*outbuf)[0] = (*inbuf)[0];
 		if ((*inbuf)[1]) ir_count++;
 		(*inbytesleft)  -= 2;
 		(*outbytesleft) -= 1;
 		(*inbuf)  += 2;
 		(*outbuf) += 1;
-	next:
 	}
 
 	if (*inbytesleft == 1) {
