@@ -48,7 +48,7 @@ static int max_protocol = PROTOCOL_NT1;
 extern pstring user_socket_options;
 
 static int process_tok(fstring tok);
-static NTSTATUS cmd_help(void);
+static void cmd_help(void);
 
 /* 30 second timeout on most commands */
 #define CLIENT_TIMEOUT (30*1000)
@@ -1787,7 +1787,7 @@ static int process_tok(fstring tok)
 /****************************************************************************
 help
 ****************************************************************************/
-static NTSTATUS cmd_help(void)
+static void cmd_help(void)
 {
 	int i=0,j;
 	fstring buf;
@@ -1804,7 +1804,7 @@ static NTSTATUS cmd_help(void)
 			d_printf("\n");
 		}
 	}
-	return NT_STATUS_OK;
+	return;
 }
 
 /****************************************************************************
