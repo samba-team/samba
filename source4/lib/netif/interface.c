@@ -187,10 +187,10 @@ void load_interfaces(void)
 
 	ptr = lp_interfaces();
 	mem_ctx = talloc_init("load_interfaces");
-    if (!mem_ctx) {
-    	DEBUG(2,("no memory to load interfaces \n"));
+	if (!mem_ctx) {
+		DEBUG(2,("no memory to load interfaces \n"));
 		return;
-    }
+	}
 
 	allones_ip = interpret_addr2("255.255.255.255");
 	loopback_ip = interpret_addr2("127.0.0.1");
@@ -329,7 +329,6 @@ struct ipv4_addr *iface_n_bcast(int n)
 	if (i) return &i->bcast;
 	return NULL;
 }
-
 
 /* these 3 functions return the ip/bcast/nmask for the interface
    most appropriate for the given ip address. If they can't find
