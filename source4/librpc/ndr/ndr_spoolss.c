@@ -2207,6 +2207,7 @@ void ndr_print_spoolss_EnumPrinters(struct ndr_print *ndr, const char *name, int
 		ndr_print_uint32(ndr, "buf_size", *r->out.buf_size);
 	ndr->depth--;
 	ndr_print_uint32(ndr, "count", r->out.count);
+	ndr_print_WERROR(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2247,6 +2248,7 @@ void ndr_print_spoolss_OpenPrinter(struct ndr_print *ndr, const char *name, int 
 	ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->out.handle);
 	ndr->depth--;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2264,6 +2266,7 @@ void ndr_print_spoolss_02(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_02");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2281,6 +2284,7 @@ void ndr_print_spoolss_03(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_03");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2326,6 +2330,7 @@ void ndr_print_spoolss_EnumJobs(struct ndr_print *ndr, const char *name, int fla
 		ndr_print_uint32(ndr, "buf_size", *r->out.buf_size);
 	ndr->depth--;
 	ndr_print_uint32(ndr, "numjobs", r->out.numjobs);
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2343,6 +2348,7 @@ void ndr_print_spoolss_05(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_05");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2360,6 +2366,7 @@ void ndr_print_spoolss_06(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_06");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2377,6 +2384,7 @@ void ndr_print_spoolss_07(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_07");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2419,6 +2427,7 @@ void ndr_print_spoolss_GetPrinter(struct ndr_print *ndr, const char *name, int f
 	ndr->depth++;
 		ndr_print_uint32(ndr, "buf_size", *r->out.buf_size);
 	ndr->depth--;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2436,6 +2445,7 @@ void ndr_print_spoolss_09(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_09");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2453,6 +2463,7 @@ void ndr_print_spoolss_0a(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_0a");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2470,6 +2481,7 @@ void ndr_print_spoolss_0b(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_0b");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2487,6 +2499,7 @@ void ndr_print_spoolss_0c(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_0c");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2504,6 +2517,7 @@ void ndr_print_spoolss_0d(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_0d");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2521,6 +2535,7 @@ void ndr_print_spoolss_0e(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_0e");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2538,6 +2553,7 @@ void ndr_print_spoolss_0f(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_0f");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2555,6 +2571,7 @@ void ndr_print_spoolss_10(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_10");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2572,6 +2589,7 @@ void ndr_print_spoolss_11(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_11");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2593,6 +2611,7 @@ void ndr_print_spoolss_StartPagePrinter(struct ndr_print *ndr, const char *name,
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_StartPagePrinter");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2610,6 +2629,7 @@ void ndr_print_spoolss_13(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_13");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2631,6 +2651,7 @@ void ndr_print_spoolss_EndPagePrinter(struct ndr_print *ndr, const char *name, i
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_EndPagePrinter");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2648,6 +2669,7 @@ void ndr_print_spoolss_15(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_15");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2665,6 +2687,7 @@ void ndr_print_spoolss_16(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_16");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2682,6 +2705,7 @@ void ndr_print_spoolss_EndDocPrinter(struct ndr_print *ndr, const char *name, in
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_EndDocPrinter");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2699,6 +2723,7 @@ void ndr_print_spoolss_18(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_18");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2716,6 +2741,7 @@ void ndr_print_spoolss_19(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_19");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2733,6 +2759,7 @@ void ndr_print_spoolss_1a(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_1a");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2750,6 +2777,7 @@ void ndr_print_spoolss_1b(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_1b");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2767,6 +2795,7 @@ void ndr_print_spoolss_1c(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_1c");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2792,6 +2821,7 @@ void ndr_print_spoolss_ClosePrinter(struct ndr_print *ndr, const char *name, int
 	ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->out.handle);
 	ndr->depth--;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2809,6 +2839,7 @@ void ndr_print_spoolss_1e(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_1e");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2826,6 +2857,7 @@ void ndr_print_spoolss_1f(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_1f");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2843,6 +2875,7 @@ void ndr_print_spoolss_20(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_20");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2860,6 +2893,7 @@ void ndr_print_spoolss_21(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_21");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2877,6 +2911,7 @@ void ndr_print_spoolss_22(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_22");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2894,6 +2929,7 @@ void ndr_print_spoolss_23(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_23");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2911,6 +2947,7 @@ void ndr_print_spoolss_24(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_24");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2928,6 +2965,7 @@ void ndr_print_spoolss_25(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_25");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2945,6 +2983,7 @@ void ndr_print_spoolss_26(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_26");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2962,6 +3001,7 @@ void ndr_print_spoolss_27(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_27");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2979,6 +3019,7 @@ void ndr_print_spoolss_28(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_28");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -2996,6 +3037,7 @@ void ndr_print_spoolss_29(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_29");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3013,6 +3055,7 @@ void ndr_print_spoolss_2a(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_2a");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3030,6 +3073,7 @@ void ndr_print_spoolss_2b(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_2b");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3047,6 +3091,7 @@ void ndr_print_spoolss_2c(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_2c");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3064,6 +3109,7 @@ void ndr_print_spoolss_2d(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_2d");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3081,6 +3127,7 @@ void ndr_print_spoolss_2e(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_2e");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3098,6 +3145,7 @@ void ndr_print_spoolss_2f(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_2f");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3115,6 +3163,7 @@ void ndr_print_spoolss_30(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_30");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3132,6 +3181,7 @@ void ndr_print_spoolss_31(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_31");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3149,6 +3199,7 @@ void ndr_print_spoolss_32(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_32");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3166,6 +3217,7 @@ void ndr_print_spoolss_33(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_33");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3183,6 +3235,7 @@ void ndr_print_spoolss_34(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_34");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3200,6 +3253,7 @@ void ndr_print_spoolss_35(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_35");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3217,6 +3271,7 @@ void ndr_print_spoolss_36(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_36");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3234,6 +3289,7 @@ void ndr_print_spoolss_37(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_37");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3251,6 +3307,7 @@ void ndr_print_spoolss_38(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_38");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3268,6 +3325,7 @@ void ndr_print_spoolss_39(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_39");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3285,6 +3343,7 @@ void ndr_print_spoolss_3a(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_3a");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3302,6 +3361,7 @@ void ndr_print_spoolss_3b(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_3b");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3319,6 +3379,7 @@ void ndr_print_spoolss_3c(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_3c");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3336,6 +3397,7 @@ void ndr_print_spoolss_3d(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_3d");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3353,6 +3415,7 @@ void ndr_print_spoolss_3e(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_3e");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3370,6 +3433,7 @@ void ndr_print_spoolss_3f(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_3f");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3387,6 +3451,7 @@ void ndr_print_spoolss_40(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_40");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3404,6 +3469,7 @@ void ndr_print_spoolss_41(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_41");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3421,6 +3487,7 @@ void ndr_print_spoolss_42(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_42");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3438,6 +3505,7 @@ void ndr_print_spoolss_43(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_43");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3455,6 +3523,7 @@ void ndr_print_spoolss_44(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_44");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3556,6 +3625,7 @@ void ndr_print_spoolss_OpenPrinterEx(struct ndr_print *ndr, const char *name, in
 	ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->out.handle);
 	ndr->depth--;
+	ndr_print_WERROR(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3573,6 +3643,7 @@ void ndr_print_spoolss_46(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_46");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3590,6 +3661,7 @@ void ndr_print_spoolss_47(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_47");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3642,6 +3714,7 @@ void ndr_print_spoolss_EnumPrinterData(struct ndr_print *ndr, const char *name, 
 	ndr->depth++;
 		ndr_print_uint32(ndr, "buf_size", *r->out.buf_size);
 	ndr->depth--;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3659,6 +3732,7 @@ void ndr_print_spoolss_49(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_49");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3676,6 +3750,7 @@ void ndr_print_spoolss_4a(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_4a");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3693,6 +3768,7 @@ void ndr_print_spoolss_4b(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_4b");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3710,6 +3786,7 @@ void ndr_print_spoolss_4c(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_4c");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3727,6 +3804,7 @@ void ndr_print_spoolss_4d(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_4d");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3744,6 +3822,7 @@ void ndr_print_spoolss_4e(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_4e");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3761,6 +3840,7 @@ void ndr_print_spoolss_4f(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_4f");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3778,6 +3858,7 @@ void ndr_print_spoolss_50(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_50");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3795,6 +3876,7 @@ void ndr_print_spoolss_51(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_51");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3812,6 +3894,7 @@ void ndr_print_spoolss_52(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_52");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3829,6 +3912,7 @@ void ndr_print_spoolss_53(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_53");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3846,6 +3930,7 @@ void ndr_print_spoolss_54(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_54");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3863,6 +3948,7 @@ void ndr_print_spoolss_55(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_55");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3880,6 +3966,7 @@ void ndr_print_spoolss_56(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_56");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3897,6 +3984,7 @@ void ndr_print_spoolss_57(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_57");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3914,6 +4002,7 @@ void ndr_print_spoolss_58(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_58");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3931,6 +4020,7 @@ void ndr_print_spoolss_59(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_59");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3948,6 +4038,7 @@ void ndr_print_spoolss_5a(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_5a");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3965,6 +4056,7 @@ void ndr_print_spoolss_5b(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_5b");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3982,6 +4074,7 @@ void ndr_print_spoolss_5c(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_5c");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -3999,6 +4092,7 @@ void ndr_print_spoolss_5d(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_5d");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -4016,6 +4110,7 @@ void ndr_print_spoolss_5e(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_5e");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -4033,6 +4128,7 @@ void ndr_print_spoolss_5f(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_5f");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;

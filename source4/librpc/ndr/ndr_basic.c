@@ -83,6 +83,11 @@ NTSTATUS ndr_pull_NTSTATUS(struct ndr_pull *ndr, NTSTATUS *status)
 	return NT_STATUS_OK;
 }
 
+void ndr_print_NTSTATUS(struct ndr_print *ndr, const char *name, NTSTATUS *r)
+{
+	ndr->print(ndr, "%-25s: %s", name, nt_errstr(*r));
+}
+
 /*
   pull a WERROR
 */
@@ -92,6 +97,11 @@ NTSTATUS ndr_pull_WERROR(struct ndr_pull *ndr, WERROR *status)
 	NDR_CHECK(ndr_pull_uint32(ndr, &v));
 	*status = W_ERROR(v);
 	return NT_STATUS_OK;
+}
+
+void ndr_print_WERROR(struct ndr_print *ndr, const char *name, WERROR *r)
+{
+	ndr->print(ndr, "%-25s: %s", name, win_errstr(*r));
 }
 
 /*

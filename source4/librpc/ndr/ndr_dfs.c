@@ -1330,6 +1330,7 @@ void ndr_print_dfs_Add(struct ndr_print *ndr, const char *name, int flags, struc
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "dfs_Add");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -1363,6 +1364,7 @@ void ndr_print_dfs_Remove(struct ndr_print *ndr, const char *name, int flags, st
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "dfs_Remove");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -1380,6 +1382,7 @@ void ndr_print_dfs_SetInfo(struct ndr_print *ndr, const char *name, int flags, s
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "dfs_SetInfo");
 	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -1671,6 +1674,7 @@ void ndr_print_dfs_GetInfo(struct ndr_print *ndr, const char *name, int flags, s
 		ndr_print_struct(ndr, "out", "dfs_GetInfo");
 	ndr->depth++;
 	ndr_print_dfs_Info(ndr, "info", r->in.level, &r->out.info);
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;
@@ -1876,6 +1880,7 @@ void ndr_print_dfs_Enum(struct ndr_print *ndr, const char *name, int flags, stru
 		ndr_print_uint32(ndr, "total", *r->out.total);
 	}
 	ndr->depth--;
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;

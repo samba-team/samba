@@ -61,8 +61,6 @@ BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			ret = False;
 			continue;
 		}
-
-		NDR_PRINT_FUNCTION_DEBUG(spoolss_GetPrinter, NDR_BOTH, &r);
 	}
 
 	return ret;
@@ -267,6 +265,8 @@ BOOL torture_rpc_spoolss(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+
+	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 	
 	if (!test_EnumPrinters(p, mem_ctx)) {
 		ret = False;

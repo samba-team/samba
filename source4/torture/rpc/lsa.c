@@ -134,8 +134,6 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_BOTH_DEBUG(lsa_LookupNames, &r);
-
 	printf("\n");
 
 	return True;
@@ -171,8 +169,6 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_BOTH_DEBUG(lsa_LookupSids, &r);
-
 	printf("\n");
 
 	if (!test_LookupNames(p, mem_ctx, handle, &names)) {
@@ -199,8 +195,6 @@ static BOOL test_LookupPrivName(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_BOTH_DEBUG(lsa_LookupPrivName, &r);
-
 	return True;
 }
 
@@ -221,8 +215,6 @@ static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p,
 		printf("EnumPrivsAccount failed - %s\n", nt_errstr(status));
 		return False;
 	}
-
-	NDR_PRINT_BOTH_DEBUG(lsa_EnumPrivsAccount, &r);
 
 	if (r.out.privs) {
 		int i;
@@ -256,8 +248,6 @@ static BOOL test_EnumAccountRights(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_BOTH_DEBUG(lsa_EnumAccountRights, &r);
-
 	return True;
 }
 
@@ -280,8 +270,6 @@ static BOOL test_QuerySecObj(struct dcerpc_pipe *p,
 		printf("QuerySecObj failed - %s\n", nt_errstr(status));
 		return False;
 	}
-
-	NDR_PRINT_BOTH_DEBUG(lsa_QuerySecObj, &r);
 
 	return True;
 }
@@ -344,8 +332,6 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_BOTH_DEBUG(lsa_EnumAccounts, &r);
-
 	if (!test_LookupSids(p, mem_ctx, handle, &sids1)) {
 		return False;
 	}
@@ -371,8 +357,6 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 		printf("EnumAccounts failed - %s\n", nt_errstr(status));
 		return False;
 	}
-
-	NDR_PRINT_BOTH_DEBUG(lsa_EnumAccounts, &r);
 
 	if (sids2.num_sids != 1) {
 		printf("Returned wrong number of entries (%d)\n", sids2.num_sids);
@@ -407,8 +391,6 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_BOTH_DEBUG(lsa_EnumPrivs, &r);
-
 	return True;
 }
 
@@ -436,8 +418,6 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_BOTH_DEBUG(lsa_EnumTrustDom, &r);
-
 	return True;
 }
 
@@ -464,8 +444,6 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 			ret = False;
 			continue;
 		}
-
-		NDR_PRINT_BOTH_DEBUG(lsa_QueryInfoPolicy, &r);
 	}
 
 	return ret;
@@ -538,6 +516,8 @@ BOOL torture_rpc_lsa(int dummy)
 		return False;
 	}
 	
+	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
+
 	if (!test_OpenPolicy(p, mem_ctx)) {
 		ret = False;
 	}

@@ -30,15 +30,11 @@ static BOOL test_Close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.handle = handle;
 	r.out.handle = handle;
 
-	NDR_PRINT_IN_DEBUG(samr_Close, &r);
-
 	status = dcerpc_samr_Close(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close handle failed - %s\n", nt_errstr(status));
 		return False;
 	}
-
-	NDR_PRINT_OUT_DEBUG(samr_Close, &r);
 
 	return True;
 }
@@ -66,8 +62,6 @@ static BOOL test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       levels[i], nt_errstr(status));
 			ret = False;
 		}
-
-		NDR_PRINT_BOTH_DEBUG(samr_QueryAliasInfo, &r);
 	}
 
 	return ret;
@@ -94,8 +88,6 @@ static BOOL test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       levels[i], nt_errstr(status));
 			ret = False;
 		}
-
-		NDR_PRINT_BOTH_DEBUG(samr_QueryGroupInfo, &r);
 	}
 
 	return ret;
@@ -123,8 +115,6 @@ static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       levels[i], nt_errstr(status));
 			ret = False;
 		}
-
-		NDR_PRINT_BOTH_DEBUG(samr_QueryUserInfo, &r);
 	}
 
 	return ret;
@@ -249,8 +239,6 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 	
-	NDR_PRINT_BOTH_DEBUG(samr_EnumDomainUsers, &r);
-
 	if (!r.out.sam) {
 		return False;
 	}
@@ -286,8 +274,6 @@ static BOOL test_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 	
-	NDR_PRINT_BOTH_DEBUG(samr_EnumDomainGroups, &r);
-
 	if (!r.out.sam) {
 		return False;
 	}
@@ -323,8 +309,6 @@ static BOOL test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 	
-	NDR_PRINT_BOTH_DEBUG(samr_EnumDomainAliases, &r);
-
 	if (!r.out.sam) {
 		return False;
 	}
@@ -360,8 +344,6 @@ static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			ret = False;
 			continue;
 		}
-
-		NDR_PRINT_BOTH_DEBUG(samr_QueryDomainInfo, &r);
 	}
 
 	return True;	
@@ -428,8 +410,6 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	NDR_PRINT_BOTH_DEBUG(samr_LookupDomain, &r);
-
 	if (!test_OpenDomain(p, mem_ctx, handle, r.out.sid)) {
 		return False;
 	}
@@ -459,8 +439,6 @@ static BOOL test_EnumDomains(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("EnumDomains failed - %s\n", nt_errstr(status));
 		return False;
 	}
-
-	NDR_PRINT_BOTH_DEBUG(samr_EnumDomains, &r);
 
 	if (!r.out.sam) {
 		return False;
@@ -524,6 +502,8 @@ BOOL torture_rpc_samr(int dummy)
 		return False;
 	}
 	
+	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
+
 	if (!test_Connect(p, mem_ctx, &handle)) {
 		ret = False;
 	}

@@ -15,34 +15,125 @@ NTSTATUS ndr_push_wks_QueryInfo(struct ndr_push *ndr, struct wks_QueryInfo *r)
 
 NTSTATUS ndr_pull_wks_Info100(struct ndr_pull *ndr, int ndr_flags, struct wks_Info100 *r)
 {
-	uint32 _ptr_uni_compname;
-	uint32 _ptr_uni_lan_grp;
+	uint32 _ptr_server;
+	uint32 _ptr_domain;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->platform_id));
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_uni_compname));
-	if (_ptr_uni_compname) {
-		NDR_ALLOC(ndr, r->uni_compname);
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_server));
+	if (_ptr_server) {
+		NDR_ALLOC(ndr, r->server);
 	} else {
-		r->uni_compname = NULL;
+		r->server = NULL;
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_uni_lan_grp));
-	if (_ptr_uni_lan_grp) {
-		NDR_ALLOC(ndr, r->uni_lan_grp);
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_domain));
+	if (_ptr_domain) {
+		NDR_ALLOC(ndr, r->domain);
 	} else {
-		r->uni_lan_grp = NULL;
+		r->domain = NULL;
 	}
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->ver_major));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->ver_minor));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->uni_compname) {
-		NDR_CHECK(ndr_pull_unistr(ndr, &r->uni_compname));
+	if (r->server) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->server));
 	}
-	if (r->uni_lan_grp) {
-		NDR_CHECK(ndr_pull_unistr(ndr, &r->uni_lan_grp));
+	if (r->domain) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->domain));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_wks_Info101(struct ndr_pull *ndr, int ndr_flags, struct wks_Info101 *r)
+{
+	uint32 _ptr_server;
+	uint32 _ptr_domain;
+	uint32 _ptr_unknown;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->platform_id));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_server));
+	if (_ptr_server) {
+		NDR_ALLOC(ndr, r->server);
+	} else {
+		r->server = NULL;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_domain));
+	if (_ptr_domain) {
+		NDR_ALLOC(ndr, r->domain);
+	} else {
+		r->domain = NULL;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->ver_major));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->ver_minor));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_unknown));
+	if (_ptr_unknown) {
+		NDR_ALLOC(ndr, r->unknown);
+	} else {
+		r->unknown = NULL;
+	}
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->server) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->server));
+	}
+	if (r->domain) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->domain));
+	}
+	if (r->unknown) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->unknown));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_wks_Info102(struct ndr_pull *ndr, int ndr_flags, struct wks_Info102 *r)
+{
+	uint32 _ptr_server;
+	uint32 _ptr_domain;
+	uint32 _ptr_unknown;
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->platform_id));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_server));
+	if (_ptr_server) {
+		NDR_ALLOC(ndr, r->server);
+	} else {
+		r->server = NULL;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_domain));
+	if (_ptr_domain) {
+		NDR_ALLOC(ndr, r->domain);
+	} else {
+		r->domain = NULL;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->ver_major));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->ver_minor));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_unknown));
+	if (_ptr_unknown) {
+		NDR_ALLOC(ndr, r->unknown);
+	} else {
+		r->unknown = NULL;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown2));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->server) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->server));
+	}
+	if (r->domain) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->domain));
+	}
+	if (r->unknown) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->unknown));
 	}
 done:
 	return NT_STATUS_OK;
@@ -64,6 +155,26 @@ NTSTATUS ndr_pull_wks_Info(struct ndr_pull *ndr, int ndr_flags, uint16 *level, u
 	}
 	break; }
 
+	case 101: {
+		uint32 _ptr_info101;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info101));
+	if (_ptr_info101) {
+		NDR_ALLOC(ndr, r->info101);
+	} else {
+		r->info101 = NULL;
+	}
+	break; }
+
+	case 102: {
+		uint32 _ptr_info102;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info102));
+	if (_ptr_info102) {
+		NDR_ALLOC(ndr, r->info102);
+	} else {
+		r->info102 = NULL;
+	}
+	break; }
+
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
 	}
@@ -74,6 +185,18 @@ buffers:
 	case 100:
 	if (r->info100) {
 		NDR_CHECK(ndr_pull_wks_Info100(ndr, NDR_SCALARS|NDR_BUFFERS, r->info100));
+	}
+	break;
+
+	case 101:
+	if (r->info101) {
+		NDR_CHECK(ndr_pull_wks_Info101(ndr, NDR_SCALARS|NDR_BUFFERS, r->info101));
+	}
+	break;
+
+	case 102:
+	if (r->info102) {
+		NDR_CHECK(ndr_pull_wks_Info102(ndr, NDR_SCALARS|NDR_BUFFERS, r->info102));
 	}
 	break;
 
@@ -100,20 +223,77 @@ void ndr_print_wks_Info100(struct ndr_print *ndr, const char *name, struct wks_I
 	ndr_print_struct(ndr, name, "wks_Info100");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "platform_id", r->platform_id);
-	ndr_print_ptr(ndr, "uni_compname", r->uni_compname);
+	ndr_print_ptr(ndr, "server", r->server);
 	ndr->depth++;
-	if (r->uni_compname) {
-		ndr_print_unistr(ndr, "uni_compname", r->uni_compname);
+	if (r->server) {
+		ndr_print_unistr(ndr, "server", r->server);
 	}
 	ndr->depth--;
-	ndr_print_ptr(ndr, "uni_lan_grp", r->uni_lan_grp);
+	ndr_print_ptr(ndr, "domain", r->domain);
 	ndr->depth++;
-	if (r->uni_lan_grp) {
-		ndr_print_unistr(ndr, "uni_lan_grp", r->uni_lan_grp);
+	if (r->domain) {
+		ndr_print_unistr(ndr, "domain", r->domain);
 	}
 	ndr->depth--;
 	ndr_print_uint32(ndr, "ver_major", r->ver_major);
 	ndr_print_uint32(ndr, "ver_minor", r->ver_minor);
+	ndr->depth--;
+}
+
+void ndr_print_wks_Info101(struct ndr_print *ndr, const char *name, struct wks_Info101 *r)
+{
+	ndr_print_struct(ndr, name, "wks_Info101");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "platform_id", r->platform_id);
+	ndr_print_ptr(ndr, "server", r->server);
+	ndr->depth++;
+	if (r->server) {
+		ndr_print_unistr(ndr, "server", r->server);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "domain", r->domain);
+	ndr->depth++;
+	if (r->domain) {
+		ndr_print_unistr(ndr, "domain", r->domain);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "ver_major", r->ver_major);
+	ndr_print_uint32(ndr, "ver_minor", r->ver_minor);
+	ndr_print_ptr(ndr, "unknown", r->unknown);
+	ndr->depth++;
+	if (r->unknown) {
+		ndr_print_unistr(ndr, "unknown", r->unknown);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_wks_Info102(struct ndr_print *ndr, const char *name, struct wks_Info102 *r)
+{
+	ndr_print_struct(ndr, name, "wks_Info102");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "platform_id", r->platform_id);
+	ndr_print_ptr(ndr, "server", r->server);
+	ndr->depth++;
+	if (r->server) {
+		ndr_print_unistr(ndr, "server", r->server);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "domain", r->domain);
+	ndr->depth++;
+	if (r->domain) {
+		ndr_print_unistr(ndr, "domain", r->domain);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "ver_major", r->ver_major);
+	ndr_print_uint32(ndr, "ver_minor", r->ver_minor);
+	ndr_print_ptr(ndr, "unknown", r->unknown);
+	ndr->depth++;
+	if (r->unknown) {
+		ndr_print_unistr(ndr, "unknown", r->unknown);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "unknown2", r->unknown2);
 	ndr->depth--;
 }
 
@@ -126,6 +306,24 @@ void ndr_print_wks_Info(struct ndr_print *ndr, const char *name, uint16 level, u
 	ndr->depth++;
 	if (r->info100) {
 		ndr_print_wks_Info100(ndr, "info100", r->info100);
+	}
+	ndr->depth--;
+	break;
+
+	case 101:
+	ndr_print_ptr(ndr, "info101", r->info101);
+	ndr->depth++;
+	if (r->info101) {
+		ndr_print_wks_Info101(ndr, "info101", r->info101);
+	}
+	ndr->depth--;
+	break;
+
+	case 102:
+	ndr_print_ptr(ndr, "info102", r->info102);
+	ndr->depth++;
+	if (r->info102) {
+		ndr_print_wks_Info102(ndr, "info102", r->info102);
 	}
 	ndr->depth--;
 	break;
@@ -155,6 +353,7 @@ void ndr_print_wks_QueryInfo(struct ndr_print *ndr, const char *name, int flags,
 		ndr_print_struct(ndr, "out", "wks_QueryInfo");
 	ndr->depth++;
 	ndr_print_wks_Info(ndr, "info", r->in.level, &r->out.info);
+	ndr_print_NTSTATUS(ndr, "result", &r->out.result);
 	ndr->depth--;
 	}
 	ndr->depth--;

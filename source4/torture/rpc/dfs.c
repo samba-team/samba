@@ -36,8 +36,6 @@ static BOOL test_Exist(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	NDR_PRINT_BOTH_DEBUG(dfs_Exist, &r);
-
 	return True;
 }
 
@@ -59,8 +57,6 @@ static BOOL test_InfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16 le
 		printf("Info failed - %s\n", nt_errstr(status));
 		return False;
 	}
-
-	NDR_PRINT_BOTH_DEBUG(dfs_GetInfo, &r);
 
 	return True;
 }
@@ -105,8 +101,6 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16 le
 		printf("Enum failed - %s\n", nt_errstr(status));
 		return False;
 	}
-
-	NDR_PRINT_BOTH_DEBUG(dfs_Enum, &r);
 
 	if (level == 1 && r.out.total) {
 		int i;
@@ -182,6 +176,8 @@ BOOL torture_rpc_dfs(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
+
+	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 	
 	if (!test_Exist(p, mem_ctx)) {
 		ret = False;
