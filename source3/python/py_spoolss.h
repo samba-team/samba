@@ -25,7 +25,6 @@
 #include "Python.h"
 
 #include "python/py_common.h"
-#include "python/py_conv.h"
 
 /* Spoolss policy handle object */
 
