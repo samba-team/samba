@@ -587,6 +587,7 @@ extern int errno;
 #endif
 
 /***** automatically generated prototypes *****/
+#include "ldapdb.h"
 #include "proto.h"
 
 /* String routines */

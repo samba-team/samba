@@ -77,6 +77,11 @@
 #ifndef _LDAPDB_H
 #define _LDAPDB_H
 
+/* in ds.c */
+struct ldapdb_handle_info;
+typedef struct ldapdb_handle_info LDAPDB;
+typedef LDAPDB *PLDAPDB;
+
 #ifdef WITH_NT5LDAP
 
 #include <lber.h> 
@@ -101,15 +106,10 @@
  */
 #define LDAPDB_OPEN(_hds, hds)		((ldapdb_dup(_hds, hds) == TRUE) ? ldapdb_open(hds) : FALSE)
 
-/* in ds.c */
-struct ldapdb_handle_info;
-typedef struct ldapdb_handle_info LDAPDB;
-
 /* used to indicate handles which may be NULL if a temporary one is to be created */
 /* these are used for functions that create a temporary handle anyway because 
  * they would otherwise change the handle's state.
  */
-typedef LDAPDB *PLDAPDB;
 
 /* One time library initialization. */
 BOOL ldapdb_init(void);

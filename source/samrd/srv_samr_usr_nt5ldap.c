@@ -182,10 +182,18 @@ uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 /*******************************************************************
  samr_reply_query_sec_obj
  ********************************************************************/
-uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
+uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf)
 {
 	uint32 rid;
 	DOM_SID usr_sid;
+	DOM_SID adm_sid;
+	DOM_SID glb_sid;
+	SEC_ACL *dacl = NULL;
+	SEC_ACE *dace = NULL;
+	SEC_ACCESS mask;
+	SEC_DESC *sec = NULL;
+	int len;
+
 	LDAPDB *hds = NULL;
 
 	/* find the policy handle.  open a policy on it. */
@@ -197,15 +205,40 @@ uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
 	sid_copy(&usr_sid, &global_sam_sid);
 	sid_append_rid(&usr_sid, rid);
 
-	/* maybe need another 1 or 2 (S-1-5-0x20-0x220 and S-1-5-20-0x224) */
-	/* these two are DOMAIN_ADMIN and DOMAIN_ACCT_OP group RIDs */
-	make_dom_sid3(&sid_stuff->sid[0], 0x035b, 0x0002, &global_sid_S_1_1);
-	make_dom_sid3(&sid_stuff->sid[1], 0x0044, 0x0002, &usr_sid);
+	sid_copy(&adm_sid, &global_sid_S_1_5_20);
+	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
 
-	make_sam_sid_stuff(sid_stuff, 
-				0x0001, 0x8004,
-				0x00000014, 0x0002, 0x0070,
-				2);
+	sid_copy(&glb_sid, &global_sid_S_1_1);
+	sid_append_rid(&glb_sid, 0x0);
+
+	dacl = malloc(sizeof(*dacl));
+	dace = malloc(3 * sizeof(*dace));
+	sec = malloc(sizeof(*sec));
+
+	if (dacl == NULL || dace == NULL || sec == NULL)
+	{
+		safe_free(dacl);
+		safe_free(dace);
+		safe_free(sec);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+
+	mask.mask = 0x20044;
+	make_sec_ace(&dace[0], &usr_sid         , 0, mask, 0);
+	mask.mask = 0xf07ff;
+	make_sec_ace(&dace[1], &adm_sid         , 0, mask, 0);
+	mask.mask = 0x2035b;
+	make_sec_ace(&dace[2], &glb_sid, 0, mask, 0);
+
+	make_sec_acl(dacl, 2, 3, dace);
+
+	len = make_sec_desc(sec, 1,
+	              SEC_DESC_DACL_PRESENT|SEC_DESC_SELF_RELATIVE,
+	              NULL, NULL, NULL, dacl);
+
+	make_sec_desc_buf(buf, len, sec);
+	buf->undoc = 0x1;
 
 	DEBUG(5,("samr_query_sec_obj: %d\n", __LINE__));
 
@@ -588,7 +621,7 @@ static BOOL set_user_info_16(LDAPDB *hds, uint32 rid,
  samr_reply_set_userinfo2
  ********************************************************************/
 uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO2_CTR *ctr)
+				SAM_USERINFO_CTR *ctr)
 {
 	LDAPDB *hds = NULL;
 	uint32 rid = 0x0;

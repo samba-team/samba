@@ -57,6 +57,9 @@ struct aliasdb_ops *file_initialise_alias_db(void);
 
 struct aliasdb_ops *ldap_initialise_alias_db(void);
 
+/*The following definitions come from  groupdb/aliasnt5ldap.c  */
+
+
 /*The following definitions come from  groupdb/aliasunix.c  */
 
 BOOL get_unixalias_members(struct group *grp,
@@ -91,6 +94,9 @@ BOOL make_builtin_line(char *p, int max_len,
 /*The following definitions come from  groupdb/builtinldap.c  */
 
 struct aliasdb_ops *ldap_initialise_builtin_db(void);
+
+/*The following definitions come from  groupdb/builtinnt5ldap.c  */
+
 
 /*The following definitions come from  groupdb/builtinunix.c  */
 
@@ -131,6 +137,9 @@ struct groupdb_ops *file_initialise_group_db(void);
 /*The following definitions come from  groupdb/groupldap.c  */
 
 struct groupdb_ops *ldap_initialise_group_db(void);
+
+/*The following definitions come from  groupdb/groupnt5ldap.c  */
+
 
 /*The following definitions come from  groupdb/groupunix.c  */
 
@@ -401,6 +410,12 @@ BOOL sursalg_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id);
 BOOL sursalg_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid,
 				BOOL create);
 
+/*The following definitions come from  lib/sursalgnt5ldap.c  */
+
+BOOL nt5ldap_sursalg_sam_sid_to_unixid(LDAPDB *hds, DOM_SID *sid, uint32 type, uint32 *id);
+BOOL nt5ldap_sursalg_unixid_to_sam_sid(LDAPDB *hds, uint32 id, uint32 type, DOM_SID *sid,
+				BOOL create);
+
 /*The following definitions come from  lib/system.c  */
 
 int sys_select(int maxfd, fd_set *fds, fd_set *w_fds, struct timeval *tval);
@@ -550,6 +565,7 @@ int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 char *get_trusted_serverlist(const char* domain);
+uint16 pwdb_acct_ctrl_from_ad(NTDS_USER_FLAG_ENUM adac);
 char *pwdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pwdb_decode_acct_ctrl(const char *p);
 time_t pwdb_get_time_last_changed(const char *p);
@@ -1548,6 +1564,11 @@ char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_bind_as(void);
 char *lp_ldap_passwd_file(void);
+char *lp_ldap_url(void);
+char *lp_ldap_realm(void);
+char *lp_ldap_computers_subcontext(void);
+char *lp_ldap_users_subcontext(void);
+char *lp_ldap_builtin_subcontext(void);
 int lp_ssl_version(void);
 char *lp_ssl_hosts(void);
 char *lp_ssl_hosts_resign(void);
@@ -1620,6 +1641,7 @@ int lp_change_notify_timeout(void);
 int lp_stat_cache_size(void);
 int lp_map_to_guest(void);
 int lp_ldap_port(void);
+int lp_ldap_protocol_version(void);
 char *lp_logon_script(uint16 );
 char *lp_logon_path(uint16 );
 char *lp_logon_drive(uint16 );
@@ -1756,6 +1778,18 @@ struct smb_passwd *ldap_getpw(void);
 BOOL ldap_allocaterid(uint32 *rid);
 struct smb_passdb_ops *ldap_initialise_password_db(void);
 
+/*The following definitions come from  passdb/ldapdb.c  */
+
+BOOL ldapdb_init(void);
+BOOL ldapdb_get_uint32(LDAPDB *hds, const char *attribute, uint32 *val);
+BOOL ldapdb_get_unistr_value(LDAPDB *hds, const char *attribute, UNISTR2 *buf);
+BOOL ldapdb_oc_check(LDAPDB *hds, const char *ocname);
+BOOL ldapdb_queue_unistr_mod(LDAPMod ***modlist,int modop, const char *attribute, const UNISTR2 *value);
+BOOL ldapdb_queue_uint32_mod(LDAPMod ***modlist, int modop, const char *attribute, uint32 value);
+BOOL ldapdb_get_domain_info(PLDAPDB _hds, const char *realm, DOM_SID *sid, fstring nbname);
+void unistr2_to_utf8(char *dest, const UNISTR2 *str, size_t maxlen);
+void utf8_to_unistr2(UNISTR2 *unistr, const char *str);
+
 /*The following definitions come from  passdb/mysqlpass.c  */
 
 int mysql_db_lock_connect( MYSQL *handle );
@@ -1794,6 +1828,14 @@ struct sam_passdb_ops *mysql_initialise_sam_password_db(void);
 /*The following definitions come from  passdb/nispass.c  */
 
 struct passdb_ops *nisplus_initialise_password_db(void);
+
+/*The following definitions come from  passdb/nt5ldap.c  */
+
+BOOL nt5ldap_make_local_grp(LDAPDB * hds, LOCAL_GRP * group,
+		     LOCAL_GRP_MEMBER ** members, int *num_membs, uint32 req_type);
+BOOL nt5ldap_make_sam_user_info21(LDAPDB *hds, SAM_USER_INFO_21 *usr);
+BOOL nt5ldap_sam_user_info21_mods(const SAM_USER_INFO_21 *usr, LDAPMod ***mods, int op, 
+	char *rdn, size_t rdnmaxlen, BOOL *iscomputer_p);
 
 /*The following definitions come from  passdb/pass_check.c  */
 
@@ -1850,6 +1892,9 @@ struct smb_passwd *getsmbgrpuid(uid_t unix_uid,
 
 struct passgrp_ops *ldap_initialise_password_grp(void);
 
+/*The following definitions come from  passdb/passgrpnt5ldap.c  */
+
+
 /*The following definitions come from  passdb/sampass.c  */
 
 struct sam_passdb_ops *file_initialise_sam_password_db(void);
@@ -1880,6 +1925,9 @@ struct sam_passwd *pwdb_sam_map_names(struct sam_passwd *sam);
 BOOL ldap_search_by_rid(uint32 rid);
 BOOL ldap_search_by_ntname(const char *ntname);
 struct sam_passdb_ops *ldap_initialise_sam_password_db(void);
+
+/*The following definitions come from  passdb/sampassnt5ldap.c  */
+
 
 /*The following definitions come from  passdb/smbpass.c  */
 
@@ -1913,6 +1961,9 @@ struct passgrp_ops *file_initialise_password_grp(void);
 /*The following definitions come from  passdb/smbpassgroupunix.c  */
 
 struct passgrp_ops *unix_initialise_password_grp(void);
+
+/*The following definitions come from  passdb/smbpassnt5ldap.c  */
+
 
 /*The following definitions come from  printing/nt_printing.c  */
 
@@ -3462,6 +3513,10 @@ void readline_init(void);
 
 msrpc_service_fns *get_service_fns(void);
 
+/*The following definitions come from  samrd/samrnt5ldapd.c  */
+
+msrpc_service_fns *get_service_fns(void);
+
 /*The following definitions come from  samrd/samrtdbd.c  */
 
 msrpc_service_fns *get_service_fns(void);
@@ -3483,6 +3538,55 @@ uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
 uint32 _samr_open_alias(const POLICY_HND *domain_pol,
 					uint32 access_mask, uint32 alias_rid,
 					POLICY_HND *alias_pol);
+
+/*The following definitions come from  samrd/srv_samr_dom_nt5ldap.c  */
+
+uint32 _samr_open_domain(const POLICY_HND *connect_pol,
+				uint32 ace_perms,
+				const DOM_SID *sid,
+				POLICY_HND *domain_pol);
+uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx, 
+				uint16 acb_mask, uint16 unk_1, uint32 size,
+				SAM_ENTRY **sam,
+				UNISTR2 **uni_acct_name,
+				uint32 *num_sam_users);
+uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
+				uint32 *start_idx, uint32 size,
+				SAM_ENTRY **sam,
+				UNISTR2 **uni_acct_name,
+				uint32 *num_sam_groups);
+uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
+					uint32 *start_idx, uint32 size,
+					SAM_ENTRY **sam,
+					UNISTR2 **uni_acct_name,
+					uint32 *num_sam_aliases);
+uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
+					uint32 start_idx,
+					uint32 max_entries,
+					uint32 max_size,
+					uint32 *data_size,
+					uint32 *num_entries,
+					SAM_DISPINFO_CTR *ctr);
+uint32 _samr_lookup_names(const POLICY_HND *dom_pol,
+				
+			uint32 num_names,
+			uint32 flags,
+			uint32 ptr,
+			const UNISTR2 *uni_name,
+
+			uint32 *num_rids,
+			uint32 rid[MAX_SAM_ENTRIES],
+			uint32 *num_types,
+			uint32 type[MAX_SAM_ENTRIES]);
+uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
+				uint32 num_rids, uint32 flags,
+				const uint32 *rids,
+				uint32 *num_names,
+				UNIHDR **hdr_name, UNISTR2** uni_name,
+				uint32 **types);
+uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
+				uint16 switch_value,
+				SAM_UNK_CTR *ctr);
 
 /*The following definitions come from  samrd/srv_samr_dom_tdb.c  */
 
@@ -3552,6 +3656,29 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
 				uint32 group_rid,
 				POLICY_HND *group_pol);
+
+/*The following definitions come from  samrd/srv_samr_nt5ldap.c  */
+
+BOOL set_nt5ldaprid(struct policy_cache *cache, POLICY_HND *hnd,
+				LDAPDB *hds, uint32 rid);
+BOOL get_nt5ldaprid(struct policy_cache *cache, const POLICY_HND *hnd,
+				LDAPDB **hds, uint32 *rid);
+BOOL set_nt5ldapsam(struct policy_cache *cache, POLICY_HND *hnd,
+				LDAPDB *hds);
+BOOL get_nt5ldapsam(struct policy_cache *cache, const POLICY_HND *hnd,
+				LDAPDB **hds);
+BOOL set_nt5ldapdomsid(struct policy_cache *cache, POLICY_HND *hnd,
+				LDAPDB *hds,
+				const DOM_SID *sid);
+BOOL get_nt5ldapdomsid(struct policy_cache *cache, const POLICY_HND *hnd,
+				LDAPDB **hds,
+				DOM_SID *sid);
+BOOL set_nt5ldapsid(struct policy_cache *cache, POLICY_HND *hnd,
+				LDAPDB *hds, const DOM_SID *sid);
+BOOL get_nt5ldapsid(struct policy_cache *cache, const POLICY_HND *hnd,
+				LDAPDB **hds, DOM_SID *sid);
+uint32 samr_open_by_nt5ldaprid( LDAPDB *hds,
+				POLICY_HND *pol, uint32 access_mask, uint32 rid);
 
 /*The following definitions come from  samrd/srv_samr_passdb.c  */
 
@@ -3735,6 +3862,33 @@ uint32 samr_open_by_tdbrid( TDB_CONTEXT *tdb,
 
 uint32 initialise_dom_tdb(const DOM_SID *sid);
 uint32 initialise_sam_tdb( const char* sam_name, const DOM_SID *sam_sid);
+
+/*The following definitions come from  samrd/srv_samr_usr_nt5ldap.c  */
+
+uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
+				uint32 *unknown_0,
+				uint32 *unknown_1);
+uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf);
+uint32 _samr_query_usergroups(const POLICY_HND *pol,
+				uint32 *num_groups,
+				DOM_GID **gids);
+uint32 _samr_query_useraliases(const POLICY_HND *pol,
+				const uint32 *ptr_sid, const DOM_SID2 *sid,
+				uint32 *num_aliases, uint32 **rid);
+uint32 _samr_open_user(const POLICY_HND *domain_pol,
+					uint32 access_mask, uint32 user_rid, 
+					POLICY_HND *user_pol);
+uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO_CTR *ctr);
+uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO_CTR *ctr);
+uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
+				SAM_USERINFO_CTR *ctr);
+uint32 _samr_create_user(const POLICY_HND *domain_pol,
+				const UNISTR2 *uni_username,
+				uint16 acb_info, uint32 access_mask, 
+				POLICY_HND *user_pol,
+				uint32 *unknown_0, uint32 *user_rid);
 
 /*The following definitions come from  samrd/srv_samr_usr_tdb.c  */
 
