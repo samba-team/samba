@@ -1,3 +1,8 @@
+2000-03-15  Assar Westerlund  <assar@sics.se>
+
+	* afssys.c (map_syscall_name_to_number): ignore # at
+	beginning-of-line
+
 2000-03-13  Assar Westerlund  <assar@sics.se>
 
 	* afssysdefs.h: add 230 for MacOS X per information from
