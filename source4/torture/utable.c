@@ -132,8 +132,7 @@ BOOL torture_casetable(int dummy)
 
 	memset(equiv, 0, sizeof(equiv));
 
-	cli_unlink(cli, "\\utable\\*");
-	cli_rmdir(cli, "\\utable");
+	cli_deltree(cli, "\\utable");
 	if (!cli_mkdir(cli, "\\utable")) {
 		printf("Failed to create utable directory!\n");
 		return False;
@@ -148,7 +147,11 @@ BOOL torture_casetable(int dummy)
 
 		fname = form_name(c);
 		fnum = cli_nt_create_full(cli, fname, 0,
-					  GENERIC_RIGHTS_FILE_ALL_ACCESS, 
+#if 0
+					  SEC_RIGHT_MAXIMUM_ALLOWED, 
+#else
+					  GENERIC_RIGHTS_FILE_ALL_ACCESS,
+#endif
 					  FILE_ATTRIBUTE_NORMAL,
 					  NTCREATEX_SHARE_ACCESS_NONE,
 					  NTCREATEX_DISP_OPEN_IF, 0, 0);
