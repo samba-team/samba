@@ -96,6 +96,7 @@ struct winbindd_domain {
 	fstring name;                          /* Domain name */	
 	fstring alt_name;                      /* alt Domain name (if any) */
 	DOM_SID sid;                           /* SID for this domain */
+	BOOL initialized;		       /* Did we already ask for the domain mode? */
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
 	BOOL active_directory;                 /* is this a win2k active directory ? */
 	BOOL primary;                          /* is this our primary domain ? */

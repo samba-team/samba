@@ -835,7 +835,9 @@ void build_options(BOOL screen);
 	if (!share_info_db_init())
 		exit(1);
 
+#if 0	/* FIXME! re-enable this when libcli/namecache.c has been fixed */
 	namecache_enable();
+#endif
 
 	if (!init_registry())
 		exit(1);
