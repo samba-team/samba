@@ -1,0 +1,135 @@
+*** samba-1.9.16p9/source/Makefile.orig	Thu Jan  2 15:46:46 1997
+--- samba-1.9.16p9/source/Makefile	Thu Jan  2 15:59:09 1997
+***************
+*** 5,20 ****
+  
+  # The base manpages directory to put the man pages in
+  # Note: $(MANDIR)/man1, $(MANDIR)/man5 and $(MANDIR)/man8 must exist.
+! MANDIR = /usr/local/man
+  
+  # The directories to put things in. If you use multiple
+  # architectures or share the samba binaries across NFS then
+  # you will probably want to change this layout.
+! BASEDIR = /usr/local/samba
+! BINDIR = $(BASEDIR)/bin
+! SBINDIR = $(BASEDIR)/bin
+! LIBDIR = $(BASEDIR)/lib
+! VARDIR = $(BASEDIR)/var
+  
+  # The permissions to give the executables
+  INSTALLPERMS = 0755
+--- 5,20 ----
+  
+  # The base manpages directory to put the man pages in
+  # Note: $(MANDIR)/man1, $(MANDIR)/man5 and $(MANDIR)/man8 must exist.
+! MANDIR = /usr/man
+  
+  # The directories to put things in. If you use multiple
+  # architectures or share the samba binaries across NFS then
+  # you will probably want to change this layout.
+! BASEDIR = /
+! BINDIR = $(BASEDIR)usr/bin
+! SBINDIR = $(BASEDIR)usr/sbin
+! LIBDIR = /etc
+! VARDIR = /var
+  
+  # The permissions to give the executables
+  INSTALLPERMS = 0755
+***************
+*** 23,35 ****
+  # add -DSYSLOG for syslog support
+  # RPM_OPT_FLAGS is needed when building an RPM distribution package
+  # for RedHat Linux.
+! # FLAGS1 = $(RPM_OPT_FLAGS)
+  FLAGS1 = -O
+  LIBS1 = 
+  
+  # You will need to use a ANSI C compiler. This means under SunOS 4 you can't 
+  # use cc, instead you will have to use gcc. 
+! # CC = gcc
+  
+  # This may help with some versions of make
+  SHELL = /bin/sh
+--- 23,35 ----
+  # add -DSYSLOG for syslog support
+  # RPM_OPT_FLAGS is needed when building an RPM distribution package
+  # for RedHat Linux.
+! FLAGS1 = $(RPM_OPT_FLAGS)
+  FLAGS1 = -O
+  LIBS1 = 
+  
+  # You will need to use a ANSI C compiler. This means under SunOS 4 you can't 
+  # use cc, instead you will have to use gcc. 
+! CC = gcc
+  
+  # This may help with some versions of make
+  SHELL = /bin/sh
+***************
+*** 42,54 ****
+  # set these to where to find various files
+  # These can be overridden by command line switches (see smbd(8))
+  # or in smb.conf (see smb.conf(5))
+! SMBLOGFILE = $(VARDIR)/log.smb
+! NMBLOGFILE = $(VARDIR)/log.nmb
+  CONFIGFILE = $(LIBDIR)/smb.conf
+  LMHOSTSFILE = $(LIBDIR)/lmhosts
+  
+  # the directory where lock files go
+! LOCKDIR = $(VARDIR)/locks
+  
+  # set this to the default group you want your machine to appear in
+  # for browsing. This can also be set in nmbd (see nmbd(8))
+--- 42,54 ----
+  # set these to where to find various files
+  # These can be overridden by command line switches (see smbd(8))
+  # or in smb.conf (see smb.conf(5))
+! SMBLOGFILE = $(VARDIR)/log/log.smb
+! NMBLOGFILE = $(VARDIR)/log/log.nmb
+  CONFIGFILE = $(LIBDIR)/smb.conf
+  LMHOSTSFILE = $(LIBDIR)/lmhosts
+  
+  # the directory where lock files go
+! LOCKDIR = $(VARDIR)/lock/samba
+  
+  # set this to the default group you want your machine to appear in
+  # for browsing. This can also be set in nmbd (see nmbd(8))
+***************
+*** 71,78 ****
+  
+  # This is for PAM authentication. RedHat Linux uses PAM.
+  # If you use PAM, then uncomment the following lines:
+! # PAM_FLAGS = -DUSE_PAM -DNO_CRYPT
+! # PAM_LIBS = -ldl -lpam
+  
+  # This is for AFS authentication.  If you use AFS then set AFS_BASE 
+  # according to your system layout, and uncomment the other lines as well.
+--- 71,78 ----
+  
+  # This is for PAM authentication. RedHat Linux uses PAM.
+  # If you use PAM, then uncomment the following lines:
+! PAM_FLAGS = -DUSE_PAM -DNO_CRYPT
+! PAM_LIBS = -ldl -lpam
+  
+  # This is for AFS authentication.  If you use AFS then set AFS_BASE 
+  # according to your system layout, and uncomment the other lines as well.
+***************
+*** 178,185 ****
+  
+  # Use this for Linux without shadow passwords
+  # contributed by Andrew.Tridgell@anu.edu.au
+! # FLAGSM = -DLINUX
+! # LIBSM = 
+  
+  # Use this for Linux with shadow passwords and quota
+  # contributed by xeno@mix.hive.no
+--- 178,187 ----
+  
+  # Use this for Linux without shadow passwords
+  # contributed by Andrew.Tridgell@anu.edu.au
+! # AXPROC defines DEC Alpha Processor
+! # FLAGSM = -DLINUX -DAXPROC
+! FLAGSM = -DLINUX
+! LIBSM = 
+  
+  # Use this for Linux with shadow passwords and quota
+  # contributed by xeno@mix.hive.no
