@@ -1,3 +1,18 @@
+2004-06-14  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: SASL
+	
+	* pop_auth.[ch], auth_gssapi.c, auth_krb4.c : improved SASL
+	support
+	
+	* pop_get_command.c: add SASL hooks
+	
+	* pop_user.c: if using SASL, don't allow plaintext USER/PASS
+	
+	* pop_init.c: recognise sasl auth level
+	
+	* popper.h: add AUTH_SASL flag
+	
 2003-12-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* popper.c (main): avoid warning by sending empty string as
