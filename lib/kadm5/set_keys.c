@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,10 +46,11 @@ _kadm5_set_keys(kadm5_server_context *context,
 {
     int i;
     krb5_data salt;
-    kadm5_ret_t ret;
+    kadm5_ret_t ret = 0;
     Key *key;
+
     krb5_get_salt(ent->principal, &salt);
-    for(i = 0; i < ent->keys.len; i++){
+    for(i = 0; i < ent->keys.len; i++) {
 	key = &ent->keys.val[i];
 	if(key->salt && 
 	   key->salt->type == hdb_pw_salt &&
