@@ -1755,9 +1755,9 @@ int print_queue_status(int snum,
 		       print_queue_struct **queue,
 		       print_status_struct *status);
 int print_queue_snum(char *qname);
-BOOL print_queue_pause(struct current_user *user, int snum);
-BOOL print_queue_resume(struct current_user *user, int snum);
-BOOL print_queue_purge(struct current_user *user, int snum);
+BOOL print_queue_pause(struct current_user *user, int snum, int *errcode);
+BOOL print_queue_resume(struct current_user *user, int snum, int *errcode);
+BOOL print_queue_purge(struct current_user *user, int snum, int *errcode);
 #endif
 
 /*The following definitions come from  profile/profile.c  */
@@ -2723,6 +2723,8 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, POLICY_HND *hnd);
+BOOL spoolss_io_q_abortprinter(char *desc, SPOOL_Q_ABORTPRINTER *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_abortprinter(char *desc, SPOOL_R_ABORTPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_deleteprinter(char *desc, SPOOL_Q_DELETEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_deleteprinter(char *desc, SPOOL_R_DELETEPRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_closeprinter(char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *ps, int depth);
@@ -3124,6 +3126,7 @@ uint32 _spoolss_writeprinter( POLICY_HND *handle,
 				uint32 buffer_size,
 				uint8 *buffer,
 				uint32 *buffer_written);
+uint32 _spoolss_abortprinter(POLICY_HND *handle, pipes_struct *p);
 uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   DEVMODE_CTR devmode_ctr,
