@@ -17,6 +17,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #include <protos.h>
+#define UIDL
 #define DEBUG
 #define RETURN_PATH_HANDLING
 #endif
