@@ -287,6 +287,7 @@ typedef struct
 	BOOL bUnixExtensions;
 	BOOL bDisableNetbios;
 	BOOL bKernelChangeNotify;
+	BOOL bUseKerberosKeytab;
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
@@ -861,6 +862,7 @@ static struct parm_struct parm_table[] = {
 	{"hosts deny", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"deny hosts", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_HIDE}, 
 	{"preload modules", P_LIST, P_GLOBAL, &Globals.szPreloadModules, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL}, 
+	{"use kerberos keytab", P_BOOL, P_GLOBAL, &Globals.bUseKerberosKeytab, NULL, NULL, FLAG_ADVANCED}, 
 
 	{N_("Logging Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1761,6 +1763,7 @@ FN_GLOBAL_BOOL(lp_use_spnego, &Globals.bUseSpnego)
 FN_GLOBAL_BOOL(lp_client_use_spnego, &Globals.bClientUseSpnego)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_GLOBAL_BOOL(lp_kernel_change_notify, &Globals.bKernelChangeNotify)
+FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
