@@ -25,39 +25,47 @@
 /* 
    a list of our registered names on each interface
 */
-struct nbt_iface_name {
-	struct nbt_iface_name *next, *prev;
-	struct nbt_interface *iface;
+struct nbtd_iface_name {
+	struct nbtd_iface_name *next, *prev;
+	struct nbtd_interface *iface;
 	struct nbt_name name;
 	uint16_t nb_flags;
 	struct timeval registration_time;
 	uint32_t ttl;
+
+	/* if registered with a wins server, then this lists the server being
+	   used */
+	char *wins_server;
 };
 
 
 /* a list of network interfaces we are listening on */
-struct nbt_interface {
-	struct nbt_interface *next, *prev;
-	struct nbt_server *nbtsrv;
+struct nbtd_interface {
+	struct nbtd_interface *next, *prev;
+	struct nbtd_server *nbtsrv;
 	const char *ip_address;
 	const char *bcast_address;
 	const char *netmask;
 	struct nbt_name_socket *nbtsock;
-	struct nbt_iface_name *names;
+	struct nbtd_iface_name *names;
 };
 
 
 /*
   top level context structure for the nbt server
 */
-struct nbt_server {
+struct nbtd_server {
 	struct task_server *task;
 
 	/* the list of local network interfaces */
-	struct nbt_interface *interfaces;
+	struct nbtd_interface *interfaces;
 
 	/* broadcast interface used for receiving packets only */
-	struct nbt_interface *bcast_interface;
+	struct nbtd_interface *bcast_interface;
+
+	/* wins client interface - used for registering and refreshing
+	   our names with a WINS server */
+	struct nbtd_interface *wins_interface;
 };
 
 
