@@ -54,6 +54,7 @@ PyObject *spoolss_startpageprinter(PyObject *self, PyObject *args, PyObject *kw)
 PyObject *spoolss_endpageprinter(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_startdocprinter(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_enddocprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_writeprinter(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_jobs_conv.c  */
 

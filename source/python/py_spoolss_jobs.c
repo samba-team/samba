@@ -349,3 +349,34 @@ PyObject *spoolss_enddocprinter(PyObject *self, PyObject *args, PyObject *kw)
 	Py_INCREF(Py_None);
 	return Py_None;
 }
+
+/* Write data to a printer */
+
+PyObject *spoolss_writeprinter(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	WERROR werror;
+	static char *kwlist[] = { "data", NULL };
+	PyObject *data;
+	uint32 num_written;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!", kwlist,
+					 &PyString_Type, &data))
+		return NULL;
+	
+	/* Call rpc function */
+	
+	werror = cli_spoolss_writeprinter(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, PyString_Size(data),
+		PyString_AsString(data), &num_written);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
