@@ -371,7 +371,7 @@ to somewhere on your network to see if TCP/IP is functioning OK. If it
 is, the problem is most likely name resolution.
 
 If your client has a facility to do so, hardcode a mapping between the
-hosts IP and the name you want to use. For example, with Man Manager
+hosts IP and the name you want to use. For example, with Lan Manager
 or Windows for Workgroups you would put a suitable entry in the file
 LMHOSTS. If this works, the problem is in the communication between
 your client and the netbios name server. If it does not work, then
@@ -394,7 +394,7 @@ the name you gave.
 
 The first step is to check the exact name of the service you are
 trying to connect to (consult your system administrator). Assuming it
-exists and you specified it correctly (read your client's doco on how
+exists and you specified it correctly (read your client's docs on how
 to specify a service name correctly), read on:
 
 <itemize>
