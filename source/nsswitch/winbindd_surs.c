@@ -26,7 +26,7 @@
 BOOL winbindd_surs_sam_sid_to_unixid(struct winbindd_domain *domain,
                                      DOM_SID *sid, 
                                      enum SID_NAME_USE name_type,
-                                     POSIX_ID *id)
+                                     WINBINDD_POSIX_ID *id)
 {
     DOM_SID tmp_sid;
     fstring temp;
@@ -79,7 +79,7 @@ BOOL winbindd_surs_sam_sid_to_unixid(struct winbindd_domain *domain,
 /* Wrapper around "standard" surs unixd to sid function */
 
 BOOL winbindd_surs_unixid_to_sam_sid(struct winbindd_domain *domain,
-                                     POSIX_ID *id, DOM_SID *sid)
+                                     WINBINDD_POSIX_ID *id, DOM_SID *sid)
 {
     /* Process user id */
 
