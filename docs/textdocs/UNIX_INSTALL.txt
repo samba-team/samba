@@ -1,5 +1,5 @@
 !==
-!== UNIX_INSTALL.txt for Samba release TNG-alpha 10 Apr 2000
+!== UNIX_INSTALL.txt for Samba release TNG-alpha 11 Apr 2000
 !==
 Contributor:	Andrew Tridgell <samba-bugs@samba.org>
 Date:		Unknown

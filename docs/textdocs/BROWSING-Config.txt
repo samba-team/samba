@@ -1,5 +1,5 @@
 !==
-!== BROWSING-Config.txt for Samba release TNG-alpha 10 Apr 2000
+!== BROWSING-Config.txt for Samba release TNG-alpha 11 Apr 2000
 !==
 Date:		July 5, 1998
 Contributor:	John H Terpstra <jht@samba.org>
