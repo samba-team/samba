@@ -2,6 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+INCLUDES += $(INCLUDE_krb4)
+
 bin_PROGRAMS = verify_krb5_conf
 
 noinst_PROGRAMS = dump_config test_get_addrs krbhst-test
