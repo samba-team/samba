@@ -1042,7 +1042,8 @@ BOOL server_validate(char *user, char *domain,
    */
 
   if(!tested_password_server) {
-    if (cli_session_setup(cli, user, (char *)badpass, sizeof(badpass), 
+    if (cli_session_setup(cli, global_myname,
+	                       user, (char *)badpass, sizeof(badpass), 
                               (char *)badpass, sizeof(badpass), domain)) {
 
       /*
@@ -1087,7 +1088,8 @@ use this machine as the password server.\n"));
    * not guest enabled, we can try with the real password.
    */
 
-  if (!cli_session_setup(cli, user, pass, passlen, ntpass, ntpasslen, domain)) {
+  if (!cli_session_setup(cli, global_myname,
+	                       user, pass, passlen, ntpass, ntpasslen, domain)) {
     DEBUG(1,("password server %s rejected the password\n", cli->desthost));
     return False;
   }
