@@ -268,6 +268,7 @@ BOOL process_exists(pid_t pid);
 char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
 uid_t nametouid(const char *name);
+gid_t nametogid(const char *name);
 void smb_panic(char *why);
 char *readdirname(DIR *p);
 BOOL is_in_path(char *name, name_compare_entry *namelist);
