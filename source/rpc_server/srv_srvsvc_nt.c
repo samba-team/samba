@@ -1264,7 +1264,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	r_u->switch_value = 0;
 
 	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 
 	snum = find_service(share_name);
 
@@ -1274,17 +1274,17 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	/* No change to printer shares. */
 	if (lp_print_ok(snum))
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 
 	get_current_user(&user,p);
 
 	if (user.uid != 0)
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 
 	switch (q_u->info_level) {
 	case 1:
 		/* Not enough info in a level 1 to do anything. */
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	case 2:
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
 		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
@@ -1299,7 +1299,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		map_generic_share_sd_bits(psd);
 		break;
 	case 1005:
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	case 1501:
 		fstrcpy(pathname, lp_pathname(snum));
 		fstrcpy(comment, lp_comment(snum));
@@ -1314,7 +1314,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	/* We can only modify disk shares. */
 	if (type != STYPE_DISKTREE)
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 		
 	/* Check if the pathname is valid. */
 	if (!(ptr = valid_share_pathname( pathname )))
@@ -1332,7 +1332,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	if (strcmp(ptr, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) {
 		if (!lp_change_share_cmd() || !*lp_change_share_cmd())
-			return ERROR_ACCESS_DENIED;
+			return ERRnoaccess;
 
 		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
 				lp_change_share_cmd(), CONFIGFILE, share_name, ptr, comment);
@@ -1340,7 +1340,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
 		if ((ret = smbrun(command, NULL)) != 0) {
 			DEBUG(0,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));
-			return ERROR_ACCESS_DENIED;
+			return ERRnoaccess;
 		}
 
 		/* Tell everyone we updated smb.conf. */
@@ -1394,18 +1394,18 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	if (user.uid != 0) {
 		DEBUG(10,("_srv_net_share_add: uid != 0. Access denied.\n"));
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	}
 
 	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
 		DEBUG(10,("_srv_net_share_add: No add share command\n"));
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	}
 
 	switch (q_u->info_level) {
 	case 1:
 		/* Not enough info in a level 1 to do anything. */
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	case 2:
 		unistr2_to_ascii(share_name, &q_u->info.share.info2.info_2_str.uni_netname, sizeof(share_name));
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
@@ -1422,14 +1422,14 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		break;
 	case 1005:
 		/* DFS only level. */
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	default:
 		DEBUG(5,("_srv_net_share_add: unsupported switch value %d\n", q_u->info_level));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 
 	snum = find_service(share_name);
 
@@ -1439,7 +1439,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	/* We can only add disk shares. */
 	if (type != STYPE_DISKTREE)
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 		
 	/* Check if the pathname is valid. */
 	if (!(ptr = valid_share_pathname( pathname )))
@@ -1456,7 +1456,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {
 		DEBUG(0,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	}
 
 	if (psd) {
@@ -1497,7 +1497,7 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
 
 	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 
 	snum = find_service(share_name);
 
@@ -1506,15 +1506,15 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	/* No change to printer shares. */
 	if (lp_print_ok(snum))
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 
 	get_current_user(&user,p);
 
 	if (user.uid != 0)
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd())
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
 			lp_delete_share_cmd(), CONFIGFILE, lp_servicename(snum));
@@ -1522,7 +1522,7 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {
 		DEBUG(0,("_srv_net_share_del: Running [%s] returned (%d)\n", command, ret ));
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	}
 
 	/* Delete the SD in the database. */
@@ -1635,7 +1635,7 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
-			r_u->status = ERROR_ACCESS_DENIED;
+			r_u->status = ERRnoaccess;
 			goto error_exit;
 		}
 	}
@@ -1644,7 +1644,7 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	if (sd_size == 0) {
 		DEBUG(3,("_srv_net_file_query_secdesc: Unable to get NT ACL for file %s\n", filename));
-		r_u->status = ERROR_ACCESS_DENIED;
+		r_u->status = ERRnoaccess;
 		goto error_exit;
 	}
 
@@ -1728,7 +1728,7 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
-			r_u->status = ERROR_ACCESS_DENIED;
+			r_u->status = ERRnoaccess;
 			goto error_exit;
 		}
 	}
@@ -1737,7 +1737,7 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	if (ret == False) {
 		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", filename));
-		r_u->status = ERROR_ACCESS_DENIED;
+		r_u->status = ERRnoaccess;
 		goto error_exit;
 	}
 
@@ -1863,7 +1863,7 @@ uint32 _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV
 
 	default:
 		/*unsupported type*/
-		r_u->status = ERROR_INVALID_LEVEL;
+		r_u->status = ERRunknownlevel;
 		break;
 	}
 
