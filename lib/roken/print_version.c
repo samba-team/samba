@@ -56,16 +56,24 @@ print_version(const char *progname)
 {
     const char *arg[] = { 
 #ifdef KRB5
-	heimdal_version,
+	NULL,
 #endif
 #ifdef KRB4
-	krb4_version,
+	NULL,
 #endif
     };
     const int num_args = sizeof(arg) / sizeof(arg[0]);
     char *msg;
     size_t len = 0;
     int i;
+    const char **p = arg;
+
+#ifdef KRB5
+    *p++ = heimdal_version;
+#endif
+#ifdef KRB4
+    *p++ = krb4_version;
+#endif
 
     if(progname == NULL)
 	progname = __progname;
