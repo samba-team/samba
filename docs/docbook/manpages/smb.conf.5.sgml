@@ -624,6 +624,7 @@
 		<listitem><para><link linkend="ENUMPORTSCOMMAND"><parameter>enumports command</parameter></link></para></listitem>
 		<listitem><para><link linkend="GETWDCACHE"><parameter>getwd cache</parameter></link></para></listitem>
 		<listitem><para><link linkend="HIDELOCALUSERS"><parameter>hide local users</parameter></link></para></listitem>
+		<listitem><para><link linkend="HIDEUNREADABLE"><parameter>hide unreadable</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOMEDIRMAP"><parameter>homedir map</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOSTMSDFS"><parameter>host msdfs</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOSTSEQUIV"><parameter>hosts equiv</parameter></link></para></listitem>
@@ -631,6 +632,7 @@
 		<listitem><para><link linkend="KEEPALIVE"><parameter>keepalive</parameter></link></para></listitem>
 		<listitem><para><link linkend="KERNELOPLOCKS"><parameter>kernel oplocks</parameter></link></para></listitem>
 		<listitem><para><link linkend="LANMANAUTH"><parameter>lanman auth</parameter></link></para></listitem>
+		<listitem><para><link linkend="LARGEREADWRITE"><parameter>large readwrite</parameter></link></para></listitem>
 		<listitem><para><link linkend="LMANNOUNCE"><parameter>lm announce</parameter></link></para></listitem>
 		<listitem><para><link linkend="LMINTERVAL"><parameter>lm interval</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOADPRINTERS"><parameter>load printers</parameter></link></para></listitem>
@@ -2925,6 +2927,16 @@
 
 
 		<varlistentry>
+		<term><anchor id="HIDEUNREADABLE">hide unreadable(G)</term>
+		<listitem><para>This parameter prevents clients from seeing the
+		existance of files that cannot be read. Defaults to off.</para>
+
+		<para>Default: <command>hide unreadable = no</command></para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
 		<term><anchor id="HOMEDIRMAP">homedir map (G)</term>
 		<listitem><para>If<link linkend="NISHOMEDIR"><parameter>nis homedir
 		</parameter></link> is <constant>true</constant>, and <ulink 
@@ -3294,7 +3306,27 @@
 		</varlistentry>
 
 
+
+
+
+		<varlistentry>
+		<term><anchor id="LARGE READWRITE">large readwrite(G)</term>
+		<listitem><para>This parameter determines whether or not <ulink url="smbd.8.html">smbd</ulink>
+		supports the new 64k streaming read and write varient SMB requests introduced
+		with Windows 2000. Note that due to Windows 2000 client redirector bugs
+		this requires Samba to be running on a 64-bit capable operating system such
+		as IRIX, Solaris or a Linux 2.4 kernel. Can improve performance by 10% with
+		Windows 2000 clients. Defaults to off. Not as tested as some other Samba
+		code paths.
+		</para>
 		
+		<para>Default : <command>large readwrite = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
 
 		<varlistentry>
 		<term><anchor id="LEVEL2OPLOCKS">level2 oplocks (S)</term>
