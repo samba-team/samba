@@ -33,7 +33,6 @@
 #define STATUS_MORE_ENTRIES               NT_STATUS(0x0105)
 #define ERROR_INVALID_PARAMETER		  NT_STATUS(0x0057)
 #define ERROR_INSUFFICIENT_BUFFER	  NT_STATUS(0x007a)
-#define STATUS_1804	                  NT_STATUS(0x070c)
 #define STATUS_NOTIFY_ENUM_DIR            NT_STATUS(0x010c)
 
 /* Win32 Error codes extracted using a loop in smbclient then printing a
