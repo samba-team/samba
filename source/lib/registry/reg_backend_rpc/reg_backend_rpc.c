@@ -169,7 +169,8 @@ static WERROR rpc_key_put_rpc_data(TALLOC_CTX *mem_ctx, struct registry_key *k)
 	return r.out.result;
 }
 
-static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const char *name, struct registry_key **key)
+
+static WERROR rpc_open_rel_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const char *name, struct registry_key **key)
 {
 	struct rpc_key_data *mykeydata;
     struct winreg_OpenKey r;
@@ -184,15 +185,20 @@ static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const c
 	/* Then, open the handle using the hive */
 
 	memset(&r, 0, sizeof(struct winreg_OpenKey));
-    r.in.handle = &(((struct rpc_key_data *)h->root->backend_data)->pol);
+    r.in.handle = &(((struct rpc_key_data *)h->backend_data)->pol);
     init_winreg_String(&r.in.keyname, name);
     r.in.unknown = 0x00000000;
     r.in.access_mask = 0x02000000;
     r.out.handle = &mykeydata->pol;
 
-    dcerpc_winreg_OpenKey((struct dcerpc_pipe *)(h->backend_data), mem_ctx, &r);
+    dcerpc_winreg_OpenKey((struct dcerpc_pipe *)(h->hive->backend_data), mem_ctx, &r);
 
 	return r.out.result;
+}
+
+static WERROR rpc_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const char *name, struct registry_key **key)
+{
+	return rpc_open_rel_key(mem_ctx, h->root, name, key);
 }
 
 static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *parent, int n, struct registry_value **value)  
@@ -226,6 +232,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 	r.in.value_in = &buf_val;
 	r.in.value_len1 = &len1;
 	r.in.value_len2 = &len2;
+	r.out.type = &type;
 
 	
 	status = dcerpc_winreg_EnumValue((struct dcerpc_pipe *)parent->hive->backend_data, mem_ctx, &r);
@@ -238,7 +245,6 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 		*value = talloc_p(mem_ctx, struct registry_value);
 		(*value)->parent = parent;
 		(*value)->name = talloc_strdup(mem_ctx, r.out.name_out.name);
-		printf("Type: %d\n", type);
 		(*value)->data_type = type;
 		(*value)->data_len = r.out.value_out->buffer.length;
 		(*value)->data_blk = talloc_memdup(mem_ctx, r.out.value_out->buffer.data, r.out.value_out->buffer.length);
@@ -271,9 +277,7 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *
 	r.in.key_name_len = r.out.key_name_len = 0;
 	status = dcerpc_winreg_EnumKey((struct dcerpc_pipe *)parent->hive->backend_data, mem_ctx, &r);
 	if(NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
-		if(parent->hive->root == parent)
-			return rpc_open_key(mem_ctx, parent->hive, talloc_strdup(mem_ctx, r.out.out_name->name), subkey);
-		return rpc_open_key(mem_ctx, parent->hive, talloc_asprintf(mem_ctx, "%s\\%s", parent->path, r.out.out_name->name), subkey);
+			return rpc_open_rel_key(mem_ctx, parent, talloc_strdup(mem_ctx, r.out.out_name->name), subkey);
 	}
 
 	return r.out.result;
@@ -298,7 +302,7 @@ static WERROR rpc_query_key(struct registry_key *k)
 	talloc_destroy(mem_ctx);
 
     if (!NT_STATUS_IS_OK(status)) {
-        printf("QueryInfoKey failed - %s\n", nt_errstr(status));
+        DEBUG(1, ("QueryInfoKey failed - %s\n", nt_errstr(status)));
         return ntstatus_to_werror(status);
     }
                                                                                                        
