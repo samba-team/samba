@@ -1132,9 +1132,13 @@ getptyslave()
 		fatal(net, "I_PUSH ptem");
 	if (ioctl(t, I_PUSH, "ldterm") < 0)
 		fatal(net, "I_PUSH ldterm");
-	if (ioctl(t, I_PUSH, "ttcompat") < 0)
+	/*
+	 * Not all systems have (or need) modules ttcompat and pckt so
+	 * don't flag it as a fatal error if they don't exist.
+	 */
+	if (ioctl(t, I_PUSH, "ttcompat") < 0 && errno != EINVAL)
 		fatal(net, "I_PUSH ttcompat");
-	if (ioctl(pty, I_PUSH, "pckt") < 0)
+	if (ioctl(pty, I_PUSH, "pckt") < 0 && errno != EINVAL)
 		fatal(net, "I_PUSH pckt");
 #endif
 
