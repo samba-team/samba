@@ -418,8 +418,8 @@ NTSTATUS ndr_push_spoolss_44(struct ndr_push *ndr, struct spoolss_44 *r)
 
 static NTSTATUS ndr_push_spoolss_Devmode(struct ndr_push *ndr, int ndr_flags, struct spoolss_Devmode *r)
 {
-	NDR_CHECK(ndr_push_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->foo));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -429,8 +429,8 @@ done:
 
 static NTSTATUS ndr_push_spoolss_DevmodeContainer(struct ndr_push *ndr, int ndr_flags, struct spoolss_DevmodeContainer *r)
 {
-	NDR_CHECK(ndr_push_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->size));
 	NDR_CHECK(ndr_push_ptr(ndr, r->devmode));
 buffers:
@@ -444,8 +444,8 @@ done:
 
 static NTSTATUS ndr_push_spoolss_UserLevel1(struct ndr_push *ndr, int ndr_flags, struct spoolss_UserLevel1 *r)
 {
-	NDR_CHECK(ndr_push_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->size));
 	NDR_CHECK(ndr_push_ptr(ndr, r->client));
 	NDR_CHECK(ndr_push_ptr(ndr, r->user));

@@ -26,19 +26,26 @@ static BOOL test_QueryDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryDomainInfo r;
+	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
+	int i;
+	BOOL ret = True;
 
-	printf("Testing QueryDomainInfo\n");
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing QueryDomainInfo level %u\n", levels[i]);
 
-	r.in.handle = handle;
-	r.in.level = 1;
+		r.in.handle = handle;
+		r.in.level = levels[i];
 
-	status = dcerpc_samr_QueryDomainInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("QueryDomainInfo failed - %s\n", nt_errstr(status));
-		return False;
+		status = dcerpc_samr_QueryDomainInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryDomainInfo level %u failed - %s\n", 
+			       r.in.level, nt_errstr(status));
+			ret = False;
+			continue;
+		}
+
+		NDR_PRINT_UNION_DEBUG(samr_DomainInfo, r.in.level, r.out.info);
 	}
-
-	NDR_PRINT_UNION_DEBUG(samr_DomainInfo, r.in.level, r.out.info);
 
 	return True;	
 }

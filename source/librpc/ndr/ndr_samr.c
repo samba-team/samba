@@ -39,8 +39,8 @@ NTSTATUS ndr_push_samr_Shutdown(struct ndr_push *ndr, struct samr_Shutdown *r)
 
 static NTSTATUS ndr_push_samr_Name(struct ndr_push *ndr, int ndr_flags, struct samr_Name *r)
 {
-	NDR_CHECK(ndr_push_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint16(ndr, 2*strlen_m(r->name)));
 	NDR_CHECK(ndr_push_uint16(ndr, 2*strlen_m(r->name)));
 	NDR_CHECK(ndr_push_ptr(ndr, r->name));
@@ -486,8 +486,8 @@ NTSTATUS ndr_pull_samr_Shutdown(struct ndr_pull *ndr, struct samr_Shutdown *r)
 static NTSTATUS ndr_pull_samr_Name(struct ndr_pull *ndr, int ndr_flags, struct samr_Name *r)
 {
 	uint32 _ptr_name;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->name_len));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->name_size));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_name));
@@ -524,8 +524,8 @@ NTSTATUS ndr_pull_samr_LookupDomain(struct ndr_pull *ndr, struct samr_LookupDoma
 
 static NTSTATUS ndr_pull_samr_SamEntry(struct ndr_pull *ndr, int ndr_flags, struct samr_SamEntry *r)
 {
-	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->idx));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->name));
 buffers:
@@ -538,8 +538,8 @@ done:
 static NTSTATUS ndr_pull_samr_SamArray(struct ndr_pull *ndr, int ndr_flags, struct samr_SamArray *r)
 {
 	uint32 _ptr_entries;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_entries));
 	if (_ptr_entries) {
@@ -593,13 +593,172 @@ NTSTATUS ndr_pull_samr_OpenDomain(struct ndr_pull *ndr, struct samr_OpenDomain *
 
 static NTSTATUS ndr_pull_samr_DomInfo1(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo1 *r)
 {
-	NDR_CHECK(ndr_pull_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->min_length_password));
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->password_history));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->flag));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->expire));
 	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->min_passwordage));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo2(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo2 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 8));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->force_logoff_time));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown_name));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->domain));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->primary));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->sequence_num));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown_2));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->role));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown_3));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_users));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_groups));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_aliases));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown_name));
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->domain));
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->primary));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo3(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo3 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 8));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->force_logoff_time));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo4(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo4 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown_name));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown_name));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo5(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo5 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->domain));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->domain));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo6(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo6 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->primary));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->primary));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo7(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo7 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->role));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo8(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo8 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 8));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->sequence_num));
+	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_modify_time));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo9(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo9 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo11(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo11 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 8));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->force_logoff_time));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown_name));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->domain));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->primary));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->sequence_num));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown_2));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->role));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown_3));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_users));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_groups));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_aliases));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->lockout_duration));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->lockout_window));
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->lockout_threshold));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown_name));
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->domain));
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->primary));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo12(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo12 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 8));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->lockout_duration));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->lockout_window));
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->lockout_threshold));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_DomInfo13(struct ndr_pull *ndr, int ndr_flags, struct samr_DomInfo13 *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 8));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->sequence_num));
+	NDR_CHECK(ndr_pull_NTTIME(ndr, &r->last_modify_time));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->foo7));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->foo8));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 done:
@@ -615,6 +774,54 @@ static NTSTATUS ndr_pull_samr_DomainInfo(struct ndr_pull *ndr, int ndr_flags, ui
 	NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_SCALARS, &r->info1));
 	break; }
 
+	case 2: {
+	NDR_CHECK(ndr_pull_samr_DomInfo2(ndr, NDR_SCALARS, &r->info2));
+	break; }
+
+	case 3: {
+	NDR_CHECK(ndr_pull_samr_DomInfo3(ndr, NDR_SCALARS, &r->info3));
+	break; }
+
+	case 4: {
+	NDR_CHECK(ndr_pull_samr_DomInfo4(ndr, NDR_SCALARS, &r->info4));
+	break; }
+
+	case 5: {
+	NDR_CHECK(ndr_pull_samr_DomInfo5(ndr, NDR_SCALARS, &r->info5));
+	break; }
+
+	case 6: {
+	NDR_CHECK(ndr_pull_samr_DomInfo6(ndr, NDR_SCALARS, &r->info6));
+	break; }
+
+	case 7: {
+	NDR_CHECK(ndr_pull_samr_DomInfo7(ndr, NDR_SCALARS, &r->info7));
+	break; }
+
+	case 8: {
+	NDR_CHECK(ndr_pull_samr_DomInfo8(ndr, NDR_SCALARS, &r->info8));
+	break; }
+
+	case 9: {
+	NDR_CHECK(ndr_pull_samr_DomInfo9(ndr, NDR_SCALARS, &r->info9));
+	break; }
+
+	case 10: {
+	NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_SCALARS, &r->info10));
+	break; }
+
+	case 11: {
+	NDR_CHECK(ndr_pull_samr_DomInfo11(ndr, NDR_SCALARS, &r->info11));
+	break; }
+
+	case 12: {
+	NDR_CHECK(ndr_pull_samr_DomInfo12(ndr, NDR_SCALARS, &r->info12));
+	break; }
+
+	case 13: {
+	NDR_CHECK(ndr_pull_samr_DomInfo13(ndr, NDR_SCALARS, &r->info13));
+	break; }
+
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
 	}
@@ -623,6 +830,54 @@ buffers:
 	switch (*level) {
 	case 1:
 		NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_BUFFERS, &r->info1));
+	break;
+
+	case 2:
+		NDR_CHECK(ndr_pull_samr_DomInfo2(ndr, NDR_BUFFERS, &r->info2));
+	break;
+
+	case 3:
+		NDR_CHECK(ndr_pull_samr_DomInfo3(ndr, NDR_BUFFERS, &r->info3));
+	break;
+
+	case 4:
+		NDR_CHECK(ndr_pull_samr_DomInfo4(ndr, NDR_BUFFERS, &r->info4));
+	break;
+
+	case 5:
+		NDR_CHECK(ndr_pull_samr_DomInfo5(ndr, NDR_BUFFERS, &r->info5));
+	break;
+
+	case 6:
+		NDR_CHECK(ndr_pull_samr_DomInfo6(ndr, NDR_BUFFERS, &r->info6));
+	break;
+
+	case 7:
+		NDR_CHECK(ndr_pull_samr_DomInfo7(ndr, NDR_BUFFERS, &r->info7));
+	break;
+
+	case 8:
+		NDR_CHECK(ndr_pull_samr_DomInfo8(ndr, NDR_BUFFERS, &r->info8));
+	break;
+
+	case 9:
+		NDR_CHECK(ndr_pull_samr_DomInfo9(ndr, NDR_BUFFERS, &r->info9));
+	break;
+
+	case 10:
+		NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_BUFFERS, &r->info10));
+	break;
+
+	case 11:
+		NDR_CHECK(ndr_pull_samr_DomInfo11(ndr, NDR_BUFFERS, &r->info11));
+	break;
+
+	case 12:
+		NDR_CHECK(ndr_pull_samr_DomInfo12(ndr, NDR_BUFFERS, &r->info12));
+	break;
+
+	case 13:
+		NDR_CHECK(ndr_pull_samr_DomInfo13(ndr, NDR_BUFFERS, &r->info13));
 	break;
 
 	default:
@@ -1116,12 +1371,177 @@ void ndr_print_samr_DomInfo1(struct ndr_print *ndr, const char *name, struct sam
 	ndr->depth--;
 }
 
+void ndr_print_samr_DomInfo2(struct ndr_print *ndr, const char *name, struct samr_DomInfo2 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo2");
+	ndr->depth++;
+	ndr_print_HYPER_T(ndr, "force_logoff_time", r->force_logoff_time);
+	ndr_print_samr_Name(ndr, "unknown_name", &r->unknown_name);
+	ndr_print_samr_Name(ndr, "domain", &r->domain);
+	ndr_print_samr_Name(ndr, "primary", &r->primary);
+	ndr_print_HYPER_T(ndr, "sequence_num", r->sequence_num);
+	ndr_print_uint32(ndr, "unknown_2", r->unknown_2);
+	ndr_print_uint32(ndr, "role", r->role);
+	ndr_print_uint32(ndr, "unknown_3", r->unknown_3);
+	ndr_print_uint32(ndr, "num_users", r->num_users);
+	ndr_print_uint32(ndr, "num_groups", r->num_groups);
+	ndr_print_uint32(ndr, "num_aliases", r->num_aliases);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo3(struct ndr_print *ndr, const char *name, struct samr_DomInfo3 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo3");
+	ndr->depth++;
+	ndr_print_HYPER_T(ndr, "force_logoff_time", r->force_logoff_time);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo4(struct ndr_print *ndr, const char *name, struct samr_DomInfo4 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo4");
+	ndr->depth++;
+	ndr_print_samr_Name(ndr, "unknown_name", &r->unknown_name);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo5(struct ndr_print *ndr, const char *name, struct samr_DomInfo5 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo5");
+	ndr->depth++;
+	ndr_print_samr_Name(ndr, "domain", &r->domain);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo6(struct ndr_print *ndr, const char *name, struct samr_DomInfo6 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo6");
+	ndr->depth++;
+	ndr_print_samr_Name(ndr, "primary", &r->primary);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo7(struct ndr_print *ndr, const char *name, struct samr_DomInfo7 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo7");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "role", r->role);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo8(struct ndr_print *ndr, const char *name, struct samr_DomInfo8 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo8");
+	ndr->depth++;
+	ndr_print_HYPER_T(ndr, "sequence_num", r->sequence_num);
+	ndr_print_NTTIME(ndr, "last_modify_time", r->last_modify_time);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo9(struct ndr_print *ndr, const char *name, struct samr_DomInfo9 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo9");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "unknown", r->unknown);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo11(struct ndr_print *ndr, const char *name, struct samr_DomInfo11 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo11");
+	ndr->depth++;
+	ndr_print_HYPER_T(ndr, "force_logoff_time", r->force_logoff_time);
+	ndr_print_samr_Name(ndr, "unknown_name", &r->unknown_name);
+	ndr_print_samr_Name(ndr, "domain", &r->domain);
+	ndr_print_samr_Name(ndr, "primary", &r->primary);
+	ndr_print_HYPER_T(ndr, "sequence_num", r->sequence_num);
+	ndr_print_uint32(ndr, "unknown_2", r->unknown_2);
+	ndr_print_uint32(ndr, "role", r->role);
+	ndr_print_uint32(ndr, "unknown_3", r->unknown_3);
+	ndr_print_uint32(ndr, "num_users", r->num_users);
+	ndr_print_uint32(ndr, "num_groups", r->num_groups);
+	ndr_print_uint32(ndr, "num_aliases", r->num_aliases);
+	ndr_print_HYPER_T(ndr, "lockout_duration", r->lockout_duration);
+	ndr_print_HYPER_T(ndr, "lockout_window", r->lockout_window);
+	ndr_print_uint16(ndr, "lockout_threshold", r->lockout_threshold);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo12(struct ndr_print *ndr, const char *name, struct samr_DomInfo12 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo12");
+	ndr->depth++;
+	ndr_print_HYPER_T(ndr, "lockout_duration", r->lockout_duration);
+	ndr_print_HYPER_T(ndr, "lockout_window", r->lockout_window);
+	ndr_print_uint16(ndr, "lockout_threshold", r->lockout_threshold);
+	ndr->depth--;
+}
+
+void ndr_print_samr_DomInfo13(struct ndr_print *ndr, const char *name, struct samr_DomInfo13 *r)
+{
+	ndr_print_struct(ndr, name, "samr_DomInfo13");
+	ndr->depth++;
+	ndr_print_HYPER_T(ndr, "sequence_num", r->sequence_num);
+	ndr_print_NTTIME(ndr, "last_modify_time", r->last_modify_time);
+	ndr_print_uint32(ndr, "foo7", r->foo7);
+	ndr_print_uint32(ndr, "foo8", r->foo8);
+	ndr->depth--;
+}
+
 void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name, uint16 level, union samr_DomainInfo *r)
 {
 	ndr_print_union(ndr, name, level, "samr_DomainInfo");
 	switch (level) {
 	case 1:
 	ndr_print_samr_DomInfo1(ndr, "info1", &r->info1);
+	break;
+
+	case 2:
+	ndr_print_samr_DomInfo2(ndr, "info2", &r->info2);
+	break;
+
+	case 3:
+	ndr_print_samr_DomInfo3(ndr, "info3", &r->info3);
+	break;
+
+	case 4:
+	ndr_print_samr_DomInfo4(ndr, "info4", &r->info4);
+	break;
+
+	case 5:
+	ndr_print_samr_DomInfo5(ndr, "info5", &r->info5);
+	break;
+
+	case 6:
+	ndr_print_samr_DomInfo6(ndr, "info6", &r->info6);
+	break;
+
+	case 7:
+	ndr_print_samr_DomInfo7(ndr, "info7", &r->info7);
+	break;
+
+	case 8:
+	ndr_print_samr_DomInfo8(ndr, "info8", &r->info8);
+	break;
+
+	case 9:
+	ndr_print_samr_DomInfo9(ndr, "info9", &r->info9);
+	break;
+
+	case 10:
+	ndr_print_samr_DomInfo1(ndr, "info10", &r->info10);
+	break;
+
+	case 11:
+	ndr_print_samr_DomInfo11(ndr, "info11", &r->info11);
+	break;
+
+	case 12:
+	ndr_print_samr_DomInfo12(ndr, "info12", &r->info12);
+	break;
+
+	case 13:
+	ndr_print_samr_DomInfo13(ndr, "info13", &r->info13);
 	break;
 
 	default:
