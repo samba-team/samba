@@ -95,8 +95,9 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 
 	/* Lookup the names */
 
-	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
-				      &argv[1], &sids, &types, &num_names);
+	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1,
+				(const char**)(argv + 1), &sids,
+				&types, &num_names);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -123,6 +124,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID *sids;
+	char **domains;
 	char **names;
 	uint32 *types;
 	int num_names, i;
@@ -153,8 +155,8 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Lookup the SIDs */
 
-	result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids, 
-				     &names, &types, &num_names);
+	result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids,
+				&domains, &names, &types, &num_names);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -165,8 +167,9 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sids[i]);
-		printf("%s %s (%d)\n", sid_str, names[i] ? names[i] :
-		       "*unknown*", types[i]);
+		printf("%s [%s]\\[%s] (%d)\n", sid_str,
+			domains[i] ? domains[i] : "*unknown*",
+			names[i] ? names[i] : "*unknown*", types[i]);
 	}
 
  done:

@@ -77,7 +77,7 @@ CODEPAGELIST= 437 737 775 850 852 861 932 866 949 950 936 1251 ISO8859-1 ISO8859
 			ISO8859-13 ISO8859-15
 
 PASSWD_FLAGS = -DPASSWD_PROGRAM=\"$(PASSWD_PROGRAM)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DTDB_PASSWD_FILE=\"$(TDB_PASSWD_FILE)\"
-FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DLOGFILEBASE=\"$(LOGFILEBASE)\"
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper $(CPPFLAGS) -DLOGFILEBASE=\"$(LOGFILEBASE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
 FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\" 
@@ -121,7 +121,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
 	  lib/ms_fnmatch.o lib/select.o lib/error.o lib/messages.o \
-	  nsswitch/wb_client.o nsswitch/wb_common.o $(TDB_OBJ)
+	  lib/pam_errors.o nsswitch/wb_client.o nsswitch/wb_common.o $(TDB_OBJ)
 
 READLINE_OBJ = lib/readline.o
 
@@ -381,8 +381,8 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_pam.o   \
 		nsswitch/winbindd_sid.o   \
 		nsswitch/winbindd_misc.o  \
-		nsswitch/winbindd_wins.o  \
-		nsswitch/winbindd_cm.o
+		nsswitch/winbindd_cm.o \
+		nsswitch/winbindd_rpc.o
 
 NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
 		smbd/password.o smbd/utmp.o smbd/session.o smbd/uid.o smbd/sec_ctx.o \
@@ -402,6 +402,9 @@ WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o \
 WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o @WINBIND_NSS_EXTRA_OBJS@
 
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
+
+POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
+	popt/popthelp.o popt/poptparse.o
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
 
@@ -653,10 +656,11 @@ nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(SHLD) @LDSHFLAGS@ -o $@ $(PAM_WINBIND_OBJ)
 
-bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) $(UBIQX_OBJ) bin/.dummy
+bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
+			$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
-		$(UBIQX_OBJ) $(LIBS)
+		$(UBIQX_OBJ) $(LIBS) @BUILD_POPT@
 
 bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@

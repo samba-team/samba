@@ -418,6 +418,13 @@ typedef struct files_struct
 	char *fsp_name;
 } files_struct;
 
+/* used to hold an arbitrary blob of data */
+typedef struct data_blob {
+	uint8 *data;
+	size_t length;
+	void (*free)(struct data_blob *data_blob);
+} DATA_BLOB;
+
 /*
  * Structure used to keep directory state information around.
  * Used in NT change-notify code.

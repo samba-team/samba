@@ -524,7 +524,7 @@ BOOL user_in_list(char *user,char *list)
 			BOOL ret;
  
 			/* Check to see if name is a Windows group */
-			if (winbind_lookup_name(tok, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
+			if (winbind_lookup_name(NULL, tok, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
  
 				/* Check if user name is in the Windows group */
 				ret = user_in_winbind_group_list(user, tok, &winbind_answered);

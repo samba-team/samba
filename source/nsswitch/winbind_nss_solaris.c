@@ -11,10 +11,11 @@
 #include <string.h>
 #include <pwd.h>
 #include <syslog.h>
+#include <sys/syslog.h>
 #include "includes.h"
 #include "winbind_nss_config.h"
 
-#if defined(HAVE_NSS_COMMON_H) || defined(HPUX)
+#ifdef HAVE_NSS_COMMON_H 
 
 #undef NSS_DEBUG
 
@@ -273,4 +274,6 @@ _nss_winbind_group_constr (const char* db_name,
 	return be;
 }
 
-#endif /* defined(HAVE_NSS_COMMON_H) || defined(HPUX) */
+#endif /* SUN_NSS */
+
+

@@ -923,6 +923,120 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	return True;
 }
 
+/* Initialise client credentials for authenticated pipe access */
+
+static void init_creds(struct ntuser_creds *creds, char* username,
+		       char* domain, char* password, int pass_len)
+{
+	ZERO_STRUCTP(creds);
+
+	pwd_set_cleartext(&creds->pwd, password);
+
+	fstrcpy(creds->user_name, username);
+	fstrcpy(creds->domain, domain);
+
+	if (!*username) {
+		creds->pwd.null_pwd = True;
+	}
+}
+
+/****************************************************************************
+establishes a connection right up to doing tconX, password specified.
+****************************************************************************/
+NTSTATUS cli_full_connection(struct cli_state **output_cli, 
+			     const char *my_name, const char *dest_host, 
+			     struct in_addr *dest_ip, int port,
+			     char *service, char *service_type,
+			     char *user, char *domain, 
+			     char *password, int pass_len) 
+{
+	struct ntuser_creds creds;
+	NTSTATUS nt_status;
+	struct nmb_name calling;
+	struct nmb_name called;
+	struct cli_state *cli;
+	struct in_addr ip;
+	
+	if (!output_cli)
+		DEBUG(0, ("output_cli is NULL!?!"));
+
+	*output_cli = NULL;
+	
+	make_nmb_name(&calling, my_name, 0x0);
+	make_nmb_name(&called , dest_host, 0x20);
+
+again:
+
+	if (!(cli = cli_initialise(NULL)))
+		return NT_STATUS_NO_MEMORY;
+	
+	if (cli_set_port(cli, port) != port) {
+		cli_shutdown(cli);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ip = *dest_ip;
+	
+	DEBUG(3,("Connecting to host=%s share=%s\n", dest_host, service));
+	
+	if (!cli_connect(cli, dest_host, &ip)) {
+		DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
+			 nmb_namestr(&called), inet_ntoa(*dest_ip)));
+		cli_shutdown(cli);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!cli_session_request(cli, &calling, &called)) {
+		char *p;
+		DEBUG(1,("session request to %s failed (%s)\n", 
+			 called.name, cli_errstr(cli)));
+		cli_shutdown(cli);
+		if ((p=strchr(called.name, '.'))) {
+			*p = 0;
+			goto again;
+		}
+		if (strcmp(called.name, "*SMBSERVER")) {
+			make_nmb_name(&called , "*SMBSERVER", 0x20);
+			goto again;
+		}
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!cli_negprot(cli)) {
+		DEBUG(1,("failed negprot\n"));
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		cli_shutdown(cli);
+		return nt_status;
+	}
+
+	if (!cli_session_setup(cli, user, password, pass_len, NULL, 0, 
+			       domain)) {
+		DEBUG(1,("failed session setup\n"));
+		nt_status = cli_nt_error(cli);
+		cli_shutdown(cli);
+		if (NT_STATUS_IS_OK(nt_status)) 
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+		return nt_status;
+	} 
+
+	if (service) {
+		if (!cli_send_tconX(cli, service, service_type,
+				    (char*)password, pass_len)) {
+			DEBUG(1,("failed tcon_X\n"));
+			nt_status = cli_nt_error(cli);
+			cli_shutdown(cli);
+			if (NT_STATUS_IS_OK(nt_status)) 
+				nt_status = NT_STATUS_UNSUCCESSFUL;
+			return nt_status;
+		}
+	}
+
+	init_creds(&creds, user, domain, password, pass_len);
+	cli_init_creds(cli, &creds);
+
+	*output_cli = cli;
+	return NT_STATUS_OK;
+}
 
 /****************************************************************************
  Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.

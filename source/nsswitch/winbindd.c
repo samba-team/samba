@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
 
    Winbind daemon for ntdom nss module
 
@@ -23,12 +22,13 @@
 
 #include "winbindd.h"
 
-pstring servicesf = CONFIGFILE;
-
 /* List of all connected clients */
 
 struct winbindd_cli_state *client_list;
 static int num_clients;
+BOOL opt_nocache;
+
+pstring servicesf = CONFIGFILE;
 
 /* Reload configuration */
 
@@ -49,12 +49,14 @@ static BOOL reload_services_file(BOOL test)
 
 	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", LOGFILEBASE);
 	lp_set_logfile(logfile);
+
 	reopen_logs();
 
 	ret = lp_load(servicesf,False,False,True);
 
 	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", LOGFILEBASE);
 	lp_set_logfile(logfile);
+
 	reopen_logs();
 	load_interfaces();
 
@@ -138,7 +140,6 @@ static void print_winbindd_status(void)
 {
 	winbindd_status();
 	winbindd_idmap_status();
-	winbindd_cache_status();
 	winbindd_cm_status();
 }
 
@@ -146,9 +147,8 @@ static void print_winbindd_status(void)
 
 static void flush_caches(void)
 {
-	/* Clear cached user and group enumation info */
-	
-	winbindd_flush_cache();
+	/* Clear cached user and group enumation info */	
+	wcache_flush_cache();
 }
 
 /* Handle the signal by unlinking socket and exiting */
@@ -156,10 +156,9 @@ static void flush_caches(void)
 static void terminate(void)
 {
 	pstring path;
-	
-	/* Close idmap. */
-	winbindd_idmap_close();
 
+	winbindd_idmap_close();
+	
 	/* Remove socket file */
 	snprintf(path, sizeof(path), "%s/%s", 
 		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
@@ -175,11 +174,11 @@ static void termination_handler(int signum)
 	sys_select_signal();
 }
 
-static BOOL do_sigusr1;
+static BOOL do_sigusr2;
 
-static void sigusr1_handler(int signum)
+static void sigusr2_handler(int signum)
 {
-	do_sigusr1 = True;
+	do_sigusr2 = True;
 	sys_select_signal();
 }
 
@@ -195,92 +194,8 @@ static void sighup_handler(int signum)
 
 static int create_sock(void)
 {
-        struct sockaddr_un sunaddr;
-        struct stat st;
-        int sock;
-        mode_t old_umask;
-        pstring path;
-        
-        /* Create the socket directory or reuse the existing one */
-        
-        if (lstat(WINBINDD_SOCKET_DIR, &st) == -1) {
-                
-                if (errno == ENOENT) {
-                        
-                        /* Create directory */
-                        
-                        if (mkdir(WINBINDD_SOCKET_DIR, 0755) == -1) {
-                                DEBUG(0, ("error creating socket directory "
-                                          "%s: %s\n", WINBINDD_SOCKET_DIR, 
-                                          strerror(errno)));
-                                return -1;
-                        }
-                        
-                } else {
-                        
-                        DEBUG(0, ("lstat failed on socket directory %s: %s\n",
-                                  WINBINDD_SOCKET_DIR, strerror(errno)));
-                        return -1;
-                }
-                
-        } else {
-                
-                /* Check ownership and permission on existing directory */
-                
-                if (!S_ISDIR(st.st_mode)) {
-                        DEBUG(0, ("socket directory %s isn't a directory\n",
-                                  WINBINDD_SOCKET_DIR));
-                        return -1;
-                }
-                
-                if ((st.st_uid != sec_initial_uid()) || 
-                    ((st.st_mode & 0777) != 0755)) {
-                        DEBUG(0, ("invalid permissions on socket directory "
-                                  "%s\n", WINBINDD_SOCKET_DIR));
-                        return -1;
-                }
-        }
-        
-        /* Create the socket file */
-        
-        old_umask = umask(0);
-        
-        sock = socket(AF_UNIX, SOCK_STREAM, 0);
-        
-        if (sock == -1) {
-                perror("socket");
-                return -1;
-        }
-        
-        snprintf(path, sizeof(path), "%s/%s", 
-                 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
-        
-        unlink(path);
-        memset(&sunaddr, 0, sizeof(sunaddr));
-        sunaddr.sun_family = AF_UNIX;
-        safe_strcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
-        
-        if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
-                DEBUG(0, ("bind failed on winbind socket %s: %s\n",
-                          path,
-                          strerror(errno)));
-                close(sock);
-                return -1;
-        }
-        
-        if (listen(sock, 5) == -1) {
-                DEBUG(0, ("listen failed on winbind socket %s: %s\n",
-                          path,
-                          strerror(errno)));
-                close(sock);
-                return -1;
-        }
-        
-        umask(old_umask);
-        
-        /* Success! */
-        
-        return sock;
+	return create_pipe_sock( WINBINDD_SOCKET_DIR,
+				 WINBINDD_SOCKET_NAME, 0755);
 }
 
 struct dispatch_table {
@@ -293,8 +208,8 @@ static struct dispatch_table dispatch_table[] = {
 	
 	/* User functions */
 
-	{ WINBINDD_GETPWNAM_FROM_USER, winbindd_getpwnam_from_user, "GETPWNAM_FROM_USER" },
-	{ WINBINDD_GETPWNAM_FROM_UID, winbindd_getpwnam_from_uid, "GETPWNAM_FROM_UID" },
+	{ WINBINDD_GETPWNAM, winbindd_getpwnam, "GETPWNAM" },
+	{ WINBINDD_GETPWUID, winbindd_getpwuid, "GETPWUID" },
 
 	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
@@ -304,8 +219,8 @@ static struct dispatch_table dispatch_table[] = {
 
 	/* Group functions */
 
-	{ WINBINDD_GETGRNAM_FROM_GROUP, winbindd_getgrnam_from_group, "GETGRNAM_FROM_GROUP" },
-	{ WINBINDD_GETGRNAM_FROM_GID, winbindd_getgrnam_from_gid, "GETGRNAM_FROM_GID" },
+	{ WINBINDD_GETGRNAM, winbindd_getgrnam, "GETGRNAM" },
+	{ WINBINDD_GETGRGID, winbindd_getgrgid, "GETGRGID" },
 	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
 	{ WINBINDD_ENDGRENT, winbindd_endgrent, "ENDGRENT" },
 	{ WINBINDD_GETGRENT, winbindd_getgrent, "GETGRENT" },
@@ -313,9 +228,7 @@ static struct dispatch_table dispatch_table[] = {
 	/* PAM auth functions */
 
 	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
-#if ALLOW_WINBIND_AUTH_CRAP
 	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
-#endif
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
 
 	/* Enumeration functions */
@@ -323,6 +236,7 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_LIST_USERS, winbindd_list_users, "LIST_USERS" },
 	{ WINBINDD_LIST_GROUPS, winbindd_list_groups, "LIST_GROUPS" },
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains, "LIST_TRUSTDOM" },
+	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence, "SHOW_SEQUENCE" },
 
 	/* SID related functions */
 
@@ -339,11 +253,10 @@ static struct dispatch_table dispatch_table[] = {
 	/* Miscellaneous */
 
 	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
-
-	/* WINS functions */
-
-	 { WINBINDD_WINS_BYNAME, winbindd_wins_byname, "WINS_BYNAME" },
-	 { WINBINDD_WINS_BYIP, winbindd_wins_byip, "WINS_BYIP" },
+	{ WINBINDD_PING, winbindd_ping, "PING" },
+	{ WINBINDD_INFO, winbindd_info, "INFO" },
+	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version, "INTERFACE_VERSION" },
+	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
 
 	/* End of list */
 
@@ -475,12 +388,14 @@ static void client_read(struct winbindd_cli_state *state)
 	/* Read data */
 
 	do {
-		n = read(state->sock, state->read_buf_len + (char *)&state->request, 
-				 sizeof(state->request) - state->read_buf_len);
+
+		n = read(state->sock, state->read_buf_len + 
+			 (char *)&state->request, 
+			 sizeof(state->request) - state->read_buf_len);
+
 	} while (n == -1 && errno == EINTR);
 	
-	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n,
-			sizeof(state->request) - n - state->read_buf_len ));
+	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n, sizeof(state->request) - n - state->read_buf_len ));
 
 	/* Read failed, kill client */
 	
@@ -677,8 +592,6 @@ static void process_loop(int accept_sock)
                     
 					client_read(state);
 
-#if 0
-					/* JRA - currently there's no length field in the request... */
 					/* 
 					 * If we have the start of a
 					 * packet, then check the
@@ -687,19 +600,14 @@ static void process_loop(int accept_sock)
 					 * Mock Swedish.
 					 */
 
-					if (state->read_buf_len >= sizeof(int)
-					    && *(int *) state->buf != sizeof(state->request)) {
-
-						struct winbindd_cli_state *rem_state = state;
-
+					if (state->read_buf_len >= sizeof(uint32)
+					    && *(uint32 *) &state->request != sizeof(state->request)) {
 						DEBUG(0,("process_loop: Invalid request size (%d) send, should be (%d)\n",
-								*(int *) rem_state->buf, sizeof(rem_state->request) ));
+								*(uint32 *) &state->request, sizeof(state->request)));
 
-						state = state_next;
-						remove_client(rem_state);
-						continue;
+						remove_client(state);
+						break;
 					}
-#endif
 
 					/* A request packet might be 
 					   complete */
@@ -731,9 +639,9 @@ static void process_loop(int accept_sock)
 			do_sighup = False;
 		}
 
-		if (do_sigusr1) {
+		if (do_sigusr2) {
 			print_winbindd_status();
-			do_sigusr1 = False;
+			do_sigusr2 = False;
 		}
 	}
 }
@@ -741,6 +649,17 @@ static void process_loop(int accept_sock)
 /* Main function */
 
 struct winbindd_state server_state;   /* Server state information */
+
+
+static void usage(void)
+{
+	printf("Usage: winbindd [options]\n");
+	printf("\t-i                interactive mode\n");
+	printf("\t-n                disable cacheing\n");
+	printf("\t-d level          set debug level\n");
+	printf("\t-s configfile     choose smb.conf location\n");
+	printf("\t-h                show this help message\n");
+}
 
 int main(int argc, char **argv)
 {
@@ -754,9 +673,9 @@ int main(int argc, char **argv)
 	int opt;
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
-		SIGUSR1 is received before a handler is installed */
+	   SIGUSR2 is received before a handler is installed */
 
- 	CatchSignal(SIGUSR1, SIG_IGN);
+ 	CatchSignal(SIGUSR2, SIG_IGN);
 
 	TimeInit();
 
@@ -775,34 +694,39 @@ int main(int argc, char **argv)
 
 	/* Initialise samba/rpc client stuff */
 
-	while ((opt = getopt(argc, argv, "id:s:")) != EOF) {
+	while ((opt = getopt(argc, argv, "id:s:nh")) != EOF) {
 		switch (opt) {
 
-		/* Don't become a daemon */
-
+			/* Don't become a daemon */
 		case 'i':
 			interactive = True;
 			break;
 
-			/* Run with specified debug level */
+			/* disable cacheing */
+		case 'n':
+			opt_nocache = True;
+			break;
 
+			/* Run with specified debug level */
 		case 'd':
 			DEBUGLEVEL = atoi(optarg);
 			AllowDebugChange = False;
 			break;
 
 			/* Load a different smb.conf file */
-
 		case 's':
 			pstrcpy(servicesf,optarg);
 			break;
+
+		case 'h':
+			usage();
+			exit(0);
 
 		default:
 			printf("Unknown option %c\n", (char)opt);
 			exit(1);
 		}
 	}
-
 
 	/* Append to log file by default as we are a single process daemon
 	   program. */
@@ -811,6 +735,7 @@ int main(int argc, char **argv)
 
 	snprintf(logfile, sizeof(logfile), "%s/log.winbindd", LOGFILEBASE);
 	lp_set_logfile(logfile);
+
 	setup_logging("winbindd", interactive);
 	reopen_logs();
 
@@ -827,6 +752,7 @@ int main(int argc, char **argv)
 	codepage_initialise(lp_client_code_page());
 
 	/* Setup names. */
+
 	if (!*global_myname) {
 		char *p;
 
@@ -836,7 +762,7 @@ int main(int argc, char **argv)
 			*p = 0;
 	}
 
-	fstrcpy(global_myworkgroup, lp_workgroup());
+        fstrcpy(global_myworkgroup, lp_workgroup());
 
 	if (!interactive)
 		become_daemon();
@@ -855,10 +781,10 @@ int main(int argc, char **argv)
 	secrets_init();
 
 	/* Get list of domains we look up requests for.  This includes the
-		domain which we are a member of as well as any trusted
-		domains. */ 
+	   domain which we are a member of as well as any trusted
+	   domains. */ 
 
-	get_domain_info();
+	init_domain_list();
 
 	ZERO_STRUCT(server_state);
 
@@ -870,15 +796,13 @@ int main(int argc, char **argv)
 	if (!winbindd_idmap_init())
 		return 1;
 
-	winbindd_cache_init();
-
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
 
 	BlockSignals(False, SIGINT);
 	BlockSignals(False, SIGQUIT);
 	BlockSignals(False, SIGTERM);
-	BlockSignals(False, SIGUSR1);
+	BlockSignals(False, SIGUSR2);
 	BlockSignals(False, SIGHUP);
 
 	/* Setup signal handlers */
@@ -888,8 +812,9 @@ int main(int argc, char **argv)
 	CatchSignal(SIGTERM, termination_handler);
 
 	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
+	CatchSignal(SIGUSR1, SIG_IGN);	               /* Samba messages */
 
-	CatchSignal(SIGUSR1, sigusr1_handler);         /* Debugging sigs */
+	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
 	CatchSignal(SIGHUP, sighup_handler);
 
 	/* Create UNIX domain socket */
@@ -902,6 +827,10 @@ int main(int argc, char **argv)
 	/* Loop waiting for requests */
 
 	process_loop(accept_sock);
+
+#if 0
+	uni_group_cache_shutdown();
+#endif
 
 	return 0;
 }

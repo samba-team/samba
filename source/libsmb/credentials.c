@@ -24,7 +24,7 @@
 /****************************************************************************
 represent a credential as a string
 ****************************************************************************/
-char *credstr(uchar *cred)
+char *credstr(const uchar *cred)
 {
 	static fstring buf;
 	slprintf(buf, sizeof(buf) - 1, "%02X%02X%02X%02X%02X%02X%02X%02X",
@@ -42,8 +42,8 @@ Input: 8 byte challenge block
 Output:
       8 byte session key
 ****************************************************************************/
-void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
-		      uchar session_key[8])
+void cred_session_key(const DOM_CHAL *clnt_chal, const DOM_CHAL *srv_chal, const uchar *pass,
+			uchar session_key[8])
 {
 	uint32 sum[2];
 	unsigned char sum2[8];
@@ -54,7 +54,7 @@ void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass,
 	SIVAL(sum2,0,sum[0]);
 	SIVAL(sum2,4,sum[1]);
 
-	cred_hash1(session_key, sum2,(unsigned char *)pass);
+	cred_hash1(session_key, sum2,pass);
 
 	/* debug output */
 	DEBUG(4,("cred_session_key\n"));

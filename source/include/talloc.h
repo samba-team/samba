@@ -1,10 +1,10 @@
 #ifndef _TALLOC_H_
 #define _TALLOC_H_
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Samba temporary memory allocation functions
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) 2001 by Martin Pool <mbp@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,20 +21,31 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-struct talloc_chunk {
-	struct talloc_chunk *next;
-	size_t size;
-	void *ptr;
-};
+/**
+ * @ingroup talloc
+ * @{
+ * @sa talloc.c
+ */
 
-typedef struct {
-	struct talloc_chunk *list;
-	size_t total_alloc_size;
-} TALLOC_CTX;
+/**
+ * talloc allocation pool.  All allocated blocks can be freed in one go.
+ **/
+typedef struct talloc_ctx TALLOC_CTX;
 
-/* free memory if the pointer is valid and zero the pointer */
-#ifndef SAFE_FREE
-#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
-#endif
+TALLOC_CTX *talloc_init_named(char const *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
 
-#endif
+char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
+	PRINTF_ATTRIBUTE(2, 0);
+
+char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
+	PRINTF_ATTRIBUTE(2, 3);
+
+char *talloc_vasprintf_append(TALLOC_CTX *t, char *, const char *, va_list ap)
+	PRINTF_ATTRIBUTE(3, 0);
+
+char *talloc_asprintf_append(TALLOC_CTX *t, char *, const char *, ...)
+	PRINTF_ATTRIBUTE(3, 4);
+
+/** @} */
+
+#endif /* ndef _TALLOC_H_ */

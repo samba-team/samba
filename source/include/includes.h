@@ -684,6 +684,8 @@ extern int errno;
 
 #include "rap.h"
 
+#include "popt.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
@@ -857,6 +859,14 @@ int rename(const char *zfrom, const char *zto);
 
 #ifndef HAVE_MKTIME
 time_t mktime(struct tm *t);
+#endif
+
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *d, const char *s, size_t bufsize);
+#endif
+
+#ifndef HAVE_STRLCAT
+size_t strlcat(char *d, const char *s, size_t bufsize);
 #endif
 
 #ifndef HAVE_FTRUNCATE

@@ -1,10 +1,10 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
    Winbind daemon - miscellaneous other functions
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Tim Potter      2000
+   Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,18 +31,9 @@ extern pstring global_myname;
 static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
 					time_t *pass_last_set_time)
 {
-	struct machine_acct_pass *pass;
-	size_t size;
-
-	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
-	    size != sizeof(*pass)) 
+	if (!secrets_fetch_trust_account_password(domain, ret_pwd, pass_last_set_time)) {
                 return False;
-        
-	if (pass_last_set_time) 
-                *pass_last_set_time = pass->mod_time;
-
-	memcpy(ret_pwd, pass->hash, 16);
-	SAFE_FREE(pass);
+	}
 
 	return True;
 }
@@ -69,6 +60,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
         /* This call does a cli_nt_setup_creds() which implicitly checks
            the trust account password. */
 
+	/* Don't shut this down - it belongs to the connection cache code */
         result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
@@ -76,12 +68,10 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
                 goto done;
         }
 
-        cli_shutdown(cli);
-
         /* There is a race condition between fetching the trust account
-           password and joining the domain so it's possible that the trust
-           account password has been changed on us.  We are returned
-           NT_STATUS_ACCESS_DENIED if this happens. */
+           password and the periodic machine password change.  So it's 
+	   possible that the trust account password has been changed on us.  
+	   We are returned NT_STATUS_ACCESS_DENIED if this happens. */
 
 #define MAX_RETRIES 8
 
@@ -112,10 +102,13 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 
 	DEBUG(3, ("[%5d]: list trusted domains\n", state->pid));
 
-        if (domain_list == NULL)
-                get_domain_info();
+	/* We need to refresh the trusted domain list as the domains may
+	   have changed since we last looked.  There may be a sequence
+	   number or something we should use but I haven't found it yet. */
 
-	for(domain = domain_list; domain; domain = domain->next) {
+	init_domain_list();
+
+	for(domain = domain_list(); domain; domain = domain->next) {
 
 		/* Skip own domain */
 
@@ -147,6 +140,85 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 		state->response.extra_data = extra_data;
 		state->response.length += extra_data_len;
 	}
+
+	return WINBINDD_OK;
+}
+
+
+enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	char *extra_data = NULL;
+
+	DEBUG(3, ("[%5d]: show sequence\n", state->pid));
+
+	extra_data = strdup("");
+
+	/* this makes for a very simple data format, and is easily parsable as well
+	   if that is ever needed */
+	for (domain = domain_list(); domain; domain = domain->next) {
+		char *s;
+
+		domain->methods->sequence_number(domain, &domain->sequence_number);
+		
+		if (DOM_SEQUENCE_NONE == (unsigned)domain->sequence_number) {
+			asprintf(&s,"%s%s : DISCONNECTED\n", extra_data, 
+				 domain->name);
+		} else {
+			asprintf(&s,"%s%s : %u\n", extra_data, 
+				 domain->name, (unsigned)domain->sequence_number);
+		}
+		free(extra_data);
+		extra_data = s;
+	}
+
+	state->response.extra_data = extra_data;
+	state->response.length += strlen(extra_data);
+
+	return WINBINDD_OK;
+}
+
+enum winbindd_result winbindd_ping(struct winbindd_cli_state
+						   *state)
+{
+	DEBUG(3, ("[%5d]: ping\n", state->pid));
+
+	return WINBINDD_OK;
+}
+
+/* List various tidbits of information */
+
+enum winbindd_result winbindd_info(struct winbindd_cli_state *state)
+{
+
+	DEBUG(3, ("[%5d]: request misc info\n", state->pid));
+
+	state->response.data.info.winbind_separator = *lp_winbind_separator();
+	fstrcpy(state->response.data.info.samba_version, VERSION);
+
+	return WINBINDD_OK;
+}
+
+/* Tell the client the current interface version */
+
+enum winbindd_result winbindd_interface_version(struct winbindd_cli_state *state)
+{
+
+	DEBUG(3, ("[%5d]: request interface version\n", state->pid));
+	
+	state->response.data.interface_version = WINBIND_INTERFACE_VERSION;
+
+	return WINBINDD_OK;
+}
+
+/* What domain are we a member of? */
+
+enum winbindd_result winbindd_domain_name(struct winbindd_cli_state *state)
+{
+
+	DEBUG(3, ("[%5d]: request domain name\n", state->pid));
+	
+	fstrcpy(state->response.data.domain_name, lp_workgroup());
 
 	return WINBINDD_OK;
 }

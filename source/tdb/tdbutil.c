@@ -53,64 +53,6 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
 }
 
 /****************************************************************************
- Fetch a value by a arbitrary blob key, return -1 if not found.
- JRA. DEPRECATED ! Use tdb_fetch_int32_byblob instead.
-****************************************************************************/
-
-int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
-{
-	TDB_DATA key, data;
-	int ret;
-
-	key.dptr = keyval;
-	key.dsize = len;
-	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(int))
-		return -1;
-	
-	memcpy(&ret, data.dptr, sizeof(int));
-	SAFE_FREE(data.dptr);
-	return ret;
-}
-
-/****************************************************************************
- Fetch a value by string key, return -1 if not found.
- JRA. DEPRECATED ! Use tdb_fetch_int32 instead.
-****************************************************************************/
-
-int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr)
-{
-	return tdb_fetch_int_byblob(tdb, keystr, strlen(keystr) + 1);
-}
-
-/****************************************************************************
- Store a value by an arbitary blob key, return 0 on success, -1 on failure.
- JRA. DEPRECATED ! Use tdb_store_int32_byblob instead.
-****************************************************************************/
-
-int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v)
-{
-	TDB_DATA key, data;
-
-	key.dptr = keystr;
-	key.dsize = len;
-	data.dptr = (void *)&v;
-	data.dsize = sizeof(int);
-
-	return tdb_store(tdb, key, data, TDB_REPLACE);
-}
-
-/****************************************************************************
- Store a value by string key, return 0 on success, -1 on failure.
- JRA. DEPRECATED ! Use tdb_store_int32 instead.
-****************************************************************************/
-
-int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v)
-{
-	return tdb_store_int_byblob(tdb, keystr, strlen(keystr) + 1, v);
-}
-
-/****************************************************************************
  Fetch a int32 value by a arbitrary blob key, return -1 if not found.
  Output is int32 in native byte order.
 ****************************************************************************/
@@ -201,41 +143,6 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
     key.dsize = strlen(keystr) + 1;
 
     return tdb_fetch(tdb, key);
-}
-
-/****************************************************************************
- Atomic integer change. Returns old value. To create, set initial value in *oldval. 
- Deprecated. Use int32 version. JRA.
-****************************************************************************/
-
-int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val)
-{
-	int val;
-	int ret = -1;
-
-	if (tdb_lock_bystring(tdb, keystr) == -1)
-		return -1;
-
-	if ((val = tdb_fetch_int(tdb, keystr)) == -1) {
-		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
-			goto err_out;
-
-		val = *oldval;
-
-	} else {
-		*oldval = val;
-		val += change_val;
-	}
-		
-	if (tdb_store_int(tdb, keystr, val) == -1)
-		goto err_out;
-
-	ret = 0;
-
-  err_out:
-
-	tdb_unlock_bystring(tdb, keystr);
-	return ret;
 }
 
 /****************************************************************************

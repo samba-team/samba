@@ -75,7 +75,7 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Initialise input parameters */
 
 	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 2, 1, 0, des_access);
+		init_lsa_sec_qos(&qos, 2, 1, 0);
 		init_q_open_pol(&q, '\\', 0, des_access, &qos);
 	} else {
 		init_q_open_pol(&q, '\\', 0, des_access, NULL);
@@ -131,7 +131,7 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Initialise input parameters */
 
 	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 2, 1, 0, des_access);
+		init_lsa_sec_qos(&qos, 2, 1, 0);
 		init_q_open_pol2(&q, cli->clnt_name_slash, 0, des_access, 
                                  &qos);
 	} else {
@@ -215,11 +215,9 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Lookup a list of sids */
-
 NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                              POLICY_HND *pol, int num_sids, DOM_SID *sids, 
-                             char ***names, uint32 **types, int *num_names)
+                             char ***domains, char ***names, uint32 **types, int *num_names)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
@@ -280,6 +278,12 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	(*num_names) = r.mapped_count;
 	result = NT_STATUS_OK;
 
+	if (!((*domains) = (char **)talloc(mem_ctx, sizeof(char *) * r.mapped_count))) {
+		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
 	if (!((*names) = (char **)talloc(mem_ctx, sizeof(char *) * r.mapped_count))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
@@ -293,7 +297,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 		
 	for (i = 0; i < r.mapped_count; i++) {
-		fstring name, dom_name, full_name;
+		fstring name, dom_name;
 		uint32 dom_idx = t_names.name[i].domain_idx;
 
 		/* Translate optimised name through domain index array */
@@ -303,13 +307,15 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			unistr2_to_ascii(dom_name, &ref.ref_dom[dom_idx].uni_dom_name, sizeof(dom_name)- 1);
 			unistr2_to_ascii(name, &t_names.uni_name[i], sizeof(name) - 1);
 
-			slprintf(full_name, sizeof(full_name) - 1,
-				 "%s%s%s", dom_name, 
-                                 (dom_name[0] && name[0]) ? 
-				 lp_winbind_separator() : "", name);
-
-			(*names)[i] = talloc_strdup(mem_ctx, full_name);
+			(*names)[i] = talloc_strdup(mem_ctx, name);
+			(*domains)[i] = talloc_strdup(mem_ctx, dom_name);
 			(*types)[i] = t_names.name[i].sid_name_use;
+			
+			if (((*names)[i] == NULL) || ((*domains)[i] == NULL)) {
+				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+				result = NT_STATUS_UNSUCCESSFUL;
+				goto done;
+			}
 
 		} else {
 			(*names)[i] = NULL;
@@ -327,7 +333,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /** Lookup a list of names */
 
 NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              POLICY_HND *pol, int num_names, char **names, 
+                              POLICY_HND *pol, int num_names, const char **names, 
                               DOM_SID **sids, uint32 **types, int *num_sids)
 {
 	prs_struct qbuf, rbuf;

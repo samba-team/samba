@@ -170,6 +170,7 @@ typedef struct
 	char *szWinbindSeparator;
 	BOOL bWinbindEnumUsers;
 	BOOL bWinbindEnumGroups;
+	BOOL bWinbindUseDefaultDomain;
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
@@ -1074,6 +1075,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind cache time", P_INTEGER, P_GLOBAL, &Globals.winbind_cache_time, NULL, NULL, 0},
 	{"winbind enum users", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumUsers, NULL, NULL, 0},
 	{"winbind enum groups", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumGroups, NULL, NULL, 0},
+	{"winbind use default domain", P_BOOL, P_GLOBAL, &Globals.bWinbindUseDefaultDomain, NULL, NULL, 0},
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
 };
@@ -1404,6 +1406,7 @@ static void init_globals(void)
 
 	Globals.bWinbindEnumUsers = True;
 	Globals.bWinbindEnumGroups = True;
+	Globals.bWinbindUseDefaultDomain = False;
 
 	/*
 	 * This must be done last as it checks the value in 
@@ -1537,6 +1540,7 @@ FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
+FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
 FN_GLOBAL_STRING(lp_codepagedir,&Globals.szCodePageDir)
 #ifdef WITH_LDAP_SAM
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)

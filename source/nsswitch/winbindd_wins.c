@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
    Winbind daemon - WINS related functions
 
@@ -95,7 +94,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		return NULL;
 
 	p = wins_srv_ip();
-	if( !is_zero_ip(p) ) {
+	if( !zero_ip(p) ) {
 		ret = name_query(fd,name,0x20,False,True, p, count);
 		goto out;
 	}
@@ -126,14 +125,14 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 {
 	char response[1024];
-	int i, count, len, size, maxsize;
+	int i, count, len, size;
 	struct node_status *status;
 
 	DEBUG(3, ("[%5d]: wins_byip %s\n", state->pid,
 		state->request.data.name));
 
 	*response = '\0';
-	maxsize = len = sizeof(response) - 1;
+	len = sizeof(response) - 2;
 
 	if ((status = lookup_byaddr_backend(state->request.data.name, &count))){
 	    size = strlen(state->request.data.name) + 1;
@@ -142,8 +141,8 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	    }
 	    len -= size;
-	    safe_strcat(response,state->request.data.name,maxsize);
-	    safe_strcat(response,"\t",maxsize);
+	    safe_strcat(response,state->request.data.name,size);
+	    safe_strcat(response,"\t",1);
 	    for (i = 0; i < count; i++) {
 		/* ignore group names */
 		if (status[i].flags & 0x80) continue;
@@ -154,10 +153,11 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 			    return WINBINDD_ERROR;
 			}
 			len -= size;
-			safe_strcat(response, status[i].name, maxsize);
-			safe_strcat(response, " ", maxsize);
+			safe_strcat(response, status[i].name, size);
+			safe_strcat(response, " ", 1);
 		}
 	    }
+	    response[strlen(response)-1] = '\n';
 	    SAFE_FREE(status);
 	}
 	fstrcpy(state->response.data.name.name,response);
@@ -169,7 +169,7 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 {
 	struct in_addr *ip_list;
-	int i, count, len, size, maxsize;
+	int i, count, len, size;
 	char response[1024];
 	char * addr;
 
@@ -177,7 +177,7 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 		state->request.data.name));
 
 	*response = '\0';
-	maxsize = len = sizeof(response) - 1;
+	len = sizeof(response) - 2;
 
 	if ((ip_list = lookup_byname_backend(state->request.data.name,&count))){
 		for (i = count; i ; i--) {
@@ -188,16 +188,18 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 			return WINBINDD_ERROR;
 		    }
 		    len -= size;
-		    safe_strcat(response,addr,maxsize);
-		    safe_strcat(response," ",maxsize);
+		    if (i != 0)
+			response[strlen(response)-1] = ' ';
+		    safe_strcat(response,addr,size);
+		    safe_strcat(response,"\t",1);
 		}
 		size = strlen(state->request.data.name) + 1;
 		if (size > len) {
 		    SAFE_FREE(ip_list);
 		    return WINBINDD_ERROR;
 		}   
-		response[strlen(response)-1] = '\t';
-		safe_strcat(response,state->request.data.name,maxsize);
+		safe_strcat(response,state->request.data.name,size);
+		safe_strcat(response,"\n",1);
 		SAFE_FREE(ip_list);
 	} else
 		return WINBINDD_ERROR;

@@ -25,9 +25,9 @@
 #define PAM_SM_ACCOUNT
 #define PAM_SM_PASSWORD
 
-#if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX)
+#if defined(SUNOS5) || defined(SUNOS4)
 
-/* Solaris and HPUX always use dynamic pam modules */
+/* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern
 #include <security/pam_appl.h> 
 
@@ -73,9 +73,22 @@ do {                             \
 #define  x_strdup(s)  ( (s) ? strdup(s):NULL )     
 #endif
 
-#define PAM_DEBUG_ARG (1<<0)
-#define PAM_USE_AUTHTOK_ARG (1<<1)
-#define PAM_UNKNOWN_OK_ARG (1<<2)
+#define WINBIND_DEBUG_ARG (1<<0)
+#define WINBIND_USE_AUTHTOK_ARG (1<<1)
+#define WINBIND_UNKNOWN_OK_ARG (1<<2)
+#define WINBIND_TRY_FIRST_PASS_ARG (1<<3)
+#define WINBIND_USE_FIRST_PASS_ARG (1<<4)
+#define WINBIND__OLD_PASSWORD (1<<5)
+
+/*
+ * here is the string to inform the user that the new passwords they
+ * typed were not the same.
+ */
+
+#define MISTYPED_PASS "Sorry, passwords do not match"
+
+#define on(x, y) (x & y)
+#define off(x, y) (!(x & y))
 
 #include "winbind_nss_config.h"
 #include "winbindd_nss.h"

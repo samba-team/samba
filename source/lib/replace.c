@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    replacement routines for broken systems
    Copyright (C) Andrew Tridgell 1992-1998
    
@@ -24,7 +23,6 @@
  void replace_dummy(void);
  void replace_dummy(void) {}
 
-
 #ifndef HAVE_FTRUNCATE
  /*******************************************************************
 ftruncate for operating systems that don't have it
@@ -41,6 +39,42 @@ ftruncate for operating systems that don't have it
 }
 #endif /* HAVE_FTRUNCATE */
 
+
+#ifndef HAVE_STRLCPY
+/* like strncpy but does not 0 fill the buffer and always null 
+   terminates. bufsize is the size of the destination buffer */
+ size_t strlcpy(char *d, const char *s, size_t bufsize)
+{
+	size_t len = strlen(s);
+	size_t ret = len;
+	if (bufsize <= 0) return 0;
+	if (len >= bufsize) len = bufsize-1;
+	memcpy(d, s, len);
+	d[len] = 0;
+	return ret;
+}
+#endif
+
+#ifndef HAVE_STRLCAT
+/* like strncat but does not 0 fill the buffer and always null 
+   terminates. bufsize is the length of the buffer, which should
+   be one more than the maximum resulting string length */
+ size_t strlcat(char *d, const char *s, size_t bufsize)
+{
+	size_t len1 = strlen(d);
+	size_t len2 = strlen(s);
+	size_t ret = len1 + len2;
+
+	if (len1+len2 >= bufsize) {
+		len2 = bufsize - (len1+1);
+	}
+	if (len2 > 0) {
+		memcpy(d+len1, s, len2);
+		d[len1+len2] = 0;
+	}
+	return ret;
+}
+#endif
 
 #ifndef HAVE_MKTIME
 /*******************************************************************
@@ -125,7 +159,7 @@ Corrections by richard.kettlewell@kewill.com
 /*
  * Search for a match in a netgroup. This replaces it on broken systems.
  */
- int innetgr(char *group,char *host,char *user,char *dom)
+ int innetgr(const char *group,const char *host,const char *user,const char *dom)
 {
 	char *hst, *usr, *dm;
   

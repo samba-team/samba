@@ -1746,11 +1746,10 @@ void *smb_xmalloc(size_t size)
 	return p;
 }
 
-/*****************************************************************
+/**
  Memdup with smb_panic on fail.
- *****************************************************************/  
-
-void *xmemdup(const void *p, size_t size)
+**/
+void *smb_xmemdup(const void *p, size_t size)
 {
 	void *p2;
 	p2 = smb_xmalloc(size);
@@ -1758,16 +1757,28 @@ void *xmemdup(const void *p, size_t size)
 	return p2;
 }
 
-/*****************************************************************
+/**
  strdup that aborts on malloc fail.
- *****************************************************************/  
-
-char *xstrdup(const char *s)
+**/
+char *smb_xstrdup(const char *s)
 {
 	char *s1 = strdup(s);
 	if (!s1)
-		smb_panic("xstrdup: malloc fail\n");
+		smb_panic("smb_xstrdup: malloc fail\n");
 	return s1;
+}
+
+/*
+  vasprintf that aborts on malloc fail
+*/
+int smb_xvasprintf(char **ptr, const char *format, va_list ap)
+{
+	int n;
+	n = vasprintf(ptr, format, ap);
+	if (n == -1 || ! *ptr) {
+		smb_panic("smb_xvasprintf: out of memory");
+	}
+	return n;
 }
 
 /*****************************************************************
@@ -2009,6 +2020,86 @@ BOOL unix_wild_match(char *pattern, char *string)
 		return True;
 
 	return unix_do_match(p2, s2) == 0;	
+}
+
+/*******************************************************************
+ free() a data blob
+*******************************************************************/
+
+static void free_data_blob(DATA_BLOB *d)
+{
+	if ((d) && (d->free)) {
+		SAFE_FREE(d->data);
+	}
+}
+
+/*******************************************************************
+ construct a data blob, must be freed with data_blob_free()
+ you can pass NULL for p and get a blank data blob
+*******************************************************************/
+
+DATA_BLOB data_blob(const void *p, size_t length)
+{
+	DATA_BLOB ret;
+
+	if (!length) {
+		ZERO_STRUCT(ret);
+		return ret;
+	}
+
+	if (p) {
+		ret.data = smb_xmemdup(p, length);
+	} else {
+		ret.data = smb_xmalloc(length);
+	}
+	ret.length = length;
+	ret.free = free_data_blob;
+	return ret;
+}
+
+/*******************************************************************
+ construct a data blob, using supplied TALLOC_CTX
+*******************************************************************/
+
+DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
+{
+	DATA_BLOB ret;
+
+	if (!p || !length) {
+		ZERO_STRUCT(ret);
+		return ret;
+	}
+
+	ret.data = talloc_memdup(mem_ctx, p, length);
+	if (ret.data == NULL)
+		smb_panic("data_blob_talloc: talloc_memdup failed.\n");
+
+	ret.length = length;
+	ret.free = NULL;
+	return ret;
+}
+
+/*******************************************************************
+free a data blob
+*******************************************************************/
+void data_blob_free(DATA_BLOB *d)
+{
+	if (d) {
+		if (d->free) {
+			(d->free)(d);
+		}
+		ZERO_STRUCTP(d);
+	}
+}
+
+/*******************************************************************
+clear a DATA_BLOB's contents
+*******************************************************************/
+void data_blob_clear(DATA_BLOB *d)
+{
+	if (d->data) {
+		memset(d->data, 0, d->length);
+	}
 }
 
 #ifdef __INSURE__

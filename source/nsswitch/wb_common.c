@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
    winbind client common code
 
@@ -57,6 +56,8 @@ void init_request(struct winbindd_request *request, int request_type)
 {
         static char *domain_env;
         static BOOL initialised;
+
+	request->length = sizeof(struct winbindd_request);
 
 	request->cmd = (enum winbindd_cmd)request_type;
 	request->pid = getpid();

@@ -559,6 +559,11 @@ char *get_nt_error_msg(NTSTATUS nt_code)
         return msg;
 }
 
+char *nt_errstr(NTSTATUS nt_code)
+{
+	return get_nt_error_msg(nt_code);
+}
+
 /*****************************************************************************
  returns an NT_STATUS constant as a string for inclusion in autogen C code
  *****************************************************************************/

@@ -1,8 +1,8 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Samba Unix SMB/CIFS implementation.
    Samba temporary memory allocation functions
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) 2001, 2002 by Martin Pool <mbp@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,7 +19,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* this is a very simple temporary memory allocator. To use it do the following:
+/**
+   @defgroup talloc Simple memory allocator
+   @{
+   
+   This is a very simple temporary memory allocator. To use it do the following:
 
    1) when you first want to allocate a pool of meomry use
    talloc_init() and save the resulting context pointer somewhere
@@ -31,58 +35,158 @@
 
    talloc does not zero the memory. It guarantees memory of a
    TALLOC_ALIGN alignment
+
+   @sa talloc.h
 */
+
+/**
+ * @todo We could allocate both the talloc_chunk structure, and the
+ * memory it contains all in one allocation, which might be a bit
+ * faster and perhaps use less memory overhead.
+ *
+ * That smells like a premature optimization, though.  -- mbp
+ **/
+
+/**
+ * If you want testing for memory corruption, link with dmalloc or use
+ * Insure++.  It doesn't seem useful to duplicate them here.
+ **/
 
 #include "includes.h"
 
-/* initialise talloc context. */
+struct talloc_chunk {
+	struct talloc_chunk *next;
+	size_t size;
+	void *ptr;
+};
+
+
+struct talloc_ctx {
+	struct talloc_chunk *list;
+	size_t total_alloc_size;
+
+	/** The name recorded for this pool, if any.  Should describe
+	 * the purpose for which it was allocated.  The string is
+	 * allocated within the pool. **/
+	char *name;
+
+	/** Pointer to the next allocate talloc pool, so that we can
+	 * summarize all talloc memory usage. **/
+	struct talloc_ctx *next_ctx;
+};
+
+
+/**
+ * Start of linked list of all talloc pools.
+ *
+ * @todo We should turn the global list off when using Insure++,
+ * otherwise all the memory will be seen as still reachable.
+ **/
+TALLOC_CTX *list_head = NULL;
+
+
+/**
+ * Add to the global list
+ **/
+static void talloc_enroll(TALLOC_CTX *t)
+{
+	t->next_ctx = list_head;
+	list_head = t;
+}
+
+
+static void talloc_disenroll(TALLOC_CTX *t)
+{
+	TALLOC_CTX **ttmp;
+
+	/* Use a double-* so that no special case is required for the
+	 * list head. */
+	for (ttmp = &list_head; *ttmp; ttmp = &((*ttmp)->next_ctx))
+		if (*ttmp == t) {
+			/* ttmp is the link that points to t, either
+			 * list_head or the next_ctx link in its
+			 * predecessor */
+			*ttmp = t->next_ctx;
+			t->next_ctx = NULL;	/* clobber */
+			return;
+		}
+	abort();		/* oops, this talloc was already
+				 * clobbered or something else went
+				 * wrong. */
+}
+
+
+/** Create a new talloc context. **/
 TALLOC_CTX *talloc_init(void)
 {
 	TALLOC_CTX *t;
 
-	t = (TALLOC_CTX *)malloc(sizeof(*t));
-	if (!t) return NULL;
-
-	t->list = NULL;
-	t->total_alloc_size = 0;
+	t = (TALLOC_CTX *)malloc(sizeof(TALLOC_CTX));
+	if (t) {
+		t->list = NULL;
+		t->total_alloc_size = 0;
+		t->name = NULL;
+		talloc_enroll(t);
+	}
 
 	return t;
 }
 
-/* allocate a bit of memory from the specified pool */
+
+
+/**
+ * Create a new talloc context, with a name specifying its purpose.
+ * Please call this in preference to talloc_init().
+ **/
+ TALLOC_CTX *talloc_init_named(char const *fmt, ...) 
+{
+	TALLOC_CTX *t;
+	va_list ap;
+
+	t = talloc_init();
+	if (t && fmt) {
+		va_start(ap, fmt);
+		t->name = talloc_vasprintf(t, fmt, ap);
+		va_end(ap);
+	}
+	
+	return t;
+}
+
+
+/** Allocate a bit of memory from the specified pool **/
 void *talloc(TALLOC_CTX *t, size_t size)
 {
 	void *p;
 	struct talloc_chunk *tc;
 
-	if (size == 0) return NULL;
+	if (!t || size == 0) return NULL;
 
 	p = malloc(size);
-	if (!p) return p;
-
-	tc = malloc(sizeof(*tc));
-	if (!tc) {
-		SAFE_FREE(p);
-		return NULL;
+	if (p) {
+		tc = malloc(sizeof(*tc));
+		if (tc) {
+			tc->ptr = p;
+			tc->size = size;
+			tc->next = t->list;
+			t->list = tc;
+			t->total_alloc_size += size;
+		}
+		else {
+			SAFE_FREE(p);
+		}
 	}
-
-	tc->ptr = p;
-	tc->size = size;
-	tc->next = t->list;
-	t->list = tc;
-	t->total_alloc_size += size;
-
 	return p;
 }
 
-/* a talloc version of realloc */
+/** A talloc version of realloc */
 void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 {
 	struct talloc_chunk *tc;
 	void *new_ptr;
 
 	/* size zero is equivalent to free() */
-	if (size == 0)
+	if (!t || size == 0)
 		return NULL;
 
 	/* realloc(NULL) is equavalent to malloc() */
@@ -103,7 +207,8 @@ void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 	return NULL;
 }
 
-/* destroy a whole pool */
+/** Destroy all the memory allocated inside @p t, but not @p t
+ * itself. */
 void talloc_destroy_pool(TALLOC_CTX *t)
 {
 	struct talloc_chunk *c;
@@ -118,27 +223,40 @@ void talloc_destroy_pool(TALLOC_CTX *t)
 		t->list = c;
 	}
 
-	t->list = NULL;
 	t->total_alloc_size = 0;
 }
 
-/* destroy a whole pool including the context */
+/** Destroy a whole pool including the context */
 void talloc_destroy(TALLOC_CTX *t)
 {
 	if (!t)
 		return;
+
 	talloc_destroy_pool(t);
-	memset(t, 0, sizeof(*t));
+	talloc_disenroll(t);
+	memset(t, 0, sizeof(TALLOC_CTX));
 	SAFE_FREE(t);
 }
 
-/* return the current total size of the pool. */
+/** Return the current total size of the pool. */
 size_t talloc_pool_size(TALLOC_CTX *t)
 {
-	return t->total_alloc_size;
+	if (t)
+		return t->total_alloc_size;
+	else
+		return 0;
 }
 
-/* talloc and zero memory. */
+const char * talloc_pool_name(TALLOC_CTX const *t)
+{
+	if (t)
+		return t->name;
+	else
+		return NULL;
+}
+
+
+/** talloc and zero memory. */
 void *talloc_zero(TALLOC_CTX *t, size_t size)
 {
 	void *p = talloc(t, size);
@@ -149,21 +267,175 @@ void *talloc_zero(TALLOC_CTX *t, size_t size)
 	return p;
 }
 
-/* memdup with a talloc. */
-void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size)
+/** memdup with a talloc. */
+void *talloc_memdup(TALLOC_CTX *t, const void *p, size_t size)
 {
 	void *newp = talloc(t,size);
 
-	if (!newp)
-		return 0;
-
-	memcpy(newp, p, size);
+	if (newp)
+		memcpy(newp, p, size);
 
 	return newp;
 }
 
-/* strdup with a talloc */
-char *talloc_strdup(TALLOC_CTX *t, char *p)
+/** strdup with a talloc */
+char *talloc_strdup(TALLOC_CTX *t, const char *p)
 {
-	return talloc_memdup(t, p, strlen(p) + 1);
+	if (p)
+		return talloc_memdup(t, p, strlen(p) + 1);
+	else
+		return NULL;
 }
+
+/**
+ * Perform string formatting, and return a pointer to newly allocated
+ * memory holding the result, inside a memory pool.
+ **/
+ char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
+{
+	va_list ap;
+	char *ret;
+
+	va_start(ap, fmt);
+	ret = talloc_vasprintf(t, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
+
+ char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
+{	
+	int len;
+	char *ret;
+	
+	len = vsnprintf(NULL, 0, fmt, ap);
+
+	ret = talloc(t, len+1);
+	if (ret)
+		vsnprintf(ret, len+1, fmt, ap);
+
+	return ret;
+}
+
+
+/**
+ * Realloc @p s to append the formatted result of @p fmt and return @p
+ * s, which may have moved.  Good for gradually accumulating output
+ * into a string buffer.
+ **/
+ char *talloc_asprintf_append(TALLOC_CTX *t, char *s,
+			      const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	s = talloc_vasprintf_append(t, s, fmt, ap);
+	va_end(ap);
+	return s;
+}
+
+
+
+/**
+ * Realloc @p s to append the formatted result of @p fmt and @p ap,
+ * and return @p s, which may have moved.  Good for gradually
+ * accumulating output into a string buffer.
+ **/
+ char *talloc_vasprintf_append(TALLOC_CTX *t, char *s,
+			       const char *fmt, va_list ap)
+{	
+	int len, s_len;
+
+	s_len = strlen(s);
+	len = vsnprintf(NULL, 0, fmt, ap);
+
+	s = talloc_realloc(t, s, s_len + len+1);
+	if (!s) return NULL;
+
+	vsnprintf(s+s_len, len+1, fmt, ap);
+
+	return s;
+}
+
+
+/**
+ * Return a human-readable description of all talloc memory usage.
+ * The result is allocated from @p t.
+ **/
+char *talloc_describe_all(TALLOC_CTX *rt)
+{
+	int n_pools = 0, total_chunks = 0;
+	size_t total_bytes = 0;
+	TALLOC_CTX *it;
+	char *s;
+
+	if (!rt) return NULL;
+
+	s = talloc_asprintf(rt, "global talloc allocations in pid: %u\n",
+			    (unsigned) sys_getpid());
+	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
+				   "name", "chunks", "bytes");
+	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
+				   "----------------------------------------",
+				   "--------",
+				   "--------");	
+	
+	for (it = list_head; it; it = it->next_ctx) {
+		size_t bytes;
+		int n_chunks;
+		fstring what;
+		
+		n_pools++;
+		
+		talloc_get_allocation(it, &bytes, &n_chunks);
+
+		if (it->name)
+			fstrcpy(what, it->name);
+		else
+			slprintf(what, sizeof what, "@%p", it);
+		
+		s = talloc_asprintf_append(rt, s, "%-40s %8u %8u\n",
+					   what,
+					   (unsigned) n_chunks,
+					   (unsigned) bytes);
+		total_bytes += bytes;
+		total_chunks += n_chunks;
+	}
+
+	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
+				   "----------------------------------------",
+				   "--------",
+				   "--------");	
+
+	s = talloc_asprintf_append(rt, s, "%-40s %8u %8u\n",
+				   "TOTAL",
+				   (unsigned) total_chunks, (unsigned) total_bytes);
+
+	return s;
+}
+
+
+
+/**
+ * Return an estimated memory usage for the specified pool.  This does
+ * not include memory used by the underlying malloc implementation.
+ **/
+void talloc_get_allocation(TALLOC_CTX *t,
+			   size_t *total_bytes,
+			   int *n_chunks)
+{
+	struct talloc_chunk *chunk;
+
+	if (t) {
+		*total_bytes = 0;
+		*n_chunks = 0;
+
+		for (chunk = t->list; chunk; chunk = chunk->next) {
+			n_chunks[0]++;
+			*total_bytes += chunk->size;
+		}
+	}
+}
+
+
+/** @} */

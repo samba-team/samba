@@ -120,7 +120,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T|^NTSTATUS|^WERROR|^CLI_POLICY_HND/ ) {
+  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T|^NTSTATUS|^WERROR|^CLI_POLICY_HND|^DATA_BLOB/ ) {
     gotstart = 1;
   }
 

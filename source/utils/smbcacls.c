@@ -1,7 +1,6 @@
 /* 
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    ACL get/set utility
-   Version 3.0
    
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Tim Potter      2000
@@ -106,6 +105,7 @@ static BOOL cacls_open_policy_hnd(void)
 /* convert a SID to a string, either numeric or username/group */
 static void SidToString(fstring str, DOM_SID *sid)
 {
+	char **domains = NULL;
 	char **names = NULL;
 	uint32 *types = NULL;
 	int num_names;
@@ -117,19 +117,23 @@ static void SidToString(fstring str, DOM_SID *sid)
 	/* Ask LSA to convert the sid to a name */
 
 	if (!cacls_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  &pol, 1, sid, &names, &types, 
-				&num_names)) ||
-	    !names || !names[0]) {
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  
+						 &pol, 1, sid, &domains, &names, 
+						 &types, &num_names)) ||
+	    !domains || !domains[0] || !names || !names[0]) {
 		return;
 	}
 
 	/* Converted OK */
 	
-	fstrcpy(str, names[0]);
+	slprintf(str, sizeof(fstring) - 1, "%s%s%s",
+		 domains[0], lp_winbind_separator(),
+		 names[0]);
+	
 }
 
 /* convert a string to a SID, either numeric or username/group */
-static BOOL StringToSid(DOM_SID *sid, char *str)
+static BOOL StringToSid(DOM_SID *sid, const char *str)
 {
 	uint32 *types = NULL;
 	DOM_SID *sids = NULL;
@@ -141,8 +145,9 @@ static BOOL StringToSid(DOM_SID *sid, char *str)
 	}
 
 	if (!cacls_open_policy_hnd() ||
-	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, &str, &sids, &types, 
-				 &num_sids))) {
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, 
+						  &str, 
+						  &sids, &types, &num_sids))) {
 		result = False;
 		goto done;
 	}
@@ -265,12 +270,12 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 
 	/* Only numeric form accepted for flags at present */
 
-	if (!(next_token(NULL, tok, "/", sizeof(fstring)) &&
+	if (!(next_token(&p, tok, "/", sizeof(fstring)) &&
 	      sscanf(tok, "%i", &aflags))) {
 		return False;
 	}
 
-	if (!next_token(NULL, tok, "/", sizeof(fstring))) {
+	if (!next_token(&p, tok, "/", sizeof(fstring))) {
 		return False;
 	}
 
@@ -402,7 +407,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 static void sec_desc_print(FILE *f, SEC_DESC *sd)
 {
 	fstring sidstr;
-	int i;
+	uint32 i;
 
 	printf("REVISION:%d\n", sd->revision);
 
@@ -525,18 +530,30 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 
 static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
 {
-	if (sec_ace_equal(ace1, ace2)) return 0;
-	if (ace1->type != ace2->type) return ace2->type - ace1->type;
-	if (sid_compare(&ace1->trustee, &ace2->trustee)) return sid_compare(&ace1->trustee, &ace2->trustee);
-	if (ace1->flags != ace2->flags) return ace1->flags - ace2->flags;
-	if (ace1->info.mask != ace2->info.mask) return ace1->info.mask - ace2->info.mask;
-	if (ace1->size != ace2->size) return ace1->size - ace2->size;
+	if (sec_ace_equal(ace1, ace2)) 
+		return 0;
+
+	if (ace1->type != ace2->type) 
+		return ace2->type - ace1->type;
+
+	if (sid_compare(&ace1->trustee, &ace2->trustee)) 
+		return sid_compare(&ace1->trustee, &ace2->trustee);
+
+	if (ace1->flags != ace2->flags) 
+		return ace1->flags - ace2->flags;
+
+	if (ace1->info.mask != ace2->info.mask) 
+		return ace1->info.mask - ace2->info.mask;
+
+	if (ace1->size != ace2->size) 
+		return ace1->size - ace2->size;
+
 	return memcmp(ace1, ace2, sizeof(SEC_ACE));
 }
 
 static void sort_acl(SEC_ACL *the_acl)
 {
-	int i;
+	uint32 i;
 	if (!the_acl) return;
 
 	qsort(the_acl->ace, the_acl->num_aces, sizeof(the_acl->ace[0]), QSORT_CAST ace_compare);
@@ -562,7 +579,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 {
 	int fnum;
 	SEC_DESC *sd, *old;
-	int i, j;
+	uint32 i, j;
 	size_t sd_size;
 	int result = EXIT_OK;
 
@@ -599,7 +616,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (sec_ace_equal(&sd->dacl->ace[i],
 						  &old->dacl->ace[j])) {
-					int k;
+					uint32 k;
 					for (k=j; k<old->dacl->num_aces-1;k++) {
 						old->dacl->ace[k] = old->dacl->ace[k+1];
 					}
@@ -689,7 +706,6 @@ struct cli_state *connect_one(char *share)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;
-	char *server_n;
 	struct in_addr ip;
 	extern pstring global_myname;
 
@@ -699,8 +715,6 @@ struct cli_state *connect_one(char *share)
 	*share = 0;
 	share++;
 
-	server_n = server;
-	
 	zero_ip(&ip);
 
 	make_nmb_name(&calling, global_myname, 0x0);
@@ -710,9 +724,8 @@ struct cli_state *connect_one(char *share)
 	zero_ip(&ip);
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, 139) == 0) ||
-	    !cli_connect(c, server_n, &ip)) {
-		DEBUG(0,("Connection to %s failed\n", server_n));
+	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server, &ip)) {
+		DEBUG(0,("Connection to %s failed\n", server));
 		cli_shutdown(c);
 		return NULL;
 	}
@@ -779,6 +792,8 @@ static void usage(void)
 \t-G username             change group ownership of a file\n\
 \t-n                      don't resolve sids or masks to names\n\
 \t-h                      print help\n\
+\t-d debuglevel           set debug output level\n\
+\t-U username             user to autheticate as\n\
 \n\
 The username can be of the form username%%password or\n\
 workgroup\\username%%password.\n\n\
@@ -846,7 +861,7 @@ You can string acls together with spaces, commas or newlines\n\
 		}
 	}
 
-	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:C:G:t")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:nhdS:D:A:M:C:G:t")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -900,6 +915,10 @@ You can string acls together with spaces, commas or newlines\n\
 			usage();
 			talloc_destroy(ctx);
 			exit(EXIT_PARSE_ERROR);
+
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
+			break;
 
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);

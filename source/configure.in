@@ -674,7 +674,7 @@ else
 fi
 
 AC_CHECK_FUNCS(waitpid getcwd strdup strtoul strerror chown fchown chmod fchmod chroot link)
-AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset setpgid mknod mknod64)
+AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset strlcpy strlcat setpgid mknod mknod64)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf realpath)
@@ -2670,6 +2670,38 @@ AC_SUBST(WINBIND_LTARGETS)
 AC_SUBST(WINBIND_PAM_TARGETS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
+
+#################################################
+# Check to see if we should use the included popt
+
+AC_ARG_WITH(included-popt,
+[  --with-included-popt    use bundled popt library, not from system],
+[
+  case "$withval" in
+        yes)
+                INCLUDED_POPT=yes
+                ;;
+        no)
+                INCLUDED_POPT=no
+                ;;
+  esac ],
+)
+if test x"$INCLUDED_POPT" != x"yes"; then
+    AC_CHECK_LIB(popt, poptGetContext,
+                 INCLUDED_POPT=no, INCLUDED_POPT=yes)
+fi
+
+AC_MSG_CHECKING(whether to use included popt)
+if test x"$INCLUDED_POPT" = x"yes"; then
+    AC_MSG_RESULT($srcdir/popt)
+    BUILD_POPT='$(POPT_OBJS)'
+    FLAGS1="-I$srcdir/popt"
+else
+    AC_MSG_RESULT(no)
+    LIBS="$LIBS -lpopt"
+fi
+AC_SUBST(BUILD_POPT)
+AC_SUBST(FLAGS1)
 
 #################################################
 # final configure stuff
