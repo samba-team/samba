@@ -91,6 +91,12 @@ It's originally in "100ns units since jan 1st 1601"
 ****************************************************************************/
 time_t nt_time_to_unix(NTTIME nt)
 {
+	if (nt == 0) {
+		return 0;
+	}
+	if (nt == -1LL) {
+		return (time_t)-1;
+	}
 	nt += 1000*1000*10/2;
 	nt /= 1000*1000*10;
 	nt -= TIME_FIXUP_CONSTANT;

@@ -90,8 +90,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Test account expire time */
-	
-	if ((*acct_expiry) != 0 && time(NULL) > nt_time_to_unix(*acct_expiry)) {
+	if ((*acct_expiry) != -1 && time(NULL) > nt_time_to_unix(*acct_expiry)) {
 		DEBUG(1,("sam_account_ok: Account for user '%s' has expired.\n", username));
 		DEBUG(3,("sam_account_ok: Account expired at '%s'.\n", 
 			 nt_time_string(mem_ctx, *acct_expiry)));
