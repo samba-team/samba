@@ -1022,6 +1022,7 @@ char *lp_printcapname(void);
 char *lp_lockdir(void);
 char *lp_utmpdir(void);
 char *lp_rootdir(void);
+char *lp_source_environment(void);
 char *lp_defaultservice(void);
 char *lp_msg_command(void);
 char *lp_dfree_command(void);
