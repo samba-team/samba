@@ -56,7 +56,7 @@ open_socket(krb5_context context)
 	    krb5_warn(context, errno, "socket");
 	    return -1;
 	}
-	setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
 	sin.sin_port = krb5_getportbyname (context, "hprop", "tcp", HPROP_PORT);
