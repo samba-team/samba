@@ -21,12 +21,12 @@
 
 #ifdef USE_SMBPASS_DB
 
-extern int pw_file_lock_depth;
 extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 
 static char s_readbuf[1024];
+static int pw_file_lock_depth;
 
 /***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer

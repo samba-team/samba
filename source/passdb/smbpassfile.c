@@ -21,10 +21,7 @@
 
 extern int DEBUGLEVEL;
 
-int pw_file_lock_depth = 0;
-
 BOOL global_machine_password_needs_changing = False;
-
 
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.
@@ -35,15 +32,15 @@ BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
   if (fd < 0)
     return False;
 
-  (*plock_depth)++;
-
-  if(pw_file_lock_depth == 0) {
+  if(*plock_depth == 0) {
     if (!do_file_lock(fd, secs, type)) {
       DEBUG(10,("pw_file_lock: locking file failed, error = %s.\n",
                  strerror(errno)));
       return False;
     }
   }
+
+  (*plock_depth)++;
 
   return True;
 }
@@ -59,7 +56,8 @@ BOOL pw_file_unlock(int fd, int *plock_depth)
   if(*plock_depth == 1)
     ret = do_file_lock(fd, 5, F_UNLCK);
 
-  (*plock_depth)--;
+  if (*plock_depth > 0)
+    (*plock_depth)--;
 
   if(!ret)
     DEBUG(10,("pw_file_unlock: unlocking file failed, error = %s.\n",

@@ -47,7 +47,7 @@
 
 extern int      DEBUGLEVEL;
 
-static int gotalarm;
+static VOLATILE SIG_ATOMIC_T gotalarm;
 
 /***************************************************************
 

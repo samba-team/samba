@@ -108,7 +108,11 @@ void CatchSignal(int signum,void (*handler)(int ))
 
 	act.sa_handler = handler;
 #ifdef SA_RESTART
-	act.sa_flags = SA_RESTART;
+	/*
+	 * We *want* SIGALRM to interrupt a system call.
+	 */
+	if(signum != SIGALRM)
+		act.sa_flags = SA_RESTART;
 #endif
 	sigemptyset(&act.sa_mask);
 	sigaddset(&act.sa_mask,signum);
