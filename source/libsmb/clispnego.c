@@ -749,7 +749,7 @@ BOOL msrpc_parse(DATA_BLOB *blob,
 			break;
 		case 'C':
 			s = va_arg(ap, char *);
-			head_ofs += pull_string(NULL, p, blob->data+head_ofs, -1, 
+			head_ofs += pull_string(NULL, p, blob->data+head_ofs, sizeof(p), 
 						blob->length - head_ofs, 
 						STR_ASCII|STR_TERMINATE);
 			if (strcmp(s, p) != 0) {

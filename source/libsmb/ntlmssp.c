@@ -29,7 +29,7 @@
  */
    
 
-static const uint8 *get_challenge(void *cookie)
+static const uint8 *get_challenge(struct ntlmssp_state *ntlmssp_state)
 {
 	static uchar chal[8];
 	generate_random_buffer(chal, sizeof(chal), False);
@@ -57,6 +57,7 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 
 	(*ntlmssp_state)->get_global_myname = global_myname;
 	(*ntlmssp_state)->get_domain = lp_workgroup;
+	(*ntlmssp_state)->server_role = ROLE_DOMAIN_MEMBER; /* a good default */
 
 	return NT_STATUS_OK;
 }
@@ -82,10 +83,12 @@ NTSTATUS ntlmssp_server_update(NTLMSSP_STATE *ntlmssp_state,
 			       DATA_BLOB request, DATA_BLOB *reply) 
 {
 	uint32 ntlmssp_command;
-		
+	*reply = data_blob(NULL, 0);
+
 	if (!msrpc_parse(&request, "Cd",
 			 "NTLMSSP",
 			 &ntlmssp_command)) {
+		
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -104,7 +107,7 @@ static const char *ntlmssp_target_name(NTLMSSP_STATE *ntlmssp_state,
 	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
 		*chal_flags |= NTLMSSP_CHAL_TARGET_INFO;
 		*chal_flags |= NTLMSSP_REQUEST_TARGET;
-		if (lp_server_role() == ROLE_STANDALONE) {
+		if (ntlmssp_state->server_role == ROLE_STANDALONE) {
 			*chal_flags |= NTLMSSP_TARGET_TYPE_SERVER;
 			return ntlmssp_state->get_global_myname();
 		} else {
@@ -145,7 +148,7 @@ NTSTATUS ntlmssp_negotiate(NTLMSSP_STATE *ntlmssp_state,
   
 	debug_ntlmssp_flags(neg_flags);
 
-	cryptkey = ntlmssp_state->get_challenge(ntlmssp_state->auth_context);
+	cryptkey = ntlmssp_state->get_challenge(ntlmssp_state);
 
 	data_blob_free(&ntlmssp_state->chal);
 	ntlmssp_state->chal = data_blob(cryptkey, 8);
@@ -270,7 +273,7 @@ NTSTATUS ntlmssp_auth(NTLMSSP_STATE *ntlmssp_state,
 	file_save("lmhash1.dat",  &ntlmssp_state->lm_resp.data,  &ntlmssp_state->lm_resp.length);
 #endif
 
-	nt_status = ntlmssp_state->check_password(ntlmssp_state->auth_context);
+	nt_status = ntlmssp_state->check_password(ntlmssp_state);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
