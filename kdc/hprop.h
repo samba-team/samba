@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,7 +46,7 @@ struct prop_data{
 
 #define HPROP_VERSION "hprop-0.0"
 #define HPROP_NAME "hprop"
-#define HPROP_KEYTAB "FILE:/etc/hprop.keytab"
+#define HPROP_KEYTAB "HDB:"
 #define HPROP_PORT 754
 
 #ifndef NEVERDATE
