@@ -1164,8 +1164,8 @@ static int call_trans2qfsinfo(connection_struct *conn,
       SMB_BIG_UINT dfree,dsize,bsize;
       data_len = 24;
       sys_disk_free(".",&bsize,&dfree,&dsize);	
-      SIVAL(pdata,0,dsize);
-      SIVAL(pdata,8,dfree);
+      SBIG_UINT(pdata,0,dsize);
+      SBIG_UINT(pdata,8,dfree);
       SIVAL(pdata,16,bsize/512);
       SIVAL(pdata,20,512);
       break;
