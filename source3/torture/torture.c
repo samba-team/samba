@@ -26,6 +26,7 @@ static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
 static const char *sockops="TCP_NODELAY";
 static int nprocs=1;
+static int port_to_use=0;
 int torture_numops=100;
 static int procnum; /* records process count number when forking */
 static struct cli_state current_cli;
@@ -104,7 +105,14 @@ static BOOL open_nbt_connection(struct cli_state *c)
 
         zero_ip(&ip);
 
-	if (!cli_initialise(c) || !cli_connect(c, host, &ip)) {
+	if (!cli_initialise(c)) {
+		printf("Failed initialize cli_struct to connect with %s\n", host);
+		return False;
+	}
+
+	c->port = port_to_use;
+
+	if (!cli_connect(c, host, &ip)) {
 		printf("Failed to connect with %s\n", host);
 		return False;
 	}
@@ -4191,6 +4199,7 @@ static void usage(void)
 	printf("\t-L use oplocks\n");
 	printf("\t-c CLIENT.TXT   specify client load file for NBENCH\n");
 	printf("\t-A showall\n");
+	printf("\t-p port\n");
 	printf("\t-s seed\n");
 	printf("\n\n");
 
@@ -4204,10 +4213,6 @@ static void usage(void)
 	
 	exit(1);
 }
-
-
-
-
 
 /****************************************************************************
   main program
@@ -4264,8 +4269,11 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:Ld:Ac:ks:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Ac:ks:")) != EOF) {
 		switch (opt) {
+		case 'p':
+			port_to_use = atoi(optarg);
+			break;
 		case 's':
 			srandom(atoi(optarg));
 			break;
