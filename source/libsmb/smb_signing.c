@@ -809,9 +809,36 @@ void srv_defer_sign_response(uint16 mid)
 
 	data = (struct smb_basic_signing_context *)srv_sign_info.signing_context;
 
+	if (!data)
+		return;
+
 	store_sequence_for_reply(&data->outstanding_packet_list, 
 				 mid, data->send_seq_num);
 	data->send_seq_num++;
+}
+
+/***********************************************************
+ Called to remove sequence records when a deferred packet is
+ cancelled by mid. This should never find one....
+************************************************************/
+
+void srv_cancel_sign_response(uint16 mid)
+{
+	struct smb_basic_signing_context *data;
+	uint32 dummy_seq;
+
+	if (!srv_sign_info.doing_signing)
+		return;
+
+	data = (struct smb_basic_signing_context *)srv_sign_info.signing_context;
+
+	if (!data)
+		return;
+
+	DEBUG(10,("srv_cancel_sign_response: for mid %u\n", (unsigned int)mid ));
+
+	while (get_sequence_for_reply(&data->outstanding_packet_list, mid, &dummy_seq))
+		;
 }
 
 /***********************************************************
