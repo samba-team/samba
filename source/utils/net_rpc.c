@@ -118,8 +118,6 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
 		return -1;
 	}
 
-	domain_sid = net_get_remote_domain_sid(cli, mem_ctx);
-
 	/* Create mem_ctx */
 	
 	if (!(mem_ctx = talloc_init("run_rpc_command"))) {
@@ -128,6 +126,8 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
 		return -1;
 	}
 	
+	domain_sid = net_get_remote_domain_sid(cli, mem_ctx);
+
 	if (!cli_nt_session_open(cli, pipe_idx)) {
 		DEBUG(0, ("Could not initialise pipe\n"));
 	}
@@ -276,12 +276,33 @@ static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid, struct cli_stat
  * @return A shell status integer (0 for success)
  **/
 
-static int net_rpc_oldjoin(int argc, const char **argv) 
+static int net_rpc_perform_oldjoin(int argc, const char **argv)
 {
 	return run_rpc_command(NULL, PI_NETLOGON, 
 			       NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
 			       rpc_oldjoin_internals,
 			       argc, argv);
+}
+
+/** 
+ * Join a domain, the old way.  This function exists to allow
+ * the message to be displayed when oldjoin was explicitly 
+ * requested, but not when it was implied by "net rpc join"
+ *
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+
+static int net_rpc_oldjoin(int argc, const char **argv) 
+{
+	int rc = net_rpc_perform_oldjoin(argc, argv);
+
+	if (rc) {
+		d_printf("Failed to join domain\n");
+	}
 }
 
 /** 
@@ -319,7 +340,7 @@ static int rpc_join_usage(int argc, const char **argv)
 
 int net_rpc_join(int argc, const char **argv) 
 {
-	if ((net_rpc_oldjoin(argc, argv) == 0))
+	if ((net_rpc_perform_oldjoin(argc, argv) == 0))
 		return 0;
 	
 	return net_rpc_join_newstyle(argc, argv);
