@@ -9,6 +9,7 @@ manpagesynopsis()
 bf(smbcacls) //server/share filename link(-U username)(minusU)
 [link(-A acls)(minusA)] [link(-M acls)(minusM)] 
 [link(-D acls)(minusD)] [link(-S acls)(minusS)] 
+[link(-C username)(minusC)] [link(-G username)(minusG)] 
 [link(-n)(minusn)] [link(-h)(minush)]
 
 label(DESCRIPTION)
@@ -50,6 +51,22 @@ dit(bf(-S acls))
 This command sets the ACLs on the file with only the ones specified on the
 command line.  All other ACLs are erased.  Note that the ACL specified must
 contain at least a revision, type, owner and group for the call to succeed.
+
+label(minusC)
+dit(bf(-C username))
+
+This command sets the owner of the file to the given username. Note that
+the user you connect to the server as must have the permissions to modify
+the ownership of a file. Unlike the NT take ownership dialog box this command
+can modify the owner of a file to any arbitrary user.
+
+label(minusG)
+dit(bf(-G username))
+
+This command sets the primary group owner of the file to the given username. Note that
+the user you connect to the server as must have the permissions to modify
+the group ownership of a file. As this attribute is only used in the NT POSIX
+subsystem there is no equivalent NT dialog box.
 
 label(minusU)
 dit(bf(-U username))
