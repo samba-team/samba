@@ -92,6 +92,8 @@ enum winbindd_cmd {
 	WINBINDD_INFO,              /* Various bit of info.  Currently just tidbits */
 	WINBINDD_DOMAIN_NAME,       /* The domain this winbind server is a member of (lp_workgroup()) */
 
+	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
+
 	/* Placeholder for end of cmd list */
 
 	WINBINDD_NUM_CMDS

@@ -145,6 +145,35 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 	return WINBINDD_OK;
 }
 
+
+enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	char *extra_data = NULL;
+
+	DEBUG(3, ("[%5d]: show sequence\n", state->pid));
+
+	extra_data = strdup("");
+
+	/* this makes for a very simple data format, and is easily parsable as well
+	   if that is ever needed */
+	for (domain = domain_list(); domain; domain = domain->next) {
+		char *s;
+
+		domain->methods->sequence_number(domain, &domain->sequence_number);
+		
+		asprintf(&s,"%s%s : %u\n", extra_data, 
+			 domain->name, (unsigned)domain->sequence_number);
+		free(extra_data);
+		extra_data = s;
+	}
+
+	state->response.extra_data = extra_data;
+	state->response.length += strlen(extra_data);
+
+	return WINBINDD_OK;
+}
+
 enum winbindd_result winbindd_ping(struct winbindd_cli_state
 						   *state)
 {
