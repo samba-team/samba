@@ -98,6 +98,12 @@ The max number of times to try to contact each KDC.
 Default ticket lifetime.
 .It Li renew_lifetime = Va time
 Default renewable ticket lifetime.
+.It Li forwardable = Va boolean
+When obtaining initial credentials, make the credentials forwardable.
+This option is also valid in the [realms] section.
+.It Li proxiable = Va boolean
+When obtaining initial credentials, make the credentials proxiable.
+This option is also valid in the [realms] section.
 .It Li verify_ap_req_nofail = Va boolean
 Enable to make a failure to verify obtained credentials
 non-fatal. This can be useful if there is no keytab on a host.
@@ -112,8 +118,20 @@ A list of addresses to get tickets for along with all local addresses.
 .It Li time_format = Va string
 How to print time strings in logs, this string is passed to
 .Xr strftime 3 .
+.It Li date_format = Va string
+How to print date strings in logs, this string is passed to
+.Xr strftime 3 .
 .It Li log_utc = Va boolean
 Write log-entries using UTC instead of your local time zone.
+.It Li srv_lookup = Va boolean
+Use DNS SRV records to lookup realm configuration information.
+.It Li srv_try_txt = Va boolean
+If a SRV lookup fails, try looking up the same info in a DNS TXT record.
+.It Li scan_interfaces = Va boolean
+Scan all network interfaces for addresses, as opposed to simply using
+the address associated with the system's host name.
+.It Li fcache_version = Va int
+Use file credential cache format version specified.
 .El
 .It Li [domain_realm]
 This is a list of mappings from DNS domain to Kerberos realm. Each
