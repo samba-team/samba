@@ -227,13 +227,17 @@ BOOL become_user(int cnum, uint16 vuid)
   if (Connections[cnum].force_user || 
       lp_security() == SEC_SHARE ||
       !(vuser) || (vuser->guest) ||
-      !check_user_ok(cnum,vuser,snum)) {
+      !check_user_ok(cnum,vuser,snum))
+  {
     uid = Connections[cnum].uid;
     gid = Connections[cnum].gid;
     current_user.groups = Connections[cnum].groups;
     current_user.igroups = Connections[cnum].igroups;
     current_user.ngroups = Connections[cnum].ngroups;
-  } else {
+    current_user.attrs   = vuser->attrs;
+  }
+  else
+  {
     if (!vuser) {
       DEBUG(2,("Invalid vuid used %d\n",vuid));
       return(False);
@@ -243,9 +247,10 @@ BOOL become_user(int cnum, uint16 vuid)
       gid = vuser->gid;
     else
       gid = Connections[cnum].gid;
-    current_user.groups = vuser->user_groups;
-    current_user.igroups = vuser->user_igroups;
-    current_user.ngroups = vuser->user_ngroups;
+    current_user.ngroups = vuser->n_groups;
+    current_user.groups  = vuser->groups;
+    current_user.igroups = vuser->igroups;
+    current_user.attrs   = vuser->attrs;
   }
 
   if (initial_uid == 0)

@@ -877,7 +877,8 @@ Response:
 */
 
 
-struct smb_passwd {
+struct smb_passwd
+{
 	int smb_userid;
 	char *smb_name;
 	unsigned char *smb_passwd; /* Null if no password */
@@ -886,12 +887,14 @@ struct smb_passwd {
 };
 
 
-struct current_user {
+struct current_user
+{
   int cnum, id;
   int uid, gid;
   int ngroups;
   gid_t *groups;
   int *igroups;
+  int *attrs;
 };
 
 typedef struct
@@ -988,35 +991,63 @@ typedef struct
   char *user; /* name of user who *opened* this connection */
   int uid; /* uid of user who *opened* this connection */
   int gid; /* gid of user who *opened* this connection */
+
   uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
+
   /* following groups stuff added by ih */
+
   /* This groups info is valid for the user that *opened* the connection */
   int ngroups;
   gid_t *groups;
   int *igroups; /* an integer version - some OSes are broken :-( */
+  int *attrs;
+
   time_t lastused;
   BOOL used;
   int num_files_open;
   name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
   name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
+
 } connection_struct;
 
+/* Domain controller authentication protocol info */
+struct dcinfo
+{
+  DOM_CHAL clnt_chal; /* Initial challenge received from client */
+  DOM_CHAL srv_chal;  /* Initial server challenge */
+  DOM_CHAL clnt_cred; /* Last client credential */
+  DOM_CHAL srv_cred;  /* Last server credential */
+
+  char  sess_key[8]; /* Session key */
+  uchar md4pw[16];   /* md4(machine password) */
+};
 
 typedef struct
 {
   int uid; /* uid of a validated user */
   int gid; /* gid of a validated user */
+
   fstring name; /* name of a validated user */
+  fstring real_name;   /* to store real name from password file - simeon */
   BOOL guest;
+
   /* following groups stuff added by ih */
   /* This groups info is needed for when we become_user() for this uid */
-  int user_ngroups;
-  gid_t *user_groups;
-  int *user_igroups; /* an integer version - some OSes are broken :-( */
+  int n_groups;
+  gid_t *groups;
+  int *igroups; /* an integer version - some OSes are broken :-( */
+  int *attrs; /* attributes associated with each gid */
+
 #if (defined(NETGROUP) && defined(AUTOMOUNT))
   char *home_share;  /* to store NIS home of a user - simeon */
 #endif
-  char *real_name;   /* to store real name from password file - simeon */
+
+  int n_sids;
+  int *sids;
+
+  /* per-user authentication information on NT RPCs */
+  struct dcinfo dc;
+
 } user_struct;
 
 
