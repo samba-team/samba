@@ -130,6 +130,7 @@ BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			    uint32_t negotiate_flags,
 			    const char *machine_name,
 			    const char *plain_pass,
+			    int sec_chan_type,
 			    struct creds_CredentialState *creds)
 {
 	NTSTATUS status;
@@ -157,7 +158,7 @@ BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	a.in.server_name = NULL;
 	a.in.account_name = talloc_asprintf(mem_ctx, "%s$", machine_name);
-	a.in.secure_channel_type = SEC_CHAN_BDC;
+	a.in.secure_channel_type = sec_chan_type;
 	a.in.computer_name = machine_name;
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
@@ -761,7 +762,8 @@ static BOOL test_DatabaseSync2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 
 	if (!test_SetupCredentials2(p, mem_ctx, NETLOGON_NEG_AUTH2_FLAGS, 
-				    TEST_MACHINE_NAME, machine_password, &creds)) {
+				    TEST_MACHINE_NAME, machine_password, 
+				    SEC_CHAN_BDC, &creds)) {
 		return False;
 	}
 
