@@ -47,7 +47,6 @@
 .Nm krb5_encrypt_EncryptedData,
 .Nm krb5_encrypt_ivec ,
 .Nm krb5_enctype_disable ,
-.Nm krb5_enctype_is_disabled ,
 .Nm krb5_enctype_keysize ,
 .Nm krb5_enctype_to_string ,
 .Nm krb5_enctype_valid ,
@@ -167,11 +166,6 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_context context"
 .Fa "krb5_enctype etype"
 .Fc
-.Ft krb5_boolean
-.Fo krb5_enctype_is_disabled
-.Fa "krb5_context context"
-.Fa "krb5_enctype etype"
-.Fc
 .Ft void
 .Fo krb5_enctype_disable
 .Fa "krb5_context context"
@@ -254,13 +248,8 @@ converts a encryption type strings to a encryption type number that
 can use used for other Kerberos crypto functions.
 .Pp
 .Fn krb5_enctype_valid
-returns non-zero if the encrypt is not supported or disabled.
-.Pp
-.Fn krb5_enctype_is_disabled
-return non-zero if
-.Fa enctype
-is (globally) disabled (and thus can't be used for
-encryption/decryption).
+returns 0 if the encrypt is supported and not disabled, otherwise and
+error code is returned.
 .Pp
 .Fn krb5_enctype_disable
 (globally, for all contextes) disables the
