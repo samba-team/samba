@@ -3834,6 +3834,10 @@ static BOOL torture_rpc_open(int dummy)
         return True;
 }
 
+static void sigcont(void)
+{
+}
+
 static double create_procs(BOOL (*fn)(int), BOOL *result)
 {
 	int i, status;
@@ -3844,6 +3848,8 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 	double start_time_limit = 10 + (nprocs * 1.5);
 
 	synccount = 0;
+
+	signal(SIGCONT, sigcont);
 
 	child_status = (volatile pid_t *)shm_setup(sizeof(pid_t)*nprocs);
 	if (!child_status) {
@@ -3886,7 +3892,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 
 			child_status[i] = getpid();
 
-			while (child_status[i] && end_timer() < start_time_limit) msleep(100);
+			pause();
 
 			if (child_status[i]) {
 				printf("Child %d failed to start!\n", i);
@@ -3918,10 +3924,10 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 
 	/* start the client load */
 	start_timer();
-
 	for (i=0;i<nprocs;i++) {
 		child_status[i] = 0;
 	}
+	kill(0, SIGCONT);
 
 	printf("%d clients started\n", nprocs);
 
