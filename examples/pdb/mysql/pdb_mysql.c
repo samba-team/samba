@@ -80,7 +80,6 @@ typedef struct pdb_mysql_query {
 	char *part1;
 	char *part2;
 } pdb_mysql_query;
-
 #define SET_DATA(data,methods) { \
 	if(!methods){ \
 		DEBUG(0, ("invalid methods!\n")); \
@@ -92,8 +91,8 @@ typedef struct pdb_mysql_query {
 				return False; \
 		} \
 }
-void
-pdb_mysql_int_field(struct pdb_methods *m,
+
+void pdb_mysql_int_field(struct pdb_methods *m,
 					struct pdb_mysql_query *q, char *name, int value)
 {
 	if (!name || strchr(name, '\''))
@@ -111,8 +110,7 @@ pdb_mysql_int_field(struct pdb_methods *m,
 	}
 }
 
-static BOOL
-pdb_mysql_string_field(struct pdb_methods *methods,
+static BOOL pdb_mysql_string_field(struct pdb_methods *methods,
 					   struct pdb_mysql_query *q,
 					   char *name, const char *value)
 {
@@ -145,8 +143,7 @@ pdb_mysql_string_field(struct pdb_methods *methods,
 	return True;
 }
 
-static char *
-config_value(pdb_mysql_data * data, char *name, char *default_value)
+static char * config_value(pdb_mysql_data * data, char *name, char *default_value)
 {
 	if (lp_parm_string(NULL, data->location, name))
 		return lp_parm_string(NULL, data->location, name);
@@ -154,9 +151,7 @@ config_value(pdb_mysql_data * data, char *name, char *default_value)
 	return default_value;
 }
 
-static char *
-config_value_write(pdb_mysql_data * data, char *name, char *default_value)
-{
+static char * config_value_write(pdb_mysql_data * data, char *name, char *default_value) {
 	char *v = config_value(data, name, NULL);
 	char *write;
 
@@ -179,8 +174,7 @@ config_value_write(pdb_mysql_data * data, char *name, char *default_value)
 	return write;
 }
 
-static const char *
-config_value_read(pdb_mysql_data * data, char *name, char *default_value)
+static const char * config_value_read(pdb_mysql_data * data, char *name, char *default_value)
 {
 	char *v = config_value(data, name, NULL);
 	char *write;
@@ -206,8 +200,7 @@ config_value_read(pdb_mysql_data * data, char *name, char *default_value)
 }
 
 /* Wrapper for atol that returns 0 if 'a' points to NULL */
-static long
-xatol(char *a)
+static long xatol(char *a)
 {
 	long ret = 0;
 
@@ -217,8 +210,7 @@ xatol(char *a)
 	return ret;
 }
 
-static BOOL
-row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
+static BOOL row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 {
 	MYSQL_ROW row;
 	pstring temp;
@@ -280,8 +272,7 @@ row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	return True;
 }
 
-static BOOL
-mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
+static BOOL mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 {
 	struct pdb_mysql_data *data =
 		(struct pdb_mysql_data *) methods->private_data;
@@ -386,8 +377,7 @@ mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
   End enumeration of the passwd list.
  ****************************************************************/
 
-static void
-mysqlsam_endsampwent(struct pdb_methods *methods)
+static void mysqlsam_endsampwent(struct pdb_methods *methods)
 {
 	struct pdb_mysql_data *data =
 		(struct pdb_mysql_data *) methods->private_data;
@@ -409,8 +399,7 @@ mysqlsam_endsampwent(struct pdb_methods *methods)
   Get one SAM_ACCOUNT from the list (next in line)
  *****************************************************************/
 
-static BOOL
-mysqlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
+static BOOL mysqlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
 {
 	struct pdb_mysql_data *data;
 
@@ -424,8 +413,7 @@ mysqlsam_getsampwent(struct pdb_methods *methods, SAM_ACCOUNT * user)
 	return row_to_sam_account(data->pwent, user);
 }
 
-BOOL
-mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOUNT * user,
+BOOL mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOUNT * user,
 						 const char *field, const char *sname)
 {
 	char *esc_sname;
@@ -551,8 +539,7 @@ mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOUNT * user,
   Lookup a name in the SAM database
  ******************************************************************/
 
-static BOOL
-mysqlsam_getsampwnam(struct pdb_methods *methods, SAM_ACCOUNT * user,
+static BOOL mysqlsam_getsampwnam(struct pdb_methods *methods, SAM_ACCOUNT * user,
 					 const char *sname)
 {
 	struct pdb_mysql_data *data;
@@ -573,8 +560,7 @@ mysqlsam_getsampwnam(struct pdb_methods *methods, SAM_ACCOUNT * user,
   Search by sid
  **************************************************************************/
 
-static BOOL
-mysqlsam_getsampwsid(struct pdb_methods *methods, SAM_ACCOUNT * user,
+static BOOL mysqlsam_getsampwsid(struct pdb_methods *methods, SAM_ACCOUNT * user,
 					 const DOM_SID * sid)
 {
 	BOOL ret = False;
@@ -597,8 +583,7 @@ mysqlsam_getsampwsid(struct pdb_methods *methods, SAM_ACCOUNT * user,
   Delete a SAM_ACCOUNT
  ****************************************************************************/
 
-static BOOL
-mysqlsam_delete_sam_account(struct pdb_methods *methods,
+static BOOL mysqlsam_delete_sam_account(struct pdb_methods *methods,
 							SAM_ACCOUNT * sam_pass)
 {
 	const char *sname = pdb_get_username(sam_pass);
@@ -656,8 +641,7 @@ mysqlsam_delete_sam_account(struct pdb_methods *methods,
 	return True;
 }
 
-static BOOL
-mysqlsam_replace_sam_account(struct pdb_methods *methods,
+static BOOL mysqlsam_replace_sam_account(struct pdb_methods *methods,
 							 const SAM_ACCOUNT * newpwd, char isupdate)
 {
 	pstring temp;
@@ -889,21 +873,18 @@ mysqlsam_replace_sam_account(struct pdb_methods *methods,
 	return True;
 }
 
-static BOOL
-mysqlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * newpwd)
+static BOOL mysqlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT * newpwd)
 {
 	return mysqlsam_replace_sam_account(methods, newpwd, 0);
 }
 
-static BOOL
-mysqlsam_update_sam_account(struct pdb_methods *methods,
+static BOOL mysqlsam_update_sam_account(struct pdb_methods *methods,
 							SAM_ACCOUNT * newpwd)
 {
 	return mysqlsam_replace_sam_account(methods, newpwd, 1);
 }
 
-NTSTATUS
-pdb_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
+NTSTATUS pdb_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method,
 		 char *location)
 {
 	NTSTATUS nt_status;
