@@ -512,58 +512,6 @@ static void usage(char *pname)
 	set_auth_parameters(argc,argv);
 #endif
 
-#ifdef HAVE_SETLUID
-	/* needed for SecureWare on SCO */
-	setluid(0);
-#endif
-
-	/*
-	 * gain_root_privilege uses an assert than will cause a core
-	 * dump if euid != 0. Ensure this is the case.
-	 */
-
-	if(geteuid() != (uid_t)0) {
-		fprintf(stderr, "%s: Version %s : Must have effective user id of zero to run.\n", argv[0], VERSION);
-		exit(1);
-	}
-
-	append_log = True;
-
-	TimeInit();
-
-	pstrcpy(debugf,SMBLOGFILE);  
-
-	pstrcpy(remote_machine, "smb");
-
-	setup_logging(argv[0],False);
-
-	charset_initialise();
-
-	/* make absolutely sure we run as root - to handle cases where people
-	   are crazy enough to have it setuid */
-
-	gain_root_privilege();
-	gain_root_group_privilege();
-
-	fault_setup((void (*)(void *))exit_server);
-	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
-
-	/* we are never interested in SIGPIPE */
-	BlockSignals(True,SIGPIPE);
-
-#if defined(SIGFPE)
-	/* we are never interested in SIGFPE */
-	BlockSignals(True,SIGFPE);
-#endif
-
-	/* we want total control over the permissions on created files,
-	   so set our umask to 0 */
-	umask(0);
-
-	dos_GetWd(OriginalDir);
-
-	init_uid();
-
 	/* this is for people who can't start the program correctly */
 	while (argc > 1 && (*argv[1] != '-')) {
 		argv++;
@@ -633,6 +581,58 @@ static void usage(char *pname)
 			usage(argv[0]);
 			exit(1);
 		}
+
+#ifdef HAVE_SETLUID
+	/* needed for SecureWare on SCO */
+	setluid(0);
+#endif
+
+	/*
+	 * gain_root_privilege uses an assert than will cause a core
+	 * dump if euid != 0. Ensure this is the case.
+	 */
+
+	if(geteuid() != (uid_t)0) {
+		fprintf(stderr, "%s: Version %s : Must have effective user id of zero to run.\n", argv[0], VERSION);
+		exit(1);
+	}
+
+	append_log = True;
+
+	TimeInit();
+
+	pstrcpy(debugf,SMBLOGFILE);  
+
+	pstrcpy(remote_machine, "smb");
+
+	setup_logging(argv[0],False);
+
+	charset_initialise();
+
+	/* make absolutely sure we run as root - to handle cases where people
+	   are crazy enough to have it setuid */
+
+	gain_root_privilege();
+	gain_root_group_privilege();
+
+	fault_setup((void (*)(void *))exit_server);
+	CatchSignal(SIGTERM , SIGNAL_CAST dflt_sig);
+
+	/* we are never interested in SIGPIPE */
+	BlockSignals(True,SIGPIPE);
+
+#if defined(SIGFPE)
+	/* we are never interested in SIGFPE */
+	BlockSignals(True,SIGFPE);
+#endif
+
+	/* we want total control over the permissions on created files,
+	   so set our umask to 0 */
+	umask(0);
+
+	dos_GetWd(OriginalDir);
+
+	init_uid();
 
 	reopen_logs();
 
