@@ -1007,7 +1007,7 @@ enum winbindd_result winbindd_create_user(struct winbindd_cli_state *state)
 {
 	char *user, *group;
 	unid_t id;
-	WINBINDD_PW pw;
+	WINBINDD_PW pw, *pw_check;
 	WINBINDD_GR *wb_grp;
 	struct group *unix_grp;
 	gid_t primary_gid;
@@ -1028,6 +1028,13 @@ enum winbindd_result winbindd_create_user(struct winbindd_cli_state *state)
 	
 	DEBUG(3, ("[%5lu]: create_user: user=>(%s), group=>(%s)\n", 
 		(unsigned long)state->pid, user, group));
+
+	if ( (pw_check=wb_getpwnam(user)) != NULL ) {
+		DEBUG(0,("winbindd_create_user: Refusing to create user that already exists (%s)\n", 
+			user));
+		return WINBINDD_ERROR;
+	}
+
 		
 	if ( !*group )
 		group = lp_template_primary_group();
@@ -1103,7 +1110,7 @@ enum winbindd_result winbindd_create_group(struct winbindd_cli_state *state)
 {
 	char *group;
 	unid_t id;
-	WINBINDD_GR grp;
+	WINBINDD_GR grp, *grp_check;
 	uint32 flags = state->request.flags;
 	uint32 rid;
 	
@@ -1118,7 +1125,13 @@ enum winbindd_result winbindd_create_group(struct winbindd_cli_state *state)
 	
 	DEBUG(3, ("[%5lu]: create_group: (%s)\n", (unsigned long)state->pid, group));
 	
-	/* get a new uid */
+	if ( (grp_check=wb_getgrnam(group)) != NULL ) {
+		DEBUG(0,("winbindd_create_group: Refusing to create group that already exists (%s)\n", 
+			group));
+		return WINBINDD_ERROR;
+	}
+	
+	/* get a new gid */
 	
 	if ( !NT_STATUS_IS_OK(idmap_allocate_id( &id, ID_GROUPID)) ) {
 		DEBUG(0,("winbindd_create_group: idmap_allocate_id() failed!\n"));
