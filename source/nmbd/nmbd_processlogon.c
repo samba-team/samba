@@ -136,8 +136,11 @@ logons are not enabled.\n",
 			else
 			{	/* A full length request */
 
-				if ((!dgram_unique) ||
-				      dgram->dest_name.name_type == 0x1b)
+				/* if there is more than 16 bytes left,
+				 * then there is a domain name in here
+				 * which we have to skip.
+				 */
+				if (len - PTR_DIFF(q, buf) > 16)
 				{
 					/* skip domain name */
 					int dom_len = CVAL(q, 0);
