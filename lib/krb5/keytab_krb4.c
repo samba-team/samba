@@ -285,3 +285,16 @@ const krb5_kt_ops krb4_fkt_ops = {
     krb4_kt_add_entry,		/* add_entry */
     NULL			/* remove_entry */
 };
+
+const krb5_kt_ops krb5_srvtab_fkt_ops = {
+    "SRVTAB",
+    krb4_kt_resolve,
+    krb4_kt_get_name,
+    krb4_kt_close,
+    NULL,			/* get */
+    krb4_kt_start_seq_get,
+    krb4_kt_next_entry,
+    krb4_kt_end_seq_get,
+    krb4_kt_add_entry,		/* add_entry */
+    NULL			/* remove_entry */
+};
