@@ -381,7 +381,11 @@ interface IRemUnknown : IUnknown
 ]
 	interface ISystemActivator : IClassActivator
 {
-	void ISystemActivatorRemoteCreateInstance();
+	HRESULT ISystemActivatorRemoteCreateInstance([in] HYPER_T unknown1,  /* IPID ? */
+											  [in] MInterfacePointer iface,
+											  [in] HYPER_T unknown2,
+											  [out] uint32 unknown3, 
+											  [out] MInterfacePointer iface);
 }
 
 
