@@ -6,23 +6,26 @@ including them on samba.anu.edu.au/pub/samba/Binary_Packages
 
 Mirror sites include:
 
-Source Only
-===========
---- Australia ---
+--- Austria ---  
+	ftp://gd.tuwien.ac.at/pub/infosys/servers/samba/sources/
+--- Australia ---  
 	ftp://samba.anu.edu.au/pub/samba/
-	ftp://nimbus.anu.edu.au/pub/tridge/samba/
 	ftp://choc.satech.net.au/pub/samba/
 --- USA Educational ---  
+	ftp://sunsite.unc.edu/pub/packages/samba/sources/
 	ftp://ftp.micro.caltech.edu/pub/samba/
 	ftp://ftp.cs.ucr.edu/pub/software/samba/
-	ftp://sunsite.unc.edu/pub/Linux/system/Network/samba/
 --- Czech Republic ---  
 	ftp://sunsite.mff.cuni.cz/Net/Protocols/Samba/
+--- Denmark ---  
+	ftp://sunsite.auc.dk/pub/unix/networking/samba/
 --- Germany ---  
 	ftp://ftp.uni-trier.de/pub/unix/network/samba/
-	ftp://ftp.gwdg.de/pub/server/samba/
 --- Greece ---
 	ftp://ftp.ntua.gr/pub/net/samba/
+--- Italy ---
+	ftp://volftp.tin.it/mirror/samba/pub/samba/
+	http://www.inferentia.it/archives/samba/ (no binaries)
 --- Japan ---  
 	ftp://ring.asahi-net.or.jp/archives/net/samba/
 	ftp://ring.aist.go.jp/archives/net/samba/
@@ -35,28 +38,15 @@ Source Only
 	ftp://despair.capecod.net/pub/Samba/
 --- Poland ---
 	ftp://giswitch.sggw.waw.pl/pub/unix/samba/
---- Portugal ---  
+--- Potugal ---
 	ftp://ftp.ua.pt/pub/misc/samba/
 --- Romania ---
-	ftp.romus.ro/pub/Linux/Network/samba/
+	ftp://ftp.romus.ro/pub/Linux/Network/samba/
 --- Russian Federation ---  
 	ftp://ftp.uic.nsu.ru/pub/vendors/samba/
 --- United Kingdom ---  
+	ftp://sunsite.doc.ic.ac.uk/packages/samba/sources/
 	ftp://ftp.demon.co.uk/pub/mirrors/samba/
-	ftp://src.doc.ic.ac.uk/packages/samba/
-
-Sources & Binaries
-==================
---- Austria ---  
-	ftp://gd.tuwien.ac.at/pub/infosys/servers/samba/
---- Denmark ---  
-	ftp://sunsite.auc.dk/pub/unix/networking/samba/
---- USA Educational ---  
-	ftp://sunsite.unc.edu/pub/packages/samba/
---- Italy ---  
-	http://www.inferentia.it/archives/samba/
---- United Kingdom ---  
-	ftp://sunsite.doc.ic.ac.uk/packages/samba/
 
 SCO binaries available from:
 	http://www.math.u-szeged.hu/hardsoft/hsdetail.htm
@@ -85,6 +75,5 @@ There are several others. Give archie a try.
 Http sites include:
 ===================
 http://samba.anu.edu.au/samba
-http://www.choc.satech.net.au/pub/samba/
 
-
+Japanese - http://samba.bento.ad.jp/
