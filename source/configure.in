@@ -2353,7 +2353,7 @@ if test x"$with_ads_support" = x"yes"; then
   ########################################################
   # now see if we can find the krb5 libs in standard paths
   # or as specified above
-  AC_CHECK_LIB(krb5, krb5_mk_req_extended, [KRB5_LIBS="$LIBS -lkrb5";
+  AC_CHECK_LIB(krb5, krb5_mk_req_extended, [KRB5_LIBS="$KRB5_LIBS -lkrb5";
 	       KRB5_CFLAGS="$CFLAGS";
                AC_DEFINE(HAVE_KRB5,1,[Whether KRB5 is available])])
 
