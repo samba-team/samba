@@ -312,31 +312,31 @@ main(int argc, char **argv)
    {  struct spwd *sp;
       long    today;
     
-    sp=getspnam(su_info->pw_name);
-    if (sp==NULL)
-        errx(1,"Have not rights to read shadow passwords!");
-    today = time(0)/(24L * 60 * 60);
-    if (sp->sp_expire > 0) {
-        if (today >= sp->sp_expire) {
-            if (login_info->pw_uid) 
-                errx(1,"Your account has expired.");
-            else
-                 printf("Your account has expired.");
+    sp = getspnam(su_info->pw_name);
+    if (sp != NULL) {
+	today = time(0)/(24L * 60 * 60);
+	if (sp->sp_expire > 0) {
+	    if (today >= sp->sp_expire) {
+		if (login_info->pw_uid) 
+		    errx(1,"Your account has expired.");
+		else
+		    printf("Your account has expired.");
             }
             else if (sp->sp_expire - today < 14) 
                 printf("Your account will expire in %d days.\n",
-                   (int)(sp->sp_expire - today));
-    } 
-    if (sp->sp_max > 0) {
-       if (today >= sp->sp_lstchg + sp->sp_max) {
-           if (login_info->pw_uid)    
-               errx(1,"Your password has expired. Choose a new one.");
-           else
-               printf("Your password has expired. Choose a new one.");
-           }
-         else if (today >= sp->sp_lstchg + sp->sp_max - sp->sp_warn)
-             printf("Your account will expire in %d days.\n",
-                   (int)(sp->sp_lstchg + sp->sp_max -today));
+		       (int)(sp->sp_expire - today));
+	} 
+	if (sp->sp_max > 0) {
+	    if (today >= sp->sp_lstchg + sp->sp_max) {
+		if (login_info->pw_uid)    
+		    errx(1,"Your password has expired. Choose a new one.");
+		else
+		    printf("Your password has expired. Choose a new one.");
+	    }
+	    else if (today >= sp->sp_lstchg + sp->sp_max - sp->sp_warn)
+		printf("Your account will expire in %d days.\n",
+		       (int)(sp->sp_lstchg + sp->sp_max -today));
+	}
     }
     }
 #endif
