@@ -6,11 +6,30 @@ if test $# -ne 1; then
 fi
 host=$1
 bindir=%bindir%
-PATH=$PATH:$bindir set -- `kx $host`
+PATH=$PATH:$bindir
+set -- `kx $host`
 if test $# -ne 3; then
   exit 1
 fi
 pid=$1
 disp=:$2
 auth=$3
-(xterm -T $host -n $host -e env DISPLAY=$disp XAUTHORITY=$auth $bindir/telnet -D $host ; kill -USR2 $pid) &
+term=
+oldifs=$IFS
+IFS=:
+set -- $PATH
+IFS=$oldifs
+for i in $*; do
+  test -n "$i" || i="."
+  for j in xterm aixterm dxterm hpterm; do
+    if test -x $i/$j; then
+      term=$j; break 2
+    fi
+  done
+done
+if test -n "$term"; then
+  $term -title $host -name $host -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $host
+else
+  env DISPLAY=$disp XAUTHORITY=$auth telnet -D $host
+fi
+kill -USR2 $pid
