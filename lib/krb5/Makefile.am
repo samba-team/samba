@@ -23,6 +23,7 @@ libkrb5_a_SOURCES = \
 	encrypt.c \
 	fcache.c \
 	free.c \
+	free_host_realm.c \
 	generate_seq_number.c \
 	generate_subkey.c \
 	get_addrs.c \
@@ -71,6 +72,7 @@ libkrb5_a_SOURCES = \
 	store_mem.c \
 	str2key.c \
 	ticket.c \
+	verify_init.c \
 	verify_user.c \
 	version.c \
 	write_message.c
