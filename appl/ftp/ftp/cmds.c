@@ -562,10 +562,12 @@ int
 getit(int argc, char **argv, int restartit, char *mode)
 {
 	int loc = 0;
+	int local_given = 1;
 	char *oldargv1, *oldargv2;
 
 	if (argc == 2) {
 		argc++;
+		local_given = 0;
 		argv[2] = argv[1];
 		loc++;
 	}
@@ -656,7 +658,7 @@ usage:
 	}
 
 	recvrequest("RETR", argv[2], argv[1], mode,
-	    argv[1] != oldargv1 || argv[2] != oldargv2, argv[2] != NULL);
+		    argv[1] != oldargv1 || argv[2] != oldargv2, local_given);
 	restart_point = 0;
 	return (0);
 }
@@ -718,61 +720,78 @@ mget(int argc, char **argv)
 char *
 remglob(char **argv, int doswitch)
 {
-	char temp[16];
-	static char buf[MaxPathLen];
-	static FILE *ftemp = NULL;
-	static char **args;
-	int oldverbose, oldhash;
-	char *cp, *mode;
+    char temp[16];
+    static char buf[MaxPathLen];
+    static FILE *ftemp = NULL;
+    static char **args;
+    int oldverbose, oldhash;
+    char *cp, *mode;
 
-	if (!mflag) {
-		if (!doglob) {
-			args = NULL;
-		}
-		else {
-			if (ftemp) {
-				fclose(ftemp);
-				ftemp = NULL;
-			}
-		}
-		return (NULL);
-	}
+    if (!mflag) {
 	if (!doglob) {
-		if (args == NULL)
-			args = argv;
-		if ((cp = *++args) == NULL)
-			args = NULL;
-		return (cp);
+	    args = NULL;
 	}
-	if (ftemp == NULL) {
-		strcpy(temp, _PATH_TMP_XXX);
-		mktemp(temp);
-		oldverbose = verbose, verbose = 0;
-		oldhash = hash, hash = 0;
-		if (doswitch) {
-			pswitch(!proxy);
-		}
-		for (mode = "w"; *++argv != NULL; mode = "a")
-			recvrequest ("NLST", temp, *argv, mode, 0, 0);
-		if (doswitch) {
-			pswitch(!proxy);
-		}
-		verbose = oldverbose; hash = oldhash;
-		ftemp = fopen(temp, "r");
-		unlink(temp);
-		if (ftemp == NULL) {
-			printf("can't find list of remote files, oops\n");
-			return (NULL);
-		}
-	}
-	if (fgets(buf, sizeof (buf), ftemp) == NULL) {
+	else {
+	    if (ftemp) {
 		fclose(ftemp);
 		ftemp = NULL;
-		return (NULL);
+	    }
 	}
-	if ((cp = strchr(buf, '\n')) != NULL)
-		*cp = '\0';
-	return (buf);
+	return (NULL);
+    }
+    if (!doglob) {
+	if (args == NULL)
+	    args = argv;
+	if ((cp = *++args) == NULL)
+	    args = NULL;
+	return (cp);
+    }
+    if (ftemp == NULL) {
+	int fd;
+	strcpy(temp, _PATH_TMP_XXX);
+	fd = mkstemp(temp);
+	if(fd < 0){
+	    warn("unable to create temporary file %s", temp);
+	    return NULL;
+	}
+	close(fd);
+	oldverbose = verbose, verbose = 0;
+	oldhash = hash, hash = 0;
+	if (doswitch) {
+	    pswitch(!proxy);
+	}
+	for (mode = "w"; *++argv != NULL; mode = "a")
+	    recvrequest ("NLST", temp, *argv, mode, 0, 0);
+	if (doswitch) {
+	    pswitch(!proxy);
+	}
+	verbose = oldverbose; hash = oldhash;
+	ftemp = fopen(temp, "r");
+	unlink(temp);
+	if (ftemp == NULL) {
+	    printf("can't find list of remote files, oops\n");
+	    return (NULL);
+	}
+    }
+next:
+    if (fgets(buf, sizeof (buf), ftemp) == NULL) {
+	fclose(ftemp);
+	ftemp = NULL;
+	return (NULL);
+    }
+    if ((cp = strchr(buf, '\n')) != NULL)
+	*cp = '\0';
+    if(strncmp(buf, "../", 3) == 0 || *buf == '/'){
+	if(interactive == 0){
+	    printf("Ignoring remote globbed file `%s'\n", buf);
+	    goto next;
+	}
+	if(!confirm(buf, *buf == '/' ? 
+		    " - retrieve file starting with `/'" : 
+		    " - retrieve file starting with `..'"))
+	    goto next;
+    }
+    return (buf);
 }
 
 char *
@@ -1484,7 +1503,7 @@ confirm(char *cmd, char *file)
 	fflush(stdout);
 	if (fgets(line, sizeof line, stdin) == NULL)
 		return (0);
-	return (*line != 'n' && *line != 'N');
+	return (*line == 'y' || *line == 'Y');
 }
 
 void
