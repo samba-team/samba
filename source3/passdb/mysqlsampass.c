@@ -21,34 +21,17 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifdef WITH_MYSQLSAM
+#if defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
 
 #include "includes.h"
-#include <mysql.h>
 
 extern int DEBUGLEVEL;
 
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 
-typedef void *(*mysql_fill_func)( MYSQL_ROW * );
-#define FILL_SAM mysql_fill_sam_passwd
-
-void *mysql_startpwent(BOOL update);
-void mysql_endpwent(void *vp);
-SMB_BIG_UINT mysql_getpwpos(void *vp);
-BOOL mysql_setpwpos(void *vp, SMB_BIG_UINT pos);
-void *mysql_fill_smb_passwd( MYSQL_ROW *row );
-MYSQL_ROW *mysql_getpwent(void *vp);
-void *mysql_fetch_passwd( mysql_fill_func filler, char *where );
-void *mysql_getpwuid( mysql_fill_func filler, uid_t uid );
-void *mysql_getpwnam( mysql_fill_func filler, char *field, const char *name );
-int mysql_db_lock_connect( MYSQL *handle );
-BOOL mysql_add_smb( MYSQL *handle, struct smb_passwd *smb );
-BOOL mysql_mod_smb( MYSQL *handle, struct smb_passwd *smb, BOOL override );
-BOOL mysql_del_smb( MYSQL *handle, char *unix_name );
-
-void *mysql_fill_sam_passwd( MYSQL_ROW *row ) {
+void *mysql_fill_sam_passwd( MYSQL_ROW *row )
+{
 	static struct sam_passwd *user;
 
 	static pstring full_name;
@@ -112,66 +95,75 @@ void *mysql_fill_sam_passwd( MYSQL_ROW *row ) {
 	return (void*)user;
 }
 
-struct sam_passwd *mysql_getsampwent(void *vp) {
+struct sam_passwd *mysql_getsampwent(void *vp)
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
 	return (struct sam_passwd*)mysql_fill_sam_passwd( mysql_getpwent(vp) );
 }
 
-struct sam_passwd *mysql_getsampwrid(uint32 rid) {
+struct sam_passwd *mysql_getsampwrid(uint32 rid)
+{
 	fstring where;
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
 	slprintf( where, sizeof(where), "user_rid=%lu", (long unsigned)rid);
 
-	return (struct sam_passwd *)mysql_fetch_passwd( FILL_SAM, where );
+	return (struct sam_passwd *)mysql_fetch_passwd( mysql_fill_sam_passwd, where );
 }
 
-struct sam_passwd *mysql_getsampwuid(uid_t uid) {
+struct sam_passwd *mysql_getsampwuid(uid_t uid)
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
-	return (struct sam_passwd *)mysql_getpwuid( FILL_SAM, uid );
+	return (struct sam_passwd *)mysql_getpwuid( mysql_fill_sam_passwd, uid );
 }
 
-struct sam_passwd *mysql_getsampwntnam(const char *nt_name) {
+struct sam_passwd *mysql_getsampwntnam(const char *nt_name)
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
-	return (struct sam_passwd *)mysql_getpwnam( FILL_SAM, "nt_name", nt_name);
+	return (struct sam_passwd *)mysql_getpwnam( mysql_fill_sam_passwd, "nt_name", nt_name);
 }
 
-struct sam_disp_info *mysql_getsamdispntnam(const char *nt_name) {
+struct sam_disp_info *mysql_getsamdispntnam(const char *nt_name)
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
 	return pwdb_sam_to_dispinfo(mysql_getsampwntnam(nt_name));
 }
 
-struct sam_disp_info *mysql_getsamdisprid(uint32 rid) {
+struct sam_disp_info *mysql_getsamdisprid(uint32 rid)
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
 	return pwdb_sam_to_dispinfo(mysql_getsampwrid(rid));
 }
 
-struct sam_disp_info *mysql_getsamdispent(void *vp) {
+struct sam_disp_info *mysql_getsamdispent(void *vp)
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
 	return pwdb_sam_to_dispinfo(mysql_getsampwent(vp));
 }
 
-static BOOL mysql_mod_sam( MYSQL *handle, struct sam_passwd *sam, BOOL override ) {
+static BOOL mysql_mod_sam( MYSQL *handle, struct sam_passwd *sam, BOOL override )
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
 	return True;
 }
 
-BOOL mysql_add_sampwd_entry(struct sam_passwd *sam) {
+BOOL mysql_add_sampwd_entry(struct sam_passwd *sam)
+{
 	MYSQL handle;
 	struct smb_passwd *smb;
 
@@ -208,7 +200,8 @@ BOOL mysql_add_sampwd_entry(struct sam_passwd *sam) {
 	return True;
 }
 
-BOOL mysql_mod_sampwd_entry(struct sam_passwd *sam, BOOL override) {
+BOOL mysql_mod_sampwd_entry(struct sam_passwd *sam, BOOL override)
+{
 	MYSQL handle;
 	struct smb_passwd *smb;
 

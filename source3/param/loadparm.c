@@ -231,7 +231,7 @@ typedef struct
   BOOL bNTPipeSupport;
   BOOL bStatCache;
   BOOL bKernelOplocks;
-#if defined(WITH_MYSQL) || defined(WITH_MYSQLSAM)
+#if defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
   char *sMysqlDatabase;
   char *sMysqlTable;
   char *sMysqlUser;
@@ -754,14 +754,14 @@ static struct parm_struct parm_table[] =
   {"ldap passwd file", P_STRING,  P_GLOBAL, &Globals.szLdapPasswdFile,  NULL,   NULL,  0},
 #endif /* WITH_LDAP */
 
-#if defined(WITH_MYSQL) || defined(WITH_MYSQLSAM)
+#if defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
   {"MySQL Options", P_SEP, P_SEPARATOR},
   {"mysql host",	P_STRING, P_GLOBAL, &Globals.sMysqlHost,        NULL,   NULL,  0},
   {"mysql user",	P_STRING, P_GLOBAL, &Globals.sMysqlUser,        NULL,   NULL,  0},
   {"mysql pass file",	P_STRING, P_GLOBAL, &Globals.sMysqlPassFile,    NULL,   NULL,  0},
   {"mysql database",	P_STRING, P_GLOBAL, &Globals.sMysqlDatabase,    NULL,   NULL,  0},
   {"mysql table",	P_STRING, P_GLOBAL, &Globals.sMysqlTable,       NULL,   NULL,  0},
-#endif /* WITH_MYSQL */
+#endif /* MYSQL */
 
   {"Miscellaneous Options", P_SEP, P_SEPARATOR},
 
@@ -986,7 +986,7 @@ static void init_globals(void)
    */
   Globals.bKernelOplocks = True;
 
-#if defined(WITH_MYSQL) || defined(WITH_MYSQLSAM)
+#if defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
   string_set(&Globals.sMysqlHost,"localhost");
   string_set(&Globals.sMysqlUser,"root");
   string_set(&Globals.sMysqlPassFile,NULL);
@@ -1352,7 +1352,7 @@ FN_LOCAL_INTEGER(lp_printing,iPrinting)
 
 FN_LOCAL_CHAR(lp_magicchar,magic_char)
 
-#if defined(WITH_MYSQL) || defined(WITH_MYSQLSAM)
+#if defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
 FN_GLOBAL_STRING(lp_mysql_host,&Globals.sMysqlHost)
 FN_GLOBAL_STRING(lp_mysql_user,&Globals.sMysqlUser)
 FN_GLOBAL_STRING(lp_mysql_passfile,&Globals.sMysqlPassFile)

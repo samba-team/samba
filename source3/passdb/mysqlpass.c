@@ -21,10 +21,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if defined(WITH_MYSQL) || defined(WITH_MYSQLSAM)
+#if defined(HAVE_MYSQL_H) || defined(WITH_MYSQLSAM)
 
 #include "includes.h"
-#include <mysql.h>
 
 extern int DEBUGLEVEL;
 
@@ -37,25 +36,6 @@ extern int DEBUGLEVEL;
 #define FLAGS(row)       ((*row)[6])
 #define CHANGE_TIME(row) ((*row)[7])
 
-void *mysql_fill_smb_passwd( MYSQL_ROW *row );
-
-typedef void *(*mysql_fill_func)( MYSQL_ROW * );
-#define FILL_SMB mysql_fill_smb_passwd
-
-void *mysql_startpwent(BOOL update);
-void mysql_endpwent(void *vp);
-SMB_BIG_UINT mysql_getpwpos(void *vp);
-BOOL mysql_setpwpos(void *vp, SMB_BIG_UINT pos);
-void *mysql_fill_smb_passwd( MYSQL_ROW *row );
-MYSQL_ROW *mysql_getpwent(void *vp);
-void *mysql_fetch_passwd( mysql_fill_func filler, char *where );
-void *mysql_getpwuid( mysql_fill_func filler, uid_t uid );
-void *mysql_getpwnam( mysql_fill_func filler, char *field, const char *name );
-int mysql_db_lock_connect( MYSQL *handle );
-BOOL mysql_add_smb( MYSQL *handle, struct smb_passwd *smb );
-BOOL mysql_mod_smb( MYSQL *handle, struct smb_passwd *smb, BOOL override );
-BOOL mysql_del_smb( MYSQL *handle, char *unix_name );
-
 static fstring mysql_table = { 0 };
 
 struct mysql_struct {
@@ -65,7 +45,8 @@ struct mysql_struct {
 };
 typedef struct mysql_struct mysql_ctrl;
 
-static char *mysql_retrieve_password(char *passfile) {
+static char *mysql_retrieve_password(char *passfile)
+{
 	static fstring pass;
 	static time_t last_checked = (time_t)0;
 	static char pass_chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_-+=|~`\\{}[]:;\"'?/>.<,";
@@ -113,7 +94,8 @@ static char *mysql_retrieve_password(char *passfile) {
 	return pass;
 }
 
-static int mysql_db_connect( MYSQL *handle ) {
+static int mysql_db_connect( MYSQL *handle )
+{
 	char *password;
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
@@ -136,7 +118,8 @@ static int mysql_db_connect( MYSQL *handle ) {
 	return 0;
 }
 
-static int mysql_lock_table( MYSQL *handle, BOOL write_access ) {
+static int mysql_lock_table( MYSQL *handle, BOOL write_access )
+{
 	fstring query;
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
@@ -151,7 +134,8 @@ static int mysql_lock_table( MYSQL *handle, BOOL write_access ) {
 	return 0;
 }
 
-int mysql_db_lock_connect( MYSQL *handle ) {
+int mysql_db_lock_connect( MYSQL *handle )
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
@@ -167,7 +151,8 @@ int mysql_db_lock_connect( MYSQL *handle ) {
 	return 0;
 }
 
-static MYSQL_RES *mysql_select_results( MYSQL *handle, char *selection ) {
+static MYSQL_RES *mysql_select_results( MYSQL *handle, char *selection )
+{
 	MYSQL_RES *result;
 	pstring query;
 	int query_length;
@@ -220,7 +205,8 @@ static MYSQL_RES *mysql_select_results( MYSQL *handle, char *selection ) {
 	return result;
 }
 
-void *mysql_startpwent( BOOL update ) {
+void *mysql_startpwent( BOOL update )
+{
 	mysql_ctrl *mysql;
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
@@ -254,7 +240,8 @@ void *mysql_startpwent( BOOL update ) {
 	return (void*)mysql;
 }
 
-void mysql_endpwent( void *ptr ) {
+void mysql_endpwent( void *ptr )
+{
 	mysql_ctrl *handle;
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
@@ -267,24 +254,27 @@ void mysql_endpwent( void *ptr ) {
 	free( handle );
 }
 
-SMB_BIG_UINT mysql_getpwpos(void *vp) {
+SMB_BIG_UINT mysql_getpwpos(void *vp)
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
 	return ((mysql_ctrl *)vp)->current_row;
 }
 
-BOOL mysql_setpwpos(void *vp, SMB_BIG_UINT pos) {
+BOOL mysql_setpwpos(void *vp, SMB_BIG_UINT pos)
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
 	mysql_data_seek( ((mysql_ctrl*)vp)->result, (uint)pos );
-((mysql_ctrl *)vp)->current_row=(uint)pos;
+	((mysql_ctrl *)vp)->current_row=(uint)pos;
 
 	return True;
 }
 
-static void quote_hash( char *target, unsigned char *passwd ) {
+static void quote_hash( char *target, unsigned char *passwd )
+{
         char hex[] = "0123456789ABCDEF";
 	int i;
 
@@ -303,7 +293,8 @@ static void quote_hash( char *target, unsigned char *passwd ) {
 	}
 }
 
-static unsigned char *decode_hash( char *hash, unsigned char *buffer ) {
+static unsigned char *decode_hash( char *hash, unsigned char *buffer )
+{
 	char hex[] = "0123456789ABCDEF";
 	int pos, v1, v2;
 
@@ -328,7 +319,8 @@ static unsigned char *decode_hash( char *hash, unsigned char *buffer ) {
 	return buffer;
 }
 
-void *mysql_fill_smb_passwd( MYSQL_ROW *row ) {
+void *mysql_fill_smb_passwd( MYSQL_ROW *row )
+{
 	static struct smb_passwd pw_buf;
 	static fstring unix_name;
 	static fstring nt_name;
@@ -373,7 +365,8 @@ void *mysql_fill_smb_passwd( MYSQL_ROW *row ) {
 	return (void*)&pw_buf;
 }
 
-MYSQL_ROW *mysql_getpwent(void *vp) {
+MYSQL_ROW *mysql_getpwent(void *vp)
+{
 	mysql_ctrl *mysql;
 	static MYSQL_ROW row;
 
@@ -391,14 +384,16 @@ MYSQL_ROW *mysql_getpwent(void *vp) {
 	return &row;
 }
 
-struct smb_passwd *mysql_getsmbpwent(void *vp) {
+struct smb_passwd *mysql_getsmbpwent(void *vp)
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
 	return (struct smb_passwd*)mysql_fill_smb_passwd( mysql_getpwent(vp) );
 }
 
-void *mysql_fetch_passwd( mysql_fill_func filler, char *where ) {
+void *mysql_fetch_passwd( mysql_fill_func filler, char *where )
+{
 	void *retval;
 	MYSQL handle;
 	MYSQL_RES *result;
@@ -447,7 +442,8 @@ void *mysql_fetch_passwd( mysql_fill_func filler, char *where ) {
 	return retval;
 }
 
-void *mysql_getpwuid(mysql_fill_func filler, uid_t uid) {
+void *mysql_getpwuid(mysql_fill_func filler, uid_t uid)
+{
 	fstring where;
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
@@ -457,14 +453,16 @@ void *mysql_getpwuid(mysql_fill_func filler, uid_t uid) {
 	return mysql_fetch_passwd(filler,where);
 }
 
-struct smb_passwd *mysql_getsmbpwuid(uid_t uid) {
+struct smb_passwd *mysql_getsmbpwuid(uid_t uid)
+{
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
-	return (struct smb_passwd *)mysql_getpwuid( FILL_SMB, uid );
+	return (struct smb_passwd *)mysql_getpwuid( mysql_fill_smb_passwd, uid );
 }
 
-void *mysql_getpwnam(mysql_fill_func filler, char *field, const char *name) {
+void *mysql_getpwnam(mysql_fill_func filler, char *field, const char *name)
+{
 	fstring where;
 	char format[] = "%s='%s'";
 
@@ -495,13 +493,15 @@ void *mysql_getpwnam(mysql_fill_func filler, char *field, const char *name) {
 	return mysql_fetch_passwd( filler, where );
 }
 
-struct smb_passwd *mysql_getsmbpwnam(const char *unix_name) {
+struct smb_passwd *mysql_getsmbpwnam(const char *unix_name)
+{
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
-	return mysql_getpwnam( FILL_SMB, "unix_name", unix_name );
+	return mysql_getpwnam( mysql_fill_smb_passwd, "unix_name", unix_name );
 }
 
-static void quote_string(char *target, char *string) {
+static void quote_string(char *target, char *string)
+{
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
 
 	if ( string == NULL ) {
@@ -514,7 +514,8 @@ static void quote_string(char *target, char *string) {
 	}
 }
 
-BOOL mysql_del_smb( MYSQL *handle, char *unix_name ) {
+BOOL mysql_del_smb( MYSQL *handle, char *unix_name )
+{
 	pstring query;
 	char format[] = "delete from %s where unix_name='%s'";
 
@@ -534,7 +535,8 @@ BOOL mysql_del_smb( MYSQL *handle, char *unix_name ) {
 	return True;
 }
 
-BOOL mysql_add_smb( MYSQL *handle, struct smb_passwd *smb ) {
+BOOL mysql_add_smb( MYSQL *handle, struct smb_passwd *smb )
+{
 	pstring query;
 	char format[] = "insert into %s (unix_name, unix_uid) values ( '%s', %lu )";
 
@@ -555,7 +557,8 @@ BOOL mysql_add_smb( MYSQL *handle, struct smb_passwd *smb ) {
 	return True;
 }
 
-BOOL mysql_mod_smb( MYSQL *handle, struct smb_passwd *smb, BOOL override ) {
+BOOL mysql_mod_smb( MYSQL *handle, struct smb_passwd *smb, BOOL override )
+{
 	pstring query;
 	fstring smb_passwd;
 	fstring smb_nt_passwd;
@@ -595,7 +598,8 @@ BOOL mysql_mod_smb( MYSQL *handle, struct smb_passwd *smb, BOOL override ) {
 	return True;
 }
 
-BOOL mysql_add_smbpwd_entry(struct smb_passwd *smb) {
+BOOL mysql_add_smbpwd_entry(struct smb_passwd *smb)
+{
 	MYSQL handle;
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));
@@ -623,7 +627,8 @@ BOOL mysql_add_smbpwd_entry(struct smb_passwd *smb) {
 	return True;
 }
 
-BOOL mysql_mod_smbpwd_entry(struct smb_passwd *smb, BOOL override) {
+BOOL mysql_mod_smbpwd_entry(struct smb_passwd *smb, BOOL override)
+{
 	MYSQL handle;
 
 	DEBUG(5,("%s\n",FUNCTION_MACRO));

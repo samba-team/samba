@@ -70,7 +70,7 @@ BOOL initialise_password_db(void)
   pwdb_ops =  nisplus_initialise_password_db();
 #elif defined(WITH_LDAP)
   pwdb_ops = ldap_initialise_password_db();
-#elif defined(WITH_MYSQL) || defined(WITH_MYSQLSAM)
+#elif defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
   pwdb_ops = mysql_initialise_password_db();
 #elif defined(USE_SMBPASS_DB)
   pwdb_ops = file_initialise_password_db();
@@ -277,6 +277,11 @@ struct smb_passwd *pwdb_smb_map_names(struct smb_passwd *smb)
 	    smb->unix_uid == (uid_t)-1 && smb->user_rid == 0xffffffff)
 	{
 		return NULL;
+	}
+	if (smb->unix_name != NULL && smb->nt_name != NULL &&
+	    smb->unix_uid != (uid_t)-1 && smb->user_rid != 0xffffffff)
+	{
+		return smb;
 	}
 
 	if (!found && smb->unix_name != NULL)
