@@ -1943,11 +1943,16 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAMR_R_QUERY_USERGROUPS *r_u)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
+	struct passwd *passwd;
 	DOM_SID  sid;
+	DOM_SID *sids;
 	DOM_GID *gids = NULL;
 	int num_groups = 0;
+	gid_t *unix_gids;
+	int i, num_gids, num_sids;
 	uint32 acc_granted;
 	BOOL ret;
+	NTSTATUS result;
 
 	/*
 	 * from the SID in the request:
@@ -1986,18 +1991,52 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	
-	if(!get_domain_user_groups(p->mem_ctx, &num_groups, &gids, sam_pass)) {
+
+	passwd = getpwnam_alloc(pdb_get_username(sam_pass));
+	if (passwd == NULL) {
 		pdb_free_sam(&sam_pass);
-		return NT_STATUS_NO_SUCH_GROUP;
+		return NT_STATUS_NO_SUCH_USER;
 	}
+
+	sids = NULL;
+	num_sids = 0;
+
+	become_root();
+	result = pdb_enum_group_memberships(pdb_get_username(sam_pass),
+					    passwd->pw_gid,
+					    &sids, &unix_gids, &num_groups);
+	unbecome_root();
+
+	pdb_free_sam(&sam_pass);
+	passwd_free(&passwd);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	SAFE_FREE(unix_gids);
+
+	gids = NULL;
+	num_gids = 0;
+
+	for (i=0; i<num_groups; i++) {
+		uint32 rid;
+
+		if (!sid_peek_check_rid(get_global_sam_sid(),
+					&(sids[i]), &rid))
+			continue;
+
+		gids = talloc_realloc(p->mem_ctx, gids,
+				      sizeof(*gids) * (num_gids+1));
+		gids[num_gids].attr=7;
+		gids[num_gids].g_rid = rid;
+		num_gids += 1;
+	}
+	SAFE_FREE(sids);
 	
 	/* construct the response.  lkclXXXX: gids are not copied! */
 	init_samr_r_query_usergroups(r_u, num_groups, gids, r_u->status);
 	
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
-	
-	pdb_free_sam(&sam_pass);
 	
 	return r_u->status;
 }

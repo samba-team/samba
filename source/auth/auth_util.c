@@ -657,47 +657,27 @@ static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
 
 	*n_groups = 0;
 	*groups   = NULL;
+
+	if (strchr(username, *lp_winbind_separator()) == NULL) {
+		NTSTATUS result;
+
+		become_root();
+		result = pdb_enum_group_memberships(username, gid, groups,
+						    unix_groups, n_groups);
+		unbecome_root();
+		return result;
+	}
+
+	/* We have the separator, this must be winbind */
 	
-	/* Try winbind first */
+	n_unix_groups = winbind_getgroups( username, unix_groups );
 
-	if ( strchr(username, *lp_winbind_separator()) ) {
-		n_unix_groups = winbind_getgroups( username, unix_groups );
-
-		DEBUG(10,("get_user_groups: winbind_getgroups(%s): result = %s\n", username, 
-			  n_unix_groups == -1 ? "FAIL" : "SUCCESS"));
+	DEBUG(10,("get_user_groups: winbind_getgroups(%s): result = %s\n",
+		  username,  n_unix_groups == -1 ? "FAIL" : "SUCCESS"));
 			  
-		if ( n_unix_groups == -1 )
-			return NT_STATUS_NO_SUCH_USER; /* what should this return value be? */	
-	}
-	else {
-		/* fallback to getgrouplist() */
-		
-		n_unix_groups = groups_max();
-		
-		if ((*unix_groups = malloc( sizeof(gid_t) * n_unix_groups ) ) == NULL) {
-			DEBUG(0, ("get_user_groups: Out of memory allocating unix group list\n"));
-			return NT_STATUS_NO_MEMORY;
-		}
-	
-		if (sys_getgrouplist(username, gid, *unix_groups, &n_unix_groups) == -1) {
-		
-			gid_t *groups_tmp;
-			
-			groups_tmp = Realloc(*unix_groups, sizeof(gid_t) * n_unix_groups);
-			
-			if (!groups_tmp) {
-				SAFE_FREE(*unix_groups);
-				return NT_STATUS_NO_MEMORY;
-			}
-			*unix_groups = groups_tmp;
-
-			if (sys_getgrouplist(username, gid, *unix_groups, &n_unix_groups) == -1) {
-				DEBUG(0, ("get_user_groups: failed to get the unix group list\n"));
-				SAFE_FREE(*unix_groups);
-				return NT_STATUS_NO_SUCH_USER; /* what should this return value be? */
-			}
-		}
-	}
+	if ( n_unix_groups == -1 )
+		return NT_STATUS_NO_SUCH_USER; /* what should this return
+						* value be? */	
 
 	debug_unix_user_token(DBGC_CLASS, 5, uid, gid, n_unix_groups, *unix_groups);
 	

@@ -1741,13 +1741,15 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	int count=0;
 	SAM_ACCOUNT *sampw = NULL;
 	BOOL ret = False;
-        DOM_GID *gids = NULL;
-        int num_groups = 0;
+	DOM_SID *sids;
+	gid_t *gids;
+	int num_groups;
 	int i;
 	fstring grp_domain;
 	fstring grp_name;
 	enum SID_NAME_USE grp_type;
-	DOM_SID sid, dom_sid;
+	struct passwd *passwd;
+	NTSTATUS result;
 
 	*rparam_len = 8;
 	*rparam = REALLOC(*rparam,*rparam_len);
@@ -1778,6 +1780,11 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 
 	/* Lookup the user information; This should only be one of 
 	   our accounts (not remote domains) */
+
+	passwd = getpwnam_alloc(UserName);
+
+	if (passwd == NULL)
+		return False;
 	   
 	pdb_init_sam( &sampw );
 	
@@ -1786,35 +1793,26 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	if ( !pdb_getsampwnam(sampw, UserName) )
 		goto out;
 
-	/* this next set of code is horribly inefficient, but since 
-	   it is rarely called, I'm going to leave it like this since 
-	   it easier to follow      --jerry                          */
-	   
-	/* get the list of group SIDs */
-	
-	if ( !get_domain_user_groups(conn->mem_ctx, &num_groups, &gids, sampw) ) {
-		DEBUG(1,("api_NetUserGetGroups: get_domain_user_groups() failed!\n"));
-		goto out;
-        }
+	sids = NULL;
+	num_groups = 0;
 
-	/* convert to names (we don't support universal groups so the domain
-	   can only be ours) */
-	
-	sid_copy( &dom_sid, get_global_sam_sid() );
+	result = pdb_enum_group_memberships(pdb_get_username(sampw),
+					    passwd->pw_gid,
+					    &sids, &gids, &num_groups);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto out;
+
 	for (i=0; i<num_groups; i++) {
 	
-		/* make the DOM_GID into a DOM_SID and then lookup 
-		   the name */
-		
-		sid_copy( &sid, &dom_sid );
-		sid_append_rid( &sid, gids[i].g_rid );
-		
-		if ( lookup_sid(&sid, grp_domain, grp_name, &grp_type) ) {
+		if ( lookup_sid(&sids[i], grp_domain, grp_name, &grp_type) ) {
 			pstrcpy(p, grp_name); 
 			p += 21; 
 			count++;
 		}
 	}
+
+	SAFE_FREE(sids);
 	
 	*rdata_len = PTR_DIFF(p,*rdata);
 
@@ -1827,6 +1825,7 @@ out:
 	unbecome_root();				/* END ROOT BLOCK */
 
 	pdb_free_sam( &sampw );
+	passwd_free(&passwd);
 
 	return ret;
 }
