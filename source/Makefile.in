@@ -211,7 +211,8 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				 printing/print_cups.o printing/print_generic.o \
 				printing/lpq_parse.o printing/load.o
 
-PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o
+PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o printing/notify.o \
+	printing/printing_db.o
 
 MSDFS_OBJ = msdfs/msdfs.o 
 
@@ -257,8 +258,8 @@ MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
 STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
-SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+SMBCONTROL_OBJ = utils/smbcontrol.o printing/notify.o printing/printing_db.o \
+	$(LOCKING_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -281,7 +282,7 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 				rpc_client/cli_login.o rpc_client/cli_netlogon.o \
 				rpcclient/display_sec.o libsmb/cli_spoolss_notify.o \
 				rpcclient/cmd_ds.o
- 
+
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 				$(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 				$(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ) \
