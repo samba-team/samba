@@ -320,6 +320,7 @@ VFS_DEFAULT_QUOTA_OBJ = modules/vfs_default_quota.o
 VFS_READONLY_OBJ = modules/vfs_readonly.o modules/getdate.o
 VFS_CAP_OBJ = modules/vfs_cap.o
 VFS_EXPAND_MSDFS_OBJ = modules/vfs_expand_msdfs.o
+VFS_SHADOW_COPY_OBJ = modules/vfs_shadow_copy.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -1167,6 +1168,11 @@ bin/default_quota.@SHLIBEXT@: $(VFS_DEFAULT_QUOTA_OBJ:.o=.@PICSUFFIX@)
 bin/readonly.@SHLIBEXT@: $(VFS_READONLY_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_READONLY_OBJ:.o=.@PICSUFFIX@) \
+		@SONAMEFLAG@`basename $@`
+
+bin/shadow_copy.@SHLIBEXT@: $(VFS_SHADOW_COPY_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_SHADOW_COPY_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
 bin/cap.@SHLIBEXT@: $(VFS_CAP_OBJ:.o=.@PICSUFFIX@)
