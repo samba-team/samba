@@ -298,8 +298,9 @@ gss_verify_mic_internal
 			       type);
 	break;
     case KEYTYPE_ARCFOUR :
-	*minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
-	ret = GSS_S_FAILURE;
+	ret = _gssapi_verify_mic_arcfour (minor_status, context_handle,
+					  message_buffer, token_buffer,
+					  qop_state, type, key);
 	break;
     default :
 #ifdef HAVE_GSSAPI_CFX
