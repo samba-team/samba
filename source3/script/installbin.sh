@@ -11,7 +11,7 @@ shift
 shift
 shift
 
-for d in $BASEDIR $BINDIR $LIBDIR $VARDIR; do
+for d in $BASEDIR $BINDIR $LIBDIR $VARDIR $BASEDIR/private; do
 if [ ! -d $d ]; then
 mkdir $d
 if [ ! -d $d ]; then

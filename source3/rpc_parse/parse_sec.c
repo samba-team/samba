@@ -416,7 +416,7 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 	}
 
  done:
-	DEBUG(10, ("sec_equal(): secdescs are identical\n"));
+	DEBUG(10, ("sec_desc_equal(): secdescs are identical\n"));
 	return True;
 }
 

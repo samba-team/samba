@@ -2740,23 +2740,31 @@ static uint32 construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, fst
  ********************************************************************/
 static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
 {
-	pstring temp_driverpath;
-	pstring temp_datafile;
-	pstring temp_configfile;
+	pstring temp;
 
 	info->version=driver.info_3->cversion;
 
 	init_unistr( &info->name, driver.info_3->name );
 	init_unistr( &info->architecture, driver.info_3->environment );
 
-	snprintf(temp_driverpath, sizeof(temp_driverpath)-1, "\\\\%s%s", servername, driver.info_3->driverpath);
-	init_unistr( &info->driverpath, temp_driverpath );
 
-	snprintf(temp_datafile, sizeof(temp_datafile)-1, "\\\\%s%s", servername, driver.info_3->datafile);
-	init_unistr( &info->datafile, temp_datafile );
+    if (strlen(driver.info_3->driverpath)) {
+		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);
+		init_unistr( &info->driverpath, temp );
+    } else
+        init_unistr( &info->driverpath, "" );
 
-	snprintf(temp_configfile, sizeof(temp_configfile)-1, "\\\\%s%s", servername, driver.info_3->configfile);
-	init_unistr( &info->configfile, temp_configfile );	
+	if (strlen(driver.info_3->datafile)) {
+		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		init_unistr( &info->datafile, temp );
+	} else
+		init_unistr( &info->datafile, "" );
+	
+	if (strlen(driver.info_3->configfile)) {
+		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		init_unistr( &info->configfile, temp );	
+	} else
+		init_unistr( &info->configfile, "" );
 }
 
 /********************************************************************
@@ -2830,10 +2838,7 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *ser
  ********************************************************************/
 static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
 {
-	pstring temp_driverpath;
-	pstring temp_datafile;
-	pstring temp_configfile;
-	pstring temp_helpfile;
+	pstring temp;
 
 	ZERO_STRUCTP(info);
 
@@ -2842,17 +2847,29 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->name, driver.info_3->name );	
 	init_unistr( &info->architecture, driver.info_3->environment );
 
-	snprintf(temp_driverpath, sizeof(temp_driverpath)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
-	init_unistr( &info->driverpath, temp_driverpath );
+    if (strlen(driver.info_3->driverpath)) {
+        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
+        init_unistr( &info->driverpath, temp );
+    } else
+        init_unistr( &info->driverpath, "" );
+    
+    if (strlen(driver.info_3->datafile)) {
+        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+        init_unistr( &info->datafile, temp );
+    } else
+        init_unistr( &info->datafile, "" );
 
-	snprintf(temp_datafile, sizeof(temp_datafile)-1, "\\\\%s%s", servername, driver.info_3->datafile);
-	init_unistr( &info->datafile, temp_datafile );
+    if (strlen(driver.info_3->configfile)) {
+        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+        init_unistr( &info->configfile, temp );	
+    } else
+        init_unistr( &info->configfile, "" );
 
-	snprintf(temp_configfile, sizeof(temp_configfile)-1, "\\\\%s%s", servername, driver.info_3->configfile);
-	init_unistr( &info->configfile, temp_configfile );	
-
-	snprintf(temp_helpfile, sizeof(temp_helpfile)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
-	init_unistr( &info->helpfile, temp_helpfile );
+    if (strlen(driver.info_3->helpfile)) {
+        snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+        init_unistr( &info->helpfile, temp );
+    } else
+        init_unistr( &info->helpfile, "" );
 
 	init_unistr( &info->monitorname, driver.info_3->monitorname );
 	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
@@ -2898,10 +2915,7 @@ static uint32 construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
 
 static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_INFO_LEVEL driver, fstring servername)
 {
-	pstring temp_driverpath;
-	pstring temp_datafile;
-	pstring temp_configfile;
-	pstring temp_helpfile;
+	pstring temp;
 	fstring nullstr;
 
 	ZERO_STRUCTP(info);
@@ -2912,18 +2926,30 @@ static void fill_printer_driver_info_6(DRIVER_INFO_6 *info, NT_PRINTER_DRIVER_IN
 	init_unistr( &info->name, driver.info_3->name );	
 	init_unistr( &info->architecture, driver.info_3->environment );
 
-	snprintf(temp_driverpath, sizeof(temp_driverpath)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
-	init_unistr( &info->driverpath, temp_driverpath );
+	if (strlen(driver.info_3->driverpath)) {
+		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->driverpath);		
+		init_unistr( &info->driverpath, temp );
+	} else
+		init_unistr( &info->driverpath, "" );
 
-	snprintf(temp_datafile, sizeof(temp_datafile)-1, "\\\\%s%s", servername, driver.info_3->datafile);
-	init_unistr( &info->datafile, temp_datafile );
+	if (strlen(driver.info_3->datafile)) {
+		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->datafile);
+		init_unistr( &info->datafile, temp );
+	} else
+		init_unistr( &info->datafile, "" );
 
-	snprintf(temp_configfile, sizeof(temp_configfile)-1, "\\\\%s%s", servername, driver.info_3->configfile);
-	init_unistr( &info->configfile, temp_configfile );	
+	if (strlen(driver.info_3->configfile)) {
+		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->configfile);
+		init_unistr( &info->configfile, temp );	
+	} else
+		init_unistr( &info->configfile, "" );
 
-	snprintf(temp_helpfile, sizeof(temp_helpfile)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
-	init_unistr( &info->helpfile, temp_helpfile );
-
+	if (strlen(driver.info_3->helpfile)) {
+		snprintf(temp, sizeof(temp)-1, "\\\\%s%s", servername, driver.info_3->helpfile);
+		init_unistr( &info->helpfile, temp );
+	} else
+		init_unistr( &info->helpfile, "" );
+	
 	init_unistr( &info->monitorname, driver.info_3->monitorname );
 	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
 
@@ -3547,8 +3573,8 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 
 	unlink(tmp_file);
 
-	/* Convert script args to unix-codepage */
-	dos_to_unix(command, True);
+    /* Convert script args to unix-codepage */
+    dos_to_unix(command, True);
 	DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
 	ret = smbrun(command, tmp_file, False);
 	DEBUGADD(10,("returned [%d]\n", ret));
@@ -3559,7 +3585,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	}
 
 	numlines = 0;
-	/* Get lines and convert them back to dos-codepage */
+    /* Get lines and convert them back to dos-codepage */
 	qlines = file_lines_load(tmp_file, &numlines, True);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 	DEBUGADD(10,("Unlinking script output file [%s]\n", tmp_file));
