@@ -141,9 +141,6 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 		return status;
 	}
 
-	/* we need to be able to send broadcasts out */
-	socket_set_option(iface->nbtsock->sock, "SO_BROADCAST", "1");
-
 	nbt_set_incoming_handler(iface->nbtsock, nbtd_request_handler, iface);
 
 	if (strcmp(netmask, "0.0.0.0") == 0) {

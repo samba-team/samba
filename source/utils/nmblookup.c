@@ -176,6 +176,7 @@ static void process_one(const char *name)
 	enum nbt_name_type node_type = NBT_NAME_CLIENT;
 	char *node_name, *p;
 	struct nbt_name_socket *nbtsock;
+	NTSTATUS status;
 	
 	if (options.find_master) {
 		node_type = NBT_NAME_MASTER;
@@ -196,7 +197,6 @@ static void process_one(const char *name)
 	nbtsock = nbt_name_socket_init(tmp_ctx, NULL);
 
 	if (options.root_port) {
-		NTSTATUS status;
 		status = socket_listen(nbtsock->sock, "0.0.0.0", NBT_NAME_SERVICE_PORT, 0, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Failed to bind to local port 137 - %s\n", nt_errstr(status));
@@ -211,16 +211,20 @@ static void process_one(const char *name)
 	}
 
 	if (options.broadcast_address) {
-		do_node_query(nbtsock, options.broadcast_address, node_name, node_type, True);
+		status = do_node_query(nbtsock, options.broadcast_address, node_name, node_type, True);
 	} else if (options.unicast_address) {
-		do_node_query(nbtsock, options.unicast_address, node_name, node_type, False);
+		status = do_node_query(nbtsock, options.unicast_address, node_name, node_type, False);
 	} else {
 		int i, num_interfaces = iface_count();
 		for (i=0;i<num_interfaces;i++) {
 			const char *bcast = sys_inet_ntoa(*iface_n_bcast(i));
-			NTSTATUS status = do_node_query(nbtsock, bcast, node_name, node_type, True);
+			status = do_node_query(nbtsock, bcast, node_name, node_type, True);
 			if (NT_STATUS_IS_OK(status)) break;
 		}
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Lookup failed - %s\n", nt_errstr(status));
 	}
 
 	talloc_free(tmp_ctx);
