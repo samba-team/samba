@@ -14,7 +14,10 @@
 @syncodeindex pg cp
 @c %**end of header
 
-@include version.texi
+@c not yet @include version.texi
+@set UPDATED $Date$
+@set EDITION 0.0
+@set VERSION 0.1c
 
 @ifinfo
 @dircategory Heimdal
@@ -27,7 +30,7 @@
 @titlepage
 @title Heimdal
 @subtitle Kerberos 5 from KTH
-@subtitle Edition 0.0, for version @value{VERSION}
+@subtitle Edition @value{EDITION}, for version @value{VERSION}
 @subtitle 1999
 @author Johan Danielsson
 @author Assar Westerlund
@@ -38,7 +41,7 @@
 @def@copyrightend{}
 @page
 @copyrightstart
-Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan 
+Copyright (c) 1997-1999 Kungliga Tekniska Högskolan 
 (Royal Institute of Technology, Stockholm, Sweden).
 All rights reserved.
 
@@ -53,12 +56,7 @@ are met:
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
 
-3. All advertising materials mentioning features or use of this software
-   must display the following acknowledgement:
-     This product includes software developed by Kungliga Tekniska
-     Högskolan and its contributors.
-
-4. Neither the name of the Institute nor the names of its contributors
+3. Neither the name of the Institute nor the names of its contributors
    may be used to endorse or promote products derived from this software
    without specific prior written permission.
 
