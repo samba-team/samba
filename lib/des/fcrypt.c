@@ -547,7 +547,6 @@ static int body();
 static int des_set_key();
 #endif
 
-inline
 static int des_set_key(key, schedule)
 des_cblock (*key);
 des_key_schedule schedule;
