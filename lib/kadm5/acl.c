@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -66,7 +66,10 @@ _kadm5_string_to_privs(const char *s, u_int32_t* privs)
 kadm5_ret_t
 _kadm5_privs_to_string(u_int32_t privs, char *string, size_t len)
 {
-    unparse_flags(privs, acl_units + 1, string, len);
+    if(privs == 0)
+	strcpy_truncate(string, "none", len);
+    else
+	unparse_flags(privs, acl_units + 1, string, len);
     return 0;
 }
 
