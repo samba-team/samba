@@ -448,7 +448,7 @@ doit (krb5_keytab keytab, int port)
     maxfd = -1;
     FD_ZERO(&real_fdset);
     for (i = 0; i < n; ++i) {
-	int sa_size;
+	int sa_size = sizeof(__ss);
 
 	krb5_addr2sockaddr (context, &addrs.val[i], sa, &sa_size, port);
 	
