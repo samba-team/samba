@@ -136,8 +136,10 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 
 	/*
 	  the schannel session key is now in creds.session_key
-	*/
 
+	  we no longer need the netlogon pipe open
+	*/
+	dcerpc_pipe_close(p2);
 
 	/*
 	  step 4 - perform a bind with security type schannel
