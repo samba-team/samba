@@ -1442,8 +1442,8 @@ struct passdb_ops *nisplus_initialize_password_db(void);
 /*The following definitions come from  passdb/pass_check.c  */
 
 void dfs_unlogin(void);
-BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
-		BOOL (*fn)(char *, char *));
+BOOL pass_check(char *user, char *password, int pwlen, struct passwd *pwd,
+		BOOL (*fn) (char *, char *));
 
 /*The following definitions come from  passdb/passdb.c  */
 
@@ -2865,22 +2865,24 @@ void process_blocking_lock_queue(time_t t);
 
 /*The following definitions come from  smbd/chgpasswd.c  */
 
-BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
-BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
-BOOL check_lanman_password(char *user, uchar *pass1, 
-                           uchar *pass2, struct smb_passwd **psmbpw);
-BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2);
+BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
+BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root);
+BOOL check_lanman_password(char *user, uchar * pass1,
+			   uchar * pass2, struct smb_passwd **psmbpw);
+BOOL change_lanman_password(struct smb_passwd *smbpw, uchar * pass1,
+			    uchar * pass2);
 BOOL pass_oem_change(char *user,
-			uchar *lmdata, uchar *lmhash,
-			uchar *ntdata, uchar *nthash);
+		     uchar * lmdata, uchar * lmhash,
+		     uchar * ntdata, uchar * nthash);
 BOOL check_oem_password(char *user,
-			uchar *lmdata, uchar *lmhash,
-			uchar *ntdata, uchar *nthash,
-                        struct smb_passwd **psmbpw, char *new_passwd,
-                        int new_passwd_size);
-BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override);
-BOOL check_plaintext_password(char *user,char *old_passwd,
-                              int old_passwd_size, struct smb_passwd **psmbpw);
+			uchar * lmdata, uchar * lmhash,
+			uchar * ntdata, uchar * nthash,
+			struct smb_passwd **psmbpw, char *new_passwd,
+			int new_passwd_size);
+BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd,
+			 BOOL override);
+BOOL check_plaintext_password(char *user, char *old_passwd,
+			      int old_passwd_size, struct smb_passwd **psmbpw);
 
 /*The following definitions come from  smbd/close.c  */
 
