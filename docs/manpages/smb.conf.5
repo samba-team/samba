@@ -516,7 +516,13 @@ use rhosts
 
 valid chars
 
-veto files
+win95 bug compatibility
+
+wins proxy
+
+wins server
+
+wins support
 
 workgroup
 
@@ -625,6 +631,8 @@ max connections
 
 min print space
 
+networkstation user login
+
 only guest
 
 only user
@@ -684,6 +692,8 @@ username
 users
 
 valid users
+
+veto files
 
 veto oplock files
 
@@ -1627,7 +1637,7 @@ See also "valid users"
 .B Example
 	invalid users = root fred admin @wheel
 
-.SS keep alive (G)
+.SS keepalive (G)
 The value of the parameter (an integer) represents the number of seconds 
 between 'keepalive' packets. If this parameter is zero, no keepalive packets
 will be sent. Keepalive packets, if sent, allow the server to tell whether a
@@ -2390,6 +2400,20 @@ server listed there.
 
 .B Example:
 	nis homedir = true
+
+.SS networkstation user login (G)
+This global parameter (new for 1.9.18p3) affects server level security.
+With this set (recommended) samba will do a full NetWkstaUserLogon to
+confirm that the client really should have login rights. This can cause
+problems with machines in trust relationships in which case you can
+disable it here, but be warned, we have heard that some NT machines
+will then allow anyone in with any password! Make sure you test it.
+
+.B Default:
+	networkstation user login = yes
+
+.B Example:
+	networkstation user login = no
 
 .SS null passwords (G)
 Allow or disallow access to accounts that have null passwords. 
@@ -3735,6 +3759,28 @@ only to areas that are outside the directory tree being exported.
 .B Example:
  	wide links = no
 
+.SS win95 bug compatibility (G)
+
+This boolean controls the behavior of smbd with respect to the reporting
+of 'access time' on files and directories. With this set to true, Samba
+will return the modify time (UNIX mtime) as the access time to the client.
+
+This is sometimes desirable due to the fact that in Windows, a files
+access time is only updated when the file is closed, whereas on UNIX,
+a files access time is updated as soon as it is read. For Visual C++
+to work correctly on a Samba share with oplocks, it is desirable to
+set this parameter to 'yes'. This parameter also causes Samba to
+swap the Date and Time information in two of the trans2 SMB calls,
+as a Windows 95 server does. Other bug-for-bug compatible fixes
+will also be turned on by setting this flag as the need arises
+to be bug compatible with a Windows 95 server.
+
+.B Default:
+        win95 bug compatibility = no
+
+.B Example:
+        win95 bug compatibility = yes
+
 .SS wins proxy (G)
 
 This is a boolean that controls if nmbd will respond to broadcast name
@@ -3756,8 +3802,8 @@ network.
 
 .SS wins support (G)
 
-This boolean controls if Samba will act as a WINS server. You should
-not set this to true unless you have a multi-subnetted network and
+This boolean controls if the nmbd process in Samba will act as a WINS server. 
+You should not set this to true unless you have a multi-subnetted network and
 you wish a particular nmbd to be your WINS server. Note that you
 should *NEVER* set this to true on more than one machine in your
 network.
