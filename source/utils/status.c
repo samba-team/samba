@@ -188,12 +188,12 @@ locking version (was %d, should be %d).\n",fname,
     }
   }
 
+  get_myname(myhostname, NULL);
+
   if (!lp_load(servicesf,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
     return (-1);
   }
-
-  get_myname(myhostname, NULL);
 
   if (verbose) {
     printf("using configfile = %s\n", servicesf);

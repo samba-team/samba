@@ -34,6 +34,7 @@ pstring cd_path = "";
 pstring service="";
 pstring desthost="";
 extern pstring myname;
+extern pstring myhostname;
 pstring password = "";
 pstring username="";
 pstring workgroup="";
@@ -4624,6 +4625,11 @@ static void usage(char *pname)
 
 
   DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
+
+  if(!get_myname(myhostname,NULL))
+  {
+    DEBUG(0,("Failed to get my hostname.\n"));
+  }
 
   if (!lp_load(servicesf,True)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
