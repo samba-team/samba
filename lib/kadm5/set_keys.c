@@ -549,7 +549,6 @@ out:
    ent->kvno++;
    *new_keys     = kblock;
    *n_keys       = num_keys;
-   return 0;
 
-   return ret;
+   return 0;
 }
