@@ -3257,6 +3257,78 @@ error_test60:
 
 error_test70:
 
+	printf("TEST #8 testing one normal open, followed by lock, followed by open with truncate\n");
+
+	cli_unlink(cli1->tree, fname);
+
+	fnum1 = cli_open(cli1->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("(8) open (1) of %s failed (%s)\n", fname, cli_errstr(cli1->tree));
+		return False;
+	}
+	
+	/* write 20 bytes. */
+	
+	memset(buf, '\0', 20);
+
+	if (cli_write(cli1->tree, fnum1, 0, buf, 0, 20) != 20) {
+		printf("(8) write failed (%s)\n", cli_errstr(cli1->tree));
+		correct = False;
+	}
+
+	/* Ensure size == 20. */
+	if (NT_STATUS_IS_ERR(cli_getatr(cli1->tree, fname, NULL, &fsize, NULL))) {
+		printf("(8) getatr (1) failed (%s)\n", cli_errstr(cli1->tree));
+		CHECK_MAX_FAILURES(error_test80);
+		return False;
+	}
+	
+	if (fsize != 20) {
+		printf("(8) file size != 20\n");
+		CHECK_MAX_FAILURES(error_test80);
+		return False;
+	}
+
+	/* Get an exclusive lock on the open file. */
+	if (NT_STATUS_IS_ERR(cli_lock(cli1->tree, fnum1, 0, 4, 0, WRITE_LOCK))) {
+		printf("(8) lock1 failed (%s)\n", cli_errstr(cli1->tree));
+		CHECK_MAX_FAILURES(error_test80);
+		return False;
+	}
+
+	fnum2 = cli_open(cli1->tree, fname, O_RDWR|O_TRUNC, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("(8) open (2) of %s with truncate failed (%s)\n", fname, cli_errstr(cli1->tree));
+		return False;
+	}
+
+	/* Ensure size == 0. */
+	if (NT_STATUS_IS_ERR(cli_getatr(cli1->tree, fname, NULL, &fsize, NULL))) {
+		printf("(8) getatr (2) failed (%s)\n", cli_errstr(cli1->tree));
+		CHECK_MAX_FAILURES(error_test80);
+		return False;
+	}
+	
+	if (fsize != 0) {
+		printf("(8) file size != 0\n");
+		CHECK_MAX_FAILURES(error_test80);
+		return False;
+	}
+
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum1))) {
+		printf("(8) close1 failed (%s)\n", cli_errstr(cli1->tree));
+		return False;
+	}
+	
+	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum2))) {
+		printf("(8) close1 failed (%s)\n", cli_errstr(cli1->tree));
+		return False;
+	}
+	
+error_test80:
+
+	printf("open test #8 passed.\n");
+
 	cli_unlink(cli1->tree, fname);
 
 	if (!torture_close_connection(cli1)) {
