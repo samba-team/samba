@@ -96,6 +96,7 @@
 
 
 	<image id="winbind_idmap">
+	<imagedescription>Winbind Idmap</imagedescription>
 	<imagefile scale="50">idmap_winbind_no_loop</imagefile>
 	</image>
 
