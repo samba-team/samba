@@ -1437,6 +1437,12 @@ int cli_open(struct cli_state *cli, const char *fname,
 ****************************************************************************/
 BOOL cli_close(struct cli_state *cli, int fnum)
 {
+	if (cli->outbuf == NULL || cli->inbuf == NULL)
+	{
+		DEBUG(1, ("cli_close: cli->(in|out)buf is NULL\n"));
+		return False;
+	}
+
 	memset(cli->outbuf, 0, smb_size);
 	memset(cli->inbuf, 0, smb_size);
 
@@ -1699,6 +1705,13 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 			    size_t size, size_t bytes_left, int i)
 {
 	char *p;
+
+	if (cli->outbuf == NULL || cli->inbuf == NULL)
+	{
+		DEBUG(1, ("cli_issue_write: cli->(in|out)buf is NULL\n"));
+		/* XXX how to indicate a failure? */
+		return;
+	}
 
 	memset(cli->outbuf, 0, smb_size);
 	memset(cli->inbuf, 0, smb_size);

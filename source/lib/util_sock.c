@@ -561,6 +561,12 @@ BOOL receive_smb(int fd, char *buffer, unsigned int timeout)
 
 	smb_read_error = 0;
 
+	if (buffer == NULL)
+	{
+		DEBUG(1, ("receive_smb: buffer==NULL\n"));
+		return False;
+	}
+
 	memset(buffer, 0, smb_size + 100);
 
 	len = read_smb_length_return_keepalive(fd, buffer, timeout);
