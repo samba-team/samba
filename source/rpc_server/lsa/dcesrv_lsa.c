@@ -29,6 +29,7 @@
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
 #include "system/time.h"
+#include "db_wrap.h"
 
 /*
   this type allows us to distinguish handle types

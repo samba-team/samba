@@ -29,6 +29,7 @@
 #include "system/filesys.h"
 #include "lib/tdb/include/tdb.h"
 #include "messages.h"
+#include "db_wrap.h"
 
 /*
   in this module a "DATA_BLOB *file_key" is a blob that uniquely identifies
