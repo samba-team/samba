@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -445,21 +445,14 @@ configure(int argc, char **argv)
 						 "enable-pkinit",
 						 NULL);
     if (enable_pkinit) {
-	const char *key_file, *certificate_file, *x509_anchors;
+	const char *user_id, *x509_anchors;
 
-	key_file = krb5_config_get_string(context, NULL,
+	user_id = krb5_config_get_string(context, NULL,
 					  "kdc",
-					  "pki-key-file",
+					  "pki-identity",
 					  NULL);
-	if (key_file == NULL)
-	    krb5_errx(context, 1, "pkinit enabled but no keyfile");
-
-	certificate_file = krb5_config_get_string(context, NULL,
-						  "kdc",
-						  "pki-certificate",
-						  NULL);
-	if (certificate_file == NULL)
-	    krb5_errx(context, 1, "pkinit enabled but no certificate");
+	if (user_id == NULL)
+	    krb5_errx(context, 1, "pkinit enabled but no identity");
 
 	x509_anchors = krb5_config_get_string(context, NULL,
 					      "kdc",
@@ -468,7 +461,7 @@ configure(int argc, char **argv)
 	if (x509_anchors == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no X509 anchors");
 
-	pk_initialize(certificate_file, key_file, x509_anchors);
+	pk_initialize(user_id, x509_anchors);
     }
 #endif
 
