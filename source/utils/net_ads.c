@@ -847,7 +847,7 @@ int net_ads_printer_usage(int argc, const char **argv)
 {
 	d_printf(
 "\nnet ads printer search <printer>"
-"\n\tsearch for a printer in the directory"
+"\n\tsearch for a printer in the directory\n"
 "\nnet ads printer info <printer> <server>"
 "\n\tlookup info in directory for printer on server"
 "\n\t(note: printer defaults to \"*\", server defaults to local)\n"
