@@ -286,6 +286,7 @@ static global Globals;
 typedef struct
 {
   BOOL valid;
+  BOOL autoloaded;
   char *szService;
   char *szPath;
   char *szUsername;
@@ -399,6 +400,7 @@ typedef struct
 static service sDefault = 
 {
   True,   /* valid */
+  False,  /* not autoloaded */
   NULL,    /* szService */
   NULL,    /* szPath */
   NULL,    /* szUsername */
@@ -1567,6 +1569,7 @@ FN_LOCAL_STRING(lp_dfsmap,szDfsMap)
 FN_LOCAL_BOOL(lp_dfsmap_loaded,bDfsMapLoaded)
 #endif
 
+FN_LOCAL_BOOL(lp_autoloaded,autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close,bPreexecClose)
 FN_LOCAL_BOOL(lp_rootpreexec_close,bRootpreexecClose)
 FN_LOCAL_BOOL(lp_revalidate,bRevalidate)
@@ -2931,8 +2934,10 @@ void lp_add_one_printer(char *name,char *comment)
 
 	if (lp_servicenumber(name) < 0)  {
 		lp_add_printer(name,printers);
-		if ((i=lp_servicenumber(name)) >= 0)
+		if ((i=lp_servicenumber(name)) >= 0) {
 			string_set(&iSERVICE(i).comment,comment);
+			iSERVICE(i).autoloaded = True;
+		}
 	}
 }
 
@@ -2941,7 +2946,7 @@ have we loaded a services file yet?
 ***************************************************************************/
 BOOL lp_loaded(void)
 {
-  return(bLoaded);
+	return(bLoaded);
 }
 
 /***************************************************************************
@@ -2949,13 +2954,15 @@ unload unused services
 ***************************************************************************/
 void lp_killunused(BOOL (*snumused)(int ))
 {
-  int i;
-  for (i=0;i<iNumServices;i++)
-    if (VALID(i) && (!snumused || !snumused(i)))
-      {
-	iSERVICE(i).valid = False;
-	free_service(pSERVICE(i));
-      }
+	int i;
+	for (i=0;i<iNumServices;i++) {
+		if (!VALID(i)) continue;
+
+		if (!snumused || !snumused(i)) {
+			iSERVICE(i).valid = False;
+			free_service(pSERVICE(i));
+		}
+	}
 }
 
 
