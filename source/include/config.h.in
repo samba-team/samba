@@ -201,6 +201,8 @@
 #undef MIPS_SPINLOCKS
 #undef POWERPC_SPINLOCKS
 #undef HAVE_POSIX_ACLS
+#undef HAVE_UNIXWARE_ACLS
+#undef HAVE_SOLARIS_ACLS
 #undef HAVE_NO_ACLS
 
 /* The number of bytes in a int.  */
