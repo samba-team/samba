@@ -294,8 +294,11 @@ realm_of_cell(kafs_data *data, const char *cell, char **realm)
 	}
 	fclose(F);
     }
-    if (*realm == NULL && dns_find_cell(cell, buf, sizeof(buf)) == 0)
+    if (*realm == NULL && dns_find_cell(cell, buf, sizeof(buf)) == 0) {
 	*realm = strdup(krb_realmofhost(buf));
+	if(*realm != NULL)
+	    ret = 0;
+    }
     return ret;
 }
 
