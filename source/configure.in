@@ -339,12 +339,13 @@ fi
 
 #
 # If no strcasecmp, check for it in some known places
-# It is in -lresolv on ReliantUNIX
+# It is in -lresolv on ReliantUNIX and UnixWare
 #   -lresolve *must* follow -lnsl for name resolution to work properly
 #
 
 if test x$ac_cv_func_strcasecmp = xno ; then
-  AC_CHECK_LIB(resolv,strcasecmp,[LIBS="$LIBS -lresolv"])
+	AC_CHECK_LIB(resolv,strcasecmp,[LIBS="$LIBS -lresolv"]
+		AC_DEFINE(HAVE_STRCASECMP))
 fi
 
 #
@@ -397,8 +398,22 @@ case "$host_os" in
 		*sco*) AC_DEFINE(SCO);;
 		*next2*) AC_DEFINE(NEXT2);;
 		*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man]);;
-		*sysv4.2*) AC_CHECK_LIB(resolv, strcasecmp);;
-		*mips-sni-sysv4*) AC_DEFINE(RELIANTUNIX);;
+		*sysv4*)
+			case "$host" in
+				*-univel-*)     if [ test "$GCC" != yes ]; then
+									AC_DEFINE(HAVE_MEMSET)
+								fi
+								LDSHFLAGS="-G"
+				;;
+				*mips-sni-sysv4*) AC_DEFINE(RELIANTUNIX);;
+			esac
+			;;
+		*sysv5*)
+			if [ test "$GCC" != yes ]; then
+				AC_DEFINE(HAVE_MEMSET)
+			fi
+			LDSHFLAGS="-G"
+			;;
 esac
 
 # try to work out how to produce pic code with this compiler

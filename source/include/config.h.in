@@ -150,6 +150,8 @@
 #undef HAVE_SETRESGID
 #undef HAVE_SETRESGID_DECL
 #undef HAVE_SHADOW_H
+#undef HAVE_MEMSET
+#undef HAVE_STRCASECMP
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
