@@ -394,7 +394,7 @@ to us so we will include this in the next release of Samba. The <command>msg</co
 </para>
 
 </para>
-Note that if you enable this feature and the <smbconfoption><name>display charset</name></smbconfoption> is not
+Note that if you enable this feature and the <smbconfoption name="display charset"/> is not
 matched to your browsers setting, the SWAT display may be corrupted.  In a future version of
 Samba, SWAT will always display messages with UTF-8 encoding. You will then not need to set
 this &smb.conf; file parameter.

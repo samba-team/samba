@@ -54,7 +54,7 @@
 	specified it will respond with the IP number of the host it 
 	is running on.  Its "own NetBIOS name" is by
 	default the primary DNS name of the host it is running on, 
-	but this can be overridden by the <smbconfoption><name>netbios name</name></smbconfoption>
+	but this can be overridden by the <smbconfoption name="netbios name"/>
 	in &smb.conf;. Thus <command>nmbd</command> will 
 	reply to broadcast queries for its own name(s). Additional
 	names for <command>nmbd</command> to respond on can be set 
@@ -129,7 +129,7 @@
 		<listitem><para>NetBIOS lmhosts file.  The lmhosts 
 		file is a list of NetBIOS names to IP addresses that 
 		is loaded by the nmbd server and used via the name 
-		resolution mechanism <smbconfoption><name>name resolve order</name></smbconfoption> described in <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		resolution mechanism <smbconfoption name="name resolve order"/> described in <citerefentry><refentrytitle>smb.conf</refentrytitle>
 		<manvolnum>5</manvolnum></citerefentry> to resolve any 
 		NetBIOS name queries needed by the server. Note 
 		that the contents of this file are <emphasis>NOT</emphasis> 
@@ -201,7 +201,7 @@
 		and <filename>/etc/samba/smb.conf</filename>.</para>
 
 		<para>When run as a WINS server (see the
-			<smbconfoption><name>wins support</name></smbconfoption>
+			<smbconfoption name="wins support"/>
 		parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
 		<manvolnum>5</manvolnum></citerefentry> man page),
 		<command>nmbd</command>
@@ -210,7 +210,7 @@
 		wherever Samba was configured to install itself.</para>
 
 		<para>If <command>nmbd</command> is acting as a <emphasis>
-				browse master</emphasis> (see the <smbconfoption><name>local master</name></smbconfoption>
+				browse master</emphasis> (see the <smbconfoption name="local master"/>
 		parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry> man page, <command>nmbd</command>
 		will store the browsing database in the file <filename>browse.dat

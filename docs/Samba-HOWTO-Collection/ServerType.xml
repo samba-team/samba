@@ -200,7 +200,7 @@ The &smb.conf; parameter that sets user level security is:
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>security</name><value>user</value></smbconfoption>
+<smbconfoption name="security">user</smbconfoption>
 </smbconfblock></para>
 
 <para>
@@ -236,7 +236,7 @@ Many clients send a session setup even if the server is in Share Level security.
 normally send a valid username but no password. Samba records this username in a list
 of possible usernames. When the client then does a tree connection it also adds to this list the name
 of the share they try to connect to (useful for home directories) and any users
-listed in the <smbconfoption><name>user</name></smbconfoption> parameter in the &smb.conf; file.
+listed in the <smbconfoption name="user"/> parameter in the &smb.conf; file.
 The password is then checked in turn against these possible usernames. If a match is found
 then the client is authenticated as that user.
 </para>
@@ -249,7 +249,7 @@ The &smb.conf; parameter that sets Share Level security is:
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>security</name><value>share</value></smbconfoption>
+<smbconfoption name="security">share</smbconfoption>
 </smbconfblock></para>
 
 </sect3>
@@ -260,7 +260,7 @@ The &smb.conf; parameter that sets Share Level security is:
 
 <para>
 <indexterm><primary>Domain Member</primary></indexterm>
-When Samba is operating in <smbconfoption><name>security</name><value>domain</value></smbconfoption> mode,
+When Samba is operating in <smbconfoption name="security">domain</smbconfoption> mode,
 the Samba server has a domain security trust account (a machine account) and causes
 all authentication requests to be passed through to the Domain Controllers.
 In other words, this configuration makes the Samba server a Domain Member server.
@@ -279,8 +279,8 @@ This method involves addition of the following parameters in the &smb.conf; file
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>security</name><value>domain</value></smbconfoption>
-<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
+<smbconfoption name="security">domain</smbconfoption>
+<smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
 </smbconfblock></para>
 
 <para>
@@ -362,8 +362,8 @@ AD-member mode can accept Kerberos tickets.
 <title>Example Configuration</title>
 
 <para><smbconfblock>
-<smbconfoption><name>realm</name><value>your.kerberos.REALM</value></smbconfoption>
-<smbconfoption><name>security</name><value>ADS</value></smbconfoption>
+<smbconfoption name="realm">your.kerberos.REALM</smbconfoption>
+<smbconfoption name="security">ADS</smbconfoption>
 </smbconfblock></para>
 
 <para>
@@ -371,7 +371,7 @@ The following parameter may be required:
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>password server</name><value>your.kerberos.server</value></smbconfoption>
+<smbconfoption name="password server">your.kerberos.server</smbconfoption>
 </smbconfblock></para>
 
 <para>
@@ -404,10 +404,10 @@ security mode has many drawbacks that include:
 In Server Security Mode the Samba server reports to the client that it is in User Level
 security. The client then does a session setup as described earlier.
 The Samba server takes the username/password that the client sends and attempts to login to the
-<smbconfoption><name>password server</name></smbconfoption> by sending exactly the same username/password that
+<smbconfoption name="password server"/> by sending exactly the same username/password that
 it got from the client. If that server is in User Level Security and accepts the password,
 then Samba accepts the client's connection. This allows the Samba server to use another SMB
-server as the <smbconfoption><name>password server</name></smbconfoption>.
+server as the <smbconfoption name="password server"/>.
 </para>
 
 <para>
@@ -418,10 +418,10 @@ passwords in encrypted form. Samba supports this type of encryption by default.
 </para>
 
 <para>
-The parameter <smbconfoption><name>security</name><value>server</value></smbconfoption> means that Samba reports to clients that
+The parameter <smbconfoption name="security">server</smbconfoption> means that Samba reports to clients that
 it is running in <emphasis>user mode</emphasis> but actually passes off all authentication
 requests to another <emphasis>user mode</emphasis> server. This requires an additional
-parameter <smbconfoption><name>password server</name></smbconfoption> that points to the real authentication server.
+parameter <smbconfoption name="password server"/> that points to the real authentication server.
 The real authentication server can be another Samba server, or it can be a Windows NT server,
 the latter being natively capable of encrypted password support.
 </para>
@@ -447,9 +447,9 @@ This method involves the additions of the following parameters in the &smb.conf;
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>encrypt passwords</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>security</name><value>server</value></smbconfoption>
-<smbconfoption><name>password server</name><value>"NetBIOS_name_of_a_DC"</value></smbconfoption>
+<smbconfoption name="encrypt passwords">Yes</smbconfoption>
+<smbconfoption name="security">server</smbconfoption>
+<smbconfoption name="password server">"NetBIOS_name_of_a_DC"</smbconfoption>
 </smbconfblock></para>
 
 
@@ -536,24 +536,24 @@ when using clear-text authentication:
 </para>
 
 <para><smbconfblock>
-<smbconfoption><name>password level</name><value><replaceable>integer</replaceable></value></smbconfoption>
-<smbconfoption><name>username level</name><value><replaceable>integer</replaceable></value></smbconfoption>
+<smbconfoption name="password level"><replaceable>integer</replaceable></smbconfoption>
+<smbconfoption name="username level"><replaceable>integer</replaceable></smbconfoption>
 </smbconfblock></para>
 
 <para>
 By default Samba will convert to lower case the username before attempting to lookup the user
 in the database of local system accounts. Because UNIX usernames conventionally
-only contain lower-case characters, the <smbconfoption><name>username level</name></smbconfoption> parameter
+only contain lower-case characters, the <smbconfoption name="username level"/> parameter
 is rarely needed.
 </para>
 
 <para>
 However, passwords on UNIX systems often make use of mixed-case characters.
 This means that in order for a user on a Windows 9x/Me client to connect to a Samba
-server using clear-text authentication, the <smbconfoption><name>password level</name></smbconfoption>
+server using clear-text authentication, the <smbconfoption name="password level"/>
 must be set to the maximum number of upper case letters that <emphasis>could</emphasis>
 appear in a password. Note that if the server OS uses the traditional DES version
-of crypt(), a <smbconfoption><name>password level</name></smbconfoption> of 8 will result in case
+of crypt(), a <smbconfoption name="password level"/> of 8 will result in case
 insensitive passwords as seen from Windows users. This will also result in longer
 login times as Samba has to compute the permutations of the password string and
 try them one by one until a match is located (or all combinations fail).
@@ -589,7 +589,7 @@ to those for whom English is not their native tongue.
 
 <para>
 To some the nature of the Samba <emphasis>security</emphasis> mode is obvious, but entirely
-wrong all the same. It is assumed that <smbconfoption><name>security</name><value>server</value></smbconfoption> means that Samba
+wrong all the same. It is assumed that <smbconfoption name="security">server</smbconfoption> means that Samba
 will act as a server. Not so! This setting means that Samba will <emphasis>try</emphasis>
 to use another SMB server as its source for user authentication alone.
 </para>
@@ -600,7 +600,7 @@ to use another SMB server as its source for user authentication alone.
 <title>What Makes Samba a Domain Controller?</title>
 
 <para>
-The &smb.conf; parameter <smbconfoption><name>security</name><value>domain</value></smbconfoption> does not really make Samba behave
+The &smb.conf; parameter <smbconfoption name="security">domain</smbconfoption> does not really make Samba behave
 as a Domain Controller. This setting means we want Samba to be a Domain Member. See <link linkend="samba-pdc">Samba as a PDC</link> for more information.
 </para>
 
@@ -610,7 +610,7 @@ as a Domain Controller. This setting means we want Samba to be a Domain Member. 
 <title>What Makes Samba a Domain Member?</title>
 
 <para>
-Guess! So many others do. But whatever you do, do not think that <smbconfoption><name>security</name><value>user</value></smbconfoption>
+Guess! So many others do. But whatever you do, do not think that <smbconfoption name="security">user</smbconfoption>
 makes Samba act as a Domain Member. Read the manufacturer's manual before the warranty expires. See 
 <link linkend="domain-member">Domain Membership</link> for more information.
 </para>
@@ -631,9 +631,9 @@ connection whose session key would be different. So server_validate() must give 
 </para>
 
 <para>
-Indeed. That's why <smbconfoption><name>security</name><value>server</value></smbconfoption>
-is at best a nasty hack. Please use <smbconfoption><name>security</name><value>domain</value></smbconfoption>;
-<smbconfoption><name>security</name><value>server</value></smbconfoption> mode is also known as pass-through authentication.
+Indeed. That's why <smbconfoption name="security">server</smbconfoption>
+is at best a nasty hack. Please use <smbconfoption name="security">domain</smbconfoption>;
+<smbconfoption name="security">server</smbconfoption> mode is also known as pass-through authentication.
 </para>
 
 </sect2>

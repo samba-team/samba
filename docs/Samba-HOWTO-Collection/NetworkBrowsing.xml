@@ -107,26 +107,26 @@ The Samba application that controls browse list management and name resolution i
 called <filename>nmbd</filename>. The configuration parameters involved in nmbd's operation are:
 </para>
 
-<para>Browsing options: <smbconfoption><name>os level</name></smbconfoption>(*),
-	<smbconfoption><name>lm announce</name></smbconfoption>,
-	<smbconfoption><name>lm interval</name></smbconfoption>,
-	<smbconfoption><name>preferred master</name></smbconfoption>(*),
-	<smbconfoption><name>local master</name></smbconfoption>(*),
-	<smbconfoption><name>domain master</name></smbconfoption>(*),
-	<smbconfoption><name>browse list</name></smbconfoption>,
-	<smbconfoption><name>enhanced browsing</name></smbconfoption>.
+<para>Browsing options: <smbconfoption name="os level"/>(*),
+	<smbconfoption name="lm announce"/>,
+	<smbconfoption name="lm interval"/>,
+	<smbconfoption name="preferred master"/>(*),
+	<smbconfoption name="local master"/>(*),
+	<smbconfoption name="domain master"/>(*),
+	<smbconfoption name="browse list"/>,
+	<smbconfoption name="enhanced browsing"/>.
 </para>
 
 <para>Name Resolution Method:
-	<smbconfoption><name>name resolve order</name></smbconfoption>(*).
+	<smbconfoption name="name resolve order"/>(*).
 </para>
 
 <para>WINS options:
-	<smbconfoption><name>dns proxy</name></smbconfoption>,
-	<smbconfoption><name>wins proxy</name></smbconfoption>,
-	<smbconfoption><name>wins server</name></smbconfoption>(*),
-	<smbconfoption><name>wins support</name></smbconfoption>(*),
-	<smbconfoption><name>wins hook</name></smbconfoption>.
+	<smbconfoption name="dns proxy"/>,
+	<smbconfoption name="wins proxy"/>,
+	<smbconfoption name="wins server"/>(*),
+	<smbconfoption name="wins support"/>(*),
+	<smbconfoption name="wins hook"/>.
 </para>
 
 <para>
@@ -166,9 +166,9 @@ UDP messages can be broadcast or unicast.
 <para>
 <indexterm><primary>UDP</primary></indexterm>
 Normally, only uni-cast UDP messaging can be forwarded by routers. The
-<smbconfoption><name>remote announce</name></smbconfoption> parameter to smb.conf helps to project browse announcements
+<smbconfoption name="remote announce"/> parameter to smb.conf helps to project browse announcements
 to remote network segments via uni-cast UDP. Similarly, the 
-<smbconfoption><name>remote browse sync</name></smbconfoption> parameter of &smb.conf;
+<smbconfoption name="remote browse sync"/> parameter of &smb.conf;
 implements browse list collation using uni-cast UDP.
 </para>
 
@@ -213,16 +213,16 @@ In those networks where Samba is the only SMB server technology, wherever possib
 server. This makes it easy to manage the browsing environment. If each network
 segment is configured with its own Samba WINS server, then the only way to
 get cross-segment browsing to work is by using the 
-<smbconfoption><name>remote announce</name></smbconfoption> and the 
-<smbconfoption><name>remote browse sync</name></smbconfoption>
+<smbconfoption name="remote announce"/> and the 
+<smbconfoption name="remote browse sync"/>
 parameters to your &smb.conf; file.
 </para>
 
 <para>
 <indexterm><primary>WINS</primary></indexterm>
 If only one WINS server is used for an entire multi-segment network, then
-the use of the <smbconfoption><name>remote announce</name></smbconfoption> and the 
-<smbconfoption><name>remote browse sync</name></smbconfoption> parameters should not be necessary.
+the use of the <smbconfoption name="remote announce"/> and the 
+<smbconfoption name="remote browse sync"/> parameters should not be necessary.
 </para>
 
 <para>
@@ -238,7 +238,7 @@ Right now Samba WINS does not support MS-WINS replication. This means that
 when setting up Samba as a WINS server, there must only be one <filename>nmbd</filename>
 configured as a WINS server on the network. Some sites have used multiple Samba WINS
 servers for redundancy (one server per subnet) and then used 
-<smbconfoption><name>remote browse sync</name></smbconfoption> and <smbconfoption><name>remote announce</name></smbconfoption>
+<smbconfoption name="remote browse sync"/> and <smbconfoption name="remote announce"/>
 to effect browse list collation across all segments. Note that this means clients
 will only resolve local names, and must be configured to use DNS to resolve names
 on other subnets in order to resolve the IP addresses of the servers they can see
@@ -535,7 +535,7 @@ resolution to the local subnet, unless LMHOSTS is used to list all
 names and IP addresses. In such situations, Samba provides a means by 
 which the Samba server name may be forcibly injected into the browse 
 list of a remote MS Windows network (using the 
-<smbconfoption><name>remote announce</name></smbconfoption> parameter).
+<smbconfoption name="remote announce"/> parameter).
 </para>
 
 <para>
@@ -573,13 +573,13 @@ inability to use the network services.
 
 <para>
 Samba supports a feature that allows forced synchronization of browse lists across
-routed networks using the <smbconfoption><name>remote browse sync</name></smbconfoption>
+routed networks using the <smbconfoption name="remote browse sync"/>
 parameter in the &smb.conf; file. This causes Samba to contact the local master
 browser on a remote network and to request browse list synchronization. This
 effectively bridges two networks that are separated by routers. The two remote
 networks may use either broadcast-based name resolution or WINS-based name
 resolution, but it should be noted that the
-<smbconfoption><name>remote browse sync</name></smbconfoption> parameter provides
+<smbconfoption name="remote browse sync"/> parameter provides
 browse list synchronization &smbmdash; and that is distinct from name to address
 resolution. In other words, for cross-subnet browsing to function correctly it is
 essential that a name-to-address resolution mechanism be provided. This mechanism
@@ -613,7 +613,7 @@ of the &smb.conf; file:
 
 <para>
 <smbconfblock>
-<smbconfoption><name>domain master</name><value>yes</value></smbconfoption>
+<smbconfoption name="domain master">yes</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -628,10 +628,10 @@ file as shown in <link linkend="dmbexample">the following example</link>:
 <smbconfexample id="dmbexample">
 <title>Domain Master Browser smb.conf</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>domain master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>local master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>os level</name><value>65</value></smbconfoption>
+<smbconfoption name="domain master">yes</smbconfoption>
+<smbconfoption name="local master">yes</smbconfoption>
+<smbconfoption name="preferred master">yes</smbconfoption>
+<smbconfoption name="os level">65</smbconfoption>
 </smbconfexample>
 </para>
 
@@ -653,10 +653,10 @@ shown in <link linkend="lmbexample">following example</link>:
 <smbconfexample id="lmbexample">
 <title>Local master browser smb.conf</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>domain master</name><value>no</value></smbconfoption>
-<smbconfoption><name>local master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>os level</name><value>65</value></smbconfoption>
+<smbconfoption name="domain master">no</smbconfoption>
+<smbconfoption name="local master">yes</smbconfoption>
+<smbconfoption name="preferred master">yes</smbconfoption>
+<smbconfoption name="os level">65</smbconfoption>
 </smbconfexample>
 </para>
 
@@ -666,9 +666,9 @@ each other over which is to be the Local Master Browser.
 </para>
 
 <para>
-The <smbconfoption><name>local master</name></smbconfoption> parameter allows Samba to act as a
-Local Master Browser. The <smbconfoption><name>preferred master</name></smbconfoption> causes <command>nmbd</command>
-to force a browser election on startup and the <smbconfoption><name>os level</name></smbconfoption>
+The <smbconfoption name="local master"/> parameter allows Samba to act as a
+Local Master Browser. The <smbconfoption name="preferred master"/> causes <command>nmbd</command>
+to force a browser election on startup and the <smbconfoption name="os level"/>
 parameter sets Samba high enough so it should win any browser elections.
 </para>
 
@@ -682,10 +682,10 @@ becoming a Local Master Browser by setting the following options in the <smbconf
 <smbconfexample id="nombexample">
 <title>smb.conf for not being a Master Browser</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>domain master</name><value>no</value></smbconfoption>
-<smbconfoption><name>local master</name><value>no</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>no</value></smbconfoption>
-<smbconfoption><name>os level</name><value>0</value></smbconfoption>
+<smbconfoption name="domain master">no</smbconfoption>
+<smbconfoption name="local master">no</smbconfoption>
+<smbconfoption name="preferred master">no</smbconfoption>
+<smbconfoption name="os level">0</smbconfoption>
 </smbconfexample>
 </para>
 
@@ -711,16 +711,16 @@ of the &smb.conf; file as shown in <link linkend="remsmb">following example</lin
 <smbconfexample id="remsmb">
 <title>Local Master Browser smb.conf</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>domain master</name><value>no</value></smbconfoption>
-<smbconfoption><name>local master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>yes</value></smbconfoption>
-<smbconfoption><name>os level</name><value>65</value></smbconfoption>
+<smbconfoption name="domain master">no</smbconfoption>
+<smbconfoption name="local master">yes</smbconfoption>
+<smbconfoption name="preferred master">yes</smbconfoption>
+<smbconfoption name="os level">65</smbconfoption>
 </smbconfexample>
 </para>
 
 <para>
 If you wish to have a Samba server fight the election with machines on the same subnet you
-may set the <smbconfoption><name>os level</name></smbconfoption> parameter to lower levels.
+may set the <smbconfoption name="os level"/> parameter to lower levels.
 By doing this you can tune the order of machines that will become Local Master Browsers if
 they are running. For more details on this refer to <link linkend="browse-force-master">Forcing Samba to Be the Master</link> section.
 </para>
@@ -736,10 +736,10 @@ and ever becoming a Local Master Browser by setting the following options in the
 <smbconfexample id="xremmb">
 <title>&smb.conf; for not being a master browser</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>domain master</name><value>no</value></smbconfoption>
-<smbconfoption><name>local master</name><value>no</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>no</value></smbconfoption>
-<smbconfoption><name>os level</name><value>0</value></smbconfoption>
+<smbconfoption name="domain master">no</smbconfoption>
+<smbconfoption name="local master">no</smbconfoption>
+<smbconfoption name="preferred master">no</smbconfoption>
+<smbconfoption name="os level">0</smbconfoption>
 </smbconfexample>
 </para>
 
@@ -755,29 +755,29 @@ elections to just about every Windows network server or client.
 </para>
 
 <para>
-If you want Samba to win elections, set the <smbconfoption><name>os level</name></smbconfoption>
+If you want Samba to win elections, set the <smbconfoption name="os level"/>
 global option in &smb.conf; to a higher number. It defaults to 20. Using 34 would make it win
 all elections every other system (except other samba systems).
 </para>
 
 <para>
-An <smbconfoption><name>os level</name></smbconfoption> of two would make it beat Windows for Workgroups and Windows 9x/Me, but not MS Windows
+An <smbconfoption name="os level"/> of two would make it beat Windows for Workgroups and Windows 9x/Me, but not MS Windows
 NT/200x Server. An MS Windows NT/200x Server Domain Controller uses level 32. The maximum os level is 255.
 </para>
 
 <para>
 If you want Samba to force an election on startup, set the
-<smbconfoption><name>preferred master</name></smbconfoption> global option in &smb.conf; to <constant>yes</constant>.
+<smbconfoption name="preferred master"/> global option in &smb.conf; to <constant>yes</constant>.
 Samba will then have a slight advantage over other potential master browsers that are not Preferred Master Browsers.
 Use this parameter with care, as if you have two hosts (whether they are Windows 9x/Me or
-NT/200x/XP or Samba) on the same local subnet both set with <smbconfoption><name>preferred master</name></smbconfoption>
+NT/200x/XP or Samba) on the same local subnet both set with <smbconfoption name="preferred master"/>
 to <constant>yes</constant>, then periodically and continually they will force an election in order
 to become the Local Master Browser.
 </para>
 
 <para>
 If you want Samba to be a <emphasis>Domain Master Browser</emphasis>, then it is recommended that
-you also set <smbconfoption><name>preferred master</name></smbconfoption> to <constant>yes</constant>, because
+you also set <smbconfoption name="preferred master"/> to <constant>yes</constant>, because
 Samba will not become a Domain Master Browser for the whole of your LAN or WAN if it is not also a
 Local Master Browser on its own broadcast isolated subnet.
 </para>
@@ -796,7 +796,7 @@ the current Domain Master Browser fail.
 
 <para>
 The domain master is responsible for collating the browse lists of multiple subnets so browsing can occur between subnets. You can
-make Samba act as the Domain Master by setting <smbconfoption><name>domain master</name><value>yes</value></smbconfoption>
+make Samba act as the Domain Master by setting <smbconfoption name="domain master">yes</smbconfoption>
 in &smb.conf;. By default it will not be a Domain Master.
 </para>
 
@@ -815,8 +815,8 @@ other subnets and then contact them to synchronize browse lists.
 
 <para>
 If you want Samba to be the domain master, you should also set the
-<smbconfoption><name>os level</name></smbconfoption> high enough to make sure it wins elections, and
-set <smbconfoption><name>preferred master</name></smbconfoption> to <constant>yes</constant>, to
+<smbconfoption name="os level"/> high enough to make sure it wins elections, and
+set <smbconfoption name="preferred master"/> to <constant>yes</constant>, to
 get Samba to force an election on startup.
 </para>
 
@@ -877,22 +877,22 @@ does not seem to support a zeros broadcast and you will probably find that brows
 
 <para>
 Samba supports machines with multiple network interfaces. If you have multiple interfaces, you will
-need to use the <smbconfoption><name>interfaces</name></smbconfoption> option in &smb.conf; to configure them. 
+need to use the <smbconfoption name="interfaces"/> option in &smb.conf; to configure them. 
 </para>
 </sect2>
 <sect2>
 <title>Use of the Remote Announce Parameter</title>
 <para>
-The <smbconfoption><name>remote announce</name></smbconfoption> parameter of 
+The <smbconfoption name="remote announce"/> parameter of 
 &smb.conf; can be used to forcibly ensure
 that all the NetBIOS names on a network get announced to a remote network.
-The syntax of the <smbconfoption><name>remote announce</name></smbconfoption> parameter is:
+The syntax of the <smbconfoption name="remote announce"/> parameter is:
 <smbconfblock>
-<smbconfoption><name>remote announce</name><value>a.b.c.d [e.f.g.h] ...</value></smbconfoption>
+<smbconfoption name="remote announce">a.b.c.d [e.f.g.h] ...</smbconfoption>
 </smbconfblock>
 <emphasis>or</emphasis>
 <smbconfblock>
-<smbconfoption><name>remote announce</name><value>a.b.c.d/WORKGROUP [e.f.g.h/WORKGROUP] ...</value></smbconfoption>
+<smbconfoption name="remote announce">a.b.c.d/WORKGROUP [e.f.g.h/WORKGROUP] ...</smbconfoption>
 </smbconfblock>
 
 where:
@@ -925,17 +925,17 @@ where:
 <title>Use of the Remote Browse Sync Parameter</title>
 
 <para>
-The <smbconfoption><name>remote browse sync</name></smbconfoption> parameter of 
+The <smbconfoption name="remote browse sync"/> parameter of 
 &smb.conf; is used to announce to another LMB that it must synchronize its NetBIOS name list with our
 Samba LMB. This works only if the Samba server that has this option is
 simultaneously the LMB on its network segment.
 </para>
 
 <para>
-The syntax of the <smbconfoption><name>remote browse sync</name></smbconfoption> parameter is:
+The syntax of the <smbconfoption name="remote browse sync"/> parameter is:
 
 <smbconfblock>
-<smbconfoption><name>remote browse sync</name><value><replaceable>a.b.c.d</replaceable></value></smbconfoption>
+<smbconfoption name="remote browse sync"><replaceable>a.b.c.d</replaceable></smbconfoption>
 </smbconfblock>
 
 where <replaceable>a.b.c.d</replaceable> is either the IP address of the
@@ -1000,19 +1000,19 @@ errors.
 
 <para>
 To configure Samba as a WINS server just add 
-<smbconfoption><name>wins support</name><value>yes</value></smbconfoption> to the &smb.conf;
+<smbconfoption name="wins support">yes</smbconfoption> to the &smb.conf;
 file [global] section.
 </para>
 
 <para>
 To configure Samba to register with a WINS server just add
-<smbconfoption><name>wins server</name><value>a.b.c.d</value></smbconfoption>
+<smbconfoption name="wins server">a.b.c.d</smbconfoption>
 to your &smb.conf; file <smbconfsection>[global]</smbconfsection> section.
 </para>
 
 <important><para>
-Never use both <smbconfoption><name>wins support</name><value>yes</value></smbconfoption> together
-with <smbconfoption><name>wins server</name><value>a.b.c.d</value></smbconfoption>
+Never use both <smbconfoption name="wins support">yes</smbconfoption> together
+with <smbconfoption name="wins server">a.b.c.d</smbconfoption>
 particularly not using its own IP address. Specifying both will cause &nmbd; to refuse to start!
 </para></important>
 
@@ -1028,7 +1028,7 @@ the <smbconfsection>[global]</smbconfsection> section:
 
 <para>
 <smbconfblock>
-<smbconfoption><name>wins support</name><value>yes</value></smbconfoption>
+<smbconfoption name="wins support">yes</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -1040,13 +1040,13 @@ least set the parameter to <quote>no</quote> on all these machines.
 </para>
 
 <para>
-Machines configured with <smbconfoption><name>wins support</name><value>yes</value></smbconfoption> will keep a list of 
+Machines configured with <smbconfoption name="wins support">yes</smbconfoption> will keep a list of 
 all NetBIOS names registered with them, acting as a DNS for NetBIOS names.
 </para>
 
 <para>
 It is strongly recommended to set up only one WINS server. Do not set the
-<smbconfoption><name>wins support</name><value>yes</value></smbconfoption> option on more than one Samba 
+<smbconfoption name="wins support">yes</smbconfoption> option on more than one Samba 
 server.
 </para>
 
@@ -1061,7 +1061,7 @@ participate in these replications. It is possible in the future that
 a Samba-to-Samba WINS replication protocol may be defined, in which
 case more than one Samba machine could be set up as a WINS server.
 Currently only one Samba server should have the 
-<smbconfoption><name>wins support</name><value>yes</value></smbconfoption> parameter set.
+<smbconfoption name="wins support">yes</smbconfoption> parameter set.
 </para>
 
 <para>
@@ -1077,7 +1077,7 @@ all &smb.conf; files:
 
 <para>
 <smbconfblock>
-<smbconfoption><name>wins server</name><value>&lt;name or IP address&gt;</value></smbconfoption>
+<smbconfoption name="wins server">&lt;name or IP address&gt;</smbconfoption>
 </smbconfblock>
 </para>
 
@@ -1089,8 +1089,8 @@ machine or its IP address.
 <para>
 This line must not be set in the &smb.conf; file of the Samba
 server acting as the WINS server itself. If you set both the
-<smbconfoption><name>wins support</name><value>yes</value></smbconfoption> option and the 
-<smbconfoption><name>wins server</name><value>&lt;name&gt;</value></smbconfoption> option then
+<smbconfoption name="wins support">yes</smbconfoption> option and the 
+<smbconfoption name="wins server">&lt;name&gt;</smbconfoption> option then
 <command>nmbd</command> will fail to start.
 </para>
 
@@ -1244,15 +1244,15 @@ Many sites want to restrict DNS lookups and avoid broadcast name
 resolution traffic. The <parameter>name resolve order</parameter> parameter is of great help here.
 The syntax of the <parameter>name resolve order</parameter> parameter is:
 <smbconfblock>
-<smbconfoption><name>name resolve order</name><value>wins lmhosts bcast host</value></smbconfoption>
+<smbconfoption name="name resolve order">wins lmhosts bcast host</smbconfoption>
 </smbconfblock>
 <emphasis>or</emphasis>
 <smbconfblock>
-<smbconfoption><name>name resolve order</name><value>wins lmhosts  	(eliminates bcast and host)</value></smbconfoption>
+<smbconfoption name="name resolve order">wins lmhosts  	(eliminates bcast and host)</smbconfoption>
 </smbconfblock>
 The default is:
 <smbconfblock>
-<smbconfoption><name>name resolve order</name><value>host lmhost wins bcast</value></smbconfoption>
+<smbconfoption name="name resolve order">host lmhost wins bcast</smbconfoption>
 </smbconfblock>
 where <quote>host</quote> refers to the native methods used by the UNIX system
 to implement the gethostbyname() function call. This is normally
@@ -1266,7 +1266,7 @@ controlled by <filename>/etc/host.conf</filename>, <filename>/etc/nsswitch.conf<
 
 <para>
 SMB networking provides a mechanism by which clients can access a list
-of machines in a network, a so-called <smbconfoption><name>browse list</name></smbconfoption>. This list
+of machines in a network, a so-called <smbconfoption name="browse list"/>. This list
 contains machines that are ready to offer file and/or print services
 to other machines within the network. Thus it does not include
 machines that aren't currently able to do server tasks. The browse
@@ -1327,7 +1327,7 @@ recommended that you use one and only one Samba server as the WINS server.
 
 <para>
 To get browsing to work you need to run nmbd as usual, but will need
-to use the <smbconfoption><name>workgroup</name></smbconfoption> option in &smb.conf;
+to use the <smbconfoption name="workgroup"/> option in &smb.conf;
 to control what workgroup Samba becomes a part of.
 </para>
 
@@ -1335,7 +1335,7 @@ to control what workgroup Samba becomes a part of.
 Samba also has a useful option for a Samba server to offer itself for
 browsing on another subnet. It is recommended that this option is only
 used for <quote>unusual</quote> purposes: announcements over the Internet, for
-example. See <smbconfoption><name>remote announce</name></smbconfoption> in the 
+example. See <smbconfoption name="remote announce"/> in the 
 &smb.conf; man page. 
 </para>
 </sect2>
@@ -1345,7 +1345,7 @@ example. See <smbconfoption><name>remote announce</name></smbconfoption> in the
 
 <para>
 If something does not work, the <filename>log.nmbd</filename> file will help
-to track down the problem. Try a <smbconfoption><name>log level</name><value></value></smbconfoption> of 2 or 3 for finding
+to track down the problem. Try a <smbconfoption name="log level"></smbconfoption> of 2 or 3 for finding
 problems. Also note that the current browse list usually gets stored
 in text form in a file called <filename>browse.dat</filename>.
 </para>
@@ -1358,7 +1358,7 @@ press enter and <command>filemanager</command> should display the list of availa
 
 <para>
 Some people find browsing fails because they do not have the global
-<smbconfoption><name>guest account</name></smbconfoption> set to a valid account. Remember that the
+<smbconfoption name="guest account"/> set to a valid account. Remember that the
 IPC$ connection that lists the shares is done as guest and, thus, you must have a valid guest account.
 </para>
 
@@ -1373,7 +1373,7 @@ server resources.
 
 <para>
 The other big problem people have is that their broadcast address,
-netmask or IP address is wrong (specified with the <smbconfoption><name>interfaces</name><value></value></smbconfoption> option
+netmask or IP address is wrong (specified with the <smbconfoption name="interfaces"></smbconfoption> option
 in &smb.conf;)
 </para>
 </sect2>
@@ -1703,7 +1703,7 @@ guest account for browsing in <command>smbd</command>. Check that your guest acc
 valid.
 </para>
 
-<para>Also see <smbconfoption><name>guest account</name></smbconfoption> in the &smb.conf; man page.</para>
+<para>Also see <smbconfoption name="guest account"/> in the &smb.conf; man page.</para>
 
 </sect2>
 

@@ -23,7 +23,7 @@
 	</xsl:template>
 
 	<xsl:template match="smbconfexample/smbconfoption|smbconfblock/smbconfoption">
-		<xsl:text>	</xsl:text><xsl:value-of select="name"/><xsl:text> = </xsl:text><xsl:value-of select="value"/><xsl:text>&#10;</xsl:text>
+		<xsl:text>	</xsl:text><xsl:value-of select="@name"/><xsl:text> = </xsl:text><xsl:value-of select="text()"/><xsl:text>&#10;</xsl:text>
 	</xsl:template>
 
 	<xsl:template match="smbconfexample">
@@ -78,10 +78,10 @@
 	</xsl:template>
 
 	<xsl:template match="smbconfoption">
-		<code><xsl:value-of select="name"/></code>
-		<xsl:if test="value != ''">
+		<code><xsl:value-of select="@name"/></code>
+		<xsl:if test="text() != ''">
 			<xsl:text> = </xsl:text>
-			<xsl:value-of select="value"/>
+			<xsl:value-of select="text()"/>
 		</xsl:if>
 		<xsl:text>&#10;</xsl:text>
 	</xsl:template>

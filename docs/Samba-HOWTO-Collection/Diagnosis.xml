@@ -58,9 +58,9 @@ lines shown in <link linkend="tmpshare">the next example</link>.
 <para><smbconfexample id="tmpshare">
 <title>smb.conf with [tmp] share</title>
 <smbconfsection>[tmp]</smbconfsection>
-<smbconfoption><name>comment</name><value>temporary files </value></smbconfoption>
-<smbconfoption><name>path</name><value>/tmp</value></smbconfoption>
-<smbconfoption><name>read only</name><value>yes</value></smbconfoption>
+<smbconfoption name="comment">temporary files </smbconfoption>
+<smbconfoption name="path">/tmp</smbconfoption>
+<smbconfoption name="read only">yes</smbconfoption>
 </smbconfexample>
 </para>
 
@@ -244,10 +244,10 @@ the &smb.conf; file entries as shown in <link linkend="modif1">the next example<
 	<title>Configuration for only allowing connections from a certain subnet</title>
 <smbconfsection>[globals]</smbconfsection>
 <member>...</member>
-<smbconfoption><name>hosts deny</name><value>ALL</value></smbconfoption>
-<smbconfoption><name>hosts allow</name><value>xxx.xxx.xxx.xxx/yy</value></smbconfoption>
-<smbconfoption><name>interfaces</name><value>eth0</value></smbconfoption>
-<smbconfoption><name>bind interfaces only</name><value>Yes</value></smbconfoption>
+<smbconfoption name="hosts deny">ALL</smbconfoption>
+<smbconfoption name="hosts allow">xxx.xxx.xxx.xxx/yy</smbconfoption>
+<smbconfoption name="interfaces">eth0</smbconfoption>
+<smbconfoption name="bind interfaces only">Yes</smbconfoption>
 <member>...</member>
 </smbconfexample>
 </para>
@@ -263,9 +263,9 @@ To solve this problem, change these lines as shown in <link linkend="modif2">the
 	<title>Configuration for allowing connections from a certain subnet and localhost</title>
 <smbconfsection>[globals]</smbconfsection>
 <member>...</member>
-<smbconfoption><name>hosts deny</name><value>ALL</value></smbconfoption>
-<smbconfoption><name>hosts allow</name><value>xxx.xxx.xxx.xxx/yy 127.</value></smbconfoption>
-<smbconfoption><name>interfaces</name><value>eth0 lo</value></smbconfoption>
+<smbconfoption name="hosts deny">ALL</smbconfoption>
+<smbconfoption name="hosts allow">xxx.xxx.xxx.xxx/yy 127.</smbconfoption>
+<smbconfoption name="interfaces">eth0 lo</smbconfoption>
 <member>...</member>
 </smbconfexample>
 </para>
@@ -347,7 +347,7 @@ messages from several hosts.
 If this does not give a similar result to the previous test, then
 nmblookup isn't correctly getting your broadcast address through its
 automatic mechanism. In this case you should experiment with the
-<smbconfoption><name>interfaces</name></smbconfoption> option in &smb.conf; to manually configure your IP
+<smbconfoption name="interfaces"/> option in &smb.conf; to manually configure your IP
 address, broadcast and netmask. 
 </para>
 
@@ -400,19 +400,19 @@ If it says <quote><errorname>bad password</errorname></quote>, then the likely c
 
 <listitem>
 	<para>
-	Your <smbconfoption><name>valid users</name></smbconfoption> configuration is incorrect.
+	Your <smbconfoption name="valid users"/> configuration is incorrect.
 	</para>
 </listitem>
 
 <listitem>
 	<para>
-	You have a mixed case password and you haven't enabled the <smbconfoption><name>password level</name></smbconfoption> option at a high enough level.
+	You have a mixed case password and you haven't enabled the <smbconfoption name="password level"/> option at a high enough level.
 	</para>
 </listitem>
 
 <listitem>
 	<para>
-	The <smbconfoption><name>path</name></smbconfoption> line in &smb.conf; is incorrect. Check it with &testparm;.
+	The <smbconfoption name="path"/> line in &smb.conf; is incorrect. Check it with &testparm;.
 	</para>
 </listitem>
 
@@ -502,7 +502,7 @@ and other config lines in &smb.conf; are correct.
 <para>
 It's also possible that the server can't work out what user name to connect you as.
 To see if this is the problem, add the line
-<smbconfoption><name>user</name><value>username</value></smbconfoption> to the
+<smbconfoption name="user">username</smbconfoption> to the
 <smbconfsection>[tmp]</smbconfsection> section of 
 &smb.conf; where <parameter>username</parameter> is the
 username corresponding to the password you typed. If you find this
@@ -511,7 +511,7 @@ fixes things, you may need the username mapping option.
 
 <para>
 It might also be the case that your client only sends encrypted passwords 
-and you have <smbconfoption><name>encrypt passwords</name><value>no</value></smbconfoption> in &smb.conf;.
+and you have <smbconfoption name="encrypt passwords">no</smbconfoption> in &smb.conf;.
 Change this to "yes" to fix this.
 </para>
 
@@ -530,7 +530,7 @@ master browser for that workgroup.
 If you do not, then the election process has failed. Wait a minute to
 see if it is just being slow, then try again. If it still fails after
 that, then look at the browsing options you have set in &smb.conf;. Make
-sure you have <smbconfoption><name>preferred master</name><value>yes</value></smbconfoption> to ensure that 
+sure you have <smbconfoption name="preferred master">yes</smbconfoption> to ensure that 
 an election is held at startup.
 </para>
 
@@ -546,9 +546,9 @@ of the server and get a list of shares. If you get the error message <quote>inva
  you are probably running Windows NT and it
 is refusing to browse a server that has no encrypted password
 capability and is in User Level Security mode. In this case, either set
-<smbconfoption><name>security</name><value>server</value></smbconfoption> and 
-<smbconfoption><name>password server</name><value>Windows_NT_Machine</value></smbconfoption> in your
-&smb.conf; file, or make sure <smbconfoption><name>encrypt passwords</name></smbconfoption> is
+<smbconfoption name="security">server</smbconfoption> and 
+<smbconfoption name="password server">Windows_NT_Machine</smbconfoption> in your
+&smb.conf; file, or make sure <smbconfoption name="encrypt passwords"/> is
 set to <quote>yes</quote>.
 </para>
 

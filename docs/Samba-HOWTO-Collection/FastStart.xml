@@ -124,15 +124,15 @@ of the packages that are provided by the operating system vendor, or through oth
 				<title>Anonymous Read-Only Server Configuration</title>
 		<smbconfcomment>Global parameters</smbconfcomment>
 		<smbconfsection>[global]</smbconfsection>
-		<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
-		<smbconfoption><name>netbios name</name><value>HOBBIT</value></smbconfoption>
-		<smbconfoption><name>security</name><value>share</value></smbconfoption>
+		<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+		<smbconfoption name="netbios name">HOBBIT</smbconfoption>
+		<smbconfoption name="security">share</smbconfoption>
 
 		<smbconfsection>[data]</smbconfsection>
-		<smbconfoption><name>comment</name><value>Data</value></smbconfoption>
-		<smbconfoption><name>path</name><value>/export</value></smbconfoption>
-		<smbconfoption><name>read only</name><value>Yes</value></smbconfoption>
-		<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+		<smbconfoption name="comment">Data</smbconfoption>
+		<smbconfoption name="path">/export</smbconfoption>
+		<smbconfoption name="read only">Yes</smbconfoption>
+		<smbconfoption name="guest ok">Yes</smbconfoption>
 		</smbconfexample>
 		</para>
 
@@ -260,17 +260,17 @@ Added user jackb.
 <smbconfexample id="anon-rw"><title>Modified Anonymous Read-Write smb.conf</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>HOBBIT</value></smbconfoption>
-<smbconfoption><name>security</name><value>SHARE</value></smbconfoption>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="netbios name">HOBBIT</smbconfoption>
+<smbconfoption name="security">SHARE</smbconfoption>
 
 <smbconfsection>[data]</smbconfsection>
-<smbconfoption><name>comment</name><value>Data</value></smbconfoption>
-<smbconfoption><name>path</name><value>/export</value></smbconfoption>
-<smbconfoption><name>force user</name><value>jackb</value></smbconfoption>
-<smbconfoption><name>force group</name><value>users</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption name="comment">Data</smbconfoption>
+<smbconfoption name="path">/export</smbconfoption>
+<smbconfoption name="force user">jackb</smbconfoption>
+<smbconfoption name="force group">users</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
 </smbconfexample>
 		</para>
 
@@ -313,21 +313,21 @@ Added user jackb.
 <smbconfexample id="anon-print"><title>Anonymous Print Server smb.conf</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>LUTHIEN</value></smbconfoption>
-<smbconfoption><name>security</name><value>share</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
-<smbconfoption><name>disable spoolss</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="netbios name">LUTHIEN</smbconfoption>
+<smbconfoption name="security">share</smbconfoption>
+<smbconfoption name="printcap name">cups</smbconfoption>
+<smbconfoption name="disable spoolss">Yes</smbconfoption>
+<smbconfoption name="show add printer wizard">No</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">All Printers</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="use client driver">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 </smbconfexample>
 		</para>
 
@@ -407,7 +407,7 @@ Added user jackb.
 		is the default, and for which the default is to store Microsoft Windows-compatible
 		encrypted passwords in a file called <filename>/etc/samba/smbpasswd</filename>.
 		The default &smb.conf; entry that makes this happen is:
-		<smbconfoption><name>passdb backend</name><value>smbpasswd, guest</value></smbconfoption>. Since this is the default
+		<smbconfoption name="passdb backend">smbpasswd, guest</smbconfoption>. Since this is the default
 		it is not necessary to enter it into the configuration file. Note that guest backend is
 		added to the list of active passdb backends not matter was it specified directly in Samba configuration
 		file or not.
@@ -432,36 +432,36 @@ Added user jackb.
 <title>Secure Office Server smb.conf</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>OLORIN</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
-<smbconfoption><name>disable spoolss</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="netbios name">OLORIN</smbconfoption>
+<smbconfoption name="printcap name">cups</smbconfoption>
+<smbconfoption name="disable spoolss">Yes</smbconfoption>
+<smbconfoption name="show add printer wizard">No</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
 
 <smbconfsection>[homes]</smbconfsection>
-<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Home Directories</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[public]</smbconfsection>
-<smbconfoption><name>comment</name><value>Data</value></smbconfoption>
-<smbconfoption><name>path</name><value>/export</value></smbconfoption>
-<smbconfoption><name>force user</name><value>maryo</value></smbconfoption>
-<smbconfoption><name>force group</name><value>users</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Data</smbconfoption>
+<smbconfoption name="path">/export</smbconfoption>
+<smbconfoption name="force user">maryo</smbconfoption>
+<smbconfoption name="force group">users</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>printer admin</name><value>root, maryo</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0600</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">All Printers</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="printer admin">root, maryo</smbconfoption>
+<smbconfoption name="create mask">0600</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="use client driver">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 			</smbconfexample>
 			</para></step>
 
@@ -644,49 +644,49 @@ smb: \> <userinput>q</userinput>
 			<title>Member server smb.conf (globals)</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>VALINOR</value></smbconfoption>
-<smbconfoption><name>security</name><value>DOMAIN</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
-<smbconfoption><name>disable spoolss</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
-<smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>winbind use default domain</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>use sendfile</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="netbios name">VALINOR</smbconfoption>
+<smbconfoption name="security">DOMAIN</smbconfoption>
+<smbconfoption name="printcap name">cups</smbconfoption>
+<smbconfoption name="disable spoolss">Yes</smbconfoption>
+<smbconfoption name="show add printer wizard">No</smbconfoption>
+<smbconfoption name="idmap uid">15000-20000</smbconfoption>
+<smbconfoption name="idmap gid">15000-20000</smbconfoption>
+<smbconfoption name="winbind use default domain">Yes</smbconfoption>
+<smbconfoption name="use sendfile">Yes</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
 			</smbconfexample></para>
 
 			<para>
 			<smbconfexample id="fast-memberserver-shares">
 			<title>Member server smb.conf (shares and services)</title>
 <smbconfsection>[homes]</smbconfsection>
-<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Home Directories</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[spytfull]</smbconfsection>
-<smbconfoption><name>comment</name><value>Accounting Application Only</value></smbconfoption>
-<smbconfoption><name>path</name><value>/export/spytfull</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>@Accounts</value></smbconfoption>
-<smbconfoption><name>admin users</name><value>maryo</value></smbconfoption>
-<smbconfoption><name>read only</name><value>Yes</value></smbconfoption>
+<smbconfoption name="comment">Accounting Application Only</smbconfoption>
+<smbconfoption name="path">/export/spytfull</smbconfoption>
+<smbconfoption name="valid users">@Accounts</smbconfoption>
+<smbconfoption name="admin users">maryo</smbconfoption>
+<smbconfoption name="read only">Yes</smbconfoption>
 
 <smbconfsection>[public]</smbconfsection>
-<smbconfoption><name>comment</name><value>Data</value></smbconfoption>
-<smbconfoption><name>path</name><value>/export/public</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Data</smbconfoption>
+<smbconfoption name="path">/export/public</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
 
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>printer admin</name><value>root, maryo</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0600</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">All Printers</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="printer admin">root, maryo</smbconfoption>
+<smbconfoption name="create mask">0600</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="use client driver">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 			</smbconfexample>
 			</para></step>
 
@@ -872,72 +872,72 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 			<smbconfexample id="fast-engoffice-global">
 			<title>Engineering Office smb.conf (globals)</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>FRODO</value></smbconfoption>
-<smbconfoption><name>passdb backend</name><value>tdbsam</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
-<smbconfoption><name>add user script</name><value>/usr/sbin/useradd -m %u</value></smbconfoption>
-<smbconfoption><name>delete user script</name><value>/usr/sbin/userdel -r %u</value></smbconfoption>
-<smbconfoption><name>add group script</name><value>/usr/sbin/groupadd %g</value></smbconfoption>
-<smbconfoption><name>delete group script</name><value>/usr/sbin/groupdel %g</value></smbconfoption>
-<smbconfoption><name>add user to group script</name><value>/usr/sbin/usermod -G %g %u</value></smbconfoption>
-<smbconfoption><name>add machine script</name><value>/usr/sbin/useradd -s /bin/false \</value></smbconfoption>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="netbios name">FRODO</smbconfoption>
+<smbconfoption name="passdb backend">tdbsam</smbconfoption>
+<smbconfoption name="printcap name">cups</smbconfoption>
+<smbconfoption name="add user script">/usr/sbin/useradd -m %u</smbconfoption>
+<smbconfoption name="delete user script">/usr/sbin/userdel -r %u</smbconfoption>
+<smbconfoption name="add group script">/usr/sbin/groupadd %g</smbconfoption>
+<smbconfoption name="delete group script">/usr/sbin/groupdel %g</smbconfoption>
+<smbconfoption name="add user to group script">/usr/sbin/usermod -G %g %u</smbconfoption>
+<smbconfoption name="add machine script">/usr/sbin/useradd -s /bin/false \</smbconfoption>
 <member><parameter>        -d /var/lib/nobody %u</parameter></member>
 <smbconfcomment>Note: The following specifies the default logon script.</smbconfcomment>
 <smbconfcomment>Per user logon scripts can be specified in the user account using pdbedit </smbconfcomment>
-<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
+<smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
 <smbconfcomment>This sets the default profile path. Set per user paths with pdbedit</smbconfcomment>
-<smbconfoption><name>logon path</name><value>\\%L\Profiles\%U</value></smbconfoption>
-<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
-<smbconfoption><name>logon home</name><value>\\%L\%U</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>os level</name><value>35</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>domain master</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<smbconfoption name="logon path">\\%L\Profiles\%U</smbconfoption>
+<smbconfoption name="logon drive">H:</smbconfoption>
+<smbconfoption name="logon home">\\%L\%U</smbconfoption>
+<smbconfoption name="domain logons">Yes</smbconfoption>
+<smbconfoption name="os level">35</smbconfoption>
+<smbconfoption name="preferred master">Yes</smbconfoption>
+<smbconfoption name="domain master">Yes</smbconfoption>
+<smbconfoption name="idmap uid">15000-20000</smbconfoption>
+<smbconfoption name="idmap gid">15000-20000</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
 			</smbconfexample>
 
 			<smbconfexample id="fast-engoffice-shares">
 			<title>Engineering Office smb.conf (shares and services)</title>
 <smbconfsection>[homes]</smbconfsection>
-<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
-<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Home Directories</smbconfoption>
+<smbconfoption name="valid users">%S</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfcomment>Printing auto-share (makes printers available thru CUPS)</smbconfcomment>
 <smbconfsection>[printers]</smbconfsection>
-<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
-<smbconfoption><name>printer admin</name><value>root, maryo</value></smbconfoption>
-<smbconfoption><name>create mask</name><value>0600</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">All Printers</smbconfoption>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="printer admin">root, maryo</smbconfoption>
+<smbconfoption name="create mask">0600</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="printable">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfsection>[print$]</smbconfsection>
-<smbconfoption><name>comment</name><value>Printer Drivers Share</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/lib/samba/drivers</value></smbconfoption>
-<smbconfoption><name>write list</name><value>maryo, root</value></smbconfoption>
-<smbconfoption><name>printer admin</name><value>maryo, root</value></smbconfoption>
+<smbconfoption name="comment">Printer Drivers Share</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
+<smbconfoption name="write list">maryo, root</smbconfoption>
+<smbconfoption name="printer admin">maryo, root</smbconfoption>
 
 <smbconfcomment>Needed to support domain logons</smbconfcomment>
 <smbconfsection>[netlogon]</smbconfsection>
-<smbconfoption><name>comment</name><value>Network Logon Service</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/lib/samba/netlogon</value></smbconfoption>
-<smbconfoption><name>admin users</name><value>root, maryo</value></smbconfoption>
-<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+<smbconfoption name="comment">Network Logon Service</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/netlogon</smbconfoption>
+<smbconfoption name="admin users">root, maryo</smbconfoption>
+<smbconfoption name="guest ok">Yes</smbconfoption>
+<smbconfoption name="browseable">No</smbconfoption>
 
 <smbconfcomment>For profiles to work, create a user directory under the path</smbconfcomment>
 <smbconfcomment> shown. i.e., mkdir -p /var/lib/samba/profiles/maryo</smbconfcomment>
 <smbconfsection>[Profiles]</smbconfsection>
-<smbconfoption><name>comment</name><value>Roaming Profile Share</value></smbconfoption>
-<smbconfoption><name>path</name><value>/var/lib/samba/profiles</value></smbconfoption>
-<smbconfoption><name>read only</name><value>No</value></smbconfoption>
-<smbconfoption><name>profile acls</name><value>Yes</value></smbconfoption>
+<smbconfoption name="comment">Roaming Profile Share</smbconfoption>
+<smbconfoption name="path">/var/lib/samba/profiles</smbconfoption>
+<smbconfoption name="read only">No</smbconfoption>
+<smbconfoption name="profile acls">Yes</smbconfoption>
 
 <smbconfcomment>Other resource (share/printer) definitions would follow below.</smbconfcomment>
 <member>...</member>
@@ -1144,41 +1144,41 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <title>LDAP backend smb.conf for PDC</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>FRODO</value></smbconfoption>
-<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://localhost</value></smbconfoption>
-<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
-<smbconfoption><name>add user script</name><value>/usr/local/sbin/smbldap-useradd.pl -m '%u'</value></smbconfoption>
-<smbconfoption><name>delete user script</name><value>/usr/local/sbin/smbldap-userdel.pl %u</value></smbconfoption>
-<smbconfoption><name>add group script</name><value>/usr/local/sbin/smbldap-groupadd.pl -p '%g'</value></smbconfoption>
-<smbconfoption><name>delete group script</name><value>/usr/local/sbin/smbldap-groupdel.pl '%g'</value></smbconfoption>
-<smbconfoption><name>add user to group script</name><value>/usr/local/sbin/ \</value></smbconfoption>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="netbios name">FRODO</smbconfoption>
+<smbconfoption name="passdb backend">ldapsam:ldap://localhost</smbconfoption>
+<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+<smbconfoption name="printcap name">cups</smbconfoption>
+<smbconfoption name="add user script">/usr/local/sbin/smbldap-useradd.pl -m '%u'</smbconfoption>
+<smbconfoption name="delete user script">/usr/local/sbin/smbldap-userdel.pl %u</smbconfoption>
+<smbconfoption name="add group script">/usr/local/sbin/smbldap-groupadd.pl -p '%g'</smbconfoption>
+<smbconfoption name="delete group script">/usr/local/sbin/smbldap-groupdel.pl '%g'</smbconfoption>
+<smbconfoption name="add user to group script">/usr/local/sbin/ \</smbconfoption>
 <member><parameter>smbldap-groupmod.pl -m '%g' '%u'</parameter></member>
-<smbconfoption><name>delete user from group script</name><value>/usr/local/sbin/ \</value></smbconfoption>
+<smbconfoption name="delete user from group script">/usr/local/sbin/ \</smbconfoption>
 <member><parameter>smbldap-groupmod.pl -x '%g' '%u'</parameter></member>
-<smbconfoption><name>set primary group script</name><value>/usr/local/sbin/ \</value></smbconfoption>
+<smbconfoption name="set primary group script">/usr/local/sbin/ \</smbconfoption>
 <member><parameter>smbldap-usermod.pl -g '%g' '%u'</parameter></member>
-<smbconfoption><name>add machine script</name><value>/usr/local/sbin/smbldap-useradd.pl -w '%u'</value></smbconfoption>
-<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
-<smbconfoption><name>logon path</name><value>\\%L\Profiles\%U</value></smbconfoption>
-<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
-<smbconfoption><name>logon home</name><value>\\%L\%U</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>os level</name><value>35</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>domain master</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>ldap suffix</name><value>dc=quenya,dc=org</value></smbconfoption>
-<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap group suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap idmap suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap admin dn</name><value>cn=Manager</value></smbconfoption>
-<smbconfoption><name>ldap ssl</name><value>no</value></smbconfoption>
-<smbconfoption><name>ldap passwd sync</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<smbconfoption name="add machine script">/usr/local/sbin/smbldap-useradd.pl -w '%u'</smbconfoption>
+<smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
+<smbconfoption name="logon path">\\%L\Profiles\%U</smbconfoption>
+<smbconfoption name="logon drive">H:</smbconfoption>
+<smbconfoption name="logon home">\\%L\%U</smbconfoption>
+<smbconfoption name="domain logons">Yes</smbconfoption>
+<smbconfoption name="os level">35</smbconfoption>
+<smbconfoption name="preferred master">Yes</smbconfoption>
+<smbconfoption name="domain master">Yes</smbconfoption>
+<smbconfoption name="ldap suffix">dc=quenya,dc=org</smbconfoption>
+<smbconfoption name="ldap machine suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap user suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap group suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap idmap suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=Manager</smbconfoption>
+<smbconfoption name="ldap ssl">no</smbconfoption>
+<smbconfoption name="ldap passwd sync">Yes</smbconfoption>
+<smbconfoption name="idmap uid">15000-20000</smbconfoption>
+<smbconfoption name="idmap gid">15000-20000</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
 <member>...</member>
 </smbconfexample>
 				</para></step>
@@ -1217,30 +1217,30 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 <title>Remote LDAP BDC smb.conf</title>
 <smbconfcomment>Global parameters</smbconfcomment>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
-<smbconfoption><name>netbios name</name><value>GANDALF</value></smbconfoption>
-<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://frodo.quenya.org</value></smbconfoption>
-<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
-<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
-<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
-<smbconfoption><name>logon path</name><value>\\%L\Profiles\%U</value></smbconfoption>
-<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
-<smbconfoption><name>logon home</name><value>\\%L\%U</value></smbconfoption>
-<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>os level</name><value>33</value></smbconfoption>
-<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>domain master</name><value>No</value></smbconfoption>
-<smbconfoption><name>ldap suffix</name><value>dc=quenya,dc=org</value></smbconfoption>
-<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap group suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap idmap suffix</name><value>ou=People</value></smbconfoption>
-<smbconfoption><name>ldap admin dn</name><value>cn=Manager</value></smbconfoption>
-<smbconfoption><name>ldap ssl</name><value>no</value></smbconfoption>
-<smbconfoption><name>ldap passwd sync</name><value>Yes</value></smbconfoption>
-<smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
-<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<smbconfoption name="workgroup">MIDEARTH</smbconfoption>
+<smbconfoption name="netbios name">GANDALF</smbconfoption>
+<smbconfoption name="passdb backend">ldapsam:ldap://frodo.quenya.org</smbconfoption>
+<smbconfoption name="username map">/etc/samba/smbusers</smbconfoption>
+<smbconfoption name="printcap name">cups</smbconfoption>
+<smbconfoption name="logon script">scripts\logon.bat</smbconfoption>
+<smbconfoption name="logon path">\\%L\Profiles\%U</smbconfoption>
+<smbconfoption name="logon drive">H:</smbconfoption>
+<smbconfoption name="logon home">\\%L\%U</smbconfoption>
+<smbconfoption name="domain logons">Yes</smbconfoption>
+<smbconfoption name="os level">33</smbconfoption>
+<smbconfoption name="preferred master">Yes</smbconfoption>
+<smbconfoption name="domain master">No</smbconfoption>
+<smbconfoption name="ldap suffix">dc=quenya,dc=org</smbconfoption>
+<smbconfoption name="ldap machine suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap user suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap group suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap idmap suffix">ou=People</smbconfoption>
+<smbconfoption name="ldap admin dn">cn=Manager</smbconfoption>
+<smbconfoption name="ldap ssl">no</smbconfoption>
+<smbconfoption name="ldap passwd sync">Yes</smbconfoption>
+<smbconfoption name="idmap uid">15000-20000</smbconfoption>
+<smbconfoption name="idmap gid">15000-20000</smbconfoption>
+<smbconfoption name="printing">cups</smbconfoption>
 <member>...</member>
 </smbconfexample>
 				</para></step>

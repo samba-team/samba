@@ -64,14 +64,14 @@
 		<title>A minimal smb.conf</title>
 
 		<smbconfsection>[global]</smbconfsection>
-		<smbconfoption><name>workgroup</name><value>WKG</value></smbconfoption>
-		<smbconfoption><name>netbios name</name><value>MYNAME</value></smbconfoption>
+		<smbconfoption name="workgroup">WKG</smbconfoption>
+		<smbconfoption name="netbios name">MYNAME</smbconfoption>
 		<smbconfsection>[share1]</smbconfsection>
-		<smbconfoption><name>path</name><value>/tmp</value></smbconfoption>
+		<smbconfoption name="path">/tmp</smbconfoption>
 
 		<smbconfsection>[share2]</smbconfsection>
-		<smbconfoption><name>path</name><value>/my_shared_folder</value></smbconfoption>
-		<smbconfoption><name>comment</name><value>Some random files</value></smbconfoption>
+		<smbconfoption name="path">/my_shared_folder</smbconfoption>
+		<smbconfoption name="comment">Some random files</smbconfoption>
 	</smbconfexample>
 
 </sect2>
@@ -151,11 +151,11 @@
 	<smbconfexample id="simple-example">
 		<title>Another simple smb.conf File</title>
 <smbconfsection>[global]</smbconfsection>
-<smbconfoption><name>workgroup</name><value>&example.workgroup;</value></smbconfoption>
+<smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
 
 <smbconfsection>[homes]</smbconfsection>
-<smbconfoption><name>guest ok</name><value>no</value></smbconfoption>
-<smbconfoption><name>read only</name><value>no</value></smbconfoption>
+<smbconfoption name="guest ok">no</smbconfoption>
+<smbconfoption name="read only">no</smbconfoption>
 	</smbconfexample>
 	</para>
 	

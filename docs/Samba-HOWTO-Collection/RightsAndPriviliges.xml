@@ -61,7 +61,7 @@ access to the UNIX host system.
 <para>
 Samba 3.0.11 introduces support for the Windows privilege model.  This model
 allows certain rights to be assigned to a user or group SID.  In order to enable
-this feature, <smbconfoption><name>enable privileges</name><value>yes</value></smbconfoption>
+this feature, <smbconfoption name="enable privileges">yes</smbconfoption>
 must be defined in the <smbconfsection>global</smbconfsection> section of the &smb.conf; file.
 </para>
 
@@ -227,7 +227,7 @@ on the Samba mailing lists.
 	<varlistentry><term>SePrintOperatorPrivilege</term>
 		<listitem><para>
 		This privilege operates identically to the
-		<smbconfoption><name>printer admin</name></smbconfoption>
+		<smbconfoption name="printer admin"/>
 		option in the &smb.conf; file (see section 5 man page for &smb.conf;)
 		except that it is a global right (not on a per printer basis). 
 		Eventually the smb.conf option will be deprecated and administrative
