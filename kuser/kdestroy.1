@@ -1,4 +1,4 @@
-.\" Copyright (c) 1997, 1999, 2001 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1997, 1999, 2001, 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd August 27, 1997
+.Dd December  8, 2004
 .Dt KDESTROY 1
 .Os HEIMDAL
 .Sh NAME
@@ -39,15 +39,17 @@
 .Nd destroy the current ticket file
 .Sh SYNOPSIS
 .Nm
+.Bk -words
 .Op Fl c Ar cachefile
 .Op Fl -cache= Ns Ar cachefile
 .Op Fl -no-unlog
 .Op Fl -no-delete-v4
 .Op Fl -version
 .Op Fl -help
+.Ek
 .Sh DESCRIPTION
 .Nm
-remove the current set of tickets.
+removes the current set of tickets.
 .Pp
 Supported options:
 .Bl -tag -width Ds
