@@ -41,6 +41,10 @@
 #define Q_SETQLIM Q_SETQUOTA
 #endif
 
+#ifndef QCMD
+#define QCMD(x,y) x
+#endif
+
 #ifdef GRPQUOTA
 #define HAVE_GROUP_QUOTA
 #endif
