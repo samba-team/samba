@@ -98,6 +98,7 @@ static int		 yylex (void);
 	ABOR	DELE	CWD	LIST	NLST	SITE
 	sTAT	HELP	NOOP	MKD	RMD	PWD
 	CDUP	STOU	SMNT	SYST	SIZE	MDTM
+	EPRT	EPSV
 
 	UMASK	IDLE	CHMOD
 
@@ -151,9 +152,23 @@ cmd
 			}
 			reply(200, "PORT command successful.");
 		}
+	| EPRT SP STRING CRLF
+		{
+			eprt ($3);
+			free ($3);
+		}
 	| PASV CRLF
 		{
-			passive();
+			pasv ();
+		}
+	| EPSV CRLF
+		{
+			epsv (NULL);
+		}
+	| EPSV SP STRING CRLF
+		{
+			epsv ($3);
+			free ($3);
 		}
 	| TYPE SP type_code CRLF
 		{
@@ -696,9 +711,11 @@ host_port
 	: NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA
 		NUMBER COMMA NUMBER
 		{
-			data_dest.sin_family = AF_INET;
-			data_dest.sin_port = htons($9 * 256 + $11);
-			data_dest.sin_addr.s_addr = 
+			struct sockaddr_in *sin = (struct sockaddr_in *)data_dest;
+
+			sin->sin_family = AF_INET;
+			sin->sin_port = htons($9 * 256 + $11);
+			sin->sin_addr.s_addr = 
 			    htonl(($1 << 24) | ($3 << 16) | ($5 << 8) | $7);
 		}
 	;
@@ -901,7 +918,9 @@ struct tab cmdtab[] = {		/* In order defined in RFC 765 */
 	{ "REIN", REIN, ARGS, 0,	"(reinitialize server state)" },
 	{ "QUIT", QUIT, ARGS, 1,	"(terminate service)", },
 	{ "PORT", PORT, ARGS, 1,	"<sp> b0, b1, b2, b3, b4" },
+	{ "EPRT", EPRT, STR1, 1,	"<sp> string" },
 	{ "PASV", PASV, ARGS, 1,	"(set server in passive mode)" },
+	{ "EPSV", EPSV, OSTR, 1,	"[<sp> foo]" },
 	{ "TYPE", TYPE, ARGS, 1,	"<sp> [ A | E | I | L ]" },
 	{ "STRU", STRU, ARGS, 1,	"(specify file structure)" },
 	{ "MODE", MODE, ARGS, 1,	"(specify transfer mode)" },
