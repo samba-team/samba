@@ -80,6 +80,16 @@ size_t ndr_size_dom_sid(struct dom_sid *sid)
 }
 
 /*
+  return the wire size of a dom_sid
+*/
+size_t ndr_length_dom_sid(struct dom_sid *sid)
+{
+	if (!sid) return 0;
+	if (sid->sid_rev_num == 0) return 0;
+	return 8 + 4*sid->num_auths;
+}
+
+/*
   return the wire size of a security_ace
 */
 size_t ndr_size_security_ace(struct security_ace *ace)
