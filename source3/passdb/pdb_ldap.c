@@ -1384,7 +1384,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			rid = ldapsam_get_next_available_nua_rid(ldap_state);
 			if (rid == 0) {
 				DEBUG(0, ("NO user RID specified on account %s, and "
-					  "findining next available NUA RID failed, "
+					  "finding next available NUA RID failed, "
 					  "cannot store!\n",
 					  pdb_get_username(sampass)));
 				ldap_mods_free(*mods, 1);
@@ -2126,7 +2126,6 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 				element_is_set_or_changed)) {
 		DEBUG(0, ("ldapsam_add_sam_account: init_ldap_from_sam failed!\n"));
 		ldap_msgfree(result);
-		ldap_mods_free(mods, 1);
 		return NT_STATUS_UNSUCCESSFUL;		
 	}
 	
