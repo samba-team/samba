@@ -1816,17 +1816,25 @@ add_pair(krb5_context context, char *str, char ***cmds, int *num)
 {
     char **c;
     char *p;
+    int i;
+
+    p = strchr(str, ':');
+    if (p) {
+	*p = '\0';
+	p++;
+    }
+
+    /* filter out dup keys */
+    for (i = 0; i < *num; i++)
+	if (strcmp((*cmds)[i * 2], str) == 0)
+	    return 0;
 
     c = realloc(*cmds, sizeof(*c) * ((*num + 1) * 2));
     if (c == NULL) {
 	krb5_set_error_string(context, "out of memory");
 	return ENOMEM;
     }
-    p = strchr(str, ':');
-    if (p) {
-	*p = '\0';
-	p++;
-    }
+
     c[(*num * 2)] = str;
     c[(*num * 2) + 1] = p;
     *num += 1;
@@ -1923,6 +1931,16 @@ load_openssl_engine(krb5_context context,
 
     ENGINE_load_builtin_engines();
 
+    user_conf = strdup(string);
+    if (user_conf == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    ret = parse_openssl_engine_conf(context, &ctx, user_conf);
+    if (ret)
+	goto out;
+
     f = krb5_config_get_string_default(context, NULL, NULL,
 				       "libdefaults", 
 				       "pkinit-openssl-engine", 
@@ -1935,16 +1953,6 @@ load_openssl_engine(krb5_context context,
 		goto out;
 	}
     }
-
-    user_conf = strdup(string);
-    if (user_conf == NULL) {
-	krb5_set_error_string(context, "malloc: out of memory");
-	return ENOMEM;
-    }
-
-    ret = parse_openssl_engine_conf(context, &ctx, user_conf);
-    if (ret)
-	goto out;
 
     if (ctx.cert_file == NULL) {
 	krb5_set_error_string(context, "openssl engine missing certificate");
