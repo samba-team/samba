@@ -1,3 +1,7 @@
+2002-05-09  Jacques Vidrine <n@nectar.com>
+
+	* acquire_cred.c: handle GSS_C_INITIATE/GSS_C_ACCEPT/GSS_C_BOTH
+
 2002-05-08  Jacques Vidrine <n@nectar.com>
 
 	* acquire_cred.c: initialize gssapi; handle null desired_name
