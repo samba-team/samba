@@ -2371,6 +2371,7 @@ static struct {
 	{"BASE-DENY1",  torture_denytest1, 0},
 	{"BASE-DENY2",  torture_denytest2, 0},
 	{"BASE-DENY3",  torture_denytest3, 0},
+	{"BASE-DENYDOS",  torture_denydos_sharing, 0},
 	{"BASE-NTDENY1",  NULL, torture_ntdenytest1},
 	{"BASE-NTDENY2",  torture_ntdenytest2, 0},
 	{"BASE-TCON",  run_tcon_test, 0},
