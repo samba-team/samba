@@ -563,6 +563,47 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
 }
 
 /******************************************************************
+ Stream an array of unicode string, length/buffer specified separately,
+ in uint16 chars. We use DBG_RW_PCVAL, not DBG_RW_PSVAL here
+ as the unicode string is already in little-endian format.
+ ********************************************************************/
+
+BOOL prs_buffer5(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER5 *str)
+{
+	char *p;
+	char *q = prs_mem_get(ps, str->buf_len * sizeof(uint16));
+	if (q == NULL)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		str->buffer = (uint16 *)prs_alloc_mem(ps,str->buf_len * sizeof(uint16));
+		if (str->buffer == NULL)
+			return False;
+		memset(str->buffer, '\0', str->buf_len * sizeof(uint16));
+	}
+
+	/* If the string is empty, we don't have anything to stream */
+	if (str->buf_len==0)
+		return True;
+
+	p = (char *)str->buffer;
+
+	/* If we're using big-endian, reverse to get little-endian. */
+	if(ps->bigendian_data) {
+		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, 
+			     ps->io, ps->bigendian_data, q, p, 
+			     str->buf_len)
+	} else {
+		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, 
+			     ps->io, q, p, str->buf_len * sizeof(uint16))
+	}
+	
+	ps->data_offset += (str->buf_len * sizeof(uint16));
+
+	return True;
+}
+
+/******************************************************************
  Stream a "not" unicode string, length/buffer specified separately,
  in byte chars. String is in little-endian format.
  ********************************************************************/

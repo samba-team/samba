@@ -17,6 +17,9 @@ void cmd_tar(void);
 int process_tar(void);
 int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
 
+/*The following definitions come from  groupdb/mapping.c  */
+
+
 /*The following definitions come from  lib/access.c  */
 
 BOOL allow_access(char *deny_list,char *allow_list,
@@ -2472,6 +2475,7 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
 BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
 BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
+BOOL prs_buffer5(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER5 *str);
 BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str);
 BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str);
 BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str);
