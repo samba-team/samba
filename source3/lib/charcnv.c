@@ -4,6 +4,7 @@
    Character set conversion Extensions
    Copyright (C) Igor Vergeichik <iverg@mail.ru> 2001
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Simo Sorce 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -150,7 +151,7 @@ size_t convert_string_allocate(charset_t from, charset_t to,
 {
 	size_t i_len, o_len, destlen;
 	size_t retval;
-	char* inbuf = (char *)src;
+	char *inbuf = (char *)src;
 	char *outbuf, *ob;
 	smb_iconv_t descriptor;
 
@@ -178,7 +179,7 @@ convert:
 	ob = (char *)realloc(outbuf, destlen);
 	if (!ob) {
 		DEBUG(0, ("convert_string_allocate: realloc failed!\n"));
-		free(outbuf);
+		SAFE_FREE(outbuf);
 		return -1;
 	}
 	else outbuf = ob;
@@ -208,10 +209,11 @@ convert:
 	}
 	
 	destlen = destlen - o_len;
+	*dest = (char *)realloc(ob,destlen);
 	*dest = (char *)realloc(outbuf,destlen);
 	if (!*dest) {
 		DEBUG(0, ("convert_string_allocate: out of memory!\n"));
-		free(outbuf);
+		SAFE_FREE(ob);
 		return -1;
 	}
 
@@ -491,14 +493,14 @@ char *acnv_u2ux(const smb_ucs2_t *src)
 	size_t dlen;
 	void *dest;
 	
-	slen = strlen_w(src) + 1;
+	slen = (strlen_w(src) + 1) * sizeof(smb_ucs2_t);
 	dlen = convert_string_allocate(CH_UCS2, CH_UNIX, src, slen, &dest);
 	if (dlen == -1) return NULL;
 	else return dest;
 }
 
 /****************************************************************************
-convert from ucs2 to unix charset and return the
+convert from unix to ucs2 charset and return the
 allocated and converted string or NULL if an error occurred.
 you must provide a zero terminated string.
 the returning string will be zero terminated.
@@ -511,6 +513,42 @@ smb_ucs2_t *acnv_uxu2(const char *src)
 	
 	slen = strlen(src) + 1;
 	dlen = convert_string_allocate(CH_UNIX, CH_UCS2, src, slen, &dest);
+	if (dlen == -1) return NULL;
+	else return dest;
+}
+
+/****************************************************************************
+convert from ucs2 to dos charset and return the
+allocated and converted string or NULL if an error occurred.
+you must provide a zero terminated string.
+the returning string will be zero terminated.
+****************************************************************************/
+char *acnv_u2dos(const smb_ucs2_t *src)
+{
+	size_t slen;
+	size_t dlen;
+	void *dest;
+	
+	slen = (strlen_w(src) + 1) * sizeof(smb_ucs2_t);
+	dlen = convert_string_allocate(CH_UCS2, CH_DOS, src, slen, &dest);
+	if (dlen == -1) return NULL;
+	else return dest;
+}
+
+/****************************************************************************
+convert from dos to ucs2 charset and return the
+allocated and converted string or NULL if an error occurred.
+you must provide a zero terminated string.
+the returning string will be zero terminated.
+****************************************************************************/
+smb_ucs2_t *acnv_dosu2(const char *src)
+{
+	size_t slen;
+	size_t dlen;
+	void *dest;
+	
+	slen = strlen(src) + 1;
+	dlen = convert_string_allocate(CH_DOS, CH_UCS2, src, slen, &dest);
 	if (dlen == -1) return NULL;
 	else return dest;
 }
