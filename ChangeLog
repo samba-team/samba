@@ -1,3 +1,13 @@
+2004-08-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/Makefile.am: add krb5_eai_to_heim_errno.3
+	
+	* lib/krb5/krb5_eai_to_heim_errno.3: document
+	krb5_eai_to_heim_errno, krb5_h_errno_to_heim_errno
+	
+	* lib/krb5/krb5.3: add krb5_eai_to_heim_errno,
+	krb5_h_errno_to_heim_errno
+
 2004-07-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_expand_hostname.3: krb5_expand_hostname_realms
