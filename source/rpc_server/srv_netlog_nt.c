@@ -655,14 +655,35 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
     
 	{
 		DOM_GID *gids = NULL;
+		const DOM_SID *user_sid = NULL;
+		const DOM_SID *group_sid = NULL;
+		DOM_SID domain_sid;
+		uint32 user_rid, group_rid; 
+
 		int num_gids = 0;
 		pstring my_name;
-		pstring my_workgroup;
-	
+		fstring user_sid_string;
+		fstring group_sid_string;
+		
+		sampw = server_info->sam_account;
+
 		/* set up pointer indicating user/password failed to be found */
 		usr_info->ptr_user_info = 0;
-        
-		pstrcpy(my_workgroup, lp_workgroup());
+
+		user_sid = pdb_get_user_sid(sampw);
+		group_sid = pdb_get_group_sid(sampw);
+
+		sid_copy(&domain_sid, user_sid);
+		sid_split_rid(&domain_sid, &user_rid);
+
+		if (!sid_peek_check_rid(&domain_sid, group_sid, &group_rid)) {
+			DEBUG(1, ("_net_sam_logon: user %s\\%s has user sid %s\n but group sid %s.\nThe conflicting domain portions are not supported for NETLOGON calls\n", 	    
+				  pdb_get_domain(sampw), pdb_get_username(sampw),
+				  sid_to_string(user_sid_string, user_sid),
+				  sid_to_string(group_sid_string, group_sid)));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		
 		pstrcpy(my_name, global_myname);
 		strupper(my_name);
 
@@ -676,12 +697,10 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 
   		gids = NULL;
 		get_domain_user_groups(p->mem_ctx, &num_gids, &gids, server_info->sam_account);
-        
-		sampw = server_info->sam_account;
 
 		init_net_user_info3(p->mem_ctx, usr_info, 
-				    pdb_get_user_rid(sampw),
-				    pdb_get_group_rid(sampw),
+				    user_rid,
+				    group_rid,
 				    
 				    pdb_get_username(sampw),
 				    pdb_get_fullname(sampw),
@@ -703,8 +722,8 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 				    0x20    , /* uint32 user_flgs (?) */
 				    NULL, /* uchar sess_key[16] */
 				    my_name     , /* char *logon_srv */
-				    my_workgroup, /* char *logon_dom */
-				    get_global_sam_sid(),     /* DOM_SID *dom_sid */  
+				    pdb_get_domain(sampw),
+				    &domain_sid,     /* DOM_SID *dom_sid */  
 				    /* Should be users domain sid, not servers - for trusted domains */
 				  
 				    NULL); /* char *other_sids */
