@@ -69,13 +69,13 @@ static int net_ads_lookup(int argc, const char **argv)
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 	}
 
-	/*	ads_connect(ads);
+	ads_connect(ads);
 
 	if (!ads || !ads->config.realm) {
 		d_printf("Didn't find the cldap server!\n");
 		return -1;
 	}
-	*/
+
 	return ads_cldap_netlogon(ads);
 }
 
@@ -116,7 +116,7 @@ static ADS_STRUCT *ads_startup(void)
 	BOOL need_password = False;
 	BOOL second_time = False;
 	
-	ads = ads_init(lp_realm(), NULL, opt_host);
+	ads = ads_init(NULL, NULL, opt_host);
 
 	if (!opt_user_name) {
 		opt_user_name = "administrator";
