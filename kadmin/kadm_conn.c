@@ -32,6 +32,9 @@
  */
 
 #include "kadmin_locl.h"
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 
 RCSID("$Id$");
 
@@ -91,20 +94,71 @@ static pid_t pgrp;
 sig_atomic_t term_flag, doing_useful_work;
 
 static RETSIGTYPE
-wait_term(int sig)
+sigchld(int sig)
 {
-    if(doing_useful_work)
-	term_flag = 1;
-    else
-	exit(0);
+    int status;
+    waitpid(-1, &status, 0);
     SIGRETURN(0);
 }
 
 static RETSIGTYPE
 terminate(int sig)
 {
-    killpg(pgrp, sig);
+    if(getpid() == pgrp) {
+	/* parent */
+	term_flag = 1;
+	signal(sig, SIG_IGN);
+	killpg(pgrp, sig);
+    } else {
+	/* child */
+	if(doing_useful_work)
+	    term_flag = 1;
+	else
+	    exit(0);
+    }
     SIGRETURN(0);
+}
+
+static int
+spawn_child(krb5_context context, int *socks, int num_socks, int this_sock)
+{
+    int e, i;
+    struct sockaddr sa;
+    size_t sa_len;
+    int s;
+    pid_t pid;
+    krb5_address addr;
+    char buf[128];
+    size_t buf_len;
+    s = accept(socks[this_sock], &sa, &sa_len);
+    if(s < 0) {
+	krb5_warn(context, errno, "accept");
+	return 1;
+    }
+    e = krb5_sockaddr2address(&sa, &addr);
+    if(e)
+	krb5_warn(context, e, "krb5_sockaddr2address");
+    else {
+	e = krb5_print_address (&addr, buf, sizeof(buf), 
+				&buf_len);
+	if(e) 
+	    krb5_warn(context, e, "krb5_sockaddr2address");
+	else
+	    krb5_warnx(context, "connection from %s", buf);
+	krb5_free_address(context, &addr);
+    }
+    
+    pid = fork();
+    if(pid == 0) {
+	for(i = 0; i < num_socks; i++)
+	    close(socks[i]);
+	dup2(s, STDIN_FILENO);
+	dup2(s, STDOUT_FILENO);
+	if(s != STDIN_FILENO && s != STDOUT_FILENO)
+	    close(s);
+	return 0;
+    }
+    return 1;
 }
 
 static int
@@ -122,63 +176,40 @@ wait_for_connection(krb5_context context,
 	max_fd = max(max_fd, socks[i]);
     }
     
-    signal(SIGTERM, terminate);
-
-    if(setpgid(0, getpid()) < 0)
-	err(1, "setpgid");
-
     pgrp = getpid();
 
-    while (1) {
+    if(setpgid(0, pgrp) < 0)
+	err(1, "setpgid");
+
+    signal(SIGTERM, terminate);
+    signal(SIGINT, terminate);
+    signal(SIGCHLD, sigchld);
+
+    while (term_flag == 0) {
 	read_set = orig_read_set;
 	e = select(max_fd + 1, &read_set, NULL, NULL, NULL);
-	if(e < 0)
-	    krb5_warn(context, errno, "select");
-	else if(e == 0)
+	if(e < 0) {
+	    if(errno != EINTR)
+		krb5_warn(context, errno, "select");
+	} else if(e == 0)
 	    krb5_warnx(context, "select returned 0");
 	else {
 	    for(i = 0; i < num_socks; i++) {
-		if(FD_ISSET(socks[i], &read_set)) {
-		    struct sockaddr sa;
-		    size_t sa_len;
-		    int s;
-		    pid_t pid;
-		    krb5_address addr;
-		    char buf[128];
-		    size_t buf_len;
-		    s = accept(socks[i], &sa, &sa_len);
-		    if(s < 0) {
-			krb5_warn(context, errno, "accept");
-			continue;
-		    }
-		    e = krb5_sockaddr2address(&sa, &addr);
-		    if(e)
-			krb5_warn(context, e, "krb5_sockaddr2address");
-		    else {
-			e = krb5_print_address (&addr, buf, sizeof(buf), 
-						&buf_len);
-			if(e) 
-			    krb5_warn(context, e, "krb5_sockaddr2address");
-			else
-			    krb5_warnx(context, "connection from %s", buf);
-			krb5_free_address(context, &addr);
-		    }
-		    
-		    pid = fork();
-		    if(pid == 0) {
-			signal(SIGTERM, wait_term);
-			for(i = 0; i < num_socks; i++)
-			    close(socks[i]);
-			dup2(s, STDIN_FILENO);
-			dup2(s, STDOUT_FILENO);
-			if(s != STDIN_FILENO && s != STDOUT_FILENO)
-			    close(s);
+		if(FD_ISSET(socks[i], &read_set))
+		    if(spawn_child(context, socks, num_socks, i) == 0)
 			return 0;
-		    }
-		}
 	    }
 	}
     }
+    signal(SIGCHLD, SIG_IGN);
+    while(1) {
+	int status;
+	pid_t pid;
+	pid = waitpid(-1, &status, 0);
+	if(pid == -1 && errno == ECHILD)
+	    break;
+    }
+    exit(0);
 }
 
 
