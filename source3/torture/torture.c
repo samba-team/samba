@@ -32,6 +32,7 @@ static struct cli_state current_cli;
 static fstring randomfname;
 static BOOL use_oplocks;
 static BOOL use_level_II_oplocks;
+BOOL torture_showall = False;
 
 static double create_procs(BOOL (*fn)(int), BOOL *result);
 
@@ -1498,195 +1499,6 @@ static BOOL run_locktest5(int dummy)
 
 	printf("finished locktest5\n");
        
-	return correct;
-}
-
-
-/*
-  this produces a matrix of deny mode behaviour
- */
-static BOOL run_denytest1(int dummy)
-{
-	static struct cli_state cli1, cli2;
-	int fnum1, fnum2;
-	int f, d1, d2, o1, o2, x=0;
-	char *fnames[] = {"\\denytest1.exe", "\\denytest1.dat", NULL};
-	struct {
-		int v;
-		char *name; 
-	} deny_modes[] = {
-		{DENY_DOS, "DENY_DOS"},
-		{DENY_ALL, "DENY_ALL"},
-		{DENY_WRITE, "DENY_WRITE"},
-		{DENY_READ, "DENY_READ"},
-		{DENY_NONE, "DENY_NONE"},
-		{DENY_FCB, "DENY_FCB"},
-		{-1, NULL}};
-	struct {
-		int v;
-		char *name; 
-	} open_modes[] = {
-		{O_RDWR, "O_RDWR"},
-		{O_RDONLY, "O_RDONLY"},
-		{O_WRONLY, "O_WRONLY"},
-		{-1, NULL}};
-	BOOL correct = True;
-
-	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
-		return False;
-	}
-	cli_sockopt(&cli1, sockops);
-	cli_sockopt(&cli2, sockops);
-
-	printf("starting denytest1\n");
-
-	for (f=0;fnames[f];f++) {
-		cli_unlink(&cli1, fnames[f]);
-
-		fnum1 = cli_open(&cli1, fnames[f], O_RDWR|O_CREAT, DENY_NONE);
-		cli_write(&cli1, fnum1, 0, fnames[f], 0, strlen(fnames[f]));
-		cli_close(&cli1, fnum1);
-
-		for (d1=0;deny_modes[d1].name;d1++) 
-		for (o1=0;open_modes[o1].name;o1++) 
-		for (d2=0;deny_modes[d2].name;d2++) 
-		for (o2=0;open_modes[o2].name;o2++) {
-			fnum1 = cli_open(&cli1, fnames[f], 
-					 open_modes[o1].v, 
-					 deny_modes[d1].v);
-			fnum2 = cli_open(&cli2, fnames[f], 
-					 open_modes[o2].v, 
-					 deny_modes[d2].v);
-
-			printf("%s %8s %10s    %8s %10s     ",
-			       fnames[f],
-			       open_modes[o1].name,
-			       deny_modes[d1].name,
-			       open_modes[o2].name,
-			       deny_modes[d2].name);
-
-			if (fnum1 == -1) {
-				printf("X");
-			} else if (fnum2 == -1) {
-				printf("-");
-			} else {
-				if (cli_read(&cli2, fnum2, (void *)&x, 0, 1) == 1) {
-					printf("R");
-				}
-				if (cli_write(&cli2, fnum2, 0, (void *)&x, 0, 1) == 1) {
-					printf("W");
-				}
-			}
-
-			printf("\n");
-			cli_close(&cli1, fnum1);
-			cli_close(&cli2, fnum2);
-		}
-		
-		cli_unlink(&cli1, fnames[f]);
-	}
-
-	if (!torture_close_connection(&cli1)) {
-		correct = False;
-	}
-	if (!torture_close_connection(&cli2)) {
-		correct = False;
-	}
-	
-	printf("finshed denytest1\n");
-	return correct;
-}
-
-
-/*
-  this produces a matrix of deny mode behaviour for two opens on the
-  same connection
- */
-static BOOL run_denytest2(int dummy)
-{
-	static struct cli_state cli1;
-	int fnum1, fnum2;
-	int f, d1, d2, o1, o2, x=0;
-	char *fnames[] = {"\\denytest2.exe", "\\denytest2.dat", NULL};
-	struct {
-		int v;
-		char *name; 
-	} deny_modes[] = {
-		{DENY_DOS, "DENY_DOS"},
-		{DENY_ALL, "DENY_ALL"},
-		{DENY_WRITE, "DENY_WRITE"},
-		{DENY_READ, "DENY_READ"},
-		{DENY_NONE, "DENY_NONE"},
-		{DENY_FCB, "DENY_FCB"},
-		{-1, NULL}};
-	struct {
-		int v;
-		char *name; 
-	} open_modes[] = {
-		{O_RDWR, "O_RDWR"},
-		{O_RDONLY, "O_RDONLY"},
-		{O_WRONLY, "O_WRONLY"},
-		{-1, NULL}};
-	BOOL correct = True;
-
-	if (!torture_open_connection(&cli1)) {
-		return False;
-	}
-	cli_sockopt(&cli1, sockops);
-
-	printf("starting denytest2\n");
-
-	for (f=0;fnames[f];f++) {
-		cli_unlink(&cli1, fnames[f]);
-
-		fnum1 = cli_open(&cli1, fnames[f], O_RDWR|O_CREAT, DENY_NONE);
-		cli_write(&cli1, fnum1, 0, fnames[f], 0, strlen(fnames[f]));
-		cli_close(&cli1, fnum1);
-
-		for (d1=0;deny_modes[d1].name;d1++) 
-		for (o1=0;open_modes[o1].name;o1++) 
-		for (d2=0;deny_modes[d2].name;d2++) 
-		for (o2=0;open_modes[o2].name;o2++) {
-			fnum1 = cli_open(&cli1, fnames[f], 
-					 open_modes[o1].v, 
-					 deny_modes[d1].v);
-			fnum2 = cli_open(&cli1, fnames[f], 
-					 open_modes[o2].v, 
-					 deny_modes[d2].v);
-
-			printf("%s %8s %10s    %8s %10s     ",
-			       fnames[f],
-			       open_modes[o1].name,
-			       deny_modes[d1].name,
-			       open_modes[o2].name,
-			       deny_modes[d2].name);
-
-			if (fnum1 == -1) {
-				printf("X");
-			} else if (fnum2 == -1) {
-				printf("-");
-			} else {
-				if (cli_read(&cli1, fnum2, (void *)&x, 0, 1) == 1) {
-					printf("R");
-				}
-				if (cli_write(&cli1, fnum2, 0, (void *)&x, 0, 1) == 1) {
-					printf("W");
-				}
-			}
-
-			printf("\n");
-			cli_close(&cli1, fnum1);
-			cli_close(&cli1, fnum2);
-		}
-		
-		cli_unlink(&cli1, fnames[f]);
-	}
-
-	if (!torture_close_connection(&cli1)) {
-		correct = False;
-	}
-	
-	printf("finshed denytest2\n");
 	return correct;
 }
 
@@ -3164,8 +2976,8 @@ static struct {
 	{"OPLOCK2",  run_oplock2, 0},
 	{"OPLOCK3",  run_oplock3, 0},
 	{"DIR",  run_dirtest, 0},
-	{"DENY1",  run_denytest1, 0},
-	{"DENY2",  run_denytest2, 0},
+	{"DENY1",  torture_denytest1, 0},
+	{"DENY2",  torture_denytest2, 0},
 	{"TCON",  run_tcon_test, 0},
 	{"RW1",  run_readwritetest, 0},
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
@@ -3237,6 +3049,7 @@ static void usage(void)
 	printf("\t-O socket_options\n");
 	printf("\t-m maximum protocol\n");
 	printf("\t-L use oplocks\n");
+	printf("\t-A showall\n");
 	printf("\n\n");
 
 	printf("tests are:");
@@ -3309,7 +3122,7 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:Ld:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:Ld:A")) != EOF) {
 		switch (opt) {
 		case 'W':
 			fstrcpy(workgroup,optarg);
@@ -3331,6 +3144,9 @@ static void usage(void)
 			break;
 		case 'L':
 			use_oplocks = True;
+			break;
+		case 'A':
+			torture_showall = True;
 			break;
 		case 'n':
 			fstrcpy(myname, optarg);
