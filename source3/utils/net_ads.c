@@ -210,6 +210,7 @@ static int net_ads_join(int argc, const char **argv)
 	const char *org_unit = "Computers";
 	char *dn;
 	void *res;
+	DOM_SID dom_sid;
 
 	if (argc > 0) org_unit = argv[0];
 
@@ -248,6 +249,17 @@ static int net_ads_join(int argc, const char **argv)
 	rc = ads_set_machine_password(ads, global_myname, password);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_set_machine_password: %s\n", ads_errstr(rc));
+		return -1;
+	}
+
+	rc = ads_domain_sid(ads, &dom_sid);
+	if (!ADS_ERR_OK(rc)) {
+		d_printf("ads_domain_sid: %s\n", ads_errstr(rc));
+		return -1;
+	}
+
+	if (!secrets_store_domain_sid(lp_workgroup(), &dom_sid)) {
+		DEBUG(1,("Failed to save domain sid\n"));
 		return -1;
 	}
 
