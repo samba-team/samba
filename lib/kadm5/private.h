@@ -41,6 +41,10 @@
 #ifndef __PRIVATE_H__
 #define __PRIVATE_H__
 
-HDB *_kadm5_s_get_db(void*);
+kadm5_ret_t _kadm5_privs_to_string (u_int32_t, char*, size_t);
+
+kadm5_ret_t _kadm5_string_to_privs (const char*, u_int32_t*);
+
+HDB *_kadm5_s_get_db (void *);
 
 #endif /* __PRIVATE_H__ */
