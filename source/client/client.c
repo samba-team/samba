@@ -1958,6 +1958,30 @@ static int do_message_op(void)
 
 	setup_logging(pname,True);
 
+	/*
+	 * If the -E option is given, be careful not to clobber stdout
+	 * before processing the options.  28.Feb.99, richard@hacom.nl.
+	 * Also pre-parse the -s option to get the service file name.
+	 */
+
+	for (opt = 1; opt < argc; opt++) {
+		if (strcmp(argv[opt], "-E") == 0)
+			dbf = stderr;
+		else if(strncmp(argv[opt], "-s", 2) == 0) {
+			if(argv[opt][2] != '\0')
+				pstrcpy(servicesf, &argv[opt][2]);
+			else if(argv[opt+1] != NULL) {
+				/*
+				 * At least one more arg left.
+				 */
+				pstrcpy(servicesf, argv[opt+1]);
+			} else {
+				usage(pname);
+				exit(1);
+			}
+		}
+	}
+
 	TimeInit();
 	charset_initialise();
 
