@@ -132,7 +132,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^WINBINDD_PW|^WINBINDD_GR|^NT_PRINTER_INFO_LEVEL_2/ ) {
+  if( $0 ~ /^WINBINDD_PW|^WINBINDD_GR|^NT_PRINTER_INFO_LEVEL_2|^LOGIN_CACHE/ ) {
     gotstart = 1;
   }
 
