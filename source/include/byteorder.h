@@ -93,11 +93,45 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 */
 
+
+/*
+  on powerpc we can use the magic instructions to load/store
+  in little endian
+*/
+#if (defined(__powerpc__) && defined(__GNUC__))
+static __inline__ uint16_t ld_le16(const uint16_t *addr)
+{
+	uint16_t val;
+	__asm__ ("lhbrx %0,0,%1" : "=r" (val) : "r" (addr), "m" (*addr));
+	return val;
+}
+
+static __inline__ void st_le16(uint16_t *addr, const uint16_t val)
+{
+	__asm__ ("sthbrx %1,0,%2" : "=m" (*addr) : "r" (val), "r" (addr));
+}
+
+static __inline__ uint32_t ld_le32(const uint32_t *addr)
+{
+	uint32_t val;
+	__asm__ ("lwbrx %0,0,%1" : "=r" (val) : "r" (addr), "m" (*addr));
+	return val;
+}
+
+static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
+{
+	__asm__ ("stwbrx %1,0,%2" : "=m" (*addr) : "r" (val), "r" (addr));
+}
+#define HAVE_ASM_BYTEORDER 1
+#endif
+
+
+
 #undef CAREFUL_ALIGNMENT
 
 /* we know that the 386 can handle misalignment and has the "right" 
    byteorder */
-#ifdef __i386__
+#if defined(__i386__)
 #define CAREFUL_ALIGNMENT 0
 #endif
 
@@ -110,8 +144,19 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define PVAL(buf,pos) (CVAL(buf,pos))
 #define SCVAL(buf,pos,val) (CVAL_NC(buf,pos) = (val))
 
+#if HAVE_ASM_BYTEORDER
 
-#if CAREFUL_ALIGNMENT
+#define  _PTRPOS(buf,pos) (((const uint8_t *)buf)+(pos))
+#define SVAL(buf,pos) ld_le16((const uint16_t *)_PTRPOS(buf,pos))
+#define IVAL(buf,pos) ld_le32((const uint32_t *)_PTRPOS(buf,pos))
+#define SSVAL(buf,pos,val) st_le16((uint16_t *)__PTRPOS(buf,pos), val)
+#define SIVAL(buf,pos,val) st_le32((uint32_t *)__PTRPOS(buf,pos), val)
+#define SVALS(buf,pos) ((int16_t)SVAL(buf,pos))
+#define IVALS(buf,pos) ((int32_t)IVAL(buf,pos))
+#define SSVALS(buf,pos,val) SSVAL((buf),(pos),((int16_t)(val)))
+#define SIVALS(buf,pos,val) SIVAL((buf),(pos),((int32_t)(val)))
+
+#elif CAREFUL_ALIGNMENT
 
 #define SVAL(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
 #define IVAL(buf,pos) (SVAL(buf,pos)|SVAL(buf,(pos)+2)<<16)
