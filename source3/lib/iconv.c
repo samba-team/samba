@@ -368,7 +368,10 @@ static size_t utf8_pull(char **inbuf, size_t *inbytesleft,
 		unsigned char *uc = (unsigned char *)*outbuf;
 		int len = 1;
 
-		if ((c[0] & 0xf0) == 0xe0) {
+		if ((c[0] & 0x80) == 0) {
+			uc[0] = c[0];
+			uc[1] = 0;
+		} else if ((c[0] & 0xf0) == 0xe0) {
 			if (*inbytesleft < 3) {
 				DEBUG(0,("short utf8 char\n"));
 				goto badseq;
@@ -384,9 +387,6 @@ static size_t utf8_pull(char **inbuf, size_t *inbytesleft,
 			uc[1] = (c[0]>>2) & 0x7;
 			uc[0] = (c[0]<<6) | (c[1]&0x3f);
 			len = 2;
-		} else {
-			uc[0] = c[0];
-			uc[1] = 0;
 		}
 
 		(*inbuf)  += len;
