@@ -2825,7 +2825,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 			}
 
 			if (parameter_count) {
-				if (parameter_displacement + parameter_count >= total_parameter_count)
+				if (parameter_displacement + parameter_count > total_parameter_count)
 					goto bad_param;
 				if ((parameter_displacement + parameter_count < parameter_displacement) ||
 						(parameter_displacement + parameter_count < parameter_count))
@@ -2842,7 +2842,7 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 			}
 
 			if (data_count) {
-				if (data_displacement + data_count >= total_data_count)
+				if (data_displacement + data_count > total_data_count)
 					goto bad_param;
 				if ((data_displacement + data_count < data_displacement) ||
 						(data_displacement + data_count < data_count))
