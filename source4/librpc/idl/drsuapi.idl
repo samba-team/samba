@@ -3,7 +3,7 @@
 [ 
   uuid(e3514235-4b06-11d1-ab04-00c04fc2dcd2),
   version(4.0),
-  endpoints(drsuapi,TCP-0),
+  endpoints(lsass,protected_storage,TCP-0),
   pointer_default(unique)
 ] 
 interface drsuapi
