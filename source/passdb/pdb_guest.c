@@ -100,6 +100,7 @@ static NTSTATUS guestsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT
 	return guestsam_getsampwrid(my_methods, user, rid);
 }
 
+
 NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
@@ -117,6 +118,16 @@ NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, c
 	
 	(*pdb_method)->getsampwnam = guestsam_getsampwnam;
 	(*pdb_method)->getsampwsid = guestsam_getsampwsid;
+	
+	/* we should do no group mapping here */
+	(*pdb_method)->getgrsid = pdb_nop_getgrsid;
+	(*pdb_method)->getgrgid = pdb_nop_getgrgid;
+	(*pdb_method)->getgrnam = pdb_nop_getgrnam;
+	(*pdb_method)->add_group_mapping_entry = pdb_nop_add_group_mapping_entry;
+	(*pdb_method)->update_group_mapping_entry = pdb_nop_update_group_mapping_entry;
+	(*pdb_method)->delete_group_mapping_entry = pdb_nop_delete_group_mapping_entry;
+	(*pdb_method)->enum_group_mapping = pdb_nop_enum_group_mapping;
+	
 	
 	/* There's not very much to initialise here */
 	return NT_STATUS_OK;
