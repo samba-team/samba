@@ -513,7 +513,7 @@
 
 <image id="ch9-sambadc">
 	<imagedescription>Samba Domain: Samba Member Server</imagedescription>
-	<imagefile scale="75">chap9-SambaDC</imagefile>
+	<imagefile scale="60">chap9-SambaDC</imagefile>
 </image>
 
 	<para><indexterm>
@@ -1106,7 +1106,7 @@ aliases:        files
 
 	<image id="ch9-adsdc">
 		<imagedescription>Active Directory Domain: Samba Member Server</imagedescription>
-		<imagefile scale="75">chap9-ADSDC</imagefile>
+		<imagefile scale="60">chap9-ADSDC</imagefile>
 	</image>
 
 	<procedure>
