@@ -574,7 +574,8 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 				   BOOL *share_locked)
 {
 	if (fsp->can_write){
-		SMB_OFF_T mask = ((SMB_OFF_T)0xC) << (SMB_OFF_T_BITS-4);
+		SMB_OFF_T mask2 = ((SMB_OFF_T)0x3) << (SMB_OFF_T_BITS-4);
+		SMB_OFF_T mask = (mask2<<2);
 		
 		if (is_locked(fsp,conn,~mask,0,F_WRLCK)){
 			/* If share modes are in force for this connection we
