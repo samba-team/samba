@@ -1809,7 +1809,6 @@ typedef struct spool_q_resetprinter
 	POLICY_HND handle;
 	uint32 datatype_ptr;
 	UNISTR2 datatype;
-	uint32 unknown1;
 	DEVMODE_CTR devmode_ctr;
 
 } SPOOL_Q_RESETPRINTER;
