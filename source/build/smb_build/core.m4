@@ -30,12 +30,19 @@ my \$SMB_BUILD_CTX;
 
 _SMB_ACEOF
 
+echo "#line 1 \"build/smb_build/config_mk.pl\"" >> config.smb_build.pl
 cat >> config.smb_build.pl < build/smb_build/config_mk.pl
+echo "#line 1 \"build/smb_build/input.pl\"" >> config.smb_build.pl
 cat >> config.smb_build.pl < build/smb_build/input.pl
+echo "#line 1 \"build/smb_build/depend.pl\"" >> config.smb_build.pl
 cat >> config.smb_build.pl < build/smb_build/depend.pl
+echo "#line 1 \"build/smb_build/output.pl\"" >> config.smb_build.pl
 cat >> config.smb_build.pl < build/smb_build/output.pl
+echo "#line 1 \"build/smb_build/makefile.pl\"" >> config.smb_build.pl
 cat >> config.smb_build.pl < build/smb_build/makefile.pl
+echo "#line 1 \"build/smb_build/smb_build_h.pl\"" >> config.smb_build.pl
 cat >> config.smb_build.pl < build/smb_build/smb_build_h.pl
+echo "#line 1 \"build/smb_build/main.pl\"" >> config.smb_build.pl
 cat >> config.smb_build.pl < build/smb_build/main.pl
 
 cat >> config.smb_build.pl <<\_SMB_ACEOF
@@ -76,6 +83,7 @@ smb_build_main(\$SMB_BUILD_CTX);
 _SMB_ACEOF
 
 if test x"$debug" = x"yes";then
+	echo "#line 1 \"build/smb_build/dump.pl\"" >> config.smb_build.pl
 	cat >> config.smb_build.pl < build/smb_build/dump.pl
 fi
 
