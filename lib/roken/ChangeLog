@@ -1,3 +1,13 @@
+2000-04-14  Assar Westerlund  <assar@sics.se>
+
+	* getaddrinfo_hostspec.c (roken_getaddrinfo_hostspec): copy the
+	correct length from `hostspec'.  based on a patch from Love
+	<lha@s3.kth.se>
+
+2000-04-09  Assar Westerlund  <assar@sics.se>
+
+	* xdbm.h: only include one of db.h and the dbm-series
+
 2000-04-05  Assar Westerlund  <assar@sics.se>
 
 	* resolve.c (_resolve_debug): explicitly set to zero.  this moves
