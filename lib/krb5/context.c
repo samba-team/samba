@@ -46,19 +46,23 @@ krb5_init_context(krb5_context *context)
     krb5_context p;
     int val;
     char *config_file = NULL;
-
+    const char * tmp;
+    
     ALLOC(p, 1);
     if(!p)
 	return ENOMEM;
     memset(p, 0, sizeof(krb5_context_data));
+
+    /* init error tables */
     krb5_init_ets(p);
-    p->cc_ops = NULL;
+
     if(getuid() == geteuid() && getgid() == getegid())
 	config_file = getenv("KRB5_CONFIG");
     if (config_file != NULL)
 	krb5_config_parse_file (config_file, &p->cf);
     else
 	krb5_config_parse_file (krb5_config_file, &p->cf);
+
     p->max_skew = 5 * 60;
     val = krb5_config_get_time (p, NULL, "libdefaults", "clockskew", NULL);
     if (val >= 0)
@@ -96,19 +100,25 @@ krb5_init_context(krb5_context *context)
 	    krb5_config_free_strings(etypes);
 	}
     }
+    /* default keytab name */
+    p->default_keytab = krb5_config_get_string(p, NULL, 
+					       "libdefaults", 
+					       "default_keytab_name", 
+					       NULL);
+    if(p->default_keytab == NULL)
+	p->default_keytab = KEYTAB_DEFAULT;
+
     p->time_fmt = krb5_config_get_string(p, NULL, "libdefaults", 
 					 "time_format", NULL);
     if(p->time_fmt == NULL)
 	p->time_fmt = "%d-%b-%Y %H:%M:%S";
     p->log_utc = krb5_config_get_bool(p, NULL, "libdefaults", "log_utc", NULL);
-#ifdef MEGA_SCHLEMM
-    {
-	const char * tmp = krb5_config_get_string(p, NULL, "libdefaults", 
-						  "dns_proxy", NULL);
-	if(tmp) 
-	    roken_gethostby_setup(p->http_proxy, tmp);
-    }
-#endif
+
+    /* init dns-proxy slime */
+    tmp = krb5_config_get_string(p, NULL, "libdefaults", 
+				 "dns_proxy", NULL);
+    if(tmp) 
+	roken_gethostby_setup(p->http_proxy, tmp);
     krb5_set_default_realm(p, NULL);
     *context = p;
     return 0;
