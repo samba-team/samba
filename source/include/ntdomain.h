@@ -200,6 +200,15 @@ typedef struct pipes_struct
 
 } pipes_struct;
 
+typedef struct msrpc_service_fns
+{
+	void (*auth_init)(rpcsrv_struct *);
+	void (*service_init)(char* );
+	BOOL (*reload_services)(BOOL);
+	int (*main_init)(int,char *[]);
+
+} msrpc_service_fns;
+
 struct api_struct
 {  
   char *name;

@@ -408,7 +408,7 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-void msrpcd_process(int c, msrpc_pipes_struct *p)
+void msrpcd_process(msrpc_service_fns *fn, int c, msrpc_pipes_struct *p)
 {
     extern fstring remote_machine;
     extern fstring local_machine;
@@ -427,7 +427,7 @@ void msrpcd_process(int c, msrpc_pipes_struct *p)
     DEBUG(2, ("msrpc_process: client_name: %s my_name: %s\n",
                          remote_machine, local_machine));
 
-    reload_services(True);
+    fn->reload_services(True);
     reopen_logs();
 
   while (True)
@@ -472,7 +472,7 @@ void msrpcd_process(int c, msrpc_pipes_struct *p)
         service_load_counter = counter;
 
         /* reload services, if files have changed. */
-        reload_services(True);
+        fn->reload_services(True);
       }
 
       /*
@@ -483,7 +483,7 @@ void msrpcd_process(int c, msrpc_pipes_struct *p)
       if (reload_after_sighup)
       {
         DEBUG(0,("Reloading services after SIGHUP\n"));
-        reload_services(False);
+        fn->reload_services(False);
         reload_after_sighup = False;
         /*
          * Use this as an excuse to print some stats.

@@ -59,6 +59,50 @@ time_t StartupTime = 0;
 extern struct in_addr ipzero;
 
 /**************************************************************************** **
+  reload the services file
+ **************************************************************************** */
+static BOOL reload_services(BOOL test)
+{
+  BOOL ret;
+  extern fstring remote_machine;
+
+  fstrcpy( remote_machine, "nmb" );
+
+  if ( lp_loaded() )
+  {
+    pstring fname;
+    pstrcpy( fname,lp_configfile());
+    if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
+    {
+      pstrcpy(servicesf,fname);
+      test = False;
+    }
+  }
+
+  if ( test && !lp_file_list_changed() )
+    return(True);
+
+  ret = lp_load( servicesf, True , False, False);
+
+  /* perhaps the config filename is now set */
+  if ( !test )
+  {
+    DEBUG( 3, ( "services not loaded\n" ) );
+    reload_services( True );
+  }
+
+  /* Do a sanity check for a misconfigured nmbd */
+  if( lp_wins_support() && *lp_wins_server() )
+  {
+    DEBUG(0,("ERROR: both 'wins support = true' and 'wins server = <server>' \
+cannot be set in the smb.conf file. nmbd aborting.\n"));
+    exit(10);
+  }
+
+  return(ret);
+} /* reload_services */
+
+/**************************************************************************** **
   catch a sigterm
  **************************************************************************** */
 static void sig_term(int sig)
@@ -183,50 +227,6 @@ static void expire_names_and_servers(time_t t)
    */
   expire_workgroups_and_servers(t);
 } /* expire_names_and_servers */
-
-/**************************************************************************** **
-  reload the services file
- **************************************************************************** */
-BOOL reload_services(BOOL test)
-{
-  BOOL ret;
-  extern fstring remote_machine;
-
-  fstrcpy( remote_machine, "nmb" );
-
-  if ( lp_loaded() )
-  {
-    pstring fname;
-    pstrcpy( fname,lp_configfile());
-    if (file_exist(fname,NULL) && !strcsequal(fname,servicesf))
-    {
-      pstrcpy(servicesf,fname);
-      test = False;
-    }
-  }
-
-  if ( test && !lp_file_list_changed() )
-    return(True);
-
-  ret = lp_load( servicesf, True , False, False);
-
-  /* perhaps the config filename is now set */
-  if ( !test )
-  {
-    DEBUG( 3, ( "services not loaded\n" ) );
-    reload_services( True );
-  }
-
-  /* Do a sanity check for a misconfigured nmbd */
-  if( lp_wins_support() && *lp_wins_server() )
-  {
-    DEBUG(0,("ERROR: both 'wins support = true' and 'wins server = <server>' \
-cannot be set in the smb.conf file. nmbd aborting.\n"));
-    exit(10);
-  }
-
-  return(ret);
-} /* reload_services */
 
 /**************************************************************************** **
  The main select loop.

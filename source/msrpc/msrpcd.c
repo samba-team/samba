@@ -354,8 +354,9 @@ static void usage(char *pname)
 /****************************************************************************
   main program
 ****************************************************************************/
-int msrpc_main(int argc,char *argv[])
+ int main(int argc,char *argv[])
 {
+	msrpc_service_fns *fn = get_service_fns();
 	extern BOOL append_log;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
@@ -364,7 +365,18 @@ int msrpc_main(int argc,char *argv[])
 	int ClientMSRPC = -1;
 	msrpc_pipes_struct p;
 	fstring service_name;
-	
+
+	if (fn == NULL)
+	{
+		fprintf(stderr,"no services table!\n");
+		exit(-1);
+	}
+
+	if (fn->main_init(argc, argv) != 0)
+	{
+		exit_server("fn->main() initialisation failed!");
+	}
+
 	pstrcpy(remote_machine, pipe_name);
 	split_at_last_component(argv[0], NULL, '/', service_name);
 
@@ -468,7 +480,7 @@ int msrpc_main(int argc,char *argv[])
 
 	get_myname(myhostname,NULL);
 
-	if (!reload_services(False))
+	if (!fn->reload_services(False))
 		return(-1);	
 
 	init_structs();
@@ -541,23 +553,23 @@ int msrpc_main(int argc,char *argv[])
 		exit(1);
 
 	/* possibly reload the services file. */
-	reload_services(True);
+	fn->reload_services(True);
 	
 	if (*lp_rootdir()) {
 		if (sys_chroot(lp_rootdir()) == 0)
 			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
 	}
 
-	msrpc_service_init(service_name);
+	fn->service_init(service_name);
 	dbgflush();
 
 	ZERO_STRUCT(p);
 	fstrcpy(p.name, pipe_name);
 	if (msrpcd_init(ClientMSRPC, &p))
 	{
-		msrpc_auth_init(p.l);
-		reload_services(True);
-		msrpcd_process(ClientMSRPC, &p);
+		fn->auth_init(p.l);
+		fn->reload_services(True);
+		msrpcd_process(fn, ClientMSRPC, &p);
 	}
 	if (ClientMSRPC != -1)
 	{
@@ -567,3 +579,4 @@ int msrpc_main(int argc,char *argv[])
 	exit_server("normal exit");
 	return(0);
 }
+

@@ -5,9 +5,7 @@
 
 /*The following definitions come from  browserd/browserd.c  */
 
-void msrpc_auth_init(rpcsrv_struct *l);
-void msrpc_service_init(char* service_name);
-BOOL reload_services(BOOL test);
+msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  client/client.c  */
 
@@ -1068,9 +1066,7 @@ int share_mode_forall(void (*fn)(share_mode_entry *, char *));
 
 /*The following definitions come from  lsarpcd/lsarpcd.c  */
 
-void msrpc_auth_init(rpcsrv_struct *l);
-void msrpc_service_init(char* service_name);
-BOOL reload_services(BOOL test);
+msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  lsarpcd/srv_lsa.c  */
 
@@ -1096,7 +1092,6 @@ void *smb_mem_resize(void *ptr,size_t newsize);
 /*The following definitions come from  msrpc/msrpcd.c  */
 
 void exit_server(char *reason);
-int msrpc_main(int argc,char *argv[]);
 
 /*The following definitions come from  msrpc/msrpcd_process.c  */
 
@@ -1104,7 +1099,7 @@ BOOL get_user_creds(int c, struct user_creds *usr);
 void close_srv_auth_array(rpcsrv_struct *l);
 void add_srv_auth_fn(rpcsrv_struct *l, srv_auth_fns *fn);
 BOOL msrpcd_init(int c, msrpc_pipes_struct *p);
-void msrpcd_process(int c, msrpc_pipes_struct *p);
+void msrpcd_process(msrpc_service_fns *fn, int c, msrpc_pipes_struct *p);
 
 /*The following definitions come from  netlogond/creds_db.c  */
 
@@ -1114,9 +1109,7 @@ BOOL cred_init_db(void);
 
 /*The following definitions come from  netlogond/netlogond.c  */
 
-void msrpc_auth_init(rpcsrv_struct *l);
-void msrpc_service_init(char* service_name);
-BOOL reload_services(BOOL test);
+msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
@@ -1132,7 +1125,6 @@ void kill_async_dns_child(void);
 
 /*The following definitions come from  nmbd/nmbd.c  */
 
-BOOL reload_services(BOOL test);
 
 /*The following definitions come from  nmbd/nmbd_become_dmb.c  */
 
@@ -4245,9 +4237,7 @@ void readline_init(void);
 
 /*The following definitions come from  samrd/samrd.c  */
 
-void msrpc_auth_init(rpcsrv_struct *l);
-void msrpc_service_init(char* service_name);
-BOOL reload_services(BOOL test);
+msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  smbd/blocking.c  */
 
@@ -4738,21 +4728,15 @@ int smbw_stat(const char *fname, struct stat *st);
 
 /*The following definitions come from  spoolssd/spoolssd.c  */
 
-void msrpc_auth_init(rpcsrv_struct *l);
-void msrpc_service_init(char* service_name);
-BOOL reload_services(BOOL test);
+msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 
-void msrpc_auth_init(rpcsrv_struct *l);
-void msrpc_service_init(char* service_name);
-BOOL reload_services(BOOL test);
+msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  svcctld/svcctld.c  */
 
-void msrpc_auth_init(rpcsrv_struct *l);
-void msrpc_service_init(char* service_name);
-BOOL reload_services(BOOL test);
+msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  tdb/tdb.c  */
 
@@ -4812,13 +4796,9 @@ void status_page(void);
 
 /*The following definitions come from  winregd/winregd.c  */
 
-void msrpc_auth_init(rpcsrv_struct *l);
-void msrpc_service_init(char* service_name);
-BOOL reload_services(BOOL test);
+msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  wkssvcd/wkssvcd.c  */
 
-void msrpc_auth_init(rpcsrv_struct *l);
-void msrpc_service_init(char* service_name);
-BOOL reload_services(BOOL test);
+msrpc_service_fns *get_service_fns(void);
 #endif /* _PROTO_H_ */

@@ -30,14 +30,14 @@ extern BOOL append_log;
 /*****************************************************************************
  initialise srv_auth_fns array
  *****************************************************************************/
-void msrpc_auth_init(rpcsrv_struct *l)
+static void msrpc_auth_init(rpcsrv_struct *l)
 {
 }
 
 /*************************************************************************
  initialise an msrpc service
  *************************************************************************/
-void msrpc_service_init(char* service_name)
+static void msrpc_service_init(char* service_name)
 {
 	add_msrpc_command_processor( pipe_name, service_name, api_srvsvc_rpc );
 }
@@ -45,7 +45,7 @@ void msrpc_service_init(char* service_name)
 /****************************************************************************
   reload the services file
   **************************************************************************/
-BOOL reload_services(BOOL test)
+static BOOL reload_msrpc(BOOL test)
 {
 	BOOL ret;
 
@@ -69,7 +69,7 @@ BOOL reload_services(BOOL test)
 
 	/* perhaps the config filename is now set */
 	if (!test)
-		reload_services(True);
+		reload_msrpc(True);
 
 	reopen_logs();
 
@@ -81,7 +81,7 @@ BOOL reload_services(BOOL test)
 /****************************************************************************
   main program
 ****************************************************************************/
- int main(int argc,char *argv[])
+static int main_init(int argc,char *argv[])
 {
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
@@ -100,5 +100,18 @@ BOOL reload_services(BOOL test)
 	fstrcpy(pipe_name, "srvsvc");
 	slprintf(debugf, sizeof(debugf), "%s/log.%s", LOGFILEBASE, pipe_name);
 
-	return msrpc_main(argc, argv);
+	return 0;
+}
+
+static msrpc_service_fns fn_table =
+{
+	msrpc_auth_init,
+	msrpc_service_init,
+	reload_msrpc,
+	main_init
+};
+
+msrpc_service_fns *get_service_fns(void)
+{
+	return &fn_table;
 }
