@@ -110,9 +110,19 @@ int asprintf (char **ret, const char *format, ...)
      __attribute__ ((format (printf, 2, 3)));
 #endif
 
-#ifndef HAVE_VSNPRINTF
+#ifndef HAVE_VASPRINTF
 int vasprintf (char **ret, const char *format, va_list ap)
      __attribute__((format (printf, 2, 0)));
+#endif
+
+#ifndef HAVE_ASNPRINTF
+int asnprintf (char **ret, size_t max_sz, const char *format, ...)
+     __attribute__ ((format (printf, 3, 4)));
+#endif
+
+#ifndef HAVE_VASNPRINTF
+int vasnprintf (char **ret, size_t max_sz, const char *format, va_list ap)
+     __attribute__((format (printf, 3, 0)));
 #endif
 
 #ifndef HAVE_STRDUP

@@ -45,6 +45,7 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <roken.h>
 
 /*
  * Common state
@@ -55,6 +56,7 @@ struct state {
   char *s;
   char *theend;
   size_t sz;
+  size_t max_sz;
   int (*append_char)(struct state *, char);
   int (*reserve)(struct state *, size_t);
   /* XXX - methods */
@@ -131,16 +133,55 @@ asprintf (char **ret, const char *format, ...)
 }
 #endif
 
+#ifndef HAVE_ASNPRINTF
+int
+asnprintf (char **ret, size_t max_sz, const char *format, ...)
+{
+  va_list args;
+  int val;
+
+  va_start(args, format);
+  val = vasnprintf (ret, max_sz, format, args);
+
+  /* XXX - more paranoia */
+  {
+    int ret2;
+    char *tmp;
+    tmp = malloc (val + 1);
+    if (tmp == NULL)
+      abort ();
+
+    ret2 = vsprintf (tmp, format, args);
+    if (val != ret2 || strcmp(*ret, tmp))
+      abort ();
+    free (tmp);
+  }
+
+  va_end(args);
+  return val;
+}
+#endif
+
 #ifndef HAVE_VASPRINTF
 int
 vasprintf (char **ret, const char *format, va_list args)
+{
+  return vasnprintf (ret, 0, format, args);
+}
+#endif
+
+
+#ifndef HAVE_VASNPRINTF
+int
+vasnprintf (char **ret, size_t max_sz, const char *format, va_list args)
 {
   int st;
   size_t len;
   struct state state;
 
-  state.sz  = 1;
-  state.str = malloc(state.sz);
+  state.max_sz = max_sz;
+  state.sz     = min(1, max_sz);
+  state.str    = malloc(state.sz);
   if (state.str == NULL) {
     *ret = NULL;
     return -1;
@@ -175,6 +216,7 @@ vsnprintf (char *str, size_t sz, const char *format, va_list args)
   struct state state;
   int ret;
 
+  state.max_sz = 0;
   state.sz     = sz;
   state.str    = str;
   state.s      = str;
@@ -215,7 +257,10 @@ as_reserve (struct state *state, size_t n)
   while (state->s + n > state->theend) {
     int off = state->s - state->str;
 
-    state->sz *= 2;
+    if (state->max_sz && state->sz >= state->max_sz)
+      return 1;
+
+    state->sz = min(state->max_sz, state->sz*2);
     state->str = realloc (state->str, state->sz);
     if (state->str == NULL)
       return 1;
@@ -241,7 +286,6 @@ append_number (struct state *state,
 	       unsigned long num, unsigned base, char *rep,
 	       int width, int zerop, int minusp)
 {
-  char *beg;
   int i, len;
 
   len = 0;
