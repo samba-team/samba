@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -62,6 +62,7 @@ krb5_recvauth(krb5_context context,
   u_char repl;
   krb5_data data;
   krb5_flags ap_options;
+  ssize_t n;
 
   /*
    * If there are no addresses in auth_context, get them from `fd'.
@@ -80,8 +81,11 @@ krb5_recvauth(krb5_context context,
       return ret;
 
   if(!(flags & KRB5_RECVAUTH_IGNORE_VERSION)) {
-    if (krb5_net_read (context, p_fd, &len, 4) != 4)
-      return errno;
+    n = krb5_net_read (context, p_fd, &len, 4);
+    if (n < 0)
+	return errno;
+    if (n == 0)
+	return KRB5_SENDAUTH_BADAUTHVERS;
     len = ntohl(len);
     if (len != sizeof(her_version)
 	|| krb5_net_read (context, p_fd, her_version, len) != len
@@ -92,8 +96,11 @@ krb5_recvauth(krb5_context context,
     }
   }
 
-  if (krb5_net_read (context, p_fd, &len, 4) != 4)
-    return errno;
+  n = krb5_net_read (context, p_fd, &len, 4);
+  if (n < 0)
+      return errno;
+  if (n == 0)
+      return KRB5_SENDAUTH_BADAPPLVERS;
   len = ntohl(len);
   if (len != strlen(appl_version) + 1) {
     repl = 2;
