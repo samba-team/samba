@@ -112,7 +112,7 @@ kfd_match_version(const void *arg, const char *version)
 	       version[0] == '0' &&
 	       version[1] == '.' &&
 	       (version[2] == '4' || version[2] == '3') &&
-	       islower(version[3])) {
+	       islower((unsigned char)version[3])) {
 	protocol_version = 0;
 	return TRUE;
     }
