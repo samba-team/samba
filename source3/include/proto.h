@@ -626,6 +626,20 @@ BOOL server_validate(char *buf);
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)());
 
+/*The following definitions come from  pipenetlog.c  */
+
+BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
+
+/*The following definitions come from  pipentlsa.c  */
+
+BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
+
 /*The following definitions come from  pipes.c  */
 
 int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize);
@@ -633,19 +647,27 @@ BOOL api_LsarpcSNPHS(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
+void LsarpcTNP1(char *data,char **rdata, int *rdata_len);
 BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
+
+/*The following definitions come from  pipeutil.c  */
+
+void initrpcreply(char *inbuf, char *q);
+void endrpcreply(char *inbuf, char *q, int datalen, int rtnval, int *rlen);
+uint32 name_to_rid(char *user_name);
 char *dom_sid_to_string(DOM_SID *sid);
-BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
-		     int mdrcnt,int mprcnt,
-		     char **rdata,char **rparam,
-		     int *rdata_len,int *rparam_len);
-BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
-		     int mdrcnt,int mprcnt,
-		     char **rdata,char **rparam,
-		     int *rdata_len,int *rparam_len);
+void make_dom_sid(DOM_SID *sid, char *domsid);
+void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len);
+int make_rpc_reply(char *inbuf, char *q, int data_len);
+void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate);
+void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate);
+void make_unistr(UNISTR *str, char *buf);
+void make_unistr2(UNISTR2 *str, char *buf, int len, char terminate);
+void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
+void make_dom_sid2(DOM_SID2 *sid2, char *sid_str);
 
 /*The following definitions come from  predict.c  */
 
