@@ -2862,7 +2862,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 /****************************************************************************
 close the socket descriptor
 ****************************************************************************/
-void cli_close_socket(struct cli_state *cli)
+static void cli_close_socket(struct cli_state *cli)
 {
 #ifdef WITH_SSL
 	if (cli->fd != -1)
