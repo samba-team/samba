@@ -130,7 +130,7 @@ static nis_result *nisp_get_nis_list (const char *nisname,
  Start enumeration of the passwd list.
 ****************************************************************/
 
-static BOOL nisplussam_setsampwent (struct pdb_methods *methods, BOOL update)
+static NTSTATUS nisplussam_setsampwent (struct pdb_methods *methods, BOOL update)
 {
 	struct nisplus_private_info *private =
 		(struct nisplus_private_info *) methods->private_data;
@@ -148,7 +148,10 @@ static BOOL nisplussam_setsampwent (struct pdb_methods *methods, BOOL update)
 	pdb_endsampwent ();	/* just in case */
 	global_nisp_ent->result = nisp_get_nis_list (pfiletmp, 0);
 	global_nisp_ent->enum_entry = 0;
-	return global_nisp_ent->result != NULL ? True : False;
+	if (global_nisp_ent->result != NULL) 
+		return NT_STATUS_UNSUCCESSFUL;
+	else
+		return NT_STATUS_OK;
 }
 
 /***************************************************************
@@ -169,10 +172,10 @@ static void nisplussam_endsampwent (struct pdb_methods *methods)
  Get one SAM_ACCOUNT from the list (next in line)
 *****************************************************************/
 
-static BOOL nisplussam_getsampwent (struct pdb_methods *methods,
+static NTSTATUS nisplussam_getsampwent (struct pdb_methods *methods,
 				    SAM_ACCOUNT * user)
 {
-
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct nisplus_private_info *global_nisp_ent =
 		(struct nisplus_private_info *) methods->private_data;
 	int enum_entry = (int) (global_nisp_ent->enum_entry);
@@ -180,33 +183,31 @@ static BOOL nisplussam_getsampwent (struct pdb_methods *methods,
 
 	if (user == NULL) {
 		DEBUG (0, ("SAM_ACCOUNT is NULL.\n"));
-		return False;
+		return nt_status;
 	}
 
-	if (result == NULL ||
-	    enum_entry < 0 || enum_entry >= (NIS_RES_NUMOBJ (result) - 1)) {
-		return False;
+	if (result == NULL || enum_entry < 0 || enum_entry >= (NIS_RES_NUMOBJ (result) - 1)) {
+		return nt_status;
 	}
 
-	if (!make_sam_from_nisp_object
-	    (user, &NIS_RES_OBJECT (result)[enum_entry])) {
+	if (!make_sam_from_nisp_object(user, &NIS_RES_OBJECT (result)[enum_entry])) {
 		DEBUG (0, ("Bad SAM_ACCOUNT entry returned from NIS+!\n"));
-		return False;
+		return nt_status;
 	}
 	(int) (global_nisp_ent->enum_entry)++;
-	return True;
-	DEBUG (10, ("nisplussam_getsampwent called\n"));
-	return False;
+
+	return nt_status;
 }
 
 /******************************************************************
  Lookup a name in the SAM database
 ******************************************************************/
 
-static BOOL nisplussam_getsampwnam (struct pdb_methods *methods,
+static NTSTATUS nisplussam_getsampwnam (struct pdb_methods *methods,
 				    SAM_ACCOUNT * user, const char *sname)
 {
 	/* Static buffers we will return. */
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	nis_result *result = NULL;
 	pstring nisname;
 	BOOL ret;
@@ -215,7 +216,7 @@ static BOOL nisplussam_getsampwnam (struct pdb_methods *methods,
 
 	if (!private->location || !(*private->location)) {
 		DEBUG (0, ("No SMB password file set\n"));
-		return False;
+		return nt_status;
 	}
 	if (strrchr (private->location, '/'))
 		private->location = strrchr (private->location, '/') + 1;
@@ -227,25 +228,25 @@ static BOOL nisplussam_getsampwnam (struct pdb_methods *methods,
 	/* Search the table. */
 
 	if (!(result = nisp_get_nis_list (nisname, 0))) {
-		return False;
+		return nt_status;
 	}
 
 	ret = make_sam_from_nisresult (user, result);
 	nis_freeresult (result);
 
-	return ret;
+	if (ret) nt_status = NT_STATUS_OK;
 
-	DEBUG (10, ("nisplussam_getsampwnam called\n"));
-	return False;
+	return nt_status;
 }
 
 /***************************************************************************
  Search by sid
  **************************************************************************/
 
-static BOOL nisplussam_getsampwrid (struct pdb_methods *methods,
+static NTSTATUS nisplussam_getsampwrid (struct pdb_methods *methods,
 				    SAM_ACCOUNT * user, uint32 rid)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	nis_result *result;
 	char *nisname;
 	BOOL ret;
@@ -256,7 +257,7 @@ static BOOL nisplussam_getsampwrid (struct pdb_methods *methods,
 
 	if (!private->location || !(*private->location)) {
 		DEBUG (0, ("no SMB password file set\n"));
-		return False;
+		return nt_status;
 	}
 
 	if ((sp = strrchr (private->location, '/')))
@@ -273,22 +274,24 @@ static BOOL nisplussam_getsampwrid (struct pdb_methods *methods,
 	/* Search the table. */
 
 	if (!(result = nisp_get_nis_list (nisname, 0))) {
-		return False;
+		return nt_status;
 	}
 
 	ret = make_sam_from_nisresult (user, result);
 	nis_freeresult (result);
 
-	return ret;
+	if (ret) nt_status = NT_STATUS_OK;
+
+	return nt_status;
 }
 
-static BOOL nisplussam_getsampwsid (struct pdb_methods *methods,
+static NTSTATUS nisplussam_getsampwsid (struct pdb_methods *methods,
 				    SAM_ACCOUNT * user, const DOM_SID * sid)
 {
 	uint32 rid;
 
 	if (!sid_peek_check_rid (get_global_sam_sid (), sid, &rid))
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	return nisplussam_getsampwrid (methods, user, rid);
 }
 
@@ -298,9 +301,10 @@ static BOOL nisplussam_getsampwsid (struct pdb_methods *methods,
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL nisplussam_delete_sam_account (struct pdb_methods *methods,
-					   SAM_ACCOUNT * user)
+static NTSTATUS nisplussam_delete_sam_account (struct pdb_methods *methods,
+						SAM_ACCOUNT * user)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	const char *sname;
 	pstring nisname;
 	nis_result *result, *delresult;
@@ -310,14 +314,14 @@ static BOOL nisplussam_delete_sam_account (struct pdb_methods *methods,
 
 	if (!user) {
 		DEBUG (0, ("no SAM_ACCOUNT specified!\n"));
-		return False;
+		return nt_status;
 	}
 
 	sname = pdb_get_username (user);
 
 	if (!private->location || !(*private->location)) {
 		DEBUG (0, ("no SMB password file set\n"));
-		return False;
+		return nt_status;
 	}
 
 	if (strrchr (private->location, '/'))
@@ -332,14 +336,14 @@ static BOOL nisplussam_delete_sam_account (struct pdb_methods *methods,
 					  MASTER_ONLY | FOLLOW_LINKS |
 					  FOLLOW_PATH | EXPAND_NAME |
 					  HARD_LOOKUP))) {
-		return False;
+		return nt_status;
 	}
 
 	if (result->status != NIS_SUCCESS || NIS_RES_NUMOBJ (result) <= 0) {
 		/* User not found. */
 		DEBUG (0, ("user not found in NIS+\n"));
 		nis_freeresult (result);
-		return False;
+		return nt_status;
 	}
 
 	obj = NIS_RES_OBJECT (result);
@@ -358,21 +362,21 @@ static BOOL nisplussam_delete_sam_account (struct pdb_methods *methods,
 		DEBUG (0, ("NIS+ table update failed: %s %s\n",
 			   nisname, nis_sperrno (delresult->status)));
 		nis_freeresult (delresult);
-		return False;
+		return nt_status;
 	}
 	nis_freeresult (delresult);
-	return True;
-	DEBUG (10, ("nisplussam_delete_sam_account called\n"));
-	return False;
+
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL nisplussam_update_sam_account (struct pdb_methods *methods,
+static NTSTATUS nisplussam_update_sam_account (struct pdb_methods *methods,
 					   SAM_ACCOUNT * newpwd)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	nis_result *result, *addresult;
 	nis_object *obj;
 	nis_object new_obj;
@@ -384,7 +388,7 @@ static BOOL nisplussam_update_sam_account (struct pdb_methods *methods,
 
 	if (!private->location || !(*private->location)) {
 		DEBUG (0, ("no SMB password file set\n"));
-		return False;
+		return nt_status;
 	}
 	if (strrchr (private->location, '/'))
 		private->location = strrchr (private->location, '/') + 1;
@@ -401,14 +405,14 @@ static BOOL nisplussam_update_sam_account (struct pdb_methods *methods,
 	     nisp_get_nis_list (nisname,
 				MASTER_ONLY | FOLLOW_LINKS | FOLLOW_PATH |
 				EXPAND_NAME | HARD_LOOKUP))) {
-		return False;
+		return ne_status;
 	}
 
 	if (result->status != NIS_SUCCESS || NIS_RES_NUMOBJ (result) <= 0) {
 		/* User not found. */
 		DEBUG (0, ("user not found in NIS+\n"));
 		nis_freeresult (result);
-		return False;
+		return nt_status;
 	}
 
 	obj = NIS_RES_OBJECT (result);
@@ -425,7 +429,7 @@ static BOOL nisplussam_update_sam_account (struct pdb_methods *methods,
 	if (!(ecol = (entry_col *) malloc (ta_maxcol * sizeof (entry_col)))) {
 		DEBUG (0, ("memory allocation failure\n"));
 		nis_freeresult (result);
-		return False;
+		return nt_status;
 	}
 
 	memmove ((char *) ecol, obj->EN_data.en_cols.en_cols_val,
@@ -449,7 +453,7 @@ static BOOL nisplussam_update_sam_account (struct pdb_methods *methods,
 			nis_freeresult (addresult);
 			nis_freeresult (result);
 			free (ecol);
-			return False;
+			return nt_status;
 		}
 
 		DEBUG (6, ("password changed\n"));
@@ -461,16 +465,17 @@ static BOOL nisplussam_update_sam_account (struct pdb_methods *methods,
 	free (ecol);
 	nis_freeresult (result);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
  Adds an existing SAM_ACCOUNT
 ****************************************************************************/
 
-static BOOL nisplussam_add_sam_account (struct pdb_methods *methods,
+static NTSTATUS nisplussam_add_sam_account (struct pdb_methods *methods,
 					SAM_ACCOUNT * newpwd)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int local_user = 0;
 	char *pfile;
 	pstring pfiletmp;
@@ -518,7 +523,7 @@ static BOOL nisplussam_add_sam_account (struct pdb_methods *methods,
 		nisname = make_nisname_from_name (pdb_get_username (newpwd),
 						  pfiletmp);
 	} else {
-		return False;
+		return nt_status;
 	}
 
 	if (!
@@ -526,20 +531,20 @@ static BOOL nisplussam_add_sam_account (struct pdb_methods *methods,
 	     nisp_get_nis_list (nisname,
 				MASTER_ONLY | FOLLOW_LINKS | FOLLOW_PATH |
 				EXPAND_NAME | HARD_LOOKUP))) {
-		return False;
+		return nt_status;
 	}
 	if (result->status != NIS_SUCCESS && result->status != NIS_NOTFOUND) {
 		DEBUG (3, ("nis_list failure: %s: %s\n",
 			   nisname, nis_sperrno (result->status)));
 		nis_freeresult (result);
-		return False;
+		return nt_status;
 	}
 
 	if (result->status == NIS_SUCCESS && NIS_RES_NUMOBJ (result) > 0) {
 		DEBUG (3, ("User already exists in NIS+ password db: %s\n",
 			   pfile));
 		nis_freeresult (result);
-		return False;
+		return nt_status;
 	}
 
 	nis_freeresult (result);	/* no such user, free results */
@@ -565,7 +570,7 @@ static BOOL nisplussam_add_sam_account (struct pdb_methods *methods,
 
 		if (!(passwd = getpwnam_alloc (pdb_get_username (newpwd)))) {
 			/* no such user in system! */
-			return False;
+			return nt_status;
 		}
 		passwd_free (&passwd);
 
@@ -607,7 +612,7 @@ static BOOL nisplussam_add_sam_account (struct pdb_methods *methods,
 			nis_freeresult (tblresult);
 			DEBUG (3, ("nis_lookup failure: %s\n",
 				   nis_sperrno (tblresult->status)));
-			return False;
+			return nt_status;
 		}
 		/* we need full name for nis_add_entry() */
 		safe_strcpy (pfiletmp, pfile, sizeof (pfiletmp) - 1);
@@ -636,7 +641,7 @@ static BOOL nisplussam_add_sam_account (struct pdb_methods *methods,
 	if (!(ecol = (entry_col *) malloc (ta_maxcol * sizeof (entry_col)))) {
 		DEBUG (0, ("memory allocation failure\n"));
 		nis_freeresult (tblresult);
-		return False;
+		return nt_status;
 	}
 
 	memset ((char *) ecol, 0, ta_maxcol * sizeof (entry_col));
@@ -655,13 +660,13 @@ static BOOL nisplussam_add_sam_account (struct pdb_methods *methods,
 			   nisname, nis_sperrno (result->status)));
 		nis_freeresult (tblresult);
 		nis_freeresult (result);
-		return False;
+		return nt_status;
 	}
 
 	nis_freeresult (tblresult);
 	nis_freeresult (result);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /***************************************************************
