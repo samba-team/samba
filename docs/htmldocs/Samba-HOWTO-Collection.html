@@ -40,7 +40,7 @@ NAME="AEN8"
 ><P
 ><EM
 >Last Update</EM
-> : Tue Jul 31 15:58:03 CDT 2001</P
+> : Mon Apr  1 08:47:26 CST 2002</P
 ><P
 >This book is a collection of HOWTOs added to Samba documentation over the years.
 I try to ensure that all are current, but sometimes the is a larger job
@@ -55,6 +55,14 @@ HREF="mailto:jerry@samba.org"
 TARGET="_top"
 >jerry@samba.org</A
 >.</P
+><P
+>This documentation is distributed under the GNU General Public License (GPL) 
+version 2.  A copy of the license is included with the Samba source
+distribution.  A copy can be found on-line at <A
+HREF="http://www.fsf.org/licenses/gpl.txt"
+TARGET="_top"
+>http://www.fsf.org/licenses/gpl.txt</A
+></P
 ><P
 >Cheers, jerry</P
 ><DIV
@@ -73,27 +81,27 @@ HREF="#INSTALL"
 ><DL
 ><DT
 >1.1. <A
-HREF="#AEN18"
+HREF="#AEN20"
 >Step 0: Read the man pages</A
 ></DT
 ><DT
 >1.2. <A
-HREF="#AEN26"
+HREF="#AEN28"
 >Step 1: Building the Binaries</A
 ></DT
 ><DT
 >1.3. <A
-HREF="#AEN54"
+HREF="#AEN56"
 >Step 2: The all important step</A
 ></DT
 ><DT
 >1.4. <A
-HREF="#AEN58"
+HREF="#AEN60"
 >Step 3: Create the smb configuration file.</A
 ></DT
 ><DT
 >1.5. <A
-HREF="#AEN72"
+HREF="#AEN74"
 >Step 4: Test your config file with 
 	<B
 CLASS="COMMAND"
@@ -102,80 +110,80 @@ CLASS="COMMAND"
 ></DT
 ><DT
 >1.6. <A
-HREF="#AEN78"
+HREF="#AEN80"
 >Step 5: Starting the smbd and nmbd</A
 ></DT
 ><DD
 ><DL
 ><DT
 >1.6.1. <A
-HREF="#AEN88"
+HREF="#AEN90"
 >Step 5a: Starting from inetd.conf</A
 ></DT
 ><DT
 >1.6.2. <A
-HREF="#AEN117"
+HREF="#AEN119"
 >Step 5b. Alternative: starting it as a daemon</A
 ></DT
 ></DL
 ></DD
 ><DT
 >1.7. <A
-HREF="#AEN133"
+HREF="#AEN135"
 >Step 6: Try listing the shares available on your 
 	server</A
 ></DT
 ><DT
 >1.8. <A
-HREF="#AEN142"
+HREF="#AEN144"
 >Step 7: Try connecting with the unix client</A
 ></DT
 ><DT
 >1.9. <A
-HREF="#AEN158"
+HREF="#AEN160"
 >Step 8: Try connecting from a DOS, WfWg, Win9x, WinNT, 
 	Win2k, OS/2, etc... client</A
 ></DT
 ><DT
 >1.10. <A
-HREF="#AEN172"
+HREF="#AEN174"
 >What If Things Don't Work?</A
 ></DT
 ><DD
 ><DL
 ><DT
 >1.10.1. <A
-HREF="#AEN177"
+HREF="#AEN179"
 >Diagnosing Problems</A
 ></DT
 ><DT
 >1.10.2. <A
-HREF="#AEN181"
+HREF="#AEN183"
 >Scope IDs</A
 ></DT
 ><DT
 >1.10.3. <A
-HREF="#AEN184"
+HREF="#AEN186"
 >Choosing the Protocol Level</A
 ></DT
 ><DT
 >1.10.4. <A
-HREF="#AEN193"
+HREF="#AEN195"
 >Printing from UNIX to a Client PC</A
 ></DT
 ><DT
 >1.10.5. <A
-HREF="#AEN197"
+HREF="#AEN199"
 >Locking</A
 ></DT
 ><DT
 >1.10.6. <A
-HREF="#AEN207"
+HREF="#AEN209"
 >Mapping Usernames</A
 ></DT
 ><DT
 >1.10.7. <A
-HREF="#AEN210"
+HREF="#AEN212"
 >Other Character Sets</A
 ></DT
 ></DL
@@ -191,19 +199,19 @@ HREF="#INTEGRATE-MS-NETWORKS"
 ><DL
 ><DT
 >2.1. <A
-HREF="#AEN224"
+HREF="#AEN226"
 >Agenda</A
 ></DT
 ><DT
 >2.2. <A
-HREF="#AEN246"
+HREF="#AEN248"
 >Name Resolution in a pure Unix/Linux world</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.2.1. <A
-HREF="#AEN262"
+HREF="#AEN264"
 ><TT
 CLASS="FILENAME"
 >/etc/hosts</TT
@@ -211,7 +219,7 @@ CLASS="FILENAME"
 ></DT
 ><DT
 >2.2.2. <A
-HREF="#AEN278"
+HREF="#AEN280"
 ><TT
 CLASS="FILENAME"
 >/etc/resolv.conf</TT
@@ -219,7 +227,7 @@ CLASS="FILENAME"
 ></DT
 ><DT
 >2.2.3. <A
-HREF="#AEN289"
+HREF="#AEN291"
 ><TT
 CLASS="FILENAME"
 >/etc/host.conf</TT
@@ -227,7 +235,7 @@ CLASS="FILENAME"
 ></DT
 ><DT
 >2.2.4. <A
-HREF="#AEN297"
+HREF="#AEN299"
 ><TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
@@ -237,47 +245,47 @@ CLASS="FILENAME"
 ></DD
 ><DT
 >2.3. <A
-HREF="#AEN309"
+HREF="#AEN311"
 >Name resolution as used within MS Windows networking</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.3.1. <A
-HREF="#AEN321"
+HREF="#AEN323"
 >The NetBIOS Name Cache</A
 ></DT
 ><DT
 >2.3.2. <A
-HREF="#AEN326"
+HREF="#AEN328"
 >The LMHOSTS file</A
 ></DT
 ><DT
 >2.3.3. <A
-HREF="#AEN334"
+HREF="#AEN336"
 >HOSTS file</A
 ></DT
 ><DT
 >2.3.4. <A
-HREF="#AEN339"
+HREF="#AEN341"
 >DNS Lookup</A
 ></DT
 ><DT
 >2.3.5. <A
-HREF="#AEN342"
+HREF="#AEN344"
 >WINS Lookup</A
 ></DT
 ></DL
 ></DD
 ><DT
 >2.4. <A
-HREF="#AEN354"
+HREF="#AEN356"
 >How browsing functions and how to deploy stable and 
 dependable browsing using Samba</A
 ></DT
 ><DT
 >2.5. <A
-HREF="#AEN364"
+HREF="#AEN366"
 >MS Windows security options and how to configure 
 Samba for seemless integration</A
 ></DT
@@ -285,29 +293,29 @@ Samba for seemless integration</A
 ><DL
 ><DT
 >2.5.1. <A
-HREF="#AEN392"
+HREF="#AEN394"
 >Use MS Windows NT as an authentication server</A
 ></DT
 ><DT
 >2.5.2. <A
-HREF="#AEN400"
+HREF="#AEN402"
 >Make Samba a member of an MS Windows NT security domain</A
 ></DT
 ><DT
 >2.5.3. <A
-HREF="#AEN417"
+HREF="#AEN419"
 >Configure Samba as an authentication server</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.5.3.1. <A
-HREF="#AEN424"
+HREF="#AEN426"
 >Users</A
 ></DT
 ><DT
 >2.5.3.2. <A
-HREF="#AEN429"
+HREF="#AEN431"
 >MS Windows NT Machine Accounts</A
 ></DT
 ></DL
@@ -316,7 +324,7 @@ HREF="#AEN429"
 ></DD
 ><DT
 >2.6. <A
-HREF="#AEN434"
+HREF="#AEN436"
 >Conclusions</A
 ></DT
 ></DL
@@ -331,17 +339,17 @@ managed authentication</A
 ><DL
 ><DT
 >3.1. <A
-HREF="#AEN455"
+HREF="#AEN457"
 >Samba and PAM</A
 ></DT
 ><DT
 >3.2. <A
-HREF="#AEN499"
+HREF="#AEN501"
 >Distributed Authentication</A
 ></DT
 ><DT
 >3.3. <A
-HREF="#AEN506"
+HREF="#AEN508"
 >PAM Configuration in smb.conf</A
 ></DT
 ></DL
@@ -355,14 +363,14 @@ HREF="#MSDFS"
 ><DL
 ><DT
 >4.1. <A
-HREF="#AEN526"
+HREF="#AEN528"
 >Instructions</A
 ></DT
 ><DD
 ><DL
 ><DT
 >4.1.1. <A
-HREF="#AEN561"
+HREF="#AEN563"
 >Notes</A
 ></DT
 ></DL
@@ -378,53 +386,53 @@ HREF="#UNIX-PERMISSIONS"
 ><DL
 ><DT
 >5.1. <A
-HREF="#AEN581"
+HREF="#AEN583"
 >Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></DT
 ><DT
 >5.2. <A
-HREF="#AEN590"
+HREF="#AEN592"
 >How to view file security on a Samba share</A
 ></DT
 ><DT
 >5.3. <A
-HREF="#AEN601"
+HREF="#AEN603"
 >Viewing file ownership</A
 ></DT
 ><DT
 >5.4. <A
-HREF="#AEN621"
+HREF="#AEN623"
 >Viewing file or directory permissions</A
 ></DT
 ><DD
 ><DL
 ><DT
 >5.4.1. <A
-HREF="#AEN636"
+HREF="#AEN638"
 >File Permissions</A
 ></DT
 ><DT
 >5.4.2. <A
-HREF="#AEN650"
+HREF="#AEN652"
 >Directory Permissions</A
 ></DT
 ></DL
 ></DD
 ><DT
 >5.5. <A
-HREF="#AEN657"
+HREF="#AEN659"
 >Modifying file or directory permissions</A
 ></DT
 ><DT
 >5.6. <A
-HREF="#AEN679"
+HREF="#AEN681"
 >Interaction with the standard Samba create mask 
 	parameters</A
 ></DT
 ><DT
 >5.7. <A
-HREF="#AEN743"
+HREF="#AEN745"
 >Interaction with the standard Samba file attribute 
 	mapping</A
 ></DT
@@ -439,75 +447,75 @@ HREF="#PRINTING"
 ><DL
 ><DT
 >6.1. <A
-HREF="#AEN764"
+HREF="#AEN766"
 >Introduction</A
 ></DT
 ><DT
 >6.2. <A
-HREF="#AEN786"
+HREF="#AEN788"
 >Configuration</A
 ></DT
 ><DD
 ><DL
 ><DT
 >6.2.1. <A
-HREF="#AEN797"
+HREF="#AEN799"
 >Creating [print$]</A
 ></DT
 ><DT
 >6.2.2. <A
-HREF="#AEN832"
+HREF="#AEN834"
 >Setting Drivers for Existing Printers</A
 ></DT
 ><DT
 >6.2.3. <A
-HREF="#AEN849"
+HREF="#AEN851"
 >Support a large number of printers</A
 ></DT
 ><DT
 >6.2.4. <A
-HREF="#AEN860"
+HREF="#AEN862"
 >Adding New Printers via the Windows NT APW</A
 ></DT
 ><DT
 >6.2.5. <A
-HREF="#AEN885"
+HREF="#AEN887"
 >Samba and Printer Ports</A
 ></DT
 ></DL
 ></DD
 ><DT
 >6.3. <A
-HREF="#AEN893"
+HREF="#AEN895"
 >The Imprints Toolset</A
 ></DT
 ><DD
 ><DL
 ><DT
 >6.3.1. <A
-HREF="#AEN897"
+HREF="#AEN899"
 >What is Imprints?</A
 ></DT
 ><DT
 >6.3.2. <A
-HREF="#AEN907"
+HREF="#AEN909"
 >Creating Printer Driver Packages</A
 ></DT
 ><DT
 >6.3.3. <A
-HREF="#AEN910"
+HREF="#AEN912"
 >The Imprints server</A
 ></DT
 ><DT
 >6.3.4. <A
-HREF="#AEN914"
+HREF="#AEN916"
 >The Installation Client</A
 ></DT
 ></DL
 ></DD
 ><DT
 >6.4. <A
-HREF="#AEN936"
+HREF="#AEN938"
 ><A
 NAME="MIGRATION"
 ></A
@@ -524,17 +532,17 @@ HREF="#DOMAIN-SECURITY"
 ><DL
 ><DT
 >7.1. <A
-HREF="#AEN990"
+HREF="#AEN992"
 >Joining an NT Domain with Samba 2.2</A
 ></DT
 ><DT
 >7.2. <A
-HREF="#AEN1054"
+HREF="#AEN1056"
 >Samba and Windows 2000 Domains</A
 ></DT
 ><DT
 >7.3. <A
-HREF="#AEN1059"
+HREF="#AEN1061"
 >Why is this better than security = server?</A
 ></DT
 ></DL
@@ -548,22 +556,22 @@ HREF="#SAMBA-PDC"
 ><DL
 ><DT
 >8.1. <A
-HREF="#AEN1092"
+HREF="#AEN1094"
 >Prerequisite Reading</A
 ></DT
 ><DT
 >8.2. <A
-HREF="#AEN1098"
+HREF="#AEN1100"
 >Background</A
 ></DT
 ><DT
 >8.3. <A
-HREF="#AEN1137"
+HREF="#AEN1139"
 >Configuring the Samba Domain Controller</A
 ></DT
 ><DT
 >8.4. <A
-HREF="#AEN1180"
+HREF="#AEN1182"
 >Creating Machine Trust Accounts and Joining Clients to the
 Domain</A
 ></DT
@@ -571,88 +579,88 @@ Domain</A
 ><DL
 ><DT
 >8.4.1. <A
-HREF="#AEN1199"
+HREF="#AEN1201"
 >Manual Creation of Machine Trust Accounts</A
 ></DT
 ><DT
 >8.4.2. <A
-HREF="#AEN1234"
+HREF="#AEN1236"
 >"On-the-Fly" Creation of Machine Trust Accounts</A
 ></DT
 ><DT
 >8.4.3. <A
-HREF="#AEN1243"
+HREF="#AEN1245"
 >Joining the Client to the Domain</A
 ></DT
 ></DL
 ></DD
 ><DT
 >8.5. <A
-HREF="#AEN1258"
+HREF="#AEN1260"
 >Common Problems and Errors</A
 ></DT
 ><DT
 >8.6. <A
-HREF="#AEN1306"
+HREF="#AEN1308"
 >System Policies and Profiles</A
 ></DT
 ><DT
 >8.7. <A
-HREF="#AEN1350"
+HREF="#AEN1352"
 >What other help can I get?</A
 ></DT
 ><DT
 >8.8. <A
-HREF="#AEN1464"
+HREF="#AEN1466"
 >Domain Control for Windows 9x/ME</A
 ></DT
 ><DD
 ><DL
 ><DT
 >8.8.1. <A
-HREF="#AEN1490"
+HREF="#AEN1492"
 >Configuration Instructions:	Network Logons</A
 ></DT
 ><DT
 >8.8.2. <A
-HREF="#AEN1509"
+HREF="#AEN1511"
 >Configuration Instructions:	Setting up Roaming User Profiles</A
 ></DT
 ><DD
 ><DL
 ><DT
 >8.8.2.1. <A
-HREF="#AEN1517"
+HREF="#AEN1519"
 >Windows NT Configuration</A
 ></DT
 ><DT
 >8.8.2.2. <A
-HREF="#AEN1525"
+HREF="#AEN1527"
 >Windows 9X Configuration</A
 ></DT
 ><DT
 >8.8.2.3. <A
-HREF="#AEN1533"
+HREF="#AEN1535"
 >Win9X and WinNT Configuration</A
 ></DT
 ><DT
 >8.8.2.4. <A
-HREF="#AEN1540"
+HREF="#AEN1542"
 >Windows 9X Profile Setup</A
 ></DT
 ><DT
 >8.8.2.5. <A
-HREF="#AEN1576"
+HREF="#AEN1578"
 >Windows NT Workstation 4.0</A
 ></DT
 ><DT
 >8.8.2.6. <A
-HREF="#AEN1589"
+HREF="#AEN1591"
 >Windows NT Server</A
 ></DT
 ><DT
 >8.8.2.7. <A
-HREF="#AEN1592"
+HREF="#AEN1594"
 >Sharing Profiles between W95 and NT Workstation 4.0</A
 ></DT
 ></DL
@@ -661,7 +669,7 @@ HREF="#AEN1592"
 ></DD
 ><DT
 >8.9. <A
-HREF="#AEN1602"
+HREF="#AEN1604"
 >DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></DT
 ></DL
@@ -669,54 +677,54 @@ HREF="#AEN1602"
 ><DT
 >9. <A
 HREF="#SAMBA-BDC"
->How to a Purely Samba Controlled Domain</A
+>How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</A
 ></DT
 ><DD
 ><DL
 ><DT
 >9.1. <A
-HREF="#AEN1638"
+HREF="#AEN1640"
 >Prerequisite Reading</A
 ></DT
 ><DT
 >9.2. <A
-HREF="#AEN1642"
+HREF="#AEN1644"
 >Background</A
 ></DT
 ><DT
 >9.3. <A
-HREF="#AEN1650"
+HREF="#AEN1652"
 >What qualifies a Domain Controller on the network?</A
 ></DT
 ><DD
 ><DL
 ><DT
 >9.3.1. <A
-HREF="#AEN1653"
+HREF="#AEN1655"
 >How does a Workstation find its domain controller?</A
 ></DT
 ><DT
 >9.3.2. <A
-HREF="#AEN1656"
+HREF="#AEN1658"
 >When is the PDC needed?</A
 ></DT
 ></DL
 ></DD
 ><DT
 >9.4. <A
-HREF="#AEN1659"
+HREF="#AEN1661"
 >Can Samba be a Backup Domain Controller?</A
 ></DT
 ><DT
 >9.5. <A
-HREF="#AEN1663"
+HREF="#AEN1665"
 >How do I set up a Samba BDC?</A
 ></DT
 ><DD
 ><DL
 ><DT
 >9.5.1. <A
-HREF="#AEN1679"
+HREF="#AEN1681"
 >How do I replicate the smbpasswd file?</A
 ></DT
 ></DL
@@ -732,66 +740,66 @@ HREF="#SAMBA-LDAP-HOWTO"
 ><DL
 ><DT
 >10.1. <A
-HREF="#AEN1700"
+HREF="#AEN1702"
 >Purpose</A
 ></DT
 ><DT
 >10.2. <A
-HREF="#AEN1720"
+HREF="#AEN1722"
 >Introduction</A
 ></DT
 ><DT
 >10.3. <A
-HREF="#AEN1749"
+HREF="#AEN1751"
 >Supported LDAP Servers</A
 ></DT
 ><DT
 >10.4. <A
-HREF="#AEN1754"
+HREF="#AEN1756"
 >Schema and Relationship to the RFC 2307 posixAccount</A
 ></DT
 ><DT
 >10.5. <A
-HREF="#AEN1766"
+HREF="#AEN1768"
 >Configuring Samba with LDAP</A
 ></DT
 ><DD
 ><DL
 ><DT
 >10.5.1. <A
-HREF="#AEN1768"
+HREF="#AEN1770"
 >OpenLDAP configuration</A
 ></DT
 ><DT
 >10.5.2. <A
-HREF="#AEN1785"
+HREF="#AEN1787"
 >Configuring Samba</A
 ></DT
 ></DL
 ></DD
 ><DT
 >10.6. <A
-HREF="#AEN1813"
+HREF="#AEN1815"
 >Accounts and Groups management</A
 ></DT
 ><DT
 >10.7. <A
-HREF="#AEN1818"
+HREF="#AEN1820"
 >Security and sambaAccount</A
 ></DT
 ><DT
 >10.8. <A
-HREF="#AEN1838"
+HREF="#AEN1840"
 >LDAP specials attributes for sambaAccounts</A
 ></DT
 ><DT
 >10.9. <A
-HREF="#AEN1908"
+HREF="#AEN1910"
 >Example LDIF Entries for a sambaAccount</A
 ></DT
 ><DT
 >10.10. <A
-HREF="#AEN1916"
+HREF="#AEN1918"
 >Comments</A
 ></DT
 ></DL
@@ -805,94 +813,94 @@ HREF="#WINBIND"
 ><DL
 ><DT
 >11.1. <A
-HREF="#AEN1945"
+HREF="#AEN1947"
 >Abstract</A
 ></DT
 ><DT
 >11.2. <A
-HREF="#AEN1949"
+HREF="#AEN1951"
 >Introduction</A
 ></DT
 ><DT
 >11.3. <A
-HREF="#AEN1962"
+HREF="#AEN1964"
 >What Winbind Provides</A
 ></DT
 ><DD
 ><DL
 ><DT
 >11.3.1. <A
-HREF="#AEN1969"
+HREF="#AEN1971"
 >Target Uses</A
 ></DT
 ></DL
 ></DD
 ><DT
 >11.4. <A
-HREF="#AEN1973"
+HREF="#AEN1975"
 >How Winbind Works</A
 ></DT
 ><DD
 ><DL
 ><DT
 >11.4.1. <A
-HREF="#AEN1978"
+HREF="#AEN1980"
 >Microsoft Remote Procedure Calls</A
 ></DT
 ><DT
 >11.4.2. <A
-HREF="#AEN1982"
+HREF="#AEN1984"
 >Name Service Switch</A
 ></DT
 ><DT
 >11.4.3. <A
-HREF="#AEN1998"
+HREF="#AEN2000"
 >Pluggable Authentication Modules</A
 ></DT
 ><DT
 >11.4.4. <A
-HREF="#AEN2006"
+HREF="#AEN2008"
 >User and Group ID Allocation</A
 ></DT
 ><DT
 >11.4.5. <A
-HREF="#AEN2010"
+HREF="#AEN2012"
 >Result Caching</A
 ></DT
 ></DL
 ></DD
 ><DT
 >11.5. <A
-HREF="#AEN2013"
+HREF="#AEN2015"
 >Installation and Configuration</A
 ></DT
 ><DD
 ><DL
 ><DT
 >11.5.1. <A
-HREF="#AEN2018"
+HREF="#AEN2020"
 >Introduction</A
 ></DT
 ><DT
 >11.5.2. <A
-HREF="#AEN2031"
+HREF="#AEN2033"
 >Requirements</A
 ></DT
 ><DT
 >11.5.3. <A
-HREF="#AEN2045"
+HREF="#AEN2047"
 >Testing Things Out</A
 ></DT
 ><DD
 ><DL
 ><DT
 >11.5.3.1. <A
-HREF="#AEN2056"
+HREF="#AEN2058"
 >Configure and compile SAMBA</A
 ></DT
 ><DT
 >11.5.3.2. <A
-HREF="#AEN2075"
+HREF="#AEN2077"
 >Configure <TT
 CLASS="FILENAME"
 >nsswitch.conf</TT
@@ -901,22 +909,22 @@ winbind libraries</A
 ></DT
 ><DT
 >11.5.3.3. <A
-HREF="#AEN2100"
+HREF="#AEN2102"
 >Configure smb.conf</A
 ></DT
 ><DT
 >11.5.3.4. <A
-HREF="#AEN2116"
+HREF="#AEN2118"
 >Join the SAMBA server to the PDC domain</A
 ></DT
 ><DT
 >11.5.3.5. <A
-HREF="#AEN2127"
+HREF="#AEN2129"
 >Start up the winbindd daemon and test it!</A
 ></DT
 ><DT
 >11.5.3.6. <A
-HREF="#AEN2163"
+HREF="#AEN2165"
 >Fix the <TT
 CLASS="FILENAME"
 >/etc/rc.d/init.d/smb</TT
@@ -924,7 +932,7 @@ CLASS="FILENAME"
 ></DT
 ><DT
 >11.5.3.7. <A
-HREF="#AEN2185"
+HREF="#AEN2187"
 >Configure Winbind and PAM</A
 ></DT
 ></DL
@@ -933,12 +941,12 @@ HREF="#AEN2185"
 ></DD
 ><DT
 >11.6. <A
-HREF="#AEN2232"
+HREF="#AEN2234"
 >Limitations</A
 ></DT
 ><DT
 >11.7. <A
-HREF="#AEN2242"
+HREF="#AEN2244"
 >Conclusion</A
 ></DT
 ></DL
@@ -952,32 +960,32 @@ HREF="#OS2"
 ><DL
 ><DT
 >12.1. <A
-HREF="#AEN2256"
+HREF="#AEN2258"
 >FAQs</A
 ></DT
 ><DD
 ><DL
 ><DT
 >12.1.1. <A
-HREF="#AEN2258"
+HREF="#AEN2260"
 >How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></DT
 ><DT
 >12.1.2. <A
-HREF="#AEN2273"
+HREF="#AEN2275"
 >How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></DT
 ><DT
 >12.1.3. <A
-HREF="#AEN2282"
+HREF="#AEN2284"
 >Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></DT
 ><DT
 >12.1.4. <A
-HREF="#AEN2286"
+HREF="#AEN2288"
 >How do I get printer driver download working 
 		for OS/2 clients?</A
 ></DT
@@ -994,24 +1002,24 @@ HREF="#CVS-ACCESS"
 ><DL
 ><DT
 >13.1. <A
-HREF="#AEN2302"
+HREF="#AEN2304"
 >Introduction</A
 ></DT
 ><DT
 >13.2. <A
-HREF="#AEN2307"
+HREF="#AEN2309"
 >CVS Access to samba.org</A
 ></DT
 ><DD
 ><DL
 ><DT
 >13.2.1. <A
-HREF="#AEN2310"
+HREF="#AEN2312"
 >Access via CVSweb</A
 ></DT
 ><DT
 >13.2.2. <A
-HREF="#AEN2315"
+HREF="#AEN2317"
 >Access via cvs</A
 ></DT
 ></DL
@@ -1020,7 +1028,7 @@ HREF="#AEN2315"
 ></DD
 ><DT
 ><A
-HREF="#AEN2343"
+HREF="#AEN2345"
 >Index</A
 ></DT
 ></DL
@@ -1037,7 +1045,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN18"
+NAME="AEN20"
 >1.1. Step 0: Read the man pages</A
 ></H1
 ><P
@@ -1069,7 +1077,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN26"
+NAME="AEN28"
 >1.2. Step 1: Building the Binaries</A
 ></H1
 ><P
@@ -1168,7 +1176,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN54"
+NAME="AEN56"
 >1.3. Step 2: The all important step</A
 ></H1
 ><P
@@ -1185,7 +1193,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN58"
+NAME="AEN60"
 >1.4. Step 3: Create the smb configuration file.</A
 ></H1
 ><P
@@ -1250,7 +1258,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN72"
+NAME="AEN74"
 >1.5. Step 4: Test your config file with 
 	<B
 CLASS="COMMAND"
@@ -1274,7 +1282,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN78"
+NAME="AEN80"
 >1.6. Step 5: Starting the smbd and nmbd</A
 ></H1
 ><P
@@ -1314,7 +1322,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN88"
+NAME="AEN90"
 >1.6.1. Step 5a: Starting from inetd.conf</A
 ></H2
 ><P
@@ -1427,7 +1435,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN117"
+NAME="AEN119"
 >1.6.2. Step 5b. Alternative: starting it as a daemon</A
 ></H2
 ><P
@@ -1493,7 +1501,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN133"
+NAME="AEN135"
 >1.7. Step 6: Try listing the shares available on your 
 	server</A
 ></H1
@@ -1534,7 +1542,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN142"
+NAME="AEN144"
 >1.8. Step 7: Try connecting with the unix client</A
 ></H1
 ><P
@@ -1597,7 +1605,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN158"
+NAME="AEN160"
 >1.9. Step 8: Try connecting from a DOS, WfWg, Win9x, WinNT, 
 	Win2k, OS/2, etc... client</A
 ></H1
@@ -1646,7 +1654,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN172"
+NAME="AEN174"
 >1.10. What If Things Don't Work?</A
 ></H1
 ><P
@@ -1669,7 +1677,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN177"
+NAME="AEN179"
 >1.10.1. Diagnosing Problems</A
 ></H2
 ><P
@@ -1685,7 +1693,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN181"
+NAME="AEN183"
 >1.10.2. Scope IDs</A
 ></H2
 ><P
@@ -1701,7 +1709,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN184"
+NAME="AEN186"
 >1.10.3. Choosing the Protocol Level</A
 ></H2
 ><P
@@ -1742,7 +1750,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN193"
+NAME="AEN195"
 >1.10.4. Printing from UNIX to a Client PC</A
 ></H2
 ><P
@@ -1760,7 +1768,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN197"
+NAME="AEN199"
 >1.10.5. Locking</A
 ></H2
 ><P
@@ -1826,7 +1834,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN207"
+NAME="AEN209"
 >1.10.6. Mapping Usernames</A
 ></H2
 ><P
@@ -1839,7 +1847,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN210"
+NAME="AEN212"
 >1.10.7. Other Character Sets</A
 ></H2
 ><P
@@ -1863,7 +1871,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN224"
+NAME="AEN226"
 >2.1. Agenda</A
 ></H1
 ><P
@@ -1930,7 +1938,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN246"
+NAME="AEN248"
 >2.2. Name Resolution in a pure Unix/Linux world</A
 ></H1
 ><P
@@ -1972,7 +1980,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN262"
+NAME="AEN264"
 >2.2.1. <TT
 CLASS="FILENAME"
 >/etc/hosts</TT
@@ -2062,7 +2070,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN278"
+NAME="AEN280"
 >2.2.2. <TT
 CLASS="FILENAME"
 >/etc/resolv.conf</TT
@@ -2100,7 +2108,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN289"
+NAME="AEN291"
 >2.2.3. <TT
 CLASS="FILENAME"
 >/etc/host.conf</TT
@@ -2138,7 +2146,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN297"
+NAME="AEN299"
 >2.2.4. <TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
@@ -2216,7 +2224,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN309"
+NAME="AEN311"
 >2.3. Name resolution as used within MS Windows networking</A
 ></H1
 ><P
@@ -2310,7 +2318,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN321"
+NAME="AEN323"
 >2.3.1. The NetBIOS Name Cache</A
 ></H2
 ><P
@@ -2337,7 +2345,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN326"
+NAME="AEN328"
 >2.3.2. The LMHOSTS file</A
 ></H2
 ><P
@@ -2449,7 +2457,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN334"
+NAME="AEN336"
 >2.3.3. HOSTS file</A
 ></H2
 ><P
@@ -2471,7 +2479,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN339"
+NAME="AEN341"
 >2.3.4. DNS Lookup</A
 ></H2
 ><P
@@ -2491,7 +2499,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN342"
+NAME="AEN344"
 >2.3.5. WINS Lookup</A
 ></H2
 ><P
@@ -2552,7 +2560,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN354"
+NAME="AEN356"
 >2.4. How browsing functions and how to deploy stable and 
 dependable browsing using Samba</A
 ></H1
@@ -2619,7 +2627,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN364"
+NAME="AEN366"
 >2.5. MS Windows security options and how to configure 
 Samba for seemless integration</A
 ></H1
@@ -2761,7 +2769,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN392"
+NAME="AEN394"
 >2.5.1. Use MS Windows NT as an authentication server</A
 ></H2
 ><P
@@ -2806,7 +2814,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN400"
+NAME="AEN402"
 >2.5.2. Make Samba a member of an MS Windows NT security domain</A
 ></H2
 ><P
@@ -2878,7 +2886,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN417"
+NAME="AEN419"
 >2.5.3. Configure Samba as an authentication server</A
 ></H2
 ><P
@@ -2924,7 +2932,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN424"
+NAME="AEN426"
 >2.5.3.1. Users</A
 ></H3
 ><P
@@ -2956,7 +2964,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN429"
+NAME="AEN431"
 >2.5.3.2. MS Windows NT Machine Accounts</A
 ></H3
 ><P
@@ -2986,7 +2994,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN434"
+NAME="AEN436"
 >2.6. Conclusions</A
 ></H1
 ><P
@@ -3031,7 +3039,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN455"
+NAME="AEN457"
 >3.1. Samba and PAM</A
 ></H1
 ><P
@@ -3290,7 +3298,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN499"
+NAME="AEN501"
 >3.2. Distributed Authentication</A
 ></H1
 ><P
@@ -3323,7 +3331,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN506"
+NAME="AEN508"
 >3.3. PAM Configuration in smb.conf</A
 ></H1
 ><P
@@ -3371,7 +3379,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN526"
+NAME="AEN528"
 >4.1. Instructions</A
 ></H1
 ><P
@@ -3528,7 +3536,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN561"
+NAME="AEN563"
 >4.1.1. Notes</A
 ></H2
 ><P
@@ -3569,7 +3577,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN581"
+NAME="AEN583"
 >5.1. Viewing and changing UNIX permissions using the NT 
 	security dialogs</A
 ></H1
@@ -3608,7 +3616,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN590"
+NAME="AEN592"
 >5.2. How to view file security on a Samba share</A
 ></H1
 ><P
@@ -3654,7 +3662,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN601"
+NAME="AEN603"
 >5.3. Viewing file ownership</A
 ></H1
 ><P
@@ -3740,7 +3748,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN621"
+NAME="AEN623"
 >5.4. Viewing file or directory permissions</A
 ></H1
 ><P
@@ -3802,7 +3810,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN636"
+NAME="AEN638"
 >5.4.1. File Permissions</A
 ></H2
 ><P
@@ -3864,7 +3872,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN650"
+NAME="AEN652"
 >5.4.2. Directory Permissions</A
 ></H2
 ><P
@@ -3896,7 +3904,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN657"
+NAME="AEN659"
 >5.5. Modifying file or directory permissions</A
 ></H1
 ><P
@@ -3994,7 +4002,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN679"
+NAME="AEN681"
 >5.6. Interaction with the standard Samba create mask 
 	parameters</A
 ></H1
@@ -4267,7 +4275,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN743"
+NAME="AEN745"
 >5.7. Interaction with the standard Samba file attribute 
 	mapping</A
 ></H1
@@ -4322,7 +4330,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN764"
+NAME="AEN766"
 >6.1. Introduction</A
 ></H1
 ><P
@@ -4406,7 +4414,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN786"
+NAME="AEN788"
 >6.2. Configuration</A
 ></H1
 ><DIV
@@ -4474,7 +4482,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN797"
+NAME="AEN799"
 >6.2.1. Creating [print$]</A
 ></H2
 ><P
@@ -4677,7 +4685,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN832"
+NAME="AEN834"
 >6.2.2. Setting Drivers for Existing Printers</A
 ></H2
 ><P
@@ -4749,7 +4757,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN849"
+NAME="AEN851"
 >6.2.3. Support a large number of printers</A
 ></H2
 ><P
@@ -4824,7 +4832,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN860"
+NAME="AEN862"
 >6.2.4. Adding New Printers via the Windows NT APW</A
 ></H2
 ><P
@@ -4930,7 +4938,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN885"
+NAME="AEN887"
 >6.2.5. Samba and Printer Ports</A
 ></H2
 ><P
@@ -4967,7 +4975,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN893"
+NAME="AEN895"
 >6.3. The Imprints Toolset</A
 ></H1
 ><P
@@ -4985,7 +4993,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN897"
+NAME="AEN899"
 >6.3.1. What is Imprints?</A
 ></H2
 ><P
@@ -5017,7 +5025,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN907"
+NAME="AEN909"
 >6.3.2. Creating Printer Driver Packages</A
 ></H2
 ><P
@@ -5033,7 +5041,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN910"
+NAME="AEN912"
 >6.3.3. The Imprints server</A
 ></H2
 ><P
@@ -5053,7 +5061,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN914"
+NAME="AEN916"
 >6.3.4. The Installation Client</A
 ></H2
 ><P
@@ -5156,7 +5164,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN936"
+NAME="AEN938"
 >6.4. <A
 NAME="MIGRATION"
 ></A
@@ -5320,7 +5328,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN990"
+NAME="AEN992"
 >7.1. Joining an NT Domain with Samba 2.2</A
 ></H1
 ><P
@@ -5551,7 +5559,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1054"
+NAME="AEN1056"
 >7.2. Samba and Windows 2000 Domains</A
 ></H1
 ><P
@@ -5576,7 +5584,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1059"
+NAME="AEN1061"
 >7.3. Why is this better than security = server?</A
 ></H1
 ><P
@@ -5670,7 +5678,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1092"
+NAME="AEN1094"
 >8.1. Prerequisite Reading</A
 ></H1
 ><P
@@ -5698,7 +5706,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1098"
+NAME="AEN1100"
 >8.2. Background</A
 ></H1
 ><DIV
@@ -5830,7 +5838,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1137"
+NAME="AEN1139"
 >8.3. Configuring the Samba Domain Controller</A
 ></H1
 ><P
@@ -6051,7 +6059,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1180"
+NAME="AEN1182"
 >8.4. Creating Machine Trust Accounts and Joining Clients to the
 Domain</A
 ></H1
@@ -6125,7 +6133,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1199"
+NAME="AEN1201"
 >8.4.1. Manual Creation of Machine Trust Accounts</A
 ></H2
 ><P
@@ -6292,7 +6300,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1234"
+NAME="AEN1236"
 >8.4.2. "On-the-Fly" Creation of Machine Trust Accounts</A
 ></H2
 ><P
@@ -6338,7 +6346,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1243"
+NAME="AEN1245"
 >8.4.3. Joining the Client to the Domain</A
 ></H2
 ><P
@@ -6398,7 +6406,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1258"
+NAME="AEN1260"
 >8.5. Common Problems and Errors</A
 ></H1
 ><P
@@ -6597,7 +6605,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1306"
+NAME="AEN1308"
 >8.6. System Policies and Profiles</A
 ></H1
 ><P
@@ -6754,7 +6762,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1350"
+NAME="AEN1352"
 >8.7. What other help can I get?</A
 ></H1
 ><P
@@ -7150,7 +7158,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1464"
+NAME="AEN1466"
 >8.8. Domain Control for Windows 9x/ME</A
 ></H1
 ><DIV
@@ -7264,7 +7272,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1490"
+NAME="AEN1492"
 >8.8.1. Configuration Instructions:	Network Logons</A
 ></H2
 ><P
@@ -7358,7 +7366,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1509"
+NAME="AEN1511"
 >8.8.2. Configuration Instructions:	Setting up Roaming User Profiles</A
 ></H2
 ><DIV
@@ -7405,7 +7413,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1517"
+NAME="AEN1519"
 >8.8.2.1. Windows NT Configuration</A
 ></H3
 ><P
@@ -7449,7 +7457,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1525"
+NAME="AEN1527"
 >8.8.2.2. Windows 9X Configuration</A
 ></H3
 ><P
@@ -7489,7 +7497,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1533"
+NAME="AEN1535"
 >8.8.2.3. Win9X and WinNT Configuration</A
 ></H3
 ><P
@@ -7527,7 +7535,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1540"
+NAME="AEN1542"
 >8.8.2.4. Windows 9X Profile Setup</A
 ></H3
 ><P
@@ -7683,7 +7691,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1576"
+NAME="AEN1578"
 >8.8.2.5. Windows NT Workstation 4.0</A
 ></H3
 ><P
@@ -7765,7 +7773,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1589"
+NAME="AEN1591"
 >8.8.2.6. Windows NT Server</A
 ></H3
 ><P
@@ -7779,7 +7787,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1592"
+NAME="AEN1594"
 >8.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</A
 ></H3
 ><DIV
@@ -7844,7 +7852,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1602"
+NAME="AEN1604"
 >8.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></H1
 ><DIV
@@ -7966,14 +7974,14 @@ CLASS="CHAPTER"
 ><HR><H1
 ><A
 NAME="SAMBA-BDC"
->Chapter 9. How to a Purely Samba Controlled Domain</A
+>Chapter 9. How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</A
 ></H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1638"
+NAME="AEN1640"
 >9.1. Prerequisite Reading</A
 ></H1
 ><P
@@ -7990,7 +7998,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1642"
+NAME="AEN1644"
 >9.2. Background</A
 ></H1
 ><P
@@ -8044,7 +8052,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1650"
+NAME="AEN1652"
 >9.3. What qualifies a Domain Controller on the network?</A
 ></H1
 ><P
@@ -8061,7 +8069,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1653"
+NAME="AEN1655"
 >9.3.1. How does a Workstation find its domain controller?</A
 ></H2
 ><P
@@ -8080,7 +8088,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1656"
+NAME="AEN1658"
 >9.3.2. When is the PDC needed?</A
 ></H2
 ><P
@@ -8096,7 +8104,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1659"
+NAME="AEN1661"
 >9.4. Can Samba be a Backup Domain Controller?</A
 ></H1
 ><P
@@ -8115,7 +8123,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1663"
+NAME="AEN1665"
 >9.5. How do I set up a Samba BDC?</A
 ></H1
 ><P
@@ -8185,7 +8193,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1679"
+NAME="AEN1681"
 >9.5.1. How do I replicate the smbpasswd file?</A
 ></H2
 ><P
@@ -8215,7 +8223,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1700"
+NAME="AEN1702"
 >10.1. Purpose</A
 ></H1
 ><P
@@ -8283,7 +8291,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1720"
+NAME="AEN1722"
 >10.2. Introduction</A
 ></H1
 ><P
@@ -8400,7 +8408,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1749"
+NAME="AEN1751"
 >10.3. Supported LDAP Servers</A
 ></H1
 ><P
@@ -8425,7 +8433,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1754"
+NAME="AEN1756"
 >10.4. Schema and Relationship to the RFC 2307 posixAccount</A
 ></H1
 ><P
@@ -8493,7 +8501,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1766"
+NAME="AEN1768"
 >10.5. Configuring Samba with LDAP</A
 ></H1
 ><DIV
@@ -8501,7 +8509,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1768"
+NAME="AEN1770"
 >10.5.1. OpenLDAP configuration</A
 ></H2
 ><P
@@ -8601,7 +8609,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1785"
+NAME="AEN1787"
 >10.5.2. Configuring Samba</A
 ></H2
 ><P
@@ -8730,7 +8738,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1813"
+NAME="AEN1815"
 >10.6. Accounts and Groups management</A
 ></H1
 ><P
@@ -8755,7 +8763,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1818"
+NAME="AEN1820"
 >10.7. Security and sambaAccount</A
 ></H1
 ><P
@@ -8835,7 +8843,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1838"
+NAME="AEN1840"
 >10.8. LDAP specials attributes for sambaAccounts</A
 ></H1
 ><P
@@ -9046,7 +9054,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1908"
+NAME="AEN1910"
 >10.9. Example LDIF Entries for a sambaAccount</A
 ></H1
 ><P
@@ -9122,7 +9130,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1916"
+NAME="AEN1918"
 >10.10. Comments</A
 ></H1
 ><P
@@ -9146,7 +9154,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1945"
+NAME="AEN1947"
 >11.1. Abstract</A
 ></H1
 ><P
@@ -9169,7 +9177,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1949"
+NAME="AEN1951"
 >11.2. Introduction</A
 ></H1
 ><P
@@ -9223,7 +9231,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1962"
+NAME="AEN1964"
 >11.3. What Winbind Provides</A
 ></H1
 ><P
@@ -9265,7 +9273,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1969"
+NAME="AEN1971"
 >11.3.1. Target Uses</A
 ></H2
 ><P
@@ -9289,7 +9297,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1973"
+NAME="AEN1975"
 >11.4. How Winbind Works</A
 ></H1
 ><P
@@ -9309,7 +9317,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1978"
+NAME="AEN1980"
 >11.4.1. Microsoft Remote Procedure Calls</A
 ></H2
 ><P
@@ -9335,7 +9343,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1982"
+NAME="AEN1984"
 >11.4.2. Name Service Switch</A
 ></H2
 ><P
@@ -9415,7 +9423,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1998"
+NAME="AEN2000"
 >11.4.3. Pluggable Authentication Modules</A
 ></H2
 ><P
@@ -9464,7 +9472,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2006"
+NAME="AEN2008"
 >11.4.4. User and Group ID Allocation</A
 ></H2
 ><P
@@ -9490,7 +9498,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2010"
+NAME="AEN2012"
 >11.4.5. Result Caching</A
 ></H2
 ><P
@@ -9513,7 +9521,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2013"
+NAME="AEN2015"
 >11.5. Installation and Configuration</A
 ></H1
 ><P
@@ -9532,7 +9540,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2018"
+NAME="AEN2020"
 >11.5.1. Introduction</A
 ></H2
 ><P
@@ -9583,7 +9591,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2031"
+NAME="AEN2033"
 >11.5.2. Requirements</A
 ></H2
 ><P
@@ -9641,7 +9649,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2045"
+NAME="AEN2047"
 >11.5.3. Testing Things Out</A
 ></H2
 ><P
@@ -9686,7 +9694,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2056"
+NAME="AEN2058"
 >11.5.3.1. Configure and compile SAMBA</A
 ></H3
 ><P
@@ -9761,7 +9769,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2075"
+NAME="AEN2077"
 >11.5.3.2. Configure <TT
 CLASS="FILENAME"
 >nsswitch.conf</TT
@@ -9851,7 +9859,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2100"
+NAME="AEN2102"
 >11.5.3.3. Configure smb.conf</A
 ></H3
 ><P
@@ -9935,7 +9943,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2116"
+NAME="AEN2118"
 >11.5.3.4. Join the SAMBA server to the PDC domain</A
 ></H3
 ><P
@@ -9981,7 +9989,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2127"
+NAME="AEN2129"
 >11.5.3.5. Start up the winbindd daemon and test it!</A
 ></H3
 ><P
@@ -10122,7 +10130,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2163"
+NAME="AEN2165"
 >11.5.3.6. Fix the <TT
 CLASS="FILENAME"
 >/etc/rc.d/init.d/smb</TT
@@ -10252,7 +10260,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN2185"
+NAME="AEN2187"
 >11.5.3.7. Configure Winbind and PAM</A
 ></H3
 ><P
@@ -10474,7 +10482,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2232"
+NAME="AEN2234"
 >11.6. Limitations</A
 ></H1
 ><P
@@ -10515,7 +10523,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2242"
+NAME="AEN2244"
 >11.7. Conclusion</A
 ></H1
 ><P
@@ -10539,7 +10547,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2256"
+NAME="AEN2258"
 >12.1. FAQs</A
 ></H1
 ><DIV
@@ -10547,7 +10555,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2258"
+NAME="AEN2260"
 >12.1.1. How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></H2
@@ -10606,7 +10614,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2273"
+NAME="AEN2275"
 >12.1.2. How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></H2
@@ -10659,7 +10667,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2282"
+NAME="AEN2284"
 >12.1.3. Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></H2
@@ -10681,7 +10689,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2286"
+NAME="AEN2288"
 >12.1.4. How do I get printer driver download working 
 		for OS/2 clients?</A
 ></H2
@@ -10737,7 +10745,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2302"
+NAME="AEN2304"
 >13.1. Introduction</A
 ></H1
 ><P
@@ -10759,7 +10767,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2307"
+NAME="AEN2309"
 >13.2. CVS Access to samba.org</A
 ></H1
 ><P
@@ -10772,7 +10780,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2310"
+NAME="AEN2312"
 >13.2.1. Access via CVSweb</A
 ></H2
 ><P
@@ -10793,7 +10801,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2315"
+NAME="AEN2317"
 >13.2.2. Access via cvs</A
 ></H2
 ><P
@@ -10899,14 +10907,14 @@ CLASS="COMMAND"
 ></DIV
 ><HR><H1
 ><A
-NAME="AEN2343"
+NAME="AEN2345"
 >Index</A
 ></H1
 ><DL
 ><DT
 >Primary Domain Controller,
     <A
-HREF="x1098.htm"
+HREF="x1100.htm"
 >Background</A
 >
   </DT

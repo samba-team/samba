@@ -31,7 +31,7 @@
 <title>Abstract</title>
 
 <para>
-<emphasis>Last Update</emphasis> : Tue Jul 31 15:58:03 CDT 2001
+<emphasis>Last Update</emphasis> : Mon Apr  1 08:47:26 CST 2002
 </para>
 
 <para>
@@ -41,6 +41,13 @@ than one person can maintain.  The most recent version of this document
 can be found at <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
 on the "Documentation" page.  Please send updates to <ulink 
 url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
+</para>
+
+<para>
+This documentation is distributed under the GNU General Public License (GPL) 
+version 2.  A copy of the license is included with the Samba source
+distribution.  A copy can be found on-line at <ulink 
+url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
 
 <para>
