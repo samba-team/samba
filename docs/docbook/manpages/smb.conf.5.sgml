@@ -79,7 +79,7 @@
 	to the user of the service. Some housekeeping options are 
 	also specifiable.</para>
 	
-	<para>Sections are either filespace services (used by the 
+	<para>Sections are either file share services (used by the 
 	client as an extension of their native file systems) or 
 	printable services (used by the client to access print services 
 	on the host running the server).</para>
@@ -140,7 +140,7 @@
 		<para>parameters in this section apply to the server 
 		as a whole, or are defaults for sections which do not 
 		specifically define certain items. See the notes 
-		under paraMETERS for more information.</para>
+		under PARAMETERS for more information.</para>
 	</refsect2>
 	
 	<refsect2>
@@ -380,7 +380,7 @@
 		
 		<varlistentry>
 		<term>%h</term>
-		<listitem><para>the internet hostname that Samba is running 
+		<listitem><para>the Internet hostname that Samba is running 
 		on.</para></listitem>
 		</varlistentry>
 
@@ -399,7 +399,7 @@
 		
 		<varlistentry>
 		<term>%M</term>
-		<listitem><para>the internet name of the client machine.
+		<listitem><para>the Internet name of the client machine.
 		</para></listitem>
 		</varlistentry>
 		
@@ -532,10 +532,10 @@
 	<title id="VALIDATIONSECT">NOTE ABOUT USERNAME/PASSWORD VALIDATION</title>
 
 	<para>There are a number of ways in which a user can connect 
-	to a service. The server follows the following steps in determining 
+	to a service. The server uses the following steps in determining 
 	if it will allow a connection to a specified service. If all the 
-	steps fail then the connection request is rejected. If one of the 
-	steps pass then the following steps are not checked.</para>
+	steps fail, then the connection request is rejected.  However, if one of the 
+	steps succeeds, then the following steps are not checked.</para>
 
 	<para>If the service is marked "guest only = yes" then
 	steps 1 to 5 are skipped.</para>
@@ -749,7 +749,7 @@
 <refsect1>
 	<title>COMPLETE LIST OF SERVICE PARAMETERS</title>
 	
-	<para>Here is a list of all service parameters. See the section of 
+	<para>Here is a list of all service parameters. See the section on 
 	each parameter for details. Note that some are synonyms.</para>
 	
 	<itemizedlist>
@@ -880,7 +880,7 @@
 		<term><anchor id="ADDUSERSCRIPT">add user script (G)</term>
 		<listitem><para>This is the full pathname to a script that will 
 		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">smbd(8)
-		</ulink> under special circumstances decribed below.</para>
+		</ulink> under special circumstances described below.</para>
 
 		<para>Normally, a Samba server requires that UNIX users are 
 		created for all users accessing files on this server. For sites 
@@ -962,7 +962,7 @@
 		</itemizedlist>
 		
 		<para>All parameters are filled in from the PRINTER_INFO_2 structure sent 
-		by the Windows NT/2000 client with one excpetion.  The "Windows 9x
+		by the Windows NT/2000 client with one exception.  The "Windows 9x
 		driver location" parameter is included for backwards compatibility
 		only.  The remaining fields in the structure are generated from answers
 		to the APW questions.</para>
@@ -1044,7 +1044,7 @@
 		<ulink url="nmbd.8.html"><command>nmbd</command></ulink> 
 		will announce itself as, to a network neighborhood browse 
 		list. By default this is set to Windows NT. The valid options 
-		are : "NT" (which is a synonym for "NT Server"), "NT Server", 
+		are : "NT Server" (which can also be written as "NT"), 
 		"NT Workstation", "Win95" or "WfW" meaning Windows NT Server, 
 		Windows NT Workstation, Windows 95 and Windows for Workgroups 
 		respectively. Do not change this parameter unless you have a 
@@ -1327,7 +1327,7 @@
 		and type the command <command>chcp</command>. This will output 
 		the code page. The default for USA MS-DOS, Windows 95, and
 		Windows NT releases is code page 437. The default for western 
-		european releases of the above operating systems is code page 850.</para>
+		European releases of the above operating systems is code page 850.</para>
 
 		<para>This parameter tells <ulink url="smbd.8.html">smbd(8)</ulink> 
 		which of the <filename>codepage.<replaceable>XXX</replaceable>
@@ -1735,7 +1735,7 @@
 		<listitem><para>This is the full pathname to a script that will 
 		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">
 		<command>smbd(8)</command></ulink> under special circumstances 
-		decribed below.</para>
+		described below.</para>
 
 		<para>Normally, a Samba server requires that UNIX users are 
 		created for all users accessing files on this server. For sites 
@@ -1888,7 +1888,7 @@
 		<para>The external program will be passed a single parameter indicating 
 		a directory in the filesystem being queried. This will typically consist
 		of the string <filename>./</filename>. The script should return two 
-		integers in ascii. The first should be the total disk space in blocks, 
+		integers in ASCII. The first should be the total disk space in blocks, 
 		and the second should be the number of available blocks. An optional 
 		third return value can give the block size in bytes. The default 
 		blocksize is 1024 bytes.</para>
@@ -2158,7 +2158,7 @@
 		</link>, then the default behavior is to enable the <parameter>domain 
 		master</parameter> parameter.  If <parameter>domain logons</parameter> is 
 		not enabled (the default setting), then neither will <parameter>domain 
-		master</parameter> ne enabled by default.</para>
+		master</parameter> be enabled by default.</para>
 
 		<para>Default: <command>domain master = auto</command></para></listitem>
 		</varlistentry>
@@ -2614,7 +2614,7 @@
 		<listitem><para>This is a username which will be used for access 
 		to services which are specified as <link linkend="GUESTOK"><parameter>
 		guest ok</parameter></link> (see below). Whatever privileges this 
-		ser has will be available to any client connecting to the guest service. 
+		user has will be available to any client connecting to the guest service. 
 		Typically this user will exist in the password file, but will not
 		have a valid login. The user account "ftp" is often a good choice 
 		for this parameter. If a username is specified in a given service, 
@@ -2638,7 +2638,7 @@
 		<varlistentry>
 		<term><anchor id="GUESTOK">guest ok (S)</term>
 		<listitem><para>If this parameter is <constant>yes</constant> for 
-		a service, then no password is equired to connect to the service. 
+		a service, then no password is required to connect to the service. 
 		Privileges will be those of the <link linkend="GUESTACCOUNT"><parameter>
 		guest account</parameter></link>.</para>
 
@@ -2972,11 +2972,11 @@
 
 		<para>The "mask" parameters can either be a bit length (such 
 		as 24 for a C class network) or a full netmask in dotted 
-		decmal form.</para>
+		decimal form.</para>
 
 		<para>The "IP" parameters above can either be a full dotted 
 		decimal IP address or a hostname which will be looked up via 
-		the OSes normal hostname resolution mechanisms.</para>
+		the OS's normal hostname resolution mechanisms.</para>
 
 		<para>For example, the following line:</para>
 		
@@ -3055,7 +3055,7 @@
 	
 		<varlistentry>
 		<term><anchor id="KERNELOPLOCKS">kernel oplocks (G)</term>
-		<listitem><para>For UNIXs that support kernel based <link
+		<listitem><para>For UNIXes that support kernel based <link
 		linkend="OPLOCKS"><parameter>oplocks</parameter></link>
 		(currently only IRIX and the Linux 2.4 kernel), this parameter 
 		allows the use of them to be turned on or off.</para>
@@ -3093,7 +3093,7 @@
 		exclusive oplocks). This allows all openers of the file that 
 		support level2 oplocks to cache the file for read-ahead only (ie. 
 		they may not cache writes or lock requests) and increases performance 
-		for many acesses of files that are not commonly written (such as 
+		for many accesses of files that are not commonly written (such as 
 		application .EXE files).</para>
 
 		<para>Once one of the clients which have a read-only oplock 
@@ -3256,7 +3256,7 @@
 
 		<varlistentry>
 		<term><anchor id="LOGFILE">log file (G)</term>
-		<listitem><para>This options allows you to override the name 
+		<listitem><para>This option allows you to override the name 
 		of the Samba log file (also known as the debug file).</para>
 
 		<para>This option takes the standard substitutions, allowing 
@@ -3707,7 +3707,7 @@
 
 		<para>One very useful case is to remove the annoying <filename>;1
 		</filename> off the ends of filenames on some CDROMS (only visible 
-		under some UNIXs). To do this use a map of (*;1 *;).</para>
+		under some UNIXes). To do this use a map of (*;1 *;).</para>
 
 		<para>Default: <emphasis>no mangled map</emphasis></para>
 		<para>Example: <command>mangled map = (*;1 *;)</command></para>
@@ -4546,7 +4546,7 @@
 		issue oplocks (opportunistic locks) to file open requests on this 
 		share. The oplock code can dramatically (approx. 30% or more) improve 
 	 	the speed of access to files on Samba servers. It allows the clients 
-		to aggressively cache files ocally and you may want to disable this 
+		to aggressively cache files locally and you may want to disable this 
 		option for unreliable network environments (it is turned on by 
 		default in Windows NT Servers).  For more information see the file 
 		<filename>Speed.txt</filename> in the Samba <filename>docs/</filename> 
@@ -4771,9 +4771,9 @@
 		</command> or <command>security = server</command> you can get Samba 
 		to do all its username/password validation via a remote server.</para>
 
-		<para>This options sets the name of the password server to use. 
+		<para>This option sets the name of the password server to use. 
 		It must be a NetBIOS name, so if the machine's NetBIOS name is 
-		different from its internet name then you may have to add its NetBIOS 
+		different from its Internet name then you may have to add its NetBIOS 
 		name to the lmhosts  file which is stored in the same directory 
 		as the <filename>smb.conf</filename> file.</para>
 
@@ -4798,14 +4798,14 @@
 		<para>The name of the password server takes the standard 
 		substitutions, but probably the only useful one is <parameter>%m
 		</parameter>, which means the Samba server will use the incoming 
-	 	client as the passwordserver. If you use this then you better 
-		trust your clients, and you better restrict them with hosts allow!</para>
+	 	client as the password server. If you use this then you better 
+		trust your clients, and you had better restrict them with hosts allow!</para>
 
 		<para>If the <parameter>security</parameter> parameter is set to
 		<constant>domain</constant>, then the list of machines in this 
 		option must be a list of Primary or Backup Domain controllers for the
-		Domain or the character '*', as the Samba server is cryptographicly
-		in that domain, and will use cryptographicly authenticated RPC calls
+		Domain or the character '*', as the Samba server is effectively
+		in that domain, and will use cryptographically authenticated RPC calls
 		to authenticate the user logging on. The advantage of using <command>
 		security = domain</command> is that if you list several hosts in the 
 		<parameter>password server</parameter> option then <command>smbd
@@ -5066,7 +5066,7 @@
 		printable service nor a global print command, spool files will 
 		be created but not processed and (most importantly) not removed.</para>
 
-		<para>Note that printing may fail on some UNIXs from the 
+		<para>Note that printing may fail on some UNIXes from the 
 		<constant>nobody</constant> account. If this happens then create 
 		an alternative guest account that can print and set the <link
 		linkend="GUESTACCOUNT"><parameter>guest account</parameter></link> 
@@ -5208,13 +5208,13 @@ print5|My Printer 5
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
 		<filename>PRINTER_DRIVER2.txt</filename> in the <filename>docs
-		</filename> ofthe Samba distribution for more information
+		</filename> of the Samba distribution for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</para>
 		
 		<para>This option allows you to control the string 
 		that clients receive when they ask the server for the printer driver 
-		associated with a printer. If you are using Windows95 or WindowsNT 
+		associated with a printer. If you are using Windows95 or Windows NT 
 		then you can use this to automate the setup of printers on your 
 		system.</para>
 
@@ -5224,7 +5224,7 @@ print5|My Printer 5
 		first try with no <link linkend="PRINTERDRIVER"><parameter>
 		printer driver</parameter></link> option set and the client will 
 		give you a list of printer drivers. The appropriate strings are 
-		shown in a scrollbox after you have chosen the printer manufacturer.</para>
+		shown in a scroll box after you have chosen the printer manufacturer.</para>
 
 		<para>See also <link linkend="PRINTERDRIVERFILE"><parameter>printer
 		driver file</parameter></link>.</para>
@@ -5241,7 +5241,7 @@ print5|My Printer 5
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
 		<filename>PRINTER_DRIVER2.txt</filename> in the <filename>docs
-		</filename> ofthe Samba distribution for more information
+		</filename> of the Samba distribution for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</para>
 
@@ -5277,7 +5277,7 @@ print5|My Printer 5
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
 		<filename>PRINTER_DRIVER2.txt</filename> in the <filename>docs
-		</filename> ofthe Samba distribution for more information
+		</filename> of the Samba distribution for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</para>
 
@@ -5647,10 +5647,10 @@ print5|My Printer 5
 		but it doesn't.  Setting it to true will force these anonymous 
  		connections to be denied, and the client will be required to always 
 		supply a username and password when connecting. Use of this parameter 
-		is only recommened for homogenous NT client environments.</para>
+		is only recommended for homogeneous NT client environments.</para>
 
 		<para>This parameter makes the use of macro expansions that rely
-		on the username (%U, %G, etc) consistant.  NT 4.0 
+		on the username (%U, %G, etc) consistent.  NT 4.0 
 		likes to use anonymous connections when refreshing the share list, 
 		and this is a way to work around that.</para>
 
@@ -6140,23 +6140,23 @@ print5|My Printer 5
 		for Windows NT/2000 client in Samba 2.2, a "Printers..." folder will 
 		appear on Samba hosts in the share listing.  Normally this folder will 
 		contain an icon for the MS Add Printer Wizard (APW).  However, it is 
-		possible to disable this feature regardless of the level of priviledge 
-		of the connacted user.</para>
+		possible to disable this feature regardless of the level of privilege 
+		of the connected user.</para>
 		
 		<para>Under normal circumstances, the Windows NT/2000 client will 
 		open a handle on the printer server with OpenPrinterEx() asking for
-		Administrator priviledges.  If the user does not have adminstrative
+		Administrator privileges.  If the user does not have administrative
 		access on the print server (i.e is not root or a member of the 
 		<parameter>printer admin</parameter> group), the OpenPrinterEx() 
 		call fails and the clients another open call with a request for 
-		a lower priviledge level.  This should succeed, however the APW 
+		a lower privilege level.  This should succeed, however the APW 
 		icon will not be displayed.</para>
 		
 		<para>Disabling the <parameter>show add printer wizard</parameter>
 		parameter will always cause the OpenPrinterEx() on the server
 		to fail.  Thus the APW icon will never be displayed. <emphasis>
 		Note :</emphasis>This does not prevent the same user from having 
-		administrative priviledge on an individual printer.</para>
+		administrative privilege on an individual printer.</para>
 		
 		<para>See also <link linkend="ADDPRINTERCOMMAND"><parameter>addprinter
 		command</parameter></link>, <link linkend="DELETEPRINTERCOMMAND">
@@ -6781,7 +6781,7 @@ print5|My Printer 5
 		maps onto LOG_INFO. All higher levels are mapped to <constant>
 		LOG_DEBUG</constant>.</para>
 
-		<para>This paramter sets the threshold for sending messages 
+		<para>This parameter sets the threshold for sending messages 
 		to syslog.  Only messages with debug level less than this value 
 		will be sent to syslog.</para>
 
@@ -6897,7 +6897,7 @@ print5|My Printer 5
 		<term><anchor id="UNIXREALNAME">unix realname (G)</term>
 		<listitem><para>This boolean parameter when set causes samba 
 		to supply the real name field from the unix password file to 
-		the client. This isuseful for setting up mail clients and WWW 
+		the client. This is useful for setting up mail clients and WWW 
 		browsers on systems used by more than one person.</para>
 
 		<para>Default: <command>unix realname = yes</command></para>
@@ -7023,7 +7023,7 @@ print5|My Printer 5
 		of all users in the netgroup group of that name.</para>
 
 		<para>Note that searching though a groups database can take 
-		quite some time, snd some clients may time out during the 
+		quite some time, and some clients may time out during the 
 		search.</para>
 
 		<para>See the section <link linkend="VALIDATIONSECT">NOTE ABOUT 
@@ -7050,7 +7050,7 @@ print5|My Printer 5
 
 		<para>If this parameter is set to non-zero the behavior changes. 
 		This parameter is a number that specifies the number of uppercase
-		combinations to try whilst trying to determine the UNIX user name. The
+		combinations to try while trying to determine the UNIX user name. The
 		higher the number the more combinations will be tried, but the slower
 		the discovery of usernames will be. Use this parameter when you have
 		strange usernames on your UNIX machine, such as <constant>AstrangeUser
@@ -7431,7 +7431,7 @@ print5|My Printer 5
 		<para>This parameter allows an admin to define the character 
 		used when listing a username of the form of <replaceable>DOMAIN
 		</replaceable>\<replaceable>user</replaceable>.  This parameter 
-		is only applizaable when using the <filename>pam_winbind.so</filename>
+		is only applicable when using the <filename>pam_winbind.so</filename>
 		and <filename>nss_winbind.so</filename> modules for UNIX services.
 		</para>
 
