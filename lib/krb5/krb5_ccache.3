@@ -40,6 +40,7 @@
 .Nm krb5_cc_ops ,
 .Nm krb5_fcc_ops ,
 .Nm krb5_mcc_ops ,
+.Nm krb5_cc_clear_mcred ,
 .Nm krb5_cc_close ,
 .Nm krb5_cc_copy_cache ,
 .Nm krb5_cc_default ,
@@ -77,6 +78,10 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Pp
 .Li "struct krb5_cc_ops *krb5_mcc_ops;"
 .Pp
+.Ft void
+.Fo krb5_cc_clear_mcred
+.Fa "krb5_creds *mcred"
+.Fc
 .Ft krb5_error_code
 .Fo krb5_cc_close
 .Fa "krb5_context *context"
@@ -329,6 +334,12 @@ sets the flags of
 .Fa id
 to
 .Fa flags .
+.Pp
+.Fn krb5_cc_clear_mcred
+clears the
+.Fa mcreds
+argument so its reset and can be used with
+.Fa krb5_cc_retrieve_cred .
 .Pp
 .Fn krb5_cc_retrieve_cred ,
 retrieves the credential identified by
