@@ -246,10 +246,10 @@ add_hostent (int port, int protocol, int socktype,
     char **h;
 
     if (*flags & AI_CANONNAME) {
-	canonname = find_fqdn (he);
+	struct hostent *he2 = NULL;
 
+	canonname = find_fqdn (he);
 	if (strchr (canonname, '.') == NULL) {
-	    struct hostent *he2;
 	    int error;
 
 	    he2 = getipnodebyaddr (he->h_addr_list[0], he->h_length,
@@ -259,11 +259,12 @@ add_hostent (int port, int protocol, int socktype,
 
 		if (strchr (tmp, '.') != NULL)
 		    canonname = tmp;
-		freehostent (he2);
 	    }
 	}
 
 	canonname = strdup (canonname);
+	if (he2 != NULL)
+	    freehostent (he2);
 	if (canonname == NULL)
 	    return EAI_MEMORY;
     }
