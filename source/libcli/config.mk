@@ -11,14 +11,18 @@ ADD_OBJ_FILES = libcli/util/asn1.o \
 ADD_OBJ_FILES = libcli/util/clilsa.o
 REQUIRED_SUBSYSTEMS = RPC_NDR_LSA
 
+[SUBSYSTEM::LIBCLI_COMPOSITE_BASE]
+ADD_OBJ_FILES = \
+	libcli/composite/composite.o
+
 [SUBSYSTEM::LIBCLI_COMPOSITE]
 ADD_OBJ_FILES = \
-	libcli/composite/composite.o \
 	libcli/composite/loadfile.o \
 	libcli/composite/savefile.o \
 	libcli/composite/connect.o \
 	libcli/composite/sesssetup.o \
 	libcli/composite/fetchfile.o
+REQUIRED_SUBSYSTEMS = LIBCLI_COMPOSITE_BASE
 
 [SUBSYSTEM::LIBCLI_NBT]
 ADD_OBJ_FILES = \
@@ -26,7 +30,7 @@ ADD_OBJ_FILES = \
 	libcli/nbt/nbtsocket.o \
 	libcli/nbt/namequery.o \
 	libcli/nbt/nameregister.o
-REQUIRED_SUBSYSTEMS = LIBNDR_RAW NDR_NBT SOCKET
+REQUIRED_SUBSYSTEMS = LIBNDR_RAW NDR_NBT SOCKET LIBCLI_COMPOSITE_BASE
 
 [SUBSYSTEM::LIBCLI_RESOLVE]
 ADD_OBJ_FILES = \
