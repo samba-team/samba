@@ -18,7 +18,7 @@
     reported with the new Windows98 explorer shell file copies.</para>
 
     <para>See also the <link linkend="SYNCALWAYS"><parameter moreinfo="none">sync 
-    always&gt;</parameter></link> parameter.</para>
+    always</parameter></link> parameter.</para>
 
     <para>Default: <command moreinfo="none">strict sync = no</command></para>
 </listitem>
