@@ -2080,6 +2080,10 @@ int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags)
 {
 	if(dest_len==-1)
 		dest_len=MAXUNI-3;
+
+	if (flags & STR_TERMINATE) 
+		src_len = strlen_w(src)*2+2;
+
 	dest_len = MIN((src_len/2), (dest_len-1));
 	unistr_to_ascii(dest, src, dest_len);
 	return src_len;
