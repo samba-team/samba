@@ -357,16 +357,21 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 ****************************************************************************/
 static BOOL init_structs()
 {
-  if (!get_myname(myhostname,NULL))
-    return(False);
+  extern fstring local_machine;
+  char *p;
 
   if (! *myname) {
-    char *p;
     strcpy(myname,myhostname);
     p = strchr(myname,'.');
     if (p) *p = 0;
   }
   strupper(myname);
+
+  strcpy(local_machine,myname);
+  trim_string(local_machine," "," ");
+  p = strchr(local_machine,' ');
+  if (p) *p = 0;
+  strlower(local_machine);
 
   return True;
 }
@@ -479,10 +484,14 @@ static void usage(char *pname)
   DEBUG(1,("%s netbios nameserver version %s started\n",timestring(),VERSION));
   DEBUG(1,("Copyright Andrew Tridgell 1994\n"));
 
+  get_myname(myhostname,NULL);
+
   if (!reload_services(False))
     return(-1);	
 
   init_structs();
+
+  reload_services(True);
 
   set_samba_nb_type();
 

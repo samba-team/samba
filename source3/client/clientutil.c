@@ -212,7 +212,7 @@ BOOL cli_send_session_request(char *inbuf, char *outbuf)
       putip((char *)&dest_ip,inbuf+4);
 
       close_sockets();
-      Client = open_socket_out(SOCK_STREAM, &dest_ip, port);
+      Client = open_socket_out(SOCK_STREAM, &dest_ip, port, SHORT_CONNECT_TIMEOUT);
       if (Client == -1)
         return False;
 
@@ -835,7 +835,7 @@ BOOL cli_open_sockets(int port)
       putip((char *)&dest_ip,(char *)hp->h_addr);
     }
 
-  Client = open_socket_out(SOCK_STREAM, &dest_ip, port);
+  Client = open_socket_out(SOCK_STREAM, &dest_ip, port, SHORT_CONNECT_TIMEOUT);
   if (Client == -1)
     return False;
 
