@@ -194,6 +194,7 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PIPE_SPOOLSS  "\\PIPE\\spoolss"
 #define PIPE_NETDFS   "\\PIPE\\netdfs"
 #define PIPE_ECHO     "\\PIPE\\rpcecho"
+#define PIPE_EPM      "\\PIPE\\epmapper"
 
 #define PIPE_NETLOGON_PLAIN "\\NETLOGON"
 
@@ -207,7 +208,8 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PI_SPOOLSS		7
 #define PI_NETDFS		8
 #define PI_ECHO 		9
-#define PI_MAX_PIPES		10
+#define PI_EPM			10
+#define PI_MAX_PIPES		11
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
