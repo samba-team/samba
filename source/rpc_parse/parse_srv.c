@@ -618,7 +618,7 @@ void srv_io_q_net_sess_enum(char *desc,  SRV_Q_NET_SESS_ENUM *q_n, prs_struct *p
 	prs_align(ps);
 
 	prs_uint32("ptr_qual_name", ps, depth, &(q_n->ptr_qual_name));
-	smb_io_unistr2("", &(q_n->uni_qual_name), True, ps, depth); 
+	smb_io_unistr2("", &(q_n->uni_qual_name), q_n->ptr_qual_name, ps, depth); 
 
 	prs_align(ps);
 
@@ -1093,7 +1093,7 @@ void srv_io_q_net_file_enum(char *desc,  SRV_Q_NET_FILE_ENUM *q_n, prs_struct *p
 	prs_align(ps);
 
 	prs_uint32("ptr_qual_name", ps, depth, &(q_n->ptr_qual_name));
-	smb_io_unistr2("", &(q_n->uni_qual_name), True, ps, depth); 
+	smb_io_unistr2("", &(q_n->uni_qual_name), q_n->ptr_qual_name, ps, depth); 
 
 	prs_align(ps);
 
