@@ -417,20 +417,6 @@ typedef struct pdb_context
 	
 	NTSTATUS (*pdb_delete_trust_passwd)(struct pdb_context *context, SAM_TRUST_PASSWD* trust);
 
-	/* privileges functions */
-
-	NTSTATUS (*pdb_lsa_create_account)(struct pdb_context *context, const DOM_SID *sid);
-
-	NTSTATUS (*pdb_lsa_enumerate_accounts)(struct pdb_context *context, DOM_SID **sid, int *sid_count);
-
-	NTSTATUS (*pdb_add_privilege_to_sid)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
-
-	NTSTATUS (*pdb_remove_privilege_from_sid)(struct pdb_context *context, const char *priv_name, const DOM_SID *sid);
-
-	NTSTATUS (*pdb_get_privilege_set)(struct pdb_context *context, DOM_SID *user_sids, int num_sids, PRIVILEGE_SET *privs);
-	
-	NTSTATUS (*pdb_get_privilege_entry)(struct pdb_context *context, const char *privname, DOM_SID **sid_list, int *sid_count);
-	
 	void (*free_fn)(struct pdb_context **);
 	
 	TALLOC_CTX *mem_ctx;
@@ -569,20 +555,6 @@ typedef struct pdb_methods
 	NTSTATUS (*update_trust_passwd)(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust);
 	
 	NTSTATUS (*delete_trust_passwd)(struct pdb_methods *methods, const SAM_TRUST_PASSWD* trust);
-
-	/* privileges functions */
-
-	NTSTATUS (*lsa_create_account)(struct pdb_methods *methods, const DOM_SID *sid);
-
-	NTSTATUS (*lsa_enumerate_accounts)(struct pdb_methods *methods, DOM_SID **sid, int *num_entries);
-
-	NTSTATUS (*add_privilege_to_sid)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
-
-	NTSTATUS (*remove_privilege_from_sid)(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid);
-
-	NTSTATUS (*get_privilege_set)(struct pdb_methods *methods, DOM_SID *user_sids, int num_sids, PRIVILEGE_SET *privs);
-
-	NTSTATUS (*get_privilege_entry)(struct pdb_methods *methods, const char *privname, DOM_SID **sid_list, int *sid_count);
 
 } PDB_METHODS;
 

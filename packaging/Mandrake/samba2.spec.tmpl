@@ -13,10 +13,15 @@
 # cvs should be submitted for inclusion in samba cvs.
 
 %define pkg_name	samba
-%define ver 		3.0.5
-%define rel 		2mdk
+%define ver 		3.0.8
+%define drel		1
+%define	subrel		1
 %define vscanver 	0.3.5
 %define libsmbmajor 	0
+%{?!mdkversion: %define mdkversion %(perl -pe '/(\d+)\.(\d)\.?(\d)?/; $_="$1$2".($3||0)' /etc/mandrake-release)}
+%define rel		%(case `hostname` in (n?.mandrakesoft.com) echo %drel;;(*) echo $[%drel-1].%subrel.$[%mdkversion/10];;esac)mdk
+%{?_with_stable_on_cluster: %define rel %(echo $[%{drel}-1].%subrel.$[%{mdkversion}/10]mdk)}
+%{?_with_official: %define rel %drel}
 
 %{!?lib: %global lib lib}
 %{!?mklibname: %global mklibname(ds) %lib%{1}%{?2:%{2}}%{?3:_%{3}}%{-s:-static}%{-d:-devel}}
@@ -57,7 +62,6 @@
 %endif
 
 # We now do detection of the Mandrake release we are building on:
-%{?!mdkversion: %define mdkversion %(perl -pe '/(\d+)\.(\d)\.?(\d)?/; $_="$1$2".($3||0)' /etc/mandrake-release)}
 %define build_mdk82 %(if [ `awk '{print $4}' /etc/mandrake-release` = 8.2 ];then echo 1; else echo 0; fi)
 %define build_mdk81 %(if [ `awk '{print $4}' /etc/mandrake-release` = 8.1 ];then echo 1; else echo 0; fi)
 %define build_mdk80 %(if [ `awk '{print $4}' /etc/mandrake-release` = 8.0 ];then echo 1; else echo 0; fi)
@@ -247,10 +251,10 @@ Version: %{source_ver}
 %endif
 
 %if %have_prelease && !%have_pre
-Release: 1.%{prelease}mdk
+Release: 0.%{prelease}.%{rel}
 %endif
 %if %have_prelease && %have_pre
-Release: 0.%{pre_pre}.%{prelease}mdk
+Release: 0.%{pre_pre}.%{rel}
 %endif
 %if !%have_prelease && !%have_pre
 Release: %{rel}
@@ -271,7 +275,9 @@ Source6: swat_16.png.bz2
 Source7: README.%{name}-mandrake-rpm
 %if %build_vscan
 Source8: samba-vscan-%{vscanver}.tar.bz2
-BuildRequires: libmagic-devel
+%endif
+%if %build_vscan && %mdkversion >= 920
+BuildRequires: file-devel
 %endif
 Source10: samba-print-pdf.sh.bz2
 Source11: smb-migrate.bz2
@@ -280,10 +286,12 @@ Patch4: samba-3.0-smbmount-sbin.patch.bz2
 Patch5:	samba-3.0.2a-smbldap-config.patch.bz2
 %if !%have_pversion
 # Version specific patches: current version
-Patch6: samba-3.0.5-mandrake-packaging.patch.bz2
 Patch7: samba-3.0.5-lib64.patch.bz2
+Patch9:	samba-3.0.6-smbmount-unixext.patch.bz2
+Patch11: samba-3.0.7-mandrake-packaging.patch.bz2
 %else
 # Version specific patches: upcoming version
+Patch8:	samba-3.0.6-revert-libsmbclient-move.patch.bz2
 %endif
 # Limbo patches (applied to prereleases, but not preleases, ie destined for
 # samba CVS)
@@ -893,11 +901,14 @@ echo -e "\n%{name}-%{version}-%{release}\n">>%{SOURCE7}
 # Version specific patches: current version
 %if !%have_pversion
 echo "Applying patches for current version: %{ver}"
-%patch6 -p1 -b .mdk
-%patch7 -p1 -b .lib64
+#%patch7 -p1 -b .lib64
+%patch9 -p1 -b .unixext
+#%patch10 -p1 -b .rpcclient-libs
+%patch11 -p1 -b .mdk
 %else
 # Version specific patches: upcoming version
 echo "Applying patches for new versions: %{pversion}"
+%patch8 -p1 -b .libsmbdir
 %endif
 
 # Limbo patches
@@ -940,6 +951,7 @@ perl -pi -e 's/%{pkg_name}/%{name}/g' source/auth/pampass.c
 find docs examples -name '.cvsignore' -exec rm -f {} \;
 
 #make better doc trees:
+chmod -R a+rX examples docs *Manifest* README  Roadmap COPYING
 mkdir -p clean-docs/samba-doc
 cp -a examples docs clean-docs/samba-doc
 mv -f clean-docs/samba-doc/examples/libsmbclient clean-docs/
@@ -954,6 +966,7 @@ CFLAGS=`echo "$RPM_OPT_FLAGS"|sed -e 's/-g//g'`
 %if %gcc331
 CFLAGS=`echo "$CFLAGS"|sed -e 's/-O2/-O/g'`
 %endif
+./autogen.sh
 # Don't use --with-fhs now, since it overrides libdir, it sets configdir, 
 # lockdir,piddir logfilebase,privatedir and swatdir
 %configure      --prefix=%{_prefix} \
@@ -1544,7 +1557,7 @@ update-alternatives --auto smbclient
 %(for i in %{_bindir}/{%{clientbin}}%{alternative_major};do echo $i;done)
 %(for i in %{_mandir}/man?/{%{clientbin}}%{alternative_major}.?.*;do echo $i|grep -v smbprint;done)
 #xclude %{_mandir}/man?/smbget*
-%{_mandir}/man5/smbgetrc3.5*
+%{_mandir}/man5/smbgetrc%{alternative_major}.5*
 %ifnarch alpha
 %(for i in /sbin/{%{client_sbin}}%{alternative_major};do echo $i;done)
 %attr(4755,root,root) /bin/mount.cifs%{alternative_major}
@@ -1567,7 +1580,7 @@ update-alternatives --auto smbclient
 %dir /var/cache/%{name}
 %dir /var/log/%{name}
 %dir /var/run/%{name}
-%(for i in %{_bindir}/{%{commonbin}}%{samba_major};do echo $i;done)
+%(for i in %{_bindir}/{%{commonbin},tdbtool}%{samba_major};do echo $i;done)
 %(for i in %{_mandir}/man?/{%{commonbin}}%{samba_major}\.[0-9]*;do echo $i;done)
 #%{_libdir}/smbwrapper%{samba_major}.so
 %dir %{_libdir}/%{name}
@@ -1803,6 +1816,54 @@ update-alternatives --auto smbclient
 %exclude %{_mandir}/man1/smbsh*.1*
 
 %changelog
+* Tue Nov 09 2004 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.8-1mdk
+- 3.0.8
+- add tdbtool to common
+- fix doc permissions (broken in tarball)
+
+* Fri Nov 05 2004 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.8-0.pre2.1mdk
+- 3.0.8pre2
+
+* Wed Oct 06 2004 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.7-3mdk
+- drop patch 23 to ldap schema (patch in 3.0.6 was to bring schema up-to-date
+  with pre-3.0.7 cvs) (#11960)
+- merge winbind init script fix into packaging patch
+- Don't set printcap name in pdf printer share (#11861)
+- allow official builds off-cluster (with _with_official macro defined)
+
+* Tue Sep 14 2004 Stew Benedict <sbenedict@mandrakesoft.com> 3.0.7-2mdk
+- fix typo in winbind init script that prevented stop
+  (in 3.0.6 too, patch27)
+
+* Mon Sep 13 2004 Stew Benedict <sbenedict@mandrakesoft.com> 3.0.7-1mdk
+- 3.0.7 (drop patch10,21,22,24,25,26; rediff patch23)
+
+* Thu Sep 09 2004 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.6-5mdk
+- patch for samba bug 1464
+- make release-depenent release tag more like security updates tags
+- sync smb.conf with drakwizard (which also fixes quoting of macros which
+  can have spaces)
+- add example admin share
+- patches from Gerald Carter
+
+* Mon Aug 31 2004 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.6-4mdk
+- Add Jerry's post-3.0.6 patches
+- fix bug 11088 
+
+* Fri Aug 27 2004 Buchan Milne <bgmilne@linux-mandrake.com>3.0.6-3mdk
+- patch from Urban Widmark via Robert Sim (anthill bug 1086) to be able
+  to diable unix extensions in smbmount (and via 'unix extensions' in smb.conf)
+- magic-devel only available on 9.2 and up
+- allow building for stable release on the chroots on the cluster
+- fix patch8
+- fix build on older releases
+
+* Fri Aug 20 2004 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.6-2mdk
+- 3.0.6
+-drop P6 (merged), P7 (broken for now)
+-keep libsmbclient where it belongs (on x86 for now)
+-implement mandrake version-specific release number
+
 * Thu Aug 12 2004 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.5-2mdk
 - 3.0.5
 - fix pid file location (#10666)

@@ -88,11 +88,11 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	request.flags = WBFLAG_PAM_INFO3_NDR;
 
-	push_utf8_fstring(request.data.auth_crap.user, 
+	fstrcpy(request.data.auth_crap.user, 
 			  user_info->smb_name.str);
-	push_utf8_fstring(request.data.auth_crap.domain, 
+	fstrcpy(request.data.auth_crap.domain, 
 			  user_info->domain.str);
-	push_utf8_fstring(request.data.auth_crap.workstation, 
+	fstrcpy(request.data.auth_crap.workstation, 
 			  user_info->wksta_name.str);
 
 	memcpy(request.data.auth_crap.chal, auth_context->challenge.data, sizeof(request.data.auth_crap.chal));

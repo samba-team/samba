@@ -817,9 +817,14 @@ static NTSTATUS check_oem_password(const char *user,
 		pdb_free_sam(&sampass);
 		return NT_STATUS_WRONG_PASSWORD;	
 	} else if (lm_pass_set) {
-		DEBUG(1, ("LM password change supplied for user %s, but we have no LanMan password to check it with\n", 
-			  user));
-		pdb_free_sam(&sampass);
+		if (lp_lanman_auth()) {
+			DEBUG(1, ("LM password change supplied for user %s, but we have no LanMan password to check it with\n", 
+				  user));
+		} else {
+			DEBUG(1, ("LM password change supplied for user %s, but we have disabled LanMan authentication\n", 
+				  user));
+		}
+			pdb_free_sam(&sampass);
 		return NT_STATUS_WRONG_PASSWORD;
 	} else {
 		DEBUG(1, ("password change requested for user %s, but no password supplied!\n", 

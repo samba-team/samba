@@ -45,7 +45,7 @@
 #undef HAVE_TERMIOS_H
 #endif
 
-#if (__GNUC__ >= 3)
+#if (__GNUC__ >= 3 ) && (__GNUC_MINOR__ >= 1 )
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
  * argument. Note that some gcc 2.x versions don't handle this
@@ -823,6 +823,8 @@ extern int errno;
 #include "secrets.h"
 
 #include "byteorder.h"
+
+#include "privileges.h"
 
 #include "rpc_creds.h"
 

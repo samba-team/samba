@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    LDAP protocol helper functions for SAMBA
-   Copyright (C) Jean François Micouleau	1998
+   Copyright (C) Jean FranÃ§ois Micouleau	1998
    Copyright (C) Gerald Carter			2001-2003
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
@@ -218,16 +218,6 @@ ATTRIB_MAP_ENTRY trustpw_attr_list[] = {
 	{ LDAP_ATTR_SID,		LDAP_ATTRIBUTE_SID	},
 	{ LDAP_ATTR_PWD_LAST_SET,	"sambaPwdLastSet"	},
 	{ LDAP_ATTR_LIST_END,           NULL                    }
-};
-
-
-/* privileges */
-
-ATTRIB_MAP_ENTRY privilege_attr_list[] = {
-	{ LDAP_ATTR_SID,		LDAP_ATTRIBUTE_SID	},
-	{ LDAP_ATTR_PRIV_LIST,		"sambaPrivilegeList"	},
-	{ LDAP_ATTR_OBJCLASS,		"objectClass"		},
-	{ LDAP_ATTR_LIST_END,		NULL			}
 };
 
 /**********************************************************************

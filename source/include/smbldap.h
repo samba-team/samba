@@ -38,7 +38,6 @@
 #define LDAP_OBJ_IDPOOL			"sambaUnixIdPool"
 #define LDAP_OBJ_IDMAP_ENTRY		"sambaIdmapEntry"
 #define LDAP_OBJ_SID_ENTRY		"sambaSidEntry"
-#define LDAP_OBJ_PRIVILEGE		"sambaPrivilege"
 #define LDAP_OBJ_TRUST_PASSWORD         "sambaTrustPassword"
 
 #define LDAP_OBJ_ACCOUNT		"account"
@@ -52,7 +51,6 @@
 #define LDAP_ATTRIBUTE_UIDNUMBER	"uidNumber"
 #define LDAP_ATTRIBUTE_GIDNUMBER	"gidNumber"
 #define LDAP_ATTRIBUTE_SID_LIST		"sambaSIDList"
-#define LDAP_ATTRIBUTE_PRIVILEGE_LIST	"sambaPrivilegeList"
 
 /* attribute map table indexes */
 
@@ -101,7 +99,6 @@
 #define LDAP_ATTR_MOD_TIMESTAMP         41
 #define LDAP_ATTR_LOGON_HOURS		42 
 
-#define LDAP_ATTR_PRIV_LIST		41
 #define LDAP_ATTR_TRUST_PASSWD_FLAGS    42
 
 typedef struct _attrib_map_entry {
@@ -118,7 +115,6 @@ extern ATTRIB_MAP_ENTRY attrib_map_v30[];
 extern ATTRIB_MAP_ENTRY attrib_map_to_delete_v30[];
 extern ATTRIB_MAP_ENTRY dominfo_attr_list[];
 extern ATTRIB_MAP_ENTRY groupmap_attr_list[];
-extern ATTRIB_MAP_ENTRY privilege_attr_list[];
 extern ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[];
 extern ATTRIB_MAP_ENTRY idpool_attr_list[];
 extern ATTRIB_MAP_ENTRY sidmap_attr_list[];

@@ -1587,39 +1587,6 @@ static NTSTATUS pdb_default_delete_trust_passwd(struct pdb_methods *methods, con
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_default_lsa_create_account(struct pdb_methods *methods, const DOM_SID *sid)
-{
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS pdb_default_lsa_enumerate_accounts(struct pdb_methods *methods, DOM_SID **sid_list, int *sid_count)
-{
-	return NT_STATUS_NO_MORE_ENTRIES;
-}
-
-static NTSTATUS pdb_default_add_privilege_to_sid(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS pdb_default_remove_privilege_from_sid(struct pdb_methods *methods, const char *priv_name, const DOM_SID *sid)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS pdb_default_get_privilege_set(struct pdb_methods *methods, DOM_SID *sid_list, int num_sids, PRIVILEGE_SET *privset)
-{
-	/* by default return the empty privilege set as otherwise login will
-	 * be denied if a backend does not support privilege sets */
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS pdb_default_get_privilege_entry(struct pdb_methods *methods, const char *privname, DOM_SID **sid_list, int *sid_count)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
 NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods) 
 {
 	*methods = TALLOC_P(mem_ctx, struct pdb_methods);
@@ -1666,13 +1633,6 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->add_trust_passwd = pdb_default_add_trust_passwd;
 	(*methods)->update_trust_passwd = pdb_default_update_trust_passwd;
 	(*methods)->delete_trust_passwd = pdb_default_delete_trust_passwd;
-
-	(*methods)->lsa_create_account = pdb_default_lsa_create_account;
-	(*methods)->lsa_enumerate_accounts = pdb_default_lsa_enumerate_accounts;
-	(*methods)->add_privilege_to_sid = pdb_default_add_privilege_to_sid;
-	(*methods)->remove_privilege_from_sid = pdb_default_remove_privilege_from_sid;
-	(*methods)->get_privilege_set = pdb_default_get_privilege_set;
-	(*methods)->get_privilege_entry = pdb_default_get_privilege_entry;
 
 	return NT_STATUS_OK;
 }

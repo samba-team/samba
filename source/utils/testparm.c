@@ -145,7 +145,7 @@ parameter.\n");
 			ret = 1;
 		} else 
 		/* check if there's a %u parameter present */
-		if(strstr_m(lp_passwd_chat(), "%u") == NULL) {
+		if(strstr_m(lp_passwd_program(), "%u") == NULL) {
 			fprintf(stderr, "ERROR: the 'passwd program' (%s) requires a '%%u' parameter.\n", lp_passwd_program());
 			ret = 1;
 		}

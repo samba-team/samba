@@ -36,7 +36,7 @@ extern "C" {
  * the parameter containing the format, and a2 the index of the first
  * argument. Note that some gcc 2.x versions don't handle this
  * properly **/
-#if (__GNUC__ >= 3)
+#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
 #define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
 #else
 #define PRINTF_ATTRIBUTE(a1, a2)
