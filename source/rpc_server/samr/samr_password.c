@@ -37,7 +37,7 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 {
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
-	struct ldb_message **res, mod, *msg;
+	struct ldb_message **res, *msg;
 	int ret;
 	struct samr_Password new_lmPwdHash, new_ntPwdHash, checkHash;
 	struct samr_Password *lm_pwd, *nt_pwd;
@@ -102,22 +102,26 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	ZERO_STRUCT(mod);
-	mod.dn = talloc_strdup(mem_ctx, a_state->account_dn);
-	if (!mod.dn) {
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	msg->dn = talloc_strdup(msg, a_state->account_dn);
+	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = samdb_set_password(a_state->sam_ctx, mem_ctx,
 				    a_state->account_dn, a_state->domain_state->domain_dn,
-				    &mod, NULL, &new_lmPwdHash, &new_ntPwdHash, 
+				    msg, NULL, &new_lmPwdHash, &new_ntPwdHash, 
 				    True, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* modify the samdb record */
-	ret = samdb_replace(a_state->sam_ctx, mem_ctx, &mod);
+	ret = samdb_replace(a_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -138,7 +142,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	void *sam_ctx;
 	const char *user_dn, *domain_dn;
 	int ret;
-	struct ldb_message **res, mod;
+	struct ldb_message **res, *mod;
 	const char * const attrs[] = { "objectSid", "lmPwdHash", "unicodePwd", NULL };
 	const char *domain_sid;
 	struct samr_Password *lm_pwd;
@@ -209,10 +213,13 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	mod = ldb_msg_new(mem_ctx);
+	if (mod == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	ZERO_STRUCT(mod);
-	mod.dn = talloc_strdup(mem_ctx, user_dn);
-	if (!mod.dn) {
+	mod->dn = talloc_strdup(mod, user_dn);
+	if (!mod->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -220,7 +227,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	   so the domain password policy can be used */
 	status = samdb_set_password(sam_ctx, mem_ctx,
 				    user_dn, domain_dn, 
-				    &mod, new_pass, 
+				    mod, new_pass, 
 				    NULL, NULL,
 				    True, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -228,7 +235,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* modify the samdb record */
-	ret = samdb_replace(sam_ctx, mem_ctx, &mod);
+	ret = samdb_replace(sam_ctx, mem_ctx, mod);
 	if (ret != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -250,7 +257,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	void *sam_ctx = NULL;
 	const char *user_dn, *domain_dn = NULL;
 	int ret;
-	struct ldb_message **res, mod;
+	struct ldb_message **res, *mod;
 	const char * const attrs[] = { "objectSid", "ntPwdHash", "lmPwdHash", "unicodePwd", NULL };
 	const char * const dom_attrs[] = { "minPwdLength", "pwdHistoryLength", 
 					   "pwdProperties", "minPwdAge", "maxPwdAge", 
@@ -354,10 +361,13 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		goto failed;
 	}
 
+	mod = ldb_msg_new(mem_ctx);
+	if (mod == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	ZERO_STRUCT(mod);
-	mod.dn = talloc_strdup(mem_ctx, user_dn);
-	if (!mod.dn) {
+	mod->dn = talloc_strdup(mod, user_dn);
+	if (!mod->dn) {
 		status = NT_STATUS_NO_MEMORY;
 		goto failed;
 	}
@@ -366,7 +376,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	   so the domain password policy can be used */
 	status = samdb_set_password(sam_ctx, mem_ctx,
 				    user_dn, domain_dn, 
-				    &mod, new_pass, 
+				    mod, new_pass, 
 				    NULL, NULL,
 				    True, &reason);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -374,7 +384,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	}
 
 	/* modify the samdb record */
-	ret = samdb_replace(sam_ctx, mem_ctx, &mod);
+	ret = samdb_replace(sam_ctx, mem_ctx, mod);
 	if (ret != 0) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
