@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -51,6 +51,6 @@ erealloc (void *ptr, size_t sz)
     void *tmp = realloc (ptr, sz);
 
     if (tmp == NULL && sz != 0)
-	err (1, "realloc %lu", (unsigned long)sz);
+	errx (1, "realloc %lu failed", (unsigned long)sz);
     return tmp;
 }

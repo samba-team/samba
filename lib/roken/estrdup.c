@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -51,6 +51,6 @@ estrdup (const char *str)
     char *tmp = strdup (str);
 
     if (tmp == NULL)
-	err (1, "strdup");
+	errx (1, "strdup failed");
     return tmp;
 }
