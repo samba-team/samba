@@ -1127,21 +1127,22 @@ get_checksum_key(krb5_context context,
 		 struct key_data **key)
 {
     krb5_error_code ret = 0;
+
     if(ct->flags & F_DERIVED)
 	ret = _get_derived_key(context, crypto, usage, key);
-    else {
-	if(ct->flags & F_VARIANT) {
-	    int i;
-	    *key = _new_derived_key(crypto, 0xff/* KRB5_KU_RFC1510_VARIANT */);
-	    if(*key == NULL)
-		return ENOMEM;
-	    ret = krb5_copy_keyblock(context, crypto->key.key, &(*key)->key);
-	    if(ret) 
-		return ret;
-	    for(i = 0; i < (*key)->key->keyvalue.length; i++)
-		((unsigned char*)(*key)->key->keyvalue.data)[i] ^= 0xF0;
-	} else
-	    *key = &crypto->key; 
+    else if(ct->flags & F_VARIANT) {
+	int i;
+
+	*key = _new_derived_key(crypto, 0xff/* KRB5_KU_RFC1510_VARIANT */);
+	if(*key == NULL)
+	    return ENOMEM;
+	ret = krb5_copy_keyblock(context, crypto->key.key, &(*key)->key);
+	if(ret) 
+	    return ret;
+	for(i = 0; i < (*key)->key->keyvalue.length; i++)
+	    ((unsigned char*)(*key)->key->keyvalue.data)[i] ^= 0xF0;
+    } else {
+	*key = &crypto->key; 
     }
     if(ret == 0)
 	ret = _key_schedule(context, *key);
@@ -1238,16 +1239,18 @@ verify_checksum(krb5_context context,
     if(ct->verify)
 	return (*ct->verify)(context, dkey, data, len, cksum);
 
-    ret = do_checksum(context, ct, crypto, usage, data, len, &c);
-    if(ret)
+    ret = krb5_data_alloc (&c.checksum, ct->checksumsize);
+    if (ret)
 	return ret;
-    
+
+    (*ct->checksum)(context, dkey, data, len, &c);
+
     if(c.checksum.length != cksum->checksum.length || 
        memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length))
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
     else
 	ret = 0;
-    free_Checksum(&c);
+    krb5_data_free (&c.checksum);
     return ret;
 }
 
@@ -1926,7 +1929,8 @@ krb5_generate_random_block(void *buf, size_t len)
 
 /* XXX should be moved someplace else */
 static void
-DES3_postproc(unsigned char *k, size_t len, struct key_data *key)
+DES3_postproc(krb5_context context,
+	      unsigned char *k, size_t len, struct key_data *key)
 {
     unsigned char x[24];
     int ki = 0, xi = 0, kb = 8, xb = 8;
@@ -1956,8 +1960,7 @@ DES3_postproc(unsigned char *k, size_t len, struct key_data *key)
     k = key->key->keyvalue.data;
     memcpy(k, x, 24);
     memset(x, 0, sizeof(x));
-    krb5_data_free(key->schedule);
-    free(key->schedule);
+    krb5_free_data(context, key->schedule);
     key->schedule = NULL;
     des_set_odd_parity((des_cblock*)k);
     des_set_odd_parity((des_cblock*)(k + 8));
@@ -2009,7 +2012,7 @@ derive_key(krb5_context context,
     /* XXX keytype dependent post-processing */
     switch(kt->type) {
     case KEYTYPE_DES3:
-	DES3_postproc(k, nblocks * et->blocksize, key);
+	DES3_postproc(context, k, nblocks * et->blocksize, key);
 	break;
     default:
 	krb5_warnx(context, "derive_key() called with unknown keytype (%u)", 
