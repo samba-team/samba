@@ -28,11 +28,24 @@
 %apply char { int8_t };
 %apply unsigned int { uint16_t };
 %apply int { int16_t };
-%apply unsigned long { uint32_t };
-%apply long { int32_t };
 %apply unsigned long long { uint64_t };
 %apply long long { int64_t };
 
+%typemap(in) uint32_t {
+	if (PyLong_Check($input))
+		$1 = PyLong_AsUnsignedLong($input);
+	else if (PyInt_Check($input))
+		$1 = PyInt_AsLong($input);
+	else {
+		PyErr_SetString(PyExc_TypeError,"Expected a long or an int");
+		return NULL;
+	}
+}
+
+%typemap(out) uint32_t {
+	$result = PyLong_FromUnsignedLong($1);
+}
+
 %typemap(out) NTSTATUS {
-        $result = PyLong_FromLong(NT_STATUS_V($1));
+        $result = PyLong_FromUnsignedLong(NT_STATUS_V($1));
 }
