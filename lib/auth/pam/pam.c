@@ -44,10 +44,11 @@ RCSID("$Id$");
 #include <sys/types.h>
 #include <syslog.h>
 
-#define PAM_SM_AUTH
-#define PAM_SM_SESSION
 #include <security/pam_appl.h>
 #include <security/pam_modules.h>
+#ifndef PAM_AUTHTOK_RECOVERY_ERR /* Fix linsux typo. */
+#define PAM_AUTHTOK_RECOVERY_ERR PAM_AUTHTOK_RECOVER_ERR
+#endif
 
 #include <netinet/in.h>
 #include <krb.h>
@@ -222,7 +223,7 @@ krb4_auth(pam_handle_t *pamh,
           log_error(LOG_ERR , "pam_get_item returned error to get-password");
           return ret;
         }
-      else if (pass != 0 && verify_pass(pamh, name, inst, pass) ==PAM_SUCCESS)
+      else if (pass != 0 && verify_pass(pamh, name, inst, pass) == PAM_SUCCESS)
 	return PAM_SUCCESS;
       else if (ctrl_on(KRB4_USE_FIRST_PASS))
 	return PAM_AUTHTOK_RECOVERY_ERR;       /* Wrong password! */
@@ -363,15 +364,20 @@ pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
   parse_ctrl(argc, argv);
   ENTRY("pam_sm_setcred");
+  pdeb("flags = 0x%x", flags);
 
   switch (flags & ~PAM_SILENT) {
   case 0:
   case PAM_ESTABLISH_CRED:
     if (k_hasafs())
+      k_setpag();
+    /* Fill PAG with credentials below. */
+  case PAM_REINITIALIZE_CRED:
+  case PAM_REFRESH_CRED:
+    if (k_hasafs())
       {
 	void *user = 0;
 
-	k_setpag();
 	if (pam_get_item(pamh, PAM_USER, &user) == PAM_SUCCESS)
 	  {
 	    struct passwd *pw = getpwnam((char *)user);
@@ -381,9 +387,10 @@ pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 	  }
       }
     break;
-  case PAM_REINITIALIZE_CRED:
-  case PAM_REFRESH_CRED:
   case PAM_DELETE_CRED:
+    dest_tkt();
+    if (k_hasafs())
+      k_unlog();
     break;
   default:
     log_error(LOG_ALERT , "pam_sm_setcred: unknown flags 0x%x", flags);
