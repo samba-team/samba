@@ -1587,4 +1587,75 @@ jfm: I should use this comment for the text file to explain
 
 */
 
+static char *pace_str(uint32 ace_flags)
+{
+	if ((ace_flags & PRINTER_ACE_FULL_CONTROL) == 
+	    PRINTER_ACE_FULL_CONTROL) return "full control";
 
+	if ((ace_flags & PRINTER_ACE_MANAGE_DOCUMENTS) ==
+	    PRINTER_ACE_MANAGE_DOCUMENTS) return "manage documents";
+
+	if ((ace_flags & PRINTER_ACE_PRINT) == PRINTER_ACE_PRINT)
+		return "print";
+
+	return "UNKNOWN";
+}
+
+BOOL print_access_check(int snum, uint16 vuid, uint32 required_access)
+{
+	SEC_DESC_BUF *secdesc = NULL;
+	uint32 acc_grant, status;
+	user_struct *user;
+	BOOL result;
+	char *p;
+	int i;
+
+	/* Get printer name */
+
+	p = PRINTERNAME(snum);
+	if (!p || !*p) p = SERVICE(snum);
+
+	/* Get printer security descriptor */
+
+	nt_printing_getsec(p, &secdesc);
+	user = get_valid_user_struct(vuid);
+
+	/* Do something useful */
+
+	for(i = 0; i < secdesc->sec->dacl->num_aces; i++) {
+		DOM_SID *sid = &secdesc->sec->dacl->ace[i].sid;
+		uint32 ace_flags = secdesc->sec->dacl->ace[i].info.mask;
+		uint8 ace_type = secdesc->sec->dacl->ace[i].type;
+		fstring sid_str;
+		fstring dom_name, name;
+		uint8 name_type;
+		BOOL result;
+
+		sid_to_string(sid_str, sid);
+		winbind_lookup_sid(sid, dom_name, name, &name_type);
+		
+		DEBUG(0, ("ACE%d: %s/%s, %s%s\n", i, dom_name, name, 
+			  (ace_type == SEC_ACE_TYPE_ACCESS_ALLOWED) ? 
+			  "+" : "-", pace_str(ace_flags)));
+
+		DEBUG(0, ("\ttype = 0x%02x, flags = 0x%02x, size=0x%04x, mask=0x%08x\n", 
+			  ace_type, secdesc->sec->dacl->ace[i].flags,
+			  secdesc->sec->dacl->ace[i].size, ace_flags));
+	}
+
+#if 0
+	/* Still mucking around with getting se_access_check() to work.
+	   Currently it takes a NET_USER_INFO_3 structure but this should
+	   perhaps be changed to a user_struct as it contains the
+	   user and group sid information required to perform the check. */
+
+	result = se_access_check(secdesc, user, required_access, 0,
+				 &acc_grant, &status);
+#endif
+
+	/* Free security descriptor */
+
+	free_sec_desc_buf(&secdesc);
+
+	return True;
+}
