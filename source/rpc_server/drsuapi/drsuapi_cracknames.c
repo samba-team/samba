@@ -26,7 +26,7 @@
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 
 
-static NTSTATUS DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ctx,
+static WERROR DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ctx,
 			uint32 format_offered, uint32 format_desired, const char *name,
 			struct drsuapi_DsNameInfo1 *info1)
 {
@@ -41,53 +41,53 @@ static NTSTATUS DsCrackNameOneName(struct drsuapi_bind_state *b_state, TALLOC_CT
 			char *str;
 
 			str = talloc_asprintf(mem_ctx, "%s/", lp_realm());
-			NTSTATUS_TALLOC_CHECK(str);
+			WERR_TALLOC_CHECK(str);
 
 			ret = strcasecmp(str, name);
 			talloc_free(str);
 			if (ret != 0) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
-				return NT_STATUS_OK;
+				return WERR_OK;
 			}
 
 			info1->status = DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 			info1->dns_domain_name = talloc_asprintf(mem_ctx, "%s", lp_realm());
-			NTSTATUS_TALLOC_CHECK(info1->dns_domain_name);
+			WERR_TALLOC_CHECK(info1->dns_domain_name);
 			switch (format_desired) {
 				case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT:
 					info1->status = DRSUAPI_DS_NAME_STATUS_OK;
 					info1->result_name = talloc_asprintf(mem_ctx, "%s\\",
 										lp_workgroup());
-					NTSTATUS_TALLOC_CHECK(info1->result_name);
-					return NT_STATUS_OK;
+					WERR_TALLOC_CHECK(info1->result_name);
+					return WERR_OK;
 				default:
-					return NT_STATUS_OK;
+					return WERR_OK;
 			}
-			return NT_STATUS_INVALID_PARAMETER;
+			return WERR_INVALID_PARAM;
 		}
 		default: {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
-			return NT_STATUS_OK;
+			return WERR_OK;
 		}
 	}
 
-	return NT_STATUS_INVALID_PARAMETER;
+	return WERR_INVALID_PARAM;
 }
 
 /* 
   drsuapi_DsCrackNames 
 */
-NTSTATUS dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct drsuapi_DsCrackNames *r)
 {
-	NTSTATUS status;
+	WERROR status;
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *h;
 
 	r->out.level = r->in.level;
 	ZERO_STRUCT(r->out.ctr);
 
-	DCESRV_PULL_HANDLE(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
+	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
 
 	switch (r->in.level) {
@@ -97,14 +97,14 @@ NTSTATUS dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_
 			int i;
 
 			r->out.ctr.ctr1 = talloc_p(mem_ctx, struct drsuapi_DsNameCtr1);
-			NTSTATUS_TALLOC_CHECK(r->out.ctr.ctr1);
+			WERR_TALLOC_CHECK(r->out.ctr.ctr1);
 
 			r->out.ctr.ctr1->count = 0;
 			r->out.ctr.ctr1->array = NULL;
 
 			count = r->in.req.req1.count;
 			names = talloc_array_p(mem_ctx, struct drsuapi_DsNameInfo1, count);
-			NTSTATUS_TALLOC_CHECK(names);
+			WERR_TALLOC_CHECK(names);
 
 			for (i=0; i < count; i++) {
 				status = DsCrackNameOneName(b_state, mem_ctx,
@@ -112,7 +112,7 @@ NTSTATUS dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_
 							    r->in.req.req1.format_desired,
 							    r->in.req.req1.names[i].str,
 							    &names[i]);
-				if (!NT_STATUS_IS_OK(status)) {
+				if (!W_ERROR_IS_OK(status)) {
 					return status;
 				}
 			}
@@ -120,9 +120,9 @@ NTSTATUS dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_
 			r->out.ctr.ctr1->count = count;
 			r->out.ctr.ctr1->array = names;
 
-			return NT_STATUS_OK;
+			return WERR_OK;
 		}
 	}
 	
-	return NT_STATUS_INVALID_LEVEL;
+	return WERR_UNKNOWN_LEVEL;
 }
