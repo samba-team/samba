@@ -295,8 +295,8 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 make LOGFILEBASE=/var/log/samba.d all
 make LOGFILEBASE=/var/log/samba.d nsswitch
 # debug package:
-make LOGFILEBASE=/var/log/samba.d smbfilter smbtorture debug2html locktest2
-make LOGFILEBASE=/var/log/samba.d masktest bin/smbspool
+make LOGFILEBASE=/var/log/samba.d smbfilter debug2html 
+make LOGFILEBASE=/var/log/samba.d bin/smbspool
 
 
 %Install
@@ -333,7 +333,7 @@ ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so
 
 # install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
 
-for f in debug2html smbtorture smbfilter locktest2 masktest smbspool; do
+for f in debug2html smbfilter smbspool; do
        install -m 755 source/bin/$f $DESTDIR/usr/sbin/$f
 done
 
@@ -486,4 +486,4 @@ lisa --inetd disable swat $1
 
 %ChangeLog
 * Mon Jan 01 1997 ...
-$Id: samba2.spec.tmpl,v 1.1.6.14 2001/04/14 23:39:07 jht Exp $
+$Id: samba2.spec.tmpl,v 1.1.6.15 2001/04/15 00:33:29 jht Exp $
