@@ -366,7 +366,7 @@ cups_job_delete(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "job-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, pjob->user);
 
        /*
 	* Do the request and get back a response...
@@ -456,7 +456,7 @@ cups_job_pause(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "job-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, pjob->user);
 
        /*
 	* Do the request and get back a response...
@@ -546,7 +546,7 @@ cups_job_resume(int snum, struct printjob *pjob)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "job-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, pjob->user);
 
        /*
 	* Do the request and get back a response...
@@ -639,7 +639,7 @@ cups_job_submit(int snum, struct printjob *pjob)
         	     "printer-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, pjob->user);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "job-name", NULL,
         	     pjob->jobname);
@@ -1065,7 +1065,7 @@ cups_queue_pause(int snum)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, pjob->user);
 
        /*
 	* Do the request and get back a response...
@@ -1156,7 +1156,7 @@ cups_queue_resume(int snum)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, cupsUser());
+        	     NULL, pjob->user);
 
        /*
 	* Do the request and get back a response...
