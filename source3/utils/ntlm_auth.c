@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-#undef HAVE_KRB5
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
