@@ -529,16 +529,7 @@ static size_t utf8_push(void *cd, char **inbuf, size_t *inbytesleft,
 		unsigned char *uc = (unsigned char *)*inbuf;
 		int len=1;
 
-		if ((uc[1] & 0xf8) == 0xd8) {
-			if (*outbytesleft < 3) {
-				DEBUG(0,("short utf8 write\n"));
-				goto toobig;
-			}
-			c[0] = 0xed;
-			c[1] = 0x9f;
-			c[2] = 0xbf;
-			len = 3;
-		} else if (uc[1] & 0xf8) {
+		if (uc[1] & 0xf8) {
 			if (*outbytesleft < 3) {
 				DEBUG(0,("short utf8 write\n"));
 				goto toobig;
