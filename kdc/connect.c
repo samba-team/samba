@@ -147,13 +147,20 @@ struct descr {
     time_t timeout;
 };
 
+/*
+ * Create the socket (family, type, port) in `d'
+ */
+
 static void 
-init_socket(struct descr *d, int family, int type, int port)
+init_socket(struct descr *d, krb5_address *a, int family, int type, int port)
 {
     krb5_error_code ret;
     struct sockaddr *sa;
     void *sa_buf;
     int sa_size;
+
+    memset(d, 0, sizeof(*d));
+    d->s = -1;
 
     sa_size = krb5_max_sockaddr_size ();
     sa_buf = malloc(sa_size);
@@ -163,7 +170,17 @@ init_socket(struct descr *d, int family, int type, int port)
     }
     sa = (struct sockaddr *)sa_buf;
 
-    memset(d, 0, sizeof(*d));
+    ret = krb5_addr2sockaddr (a, sa, &sa_size, port);
+    if (ret) {
+	krb5_warn(context, ret, "krb5_anyaddr");
+	close(d->s);
+	d->s = -1;
+	goto out;
+    }
+
+    if (sa->sa_family != family)
+	goto out;
+
     d->s = socket(family, type, 0);
     if(d->s < 0){
 	krb5_warn(context, errno, "socket(%d, %d, 0)", family, type);
@@ -177,13 +194,6 @@ init_socket(struct descr *d, int family, int type, int port)
     }
 #endif
     d->type = type;
-    ret = krb5_anyaddr (family, sa, &sa_size, port);
-    if (ret) {
-	krb5_warn(context, ret, "krb5_anyaddr");
-	close(d->s);
-	d->s = -1;
-	goto out;
-    }
 
     if(bind(d->s, sa, sa_size) < 0){
 	krb5_warn(context, errno, "bind(%d)", ntohs(port));
@@ -200,24 +210,46 @@ out:
     free (sa_buf);
 }
 
+/*
+ * Allocate descriptors for all the sockets that we should listen on
+ * and return the number of them.
+ */
+
 static int
 init_sockets(struct descr **desc)
 {
-    int i;
+    krb5_error_code ret;
+    int i, j;
     struct descr *d;
     int num = 0;
+    krb5_addresses addresses;
 
+    ret = krb5_get_all_server_addrs (&addresses);
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_get_all_server_addrs");
     parse_ports(port_str);
-    d = malloc(num_ports * sizeof(*d));
+    d = malloc(addresses.len * num_ports * sizeof(*d));
     if (d == NULL)
 	krb5_errx(context, 1, "malloc(%u) failed", num_ports * sizeof(*d));
 
     for (i = 0; i < num_ports; i++){
-	init_socket(&d[num], ports[i].family, ports[i].type, ports[i].port);
-	if(d[num].s != -1){
-	    kdc_log(5, "listening to port %u/%s", ntohs(ports[i].port), 
-		    (ports[i].type == SOCK_STREAM) ? "tcp" : "udp"); /* XXX */
-	    num++;
+	for (j = 0; j < addresses.len; ++j) {
+	    init_socket(&d[num], &addresses.val[j],
+			ports[i].family, ports[i].type, ports[i].port);
+	    if(d[num].s != -1){
+		char a_str[80];
+		int len;
+
+		krb5_print_address (&addresses.val[j], a_str,
+				    sizeof(a_str), &len);
+
+		kdc_log(5, "listening on %s port %u/%s",
+			a_str,
+			ntohs(ports[i].port), 
+			(ports[i].type == SOCK_STREAM) ? "tcp" : "udp");
+		/* XXX */
+		num++;
+	    }
 	}
     }
     d = realloc(d, num * sizeof(*d));
@@ -535,6 +567,7 @@ loop(void)
 {
     struct descr *d;
     int ndescr;
+
     ndescr = init_sockets(&d);
     if(ndescr <= 0)
 	krb5_errx(context, 1, "No sockets!");
