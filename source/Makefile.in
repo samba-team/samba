@@ -681,7 +681,7 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@
+	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ $(PROGS) $(SPROGS)
 
 proto: 
 	@echo rebuilding include/proto.h
