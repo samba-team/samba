@@ -726,23 +726,12 @@ union smb_setfileinfo {
 		} in;
 	} setattr;
 
-	/* RAW_SFILEINFO_SETATTRE (SMBsetattrE) interface - only via setfileinfo() */
+	/* RAW_SFILEINFO_SETATTRE (SMBsetattrE) interface - only via setfileinfo() 
+	   also RAW_SFILEINFO_STANDARD */
 	struct {
 		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 
-		struct {
-			time_t create_time;
-			time_t access_time;
-			time_t write_time;
-		} in;
-	} setattre;
-
-	
-	/* RAW_SFILEINFO_STANDARD interface */
-	struct {
-		enum smb_setfileinfo_level level;
-		union setfileinfo_file file;
 		struct {
 			time_t create_time;
 			time_t access_time;
@@ -750,7 +739,7 @@ union smb_setfileinfo {
 			/* notice that size, alloc_size and attrib are not settable,
 			   unlike the corresponding qfileinfo level */
 		} in;
-	} standard;
+	} setattre, standard;
 
 	/* RAW_SFILEINFO_EA_SET interface */
 	struct {
@@ -1248,7 +1237,7 @@ union smb_read {
 			uint16_t fnum;
 			uint64_t offset;
 			uint16_t mincnt;
-			uint16_t maxcnt;
+			uint32_t maxcnt;
 			uint16_t remaining;
 		} in;
 		struct {
