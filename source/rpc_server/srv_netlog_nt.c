@@ -228,45 +228,25 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	fstring mach_acct;
 
-	if (!get_valid_user_struct(p->vuid))
-		return NT_STATUS_NO_SUCH_USER;
+	rpcstr_pull(p->dc.remote_machine,q_u->uni_logon_clnt.buffer,sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
 
-	rpcstr_pull(mach_acct,q_u->uni_logon_clnt.buffer,sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
+	/* create a server challenge for the client */
+	/* Set these to random values. */
+	generate_random_buffer(p->dc.srv_chal.data, 8, False);
+	
+	memcpy(p->dc.srv_cred.challenge.data, p->dc.srv_chal.data, 8);
 
-	strlower(mach_acct);
-	fstrcat(mach_acct, "$");
+	memcpy(p->dc.clnt_chal.data          , q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+	memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
 
-	if (get_md4pw((char *)p->dc.md4pw, mach_acct)) {
-		/* copy the client credentials */
-		memcpy(p->dc.clnt_chal.data          , q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-		memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+	memset((char *)p->dc.sess_key, '\0', sizeof(p->dc.sess_key));
 
-		/* create a server challenge for the client */
-		/* Set these to random values. */
-		generate_random_buffer(p->dc.srv_chal.data, 8, False);
-
-		memcpy(p->dc.srv_cred.challenge.data, p->dc.srv_chal.data, 8);
-
-		memset((char *)p->dc.sess_key, '\0', sizeof(p->dc.sess_key));
-
-		/* from client / server challenges and md4 password, generate sess key */
-		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
-				 (char *)p->dc.md4pw, p->dc.sess_key);
-
-		/* Save the machine account name. */
-		fstrcpy(p->dc.mach_acct, mach_acct);
-
-	} else {
-		/* lkclXXXX take a guess at a good error message to return :-) */
-		status = NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
-	}
-
+	p->dc.challange_sent = True;
 	/* set up the LSA REQUEST CHALLENGE response */
 	init_net_r_req_chal(r_u, &p->dc.srv_chal, status);
-
-	return r_u->status;
+	
+	return status;
 }
 
 /*************************************************************************
@@ -288,26 +268,37 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 	NTSTATUS status = NT_STATUS_OK;
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
-
-	if (!get_valid_user_struct(p->vuid))
-		return NT_STATUS_NO_SUCH_USER;
+	fstring mach_acct;
 
 	srv_time.time = 0;
 
-	/* check that the client credentials are valid */
-	if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
+	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
 
+	if (p->dc.challange_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
+		/* copy the client credentials */
+		
 		/* create server challenge for inclusion in the reply */
 		cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
-
-		/* copy the received client credentials for use next time */
-		memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-		memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+		
+		/* check that the client credentials are valid */
+		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
+			
+			/* copy the received client credentials for use next time */
+			memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+			memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+			
+			/* Save the machine account name. */
+			fstrcpy(p->dc.mach_acct, mach_acct);
+		
+			p->dc.authenticated = True;
+		} else {
+			status = NT_STATUS_ACCESS_DENIED;
+		}
 	} else {
 		status = NT_STATUS_ACCESS_DENIED;
 	}
-
-	/* set up the LSA AUTH 2 response */
+	
+	/* set up the LSA AUTH response */
 	init_net_r_auth(r_u, &srv_cred, status);
 
 	return r_u->status;
@@ -335,25 +326,44 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 	NEG_FLAGS srv_flgs;
-
-	if (!get_valid_user_struct(p->vuid))
-		return NT_STATUS_NO_SUCH_USER;
+	fstring mach_acct;
 
 	srv_time.time = 0;
 
-	/* check that the client credentials are valid */
-	if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
+	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
 
+	if (p->dc.challange_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
+		/* copy the client credentials */
+		
+		/* from client / server challenges and md4 password, generate sess key */
+		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
+				 (char *)p->dc.md4pw, p->dc.sess_key);
+		
 		/* create server challenge for inclusion in the reply */
 		cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
+		
+		/* check that the client credentials are valid */
+		if (cred_assert(&q_u->clnt_chal, p->dc.sess_key, &p->dc.clnt_cred.challenge, srv_time)) {
+			
+			/* create server challenge for inclusion in the reply */
+			cred_create(p->dc.sess_key, &p->dc.srv_cred.challenge, srv_time, &srv_cred);
+			
+			/* copy the received client credentials for use next time */
+			memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+			memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+			
+			/* Save the machine account name. */
+			fstrcpy(p->dc.mach_acct, mach_acct);
+			
+			p->dc.authenticated = True;
 
-		/* copy the received client credentials for use next time */
-		memcpy(p->dc.clnt_cred.challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
-		memcpy(p->dc.srv_cred .challenge.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+		} else {
+			status = NT_STATUS_ACCESS_DENIED;
+		}
 	} else {
 		status = NT_STATUS_ACCESS_DENIED;
 	}
-
+	
 	srv_flgs.neg_flags = 0x000001ff;
 
 	/* set up the LSA AUTH 2 response */
@@ -370,47 +380,40 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 {
 	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
 	DOM_CRED srv_cred;
-	pstring mach_acct;
+	pstring workstation;
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret = False;
 	unsigned char pwd[16];
 	int i;
-
-	if (!get_valid_user_struct(p->vuid))
-		return NT_STATUS_NO_SUCH_USER;
+	uint32 acct_ctrl;
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->clnt_id.cred, &srv_cred))
+	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->clnt_id.cred, &srv_cred)))
 		return NT_STATUS_INVALID_HANDLE;
 
 	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
 
 	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
 
-	rpcstr_pull(mach_acct,q_u->clnt_id.login.uni_acct_name.buffer,
-			sizeof(mach_acct),q_u->clnt_id.login.uni_acct_name.uni_str_len*2,0);
+	rpcstr_pull(workstation,q_u->clnt_id.login.uni_acct_name.buffer,
+		    sizeof(workstation),q_u->clnt_id.login.uni_acct_name.uni_str_len*2,0);
 
-	DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
+	DEBUG(3,("Server Password Set by Wksta:[%s] on account [%s]\n", workstation, p->dc.mach_acct));
 	
-	/*
-	 * Check the machine account name we're changing is the same
-	 * as the one we've authenticated from. This prevents arbitrary
-	 * machines changing other machine account passwords.
-	 */
-
-	if (!strequal(mach_acct, p->dc.mach_acct)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	pdb_init_sam(&sampass);
 
 	become_root();
-	ret=pdb_getsampwnam(sampass, mach_acct);
+	ret=pdb_getsampwnam(sampass, p->dc.mach_acct);
 	unbecome_root();
 
 	/* Ensure the account exists and is a machine account. */
+	
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
 
-	if (ret==False || !(pdb_get_acct_ctrl(sampass) & ACB_WSTRUST)) {
+	if (!(ret 
+	      && (acct_ctrl & ACB_WSTRUST ||
+		      acct_ctrl & ACB_SVRTRUST ||
+		      acct_ctrl & ACB_DOMTRUST))) {
 		pdb_free_sam(&sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -438,16 +441,10 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_acct_ctrl     (sampass, ACB_WSTRUST)) {
-		pdb_free_sam(&sampass);
-		/* Not quite sure what this one qualifies as, but this will do */
-		return NT_STATUS_NO_MEMORY; 
-	}
- 
 	if (!pdb_set_pass_changed_now     (sampass)) {
 		pdb_free_sam(&sampass);
 		/* Not quite sure what this one qualifies as, but this will do */
-		return NT_STATUS_NO_MEMORY; 
+		return NT_STATUS_UNSUCCESSFUL; 
 	}
  
 	become_root();
@@ -477,8 +474,8 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 		return NT_STATUS_NO_SUCH_USER;
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, 
-	                &q_u->sam_id.client.cred, &srv_cred))
+	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, 
+						     &q_u->sam_id.client.cred, &srv_cred)))
 		return NT_STATUS_INVALID_HANDLE;
 
 	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
@@ -522,10 +519,10 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		return NT_STATUS_NO_SUCH_USER;
     
 	/* checks and updates credentials.  creates reply credentials */
-	if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred))
+	if (!(p->dc.authenticated && deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred)))
 		return NT_STATUS_INVALID_HANDLE;
-	else
-		memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
+
+	memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
     
 	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
 	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
