@@ -1,4 +1,4 @@
-.\" Copyright (c) 2001 - 2002 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2001 - 2003 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd August 13, 2001
+.Dd April 16, 2003
 .Dt POPPER 8
 .Os HEIMDAL
 .Sh NAME
@@ -60,7 +60,7 @@ tells
 .Nm
 what authentication modes are acceptable, passing
 .Ar otp
-disables clear text passwords. This has only effect when not using
+disables clear text passwords. This only has effect when not using
 Kerberos authentication.
 .It Xo
 .Fl -address-log= Ns Pa file
@@ -95,7 +95,7 @@ port to listen to, in combination with
 .Fl t Ar file ,
 .Fl -trace-file= Ns Ar file
 .Xc
-trace all command to file
+trace all commands to file
 .It Xo
 .Fl T Ar seconds ,
 .Fl -timeout= Ns Ar seconds
@@ -117,5 +117,5 @@ RFC1939 (Post Office Protocol - Version 3)
 The server was initially developed at the University of California,
 Berkeley.
 .Pp
-Many changes has been made as part of the KTH Kerberos distributions.
+Many changes have been made as part of the KTH Kerberos distributions.
 .\".Sh BUGS
