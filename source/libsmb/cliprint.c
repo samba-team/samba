@@ -156,3 +156,108 @@ int cli_printjob_del(struct cli_state *cli, int job)
 }
 
 
+/****************************************************************************
+ Open a spool file
+****************************************************************************/
+
+int cli_spl_open(struct cli_state *cli, const char *fname, int flags, int share_mode)
+{
+	char *p;
+	unsigned openfn=0;
+	unsigned accessmode=0;
+
+	if (flags & O_CREAT)
+		openfn |= (1<<4);
+	if (!(flags & O_EXCL)) {
+		if (flags & O_TRUNC)
+			openfn |= (1<<1);
+		else
+			openfn |= (1<<0);
+	}
+
+	accessmode = (share_mode<<4);
+
+	if ((flags & O_ACCMODE) == O_RDWR) {
+		accessmode |= 2;
+	} else if ((flags & O_ACCMODE) == O_WRONLY) {
+		accessmode |= 1;
+	} 
+
+#if defined(O_SYNC)
+	if ((flags & O_SYNC) == O_SYNC) {
+		accessmode |= (1<<14);
+	}
+#endif /* O_SYNC */
+
+	if (share_mode == DENY_FCB) {
+		accessmode = 0xFF;
+	}
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,15,0,True);
+
+	SCVAL(cli->outbuf,smb_com,SMBsplopen);
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,0xFF);
+	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
+	SSVAL(cli->outbuf,smb_vwv3,accessmode);
+	SSVAL(cli->outbuf,smb_vwv4,aSYSTEM | aHIDDEN);
+	SSVAL(cli->outbuf,smb_vwv5,0);
+	SSVAL(cli->outbuf,smb_vwv8,openfn);
+
+	if (cli->use_oplocks) {
+		/* if using oplocks then ask for a batch oplock via
+                   core and extended methods */
+		SCVAL(cli->outbuf,smb_flg, CVAL(cli->outbuf,smb_flg)|
+			FLAG_REQUEST_OPLOCK|FLAG_REQUEST_BATCH_OPLOCK);
+		SSVAL(cli->outbuf,smb_vwv2,SVAL(cli->outbuf,smb_vwv2) | 6);
+	}
+  
+	p = smb_buf(cli->outbuf);
+	p += clistr_push(cli, p, fname, -1, STR_TERMINATE);
+
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return -1;
+	}
+
+	if (cli_is_error(cli)) {
+		return -1;
+	}
+
+	return SVAL(cli->inbuf,smb_vwv2);
+}
+
+/****************************************************************************
+ Close a file.
+****************************************************************************/
+
+BOOL cli_spl_close(struct cli_state *cli, int fnum)
+{
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,3,0,True);
+
+	SCVAL(cli->outbuf,smb_com,SMBsplclose);
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,fnum);
+	SIVALS(cli->outbuf,smb_vwv1,-1);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return False;
+	}
+
+	return !cli_is_error(cli);
+}
+
+

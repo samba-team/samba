@@ -151,7 +151,7 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 	if (cli->use_level_II_oplocks)
 		capabilities |= CAP_LEVEL_II_OPLOCKS;
 
-	capabilities |= (cli->capabilities & (CAP_UNICODE|CAP_LARGE_FILES|CAP_LARGE_READX|CAP_LARGE_WRITEX));
+	capabilities |= (cli->capabilities & (CAP_UNICODE|CAP_LARGE_FILES|CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_DFS));
 	return capabilities;
 }
 

@@ -185,6 +185,8 @@ void cli_setup_packet(struct cli_state *cli)
 		flags2 = FLAGS2_LONG_PATH_COMPONENTS;
 		if (cli->capabilities & CAP_UNICODE)
 			flags2 |= FLAGS2_UNICODE_STRINGS;
+		if (cli->capabilities & CAP_DFS)
+			flags2 |= FLAGS2_DFS_PATHNAMES;
 		if (cli->capabilities & CAP_STATUS32)
 			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
 		if (cli->use_spnego)
@@ -283,7 +285,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 
 	cli->use_spnego = lp_client_use_spnego();
 
-	cli->capabilities = CAP_UNICODE | CAP_STATUS32;
+	cli->capabilities = CAP_UNICODE | CAP_STATUS32 | CAP_DFS;
 
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
