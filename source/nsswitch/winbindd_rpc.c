@@ -527,8 +527,11 @@ int get_ldap_seq(const char *server, uint32 *seq)
 	if ((ldp = ldap_open(server, LDAP_PORT)) == NULL)
 		return -1;
 
+#if 0
+	/* As per tridge comment this doesn't seem to be needed. JRA */
 	if ((err = ldap_simple_bind_s(ldp, NULL, NULL)) != 0)
 		goto done;
+#endif
 
 	if (ldap_search_s(ldp, "", LDAP_SCOPE_BASE, "(objectclass=*)", &attrs[0], 0, &res))
 		goto done;
