@@ -911,69 +911,18 @@ static void api_spoolss_setprinterdata(rpcsrv_struct *p, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata)
-{
-       SPOOL_R_ADDFORM r_u;
-       int pnum = 0;
-       int count = 0;
-       nt_forms_struct *list = NULL;
-
-       DEBUG(5,("spoolss_reply_addform\n"));
-
-       pnum = find_printer_index_by_hnd(&(q_u->handle));
-
-       if (OPEN_HANDLE(pnum))
-       {
-	       count = get_ntforms(&list);
-
-	       add_a_form(&list, q_u->form, &count);
-
-	       write_ntforms(&list, count);
-
-	       free(list);
-       }
-
-       r_u.status = 0x0;
-       spoolss_io_r_addform("", &r_u, rdata, 0);
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_addform(rpcsrv_struct *p, prs_struct *data,
 				prs_struct *rdata)
 {
-       SPOOL_Q_ADDFORM q_u;
+	SPOOL_Q_ADDFORM q_u;
+	SPOOL_R_ADDFORM r_u;
 
-       spoolss_io_q_addform("", &q_u, data, 0);
-
-       spoolss_reply_addform(&q_u, rdata);
-}
-
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata)
-{
-	SPOOL_R_SETFORM r_u;
-	int pnum = 0;
-	int count = 0;
-	nt_forms_struct *list = NULL;
-
- 	DEBUG(5,("spoolss_reply_setform\n"));
-
-	pnum = find_printer_index_by_hnd(&(q_u->handle));
-
-	if (OPEN_HANDLE(pnum))
-	{
-		count = get_ntforms(&list);
-
-		update_a_form(&list, q_u->form, count);
-
-		write_ntforms(&list, count);
-
-		free(list);
-	}
-	r_u.status = 0x0;
-	spoolss_io_r_setform("", &r_u, rdata, 0);
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	spoolss_io_q_addform("", &q_u, data, 0);
+	r_u.status = _spoolss_addform(&q_u.handle, q_u.level, &q_u.form);
+	spoolss_io_r_addform("", &r_u, rdata, 0);
 }
 
 /****************************************************************************
@@ -982,10 +931,15 @@ static void api_spoolss_setform(rpcsrv_struct *p, prs_struct *data,
 				prs_struct *rdata)
 {
 	SPOOL_Q_SETFORM q_u;
+	SPOOL_R_SETFORM r_u;
 
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
 	spoolss_io_q_setform("", &q_u, data, 0);
-
-	spoolss_reply_setform(&q_u, rdata);
+	r_u.status = _spoolss_setform(&q_u.handle,
+	                              &q_u.name, q_u.level, &q_u.form);
+	spoolss_io_r_setform("", &r_u, rdata, 0);
 }
 
 /****************************************************************************

@@ -3220,41 +3220,41 @@ uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
 	return status;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata)
+uint32 _spoolss_addform( const POLICY_HND *handle,
+				uint32 level,
+				const FORM *form)
 {
-       SPOOL_R_ADDFORM r_u;
-       int pnum=0;
-       int count=0;
-       nt_forms_struct *list=NULL;
+	int pnum=0;
+	int count=0;
+	nt_forms_struct *list=NULL;
 
-       DEBUG(5,("spoolss_addform\n"));
+	DEBUG(5,("spoolss_addform\n"));
 
-       pnum = find_printer_index_by_hnd(handle);
+	pnum = find_printer_index_by_hnd(handle);
 
-       if (OPEN_HANDLE(pnum))
-       {
-	       count=get_ntforms(&list);
+	if (!OPEN_HANDLE(pnum))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	       add_a_form(&list, form, &count);
+	count=get_ntforms(&list);
+	add_a_form(&list, form, &count);
+	write_ntforms(&list, count);
 
-	       write_ntforms(&list, count);
+	safe_free(list);
 
-	       free(list);
-       }
-
-       status = 0x0;
-       spoolss_io_r_addform("", &r_u, rdata, 0);
+	return 0x0;
 }
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata)
+uint32 _spoolss_setform( const POLICY_HND *handle,
+				const UNISTR2 *uni_name,
+				uint32 level,
+				const FORM *form)
 {
-	SPOOL_R_SETFORM r_u;
 	int pnum=0;
 	int count=0;
 	nt_forms_struct *list=NULL;
@@ -3262,32 +3262,20 @@ uint32 _spoolss_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata)
  	DEBUG(5,("spoolss_setform\n"));
 
 	pnum = find_printer_index_by_hnd(handle);
-
-	if (OPEN_HANDLE(pnum))
+	if (!OPEN_HANDLE(pnum))
 	{
-		count=get_ntforms(&list);
-
-		update_a_form(&list, form, count);
-
-		write_ntforms(&list, count);
-
-		free(list);
+		return NT_STATUS_INVALID_HANDLE;
 	}
-	status = 0x0;
-	spoolss_io_r_setform("", &r_u, rdata, 0);
+	count=get_ntforms(&list);
+	update_a_form(&list, form, count);
+	write_ntforms(&list, count);
+
+	safe_free(list);
+
+	return 0x0;
 }
 
-/****************************************************************************
-****************************************************************************/
-static void api_spoolss_setform(rpcsrv_struct *p, prs_struct *data,
-				prs_struct *rdata)
-{
-	SPOOL_Q_SETFORM q_u;
-
-	spoolss_io_q_setform("", &q_u, data, 0);
-
-	spoolss_setform(&q_u, rdata);
-}
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

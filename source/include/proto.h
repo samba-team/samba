@@ -576,20 +576,6 @@ void free_unistr_array(uint32 num_entries, UNISTR2 **entries);
 UNISTR2* add_unistr_to_array(uint32 *len, UNISTR2 ***array, UNISTR2 *name);
 void free_sid_array(uint32 num_entries, DOM_SID **entries);
 DOM_SID* add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
-void free_devmode(DEVICEMODE *devmode);
-void free_printer_info_2(PRINTER_INFO_2 *printer);
-void free_print2_array(uint32 num_entries, PRINTER_INFO_2 **entries);
-PRINTER_INFO_2 *add_print2_to_array(uint32 *len, PRINTER_INFO_2 ***array,
-				const PRINTER_INFO_2 *prt);
-void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries);
-PRINTER_INFO_1 *add_print1_to_array(uint32 *len, PRINTER_INFO_1 ***array,
-				const PRINTER_INFO_1 *prt);
-void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries);
-JOB_INFO_1 *add_job1_to_array(uint32 *len, JOB_INFO_1 ***array,
-				const JOB_INFO_1 *job);
-void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries);
-JOB_INFO_2 *add_job2_to_array(uint32 *len, JOB_INFO_2 ***array,
-				const JOB_INFO_2 *job);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -1863,8 +1849,8 @@ struct passgrp_ops *unix_initialise_password_grp(void);
 
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
-void add_a_form(nt_forms_struct **list, FORM form, int *count);
-void update_a_form(nt_forms_struct **list, FORM form, int count);
+void add_a_form(nt_forms_struct **list, const FORM *form, int *count);
+void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);
 void dump_a_param(NT_PRINTER_PARAM *param);
@@ -3663,6 +3649,20 @@ BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int 
 BOOL spoolss_io_r_setform(char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int depth);
+void free_devmode(DEVICEMODE *devmode);
+void free_printer_info_2(PRINTER_INFO_2 *printer);
+void free_print2_array(uint32 num_entries, PRINTER_INFO_2 **entries);
+PRINTER_INFO_2 *add_print2_to_array(uint32 *len, PRINTER_INFO_2 ***array,
+				const PRINTER_INFO_2 *prt);
+void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries);
+PRINTER_INFO_1 *add_print1_to_array(uint32 *len, PRINTER_INFO_1 ***array,
+				const PRINTER_INFO_1 *prt);
+void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries);
+JOB_INFO_1 *add_job1_to_array(uint32 *len, JOB_INFO_1 ***array,
+				const JOB_INFO_1 *job);
+void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries);
+JOB_INFO_2 *add_job2_to_array(uint32 *len, JOB_INFO_2 ***array,
+				const JOB_INFO_2 *job);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
@@ -4975,8 +4975,13 @@ uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
 				const uint8 *data,
 				uint32 real_len,
 				uint32 numeric_data);
-uint32 _spoolss_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata);
-uint32 _spoolss_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata);
+uint32 _spoolss_addform( const POLICY_HND *handle,
+				uint32 level,
+				const FORM *form);
+uint32 _spoolss_setform( const POLICY_HND *handle,
+				const UNISTR2 *uni_name,
+				uint32 level,
+				const FORM *form);
 uint32 _spoolss_enumprintprocessors(SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *rdata);
 uint32 _spoolss_enumprintmonitors(SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *rdata);
 uint32 _spoolss_getjob(SPOOL_Q_GETJOB *q_u, prs_struct *rdata);
