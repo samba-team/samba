@@ -44,7 +44,11 @@ RCSID("$Id$");
  *
  * The search is recursive, so you can add entries for specific
  * hosts. To find the realm of host a.b.c, it first tries
- * krb5-realm.a.b.c, then krb5-realm.b.c and so on.  */
+ * krb5-realm.a.b.c, then krb5-realm.b.c and so on.
+ *
+ * Also supported is _kerberos (following draft-ietf-cat-krb-dns-locate-01.txt)
+ *
+ */
 
 static int
 copy_txt_to_realms (struct resource_record *head,
@@ -88,6 +92,7 @@ copy_txt_to_realms (struct resource_record *head,
 static int
 dns_find_realm(krb5_context context,
 	       const char *domain,
+	       const char *dom_string,
 	       krb5_realm **realms)
 {
     char dom[MAXHOSTNAMELEN];
@@ -96,7 +101,7 @@ dns_find_realm(krb5_context context,
     
     if(*domain == '.')
 	domain++;
-    snprintf(dom, sizeof(dom), "krb5-realm.%s.", domain);
+    snprintf(dom, sizeof(dom), "%s.%s.", dom_string, domain);
     r = dns_lookup(dom, "TXT");
     if(r == NULL)
 	return -1;
@@ -144,7 +149,9 @@ krb5_get_host_realm_int (krb5_context context,
     for (p = host; p != NULL; p = strchr (p + 1, '.')) {
 	if(config_find_realm(context, p, realms) == 0)
 	    return 0;
-	else if(dns_find_realm(context, p, realms) == 0)
+	else if(dns_find_realm(context, p, "krb5-realm", realms) == 0)
+	    return 0;
+	else if(dns_find_realm(context, p, "_kerberos", realms) == 0)
 	    return 0;
     }
     p = strchr(host, '.');
