@@ -758,7 +758,7 @@ static BOOL lsa_io_dom_query_6(char *desc, DOM_QUERY_6 *d_q, prs_struct *ps, int
 }
 
 /*******************************************************************
- Reads or writes an LSA_Q_QUERY_INFO structure.
+ Reads or writes an LSA_R_QUERY_INFO structure.
 ********************************************************************/
 
 BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
