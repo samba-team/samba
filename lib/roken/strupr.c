@@ -43,6 +43,8 @@ RCSID("$Id$");
 #include <string.h>
 #include <ctype.h>
 
+#include <roken.h>
+
 #ifndef HAVE_STRUPR
 char *
 strupr(char *str)
