@@ -568,7 +568,7 @@ struct v4_name_convert {
     { "ftp",	"ftp" },
     { "hprop",	"hprop" },
     { "pop",	"pop" },
-    { "imap",	"imap" }
+    { "imap",	"imap" },
     { "rcmd",	"host" },
     { NULL, NULL }
 };
