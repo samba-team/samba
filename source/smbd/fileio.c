@@ -121,6 +121,8 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
   
   if (n > 0) {
     readret = read(fsp->fd_ptr->fd,data,n);
+    if (readret == -1)
+      return -1;
     if (readret > 0) ret += readret;
   }
 
