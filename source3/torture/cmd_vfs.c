@@ -122,7 +122,11 @@ static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 	}
 
 	diskfree = vfs->conn->vfs_ops.disk_free(vfs->conn, argv[1], False, &bsize, &dfree, &dsize);
-	printf("disk_free: %ld, bsize = %ld, dfree = %ld, dsize = %ld\n", diskfree, bsize, dfree, dsize);
+	printf("disk_free: %lu, bsize = %lu, dfree = %lu, dsize = %lu\n",
+			(unsigned long)diskfree,
+			(unsigned long)bsize,
+			(unsigned long)dfree,
+			(unsigned long)dsize);
 	return NT_STATUS_OK;
 }
 
@@ -526,12 +530,12 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
 	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
 	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
-	printf("  Size: %10d", st.st_size);
-	printf(" Blocks: %9d", st.st_blocks);
-	printf(" IO Block: %d\n", st.st_blksize);
-	printf("  Device: 0x%10x", st.st_dev);
-	printf(" Inode: %10d", st.st_ino);
-	printf(" Links: %10d\n", st.st_nlink);
+	printf("  Size: %10u", (unsigned int)st.st_size);
+	printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+	printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
+	printf(" Inode: %10u", (unsigned int)st.st_ino);
+	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
 	printf("  Access: %05o", (st.st_mode) & 007777);
 	printf(" Uid: %5d/%.16s Gid: %5d/%.16s\n", st.st_uid, user, st.st_gid, group);
 	printf("  Access: %s", ctime(&(st.st_atime)));
@@ -588,12 +592,12 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
 	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
 	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
-	printf("  Size: %10d", st.st_size);
-	printf(" Blocks: %9d", st.st_blocks);
-	printf(" IO Block: %d\n", st.st_blksize);
-	printf("  Device: 0x%10x", st.st_dev);
-	printf(" Inode: %10d", st.st_ino);
-	printf(" Links: %10d\n", st.st_nlink);
+	printf("  Size: %10u", (unsigned int)st.st_size);
+	printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+	printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
+	printf(" Inode: %10u", (unsigned int)st.st_ino);
+	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
 	printf("  Access: %05o", (st.st_mode) & 007777);
 	printf(" Uid: %5d/%.16s Gid: %5d/%.16s\n", st.st_uid, user, st.st_gid, group);
 	printf("  Access: %s", ctime(&(st.st_atime)));
@@ -638,12 +642,12 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
 	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
 	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
-	printf("  Size: %10d", st.st_size);
-	printf(" Blocks: %9d", st.st_blocks);
-	printf(" IO Block: %d\n", st.st_blksize);
-	printf("  Device: 0x%10x", st.st_dev);
-	printf(" Inode: %10d", st.st_ino);
-	printf(" Links: %10d\n", st.st_nlink);
+	printf("  Size: %10u", (unsigned int)st.st_size);
+	printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+	printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
+	printf(" Inode: %10u", (unsigned int)st.st_ino);
+	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
 	printf("  Access: %05o", (st.st_mode) & 007777);
 	printf(" Uid: %5d/%.16s Gid: %5d/%.16s\n", st.st_uid, user, st.st_gid, group);
 	printf("  Access: %s", ctime(&(st.st_atime)));
@@ -955,6 +959,7 @@ static NTSTATUS cmd_link(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	mode_t mode;
+	unsigned int dev_val;
 	SMB_DEV_T dev;
 	
 	if (argc != 4) {
@@ -969,10 +974,11 @@ static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (sscanf(argv[3], "%x", &dev) == 0) {
+	if (sscanf(argv[3], "%x", &dev_val) == 0) {
 		printf("open: error=-1 (invalid dev!)\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+	dev = (SMB_DEV_T)dev_val;
 
 	if (vfs->conn->vfs_ops.mknod(vfs->conn, argv[1], mode, dev) == -1) {
 		printf("mknod: error=%d (%s)\n", errno, strerror(errno));
