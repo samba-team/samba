@@ -23,6 +23,7 @@
 <!ENTITY Passdb SYSTEM "passdb.sgml">
 <!ENTITY VFS SYSTEM "VFS.sgml">
 <!ENTITY GroupProfiles SYSTEM "GroupProfiles.sgml">
+<!ENTITY SecuringSamba SYSTEM "securing-samba.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -115,6 +116,7 @@ part each cover one specific feature.</para>
 &GROUP-MAPPING-HOWTO;
 &SPEED;
 &GroupProfiles;
+&SecuringSamba;
 </part>
 
 <part id="Appendixes">
