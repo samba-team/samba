@@ -2983,9 +2983,7 @@ if test x"$with_ads_support" != x"no"; then
     krb5_keytab keytab;
 
     krb5_init_context(&context);
-    if (krb5_kt_resolve(context, "WRFILE:api", &keytab))
-      exit(0);
-    exit(1);
+    return krb5_kt_resolve(context, "WRFILE:api", &keytab);
   }],
   samba_cv_HAVE_WRFILE_KEYTAB=yes,
   samba_cv_HAVE_WRFILE_KEYTAB=no)])
