@@ -1,3 +1,8 @@
+2003-04-01  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* init_c.c (kadm_connect): if a context realm was passed in, use
+	that to form the kadmin/admin principal
+	
 2003-03-19  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ipropd_master.c (main): make sure we don't consider dead slave

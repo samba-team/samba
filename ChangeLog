@@ -1,3 +1,10 @@
+2003-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* admin/change.c (kt_change): collect all principals we are going
+	to change, and pick the highest kvno and use that to guess what
+	kvno the resulting kvno is going to be. Now two ktutil change in a
+	row works. XXX fix the protocol to pass the kvno back.
+	
 2003-03-31  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* appl/kf/kf.1: afs->AFS, from jmc <jmc@acn.waw.pl>
