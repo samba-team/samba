@@ -4188,6 +4188,10 @@ int reply_negprot(connection_struct *conn,
 		  char *inbuf,char *outbuf, int dum_size, 
 		  int dum_buffsize);
 
+/*The following definitions come from  smbd/noquotas.c  */
+
+BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
+
 /*The following definitions come from  smbd/notify.c  */
 
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp);
@@ -4314,16 +4318,6 @@ void construct_reply_common(char *inbuf,char *outbuf);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 void check_reload(int t);
 void smbd_process(void);
-
-/*The following definitions come from  smbd/quotas.c  */
-
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 
 /*The following definitions come from  smbd/reply.c  */
 
