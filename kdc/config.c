@@ -194,8 +194,11 @@ get_dbinfo(krb5_config_section *cf)
 	if(di->mkey_file == NULL) {
 	    p = strrchr(di->dbname, '.');
 	    if(p == NULL || strchr(p, '/') != NULL)
+		/* final pathname component does not contain a . */
 		asprintf(&di->mkey_file, "%s.mkey", di->dbname);
 	    else
+		/* the filename is something.else, replace .else with
+                   .mkey */
 		asprintf(&di->mkey_file, "%.*s.mkey", 
 			 (int)(p - di->dbname), di->dbname);
 	}
