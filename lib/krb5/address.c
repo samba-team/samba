@@ -2,6 +2,9 @@
 
 RCSID("$Id$");
 
+#if 0
+/* This is the supposedly MIT-api version */
+
 krb5_boolean
 krb5_address_search(krb5_context context,
 		    const krb5_address *addr,
@@ -13,6 +16,20 @@ krb5_address_search(krb5_context context,
     if (krb5_address_compare (context, addr, a))
       return TRUE;
   return FALSE;
+}
+#endif
+
+krb5_boolean
+krb5_address_search(krb5_context context,
+		    const krb5_address *addr,
+		    const krb5_addresses *addrlist)
+{
+    int i;
+
+    for (i = 0; i < addrlist->len; ++i)
+	if (krb5_address_compare (context, addr, addrlist->val[i]))
+	    return TRUE;
+    return FALSE;
 }
 
 krb5_boolean
@@ -34,10 +51,11 @@ krb5_address_order(krb5_context context,
 
 krb5_error_code
 krb5_copy_addresses(krb5_context context,
-		    krb5_address *const *inaddr,
-		    krb5_address ***outaddr)
+		    const krb5_addresses *inaddr,
+		    krb5_addresses *outaddr)
 {
-  abort ();
+    copy_HostAddresses(inaddr, outaddr);
+    return 0;
 }
 
 krb5_error_code
@@ -46,4 +64,12 @@ krb5_free_address(krb5_context context,
 {
   krb5_data_free (&address->address);
   return 0;
+}
+
+krb5_error_code
+krb5_free_addresses(krb5_context context,
+		    krb5_addresses *addresses)
+{
+    free_HostAddresses(addresses);
+    return 0;
 }
