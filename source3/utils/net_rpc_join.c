@@ -42,7 +42,7 @@
  * @return A shell status integer (0 for success)
  *
  **/
-int net_rpc_join_ok(const char *domain)
+static int net_rpc_join_ok(const char *domain)
 {
 	struct cli_state *cli;
 	uchar stored_md4_trust_password[16];
