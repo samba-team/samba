@@ -30,14 +30,17 @@ static BOOL set_smb_signing_common(struct smbcli_transport *transport)
 {
 	if (!(transport->negotiate.sec_mode & 
 	      (NEGOTIATE_SECURITY_SIGNATURES_REQUIRED|NEGOTIATE_SECURITY_SIGNATURES_ENABLED))) {
+		DEBUG(5, ("SMB Signing is not negotiated by the peer\n"));
 		return False;
 	}
 
 	if (transport->negotiate.sign_info.doing_signing) {
+		DEBUG(5, ("SMB Signing already in progress, so we don't start it again\n"));
 		return False;
 	}
 
 	if (!transport->negotiate.sign_info.allow_smb_signing) {
+		DEBUG(5, ("SMB Signing has been locally disabled\n"));
 		return False;
 	}
 
@@ -61,9 +64,11 @@ static BOOL signing_good(struct smb_signing_context *sign_info,
 {
 	if (good) {
 		if (!sign_info->doing_signing) {
+			DEBUG(5, ("Seen valid packet, so turning signing on\n"));
 			sign_info->doing_signing = True;
 		}
 		if (!sign_info->seen_valid) {
+			DEBUG(5, ("Seen valid packet, so marking signing as 'seen valid'\n"));
 			sign_info->seen_valid = True;
 		}
 	} else {
@@ -127,6 +132,11 @@ BOOL check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key
 
 	/* room enough for the signature? */
 	if (in->size < NBT_HDR_SIZE + HDR_SS_FIELD + 8) {
+		return False;
+	}
+
+	if (!mac_key->length) {
+		/* NO key yet */
 		return False;
 	}
 
@@ -229,6 +239,7 @@ void smbcli_request_calculate_sign_mac(struct smbcli_request *req)
 */
 static BOOL smbcli_set_signing_off(struct smb_signing_context *sign_info)
 {
+	DEBUG(5, ("Shutdown SMB signing\n"));
 	sign_info->doing_signing = False;
 	data_blob_free(&sign_info->mac_key);
 	sign_info->signing_state = SMB_SIGNING_ENGINE_OFF;
@@ -244,6 +255,7 @@ BOOL smbcli_temp_set_signing(struct smbcli_transport *transport)
 	if (!set_smb_signing_common(transport)) {
 		return False;
 	}
+	DEBUG(5, ("BSRSPYL SMB signing enabled\n"));
 	smbcli_set_signing_off(&transport->negotiate.sign_info);
 
 	transport->negotiate.sign_info.mac_key = data_blob(NULL, 0);
