@@ -161,12 +161,27 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-privatedir='$(LIBDIR)' \
 	--with-lockdir='$(DESTDIR)/var/lock/samba.d' \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
-	--with-smbmount --with-pam --without-smbwrapper \
-	--with-utmp --with-quotas --with-vfs --with-msdfs \
-	--with-profile --with-syslog --with-utmp --with-netatalk \
+	--with-smbmount \
+	--with-pam \
+	--with-pam_smbpass \
+	--with-tdbsam \
+	--with-ldapsam \
+	--with-nisplussam \
+	--with-nisplus-home \
+	--with-winbind \
+	--with-acl-support \
+	--without-smbwrapper \
+	--with-utmp \
+	--with-quotas \
+	--with-vfs \
+	--with-msdfs \
+	--with-profile \
+	--with-syslog \
+	--with-utmp \
+	--with-netatalk \
 	--with-sambabook=$(DESTDIR)/usr/share/swat/using_samba
 
-make all nsswitch/libnss_wins.so
+make all
 
 
 %Install
