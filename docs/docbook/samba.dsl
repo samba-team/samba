@@ -34,6 +34,7 @@
 	(normalize "reference")
 	(normalize "refentry")
 	(normalize "part")
+; We would like to split up in chapters, not in sect1's...
 ;	(normalize "sect1") 
 	(normalize "section") 
 	(normalize "book") ;; just in case nothing else matches...
