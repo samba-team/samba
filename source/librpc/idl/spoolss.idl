@@ -304,9 +304,27 @@
 		[in,out,ref]     policy_handle *handle
 	);
 
+	typedef struct {
+		uint32 flags;
+		[relative] unistr *name;
+		uint32 width;
+		uint32 length;
+		uint32 left;
+		uint32 top;
+		uint32 right;
+		uint32 bottom;
+	} spoolss_AddFormInfo1;
+
+	typedef union {
+		[case(1)] spoolss_AddFormInfo1 *info1;
+	} spoolss_AddFormInfo;
+
 	/******************/
 	/* Function: 0x1e */
-	WERROR spoolss_1e(
+	WERROR spoolss_AddForm(
+		[in,ref] policy_handle *handle,
+		[in] uint32 level,
+		[in,switch_is(level)] spoolss_AddFormInfo info
 	);
 
 	/******************/
