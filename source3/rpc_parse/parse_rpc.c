@@ -132,6 +132,16 @@ interface/version dce/rpc pipe identification
 	}, 0x01                       \
 }                                 \
 
+#define SYNT_SPOOLSS_V1           \
+{                                 \
+	{                             \
+		0x78, 0x56, 0x34, 0x12,   \
+		0x34, 0x12, 0xcd, 0xab,   \
+		0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0x89, 0xab    \
+	}, 0x01                       \
+}                                 \
+
 #define SYNT_NONE_V0              \
 {                                 \
 	{                             \
@@ -153,6 +163,7 @@ struct pipe_id_info pipe_names [] =
 	{ PIPE_WKSSVC  , SYNT_WKSSVC_V1  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_WINREG  , SYNT_WINREG_V1  , PIPE_WINREG   , TRANS_SYNT_V2 },
 	{ PIPE_ATSVC   , SYNT_ATSVC_V1   , PIPE_ATSVC    , TRANS_SYNT_V2 },
+	{ PIPE_SPOOLSS , SYNT_SPOOLSS_V1 , PIPE_SPOOLSS  , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0    , NULL          , SYNT_NONE_V0  }
 };
 
@@ -212,13 +223,22 @@ static void smb_io_rpc_iface(char *desc,  RPC_IFACE *ifc, prs_struct *ps, int de
 
 /*******************************************************************
 creates an RPC_ADDR_STR structure.
+
+The name can be null (RPC Alter-Context)
 ********************************************************************/
 static void make_rpc_addr_str(RPC_ADDR_STR *str, char *name)
 {
-	if (str == NULL || name == NULL) return;
-
-	str->len = strlen(name) + 1;
-	fstrcpy(str->str, name);
+	if (str == NULL ) return;
+	if (name == NULL)
+	{
+		str->len = 1;
+		fstrcpy(str->str, "");
+	}
+	else
+	{
+		str->len = strlen(name) + 1;
+		fstrcpy(str->str, name);
+	}
 }
 
 /*******************************************************************
@@ -349,6 +369,7 @@ static void smb_io_rpc_results(char *desc,  RPC_RESULTS *res, prs_struct *ps, in
 creates an RPC_HDR_BA structure.
 
 lkclXXXX only one reason at the moment!
+jfm: nope two ! The pipe_addr can be NULL !
 
 ********************************************************************/
 void make_rpc_hdr_ba(RPC_HDR_BA *rpc, 
@@ -357,7 +378,7 @@ void make_rpc_hdr_ba(RPC_HDR_BA *rpc,
 				uint8 num_results, uint16 result, uint16 reason,
 				RPC_IFACE *transfer)
 {
-	if (rpc == NULL || transfer == NULL || pipe_addr == NULL) return;
+	if (rpc == NULL || transfer == NULL) return;
 
 	make_rpc_hdr_bba (&(rpc->bba ), max_tsize, max_rsize, assoc_gid);
 	make_rpc_addr_str(&(rpc->addr), pipe_addr);

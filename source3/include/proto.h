@@ -1201,6 +1201,8 @@ char *lp_nis_home_map_name(void);
 char *lp_netbios_aliases(void);
 char *lp_driverfile(void);
 char *lp_panic_action(void);
+char *lp_nt_forms(void);
+char *lp_nt_drivers_file(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_bind_as(void);
@@ -1559,6 +1561,27 @@ struct passgrp_ops *file_initialise_password_grp(void);
 /*The following definitions come from  passdb/smbpassgroupunix.c  */
 
 struct passgrp_ops *unix_initialise_password_grp(void);
+
+/*The following definitions come from  printing/nt_printing.c  */
+
+int get_ntforms(nt_forms_struct **list);
+int get_ntdrivers(fstring **list, char *architecture);
+void get_short_archi(char *short_archi, char *long_archi);
+void dump_a_param(NT_PRINTER_PARAM *param);
+BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
+BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
+uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
+uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring sharename);
+uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level);
+uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
+uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level, 
+                            fstring printername, fstring architecture);
+uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
+BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,
+                                 fstring value, uint8 **data, uint32 *type, uint32 *len);
+BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level, 
+                        fstring value, uint8 **data, uint32 *type, uint32 *len);
+void init_devicemode(NT_DEVICEMODE *nt_devmode);
 
 /*The following definitions come from  printing/pcap.c  */
 
@@ -2008,6 +2031,10 @@ void make_buffer3_hex(BUFFER3 *str, char *buf);
 void make_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len);
 void smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth);
 void smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth);
+void init_buffer5(BUFFER5 **str);
+void clear_buffer5(BUFFER5 **str);
+void make_buffer5(BUFFER5 *str, char *buf, int len);
+void smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
 void make_buffer2(BUFFER2 *str, const char *buf, int len);
 void smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
 void make_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf);
@@ -2144,6 +2171,7 @@ BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
 BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
 BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
 BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
+BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
 BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str);
 BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str);
@@ -2646,6 +2674,103 @@ SEC_DESC_BUF *dup_sec_desc_buf(SEC_DESC_BUF *src);
 void free_sec_desc_buf(SEC_DESC_BUF **ppsdb);
 BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth);
 
+/*The following definitions come from  rpc_parse/parse_spoolss.c  */
+
+void make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
+void smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
+                                     prs_struct *ps, int depth);
+void spoolss_io_r_open_printer(char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_open_printer(char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *ps, int depth);
+void spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_closeprinter(char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_closeprinter(char *desc, SPOOL_R_CLOSEPRINTER *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_startdocprinter(char *desc, SPOOL_Q_STARTDOCPRINTER *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_startdocprinter(char *desc, SPOOL_R_STARTDOCPRINTER *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_enddocprinter(char *desc, SPOOL_Q_ENDDOCPRINTER *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_enddocprinter(char *desc, SPOOL_R_ENDDOCPRINTER *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_startpageprinter(char *desc, SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_startpageprinter(char *desc, SPOOL_R_STARTPAGEPRINTER *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_endpageprinter(char *desc, SPOOL_Q_ENDPAGEPRINTER *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_endpageprinter(char *desc, SPOOL_R_ENDPAGEPRINTER *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_writeprinter(char *desc, SPOOL_Q_WRITEPRINTER *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_writeprinter(char *desc, SPOOL_R_WRITEPRINTER *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_rffpcnex(char *desc, SPOOL_Q_RFFPCNEX *q_u,
+                           prs_struct *ps, int depth);
+void spoolss_io_r_rffpcnex(char *desc, SPOOL_R_RFFPCNEX *r_u, 
+                           prs_struct *ps, int depth);
+void spoolss_io_q_rfnpcnex(char *desc, SPOOL_Q_RFNPCNEX *q_u,
+                           prs_struct *ps, int depth);
+void spoolss_io_r_rfnpcnex(char *desc, 
+                           SPOOL_R_RFNPCNEX *r_u, 
+                           prs_struct *ps, int depth);
+void spoolss_io_q_getprinterdriver2(char *desc, 
+				    SPOOL_Q_GETPRINTERDRIVER2 *q_u,
+                                    prs_struct *ps, int depth);
+void spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u,
+                               prs_struct *ps, int depth);
+void spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u,
+                               prs_struct *ps, int depth);
+void spoolss_io_r_enumprinters(char *desc,
+                               SPOOL_R_ENUMPRINTERS *r_u, 
+                               prs_struct *ps, int depth);
+void spoolss_io_r_getprinter(char *desc,
+                               SPOOL_R_GETPRINTER *r_u, 
+                               prs_struct *ps, int depth);
+void spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u,
+                               prs_struct *ps, int depth);
+void spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_fcpn(char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_fcpn(char *desc, SPOOL_Q_FCPN *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_addjob(char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_addjob(char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_enumjobs(char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_schedulejob(char *desc, SPOOL_R_SCHEDULEJOB *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_schedulejob(char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_setjob(char *desc, SPOOL_R_SETJOB *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_setjob(char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_enumdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_enumprinterdrivers(char *desc, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_enumports(char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth);
+void spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 **q_u, prs_struct *ps, int depth);
+void spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_struct *ps, int depth);
+void spool_io_user_level_1(char *desc, SPOOL_USER_LEVEL_1 **q_u, prs_struct *ps, int depth);
+void spool_io_user_level(char *desc, SPOOL_USER_LEVEL *q_u, prs_struct *ps, int depth);
+void spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u, prs_struct *ps, int depth);
+void spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u, 
+                                          prs_struct *ps, int depth);
+void uniarray_2_ascarray(BUFFER5 *buf5, char ***ar);
+void smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
+void spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
+void spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
+void uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
+                                NT_PRINTER_DRIVER_INFO_LEVEL_3 **asc);
+void uni_2_asc_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 *uni,
+                              NT_PRINTER_INFO_LEVEL_2  **asc);
+void convert_printer_info(SPOOL_PRINTER_INFO_LEVEL uni,
+                          NT_PRINTER_INFO_LEVEL *printer,
+			  uint32 level);
+void convert_printer_driver_info(SPOOL_PRINTER_DRIVER_INFO_LEVEL uni,
+                                 NT_PRINTER_DRIVER_INFO_LEVEL *printer,
+			         uint32 level);
+void convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode);
+void spoolss_io_r_getprinterdriverdir(char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_getprinterdriverdir(char *desc, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_enumprintprocessors(char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_enumprintprocessors(char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_struct *ps, int depth);
+void spoolss_io_q_enumprinterdata(char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *ps, int depth);
+void spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth);
+void spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
+void convert_specific_param(NT_PRINTER_PARAM **param, UNISTR2 value , uint32 type, uint8 *data, uint32 len);
+
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
 void make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark);
@@ -2860,6 +2985,13 @@ BOOL api_reg_rpc(pipes_struct *p, prs_struct *data);
 /*The following definitions come from  rpc_server/srv_samr.c  */
 
 BOOL api_samr_rpc(pipes_struct *p, prs_struct *data);
+
+/*The following definitions come from  rpc_server/srv_spoolss.c  */
+
+void init_printer_hnd(void);
+uint32 size_of_notify_info_data(uint16 type, uint16 field);
+BOOL type_of_notify_info_data(uint16 type, uint16 field);
+BOOL api_spoolss_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 

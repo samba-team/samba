@@ -360,6 +360,7 @@ static struct api_cmd api_fd_commands[] =
     { "svcctl",   "ntsvcs",  api_svcctl_rpc },
     { "NETLOGON", "lsass",   api_netlog_rpc },
     { "winreg",   "winreg",  api_reg_rpc },
+    { "spoolss",  "spoolss", api_spoolss_rpc },
     { NULL,       NULL,      NULL }
 };
 
@@ -383,7 +384,7 @@ static BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *pd)
 	return api_pipe_ntlmssp(p, pd);
 }
 
-static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
+static BOOL api_pipe_bind_and_alt_req(pipes_struct *p, prs_struct *pd, enum RPC_PKT_TYPE pkt_type)
 {
 	uint16 assoc_gid;
 	fstring ack_pipe_name;
@@ -435,9 +436,29 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 		}
 	}
 
-	/* name has to be \PIPE\xxxxx */
-	fstrcpy(ack_pipe_name, "\\PIPE\\");
-	fstrcat(ack_pipe_name, p->pipe_srv_name);
+	switch (pkt_type)
+	{
+		case RPC_BINDACK:
+		{
+			/* name has to be \PIPE\xxxxx */
+			fstrcpy(ack_pipe_name, "\\PIPE\\");
+			fstrcat(ack_pipe_name, p->pipe_srv_name);
+			break;
+		}
+		case RPC_ALTCONTRESP:
+		{
+			/* secondary address CAN be NULL
+			 * as the specs says it's ignored.
+			 * It MUST NULL to have the spoolss working.
+			 */
+			fstrcpy(ack_pipe_name, "");
+			break;
+		}
+		default:
+		{
+			return False;
+		}
+	}
 
 	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
 
@@ -505,7 +526,7 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 	/*** then do the header, now we know the length ***/
 	/***/
 
-	make_rpc_hdr(&p->hdr, RPC_BINDACK, RPC_FLG_FIRST | RPC_FLG_LAST,
+	make_rpc_hdr(&p->hdr, pkt_type, RPC_FLG_FIRST | RPC_FLG_LAST,
 	             p->hdr.call_id,
 	             p->rdata.offset + p->rverf.offset + p->rauth.offset + p->rntlm.offset + 0x10,
 	             p->rauth.offset + p->rntlm.offset);
@@ -534,6 +555,21 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 	return True;
 }
 
+/*
+ * The RPC Alter-Context call is used only by the spoolss pipe
+ * simply because there is a bug (?) in the MS unmarshalling code
+ * or in the marshalling code. If it's in the later, then Samba
+ * have the same bug.
+ */
+static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
+{
+	return api_pipe_bind_and_alt_req(p, pd, RPC_BINDACK);
+}
+
+static BOOL api_pipe_alt_req(pipes_struct *p, prs_struct *pd)
+{
+	return api_pipe_bind_and_alt_req(p, pd, RPC_ALTCONTRESP);
+}
 
 static BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *pd)
 {
@@ -635,6 +671,11 @@ BOOL rpc_command(pipes_struct *p, prs_struct *pd)
 			reply = api_pipe_bind_req(p, pd);
 			break;
 		}
+		case RPC_ALTCONT:
+		{
+			reply = api_pipe_alt_req(p, pd);
+ 			break;
+ 		}
 		case RPC_REQUEST:
 		{
 			if (p->ntlmssp_auth && !p->ntlmssp_validated)

@@ -450,6 +450,7 @@ static void init_structs(void)
 	file_init();
 	init_rpc_pipe_hnd(); /* for RPC pipes */
 	init_lsa_policy_hnd(); /* for LSA handles */
+	init_printer_hnd(); /* for SPOOLSS handles */
 	init_dptrs();
 }
 

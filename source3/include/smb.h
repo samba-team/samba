@@ -360,6 +360,7 @@ typedef char fstring[FSTRING_LEN];
 #define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
 #define PIPE_ATSVC    "\\PIPE\\atsvc"
+#define PIPE_SPOOLSS  "\\pipe\\spoolss"
 
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
@@ -1877,6 +1878,7 @@ extern int unix_ERR_code;
 		 __FILE__, __LINE__)), smb_panic("assert failed")))
 #define SMB_ASSERT_ARRAY(a,n) SMB_ASSERT((sizeof(a)/sizeof((a)[0])) >= (n))
 
+#include "nt_printing.h"
 #include "ntdomain.h"
 
 /* A netbios name structure. */

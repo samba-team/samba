@@ -158,6 +158,20 @@ BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *dat
 }
 
 /******************************************************************
+ stream an array of uint16s.  length is number of uint16s
+ ********************************************************************/
+BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
+{
+	char *q = mem_data(&(ps->data), ps->offset);
+	if (q == NULL) return False;
+
+	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, data16s, len)
+	ps->offset += len * sizeof(uint16);
+
+	return True;
+}
+
+/******************************************************************
  stream an array of uint32s.  length is number of uint32s
  ********************************************************************/
 BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
