@@ -46,8 +46,6 @@ kadm5_s_rename_principal(void *server_handle,
     ent.principal = source;
     if(krb5_principal_compare(context->context, source, target))
 	return KADM5_DUP; /* XXX is this right? */
-    if(!krb5_realm_compare(context->context, source, target))
-	return KADM5_FAILURE; /* XXX better code */
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
