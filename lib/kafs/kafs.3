@@ -40,6 +40,7 @@
 .Nm k_unlog ,
 .Nm k_setpag ,
 .Nm k_afs_cell_of_file ,
+.Nm kafs_set_verbose ,
 .Nm kafs_settoken_rxkad ,
 .Nm kafs_settoken ,
 .Nm krb_afslog ,
@@ -62,6 +63,8 @@ AFS cache manager access library (libkafs, -lkafs)
 .Fn k_setpag "void"
 .Ft int
 .Fn k_unlog "void"
+.Ft void
+.Fn kafs_set_verbose "void (*func)(void *, const char *, int)" "void *"
 .Ft int
 .Fn kafs_settoken_rxkad "const char *cell" "struct ClearToken *token" "void *ticket" "size_t ticket_len"
 .Ft int
@@ -82,6 +85,16 @@ presence of AFS in the kernel, none of the other functions should be
 called before
 .Fn k_hasafs
 is called, or if it fails.
+.Pp
+.Fn kafs_set_verbose
+set a log function that will be called each time the kafs library does
+something important so that the application using libkafs can output
+verbose logging.
+Calling the function
+.Fa kafs_set_verbose
+with the function argument set to
+.Dv NULL
+will stop libkafs from calling the logging function (if set).
 .Pp
 .Fn kafs_settoken_rxkad
 set
