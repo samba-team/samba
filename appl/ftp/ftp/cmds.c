@@ -642,41 +642,45 @@ getit(int argc, char **argv, int restartit, char *mode)
 				return (0);
 			}
 			restart_point = stbuf.st_size;
-		} else {
-			if (ret == 0) {
-				int overbose;
+		} else if (ret == 0) {
+			int overbose;
+			int cmdret;
+			int yy, mo, day, hour, min, sec;
+			struct tm *tm;
 
-				overbose = verbose;
-				if (debug == 0)
-					verbose = -1;
-				if (command("MDTM %s", argv[1]) == COMPLETE) {
-					int yy, mo, day, hour, min, sec;
-					struct tm *tm;
-					verbose = overbose;
-					sscanf(reply_string,
-					    "%*s %04d%02d%02d%02d%02d%02d",
-					    &yy, &mo, &day, &hour, &min, &sec);
-					tm = gmtime(&stbuf.st_mtime);
-					tm->tm_mon++;
-					if (tm->tm_year > yy%100)
-						return (1);
-					if ((tm->tm_year == yy%100 && 
-					    tm->tm_mon > mo) ||
-					   (tm->tm_mon == mo && 
-					    tm->tm_mday > day) ||
-					   (tm->tm_mday == day && 
-					    tm->tm_hour > hour) ||
-					   (tm->tm_hour == hour && 
-					    tm->tm_min > min) ||
-					   (tm->tm_min == min && 
-					    tm->tm_sec > sec))
-						return (1);
-				} else {
-					printf("%s\n", reply_string);
-					verbose = overbose;
-					return (0);
-				}
+			overbose = verbose;
+			if (debug == 0)
+				verbose = -1;
+			cmdret = command("MDTM %s", argv[1]);
+			verbose = overbose;
+			if (cmdret != COMPLETE) {
+				printf("%s\n", reply_string);
+				return (0);
 			}
+			if (sscanf(reply_string,
+				   "%*s %04d%02d%02d%02d%02d%02d",
+				   &yy, &mo, &day, &hour, &min, &sec)
+			    != 6) {
+				printf ("bad MDTM result\n");
+				return (0);
+			}
+
+			tm = gmtime(&stbuf.st_mtime);
+			tm->tm_mon++;
+			tm->tm_year += 1900;
+
+			if ((tm->tm_year > yy) ||
+			    (tm->tm_year == yy && 
+			     tm->tm_mon > mo) ||
+			    (tm->tm_mon == mo && 
+			     tm->tm_mday > day) ||
+			    (tm->tm_mday == day && 
+			     tm->tm_hour > hour) ||
+			    (tm->tm_hour == hour && 
+			     tm->tm_min > min) ||
+			    (tm->tm_min == min && 
+			     tm->tm_sec > sec))
+				return (1);
 		}
 	}
 
