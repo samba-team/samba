@@ -133,8 +133,8 @@ static BOOL create_rpc_noauth_bind_req(struct cli_connection *con,
 
 	DEBUG(10,("create_rpc_noauth_bind_req\n"));
 
-	prs_init(&rhdr     , 0x10, 4, False);
-	prs_init(&rhdr_rb  , 0x0 , 4, False);
+	prs_init(&rhdr     , 0x0, 4, False);
+	prs_init(&rhdr_rb  , 0x0, 4, False);
 
 	/* create the bind request RPC_HDR_RB */
 	make_rpc_hdr_rb(&hdr_rb, 0x1630, 0x1630, 0x0,

@@ -278,7 +278,7 @@ static void *prs_realloc(void *p, size_t size)
 		memcpy(ret, p, size);
 		*(char*)p = 0;
 	}
-	free(p);
+	safe_free(p);
 	return ret;
 }
 
