@@ -4833,7 +4833,8 @@ particular volume label.
 may be followed by the server. Links that point to areas within the
 directory tree exported by the server are always allowed; this
 parameter controls access only to areas that are outside the directory
-tree being exported.
+tree being exported. Note that only links to directories are restricted
+by this parameter setting. Links directly to files are not disallowed.
 <p>Note that setting this parameter can have a negative effect on your
 server performance due to the extra system calls that Samba has to
 do in order to perform the link checks.
