@@ -485,7 +485,7 @@ static int delete_user_entry (struct pdb_context *in, const char *username)
 		return -1;
 	}
 
-	if (NT_STATUS_IS_ERR(in->pdb_getsampwnam(in, samaccount, username))) {
+	if (!NT_STATUS_IS_OK(in->pdb_getsampwnam(in, samaccount, username))) {
 		fprintf (stderr, "user %s does not exist in the passdb\n", username);
 		return -1;
 	}
@@ -511,7 +511,7 @@ static int delete_machine_entry (struct pdb_context *in, const char *machinename
 		return -1;
 	}
 
-	if (NT_STATUS_IS_ERR(in->pdb_getsampwnam(in, samaccount, name))) {
+	if (!NT_STATUS_IS_OK(in->pdb_getsampwnam(in, samaccount, name))) {
 		fprintf (stderr, "machine %s does not exist in the passdb\n", name);
 		return -1;
 	}

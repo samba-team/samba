@@ -41,7 +41,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	DEBUG(3,("pdb: query_user_list\n"));
 
-	if (NT_STATUS_IS_ERR(result = pdb_init_sam(&sam_account))) {
+	if (!NT_STATUS_IS_OK(result = pdb_init_sam(&sam_account))) {
 		return result;
 	}
 
@@ -84,7 +84,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 			i++;
 
-			if (NT_STATUS_IS_ERR(pdb_reset_sam(sam_account))) {
+			if (!NT_STATUS_IS_OK(pdb_reset_sam(sam_account))) {
 				result = NT_STATUS_UNSUCCESSFUL;
 				break;
 			}
@@ -177,7 +177,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 	if (NT_STATUS_IS_OK(sid_to_uid(sid, &id))) { /* this is a user */
 
-		if (NT_STATUS_IS_ERR(result = pdb_init_sam(&sam_account))) {
+		if (!NT_STATUS_IS_OK(result = pdb_init_sam(&sam_account))) {
 			return result;
 		}
 	
@@ -217,7 +217,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	DEBUG(3,("pdb: query_user sid=%s\n", sid_string_static(user_sid)));
 
-	if (NT_STATUS_IS_ERR(result = pdb_init_sam(&sam_account))) {
+	if (!NT_STATUS_IS_OK(result = pdb_init_sam(&sam_account))) {
 		return result;
 	}
 	

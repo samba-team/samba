@@ -234,7 +234,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if (NT_STATUS_IS_ERR(sid_to_gid(&group_sid, &gid))) {
+	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid))) {
 		DEBUG(1, ("error converting unix gid to sid\n"));
 		return WINBINDD_ERROR;
 	}
@@ -279,7 +279,7 @@ enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 
 	/* Get rid from gid */
-	if (NT_STATUS_IS_ERR(gid_to_sid(&group_sid, state->request.data.gid))) {
+	if (!NT_STATUS_IS_OK(gid_to_sid(&group_sid, state->request.data.gid))) {
 		DEBUG(1, ("could not convert gid %d to rid\n", 
 			  state->request.data.gid));
 		return WINBINDD_ERROR;
@@ -591,7 +591,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (NT_STATUS_IS_ERR(sid_to_gid(&group_sid, &group_gid))) {
+		if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &group_gid))) {
 			
 			DEBUG(1, ("could not look up gid for group %s\n", 
 				  name_list[ent->sam_entry_index].acct_name));
@@ -903,7 +903,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 			/* Map to a gid */
 
-			if ( NT_STATUS_IS_ERR(sid_to_gid(&info3->other_sids[i].sid, 
+			if (!NT_STATUS_IS_OK(sid_to_gid(&info3->other_sids[i].sid, 
 				&gid_list[num_gids])) )
 			{
 				DEBUG(10, ("winbindd_getgroups: could not map sid %s to gid\n",
@@ -928,7 +928,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			sid_copy( &group_sid, &domain->sid );
 			sid_append_rid( &group_sid, info3->gids[i].g_rid );
 
-			if ( NT_STATUS_IS_ERR(sid_to_gid(&group_sid, &gid_list[num_gids])) ) {
+			if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid_list[num_gids])) ) {
 				DEBUG(10, ("winbindd_getgroups: could not map sid %s to gid\n",
 					   sid_string_static(&group_sid)));
 			}
@@ -951,7 +951,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 			goto done;
 
 		for (i = 0; i < num_groups; i++) {
-			if (NT_STATUS_IS_ERR(sid_to_gid(user_grpsids[i], &gid_list[num_gids]))) {
+			if (!NT_STATUS_IS_OK(sid_to_gid(user_grpsids[i], &gid_list[num_gids]))) {
 				DEBUG(1, ("unable to convert group sid %s to gid\n", 
 					  sid_string_static(user_grpsids[i])));
 				continue;

@@ -904,7 +904,7 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		sid_copy(&owner_sid, psd->owner_sid);
-		if (NT_STATUS_IS_ERR(sid_to_uid(&owner_sid, puser))) {
+		if (!NT_STATUS_IS_OK(sid_to_uid(&owner_sid, puser))) {
 #if ACL_FORCE_UNMAPPABLE
 			/* this allows take ownership to work reasonably */
 			extern struct current_user current_user;
@@ -924,7 +924,7 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
 		sid_copy(&grp_sid, psd->grp_sid);
-		if (NT_STATUS_IS_ERR(sid_to_gid( &grp_sid, pgrp))) {
+		if (!NT_STATUS_IS_OK(sid_to_gid( &grp_sid, pgrp))) {
 #if ACL_FORCE_UNMAPPABLE
 			/* this allows take group ownership to work reasonably */
 			extern struct current_user current_user;

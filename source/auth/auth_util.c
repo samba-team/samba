@@ -607,10 +607,10 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 	NT_USER_TOKEN *token;
 	int i;
 
-	if (NT_STATUS_IS_ERR(uid_to_sid(&user_sid, uid))) {
+	if (!NT_STATUS_IS_OK(uid_to_sid(&user_sid, uid))) {
 		return NULL;
 	}
-	if (NT_STATUS_IS_ERR(gid_to_sid(&group_sid, gid))) {
+	if (!NT_STATUS_IS_OK(gid_to_sid(&group_sid, gid))) {
 		return NULL;
 	}
 
@@ -621,7 +621,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 	}
 
 	for (i = 0; i < ngroups; i++) {
-		if (NT_STATUS_IS_ERR(gid_to_sid(&(group_sids)[i], (groups)[i]))) {
+		if (!NT_STATUS_IS_OK(gid_to_sid(&(group_sids)[i], (groups)[i]))) {
 			DEBUG(1, ("create_nt_token: failed to convert gid %ld to a sid!\n", (long int)groups[i]));
 			SAFE_FREE(group_sids);
 			return NULL;
@@ -695,7 +695,7 @@ static NTSTATUS get_user_groups_from_local_sam(const char *username, uid_t uid, 
 	*n_groups = n_unix_groups;
 
 	for (i = 0; i < *n_groups; i++) {
-		if (NT_STATUS_IS_ERR(gid_to_sid(&(*groups)[i], (*unix_groups)[i]))) {
+		if (!NT_STATUS_IS_OK(gid_to_sid(&(*groups)[i], (*unix_groups)[i]))) {
 			DEBUG(1, ("get_user_groups_from_local_sam: failed to convert gid %ld to a sid!\n", (long int)(*unix_groups)[i+1]));
 			SAFE_FREE(*groups);
 			SAFE_FREE(*unix_groups);

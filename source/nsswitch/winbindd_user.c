@@ -43,14 +43,14 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	
 	/* Resolve the uid number */
 
-	if (NT_STATUS_IS_ERR(sid_to_uid(user_sid, &(pw->pw_uid)))) {
+	if (!NT_STATUS_IS_OK(sid_to_uid(user_sid, &(pw->pw_uid)))) {
 		DEBUG(1, ("error getting user id for sid %s\n", sid_to_string(sid_string, user_sid)));
 		return False;
 	}
 	
 	/* Resolve the gid number */   
 
-	if (NT_STATUS_IS_ERR(sid_to_gid(group_sid, &(pw->pw_gid)))) {
+	if (!NT_STATUS_IS_OK(sid_to_gid(group_sid, &(pw->pw_gid)))) {
 		DEBUG(1, ("error getting group id for sid %s\n", sid_to_string(sid_string, group_sid)));
 		return False;
 	}
@@ -192,7 +192,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Get rid from uid */
 
-	if (NT_STATUS_IS_ERR(uid_to_sid(&user_sid, state->request.data.uid))) {
+	if (!NT_STATUS_IS_OK(uid_to_sid(&user_sid, state->request.data.uid))) {
 		DEBUG(1, ("could not convert uid %d to SID\n", 
 			  state->request.data.uid));
 		return WINBINDD_ERROR;
@@ -236,7 +236,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Check group has a gid number */
 
-	if (NT_STATUS_IS_ERR(sid_to_gid(user_info.group_sid, &gid))) {
+	if (!NT_STATUS_IS_OK(sid_to_gid(user_info.group_sid, &gid))) {
 		DEBUG(1, ("error getting group id for user %s\n", user_name));
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;

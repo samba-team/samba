@@ -190,7 +190,7 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 	*/
 
 	ret = pdb_set_sam_sids(sam_account, pwd);
-	if (NT_STATUS_IS_ERR(ret)) return ret;
+	if (!NT_STATUS_IS_OK(ret)) return ret;
 
 	/* check if this is a user account or a machine account */
 	if (pwd->pw_name[strlen(pwd->pw_name)-1] != '$')

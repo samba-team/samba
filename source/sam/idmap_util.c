@@ -150,7 +150,7 @@ NTSTATUS uid_to_sid(DOM_SID *sid, uid_t uid)
 	}
 
 	id.uid = uid;
-	if (NT_STATUS_IS_ERR(ret = idmap_get_sid_from_id(sid, id, flags))) {
+	if (!NT_STATUS_IS_OK(ret = idmap_get_sid_from_id(sid, id, flags))) {
 		DEBUG(10, ("uid_to_sid: Failed to map uid = [%u]\n", (unsigned int)uid));
 		if (flags & ID_NOMAP) {
 			sid_copy(sid, get_global_sam_sid());
@@ -186,7 +186,7 @@ NTSTATUS gid_to_sid(DOM_SID *sid, gid_t gid)
 	}
 
 	id.gid = gid;
-	if (NT_STATUS_IS_ERR(ret = idmap_get_sid_from_id(sid, id, flags))) {
+	if (!NT_STATUS_IS_OK(ret = idmap_get_sid_from_id(sid, id, flags))) {
 		DEBUG(10, ("gid_to_sid: Failed to map gid = [%u]\n", (unsigned int)gid));
 		if (flags & ID_NOMAP) {
 			sid_copy(sid, get_global_sam_sid());
@@ -341,7 +341,7 @@ BOOL idmap_init_wellknown_sids(void)
 	id.uid = pass->pw_uid;
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, DOMAIN_USER_RID_GUEST);
-	if (NT_STATUS_IS_ERR(idmap_set_mapping(&sid, id, flags))) {
+	if (!NT_STATUS_IS_OK(idmap_set_mapping(&sid, id, flags))) {
 		passwd_free(&pass);
 		return False;
 	}
@@ -362,10 +362,10 @@ BOOL idmap_init_wellknown_sids(void)
 	flags = ID_GROUPID | ID_NOMAP;
 	sid_copy(&sid, get_global_sam_sid());
 	sid_append_rid(&sid, DOMAIN_GROUP_RID_GUESTS);
-	if (NT_STATUS_IS_ERR(idmap_get_id_from_sid(&id, &flags, &sid))) {
+	if (!NT_STATUS_IS_OK(idmap_get_id_from_sid(&id, &flags, &sid))) {
 		flags = ID_GROUPID;
 		id.gid = pass->pw_gid;
-		if (NT_STATUS_IS_ERR(idmap_set_mapping(&sid, id, flags))) {
+		if (!NT_STATUS_IS_OK(idmap_set_mapping(&sid, id, flags))) {
 			passwd_free(&pass);
 			return False;
 		}
