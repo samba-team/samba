@@ -161,12 +161,15 @@ ssize_t convert_string(charset_t from, charset_t to,
 				break;
 			case E2BIG:
 				reason="No more room"; 
-				DEBUG(0, ("convert_string: Required %d, available %d\n",
-					srclen, destlen));
-				/* we are not sure we need srclen bytes,
-			          may be more, may be less.
-				  We only know we need more than destlen
-				  bytes ---simo */
+				if (from == CH_UNIX) {
+					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d - '%s'\n",
+						 charset_name(from), charset_name(to),
+						 srclen, destlen, (const char *)src));
+				} else {
+					DEBUG(0,("E2BIG: convert_string(%s,%s): srclen=%d destlen=%d\n",
+						 charset_name(from), charset_name(to),
+						 srclen, destlen));
+				}
 		               break;
 			case EILSEQ:
 			       reason="Illegal multibyte sequence";
