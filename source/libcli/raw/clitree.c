@@ -283,8 +283,12 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	}
 
 	tree->tid = tcon.tconx.out.cnum;
-	tree->device = talloc_strdup(tree->mem_ctx, tcon.tconx.out.dev_type);
-	tree->fs_type = talloc_strdup(tree->mem_ctx, tcon.tconx.out.fs_type);
+	if (tcon.tconx.out.dev_type) {
+		tree->device = talloc_strdup(tree->mem_ctx, tcon.tconx.out.dev_type);
+	}
+	if (tcon.tconx.out.fs_type) {
+		tree->fs_type = talloc_strdup(tree->mem_ctx, tcon.tconx.out.fs_type);
+	}
 
 	talloc_destroy(mem_ctx);
 
