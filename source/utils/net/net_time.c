@@ -57,7 +57,7 @@ int net_time(struct net_context *ctx, int argc, const char **argv)
 	/* get the time */
 	status = libnet_RemoteTOD(libnetctx, ctx->mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("net_password_change: %s\n",r.generic.out.error_string));
+		DEBUG(0,("net_time: %s\n",r.generic.out.error_string));
 		return -1;
 	}
 
