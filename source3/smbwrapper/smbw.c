@@ -100,7 +100,7 @@ void smbw_init(void)
 	}
 	smbw_busy--;
 
-	set_maxfiles();
+	set_maxfiles(lp_max_open_files()+10);
 
 	errno = eno;
 }

@@ -351,7 +351,7 @@ char *sid_to_string(pstring sidstr_out, DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
-int set_maxfiles(void);
+int set_maxfiles(int requested_max);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
@@ -1189,7 +1189,7 @@ BOOL trust_password_unlock(void);
 BOOL trust_password_delete( char *domain, char *name );
 BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time);
 BOOL set_trust_account_password( unsigned char *md4_new_pwd);
-BOOL trust_get_passwd( unsigned char trust_passwd[16], char *myname, char *domain);
+BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *myname);
 
 /*The following definitions come from  printing/pcap.c  */
 
