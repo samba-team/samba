@@ -36,13 +36,6 @@ struct dcerpc_schannel_state {
 	char *account_name;
 };
 
-static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
-				    const char *domain,
-				    const char *username,
-				    const char *password,
-				    int chan_type,
-				    struct creds_CredentialState *creds);
-
 /*
   wrappers for the schannel_*() functions
 

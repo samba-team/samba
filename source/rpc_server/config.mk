@@ -32,15 +32,6 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 
 ################################################
-# Start SUBSYSTEM SCHANNELDB
-[SUBSYSTEM::SCHANNELDB]
-INIT_OBJ_FILES = \
-		rpc_server/netlogon/schannel_state.o
-#
-# End SUBSYSTEM SCHANNELDB
-################################################
-
-################################################
 # Start MODULE dcerpc_rpcecho
 [MODULE::dcerpc_rpcecho]
 INIT_FUNCTION = dcerpc_server_rpcecho_init
