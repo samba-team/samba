@@ -1,6 +1,6 @@
                   =============================
                   Release Notes for Samba 3.0.6
-                            Aug XX, 2004
+                            Aug 18, 2004
                   =============================
 
 This is the latest stable release of Samba. This is the version
@@ -92,6 +92,42 @@ to implement this restriction).
 ######################################################################
 Changes
 #######
+
+Changes since 3.0.6rc2
+----------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * Ensure we return the same ACL revision on the wire that 
+      W2K3 does.
+    * BUG 1578: Hardcode replacement for invalid characters as '_'
+      (based on fix from Alexander E. Patrakov <patrakov@ums.usu.ru>).
+    * Fix hashed password history for LDAP backends.
+    * Enforce logon hours restrictions if confiogured (based on code 
+      from Richard Renard <rrenard@idealx.com>).
+    * BUG 1606: Force smbd to disable sendfile with DOS clients 
+      and ensure that the chained header is filled in for ...&X 
+      commands.
+
+
+o   Steve French <sfrench@us.ibm.com>
+    o prevent infinite recusion in reopen_logs() when expanding 
+      the smb.conf variable %I.
+      
+
+o   Volker Lendecke <vl@samba.org>
+    o Improved NT->AFS ACL mapping VFS module.
+
+
+o   Lars Mueller <lmuelle@suse.de>
+    o Fix compiler warnings in the kerberos client code.
+    
+
+o   James Peach <jpeach@sgi.com>
+    * Prevent smbd from attempting to use sendfile at all if it is not
+      supported by the server's OS.
+    * Allow SWAT to search for index.html when searving html files 
+      in a directory.
+
 
 Changes since 3.0.5
 -------------------

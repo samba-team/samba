@@ -4320,6 +4320,11 @@ int lp_maxprintjobs(int snum)
 
 BOOL lp_use_sendfile(int snum)
 {
+	extern int Protocol;
+	/* Using sendfile blows the brains out of any DOS or Win9x TCP stack... JRA. */
+	if (Protocol < PROTOCOL_NT1) {
+		return False;
+	}
 	return (_lp_use_sendfile(snum) && (get_remote_arch() != RA_WIN95) && !srv_is_signing_active());
 }
 
