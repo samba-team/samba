@@ -336,7 +336,9 @@ static void send_fs_socket(char *service, char *mount_point, struct cli_state *c
 #ifndef SMBFS_DEBUG
 		/* Close all open files if we haven't done so yet. */
 		if (!closed) {
+			extern FILE *dbf;
 			closed = 1;
+			dbf = NULL;
 			close_our_files(c?c->fd:-1);
 		}
 #endif
