@@ -42,8 +42,8 @@ LIB_tgetent		= @LIB_tgetent@
 
 HESIODLIB = @HESIODLIB@
 HESIODINCLUDE = @HESIODINCLUDE@
-INCLUDE_hesoid = @INCLUDE_hesoid@
-LIB_hesoid = @LIB_hesoid@
+INCLUDE_hesiod = @INCLUDE_hesiod@
+LIB_hesiod = @LIB_hesiod@
 
 INCLUDE_krb4 = @INCLUDE_krb4@
 LIB_krb4 = @LIB_krb4@
