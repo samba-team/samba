@@ -1,3 +1,7 @@
+2004-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* make-proto.pl: add cpluscplus extern "C" support
+	
 2004-07-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pthreads.m4: add -pthread to LIBS since libtool doesn't preserve
