@@ -6,6 +6,8 @@ VPATH		= @srcdir@
 
 SHELL		= /bin/sh
 
+@SET_MAKE@
+
 CC = @CC@
 RANLIB = @RANLIB@
 DEFS = @DEFS@
