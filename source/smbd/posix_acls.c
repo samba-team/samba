@@ -1983,14 +1983,18 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		ace = file_ace;
 
 		for (i = 0; i < num_acls; i++, ace = ace->next) {
-			SEC_ACCESS acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+			SEC_ACCESS acc;
+
+			acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
 			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 0);
 		}
 
 		ace = dir_ace;
 
 		for (i = 0; i < num_dir_acls; i++, ace = ace->next) {
-			SEC_ACCESS acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+			SEC_ACCESS acc;
+
+			acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
 			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 
 					SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
 		}
