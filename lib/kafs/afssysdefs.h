@@ -13,7 +13,8 @@
 #endif
 
 #if defined(hpux)
-#define AFS_SYSCALL	49
+#define AFS_SYSCALL	50
+#define AFS_SYSCALL2	49
 #endif
 
 #if defined(_AIX)
