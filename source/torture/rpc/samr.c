@@ -3,6 +3,7 @@
    test suite for samr rpc operations
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +23,8 @@
 #include "includes.h"
 
 #define TEST_USERNAME "samrtorturetest"
+#define TEST_MACHINENAME "samrtorturetestmach$"
+#define TEST_DOMAINNAME "samrtorturetestdom$"
 
 static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			       struct policy_handle *handle);
@@ -181,9 +184,9 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_INT(2, country_code, 21, country_code, __LINE__);
 	TEST_USERINFO_INT(2, code_page, 21, code_page, __LINE__);
 
-	TEST_USERINFO_INT(4, logon_hours[3],  3, logon_hours[3], __LINE__);
-	TEST_USERINFO_INT(4, logon_hours[3],  5, logon_hours[3], __LINE__);
-	TEST_USERINFO_INT(4, logon_hours[3], 21, logon_hours[3], __LINE__);
+	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  3, logon_hours.bitmap[3], __LINE__);
+	TEST_USERINFO_INT(4, logon_hours.bitmap[3],  5, logon_hours.bitmap[3], __LINE__);
+	TEST_USERINFO_INT(4, logon_hours.bitmap[3], 21, logon_hours.bitmap[3], __LINE__);
 
 	TEST_USERINFO_INT(9, primary_gid,  1, primary_gid, 513);
 	TEST_USERINFO_INT(9, primary_gid,  3, primary_gid, 513);
@@ -288,9 +291,13 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_CreateUser r;
+	struct samr_QueryUserInfo q;
 	struct samr_DeleteUser d;
 	struct policy_handle acct_handle;
 	uint32 rid;
+
+	/* This call creates a 'normal' account - check that it really does */
+	const uint32 acct_flags = ACB_NORMAL;
 	struct samr_Name name;
 	BOOL ret = True;
 
@@ -323,6 +330,23 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 
+	q.in.handle = handle;
+	q.in.level = 16;
+
+	status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QueryUserInfo level %u failed - %s\n", 
+		       q.in.level, nt_errstr(status));
+		ret = False;
+	} else {
+		if (q.out.info->info16.acct_flags != acct_flags) {
+			printf("QuerUserInfo level 16 failed, it returned 0x%08x (%u) when we expected flags of 0x%08x (%u)\n",
+			       q.out.info->info16.acct_flags, q.out.info->info16.acct_flags, 
+			       acct_flags, acct_flags);
+			ret = False;
+		}
+	}
+
 	if (!test_user_ops(p, mem_ctx, &acct_handle)) {
 		ret = False;
 	}
@@ -336,6 +360,114 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("DeleteUser failed - %s\n", nt_errstr(status));
 		ret = False;
+	}
+
+	return ret;
+}
+
+static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				     struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_CreateUser2 r;
+	struct samr_QueryUserInfo q;
+	struct samr_DeleteUser d;
+	struct policy_handle acct_handle;
+	uint32 rid;
+	struct samr_Name name;
+	BOOL ret = True;
+	int i;
+
+	struct {
+		uint32 acct_flags;
+		const char *account_name;
+		NTSTATUS nt_status;
+	} account_types[] = {
+		{ ACB_NORMAL, TEST_USERNAME, NT_STATUS_OK },
+		{ ACB_NORMAL | ACB_DISABLED, TEST_USERNAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_NORMAL | ACB_PWNOEXP, TEST_USERNAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_WSTRUST, TEST_MACHINENAME, NT_STATUS_OK },
+		{ ACB_WSTRUST | ACB_DISABLED, TEST_MACHINENAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_WSTRUST | ACB_PWNOEXP, TEST_MACHINENAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_SVRTRUST, TEST_MACHINENAME, NT_STATUS_OK },
+		{ ACB_SVRTRUST | ACB_DISABLED, TEST_MACHINENAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_SVRTRUST | ACB_PWNOEXP, TEST_MACHINENAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_DOMTRUST, TEST_DOMAINNAME, NT_STATUS_OK },
+		{ ACB_DOMTRUST | ACB_DISABLED, TEST_DOMAINNAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_DOMTRUST | ACB_PWNOEXP, TEST_DOMAINNAME, NT_STATUS_INVALID_PARAMETER },
+		{ 0, TEST_USERNAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_DISABLED, TEST_USERNAME, NT_STATUS_INVALID_PARAMETER },
+		{ 0, NULL, NT_STATUS_INVALID_PARAMETER }
+	};
+
+	for (i = 0; account_types[i].account_name; i++) {
+		uint32 acct_flags = account_types[i].acct_flags;
+		uint32 access_granted;
+
+		init_samr_Name(&name, account_types[i].account_name);
+
+		r.in.handle = handle;
+		r.in.username = &name;
+		r.in.acct_flags = acct_flags;
+		r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+		r.out.acct_handle = &acct_handle;
+		r.out.access_granted = &access_granted;
+		r.out.rid = &rid;
+		
+		printf("Testing CreateUser2(%s)\n", r.in.username->name);
+		
+		status = dcerpc_samr_CreateUser2(p, mem_ctx, &r);
+		
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			printf("Server refused create of '%s'\n", r.in.username->name);
+			continue;
+
+		} else if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+			if (!test_DeleteUser_byname(p, mem_ctx, handle, r.in.username->name)) {
+				return False;
+			}
+			status = dcerpc_samr_CreateUser2(p, mem_ctx, &r);
+
+		}
+		if (!NT_STATUS_EQUAL(status, account_types[i].nt_status)) {
+			printf("CreateUser2 failed gave incorrect error return - %s (should be %s)\n", 
+			       nt_errstr(status), nt_errstr(account_types[i].nt_status));
+			ret = False;
+		}
+		
+		if (NT_STATUS_IS_OK(status)) {
+			q.in.handle = handle;
+			q.in.level = 16;
+			
+			status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("QueryUserInfo level %u failed - %s\n", 
+				       q.in.level, nt_errstr(status));
+				ret = False;
+			} else {
+				if (q.out.info->info16.acct_flags != acct_flags) {
+					printf("QuerUserInfo level 16 failed, it returned 0x%08xwhen we expected flags of 0x%08x\n",
+					       q.out.info->info16.acct_flags, 
+					       acct_flags);
+					ret = False;
+				}
+			}
+		
+			if (!test_user_ops(p, mem_ctx, &acct_handle)) {
+				ret = False;
+			}
+
+			printf("Testing DeleteUser\n");
+		
+			d.in.handle = &acct_handle;
+			d.out.handle = &acct_handle;
+			
+			status = dcerpc_samr_DeleteUser(p, mem_ctx, &d);
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("DeleteUser failed - %s\n", nt_errstr(status));
+				ret = False;
+			}
+		}
 	}
 
 	return ret;
@@ -749,6 +881,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_CreateUser(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
+	if (!test_CreateUser2(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
 

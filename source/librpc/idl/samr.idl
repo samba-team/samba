@@ -767,7 +767,17 @@
 
 	/************************/
 	/* Function    0x32     */
-	NTSTATUS samr_CREATE_USER2_IN_DOMAIN();
+	NTSTATUS samr_CreateUser2(
+	/************************/
+		[in,ref]      policy_handle *handle,
+		[in,ref]      samr_Name *username,
+		[in]          uint32 acct_flags,
+		[in]          uint32 access_mask,
+		[out,ref]     policy_handle *acct_handle,
+		[out,ref]     uint32 *access_granted,
+		[out,ref]     uint32 *rid
+		);
+
 
 	/************************/
 	/* Function    0x33     */
