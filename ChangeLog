@@ -1,3 +1,15 @@
+Sat Jul 12 16:38:34 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/test: new programs
+	
+	* lib/krb5/rd_req.c: add address compare
+
+	* lib/krb5/mk_req_ext.c: allow no checksum
+
+	* lib/krb5/keytab.c (krb5_kt_ret_string): 0-terminate string
+
+	* lib/krb5/address.c: fix `krb5_address_compare'
+
 Sat Jul 12 15:03:16 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/get_addrs.c: Fix ip4 address extraction.
