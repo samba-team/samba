@@ -38,7 +38,6 @@
 
 #include "krb5_locl.h"
 #ifdef KRB4
-#define extract_ticket v4_extract_ticket
 #include <krb.h>
 
 RCSID("$Id$");
