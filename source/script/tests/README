@@ -1,0 +1,4 @@
+This directory contains test scripts that are useful for running a
+bunch of tests all at once. I expect it will eventually be hooked into
+a "make test" framework.
+
