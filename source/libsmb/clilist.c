@@ -50,7 +50,7 @@ static int interpret_long_filename(struct cli_state *cli,
 			finfo->ctime = make_unix_date2(p+4);
 			finfo->atime = make_unix_date2(p+8);
 			finfo->mtime = make_unix_date2(p+12);
-			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,16);
+			finfo->size = IVAL(p,16);
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 26);
 			p += 27;
@@ -67,7 +67,7 @@ static int interpret_long_filename(struct cli_state *cli,
 			finfo->ctime = make_unix_date2(p+4);
 			finfo->atime = make_unix_date2(p+8);
 			finfo->mtime = make_unix_date2(p+12);
-			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,16);
+			finfo->size = IVAL(p,16);
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 30);
 			p += 31;
