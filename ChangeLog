@@ -1,3 +1,7 @@
+2003-11-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/asn1/der_copy.c (copy_oid): copy all components
+	
 2003-10-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/krb5.conf.5: document capaths section
