@@ -1555,11 +1555,26 @@ init_env()
 #ifndef	NEWINIT
 
 /*
- * start_login(host)
+ * scrub_env()
  *
- * Assuming that we are now running as a child processes, this
- * function will turn us into the login process.
+ * Remove a few things from the environment that
+ * don't need to be there.
  */
+
+static void scrub_env(void)
+{
+  char **cpp, **cpp2;
+  
+  for (cpp2 = cpp = environ; *cpp; cpp++) {
+    if (!strncmp(*cpp, "LD_", 3) &&
+	!strncmp(*cpp, "_RLD_", 5) &&
+	!strncmp(*cpp, "LIBPATH=", 8) &&
+	!strncmp(*cpp, "IFS=", 4))
+      *cpp2++ = *cpp;
+  }
+  *cpp2 = 0;
+}
+
 
 struct arg_val {
   int size;
@@ -1569,8 +1584,14 @@ struct arg_val {
 
 int addarg(struct arg_val*, char*);
 
-	void
-start_login(host, autologin, name)
+/*
+ * start_login(host)
+ *
+ * Assuming that we are now running as a child processes, this
+ * function will turn us into the login process.
+ */
+
+void start_login(host, autologin, name)
 	char *host;
 	int autologin;
 	char *name;
@@ -1612,6 +1633,8 @@ start_login(host, autologin, name)
 		fatal(net, "pututxline failed");
 #endif
 
+	scrub_env();
+	
 	/*
 	 * -h : pass on name of host.
 	 *		WARNING:  -h is accepted by login if and only if
@@ -1853,41 +1876,6 @@ int addarg(struct arg_val *argv, char *val)
   return 0;
 }
 
-#if 0 /* Ick!! */
-
-char **
-addarg(argv, val)
-	register char **argv;
-	register char *val;
-{
-	register char **cpp;
-
-	if (argv == NULL) {
-		/*
-		 * 10 entries, a leading length, and a null
-		 */
-		argv = (char **)malloc(sizeof(*argv) * 12);
-		if (argv == NULL)
-			return(NULL);
-		*argv++ = (char *)10;
-		*argv = (char *)0;
-	}
-	for (cpp = argv; *cpp; cpp++)
-		;
-	if (cpp == &argv[(int)argv[-1]]) {
-		--argv;
-		*argv = (char *)((int)(*argv) + 10);
-		argv = (char **)realloc(argv, sizeof(*argv)*((int)(*argv) + 2));
-		if (argv == NULL)
-			return(NULL);
-		argv++;
-		cpp = &argv[(int)argv[-1] - 10];
-	}
-	*cpp++ = val;
-	*cpp = 0;
-	return(argv);
-}
-#endif /* 0 */
 
 #endif	/* NEWINIT */
 
