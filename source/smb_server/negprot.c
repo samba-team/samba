@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "asn_1.h"
 #include "smb_server/smb_server.h"
 
 
@@ -325,7 +324,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 			return;
 		}
 
-		nt_status = gensec_start_mech_by_oid(gensec_security, OID_SPNEGO);
+		nt_status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_SPNEGO);
 		
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("Failed to start SPNEGO: %s\n", nt_errstr(nt_status)));

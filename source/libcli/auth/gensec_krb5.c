@@ -29,7 +29,6 @@
 #include "libcli/auth/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "auth/auth.h"
-#include "asn_1.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -754,7 +753,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.name		= "krb5",
 	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
-	.oid            = OID_KERBEROS5,
+	.oid            = GENSEC_OID_KERBEROS5,
 	.client_start   = gensec_krb5_client_start,
 	.server_start   = gensec_krb5_server_start,
 	.update 	= gensec_krb5_update,
@@ -766,7 +765,7 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 static const struct gensec_security_ops gensec_ms_krb5_security_ops = {
 	.name		= "ms_krb5",
 	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
-	.oid            = OID_KERBEROS5_OLD,
+	.oid            = GENSEC_OID_KERBEROS5_OLD,
 	.client_start   = gensec_krb5_client_start,
 	.server_start   = gensec_krb5_server_start,
 	.update 	= gensec_krb5_update,

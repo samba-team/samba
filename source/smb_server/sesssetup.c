@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "asn_1.h"
 #include "smb_server/smb_server.h"
 
 
@@ -241,7 +240,7 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 
 		gensec_want_feature(gensec_ctx, GENSEC_WANT_SESSION_KEY);
 
-		status = gensec_start_mech_by_oid(gensec_ctx, OID_SPNEGO);
+		status = gensec_start_mech_by_oid(gensec_ctx, GENSEC_OID_SPNEGO);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC SPNEGO server code: %s\n", nt_errstr(status)));
 			return status;

@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "asn_1.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -218,7 +217,7 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 		if (!all_ops[i]->oid) {
 			continue;
 		}
-		if (strcasecmp(OID_SPNEGO,all_ops[i]->oid) == 0) {
+		if (strcasecmp(GENSEC_OID_SPNEGO,all_ops[i]->oid) == 0) {
 			continue;
 		}
 
@@ -311,7 +310,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 	const char **mechTypes = NULL;
 	DATA_BLOB unwrapped_out = data_blob(NULL,0);
 
-	mechTypes = gensec_security_oids(out_mem_ctx, OID_SPNEGO);
+	mechTypes = gensec_security_oids(out_mem_ctx, GENSEC_OID_SPNEGO);
 
 	if (!mechTypes) {
 		DEBUG(1, ("no GENSEC OID backends available\n"));
@@ -467,7 +466,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			
 			return nt_status;
 		} else {
-			const char **mechlist = gensec_security_oids(out_mem_ctx, OID_SPNEGO);
+			const char **mechlist = gensec_security_oids(out_mem_ctx, GENSEC_OID_SPNEGO);
 			const char *mechListMIC;
 
 			mechListMIC = talloc_asprintf(out_mem_ctx,"%s$@%s",
@@ -712,7 +711,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.name		= "spnego",
 	.sasl_name	= "GSS-SPNEGO",
 	.auth_type	= DCERPC_AUTH_TYPE_SPNEGO,
-	.oid            = OID_SPNEGO,
+	.oid            = GENSEC_OID_SPNEGO,
 	.client_start   = gensec_spnego_client_start,
 	.server_start   = gensec_spnego_server_start,
 	.update 	= gensec_spnego_update,

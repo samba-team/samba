@@ -27,7 +27,6 @@
 #include "system/passwd.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
-#include "asn_1.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -377,7 +376,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		switch (stdio_helper_mode) {
 		case GSS_SPNEGO_CLIENT:
 		case GSS_SPNEGO_SERVER:
-			nt_status = gensec_start_mech_by_oid(*gensec_state, OID_SPNEGO);
+			nt_status = gensec_start_mech_by_oid(*gensec_state, GENSEC_OID_SPNEGO);
 			if (!in.length) {
 				first = True;
 			}
@@ -387,7 +386,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 				first = True;
 			}
 		case SQUID_2_5_NTLMSSP:
-			nt_status = gensec_start_mech_by_oid(*gensec_state, OID_NTLMSSP);
+			nt_status = gensec_start_mech_by_oid(*gensec_state, GENSEC_OID_NTLMSSP);
 			break;
 		default:
 			abort();

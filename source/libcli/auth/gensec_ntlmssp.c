@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "auth/auth.h"
-#include "asn_1.h"
 
 struct gensec_ntlmssp_state {
 	struct auth_context *auth_context;
@@ -401,7 +400,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.name		= "ntlmssp",
 	.sasl_name	= "NTLM",
 	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
-	.oid            = OID_NTLMSSP,
+	.oid            = GENSEC_OID_NTLMSSP,
 	.client_start   = gensec_ntlmssp_client_start,
 	.server_start   = gensec_ntlmssp_server_start,
 	.update 	= gensec_ntlmssp_update,

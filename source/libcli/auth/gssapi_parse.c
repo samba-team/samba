@@ -24,6 +24,9 @@
 
 #include "includes.h"
 #include "asn_1.h"
+#include "system/kerberos.h"
+#include "libcli/auth/kerberos.h"
+#include "libcli/auth/gensec.h"
 
 /*
   generate a krb5 GSS-API wrapper packet given a ticket
@@ -36,7 +39,7 @@ DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *tick
 	ZERO_STRUCT(data);
 
 	asn1_push_tag(&data, ASN1_APPLICATION(0));
-	asn1_write_OID(&data, OID_KERBEROS5);
+	asn1_write_OID(&data, GENSEC_OID_KERBEROS5);
 
 	asn1_write(&data, tok_id, 2);
 	asn1_write(&data, ticket->data, ticket->length);
@@ -64,7 +67,7 @@ BOOL gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, D
 
 	asn1_load(&data, *blob);
 	asn1_start_tag(&data, ASN1_APPLICATION(0));
-	asn1_check_OID(&data, OID_KERBEROS5);
+	asn1_check_OID(&data, GENSEC_OID_KERBEROS5);
 
 	data_remaining = asn1_tag_remaining(&data);
 
