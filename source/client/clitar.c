@@ -71,6 +71,7 @@ stack dir_stack = {NULL, 0}; /* Want an empty stack */
 #define SEPARATORS " \t\n\r"
 extern int DEBUGLEVEL;
 extern struct cli_state *cli;
+extern FILE *dbf;
 
 /* These defines are for the do_setrattr routine, to indicate
  * setting and reseting of file attributes in the function call */
@@ -848,6 +849,7 @@ static void do_tar(file_info *finfo)
       ntarf++;  /* Make sure we have a file on there */
       safe_strcpy(mtar_mask,cur_dir, sizeof(pstring));
       safe_strcat(mtar_mask,"*", sizeof(pstring));
+      DEBUG(5, ("Doing list with mtar_mask: %s\n", mtar_mask));
       do_list(mtar_mask, attribute, do_tar, False, True);
       safe_strcpy(cur_dir,saved_curdir, sizeof(pstring));
     }
@@ -1461,17 +1463,20 @@ int process_tar(void)
 	  safe_strcpy(cur_dir, tarmac, sizeof(pstring));
 	  *(strrchr(cur_dir, '\\')+1)='\0';
 
+	  DEBUG(5, ("process_tar, do_list with tarmac: %s\n", tarmac));
 	  do_list(tarmac,attribute,do_tar, False, True);
 	  safe_strcpy(cur_dir,saved_dir, sizeof(pstring));
 	} else {
 	  safe_strcpy(tarmac, cur_dir, sizeof(pstring));
 	  safe_strcat(tarmac, cliplist[i], sizeof(pstring));
+	  DEBUG(5, ("process_tar, do_list with tarmac: %s\n", tarmac));
 	  do_list(tarmac,attribute,do_tar, False, True);
 	}
       }
     } else {
       pstring mask;
       safe_strcpy(mask,cur_dir, sizeof(pstring));
+      DEBUG(5, ("process_tar, do_list with mask: $s\n", mask));
       safe_strcat(mask,"\\*", sizeof(pstring));
       do_list(mask,attribute,do_tar,False, True);
     }
@@ -1814,6 +1819,12 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
   if (Optind>=argc || !strcmp(argv[Optind], "-")) {
     /* Sets tar handle to either 0 or 1, as appropriate */
     tarhandle=(tar_type=='c');
+    /*
+     * Make sure that dbf points to stderr if we are using stdout for 
+     * tar output
+    */
+    if (tarhandle == 1) 
+      dbf = stderr;
   } else {
     if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0))
       {
