@@ -168,7 +168,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
 
         /* Initialise session credentials */
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup_dos(), trust_passwd, NULL)) {
+	if (!secrets_fetch_trust_account_password(lp_workgroup_unix(), trust_passwd, NULL)) {
 		fprintf(stderr, "could not fetch trust account password\n");
 		goto done;
 	}        
@@ -230,7 +230,7 @@ static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli,
 
         /* Initialise session credentials */
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup_dos(), trust_passwd, NULL)) {
+	if (!secrets_fetch_trust_account_password(lp_workgroup_unix(), trust_passwd, NULL)) {
 		fprintf(stderr, "could not fetch trust account password\n");
 		goto done;
 	}        
@@ -291,7 +291,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
                 return result;
         }
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup_dos(), trust_passwd, NULL)) {
+	if (!secrets_fetch_trust_account_password(lp_workgroup_unix(), trust_passwd, NULL)) {
 		fprintf(stderr, "could not fetch trust account password\n");
 		goto done;
 	}        

@@ -4392,7 +4392,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 
 		/* Change sd owner to workgroup administrator */
 
-		if (winbind_lookup_name(NULL, lp_workgroup_dos(), &owner_sid,
+		if (winbind_lookup_name(NULL, lp_workgroup_unix(), &owner_sid,
 					&name_type)) {
 			SEC_DESC_BUF *new_secdesc_ctr = NULL;
 			SEC_DESC *psd = NULL;

@@ -1218,7 +1218,7 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 	pdb_set_acct_ctrl (sam_pass, pw_buf->acct_ctrl);
 	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time);
 	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time);
-	pdb_set_domain (sam_pass, lp_workgroup_dos());
+	pdb_set_domain (sam_pass, lp_workgroup_unix());
 	
 	pdb_set_dir_drive     (sam_pass, lp_logon_drive(), False);
 
@@ -1355,7 +1355,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, char *username)
 	
 	/* if a domain was specified and it wasn't ours
 	   then there is no chance of matching */
-	if ( domain && !StrCaseCmp(domain, lp_workgroup_dos()) )
+	if ( domain && !strequal_unix(domain, lp_workgroup_unix()) )
 		return False;
 
 	/* startsmbfilepwent() is used here as we don't want to lookup
