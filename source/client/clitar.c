@@ -729,6 +729,17 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 		      break;
 	      }
 	      
+		  nread += datalen;
+
+		  /* if file size has increased since we made file size query, truncate
+			read so tar header for this file will be correct.
+		   */
+
+		  if (nread > finfo.size) {
+			datalen -= nread - finfo.size;
+			DEBUG(0,("File size change - truncating %s to %d bytes\n", finfo.name, (int)finfo.size));
+		  }
+
 	      /* add received bits of file to buffer - dotarbuf will
 	       * write out in 512 byte intervals */
 	      if (dotarbuf(tarhandle,data,datalen) != datalen) {
@@ -736,7 +747,6 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 		      break;
 	      }
 	      
-	      nread += datalen;
 	      if (datalen == 0) {
 		      DEBUG(0,("Error reading file %s. Got 0 bytes\n", rname));
 		      break;
