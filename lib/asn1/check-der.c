@@ -154,10 +154,11 @@ test_integer (void)
 	{NULL, 4, "\x02\x02\x00\x80"},
 	{NULL, 4, "\x02\x02\x01\x00"},
 	{NULL, 3, "\x02\x01\x80"},
-	{NULL, 4, "\x02\x02\xff\x7f"}
+	{NULL, 4, "\x02\x02\xff\x7f"},
+	{NULL, 3, "\x02\x01\xff"}
     };
 
-    int values[] = {0, 127, 128, 256, -128, -129};
+    int values[] = {0, 127, 128, 256, -128, -129, -1};
     int i;
     int ntests = sizeof(tests) / sizeof(*tests);
 
