@@ -116,7 +116,7 @@ SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script
 
 QUOTAOBJS=@QUOTAOBJS@
 
-MODULES = bin/vfs_audit.so bin/vfs_recycle.so bin/vfs_netatalk.so @MODULE_PDB_MYSQL@ @MODULE_PDB_XML@
+MODULES = bin/vfs_audit.so bin/vfs_recycle.so bin/vfs_netatalk.so bin/developer.so @MODULE_PDB_MYSQL@ @MODULE_PDB_XML@
 
 ######################################################################
 # object file lists
@@ -984,7 +984,7 @@ TOPFILES=dynconfig.o dynconfig.po
 
 clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
-		$(TOPFILES) $(PROGS) $(SPROGS) .headers.stamp
+		$(TOPFILES) $(PROGS) $(SPROGS) $(MODULES) .headers.stamp
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
@@ -1061,7 +1061,7 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean delheaders
-	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy script/findsmb
+	-rm -f config.log $(PROGS) $(MODULES) $(SPROGS) bin/.dummy script/findsmb
 
 distclean: realclean
 	-rm -f include/stamp-h
