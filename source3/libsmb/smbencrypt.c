@@ -223,20 +223,6 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 #endif
 }
 
-#if 0
-static char np_cli_chal[58] = 
-{
-	0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xf0, 0x20, 0xd0, 0xb6, 0xc2, 0x92, 0xBE, 0x01,
-	0x05, 0x83, 0x32, 0xec, 0xfa, 0xe4, 0xf3, 0x6d,
-	0x6f, 0x00, 0x6e, 0x00, 0x02, 0x00, 0x12, 0x00,
-	0x52, 0x00, 0x4f, 0x00, 0x43, 0x00, 0x4b, 0x00,
-	0x4e, 0x00, 0x52, 0x00, 0x4f, 0x00, 0x4c, 0x00,
-	0x4c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65, 0x00,
-	0x00, 0x00
-};
-#endif
-
 void SMBgenclientchals(char *lm_cli_chal,
 				char *nt_cli_chal, int *nt_cli_chal_len,
 				const char *srv, const char *dom)
@@ -315,58 +301,6 @@ void ntv2_owf_gen(const uchar owf[16],
 	dump_data(100, kr_buf, 16);
 #endif
 }
-
-#if 0
-static void main()
-{
-	char *kr;
-	int kr_len;
-	char *cli_chal;
-	int cli_chal_len;
-	char *resp;
-	int resp_len;
-	char *k_x;
-	int k_x_len;
-
-	char k_u[16];
-	int k_u_len = sizeof(k_u);
-
-	char sesk[16];
-	int sesk_len;
-
-	char buf[1024];
-
-	int flgs = NTLMSSP_NP | NTLMSSP_N2;
-
-	gen_client_chal(flgs, "BROOKFIELDS1", "TEST1", &cli_chal, &cli_chal_len);
-	gen_owf(flgs, "test", "ADMINISTRATOR", "BROOKFIELDS1", &kr, &kr_len);
-	gen_resp(flgs, kr, kr_len, srv_chal, 8, cli_chal, cli_chal_len,
-				&resp, &resp_len);
-
-	gen_sesskey(flgs, kr, kr_len, resp, resp_len, &k_x, &k_x_len);
-
-	printf("lm_resp:\n"); dump_data(lm_resp, 16); printf("\n");
-	printf("np_resp:\n"); dump_data(np_resp, 16); printf("\n");
-	printf("resp:\n"); dump_data(resp, 16); printf("\n");
-
-#if 0
-	printf("np_sesk:\n"); dump_data(np_sess_key, 16); printf("\n");
-	if (flgs & NTLMSSP_NP)
-	{
-		oem_hash(k_x, k_x_len, k_u, np_sess_key, k_u_len);
-		sesk_len = k_u_len;
-	}
-	else
-	{
-		memcpy(sesk, k_x, k_x_len);
-		sesk_len = k_x_len;
-	}
-
-	oem_hash(sesk, sesk_len, buf, cli_req, sizeof(cli_req));
-	printf("cli_req:\n"); dump_data(buf, sizeof(cli_req)); printf("\n");
-#endif
-}
-#endif
 
 /* Does the des encryption from the FIRST 8 BYTES of the NT or LM MD4 hash. */
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24])
