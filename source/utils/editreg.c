@@ -2983,7 +2983,7 @@ REGF_HDR *nt_get_reg_header(REGF *regf)
 int nt_store_registry(REGF *regf)
 {
   REGF_HDR *reg;
-  int fkey;
+  int fkey, fd;
 
   /*
    * Get a header ... and partially fill it in ...
@@ -2991,9 +2991,25 @@ int nt_store_registry(REGF *regf)
   reg = nt_get_reg_header(regf);
 
   /*
-   * Store the first key
+   * Store the first key, which will store the whole thing
    */
   fkey = nt_store_reg_key(regf, regf->root);
+
+  /*
+   * At this point we have the registry as a series of blocks, so
+   * run down that series of blocks and save them ...
+   */
+
+  if (!regf->outfile_name) {
+    fprintf(stderr, "Cannot write file without a name!\n");
+    return 0;
+  }
+
+  if ((fd = open(regf->outfile_name, O_WRONLY, 0666)) < 0) {
+    fprintf(stderr, "Unable to create file %s: %s\n", regf->outfile_name,
+	    strerror(errno));
+    return 0;
+  }
 
   return 1;
 }
@@ -3870,7 +3886,7 @@ int main(int argc, char *argv[])
   extern int optind;
   int opt, print_keys = 0;
   int regf_opt = 1; /* Command name */
-  int commands = 0;
+  int commands = 0, modified = 0;
   char *cmd_file_name = NULL;
   char *out_file_name = NULL;
   CMD_FILE *cmd_file = NULL;
@@ -4001,11 +4017,9 @@ int main(int argc, char *argv[])
 
 	/* If we found it, apply the other bits, else create such a key */
 
-	if (!tmp)
+	if (!tmp) {
 	  tmp = nt_add_reg_key(regf, cmd->key, True);
-
-	if (tmp) {
-
+	  modified = 1;
 	}
 
 	while (cmd->val_count) {
@@ -4015,10 +4029,12 @@ int main(int argc, char *argv[])
 	  if (val->type == REG_TYPE_DELETE) {
 	    reg_val = nt_delete_reg_value(tmp, val -> name);
 	    if (reg_val) nt_delete_val_key(reg_val);
+	    modified = 1;
 	  }
 	  else {
 	    reg_val = nt_add_reg_value(tmp, val->name, val->type, 
 				       val->val);
+	    modified = 1;
 	  }
 
 	  cmd->val_spec_list = val->next;
@@ -4036,6 +4052,7 @@ int main(int argc, char *argv[])
 	 */
 	
 	nt_delete_key_by_name(regf, cmd->key);
+	modified = 1;
 	break;
       }
     }
@@ -4050,6 +4067,14 @@ int main(int argc, char *argv[])
   if (print_keys) {
     nt_key_iterator(regf, regf->root, 0, "", print_key, print_sec, print_val);
   }
+
+  /*
+   * If there was an out_file_name and the tree was modified, print it
+   */
+  if (modified && out_file_name) 
+    if (!nt_store_registry(regf)) {
+      fprintf(stdout, "Error storing registry\n");
+    }
 
   return 0;
 }
