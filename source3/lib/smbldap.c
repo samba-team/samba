@@ -548,7 +548,7 @@ static int smbldap_open_connection (struct smbldap_state *ldap_state)
 			p += 4;
 		}
 		
-		sscanf(p, "%10[^:]://%254s[^:]:%d", protocol, host, &port);
+		sscanf(p, "%10[^:]://%254[^:/]:%d", protocol, host, &port);
 		
 		if (port == 0) {
 			if (strequal(protocol, "ldap")) {
