@@ -135,6 +135,30 @@ krb5_checksum_free(krb5_context context, krb5_checksum *cksum)
     free_Checksum(cksum);
 }
 
+krb5_boolean
+krb5_c_valid_enctype (krb5_enctype etype)
+{
+    return krb5_enctype_valid(NULL, etype);
+}
+
+krb5_boolean
+krb5_c_valid_cksumtype(krb5_cksumtype ctype)
+{
+    return krb5_cksumtype_valid(NULL, ctype);
+}
+
+krb5_boolean
+krb5_c_is_coll_proof_cksum(krb5_cksumtype ctype)
+{
+    return krb5_checksum_is_collision_proof(NULL, ctype);
+}
+
+krb5_boolean
+krb5_c_is_keyed_cksum(krb5_cksumtype ctype)
+{
+    return krb5_checksum_is_keyed(NULL, ctype);
+}
+
 krb5_error_code
 krb5_copy_checksum (krb5_context context,
 		    const krb5_checksum *old,
