@@ -376,6 +376,13 @@ change_password (krb5_context context,
 	      krb5_get_err_text(context, ret));
 
 
+    ret = krb5_auth_con_init (context, &auth_context);
+    if (ret)
+	errx (1, "krb5_auth_con_init: %s",
+	      krb5_get_err_text (context, ret));
+
+    krb5_auth_con_setflags (context, auth_context,
+			    KRB5_AUTH_CONTEXT_DO_SEQUENCE);
 
     for (i = 0; i < 5; ++i) {
 	struct fd_set fdset;
