@@ -27,6 +27,8 @@ typedef struct dirent	DIRENTRY;
 typedef struct direct	DIRENTRY;
 #endif
 
+#include <roken.h>
+
 #if	!defined(S_ISDIR)
 #define S_ISDIR(m)		(((m) & S_IFMT) == S_IFDIR)
 #endif	/* !defined(S_ISDIR) */
