@@ -188,6 +188,11 @@ enum ndr_err_code {
 	} \
 } while(0)
 
+#define NDR_SIZE_ALIGN(t, n, flags) ((flags & LIBNDR_FLAG_NOALIGN)?(t):(((t) + (n-1)) & ~(n-1)))
+#define ndr_size_uint8(t, p, flags) (NDR_SIZE_ALIGN(t, 1, flags) + 1)
+#define ndr_size_uint16(t, p, flags) (NDR_SIZE_ALIGN(t, 2, flags) + 2)
+#define ndr_size_uint32(t, p, flags) (NDR_SIZE_ALIGN(t, 4, flags) + 4)
+#define ndr_size_ptr(t, p, flags) (NDR_SIZE_ALIGN(t, 4, flags) + 4)
 
 /* these are used to make the error checking on each element in libndr
    less tedious, hopefully making the code more readable */
