@@ -117,6 +117,25 @@ WERROR reg_open(const char *backend, const char *location, const char *credentia
 	return werr;
 }
 
+WERROR reg_open_key_abs(REG_HANDLE *handle, const char *name, REG_KEY **result)
+{
+	REG_KEY *hive;
+	WERROR error;
+	int i, hivelength;
+
+	if(strchr(name, '\\')) hivelength = strchr(name, '\\')-name;
+	else hivelength = strlen(name);
+
+	for(i = 0; W_ERROR_IS_OK(error); i++) {
+		error = reg_get_hive(handle, i, &hive);
+		if(W_ERROR_IS_OK(error) && !strncmp(reg_key_name(hive), name, hivelength)) {
+			return reg_open_key(hive, name, result);
+		}
+	}
+
+	return error;
+}
+
 /* Open a key 
  * First tries to use the open_key function from the backend
  * then falls back to get_subkey_by_name and later get_subkey_by_index 
@@ -166,7 +185,7 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 		return WERR_NOT_SUPPORTED;
 	}
 
-	error = parent->handle->functions->open_key(parent->handle, fullname, result);
+	error = parent->handle->functions->open_key(parent->handle, parent->hive, fullname, result);
 
 	if(!W_ERROR_IS_OK(error)) {
 		talloc_destroy(mem_ctx);
@@ -175,6 +194,7 @@ WERROR reg_open_key(REG_KEY *parent, const char *name, REG_KEY **result)
 		
 	(*result)->handle = parent->handle;
 	(*result)->path = fullname;
+	(*result)->hive = parent->hive;
 	talloc_steal(mem_ctx, (*result)->mem_ctx, fullname);
 
 	talloc_destroy(mem_ctx);
@@ -285,6 +305,7 @@ WERROR reg_key_get_subkey_by_index(REG_KEY *key, int idx, REG_KEY **subkey)
 
 	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", (*subkey)->name);
 	(*subkey)->handle = key->handle;
+	(*subkey)->hive = key->hive;
 
 
 	return WERR_OK;;
@@ -315,6 +336,7 @@ WERROR reg_key_get_subkey_by_name(REG_KEY *key, const char *name, REG_KEY **subk
 
 	(*subkey)->path = talloc_asprintf((*subkey)->mem_ctx, "%s%s%s", key->path, key->path[strlen(key->path)-1] == '\\'?"":"\\", (*subkey)->name);
 	(*subkey)->handle = key->handle;
+	(*subkey)->hive = key->hive;
 
 	return WERR_OK; 
 }
@@ -427,6 +449,25 @@ WERROR reg_val_del(REG_VAL *val)
 	return WERR_OK;
 }
 
+WERROR reg_key_add_name_recursive_abs(REG_HANDLE *handle, const char *name)
+{
+	REG_KEY *hive;
+	WERROR error;
+	int i, hivelength;
+
+	if(strchr(name, '\\')) hivelength = strchr(name, '\\')-name;
+	else hivelength = strlen(name);
+
+	for(i = 0; W_ERROR_IS_OK(error); i++) {
+		error = reg_get_hive(handle, i, &hive);
+		if(W_ERROR_IS_OK(error) && !strncmp(reg_key_name(hive), name, hivelength)) {
+			return reg_key_add_name_recursive(hive, name);
+		}
+	}
+
+	return error;
+}
+
 WERROR reg_key_add_name_recursive(REG_KEY *parent, const char *path)
 {
 	REG_KEY *cur, *prevcur = parent;
@@ -516,21 +557,26 @@ void reg_free(REG_HANDLE *h)
 	h->functions->close_registry(h);
 }
 
-WERROR reg_get_root(REG_HANDLE *h, REG_KEY **key) 
+WERROR reg_get_hive(REG_HANDLE *h, int hivenum, REG_KEY **key) 
 {
 	WERROR ret;
-	if(h->functions->open_root_key) {
-		ret = h->functions->open_root_key(h, key);
+	
+	if(h->functions->get_hive) {
+		ret = h->functions->get_hive(h, hivenum, key);
 	} else if(h->functions->open_key) {
-		ret = h->functions->open_key(h, "\\", key);
+		if(hivenum == 0) ret = h->functions->open_key(h, hivenum, "", key);
+		else ret = WERR_NO_MORE_ITEMS;
 	} else {
-		DEBUG(0, ("Backend '%s' has neither open_root_key nor open_key method implemented\n", h->functions->name));
+		DEBUG(0, ("Backend '%s' has neither open_root_key nor open_key or get_hive method implemented\n", h->functions->name));
 		ret = WERR_NOT_SUPPORTED;
 	}
 
 	if(W_ERROR_IS_OK(ret)) {
 		(*key)->handle = h;
-		(*key)->path = talloc_strdup((*key)->mem_ctx, "\\");
+		if(!(*key)->path) {
+			(*key)->path = talloc_strdup((*key)->mem_ctx, (*key)->name);
+		}
+		(*key)->hive = hivenum;
 	}
 
 	return ret;
@@ -565,7 +611,7 @@ WERROR reg_key_get_parent(REG_KEY *key, REG_KEY **parent)
 	REG_KEY *root;
 	WERROR error;
 
-	error = reg_get_root(key->handle, &root);
+	error = reg_get_hive(key->handle, key->hive, &root);
 	if(!W_ERROR_IS_OK(error)) return error;
 
 	parent_name = strdup(reg_key_get_path(key));
