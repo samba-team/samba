@@ -444,7 +444,7 @@ main(int argc, char **argv)
 
 	if (ret == 0) {
 	    old_version = current_version;
-	    kadm5_log_get_version (log_fd, &current_version);
+	    kadm5_log_get_version_fd (log_fd, &current_version);
 
 	    if (current_version > old_version)
 		for (p = slaves; p != NULL; p = p->next)
@@ -462,7 +462,7 @@ main(int argc, char **argv)
 	    }
 	    --ret;
 	    old_version = current_version;
-	    kadm5_log_get_version (log_fd, &current_version);
+	    kadm5_log_get_version_fd (log_fd, &current_version);
 	    for (p = slaves; p != NULL; p = p->next)
 		send_diffs (context, p, log_fd, database, current_version);
 	}
