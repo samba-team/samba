@@ -58,13 +58,13 @@ struct in_addr *lookup_backend(const char *name, int *count)
 
 	p = lp_wins_server();
 	if (p && *p) {
-		ret = name_query(fd,name,0x20,False,True, *interpret_addr2(p), count,NULL);
+		ret = name_query(fd,name,0x20,False,True, *interpret_addr2(p), count);
 		goto out;
 	}
 
 	if (lp_wins_support()) {
 		/* we are our own WINS server */
-		ret = name_query(fd,name,0x20,False,True, *interpret_addr2("127.0.0.1"), count,NULL);
+		ret = name_query(fd,name,0x20,False,True, *interpret_addr2("127.0.0.1"), count);
 		goto out;
 	}
 
@@ -73,7 +73,7 @@ struct in_addr *lookup_backend(const char *name, int *count)
 	     j >= 0;
 	     j--) {
 		struct in_addr *bcast = iface_n_bcast(j);
-		ret = name_query(fd,name,0x20,True,True,*bcast,count,NULL);
+		ret = name_query(fd,name,0x20,True,True,*bcast,count);
 		if (ret) break;
 	}
 
