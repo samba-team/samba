@@ -120,8 +120,8 @@ NTSTATUS ndr_pull_guid(struct ndr_pull *ndr, GUID *guid)
 #define NDR_PUSH_NEED_BYTES(ndr, n) NDR_CHECK(ndr_push_expand(ndr, ndr->offset+(n)))
 
 #define NDR_PUSH_ALIGN(ndr, n) do { \
-	ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
-	NDR_CHECK(ndr_push_expand(ndr, ndr->offset)); \
+	uint32 _pad = (ndr->offset & (n-1)); \
+	while (_pad--) NDR_CHECK(ndr_push_u8(ndr, 0)); \
 } while(0)
 
 /*
