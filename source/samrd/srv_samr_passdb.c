@@ -435,9 +435,7 @@ uint32 _samr_add_groupmem(POLICY_HND *pol, uint32 rid, uint32 unknown)
 		{
 			DEBUG(10,("lookup on Domain SID\n"));
 
-			become_root(True);
 			status = add_group_member(group_rid, rid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-			unbecome_root(True);
 		}
 		else
 		{
@@ -448,20 +446,19 @@ uint32 _samr_add_groupmem(POLICY_HND *pol, uint32 rid, uint32 unknown)
 	return status;
 }
 
-#if 0
 /*******************************************************************
  samr_reply_del_groupmem
  ********************************************************************/
-uint32 _samr_del_groupmem(POLICY_HND *group_pol, uint32 rid)
+uint32 _samr_del_groupmem(POLICY_HND *pol, uint32 rid)
 {
 	DOM_SID group_sid;
 	uint32 group_rid;
 	fstring group_sid_str;
 
-	status = 0x0;
+	uint32 status = 0x0;
 
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &pol, &group_sid))
+	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), pol, &group_sid))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -479,9 +476,7 @@ uint32 _samr_del_groupmem(POLICY_HND *group_pol, uint32 rid)
 		{
 			DEBUG(10,("lookup on Domain SID\n"));
 
-			become_root(True);
 			status = del_group_member(group_rid, rid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-			unbecome_root(True);
 		}
 		else
 		{
@@ -489,12 +484,10 @@ uint32 _samr_del_groupmem(POLICY_HND *group_pol, uint32 rid)
 		}
 	}
 
-	/* store the response in the SMB stream */
-	samr_io_r_del_groupmem("", &r_e, rdata, 0);
-
-	DEBUG(5,("samr_del_groupmem: %d\n", __LINE__));
+	return status;
 }
 
+#if 0
 /*******************************************************************
  samr_reply_add_aliasmem
  ********************************************************************/
@@ -527,17 +520,13 @@ uint32 _samr_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u,
 		{
 			DEBUG(10,("add member on Domain SID\n"));
 
-			become_root(True);
 			status = add_alias_member(alias_rid, &sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-			unbecome_root(True);
 		}
 		else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
 		{
 			DEBUG(10,("add member on BUILTIN SID\n"));
 
-			become_root(True);
 			status = add_builtin_member(alias_rid, &sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-			unbecome_root(True);
 		}
 		else
 		{
@@ -583,17 +572,13 @@ uint32 _samr_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u,
 		{
 			DEBUG(10,("del member on Domain SID\n"));
 
-			become_root(True);
 			status = del_alias_member(alias_rid, &sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-			unbecome_root(True);
 		}
 		else if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
 		{
 			DEBUG(10,("del member on BUILTIN SID\n"));
 
-			become_root(True);
 			status = del_builtin_member(alias_rid, &sid.sid) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-			unbecome_root(True);
 		}
 		else
 		{
@@ -1007,9 +992,7 @@ uint32 _samr_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_u,
 		{
 			DEBUG(10,("lookup on Domain SID\n"));
 
-			become_root(True);
 			status = del_group_entry(group_rid) ? 0x0 : (0xC0000000 | NT_STATUS_NO_SUCH_GROUP);
-			unbecome_root(True);
 		}
 		else
 		{
@@ -1341,9 +1324,7 @@ uint32 _samr_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u,
 		{
 			DEBUG(10,("lookup on Domain SID\n"));
 
-			become_root(True);
 			status = del_alias_entry(alias_rid) ? 0x0 : (0xC0000000 | NT_STATUS_NO_SUCH_ALIAS);
-			unbecome_root(True);
 		}
 		else
 		{
@@ -2265,9 +2246,7 @@ uint32 _samr_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u,
 		fstrcpy(grp.comment, "");
 		grp.rid = 0xffffffff;
 
-		become_root(True);
 		status = add_alias_entry(&grp) ? 0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-		unbecome_root(True);
 	}
 
 	if (status == 0x0)
@@ -2367,9 +2346,7 @@ uint32 _samr_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_u,
 		grp.rid = 0xffffffff;
 		grp.attr = 0x07;
 
-		become_root(True);
 		status = add_group_entry(&grp) ? 0x0 : (0xC0000000 | NT_STATUS_ACCESS_DENIED);
-		unbecome_root(True);
 	}
 
 	if (status == 0x0)
