@@ -50,13 +50,13 @@ RCSID("$Id$");
 #include <initreq.h>
 int	utmp_len = MaxHostNameLen;	/* sizeof(init_request.host) */
 #else	/* NEWINIT*/
-# ifdef	HAVE_UTMPX_H
+# ifdef	HAVE_UTMPX
 # include <utmpx.h>
 struct	utmpx wtmp;
 # else
 # include <utmp.h>
 struct	utmp wtmp;
-# endif /* HAVE_UTMPX_H */
+# endif /* HAVE_UTMPX */
 
 int	utmp_len = sizeof(wtmp.ut_host);
 # ifndef PARENT_DOES_UTMP
@@ -372,7 +372,7 @@ static char *ptsname(int fd)
 }
 #endif
 
-#ifdef HAVE_UTMPX_H
+#ifdef HAVE_UTMPX
 static char utid[32]; /* XXX larger than ut_id */
 
 void
@@ -1500,14 +1500,14 @@ void start_login(char *host, int autologin, char *name)
 	struct arg_val argv;
 	extern char *getenv(const char *);
 
-#ifdef	HAVE_UTMPX_H
+#ifdef	HAVE_UTMPX
 	char id_buf[3];
 	int ptynum;
 	register int pid = getpid();
 	struct utmpx utmpx;
 #endif
 
-#ifdef	HAVE_UTMPX_H
+#ifdef	HAVE_UTMPX
 	/*
 	 * Create utmp entry for child
 	 */
@@ -1758,7 +1758,7 @@ int addarg(struct arg_val *argv, char *val)
  * remove the utmp entry for this person.
  */
 
-#ifdef	HAVE_UTMPX_H
+#ifdef	HAVE_UTMPX
 static
 void
 rmut(void)
@@ -1793,7 +1793,7 @@ rmut(void)
 }  /* end of rmut */
 #endif
 
-#if !defined(HAVE_UTMPX_H) && !(defined(CRAY) || defined(__hpux)) && BSD <= 43
+#if !defined(HAVE_UTMPX) && !(defined(CRAY) || defined(__hpux)) && BSD <= 43
 static
 void
 rmut(void)
@@ -1969,7 +1969,7 @@ extern void rmut(void);
 void
 cleanup(int sig)
 {
-#if defined(HAVE_UTMPX_H) || !defined(HAVE_LOGWTMP)
+#if defined(HAVE_UTMPX) || !defined(HAVE_LOGWTMP)
     rmut();
 #ifdef HAVE_VHANGUP
     vhangup(); /* XXX */
