@@ -1,3 +1,8 @@
+2002-09-03  Assar Westerlund  <assar@kth.se>
+
+	* configure.in: add --disable-mmap option, and tests for
+	sys/mman.h and mmap
+
 2002-09-03  Jacques Vidrine  <nectar@kth.se>
 
 	* lib/krb5/changepw.c: verify lengths in response
@@ -25,6 +30,13 @@
 	* lib/krb5/changepw.c (send_request): set AP_OPTS_USE_SUBKEY
 
 	* lib/krb5/krb5.h: add AP_OPTS_USE_SUBKEY
+
+2002-08-30  Assar Westerlund  <assar@kth.se>
+
+	* lib/krb5/name-45-test.c: also test krb5_524_conv_principal
+	* lib/krb5/Makefile.am (TESTS): add name-45-test
+	* lib/krb5/name-45-test.c: add testcases for
+	krb5_425_conv_principal
 
 2002-08-29  Assar Westerlund  <assar@kth.se>
 
