@@ -65,7 +65,7 @@ SORTED_TREE* sorted_tree_init( void *data_p,
 	ZERO_STRUCTP( tree );
 	
 	tree->compare = cmp_fn;
-	tree->free    = free_fn;
+	tree->free_func    = free_fn;
 	
 	if ( !(tree->root = (TREE_NODE*)malloc( sizeof(TREE_NODE) )) ) {
 		SAFE_FREE( tree );
@@ -110,8 +110,8 @@ void sorted_tree_destroy( SORTED_TREE *tree )
 	if ( tree->root )
 		sorted_tree_destroy_children( tree->root );	
 	
-	if ( tree->free )
-		tree->free( tree->root );
+	if ( tree->free_func )
+		tree->free_func( tree->root );
 	
 	SAFE_FREE( tree );
 }
