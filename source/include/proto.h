@@ -2421,10 +2421,10 @@ WERROR get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level);
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
-                            fstring printername, fstring architecture, uint32 version);
+                            fstring drivername, fstring architecture, uint32 version);
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 );
-WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_user *user,
+WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user,
                               uint32 version, BOOL delete_files );
 BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,
                                  fstring value, uint8 **data, uint32 *type, uint32 *len);
