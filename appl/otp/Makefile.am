@@ -2,6 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+INCLUDES += $(INCLUDE_des)
+
 bin_PROGRAMS = otp otpprint
 bin_SUIDS = otp
 otp_SOURCES = otp.c otp_locl.h

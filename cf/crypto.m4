@@ -110,6 +110,7 @@ if test "$crypto_lib" = "unknown"; then
 fi
 
 AC_SUBST(DIR_des)
+AC_SUBST(INCLUDE_des)
 AC_SUBST(LIB_des)
 AC_SUBST(LIB_des_a)
 AC_SUBST(LIB_des_so)

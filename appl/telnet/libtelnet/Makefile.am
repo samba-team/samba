@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += -I$(srcdir)/.. $(INCLUDE_krb4)
+INCLUDES += -I$(srcdir)/.. $(INCLUDE_krb4) $(INCLUDE_des)
 
 noinst_LIBRARIES = libtelnet.a
 

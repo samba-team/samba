@@ -2,6 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+INCLUDES += $(INCLUDE_des)
+
 man_MANS = kpasswd.1 kpasswdd.8
 
 bin_PROGRAMS = kpasswd

@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += -I../asn1 -I$(srcdir)/../asn1
+INCLUDES += -I../asn1 -I$(srcdir)/../asn1 $(INCLUDE_des)
 
 BUILT_SOURCES = asn1_Key.c asn1_Event.c asn1_HDBFlags.c asn1_hdb_entry.c \
 	asn1_Salt.c hdb_err.c hdb_err.h asn1_GENERATION.c
