@@ -1,5 +1,11 @@
 2003-05-15  Love Hörquist Åstrand  <lha@it.su.se>
 
+	* kxd.c (recv_conn): pass pointer to sockaddr, not pointer to
+	pointer
+
+	* kxd.c (recv_conn): get sizeof of the sockaddr_storage, not the
+	sockaddr pointer
+
 	* kxd.c (recv_conn): if getnameinfo failes, send error to client
 	(and syslog)
 
