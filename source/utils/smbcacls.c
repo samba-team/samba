@@ -761,11 +761,13 @@ static struct cli_state *connect_one(const char *share)
 
 	ctx=talloc_init("main");
 
-	setlinebuf(stdout);
-
+	/* set default debug level to 0 regardless of what smb.conf sets */
+	setup_logging( "smbcacls", True );
+	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
 	dbf = x_stderr;
+	x_setbuf( x_stderr, NULL );
 
-	setup_logging(argv[0],True);
+	setlinebuf(stdout);
 
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
