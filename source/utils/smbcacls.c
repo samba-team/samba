@@ -443,29 +443,36 @@ dump the acls for a file
 *******************************************************/
 static int cacl_dump(struct cli_state *cli, char *filename)
 {
-	int fnum;
+	int result = EXIT_FAILED;
+	int fnum = -1;
 	SEC_DESC *sd;
 
-	if (test_args) return EXIT_OK;
+	if (test_args) 
+		return EXIT_OK;
 
 	fnum = cli_nt_create(cli, filename, CREATE_ACCESS_READ);
+
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
-		return EXIT_FAILED;
+		goto done;
 	}
 
 	sd = cli_query_secdesc(cli, fnum, ctx);
 
 	if (!sd) {
 		printf("ERROR: secdesc query failed: %s\n", cli_errstr(cli));
-		return EXIT_FAILED;
+		goto done;
 	}
 
 	sec_desc_print(stdout, sd);
 
-	cli_close(cli, fnum);
+	result = EXIT_OK;
 
-	return EXIT_OK;
+done:
+	if (fnum != -1)
+		cli_close(cli, fnum);
+
+	return result;
 }
 
 /***************************************************** 
