@@ -71,3 +71,12 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 #ifndef LOGIN_PATH
 #define LOGIN_PATH BINDIR "/login"
 #endif
+
+/* random defines */
+
+/*
+ * Defining this enables lots of useful (and used) extensions on
+ * glibc-based systems such as Linux
+ */
+
+#define _GNU_SOURCE
