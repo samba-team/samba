@@ -3406,8 +3406,9 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 	 * as this is what Samba insists upon.
 	 */
 
-	if (!(info->attributes & PRINTER_ATTRIBUTE_SHARED)) {
-		DEBUG(10,("check_printer_ok: SHARED check failed (%x).\n", (unsigned int)info->attributes ));
+	if (!(info->attributes & (PRINTER_ATTRIBUTE_SHARED|PRINTER_ATTRIBUTE_NETWORK))) {
+		DEBUG(10,("check_printer_ok: SHARED/NETWORK check failed (%x).\n",
+							(unsigned int)info->attributes ));
 		return False;
 	}
 
@@ -3421,8 +3422,22 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 		}
 	}
 
+	/*
+	 * Sometimes the NT client doesn't set the sharename, but
+	 * includes the sharename in the printername. This could
+	 * cause SETPRINTER to fail which causes problems with the
+	 * client getting confused between local/remote printers...
+	 */
+	 
+	if (*info->sharename == '\0') {
+		char *p = strrchr(info->printername, '\\');
+		if (p)
+			fstrcpy(info->sharename, p+1);
+	}
+
 	if (!strequal(info->sharename, lp_servicename(snum))) {
-		DEBUG(10,("check_printer_ok: NAME check failed (%s) (%s).\n", info->sharename, lp_servicename(snum)));
+		DEBUG(10,("check_printer_ok: NAME check failed (%s) (%s).\n",
+					info->sharename, lp_servicename(snum)));
 		return False;
 	}
 
