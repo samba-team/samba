@@ -1848,7 +1848,7 @@ PING diamond (192.168.1.1) 56(84) bytes of data.
 			again. This time you add all three forms of name resolution to this file.
 			Your edited entry for <constant>hosts</constant> should now look like this:
 <screen>
-hosts:       file dns wins
+hosts:       files dns wins
 </screen>
 			The system is looking good. Let's move on.
 			</para></step>
