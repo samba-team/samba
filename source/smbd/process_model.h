@@ -54,7 +54,7 @@ struct model_ops {
 	void (*exit_server)(struct smbsrv_context *smb, const char *reason);
 	
 	/* returns process or thread id */
-	int (*get_id)(struct request_context *req);
+	int (*get_id)(struct smbsrv_request *req);
 };
 
 /* this structure is used by modules to determine the size of some critical types */

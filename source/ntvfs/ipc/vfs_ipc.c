@@ -105,7 +105,7 @@ static struct pipe_state *pipe_state_find(struct ipc_private *private, uint16_t 
 /*
   connect to a share - always works 
 */
-static NTSTATUS ipc_connect(struct request_context *req, const char *sharename)
+static NTSTATUS ipc_connect(struct smbsrv_request *req, const char *sharename)
 {
 	struct smbsrv_tcon *tcon = req->tcon;
 	struct ipc_private *private;
@@ -145,7 +145,7 @@ static NTSTATUS ipc_disconnect(struct smbsrv_tcon *tcon)
 /*
   delete a file
 */
-static NTSTATUS ipc_unlink(struct request_context *req, struct smb_unlink *unl)
+static NTSTATUS ipc_unlink(struct smbsrv_request *req, struct smb_unlink *unl)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -154,7 +154,7 @@ static NTSTATUS ipc_unlink(struct request_context *req, struct smb_unlink *unl)
 /*
   ioctl interface - we don't do any
 */
-static NTSTATUS ipc_ioctl(struct request_context *req, union smb_ioctl *io)
+static NTSTATUS ipc_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -162,7 +162,7 @@ static NTSTATUS ipc_ioctl(struct request_context *req, union smb_ioctl *io)
 /*
   check if a directory exists
 */
-static NTSTATUS ipc_chkpath(struct request_context *req, struct smb_chkpath *cp)
+static NTSTATUS ipc_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -170,7 +170,7 @@ static NTSTATUS ipc_chkpath(struct request_context *req, struct smb_chkpath *cp)
 /*
   return info on a pathname
 */
-static NTSTATUS ipc_qpathinfo(struct request_context *req, union smb_fileinfo *info)
+static NTSTATUS ipc_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -178,7 +178,7 @@ static NTSTATUS ipc_qpathinfo(struct request_context *req, union smb_fileinfo *i
 /*
   set info on a pathname
 */
-static NTSTATUS ipc_setpathinfo(struct request_context *req, union smb_setfileinfo *st)
+static NTSTATUS ipc_setpathinfo(struct smbsrv_request *req, union smb_setfileinfo *st)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -188,7 +188,7 @@ static NTSTATUS ipc_setpathinfo(struct request_context *req, union smb_setfilein
 /*
   open a file backend - used for MSRPC pipes
 */
-static NTSTATUS ipc_open_generic(struct request_context *req, const char *fname, 
+static NTSTATUS ipc_open_generic(struct smbsrv_request *req, const char *fname, 
 				 struct pipe_state **ps)
 {
 	struct pipe_state *p;
@@ -270,7 +270,7 @@ static NTSTATUS ipc_open_generic(struct request_context *req, const char *fname,
 /*
   open a file with ntcreatex - used for MSRPC pipes
 */
-static NTSTATUS ipc_open_ntcreatex(struct request_context *req, union smb_open *oi)
+static NTSTATUS ipc_open_ntcreatex(struct smbsrv_request *req, union smb_open *oi)
 {
 	struct pipe_state *p;
 	NTSTATUS status;
@@ -290,7 +290,7 @@ static NTSTATUS ipc_open_ntcreatex(struct request_context *req, union smb_open *
 /*
   open a file with openx - used for MSRPC pipes
 */
-static NTSTATUS ipc_open_openx(struct request_context *req, union smb_open *oi)
+static NTSTATUS ipc_open_openx(struct smbsrv_request *req, union smb_open *oi)
 {
 	struct pipe_state *p;
 	NTSTATUS status;
@@ -318,7 +318,7 @@ static NTSTATUS ipc_open_openx(struct request_context *req, union smb_open *oi)
 /*
   open a file - used for MSRPC pipes
 */
-static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
+static NTSTATUS ipc_open(struct smbsrv_request *req, union smb_open *oi)
 {
 	NTSTATUS status;
 
@@ -340,7 +340,7 @@ static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
 /*
   create a directory
 */
-static NTSTATUS ipc_mkdir(struct request_context *req, union smb_mkdir *md)
+static NTSTATUS ipc_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -348,7 +348,7 @@ static NTSTATUS ipc_mkdir(struct request_context *req, union smb_mkdir *md)
 /*
   remove a directory
 */
-static NTSTATUS ipc_rmdir(struct request_context *req, struct smb_rmdir *rd)
+static NTSTATUS ipc_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -356,7 +356,7 @@ static NTSTATUS ipc_rmdir(struct request_context *req, struct smb_rmdir *rd)
 /*
   rename a set of files
 */
-static NTSTATUS ipc_rename(struct request_context *req, union smb_rename *ren)
+static NTSTATUS ipc_rename(struct smbsrv_request *req, union smb_rename *ren)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -364,7 +364,7 @@ static NTSTATUS ipc_rename(struct request_context *req, union smb_rename *ren)
 /*
   copy a set of files
 */
-static NTSTATUS ipc_copy(struct request_context *req, struct smb_copy *cp)
+static NTSTATUS ipc_copy(struct smbsrv_request *req, struct smb_copy *cp)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -372,7 +372,7 @@ static NTSTATUS ipc_copy(struct request_context *req, struct smb_copy *cp)
 /*
   read from a file
 */
-static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
+static NTSTATUS ipc_read(struct smbsrv_request *req, union smb_read *rd)
 {
 	struct ipc_private *private = req->tcon->ntvfs_private;
 	DATA_BLOB data;
@@ -424,7 +424,7 @@ static NTSTATUS ipc_read(struct request_context *req, union smb_read *rd)
 /*
   write to a file
 */
-static NTSTATUS ipc_write(struct request_context *req, union smb_write *wr)
+static NTSTATUS ipc_write(struct smbsrv_request *req, union smb_write *wr)
 {
 	struct ipc_private *private = req->tcon->ntvfs_private;
 	DATA_BLOB data;
@@ -477,7 +477,7 @@ static NTSTATUS ipc_write(struct request_context *req, union smb_write *wr)
 /*
   seek in a file
 */
-static NTSTATUS ipc_seek(struct request_context *req, struct smb_seek *io)
+static NTSTATUS ipc_seek(struct smbsrv_request *req, struct smb_seek *io)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -485,7 +485,7 @@ static NTSTATUS ipc_seek(struct request_context *req, struct smb_seek *io)
 /*
   flush a file
 */
-static NTSTATUS ipc_flush(struct request_context *req, struct smb_flush *io)
+static NTSTATUS ipc_flush(struct smbsrv_request *req, struct smb_flush *io)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -493,7 +493,7 @@ static NTSTATUS ipc_flush(struct request_context *req, struct smb_flush *io)
 /*
   close a file
 */
-static NTSTATUS ipc_close(struct request_context *req, union smb_close *io)
+static NTSTATUS ipc_close(struct smbsrv_request *req, union smb_close *io)
 {
 	struct ipc_private *private = req->tcon->ntvfs_private;
 	struct pipe_state *p;
@@ -516,7 +516,7 @@ static NTSTATUS ipc_close(struct request_context *req, union smb_close *io)
 /*
   exit - closing files?
 */
-static NTSTATUS ipc_exit(struct request_context *req)
+static NTSTATUS ipc_exit(struct smbsrv_request *req)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -524,7 +524,7 @@ static NTSTATUS ipc_exit(struct request_context *req)
 /*
   lock a byte range
 */
-static NTSTATUS ipc_lock(struct request_context *req, union smb_lock *lck)
+static NTSTATUS ipc_lock(struct smbsrv_request *req, union smb_lock *lck)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -532,7 +532,7 @@ static NTSTATUS ipc_lock(struct request_context *req, union smb_lock *lck)
 /*
   set info on a open file
 */
-static NTSTATUS ipc_setfileinfo(struct request_context *req, union smb_setfileinfo *info)
+static NTSTATUS ipc_setfileinfo(struct smbsrv_request *req, union smb_setfileinfo *info)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -540,7 +540,7 @@ static NTSTATUS ipc_setfileinfo(struct request_context *req, union smb_setfilein
 /*
   query info on a open file
 */
-static NTSTATUS ipc_qfileinfo(struct request_context *req, union smb_fileinfo *info)
+static NTSTATUS ipc_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -549,7 +549,7 @@ static NTSTATUS ipc_qfileinfo(struct request_context *req, union smb_fileinfo *i
 /*
   return filesystem info
 */
-static NTSTATUS ipc_fsinfo(struct request_context *req, union smb_fsinfo *fs)
+static NTSTATUS ipc_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -557,7 +557,7 @@ static NTSTATUS ipc_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 /*
   return print queue info
 */
-static NTSTATUS ipc_lpq(struct request_context *req, union smb_lpq *lpq)
+static NTSTATUS ipc_lpq(struct smbsrv_request *req, union smb_lpq *lpq)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -565,7 +565,7 @@ static NTSTATUS ipc_lpq(struct request_context *req, union smb_lpq *lpq)
 /* 
    list files in a directory matching a wildcard pattern
 */
-NTSTATUS ipc_search_first(struct request_context *req, union smb_search_first *io,
+NTSTATUS ipc_search_first(struct smbsrv_request *req, union smb_search_first *io,
 			  void *search_private, 
 			  BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -575,7 +575,7 @@ NTSTATUS ipc_search_first(struct request_context *req, union smb_search_first *i
 /* 
    continue listing files in a directory 
 */
-NTSTATUS ipc_search_next(struct request_context *req, union smb_search_next *io,
+NTSTATUS ipc_search_next(struct smbsrv_request *req, union smb_search_next *io,
 			 void *search_private, 
 			 BOOL (*callback)(void *, union smb_search_data *))
 {
@@ -585,14 +585,14 @@ NTSTATUS ipc_search_next(struct request_context *req, union smb_search_next *io,
 /* 
    end listing files in a directory 
 */
-NTSTATUS ipc_search_close(struct request_context *req, union smb_search_close *io)
+NTSTATUS ipc_search_close(struct smbsrv_request *req, union smb_search_close *io)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
 
 
 /* SMBtrans - handle a DCERPC command */
-static NTSTATUS ipc_dcerpc_cmd(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS ipc_dcerpc_cmd(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	struct pipe_state *p;
 	struct ipc_private *private = req->tcon->ntvfs_private;
@@ -637,7 +637,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct request_context *req, struct smb_trans2 *t
 
 
 /* SMBtrans - set named pipe state */
-static NTSTATUS ipc_set_nm_pipe_state(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS ipc_set_nm_pipe_state(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	struct pipe_state *p;
 	struct ipc_private *private = req->tcon->ntvfs_private;
@@ -663,7 +663,7 @@ static NTSTATUS ipc_set_nm_pipe_state(struct request_context *req, struct smb_tr
 
 
 /* SMBtrans - used to provide access to SMB pipes */
-static NTSTATUS ipc_trans(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS ipc_trans(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	NTSTATUS status;
 

@@ -32,7 +32,7 @@
 
 
 /* setup a nttrans reply, given the data and params sizes */
-static void nttrans_setup_reply(struct request_context *req, 
+static void nttrans_setup_reply(struct smbsrv_request *req, 
 			       struct smb_nttrans *trans,
 			       uint16_t param_size, uint16_t data_size,
 			       uint16_t setup_count)
@@ -48,7 +48,7 @@ static void nttrans_setup_reply(struct request_context *req,
 
 /* parse NTTRANS_CREATE request
  */
-static NTSTATUS nttrans_create(struct request_context *req, 
+static NTSTATUS nttrans_create(struct smbsrv_request *req, 
 		struct smb_nttrans *trans)
 {
 	return NT_STATUS_FOOBAR;
@@ -56,14 +56,14 @@ static NTSTATUS nttrans_create(struct request_context *req,
 
 /* parse NTTRANS_RENAME request
  */
-static NTSTATUS nttrans_rename(struct request_context *req, 
+static NTSTATUS nttrans_rename(struct smbsrv_request *req, 
 		struct smb_nttrans *trans)
 {
 	return NT_STATUS_FOOBAR;
 }
 /* parse NTTRANS_IOCTL request
  */
-static NTSTATUS nttrans_ioctl(struct request_context *req, 
+static NTSTATUS nttrans_ioctl(struct smbsrv_request *req, 
 		struct smb_nttrans *trans)
 {
 	union smb_ioctl nt;
@@ -100,7 +100,7 @@ static NTSTATUS nttrans_ioctl(struct request_context *req,
 /*
   backend for nttrans requests
 */
-static NTSTATUS nttrans_backend(struct request_context *req, 
+static NTSTATUS nttrans_backend(struct smbsrv_request *req, 
 		struct smb_nttrans *trans)
 {
 	DEBUG(9,("nttrans_backend: setup_count=%d function=%d\n",
@@ -128,7 +128,7 @@ static NTSTATUS nttrans_backend(struct request_context *req,
 /****************************************************************************
  Reply to an SMBnttrans request
 ****************************************************************************/
-void reply_nttrans(struct request_context *req)
+void reply_nttrans(struct smbsrv_request *req)
 {
 	struct smb_nttrans trans;
 	int i;
@@ -267,7 +267,7 @@ void reply_nttrans(struct request_context *req)
 /****************************************************************************
  Reply to an SMBnttranss request
 ****************************************************************************/
-void reply_nttranss(struct request_context *req)
+void reply_nttranss(struct smbsrv_request *req)
 {
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }

@@ -49,7 +49,7 @@ static void get_challenge(struct smbsrv_context *smb_ctx, char buff[8])
 /****************************************************************************
  Reply for the core protocol.
 ****************************************************************************/
-static void reply_corep(struct request_context *req, uint16_t choice)
+static void reply_corep(struct smbsrv_request *req, uint16_t choice)
 {
 	req_setup_reply(req, 1, 0);
 
@@ -65,7 +65,7 @@ static void reply_corep(struct request_context *req, uint16_t choice)
 this is quite incomplete - we only fill in a small part of the reply, but as nobody uses
 this any more it probably doesn't matter
 ****************************************************************************/
-static void reply_coreplus(struct request_context *req, uint16_t choice)
+static void reply_coreplus(struct smbsrv_request *req, uint16_t choice)
 {
 	uint16_t raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
 
@@ -90,7 +90,7 @@ static void reply_coreplus(struct request_context *req, uint16_t choice)
 /****************************************************************************
  Reply for the lanman 1.0 protocol.
 ****************************************************************************/
-static void reply_lanman1(struct request_context *req, uint16_t choice)
+static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 {
 	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
 	int secword=0;
@@ -134,7 +134,7 @@ static void reply_lanman1(struct request_context *req, uint16_t choice)
 /****************************************************************************
  Reply for the lanman 2.0 protocol.
 ****************************************************************************/
-static void reply_lanman2(struct request_context *req, uint16_t choice)
+static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 {
 	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
 	int secword=0;
@@ -223,7 +223,7 @@ static DATA_BLOB negprot_spnego(struct smbsrv_context *smb_ctx)
 /****************************************************************************
  Reply for the nt protocol.
 ****************************************************************************/
-static void reply_nt1(struct request_context *req, uint16_t choice)
+static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 {
 	/* dual names + lock_and_read + nt SMBs + remote API calls */
 	int capabilities;
@@ -422,7 +422,7 @@ protocol [LANMAN2.1]
 static const struct {
 	const char *proto_name;
 	const char *short_name;
-	void (*proto_reply_fn)(struct request_context *req, uint16_t choice);
+	void (*proto_reply_fn)(struct smbsrv_request *req, uint16_t choice);
 	int protocol_level;
 } supported_protocols[] = {
 	{"NT LANMAN 1.0",           "NT1",      reply_nt1,      PROTOCOL_NT1},
@@ -441,7 +441,7 @@ static const struct {
  Reply to a negprot.
 ****************************************************************************/
 
-void reply_negprot(struct request_context *req)
+void reply_negprot(struct smbsrv_request *req)
 {
 	int Index=0;
 	int choice = -1;

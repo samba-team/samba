@@ -87,7 +87,7 @@ static void terminate_rpc_connection(void *r, const char *reason)
 	rpc_server_terminate(r);
 }
 
-static int get_id(struct request_context *req)
+static int get_id(struct smbsrv_request *req)
 {
 	return (int)req->smb_ctx->pid;
 }

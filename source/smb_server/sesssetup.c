@@ -26,7 +26,7 @@
 /*
   setup the OS, Lanman and domain portions of a session setup reply
 */
-static void sesssetup_common_strings(struct request_context *req,
+static void sesssetup_common_strings(struct smbsrv_request *req,
 				     char **os, char **lanman, char **domain)
 {
 	(*os) = talloc_asprintf(req->mem_ctx, "Unix");
@@ -38,7 +38,7 @@ static void sesssetup_common_strings(struct request_context *req,
 /*
   handler for old style session setup
 */
-static NTSTATUS sesssetup_old(struct request_context *req, union smb_sesssetup *sess)
+static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
 	NTSTATUS status;
 	struct auth_usersupplied_info *user_info = NULL;
@@ -86,7 +86,7 @@ static NTSTATUS sesssetup_old(struct request_context *req, union smb_sesssetup *
 /*
   handler for NT1 style session setup
 */
-static NTSTATUS sesssetup_nt1(struct request_context *req, union smb_sesssetup *sess)
+static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
 	NTSTATUS status;
 	struct auth_usersupplied_info *user_info = NULL;
@@ -136,7 +136,7 @@ static NTSTATUS sesssetup_nt1(struct request_context *req, union smb_sesssetup *
 /*
   handler for SPNEGO style session setup
 */
-static NTSTATUS sesssetup_spnego(struct request_context *req, union smb_sesssetup *sess)
+static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
 	/* defer this one for now */
 	return NT_STATUS_INVALID_LEVEL;
@@ -145,7 +145,7 @@ static NTSTATUS sesssetup_spnego(struct request_context *req, union smb_sesssetu
 /*
   backend for sessionsetup call - this takes all 3 variants of the call
 */
-NTSTATUS sesssetup_backend(struct request_context *req, 
+NTSTATUS sesssetup_backend(struct smbsrv_request *req, 
 			   union smb_sesssetup *sess)
 {
 	switch (sess->generic.level) {

@@ -27,7 +27,7 @@
 */
 BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t level)
 {
-	struct request_context *req;
+	struct smbsrv_request *req;
 
 	req = init_smb_request(tcon->smb_ctx);
 
@@ -57,11 +57,11 @@ BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t leve
 /****************************************************************************
 receive a SMB request from the wire, forming a request_context from the result
 ****************************************************************************/
-static struct request_context *receive_smb_request(struct smbsrv_context *smb_ctx)
+static struct smbsrv_request *receive_smb_request(struct smbsrv_context *smb_ctx)
 {
 	ssize_t len, len2;
 	char header[4];
-	struct request_context *req;
+	struct smbsrv_request *req;
 
 	len = read_data(smb_ctx->socket.fd, header, 4);
 	if (len != 4) {
@@ -116,7 +116,7 @@ static struct request_context *receive_smb_request(struct smbsrv_context *smb_ct
 /*
   setup the user_ctx element of a request
 */
-static void setup_user_context(struct request_context *req)
+static void setup_user_context(struct smbsrv_request *req)
 {
 	struct smbsrv_user *user_ctx;
 
@@ -150,7 +150,7 @@ force write permissions on print services.
 static const struct smb_message_struct
 {
 	const char *name;
-	void (*fn)(struct request_context *);
+	void (*fn)(struct smbsrv_request *);
 	int flags;
 }
  smb_messages[256] = {
@@ -433,7 +433,7 @@ for sending the reply themselves, rather than returning a size to this function
 The reply functions may also choose to delay the processing by pushing the message
 onto the message queue
 ****************************************************************************/
-static void switch_message(int type, struct request_context *req)
+static void switch_message(int type, struct smbsrv_request *req)
 {
 	int flags;
 	uint16_t session_tag;
@@ -548,7 +548,7 @@ static void switch_message(int type, struct request_context *req)
 /****************************************************************************
  Construct a reply to the incoming packet.
 ****************************************************************************/
-static void construct_reply(struct request_context *req)
+static void construct_reply(struct smbsrv_request *req)
 {
 	uint8_t type = CVAL(req->in.hdr,HDR_COM);
 
@@ -596,7 +596,7 @@ static void construct_reply(struct request_context *req)
   we call this when first first part of a possibly chained request has been completed
   and we need to call the 2nd part, if any
 */
-void chain_reply(struct request_context *req)
+void chain_reply(struct smbsrv_request *req)
 {
 	uint16_t chain_cmd, chain_offset;
 	char *vwv, *data;
@@ -782,7 +782,7 @@ void open_sockets_smbd(struct event_context *events,
 void smbd_read_handler(struct event_context *ev, struct fd_event *fde, 
 		       time_t t, uint16_t flags)
 {
-	struct request_context *req;
+	struct smbsrv_request *req;
 	struct smbsrv_context *smb_ctx = fde->private;
 	
 	req = receive_smb_request(smb_ctx);
@@ -806,7 +806,7 @@ void smbd_read_handler(struct event_context *ev, struct fd_event *fde,
 */
 void smbd_process_async(struct smbsrv_context *smb_ctx)
 {
-	struct request_context *req;
+	struct smbsrv_request *req;
 	
 	req = receive_smb_request(smb_ctx);
 	if (!req) {

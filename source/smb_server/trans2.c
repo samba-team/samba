@@ -32,7 +32,7 @@
 /* grow the data allocation size of a trans2 reply - this guarantees
    that requests to grow the data size later will not change the
    pointer */
-static void trans2_grow_data_allocation(struct request_context *req, 
+static void trans2_grow_data_allocation(struct smbsrv_request *req, 
 					struct smb_trans2 *trans,
 					uint16_t new_size)
 {
@@ -44,7 +44,7 @@ static void trans2_grow_data_allocation(struct request_context *req,
 
 
 /* grow the data size of a trans2 reply */
-static void trans2_grow_data(struct request_context *req, 
+static void trans2_grow_data(struct smbsrv_request *req, 
 			     struct smb_trans2 *trans,
 			     uint16_t new_size)
 {
@@ -53,7 +53,7 @@ static void trans2_grow_data(struct request_context *req,
 }
 
 /* grow the data, zero filling any new bytes */
-static void trans2_grow_data_fill(struct request_context *req, 
+static void trans2_grow_data_fill(struct smbsrv_request *req, 
 				  struct smb_trans2 *trans,
 				  uint16_t new_size)
 {
@@ -66,7 +66,7 @@ static void trans2_grow_data_fill(struct request_context *req,
 
 
 /* setup a trans2 reply, given the data and params sizes */
-static void trans2_setup_reply(struct request_context *req, 
+static void trans2_setup_reply(struct smbsrv_request *req, 
 			       struct smb_trans2 *trans,
 			       uint16_t param_size, uint16_t data_size,
 			       uint16_t setup_count)
@@ -83,7 +83,7 @@ static void trans2_setup_reply(struct request_context *req,
 /*
   pull a string from a blob in a trans2 request
 */
-static size_t trans2_pull_blob_string(struct request_context *req, 
+static size_t trans2_pull_blob_string(struct smbsrv_request *req, 
 				      const DATA_BLOB *blob,
 				      uint16_t offset,
 				      const char **str,
@@ -107,7 +107,7 @@ static size_t trans2_pull_blob_string(struct request_context *req,
   push a string into the data section of a trans2 request
   return the number of bytes consumed in the output
 */
-static size_t trans2_push_data_string(struct request_context *req, 
+static size_t trans2_push_data_string(struct smbsrv_request *req, 
 				      struct smb_trans2 *trans,
 				      uint16_t len_offset,
 				      uint16_t offset,
@@ -176,7 +176,7 @@ static size_t trans2_push_data_string(struct request_context *req,
   len_offset points to the place in the packet where the length field
   should go
 */
-static void trans2_append_data_string(struct request_context *req, 
+static void trans2_append_data_string(struct smbsrv_request *req, 
 					struct smb_trans2 *trans,
 					const WIRE_STRING *str,
 					uint_t len_offset,
@@ -196,7 +196,7 @@ static void trans2_append_data_string(struct request_context *req,
 /*
   trans2 qfsinfo implementation
 */
-static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS trans2_qfsinfo(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	union smb_fsinfo fsinfo;
 	NTSTATUS status;
@@ -391,7 +391,7 @@ static NTSTATUS trans2_qfsinfo(struct request_context *req, struct smb_trans2 *t
 /*
   fill in the reply from a qpathinfo or qfileinfo call
 */
-static NTSTATUS trans2_fileinfo_fill(struct request_context *req, struct smb_trans2 *trans,
+static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_trans2 *trans,
 				     union smb_fileinfo *st)
 {
 	uint_t i;
@@ -614,7 +614,7 @@ static NTSTATUS trans2_fileinfo_fill(struct request_context *req, struct smb_tra
 /*
   trans2 qpathinfo implementation
 */
-static NTSTATUS trans2_qpathinfo(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS trans2_qpathinfo(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	union smb_fileinfo st;
 	NTSTATUS status;
@@ -654,7 +654,7 @@ static NTSTATUS trans2_qpathinfo(struct request_context *req, struct smb_trans2 
 /*
   trans2 qpathinfo implementation
 */
-static NTSTATUS trans2_qfileinfo(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS trans2_qfileinfo(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	union smb_fileinfo st;
 	NTSTATUS status;
@@ -690,7 +690,7 @@ static NTSTATUS trans2_qfileinfo(struct request_context *req, struct smb_trans2 
 /*
   parse a trans2 setfileinfo/setpathinfo data blob
 */
-static NTSTATUS trans2_parse_sfileinfo(struct request_context *req,
+static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 				       union smb_setfileinfo *st,
 				       const DATA_BLOB *blob)
 {
@@ -786,7 +786,7 @@ static NTSTATUS trans2_parse_sfileinfo(struct request_context *req,
 /*
   trans2 setfileinfo implementation
 */
-static NTSTATUS trans2_setfileinfo(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS trans2_setfileinfo(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	union smb_setfileinfo st;
 	NTSTATUS status;
@@ -824,7 +824,7 @@ static NTSTATUS trans2_setfileinfo(struct request_context *req, struct smb_trans
 /*
   trans2 setpathinfo implementation
 */
-static NTSTATUS trans2_setpathinfo(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS trans2_setpathinfo(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	union smb_setfileinfo st;
 	NTSTATUS status;
@@ -863,7 +863,7 @@ static NTSTATUS trans2_setpathinfo(struct request_context *req, struct smb_trans
 
 /* a structure to encapsulate the state information about an in-progress ffirst/fnext operation */
 struct find_state {
-	struct request_context *req;
+	struct smbsrv_request *req;
 	struct smb_trans2 *trans;
 	enum search_level level;
 	uint16_t last_entry_offset;
@@ -873,7 +873,7 @@ struct find_state {
 /*
   fill a single entry in a trans2 find reply 
 */
-static void find_fill_info(struct request_context *req,
+static void find_fill_info(struct smbsrv_request *req,
 			   struct smb_trans2 *trans, 
 			   struct find_state *state,
 			   union smb_search_data *file)
@@ -1069,7 +1069,7 @@ static BOOL find_callback(void *private, union smb_search_data *file)
 /*
   trans2 findfirst implementation
 */
-static NTSTATUS trans2_findfirst(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	union smb_search_first search;
 	NTSTATUS status;
@@ -1129,7 +1129,7 @@ static NTSTATUS trans2_findfirst(struct request_context *req, struct smb_trans2 
 /*
   trans2 findnext implementation
 */
-static NTSTATUS trans2_findnext(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	union smb_search_next search;
 	NTSTATUS status;
@@ -1188,7 +1188,7 @@ static NTSTATUS trans2_findnext(struct request_context *req, struct smb_trans2 *
 /*
   backend for trans2 requests
 */
-static NTSTATUS trans2_backend(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS trans2_backend(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	if (req->tcon->ntvfs_ops->trans2 != NULL) {
 		/* direct trans2 pass thru */
@@ -1226,7 +1226,7 @@ static NTSTATUS trans2_backend(struct request_context *req, struct smb_trans2 *t
 /*
   backend for trans requests
 */
-static NTSTATUS trans_backend(struct request_context *req, struct smb_trans2 *trans)
+static NTSTATUS trans_backend(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	if (!req->tcon->ntvfs_ops->trans) {
 		return NT_STATUS_NOT_IMPLEMENTED;
@@ -1238,7 +1238,7 @@ static NTSTATUS trans_backend(struct request_context *req, struct smb_trans2 *tr
 /****************************************************************************
  Reply to an SMBtrans or SMBtrans2 request
 ****************************************************************************/
-void reply_trans_generic(struct request_context *req, uint8_t command)
+void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 {
 	struct smb_trans2 trans;
 	int i;
@@ -1391,7 +1391,7 @@ void reply_trans_generic(struct request_context *req, uint8_t command)
 /****************************************************************************
  Reply to an SMBtrans2
 ****************************************************************************/
-void reply_trans2(struct request_context *req)
+void reply_trans2(struct smbsrv_request *req)
 {
 	reply_trans_generic(req, SMBtrans2);
 }
@@ -1399,7 +1399,7 @@ void reply_trans2(struct request_context *req)
 /****************************************************************************
  Reply to an SMBtrans
 ****************************************************************************/
-void reply_trans(struct request_context *req)
+void reply_trans(struct smbsrv_request *req)
 {
 	reply_trans_generic(req, SMBtrans);
 }
@@ -1407,7 +1407,7 @@ void reply_trans(struct request_context *req)
 /****************************************************************************
  Reply to an SMBtranss2 request
 ****************************************************************************/
-void reply_transs2(struct request_context *req)
+void reply_transs2(struct smbsrv_request *req)
 {
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }

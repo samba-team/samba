@@ -35,7 +35,7 @@ BOOL init_change_notify(void)
 BOOL pcap_printername_ok(const char *service, const char *foo)
 { return True; }
 
-BOOL share_access_check(struct request_context *req, struct smbsrv_tcon *tcon, int snum, uint32_t desired_access)
+BOOL share_access_check(struct smbsrv_request *req, struct smbsrv_tcon *tcon, int snum, uint32_t desired_access)
 { return True; }
 
 BOOL init_names(void)

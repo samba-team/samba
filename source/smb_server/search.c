@@ -57,7 +57,7 @@
 /* a structure to encapsulate the state information about 
  * an in-progress search first/next operation */
 struct search_state {
-	struct request_context *req;
+	struct smbsrv_request *req;
 	union smb_search_data *file;
 	uint16_t last_entry_offset;
 };
@@ -65,7 +65,7 @@ struct search_state {
 /*
   fill a single entry in a search find reply 
 */
-static void find_fill_info(struct request_context *req,
+static void find_fill_info(struct smbsrv_request *req,
 			   union smb_search_data *file)
 {
 	char *p = req->out.data + req->out.data_size;
@@ -100,7 +100,7 @@ static BOOL find_callback(void *private, union smb_search_data *file)
 /****************************************************************************
  Reply to a search.
 ****************************************************************************/
-void reply_search(struct request_context *req)
+void reply_search(struct smbsrv_request *req)
 {
 	union smb_search_first *sf;
 	union smb_search_next *sn;
@@ -176,7 +176,7 @@ void reply_search(struct request_context *req)
 /****************************************************************************
  Reply to a fclose (async reply)
 ****************************************************************************/
-static void reply_fclose_send(struct request_context *req)
+static void reply_fclose_send(struct smbsrv_request *req)
 {
 	CHECK_ASYNC_STATUS;
 	
@@ -190,7 +190,7 @@ static void reply_fclose_send(struct request_context *req)
 /****************************************************************************
  Reply to fclose (stop directory search).
 ****************************************************************************/
-void reply_fclose(struct request_context *req)
+void reply_fclose(struct smbsrv_request *req)
 {
 	union smb_search_next *sn;
 	DATA_BLOB resume_key;
