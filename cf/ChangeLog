@@ -1,3 +1,8 @@
+1999-04-17  Assar Westerlund  <assar@sics.se>
+
+	* make-aclocal: removed.  Not used anymore, being replaced by
+	aclocal from automake.
+
 Fri Apr  9 20:37:18 1999  Assar Westerlund  <assar@sics.se>
 
 	* shared-libs.m4: quote $@
