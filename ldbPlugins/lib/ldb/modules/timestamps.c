@@ -41,8 +41,6 @@ static int timestamps_close(struct ldb_module *module)
 	return ldb_next_close(module);
 }
 
-/* if whenCreated/whenModified are part of the filter, modify it to look for
-   createTimestamp/modifyTimestamp */
 static int timestamps_search(struct ldb_module *module, const char *base,
 				  enum ldb_scope scope, const char *expression,
 				  const char * const *attrs, struct ldb_message ***res)
