@@ -242,30 +242,10 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	return True;
 }
 
-/****************************************************************************
-  C. Hoch 11/22/95
-  Helper for open_file_shared. 
-  Truncate a file after checking locking; close file if locked.
-  **************************************************************************/
-
-static int truncate_unless_locked(struct connection_struct *conn, files_struct *fsp)
-{
-	SMB_BIG_UINT mask = (SMB_BIG_UINT)-1;
-
-	if (is_locked(fsp,fsp->conn,mask,0,WRITE_LOCK,True)){
-		errno = EACCES;
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRlock;
-		unix_ERR_ntstatus = dos_to_ntstatus(ERRDOS, ERRlock);
-		return -1;
-	} else {
-		return SMB_VFS_FTRUNCATE(fsp,fsp->fd,0); 
-	}
-}
-
 /*******************************************************************
 return True if the filename is one of the special executable types
 ********************************************************************/
+
 static BOOL is_executable(const char *fname)
 {
 	if ((fname = strrchr_m(fname,'.'))) {
@@ -1109,7 +1089,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		/*
 		 * We are modifing the file after open - update the stat struct..
 		 */
-		if ((truncate_unless_locked(conn,fsp) == -1) || (SMB_VFS_FSTAT(fsp,fsp->fd,psbuf)==-1)) {
+		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fd,0) == -1) || (SMB_VFS_FSTAT(fsp,fsp->fd,psbuf)==-1)) {
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
