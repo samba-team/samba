@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -159,23 +159,23 @@ receive_loop (krb5_context context,
 	op = tmp;
 	krb5_ret_int32 (sp, &len);
 	if (vers <= server_context->log_context.version)
-	    sp->seek(sp, len, SEEK_CUR);
+	    krb5_storage_seek(sp, len, SEEK_CUR);
     } while(vers <= server_context->log_context.version);
 
-    left  = sp->seek (sp, -16, SEEK_CUR);
-    right = sp->seek (sp, 0, SEEK_END);
+    left  = krb5_storage_seek (sp, -16, SEEK_CUR);
+    right = krb5_storage_seek (sp, 0, SEEK_END);
     buf = malloc (right - left);
     if (buf == NULL && (right - left) != 0) {
 	krb5_warnx (context, "malloc: no memory");
 	return;
     }
-    sp->seek (sp, left, SEEK_SET);
-    sp->fetch (sp, buf, right - left);
+    krb5_storage_seek (sp, left, SEEK_SET);
+    krb5_storage_read (sp, buf, right - left);
     write (server_context->log_context.log_fd, buf, right-left);
     fsync (server_context->log_context.log_fd);
     free (buf);
 
-    sp->seek (sp, left, SEEK_SET);
+    krb5_storage_seek (sp, left, SEEK_SET);
 
     for(;;) {
 	int32_t len, timestamp, tmp;
@@ -194,7 +194,7 @@ receive_loop (krb5_context context,
 	    krb5_warn (context, ret, "kadm5_log_replay");
 	else
 	    server_context->log_context.version = vers;
-	sp->seek (sp, 8, SEEK_CUR);
+	krb5_storage_seek (sp, 8, SEEK_CUR);
     }
 }
 

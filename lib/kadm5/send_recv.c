@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,10 +45,10 @@ _kadm5_client_send(kadm5_client_context *context, krb5_storage *sp)
 
     assert(context->sock != -1);
 
-    len = sp->seek(sp, 0, SEEK_CUR);
+    len = krb5_storage_seek(sp, 0, SEEK_CUR);
     ret = krb5_data_alloc(&msg, len);
-    sp->seek(sp, 0, SEEK_SET);
-    sp->fetch(sp, msg.data, msg.length);
+    krb5_storage_seek(sp, 0, SEEK_SET);
+    krb5_storage_read(sp, msg.data, msg.length);
     
     ret = krb5_mk_priv(context->context, context->ac, &msg, &out, NULL);
     krb5_data_free(&msg);

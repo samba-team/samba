@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -404,7 +404,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
     return 0;
 fail:
     krb5_warn(context->context, ret, "%s", op);
-    sp->seek(sp, 0, SEEK_SET);
+    krb5_storage_seek(sp, 0, SEEK_SET);
     krb5_store_int32(sp, ret);
     krb5_storage_to_data(sp, out);
     krb5_storage_free(sp);

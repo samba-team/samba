@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999, 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -51,7 +51,7 @@ apply_entry(kadm5_server_context *server_context,
     if((start_version != -1 && ver < start_version) ||
        (end_version != -1 && ver > end_version)) {
 	/* XXX skip this entry */
-	(*sp->seek)(sp, len, SEEK_CUR);
+	krb5_storage_seek(sp, len, SEEK_CUR);
 	return;
     }
     printf ("ver %u... ", ver);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -280,11 +280,11 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 	return 0;
 
     sp = kadm5_log_goto_end (log_fd);
-    right = sp->seek(sp, 0, SEEK_CUR);
+    right = krb5_storage_seek(sp, 0, SEEK_CUR);
     for (;;) {
 	if (kadm5_log_previous (sp, &ver, &timestamp, &op, &len))
 	    abort ();
-	left = sp->seek(sp, -16, SEEK_CUR);
+	left = krb5_storage_seek(sp, -16, SEEK_CUR);
 	if (ver == s->version)
 	    return 0;
 	if (ver == s->version + 1)
@@ -293,7 +293,7 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 	    return send_complete (context, s, database, current_version);
     }
     krb5_data_alloc (&data, right - left + 4);
-    sp->fetch (sp, (char *)data.data + 4, data.length - 4);
+    krb5_storage_read (sp, (char *)data.data + 4, data.length - 4);
     krb5_storage_free(sp);
 
     _krb5_put_int(data.data, FOR_YOU, 4);
