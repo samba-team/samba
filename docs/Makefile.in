@@ -40,7 +40,7 @@ EPSTOPDF = @EPSTOPDF@
 MANPAGEDIR = manpages
 HOWTODIR = howto
 GUIDEDOC = guide
-DEVDOCDIR = /devel
+DEVDOCDIR = devel
 MAKEINDEX = @MAKEINDEX@
 IMAGEPROJDIR = $(HOWTODIR)/imagefiles
 IMAGEGUIDEDIR = $(GUIDEDOC)/images
@@ -113,6 +113,8 @@ html-single: $(HTMLDIR) $(HTMLDIR)/samba.css $(HTMLDIR)/Samba-HOWTO-Collection.h
 	cp -p $(GUIDEDOC_IMAGES_PNG) $(HOWTODIR_IMAGES_PNG) $(HTMLDIR)/images/
 
 html: $(HTMLDIR)/howto $(HTMLDIR)/guide $(HTMLDIR)/devel $(HTMLDIR)/index.html
+
+htmlhelp: $(HTMLHELPDIR)/Samba-HOWTO-Collection $(HTMLHELPDIR)/Samba-Developers-Guide $(HTMLHELPDIR)/Samba-Guide
 
 $(HTMLDIR)/index.html: htmldocs.html $(HTMLDIR)
 	cp $< $@
@@ -221,12 +223,24 @@ $(FODIR):
 $(FODIR)/%.fo: %.xml $(FODIR)
 	$(XSLTPROC) --output $@ http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $<
 
+# HTML Help
+
 $(HTMLHELPDIR):
 	mkdir $(HTMLHELPDIR)
 
-$(HTMLHELPDIR)/%: %.xml $(HTMLHELPDIR) 
+$(HTMLHELPDIR)/Samba-HOWTO-Collection/images: 
+	-mkdir -p $@
+	cp -p $(HOWTODIR_IMAGES_PNG) $@
+
+$(HTMLHELPDIR)/Samba-Guide/images:
+	-mkdir -p $@
+	cp -p $(GUIDEDOC_IMAGES_PNG) $@
+
+$(HTMLHELPDIR)/Samba-Developers-Guide/images:
+
+$(HTMLHELPDIR)/%: %.xml $(HTMLHELPDIR) $(HTMLHELPDIR)/%/images
 	-mkdir $@
-	$(XSLTPROC) --stringparam base.dir "$@/" http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
+	$(XSLTPROC) --stringparam htmlhelp.chm $(patsubst %.xml,%.chm,$<) --stringparam manifest.in.base.dir "$@/" --stringparam base.dir "$@/" http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
 
 # Single large HTML files
 
