@@ -467,7 +467,7 @@ static void display_finfo(file_info *finfo)
 {
   if (do_this_one(finfo)) {
     time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
-    DEBUG(0,("  %-30s%7.7s%.0f  %s",
+    DEBUG(0,("  %-30s%7.7s%8.0f  %s",
        CNV_LANG(finfo->name),
 	   attrib_string(finfo->mode),
 	   (double)finfo->size,
