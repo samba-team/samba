@@ -61,13 +61,10 @@ For futher information, please consult our website www.obsidian.co.za
 JOHANNESBURG - SOUTH AFRICA
 
  Company: Symphony Research (Pty) Ltd
- Contact: Dr Evan Summers, <evan@sr.co.za>, cell 082 900-8632. 
+ Contact: Dr Evan Summers, <evan@sr.co.za>, tel 011 728-5742.
 keywords: Samba on Linux, support and consulting
           Johannesburg (South Africa)
 
-Evan Summers, PhD           Tel +27 82 900-8632   Symphony
-Linux systems integration   http://sr.co.za       Research
-Johannesburg, South Africa  mailto:evan@sr.co.za  (Pty)Ltd
 ------------------------------------------------------------------------------
 
 
