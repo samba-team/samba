@@ -7,7 +7,7 @@ function header_elstring(elnum,
 	elem=elements[elnum, "elem"];
 	if (elements[elnum, "ptr"]=="1") elem="*"elem;
 	if (array_len!="") {
-		if (match(array_len,"[0-9]") == 1) {
+		if (is_constant(array_len) == 1) {
 			elem=elem"["array_len"]";
 		} else {
 			elem="*"elem;
@@ -63,6 +63,14 @@ function produce_headers(f, NIL,
 	xprintf(f,"/* auto-generated headers for %s */\n\n\n", module);
 	xprintf(f,"#ifndef _%s_\n", module);
 	xprintf(f,"#define _%s_\n", module);
+
+	xprintf(f,"\n\n");
+	for (i=0;i < num_options;i++) {
+		xprintf(f,"#define OPTION_%s %s\n", 
+			options[i, "name"], options[i, "value"]);
+	}
+	xprintf(f,"\n\n");
+
 	for (i=0;i < num_structs;i++) {
 		header_struct(f, i);
 	}

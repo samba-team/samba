@@ -1,3 +1,4 @@
+#include "parser.h"
 #include "test.h"
 
 int main(int argc, char *argv[])
@@ -29,6 +30,7 @@ int main(int argc, char *argv[])
 	ps.data_offset = 0;	
 	ps.buffer_size = ps.grow_size;
 	ps.io = UNMARSHALL;
+	ps.autoalign = OPTION_autoalign;
 	ret = run_test(test, &ps, PARSE_SCALARS|PARSE_BUFFERS);
 	printf("\nret=%s\n", ret?"OK":"Bad");
 	printf("Trailer is %d bytes\n\n", ps.grow_size - ps.data_offset);

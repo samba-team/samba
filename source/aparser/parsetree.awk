@@ -16,6 +16,15 @@ function start_module(name)
 	num_elements=0;
 	num_unions=0;
 	num_tests=0;
+	num_options=0;
+}
+
+function set_option(name, value) 
+{
+	options[name] = value;
+	options[num_options, "name"] = name;
+	options[num_options, "value"] = value;
+	num_options++;
 }
 
 function parse_define(def1, def2,
@@ -31,6 +40,7 @@ function start_struct(name)
 	structs[current_struct, "name"]=name;
 	structs[current_struct, "num_elems"]=0;
 	structs[current_struct, "num_unions"]=0;
+	structs[current_struct, "recurse"] = options["recurse"];
 }
 
 function end_struct(name) 
@@ -168,7 +178,7 @@ function add_sizeis_array(count, type, elem)
 function start_function(type, fname)
 {
         start_struct(fname);
-	add_function_param("[in,out]",".trailer", "");
+	structs[current_struct, "recurse"] = "False";
 }
 
 function end_function(LOCAL, i)

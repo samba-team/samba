@@ -52,6 +52,12 @@ function dump_structs(f, NIL,
 		      LOCAL, i, j) 
 {
 	xprintf(f,"/* dump of parsed structures */\n\n\n");
+
+	for (i=0;i < num_options;i++) {
+		xprintf(f,"option %s %s\n", options[i, "name"], options[i, "value"]);
+	}
+	xprintf(f,"\n\n");
+
 	for (i=0;i < num_structs;i++) {
 		xprintf(f,"/* structure %d */\n", i);
 		xprintf(f,"struct %s {\n", structs[i, "name"]);

@@ -1,4 +1,9 @@
 #include <ctype.h>
+#include <stdio.h>
+#include <malloc.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "../include/byteorder.h"
 
 #define PARSE_SCALARS (1<<0)
@@ -11,10 +16,9 @@
 #ifndef MAX
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
-/* Maximum PDU fragment size. */
-#define MAX_PDU_FRAG_LEN 0x1630
 
 #define DEBUG(lvl, str) printf str;
+#define DEBUGADD(lvl, str) printf str;
 
 #define MARSHALL 0
 #define UNMARSHALL 1
@@ -24,10 +28,14 @@
 
 typedef int BOOL;
 typedef unsigned char uint8;
+typedef unsigned char uchar;
 typedef unsigned short uint16;
 typedef unsigned short wchar;
 typedef unsigned uint32;
 typedef char *SMBSTR;
+
+/* a null terminated unicode string */
+typedef uint16 ZUSTRING;
 
 #ifndef _PSTRING
 
@@ -59,6 +67,7 @@ typedef struct _io_struct
 	 */ 
 	BOOL bigendian_data;
 	BOOL is_dynamic; /* Do we own this memory or not ? */
+	BOOL autoalign; /* should we auto-align all elements? */
 	uint32 data_offset; /* Current working offset into data. */
 	uint32 buffer_size; /* Current size of the buffer. */
 	uint32 grow_size; /* size requested via io_grow() calls */
@@ -72,7 +81,6 @@ void io_debug(io_struct *ps, int depth, char *desc, char *fn_name);
 BOOL io_align(io_struct *ps, int align);
 BOOL io_align4(io_struct *ps, int align);
 BOOL io_align2(io_struct *ps, int align);
-void print_asc(int level, unsigned char *buf,int len);
 BOOL io_read(io_struct *ps, int fd, size_t len, int timeout);
 void dump_data(int level,char *buf1,int len);
 BOOL io_alloc(char *name, io_struct *ps, void **ptr, unsigned size);
@@ -88,5 +96,8 @@ BOOL io_uint8s(char *name, io_struct *ps, int depth, uint8 **data8s, int len, un
 
 char *tab_depth(int depth);
 void *Realloc(void *p,size_t size);
-void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
+void print_asc(int level, uchar const *buf, int len);
+BOOL io_ZUSTRING(char *name, io_struct *ps, int depth, uint16 **ustr, unsigned flags);
+size_t strlen_w(void *src);
+

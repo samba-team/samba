@@ -50,24 +50,24 @@ struct PRINTER_DRIVER_INFO_LEVEL_3 {
 };
 
 struct PRINTER_DRIVER_INFO_LEVEL_6 {
-  DWORD   dummy1; 
-  DWORD   version; 
-  LPWSTR   name;       
-  LPWSTR environment;
-  LPWSTR driverpath;
-  LPWSTR datafile;
-  LPWSTR configfile;
-  LPWSTR helpfile;
-  LPWSTR monitorname;
-  LPWSTR defaultdatatype;
-  BUFFERP  dependentfiles;
-  BUFFERP  previousnames;
-  NTTIME   driverdate; 
-  VERSION driverversion; 
-  LPWSTR mfgname; 
-  LPWSTR oemurl; 
-  LPWSTR hardwareid; 
-  LPWSTR provider; 
+         DWORD   dummy1; 
+	 DWORD   version; 
+	 LPWSTR   name;       
+	 LPWSTR environment;
+	 LPWSTR driverpath;
+	 LPWSTR datafile;
+	 LPWSTR configfile;
+	 LPWSTR helpfile;
+	 LPWSTR monitorname;
+	 LPWSTR defaultdatatype;
+	 BUFFERP  dependentfiles;
+	 BUFFERP  previousnames;
+	 NTTIME   driverdate; 
+	 VERSION driverversion; 
+	 LPWSTR mfgname; 
+	 LPWSTR oemurl; 
+	 LPWSTR hardwareid; 
+	 LPWSTR provider; 
 };
 
 

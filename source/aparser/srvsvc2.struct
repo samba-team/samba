@@ -1,5 +1,10 @@
 module srvsvc
 
+option autoalign True
+option relative False
+option recurse True
+option foo blah
+
 #define BOOL uint32
 #define LONG uint32
 #define DWORD uint32

@@ -8,6 +8,6 @@ if ! igawk -f main.awk $file; then
 fi
 
 echo compiling vluke
-gcc -Wall -o vluke parser.c vluke.c util.c
+gcc -Wall -g -o vluke parser.c vluke.c util.c
 echo done.
 

@@ -1,5 +1,8 @@
 module cifs
 
+option autoalign False
+
+
 #define BOOL uint32
 #define UCHAR uint8
 #define WCHAR uint16
