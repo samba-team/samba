@@ -215,6 +215,8 @@ typedef struct
   BOOL bDomainLogons;
   BOOL bEncryptPasswords;
   BOOL bUpdateEncrypt;
+  BOOL bServerSChannel;
+  BOOL bClientSChannel;
   BOOL bServerNTLMv2;
   BOOL bClientNTLMv2;
   BOOL bStripDot;
@@ -538,6 +540,8 @@ static struct parm_struct parm_table[] =
   {"security",         P_ENUM,    P_GLOBAL, &Globals.security,          NULL,   enum_security, FLAG_BASIC},
   {"encrypt passwords",P_BOOL,    P_GLOBAL, &Globals.bEncryptPasswords, NULL,   NULL,  FLAG_BASIC},
   {"update encrypted", P_BOOL,    P_GLOBAL, &Globals.bUpdateEncrypt,    NULL,   NULL,  FLAG_BASIC},
+  {"server schannel",  P_ENUM,    P_GLOBAL, &Globals.bServerSChannel,   NULL,   enum_bool_auto,  FLAG_BASIC},
+  {"client schannel",  P_ENUM,    P_GLOBAL, &Globals.bClientSChannel,   NULL,   enum_bool_auto,  FLAG_BASIC},
   {"server ntlmv2",    P_ENUM,    P_GLOBAL, &Globals.bServerNTLMv2,     NULL,   enum_bool_auto,  FLAG_BASIC},
   {"client ntlmv2",    P_ENUM,    P_GLOBAL, &Globals.bClientNTLMv2,     NULL,   enum_bool_auto,  FLAG_BASIC},
   {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
@@ -987,10 +991,15 @@ static void init_globals(void)
   Globals.sslCompatibility = False;
 #endif        /* WITH_SSL */
 
+/* NETLOGON Secure Channel */
+
+  Globals.bClientSChannel = Auto; 
+  Globals.bServerSChannel = False; 
+
 /* NTLMv2 */
 
   Globals.bClientNTLMv2 = False; 
-  Globals.bServerNTLMv2 = False; 
+  Globals.bServerNTLMv2 = Auto; 
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -1275,6 +1284,8 @@ FN_GLOBAL_BOOL(lp_encrypted_passwords,&Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_update_encrypted,&Globals.bUpdateEncrypt)
 FN_GLOBAL_BOOL(lp_client_ntlmv2,&Globals.bClientNTLMv2)
 FN_GLOBAL_BOOL(lp_server_ntlmv2,&Globals.bServerNTLMv2)
+FN_GLOBAL_BOOL(lp_client_schannel,&Globals.bClientSChannel)
+FN_GLOBAL_BOOL(lp_server_schannel,&Globals.bServerSChannel)
 FN_GLOBAL_BOOL(lp_syslog_only,&Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_timestamp_logs,&Globals.bTimestampLogs)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)

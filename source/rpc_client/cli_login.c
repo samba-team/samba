@@ -42,7 +42,7 @@ uint32 cli_nt_setup_creds( const char* srv_name,
 	UTIME zerotime;
 	uint8 sess_key[16];
 	DOM_CRED clnt_cred;
-	uint32 neg_flags = 0x400001ff;
+	uint32 neg_flags = !lp_client_schannel() ? 0x000001ff : 0x400001ff;
 
 	/******************* Request Challenge ********************/
 
@@ -82,6 +82,17 @@ uint32 cli_nt_setup_creds( const char* srv_name,
 	if (ret != 0x0)
 	{
 		DEBUG(1,("cli_nt_setup_creds: auth2 challenge failed.  status: %x\n", ret));
+	}
+
+	/* check the client secure channel status */
+	if (ret == 0x0 &&
+	    lp_client_schannel() == True &&
+	    IS_BITS_CLR_ALL(neg_flags, 0x40000000))
+	{
+		/* netlogon secure channel was required, and not negotiated */
+		{
+			return NT_STATUS_ACCESS_DENIED | 0xC0000000;
+		}
 	}
 
 	if (ret == 0x0 && IS_BITS_SET_ALL(neg_flags, 0x40000000))

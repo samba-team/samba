@@ -154,20 +154,38 @@ static void net_reply_auth_2(NET_Q_AUTH_2 *q_a, prs_struct *rdata,
 	NET_R_AUTH_2 r_a;
 	NEG_FLAGS srv_flgs;
 
-	srv_flgs.neg_flags = 0x400001ff;
+	/* mask out unsupported bits */
+	srv_flgs.neg_flags = q_a->clnt_flgs.neg_flags & 0x400001ff;
+
+	/* minimum bits required */
+	if (status == 0x0 && !IS_BITS_SET_ALL(srv_flgs.neg_flags, 0x000000ff))
+	{
+		status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* secure channel NOT to be used */
+	if (status == 0x0 && !lp_server_schannel())
+	{
+		srv_flgs.neg_flags &= ~0x40000000;
+	}
+
+	/* secure channel MUST be used */
+	if (status == 0x0 && lp_server_schannel() == True &&
+	    IS_BITS_CLR_ALL(srv_flgs.neg_flags, 0x40000000))
+	{
+		status = 0xC0000000 | NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* set up the LSA AUTH 2 response */
-
 	make_net_r_auth_2(&r_a, resp_cred, &srv_flgs, status);
 
 	/* store the response in the SMB stream */
 	net_io_r_auth_2("", &r_a, rdata, 0);
-
 }
 
-/***********************************************************************************
+/*************************************************************************
  make_net_r_srv_pwset:
- ***********************************************************************************/
+ *************************************************************************/
 static void make_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
                              DOM_CRED *srv_cred, int status)  
 {

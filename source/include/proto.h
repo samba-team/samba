@@ -1523,6 +1523,8 @@ BOOL lp_encrypted_passwords(void);
 BOOL lp_update_encrypted(void);
 BOOL lp_client_ntlmv2(void);
 BOOL lp_server_ntlmv2(void);
+BOOL lp_client_schannel(void);
+BOOL lp_server_schannel(void);
 BOOL lp_syslog_only(void);
 BOOL lp_timestamp_logs(void);
 BOOL lp_browse_list(void);
