@@ -83,6 +83,7 @@ parse_something (const char *s, const struct units *units,
 	const struct units *u, *partial_unit;
 	size_t u_len;
 	unsigned partial;
+	int no_val_p = 0;
 
 	while(isspace((unsigned char)*p) || *p == ',')
 	    ++p;
@@ -91,6 +92,7 @@ parse_something (const char *s, const struct units *units,
 	if (val == 0 && p == next) {
 	    if(!accept_no_val_p)
 		return -1;
+	    no_val_p = 1;
 	}
 	p = next;
 	while (isspace((unsigned char)*p))
@@ -107,7 +109,7 @@ parse_something (const char *s, const struct units *units,
 	    ++p;
 	    val = -1;
 	}
-	if (val == 0)
+	if (no_val_p && val == 0)
 	    val = 1;
 	u_len = strcspn (p, ", \t");
 	partial = 0;
