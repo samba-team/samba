@@ -1,11 +1,14 @@
                  ================================
-                 Release Notes for Samba 3.0.2rc1
-                         January 16, 2004
+                 Release Notes for Samba 3.0.2rc2
+                         January XX, 2004
                  ================================
 
-This is a preview release of the Samba 3.0.2 code base and is
-provided for testing only.  This release is *not* intended for
-production servers.  Use at your own risk.
+This is a release candidate snapshot of the Samba 3.0.2 code 
+base and should be considered for testing only.  A release 
+candidate (RC) means that we are close to the final, stable 
+release and in provided for Quality Assurance (QA) purposes.  
+This release is *not* intended for production servers.  Use 
+at your own risk.
 
 There have been several bug fixes since the 3.0.1 release that
 we feel are important to make available to the Samba community
@@ -16,15 +19,49 @@ Common bugs fixed in this preview release include:
 
   o <FILL THIS IN>
 
+
 ######################################################################
 Changes
 #######
-Changes since 3.0.2pre1
+Changes since 3.0.2rc1
 -----------------------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details.  The list of changes per contributor are as follows:
 
+o   Jeremy Allison <jra@samba.org>
+    
+       
+o   Andrew Bartlet <abartlet@samba.org>
+
+    
+o   Alexander Bokovoy <ab@samba.org>
+      
+      
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix server connection code in rpcclient.
+
+
+o   Volker Lendecke <vl@samba.org>
+      
+      
+o   Herb Lewis <herb@samba.org>
+    
+    
+o   Jim McDonough <jmcd@samba.org>
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    
+
+o   Tim Potter <tpot@samba.org>
+
+    
+o   Jelmer Vernooij <jelmer@samba.org>
+
+
+Changes since 3.0.2pre1
+-----------------------
 
 o   Jeremy Allison <jra@samba.org>
     * Revert change that broke Exchange clear text samlogons.
@@ -36,7 +73,7 @@ o   Andrew Bartlet <abartlet@samba.org>
     * BUG 722: Allow winbindd to map machine accounts to uids.
     * More cleanups for winbindd's find_our_domain().
     * More clearly detect whether a domain controller is an NT4
-      or mixed-mode AD DC.
+      or mixed-mode AD DC (additional bug fixes by jerry & jmcd).
     * Increase separation between DNS queries for hosts and queries
       for AD domain controllers.
 
@@ -54,11 +91,12 @@ o   Alexander Bokovoy <ab@samba.org>
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix several warnings reported by the SUN Forte C compiler.
     * Fully control DNS queries for AD DC's using 'name resolve order'.
-    * BUG 770: Send the SMBjobid for unix jobs back to the client.
+    * BUG 770: Send the SMBjobid for UNIX jobs back to the client.
     * BUG 972: Fix segfault in cli_ds_getprimarydominfo().
     * BUG 936: fix bind credentials for schannel binds in smbd.
     * BUG 446: Fix output of smbclient for better compatibility 
       with scripts based on the 2.2 version (including Amanda).
+    * BUG 891, 949: Fedora packaging fixes.
 
 
 o   Luke Howard <lukeh@PADL.COM>
@@ -74,19 +112,28 @@ o   Volker Lendecke <vl@samba.org>
     * Fix a segfaults in winbindd.
     * Fix the user's domain passed to register_vuid() from 
       reply_spnego_kerberos().
+    * Add NSS example code in nss_winbind to convert UNIX 
+      id's <-> Windows SIDs.
       
       
 o   Herb Lewis <herb@samba.org>
     * Fix bit rot in psec.
     
     
+o   Jianliang Lu <j.lu@tiesse.com>
+    * BUG 381: check builtin (not local) group SID when updating 
+      group membership.
+
+
 o   John Klinger <john.klinger@lmco.com>
     * Implement initgroups() call in nss_winbind on Solaris.
 
 
-o   Jim McDonough <jmcd@us.ibm.com>
+o   Jim McDonough <jmcd@samba.org>
     * Fix regression in net rpc join caused by recent changes 
       to cli_lsa_query_info_policy().
+    * BUG 964: Fix crash bug in 'net rpc join' using a preexisting
+      machine account.
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -96,11 +143,11 @@ o   Stefan Metzmacher <metze@samba.org>
     * Fix disk_free calculation with group quotas.
     * Add debug class 'quota' and a lot of DEBUG()'s 
       to the quota code.
-    * Fix sys_chown() when no chown() is presend
+    * Fix sys_chown() when no chown() is present.
     
 
 o   Tim Potter <tpot@samba.org>
-    * BUG 905: Remove POBAD_CC to fix Solaris FOrte compiles.
+    * BUG 905: Remove POBAD_CC to fix Solaris Forte compiles.
 
     
 o   Jelmer Vernooij <jelmer@samba.org>
