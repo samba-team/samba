@@ -54,7 +54,6 @@ void unexpected_packet(struct packet_struct *p)
 			       O_RDWR | O_CREAT, 0644);
 		talloc_destroy(mem_ctx);
 		if (!tdbd) {
-			DEBUG(0,("Failed to open unexpected.tdb\n"));
 			return;
 		}
 	}
