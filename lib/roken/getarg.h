@@ -60,4 +60,8 @@ enum {
 int getarg(struct getargs *args, size_t num_args, 
 	   int argc, char **argv, int *optind);
 
+void arg_printusage (struct getargs *args,
+		     size_t num_args,
+		     const char *extra_string);
+
 #endif /* __GETARG_H__ */
