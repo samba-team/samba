@@ -75,7 +75,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     char                *   trace_file_name;
 
     /*  Initialize the POP parameter block */
-    bzero ((char *)p,(int)sizeof(POP));
+    memset (p,0, sizeof(POP));
 
     /*  Save my name in a global variable */
     p->myname = argmessage[0];
@@ -184,7 +184,9 @@ pop_init(POP *p,int argcount,char **argmessage)
             /*  Look for the client's IP address in the list returned 
                 for its name */
             for (addrp=ch_again->h_addr_list; *addrp; ++addrp)
-                if (bcmp(*addrp,&(cs.sin_addr),sizeof(cs.sin_addr)) == 0) break;
+	        if (memcmp(*addrp, &cs.sin_addr, sizeof(cs.sin_addr))
+		    == 0)
+		  break;
 
             if (!*addrp) {
                 pop_log (p,POP_PRIORITY,

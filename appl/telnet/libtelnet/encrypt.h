@@ -65,7 +65,7 @@
 #define	VALIDKEY(key)	( key[0] | key[1] | key[2] | key[3] | \
 			  key[4] | key[5] | key[6] | key[7])
 
-#define	SAMEKEY(k1, k2)	(!bcmp((void *)k1, (void *)k2, sizeof(des_cblock)))
+#define	SAMEKEY(k1, k2)	(!memcmp(k1, k2, sizeof(des_cblock)))
 
 typedef	struct {
 	short		type;

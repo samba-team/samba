@@ -61,7 +61,7 @@ __icheckhost(u_int32_t raddr, const char *lhost)
 
 	/* Spin through ip addresses. */
 	for (pp = hp->h_addr_list; *pp; ++pp)
-		if (!bcmp(&raddr, *pp, sizeof(u_long)))
+	        if (memcmp(&raddr, *pp, sizeof(u_long)) == 0)
 			return (1);
 
 	/* No match. */

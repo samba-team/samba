@@ -242,7 +242,7 @@ k_afsklog(char *cell, char *krealm)
        * Build a struct ClearToken
        */
       ct.AuthHandle = c.kvno;
-      bcopy((char *)c.session, ct.HandShakeKey, sizeof(c.session));
+      memcpy (ct.HandShakeKey, c.session, sizeof(c.session));
       ct.ViceId = getuid();	/* is this always valid? */
       ct.BeginTimestamp = 1 + c.issue_date;
       ct.EndTimestamp = krb_life_to_time(c.issue_date, c.lifetime);
@@ -252,30 +252,30 @@ k_afsklog(char *cell, char *krealm)
        * length of secret token followed by secret token
        */
       sizeof_x = c.ticket_st.length;
-      bcopy((char *)&sizeof_x, t, sizeof(sizeof_x));
+      memcpy(t, &sizeof_x, sizeof(sizeof_x));
       t += sizeof(sizeof_x);
-      bcopy((char *)c.ticket_st.dat, t, sizeof_x);
+      memcpy(t, c.ticket_st.dat, sizeof_x);
       t += sizeof_x;
       /*
        * length of clear token followed by clear token
        */
       sizeof_x = sizeof(ct);
-      bcopy((char *)&sizeof_x, t, sizeof(sizeof_x));
+      memcpy(t, &sizeof_x, sizeof(sizeof_x));
       t += sizeof(sizeof_x);
-      bcopy((char *)&ct, t, sizeof_x);
+      memcpy(t, &ct, sizeof_x);
       t += sizeof_x;
 
       /*
        * do *not* mark as primary cell
        */
       sizeof_x = 0;
-      bcopy((char *)&sizeof_x, t, sizeof(sizeof_x));
+      memcpy(t, &sizeof_x, sizeof(sizeof_x));
       t += sizeof(sizeof_x);
       /*
        * follow with cell name
        */
       sizeof_x = strlen(cell) + 1;
-      bcopy(cell, t, sizeof_x);
+      memcpy(t, cell, sizeof_x);
       t += sizeof_x;
 
       /*
@@ -336,7 +336,7 @@ int
 k_unlog(void)
 {
   struct ViceIoctl parms;
-  bzero((char *)&parms, sizeof(parms));
+  memset(&parms, 0, sizeof(parms));
   return k_pioctl(0, VIOCUNLOG, &parms, 0);
 }
 
@@ -397,7 +397,7 @@ k_hasafs(void)
    * If the syscall is absent we recive a SIGSYS.
    */
   afs_entry_point = NO_ENTRY_POINT;
-  bzero(&parms, sizeof(parms));
+  memset(&parms, 0, sizeof(parms));
   
   saved_errno = errno;
   saved_func = signal(SIGSYS, SIGSYS_handler);
