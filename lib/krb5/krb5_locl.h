@@ -142,12 +142,16 @@ typedef enum {
     KRB5_PA_PAC_REQ_FALSE
 } krb5_get_init_creds_req_pac;
 
+typedef struct krb5_pk_init_ctx_data *krb5_pk_init_ctx
+
 struct _krb5_get_init_creds_opt_private {
     /* ENC_TIMESTAMP */
     const char *password;
     krb5_s2k_proc key_proc;
     /* PA_PAC_REQUEST */
     krb5_get_init_creds_req_pac req_pac;
+    /* PKINIT */
+    krb5_pk_init_ctx pk_init_ctx;
 };
 
 #endif /* __KRB5_LOCL_H__ */
