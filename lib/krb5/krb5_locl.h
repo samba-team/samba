@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -104,6 +104,9 @@ struct sockaddr_dl;
 #endif
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
+#endif
+#ifdef HAVE_SYS_FILE_H
+#include <sys/file.h>
 #endif
 #include <roken.h>
 #include <parse_time.h>
