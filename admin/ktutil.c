@@ -281,6 +281,7 @@ kt_get(int argc, char **argv)
     char *realm = NULL;
     char *admin_server = NULL;
     int server_port = 0;
+    int help_flag = 0;
     int optind = 0;
     int i, j;
     
@@ -296,19 +297,25 @@ kt_get(int argc, char **argv)
 	},
 	{ "server-port",	's',	arg_integer, NULL,
 	  "server to contact", "port number" 
-	}
+	},
+	{ "help",		'h',	arg_flag,    NULL }
     };
 
     args[0].value = &principal;
     args[1].value = &realm;
     args[2].value = &admin_server;
     args[3].value = &server_port;
+    args[4].value = &help_flag;
 
     memset(&conf, 0, sizeof(conf));
 
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind)
+       || help_flag) {
+	arg_printusage(args, sizeof(args) / sizeof(args[0]), 
+		       "ktutil get", "principal...");
 	return 0;
-
+    }
+    
     if(realm) {
 	krb5_set_default_realm(context, realm); /* XXX should be fixed
 						   some other way */
