@@ -1655,6 +1655,87 @@ static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,c
   return(True);
 }
 
+/****************************************************************************
+  Add a share
+  ****************************************************************************/
+static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,char *data,
+				 int mdrcnt,int mprcnt,
+				 char **rdata,char **rparam,
+				 int *rdata_len,int *rparam_len)
+{
+  char *str1 = param+2;
+  char *str2 = skip_string(str1,1);
+  char *p = skip_string(str2,1);
+  int uLevel = SVAL(p,0);
+  fstring sharename;
+  fstring comment;
+  pstring pathname;
+  pstring command;
+  int offset;
+  int snum;
+  int res;
+  
+  /* check it's a supported varient */
+  if (!prefix_ok(str1,RAP_WShareAdd_REQ)) return False;
+  if (!check_share_info(uLevel,str2)) return False;
+  if (uLevel != 2) {
+    *rparam_len = 4;
+    *rparam = REALLOC(*rparam,*rparam_len);
+    *rdata_len = 0;
+    SSVAL(*rparam,0,NERR_notsupported);
+    SSVAL(*rparam,2,0);
+    return True;
+  }
+
+  pull_ascii_fstring(sharename,data);
+  snum = find_service(sharename);
+  if (snum >= 0) { /* already exists */
+    *rparam_len = 4;
+    *rparam = REALLOC(*rparam,*rparam_len);
+    SSVAL(*rparam,0,ERRfilexists);
+    SSVAL(*rparam,2,0);
+    return True;
+  }
+
+  /* only support disk share adds */
+  if (SVAL(data,14)!=STYPE_DISKTREE) {
+    *rparam_len = 4;
+    *rparam = REALLOC(*rparam,*rparam_len);
+    *rdata_len = 0;
+    SSVAL(*rparam,0,NERR_notsupported);
+    SSVAL(*rparam,2,0);
+    return True;
+  }
+
+  offset = IVAL(data, 16);
+  pull_ascii_fstring(comment, offset? (data+offset) : "");
+  offset = IVAL(data, 26);
+  pull_ascii_pstring(pathname, offset? (data+offset) : "");
+
+  string_replace(sharename, '"', ' ');
+  string_replace(pathname, '"', ' ');
+  string_replace(comment, '"', ' ');
+
+  slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
+	   lp_add_share_cmd(), CONFIGFILE, sharename, pathname, comment);
+
+  DEBUG(10,("api_RNetShareAdd: Running [%s]\n", command ));
+  if ((res = smbrun(command, NULL)) != 0) {
+    DEBUG(0,("api_RNetShareAdd: Running [%s] returned (%d)\n", command, res ));
+    return ERRnoaccess;
+  } else
+    message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False);
+  return True;
+
+  *rparam_len = 6;
+  *rparam = REALLOC(*rparam,*rparam_len);
+  SSVAL(*rparam,0,NERR_Success);
+  SSVAL(*rparam,2,0);		/* converter word */
+  SSVAL(*rparam,4,*rdata_len);
+  *rdata_len = 0;
+  
+  return(True);
+}
 
 /****************************************************************************
   view list of groups available
@@ -3379,37 +3460,38 @@ struct
 	     int,int,char **,char **,int *,int *);
   int flags;
 } api_commands[] = {
-  {"RNetShareEnum",	0,	api_RNetShareEnum,0},
-  {"RNetShareGetInfo",	1,	api_RNetShareGetInfo,0},
-  {"RNetServerGetInfo",	13,	api_RNetServerGetInfo,0},
-  {"RNetGroupEnum",	47,	api_RNetGroupEnum,0},
-  {"RNetGroupGetUsers", 52,	api_RNetGroupGetUsers,0},
-  {"RNetUserEnum", 	53,	api_RNetUserEnum,0},
-  {"RNetUserGetInfo",	56,	api_RNetUserGetInfo,0},
-  {"NetUserGetGroups",	59,	api_NetUserGetGroups,0},
-  {"NetWkstaGetInfo",	63,	api_NetWkstaGetInfo,0},
-  {"DosPrintQEnum",	69,	api_DosPrintQEnum,0},
-  {"DosPrintQGetInfo",	70,	api_DosPrintQGetInfo,0},
-  {"WPrintQueuePause",  74, api_WPrintQueueCtrl,0},
-  {"WPrintQueueResume", 75, api_WPrintQueueCtrl,0},
-  {"WPrintJobEnumerate",76,	api_WPrintJobEnumerate,0},
-  {"WPrintJobGetInfo",	77,	api_WPrintJobGetInfo,0},
-  {"RDosPrintJobDel",	81,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobPause",	82,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobResume",83,	api_RDosPrintJobDel,0},
-  {"WPrintDestEnum",	84,	api_WPrintDestEnum,0},
-  {"WPrintDestGetInfo",	85,	api_WPrintDestGetInfo,0},
-  {"NetRemoteTOD",	91,	api_NetRemoteTOD,0},
-  {"WPrintQueuePurge",	103,	api_WPrintQueueCtrl,0},
-  {"NetServerEnum",	104,	api_RNetServerEnum,0},
-  {"WAccessGetUserPerms",105,	api_WAccessGetUserPerms,0},
-  {"SetUserPassword",	115,	api_SetUserPassword,0},
-  {"WWkstaUserLogon",	132,	api_WWkstaUserLogon,0},
-  {"PrintJobInfo",	147,	api_PrintJobInfo,0},
-  {"WPrintDriverEnum",	205,	api_WPrintDriverEnum,0},
-  {"WPrintQProcEnum",	206,	api_WPrintQProcEnum,0},
-  {"WPrintPortEnum",	207,	api_WPrintPortEnum,0},
-  {"SamOEMChangePassword", 214, api_SamOEMChangePassword,0},
+  {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum,0},
+  {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo,0},
+  {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd,0},
+  {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo,0},
+  {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum,0},
+  {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers,0},
+  {"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum,0},
+  {"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo,0},
+  {"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups,0},
+  {"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo,0},
+  {"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum,0},
+  {"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo,0},
+  {"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl,0},
+  {"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl,0},
+  {"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate,0},
+  {"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo,0},
+  {"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel,0},
+  {"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum,0},
+  {"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo,0},
+  {"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD,0},
+  {"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl,0},
+  {"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum,0},
+  {"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms,0},
+  {"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword,0},
+  {"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon,0},
+  {"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo,0},
+  {"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum,0},
+  {"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum,0},
+  {"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum,0},
+  {"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword,0},
   {NULL,		-1,	api_Unsupported,0}};
 
 
