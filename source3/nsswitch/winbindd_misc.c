@@ -23,6 +23,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 extern pstring global_myname;
 
 /************************************************************************

@@ -22,6 +22,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 struct winbind_cache {
 	struct winbindd_methods *backend;
 	TDB_CONTEXT *tdb;

@@ -22,6 +22,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /* This is the max handles across all instances of a pipe name. */
 #ifndef MAX_OPEN_POLS
 #define MAX_OPEN_POLS 1024

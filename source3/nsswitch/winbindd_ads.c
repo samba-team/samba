@@ -24,6 +24,9 @@
 
 #ifdef HAVE_ADS
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* the realm of our primary LDAP server */
 static char *primary_realm;
 

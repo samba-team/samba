@@ -23,6 +23,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* Use our own create socket code so we don't recurse.... */
 
 static int wins_lookup_open_socket_in(void)

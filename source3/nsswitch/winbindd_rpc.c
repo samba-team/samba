@@ -23,6 +23,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
    application. */

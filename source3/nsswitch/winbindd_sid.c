@@ -22,6 +22,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* Convert a string  */
 
 enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)

@@ -24,6 +24,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
+
 /*******************************************************************
  Inits a SH_INFO_1_STR structure
 ********************************************************************/

@@ -24,6 +24,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* Return a password structure from a username.  */
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 

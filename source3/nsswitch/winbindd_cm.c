@@ -60,6 +60,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 /* Global list of connections.	Initially a DLIST but can become a hash
    table or whatever later. */
 

@@ -24,6 +24,10 @@
 #include "rpc_parse.h"
 #include "nterr.h"
 #endif
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_CLI
+
 extern pstring global_myname;
 
 struct msg_info_table {

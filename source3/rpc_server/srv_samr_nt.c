@@ -29,6 +29,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 extern DOM_SID global_sid_Builtin;

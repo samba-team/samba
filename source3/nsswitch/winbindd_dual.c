@@ -31,6 +31,9 @@
 
 #include "winbindd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_WINBIND
+
 extern BOOL opt_dual_daemon;
 BOOL backgroud_process = False;
 int dual_daemon_pipe = -1;
