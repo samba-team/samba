@@ -432,10 +432,6 @@ typedef int socklen_t;
 #endif
 
 
-#ifndef uchar
-#define uchar unsigned char
-#endif
-
 /*
    Samba needs type definitions for 
    int8_t,  int16_t,  int32_t, int64_t 

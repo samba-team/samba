@@ -161,8 +161,8 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *wksta_name, 
-				     const uchar *lm_network_pwd, int lm_pwd_len,
-				     const uchar *nt_network_pwd, int nt_pwd_len)
+				     const uint8_t *lm_network_pwd, int lm_pwd_len,
+				     const uint8_t *nt_network_pwd, int nt_pwd_len)
 {
 	BOOL ret;
 	NTSTATUS nt_status;
@@ -193,10 +193,10 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 					 const char *smb_name, 
 					 const char *client_domain, 
 					 const char *wksta_name, 
-					 const uchar chal[8], 
-					 const uchar lm_interactive_pwd[16], 
-					 const uchar nt_interactive_pwd[16], 
-					 const uchar *dc_sess_key)
+					 const uint8_t chal[8], 
+					 const uint8_t lm_interactive_pwd[16], 
+					 const uint8_t nt_interactive_pwd[16], 
+					 const uint8_t *dc_sess_key)
 {
 	char lm_pwd[16];
 	char nt_pwd[16];
@@ -222,10 +222,10 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 #endif
 	
 	if (lm_interactive_pwd)
-		SamOEMhash((uchar *)lm_pwd, key, sizeof(lm_pwd));
+		SamOEMhash((uint8_t *)lm_pwd, key, sizeof(lm_pwd));
 	
 	if (nt_interactive_pwd)
-		SamOEMhash((uchar *)nt_pwd, key, sizeof(nt_pwd));
+		SamOEMhash((uint8_t *)nt_pwd, key, sizeof(nt_pwd));
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));
@@ -314,7 +314,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 		dump_data(100, plaintext_password.data, plaintext_password.length);
 #endif
 
-		SMBencrypt( (const char *)plaintext_password.data, (const uchar*)chal, local_lm_response);
+		SMBencrypt( (const char *)plaintext_password.data, (const uint8_t *)chal, local_lm_response);
 		local_lm_blob = data_blob(local_lm_response, 24);
 		
 		/* We can't do an NT hash here, as the password needs to be

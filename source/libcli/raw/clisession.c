@@ -252,7 +252,7 @@ static void use_nt1_session_keys(struct cli_session *session,
 				 const char *password, const DATA_BLOB  *nt_response)
 {
 	struct cli_transport *transport = session->transport; 
-	uchar nt_hash[16];
+	uint8_t nt_hash[16];
 	DATA_BLOB session_key = data_blob(NULL, 16);
 
 	E_md4hash(password, nt_hash);

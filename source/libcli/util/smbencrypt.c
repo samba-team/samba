@@ -32,10 +32,10 @@
 
    Returns False if password must have been truncated to create LM hash
 */
-BOOL SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
+BOOL SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
 {
 	BOOL ret;
-	uchar p21[21];
+	uint8_t p21[21];
 
 	memset(p21,'\0',21);
 	ret = E_deshash(passwd, p21); 
@@ -58,7 +58,7 @@ BOOL SMBencrypt(const char *passwd, const uchar *c8, uchar p24[24])
  * @param p16 return password hashed with md4, caller allocated 16 byte buffer
  */
  
-void E_md4hash(const char *passwd, uchar p16[16])
+void E_md4hash(const char *passwd, uint8_t p16[16])
 {
 	int len;
 	smb_ucs2_t wpwd[129];
@@ -80,7 +80,7 @@ void E_md4hash(const char *passwd, uchar p16[16])
  * @note p16 is filled in regardless
  */
  
-BOOL E_deshash(const char *passwd, uchar p16[16])
+BOOL E_deshash(const char *passwd, uint8_t p16[16])
 {
 	BOOL ret = True;
 	fstring dospwd; 
@@ -110,7 +110,7 @@ BOOL E_deshash(const char *passwd, uchar p16[16])
  */
  
 /* Does both the NT and LM owfs of a user's password */
-void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16])
+void nt_lm_owf_gen(const char *pwd, uint8_t nt_p16[16], uint8_t p16[16])
 {
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	memset(nt_p16, '\0', 16);
@@ -122,7 +122,7 @@ void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16])
 	dump_data(100, (char *)nt_p16, 16);
 #endif
 
-	E_deshash(pwd, (uchar *)p16);
+	E_deshash(pwd, (uint8_t *)p16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_lm_owf_gen: pwd, lm#\n"));
@@ -132,10 +132,10 @@ void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16])
 }
 
 /* Does both the NTLMv2 owfs of a user's password */
-BOOL ntv2_owf_gen(const uchar owf[16],
+BOOL ntv2_owf_gen(const uint8_t owf[16],
 		  const char *user_in, const char *domain_in,
 		  BOOL upper_case_domain, /* Transform the domain into UPPER case */
-		  uchar kr_buf[16])
+		  uint8_t kr_buf[16])
 {
 	smb_ucs2_t *user;
 	smb_ucs2_t *domain;
@@ -188,9 +188,9 @@ BOOL ntv2_owf_gen(const uchar owf[16],
 }
 
 /* Does the des encryption from the NT or LM MD4 hash. */
-void SMBOWFencrypt(const uchar passwd[16], const uchar *c8, uchar p24[24])
+void SMBOWFencrypt(const uint8_t passwd[16], const uint8_t *c8, uint8_t p24[24])
 {
-	uchar p21[21];
+	uint8_t p21[21];
 
 	ZERO_STRUCT(p21);
  
@@ -200,9 +200,9 @@ void SMBOWFencrypt(const uchar passwd[16], const uchar *c8, uchar p24[24])
 
 /* Does the NT MD4 hash then des encryption. */
  
-void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24)
+void SMBNTencrypt(const char *passwd, uint8_t *c8, uint8_t *p24)
 {
-	uchar p21[21];
+	uint8_t p21[21];
  
 	memset(p21,'\0',21);
  
@@ -218,10 +218,10 @@ void SMBNTencrypt(const char *passwd, uchar *c8, uchar *p24)
 }
 
 /* Does the md5 encryption from the Key Response for NTLMv2. */
-void SMBOWFencrypt_ntv2(const uchar kr[16],
+void SMBOWFencrypt_ntv2(const uint8_t kr[16],
 			const DATA_BLOB *srv_chal,
 			const DATA_BLOB *cli_chal,
-			uchar resp_buf[16])
+			uint8_t resp_buf[16])
 {
 	HMACMD5Context ctx;
 
@@ -238,8 +238,8 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 #endif
 }
 
-void SMBsesskeygen_ntv2(const uchar kr[16],
-			const uchar * nt_resp, uint8_t sess_key[16])
+void SMBsesskeygen_ntv2(const uint8_t kr[16],
+			const uint8_t * nt_resp, uint8_t sess_key[16])
 {
 	/* a very nice, 128 bit, variable session key */
 	
@@ -255,7 +255,7 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 #endif
 }
 
-void SMBsesskeygen_ntv1(const uchar kr[16], uint8_t sess_key[16])
+void SMBsesskeygen_ntv1(const uint8_t kr[16], uint8_t sess_key[16])
 {
 	/* yes, this session key does not change - yes, this 
 	   is a problem - but it is 128 bits */
@@ -268,14 +268,14 @@ void SMBsesskeygen_ntv1(const uchar kr[16], uint8_t sess_key[16])
 #endif
 }
 
-void SMBsesskeygen_lm_sess_key(const uchar lm_hash[16],
-			       const uchar lm_resp[24], /* only uses 8 */ 
+void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
+			       const uint8_t lm_resp[24], /* only uses 8 */ 
 			       uint8_t sess_key[16])
 {
 	/* Calculate the LM session key (effective length 40 bits,
 	   but changes with each session) */
-	uchar p24[24];
-	uchar p21[21];
+	uint8_t p24[24];
+	uint8_t p21[21];
  
 	memset(p21,'\0',21);
 	memcpy(p21, lm_hash, 8);    
@@ -306,7 +306,7 @@ DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx,
 
 static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLOB *names_blob) 
 {
-	uchar client_chal[8];
+	uint8_t client_chal[8];
 	DATA_BLOB response = data_blob(NULL, 0);
 	char long_date[8];
 	NTTIME nttime;
@@ -330,11 +330,11 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLO
 	return response;
 }
 
-static DATA_BLOB NTLMv2_generate_response(const uchar ntlm_v2_hash[16],
+static DATA_BLOB NTLMv2_generate_response(const uint8_t ntlm_v2_hash[16],
 					  const DATA_BLOB *server_chal,
 					  const DATA_BLOB *names_blob)
 {
-	uchar ntlmv2_response[16];
+	uint8_t ntlmv2_response[16];
 	DATA_BLOB ntlmv2_client_data;
 	DATA_BLOB final_response;
 	
@@ -364,10 +364,10 @@ static DATA_BLOB NTLMv2_generate_response(const uchar ntlm_v2_hash[16],
 	return final_response;
 }
 
-static DATA_BLOB LMv2_generate_response(const uchar ntlm_v2_hash[16],
+static DATA_BLOB LMv2_generate_response(const uint8_t ntlm_v2_hash[16],
 					const DATA_BLOB *server_chal)
 {
-	uchar lmv2_response[16];
+	uint8_t lmv2_response[16];
 	DATA_BLOB lmv2_client_data = data_blob(NULL, 8);
 	DATA_BLOB final_response = data_blob(NULL, 24);
 	
@@ -395,8 +395,8 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
 		      DATA_BLOB *user_session_key) 
 {
-	uchar nt_hash[16];
-	uchar ntlm_v2_hash[16];
+	uint8_t nt_hash[16];
+	uint8_t ntlm_v2_hash[16];
 	E_md4hash(password, nt_hash);
 
 	/* We don't use the NT# directly.  Instead we use it mashed up with
@@ -434,7 +434,7 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 ************************************************************/
 BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
 {
-	uchar new_pw[512];
+	uint8_t new_pw[512];
 	size_t new_pw_len;
 
 	new_pw_len = push_string(NULL, new_pw,

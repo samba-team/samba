@@ -968,7 +968,7 @@ static BOOL unix_do_match(char *regexp, char *str)
 	return False;
 }
 
-void dump_data_pw(const char *msg, const uchar * data, size_t len)
+void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
 {
 #ifdef DEBUG_PASSWORD
 	DEBUG(11, ("%s", msg));

@@ -226,8 +226,8 @@ int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
 		struct in_addr ip;
 		int bits1, bits2;
 		ip = *iface_n_bcast(i);
-		bits1 = matching_quad_bits((uchar *)&ip1->s_addr, (uchar *)&ip.s_addr);
-		bits2 = matching_quad_bits((uchar *)&ip2->s_addr, (uchar *)&ip.s_addr);
+		bits1 = matching_quad_bits((uint8_t *)&ip1->s_addr, (uint8_t *)&ip.s_addr);
+		bits2 = matching_quad_bits((uint8_t *)&ip2->s_addr, (uint8_t *)&ip.s_addr);
 		max_bits1 = MAX(bits1, max_bits1);
 		max_bits2 = MAX(bits2, max_bits2);
 	}	

@@ -107,7 +107,7 @@ typedef struct ntlmssp_state
 
 	/* internal variables used by NTLM2 */
 	BOOL doing_ntlm2; 
-	uchar session_nonce[16];
+	uint8_t session_nonce[16];
 
 	/* internal variables used by KEY_EXCH (client-supplied user session key */
 	DATA_BLOB encrypted_session_key;
