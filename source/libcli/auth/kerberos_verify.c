@@ -202,7 +202,7 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
  authorization_data if available.
 ***********************************************************************************/
 
-NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
+ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx, 
 			   krb5_context context,
 			   krb5_auth_context auth_context,
 			   const char *realm, const DATA_BLOB *ticket, 
