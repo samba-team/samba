@@ -27,7 +27,6 @@
 #undef VOLATILE
 
 #include <ns_daemon.h>
-#define NSD_LOGLEVEL NSD_LOG_MIN
 #endif
 
 #ifndef INADDRSZ
@@ -64,8 +63,12 @@ static int wins_lookup_open_socket_in(void)
 
 	/* now we've got a socket - we need to bind it */
 
-	if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0)
+	if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0) {
+		close(res);
 		return(-1);
+	}
+
+	set_socket_options(res,"SO_BROADCAST");
 
 	return res;
 }
@@ -86,7 +89,30 @@ static void nss_wins_init(void)
 	codepage_initialise(lp_client_code_page());
 }
 
-static struct in_addr *lookup_backend(const char *name, int *count)
+static struct node_status *lookup_byaddr_backend(char *addr, int *count)
+{
+	int fd;
+	struct in_addr  ip;
+	struct nmb_name nname;
+	struct node_status *status;
+
+	if (!initialised) {
+		nss_wins_init();
+	}
+
+	fd = wins_lookup_open_socket_in();
+	if (fd == -1)
+		return NULL;
+
+	make_nmb_name(&nname, "*", 0);
+	ip = *interpret_addr2(addr);
+	status = node_status_query(fd,&nname,ip, count);
+
+	close(fd);
+	return status;
+}
+
+static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
 	int fd;
 	struct in_addr *ret = NULL;
@@ -103,15 +129,6 @@ static struct in_addr *lookup_backend(const char *name, int *count)
 	if (fd == -1)
 		return NULL;
 
-	set_socket_options(fd,"SO_BROADCAST");
-
-/* The next four lines commented out by JHT
-   and replaced with the four lines following */
-/*	if( !zero_ip( wins_ip ) ) {
- *		ret = name_query( fd, name, 0x20, False, True, wins_src_ip(), count );
- *		goto out;
- *	}
- */
 	p = wins_srv_ip();
 	if( !zero_ip(p) ) {
 		ret = name_query(fd,name,0x20,False,True, p, count);
@@ -149,7 +166,7 @@ handle names that are at most 15 characters long
 
 int init(void)
 {
-	nsd_logprintf(NSD_LOGLEVEL, "init (wins)\n");
+	nsd_logprintf(NSD_LOG_MIN, "entering init (wins)\n");
 	nss_wins_init();
 	return NSD_OK;
 }
@@ -159,10 +176,12 @@ int lookup(nsd_file_t *rq)
 	char *map;
 	char *key;
 	struct in_addr *ip_list;
-	int count;
+	struct node_status *status;
+	int i, count;
 	char response[80];
+	BOOL found = False;
 
-	nsd_logprintf(NSD_LOGLEVEL, "lookup (wins)\n");
+	nsd_logprintf(NSD_LOG_MIN, "entering lookup (wins)\n");
 	if (! rq) 
 		return NSD_ERROR;
 
@@ -172,28 +191,51 @@ int lookup(nsd_file_t *rq)
 		return NSD_ERROR;
 	}
 
-	if (strcasecmp(map,"hosts.byname") != 0) {
-		rq->f_status = NS_NOTFOUND;
-		return NSD_NEXT;
-	}
-
 	key = nsd_attr_fetch_string(rq->f_attrs, "key", (char*)0);
 	if (! key || ! *key) {
 		rq->f_status = NS_FATAL;
 		return NSD_ERROR;
 	}
 
-	ip_list = lookup_backend(key, &count);
-
-	if (!ip_list) {
-		rq->f_status = NSS_STATUS_NOTFOUND;
-		return NSD_NEXT;
+	if (strcasecmp(map,"hosts.byaddr") == 0) {
+		if ( status = lookup_byaddr_backend(key, &count)) {
+		    for (i = 0; i < count; i++) {
+			/* ignore group names */
+			if (status[i].flags & 0x80) continue;
+			if (status[i].type == 0x20) {
+				snprintf(response,79,"%s %s\n",key, status[i].name);
+				found = True;
+				break;
+			}
+		    }
+		    free(status);
+		}
+	} else if (strcasecmp(map,"hosts.byname") == 0) {
+	    if (ip_list = lookup_byname_backend(key, &count)) {
+		nsd_logprintf(NSD_LOG_LOW, 
+			"lookup (wins %s) %d addresses returned\n",
+			map,count);
+/* 
+ * IRIX seems to only support being able to return only one IP address so 
+ * just return the last one but still print them all to the log for debugging.
+ */
+		for (i = 0; i < count; i++) {
+		    nsd_logprintf(NSD_LOG_LOW, "lookup (wins) %s\n",
+				inet_ntoa(ip_list[i]));
+		    snprintf(response,79,"%s %s\n",inet_ntoa(ip_list[i]),key);
+		}
+		found = True;
+		free(ip_list);
+	    }
 	}
-	snprintf(response,79,"%s %s\n",inet_ntoa(*ip_list),key);
-	free(ip_list);
 
-	nsd_set_result(rq,NS_SUCCESS,response,strlen(response),VOLATILE);
-	return NSD_OK;
+	if (found) {
+	    nsd_logprintf(NSD_LOG_LOW, "lookup (wins %s) %s\n",map,response);
+	    nsd_set_result(rq,NS_SUCCESS,response,strlen(response),VOLATILE);
+	    return NSD_OK;
+	}
+	rq->f_status = NS_NOTFOUND;
+	return NSD_NEXT;
 }
 
 #else
@@ -209,7 +251,7 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 		
 	memset(he, '\0', sizeof(*he));
 
-	ip_list = lookup_backend(name, &count);
+	ip_list = lookup_byname_backend(name, &count);
 	if (!ip_list) {
 		return NSS_STATUS_NOTFOUND;
 	}
