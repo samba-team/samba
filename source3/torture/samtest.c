@@ -360,7 +360,6 @@ int main(int argc, char *argv[])
 	struct cmd_set 		**cmd_set;
 	struct samtest_state st;
 
-
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
 	poptContext pc;
@@ -374,6 +373,8 @@ int main(int argc, char *argv[])
 	};
 
 	ZERO_STRUCT(st);
+
+	st.token = get_system_token();
 
 	setlinebuf(stdout);
 

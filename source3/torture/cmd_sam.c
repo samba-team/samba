@@ -104,8 +104,8 @@ static NTSTATUS cmd_lookup_sid(struct samtest_state *st, TALLOC_CTX *mem_ctx, in
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!NT_STATUS_IS_OK(status = context_sam_lookup_sid(st->context, st->token, mem_ctx, &sid, &name, &type))) {
-		printf("context_sam_lookup_sid failed!\n");
+	if (!NT_STATUS_IS_OK(status = sam_lookup_sid(st->context, st->token, mem_ctx, &sid, &name, &type))) {
+		printf("sam_lookup_sid failed!\n");
 		return status;
 	}
 
@@ -125,8 +125,8 @@ static NTSTATUS cmd_lookup_name(struct samtest_state *st, TALLOC_CTX *mem_ctx, i
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!NT_STATUS_IS_OK(status = context_sam_lookup_name(st->context, st->token, argv[1], argv[2], &sid, &type))) {
-		printf("context_sam_lookup_name failed!\n");
+	if (!NT_STATUS_IS_OK(status = sam_lookup_name(st->context, st->token, argv[1], argv[2], &sid, &type))) {
+		printf("sam_lookup_name failed!\n");
 		return status;
 	}
 
@@ -155,8 +155,8 @@ static NTSTATUS cmd_lookup_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!NT_STATUS_IS_OK(status = context_sam_lookup_domain(st->context, st->token, argv[1], &sid))) {
-		printf("context_sam_lookup_name failed!\n");
+	if (!NT_STATUS_IS_OK(status = sam_lookup_domain(st->context, st->token, argv[1], &sid))) {
+		printf("sam_lookup_name failed!\n");
 		return status;
 	}
 
@@ -172,8 +172,8 @@ static NTSTATUS cmd_enum_domains(struct samtest_state *st, TALLOC_CTX *mem_ctx, 
 	char **domain_names;
 	NTSTATUS status;
 
-	if (!NT_STATUS_IS_OK(status = context_sam_enum_domains(st->context, st->token, &domain_count, &domain_sids, &domain_names))) {
-		printf("context_sam_enum_domains failed!\n");
+	if (!NT_STATUS_IS_OK(status = sam_enum_domains(st->context, st->token, &domain_count, &domain_sids, &domain_names))) {
+		printf("sam_enum_domains failed!\n");
 		return status;
 	}
 
@@ -218,8 +218,8 @@ static NTSTATUS cmd_show_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, i
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!NT_STATUS_IS_OK(status = context_sam_get_domain_by_sid(st->context, st->token, DOMAIN_ALL_ACCESS, &sid, &domain))) {
-		printf("context_sam_get_domain_by_sid failed\n");
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_by_sid(st->context, st->token, DOMAIN_ALL_ACCESS, &sid, &domain))) {
+		printf("sam_get_domain_by_sid failed\n");
 		return status;
 	}
 
@@ -331,7 +331,6 @@ static NTSTATUS cmd_enum_accounts(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 	DOM_SID sid;
 	int32 account_count, i;
 	SAM_ACCOUNT_ENUM *accounts;
-	uint16 acct_ctrl = (ACB_NORMAL |ACB_WSTRUST |ACB_SVRTRUST |ACB_DOMTRUST | ACB_MNS);
 
 	if (argc != 2) {
 		printf("Usage: enum_accounts <domain-sid>\n");
@@ -343,8 +342,8 @@ static NTSTATUS cmd_enum_accounts(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!NT_STATUS_IS_OK(status = context_sam_enum_accounts(st->context, st->token, &sid, acct_ctrl, &account_count, &accounts))) {
-		printf("context_sam_enum_accounts failed: %s\n", nt_errstr(status));
+	if (!NT_STATUS_IS_OK(status = sam_enum_accounts(st->context, st->token, &sid, 0, &account_count, &accounts))) {
+		printf("sam_enum_accounts failed: %s\n", nt_errstr(status));
 		return status;
 	}
 

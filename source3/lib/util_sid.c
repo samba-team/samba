@@ -34,6 +34,7 @@ DOM_SID global_sid_World_Domain;	    	/* Everyone domain */
 DOM_SID global_sid_World;    				/* Everyone */
 DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner domain */
 DOM_SID global_sid_NT_Authority;    		/* NT Authority */
+DOM_SID global_sid_System;    		/* System */
 DOM_SID global_sid_NULL;            		/* NULL sid */
 DOM_SID global_sid_Authenticated_Users;		/* All authenticated rids */
 DOM_SID global_sid_Network;					/* Network rids */
@@ -56,6 +57,12 @@ static DOM_SID anon_sid_array[3];
 NT_USER_TOKEN anonymous_token = {
     3,
     anon_sid_array
+};
+
+static DOM_SID system_sid_array[4];
+NT_USER_TOKEN system_token = {
+    4,
+    system_sid_array
 };
 
 /****************************************************************************
@@ -101,6 +108,10 @@ const char *sid_type_lookup(uint32 sid_type)
 
 void generate_wellknown_sids(void)
 {
+	static BOOL initialised = False;
+	if (initialised) 
+		return;
+
 	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 	string_to_sid(&global_sid_Builtin_Administrators, "S-1-5-32-544");
 	string_to_sid(&global_sid_Builtin_Users, "S-1-5-32-545");
@@ -111,6 +122,7 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_Creator_Owner, "S-1-3-0");
 	string_to_sid(&global_sid_Creator_Group, "S-1-3-1");
 	string_to_sid(&global_sid_NT_Authority, "S-1-5");
+	string_to_sid(&global_sid_System, "S-1-5-18");
 	string_to_sid(&global_sid_NULL, "S-1-0-0");
 	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
 	string_to_sid(&global_sid_Network, "S-1-5-2");
@@ -120,6 +132,20 @@ void generate_wellknown_sids(void)
 	sid_copy( &anonymous_token.user_sids[0], &global_sid_World);
 	sid_copy( &anonymous_token.user_sids[1], &global_sid_Network);
 	sid_copy( &anonymous_token.user_sids[2], &global_sid_Anonymous);
+
+	/* Create the system token. */
+	sid_copy( &system_token.user_sids[0], &global_sid_World);
+	sid_copy( &system_token.user_sids[1], &global_sid_Authenticated_Users);
+	sid_copy( &system_token.user_sids[2], &global_sid_Builtin_Administrators);
+	sid_copy( &system_token.user_sids[3], &global_sid_System);
+	
+	initialised = True;
+}
+
+NT_USER_TOKEN *get_system_token(void) 
+{
+	generate_wellknown_sids(); /* The token is initialised here */
+	return &system_token;
 }
 
 /**************************************************************************
