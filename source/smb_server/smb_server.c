@@ -681,12 +681,11 @@ static void add_socket(struct server_service *service,
 		       struct in_addr *ifip)
 {
 	char *ptr, *tok;
-	const char *delim = ", ";
+	char **ports = lp_smb_ports();
+	int i;
 
-	for (tok=strtok_r(lp_smb_ports(), delim, &ptr); 
-	     tok; 
-	     tok=strtok_r(NULL, delim, &ptr)) {
-		uint16_t port = atoi(tok);
+	for (i=0;ports[i];i++) {
+		uint16_t port = atoi(ports[i]);
 		if (port == 0) continue;
 		service_setup_socket(service, model_ops, socket_ctx, ifip, &port);
 	}

@@ -89,7 +89,7 @@ struct param_opt {
  */
 typedef struct
 {
-	char *smb_ports;
+	char **smb_ports;
 	char *dos_charset;
 	char *unix_charset;
 	char *display_charset;
@@ -633,7 +633,7 @@ static struct parm_struct parm_table[] = {
 	
 	{"Protocol Options", P_SEP, P_SEPARATOR},
 	
-	{"smb ports", P_STRING, P_GLOBAL, &Globals.smb_ports, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"smb ports", P_LIST, P_GLOBAL, &Globals.smb_ports, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_DEVELOPER},
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
 	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
@@ -1112,7 +1112,7 @@ static void init_globals(void)
 	Globals.client_signing = SMB_SIGNING_SUPPORTED;
 	Globals.server_signing = SMB_SIGNING_SUPPORTED;
 
-	string_set(&Globals.smb_ports, SMB_PORTS);
+	Globals.smb_ports = str_list_make(SMB_PORTS, NULL);
 }
 
 static TALLOC_CTX *lp_talloc;
@@ -1207,7 +1207,7 @@ static const char *lp_string(const char *s)
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
-FN_GLOBAL_STRING(lp_smb_ports, &Globals.smb_ports)
+FN_GLOBAL_LIST(lp_smb_ports, &Globals.smb_ports)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
 FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
 FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)
