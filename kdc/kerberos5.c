@@ -18,7 +18,6 @@ as_rep(krb5_context context,
     EncKDCRepPart *ek = calloc(1, sizeof(*ek));
     krb5_principal client_princ;
     krb5_error_code ret;
-    int e;
     int i;
 
     krb5_keyblock *ckey, *skey;
@@ -63,59 +62,68 @@ as_rep(krb5_context context,
 		       &foo_data,
 		       reply);
 	
-	return 0;
+	ret = 0;
+	goto out;
     } else {
 	krb5_data ts_data;
 	PA_ENC_TS_ENC p;
+	time_t patime;
 	size_t len;
 	EncryptedData enc_data;
 
-	e = decode_EncryptedData(req->padata->val->padata_value.data,
+	ret = decode_EncryptedData(req->padata->val->padata_value.data,
 				 req->padata->val->padata_value.length,
 				 &enc_data,
 				 &len);
-	if (e) {
+	if (ret) {
 	    krb5_mk_error (client_princ,
 			   KRB5KRB_AP_ERR_BAD_INTEGRITY,
 			   "Couldn't decode",
 			   NULL,
 			   reply);
-	    return 0;
+	    goto out;
 	}
 
-	e = krb5_decrypt (context,
-			  enc_data.cipher.data,
-			  enc_data.cipher.length,
-			  enc_data.etype,
-			  &client->keyblock,
-			  &ts_data);
-	if (e) {
+	ret = krb5_decrypt (context,
+			    enc_data.cipher.data,
+			    enc_data.cipher.length,
+			    enc_data.etype,
+			    &client->keyblock,
+			    &ts_data);
+	free_EncryptedData(&enc_data);
+	if (ret) {
 	    krb5_mk_error (client_princ,
 			   KRB5KRB_AP_ERR_BAD_INTEGRITY,
 			   "Couldn't decode",
 			   NULL,
 			   reply);
-	    return 0;
+	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+	    goto out;
 	}
-	e = decode_PA_ENC_TS_ENC(ts_data.data,
-				 ts_data.length,
-				 &p,
-				 &len);
-	if (e) {
+	ret = decode_PA_ENC_TS_ENC(ts_data.data,
+				   ts_data.length,
+				   &p,
+				   &len);
+	krb5_data_free(&ts_data);
+	if (ret) {
 	    krb5_mk_error (client_princ,
 			   KRB5KRB_AP_ERR_BAD_INTEGRITY,
 			   "Couldn't decode",
 			   NULL,
 			   reply);
-	    return 0;
+	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+	    goto out;
 	}
+	patime = p.patimestamp;
+	free_PA_ENC_TS_ENC(&p);
 	if (abs(kdc_time - p.patimestamp) > 300) {
 	    krb5_mk_error (client_princ,
 			   KRB5KDC_ERR_PREAUTH_FAILED,
 			   "Too large time skew",
 			   NULL,
 			   reply);
-	    return 0;
+	    ret = KRB5KDC_ERR_PREAUTH_FAILED;
+	    goto out;
 	}
 	et->flags.pre_authent = 1;
     }
@@ -131,8 +139,10 @@ as_rep(krb5_context context,
 	break;
     }
 
-    if(ret)
-	return KRB5KDC_ERR_ETYPE_NOSUPP;
+    if(ret){
+	ret = KRB5KDC_ERR_ETYPE_NOSUPP;
+	goto out;
+    }
     
     etype = b->etype.val[i];
     
@@ -145,8 +155,10 @@ as_rep(krb5_context context,
     copy_Realm(&b->realm, &rep.ticket.realm);
     copy_PrincipalName(b->sname, &rep.ticket.sname);
 
-    if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey)
-	return KRB5KDC_ERR_BADOPTION;
+    if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey){
+	ret = KRB5KDC_ERR_BADOPTION;
+	goto out;
+    }
     
     et->flags.initial = 1;
     et->flags.forwardable = f.forwardable;
@@ -233,12 +245,12 @@ as_rep(krb5_context context,
 	unsigned char buf[1024]; /* XXX The data could be indefinite */
 	size_t len;
 
-	e = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et, &len);
+	ret = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf),et, &len);
 	free_EncTicketPart(et);
 	free(et);
-	if(e)
-	    return e;
-
+	if(ret) 
+	    goto out;
+	
 	krb5_encrypt_EncryptedData(context, 
 				   buf + sizeof(buf) - len,
 				   len,
@@ -250,11 +262,11 @@ as_rep(krb5_context context,
 	*rep.ticket.enc_part.kvno = server.kvno;
 #endif
 	
-	e = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek, &len);
+	ret = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek, &len);
 	free_EncKDCRepPart(ek);
 	free(ek);
-	if(e)
-	    return e;
+	if(ret)
+	    goto out;
 	krb5_encrypt_EncryptedData(context,
 				   buf + sizeof(buf) - len,
 				   len,
@@ -266,15 +278,21 @@ as_rep(krb5_context context,
 	*rep.enc_part.kvno = client.kvno;
 #endif
 	
-	e = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
+	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
 	free_AS_REP(&rep);
-	if(e)
-	    return e;
+	if(ret)
+	    goto out;
 	
 	krb5_data_copy(reply, buf + sizeof(buf) - len, len);
     }
+out:
+    krb5_free_principal(context, client_princ);
+    hdb_free_entry(context, client);
+    free(client);
+    hdb_free_entry(context, server);
+    free(server);
     
-    return 0;
+    return ret;
 }
 
 krb5_error_code
@@ -334,6 +352,8 @@ tgs_rep(krb5_context context,
 					&krbtgt->keyblock,
 					&ap_req_options,
 					&ticket);
+
+	krb5_free_principal(context, princ);
 	if(ret) 
 	    return ret;
 
@@ -356,7 +376,9 @@ tgs_rep(krb5_context context,
 				       auth->cksum);
 	    if(ret)
 		return ret;
+	    krb5_auth_con_free(context, ac);
 	    free_Authenticator(auth);
+	    free(auth);
 	}
 	    
 	server = db_fetch(context, b->sname, b->realm);
@@ -387,13 +409,13 @@ tgs_rep(krb5_context context,
 	memset(&rep, 0, sizeof(rep));
 	rep.pvno = 5;
 	rep.msg_type = krb_tgs_rep;
-	rep.crealm = tgt->crealm;
-	rep.cname = tgt->cname;
+	copy_Realm(&tgt->crealm, &rep.crealm);
+	copy_PrincipalName(&tgt->cname, &rep.cname);
 	rep.ticket.tkt_vno = 5;
+	copy_Realm(&b->realm, &rep.ticket.realm);
 	copy_PrincipalName (b->sname, &rep.ticket.sname);
-	rep.ticket.realm = strdup(b->realm);
 
-	et->caddr = ticket->tkt.caddr;
+	et->caddr = tgt->caddr;
 	
 	if(f.forwardable){
 	    if(!tgt->flags.forwardable)
@@ -443,6 +465,7 @@ tgs_rep(krb5_context context,
 	    /* XXX  tkt = tgt */
 	    et->flags.invalid = 0;
 	}
+	
 	/* check for excess flags */
 	
 	et->authtime = tgt->authtime;
@@ -517,9 +540,7 @@ tgs_rep(krb5_context context,
 	ek->key = et->key;
 	/* MIT must have at least one last_req */
 	ek->last_req.len = 1;
-	ek->last_req.val = malloc(sizeof(*ek->last_req.val));
-	ek->last_req.val->lr_type = 0;
-	ek->last_req.val->lr_value = 0;
+	ek->last_req.val = calloc(1, sizeof(*ek->last_req.val));
 	ek->nonce = b->nonce;
 	ek->flags = et->flags;
 	ek->authtime = et->authtime;
@@ -572,7 +593,22 @@ tgs_rep(krb5_context context,
 	    free_TGS_REP(&rep);
 	    krb5_data_copy(data, buf + sizeof(buf) - len, len);
 	}
+	free_EncTicketPart(tgt);
+	krb5_free_principal(context, ticket->enc_part2.client);
+	free(ticket);
 	
+	hdb_free_entry(context, krbtgt);
+	free(krbtgt);
+	hdb_free_entry(context, server);
+	free(server);
+	hdb_free_entry(context, client);
+	free(client);
+	free_EncryptionKey(&et->key);
+	if(et->starttime)
+	    free(et->starttime);
+	free(et);
+	free(ek->last_req.val);
+	free(ek);
 	return 0;
     }
 	    
