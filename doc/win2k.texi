@@ -17,7 +17,7 @@ our not so inspired guesses.  Hopefully it's still somewhat useful.
 
 @menu
 * Configuring Windows 2000 to use a Heimdal KDC::  
-* Interrealm keys (trust) between Windows 2000 and a Heimdal KDC::  
+* Inter-Realm keys (trust) between Windows 2000 and a Heimdal KDC::  
 * Create account mappings::     
 * Encryption types::            
 * Authorization data::          
@@ -25,7 +25,7 @@ our not so inspired guesses.  Hopefully it's still somewhat useful.
 * Useful links when reading about the Windows 2000::  
 @end menu
 
-@node Configuring Windows 2000 to use a Heimdal KDC, Interrealm keys (trust) between Windows 2000 and a Heimdal KDC, Windows 2000 compatability, Windows 2000 compatability
+@node Configuring Windows 2000 to use a Heimdal KDC, Inter-Realm keys (trust) between Windows 2000 and a Heimdal KDC, Windows 2000 compatability, Windows 2000 compatability
 @comment node-name, next, precious, up
 @section Configuring Windows 2000 to use a Heimdal KDC
 
@@ -79,9 +79,9 @@ The Windows machine will now map any user to the corresponding principal,
 for example @samp{nisse} to the principal @samp{nisse@@MY.REALM}.
 (This is most likely what you want.)
 
-@node Interrealm keys (trust) between Windows 2000 and a Heimdal KDC, Create account mappings, Configuring Windows 2000 to use a Heimdal KDC, Windows 2000 compatability
+@node Inter-Realm keys (trust) between Windows 2000 and a Heimdal KDC, Create account mappings, Configuring Windows 2000 to use a Heimdal KDC, Windows 2000 compatability
 @comment node-name, next, precious, up
-@section Interrealm keys (trust) between Windows 2000 and a Heimdal KDC
+@section Inter-Realm keys (trust) between Windows 2000 and a Heimdal KDC
 
 See also the Step-by-Step guide from Microsoft, referenced below.
 
@@ -148,7 +148,7 @@ Do not forget to reboot before trying the new realm-trust (after running
 @code{ksetup}). It looks like it might work, but packets are never sent to the
 non-Windows KDC.
 
-@node Create account mappings, Encryption types, Interrealm keys (trust) between Windows 2000 and a Heimdal KDC, Windows 2000 compatability
+@node Create account mappings, Encryption types, Inter-Realm keys (trust) between Windows 2000 and a Heimdal KDC, Windows 2000 compatability
 @comment node-name, next, precious, up
 @section Create account mappings
 
@@ -249,7 +249,7 @@ short list of the interesting documents that we have managed to find.
 @url{http://www.microsoft.com/windows2000/library/planning/security/kerbsteps.asp}
 Kerberos GSS-API (in Windows-ize SSPI), Windows as a client in a
 non-Windows KDC realm, adding unix clients to a Windows 2000 KDC, and
-adding cross-realm trust (@xref{Interrealm trust between Windows 2000
+adding cross-realm trust (@xref{Inter-Realm trust (keys) between Windows 2000
 and a Heimdal KDC}.).
 
 @item Windows 2000 Kerberos Authentication - 
