@@ -1,5 +1,9 @@
 Tue Nov 11 02:53:19 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/krb5/auth_context.c: Implement auth_con_setuserkey.
+
+	* lib/gssapi/init_sec_context.c: Use krb5_auth_con_getkey.
+
 	* lib/krb5/keyblock.c: Rename krb5_free_keyblock to
  	krb5_free_keyblock_contents, and reimplement krb5_free_keyblock.
 
