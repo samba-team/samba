@@ -7,6 +7,8 @@ YFLAGS = -d
 lib_LTLIBRARIES = libasn1.la
 libasn1_la_LDFLAGS = -version-info 5:0:0
 
+libasn1_la_LIBADD = ../com_err/libcom_err.la
+
 BUILT_SOURCES =			\
 	$(gen_files:.x=.c)	\
 	asn1_err.h		\
@@ -98,7 +100,6 @@ asn1_compile_LDADD = \
 
 check_der_LDADD = \
 	libasn1.la \
-	../com_err/libcom_err.la \
 	$(LIB_roken)
 
 asn1_print_LDADD = $(check_der_LDADD)
