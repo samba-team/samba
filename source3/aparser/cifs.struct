@@ -101,7 +101,7 @@ typedef struct {
 			      /*  security package if CAP_EXTENDED_SECURITY is */
 			      /*  on in the Capabilities field; else challenge */
 			      /*  for CIFS challenge/response authentication. */
-	string OemDomainName; /*The name of the domain (in OEM chars); not */
+	string OemDomainName[+]; /*The name of the domain (in OEM chars); not */
 	                      /*  present  if CAP_EXTENDED_SECURITY is on in the */
 			      /*  Capabilities field */
 } R_NEGPROT_17;

@@ -16,6 +16,11 @@ function parse_array(f, v, elnum, flags,
 	v["FLAGS"] = flags;
 	v["ARRAY_LEN"] = array_len;
 
+	if (array_len=="+") {
+	  print_template(f,"prs_array_optional.tpl", v);
+	  return;
+	}
+
 	if (array_len=="*") {
 	  print_template(f,"prs_array_remainder.tpl", v);
 	  return;
