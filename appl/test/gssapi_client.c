@@ -109,6 +109,16 @@ proto (int sock, const char *hostname, const char *service)
     struct gss_channel_bindings_struct input_chan_bindings;
     u_char init_buf[4];
     u_char acct_buf[4];
+    gss_OID mech_oid;
+
+    if (strcasecmp(mech, "krb5") == 0)
+	mech_oid = GSS_KRB5_MECHANISM;
+    else if (strcasecmp(mech, "spnego") == 0)
+	mech_oid = GSS_SPNEGO_MECHANISM;
+    else if (strcasecmp(mech, "no-oid") == 0)
+	mech_oid = GSS_C_NO_OID;
+    else
+	errx (1, "Unknown mechanism '%s'", mech);
 
     name_token.length = asprintf ((char **)&name_token.value,
 				  "%s@%s", service, hostname);
@@ -166,7 +176,7 @@ proto (int sock, const char *hostname, const char *service)
 				 GSS_C_NO_CREDENTIAL,
 				 &context_hdl,
 				 server,
-				 GSS_C_NO_OID,
+				 mech_oid,
 				 GSS_C_MUTUAL_FLAG | GSS_C_SEQUENCE_FLAG
 				 | GSS_C_DELEG_FLAG,
 				 0,
