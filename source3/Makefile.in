@@ -1071,10 +1071,14 @@ utils/net_proto.h:
 # make sure these commands are executed in sequence even for a
 # parallel make.
 headers: 
-	$(MAKE) delheaders include/proto.h include/build_env.h \
-	include/wrepld_proto.h nsswitch/winbindd_proto.h \
-	web/swat_proto.h client/client_proto.h \
-	utils/net_proto.h
+	$(MAKE) delheaders; \
+	$(MAKE) include/proto.h; \
+	$(MAKE) include/build_env.h; \
+	$(MAKE) include/wrepld_proto.h; \
+	$(MAKE) nsswitch/winbindd_proto.h; \
+	$(MAKE) web/swat_proto.h; \
+	$(MAKE) client/client_proto.h; \
+	$(MAKE) utils/net_proto.h
 
 proto: headers 
 
