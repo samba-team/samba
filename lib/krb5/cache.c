@@ -216,8 +216,6 @@ _krb5_expand_default_cc_name(krb5_context context, const char *str, char **res)
 	    }
 	    if (strncasecmp(tmp, "${uid}", 6) == 0)
 		asprintf(&append, "%u", (unsigned)getuid());
-	    else if (strncasecmp(tmp, "${time}", 7) == 0)
-		asprintf(&append, "%u", (unsigned)time(NULL));
 	    else if (strncasecmp(tmp, "${null}", 7) == 0)
 		append = strdup("");
 	    else {
