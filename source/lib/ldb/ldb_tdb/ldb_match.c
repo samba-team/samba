@@ -137,10 +137,10 @@ static int ldb_val_equal_wildcard(struct ldb_context *ldb,
 
   return 1 for a match, 0 for a mis-match
 */
-static int ldb_val_equal_objectclass(struct ldb_context *ldb, 
+static int ldb_val_equal_objectclass(struct ldb_module *module, 
 				     const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	struct ltdb_private *ltdb = ldb->private_data;
+	struct ltdb_private *ltdb = module->private_data;
 	unsigned int i;
 
 	if (ldb_val_equal_case_insensitive(v1, v2) == 1) {
@@ -152,7 +152,7 @@ static int ldb_val_equal_objectclass(struct ldb_context *ldb,
 		if (ldb_attr_cmp(el->name, v2->data) == 0) {
 			unsigned int j;
 			for (j=0;j<el->num_values;j++) {
-				if (ldb_val_equal_objectclass(ldb, v1, &el->values[j])) {
+				if (ldb_val_equal_objectclass(module, v1, &el->values[j])) {
 					return 1;
 				}
 			}
@@ -171,14 +171,15 @@ static int ldb_val_equal_objectclass(struct ldb_context *ldb,
   
   return 1 for a match, 0 for a mis-match
 */
-int ldb_val_equal(struct ldb_context *ldb,
+int ldb_val_equal(struct ldb_module *module,
 		  const char *attr_name,
 		  const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	int flags = ltdb_attribute_flags(ldb, attr_name);
+	struct ldb_context *ldb = module->ldb;
+	int flags = ltdb_attribute_flags(module, attr_name);
 
 	if (flags & LTDB_FLAG_OBJECTCLASS) {
-		return ldb_val_equal_objectclass(ldb, v1, v2);
+		return ldb_val_equal_objectclass(module, v1, v2);
 	}
 
 	if (flags & LTDB_FLAG_INTEGER) {
@@ -254,7 +255,7 @@ static int scope_match(const char *dn, const char *base, enum ldb_scope scope)
 /*
   match a leaf node
 */
-static int match_leaf(struct ldb_context *ldb, 
+static int match_leaf(struct ldb_module *module, 
 		      struct ldb_message *msg,
 		      struct ldb_parse_tree *tree,
 		      const char *base,
@@ -279,7 +280,7 @@ static int match_leaf(struct ldb_context *ldb,
 				return 1;
 			}
 			for (j=0;j<msg->elements[i].num_values;j++) {
-				if (ldb_val_equal(ldb, msg->elements[i].name,
+				if (ldb_val_equal(module, msg->elements[i].name,
 						  &msg->elements[i].values[j], 
 						  &tree->u.simple.value)) {
 					return 1;
@@ -299,7 +300,7 @@ static int match_leaf(struct ldb_context *ldb,
 
   this is a recursive function, and does short-circuit evaluation
  */
-int ldb_message_match(struct ldb_context *ldb, 
+int ldb_message_match(struct ldb_module *module, 
 		      struct ldb_message *msg,
 		      struct ldb_parse_tree *tree,
 		      const char *base,
@@ -313,11 +314,11 @@ int ldb_message_match(struct ldb_context *ldb,
 		break;
 
 	case LDB_OP_NOT:
-		return ! ldb_message_match(ldb, msg, tree->u.not.child, base, scope);
+		return ! ldb_message_match(module, msg, tree->u.not.child, base, scope);
 
 	case LDB_OP_AND:
 		for (i=0;i<tree->u.list.num_elements;i++) {
-			v = ldb_message_match(ldb, msg, tree->u.list.elements[i],
+			v = ldb_message_match(module, msg, tree->u.list.elements[i],
 					      base, scope);
 			if (!v) return 0;
 		}
@@ -325,12 +326,12 @@ int ldb_message_match(struct ldb_context *ldb,
 
 	case LDB_OP_OR:
 		for (i=0;i<tree->u.list.num_elements;i++) {
-			v = ldb_message_match(ldb, msg, tree->u.list.elements[i],
+			v = ldb_message_match(module, msg, tree->u.list.elements[i],
 					      base, scope);
 			if (v) return 1;
 		}
 		return 0;
 	}
 
-	return match_leaf(ldb, msg, tree, base, scope);
+	return match_leaf(module, msg, tree, base, scope);
 }

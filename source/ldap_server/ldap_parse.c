@@ -75,7 +75,80 @@ static char *parse_slash(char *p, char *end) {
 	} \
 } while(0)
 
-struct ldap_dn *ldap_parse_dn(TALLOC_CTX *mem_ctx, const char *orig_dn)
+#if 0
+static void ldap_parse_attributetypedescription(struct ldap_schema *schema, DATA_BLOB *data)
+{
+	char *desc;
+
+	desc = (char *)talloc(schema, data->lenght + 1);
+	memcpy(desc, data->data, data->lenght);
+	desc[data->lenght] = '\0';
+
+}
+
+static void ldap_parse_objectclassdescription(struct ldap_schema *schema, DATA_BLOB *data)
+{
+	char *desc;
+
+	desc = (char *)talloc(schema, data->lenght + 1);
+	memcpy(desc, data->data, data->lenght);
+	desc[data->lenght] = '\0';
+
+}
+
+static struct ldap_schema *ldap_get_schema(void *mem_ctx, struct ldap_schema *schema, struct ldb_context *ldb)
+{
+	NTSTATUS status;
+	struct ldap_schema *local_schema;
+	struct ldb_message **res;
+	const char *errstr;
+	const char *schema_dn = "cn=schema";
+	const char *attr_filter = "attributeTypeDescription=*";
+	const char *class_filter = "objectClassDescription=*";
+	const char *attrs = "attributeTypeDescription";
+	const char *classes = "objectClassDescription";
+	enum ldb_scope scope = LDAP_SCOPE_SUBTREE;
+	int count, i, j, k;
+
+	local_schema = schema;
+	if (local_schema == NULL) {
+		local_schema = talloc_p(mem_ctx, struct ldap_schema);
+		ALLOC_CHECK(local_schema);
+	}
+
+	count = ldb_search(ldb, schema_dn, scope, attr_filter, attrs, &res);
+
+	for (i = 0; i < count; i++) {
+		if (res[i]->num_elements == 0) {
+			goto attr_done;
+		}
+		for (j = 0; j < res[i]->num_elements; j++) {
+			for (k = 0; res[i]->elements[j].num_values; k++) {
+				ldap_parse_attributetypedescription(local_schema, &(res[i]->elements[j].values[k]));
+			}
+		}
+attr_done:
+	}
+
+	count = ldb_search(ldb, schema_dn, scope, class_filter, classes, &res);
+
+	for (i = 0; i < count; i++) {
+		if (res[i]->num_elements == 0) {
+			goto class_done;
+		}
+		for (j = 0; j < res[i]->num_elements; j++) {
+			for (k = 0; res[i]->elements[j].num_values; k++) {
+				ldap_parse_objectclassdescription(local_schema, &(res[i]->elements[j].values[k]));
+			}
+		}
+class_done:
+	}
+
+	return local_schema;
+}
+#endif
+
+struct ldap_dn *ldap_parse_dn(void *mem_ctx, const char *orig_dn)
 {
 	struct ldap_dn *dn;
 	struct dn_component *component;

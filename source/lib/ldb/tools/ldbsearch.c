@@ -89,13 +89,15 @@ static int do_search(struct ldb_context *ldb,
 	const char * const * attrs = NULL;
 	const char *ldb_url;
 	const char *basedn = NULL;
-	int opt;
+	const char **options = NULL;
+	int opt, ldbopts;
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 	int interactive = 0, ret=0;
 
 	ldb_url = getenv("LDB_URL");
 
-	while ((opt = getopt(argc, argv, "b:H:s:hi")) != EOF) {
+	ldbopts = 0;
+	while ((opt = getopt(argc, argv, "b:H:s:o:hi")) != EOF) {
 		switch (opt) {
 		case 'b':
 			basedn = optarg;
@@ -117,6 +119,21 @@ static int do_search(struct ldb_context *ldb,
 
 		case 'i':
 			interactive = 1;
+			break;
+
+		case 'o':
+			ldbopts++;
+			if (options == NULL) {
+				options = (const char **)malloc(sizeof(char *) * (ldbopts + 1));
+			} else {
+				options = (const char **)realloc(options, sizeof(char *) * (ldbopts + 1));
+				if (options == NULL) {
+					fprintf(stderr, "Out of memory!\n");
+					exit(-1);
+				}
+			}
+			options[ldbopts - 1] = optarg;
+			options[ldbopts] = NULL;
 			break;
 
 		case 'h':
@@ -143,7 +160,7 @@ static int do_search(struct ldb_context *ldb,
 		attrs = (const char * const *)(argv+1);
 	}
 
-	ldb = ldb_connect(ldb_url, 0, NULL);
+	ldb = ldb_connect(ldb_url, 0, options);
 	if (!ldb) {
 		perror("ldb_connect");
 		exit(1);

@@ -121,26 +121,39 @@ struct ldb_context;
 typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *);
 
 
+struct ldb_module_ops;
+
+/* basic module structure */
+struct ldb_module {
+	struct ldb_module *prev, *next;
+	struct ldb_context *ldb;
+	void *private_data;
+	const struct ldb_module_ops *ops;
+};
+
 /* 
-   these function pointers define the operations that a ldb backend must perform
+   these function pointers define the operations that a ldb module must perform
    they correspond exactly to the ldb_*() interface 
 */
-struct ldb_backend_ops {
-	int (*close)(struct ldb_context *);
-	int (*search)(struct ldb_context *, const char *, enum ldb_scope,
+struct ldb_module_ops {
+	const char *name;
+	int (*close)(struct ldb_module *);
+	int (*search)(struct ldb_module *, const char *, enum ldb_scope,
 		      const char *, const char * const [], struct ldb_message ***);
-	int (*search_free)(struct ldb_context *, struct ldb_message **);
-	int (*add_record)(struct ldb_context *, const struct ldb_message *);
-	int (*modify_record)(struct ldb_context *, const struct ldb_message *);
-	int (*delete_record)(struct ldb_context *, const char *);
-	int (*rename_record)(struct ldb_context *, const char *olddn, const char *newdn);
-	const char * (*errstring)(struct ldb_context *);
+	int (*search_free)(struct ldb_module *, struct ldb_message **);
+	int (*add_record)(struct ldb_module *, const struct ldb_message *);
+	int (*modify_record)(struct ldb_module *, const struct ldb_message *);
+	int (*delete_record)(struct ldb_module *, const char *);
+	int (*rename_record)(struct ldb_module *, const char *, const char *);
+	const char * (*errstring)(struct ldb_module *);
 
 	/* this is called when the alloc ops changes to ensure we 
 	   don't have any old allocated data in the context */
-	void (*cache_free)(struct ldb_context *);
+	void (*cache_free)(struct ldb_module *);
 };
 
+/* the modules init function */
+typedef struct ldb_module *(*init_ldb_module_function)(void);
 
 /*
   the user can optionally supply a allocator function. It is presumed
@@ -172,11 +185,8 @@ struct ldb_debug_ops {
   every ldb connection is started by establishing a ldb_context
 */
 struct ldb_context {
-	/* a private pointer for the backend to use */
-	void *private_data;
-
 	/* the operations provided by the backend */
-	const struct ldb_backend_ops *ops;
+	struct ldb_module *modules;
 
 	/* memory allocation info */
 	struct ldb_alloc_ops alloc_ops;
