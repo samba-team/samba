@@ -396,7 +396,10 @@
 
 	/************************/
 	/* Function    0x18     */
-	NTSTATUS samr_DEL_GROUPMEM();
+	NTSTATUS samr_DeleteGroupMember(
+		[in,ref]                  policy_handle *handle,
+		[in]                      uint32 rid
+		);
 
 	/************************/
 	/* Function    0x19     */

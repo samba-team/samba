@@ -1432,6 +1432,7 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_AddGroupMember r;
+	struct samr_DeleteGroupMember d;
 	BOOL ret = True;
 	uint32 rid;
 
@@ -1444,7 +1445,17 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.rid = rid;
 	r.in.flags = 0; /* ??? */
 
-	printf("Testing AddGroupMember\n");
+	printf("Testing AddGroupMember and DeleteGroupMember\n");
+
+	d.in.handle = group_handle;
+	d.in.rid = rid;
+
+	status = dcerpc_samr_DeleteGroupMember(p, mem_ctx, &d);
+	if (!NT_STATUS_EQUAL(NT_STATUS_MEMBER_NOT_IN_GROUP, status)) {
+		printf("DeleteGroupMember gave %s - should be NT_STATUS_MEMBER_NOT_IN_GROUP\n", 
+		       nt_errstr(status));
+		return False;
+	}
 
 	status = dcerpc_samr_AddGroupMember(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1456,6 +1467,18 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_EQUAL(NT_STATUS_MEMBER_IN_GROUP, status)) {
 		printf("AddGroupMember gave %s - should be NT_STATUS_MEMBER_IN_GROUP\n", 
 		       nt_errstr(status));
+		return False;
+	}
+
+	status = dcerpc_samr_DeleteGroupMember(p, mem_ctx, &d);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("DeleteGroupMember failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	status = dcerpc_samr_AddGroupMember(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("AddGroupMember failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
