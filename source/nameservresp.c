@@ -624,7 +624,7 @@ static BOOL response_compatible(struct response_record *n,
   {
     case NAME_RELEASE:
     {
-  		if (nmb->answers->rr_type != NMB_REL)
+  		if (nmb->answers->rr_type != 0x20)
 		{
 			DEBUG(1,("Name release reply has wrong answer rr_type\n"));
 			return False;
@@ -634,7 +634,7 @@ static BOOL response_compatible(struct response_record *n,
 
     case NAME_REGISTER:
     {
-  		if (nmb->answers->rr_type != NMB_REG)
+  		if (nmb->answers->rr_type != 0x20)
 		{
 			DEBUG(1,("Name register reply has wrong answer rr_type\n"));
 			return False;
@@ -652,7 +652,7 @@ static BOOL response_compatible(struct response_record *n,
     case NAME_QUERY_FIND_MST:
     case NAME_QUERY_MST_CHK:
     {
-		if (nmb->answers->rr_type != NMB_QUERY)
+		if (nmb->answers->rr_type != 0x20)
 		{
 			DEBUG(1,("Name query reply has wrong answer rr_type\n"));
 			return False;
@@ -663,7 +663,7 @@ static BOOL response_compatible(struct response_record *n,
     case NAME_STATUS_DOM_SRV_CHK:
     case NAME_STATUS_SRV_CHK:
     {
-		if (nmb->answers->rr_type != NMB_STATUS)
+		if (nmb->answers->rr_type != 0x21)
 		{
 			DEBUG(1,("Name status reply has wrong answer rr_type\n"));
 			return False;
@@ -808,10 +808,6 @@ void response_netbios_packet(struct packet_struct *p)
 
   /* problem checking: multiple responses etc */
   if (response_problem_check(n, nmb, qname))
-    return;
-
-  /* now check whether the 'state' has received the correct type of response */
-  if (!response_compatible(n, nmb))
     return;
 
   /* now deal with the current state */
