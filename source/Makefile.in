@@ -291,8 +291,8 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
 DEVEL_HELP_WEIRD_OBJ = modules/weird.o
-DEVEL_HELP_CP850_OBJ = modules/CP850.o
-DEVEL_HELP_CP437_OBJ = modules/CP437.o
+CP850_OBJ = modules/CP850.o
+CP437_OBJ = modules/CP437.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -1078,14 +1078,14 @@ bin/weird.@SHLIBEXT@: $(DEVEL_HELP_WEIRD_OBJ:.o=.@PICSUFFIX@)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_WEIRD_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/CP850.@SHLIBEXT@: $(DEVEL_HELP_CP850_OBJ:.o=.@PICSUFFIX@)
+bin/CP850.@SHLIBEXT@: $(CP850_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_CP850_OBJ:.o=.@PICSUFFIX@) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP850_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
-bin/CP437.@SHLIBEXT@: $(DEVEL_HELP_CP437_OBJ:.o=.@PICSUFFIX@)
+bin/CP437.@SHLIBEXT@: $(CP437_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_CP437_OBJ:.o=.@PICSUFFIX@) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(CP437_OBJ:.o=.@PICSUFFIX@) \
 		@SONAMEFLAG@`basename $@`
 
 bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.@PICSUFFIX@)
