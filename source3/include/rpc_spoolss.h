@@ -1192,6 +1192,17 @@ typedef struct spool_r_enumforms
 SPOOL_R_ENUMFORMS;
 
 
+typedef struct spool_printer_info_level_1
+{
+	uint32 flags;
+	uint32 description_ptr;
+	uint32 name_ptr;
+	uint32 comment_ptr;
+	UNISTR2 description;
+	UNISTR2 name;
+	UNISTR2 comment;	
+} SPOOL_PRINTER_INFO_LEVEL_1;
+
 typedef struct spool_printer_info_level_2
 {
 	uint32 servername_ptr;
@@ -1234,6 +1245,7 @@ typedef struct spool_printer_info_level
 {
 	uint32 level;
 	uint32 info_ptr;
+	SPOOL_PRINTER_INFO_LEVEL_1 *info_1;
 	SPOOL_PRINTER_INFO_LEVEL_2 *info_2;
 }
 SPOOL_PRINTER_INFO_LEVEL;
