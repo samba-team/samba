@@ -46,7 +46,9 @@ RCSID("$Id$");
 #ifndef HAVE_HSTRERROR
 
 #include <stdio.h>
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 
 #ifndef HAVE_H_ERRNO
 int h_errno = -17; /* Some magic number */

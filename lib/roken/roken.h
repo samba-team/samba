@@ -186,11 +186,11 @@ struct passwd *k_getpwuid (uid_t uid);
 #endif
 
 #ifndef HAVE_SETEUID
-int seteuid(int euid);
+int seteuid(uid_t euid);
 #endif
 
 #ifndef HAVE_SETEGID
-int setegid(int egid);
+int setegid(gid_t egid);
 #endif
 
 #ifndef HAVE_LSTAT

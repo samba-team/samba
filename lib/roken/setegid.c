@@ -41,12 +41,14 @@
 RCSID("$Id$");
 #endif
 
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include "roken.h"
 
 int
-setegid(int egid)
+setegid(gid_t egid)
 {
 #ifdef HAVE_SETREGID
     return setregid(-1, egid);

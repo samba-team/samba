@@ -3,12 +3,17 @@
 #ifndef __KRB5_H__
 #define __KRB5_H__
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <stdarg.h>
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+#include <stdarg.h>
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
 #endif
 
 #ifdef HAVE_NETINET_IN6_MACHTYPES_H

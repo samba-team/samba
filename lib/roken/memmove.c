@@ -45,7 +45,9 @@ RCSID("$Id$");
  * memmove for systems that doesn't have it 
  */
 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 
 void* memmove(void *s1, const void *s2, size_t n)
 {

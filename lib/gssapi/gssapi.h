@@ -12,14 +12,12 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 
 #ifdef HAVE_NETINET_IN6_MACHTYPES_H
 #include <netinet/in6_machtypes.h>
-#endif
-
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
 #endif
 
 #include <bits.h>

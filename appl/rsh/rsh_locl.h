@@ -7,21 +7,36 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include <unistd.h>
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 #include <errno.h>
+
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
+#include <roken.h>
 #include <krb.h>
 #include <prot.h>
 #include <krb5.h>
-#include <roken.h>
 
 #ifndef _PATH_NOLOGIN
 #define _PATH_NOLOGIN   "/etc/nologin"
