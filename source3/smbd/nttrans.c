@@ -308,7 +308,7 @@ static int map_create_disposition( uint32 create_disposition)
 
 static int map_share_mode( uint32 desired_access, uint32 share_access, uint32 file_attributes)
 {
-  int smb_open_mode;
+  int smb_open_mode = -1;
 
   switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA) ) {
   case FILE_READ_DATA:
@@ -320,10 +320,16 @@ static int map_share_mode( uint32 desired_access, uint32 share_access, uint32 fi
   case FILE_READ_DATA|FILE_WRITE_DATA:
     smb_open_mode = 2;
     break;
-  default:
-    DEBUG(0,("map_share_mode: Incorrect value for desired_access = %x\n",
+  }
+
+  if (smb_open_mode == -1) {
+    if(desired_access & DELETE_ACCESS)
+      smb_open_mode = 2;
+    else {
+      DEBUG(0,("map_share_mode: Incorrect value for desired_access = %x\n",
              desired_access));
-    return -1;
+      return -1;
+    }
   }
 
   /* Add in the requested share mode - ignore FILE_SHARE_DELETE for now. */
