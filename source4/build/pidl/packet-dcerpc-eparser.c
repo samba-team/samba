@@ -162,16 +162,3 @@ void ndr_pull_subcontext_header(struct e_ndr_pull *ndr,
 				struct e_ndr_pull *ndr2)
 {
 }
-
-void ndr_pull_lsa_SidArray(struct e_ndr_pull *ndr, int ndr_flags)
-{
-}
-
-void ndr_pull_samr_LogonHours(struct e_ndr_pull *ndr, int ndr_flags)
-{
-}
-
-void ndr_pull_samr_Password(struct e_ndr_pull *ndr, int ndr_flags)
-{
-}
-
