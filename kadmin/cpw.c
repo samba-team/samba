@@ -139,12 +139,10 @@ do_cpw_entry(krb5_principal principal, void *data)
 	return set_random_key (principal);
     else if (e->random_password)
 	return set_random_password (principal);
-    else if (e->password)
-	return set_password (principal, e->password);
     else if (e->key_data)
 	return set_key_data (principal, e->key_data);
     else
-	abort ();
+	return set_password (principal, e->password);
 }
 
 int
