@@ -14,6 +14,7 @@ introduction text (@pxref{What is Kerberos?}).
 * Kerberos 5 API Overview::     
 * Walkthru a sample Kerberos 5 client::  
 * Validating a password in a server application::  
+* API diffrences to MIT Kerberos::
 @end menu
 
 @node Kerberos 5 API Overview, Walkthru a sample Kerberos 5 client, Programming with Kerberos, Programming with Kerberos
@@ -268,10 +269,45 @@ And send it over the network.
 The server is using @manpage{krb5_rd_safe,3} and
 @manpage{krb5_rd_priv,3} to verify the signature and decrypt the packet.
 
-@node Validating a password in a server application,  , Walkthru a sample Kerberos 5 client, Programming with Kerberos
+@node Validating a password in a server application, API diffrences to MIT Kerberos, Walkthru a sample Kerberos 5 client, Programming with Kerberos
 @section Validating a password in an application
 
 See the manual page for @manpage{krb5_verify_user,3}.
+
+@node API diffrences to MIT Kerberos, , Validating a password in a server application, Programming with Kerberos
+@section API diffrences to MIT Kerberos
+
+This section is somewhat unorganized, but so far there is no overall
+structure to the diffrecies, though some of the have their root in
+that heimdal uses a ASN.1 compiler and MIT doesn't.
+
+@subsection Principal and realms
+
+Heimdal store the realm as a @code{krb5_realm} that is a @code{char *}.
+MIT Kerberos uses a @code{krb5_data} to store a realm. See
+
+In Heimdal @code{krb5_principal} doesn't contain the component
+@code{name_type}, its instead stored in component
+@code{name.name_type}. To get and set the nametype in Heimdal, use
+@manpage{krb5_principal_get_type,3} and
+@manpage{krb5_principal_set_type,3}.
+
+For more information about principal and realms, see
+@manpage{krb5_principal,3}.
+
+@subsection Error messages
+
+To get the error string, Heimdal users uses
+@manpage{krb5_get_error_string,3} or if @code{NULL} is returned,
+@manpage{krb5_get_err_text,3}. This is to return custom error messages
+(like ''Can't find host/datan.example.com@@EXAMPLE.COM in
+/etc/krb5.conf.'' instead of a ``Key table entry not found'' that
+@manpage{error_message,3} returns.
+
+Heimdal uses a threadsafe(er) version of the com_err interface, the
+global com_err table isn't initialized, then @manpage{error_message,3}
+returns quite boring error string (just the error code itself).
+
 
 @c @node Why you should use GSS-API for new applications, Walkthru a sample GSS-API client, Validating a password in a server application, Programming with Kerberos
 @c @section Why you should use GSS-API for new applications
