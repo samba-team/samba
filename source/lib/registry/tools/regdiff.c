@@ -100,10 +100,11 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 	const char *credentials1= NULL, *credentials2 = NULL;
 	char *outputfile = NULL;
 	FILE *fd = stdout;
-	REG_HANDLE *h2;
+	REG_HANDLE *h1, *h2;
 	REG_KEY *root1 = NULL, *root2;
 	int from_null = 0;
-	WERROR error;
+	int i;
+	WERROR error, error2;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"backend", 'b', POPT_ARG_STRING, NULL, 'b', "backend to use", NULL},
@@ -130,7 +131,6 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 	setup_logging(argv[0], True);
 
 	if(!from_null) {
-		REG_HANDLE *h1;
 		const char *location1;
 		location1 = poptGetArg(pc);
 		if(!location1) {
@@ -145,8 +145,6 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 			fprintf(stderr, "Unable to open '%s' with backend '%s'\n", location1, backend1);
 			return 1;
 		}
-
-		if(!W_ERROR_IS_OK(reg_get_root(h1, &root1))) return 1;
 	}
 
 	location2 = poptGetArg(pc);
@@ -163,12 +161,6 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 		return 1;
 	}
 	
-	error = reg_get_root(h2, &root2);
-	if(!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Can't open root key for '%s:%s'\n", backend2, location2);
-		return 1;
-	}
-
 	poptFreeContext(pc);
 
 	if(outputfile) {
@@ -182,7 +174,23 @@ static void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 	fprintf(fd, "REGEDIT4\n\n");
 	fprintf(fd, "; Generated using regdiff\n");
 
-	writediff(root1, root2, fd); 
+	error2 = error = WERR_OK; 
+	
+	for(i = 0; ; i++) {
+		if(backend1) error = reg_get_hive(h1, i, &root1);
+		else root1 = NULL;
+
+		if(!W_ERROR_IS_OK(error)) break;
+	
+		if(backend2) error2 = reg_get_hive(h2, i, &root2);
+		else root2 = NULL;
+		
+		if(!W_ERROR_IS_OK(error2)) break;
+	
+		writediff(root1, root2, fd); 
+
+		if(!root1 && !root2) break;
+	}
 
 	fclose(fd);
 	

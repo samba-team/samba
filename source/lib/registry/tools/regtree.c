@@ -60,7 +60,7 @@ static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 
  int main(int argc, char **argv)
 {
-	int opt;
+	int opt, i;
 	const char *backend = "dir";
 	const char *credentials = NULL;
 	poptContext pc;
@@ -91,10 +91,14 @@ static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 	}
 	poptFreeContext(pc);
 
-	error = reg_get_root(h, &root);
-	if(!W_ERROR_IS_OK(error)) return 1;
+	error = WERR_OK;
 
-	print_tree(0, root, fullpath, no_values);
+	for(i = 0; W_ERROR_IS_OK(error); i++) {
+		error = reg_get_hive(h, i, &root);
+		if(!W_ERROR_IS_OK(error)) return 1;
+
+		print_tree(0, root, fullpath, no_values);
+	}
 	
 	return 0;
 }

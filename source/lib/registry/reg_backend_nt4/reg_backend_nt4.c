@@ -1663,8 +1663,9 @@ static WERROR nt_open_registry (REG_HANDLE *h, const char *location, const char 
 	return WERR_OK;
 }
 
-static WERROR nt_get_root_key(REG_HANDLE *h, REG_KEY **key) 
+static WERROR nt_get_root_key(REG_HANDLE *h, int hive, REG_KEY **key) 
 { 
+	if(hive != 0) return WERR_NO_MORE_ITEMS;
 	return nk_to_key(h, ((REGF *)h->backend_data)->first_key, BLK_SIZE(((REGF *)h->backend_data)->first_key), NULL, key);
 }
 
@@ -1737,7 +1738,7 @@ static struct registry_ops reg_backend_nt4 = {
 	.name = "nt4",
 	.open_registry = nt_open_registry,
 	.close_registry = nt_close_registry,
-	.open_root_key = nt_get_root_key,
+	.get_hive = nt_get_root_key,
 	.num_subkeys = nt_num_subkeys,
 	.num_values = nt_num_values,
 	.get_subkey_by_index = nt_key_by_index,

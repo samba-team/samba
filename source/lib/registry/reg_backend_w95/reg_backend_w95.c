@@ -179,12 +179,14 @@ static void parse_rgdb_block(CREG *creg, RGDB_HDR *rgdb_hdr)
 	}
 }
 
-static WERROR w95_open_root (REG_HANDLE *h, REG_KEY **key)
+static WERROR w95_open_root (REG_HANDLE *h, int hive, REG_KEY **key)
 {
 	CREG *creg = h->backend_data;
+
+	if(hive != 0) return WERR_NO_MORE_ITEMS;
 	
 	/* First element in rgkn should be root key */
-	*key = reg_key_new_abs("\\", h, LOCN_RGKN(creg, sizeof(RGKN_HDR)));
+	*key = reg_key_new_abs("", h, LOCN_RGKN(creg, sizeof(RGKN_HDR)));
 	
 	return WERR_OK;
 }
@@ -356,7 +358,7 @@ static struct registry_ops reg_backend_w95 = {
 	.name = "w95",
 	.open_registry = w95_open_reg,
 	.close_registry = w95_close_reg,
-	.open_root_key = w95_open_root,
+	.get_hive = w95_open_root,
 	.fetch_values = w95_fetch_values,
 	.get_subkey_by_index = w95_get_subkey_by_index,
 };

@@ -141,6 +141,12 @@ char *reg_val_get_path(REG_VAL *v)
 const char *reg_key_get_path(REG_KEY *k)
 {
 	SMB_REG_ASSERT(k);
+	return strchr(k->path, '\\')?strchr(k->path, '\\')+1:k->path;
+}
+
+const char *reg_key_get_path_abs(REG_KEY *k)
+{
+	SMB_REG_ASSERT(k);
 	return k->path;
 }
 
@@ -168,6 +174,7 @@ REG_KEY *reg_key_new_rel(const char *name, REG_KEY *k, void *data)
 	r = talloc(mem_ctx, sizeof(REG_KEY));
 	ZERO_STRUCTP(r);
 	r->handle = k->handle;
+	r->hive = k->hive;
 	r->name = talloc_strdup(mem_ctx, name);
 	
 	r->path = talloc_asprintf(mem_ctx, "%s%s%s", parent_path, *parent_path && parent_path[strlen(parent_path)-1] != '\\'?"\\":"", name);
