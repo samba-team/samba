@@ -1,0 +1,229 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Group mapping HOWTO</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="samba-howto-collection.html"><LINK
+REL="PREVIOUS"
+TITLE="Reporting Bugs"
+HREF="bugreport.html"><LINK
+REL="NEXT"
+TITLE="Portability"
+HREF="portability.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="bugreport.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="portability.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="GROUPMAPPING"
+></A
+>Chapter 20. Group mapping HOWTO</H1
+><P
+> 
+Starting with Samba 3.0 alpha 2, a new group mapping function is available. The
+current method (likely to change) to manage the groups is a new command called
+<B
+CLASS="COMMAND"
+>smbgroupedit</B
+>.</P
+><P
+>The first immediate reason to use the group mapping on a PDC, is that
+the <B
+CLASS="COMMAND"
+>domain admin group</B
+> of <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> is 
+now gone. This parameter was used to give the listed users local admin rights 
+on their workstations. It was some magic stuff that simply worked but didn't
+scale very well for complex setups.</P
+><P
+>Let me explain how it works on NT/W2K, to have this magic fade away.
+When installing NT/W2K on a computer, the installer program creates some users
+and groups. Notably the 'Administrators' group, and gives to that group some
+privileges like the ability to change the date and time or to kill any process
+(or close too) running on the local machine. The 'Administrator' user is a
+member of the 'Administrators' group, and thus 'inherit' the 'Administrators'
+group privileges. If a 'joe' user is created and become a member of the
+'Administrator' group, 'joe' has exactly the same rights as 'Administrator'.</P
+><P
+>When a NT/W2K machine is joined to a domain, during that phase, the "Domain
+Administrators' group of the PDC is added to the 'Administrators' group of the
+workstation. Every members of the 'Domain Administrators' group 'inherit' the
+rights of the 'Administrators' group when logging on the workstation.</P
+><P
+>You are now wondering how to make some of your samba PDC users members of the
+'Domain Administrators' ? That's really easy.</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>create a unix group (usually in <TT
+CLASS="FILENAME"
+>/etc/group</TT
+>), let's call it domadm</P
+></LI
+><LI
+><P
+>add to this group the users that must be Administrators. For example if you want joe,john and mary, your entry in <TT
+CLASS="FILENAME"
+>/etc/group</TT
+> will look like:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>domadm:x:502:joe,john,mary</PRE
+></P
+></LI
+><LI
+><P
+>Map this domadm group to the <B
+CLASS="COMMAND"
+>domain admins</B
+> group by running the command:</P
+><P
+><B
+CLASS="COMMAND"
+>smbgroupedit -c "Domain Admins" -u domadm</B
+></P
+></LI
+></OL
+><P
+>You're set, joe, john and mary are domain administrators !</P
+><P
+>Like the Domain Admins group, you can map any arbitrary Unix group to any NT
+group. You can also make any Unix group a domain group. For example, on a domain
+member machine (an NT/W2K or a samba server running winbind), you would like to
+give access to a certain directory to some users who are member of a group on
+your samba PDC. Flag that group as a domain group by running:</P
+><P
+><B
+CLASS="COMMAND"
+>smbgroupedit -a unixgroup -td</B
+></P
+><P
+>You can list the various groups in the mapping database like this</P
+><P
+><B
+CLASS="COMMAND"
+>smbgroupedit -v</B
+></P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="bugreport.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-howto-collection.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="portability.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Reporting Bugs</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Portability</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>
