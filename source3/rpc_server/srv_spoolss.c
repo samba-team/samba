@@ -1580,7 +1580,7 @@ static BOOL api_spoolss_replycloseprinter(pipes_struct *p)
 \pipe\spoolss commands
 ********************************************************************/
 
-int rpc_spoolss_init(void)
+NTSTATUS rpc_spoolss_init(void)
 {
   struct api_struct api_spoolss_cmds[] = 
     {
@@ -1640,6 +1640,6 @@ int rpc_spoolss_init(void)
  {"SPOOLSS_REPLYCLOSEPRINTER",         SPOOLSS_REPLYCLOSEPRINTER,         api_spoolss_replycloseprinter         }
 #endif
     };
-  return rpc_pipe_register_commands("spoolss", "spoolss", api_spoolss_cmds,
+  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "spoolss", "spoolss", api_spoolss_cmds,
 				    sizeof(api_spoolss_cmds) / sizeof(struct api_struct));
 }

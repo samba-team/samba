@@ -147,7 +147,7 @@ NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param,
 	return NT_STATUS_OK;
 }
 
-int auth_winbind_init(void)
+NTSTATUS auth_winbind_init(void)
 {
-	return smb_register_auth("winbind", auth_init_winbind, AUTH_INTERFACE_VERSION);
+	return smb_register_auth(AUTH_INTERFACE_VERSION, "winbind", auth_init_winbind);
 }

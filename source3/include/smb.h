@@ -1736,6 +1736,6 @@ typedef struct {
 #include "popt_common.h"
 
 /* Module support */
-typedef int (init_module_function) (void);
+typedef NTSTATUS (init_module_function) (void);
 
 #endif /* _SMB_H */

@@ -77,22 +77,23 @@ static struct charset_functions *find_charset_functions(const char *name)
 	return NULL;
 }
 
-BOOL smb_register_charset(struct charset_functions *funcs) 
+NTSTATUS smb_register_charset(struct charset_functions *funcs) 
 {
-	struct charset_functions *c = charsets;
+	if (!funcs) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	DEBUG(5, ("Attempting to register new charset %s\n", funcs->name));
 	/* Check whether we already have this charset... */
-
 	if (find_charset_functions(funcs->name)) {
 		DEBUG(0, ("Duplicate charset %s, not registering\n", funcs->name));
-		return False;
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
 	funcs->next = funcs->prev = NULL;
 	DEBUG(5, ("Registered charset %s\n", funcs->name));
 	DLIST_ADD(charsets, funcs);
-	return True;
+	return NT_STATUS_OK;
 }
 
 void lazy_initialize_iconv(void)
@@ -219,14 +220,14 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 #endif
 	
 	/* check if there is a module available that can do this conversion */
-	if (!ret->pull && smb_probe_module("charset", fromcode)) {
+	if (!ret->pull && NT_STATUS_IS_OK(smb_probe_module("charset", fromcode))) {
 		if(!(from = find_charset_functions(fromcode)))
 			DEBUG(0, ("Module %s doesn't provide charset %s!\n", fromcode, fromcode));
 		else 
 			ret->pull = from->pull;
 	}
 
-	if (!ret->push && smb_probe_module("charset", tocode)) {
+	if (!ret->push && NT_STATUS_IS_OK(smb_probe_module("charset", tocode))) {
 		if(!(to = find_charset_functions(tocode)))
 			DEBUG(0, ("Module %s doesn't provide charset %s!\n", tocode, tocode));
 		else 

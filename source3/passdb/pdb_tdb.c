@@ -990,10 +990,10 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 	return NT_STATUS_OK;
 }
 
-int pdb_tdbsam_init(void)
+NTSTATUS pdb_tdbsam_init(void)
 {
-    smb_register_passdb("tdbsam", pdb_init_tdbsam, PASSDB_INTERFACE_VERSION);
-    smb_register_passdb("tdbsam_nua", pdb_init_tdbsam_nua, PASSDB_INTERFACE_VERSION);
-	return True;
+	smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam", pdb_init_tdbsam);
+	smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam_nua", pdb_init_tdbsam_nua);
+	return NT_STATUS_OK;
 }
 

@@ -373,7 +373,7 @@ static BOOL api_reg_save_key(pipes_struct *p)
  array of \PIPE\reg operations
  ********************************************************************/
 
-int rpc_reg_init(void)
+NTSTATUS rpc_reg_init(void)
 {
   static struct api_struct api_reg_cmds[] =
     {
@@ -391,6 +391,6 @@ int rpc_reg_init(void)
       { "REG_UNKNOWN_1A"         , REG_UNKNOWN_1A         , api_reg_unknown_1a       },
       { "REG_SAVE_KEY"           , REG_SAVE_KEY           , api_reg_save_key         }
     };
-  return rpc_pipe_register_commands("winreg", "winreg", api_reg_cmds,
+  return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "winreg", "winreg", api_reg_cmds,
 				    sizeof(api_reg_cmds) / sizeof(struct api_struct));
 }

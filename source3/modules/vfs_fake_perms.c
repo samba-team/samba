@@ -281,7 +281,7 @@ static vfs_op_tuple *fake_perms_init(const struct vfs_ops *def_vfs_ops,
 	return fake_perms_ops;
 }
 
-int vfs_fake_perms_init(void)
+NTSTATUS vfs_fake_perms_init(void)
 {
-	return smb_register_vfs("fake_perms", fake_perms_init, SMB_VFS_INTERFACE_VERSION);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "fake_perms", fake_perms_init);
 }

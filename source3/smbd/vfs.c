@@ -153,29 +153,30 @@ static struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
    return NULL;
 }
 
-BOOL smb_register_vfs(const char *name, vfs_op_tuple *(*init)(const struct vfs_ops *, struct smb_vfs_handle_struct *), int version)
+NTSTATUS smb_register_vfs(uint16 version, const char *name, vfs_op_tuple *(*init)(const struct vfs_ops *, struct smb_vfs_handle_struct *))
 {
    struct vfs_init_function_entry *entry = backends;
-   
+
    if ((version < SMB_VFS_INTERFACE_CASCADED)) {
        DEBUG(0, ("vfs_init() returned wrong interface version info (was %d, should be no less than %d)\n",
            version, SMB_VFS_INTERFACE_VERSION ));
-       return False;
+       return NT_STATUS_OBJECT_TYPE_MISMATCH;
    }
   
    if ((version < SMB_VFS_INTERFACE_VERSION)) {
        DEBUG(0, ("Warning: vfs_init() states that module confirms interface version #%d, current interface version is #%d.\n\
 		Proceeding in compatibility mode, new operations (since version #%d) will fallback to default ones.\n",
 		version, SMB_VFS_INTERFACE_VERSION, version ));
-	   return False;
+	   return NT_STATUS_OBJECT_TYPE_MISMATCH;
+   }
+
+   if (!name || !init) {
+       return NT_STATUS_INVALID_PARAMETER;
    }
    
-   while(entry) {
-       if (strequal(entry->name, name)) {
+   if (vfs_find_backend_entry(name)) {
            DEBUG(0,("VFS module %s already loaded!\n", name));
-           return False;
-       }
-       entry = entry->next;
+           return NT_STATUS_OBJECT_NAME_COLLISION;
    }
 
    entry = smb_xmalloc(sizeof(struct vfs_init_function_entry));
@@ -184,7 +185,7 @@ BOOL smb_register_vfs(const char *name, vfs_op_tuple *(*init)(const struct vfs_o
 
    DLIST_ADD(backends, entry);
    DEBUG(5, ("Successfully added vfs backend '%s'\n", name));
-   return True;
+   return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -267,7 +268,7 @@ BOOL vfs_init_custom(connection_struct *conn, const char *vfs_object)
 
 	/* First, try to load the module with the new module system */
 	if((entry = vfs_find_backend_entry(vfs_object)) || 
-	   (smb_probe_module("vfs", vfs_object) && 
+	   (NT_STATUS_IS_OK(smb_probe_module("vfs", vfs_object)) && 
 		(entry = vfs_find_backend_entry(vfs_object)))) {
 
 		DEBUG(3,("Successfully loaded %s with the new modules system\n", vfs_object));
