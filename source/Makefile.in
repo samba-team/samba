@@ -194,10 +194,11 @@ LIBCLIUTIL_OBJ = libcli/util/asn1.o \
 	     libcli/util/pwd_cache.o libcli/util/clierror.o libcli/util/cliutil.o
 
 LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
-		librpc/ndr/ndr_echo.o librpc/ndr/ndr_misc.o librpc/ndr/ndr_lsa.o
+		librpc/ndr/ndr_echo.o librpc/ndr/ndr_misc.o librpc/ndr/ndr_lsa.o \
+		librpc/ndr/ndr_dfs.o
 
 LIBRAW_RPC_OBJ = librpc/rpc/dcerpc.o librpc/rpc/rpc_echo.o librpc/rpc/rpc_lsa.o \
-		librpc/rpc/dcerpc_smb.o
+		librpc/rpc/dcerpc_smb.o librpc/rpc/rpc_dfs.o
 
 LIBRAW_OBJ = libcli/raw/rawfile.o libcli/raw/smb_signing.o  \
 	     libcli/raw/clisocket.o libcli/raw/clitransport.o \
@@ -529,7 +530,7 @@ SMBTORTURE_RAW_OBJ = torture/raw/qfsinfo.o torture/raw/qfileinfo.o torture/raw/s
 		torture/raw/chkpath.o torture/raw/unlink.o torture/raw/read.o torture/raw/context.o \
 		torture/raw/write.o torture/raw/lock.o torture/raw/rename.o torture/raw/seek.o 
 
-SMBTORTURE_RPC_OBJ = torture/rpc/lsa.o torture/rpc/echo.o
+SMBTORTURE_RPC_OBJ = torture/rpc/lsa.o torture/rpc/echo.o torture/rpc/dfs.o
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/torture_util.o torture/nbio.o torture/scanner.o \
 		torture/utable.o torture/denytest.o torture/mangle_test.o \
@@ -1278,7 +1279,6 @@ headers:
 	$(MAKE) utils/net_proto.h; \
 	$(MAKE) include/tdbsam2_parse_info.h; \
 @STFS_ENABLED@	$(MAKE) ntvfs/tank/vfs_tank_proto.h
-@PCH_AVAILABLE@	$(MAKE) pch
 
 proto: headers 
 

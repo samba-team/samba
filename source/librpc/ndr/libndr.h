@@ -76,6 +76,12 @@ struct ndr_print {
 #define NDR_PRINT_UNION_DEBUG(type, level, p) ndr_print_union_debug((ndr_print_union_fn_t)ndr_print_ ##type, #p, level, p)
 
 
+enum ndr_err_code {
+	NDR_ERR_CONFORMANT_SIZE,
+	NDR_ERR_ARRAY_SIZE,
+	NDR_ERR_BAD_SWITCH
+};
+
 /*
   flags passed to control parse flow
 */
@@ -91,10 +97,13 @@ struct ndr_print {
                         } while (0)
 
 
-#define NDR_ALLOC(ndr, s) do { \
-	                       (s) = talloc(ndr->mem_ctx, sizeof(*(s))); \
+#define NDR_ALLOC_SIZE(ndr, s, size) do { \
+	                       (s) = talloc(ndr->mem_ctx, size); \
                                if (!(s)) return NT_STATUS_NO_MEMORY; \
                            } while (0)
+
+#define NDR_ALLOC(ndr, s) NDR_ALLOC_SIZE(ndr, s, sizeof(*(s)))
+
 
 #define NDR_ALLOC_N_SIZE(ndr, s, n, elsize) do { \
 				if ((n) == 0) { \
@@ -104,6 +113,7 @@ struct ndr_print {
 					if (!(s)) return NT_STATUS_NO_MEMORY; \
 				} \
                            } while (0)
+
 #define NDR_ALLOC_N(ndr, s, n) NDR_ALLOC_N_SIZE(ndr, s, n, sizeof(*(s)))
 
 /* these are used when generic fn pointers are needed for ndr push/pull fns */

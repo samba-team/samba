@@ -19,8 +19,9 @@ NTSTATUS ndr_pull_echo_AddOne(struct ndr_pull *ndr, struct echo_AddOne *r)
 NTSTATUS ndr_push_echo_EchoData(struct ndr_push *ndr, struct echo_EchoData *r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
-	if (r->in.data) {
-		NDR_CHECK(ndr_push_array_uint8(ndr, r->in.data, r->in.len));
+	if (r->in.in_data) {
+		NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
+		NDR_CHECK(ndr_push_array_uint8(ndr, r->in.in_data, r->in.len));
 	}
 
 	return NT_STATUS_OK;
@@ -28,8 +29,16 @@ NTSTATUS ndr_push_echo_EchoData(struct ndr_push *ndr, struct echo_EchoData *r)
 
 NTSTATUS ndr_pull_echo_EchoData(struct ndr_pull *ndr, struct echo_EchoData *r)
 {
-	if (r->out.data) {
-		NDR_CHECK(ndr_pull_array_uint8(ndr, r->out.data, r->in.len));
+	if (r->out.out_data) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->in.len > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->in.len);
+		}
+	}
+		NDR_ALLOC_N_SIZE(ndr, r->out.out_data, r->in.len, sizeof(r->out.out_data[0]));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, r->out.out_data, r->in.len));
 	}
 
 	return NT_STATUS_OK;
@@ -39,6 +48,7 @@ NTSTATUS ndr_push_echo_SinkData(struct ndr_push *ndr, struct echo_SinkData *r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
 	if (r->in.data) {
+		NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
 		NDR_CHECK(ndr_push_array_uint8(ndr, r->in.data, r->in.len));
 	}
 
@@ -61,7 +71,70 @@ NTSTATUS ndr_push_echo_SourceData(struct ndr_push *ndr, struct echo_SourceData *
 NTSTATUS ndr_pull_echo_SourceData(struct ndr_pull *ndr, struct echo_SourceData *r)
 {
 	if (r->out.data) {
+	{
+		uint32 _array_size;
+		NDR_CHECK(ndr_pull_uint32(ndr, &_array_size));
+		if (r->in.len > _array_size) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->in.len);
+		}
+	}
 		NDR_CHECK(ndr_pull_array_uint8(ndr, r->out.data, r->in.len));
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_Struct1(struct ndr_pull *ndr, int ndr_flags, struct Struct1 *r)
+{
+	uint32 _conformant_size;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_conformant_size));
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->bar));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->foo));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->count > _conformant_size) {
+		return ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, "Bad conformant size %u should be %u", _conformant_size, r->count);
+	}
+		NDR_ALLOC_N_SIZE(ndr, r->s, _conformant_size, sizeof(r->s[0]));
+		NDR_CHECK(ndr_pull_array_uint32(ndr, r->s, r->count));
+done:
+	return NT_STATUS_OK;
+}
+
+void ndr_print_Struct1(struct ndr_print *ndr, const char *name, struct Struct1 *r)
+{
+	ndr_print_struct(ndr, name, "Struct1");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "bar", r->bar);
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_uint32(ndr, "foo", r->foo);
+	ndr_print_ptr(ndr, "s", r->s);
+	ndr->depth++;
+		ndr_print_array_uint32(ndr, "s", r->s, r->count);
+	ndr->depth--;
+	ndr->depth--;
+}
+
+NTSTATUS ndr_push_TestCall(struct ndr_push *ndr, struct TestCall *r)
+{
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_TestCall(struct ndr_pull *ndr, struct TestCall *r)
+{
+	uint32 _ptr_s1;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_s1));
+	if (_ptr_s1) {
+		NDR_ALLOC(ndr, r->out.s1);
+	} else {
+		r->out.s1 = NULL;
+	}
+	if (r->out.s1) {
+		NDR_CHECK(ndr_pull_Struct1(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.s1));
 	}
 
 	return NT_STATUS_OK;

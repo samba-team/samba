@@ -68,8 +68,7 @@ static BOOL test_echodata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 	
 	r.in.len = len;
-	r.in.data = data_in;
-	r.out.data = data_out;
+	r.in.in_data = data_in;
 
 	status = dcerpc_echo_EchoData(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -77,9 +76,18 @@ static BOOL test_echodata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (memcmp(data_in, data_out, len) != 0) {
-		printf("Bad data returned for len %d!\n", len);
-		return False;
+	data_out = r.out.out_data;
+
+	for (i=0;i<len;i++) {
+		if (data_in[i] != data_out[i]) {
+			printf("Bad data returned for len %d at offset %d\n", 
+			       len, i);
+			printf("in:\n");
+			dump_data(0, data_in, MIN(len, 16));
+			printf("out:\n");
+			dump_data(0, data_out, MIN(len, 16));
+			return False;
+		}
 	}
 
 
@@ -154,6 +162,27 @@ static BOOL test_sinkdata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
+
+/*
+  test the testcall interface
+*/
+static BOOL test_testcall(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct TestCall r;
+
+	printf("\nTesting TestCall\n");
+	status = dcerpc_TestCall(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("TestCall failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	NDR_PRINT_DEBUG(Struct1, r.out.s1);	
+
+	return True;
+}
+
 BOOL torture_rpc_echo(int dummy)
 {
         NTSTATUS status;
@@ -181,6 +210,10 @@ BOOL torture_rpc_echo(int dummy)
 	}
 
 	if (!test_sinkdata(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_testcall(p, mem_ctx)) {
 		ret = False;
 	}
 

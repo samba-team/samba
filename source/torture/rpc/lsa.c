@@ -288,8 +288,8 @@ static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	printf("received %d privileges with unknown=0x%x\n", 
-	       r.out.privs?r.out.privs->count:0, r.out.unknown);
+	printf("received %d privileges\n", 
+	       r.out.privs?r.out.privs->count:0);
 
 	if (r.out.privs) {
 		int i;
