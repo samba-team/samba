@@ -762,13 +762,12 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			   NTTIME * pass_must_change_time,	/* all zeros */
 			   char *user_name,	/* NULL */
 			   char *full_name,
-			   char *home_dir, char *dir_drive, char *log_scr, char *prof_path, char *desc, char *wkstas, char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
-			   uint32 group_rid,
-			   uint32 acb_info,
-			   uint32 unknown_3,
-			   uint16 logon_divs,
-			   LOGON_HRS * hrs,
-			   uint32 unknown_5,
+			   char *home_dir, char *dir_drive, char *log_scr,
+			   char *prof_path, char *desc, char *wkstas,
+			   char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
+			   uint32 group_rid, uint32 acb_info,
+			   uint32 unknown_3, uint16 logon_divs,
+			   LOGON_HRS * hrs, uint32 unknown_5,
 			   char newpass[516], uint32 unknown_6);
 BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 			   const NTTIME * logon_time,
@@ -1071,6 +1070,9 @@ BOOL make_srv_share_info2(SH_INFO_2 *sh2,
 			  const char *remark,
 			  uint32 perms, uint32 max_uses, uint32 num_uses,
 			  const char *path, const char *pass);
+void srv_free_share_info_ctr(const char *desc,
+			     SHARE_INFO_CTR *info,
+			     uint32 info_level, uint32 count);
 void srv_free_srv_share_ctr(SRV_SHARE_INFO_CTR *ctr);
 BOOL make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
 				const char *srv_name, 
@@ -1229,6 +1231,8 @@ BOOL svc_io_q_change_svc_config(char *desc,  SVC_Q_CHANGE_SVC_CONFIG *q_u, prs_s
 BOOL make_svc_r_change_svc_config(SVC_R_CHANGE_SVC_CONFIG *r_c, 
 				uint32 unknown_0, uint32 status);
 BOOL svc_io_r_change_svc_config(char *desc,  SVC_R_CHANGE_SVC_CONFIG *r_u, prs_struct *ps, int depth);
+BOOL svc_io_q_unknown_3(char *desc, SVC_Q_UNKNOWN_3 *q_u,
+			prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_wks.c  */
 

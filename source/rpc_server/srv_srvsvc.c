@@ -219,11 +219,13 @@ static BOOL api_srv_net_share_get_info(rpcsrv_struct *p, prs_struct *data,
 {
 	SRV_Q_NET_SHARE_GET_INFO q_n;
 	SRV_R_NET_SHARE_GET_INFO r_n;
+	SHARE_INFO_CTR ctr;
 	uint32 status;
 	BOOL ret;
 
 	ZERO_STRUCT(q_n);
 	ZERO_STRUCT(r_n);
+	ZERO_STRUCT(ctr);
 
 	/* grab the request */
 	if (!srv_io_q_net_share_get_info("", &q_n, data, 0))
@@ -233,7 +235,7 @@ static BOOL api_srv_net_share_get_info(rpcsrv_struct *p, prs_struct *data,
 
 	status = NT_STATUS_ACCESS_DENIED;
 
-	make_srv_r_net_share_get_info(&r_n, q_n.info_level, NULL, status);
+	make_srv_r_net_share_get_info(&r_n, q_n.info_level, &ctr, status);
 
 	ret = srv_io_r_net_share_get_info("", &r_n, rdata, 0);
 

@@ -576,3 +576,44 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 
 	return valid_cfg;
 }
+
+/****************************************************************************
+do a SVC unknown 3
+****************************************************************************/
+BOOL svc_unknown_3(const POLICY_HND *scman_hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	SVC_Q_UNKNOWN_3 q_c;
+	BOOL valid_req = False;
+
+	struct cli_connection *con = NULL;
+
+	if (scman_hnd == NULL) return False;
+
+	if (!cli_connection_get(scman_hnd, &con))
+	{
+		return False;
+	}
+
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0, 4, True );
+
+	DEBUG(4,("SVC Unknown 3\n"));
+
+	/* store the parameters */
+	q_c.scman_hnd = *scman_hnd;
+
+	/* turn parameters into data stream */
+	if (svc_io_q_unknown_3("", &q_c, &buf, 0) &&
+	    rpc_con_pipe_req(con, SVC_CLOSE, &buf, &rbuf))
+	{
+		;
+	}
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
+
+	return valid_req;
+}
+

@@ -70,7 +70,7 @@ DOM_SID global_sid_S_1_1;    /* Global Domain */
 DOM_SID global_sid_S_1_3;    /* Creator Owner */
 DOM_SID global_sid_S_1_5;    /* NT Authority */
 DOM_SID global_sid_system;   /* NT System */
-DOM_SID global_sid_S_1_1_0;  /* everyone */
+static DOM_SID global_sid_S_1_1_0;  /* everyone */
 
 const DOM_SID *global_sid_everyone = NULL;
 const DOM_SID *global_sid_builtin = NULL;
@@ -82,21 +82,21 @@ struct sid_map
 
 };
 
-struct sid_map static_sid_name_map[] =
+static const struct sid_map static_sid_name_map[] =
 {
-	{ &global_sid_S_1_5_20, "BUILTIN" },
+	{ &global_sid_S_1_5_20, "BUILTIN" }, /* SID_NAME_DOMAIN */
 	{ &global_sid_S_1_1   , "Global Domain" },
-	{ &global_sid_S_1_1_0 , "Everyone" },
+	{ &global_sid_S_1_1_0 , "Everyone" }, /* SID_NAME_WKN_GRP */
 	{ &global_sid_S_1_3   , "Creator Owner" },
-	{ &global_sid_S_1_5   , "NT Authority" },
-	{ &global_sid_system  , "SYSTEM" },
+	{ &global_sid_S_1_5   , "NT Authority" }, /* SID_NAME_DOMAIN */
+	{ &global_sid_system  , "SYSTEM" }, /* SID_NAME_WKN_GRP */
 	{ &global_sam_sid     , global_sam_name },
 	{ &global_member_sid  , global_myworkgroup },
 	{ NULL                , NULL      }
 };
 
-struct sid_map **sid_name_map = NULL;
-uint32 num_maps = 0;
+static struct sid_map **sid_name_map = NULL;
+static uint32 num_maps = 0;
 
 static struct sid_map *sid_map_dup(const struct sid_map *from)
 {

@@ -418,6 +418,7 @@ typedef struct _share_info_502
 typedef union _share_info_ctr
 {
 	SHARE_INFO_502 *info502;
+	void *info;
 } SHARE_INFO_CTR;
 
 

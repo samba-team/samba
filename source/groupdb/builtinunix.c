@@ -217,7 +217,7 @@ static LOCAL_GRP *getbltunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		}
 
 		sid_split_rid(&gmep.sid, &gp_buf.rid);
-		if (!sid_equal(&global_sam_sid, &gmep.sid))
+		if (!sid_equal(global_sid_builtin, &gmep.sid))
 		{
 			continue;
 		}
@@ -276,7 +276,7 @@ static BOOL mod_bltunixgrp_entry(LOCAL_GRP* blt)
 /************************************************************************
  Routine to add a member to an entry to the bltpasswd file.
 *************************************************************************/
-static BOOL add_bltunixgrp_member(uint32 rid, DOM_SID *member_sid)
+static BOOL add_bltunixgrp_member(uint32 rid, const DOM_SID *member_sid)
 {
 	DEBUG(0, ("add_bltunixgrp_member: NOT IMPLEMENTED\n"));
 	return False;
@@ -285,7 +285,7 @@ static BOOL add_bltunixgrp_member(uint32 rid, DOM_SID *member_sid)
 /************************************************************************
  Routine to delete a member from an entry to the bltpasswd file.
 *************************************************************************/
-static BOOL del_bltunixgrp_member(uint32 rid, DOM_SID *member_sid)
+static BOOL del_bltunixgrp_member(uint32 rid, const DOM_SID *member_sid)
 {
 	DEBUG(0, ("del_bltunixgrp_member: NOT IMPLEMENTED\n"));
 	return False;

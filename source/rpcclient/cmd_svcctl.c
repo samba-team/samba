@@ -405,3 +405,34 @@ void cmd_svc_set(struct client_info *info, int argc, char *argv[])
 	}
 }
 
+/****************************************************************************
+nt stop service 
+****************************************************************************/
+void cmd_svc_unk3(struct client_info *info, int argc, char *argv[])
+{
+	BOOL res = True;
+	BOOL res1 = True;
+	POLICY_HND pol_scm;
+	
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	DEBUG(4,("cmd_svc_unk3: server:%s\n", srv_name));
+
+	/* open service control manager receive a policy handle */
+	res = res ? svc_open_sc_man(srv_name, NULL, 0x80000000,
+				    &pol_scm) : False;
+
+	res1 = res ? svc_unknown_3(&pol_scm) : False;
+
+	res  = res  ? svc_close(&pol_scm) : False;
+
+	if (res1)
+	{
+		DEBUG(5,("cmd_svc_unk3: succeeded\n"));
+	}
+}
+

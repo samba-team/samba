@@ -26,6 +26,9 @@
 
 
 /* svcctl pipe */
+#define SVC_CLOSE             0x00
+#define SVC_STOP_SERVICE      0x01
+#define SVC_UNKNOWN_3         0x03
 #define SVC_OPEN_SC_MAN       0x0f
 #define SVC_ENUM_SVCS_STATUS  0x0e
 #define SVC_QUERY_SVC_CONFIG  0x11
@@ -33,8 +36,6 @@
 #define SVC_CHANGE_SVC_CONFIG 0x0b
 #define SVC_OPEN_SERVICE      0x10
 #define SVC_START_SERVICE     0x13
-#define SVC_STOP_SERVICE      0x01
-#define SVC_CLOSE             0x00
 
 /* SVC_Q_START_SERVICE */
 #define MAX_SVC_ARGS 		10
@@ -236,8 +237,6 @@ typedef struct q_svc_close_info
 
 } SVC_Q_CLOSE;
 
-
-
 /* SVC_R_CLOSE */
 typedef struct r_svc_close_info
 {
@@ -284,6 +283,14 @@ typedef struct r_svc_change_svc_cfg_info
 	uint32 status;             /* return status */
 
 } SVC_R_CHANGE_SVC_CONFIG;
+
+
+/* SVC_Q_UNKNOWN_3 */
+typedef struct _svc_unknown_3
+{
+	POLICY_HND scman_hnd;
+} SVC_Q_UNKNOWN_3;
+
 
 
 #endif /* _RPC_SVCCTL_H */

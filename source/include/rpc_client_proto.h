@@ -446,6 +446,7 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 				char* dependencies, char* service_start_name,
 				char* password,
 				char* disp_name);
+BOOL svc_unknown_3(const POLICY_HND *scman_hnd);
 
 /*The following definitions come from  rpc_client/cli_use.c  */
 
@@ -476,14 +477,15 @@ uint32 lookup_lsa_sid(const char *domain,
 		      DOM_SID * sid, char *name, uint32 * type);
 BOOL msrpc_lsa_create_secret(const char *srv_name, const char *secret_name,
 			     uint32 access_rights);
-void secret_store_data(STRING2 * secret, const char* data, int len);
-void secret_store_data2(STRING2 * secret, const char* data, int len);
+void secret_store_data(STRING2 * secret, const char *data, int len);
+void secret_store_data2(STRING2 * secret, const char *data, int len);
 BOOL msrpc_lsa_set_secret(const char *srv_name,
 			  const char *secret_name, const char *data, int len);
 BOOL msrpc_lsa_query_secret(const char *srv_name,
 			    const char *secret_name,
 			    STRING2 * secret, NTTIME * last_update);
-BOOL secret_get_data(const STRING2 *secret, uchar *data, uint32 *len);
+BOOL secret_get_data(const STRING2 * secret, uchar * data, uint32 * len);
+BOOL secret_to_nt_owf(uchar trust_passwd[16], const STRING2 * secret);
 BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
 				  const char *secret_name,
 				  uchar trust_passwd[16],

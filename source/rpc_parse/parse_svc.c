@@ -886,3 +886,18 @@ BOOL svc_io_r_change_svc_config(char *desc,  SVC_R_CHANGE_SVC_CONFIG *r_u, prs_s
 	return True;
 }
 
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL svc_io_q_unknown_3(char *desc, SVC_Q_UNKNOWN_3 *q_u,
+			prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "svc_io_q_unknown_3");
+	depth++;
+
+	prs_align(ps);
+
+	return smb_io_pol_hnd("scman_hnd", &(q_u->scman_hnd), ps, depth);
+}

@@ -115,6 +115,13 @@ static const struct command_set svc_commands[] = {
 	 {complete_svcenum, NULL}
 	 },
 
+	{
+		"svcunk3",
+		cmd_svc_unk3,
+		"do some unknown stuff",
+		{NULL, NULL}
+	},
+
 	/*
 	 * oop!
 	 */

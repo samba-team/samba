@@ -310,6 +310,10 @@ static BOOL srv_io_share_info2(char *desc,  SH_INFO_2 *sh2, prs_struct *ps, int 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+static void srv_free_share_info502_hdr(SH_INFO_502_HDR *sh502)
+{
+}
+
 static BOOL srv_io_share_info502_hdr(char *desc, SH_INFO_502_HDR *sh502,
 				     prs_struct *ps, int depth)
 {
@@ -331,6 +335,16 @@ static BOOL srv_io_share_info502_hdr(char *desc, SH_INFO_502_HDR *sh502,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+static void srv_free_share_info502_data(SH_INFO_502_DATA *sh502)
+{
+	if (sh502 == NULL)
+	{
+		return;
+	}
+	free_sec_desc(&sh502->sd);
+	ZERO_STRUCT(sh502->sd);
+}
+
 static BOOL srv_io_share_info502_data(char *desc,
 				      SH_INFO_502_DATA *sh502,
 				      SH_INFO_502_HDR *si502,
@@ -360,6 +374,17 @@ static BOOL srv_io_share_info502_data(char *desc,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+static void srv_free_share_info502(SHARE_INFO_502 *sh502, uint32 count)
+{
+	uint32 i;
+	if (sh502 == NULL) return;
+	for (i = 0; i < count; i++)
+	{
+		srv_free_share_info502_hdr(&(sh502[i].info502_hdr));
+		srv_free_share_info502_data(&(sh502[i].info502_data));
+	}
+}
+
 static BOOL srv_io_share_info502(char *desc,
 				 SHARE_INFO_502 *sh502, uint32 count,
 				 prs_struct *ps, int depth)
@@ -384,6 +409,28 @@ static BOOL srv_io_share_info502(char *desc,
 /*******************************************************************
  reads or writes a structure.
  ********************************************************************/
+void srv_free_share_info_ctr(const char *desc,
+			     SHARE_INFO_CTR *info,
+			     uint32 info_level, uint32 count)
+{
+	if (info == NULL) return;
+
+	switch (info_level)
+	{
+		case 502:
+			srv_free_share_info502(info->info502, count);
+			safe_free(info->info502);
+			info->info502 = NULL;
+			break;
+		default:
+			DEBUG(1, ("srv_free_share_info_ctr: Unsupported info level %d\n",
+				  info_level));
+			return;
+			break;
+	}
+
+}
+
 static BOOL srv_io_share_info_ctr(const char *desc,
 				  SHARE_INFO_CTR *info,
 				  uint32 info_level, uint32 count,
@@ -710,7 +757,16 @@ BOOL make_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n,
 
 	if (status == NT_STATUS_NOPROBLEMO)
 	{
-		r_n->info_ptr = (ctr != NULL ? 1 : 0);
+		if (ctr && ctr->info)
+		{
+			r_n->info_ptr = 1;
+			r_n->info = *ctr;
+		}
+		else
+		{
+			r_n->info_ptr = 0;
+			r_n->info.info = NULL;
+		}
 	}
 	else
 	{

@@ -763,31 +763,32 @@ BOOL create_new_sid(DOM_SID *sid);
 
 BOOL is_a_socket(int fd);
 void set_socket_options(int fd, char *options);
-void close_sockets(void );
-ssize_t write_socket(int fd,char *buf,size_t len);
-ssize_t read_udp_socket(int fd,char *buf,size_t len);
-ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out);
+void close_sockets(void);
+ssize_t write_socket(int fd, char *buf, size_t len);
+ssize_t read_udp_socket(int fd, char *buf, size_t len);
+ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
+			  unsigned int time_out);
 BOOL send_keepalive(int client);
-ssize_t read_data(int fd,char *buffer,size_t N);
-ssize_t write_data(int fd,char *buffer,size_t N);
-ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
-BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
-BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
-BOOL send_smb(int fd,char *buffer);
-BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type);
-int open_socket_in(int type, int port, int dlevel,uint32 socket_addr, 
-                   BOOL rebind);
-int open_socket_out(int type, struct in_addr *addr, int port ,int timeout);
-void set_client_connection_name(const char* name, int fd);
-void set_client_connection_addr(const char* addr, int fd);
+ssize_t read_data(int fd, char *buffer, size_t N);
+ssize_t write_data(int fd, char *buffer, size_t N);
+ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout);
+BOOL receive_smb(int fd, char *buffer, unsigned int timeout);
+BOOL client_receive_smb(int fd, char *buffer, unsigned int timeout);
+BOOL send_smb(int fd, char *buffer);
+BOOL send_one_packet(char *buf, int len, struct in_addr ip, int port,
+		     int type);
+int open_socket_in(int type, int port, int dlevel, uint32 socket_addr,
+		   BOOL rebind);
+int open_socket_out(int type, struct in_addr *addr, int port, int timeout);
+void set_client_connection_name(const char *name, int fd);
+void set_client_connection_addr(const char *addr, int fd);
 char *client_connection_name(void);
 char *client_connection_addr(void);
 void reset_globals_after_fork(void);
 char *client_name(int fd);
 char *client_addr(int fd);
 int open_pipe_sock(char *path);
-int create_pipe_socket(char *dir, int dir_perms,
-				char *path, int path_perms);
+int create_pipe_socket(char *dir, int dir_perms, char *path, int path_perms);
 
 /*The following definitions come from  lib/util_str.c  */
 
@@ -2496,13 +2497,12 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			   NTTIME * pass_must_change_time,	/* all zeros */
 			   char *user_name,	/* NULL */
 			   char *full_name,
-			   char *home_dir, char *dir_drive, char *log_scr, char *prof_path, char *desc, char *wkstas, char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
-			   uint32 group_rid,
-			   uint32 acb_info,
-			   uint32 unknown_3,
-			   uint16 logon_divs,
-			   LOGON_HRS * hrs,
-			   uint32 unknown_5,
+			   char *home_dir, char *dir_drive, char *log_scr,
+			   char *prof_path, char *desc, char *wkstas,
+			   char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
+			   uint32 group_rid, uint32 acb_info,
+			   uint32 unknown_3, uint16 logon_divs,
+			   LOGON_HRS * hrs, uint32 unknown_5,
 			   char newpass[516], uint32 unknown_6);
 BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 			   const NTTIME * logon_time,
