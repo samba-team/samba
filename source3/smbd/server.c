@@ -5167,10 +5167,6 @@ static void usage(char *pname)
   if(!open_oplock_ipc())
     exit(1);
 
-  if (lp_status(-1)) {
-	  claim_connection(-1,"STATUS.",MAXSTATUS,True);
-  }
-
   process();
   close_sockets();
 
