@@ -636,7 +636,8 @@ BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps
 	depth++;
 
 	/* "NTLMSSP" */
-	if(!prs_string("signature", ps, depth, rav->signature, 0, sizeof(rav->signature)))
+	if(!prs_string("signature", ps, depth, rav->signature, strlen("NTLMSSP"),
+			sizeof(rav->signature)))
 		return False;
 	if(!prs_uint32("msg_type ", ps, depth, &rav->msg_type)) /* NTLMSSP_MESSAGE_TYPE */
 		return False;

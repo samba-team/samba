@@ -1676,6 +1676,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
 
   p = skip_string(p,1);
 
+  memset(pass1,'\0',sizeof(pass1));
+  memset(pass2,'\0',sizeof(pass2));
   memcpy(pass1,p,16);
   memcpy(pass2,p+16,16);
 
