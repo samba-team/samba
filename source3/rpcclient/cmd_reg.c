@@ -895,7 +895,7 @@ static void cmd_reg_get_key_sec(struct client_info *info)
 nt registry shutdown
 ****************************************************************************/
 static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                 int argc, char **argv)
+                                 int argc, const char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring msg;
@@ -950,7 +950,7 @@ abort a shutdown
 ****************************************************************************/
 static NTSTATUS cmd_reg_abort_shutdown(struct cli_state *cli, 
                                        TALLOC_CTX *mem_ctx, int argc, 
-                                       char **argv)
+                                       const char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 

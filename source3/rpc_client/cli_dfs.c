@@ -67,8 +67,8 @@ NTSTATUS cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS cli_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                     char *entrypath, char *servername, char *sharename,
-                     char *comment, uint32 flags)
+                     const char *entrypath, const char *servername, 
+		     const char *sharename, const char *comment, uint32 flags)
 {
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_ADD q;
@@ -111,7 +111,8 @@ NTSTATUS cli_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                        char *entrypath, char *servername, char *sharename)
+                        const char *entrypath, const char *servername, 
+			const char *sharename)
 {
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_REMOVE q;
@@ -153,8 +154,9 @@ NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                          char *entrypath, char *servername, char *sharename,
-                          uint32 info_level, DFS_INFO_CTR *ctr)
+                          const char *entrypath, const char *servername, 
+			  const char *sharename, uint32 info_level, 
+			  DFS_INFO_CTR *ctr)
 
 {
 	prs_struct qbuf, rbuf;

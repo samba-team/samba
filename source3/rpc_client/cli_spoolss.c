@@ -1243,8 +1243,8 @@ WERROR cli_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  */
 
 WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *handle, uint32 level, char *form_name,
-			   FORM *form)
+			   POLICY_HND *handle, uint32 level, 
+			   const char *form_name, FORM *form)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_SETFORM q;
@@ -1305,8 +1305,8 @@ WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			   uint32 offered, uint32 *needed,
-			   POLICY_HND *handle, char *formname, uint32 level, 
-			   FORM_1 *form)
+			   POLICY_HND *handle, const char *formname, 
+			   uint32 level, FORM_1 *form)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETFORM q;
@@ -1377,7 +1377,7 @@ WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  */
 
 WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *handle, char *form_name)
+			      POLICY_HND *handle, const char *form_name)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_DELETEFORM q;
@@ -1899,7 +1899,7 @@ WERROR cli_spoolss_enddocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				  uint32 offered, uint32 *needed,
-				  POLICY_HND *hnd, char *valuename, 
+				  POLICY_HND *hnd, const char *valuename, 
 				  REGISTRY_VALUE *value)
 {
 	prs_struct qbuf, rbuf;
@@ -1953,8 +1953,9 @@ WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 WERROR cli_spoolss_getprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				    uint32 offered, uint32 *needed,
-				    POLICY_HND *hnd, char *keyname, 
-				    char *valuename, REGISTRY_VALUE *value)
+				    POLICY_HND *hnd, const char *keyname, 
+				    const char *valuename, 
+				    REGISTRY_VALUE *value)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTERDATAEX q;

@@ -76,8 +76,8 @@ BOOL dfs_io_r_dfs_exist(const char *desc, DFS_R_DFS_EXIST *q_d, prs_struct *ps, 
 Make a DFS_Q_DFS_REMOVE structure
 *******************************************************************/
 
-BOOL init_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, char *entrypath, 
-			   char *servername, char *sharename)
+BOOL init_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, const char *entrypath, 
+			   const char *servername, const char *sharename)
 {
 	DEBUG(5,("init_dfs_q_dfs_remove\n"));
 	init_unistr2(&q_d->DfsEntryPath, entrypath,  strlen(entrypath)+1);
@@ -149,8 +149,9 @@ BOOL dfs_io_r_dfs_remove(const char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps
 Make a DFS_Q_DFS_ADD structure
 *******************************************************************/
 
-BOOL init_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, char *entrypath, char *servername,
-			char *sharename, char *comment, uint32 flags)
+BOOL init_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, const char *entrypath, 
+			const char *servername, const char *sharename, 
+			const char *comment, uint32 flags)
 {
 	DEBUG(5,("init_dfs_q_dfs_add\n"));
 	q_d->ptr_DfsEntryPath = q_d->ptr_ServerName = q_d->ptr_ShareName = 1;
@@ -231,8 +232,8 @@ BOOL dfs_io_r_dfs_add(const char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps, int 
 	return True;
 }
 
-BOOL init_dfs_q_dfs_get_info(DFS_Q_DFS_GET_INFO *q_d, char *entrypath,
-			     char *servername, char *sharename, 
+BOOL init_dfs_q_dfs_get_info(DFS_Q_DFS_GET_INFO *q_d, const char *entrypath,
+			     const char *servername, const char *sharename, 
 			     uint32 info_level)
 {
 	DEBUG(5,("init_dfs_q2_get_info\n"));
