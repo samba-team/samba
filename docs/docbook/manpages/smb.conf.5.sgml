@@ -3451,10 +3451,13 @@
 		<para>
 		This option is used to control the tcp port number used to contact
 		the <link linkend="LDAPSERVER"><parameter>ldap server</parameter></link>.
-		The default is to use the stand LDAP port 389.
+		The default is to use the stand LDAPS port 636.
+		</para>
+
+		<para>See Also: <link linkend="LDAPSSL">ldap ssl</link>
 		</para>
 		
-		<para>Default : <command>ldap port = 389</command></para>
+		<para>Default : <command>ldap port = 636</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -3502,15 +3505,15 @@
 		
 		<para>
 		The <parameter>ldap ssl</parameter> can be set to one of three values:
-		(a) <command>on</command> - Always use SSL when contacting the 
-		<parameter>ldap	server</parameter>, (b) <command>off</command> -
-		Never use SSL when querying the directory, or (c) <command>start 
-		tls</command> - Use the LDAPv3 StartTLS extended operation 
+		(a) <constant>on</constant> - Always use SSL when contacting the 
+		<parameter>ldap	server</parameter>, (b) <constant>off</constant> -
+		Never use SSL when querying the directory, or (c) <constant>start_tls</constant> 
+		- Use the LDAPv3 StartTLS extended operation 
 		(RFC2830) for communicating with the directory server.
 		</para>
 		
 		
-		<para>Default : <command>ldap ssl = off</command></para>
+		<para>Default : <command>ldap ssl = on</command></para>
 		</listitem>
 		</varlistentry>
 

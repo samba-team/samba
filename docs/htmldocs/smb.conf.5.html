@@ -9778,12 +9778,18 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.
-		The default is to use the stand LDAP port 389.
+		The default is to use the stand LDAPS port 636.
+		</P
+><P
+>See Also: <A
+HREF="#LDAPSSL"
+>ldap ssl</A
+>
 		</P
 ><P
 >Default : <B
 CLASS="COMMAND"
->ldap port = 389</B
+>ldap port = 636</B
 ></P
 ></DD
 ><DT
@@ -9865,30 +9871,30 @@ CLASS="PARAMETER"
 >ldap ssl</I
 ></TT
 > can be set to one of three values:
-		(a) <B
-CLASS="COMMAND"
->on</B
+		(a) <TT
+CLASS="CONSTANT"
+>on</TT
 > - Always use SSL when contacting the 
 		<TT
 CLASS="PARAMETER"
 ><I
 >ldap	server</I
 ></TT
->, (b) <B
-CLASS="COMMAND"
->off</B
+>, (b) <TT
+CLASS="CONSTANT"
+>off</TT
 > -
-		Never use SSL when querying the directory, or (c) <B
-CLASS="COMMAND"
->start 
-		tls</B
-> - Use the LDAPv3 StartTLS extended operation 
+		Never use SSL when querying the directory, or (c) <TT
+CLASS="CONSTANT"
+>start_tls</TT
+> 
+		- Use the LDAPv3 StartTLS extended operation 
 		(RFC2830) for communicating with the directory server.
 		</P
 ><P
 >Default : <B
 CLASS="COMMAND"
->ldap ssl = off</B
+>ldap ssl = on</B
 ></P
 ></DD
 ><DT
@@ -19187,7 +19193,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6052"
+NAME="AEN6054"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19217,7 +19223,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6058"
+NAME="AEN6060"
 ></A
 ><H2
 >VERSION</H2
@@ -19228,7 +19234,7 @@ NAME="AEN6058"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6061"
+NAME="AEN6063"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19307,7 +19313,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6081"
+NAME="AEN6083"
 ></A
 ><H2
 >AUTHOR</H2
