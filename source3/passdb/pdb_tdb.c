@@ -44,30 +44,69 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 struct tdbsam_privates {
 	TDB_CONTEXT 	*passwd_tdb;
-	TDB_DATA 	key;
 
 	/* retrive-once info */
 	const char *tdbsam_location;
 };
 
-/***************************************************************
- Open the TDB passwd database for SAM account enumeration.
-****************************************************************/
+struct pwent_list {
+	struct pwent_list *prev, *next;
+	TDB_DATA key;
+};
+static struct pwent_list *tdbsam_pwent_list;
 
-static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
+
+/****************************************************************************
+ creates a list of user keys
+****************************************************************************/
+
+static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
 {
-	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
+	const char *prefix = USERPREFIX;
+	int  prefixlen = strlen (prefix);
+	struct pwent_list *ptr;
 	
-	/* Open tdb passwd */
-	if (!(tdb_state->passwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, update?(O_RDWR|O_CREAT):O_RDONLY, 0600)))
-	{
-		DEBUG(0, ("Unable to open/create TDB passwd\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+	if ( strncmp(key.dptr, prefix, prefixlen) == 0 ) {
+		if ( !(ptr=(struct pwent_list*)malloc(sizeof(struct pwent_list))) ) {
+			DEBUG(0,("tdbsam_traverse_setpwent: Failed to malloc new entry for list\n"));
+			
+			/* just return 0 and let the traversal continue */
+			return 0;
+		}
+		ZERO_STRUCTP(ptr);
+		
+		/* save a copy of the key */
+		
+		ptr->key.dptr = memdup( key.dptr, key.dsize );
+		ptr->key.dsize = key.dsize;
+		
+		DLIST_ADD( tdbsam_pwent_list, ptr );
+	
 	}
 	
-	tdb_state->key = tdb_firstkey(tdb_state->passwd_tdb);
+	
+	return 0;
+}
 
-	return NT_STATUS_OK;
+/*****************************************************************************
+ Utility functions to open and close the tdb sam database
+ ****************************************************************************/
+ 
+static BOOL open_tdbsam( struct tdbsam_privates *tdb_state, BOOL update )
+{
+	/* check if we already have the tdbsam open */
+	
+	if ( tdb_state->passwd_tdb )
+		return True;
+		
+	if ( !(tdb_state->passwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 
+		0, TDB_DEFAULT, update?(O_RDWR|O_CREAT):O_RDONLY, 0600)) )
+	{
+		DEBUG(0, ("Unable to open/create TDB passwd\n"));
+		return False;
+	}
+
+	return True;
 }
 
 static void close_tdb(struct tdbsam_privates *tdb_state) 
@@ -79,14 +118,42 @@ static void close_tdb(struct tdbsam_privates *tdb_state)
 }
 
 /***************************************************************
+ Open the TDB passwd database for SAM account enumeration.
+ Save a list of user keys for iteration.
+****************************************************************/
+
+static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, BOOL update)
+{
+	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
+	
+	/* Open tdb passwd */
+	if ( !open_tdbsam(tdb_state, update) ) 
+		return NT_STATUS_UNSUCCESSFUL;
+
+	tdb_traverse( tdb_state->passwd_tdb, tdbsam_traverse_setpwent, NULL );
+
+	return NT_STATUS_OK;
+}
+
+
+/***************************************************************
  End enumeration of the TDB passwd list.
 ****************************************************************/
 
 static void tdbsam_endsampwent(struct pdb_methods *my_methods)
 {
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
-	SAFE_FREE(tdb_state->key.dptr);
+	struct pwent_list *ptr;
+	
 	close_tdb(tdb_state);
+	
+	/* clear out any remaining entries in the list */
+	
+	for ( ptr=tdbsam_pwent_list; ptr; ptr=ptr->next ) {
+		DLIST_REMOVE( tdbsam_pwent_list, ptr );
+		SAFE_FREE( ptr->key.dptr);
+		SAFE_FREE( ptr );
+	}
 	
 	DEBUG(7, ("endtdbpwent: closed sam database.\n"));
 }
@@ -97,55 +164,45 @@ static void tdbsam_endsampwent(struct pdb_methods *my_methods)
 
 static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS 		nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
-	TDB_DATA 	data, old_key;
-	const char *prefix = USERPREFIX;
-	int  prefixlen = strlen (prefix);
+	TDB_DATA 		data;
+	struct pwent_list	*pkey;
 
-
-	if (user==NULL) {
-		DEBUG(0,("pdb_get_sampwent: SAM_ACCOUNT is NULL.\n"));
+	if ( !user ) {
+		DEBUG(0,("tdbsam_getsampwent: SAM_ACCOUNT is NULL.\n"));
 		return nt_status;
 	}
 
-	/* skip all non-USER entries (eg. RIDs) */
-	while ((tdb_state->key.dsize != 0) && (strncmp(tdb_state->key.dptr, prefix, prefixlen))) {
+	if( !open_tdbsam(tdb_state, True) )
+		return nt_status;
 
-		old_key = tdb_state->key;
-
-		/* increment to next in line */
-		tdb_state->key = tdb_nextkey(tdb_state->passwd_tdb, tdb_state->key);
-
-		SAFE_FREE(old_key.dptr);
-	}
-
-	/* do we have an valid iteration pointer? */
-	if(tdb_state->passwd_tdb == NULL) {
-		DEBUG(0,("pdb_get_sampwent: Bad TDB Context pointer.\n"));
+	if ( !tdbsam_pwent_list ) {
+		DEBUG(4,("tdbsam_getsampwent: end of list\n"));
 		return nt_status;
 	}
 
-	data = tdb_fetch(tdb_state->passwd_tdb, tdb_state->key);
+	/* pull the next entry */
+		
+	pkey = tdbsam_pwent_list;
+	DLIST_REMOVE( tdbsam_pwent_list, pkey );
+	
+	data = tdb_fetch(tdb_state->passwd_tdb, pkey->key);
+
+	SAFE_FREE( pkey->key.dptr);
+	SAFE_FREE( pkey);
+	
 	if (!data.dptr) {
-		DEBUG(5,("pdb_getsampwent: database entry not found.\n"));
+		DEBUG(5,("pdb_getsampwent: database entry not found.  Was the user deleted?\n"));
 		return nt_status;
 	}
   
-  	/* unpack the buffer */
 	if (!init_sam_from_buffer(user, (unsigned char *)data.dptr, data.dsize)) {
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
-		SAFE_FREE(data.dptr);
-		return nt_status;
 	}
-	SAFE_FREE(data.dptr);
 	
-	old_key = tdb_state->key;
+	SAFE_FREE( data.dptr );
 	
-	/* increment to next in line */
-	tdb_state->key = tdb_nextkey(tdb_state->passwd_tdb, tdb_state->key);
-
-	SAFE_FREE(old_key.dptr);
 
 	return NT_STATUS_OK;
 }
