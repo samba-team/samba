@@ -44,7 +44,9 @@ RCSID("$Id$");
 #include <openssl/dh.h>
 #include <openssl/bn.h>
 
+#ifdef HAVE_DIRENT_H
 #include <dirent.h>
+#endif
 
 #include "heim_asn1.h"
 #include "rfc2459_asn1.h"
@@ -83,6 +85,7 @@ struct krb5_pk_identity {
     EVP_PKEY *private_key;
     STACK_OF(X509) *cert;
     STACK_OF(X509) *trusted_certs;
+    STACK_OF(X509_CRL) *crls;
 };
 
 struct krb5_pk_cert {
@@ -157,16 +160,17 @@ _krb5_pk_cert_free(struct krb5_pk_cert *cert)
 
 krb5_error_code
 _krb5_pk_create_sign(krb5_context context,
-		     const heim_oid *oid,
+		     const heim_oid *eContentType,
 		     krb5_data *eContent,
 		     struct krb5_pk_identity *id,
 		     krb5_data *sd_data)
 {
+    const heim_oid *digest_oid;
+    SignerInfo *signer_info;
+    X509 *user_cert = NULL;
     krb5_error_code ret;
     krb5_data buf;
     SignedData sd;
-    X509 *user_cert = NULL ;
-    SignerInfo *signer_info;
     EVP_MD_CTX md;
     int len, i;
     size_t size;
@@ -185,7 +189,7 @@ _krb5_pk_create_sign(krb5_context context,
 
     sd.digestAlgorithms.len = 0;
     sd.digestAlgorithms.val = NULL;
-    copy_oid(oid, &sd.encapContentInfo.eContentType);
+    copy_oid(eContentType, &sd.encapContentInfo.eContentType);
     ALLOC(sd.encapContentInfo.eContent, 1);
     if (sd.encapContentInfo.eContent == NULL) {
 	krb5_clear_error_string(context);
@@ -232,13 +236,12 @@ _krb5_pk_create_sign(krb5_context context,
     signer_info->sid.u.issuerAndSerialNumber.serialNumber = 
 	ASN1_INTEGER_get(X509_get_serialNumber(user_cert));
 
-#ifdef PACKET_CABLE
-    ret = copy_oid(&heim_sha1_oid, 
-		  &signer_info->digestAlgorithm.algorithm);
-#else
-    ret = copy_oid(&heim_sha1WithRSAEncryption_oid, 
-		   &signer_info->digestAlgorithm.algorithm);
-#endif
+    if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE)
+	digest_oid = &heim_sha1_oid;
+    else
+	digest_oid = &heim_sha1WithRSAEncryption_oid;
+    
+    ret = copy_oid(digest_oid, &signer_info->digestAlgorithm.algorithm);
     signer_info->digestAlgorithm.parameters = NULL;
     if (ret) {
 	krb5_set_error_string(context, "malloc: out of memory");
@@ -353,12 +356,10 @@ build_auth_pack(krb5_context context,
     krb5_timestamp sec;
     int32_t usec;
 
-#if 1 /* def PACKET_CABLE */
-    cksum = CKSUMTYPE_RSA_MD5;
-#else
-    cksum = CKSUMTYPE_SHA1;
-#endif
-
+    if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE)
+	cksum = CKSUMTYPE_RSA_MD5;
+    else
+	cksum = CKSUMTYPE_SHA1;
 
     krb5_us_timeofday(context, &sec, &usec);
     a->pkAuthenticator.ctime = sec;
@@ -447,17 +448,23 @@ _krb5_pk_mk_padata(krb5_context context,
     PA_PK_AS_REQ req;
     size_t size;
     krb5_data buf, sd_buf;
-    PROV_SRV_LOCATION provisioning_server = NULL;
+    int pa_type;
+    const char *provisioning_server = NULL;
 
-#ifdef PACKET_CABLE
-    provisioning_server = "provserver.ipfonix.com";
-#endif
+    if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE) {
+	provisioning_server =
+	    krb5_config_get_string(context, NULL,
+				   "realms",
+				   req_body->realm,
+				   "packet-cable-provisioning-server",
+				   NULL);
+    }
 
     krb5_data_zero(&buf);
     krb5_data_zero(&sd_buf);
     memset(&req, 0, sizeof(req));
   
-    if (context->pkinit_win2k_compatible) {
+    if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
 	AuthPack_Win2k ap;
 
 	memset(&ap, 0, sizeof(ap));
@@ -477,6 +484,8 @@ _krb5_pk_mk_padata(krb5_context context,
 	}
 	if (buf.length != size)
 	    krb5_abortx(context, "internal ASN1 encoder error");
+
+	oid = &pkcs7_data_oid;
     } else {
 	AuthPack ap;
 	
@@ -496,12 +505,7 @@ _krb5_pk_mk_padata(krb5_context context,
 	}
 	if (buf.length != size)
 	    krb5_abortx(context, "internal ASN1 encoder error");
-    }
 
-    /* for win2k we have to use a different object identifier */
-    if (context->pkinit_win2k_compatible) {
-	oid = &pkcs7_data_oid;
-    } else {
 	oid = &heim_pkauthdata_oid;
     }
 
@@ -520,12 +524,12 @@ _krb5_pk_mk_padata(krb5_context context,
     if (ret)
 	goto out;
 
-    req.trustedCertifiers = NULL; /* XXX */
+    /* XXX tell kdc what client is willing to accept */
+    req.trustedCertifiers = NULL;
     req.kdcCert = NULL;
     req.encryptionCert = NULL;
   
-    /* use the win2k compatible der encoding if needed */
-    if (context->pkinit_win2k_compatible) {
+    if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
 	PA_PK_AS_REQ_Win2k winreq;
 #if 1
 	memset(&winreq, 0, sizeof(winreq));
@@ -535,10 +539,12 @@ _krb5_pk_mk_padata(krb5_context context,
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ_Win2k, buf.data, buf.length,
 			   &winreq, &size, ret);
 	free_PA_PK_AS_REQ_Win2k(&winreq);
-    } else
+	pa_type = KRB5_PADATA_PK_AS_REQ + 1;
+    } else {
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REQ, buf.data, buf.length,
 			   &req, &size, ret);
-
+	pa_type = KRB5_PADATA_PK_AS_REQ;
+    }
     if (ret) {
 	krb5_set_error_string(context, "PA-PK-AS-REQ %d", ret);
 	goto out;
@@ -546,24 +552,16 @@ _krb5_pk_mk_padata(krb5_context context,
     if (buf.length != size)
 	krb5_abortx(context, "Internal ASN1 encoder error");
 
-    { 
-	int type;
-
-	if (context->pkinit_win2k_compatible)
-	    type = KRB5_PADATA_PK_AS_REQ+1;
-	else
-	    type = KRB5_PADATA_PK_AS_REQ;
-
-	ret = krb5_padata_add(context, md, type, buf.data, buf.length);
-	if (ret)
-	    free(buf.data);
-    }
+    ret = krb5_padata_add(context, md, pa_type, buf.data, buf.length);
+    if (ret)
+	free(buf.data);
 
     if (ret == 0 && provisioning_server) {
 	/* PacketCable requires the PROV-SRV-LOCATION authenticator */
+	const PROV_SRV_LOCATION prov_server = (char *)provisioning_server;
 
 	ASN1_MALLOC_ENCODE(PROV_SRV_LOCATION, buf.data, buf.length,
-			   &provisioning_server, &size, ret);
+			   &prov_server, &size, ret);
 	if (ret)
 	    goto out;
 	if (buf.length != size)
@@ -658,8 +656,7 @@ pk_decrypt_key(krb5_context context,
 
 static krb5_error_code 
 pk_verify_chain_standard(krb5_context context,
-                         STACK_OF(X509) *trusted_certs,
-                         STACK_OF(X509_CRL) *crls,
+			 struct krb5_pk_identity *id,
 			 const SignerIdentifier *client,
 			 STACK_OF(X509) *chain,
 			 X509 **client_cert)
@@ -697,7 +694,7 @@ pk_verify_chain_standard(krb5_context context,
     }
    
     X509_STORE_CTX_init(store_ctx, cert_store, cert, chain);
-    X509_STORE_CTX_trusted_stack(store_ctx, trusted_certs);
+    X509_STORE_CTX_trusted_stack(store_ctx, id->trusted_certs);
     X509_verify_cert(store_ctx);
     /* the last checked certificate is in store_ctx->current_cert */
     switch(store_ctx->error) {
@@ -725,7 +722,7 @@ pk_verify_chain_standard(krb5_context context,
     /* Since X509_verify_cert() doesn't do CRL checking at all, we have to
        perform own verification against CRLs */
 #if 0
-    ret = pk_verify_crl(context, store_ctx, crls);
+    ret = pk_verify_crl(context, store_ctx, id->crls);
     if (ret)
 	goto end;
 #endif
@@ -825,7 +822,6 @@ _krb5_pk_verify_sign(krb5_context context,
     CertificateSetReal set;
     EVP_MD_CTX md;
     X509 *cert;
-    STACK_OF(X509_CRL) *crls = NULL;
     SignedData sd;
     size_t size;
     
@@ -873,8 +869,10 @@ _krb5_pk_verify_sign(krb5_context context,
 	return ret;
     }
 
-    ret = pk_verify_chain_standard(context, id->trusted_certs, crls,
-				   &signer_info->sid, certificates, &cert);
+    ret = pk_verify_chain_standard(context, id,
+				   &signer_info->sid,
+				   certificates,
+				   &cert);
     sk_X509_free(certificates);
     if (ret) {
 	free_SignedData(&sd);
@@ -1093,7 +1091,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 
   
     /* verify content type */
-    if (context->pkinit_win2k_compatible) {
+    if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
 	if (oid_cmp(&ed.encryptedContentInfo.contentType, &pkcs7_data_oid)) {
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
@@ -1153,7 +1151,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     length = plain.length;
 
     /* win2k uses ContentInfo */
-    if (context->pkinit_win2k_compatible) {
+    if (context->pkinit_flags & KRB5_PKINIT_WIN2K) {
 	ContentInfo ci;
 	size_t size;
 
