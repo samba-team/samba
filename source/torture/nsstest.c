@@ -325,7 +325,7 @@ static void print_group(struct group *grp)
 	printf("%s\n", grp->gr_mem[i]);
 }
 
-static void nss_test_winbind_initgroups(char *name, gid_t gid)
+static void nss_test_initgroups(char *name, gid_t gid)
 {
 	long int size = 16;
 	long int start = 1;
@@ -349,7 +349,7 @@ static void nss_test_winbind_initgroups(char *name, gid_t gid)
 }
 
 
-static void nss_test_winbind_users(void)
+static void nss_test_users(void)
 {
 	struct passwd *pwd;
 
@@ -372,13 +372,13 @@ static void nss_test_winbind_users(void)
 			continue;
 		}
 		printf("getpwnam:   "); print_passwd(pwd);
-		printf("initgroups: "); nss_test_winbind_initgroups(pwd->pw_name, pwd->pw_gid);
+		printf("initgroups: "); nss_test_initgroups(pwd->pw_name, pwd->pw_gid);
 		printf("\n");
 	}
 	nss_endpwent();
 }
 
-static void nss_test_winbind_groups(void)
+static void nss_test_groups(void)
 {
 	struct group *grp;
 
@@ -406,7 +406,7 @@ static void nss_test_winbind_groups(void)
 	nss_endgrent();
 }
 
-static void nss_test_winbind_errors(void)
+static void nss_test_errors(void)
 {
 	struct passwd *pwd;
 	struct group *grp;
@@ -436,145 +436,15 @@ static void nss_test_winbind_errors(void)
 	}
 }
 
-static struct hostent *nss_gethostbyname(const char *name)
-{
-	NSS_STATUS (*_nss_gethostbyname_r)(const char *, struct hostent *,
-					   char *, size_t, int *, int *) = 
-		find_fn("gethostbyname_r");
-	NSS_STATUS status;
-	static struct hostent he;
-	static char *buf;
-	static int buflen = 1000;
-	int h_nss_errnop;	/* "Other" error information stored here */
-
-	if (!_nss_gethostbyname_r)
-		return NULL;
-
-	if (!buf)
-		buf = malloc(buflen);
-
-again:
-	status = _nss_gethostbyname_r(
-		name, &he, buf, buflen, &nss_errno, &h_nss_errnop) ;
-
-	if (status == NSS_STATUS_TRYAGAIN) {
-		buflen *= 2;
-		buf = realloc(buf, buflen);
-		goto again;
-	}
-
-	if (status == NSS_STATUS_NOTFOUND) 
-		return NULL;
-
-
-	if (status != NSS_STATUS_SUCCESS) {
-		report_nss_error("gethostbyname", status);
-		return NULL;
-	}
-
-	return &he;
-}
-
-static struct hostent *nss_gethostbyname2(const char *name, int af)
-{
-	NSS_STATUS (*_nss_gethostbyname2_r)(const char *, int, 
-					    struct hostent *, char *, size_t, 
-					    int *, int *) = 
-		find_fn("gethostbyname2_r");
-	NSS_STATUS status;
-	static struct hostent he;
-	static char *buf;
-	static int buflen = 1000;
-	int h_nss_errnop;	/* "Other" error information stored here */
-
-	if (!_nss_gethostbyname2_r)
-		return NULL;
-
-	if (!buf)
-		buf = malloc(buflen);
-
-again:
-	status = _nss_gethostbyname2_r(
-		name, af, &he, buf, buflen, &nss_errno, &h_nss_errnop) ;
-
-	if (status == NSS_STATUS_TRYAGAIN) {
-		buflen *= 2;
-		buf = realloc(buf, buflen);
-		goto again;
-	}
-
-	if (status == NSS_STATUS_NOTFOUND) 
-		return NULL;
-
-
-	if (status != NSS_STATUS_SUCCESS) {
-		report_nss_error("gethostbyname2", status);
-		return NULL;
-	}
-
-	return &he;
-}
-
-static void nss_test_wins(void)
-{
-	fstring myname;
-	struct hostent *he;
-
-	/* Try testing with our hostname.  This will probably work if
-           Samba is/was running on the local machine. */
-
-	memset(myname, 0, sizeof(myname));
-	if (gethostname(myname, sizeof(myname) - 1) == -1) {
-		printf("gethostname() failed!");
-		total_errors++;
-		return;
-	}
-
-	/* Test gethostbyname */
-
-	if ((he = nss_gethostbyname(myname))) {
-		struct in_addr **ip_list = (struct in_addr **)he->h_addr_list;
-
-		while (*ip_list) {
-			printf("gethostbyname: %s has ip %s\n", myname, 
-			       inet_ntoa(**ip_list));
-			*ip_list++;
-		}
-	} else
-		printf("hostname %s not found with gethostbyname\n", myname);
-
-	/* Test gethostbyname2 */
-
-	if ((he = nss_gethostbyname2(myname, AF_INET))) {
-		struct in_addr **ip_list = (struct in_addr **)he->h_addr_list;
-
-		while (*ip_list) {
-			printf("gethostbyname2: %s has ip %s\n", myname, 
-			       inet_ntoa(**ip_list));
-			*ip_list++;
-		}
-	} else
-		printf("hostname %s not found with gethostbyname2\n", myname);
-}
-
  int main(int argc, char *argv[])
 {	
 	if (argc > 1) so_path = argv[1];
 	if (argc > 2) nss_name = argv[2];
 
-	if (strequal(nss_name, "winbind")) {
-		nss_test_winbind_users();
-		nss_test_winbind_groups();
-		nss_test_winbind_errors();
-		goto done;
-	}
+	nss_test_users();
+	nss_test_groups();
+	nss_test_errors();
 
-	if (strequal(nss_name, "wins")) {
-		nss_test_wins();
-		goto done;
-	}
-		
-done:
 	printf("total_errors=%d\n", total_errors);
 
 	return total_errors;
