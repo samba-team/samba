@@ -818,14 +818,11 @@ static int update_trustpw(struct pdb_context *in, const char *dom_name,
 
 	if (!dom_name) return -1;
 
-	/* fetch existing password to fill the structure before
-	   the changes themselves */
-	nt_status = in->pdb_gettrustpwnam(in, &trust, dom_name);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		printf("Wrong domain name - seems non-existent!\n");
-		return -1;
-	}
-
+	/* unicode domain name */
+	trust.private.uni_name_len = strlen(dom_name);
+	push_ucs2(NULL, &trust.private.uni_name, dom_name, trust.private.uni_name_len,
+		  STR_TERMINATE);
+	
 	/* domain sid */
 	if (dom_sid) {
 		/* copying sid to trust password structure */
@@ -844,6 +841,8 @@ static int update_trustpw(struct pdb_context *in, const char *dom_name,
 	givenpass = getpass("password (type Enter to leave it untouched):");
 	if (strlen(givenpass))
 		strncpy(trust.private.pass, givenpass, FSTRING_LEN);
+	else
+		trust.private.pass[0] = '\0';
 
 	/* last change time */
 	lct = time(NULL);
