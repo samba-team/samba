@@ -1163,7 +1163,7 @@ void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *s
     {
       Files[fnum].mmap_size = file_size(fname);
       Files[fnum].mmap_ptr = (char *)mmap(NULL,Files[fnum].mmap_size,
-					  PROT_READ,MAP_SHARED,Files[fnum]->fd_ptr.fd,0);
+					  PROT_READ,MAP_SHARED,Files[fnum].fd_ptr->fd,0);
 
       if (Files[fnum].mmap_ptr == (char *)-1 || !Files[fnum].mmap_ptr)
 	{
