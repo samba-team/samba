@@ -1872,8 +1872,8 @@ int write_data(int fd,char *buffer,int N)
     {
       ret = write(fd,buffer + total,N - total);
 
-      if (ret <= 0)
-	return total;
+      if (ret == -1) return -1;
+      if (ret == 0) return total;
 
       total += ret;
     }
