@@ -670,7 +670,7 @@ BOOL get_uid_list_of_group(gid_t gid, uid_t **uid, int *num_uids)
 	gr = grp->gr_mem[0];
 	DEBUG(10, ("getting members\n"));
         
-	while (gr && (*gr != (char)NULL)) {
+	while (gr && (*gr != (char)'\0')) {
 		(*uid)=Realloc((*uid), sizeof(uid_t)*(*num_uids+1));
 
 		if( (pwd=getpwnam(gr)) !=NULL) {
