@@ -100,12 +100,14 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type, uint8_t auth
 
 		p->conn->security_state.auth_info->credentials = credentials;
 		
-		if (auth_type == DCERPC_AUTH_TYPE_SPNEGO) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			/* We are demanding a reply, so use a request that will get us one */
 			status = dcerpc_alter_context(p, tmp_ctx, &p->syntax, &p->transfer_syntax);
 			if (!NT_STATUS_IS_OK(status)) {
 				break;
 			}
 		} else {
+			/* NO reply expected, so just send it */
 			status = dcerpc_auth3(p->conn, tmp_ctx);
 			credentials = data_blob(NULL, 0);
 			if (!NT_STATUS_IS_OK(status)) {
