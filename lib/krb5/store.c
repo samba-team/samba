@@ -355,8 +355,10 @@ krb5_store_keyblock(krb5_storage *sp, krb5_keyblock p)
     int ret;
     ret = krb5_store_int16(sp, p.keytype);
     if(ret) return ret;
-    /* yes, this should be stored twice... */
+#if 0
+    /* this should be stored twice iff cache version == 3 */
     ret = krb5_store_int16(sp, p.keytype);
+#endif
     if(ret) return ret;
     ret = krb5_store_data(sp, p.keyvalue);
     return ret;
@@ -370,9 +372,11 @@ krb5_ret_keyblock(krb5_storage *sp, krb5_keyblock *p)
     ret = krb5_ret_int16(sp, &tmp);
     if(ret) return ret;
     p->keytype = tmp;
-    /* XXX only if cache-type >= 3 */
+#if 0
+    /* XXX only if cache-type == 3 */
     ret = krb5_ret_int16(sp, &tmp);
     if(ret) return ret;
+#endif
     ret = krb5_ret_data(sp, &p->keyvalue);
     return ret;
 }
