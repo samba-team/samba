@@ -56,7 +56,9 @@ RCSID("$Id$");
 #include <unistd.h>
 
 #define	BFRAG		1024
+#if 0
 #define	BSIZE		1024
+#endif
 #define	ESC		('[' & 037)	/* ASCII ESC */
 #define	MAX_RECURSION	32		/* maximum getent recursion */
 #define	SFRAG		100		/* cgetstr mallocs in SFRAG chunks */
@@ -69,7 +71,9 @@ static size_t	 topreclen;	/* toprec length */
 static char	*toprec;	/* Additional record specified by cgetset() */
 static int	 gottoprec;	/* Flag indicating retrieval of toprecord */
 
+#ifdef HAVE_DBOPEN
 static int	cdbget (DB *, char **, const char *);
+#endif
 static int 	getent (char **, size_t *, char **, int, const char *, int, char *);
 static int	nfcmp (char *, char *);
 
@@ -225,13 +229,10 @@ static int
 getent(char **cap, size_t *len, char **db_array, int fd, 
        const char *name, int depth, char *nfield)
 {
-    DB *capdbp;
     char *r_end, *rp = NULL, **db_p;	/* pacify gcc */
-    int myfd = 0, eof, foundit, retval;
-    size_t clen;
-    char *record, *cbuf;
+    int myfd = 0, eof, foundit;
+    char *record;
     int tc_not_resolved;
-    char pbuf[_POSIX_PATH_MAX];
 	
     /*
      * Return with ``loop detected'' error if we've recursed more than
@@ -277,9 +278,13 @@ getent(char **cap, size_t *len, char **db_array, int fd,
 	if (fd >= 0) {
 	    (void)lseek(fd, (off_t)0, SEEK_SET);
 	} else {
-#ifndef HAVE_DBOPEN
-#define dbopen(a, b, c, d, e) NULL
-#endif
+#ifdef HAVE_DBOPEN
+	    char pbuf[_POSIX_PATH_MAX];
+	    char *cbuf;
+	    size_t clen;
+	    int retval;
+	    DB *capdbp;
+
 	    (void)snprintf(pbuf, sizeof(pbuf), "%s.db", *db_p);
 	    if ((capdbp = dbopen(pbuf, O_RDONLY, 0, DB_HASH, 0))
 		!= NULL) {
@@ -301,7 +306,9 @@ getent(char **cap, size_t *len, char **db_array, int fd,
 		*len = clen;
 		*cap = cbuf;
 		return (retval);
-	    } else {
+	    } else
+#endif
+	    {
 		fd = open(*db_p, O_RDONLY, 0);
 		if (fd < 0) {
 		    /* No error on unfound file. */
@@ -598,6 +605,7 @@ getent(char **cap, size_t *len, char **db_array, int fd,
     return (0);
 }	
 
+#ifdef HAVE_DBOPEN
 static int
 cdbget(DB *capdbp, char **bp, const char *name)
 {
@@ -628,6 +636,7 @@ cdbget(DB *capdbp, char **bp, const char *name)
 	*bp = (char *)data.data + 1;
 	return (((char *)(data.data))[0] == TCERR ? 1 : 0);
 }
+#endif /* HAVE_DBOPEN */
 
 /*
  * Cgetmatch will return 0 if name is one of the names of the capability
