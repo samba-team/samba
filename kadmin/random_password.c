@@ -57,9 +57,9 @@ random_password(char *pw, size_t len)
 {
 #ifdef OTP_STYLE
     {
-	des_cblock newkey;
+	OtpKey newkey;
 
-	des_new_random_key(&newkey);
+	krb5_generate_random_block(&newkey, sizeof(newkey));
 	otp_print_stddict (newkey, pw, len);
 	strlwr(pw);
     }
@@ -80,11 +80,11 @@ random_password(char *pw, size_t len)
 #ifndef OTP_STYLE
 /* return a random value in range 0-127 */
 static int
-RND(des_cblock *key, int *left)
+RND(unsigned char *key, int keylen, int *left)
 {
     if(*left == 0){
-	des_new_random_key(key);
-	*left = 8;
+	krb5_generate_random_block(key, keylen);
+	*left = keylen;
     }
     (*left)--;
     return ((unsigned char*)key)[*left];
@@ -120,7 +120,7 @@ generate_password(char **pw, int num_classes, ...)
     } *classes;
     va_list ap;
     int len, i;
-    des_cblock rbuf; /* random buffer */
+    unsigned char rbuf[8]; /* random buffer */
     int rleft = 0;
 
     classes = malloc(num_classes * sizeof(*classes));
@@ -138,11 +138,12 @@ generate_password(char **pw, int num_classes, ...)
 	return;
     for(i = 0; i < len; i++) {
 	int j;
-	int x = RND(&rbuf, &rleft) % (len - i);
+	int x = RND(rbuf, sizeof(rbuf), &rleft) % (len - i);
 	int t = 0;
 	for(j = 0; j < num_classes; j++) {
 	    if(x < t + classes[j].freq) {
-		(*pw)[i] = classes[j].str[RND(&rbuf, &rleft) % classes[j].len];
+		(*pw)[i] = classes[j].str[RND(rbuf, sizeof(rbuf), &rleft)
+					 % classes[j].len];
 		classes[j].freq--;
 		break;
 	    }

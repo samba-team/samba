@@ -65,7 +65,6 @@ RCSID("$Id$");
 #include <arpa/telnet.h>
 #endif
 #include <stdio.h>
-#include <des.h>	/* BSD wont include this in krb.h, so we do it here */
 #include <krb.h>
 #include <pwd.h>
 #include <stdlib.h>

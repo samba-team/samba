@@ -50,7 +50,11 @@ RCSID("$Id$");
 
 #include <pwd.h>
 
+#ifdef HAVE_OPENSSL_DES_H
+#include <openssl/des.h>
+#else
 #include <des.h>
+#endif
 #include <krb5.h>
 #include <kafs.h>
 #include <err.h>

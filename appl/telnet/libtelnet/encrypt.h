@@ -90,6 +90,13 @@ typedef struct {
 
 #define	SK_DES		1	/* Matched Kerberos v5 KEYTYPE_DES */
 
+#ifdef HAVE_OPENSSL_CRYPTO_H
+#include <openssl/des.h>
+#define des_new_random_key des_random_key
+#else
+#include <des.h>
+#endif
+
 #include "enc-proto.h"
 
 extern int encrypt_debug_mode;

@@ -74,7 +74,6 @@ RCSID("$Id$");
 #include <pwd.h>
 #include <stdio.h>
 
-#include <des.h>
 #include <krb.h>
 #include <stdlib.h>
 #include <string.h>

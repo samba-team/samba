@@ -2532,6 +2532,71 @@ krb5_decrypt_EncryptedData(krb5_context context,
  *                                                          *
  ************************************************************/
 
+#ifdef HAVE_OPENSSL_DES_H
+#include <openssl/rand.h>
+
+/* From openssl/crypto/rand/rand_lcl.h */
+#define ENTROPY_NEEDED 20
+static int
+seed_something(void)
+{
+    int fd = -1;
+    size_t len;
+    char buf[1024], seedfile[256];
+
+    /* If there is a seed file, load it. But such a file cannot be trusted,
+       so use 0 for the entropy estimate */
+    if (RAND_file_name(seedfile, sizeof(seedfile))) {
+	fd = open(seedfile, O_RDONLY);
+	if (fd >= 0) {
+	    read(fd, buf, sizeof(buf));
+	    /* Use the full buffer anyway */
+	    RAND_add(buf, sizeof(buf), 0.0);
+	} else
+	    seedfile[0] = '\0';
+    } else
+	seedfile[0] = '\0';
+
+    /* Calling RAND_status() will try to use /dev/urandom if it exists so
+       we do not have to deal with it. */
+    if (RAND_status() != 1) {
+	krb5_context context;
+	char *p;
+
+	/* Try using egd */
+	if (!krb5_init_context(&context)) {
+	    p = krb5_config_get_string(context, NULL, "libdefaults",
+		"egd_socket", NULL);
+	    if (p != NULL)
+		RAND_egd_bytes(p, ENTROPY_NEEDED);
+	    krb5_free_context(context);
+	}
+    }
+    
+    if (RAND_status() == 1)	{
+	/* Update the seed file */
+	if (seedfile[0])
+	    RAND_write_file(seedfile);
+
+	return 0;
+    } else
+	return -1;
+}
+
+void
+krb5_generate_random_block(void *buf, size_t len)
+{
+    static int rng_initialized = 0;
+    
+    if (!rng_initialized) {
+	if (seed_something())
+	    krb5_abortx(NULL, "Fatal: could not seed the random number generator");
+	
+	rng_initialized = 1;
+    }
+    RAND_bytes(buf, len);
+}
+#else
 void
 krb5_generate_random_block(void *buf, size_t len)
 {
@@ -2557,6 +2622,7 @@ krb5_generate_random_block(void *buf, size_t len)
 	buf = (char*)buf + sizeof(out);
     }
 }
+#endif
 
 static void
 DES3_postproc(krb5_context context,

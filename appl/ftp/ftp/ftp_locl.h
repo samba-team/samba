@@ -129,7 +129,13 @@ struct hostent  *gethostbyname(const char *);
 
 #include "roken.h"
 #include "security.h"
-#include <des.h> /* for des_read_pw_string */
+
+/* des_read_pw_string */
+#ifdef HAVE_OPENSSL_DES_H
+#include <openssl/des.h>
+#else
+#include <des.h>
+#endif
 
 #if defined(__sun__) && !defined(__svr4)
 int fclose(FILE*);

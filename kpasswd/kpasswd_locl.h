@@ -95,7 +95,11 @@
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
+#ifdef HAVE_OPENSSL_DES_H
+#include <openssl/des.h>
+#else
 #include <des.h>
+#endif
 #include <krb5.h>
 
 #endif /* __KPASSWD_LOCL_H__ */

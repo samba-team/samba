@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -83,7 +83,11 @@
 #endif
 #include <err.h>
 #include <roken.h>
+#ifdef HAVE_OPENSSL_DES_H
+#include <openssl/des.h>
+#else
 #include <des.h>
+#endif
 #include <krb5.h>
 #include <krb5_locl.h>
 #include <hdb.h>
@@ -176,7 +180,7 @@ random_password(char *pw, size_t len);
 
 /* kadm_conn.c */
 
-sig_atomic_t term_flag, doing_useful_work;
+extern sig_atomic_t term_flag, doing_useful_work;
 
 void parse_ports(krb5_context, const char*);
 int start_server(krb5_context);

@@ -50,7 +50,11 @@ RCSID("$Id$");
 #include "encrypt.h"
 #include "misc-proto.h"
 
+#ifdef HAVE_OPENSSL_DES_H
+#include <openssl/des.h>
+#else
 #include <des.h>
+#endif
 
 extern int encrypt_debug_mode;
 
