@@ -27,6 +27,15 @@
 #define WINS_VERSION 1
 
 /****************************************************************************
+ Process a internal Samba message receiving a wins record
+***************************************************************************/
+
+void nmbd_wins_new_entry(int msg_type, pid_t src, void *buf, size_t len)
+{
+	/* Placeholder for now. */
+}
+
+/****************************************************************************
 possibly call the WINS hook external program when a WINS change is made
 *****************************************************************************/
 

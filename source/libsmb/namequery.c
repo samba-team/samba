@@ -466,33 +466,33 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
  Start parsing the lmhosts file.
 *********************************************************/
 
-FILE *startlmhosts(char *fname)
+XFILE *startlmhosts(char *fname)
 {
-  FILE *fp = sys_fopen(fname,"r");
-  if (!fp) {
-    DEBUG(4,("startlmhosts: Can't open lmhosts file %s. Error was %s\n",
-             fname, strerror(errno)));
-    return NULL;
-  }
-  return fp;
+	XFILE *fp = x_fopen(fname,O_RDONLY, 0);
+	if (!fp) {
+		DEBUG(4,("startlmhosts: Can't open lmhosts file %s. Error was %s\n",
+			fname, strerror(errno)));
+		return NULL;
+	}
+	return fp;
 }
 
 /********************************************************
  Parse the next line in the lmhosts file.
 *********************************************************/
 
-BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr)
+BOOL getlmhostsent( XFILE *fp, pstring name, int *name_type, struct in_addr *ipaddr)
 {
   pstring line;
 
-  while(!feof(fp) && !ferror(fp)) {
+  while(!x_feof(fp) && !x_ferror(fp)) {
     pstring ip,flags,extra;
     char *ptr;
     int count = 0;
 
     *name_type = -1;
 
-    if (!fgets_slash(line,sizeof(pstring),fp))
+    if (!fgets_slash_x(line,sizeof(pstring),fp))
       continue;
 
     if (*line == '#')
@@ -566,9 +566,9 @@ BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipad
  Finish parsing the lmhosts file.
 *********************************************************/
 
-void endlmhosts(FILE *fp)
+void endlmhosts(XFILE *fp)
 {
-  fclose(fp);
+	x_fclose(fp);
 }
 
 BOOL name_register_wins(const char *name, int name_type)
@@ -756,7 +756,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 	 * "lmhosts" means parse the local lmhosts file.
 	 */
 	
-	FILE *fp;
+	XFILE *fp;
 	pstring lmhost_name;
 	int name_type2;
 	struct in_addr return_ip;

@@ -1,6 +1,5 @@
 /*
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Jeremy Allison 1994-1998
 
@@ -34,7 +33,7 @@ void load_lmhosts_file(char *fname)
   pstring name;
   int name_type;
   struct in_addr ipaddr;
-  FILE *fp = startlmhosts( fname );
+  XFILE *fp = startlmhosts( fname );
 
   if (!fp) {
     DEBUG(2,("load_lmhosts_file: Can't open lmhosts file %s. Error was %s\n",

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
@@ -54,7 +53,7 @@ ubi_dlNewList( lmb_browserlist );
  */
 static void remove_lmb_browser_entry( struct browse_cache_record *browc )
   {
-  safe_free( (char *)ubi_dlRemThis( lmb_browserlist, browc ) );
+  safe_free( ubi_dlRemThis( lmb_browserlist, browc ) );
   } /* remove_lmb_browser_entry */
 
 /* ************************************************************************** **

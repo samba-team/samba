@@ -1,8 +1,8 @@
 /*
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Jeremy Allison 1997-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,11 +18,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
    
-   Revision History:
-
-   14 jan 96: lkcl@pires.co.uk
-   added multiple workgroup domain master support
-
 */
 
 #include "includes.h"
@@ -71,6 +66,15 @@ static void terminate(void)
 	kill_async_dns_child();
 
 	exit(0);
+}
+
+/**************************************************************************** **
+ Handle a SHUTDOWN message from smbcontrol.
+ **************************************************************************** */
+
+static void nmbd_terminate(int msg_type, pid_t src, void *buf, size_t len)
+{
+	terminate();
 }
 
 /**************************************************************************** **
@@ -134,7 +138,7 @@ static BOOL dump_core(void)
   DEBUG(0,("Dumping core in %s\n",dname));
   abort();
   return( True );
-} /* dump_core */
+}
 #endif
 
 /**************************************************************************** **
@@ -146,7 +150,7 @@ static void fault_continue(void)
 #if DUMP_CORE
   dump_core();
 #endif
-} /* fault_continue */
+}
 
 /**************************************************************************** **
  Expire old names from the namelist and server list.
@@ -176,8 +180,9 @@ static void expire_names_and_servers(time_t t)
    * and has itself timed out then remove the workgroup.
    * (nmbd_workgroupdb.c)
    */
+
   expire_workgroups_and_servers(t);
-} /* expire_names_and_servers */
+}
 
 /************************************************************************** **
  Reload the list of network interfaces.
@@ -302,7 +307,7 @@ cannot be set in the smb.conf file. nmbd aborting.\n"));
   }
 
   return(ret);
-} /* reload_nmbd_services */
+}
 
 /**************************************************************************** **
  The main select loop.
@@ -516,7 +521,7 @@ static void process(void)
     /* free up temp memory */
     lp_talloc_free();
   }
-} /* process */
+}
 
 /**************************************************************************** **
  Open the socket communication.
@@ -524,11 +529,12 @@ static void process(void)
 
 static BOOL open_sockets(BOOL isdaemon, int port)
 {
-  /* The sockets opened here will be used to receive broadcast
-     packets *only*. Interface specific sockets are opened in
-     make_subnet() in namedbsubnet.c. Thus we bind to the
-     address "0.0.0.0". The parameter 'socket address' is
-     now deprecated.
+	/*
+	 * The sockets opened here will be used to receive broadcast
+	 * packets *only*. Interface specific sockets are opened in
+	 * make_subnet() in namedbsubnet.c. Thus we bind to the
+	 * address "0.0.0.0". The parameter 'socket address' is
+	 * now deprecated.
    */
 
   if ( isdaemon )
@@ -549,7 +555,7 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 
   DEBUG( 3, ( "open_sockets: Broadcast sockets opened.\n" ) );
   return( True );
-} /* open_sockets */
+}
 
 /**************************************************************************** **
  Initialise connect, service and file structs.
@@ -634,7 +640,7 @@ static BOOL init_structs(void)
     DEBUGADD( 5, ( "my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names[n] ) );
 
   return( True );
-} /* init_structs */
+}
 
 /**************************************************************************** **
  Usage on the program.
@@ -658,7 +664,7 @@ static void usage(char *pname)
   printf( "\t-p port               Listen on the specified port\n" );
   printf( "\t-s configuration file Configuration file name\n" );
   printf( "\n");
-} /* usage */
+}
 
 
 /**************************************************************************** **
@@ -739,6 +745,9 @@ static void usage(char *pname)
         case 'G':
           DEBUG(0,("Obsolete option '%c' used\n",opt));
           break;
+        case 'i':
+          opt_interactive = True;
+          break;
         case 'H':
           pstrcpy(host_file,optarg);
           break;
@@ -755,9 +764,6 @@ static void usage(char *pname)
           break;
         case 'o':
           append_log = False;
-          break;
-        case 'i':
-          opt_interactive = True;
           break;
         case 'D':
           is_daemon = True;
@@ -847,7 +853,7 @@ static void usage(char *pname)
 #ifndef SYNC_DNS
   /* Setup the async dns. We do it here so it doesn't have all the other
      stuff initialised and thus chewing memory and sockets */
-  if(lp_we_are_a_wins_server()) {
+  if(lp_we_are_a_wins_server() && lp_dns_proxy()) {
 	  start_async_dns();
   }
 #endif
@@ -859,11 +865,15 @@ static void usage(char *pname)
   pidfile_create("nmbd");
   message_init();
   message_register(MSG_FORCE_ELECTION, nmbd_message_election);
+  message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
+  message_register(MSG_SHUTDOWN, nmbd_terminate);
 
   DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 
-  if ( !open_sockets( is_daemon, global_nmb_port ) )
+  if ( !open_sockets( is_daemon, global_nmb_port ) ) {
+    kill_async_dns_child();
     return 1;
+  }
 
   /* Determine all the IP addresses we have. */
   load_interfaces();
@@ -872,6 +882,7 @@ static void usage(char *pname)
   if( False == create_subnets() )
   {
     DEBUG(0,("ERROR: Failed when creating subnet lists. Exiting.\n"));
+    kill_async_dns_child();
     exit(1);
   }
 
@@ -886,6 +897,7 @@ static void usage(char *pname)
   if( !initialise_wins() )
   {
     DEBUG( 0, ( "nmbd: Failed when initialising WINS server.\n" ) );
+    kill_async_dns_child();
     exit(1);
   }
 
@@ -900,6 +912,7 @@ static void usage(char *pname)
   if( False == register_my_workgroup_and_names() )
   {
     DEBUG(0,("ERROR: Failed when creating my my workgroup. Exiting.\n"));
+    kill_async_dns_child();
     exit(1);
   }
 
@@ -910,5 +923,6 @@ static void usage(char *pname)
 
   if (dbf)
     fclose(dbf);
+  kill_async_dns_child();
   return(0);
-} /* main */
+}

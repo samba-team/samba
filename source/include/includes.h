@@ -651,6 +651,7 @@ extern int errno;
 #endif
 
 /* Lists, trees, caching, database... */
+#include "xfile.h"
 #include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
 #include "dlinklist.h"

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios library routines
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
@@ -98,12 +97,12 @@ void remove_response_record(struct subnet_record *subrec,
   **************************************************************************/
 
 struct response_record *make_response_record( struct subnet_record *subrec,
-                    struct packet_struct *p,
-                    response_function resp_fn,
-                    timeout_response_function timeout_fn,
-                    success_function success_fn,
-                    fail_function fail_fn,
-                    struct userdata_struct *userdata)
+					      struct packet_struct *p,
+					      response_function resp_fn,
+					      timeout_response_function timeout_fn,
+					      success_function success_fn,
+					      fail_function fail_fn,
+					      struct userdata_struct *userdata)
 {
   struct response_record *rrec;
   struct nmb_packet *nmb = &p->packet.nmb;

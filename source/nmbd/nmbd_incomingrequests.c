@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
@@ -67,7 +66,6 @@ void process_name_release_request(struct subnet_record *subrec,
   struct name_record *namerec;
   int rcode = 0;
   
-  START_PROFILE(name_release);
   putip((char *)&owner_ip,&nmb->additional->rdata[2]);  
   
   if(!bcast)
@@ -84,7 +82,7 @@ received for name %s from IP %s on subnet %s. Error - should be sent to WINS ser
           nmb_namestr(question), inet_ntoa(owner_ip), subrec->subnet_name));      
 
     send_name_release_response(FMT_ERR, p);
-    goto done;
+    return;
   }
 
   DEBUG(3,("process_name_release_request: Name release on name %s, \
@@ -94,7 +92,7 @@ subnet %s from owner IP %s\n",
   
   /* If someone is releasing a broadcast group name, just ignore it. */
   if( group && !ismyip(owner_ip) )
-    goto done;
+    return;
 
   /*
    * Code to work around a bug in FTP OnNet software NBT implementation.
@@ -108,7 +106,7 @@ subnet %s from owner IP %s\n",
     DEBUG(6,("process_name_release_request: FTP OnNet bug workaround. Ignoring \
 group release name %s from IP %s on subnet %s with no group bit set.\n",
         nmb_namestr(question), inet_ntoa(owner_ip), subrec->subnet_name ));
-    goto done;
+    return;
   }
 
   namerec = find_name_on_subnet(subrec, &nmb->question.question_name, FIND_ANY_NAME);
@@ -125,12 +123,10 @@ on subnet %s being rejected as it is one of our names.\n",
   }
 
   if(rcode == 0)
-    goto done;
+    return;
 
   /* Send a NAME RELEASE RESPONSE (pos/neg) see rfc1002.txt 4.2.10-11 */
   send_name_release_response(rcode, p);
-done:
-  END_PROFILE(name_release);
 }
 
 /****************************************************************************
@@ -166,7 +162,6 @@ void process_name_refresh_request(struct subnet_record *subrec,
   BOOL bcast = nmb->header.nm_flags.bcast;
   struct in_addr from_ip;
   
-  START_PROFILE(name_refresh);
   putip((char *)&from_ip,&nmb->additional->rdata[2]);
 
   if(!bcast)
@@ -184,7 +179,7 @@ received for name %s from IP %s on subnet %s.\n",
     DEBUG(0,("Error - should be sent to WINS server\n"));
     
     send_name_registration_response(FMT_ERR, 0, p);
-    goto done;
+    return;
   } 
 
   /* Just log a message. We really don't care about broadcast name
@@ -193,8 +188,6 @@ received for name %s from IP %s on subnet %s.\n",
   DEBUG(3,("process_name_refresh_request: Name refresh for name %s \
 IP %s on subnet %s\n", nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
      
-done:
-  END_PROFILE(name_refresh);
 }
     
 /****************************************************************************
@@ -213,7 +206,6 @@ void process_name_registration_request(struct subnet_record *subrec,
   int ttl = nmb->additional->ttl;
   struct in_addr from_ip;
   
-  START_PROFILE(name_registration);
   putip((char *)&from_ip,&nmb->additional->rdata[2]);
   
   if(!bcast)
@@ -230,7 +222,7 @@ received for name %s from IP %s on subnet %s. Error - should be sent to WINS ser
           nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));      
 
     send_name_registration_response(FMT_ERR, 0, p);
-    goto done;
+    return;
   }
 
   DEBUG(3,("process_name_registration_request: Name registration for name %s \
@@ -264,7 +256,7 @@ IP %s on subnet %s\n", nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet
          register a name that's a group name as a unique name */
 
       send_name_registration_response(ACT_ERR, 0, p);
-      goto done;
+      return;
     }
     else if(namerec != NULL)
     {
@@ -274,7 +266,7 @@ IP %s on subnet %s\n", nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet
 
       DEBUG(3,("process_name_registration_request: Updated name record %s \
 with IP %s on subnet %s\n",nmb_namestr(&namerec->name),inet_ntoa(from_ip), subrec->subnet_name));
-      goto done;
+      return;
     }
   }
   else
@@ -288,11 +280,9 @@ with IP %s on subnet %s\n",nmb_namestr(&namerec->name),inet_ntoa(from_ip), subre
     {
       /* Disallow group names when we have a unique name. */
       send_name_registration_response(ACT_ERR, 0, p);  
-      goto done;  
+      return;  
     }  
   }
-done:
-  END_PROFILE(name_registration);
 }
 
 /****************************************************************************
@@ -336,7 +326,6 @@ void process_node_status_request(struct subnet_record *subrec, struct packet_str
   int names_added,i;
   struct name_record *namerec;
 
-  START_PROFILE(node_status);
   DEBUG(3,("process_node_status_request: status request for name %s from IP %s on \
 subnet %s.\n", nmb_namestr(&nmb->question.question_name), inet_ntoa(p->ip),
           subrec->subnet_name));
@@ -348,7 +337,7 @@ subnet %s.\n", nmb_namestr(&nmb->question.question_name), inet_ntoa(p->ip),
 subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
           inet_ntoa(p->ip), subrec->subnet_name));
 
-    goto done;
+    return;
   }
  
   /* this is not an exact calculation. the 46 is for the stats buffer
@@ -445,8 +434,6 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 		       0,                            /* ttl. */
                        rdata,                        /* data to send. */
                        PTR_DIFF(buf,rdata));         /* data length. */
-done:
-  END_PROFILE(node_status);
 }
 
 
@@ -462,178 +449,151 @@ For broadcast name queries:
 
 void process_name_query_request(struct subnet_record *subrec, struct packet_struct *p)
 {
-  struct nmb_packet *nmb = &p->packet.nmb;
-  struct nmb_name *question = &nmb->question.question_name;
-  int name_type = question->name_type;
-  BOOL bcast = nmb->header.nm_flags.bcast;
-  int ttl=0;
-  int rcode = 0;
-  char *prdata = NULL;
-  char rdata[6];
-  BOOL success = False;
-  struct name_record *namerec = NULL;
-  int reply_data_len = 0;
-  int i;
- 
-  START_PROFILE(name_query);
-  DEBUG(3,("process_name_query_request: Name query from %s on subnet %s for name %s\n", 
-            inet_ntoa(p->ip), subrec->subnet_name, nmb_namestr(question)));
+	struct nmb_packet *nmb = &p->packet.nmb;
+	struct nmb_name *question = &nmb->question.question_name;
+	int name_type = question->name_type;
+	BOOL bcast = nmb->header.nm_flags.bcast;
+	int ttl=0;
+	int rcode = 0;
+	char *prdata = NULL;
+	char rdata[6];
+	BOOL success = False;
+	struct name_record *namerec = NULL;
+	int reply_data_len = 0;
+	int i;
+	
+	DEBUG(3,("process_name_query_request: Name query from %s on subnet %s for name %s\n", 
+		 inet_ntoa(p->ip), subrec->subnet_name, nmb_namestr(question)));
   
-  /* Look up the name in the cache - if the request is a broadcast request that
-     came from a subnet we don't know about then search all the broadcast subnets
-     for a match (as we don't know what interface the request came in on). */
+	/* Look up the name in the cache - if the request is a broadcast request that
+	   came from a subnet we don't know about then search all the broadcast subnets
+	   for a match (as we don't know what interface the request came in on). */
 
-  if(subrec == remote_broadcast_subnet)
-    namerec = find_name_for_remote_broadcast_subnet( question, FIND_ANY_NAME);
-  else
-    namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME);
+	if(subrec == remote_broadcast_subnet)
+		namerec = find_name_for_remote_broadcast_subnet( question, FIND_ANY_NAME);
+	else
+		namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME);
 
+	/* Check if it is a name that expired */
+	if (namerec && 
+	    ((namerec->data.death_time != PERMANENT_TTL) && 
+	     (namerec->data.death_time < p->timestamp))) {
+		DEBUG(5,("process_name_query_request: expired name %s\n", nmb_namestr(&namerec->name)));
+		namerec = NULL;
+	}
 
-  /* Check if it is a name that expired */
-  if( namerec
-   && ( (namerec->data.death_time != PERMANENT_TTL)
-     && (namerec->data.death_time < p->timestamp) ) )
-  {
-    DEBUG(5,("process_name_query_request: expired name %s\n", nmb_namestr(&namerec->name)));
-    namerec = NULL;
-  }
+	if (namerec) {
+		/* 
+		 * Always respond to unicast queries.
+		 * Don't respond to broadcast queries unless the query is for
+		 * a name we own, a Primary Domain Controller name, or a WINS_PROXY 
+		 * name with type 0 or 0x20. WINS_PROXY names are only ever added
+		 * into the namelist if we were configured as a WINS proxy.
+		 */
+		
+		if (!bcast || 
+		    (bcast && ((name_type == 0x1b) ||
+			       (namerec->data.source == SELF_NAME) ||
+			       (namerec->data.source == PERMANENT_NAME) ||
+			       ((namerec->data.source == WINS_PROXY_NAME) &&
+				((name_type == 0) || (name_type == 0x20)))))) {
+			/* The requested name is a directed query, or it's SELF or PERMANENT or WINS_PROXY, 
+			   or it's a Domain Master type. */
 
-  if (namerec)
-  {
+			/*
+			 * If this is a WINS_PROXY_NAME, then ceck that none of the IP 
+			 * addresses we are returning is on the same broadcast subnet 
+			 * as the requesting packet. If it is then don't reply as the 
+			 * actual machine will be replying also and we don't want two 
+			 * replies to a broadcast query.
+			 */
+			
+			if (namerec->data.source == WINS_PROXY_NAME) {
+				for( i = 0; i < namerec->data.num_ips; i++) {
+					if (same_net(namerec->data.ip[i], subrec->myip, subrec->mask_ip)) {
+						DEBUG(5,("process_name_query_request: name %s is a WINS proxy name and is also on the same subnet (%s) as the requestor. Not replying.\n", 
+							 nmb_namestr(&namerec->name), subrec->subnet_name ));
+						return;
+					}
+				}
+			}
 
-    /* 
-     * Always respond to unicast queries.
-     * Don't respond to broadcast queries unless the query is for
-     * a name we own, a Primary Domain Controller name, or a WINS_PROXY 
-     * name with type 0 or 0x20. WINS_PROXY names are only ever added
-     * into the namelist if we were configured as a WINS proxy.
-     */
+			ttl = (namerec->data.death_time != PERMANENT_TTL) ?
+				namerec->data.death_time - p->timestamp : lp_max_ttl();
 
-    if( !bcast
-     || ( bcast
-       && ( (name_type == 0x1b)
-         || (namerec->data.source == SELF_NAME)
-         || (namerec->data.source == PERMANENT_NAME)
-         || ( (namerec->data.source == WINS_PROXY_NAME)
-           && ( (name_type == 0) || (name_type == 0x20) ) 
-            )
-          )
-        )
-      )
-    {
-      
-      /* The requested name is a directed query, or it's SELF or PERMANENT or WINS_PROXY, 
-         or it's a Domain Master type. */
+			/* Copy all known ip addresses into the return data. */
+			/* Optimise for the common case of one IP address so 
+			   we don't need a malloc. */
 
-      /*
-       * If this is a WINS_PROXY_NAME, then ceck that none of the IP 
-       * addresses we are returning is on the same broadcast subnet 
-       * as the requesting packet. If it is then don't reply as the 
-       * actual machine will be replying also and we don't want two 
-       * replies to a broadcast query.
-       */
+			if (namerec->data.num_ips == 1) {
+				prdata = rdata;
+			} else {
+				if ((prdata = (char *)malloc( namerec->data.num_ips * 6 )) == NULL) {
+					DEBUG(0,("process_name_query_request: malloc fail !\n"));
+					return;
+				}
+			}
 
-      if( namerec->data.source == WINS_PROXY_NAME )
-      {
-        for( i = 0; i < namerec->data.num_ips; i++)
-        {
-          if(same_net( namerec->data.ip[i], subrec->myip, subrec->mask_ip ))    
-          {
-            DEBUG(5,("process_name_query_request: name %s is a WINS proxy name and is also \
-on the same subnet (%s) as the requestor. Not replying.\n", 
-                   nmb_namestr(&namerec->name), subrec->subnet_name ));
-            goto done;
-          }
-        }   
-      }     
+			for (i = 0; i < namerec->data.num_ips; i++) {
+				set_nb_flags(&prdata[i*6],namerec->data.nb_flags);
+				putip((char *)&prdata[2+(i*6)], &namerec->data.ip[i]);
+			}
 
-      ttl = (namerec->data.death_time != PERMANENT_TTL) ?
-                     namerec->data.death_time - p->timestamp : lp_max_ttl();
+			sort_query_replies(prdata, i, p->ip);
+			
+			reply_data_len = namerec->data.num_ips * 6;
+			success = True;
+		}
+	}
 
-      /* Copy all known ip addresses into the return data. */
-      /* Optimise for the common case of one IP address so 
-         we don't need a malloc. */
+	/*
+	 * If a machine is broadcasting a name lookup request and we have lp_wins_proxy()
+	 * set we should initiate a WINS query here. On success we add the resolved name 
+	 * into our namelist with a type of WINS_PROXY_NAME and then reply to the query.
+	 */
+	
+	if(!success && (namerec == NULL) && we_are_a_wins_client() && lp_wins_proxy() && 
+	   bcast && (subrec != remote_broadcast_subnet)) {
+		make_wins_proxy_name_query_request( subrec, p, question );
+		return;
+	}
 
-      if( namerec->data.num_ips == 1 )
-        prdata = rdata;
-      else
-      {
-        if((prdata = (char *)malloc( namerec->data.num_ips * 6 )) == NULL)
-        {
-          DEBUG(0,("process_name_query_request: malloc fail !\n"));
-          goto done;
-        }
-      }
+	if (!success && bcast) {
+		if(prdata != rdata)
+			SAFE_FREE(prdata);
+		return; /* Never reply with a negative response to broadcasts. */
+	}
 
-      for( i = 0; i < namerec->data.num_ips; i++ )
-      {
-        set_nb_flags(&prdata[i*6],namerec->data.nb_flags);
-        putip((char *)&prdata[2+(i*6)], &namerec->data.ip[i]);
-      }
+	/* 
+	 * Final check. From observation, if a unicast packet is sent
+	 * to a non-WINS server with the recursion desired bit set
+	 * then never send a negative response.
+	 */
+	
+	if(!success && !bcast && nmb->header.nm_flags.recursion_desired) {
+		if(prdata != rdata)
+			SAFE_FREE(prdata);
+		return;
+	}
 
-      sort_query_replies(prdata, i, p->ip);
-      
-      reply_data_len = namerec->data.num_ips * 6;
-      success = True;
-    }
-  }
+	if (success) {
+		rcode = 0;
+		DEBUG(3,("OK\n"));
+	} else {
+		rcode = NAM_ERR;
+		DEBUG(3,("UNKNOWN\n"));      
+	}
 
-  /*
-   * If a machine is broadcasting a name lookup request and we have lp_wins_proxy()
-   * set we should initiate a WINS query here. On success we add the resolved name 
-   * into our namelist with a type of WINS_PROXY_NAME and then reply to the query.
-   */
+	/* See rfc1002.txt 4.2.13. */
 
-  if(!success && (namerec == NULL) && we_are_a_wins_client() && lp_wins_proxy() && 
-     bcast && (subrec != remote_broadcast_subnet))
-  {
-    make_wins_proxy_name_query_request( subrec, p, question );
-    goto done;
-  }
-
-  if (!success && bcast)
-  {
-    if((prdata != rdata) && (prdata != NULL))
-      SAFE_FREE(prdata);
-    goto done; /* Never reply with a negative response to broadcasts. */
-  }
-
-  /* 
-   * Final check. From observation, if a unicast packet is sent
-   * to a non-WINS server with the recursion desired bit set
-   * then never send a negative response.
-   */
-
-  if(!success && !bcast && nmb->header.nm_flags.recursion_desired)
-  {
-    if((prdata != rdata) && (prdata != NULL))
-      SAFE_FREE(prdata);
-    goto done;
-  }
-
-  if (success)
-  {
-      rcode = 0;
-      DEBUG(3,("OK\n"));
-  }
-  else
-  {
-      rcode = NAM_ERR;
-      DEBUG(3,("UNKNOWN\n"));      
-  }
-
-  /* See rfc1002.txt 4.2.13. */
-
-  reply_netbios_packet(p,                              /* Packet to reply to. */
-                       rcode,                          /* Result code. */
-                       NMB_QUERY,                      /* nmbd type code. */
-                       NMB_NAME_QUERY_OPCODE,          /* opcode. */
-                       ttl,                            /* ttl. */
-                       prdata,                         /* data to send. */
-                       reply_data_len);                /* data length. */
-
-  if((prdata != rdata) && (prdata != NULL))
-    SAFE_FREE(prdata);
-done:
-  END_PROFILE(name_query);
+	reply_netbios_packet(p,                              /* Packet to reply to. */
+			     rcode,                          /* Result code. */
+			     NMB_QUERY,                      /* nmbd type code. */
+			     NMB_NAME_QUERY_OPCODE,          /* opcode. */
+			     ttl,                            /* ttl. */
+			     prdata,                         /* data to send. */
+			     reply_data_len);                /* data length. */
+	
+	if(prdata != rdata)
+		SAFE_FREE(prdata);
 }

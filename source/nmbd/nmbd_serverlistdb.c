@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
@@ -296,17 +295,17 @@ static uint32 write_this_workgroup_name( struct subnet_record *subrec,
   Write out the browse.dat file.
   ******************************************************************/
 
-void write_browse_list_entry(FILE *fp, fstring name, uint32 rec_type,
+void write_browse_list_entry(XFILE *fp, fstring name, uint32 rec_type,
 		fstring local_master_browser_name, fstring description)
 {
 	fstring tmp;
 
 	slprintf(tmp,sizeof(tmp)-1, "\"%s\"", name);
-	fprintf(fp, "%-25s ", tmp);
-	fprintf(fp, "%08x ", rec_type);
+	x_fprintf(fp, "%-25s ", tmp);
+	x_fprintf(fp, "%08x ", rec_type);
 	slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", local_master_browser_name);
-	fprintf(fp, "%-30s", tmp);
-	fprintf(fp, "\"%s\"\n", description);
+	x_fprintf(fp, "%-30s", tmp);
+	x_fprintf(fp, "\"%s\"\n", description);
 }
 
 void write_browse_list(time_t t, BOOL force_write)
@@ -317,7 +316,7 @@ void write_browse_list(time_t t, BOOL force_write)
   pstring fname,fnamenew;
   uint32 stype;
   int i;
-  FILE *fp;
+  XFILE *fp;
   BOOL list_changed = force_write;
   static time_t lasttime = 0;
     
@@ -355,7 +354,7 @@ void write_browse_list(time_t t, BOOL force_write)
   pstrcpy(fnamenew,fname);
   pstrcat(fnamenew,".");
  
-  fp = sys_fopen(fnamenew,"w");
+  fp = x_fopen(fnamenew,O_WRONLY|O_CREAT|O_TRUNC, 0644);
  
   if (!fp)
   {
@@ -373,11 +372,12 @@ void write_browse_list(time_t t, BOOL force_write)
   { 
     DEBUG(0,("write_browse_list: Fatal error - cannot find my workgroup %s\n",
              global_myworkgroup));
-    fclose(fp);
+    x_fclose(fp);
     return;
   }
 
-  write_browse_list_entry(fp, work->work_group, SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT|SV_TYPE_LOCAL_LIST_ONLY, 
+  write_browse_list_entry(fp, work->work_group,
+     SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT|SV_TYPE_LOCAL_LIST_ONLY,
      work->local_master_browser_name, work->work_group);
 
   /* 
@@ -402,10 +402,8 @@ void write_browse_list(time_t t, BOOL force_write)
     }
 
     /* Output server details, plus what workgroup they're in. */
-    write_browse_list_entry(fp, my_netbios_names[i], stype, 
-       string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH), 
-       global_myworkgroup);
-
+    write_browse_list_entry(fp, my_netbios_names[i], stype,
+        string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH), global_myworkgroup);
   }
       
   for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) 
@@ -418,9 +416,11 @@ void write_browse_list(time_t t, BOOL force_write)
       uint32 wg_type = write_this_workgroup_name( subrec, work);
 
       if(wg_type)
-	write_browse_list_entry(fp, work->work_group, wg_type, 
-				work->local_master_browser_name, 
-				work->work_group);
+      {
+        write_browse_list_entry(fp, work->work_group, wg_type,
+                                work->local_master_browser_name,
+                                work->work_group);
+      }
 
       /* Now write out any server records a workgroup may have. */
 
@@ -434,15 +434,17 @@ void write_browse_list(time_t t, BOOL force_write)
 
         serv_type = write_this_server_name(subrec, work, servrec);
 
-	/* Output server details, plus what workgroup they're in. */
         if(serv_type)
-	  write_browse_list_entry(fp, servrec->serv.name, serv_type, 
-				  servrec->serv.comment, work->work_group);
+        {
+          /* Output server details, plus what workgroup they're in. */
+          write_browse_list_entry(fp, servrec->serv.name, serv_type,
+                                 servrec->serv.comment, work->work_group);
+        }
       }
     }
   } 
   
-  fclose(fp);
+  x_fclose(fp);
   unlink(fname);
   chmod(fnamenew,0644);
   rename(fnamenew,fname);

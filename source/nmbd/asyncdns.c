@@ -1,5 +1,5 @@
 /*
-   Unix SMB/Netbios implementation.
+   Unix SMB/CIFS implementation.
    a async DNS handler
    Copyright (C) Andrew Tridgell 1997-1998
    
@@ -120,8 +120,10 @@ static void sig_term(int sig)
 
 void kill_async_dns_child(void)
 {
-  if(child_pid != 0 && child_pid != -1)
-    kill(child_pid, SIGTERM);
+	if (child_pid > 0) {
+		kill(child_pid, SIGTERM);
+		child_pid = -1;
+	}
 }
 
 /***************************************************************************

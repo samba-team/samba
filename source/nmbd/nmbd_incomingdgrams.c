@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
@@ -778,6 +777,7 @@ request from %s IP %s state=0x%X\n",
   /* Request to stop browsing altogether. */
   if (state & 0x4)
     DEBUG(1,("process_reset_browser: ignoring request to stop being a browser.\n"));
+
   END_PROFILE(reset_browser);
 }
 

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    NBT netbios routines and daemon - version 2
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
@@ -139,7 +138,7 @@ static struct work_record *remove_workgroup_from_subnet(struct subnet_record *su
       subrec->workgrouplist = work->next; 
   
     ZERO_STRUCTP(work);
-    free((char *)work);
+    SAFE_FREE(work);
   }
   
   subrec->work_changed = True;
