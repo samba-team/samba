@@ -74,17 +74,17 @@ EXTRA_DIST = sia.c krb4_matrix.conf krb4+c2_matrix.conf \
 foodir = $(libdir)
 foo_DATA = $(MOD)
 
-LDFLAGS = @LDFLAGS@ -rpath $(libdir) -hidden -exported_symbol siad_\* 
+LDFLAGS = @LDFLAGS@ -rpath $(libdir) -Wl,-hidden -Wl,-exported_symbol -Wl,siad_\* 
 
 OBJS = sia.o posix_getpw.o
 
 libsia_krb5.so: $(OBJS)
 	@if test -f $(top_builddir)/lib/krb5/.libs/libkrb5.a; then \
-		echo "ld -shared -o $@ $(LDFLAGS) $(OBJS) $(L)"; \
-		ld -shared -o $@ $(LDFLAGS) $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`; \
+		echo "$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`"; \
+		$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`; \
 	elif test -f $(top_builddir)/lib/krb5/.libs/libkrb5.so; then \
-		echo "ld -shared -o $@ $(LDFLAGS) $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`"; \
-		ld -shared -o $@ $(LDFLAGS) $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`; \
+		echo "$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`"; \
+		$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`; \
 	else \
 		echo "missing libraries"; exit 1; \
 	fi
@@ -92,11 +92,11 @@ libsia_krb5.so: $(OBJS)
 
 libsia_krb4.so: $(OBJS)
 	@if test -f $(top_builddir)/lib/krb/.libs/libkrb.a; then \
-		echo "ld -shared -o $@ $(LDFLAGS) $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`"; \
-		ld -shared -o $@ $(LDFLAGS) $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`; \
+		echo "$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`"; \
+		$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L) | sed 's,-R,-rpath,g'`; \
 	elif test -f $(top_builddir)/lib/krb/.libs/libkrb.so; then \
-		echo "ld -shared -o $@ $(LDFLAGS) $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`"; \
-		ld -shared -o $@ $(LDFLAGS) $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`; \
+		echo "$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`"; \
+		$(CC) -shared -o $@ `echo $(LDFLAGS) | sed 's,-R,-rpath,g'` $(OBJS) `echo $(L_shared) | sed 's,-R,-rpath,g'`; \
 	else \
 		echo "missing libraries"; exit 1; \
 	fi
