@@ -18,21 +18,23 @@ dnl		)
 AC_DEFUN([SMB_BUILD_CORE],
 [
 
-#################################
-# First the infos from configure
 cat > config.smb_build.pl <<\_SMB_ACEOF
 #!/usr/bin/perl -w
 #
 
 use strict;
 
+my %modules;
+my %subsystems;
+my %libraries;
+my %binaries;
+
+_SMB_ACEOF
+
+cat >> config.smb_build.pl <<\_SMB_ACEOF
 ###########################################################
 ### First we list all info from configure		###
 ###########################################################
-my %module;
-my %subsystem;
-my %library;
-my %binary;
 #
 #########################################
 ## Start Modules
@@ -51,11 +53,6 @@ $SMB_INFO_LIBRARIES
 $SMB_INFO_BINARIES
 ## End Binaries
 #########################################
-
-###########################################################
-### Now do something:-)  TODO!!!			###
-###########################################################
-print "Here's the new build system!\n";
 
 _SMB_ACEOF
 
