@@ -1033,22 +1033,20 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   pstring name;
   BOOL ok = False;
   BOOL bad_path = False;
-  SMB_STRUCT_STAT st;
+  SMB_STRUCT_STAT sbuf;
   START_PROFILE(SMBchkpth);
  
   pstrcpy(name,smb_buf(inbuf) + 1);
 
   RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 
-  unix_convert(name,conn,0,&bad_path,&st);
+  unix_convert(name,conn,0,&bad_path,&sbuf);
 
   mode = SVAL(inbuf,smb_vwv0);
 
   if (check_name(name,conn)) {
-    if(VALID_STAT(st))
-      ok = S_ISDIR(st.st_mode);
-    else
-      ok = vfs_directory_exist(conn,name,NULL);
+    if(VALID_STAT(sbuf))
+      ok = S_ISDIR(sbuf.st_mode);
   }
 
   if (!ok)
@@ -1182,17 +1180,17 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL ok=False;
   int mode;
   time_t mtime;
-  SMB_STRUCT_STAT st;
+  SMB_STRUCT_STAT sbuf;
   BOOL bad_path = False;
   START_PROFILE(SMBsetatr);
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
-  unix_convert(fname,conn,0,&bad_path,&st);
+  unix_convert(fname,conn,0,&bad_path,&sbuf);
 
   mode = SVAL(inbuf,smb_vwv0);
   mtime = make_unix_date3(inbuf+smb_vwv1);
   
-  if (VALID_STAT_OF_DIR(st) || vfs_directory_exist(conn, fname, NULL))
+  if (VALID_STAT_OF_DIR(sbuf))
     mode |= aDIR;
   if (check_name(fname,conn))
     ok =  (file_chmod(conn,fname,mode,NULL) == 0);
@@ -1292,11 +1290,12 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   
   if (status_len == 0)
   {
+    SMB_STRUCT_STAT sbuf;
     pstring dir2;
 
     pstrcpy(directory,smb_buf(inbuf)+1);
     pstrcpy(dir2,smb_buf(inbuf)+1);
-    unix_convert(directory,conn,0,&bad_path,NULL);
+    unix_convert(directory,conn,0,&bad_path,&sbuf);
     unix_format(dir2);
 
     if (!check_name(directory,conn))
@@ -1517,11 +1516,11 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  unix_convert(fname,conn,0,&bad_path,&sbuf);
     
   unixmode = unix_mode(conn,aARCH,fname);
       
-  fsp = open_file_shared(conn,fname,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+  fsp = open_file_shared(conn,fname,&sbuf,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
                    unixmode, oplock_request,&rmode,NULL);
 
   if (!fsp)
@@ -1535,12 +1534,6 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (vfs_fstat(fsp,fsp->fd,&sbuf) != 0) {
-    close_file(fsp,False);
-    END_PROFILE(SMBopen);
-    return(ERROR(ERRDOS,ERRnoaccess));
-  }
-    
   size = sbuf.st_size;
   fmode = dos_mode(conn,fname,&sbuf);
   mtime = sbuf.st_mtime;
@@ -1618,11 +1611,11 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  unix_convert(fname,conn,0,&bad_path,&sbuf);
     
   unixmode = unix_mode(conn,smb_attr | aARCH, fname);
       
-  fsp = open_file_shared(conn,fname,smb_mode,smb_ofun,unixmode,
+  fsp = open_file_shared(conn,fname,&sbuf,smb_mode,smb_ofun,unixmode,
 	               oplock_request, &rmode,&smb_action);
       
   if (!fsp)
@@ -1634,12 +1627,6 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     }
     END_PROFILE(SMBopenX);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
-  if (vfs_fstat(fsp,fsp->fd,&sbuf) != 0) {
-    close_file(fsp,False);
-    END_PROFILE(SMBopenX);
-    return(ERROR(ERRDOS,ERRnoaccess));
   }
 
   size = sbuf.st_size;
@@ -1737,6 +1724,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
   files_struct *fsp;
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+  SMB_STRUCT_STAT sbuf;
   START_PROFILE(SMBcreate);
  
   com = SVAL(inbuf,smb_com);
@@ -1746,12 +1734,11 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  unix_convert(fname,conn,0,&bad_path,&sbuf);
 
-  if (createmode & aVOLID)
-    {
+  if (createmode & aVOLID) {
       DEBUG(0,("Attempt to create file (%s) with volid set - please report this\n",fname));
-    }
+  }
   
   unixmode = unix_mode(conn,createmode,fname);
   
@@ -1767,7 +1754,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   }
 
   /* Open file in dos compatibility share mode. */
-  fsp = open_file_shared(conn,fname,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+  fsp = open_file_shared(conn,fname,&sbuf,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
                    ofun, unixmode, oplock_request, NULL, NULL);
   
   if (!fsp)
@@ -1813,23 +1800,27 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
   files_struct *fsp;
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+  SMB_STRUCT_STAT sbuf;
   START_PROFILE(SMBctemp);
- 
+
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
   pstrcat(fname,"/TMXXXXXX");
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  unix_convert(fname,conn,0,&bad_path,&sbuf);
   
   unixmode = unix_mode(conn,createmode,fname);
   
   pstrcpy(fname2,(char *)smbd_mktemp(fname));
+  /* This file should not exist. */
+  ZERO_STRUCT(sbuf);
+  vfs_stat(conn,fname2,&sbuf);
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
-  fsp = open_file_shared(conn,fname2,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+  fsp = open_file_shared(conn,fname2,&sbuf,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
                    (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unixmode, oplock_request, NULL, NULL);
 
   if (!fsp)
@@ -1904,6 +1895,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL exists=False;
   BOOL bad_path = False;
   BOOL rc = True;
+  SMB_STRUCT_STAT sbuf;
   START_PROFILE(SMBunlink);
 
   *directory = *mask = 0;
@@ -1916,7 +1908,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   DEBUG(3,("reply_unlink : %s\n",name));
    
-  rc = unix_convert(name,conn,0,&bad_path,NULL);
+  rc = unix_convert(name,conn,0,&bad_path,&sbuf);
 
   p = strrchr(name,'/');
   if (!p) {
@@ -1948,7 +1940,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     if (can_delete(directory,conn,dirtype) && !vfs_unlink(conn,directory))
       count++;
     if (!count)
-      exists = vfs_file_exist(conn,directory,NULL);    
+      exists = vfs_file_exist(conn,directory,&sbuf);    
   } else {
     void *dirptr = NULL;
     char *dname;
@@ -3281,9 +3273,10 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
 int mkdir_internal(connection_struct *conn, char *inbuf, char *outbuf, pstring directory)
 {
   BOOL bad_path = False;
+  SMB_STRUCT_STAT sbuf;
   int ret= -1;
   
-  unix_convert(directory,conn,0,&bad_path,NULL);
+  unix_convert(directory,conn,0,&bad_path,&sbuf);
   
   if (check_name(directory, conn))
     ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
@@ -3482,13 +3475,14 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   int outsize = 0;
   BOOL ok = False;
   BOOL bad_path = False;
+  SMB_STRUCT_STAT sbuf;
   START_PROFILE(SMBrmdir);
 
   pstrcpy(directory,smb_buf(inbuf) + 1);
 
   RESOLVE_DFSPATH(directory, conn, inbuf, outbuf)
 
-  unix_convert(directory,conn, NULL,&bad_path,NULL);
+  unix_convert(directory,conn, NULL,&bad_path,&sbuf);
   
   if (check_name(directory,conn))
   {
@@ -3614,12 +3608,13 @@ int rename_internals(connection_struct *conn,
 	int error = ERRnoaccess;
 	BOOL exists=False;
 	BOOL rc = True;
-        pstring zdirectory;
+	SMB_STRUCT_STAT sbuf1, sbuf2;
+	pstring zdirectory;
 
 	*directory = *mask = 0;
 
-	rc = unix_convert(name,conn,0,&bad_path1,NULL);
-	unix_convert(newname,conn,newname_last_component,&bad_path2,NULL);
+	rc = unix_convert(name,conn,0,&bad_path1,&sbuf1);
+	unix_convert(newname,conn,newname_last_component,&bad_path2,&sbuf2);
 
 	/*
 	 * Split the old name into directory and last component
@@ -3855,7 +3850,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		      int count,BOOL target_is_directory, int *err_ret)
 {
   int Access,action;
-  SMB_STRUCT_STAT st;
+  SMB_STRUCT_STAT src_sbuf, sbuf2;
   SMB_OFF_T ret=-1;
   files_struct *fsp1,*fsp2;
   pstring dest;
@@ -3873,10 +3868,10 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
     pstrcat(dest,p);
   }
 
-  if (!vfs_file_exist(conn,src,&st))
+  if (!vfs_file_exist(conn,src,&src_sbuf))
     return(False);
 
-  fsp1 = open_file_shared(conn,src,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
+  fsp1 = open_file_shared(conn,src,&src_sbuf,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
 		   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),0,0,&Access,&action);
 
   if (!fsp1) {
@@ -3884,10 +3879,11 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   }
 
   if (!target_is_directory && count)
-    ofun = 1;
+    ofun = FILE_EXISTS_OPEN;
 
-  fsp2 = open_file_shared(conn,dest,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-		   ofun,st.st_mode,0,&Access,&action);
+  vfs_stat(conn,dest,&sbuf2);
+  fsp2 = open_file_shared(conn,dest,&sbuf2,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
+		   ofun,src_sbuf.st_mode,0,&Access,&action);
 
   if (!fsp2) {
     close_file(fsp1,False);
@@ -3902,12 +3898,12 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
        * Stop the copy from occurring.
        */
       ret = -1;
-      st.st_size = 0;
+      src_sbuf.st_size = 0;
     }
   }
   
-  if (st.st_size)
-    ret = vfs_transfer_file(-1, fsp1, -1, fsp2, st.st_size, NULL, 0, 0);
+  if (src_sbuf.st_size)
+    ret = vfs_transfer_file(-1, fsp1, -1, fsp2, src_sbuf.st_size, NULL, 0, 0);
 
   close_file(fsp1,False);
   /*
@@ -3918,7 +3914,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
    */
   *err_ret = close_file(fsp2,False);
 
-  return(ret == (SMB_OFF_T)st.st_size);
+  return(ret == (SMB_OFF_T)src_sbuf.st_size);
 }
 
 
@@ -3945,6 +3941,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   BOOL bad_path1 = False;
   BOOL bad_path2 = False;
   BOOL rc = True;
+  SMB_STRUCT_STAT sbuf1, sbuf2;
   START_PROFILE(SMBcopy);
 
   *directory = *mask = 0;
@@ -3964,10 +3961,10 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
   RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
 
-  rc = unix_convert(name,conn,0,&bad_path1,NULL);
-  unix_convert(newname,conn,0,&bad_path2,NULL);
+  rc = unix_convert(name,conn,0,&bad_path1,&sbuf1);
+  unix_convert(newname,conn,0,&bad_path2,&sbuf2);
 
-  target_is_directory = vfs_directory_exist(conn,False,NULL);
+  target_is_directory = VALID_STAT_OF_DIR(sbuf2);
 
   if ((flags&1) && target_is_directory) {
     END_PROFILE(SMBcopy);
@@ -3979,7 +3976,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(ERROR(ERRDOS,ERRbadpath));
   }
 
-  if ((flags&(1<<5)) && vfs_directory_exist(conn,name,NULL)) {
+  if ((flags&(1<<5)) && VALID_STAT_OF_DIR(sbuf1)) {
     /* wants a tree copy! XXXX */
     DEBUG(3,("Rejecting tree copy\n"));
     END_PROFILE(SMBcopy);

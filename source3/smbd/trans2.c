@@ -224,7 +224,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 
   /* XXXX we need to handle passed times, sattr and flags */
 
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  unix_convert(fname,conn,0,&bad_path,&sbuf);
     
   if (!check_name(fname,conn))
   {
@@ -238,7 +238,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 
   unixmode = unix_mode(conn,open_attr | aARCH, fname);
       
-  fsp = open_file_shared(conn,fname,open_mode,open_ofun,unixmode,
+  fsp = open_file_shared(conn,fname,&sbuf,open_mode,open_ofun,unixmode,
 		   oplock_request, &rmode,&smb_action);
       
   if (!fsp)
@@ -251,11 +251,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fsp->conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0) {
-    close_file(fsp,False);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-    
   size = sbuf.st_size;
   fmode = dos_mode(conn,fname,&sbuf);
   mtime = sbuf.st_mtime;
@@ -407,7 +402,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       if(needslash)
         pstrcat(pathreal,"/");
       pstrcat(pathreal,dname);
-      if (conn->vfs_ops.stat(conn,dos_to_unix(pathreal,False),&sbuf) != 0) 
+      if (vfs_stat(conn,pathreal,&sbuf) != 0) 
       {
 	/* Needed to show the msdfs symlinks as directories */
 	if(!lp_host_msdfs() || !lp_msdfs_root(SNUM(conn)) 
@@ -657,6 +652,7 @@ static int call_trans2findfirst(connection_struct *conn,
   BOOL out_of_space = False;
   int space_remaining;
   BOOL bad_path = False;
+  SMB_STRUCT_STAT sbuf;
 
   *directory = *mask = 0;
 
@@ -686,7 +682,7 @@ static int call_trans2findfirst(connection_struct *conn,
 
   DEBUG(5,("path=%s\n",directory));
 
-  unix_convert(directory,conn,0,&bad_path,NULL);
+  unix_convert(directory,conn,0,&bad_path,&sbuf);
   if(!check_name(directory,conn)) {
     if((errno == ENOENT) && bad_path)
     {
@@ -1112,7 +1108,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 
   DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
-  if(conn->vfs_ops.stat(conn,".",&st)!=0) {
+  if(vfs_stat(conn,".",&st)!=0) {
     DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n", strerror(errno)));
     return (ERROR(ERRSRV,ERRinvdevice));
   }
@@ -1308,7 +1304,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       fname = fsp->fsp_name;
       unix_convert(fname,conn,0,&bad_path,&sbuf);
       if (!check_name(fname,conn) || 
-          (!VALID_STAT(sbuf) && conn->vfs_ops.stat(conn,dos_to_unix(fname,False),&sbuf))) {
+          (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf))) {
         DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
         if((errno == ENOENT) && bad_path)
         {
@@ -1328,7 +1324,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       CHECK_ERROR(fsp);
 
       fname = fsp->fsp_name;
-      if (fsp->conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0) {
+      if (vfs_fstat(fsp,fsp->fd,&sbuf) != 0) {
         DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
         return(UNIXERROR(ERRDOS,ERRbadfid));
       }
@@ -1350,7 +1346,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
     unix_convert(fname,conn,0,&bad_path,&sbuf);
     if (!check_name(fname,conn) || 
-        (!VALID_STAT(sbuf) && conn->vfs_ops.stat(conn,dos_to_unix(fname,False),&sbuf))) {
+        (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf))) {
       DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
       if((errno == ENOENT) && bad_path)
       {
@@ -1567,7 +1563,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   int mode=0;
   SMB_OFF_T size=0;
   struct utimbuf tvs;
-  SMB_STRUCT_STAT st;
+  SMB_STRUCT_STAT sbuf;
   pstring fname1;
   char *fname;
   int fd = -1;
@@ -1588,9 +1584,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
        * to do this call. JRA.
        */
       fname = fsp->fsp_name;
-      unix_convert(fname,conn,0,&bad_path,&st);
-      if (!check_name(fname,conn) || 
-          (!VALID_STAT(st) && conn->vfs_ops.stat(conn,dos_to_unix(fname,False),&st))) {
+      unix_convert(fname,conn,0,&bad_path,&sbuf);
+      if (!check_name(fname,conn) || (!VALID_STAT(sbuf))) {
         DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
         if((errno == ENOENT) && bad_path)
         {
@@ -1609,7 +1604,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       fname = fsp->fsp_name;
       fd = fsp->fd;
 
-      if (fsp->conn->vfs_ops.fstat(fsp,fd,&st) != 0) {
+      if (vfs_fstat(fsp,fd,&sbuf) != 0) {
         DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
         return(UNIXERROR(ERRDOS,ERRbadfid));
       }
@@ -1619,7 +1614,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     info_level = SVAL(params,0);    
     fname = fname1;
     pstrcpy(fname,&params[6]);
-    unix_convert(fname,conn,0,&bad_path,&st);
+    unix_convert(fname,conn,0,&bad_path,&sbuf);
     if(!check_name(fname, conn))
     {
       if((errno == ENOENT) && bad_path)
@@ -1630,7 +1625,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRbadpath));
     }
  
-    if(!VALID_STAT(st) && conn->vfs_ops.stat(conn,dos_to_unix(fname,False),&st)!=0) {
+    if(!VALID_STAT(sbuf)) {
       DEBUG(3,("stat of %s failed (%s)\n", fname, strerror(errno)));
       if((errno == ENOENT) && bad_path)
       {
@@ -1651,10 +1646,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
   SSVAL(params,0,0);
 
-  size = st.st_size;
-  tvs.modtime = st.st_mtime;
-  tvs.actime = st.st_atime;
-  mode = dos_mode(conn,fname,&st);
+  size = sbuf.st_size;
+  tvs.modtime = sbuf.st_mtime;
+  tvs.actime = sbuf.st_atime;
+  mode = dos_mode(conn,fname,&sbuf);
 
   if (total_data > 0 && IVAL(pdata,0) == total_data) {
     /* uggh, EAs for OS2 */
@@ -1908,10 +1903,10 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
 
   /* get some defaults (no modifications) if any info is zero or -1. */
   if (tvs.actime == (time_t)0 || tvs.actime == (time_t)-1)
-    tvs.actime = st.st_atime;
+    tvs.actime = sbuf.st_atime;
 
   if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
-    tvs.modtime = st.st_mtime;
+    tvs.modtime = sbuf.st_mtime;
 
   DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
   DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
@@ -1925,13 +1920,13 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
      * changing the size of a file.
      */
     if (!size)
-      size = st.st_size;
+      size = sbuf.st_size;
   }
 
   /* Try and set the times, size and mode of this file -
      if they are different from the current values
    */
-  if (st.st_mtime != tvs.modtime || st.st_atime != tvs.actime) {
+  if (sbuf.st_mtime != tvs.modtime || sbuf.st_atime != tvs.actime) {
     if(fsp != NULL) {
       /*
        * This was a setfileinfo on an open file.
@@ -1957,7 +1952,7 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
   }
 
   /* check the mode isn't different, before changing it */
-  if ((mode != 0) && (mode != dos_mode(conn, fname, &st))) {
+  if ((mode != 0) && (mode != dos_mode(conn, fname, &sbuf))) {
 
     DEBUG(10,("call_trans2setfilepathinfo: file %s : setting dos mode %x\n",
           fname, mode ));
@@ -1968,7 +1963,7 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
     }
   }
 
-  if(size != st.st_size) {
+  if(size != sbuf.st_size) {
 
     DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
           fname, (double)size ));
@@ -2004,6 +1999,7 @@ static int call_trans2mkdir(connection_struct *conn,
   char *params = *pparams;
   pstring directory;
   int ret = -1;
+  SMB_STRUCT_STAT sbuf;
   BOOL bad_path = False;
 
   if (!CAN_WRITE(conn))
@@ -2013,7 +2009,7 @@ static int call_trans2mkdir(connection_struct *conn,
 
   DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-  unix_convert(directory,conn,0,&bad_path,NULL);
+  unix_convert(directory,conn,0,&bad_path,&sbuf);
   if (check_name(directory,conn))
     ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
   

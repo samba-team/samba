@@ -795,7 +795,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 	set_posix_case_semantics(file_attributes);
 		
-	unix_convert(fname,conn,0,&bad_path,NULL);
+	unix_convert(fname,conn,0,&bad_path,&sbuf);
 		
 	unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
@@ -806,7 +806,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
-		fsp = open_directory(conn, fname, smb_ofun, unixmode, &smb_action);
+		fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
 			
 		restore_case_semantics(file_attributes);
 
@@ -836,7 +836,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		fsp = open_file_shared(conn,fname,smb_open_mode,
+		fsp = open_file_shared(conn,fname,&sbuf,smb_open_mode,
 				 smb_ofun,unixmode, oplock_request,&rmode,&smb_action);
 
 		if (!fsp) { 
@@ -873,7 +873,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, smb_ofun, unixmode, &smb_action);
+				fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
@@ -896,7 +896,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 				oplock_request = 0;
 
-				fsp = open_file_stat(conn,fname,smb_open_mode,&sbuf,&smb_action);
+				fsp = open_file_stat(conn,fname,&sbuf,smb_open_mode,&smb_action);
 
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
@@ -916,22 +916,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				END_PROFILE(SMBntcreateX);
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
-		} 
-	}
-		
-	if(fsp->is_directory) {
-		if(conn->vfs_ops.stat(conn,dos_to_unix(fsp->fsp_name, False), &sbuf) != 0) {
-			close_file(fsp,True);
-			restore_case_semantics(file_attributes);
-			END_PROFILE(SMBntcreateX);
-			return(ERROR(ERRDOS,ERRnoaccess));
-		}
-	} else {
-		if (conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0) {
-			close_file(fsp,False);
-			restore_case_semantics(file_attributes);
-			END_PROFILE(SMBntcreateX);
-			return(ERROR(ERRDOS,ERRnoaccess));
 		} 
 	}
 		
@@ -1231,7 +1215,7 @@ static int call_nt_transact_create(connection_struct *conn,
     
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-  unix_convert(fname,conn,0,&bad_path,NULL);
+  unix_convert(fname,conn,0,&bad_path,&sbuf);
     
   unixmode = unix_mode(conn,smb_attr | aARCH, fname);
    
@@ -1249,7 +1233,7 @@ static int call_nt_transact_create(connection_struct *conn,
      * CreateDirectory() call.
      */
 
-    fsp = open_directory(conn, fname, smb_ofun, unixmode, &smb_action);
+    fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
 
     if(!fsp) {
       restore_case_semantics(file_attributes);
@@ -1260,20 +1244,13 @@ static int call_nt_transact_create(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
 
-    if(conn->vfs_ops.stat(conn,dos_to_unix(fsp->fsp_name, False),
-	     &sbuf) != 0) {
-      close_file(fsp,True);
-      restore_case_semantics(file_attributes);
-      return(ERROR(ERRDOS,ERRnoaccess));
-    }
-
   } else {
 
     /*
      * Ordinary file case.
      */
 
-    fsp = open_file_shared(conn,fname,smb_open_mode,smb_ofun,unixmode,
+    fsp = open_file_shared(conn,fname,&sbuf,smb_open_mode,smb_ofun,unixmode,
                      oplock_request,&rmode,&smb_action);
 
     if (!fsp) { 
@@ -1291,7 +1268,7 @@ static int call_nt_transact_create(connection_struct *conn,
 			}
 	
 			oplock_request = 0;
-			fsp = open_directory(conn, fname, smb_ofun, unixmode, &smb_action);
+			fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
 				
 			if(!fsp) {
 				restore_case_semantics(file_attributes);
@@ -1314,7 +1291,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
 			oplock_request = 0;
 
-			fsp = open_file_stat(conn,fname,smb_open_mode,&sbuf,&smb_action);
+			fsp = open_file_stat(conn,fname,&sbuf,smb_open_mode,&smb_action);
 
 			if(!fsp) {
 				restore_case_semantics(file_attributes);
@@ -1333,20 +1310,6 @@ static int call_nt_transact_create(connection_struct *conn,
 		}
       } 
   
-      if(fsp->is_directory) {
-          if(conn->vfs_ops.stat(conn,dos_to_unix(fsp->fsp_name,False), &sbuf) != 0) {
-              close_file(fsp,True);
-              restore_case_semantics(file_attributes);
-              return(ERROR(ERRDOS,ERRnoaccess));
-          }
-      } else {
-          if (!fsp->stat_open && conn->vfs_ops.fstat(fsp,fsp->fd,&sbuf) != 0) {
-              close_file(fsp,False);
-              restore_case_semantics(file_attributes);
-              return(ERROR(ERRDOS,ERRnoaccess));
-          } 
-      }
- 
       file_len = sbuf.st_size;
       fmode = dos_mode(conn,fname,&sbuf);
       if(fmode == 0)
