@@ -56,6 +56,9 @@
 #define NAME_MFLAG(p)     (((p) & NB_FLGMSK) == NB_MFLAG)
 #define NAME__FLAG(p)     (((p) & NB_FLGMSK) == NB__FLAG)
 
+#define MSBROWSE "\001\002__MSBROWSE__\002"
+
+enum name_search { FIND_SELF, FIND_GLOBAL };
 enum name_source {STATUS_QUERY, LMHOSTS, REGISTER, SELF, DNS, DNSFAIL};
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
 enum packet_type {NMB_PACKET, DGRAM_PACKET};
@@ -260,14 +263,32 @@ struct packet_struct
 #define AM_DOMCTL(work) (work->ServerType & SV_TYPE_DOMAIN_CTRL)
 
 
-#define ANN_HostAnnouncement  1
-#define ANN_AnnouncementRequest 2
-#define ANN_Election 8
-#define ANN_GetBackupListReq 9
-#define ANN_GetBackupListResp 10
-#define ANN_BecomeBackup 11
-#define ANN_DomainAnnouncement 12
-#define ANN_MasterAnnouncement 13
-#define ANN_ResetBrowserState 14
+/* ids for netbios packet types */
+#define ANN_HostAnnouncement         1
+#define ANN_AnnouncementRequest      2
+#define ANN_Election                 8
+#define ANN_GetBackupListReq         9
+#define ANN_GetBackupListResp       10
+#define ANN_BecomeBackup            11
+#define ANN_DomainAnnouncement      12
+#define ANN_MasterAnnouncement      13
+#define ANN_ResetBrowserState       14
 #define ANN_LocalMasterAnnouncement 15
+
+
+/* broadcast packet announcement intervals, in minutes */
+
+/* search for master browsers of workgroups samba knows about, 
+   except default */
+#define CHECK_TIME_MST_BROWSE       5 
+
+/* request backup browser announcements from other servers */
+#define CHECK_TIME_ANNOUNCE_BACKUP 15
+
+/* request host announcements from other servers: min and max of interval */
+#define CHECK_TIME_MIN_HOST_ANNCE   3
+#define CHECK_TIME_MAX_HOST_ANNCE  12
+
+/* announce as master to WINS server and any Primary Domain Controllers */
+#define CHECK_TIME_MST_ANNOUNCE    15
 

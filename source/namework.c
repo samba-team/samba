@@ -71,7 +71,6 @@ extern time_t StartupTime;
 #define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
 #define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
 
-#define MSBROWSE "\001\002__MSBROWSE__\002"
 #define BROWSE_MAILSLOT "\\MAILSLOT\\BROWSE"
 
 #define GET_TTL(ttl) ((ttl)?MIN(ttl,lp_max_ttl()):lp_max_ttl())
@@ -652,7 +651,7 @@ static void process_send_backup_list(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct domain_record *d; /* = find_domain(ip); */
+  struct domain_record *d; 
   struct work_record *work;
 
   int count = CVAL(buf,0);

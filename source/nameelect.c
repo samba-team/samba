@@ -45,7 +45,6 @@ extern time_t StartupTime;
 
 #define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
 
-#define MSBROWSE "\001\002__MSBROWSE__\002"
 #define BROWSE_MAILSLOT "\\MAILSLOT\\BROWSE"
 
 extern struct domain_record *domainlist;
@@ -61,7 +60,9 @@ void check_master_browser(void)
   struct domain_record *d;
 
   if (!lastrun) lastrun = t;
-  if (t < lastrun + 5*60) return;
+  if (t < lastrun + CHECK_TIME_MST_BROWSE * 60) 
+    return;
+
   lastrun = t;
 
   dump_workgroups();
@@ -108,16 +109,16 @@ void browser_gone(char *work_name, struct in_addr ip)
     }
   else
     {
-      DEBUG(2,("no master browser for persistent entry %s %s\n",
-	       work->work_group, inet_ntoa(d->bcast_ip)));
+      /* XXXX note: this will delete entries that have been added in by
+	 lmhosts as well. a flag to ensure that these are not deleted may
+	 be considered */
       
-      /* XXXX oh dear. we are going to have problems here. the
-	 entry is a persistent one, there isn't anyone responsible
-	 for this workgroup up and running, yet we can't find it
-	 and we are going to continually have name_queries until
-	 a master browser is found for this workgroup on the
-	 remote subnet.
-	 */
+      /* workgroup with no master browser is not the default workgroup:
+	 it's also not on our subnet. therefore delete it: it can be
+	 recreated dynamically */
+      
+      send_election(d, work->work_group, 0, 0, myname);
+      remove_workgroup(d, work);      
     }
 }
 
@@ -177,7 +178,7 @@ static void become_master(struct domain_record *d, struct work_record *work)
       DEBUG(4,("Domain master: adding names...\n"));
       
       /* add domain master and domain member names or register with WINS */
-      add_name_entry(work->work_group,0x1b,NB_ACTIVE         );
+      add_name_entry(work->work_group,0x1b,NB_ACTIVE);
       work->ServerType |= SV_TYPE_DOMAIN_MASTER;
       
       if (lp_domain_logons())
