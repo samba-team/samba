@@ -162,8 +162,13 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 
 		domain->methods->sequence_number(domain, &domain->sequence_number);
 		
-		asprintf(&s,"%s%s : %u\n", extra_data, 
-			 domain->name, (unsigned)domain->sequence_number);
+		if (DOM_SEQUENCE_NONE == (unsigned)domain->sequence_number) {
+			asprintf(&s,"%s%s : %u\n", extra_data, 
+				 domain->name, (unsigned)domain->sequence_number);
+		} else {
+			asprintf(&s,"%s%s : DISCONNECTED\n", extra_data, 
+				 domain->name);
+		}
 		free(extra_data);
 		extra_data = s;
 	}
