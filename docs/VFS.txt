@@ -1,9 +1,0 @@
-!==
-!== VFS.txt
-!==
-Contributor:	Tim Potter
-Updated:	April 5, 1999
-
-Subject:	Implementing a virtual filesystem for Samba
-===========================================================
-
