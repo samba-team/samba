@@ -902,6 +902,9 @@ NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
   will be the number of bytes to be sent.
 
   write_fn() should return the number of bytes successfully written.
+
+  this will return STATUS_BUFFER_OVERFLOW if there is more to be read
+  from the current fragment
 */
 NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn, 
 		       void *private,
@@ -910,6 +913,7 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	struct dcesrv_call_state *call;
 	struct dcesrv_call_reply *rep;
 	ssize_t nwritten;
+	NTSTATUS status = NT_STATUS_OK;
 
 	call = dce_conn->call_list;
 	if (!call || !call->replies) {
@@ -930,6 +934,8 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 	if (rep->data.length == 0) {
 		/* we're done with this section of the call */
 		DLIST_REMOVE(call->replies, rep);
+	} else {
+		status = STATUS_BUFFER_OVERFLOW;
 	}
 
 	if (call->replies == NULL) {
@@ -938,7 +944,7 @@ NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn,
 		talloc_destroy(call->mem_ctx);
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 
