@@ -1,5 +1,11 @@
 2003-05-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* *.[ch]: do some basic locking (no reference counting so contexts 
+	  can be removed while still used)
+	- don't export gss_ctx_id_t_desc_struct and gss_cred_id_t_desc_struct
+	- make sure all lifetime are returned in seconds left until expired,
+	  not in unix epoch
+
 	* gss_acquire_cred.3: document argument lifetime_rec to function
 	gss_inquire_context
 
