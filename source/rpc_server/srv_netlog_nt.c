@@ -169,6 +169,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 	SAM_ACCOUNT *sampass = NULL;
 	const uint8 *pass;
 	BOOL ret;
+	uint32 acct_ctrl;
 
 #if 0
     /*
@@ -202,7 +203,12 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 		return False;
 	}
 
-	if (!(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) && ((pass=pdb_get_nt_passwd(sampass)) != NULL)) {
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
+	if (!(acct_ctrl & ACB_DISABLED) &&
+	    ((acct_ctrl & ACB_DOMTRUST) ||
+	     (acct_ctrl & ACB_WSTRUST) ||
+	     (acct_ctrl & ACB_SVRTRUST)) &&
+	    ((pass=pdb_get_nt_passwd(sampass)) != NULL)) {
 		memcpy(md4pw, pass, 16);
 		dump_data(5, md4pw, 16);
  		pdb_free_sam(&sampass);
