@@ -1,7 +1,7 @@
 test_smb_conf_setup() {
 	cat basicsmb.smb.conf.template | \
               sed "s|PREFIX|$prefix|g" | \
-	      sed "s|BUILD_FARM|$pwd|g" | \
+	      sed "s|BUILD_FARM|$test_root|g" | \
 	      sed "s|WHOAMI|$whoami|g" | \
 	      sed "s|LOGLEVEL|$loglevel|g" \
         > $prefix/lib/smb.conf
