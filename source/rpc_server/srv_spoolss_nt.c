@@ -3862,6 +3862,7 @@ static uint32 modify_driver_heirarchy(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint
 	pstring path_old;
 	pstring path_new;
 	pstring short_archi;
+
 	/* find_service is an smbd-specific function call */
 	int snum = find_service("print$");
 	char *model = NULL;
@@ -3886,10 +3887,11 @@ static uint32 modify_driver_heirarchy(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint
 		(unsigned int)sys_getpid());
 	slprintf(path_new, sizeof(path_new)-1, "%s/%s/%s", lp_pathname(snum), short_archi, model);
 
-	DEBUG(10,("_spoolss_addprinterdriver: old_path=%s, new_path=%s\n",
+	DEBUG(10,("modify_driver_heirarchy: old_path=%s, new_path=%s\n",
 			path_old, path_new ));
 	if (dos_rename(path_old, path_new) == -1) {
-		DEBUG(0,("modify_driver_heirarchy: rename failed (%s)\n", strerror(errno) ));
+		DEBUG(0,("modify_driver_heirarchy: rename from %s to %s failed (%s)\n", 
+			path_old, path_new, strerror(errno) ));
 		/* We need to clean up here.... - how ? */
 		return ERROR_ACCESS_DENIED; /* We need a generic mapping from NT errors here... */
 	}

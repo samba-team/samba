@@ -362,7 +362,9 @@ static uint32 get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 	fstrcpy(info.name, lp_printerdriver(snum));
 	fstrcpy(info.defaultdatatype, "RAW");
 	
-	info.dependentfiles=(fstring *)malloc(sizeof(fstring));
+	if ((info.dependentfiles=(char *)malloc(sizeof(fstring))) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
+
 	fstrcpy(info.dependentfiles[0], "");
 
 	*info_ptr = memdup(&info, sizeof(info));
@@ -407,15 +409,22 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	while (len < dbuf.dsize) {
 		driver.dependentfiles = (fstring *)Realloc(driver.dependentfiles,
 							 sizeof(fstring)*(i+2));
+		if (driver.dependentfiles == NULL)
+			break;
+
 		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f", 
-				  driver.dependentfiles[i]);
+				  &driver.dependentfiles[i]);
 		i++;
 	}
-	fstrcpy(driver.dependentfiles[i], "");
+	if (driver.dependentfiles != NULL)
+		fstrcpy(driver.dependentfiles[i], "");
 
 	safe_free(dbuf.dptr);
 
 	if (len != dbuf.dsize) {
+		if (driver.dependentfiles != NULL)
+			safe_free(driver.dependentfiles);
+
 		return get_a_printer_driver_3_default(info_ptr, in_prt, in_arch);
 	}
 
@@ -1155,6 +1164,8 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 			if (success == 0) {
 				dump_a_printer(*printer, level);
 				*pp_printer = printer;
+			} else {
+				safe_free(printer);
 			}
 			break;
 		}
@@ -1274,8 +1285,7 @@ uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 			if (driver.info_3 != NULL)
 			{
 				info3=driver.info_3;
-				if (info3->dependentfiles)
-					free(info3->dependentfiles);
+				safe_free(info3->dependentfiles);
 				safe_free(info3);
 				ZERO_STRUCTP(info3);
 				success=0;

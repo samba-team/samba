@@ -338,7 +338,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   SEC_ACE ace_list[6];
   DOM_SID owner_sid;
   DOM_SID group_sid;
-  size_t sec_desc_size;
+  size_t sd_size;
   SEC_ACL *psa = NULL;
   SEC_ACCESS owner_access;
   int owner_acl_type;
@@ -429,16 +429,16 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
       }
   }
 
-  *ppdesc = make_standard_sec_desc( &owner_sid, &group_sid, psa, &sec_desc_size);
+  *ppdesc = make_standard_sec_desc( &owner_sid, &group_sid, psa, &sd_size);
 
   if(!*ppdesc) {
     DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
-    sec_desc_size = 0;
+    sd_size = 0;
   }
 
   free_sec_acl(&psa);
 
-  return sec_desc_size;
+  return sd_size;
 }
 
 /****************************************************************************

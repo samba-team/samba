@@ -236,7 +236,9 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
      * Check if the string is terminated with a newline - if not
      * then we must keep reading and discard until we get one.
      */
-    linebuf_len = strlen(linebuf);
+    if ((linebuf_len = strlen(linebuf)) == 0)
+		continue;
+
     if (linebuf[linebuf_len - 1] != '\n') {
       c = '\0';
       while (!ferror(fp) && !feof(fp)) {
