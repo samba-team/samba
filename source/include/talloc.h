@@ -42,4 +42,12 @@ typedef struct {
 	char *name;
 } TALLOC_CTX;
 
+TALLOC_CTX *talloc_init_named(char const *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
+
+char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
+	PRINTF_ATTRIBUTE(2, 0);
+
+char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
+	PRINTF_ATTRIBUTE(2, 3);
+
 #endif
