@@ -367,7 +367,8 @@ init_auth
 				     cred,
 				     &cksum,
 				     &auth,
-				     &authenticator);
+				     &authenticator,
+				     KRB5_KU_AP_REQ_AUTH);
 
     if (kret) {
 	*minor_status = kret;
