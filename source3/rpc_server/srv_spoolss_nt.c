@@ -1935,12 +1935,7 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 	init_unistr(&printer->servername, chaine);				/* servername*/
 	init_unistr(&printer->printername, chaine2);				/* printername*/
 	init_unistr(&printer->sharename, lp_servicename(snum));			/* sharename */
-#if 1 /* JRATEST */
-	/* We need to determine the correct model for this..... */
-	init_unistr(&printer->portname, lp_printername(snum));			/* port */	
-#else
-	init_unistr(&printer->portname, lp_servicename(snum));			/* port */	
-#endif
+	init_unistr(&printer->portname, ntprinter->info_2->portname);			/* port */	
 	init_unistr(&printer->drivername, ntprinter->info_2->drivername);	/* drivername */
 
 	if (*ntprinter->info_2->comment == '\0')
@@ -1966,9 +1961,6 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 			
 	if((printer->devmode = construct_dev_mode(snum, servername)) == NULL) {
 		DEBUG(8, ("Returning NULL Devicemode!\n"));
-#if 0 /* JFMTEST */
-		goto err;
-#endif
 	}
 
 	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->len != 0) {
@@ -1985,13 +1977,6 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 	free_a_printer(&ntprinter, 2);
 	safe_free(queue);
 	return True;
-
-  err:
-
-	if (ntprinter)
-		free_a_printer(&ntprinter, 2);
-	safe_free(queue);
-	return False;
 }
 
 /********************************************************************
