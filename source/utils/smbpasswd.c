@@ -153,7 +153,7 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 				    pw_buf.smb_nt_passwd = smbntpwd;
 				}
 			}
-			pw_buf.smb_name = user_name;
+			fstrcpy(pw_buf.smb_name, user_name);
 			pw_buf.smb_userid = uidval;
 			pw_buf.smb_passwd = NULL;	/* No password */
 			return (&pw_buf);
@@ -172,7 +172,7 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 		  pw_buf.smb_passwd = smbpwd;
 		}
 
-		pw_buf.smb_name = user_name;
+		fstrcpy(pw_buf.smb_name, user_name);
 		pw_buf.smb_userid = uidval;
 		pw_buf.smb_nt_passwd = NULL;
 		*got_valid_nt_entry = False;

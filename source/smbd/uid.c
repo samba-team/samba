@@ -165,7 +165,7 @@ BOOL become_guest(void)
     return(True);
 
   if (!pass)
-    pass = Get_Pwnam(lp_guestaccount(-1),True);
+    pass = Get_Pwnam(lp_guestaccount(-1),True, NULL);
   if (!pass) return(False);
 
   ret = become_id(pass->pw_uid,pass->pw_gid);
