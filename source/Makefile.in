@@ -318,6 +318,8 @@ MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash
 
 SMBD_OBJ_MAIN = smbd/server.o
 
+BUILDOPT_OBJ = smbd/build_options.o
+
 SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/utmp.o smbd/session.o \
                smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
@@ -330,19 +332,19 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
                smbd/posix_acls.o lib/sysacls.o lib/server_mutex.o \
 	       smbd/process.o smbd/service.o smbd/error.o \
 	       printing/printfsp.o lib/util_seaccess.o \
-               smbd/build_options.o lib/sysquotas.o \
-	       smbd/change_trust_pw.o smbd/fake_file.o \
+               lib/sysquotas.o smbd/change_trust_pw.o smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@
 
 SMBD_OBJ_BASE = $(PARAM_OBJ) $(SMBD_OBJ_SRV) $(MSDFS_OBJ) $(LIBSMB_OBJ) \
-		$(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) $(UBIQX_OBJ) \
+		$(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) \
 		$(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
 		$(LIB_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) \
 		$(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) \
 		$(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
 		$(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(LIBADS_SERVER_OBJ) \
-		$(LIB_SMBD_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) $(IDMAP_OBJ)
+		$(LIB_SMBD_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) $(IDMAP_OBJ) \
+		$(UBIQX_OBJ) $(BUILDOPT_OBJ)
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				printing/print_cups.o printing/print_generic.o \
@@ -701,7 +703,7 @@ smbd/build_options.o: smbd/build_options.c Makefile include/config.h include/bui
 
 smbd/build_options.c: include/config.h.in script/mkbuildoptions.awk
 	@echo Generating $@
-	@$(AWK) -f $(srcdir)/script/mkbuildoptions.awk > $(builddir)/smbd/build_options.c < $(srcdir)/include/config.h.in
+	@dir=smbd $(MAKEDIR) && $(AWK) -f $(srcdir)/script/mkbuildoptions.awk > $(builddir)/smbd/build_options.c < $(srcdir)/include/config.h.in
 
 .c.po: 
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
@@ -1246,42 +1248,47 @@ delheaders:
 	@/bin/rm -f include/proto.h include/build_env.h include/wrepld_proto.h \
 	            nsswitch/winbindd_proto.h web/swat_proto.h \
 		    client/client_proto.h utils/net_proto.h smbd/build_options.c
+# Location of mkproto.sh
+
+MKPROTO_SH = $(builddir)/script/mkproto.sh
 
 include/proto.h: smbd/build_options.c
 	@echo Building include/proto.h
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@$(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _PROTO_H_ $(builddir)/include/proto.h \
-	  $(PROTO_OBJ)
+	  $(builddir)/smbd/build_options.o \
+	  `echo $(PROTO_OBJ) | sed -e 's%\([^ \t]*\)%$(srcdir)/\1%g'`
 
 include/build_env.h: script/build_env.sh
 	@echo Building include/build_env.h
-	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > $(builddir)/include/build_env.h
+	@$(SHELL) $(srcdir)/script/build_env.sh $(srcdir) $(builddir) $(CC) \
+	  > $(builddir)/include/build_env.h
 
 include/wrepld_proto.h:
 	@echo Building include/wrepld_proto.h
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@$(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
-	  $(WREPL_OBJ1)
+	  `echo $(WREPL_OBJ1) | sed -e 's%\([^ \t]*\)%$(srcdir)/\1%g'`
 
 nsswitch/winbindd_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@$(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
-	  $(WINBINDD_OBJ1)
+	  `echo $(WINBINDD_OBJ1) | sed -e 's%\([^ \t]*\)%$(srcdir)/\1%g'`
 
 web/swat_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@$(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _SWAT_PROTO_H_ web/swat_proto.h \
-	  $(SWAT_OBJ1)
+	  `echo $(SWAT_OBJ1) | sed -e 's%\([^ \t]*\)%$(srcdir)/\1%g'`
 
 client/client_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@$(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _CLIENT_PROTO_H_ client/client_proto.h \
-	  $(CLIENT_OBJ1)
+	  `echo $(CLIENT_OBJ1) | sed -e 's%\([^ \t]*\)%$(srcdir)/\1%g'`
 
 utils/net_proto.h: 
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
+	@$(SHELL) $(MKPROTO_SH) $(AWK) \
 	  -h _CLIENT_PROTO_H_ utils/net_proto.h \
-	  $(NET_OBJ1)
+	  `echo $(NET_OBJ1) | sed -e 's%\([^ \t]*\)%$(srcdir)/\1%g'`
 
 # "make headers" or "make proto" calls a subshell because we need to
 # make sure these commands are executed in sequence even for a
