@@ -3,7 +3,11 @@
 RCSID("$Id$");
 #endif
 
+
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include "roken.h"
 
 int
