@@ -31,10 +31,21 @@ static smb_ucs2_t *upcase_table;
 static smb_ucs2_t *lowcase_table;
 static uint8 *valid_table;
 
+/**
+ * This table says which Unicode characters are valid dos
+ * characters.
+ *
+ * Each value is just a single bit.
+ **/
+static uint8 doschar_table[8192]; /* 65536 characters / 8 bits/byte */
 
-/*******************************************************************
-load the case handling tables
-********************************************************************/
+
+/**
+ * Load or generate the case handling tables.
+ *
+ * The case tables are defined in UCS2 and don't depend on any
+ * configured parameters, so they never need to be reloaded.
+ **/
 void load_case_tables(void)
 {
 	static int initialised;
@@ -85,6 +96,16 @@ void load_case_tables(void)
 */
 int check_dos_char(smb_ucs2_t c)
 {
+	lazy_initialize_conv();
+	
+	/* Find the right byte, and right bit within the byte; return
+	 * 1 or 0 */
+	return (doschar_table[(c & 0xffff) / 8] & (1 << (c & 7))) != 0;
+}
+
+
+static int check_dos_char_slowly(smb_ucs2_t c)
+{
 	char buf[10];
 	smb_ucs2_t c2 = 0;
 	int len1, len2;
@@ -94,6 +115,31 @@ int check_dos_char(smb_ucs2_t c)
 	if (len2 != 2) return 0;
 	return (c == c2);
 }
+
+
+/**
+ * Fill out doschar table the hard way, by examining each character
+ **/
+void init_doschar_table(void)
+{
+	int i, j, byteval;
+
+	/* For each byte of packed table */
+	
+	for (i = 0; i <= 0xffff; i += 8) {
+		byteval = 0;
+		for (j = 0; j <= 7; j++) {
+			smb_ucs2_t c;
+
+			c = i + j;
+			
+			if (check_dos_char_slowly(c))
+				byteval |= 1 << j;
+		}
+		doschar_table[i/8] = byteval;
+	}
+}
+
 
 /**
  * Load the valid character map table from <tt>valid.dat</tt> or
