@@ -1,3 +1,8 @@
+1999-08-16  Assar Westerlund  <assar@sics.se>
+
+	* common.c (do_read): be careful with the return value from
+ 	krb5_net_read
+
 1999-08-05  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c: call freehostent
