@@ -47,7 +47,7 @@
 
 
 
-DIR *block_opendir(struct connection_struct *conn, char *fname);
+DIR *block_opendir(struct connection_struct *conn, const char *fname);
 int block_connect(struct connection_struct *conn, const char *service, const char *user);    
 void block_disconnect(struct connection_struct *conn);    
 
@@ -138,7 +138,7 @@ struct vfs_ops execute_vfs_ops = {
 
 
 #ifndef PARAMCONF
-#define PARAMCONF "/etc/samba-block.conf"
+#define PARAMCONF "/etc/samba/samba-block.conf"
 #endif
 
 extern BOOL pm_process(char *FileName, BOOL (*sfunc)(char *), BOOL(*pfunc)(char * , char *));
@@ -150,7 +150,7 @@ BOOL get_section(char *sect);
 BOOL get_parameter_value(char *param, char *value);
 BOOL load_param(void);
 BOOL search(struct stat *stat_buf);
-BOOL dir_search(char *link, char *dir);
+BOOL dir_search(char *link, const char *dir);
 BOOL enter_pblock_dir(char *dir);
 
 
@@ -352,7 +352,7 @@ struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
  * VFS connect and param file loading
  */
 
-int block_connect(struct connection_struct *conn, char *service, char *user)
+int block_connect(struct connection_struct *conn, const char *service, const char *user)
 {
 	if((load_param()) == FALSE)
 	{
@@ -403,7 +403,7 @@ void block_disconnect(struct connection_struct *conn)
  * VFS opendir
  */
 
-DIR *block_opendir(struct connection_struct *conn, char *fname)
+DIR *block_opendir(struct connection_struct *conn, const char *fname)
 {
 
 	char *dir_name = NULL; 
@@ -459,7 +459,7 @@ BOOL search(struct stat *stat_buf)
  * Find dir in list to block id the starting point is link from a share
  */
 
-BOOL dir_search(char *link, char *dir)
+BOOL dir_search(char *link, const char *dir)
 {
 	char buf[PATH_MAX +1], *ext_path;
 	int len = 0;

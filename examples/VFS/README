@@ -17,10 +17,14 @@ construction.  The following VFS modules are given:
 		connect/disconnect, directory opens/create/remove,
 		file open/close/rename/unlink/chmod.
 
+	recycle
+		Add a recycle bin facility to a samba share
+
 	block/
 
 		A directory containing a sample module by Ronald Kuetemeier
 		<ronald@kuetemeier.com> to block named symbolic link following.
+		Note: Config file is in /etc/samba/samba-block.conf
 
 The libtool program, available from your favourite GNU software
 archive, is required to compile these programs.
