@@ -1586,11 +1586,15 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
 	int num_entries = 0;
-	
+
 	while ( sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 		mode_t perms;
+
+		/* get_next... */
+		if (entry_id == SMB_ACL_FIRST_ENTRY)
+			entry_id = SMB_ACL_NEXT_ENTRY;
 
 		if (sys_acl_get_tag_type(entry, &tagtype) == -1)
 			return -1;
@@ -1608,7 +1612,7 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 				perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
 				break;
 			case SMB_ACL_MASK:
-				perms = S_IRGRP|S_IWGRP|S_IXGRP;
+				perms = S_IRUSR|S_IWUSR|S_IXUSR;
 				break;
 			case SMB_ACL_OTHER:
 				perms = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
