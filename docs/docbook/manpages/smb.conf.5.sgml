@@ -586,168 +586,166 @@
 	each parameter for details.  Note that some are synonyms.</para>
 
 	<itemizedlist>
-		<listitem><para><parameter>add user script</parameter></para></listitem>
-		<listitem><para><parameter>addprinter command</parameter></para></listitem>
-		<listitem><para><parameter>allow trusted domains</parameter></para></listitem>
-		<listitem><para><parameter>announce as</parameter></para></listitem>
-		<listitem><para><parameter>announce version</parameter></para></listitem>
-		<listitem><para><parameter>auto services</parameter></para></listitem>
-		<listitem><para><parameter>bind interfaces only</parameter></para></listitem>
-		<listitem><para><parameter>browse list</parameter></para></listitem>
-		<listitem><para><parameter>change notify timeout</parameter></para></listitem>
-		<listitem><para><parameter>character set</parameter></para></listitem>
-		<listitem><para><parameter>client code page</parameter></para></listitem>
-		<listitem><para><parameter>code page directory</parameter></para></listitem>
-		<listitem><para><parameter>coding system</parameter></para></listitem>
-		<listitem><para><parameter>config file</parameter></para></listitem>
-		<listitem><para><parameter>deadtime</parameter></para></listitem>
-		<listitem><para><parameter>debug hires timestamp</parameter></para></listitem>
-		<listitem><para><parameter>debug pid</parameter></para></listitem>
-		<listitem><para><parameter>debug timestamp</parameter></para></listitem>
-		<listitem><para><parameter>debug uid</parameter></para></listitem>
-		<listitem><para><parameter>debuglevel</parameter></para></listitem>
-		<listitem><para><parameter>default</parameter></para></listitem>
-		<listitem><para><parameter>default service</parameter></para></listitem>
-		<listitem><para><parameter>delete user script</parameter></para></listitem>
-		<listitem><para><parameter>deleteprinter command</parameter></para></listitem>
-		<listitem><para><parameter>dfree command</parameter></para></listitem>
-		<listitem><para><parameter>dns proxy</parameter></para></listitem>
-		<listitem><para><parameter>domain admin group</parameter></para></listitem>
-		<listitem><para><parameter>domain admin users</parameter></para></listitem>
-		<listitem><para><parameter>domain groups</parameter></para></listitem>
-		<listitem><para><parameter>domain guest group</parameter></para></listitem>
-		<listitem><para><parameter>domain guest users</parameter></para></listitem>
-		<listitem><para><parameter>domain logons</parameter></para></listitem>
-		<listitem><para><parameter>domain master</parameter></para></listitem>
-		<listitem><para><parameter>encrypt passwords</parameter></para></listitem>
-		<listitem><para><parameter>enhanced browsing</parameter></para></listitem>
-		<listitem><para><parameter>enumports command</parameter></para></listitem>
-		<listitem><para><parameter>getwd cache</parameter></para></listitem>
-		<listitem><para><parameter>hide local users</parameter></para></listitem>
-		<listitem><para><parameter>homedir map</parameter></para></listitem>
-		<listitem><para><parameter>host msdfs</parameter></para></listitem>
-		<listitem><para><parameter>hosts equiv</parameter></para></listitem>
-		<listitem><para><parameter>interfaces</parameter></para></listitem>
-		<listitem><para><parameter>keepalive</parameter></para></listitem>
-		<listitem><para><parameter>kernel oplocks</parameter></para></listitem>
-		<listitem><para><parameter>lanman auth</parameter></para></listitem>
-		<listitem><para><parameter>lm announce</parameter></para></listitem>
-		<listitem><para><parameter>lm interval</parameter></para></listitem>
-		<listitem><para><parameter>load printers</parameter></para></listitem>
-		<listitem><para><parameter>local master</parameter></para></listitem>
-		<listitem><para><parameter>lock dir</parameter></para></listitem>
-		<listitem><para><parameter>lock directory</parameter></para></listitem>
-		<listitem><para><parameter>log file</parameter></para></listitem>
-		<listitem><para><parameter>log level</parameter></para></listitem>
-		<listitem><para><parameter>logon drive</parameter></para></listitem>
-		<listitem><para><parameter>logon home</parameter></para></listitem>
-		<listitem><para><parameter>logon path</parameter></para></listitem>
-		<listitem><para><parameter>logon script</parameter></para></listitem>
-		<listitem><para><parameter>lpq cache time</parameter></para></listitem>
-		<listitem><para><parameter>machine password timeout</parameter></para></listitem>
-		<listitem><para><parameter>mangled stack</parameter></para></listitem>
-		<listitem><para><parameter>map to guest</parameter></para></listitem>
-		<listitem><para><parameter>max disk size</parameter></para></listitem>
-		<listitem><para><parameter>max log size</parameter></para></listitem>
-		<listitem><para><parameter>max mux</parameter></para></listitem>
-		<listitem><para><parameter>max open files</parameter></para></listitem>
-		<listitem><para><parameter>max protocol</parameter></para></listitem>
-		<listitem><para><parameter>max smbd processes</parameter></para></listitem>
-		<listitem><para><parameter>max ttl</parameter></para></listitem>
-		<listitem><para><parameter>max wins ttl</parameter></para></listitem>
-		<listitem><para><parameter>max xmit</parameter></para></listitem>
-		<listitem><para><parameter>message command</parameter></para></listitem>
-		<listitem><para><parameter>min passwd length</parameter></para></listitem>
-		<listitem><para><parameter>min password length</parameter></para></listitem>
-		<listitem><para><parameter>min protocol</parameter></para></listitem>
-		<listitem><para><parameter>min wins ttl</parameter></para></listitem>
-		<listitem><para><parameter>name resolve order</parameter></para></listitem>
-		<listitem><para><parameter>netbios aliases</parameter></para></listitem>
-		<listitem><para><parameter>netbios name</parameter></para></listitem>
-		<listitem><para><parameter>netbios scope</parameter></para></listitem>
-		<listitem><para><parameter>nis homedir</parameter></para></listitem>
-		<listitem><para><parameter>nt acl support</parameter></para></listitem>
-		<listitem><para><parameter>nt pipe support</parameter></para></listitem>
-		<listitem><para><parameter>nt smb support</parameter></para></listitem>
-		<listitem><para><parameter>null passwords</parameter></para></listitem>
-		<listitem><para><parameter>oplock break wait time</parameter></para></listitem>
-		<listitem><para><parameter>os level</parameter></para></listitem>
-		<listitem><para><parameter>os2 driver map</parameter></para></listitem>
-		<listitem><para><parameter>panic action</parameter></para></listitem>
-		<listitem><para><parameter>passwd chat</parameter></para></listitem>
-		<listitem><para><parameter>passwd chat debug</parameter></para></listitem>
-		<listitem><para><parameter>passwd program</parameter></para></listitem>
-		<listitem><para><parameter>password level</parameter></para></listitem>
-		<listitem><para><parameter>password server</parameter></para></listitem>
-		<listitem><para><parameter>prefered master</parameter></para></listitem>
-		<listitem><para><parameter>preferred master</parameter></para></listitem>
-		<listitem><para><parameter>preload</parameter></para></listitem>
-		<listitem><para><parameter>printcap</parameter></para></listitem>
-		<listitem><para><parameter>printcap name</parameter></para></listitem>
-		<listitem><para><parameter>printer driver file</parameter></para></listitem>
-		<listitem><para><parameter>private dir</parameter></para></listitem>
-		<listitem><para><parameter>protocol</parameter></para></listitem>
-		<listitem><para><parameter>read bmpx</parameter></para></listitem>
-		<listitem><para><parameter>read prediction</parameter></para></listitem>
-		<listitem><para><parameter>read raw</parameter></para></listitem>
-		<listitem><para><parameter>read size</parameter></para></listitem>
-		<listitem><para><parameter>remote announce</parameter></para></listitem>
-		<listitem><para><parameter>remote browse sync</parameter></para></listitem>
-		<listitem><para><parameter>restrict anonymous</parameter></para></listitem>
-		<listitem><para><parameter>root</parameter></para></listitem>
-		<listitem><para><parameter>root dir</parameter></para></listitem>
-		<listitem><para><parameter>root directory</parameter></para></listitem>
-		<listitem><para><parameter>security</parameter></para></listitem>
-		<listitem><para><parameter>server string</parameter></para></listitem>
-		<listitem><para><parameter>show add printer wizard</parameter></para></listitem>
-		<listitem><para><parameter>smb passwd file</parameter></para></listitem>
-		<listitem><para><parameter>smbrun</parameter></para></listitem>
-		<listitem><para><parameter>socket address</parameter></para></listitem>
-		<listitem><para><parameter>socket options</parameter></para></listitem>
-		<listitem><para><parameter>source environment</parameter></para></listitem>
-		<listitem><para><parameter>ssl</parameter></para></listitem>
-		<listitem><para><parameter>ssl CA certDir</parameter></para></listitem>
-		<listitem><para><parameter>ssl CA certFile</parameter></para></listitem>
-		<listitem><para><parameter>ssl ciphers</parameter></para></listitem>
-		<listitem><para><parameter>ssl client cert</parameter></para></listitem>
-		<listitem><para><parameter>ssl client key</parameter></para></listitem>
-		<listitem><para><parameter>ssl compatibility</parameter></para></listitem>
-		<listitem><para><parameter>ssl hosts</parameter></para></listitem>
-		<listitem><para><parameter>ssl hosts resign</parameter></para></listitem>
-		<listitem><para><parameter>ssl require clientcert</parameter></para></listitem>
-		<listitem><para><parameter>ssl require servercert</parameter></para></listitem>
-		<listitem><para><parameter>ssl server cert</parameter></para></listitem>
-		<listitem><para><parameter>ssl server key</parameter></para></listitem>
-		<listitem><para><parameter>ssl version</parameter></para></listitem>
-		<listitem><para><parameter>stat cache</parameter></para></listitem>
-		<listitem><para><parameter>stat cache size</parameter></para></listitem>
-		<listitem><para><parameter>strip dot</parameter></para></listitem>
-		<listitem><para><parameter>syslog</parameter></para></listitem>
-		<listitem><para><parameter>syslog only</parameter></para></listitem>
-		<listitem><para><parameter>template homedir</parameter></para></listitem>
-		<listitem><para><parameter>template shell</parameter></para></listitem>
-		<listitem><para><parameter>time offset</parameter></para></listitem>
-		<listitem><para><parameter>time server</parameter></para></listitem>
-		<listitem><para><parameter>timestamp logs</parameter></para></listitem>
-		<listitem><para><parameter>total print jobs</parameter></para></listitem>
-		<listitem><para><parameter>unix password sync</parameter></para></listitem>
-		<listitem><para><parameter>unix realname</parameter></para></listitem>
-		<listitem><para><parameter>update encrypted</parameter></para></listitem>
-		<listitem><para><parameter>use rhosts</parameter></para></listitem>
-		<listitem><para><parameter>username level</parameter></para></listitem>
-		<listitem><para><parameter>username map</parameter></para></listitem>
-		<listitem><para><parameter>utmp directory</parameter></para></listitem>
-		<listitem><para><parameter>valid chars</parameter></para></listitem>
-		<listitem><para><parameter>winbind cache time</parameter></para></listitem>
-		<listitem><para><parameter>winbind gid</parameter></para></listitem>
-		<listitem><para><parameter>winbind separator</parameter></para></listitem>
-		<listitem><para><parameter>winbind uid</parameter></para></listitem>
-		<listitem><para><parameter>wins hook</parameter></para></listitem>
-		<listitem><para><parameter>wins proxy</parameter></para></listitem>
-		<listitem><para><parameter>wins server</parameter></para></listitem>
-		<listitem><para><parameter>wins support</parameter></para></listitem>
-		<listitem><para><parameter>workgroup</parameter></para></listitem>
-		<listitem><para><parameter>write raw</parameter></para></listitem>
+		<listitem><para><link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link></para></listitem>
+		<listitem><para><link linkend="ADDPRINTERCOMMAND"><parameter>addprinter command</parameter></link></para></listitem>
+		<listitem><para><link linkend="ALLOWTRUSTEDDOMAINS"><parameter>allow trusted domains</parameter></link></para></listitem>
+		<listitem><para><link linkend="ANNOUNCEAS"><parameter>announce as</parameter></link></para></listitem>
+		<listitem><para><link linkend="ANNOUNCEVERSION"><parameter>announce version</parameter></link></para></listitem>
+		<listitem><para><link linkend="AUTOSERVICES"><parameter>auto services</parameter></link></para></listitem>
+		<listitem><para><link linkend="BINDINTERFACESONLY"><parameter>bind interfaces only</parameter></link></para></listitem>
+		<listitem><para><link linkend="BROWSELIST"><parameter>browse list</parameter></link></para></listitem>
+		<listitem><para><link linkend="CHANGENOTIFYTIMEOUT"><parameter>change notify timeout</parameter></link></para></listitem>
+		<listitem><para><link linkend="CHARACTERSET"><parameter>character set</parameter></link></para></listitem>
+		<listitem><para><link linkend="CLIENTCODEPAGE"><parameter>client code page</parameter></link></para></listitem>
+		<listitem><para><link linkend="CODEPAGEDIRECTORY"><parameter>code page directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="CODINGSYSTEM"><parameter>coding system</parameter></link></para></listitem>
+		<listitem><para><link linkend="CONFIGFILE"><parameter>config file</parameter></link></para></listitem>
+		<listitem><para><link linkend="DEADTIME"><parameter>deadtime</parameter></link></para></listitem>
+		<listitem><para><link linkend="DEBUGHIRESTIMESTAMP"><parameter>debug hires timestamp</parameter></link></para></listitem>
+		<listitem><para><link linkend="DEBUGPID"><parameter>debug pid</parameter></link></para></listitem>
+		<listitem><para><link linkend="DEBUGTIMESTAMP"><parameter>debug timestamp</parameter></link></para></listitem>
+		<listitem><para><link linkend="DEBUGUID"><parameter>debug uid</parameter></link></para></listitem>
+		<listitem><para><link linkend="DEBUGLEVEL"><parameter>debuglevel</parameter></link></para></listitem>
+		<listitem><para><link linkend="DEFAULT"><parameter>default</parameter></link></para></listitem>
+		<listitem><para><link linkend="DEFAULTSERVICE"><parameter>default service</parameter></link></para></listitem>
+		<listitem><para><link linkend="DELETEUSERSCRIPT"><parameter>delete user script</parameter></link></para></listitem>
+		<listitem><para><link linkend="DELETEPRINTERCOMMAND"><parameter>deleteprinter command</parameter></link></para></listitem>
+		<listitem><para><link linkend="DFREECOMMAND"><parameter>dfree command</parameter></link></para></listitem>
+		<listitem><para><link linkend="DNSPROXY"><parameter>dns proxy</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOMAINADMINGROUP"><parameter>domain admin group</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOMAINADMINUSERS"><parameter>domain admin users</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOMAINGROUPS"><parameter>domain groups</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOMAINGUESTGROUP"><parameter>domain guest group</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOMAINGUESTUSERS"><parameter>domain guest users</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOMAINLOGONS"><parameter>domain logons</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOMAINMASTER"><parameter>domain master</parameter></link></para></listitem>
+		<listitem><para><link linkend="ENCRYPTPASSWORDS"><parameter>encrypt passwords</parameter></link></para></listitem>
+		<listitem><para><link linkend="ENHANCEDBROWSING"><parameter>enhanced browsing</parameter></link></para></listitem>
+		<listitem><para><link linkend="ENUMPORTSCOMMAND"><parameter>enumports command</parameter></link></para></listitem>
+		<listitem><para><link linkend="GETWDCACHE"><parameter>getwd cache</parameter></link></para></listitem>
+		<listitem><para><link linkend="HIDELOCALUSERS"><parameter>hide local users</parameter></link></para></listitem>
+		<listitem><para><link linkend="HOMEDIRMAP"><parameter>homedir map</parameter></link></para></listitem>
+		<listitem><para><link linkend="HOSTMSDFS"><parameter>host msdfs</parameter></link></para></listitem>
+		<listitem><para><link linkend="HOSTSEQUIV"><parameter>hosts equiv</parameter></link></para></listitem>
+		<listitem><para><link linkend="INTERFACES"><parameter>interfaces</parameter></link></para></listitem>
+		<listitem><para><link linkend="KEEPALIVE"><parameter>keepalive</parameter></link></para></listitem>
+		<listitem><para><link linkend="KERNELOPLOCKS"><parameter>kernel oplocks</parameter></link></para></listitem>
+		<listitem><para><link linkend="LANMANAUTH"><parameter>lanman auth</parameter></link></para></listitem>
+		<listitem><para><link linkend="LMANNOUNCE"><parameter>lm announce</parameter></link></para></listitem>
+		<listitem><para><link linkend="LMINTERVAL"><parameter>lm interval</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOADPRINTERS"><parameter>load printers</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOCALMASTER"><parameter>local master</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOCKDIR"><parameter>lock dir</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOCKDIRECTORY"><parameter>lock directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOGFILE"><parameter>log file</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOGLEVEL"><parameter>log level</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOGONDRIVE"><parameter>logon drive</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOGONHOME"><parameter>logon home</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOGONPATH"><parameter>logon path</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOGONSCRIPT"><parameter>logon script</parameter></link></para></listitem>
+		<listitem><para><link linkend="LPQCACHETIME"><parameter>lpq cache time</parameter></link></para></listitem>
+		<listitem><para><link linkend="MACHINEPASSWORDTIMEOUT"><parameter>machine password timeout</parameter></link></para></listitem>
+		<listitem><para><link linkend="MANGLEDSTACK"><parameter>mangled stack</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAPTOGUEST"><parameter>map to guest</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXDISKSIZE"><parameter>max disk size</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXLOGSIZE"><parameter>max log size</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXMUX"><parameter>max mux</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXOPENFILES"><parameter>max open files</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXPROTOCOL"><parameter>max protocol</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXSMBDPROCESSES"><parameter>max smbd processes</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXTTL"><parameter>max ttl</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXWINSTTL"><parameter>max wins ttl</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXXMIT"><parameter>max xmit</parameter></link></para></listitem>
+		<listitem><para><link linkend="MESSAGECOMMAND"><parameter>message command</parameter></link></para></listitem>
+		<listitem><para><link linkend="MINPASSWDLENGTH"><parameter>min passwd length</parameter></link></para></listitem>
+		<listitem><para><link linkend="MINPASSWORDLENGTH"><parameter>min password length</parameter></link></para></listitem>
+		<listitem><para><link linkend="MINPROTOCOL"><parameter>min protocol</parameter></link></para></listitem>
+		<listitem><para><link linkend="MINWINSTTL"><parameter>min wins ttl</parameter></link></para></listitem>
+		<listitem><para><link linkend="NAMERESOLVEORDER"><parameter>name resolve order</parameter></link></para></listitem>
+		<listitem><para><link linkend="NETBIOSALIASES"><parameter>netbios aliases</parameter></link></para></listitem>
+		<listitem><para><link linkend="NETBIOSNAME"><parameter>netbios name</parameter></link></para></listitem>
+		<listitem><para><link linkend="NETBIOSSCOPE"><parameter>netbios scope</parameter></link></para></listitem>
+		<listitem><para><link linkend="NISHOMEDIR"><parameter>nis homedir</parameter></link></para></listitem>
+		<listitem><para><link linkend="NTACLSUPPORT"><parameter>nt acl support</parameter></link></para></listitem>
+		<listitem><para><link linkend="NTPIPESUPPORT"><parameter>nt pipe support</parameter></link></para></listitem>
+		<listitem><para><link linkend="NTSMBSUPPORT"><parameter>nt smb support</parameter></link></para></listitem>
+		<listitem><para><link linkend="NULLPASSWORDS"><parameter>null passwords</parameter></link></para></listitem>
+		<listitem><para><link linkend="OPLOCKBREAKWAITTIME"><parameter>oplock break wait time</parameter></link></para></listitem>
+		<listitem><para><link linkend="OSLEVEL"><parameter>os level</parameter></link></para></listitem>
+		<listitem><para><link linkend="OS2DRIVERMAP"><parameter>os2 driver map</parameter></link></para></listitem>
+		<listitem><para><link linkend="PANICACTION"><parameter>panic action</parameter></link></para></listitem>
+		<listitem><para><link linkend="PASSWDCHAT"><parameter>passwd chat</parameter></link></para></listitem>
+		<listitem><para><link linkend="PASSWDCHATDEBUG"><parameter>passwd chat debug</parameter></link></para></listitem>
+		<listitem><para><link linkend="PASSWDPROGRAM"><parameter>passwd program</parameter></link></para></listitem>
+		<listitem><para><link linkend="PASSWORDLEVEL"><parameter>password level</parameter></link></para></listitem>
+		<listitem><para><link linkend="PASSWORDSERVER"><parameter>password server</parameter></link></para></listitem>
+		<listitem><para><link linkend="PREFEREDMASTER"><parameter>prefered master</parameter></link></para></listitem>
+		<listitem><para><link linkend="PREFERREDMASTER"><parameter>preferred master</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRELOAD"><parameter>preload</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTCAP"><parameter>printcap</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTCAPNAME"><parameter>printcap name</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTERDRIVERFILE"><parameter>printer driver file</parameter></link></para></listitem>
+		<listitem><para><link linkend="PROTOCOL"><parameter>protocol</parameter></link></para></listitem>
+		<listitem><para><link linkend="READBMPX"><parameter>read bmpx</parameter></link></para></listitem>
+		<listitem><para><link linkend="READRAW"><parameter>read raw</parameter></link></para></listitem>
+		<listitem><para><link linkend="READSIZE"><parameter>read size</parameter></link></para></listitem>
+		<listitem><para><link linkend="REMOTEANNOUNCE"><parameter>remote announce</parameter></link></para></listitem>
+		<listitem><para><link linkend="REMOTEBROWSESYNC"><parameter>remote browse sync</parameter></link></para></listitem>
+		<listitem><para><link linkend="RESTRICTANONYMOUS"><parameter>restrict anonymous</parameter></link></para></listitem>
+		<listitem><para><link linkend="ROOT"><parameter>root</parameter></link></para></listitem>
+		<listitem><para><link linkend="ROOTDIR"><parameter>root dir</parameter></link></para></listitem>
+		<listitem><para><link linkend="ROOTDIRECTORY"><parameter>root directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="SECURITY"><parameter>security</parameter></link></para></listitem>
+		<listitem><para><link linkend="SERVERSTRING"><parameter>server string</parameter></link></para></listitem>
+		<listitem><para><link linkend="SHOWADDPRINTERWIZARD"><parameter>show add printer wizard</parameter></link></para></listitem>
+		<listitem><para><link linkend="SMBPASSWDFILE"><parameter>smb passwd file</parameter></link></para></listitem>
+		<listitem><para><link linkend="SMBRUN"><parameter>smbrun</parameter></link></para></listitem>
+		<listitem><para><link linkend="SOCKETADDRESS"><parameter>socket address</parameter></link></para></listitem>
+		<listitem><para><link linkend="SOCKETOPTIONS"><parameter>socket options</parameter></link></para></listitem>
+		<listitem><para><link linkend="SOURCEENVIRONMENT"><parameter>source environment</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSL"><parameter>ssl</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLCACERTDIR"><parameter>ssl CA certDir</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLCACERTFILE"><parameter>ssl CA certFile</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLCIPHERS"><parameter>ssl ciphers</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLCLIENTCERT"><parameter>ssl client cert</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLCLIENTKEY"><parameter>ssl client key</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLCOMPATIBILITY"><parameter>ssl compatibility</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLHOSTS"><parameter>ssl hosts</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLHOSTSRESIGN"><parameter>ssl hosts resign</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLREQUIRECLIENTCERT"><parameter>ssl require clientcert</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLREQUIRESERVERCERT"><parameter>ssl require servercert</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLSERVERCERT"><parameter>ssl server cert</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLSERVERKEY"><parameter>ssl server key</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLVERSION"><parameter>ssl version</parameter></link></para></listitem>
+		<listitem><para><link linkend="STATCACHE"><parameter>stat cache</parameter></link></para></listitem>
+		<listitem><para><link linkend="STATCACHESIZE"><parameter>stat cache size</parameter></link></para></listitem>
+		<listitem><para><link linkend="STRIPDOT"><parameter>strip dot</parameter></link></para></listitem>
+		<listitem><para><link linkend="SYSLOG"><parameter>syslog</parameter></link></para></listitem>
+		<listitem><para><link linkend="SYSLOGONLY"><parameter>syslog only</parameter></link></para></listitem>
+		<listitem><para><link linkend="TEMPLATEHOMEDIR"><parameter>template homedir</parameter></link></para></listitem>
+		<listitem><para><link linkend="TEMPLATESHELL"><parameter>template shell</parameter></link></para></listitem>
+		<listitem><para><link linkend="TIMEOFFSET"><parameter>time offset</parameter></link></para></listitem>
+		<listitem><para><link linkend="TIMESERVER"><parameter>time server</parameter></link></para></listitem>
+		<listitem><para><link linkend="TIMESTAMPLOGS"><parameter>timestamp logs</parameter></link></para></listitem>
+		<listitem><para><link linkend="TOTALPRINTJOBS"><parameter>total print jobs</parameter></link></para></listitem>
+		<listitem><para><link linkend="UNIXPASSWORDSYNC"><parameter>unix password sync</parameter></link></para></listitem>
+		<listitem><para><link linkend="UNIXREALNAME"><parameter>unix realname</parameter></link></para></listitem>
+		<listitem><para><link linkend="UPDATEENCRYPTED"><parameter>update encrypted</parameter></link></para></listitem>
+		<listitem><para><link linkend="USERHOSTS"><parameter>use rhosts</parameter></link></para></listitem>
+		<listitem><para><link linkend="USERNAMELEVEL"><parameter>username level</parameter></link></para></listitem>
+		<listitem><para><link linkend="USERNAMEMAP"><parameter>username map</parameter></link></para></listitem>
+		<listitem><para><link linkend="UTMPDIRECTORY"><parameter>utmp directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="VALIDCHARS"><parameter>valid chars</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDCACHETIME"><parameter>winbind cache time</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDGID"><parameter>winbind gid</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDSEPARATOR"><parameter>winbind separator</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDUID"><parameter>winbind uid</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINSHOOK"><parameter>wins hook</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINSPROXY"><parameter>wins proxy</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINSSERVER"><parameter>wins server</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINSSUPPORT"><parameter>wins support</parameter></link></para></listitem>
+		<listitem><para><link linkend="WORKGROUP"><parameter>workgroup</parameter></link></para></listitem>
+		<listitem><para><link linkend="WRITERAW"><parameter>write raw</parameter></link></para></listitem>
 	</itemizedlist>
 
 </refsect1>
@@ -759,124 +757,123 @@
 	each parameter for details. Note that some are synonyms.</para>
 	
 	<itemizedlist>
-		<listitem><para><parameter>admin users</parameter></para></listitem>
-		<listitem><para><parameter>allow hosts</parameter></para></listitem>
-		<listitem><para><parameter>available</parameter></para></listitem>
-		<listitem><para><parameter>blocking locks</parameter></para></listitem>
-		<listitem><para><parameter>browsable</parameter></para></listitem>
-		<listitem><para><parameter>browseable</parameter></para></listitem>
-		<listitem><para><parameter>case sensitive</parameter></para></listitem>
-		<listitem><para><parameter>casesignames</parameter></para></listitem>
-		<listitem><para><parameter>comment</parameter></para></listitem>
-		<listitem><para><parameter>copy</parameter></para></listitem>
-		<listitem><para><parameter>create mask</parameter></para></listitem>
-		<listitem><para><parameter>create mode</parameter></para></listitem>
-		<listitem><para><parameter>default case</parameter></para></listitem>
-		<listitem><para><parameter>delete readonly</parameter></para></listitem>
-		<listitem><para><parameter>delete veto files</parameter></para></listitem>
-		<listitem><para><parameter>deny hosts</parameter></para></listitem>
-		<listitem><para><parameter>directory</parameter></para></listitem>
-		<listitem><para><parameter>directory mask</parameter></para></listitem>
-		<listitem><para><parameter>directory mode</parameter></para></listitem>
-		<listitem><para><parameter>directory security mask</parameter></para></listitem>
-		<listitem><para><parameter>dont descend</parameter></para></listitem>
-		<listitem><para><parameter>dos filemode</parameter></para></listitem>
-		<listitem><para><parameter>dos filetime resolution</parameter></para></listitem>
-		<listitem><para><parameter>dos filetimes</parameter></para></listitem>
-		<listitem><para><parameter>exec</parameter></para></listitem>
-		<listitem><para><parameter>fake directory create times</parameter></para></listitem>
-		<listitem><para><parameter>fake oplocks</parameter></para></listitem>
-		<listitem><para><parameter>follow symlinks</parameter></para></listitem>
-		<listitem><para><parameter>force create mode</parameter></para></listitem>
-		<listitem><para><parameter>force directory mode</parameter></para></listitem>
-		<listitem><para><parameter>force directory security mode</parameter></para></listitem>
-		<listitem><para><parameter>force group</parameter></para></listitem>
-		<listitem><para><parameter>force security mode</parameter></para></listitem>
-		<listitem><para><parameter>force user</parameter></para></listitem>
-		<listitem><para><parameter>fstype</parameter></para></listitem>
-		<listitem><para><parameter>group</parameter></para></listitem>
-		<listitem><para><parameter>guest account</parameter></para></listitem>
-		<listitem><para><parameter>guest ok</parameter></para></listitem>
-		<listitem><para><parameter>guest only</parameter></para></listitem>
-		<listitem><para><parameter>hide dot files</parameter></para></listitem>
-		<listitem><para><parameter>hide files</parameter></para></listitem>
-		<listitem><para><parameter>hosts allow</parameter></para></listitem>
-		<listitem><para><parameter>hosts deny</parameter></para></listitem>
-		<listitem><para><parameter>include</parameter></para></listitem>
-		<listitem><para><parameter>inherit permissions</parameter></para></listitem>
-		<listitem><para><parameter>invalid users</parameter></para></listitem>
-		<listitem><para><parameter>level2 oplocks</parameter></para></listitem>
-		<listitem><para><parameter>locking</parameter></para></listitem>
-		<listitem><para><parameter>lppause command</parameter></para></listitem>
-		<listitem><para><parameter>lpq command</parameter></para></listitem>
-		<listitem><para><parameter>lpresume command</parameter></para></listitem>
-		<listitem><para><parameter>lprm command</parameter></para></listitem>
-		<listitem><para><parameter>magic output</parameter></para></listitem>
-		<listitem><para><parameter>magic script</parameter></para></listitem>
-		<listitem><para><parameter>mangle case</parameter></para></listitem>
-		<listitem><para><parameter>mangle locks</parameter></para></listitem>
-		<listitem><para><parameter>mangled map</parameter></para></listitem>
-		<listitem><para><parameter>mangled names</parameter></para></listitem>
-		<listitem><para><parameter>mangling char</parameter></para></listitem>
-		<listitem><para><parameter>map archive</parameter></para></listitem>
-		<listitem><para><parameter>map hidden</parameter></para></listitem>
-		<listitem><para><parameter>map system</parameter></para></listitem>
-		<listitem><para><parameter>max connections</parameter></para></listitem>
-		<listitem><para><parameter>max print jobs</parameter></para></listitem>
-		<listitem><para><parameter>min print space</parameter></para></listitem>
-		<listitem><para><parameter>msdfs root</parameter></para></listitem>
-		<listitem><para><parameter>only guest</parameter></para></listitem>
-		<listitem><para><parameter>only user</parameter></para></listitem>
-		<listitem><para><parameter>oplock contention limit</parameter></para></listitem>
-		<listitem><para><parameter>oplocks</parameter></para></listitem>
-		<listitem><para><parameter>path</parameter></para></listitem>
-		<listitem><para><parameter>posix locking</parameter></para></listitem>
-		<listitem><para><parameter>postexec</parameter></para></listitem>
-		<listitem><para><parameter>postscript</parameter></para></listitem>
-		<listitem><para><parameter>preexec</parameter></para></listitem>
-		<listitem><para><parameter>preexec close</parameter></para></listitem>
-		<listitem><para><parameter>preserve case</parameter></para></listitem>
-		<listitem><para><parameter>print command</parameter></para></listitem>
-		<listitem><para><parameter>print ok</parameter></para></listitem>
-		<listitem><para><parameter>printable</parameter></para></listitem>
-		<listitem><para><parameter>printer</parameter></para></listitem>
-		<listitem><para><parameter>printer admin</parameter></para></listitem>		
-		<listitem><para><parameter>printer driver</parameter></para></listitem>
-		<listitem><para><parameter>printer driver location</parameter></para></listitem>
-		<listitem><para><parameter>printer name</parameter></para></listitem>
-		<listitem><para><parameter>printing</parameter></para></listitem>
-		<listitem><para><parameter>public</parameter></para></listitem>
-		<listitem><para><parameter>queuepause command</parameter></para></listitem>
-		<listitem><para><parameter>queueresume command</parameter></para></listitem>
-		<listitem><para><parameter>read list</parameter></para></listitem>
-		<listitem><para><parameter>read only</parameter></para></listitem>
-		<listitem><para><parameter>root postexec</parameter></para></listitem>
-		<listitem><para><parameter>root preexec</parameter></para></listitem>
-		<listitem><para><parameter>root preexec close</parameter></para></listitem>
-		<listitem><para><parameter>security mask</parameter></para></listitem>
-		<listitem><para><parameter>set directory</parameter></para></listitem>
-		<listitem><para><parameter>share modes</parameter></para></listitem>
-		<listitem><para><parameter>short preserve case</parameter></para></listitem>
-		<listitem><para><parameter>status</parameter></para></listitem>
-		<listitem><para><parameter>strict locking</parameter></para></listitem>
-		<listitem><para><parameter>strict sync</parameter></para></listitem>
-		<listitem><para><parameter>sync always</parameter></para></listitem>
-		<listitem><para><parameter>user</parameter></para></listitem>
-		<listitem><para><parameter>username</parameter></para></listitem>
-		<listitem><para><parameter>users</parameter></para></listitem>
-		<listitem><para><parameter>utmp</parameter></para></listitem>
-		<listitem><para><parameter>valid users</parameter></para></listitem>
-		<listitem><para><parameter>veto files</parameter></para></listitem>
-		<listitem><para><parameter>veto oplock files</parameter></para></listitem>
-		<listitem><para><parameter>vfs object</parameter></para></listitem>
-		<listitem><para><parameter>vfs options</parameter></para></listitem>
-		<listitem><para><parameter>volume</parameter></para></listitem>
-		<listitem><para><parameter>wide links</parameter></para></listitem>
-		<listitem><para><parameter>writable</parameter></para></listitem>
-		<listitem><para><parameter>write cache size</parameter></para></listitem>
-		<listitem><para><parameter>write list</parameter></para></listitem>
-		<listitem><para><parameter>write ok</parameter></para></listitem>
-		<listitem><para><parameter>writeable</parameter></para></listitem>
+		<listitem><para><link linkend="ADMINUSERS"><parameter>admin users</parameter></link></para></listitem>
+		<listitem><para><link linkend="ALLOWHOSTS"><parameter>allow hosts</parameter></link></para></listitem>
+		<listitem><para><link linkend="AVAILABLE"><parameter>available</parameter></link></para></listitem>
+		<listitem><para><link linkend="BLOCKINGLOCKS"><parameter>blocking locks</parameter></link></para></listitem>
+		<listitem><para><link linkend="BROWSABLE"><parameter>browsable</parameter></link></para></listitem>
+		<listitem><para><link linkend="BROWSEABLE"><parameter>browseable</parameter></link></para></listitem>
+		<listitem><para><link linkend="CASESENSITIVE"><parameter>case sensitive</parameter></link></para></listitem>
+		<listitem><para><link linkend="CASESIGNAMES"><parameter>casesignames</parameter></link></para></listitem>
+		<listitem><para><link linkend="COMMENT"><parameter>comment</parameter></link></para></listitem>
+		<listitem><para><link linkend="COPY"><parameter>copy</parameter></link></para></listitem>
+		<listitem><para><link linkend="CREATEMASK"><parameter>create mask</parameter></link></para></listitem>
+		<listitem><para><link linkend="CREATEMODE"><parameter>create mode</parameter></link></para></listitem>
+		<listitem><para><link linkend="DEFAULTCASE"><parameter>default case</parameter></link></para></listitem>
+		<listitem><para><link linkend="DELETEREADONLY"><parameter>delete readonly</parameter></link></para></listitem>
+		<listitem><para><link linkend="DELETEVETOFILES"><parameter>delete veto files</parameter></link></para></listitem>
+		<listitem><para><link linkend="DENYHOSTS"><parameter>deny hosts</parameter></link></para></listitem>
+		<listitem><para><link linkend="DIRECTORY"><parameter>directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="DIRECTORYMASK"><parameter>directory mask</parameter></link></para></listitem>
+		<listitem><para><link linkend="DIRECTORYMODE"><parameter>directory mode</parameter></link></para></listitem>
+		<listitem><para><link linkend="DIRECTORYSECURITYMASK"><parameter>directory security mask</parameter></link></para></listitem>
+		<listitem><para><link linkend="DONTDESCEND"><parameter>dont descend</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOSFILEMODE"><parameter>dos filemode</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOSFILETIMERESOLUTION"><parameter>dos filetime resolution</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOSFILETIMES"><parameter>dos filetimes</parameter></link></para></listitem>
+		<listitem><para><link linkend="EXEC"><parameter>exec</parameter></link></para></listitem>
+		<listitem><para><link linkend="FAKEDIRECTORYCREATETIMES"><parameter>fake directory create times</parameter></link></para></listitem>
+		<listitem><para><link linkend="FAKEOPLOCKS"><parameter>fake oplocks</parameter></link></para></listitem>
+		<listitem><para><link linkend="FOLLOWSYMLINKS"><parameter>follow symlinks</parameter></link></para></listitem>
+		<listitem><para><link linkend="FORCECREATEMODE"><parameter>force create mode</parameter></link></para></listitem>
+		<listitem><para><link linkend="FORCEDIRECTORYMODE"><parameter>force directory mode</parameter></link></para></listitem>
+		<listitem><para><link linkend="FORCEDIRECTORYSECURITYMODE"><parameter>force directory security mode</parameter></link></para></listitem>
+		<listitem><para><link linkend="FORCEGROUP"><parameter>force group</parameter></link></para></listitem>
+		<listitem><para><link linkend="FORCESECURITYMODE"><parameter>force security mode</parameter></link></para></listitem>
+		<listitem><para><link linkend="FORCEUSER"><parameter>force user</parameter></link></para></listitem>
+		<listitem><para><link linkend="FSTYPE"><parameter>fstype</parameter></link></para></listitem>
+		<listitem><para><link linkend="GROUP"><parameter>group</parameter></link></para></listitem>
+		<listitem><para><link linkend="GUESTACCOUNT"><parameter>guest account</parameter></link></para></listitem>
+		<listitem><para><link linkend="GUESTOK"><parameter>guest ok</parameter></link></para></listitem>
+		<listitem><para><link linkend="GUESTONLY"><parameter>guest only</parameter></link></para></listitem>
+		<listitem><para><link linkend="HIDEDOTFILES"><parameter>hide dot files</parameter></link></para></listitem>
+		<listitem><para><link linkend="HIDEFILES"><parameter>hide files</parameter></link></para></listitem>
+		<listitem><para><link linkend="HOSTSALLOW"><parameter>hosts allow</parameter></link></para></listitem>
+		<listitem><para><link linkend="HOSTSDENY"><parameter>hosts deny</parameter></link></para></listitem>
+		<listitem><para><link linkend="INCLUDE"><parameter>include</parameter></link></para></listitem>
+		<listitem><para><link linkend="INHERITPERMISSIONS"><parameter>inherit permissions</parameter></link></para></listitem>
+		<listitem><para><link linkend="INVALIDUSERS"><parameter>invalid users</parameter></link></para></listitem>
+		<listitem><para><link linkend="LEVEL2OPLOCKS"><parameter>level2 oplocks</parameter></link></para></listitem>
+		<listitem><para><link linkend="LOCKING"><parameter>locking</parameter></link></para></listitem>
+		<listitem><para><link linkend="LPPAUSECOMMAND"><parameter>lppause command</parameter></link></para></listitem>
+		<listitem><para><link linkend="LPQCOMMAND"><parameter>lpq command</parameter></link></para></listitem>
+		<listitem><para><link linkend="LPRESUMECOMMAND"><parameter>lpresume command</parameter></link></para></listitem>
+		<listitem><para><link linkend="LPRMCOMMAND"><parameter>lprm command</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAGICOUTPUT"><parameter>magic output</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAGICSCRIPT"><parameter>magic script</parameter></link></para></listitem>
+		<listitem><para><link linkend="MANGLECASE"><parameter>mangle case</parameter></link></para></listitem>
+		<listitem><para><link linkend="MANGLEDMAP"><parameter>mangled map</parameter></link></para></listitem>
+		<listitem><para><link linkend="MANGLEDNAMES"><parameter>mangled names</parameter></link></para></listitem>
+		<listitem><para><link linkend="MANGLINGCHAR"><parameter>mangling char</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAPARCHIVE"><parameter>map archive</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAPHIDDEN"><parameter>map hidden</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAPSYSTEM"><parameter>map system</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXCONNECTIONS"><parameter>max connections</parameter></link></para></listitem>
+		<listitem><para><link linkend="MAXPRINTJOBS"><parameter>max print jobs</parameter></link></para></listitem>
+		<listitem><para><link linkend="MINPRINTSPACE"><parameter>min print space</parameter></link></para></listitem>
+		<listitem><para><link linkend="MSDFSROOT"><parameter>msdfs root</parameter></link></para></listitem>
+		<listitem><para><link linkend="ONLYGUEST"><parameter>only guest</parameter></link></para></listitem>
+		<listitem><para><link linkend="ONLYUSER"><parameter>only user</parameter></link></para></listitem>
+		<listitem><para><link linkend="OPLOCKCONTENTIONLIMIT"><parameter>oplock contention limit</parameter></link></para></listitem>
+		<listitem><para><link linkend="OPLOCKS"><parameter>oplocks</parameter></link></para></listitem>
+		<listitem><para><link linkend="PATH"><parameter>path</parameter></link></para></listitem>
+		<listitem><para><link linkend="POSIXLOCKING"><parameter>posix locking</parameter></link></para></listitem>
+		<listitem><para><link linkend="POSTEXEC"><parameter>postexec</parameter></link></para></listitem>
+		<listitem><para><link linkend="POSTSCRIPT"><parameter>postscript</parameter></link></para></listitem>
+		<listitem><para><link linkend="PREEXEC"><parameter>preexec</parameter></link></para></listitem>
+		<listitem><para><link linkend="PREEXECCLOSE"><parameter>preexec close</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRESERVECASE"><parameter>preserve case</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTCOMMAND"><parameter>print command</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTOK"><parameter>print ok</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTABLE"><parameter>printable</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTER"><parameter>printer</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTERADMIN"><parameter>printer admin</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTERDRIVER"><parameter>printer driver</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTERDRIVERLOCATION"><parameter>printer driver location</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTERNAME"><parameter>printer name</parameter></link></para></listitem>
+		<listitem><para><link linkend="PRINTING"><parameter>printing</parameter></link></para></listitem>
+		<listitem><para><link linkend="PUBLIC"><parameter>public</parameter></link></para></listitem>
+		<listitem><para><link linkend="QUEUEPAUSECOMMAND"><parameter>queuepause command</parameter></link></para></listitem>
+		<listitem><para><link linkend="QUEUERESUMECOMMAND"><parameter>queueresume command</parameter></link></para></listitem>
+		<listitem><para><link linkend="READLIST"><parameter>read list</parameter></link></para></listitem>
+		<listitem><para><link linkend="READONLY"><parameter>read only</parameter></link></para></listitem>
+		<listitem><para><link linkend="ROOTPOSTEXEC"><parameter>root postexec</parameter></link></para></listitem>
+		<listitem><para><link linkend="ROOTPREEXEC"><parameter>root preexec</parameter></link></para></listitem>
+		<listitem><para><link linkend="ROOTPREEXECCLOSE"><parameter>root preexec close</parameter></link></para></listitem>
+		<listitem><para><link linkend="SECURITYMASK"><parameter>security mask</parameter></link></para></listitem>
+		<listitem><para><link linkend="SETDIRECTORY"><parameter>set directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="SHAREMODES"><parameter>share modes</parameter></link></para></listitem>
+		<listitem><para><link linkend="SHORTPRESERVECASE"><parameter>short preserve case</parameter></link></para></listitem>
+		<listitem><para><link linkend="STATUS"><parameter>status</parameter></link></para></listitem>
+		<listitem><para><link linkend="STRICTLOCKING"><parameter>strict locking</parameter></link></para></listitem>
+		<listitem><para><link linkend="STRICTSYNC"><parameter>strict sync</parameter></link></para></listitem>
+		<listitem><para><link linkend="SYNCALWAYS"><parameter>sync always</parameter></link></para></listitem>
+		<listitem><para><link linkend="USER"><parameter>user</parameter></link></para></listitem>
+		<listitem><para><link linkend="USERNAME"><parameter>username</parameter></link></para></listitem>
+		<listitem><para><link linkend="USERS"><parameter>users</parameter></link></para></listitem>
+		<listitem><para><link linkend="UTMP"><parameter>utmp</parameter></link></para></listitem>
+		<listitem><para><link linkend="VALIDUSERS"><parameter>valid users</parameter></link></para></listitem>
+		<listitem><para><link linkend="VETOFILES"><parameter>veto files</parameter></link></para></listitem>
+		<listitem><para><link linkend="VETOOPLOCKFILES"><parameter>veto oplock files</parameter></link></para></listitem>
+		<listitem><para><link linkend="VFSOBJECT"><parameter>vfs object</parameter></link></para></listitem>
+		<listitem><para><link linkend="VFSOPTIONS"><parameter>vfs options</parameter></link></para></listitem>
+		<listitem><para><link linkend="VOLUME"><parameter>volume</parameter></link></para></listitem>
+		<listitem><para><link linkend="WIDELINKS"><parameter>wide links</parameter></link></para></listitem>
+		<listitem><para><link linkend="WRITABLE"><parameter>writable</parameter></link></para></listitem>
+		<listitem><para><link linkend="WRITECACHESIZE"><parameter>write cache size</parameter></link></para></listitem>
+		<listitem><para><link linkend="WRITELIST"><parameter>write list</parameter></link></para></listitem>
+		<listitem><para><link linkend="WRITEOK"><parameter>write ok</parameter></link></para></listitem>
+		<listitem><para><link linkend="WRITEABLE"><parameter>writeable</parameter></link></para></listitem>
 	</itemizedlist>
 
 </refsect1>
@@ -1071,7 +1068,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="ANNOUCEVERSION">annouce version (G)</term>
+		<term><anchor id="ANNOUNCEVERSION">annouce version (G)</term>
 		<listitem><para>This specifies the major and minor version numbers 
 		that nmbd will use when announcing itself as a server. The default 
 		is 4.2.  Do not change this parameter unless you have a specific 
