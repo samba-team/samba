@@ -688,16 +688,14 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		
 		pstrcpy(my_name, global_myname());
 
-		/*
-		 * This is the point at which we get the group
-		 * database - we should be getting the gid_t list
-		 * from /etc/group and then turning the uids into
-		 * rids and then into machine sids for this user.
-		 * JRA.
-		 */
-
-  		gids = NULL;
-		get_domain_user_groups(p->mem_ctx, &num_gids, &gids, server_info->sam_account);
+		if (!NT_STATUS_IS_OK(status 
+				     = nt_token_to_group_list(p->mem_ctx, 
+							      &domain_sid, 
+							      server_info->ptok, 
+							      &num_gids, 
+							      &gids))) {
+			return status;
+		}
 
 		init_net_user_info3(p->mem_ctx, usr_info, 
 				    user_rid,
