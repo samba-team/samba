@@ -55,6 +55,18 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_UN_H
+#include <sys/un.h>
+#endif
 #include <fnmatch.h>
 #include "admin.h"
 #include "kadm5_err.h"
@@ -99,6 +111,8 @@ typedef struct kadm5_log_context {
     char *log_file;
     int log_fd;
     u_int32_t version;
+    struct sockaddr_un socket_name;
+    int socket_fd;
 } kadm5_log_context;
 
 typedef struct kadm5_server_context {
@@ -262,5 +276,7 @@ kadm5_log_replay (kadm5_server_context *context,
 		  u_int32_t ver,
 		  u_int32_t len,
 		  krb5_storage *sp);
+
+#define KADM5_LOG_SIGNAL HDB_DB_DIR "/signal"
 
 #endif /* __KADM5_LOCL_H__ */
