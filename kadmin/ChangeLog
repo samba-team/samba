@@ -1,3 +1,7 @@
+2004-06-15  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmin.c (main): keytab mode requires principal name
+	
 2004-06-12  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kadmind.c: drop keyfile, not used, found by
