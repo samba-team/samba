@@ -383,32 +383,32 @@ static PyMethodDef lsa_methods[] = {
 
 	{ "setup_logging", (PyCFunction)py_setup_logging, 
 	  METH_VARARGS | METH_KEYWORDS, 
-	  "Set up debug logging.
-
-Initialises Samba's debug logging system.  One argument is expected which
-is a boolean specifying whether debugging is interactive and sent to stdout
-or logged to a file.
-
-Example:
-
->>> spoolss.setup_logging(interactive = 1)" },
+	  "Set up debug logging.\n"
+"\n"
+"Initialises Samba's debug logging system.  One argument is expected which\n"
+"is a boolean specifying whether debugging is interactive and sent to stdout\n"
+"or logged to a file.\n"
+"\n"
+"Example:\n"
+"\n"
+">>> spoolss.setup_logging(interactive = 1)" },
 
 	{ "get_debuglevel", (PyCFunction)get_debuglevel, 
 	  METH_VARARGS, 
-	  "Set the current debug level.
-
-Example:
-
->>> spoolss.get_debuglevel()
-0" },
+	  "Set the current debug level.\n"
+"\n"
+"Example:\n"
+"\n"
+">>> spoolss.get_debuglevel()\n"
+"0" },
 
 	{ "set_debuglevel", (PyCFunction)set_debuglevel, 
 	  METH_VARARGS, 
-	  "Get the current debug level.
-
-Example:
-
->>> spoolss.set_debuglevel(10)" },
+	  "Get the current debug level.\n"
+"\n"
+"Example:\n"
+"\n"
+">>> spoolss.set_debuglevel(10)" },
 
 	{ NULL }
 };
