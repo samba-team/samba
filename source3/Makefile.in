@@ -631,7 +631,7 @@ bin/rpcclient: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/samsync: $(SAMSYNC_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SAMSYNC_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMSYNC_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/smbclient: $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
