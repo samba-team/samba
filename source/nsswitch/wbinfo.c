@@ -43,8 +43,8 @@ static BOOL wbinfo_list_domains(void)
 
 	/* Send request */
 
-	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -80,8 +80,8 @@ static BOOL wbinfo_uid_to_sid(uid_t uid)
 	/* Send request */
 
 	request.data.uid = uid;
-	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -105,8 +105,8 @@ static BOOL wbinfo_gid_to_sid(gid_t gid)
 	/* Send request */
 
 	request.data.gid = gid;
-	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -130,8 +130,8 @@ static BOOL wbinfo_sid_to_uid(char *sid)
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
-	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -153,8 +153,8 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
-	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -178,8 +178,8 @@ static BOOL wbinfo_lookupsid(char *sid)
 	/* Send off request */
 
 	fstrcpy(request.data.sid, sid);
-	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -203,8 +203,8 @@ static BOOL wbinfo_lookupname(char *name)
 	ZERO_STRUCT(response);
 
 	fstrcpy(request.data.name, name);
-	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
@@ -217,7 +217,7 @@ static BOOL wbinfo_lookupname(char *name)
 
 /* Print domain users */
 
-static BOOL print_domain_users(void)
+static BOOL wbinfo_list_users(void)
 {
 	struct winbindd_response response;
 	fstring name;
@@ -226,15 +226,15 @@ static BOOL print_domain_users(void)
 
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
 	/* Look through extra data */
 
 	if (!response.extra_data) {
-		return False;
+		return True;
 	}
 
 	while(next_token((char **)&response.extra_data, name, ",", 
@@ -247,22 +247,22 @@ static BOOL print_domain_users(void)
 
 /* Print domain groups */
 
-static BOOL print_domain_groups(void)
+static BOOL wbinfo_list_groups(void)
 {
 	struct winbindd_response response;
 	fstring name;
 
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) ==
-	    WINBINDD_ERROR) {
+	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) !=
+	    NSS_STATUS_SUCCESS) {
 		return False;
 	}
 
 	/* Look through extra data */
 
 	if (!response.extra_data) {
-		return False;
+		return True;
 	}
 
 	while(next_token((char **)&response.extra_data, name, ",", 
@@ -330,13 +330,13 @@ int main(int argc, char **argv)
 	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tm")) != EOF) {
 		switch (opt) {
 		case 'u':
-			if (!print_domain_users()) {
+			if (!wbinfo_list_users()) {
 				printf("Error looking up domain users\n");
 				return 1;
 			}
 			break;
 		case 'g':
-			if (!print_domain_groups()) {
+			if (!wbinfo_list_groups()) {
 				printf("Error looking up domain groups\n");
 				return 1;
 			}
