@@ -754,6 +754,7 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 		strupper(p);
 		p = skip_string(p,1);
 		pstrcpy(p,user_domain);
+		strupper(p);
 		p = skip_string(p,1);
 		pstrcpy(p,"Unix");p = skip_string(p,1);
 		CVAL(p, 0) = 0; p++;
@@ -2851,6 +2852,16 @@ BOOL cli_establish_connection(struct cli_state *cli,
 			return False;
 		}
 
+		DEBUG(1,("session setup ok\n"));
+
+		if (*cli->server_domain || *cli->server_os || *cli->server_type)
+		{
+			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
+			     cli->server_domain,
+		             cli->server_os,
+		             cli->server_type));
+		}
+	
 		if (do_tcon)
 		{
 			if (!cli_send_tconX(cli, service, service_type,

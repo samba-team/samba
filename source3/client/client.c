@@ -1622,13 +1622,20 @@ return a connection to a server
 *******************************************************/
 struct cli_state *do_connect(char *server, char *share, int smb_port)
 {
-	struct cli_state *c;
-	struct nmb_name called, calling;
+	struct cli_state *smb_cli;
+	struct nmb_name called, calling, stupid_smbserver_called;
 	char *server_n;
 	struct in_addr ip;
 	extern struct in_addr ipzero;
 
-	if (*share == '\\') {
+	if ((smb_cli=cli_initialise(NULL)) == NULL)
+	{
+		DEBUG(1,("cli_initialise failed\n"));
+		return NULL;
+	}
+
+	if (*share == '\\')
+	{
 		server = share+2;
 		share = strchr(server,'\\');
 		if (!share) return NULL;
@@ -1642,78 +1649,52 @@ struct cli_state *do_connect(char *server, char *share, int smb_port)
 
 	make_nmb_name(&calling, global_myname, 0x0, "");
 	make_nmb_name(&called , server, name_type, "");
+	make_nmb_name(&stupid_smbserver_called , "*SMBSERVER", 0x20, scope);
 
-	if (smb_port == 0)
-	  smb_port = 139;   /* If not set, set to 139, FIXME, NUMBERS BAD */
+	fstrcpy(smb_cli->user_name, username);
+	fstrcpy(smb_cli->domain, workgroup);
 
- again:
 	ip = ipzero;
 	if (have_ip) ip = dest_ip;
 
-	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, smb_port) == 0) ||
-            !cli_connect(c, server_n, &ip)) {
-		DEBUG(0,("Connection to %s failed\n", server_n));
+	if (cli_set_port(smb_cli, smb_port) == 0)
+	{
 		return NULL;
 	}
 
-	if (!cli_session_request(c, &calling, &called)) {
-		DEBUG(0,("session request to %s failed\n", called.name));
-		cli_shutdown(c);
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20, "");
-			goto again;
+	/* set the password cache info */
+	if (got_pass)
+	{
+		if (password[0] == 0)
+		{
+			pwd_set_nullpwd(&(smb_cli->pwd));
 		}
-		return NULL;
-	}
-
-	DEBUG(4,(" session request ok\n"));
-
-	if (!cli_negprot(c)) {
-		DEBUG(0,("protocol negotiation failed\n"));
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	if (!got_pass) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			pstrcpy(password, pass);
+		else
+		{
+			/* generate 16 byte hashes */
+			pwd_make_lm_nt_16(&(smb_cli->pwd), password);
 		}
 	}
-
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       workgroup)) {
-		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
-		return NULL;
+	else 
+	{
+		pwd_read(&(smb_cli->pwd), "Password:", True);
 	}
 
-	/*
-	 * These next two lines are needed to emulate
-	 * old client behaviour for people who have
-	 * scripts based on client output.
-	 * QUESTION ? Do we want to have a 'client compatibility
-	 * mode to turn these on/off ? JRA.
-	 */
+	/* paranoia: destroy the local copy of the password */
+	bzero(password, sizeof(password)); 
 
-	if (*c->server_domain || *c->server_os || *c->server_type)
-		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			c->server_domain,c->server_os,c->server_type));
-	
-	DEBUG(4,(" session setup ok\n"));
+	smb_cli->use_ntlmv2 = lp_client_ntlmv2();
 
-	if (!cli_send_tconX(c, share, "?????",
-			    password, strlen(password)+1)) {
-		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
-		cli_shutdown(c);
+	if (!cli_establish_connection(smb_cli, server, &ip, &calling, &called,
+	                              share, "?????", False, True) &&
+	    !cli_establish_connection(smb_cli, server, &ip,
+	                              &calling, &stupid_smbserver_called,
+	                              share, "?????", False, True))
+	{
 		return NULL;
 	}
-
-	DEBUG(4,(" tconx ok\n"));
-
-	return c;
+		
+	return smb_cli;
 }
 
 
