@@ -141,6 +141,15 @@ BOOL cli_session_setup(struct cli_state *cli,
 	}
 	else
 	{
+		uint32 capabilities;
+
+		capabilities = CAP_NT_SMBS;
+		if (cli->use_level_II_oplocks) 
+			capabilities |= CAP_LEVEL_II_OPLOCKS;
+		if (getenv("USE_UNICODE") && 
+		    (cli->capabilities & CAP_UNICODE)) {
+			capabilities |= CAP_UNICODE;
+		}
 		set_message(cli->outbuf,13,0,True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
 		cli_setup_packet(cli);
@@ -152,7 +161,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
-		SSVAL(cli->outbuf,smb_vwv11,CAP_NT_SMBS|(cli->use_level_II_oplocks ? CAP_LEVEL_II_OPLOCKS : 0));
+		SIVAL(cli->outbuf,smb_vwv11,capabilities);
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
