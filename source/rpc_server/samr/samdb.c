@@ -120,6 +120,8 @@ int samdb_search_v(void *ctx,
 
 	count = ldb_search(sam_ctx->ldb, basedn, LDB_SCOPE_SUBTREE, expr, attrs, res);
 
+	DEBUG(4,("samdb_search_v: %s %s -> %d\n", basedn?basedn:"NULL", expr, count));
+
 	free(expr);
 
 	return count;
