@@ -707,7 +707,7 @@ NTSTATUS nt_status_string_to_code(char *nt_status_str)
         int idx = 0;
 
 	while (nt_errs[idx].nt_errstr != NULL) {
-		if (strcmp(nt_errs[idx].nt_errstr, nt_status_str) == 0) {
+		if (strcasecmp(nt_errs[idx].nt_errstr, nt_status_str) == 0) {
                         return nt_errs[idx].nt_errcode;
 		}
 		idx++;
