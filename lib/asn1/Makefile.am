@@ -126,6 +126,8 @@ CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) $(foo) asn1_files
 
 include__DATA = asn1.h asn1_err.h
 
+include_HEADERS = der.h
+
 lex.lo: parse.h
 
 $(foo) asn1.h: asn1_files
