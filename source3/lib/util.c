@@ -3139,7 +3139,15 @@ BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
 
 	DEBUG(10, ("reg_split_key: hive %s\n", tmp));
 
-	if (strequal(tmp, "HKLM") || strequal(tmp, "HKEY_LOCAL_MACHINE"))
+	if (strequal(tmp, "HKCR") || strequal(tmp, "HKEY_CLASSES_ROOT"))
+	{
+		(*reg_type) = HKEY_CLASSES_ROOT;
+	}
+	else if (strequal(tmp, "HKCU") || strequal(tmp, "HKEY_CURRENT_USER"))
+	{
+		(*reg_type) = HKEY_CURRENT_USER;
+	}
+	else if (strequal(tmp, "HKLM") || strequal(tmp, "HKEY_LOCAL_MACHINE"))
 	{
 		(*reg_type) = HKEY_LOCAL_MACHINE;
 	}

@@ -59,6 +59,14 @@ BOOL do_reg_connect(struct cli_state *cli, uint16 fnum, char *full_keyname, char
 
 	switch (reg_type)
 	{
+		case HKEY_CLASSES_ROOT:
+		{
+			res = res ? do_reg_open_hkcr(cli, fnum,
+					0x5428, 0x02000000,
+					reg_hnd) : False;
+			break;
+		}
+	
 		case HKEY_LOCAL_MACHINE:
 		{
 			res = res ? do_reg_open_hklm(cli, fnum,
@@ -82,6 +90,63 @@ BOOL do_reg_connect(struct cli_state *cli, uint16 fnum, char *full_keyname, char
 	}
 
 	return res;
+}
+
+/****************************************************************************
+do a REG Open Policy
+****************************************************************************/
+BOOL do_reg_open_hkcr(struct cli_state *cli, uint16 fnum, uint16 unknown_0, uint32 level,
+				POLICY_HND *hnd)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_OPEN_HKCR q_o;
+	BOOL valid_pol = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_OPEN_HKCR */
+
+	DEBUG(4,("REG Open HKCR\n"));
+
+	make_reg_q_open_hkcr(&q_o, unknown_0, level);
+
+	/* turn parameters into data stream */
+	reg_io_q_open_hkcr("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, REG_OPEN_HKCR, &buf, &rbuf))
+	{
+		REG_R_OPEN_HKCR r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_open_hkcr("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_OPEN_HKCR: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_pol;
 }
 
 /****************************************************************************
