@@ -153,13 +153,13 @@ static void print_canon_ace_list(const char *name, canon_ace *ace_list)
  Map POSIX ACL perms to canon_ace permissions (a mode_t containing only S_(R|W|X)USR bits).
 ****************************************************************************/
 
-static mode_t convert_permset_to_mode_t(SMB_ACL_PERMSET_T permset)
+static mode_t convert_permset_to_mode_t(connection_struct *conn, SMB_ACL_PERMSET_T permset)
 {
 	mode_t ret = 0;
 
-	ret |= (sys_acl_get_perm(permset, SMB_ACL_READ) ? S_IRUSR : 0);
-	ret |= (sys_acl_get_perm(permset, SMB_ACL_WRITE) ? S_IWUSR : 0);
-	ret |= (sys_acl_get_perm(permset, SMB_ACL_EXECUTE) ? S_IXUSR : 0);
+	ret |= (conn->vfs_ops.sys_acl_get_perm(conn, permset, SMB_ACL_READ) ? S_IRUSR : 0);
+	ret |= (conn->vfs_ops.sys_acl_get_perm(conn, permset, SMB_ACL_WRITE) ? S_IWUSR : 0);
+	ret |= (conn->vfs_ops.sys_acl_get_perm(conn, permset, SMB_ACL_EXECUTE) ? S_IXUSR : 0);
 
 	return ret;
 }
@@ -187,20 +187,20 @@ static mode_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x
  an SMB_ACL_PERMSET_T.
 ****************************************************************************/
 
-static int map_acl_perms_to_permset(mode_t mode, SMB_ACL_PERMSET_T *p_permset)
+static int map_acl_perms_to_permset(connection_struct *conn, mode_t mode, SMB_ACL_PERMSET_T *p_permset)
 {
-	if (sys_acl_clear_perms(*p_permset) ==  -1)
+	if (conn->vfs_ops.sys_acl_clear_perms(conn, *p_permset) ==  -1)
 		return -1;
 	if (mode & S_IRUSR) {
-		if (sys_acl_add_perm(*p_permset, SMB_ACL_READ) == -1)
+		if (conn->vfs_ops.sys_acl_add_perm(conn, *p_permset, SMB_ACL_READ) == -1)
 			return -1;
 	}
 	if (mode & S_IWUSR) {
-		if (sys_acl_add_perm(*p_permset, SMB_ACL_WRITE) == -1)
+		if (conn->vfs_ops.sys_acl_add_perm(conn, *p_permset, SMB_ACL_WRITE) == -1)
 			return -1;
 	}
 	if (mode & S_IXUSR) {
-		if (sys_acl_add_perm(*p_permset, SMB_ACL_EXECUTE) == -1)
+		if (conn->vfs_ops.sys_acl_add_perm(conn, *p_permset, SMB_ACL_EXECUTE) == -1)
 			return -1;
 	}
 	return 0;
@@ -1425,6 +1425,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 									DOM_SID *powner, DOM_SID *pgroup)
 {
 	extern DOM_SID global_sid_World;
+	connection_struct *conn = fsp->conn;
 	mode_t acl_mask = (S_IRUSR|S_IWUSR|S_IXUSR);
 	canon_ace *list_head = NULL;
 	canon_ace *ace = NULL;
@@ -1433,7 +1434,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 	SMB_ACL_ENTRY_T entry;
 	size_t ace_count;
 
-	while ( posix_acl && (sys_acl_get_entry(posix_acl, entry_id, &entry) == 1)) {
+	while ( posix_acl && (conn->vfs_ops.sys_acl_get_entry(conn, posix_acl, entry_id, &entry) == 1)) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 		DOM_SID sid;
@@ -1445,10 +1446,10 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 			entry_id = SMB_ACL_NEXT_ENTRY;
 
 		/* Is this a MASK entry ? */
-		if (sys_acl_get_tag_type(entry, &tagtype) == -1)
+		if (conn->vfs_ops.sys_acl_get_tag_type(conn, entry, &tagtype) == -1)
 			continue;
 
-		if (sys_acl_get_permset(entry, &permset) == -1)
+		if (conn->vfs_ops.sys_acl_get_permset(conn, entry, &permset) == -1)
 			continue;
 
 		/* Decide which SID to use based on the ACL type. */
@@ -1461,7 +1462,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 				break;
 			case SMB_ACL_USER:
 				{
-					uid_t *puid = (uid_t *)sys_acl_get_qualifier(entry);
+					uid_t *puid = (uid_t *)conn->vfs_ops.sys_acl_get_qualifier(conn, entry);
 					if (puid == NULL) {
 						DEBUG(0,("canonicalise_acl: Failed to get uid.\n"));
 						continue;
@@ -1469,7 +1470,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 					uid_to_sid( &sid, *puid);
 					unix_ug.uid = *puid;
 					owner_type = UID_ACE;
-					sys_acl_free_qualifier((void *)puid,tagtype);
+					conn->vfs_ops.sys_acl_free_qualifier(conn, (void *)puid,tagtype);
 					break;
 				}
 			case SMB_ACL_GROUP_OBJ:
@@ -1480,7 +1481,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 				break;
 			case SMB_ACL_GROUP:
 				{
-					gid_t *pgid = (gid_t *)sys_acl_get_qualifier(entry);
+					gid_t *pgid = (gid_t *)conn->vfs_ops.sys_acl_get_qualifier(conn, entry);
 					if (pgid == NULL) {
 						DEBUG(0,("canonicalise_acl: Failed to get gid.\n"));
 						continue;
@@ -1488,11 +1489,11 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 					gid_to_sid( &sid, *pgid);
 					unix_ug.gid = *pgid;
 					owner_type = GID_ACE;
-					sys_acl_free_qualifier((void *)pgid,tagtype);
+					conn->vfs_ops.sys_acl_free_qualifier(conn, (void *)pgid,tagtype);
 					break;
 				}
 			case SMB_ACL_MASK:
-				acl_mask = convert_permset_to_mode_t(permset);
+				acl_mask = convert_permset_to_mode_t(conn, permset);
 				continue; /* Don't count the mask as an entry. */
 			case SMB_ACL_OTHER:
 				/* Use the Everyone SID */
@@ -1514,7 +1515,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 
 		ZERO_STRUCTP(ace);
 		ace->type = tagtype;
-		ace->perms = convert_permset_to_mode_t(permset);
+		ace->perms = convert_permset_to_mode_t(conn, permset);
 		ace->attr = ALLOW_ACE;
 		ace->trustee = sid;
 		ace->unix_ug = unix_ug;
@@ -1571,8 +1572,9 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 
 static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL default_ace, BOOL *pacl_set_support)
 {
+	connection_struct *conn = fsp->conn;
 	BOOL ret = False;
-	SMB_ACL_T the_acl = sys_acl_init((int)count_canon_ace_list(the_ace) + 1);
+	SMB_ACL_T the_acl = conn->vfs_ops.sys_acl_init(conn, (int)count_canon_ace_list(the_ace) + 1);
 	canon_ace *p_ace;
 	int i;
 	SMB_ACL_ENTRY_T mask_entry;
@@ -1601,7 +1603,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		 * Get the entry for this ACE.
 		 */
 
-		if (sys_acl_create_entry( &the_acl, &the_entry) == -1) {
+		if (conn->vfs_ops.sys_acl_create_entry(conn, &the_acl, &the_entry) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to create entry %d. (%s)\n",
 				i, strerror(errno) ));
 			goto done;
@@ -1622,7 +1624,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		 * First tell the entry what type of ACE this is.
 		 */
 
-		if (sys_acl_set_tag_type(the_entry, p_ace->type) == -1) {
+		if (conn->vfs_ops.sys_acl_set_tag_type(conn, the_entry, p_ace->type) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to set tag type on entry %d. (%s)\n",
 				i, strerror(errno) ));
 			goto done;
@@ -1634,7 +1636,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		 */
 
 		if ((p_ace->type == SMB_ACL_USER) || (p_ace->type == SMB_ACL_GROUP)) {
-			if (sys_acl_set_qualifier(the_entry,(void *)&p_ace->unix_ug.uid) == -1) {
+			if (conn->vfs_ops.sys_acl_set_qualifier(conn, the_entry,(void *)&p_ace->unix_ug.uid) == -1) {
 				DEBUG(0,("set_canon_ace_list: Failed to set qualifier on entry %d. (%s)\n",
 					i, strerror(errno) ));
 				goto done;
@@ -1645,13 +1647,13 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		 * Convert the mode_t perms in the canon_ace to a POSIX permset.
 		 */
 
-		if (sys_acl_get_permset(the_entry, &the_permset) == -1) {
+		if (conn->vfs_ops.sys_acl_get_permset(conn, the_entry, &the_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to get permset on entry %d. (%s)\n",
 				i, strerror(errno) ));
 			goto done;
 		}
 
-		if (map_acl_perms_to_permset(p_ace->perms, &the_permset) == -1) {
+		if (map_acl_perms_to_permset(conn, p_ace->perms, &the_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to create permset for mode (%u) on entry %d. (%s)\n",
 				(unsigned int)p_ace->perms, i, strerror(errno) ));
 			goto done;
@@ -1661,7 +1663,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		 * ..and apply them to the entry.
 		 */
 
-		if (sys_acl_set_permset(the_entry, the_permset) == -1) {
+		if (conn->vfs_ops.sys_acl_set_permset(conn, the_entry, the_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to add permset on entry %d. (%s)\n",
 				i, strerror(errno) ));
 			goto done;
@@ -1675,27 +1677,27 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	 * Add in a mask of rwx.
 	 */
 
-	if (sys_acl_create_entry( &the_acl, &mask_entry) == -1) {
+	if (conn->vfs_ops.sys_acl_create_entry( conn, &the_acl, &mask_entry) == -1) {
 		DEBUG(0,("set_canon_ace_list: Failed to create mask entry. (%s)\n", strerror(errno) ));
 		goto done;
 	}
 
-	if (sys_acl_set_tag_type(mask_entry, SMB_ACL_MASK) == -1) {
+	if (conn->vfs_ops.sys_acl_set_tag_type(conn, mask_entry, SMB_ACL_MASK) == -1) {
 		DEBUG(0,("set_canon_ace_list: Failed to set tag type on mask entry. (%s)\n",strerror(errno) ));
 		goto done;
 	}
 
-	if (sys_acl_get_permset(mask_entry, &mask_permset) == -1) {
+	if (conn->vfs_ops.sys_acl_get_permset(conn, mask_entry, &mask_permset) == -1) {
 		DEBUG(0,("set_canon_ace_list: Failed to get mask permset. (%s)\n", strerror(errno) ));
 		goto done;
 	}
 
-	if (map_acl_perms_to_permset(S_IRUSR|S_IWUSR|S_IXUSR, &mask_permset) == -1) {
+	if (map_acl_perms_to_permset(conn, S_IRUSR|S_IWUSR|S_IXUSR, &mask_permset) == -1) {
 		DEBUG(0,("set_canon_ace_list: Failed to create mask permset. (%s)\n", strerror(errno) ));
 		goto done;
 	}
 
-	if (sys_acl_set_permset(mask_entry, mask_permset) == -1) {
+	if (conn->vfs_ops.sys_acl_set_permset(conn, mask_entry, mask_permset) == -1) {
 		DEBUG(0,("set_canon_ace_list: Failed to add mask permset. (%s)\n", strerror(errno) ));
 		goto done;
 	}
@@ -1704,7 +1706,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	 * Check if the ACL is valid.
 	 */
 
-	if (sys_acl_valid(the_acl) == -1) {
+	if (conn->vfs_ops.sys_acl_valid(conn, the_acl) == -1) {
 		DEBUG(0,("set_canon_ace_list: ACL type (%s) is invalid for set (%s).\n",
 				the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
 				strerror(errno) ));
@@ -1716,7 +1718,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	 */
 
 	if(default_ace || fsp->is_directory || fsp->fd == -1) {
-		if (sys_acl_set_file(fsp->fsp_name, the_acl_type, the_acl) == -1) {
+		if (conn->vfs_ops.sys_acl_set_file(conn, fsp->fsp_name, the_acl_type, the_acl) == -1) {
 			/*
 			 * Some systems allow all the above calls and only fail with no ACL support
 			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
@@ -1729,7 +1731,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 			goto done;
 		}
 	} else {
-		if (sys_acl_set_fd(fsp->fd, the_acl) == -1) {
+		if (conn->vfs_ops.sys_acl_set_fd(fsp, fsp->fd, the_acl) == -1) {
 			/*
 			 * Some systems allow all the above calls and only fail with no ACL support
 			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
@@ -1747,7 +1749,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
   done:
 
 	if (the_acl != NULL)
-	    sys_acl_free_acl(the_acl);
+	    conn->vfs_ops.sys_acl_free_acl(conn, the_acl);
 
 	return ret;
 }
@@ -1846,6 +1848,7 @@ static int nt_ace_comp( SEC_ACE *a1, SEC_ACE *a2)
 
 size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
+	connection_struct *conn = fsp->conn;
 	SMB_STRUCT_STAT sbuf;
 	SEC_ACE *nt_ace_list = NULL;
 	DOM_SID owner_sid;
@@ -1874,14 +1877,14 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		 * Get the ACL from the path.
 		 */
 
-		posix_acl = sys_acl_get_file(fsp->fsp_name, SMB_ACL_TYPE_ACCESS);
+		posix_acl = conn->vfs_ops.sys_acl_get_file(conn, fsp->fsp_name, SMB_ACL_TYPE_ACCESS);
 
 		/*
 		 * If it's a directory get the default POSIX ACL.
 		 */
 
 		if(fsp->is_directory)
-			dir_acl = sys_acl_get_file(fsp->fsp_name, SMB_ACL_TYPE_DEFAULT);
+			dir_acl = conn->vfs_ops.sys_acl_get_file(conn, fsp->fsp_name, SMB_ACL_TYPE_DEFAULT);
 
 	} else {
 
@@ -1892,7 +1895,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		/*
 		 * Get the ACL from the fd.
 		 */
-		posix_acl = sys_acl_get_fd(fsp->fd);
+		posix_acl = conn->vfs_ops.sys_acl_get_fd(fsp, fsp->fd);
 	}
 
 	DEBUG(5,("get_nt_acl : file ACL %s, directory ACL %s\n",
@@ -1983,9 +1986,9 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   done:
 
 	if (posix_acl)	
-		sys_acl_free_acl(posix_acl);
+		conn->vfs_ops.sys_acl_free_acl(conn, posix_acl);
 	if (dir_acl)
-		sys_acl_free_acl(dir_acl);
+		conn->vfs_ops.sys_acl_free_acl(conn, dir_acl);
 	free_canon_ace_list(file_ace);
 	free_canon_ace_list(dir_ace);
 	SAFE_FREE(nt_ace_list);
@@ -2138,7 +2141,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 				 * No default ACL - delete one if it exists.
 				 */
 
-				if (sys_acl_delete_def_file(fsp->fsp_name) == -1) {
+				if (conn->vfs_ops.sys_acl_delete_def_file(conn, fsp->fsp_name) == -1) {
 					DEBUG(3,("set_nt_acl: sys_acl_delete_def_file failed (%s)\n", strerror(errno)));
 					free_canon_ace_list(file_ace_list);
 					return False;
@@ -2188,13 +2191,13 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
  and set the mask to rwx. Needed to preserve complex ACLs set by NT.
 ****************************************************************************/
 
-static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
+static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mode_t mode)
 {
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
 	int num_entries = 0;
 
-	while ( sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
+	while ( conn->vfs_ops.sys_acl_get_entry(conn, posix_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 		mode_t perms;
@@ -2203,10 +2206,10 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 		if (entry_id == SMB_ACL_FIRST_ENTRY)
 			entry_id = SMB_ACL_NEXT_ENTRY;
 
-		if (sys_acl_get_tag_type(entry, &tagtype) == -1)
+		if (conn->vfs_ops.sys_acl_get_tag_type(conn, entry, &tagtype) == -1)
 			return -1;
 
-		if (sys_acl_get_permset(entry, &permset) == -1)
+		if (conn->vfs_ops.sys_acl_get_permset(conn, entry, &permset) == -1)
 			return -1;
 
 		num_entries++;
@@ -2228,10 +2231,10 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
 				continue;
 		}
 
-		if (map_acl_perms_to_permset(perms, &permset) == -1)
+		if (map_acl_perms_to_permset(conn, perms, &permset) == -1)
 			return -1;
 
-		if (sys_acl_set_permset(entry, permset) == -1)
+		if (conn->vfs_ops.sys_acl_set_permset(conn, entry, permset) == -1)
 			return -1;
 	}
 
@@ -2252,22 +2255,22 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
  Note that name is in UNIX character set.
 ****************************************************************************/
 
-int chmod_acl(const char *name, mode_t mode)
+int chmod_acl(connection_struct *conn, const char *name, mode_t mode)
 {
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS)) == NULL)
+	if ((posix_acl = conn->vfs_ops.sys_acl_get_file(conn, name, SMB_ACL_TYPE_ACCESS)) == NULL)
 		return -1;
 
-	if ((ret = chmod_acl_internals(posix_acl, mode)) == -1)
+	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
 		goto done;
 
-	ret = sys_acl_set_file(name, SMB_ACL_TYPE_ACCESS, posix_acl);
+	ret = conn->vfs_ops.sys_acl_set_file(conn, name, SMB_ACL_TYPE_ACCESS, posix_acl);
 
   done:
 
-	sys_acl_free_acl(posix_acl);
+	conn->vfs_ops.sys_acl_free_acl(conn, posix_acl);
 	return ret;
 }
 
@@ -2276,34 +2279,35 @@ int chmod_acl(const char *name, mode_t mode)
  and set the mask to rwx. Needed to preserve complex ACLs set by NT.
 ****************************************************************************/
 
-int fchmod_acl(int fd, mode_t mode)
+int fchmod_acl(files_struct *fsp, int fd, mode_t mode)
 {
+	connection_struct *conn = fsp->conn;
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = sys_acl_get_fd(fd)) == NULL)
+	if ((posix_acl = conn->vfs_ops.sys_acl_get_fd(fsp, fd)) == NULL)
 		return -1;
 
-	if ((ret = chmod_acl_internals(posix_acl, mode)) == -1)
+	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
 		goto done;
 
-	ret = sys_acl_set_fd(fd, posix_acl);
+	ret = conn->vfs_ops.sys_acl_set_fd(fsp, fd, posix_acl);
 
   done:
 
-	sys_acl_free_acl(posix_acl);
+	conn->vfs_ops.sys_acl_free_acl(conn, posix_acl);
 	return ret;
 }
 
-BOOL directory_has_default_acl(const char *fname)
+BOOL directory_has_default_acl(connection_struct *conn, const char *fname)
 {
-        SMB_ACL_T dir_acl = sys_acl_get_file( fname, SMB_ACL_TYPE_DEFAULT);
+        SMB_ACL_T dir_acl = conn->vfs_ops.sys_acl_get_file( conn, fname, SMB_ACL_TYPE_DEFAULT);
         BOOL has_acl = False;
         SMB_ACL_ENTRY_T entry;
 
-        if (dir_acl != NULL && (sys_acl_get_entry(dir_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1))
+        if (dir_acl != NULL && (conn->vfs_ops.sys_acl_get_entry(conn, dir_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1))
                 has_acl = True;
 
-        sys_acl_free_acl(dir_acl);
+        conn->vfs_ops.sys_acl_free_acl(conn, dir_acl);
         return has_acl;
 }
