@@ -343,43 +343,13 @@ static void move_rec(void)
 	return;
 }
 
-#if 0
-static int print_conn_key(TDB_DATA key)
-{
-	printf( "pid    =%5d   ", ((connections_key*)key.dptr)->pid);
-	printf( "cnum   =%10d  ", ((connections_key*)key.dptr)->cnum);
-	printf( "name   =[%s]\n", ((connections_key*)key.dptr)->name);
-	return 0;
-}
-
-static int print_conn_data(TDB_DATA dbuf)
-{
-	printf( "pid    =%5d   ", ((connections_data*)dbuf.dptr)->pid);
-	printf( "cnum   =%10d  ", ((connections_data*)dbuf.dptr)->cnum);
-	printf( "name   =[%s]\n", ((connections_data*)dbuf.dptr)->name);
-	
-	printf( "uid    =%5d   ",  ((connections_data*)dbuf.dptr)->uid);
-	printf( "addr   =[%s]\n", ((connections_data*)dbuf.dptr)->addr);
-	printf( "gid    =%5d   ",  ((connections_data*)dbuf.dptr)->gid);
-	printf( "machine=[%s]\n", ((connections_data*)dbuf.dptr)->machine);
-	printf( "start  = %s\n",   ctime(&((connections_data*)dbuf.dptr)->start));
-	return 0;
-}
-#endif
-
 static int print_rec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
-#if 0
-	print_conn_key(key);
-	print_conn_data(dbuf);
-	return 0;
-#else
 	printf("\nkey %d bytes\n", key.dsize);
 	print_asc(key.dptr, key.dsize);
 	printf("\ndata %d bytes\n", dbuf.dsize);
 	print_data(dbuf.dptr, dbuf.dsize);
 	return 0;
-#endif
 }
 
 static int print_key(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
