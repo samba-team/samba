@@ -24,7 +24,7 @@ static TDB_CONTEXT *tdb;
 
 #define NAME_LENGTH 20
 
-static unsigned total, collisions;
+static unsigned total, collisions, failures;
 
 static BOOL test_one(struct cli_state *cli, const char *name)
 {
@@ -76,7 +76,9 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 	if (!cli_unlink(cli, name)) {
 		printf("unlink2 of %s  (%s) failed (%s)\n", 
 		       name, name2, cli_errstr(cli));
-		return False;
+		failures++;
+		cli_unlink(cli, name2);
+		return True;
 	}
 
 	/* see if the short name is already in the tdb */
@@ -127,6 +129,11 @@ static void gen_name(char *name)
 		p[0] = 'A';
 	}
 
+	/* and a medium probability of a common lead string */
+	if (random() % 10 == 0) {
+		strncpy(p, "ABCDE", 5);
+	}
+
 	/* and a high probability of a good extension length */
 	if (random() % 2 == 0) {
 		char *s = strrchr(p, '.');
@@ -173,21 +180,22 @@ BOOL torture_mangle(int dummy)
 			break;
 		}
 		if (total && total % 100 == 0) {
-			printf("collisions %u/%u  - %.2f%%\r",
-			       collisions, total, (100.0*collisions) / total);
+			printf("collisions %u/%u  - %.2f%%   (%u failures)\r",
+			       collisions, total, (100.0*collisions) / total, failures);
 		}
 	}
 
+	cli_unlink(&cli, "\\mangle_test\\*");
 	if (!cli_rmdir(&cli, "\\mangle_test")) {
 		printf("ERROR: Failed to remove directory\n");
 		return False;
 	}
 
-	printf("\nTotal collisions %u/%u  - %.2f%%\n",
-	       collisions, total, (100.0*collisions) / total);
+	printf("\nTotal collisions %u/%u  - %.2f%%   (%u failures)\n",
+	       collisions, total, (100.0*collisions) / total, failures);
 
 	torture_close_connection(&cli);
 
 	printf("mangle test finished\n");
-	return True;
+	return (failures == 0);
 }
