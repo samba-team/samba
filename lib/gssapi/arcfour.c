@@ -58,8 +58,17 @@ arcfour_mic_key(krb5_context context, krb5_keyblock *key,
     cksum_k5.checksum.data = k5_data;
     cksum_k5.checksum.length = sizeof(k5_data);
 
-    ret = krb5_hmac(context, CKSUMTYPE_RSA_MD5,
-		    T, 4, 0, key, &cksum_k5);
+    if (key->keytype == KEYTYPE_ARCFOUR_56) {
+	char L40[14] = "fortybits";
+
+	memcpy(L40 + 10, T, sizeof(T));
+	ret = krb5_hmac(context, CKSUMTYPE_RSA_MD5,
+			L40, 14, 0, key, &cksum_k5);
+	memset(&k5_data[7], 0xAB, 9);
+    } else {
+	ret = krb5_hmac(context, CKSUMTYPE_RSA_MD5,
+			T, 4, 0, key, &cksum_k5);
+    }
     if (ret)
 	return ret;
 
