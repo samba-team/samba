@@ -1087,15 +1087,15 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    # try building a trivial shared library
    if test "$PICSUFFIX" = "po"; then
      $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
-       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o shlib.so shlib.po &&
+       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
        ac_cv_shlib_works=yes
    else
      $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.$PICSUFFIX ${srcdir-.}/tests/shlib.c &&
        mv shlib.$PICSUFFIX shlib.po &&
-       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o shlib.so shlib.po &&
+       $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
        ac_cv_shlib_works=yes
    fi
-   rm -f shlib.so shlib.po
+   rm -f "shlib.$SHLIBEXT" shlib.po
 ])
 if test $ac_cv_shlib_works = no; then
    BLDSHARED=false
@@ -3284,14 +3284,14 @@ if test x"$HAVE_WINBIND" = x"yes"; then
         if test x"$BLDSHARED" = x"true"; then
 		case "$host_os" in
 		*irix*)
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libns_winbind.so"
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libns_winbind.$SHLIBEXT"
 			;;
 		*)
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libnss_winbind.so"
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/libnss_winbind.$SHLIBEXT"
 			;;
 		esac
 		if test x"$with_pam" = x"yes"; then
-			SHLIB_PROGS="$SHLIB_PROGS nsswitch/pam_winbind.so"
+			SHLIB_PROGS="$SHLIB_PROGS nsswitch/pam_winbind.$SHLIBEXT"
 		fi
 	fi
 else
@@ -3426,50 +3426,47 @@ AC_ARG_WITH(shared-modules,
 	done
 fi ])
 
-SMB_MODULE(pdb_xml, modules/xml.o, bin/xml.so, PDB,
+SMB_MODULE(pdb_xml, modules/xml.o, "bin/xml.$SHLIBEXT", PDB,
 		  [ PASSDBLIBS="$PASSDBLIBS $XML_LIBS" ] )
-SMB_MODULE(pdb_mysql, modules/mysql.o, bin/mysql.so, PDB, 
+SMB_MODULE(pdb_mysql, modules/mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
 		   [ PASSDBLIBS="$PASSDBLIBS $MYSQL_LIBS" ]	)
-SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, bin/ldapsam.so, PDB, 
+SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB, 
 		   [ PASSDBLIBS="$PASSDBLIBS $LDAP_LIBS" ] )
-SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, bin/smbpasswd.so, PDB)
-SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, bin/tdbsam.so, PDB)
-SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, bin/nisplussam.so, PDB)
-SMB_MODULE(pdb_unix, passdb/pdb_unix.o, bin/unixsam.so, PDB)
-SMB_MODULE(pdb_guest, passdb/pdb_guest.o, bin/guest.so, PDB)
+SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_nisplussam, passdb/pdb_nisplus.o, "bin/nisplussam.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_unix, passdb/pdb_unix.o, "bin/unixsam.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
 SMB_SUBSYSTEM(PDB)
 
-SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), bin/librpc_lsarpc.so, RPC)
-SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), bin/librpc_winreg.so, RPC)
-SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), bin/librpc_wkssvc.so, RPC)
-SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), bin/librpc_NETLOGON.so, RPC)
-SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), bin/librpc_netdfs.so, RPC)
-SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), bin/librpc_srvsvc.so, RPC)
-SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), bin/librpc_spoolss.so, RPC)
-SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), bin/librpc_samr.so, RPC)
+SMB_MODULE(rpc_lsa, \$(RPC_LSA_OBJ), "bin/librpc_lsarpc.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_reg, \$(RPC_REG_OBJ), "bin/librpc_winreg.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_wks, \$(RPC_WKS_OBJ), "bin/librpc_wkssvc.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_net, \$(RPC_NETLOG_OBJ), "bin/librpc_NETLOGON.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_dfs, \$(RPC_DFS_OBJ), "bin/librpc_netdfs.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_srv, \$(RPC_SVC_OBJ), "bin/librpc_srvsvc.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_spoolss, \$(RPC_SPOOLSS_OBJ), "bin/librpc_spoolss.$SHLIBEXT", RPC)
+SMB_MODULE(rpc_samr, \$(RPC_SAMR_OBJ), "bin/librpc_samr.$SHLIBEXT", RPC)
 SMB_SUBSYSTEM(RPC)
 
-SMB_MODULE(charset_weird, modules/developer.o, bin/developer.so, CHARSET)
+SMB_MODULE(charset_weird, modules/developer.o, "bin/developer.$SHLIBEXT", CHARSET)
 SMB_SUBSYSTEM(CHARSET)
 
-SMB_MODULE(auth_rhosts, \$(AUTH_RHOSTS_OBJ), bin/rhosts.so, AUTH)
-SMB_MODULE(auth_sam, \$(AUTH_SAM_OBJ), bin/sam.so, AUTH)
-SMB_MODULE(auth_unix, \$(AUTH_UNIX_OBJ), bin/unix.so, AUTH)
-SMB_MODULE(auth_winbind, \$(AUTH_WINBIND_OBJ), bin/winbind.so, AUTH)
-SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), bin/server.so, AUTH)
-SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), bin/domain.so, AUTH)
-SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), bin/builtin.so, AUTH)
+SMB_MODULE(auth_rhosts, \$(AUTH_RHOSTS_OBJ), "bin/rhosts.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_sam, \$(AUTH_SAM_OBJ), "bin/sam.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_unix, \$(AUTH_UNIX_OBJ), "bin/unix.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_winbind, \$(AUTH_WINBIND_OBJ), "bin/winbind.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), "bin/server.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), "bin/domain.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)
 SMB_SUBSYSTEM(AUTH)
 
-SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), bin/recycle.so, VFS)
-SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), bin/audit.so, VFS)
-SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), bin/extd_audit.so, VFS)
-SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), bin/fake_perms.so, VFS)
-SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK_OBJ), bin/netatalk.so, VFS)
+SMB_MODULE(vfs_recycle, \$(VFS_RECYCLE_OBJ), "bin/recycle.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_audit, \$(VFS_AUDIT_OBJ), "bin/audit.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_extd_audit, \$(VFS_EXTD_AUDIT_OBJ), "bin/extd_audit.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_fake_perms, \$(VFS_FAKE_PERMS_OBJ), "bin/fake_perms.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_netatalk, \$(VFS_NETATALK_OBJ), "bin/netatalk.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS)
-
-SMB_MODULE(idmap_winbind, sam/idmap_winbind.o, bin/winbind.so, IDMAP)
-SMB_SUBSYSTEM(IDMAP)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
