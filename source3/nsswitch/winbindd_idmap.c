@@ -244,24 +244,28 @@ BOOL winbindd_idmap_get_rid_from_gid(gid_t gid, uint32 *group_rid,
 static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *ignored)
 {
 	struct winbindd_domain *domain;
-	char *p, *dom_name;
+	char *p;
 	DOM_SID sid;
 	uint32 rid;
 	fstring keystr;
+	fstring dom_name;
 	TDB_DATA key2;
 
 	p = strchr(key.dptr, '/');
-	if (!p) return 0;
+	if (!p)
+		return 0;
 
-	*p++ = 0;
-	dom_name = key.dptr;
+	*p = 0;
+	fstrcpy(dom_name, key.dptr);
+	*p++ = '/';
 
 	domain = find_domain_from_name(dom_name);
 	if (!domain) {
-		/* what do we do about this?? */
+		/* We must delete the old record. */
 		DEBUG(0,("winbindd: convert_fn : Unable to find domain %s\n", dom_name ));
-		DEBUG(0,("winbindd: convert_fn : conversion failed - idmap corrupt ?\n"));
-		return -1;
+		DEBUG(0,("winbindd: convert_fn : deleting record %s\n", key.dptr ));
+		tdb_delete(idmap_tdb, key);
+		return 0;
 	}
 
 	rid = atoi(p);
@@ -292,13 +296,83 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *ignor
 	return 0;
 }
 
-/* convert the idmap database from an older version */
-static BOOL idmap_convert(void)
+#if 0
+/*****************************************************************************
+ Make a backup copy of the old idmap just to be safe.... JRA.
+*****************************************************************************/
+
+static BOOL backup_old_idmap(const char *idmap_name)
+{
+	pstring new_name;
+	int outfd = -1;
+	SMB_OFF_T size;
+	struct stat st;
+
+	pstrcpy(new_name, idmap_name);
+	pstrcat(new_name, ".bak");
+
+	DEBUG(10,("backup_old_idmap: backing up %s to %s before upgrade.\n",
+			idmap_name, new_name ));
+
+	if (tdb_lockall(idmap_tdb) == -1) {
+		DEBUG(10,("backup_old_idmap: failed to lock %s. Error %s\n",
+			idmap_name, tdb_errorstr(idmap_tdb) ));
+		return False;
+	}
+	if ((outfd = open(new_name, O_CREAT|O_EXCL|O_RDWR, 0600)) == -1) {
+		DEBUG(10,("backup_old_idmap: failed to open %s. Error %s\n",
+			new_name, strerror(errno) ));
+		goto fail;
+	}
+
+	if (fstat(idmap_tdb->fd, &st) == -1) {
+		DEBUG(10,("backup_old_idmap: failed to fstat %s. Error %s\n",
+			idmap_name, strerror(errno) ));
+		goto fail;
+	}
+
+	size = (SMB_OFF_T)st.st_size;
+
+	if (transfer_file(idmap_tdb->fd, outfd, size) != size ) {
+		DEBUG(10,("backup_old_idmap: failed to copy %s. Error %s\n",
+			idmap_name, strerror(errno) ));
+		goto fail;
+	}
+
+	if (close(outfd) == -1) {
+		DEBUG(10,("backup_old_idmap: failed to close %s. Error %s\n",
+			idmap_name, strerror(errno) ));
+		outfd = -1;
+		goto fail;
+	}
+	tdb_unlockall(idmap_tdb);
+	return True;
+
+fail:
+
+	if (outfd != -1)
+		close(outfd);
+	tdb_unlockall(idmap_tdb);
+	return False;
+}
+#endif
+
+/*****************************************************************************
+ Convert the idmap database from an older version.
+*****************************************************************************/
+
+static BOOL idmap_convert(const char *idmap_name)
 {
 	int32 vers = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
 
 	if (vers == IDMAP_VERSION)
 		return True;
+
+#if 0
+	/* Make a backup copy before doing anything else.... */
+	if (!backup_old_idmap(idmap_name))
+		return False;
+#endif
 
 	if (IREV(vers) == IDMAP_VERSION) {
 		/* Arrggghh ! Bytereversed - make order independent ! */
@@ -338,41 +412,43 @@ static BOOL idmap_convert(void)
 	return True;
 }
 
-
-/* Initialise idmap database */
+/*****************************************************************************
+ Initialise idmap database. 
+*****************************************************************************/
 
 BOOL winbindd_idmap_init(void)
 {
-    /* Open tdb cache */
+	/* Open tdb cache */
 
-    if (!(idmap_tdb = tdb_open_log(lock_path("winbindd_idmap.tdb"), 0,
-				   TDB_DEFAULT, O_RDWR | O_CREAT, 0600))) {
-        DEBUG(0, ("Unable to open idmap database\n"));
-        return False;
-    }
+	if (!(idmap_tdb = tdb_open_log(lock_path("winbindd_idmap.tdb"), 0,
+				TDB_DEFAULT, O_RDWR | O_CREAT, 0600))) {
+		DEBUG(0, ("winbindd_idmap_init: Unable to open idmap database\n"));
+		return False;
+	}
 
-    /* possibly convert from an earlier version */
-    if (!idmap_convert()) {
-	    return False;
-    }
+	/* possibly convert from an earlier version */
+	if (!idmap_convert(lock_path("winbindd_idmap.tdb"))) {
+		DEBUG(0, ("winbindd_idmap_init: Unable to open idmap database\n"));
+		return False;
+	}
 
-     /* Create high water marks for group and user id */
+	/* Create high water marks for group and user id */
 
-    if (tdb_fetch_int32(idmap_tdb, HWM_USER) == -1) {
-        if (tdb_store_int32(idmap_tdb, HWM_USER, server_state.uid_low) == -1) {
-            DEBUG(0, ("winbindd_idmap_init: Unable to initialise user hwm in idmap database\n"));
-            return False;
-        }
-    }
+	if (tdb_fetch_int32(idmap_tdb, HWM_USER) == -1) {
+		if (tdb_store_int32(idmap_tdb, HWM_USER, server_state.uid_low) == -1) {
+			DEBUG(0, ("winbindd_idmap_init: Unable to initialise user hwm in idmap database\n"));
+			return False;
+		}
+	}
 
-    if (tdb_fetch_int32(idmap_tdb, HWM_GROUP) == -1) {
-        if (tdb_store_int32(idmap_tdb, HWM_GROUP, server_state.gid_low) == -1) {
-            DEBUG(0, ("winbindd_idmap_init: Unable to initialise group hwm in idmap database\n"));
-            return False;
-        }
-    }
+	if (tdb_fetch_int32(idmap_tdb, HWM_GROUP) == -1) {
+		if (tdb_store_int32(idmap_tdb, HWM_GROUP, server_state.gid_low) == -1) {
+			DEBUG(0, ("winbindd_idmap_init: Unable to initialise group hwm in idmap database\n"));
+			return False;
+		}
+	}
 
-    return True;   
+	return True;   
 }
 
 BOOL winbindd_idmap_close(void)
@@ -395,49 +471,49 @@ BOOL winbindd_idmap_close(void)
 
 void winbindd_idmap_status(void)
 {
-    int user_hwm, group_hwm;
+	int user_hwm, group_hwm;
 
-    DEBUG(0, ("winbindd idmap status:\n"));
+	DEBUG(0, ("winbindd idmap status:\n"));
 
-    /* Get current high water marks */
+	/* Get current high water marks */
 
-    if ((user_hwm = tdb_fetch_int32(idmap_tdb, HWM_USER)) == -1) {
-        DEBUG(DUMP_INFO, ("\tCould not get userid high water mark!\n"));
-    }
+	if ((user_hwm = tdb_fetch_int32(idmap_tdb, HWM_USER)) == -1) {
+		DEBUG(DUMP_INFO, ("\tCould not get userid high water mark!\n"));
+	}
 
-    if ((group_hwm = tdb_fetch_int32(idmap_tdb, HWM_GROUP)) == -1) {
-        DEBUG(DUMP_INFO, ("\tCould not get groupid high water mark!\n"));
-    }
+	if ((group_hwm = tdb_fetch_int32(idmap_tdb, HWM_GROUP)) == -1) {
+		DEBUG(DUMP_INFO, ("\tCould not get groupid high water mark!\n"));
+	}
 
-    /* Display next ids to allocate */
+	/* Display next ids to allocate */
 
-    if (user_hwm != -1) {
-        DEBUG(DUMP_INFO, ("\tNext userid to allocate is %d\n", user_hwm));
-    }
+	if (user_hwm != -1) {
+		DEBUG(DUMP_INFO, ("\tNext userid to allocate is %d\n", user_hwm));
+	}
 
-    if (group_hwm != -1) {
-        DEBUG(DUMP_INFO, ("\tNext groupid to allocate is %d\n", group_hwm));
-    }
+	if (group_hwm != -1) {
+		DEBUG(DUMP_INFO, ("\tNext groupid to allocate is %d\n", group_hwm));
+	}
 
-    /* Display percentage of id range already allocated. */
+	/* Display percentage of id range already allocated. */
 
-    if (user_hwm != -1) {
-        int num_users = user_hwm - server_state.uid_low;
-        int total_users = server_state.uid_high - server_state.uid_low;
+	if (user_hwm != -1) {
+		int num_users = user_hwm - server_state.uid_low;
+		int total_users = server_state.uid_high - server_state.uid_low;
 
-        DEBUG(DUMP_INFO, ("\tUser id range is %d%% full (%d of %d)\n", 
-                          num_users * 100 / total_users, num_users,
-                          total_users));
-    }
+		DEBUG(DUMP_INFO, ("\tUser id range is %d%% full (%d of %d)\n", 
+				num_users * 100 / total_users, num_users,
+				total_users));
+	}
 
-    if (group_hwm != -1) {
-        int num_groups = group_hwm - server_state.gid_low;
-        int total_groups = server_state.gid_high - server_state.gid_low;
+	if (group_hwm != -1) {
+		int num_groups = group_hwm - server_state.gid_low;
+		int total_groups = server_state.gid_high - server_state.gid_low;
 
-        DEBUG(DUMP_INFO, ("\tGroup id range is %d%% full (%d of %d)\n",
-                          num_groups * 100 / total_groups, num_groups,
-                          total_groups));
-    }
+		DEBUG(DUMP_INFO, ("\tGroup id range is %d%% full (%d of %d)\n",
+				num_groups * 100 / total_groups, num_groups,
+				total_groups));
+	}
 
-    /* Display complete mapping of users and groups to rids */
+	/* Display complete mapping of users and groups to rids */
 }

@@ -23,6 +23,7 @@ ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, void **res,
 /* The following definitions come from nsswitch/winbindd_cache.c  */
 
 void wcache_flush_cache(void);
+void winbindd_check_cache_size(time_t t);
 struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status);
 
 /* The following definitions come from nsswitch/winbindd_cm.c  */

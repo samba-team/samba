@@ -34,6 +34,8 @@ struct cache_entry {
 	uint32 len, ofs;
 };
 
+#define WINBINDD_MAX_CACHE_SIZE (50*1024*1024)
+
 static struct winbind_cache *wcache;
 
 /* flush the cache */
@@ -53,6 +55,35 @@ void wcache_flush_cache(void)
 
 	if (!wcache->tdb) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
+	}
+}
+
+void winbindd_check_cache_size(time_t t)
+{
+	static time_t last_check_time;
+	struct stat st;
+
+	if (last_check_time == (time_t)0)
+		last_check_time = t;
+
+	if (t - last_check_time < 60 && t - last_check_time > 0)
+		return;
+
+	if (wcache == NULL || wcache->tdb == NULL) {
+		DEBUG(0, ("Unable to check size of tdb cache - cache not open !\n"));
+		return;
+	}
+
+	if (fstat(wcache->tdb->fd, &st) == -1) {
+		DEBUG(0, ("Unable to check size of tdb cache %s!\n", strerror(errno) ));
+		return;
+	}
+
+	if (st.st_size > WINBINDD_MAX_CACHE_SIZE) {
+		DEBUG(10,("flushing cache due to size (%lu) > (%lu)\n",
+			(unsigned long)st.st_size,
+			(unsigned long)WINBINDD_MAX_CACHE_SIZE));
+		wcache_flush_cache();
 	}
 }
 
