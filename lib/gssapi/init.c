@@ -35,13 +35,10 @@
 
 RCSID("$Id$");
 
-void
+krb5_error_code
 gssapi_krb5_init (void)
 {
-    krb5_error_code ret;
-
-    if(gssapi_krb5_context == NULL) {
-	ret = krb5_init_context (&gssapi_krb5_context);
-	/* and what do we do when that failed? */
-    }
+    if(gssapi_krb5_context == NULL)
+	return krb5_init_context (&gssapi_krb5_context);
+    return 0;
 }
