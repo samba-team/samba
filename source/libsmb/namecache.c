@@ -141,8 +141,8 @@ void namecache_store(const char *name, int name_type,
 	   otherwise if we lock on to a bad DC we can potentially be
 	   out of action for the entire cache timeout time! */
 
-	if (name_type != 0x1b || name_type != 0x1c)
-		expiry = time(NULL) + 10;
+	if (name_type == 0x1b || name_type == 0x1c)
+		expiry = time(NULL) + 15;
 	else
 		expiry = time(NULL) + lp_name_cache_timeout();
 
