@@ -99,8 +99,6 @@ my $domain_dn = search("(objectClass=domainDNS)", "dn");
 my $ldif = `ldbsearch 'cn=TemplateUser' | grep -v Template | grep -v '^#'`;
 chomp $ldif;
 
-$ldif .= "name: $opt_username\n";
-
 my $sid;
 
 # crude way of working out a rid
@@ -113,16 +111,17 @@ for (my $i=1001;$i<1100;$i++) {
 
 print "Chose new SID $sid\n";
 
-$ldif .= "objectSid: $sid\n";
-
-$ldif .= "objectGUID: " . randguid() . "\n";
-
 my $dom_users = search("name=Domain Users", "dn");
 
-$ldif .= "memberOf: $dom_users\n";
 
+$ldif .= "sAMAccountName: $opt_username\n";
+$ldif .= "name: $opt_username\n";
+$ldif .= "objectSid: $sid\n";
+$ldif .= "objectGUID: " . randguid() . "\n";
+$ldif .= "memberOf: $dom_users\n";
 $ldif .= "userAccountControl: 0x10200\n";
 $ldif .= "sAMAccountType: 0x30000000\n";
+$ldif .= "objectClass: user\n";
 $ldif .= "unicodePwd: $opt_password\n";
 $ldif .= "unixName: $opt_unixname\n";
 
