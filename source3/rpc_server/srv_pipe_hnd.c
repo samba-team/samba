@@ -476,6 +476,13 @@ authentication failed. Denying the request.\n", p->name));
 		 */
 
 		/*
+		 * Ensure the internal prs buffer size is *exactly* the same
+		 * size as the current offset.
+		 */
+
+		prs_set_buffer_size(&p->in_data.data, prs_offset(&p->in_data.data));
+
+		/*
 		 * Set the parse offset to the start of the data and set the
 		 * prs_struct to UNMARSHALL.
 		 */

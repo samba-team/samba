@@ -154,6 +154,29 @@ char *prs_take_memory(prs_struct *ps, uint32 *psize)
 }
 
 /*******************************************************************
+ Set a prs_struct to exactly a given size. Will grow or tuncate if neccessary.
+ ********************************************************************/
+
+BOOL prs_set_buffer_size(prs_struct *ps, uint32 newsize)
+{
+	if (newsize > ps->buffer_size)
+		return prs_force_grow(ps, newsize - ps->buffer_size);
+
+	if (newsize < ps->buffer_size) {
+		char *new_data_p = Realloc(ps->data_p, newsize);
+		if (new_data_p == NULL) {
+			DEBUG(0,("prs_set_buffer_size: Realloc failure for size %u.\n",
+				(unsigned int)newsize));
+			return False;
+		}
+		ps->data_p = new_data_p;
+		ps->buffer_size = newsize;
+	}
+
+	return True;
+}
+
+/*******************************************************************
  Attempt, if needed, to grow a data buffer.
  Also depends on the data stream mode (io).
  ********************************************************************/
@@ -300,7 +323,7 @@ BOOL prs_set_offset(prs_struct *ps, uint32 offset)
 
 BOOL prs_append_prs_data(prs_struct *dst, prs_struct *src)
 {
-	if(!prs_force_grow(dst, prs_offset(src)))
+	if(!prs_grow(dst, prs_offset(src)))
 		return False;
 
 	memcpy(&dst->data_p[dst->data_offset], prs_data_p(src), (size_t)prs_offset(src));
@@ -315,7 +338,7 @@ BOOL prs_append_prs_data(prs_struct *dst, prs_struct *src)
 
 BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len)
 {	
-	if(!prs_force_grow(dst, len))
+	if(!prs_grow(dst, len))
 		return False;
 	
 	memcpy(&dst->data_p[dst->data_offset], prs_data_p(src)+start, (size_t)len);
@@ -330,7 +353,7 @@ BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uin
 
 BOOL prs_append_data(prs_struct *dst, char *src, uint32 len)
 {
-	if(!prs_force_grow(dst, len))
+	if(!prs_grow(dst, len))
 		return False;
 
 	memcpy(&dst->data_p[dst->data_offset], src, (size_t)len);
