@@ -55,8 +55,7 @@ interface drsuapi
 		uint32 unknown2;
 		GUID guid1;
 		uint8 unknown3[28];
-		[range(0,0xA00000)] uint32 length;
-		[size_is(length+1)] uint16 nc_dn[*];
+		[flag(STR_SIZE4|STR_CHARLEN|STR_CONFORMANT)] string nc_dn;
 	} drsuapi_DsReplicaSyncRequest1Info;
 
 	typedef struct {
