@@ -382,6 +382,8 @@ void unbecome_unix_root_sec_ctxt(void);
 
 /*The following definitions come from  lib/username.c  */
 
+struct passwd *hashed_getpwnam(const char *name);
+char *uidtoname(uid_t uid);
 char *get_home_dir(char *user);
 BOOL map_username(char *user);
 struct passwd *Get_Pwnam(char *user,BOOL allow_change);
@@ -448,7 +450,6 @@ BOOL process_exists(int pid);
 int get_unixgroups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups);
 BOOL get_unix_grps(int *p_ngroups, struct group **p_groups);
 void free_unix_grps(int ngroups, struct group *p_groups);
-char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
 BOOL nametogid(const char *name, gid_t *gid);
 BOOL nametouid(const char *name, uid_t *uid);
