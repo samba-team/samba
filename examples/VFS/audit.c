@@ -2,7 +2,7 @@
  * Auditing VFS module for samba.  Log select file operations to syslog
  * facility.
  *
- * Copyright (C) Tim Potter, 1999
+ * Copyright (C) Tim Potter, 1999-2000
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * $Id: audit.c,v 1.1 2000/02/03 04:40:56 tpot Exp $
+ * $Id: audit.c,v 1.2 2000/02/04 05:08:16 tpot Exp $
  */
 
 #include "config.h"
@@ -83,15 +83,14 @@ struct vfs_ops audit_ops = {
 
     audit_open,
     audit_close,
-    NULL,                     /* read */
+    NULL,                     /* read  */
     NULL,                     /* write */
     NULL,                     /* lseek */
     audit_rename,
-    NULL,                     /* sync */
-    NULL,                     /* stat */
+    NULL,                     /* fsync */
+    NULL,                     /* stat  */
     NULL,                     /* fstat */
     NULL,                     /* lstat */
-    NULL,                     /* fcntl_lock */
     audit_unlink,
     NULL,                     /* chmod */
     NULL                      /* utime */
@@ -164,7 +163,7 @@ int audit_open(char *fname, int flags, mode_t mode)
 
     syslog(SYSLOG_PRIORITY, "open %s (fd %d) %s%s%s\n", 
 	   fname, result,
-	   ((mode & O_WRONLY) || (mode & O_RDWR)) ? "for writing " : "", 
+	   ((flags & O_WRONLY) || (flags & O_RDWR)) ? "for writing " : "", 
 	   (result < 0) ? "failed: " : "",
 	   (result < 0) ? strerror(errno) : "");
 
