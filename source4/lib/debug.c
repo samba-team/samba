@@ -57,6 +57,8 @@ void do_debug(const char *format, ...)
 	vasprintf(&s, format, ap);
 	va_end(ap);
 
+	log_task_id();
+	
 	write(state.fd, s, strlen(s));
 	free(s);
 }
@@ -147,6 +149,12 @@ uint32 get_task_id(void)
 	return getpid();
 }
 
+void log_task_id(void)
+{
+	if (debug_handlers.ops.log_task_id) {
+		debug_handlers.ops.log_task_id(state.fd);
+	}
+}
 /*
   register a set of debug handlers. 
 */

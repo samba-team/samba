@@ -30,6 +30,9 @@ struct debug_ops {
 	
 	/* function to return process/thread id */
 	uint32 (*get_task_id)(void);
+	
+	/* function to log process/thread id */
+	void (*log_task_id)(int fd);
 };
 
 void do_debug(const char *, ...) PRINTF_ATTRIBUTE(1,2);
