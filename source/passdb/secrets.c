@@ -128,6 +128,38 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	return True;
 }
 
+BOOL secrets_store_domain_guid(char *domain, GUID *guid)
+{
+	fstring key;
+
+	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
+	strupper(key);
+	return secrets_store(key, guid, sizeof(GUID));
+}
+
+BOOL secrets_fetch_domain_guid(char *domain, GUID *guid)
+{
+	GUID *dyn_guid;
+	fstring key;
+	size_t size;
+
+	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
+	strupper(key);
+	dyn_guid = (GUID *)secrets_fetch(key, &size);
+
+	if (dyn_guid == NULL)
+		return False;
+
+	if (size != sizeof(GUID))
+	{ 
+		SAFE_FREE(dyn_guid);
+		return False;
+	}
+
+	*guid = *dyn_guid;
+	SAFE_FREE(dyn_guid);
+	return True;
+}
 
 /**
  * Form a key for fetching the machine trust account password

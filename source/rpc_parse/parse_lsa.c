@@ -3,8 +3,9 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Andrew Bartlett                   2002.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Andrew Bartlett                   2002,
+ *  Copyright (C) Jim McDonough                     2002.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2116,4 +2117,109 @@ BOOL policy_handle_is_valid(const POLICY_HND *hnd)
 
 	ZERO_STRUCT(zero_pol);
 	return ((memcmp(&zero_pol, hnd, sizeof(POLICY_HND)) == 0) ? False : True );
+}
+
+/*******************************************************************
+ Reads or writes an LSA_DNS_DOM_INFO structure.
+********************************************************************/
+
+BOOL lsa_io_dns_dom_info(char *desc, LSA_DNS_DOM_INFO *info,
+			 prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_dns_dom_info");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unihdr("nb_name", &info->hdr_nb_dom_name, ps, depth))
+		return False;
+	if(!smb_io_unihdr("dns_name", &info->hdr_dns_dom_name, ps, depth))
+		return False;
+	if(!smb_io_unihdr("forest", &info->hdr_forest_name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if (!prs_uint8s(False, "dom_guid", ps, depth, info->dom_guid.info, GUID_SIZE))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("dom_sid", ps, depth, &info->ptr_dom_sid))
+		return False;
+
+	if(!smb_io_unistr2("nb_name", &info->uni_nb_dom_name,
+			   info->hdr_nb_dom_name.buffer, ps, depth))
+		return False;
+	if(!smb_io_unistr2("dns_name", &info->uni_dns_dom_name, 
+			   info->hdr_dns_dom_name.buffer, ps, depth))
+		return False;
+	if(!smb_io_unistr2("forest", &info->uni_forest_name, 
+			   info->hdr_forest_name.buffer, ps, depth))
+		return False;
+
+	if(!smb_io_dom_sid2("dom_sid", &info->dom_sid, ps, depth))
+		return False;
+
+	return True;
+	
+}
+
+/*******************************************************************
+ Reads or writes an LSA_Q_QUERY_DNSDOMINFO structure.
+********************************************************************/
+
+BOOL lsa_io_q_query_info2(char *desc, LSA_Q_QUERY_INFO2 *q_c,
+			  prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_q_query_info2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+ 
+	if(!smb_io_pol_hnd("pol", &q_c->pol, ps, depth))
+		return False;
+	
+	if(!prs_uint16("info_class", ps, depth, &q_c->info_class))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Reads or writes an LSA_R_QUERY_DNSDOMINFO structure.
+********************************************************************/
+
+BOOL lsa_io_r_query_info2(char *desc, LSA_R_QUERY_INFO2 *r_c,
+			  prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "lsa_io_r_query_info2");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr", ps, depth, &r_c->ptr))
+		return False;
+	if(!prs_uint16("info_class", ps, depth, &r_c->info_class))
+		return False;
+	switch(r_c->info_class) {
+	case 0x000c:
+		if (!lsa_io_dns_dom_info("info12", &r_c->info.dns_dom_info,
+					 ps, depth))
+			return False;
+		break;
+	default:
+		DEBUG(0,("lsa_io_r_query_info2: unknown info class %d\n",
+			 r_c->info_class));
+		return False;
+	}
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_ntstatus("status", ps, depth, &r_c->status))
+		return False;
+
+	return True;
 }
