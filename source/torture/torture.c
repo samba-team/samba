@@ -146,6 +146,8 @@ static NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p,
 						 pipe_uuid, pipe_version,
 						 &port);
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Failed to map DCERPC/TCP port for '%s' - %s\n", 
+				 pipe_name, nt_errstr(status)));
 			return status;
 		}
 	}
