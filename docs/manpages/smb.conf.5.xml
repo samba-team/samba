@@ -372,7 +372,7 @@ alias|alias|alias|alias...
 
 		<varlistentry>
 		<term>%d</term>
-		<listitem><para>The process id of the current server
+		<listitem><para>the process id of the current server
 		process.</para></listitem>
 		</varlistentry>
 		
@@ -389,7 +389,13 @@ alias|alias|alias|alias...
 		
 		<varlistentry>
 		<term>%I</term>
-		<listitem><para>The IP address of the client machine.</para>
+		<listitem><para>the IP address of the client machine.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>%i</term>
+		<listitem><para>the local IP address to which a client connected.</para>
 		</listitem>
 		</varlistentry>
 
@@ -400,12 +406,12 @@ alias|alias|alias|alias...
 
 		<varlistentry>
 		<term>%D</term>
-		<listitem><para>Name of the domain or workgroup of the current user.</para></listitem>
+		<listitem><para>name of the domain or workgroup of the current user.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
 		<term>%$(<replaceable>envvar</replaceable>)</term>
-		<listitem><para>The value of the environment variable
+		<listitem><para>the value of the environment variable
 		<replaceable>envar</replaceable>.</para></listitem>
 		</varlistentry>
 	</variablelist>
