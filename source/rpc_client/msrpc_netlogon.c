@@ -182,7 +182,6 @@ uint32 domain_client_validate_backend(const char *srv_name,
 	 */
 
 	DEBUG(10, ("domain_client_validate: user %s\\%s OK\n", domain, user));
-	DEBUG(3, ("domain_client_validate: check lockout / pwd expired!\n"));
 
 	return 0x0;
 }
