@@ -30,6 +30,7 @@
 #define NET_SRVPWSET           0x06
 #define NET_SAMLOGON           0x02
 #define NET_SAMLOGOFF          0x03
+#define NET_AUTH               0x05
 #define NET_AUTH2              0x0f
 #define NET_LOGON_CTRL2        0x0e
 #define NET_TRUST_DOM_LIST     0x13
@@ -226,7 +227,23 @@ typedef struct net_r_req_chal_info
 
 } NET_R_REQ_CHAL;
 
+/* NET_Q_AUTH */
+typedef struct net_q_auth_info
+{
+    DOM_LOG_INFO clnt_id; /* client identification info */
+    DOM_CHAL clnt_chal;     /* client-calculated credentials */
 
+
+} NET_Q_AUTH;
+
+/* NET_R_AUTH */
+typedef struct net_r_auth_info
+{
+    DOM_CHAL srv_chal;     /* server-calculated credentials */
+
+  uint32 status; /* return code */
+
+} NET_R_AUTH;
 
 /* NET_Q_AUTH_2 */
 typedef struct net_q_auth2_info
@@ -238,7 +255,6 @@ typedef struct net_q_auth2_info
 
 } NET_Q_AUTH_2;
 
-
 /* NET_R_AUTH_2 */
 typedef struct net_r_auth2_info
 {
@@ -248,7 +264,6 @@ typedef struct net_r_auth2_info
   uint32 status; /* return code */
 
 } NET_R_AUTH_2;
-
 
 /* NET_Q_SRV_PWSET */
 typedef struct net_q_srv_pwset_info

@@ -436,6 +436,66 @@ BOOL net_io_r_req_chal(char *desc,  NET_R_REQ_CHAL *r_c, prs_struct *ps, int dep
 	return True;
 }
 
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL make_q_auth(NET_Q_AUTH *q_a,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name,
+		DOM_CHAL *clnt_chal)
+{
+	if (q_a == NULL) return False;
+
+	DEBUG(5,("make_q_auth: %d\n", __LINE__));
+
+	make_log_info(&(q_a->clnt_id), logon_srv, acct_name, sec_chan, comp_name);
+	memcpy(q_a->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
+
+	DEBUG(5,("make_q_auth: %d\n", __LINE__));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL net_io_q_auth(char *desc,  NET_Q_AUTH *q_a, prs_struct *ps, int depth)
+{
+	int old_align;
+	if (q_a == NULL) return False;
+
+	prs_debug(ps, depth, desc, "net_io_q_auth");
+	depth++;
+
+	prs_align(ps);
+    
+	smb_io_log_info ("", &(q_a->clnt_id), ps, depth); /* client identification info */
+	/* client challenge is _not_ aligned */
+	old_align = ps->align;
+	ps->align = 0;
+	smb_io_chal     ("", &(q_a->clnt_chal), ps, depth); /* client-calculated credentials */
+	ps->align = old_align;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL net_io_r_auth(char *desc,  NET_R_AUTH *r_a, prs_struct *ps, int depth)
+{
+	if (r_a == NULL) return False;
+
+	prs_debug(ps, depth, desc, "net_io_r_auth");
+	depth++;
+
+	prs_align(ps);
+    
+	smb_io_chal     ("", &(r_a->srv_chal), ps, depth); /* server challenge */
+	prs_uint32("status", ps, depth, &(r_a->status));
+
+	return True;
+}
 
 /*******************************************************************
 reads or writes a structure.

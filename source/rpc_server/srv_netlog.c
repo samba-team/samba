@@ -106,6 +106,34 @@ static void net_reply_trust_dom_list(NET_Q_TRUST_DOM_LIST *q_t, prs_struct *rdat
 
 }
 
+
+/*************************************************************************
+ make_net_r_auth:
+ *************************************************************************/
+static void make_net_r_auth(NET_R_AUTH *r_a,
+                              DOM_CHAL *resp_cred, int status)
+{
+	memcpy(  r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
+	r_a->status = status;
+}
+
+/*************************************************************************
+ net_reply_auth:
+ *************************************************************************/
+static void net_reply_auth(NET_Q_AUTH *q_a, prs_struct *rdata,
+				DOM_CHAL *resp_cred, int status)
+{
+	NET_R_AUTH r_a;
+
+	/* set up the LSA AUTH 2 response */
+
+	make_net_r_auth(&r_a, resp_cred, status);
+
+	/* store the response in the SMB stream */
+	net_io_r_auth("", &r_a, rdata, 0);
+
+}
+
 /*************************************************************************
  make_net_r_auth_2:
  *************************************************************************/
@@ -371,6 +399,50 @@ static void api_net_req_chal( pipes_struct *p,
 }
 
 /*************************************************************************
+ api_net_auth:
+ *************************************************************************/
+static void api_net_auth( pipes_struct *p,
+                            prs_struct *data,
+                            prs_struct *rdata)
+{
+	NET_Q_AUTH q_a;
+	uint32 status = 0x0;
+
+	DOM_CHAL srv_cred;
+	UTIME srv_time;
+
+	user_struct *vuser;
+
+	if ((vuser = get_valid_user_struct(p->vuid)) == NULL)
+      return;
+
+	srv_time.time = 0;
+
+	/* grab the challenge... */
+	net_io_q_auth("", &q_a, data, 0);
+
+	/* check that the client credentials are valid */
+	if (cred_assert(&(q_a.clnt_chal), vuser->dc.sess_key,
+                    &(vuser->dc.clnt_cred.challenge), srv_time))
+	{
+
+		/* create server challenge for inclusion in the reply */
+		cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred.challenge), srv_time, &srv_cred);
+
+		/* copy the received client credentials for use next time */
+		memcpy(vuser->dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+		memcpy(vuser->dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+	}
+	else
+	{
+		status = NT_STATUS_ACCESS_DENIED | 0xC0000000;
+	}
+
+	/* construct reply. */
+	net_reply_auth(&q_a, rdata, &srv_cred, status);
+}
+
+/*************************************************************************
  api_net_auth_2:
  *************************************************************************/
 static void api_net_auth_2( pipes_struct *p,
@@ -413,7 +485,6 @@ static void api_net_auth_2( pipes_struct *p,
 	/* construct reply. */
 	net_reply_auth_2(&q_a, rdata, &srv_cred, status);
 }
-
 
 /*************************************************************************
  api_net_srv_pwset:
@@ -934,6 +1005,7 @@ static void api_net_logon_ctrl2( pipes_struct *p,
 static struct api_struct api_net_cmds [] =
 {
 	{ "NET_REQCHAL"       , NET_REQCHAL       , api_net_req_chal       }, 
+	{ "NET_AUTH"          , NET_AUTH          , api_net_auth           },
 	{ "NET_AUTH2"         , NET_AUTH2         , api_net_auth_2         }, 
 	{ "NET_SRVPWSET"      , NET_SRVPWSET      , api_net_srv_pwset      }, 
 	{ "NET_SAMLOGON"      , NET_SAMLOGON      , api_net_sam_logon      }, 
@@ -941,7 +1013,7 @@ static struct api_struct api_net_cmds [] =
 	{ "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
 	{ "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
 	{ "NET_SAM_SYNC"      , NET_SAM_SYNC      , api_net_sam_sync       },
-    {  NULL               , 0                 , NULL                   }
+        {  NULL               , 0                 , NULL                   }
 };
 
 /*******************************************************************
