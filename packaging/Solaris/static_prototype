@@ -13,7 +13,7 @@ i request=./request
 #
 d initscript /etc ? ? ?
 d initscript /etc/init.d ? ? ?
-f initscript /etc/init.d/samba.server=packaging/Solaris/pkg-specs/samba.server 0744 root sys
+f initscript /etc/init.d/samba.server=packaging/Solaris/samba.server 0744 root sys
 d initscript /etc/rc3.d ? ? ?
 l initscript /etc/rc3.d/S99samba.server=/etc/init.d/samba.server
 #
