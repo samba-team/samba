@@ -1,3 +1,19 @@
+Sun Mar  1 03:04:12 1998  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: add X-tests, and {bin,...}dir appl/{kx,kauth}
+	
+	* lib/krb5/build_auth.c,mk_priv.c,rd_safe.c,mk_safe.c,mk_rep.c:
+ 	remove arbitrary limit
+
+	* kdc/hprop-common.c: use krb5_{read,write}_message
+
+	* lib/kadm5/ipropd_master.c (send_diffs): more careful use
+ 	krb5_{write,read}_message
+
+	* lib/kadm5/ipropd_slave.c (get_creds): get credentials for
+ 	`iprop/master' directly.
+	(main): use `krb5_read_message'
+
 Sun Mar  1 03:28:42 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/kadm5/dump_log.c: print operation names
