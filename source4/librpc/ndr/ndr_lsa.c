@@ -1127,14 +1127,27 @@ NTSTATUS ndr_pull_LOOKUPPRIVVALUE(struct ndr_pull *ndr, struct LOOKUPPRIVVALUE *
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_LOOKUPPRIVNAME(struct ndr_push *ndr, struct LOOKUPPRIVNAME *r)
+NTSTATUS ndr_push_lsa_LookupPrivName(struct ndr_push *ndr, struct lsa_LookupPrivName *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.luid_high));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.luid_low));
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_LOOKUPPRIVNAME(struct ndr_pull *ndr, struct LOOKUPPRIVNAME *r)
+NTSTATUS ndr_pull_lsa_LookupPrivName(struct ndr_pull *ndr, struct lsa_LookupPrivName *r)
 {
+	uint32 _ptr_name;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_name));
+	if (_ptr_name) {
+		NDR_ALLOC(ndr, r->out.name);
+	} else {
+		r->out.name = NULL;
+	}
+	if (r->out.name) {
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.name));
+	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;

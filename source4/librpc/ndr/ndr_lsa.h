@@ -464,11 +464,15 @@ struct LOOKUPPRIVVALUE {
 
 };
 
-struct LOOKUPPRIVNAME {
+struct lsa_LookupPrivName {
 	struct {
+		struct policy_handle *handle;
+		uint32 luid_high;
+		uint32 luid_low;
 	} in;
 
 	struct {
+		struct lsa_Name *name;
 		NTSTATUS result;
 	} out;
 
@@ -662,7 +666,7 @@ struct QUERYINFO2 {
 #define DCERPC_SETSECRET 29
 #define DCERPC_QUERYSECRET 30
 #define DCERPC_LOOKUPPRIVVALUE 31
-#define DCERPC_LOOKUPPRIVNAME 32
+#define DCERPC_LSA_LOOKUPPRIVNAME 32
 #define DCERPC_PRIV_GET_DISPNAME 33
 #define DCERPC_DELETEOBJECT 34
 #define DCERPC_ENUMACCTWITHRIGHT 35

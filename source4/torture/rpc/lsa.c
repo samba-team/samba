@@ -271,8 +271,32 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_LookupPrivName(struct dcerpc_pipe *p, 
+				TALLOC_CTX *mem_ctx, 
+				struct policy_handle *handle,
+				struct lsa_LUID *luid)
+{
+	NTSTATUS status;
+	struct lsa_LookupPrivName r;
+
+	r.in.handle = handle;
+	r.in.luid_high = luid->high;
+	r.in.luid_low = luid->low;
+
+	status = dcerpc_lsa_LookupPrivName(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("\nLookupPrivName failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf(" '%s'\n", r.out.name->name);
+
+	return True;
+}
+
 static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p, 
-				  TALLOC_CTX *mem_ctx, 
+				  TALLOC_CTX *mem_ctx, 				  
+				  struct policy_handle *handle,
 				  struct policy_handle *acct_handle)
 {
 	NTSTATUS status;
@@ -295,10 +319,12 @@ static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p,
 		struct lsa_PrivilegeSet *privs = r.out.privs;
 		int i;
 		for (i=0;i<privs->count;i++) {
-			printf("luid=%08x-%08x  attribute=0x%08x\n", 
+			printf("luid=%08x-%08x  attribute=0x%08x ", 
 			       privs->set[i].luid.low,
 			       privs->set[i].luid.high,
 			       privs->set[i].attribute);
+			test_LookupPrivName(p, mem_ctx, handle, 
+					    &privs->set[i].luid);
 		}
 	}
 
@@ -357,7 +383,7 @@ static BOOL test_OpenAccount(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (!test_EnumPrivsAccount(p, mem_ctx, &acct_handle)) {
+	if (!test_EnumPrivsAccount(p, mem_ctx, handle, &acct_handle)) {
 		return False;
 	}
 

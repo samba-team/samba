@@ -278,10 +278,20 @@
 	NTSTATUS SETSECRET ();
 	/* Function:         0x1e */
 	NTSTATUS QUERYSECRET ();
+
 	/* Function:     0x1f */
 	NTSTATUS LOOKUPPRIVVALUE ();
+
+
 	/* Function:      0x20 */
-	NTSTATUS LOOKUPPRIVNAME ();
+	NTSTATUS lsa_LookupPrivName (
+		[in,ref]     policy_handle *handle,
+		[in]         uint32 luid_high,
+		[in]         uint32 luid_low,
+		[out]        lsa_Name *name
+		);
+
+
 	/* Function:  0x21 */
 	NTSTATUS PRIV_GET_DISPNAME ();
 	/* Function:        0x22 */
