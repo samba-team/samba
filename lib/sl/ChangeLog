@@ -1,3 +1,11 @@
+Tue Mar 23 14:36:21 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: don't rename
+
+Sun Mar 21 14:13:29 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: don't roken-rename
+
 Sat Mar 20 03:43:30 1999  Assar Westerlund  <assar@sics.se>
 
 	* parse.y: replace return with YYACCEPT
