@@ -61,7 +61,7 @@ krb5_password_key_proc (krb5_context context,
 	  des_read_pw_string (buf, sizeof(buf), "Password: ", 0);
 	  password = buf;
      }
-     ret = krb5_string_to_key (password, salt, *key);
+     ret = krb5_string_to_key (password, salt, type, *key);
      memset (buf, 0, sizeof(buf));
      return ret;
 }
