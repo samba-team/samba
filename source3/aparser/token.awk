@@ -53,10 +53,19 @@ function parse_error(msg) {
 	next;
 }
 
-/^[ \t]*STATUS.*\(/ {
+/^[ \t]*void.*\(/ {
 	{if (current_struct!="") parse_error("you cannot have nested structures");}
 	split($0,a,"[ \t;()]*");
 	start_function(a[2], a[3]);
+	return_result="void";
+	next;
+}
+
+/^[ \t]*STATUS.*\(|^[ \t]*void.*\(/ {
+	{if (current_struct!="") parse_error("you cannot have nested structures");}
+	split($0,a,"[ \t;()]*");
+	start_function(a[2], a[3]);
+	return_result="STATUS";
 	next;
 }
 
@@ -118,6 +127,7 @@ function parse_error(msg) {
 
 /^[ \t]*\);/ {
 	end_function();
+	return_result="";
 	next;
 }
 

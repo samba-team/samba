@@ -3,9 +3,16 @@
 function header_elstring(elnum,
 			 LOCAL, elem)
 {
+	array_len = elements[elnum, "array_len"];
 	elem=elements[elnum, "elem"];
 	if (elements[elnum, "ptr"]=="1") elem="*"elem;
-	if (elements[elnum, "array_len"]!="") elem="*"elem;
+	if (array_len!="") {
+		if (match(array_len,"[0-9]") == 1) {
+			elem=elem"["array_len"]";
+		} else {
+			elem="*"elem;
+		}
+	}
 	return elem;
 }
 
@@ -54,9 +61,12 @@ function produce_headers(f, NIL,
 			 LOCAL, i) 
 {
 	xprintf(f,"/* auto-generated headers for %s */\n\n\n", module);
+	xprintf(f,"#ifndef _%s_\n", module);
+	xprintf(f,"#define _%s_\n", module);
 	for (i=0;i < num_structs;i++) {
 		header_struct(f, i);
 	}
 	xprintf(f,"/* end auto-generated headers */\n\n");
+	xprintf(f,"#endif /* _%s_ */\n", module);
 }
 

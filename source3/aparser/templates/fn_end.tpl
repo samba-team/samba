@@ -4,7 +4,9 @@ end:
 	return True;
 
 fail:
-        ZERO_STRUCTP(il);
+	if (UNMARSHALLING(ps)) {
+		ZERO_STRUCTP(il);
+	}
 	return False;
 } /* @FUNCNAME@ */
 

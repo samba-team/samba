@@ -1,5 +1,5 @@
 	if ((@FLAGS@ & PARSE_SCALARS) &&
-            !io_alloc("@ELEM@", ps, (void **)&il->@ELEM@, sizeof(*(il->@ELEM@))*il->@ARRAY_LEN@)) goto fail;
+            !io_alloc("@ELEM@", ps, (void **)&il->@ELEM@, sizeof(*(il->@ELEM@))*(il->@ARRAY_LEN@))) goto fail;
 	{
 		int i;
 		for (i=0;i<il->@ARRAY_LEN@;i++) {

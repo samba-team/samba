@@ -1,47 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h> 
-#include <unistd.h>
-#include "parser.h"
+#include "includes.h"
 
-char *tab_depth(int depth)
-{
-	static pstring spaces;
-	memset(spaces, ' ', depth * 4);
-	spaces[depth * 4] = 0;
-	return spaces;
-}
-
-/****************************************************************************
-expand a pointer to be a particular size
-****************************************************************************/
-void *Realloc(void *p,size_t size)
-{
-  void *ret=NULL;
-
-  if (size == 0) {
-    if (p) free(p);
-    DEBUG(5,("Realloc asked for 0 bytes\n"));
-    return NULL;
-  }
-
-  if (!p)
-    ret = (void *)malloc(size);
-  else
-    ret = (void *)realloc(p,size);
-
-  if (!ret)
-    DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
-
-  return(ret);
-}
 
 /*******************************************************************
  Attempt, if needed, to grow a data buffer.
  Also depends on the data stream mode (io).
  ********************************************************************/
 
-BOOL prs_grow(prs_struct *ps, uint32 extra_space)
+BOOL io_grow(io_struct *ps, uint32 extra_space)
 {
 	uint32 new_size;
 	char *new_data;
@@ -53,11 +18,11 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 
 	/*
 	 * We cannot grow the buffer if we're not reading
-	 * into the prs_struct, or if we don't own the memory.
+	 * into the io_struct, or if we don't own the memory.
 	 */
 
 	if(UNMARSHALLING(ps) || !ps->is_dynamic) {
-		DEBUG(0,("prs_grow: Buffer overflow - unable to expand buffer by %u bytes.\n",
+		DEBUG(0,("io_grow: Buffer overflow - unable to expand buffer by %u bytes.\n",
 				(unsigned int)extra_space));
 		return False;
 	}
@@ -76,7 +41,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 		new_size = MAX(MAX_PDU_FRAG_LEN,extra_space);
 
 		if((new_data = malloc(new_size)) == NULL) {
-			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
+			DEBUG(0,("io_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
 			return False;
 		}
 		memset(new_data, '\0', new_size );
@@ -88,7 +53,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 		new_size = MAX(ps->buffer_size*2, ps->buffer_size + extra_space);		
 
 		if ((new_data = Realloc(ps->data_p, new_size)) == NULL) {
-			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
+			DEBUG(0,("io_grow: Realloc failure for size %u.\n",
 				(unsigned int)new_size));
 			return False;
 		}
@@ -104,14 +69,14 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
  Ensure we can read/write to a given offset.
  ********************************************************************/
 
-char *prs_mem_get(prs_struct *ps, uint32 extra_size)
+char *io_mem_get(io_struct *ps, uint32 extra_size)
 {
 	if(UNMARSHALLING(ps)) {
 		/*
 		 * If reading, ensure that we can read the requested size item.
 		 */
 		if (ps->data_offset + extra_size > ps->buffer_size) {
-			DEBUG(0,("prs_mem_get: reading data of size %u would overrun buffer.\n",
+			DEBUG(0,("io_mem_get: reading data of size %u would overrun buffer.\n",
 					(unsigned int)extra_size ));
 			return NULL;
 		}
@@ -119,7 +84,7 @@ char *prs_mem_get(prs_struct *ps, uint32 extra_size)
 		/*
 		 * Writing - grow the buffer if needed.
 		 */
-		if(!prs_grow(ps, extra_size))
+		if(!io_grow(ps, extra_size))
 			return False;
 	}
 	return &ps->data_p[ps->data_offset];
@@ -129,7 +94,7 @@ char *prs_mem_get(prs_struct *ps, uint32 extra_size)
  Initialise a parse structure - malloc the data if requested.
  ********************************************************************/
 
-BOOL prs_init(prs_struct *ps, uint32 size, BOOL io)
+BOOL io_init(io_struct *ps, uint32 size, BOOL io)
 {
 	ZERO_STRUCTP(ps);
 	ps->io = io;
@@ -142,7 +107,7 @@ BOOL prs_init(prs_struct *ps, uint32 size, BOOL io)
 	if (size != 0) {
 		ps->buffer_size = size;
 		if((ps->data_p = (char *)malloc((size_t)size)) == NULL) {
-			DEBUG(0,("prs_init: malloc fail for %u bytes.\n", (unsigned int)size));
+			DEBUG(0,("io_init: malloc fail for %u bytes.\n", (unsigned int)size));
 			return False;
 		}
 		ps->is_dynamic = True; /* We own this memory. */
@@ -157,7 +122,7 @@ BOOL prs_init(prs_struct *ps, uint32 size, BOOL io)
  XXXX side-effect of this function is to increase the debug depth XXXX
 
  ********************************************************************/
-void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
+void io_debug(io_struct *ps, int depth, char *desc, char *fn_name)
 {
 	DEBUG(5+depth, ("%s%06x %s %s\n", tab_depth(depth), ps->data_offset, fn_name, desc));
 }
@@ -167,13 +132,13 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
  zeros.
  ********************************************************************/
 
-BOOL io_align2(prs_struct *ps, int offset)
+BOOL io_align2(io_struct *ps, int offset)
 {
 	uint32 mod = (ps->data_offset + offset) & (2-1);
 
 	if (mod != 0) {
 		uint32 extra_space = (2 - mod);
-		if(!prs_grow(ps, extra_space))
+		if(!io_grow(ps, extra_space))
 			return False;
 		memset(&ps->data_p[ps->data_offset], '\0', (size_t)extra_space);
 		ps->data_offset += extra_space;
@@ -182,13 +147,13 @@ BOOL io_align2(prs_struct *ps, int offset)
 	return True;
 }
 
-BOOL io_align4(prs_struct *ps, int offset)
+BOOL io_align4(io_struct *ps, int offset)
 {
 	uint32 mod = (ps->data_offset + offset) & (4-1);
 
 	if (mod != 0) {
 		uint32 extra_space = (4 - mod);
-		if(!prs_grow(ps, extra_space))
+		if(!io_grow(ps, extra_space))
 			return False;
 		memset(&ps->data_p[ps->data_offset], '\0', (size_t)extra_space);
 		ps->data_offset += extra_space;
@@ -202,7 +167,7 @@ BOOL io_align4(prs_struct *ps, int offset)
  zeros.
  ********************************************************************/
 
-BOOL prs_align(prs_struct *ps, int align)
+BOOL io_align(io_struct *ps, int align)
 {
 	uint32 mod = ps->data_offset & (align-1);
 
@@ -210,7 +175,7 @@ BOOL prs_align(prs_struct *ps, int align)
 	
 	if (align != 0 && mod != 0) {
 		uint32 extra_space = (align - mod);
-		if(!prs_grow(ps, extra_space))
+		if(!io_grow(ps, extra_space))
 			return False;
 		memset(&ps->data_p[ps->data_offset], '\0', (size_t)extra_space);
 		ps->data_offset += extra_space;
@@ -220,21 +185,14 @@ BOOL prs_align(prs_struct *ps, int align)
 }
 
 
-void print_asc(int level, unsigned char *buf,int len)
-{
-	int i;
-	for (i=0;i<len;i++)
-		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
-}
-
 /*******************************************************************
  read from a socket into memory.
  ********************************************************************/
-BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout)
+BOOL io_read(io_struct *ps, int fd, size_t len, int timeout)
 {
 	BOOL ok;
 	size_t prev_size = ps->buffer_size;
-	if (!prs_grow(ps, len))
+	if (!io_grow(ps, len))
 	{
 		return False;
 	}
@@ -250,52 +208,19 @@ BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout)
 	return ok;
 }
 
-void dump_data(int level,char *buf1,int len)
-{
-  unsigned char *buf = (unsigned char *)buf1;
-  int i=0;
-  if (len<=0) return;
-
-  DEBUG(level,("[%03X] ",i));
-  for (i=0;i<len;) {
-    DEBUG(level,("%02X ",(int)buf[i]));
-    i++;
-    if (i%8 == 0) DEBUG(level,(" "));
-    if (i%16 == 0) {      
-      print_asc(level,&buf[i-16],8); DEBUG(level,(" "));
-      print_asc(level,&buf[i-8],8); DEBUG(level,("\n"));
-      if (i<len) DEBUG(level,("[%03X] ",i));
-    }
-  }
-  if (i%16) {
-    int n;
-
-    n = 16 - (i%16);
-    DEBUG(level,(" "));
-    if (n>8) DEBUG(level,(" "));
-    while (n--) DEBUG(level,("   "));
-
-    n = MIN(8,i%16);
-    print_asc(level,&buf[i-(i%16)],n); DEBUG(level,(" "));
-    n = (i%16) - n;
-    if (n>0) print_asc(level,&buf[i-n],n); 
-    DEBUG(level,("\n"));    
-  }
-}
-
 
 /*******************************************************************
  do IO on a uint32.
  ********************************************************************/
-BOOL io_uint32(char *name, prs_struct *ps, int depth, uint32 *data32, unsigned flags)
+BOOL io_uint32(char *name, io_struct *ps, int depth, uint32 *data32, unsigned flags)
 {
 	char *q;
 
 	if (!(flags & PARSE_SCALARS)) return True;
 
-	if (!prs_align(ps, 4)) return False;
+	if (!io_align(ps, 4)) return False;
 
-	q = prs_mem_get(ps, sizeof(uint32));
+	q = io_mem_get(ps, sizeof(uint32));
 	if (q == NULL) return False;
 
 	DBG_RW_IVAL(name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, *data32)
@@ -307,18 +232,18 @@ BOOL io_uint32(char *name, prs_struct *ps, int depth, uint32 *data32, unsigned f
 /*******************************************************************
  do IO on a uint16.
  ********************************************************************/
-BOOL io_uint16(char *name, prs_struct *ps, int depth, uint16 *data16, unsigned flags)
+BOOL io_uint16(char *name, io_struct *ps, int depth, uint16 *data16, unsigned flags)
 {
 	char *q;
 
 	if (!(flags & PARSE_SCALARS)) return True;
 
-	if (!prs_align(ps, 2)) return False;
+	if (!io_align(ps, 2)) return False;
 
-	q = prs_mem_get(ps, sizeof(uint16));
+	q = io_mem_get(ps, sizeof(uint16));
 	if (q == NULL) return False;
 
-	DBG_RW_IVAL(name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, *data16)
+	DBG_RW_SVAL(name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, *data16)
 	ps->data_offset += sizeof(uint16);
 
 	return True;
@@ -327,13 +252,13 @@ BOOL io_uint16(char *name, prs_struct *ps, int depth, uint16 *data16, unsigned f
 /*******************************************************************
  do IO on a uint8.
  ********************************************************************/
-BOOL io_uint8(char *name, prs_struct *ps, int depth, uint8 *data8, unsigned flags)
+BOOL io_uint8(char *name, io_struct *ps, int depth, uint8 *data8, unsigned flags)
 {
 	char *q;
 
 	if (!(flags & PARSE_SCALARS)) return True;
 
-	q = prs_mem_get(ps, sizeof(uint8));
+	q = io_mem_get(ps, sizeof(uint8));
 	if (q == NULL) return False;
 
 	DBG_RW_IVAL(name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, *data8)
@@ -345,7 +270,7 @@ BOOL io_uint8(char *name, prs_struct *ps, int depth, uint8 *data8, unsigned flag
 /*******************************************************************
  do IO on a pointer
  ********************************************************************/
-BOOL io_pointer(char *desc, prs_struct *ps, int depth, void **p, unsigned flags)
+BOOL io_pointer(char *desc, io_struct *ps, int depth, void **p, unsigned flags)
 {
 	uint32 v;
 
@@ -360,7 +285,7 @@ BOOL io_pointer(char *desc, prs_struct *ps, int depth, void **p, unsigned flags)
 /*******************************************************************
  Stream a null-terminated string.  
  ********************************************************************/
-BOOL io_string(char *name, prs_struct *ps, int depth, char **str, unsigned flags)
+BOOL io_SMBSTR(char *name, io_struct *ps, int depth, char **str, unsigned flags)
 {
 	char *q;
 	uint8 *start;
@@ -371,7 +296,7 @@ BOOL io_string(char *name, prs_struct *ps, int depth, char **str, unsigned flags
 	if (!(flags & PARSE_SCALARS)) return True;
 	
 	if (UNMARSHALLING(ps)) {
-		*str = prs_mem_get(ps, 0);
+		*str = io_mem_get(ps, 0);
 		if (*str == NULL)
 			return False;
 		len = strlen(*str);
@@ -379,25 +304,17 @@ BOOL io_string(char *name, prs_struct *ps, int depth, char **str, unsigned flags
 	}
 	else
 	{
-		len = strlen(*str);
+		len = strlen(*str)+1;
 		start = (uint8*)q;
 
 		for(i = 0; i < len; i++) {
-			q = prs_mem_get(ps, 1);
+			q = io_mem_get(ps, 1);
 			if (q == NULL)
 				return False;
 
 			RW_CVAL(ps->io, q, (*str)[i],0);
-			if ((*str)[i] == 0)
-				break;
 			ps->data_offset++;
 		}
-
-		/* The terminating null. */
-		(*str)[i] = '\0';
-		RW_CVAL(ps->io, q, (*str)[i], 0);
-
-		ps->data_offset++;
 	}
 
 	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth),
@@ -408,16 +325,14 @@ BOOL io_string(char *name, prs_struct *ps, int depth, char **str, unsigned flags
 /******************************************************************
  do IO on a byte array
  ********************************************************************/
-BOOL io_uint8s(char *name, prs_struct *ps, int depth, uint8 **data8s, int len, unsigned flags)
+BOOL io_uint8s(char *name, io_struct *ps, int depth, uint8 **data8s, int len, unsigned flags)
 {
 	char *q;
 	size_t num_bytes = len * sizeof(uint8);
 
 	if (!(flags & PARSE_SCALARS)) return True;
 
-	if (!prs_align(ps, 2)) return False;
-
-	q = prs_mem_get(ps, num_bytes);
+	q = io_mem_get(ps, num_bytes);
 	if (q == NULL) return False;
 
 	if (MARSHALLING(ps))
@@ -427,8 +342,26 @@ BOOL io_uint8s(char *name, prs_struct *ps, int depth, uint8 **data8s, int len, u
 	else
 	{
 		*data8s = q;
-		dump_data(depth+5, q, num_bytes);
+		dump_data(depth+5, *data8s, num_bytes);
 	}
+	ps->data_offset += num_bytes;
+
+	return True;
+}
+/******************************************************************
+ do IO on a fixed-size byte array
+ ********************************************************************/
+BOOL io_uint8s_fixed(char *name, io_struct *ps, int depth, uint8 *data8s, int len, unsigned flags)
+{
+	char *q;
+	size_t num_bytes = len * sizeof(uint8);
+
+	if (!(flags & PARSE_SCALARS)) return True;
+
+	q = io_mem_get(ps, num_bytes);
+	if (q == NULL) return False;
+
+	DBG_RW_PCVAL(True, name, depth, ps->data_offset, ps->io, q, data8s, len)
 	ps->data_offset += num_bytes;
 
 	return True;
@@ -436,17 +369,65 @@ BOOL io_uint8s(char *name, prs_struct *ps, int depth, uint8 **data8s, int len, u
 
 
 /******************************************************************
+ do IO on an io (eh?? :)
+ ********************************************************************/
+BOOL io_io_struct(char *name, io_struct *ps, int depth, io_struct *io, unsigned flags)
+{
+	char *q;
+	uint16 len;
+
+	if (!(flags & PARSE_SCALARS)) return True;
+
+	q = io_mem_get(ps, sizeof(uint16));
+	if (q == NULL) return False;
+
+	/* length first */
+	if (MARSHALLING(ps))
+	{
+		len = io->data_offset;
+	}
+	if (!io_uint16("len", ps, depth+1, &len, flags))
+	{
+		return False;
+	}
+	if (UNMARSHALLING(ps))
+	{
+		if (!io_init(io, len, UNMARSHALL))
+		{
+			return False;
+		}
+	}
+
+	/* now data */
+	q = io_mem_get(ps, len * sizeof(uint8));
+	if (q == NULL) return False;
+
+	if (MARSHALLING(ps))
+	{
+		DBG_RW_PCVAL(False, name, depth+1, ps->data_offset, ps->io, q, io->data_p, len)
+	}
+	else
+	{
+		io->data_p = q;
+		dump_data(depth+5, q, len);
+	}
+	ps->data_offset += len;
+
+	return True;
+}
+
+/******************************************************************
  do IO on a unicode array
  ********************************************************************/
-BOOL io_wstring(char *name, prs_struct *ps, int depth, uint16 *data16s, int len, unsigned flags)
+BOOL io_wstring(char *name, io_struct *ps, int depth, uint16 *data16s, int len, unsigned flags)
 {
 	char *q;
 
 	if (!(flags & PARSE_SCALARS)) return True;
 
-	if (!prs_align(ps, 2)) return False;
+	if (!io_align(ps, 2)) return False;
 
-	q = prs_mem_get(ps, len * sizeof(uint16));
+	q = io_mem_get(ps, len * sizeof(uint16));
 	if (q == NULL) return False;
 
 	DBG_RW_PSVAL(False, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data16s, len)
@@ -459,7 +440,19 @@ BOOL io_wstring(char *name, prs_struct *ps, int depth, uint16 *data16s, int len,
 /******************************************************************
 allocate some memory for a parse structure
  ********************************************************************/
-BOOL io_alloc(char *name, prs_struct *ps, void **ptr, unsigned size)
+void io_free(io_struct *ps)
+{
+	if (ps->is_dynamic && ps->data_p)
+	{
+		free(ps->data_p);
+		ps->data_p = NULL;
+	}
+}
+
+/******************************************************************
+allocate some memory for a parse structure
+ ********************************************************************/
+BOOL io_alloc(char *name, io_struct *ps, void **ptr, unsigned size)
 {
 	(*ptr) = (void *)malloc(size);
 	if (*ptr) return True;
@@ -469,7 +462,7 @@ BOOL io_alloc(char *name, prs_struct *ps, void **ptr, unsigned size)
 /******************************************************************
 realloc some memory for a parse structure
  ********************************************************************/
-BOOL io_realloc(char *name, prs_struct *ps, void **ptr, unsigned size)
+BOOL io_realloc(char *name, io_struct *ps, void **ptr, unsigned size)
 {
 	(*ptr) = (void *)Realloc(*ptr, size);
 	if (*ptr) return True;
