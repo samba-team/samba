@@ -805,6 +805,25 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		return print_fsp_open(conn, fname);
 	}
 
+	if (desired_access && ((desired_access & ~(SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES))==0) &&
+		((desired_access & (SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES)) != 0)) {
+		/* Stat open that doesn't trigger oplock breaks or share mode checks... ! JRA. */
+		oplock_request = 0;
+		fsp = open_file_stat(conn, fname, psbuf);
+		if (!fsp)
+			return NULL;
+
+		fsp->desired_access = desired_access;
+		if (Access)
+			*Access = DOS_OPEN_RDONLY;
+		if (paction)
+			*paction = FILE_WAS_OPENED;
+
+		DEBUG(10,("open_file_shared: stat open for fname = %s share_mode = %x\n",
+			fname, share_mode ));
+		return fsp;
+	}
+
 	fsp = file_new(conn);
 	if(!fsp)
 		return NULL;
@@ -1427,12 +1446,8 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	 */
 	
 	fsp->mode = psbuf->st_mode;
-	/* 
-	 * Don't store dev or inode, we don't want any iterator
-	 * to see this.
-	 */
-	fsp->inode = (SMB_INO_T)0;
-	fsp->dev = (SMB_DEV_T)0;
+	fsp->inode = psbuf->st_ino;
+	fsp->dev = psbuf->st_dev;
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
 	fsp->file_pid = global_smbpid;

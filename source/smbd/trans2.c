@@ -2302,7 +2302,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 			}
 
-			delete_pending = fsp->directory_delete_on_close;
+			delete_pending = fsp->is_directory ? fsp->directory_delete_on_close : 0;
 		} else {
 			/*
 			 * Original code - this is an open file.
