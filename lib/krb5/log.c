@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -363,7 +363,7 @@ krb5_closelog(krb5_context context,
 {
     int i;
     for(i = 0; i < fac->len; i++)
-	(*fac->val[i].close)(&fac->val[i].data);
+	(*fac->val[i].close)(fac->val[i].data);
     return 0;
 }
 
