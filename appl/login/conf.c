@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -49,7 +49,7 @@ login_conf_get_string(const char *str)
     char *value;
     if(login_conf_init() != 0)
 	return NULL;
-    if(cgetstr(confbuf, str, &value) < 0)
+    if(cgetstr(confbuf, (char *)str, &value) < 0)
 	return NULL;
     return value;
 }
