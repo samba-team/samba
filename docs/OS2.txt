@@ -1,0 +1,57 @@
+This describes how to use smbclient to connect to an OS/2 server.
+Knowing this allows you to use a OS/2 printer from unix.
+
+Author: riiber@oslonett.no
+
+
+How to login to an OS/2 server
+-------------------------------
+
+Sample setup for OS/2 server running LanMan 2.2:
+
+	OS/2 Server Name      : \\OBV11
+	OS/2 User Account     : ARNE
+	OS/2 Password         : xxx
+	OS/2 shared service 1 : LASER02	
+	OS/2 Shared service 2 : PCPROGS	
+	Samba NetBIOS name    : KLATREMUS
+
+First, the two servers were started with the commands
+smbd and nmbd -n KLATREMUS.
+
+Command to connect to a the shared printer LASER02 on the OS/2 server:
+n
+	smbclient '\\OBV11\LASER02' xxx -n ARNE -U ARNE -P
+
+and to connect to the shared drive 'PCPROGS':
+
+	smbclient '\\OBV11\PCPROGS' xxx -n ARNE -U ARNE
+
+
+If login to the OS/2 server fails:
+----------------------------------
+
+The remarkable OS/2 server requires NetBIOS name to be equal to User name.
+This was the only combination of (NetBIOS name, User name) that allowed login.
+
+Password xxx must be in upper case, case in user name is unimportant.
+
+The OS/2 server responds with "Bad password - name/password pair"
+if the password is illegal (in lowercase, for example).
+
+If correct user name and password, but invalid NetBIOS name is given,
+it responds with "... SMBtcon failed. ERRDOS - 65".
+
+The OS/2 server can disable login from a list of workstations (PCs)
+corresponding to the NetBIOS name (-n option). I set it up to
+allow login from any workstation.
+
+
+
+(I experimented quite a lot with the -U and -n options, printed and browsed
+the MS SMB protocol docs and the RFC's, then read some comp.protocols.smb,
+got some tips, tried some "stupid" command line options, 
+and at last I got it working!)
+
+-Arne-
+

@@ -1,0 +1,99 @@
+Here is some advice from maxfield@ctelcom.uucp.netcom.com (Wade Maxfie
+to use Samba with OS/2 Warp.
+
+Note that you may also find ftp://ftp.cdrom.com/pub/os2/new/os2net.faq
+useful.
+
+
+
+        Can I use Samba with Warp?
+
+        Yes.  The MSClient software at ftp.microsoft.com in the Bussys
+(lanman os2 directory) will work, sort of.  It is version 2.2c.
+
+        First, uncloack os2ver.  (attrib -h -r -s c:\os2ver).  It is a
+text file.  change netwksta.xxx to 20=netwksta.sys.  Also add
+20=setup.exe.  Another change will be needed, a .vdd file.  I remember
+it came up during the installation as being a wrong version.  I wrote
+the name down, changed os2ver to include it, and restarted the
+installation.
+
+ Here is a copy of my os2ver
+
+setup.exe
+netbios.os2
+nwifs.ifs
+netwksta.sys
+nwreq.sys
+netbios.sys
+ipx.sys
+netvdd.sys
+
+Re-cloak os2ver. (attrib +h +r +s c:\os2ver)
+
+Run the installation from an OS/2 Box.  Note that your mouse wont work,
+use the TAB key to move around, enter to select hilighted items.
+
+Here is a copy of my Config.sys file regarding the Laman entries.
+Note even though the version is 2.2c, it reports 2.2a in the text.
+
+REM ==== LANMAN 2.2a == DO NOT MODIFY BETWEEN THESE LINES == LANMAN 2.
+DEVICE=C:\LANMAN\DRIVERS\PROTMAN\PROTMAN.OS2 /i:C:\LANMAN
+DEVICE=C:\LANMAN\DRIVERS\ETHERNET\Ns2000\Ns2000.OS2
+RUN=C:\LANMAN\DRIVERS\PROTOCOL\tcpip\starttcp.exe
+RUN=C:\LANMAN\DRIVERS\PROTOCOL\tcpip\startnb.exe
+DEVICE=C:\LANMAN\DRIVERS\PROTOCOL\tcpip\tcpdrv.os2
+DEVICE=C:\LANMAN\DRIVERS\PROTOCOL\tcpip\nbdrv.os2
+DEVICE=C:\LANMAN\DRIVERS\PROTOCOL\tcpip\nmdrv.os2
+DEVICE=C:\LANMAN\arpa\sockdrv.os2
+DEVICE=C:\LANMAN\DRIVERS\PROTOCOL\NETBEUI\NETBEUI.OS2
+DEVICE=C:\LANMAN\NETPROG\RDRHELP.SYS
+IFS=C:\LANMAN\NETPROG\NETWKSTA.SYS /i:C:\LANMAN
+DEVICE=C:\LANMAN\NETPROG\NETVDD.SYS
+REM ==== LANMAN 2.2a == DO NOT MODIFY BETWEEN THESE LINES == LANMAN 2.
+
+
+       If you have an NE2000 card, don't reboot, or you'll be sorry.
+enable the automatic backup mechanism for recovering old config.sys and
+other files in OS/2.  It paid for itself during this installation nightm
+before I knew better!)
+
+        Next, (or perhaps before this), if you have an NE2000 adaptor,
+get the ns2000 files from hobbes.nmsu.edu (in ns2000.zip).  I manually
+patched protocol.ini to refer to that adaptor, and copied it into my
+c:\lanman directory.  Note that I also modified the driver to be loaded
+in the config.sys to the ns2000.os2.  It might install as an "other"
+adaptor.
+
+      A command file "startup.cmd" is placed in c:\.  This file is
+automatically run when OS/2 Warp starts.
+Here is a copy of my startup file.  Note that Warp sometimes fails to
+login properly to the server.  I solve this by checking for the
+existance of a file, and rerunning the loing if that file fails to
+exist.
+
+@REM ==== LANMAN 2.2a == DO NOT MODIFY BETWEEN THESE LINES == LANMAN
+NET START WORKSTATION
+:relogin
+NET LOGON maxfield mypassword /y
+rem net use f: \\packard90\d$
+rem net use g: \\linuxone\cdromsdir
+rem net use h: \\linuxone\public
+:doOver
+if not exist f:\wildcat\wildcat.exe goto relogin
+@REM ==== LANMAN 2.2a == DO NOT MODIFY BETWEEN THESE LINES == LANMAN
+exit
+
+        Finally, the system expects to be on a domain with a domain
+server.  BTW, TCP/IP and NetBeui allow simultaneous communication with
+Os/2 lanserver 4.0, and Samba.  (Note: Lanserver 4.0 won't yet to
+TCP/IP.  (Well,it might, but it crashes before I get to that point, so I
+havent' been able to enable it))
+
+I have not yet tried with only a SAMBA server on the domain.
+
+    I would be glad to try to answer any questions at above e-mail
+address, if I can.
+
+wade
+
