@@ -64,3 +64,7 @@ int initgroups(char *name,gid_t id);
 #define crypt ufc_crypt
 #endif
 
+
+#ifndef NGROUPS_MAX
+#define NGROUPS_MAX 32 /* Guess... */
+#endif

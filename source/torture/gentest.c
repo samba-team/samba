@@ -1085,27 +1085,27 @@ static BOOL handler_open(int instance)
 	union smb_open parm[NSERVERS];
 	NTSTATUS status[NSERVERS];
 
-	parm[0].open.level = RAW_OPEN_OPEN;
-	parm[0].open.in.flags = gen_bits_mask2(0xF, 0xFFFF);
-	parm[0].open.in.search_attrs = gen_attrib();
-	parm[0].open.in.fname = gen_fname_open(instance);
+	parm[0].openold.level = RAW_OPEN_OPEN;
+	parm[0].openold.in.flags = gen_bits_mask2(0xF, 0xFFFF);
+	parm[0].openold.in.search_attrs = gen_attrib();
+	parm[0].openold.in.fname = gen_fname_open(instance);
 
 	if (!options.use_oplocks) {
 		/* mask out oplocks */
-		parm[0].open.in.flags &= ~(OPENX_FLAGS_REQUEST_OPLOCK|
+		parm[0].openold.in.flags &= ~(OPENX_FLAGS_REQUEST_OPLOCK|
 					   OPENX_FLAGS_REQUEST_BATCH_OPLOCK);
 	}
 	
 	GEN_COPY_PARM;
 	GEN_CALL(smb_raw_open(tree, current_op.mem_ctx, &parm[i]));
 
-	CHECK_EQUAL(open.out.attrib);
-	CHECK_TIMES_EQUAL(open.out.write_time);
-	CHECK_EQUAL(open.out.size);
-	CHECK_EQUAL(open.out.rmode);
+	CHECK_EQUAL(openold.out.attrib);
+	CHECK_TIMES_EQUAL(openold.out.write_time);
+	CHECK_EQUAL(openold.out.size);
+	CHECK_EQUAL(openold.out.rmode);
 
 	/* open creates a new file handle */
-	ADD_HANDLE(parm[0].open.in.fname, open.out.fnum);
+	ADD_HANDLE(parm[0].openold.in.fname, openold.out.fnum);
 
 	return True;
 }

@@ -300,15 +300,15 @@ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_ope
 	int len;
 	struct smbcli_request *req = NULL; 
 
-	switch (parms->open.level) {
+	switch (parms->generic.level) {
 	case RAW_OPEN_T2OPEN:
 		return smb_raw_t2open_send(tree, parms);
 
 	case RAW_OPEN_OPEN:
 		SETUP_REQUEST(SMBopen, 2, 0);
-		SSVAL(req->out.vwv, VWV(0), parms->open.in.flags);
-		SSVAL(req->out.vwv, VWV(1), parms->open.in.search_attrs);
-		smbcli_req_append_ascii4(req, parms->open.in.fname, STR_TERMINATE);
+		SSVAL(req->out.vwv, VWV(0), parms->openold.in.flags);
+		SSVAL(req->out.vwv, VWV(1), parms->openold.in.search_attrs);
+		smbcli_req_append_ascii4(req, parms->openold.in.fname, STR_TERMINATE);
 		break;
 		
 	case RAW_OPEN_OPENX:
@@ -397,18 +397,18 @@ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, unio
 		goto failed;
 	}
 
-	switch (parms->open.level) {
+	switch (parms->openold.level) {
 	case RAW_OPEN_T2OPEN:
 		return smb_raw_t2open_recv(req, mem_ctx, parms);
 
 	case RAW_OPEN_OPEN:
 		SMBCLI_CHECK_WCT(req, 7);
-		parms->open.out.fnum = SVAL(req->in.vwv, VWV(0));
-		parms->open.out.attrib = SVAL(req->in.vwv, VWV(1));
-		parms->open.out.write_time = raw_pull_dos_date3(req->transport,
+		parms->openold.out.fnum = SVAL(req->in.vwv, VWV(0));
+		parms->openold.out.attrib = SVAL(req->in.vwv, VWV(1));
+		parms->openold.out.write_time = raw_pull_dos_date3(req->transport,
 								req->in.vwv + VWV(2));
-		parms->open.out.size = IVAL(req->in.vwv, VWV(4));
-		parms->open.out.rmode = SVAL(req->in.vwv, VWV(6));
+		parms->openold.out.size = IVAL(req->in.vwv, VWV(4));
+		parms->openold.out.rmode = SVAL(req->in.vwv, VWV(6));
 		break;
 
 	case RAW_OPEN_OPENX:
