@@ -173,9 +173,9 @@ BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, in
 
 	if (ret) {
 		sock->hostname = talloc_steal(sock, name);
+	} else {
+		talloc_free(name);
 	}
-
-	talloc_destroy(name);
 
 	return ret;
 }
