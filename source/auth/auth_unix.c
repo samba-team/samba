@@ -106,7 +106,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	
 	unbecome_root();
 
-	if NT_STATUS_IS_OK(nt_status) {
+	if (NT_STATUS_IS_OK(nt_status)) {
 		if (pass) {
 			make_server_info_pw(server_info, pass);
 		} else {
