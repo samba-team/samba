@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -67,19 +67,18 @@ kadm5_s_rename_principal(void *server_handle,
     {
 	/* fix salt */
 	int i;
-	krb5_data salt;
-	krb5_get_salt(target, &salt);
+	Salt salt;
+	krb5_get_salt(source, &salt.salt);
+	salt.type = hdb_pw_salt;
 	for(i = 0; i < ent.keys.len; i++){
 	    if(ent.keys.val[i].salt == NULL){
 		ent.keys.val[i].salt = malloc(sizeof(*ent.keys.val[i].salt));
-		ent.keys.val[i].salt->type = hdb_pw_salt;
-		ret = krb5_data_copy(&ent.keys.val[i].salt->salt, 
-				     salt.data, salt.length);
+		ret = copy_Salt(&salt, ent.keys.val[i].salt);
 		if(ret)
 		    break;
 	    }
 	}
-	krb5_data_free(&salt);
+	free_Salt(&salt);
     }
     if(ret)
 	goto out2;
