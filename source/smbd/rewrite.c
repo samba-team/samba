@@ -70,6 +70,13 @@ void smbd_process_init(void)
 	if (!init_change_notify())
 		exit(1);
 
+	/* Start old-style secrets subsystem */
+	
+	/* We must perform secrets_init(), as it sets up important
+	 * seeding for the random number generator.
+	 */
+	secrets_init();
+	
 	talloc_destroy(mem_ctx);
 }
 
