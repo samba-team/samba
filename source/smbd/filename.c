@@ -3,6 +3,8 @@
    Version 1.9.
    filename handling routines
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 1999-200
+   Copyright (C) Ying Chen 2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,6 +20,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+
+/*
+ * New hash table stat cache code added by Ying Chen.
+ */
 
 #include "includes.h"
 
@@ -109,15 +115,12 @@ stat cache was %f%% effective.\n", global_stat_cache_lookups,
 }
 
 typedef struct {
-  ubi_dlNode link;
   int name_len;
-  pstring orig_name;
-  pstring translated_name;
+  char names[2]; /* This is extended via malloc... */
 } stat_cache_entry;
 
-#define MAX_STAT_CACHE_SIZE 50
-
-static ubi_dlList stat_cache = { NULL, (ubi_dlNodePtr)&stat_cache, 0};
+#define INIT_STAT_CACHE_SIZE 512
+static hash_table stat_cache;
 
 /****************************************************************************
  Compare a pathname to a name in the stat cache - of a given length.
@@ -144,9 +147,11 @@ static BOOL stat_name_equal_len( char *stat_name, char *orig_name, int len)
 static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
 {
   stat_cache_entry *scp;
+  stat_cache_entry *found_scp;
   pstring orig_name;
   pstring translated_path;
   int namelen;
+  hash_element *hash_elem;
 
   if (!lp_stat_cache()) return;
 
@@ -194,39 +199,39 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
    * add it.
    */
 
-  for( scp = (stat_cache_entry *)ubi_dlFirst( &stat_cache); scp; 
-                        scp = (stat_cache_entry *)ubi_dlNext( scp )) {
-    if((strcmp( scp->orig_name, orig_name) == 0) &&
-       (strcmp( scp->translated_name, translated_path) == 0)) {
-      /*
-       * Name does exist - promote it.
-       */
-      if( (stat_cache_entry *)ubi_dlFirst( &stat_cache) != scp ) {
-        ubi_dlRemThis( &stat_cache, scp);
-        ubi_dlAddHead( &stat_cache, scp);
+  if (hash_elem = hash_lookup(&stat_cache, orig_name)) {
+    found_scp = (stat_cache_entry *)(hash_elem->value);
+    if (strcmp((found_scp->names+found_scp->name_len+1), translated_path) == 0) {
+      return;
+    } else {
+      hash_remove(&stat_cache, hash_elem);
+      if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)+2*namelen)) == NULL) {
+        DEBUG(0,("stat_cache_add: Out of memory !\n"));
+        return;
       }
+      pstrcpy(scp->names, orig_name);
+      pstrcpy((scp->names+namelen+1), translated_path);
+      scp->name_len = namelen;
+      hash_insert(&stat_cache, (char *)scp, orig_name);
+    }
+    return;
+  } else {
+
+    /*
+     * New entry.
+     */
+
+    if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)+2*namelen)) == NULL) {
+      DEBUG(0,("stat_cache_add: Out of memory !\n"));
       return;
     }
+    pstrcpy(scp->names, orig_name);
+    pstrcpy(scp->names+namelen+1, translated_path);
+    scp->name_len = namelen;
+    hash_insert(&stat_cache, (char *)scp, orig_name);
   }
 
-  if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry))) == NULL) {
-    DEBUG(0,("stat_cache_add: Out of memory !\n"));
-    return;
-  }
-
-  pstrcpy(scp->orig_name, orig_name);
-  pstrcpy(scp->translated_name, translated_path);
-  scp->name_len = namelen;
-
-  ubi_dlAddHead( &stat_cache, scp);
-
-  DEBUG(10,("stat_cache_add: Added entry %s -> %s\n", scp->orig_name, scp->translated_name ));
-
-  if(ubi_dlCount(&stat_cache) > lp_stat_cache_size()) {
-    scp = (stat_cache_entry *)ubi_dlRemTail( &stat_cache );
-    free((char *)scp);
-    return;
-  }
+  DEBUG(5,("stat_cache_add: Added entry %s -> %s\n", scp->names, (scp->names+scp->name_len+1)));
 }
 
 /****************************************************************************
@@ -238,10 +243,14 @@ static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRU
 {
   stat_cache_entry *scp;
   stat_cache_entry *longest_hit = NULL;
+  char *trans_name;
   pstring chk_name;
   int namelen;
+  hash_element *hash_elem;
+  char *sp;
 
-  if (!lp_stat_cache()) return False;
+  if (!lp_stat_cache())
+    return False;
  
   namelen = strlen(name);
 
@@ -260,55 +269,44 @@ static BOOL stat_cache_lookup( char *name, char *dirpath, char **start, SMB_STRU
   if(!case_sensitive)
     strupper( chk_name );
 
-  for( scp = (stat_cache_entry *)ubi_dlFirst( &stat_cache); scp; 
-                        scp = (stat_cache_entry *)ubi_dlNext( scp )) {
-    if(scp->name_len <= namelen) {
-      if(stat_name_equal_len(scp->orig_name, chk_name, scp->name_len)) {
-        if((longest_hit == NULL) || (longest_hit->name_len <= scp->name_len))
-          longest_hit = scp;
+  while (1) {
+    hash_elem = hash_lookup(&stat_cache, chk_name);
+    if(hash_elem == NULL) {
+      /*
+       * Didn't find it - remove last component for next try.
+       */
+      sp = strrchr(chk_name, '/');
+      if (sp) {
+        *sp = '\0';
+      } else {
+        /*
+         * We reached the end of the name - no match.
+         */
+        global_stat_cache_misses++;
+        return False;
       }
+      if((*chk_name == '\0') || (strcmp(chk_name, ".") == 0)
+                          || (strcmp(chk_name, "..") == 0)) {
+        global_stat_cache_misses++;
+        return False;
+      }
+    } else {
+      scp = (stat_cache_entry *)(hash_elem->value);
+      global_stat_cache_hits++;
+      trans_name = scp->names+scp->name_len+1;
+      if(dos_stat( trans_name, pst) != 0) {
+        /* Discard this entry - it doesn't exist in the filesystem.  */
+        hash_remove(&stat_cache, hash_elem);
+        return False;
+      }
+      memcpy(name, trans_name, scp->name_len);
+      *start = &name[scp->name_len];
+      if(**start == '/')
+        ++*start;
+      StrnCpy( dirpath, trans_name, name - (*start));
+      return (namelen == scp->name_len);
     }
   }
-
-  if(longest_hit == NULL) {
-    DEBUG(10,("stat_cache_lookup: cache miss on %s\n", name));
-    global_stat_cache_misses++;
-    return False;
-  }
-
-  global_stat_cache_hits++;
-
-  DEBUG(10,("stat_cache_lookup: cache hit for name %s. %s -> %s\n",
-        name, longest_hit->orig_name, longest_hit->translated_name ));
-
-  /*
-   * longest_hit is the longest match we got in the list.
-   * Check it exists - if so, overwrite the original name
-   * and then promote it to the top.
-   */
-
-  if(dos_stat( longest_hit->translated_name, pst) != 0) {
-    /*
-     * Discard this entry.
-     */
-    ubi_dlRemThis( &stat_cache, longest_hit);
-    free((char *)longest_hit);
-    return False;
-  }
-
-  memcpy(name, longest_hit->translated_name, longest_hit->name_len);
-  if( (stat_cache_entry *)ubi_dlFirst( &stat_cache) != longest_hit ) {
-    ubi_dlRemThis( &stat_cache, longest_hit);
-    ubi_dlAddHead( &stat_cache, longest_hit);
-  }
-
-  *start = &name[longest_hit->name_len];
-  if(**start == '/')
-    ++*start;
-
-  StrnCpy( dirpath, longest_hit->translated_name, name - (*start));
-
-  return (namelen == longest_hit->name_len);
 }
 
 /****************************************************************************
@@ -352,7 +350,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   *dirpath = 0;
   *bad_path = False;
   if(pst) {
-	  ZERO_STRUCTP(pst);
+    ZERO_STRUCTP(pst);
   }
 
   if(saved_last_component)
@@ -744,3 +742,16 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
   CloseDir(cur_dir);
   return(False);
 }
+
+/*************************************************************************** **
+ * Initializes or clears the stat cache.
+ *
+ *  Input:  none.
+ *  Output: none.
+ *
+ * ************************************************************************** **
+ */
+BOOL reset_stat_cache( void )
+{
+  return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));
+} /* reset_stat_cache  */

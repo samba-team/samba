@@ -619,6 +619,7 @@ extern int errno;
 #include "../tdb/tdb.h"
 #include "talloc.h"
 #include "interfaces.h"
+#include "hash.h"
 
 #ifdef HAVE_FNMATCH
 #include <fnmatch.h>
