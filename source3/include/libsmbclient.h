@@ -27,25 +27,33 @@
 /*-------------------------------------------------------------------*/
 /* The following are special comments to instruct DOXYGEN (automated 
  * documentation tool:
- */
+*/
+/** \defgroup libsmbclient
+*/
 /** \defgroup structure Data Structures Type and Constants
- *   Data structures, types, and constants
- */
+*   \ingroup libsmbclient
+*   Data structures, types, and constants
+*/
 /** \defgroup file File Functions
- *   Functions used to access individual file contents
- */
+*   \ingroup libsmbclient
+*   Functions used to access individual file contents
+*/
 /** \defgroup directory Directory Functions
- *   Functions used to access directory entries
- */
+*   \ingroup libsmbclient
+*   Functions used to access directory entries
+*/
 /** \defgroup attribute Attributes Functions
- *   Functions used to view or change file and directory attributes
- */
+*   \ingroup libsmbclient
+*   Functions used to view or change file and directory attributes
+*/
 /** \defgroup print Print Functions
- *   Functions used to access printing functionality
- */
+*   \ingroup libsmbclient
+*   Functions used to access printing functionality
+*/
 /** \defgroup attribute Miscellaneous Functions
- *   Functions that don't fit in to other categories
- */
+*   \ingroup libsmbclient
+*   Functions that don't fit in to other categories
+*/
 /*-------------------------------------------------------------------*/   
 
 /* Make sure we have the following includes for now ... */
