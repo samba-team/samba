@@ -86,10 +86,8 @@ pstring global_scope = "";
 #endif
 
 /* some helpful bits */
-#define pSERVICE(i) ServicePtrs[i]
-#define iSERVICE(i) (*pSERVICE(i))
-#define LP_SNUM_OK(iService) (((iService) >= 0) && ((iService) < iNumServices) && iSERVICE(iService).valid)
-#define VALID(i) iSERVICE(i).valid
+#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && ServicePtrs[(i)]->valid)
+#define VALID(i) ServicePtrs[i]->valid
 
 int keepalive = DEFAULT_KEEPALIVE;
 BOOL use_getwd_cache = True;
@@ -1402,13 +1400,13 @@ static char *lp_string(const char *s)
  int fn_name(void) {return(*(int *)(ptr));}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i)&&pSERVICE(i)->val)?pSERVICE(i)->val : sDefault.val));}
+ char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
 #define FN_LOCAL_BOOL(fn_name,val) \
- BOOL fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
+ BOOL fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_CHAR(fn_name,val) \
- char fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
+ char fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_INTEGER(fn_name,val) \
- int fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
+ int fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 
 FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
@@ -1716,8 +1714,6 @@ static void free_service(service * pservice)
 		pservice->copymap = NULL;
 	}
 
-	pservice->valid = False;
-
 	for (i = 0; parm_table[i].label; i++)
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
@@ -1725,6 +1721,8 @@ static void free_service(service * pservice)
 			string_free((char **)
 				    (((char *)pservice) +
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
+
+	ZERO_STRUCTP(pservice);
 }
 
 /***************************************************************************
@@ -1749,7 +1747,7 @@ static int add_a_service(service * pservice, char *name)
 
 	/* find an invalid one */
 	for (i = 0; i < iNumServices; i++)
-		if (!pSERVICE(i)->valid)
+		if (!ServicePtrs[i]->valid)
 			break;
 
 	/* if not, then create one */
@@ -1760,24 +1758,24 @@ static int add_a_service(service * pservice, char *name)
 					     sizeof(service *) *
 					     num_to_alloc);
 		if (ServicePtrs)
-			pSERVICE(iNumServices) =
+			ServicePtrs[iNumServices] =
 				(service *) malloc(sizeof(service));
 
-		if (!ServicePtrs || !pSERVICE(iNumServices))
+		if (!ServicePtrs || !ServicePtrs[iNumServices])
 			return (-1);
 
 		iNumServices++;
 	}
 	else
-		free_service(pSERVICE(i));
+		free_service(ServicePtrs[i]);
 
-	pSERVICE(i)->valid = True;
+	ServicePtrs[i]->valid = True;
 
-	init_service(pSERVICE(i));
-	copy_service(pSERVICE(i), &tservice, NULL);
+	init_service(ServicePtrs[i]);
+	copy_service(ServicePtrs[i], &tservice, NULL);
 	if (name)
 	{
-		string_set(&iSERVICE(i).szService, name);
+		string_set(&ServicePtrs[i]->szService, name);
 	}
 	return (i);
 }
@@ -1788,23 +1786,23 @@ from service ifrom. homename must be in DOS codepage.
 ***************************************************************************/
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
 {
-	int i = add_a_service(pSERVICE(iDefaultService), pszHomename);
+	int i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
 	if (i < 0)
 		return (False);
 
-	if (!(*(iSERVICE(i).szPath))
-	    || strequal(iSERVICE(i).szPath, lp_pathname(-1)))
-		string_set(&iSERVICE(i).szPath, pszHomedir);
-	if (!(*(iSERVICE(i).comment)))
+	if (!(*(ServicePtrs[i]->szPath))
+	    || strequal(ServicePtrs[i]->szPath, lp_pathname(-1)))
+		string_set(&ServicePtrs[i]->szPath, pszHomedir);
+	if (!(*(ServicePtrs[i]->comment)))
 	{
 		pstring comment;
 		slprintf(comment, sizeof(comment) - 1,
 			 "Home directory of %s", pszHomename);
-		string_set(&iSERVICE(i).comment, comment);
+		string_set(&ServicePtrs[i]->comment, comment);
 	}
-	iSERVICE(i).bAvailable = sDefault.bAvailable;
-	iSERVICE(i).bBrowseable = sDefault.bBrowseable;
+	ServicePtrs[i]->bAvailable = sDefault.bAvailable;
+	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
 	DEBUG(3,
 	      ("adding home directory %s at %s\n", pszHomename, pszHomedir));
@@ -1817,7 +1815,7 @@ add a new service, based on an old one. pszService must be in DOS codepage.
 ***************************************************************************/
 int lp_add_service(char *pszService, int iDefaultService)
 {
-	return (add_a_service(pSERVICE(iDefaultService), pszService));
+	return (add_a_service(ServicePtrs[iDefaultService], pszService));
 }
 
 
@@ -1835,18 +1833,18 @@ static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
 	slprintf(comment, sizeof(comment) - 1,
 		 "IPC Service (%s)", Globals.szServerString);
 
-	string_set(&iSERVICE(i).szPath, tmpdir());
-	string_set(&iSERVICE(i).szUsername, "");
-	string_set(&iSERVICE(i).comment, comment);
-	string_set(&iSERVICE(i).fstype, "IPC");
-	iSERVICE(i).status = False;
-	iSERVICE(i).iMaxConnections = 0;
-	iSERVICE(i).bAvailable = True;
-	iSERVICE(i).bRead_only = True;
-	iSERVICE(i).bGuest_only = False;
-	iSERVICE(i).bGuest_ok = guest_ok;
-	iSERVICE(i).bPrint_ok = False;
-	iSERVICE(i).bBrowseable = sDefault.bBrowseable;
+	string_set(&ServicePtrs[i]->szPath, tmpdir());
+	string_set(&ServicePtrs[i]->szUsername, "");
+	string_set(&ServicePtrs[i]->comment, comment);
+	string_set(&ServicePtrs[i]->fstype, "IPC");
+	ServicePtrs[i]->status = False;
+	ServicePtrs[i]->iMaxConnections = 0;
+	ServicePtrs[i]->bAvailable = True;
+	ServicePtrs[i]->bRead_only = True;
+	ServicePtrs[i]->bGuest_only = False;
+	ServicePtrs[i]->bGuest_ok = guest_ok;
+	ServicePtrs[i]->bPrint_ok = False;
+	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
 	DEBUG(3, ("adding IPC service %s\n", ipc_name));
 
@@ -1861,7 +1859,7 @@ printername must be in DOS codepage.
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 {
 	char *comment = "From Printcap";
-	int i = add_a_service(pSERVICE(iDefaultService), pszPrintername);
+	int i = add_a_service(ServicePtrs[iDefaultService], pszPrintername);
 
 	if (i < 0)
 		return (False);
@@ -1872,17 +1870,17 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 	/* entry (if/when the 'available' keyword is implemented!).    */
 
 	/* the printer name is set to the service name. */
-	string_set(&iSERVICE(i).szPrintername, pszPrintername);
-	string_set(&iSERVICE(i).comment, comment);
-	iSERVICE(i).bBrowseable = sDefault.bBrowseable;
+	string_set(&ServicePtrs[i]->szPrintername, pszPrintername);
+	string_set(&ServicePtrs[i]->comment, comment);
+	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 	/* Printers cannot be read_only. */
-	iSERVICE(i).bRead_only = False;
+	ServicePtrs[i]->bRead_only = False;
 	/* No share modes on printer services. */
-	iSERVICE(i).bShareModes = False;
+	ServicePtrs[i]->bShareModes = False;
 	/* No oplocks on printer services. */
-	iSERVICE(i).bOpLocks = False;
+	ServicePtrs[i]->bOpLocks = False;
 	/* Printer services must be printable. */
-	iSERVICE(i).bPrint_ok = True;
+	ServicePtrs[i]->bPrint_ok = True;
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
@@ -1947,12 +1945,10 @@ static int getservicebyname(char *pszServiceName, service * pserviceDest)
 
 	for (iService = iNumServices - 1; iService >= 0; iService--)
 		if (VALID(iService) &&
-		    strwicmp(iSERVICE(iService).szService,
-			     pszServiceName) == 0)
+		    strwicmp(ServicePtrs[iService]->szService, pszServiceName) == 0)
 		{
 			if (pserviceDest != NULL)
-				copy_service(pserviceDest, pSERVICE(iService),
-					     NULL);
+				copy_service(pserviceDest, ServicePtrs[iService], NULL);
 			break;
 		}
 
@@ -2035,7 +2031,7 @@ static BOOL service_ok(int iService)
 	BOOL bRetval;
 
 	bRetval = True;
-	if (iSERVICE(iService).szService[0] == '\0')
+	if (ServicePtrs[iService]->szService[0] == '\0')
 	{
 		DEBUG(0,
 		      ("The following message indicates an internal error:\n"));
@@ -2045,31 +2041,31 @@ static BOOL service_ok(int iService)
 
 	/* The [printers] entry MUST be printable. I'm all for flexibility, but */
 	/* I can't see why you'd want a non-printable printer service...        */
-	if (strwicmp(iSERVICE(iService).szService, PRINTERS_NAME) == 0) {
-		if (!iSERVICE(iService).bPrint_ok) {
+	if (strwicmp(ServicePtrs[iService]->szService, PRINTERS_NAME) == 0) {
+		if (!ServicePtrs[iService]->bPrint_ok) {
 			DEBUG(0,
 			      ("WARNING: [%s] service MUST be printable!\n",
-			       iSERVICE(iService).szService));
-			iSERVICE(iService).bPrint_ok = True;
+			       ServicePtrs[iService]->szService));
+			ServicePtrs[iService]->bPrint_ok = True;
 		}
 		/* [printers] service must also be non-browsable. */
-		if (iSERVICE(iService).bBrowseable)
-			iSERVICE(iService).bBrowseable = False;
+		if (ServicePtrs[iService]->bBrowseable)
+			ServicePtrs[iService]->bBrowseable = False;
 	}
 
-	if (iSERVICE(iService).szPath[0] == '\0' &&
-	    strwicmp(iSERVICE(iService).szService, HOMES_NAME) != 0)
+	if (ServicePtrs[iService]->szPath[0] == '\0' &&
+	    strwicmp(ServicePtrs[iService]->szService, HOMES_NAME) != 0)
 	{
 		DEBUG(0,
 		      ("No path in service %s - using %s\n",
-		       iSERVICE(iService).szService, tmpdir()));
-		string_set(&iSERVICE(iService).szPath, tmpdir());
+		       ServicePtrs[iService]->szService, tmpdir()));
+		string_set(&ServicePtrs[iService]->szPath, tmpdir());
 	}
 
 	/* If a service is flagged unavailable, log the fact at level 0. */
-	if (!iSERVICE(iService).bAvailable)
+	if (!ServicePtrs[iService]->bAvailable)
 		DEBUG(1, ("NOTE: Service %s is flagged unavailable.\n",
-			  iSERVICE(iService).szService));
+			  ServicePtrs[iService]->szService));
 
 	return (bRetval);
 }
@@ -2415,9 +2411,9 @@ static BOOL handle_copy(char *pszParmValue, char **ptr)
 		}
 		else
 		{
-			copy_service(pSERVICE(iServiceIndex),
+			copy_service(ServicePtrs[iServiceIndex],
 				     &serviceTemp,
-				     iSERVICE(iServiceIndex).copymap);
+				     ServicePtrs[iServiceIndex]->copymap);
 			bRetval = True;
 		}
 	}
@@ -2514,7 +2510,7 @@ static void init_copymap(service * pservice)
 ***************************************************************************/
 void *lp_local_ptr(int snum, void *ptr)
 {
-	return (void *)(((char *)pSERVICE(snum)) + PTR_DIFF(ptr, &sDefault));
+	return (void *)(((char *)ServicePtrs[snum]) + PTR_DIFF(ptr, &sDefault));
 }
 
 /***************************************************************************
@@ -2559,20 +2555,20 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 			return (True);
 		}
 		parm_ptr =
-			((char *)pSERVICE(snum)) + PTR_DIFF(def_ptr,
+			((char *)ServicePtrs[snum]) + PTR_DIFF(def_ptr,
 							    &sDefault);
 	}
 
 	if (snum >= 0)
 	{
-		if (!iSERVICE(snum).copymap)
-			init_copymap(pSERVICE(snum));
+		if (!ServicePtrs[snum]->copymap)
+			init_copymap(ServicePtrs[snum]);
 
 		/* this handles the aliases - set the copymap for other entries with
 		   the same data pointer */
 		for (i = 0; parm_table[i].label; i++)
 			if (parm_table[i].ptr == parm_table[parmnum].ptr)
-				iSERVICE(snum).copymap[i] = False;
+				ServicePtrs[snum]->copymap[i] = False;
 	}
 
 	/* if it is a special case then go ahead */
@@ -2907,7 +2903,7 @@ BOOL lp_is_default(int snum, struct parm_struct *parm)
 	int pdiff = PTR_DIFF(parm->ptr, &sDefault);
 
 	return equal_parameter(parm->type,
-			       ((char *)pSERVICE(snum)) + pdiff,
+			       ((char *)ServicePtrs[snum]) + pdiff,
 			       ((char *)&sDefault) + pdiff);
 }
 
@@ -2981,7 +2977,7 @@ struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters)
 	}
 	else
 	{
-		service *pService = pSERVICE(snum);
+		service *pService = ServicePtrs[snum];
 
 		for (; parm_table[*i].label; (*i)++)
 		{
@@ -3043,7 +3039,7 @@ Return TRUE if the passed service number is within range.
 ***************************************************************************/
 BOOL lp_snum_ok(int iService)
 {
-	return (LP_SNUM_OK(iService) && iSERVICE(iService).bAvailable);
+	return (LP_SNUM_OK(iService) && ServicePtrs[iService]->bAvailable);
 }
 
 
@@ -3093,9 +3089,9 @@ void lp_add_one_printer(char *name, char *comment)
 		lp_add_printer(name, printers);
 		if ((i = lp_servicenumber(name)) >= 0)
 		{
-			string_set(&iSERVICE(i).comment, comment);
-            unix_to_dos(iSERVICE(i).comment, True);
-			iSERVICE(i).autoloaded = True;
+			string_set(&ServicePtrs[i]->comment, comment);
+            unix_to_dos(ServicePtrs[i]->comment, True);
+			ServicePtrs[i]->autoloaded = True;
 		}
 	}
 }
@@ -3121,8 +3117,8 @@ void lp_killunused(BOOL (*snumused) (int))
 
 		if (!snumused || !snumused(i))
 		{
-			iSERVICE(i).valid = False;
-			free_service(pSERVICE(i));
+			ServicePtrs[i]->valid = False;
+			free_service(ServicePtrs[i]);
 		}
 	}
 }
@@ -3135,8 +3131,8 @@ void lp_killservice(int iServiceIn)
 {
 	if (VALID(iServiceIn))
 	{
-		iSERVICE(iServiceIn).valid = False;
-		free_service(pSERVICE(iServiceIn));
+		ServicePtrs[iServiceIn]->valid = False;
+		free_service(ServicePtrs[iServiceIn]);
 	}
 }
 
@@ -3340,9 +3336,9 @@ void lp_dump_one(FILE * f, BOOL show_defaults, int snum, char *(*dos_to_ext)(cha
 {
 	if (VALID(snum))
 	{
-		if (iSERVICE(snum).szService[0] == '\0')
+		if (ServicePtrs[snum]->szService[0] == '\0')
 			return;
-		dump_a_service(pSERVICE(snum), f, dos_to_ext);
+		dump_a_service(ServicePtrs[snum], f, dos_to_ext);
 	}
 }
 
@@ -3504,7 +3500,7 @@ remove a service
 ********************************************************************/
 void lp_remove_service(int snum)
 {
-	pSERVICE(snum)->valid = False;
+	ServicePtrs[snum]->valid = False;
 }
 
 /*******************************************************************
