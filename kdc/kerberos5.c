@@ -92,15 +92,13 @@ find_etype(hdb_entry *princ, unsigned *etypes, unsigned len,
 		ret = KRB5KDC_ERR_NULL_KEY;
 		continue;
 	    }
-	    *ret_key = key;
+	    *ret_key   = key;
+	    *ret_etype = etypes[i];
 	    ret = 0;
 	    if (key->salt == NULL)
-		goto out;
+		return ret;
 	}
     }
- out:
-    if (ret_etype)
-	*ret_etype = etypes[i];
     return ret;
 }
 
