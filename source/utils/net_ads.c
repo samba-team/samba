@@ -257,7 +257,7 @@ static int ads_user_add(int argc, const char **argv)
 		goto done;
 	}
 
-	status = ads_add_user_acct(ads, argv[0], opt_comment);
+	status = ads_add_user_acct(ads, argv[0], opt_container, opt_comment);
 
 	if (!ADS_ERR_OK(status)) {
 		d_printf("Could not add user %s: %s\n", argv[0],
@@ -433,7 +433,7 @@ static int ads_group_add(int argc, const char **argv)
 		goto done;
 	}
 
-	status = ads_add_group_acct(ads, argv[0], opt_comment);
+	status = ads_add_group_acct(ads, argv[0], opt_container, opt_comment);
 
 	if (ADS_ERR_OK(status)) {
 		d_printf("Group %s added\n", argv[0]);

@@ -38,6 +38,7 @@
 
 extern int opt_maxusers;
 extern const char *opt_comment;
+extern char *opt_container;
 extern int opt_flags;
 
 extern const char *opt_comment;

@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RPC pipe client
 
@@ -462,8 +462,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli,
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 access_desired = 0x000f000f;
-	
+
 	DOM_SID sid;
 	uint32 count;
 	char **rights;
