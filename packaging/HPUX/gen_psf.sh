@@ -15,7 +15,7 @@
 #-                  '?.10.*|?.11.*
     VERSION=""
 
-        BIN="smbd nmbd smbclient testparm testprns smbrun smbstatus\
+        BIN="smbd nmbd smbclient testparm testprns smbstatus\
              rpcclient smbpasswd make_smbcodepage nmblookup make_printerdef"
 
      SCRIPT="smbtar addtosmbpass convert_smbpasswd"
