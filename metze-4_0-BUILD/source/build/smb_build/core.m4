@@ -26,10 +26,7 @@ cat > config.smb_build.pl <<\_SMB_ACEOF
 
 use strict;
 
-my %modules;
-my %subsystems;
-my %libraries;
-my %binaries;
+my \$SMB_BUILD_CTX;
 
 _SMB_ACEOF
 
