@@ -1,3 +1,7 @@
+2000-12-14  Johan Danielsson  <joda@pdc.kth.se>
+
+	* load.c: fix option parsing
+
 2000-11-16  Assar Westerlund  <assar@sics.se>
 
 	* kadm_conn.c (wait_for_connection): check for fd's being too
