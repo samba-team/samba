@@ -1287,7 +1287,7 @@ BOOL server_cryptkey(char *buf)
       continue;
     }
 
-    password_client = open_socket_out(SOCK_STREAM, &dest_ip, port);
+    password_client = open_socket_out(SOCK_STREAM, &dest_ip, port, SHORT_CONNECT_TIMEOUT);
     if (password_client >= 0) {
       DEBUG(3,("connected to password server %s\n",p));
       StrnCpy(pserver,p,sizeof(pserver)-1);

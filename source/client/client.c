@@ -2956,7 +2956,7 @@ static BOOL send_session_request(char *inbuf,char *outbuf)
       putip((char *)&dest_ip,inbuf+4);
 
       close_sockets();
-      Client = open_socket_out(SOCK_STREAM, &dest_ip, port);
+      Client = open_socket_out(SOCK_STREAM, &dest_ip, port, LONG_CONNECT_TIMEOUT);
       if (Client == -1)
         return False;
 
@@ -4025,7 +4025,7 @@ static BOOL open_sockets(int port )
       }
     }
 
-  Client = open_socket_out(SOCK_STREAM, &dest_ip, port);
+  Client = open_socket_out(SOCK_STREAM, &dest_ip, port, LONG_CONNECT_TIMEOUT);
   if (Client == -1)
     return False;
 

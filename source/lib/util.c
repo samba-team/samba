@@ -478,6 +478,12 @@ struct
 #ifdef SO_RCVLOWAT
   {"SO_RCVLOWAT",       SOL_SOCKET,    SO_RCVLOWAT,     0,                 OPT_INT},
 #endif
+#ifdef SO_SNDTIMEO
+  {"SO_SNDTIMEO",       SOL_SOCKET,    SO_SNDTIMEO,     0,                 OPT_INT},
+#endif
+#ifdef SO_RCVTIMEO
+  {"SO_RCVTIMEO",       SOL_SOCKET,    SO_RCVTIMEO,     0,                 OPT_INT},
+#endif
   {NULL,0,0,0,0}};
 
 	
@@ -1655,6 +1661,35 @@ void close_low_fds(void)
   }
 }
 
+/****************************************************************************
+Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
+else
+if SYSV use O_NDELAY
+if BSD use FNDELAY
+****************************************************************************/
+int set_blocking(int fd, int set)
+{
+  int val;
+#ifdef O_NONBLOCK
+#define FLAG_TO_SET O_NONBLOCK
+#else
+#ifdef SYSV
+#define FLAG_TO_SET O_NDELAY
+#else /* BSD */
+#define FLAG_TO_SET FNDELAY
+#endif
+#endif
+
+  if((val = fcntl(fd, F_GETFL, 0)) == -1)
+	return -1;
+  if(set) /* Turn blocking on - ie. clear nonblock flag */
+	val &= ~FLAG_TO_SET;
+  else
+    val |= FLAG_TO_SET;
+  return fcntl( fd, F_SETFL, val);
+#undef FLAG_TO_SET
+}
+
 
 /****************************************************************************
 write to a socket
@@ -2813,10 +2848,12 @@ int open_socket_in(int type, int port, int dlevel,uint32 socket_addr)
 /****************************************************************************
   create an outgoing socket
   **************************************************************************/
-int open_socket_out(int type, struct in_addr *addr, int port )
+int open_socket_out(int type, struct in_addr *addr, int port ,int timeout)
 {
   struct sockaddr_in sock_out;
-  int res;
+  int res,ret;
+  int connect_loop = 250; /* 250 milliseconds */
+  int loops = (timeout * 1000) / connect_loop;
 
   /* create a socket to write to */
   res = socket(PF_INET, type, 0);
@@ -2831,14 +2868,34 @@ int open_socket_out(int type, struct in_addr *addr, int port )
   sock_out.sin_port = htons( port );
   sock_out.sin_family = PF_INET;
 
+  /* set it non-blocking */
+  set_blocking(res,0);
+
   DEBUG(3,("Connecting to %s at port %d\n",inet_ntoa(*addr),port));
   
   /* and connect it to the destination */
-  if (connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out))<0) {
-    DEBUG(0,("connect error: %s\n",strerror(errno))); 
-    close(res); 
-    return(-1);
+connect_again:
+  ret = connect(res,(struct sockaddr *)&sock_out,sizeof(sock_out));
+
+  if (ret < 0 && errno == EINPROGRESS && loops--) {
+    msleep(connect_loop);
+    goto connect_again;
   }
+
+  if (ret < 0 && errno == EINPROGRESS) {
+      DEBUG(2,("timeout connecting to %s:%d\n",inet_ntoa(*addr),port));
+      close(res);
+      return -1;
+  }
+
+  if (ret < 0) {
+    DEBUG(2,("error connecting to %s:%d (%s)\n",
+	     inet_ntoa(*addr),port,strerror(errno)));
+    return -1;
+  }
+
+  /* set it blocking again */
+  set_blocking(res,1);
 
   return res;
 }

@@ -150,4 +150,8 @@
    by many apps */
 #define KEEP_PASSWORD_SERVER_OPEN 1
 
+/* how long to wait for a socket connect to happen */
+#define LONG_CONNECT_TIMEOUT 30
+#define SHORT_CONNECT_TIMEOUT 5
+
 #endif
