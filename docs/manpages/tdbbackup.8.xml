@@ -33,8 +33,8 @@
 
 	<para><command>tdbbackup</command> is a tool that may be used to backup samba .tdb
 	files. This tool may also be used to verify the integrity of the .tdb files prior
-	to samba startup, in which case, if it find file damage and it finds a prior backup
-	it will restore the backup file.
+	to samba startup or during normal operation. If it finds file damage and it finds 
+	a prior backup the backup file will be restored. 
 	</para>
 </refsect1>
 
@@ -78,8 +78,9 @@
 	<para><emphasis>GENERAL INFORMATION</emphasis></para>
 
 	<para>
-	The <command>tdbbackup</command> utility should be run as soon as samba has shut down.
-	Do NOT run this command on a live database. Typical usage for the command will be:
+	The <command>tdbbackup</command> utility can safely be run at any time. It was designed so
+	that it can be used at any time to validate the integrity of tdb files, even during Samba
+	operation. Typical usage for the command will be:
 	</para>
 
 	<para>tdbbackup [-s suffix] *.tdb</para>
