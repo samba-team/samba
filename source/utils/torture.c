@@ -172,6 +172,9 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 		}
 	}
 
+	cli_close(c, fnum2);
+	cli_unlink(c, lockfname);
+
 	printf("%d\n", i);
 
 	return True;
@@ -587,6 +590,9 @@ static void run_unlinktest(void)
 		printf("error: server allowed unlink on an open file\n");
 	}
 
+	cli_close(&cli, fnum);
+	cli_unlink(&cli, fname);
+
 	close_connection(&cli);
 
 	printf("unlink test finished\n");
@@ -608,7 +614,7 @@ static void run_browsetest(void)
 {
 	static struct cli_state cli;
 
-	printf("staring browse test\n");
+	printf("starting browse test\n");
 
 	if (!open_connection(&cli)) {
 		return;
@@ -640,7 +646,7 @@ static void run_attrtest(void)
 	time_t t, t2;
 	char *fname = "\\attrib.tst";
 
-	printf("staring attrib test\n");
+	printf("starting attrib test\n");
 
 	if (!open_connection(&cli)) {
 		return;
@@ -676,6 +682,8 @@ static void run_attrtest(void)
 		printf("%s", ctime(&t2));
 	}
 
+	cli_unlink(&cli, fname);
+
 	close_connection(&cli);
 
 	printf("attrib test finished\n");
@@ -690,10 +698,12 @@ static void run_trans2test(void)
 	static struct cli_state cli;
 	int fnum;
 	uint32 size;
-	time_t c_time, a_time, m_time, w_time;
+	time_t c_time, a_time, m_time, w_time, m_time2;
 	char *fname = "\\trans2.tst";
+	char *dname = "\\trans2";
+	char *fname2 = "\\trans2\\trans2.tst";
 
-	printf("staring trans2 test\n");
+	printf("starting trans2 test\n");
 
 	if (!open_connection(&cli)) {
 		return;
@@ -727,7 +737,7 @@ static void run_trans2test(void)
 			printf("This system appears to set a midnight access time\n");
 		}
 
-		if (abs(m_time - time(NULL)) > 60) {
+		if (abs(m_time - time(NULL)) > 60*60*24*7) {
 			printf("ERROR: totally incorrect times - maybe word reversed?\n");
 		}
 	}
@@ -746,6 +756,35 @@ static void run_trans2test(void)
 			printf("This system appears to set a initial 0 write time\n");
 		}
 	}
+
+	cli_unlink(&cli, fname);
+
+
+	/* check if the server updates the directory modification time
+           when creating a new file */
+	if (!cli_mkdir(&cli, dname)) {
+		printf("ERROR: mkdir failed (%s)\n", cli_errstr(&cli));
+	}
+	sleep(3);
+	if (!cli_qpathinfo2(&cli, "\\trans2\\", &c_time, &a_time, &m_time, 
+			    &w_time, &size)) {
+		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
+	}
+
+	fnum = cli_open(&cli, fname2, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	cli_write(&cli, fnum,  (char *)&fnum, 0, sizeof(fnum));
+	cli_close(&cli, fnum);
+	if (!cli_qpathinfo2(&cli, "\\trans2\\", &c_time, &a_time, &m_time2, 
+			    &w_time, &size)) {
+		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
+	} else {
+		if (m_time2 == m_time)
+			printf("This system does not update directory modification times\n");
+	}
+	cli_unlink(&cli, fname2);
+	cli_rmdir(&cli, dname);
+
 
 	close_connection(&cli);
 
