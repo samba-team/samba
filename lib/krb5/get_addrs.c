@@ -147,7 +147,7 @@ find_all_addresses (krb5_addresses *res, int loop)
 	  }
 
 	  if(!(ifr->ifr_flags & IFF_UP)
-	     || (loop && ifr->ifr_flags & IFF_LOOPBACK))
+	     || (loop == 0 && (ifr->ifr_flags & IFF_LOOPBACK)))
 	      continue;
 
 	  /*
