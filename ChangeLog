@@ -1,10 +1,16 @@
+2003-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c: add some help function that is common
+	between ENC_TS and SAM2 free the etype{,2}-infos on failure move
+	the pa counter into krb5_get_init_creds_ctx
+	
 2003-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kaserver.c (do_getticket): if times data is shorter then 8
 	byte, request is malformed.
 
 	* kdc/kaserver.c (do_authenticate): if request length is less then
-	8, its a bad request and fail. Pointed out by Marco Foglia
+	8 byte, its a bad request and fail. Pointed out by Marco Foglia
 	<marco@foglia.org>
 
 	* lib/krb5/verify_krb5_conf.c: add flag --warn-mit-syntax that
