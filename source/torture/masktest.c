@@ -29,98 +29,7 @@ static const char *filechars = "abcdefghijklm.";
 static int verbose;
 static int die_on_error;
 static int NumLoops = 0;
-
-/* a test fn for LANMAN mask support */
-static int ms_fnmatch_lanman_core(const char *pattern, const char *string)
-{
-	const char *p = pattern, *n = string;
-	char c;
-
-	if (strcmp(p,"?")==0 && strcmp(n,".")==0) goto match;
-
-	while ((c = *p++)) {
-		switch (c) {
-		case '.':
-			/* if (! *n && ! *p) goto match; */
-			if (*n != '.') goto nomatch;
-			n++;
-			break;
-
-		case '?':
-			if ((*n == '.' && n[1] != '.') || ! *n) goto next;
-			n++;
-			break;
-
-		case '>':
-			if (n[0] == '.') {
-				if (! n[1] && ms_fnmatch_lanman_core(p, n+1) == 0) goto match;
-				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
-				goto nomatch;
-			}
-			if (! *n) goto next;
-			n++;
-			break;
-
-		case '*':
-			if (! *p) goto match;
-			for (; *n; n++) {
-				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
-			}
-			break;
-
-		case '<':
-			for (; *n; n++) {
-				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
-				if (*n == '.' && !strchr_m(n+1,'.')) {
-					n++;
-					break;
-				}
-			}
-			break;
-
-		case '"':
-			if (*n == 0 && ms_fnmatch_lanman_core(p, n) == 0) goto match;
-			if (*n != '.') goto nomatch;
-			n++;
-			break;
-
-		default:
-			if (c != *n) goto nomatch;
-			n++;
-		}
-	}
-	
-	if (! *n) goto match;
-	
- nomatch:
-	if (verbose) printf("NOMATCH pattern=[%s] string=[%s]\n", pattern, string);
-	return -1;
-
-next:
-	if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
-        goto nomatch;
-
- match:
-	if (verbose) printf("MATCH   pattern=[%s] string=[%s]\n", pattern, string);
-	return 0;
-}
-
-static int ms_fnmatch_lanman(const char *pattern, const char *string)
-{
-	if (!strpbrk(pattern, "?*<>\"")) {
-		if (strcmp(string,"..") == 0) 
-			string = ".";
-
-		return strcmp(pattern, string);
-	}
-
-	if (strcmp(string,"..") == 0 || strcmp(string,".") == 0) {
-		return ms_fnmatch_lanman_core(pattern, "..") &&
-			ms_fnmatch_lanman_core(pattern, ".");
-	}
-
-	return ms_fnmatch_lanman_core(pattern, string);
-}
+static int max_length = 20;
 
 static BOOL reg_match_one(struct smbcli_state *cli, const char *pattern, const char *file)
 {
@@ -128,10 +37,6 @@ static BOOL reg_match_one(struct smbcli_state *cli, const char *pattern, const c
 	if (old_list && strcmp(pattern, "*.*") == 0) return True;
 
 	if (strcmp(pattern,".") == 0) return False;
-
-	if (cli->transport->negotiate.protocol <= PROTOCOL_LANMAN1) {
-		return ms_fnmatch_lanman(pattern, file)==0;
-	}
 
 	if (strcmp(file,"..") == 0) file = ".";
 
@@ -298,8 +203,8 @@ static void test_mask(int argc, char *argv[],
 	}
 
 	while (1) {
-		l1 = 1 + random() % 20;
-		l2 = 1 + random() % 20;
+		l1 = 1 + random() % max_length;
+		l2 = 1 + random() % max_length;
 		pstrcpy(mask,"\\masktest\\");
 		pstrcpy(file,"\\masktest\\");
 		l = strlen(mask);
@@ -340,6 +245,7 @@ static void usage(void)
         -W workgroup\n\
         -U user%%pass\n\
         -s seed\n\
+        -l max test length\n\
         -M max protocol\n\
         -f filechars (default %s)\n\
         -m maskchars (default %s)\n\
@@ -394,7 +300,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vE")) != EOF) {
+	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vEl:")) != EOF) {
 		switch (opt) {
 		case 'n':
 			NumLoops = atoi(optarg);
@@ -427,6 +333,9 @@ static void usage(void)
 			exit(1);
 		case 'm':
 			maskchars = optarg;
+			break;
+		case 'l':
+			max_length = atoi(optarg);
 			break;
 		case 'f':
 			filechars = optarg;
