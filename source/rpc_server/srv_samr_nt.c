@@ -1833,6 +1833,8 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
+	*groups = 0;
+
 	get_domain_user_groups(groups, pdb_get_username(sam_pass));
 	gids = NULL;
 	num_groups = make_dom_gids(p->mem_ctx, groups, &gids);
