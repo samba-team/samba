@@ -1,10 +1,8 @@
 #
 # @(#) Test operation of WINBINDD_DOMAIN environment variable
 #
-# TODO: multiple domain tests
-#
 
-load_lib util-defs.exp
+load_lib "util-defs.exp"
 load_lib "$srcdir/config/env.exp"
 
 # Get list of users and groups
@@ -15,42 +13,60 @@ set group_list [util_start "getent group"]
 verbose "user list is:\n$user_list"
 verbose "group list is:\n$group_list"
 
+# Get any trusted domains
+
+verbose "Domain is $domain"
+
+set output [util_start "bin/wbinfo" "-m"]
+verbose "Trusted domains are $output"
+set trusted_domain_list [split $output "\n"]
+
 # Test simple inclusion
 
-set env(WINBINDD_DOMAIN) $domain
-set user_out [util_start "getent passwd"]
-set group_out [util_start "getent group"]
+set domain_list $trusted_domain_list
+lappend domain_list $domain
 
-set test_desc "users in WINBINDD_DOMAIN $domain"
-set failed 0
+foreach { the_domain } $domain_list {
 
-foreach { user } [split $user_out "\n"] {
-    set user_name [lindex [split $user ":"] 0]
-    if { [regexp "/" $user_name] && ![regexp $domain $user_name]} {
-	set failed 1
+    set env(WINBINDD_DOMAIN) $the_domain
+
+    set user_out [util_start "getent passwd"]
+    set group_out [util_start "getent group"]
+
+    verbose "users in $the_domain:\n$user_out\n"
+    verbose "groups in $the_domain:\n$group_out\n"
+
+    set test_desc "users in WINBINDD_DOMAIN $the_domain"
+    set failed 0
+
+    foreach { user } [split $user_out "\n"] {
+	set user_name [lindex [split $user ":"] 0]
+	if { [regexp "/" $user_name] && ![regexp $the_domain $user_name]} {
+	    set failed 1
+	}
     }
-}
-
-if { $failed } {
-    fail $test_desc
-} else {
-    pass $test_desc
-}
-
-set test_desc "groups in WINBINDD_DOMAIN $domain"
-set failed 0
-
-foreach { group } [split $group_out "\n"] {
-    set group_name [lindex [split $group ":"] 0]
-    if { [regexp "/" $group_name] && ![regexp $domain $group_name]} {
-	set failed 1
+    
+    if { $failed } {
+	fail $test_desc
+    } else {
+	pass $test_desc
     }
-}
 
-if { $failed } {
-    fail $test_desc
-} else {
-    pass $test_desc
+    set test_desc "groups in WINBINDD_DOMAIN $the_domain"
+    set failed 0
+    
+    foreach { group } [split $group_out "\n"] {
+	set group_name [lindex [split $group ":"] 0]
+	if { [regexp "/" $group_name] && ![regexp $the_domain $group_name]} {
+	    set failed 1
+	}
+    }
+
+    if { $failed } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
 }
 
 # Test non-inclusion of another domain
@@ -75,60 +91,71 @@ if { [regexp $domain $group_out] } {
 
 # Test comma separated inclusion
 
-set env(WINBINDD_DOMAIN) "$domain,asmithee"
-set user_out [util_start "getent passwd"]
-set group_out [util_start "getent group"]
+foreach { the_domain } $domain_list {
+    set env(WINBINDD_DOMAIN) "$the_domain,asmithee"
+    set user_out [util_start "getent passwd"]
+    set group_out [util_start "getent group"]
 
-set test_desc "users in comma separated WINBINDD_DOMAIN"
-set failed 0
+    verbose "users in $the_domain:\n$user_out\n"
+    verbose "groups in $the_domain:\n$group_out\n"
 
-foreach { user } [split $user_out "\n"] {
-    set user_name [lindex [split $user ":"] 0]
-    if { [regexp "/" $user_name] && ![regexp $domain $user_name]} {
-	set failed 1
+    set test_desc "users in comma separated WINBINDD_DOMAIN $the_domain"
+    set failed 0
+
+    foreach { user } [split $user_out "\n"] {
+	set user_name [lindex [split $user ":"] 0]
+	if { [regexp "/" $user_name] && ![regexp $the_domain $user_name]} {
+	    set failed 1
+	}
     }
-}
 
-if { $failed } {
-    fail $test_desc
-} else {
-    pass $test_desc
-}
-
-set test_desc "groups in comma separated WINBINDD_DOMAIN"
-set failed 0
-
-foreach { group } [split $group_out "\n"] {
-    set group_name [lindex [split $group ":"] 0]
-    if { [regexp "/" $group_name] && ![regexp $domain $group_name]} {
-	set failed 1
+    if { $failed } {
+	fail $test_desc
+    } else {
+	pass $test_desc
     }
-}
 
-if { $failed } {
-    fail $test_desc
-} else {
-    pass $test_desc
+    set test_desc "groups in comma separated WINBINDD_DOMAIN $the_domain"
+    set failed 0
+    
+    foreach { group } [split $group_out "\n"] {
+	set group_name [lindex [split $group ":"] 0]
+	if { [regexp "/" $group_name] && ![regexp $the_domain $group_name]} {
+	    set failed 1
+	}
+    }
+    
+    if { $failed } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
 }
 
 # Test comma separated different exclusion
 
-set env(WINBINDD_DOMAIN) "moose,asmithee"
-set user_out [util_start "getent passwd"]
-set group_out [util_start "getent group"]
+foreach { the_domain } $domain_list {
 
-set test_desc "users in comma separated WINBINDD_DOMAIN"
-if { [regexp $domain $user_out] } {
-    fail $test_desc
-} else {
-    pass $test_desc
-}
+    set env(WINBINDD_DOMAIN) "moose,asmithee"
+    set user_out [util_start "getent passwd"]
+    set group_out [util_start "getent group"]
 
-set test_desc "groups in comma separated WINBINDD_DOMAIN"
-if { [regexp $domain $group_out] } {
-    fail $test_desc
-} else {
-    pass $test_desc
+    verbose "users in $the_domain:\n$user_out\n"
+    verbose "groups in $the_domain:\n$group_out\n"
+
+    set test_desc "users in comma separated invalid WINBINDD_DOMAIN"
+    if { [regexp $the_domain $user_out] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+    
+    set test_desc "groups in comma separated invalid WINBINDD_DOMAIN"
+    if { [regexp $the_domain $group_out] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
 }
 
 set env(WINBINDD_DOMAIN) ""
@@ -139,18 +166,24 @@ set env(_NO_WINBINDD) "1"
 set user_out [util_start "getent passwd"]
 set group_out [util_start "getent group"]
 
-set test_desc "users found with _NO_WINBINDD environment variable set"
-if { [regexp $domain $user_out] } {
-    fail $test_desc
-} else {
-    pass $test_desc
-}
+verbose "users with _NO_WINBINDD:\n$user_out\n"
+verbose "groups with _NO_WINBINDD:\n$group_out\n"
 
-set test_desc "groups found with _NO_WINBINDD environment variable set"
-if { [regexp $domain $group_out] } {
-    fail $test_desc
-} else {
-    pass $test_desc
+foreach { the_domain } $domain_list {
+
+    set test_desc "users found with _NO_WINBINDD environment variable set"
+    if { [regexp $the_domain $user_out] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
+    
+    set test_desc "groups found with _NO_WINBINDD environment variable set"
+    if { [regexp $the_domain $group_out] } {
+	fail $test_desc
+    } else {
+	pass $test_desc
+    }
 }
 
 # Unset _NO_WINBINDD and make sure everything still works
@@ -159,6 +192,9 @@ unset env(_NO_WINBINDD)
 
 set user_out [util_start "getent passwd"]
 set group_out [util_start "getent group"]
+
+verbose "users with _NO_WINBINDD unset:\n$user_out\n"
+verbose "groups with _NO_WINBINDD unset:\n$group_out\n"
 
 set test_desc "no users found with _NO_WINBINDD environment variable set"
 if { $user_out != $user_list } {
