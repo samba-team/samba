@@ -51,6 +51,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <parse_time.h>
 #include <roken.h>
 
 #include <des.h>
