@@ -1313,8 +1313,9 @@ int command_main(int argc, char *argv[])
 	if (IS_BITS_SET_SOME(cmd_set_options, CMD_HELP|CMD_STR))
 	{
 		free_connections();
+		get_safe_nt_error_msg(status, msg, sizeof(msg));
 
-		report(out_hnd, "Exit Status: %s\n", get_nt_error_msg(status));
+		report(out_hnd, "Exit Status: %s\n", msg);
 		/* unix only has 8 bit error codes - blergh */
 		exit(status & 0xFF);
 	}
@@ -1330,7 +1331,8 @@ int command_main(int argc, char *argv[])
 	num_commands = 0;
 	commands = NULL;
 	
-	report(out_hnd, "Exit Status: %s\n", get_nt_error_msg(status));
+	get_safe_nt_error_msg(status, msg, sizeof(msg));
+	report(out_hnd, "Exit Status: %s\n", msg);
 
 	return status;
 }
