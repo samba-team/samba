@@ -3,6 +3,7 @@
    Samba wins server helper functions
    Copyright (C) Andrew Tridgell 1992-2002
    Copyright (C) Christopher R. Hertel 2000
+   Copyright (C) Tim Potter 2003
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,7 +23,7 @@
 #include "includes.h"
 
 /*
-  this is pretty much a complete rewrite of the earlier code. The main
+  This is pretty much a complete rewrite of the earlier code. The main
   aim of the rewrite is to add support for having multiple wins server
   lists, so Samba can register with multiple groups of wins servers
   and each group has a failover list of wins servers.
@@ -56,50 +57,48 @@
   confused yet? (tridge)
 */
 
-
 /* how long a server is marked dead for */
 #define DEATH_TIME 600
 
-/* a list of wins server that are marked dead from the point of view
-   of a given source address. We keep a separate dead list for each src address
-   to cope with multiple interfaces that are not routable to each other
+/* The list of dead wins servers is stored in gencache.tdb.  Each server is
+   marked dead m the point of view of a given source address. We keep a 
+   separate dead list for each src address to cope with multiple interfaces 
+   that are not routable to each other.
   */
-static struct wins_dead {
-	struct in_addr dest_ip;
-	struct in_addr src_ip;
-	time_t revival; /* when it will be revived */
-	struct wins_dead *next, *prev;
-} *dead_servers;
 
-/* an internal convenience structure for an IP with a short string tag
-   attached */
-struct tagged_ip {
-	fstring tag;
-	struct in_addr ip;
-};
+#define WINS_SRV_FMT "WINS_SRV_DEAD/%s,%s" /* wins_ip,src_ip */
 
 /*
   see if an ip is on the dead list
 */
+
+static char *wins_srv_keystr(struct in_addr wins_ip, struct in_addr src_ip)
+{
+	char *keystr;
+
+	if (asprintf(&keystr, WINS_SRV_FMT, inet_ntoa(wins_ip),
+		     inet_ntoa(src_ip)) == -1) {
+		DEBUG(0, ("wins_srv_is_dead: malloc error\n"));
+		return NULL;
+	}
+
+	return keystr;
+}
+
 BOOL wins_srv_is_dead(struct in_addr wins_ip, struct in_addr src_ip)
 {
-	struct wins_dead *d;
-	for (d=dead_servers; d; d=d->next) {
-		if (ip_equal(wins_ip, d->dest_ip) && ip_equal(src_ip, d->src_ip)) {
-			/* it might be due for revival */
-			if (d->revival <= time(NULL)) {
-				fstring src_name;
-				fstrcpy(src_name, inet_ntoa(src_ip));
-				DEBUG(4,("Reviving wins server %s for source %s\n", 
-					 inet_ntoa(wins_ip), src_name));
-				DLIST_REMOVE(dead_servers, d);
-				free(d);
-				return False;
-			}
-			return True;
-		}
-	}
-	return False;
+	char *keystr = wins_srv_keystr(wins_ip, src_ip);
+	BOOL result;
+
+	/* If the key exists then the WINS server has been marked as dead */
+
+	result = gencache_get(keystr, NULL, NULL);
+	SAFE_FREE(keystr);
+
+	DEBUG(4, ("wins_srv_is_dead: %s is %s\n", inet_ntoa(wins_ip),
+		  result ? "dead" : "alive"));
+
+	return result;
 }
 
 
@@ -108,45 +107,33 @@ BOOL wins_srv_is_dead(struct in_addr wins_ip, struct in_addr src_ip)
 */
 void wins_srv_alive(struct in_addr wins_ip, struct in_addr src_ip)
 {
-	struct wins_dead *d;
-	for (d=dead_servers; d; d=d->next) {
-		if (ip_equal(wins_ip, d->dest_ip) && ip_equal(src_ip, d->src_ip)) {
-			fstring src_name;
-			fstrcpy(src_name, inet_ntoa(src_ip));
-			DEBUG(4,("Reviving wins server %s for source %s\n", 
-				 inet_ntoa(wins_ip), src_name));
-			DLIST_REMOVE(dead_servers, d);
-			return;
-		}
-	}
-}
+	char *keystr = wins_srv_keystr(wins_ip, src_ip);
 
+	gencache_del(keystr);
+	SAFE_FREE(keystr);
+
+	DEBUG(4, ("wins_srv_alive: marking wins server %s alive\n", 
+		  inet_ntoa(wins_ip)));
+}
 
 /*
   mark a wins server as temporarily dead
 */
 void wins_srv_died(struct in_addr wins_ip, struct in_addr src_ip)
 {
-	struct wins_dead *d;
-	fstring src_name;
+	char *keystr;
 
-	if (is_zero_ip(wins_ip) || wins_srv_is_dead(wins_ip, src_ip)) {
+	if (is_zero_ip(wins_ip) || wins_srv_is_dead(wins_ip, src_ip))
 		return;
-	}
 
-	d = (struct wins_dead *)malloc(sizeof(*d));
-	if (!d) return;
+	keystr = wins_srv_keystr(wins_ip, src_ip);
 
-	d->dest_ip = wins_ip;
-	d->src_ip = src_ip;
-	d->revival = time(NULL) + DEATH_TIME;
+	gencache_set(keystr, "DOWN", time(NULL) + DEATH_TIME);
 
-	fstrcpy(src_name, inet_ntoa(src_ip));
+	SAFE_FREE(keystr);
 
-	DEBUG(4,("Marking wins server %s dead for %u seconds from source %s\n", 
-		 inet_ntoa(wins_ip), DEATH_TIME, src_name));
-
-	DLIST_ADD(dead_servers, d);
+	DEBUG(4,("Marking wins server %s dead for %u seconds from source %s\n",
+		 inet_ntoa(wins_ip), DEATH_TIME, inet_ntoa(src_ip)));
 }
 
 /*
@@ -168,6 +155,13 @@ unsigned wins_srv_count(void)
 
 	return count;
 }
+
+/* an internal convenience structure for an IP with a short string tag
+   attached */
+struct tagged_ip {
+	fstring tag;
+	struct in_addr ip;
+};
 
 /*
   parse an IP string that might be in tagged format
