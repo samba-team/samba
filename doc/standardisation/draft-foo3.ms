@@ -78,6 +78,44 @@ Kerberised server: the server using Kerberos to authenticate the
 client, for example telnetd.
 
 .ti 0
+Firewalls
+
+There are different kinds of firewalls. The main difference is in the
+way it forwards your packets. The easiest types of firewall are the
+ones that just imposes restrictions on incoming packets. Such a
+firewall could be described as a router that just throws away packets
+that match some criteria. They may also ``hide'' some or all addresses
+on the inside of the firewall, replacing the addresses in the outgoing
+packets with the address of the firewall (aka network address
+translation, or NAT). NAT can also be used without any packet
+filtering, for instance when you have more than one host sharing a
+single dialed-in PPP connection.
+
+There are also firewalls that does NAT both on the inside and the
+outside (a server on the inside will see this as a connection from the
+firewall).
+
+A third type is the proxy type firewall, that parses the contents of
+the packets, basically acting as a server to the client, and as a
+client to the server. If Kerberos is to be used with this kind of
+firewall, a protocol module that handles KDC requests has to be
+written.
+
+This type of firewall also might add extra trouble when used with
+kerberised versions of protocols that the proxy understands, in
+addition to the ones mentioned below.
+
+This is the case with the FTP Security Extensions [RFC2228], that adds
+a new set of commands to the FTP protocol [RFC959], for integrity,
+confidentiality and privacy protecting commands. When transferring
+data, the FTP protocol uses a separate data channel, and an FTP proxy
+will have to look out for commands that start a data transfer. If all
+commands are encrypted, this is impossible.
+
+An example of a protocol that doesn't suffer from this is TELNET that
+does all authentication and encryption in-bound.
+
+.ti 0
 Scenarios
 
 Here the different scenarios we have considered are described, the
@@ -95,21 +133,17 @@ communicate over TCP.
 Apart from that, the client needs to be sure that the ticket it will
 acquire from the KDC can be used to authenticate to a server outside
 its firewall.  For this, it needs to add the address(es) of potential
-firewalls to the list of its own addresses when requesting the
-ticket.  We are not aware of any protocol for determining this set of
-addresses, thus this will have to be manually configured in the
-client.
+firewalls between itself and the KDC/server, to the list of its own
+addresses when requesting the ticket.  We are not aware of any
+protocol for determining this set of addresses, thus this will have to
+be manually configured in the client.
+
+The client could also request a ticket with no addresses, but some
+KDCs and servers might not accept such a ticket.
 
 With the ticket in possession, communication with the kerberised
 server will not need to be any different from communicating between a
 non-kerberised client and server.
-
-.ti 1
-KDC behind firewall
-
-Once there is some way of getting the requests through the firewall to
-the KDC and back to the requesting client there is nothing else that
-can go wrong.
 
 .ti 1
 Kerberised server behind firewall
@@ -122,6 +156,11 @@ The kerberised server needs to be able to retrieve the original
 address (before its firewall) that the request was sent for.  If this
 is done via some out-of-band mechanism or it's directly able to see it
 doesn't matter.
+
+.ti 1
+KDC behind firewall
+
+The same restrictions applies for a KDC as for any other server.
 
 .ti 0
 Specification
