@@ -47,7 +47,7 @@ strlwr(char *str)
   char *s;
 
   for(s = str; *s; s++)
-    *s = tolower(*s);
+    *s = tolower((unsigned char)*s);
   return str;
 }
 #endif
