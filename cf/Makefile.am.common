@@ -39,8 +39,6 @@ LIB_socket		= @LIB_socket@
 LIB_syslog		= @LIB_syslog@
 LIB_tgetent		= @LIB_tgetent@
 
-LIBS			= @LIBS@
-
 HESIODLIB = @HESIODLIB@
 HESIODINCLUDE = @HESIODINCLUDE@
 INCLUDE_hesiod = @INCLUDE_hesiod@
