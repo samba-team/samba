@@ -319,7 +319,7 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char
 		return ADS_ERROR_KRB5(ret);
 	}
 	
-	//we might have to call krb5_free_creds(...) from now on ...
+	/* we might have to call krb5_free_creds(...) from now on ... */
 	ret = krb5_mk_req_extended(context, &auth_context, AP_OPTS_USE_SUBKEY,
 				   NULL, credsp, &ap_req);
 	if (ret) {
