@@ -531,7 +531,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	/* Find all the groups this uid is in and
 	   store them. Used by change_to_user() */
 	initialise_groups(conn->user, conn->uid, conn->gid); 
-	get_current_groups(&conn->ngroups,&conn->groups);
+	get_current_groups(conn->gid, &conn->ngroups,&conn->groups);
 		
 	conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
 					      conn->ngroups, conn->groups,
