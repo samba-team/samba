@@ -672,6 +672,13 @@ Sun Nov 22 01:49:50 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* kdc/hprop.c (v4_prop): fix bogus indexing
 
+Sat Nov 21 21:39:20 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/verify_init.c (fail_verify_is_ok): new function
+	(krb5_verify_init_creds): if we cannot get a ticket for
+	host/`hostname` and fail_verify_is_ok just return.  use
+ 	krb5_rd_req
+
 Sat Nov 21 23:12:27 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/free.c (krb5_xfree): new function
@@ -724,6 +731,10 @@ Sun Nov 15 17:28:19 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 Fri Nov 13 05:35:48 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krb5.h (KRB5_TGS_NAME, KRB5_TGS_NAME_SIZE): added
+	
+Sat Nov  7 19:56:31 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_cred.c (add_cred): add termination NULL pointer
 
 Mon Nov  2 01:15:06 1998  Assar Westerlund  <assar@sics.se>
 
