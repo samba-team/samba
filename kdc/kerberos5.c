@@ -1373,16 +1373,16 @@ tgs_make_reply(KDC_REQ_BODY *b,
 #define PRINCIPAL_FORCE_TRANSITED_CHECK(P)		0
 #define PRINCIPAL_ALLOW_DISABLE_TRANSITED_CHECK(P)	0
 
-	ret = fix_transited_encoding(!f.disable_transited_check ||
-				     GLOBAL_FORCE_TRANSITED_CHECK ||
-				     PRINCIPAL_FORCE_TRANSITED_CHECK(server) ||
-				     !((GLOBAL_ALLOW_PER_PRINCIPAL && 
-					PRINCIPAL_ALLOW_DISABLE_TRANSITED_CHECK(server)) ||
-				       GLOBAL_ALLOW_DISABLE_TRANSITED_CHECK),
-				     &tgt->transited, &et,
-				     *krb5_princ_realm(context, client_principal),
-				     *krb5_princ_realm(context, server->principal),
-				     *krb5_princ_realm(context, krbtgt->principal));
+    ret = fix_transited_encoding(!f.disable_transited_check ||
+				 GLOBAL_FORCE_TRANSITED_CHECK ||
+				 PRINCIPAL_FORCE_TRANSITED_CHECK(server) ||
+				 !((GLOBAL_ALLOW_PER_PRINCIPAL && 
+				    PRINCIPAL_ALLOW_DISABLE_TRANSITED_CHECK(server)) ||
+				   GLOBAL_ALLOW_DISABLE_TRANSITED_CHECK),
+				 &tgt->transited, &et,
+				 *krb5_princ_realm(context, client_principal),
+				 *krb5_princ_realm(context, server->principal),
+				 *krb5_princ_realm(context, krbtgt->principal));
     if(ret)
 	goto out;
 
@@ -1581,13 +1581,13 @@ get_krbtgt_realm(const PrincipalName *p)
 }
 
 static Realm
-find_rpath(Realm r)
+find_rpath(Realm crealm, Realm srealm)
 {
     const char *new_realm = krb5_config_get_string(context,
 						   NULL,
-						   "libdefaults", 
-						   "capath", 
-						   r, 
+						   "capaths", 
+						   crealm,
+						   srealm,
 						   NULL);
     return (Realm)new_realm;
 }
@@ -1889,7 +1889,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 
 	    if ((req_rlm = get_krbtgt_realm(&sp->name)) != NULL) {
 		if(loop++ < 2) {
-		    new_rlm = find_rpath(req_rlm);
+		    new_rlm = find_rpath(tgt->crealm, req_rlm);
 		    if(new_rlm) {
 			kdc_log(5, "krbtgt for realm %s not found, trying %s", 
 				req_rlm, new_rlm);
@@ -1941,6 +1941,18 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    goto out;
 	}
 #endif
+
+	if(strcmp(krb5_principal_get_realm(context, sp),
+		  krb5_principal_get_comp_string(context, krbtgt->principal, 1)) != 0) {
+	    char *tpn;
+	    ret = krb5_unparse_name(context, krbtgt->principal, &tpn);
+	    kdc_log(0, "Request with wrong krbtgt: %s", (ret == 0) ? tpn : "<unknown>");
+	    if(ret == 0)
+		free(tpn);
+	    ret = KRB5KRB_AP_ERR_NOT_US;
+	    goto out;
+	    
+	}
 
 	ret = check_flags(client, cpn, server, spn, FALSE);
 	if(ret)
