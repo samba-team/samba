@@ -810,35 +810,6 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 }
 
 /****************************************************************************
-  Keep track of the number of running smbd's. This functionality is used to
-  'hard' limit Samba overhead on resource constrained systems. 
-  This function is only called once per smbd.
-****************************************************************************/
-
-static BOOL smbd_process_limit(void)
-{
-	int32  total_smbds;
-	
-	if (lp_max_smbd_processes()) {
-
-		/* Always add one to the smbd process count, as exit_server() always
-		 * subtracts one.
-		 */
-
-		if (!conn_tdb_ctx()) {
-			DEBUG(0,("smbd_process_limit: max smbd processes parameter set with status parameter not \
-set. Ignoring max smbd restriction.\n"));
-			return False;
-		}
-
-		total_smbds = increment_smbd_process_count();
-		return total_smbds > lp_max_smbd_processes();
-	}
-	else
-		return False;
-}
-
-/****************************************************************************
   process an smb from the client - split out from the process() code so
   it can be used by the oplock break code.
 ****************************************************************************/
@@ -860,8 +831,7 @@ void process_smb(char *inbuf, char *outbuf)
 	     deny parameters before doing any parsing of the packet
 	     passed to us by the client.  This prevents attacks on our
 	     parsing code from hosts not in the hosts allow list */
-	  if (smbd_process_limit() ||
-		  !check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
+	  if (!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
 		  /* send a negative session response "not listening on calling
 		   name" */
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};

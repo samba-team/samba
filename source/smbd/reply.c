@@ -746,6 +746,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     uint16 passlen2 = SVAL(inbuf,smb_vwv8);
     enum remote_arch_types ra_type = get_remote_arch();
     char *p = smb_buf(inbuf);    
+    char *username_str;
+    fstring native_lanman;
+    
 
     if(global_client_caps == 0)
       global_client_caps = IVAL(inbuf,smb_vwv11);
@@ -759,6 +762,25 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       if(!(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32))) {
         set_remote_arch( RA_WIN95);
       }
+    }
+
+    username_str = smb_buf(inbuf)+smb_apasslen;
+    fstrcpy( native_lanman, skip_string(username_str, 3));
+    
+    /* 
+     * we distinguish between 2K and XP by the "Native Lan Manager" 
+     * string.  
+     *   .NET RC2 => "Windows .NET 5.2"
+     *   WinXP    => "Windows 2002 5.1"
+     *   Win2k    => "Windows 2000 5.0"
+     *   NT4      => (off by one bug) "Windows NT 4.0" 
+     *   Win9x    => "Windows 4.0"
+     */
+    if ( ra_type == RA_WIN2K ) {
+    	if ( 0 == strcmp( native_lanman, "Windows 2002 5.1" ) )
+	    set_remote_arch( RA_WINXP );
+        else if ( 0 == strcmp( native_lanman, "Windows .NET 5.2" ) )
+            set_remote_arch( RA_WIN2K3 );
     }
 
     if (passlen1 != 24 && passlen2 != 24)
