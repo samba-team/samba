@@ -1,3 +1,12 @@
+2001-01-05  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/kinit.c: call a time `time', and not `seconds'
+
+	* lib/krb5/init_creds.c: not much point in setting the anonymous
+	flag here
+
+	* lib/krb5/krb5_appdefault.3: document appdefault_time
+
 2001-01-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/verify_user.c: use
