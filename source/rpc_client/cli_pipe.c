@@ -698,11 +698,13 @@ BOOL cli_send_and_rcv_pdu(struct cli_connection *con,
 	if (True)
 	{
 		return cli_send_and_rcv_pdu_trans(con, cli, fnum,
-						  data, rdata, max_send_pdu);}
+						  data, rdata, max_send_pdu);
+	}
 	else
 	{
 		return cli_send_and_rcv_pdu_rw(con, cli, fnum, data,
-					       rdata, max_send_pdu);}
+					       rdata, max_send_pdu);
+	}
 }
 
 BOOL cli_rcv_pdu(struct cli_connection *con,
@@ -716,6 +718,7 @@ BOOL cli_rcv_pdu(struct cli_connection *con,
 	BOOL last = True;
 	int len;
 	cli_auth_fns *auth = cli_conn_get_authfns(con);
+
 	/* with a little help by Scummer */
 	num_read = cli_read_one(cli, fnum, readbuf, 0, 0x18);
 	DEBUG(5, ("cli_pipe: read header (size:%d)\n", num_read));

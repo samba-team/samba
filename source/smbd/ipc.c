@@ -195,6 +195,7 @@ static void api_rpc_trans_reply(char *outbuf, char *rdata, int rlen,
 {
 	prs_struct ps;
 	prs_create(&ps, rdata, rlen, 0, False);
+	safe_free(rdata);
 	prs_debug_out(&ps, "api_rpc_trans_reply", 200);
 	send_trans_reply(outbuf, &ps, NULL, NULL, 0, rlen,
 			 pipe_data_outstanding);

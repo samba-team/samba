@@ -1268,6 +1268,7 @@ berval_to_sid (const struct berval * bv, DOM_SID * sid)
 
 	/* True for reading */
 	prs_create (&ps, bv->bv_val, bv->bv_len, 4, True);
+	safe_free(bv->bv_val);
 
 	ret = smb_io_dom_sid ("berval_to_sid", sid, &ps, 0);
 
