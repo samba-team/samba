@@ -705,7 +705,7 @@
 		[in]                  unistr *printername,
 		[in]                  unistr *datatype,
 		[in]	              spoolss_DevmodeContainer devmode_ctr,
-		[in]	              uint32 access_required,
+		[in]	              uint32 access_mask,
 		[in]	              uint32 level,
 		[in,switch_is(level)] spoolss_UserLevel userlevel,
 		[out,ref]	      policy_handle *handle
