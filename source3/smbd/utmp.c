@@ -283,8 +283,12 @@ static void updwtmp_my(pstring wname, struct utmp *u, BOOL claim)
 		 *	man page appears not to specify (hints non-NULL)
 		 *	A correspondent suggest at least ut_name should be NULL
 		 */
+#if defined(HAVE_UT_UT_NAME)
 		memset((char *)&u->ut_name, '\0', sizeof(u->ut_name));
+#endif
+#if defined(HAVE_UT_UT_HOST)
 		memset((char *)&u->ut_host, '\0', sizeof(u->ut_host));
+#endif
 	}
 	/* Stolen from logwtmp function in libutil.
 	 * May be more locking/blocking is needed?
@@ -406,7 +410,9 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
 	else
 		ux.ut_syslen = 0;
 #endif
+#if defined(HAVE_UT_UT_HOST)
 	utmp_strcpy(ux.ut_host, hostname, sizeof(ux.ut_host));
+#endif
 
 	uw_pathname(uname, "utmpx", ux_pathname);
 	uw_pathname(wname, "wtmpx", wx_pathname);
