@@ -933,6 +933,7 @@ static void init_globals(void)
 	do_parameter("private dir", dyn_PRIVATE_DIR);
 	do_parameter_var("sam database", "tdb://%s/sam.ldb", dyn_PRIVATE_DIR);
 	do_parameter_var("spoolss database", "tdb://%s/spoolss.ldb", dyn_PRIVATE_DIR);
+	do_parameter_var("registry:HKEY_LOCAL_MACHINE", "ldb:/%s/hklm.ldb", dyn_PRIVATE_DIR);
 	do_parameter("guest account", GUEST_ACCOUNT);
 
 	/* using UTF8 by default allows us to support all chars */
@@ -1412,7 +1413,7 @@ static BOOL lp_bool(const char *s)
 const char *lp_parm_string(int lookup_service, const char *type, const char *option)
 {
 	const char *value = get_parametrics(lookup_service, type, option);
-	
+
 	if (value)
 		return lp_string(value);
 
@@ -3025,13 +3026,6 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	bInGlobalSection = True;
 	bGlobalOnly = global_only;
 
-	init_globals();
-
-	if (save_defaults)
-	{
-		lp_save_defaults();
-	}
-
 	if (Globals.param_opt != NULL) {
 		struct param_opt *next;
 		for (data=Globals.param_opt; data; data=next) {
@@ -3044,6 +3038,13 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 		}
 	}
 	
+	init_globals();
+
+	if (save_defaults)
+	{
+		lp_save_defaults();
+	}
+
 	/* We get sections first, so have to start 'behind' to make up */
 	iServiceIndex = -1;
 	bRetval = pm_process(n2, do_section, do_parameter);
