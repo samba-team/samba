@@ -398,6 +398,7 @@ typedef struct
 	BOOL bInheritPerms;
 	BOOL bMSDfsRoot;
 	BOOL bUseClientDriver;
+	BOOL bDefaultDevmode;
 	BOOL bNTAclSupport;
 
 	char dummy[3];		/* for alignment */
@@ -514,6 +515,7 @@ static service sDefault = {
 	False,			/* bInheritPerms */
 	False,			/* bMSDfsRoot */
 	False,			/* bUseClientDriver */
+	False,			/* bDefaultDevmode */
 	True,			/* bNTAclSupport */
 
 	""			/* dummy */
@@ -886,6 +888,7 @@ static struct parm_struct parm_table[] = {
 	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT|FLAG_DOS_STRING},
 	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_DOS_STRING},
 	{"use client driver", P_BOOL, P_LOCAL, &sDefault.bUseClientDriver, NULL, NULL, FLAG_PRINT},
+	{"default devmode", P_BOOL, P_LOCAL, &sDefault.bDefaultDevmode, NULL, NULL, FLAG_PRINT},
 	{"printer driver", P_STRING, P_LOCAL, &sDefault.szPrinterDriver, NULL, NULL, FLAG_PRINT},
 	{"printer driver file", P_STRING, P_LOCAL, &sDefault.szDriverFile, NULL, NULL, FLAG_PRINT},
 	{"printer driver location", P_STRING, P_LOCAL, &sDefault.szPrinterDriverLocation, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
@@ -1712,6 +1715,7 @@ FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
+FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)

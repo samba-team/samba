@@ -2550,20 +2550,19 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	 * I changed this as I think it is better to have a generic
 	 * DEVMODE than to crash Win2k explorer.exe   --jerry
 	 * See the HP Deskjet 990c Win2k drivers for an example.
+	 *
+	 * However the default devmode appears to cause problems
+	 * with the HP CLJ 8500 PCL driver.  Hence the addition of
+	 * the "default devmode" parameter   --jerry 22/01/2002
 	 */
 
-#if 1 /* JRA - NO NOT CHANGE ! */
-	info.devmode = NULL;
-#else
-	/*
-	 * We should not return a default devicemode, as this causes
-	 * Win2K to not send the correct one on PCL drivers. It needs to
-	 * see a null devicemode so it can then overwrite the devicemode
-	 * on OpenPrinterEx. Yes this *is* insane :-). JRA.
-	 */
-	if ((info.devmode = construct_nt_devicemode(info.printername)) == NULL)
-		goto fail;
-#endif
+	if (lp_default_devmode(snum)) {
+		info.devmode = NULL;
+	}
+	else {
+		if ((info.devmode = construct_nt_devicemode(info.printername)) == NULL)
+			goto fail;
+	}
 
 	/* This will get the current RPC talloc context, but we should be
 	   passing this as a parameter... fixme... JRA ! */
@@ -2641,19 +2640,22 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	fstrcpy(info.printername, printername);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
-#if 0
+
 	/*
 	 * Some client drivers freak out if there is a NULL devmode
 	 * (probably the driver is not checking before accessing 
 	 * the devmode pointer)   --jerry
+	 *
+	 * See comments in get_a_printer_2_default()
 	 */
-	if (!info.devmode)
+
+	if (lp_default_devmode(lp_servicenumber(sharename)) && !info.devmode)
 	{
 		DEBUG(8,("get_a_printer_2: Constructing a default device mode for [%s]\n",
 			printername));
 		info.devmode = construct_nt_devicemode(printername);
 	}
-#endif
+
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
 	/* This will get the current RPC talloc context, but we should be
