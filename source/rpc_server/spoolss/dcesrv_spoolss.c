@@ -31,19 +31,64 @@
 static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrinters *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct ndr_push *buf;
+	struct spoolss_PrinterInfo1 info;
+	WERROR result;
+
+	info.flags = 0;
+	info.name = "p";
+	info.description = "a printer";
+	info.comment = "a comment";
+
+	buf = ndr_push_init();
+	
+	ndr_push_spoolss_PrinterInfo1(buf, NDR_SCALARS|NDR_BUFFERS, &info);
+
+	if (*r->in.buf_size < buf->offset) {
+		*r->out.buf_size = buf->offset;
+		result = WERR_INSUFFICIENT_BUFFER;
+		goto done;
+	}
+
+	r->out.buffer = (DATA_BLOB *)talloc(mem_ctx, sizeof(DATA_BLOB));
+
+	if (!r->out.buffer) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	*r->out.buffer = data_blob_talloc(mem_ctx, buf->data, buf->offset);
+
+	r->out.count = 1;
+	*r->out.buf_size = buf->offset;
+
+	result = WERR_OK;
+
+ done:
+	ndr_push_free(buf);
+
+	return result;
 }
 
+
+/*
+  destroy connection state
+*/
+static void spoolss_OpenPrinter_close(struct spoolss_openprinter_state *c_state)
+{
+	c_state->reference_count--;
+	if (c_state->reference_count == 0) {
+		talloc_destroy(c_state->mem_ctx);
+	}
+}
 
 /*
   destroy an open connection. This closes the database connection
 */
 static void spoolss_OpenPrinter_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
 {
-#if 0
-	struct samr_connect_state *c_state = h->data;
-	samr_Connect_close(c_state);
-#endif
+	struct spoolss_openprinter_state *c_state = h->data;
+	spoolss_OpenPrinter_close(c_state);
 }
 
 /* 
@@ -338,7 +383,7 @@ static WERROR spoolss_ClosePrinter(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
 
-	/* this causes the callback spoolss_XXX_destroy() to be called by
+	/* this causes the callback s_XXX_destroy() to be called by
 	   the handle destroy code which destroys the state associated
 	   with the handle */
 	dcesrv_handle_destroy(dce_call->conn, h);
