@@ -375,8 +375,14 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
     pstrcpy(fname,dname);      
 
-    if(!(got_match = *got_exact_match = exact_match(fname, mask, case_sensitive)))
-      got_match = mask_match(fname, mask, case_sensitive);
+    if(!(got_match = *got_exact_match = exact_match(fname, mask, case_sensitive))) {
+      if (!strcmp(mask, "*.*")) {
+        got_match = True;
+      }
+      else {
+        got_match = mask_match(fname, mask, case_sensitive);
+      }
+    }
 
     if(!got_match && !is_8_3(fname, False)) {
 
