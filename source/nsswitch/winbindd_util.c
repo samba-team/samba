@@ -92,13 +92,13 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	/* We can't call domain_list() as this function is called from
 	   init_domain_list() and we'll get stuck in a loop. */
 	for (domain = _domain_list; domain; domain = domain->next) {
-		if (strcasecmp(domain_name, domain->name) == 0 ||
-		    strcasecmp(domain_name, domain->alt_name) == 0) {
+		if (strequal(domain_name, domain->name) ||
+		    strequal(domain_name, domain->alt_name)) {
 			return domain;
 		}
 		if (alternative_name && *alternative_name) {
-			if (strcasecmp(alternative_name, domain->name) == 0 ||
-			    strcasecmp(alternative_name, domain->alt_name) == 0) {
+			if (strequal(alternative_name, domain->name) ||
+			    strequal(alternative_name, domain->alt_name)) {
 				return domain;
 			}
 		}

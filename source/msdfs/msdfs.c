@@ -314,7 +314,7 @@ BOOL dfs_redirect(char* pathname, connection_struct* conn,
 		return False;
 	}
 	
-	if (strcasecmp(dp.servicename, lp_servicename(SNUM(conn)) ) != 0) 
+	if (!strequal(dp.servicename, lp_servicename(SNUM(conn)) )) 
 		return False;
 
 	if (resolve_dfs_path(pathname, &dp, conn, findfirst_flag,
@@ -362,7 +362,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 	parse_dfs_path(pathname, &dp);
 
 	/* Verify hostname in path */
-	if (local_machine && (strcasecmp(local_machine, dp.hostname) != 0)) {
+	if (local_machine && (!strequal(local_machine, dp.hostname))) {
 
 	   /* Hostname mismatch, check if one of our IP addresses */
 	   if (!ismyip(*interpret_addr2(dp.hostname))) {
@@ -711,7 +711,7 @@ BOOL create_junction(char* pathname, struct junction_map* jn)
         parse_dfs_path(pathname,&dp);
 
         /* check if path is dfs : validate first token */
-        if (local_machine && (strcasecmp(local_machine,dp.hostname)!=0)) {
+        if (local_machine && (!strequal(local_machine,dp.hostname))) {
 	    
 	   /* Hostname mismatch, check if one of our IP addresses */
 	   if (!ismyip(*interpret_addr2(dp.hostname))) {

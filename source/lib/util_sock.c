@@ -837,8 +837,8 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	 * DNS is perverted). We always check the address list, though.
 	 */
 	
-	if (strcasecmp(remotehost, hp->h_name)
-	    && strcasecmp(remotehost, "localhost")) {
+	if (!strequal(remotehost, hp->h_name)
+	    && !strequal(remotehost, "localhost")) {
 		DEBUG(0,("host name/name mismatch: %s != %s\n",
 			 remotehost, hp->h_name));
 		return False;

@@ -427,7 +427,7 @@ static BOOL is_reserved_name(const char *name)
 		for (i=0; reserved_names[i]; i++) {
 			int len = strlen(reserved_names[i]);
 			/* note that we match on COM1 as well as COM1.foo */
-			if (strncasecmp(name, reserved_names[i], len) == 0 &&
+			if (strnequal(name, reserved_names[i], len) &&
 			    (name[len] == '.' || name[len] == 0)) {
 				return True;
 			}
