@@ -761,6 +761,12 @@ Can't find printer handle we created for priunter %s\n", name ));
 		if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin()))
 			printer_default->access_required = PRINTER_ACCESS_ADMINISTER;
 
+
+		if (printer_default->access_required & PRINTER_ACCESS_ADMINISTER)
+			printer_default->access_required = PRINTER_ACCESS_ADMINISTER;
+		else
+			printer_default->access_required = PRINTER_ACCESS_USE;
+
 	        DEBUG(4,("Setting printer access=%x\n", printer_default->access_required));
 		Printer->access_granted = printer_default->access_required;
 		
