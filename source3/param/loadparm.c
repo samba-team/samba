@@ -994,7 +994,7 @@ static BOOL lp_add_ipc(void)
 
   sprintf(comment,"IPC Service (%s)",lp_serverstring());
 
-  string_set(&iSERVICE(i).szPath,"/tmp");
+  string_set(&iSERVICE(i).szPath,tmpdir());
   string_set(&iSERVICE(i).szUsername,"");
   string_set(&iSERVICE(i).comment,comment);
   iSERVICE(i).status = False;
@@ -1228,8 +1228,8 @@ static BOOL service_ok(int iService)
    if (iSERVICE(iService).szPath[0] == '\0' &&
        strwicmp(iSERVICE(iService).szService,HOMES_NAME) != 0)
    {
-      DEBUG(0,("No path in service %s - using /tmp\n",iSERVICE(iService).szService));
-      string_set(&iSERVICE(iService).szPath,"/tmp");      
+      DEBUG(0,("No path in service %s - using %s\n",iSERVICE(iService).szService,tmpdir()));
+      string_set(&iSERVICE(iService).szPath,tmpdir());      
    }
 
    /* If a service is flagged unavailable, log the fact at level 0. */

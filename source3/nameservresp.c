@@ -614,6 +614,7 @@ static BOOL response_problem_check(struct response_record *n,
   return False;
 }
 
+#if 0
 /****************************************************************************
   check that the response received is compatible with the response record
   ****************************************************************************/
@@ -679,6 +680,7 @@ static BOOL response_compatible(struct response_record *n,
   }
   return True;
 }
+#endif
 
 
 /****************************************************************************

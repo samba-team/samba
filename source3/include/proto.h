@@ -739,6 +739,9 @@ struct smb_passwd *get_smbpwnam(char *name);
 /*The following definitions come from  smbrun.c  */
 
 
+/*The following definitions come from  smbwizard.c  */
+
+
 /*The following definitions come from  status.c  */
 
 void Ucrit_addUsername(pstring username);
@@ -819,6 +822,7 @@ BOOL user_in_list(char *user,char *list);
 
 void setup_logging(char *pname,BOOL interactive);
 void reopen_logs(void);
+char *tmpdir(void);
 BOOL is_a_socket(int fd);
 BOOL next_token(char **ptr,char *buff,char *sep);
 char **toktocliplist(int *ctok, char *sep);

@@ -19,10 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef LINUX
-#define __KERNEL__
-#endif
-
 #include "includes.h"
 extern int DEBUGLEVEL;
 

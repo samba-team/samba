@@ -54,8 +54,8 @@ void D1(uchar *k, uchar *d, uchar *out)
   des_cblock deskey;
 
   str_to_key(k,(uchar *)deskey);
-  des_set_key(deskey,ks);
-  des_ecb_encrypt(d, out, ks, DES_DECRYPT);
+  des_set_key((des_cblock *)deskey,ks);
+  des_ecb_encrypt((des_cblock *)d,(des_cblock *)out, ks, DES_DECRYPT);
 }
 
 void E1(uchar *k, uchar *d, uchar *out)
@@ -64,8 +64,8 @@ void E1(uchar *k, uchar *d, uchar *out)
   des_cblock deskey;
 
   str_to_key(k,(uchar *)deskey);
-  des_set_key(deskey,ks);
-  des_ecb_encrypt(d, out, ks, DES_ENCRYPT);
+  des_set_key((des_cblock *)deskey,ks);
+  des_ecb_encrypt((des_cblock *)d,(des_cblock *)out, ks, DES_ENCRYPT);
 }
  
 void E_P16(uchar *p14,uchar *p16)

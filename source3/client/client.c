@@ -1651,7 +1651,7 @@ static void cmd_more(void)
 
   strcpy(rname,cur_dir);
   strcat(rname,"\\");
-  sprintf(tmpname,"/tmp/smbmore.%d",getpid());
+  sprintf(tmpname,"%s/smbmore.%d",tmpdir(),getpid());
   strcpy(lname,tmpname);
 
   if (!next_token(NULL,rname+strlen(rname),NULL)) {
@@ -2125,7 +2125,7 @@ static void cmd_mput(void)
       pstring tmpname;
       FILE *f;
       
-      sprintf(tmpname,"/tmp/ls.smb.%d",(int)getpid());
+      sprintf(tmpname,"%s/ls.smb.%d",tmpdir(),(int)getpid());
       if (recurse)
 	sprintf(cmd,"find . -name \"%s\" -print > %s",p,tmpname);
       else
