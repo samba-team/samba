@@ -1793,7 +1793,20 @@ BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 	return ms_fnmatch(p2, s2) == 0;
 }
 
+/*******************************************************************
+ Simple case insensitive interface to ms_fnmatch.
+*******************************************************************/
+ 
+BOOL wild_match(char *string, char *pattern)
+{
+	pstring p2, s2;
 
+	pstrcpy(p2, pattern);
+	pstrcpy(s2, string);
+	strlower(p2);
+	strlower(s2);
+	return ms_fnmatch(p2, s2) == 0;
+}
 
 #ifdef __INSURE__
 
