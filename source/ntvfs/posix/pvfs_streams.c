@@ -99,7 +99,7 @@ NTSTATUS pvfs_stream_info(struct pvfs_state *pvfs, struct pvfs_filename *name, i
 	for (i=0;i<streams->num_streams;i++) {
 		struct xattr_DosStream *s = &streams->streams[i];
 		if (StrCaseCmp(s->name, name->stream_name) == 0) {
-			name->dos.alloc_size = s->alloc_size;
+			name->dos.alloc_size = pvfs_round_alloc_size(pvfs, s->alloc_size);
 			name->st.st_size     = s->size;
 			name->stream_exists = True;
 			talloc_free(streams);
@@ -141,7 +141,7 @@ static NTSTATUS pvfs_stream_update_size(struct pvfs_state *pvfs, struct pvfs_fil
 		struct xattr_DosStream *s = &streams->streams[i];
 		if (StrCaseCmp(s->name, name->stream_name) == 0) {
 			s->size       = size;
-			s->alloc_size = size;
+			s->alloc_size = pvfs_round_alloc_size(pvfs, size);
 			break;
 		}
 	}
@@ -160,7 +160,7 @@ static NTSTATUS pvfs_stream_update_size(struct pvfs_state *pvfs, struct pvfs_fil
 		
 		s->flags      = XATTR_STREAM_FLAG_INTERNAL;
 		s->size       = size;
-		s->alloc_size = size;
+		s->alloc_size = pvfs_round_alloc_size(pvfs, size);
 		s->name       = name->stream_name;
 	}
 

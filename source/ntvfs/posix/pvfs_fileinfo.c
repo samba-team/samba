@@ -93,7 +93,7 @@ NTSTATUS pvfs_fill_dos_info(struct pvfs_state *pvfs, struct pvfs_filename *name,
 	name->dos.change_time += name->st.st_ctim.tv_nsec / 100;
 #endif
 	name->dos.attrib = dos_mode_from_stat(pvfs, &name->st);
-	name->dos.alloc_size = name->st.st_size;
+	name->dos.alloc_size = pvfs_round_alloc_size(pvfs, name->st.st_size);
 	name->dos.nlink = name->st.st_nlink;
 	name->dos.ea_size = 0;
 	name->dos.file_id = (((uint64_t)name->st.st_dev)<<32) | name->st.st_ino;
@@ -113,7 +113,8 @@ mode_t pvfs_fileperms(struct pvfs_state *pvfs, uint32 attrib)
 		mode |= S_IXUSR | S_IXGRP | S_IXOTH;
 	}
 
-	if (!(attrib & FILE_ATTRIBUTE_READONLY)) {
+	if (!(attrib & FILE_ATTRIBUTE_READONLY) ||
+	    (pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
 		mode |= S_IWUSR;
 	}
 

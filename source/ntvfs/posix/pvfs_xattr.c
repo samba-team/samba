@@ -224,7 +224,8 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 		name->dos.attrib = pvfs_attrib_normalise(info1->attrib);
 		name->dos.ea_size = info1->ea_size;
 		if (name->st.st_size == info1->size) {
-			name->dos.alloc_size = info1->alloc_size;
+			name->dos.alloc_size = 
+				pvfs_round_alloc_size(pvfs, info1->alloc_size);
 		}
 		if (info1->create_time != 0) {
 			name->dos.create_time = info1->create_time;
