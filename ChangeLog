@@ -4,9 +4,9 @@
 
 2000-01-08  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/Makefile.am: bump version to 7:1:0
 	* lib/krb5/principal.c (krb5_sname_to_principal): use
 	krb5_expand_hostname
-
 	* lib/krb5/expand_hostname.c (krb5_expand_hostname): handle
 	ai_canonname being set in any of the addresses returnedby
 	getaddrinfo.  glibc apparently returns the reverse lookup of every
