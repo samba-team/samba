@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -37,6 +37,7 @@
 #include "ftp_locl.h"
 #endif
 #include <gssapi.h>
+#include <krb5_err.h>
 
 RCSID("$Id$");
 
@@ -265,24 +266,16 @@ struct sec_server_mech gss_server_mech = {
 extern struct sockaddr *hisctladdr, *myctladdr;
 
 static int
-gss_auth(void *app_data, char *host)
+import_name(const char *kname, const char *host, gss_name_t *target_name)
 {
-    
     OM_uint32 maj_stat, min_stat;
     gss_buffer_desc name;
-    gss_name_t target_name;
-    gss_buffer_desc input, output_token;
-    int context_established = 0;
-    char *p;
-    int n;
-    gss_channel_bindings_t bindings;
-    struct gss_data *d = app_data;
-	    
-    name.length = asprintf((char**)&name.value, "ftp@%s", host);
+
+    name.length = asprintf((char**)&name.value, "%s@%s", kname, host);
     maj_stat = gss_import_name(&min_stat,
 			       &name,
 			       GSS_C_NT_HOSTBASED_SERVICE,
-			       &target_name);
+			       target_name);
     if (GSS_ERROR(maj_stat)) {
 	OM_uint32 new_stat;
 	OM_uint32 msg_ctx = 0;
@@ -301,7 +294,28 @@ gss_auth(void *app_data, char *host)
 	return AUTH_ERROR;
     }
     free(name.value);
+    return 0;
+}
+
+static int
+gss_auth(void *app_data, char *host)
+{
     
+    OM_uint32 maj_stat, min_stat;
+    gss_buffer_desc name;
+    gss_name_t target_name;
+    gss_buffer_desc input, output_token;
+    int context_established = 0;
+    char *p;
+    int n;
+    gss_channel_bindings_t bindings;
+    struct gss_data *d = app_data;
+
+    const char *knames[] = { "ftp", "host", NULL }, **kname = knames;
+	    
+    
+    if(import_name(*kname++, host, &target_name))
+	return AUTH_ERROR;
 
     input.length = 0;
     input.value = NULL;
@@ -337,6 +351,12 @@ gss_auth(void *app_data, char *host)
 	    OM_uint32 new_stat;
 	    OM_uint32 msg_ctx = 0;
 	    gss_buffer_desc status_string;
+
+	    if(min_stat == KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN && *kname != NULL) {
+		if(import_name(*kname++, host, &target_name))
+		    return AUTH_ERROR;
+		continue;
+	    }
 	    
 	    gss_display_status(&new_stat,
 			       min_stat,
