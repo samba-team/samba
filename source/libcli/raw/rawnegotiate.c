@@ -53,7 +53,9 @@ struct smbcli_request *smb_negprot_send(struct smbcli_transport *transport, int 
 	}
 
 	flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-	flags2 |= FLAGS2_UNICODE_STRINGS;
+	if (lp_unicode()) {
+		flags2 |= FLAGS2_UNICODE_STRINGS;
+	}
 	flags2 |= FLAGS2_EXTENDED_ATTRIBUTES;
 	flags2 |= FLAGS2_LONG_PATH_COMPONENTS;
 	flags2 |= FLAGS2_IS_LONG_NAME;
@@ -172,7 +174,7 @@ NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport)
 	}
 
 	/* a way to force ascii SMB */
-	if (getenv("SMBCLI_FORCE_ASCII")) {
+	if (!lp_unicode() || getenv("SMBCLI_FORCE_ASCII")) {
 		transport->negotiate.capabilities &= ~CAP_UNICODE;
 	}
 
