@@ -46,11 +46,11 @@ protocol server
 .Op Fl S Ar tos
 .Op Fl X Ar authtype
 .Op Fl a Ar authmode
-.Op Fl edebug
 .Op Fl r Ns Ar lowpty-highpty
 .Op Fl u Ar len
-.Op Fl debug Op Ar port
+.Op Fl debug
 .Op Fl L Ar /bin/login
+.Op Ar port
 .Sh DESCRIPTION
 The
 .Nm telnetd
@@ -165,19 +165,6 @@ Displays data written to the pty.
 .It Cm exercise
 Has not been implemented yet.
 .El
-.It Fl debug
-Enables debugging on each socket created by
-.Nm telnetd
-(see
-.Dv SO_DEBUG
-in
-.Xr socket 2 ) .
-.It Fl edebug
-If
-.Nm telnetd
-has been compiled with support for data encryption, then the
-.Fl edebug
-option may be used to enable encryption debugging code.
 .It Fl h
 Disables the printing of host-specific information before
 login has been completed.
