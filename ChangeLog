@@ -1,5 +1,8 @@
 Sat May 23 04:55:19 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kadmin/util.c (foreach_principal): Check for expression before
+ 	wading through the whole database.
+
 	* kadmin/kadmin.c: Pass NULL password to
  	kadm5_*_init_with_password.
 
