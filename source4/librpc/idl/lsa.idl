@@ -290,9 +290,20 @@
 
 	/******************/
 	/* Function: 0x0e */
+	typedef enum {
+		SID_NAME_USE_NONE = 0,/* NOTUSED */
+		SID_NAME_USER    = 1, /* user */
+		SID_NAME_DOM_GRP = 2, /* domain group */
+		SID_NAME_DOMAIN  = 3, /* domain: don't know what this is */
+		SID_NAME_ALIAS   = 4, /* local group */
+		SID_NAME_WKN_GRP = 5, /* well-known group */
+		SID_NAME_DELETED = 6, /* deleted account: needed for c2 rating */
+		SID_NAME_INVALID = 7, /* invalid account */
+		SID_NAME_UNKNOWN = 8  /* oops. */
+	} lsa_SidType;
 
 	typedef struct {
-		uint16 sid_type;
+		lsa_SidType sid_type;
 		uint32 rid;
 		uint32 sid_index;
 	} lsa_TranslatedSid;
@@ -323,7 +334,7 @@
 	/* Function: 0x0f */
 
 	typedef struct {
-		uint16 sid_type;
+		lsa_SidType sid_type;
 		lsa_String name;
 		uint32 sid_index;
 	} lsa_TranslatedName;
@@ -719,7 +730,7 @@
 	/* Function 0x39 */
 
 	typedef struct {
-		uint16 sid_type;
+		lsa_SidType sid_type;
 		lsa_String name;
 		uint32 sid_index;
 		uint32 unknown;
@@ -745,7 +756,7 @@
 	/* Function 0x3a */
 
 	typedef struct {
-		uint16 sid_type;
+		lsa_SidType sid_type;
 		uint32 rid;
 		uint32 sid_index;
 		uint32 unknown;
@@ -798,7 +809,7 @@
 	/**********************/
 	/* Function 0x44 */
 	typedef struct {
-		uint16 sid_type;
+		lsa_SidType sid_type;
 		dom_sid2 *sid;
 		uint32 sid_index;
 		uint32 unknown;
