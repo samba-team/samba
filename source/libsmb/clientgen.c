@@ -1345,7 +1345,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
   lock a file
 ****************************************************************************/
 BOOL cli_lock(struct cli_state *cli, int fnum, 
-	      uint32 offset, uint32 len, int timeout, int locktype)
+	      uint32 offset, uint32 len, int timeout, enum lock_type lock_type)
 {
 	char *p;
         int saved_timeout = cli->timeout;
@@ -1361,7 +1361,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
-	CVAL(cli->outbuf,smb_vwv3) = (locktype == F_RDLCK? 1 : 0);
+	CVAL(cli->outbuf,smb_vwv3) = (lock_type == READ_LOCK? 1 : 0);
 	SIVALS(cli->outbuf, smb_vwv4, timeout);
 	SSVAL(cli->outbuf,smb_vwv6,0);
 	SSVAL(cli->outbuf,smb_vwv7,1);
@@ -1392,7 +1392,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
   unlock a file
 ****************************************************************************/
 BOOL cli_unlock(struct cli_state *cli, int fnum, 
-		uint32 offset, uint32 len, int timeout, int locktype)
+		uint32 offset, uint32 len, int timeout)
 {
 	char *p;
 
@@ -1407,7 +1407,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum,
 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
-	CVAL(cli->outbuf,smb_vwv3) = (locktype == F_RDLCK? 1 : 0);
+	CVAL(cli->outbuf,smb_vwv3) = 0;
 	SIVALS(cli->outbuf, smb_vwv4, timeout);
 	SSVAL(cli->outbuf,smb_vwv6,1);
 	SSVAL(cli->outbuf,smb_vwv7,0);
