@@ -122,6 +122,12 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	pvfs_setup_options(pvfs);
 
+#ifdef SIGXFSZ
+	/* who had the stupid idea to generate a signal on a large
+	   file write instead of just failing it!? */
+	BlockSignals(True, SIGXFSZ);
+#endif
+
 	return NT_STATUS_OK;
 }
 
@@ -132,15 +138,6 @@ static NTSTATUS pvfs_disconnect(struct ntvfs_module_context *ntvfs,
 				struct smbsrv_tcon *tcon)
 {
 	return NT_STATUS_OK;
-}
-
-/*
-  ioctl interface - we don't do any
-*/
-static NTSTATUS pvfs_ioctl(struct ntvfs_module_context *ntvfs,
-			   struct smbsrv_request *req, union smb_ioctl *io)
-{
-	return NT_STATUS_INVALID_PARAMETER;
 }
 
 /*
