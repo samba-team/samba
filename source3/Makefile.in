@@ -852,7 +852,7 @@ include/wrepld_proto.h:
 	  $(WREPL_OBJ1)
 
 headers: 
-	$(MAKE) $(MAKEFLAGS) delheaders include/proto.h include/build_env.h include/wrepld_proto.h winbindd_proto
+	$(MAKE) delheaders include/proto.h include/build_env.h include/wrepld_proto.h winbindd_proto
 
 proto: headers 
 
