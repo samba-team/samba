@@ -1,9 +1,8 @@
 #include "krb5_locl.h"
 #include <krb5_error.h>
 
-static krb5_error_code
+krb5_error_code
 krb5_get_salt (krb5_principal princ,
-	       krb5_data realm,
 	       krb5_data *salt)
 {
     size_t len;
@@ -11,15 +10,15 @@ krb5_get_salt (krb5_principal princ,
     krb5_error_code err;
     char *p;
      
-    len = realm.length;
+    len = princ->realm.length;
     for (i = 0; i < princ->ncomp; ++i)
 	len += princ->comp[i].length;
     err = krb5_data_alloc (salt, len);
     if (err)
 	return err;
     p = salt->data;
-    strncpy (p, realm.data, realm.length);
-    p += realm.length;
+    strncpy (p, princ->realm.data, princ->realm.length);
+    p += princ->realm.length;
     for (i = 0; i < princ->ncomp; ++i) {
 	strncpy (p, princ->comp[i].data, princ->comp[i].length);
 	p += princ->comp[i].length;
@@ -85,7 +84,7 @@ extract_ticket(krb5_context context,
 
     salt.length = 0;
     salt.data = NULL;
-    err = krb5_get_salt (creds->client, creds->client->realm, &salt);
+    err = krb5_get_salt (creds->client, &salt);
 
     if (err)
 	return err;
