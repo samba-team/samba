@@ -2563,12 +2563,12 @@ AC_MSG_CHECKING(whether to try disk-quotas support)
 AC_ARG_WITH(quotas,
 [  --with-quotas           Include disk-quota support (default=no)],
 [ case "$withval" in
-  no)
-    AC_MSG_RESULT(no)
-    samba_cv_TRY_QUOTAS=no
+  yes)
+    AC_MSG_RESULT(yes)
+    samba_cv_TRY_QUOTAS=yes
     ;;
   *)
-    AC_MSG_RESULT(yes)
+    AC_MSG_RESULT(no)
     ;;
   esac ],
   AC_MSG_RESULT(no)
