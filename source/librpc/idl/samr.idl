@@ -485,7 +485,8 @@
 		NTTIME last_logoff;
 		uint32 units_per_week;
 		[size_is(1260), length_is(units_per_week/8)] uint8 *logon_hours;
-		uint32 unknown;
+		uint16 bad_pwd_count;
+		uint16 num_logons;
 		NTTIME last_pwd_change;
 		NTTIME acct_expiry;
 		uint32 acct_flags;
