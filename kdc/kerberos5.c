@@ -706,7 +706,6 @@ as_rep(KDC_REQ *req,
 	while((pa = find_padata(req, &i, KRB5_PADATA_ENC_TIMESTAMP))){
 	    krb5_data ts_data;
 	    PA_ENC_TS_ENC p;
-	    time_t patime;
 	    size_t len;
 	    EncryptedData enc_data;
 	    Key *pa_key;
@@ -782,7 +781,6 @@ as_rep(KDC_REQ *req,
 			 client_name);
 		continue;
 	    }
-	    patime = p.patimestamp;
 	    free_PA_ENC_TS_ENC(&p);
 	    if (abs(kdc_time - p.patimestamp) > context->max_skew) {
 		ret = KRB5KDC_ERR_PREAUTH_FAILED;
@@ -1608,15 +1606,14 @@ tgs_rep2(KDC_REQ_BODY *b,
     ret = db_fetch(princ, &krbtgt);
 
     if(ret) {
-	krb5_error_code ret2;
 	char *p;
 	ret = krb5_unparse_name(context, princ, &p);
-	if (ret2 != 0)
+	if (ret != 0)
 	    p = "<unparse_name failed>";
 	krb5_free_principal(context, princ);
 	kdc_log(0, "Ticket-granting ticket not found in database: %s: %s",
 		p, krb5_get_err_text(context, ret));
-	if (ret2 == 0)
+	if (ret == 0)
 	    free(p);
 	ret = KRB5KRB_AP_ERR_NOT_US;
 	goto out2;
