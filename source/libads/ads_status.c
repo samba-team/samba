@@ -69,6 +69,8 @@ const char *ads_errstr(ADS_STATUS status)
 #ifdef HAVE_KRB5
 	case ADS_ERROR_KRB5: 
 		return error_message(status.rc);
+#endif
+#ifdef HAVE_GSSAPI
 	case ADS_ERROR_GSS:
 	{
 		gss_buffer_desc msg1, msg2;

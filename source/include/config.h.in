@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -248,6 +248,7 @@
 #undef I18N_SWAT
 #undef I18N_DEFAULT_PREF_LANG
 #undef HAVE_KRB5
+#undef HAVE_GSSAPI
 #undef BROKEN_REDHAT_7_SYSTEM_HEADERS
 #undef HAVE_LDAP
 

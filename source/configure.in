@@ -1669,7 +1669,7 @@ AC_CHECK_HEADERS(gssapi/gssapi_generic.h gssapi/gssapi.h)
 # we might need the k5crypto and com_err libraries on some systems
 AC_CHECK_LIB(com_err, _et_list, [LIBS="$LIBS -lcom_err"])
 AC_CHECK_LIB(k5crypto, krb5_encrypt_data, [LIBS="$LIBS -lk5crypto"])
-AC_CHECK_LIB(gssapi_krb5, gss_import_name, [LIBS="$LIBS -lgssapi_krb5"])
+AC_CHECK_LIB(gssapi_krb5, gss_display_status, [LIBS="$LIBS -lgssapi_krb5"])
 
 
 ########################################################
@@ -1677,6 +1677,10 @@ AC_CHECK_LIB(gssapi_krb5, gss_import_name, [LIBS="$LIBS -lgssapi_krb5"])
 # or as specified above
 AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5";
 	AC_DEFINE(HAVE_KRB5)])
+
+########################################################
+# now see if we can find the gssapi libs in standard paths
+AC_CHECK_LIB(gssapi_krb5, gss_display_status, [AC_DEFINE(HAVE_GSSAPI)])
 
 
 ##################################################################
