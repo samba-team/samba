@@ -657,7 +657,6 @@ alias|alias|alias|alias...
 		
 		<listitem><para><link linkend="LDAPADMINDN"><parameter>ldap admin dn</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPDELETEDN"><parameter>ldap delete dn</parameter></link></para></listitem>
-		<listitem><para><link linkend="LDAPDELONLYSAMATTR"><parameter>ldap del only sam attr</parameter></link></para></listitem>
 		<listitem><para><link linkend="LDAPFILTER"><parameter>ldap filter</parameter></link></para></listitem>
                 <listitem><para><link linkend="LDAPPORT"><parameter>ldap port</parameter></link></para></listitem>
                 <listitem><para><link linkend="LDAPSERVER"><parameter>ldap server</parameter></link></para></listitem>
@@ -746,6 +745,7 @@ alias|alias|alias|alias...
 		<listitem><para><link linkend="ROOTDIRECTORY"><parameter>root directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="SECURITY"><parameter>security</parameter></link></para></listitem>
 		<listitem><para><link linkend="SERVERSTRING"><parameter>server string</parameter></link></para></listitem>
+		<listitem><para><link linkend="SETPRIMARYGROUPSCRIPT"><parameter>set primary group script</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHOWADDPRINTERWIZARD"><parameter>show add printer wizard</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link></para></listitem>
 		<listitem><para><link linkend="SMBPASSWDFILE"><parameter>smb passwd file</parameter></link></para></listitem>
@@ -3440,7 +3440,7 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		</varlistentry>
 	
 		<varlistentry>
-		<term><anchor id="LDAPDELETEDN"/>ldap del only sam attr (G)</term>
+		<term><anchor id="LDAPDELETEDN"/>ldap delete dn (G)</term>
 		<listitem><para> This parameter specifies whether a delete
 		operation in the ldapsam deletes the complete entry or only the attributes
 		specific to Samba.
@@ -3449,16 +3449,6 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		<para>Default : <emphasis>ldap delete dn = no</emphasis></para>
 		</listitem>
 		</varlistentry>
-
-
-		<varlistentry>
-		<term><anchor id="LDAPDELONLYSAMATTR"/>ldap del only sam attr (G)</term>
-		<listitem><para> Inverted synonym for <link linkend="LDAPDELETEDN"><parameter>
-		ldap delete dn</parameter></link>.</para>
-		</listitem>
-		</varlistentry>
-
-
 
 
 		<varlistentry>
@@ -6952,6 +6942,25 @@ print5|My Printer 5
 
 		<para>Example: <command>server string = University of GNUs Samba 
 		Server</command></para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><anchor id="SETPRIMARYGROUPSCRIPT"/>set primary group script (G)</term>
+		<listitem><para>Thanks to the Posix subsystem in NT a
+		Windows User has a primary group in addition to the
+		auxiliary groups.  This script sets the primary group
+		in the unix userdatase when an administrator sets the
+		primary group from the windows user manager or when
+		fetching a SAM with <command>net rpc
+		vampire</command>. <parameter>%u</parameter> will be
+		replaced with the user whose primary group is to be
+		set.  <parameter>%g</parameter> will be replaced with
+		the group to set.
+
+		<para>Default: <emphasis>No default value</emphasis></para>
+
+		<para>Example: <command>set primary group script = /usr/sbin/usermod -g '%g' '%u'</command></para>
 		</listitem>
 		</varlistentry>
 

@@ -1,6 +1,0 @@
-<samba:parameter xmlns:samba="http://samba.org/common">
-		<term><anchor id="LDAPDELONLYSAMATTR"/>ldap del only sam attr (G)</term>
-		<listitem><para> Inverted synonym for <link linked="LDAPDELETEDN"><parameter moreinfo="none">
-		ldap delete dn</parameter></link>.</para>
-		</listitem>
-		</samba:parameter>
