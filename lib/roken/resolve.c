@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -64,7 +64,7 @@ static struct stot{
     {NULL, 	0}
 };
 
-int _resolve_debug;
+int _resolve_debug = 0;
 
 static int
 string_to_type(const char *name)
