@@ -1,5 +1,5 @@
-                  WHATS NEW IN Samba 3.0 alpha22
-                           4th March 2003
+                  WHATS NEW IN Samba 3.0 alpha23
+                           31st March 2003
                   ==============================
 
 This is a pre-release of Samba 3.0. This is NOT a stable release.
