@@ -2434,24 +2434,9 @@ static struct cli_state *do_connect(const char *server, const char *share)
 
 	if (!cli_send_tconX(c, sharename, "?????",
 			    password, strlen(password)+1)) {
-		pstring full_share;
-
-		/*
-		 * Some servers require \\server\share for the share
-		 * while others are happy with share as we gave above
-		 * Lets see if we give it the long form if it works
-		 */
-		pstrcpy(full_share, "\\\\");
-		pstrcat(full_share, server);
-		pstrcat(full_share, "\\");
-		pstrcat(full_share, sharename);
-		if (!cli_send_tconX(c, full_share, "?????", password,
-					strlen(password) + 1)) {
-
-			d_printf("tree connect failed: %s\n", cli_errstr(c));
-			cli_shutdown(c);
-			return NULL;
-		}
+		d_printf("tree connect failed: %s\n", cli_errstr(c));
+		cli_shutdown(c);
+		return NULL;
 	}
 
 	DEBUG(4,(" tconx ok\n"));
