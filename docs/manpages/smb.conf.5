@@ -1312,28 +1312,27 @@ a dot appear as hidden files.
 
 
 .SS hide files(S)
-This is a list of files and directories that are not visible but are
+This is a list of files or directories that are not visible but are
 accessible.  The DOS 'hidden' attribute is applied to any files or
 directories that match.
 
-Each entry in the list must be separated by a "\\", which allows spaces
-to be included in the entry.  '*' and '?' can be used to specify multiple
-files or directories.  The default, for example, is used to hide all files
-beginning with a dot.
+Each entry in the list must be separated by a "/", which allows spaces
+to be included in the entry.  '*' and '?' can be used to specify multiple 
+files or directories as in DOS wildcards.  The default, for example, is 
+used to hide all files beginning with a dot.
 
-Each entry must be a unix path, not a DOS path.  Therefore, the pathname
-specified between separators "\\", if it incudes directories, must use the
-unix directory specifier "/", not the DOS directory specifier "\\".
+Each entry must be a unix path, not a DOS path and must not include the 
+unix directory separator "/".
 
 Note that the case sensitivity option is applicable in hiding files.
 
 See also "veto files" and "case sensitive"
 
 .B Default
-	hide files = */.*
+	hide files = .*
 
 .B Example
-	hide files = \\*/.*\\DesktopFolderDB\\TrashFor%m\\resource.frk\\
+	hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/
 
 The above example is based on files that the Macintosh client (DAVE)
 creates for internal use, and also still hides all files beginning with
@@ -3196,13 +3195,12 @@ See also "invalid users"
 
 .SS veto files(S)
 This is a list of files and directories that are neither visible nor
-accessible.  Each entry in the list must be separated by a "\\", which
+accessible.  Each entry in the list must be separated by a "/", which
 allows spaces to be included in the entry.  '*' and '?' can be used to
 specify multiple files or directories as in DOS wildcards.
 
-Each entry must be a unix path, not a DOS path.  Therefore, the pathname
-specified between separators "\\", if it incudes directories, must use the
-unix directory specifier "/", not the DOS directory specifier "\\".
+Each entry must be a unix path, not a DOS path and must not include the 
+unix directory separator "/".
 
 Note that the case sensitivity option is applicable in vetoing files.
 
@@ -3222,15 +3220,15 @@ See also "hide files" and "case sensitive"
     Example 1.
     Veto any files containing the word Security, 
     any ending in .tmp, and any directory containing the
-    component /root/.
+    word root.
 
-	veto files = \\*Security*\\*.tmp\\*/root/*\\
+	veto files = /*Security*/*.tmp/*root*/
 
     Example 2.
     Veto the Apple specific files that a NetAtalk server
     creates.
 
-    veto files = \.AppleDouble\.bin\.AppleDesktop\Network Trash Folder\
+    veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 .SS volume (S)
 This allows you to override the volume label returned for a
