@@ -222,8 +222,8 @@ typedef struct
 	char *sslHostsResign;
 	char *sslCaCertDir;
 	char *sslCaCertFile;
-	char *sslCert;
-	char *sslPrivKey;
+	char *sslServerCert;
+	char *sslServerPrivKey;
 	char *sslClientCert;
 	char *sslClientPrivKey;
 	char *sslCiphers;
@@ -770,10 +770,8 @@ static struct parm_struct parm_table[] = {
 	{"ssl hosts resign", P_STRING, P_GLOBAL, &Globals.sslHostsResign, NULL, NULL, 0},
 	{"ssl CA certDir", P_STRING, P_GLOBAL, &Globals.sslCaCertDir, NULL, NULL, 0},
 	{"ssl CA certFile", P_STRING, P_GLOBAL, &Globals.sslCaCertFile, NULL, NULL, 0},
-	{"ssl server cert", P_STRING, P_GLOBAL, &Globals.sslCert, NULL, NULL, 0},
-	{"ssl cert", P_STRING, P_GLOBAL, &Globals.sslCert, NULL, NULL, 0},
-	{"ssl server key", P_STRING, P_GLOBAL, &Globals.sslPrivKey, NULL, NULL, 0},
-	{"ssl key", P_STRING, P_GLOBAL, &Globals.sslPrivKey, NULL, NULL, 0},
+	{"ssl server cert", P_STRING, P_GLOBAL, &Globals.sslServerCert, NULL, NULL, 0},
+	{"ssl server key", P_STRING, P_GLOBAL, &Globals.sslServerPrivKey, NULL, NULL, 0},
 	{"ssl client cert", P_STRING, P_GLOBAL, &Globals.sslClientCert, NULL, NULL, 0},
 	{"ssl client key", P_STRING, P_GLOBAL, &Globals.sslClientPrivKey, NULL, NULL, 0},
 	{"ssl egd socket", P_STRING, P_GLOBAL, &Globals.sslEgdSocket, NULL, NULL, 0},
@@ -1324,8 +1322,8 @@ static void init_globals(void)
 	string_set(&Globals.sslHostsResign, "");
 	string_set(&Globals.sslCaCertDir, "");
 	string_set(&Globals.sslCaCertFile, "");
-	string_set(&Globals.sslCert, "");
-	string_set(&Globals.sslPrivKey, "");
+	string_set(&Globals.sslServerCert, "");
+	string_set(&Globals.sslServerPrivKey, "");
 	string_set(&Globals.sslClientCert, "");
 	string_set(&Globals.sslClientPrivKey, "");
 	string_set(&Globals.sslCiphers, "");
@@ -1536,8 +1534,8 @@ FN_GLOBAL_STRING(lp_ssl_hosts, &Globals.sslHostsRequire)
 FN_GLOBAL_STRING(lp_ssl_hosts_resign, &Globals.sslHostsResign)
 FN_GLOBAL_STRING(lp_ssl_cacertdir, &Globals.sslCaCertDir)
 FN_GLOBAL_STRING(lp_ssl_cacertfile, &Globals.sslCaCertFile)
-FN_GLOBAL_STRING(lp_ssl_cert, &Globals.sslCert)
-FN_GLOBAL_STRING(lp_ssl_privkey, &Globals.sslPrivKey)
+FN_GLOBAL_STRING(lp_ssl_server_cert, &Globals.sslServerCert)
+FN_GLOBAL_STRING(lp_ssl_server_privkey, &Globals.sslServerPrivKey)
 FN_GLOBAL_STRING(lp_ssl_client_cert, &Globals.sslClientCert)
 FN_GLOBAL_STRING(lp_ssl_client_privkey, &Globals.sslClientPrivKey)
 FN_GLOBAL_STRING(lp_ssl_ciphers, &Globals.sslCiphers)
