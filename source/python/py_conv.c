@@ -80,7 +80,11 @@ PyObject *from_struct(void *s, struct pyconv *conv)
 
 BOOL to_struct(void *s, PyObject *dict, struct pyconv *conv)
 {
+	PyObject *visited, *key, *value;
+	BOOL result = False;
 	int i;
+
+	visited = PyDict_New();
 
 	for (i = 0; conv[i].name; i++) {
 		PyObject *obj;
@@ -88,7 +92,7 @@ BOOL to_struct(void *s, PyObject *dict, struct pyconv *conv)
 		obj = PyDict_GetItemString(dict, conv[i].name);
 
 		if (!obj)
-			return False;
+			goto done;
 		
 		switch (conv[i].type) {
 		case PY_UNISTR: {
@@ -125,7 +129,31 @@ BOOL to_struct(void *s, PyObject *dict, struct pyconv *conv)
 		default:
 			break;
 		}
+
+		/* Mark as visited */
+
+		PyDict_SetItemString(visited, conv[i].name, 
+				     PyInt_FromLong(1));
 	}
 
-	return True;
+	/* Iterate over each item in the input dictionary and see if it was
+	   visited.  If it wasn't then the user has added some extra crap
+	   to the dictionary. */
+
+	i = 0;
+
+	while (PyDict_Next(dict, &i, &key, &value)) {
+		if (!PyDict_GetItem(visited, key))
+			goto done;
+	}
+
+	result = True;
+
+done:
+	/* We must decrement the reference count here or the visited
+	   dictionary will not be freed. */
+	       
+	Py_DECREF(visited);
+
+	return result;
 }
