@@ -774,6 +774,13 @@ process_rings(int netin,
     int returnValue = 0;
     static struct timeval TimeValue = { 0 };
 
+    if (netin >= FD_SETSIZE
+	|| netout >= FD_SETSIZE
+	|| netex >= FD_SETSIZE
+	|| ttyin >= FD_SETSIZE
+	|| ttyout >= FD_SETSIZE)
+	errx (1, "fd too large");
+
     if (netout) {
 	FD_SET(net, &obits);
     }
@@ -791,7 +798,7 @@ process_rings(int netin,
 	FD_SET(net, &xbits);
     }
 #endif
-    if ((c = select(16, &ibits, &obits, &xbits,
+    if ((c = select(FD_SETSIZE, &ibits, &obits, &xbits,
 			(poll == 0)? (struct timeval *)0 : &TimeValue)) < 0) {
 	if (c == -1) {
 		    /*
