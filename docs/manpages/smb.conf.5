@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "24 April 2001" "" ""
+.TH "SMB.CONF" "5" "01 June 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -503,10 +503,13 @@ Here is a list of all global parameters. See the section of
 each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
-\fIadd user script\fR
+\fIadd printer command\fR
 .TP 0.2i
 \(bu
-\fIaddprinter command\fR
+\fIadd share command\fR
+.TP 0.2i
+\(bu
+\fIadd user script\fR
 .TP 0.2i
 \(bu
 \fIallow trusted domains\fR
@@ -528,6 +531,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIchange notify timeout\fR
+.TP 0.2i
+\(bu
+\fIchange share command\fR
 .TP 0.2i
 \(bu
 \fIcharacter set\fR
@@ -569,10 +575,13 @@ each parameter for details. Note that some are synonyms.
 \fIdefault service\fR
 .TP 0.2i
 \(bu
-\fIdelete user script\fR
+\fIdelete printer command\fR
 .TP 0.2i
 \(bu
-\fIdeleteprinter command\fR
+\fIdelete share command\fR
+.TP 0.2i
+\(bu
+\fIdelete user script\fR
 .TP 0.2i
 \(bu
 \fIdfree command\fR
@@ -584,16 +593,7 @@ each parameter for details. Note that some are synonyms.
 \fIdomain admin group\fR
 .TP 0.2i
 \(bu
-\fIdomain admin users\fR
-.TP 0.2i
-\(bu
-\fIdomain groups\fR
-.TP 0.2i
-\(bu
 \fIdomain guest group\fR
-.TP 0.2i
-\(bu
-\fIdomain guest users\fR
 .TP 0.2i
 \(bu
 \fIdomain logons\fR
@@ -755,6 +755,9 @@ each parameter for details. Note that some are synonyms.
 \fInull passwords\fR
 .TP 0.2i
 \(bu
+\fIobey pam restrictions\fR
+.TP 0.2i
+\(bu
 \fIoplock break wait time\fR
 .TP 0.2i
 \(bu
@@ -762,6 +765,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIos2 driver map\fR
+.TP 0.2i
+\(bu
+\fIpam password change\fR
 .TP 0.2i
 \(bu
 \fIpanic action\fR
@@ -1332,6 +1338,118 @@ each parameter for details. Note that some are synonyms.
 \fIwriteable\fR
 .SH "EXPLANATION OF EACH PARAMETER"
 .TP
+\fBadd printer command (G)\fR
+With the introduction of MS-RPC based printing
+support for Windows NT/2000 clients in Samba 2.2, The MS Add
+Printer Wizard (APW) icon is now also available in the 
+"Printers..." folder displayed a share listing. The APW
+allows for printers to be add remotely to a Samba or Windows 
+NT/2000 print server.
+
+For a Samba host this means that the printer must be 
+physically added to underlying printing system. The \fIadd 
+printer command\fR defines a script to be run which 
+will perform the necessary operations for adding the printer
+to the print system and to add the appropriate service definition 
+to the \fIsmb.conf\fR file in order that it can be 
+shared by \fBsmbd(8)\fR
+.
+
+The \fIadd printer command\fR is
+automatically invoked with the following parameter (in 
+order:
+.RS
+.TP 0.2i
+\(bu
+\fIprinter name\fR
+.TP 0.2i
+\(bu
+\fIshare name\fR
+.TP 0.2i
+\(bu
+\fIport name\fR
+.TP 0.2i
+\(bu
+\fIdriver name\fR
+.TP 0.2i
+\(bu
+\fIlocation\fR
+.TP 0.2i
+\(bu
+\fIWindows 9x driver location\fR
+.RE
+.PP
+All parameters are filled in from the PRINTER_INFO_2 structure sent 
+by the Windows NT/2000 client with one exception. The "Windows 9x
+driver location" parameter is included for backwards compatibility
+only. The remaining fields in the structure are generated from answers
+to the APW questions.
+.PP
+.PP
+Once the \fIadd printer command\fR has 
+been executed, \fBsmbd\fR will reparse the \fI smb.conf\fR to determine if the share defined by the APW
+exists. If the sharename is still invalid, then \fBsmbd
+\fRwill return an ACCESS_DENIED error to the client.
+.PP
+.PP
+See also \fI delete printer command\fR, \fIprinting\fR,
+\fIshow add
+printer wizard\fR
+.PP
+.PP
+Default: \fBnone\fR
+.PP
+.PP
+Example: \fBaddprinter command = /usr/bin/addprinter
+\fR.PP
+.TP
+\fBadd share command (G)\fR
+Samba 2.2.0 introduced the ability to dynamically 
+add and delete shares via the Windows NT 4.0 Server Manager. The 
+\fIadd share command\fR is used to define an 
+external program or script which will add a new service definition 
+to \fIsmb.conf\fR. In order to successfully 
+execute the \fIadd share command\fR, \fBsmbd\fR
+requires that the administrator be connected using a root account (i.e. 
+uid == 0).
+
+When executed, \fBsmbd\fR will automatically invoke the 
+\fIadd share command\fR with four parameters.
+.RS
+.TP 0.2i
+\(bu
+\fIconfigFile\fR - the location 
+of the global \fIsmb.conf\fR file. 
+.TP 0.2i
+\(bu
+\fIshareName\fR - the name of the new 
+share.
+.TP 0.2i
+\(bu
+\fIpathName\fR - path to an **existing**
+directory on disk.
+.TP 0.2i
+\(bu
+\fIcomment\fR - comment string to associate 
+with the new share.
+.RE
+.PP
+This parameter is only used for add file shares. To add printer shares, 
+see the \fIadd printer 
+command\fR.
+.PP
+.PP
+See also \fIchange share 
+command\fR, \fIdelete share
+command\fR.
+.PP
+.PP
+Default: \fBnone\fR
+.PP
+.PP
+Example: \fBadd share command = /usr/local/bin/addshare\fR
+.PP
+.TP
 \fBadd user script (G)\fR
 This is the full pathname to a script that will 
 be run \fBAS ROOT\fR by smbd(8)
@@ -1372,70 +1490,6 @@ Default: \fBadd user script = <empty string>
 \fR
 Example: \fBadd user script = /usr/local/samba/bin/add_user 
 %u\fR
-.TP
-\fBaddprinter command (G)\fR
-With the introduction of MS-RPC based printing
-support for Windows NT/2000 clients in Samba 2.2, The MS Add
-Printer Wizard (APW) icon is now also available in the 
-"Printers..." folder displayed a share listing. The APW
-allows for printers to be add remotely to a Samba or Windows 
-NT/2000 print server.
-
-For a Samba host this means that the printer must be 
-physically added to underlying printing system. The \fI addprinter command\fR defines a script to be run which 
-will perform the necessary operations for adding the printer
-to the print system and to add the appropriate service definition 
-to the \fIsmb.conf\fR file in order that it can be 
-shared by \fBsmbd(8)\fR
-.
-
-The \fIaddprinter command\fR is
-automatically invoked with the following parameter (in 
-order:
-.RS
-.TP 0.2i
-\(bu
-\fIprinter name\fR
-.TP 0.2i
-\(bu
-\fIshare name\fR
-.TP 0.2i
-\(bu
-\fIport name\fR
-.TP 0.2i
-\(bu
-\fIdriver name\fR
-.TP 0.2i
-\(bu
-\fIlocation\fR
-.TP 0.2i
-\(bu
-\fIWindows 9x driver location\fR
-.RE
-.PP
-All parameters are filled in from the PRINTER_INFO_2 structure sent 
-by the Windows NT/2000 client with one exception. The "Windows 9x
-driver location" parameter is included for backwards compatibility
-only. The remaining fields in the structure are generated from answers
-to the APW questions.
-.PP
-.PP
-Once the \fIaddprinter command\fR has 
-been executed, \fBsmbd\fR will reparse the \fI smb.conf\fR to determine if the share defined by the APW
-exists. If the sharename is still invalid, then \fBsmbd
-\fRwill return an ACCESS_DENIED error to the client.
-.PP
-.PP
-See also \fI deleteprinter command\fR, \fIprinting\fR,
-\fIshow add
-printer wizard\fR
-.PP
-.PP
-Default: \fBnone\fR
-.PP
-.PP
-Example: \fBaddprinter command = /usr/bin/addprinter
-\fR.PP
 .TP
 \fBadmin users (S)\fR
 This is a list of users who will be granted 
@@ -1620,6 +1674,52 @@ Default: \fBchange notify timeout = 60\fR
 Example: \fBchange notify timeout = 300\fR
 
 Would change the scan time to every 5 minutes.
+.TP
+\fBchange share command (G)\fR
+Samba 2.2.0 introduced the ability to dynamically 
+add and delete shares via the Windows NT 4.0 Server Manager. The 
+\fIchange share command\fR is used to define an 
+external program or script which will modify an existing service definition 
+in \fIsmb.conf\fR. In order to successfully 
+execute the \fIchange share command\fR, \fBsmbd\fR
+requires that the administrator be connected using a root account (i.e. 
+uid == 0).
+
+When executed, \fBsmbd\fR will automatically invoke the 
+\fIchange share command\fR with four parameters.
+.RS
+.TP 0.2i
+\(bu
+\fIconfigFile\fR - the location 
+of the global \fIsmb.conf\fR file. 
+.TP 0.2i
+\(bu
+\fIshareName\fR - the name of the new 
+share.
+.TP 0.2i
+\(bu
+\fIpathName\fR - path to an **existing**
+directory on disk.
+.TP 0.2i
+\(bu
+\fIcomment\fR - comment string to associate 
+with the new share.
+.RE
+.PP
+This parameter is only used modify existing file shares definitions. To modify 
+printer shares, use the "Printers..." folder as seen when browsing the Samba host.
+.PP
+.PP
+See also \fIadd share
+command\fR, \fIdelete 
+share command\fR.
+.PP
+.PP
+Default: \fBnone\fR
+.PP
+.PP
+Example: \fBchange share command = /usr/local/bin/addshare\fR
+.PP
 .TP
 \fBcharacter set (G)\fR
 This allows a smbd to map incoming filenames 
@@ -1898,6 +1998,10 @@ create mode\fR parameter for forcing particular mode
 bits to be set on created files. See also the  \fIdirectory mode"\fR parameter for masking 
 mode bits on created directories. See also the  \fIinherit permissions\fR parameter.
 
+Note that this parameter does not apply to permissions
+set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+a mask on access control lists also, they need to set the \fIsecurity mask\fR.
+
 Default: \fBcreate mask = 0744\fR
 
 Example: \fBcreate mask = 0775\fR
@@ -1970,15 +2074,7 @@ effect.
 Default: \fBdebug uid = no\fR
 .TP
 \fBdebuglevel (G)\fR
-The value of the parameter (an integer) allows 
-the debug level (logging level) to be specified in the 
-\fIsmb.conf\fR file. This is to give greater 
-flexibility in the configuration of the system.
-
-The default will be the debug level specified on 
-the command line or level zero if none was specified.
-
-Example: \fBdebug level = 3\fR
+Synonym for \fI log level\fR.
 .TP
 \fBdefault (G)\fR
 A synonym for \fI default service\fR.
@@ -2022,6 +2118,33 @@ Example:
 .sp
 .fi
 .TP
+\fBdelete printer command (G)\fR
+With the introduction of MS-RPC based printer
+support for Windows NT/2000 clients in Samba 2.2, it is now 
+possible to delete printer at run time by issuing the 
+DeletePrinter() RPC call.
+
+For a Samba host this means that the printer must be 
+physically deleted from underlying printing system. The \fI deleteprinter command\fR defines a script to be run which 
+will perform the necessary operations for removing the printer
+from the print system and from \fIsmb.conf\fR.
+
+The \fIdelete printer command\fR is 
+automatically called with only one parameter: \fI "printer name"\fR.
+
+Once the \fIdelete printer command\fR has 
+been executed, \fBsmbd\fR will reparse the \fI smb.conf\fR to associated printer no longer exists. 
+If the sharename is still valid, then \fBsmbd
+\fRwill return an ACCESS_DENIED error to the client.
+
+See also \fI add printer command\fR, \fIprinting\fR,
+\fIshow add
+printer wizard\fR
+
+Default: \fBnone\fR
+
+Example: \fBdeleteprinter command = /usr/bin/removeprinter
+\fR.TP
 \fBdelete readonly (S)\fR
 This parameter allows readonly files to be deleted. 
 This is not normal DOS semantics, but is allowed by UNIX.
@@ -2031,6 +2154,45 @@ as rcs, where UNIX file ownership prevents changing file
 permissions, and DOS semantics prevent deletion of a read only file.
 
 Default: \fBdelete readonly = no\fR
+.TP
+\fBdelete share command (G)\fR
+Samba 2.2.0 introduced the ability to dynamically 
+add and delete shares via the Windows NT 4.0 Server Manager. The 
+\fIdelete share command\fR is used to define an 
+external program or script which will remove an existing service 
+definition from \fIsmb.conf\fR. In order to successfully 
+execute the \fIdelete share command\fR, \fBsmbd\fR
+requires that the administrator be connected using a root account (i.e. 
+uid == 0).
+
+When executed, \fBsmbd\fR will automatically invoke the 
+\fIdelete share command\fR with two parameters.
+.RS
+.TP 0.2i
+\(bu
+\fIconfigFile\fR - the location 
+of the global \fIsmb.conf\fR file. 
+.TP 0.2i
+\(bu
+\fIshareName\fR - the name of 
+the existing service.
+.RE
+.PP
+This parameter is only used to remove file shares. To delete printer shares, 
+see the \fIdelete printer 
+command\fR.
+.PP
+.PP
+See also \fIdelete share
+command\fR, \fIchange 
+share\fR.
+.PP
+.PP
+Default: \fBnone\fR
+.PP
+.PP
+Example: \fBdelete share command = /usr/local/bin/delshare\fR
+.PP
 .TP
 \fBdelete user script (G)\fR
 This is the full pathname to a script that will 
@@ -2085,33 +2247,6 @@ Default: \fBdelete user script = <empty string>
 Example: \fBdelete user script = /usr/local/samba/bin/del_user 
 %u\fR
 .TP
-\fBdeleteprinter command (G)\fR
-With the introduction of MS-RPC based printer
-support for Windows NT/2000 clients in Samba 2.2, it is now 
-possible to delete printer at run time by issuing the 
-DeletePrinter() RPC call.
-
-For a Samba host this means that the printer must be 
-physically deleted from underlying printing system. The \fI deleteprinter command\fR defines a script to be run which 
-will perform the necessary operations for removing the printer
-from the print system and from \fIsmb.conf\fR.
-
-The \fIdeleteprinter command\fR is 
-automatically called with only one parameter: \fI "printer name"\fR.
-
-Once the \fIdeleteprinter command\fR has 
-been executed, \fBsmbd\fR will reparse the \fI smb.conf\fR to associated printer no longer exists. 
-If the sharename is still valid, then \fBsmbd
-\fRwill return an ACCESS_DENIED error to the client.
-
-See also \fI addprinter command\fR, \fIprinting\fR,
-\fIshow add
-printer wizard\fR
-
-Default: \fBnone\fR
-
-Example: \fBdeleteprinter command = /usr/bin/removeprinter
-\fR.TP
 \fBdelete veto files (S)\fR
 This option is used when Samba is attempting to 
 delete a directory that contains one or more vetoed directories 
@@ -2220,6 +2355,10 @@ created from this parameter with the value of the \fIforce directory mode
 \fRparameter. This parameter is set to 000 by 
 default (i.e. no extra mode bits are added).
 
+Note that this parameter does not apply to permissions
+set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+a mask on access control lists also, they need to set the \fIdirectory security mask\fR.
+
 See the \fIforce 
 directory mode\fR parameter to cause particular mode 
 bits to always be set on created directories.
@@ -2250,26 +2389,23 @@ this mask from being modified. Essentially, zero bits in this
 mask may be treated as a set of bits the user is not allowed 
 to change.
 
-If not set explicitly this parameter is set to the same 
-value as the \fIdirectory 
-mask\fR parameter. To allow a user to
-modify all the user/group/world permissions on a directory, set 
-this parameter to 0777.
+If not set explicitly this parameter is set to 0777
+meaning a user is allowed to modify all the user/group/world
+permissions on a directory.
 
 \fBNote\fR that users who can access the 
 Samba server through other means can easily bypass this restriction, 
 so it is primarily useful for standalone "appliance" systems. 
-Administrators of most normal systems will probably want to set 
-it to 0777.
+Administrators of most normal systems will probably want to leave
+it as the default of 0777.
 
 See also the \fI force directory security mode\fR, \fIsecurity mask\fR, 
 \fIforce security mode
 \fRparameters.
 
-Default: \fBdirectory security mask = <same as 
-directory mask>\fR
+Default: \fBdirectory security mask = 0777\fR
 
-Example: \fBdirectory security mask = 0777\fR
+Example: \fBdirectory security mask = 0700\fR
 .TP
 \fBdns proxy (G)\fR
 Specifies that nmbd(8)when acting as a WINS server and finding that a NetBIOS name has not 
@@ -2290,44 +2426,38 @@ See also the parameter \fI wins support\fR.
 Default: \fBdns proxy = yes\fR
 .TP
 \fBdomain admin group (G)\fR
-This is an \fBEXPERIMENTAL\fR parameter 
-that is part of the unfinished Samba NT Domain Controller Code. It may 
-be removed in a later release. To work with the latest code builds 
-that may have more support for Samba NT Domain Controller functionality 
-please subscribe to the mailing list samba-ntdom <URL:mailto:samba-ntdom@samba.org> available by 
-visiting the web page at  http://lists.samba.org/ <URL:http://lists.samba.org/>.
-.TP
-\fBdomain admin users (G)\fR
-This is an \fBEXPERIMENTAL\fR parameter 
-that is part of the unfinished Samba NT Domain Controller Code. It may 
-be removed in a later release. To work with the latest code builds 
-that may have more support for Samba NT Domain Controller functionality 
-please subscribe to the mailing list samba-ntdom <URL:mailto:samba-ntdom@samba.org> available by 
-visiting the web page at  http://lists.samba.org/ <URL:http://lists.samba.org/>.
-.TP
-\fBdomain groups (G)\fR
-This is an \fBEXPERIMENTAL\fR parameter 
-that is part of the unfinished Samba NT Domain Controller Code. It may 
-be removed in a later release. To work with the latest code builds 
-that may have more support for Samba NT Domain Controller functionality 
-please subscribe to the mailing list samba-ntdom <URL:mailto:samba-ntdom@samba.org> available by 
-visiting the web page at  http://lists.samba.org/ <URL:http://lists.samba.org/>.
+This parameter is intended as a temporary solution
+to enable users to be a member of the "Domain Admins" group when 
+a Samba host is acting as a PDC. A complete solution will be provided
+by a system for mapping Windows NT/2000 groups onto UNIX groups.
+Please note that this parameter has a somewhat confusing name. It 
+accepts a list of usernames and of group names in standard 
+\fIsmb.conf\fR notation.
+
+See also \fIdomain
+guest group\fR, \fIdomain
+logons\fR
+
+Default: \fBno domain administrators\fR
+
+Example: \fBdomain admin group = root @wheel\fR
 .TP
 \fBdomain guest group (G)\fR
-This is an \fBEXPERIMENTAL\fR parameter 
-that is part of the unfinished Samba NT Domain Controller Code. It may 
-be removed in a later release. To work with the latest code builds 
-that may have more support for Samba NT Domain Controller functionality 
-please subscribe to the mailing list samba-ntdom <URL:mailto:samba-ntdom@samba.org> available by 
-visiting the web page at  http://lists.samba.org/ <URL:http://lists.samba.org/>.
-.TP
-\fBdomain guest users (G)\fR
-This is an \fBEXPERIMENTAL\fR parameter 
-that is part of the unfinished Samba NT Domain Controller Code. It may 
-be removed in a later release. To work with the latest code builds 
-that may have more support for Samba NT Domain Controller functionality 
-please subscribe to the mailing list samba-ntdom <URL:mailto:samba-ntdom@samba.org> available by 
-visiting the web page at  http://lists.samba.org/ <URL:http://lists.samba.org/>.
+This parameter is intended as a temporary solution
+to enable users to be a member of the "Domain Guests" group when 
+a Samba host is acting as a PDC. A complete solution will be provided
+by a system for mapping Windows NT/2000 groups onto UNIX groups.
+Please note that this parameter has a somewhat confusing name. It 
+accepts a list of usernames and of group names in standard 
+\fIsmb.conf\fR notation.
+
+See also \fIdomain
+admin group\fR, \fIdomain
+logons\fR
+
+Default: \fBno domain guests\fR
+
+Example: \fBdomain guest group = nobody @guest\fR
 .TP
 \fBdomain logons (G)\fR
 If set to true, the Samba server will serve 
@@ -2574,6 +2704,11 @@ permissions changed. The default for this parameter is (in octal)
 mode after the mask set in the \fIcreate mask\fR 
 parameter is applied.
 
+Note that by default this parameter does not apply to permissions
+set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+this mask on access control lists also, they need to set the \fIrestrict acl with 
+mask\fR to true.
+
 See also the parameter \fIcreate 
 mask\fR for details on masking mode bits on files.
 
@@ -2597,6 +2732,11 @@ parameter is (in octal) 0000 which will not add any extra permission
 bits to a created directory. This operation is done after the mode 
 mask in the parameter \fIdirectory mask\fR is 
 applied.
+
+Note that by default this parameter does not apply to permissions
+set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+this mask on access control lists also, they need to set the \fIrestrict acl with 
+mask\fR to true.
 
 See also the parameter \fI directory mask\fR for details on masking mode bits 
 on created directories.
@@ -2622,26 +2762,23 @@ the user may have modified to be on. Essentially, one bits in this
 mask may be treated as a set of bits that, when modifying security 
 on a directory, the user has always set to be 'on'.
 
-If not set explicitly this parameter is set to the same 
-value as the \fIforce 
-directory mode\fR parameter. To allow
-a user to modify all the user/group/world permissions on a 
-directory without restrictions, set this parameter to 000.
+If not set explicitly this parameter is 000, which 
+allows a user to modify all the user/group/world permissions on a 
+directory without restrictions.
 
 \fBNote\fR that users who can access the 
 Samba server through other means can easily bypass this restriction, 
 so it is primarily useful for standalone "appliance" systems. 
-Administrators of most normal systems will probably want to set 
-it to 0000.
+Administrators of most normal systems will probably want to leave
+it set as 0000.
 
 See also the \fI directory security mask\fR,  \fIsecurity mask\fR, 
 \fIforce security mode
 \fRparameters.
 
-Default: \fBforce directory security mode = <same as 
-force directory mode>\fR
+Default: \fBforce directory security mode = 0\fR
 
-Example: \fBforce directory security mode = 0\fR
+Example: \fBforce directory security mode = 700\fR
 .TP
 \fBforce group (S)\fR
 This specifies a UNIX group name that will be 
@@ -2689,26 +2826,23 @@ the user may have modified to be on. Essentially, one bits in this
 mask may be treated as a set of bits that, when modifying security 
 on a file, the user has always set to be 'on'.
 
-If not set explicitly this parameter is set to the same 
-value as the \fIforce 
-create mode\fR parameter. To allow a user to 
-modify all the user/group/world permissions on a file, with no 
-restrictions set this parameter to 000.
+If not set explicitly this parameter is set to 0,
+and allows a user to modify all the user/group/world permissions on a file,
+with no restrictions.
 
 \fBNote\fR that users who can access 
 the Samba server through other means can easily bypass this restriction, 
 so it is primarily useful for standalone "appliance" systems. 
-Administrators of most normal systems will probably want to set 
-it to 0000.
+Administrators of most normal systems will probably want to leave
+this set to 0000.
 
 See also the \fI force directory security mode\fR,
 \fIdirectory security
 mask\fR, \fI security mask\fR parameters.
 
-Default: \fBforce security mode = <same as force 
-create mode>\fR
+Default: \fBforce security mode = 0\fR
 
-Example: \fBforce security mode = 0\fR
+Example: \fBforce security mode = 700\fR
 .TP
 \fBforce user (S)\fR
 This specifies a UNIX user name that will be 
@@ -3287,7 +3421,15 @@ you to have separate log files for each user or machine.
 Example: \fBlog file = /usr/local/samba/var/log.%m
 \fR.TP
 \fBlog level (G)\fR
-Synonym for \fI debug level\fR.
+The value of the parameter (an integer) allows 
+the debug level (logging level) to be specified in the 
+\fIsmb.conf\fR file. This is to give greater 
+flexibility in the configuration of the system.
+
+The default will be the log level specified on 
+the command line or level zero if none was specified.
+
+Example: \fBlog level = 3\fR
 .TP
 \fBlogon drive (G)\fR
 This parameter specifies the local path to 
@@ -4295,6 +4437,18 @@ See also smbpasswd (5).
 
 Default: \fBnull passwords = no\fR
 .TP
+\fBobey pam restrictions (G)\fR
+When Samba 2.2 is configure to enable PAM support
+(i.e. --with-pam), this parameter will control whether or not Samba
+should obey PAM's account and session management directives. The 
+default behavior is to use PAM for clear text authentication only
+and to ignore any account or session management. Note that Samba
+always ignores PAM for authentication in the case of \fIencrypt passwords = yes\fR
+\&. The reason is that PAM modules cannot support the challenge/response
+authentication mechanism needed in the presence of SMB password encryption.
+
+Default: \fBobey pam restrictions = no\fR
+.TP
 \fBonly user (S)\fR
 This is a boolean option that controls whether 
 connections with usernames not in the \fIuser\fR 
@@ -4316,18 +4470,6 @@ See also the \fIuser\fR
 parameter.
 
 Default: \fBonly user = no\fR
-.TP
-\fBole locking compatibility (G)\fR
-This parameter allows an administrator to turn 
-off the byte range lock manipulation that is done within Samba to 
-give compatibility for OLE applications. Windows OLE applications 
-use byte range locking as a form of inter-process communication, by 
-locking ranges of bytes around the 2^32 region of a file range. This 
-can cause certain UNIX lock managers to crash or otherwise cause 
-problems. Setting this parameter to no means you 
-trust your UNIX lock manager to handle such cases correctly.
-
-Default: \fBole locking compatibility = yes\fR
 .TP
 \fBonly guest (S)\fR
 A synonym for \fI guest only\fR.
@@ -4423,6 +4565,15 @@ containing in the Samba documentation.
 
 Default: \fBos2 driver map = <empty string>
 \fR.TP
+\fBpam password change (G)\fR
+With the addition of better PAM support in Samba 2.2, 
+this parameter, it is possible to use PAM's password change control 
+flag for Samba. If enabled, then PAM will be used for password
+changes when requested by an SMB client, and the \fIpasswd chat\fR must be
+be changed to work with the pam prompts.
+
+Default: \fBpam password change = no\fR
+.TP
 \fBpanic action (G)\fR
 This is a Samba developer option that allows a 
 system command to be called when either  smbd(8)crashes. This is usually used to draw attention to the fact that 
@@ -4468,8 +4619,17 @@ in the smbpasswd file is being changed, without access to the old
 password cleartext. In this case the old password cleartext is set 
 to "" (the empty string).
 
+Also, if the \fIpam
+password change\fR parameter is set to true, then the
+chat sequence should consist of three elements. The first element should
+match the pam prompt for the old password, the second element should match
+the pam prompt for the first request for the new password, and the final
+element should match the pam prompt for the second request for the new password.
+These matches are done case insentively. Under most conditions this change
+is done as root so the prompt for the old password will never be matched.
+
 See also \fIunix password 
-sync\fR, \fI passwd program\fR and  \fIpasswd chat debug\fR.
+sync\fR, \fI passwd program\fR , \fIpasswd chat debug\fR and  \fIpam password change\fR.
 
 Default: \fBpasswd chat = *new*password* %n\\n 
 *new*password* %n\\n *changed*\fR
@@ -5230,6 +5390,27 @@ is in fact the browse master on it's segment.
 
 Default: \fBremote browse sync = <empty string>
 \fR.TP
+\fBrestrict acl with mask (S)\fR
+This is a boolean parameter. If set to false (default), then 
+Creation of files with access control lists (ACLS) and modification of ACLs
+using the Windows NT/2000 ACL editor will be applied directly to the file
+or directory.
+
+If set to True, then all requests to set an ACL on a file will have the
+parameters \fIcreate mask\fR,
+\fIforce create mode\fR
+applied before setting the ACL, and all requests to set an ACL on a directory will
+have the parameters \fIdirectory 
+mask\fR, \fIforce 
+directory mode\fR applied before setting the ACL.
+
+See also \fIcreate mask\fR,
+\fIforce create mode\fR,
+\fIdirectory mask\fR,
+\fIforce directory mode\fR
+
+Default: \fBrestrict acl with mask = no\fR
+.TP
 \fBrestrict anonymous (G)\fR
 This is a boolean parameter. If it is true, then 
 anonymous access to the server will be restricted, namely in the 
@@ -5562,25 +5743,22 @@ this mask from being modified. Essentially, zero bits in this
 mask may be treated as a set of bits the user is not allowed 
 to change.
 
-If not set explicitly this parameter is set to the same
-value as the \fIcreate mask
-\fRparameter. To allow a user to modify all the 
-user/group/world permissions on a file, set this parameter to 
-0777.
+If not set explicitly this parameter is 0777, allowing
+a user to modify all the user/group/world permissions on a file.
 
 \fBNote\fR that users who can access the 
 Samba server through other means can easily bypass this 
 restriction, so it is primarily useful for standalone 
 "appliance" systems. Administrators of most normal systems will 
-probably want to set it to 0777.
+probably want to leave it set to 0777.
 
 See also the  \fIforce directory security mode\fR, 
 \fIdirectory 
 security mask\fR,  \fIforce security mode\fR parameters.
 
-Default: \fBsecurity mask = <same as create mask>
-\fR
-Example: \fBsecurity mask = 0777\fR
+Default: \fBsecurity mask = 0777\fR
+
+Example: \fBsecurity mask = 0770\fR
 .TP
 \fBserver string (G)\fR
 This controls what string will show up in the 

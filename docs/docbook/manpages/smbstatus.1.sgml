@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="findsmb">
+<refentry id="smbstatus">
 
 <refmeta>
 	<refentrytitle>smbstatus</refentrytitle>

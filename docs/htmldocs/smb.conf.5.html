@@ -859,11 +859,11 @@ NAME="AEN253"
 ><LI
 ><P
 ><A
-HREF="#ADDUSERSCRIPT"
+HREF="#ADDPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
->add user script</I
+>add printer command</I
 ></TT
 ></A
 ></P
@@ -871,11 +871,23 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#ADDPRINTERCOMMAND"
+HREF="#ADDSHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
->addprinter command</I
+>add share command</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#ADDUSERSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>add user script</I
 ></TT
 ></A
 ></P
@@ -960,6 +972,18 @@ HREF="#CHANGENOTIFYTIMEOUT"
 CLASS="PARAMETER"
 ><I
 >change notify timeout</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#CHANGESHARECOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>change share command</I
 ></TT
 ></A
 ></P
@@ -1123,11 +1147,11 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#DELETEUSERSCRIPT"
+HREF="#DELETEPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
->delete user script</I
+>delete printer command</I
 ></TT
 ></A
 ></P
@@ -1135,11 +1159,23 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#DELETEPRINTERCOMMAND"
+HREF="#DELETESHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
->deleteprinter command</I
+>delete share command</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#DELETEUSERSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>delete user script</I
 ></TT
 ></A
 ></P
@@ -1183,47 +1219,11 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#DOMAINADMINUSERS"
-><TT
-CLASS="PARAMETER"
-><I
->domain admin users</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#DOMAINGROUPS"
-><TT
-CLASS="PARAMETER"
-><I
->domain groups</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#DOMAINGUESTGROUP"
 ><TT
 CLASS="PARAMETER"
 ><I
 >domain guest group</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#DOMAINGUESTUSERS"
-><TT
-CLASS="PARAMETER"
-><I
->domain guest users</I
 ></TT
 ></A
 ></P
@@ -1867,6 +1867,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#OBEYPAMRESTRICTIONS"
+><TT
+CLASS="PARAMETER"
+><I
+>obey pam restrictions</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#OPLOCKBREAKWAITTIME"
 ><TT
 CLASS="PARAMETER"
@@ -1896,6 +1908,18 @@ HREF="#OS2DRIVERMAP"
 CLASS="PARAMETER"
 ><I
 >os2 driver map</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#PAMPASSWORDCHANGE"
+><TT
+CLASS="PARAMETER"
+><I
+>pam password change</I
 ></TT
 ></A
 ></P
@@ -2757,7 +2781,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN889"
+NAME="AEN897"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4176,7 +4200,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1361"
+NAME="AEN1369"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -4185,6 +4209,314 @@ NAME="AEN1361"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
+><DT
+><A
+NAME="ADDPRINTERCOMMAND"
+></A
+>add printer command (G)</DT
+><DD
+><P
+>With the introduction of MS-RPC based printing
+		support for Windows NT/2000 clients in Samba 2.2, The MS Add
+		Printer Wizard (APW) icon is now also available in the 
+		"Printers..." folder displayed a share listing.  The APW
+		allows for printers to be add remotely to a Samba or Windows 
+		NT/2000 print server.</P
+><P
+>For a Samba host this means that the printer must be 
+		physically added to underlying printing system.  The <TT
+CLASS="PARAMETER"
+><I
+>add 
+		printer command</I
+></TT
+> defines a script to be run which 
+		will perform the necessary operations for adding the printer
+		to the print system and to add the appropriate service definition 
+		to the  <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file in order that it can be 
+		shared by <A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+>
+		</A
+>.</P
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>add printer command</I
+></TT
+> is
+		automatically invoked with the following parameter (in 
+		order:</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>printer name</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>share name</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>port name</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>driver name</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>location</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>Windows 9x driver location</I
+></TT
+>
+			</P
+></LI
+></UL
+><P
+>All parameters are filled in from the PRINTER_INFO_2 structure sent 
+		by the Windows NT/2000 client with one exception.  The "Windows 9x
+		driver location" parameter is included for backwards compatibility
+		only.  The remaining fields in the structure are generated from answers
+		to the APW questions.</P
+><P
+>Once the <TT
+CLASS="PARAMETER"
+><I
+>add printer command</I
+></TT
+> has 
+		been executed, <B
+CLASS="COMMAND"
+>smbd</B
+> will reparse the <TT
+CLASS="FILENAME"
+>		smb.conf</TT
+> to determine if the share defined by the APW
+		exists.  If the sharename is still invalid, then <B
+CLASS="COMMAND"
+>smbd
+		</B
+> will return an ACCESS_DENIED error to the client.</P
+><P
+>See also <A
+HREF="#DELETEPRINTERCOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>		delete printer command</I
+></TT
+></A
+>, <A
+HREF="#PRINTING"
+><TT
+CLASS="PARAMETER"
+><I
+>printing</I
+></TT
+></A
+>,
+		<A
+HREF="#SHOWADDPRINTERWIZARD"
+><TT
+CLASS="PARAMETER"
+><I
+>show add
+		printer wizard</I
+></TT
+></A
+></P
+><P
+>Default: <EM
+>none</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>addprinter command = /usr/bin/addprinter
+		</B
+></P
+></DD
+><DT
+><A
+NAME="ADDSHARECOMMAND"
+></A
+>add share command (G)</DT
+><DD
+><P
+>Samba 2.2.0 introduced the ability to dynamically 
+		add and delete shares via the Windows NT 4.0 Server Manager.  The 
+		<TT
+CLASS="PARAMETER"
+><I
+>add share command</I
+></TT
+> is used to define an 
+		external program or script which will add a new service definition 
+		to <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>.  In order to successfully 
+		execute the <TT
+CLASS="PARAMETER"
+><I
+>add share command</I
+></TT
+>, <B
+CLASS="COMMAND"
+>smbd</B
+>
+		requires that the administrator be connected using a root account (i.e. 
+		uid == 0).
+		</P
+><P
+>		When executed, <B
+CLASS="COMMAND"
+>smbd</B
+> will automatically invoke the 
+		<TT
+CLASS="PARAMETER"
+><I
+>add share command</I
+></TT
+> with four parameters.
+		</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>configFile</I
+></TT
+> - the location 
+			of the global <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. 
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>shareName</I
+></TT
+> - the name of the new 
+			share.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>pathName</I
+></TT
+> - path to an **existing**
+			directory on disk.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>comment</I
+></TT
+> - comment string to associate 
+			with the new share.
+			</P
+></LI
+></UL
+><P
+>		This parameter is only used for add file shares.  To add printer shares, 
+		see the <A
+HREF="#ADDPRINTERCOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>add printer 
+		command</I
+></TT
+></A
+>.
+		</P
+><P
+>		See also <A
+HREF="#CHANGESHARECOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>change share 
+		command</I
+></TT
+></A
+>, <A
+HREF="#DELETESHARECOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>delete share
+		command</I
+></TT
+></A
+>.
+		</P
+><P
+>Default: <EM
+>none</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>add share command = /usr/local/bin/addshare</B
+></P
+></DD
 ><DT
 ><A
 NAME="ADDUSERSCRIPT"
@@ -4328,174 +4660,6 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >add user script = /usr/local/samba/bin/add_user 
 		%u</B
-></P
-></DD
-><DT
-><A
-NAME="ADDPRINTERCOMMAND"
-></A
->addprinter command (G)</DT
-><DD
-><P
->With the introduction of MS-RPC based printing
-		support for Windows NT/2000 clients in Samba 2.2, The MS Add
-		Printer Wizard (APW) icon is now also available in the 
-		"Printers..." folder displayed a share listing.  The APW
-		allows for printers to be add remotely to a Samba or Windows 
-		NT/2000 print server.</P
-><P
->For a Samba host this means that the printer must be 
-		physically added to underlying printing system.  The <TT
-CLASS="PARAMETER"
-><I
->		addprinter command</I
-></TT
-> defines a script to be run which 
-		will perform the necessary operations for adding the printer
-		to the print system and to add the appropriate service definition 
-		to the  <TT
-CLASS="FILENAME"
->smb.conf</TT
-> file in order that it can be 
-		shared by <A
-HREF="smbd.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbd(8)</B
->
-		</A
->.</P
-><P
->The <TT
-CLASS="PARAMETER"
-><I
->addprinter command</I
-></TT
-> is
-		automatically invoked with the following parameter (in 
-		order:</P
-><P
-></P
-><UL
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->printer name</I
-></TT
-></P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->share name</I
-></TT
-></P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->port name</I
-></TT
-></P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->driver name</I
-></TT
-></P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->location</I
-></TT
-></P
-></LI
-><LI
-><P
-><TT
-CLASS="PARAMETER"
-><I
->Windows 9x driver location</I
-></TT
->
-			</P
-></LI
-></UL
-><P
->All parameters are filled in from the PRINTER_INFO_2 structure sent 
-		by the Windows NT/2000 client with one exception.  The "Windows 9x
-		driver location" parameter is included for backwards compatibility
-		only.  The remaining fields in the structure are generated from answers
-		to the APW questions.</P
-><P
->Once the <TT
-CLASS="PARAMETER"
-><I
->addprinter command</I
-></TT
-> has 
-		been executed, <B
-CLASS="COMMAND"
->smbd</B
-> will reparse the <TT
-CLASS="FILENAME"
->		smb.conf</TT
-> to determine if the share defined by the APW
-		exists.  If the sharename is still invalid, then <B
-CLASS="COMMAND"
->smbd
-		</B
-> will return an ACCESS_DENIED error to the client.</P
-><P
->See also <A
-HREF="#DELETEPRINTERCOMMAND"
-><TT
-CLASS="PARAMETER"
-><I
->		deleteprinter command</I
-></TT
-></A
->, <A
-HREF="#PRINTING"
-><TT
-CLASS="PARAMETER"
-><I
->printing</I
-></TT
-></A
->,
-		<A
-HREF="#SHOWADDPRINTERWIZARD"
-><TT
-CLASS="PARAMETER"
-><I
->show add
-		printer wizard</I
-></TT
-></A
-></P
-><P
->Default: <EM
->none</EM
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->addprinter command = /usr/bin/addprinter
-		</B
 ></P
 ></DD
 ><DT
@@ -5058,6 +5222,136 @@ CLASS="COMMAND"
 ></P
 ><P
 >Would change the scan time to every 5 minutes.</P
+></DD
+><DT
+><A
+NAME="CHANGESHARECOMMAND"
+></A
+>change share command (G)</DT
+><DD
+><P
+>Samba 2.2.0 introduced the ability to dynamically 
+		add and delete shares via the Windows NT 4.0 Server Manager.  The 
+		<TT
+CLASS="PARAMETER"
+><I
+>change share command</I
+></TT
+> is used to define an 
+		external program or script which will modify an existing service definition 
+		in <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>.  In order to successfully 
+		execute the <TT
+CLASS="PARAMETER"
+><I
+>change share command</I
+></TT
+>, <B
+CLASS="COMMAND"
+>smbd</B
+>
+		requires that the administrator be connected using a root account (i.e. 
+		uid == 0).
+		</P
+><P
+>		When executed, <B
+CLASS="COMMAND"
+>smbd</B
+> will automatically invoke the 
+		<TT
+CLASS="PARAMETER"
+><I
+>change share command</I
+></TT
+> with four parameters.
+		</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>configFile</I
+></TT
+> - the location 
+			of the global <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. 
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>shareName</I
+></TT
+> - the name of the new 
+			share.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>pathName</I
+></TT
+> - path to an **existing**
+			directory on disk.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>comment</I
+></TT
+> - comment string to associate 
+			with the new share.
+			</P
+></LI
+></UL
+><P
+>		This parameter is only used modify existing file shares definitions.  To modify 
+		printer shares, use the "Printers..." folder as seen when browsing the Samba host.
+		</P
+><P
+>		See also <A
+HREF="#ADDSHARECOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>add share
+		command</I
+></TT
+></A
+>, <A
+HREF="#DELETESHARECOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>delete 
+		share command</I
+></TT
+></A
+>.
+		</P
+><P
+>Default: <EM
+>none</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>change share command = /usr/local/bin/addshare</B
+></P
 ></DD
 ><DT
 ><A
@@ -5731,6 +6025,18 @@ CLASS="PARAMETER"
 ></A
 > parameter.</P
 ><P
+>Note that this parameter does not apply to permissions
+		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+		a mask on access control lists also, they need to set the <A
+HREF="#SECURITYMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>security mask</I
+></TT
+></A
+>.</P
+><P
 >Default: <B
 CLASS="COMMAND"
 >create mask = 0744</B
@@ -5909,21 +6215,15 @@ NAME="DEBUGLEVEL"
 >debuglevel (G)</DT
 ><DD
 ><P
->The value of the parameter (an integer) allows 
-		the debug level (logging level) to be specified in the 
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
-> file. This is to give greater 
-		flexibility in the configuration of the system.</P
-><P
->The default will be the debug level specified on 
-		the command line or level zero if none was specified.</P
-><P
->Example: <B
-CLASS="COMMAND"
->debug level = 3</B
-></P
+>Synonym for <A
+HREF="#LOGLEVEL"
+><TT
+CLASS="PARAMETER"
+><I
+>		log level</I
+></TT
+></A
+>.</P
 ></DD
 ><DT
 ><A
@@ -6040,6 +6340,102 @@ CLASS="PROGRAMLISTING"
 ></DD
 ><DT
 ><A
+NAME="DELETEPRINTERCOMMAND"
+></A
+>delete printer command (G)</DT
+><DD
+><P
+>With the introduction of MS-RPC based printer
+		support for Windows NT/2000 clients in Samba 2.2, it is now 
+		possible to delete printer at run time by issuing the 
+		DeletePrinter() RPC call.</P
+><P
+>For a Samba host this means that the printer must be 
+		physically deleted from underlying printing system.  The <TT
+CLASS="PARAMETER"
+><I
+>		deleteprinter command</I
+></TT
+> defines a script to be run which 
+		will perform the necessary operations for removing the printer
+		from the print system and from <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>.
+		</P
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>delete printer command</I
+></TT
+> is 
+		automatically called with only one parameter: <TT
+CLASS="PARAMETER"
+><I
+>		"printer name"</I
+></TT
+>.</P
+><P
+>Once the <TT
+CLASS="PARAMETER"
+><I
+>delete printer command</I
+></TT
+> has 
+		been executed, <B
+CLASS="COMMAND"
+>smbd</B
+> will reparse the <TT
+CLASS="FILENAME"
+>		smb.conf</TT
+> to associated printer no longer exists.  
+		If the sharename is still valid, then <B
+CLASS="COMMAND"
+>smbd
+		</B
+> will return an ACCESS_DENIED error to the client.</P
+><P
+>See also <A
+HREF="#ADDPRINTERCOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>		add printer command</I
+></TT
+></A
+>, <A
+HREF="#PRINTING"
+><TT
+CLASS="PARAMETER"
+><I
+>printing</I
+></TT
+></A
+>,
+		<A
+HREF="#SHOWADDPRINTERWIZARD"
+><TT
+CLASS="PARAMETER"
+><I
+>show add
+		printer wizard</I
+></TT
+></A
+></P
+><P
+>Default: <EM
+>none</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>deleteprinter command = /usr/bin/removeprinter
+		</B
+></P
+></DD
+><DT
+><A
 NAME="DELETEREADONLY"
 ></A
 >delete readonly (S)</DT
@@ -6055,6 +6451,123 @@ NAME="DELETEREADONLY"
 >Default: <B
 CLASS="COMMAND"
 >delete readonly = no</B
+></P
+></DD
+><DT
+><A
+NAME="DELETESHARECOMMAND"
+></A
+>delete share command (G)</DT
+><DD
+><P
+>Samba 2.2.0 introduced the ability to dynamically 
+		add and delete shares via the Windows NT 4.0 Server Manager.  The 
+		<TT
+CLASS="PARAMETER"
+><I
+>delete share command</I
+></TT
+> is used to define an 
+		external program or script which will remove an existing service 
+		definition from <TT
+CLASS="FILENAME"
+>smb.conf</TT
+>.  In order to successfully 
+		execute the <TT
+CLASS="PARAMETER"
+><I
+>delete share command</I
+></TT
+>, <B
+CLASS="COMMAND"
+>smbd</B
+>
+		requires that the administrator be connected using a root account (i.e. 
+		uid == 0).
+		</P
+><P
+>		When executed, <B
+CLASS="COMMAND"
+>smbd</B
+> will automatically invoke the 
+		<TT
+CLASS="PARAMETER"
+><I
+>delete share command</I
+></TT
+> with two parameters.
+		</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>configFile</I
+></TT
+> - the location 
+			of the global <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. 
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>shareName</I
+></TT
+> - the name of 
+			the existing service.
+			</P
+></LI
+></UL
+><P
+>		This parameter is only used to remove file shares.  To delete printer shares, 
+		see the <A
+HREF="#DELETEPRINTERCOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>delete printer 
+		command</I
+></TT
+></A
+>.
+		</P
+><P
+>		See also <A
+HREF="#ADDSHARECOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>delete share
+		command</I
+></TT
+></A
+>, <A
+HREF="#CHANGESHARECOMMAND"
+><TT
+CLASS="PARAMETER"
+><I
+>change 
+		share</I
+></TT
+></A
+>.
+		</P
+><P
+>Default: <EM
+>none</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>delete share command = /usr/local/bin/delshare</B
 ></P
 ></DD
 ><DT
@@ -6228,102 +6741,6 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >delete user script = /usr/local/samba/bin/del_user 
 		%u</B
-></P
-></DD
-><DT
-><A
-NAME="DELETEPRINTERCOMMAND"
-></A
->deleteprinter command (G)</DT
-><DD
-><P
->With the introduction of MS-RPC based printer
-		support for Windows NT/2000 clients in Samba 2.2, it is now 
-		possible to delete printer at run time by issuing the 
-		DeletePrinter() RPC call.</P
-><P
->For a Samba host this means that the printer must be 
-		physically deleted from underlying printing system.  The <TT
-CLASS="PARAMETER"
-><I
->		deleteprinter command</I
-></TT
-> defines a script to be run which 
-		will perform the necessary operations for removing the printer
-		from the print system and from <TT
-CLASS="FILENAME"
->smb.conf</TT
->.
-		</P
-><P
->The <TT
-CLASS="PARAMETER"
-><I
->deleteprinter command</I
-></TT
-> is 
-		automatically called with only one parameter: <TT
-CLASS="PARAMETER"
-><I
->		"printer name"</I
-></TT
->.</P
-><P
->Once the <TT
-CLASS="PARAMETER"
-><I
->deleteprinter command</I
-></TT
-> has 
-		been executed, <B
-CLASS="COMMAND"
->smbd</B
-> will reparse the <TT
-CLASS="FILENAME"
->		smb.conf</TT
-> to associated printer no longer exists.  
-		If the sharename is still valid, then <B
-CLASS="COMMAND"
->smbd
-		</B
-> will return an ACCESS_DENIED error to the client.</P
-><P
->See also <A
-HREF="#ADDPRINTERCOMMAND"
-><TT
-CLASS="PARAMETER"
-><I
->		addprinter command</I
-></TT
-></A
->, <A
-HREF="#PRINTING"
-><TT
-CLASS="PARAMETER"
-><I
->printing</I
-></TT
-></A
->,
-		<A
-HREF="#SHOWADDPRINTERWIZARD"
-><TT
-CLASS="PARAMETER"
-><I
->show add
-		printer wizard</I
-></TT
-></A
-></P
-><P
->Default: <EM
->none</EM
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->deleteprinter command = /usr/bin/removeprinter
-		</B
 ></P
 ></DD
 ><DT
@@ -6551,6 +6968,18 @@ CLASS="PARAMETER"
 > parameter. This parameter is set to 000 by 
 		default (i.e. no extra mode bits are added).</P
 ><P
+>Note that this parameter does not apply to permissions
+		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+		a mask on access control lists also, they need to set the <A
+HREF="#DIRECTORYSECURITYMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>directory security mask</I
+></TT
+></A
+>.</P
+><P
 >See the <A
 HREF="#FORCEDIRECTORYMODE"
 ><TT
@@ -6639,27 +7068,17 @@ NAME="DIRECTORYSECURITYMASK"
 		mask may be treated as a set of bits the user is not allowed 
 		to change.</P
 ><P
->If not set explicitly this parameter is set to the same 
-		value as the <A
-HREF="#DIRECTORYMASK"
-><TT
-CLASS="PARAMETER"
-><I
->directory 
-		mask</I
-></TT
-></A
-> parameter. To allow a user to
-		modify all the user/group/world permissions on a directory, set 
-		this parameter to 0777.</P
+>If not set explicitly this parameter is set to 0777
+		meaning a user is allowed to modify all the user/group/world
+		permissions on a directory.</P
 ><P
 ><EM
 >Note</EM
 > that users who can access the 
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
-		Administrators of most normal systems will probably want to set 
-		it to 0777.</P
+		Administrators of most normal systems will probably want to leave
+		it as the default of 0777.</P
 ><P
 >See also the <A
 HREF="#FORCEDIRECTORYSECURITYMODE"
@@ -6691,13 +7110,12 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->directory security mask = &#60;same as 
-		directory mask&#62;</B
+>directory security mask = 0777</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->directory security mask = 0777</B
+>directory security mask = 0700</B
 ></P
 ></DD
 ><DT
@@ -6750,70 +7168,47 @@ NAME="DOMAINADMINGROUP"
 >domain admin group (G)</DT
 ><DD
 ><P
->This is an <EM
->EXPERIMENTAL</EM
-> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <A
-HREF="mailto:samba-ntdom@samba.org"
-TARGET="_top"
->samba-ntdom</A
-> available by 
-		visiting the web page at <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->		http://lists.samba.org/</A
->.</P
-></DD
-><DT
-><A
-NAME="DOMAINADMINUSERS"
-></A
->domain admin users (G)</DT
-><DD
+>This parameter is intended as a temporary solution
+		to enable users to be a member of the "Domain Admins" group when 
+		a Samba host is acting as a PDC.  A complete solution will be provided
+		by a system for mapping Windows NT/2000 groups onto UNIX groups.
+		Please note that this parameter has a somewhat confusing name.  It 
+		accepts a list of usernames and of group names in standard 
+		<TT
+CLASS="FILENAME"
+>smb.conf</TT
+>	notation.
+		</P
 ><P
->This is an <EM
->EXPERIMENTAL</EM
-> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <A
-HREF="mailto:samba-ntdom@samba.org"
-TARGET="_top"
->samba-ntdom</A
-> available by 
-		visiting the web page at <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->		http://lists.samba.org/</A
->.</P
-></DD
-><DT
-><A
-NAME="DOMAINGROUPS"
+>See also <A
+HREF="#DOMAINGUESTGROUP"
+><TT
+CLASS="PARAMETER"
+><I
+>domain
+		guest group</I
+></TT
 ></A
->domain groups (G)</DT
-><DD
+>, <A
+HREF="#DOMAINLOGONS"
+><TT
+CLASS="PARAMETER"
+><I
+>domain
+		logons</I
+></TT
+></A
+>
+		</P
 ><P
->This is an <EM
->EXPERIMENTAL</EM
-> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <A
-HREF="mailto:samba-ntdom@samba.org"
-TARGET="_top"
->samba-ntdom</A
-> available by 
-		visiting the web page at <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->		http://lists.samba.org/</A
->.</P
+>Default: <EM
+>no domain administrators</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>domain admin group = root @wheel</B
+></P
 ></DD
 ><DT
 ><A
@@ -6822,46 +7217,47 @@ NAME="DOMAINGUESTGROUP"
 >domain guest group (G)</DT
 ><DD
 ><P
->This is an <EM
->EXPERIMENTAL</EM
-> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <A
-HREF="mailto:samba-ntdom@samba.org"
-TARGET="_top"
->samba-ntdom</A
-> available by 
-		visiting the web page at <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->		http://lists.samba.org/</A
->.</P
-></DD
-><DT
-><A
-NAME="DOMAINGUESTUSERS"
-></A
->domain guest users (G)</DT
-><DD
+>This parameter is intended as a temporary solution
+		to enable users to be a member of the "Domain Guests" group when 
+		a Samba host is acting as a PDC.  A complete solution will be provided
+		by a system for mapping Windows NT/2000 groups onto UNIX groups.
+		Please note that this parameter has a somewhat confusing name.  It 
+		accepts a list of usernames and of group names in standard 
+		<TT
+CLASS="FILENAME"
+>smb.conf</TT
+>	notation.
+		</P
 ><P
->This is an <EM
->EXPERIMENTAL</EM
-> parameter 
-		that is part of the unfinished Samba NT Domain Controller Code. It may 
-		be removed in a later release. To work with the latest code builds 
-		that may have more support for Samba NT Domain Controller functionality 
-		please subscribe to the mailing list <A
-HREF="mailto:samba-ntdom@samba.org"
-TARGET="_top"
->samba-ntdom</A
-> available by 
-		visiting the web page at <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->		http://lists.samba.org/</A
->.</P
+>See also <A
+HREF="#DOMAINADMINGROUP"
+><TT
+CLASS="PARAMETER"
+><I
+>domain
+		admin group</I
+></TT
+></A
+>, <A
+HREF="#DOMAINLOGONS"
+><TT
+CLASS="PARAMETER"
+><I
+>domain
+		logons</I
+></TT
+></A
+>
+		</P
+><P
+>Default: <EM
+>no domain guests</EM
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>domain guest group = nobody @guest</B
+></P
 ></DD
 ><DT
 ><A
@@ -7436,6 +7832,19 @@ CLASS="PARAMETER"
 > 
 		parameter is applied.</P
 ><P
+>Note that by default this parameter does not apply to permissions
+		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+		this mask on access control lists also, they need to set the <A
+HREF="#RESTRICTACLWITHMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>restrict acl with 
+		mask</I
+></TT
+></A
+> to true.</P
+><P
 >See also the parameter <A
 HREF="#CREATEMASK"
 ><TT
@@ -7495,6 +7904,19 @@ CLASS="PARAMETER"
 > is 
 		applied.</P
 ><P
+>Note that by default this parameter does not apply to permissions
+		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
+		this mask on access control lists also, they need to set the <A
+HREF="#RESTRICTACLWITHMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>restrict acl with 
+		mask</I
+></TT
+></A
+> to true.</P
+><P
 >See also the parameter <A
 HREF="#DIRECTORYMASK"
 ><TT
@@ -7548,27 +7970,17 @@ NAME="FORCEDIRECTORYSECURITYMODE"
 		mask may be treated as a set of bits that, when modifying security 
 		on a directory, the user has always set to be 'on'.</P
 ><P
->If not set explicitly this parameter is set to the same 
-		value as the <A
-HREF="#FORCEDIRECTORYMODE"
-><TT
-CLASS="PARAMETER"
-><I
->force 
-		directory mode</I
-></TT
-></A
-> parameter. To allow
-		a user to modify all the user/group/world permissions on a 
-		directory without restrictions, set this parameter to 000.</P
+>If not set explicitly this parameter is 000, which 
+		allows a user to modify all the user/group/world permissions on a 
+		directory without restrictions.</P
 ><P
 ><EM
 >Note</EM
 > that users who can access the 
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
-		Administrators of most normal systems will probably want to set 
-		it to 0000.</P
+		Administrators of most normal systems will probably want to leave
+		it set as 0000.</P
 ><P
 >See also the <A
 HREF="#DIRECTORYSECURITYMASK"
@@ -7600,13 +8012,12 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->force directory security mode = &#60;same as 
-		force directory mode&#62;</B
+>force directory security mode = 0</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->force directory security mode = 0</B
+>force directory security mode = 700</B
 ></P
 ></DD
 ><DT
@@ -7701,27 +8112,17 @@ NAME="FORCESECURITYMODE"
 		mask may be treated as a set of bits that, when modifying security 
 		on a file, the user has always set to be 'on'.</P
 ><P
->If not set explicitly this parameter is set to the same 
-		value as the <A
-HREF="#FORCECREATEMODE"
-><TT
-CLASS="PARAMETER"
-><I
->force 
-		create mode</I
-></TT
-></A
-> parameter. To allow a user to 
-		modify all the user/group/world permissions on a file, with no 
-		restrictions set this parameter to 000.</P
+>If not set explicitly this parameter is set to 0,
+		and allows a user to modify all the user/group/world permissions on a file,
+		with no restrictions.</P
 ><P
 ><EM
 >Note</EM
 > that users who can access 
 		the Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
-		Administrators of most normal systems will probably want to set 
-		it to 0000.</P
+		Administrators of most normal systems will probably want to leave
+		this set to 0000.</P
 ><P
 >See also the <A
 HREF="#FORCEDIRECTORYSECURITYMODE"
@@ -7753,13 +8154,12 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->force security mode = &#60;same as force 
-		create mode&#62;</B
+>force security mode = 0</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->force security mode = 0</B
+>force security mode = 700</B
 ></P
 ></DD
 ><DT
@@ -9292,15 +9692,21 @@ NAME="LOGLEVEL"
 >log level (G)</DT
 ><DD
 ><P
->Synonym for <A
-HREF="#DEBUGLEVEL"
-><TT
-CLASS="PARAMETER"
-><I
->		debug level</I
-></TT
-></A
->.</P
+>The value of the parameter (an integer) allows 
+		the debug level (logging level) to be specified in the 
+		<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. This is to give greater 
+		flexibility in the configuration of the system.</P
+><P
+>The default will be the log level specified on 
+		the command line or level zero if none was specified.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>log level = 3</B
+></P
 ></DD
 ><DT
 ><A
@@ -11634,6 +12040,36 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="OBEYPAMRESTRICTIONS"
+></A
+>obey pam restrictions (G)</DT
+><DD
+><P
+>When Samba 2.2 is configure to enable PAM support
+		(i.e. --with-pam), this parameter will control whether or not Samba
+		should obey PAM's account and session management directives.  The 
+		default behavior is to use PAM for clear text authentication only
+		and to ignore any account or session management.  Note that Samba
+		always ignores PAM for authentication in the case of <A
+HREF="#ENCRYPTPASSWORDS"
+><TT
+CLASS="PARAMETER"
+><I
+>encrypt passwords = yes</I
+></TT
+>
+		</A
+>.  The reason is that PAM modules cannot support the challenge/response
+		authentication mechanism needed in the presence of SMB password encryption.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>obey pam restrictions = no</B
+></P
+></DD
+><DT
+><A
 NAME="ONLYUSER"
 ></A
 >only user (S)</DT
@@ -11690,30 +12126,6 @@ CLASS="PARAMETER"
 >Default: <B
 CLASS="COMMAND"
 >only user = no</B
-></P
-></DD
-><DT
-><A
-NAME="OLELOCKINGCOMPATIBILITY"
-></A
->ole locking compatibility (G)</DT
-><DD
-><P
->This parameter allows an administrator to turn 
- 		off the byte range lock manipulation that is done within Samba to 
-		give compatibility for OLE applications. Windows OLE applications 
-		use byte range locking as a form of inter-process communication, by 
-		locking ranges of bytes around the 2^32 region of a file range. This 
-		can cause certain UNIX lock managers to crash or otherwise cause 
-		problems. Setting this parameter to <TT
-CLASS="CONSTANT"
->no</TT
-> means you 
-		trust your UNIX lock manager to handle such cases correctly.</P
-><P
->Default: <B
-CLASS="COMMAND"
->ole locking compatibility = yes</B
 ></P
 ></DD
 ><DT
@@ -11952,6 +12364,33 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="PAMPASSWORDCHANGE"
+></A
+>pam password change (G)</DT
+><DD
+><P
+>With the addition of better PAM support in Samba 2.2, 
+		this parameter, it is possible to use PAM's password change control 
+		flag for Samba.  If enabled, then PAM will be used for password
+		changes when requested by an SMB client, and  the <A
+HREF="#PASSWDCHAT"
+><TT
+CLASS="PARAMETER"
+><I
+>passwd chat</I
+></TT
+></A
+> must be
+		be changed to work with the pam prompts.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>pam password change = no</B
+></P
+></DD
+><DT
+><A
 NAME="PANICACTION"
 ></A
 >panic action (G)</DT
@@ -12072,6 +12511,24 @@ CLASS="PARAMETER"
 		password cleartext. In this case the old password cleartext is set 
 		to "" (the empty string).</P
 ><P
+>Also, if the <A
+HREF="#PAMPASSWORDCHANGE"
+><TT
+CLASS="PARAMETER"
+><I
+>pam
+		password change</I
+></TT
+></A
+> parameter is set to true, then the
+		chat sequence should consist of three elements. The first element should
+		match the pam prompt for the old password, the second element should match
+		the pam prompt for the first request for the new password, and the final
+		element should match the pam prompt for the second request for the new password.
+		These matches are done case insentively. Under most conditions this change
+		is done as root so the prompt for the old password will never be matched.
+		</P
+><P
 >See also <A
 HREF="#UNIXPASSWORDSYNC"
 ><TT
@@ -12089,12 +12546,20 @@ CLASS="PARAMETER"
 >		passwd program</I
 ></TT
 ></A
-> and <A
+> ,<A
 HREF="#PASSWDCHATDEBUG"
 >		<TT
 CLASS="PARAMETER"
 ><I
 >passwd chat debug</I
+></TT
+></A
+> and <A
+HREF="#PAMPASSWORDCHANGE"
+>		<TT
+CLASS="PARAMETER"
+><I
+>pam password change</I
 ></TT
 ></A
 >.</P
@@ -13990,6 +14455,102 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="RESTRICTACLWITHMASK"
+></A
+>restrict acl with mask (S)</DT
+><DD
+><P
+>This is a boolean parameter.  If set to false (default), then 
+		Creation of files with access control lists (ACLS) and modification of ACLs
+		using the Windows NT/2000 ACL editor will be applied directly to the file
+		or directory.</P
+><P
+>If set to True, then all requests to set an ACL on a file will have the
+		parameters <A
+HREF="#CREATEMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>create mask</I
+></TT
+></A
+>,
+		<A
+HREF="#FORCECREATEMODE"
+><TT
+CLASS="PARAMETER"
+><I
+>force create mode</I
+></TT
+></A
+>
+		applied before setting the ACL, and all requests to set an ACL on a directory will
+		have the parameters <A
+HREF="#DIRECTORYMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>directory 
+		mask</I
+></TT
+></A
+>, <A
+HREF="#FORCEDIRECTORYMODE"
+><TT
+CLASS="PARAMETER"
+><I
+>force 
+		directory mode</I
+></TT
+></A
+> applied before setting the ACL.
+		</P
+><P
+>See also <A
+HREF="#CREATEMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>create mask</I
+></TT
+></A
+>,
+		<A
+HREF="#FORCECREATEMODE"
+><TT
+CLASS="PARAMETER"
+><I
+>force create mode</I
+></TT
+></A
+>,
+		<A
+HREF="#DIRECTORYMASK"
+><TT
+CLASS="PARAMETER"
+><I
+>directory mask</I
+></TT
+></A
+>,
+		<A
+HREF="#FORCEDIRECTORYMODE"
+><TT
+CLASS="PARAMETER"
+><I
+>force directory mode</I
+></TT
+></A
+>
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>restrict acl with mask = no</B
+></P
+></DD
+><DT
+><A
 NAME="RESTRICTANONYMOUS"
 ></A
 >restrict anonymous (G)</DT
@@ -14819,19 +15380,9 @@ NAME="SECURITYMASK"
 		mask may be treated as a set of bits the user is not allowed 
 		to change.</P
 ><P
->If not set explicitly this parameter is set to the same
-		value as the <A
-HREF="#CREATEMASK"
-><TT
-CLASS="PARAMETER"
-><I
->create mask
-		</I
-></TT
-></A
-> parameter. To allow a user to modify all the 
-		user/group/world permissions on a file, set this parameter to 
-		0777.</P
+>If not set explicitly this parameter is 0777, allowing
+		a user to modify all the user/group/world permissions on a file.
+		</P
 ><P
 ><EM
 >Note</EM
@@ -14839,7 +15390,7 @@ CLASS="PARAMETER"
 		Samba server through other means can easily bypass this 
 		restriction, so it is primarily useful for standalone 
 		"appliance" systems.  Administrators of most normal systems will 
-		probably want to set it to 0777.</P
+		probably want to leave it set to 0777.</P
 ><P
 >See also the <A
 HREF="#FORCEDIRECTORYSECURITYMODE"
@@ -14871,13 +15422,12 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->security mask = &#60;same as create mask&#62;
-		</B
+>security mask = 0777</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->security mask = 0777</B
+>security mask = 0770</B
 ></P
 ></DD
 ><DT
@@ -17781,7 +18331,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5643"
+NAME="AEN5791"
 ></A
 ><H2
 >WARNINGS</H2
@@ -17811,7 +18361,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5649"
+NAME="AEN5797"
 ></A
 ><H2
 >VERSION</H2
@@ -17822,7 +18372,7 @@ NAME="AEN5649"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5652"
+NAME="AEN5800"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -17901,7 +18451,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5672"
+NAME="AEN5820"
 ></A
 ><H2
 >AUTHOR</H2
