@@ -1,4 +1,7 @@
-Changes in release 0.3g
+Changes in release 0.4a
+
+ * corrected key used for checksum in mk_safe, unfortunately this
+   makes it backwards incomp
 
  * update to autoconf 2.50, libtool 1.4
 
