@@ -1,5 +1,11 @@
 1999-10-06  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/copy_host_realm.c (krb5_copy_host_realm): copy all the
+ 	strings
+
+	* lib/krb5/verify_user.c (krb5_verify_user_lrealm): free the
+ 	correct realm part
+
 	* kdc/connect.c (handle_tcp): things work much better when ret is
  	initialized
 
