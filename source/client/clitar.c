@@ -300,7 +300,7 @@ static long readtarheader(union hblock *hb, file_info2 *finfo, char *prefix)
   if (fchk != chk)
     {
       DEBUG(0, ("checksums don't match %ld %ld\n", fchk, chk));
-      dump_data(5, (char *)hb - TBLOCK, TBLOCK *3);
+      dump_data(5, (uint8_t *)hb - TBLOCK, TBLOCK *3);
       return -1;
     }
 
