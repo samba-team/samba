@@ -342,6 +342,7 @@ VFS_CAP_OBJ = modules/vfs_cap.o
 VFS_EXPAND_MSDFS_OBJ = modules/vfs_expand_msdfs.o
 VFS_SHADOW_COPY_OBJ = modules/vfs_shadow_copy.o
 VFS_AFSACL_OBJ = modules/vfs_afsacl.o
+VFS_CATIA_OBJ = modules/vfs_catia.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -1227,6 +1228,12 @@ bin/afsacl.@SHLIBEXT@: $(VFS_AFSACL_OBJ:.o=.po)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_AFSACL_OBJ:.o=.po) \
 		@SONAMEFLAG@`basename $@`
+
+bin/catia.@SHLIBEXT@: $(VFS_CATIA_OBJ:.o=.@PICSUFFIX@)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_CATIA_OBJ:.o=.@PICSUFFIX@) \
+		@SONAMEFLAG@`basename $@`
+
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
