@@ -267,6 +267,10 @@ ent_to_values(krb5_context context,
 #endif
 }
 
+/*
+ * convert the kadm4 values in `vals' to `ent' (and `mask')
+ */
+
 static krb5_error_code
 values_to_ent(krb5_context context,
 	      Kadm_vals *vals, 
@@ -315,10 +319,10 @@ values_to_ent(krb5_context context,
 	    if((ent->key_data[i].key_data_contents[0] = malloc(8)) == NULL)
 		return ENOMEM;
 	    memcpy(ent->key_data[i].key_data_contents[0],
-		   &vals->key_high,
+		   &vals->key_low,
 		   4);
 	    memcpy((char*)ent->key_data[i].key_data_contents[0] + 4,
-		   &vals->key_low,
+		   &vals->key_high,
 		   4);
 	    ent->key_data[i].key_data_type[1] = KRB5_PW_SALT;
 	    ent->key_data[i].key_data_length[1] = 0;
