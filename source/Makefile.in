@@ -745,7 +745,7 @@ uninstallcp:
 clean: 
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@* */*.a
 
-winbindd_proto:
+nsswitch/winbindd_proto.h:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
 		-h _WINBINDD_PROTO_H_ $(builddir)/nsswitch/winbindd_proto.h \
 		$(WINBINDD_OBJ1)
@@ -754,7 +754,18 @@ include/proto.h:
 	@echo rebuilding include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > $(builddir)/include/proto.h
 
-proto: include/proto.h
+delheaders:
+	@echo Removing prototype headers
+	@/bin/rm -f include/proto.h
+	@/bin/rm -f nsswitch/winbindd_proto.h 
+
+# "make headers" or "make proto" calls a subshell because we need to
+# make sure these commands are executed in sequence even for a
+# parallel make.
+headers:
+	$(MAKE) delheaders include/proto.h nsswitch/winbindd_proto.h
+
+proto: headers
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
