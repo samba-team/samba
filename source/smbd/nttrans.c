@@ -479,6 +479,10 @@ static time_t fail_time;
 
 void fail_next_srvsvc_open(void)
 {
+  /* Check client is WinNT proper; Win2K doesn't like Jeremy's hack - matty */
+  if (get_remote_arch() != RA_WINNT)
+    return;
+
   fail_next_srvsvc = True;
   fail_time = time(NULL);
   DEBUG(10,("fail_next_srvsvc_open: setting up timeout close of \\srvsvc pipe for print fix.\n"));
