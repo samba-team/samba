@@ -240,7 +240,7 @@
 /* Directory operations */
 #define SMB_VFS_NEXT_OPENDIR(handle, conn, fname) ((handle)->vfs_next.ops.opendir((handle)->vfs_next.handles.opendir, (conn), (fname)))
 #define SMB_VFS_NEXT_READDIR(handle, conn, dirp) ((handle)->vfs_next.ops.readdir((handle)->vfs_next.handles.readdir, (conn), (dirp))) 
-#define SMB_VFS_NEXT_SEEKDIR(handle, conn, dirp) ((handle)->vfs_next.ops.seekdir((handle)->vfs_next.handles.seekdir, (conn), (dirp), (offset))) 
+#define SMB_VFS_NEXT_SEEKDIR(handle, conn, dirp, offset) ((handle)->vfs_next.ops.seekdir((handle)->vfs_next.handles.seekdir, (conn), (dirp), (offset))) 
 #define SMB_VFS_NEXT_TELLDIR(handle, conn, dirp) ((handle)->vfs_next.ops.telldir((handle)->vfs_next.handles.telldir, (conn), (dirp))) 
 #define SMB_VFS_NEXT_REWINDDIR(handle, conn, dirp) ((handle)->vfs_next.ops.rewinddir((handle)->vfs_next.handles.rewinddir, (conn), (dirp))) 
 #define SMB_VFS_NEXT_DIR(handle, conn, dirp) ((handle)->vfs_next.ops.readdir((handle)->vfs_next.handles.readdir, (conn), (dirp))) 
