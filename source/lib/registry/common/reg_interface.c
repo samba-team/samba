@@ -367,6 +367,7 @@ WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key,
 
 	if(key->hive->functions->get_subkey_by_name) {
 		error = key->hive->functions->get_subkey_by_name(mem_ctx, key,name,subkey);
+		/* FIXME: Fall back to reg_open_key rather then get_subkey_by_index */
 	} else if(key->hive->functions->get_subkey_by_index) {
 		for(i = 0; W_ERROR_IS_OK(error); i++) {
 			error = reg_key_get_subkey_by_index(mem_ctx, key, i, subkey);

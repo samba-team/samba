@@ -167,7 +167,6 @@ static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!W_ERROR_IS_OK(r.out.result)) {
-		printf("OpenKey failed - %s\n", win_errstr(r.out.result));
 		return False;
 	}
 
@@ -258,23 +257,34 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
 			struct policy_handle key_handle;
 
+			printf("EnumKey: %d: %s\n", r.in.enum_index, r.out.out_name->name);
+
 			if (!test_OpenKey(
 				    p, mem_ctx, handle, r.out.out_name->name,
 				    &key_handle)) {
 				printf("OpenKey(%s) failed - %s\n",
 				       r.out.out_name->name, 
 				       win_errstr(r.out.result));
-				goto next_key;
+			} else {
+				test_key(p, mem_ctx, &key_handle, depth + 1);
 			}
-
-			test_key(p, mem_ctx, &key_handle, depth + 1);
 		}
-
-	next_key:
 
 		r.in.enum_index++;
 
 	} while (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumKey failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result) && !W_ERROR_EQUAL(r.out.result, WERR_NO_MORE_ITEMS)) {
+		printf("EnumKey failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+
 
 	return True;
 }

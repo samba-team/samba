@@ -142,7 +142,10 @@ static WERROR ldb_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *hive, str
 	if (!hive->location) return WERR_INVALID_PARAM;
 	c = ldb_connect(hive->location, 0, NULL);
 
-	if(!c) return WERR_FOOBAR;
+	if(!c) {
+		DEBUG(1, ("ldb_open_hive: %s\n", ldb_errstring(hive->backend_data)));
+		return WERR_FOOBAR;
+	}
 	ldb_set_debug_stderr(c);
 	hive->backend_data = c;
 
@@ -152,8 +155,49 @@ static WERROR ldb_open_hive(TALLOC_CTX *mem_ctx, struct registry_hive *hive, str
 	return WERR_OK;
 }
 
+static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, SEC_DESC *sd, struct registry_key **newkey)
+{
+	struct ldb_context *ctx = parent->hive->backend_data;
+	struct ldb_message msg;
+	int ret;
+
+	ZERO_STRUCT(msg);
+
+	msg.dn = reg_path_to_ldb(mem_ctx, parent->path, talloc_asprintf(mem_ctx, "key=%s,", name));
+
+	ldb_msg_add_string(ctx, &msg, "key", talloc_strdup(mem_ctx, name));
+
+	ret = ldb_add(ctx, &msg);
+	if (ret < 0) {
+		DEBUG(1, ("ldb_msg_add: %s\n", ldb_errstring(parent->hive->backend_data)));
+		return WERR_FOOBAR;
+	}
+
+	*newkey = talloc_zero_p(mem_ctx, struct registry_key);
+	(*newkey)->backend_data = msg.dn;
+	(*newkey)->name = talloc_strdup(mem_ctx, name);
+
+	return WERR_OK;
+}
+
+static WERROR ldb_del_key (struct registry_key *key)
+{
+	int ret;
+
+	ret = ldb_delete(key->hive->backend_data, key->backend_data);
+
+	if (ret < 0) {
+		DEBUG(1, ("ldb_del_key: %s\n", ldb_errstring(key->hive->backend_data)));
+		return WERR_FOOBAR;
+	}
+
+	return WERR_OK;
+}
+
 static struct registry_operations reg_backend_ldb = {
 	.name = "ldb",
+	.add_key = ldb_add_key,
+	.del_key = ldb_del_key,
 	.open_hive = ldb_open_hive,
 	.open_key = ldb_open_key,
 	.get_value_by_index = ldb_get_value_by_id,
