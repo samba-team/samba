@@ -820,7 +820,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
  * these should really be smb_snprintf to avoid conflicts with buggy
  * linkers? -- mbp
  */
-#if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_SNPRINTF)
+#if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
  int snprintf(char *str,size_t count,const char *fmt,...)
 {
 	size_t ret;
