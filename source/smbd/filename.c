@@ -833,24 +833,6 @@ static BOOL reduce_name(char *s,char *dir,BOOL widelinks)
 }
 
 /****************************************************************************
-expand some *s 
-****************************************************************************/
-static void expand_one(char *Mask,int len)
-{
-  char *p1;
-  while ((p1 = strchr(Mask,'*')) != NULL)
-    {
-      int lfill = (len+1) - strlen(Mask);
-      int l1= (p1 - Mask);
-      pstring tmp;
-      pstrcpy(tmp,Mask);  
-      memset(tmp+l1,'?',lfill);
-      pstrcpy(tmp + l1 + lfill,Mask + l1 + 1);	
-      pstrcpy(Mask,tmp);      
-    }
-}
-
-/****************************************************************************
 check a filename - possibly caling reducename
 
 This is called by every routine before it allows an operation on a filename.
