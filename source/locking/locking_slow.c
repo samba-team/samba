@@ -434,16 +434,16 @@ for share file %s\n", num_entries, fname));
 
   for( i = 0; i < num_entries; i++)
   {
-    int pid;
+    pid_t pid;
     char *p = base + (i*SMF_ENTRY_LENGTH);
 
-    pid = IVAL(p,SME_PID_OFFSET);
+    pid = (pid_t)IVAL(p,SME_PID_OFFSET);
 
     if(!process_exists(pid))
     {
       DEBUG(0,("get_share_modes: process %d no longer exists and \
 it left a share mode entry with mode 0x%X in share file %s\n",
-            pid, IVAL(p,SME_SHAREMODE_OFFSET), fname));
+            (int)pid, IVAL(p,SME_SHAREMODE_OFFSET), fname));
       continue;
     }
     share_array[num_entries_copied].time.tv_sec = IVAL(p,SME_SEC_OFFSET);
@@ -492,7 +492,7 @@ position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
     {
       char *p = base + (i*SMF_ENTRY_LENGTH);
 
-      SIVAL(p,SME_PID_OFFSET,share_array[i].pid);
+      SIVAL(p,SME_PID_OFFSET,(uint32)share_array[i].pid);
       SIVAL(p,SME_SHAREMODE_OFFSET,share_array[i].share_mode);
       SIVAL(p,SME_SEC_OFFSET,share_array[i].time.tv_sec);
       SIVAL(p,SME_USEC_OFFSET,share_array[i].time.tv_usec);
@@ -561,7 +561,7 @@ static void slow_del_share_mode(int token, files_struct *fsp)
   int num_entries;
   int newsize;
   int i;
-  int pid;
+  pid_t pid;
   BOOL deleted = False;
   BOOL new_file;
 
@@ -622,7 +622,7 @@ for share file %s\n", num_entries, fname));
     if((IVAL(p,SME_SEC_OFFSET) != fsp->open_time.tv_sec) || 
        (IVAL(p,SME_USEC_OFFSET) != fsp->open_time.tv_usec) ||
        (IVAL(p,SME_SHAREMODE_OFFSET) != fsp->share_mode) || 
-       (IVAL(p,SME_PID_OFFSET) != pid))
+       (((pid_t)IVAL(p,SME_PID_OFFSET)) != pid))
       continue;
 
     DEBUG(5,("del_share_mode: deleting entry number %d (of %d) from the share file %s\n",
@@ -712,7 +712,7 @@ static BOOL slow_set_share_mode(int token,files_struct *fsp, uint16 port, uint16
 {
   pstring fname;
   int fd = (int)token;
-  int pid = (int)getpid();
+  pid_t pid = getpid();
   SMB_STRUCT_STAT sb;
   char *buf;
   int num_entries;
@@ -808,7 +808,7 @@ deleting it.\n", fname));
   SIVAL(p,SME_SEC_OFFSET,fsp->open_time.tv_sec);
   SIVAL(p,SME_USEC_OFFSET,fsp->open_time.tv_usec);
   SIVAL(p,SME_SHAREMODE_OFFSET,fsp->share_mode);
-  SIVAL(p,SME_PID_OFFSET,pid);
+  SIVAL(p,SME_PID_OFFSET,(uint32)pid);
   SSVAL(p,SME_PORT_OFFSET,port);
   SSVAL(p,SME_OPLOCK_TYPE_OFFSET,op_type);
 
@@ -867,7 +867,7 @@ mode file %s to size %d (%s)\n", fname, header_size + (SMF_ENTRY_LENGTH*num_entr
     free(buf);
 
   DEBUG(3,("set_share_mode: Created share file %s with \
-mode 0x%X pid=%d\n",fname,fsp->share_mode,pid));
+mode 0x%X pid=%d\n",fname,fsp->share_mode,(int)pid));
 
   return True;
 }
@@ -887,7 +887,7 @@ static BOOL slow_mod_share_entry(int token, files_struct *fsp,
   int num_entries;
   int fsize;
   int i;
-  int pid;
+  pid_t pid;
   BOOL found = False;
   BOOL new_file;
   share_mode_entry entry;
@@ -945,7 +945,7 @@ for share file %s\n", num_entries, fname));
     if((IVAL(p,SME_SEC_OFFSET) != fsp->open_time.tv_sec) || 
        (IVAL(p,SME_USEC_OFFSET) != fsp->open_time.tv_usec) ||
        (IVAL(p,SME_SHAREMODE_OFFSET) != fsp->share_mode) || 
-       (IVAL(p,SME_PID_OFFSET) != pid))
+       (((pid_t)IVAL(p,SME_PID_OFFSET)) != pid))
       continue;
 
     DEBUG(5,("slow_mod_share_entry: Calling generic function to modify entry number %d (of %d) \
@@ -956,7 +956,7 @@ from the share file %s\n", i, num_entries, fname));
      * the generic function with the given parameter.
      */
 
-    entry.pid = IVAL(p,SME_PID_OFFSET);
+    entry.pid = (pid_t)IVAL(p,SME_PID_OFFSET);
     entry.op_port = SVAL(p,SME_PORT_OFFSET);
     entry.op_type = SVAL(p,SME_OPLOCK_TYPE_OFFSET);
     entry.share_mode = IVAL(p,SME_SHAREMODE_OFFSET);
@@ -969,7 +969,7 @@ from the share file %s\n", i, num_entries, fname));
      * Now copy any changes the function made back into the buffer.
      */
 
-    SIVAL(p,SME_PID_OFFSET, entry.pid);
+    SIVAL(p,SME_PID_OFFSET, (uint32)entry.pid);
     SSVAL(p,SME_PORT_OFFSET,entry.op_port);
     SSVAL(p,SME_OPLOCK_TYPE_OFFSET,entry.op_type);
     SIVAL(p,SME_SHAREMODE_OFFSET,entry.share_mode);
@@ -1077,12 +1077,11 @@ static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 			SVAL(buf,SMF_FILENAME_LEN_OFFSET); 
 		for( i = 0; i < IVAL(buf, SMF_NUM_ENTRIES_OFFSET); i++) {
 			char *p = base + (i*SMF_ENTRY_LENGTH);
-			e.pid = IVAL(p,SME_PID_OFFSET);
+			e.pid = (pid_t)IVAL(p,SME_PID_OFFSET);
 			e.share_mode = IVAL(p,SME_SHAREMODE_OFFSET);
 			e.time.tv_sec = IVAL(p,SME_SEC_OFFSET);
 			e.time.tv_usec = IVAL(p,SME_USEC_OFFSET);
 			e.op_port = SVAL(p,SME_PORT_OFFSET);
-			e.pid = SVAL(p,SME_PID_OFFSET);
 			e.op_type = SVAL(p,SME_OPLOCK_TYPE_OFFSET);
 
 			if (process_exists(e.pid)) {
