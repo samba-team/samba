@@ -189,7 +189,7 @@ sub is_builtin_type($)
     my($type) = shift;
 
     return 1, if (is_scalar_type($type));
-    return 1, if ($type eq "unistr");
+    return 1, if ($type =~ "unistr.*");
     return 1, if ($type eq "security_descriptor");
     return 1, if ($type eq "dom_sid");
     return 1, if ($type eq "dom_sid2");
