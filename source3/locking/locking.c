@@ -282,7 +282,7 @@ BOOL locking_init(int read_only)
 	if (tdb)
 		return True;
 
-	tdb = tdb_open(lock_path("locking.tdb"), 
+	tdb = tdb_open_log(lock_path("locking.tdb"), 
 		       0, TDB_CLEAR_IF_FIRST, 
 		       read_only?O_RDONLY:O_RDWR|O_CREAT,
 		       0644);
