@@ -1078,10 +1078,10 @@ struct cli_state *server_cryptkey(void)
 	if (!cli_initialise(cli))
 		return NULL;
 
-        pserver = strdup(lp_passwordserver());
+	pserver = strdup(lp_passwordserver());
 	p = pserver;
 
-        while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
+	while(next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
 		standard_sub_basic(desthost);
 		strupper(desthost);
 

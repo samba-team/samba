@@ -1111,9 +1111,9 @@ cups_queue_resume(int snum)
 
 	DEBUG(5,("cups_queue_resume(%d)\n", snum));
 
-       /*
-        * Make sure we don't ask for passwords...
-	*/
+	/*
+	 * Make sure we don't ask for passwords...
+	 */
 
         cupsSetPasswordCB(cups_passwd_cb);
 
@@ -1159,9 +1159,9 @@ cups_queue_resume(int snum)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
         	     NULL, current_user_info.unix_name);
 
-       /*
-	* Do the request and get back a response...
-	*/
+	/*
+	 * Do the request and get back a response...
+	 */
 
         ret = 1;
 
