@@ -43,3 +43,5 @@ void gss_verr(int exitval, int status, const char *fmt, va_list ap)
 
 void gss_err(int exitval, int status, const char *fmt, ...)
     __attribute__ ((format (printf, 3, 4)));
+
+gss_OID select_mech(const char *);
