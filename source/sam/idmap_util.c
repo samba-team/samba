@@ -56,9 +56,14 @@ BOOL idmap_check_rid_is_in_free_range(uint32 rid)
 	if (!idmap_get_free_rid_range(&low, &high)) {
 		return False;
 	}
+	if (rid < algorithmic_rid_base()) {
+		return True;
+	}
+
 	if (rid < low || rid > high) {
 		return False;
 	}
+
 	return True;
 }
 
