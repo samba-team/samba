@@ -156,22 +156,6 @@ CLASS="COMMAND"
 >. </P
 ></DD
 ><DT
->-s</DT
-><DD
-><P
->This option causes smbpasswd to be silent (i.e. 
-		not issue prompts) and to read its old and new passwords from 
-		standard  input, rather than from <TT
-CLASS="FILENAME"
->/dev/tty</TT
-> 
-		(like the <B
-CLASS="COMMAND"
->passwd(1)</B
-> program does). This option 
-		is to aid people writing scripts to drive smbpasswd</P
-></DD
-><DT
 >-c smb.conf file</DT
 ><DD
 ><P
@@ -247,6 +231,59 @@ CLASS="PARAMETER"
 > that Windows 95/98 do not have 
 		a real password database so it is not possible to change passwords 
 		specifying a Win95/98  machine as remote machine target. </P
+></DD
+><DT
+>-s</DT
+><DD
+><P
+>This option causes smbpasswd to be silent (i.e. 
+		not issue prompts) and to read its old and new passwords from 
+		standard  input, rather than from <TT
+CLASS="FILENAME"
+>/dev/tty</TT
+> 
+		(like the <B
+CLASS="COMMAND"
+>passwd(1)</B
+> program does). This option 
+		is to aid people writing scripts to drive smbpasswd</P
+></DD
+><DT
+>-S</DT
+><DD
+><P
+>This option causes <B
+CLASS="COMMAND"
+>smbpasswd</B
+>
+		to query a domain controller of the domain specified 
+		by the <A
+HREF="smb.conf.5.html#WORKGROUP"
+TARGET="_top"
+>workgroup</A
+>
+		parameter in <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> and store the
+		domain SID in the <TT
+CLASS="FILENAME"
+>secrets.tdb</TT
+> file
+		as its own machine SID.  This is only useful when configuring
+		a Samba PDC and Samba BDC, or when migrating from a Windows PDC
+		to a Samba PDC.  </P
+><P
+>The <TT
+CLASS="PARAMETER"
+><I
+>-r</I
+></TT
+> options can be used
+		as well to indicate a specific domain controller which should
+		be contacted.  In this case, the domain SID obtained is the 
+		one for the domain to which the remote machine belongs.
+		</P
 ></DD
 ><DT
 >-U username[%pass]</DT
@@ -623,7 +660,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN195"
+NAME="AEN205"
 ></A
 ><H2
 >NOTES</H2
@@ -666,7 +703,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN205"
+NAME="AEN215"
 ></A
 ><H2
 >VERSION</H2
@@ -677,7 +714,7 @@ NAME="AEN205"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN208"
+NAME="AEN218"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -700,7 +737,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN214"
+NAME="AEN224"
 ></A
 ><H2
 >AUTHOR</H2
