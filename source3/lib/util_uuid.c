@@ -29,11 +29,11 @@
 
 void smb_uuid_pack(const struct uuid uu, UUID_FLAT *ptr)
 {
-	SIVAL(ptr, 0, uu.time_low);
-	SSVAL(ptr, 4, uu.time_mid);
-	SSVAL(ptr, 6, uu.time_hi_and_version);
-	memcpy(ptr+8, uu.clock_seq, 2);
-	memcpy(ptr+10, uu.node, 6);
+	SIVAL(ptr->info, 0, uu.time_low);
+	SSVAL(ptr->info, 4, uu.time_mid);
+	SSVAL(ptr->info, 6, uu.time_hi_and_version);
+	memcpy(ptr->info+8, uu.clock_seq, 2);
+	memcpy(ptr->info+10, uu.node, 6);
 }
 
 void smb_uuid_unpack(const UUID_FLAT in, struct uuid *uu)
@@ -96,6 +96,7 @@ BOOL smb_string_to_uuid(const char *in, struct uuid* uu)
 	const char *ptr = in;
 	char *end = (char *)in;
 	int i;
+	unsigned v1, v2;
 
 	if (!in || !uu) goto out;
 
@@ -111,61 +112,22 @@ BOOL smb_string_to_uuid(const char *in, struct uuid* uu)
 	if ((end - ptr) != 4 || *end != '-') goto out;
 	ptr = (end + 1);
 
-	for (i = 0; i < 2; i++) {
-		int adj = 0;
-		if (*ptr >= '0' && *ptr <= '9') {
-			adj = '0';
-		} else if (*ptr >= 'a' && *ptr <= 'f') {
-			adj = 'a';
-		} else if (*ptr >= 'A' && *ptr <= 'F') {
-			adj = 'A';
-		} else {
-			goto out;
-		}
-		uu->clock_seq[i] = (*ptr - adj) << 4;
-		ptr++;
-
-		if (*ptr >= '0' && *ptr <= '9') {
-			adj = '0';
-		} else if (*ptr >= 'a' && *ptr <= 'f') {
-			adj = 'a';
-		} else if (*ptr >= 'A' && *ptr <= 'F') {
-			adj = 'A';
-		} else {
-			goto out;
-		}
-		uu->clock_seq[i] |= (*ptr - adj);
-		ptr++;
+	if (sscanf(ptr, "%02x%02x", &v1, &v2) != 2) {
+		goto out;
 	}
+	uu->clock_seq[0] = v1;
+	uu->clock_seq[1] = v2;
+	ptr += 4;
 
 	if (*ptr != '-') goto out;
 	ptr++;
 
 	for (i = 0; i < 6; i++) {
-		int adj = 0;
-		if (*ptr >= '0' && *ptr <= '9') {
-			adj = '0';
-		} else if (*ptr >= 'a' && *ptr <= 'f') {
-			adj = 'a';
-		} else if (*ptr >= 'A' && *ptr <= 'F') {
-			adj = 'A';
-		} else {
+		if (sscanf(ptr, "%02x", &v1) != 1) {
 			goto out;
 		}
-		uu->node[i] = (*ptr - adj) << 4;
-		ptr++;
-
-		if (*ptr >= '0' && *ptr <= '9') {
-			adj = '0';
-		} else if (*ptr >= 'a' && *ptr <= 'f') {
-			adj = 'a';
-		} else if (*ptr >= 'A' && *ptr <= 'F') {
-			adj = 'A';
-		} else {
-			goto out;
-		}
-		uu->node[i] |= (*ptr - adj);
-		ptr++;
+		uu->node[i] = v1;
+		ptr += 2;
 	}
 
 	ret = True;
