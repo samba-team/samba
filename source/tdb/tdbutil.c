@@ -105,6 +105,8 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 	int len;
 	char *s;
 	char *buf0 = buf;
+	char *fmt0 = fmt;
+	int bufsize0 = bufsize;
 	va_list ap;
 	char c;
 
@@ -162,6 +164,10 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 	}
 
 	va_end(ap);
+
+	DEBUG(8,("tdb_pack(%s, %d) -> %d\n", 
+		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
+	
 	return PTR_DIFF(buf, buf0);
 }
 
@@ -178,6 +184,8 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 	void **p;
 	char *s, **b;
 	char *buf0 = buf;
+	char *fmt0 = fmt;
+	int bufsize0 = bufsize;
 	va_list ap;
 	char c;
 
@@ -233,6 +241,10 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 	}
 
 	va_end(ap);
+
+	DEBUG(8,("tdb_unpack(%s, %d) -> %d\n", 
+		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
+
 	return PTR_DIFF(buf, buf0);
 
  no_space:
