@@ -28,6 +28,8 @@ ftp_SOURCES = \
 
 EXTRA_ftp_SOURCES = krb4.c kauth.c
 
+LIB_tgetent = @LIB_tgetent@
+
 LDADD = \
 	../common/libcommon.a \
 	$(top_builddir)/lib/gssapi/libgssapi.la \

@@ -12,6 +12,8 @@ sbin_PROGRAMS = ktutil
 
 ktutil_SOURCES = ktutil.c srvconvert.c
 
+LIB_tgetent = @LIB_tgetent@
+
 LDADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/des/libdes.la \

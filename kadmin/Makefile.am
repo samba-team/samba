@@ -12,6 +12,8 @@ kadmin_SOURCES = 						\
 	ank.c cpw.c del.c dump.c ext.c get.c init.c kadmin.c	\
 	load.c mod.c rename.c util.c
 
+LIB_tgetent = @LIB_tgetent@
+
 COMMON_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
