@@ -162,16 +162,6 @@ struct server_record *add_server_entry(struct subnet_record *d,
   }
   
   
-  if (strequal(myworkgroup,work->work_group))
-    {
-	  if (servertype)
-        servertype |= SV_TYPE_LOCAL_LIST_ONLY;
-    }
-  else
-    {
-      servertype &= ~SV_TYPE_LOCAL_LIST_ONLY;
-    }
-  
   /* update the entry */
   StrnCpy(s->serv.name,name,sizeof(s->serv.name)-1);
   StrnCpy(s->serv.comment,comment,sizeof(s->serv.comment)-1);

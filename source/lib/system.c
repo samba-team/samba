@@ -197,15 +197,130 @@ int sys_utime(char *fname,struct utimbuf *times)
   return(utime(dos_to_unix(fname,False),times));
 }
 
+/*********************************************************
+for rename across filesystems Patch from Warren Birnbaum 
+<warrenb@hpcvscdp.cv.hp.com>
+**********************************************************/
+
+static int
+copy_reg (const char *source, const char *dest)
+{
+  struct stat source_stats;
+  int ifd;
+  int full_write();
+  int safe_read();
+  int ofd;
+  char *buf;
+  int len;                      /* Number of bytes read into `buf'. */
+
+  lstat (source, &source_stats);
+  if (!S_ISREG (source_stats.st_mode))
+    {
+      return 1;
+    }
+
+  if (unlink (dest) && errno != ENOENT)
+    {
+      return 1;
+    }
+
+  if((ifd = open (source, O_RDONLY, 0)) < 0)
+    {
+      return 1;
+    }
+  if((ofd = open (dest, O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0 )
+    {
+      close (ifd);
+      return 1;
+    }
+
+  if((buf = malloc( COPYBUF_SIZE )) == NULL)
+    {
+      close (ifd);  
+      close (ofd);  
+      unlink (dest);
+      return 1;
+    }
+
+  while ((len = read(ifd, buf, COPYBUF_SIZE)) > 0)
+    {
+      if (write_data(ofd, buf, len) < 0)
+        {
+          close (ifd);
+          close (ofd);
+          unlink (dest);
+          free(buf);
+          return 1;
+        }
+    }
+  free(buf);
+  if (len < 0)
+    {
+      close (ifd);
+      close (ofd);
+      unlink (dest);
+      return 1;
+    }
+
+  if (close (ifd) < 0)
+    {
+      close (ofd);
+      return 1;
+    }
+  if (close (ofd) < 0)
+    {
+      return 1;
+    }
+
+  /* chown turns off set[ug]id bits for non-root,
+     so do the chmod last.  */
+
+  /* Try to copy the old file's modtime and access time.  */
+  {
+    struct utimbuf tv;
+
+    tv.actime = source_stats.st_atime;
+    tv.modtime = source_stats.st_mtime;
+    if (utime (dest, &tv))
+      {
+        return 1;
+      }
+  }
+
+  /* Try to preserve ownership.  For non-root it might fail, but that's ok.
+     But root probably wants to know, e.g. if NFS disallows it.  */
+  if (chown (dest, source_stats.st_uid, source_stats.st_gid)
+      && (errno != EPERM))
+    {
+      return 1;
+    }
+
+  if (chmod (dest, source_stats.st_mode & 07777))
+    {
+      return 1;
+    }
+  unlink (source);
+  return 0;
+}
+
 /*******************************************************************
 for rename()
 ********************************************************************/
 int sys_rename(char *from, char *to)
 {
+    int rcode;  
     pstring zfrom, zto;
+
     strcpy (zfrom, dos_to_unix (from, False));
     strcpy (zto, dos_to_unix (to, False));
-    return rename (zfrom, zto);
+    rcode = rename (zfrom, zto);
+
+    if (errno == EXDEV) 
+      {
+        /* Rename across filesystems needed. */
+        rcode = copy_reg (zfrom, zto);        
+      }
+    return rcode;
 }
 
 /*******************************************************************

@@ -770,6 +770,7 @@ static int get_server_info(uint32 servertype,
   int count=0;
   int alloced=0;
   pstring line;
+  BOOL local_list_only;
 
   strcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
@@ -784,7 +785,10 @@ static int get_server_info(uint32 servertype,
   }
 
   /* request for everything is code for request all servers */
-  if (servertype == SV_TYPE_ALL) servertype &= ~SV_TYPE_DOMAIN_ENUM;
+  if (servertype == SV_TYPE_ALL) 
+	servertype &= ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY);
+
+  local_list_only = (servertype & SV_TYPE_LOCAL_LIST_ONLY);
 
   DEBUG(4,("Servertype search: %8x\n",servertype));
 
@@ -821,6 +825,14 @@ static int get_server_info(uint32 servertype,
       ok = False; 
     }
     
+	/* Filter the servers/domains we return based on what was asked for. */
+
+	/* Check to see if we are being asked for a local list only. */
+	if(local_list_only && ((s->type & SV_TYPE_LOCAL_LIST_ONLY) == 0)) {
+	  DEBUG(4,("r: local list only"));
+	  ok = False;
+	}
+
     /* doesn't match up: don't want it */
     if (!(servertype & s->type)) { 
       DEBUG(4,("r:serv type ")); 
@@ -839,6 +851,9 @@ static int get_server_info(uint32 servertype,
 	ok = False;
       }
     
+	/* We should never return a server type with a SV_TYPE_LOCAL_LIST_ONLY set. */
+	s->type &= ~SV_TYPE_LOCAL_LIST_ONLY;
+
     if (ok)
       {
     	DEBUG(4,("**SV** %20s %8x %25s %15s\n",

@@ -893,7 +893,8 @@ it left a share mode entry with mode 0x%X in share file %s\n",
     DEBUG(0,("get_share_modes: share file %s had no valid entries - deleting it !\n",
              fname));
     if(*old_shares)
-      free((char *)old_shares);
+      free((char *)*old_shares);
+    *old_shares = 0;
     if(buf)
       free(buf);
     delete_share_file(cnum, fname);
@@ -910,7 +911,8 @@ it left a share mode entry with mode 0x%X in share file %s\n",
       DEBUG(0,("ERROR: get_share_modes: lseek failed to reset to \
 position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
       if(*old_shares)
-        free((char *)old_shares);
+        free((char *)*old_shares);
+      *old_shares = 0;
       if(buf)
         free(buf);
       return 0;
@@ -933,7 +935,8 @@ position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
       DEBUG(0,("ERROR: get_share_modes: failed to re-write share \
 mode file %s (%s)\n", fname, strerror(errno)));
       if(*old_shares)
-        free((char *)old_shares);
+        free((char *)*old_shares);
+      *old_shares = 0;
       if(buf)
         free(buf);
       return 0;
@@ -944,7 +947,8 @@ mode file %s (%s)\n", fname, strerror(errno)));
       DEBUG(0,("ERROR: get_share_modes: failed to ftruncate share \
 mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
       if(*old_shares)
-        free((char *)old_shares);
+        free((char *)*old_shares);
+      *old_shares = 0;
       if(buf)
         free(buf);
       return 0;

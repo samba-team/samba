@@ -255,7 +255,7 @@ static void process_localnet_announce(struct packet_struct *p,uint16 command,cha
   ttl = GET_TTL(ttl);
   
   /* add them to our browse list, and update the browse.dat file */
-  add_server_entry(d,work,name,servertype,ttl,comment,True);
+  add_server_entry(d,work,name,servertype|SV_TYPE_LOCAL_LIST_ONLY,ttl,comment,True);
   updatedlists = True;
 
 #if 0

@@ -298,7 +298,7 @@ static service sDefault =
   NULL,    /* volume */
   0,       /* iMinPrintSpace */
   0644,    /* iCreate_mode */
-  0700,    /* iCreate_force_mode */
+  0000,    /* iCreate_force_mode */
   0755,    /* iDir_mode */
   0000,    /* iDir_force_mode */
   0,       /* iMaxConnections */
@@ -598,7 +598,7 @@ static void init_globals(void)
   Globals.max_packet = 65535;
   Globals.mangled_stack = 50;
   Globals.max_xmit = 65535;
-  Globals.max_mux = 2;
+  Globals.max_mux = 50; /* This is *needed* for profile support. */
   Globals.lpqcachetime = 10;
   Globals.pwordlevel = 0;
   Globals.deadtime = 0;

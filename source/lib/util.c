@@ -3306,7 +3306,7 @@ BOOL process_exists(int pid)
     fstring s;
     if (!tested) {
       tested = True;
-      sprintf(s,"/proc/%05d",getpid());
+      sprintf(s,"/proc/%05d",(int)getpid());
       ok = file_exist(s,NULL);
     }
     if (ok) {

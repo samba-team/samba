@@ -1651,7 +1651,7 @@ static void cmd_more(void)
 
   strcpy(rname,cur_dir);
   strcat(rname,"\\");
-  sprintf(tmpname,"%s/smbmore.%d",tmpdir(),getpid());
+  sprintf(tmpname,"%s/smbmore.%d",tmpdir(),(int)getpid());
   strcpy(lname,tmpname);
 
   if (!next_token(NULL,rname+strlen(rname),NULL)) {
@@ -2452,7 +2452,8 @@ static void cmd_print(char *inbuf,char *outbuf )
 }
 
 /****************************************************************************
-show a print queue
+show a print queue - this is deprecated as it uses the old smb that
+has limited support - the correct call is the cmd_p_queue_4() after this.
 ****************************************************************************/
 static void cmd_queue(char *inbuf,char *outbuf )
 {
@@ -2512,6 +2513,119 @@ static void cmd_queue(char *inbuf,char *outbuf )
   
 }
 
+
+/****************************************************************************
+show information about a print queue
+****************************************************************************/
+static void cmd_p_queue_4(char *inbuf,char *outbuf )
+{
+  char *rparam = NULL;
+  char *rdata = NULL;
+  char *p;
+  int rdrcnt, rprcnt;
+  pstring param;
+  int result_code=0;
+
+  if (!connect_as_printer)
+    {
+      DEBUG(0,("WARNING: You didn't use the -P option to smbclient.\n"));
+      DEBUG(0,("Trying to print without -P may fail\n"));
+    }
+  
+  bzero(param,sizeof(param));
+
+  p = param;
+  SSVAL(p,0,76);                        /* API function number 76 (DosPrintJobEnum) */
+  p += 2;
+  strcpy(p,"zWrLeh");                   /* parameter description? */
+  p = skip_string(p,1);
+  strcpy(p,"WWzWWDDzz");                /* returned data format */
+  p = skip_string(p,1);
+  strcpy(p,strrchr(service,'\\')+1);    /* name of queue */
+  p = skip_string(p,1);
+  SSVAL(p,0,2);                 /* API function level 2, PRJINFO_2 data structure */
+  SSVAL(p,2,1000);                      /* size of bytes of returned data buffer */
+  p += 4;
+  strcpy(p,"");                         /* subformat */
+  p = skip_string(p,1);
+
+  DEBUG(1,("Calling DosPrintJobEnum()...\n"));
+  if( call_api(PTR_DIFF(p,param), 0,
+               10, 4096,
+               &rprcnt, &rdrcnt,
+               param, NULL,
+               &rparam, &rdata) )
+    {
+      int converter;
+      result_code = SVAL(rparam,0);
+      converter = SVAL(rparam,2);             /* conversion factor */
+
+      DEBUG(2,("returned %d bytes of parameters, %d bytes of data, %d records\n", rprcnt, rdrcnt, SVAL(rparam,4) ));
+
+      if (result_code == 0)                   /* if no error, */
+        {
+          int i;
+          uint16 JobId;
+          uint16 Priority;
+          uint32 Size;
+          char *UserName;
+          char *JobName;
+          char *JobTimeStr;
+          time_t JobTime;
+          char PrinterName[20];
+             
+          strcpy(PrinterName,strrchr(service,'\\')+1);       /* name of queue */
+          strlower(PrinterName);                             /* in lower case */
+
+          p = rdata;                          /* received data */
+          for( i = 0; i < SVAL(rparam,4); ++i)
+            {
+              JobId = SVAL(p,0);
+              Priority = SVAL(p,2);
+              UserName = fix_char_ptr(SVAL(p,4), converter, rdata, rdrcnt);
+              strlower(UserName);
+              Priority = SVAL(p,2);
+              JobTime = make_unix_date3( p + 12);
+              JobTimeStr = asctime(LocalTime( &JobTime));
+              Size = IVAL(p,16);
+              JobName = fix_char_ptr(SVAL(p,24), converter, rdata, rdrcnt);
+            
+
+              printf("%s-%u    %s    priority %u   %s    %s   %u bytes\n", 
+		PrinterName, JobId, UserName,
+                Priority, JobTimeStr, JobName, Size);
+   
+#if 0 /* DEBUG code */
+              printf("Job Id: \"%u\"\n", SVAL(p,0));
+              printf("Priority: \"%u\"\n", SVAL(p,2));
+            
+              printf("User Name: \"%s\"\n", fix_char_ptr(SVAL(p,4), converter, rdata, rdrcnt) );
+              printf("Position: \"%u\"\n", SVAL(p,8));
+              printf("Status: \"%u\"\n", SVAL(p,10));
+            
+              JobTime = make_unix_date3( p + 12);
+              printf("Submitted: \"%s\"\n", asctime(LocalTime(&JobTime)));
+              printf("date: \"%u\"\n", SVAL(p,12));
+
+              printf("Size: \"%u\"\n", SVAL(p,16));
+              printf("Comment: \"%s\"\n", fix_char_ptr(SVAL(p,20), converter, rdata, rdrcnt) );
+              printf("Document: \"%s\"\n", fix_char_ptr(SVAL(p,24), converter, rdata, rdrcnt) );
+#endif /* DEBUG CODE */ 
+              p += 28;
+            }
+        }
+    }
+  else                  /* call_api() failed */
+    {
+      printf("Failed, error = %d\n", result_code);
+    }
+
+  /* If any parameters or data were returned, free the storage. */
+  if(rparam) free(rparam);
+  if(rdata) free(rdata);
+
+  return;
+}
 
 /****************************************************************************
 show information about a print queue
@@ -3870,6 +3984,7 @@ struct
   {"md",cmd_mkdir,"<directory> make a directory"},
   {"rmdir",cmd_rmdir,"<directory> remove a directory"},
   {"rd",cmd_rmdir,"<directory> remove a directory"},
+  {"pq",cmd_p_queue_4,"enumerate the print queue"},
   {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput"},  
   {"recurse",cmd_recurse,"toggle directory recursion for mget and mput"},  
   {"translate",cmd_translate,"toggle text translation for printing"},  
