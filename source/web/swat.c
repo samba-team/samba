@@ -1042,7 +1042,7 @@ static void printers_page(void)
 
 	print_header();
 	
-	cgi_load_variables(NULL);
+	cgi_load_variables();
 
 	if (!file_exist(servicesf, NULL)) {
 		have_read_access = True;

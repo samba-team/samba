@@ -127,12 +127,12 @@ static char *grab_line(FILE *f, int *cl)
   with the same name and the same or different values. Takes a file parameter
   for simulating CGI invocation eg loading saved preferences.
   ***************************************************************************/
-void cgi_load_variables(FILE *f1)
+void cgi_load_variables(void)
 {
-	FILE *f = f1;
 	static char *line;
 	char *p, *s, *tok;
-	int len;
+	int len, i;
+	FILE *f = stdin;
 
 #ifdef DEBUG_COMMENTS
 	char dummy[100]="";
@@ -140,23 +140,16 @@ void cgi_load_variables(FILE *f1)
 	printf("<!== Start dump in cgi_load_variables() %s ==>\n",__FILE__);
 #endif
 
-	if (!f1) {
-		f = stdin;
-		if (!content_length) {
-			p = getenv("CONTENT_LENGTH");
-			len = p?atoi(p):0;
-		} else {
-			len = content_length;
-		}
+	if (!content_length) {
+		p = getenv("CONTENT_LENGTH");
+		len = p?atoi(p):0;
 	} else {
-		struct stat st;
-		fstat(fileno(f), &st);
-		len = st.st_size;
+		len = content_length;
 	}
 
 
 	if (len > 0 && 
-	    (f1 || request_post ||
+	    (request_post ||
 	     ((s=getenv("REQUEST_METHOD")) && 
 	      strcasecmp(s,"POST")==0))) {
 		while (len && (line=grab_line(f, &len))) {
@@ -186,13 +179,6 @@ void cgi_load_variables(FILE *f1)
 			num_variables++;
 			if (num_variables == MAX_VARIABLES) break;
 		}
-	}
-
-	if (f1) {
-#ifdef DEBUG_COMMENTS
-	        printf("<!== End dump in cgi_load_variables() ==>\n"); 
-#endif
-		return;
 	}
 
 	fclose(stdin);
@@ -228,6 +214,26 @@ void cgi_load_variables(FILE *f1)
 #ifdef DEBUG_COMMENTS
         printf("<!== End dump in cgi_load_variables() ==>\n");   
 #endif
+
+	/* variables from the client are in display charset - convert them
+	   to our internal charset before use */
+	for (i=0;i<num_variables;i++) {
+		pstring dest;
+
+		convert_string(CH_DISPLAY, CH_UNIX, 
+			       variables[i].name, -1, 
+			       dest, sizeof(dest));
+		free(variables[i].name);
+		variables[i].name = strdup(dest);
+
+		convert_string(CH_DISPLAY, CH_UNIX, 
+			       variables[i].value, -1, 
+			       dest, sizeof(dest));
+		free(variables[i].value);
+		variables[i].value = strdup(dest);
+	}
+
+
 }
 
 
