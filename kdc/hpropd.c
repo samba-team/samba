@@ -194,10 +194,10 @@ int main(int argc, char **argv)
     asprintf(&tmp_db, "%s~", database);
     ret = hdb_create(context, &db, tmp_db);
     if(ret)
-	krb5_err(context, 1, ret, "hdb_open(%s)", tmp_db);
+	krb5_err(context, 1, ret, "hdb_create(%s)", tmp_db);
     ret = db->open(context, db, O_RDWR | O_CREAT | O_TRUNC, 0600);
     if(ret)
-	krb5_err(context, 1, ret, "hdb_open");
+	krb5_err(context, 1, ret, "hdb_open(%s)", tmp_db);
 
     nprincs = 0;
     while(1){
