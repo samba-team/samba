@@ -1793,8 +1793,8 @@ BOOL spoolss_io_q_getprinterdriver2(char *desc,
 	prs_align(ps);
 
 	prs_uint32("buffer size", ps, depth, &(q_u->buf_size));
-	prs_uint32("status", ps, depth, &(q_u->status));
-
+	DEBUG(0,("spoolss_io_q_getprinterdriver2: renamed status - unknown\n"));
+	prs_uint32("unknown", ps, depth, &(q_u->unknown));
 
 	return True;
 }
@@ -1820,9 +1820,9 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u,
 	prs_align(ps);	
 	prs_uint32("pointer", ps, depth, &useless_ptr);
 	
-	info1 = r_u->printer.info1;
-	info2 = r_u->printer.info2;
-	info3 = r_u->printer.info3;
+	info1 = r_u->ctr.driver.info1;
+	info2 = r_u->ctr.driver.info2;
+	info3 = r_u->ctr.driver.info3;
 
 	switch (r_u->level)
 	{
@@ -1912,6 +1912,43 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u,
 		prs_align(ps);	
 	}
 	
+	if (!ps->io)
+	{
+		/* writing */
+		switch (r_u->level)
+		{
+			case 1:
+			{
+				safe_free(info1);
+				break;
+			}
+			case 2:
+			{
+				safe_free(info2);
+				break;
+			}
+			case 3:
+			{
+				if (info3!=NULL) 
+				{
+					UNISTR **dependentfiles;
+					int j=0;
+					dependentfiles=info3->dependentfiles;
+					while ( dependentfiles[j] != NULL )
+					{
+						free(dependentfiles[j]);
+						j++;
+					}
+					free(dependentfiles);
+				
+					free(info3);
+				}
+				break;
+			}
+		
+		}	
+	}
+
 	/*
 	 * if the buffer was too small, send the minimum required size
 	 * if it was too large, send the real needed size
@@ -1921,7 +1958,6 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u,
 	prs_uint32("pipo", ps, depth, &pipo);
 	prs_uint32("pipo", ps, depth, &pipo);
 	prs_uint32("status", ps, depth, &(r_u->status));
-
 
 	return True;
 }

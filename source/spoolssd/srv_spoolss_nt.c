@@ -1828,8 +1828,6 @@ uint32 _spoolss_getprinter( POLICY_HND *handle,
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
-#if 0
-
 /********************************************************************
  * construct_printer_driver_info_1
  * fill a construct_printer_driver_info_1 struct
@@ -2010,9 +2008,13 @@ static void construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *rdata)
+uint32 _spoolss_getprinterdriver2( const POLICY_HND *handle,
+				const UNISTR2 *uni_arch,
+				uint32 level,
+				DRIVER_INFO *ctr,
+				uint32 *offered,
+				uint32 *needed)
 {
-	SPOOL_R_GETPRINTERDRIVER2 r_u;
 	pstring servername;
 	fstring architecture;
 	int snum;
@@ -2021,13 +2023,13 @@ uint32 _spoolss_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *rd
 	DRIVER_INFO_3 *info3=NULL;
 
 	pstrcpy(servername, global_myname);
-	get_printer_snum(handle,&snum);
 
-	offered=buf_size;
-	level=level;
-	status=0x0000;	
-	
-	unistr2_to_ascii(architecture, &(architecture), sizeof(architecture) );
+	if (!get_printer_snum(handle,&snum))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture) );
 	
 	DEBUG(1,("spoolss_getprinterdriver2:[%d]\n", level));
 	
@@ -2037,44 +2039,35 @@ uint32 _spoolss_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *rd
 		{			
 			info1=(DRIVER_INFO_1 *)malloc(sizeof(DRIVER_INFO_1));
 			construct_printer_driver_info_1(info1, snum, servername, architecture);
-			printer.info1=info1;			
-			break;			
+			ctr->driver.info1=info1;			
+
+			return 0x0;
 		}
 		case 2:
 		{
 			info2=(DRIVER_INFO_2 *)malloc(sizeof(DRIVER_INFO_2));
 			construct_printer_driver_info_2(info2, snum, servername, architecture);
-			printer.info2=info2;			
-			break;
+			ctr->driver.info2=info2;			
+
+			return 0x0;
 		}
 		case 3:
 		{
 			info3=(DRIVER_INFO_3 *)malloc(sizeof(DRIVER_INFO_3));
 			construct_printer_driver_info_3(info3, snum, servername, architecture);
-			printer.info3=info3;
+			ctr->driver.info3=info3;
+
+			return 0x0;
+		}
+		default:
+		{
 			break;
 		}
 	}
-	
-	spoolss_io_r_getprinterdriver2("",&r_u,rdata,0);
-	
-	if (info1!=NULL) free(info1);
-	if (info2!=NULL) free(info2);
-	if (info3!=NULL) 
-	{
-		UNISTR **dependentfiles;
-		int j=0;
-		dependentfiles=info3->dependentfiles;
-		while ( dependentfiles[j] != NULL )
-		{
-			free(dependentfiles[j]);
-			j++;
-		}
-		free(dependentfiles);
-	
-		free(info3);
-	}
+	return NT_STATUS_INVALID_INFO_CLASS;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

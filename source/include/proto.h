@@ -4886,7 +4886,12 @@ uint32 _spoolss_getprinter( POLICY_HND *handle,
 				PRINTER_INFO *ctr,
 				uint32 *offered,
 				uint32 *needed);
-uint32 _spoolss_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *rdata);
+uint32 _spoolss_getprinterdriver2( const POLICY_HND *handle,
+				const UNISTR2 *uni_arch,
+				uint32 level,
+				DRIVER_INFO *ctr,
+				uint32 *offered,
+				uint32 *needed);
 uint32 _spoolss_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *rdata);
 uint32 _spoolss_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, prs_struct *rdata);
 uint32 _spoolss_enddocprinter(SPOOL_Q_ENDDOCPRINTER *q_u, prs_struct *rdata);

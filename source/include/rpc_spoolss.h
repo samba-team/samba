@@ -877,7 +877,8 @@ typedef struct spool_q_getprinterdriver2
 	uint32 level;
 	BUFFER buffer;
 	uint32 buf_size;
-	uint32 status;
+	uint32 unknown;
+
 } SPOOL_Q_GETPRINTERDRIVER2;
 
 typedef struct driver_info_1
@@ -909,18 +910,25 @@ typedef struct driver_info_3
 	UNISTR defaultdatatype;
 } DRIVER_INFO_3;
 
-typedef struct spool_r_getprinterdriver2
+typedef struct driver_info_info
 {
-	uint32 needed;
-	uint32 offered;
-	uint32 returned;
-	uint32 status;
-	uint32 level;
 	union {
 		DRIVER_INFO_1 *info1;
 		DRIVER_INFO_2 *info2;
 		DRIVER_INFO_3 *info3;
-	} printer;
+	} driver;
+
+} DRIVER_INFO;
+
+typedef struct spool_r_getprinterdriver2
+{
+	uint32 level;
+	DRIVER_INFO ctr;
+	uint32 needed;
+	uint32 offered;
+	uint32 returned;
+	uint32 status;
+
 } SPOOL_R_GETPRINTERDRIVER2;
 
 typedef struct add_jobinfo_1

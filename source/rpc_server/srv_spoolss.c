@@ -564,76 +564,6 @@ static void fill_printer_driver_info_1(DRIVER_INFO_1 *info,
 	make_unistr( &(info->name), driver.info_3->name);
 }
 
-static void construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, 
-                                            pstring servername, fstring architecture)
-{	
-	NT_PRINTER_INFO_LEVEL printer;
-	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-
-	get_a_printer(&printer, 2, lp_servicename(snum) );
-	get_a_printer_driver(&driver, 3, printer.info_2->drivername, architecture);	
-	
-	fill_printer_driver_info_1(info, driver, servername, architecture);
-	
-	free_a_printer_driver(driver, 3);
-	free_a_printer(printer, 2);
-}
-
-/********************************************************************
- * construct_printer_driver_info_2
- * fill a printer_info_2 struct
- ********************************************************************/
-static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, 
-                                       NT_PRINTER_DRIVER_INFO_LEVEL driver, 
-				       pstring servername, fstring architecture)
-{
-	pstring where;
-	pstring temp_driverpath;
-	pstring temp_datafile;
-	pstring temp_configfile;
-	fstring short_archi;
-
-	get_short_archi(short_archi,architecture);
-	
-	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\", servername, short_archi);
-
-	info->version=driver.info_3->cversion;
-
-	make_unistr( &(info->name),         driver.info_3->name );
-	make_unistr( &(info->architecture), architecture );
-	
-	snprintf(temp_driverpath, sizeof(temp_driverpath)-1, "%s%s", where, 
-	         driver.info_3->driverpath);
-	make_unistr( &(info->driverpath),   temp_driverpath );
-
-	snprintf(temp_datafile,   sizeof(temp_datafile)-1, "%s%s", where, 
-	         driver.info_3->datafile);
-	make_unistr( &(info->datafile),     temp_datafile );
-
-	snprintf(temp_configfile, sizeof(temp_configfile)-1, "%s%s", where, 
-	         driver.info_3->configfile);
-	make_unistr( &(info->configfile),   temp_configfile );	
-}
-
-/********************************************************************
- * construct_printer_driver_info_2
- * fill a printer_info_2 struct
- ********************************************************************/
-static void construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, 
-                                            pstring servername, fstring architecture)
-{
-	NT_PRINTER_INFO_LEVEL printer;
-	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	
-	get_a_printer(&printer, 2, lp_servicename(snum) );
-	get_a_printer_driver(&driver, 3, printer.info_2->drivername, architecture);	
-
-	fill_printer_driver_info_2(info, driver, servername, architecture);
-
-	free_a_printer_driver(driver, 3);
-	free_a_printer(printer, 2);
-}
-
 /********************************************************************
  * copy a strings array and convert to UNICODE
  ********************************************************************/
@@ -712,91 +642,41 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
 	make_unistr_array(&(info->dependentfiles), driver.info_3->dependentfiles, where);
 }
 
+
 /********************************************************************
- * construct_printer_info_3
- * fill a printer_info_3 struct
+ * construct_printer_driver_info_2
+ * fill a printer_info_2 struct
  ********************************************************************/
-static void construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, 
-                                            pstring servername, fstring architecture)
-{	
-	NT_PRINTER_INFO_LEVEL printer;
-	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	
-	get_a_printer(&printer, 2, lp_servicename(snum) );	
-	get_a_printer_driver(&driver, 3, printer.info_2->drivername, architecture);	
-
-	fill_printer_driver_info_3(info, driver, servername, architecture);
-
-	free_a_printer_driver(driver, 3);
-	free_a_printer(printer, 2);
-}
-
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *rdata)
+static void fill_printer_driver_info_2(DRIVER_INFO_2 *info, 
+                                       NT_PRINTER_DRIVER_INFO_LEVEL driver, 
+				       pstring servername, fstring architecture)
 {
-	SPOOL_R_GETPRINTERDRIVER2 r_u;
-	pstring servername;
-	fstring architecture;
-	int snum;
-	DRIVER_INFO_1 *info1=NULL;
-	DRIVER_INFO_2 *info2=NULL;
-	DRIVER_INFO_3 *info3=NULL;
+	pstring where;
+	pstring temp_driverpath;
+	pstring temp_datafile;
+	pstring temp_configfile;
+	fstring short_archi;
 
-	pstrcpy(servername, global_myname);
-	get_printer_snum(&(q_u->handle),&snum);
+	get_short_archi(short_archi,architecture);
+	
+	snprintf(where,sizeof(where)-1,"\\\\%s\\print$\\%s\\", servername, short_archi);
 
-	r_u.offered=q_u->buf_size;
-	r_u.level=q_u->level;
-	r_u.status=0x0000;	
+	info->version=driver.info_3->cversion;
+
+	make_unistr( &(info->name),         driver.info_3->name );
+	make_unistr( &(info->architecture), architecture );
 	
-	unistr2_to_ascii(architecture, &(q_u->architecture), sizeof(architecture) );
-	
-	DEBUG(1,("spoolss_reply_getprinterdriver2:[%d]\n", q_u->level));
-	
-	switch (q_u->level)
-	{
-		case 1:
-		{			
-			info1=(DRIVER_INFO_1 *)malloc(sizeof(DRIVER_INFO_1));
-			construct_printer_driver_info_1(info1, snum, servername, architecture);
-			r_u.printer.info1=info1;			
-			break;			
-		}
-		case 2:
-		{
-			info2=(DRIVER_INFO_2 *)malloc(sizeof(DRIVER_INFO_2));
-			construct_printer_driver_info_2(info2, snum, servername, architecture);
-			r_u.printer.info2=info2;			
-			break;
-		}
-		case 3:
-		{
-			info3=(DRIVER_INFO_3 *)malloc(sizeof(DRIVER_INFO_3));
-			construct_printer_driver_info_3(info3, snum, servername, architecture);
-			r_u.printer.info3=info3;
-			break;
-		}
-	}
-	
-	spoolss_io_r_getprinterdriver2("",&r_u,rdata,0);
-	
-	if (info1!=NULL) free(info1);
-	if (info2!=NULL) free(info2);
-	if (info3!=NULL) 
-	{
-		UNISTR **dependentfiles;
-		int j=0;
-		dependentfiles=info3->dependentfiles;
-		while ( dependentfiles[j] != NULL )
-		{
-			free(dependentfiles[j]);
-			j++;
-		}
-		free(dependentfiles);
-	
-		free(info3);
-	}
+	snprintf(temp_driverpath, sizeof(temp_driverpath)-1, "%s%s", where, 
+	         driver.info_3->driverpath);
+	make_unistr( &(info->driverpath),   temp_driverpath );
+
+	snprintf(temp_datafile,   sizeof(temp_datafile)-1, "%s%s", where, 
+	         driver.info_3->datafile);
+	make_unistr( &(info->datafile),     temp_datafile );
+
+	snprintf(temp_configfile, sizeof(temp_configfile)-1, "%s%s", where, 
+	         driver.info_3->configfile);
+	make_unistr( &(info->configfile),   temp_configfile );	
 }
 
 /********************************************************************
@@ -808,12 +688,23 @@ static void api_spoolss_getprinterdriver2(rpcsrv_struct *p, prs_struct *data,
                                           prs_struct *rdata)
 {
 	SPOOL_Q_GETPRINTERDRIVER2 q_u;
+	SPOOL_R_GETPRINTERDRIVER2 r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 	
 	spoolss_io_q_getprinterdriver2("", &q_u, data, 0);
 	
-	spoolss_reply_getprinterdriver2(&q_u, rdata);
+	r_u.status = _spoolss_getprinterdriver2(&q_u.handle,
+				&q_u.architecture, q_u.level,
+				&r_u.ctr, &q_u.buf_size,
+				&r_u.needed);
 	
+	r_u.offered = q_u.buf_size;
+	r_u.level = q_u.level;
 	spoolss_io_free_buffer(&(q_u.buffer));
+
+	spoolss_io_r_getprinterdriver2("",&r_u,rdata,0);
 }
 
 /****************************************************************************
