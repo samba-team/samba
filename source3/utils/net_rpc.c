@@ -178,7 +178,7 @@ static int run_rpc_command(struct cli_state *cli_arg, const char *pipe_name, int
 /** 
  * Force a change of the trust acccount password.
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
@@ -224,7 +224,7 @@ static int rpc_changetrustpw(int argc, const char **argv)
  *
  * The password should be created with 'server manager' or eqiv first.
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
@@ -319,7 +319,7 @@ int net_rpc_join(int argc, const char **argv)
 /** 
  * display info about a rpc domain
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -406,7 +406,7 @@ static int rpc_user_usage(int argc, const char **argv)
 /** 
  * Add a new user to a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -494,7 +494,7 @@ static int rpc_user_add(int argc, const char **argv)
 /** 
  * Delete a user from a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -595,7 +595,7 @@ static int rpc_user_delete(int argc, const char **argv)
 /** 
  * List user's groups on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -697,7 +697,7 @@ static int rpc_user_info(int argc, const char **argv)
 /** 
  * List users on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -811,7 +811,7 @@ static int rpc_group_usage(int argc, const char **argv)
 /** 
  * List groups on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -954,7 +954,7 @@ static int rpc_share_usage(int argc, const char **argv)
 /** 
  * Add a share on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1002,7 +1002,7 @@ static int rpc_share_add(int argc, const char **argv)
 /** 
  * Delete a share on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1070,7 +1070,7 @@ static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
 /** 
  * List shares on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1147,7 +1147,7 @@ static int rpc_file_usage(int argc, const char **argv)
 /** 
  * Close a file on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1210,7 +1210,7 @@ static void display_file_info_3(FILE_INFO_3 *info3, FILE_INFO_3_STR *str3)
 /** 
  * List open files on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1314,7 +1314,7 @@ int net_rpc_file(int argc, const char **argv)
 /** 
  * ABORT the shutdown of a remote RPC Server
  *
- * All paramaters are provided by the run_rpc_command function, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
@@ -1362,7 +1362,7 @@ static int rpc_shutdown_abort(int argc, const char **argv)
 /** 
  * Shut down a remote RPC Server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All parameters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
