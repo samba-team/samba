@@ -1356,5 +1356,55 @@ enum winbindd_result winbindd_delete_group(struct winbindd_cli_state *state)
 	return ( ret ? WINBINDD_OK : WINBINDD_ERROR );
 }
 
+static void add_string_to_array(char *name, char ***names, int *num_names)
+{
+	*names = Realloc(*names, (*num_names + 1) * sizeof(char **));
 
+	if (*names == NULL)
+		return;
 
+	(*names)[*num_names] = name;
+	*num_names += 1;
+}
+
+/**********************************************************************
+ List all group names locally defined
+**********************************************************************/
+
+void wb_list_group_names(char ***names, int *num_names)
+{
+	TDB_LIST_NODE *nodes, *node;
+	
+	if (!winbindd_accountdb_init())
+		return;
+
+	nodes = tdb_search_keys(account_tdb, acct_groupkey_byname("*"));
+
+	node = nodes;
+
+	while (node != NULL) {
+		char *name = (char *)node->node_key.dptr;
+
+		DEBUG(10, ("Found key %s\n", name));
+
+		node = node->next;
+
+		/* Skip WBA_GROUP */
+		name = strchr(name, '/');
+		if (name == NULL)
+			continue;
+		name += 1;
+
+		/* Skip NAME */
+		name = strchr(name, '/');
+		if (name == NULL)
+			continue;
+		name += 1;
+
+		DEBUG(10, ("adding %s\n", name));
+
+		add_string_to_array(strdup(name), names, num_names);
+	}
+
+	tdb_search_list_free(nodes);
+}

@@ -423,6 +423,15 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		free_getent_state(state->getgrent_state);
 		state->getgrent_state = NULL;
 	}
+
+	/* Add our locally defined groups */
+
+	state->local_group_names = NULL;
+	state->num_local_group_names = 0;
+	state->local_group_ndx = 0;
+
+	wb_list_group_names(&state->local_group_names,
+			    &state->num_local_group_names);
 	
 	/* Create sam pipes for each domain we know about */
 	
@@ -470,6 +479,80 @@ enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 	
 	return WINBINDD_OK;
 }
+
+/* Fetch group entries from local faked database */
+
+static BOOL return_local_winbind_groups(struct winbindd_cli_state *state)
+{
+	WINBINDD_GR *grp;
+	char *buffer = NULL;
+	char *name;
+	int gr_mem_list_len = 0;
+	struct winbindd_gr *group_list;
+	struct winbindd_gr *gr;
+
+	if (state->local_group_names == NULL)
+		return False;
+
+	name = state->local_group_names[state->local_group_ndx];
+	grp = wb_getgrnam(name);
+
+	if (grp == NULL) {
+		DEBUG(3, ("Group %s vanished\n", name));
+
+		/* Stop that stuff.. */
+		state->local_group_ndx = state->num_local_group_names;
+
+		return False;
+	}
+
+	gr_mem_list_len = gr_mem_buffer( &buffer, grp->gr_mem, grp->num_gr_mem );
+
+	state->response.extra_data = malloc(sizeof(struct winbindd_gr) +
+					    gr_mem_list_len);
+	state->response.length += sizeof(struct winbindd_gr) + gr_mem_list_len;
+
+	group_list = (struct winbindd_gr *)state->response.extra_data;
+
+	if (group_list == NULL) {
+		DEBUG(0, ("Could not malloc group_list\n"));
+		return False;
+	}
+
+	gr = &group_list[0];
+
+	ZERO_STRUCTP(gr);
+
+	gr->gr_gid = grp->gr_gid;
+	safe_strcpy(gr->gr_name, name, sizeof(gr->gr_name) - 1);
+	safe_strcpy(gr->gr_passwd, "x", sizeof(gr->gr_passwd) - 1);
+	gr->num_gr_mem = grp->num_gr_mem;
+	gr->gr_mem_ofs = 0;
+
+	memcpy(&((char *)state->response.extra_data)
+	       [sizeof(struct winbindd_gr)],
+	       buffer, gr_mem_list_len);
+
+	SAFE_FREE(buffer);
+	SAFE_FREE(grp->gr_mem);
+
+	state->response.data.num_entries = 1;
+
+	state->local_group_ndx += 1;
+
+	if (state->local_group_ndx >= state->num_local_group_names) {
+		int i;
+
+		for (i=0; i<state->num_local_group_names; i++) {
+			free(state->local_group_names[i]);
+		}
+		free(state->local_group_names);
+		state->local_group_names = NULL;
+	}
+
+	return True;
+}
+
 
 /* Get the list of domain groups and domain aliases for a domain.  We fill in
    the sam_entries and num_sam_entries fields with domain group information.  
@@ -605,6 +688,9 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 	if (!lp_winbind_enum_groups())
 		return WINBINDD_ERROR;
+
+	if (return_local_winbind_groups(state))
+		return WINBINDD_OK;
 
 	num_groups = MIN(MAX_GETGRENT_GROUPS, state->request.data.num_entries);
 
