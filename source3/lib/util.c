@@ -4596,7 +4596,7 @@ int unistrcpy(char *dst, char *src)
 safe string copy into a known length string. maxlength does not
 include the terminating zero.
 ********************************************************************/
-char *safe_strcpy(char *dest, char *src, int maxlength)
+char *safe_strcpy(char *dest,const char *src, int maxlength)
 {
     int len;
 

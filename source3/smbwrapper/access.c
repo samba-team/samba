@@ -21,7 +21,7 @@
 
 #include "wrapper.h"
 
- int access(__const char *name, int mode)
+ int access(const char *name, int mode)
 {
 	if (smbw_path(name)) {
 		return smbw_access(name, mode);

@@ -335,7 +335,7 @@ char *unistr2(uint16 *buf);
 int struni2(uint16 *p, char *buf);
 char *unistr(char *buf);
 int unistrcpy(char *dst, char *src);
-char *safe_strcpy(char *dest, char *src, int maxlength);
+char *safe_strcpy(char *dest,const char *src, int maxlength);
 char *safe_strcat(char *dest, char *src, int maxlength);
 char *align2(char *q, char *base);
 void print_asc(int level, unsigned char *buf,int len);
@@ -361,7 +361,7 @@ BOOL cli_api(struct cli_state *cli,
 	     char **rparam, int *rprcnt,
 	     char **rdata, int *rdrcnt);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
-BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(char *, uint32, char *));
+BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(char *, uint32, char *));
 BOOL cli_session_setup(struct cli_state *cli, 
@@ -373,7 +373,7 @@ BOOL cli_ulogoff(struct cli_state *cli);
 BOOL cli_send_tconX(struct cli_state *cli, 
 		    char *share, char *dev, char *pass, int passlen);
 BOOL cli_tdis(struct cli_state *cli);
-BOOL cli_mv(struct cli_state *cli, char *fname_src, char *fname_dst);
+BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
 BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);

@@ -21,7 +21,7 @@
 
 #include "wrapper.h"
 
- int __lxstat(int vers, __const char *name, struct stat *st)
+ int __lxstat(int vers, const char *name, struct stat *st)
 {
 	struct kernel_stat kbuf;
 	int ret;
