@@ -409,6 +409,7 @@ auth(char *auth_name)
 	    return;
 	}
     }
+    free (app_data);
     reply(504, "%s is unknown to me", auth_name);
 }
 
@@ -713,12 +714,14 @@ sec_login(char *host)
 void
 sec_end(void)
 {
-    if(mech->end)
-	(*mech->end)(app_data);
+    if (mech != NULL) {
+	if(mech->end)
+	    (*mech->end)(app_data);
+	memset(app_data, 0, mech->size);
+	free(app_data);
+    }
     sec_complete = 0;
     data_prot = 0;
-    memset(app_data, 0, mech->size);
-    free(app_data);
 }
 
 #endif /* FTP_SERVER */
