@@ -511,81 +511,54 @@ int set_blocking(int fd, BOOL set)
 }
 
 /****************************************************************************
-transfer some data between two fd's
+ Transfer some data between two fd's.
 ****************************************************************************/
-SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align)
+
+ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
+						ssize_t (*write_fn)(int, const void *, size_t))
 {
-  static char *buf=NULL;  
-  static int size=0;
-  char *buf1,*abuf;
-  SMB_OFF_T total = 0;
+	static char buf[16384];
+	size_t total = 0;
+	ssize_t read_ret;
+	size_t write_total = 0;
+    ssize_t write_ret;
 
-  DEBUG(4,("transfer_file n=%.0f  (head=%d) called\n",(double)n,headlen));
+	while (total < n) {
+		size_t num_to_read_thistime = MIN((n - total), sizeof(buf));
 
-  if (size == 0) {
-    size = lp_readsize();
-    size = MAX(size,1024);
-  }
+		read_ret = (*read_fn)(infd, buf + total, num_to_read_thistime);
+		if (read_ret == -1) {
+			DEBUG(0,("transfer_file_internal: read failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (read_ret == 0)
+			break;
 
-  while (!buf && size>0) {
-    buf = (char *)malloc(size+8);
-    if (!buf) size /= 2;
-  }
+		write_total = 0;
+ 
+		while (write_total < read_ret) {
+			write_ret = (*write_fn)(outfd,buf + total, read_ret);
+ 
+			if (write_ret == -1) {
+				DEBUG(0,("transfer_file_internal: write failure. Error = %s\n", strerror(errno) ));
+				return -1;
+			}
+			if (write_ret == 0)
+				return (ssize_t)total;
+ 
+			write_total += (size_t)write_ret;
+		}
 
-  if (!buf) {
-    DEBUG(0,("Can't allocate transfer buffer!\n"));
-    exit(1);
-  }
+		total += (size_t)read_ret;
+	}
 
-  abuf = buf + (align%8);
-
-  if (header)
-    n += headlen;
-
-  while (n > 0)
-  {
-    int s = (int)MIN(n,(SMB_OFF_T)size);
-    int ret,ret2=0;
-
-    ret = 0;
-
-    if (header && (headlen >= MIN(s,1024))) {
-      buf1 = header;
-      s = headlen;
-      ret = headlen;
-      headlen = 0;
-      header = NULL;
-    } else {
-      buf1 = abuf;
-    }
-
-    if (header && headlen > 0)
-    {
-      ret = MIN(headlen,size);
-      memcpy(buf1,header,ret);
-      headlen -= ret;
-      header += ret;
-      if (headlen <= 0) header = NULL;
-    }
-
-    if (s > ret)
-      ret += read(infd,buf1+ret,s-ret);
-
-    if (ret > 0)
-    {
-      ret2 = (outfd>=0?write_data(outfd,buf1,ret):ret);
-      if (ret2 > 0) total += ret2;
-      /* if we can't write then dump excess data */
-      if (ret2 != ret)
-        transfer_file(infd,-1,n-(ret+headlen),NULL,0,0);
-    }
-    if (ret <= 0 || ret2 != ret)
-      return(total);
-    n -= ret;
-  }
-  return(total);
+	return (ssize_t)total;		
 }
 
+SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
+{
+	return (SMB_OFF_T)transfer_file_internal(infd, outfd, (size_t)n, read, write);
+}
 
 /*******************************************************************
 sleep for a specified number of milliseconds

@@ -190,7 +190,7 @@ int vfswrap_close(files_struct *fsp, int fd)
     return result;
 }
 
-ssize_t vfswrap_read(files_struct *fsp, int fd, char *data, size_t n)
+ssize_t vfswrap_read(files_struct *fsp, int fd, void *data, size_t n)
 {
     ssize_t result;
 
@@ -207,7 +207,7 @@ ssize_t vfswrap_read(files_struct *fsp, int fd, char *data, size_t n)
     return result;
 }
 
-ssize_t vfswrap_write(files_struct *fsp, int fd, const char *data, size_t n)
+ssize_t vfswrap_write(files_struct *fsp, int fd, const void *data, size_t n)
 {
     ssize_t result;
 
