@@ -21,11 +21,11 @@
 */
 
 /**
-   @defgroups messages Internal messaging framework
-   @{
-   @file messages.c
-
-   This module is used for internal messaging between Samba daemons. 
+  @defgroup messages Internal messaging framework
+  @{
+  @file messages.c
+  
+  @brief  Module for internal messaging between Samba daemons. 
 
    The idea is that if a part of Samba wants to do communication with
    another Samba process then it will do a message_register() of a
@@ -36,7 +36,7 @@
    use that to reply by message_send_pid().  See ping_message() for a
    simple example.
 
-   *NOTE*: Dispatch functions must be able to cope with incoming
+   @caution Dispatch functions must be able to cope with incoming
    messages on an *odd* byte boundary.
 
    This system doesn't have any inherent size limitations but is not
@@ -524,7 +524,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
  * @param n_sent Set to the number of messages sent.  This should be
  * equal to the number of processes, but be careful for races.
  *
- * @return True for success.
+ * @retval True for success.
  **/
 BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 		      const void *buf, size_t len,
