@@ -1716,6 +1716,8 @@ static BOOL spoolss_io_read_buffer(char *desc, prs_struct *ps, int depth, BUFFER
 		{
 			return False;
 		}
+		mem_grow_data(&(ps->data), ps->io,
+		              ps->data->data_size + buffer->size, 0);
 		prs_uint8s(True, "buffer", ps, depth, buffer->data, buffer->size);	
 		prs_align(ps);
 
