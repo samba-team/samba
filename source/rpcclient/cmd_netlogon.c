@@ -65,7 +65,7 @@ void cmd_netlogon_login_test(struct client_info *info)
 		fstrcpy(nt_user_name, smb_cli->user_name);
 		if (nt_user_name[0] == 0)
 		{
-			fprintf(out_hnd,"ntlogin: must specify username with anonymous connection\n");
+			report(out_hnd,"ntlogin: must specify username with anonymous connection\n");
 			return;
 		}
 	}
@@ -130,7 +130,7 @@ void cmd_netlogon_login_test(struct client_info *info)
 	/* close the session */
 	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
-	fprintf(out_hnd,"cmd_nt_login: login (%s) test succeeded: %s\n",
+	report(out_hnd,"cmd_nt_login: login (%s) test succeeded: %s\n",
 		nt_user_name, BOOLSTR(res));
 }
 
@@ -148,7 +148,7 @@ void cmd_netlogon_domain_test(struct client_info *info)
 
 	if (!next_token(NULL, nt_trust_dom, NULL, sizeof(nt_trust_dom)))
 	{
-		fprintf(out_hnd,"domtest: must specify domain name\n");
+		report(out_hnd,"domtest: must specify domain name\n");
 		return;
 	}
 
@@ -170,7 +170,7 @@ void cmd_netlogon_domain_test(struct client_info *info)
 	/* close the session */
 	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
-	fprintf(out_hnd,"cmd_nt_login: credentials (%s) test succeeded: %s\n",
+	report(out_hnd,"cmd_nt_login: credentials (%s) test succeeded: %s\n",
 		nt_trust_dom, BOOLSTR(res));
 }
 
@@ -182,8 +182,16 @@ void cmd_sam_sync(struct client_info *info)
 	SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS];
 	SAM_DELTA_CTR deltas[MAX_SAM_DELTAS];
 	uint32 num;
+	uchar trust_passwd[16];
+	extern pstring global_myname;
 
-	if (do_sam_sync(smb_cli, hdr_deltas, deltas, &num))
+	if (!trust_get_passwd(trust_passwd, smb_cli->domain, global_myname))
+	{
+		report(out_hnd, "cmd_sam_sync: no trust account password\n");
+		return;
+	}
+
+	if (do_sam_sync(smb_cli, trust_passwd, hdr_deltas, deltas, &num))
 	{
 		display_sam_sync(out_hnd, ACTION_HEADER   , hdr_deltas, deltas, num);
 		display_sam_sync(out_hnd, ACTION_ENUMERATE, hdr_deltas, deltas, num);

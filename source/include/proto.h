@@ -1768,10 +1768,13 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_
 BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id, uint32 *num_deltas, SAM_DELTA_HDR *hdr_deltas, SAM_DELTA_CTR *deltas);
 BOOL change_trust_account_password(char *domain, char *remote_machine_list,
 					uint16 sec_chan);
-BOOL do_sam_sync(struct cli_state *cli,
+BOOL do_sam_sync(struct cli_state *cli, uchar trust_passwd[16],
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
 				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],
 				uint32 *num_deltas);
+
+/*The following definitions come from  rpc_client/cli_netlogon_sync.c  */
+
 BOOL synchronise_passdb(void);
 
 /*The following definitions come from  rpc_client/cli_pipe.c  */
