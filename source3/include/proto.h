@@ -1259,7 +1259,7 @@ BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 
 BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
                       prs_struct *data, prs_struct *rdata);
-BOOL cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
+void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
 BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name);
 void cli_nt_session_close(struct cli_state *cli);
 
@@ -2196,6 +2196,9 @@ void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass,
                      uchar lm_pass[24], uchar nt_pass[24]);
+BOOL pass_check_smb(char *user, char *domain,
+		char *challenge, char *lm_pwd, char *nt_pwd,
+		struct passwd *pwd);
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd);
 BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
