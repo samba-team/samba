@@ -86,6 +86,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
 	for (i = 0; i < num_names; i++) {
 		char *the_name;
+		fstring name;
 		int len;
 			
 		the_name = names[i];
@@ -104,7 +105,12 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 			continue;
 		}
 
-		len = strlen(the_name);
+		/* Append domain name */
+
+		slprintf(name, sizeof(name), "%s%s%s", domain->name,
+			 lp_winbind_separator(), the_name);
+
+		len = strlen(name);
 		
 		/* Add to list or calculate buffer length */
 
@@ -112,7 +118,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 			buf_len += len + 1; /* List is comma separated */
 			gr->num_gr_mem++;
 		} else {
-			safe_strcpy(&buf[buf_ndx], the_name, len);
+			safe_strcpy(&buf[buf_ndx], name, len);
 			buf_ndx += len;
 			buf[buf_ndx] = ',';
 			buf_ndx++;
