@@ -40,17 +40,20 @@
 RCSID("$Id$");
 
 krb5_context context;
+char krb5_tkfile[MAXPATHLEN];
 
 static int help_flag;
 static int version_flag;
 static char *port_str;
 char *service = SERVICE;
 int do_inetd = 0;
+static char *regpag_str=NULL;
 
 static struct getargs args[] = {
     { "port", 'p', arg_string, &port_str, "port to listen to", "port" },
     { "inetd",'i',arg_flag, &do_inetd,
        "Not started from inetd", NULL },
+    { "regpag",'R',arg_string,&regpag_str,"path to regpag binary","regpag"},
     { "help", 'h', arg_flag, &help_flag },
     { "version", 0, arg_flag, &version_flag }
 };
@@ -286,11 +289,12 @@ proto (int sock, const char *service)
     status = krb5_rd_cred (context, auth_context, ccache, &data);
     krb5_cc_close (context, ccache);
     if (status) {
-	syslog_and_cont("krb5_cc_initialize: %s",
+	syslog_and_cont("krb5_rd_cred: %s",
 			krb5_get_err_text(context, status));
         goto out;
 
     }
+    strcpy_truncate(krb5_tkfile,ccname,sizeof(krb5_tkfile));
     syslog_and_cont("%s forwarded ticket to %s,%s",
 		    name,
 		    (char *)(remotename.data),ccname);
@@ -314,7 +318,7 @@ out:
          return 1;
     if (krb5_net_write (context, &sock, ret_string, len) != len)
          return 1;
-    return 0;
+    return status;
 }
 
 static int
@@ -336,5 +340,7 @@ main(int argc, char **argv)
     port = server_setup(&context, argc, argv);
     ret = doit (port, service);
     closelog();
+    if (ret == 0 && regpag_str != NULL)
+        ret = execl(regpag_str, "regpag", "-t", krb5_tkfile, "-r", NULL);
     return ret;
 }
