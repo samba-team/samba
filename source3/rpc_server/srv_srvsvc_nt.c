@@ -1886,6 +1886,18 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
 	unix_convert(filename, conn, NULL, &bad_path, &st);
+	if (bad_path) {
+		DEBUG(3,("_srv_net_file_query_secdesc: bad pathname %s\n", filename));
+		r_u->status = WERR_ACCESS_DENIED;
+		goto error_exit;
+	}
+
+	if (!check_name(filename,conn)) {
+		DEBUG(3,("_srv_net_file_query_secdesc: can't access %s\n", filename));
+		r_u->status = WERR_ACCESS_DENIED;
+		goto error_exit;
+	}
+
 	fsp = open_file_shared(conn, filename, &st, SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
 				(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY,
 				&access_mode, &action);
@@ -1990,6 +2002,18 @@ WERROR _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	unistr2_to_ascii(filename, &q_u->uni_file_name, sizeof(filename));
 	unix_convert(filename, conn, NULL, &bad_path, &st);
+	if (bad_path) {
+		DEBUG(3,("_srv_net_file_set_secdesc: bad pathname %s\n", filename));
+		r_u->status = WERR_ACCESS_DENIED;
+		goto error_exit;
+	}
+
+	if (!check_name(filename,conn)) {
+		DEBUG(3,("_srv_net_file_set_secdesc: can't access %s\n", filename));
+		r_u->status = WERR_ACCESS_DENIED;
+		goto error_exit;
+	}
+
 
 	fsp = open_file_shared(conn, filename, &st, SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDWR),
 			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY,
