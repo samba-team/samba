@@ -1,3 +1,7 @@
+2003-10-14  Johan Danielsson  <joda@pdc.kth.se>
+
+	* pagsh.c: mkstemp formats must end in exactly six X's
+
 2003-07-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afslog.c (do_afslog): is cell is unset, set it "<default cell>"
