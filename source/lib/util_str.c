@@ -1262,7 +1262,7 @@ char *octal_string(int i)
 	if (i == -1) {
 		return "-1";
 	}
-	slprintf(ret, sizeof(ret), "0%o", i);
+	slprintf(ret, sizeof(ret)-1, "0%o", i);
 	return ret;
 }
 

@@ -626,7 +626,7 @@ static void usage(char *pname)
 	TimeInit();
 
 	if(!specified_logfile) {
-		slprintf(debugf, sizeof(debugf), "%s/log.smbd", LOGFILEBASE);
+		slprintf(debugf, sizeof(debugf)-1, "%s/log.smbd", LOGFILEBASE);
 	}
 
 	pstrcpy(remote_machine, "smbd");

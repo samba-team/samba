@@ -880,7 +880,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   if (!sys_getpwnam(user)) {
 	  pstring user2;
 
-	  slprintf(user2,sizeof(user2),"%s%s%s", dos_to_unix(domain,False), 
+	  slprintf(user2,sizeof(user2)-1,"%s%s%s", dos_to_unix(domain,False), 
 		   lp_winbind_separator(), user);
 
 	  if (sys_getpwnam(user2)) {

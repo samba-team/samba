@@ -160,7 +160,7 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 		data2 = (char *) data;
 	}
 
-	slprintf(opts, sizeof(opts),
+	slprintf(opts, sizeof(opts)-1,
 		 "version=7,uid=%d,gid=%d,file_mode=0%o,dir_mode=0%o,%s",
 		 data->uid, data->gid, data->file_mode, data->dir_mode,options);
 	if (mount(share_name, ".", "smbfs", flags, data1) == 0)

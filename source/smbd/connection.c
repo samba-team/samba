@@ -434,7 +434,7 @@ static int utmp_fill(struct utmp *u, const connection_struct *conn, pid_t pid,
  * o  with overflow if ut_line would be more than full.
  */
 	memset(line_tmp, '\0', sizeof(line_tmp));
-	slprintf(line_tmp, sizeof(line_tmp), (char *) ut_line_template, i);
+	slprintf(line_tmp, sizeof(line_tmp)-1, (char *) ut_line_template, i);
 	line_len = strlen(line_tmp);
 	if (line_len <= sizeof(u->ut_line)) {
 		memcpy(u->ut_line, line_tmp, sizeof(u->ut_line));

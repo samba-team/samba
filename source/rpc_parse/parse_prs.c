@@ -36,9 +36,9 @@ void prs_dump(char *name, int v, prs_struct *ps)
 	if (DEBUGLEVEL < 50) return;
 	for (i=1;i<100;i++) {
 		if (v != -1) {
-			slprintf(fname,sizeof(fname), "/tmp/%s_%d.%d.prs", name, v, i);
+			slprintf(fname,sizeof(fname)-1, "/tmp/%s_%d.%d.prs", name, v, i);
 		} else {
-			slprintf(fname,sizeof(fname), "/tmp/%s.%d.prs", name, i);
+			slprintf(fname,sizeof(fname)-1, "/tmp/%s.%d.prs", name, i);
 		}
 		fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
 		if (fd != -1 || errno != EEXIST) break;

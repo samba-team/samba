@@ -690,7 +690,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
     jn[cnt].volume_name[0] = '\0';
     jn[cnt].referral_count = 1;
   
-    slprintf(alt_path,"\\\\%s\\%s", global_myname, service_name);
+    slprintf(alt_path,sizeof(alt_path)-1"\\\\%s\\%s", global_myname, service_name);
     jn[cnt].referral_l
     */
 

@@ -55,7 +55,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	nt_lm_owf_gen(state->request.data.auth.pass, ntpw, lmpw);
 
-	slprintf(server, sizeof(server), "\\\\%s", server_state.controller);
+	slprintf(server, sizeof(server)-1, "\\\\%s", server_state.controller);
 
 	status = domain_client_validate_backend(server, 
 						name_user, name_domain,

@@ -77,7 +77,7 @@ static BOOL get_id_from_rid(char *domain_name, uint32 rid, int *id,
 
     /* Check if rid is present in database */
 
-    slprintf(keystr, sizeof(keystr), "%s/%d", domain_name, rid);
+    slprintf(keystr, sizeof(keystr)-1, "%s/%d", domain_name, rid);
 	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
     
     key.dptr = keystr;
@@ -116,7 +116,7 @@ static BOOL get_id_from_rid(char *domain_name, uint32 rid, int *id,
 
             /* Store new id */
             
-            slprintf(keystr2, sizeof(keystr2), "%s %d", isgroup ? "GID" :
+            slprintf(keystr2, sizeof(keystr2)-1, "%s %d", isgroup ? "GID" :
                      "UID", *id);
 
             data.dptr = keystr2;
@@ -155,7 +155,7 @@ BOOL get_rid_from_id(int id, uint32 *rid, struct winbindd_domain **domain,
     fstring keystr;
     BOOL result = False;
 
-    slprintf(keystr, sizeof(keystr), "%s %d", isgroup ? "GID" : "UID", id);
+    slprintf(keystr, sizeof(keystr)-1, "%s %d", isgroup ? "GID" : "UID", id);
 
     key.dptr = keystr;
     key.dsize = strlen(keystr) + 1;

@@ -88,7 +88,7 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 		char **lines;
 		pstring syscmd;
 
-		slprintf(syscmd, sizeof(syscmd), "%s %s", dfree_command, path);
+		slprintf(syscmd, sizeof(syscmd)-1, "%s %s", dfree_command, path);
 		DEBUG (3, ("disk_free: Running command %s\n", syscmd));
 
 		lines = file_lines_pload(syscmd, NULL, True);
