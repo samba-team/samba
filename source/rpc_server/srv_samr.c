@@ -734,7 +734,7 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	fstring sid_str;
 	fstring sam_sid_str;
 	struct group *grp;
-
+	
 	ZERO_STRUCT(r_e);
 
 	/* find the policy handle.  open a policy on it. */
@@ -809,6 +809,8 @@ static BOOL api_samr_enum_dom_aliases(pipes_struct *p)
 	SAMR_Q_ENUM_DOM_ALIASES q_e;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
+	
+	ZERO_STRUCT(q_e);
 
 	/* grab the samr open */
 	if(!samr_io_q_enum_dom_aliases("", &q_e, data, 0))
@@ -886,6 +888,7 @@ static BOOL samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u, prs_struct *rd
 			{
 			
 				/* query disp info is for users */
+				ZERO_STRUCT (info1);
 				switch_level = 0x1;
 				init_sam_info_1(&info1, ACB_NORMAL,
 					q_u->start_idx, num_entries, pass);
@@ -897,6 +900,7 @@ static BOOL samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u, prs_struct *rd
 			case 0x2:
 			{
 				/* query disp info is for servers */
+				ZERO_STRUCT (info2);
 				switch_level = 0x2;
 				init_sam_info_2(&info2, ACB_WSTRUST,
 					q_u->start_idx, num_entries, pass);
