@@ -82,7 +82,7 @@ static BOOL open_sockets_inetd(void)
 	/* We will abort gracefully when the client or remote system 
 	   goes away */
 	Client = dup(0);
-	ClientPort = 138;
+	ClientPort = SMB_PORT;
 	
 	/* close our standard file descriptors */
 	close_low_fds();
@@ -218,12 +218,12 @@ max can be %d\n",
 			for(i = 0; i < num_interfaces; i++) {
 				if(FD_ISSET(fd_listenset[i * 2],&lfds)) {
 					s = fd_listenset[i * 2];
-					ClientPort = 138;
+					ClientPort = SMB_PORT;
 					break;
 				}
 				if(FD_ISSET(fd_listenset[i * 2 + 1],&lfds)) {
 					s = fd_listenset[i * 2 + 1];
-					ClientPort = 445;
+					ClientPort = SMB_PORT2;
 					break;
 				}
 			}
@@ -508,7 +508,7 @@ static void usage(char *pname)
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
 	int port = SMB_PORT;
-	int port445 = 445;
+	int port445 = SMB_PORT2;
 	int opt;
 	extern char *optarg;
 	

@@ -2517,7 +2517,7 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 	}
 
 
-	if (port == 0) port = 445;
+	if (port == 0) port = SMB_PORT2;
 
 	cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
 				  port, cli->timeout);
@@ -2527,7 +2527,7 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 		{
 			return False;
 		}
-		port = 139;
+		port = SMB_PORT;
 
 		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
 					  port, cli->timeout);
