@@ -79,7 +79,7 @@ struct in_addr opt_dest_ip;
 
 uint32 get_sec_channel_type(const char *param) 
 {
-	if (param && *param) {
+	if (!(param && *param)) {
 		return get_default_sec_channel();
 	} else {
 		if (strcasecmp(param, "PDC")==0) {
