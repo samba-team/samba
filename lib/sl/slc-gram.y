@@ -101,9 +101,14 @@ struct assignment *a;
 
 
 static void
-ex(struct assignment *a, const char *msg)
+ex(struct assignment *a, const char *fmt, ...)
 {
-	fprintf(stderr, "%s:%d: %s\n", a->name, a->lineno, msg);
+    va_list ap;
+    fprintf(stderr, "%s:%d: ", a->name, a->lineno);
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fprintf(stderr, "\n");
 }
 
 
@@ -348,7 +353,10 @@ make_name(struct assignment *as)
 	return NULL;
     
     type = find(as, "type");
-    asprintf(&s, "%s_%s", lopt->u.value, type->u.value);
+    if(strcmp(type->u.value, "-flag") == 0)
+	asprintf(&s, "%s_flag", lopt->u.value);
+    else
+	asprintf(&s, "%s_%s", lopt->u.value, type->u.value);
     gen_name(s);
     return s;
 }
@@ -370,12 +378,18 @@ gen_options(struct assignment *opt1, const char *name)
 	type = find(tmp->u.assignment, "type");
 	if(strcmp(type->u.value, "string") == 0)
 	    hprint(1, "char *%s;\n", s);
+	else if(strcmp(type->u.value, "strings") == 0)
+	    hprint(1, "struct getarg_strings %s;\n", s);
 	else if(strcmp(type->u.value, "integer") == 0)
 	    hprint(1, "int %s;\n", s);
 	else if(strcmp(type->u.value, "flag") == 0) 
 	    hprint(1, "int %s;\n", s);
-	else
-	    abort();
+	else if(strcmp(type->u.value, "-flag") == 0) 
+	    hprint(1, "int %s;\n", s);
+	else {
+	    ex(type, "unknown type \"%s\"", type->u.value);
+	    exit(1);
+	}
 	free(s);
     }
     hprint(0, "};\n");
@@ -391,6 +405,7 @@ gen_wrapper(struct assignment *as)
     struct assignment *tmp;
     char *f;
     int nargs = 0;
+    int seen_strings = 0;
 
     name = find(as, "name");
     arg = find(as, "argument");
@@ -415,6 +430,7 @@ gen_wrapper(struct assignment *as)
     fprintf(cfile, "{\n");
     if(opt1 != NULL)
 	cprint(1, "struct %s_options opt;\n", name->u.value);
+    cprint(1, "int ret;\n");
     cprint(1, "int optind = 0;\n");
     cprint(1, "struct getargs args[] = {\n");
     for(tmp = find(as, "option"); 
@@ -437,12 +453,18 @@ gen_wrapper(struct assignment *as)
 	    fprintf(cfile, "0, ");
 	if(strcmp(type->u.value, "string") == 0)
 	    fprintf(cfile, "arg_string, ");
+	else if(strcmp(type->u.value, "strings") == 0)
+	    fprintf(cfile, "arg_strings, ");
 	else if(strcmp(type->u.value, "integer") == 0)
 	    fprintf(cfile, "arg_integer, ");
 	else if(strcmp(type->u.value, "flag") == 0)
 	    fprintf(cfile, "arg_flag, ");
-	else
-	    abort();
+	else if(strcmp(type->u.value, "-flag") == 0)
+	    fprintf(cfile, "arg_negative_flag, ");
+	else {
+	    ex(type, "unknown type \"%s\"", type->u.value);
+	    exit(1);
+	}
 	fprintf(cfile, "NULL, ");
 	if(help)
 	    fprintf(cfile, "\"%s\", ", help->u.value);
@@ -471,18 +493,25 @@ gen_wrapper(struct assignment *as)
 		cprint(1, "opt.%s = \"%s\";\n", s, defval->u.value);
 	    else
 		cprint(1, "opt.%s = NULL;\n", s);
+	} else if(strcmp(type->u.value, "strings") == 0) {
+	    seen_strings = 1;
+	    cprint(1, "opt.%s.num_strings = 0;\n", s);
+	    cprint(1, "opt.%s.strings = NULL;\n", s);
 	} else if(strcmp(type->u.value, "integer") == 0) {
 	    if(defval != NULL)
 		cprint(1, "opt.%s = %s;\n", s, defval->u.value);
 	    else
 		cprint(1, "opt.%s = 0;\n", s);
-	} else if(strcmp(type->u.value, "flag") == 0) {
+	} else if(strcmp(type->u.value, "flag") == 0 ||
+		  strcmp(type->u.value, "-flag") == 0) {
 	    if(defval != NULL)
 		cprint(1, "opt.%s = %s;\n", s, defval->u.value);
 	    else
 		cprint(1, "opt.%s = 0;\n", s);
-	} else
-	    abort();
+	} else {
+	    ex(type, "unknown type \"%s\"", type->u.value);
+	    exit(1);
+	}
 	free(s);
     }
 
@@ -529,35 +558,77 @@ gen_wrapper(struct assignment *as)
 	    }
 	}
 	if(min_args != -1 || max_args != -1) {
-	    if(min_args == max_args)
-		cprint(1, "if(argc - optind != %d)\n", 
+	    if(min_args == max_args) {
+		cprint(1, "if(argc - optind != %d) {\n", 
 		       min_args);
-	    else if(max_args != -1 && min_args != -1)
-		cprint(1, "if(argc - optind < %d || argc - optind > %d)\n", 
-		       min_args, max_args);
-	    else if(max_args != -1)
-		cprint(1, "if(argc - optind > %d)\n", 
-		       max_args);
-	    else if(min_args != -1)
-		cprint(1, "if(argc - optind < %d)\n", 
-		       min_args);
-	    cprint(2, "goto usage;\n");
+		cprint(2, "fprintf(stderr, \"Need exactly %u parameters (%%u given).\\n\\n\", argc - optind);\n", min_args);
+		cprint(2, "goto usage;\n");
+		cprint(1, "}\n");
+	    } else {
+		if(max_args != -1) {
+		    cprint(1, "if(argc - optind > %d) {\n", max_args);
+		    cprint(2, "fprintf(stderr, \"Arguments given (%%u) are more than expected (%u).\\n\\n\", argc - optind);\n", max_args);
+		    cprint(2, "goto usage;\n");
+		    cprint(1, "}\n");
+		}
+		if(min_args != -1) {
+		    cprint(1, "if(argc - optind < %d) {\n", min_args);
+		    cprint(2, "fprintf(stderr, \"Arguments given (%%u) are less than expected (%u).\\n\\n\", argc - optind);\n", min_args);
+		    cprint(2, "goto usage;\n");
+		    cprint(1, "}\n");
+		}
+	    }
 	}
     }
     
     cprint(1, "if(help_flag)\n");
     cprint(2, "goto usage;\n");
 
-    cprint(1, "return %s(%s, argc - optind, argv + optind);\n", 
+    cprint(1, "ret = %s(%s, argc - optind, argv + optind);\n", 
 	   function->u.value, 
 	   opt1 ? "&opt": "NULL");
+    if(seen_strings) {
+	if(seen_strings) {
+	    for(tmp = find(as, "option"); 
+		tmp != NULL; 
+		tmp = find_next(tmp, "option")) {
+		char *s;
+		struct assignment *type = find(tmp->u.assignment, "type");
+		
+		s = make_name(tmp->u.assignment);
+		if(strcmp(type->u.value, "strings") == 0) {
+		    cprint(1, "free_getarg_strings (&opt.%s);\n", s);
+		} 
+		free(s);
+	    }
+	}
+    }
+    cprint(1, "return ret;\n");
+
     cprint(0, "usage:\n");
     cprint(1, "arg_printusage (args, %d, \"%s\", \"%s\");\n", nargs, 
 	   name->u.value, arg ? arg->u.value : "");
+    if(seen_strings) {
+	for(tmp = find(as, "option"); 
+	    tmp != NULL; 
+	    tmp = find_next(tmp, "option")) {
+	    char *s;
+	    struct assignment *type = find(tmp->u.assignment, "type");
+
+	    s = make_name(tmp->u.assignment);
+	    if(strcmp(type->u.value, "strings") == 0) {
+		cprint(1, "free_getarg_strings (&opt.%s);\n", s);
+	    } 
+	    free(s);
+	}
+    }
     cprint(1, "return 0;\n");
     cprint(0, "}\n");
     cprint(0, "\n");
 }
+
+char cname[PATH_MAX];
+char hname[PATH_MAX];
 
 static void
 gen(struct assignment *as)
@@ -566,7 +637,7 @@ gen(struct assignment *as)
     cprint(0, "#include <stdio.h>\n");
     cprint(0, "#include <getarg.h>\n");
     cprint(0, "#include <sl.h>\n");
-    cprint(0, "#include \"kadmin-commands.h\"\n\n");
+    cprint(0, "#include \"%s\"\n\n", hname);
 
     hprint(0, "#include <stdio.h>\n");
     hprint(0, "#include <sl.h>\n");
@@ -603,8 +674,6 @@ usage(int code)
 int
 main(int argc, char **argv)
 {
-    char cname[PATH_MAX];
-    char hname[PATH_MAX];
     char *p;
 
     int optind = 0;
