@@ -84,10 +84,16 @@ doit(char *principal, int mod)
     if(mod == 0 || buf[0] == 'y'){
 	krb5_data salt;
 	des_read_pw_string(buf, sizeof(buf), "Password:", 1);
-	memset(&salt, 0, sizeof(salt));
-	krb5_get_salt(ent.principal, &salt);
-	memset(&ent.keyblock, 0, sizeof(ent.keyblock));
-	krb5_string_to_key(buf, &salt, &ent.keyblock);
+	if(strcasecmp(buf, "random") == 0)
+	    krb5_generate_random_keyblock(context,
+					  KEYTYPE_DES,
+					  &ent.keyblock);
+	else{
+	    memset(&salt, 0, sizeof(salt));
+	    krb5_get_salt(ent.principal, &salt);
+	    memset(&ent.keyblock, 0, sizeof(ent.keyblock));
+	    krb5_string_to_key(buf, &salt, &ent.keyblock);
+	}
 	ent.kvno++;
     }
     ent.last_change = time(NULL);
