@@ -89,7 +89,11 @@ anonymous credentials not implemented
 
 ** lib/hdb
 
-implement encryption of database entries and master keys.
+fix encryption of database entries and master keys.
+
+fix locking
+
+fix atomic rename of database
 
 ** lib/krb5
 

@@ -1,5 +1,7 @@
 Sat Aug  9 02:21:46 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kdc/hprop*.c: Add database propagation programs.
+
 	* kdc/connect.c: Max request size.
 
 Sat Aug  9 00:47:28 1997  Assar Westerlund  <assar@sics.se>
