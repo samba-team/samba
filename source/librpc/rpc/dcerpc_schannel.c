@@ -279,8 +279,12 @@ static NTSTATUS dcerpc_schannel_start(struct gensec_security *gensec_security)
 static NTSTATUS dcerpc_schannel_server_start(struct gensec_security *gensec_security) 
 {
 	NTSTATUS status;
+	struct dcerpc_schannel_state *dce_schan_state;
 
 	status = dcerpc_schannel_start(gensec_security);
+
+	dce_schan_state = gensec_security->private_data;
+	dce_schan_state->schannel_state = NULL;
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
