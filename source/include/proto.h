@@ -2915,6 +2915,7 @@ BOOL prs_append_data(prs_struct *dst, char *src, uint32 len);
 void prs_set_endian_data(prs_struct *ps, BOOL endian);
 BOOL prs_align(prs_struct *ps);
 BOOL prs_align_uint16(prs_struct *ps);
+BOOL prs_align_uint64(prs_struct *ps);
 BOOL prs_align_needed(prs_struct *ps, uint32 needed);
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
 void prs_switch_type(prs_struct *ps, BOOL io);
