@@ -969,10 +969,10 @@ int net_rpc_help(int argc, const char **argv)
 	struct functable func[] = {
 		{"join", rpc_join_usage},
 		{"user", rpc_user_usage},
-		//{"changetrustpw", rpc_changetrustpw_usage},
+		/*{"changetrustpw", rpc_changetrustpw_usage}, */
 		{"trustdom", rpc_trustdom_usage},
-		//{"abortshutdown", rpc_shutdown_abort_usage},
-		//{"shutdown", rpc_shutdown_usage},
+		/*{"abortshutdown", rpc_shutdown_abort_usage},*/
+		/*{"shutdown", rpc_shutdown_usage}, */
 		{NULL, NULL}
 	};
 
