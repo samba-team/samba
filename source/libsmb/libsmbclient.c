@@ -667,9 +667,18 @@ ssize_t smbc_read(int fd, void *buf, size_t count)
 
   }
 
+  /* Check that the buffer exists ... */
+
+  if (buf == NULL) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+
   fe = smbc_file_table[fd - smbc_start_fd];
 
-  if (!fe->file) {
+  if (!fe || !fe->file) {
 
     errno = EBADF;
     return -1;
@@ -727,6 +736,13 @@ ssize_t smbc_write(int fd, void *buf, size_t count)
 
   fe = smbc_file_table[fd - smbc_start_fd];
 
+  if (!fe || !fe->file) {
+
+    errno = EBADF;
+    return -1;
+
+  }
+
   ret = cli_write(&fe->srv->cli, fe->cli_fd, 0, buf, fe->offset, count);
 
   if (ret <= 0) {
@@ -764,6 +780,13 @@ int smbc_close(int fd)
   }
 
   fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (!fe) {
+
+    errno = EBADF;
+    return -1;
+
+  }
 
   if (!fe->file) {
 
@@ -966,6 +989,13 @@ off_t smbc_lseek(int fd, off_t offset, int whence)
   }
 
   fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (!fe) {
+
+    errno = EBADF;
+    return -1;
+
+  }
 
   if (!fe->file) {
 
@@ -1207,6 +1237,13 @@ int smbc_fstat(int fd, struct stat *st)
   }
 
   fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (!fe) {
+
+    errno = EBADF;
+    return -1;
+
+  }
 
   if (!fe->file) {
 
@@ -1620,7 +1657,7 @@ int smbc_opendir(const char *fname)
 	}
 	else {
 
-	  errno = EINVAL;
+	  errno = ENODEV;   /* Neither the workgroup nor server exists */
 	  if (smbc_file_table[slot]) free(smbc_file_table[slot]);
 	  smbc_file_table[slot] = NULL;
 	  return -1;
@@ -1695,7 +1732,7 @@ int smbc_closedir(int fd)
 
   if (!fe) {
 
-    errno = ENOENT;  /* FIXME: Is this correct */
+    errno = EBADF;  
     return -1;
 
   }
@@ -1738,6 +1775,13 @@ struct smbc_dirent *smbc_readdir(unsigned int fd)
   }
 
   fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (!fe) {
+
+    errno = EBADF;
+    return NULL;
+
+  }
 
   if (fe->file != False) { /* FIXME, should be dir, perhaps */
 
@@ -1801,6 +1845,13 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
   }
 
   fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (!fe) {
+
+    errno = EBADF;
+    return -1;
+
+  }
 
   if (fe->file != False) { /* FIXME, should be dir, perhaps */
 
@@ -2026,6 +2077,13 @@ off_t smbc_telldir(int fd)
   }
 
   fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (!fe) {
+
+    errno = EBADF;
+    return -1;
+
+  }
 
   if (fe->file != False) { /* FIXME, should be dir, perhaps */
 
