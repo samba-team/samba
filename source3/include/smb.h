@@ -865,6 +865,7 @@ struct bitmap {
 #define FLAG_HIDE  2 /* options that should be hidden in SWAT */
 #define FLAG_PRINT 4 /* printing options */
 #define FLAG_GLOBAL 8 /* local options that should be globally settable in SWAT */
+#define FLAG_DEPRECATED 16 /* options that should no longer be used */
 
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
