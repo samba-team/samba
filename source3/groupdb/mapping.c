@@ -542,19 +542,6 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	return (result == 0 ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED);
 }
 
-static BOOL add_sid_to_array(DOM_SID sid, DOM_SID **sids, int *num)
-{
-	*sids = Realloc(*sids, ((*num)+1) * sizeof(DOM_SID));
-
-	if (*sids == NULL)
-		return False;
-
-	sid_copy(&((*sids)[*num]), &sid);
-	*num += 1;
-
-	return True;
-}
-
 static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, int *num)
 {
 	GROUP_MAP map;
@@ -599,7 +586,9 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, int *num)
 		if (!string_to_sid(&sid, string_sid))
 			continue;
 
-		if (!add_sid_to_array(sid, sids, num))
+		add_sid_to_array(sid, sids, num);
+
+		if (sids == NULL)
 			return NT_STATUS_NO_MEMORY;
 	}
 
@@ -713,8 +702,16 @@ static NTSTATUS alias_memberships(const DOM_SID *sid, DOM_SID **sids, int *num)
 		return NT_STATUS_NO_MEMORY;
 
 	for (i=0; i<num_maps; i++) {
-		if (is_foreign_alias_member(sid, &maps[i].sid))
+
+		if (is_foreign_alias_member(sid, &maps[i].sid)) {
+
 			add_sid_to_array(maps[i].sid, sids, num);
+
+			if (sids == NULL) {
+				SAFE_FREE(maps);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
 	}
 	SAFE_FREE(maps);
 				
@@ -722,8 +719,15 @@ static NTSTATUS alias_memberships(const DOM_SID *sid, DOM_SID **sids, int *num)
 		return NT_STATUS_NO_MEMORY;
 
 	for (i=0; i<num_maps; i++) {
-		if (is_foreign_alias_member(sid, &maps[i].sid))
+		if (is_foreign_alias_member(sid, &maps[i].sid)) {
+
 			add_sid_to_array(maps[i].sid, sids, num);
+
+			if (sids == NULL) {
+				SAFE_FREE(maps);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
 	}
 	SAFE_FREE(maps);
 				
@@ -1054,6 +1058,9 @@ BOOL get_sid_list_of_group(gid_t gid, DOM_SID **sids, int *num_sids)
 
 		for (i=0; i<num_members; i++) {
 			add_sid_to_array(members[i], sids, num_sids);
+
+			if (sids == NULL)
+				return False;
 		}
 	}
 
