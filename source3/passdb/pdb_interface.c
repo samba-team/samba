@@ -52,9 +52,10 @@ static BOOL context_setsampwent(struct pdb_context *context, BOOL update)
 		return True;
 	}
 
-	while(!(context->pwent_methods->setsampwent(context->pwent_methods, update))){
+	while (!(context->pwent_methods->setsampwent(context->pwent_methods, update))) {
 		context->pwent_methods = context->pwent_methods->next;
-		if(context->pwent_methods == NULL)return False;
+		if (context->pwent_methods == NULL) 
+			return False;
 	}
 	return True;
 }
@@ -93,7 +94,7 @@ static BOOL context_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
 			return False;
 	
 		if (!context->pwent_methods->setsampwent){
-			DEBUG(5, ("invalid context->pwent_methods->setsampwent\n"));
+			DEBUG(5, ("next backend does not implment setsampwent\n"));
 			return False;
 		}
 
@@ -190,7 +191,10 @@ static BOOL context_delete_sam_account(struct pdb_context *context, SAM_ACCOUNT 
 	if (!sam_acct->methods){
 		pdb_selected = context->pdb_methods;
 		/* There's no passdb backend specified for this account.
-		 * Try to delete it in every passdb available */
+		 * Try to delete it in every passdb available 
+		 * Needed to delete accounts in smbpasswd that are not
+		 * in /etc/passwd.
+		 */
 		while (pdb_selected){
 			if (pdb_selected->delete_sam_account && pdb_selected->delete_sam_account(pdb_selected, sam_acct)){
 				return True;
@@ -207,6 +211,11 @@ static BOOL context_delete_sam_account(struct pdb_context *context, SAM_ACCOUNT 
 	
 	return sam_acct->methods->delete_sam_account(sam_acct->methods, sam_acct);
 }
+
+/******************************************************************
+  Free and cleanup a pdb context, any associated data and anything
+  that the attached modules might have associated.
+ *******************************************************************/
 
 static void free_pdb_context(struct pdb_context **context)
 {
@@ -252,22 +261,17 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 			if (NT_STATUS_IS_OK(nt_status 
 					    = builtin_pdb_init_functions[i].init(context, methods, module_location))) {
 				DEBUG(5,("pdb backend %s has a valid init\n", selected));
+				return nt_status;
 			} else {
 				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
+				return nt_status;
 			}
 			break;
 		}
 	}
 
-	if (!*methods) {
-		DEBUG(0,("failed to select passdb backed!\n"));
-		if (NT_STATUS_IS_OK(nt_status)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		} else {
-			return nt_status;
-		}
-	}
-	return NT_STATUS_OK;
+	/* No such backend found */
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 /******************************************************************
@@ -304,9 +308,6 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_update_sam_account = context_update_sam_account;
 	(*context)->pdb_delete_sam_account = context_delete_sam_account;
 
-	(*context)->pdb_methods = NULL;
-	(*context)->pwent_methods = NULL;
-
 	(*context)->free_fn = free_pdb_context;
 
 	return NT_STATUS_OK;
@@ -323,14 +324,14 @@ NTSTATUS make_pdb_context_list(struct pdb_context **context, char **selected)
 	struct pdb_methods *curmethods, *tmpmethods;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 
-	if(!NT_STATUS_IS_OK(nt_status = make_pdb_context(context))){
+	if (!NT_STATUS_IS_OK(nt_status = make_pdb_context(context))) {
 		return nt_status;
 	}
 
-	while(selected[i]){
+	while (selected[i]){
 		/* Try to initialise pdb */
 		DEBUG(5,("Trying to load: %s\n", selected[i]));
-		if(!NT_STATUS_IS_OK(nt_status = make_pdb_methods_name(&curmethods, *context, selected[i]))){
+		if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods_name(&curmethods, *context, selected[i]))) {
 			DEBUG(5, ("Loading %s failed!\n", selected[i]));
 			SAFE_FREE(curmethods);
 			free_pdb_context(context);
