@@ -4,6 +4,8 @@ dn: @INDEXLIST
 @IDXATTR: objectSid
 @IDXATTR: objectClass
 @IDXATTR: member
+@IDXATTR: unixID
+@IDXATTR: unixName
 
 dn: @ATTRIBUTES
 realm: CASE_INSENSITIVE
