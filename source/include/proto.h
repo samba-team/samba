@@ -2348,7 +2348,7 @@ void pcap_printer_fn(void (*fn)(char *, char *));
 
 /*The following definitions come from  printing/printfsp.c  */
 
-files_struct *print_fsp_open(connection_struct *conn);
+files_struct *print_fsp_open(connection_struct *conn, char *fname);
 void print_fsp_end(files_struct *fsp, BOOL normal_close);
 
 /*The following definitions come from  printing/print_generic.c  */

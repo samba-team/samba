@@ -639,7 +639,7 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 			of the passed parameters are ignored */
 		*Access = DOS_OPEN_WRONLY;
 		*action = FILE_WAS_CREATED;
-		return print_fsp_open(conn);
+		return print_fsp_open(conn, fname);
 	}
 
 	fsp = file_new(conn);
