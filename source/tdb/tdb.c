@@ -1474,6 +1474,7 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 				 "failed to truncate %s: %s\n",
 				 name, strerror(errno)));
 			goto fail; /* errno set by ftruncate */
+		}
 	}
 
 	if (read(tdb->fd, &tdb->header, sizeof(tdb->header)) != sizeof(tdb->header)
