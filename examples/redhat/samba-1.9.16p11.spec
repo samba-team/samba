@@ -34,15 +34,30 @@ make RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
 
 %install
 cd source
-make install
 cd ..
+for i in addtosmbpass mksmbpasswd.sh nmblookup smbclient smbpasswd smbrun smbstatus smbtar testparm testprn
+do
+	install -m755 -g 0 -o 0 source/$i /usr/bin
+done
+for i in smbd nmbd
+do
+	install -m755 -g 0 -o 0 source/$i /usr/sbin
+done
+for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprn.1
+do
+	install -m644 -g 0 -o 0 docs/$i /usr/man/man1
+done
+install -m644 -g 0 -o 0 docs/smb.conf.5 /usr/man/man5
+install -m644 -g 0 -o 0 docs/samba.7 /usr/man/man7
+install -m644 -g 0 -o 0 docs/smbd.8 /usr/man/man8
+install -m644 -g 0 -o 0 docs/nmbd.8 /usr/man/man8
 install -m644 examples/simple/smb.conf /etc/smb.conf.sampl
 install -m644 examples/redhat/smb.conf /etc/smb.conf
 install -m755 examples/redhat/smb.init /etc/rc.d/init.d/smb
-ln -sf ../init.d/smb /etc/rc.d/rc3.d/S91smb
-ln -sf ../init.d/smb /etc/rc.d/rc0.d/K35smb
-ln -sf ../init.d/smb /etc/rc.d/rc6.d/K35smb
-ln -sf ../init.d/smb /etc/rc.d/rc1.d/K35smb
+ln -sf /etc/rc.d/init.d/smb /etc/rc.d/rc3.d/S91smb
+ln -sf /etc/rc.d/init.d/smb /etc/rc.d/rc0.d/K35smb
+ln -sf /etc/rc.d/init.d/smb /etc/rc.d/rc6.d/K35smb
+ln -sf /etc/rc.d/init.d/smb /etc/rc.d/rc1.d/K35smb
 mkdir -p /home/samba
 mkdir -p /var/lock/samba
 chown root.nobody /home/samba
@@ -73,6 +88,8 @@ fi
 %doc docs/samba.faq docs/samba.lsm docs/wfw_slip.htm 
 %doc examples
 /usr/sbin/smbd
+/usr/bin/addtosmbpass
+/usr/bin/mksmbpasswd.sh
 /usr/bin/smbclient
 /usr/sbin/nmbd
 /usr/bin/testparm
