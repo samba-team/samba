@@ -78,7 +78,8 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 	int port;
 	int version, rc;
 	int tls;
-	struct passwd* pass = sys_getpwuid(geteuid());
+	uid_t uid = geteuid();
+	struct passwd* pass;
 	
 	/*
 	 * using sys_getpwnam() here since I'm assuming that the 
@@ -86,15 +87,15 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 	 * winbind not in the picture....
 	 */
 	
-	if (!pass) {
+	if ( (pass=sys_getpwuid(uid)) == NULL ) {
 		DEBUG(0,("ldap_open_connection: Can't determine user of running process!\n"));
 		return False;
 	}
 
 	/* check that the user is in the domain admin group for connecting */
 
-	if (!user_in_list(pass->pw_name, lp_domain_admin_group())) {
-		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not a member of domain admin group..\n"));
+	if ( (uid == 0) || !user_in_list(pass->pw_name, lp_domain_admin_group()) ) {
+		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not root or a member of domain admin group..\n"));
 		return False;
 	}
 
