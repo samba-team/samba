@@ -240,5 +240,9 @@ const struct socket_ops *socket_getops_byname(const char *name, enum socket_type
 		return socket_ipv4_ops();
 	}
 
+	if (strequal("unix", name)) {
+		return socket_ipv4_ops();
+	}
+
 	return NULL;
 }
