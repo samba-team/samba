@@ -131,7 +131,7 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 		return NULL;
 	}
 
-	kernel_flags = 0;
+	kernel_flags = DN_CREATE; /* always notify on file creation */
 	if (flags & FILE_NOTIFY_CHANGE_FILE_NAME)   kernel_flags |= DN_RENAME|DN_DELETE;
 	if (flags & FILE_NOTIFY_CHANGE_DIR_NAME)    kernel_flags |= DN_RENAME|DN_DELETE;
 	if (flags & FILE_NOTIFY_CHANGE_ATTRIBUTES)  kernel_flags |= DN_MODIFY;
@@ -145,15 +145,10 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 		return NULL;
 	}
 
-	if (fcntl(fd, F_SETOWN, sys_getpid()) == -1) {
-		DEBUG(3,("Failed to set owner for change notify\n"));
-		return NULL;
-	}
-
 	data.directory_handle = fd;
 
-	DEBUG(3,("kernel change notify on %s (flags=0x%x) fd=%d\n", 
-		 path, (int)kernel_flags, fd));
+	DEBUG(3,("kernel change notify on %s (ntflags=0x%x flags=0x%x) fd=%d\n", 
+		 path, (int)flags, (int)kernel_flags, fd));
 
 	return (void *)memdup(&data, sizeof(data));
 }
