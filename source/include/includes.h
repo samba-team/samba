@@ -494,6 +494,8 @@ extern int errno;
 
 #include "nterr.h"
 
+#include "debugparse.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
@@ -680,7 +682,7 @@ int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
 
-#if (defined(HAVE_CRYPT) && !defined(HAVE_CRYPT_DECL))
+#if (defined(HAVE_CRYPT) && !defined(HAVE_CRYPT_DECL) && !defined(KRB4_AUTH))
 /* stupid glibc */
 int crypt(const char *key, const char *salt);
 #endif

@@ -35,6 +35,12 @@
  * -------------------------------------------------------------------------- **
  *
  * $Log: debugparse.h,v $
+ * Revision 1.2  1998/10/28 17:51:48  jra
+ * Quick fixes to fix the broken tree. Needed for my morning compiles.
+ * Chris - feel free to fix these things differently if these fixes don't
+ * work for you.
+ * Jeremy.
+ *
  * Revision 1.1  1998/10/26 23:21:37  crh
  * Here is the simple debug parser and the debug2html converter.  Still to do:
  *
@@ -49,8 +55,6 @@
  *
  * ========================================================================== **
  */
-
-#include "includes.h"
 
 /* -------------------------------------------------------------------------- **
  * These are the tokens returned by dbg_char2token().

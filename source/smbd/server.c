@@ -486,6 +486,7 @@ static void usage(char *pname)
 	printf("\t-P                    passive only\n");
 	printf("\t-a                    append to log file (default)\n");
 	printf("\t-o                    overwrite log file, don't append\n");
+	printf("\t-i scope              NetBIOS scope to use (default none)\n");
 	printf("\n");
 }
 

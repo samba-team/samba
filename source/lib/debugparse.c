@@ -29,6 +29,12 @@
  * -------------------------------------------------------------------------- **
  *
  * $Log: debugparse.c,v $
+ * Revision 1.2  1998/10/28 17:51:49  jra
+ * Quick fixes to fix the broken tree. Needed for my morning compiles.
+ * Chris - feel free to fix these things differently if these fixes don't
+ * work for you.
+ * Jeremy.
+ *
  * Revision 1.1  1998/10/26 23:21:37  crh
  * Here is the simple debug parser and the debug2html converter.  Still to do:
  *
@@ -44,7 +50,7 @@
  * ========================================================================== **
  */
 
-#include "debugparse.h"
+#include "includes.h"
 
 /* -------------------------------------------------------------------------- **
  * Constants...
@@ -312,7 +318,7 @@ void dbg_test( void )
  * This simple main line can be uncommented and used to test the parser.
  */
 /*
-int main( void )
+ int main( int argc, char **argv)
   {
   dbg_test();
   return( 0 );

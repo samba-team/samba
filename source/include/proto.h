@@ -88,7 +88,6 @@ BOOL dbghdr( int level, char *file, char *func, int line );
 
 char *dbg_token2string( dbg_Token tok );
 void dbg_test( void );
-int main( void );
 
 /*The following definitions come from  lib/fault.c  */
 
