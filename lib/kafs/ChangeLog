@@ -1,3 +1,8 @@
+2003-09-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afskrb5.c (krb5_afslog_uid_home): be even more friendly to the
+	user and fetch context and id ourself
+	
 2003-09-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afskrb5.c (afslog_uid_int): just belive that realm hint the user

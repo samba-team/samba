@@ -1,3 +1,7 @@
+2003-09-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* xnlock.c (verify_krb5): set mcred.client too
+	
 2003-08-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: fix automake conditional foo
