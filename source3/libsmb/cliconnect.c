@@ -269,8 +269,13 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		}
 	}
 
-	slprintf(fullshare, sizeof(fullshare)-1,
-		 "\\\\%s\\%s", cli->desthost, share);
+	if (cli->port == 445) {
+		slprintf(fullshare, sizeof(fullshare)-1,
+			 "%s", share);
+	} else {
+		slprintf(fullshare, sizeof(fullshare)-1,
+			 "\\\\%s\\%s", "foo", share);
+	}
 
 	set_message(cli->outbuf,4, 0, True);
 	CVAL(cli->outbuf,smb_com) = SMBtconX;
@@ -474,6 +479,9 @@ BOOL cli_session_request(struct cli_state *cli,
 	int len = 4;
 	extern pstring user_socket_options;
 
+	/* 445 doesn't have session request */
+	if (cli->port == 445) return True;
+
 	/* send a session request (RFC 1002) */
 
 	memcpy(&(cli->calling), calling, sizeof(*calling));
@@ -578,13 +586,19 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 		cli->dest_ip = *ip;
 	}
 
-        if (cli->port == 0) cli->port = 139;  /* Set to default */
-
 	if (getenv("LIBSMB_PROG")) {
 		cli->fd = sock_exec(getenv("LIBSMB_PROG"));
 	} else {
+		/* try 445 first, then 139 */
+		int port = cli->port?cli->port:445;
 		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
-					  cli->port, cli->timeout);
+					  port, cli->timeout);
+		if (cli->fd == -1 && cli->port == 0) {
+			port = 139;
+			cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
+						  port, cli->timeout);
+		}
+		if (cli->fd != -1) cli->port = port;
 	}
 	if (cli->fd == -1)
 		return False;
