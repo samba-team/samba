@@ -17,6 +17,8 @@ ac_help="$ac_help
 ac_help="$ac_help
   --enable-encryption       configure with encryption"
 ac_help="$ac_help
+  --with-athena=path        location of athena tree"
+ac_help="$ac_help
   --enable-default-im[=ARG] default initial banner"
 
 # Initialize some variables set by options.
@@ -687,6 +689,74 @@ echo "$ac_t""$telnet_cv_opt_encryption" 1>&6
 
 
 
+
+#
+# locate kerberos libraries
+#
+
+echo $ac_n "checking for kerberos tree""... $ac_c" 1>&6
+telnet_athena_default=yes
+# Check whether --with-athena or --without-athena was given.
+withval="$with_athena"
+if test -n "$withval"; then
+  
+case "$withval" in
+yes)
+telnet_athena_default="/usr/athena"
+;;
+no)
+telnet_athena_default="no"
+;;
+*)
+telnet_athena_default="$withval"
+;;
+esac
+
+fi
+
+
+if test "$telnet_athena_default" = yes; then
+
+libtop='../../..'
+KRBLIBPATH=""
+LIBKRB='-L$(libtop)/lib/krb -lkrb'
+LIBDES='-L$(libtop)/lib/des -ldes'
+LIBKAFS='-L$(libtop)/lib/kafs -lkafs'
+LIBCOM_ERR='-L$(libtop)/util/et -lcom_err'
+KRBINCPATH='-I$(libtop)/include -I$(srcdir)/$(libtop)/include'
+telnet_msg="default"
+
+elif test "$telnet_athena_default" = no; then
+
+if test "$telnet_cv_opt_encryption" = yes -o "$telnet_cv_opt_authentication" = yes; then
+
+{ echo "configure: error: Kerberos libraries are needed for authentication and encryption" 1>&2; exit 1; }
+
+fi
+
+else
+
+libtop="$telnet_athena_default"
+KRBLIBPATH='-L$(libtop)/lib'
+LIBKRB="-lkrb"
+LIBDES="-ldes"
+LIBKAFS="-lkafs"
+LIBCOM_ERR="-lcom_err"
+KRBINCPATH='-I$(libtop)/include'
+telnet_msg="$telnet_athena_default"
+
+fi
+
+
+
+
+
+
+
+
+
+echo "$ac_t""$telnet_msg" 1>&6
+
 #
 # default im
 #
@@ -775,7 +845,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 779 "configure"
+#line 849 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -818,14 +888,14 @@ fi
 done
 
 
-for ac_func in cgetent uname vfork vhangup
+for ac_func in cgetent uname vfork vhangup frevoke revoke setsid
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 829 "configure"
+#line 899 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -877,7 +947,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 881 "configure"
+#line 951 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -932,7 +1002,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-l$lib  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 936 "configure"
+#line 1006 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -975,7 +1045,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-l$lib  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 979 "configure"
+#line 1049 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1017,7 +1087,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1021 "configure"
+#line 1091 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1069,7 +1139,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lsocket  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1073 "configure"
+#line 1143 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1109,7 +1179,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1113 "configure"
+#line 1183 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1161,7 +1231,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lnsl  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1165 "configure"
+#line 1235 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1202,7 +1272,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lutil  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1206 "configure"
+#line 1276 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1252,7 +1322,7 @@ else
   # On the NeXT, cc -E runs the code through the compiler's parser,
   # not just through cpp.
   cat > conftest.$ac_ext <<EOF
-#line 1256 "configure"
+#line 1326 "configure"
 #include "confdefs.h"
 #include <assert.h>
 Syntax Error
@@ -1266,7 +1336,7 @@ else
   rm -rf conftest*
   CPP="${CC-cc} -E -traditional-cpp"
   cat > conftest.$ac_ext <<EOF
-#line 1270 "configure"
+#line 1340 "configure"
 #include "confdefs.h"
 #include <assert.h>
 Syntax Error
@@ -1291,7 +1361,7 @@ else
 fi
 echo "$ac_t""$CPP" 1>&6
 
-for ac_hdr in termios.h termio.h sys/select.h sys/resource.h utmpx.h sac.h
+for ac_hdr in termios.h termio.h sys/select.h sys/resource.h sys/tty.h utmpx.h
 do
 ac_safe=`echo "$ac_hdr" | tr './\055' '___'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -1299,7 +1369,7 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1311 "configure"
+#line 1373 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
@@ -1328,12 +1398,47 @@ fi
 done
 
 
-if test "$ac_cv_header_sac_h" = yes ; then
+#
+# Simple test for streamspty, based on the existance of <sys/sac.h>
+#
+
+
+echo $ac_n "checking for streamspty""... $ac_c" 1>&6
+
+if eval "test \"`echo '$''{'krb_cv_sys_streamspty'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  cat > conftest.$ac_ext <<EOF
+#line 1413 "configure"
+#include "confdefs.h"
+#include <sac.h>
+EOF
+eval "$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+ac_err=`grep -v '^ *+' conftest.out`
+if test -z "$ac_err"; then
+  rm -rf conftest*
+  
+krb_cv_sys_streamspty=yes
+
+else
+  echo "$ac_err" >&5
+  rm -rf conftest*
+  
+krb_cv_sys_streamspty=no
+
+fi
+rm -f conftest*
+fi
+
+
+if test "$krb_cv_sys_streamspty" = yes; then
 	cat >> confdefs.h <<\EOF
 #define STREAMSPTY 1
 EOF
 
 fi
+
+echo "$ac_t""$krb_cv_sys_streamspty" 1>&6
 
 
 ###
@@ -1449,6 +1554,13 @@ s%@AUTHENTICATION@%$AUTHENTICATION%g
 s%@KRB4@%$KRB4%g
 s%@ENCRYPTION@%$ENCRYPTION%g
 s%@DES_ENCRYPTION@%$DES_ENCRYPTION%g
+s%@libtop@%$libtop%g
+s%@KRBINCPATH@%$KRBINCPATH%g
+s%@KRBLIBPATH@%$KRBLIBPATH%g
+s%@LIBKRB@%$LIBKRB%g
+s%@LIBDES@%$LIBDES%g
+s%@LIBKAFS@%$LIBKAFS%g
+s%@LIBCOM_ERR@%$LIBCOM_ERR%g
 s%@USE_IM@%$USE_IM%g
 s%@DIAGNOSTICS@%$DIAGNOSTICS%g
 s%@KLUDGELINEMODE@%$KLUDGELINEMODE%g

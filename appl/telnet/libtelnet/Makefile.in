@@ -31,9 +31,11 @@ OBJECTS=auth.o encrypt.o genget.o \
 
 all: libtelnet.a
 
+libtop = @libtop@
+
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) \
-	-I../../../include -I$(srcdir)/../../../include -I.. -I$(srcdir)/.. $<
+	@KRBINCPATH@ -I.. -I$(srcdir)/.. $<
 
 
 libtelnet.a: $(OBJECTS)

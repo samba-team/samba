@@ -54,8 +54,17 @@
 /* Define if you have the cgetent function.  */
 #undef HAVE_CGETENT
 
+/* Define if you have the frevoke function.  */
+#undef HAVE_FREVOKE
+
 /* Define if you have the gethostbyname function.  */
 #undef HAVE_GETHOSTBYNAME
+
+/* Define if you have the revoke function.  */
+#undef HAVE_REVOKE
+
+/* Define if you have the setsid function.  */
+#undef HAVE_SETSID
 
 /* Define if you have the setupterm function.  */
 #undef HAVE_SETUPTERM
@@ -75,14 +84,14 @@
 /* Define if you have the vhangup function.  */
 #undef HAVE_VHANGUP
 
-/* Define if you have the <sac.h> header file.  */
-#undef HAVE_SAC_H
-
 /* Define if you have the <sys/resource.h> header file.  */
 #undef HAVE_SYS_RESOURCE_H
 
 /* Define if you have the <sys/select.h> header file.  */
 #undef HAVE_SYS_SELECT_H
+
+/* Define if you have the <sys/tty.h> header file.  */
+#undef HAVE_SYS_TTY_H
 
 /* Define if you have the <termio.h> header file.  */
 #undef HAVE_TERMIO_H
