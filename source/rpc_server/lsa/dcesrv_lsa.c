@@ -40,6 +40,7 @@ enum lsa_handle {
   state associated with a lsa_OpenPolicy() operation
 */
 struct lsa_policy_state {
+	struct dcesrv_handle *handle;
 	void *sam_ctx;
 	struct sidmap_context *sidmap;
 	uint32_t access_mask;
@@ -272,6 +273,7 @@ static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	handle->destroy = lsa_Policy_destroy;
 
 	state->access_mask = r->in.access_mask;
+	state->handle = handle;
 	*r->out.handle = handle->wire_handle;
 
 	/* note that we have completely ignored the attr element of
@@ -878,12 +880,157 @@ static NTSTATUS lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 
 
 /* 
+  helper for lsa_AddAccountRights and lsa_RemoveAccountRights
+*/
+static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call, 
+					   TALLOC_CTX *mem_ctx,
+					   struct lsa_policy_state *state,
+					   int ldb_flag,
+					   const struct dom_sid *sid,
+					   const struct lsa_RightSet *rights)
+{
+	const char *sidstr;
+	struct ldb_message msg;
+	struct ldb_message_element el;
+	int i, ret;
+	const char *dn;
+
+	sidstr = dom_sid_string(mem_ctx, sid);
+	if (sidstr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dn = samdb_search_string(state->sam_ctx, mem_ctx, NULL, "dn", 
+				 "objectSid=%s", sidstr);
+	if (dn == NULL) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	msg.dn = talloc_strdup(mem_ctx, dn);
+	if (msg.dn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	msg.num_elements = 1;
+	msg.elements = &el;
+	el.flags = ldb_flag;
+	el.name = talloc_strdup(mem_ctx, "privilege");
+	if (el.name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	el.num_values = rights->count;
+	el.values = talloc_array_p(mem_ctx, struct ldb_val, el.num_values);
+	if (el.values == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<el.num_values;i++) {
+		if (sec_privilege_id(rights->names[i].string) == -1) {
+			return NT_STATUS_NO_SUCH_PRIVILEGE;
+		}
+		el.values[i].length = strlen(rights->names[i].string);
+		el.values[i].data = talloc_strdup(mem_ctx, rights->names[i].string);
+		if (el.values[i].data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	ret = samdb_modify(state->sam_ctx, mem_ctx, &msg);
+	if (ret != 0) {
+		if (ldb_flag == LDB_FLAG_MOD_DELETE) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		return NT_STATUS_UNEXPECTED_IO_ERROR;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+/* 
+  lsa_EnumAccountRights 
+*/
+static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call, 
+				      TALLOC_CTX *mem_ctx,
+				      struct lsa_EnumAccountRights *r)
+{
+	struct dcesrv_handle *h;
+	struct lsa_policy_state *state;
+	int ret, i;
+	struct ldb_message **res;
+	const char * const attrs[] = { "privilege", NULL};
+	const char *sidstr;
+	struct ldb_message_element *el;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	sidstr = dom_sid_string(mem_ctx, r->in.sid);
+	if (sidstr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
+			   "objectSid=%s", sidstr);
+	if (ret != 1) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	el = ldb_msg_find_element(res[0], "privilege");
+	if (el == NULL || el->num_values == 0) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	r->out.rights->count = el->num_values;
+	r->out.rights->names = talloc_array_p(r->out.rights, 
+					      struct lsa_String, r->out.rights->count);
+	if (r->out.rights->names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0;i<el->num_values;i++) {
+		r->out.rights->names[i].string = el->values[i].data;
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+
+
+/* 
   lsa_AddPrivilegesToAccount
 */
 static NTSTATUS lsa_AddPrivilegesToAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_AddPrivilegesToAccount *r)
+					   struct lsa_AddPrivilegesToAccount *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct lsa_RightSet rights;
+	struct dcesrv_handle *h;
+	struct lsa_account_state *astate;
+	int i;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_ACCOUNT);
+
+	astate = h->data;
+
+	rights.count = r->in.privs->count;
+	rights.names = talloc_array_p(mem_ctx, struct lsa_String, rights.count);
+	if (rights.names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<rights.count;i++) {
+		int id = r->in.privs->set[i].luid.low;
+		if (r->in.privs->set[i].luid.high) {
+			return NT_STATUS_NO_SUCH_PRIVILEGE;
+		}
+		rights.names[i].string = sec_privilege_name(id);
+		if (rights.names[i].string == NULL) {
+			return NT_STATUS_NO_SUCH_PRIVILEGE;
+		}
+	}
+
+	return lsa_AddRemoveAccountRights(dce_call, mem_ctx, astate->policy, 
+					  LDB_FLAG_MOD_ADD, astate->account_sid,
+					  &rights);
 }
 
 
@@ -891,9 +1038,61 @@ static NTSTATUS lsa_AddPrivilegesToAccount(struct dcesrv_call_state *dce_call, T
   lsa_RemovePrivilegesFromAccount
 */
 static NTSTATUS lsa_RemovePrivilegesFromAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_RemovePrivilegesFromAccount *r)
+						struct lsa_RemovePrivilegesFromAccount *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct lsa_RightSet *rights;
+	struct dcesrv_handle *h;
+	struct lsa_account_state *astate;
+	int i;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_ACCOUNT);
+
+	astate = h->data;
+
+	rights = talloc_p(mem_ctx, struct lsa_RightSet);
+
+	if (r->in.remove_all == 1 && 
+	    r->in.privs == NULL) {
+		struct lsa_EnumAccountRights r2;
+		NTSTATUS status;
+
+		r2.in.handle = &astate->policy->handle->wire_handle;
+		r2.in.sid = astate->account_sid;
+		r2.out.rights = rights;
+
+		status = lsa_EnumAccountRights(dce_call, mem_ctx, &r2);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		return lsa_AddRemoveAccountRights(dce_call, mem_ctx, astate->policy, 
+						  LDB_FLAG_MOD_DELETE, astate->account_sid,
+						  r2.out.rights);
+	}
+
+	if (r->in.remove_all != 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	rights->count = r->in.privs->count;
+	rights->names = talloc_array_p(mem_ctx, struct lsa_String, rights->count);
+	if (rights->names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<rights->count;i++) {
+		int id = r->in.privs->set[i].luid.low;
+		if (r->in.privs->set[i].luid.high) {
+			return NT_STATUS_NO_SUCH_PRIVILEGE;
+		}
+		rights->names[i].string = sec_privilege_name(id);
+		if (rights->names[i].string == NULL) {
+			return NT_STATUS_NO_SUCH_PRIVILEGE;
+		}
+	}
+
+	return lsa_AddRemoveAccountRights(dce_call, mem_ctx, astate->policy, 
+					  LDB_FLAG_MOD_DELETE, astate->account_sid,
+					  rights);
 }
 
 
@@ -1156,121 +1355,6 @@ static NTSTATUS lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *dce_call
 	return NT_STATUS_OK;
 }
 
-
-/* 
-  lsa_EnumAccountRights 
-*/
-static NTSTATUS lsa_EnumAccountRights(struct dcesrv_call_state *dce_call, 
-				      TALLOC_CTX *mem_ctx,
-				      struct lsa_EnumAccountRights *r)
-{
-	struct dcesrv_handle *h;
-	struct lsa_policy_state *state;
-	int ret, i;
-	struct ldb_message **res;
-	const char * const attrs[] = { "privilege", NULL};
-	const char *sidstr;
-	struct ldb_message_element *el;
-
-	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
-
-	state = h->data;
-
-	sidstr = dom_sid_string(mem_ctx, r->in.sid);
-	if (sidstr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
-			   "objectSid=%s", sidstr);
-	if (ret != 1) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	el = ldb_msg_find_element(res[0], "privilege");
-	if (el == NULL || el->num_values == 0) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	r->out.rights->count = el->num_values;
-	r->out.rights->names = talloc_array_p(r->out.rights, 
-					      struct lsa_String, r->out.rights->count);
-	if (r->out.rights->names == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i=0;i<el->num_values;i++) {
-		r->out.rights->names[i].string = el->values[i].data;
-	}
-
-	return NT_STATUS_OK;
-}
-
-
-/* 
-  helper for lsa_AddAccountRights and lsa_RemoveAccountRights
-*/
-static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call, 
-					   TALLOC_CTX *mem_ctx,
-					   struct lsa_policy_state *state,
-					   int ldb_flag,
-					   const struct dom_sid *sid,
-					   const struct lsa_RightSet *rights)
-{
-	const char *sidstr;
-	struct ldb_message msg;
-	struct ldb_message_element el;
-	int i, ret;
-	const char *dn;
-
-	sidstr = dom_sid_string(mem_ctx, sid);
-	if (sidstr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dn = samdb_search_string(state->sam_ctx, mem_ctx, NULL, "dn", 
-				 "objectSid=%s", sidstr);
-	if (dn == NULL) {
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	msg.dn = talloc_strdup(mem_ctx, dn);
-	if (msg.dn == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	msg.num_elements = 1;
-	msg.elements = &el;
-	el.flags = ldb_flag;
-	el.name = talloc_strdup(mem_ctx, "privilege");
-	if (el.name == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	el.num_values = rights->count;
-	el.values = talloc_array_p(mem_ctx, struct ldb_val, el.num_values);
-	if (el.values == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	for (i=0;i<el.num_values;i++) {
-		if (sec_privilege_id(rights->names[i].string) == -1) {
-			return NT_STATUS_NO_SUCH_PRIVILEGE;
-		}
-		el.values[i].length = strlen(rights->names[i].string);
-		el.values[i].data = talloc_strdup(mem_ctx, rights->names[i].string);
-		if (el.values[i].data == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	ret = samdb_modify(state->sam_ctx, mem_ctx, &msg);
-	if (ret != 0) {
-		if (ldb_flag == LDB_FLAG_MOD_DELETE) {
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
-		return NT_STATUS_UNEXPECTED_IO_ERROR;
-	}
-
-	return NT_STATUS_OK;
-}
 
 /* 
   lsa_AddAccountRights
