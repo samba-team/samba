@@ -1,3 +1,8 @@
+2003-05-08  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am.common: change install-data-local to
+	install-data-hook
+
 2003-05-05  Assar Westerlund  <assar@kth.se>
 
 	* crypto.m4: define OPENSSL_DES_LIBDES_COMPATIBILITY
