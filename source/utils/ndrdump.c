@@ -56,16 +56,10 @@ static const struct dcerpc_interface_call *find_function(
 	return &p->calls[i];
 }
 
-static void usage(void)
-{
-	printf("Usage: ndrdump <pipe> <function> <inout> <filename>\n");
-}
-
 
 static void show_pipes(void)
 {
 	int i;
-	usage();
 	printf("\nYou must specify a pipe\n");
 	printf("known pipes are:\n");
 	for (i=0;dcerpc_pipes[i];i++) {
@@ -81,7 +75,6 @@ static void show_pipes(void)
 static void show_functions(const struct dcerpc_interface_table *p)
 {
 	int i;
-	usage();
 	printf("\nYou must specify a function\n");
 	printf("known functions on '%s' are:\n", p->name);
 	for (i=0;i<p->num_calls;i++) {
@@ -90,7 +83,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	exit(1);
 }
 
- int main(int argc, char *argv[])
+ int main(int argc, const char *argv[])
 {
 	const struct dcerpc_interface_table *p;
 	const struct dcerpc_interface_call *f;
@@ -101,31 +94,46 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	struct ndr_pull *ndr;
 	TALLOC_CTX *mem_ctx;
 	int flags;
+	poptContext pc;
 	NTSTATUS status;
 	void *st;
+	int opt;
 	struct ndr_print *pr;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		POPT_TABLEEND
+	};
 
 	DEBUGLEVEL = 10;
 
 	setup_logging("ndrdump", DEBUG_STDOUT);
 
-	if (argc < 2) {
+	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
+	
+	poptSetOtherOptionHelp(pc, "<pipe> <function> <inout> <filename>");
+
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+	}
+
+	pipe_name = poptGetArg(pc);
+
+	if (!pipe_name) {
+		poptPrintUsage(pc, stderr, 0);
 		show_pipes();
 		exit(1);
 	}
 
-	pipe_name = argv[1];
-
 	p = find_pipe(pipe_name);
 
-	if (argc < 5) {
+	function = poptGetArg(pc);
+	inout = poptGetArg(pc);
+	filename = poptGetArg(pc);
+
+	if (!function || !inout || !filename) {
+		poptPrintUsage(pc, stderr, 0);
 		show_functions(p);
 		exit(1);
 	}
-
-	function = argv[2];
-	inout = argv[3];
-	filename = argv[4];
 
 	if (strcmp(inout, "in") == 0 ||
 	    strcmp(inout, "request") == 0) {
@@ -186,6 +194,8 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	printf("dump OK\n");
 
 	talloc_free(pr);
+	
+	poptFreeContext(pc);
 	
 	return 0;
 }
