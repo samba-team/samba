@@ -52,8 +52,10 @@ PyObject *spoolss_hnd_enumjobs(PyObject *self, PyObject *args, PyObject *kw)
 	
 	result = Py_None;
 
-	if (!W_ERROR_IS_OK(werror))
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
 		goto done;
+	}
 
 	result = PyList_New(num_jobs);
 
