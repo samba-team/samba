@@ -177,8 +177,8 @@ krb5_sendto_kdc (krb5_context context,
      int fd;
      int port;
      int i;
-     char *buf;
-     struct sockaddr *sa;
+     struct sockaddr_storage __ss;
+     struct sockaddr *sa = (struct sockaddr *)&__ss;
 
      port = krb5_getportbyname (context, "kerberos", "udp", 88);
 
@@ -188,13 +188,6 @@ krb5_sendto_kdc (krb5_context context,
 	 ret = krb5_get_krbhst (context, realm, &hostlist);
      if (ret)
 	  return ret;
-
-     buf = malloc(krb5_max_sockaddr_size ());
-     if (buf == NULL) {
-	 ret = ENOMEM;
-	 goto out;
-     }
-     sa = (struct sockaddr *)buf;
 
      for (i = 0; i < context->max_retries; ++i)
 	 for (hp = hostlist; (p = *hp); ++hp) {
@@ -323,6 +316,5 @@ krb5_sendto_kdc (krb5_context context,
      ret = KRB5_KDC_UNREACH;
 out:
      krb5_free_krbhst (context, hostlist);
-     free (buf);
      return ret;
 }
