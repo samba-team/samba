@@ -76,7 +76,7 @@ test_smb_conf_setup() {
     echo "127.0.0.7    INVALIDUSERS">>$prefix/lib/lmhosts
     echo "127.0.0.7    PREEXEC">>$prefix/lib/lmhosts
     echo "127.0.0.7    PREEXEC_CLOSE">>$prefix/lib/lmhosts
-    echo "127.0.0.7    PREEXEC_CL_FAIL">>$prefix/lib/lmhosts
+    echo "127.0.0.7    PREEXEC_CL_FL">>$prefix/lib/lmhosts
 
 
 	echo "127.0.0.1" > $prefix/lib/hosts.equiv

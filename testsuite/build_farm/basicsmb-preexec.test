@@ -23,6 +23,6 @@ else
 	exit 1;
 fi
 
-mode=PREEXEC_cl_fail
+mode=PREEXEC_cl_fl
 (test_listfilesauth_should_deny $mode) || exit 1
 
