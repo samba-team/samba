@@ -177,18 +177,6 @@ a clean and stable API for SMB client application development.
 #%patch1 -p1
 #%patch2 -p1
 
-# The commented out fixUP below should be best known as screwUP!
-# instead of patch (to help configuration) ...   ;^)
-#%{fixUP} -vbT source/Makefile.in -e '
-#  s:we don.t use sbindir because we want:if you want : +
-#  s:(the previous releases of Samba):$1, please use: +
-#  s:(SBINDIR\s*=\s*\@)b:# ./configure --sbindir=\\\$(BINDIR)\n${1}sb: +
-#  s:/log\.(\S+):/log/samba.d/${1}d: +
-#  s:(PASSWD_PROGRAM\s*=\s*)(/bin):$1/usr$2: +
-#  s:^(LIBS\s*=):AUTH_$1: +
-#  s:((SMBD|SWAT|RPCCLIENT|SMBPASSWD)_OBJ\) )(\$\(LDF):$1\$(AUTH_LIBS) $3:
-#'
-
 for i in {cvs.,change-}log; do [ ! -f ../$i ] || mv ../$i source; done
 
 mv swat/help/welcome.html docs
@@ -209,10 +197,6 @@ for i in docs/*/smb.conf.5*; do
     s:/usr/local/:/usr/:g;
   '
 done
-%{fixUP} -vT docs/textdocs/Faxing.txt -e '
-  s:/usr/local/etc/:/etc/: +
-  s:/usr/local/:/usr/:;
-'
 # End of DirtyHack(TM)
 
 
