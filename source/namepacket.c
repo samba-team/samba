@@ -394,12 +394,17 @@ static void process_nmb(struct packet_struct *p)
     case NMB_REG:
     case NMB_REG_REFRESH:
     {
-	if (nmb->header.qdcount==0 || nmb->header.arcount==0) break;
 	if (nmb->header.response)
+        {
+          if (nmb->header.ancount ==0) break;
 	  response_netbios_packet(p); /* response to registration dealt 
 					 with here */
+        }
 	else
+        {
+          if (nmb->header.qdcount==0 || nmb->header.arcount==0) break;
 	  reply_name_reg(p);
+        }
 	break;
     }
       
@@ -439,17 +444,17 @@ static void process_nmb(struct packet_struct *p)
       
     case NMB_REL:
     {
-      if (nmb->header.qdcount==0 || nmb->header.arcount==0)
-	  {
-	    DEBUG(2,("netbios release packet rejected\n"));
-	    break;
-	  }
-	
 	if (nmb->header.response)
-	  response_netbios_packet(p); /* response to reply dealt with 
-					 in here */
+        {
+          if (nmb->header.ancount ==0) break;
+	  response_netbios_packet(p); /* response to release dealt 
+					 with here */
+        }
 	else
+        {
+          if (nmb->header.qdcount==0 || nmb->header.arcount==0) break;
 	  reply_name_release(p);
+        }
       break;
     }
   }
