@@ -89,6 +89,4 @@
 #include <getarg.h>
 #include <krb5.h>
 
-#define KPASSWD_PORT 464
-
 #endif /* __KPASSWD_LOCL_H__ */
