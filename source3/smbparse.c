@@ -361,6 +361,36 @@ char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align, i
 }
 
 /*******************************************************************
+makes a DOM_CLNT_SRV structure.
+********************************************************************/
+void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name)
+{
+	if (log == NULL) return;
+
+	DEBUG(5,("make_clnt_srv: %d\n", __LINE__));
+
+	if (logon_srv != NULL)
+	{
+		log->undoc_buffer = 1;
+		make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv));
+	}
+	else
+	{
+		log->undoc_buffer = 1;
+	}
+
+	if (comp_name != NULL)
+	{
+		log->undoc_buffer2 = 1;
+		make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name));
+	}
+	else
+	{
+		log->undoc_buffer2 = 1;
+	}
+}
+
+/*******************************************************************
 reads or writes a DOM_CLNT_SRV structure.
 ********************************************************************/
 char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align, int depth)
@@ -372,10 +402,10 @@ char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align
 
 	q = align_offset(q, base, align);
 	
-	DBG_RW_IVAL("undoc_buffer ", depth, base, io, q, log->undoc_buffer); q += 4;
+	DBG_RW_IVAL("undoc_buffer ", depth, base, io, q, log->undoc_buffer ); q += 4;
 	q = smb_io_unistr2(io, &(log->uni_logon_srv), q, base, align, depth);
 
-	DBG_RW_IVAL("undoc_buffer2", depth, base, io, q, log->undoc_buffer); q += 4;
+	DBG_RW_IVAL("undoc_buffer2", depth, base, io, q, log->undoc_buffer2); q += 4;
 	q = smb_io_unistr2(io, &(log->uni_comp_name), q, base, align, depth);
 
 	return q;
@@ -464,6 +494,30 @@ char* smb_io_cred(BOOL io, DOM_CRED *cred, char *q, char *base, int align, int d
 }
 
 /*******************************************************************
+makes a DOM_CLNT_INFO2 structure.
+********************************************************************/
+void make_clnt_info2(DOM_CLNT_INFO2 *clnt,
+				char *logon_srv, char *comp_name,
+				DOM_CRED *clnt_cred)
+{
+	if (clnt == NULL) return;
+
+	DEBUG(5,("make_clnt_info: %d\n", __LINE__));
+
+	make_clnt_srv(&(clnt->login), logon_srv, comp_name);
+
+	if (clnt_cred != NULL)
+	{
+		clnt->ptr_cred = 1;
+		memcpy(&(clnt->cred), clnt_cred, sizeof(clnt->cred));
+	}
+	else
+	{
+		clnt->ptr_cred = 0;
+	}
+}
+
+/*******************************************************************
 reads or writes a DOM_CLNT_INFO2 structure.
 ********************************************************************/
 char* smb_io_clnt_info2(BOOL io, DOM_CLNT_INFO2 *clnt, char *q, char *base, int align, int depth)
@@ -504,6 +558,19 @@ char* smb_io_clnt_info(BOOL io, DOM_CLNT_INFO *clnt, char *q, char *base, int al
 }
 
 /*******************************************************************
+makes a DOM_LOGON_ID structure.
+********************************************************************/
+void make_logon_id(DOM_LOGON_ID *log, uint32 log_id_low, uint32 log_id_high)
+{
+	if (log == NULL) return;
+
+	DEBUG(5,("make_logon_id: %d\n", __LINE__));
+
+	log->low  = log_id_low;
+	log->high = log_id_high;
+}
+
+/*******************************************************************
 reads or writes a DOM_LOGON_ID structure.
 ********************************************************************/
 char* smb_io_logon_id(BOOL io, DOM_LOGON_ID *log, char *q, char *base, int align, int depth)
@@ -522,6 +589,18 @@ char* smb_io_logon_id(BOOL io, DOM_LOGON_ID *log, char *q, char *base, int align
 }
 
 /*******************************************************************
+makes an ARC4_OWF structure.
+********************************************************************/
+void make_arc4_owf(ARC4_OWF *hash, char data[16])
+{
+	if (hash == NULL) return;
+
+	DEBUG(5,("make_arc4_owf: %d\n", __LINE__));
+	
+	memcpy(hash->data, data, sizeof(hash->data));
+}
+
+/*******************************************************************
 reads or writes an ARC4_OWF structure.
 ********************************************************************/
 char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align, int depth)
@@ -536,6 +615,40 @@ char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align, i
 	DBG_RW_PCVAL("data", depth, base, io, q, hash->data, 16); q += 16;
 
 	return q;
+}
+
+/*******************************************************************
+makes a DOM_ID_INFO_1 structure.
+********************************************************************/
+void make_id_info1(DOM_ID_INFO_1 *id, char *domain_name,
+				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
+				char *user_name, char *workgroup_name,
+				char arc4_lm_owf[16], char arc4_nt_owf[16])
+{
+	int len_domain_name    = strlen(domain_name   );
+	int len_user_name      = strlen(user_name     );
+	int len_workgroup_name = strlen(workgroup_name);
+
+	if (id == NULL) return;
+
+	DEBUG(5,("make_id_info1: %d\n", __LINE__));
+
+	id->ptr_id_info1 = 1;
+
+	make_uni_hdr(&(id->hdr_domain_name   ), len_domain_name   , len_domain_name   , 4);
+
+	id->param_ctrl = param_ctrl;
+	make_logon_id(&(id->logon_id), log_id_low, log_id_high);
+
+	make_uni_hdr(&(id->hdr_user_name     ), len_user_name     , len_user_name     , 4);
+	make_uni_hdr(&(id->hdr_workgroup_name), len_workgroup_name, len_workgroup_name, 4);
+
+	make_arc4_owf(&(id->arc4_lm_owf), arc4_lm_owf);
+	make_arc4_owf(&(id->arc4_nt_owf), arc4_nt_owf);
+
+	make_unistr2(&(id->uni_domain_name   ), domain_name   , len_domain_name   );
+	make_unistr2(&(id->uni_user_name     ), user_name     , len_user_name     );
+	make_unistr2(&(id->uni_workgroup_name), workgroup_name, len_workgroup_name);
 }
 
 /*******************************************************************
@@ -574,6 +687,49 @@ char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align
 }
 
 /*******************************************************************
+makes a DOM_SAM_INFO structure.
+********************************************************************/
+void make_sam_info(DOM_SAM_INFO *sam,
+				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
+				DOM_CRED *rtn_cred, uint16 switch_value, uint16 logon_level,
+				DOM_ID_INFO_1 *id1)
+{
+	if (sam == NULL) return;
+
+	DEBUG(5,("make_sam_info: %d\n", __LINE__));
+
+	make_clnt_info2(&(sam->client), logon_srv, comp_name, clnt_cred);
+
+	if (rtn_cred != NULL)
+	{
+		sam->ptr_rtn_cred = 1;
+		memcpy(&(sam->rtn_cred), rtn_cred, sizeof(sam->rtn_cred));
+	}
+	else
+	{
+		sam->ptr_rtn_cred = 0;
+	}
+
+	sam->logon_level  = logon_level;
+	sam->switch_value = switch_value;
+
+	switch (sam->switch_value)
+	{
+		case 1:
+		{
+			sam->auth.id1 = id1;
+			break;
+		}
+		default:
+		{
+			/* PANIC! */
+			DEBUG(4,("make_sam_info: unknown switch_value!\n"));
+			break;
+		}
+	}
+}
+
+/*******************************************************************
 reads or writes a DOM_SAM_INFO structure.
 ********************************************************************/
 char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align, int depth)
@@ -597,7 +753,7 @@ char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align
 	{
 		case 1:
 		{
-			q = smb_io_id_info1(io, &(sam->auth.id1), q, base, align, depth);
+			q = smb_io_id_info1(io, sam->auth.id1, q, base, align, depth);
 			break;
 		}
 		default:

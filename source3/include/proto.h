@@ -910,17 +910,31 @@ void make_dom_sid2(DOM_SID2 *sid2, char *sid_str);
 char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align, int depth);
 void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
 char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align, int depth);
+void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name);
 char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align, int depth);
 void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
 		uint16 sec_chan, char *comp_name);
 char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align, int depth);
 char* smb_io_chal(BOOL io, DOM_CHAL *chal, char *q, char *base, int align, int depth);
 char* smb_io_cred(BOOL io, DOM_CRED *cred, char *q, char *base, int align, int depth);
+void make_clnt_info2(DOM_CLNT_INFO2 *clnt,
+				char *logon_srv, char *comp_name,
+				DOM_CRED *clnt_cred);
 char* smb_io_clnt_info2(BOOL io, DOM_CLNT_INFO2 *clnt, char *q, char *base, int align, int depth);
 char* smb_io_clnt_info(BOOL io, DOM_CLNT_INFO *clnt, char *q, char *base, int align, int depth);
+void make_logon_id(DOM_LOGON_ID *log, uint32 log_id_low, uint32 log_id_high);
 char* smb_io_logon_id(BOOL io, DOM_LOGON_ID *log, char *q, char *base, int align, int depth);
+void make_arc4_owf(ARC4_OWF *hash, char data[16]);
 char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align, int depth);
+void make_id_info1(DOM_ID_INFO_1 *id, char *domain_name,
+				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
+				char *user_name, char *workgroup_name,
+				char arc4_lm_owf[16], char arc4_nt_owf[16]);
 char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align, int depth);
+void make_sam_info(DOM_SAM_INFO *sam,
+				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
+				DOM_CRED *rtn_cred, uint16 switch_value, uint16 logon_level,
+				DOM_ID_INFO_1 *id1);
 char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align, int depth);
 char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int depth);
 void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
