@@ -1753,7 +1753,6 @@ static BOOL domain_client_validate_direct( char *user, char *domain,
 	unsigned char local_nt_response[24];
 	unsigned char trust_passwd[16];
 	fstring remote_machine;
-	char *p, *pserver;
 	NET_ID_INFO_CTR ctr;
 	NET_USER_INFO_3 info3;
 	struct cli_state *pcli = NULL;
@@ -1847,31 +1846,9 @@ static BOOL domain_client_validate_direct( char *user, char *domain,
 	 * see if they were valid.
 	 */
 
-	/*
-	 * Treat each name in the 'password server =' line as a potential
-	 * PDC/BDC. Contact each in turn and try and authenticate.
-	 */
-
-	pserver = lp_passwordserver();
-	if (! *pserver)
-		pserver = "*";
-	p = pserver;
-
-	while (!connected_ok &&
-			next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
-		if(strequal(remote_machine, "*")) {
-			connected_ok = find_connect_pdc(&pcli, trust_passwd, last_change_time);
-		} else {
-			int i = 0;
-			BOOL retry = False;
-
-			do {
-			  connected_ok = connect_to_domain_password_server(
-				  &pcli, remote_machine, trust_passwd, &retry);
-			  i++;
-			} while (!connected_ok && retry && (i < NUM_CLI_AUTH_CONNECT_RETRIES));
-		}
-	}
+	/* find_connect_pdc() handles all the lookups and connect attempts for us */
+	
+	connected_ok = find_connect_pdc(&pcli, trust_passwd, last_change_time);
 
 	if (!connected_ok) {
 		DEBUG(0,("domain_client_validate_direct: Domain password server not available.\n"));
@@ -1896,8 +1873,8 @@ static BOOL domain_client_validate_direct( char *user, char *domain,
 		release_server_mutex();
 
 		/* BEGIN_ADMIN_LOG */
-		sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication \
-via Microsoft networking was unsuccessful. User name: %s\\%s."), domain,user);
+		sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication via Microsoft networking was unsuccessful. User name: %s\\%s, Error : %s"), 
+			domain, user, get_friendly_nt_error_msg(status));
 		/* END_ADMIN_LOG */
 
 		if((NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) && (user_exists != NULL))

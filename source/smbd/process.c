@@ -1160,7 +1160,6 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
   {
     unsigned char trust_passwd_hash[16];
     time_t lct;
-    pstring remote_machine_list;
 
     /*
      * We're in domain level security, and the code that
@@ -1200,9 +1199,8 @@ machine %s in domain %s.\n", global_myname_unix(), lp_workgroup_unix() ));
     DEBUG(10,("timeout_processing: machine account password last change time = (%u) %s.\n",
 			    (unsigned int)lct, http_timestring(lct)));
 
-    pstrcpy(remote_machine_list, lp_passwordserver());
-
-    change_trust_account_password( lp_workgroup_unix(), remote_machine_list);
+    /* always just contact the PDC here */
+    change_trust_account_password( lp_workgroup_unix(), NULL);
     global_machine_password_needs_changing = False;
     secrets_lock_trust_account_password(lp_workgroup_unix(), False);
   }

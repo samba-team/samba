@@ -609,35 +609,14 @@ machine %s in domain %s.\n", global_myname_unix(), domain);
 		return 1;
 	}
 	
-	/*
-	 * If we are given a remote machine assume this is the PDC.
-	 */
-	
-	if(remote == NULL || !strcmp(remote, "*")) {
-		struct in_addr dest_ip;
-
-                if (!get_pdc_ip(domain, &dest_ip)) {
-			fprintf(stderr, "Unable to find the domain controller for domain %s.\n", domain);
-			return 1;
-		}
-		if (is_zero_ip(dest_ip)) {
-			fprintf(stderr, "Incorrect entries returned when finding the domain controller for domain %s.\n", domain);
-			return 1;
-		}
-
-		if (!lookup_dc_name(global_myname_unix(), domain, &dest_ip, 
-				    pdc_name)) {
-			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
-			return 1;
-		}
-	}
-
 	if (!fetch_domain_sid( domain, pdc_name, &domain_sid) ||
 		!secrets_store_domain_sid(domain, &domain_sid)) {
 		fprintf(stderr,"Failed to get domain SID. Unable to join domain %s.\n",domain);
 		return 1;
 	}
-		
+	
+	/* pdc_name can be NULL, *, or some name given by the user */
+	/* all 3 cases are handledm by change_trust_account_password() */
 	ret = change_trust_account_password( domain, pdc_name);
 	
 	if(!ret) {
