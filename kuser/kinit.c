@@ -146,16 +146,10 @@ renew_validate(krb5_context context,
 	    goto out;
 	}
     } else {
-	char *realm;
+	krb5_realm *client_realm = krb5_princ_realm (context, in.client);
 
-	ret = krb5_get_default_realm(context, &realm);
-	if(ret) {
-	    krb5_warn(context, ret, "krb5_get_default_realm");
-	    goto out;
-	}
-	ret = krb5_make_principal(context, &in.server, 
-				  realm, "krbtgt", realm, NULL);
-	free (realm);
+	ret = krb5_make_principal(context, &in.server, *client_realm,
+				  KRB5_TGS_NAME, *client_realm, NULL);
 	if(ret) {
 	    krb5_warn(context, ret, "krb5_make_principal");
 	    goto out;
