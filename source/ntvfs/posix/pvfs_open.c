@@ -669,6 +669,8 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	talloc_steal(pvfs, r);
+
 	return NT_STATUS_OK;
 }
 
