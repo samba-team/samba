@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,6 +44,7 @@ _warnerr(krb5_context context, int do_errtext,
     const char *args[2], **arg;
     char *msg = NULL;
     
+    args[0] = args[1] = NULL;
     arg = args;
     if(fmt){
 	strcat(xfmt, "%s");
