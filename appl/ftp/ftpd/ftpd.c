@@ -169,7 +169,7 @@ int	stru;			/* avoid C keyword */
 int	mode;
 int	usedefault = 1;		/* for data transfers */
 int	pdata = -1;		/* for passive mode */
-int 	transflag;
+int	transflag;
 off_t	file_size;
 off_t	byte_count;
 #if !defined(CMASK) || CMASK == 0
@@ -226,6 +226,7 @@ char	proctitle[BUFSIZ];	/* initial part of title */
 static void	 ack (char *);
 static void	 myoob (int);
 static int	 checkuser (char *, char *);
+static int	 checkaccess (char *);
 static FILE	*dataconn (char *, off_t, char *);
 static void	 dolog (struct sockaddr_in *);
 static void	 end_login (void);
@@ -566,9 +567,9 @@ user(char *name)
 
 	guest = 0;
 	if (strcmp(name, "ftp") == 0 || strcmp(name, "anonymous") == 0) {
-	    if ((auth_level & AUTH_FTP) == 0 || 
-		checkuser(_PATH_FTPUSERS, "ftp") ||
-		checkuser(_PATH_FTPUSERS, "anonymous"))
+	    if ((auth_level & AUTH_FTP) == 0 ||
+		checkaccess("ftp") || 
+		checkaccess("anonymous"))
 		reply(530, "User %s access denied.", name);
 	    else if ((pw = sgetpwnam("ftp")) != NULL) {
 		guest = 1;
@@ -595,7 +596,7 @@ user(char *name)
 				break;
 		endusershell();
 
-		if (cp == NULL || checkuser(_PATH_FTPUSERS, name)) {
+		if (cp == NULL || checkaccess(name)) {
 			reply(530, "User %s access denied.", name);
 			if (logging)
 				syslog(LOG_NOTICE,
@@ -665,6 +666,61 @@ checkuser(char *fname, char *name)
 	}
 	return (found);
 }
+
+
+/*
+ * Determine whether a user has access, based on information in 
+ * _PATH_FTPUSERS. The users are listed one per line, with `allow'
+ * or `deny' after the username. If anything other than `allow', or
+ * just nothing, is given after the username, `deny' is assumed.
+ *
+ * If the user is not found in the file, but the pseudo-user `*' is,
+ * the permission is taken from that line.
+ *
+ * This is probably not the best way to do this, but it preserves
+ * the old semantics where if a user was listed in the file he was
+ * denied, otherwise he was allowed.
+ *
+ * There is one change in the semantics, however; ftpd will now `fail
+ * safe' and deny all access if there's no /etc/ftpusers file.
+ *
+ * Return 1 if the user is denied, or 0 if he is allowed.
+ */
+static int
+checkaccess(char *name)
+{
+#define ALLOWED		0
+#define	NOT_ALLOWED	1
+    FILE *fd;
+    int allowed = ALLOWED;
+    char *user, *perm, line[BUFSIZ];
+    
+    if ((fd = fopen(_PATH_FTPUSERS, "r")) == NULL)
+	return NOT_ALLOWED;
+    
+    while (fgets(line, sizeof(line), fd) != NULL)  {
+	user = strtok(line, " \t\n");
+	if (user[0] == '#')
+	    continue;
+	perm = strtok(NULL, " \t\n");
+	if (strcmp(user, "*") == 0)  {
+	    if (perm != NULL && strcmp(perm, "allow") == 0)
+		allowed = ALLOWED;
+	    else
+		allowed = NOT_ALLOWED;
+	}
+	if (strcmp(user, name) == 0)  {
+	    if (perm != NULL && strcmp(perm, "allow") == 0)
+		return ALLOWED;
+	    else
+		return NOT_ALLOWED;
+	}
+    }
+    fclose(fd);
+    return (allowed);
+}
+#undef	ALLOWED
+#undef	NOT_ALLOWED
 
 int do_login(int code, char *passwd)
 {
@@ -749,7 +805,6 @@ int do_login(int code, char *passwd)
 	umask(defumask);
 	return 0;
 }
-
 
 /*
  * Terminate login as previous user, if any, resetting state;
@@ -1705,12 +1760,14 @@ myoob(int signo)
 	if (!transflag)
 		return;
 
+	/* This is all XXX */
 	oobflag = 1;
-	yyparse();
+	/* if the command resulted in a new command, 
+	   parse that as well */
+	do{
+	    yyparse();
+	} while(ftp_command);
 	oobflag = 0;
-
-	/* hopefully this will work. this way we can send commands to
-           yyparse() from other sources than stdin */
 
 #if 0 
 	cp = tmpline;
