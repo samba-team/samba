@@ -336,78 +336,9 @@ struct smb_passwd *getsmbpwent(void *vp)
     DEBUG(5, ("getsmbpwent: returning passwd entry for user %s, uid %d\n",
 			  user_name, uidval));
 
-    /*
-     * Check if the account type bits have been encoded after the
-     * NT password (in the form [NDHTUWSLXI]).
-     */
-
-    if (*p == '[') {
-      BOOL finished = False;
-
-      pw_buf.acct_ctrl = 0;
-
-      for(p++;*p && !finished; p++) {
-        switch (*p) {
-#if 0
-   /*
-    * Hmmm. Don't allow these to be set/read independently
-    * of the actual password fields. We don't want a mismatch.
-    * JRA.
-    */
-          case 'N':
-            /* 'N'o password. */
-            pw_buf.acct_ctrl |= ACB_PWNOTREQ;
-            break;
-          case 'D':
-            /* 'D'isabled. */
-            pw_buf.acct_ctrl |= ACB_DISABLED;
-            break;
-#endif 
-          case 'H':
-            /* 'H'omedir required. */
-            pw_buf.acct_ctrl |= ACB_HOMDIRREQ;
-            break;
-          case 'T':
-            /* 'T'emp account. */
-            pw_buf.acct_ctrl |= ACB_TEMPDUP;
-            break;
-          case 'U':
-            /* 'U'ser account (normal). */
-            pw_buf.acct_ctrl |= ACB_NORMAL;
-            break;
-          case 'M':
-            /* 'M'NS logon user account. What is this ? */
-            pw_buf.acct_ctrl |= ACB_MNS;
-            break;
-          case 'W':
-            /* 'W'orkstation account. */
-            pw_buf.acct_ctrl |= ACB_WSTRUST;
-            break;
-          case 'S':
-            /* 'S'erver account. */
-            pw_buf.acct_ctrl |= ACB_SVRTRUST;
-            break;
-          case 'L':
-            /* 'L'ocked account. */
-            pw_buf.acct_ctrl |= ACB_AUTOLOCK;
-            break;
-          case 'X':
-            /* No 'X'piry. */
-            pw_buf.acct_ctrl |= ACB_PWNOEXP;
-            break;
-          case 'I':
-            /* 'I'nterdomain trust account. */
-            pw_buf.acct_ctrl |= ACB_DOMTRUST;
-            break;
-
-          case ':':
-          case '\n':
-          case '\0': 
-          case ']':
-          default:
-            finished = True;
-        }
-      }
+    if (*p == '[')
+	{
+      pw_buf.acct_ctrl = decode_acct_ctrl(p);
 
       /* Must have some account type set. */
       if(pw_buf.acct_ctrl == 0)
@@ -438,7 +369,7 @@ struct smb_passwd *getsmbpwent(void *vp)
     } else {
       /* 'Old' style file. Fake up based on user name. */
       /*
-       * Currently machine accounts are kept in the same
+       * Currently trust accounts are kept in the same
        * password file as 'normal accounts'. If this changes
        * we will have to fix this code. JRA.
        */
@@ -479,107 +410,12 @@ BOOL setsmbpwpos(void *vp, unsigned long tok)
   return !fseek((FILE *)vp, tok, SEEK_SET);
 }
 
-/*************************************************************************
- Routine to search the smbpasswd file for an entry matching the username
- or user id.  if the name is NULL, then the smb_uid is used instead.
- *************************************************************************/
-static struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
-{
-  struct smb_passwd *pwd = NULL;
-  FILE *fp = NULL;
-
-  if (name != NULL) {
-    DEBUG(10, ("get_smbpwd_entry: search by name: %s\n", name));
-  } else {
-    DEBUG(10, ("get_smbpwd_entry: search by smb_userid: %x\n", smb_userid));
-  }
-
-  /* Open the smbpassword file - not for update. */
-  fp = startsmbpwent(False);
-
-  if (fp == NULL) {
-    DEBUG(0, ("get_smbpwd_entry: unable to open password file.\n"));
-    return NULL;
-  }
-
-  /*
-   * Scan the file, a line at a time and check if the name 
-   * or uid matches.
-   */
-
-  while ((pwd = getsmbpwent(fp)) != NULL) {
-    if (name != NULL) {
-      /* Search is by user name */
-      if (!strequal(pwd->smb_name, name))
-        continue;
-      DEBUG(10, ("get_smbpwd_entry: found by name: %s\n", name));
-      break;
-    } else {
-      /* Search is by user id */
-      if (pwd->smb_userid != smb_userid)
-        continue;
-      DEBUG(10, ("get_smbpwd_entry: found by smb_userid: %x\n", smb_userid));
-      break;
-    }
-  }
-
-  endsmbpwent(fp);
-  return pwd;
-}
-
-/************************************************************************
- Routine to search smb passwd by name.
-*************************************************************************/
-
-struct smb_passwd *getsmbpwnam(char *name)
-{
-  return get_smbpwd_entry(name, 0);
-}
-
-
-/************************************************************************
- Routine to search smb passwd by uid.
-*************************************************************************/
-
-struct smb_passwd *getsmbpwuid(unsigned int uid)
-{
-  return get_smbpwd_entry(NULL, uid);
-}
-
-
-/**********************************************************
- Encode the account control bits into a string.
-**********************************************************/
-        
-char *encode_acct_ctrl(uint16 acct_ctrl)
-{
-  static fstring acct_str;
-  char *p = acct_str;
- 
-  *p++ = '[';
-
-  if (acct_ctrl & ACB_HOMDIRREQ) *p++ = 'H';
-  if (acct_ctrl & ACB_TEMPDUP  ) *p++ = 'T'; 
-  if (acct_ctrl & ACB_NORMAL   ) *p++ = 'U';
-  if (acct_ctrl & ACB_MNS      ) *p++ = 'M';
-  if (acct_ctrl & ACB_WSTRUST  ) *p++ = 'W';
-  if (acct_ctrl & ACB_SVRTRUST ) *p++ = 'S';
-  if (acct_ctrl & ACB_AUTOLOCK ) *p++ = 'L';
-  if (acct_ctrl & ACB_PWNOEXP  ) *p++ = 'X';
-  if (acct_ctrl & ACB_DOMTRUST ) *p++ = 'I';
-      
-  *p++ = ']';
-  *p = '\0';
-  return acct_str;
-}     
-
 /************************************************************************
  Routine to add an entry to the smbpasswd file.
 
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 {
   char *pfile = lp_smb_passwd_file();
@@ -713,7 +549,6 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
  do not call this function directly.  use passdb.c instead.
 
 ************************************************************************/
-
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 {
   /* Static buffers we will return. */
@@ -1060,10 +895,10 @@ static int mach_passwd_lock_depth;
 static FILE *mach_passwd_fp;
 
 /************************************************************************
- Routine to get the name for a machine account file.
+ Routine to get the name for a trust account file.
 ************************************************************************/
 
-static void get_machine_account_file_name( char *domain, char *name, char *mac_file)
+static void get_trust_account_file_name( char *domain, char *name, char *mac_file)
 {
   unsigned int mac_file_len;
   char *p;
@@ -1077,7 +912,7 @@ static void get_machine_account_file_name( char *domain, char *name, char *mac_f
 
   if ((int)(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) < 0)
   {
-    DEBUG(0,("machine_password_lock: path %s too long to add machine details.\n",
+    DEBUG(0,("trust_password_lock: path %s too long to add trust details.\n",
               mac_file));
     return;
   }
@@ -1089,16 +924,16 @@ static void get_machine_account_file_name( char *domain, char *name, char *mac_f
 }
  
 /************************************************************************
- Routine to lock the machine account password file for a domain.
+ Routine to lock the trust account password file for a domain.
 ************************************************************************/
 
-BOOL machine_password_lock( char *domain, char *name, BOOL update)
+BOOL trust_password_lock( char *domain, char *name, BOOL update)
 {
   pstring mac_file;
 
   if(mach_passwd_lock_depth == 0) {
 
-    get_machine_account_file_name( domain, name, mac_file);
+    get_trust_account_file_name( domain, name, mac_file);
 
     if((mach_passwd_fp = fopen(mac_file, "r+b")) == NULL) {
       if(errno == ENOENT && update) {
@@ -1106,7 +941,7 @@ BOOL machine_password_lock( char *domain, char *name, BOOL update)
       }
 
       if(mach_passwd_fp == NULL) {
-        DEBUG(0,("machine_password_lock: cannot open file %s - Error was %s.\n",
+        DEBUG(0,("trust_password_lock: cannot open file %s - Error was %s.\n",
               mac_file, strerror(errno) ));
         return False;
       }
@@ -1117,7 +952,7 @@ BOOL machine_password_lock( char *domain, char *name, BOOL update)
     if(!pw_file_lock(fileno(mach_passwd_fp), (update ? F_WRLCK : F_RDLCK), 
                                       60, &mach_passwd_lock_depth))
     {
-      DEBUG(0,("machine_password_lock: cannot lock file %s\n", mac_file));
+      DEBUG(0,("trust_password_lock: cannot lock file %s\n", mac_file));
       fclose(mach_passwd_fp);
       return False;
     }
@@ -1128,10 +963,10 @@ BOOL machine_password_lock( char *domain, char *name, BOOL update)
 }
 
 /************************************************************************
- Routine to unlock the machine account password file for a domain.
+ Routine to unlock the trust account password file for a domain.
 ************************************************************************/
 
-BOOL machine_password_unlock(void)
+BOOL trust_password_unlock(void)
 {
   BOOL ret = pw_file_unlock(fileno(mach_passwd_fp), &mach_passwd_lock_depth);
   if(mach_passwd_lock_depth == 0)
@@ -1140,23 +975,23 @@ BOOL machine_password_unlock(void)
 }
 
 /************************************************************************
- Routine to delete the machine account password file for a domain.
+ Routine to delete the trust account password file for a domain.
 ************************************************************************/
 
-BOOL machine_password_delete( char *domain, char *name )
+BOOL trust_password_delete( char *domain, char *name )
 {
   pstring mac_file;
 
-  get_machine_account_file_name( domain, name, mac_file);
+  get_trust_account_file_name( domain, name, mac_file);
   return (unlink( mac_file ) == 0);
 }
 
 /************************************************************************
- Routine to get the machine account password for a domain.
- The user of this function must have locked the machine password file.
+ Routine to get the trust account password for a domain.
+ The user of this function must have locked the trust password file.
 ************************************************************************/
 
-BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time)
+BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time)
 {
   char linebuf[256];
   char *p;
@@ -1168,14 +1003,14 @@ BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *pass_last_set
   memset(ret_pwd, '\0', 16);
 
   if(fseek( mach_passwd_fp, 0L, SEEK_SET) == -1) {
-    DEBUG(0,("get_machine_account_password: Failed to seek to start of file. Error was %s.\n",
+    DEBUG(0,("get_trust_account_password: Failed to seek to start of file. Error was %s.\n",
               strerror(errno) ));
     return False;
   } 
 
   fgets(linebuf, sizeof(linebuf), mach_passwd_fp);
   if(ferror(mach_passwd_fp)) {
-    DEBUG(0,("get_machine_account_password: Failed to read password. Error was %s.\n",
+    DEBUG(0,("get_trust_account_password: Failed to read password. Error was %s.\n",
               strerror(errno) ));
     return False;
   }
@@ -1186,9 +1021,9 @@ BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *pass_last_set
    */
 
   if(strlen(linebuf) != 45) {
-    DEBUG(0,("get_machine_account_password: Malformed machine password file (wrong length).\n"));
+    DEBUG(0,("get_trust_account_password: Malformed trust password file (wrong length).\n"));
 #ifdef DEBUG_PASSWORD
-    DEBUG(100,("get_machine_account_password: line = |%s|\n", linebuf));
+    DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));
 #endif
     return False;
   }
@@ -1199,9 +1034,9 @@ BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *pass_last_set
 
   if (!gethexpwd((char *)linebuf, (char *)ret_pwd) || linebuf[32] != ':' || 
          strncmp(&linebuf[33], "TLC-", 4)) {
-    DEBUG(0,("get_machine_account_password: Malformed machine password file (incorrect format).\n"));
+    DEBUG(0,("get_trust_account_password: Malformed trust password file (incorrect format).\n"));
 #ifdef DEBUG_PASSWORD
-    DEBUG(100,("get_machine_account_password: line = |%s|\n", linebuf));
+    DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));
 #endif
     return False;
   }
@@ -1213,9 +1048,9 @@ BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *pass_last_set
 
   for(i = 0; i < 8; i++) {
     if(p[i] == '\0' || !isxdigit(p[i])) {
-      DEBUG(0,("get_machine_account_password: Malformed machine password file (no timestamp).\n"));
+      DEBUG(0,("get_trust_account_password: Malformed trust password file (no timestamp).\n"));
 #ifdef DEBUG_PASSWORD
-      DEBUG(100,("get_machine_account_password: line = |%s|\n", linebuf));
+      DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));
 #endif
       return False;
     }
@@ -1233,17 +1068,17 @@ BOOL get_machine_account_password( unsigned char *ret_pwd, time_t *pass_last_set
 }
 
 /************************************************************************
- Routine to get the machine account password for a domain.
- The user of this function must have locked the machine password file.
+ Routine to get the trust account password for a domain.
+ The user of this function must have locked the trust password file.
 ************************************************************************/
 
-BOOL set_machine_account_password( unsigned char *md4_new_pwd)
+BOOL set_trust_account_password( unsigned char *md4_new_pwd)
 {
   char linebuf[64];
   int i;
 
   if(fseek( mach_passwd_fp, 0L, SEEK_SET) == -1) {
-    DEBUG(0,("set_machine_account_password: Failed to seek to start of file. Error was %s.\n",
+    DEBUG(0,("set_trust_account_password: Failed to seek to start of file. Error was %s.\n",
               strerror(errno) ));
     return False;
   } 
@@ -1254,8 +1089,8 @@ BOOL set_machine_account_password( unsigned char *md4_new_pwd)
   sprintf(&linebuf[32], ":TLC-%08X\n", (unsigned)time(NULL));
 
   if(fwrite( linebuf, 1, 45, mach_passwd_fp)!= 45) {
-    DEBUG(0,("set_machine_account_password: Failed to write file. Warning - the machine \
-machine account is now invalid. Please recreate. Error was %s.\n", strerror(errno) ));
+    DEBUG(0,("set_trust_account_password: Failed to write file. Warning - the trust \
+account is now invalid. Please recreate. Error was %s.\n", strerror(errno) ));
     return False;
   }
 

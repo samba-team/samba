@@ -1180,6 +1180,11 @@ union semun {
 #include <krb.h>
 #endif
 
+#ifdef USE_LDAP
+#include <lber.h>
+#include <ldap.h>
+#endif
+
 #ifdef NO_UTIMBUF
 struct utimbuf {
   time_t actime;

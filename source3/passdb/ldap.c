@@ -23,8 +23,6 @@
 #ifdef USE_LDAP
 
 #include "includes.h"
-#include "lber.h"
-#include "ldap.h"
 
 extern int DEBUGLEVEL;
 
@@ -190,13 +188,13 @@ BOOL ldap_check_user(LDAP *ldap_struct, LDAPMessage *entry)
 /*******************************************************************
  check if the returned entry is a sambaMachine objectclass.
 ******************************************************************/	
-BOOL ldap_check_machine(LDAP *ldap_struct, LDAPMessage *entry)
+BOOL ldap_check_trust(LDAP *ldap_struct, LDAPMessage *entry)
 {
 	BOOL sambaMachine=False;
 	char **valeur;
 	int i;
 	
-	DEBUG(2,("ldap_check_machine: "));
+	DEBUG(2,("ldap_check_trust: "));
 	valeur=ldap_get_values(ldap_struct, entry, "objectclass");
 	if (valeur!=NULL)
 	{
@@ -213,188 +211,195 @@ BOOL ldap_check_machine(LDAP *ldap_struct, LDAPMessage *entry)
 /*******************************************************************
  retrieve the user's info and contruct a smb_passwd structure.
 ******************************************************************/
-static void ldap_get_user(LDAP *ldap_struct,LDAPMessage *entry, 
-                          struct smb_passwd *ldap_passwd)
+static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry, 
+                          struct sam_passwd *user)
 {	
 	static pstring user_name;
-	static unsigned char ldappwd[16];
-	static unsigned char smbntpwd[16];
-	char **valeur;
+	static pstring fullname;
+	static pstring home_dir;
+	static pstring dir_drive;
+	static pstring logon_script;
+	static pstring profile_path;
+	static pstring acct_desc;
+	static pstring workstations;
+	static pstring temp;
+	
+	bzero(user, sizeof(*user));
+
+	user->logon_time            = (time_t)-1;
+	user->logoff_time           = (time_t)-1;
+	user->kickoff_time          = (time_t)-1;
+	user->pass_last_set_time    = (time_t)-1;
+	user->pass_can_change_time  = (time_t)-1;
+	user->pass_must_change_time = (time_t)-1;
+
+	get_single_attribute(ldap_struct, entry, "logonTime", temp);
+	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
+
+	get_single_attribute(ldap_struct, entry, "logoffTime", temp);
+	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
+
+	get_single_attribute(ldap_struct, entry, "kickoffTime", temp);
+	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
+
+	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
+	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
+
+	get_single_attribute(ldap_struct, entry, "pwdCanChange", temp);
+	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
+
+	get_single_attribute(ldap_struct, entry, "pwdMustChange", temp);
+	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
 
 	get_single_attribute(ldap_struct, entry, "cn", user_name);
+	user->smb_name = user_name;
+
+	DEBUG(2,("ldap_get_sam_passwd: user: %s\n", user_name));
 		
-	DEBUG(2,("ldap_get_user: user: %s\n",user_name));
-		
-	if ( (valeur=ldap_get_values(ldap_struct, entry, "uidAccount")) != NULL)
-	{
-		ldap_passwd->smb_userid=atoi(valeur[0]);
-		ldap_value_free(valeur);
-	}
-			
-	if ( (valeur=ldap_get_values(ldap_struct, entry, "userPassword")) != NULL) 
-	{
-		memset(smbntpwd, '\0', 16);
-		E_md4hash((uchar *) valeur[0], smbntpwd);
-  		valeur[0][14] = '\0';
-  		strupper(valeur[0]);
- 		memset(ldappwd, '\0', 16);
-  		E_P16((uchar *) valeur[0], ldappwd);		
-		ldap_value_free(valeur);		
-	}
-			
-	if ( (valeur=ldap_get_values(ldap_struct,entry, "userAccountControl") ) != NULL)
-	{
-		ldap_passwd->acct_ctrl=atoi(valeur[0]);
-		if (ldap_passwd->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
-		{
-		 	DEBUG(0,("Inconsistency in the LDAP database\n"));
-				 
-		}
-		if (ldap_passwd->acct_ctrl & ACB_NORMAL)
-		{
-			ldap_passwd->smb_name=user_name;
-			ldap_passwd->smb_passwd=ldappwd;
-			ldap_passwd->smb_nt_passwd=smbntpwd;
-		}
-		ldap_value_free(valeur); 
-	}
+	get_single_attribute(ldap_struct, entry, "userFullName", fullname);
+	user->full_name = fullname;
+
+	get_single_attribute(ldap_struct, entry, "homeDirectory", home_dir);
+	user->home_dir = home_dir;
+
+	get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive);
+	user->dir_drive = dir_drive;
+
+	get_single_attribute(ldap_struct, entry, "scriptPath", logon_script);
+	user->logon_script = logon_script;
+
+	get_single_attribute(ldap_struct, entry, "profilePath", profile_path);
+	user->profile_path = profile_path;
+
+	get_single_attribute(ldap_struct, entry, "comment", acct_desc);
+	user->acct_desc = acct_desc;
+
+	get_single_attribute(ldap_struct, entry, "userWorkstations", workstations);
+	user->workstations = workstations;
+
 	
-	if ( (valeur=ldap_get_values(ldap_struct,entry, "pwdLastSet")) != NULL)
-	{	
-		ldap_passwd->pass_last_set_time=(time_t)strtol(valeur[0], NULL, 16);
-		ldap_value_free(valeur);
+	user->unknown_str = NULL; /* don't know, yet! */
+	user->munged_dial = NULL; /* "munged" dial-back telephone number */
+
+	get_single_attribute(ldap_struct, entry, "userPassword", temp);
+	nt_lm_owf_gen(temp, user->smb_nt_passwd, user->smb_passwd);
+	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
+			
+	get_single_attribute(ldap_struct, entry, "rid", temp);
+	user->user_rid=atoi(temp);
+
+	get_single_attribute(ldap_struct, entry, "primaryGroupID", temp);
+	user->group_rid=atoi(temp);
+
+	/* the smb (unix) ids are not stored: they are created */
+	user->smb_userid = user_rid_to_uid (user->user_rid);
+	user->smb_grpid  = group_rid_to_uid(user->group_rid);
+
+	get_single_attribute(ldap_struct, entry, "userAccountControl", temp);
+	user->acct_ctrl=atoi(temp);
+
+	user->unknown_3 = 0xffffff; /* don't know */
+	user->logon_divs = 168; /* hours per week */
+	user->hours_len = 21; /* 21 times 8 bits = 168 */
+	memset(user->hours, 0xff, user->hours_len); /* available at all hours */
+	user->unknown_5 = 0x00020000; /* don't know */
+	user->unknown_5 = 0x000004ec; /* don't know */
+
+	if (user->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
+	{
+		DEBUG(0,("Inconsistency in the LDAP database\n"));
+	}
+
+	if (!(user->acct_ctrl & ACB_NORMAL))
+	{
+		DEBUG(0,("User's acct_ctrl bits not set to ACT_NORMAL in LDAP database\n"));
+		return;
+	}
+
+}
+
+/*******************************************************************
+ retrieve the user's info and contruct a smb_passwd structure.
+******************************************************************/
+static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry, 
+                          struct smb_passwd *user)
+{	
+	static pstring user_name;
+	static pstring user_pass;
+	static pstring temp;
+	static unsigned char smblmpwd[16];
+	static unsigned char smbntpwd[16];
+
+	user->smb_name = NULL;
+	user->smb_passwd = NULL;
+	user->smb_nt_passwd = NULL;
+	user->smb_userid = 0;
+	user->pass_last_set_time    = (time_t)-1;
+
+	get_single_attribute(ldap_struct, entry, "cn", user_name);
+	DEBUG(2,("ldap_get_smb_passwd: user: %s\n",user_name));
+		
+	get_single_attribute(ldap_struct, entry, "userPassword", user_pass);
+	nt_lm_owf_gen(user_pass, smbntpwd, smblmpwd);
+	bzero(user_pass, sizeof(user_pass)); /* destroy local copy of the password */
+			
+	get_single_attribute(ldap_struct, entry, "userAccountControl", temp);
+	user->acct_ctrl=decode_acct_ctrl(temp);
+
+	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
+	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
+
+	get_single_attribute(ldap_struct, entry, "rid", temp);
+
+	/* the smb (unix) ids are not stored: they are created */
+	user->smb_userid = user_rid_to_uid (atoi(temp));
+
+	if (user->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
+	{
+		DEBUG(0,("Inconsistency in the LDAP database\n"));
+			 
+	}
+	if (user->acct_ctrl & ACB_NORMAL)
+	{
+		user->smb_name      = user_name;
+		user->smb_passwd    = smblmpwd;
+		user->smb_nt_passwd = smbntpwd;
 	}
 }
 
 /*******************************************************************
- retrieve the machine's info and contruct a smb_passwd structure.
+ retrieve the trust's info and contruct a smb_passwd structure.
 ******************************************************************/
-static void ldap_get_machine(LDAP *ldap_struct,LDAPMessage *entry, 
-                             struct smb_passwd *ldap_passwd)
+static void ldap_get_trust(LDAP *ldap_struct,LDAPMessage *entry, 
+                             struct smb_passwd *trust)
 {	
 	static pstring  user_name;
 	static unsigned char smbntpwd[16];
-	char **valeur;
+	static pstring temp;
 	
-	/* by default it's a station */
-	ldap_passwd->acct_ctrl = ACB_WSTRUST;
-
 	get_single_attribute(ldap_struct, entry, "cn", user_name);
-	DEBUG(2,("ldap_get_machine: machine: %s\n", user_name));
+	DEBUG(2,("ldap_get_trust: trust: %s\n", user_name));
 		
-	if ( (valeur=ldap_get_values(ldap_struct, entry, "uidAccount")) != NULL)
-	{
-		ldap_passwd->smb_userid=atoi(valeur[0]);
-		ldap_value_free(valeur);
-	}
+	get_single_attribute(ldap_struct, entry, "trustPassword", temp);
+	gethexpwd(temp,smbntpwd);		
 			
-	if ( (valeur=ldap_get_values(ldap_struct, entry, "machinePassword")) != NULL) 
+	get_single_attribute(ldap_struct, entry, "rid", temp);
+
+	/* the smb (unix) ids are not stored: they are created */
+	trust->smb_userid = user_rid_to_uid(atoi(temp));
+
+	get_single_attribute(ldap_struct, entry, "trustAccountControl", temp);
+	trust->acct_ctrl=decode_acct_ctrl(temp);
+
+	if (trust->acct_ctrl == 0)
 	{
-		gethexpwd(valeur[0],smbntpwd);		
-		ldap_value_free(valeur);		
-	}
-			
-	if ( (valeur=ldap_get_values(ldap_struct,entry, "machineRole") ) != NULL)
-	{
-		if ( !strcmp(valeur[0],"workstation") )
-			ldap_passwd->acct_ctrl=ACB_WSTRUST;
-		else
-		if  ( !strcmp(valeur[0],"server") )
-			ldap_passwd->acct_ctrl=ACB_SVRTRUST;		
-		ldap_value_free(valeur); 
+		/* by default it's a workstation (or stand-alone server) */
+		trust->acct_ctrl = ACB_WSTRUST;
 	}
 
-	ldap_passwd->smb_name=user_name;
-	ldap_passwd->smb_passwd=smbntpwd;
-	ldap_passwd->smb_nt_passwd=smbntpwd;
-}
-
-/*******************************************************************
- find a user or a machine return a smbpass struct.
-******************************************************************/
-static struct smb_passwd *get_ldappwd_entry(char *name, int smb_userid)
-{
-	LDAP *ldap_struct;
-	LDAPMessage *result;
-	LDAPMessage *entry;
-	BOOL machine=False;
-
-	static struct smb_passwd ldap_passwd;
-
-	bzero(&ldap_passwd, sizeof(ldap_passwd));
-
-	ldap_passwd.smb_name      = NULL;
-	ldap_passwd.smb_passwd    = NULL;
-	ldap_passwd.smb_nt_passwd = NULL;
-	
-	ldap_passwd.smb_userid         = -1;
-	ldap_passwd.acct_ctrl          = ACB_DISABLED;
-	ldap_passwd.pass_last_set_time = (time_t)-1;
-
-	ldap_struct=NULL;
-
-	if (name != NULL)
-	{
-		DEBUG(10, ("get_ldappwd_entry: search by name: %s\n", name));
-	}
-	else 
-	{
-		DEBUG(10, ("get_ldappwd_entry: search by smb_userid: %x\n", smb_userid));
-	}
-
-	if (!ldap_open_connection(&ldap_struct))
-		return (NULL);
-	if (!ldap_connect_system(ldap_struct))
-		return (NULL);
-		
-	if (name != NULL)
-	{
-		if (!ldap_search_one_user_by_name(ldap_struct, name, &result))
-			return (NULL);
-	} 
-	else
-	{
-		if (!ldap_search_one_user_by_uid(ldap_struct, smb_userid, &result))
-			return (NULL);
-	}
-	
-	if (ldap_count_entries(ldap_struct, result) == 0)
-	{
-		DEBUG(2,("%s: Non existant user!\n", timestring() ));
-		return (NULL);	
-	}
-		
-	if (ldap_count_entries(ldap_struct, result) > 1)
-	{
-		DEBUG(2,("%s: Strange %d users in the base!\n",
-		         timestring(), ldap_count_entries(ldap_struct, result) ));
-	}
-	/* take the first and unique entry */
-	entry=ldap_first_entry(ldap_struct, result);
-
-	if (name != NULL)
-	{
-		DEBUG(0,("get_ldappwd_entry: Found user: %s\n",name));
-
-		machine = name[strlen(name)-1] == '$';
-	}
-		
-	if (!machine)
-	{
-		if (ldap_check_user(ldap_struct, entry))
-			ldap_get_user(ldap_struct, entry, &ldap_passwd);
-	}
-	else
-	{
-		if (ldap_check_machine(ldap_struct, entry))
-			ldap_get_machine(ldap_struct, entry, &ldap_passwd);
-	}
-				
-	ldap_msgfree(result);
-	result=NULL;
-	ldap_unbind(ldap_struct);
-		
-	return(&ldap_passwd);
+	trust->smb_name      = user_name;
+	trust->smb_passwd    = NULL;
+	trust->smb_nt_passwd = smbntpwd;
 }
 
 /************************************************************************
@@ -422,30 +427,6 @@ BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
 BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
 {
     return False;
-}
-
-/************************************************************************
- Routine to search ldap passwd by name.
-
- do not call this function directly.  use passdb.c instead.
-
-*************************************************************************/
-
-struct smb_passwd *getldappwnam(char *name)
-{
-  return get_ldappwd_entry(name, 0);
-}
-
-/************************************************************************
- Routine to search ldap passwd by uid.
-
- do not call this function directly.  use passdb.c instead.
-
-*************************************************************************/
-
-struct smb_passwd *getldappwuid(unsigned int uid)
-{
-	return get_ldappwd_entry(NULL, uid);
 }
 
 /***************************************************************
@@ -526,6 +507,9 @@ struct smb_passwd *getldappwent(void *vp)
 
 /***************************************************************
  End enumeration of the ldap passwd list.
+
+ do not call this function directly.  use passdb.c instead.
+
 ****************************************************************/
 void endldappwent(void *vp)
 {
