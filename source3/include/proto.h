@@ -866,7 +866,7 @@ int open_socket_in(int type, int port, int dlevel);
 int open_socket_out(int type, struct in_addr *addr, int port );
 int interpret_protocol(char *str,int def);
 int interpret_security(char *str,int def);
-unsigned long interpret_addr(char *str);
+uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
 void standard_sub_basic(char *s);

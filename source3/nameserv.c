@@ -185,8 +185,6 @@ void add_my_names(void)
 
   for (d = subnetlist; d; d = d->next)
   {
-    BOOL wins_iface = ip_equal(d->bcast_ip, ipgrp);
-
 	add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE);
 	add_my_name_entry(d, myname,0x03,nb_type|NB_ACTIVE);
 	add_my_name_entry(d, myname,0x00,nb_type|NB_ACTIVE);

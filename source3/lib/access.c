@@ -272,20 +272,20 @@ static int string_match(char *tok,char *s)
 /* masked_match - match address against netnumber/netmask */
 static int masked_match(char *tok, char *slash, char *s)
 {
-    unsigned long net;
-    unsigned long mask;
-    unsigned long addr;
+  uint32 net;
+  uint32 mask;
+  uint32 addr;
 
-    if ((addr = interpret_addr(s)) == INADDR_NONE)
-	return (NO);
-    *slash = 0;
-    net = interpret_addr(tok);
-    *slash = '/';
-    if (net == INADDR_NONE || (mask = interpret_addr(slash + 1)) == INADDR_NONE) {
-	DEBUG(0,("access: bad net/mask access control: %s", tok));
-	return (NO);
-    }
-    return ((addr & mask) == net);
+  if ((addr = interpret_addr(s)) == INADDR_NONE)
+    return (NO);
+  *slash = 0;
+  net = interpret_addr(tok);
+  *slash = '/';
+  if (net == INADDR_NONE || (mask = interpret_addr(slash + 1)) == INADDR_NONE) {
+    DEBUG(0,("access: bad net/mask access control: %s", tok));
+    return (NO);
+  }
+  return ((addr & mask) == net);
 }
 
 
