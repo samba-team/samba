@@ -37,6 +37,8 @@ char *get_file_mode_str(uint32 share_mode)
 		case DENY_DOS  : fstrcpy(mode, "DENY_DOS   "); break;
 		case DENY_READ : fstrcpy(mode, "DENY_READ  "); break;
 		case DENY_WRITE: fstrcpy(mode, "DENY_WRITE "); break;
+		case DENY_FCB: 
+		case 0xFF:       fstrcpy(mode, "DENY_FCB "); break;
 		default        : fstrcpy(mode, "DENY_????  "); break;
 	}
 
