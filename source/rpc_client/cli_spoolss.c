@@ -661,7 +661,8 @@ WERROR cli_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 		
-	make_spoolss_q_setprinter(mem_ctx, &q, pol, level, ctr, command);
+	if (!make_spoolss_q_setprinter(mem_ctx, &q, pol, level, ctr, command))
+		goto done;
 
 	/* Marshall data and send request */
 
@@ -1335,8 +1336,16 @@ WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if (needed)
 		*needed = r.needed;
 
-	if (W_ERROR_IS_OK(result)) 
-		smb_io_form_1("", r.buffer, form, 0);
+	if (W_ERROR_IS_OK(result)) {
+		switch(level) {
+		case 1:
+			smb_io_form_1("", r.buffer, form, 0);
+			break;
+		default:
+			DEBUG(10, ("cli_spoolss_getform: unknown info level %d", level));
+			return WERR_UNKNOWN_LEVEL;
+		}
+	}
 
  done:
 	prs_mem_free(&qbuf);
