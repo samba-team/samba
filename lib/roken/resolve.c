@@ -228,7 +228,7 @@ dns_lookup(const char *domain, const char *type_name)
 #else /* defined(HAVE_RES_SEARCH) && defined(HAVE_DN_EXPAND) */
 
 struct dns_reply *
-dns_lookup(char *domain, char *type_name)
+dns_lookup(const char *domain, const char *type_name)
 {
     return NULL;
 }
