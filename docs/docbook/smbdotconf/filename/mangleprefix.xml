@@ -9,6 +9,10 @@
 	hash and therefore more name collisions. The minimum
 	value is 1 and the maximum value is 6.</para>
 
+	<para>
+	mangle prefix is effective only when mangling method is hash2.
+	</para>
+
 	<para>Default: <command moreinfo="none">mangle prefix = 1</command></para>
 
 	<para>Example: <command moreinfo="none">mangle prefix = 4</command></para>
