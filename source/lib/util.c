@@ -156,7 +156,7 @@ static void check_log_size(void)
   int maxlog;
   struct stat st;
 
-  if (debug_count++ < 100) return;
+  if (debug_count++ < 100 || getuid() != 0) return;
 
   maxlog = lp_max_log_size() * 1024;
   if (!dbf || maxlog <= 0) return;
@@ -190,7 +190,8 @@ va_dcl
   char *format_str;
 #endif
   va_list ap;  
-  
+  int old_errno = errno;
+
   if (stdout_logging) {
 #ifdef __STDC__
     va_start(ap, format_str);
@@ -200,6 +201,7 @@ va_dcl
 #endif
     vfprintf(dbf,format_str,ap);
     va_end(ap);
+    errno = old_errno;
     return(0);
   }
   
@@ -207,16 +209,17 @@ va_dcl
   if (!lp_syslog_only())
 #endif  
     {
-      if (!dbf) 
-	{
-	  int oldumask = umask(022);
-      	  dbf = fopen(debugf,"w");
-	  umask(oldumask);
-	  if (dbf)
-	    setbuf(dbf,NULL);
-	  else
-	    return(0);
-	}
+      if (!dbf) {
+	      int oldumask = umask(022);
+	      dbf = fopen(debugf,"w");
+	      umask(oldumask);
+	      if (dbf) {
+		      setbuf(dbf,NULL);
+	      } else {
+		      errno = old_errno;
+		      return(0);
+	      }
+      }
     }
 
 #ifdef SYSLOG
@@ -272,6 +275,8 @@ va_dcl
     }
 
   check_log_size();
+
+  errno = old_errno;
 
   return(0);
 }
