@@ -5,6 +5,7 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000.
+ *  Copyright (C) Gerald Carter                2000
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -720,6 +721,112 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, strlen(clientname));
 	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, strlen(user_name));
 	
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_addprinterex(SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name,
+				 const char* clientname, const char* user_name,
+				 uint32 level, PRINTER_INFO_2 *info)
+{
+	DEBUG(5,("make_spoolss_q_addprinterex\n"));
+
+	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
+	init_unistr2(&q_u->server_name, srv_name, strlen(srv_name));
+
+	q_u->level = level;
+	
+	q_u->info.level = level;
+	q_u->info.info_ptr = (info!=NULL)?1:0;
+	switch (level)
+	{
+		case 2:
+			/* init q_u->info.info2 from *info */
+			if (!make_spool_printer_info_2( &q_u->info.info_2, info))
+			{
+				DEBUG(0,("make_spoolss_q_addprinterex: Unable to fill SPOOL_Q_ADDPRINTEREX struct!\n"));
+				return False;
+			}
+			break;
+		default :
+			break;
+	}
+
+	q_u->unk0 = q_u->unk1 = q_u->unk2 = q_u->unk3 = 0;
+
+	q_u->user_switch=1;
+
+	q_u->user_ctr.level=1;
+	q_u->user_ctr.ptr=1;
+	q_u->user_ctr.user1.size=strlen(clientname)+strlen(user_name)+8;
+	q_u->user_ctr.user1.client_name_ptr = (clientname!=NULL)?1:0;
+	q_u->user_ctr.user1.user_name_ptr = (user_name!=NULL)?1:0;
+	q_u->user_ctr.user1.build=1381;
+	q_u->user_ctr.user1.major=2;
+	q_u->user_ctr.user1.minor=0;
+	q_u->user_ctr.user1.processor=0;
+	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, strlen(clientname));
+	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, strlen(user_name));
+	
+	return True;
+}
+/*******************************************************************
+create a SPOOL_PRINTER_INFO_2 stuct from a PRINTER_INFO_2 struct
+*******************************************************************/
+BOOL make_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
+			       PRINTER_INFO_2 *info)
+{
+
+	SPOOL_PRINTER_INFO_LEVEL_2 *inf;
+
+	/* allocate the necessary memory */
+	inf = (SPOOL_PRINTER_INFO_LEVEL_2*)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2));
+	if (spool_info2 == NULL)
+	{
+		DEBUG(0,("make_spool_printer_info_2: Unable to malloc SPOOL_PRINTER_INFO_LEVEL_2 sruct!\n"));
+		return False;
+	}
+	
+	ZERO_STRUCTP(inf);
+	
+	inf->servername_ptr 	= (info->servername.buffer!=NULL)?1:0;
+	inf->printername_ptr 	= (info->printername.buffer!=NULL)?1:0;
+	inf->sharename_ptr 	= (info->sharename.buffer!=NULL)?1:0;
+	inf->portname_ptr 	= (info->portname.buffer!=NULL)?1:0;
+	inf->drivername_ptr 	= (info->drivername.buffer!=NULL)?1:0;
+	inf->comment_ptr 	= (info->comment.buffer!=NULL)?1:0;
+	inf->location_ptr 	= (info->location.buffer!=NULL)?1:0;
+	inf->devmode_ptr 	= (info->devmode!=NULL)?1:0;
+	inf->sepfile_ptr 	= (info->sepfile.buffer!=NULL)?1:0;
+	inf->printprocessor_ptr = (info->printprocessor.buffer!=NULL)?1:0;
+	inf->datatype_ptr 	= (info->datatype.buffer!=NULL)?1:0;
+	inf->parameters_ptr 	= (info->parameters.buffer!=NULL)?1:0;
+	inf->secdesc_ptr 	= (info->secdesc!=NULL)?1:0;
+	inf->attributes 	= info->attributes;
+	inf->priority 		= info->priority;
+	inf->default_priority 	= info->defaultpriority;
+	inf->starttime		= info->starttime;
+	inf->untiltime		= info->untiltime;
+	inf->cjobs		= info->cjobs;
+	inf->averageppm	= info->averageppm;
+	init_unistr2_from_unistr(&inf->servername, 	&info->servername);
+	init_unistr2_from_unistr(&inf->printername, 	&info->printername);
+	init_unistr2_from_unistr(&inf->sharename, 	&info->sharename);
+	init_unistr2_from_unistr(&inf->portname, 	&info->portname);
+	init_unistr2_from_unistr(&inf->drivername, 	&info->drivername);
+	init_unistr2_from_unistr(&inf->comment, 	&info->comment);
+	init_unistr2_from_unistr(&inf->location, 	&info->location);
+	init_unistr2_from_unistr(&inf->sepfile, 	&info->sepfile);
+	init_unistr2_from_unistr(&inf->printprocessor,	&info->printprocessor);
+	init_unistr2_from_unistr(&inf->datatype, 	&info->datatype);
+	init_unistr2_from_unistr(&inf->parameters, 	&info->parameters);
+	init_unistr2_from_unistr(&inf->datatype, 	&info->datatype);
+	inf->secdesc 	= NULL;
+
+	*spool_info2 = inf;
+
 	return True;
 }
 
@@ -3741,12 +3848,6 @@ BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct
 	prs_debug(ps, depth, desc, "spoolss_io_q_addprinterex");
 	depth++;
 
-	/*
-	 * I think that's one of the few well written functions.
-	 * the sub-structures are correctly parsed and analysed
-	 * the info level are handled in a nice way.
-	 */
-
 	if(!prs_align(ps))
 		return False;
 	if(!prs_uint32("", ps, depth, &q_u->server_name_ptr))
@@ -3772,6 +3873,8 @@ BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct
 	 * et le security descriptor.
 	 */
 	
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("unk0", ps, depth, &q_u->unk0))
 		return False;
 	if(!prs_uint32("unk1", ps, depth, &q_u->unk1))
@@ -3789,10 +3892,10 @@ BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct
 	return True;
 }
 
-
 /*******************************************************************
 ********************************************************************/  
-BOOL spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u, 
+			       prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_addprinterex");
 	depth++;

@@ -545,31 +545,77 @@ BOOL spoolss_open_printer_ex(  const char *printername,
  do a SPOOLSS AddPrinterEx()
  **ALWAYS** uses as PRINTER_INFO level 2 struct
 ****************************************************************************/
-BOOL spoolss_addprinterex(POLICY_HND *hnd, PRINTER_INFO_2 *info2)
+uint32 spoolss_addprinterex(POLICY_HND *hnd,const char* srv_name, PRINTER_INFO_2 *info2)
 {
-#if 0
         prs_struct rbuf;
         prs_struct buf;
         SPOOL_Q_ADDPRINTEREX q_o;
+        SPOOL_R_ADDPRINTEREX r_o;
         BOOL valid_pol = False;
-        fstring srv_name;
         char *s = NULL;
 	struct cli_connection *con = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+        fstring client_name;
 
 
-        memset(srv_name, 0, sizeof(srv_name));
-        unistr_to_ascii(srv_name, info2->servername.buffer, sizeof(srv_name));
+
+       /*  memset(srv_name, 0, sizeof(srv_name));
+        unistr_to_ascii(srv_name, info2->servername.buffer, sizeof(srv_name)); */
 
         if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
-                return False;
+                return NT_STATUS_ACCESS_DENIED;
 
-        if (hnd == NULL) return False;
+        if (hnd == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
 
-        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        prs_init(&rbuf, 0, 4, UNMARSHALL);
-#endif
+	if ((mem_ctx=talloc_init()) == NULL)
+	{
+		DEBUG(0,("spoolss_addprinterex: talloc_init() failed!\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, mem_ctx, MARSHALL);
+        prs_init(&rbuf, 0, 4, mem_ctx, UNMARSHALL);
 
-	return True;
+        /* create and send a MSRPC command with api SPOOLSS_ENUMPORTS */
+        DEBUG(5,("SPOOLSS Add Printer Ex (Server: %s)\n", srv_name));
+	
+        fstrcpy(client_name, "\\\\");
+        fstrcat(client_name, con->pCli_state->desthost);
+        strupper(client_name);
+	
+
+        make_spoolss_q_addprinterex(&q_o, srv_name, client_name, 
+				    "Administrator", 2, info2);
+
+        /* turn parameters into data stream */
+        if (!spoolss_io_q_addprinterex("", &q_o, &buf, 0) ) {
+                prs_mem_free(&rbuf);
+                prs_mem_free(&buf );
+
+                cli_connection_unlink(con);
+        }
+
+        if(!rpc_con_pipe_req(con, SPOOLSS_ADDPRINTEREX, &buf, &rbuf)) {
+                prs_mem_free(&rbuf);
+                prs_mem_free(&buf );
+
+                cli_connection_unlink(con);
+        }
+
+        prs_mem_free(&buf );
+        ZERO_STRUCT(r_o);
+
+        if(!spoolss_io_r_addprinterex("", &r_o, &rbuf, 0)) {
+                prs_mem_free(&rbuf);
+                cli_connection_unlink(con);
+        }
+
+        prs_mem_free(&rbuf);
+        prs_mem_free(&buf );
+
+        cli_connection_unlink(con);
+
+        return r_o.status;
 }
 
 /****************************************************************************
