@@ -393,7 +393,7 @@ static struct cli_state *connect_one(const char *share)
 	pstring set_str = {0};
 	enum SMB_QUOTA_TYPE qtype;
 	int cmd = 0;
-	BOOL test_args = False;
+	static BOOL test_args = False;
 	struct cli_state *cli;
 	BOOL fix_user = False;
 	SMB_NTQUOTA_STRUCT qt;
