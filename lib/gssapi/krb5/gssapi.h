@@ -39,13 +39,11 @@ typedef u_int32_t OM_uint32;
  * This is to avoid having to include <krb5.h>
  */
 
-struct krb5_principal_data;
-
 struct krb5_auth_context_data;
 
 /* */
 
-typedef struct krb5_principal_data *gss_name_t;
+typedef void *gss_name_t;
 
 typedef struct gss_ctx_id_t_desc_struct {
   struct krb5_auth_context_data *auth_context;
