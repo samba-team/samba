@@ -486,7 +486,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name, enum SID_NAME_USE *
 		fstring sidstr;
 
 		sid_to_string(sidstr, sid);
-		store_name_by_sid_in_cache(sidstr, "", SID_NAME_USE_NONE);
+		store_name_by_sid_in_cache(sid, "", SID_NAME_USE_NONE);
 	}
 
 	rv = NT_STATUS_IS_OK(result);
