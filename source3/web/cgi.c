@@ -221,19 +221,17 @@ void cgi_load_variables(void)
 		pstring dest;
 
 		convert_string(CH_DISPLAY, CH_UNIX, 
-			       variables[i].name, -1, 
+			       variables[i].name, strlen(variables[i].name), 
 			       dest, sizeof(dest));
 		free(variables[i].name);
 		variables[i].name = strdup(dest);
 
 		convert_string(CH_DISPLAY, CH_UNIX, 
-			       variables[i].value, -1, 
+			       variables[i].value, strlen(variables[i].name), 
 			       dest, sizeof(dest));
 		free(variables[i].value);
 		variables[i].value = strdup(dest);
 	}
-
-
 }
 
 
