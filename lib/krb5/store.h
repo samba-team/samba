@@ -29,4 +29,16 @@ __PT(authdata, krb5_data);
 
 #undef __PT
 
+krb5_error_code
+krb5_store_string(krb5_storage *sp, char *s);
+
+krb5_error_code
+krb5_ret_string(krb5_storage *sp, char **string);
+
+/* mem */
+
+size_t mem_store(krb5_storage *sp, void *data, size_t size);
+off_t  mem_seek(krb5_storage *sp, off_t offset, int whence);
+
+
 #endif /* __STORE_H__ */
