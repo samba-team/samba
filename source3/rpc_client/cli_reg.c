@@ -28,7 +28,8 @@
 /* Shutdown a server */
 
 NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
-                          const char *msg, uint32 timeout, uint16 flags)
+                          const char *msg, uint32 timeout, BOOL reboot,
+			  BOOL force)
 {
 	prs_struct qbuf;
 	prs_struct rbuf; 
@@ -46,7 +47,7 @@ NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	init_reg_q_shutdown(&q_s, msg, timeout, flags);
+	init_reg_q_shutdown(&q_s, msg, timeout, reboot, force);
 
 	if (!reg_io_q_shutdown("", &q_s, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, REG_SHUTDOWN, &qbuf, &rbuf))
