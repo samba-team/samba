@@ -233,8 +233,8 @@ samba_cv_HAVE_SENDFILEV=yes,samba_cv_HAVE_SENDFILEV=no)])
 SMB_MODULE(ntvfs_cifs, NTVFS, STATIC, [ntvfs/cifs/vfs_cifs.o])
 
 SMB_MODULE(ntvfs_simple, NTVFS, STATIC, 
-		[ntvfs/simple/vfs_simple.o ntvfs/simple/svfs_util.o], 
-		ntvfs/simple/svfs_private.h)
+		[ntvfs/simple/vfs_simple.o],
+		[ntvfs/simple/svfs_util.o])
 
 SMB_MODULE(ntvfs_print, NTVFS, STATIC, [ntvfs/print/vfs_print.o])
 
@@ -245,5 +245,5 @@ SMB_MODULE(ntvfs_posix, NTVFS, STATIC, [ntvfs/posix/vfs_posix.o])
 SMB_MODULE(ntvfs_nbench, NTVFS, STATIC, [ntvfs/nbench/vfs_nbench.o])
 
 SMB_SUBSYSTEM(NTVFS,ntvfs/ntvfs_base.o,
-		[ntvfs/ntvfs_generic.o ntvfs/ntvfs_util.o],
-		ntvfs_public_proto.h)
+		[ntvfs/ntvfs_generic.o
+		ntvfs/ntvfs_util.o])

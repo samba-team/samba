@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-void print_tree(int l, REG_KEY *p, int fullpath, int novals)
+static void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 {
 	REG_KEY *subkey;
 	REG_VAL *value;

@@ -173,7 +173,7 @@ static REG_KEY *cmd_help(REG_KEY *cur, int argc, char **argv)
 	return NULL;
 } 
 
-REG_KEY *process_cmd(REG_KEY *k, char *line)
+static REG_KEY *process_cmd(REG_KEY *k, char *line)
 {
 	int argc;
 	char **argv = NULL;
@@ -196,7 +196,7 @@ REG_KEY *process_cmd(REG_KEY *k, char *line)
 	return k;
 }
 
-int main (int argc, char **argv)
+ int main(int argc, char **argv)
 {
 	int opt;
 	const char *backend = "dir";

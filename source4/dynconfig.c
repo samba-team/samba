@@ -40,7 +40,7 @@
  * table?  There's kind of a chicken-and-egg situation there...
  **/
 
-char const *dyn_SBINDIR = SBINDIR,
+const char *dyn_SBINDIR = SBINDIR,
 	*dyn_BINDIR = BINDIR;
 
 pstring dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/

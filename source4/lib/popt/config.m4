@@ -33,8 +33,9 @@ else
 	AC_MSG_RESULT(no)
 fi
 
+#hack
+LIBS="$LIBS ${TMP_LIBPOPT_LIBS}"
+
 SMB_SUBSYSTEM(LIBPOPT,[],
 		[${TMP_LIBPOPT_OBJS}],
-		[],
-		[],
-		[${TMP_LIBPOPT_LIBS}])
+		[])
