@@ -243,7 +243,7 @@ static inline void __spin_lock(spinlock_t *lock)
 	}
 }
 
-static void __read_lock(rwlock_t *rwlock)
+static void __read_lock(tdb_rwlock_t *rwlock)
 {
 	int ntries = 0;
 
@@ -266,7 +266,7 @@ static void __read_lock(rwlock_t *rwlock)
 	}
 }
 
-static void __write_lock(rwlock_t *rwlock)
+static void __write_lock(tdb_rwlock_t *rwlock)
 {
 	int ntries = 0;
 
@@ -289,7 +289,7 @@ static void __write_lock(rwlock_t *rwlock)
 	}
 }
 
-static void __write_unlock(rwlock_t *rwlock)
+static void __write_unlock(tdb_rwlock_t *rwlock)
 {
 	__spin_lock(&rwlock->lock);
 
@@ -302,7 +302,7 @@ static void __write_unlock(rwlock_t *rwlock)
 	__spin_unlock(&rwlock->lock);
 }
 
-static void __read_unlock(rwlock_t *rwlock)
+static void __read_unlock(tdb_rwlock_t *rwlock)
 {
 	__spin_lock(&rwlock->lock);
 
@@ -323,10 +323,10 @@ static void __read_unlock(rwlock_t *rwlock)
 /* lock a list in the database. list -1 is the alloc list */
 int tdb_spinlock(TDB_CONTEXT *tdb, int list, int rw_type)
 {
-	rwlock_t *rwlocks;
+	tdb_rwlock_t *rwlocks;
 
 	if (!tdb->map_ptr) return -1;
-	rwlocks = (rwlock_t *)((char *)tdb->map_ptr + tdb->header.rwlocks);
+	rwlocks = (tdb_rwlock_t *)((char *)tdb->map_ptr + tdb->header.rwlocks);
 
 	switch(rw_type) {
 	case F_RDLCK:
@@ -346,10 +346,10 @@ int tdb_spinlock(TDB_CONTEXT *tdb, int list, int rw_type)
 /* unlock the database. */
 int tdb_spinunlock(TDB_CONTEXT *tdb, int list, int rw_type)
 {
-	rwlock_t *rwlocks;
+	tdb_rwlock_t *rwlocks;
 
 	if (!tdb->map_ptr) return -1;
-	rwlocks = (rwlock_t *)((char *)tdb->map_ptr + tdb->header.rwlocks);
+	rwlocks = (tdb_rwlock_t *)((char *)tdb->map_ptr + tdb->header.rwlocks);
 
 	switch(rw_type) {
 	case F_RDLCK:
@@ -370,9 +370,9 @@ int tdb_spinunlock(TDB_CONTEXT *tdb, int list, int rw_type)
 int tdb_create_rwlocks(int fd, unsigned int hash_size)
 {
 	unsigned size, i;
-	rwlock_t *rwlocks;
+	tdb_rwlock_t *rwlocks;
 
-	size = (hash_size + 1) * sizeof(rwlock_t);
+	size = (hash_size + 1) * sizeof(tdb_rwlock_t);
 	rwlocks = malloc(size);
 	if (!rwlocks)
 		return -1;
@@ -394,14 +394,14 @@ int tdb_create_rwlocks(int fd, unsigned int hash_size)
 
 int tdb_clear_spinlocks(TDB_CONTEXT *tdb)
 {
-	rwlock_t *rwlocks;
+	tdb_rwlock_t *rwlocks;
 	unsigned i;
 
 	if (tdb->header.rwlocks == 0) return 0;
 	if (!tdb->map_ptr) return -1;
 
 	/* We're mmapped here */
-	rwlocks = (rwlock_t *)((char *)tdb->map_ptr + tdb->header.rwlocks);
+	rwlocks = (tdb_rwlock_t *)((char *)tdb->map_ptr + tdb->header.rwlocks);
 	for(i = 0; i < tdb->header.hash_size+1; i++) {
 		__spin_lock_init(&rwlocks[i].lock);
 		rwlocks[i].count = 0;
