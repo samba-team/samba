@@ -1536,6 +1536,7 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
 BOOL lp_file_list_changed(void);
 void *lp_local_ptr(int snum, void *ptr);
 BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue);
+void init_locals(void);
 BOOL lp_is_default(int snum, struct parm_struct *parm);
 struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters);
 BOOL lp_snum_ok(int iService);
@@ -2131,7 +2132,7 @@ BOOL dfs_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
 void init_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
-			uint32 sid_name_use, char *name, uint32 idx);
+			uint16 sid_name_use, char *name, uint32 idx);
 void init_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
 				uint32 unknown);
 void init_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos);
@@ -2147,6 +2148,9 @@ void init_q_open_pol2(LSA_Q_OPEN_POL2 *r_q, char *server_name,
 			LSA_SEC_QOS *qos);
 BOOL lsa_io_q_open_pol2(char *desc, LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int depth);
 BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int depth);
+void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *q_q, const POLICY_HND *hnd, uint32 sec_info);
+BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ *q_q, prs_struct *ps, int depth);
+BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth);
 void init_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
 BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth);
 BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth);
@@ -2780,6 +2784,7 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info);
 uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info);
 uint32 spoolss_size_printer_driver_info_1(DRIVER_INFO_1 *info);
 uint32 spoolss_size_printer_driver_info_2(DRIVER_INFO_2 *info);
+uint32 spoolss_size_string_array(uint16 *string);
 uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info);
 uint32 spoolss_size_printer_driver_info_6(DRIVER_INFO_6 *info);
 uint32 spoolss_size_job_info_1(JOB_INFO_1 *info);

@@ -1473,11 +1473,18 @@ static int call_nt_transact_rename(connection_struct *conn,
           fsp->fsp_name, new_name));
 
     outsize = -1;
+
+	/*
+	 * Win2k needs a changenotify request response before it will
+	 * update after a rename..
+	 */
+
+	process_pending_change_notify_queue((time_t)0);
   }
 
   return(outsize);
 }
-   
+
 
 /****************************************************************************
  Reply to query a security descriptor - currently this is not implemented (it

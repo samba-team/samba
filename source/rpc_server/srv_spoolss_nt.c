@@ -247,7 +247,7 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 		DEBUGADD(10,("Unlinking output file [%s]\n", tmp_file));
 		unlink(tmp_file);
 
-		// Send SIGHUP to process group... is there a better way?
+		/* Send SIGHUP to process group... is there a better way? */
 		kill(0, SIGHUP);
 
 		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
@@ -3322,11 +3322,11 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	unlink(tmp_file);
 
 	if(numlines) {
-		// Set the portname to what the script says the portname should be
+		/* Set the portname to what the script says the portname should be */
 		strncpy(printer->info_2->portname, qlines[0], sizeof(printer->info_2->portname));
 		DEBUGADD(6,("Line[0] = [%s]\n", qlines[0]));
 
-		// Send SIGHUP to process group... is there a better way?
+		/* Send SIGHUP to process group... is there a better way? */
 		kill(0, SIGHUP);
 		add_all_printers();
 	}
@@ -4253,7 +4253,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		DEBUG(10,("Returned [%d]\n", ret));
 		if (ret != 0) {
 			unlink(tmp_file);
-			// Is this the best error to return here?
+			/* Is this the best error to return here? */
 			return ERROR_ACCESS_DENIED;
 		}
 
@@ -4351,7 +4351,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		DEBUGADD(10,("returned [%d]\n", ret));
 		if (ret != 0) {
 			unlink(tmp_file);
-			// Is this the best error to return here?
+			/* Is this the best error to return here? */
 			return ERROR_ACCESS_DENIED;
 		}
 
