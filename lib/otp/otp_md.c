@@ -72,10 +72,10 @@ otp_md_init (OtpKey key,
 	     char *pwd,
 	     char *seed,
 	     void (*init)(void *),
-	     void (*update)(void *, u_char *, size_t),
-	     void (*finito)(void *, char *),
+	     void (*update)(void *, void *, size_t),
+	     void (*finito)(void *, void *),
 	     void *arg,
-	     char *res,
+	     unsigned char *res,
 	     size_t ressz)
 {
   char *p;
@@ -98,10 +98,10 @@ otp_md_init (OtpKey key,
 static int
 otp_md_next (OtpKey key,
 	     void (*init)(void *),
-	     void (*update)(void *, u_char *, size_t),
-	     void (*finito)(void *, char *),
+	     void (*update)(void *, void *, size_t),
+	     void (*finito)(void *, void *),
 	     void *arg,
-	     char *res,
+	     unsigned char *res,
 	     size_t ressz)
 {
   (*init)(arg);
@@ -115,10 +115,10 @@ static int
 otp_md_hash (char *data,
 	     size_t len,
 	     void (*init)(void *),
-	     void (*update)(void *, u_char *, size_t),
-	     void (*finito)(void *, char *),
+	     void (*update)(void *, void *, size_t),
+	     void (*finito)(void *, void *),
 	     void *arg,
-	     char *res,
+	     unsigned char *res,
 	     size_t ressz)
 {
   (*init)(arg);
@@ -135,22 +135,22 @@ otp_md4_init (OtpKey key, char *pwd, char *seed)
 
   return otp_md_init (key, pwd, seed,
 		      (void (*)(void *))md4_init,
-		      (void (*)(void *, u_char *, size_t))md4_update, 
-		      (void (*)(void *, char *))md4_finito,
+		      (void (*)(void *, void *, size_t))md4_update, 
+		      (void (*)(void *, void *))md4_finito,
 		      &md4, res, sizeof(res));
 }
 
 int
 otp_md4_hash (char *data,
 	      size_t len,
-	      char *res)
+	      unsigned char *res)
 {
   struct md4 md4;
 
   return otp_md_hash (data, len,
 		      (void (*)(void *))md4_init,
-		      (void (*)(void *, u_char *, size_t))md4_update, 
-		      (void (*)(void *, char *))md4_finito,
+		      (void (*)(void *, void *, size_t))md4_update, 
+		      (void (*)(void *, void *))md4_finito,
 		      &md4, res, 16);
 }
 
@@ -162,8 +162,8 @@ otp_md4_next (OtpKey key)
 
   return otp_md_next (key, 
 		      (void (*)(void *))md4_init, 
-		      (void (*)(void *, u_char *, size_t))md4_update, 
-		      (void (*)(void *, char *))md4_finito,
+		      (void (*)(void *, void *, size_t))md4_update, 
+		      (void (*)(void *, void *))md4_finito,
 		      &md4, res, sizeof(res));
 }
 
@@ -176,22 +176,22 @@ otp_md5_init (OtpKey key, char *pwd, char *seed)
 
   return otp_md_init (key, pwd, seed, 
 		      (void (*)(void *))md5_init, 
-		      (void (*)(void *, u_char *, size_t))md5_update, 
-		      (void (*)(void *, char *))md5_finito,
+		      (void (*)(void *, void *, size_t))md5_update, 
+		      (void (*)(void *, void *))md5_finito,
 		      &md5, res, sizeof(res));
 }
 
 int
 otp_md5_hash (char *data,
 	      size_t len,
-	      char *res)
+	      unsigned char *res)
 {
   struct md5 md5;
 
   return otp_md_hash (data, len,
 		      (void (*)(void *))md5_init,
-		      (void (*)(void *, u_char *, size_t))md5_update, 
-		      (void (*)(void *, char *))md5_finito,
+		      (void (*)(void *, void *, size_t))md5_update, 
+		      (void (*)(void *, void *))md5_finito,
 		      &md5, res, 16);
 }
 
@@ -203,8 +203,8 @@ otp_md5_next (OtpKey key)
 
   return otp_md_next (key, 
 		      (void (*)(void *))md5_init, 
-		      (void (*)(void *, u_char *, size_t))md5_update, 
-		      (void (*)(void *, char *))md5_finito,
+		      (void (*)(void *, void *, size_t))md5_update, 
+		      (void (*)(void *, void *))md5_finito,
 		      &md5, res, sizeof(res));
 }
 
@@ -216,22 +216,22 @@ otp_sha_init (OtpKey key, char *pwd, char *seed)
 
   return otp_md_init (key, pwd, seed, 
 		      (void (*)(void *))sha_init, 
-		      (void (*)(void *, u_char *, size_t))sha_update, 
-		      (void (*)(void *, char *))sha_finito,
+		      (void (*)(void *, void *, size_t))sha_update, 
+		      (void (*)(void *, void *))sha_finito,
 		      &sha, res, sizeof(res));
 }
 
 int
 otp_sha_hash (char *data,
 	      size_t len,
-	      char *res)
+	      unsigned char *res)
 {
   struct sha sha;
 
   return otp_md_hash (data, len,
 		      (void (*)(void *))sha_init,
-		      (void (*)(void *, u_char *, size_t))sha_update, 
-		      (void (*)(void *, char *))sha_finito,
+		      (void (*)(void *, void *, size_t))sha_update, 
+		      (void (*)(void *, void *))sha_finito,
 		      &sha, res, 20);
 }
 
@@ -243,7 +243,7 @@ otp_sha_next (OtpKey key)
 
   return otp_md_next (key, 
 		      (void (*)(void *))sha_init, 
-		      (void (*)(void *, u_char *, size_t))sha_update, 
-		      (void (*)(void *, char *))sha_finito,
+		      (void (*)(void *, void *, size_t))sha_update, 
+		      (void (*)(void *, void *))sha_finito,
 		      &sha, res, sizeof(res));
 }

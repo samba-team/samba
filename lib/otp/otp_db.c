@@ -82,7 +82,7 @@ otp_get (void *v, OtpContext *ctx)
 {
   DBM *dbm = (DBM *)v;
   datum dat, key;
-  unsigned char *p;
+  char *p;
   time_t now, then;
 
   key.dsize = strlen(ctx->user);
@@ -120,7 +120,7 @@ otp_put (void *v, OtpContext *ctx)
 {
   DBM *dbm = (DBM *)v;
   datum dat, key;
-  unsigned char buf[1024], *p;
+  char buf[1024], *p;
   time_t zero = 0;
 
   key.dsize = strlen(ctx->user);
