@@ -1,0 +1,105 @@
+-*- indented-text -*-
+
+- admin
+
+- appl
+
+* more programs here
+
+- appl/rsh
+
+* forwarding is not implemented at all.
+
+* perhaps rsh and rshd should be able to handle `traditional'
+  rsh-protocol as well.
+
+- appl/telnet
+
+* forwarding not implemented.
+
+- appl/test
+
+- kdc
+
+* implement support for interoperability with kerberos V4.
+
+* needs a configuration file.
+
+* the requirement for preauthentication should be configurable.
+
+- kuser
+
+* kinit misses lots of useful options.
+
+* kinit should try to give better error messages.
+
+- lib
+
+- lib/asn1
+
+- lib/auth
+
+- lib/des
+
+- lib/editline
+
+- lib/error
+
+- lib/gssapi
+
+* acquire_cred, release_cred, process_context_token, context_time,
+  display_status, compare_names, export_name, inquire_cred,
+  wrap_size_limit, add_cred, inquire_cred_by_mech, export_sec_context,
+  import_sec_context, inquire_names_for_mech, inquire_mechs_for_name,
+  canonicalize_name, and duplicate_name not implemented.
+
+* import_name only understands GSS_C_NT_HOSTBASED_SERVICE and GSS_C_NO_OID.
+
+* get_mic, wrap: always uses the remote_subkey
+
+* only DES MAC MD5 and DES implemented.
+
+* wrap and unwrap always uses DES for sealing even if conf is not
+  requested.
+
+* minor_status is never set
+
+* init_sec_context: `initiator_cred_handle' and `time_req' ignored.
+
+* accept_sec_context: the first principal in the srvtab is always used.
+
+* accept_sec_context: `acceptor_cred_handle' is ignored.
+
+* input channel bindings are not supported
+
+* delegation not implemented
+
+* anonymous credentials not implemented
+
+- lib/hdb
+
+* implement encryption of database entries and master keys.
+
+- lib/krb5
+
+* replay cache not implemented
+
+* the following encryption types have been implemented: DES-CBC-CRC,
+  DES-CBC-MD4, DES-CBC-MD5
+
+* supports the following checksums: CRC32, RSA-MD4, RSA-MD5,
+ RSA-MD4-DES, RSA-MD5-DES
+
+* always generates a new subkey in an authenticator
+
+* probably leaks memory when errors occur
+
+* should the sequence numbers be XORed?
+
+* encryption and checksum type is still hardcoded in some places.
+
+* postdated, renewable, and forwardable tickets are not supported.
+
+- lib/roken
+
+- lib/sl
