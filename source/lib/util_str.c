@@ -632,8 +632,7 @@ void string_free(char **s)
   if (!s || !(*s)) return;
   if (*s == null_string)
     *s = NULL;
-  if (*s) free(*s);
-  *s = NULL;
+  SAFE_FREE(*s);
 }
 
 /****************************************************************************

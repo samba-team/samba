@@ -85,7 +85,7 @@ static int string_match(char *tok,char *s, char *invalid_char)
 			 tok+1,
 			 BOOLSTR(netgroup_ok)));
 
-		free(hostname);
+		SAFE_FREE(hostname);
       
 		if (netgroup_ok) return(True);
 #else

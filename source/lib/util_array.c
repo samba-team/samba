@@ -35,7 +35,7 @@ void free_void_array(uint32 num_entries, void **entries,
 				free_item(entries[i]);
 			}
 		}
-		free(entries);
+		SAFE_FREE(entries);
 	}
 }
 
@@ -71,7 +71,7 @@ void* add_item_to_array(uint32 *len, void ***array, void *item)
 		(*len)++;
 		return item;
 	} else {
-		free((char *)*array);
+		SAFE_FREE(*array);
 	}
 	return NULL;
 }
@@ -80,19 +80,10 @@ static void use_info_free(struct use_info *item)
 {
 	if (item != NULL)
 	{
-		if (item->srv_name != NULL)
-		{
-			free(item->srv_name);
-		}
-		if (item->user_name != NULL)
-		{
-			free(item->user_name);
-		}
-		if (item->domain != NULL)
-		{
-			free(item->domain);
-		}
-		free(item);
+		SAFE_FREE(item->srv_name);
+		SAFE_FREE(item->user_name);
+		SAFE_FREE(item->domain);
+		SAFE_FREE(item);
 	}
 }
 
@@ -141,7 +132,7 @@ struct use_info* add_use_info_to_array(uint32 *len, struct use_info ***array,
 
 void free_char_array(uint32 num_entries, char **entries)
 {
-	void(*fn)(void*) = (void(*)(void*))&free;
+	void(*fn)(void*) = (void(*)(void*))&safe_free;
 	free_void_array(num_entries, (void**)entries, *fn);
 }
 
@@ -169,7 +160,7 @@ static uint32 *uint32_dup(const uint32* from)
 
 void free_uint32_array(uint32 num_entries, uint32 **entries)
 {
-	void(*fn)(void*) = (void(*)(void*))&free;
+	void(*fn)(void*) = (void(*)(void*))&safe_free;
 	free_void_array(num_entries, (void**)entries, *fn);
 }
 
@@ -183,7 +174,7 @@ uint32* add_uint32s_to_array(uint32 *len, uint32 ***array, const uint32 *name)
 
 void free_sid_array(uint32 num_entries, DOM_SID **entries)
 {
-	void(*fn)(void*) = (void(*)(void*))&free;
+	void(*fn)(void*) = (void(*)(void*))&safe_free;
 	free_void_array(num_entries, (void**)entries, *fn);
 }
 

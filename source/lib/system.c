@@ -535,7 +535,7 @@ int sys_getgroups(int setlen, gid_t *gidset)
 
   if((ngroups = getgroups(setlen, group_list)) < 0) {
     int saved_errno = errno;
-    free((char *)group_list);
+    SAFE_FREE(group_list);
     errno = saved_errno;
     return -1;
   }
@@ -543,7 +543,7 @@ int sys_getgroups(int setlen, gid_t *gidset)
   for(i = 0; i < ngroups; i++)
     gidset[i] = (gid_t)group_list[i];
 
-  free((char *)group_list);
+  SAFE_FREE(group_list);
   return ngroups;
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
@@ -587,12 +587,12 @@ int sys_setgroups(int setlen, gid_t *gidset)
 
   if(setgroups(setlen, group_list) != 0) {
     int saved_errno = errno;
-    free((char *)group_list);
+    SAFE_FREE(group_list);
     errno = saved_errno;
     return -1;
   }
  
-  free((char *)group_list);
+  SAFE_FREE(group_list);
   return 0 ;
 #endif /* HAVE_BROKEN_GETGROUPS */
 }
@@ -886,7 +886,7 @@ int sys_popen(const char *command)
 	 */
 
 	close (child_end);
-	free((char *)argl);
+	SAFE_FREE(argl);
 
 	/* Link into popen_chain. */
 	entry->next = popen_chain;
@@ -897,10 +897,8 @@ int sys_popen(const char *command)
 
 err_exit:
 
-	if(entry)
-		free((char *)entry);
-	if(argl)
-		free((char *)argl);
+	SAFE_FREE(entry);
+	SAFE_FREE(argl);
 	close(pipe_fds[0]);
 	close(pipe_fds[1]);
 	return -1;
@@ -940,7 +938,7 @@ int sys_pclose(int fd)
 		wait_pid = sys_waitpid (entry->child_pid, &wstatus, 0);
 	} while (wait_pid == -1 && errno == EINTR);
 
-	free((char *)entry);
+	SAFE_FREE(entry);
 
 	if (wait_pid == -1)
 		return -1;

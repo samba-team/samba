@@ -175,7 +175,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 		dbuf.dptr = p;
 		dbuf.dsize = len + sizeof(rec);
 		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-		free(p);
+		SAFE_FREE(p);
 		goto ok;
 	}
 
@@ -193,7 +193,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 			if (!memcmp(ptr, &rec, sizeof(rec))) {
 				if (!len || (len && !memcmp( ptr + sizeof(rec), (char *)buf, len))) {
 					DEBUG(10,("message_send_pid: discarding duplicate message.\n"));
-					free(dbuf.dptr);
+					SAFE_FREE(dbuf.dptr);
 					tdb_chainunlock(tdb, kbuf);
 					return True;
 				}
@@ -211,11 +211,11 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 	memcpy((void *)((char*)p+dbuf.dsize), &rec, sizeof(rec));
 	if (len > 0) memcpy((void *)((char*)p+dbuf.dsize+sizeof(rec)), buf, len);
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	dbuf.dptr = p;
 	dbuf.dsize += len + sizeof(rec);
 	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
  ok:
 	tdb_chainunlock(tdb, kbuf);
@@ -275,7 +275,7 @@ static BOOL message_recv(int *msg_type, pid_t *src, void **buf, size_t *len)
 	else
 		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	tdb_chainunlock(tdb, kbuf);
 	return True;
 
@@ -307,7 +307,7 @@ void message_dispatch(void)
 				dfn->fn(msg_type, src, buf, len);
 			}
 		}
-		if (buf) free(buf);
+		SAFE_FREE(buf);
 	}
 }
 
@@ -348,7 +348,7 @@ void message_deregister(int msg_type)
 		next = dfn->next;
 		if (dfn->msg_type == msg_type) {
 			DLIST_REMOVE(dispatch_fns, dfn);
-			free(dfn);
+			SAFE_FREE(dfn);
 		}
 	}	
 }
