@@ -346,6 +346,12 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
                              const char *username,
                              const char *password);
 
+%typemap(in) DATA_BLOB * (DATA_BLOB temp_data_blob) {
+	temp_data_blob.data = PyString_AsString($input);
+	temp_data_blob.length = PyString_Size($input);
+	$1 = &temp_data_blob;
+}
+
 %include "librpc/gen_ndr/misc.i"
 %include "librpc/gen_ndr/lsa.i"
 %include "librpc/gen_ndr/samr.i"
