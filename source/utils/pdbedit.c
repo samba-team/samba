@@ -935,7 +935,6 @@ static int delete_trustpw(struct pdb_context *in, char* domain)
 {
 	SAM_TRUST_PASSWD trust;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	BOOL status = False;
 
 	/* unicode name and its null-termination */
 	trust.private.uni_name_len = strnlen(domain, 32);
@@ -946,8 +945,15 @@ static int delete_trustpw(struct pdb_context *in, char* domain)
 	   to fill the rest of the structure */
 	nt_status = in->pdb_delete_trust_passwd(in, &trust);
 	
-	status = NT_STATUS_IS_OK(nt_status) ? 0 : -1;
-	return status;
+	if (NT_STATUS_IS_OK(nt_status)) {
+		return 0;
+
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
+		printf("Error: this functionality is not supported by your current passdb backend!\n");
+		return -1;
+	}
+
+	return -1;
 }
 
 
