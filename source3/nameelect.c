@@ -97,7 +97,11 @@ void browser_gone(char *work_name, struct in_addr ip)
 
   /* i don't know about this workgroup, therefore i don't care */
   if (!work || !d) return;
- 
+
+  /* don't do election stuff on the WINS subnet */
+  if (ip_equal(d->bcast_ip,ipgrp)) 
+    return;
+
   if (strequal(work->work_group, lp_workgroup()))
   {
 
@@ -245,7 +249,8 @@ void name_register_work(struct subnet_record *d, char *name, int name_type,
   ******************************************************************/
 void become_master(struct subnet_record *d, struct work_record *work)
 {
-  uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_SERVER_UNIX|0x00400000;
+  uint32 domain_type = SV_TYPE_DOMAIN_ENUM|DFLT_SERVER_TYPE|
+    SV_TYPE_POTENTIAL_BROWSER;
 
   if (!work) return;
   
@@ -369,12 +374,8 @@ void become_master(struct subnet_record *d, struct work_record *work)
         DEBUG(3,("domain third stage: samba is now a domain master.\n"));
         work->state = MST_DOMAIN; /* ... registering WORKGROUP(1b) succeeded */
 
-        update_type |= SV_TYPE_DOMAIN_MASTER;
-      
-        if (lp_domain_logons())
-	    {
-	      update_type |= SV_TYPE_DOMAIN_CTRL|SV_TYPE_SERVER_UNIX;
-	    }
+        update_type |= DFLT_SERVER_TYPE | SV_TYPE_DOMAIN_MASTER | 
+	  SV_TYPE_POTENTIAL_BROWSER;
 
 		work->ServerType |= update_type;
 		add_server_entry(d,work,myname,work->ServerType,0,lp_serverstring(),True);
@@ -427,7 +428,7 @@ void become_nonmaster(struct subnet_record *d, struct work_record *work,
   DEBUG(2,("Becoming non-master for %s\n",work->work_group));
   
   /* can only remove master or domain types with this function */
-  remove_type &= ~(SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER);
+  remove_type &= SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER;
 
   /* unbecome a master browser; unbecome a domain master, too :-( */
   if (remove_type & SV_TYPE_MASTER_BROWSER)
@@ -439,7 +440,7 @@ void become_nonmaster(struct subnet_record *d, struct work_record *work,
   {
     /* no longer a master browser of any sort */
 
-  	work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
+    work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
     work->ElectionCriterion &= ~0x4;
     work->state = MST_NONE;
 
@@ -454,11 +455,10 @@ void become_nonmaster(struct subnet_record *d, struct work_record *work,
   {
     if (work->state == MST_DOMAIN)
       work->state = MST_BROWSER;
-    remove_name_entry(d,work->work_group,0x1b);
-    
+    remove_name_entry(d,work->work_group,0x1b);    
   }
 
-  if (!(work->ServerType & SV_TYPE_DOMAIN_MASTER))
+  if (!(work->ServerType & SV_TYPE_MASTER_BROWSER))
   {
     if (work->state >= MST_BROWSER)
       work->state = MST_NONE;
@@ -515,18 +515,23 @@ void run_elections(void)
 static BOOL win_election(struct work_record *work,int version,uint32 criterion,
 			 int timeup,char *name)
 {  
-  time_t t = time(NULL);
-  uint32 mycriterion;
+  int mytimeup = time(NULL) - StartupTime;
+  uint32 mycriterion = work->ElectionCriterion;
+
+  DEBUG(4,("election comparison: %x:%x %x:%x %d:%d %s:%s\n",
+	   version,ELECTION_VERSION,
+	   criterion,mycriterion,
+	   timeup,mytimeup,
+	   name,myname));
+
   if (version > ELECTION_VERSION) return(False);
   if (version < ELECTION_VERSION) return(True);
   
-  mycriterion = work->ElectionCriterion;
-
   if (criterion > mycriterion) return(False);
   if (criterion < mycriterion) return(True);
 
-  if (timeup > (t - StartupTime)) return(False);
-  if (timeup < (t - StartupTime)) return(True);
+  if (timeup > mytimeup) return(False);
+  if (timeup < mytimeup) return(True);
 
   if (strcasecmp(myname,name) > 0) return(False);
   
@@ -551,46 +556,44 @@ void process_election(struct packet_struct *p,char *buf)
   struct work_record *work;
 
   if (!d) return;
+
+  if (ip_equal(d->bcast_ip,ipgrp)) {
+    DEBUG(3,("Unexpected election request from %s %s on WINS net\n",
+	     name, inet_ntoa(p->ip)));
+    return;
+  }
   
   name[15] = 0;  
 
-  DEBUG(3,("Election request from %s vers=%d criterion=%08x timeup=%d\n",
-	   name,version,criterion,timeup));
+  DEBUG(3,("Election request from %s %s vers=%d criterion=%08x timeup=%d\n",
+	   name,inet_ntoa(p->ip),version,criterion,timeup));
   
   if (same_context(dgram)) return;
   
   for (work = d->workgrouplist; work; work = work->next)
     {
-      if (strequal(work->work_group, lp_workgroup()))
-	{
-	  if (win_election(work, version,criterion,timeup,name))
-	    {
-	      if (!work->RunningElection)
-		{
-		  work->needelection = True;
-		  work->ElectionCount=0;
-          work->state = MST_NONE;
-		}
-	    }
-	  else
-	    {
-	      work->needelection = False;
-	      
-	      if (work->RunningElection)
-		{
-		  work->RunningElection = False;
-		  DEBUG(3,(">>> Lost election on %s %s <<<\n",
-			   work->work_group,inet_ntoa(d->bcast_ip)));
-		  
-		  /* if we are the master then remove our masterly names */
-		  if (AM_MASTER(work))
-		  {
-		      become_nonmaster(d, work,
-					SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER);
-		  }
-		}
-	    }
+      if (!strequal(work->work_group, lp_workgroup()))
+	continue;
+
+      if (win_election(work, version,criterion,timeup,name)) {
+	if (!work->RunningElection) {
+	  work->needelection = True;
+	  work->ElectionCount=0;
+	  work->state = MST_NONE;
 	}
+      } else {
+	work->needelection = False;
+	  
+	if (work->RunningElection || AM_MASTER(work)) {
+	  work->RunningElection = False;
+	  DEBUG(3,(">>> Lost election on %s %s <<<\n",
+		   work->work_group,inet_ntoa(d->bcast_ip)));
+	  if (AM_MASTER(work))
+	    become_nonmaster(d, work,
+			     SV_TYPE_MASTER_BROWSER|
+			     SV_TYPE_DOMAIN_MASTER);
+	}
+      }
     }
 }
 

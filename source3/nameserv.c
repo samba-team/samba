@@ -47,7 +47,7 @@ extern uint16 nb_type; /* samba's NetBIOS type */
 /****************************************************************************
   remove an entry from the name list
 
-  note: the name will _always_ be removed: it's just a matter of when.
+  note: the name will _always_ be removed
   XXXX at present, the name is removed _even_ if a WINS server says keep it.
 
   ****************************************************************************/
@@ -72,37 +72,26 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
     n2->ip_flgs[0].nb_flags &= NB_DEREG;
   }
 
-  if (ip_equal(d->bcast_ip, ipgrp))
-  {
-    if (lp_wins_support())
-    {
-        /* we are a WINS server. */
-        /* XXXX assume that if we are a WINS server that we are therefore
-           not pointing to another WINS server as well. this may later NOT
-           actually be true
-         */
-        remove_netbios_name(d,name,type,SELF,ipzero);
-    }
-    else
-    {
-      /* not a WINS server: cannot just remove our own names: we have to
-         release them on the network first. ask permission from the WINS
-         server, or if no reply is received, then we can remove the name */
+  if (!n2) return;
 
-        queue_netbios_pkt_wins(d,ClientNMB,NMB_REL,NAME_RELEASE,
-                 name, type, 0, 0,0,NULL,NULL,
-                 False, True, ipzero, ipzero);
-    }
-  }
-  else
-  {
-     /* local interface: cannot just remove our own names: we have to
-        release them on the network first. once no reply is received,
-        then we can remove the name. */
+  /* remove the name immediately. even if the spec says we should
+     first try to release them, this is too dangerous with our current
+     name structures as otherwise we will end up replying to names we
+     don't really own */  
+  remove_netbios_name(d,name,type,SELF,n2->ip_flgs[0].ip);
 
-     queue_netbios_packet(d,ClientNMB,NMB_REL,NAME_RELEASE,
+  if (ip_equal(d->bcast_ip, ipgrp)) {
+    if (!lp_wins_support()) {
+      /* not a WINS server: we have to release them on the network */
+      queue_netbios_pkt_wins(d,ClientNMB,NMB_REL,NAME_RELEASE,
 			     name, type, 0, 0,0,NULL,NULL,
-			     True, True, d->bcast_ip, d->bcast_ip);
+			     False, True, ipzero, ipzero);
+    }
+  } else {
+    /* local interface: release them on the network */
+    queue_netbios_packet(d,ClientNMB,NMB_REL,NAME_RELEASE,
+			 name, type, 0, 0,0,NULL,NULL,
+			 True, True, d->bcast_ip, d->bcast_ip);
   }
 }
 

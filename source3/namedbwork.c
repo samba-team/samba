@@ -38,13 +38,10 @@ extern int DEBUGLEVEL;
 /* this is our domain/workgroup/server database */
 extern struct subnet_record *subnetlist;
 
+extern struct in_addr ipgrp;
+
 int workgroup_count = 0; /* unique index key: one for each workgroup */
 
-/* what server type are we currently */
-
-#define DFLT_SERVER_TYPE (SV_TYPE_WORKSTATION | SV_TYPE_SERVER | \
-			SV_TYPE_TIME_SOURCE | SV_TYPE_SERVER_UNIX | \
-			SV_TYPE_PRINTQ_SERVER | SV_TYPE_POTENTIAL_BROWSER)
 
 
 /****************************************************************************
@@ -89,7 +86,7 @@ static struct work_record *make_workgroup(char *name)
   StrnCpy(work->work_group,name,sizeof(work->work_group)-1);
   work->serverlist = NULL;
   
-  work->ServerType = DFLT_SERVER_TYPE;
+  work->ServerType = DFLT_SERVER_TYPE | SV_TYPE_POTENTIAL_BROWSER;
   work->RunningElection = False;
   work->ElectionCount = 0;
   work->needelection = False;
@@ -202,7 +199,8 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
   
   if ((work = make_workgroup(name)))
     {
-      if (lp_preferred_master() &&
+      if (!ip_equal(d->bcast_ip, ipgrp) &&
+	  lp_preferred_master() &&
 	  strequal(lp_workgroup(), name))
 	{
 	  DEBUG(3, ("preferred master startup for %s\n", work->work_group));

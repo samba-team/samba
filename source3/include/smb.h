@@ -785,6 +785,7 @@ char *Strstr(char *s, char *p);
 #define SV_TYPE_DOMAIN_ENUM         0x80000000
 #define SV_TYPE_ALL                 0xFFFFFFFF  
 
+/* what server type are we currently */
 
 
 /* protocol types. It assumes that higher protocols include lower protocols

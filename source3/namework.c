@@ -50,11 +50,6 @@ extern struct subnet_record *subnetlist;
 
 extern int  updatecount;
 
-/* what server type are we currently */
-#define DFLT_SERVER_TYPE (SV_TYPE_WORKSTATION | SV_TYPE_SERVER | \
-		SV_TYPE_TIME_SOURCE | SV_TYPE_SERVER_UNIX |\
-		SV_TYPE_PRINTQ_SERVER | SV_TYPE_POTENTIAL_BROWSER)
-
 /* backup request types: which servers are to be included */
 #define MASTER_TYPE (SV_TYPE_MASTER_BROWSER)
 #define DOMCTL_TYPE (SV_TYPE_DOMAIN_CTRL   )

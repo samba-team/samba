@@ -491,6 +491,8 @@ void listen_for_packets(BOOL run_election)
   int selrtn;
   struct timeval timeout;
 
+try_again:
+
   FD_ZERO(&fds);
   FD_SET(ClientNMB,&fds);
   FD_SET(ClientDGRAM,&fds);
@@ -515,6 +517,7 @@ void listen_for_packets(BOOL run_election)
 	  DEBUG(7,("discarding own packet from %s:%d\n",
 		   inet_ntoa(packet->ip),packet->port));	  
 	  free_packet(packet);
+	  goto try_again;
 	} else {
 	  queue_packet(packet);
 	}
@@ -530,6 +533,7 @@ void listen_for_packets(BOOL run_election)
 	  DEBUG(7,("discarding own packet from %s:%d\n",
 		   inet_ntoa(packet->ip),packet->port));	  
 	  free_packet(packet);
+	  goto try_again;
 	} else {
 	  queue_packet(packet);
 	}
