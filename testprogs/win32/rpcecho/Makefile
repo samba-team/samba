@@ -1,6 +1,5 @@
-CC=E:\VC98\bin\cl -nologo
 INCLUDES=-I 
-CFLAGS=$(INCLUDES) -Zi
+CFLAGS=$(INCLUDES) -Zi -nologo
 LIBS=rpcrt4.lib
 
 all: client server
@@ -12,10 +11,10 @@ rpcecho.h rpcecho_s.c rpcecho_c.c: rpcecho.idl rpcecho.acf
 	midl rpcecho.idl
 
 client: client.obj rpcecho_c.obj utils.obj
-	$(CC) -o client client.obj rpcecho_c.obj utils.obj $(LIBS)
+	$(CC) $(CFLAGS) -o client client.obj rpcecho_c.obj utils.obj $(LIBS)
 
 server: server.obj rpcecho_s.obj utils.obj
-	$(CC) -o server server.obj rpcecho_s.obj utils.obj $(LIBS)
+	$(CC) $(CFLAGS) -o server server.obj rpcecho_s.obj utils.obj $(LIBS)
 
 client.obj: rpcecho.h client.c
 server.obj: rpcecho.h server.c
