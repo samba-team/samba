@@ -217,7 +217,7 @@ ipv6_sockaddr2addr (const struct sockaddr *sa, krb5_address *a)
 }
 
 static krb5_error_code
-ipv6_sockaddr2port (const struct sockaddr *sa, int16_port *port)
+ipv6_sockaddr2port (const struct sockaddr *sa, int16_t *port)
 {
     const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sa;
 
