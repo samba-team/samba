@@ -94,7 +94,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^LOCAL_GRP|^DOMAIN_GRP|SMB_STRUCT_DIRENT/ ) {
+  if( $0 ~ /^LOCAL_GRP|^DOMAIN_GRP|^SMB_STRUCT_DIRENT|^SEC_ACL|^SEC_DESC|^SEC_DESC_BUF|^DOM_SID/ ) {
     gotstart = 1;
   }
 

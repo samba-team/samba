@@ -1601,23 +1601,95 @@ name = %s\n", fsp->fsp_name ));
 }
 
 /****************************************************************************
+ Reply to query a security descriptor from an fsp. If it succeeds it allocates
+ the space for the return elements and returns True.
+****************************************************************************/
+
+static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
+{
+  static DOM_SID world_sid;
+  static BOOL world_sid_initialized = False;
+  SEC_ACL *daclp;
+  DOM_SID owner_sid;
+  DOM_SID group_sid;
+  size_t sec_desc_size;
+
+  /*
+   * The security descriptor returned has no SACL and no DACL
+   * and the owner and group sids are S-1-1-0 (World Sid).
+   * JRA.
+   */
+
+  *ppdesc = NULL;
+
+  if(!world_sid_initialized) {
+    world_sid_initialized = True;
+    string_to_sid( &world_sid, "S-1-1-0");
+  }
+
+  sid_copy( &owner_sid, &world_sid);
+  sid_copy( &group_sid, &world_sid);
+
+  *ppdesc = make_standard_sec_desc( &owner_sid, &group_sid, NULL, &sec_desc_size);
+
+  if(!*ppdesc) {
+    DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
+    return 0;
+  }
+
+  return sec_desc_size;
+
+#if 0
+  extern DOM_SID global_sam_sid;
+  static DOM_SID world_sid;
+  static BOOL world_sid_initialized = False;
+  SMB_STRUCT_STAT sbuf;
+  SEC_ACE ace_list[3];
+  DOM_SID owner_sid;
+  DOM_SID group_sid;
+  size_t sec_desc_size;
+  
+  *ppdesc = NULL;
+
+  if(fsp->is_directory) {
+    if(sys_stat(fsp->fsp_name, &sbuf) != 0) {
+      return 0;
+    }
+  } else {
+    if(sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      return 0;
+    }
+  }
+
+  /*
+   * Get the owner, group and world SIDs.
+   */
+
+  sid_copy(&owner_sid, &global_sam_sid);
+  sid_copy(&group_sid, &global_sam_sid);
+  sid_append_rid(&owner_sid, pdb_uid_to_user_rid(sbuf.st_uid));
+  sid_append_rid(&group_sid, pdb_uid_to_user_rid(sbuf.st_gid));
+
+  if(!world_sid_initialized) {
+    world_sid_initialized = True;
+    string_to_sid( &world_sid, "S-1-1-0");
+  }
+
+  /*
+   * Create the generic 3 element UNIX acl.
+   */
+
+  init_sec_ace(&ace_list[0], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+  init_sec_ace(&ace_list[0], &group_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+  init_sec_ace(&ace_list[0], &world_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+#endif
+}
+
+/****************************************************************************
  Reply to query a security descriptor - currently this is not implemented (it
  is planned to be though). Right now it just returns the same thing NT would
  when queried on a FAT filesystem. JRA.
 ****************************************************************************/
-
-#define NO_NT_SEC_DESC_REPLY_SIZE 0x2C
-
-/* This is a hacked up description of the null SD on
-   the wire. I'll fix this when we do this properly. JRA. */
-
-#define SD_REVISION_OFFSET        0
-#define SD_CONTROL_OFFSET         2
-#define SD_OWNER_OFFSET           4
-#define SD_GROUP_OFFSET           8
-#define SD_SACL_OFFSET          0xC
-#define SD_DACL_OFFSET         0x10
-#define SD_OWNER_START_OFFSET  0x14
 
 static int call_nt_transact_query_security_desc(connection_struct *conn,
                                                 char *inbuf, char *outbuf, 
@@ -1627,9 +1699,9 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
   uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
   char *params = *ppparams;
   char *data = *ppdata;
-  static DOM_SID world_sid;
-  static BOOL world_sid_initialized = False;
-  size_t world_sid_size;
+  prs_struct pd;
+  SEC_DESC *psd;
+  size_t sec_desc_size;
 
   files_struct *fsp = file_fsp(params,0);
 
@@ -1642,43 +1714,73 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
   if(params == NULL)
     return(ERROR(ERRDOS,ERRnomem));
 
-  SIVAL(params,0,NO_NT_SEC_DESC_REPLY_SIZE);
+  /*
+   * Get the permissions to return.
+   */
 
-  data = *ppdata = Realloc(*ppdata, NO_NT_SEC_DESC_REPLY_SIZE);
-  if(data == NULL)
-    return(ERROR(ERRDOS,ERRnomem));
+  if((sec_desc_size = get_nt_acl(fsp, &psd)) == 0) {
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
-  if(max_data_count < NO_NT_SEC_DESC_REPLY_SIZE) {
+  SIVAL(params,0,(uint32)sec_desc_size);
+
+  if(max_data_count < sec_desc_size) {
+
+    free_sec_desc(&psd);
+
     send_nt_replies(inbuf, outbuf, bufsize, 0xC0000000|NT_STATUS_BUFFER_TOO_SMALL,
                     params, 4, *ppdata, 0);
     return -1;
   }
 
-  memset(data, '\0', NO_NT_SEC_DESC_REPLY_SIZE);
-
   /*
-   * The security descriptor returned has no SACL and no DACL
-   * and the owner and group sids are S-1-1-0 (World Sid).
-   * JRA.
+   * Allocate the data we will point this at.
    */
 
-  if(!world_sid_initialized) {
-    world_sid_initialized = True;
-    string_to_sid( &world_sid, "S-1-1-0");
+  data = *ppdata = Realloc(*ppdata, sec_desc_size + SAFETY_MARGIN);
+  if(data == NULL) {
+    free_sec_desc(&psd);
+    return(ERROR(ERRDOS,ERRnomem));
   }
 
-  world_sid_size = sid_size(&world_sid);
+  memset(data, '\0', sec_desc_size + SAFETY_MARGIN);
 
-  SSVAL(data, SD_REVISION_OFFSET, 1);
-  SSVAL(data, SD_CONTROL_OFFSET, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT);
-  SIVAL(data, SD_OWNER_OFFSET, SD_OWNER_START_OFFSET);
-  SIVAL(data, SD_GROUP_OFFSET, SD_OWNER_START_OFFSET + world_sid_size);
-  SIVAL(data, SD_SACL_OFFSET, 0);
-  SIVAL(data, SD_DACL_OFFSET, 0);
-  sid_linearize(&data[SD_OWNER_START_OFFSET], world_sid_size, &world_sid);
-  sid_linearize(&data[SD_OWNER_START_OFFSET+world_sid_size], world_sid_size, &world_sid);
+  /*
+   * Create the parse struct we will linearize into.
+   * This allocates a mem_buf pointer *dynamically* (why?).
+   */
 
-  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, NO_NT_SEC_DESC_REPLY_SIZE);
+  prs_init(&pd, 0, 4, 0, False);
+
+  if(pd.data == NULL) {
+    free_sec_desc(&psd);
+    return(ERROR(ERRDOS,ERRnomem));
+  }
+
+  /*
+   * Setup the prs_struct to point at the memory we just
+   * allocated. This is a silly way of doing things - I *must*
+   * fix the prs_struct+membuf stuff.... JRA.
+   */
+
+  mem_create( pd.data, data, 0, sec_desc_size, SAFETY_MARGIN, False);
+
+  /*
+   * Finally, linearize into the outgoing buffer.
+   */
+
+  sec_io_desc( "sd data", &psd, &pd, 1);
+
+  /*
+   * Now we can delete the security descriptor
+   * and the dynamically allocated mem_buf in the
+   * parse struct (why is this done.... ?).
+   */
+
+  free_sec_desc(&psd);
+  prs_mem_free(&pd);
+
+  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sec_desc_size);
   return -1;
 }
    

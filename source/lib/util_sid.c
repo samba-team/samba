@@ -155,6 +155,25 @@ void sid_copy(DOM_SID *sid1, DOM_SID *sid2)
 }
 
 /*****************************************************************
+ Duplicates a sid - mallocs the target.
+*****************************************************************/
+
+DOM_SID *sid_dup(DOM_SID *src)
+{
+  DOM_SID *dst;
+
+  if(!src)
+    return NULL;
+
+  if((dst = malloc(sizeof(DOM_SID))) != NULL) {
+	memset(dst, '\0', sizeof(DOM_SID));
+	sid_copy( dst, src);
+  }
+
+  return dst;
+}
+
+/*****************************************************************
  Write a sid out into on-the-wire format.
 *****************************************************************/  
 
