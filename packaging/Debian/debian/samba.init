@@ -2,7 +2,6 @@
 #
 # Start/stops the Samba daemons (nmbd and smbd).
 #
-# $Id: samba.init,v 1.2.4.1 2003/06/01 04:30:10 peloy Exp $
 #
 
 # Defaults

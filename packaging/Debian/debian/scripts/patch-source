@@ -1,6 +1,5 @@
 #!/bin/sh -e
 #
-# $Id: patch-source,v 1.2.4.1 2003/06/01 04:30:13 peloy Exp $
 #
 
 for patch in debian/patches/*.patch; do

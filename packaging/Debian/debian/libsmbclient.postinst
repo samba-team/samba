@@ -2,7 +2,6 @@
 #
 # postinst script for libsmbclient
 #
-# $Id: libsmbclient.postinst,v 1.2.4.1 2003/06/01 04:30:10 peloy Exp $
 #
 
 if [ "$1" = "configure" ]; then
