@@ -2501,14 +2501,14 @@ void cli_nt_session_close(struct cli_state *cli);
 
 BOOL spoolss_disconnect_from_client( struct cli_state *cli);
 BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine);
-NTSTATUS cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 				char *printer, uint32 localprinter, uint32 type, 
 				POLICY_HND *handle);
-NTSTATUS cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 					POLICY_HND *handle);
-NTSTATUS cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+WERROR cli_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 					POLICY_HND *pol, uint32 condition, uint32 changd_id);
-NTSTATUS cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+WERROR cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 					POLICY_HND *handle, PRINTER_MESSAGE_INFO *info,
 					NT_PRINTER_INFO_LEVEL *printer);
 

@@ -118,7 +118,7 @@ static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli,
 
 		if (!W_ERROR_IS_OK(werror)) {
 			printf("Error closing printer handle! (%s)\n", 
-				get_dos_error_msg(werror));
+				werror_str(werror));
 		}
 	}
 
