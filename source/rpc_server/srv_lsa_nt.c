@@ -647,8 +647,9 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_
 	uint32 mapped_count = 0;
 
 	if (num_entries >  MAX_LOOKUP_SIDS) {
-		num_entries = MAX_LOOKUP_SIDS;
-		DEBUG(5,("_lsa_lookup_sids: truncating SID lookup list to %d\n", num_entries));
+		num_entries = 0;
+		DEBUG(5,("_lsa_lookup_sids: limit of %d exceeded, truncating SID lookup list to %d\n", MAX_LOOKUP_SIDS, num_entries));
+		r_u->status = NT_STATUS_NONE_MAPPED;
 	}
 
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
