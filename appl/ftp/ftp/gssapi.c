@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -219,12 +219,13 @@ gss_adat(void *app_data, void *buf, size_t len)
 	    gss_release_buffer(&min_stat, &export_name);
 	    goto out;
 	}
-	name = realloc(export_name.value, export_name.length + 1);
+	name = malloc(export_name.length + 1);
 	if(name == NULL) {
 	    reply(500, "Out of memory");
 	    gss_release_buffer(&min_stat, &export_name);
 	    goto out;
 	}
+	memcpy(name, export_name.value, export_name.length);
 	name[export_name.length] = '\0';
 	gss_release_buffer(&min_stat, &export_name);
 	d->client_name = name;
