@@ -569,6 +569,15 @@ static BOOL winbindd_lookup_name_by_sid_in_cache(DOM_SID *sid, fstring name, enu
     return True;
 }
 
+static void store_negative_sid_by_name(char *name)
+{
+        /* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
+        DOM_SID nullsid;
+
+        ZERO_STRUCT(nullsid);
+        store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
+}
+
 /* Lookup a sid in a domain from a name */
 
 BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
@@ -588,10 +597,17 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
 
     /* First check cache. */
     if (winbindd_lookup_sid_by_name_in_cache(name, sid, type)) {
-        if (*type == SID_NAME_USE_NONE)
+        if (*type == SID_NAME_USE_NONE) {
+            *type = SID_NAME_UNKNOWN;
             return False; /* Negative cache hit. */
+        }
         return True;
     }
+
+    /* Setup for fail. */
+
+    *type = SID_NAME_UNKNOWN;
+    ZERO_STRUCTP(sid);
 
     /* Lookup name */
 
@@ -600,33 +616,27 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
 
     /* Return rid and type if lookup successful */
 
-    if (!res) {
+    if (!res || sids == NULL || types == NULL || types[0] == SID_NAME_UNKNOWN) {
         /* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
-        DOM_SID nullsid;
-
-        ZERO_STRUCT(nullsid);
-        store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
+        store_negative_sid_by_name(name);
         *type = SID_NAME_UNKNOWN;
+        res = False;
 	goto done;
     }
 
-    /* Return sid */
-
-    if ((sid != NULL) && (sids != NULL)) {
-            sid_copy(sid, &sids[0]);
-    }
-    
-    /* Return name type */
-    
-    if ((type != NULL) && (types != NULL)) {
-            *type = types[0];
-    }
+    sid_copy(sid, &sids[0]);
+    *type = types[0];
 
     res = lsa_lookup_sids(&server_state.lsa_handle, 1, &sids,
 			  &names, &types, &num_names);
 
-    if (!res)
-	    goto done;
+    /* Tests for results being ok. */
+
+    if (!res || names == NULL || types == NULL || types[0] == SID_NAME_UNKNOWN) {
+        *type = SID_NAME_UNKNOWN;
+        res = False;
+        goto done;
+    }
 
     /* Store the forward and reverse map of this lookup in the cache. */
     store_sid_by_name_in_cache(names[0], &sids[0], types[0]);
@@ -655,7 +665,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 {
     int num_sids = 1, num_names = 0;
     uint32 *types = NULL;
-    char **names;
+    char **names = NULL;
     BOOL res;
 
     /* First check cache. */
@@ -668,6 +678,10 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
             return True;
     }
 
+    /* Default fail. */
+    *type = SID_NAME_UNKNOWN;
+    *name = '\0';
+
     /* Lookup name */
 
     res = lsa_lookup_sids(&server_state.lsa_handle, num_sids, &sid, &names, 
@@ -677,30 +691,29 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 
     if (res) {
 
-        /* Return name */
-
-        if ((names != NULL) && (name != NULL)) {
+        if (names != NULL)
             fstrcpy(name, names[0]);
-        }
 
-        /* Return name type */
-
-        if ((type != NULL) && (types != NULL)) {
+        if (types != NULL)
             *type = types[0];
-        }
 
-        store_sid_by_name_in_cache(names[0], sid, types[0]);
-        store_name_by_sid_in_cache(sid, names[0], types[0]);
-
-    } else {
-
-        /* OK, so we tried to look up a name in this sid, and
-         * didn't find it.  Therefore add a negative cache
-         * entry.  */
-        store_name_by_sid_in_cache(sid, "", SID_NAME_USE_NONE);
-        *type = SID_NAME_UNKNOWN;
-        fstrcpy(name, name_deadbeef);
+	if ((*type != SID_NAME_UNKNOWN) && *name) {
+	        store_sid_by_name_in_cache(names[0], sid, types[0]);
+        	store_name_by_sid_in_cache(sid, names[0], types[0]);
+		goto done;
+	}
     }
+
+    /* OK, so we tried to look up a name in this sid, and
+     * didn't find it.  Therefore add a negative cache
+     * entry.  */
+    store_name_by_sid_in_cache(sid, "", SID_NAME_USE_NONE);
+    *type = SID_NAME_UNKNOWN;
+    fstrcpy(name, name_deadbeef);
+    res = False;
+
+  done:
+
     /* Free memory */
 
     safe_free(types);
