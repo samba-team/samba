@@ -31,6 +31,13 @@ struct table_node {
 	int	version;
 };
  
+/* The version int is used by getdrivers.  Note that
+   all architecture strings that support mutliple
+   versions must be grouped together since enumdrivers
+   uses this property to prevent issuing multiple 
+   enumdriver calls for the same arch */
+
+
 static const struct table_node archi_table[]= {
 
 	{"Windows 4.0",          "WIN40",	0 },
@@ -1133,6 +1140,11 @@ static WERROR cmd_spoolss_enum_drivers(struct cli_state *cli,
 	for (i=0; archi_table[i].long_archi!=NULL; i++) 
 	{
 		uint32 needed;
+
+		/* check to see if we already asked for this architecture string */
+
+		if ( i>0 && strequal(archi_table[i].long_archi, archi_table[i-1].long_archi) )
+			continue;
 
 		werror = cli_spoolss_enumprinterdrivers(
 			cli, mem_ctx, 0, &needed, info_level, 
