@@ -47,7 +47,7 @@ the internals of various parts of samba and the SMB protocol. It's still incompl
 The most recent version of this document
 can be found at <ulink url="http://devel.samba.org/">http://devel.samba.org/</ulink>.
 Please send updates to <ulink 
-url="mailto:jelmer@samba.org">Jelmer Veenrooij</ulink>.
+url="mailto:jelmer@samba.org">Jelmer Vernooij</ulink>.
 </para>
 
 <para>
@@ -58,6 +58,18 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 </para>
 
 </dedication>
+
+<legalnotice>
+
+<formalpara>
+	<title>Attributions</title>
+
+	<para>
+	&attributions-dev;
+	</para>
+</formalpara>
+	
+</legalnotice>
 
 <!-- Contents -->
 <toc/>

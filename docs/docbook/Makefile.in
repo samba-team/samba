@@ -52,7 +52,7 @@ MANPAGES=$(patsubst %,$(MANDIR)/%,$(MANPAGES_NAMES))
 MANPAGES_HTML=$(patsubst %,$(HTMLDIR)/%.html,$(MANPAGES_NAMES))
 
 PROJDOC_DEPS = $(PROJDOC)/*.xml $(PROJDOC)/attributions.xml
-DEVDOC_DEPS = $(DEVDOC)/*.xml
+DEVDOC_DEPS = $(DEVDOC)/*.xml $(DEVDOC)/attributions.xml
 
 all: 
 	@echo "Supported make targets:"
@@ -177,7 +177,7 @@ $(SMBDOTCONFDOC)/parameters.all.xml: $(SMBDOTCONFDOC)/generate-file-list.sh
 
 $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	@cd $(SMBDOTCONFDOC) && \
-	$(XSLTPROC) --xinclude \
+	@$(XSLTPROC) --xinclude \
 	--param smb.context "'G'" \
 	--output parameters.global.xml \
 	generate-context.xsl parameters.all.xml && \
@@ -185,7 +185,7 @@ $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SM
 
 $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	@cd $(SMBDOTCONFDOC) && \
-	$(XSLTPROC) --xinclude \
+	@$(XSLTPROC) --xinclude \
 	--param smb.context "'S'" \
 	--output parameters.service.xml \
 	generate-context.xsl parameters.all.xml && \
@@ -199,7 +199,12 @@ $(MANPROJDOC)/smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/p
 $(PROJDOC)/attributions.xml: $(PROJDOC)/samba-doc.xml
 	@echo > $@ # Make sure we don't get recursive dependencies, etc!
 	@echo "Generating attributions page"
-	$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
+	@$(@XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
+
+$(DEVDOC)/attributions.xml: $(DEVDOC)/dev-doc.xml
+	@echo > $@ # Make sure we don't get recursive dependencies, etc!
+	@echo "Generating attributions page"
+	@$(@XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
 
 $(MANDIR): 
 	mkdir $(MANDIR)
