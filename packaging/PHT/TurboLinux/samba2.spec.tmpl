@@ -257,7 +257,7 @@ install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT%{prefix}/share/sa
 done
 for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
 do
-install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROO%{prefix}/share/samba/codepages/src
+install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROOT%{prefix}/share/samba/codepages/src
 done
 
 # Install the nsswitch library extension files
