@@ -1333,7 +1333,7 @@ uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol,
 /*******************************************************************
  samr_reply_lookup_names
  ********************************************************************/
-uint32 _samr_lookup_names(POLICY_HND *pol,
+uint32 _samr_lookup_names(const POLICY_HND *pol,
 				
 			uint32 num_names1,
 			uint32 flags,
@@ -1345,7 +1345,6 @@ uint32 _samr_lookup_names(POLICY_HND *pol,
 			uint32 *num_types1,
 			uint32 type[MAX_SAM_ENTRIES])
 {
-	uint32 status     = 0;
 	int i;
 	int num_rids = num_names1;
 	DOM_SID pol_sid;
@@ -1354,9 +1353,9 @@ uint32 _samr_lookup_names(POLICY_HND *pol,
 
 	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
 
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), pol, &pol_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(), pol, &pol_sid))
 	{
-		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
 	sid_to_string(tmp, &pol_sid);
@@ -1394,15 +1393,13 @@ uint32 _samr_lookup_names(POLICY_HND *pol,
 
 	if (!found_one)
 	{
-		status = NT_STATUS_NONE_MAPPED;
-	}
-	else
-	{
-		(*num_rids1) = num_rids;
-		(*num_types1) = num_rids;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
-	return status;
+	(*num_rids1) = num_rids;
+	(*num_types1) = num_rids;
+
+	return 0x0;
 }
 
 /*******************************************************************
@@ -1415,7 +1412,6 @@ uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 				const char lm_newpass[516],
 				const uchar lm_oldhash[16])
 {
-	uint32 status = 0x0;
 	fstring user_name;
 	fstring wks;
 
@@ -1428,10 +1424,10 @@ uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 	                     lm_newpass, lm_oldhash,
 	                     nt_newpass, nt_oldhash))
 	{
-		status = NT_STATUS_WRONG_PASSWORD;
+		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	return status;
+	return 0x0;
 }
 
 
@@ -1498,69 +1494,59 @@ uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
 					uint32 **types)
 {
 	char **grp_names = NULL;
-	uint32 status     = 0;
 	DOM_SID pol_sid;
 	BOOL found_one = False;
-
-	SAMR_R_LOOKUP_RIDS r_u;
-	ZERO_STRUCT(r_u);
+		int i;
 
 	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), pol) == -1))
+	if (find_policy_by_hnd(get_global_hnd_cache(), pol) == -1)
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), pol, &pol_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(), pol, &pol_sid))
 	{
-		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
-	if (status == 0x0)
-	{
-		(*types) = malloc(num_rids * sizeof(**types));
+	(*types) = malloc(num_rids * sizeof(**types));
 
-		if ((*types) == NULL)
+	if ((*types) == NULL)
+	{
+		return NT_STATUS_NO_MEMORY;
+	}
+
+
+	for (i = 0; i < num_rids; i++)
+	{
+		uint32 status1;
+		DOM_SID sid;
+		sid_copy(&sid, &pol_sid);
+		sid_append_rid(&sid, rids[i]);
+
+		status1 = lookup_sid(&sid, grp_names[i], &(*types)[i]);
+
+		if (status1 == 0)
 		{
-			status = NT_STATUS_NO_MEMORY;
+			found_one = True;
+		}
+		else
+		{
+			(*types)[i] = SID_NAME_UNKNOWN;
 		}
 	}
 
-	if (status == 0x0)
+	if (!found_one)
 	{
-		int i;
-
-		for (i = 0; i < num_rids; i++)
-		{
-			uint32 status1;
-			DOM_SID sid;
-			sid_copy(&sid, &pol_sid);
-			sid_append_rid(&sid, rids[i]);
-			status1 = lookup_sid(&sid, grp_names[i], &(*types)[i]);
-			if (status1 == 0)
-			{
-				found_one = True;
-			}
-			else
-			{
-				(*types)[i] = SID_NAME_UNKNOWN;
-			}
-		}
+		return NT_STATUS_NONE_MAPPED;
 	}
 
-	if (status == 0x0 && !found_one)
-	{
-		status = NT_STATUS_NONE_MAPPED;
-	}
-	else
-	{
-		(*num_names) = num_rids;
-		make_samr_lookup_rids(num_rids, grp_names, hdr_name, uni_name);
-	}
+	(*num_names) = num_rids;
+	make_samr_lookup_rids(num_rids, grp_names, hdr_name, uni_name);
 
-	return status;
+	return 0x0;
 }
 
 /*******************************************************************
@@ -1572,7 +1558,6 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 {
 	struct sam_passwd *sam_pass;
 	DOM_SID sid;
-	uint32 status;
 
 	/* set up the SAMR open_user response */
 	bzero(user_pol->data, POL_HND_SIZE);
@@ -1600,14 +1585,7 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	status = samr_open_by_sid(&sid, user_pol, access_mask, user_rid);
-	if (status != 0x0)
-	{
-		close_policy_hnd(get_global_hnd_cache(), user_pol);
-		return status;
-	}
-
-	return 0x0;
+	return samr_open_by_sid(&sid, user_pol, access_mask, user_rid);
 }
 
 
@@ -1700,97 +1678,88 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 /*******************************************************************
  samr_reply_query_userinfo
  ********************************************************************/
-uint32 _samr_query_userinfo(POLICY_HND *pol, uint16 switch_value,
+uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr)
 {
-	uint32 status = 0x0;
 	uint32 rid = 0x0;
 	DOM_SID group_sid;
 
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), pol, &group_sid))
+	if (!get_policy_samr_sid(get_global_hnd_cache(), pol, &group_sid))
 	{
-		status = NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 	}
-	else
-	{
-		sid_split_rid(&group_sid, &rid);
-	}
+	sid_split_rid(&group_sid, &rid);
 
 	DEBUG(5,("samr_reply_query_userinfo: rid:0x%x\n", rid));
 
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
-	if (status == 0x0)
+	ctr->switch_value = switch_value;
+	switch (switch_value)
 	{
-		ctr->switch_value = switch_value;
-		switch (switch_value)
+		case 0x10:
 		{
-			case 0x10:
+			ctr->info.id = (SAM_USER_INFO_10*)Realloc(NULL,
+					 sizeof(*ctr->info.id10));
+			if (ctr->info.id == NULL)
 			{
-				ctr->info.id = (SAM_USER_INFO_10*)Realloc(NULL,
-						 sizeof(*ctr->info.id10));
-				if (ctr->info.id == NULL)
-				{
-					status = NT_STATUS_NO_MEMORY;
-				}
-				else if (!get_user_info_10(ctr->info.id10, rid))
-				{
-					status = NT_STATUS_NO_SUCH_USER;
-				}
-				break;
+				return NT_STATUS_NO_MEMORY;
 			}
+			if (!get_user_info_10(ctr->info.id10, rid))
+			{
+				return NT_STATUS_NO_SUCH_USER;
+			}
+			break;
+		}
 #if 0
 /* whoops - got this wrong.  i think.  or don't understand what's happening. */
-			case 0x11:
-			{
-				NTTIME expire;
-				info = (void*)&id11;
-				
-				expire.low  = 0xffffffff;
-				expire.high = 0x7fffffff;
+		case 0x11:
+		{
+			NTTIME expire;
+			info = (void*)&id11;
+			
+			expire.low  = 0xffffffff;
+			expire.high = 0x7fffffff;
 
-				ctr->info.id = (SAM_USER_INFO_11*)Realloc(NULL,
-						 sizeof(*ctr->info.id11));
-				make_sam_user_info11(ctr->info.id11, &expire,
-				                     "BROOKFIELDS$", /* name */
-				                     0x03ef, /* user rid */
-				                     0x201, /* group rid */
-				                     0x0080); /* acb info */
+			ctr->info.id = (SAM_USER_INFO_11*)Realloc(NULL,
+					 sizeof(*ctr->info.id11));
+			make_sam_user_info11(ctr->info.id11, &expire,
+					     "BROOKFIELDS$", /* name */
+					     0x03ef, /* user rid */
+					     0x201, /* group rid */
+					     0x0080); /* acb info */
 
-				break;
-			}
+			break;
+		}
 #endif
-			case 21:
+		case 21:
+		{
+			ctr->info.id = (SAM_USER_INFO_21*)Realloc(NULL,
+					 sizeof(*ctr->info.id21));
+			if (ctr->info.id == NULL)
 			{
-				ctr->info.id = (SAM_USER_INFO_21*)Realloc(NULL,
-						 sizeof(*ctr->info.id21));
-				if (ctr->info.id == NULL)
-				{
-					status = NT_STATUS_NO_MEMORY;
-				}
-				else if (!get_user_info_21(ctr->info.id21, rid))
-				{
-					status = NT_STATUS_NO_SUCH_USER;
-				}
-				break;
+				return NT_STATUS_NO_MEMORY;
 			}
-
-			default:
+			if (!get_user_info_21(ctr->info.id21, rid))
 			{
-				status = NT_STATUS_INVALID_INFO_CLASS;
-
-				break;
+				return NT_STATUS_NO_SUCH_USER;
 			}
+			break;
+		}
+
+		default:
+		{
+			return NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
 
-	return status;
+	return 0x0;
 }
 
 /*******************************************************************
  set_user_info_24
  ********************************************************************/
-static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
+static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
 	struct sam_passwd new_pwd;
@@ -1826,7 +1795,7 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 /*******************************************************************
  set_user_info_23
  ********************************************************************/
-static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
+static BOOL set_user_info_23(const SAM_USER_INFO_23 *id23, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
 	struct sam_passwd new_pwd;
@@ -1868,7 +1837,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 /*******************************************************************
  samr_reply_set_userinfo
  ********************************************************************/
-uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value,
+uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr)
 {
 	uchar user_sess_key[16];
@@ -1944,7 +1913,7 @@ uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value,
 /*******************************************************************
  set_user_info_16
  ********************************************************************/
-static BOOL set_user_info_16(SAM_USER_INFO_16 *id16, uint32 rid)
+static BOOL set_user_info_16(const SAM_USER_INFO_16 *id16, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
 	struct sam_passwd new_pwd;
@@ -1966,11 +1935,10 @@ static BOOL set_user_info_16(SAM_USER_INFO_16 *id16, uint32 rid)
 	return mod_sam21pwd_entry(&new_pwd, True);
 }
 
-
 /*******************************************************************
  samr_reply_set_userinfo2
  ********************************************************************/
-uint32 _samr_set_userinfo2(POLICY_HND *pol, uint16 switch_value,
+uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO2_CTR *ctr)
 {
 	DOM_SID sid;
@@ -2030,6 +1998,7 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 	struct sam_passwd *sam_pass;
 	DOM_SID sid;
 	uint32 rid;
+	BOOL ret;
 
 	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
 
@@ -2051,8 +2020,13 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 	}
 
 	become_root(True);
-	getusergroupsntnam(sam_pass->nt_name, &mem_grp, num_groups);
+	ret = getusergroupsntnam(sam_pass->nt_name, &mem_grp, num_groups);
 	unbecome_root(True);
+
+	if (!ret)
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	(*gids) = NULL;
 	(*num_groups) = make_dom_gids(mem_grp, *num_groups, gids);
@@ -2171,7 +2145,9 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
 /*******************************************************************
  _samr_query_dom_info
  ********************************************************************/
-uint32 _samr_query_dom_info(const POLICY_HND *domain_pol, uint16 switch_value, SAM_UNK_CTR *ctr)
+uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
+				uint16 switch_value,
+				SAM_UNK_CTR *ctr)
 {
 	/* find the policy handle.  open a policy on it. */
 	if (find_policy_by_hnd(get_global_hnd_cache(), domain_pol) == -1)
@@ -2212,7 +2188,6 @@ uint32 _samr_query_dom_info(const POLICY_HND *domain_pol, uint16 switch_value, S
 		default:
 		{
 			return NT_STATUS_INVALID_INFO_CLASS;
-			break;
 		}
 	}
 
@@ -2235,9 +2210,8 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	pstring err_str;
 	pstring msg_str;
 
-
-	*unknown_0 = 0x30;
-	*user_rid = 0x0;
+	(*unknown_0) = 0x30;
+	(*user_rid) = 0x0;
 
 	/* find the machine account: tell the caller if it exists.
 	   lkclXXXX i have *no* idea if this is a problem or not
@@ -2264,6 +2238,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 		/* account exists: say so */
 		return NT_STATUS_USER_EXISTS;
 	}
+
 	if (!local_password_change(user_name, True,
 		  acb_info | ACB_DISABLED | ACB_PWNOTREQ, 0xffff,
 		  NULL,
@@ -2273,20 +2248,16 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 		DEBUG(0,("%s\n", err_str));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	else
+
+	sam_pass = getsam21pwntnam(user_name);
+	if (sam_pass == NULL)
 	{
-		sam_pass = getsam21pwntnam(user_name);
-		if (sam_pass == NULL)
-		{
-			/* account doesn't exist: say so */
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		else
-		{
-			*unknown_0 = 0x000703ff;
-			*user_rid = sam_pass->user_rid;
-		}
+		/* account doesn't exist: say so */
+		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	*unknown_0 = 0x000703ff;
+	*user_rid = sam_pass->user_rid;
 
 	return samr_open_by_sid(&sid, user_pol, access_mask, *user_rid);
 }
@@ -2393,16 +2364,14 @@ uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
 	if (strequal(domain, global_sam_name))
 	{
 		sid_copy(dom_sid, &global_sam_sid);
+		return 0x0;
 	}
 	else if (strequal(domain, "BUILTIN"))
 	{
 		sid_copy(dom_sid, &global_sid_S_1_5_20);
-	}
-	else
-	{
-		return NT_STATUS_NO_SUCH_DOMAIN;
+		return 0x0;
 	}
 
-	return 0x0;
+	return NT_STATUS_NO_SUCH_DOMAIN;
 }
 

@@ -3731,14 +3731,6 @@ BOOL make_srv_q_net_file_enum(SRV_Q_NET_FILE_ENUM *q_n,
 				ENUM_HND *hnd);
 BOOL srv_io_q_net_file_enum(char *desc,  SRV_Q_NET_FILE_ENUM *q_n, prs_struct *ps, int depth);
 BOOL srv_io_r_net_file_enum(char *desc,  SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps, int depth);
-BOOL make_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, char *name,
-				uint32 ver_major, uint32 ver_minor,
-				uint32 srv_type, char *comment);
-BOOL make_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id, char *name,
-				char *comment, uint32 ver_major, uint32 ver_minor,
-				uint32 srv_type, uint32 users, uint32 disc, uint32 hidden,
-				uint32 announce, uint32 ann_delta, uint32 licenses,
-				char *usr_path);
 BOOL make_srv_q_net_srv_get_info(SRV_Q_NET_SRV_GET_INFO *srv,
 				char *server_name, uint32 switch_value);
 BOOL srv_io_q_net_srv_get_info(char *desc,  SRV_Q_NET_SRV_GET_INFO *q_n, prs_struct *ps, int depth);
@@ -4286,7 +4278,7 @@ uint32 _samr_query_useraliases(const POLICY_HND *pol,
 uint32 _samr_delete_dom_alias(POLICY_HND *alias_pol);
 uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol, 
 				uint32 *num_mem, DOM_SID2 **sid);
-uint32 _samr_lookup_names(POLICY_HND *pol,
+uint32 _samr_lookup_names(const POLICY_HND *pol,
 				
 			uint32 num_names1,
 			uint32 flags,
@@ -4313,11 +4305,11 @@ uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
 uint32 _samr_open_user(const POLICY_HND *domain_pol,
 					uint32 access_mask, uint32 user_rid, 
 					POLICY_HND *user_pol);
-uint32 _samr_query_userinfo(POLICY_HND *pol, uint16 switch_value,
+uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr);
-uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value,
+uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr);
-uint32 _samr_set_userinfo2(POLICY_HND *pol, uint16 switch_value,
+uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO2_CTR *ctr);
 uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				uint32 *num_groups,
@@ -4999,6 +4991,20 @@ uint32 _spoolss_getjob( const POLICY_HND *handle,
 				uint32 level,
 				PJOB_INFO *ctr,
 				uint32 *offered);
+
+/*The following definitions come from  srvsvcd/srv_srvsvc_nt.c  */
+
+uint32 _srv_net_remote_tod( UNISTR2 *srv_name, TIME_OF_DAY_INFO *tod );
+BOOL make_r_srv_info_101(SRV_INFO_101 *sv101, uint32 platform_id, char *name,
+                                uint32 ver_major, uint32 ver_minor,
+                                uint32 srv_type, char *comment);
+BOOL make_r_srv_info_102(SRV_INFO_102 *sv102, uint32 platform_id, char *name,
+                      char *comment, uint32 ver_major, uint32 ver_minor,
+                      uint32 srv_type, uint32 users, uint32 disc, uint32 hidden,
+                      uint32 announce, uint32 ann_delta, uint32 licenses,
+                      char *usr_path);
+uint32 _srv_net_srv_get_info( UNISTR2 *srv_name, uint32 switch_value,
+                                SRV_INFO_CTR *ctr);
 
 /*The following definitions come from  srvsvcd/srvsvcd.c  */
 
