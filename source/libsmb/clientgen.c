@@ -1549,7 +1549,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,2,0,True);
+	set_message(cli->outbuf,1,0,True);
 
 	CVAL(cli->outbuf,smb_com) = SMBgetattrE;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
