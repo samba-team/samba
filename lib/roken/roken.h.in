@@ -127,12 +127,12 @@ char *getusershell(void);
 void endusershell(void);
 #endif
 
-#ifndef HAVE_SNPRINTF
+#if !defined(HAVE_SNPRINTF) || defined(NEED_SNPRINTF_PROTO)
 int snprintf (char *str, size_t sz, const char *format, ...)
      __attribute__ ((format (printf, 3, 4)));
 #endif
 
-#ifndef HAVE_VSNPRINTF
+#if !defined(HAVE_VSNPRINTF) || defined(NEED_VSNPRINTF_PROTO)
 int vsnprintf (char *str, size_t sz, const char *format, va_list ap)
      __attribute__((format (printf, 3, 0)));
 #endif
