@@ -98,7 +98,7 @@ static int smb_delete_user(char *unix_user)
 }
 
 /****************************************************************************
- Add and Delete UNIX users on demand, based on NT_STATUS codes.
+ Add and Delete UNIX users on demand, based on NTSTATUS codes.
 ****************************************************************************/
 
 void smb_user_control(char *unix_user, NTSTATUS nt_status) 
