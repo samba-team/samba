@@ -1385,4 +1385,12 @@ extern int errno;
 #endif /* MEM_MAN */
 
 
-#endif
+/* -------------------------------------------------------------------------- **
+ * Lists, trees, and caches...
+ */
+#include "ubiqx/ubi_sLinkList.h"
+#include "ubiqx/ubi_dLinkList.h"
+#include "ubiqx/ubi_SplayTree.h"
+#include "ubiqx/ubi_Cache.h"
+
+#endif /* _INCLUDES_H */
