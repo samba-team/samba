@@ -69,7 +69,7 @@ done
 CFLAGS="$save_CFLAGS"
 LIBS="$save_LIBS"
 
-if test "$ires" -a "$lres"; then
+if test "$ires" -a "$lres" -a "$with_$1" != "no"; then
 	$1_includedir="$ires"
 	$1_libdir="$lres"
 	INCLUDE_$1="-I$$1_includedir"
