@@ -47,8 +47,8 @@ WinbdConfig() {
 
   local config_file=$1; shift   # file to check
 
-  # check if "winbindd uid" is set in samba config file
-  egrep -q '[^#]*winbindd uid' $config_file || return 0
+  # check if "winbind uid" is set in samba config file
+  egrep -q '[^#]*winbind uid' $config_file || return 0
 
   found=0;
   # We also need to check if least one PAM module control file does
