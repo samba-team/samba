@@ -1,3 +1,7 @@
+2005-01-21  Dave Love  <d.love@dl.ac.uk>
+
+	* slc-gram.y: include <roken.h>
+
 2005-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* slc-gram.y: cast argument to isalnum to unsigned char
