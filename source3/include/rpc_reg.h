@@ -42,6 +42,8 @@
 #define REG_INFO            0x11
 #define REG_CLOSE           0x05
 
+#define HKEY_LOCAL_MACHINE 0x80000000
+#define HKEY_USERS         0x80000003
 
 /* REG_Q_OPEN_HKLM   */
 typedef struct q_reg_open_policy_info

@@ -281,6 +281,8 @@ char *tab_depth(int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
+void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
+BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -358,6 +360,7 @@ BOOL string_init(char **dest,char *src);
 void string_free(char **s);
 BOOL string_set(char **dest,char *src);
 BOOL string_sub(char *s,char *pattern,char *insert);
+void split_at_last_component(char *path, char *front, char sep, char *back);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
@@ -1267,10 +1270,11 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 			POLICY_HND *hnd,
 			int num_sids,
 			DOM_SID **sids,
-			char **names);
+			char ***names,
+			int *num_names);
 BOOL do_lsa_query_info_pol(struct cli_state *cli,
 			POLICY_HND *hnd, uint16 info_class,
-			fstring domain_name, fstring domain_sid);
+			fstring domain_name, DOM_SID *domain_sid);
 BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
@@ -1295,9 +1299,8 @@ void cli_nt_session_close(struct cli_state *cli);
 
 /*The following definitions come from  rpc_client/cli_reg.c  */
 
-BOOL do_reg_connect(struct cli_state *cli, char *full_keyname,
-				POLICY_HND *reg_hnd,
-				POLICY_HND *key_hnd);
+BOOL do_reg_connect(struct cli_state *cli, char *full_keyname, char *key_name,
+				POLICY_HND *reg_hnd);
 BOOL do_reg_open_hklm(struct cli_state *cli, uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
 BOOL do_reg_open_hku(struct cli_state *cli, uint16 unknown_0, uint32 level,
@@ -2095,7 +2098,6 @@ void cmd_netlogon_login_test(struct client_info *info);
 
 void cmd_reg_enum(struct client_info *info);
 void cmd_reg_query_key(struct client_info *info);
-void cmd_reg_test2(struct client_info *info);
 void cmd_reg_create_val(struct client_info *info);
 void cmd_reg_delete_val(struct client_info *info);
 void cmd_reg_delete_key(struct client_info *info);
