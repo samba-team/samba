@@ -214,7 +214,7 @@ int net_use_machine_password(void)
 	return 0;
 }
 
-BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_name)
+BOOL net_find_server(TALLOC_CTX *mem_ctx, unsigned flags, struct in_addr *server_ip, char **server_name)
 {
 
 	if (opt_host) {
@@ -228,14 +228,14 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 		}
 	} else if (*server_name) {
 		/* resolve the IP address */
-		if (!resolve_name(*server_name, server_ip, 0x20))  {
+		if (!resolve_name(mem_ctx, *server_name, server_ip, 0x20))  {
 			DEBUG(1,("Unable to resolve server name\n"));
 			return False;
 		}
 	} else if (flags & NET_FLAGS_PDC) {
 		struct in_addr pdc_ip;
 
-		if (get_pdc_ip(opt_target_workgroup, &pdc_ip)) {
+		if (get_pdc_ip(mem_ctx, opt_target_workgroup, &pdc_ip)) {
 			fstring dc_name;
 			
 			if (is_zero_ip(pdc_ip))
@@ -251,7 +251,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 	} else if (flags & NET_FLAGS_DMB) {
 		struct in_addr msbrow_ip;
 		/*  if (!resolve_name(MSBROWSE, &msbrow_ip, 1)) */
-		if (!resolve_name(opt_target_workgroup, &msbrow_ip, 0x1B))  {
+		if (!resolve_name(mem_ctx, opt_target_workgroup, &msbrow_ip, 0x1B))  {
 			DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
 			return False;
 		} else {
@@ -260,7 +260,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 		*server_name = strdup(inet_ntoa(opt_dest_ip));
 	} else if (flags & NET_FLAGS_MASTER) {
 		struct in_addr brow_ips;
-		if (!resolve_name(opt_target_workgroup, &brow_ips, 0x1D))  {
+		if (!resolve_name(mem_ctx, opt_target_workgroup, &brow_ips, 0x1D))  {
 				/* go looking for workgroups */
 			DEBUG(1,("Unable to resolve master browser via name lookup\n"));
 			return False;
@@ -283,9 +283,9 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 }
 
 
-BOOL net_find_pdc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
+BOOL net_find_pdc(TALLOC_CTX *mem_ctx, struct in_addr *server_ip, fstring server_name, const char *domain_name)
 {
-	if (get_pdc_ip(domain_name, server_ip)) {
+	if (get_pdc_ip(mem_ctx, domain_name, server_ip)) {
 		if (is_zero_ip(*server_ip))
 			return False;
 		
@@ -305,9 +305,11 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	struct in_addr server_ip;
 	struct cli_state *cli = NULL;
 	NTSTATUS nt_status;
+	TALLOC_CTX *mem_ctx = talloc_init("net_make_ipc_connection");
 
-	if (!net_find_server(flags, &server_ip, &server_name)) {
+	if (!net_find_server(mem_ctx, flags, &server_ip, &server_name)) {
 		d_printf("\nUnable to find a suitable server\n");
+		talloc_destroy(mem_ctx);
 		return NULL;
 	}
 
@@ -316,8 +318,8 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	} else {
 		nt_status = connect_to_ipc(&cli, &server_ip, server_name);
 	}
+	talloc_destroy(mem_ctx);
 
-	SAFE_FREE(server_name);
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;
 	} else {
@@ -699,8 +701,8 @@ static struct functable net_func[] = {
 	zero_ip(&opt_dest_ip);
 
 	/* set default debug level to 0 regardless of what smb.conf sets */
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
-	dbf = x_stderr;
+	DEBUGLEVEL = 0;
+	setup_logging(argv[0], DEBUG_STDERR);
 	
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
@@ -712,7 +714,7 @@ static struct functable net_func[] = {
 			exit(0);
 			break;
 		case 'I':
-			opt_dest_ip = *interpret_addr2(poptGetOptArg(pc));
+			opt_dest_ip.s_addr = interpret_addr(poptGetOptArg(pc));
 			if (is_zero_ip(opt_dest_ip))
 				d_printf("\nInvalid ip address specified\n");
 			else

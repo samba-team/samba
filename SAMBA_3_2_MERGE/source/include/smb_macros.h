@@ -264,4 +264,10 @@ copy an IP address from one buffer to another
 
 #define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC) 
 
+#ifdef HAVE_FUNCTION_MACRO
+#define FUNCTION_MACRO (__FUNCTION__)
+#else
+#define FUNCTION_MACRO ("")
+#endif
+
 #endif /* _SMB_MACROS_H */

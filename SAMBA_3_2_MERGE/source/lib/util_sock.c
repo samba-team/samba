@@ -953,7 +953,7 @@ char *get_socket_name(int fd, BOOL force_lookup)
 
 	fstrcpy(addr_buf, p);
 
-	/*FIXMEaddr = *interpret_addr2_x(p);*/
+	addr.s_addr = interpret_addr(p);
 	
 	/* Look up the remote host name. */
 	if ((hp = gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr), AF_INET)) == 0) {
