@@ -495,3 +495,17 @@ __asm__(".globl __write; __write = write");
 	return real_rmdir(name);
 }
 
+
+ int symlink(const char *topath,const char *frompath)
+{
+	int p1, p2;
+	p1 = smbw_path(topath); 
+	p2 = smbw_path(frompath); 
+	if (p1 || p2) {
+		/* can't handle symlinks */
+		errno = EPERM;
+		return -1;
+	}
+
+	return real_symlink(topath, frompath);
+}
