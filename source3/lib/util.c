@@ -4428,3 +4428,11 @@ void dump_data(int level,unsigned char *buf,int len)
     DEBUG(level,("\n"));    
   }
 }
+
+char *tab_depth(int depth)
+{
+	static pstring spaces;
+	memset(spaces, ' ', depth * 4);
+	spaces[depth * 4] = 0;
+	return spaces;
+}
