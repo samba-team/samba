@@ -1470,7 +1470,8 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  enum brl_type lock_type);
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
-		br_off start, br_off size);
+		br_off start, br_off size,
+		BOOL remove_pending_locks_only);
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
@@ -4318,10 +4319,11 @@ NTSTATUS _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INF
 
 /* The following definitions come from smbd/blocking.c  */
 
-BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num);
+BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
+		int lock_num, uint16 lock_pid, SMB_BIG_UINT offset, SMB_BIG_UINT count);
 void remove_pending_lock_requests_by_fid(files_struct *fsp);
 void remove_pending_lock_requests_by_mid(int mid);
-BOOL blocking_locks_timeout(unsigned default_timeout);
+unsigned blocking_locks_timeout(unsigned default_timeout);
 void process_blocking_lock_queue(time_t t);
 
 /* The following definitions come from smbd/chgpasswd.c  */
