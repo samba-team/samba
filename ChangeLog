@@ -1,3 +1,8 @@
+2004-01-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kpasswd/kpasswdd.c (change): use the right password when
+	changing the password
+
 2004-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/fcache.c (_krb5_xlock): catch EINVAL and assume that it
