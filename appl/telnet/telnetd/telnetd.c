@@ -459,7 +459,7 @@ int main(int argc, char **argv)
 		syslog(LOG_WARNING, "setsockopt (SO_KEEPALIVE): %m");
 	}
 
-#if	defined(IPPROTO_IP) && defined(IP_TOS)
+#if	defined(IPPROTO_IP) && defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
 	{
 # if	defined(HAS_GETTOS)
 		struct tosent *tp;
@@ -979,7 +979,7 @@ telnet(f, p)
 	ioctl(f, FIONBIO, (char *)&on);
 	ioctl(p, FIONBIO, (char *)&on);
 
-#if	defined(SO_OOBINLINE)
+#if	defined(SO_OOBINLINE) && defined(HAVE_SETSOCKOPT)
 	setsockopt(net, SOL_SOCKET, SO_OOBINLINE,
 				(void *)&on, sizeof on);
 #endif	/* defined(SO_OOBINLINE) */

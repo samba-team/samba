@@ -43,17 +43,20 @@ RCSID("$Id$");
 /*
  * FTP server.
  */
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
-#ifdef HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
-#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
 #endif
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -308,15 +311,15 @@ main(int argc, char **argv)
 		    auth_level = parse_auth_level(optarg);
 		    break;
 		case 'd':
-			debug = 1;
-			break;
+		    debug = 1;
+		    break;
 
 		case 'i':
 		    not_inetd = 1;
 		    break;
 		case 'l':
-			logging++;	/* > 1 == extra logging */
-			break;
+		    logging++;	/* > 1 == extra logging */
+		    break;
 
 		case 'p':
 		    sp = getservbyname(optarg, "tcp");
@@ -330,16 +333,16 @@ main(int argc, char **argv)
 		    break;
 		    
 		case 't':
-			ftpd_timeout = atoi(optarg);
-			if (maxtimeout < ftpd_timeout)
-				maxtimeout = ftpd_timeout;
-			break;
+		    ftpd_timeout = atoi(optarg);
+		    if (maxtimeout < ftpd_timeout)
+			maxtimeout = ftpd_timeout;
+		    break;
 
 		case 'T':
-			maxtimeout = atoi(optarg);
-			if (ftpd_timeout > maxtimeout)
-				ftpd_timeout = maxtimeout;
-			break;
+		    maxtimeout = atoi(optarg);
+		    if (ftpd_timeout > maxtimeout)
+			ftpd_timeout = maxtimeout;
+		    break;
 
 		case 'u':
 		    {
@@ -347,19 +350,19 @@ main(int argc, char **argv)
 
 			val = strtol(optarg, &optarg, 8);
 			if (*optarg != '\0' || val < 0)
-				warnx("bad value for -u");
+			    warnx("bad value for -u");
 			else
-				defumask = val;
+			    defumask = val;
 			break;
 		    }
 
 		case 'v':
-			debug = 1;
-			break;
+		    debug = 1;
+		    break;
 
 		default:
-                        warnx("unknown flag -%c ignored", argv[optind-1][0]);
-			break;
+		    warnx("unknown flag -%c ignored", argv[optind-1][0]);
+		    break;
 		}
 	}
 
@@ -382,7 +385,7 @@ main(int argc, char **argv)
 		syslog(LOG_ERR, "getsockname (%s): %m",argv[0]);
 		exit(1);
 	}
-#ifdef IP_TOS
+#if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
 	tos = IPTOS_LOWDELAY;
 	if (setsockopt(0, IPPROTO_IP, IP_TOS, (void *)&tos, sizeof(int)) < 0)
 		syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
@@ -403,7 +406,7 @@ main(int argc, char **argv)
 	auth_init();
 
 	/* Try to handle urgent data inline */
-#ifdef SO_OOBINLINE
+#if defined(SO_OOBINLINE) && defined(HAVE_SETSOCKOPT)
 	if (setsockopt(0, SOL_SOCKET, SO_OOBINLINE, (void *)&on,
 		       sizeof(on)) < 0)
 		syslog(LOG_ERR, "setsockopt: %m");
@@ -785,9 +788,9 @@ pass(char *passwd)
 		memset (passwd, 0, strlen(passwd));
 
 		/*
-		 * If rval == 1, the user failed the authentication check
-		 * above.  If rval == 0, either Kerberos or local authentication
-		 * succeeded.
+		 * If rval == 1, the user failed the authentication
+		 * check above.  If rval == 0, either Kerberos or
+		 * local authentication succeeded.
 		 */
 		if (rval) {
 			reply(530, "Login incorrect.");
@@ -815,7 +818,7 @@ pass(char *passwd)
 static void
 set_buffer_size(int fd, int read)
 {
-#if defined(SO_RCVBUF) && defined(SO_SNDBUF)
+#if defined(SO_RCVBUF) && defined(SO_SNDBUF) && defined(HAVE_SETSOCKOPT)
     size_t size = 1048576;
     while(size >= 131072 && 
 	  setsockopt(fd, SOL_SOCKET, read ? SO_RCVBUF : SO_SNDBUF, 
@@ -1052,9 +1055,11 @@ getdatasock(char *mode)
 	s = socket(AF_INET, SOCK_STREAM, 0);
 	if (s < 0)
 		goto bad;
+#if defined(SO_REUSEADDR) && defined(HAVE_SETSOCKOPT)
 	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
 	    (void *) &on, sizeof(on)) < 0)
 		goto bad;
+#endif
 	/* anchor socket to avoid multi-homing problems */
 	data_source.sin_family = AF_INET;
 	data_source.sin_addr = ctrl_addr.sin_addr;
@@ -1067,7 +1072,7 @@ getdatasock(char *mode)
 		sleep(tries);
 	}
 	seteuid((uid_t)pw->pw_uid);
-#ifdef IP_TOS
+#if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
 	on = IPTOS_THROUGHPUT;
 	if (setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&on, sizeof(int)) < 0)
 		syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
@@ -1108,7 +1113,7 @@ dataconn(char *name, off_t size, char *mode)
 		}
 		close(pdata);
 		pdata = s;
-#ifdef IP_TOS
+#if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
 		tos = IPTOS_THROUGHPUT;
 		setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&tos,
 		    sizeof(int));
@@ -1808,7 +1813,6 @@ send_file_list(char *whichf)
   int simple = 0;
   int freeglob = 0;
   glob_t gl;
-
   char buf[MaxPathLen];
 
   if (strpbrk(whichf, "~{[*?") != NULL) {

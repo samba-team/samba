@@ -115,7 +115,7 @@ hookup(char *host, int port)
 		code = -1;
 		goto bad;
 	}
-#ifdef IP_TOS
+#if defined(IP_TOS) && defined(SETSOCKOPT)
 	tos = IPTOS_LOWDELAY;
 	if (setsockopt(s, IPPROTO_IP, IP_TOS, (char *)&tos, sizeof(int)) < 0)
 		warn("setsockopt TOS (ignored)");
@@ -141,7 +141,7 @@ hookup(char *host, int port)
 		code = -1;
 		goto bad;
 	}
-#ifdef SO_OOBINLINE
+#if defined(SO_OOBINLINE) && defined(HAVE_SETSOCKOPT)
 	{
 	int on = 1;
 
@@ -572,7 +572,7 @@ copy_stream(FILE *from, FILE *to)
 static void
 set_buffer_size(int fd, int read)
 {
-#if defined(SO_RCVBUF) && defined(SO_SNDBUF)
+#if defined(SO_RCVBUF) && defined(SO_SNDBUF) && defined(HAVE_SETSOCKOPT)
     size_t size = 1048576;
     while(size >= 131072 && 
 	  setsockopt(fd, SOL_SOCKET, read ? SO_RCVBUF : SO_SNDBUF, 
@@ -1132,10 +1132,12 @@ initconn(void)
 			perror("ftp: socket");
 			return(1);
 		}
+#if defined(SO_DEBUG) && defined(HAVE_SETSOCKOPT)
 		if ((options & SO_DEBUG) &&
 		    setsockopt(data, SOL_SOCKET, SO_DEBUG, (char *)&on,
 			       sizeof (on)) < 0)
 			perror("ftp: setsockopt (ignored)");
+#endif
 		if (command("PASV") != COMPLETE) {
 			printf("Passive mode refused.\n");
 			goto bad;
@@ -1174,7 +1176,7 @@ initconn(void)
 			perror("ftp: connect");
 			goto bad;
 		}
-#ifdef IP_TOS
+#if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
 		on = IPTOS_THROUGHPUT;
 		if (setsockopt(data, IPPROTO_IP, IP_TOS, (char *)&on,
 			       sizeof(int)) < 0)
@@ -1196,18 +1198,22 @@ noport:
 			sendport = 1;
 		return (1);
 	}
+#if defined(SO_REUSEADDR) && defined(HAVE_SETSOCKOPT)
 	if (!sendport)
 		if (setsockopt(data, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof (on)) < 0) {
 			warn("setsockopt (reuse address)");
 			goto bad;
 		}
+#endif
 	if (bind(data, (struct sockaddr *)&data_addr, sizeof (data_addr)) < 0) {
 		warn("bind");
 		goto bad;
 	}
+#if defined(SO_DEBUG) && defined(HAVE_SETSOCKOPT)
 	if (options & SO_DEBUG &&
 	    setsockopt(data, SOL_SOCKET, SO_DEBUG, (char *)&on, sizeof (on)) < 0)
 		warn("setsockopt (ignored)");
+#endif
 	len = sizeof (data_addr);
 	if (getsockname(data, (struct sockaddr *)&data_addr, &len) < 0) {
 		warn("getsockname");
@@ -1234,7 +1240,7 @@ noport:
 	}
 	if (tmpno)
 		sendport = 1;
-#ifdef IP_TOS
+#if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
 	on = IPTOS_THROUGHPUT;
 	if (setsockopt(data, IPPROTO_IP, IP_TOS, (char *)&on, sizeof(int)) < 0)
 		warn("setsockopt TOS (ignored)");
@@ -1264,7 +1270,7 @@ dataconn(char *lmode)
 	}
 	close(data);
 	data = s;
-#ifdef IP_TOS
+#if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
 	tos = IPTOS_THROUGHPUT;
 	if (setsockopt(s, IPPROTO_IP, IP_TOS, (char *)&tos, sizeof(int)) < 0)
 		warn("setsockopt TOS (ignored)");

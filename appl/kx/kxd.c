@@ -110,7 +110,7 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 			    &thataddr, &thisaddr, &auth, "", schedule,
 			    version);
      if (status != KSUCCESS ||
-	 strncmp(version, KXVERSION, KRB_SENDAUTH_VLEN) != 0) {
+	 strncmp(version, KX_VERSION, KRB_SENDAUTH_VLEN) != 0) {
 	  return 1;
      }
      if (krb_net_read (sock, user, sizeof(user)) != sizeof(user))
@@ -187,7 +187,7 @@ doit_conn (int fd, struct sockaddr_in *thataddr,
     sprintf (msg, "socket: %s", strerror(errno));
     return fatal (sock, msg);
   }
-#ifdef TCP_NODELAY
+#if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
   setsockopt (sock, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
 #endif
   if (connect (sock, (struct sockaddr *)thataddr,
@@ -291,7 +291,7 @@ doit(int sock, int tcpp)
 			 sprintf (msg, "accept: %s\n", strerror (errno));
 			 return fatal (sock, msg);
 		    }
-#ifdef TCP_NODELAY
+#if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
 	       setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, (void *)&one,
 			   sizeof(one));
 #endif

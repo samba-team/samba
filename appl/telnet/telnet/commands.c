@@ -2295,7 +2295,7 @@ tn(int argc, char **argv)
 	    perror("telnet: socket");
 	    return 0;
 	}
-#if	defined(IP_OPTIONS) && defined(IPPROTO_IP)
+#if	defined(IP_OPTIONS) && defined(IPPROTO_IP) && defined(HAVE_SETSOCKOPT)
 	if (srp && setsockopt(net, IPPROTO_IP, IP_OPTIONS, (void *)srp,
 			      srlen) < 0)
 		perror("setsockopt (IP_OPTIONS)");

@@ -183,7 +183,7 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 		 close (unixfd);
 		 return -1;
 	     }
-#ifdef TCP_NODELAY
+#if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
 	     setsockopt (tcpfd, IPPROTO_TCP, TCP_NODELAY, (void *)&one,
 			 sizeof(one));
 #endif
@@ -326,6 +326,9 @@ suspicious_address (int sock, struct sockaddr_in addr)
     int len = sizeof(data);
 
     return addr.sin_addr.s_addr != htonl(INADDR_LOOPBACK)
+#if defined(IP_OPTIONS) && defined(HAVE_GETSOCKOPT)
 	|| getsockopt (sock, IPPROTO_IP, IP_OPTIONS, data, &len) < 0
-	|| len != 0;
+	|| len != 0
+#endif
+    ;
 }

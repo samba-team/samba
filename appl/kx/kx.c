@@ -138,7 +138,7 @@ connect_host (char *host, char *user, des_cblock *key,
 	     return -1;
 	 }
 
-#ifdef TCP_NODELAY
+#if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
 	 setsockopt (s, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
 #endif
 
@@ -164,7 +164,7 @@ connect_host (char *host, char *user, des_cblock *key,
      status = krb_sendauth (KOPT_DO_MUTUAL, s, &text, "rcmd",
 			    host, krb_realmofhost (host),
 			    getpid(), &msg, &cred, schedule,
-			    &thisaddr, &thataddr, KXVERSION);
+			    &thisaddr, &thataddr, KX_VERSION);
      if (status != KSUCCESS) {
 	  fprintf (stderr, "%s: %s: %s\n", prog, host,
 		   krb_get_err_text(status));
@@ -435,7 +435,7 @@ doit (char *host, char *user, int passivep, int debugp, int tcpp)
 			     strerror(errno));
 		    return 1;
 	       }
-#ifdef TCP_NODELAY
+#if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
 	  setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, (void *)&one, sizeof(one));
 #endif
 	  ++nchild;

@@ -67,11 +67,13 @@ mini_inetd (int port)
 	  perror("socket");
 	  exit(1);
      }
+#if defined(SO_REUSEADDR) && defined(HAVE_SETSOCKOPT)
      if(setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void *)&one,
 		   sizeof(one)) < 0){
 	  perror("setsockopt");
 	  exit(1);
      }
+#endif
      memset(&sa, 0, sizeof(sa));
      sa.sin_family = AF_INET;
      sa.sin_port = port;
