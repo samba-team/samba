@@ -194,8 +194,8 @@ static struct cli_state *init_connection(struct cli_state *cli,
                 return NULL;
         }
 
-        if (!lookup_pdc_name(global_myname, lp_workgroup(), dest_ip, 
-                             dest_host)) {
+        if (!lookup_dc_name(global_myname, lp_workgroup(), dest_ip, 
+			    dest_host)) {
                 DEBUG(0, ("Could not lookup up PDC name for domain %s\n",
                           lp_workgroup()));
                 return NULL;
