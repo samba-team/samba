@@ -137,7 +137,7 @@ if test x"$with_ads_support" != x"no"; then
     AC_MSG_RESULT(no. Fallback to previous krb5 detection strategy)
   fi
   
-  if test x$FOUND_KRB5 = x"no"; then
+  if test x$FOUND_KRB5 != x"yes"; then
     #################################################
     # check for location of Kerberos 5 install
     AC_MSG_CHECKING(for kerberos 5 install path)
@@ -163,7 +163,7 @@ if test x"$with_ads_support" != x"no"; then
     )
   fi
 
-  if test x$FOUND_KRB5 = x"no"; then
+  if test x$FOUND_KRB5 != x"yes"; then
     #################################################
     # see if this box has the SuSE location for the heimdal krb implementation
     AC_MSG_CHECKING(for /usr/include/heimdal)
@@ -183,7 +183,7 @@ if test x"$with_ads_support" != x"no"; then
     fi
   fi
 
-  if test x$FOUND_KRB5 = x"no"; then
+  if test x$FOUND_KRB5 != x"yes"; then
     #################################################
     # see if this box has the RedHat location for kerberos
     AC_MSG_CHECKING(for /usr/kerberos)
