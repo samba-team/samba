@@ -369,6 +369,11 @@ Comma Separated list of Files
 		<varlistentry><term>enumforms</term><listitem><para>Enumerate form</para></listitem></varlistentry>
 		<varlistentry><term>setprinter</term><listitem><para>Set printer comment</para></listitem></varlistentry>
 		<varlistentry><term>setprinterdata</term><listitem><para>Set REG_SZ printer data</para></listitem></varlistentry>
+
+		<varlistentry><term>setprintername &lt;printername&gt;
+		&lt;newprintername&gt;</term>
+		<listitem><para>Set printer name</para></listitem></varlistentry>
+
 		<varlistentry><term>rffpcnex</term><listitem><para>Rffpcnex test</para></listitem></varlistentry>
 		
 
