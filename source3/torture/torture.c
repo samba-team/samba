@@ -844,7 +844,7 @@ static BOOL run_locktest1(int dummy)
 		printf("error: This server appears not to support timed lock requests\n");
 	}
 	printf("server slept for %u seconds for a %u second timeout\n",
-	       t2-t1, lock_timeout);
+	       (unsigned int)(t2-t1), lock_timeout);
 
 	if (!cli_close(&cli1, fnum2)) {
 		printf("close1 failed (%s)\n", cli_errstr(&cli1));
@@ -3454,7 +3454,9 @@ static BOOL run_opentest(int dummy)
 		correct = False;
 		cli_close(&cli1, fnum1);
 	} else {
-		printf("test 8 open 3 of %s gave %s (correct error should be %s)\n", fname, cli_errstr(&cli1), "ACCESS_DENIED");
+        	if (check_error(__LINE__, &cli1, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED)) {
+			printf("correct error code NT_STATUS_ACCESS_DENIED/ERRDOS:ERRnoaccess returned\n");
+		}
 	}
 
 	printf("Attribute open test #8 passed.\n");
