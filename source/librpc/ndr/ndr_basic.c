@@ -960,7 +960,7 @@ NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, NTTIME *t)
 NTSTATUS ndr_push_NTTIME_1sec(struct ndr_push *ndr, NTTIME t)
 {
 	t /= 10000000;
-	NDR_CHECK(ndr_push_uint64(ndr, t));
+	NDR_CHECK(ndr_push_HYPER_T(ndr, t));
 	return NT_STATUS_OK;
 }
 
@@ -969,7 +969,7 @@ NTSTATUS ndr_push_NTTIME_1sec(struct ndr_push *ndr, NTTIME t)
 */
 NTSTATUS ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, NTTIME *t)
 {
-	NDR_CHECK(ndr_pull_uint64(ndr, t));
+	NDR_CHECK(ndr_pull_HYPER_T(ndr, t));
 	(*t) *= 10000000;
 	return NT_STATUS_OK;
 }
