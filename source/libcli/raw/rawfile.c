@@ -330,6 +330,13 @@ struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *par
 		put_dos_date3(req->out.vwv, VWV(1), parms->mknew.in.write_time);
 		cli_req_append_ascii4(req, parms->mknew.in.fname, STR_TERMINATE);
 		break;
+
+	case RAW_OPEN_CREATE:
+		SETUP_REQUEST(SMBcreate, 3, 0);
+		SSVAL(req->out.vwv, VWV(0), parms->create.in.attrib);
+		put_dos_date3(req->out.vwv, VWV(1), parms->create.in.write_time);
+		cli_req_append_ascii4(req, parms->create.in.fname, STR_TERMINATE);
+		break;
 		
 	case RAW_OPEN_CTEMP:
 		SETUP_REQUEST(SMBctemp, 3, 0);
@@ -419,6 +426,11 @@ NTSTATUS smb_raw_open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union s
 	case RAW_OPEN_MKNEW:
 		CLI_CHECK_WCT(req, 1);
 		parms->mknew.out.fnum = SVAL(req->in.vwv, VWV(0));
+		break;
+
+	case RAW_OPEN_CREATE:
+		CLI_CHECK_WCT(req, 1);
+		parms->create.out.fnum = SVAL(req->in.vwv, VWV(0));
 		break;
 
 	case RAW_OPEN_CTEMP:

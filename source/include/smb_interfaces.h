@@ -1078,7 +1078,8 @@ union smb_fsinfo {
 
 
 enum open_level {RAW_OPEN_OPEN, RAW_OPEN_OPENX, 
-		 RAW_OPEN_MKNEW, RAW_OPEN_CTEMP, RAW_OPEN_SPLOPEN,
+		 RAW_OPEN_MKNEW, RAW_OPEN_CREATE, 
+		 RAW_OPEN_CTEMP, RAW_OPEN_SPLOPEN,
 		 RAW_OPEN_NTCREATEX, RAW_OPEN_T2OPEN};
 
 /* the generic interface is defined to be equal to the NTCREATEX interface */
@@ -1213,7 +1214,7 @@ union smb_open {
 		struct {
 			uint16 fnum;
 		} out;
-	} mknew;
+	} mknew, create;
 
 	/* SMBctemp interface */
 	struct {
