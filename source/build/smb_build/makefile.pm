@@ -913,3 +913,5 @@ sub create_makefile_in($)
 	print "config.smb_build.pl: creating Makefile.in\n";
 	return;	
 }
+
+1;

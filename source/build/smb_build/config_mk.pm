@@ -432,3 +432,4 @@ sub binary_get_array($$$)
 
 	return _fetch_array_from_config_mk($filename,$section,$var);
 }
+1;
