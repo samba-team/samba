@@ -735,8 +735,7 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	fstring sam_sid_str;
 	struct group *grp;
 
-	r_e.status = 0x0;
-	r_e.num_entries = 0;
+	ZERO_STRUCT(r_e);
 
 	/* find the policy handle.  open a policy on it. */
 	if (r_e.status == 0x0 && !get_lsa_policy_samr_sid(&q_u->pol, &sid))
@@ -839,8 +838,6 @@ static BOOL samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u, prs_struct *rd
 	uint16 switch_level = 0x0;
 
 	ZERO_STRUCT(r_e);
-
-	r_e.status = 0x0;
 
 	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
 
