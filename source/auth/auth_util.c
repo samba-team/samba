@@ -842,6 +842,52 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 	return nt_status;
 }
 
+static NTSTATUS fill_sam_account(const char *domain,
+				 const char *username,
+				 const DOM_SID *user_sid,
+				 const DOM_SID *group_sid,
+				 SAM_ACCOUNT **sam_account)
+{
+	fstring dom_user;
+	struct passwd *passwd;
+	NTSTATUS result;
+	unid_t id;
+
+	fstr_sprintf(dom_user, "%s%s%s",
+		     domain, lp_winbind_separator(), username);
+
+	passwd = Get_Pwnam(dom_user);
+
+	if ( (passwd == NULL) && is_myworkgroup(domain) ) {
+		/* For our own domain also try unqualified */
+		passwd = Get_Pwnam(username);
+	}
+
+	if (passwd == NULL)
+		return NT_STATUS_NO_SUCH_USER;
+
+	result = pdb_init_sam_pw(sam_account, passwd);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	id.uid = passwd->pw_uid;
+	result = idmap_set_mapping(user_sid, id, ID_USERID);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	/* This is currently broken. We have two different sources of
+	   information for the primary group: The info3 and
+	   /etc/passwd. To make this work at all, the info3 sid is
+	   mapped to the user's primary group from /etc/passwd.
+	   This is broken, but it basically works. */
+
+	id.gid = passwd->pw_gid;
+	result = idmap_set_mapping(group_sid, id, ID_GROUPID);
+
+	return result;
+}
+
 /***************************************************************************
  Make a server_info struct from the info3 returned by a domain logon 
 ***************************************************************************/
@@ -910,38 +956,20 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		nt_status = pdb_init_sam_pw(&sam_account, passwd);
 		passwd_free(&passwd);
 	} else {
-		int try = 0;
-		while (try < 2) {
-			char *dom_user;
-			dom_user = talloc_asprintf(mem_ctx, "%s%s%s", 
-						   nt_domain,
-						   lp_winbind_separator(),
-						   internal_username);
-			
-			if (!dom_user) {
-				DEBUG(0, ("talloc_asprintf failed!\n"));
-				nt_status = NT_STATUS_NO_MEMORY;
-			} else { 
-				
-				if (!(passwd = Get_Pwnam(dom_user))
-				    /* Only lookup local for the local
-				       domain, we don't want this for
-				       trusted domains */
-				    && strequal(nt_domain, lp_workgroup())) {
-					passwd = Get_Pwnam(internal_username);
-				}
-				
-				if (!passwd) {
-					nt_status = NT_STATUS_NO_SUCH_USER;
-				} else {
-					nt_status = pdb_init_sam_pw(&sam_account, passwd);
-					break;
-				}
-			}
-			if (try == 0) {
-				auth_add_user_script(nt_domain, internal_username);
-			}
-			try++;
+
+		nt_status = fill_sam_account(nt_domain,
+					     internal_username,
+					     &user_sid, &group_sid,
+					     &sam_account);
+
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
+			DEBUG(3,("User %s does not exist, trying to add it\n",
+				 internal_username));
+			auth_add_user_script(nt_domain, internal_username);
+			nt_status = fill_sam_account(nt_domain,
+						     internal_username,
+						     &user_sid, &group_sid,
+						     &sam_account);
 		}
 	}
 	
