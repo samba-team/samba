@@ -1,3 +1,23 @@
+2002-02-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* admin/ktutil.c: no need to use the "modify" keytab anymore
+
+	* lib/krb5/keytab_any.c: implement add and remove
+
+	* lib/krb5/keytab_krb4.c: implement add and remove
+
+	* lib/krb5/store_emem.c (emem_free): clear memory before freeing
+	(this should perhaps be selectable with a flag)
+
+2002-02-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/config.c (get_dbinfo): if there are database specifications
+	in the config file, don't automatically try to use the default
+	values (from Gombas Gabor)
+
+	* lib/krb5/log.c (krb5_closelog): don't pass pointer to pointer
+	(from Gombas Gabor)
+
 2002-01-30  Johan Danielsson  <joda@pdc.kth.se>
 
 	* admin/list.c: get the default keytab from krb5.conf, and list

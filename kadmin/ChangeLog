@@ -1,3 +1,7 @@
+2002-02-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ext.c: no need to use the "modify" keytab anymore
+
 2001-09-20  Assar Westerlund  <assar@sics.se>
 
 	* add-random-users.c: allocate several buffers for the list of
