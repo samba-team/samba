@@ -236,6 +236,7 @@ static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT *tdb, uint32 rid,
 
 	if (tdb_writelock(tdb) != 0)
 	{
+		DEBUG(5,("tdb_set_userinfo_pwds: write lock failed\n"));
 		return False;
 	}
 
@@ -582,6 +583,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			SamOEMhash(id24->pass, user_sess_key, True);
 			if (!set_user_info_24(tdb_usr, rid, id24))
 			{
+				DEBUG(10,("_samr_set_userinfo 0x18 failed\n"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			break;

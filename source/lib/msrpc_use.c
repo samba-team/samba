@@ -108,7 +108,7 @@ void free_msrpc_use(void)
 find client state.  server name, user name, domain name and password must all
 match.
 ****************************************************************************/
-static struct msrpc_use *msrpc_find(const char* pipe_name)
+static struct msrpc_use *msrpc_find(const char* pipe_name, const vuser_key *key)
 {
 	int i;
 
@@ -118,14 +118,18 @@ static struct msrpc_use *msrpc_find(const char* pipe_name)
 	{
 		char *msrpc_name = NULL;
 		struct msrpc_use *c = msrpcs[i];
+		vuser_key k;
 
 		if (c == NULL) continue;
 
 		msrpc_name = c->cli->pipe_name;
+		k = c->cli->nt.key;
 
-		DEBUG(10,("msrpc_find[%d]: %s\n", i, msrpc_name));
+		DEBUG(10,("msrpc_find[%d]: %s [%d,%x]\n",
+		   i, msrpc_name, k.pid, k.vuid));
 				
-		if (strequal(msrpc_name, pipe_name))
+		if (strequal(msrpc_name, pipe_name) &&
+		    (key == NULL || (k.pid == key->pid && k.vuid == key->vuid)))
 		{
 			return c;
 		}
@@ -169,7 +173,7 @@ struct msrpc_state *msrpc_use_add(const char* pipe_name,
 	struct msrpc_use *cli;
 	DEBUG(10,("msrpc_use_add: %s redir: %s\n", pipe_name, BOOLSTR(redir)));
 
-	cli = msrpc_find(pipe_name); 
+	cli = msrpc_find(pipe_name, key); 
 
 	if (cli != NULL)
 	{

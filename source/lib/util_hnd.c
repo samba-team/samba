@@ -356,11 +356,7 @@ BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
 	const vuser_key *key = get_policy_vuser_key(cache, hnd);
 	user_struct *vuser;
 
-	if (key == NULL)
-	{
-		return False;
-	}
-	if (key->vuid == UID_FIELD_INVALID)
+	if (key == NULL || key->vuid == UID_FIELD_INVALID)
 	{
 		memset(usr_sess_key, 0, 16);
 		return True;

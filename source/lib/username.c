@@ -228,11 +228,11 @@ static BOOL have_passwd_hash(void)
 
 struct passwd *hashed_getpwnam(const char *name)
 {
+#if 0
   struct passwd_hash_table_s *pht=&passwd_hash_table;
 
   DEBUG(5,("getpwnam(%s)\n", name));
 
-#if 0
   if (have_passwd_hash())
   {
     int name_i=name_hash_function(name);
@@ -269,11 +269,11 @@ turn a uid into a user name
 char *uidtoname(uid_t uid)
 {
   static char name[40];
-  struct passwd_hash_table_s *pht=&passwd_hash_table;
   struct passwd *pass=NULL;
+#if 0
+  struct passwd_hash_table_s *pht=&passwd_hash_table;
 
   DEBUG(5,("uidtoname(%d)\n",uid));
-#if 0
   if (have_passwd_hash()) {
     int hash_index=pht->uids[uid_hash_function(uid)];
     while(hash_index!=-1) {
