@@ -704,6 +704,11 @@ sub RewriteHeader($$$)
    
     while(<IN>) {
 
+	# Rename dom_sid2 to dom_sid as we don't care about the difference
+	# for the swig wrappers.
+
+	s/dom_sid2/dom_sid/g;
+
 	# Copy structure definitions
 
 	if (/^struct .*? {$/ .. /^\};$/) {
@@ -741,6 +746,5 @@ sub RewriteC($$$)
 
     close(OUT);   
 }
-
 
 1;
