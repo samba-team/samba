@@ -789,9 +789,12 @@ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push)
 	NTSTATUS status;
 	size_t ret;
 
+	/* avoid recursion */
+	if (flags & LIBNDR_FLAG_NO_NDR_SIZE) return 0;
+
 	ndr = ndr_push_init_ctx(NULL);
 	if (!ndr) return 0;
-	ndr->flags |= flags;
+	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, discard_const(p));
 	if (!NT_STATUS_IS_OK(status)) {
 		return 0;
@@ -810,9 +813,12 @@ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_union_f
 	NTSTATUS status;
 	size_t ret;
 
+	/* avoid recursion */
+	if (flags & LIBNDR_FLAG_NO_NDR_SIZE) return 0;
+
 	ndr = ndr_push_init_ctx(NULL);
 	if (!ndr) return 0;
-	ndr->flags |= flags;
+	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, level, discard_const(p));
 	if (!NT_STATUS_IS_OK(status)) {
 		return 0;
