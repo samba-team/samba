@@ -184,12 +184,12 @@ static const char *cache_lookup(u32 hash)
 
    In this algorithm, mangled names use only pure ascii characters (no
    multi-byte) so we can avoid doing a UCS2 conversion 
-*/
-static BOOL is_mangled(const char *name)
+ */
+static BOOL is_mangled_component(const char *name)
 {
 	int len, i;
 
-	M_DEBUG(0,("is_mangled %s ?\n", name));
+	M_DEBUG(0,("is_mangled_component %s ?\n", name));
 
 	/* the best distinguishing characteristic is the ~ */
 	if (name[6] != '~') return False;
@@ -226,6 +226,39 @@ static BOOL is_mangled(const char *name)
 	M_DEBUG(0,("is_mangled %s -> yes\n", name));
 
 	return True;
+}
+
+
+
+/* 
+   determine if a string is possibly in a mangled format, ignoring
+   case 
+
+   In this algorithm, mangled names use only pure ascii characters (no
+   multi-byte) so we can avoid doing a UCS2 conversion 
+
+   NOTE! This interface must be able to handle a path with unix
+   directory separators. It should return true if any component is
+   mangled
+ */
+static BOOL is_mangled(const char *name)
+{
+	char *p;
+	char *s;
+
+	M_DEBUG(0,("is_mangled %s ?\n", name));
+
+	for (s=name; (p=strchr(s, '/')); s=p+1) {
+		char *component = strndup(s, PTR_DIFF(p, s));
+		if (is_mangled_component(component)) {
+			free(component);
+			return True;
+		}
+		free(component);
+	}
+	
+	/* and the last part ... */
+	return is_mangled_component(s);
 }
 
 
@@ -343,8 +376,12 @@ static BOOL check_cache(char *name)
 	}
 
 	/* we found it - construct the full name */
-	strncpy(extension, name+9, 3);
-	extension[3] = 0;
+	if (name[8] == '.') {
+		strncpy(extension, name+9, 3);
+		extension[3] = 0;
+	} else {
+		extension[0] = 0;
+	}
 
 	if (extension[0]) {
 		M_DEBUG(0,("check_cache: %s -> %s.%s\n", name, prefix, extension));
