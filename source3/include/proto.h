@@ -250,6 +250,7 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16]);
 BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
                        NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
+BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 
 /*The following definitions come from  lib/rpc/client/cli_pipe.c  */
 
@@ -1017,6 +1018,7 @@ int lp_client_code_page(void);
 int lp_announce_as(void);
 int lp_lm_announce(void);
 int lp_lm_interval(void);
+int lp_machine_password_timeout(void);
 int lp_ldap_port(void);
 char *lp_preexec(int );
 char *lp_postexec(int );

@@ -1101,4 +1101,3 @@ BOOL pdb_rid_is_user(uint32 rid)
    */
   return True;
 }
-

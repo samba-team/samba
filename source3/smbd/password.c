@@ -28,6 +28,8 @@
 extern int DEBUGLEVEL;
 extern int Protocol;
 
+BOOL global_machine_pasword_needs_changing;
+
 /* users from session setup */
 static pstring session_users="";
 
@@ -1972,8 +1974,6 @@ BOOL domain_client_validate( char *user, char *domain,
     }
   }
 
-  become_root(False);
-
   /*
    * Get the machine account password.
    */
@@ -1992,12 +1992,13 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 
   trust_password_unlock();
 
-  unbecome_root(False);
-
   /* 
    * Here we should check the last change time to see if the machine
    * password needs changing..... TODO... JRA. 
    */
+
+  if(time(NULL) > lct + lp_machine_password_timeout())
+    global_machine_pasword_needs_changing = True;
 
   /*
    * At this point, smb_apasswd points to the lanman response to
