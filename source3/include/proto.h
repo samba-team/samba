@@ -1962,9 +1962,9 @@ BOOL parse_lpq_entry(int snum,char *line,
 
 #if OLD_NTDOMAIN
 BOOL nt_printing_init(void);
-int get_ntforms(nt_forms_struct **list);
+int get_ntforms(TALLOC_CTX *ctx, nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
-BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
+BOOL add_a_form(TALLOC_CTX *ctx, nt_forms_struct **list, const FORM *form, int *count);
 BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32 *ret);
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture, uint32 version);

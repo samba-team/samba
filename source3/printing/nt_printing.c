@@ -52,10 +52,10 @@ static nt_forms_struct default_forms[] = {
 	{"Letter", 0x2, 0x34b5b, 0x44367, 0x0, 0x0, 0x34b5b, 0x44367},
 };
 
-
 /****************************************************************************
 open the NT printing tdb
 ****************************************************************************/
+
 BOOL nt_printing_init(void)
 {
 	static pid_t local_pid;
@@ -81,14 +81,15 @@ BOOL nt_printing_init(void)
 	return True;
 }
 
-
 /****************************************************************************
-get a form struct list
+get a form struct list. Returns talloc'ed memory.
 ****************************************************************************/
-int get_ntforms(nt_forms_struct **list)
+
+int get_ntforms(TALLOC_CTX *ctx, nt_forms_struct **list)
 {
 	TDB_DATA kbuf, newkey, dbuf;
 	nt_forms_struct form;
+	nt_forms_struct *list_p = NULL;
 	int ret;
 	int i;
 	int n = 0;
@@ -110,25 +111,37 @@ int get_ntforms(nt_forms_struct **list)
 
 		/* allocate space and populate the list in correct order */
 		if (i+1 > n) {
-			*list = Realloc(*list, sizeof(nt_forms_struct)*(i+1));
+			list_p = Realloc(list_p, sizeof(nt_forms_struct)*(i+1));
+			if (!list_p)
+				return 0;
 			n = i+1;
 		}
-		(*list)[i] = form;
+		list_p[i] = form;
 	}
 
 	/* we should never return a null forms list or NT gets unhappy */
 	if (n == 0) {
-		*list = (nt_forms_struct *)memdup(&default_forms[0], sizeof(default_forms));
+		list_p = (nt_forms_struct *)memdup(&default_forms[0], sizeof(default_forms));
+		if (!list_p)
+			return 0;
 		n = sizeof(default_forms) / sizeof(default_forms[0]);
 	}
 	
+	*list = NULL;
+	if (list_p) {
+		*list = (nt_forms_struct *)talloc_memdup(ctx, list_p, n * sizeof(nt_forms_struct) );
+		free(list_p);
+	}
 
+	if (!*list)
+		return 0;
 	return n;
 }
 
 /****************************************************************************
 write a form struct list
 ****************************************************************************/
+
 int write_ntforms(nt_forms_struct **list, int number)
 {
 	pstring buf, key;
@@ -142,23 +155,26 @@ int write_ntforms(nt_forms_struct **list, int number)
 			       i, (*list)[i].flag, (*list)[i].width, (*list)[i].length,
 			       (*list)[i].left, (*list)[i].top, (*list)[i].right,
 			       (*list)[i].bottom);
-		if (len > sizeof(buf)) break;
+		if (len > sizeof(buf))
+			break;
 		slprintf(key, sizeof(key), "%s%s", FORMS_PREFIX, (*list)[i].name);
         dos_to_unix(key, True);            /* Convert key to unix-codepage */
 		kbuf.dsize = strlen(key)+1;
 		kbuf.dptr = key;
 		dbuf.dsize = len;
 		dbuf.dptr = buf;
-		if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) break;
-       }
+		if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0)
+			break;
+	}
 
-       return i;
+	return i;
 }
 
 /****************************************************************************
 add a form struct at the end of the list
 ****************************************************************************/
-BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
+
+BOOL add_a_form(TALLOC_CTX *ctx, nt_forms_struct **list, const FORM *form, int *count)
 {
 	int n=0;
 	BOOL update;
@@ -182,8 +198,14 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	}
 
 	if (update==False) {
-		if((*list=Realloc(*list, (n+1)*sizeof(nt_forms_struct))) == NULL)
+		/* We can't realloc a talloc memory area. */
+		nt_forms_struct *new_list = (nt_forms_struct *)talloc(ctx, (n+1)*sizeof(nt_forms_struct) );
+		if (!new_list)
 			return False;
+
+		memcpy(new_list, *list, n*sizeof(nt_forms_struct) );
+		*list = new_list;
+
 		unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name)-1);
 		(*count)++;
 	}
@@ -202,6 +224,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 /****************************************************************************
  delete a named form struct
 ****************************************************************************/
+
 BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32 *ret)
 {
 	pstring key;
@@ -250,6 +273,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32
 /****************************************************************************
 update a form struct
 ****************************************************************************/
+
 void update_a_form(nt_forms_struct **list, const FORM *form, int count)
 {
 	int n=0;
@@ -257,8 +281,7 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count)
 	unistr2_to_ascii(form_name, &(form->name), sizeof(form_name)-1);
 
 	DEBUG(106, ("[%s]\n", form_name));
-	for (n=0; n<count; n++)
-	{
+	for (n=0; n<count; n++) {
 		DEBUGADD(106, ("n [%d]:[%s]\n", n, (*list)[n].name));
 		if (!strncmp((*list)[n].name, form_name, strlen(form_name)))
 			break;
@@ -280,6 +303,7 @@ get the nt drivers list
 
 traverse the database and look-up the matching names
 ****************************************************************************/
+
 int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 {
 	int total=0;
