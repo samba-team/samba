@@ -126,11 +126,11 @@ void tdb_unlockall(TDB_CONTEXT *tdb);
 
 /* Low level locking functions: use with care */
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
-void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 
 /* Debug functions. Not used in production. */
 void tdb_dump_all(TDB_CONTEXT *tdb);
-void tdb_printfreelist(TDB_CONTEXT *tdb);
+int tdb_printfreelist(TDB_CONTEXT *tdb);
 
 extern TDB_DATA tdb_null;
 
