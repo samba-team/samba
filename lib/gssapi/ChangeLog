@@ -1,3 +1,9 @@
+2002-10-31  Johan Danielsson  <joda@pdc.kth.se>
+
+	* check return value from gssapi_krb5_init
+	
+	* 8003.c (gssapi_krb5_verify_8003_checksum): check size of input
+
 2002-09-03  Johan Danielsson  <joda@pdc.kth.se>
 
 	* wrap.c (wrap_des3): use ETYPE_DES3_CBC_NONE
