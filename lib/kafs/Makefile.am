@@ -41,7 +41,7 @@ endif # KRB4
 
 
 lib_LTLIBRARIES = $(AFSLIBS)
-libkafs_la_LDFLAGS = -version-info 1:1:1
+libkafs_la_LDFLAGS = -version-info 1:2:1
 foodir = $(libdir)
 foo_DATA = $(AFS_EXTRA_LIBS)
 # EXTRA_DATA = afslib.so
