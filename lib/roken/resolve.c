@@ -110,10 +110,9 @@ parse_reply(unsigned char *data, int len)
     struct dns_reply *r;
     struct resource_record **rr;
     
-    r = (struct dns_reply*)malloc(sizeof(struct dns_reply));
+    r = calloc(1, sizeof(*r));
     if (r == NULL)
 	return NULL;
-    memset(r, 0, sizeof(struct dns_reply));
 
     p = data;
     memcpy(&r->h, p, sizeof(HEADER));
@@ -242,22 +241,19 @@ parse_reply(unsigned char *data, int len)
     return r;
 }
 
-struct dns_reply *
-dns_lookup(const char *domain, const char *type_name)
+static dns_lookup_int(const char *domain, int rr_class, int rr_type)
 {
     unsigned char reply[1024];
     int len;
-    int type;
     struct dns_reply *r = NULL;
     u_long old_options = 0;
     
-    type = string_to_type(type_name);
     if (_resolve_debug) {
         old_options = _res.options;
 	_res.options |= RES_DEBUG;
 	fprintf(stderr, "dns_lookup(%s, %s)\n", domain, type_name);
     }
-    len = res_search(domain, C_IN, type, reply, sizeof(reply));
+    len = res_search(domain, rr_type, rr_type, reply, sizeof(reply));
     if (_resolve_debug) {
         _res.options = old_options;
 	fprintf(stderr, "dns_lookup(%s, %s) --> %d\n", domain, type_name, len);
@@ -265,6 +261,21 @@ dns_lookup(const char *domain, const char *type_name)
     if (len >= 0)
 	r = parse_reply(reply, len);
     return r;
+}
+
+struct dns_reply *
+dns_lookup(const char *domain, const char *type_name)
+{
+    int type;
+    
+    type = string_to_type(type_name);
+    if(type == -1) {
+	if(_resolve_debug)
+	    fprintf(stderr, "dns_lookup: unknown resource type: `%s'\n", 
+		    type_name);
+	return NULL;
+    }
+    return dns_lookup_int(domain, C_IN, type);
 }
 
 #else /* NOT defined(HAVE_RES_SEARCH) && defined(HAVE_DN_EXPAND) */
