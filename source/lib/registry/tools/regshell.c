@@ -337,7 +337,7 @@ static char **reg_completion(const char *text, int start, int end)
  int main(int argc, char **argv)
 {
 	int opt;
-	const char *backend = "dir";
+	const char *backend = "rpc";
 	const char *credentials = NULL;
 	struct registry_key *curkey = NULL;
 	poptContext pc;
@@ -363,14 +363,14 @@ static char **reg_completion(const char *text, int start, int end)
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
+    setup_logging("regtree", True);
+
 	error = reg_open(&h, backend, poptPeekArg(pc), credentials);
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", poptGetArg(pc), backend);
 		return 1;
 	}
 	poptFreeContext(pc);
-
-    setup_logging("regtree", True);
 
 	curkey = h->hives[0]->root;
 

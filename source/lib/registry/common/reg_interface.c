@@ -132,9 +132,9 @@ WERROR reg_list_available_hives(TALLOC_CTX *mem_ctx, const char *backend, const 
 
 WERROR reg_open(struct registry_context **ret, const char *backend, const char *location, const char *credentials)
 {
-	WERROR error = reg_create(ret);
+	WERROR error = reg_create(ret), reterror = WERR_NO_MORE_ITEMS;
 	char **hives;
-	int i;
+	int i, j;
 	TALLOC_CTX *mem_ctx = talloc_init("reg_open");
 
 	if(!W_ERROR_IS_OK(error)) return error;
@@ -147,11 +147,15 @@ WERROR reg_open(struct registry_context **ret, const char *backend, const char *
 	   
 	if(!W_ERROR_IS_OK(error)) return error;
 
+	j = 0;
 	for(i = 0; hives[i]; i++)
 	{
 		error = reg_import_hive(*ret, backend, location, credentials, hives[i]);
-		if(!W_ERROR_IS_OK(error)) return error;
-		(*ret)->hives[i]->name = talloc_strdup((*ret)->mem_ctx, hives[i]);
+		if (W_ERROR_IS_OK(error)) { 
+			reterror = WERR_OK;
+			(*ret)->hives[j]->name = talloc_strdup((*ret)->mem_ctx, hives[i]);
+			j++;
+		} else if (!W_ERROR_IS_OK(reterror)) reterror = error;
 	}
 
 	return WERR_OK;
