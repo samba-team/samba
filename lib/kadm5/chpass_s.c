@@ -80,12 +80,16 @@ change(void *server_handle,
     if(ret)
 	goto out2;
 
+    ret = _kadm5_bump_pw_expire(context, &ent);
+    if (ret)
+	goto out2;
+
     hdb_seal_keys(context->context, context->db, &ent);
 
     kadm5_log_modify (context,
 		      &ent,
 		      KADM5_PRINCIPAL | KADM5_MOD_NAME | KADM5_MOD_TIME |
-		      KADM5_KEY_DATA | KADM5_KVNO);
+		      KADM5_KEY_DATA | KADM5_KVNO | KADM5_PW_EXPIRATION);
     
     ret = context->db->store(context->context, context->db, 
 			     HDB_F_REPLACE, &ent);
@@ -148,13 +152,16 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
     ret = _kadm5_set_modifier(context, &ent);
     if(ret)
 	goto out2;
+    ret = _kadm5_bump_pw_expire(context, &ent);
+    if (ret)
+	goto out2;
 
     hdb_seal_keys(context->context, context->db, &ent);
 
     kadm5_log_modify (context,
 		      &ent,
 		      KADM5_PRINCIPAL | KADM5_MOD_NAME | KADM5_MOD_TIME |
-		      KADM5_KEY_DATA | KADM5_KVNO);
+		      KADM5_KEY_DATA | KADM5_KVNO | KADM5_PW_EXPIRATION);
     
     ret = context->db->store(context->context, context->db, 
 			     HDB_F_REPLACE, &ent);
