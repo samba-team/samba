@@ -275,22 +275,6 @@ tolocal(int argc, char **argv)
 	}
 }
 
-static char *
-sizestr(off_t size)
-{
-    static char ss[32];
-    char *p;
-    ss[sizeof(ss) - 1] = '\0';
-    for(p = ss + sizeof(ss) - 2; p >= ss; p--) {
-	*p = '0' + size % 10;
-	size /= 10;
-	if(size == 0)
-	    break;
-    }
-    return ss;
-}
-		    
-
 void
 source(int argc, char **argv)
 {
@@ -339,8 +323,10 @@ syserr:			run_err("%s: %s", name, strerror(errno));
 				goto next;
 		}
 #define	MODEMASK	(S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
-		snprintf(buf, sizeof(buf), "C%04o %s %s\n",
-			 stb.st_mode & MODEMASK, sizestr(stb.st_size), last);
+		snprintf(buf, sizeof(buf), "C%04o %lu %s\n",
+			 stb.st_mode & MODEMASK,
+			 (unsigned long)stb.st_size,
+			 last);
 		write(remout, buf, strlen(buf));
 		if (response() < 0)
 			goto next;
