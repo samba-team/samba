@@ -184,7 +184,7 @@ int psec_getsec(char *printer)
 
 	if (!tdb) {
 		printf("psec: failed to open %s: %s\n", tdb_filename,
-		       sys_errlist[errno]);
+		       strerror(errno));
 		return 1;
 	}
 
@@ -296,7 +296,7 @@ int psec_setsec(char *printer)
 
 	if (!tdb) {
 		printf("psec: failed to open %s: %s\n", tdb_filename,
-		       sys_errlist[errno]);
+		       strerror(errno));
 		result = 1;
 		goto done;
 	}
