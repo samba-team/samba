@@ -3837,15 +3837,17 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 	/* check if the driver actually exists for this environment */
 	
 	dbuf = tdb_fetch( tdb_drivers, kbuf );
-	if ( !dbuf.dptr )
+	if ( !dbuf.dptr ) {
+		DEBUG(8,("delete_printer_driver_internal: Driver unknown [%s]\n", key));
 		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
 		
 	SAFE_FREE( dbuf.dptr );
 	
 	/* ok... the driver exists so the delete should return success */
 		
 	if (tdb_delete(tdb_drivers, kbuf) == -1) {
-		DEBUG (0,("delete_printer_driver: fail to delete %s!\n", key));
+		DEBUG (0,("delete_printer_driver_internal: fail to delete %s!\n", key));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -3859,7 +3861,7 @@ static WERROR delete_printer_driver_internal( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i,
 		delete_driver_files( i, user );
 		
 
-	DEBUG(5,("delete_printer_driver: [%s] driver delete successful.\n", i->name));
+	DEBUG(5,("delete_printer_driver_internal: driver delete successful [%s]\n", key));
 
 	return WERR_OK;
 }
