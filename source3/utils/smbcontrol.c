@@ -203,7 +203,8 @@ static void profilelevel_cb(int msg_type, pid_t pid, void *buf, size_t len)
 	num_replies++;
 
 	if (len != sizeof(int)) {
-		fprintf(stderr, "invalid message length %d returned\n", len);
+		fprintf(stderr, "invalid message length %ld returned\n", 
+			(unsigned long)len);
 		return;
 	}
 
