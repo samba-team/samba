@@ -178,7 +178,8 @@ NTSTATUS ntvfs_map_open(struct request_context *req, union smb_open *io)
 				break;
 			case OPEN_FLAGS_OPEN_RDWR:
 			case 0xf: /* FCB mode */
-				io2.generic.in.access_mask = GENERIC_RIGHTS_FILE_ALL_ACCESS;
+				io2.generic.in.access_mask = GENERIC_RIGHTS_FILE_READ |
+					GENERIC_RIGHTS_FILE_WRITE;
 				io->open.out.rmode = DOS_OPEN_RDWR; /* assume we got r/w */
 				break;
 			default:
@@ -369,12 +370,13 @@ NTSTATUS ntvfs_map_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 */
 NTSTATUS ntvfs_map_fileinfo(struct request_context *req, union smb_fileinfo *info, union smb_fileinfo *info2)
 {
+	int i;
 	/* and convert it to the required level using results in info2 */
 	switch (info->generic.level) {
 		case RAW_FILEINFO_GENERIC:
 		return NT_STATUS_INVALID_LEVEL;
 	case RAW_FILEINFO_GETATTR:
-		info->getattr.out.attrib = info2->generic.out.attrib & 0x3f;
+		info->getattr.out.attrib = info2->generic.out.attrib & 0xff;
 		info->getattr.out.size = info2->generic.out.size;
 		info->getattr.out.write_time = nt_time_to_unix(&info2->generic.out.write_time);
 		return NT_STATUS_OK;
@@ -468,29 +470,118 @@ NTSTATUS ntvfs_map_fileinfo(struct request_context *req, union smb_fileinfo *inf
 
 	case RAW_FILEINFO_STREAM_INFO:
 	case RAW_FILEINFO_STREAM_INFORMATION:
-		/* setup a single data stream */
 		info->stream_info.out.num_streams = info2->generic.out.num_streams;
-		info->stream_info.out.streams = talloc(req->mem_ctx, sizeof(info2->stream_info.out.streams[0]));
-		if (!info->stream_info.out.streams) {
-			return NT_STATUS_NO_MEMORY;
+		if (info->stream_info.out.num_streams > 0) {
+			info->stream_info.out.streams = talloc(req->mem_ctx, 
+				info->stream_info.out.num_streams * sizeof(struct stream_struct));
+			if (!info->stream_info.out.streams) {
+				DEBUG(2,("ntvfs_map_fileinfo: no memory for %d streams\n",
+					info->stream_info.out.num_streams));
+				return NT_STATUS_NO_MEMORY;
+			}
+			for (i=0; i < info->stream_info.out.num_streams; i++) {
+				info->stream_info.out.streams[i] = info2->generic.out.streams[i];
+				info->stream_info.out.streams[i].stream_name.s = 
+					talloc_strdup(req->mem_ctx, info2->generic.out.streams[i].stream_name.s);
+				if (!info->stream_info.out.streams[i].stream_name.s) {
+					DEBUG(2,("ntvfs_map_fileinfo: no memory for stream_name\n"));
+					return NT_STATUS_NO_MEMORY;
+				}
+			}
 		}
-		info->stream_info.out.streams[0].size = info2->generic.out.streams[0].size;
-		info->stream_info.out.streams[0].alloc_size = info2->generic.out.streams[0].alloc_size;
-		info->stream_info.out.streams[0].stream_name.s = info2->generic.out.streams[0].stream_name.s;
-		info->stream_info.out.streams[0].stream_name.private_length = info->generic.out.streams[0].stream_name.private_length;
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
-		info->name_info.out.fname.s = info2->generic.out.fname.s;
+		info->name_info.out.fname.s = talloc_strdup(req->mem_ctx, info2->generic.out.fname.s);
 		info->name_info.out.fname.private_length = info2->generic.out.fname.private_length;
 		return NT_STATUS_OK;
 		
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
-		info->alt_name_info.out.fname.s = info2->generic.out.alt_fname.s;
+		info->alt_name_info.out.fname.s = talloc_strdup(req->mem_ctx, info2->generic.out.alt_fname.s);
 		info->alt_name_info.out.fname.private_length = info2->generic.out.alt_fname.private_length;
 		return NT_STATUS_OK;
+	
+	case RAW_FILEINFO_POSITION_INFORMATION:
+		info->position_information.out.position = info2->generic.out.position;
+		return NT_STATUS_OK;
+	
+	case RAW_FILEINFO_ALL_EAS:
+		info->all_eas.out.num_eas = info2->generic.out.num_eas;
+		if (info->all_eas.out.num_eas > 0) {
+			info->all_eas.out.eas = talloc(req->mem_ctx, 
+				info->all_eas.out.num_eas * sizeof(struct ea_struct));
+			if (!info->all_eas.out.eas) {
+				DEBUG(2,("ntvfs_map_fileinfo: no memory for %d eas\n",
+					info->all_eas.out.num_eas));
+				return NT_STATUS_NO_MEMORY;
+			}
+			for (i = 0; i < info->all_eas.out.num_eas; i++) {
+				info->all_eas.out.eas[i] = info2->generic.out.eas[i];
+				info->all_eas.out.eas[i].name.s = 
+					talloc_strdup(req->mem_ctx, info2->generic.out.eas[i].name.s);
+				if (!info->all_eas.out.eas[i].name.s) {
+					DEBUG(2,("ntvfs_map_fileinfo: no memory for stream_name\n"));
+					return NT_STATUS_NO_MEMORY;
+				}
+				info->all_eas.out.eas[i].value.data = 
+					talloc_memdup(req->mem_ctx,
+						info2->generic.out.eas[i].value.data,
+						info2->generic.out.eas[i].value.length);
+				if (!info->all_eas.out.eas[i].value.data) {
+					DEBUG(2,("ntvfs_map_fileinfo: no memory for stream_name\n"));
+					return NT_STATUS_NO_MEMORY;
+				}
+			}
+		}
+		return NT_STATUS_OK;
+		
+	case RAW_FILEINFO_IS_NAME_VALID:
+		return NT_STATUS_OK;
+		
+	case RAW_FILEINFO_COMPRESSION_INFO:
+	case RAW_FILEINFO_COMPRESSION_INFORMATION:
+		info->compression_info.out.compressed_size = info2->generic.out.compressed_size;
+		info->compression_info.out.format = info2->generic.out.format;
+		info->compression_info.out.unit_shift = info2->generic.out.unit_shift;
+		info->compression_info.out.chunk_shift = info2->generic.out.chunk_shift;
+		info->compression_info.out.cluster_shift = info2->generic.out.cluster_shift;
+		return NT_STATUS_OK;
+		
+	case RAW_FILEINFO_ACCESS_INFORMATION:
+		info->access_information.out.access_flags = info2->generic.out.access_flags;
+		return NT_STATUS_OK;
+		
+	case RAW_FILEINFO_MODE_INFORMATION:
+		info->mode_information.out.mode = info2->generic.out.mode;
+		return NT_STATUS_OK;
+		
+	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
+		info->alignment_information.out.alignment_requirement =
+			info2->generic.out.alignment_requirement;
+		return NT_STATUS_OK;
+#if 0	
+	case RAW_FILEINFO_UNIX_BASIC:
+		info->unix_basic_info.out.end_of_file = info2->generic.out.end_of_file;
+		info->unix_basic_info.out.num_bytes = info2->generic.out.size;
+		info->unix_basic_info.out.status_change_time = info2->generic.out.change_time;
+		info->unix_basic_info.out.access_time = info2->generic.out.access_time;
+		info->unix_basic_info.out.change_time = info2->generic.out.change_time;
+		info->unix_basic_info.out.uid = info2->generic.out.uid;
+		info->unix_basic_info.out.gid = info2->generic.out.gid;
+		info->unix_basic_info.out.file_type = info2->generic.out.file_type;
+		info->unix_basic_info.out.dev_major = info2->generic.out.device;
+		info->unix_basic_info.out.dev_minor = info2->generic.out.device;
+		info->unix_basic_info.out.unique_id = info2->generic.out.inode;
+		info->unix_basic_info.out.permissions = info2->generic.out.permissions;
+		info->unix_basic_info.out.nlink = info2->generic.out.nlink;
+		return NT_STATUS_OK;
+		
+	case RAW_FILEINFO_UNIX_LINK:
+		info->unix_link_info.out.link_dest = info2->generic.out.link_dest;
+		return NT_STATUS_OK;
+#endif
 	}
 
 	return NT_STATUS_INVALID_LEVEL;

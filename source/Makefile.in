@@ -292,7 +292,7 @@ SMBD_OBJ_SRV = smbd/connection.o \
            smbd/password.o smbd/conn.o \
            smbd/negprot.o smbd/request.o \
            smbd/reply.o smbd/sesssetup.o \
-	   smbd/trans2.o \
+	   smbd/trans2.o smbd/search.o smbd/nttrans.o \
            lib/sysacls.o lib/server_mutex.o \
            smbd/build_options.o smbd/service.o \
 	   smbd/rewrite.o \

@@ -709,6 +709,7 @@ void reply_readbraw(struct request_context *req)
 	if (req->out.buffer == NULL) {
 		goto failed;
 	}
+	SIVAL(req->out.buffer, 0, 0); /* init NBT header */
 
 	/* tell the backend where to put the data */
 	io.readbraw.out.data = req->out.buffer + NBT_HDR_SIZE;
@@ -723,11 +724,13 @@ void reply_readbraw(struct request_context *req)
 	req->out.size = io.readbraw.out.nread + NBT_HDR_SIZE;
 
 	req_send_reply(req);
+	return;
 
 failed:
 	/* any failure in readbraw is equivalent to reading zero bytes */
 	req->out.size = 4;
 	req->out.buffer = talloc(req->mem_ctx, req->out.size);
+	SIVAL(req->out.buffer, 0, 0); /* init NBT header */
 	req_send_reply(req);
 }
 
@@ -742,6 +745,8 @@ static void reply_lockread_send(struct request_context *req)
 	CHECK_ASYNC_STATUS;
 
 	/* trim packet */
+	io->lockread.out.nread = MIN(io->lockread.out.nread,
+		req_max_data(req) - 3);
 	req_grow_data(req, 3 + io->lockread.out.nread);
 
 	/* construct reply */
@@ -800,6 +805,8 @@ static void reply_read_send(struct request_context *req)
 	CHECK_ASYNC_STATUS;
 
 	/* trim packet */
+	io->read.out.nread = MIN(io->read.out.nread,
+		req_max_data(req) - 3);
 	req_grow_data(req, 3 + io->read.out.nread);
 
 	/* construct reply */
@@ -833,7 +840,7 @@ void reply_read(struct request_context *req)
 	req_setup_reply(req, 5, 3 + io->read.in.count);
 
 	/* tell the backend where to put the data */
-	io->lockread.out.data = req->out.data + 3;
+	io->read.out.data = req->out.data + 3;
 
 	req->async.send_fn = reply_read_send;
 	req->async.private = io;
@@ -856,6 +863,8 @@ static void reply_read_and_X_send(struct request_context *req)
 	CHECK_ASYNC_STATUS;
 
 	/* trim the packet to the right size */
+	io->readx.out.nread = MIN(io->readx.out.nread,
+		req_max_data(req) - 1);
 	req_grow_data(req, 1 + io->readx.out.nread);
 
 	/* construct reply */
@@ -1922,26 +1931,6 @@ void reply_getattrE(struct request_context *req)
 	REQ_ASYNC_TAIL;
 }
 
-/****************************************************************************
- Reply to a search.
- Can be called from SMBsearch, SMBffirst or SMBfunique.
-****************************************************************************/
-void reply_search(struct request_context *req)
-{
-	/* do this one later */
-	req_reply_error(req, NT_STATUS_FOOBAR);
-}
-
-
-/****************************************************************************
- Reply to a fclose (stop directory search).
-****************************************************************************/
-void reply_fclose(struct request_context *req)
-{
-	/* skip this one for now too */
-	req_reply_error(req, NT_STATUS_FOOBAR);
-}
-
 
 /****************************************************************************
 reply to an old style session setup command
@@ -2192,22 +2181,6 @@ void reply_trans(struct request_context *req)
  Reply to an SMBtranss2 request
 ****************************************************************************/
 void reply_transs2(struct request_context *req)
-{
-	req_reply_error(req, NT_STATUS_FOOBAR);
-}
-
-/****************************************************************************
- Reply to an SMBnttrans request
-****************************************************************************/
-void reply_nttrans(struct request_context *req)
-{
-	req_reply_error(req, NT_STATUS_FOOBAR);
-}
-
-/****************************************************************************
- Reply to an SMBnttranss request
-****************************************************************************/
-void reply_nttranss(struct request_context *req)
 {
 	req_reply_error(req, NT_STATUS_FOOBAR);
 }

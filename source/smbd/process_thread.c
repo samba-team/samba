@@ -21,7 +21,9 @@
 
 #include "includes.h"
 #include "pthread.h"
+#ifdef HAVE_BACKTRACE
 #include "execinfo.h"
+#endif
 
 static void *connection_thread(void *thread_parm)
 {
@@ -267,12 +269,14 @@ static void thread_log_suspicious_usage(const char* from, const char* info)
 	char **bt_symbols;
 	
 	DEBUG(1,("log_suspicious_usage: from %s info='%s'\n", from, info));
+#ifdef HAVE_BACKTRACE
 	num_addresses = backtrace(addresses, 8);
 	bt_symbols = backtrace_symbols(addresses, num_addresses);
 	for (i=0; i<num_addresses; i++) {
 		DEBUG(1,("log_suspicious_usage: %s%s\n", DEBUGTAB(1), bt_symbols[i]));
 	}
 	free(bt_symbols);
+#endif
 }
 
 /*****************************************************************
@@ -286,19 +290,29 @@ static void thread_print_suspicious_usage(const char* from, const char* info)
 	char **bt_symbols;
 	
 	printf("log_suspicious_usage: from %s info='%s'\n", from, info);
+#ifdef HAVE_BACKTRACE
 	num_addresses = backtrace(addresses, 8);
 	bt_symbols = backtrace_symbols(addresses, num_addresses);
 	for (i=0; i<num_addresses; i++) {
 		printf("log_suspicious_usage: %s%s\n", DEBUGTAB(1), bt_symbols[i]);
 	}
 	free(bt_symbols);
+#endif
 }
 
-uint32 thread_get_task_id(void)
+static uint32 thread_get_task_id(void)
 {
 	return (uint32)pthread_self();
 }
 
+static void thread_log_task_id(int fd)
+{
+	char *s;
+	
+	asprintf(&s, "thread %u: ", (uint32)pthread_self());
+	write(fd, s, strlen(s));
+	free(s);
+}
 /****************************************************************************
 catch serious errors
 ****************************************************************************/
@@ -342,13 +356,14 @@ static void thread_fault_handler(int sig)
 	DEBUG(0,("INTERNAL ERROR: Signal %d in thread %lu (%s)\n",sig,(unsigned long int)pthread_self(),SAMBA_VERSION));
 	DEBUG(0,("Please read the file BUGS.txt in the distribution\n"));
 	DEBUG(0,("===============================================================\n"));
-
+#ifdef HAVE_BACKTRACE
 	num_addresses = backtrace(addresses, 10);
 	bt_symbols = backtrace_symbols(addresses, num_addresses);
 	for (i=0; i<num_addresses; i++) {
 		DEBUG(9,("fault_report:   %s\n", bt_symbols[i]));
 	}
 	free(bt_symbols);
+#endif
 	pthread_exit(NULL); /* terminate failing thread only */
 }
 
@@ -384,6 +399,7 @@ static void model_startup(void)
 	d_ops.log_suspicious_usage = thread_log_suspicious_usage;
 	d_ops.print_suspicious_usage = thread_print_suspicious_usage;
 	d_ops.get_task_id = thread_get_task_id;
+	d_ops.log_task_id = thread_log_task_id;
 
 	register_debug_handlers("thread", &d_ops);	
 }
