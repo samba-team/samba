@@ -24,9 +24,83 @@
 
 extern int DEBUGLEVEL;
 
+static uint32 cmd_netlogon_logon_ctrl2(struct cli_state *cli, int argc,
+				       char **argv)
+{
+	uint32 query_level = 1;
+	TALLOC_CTX *mem_ctx;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+
+	if (argc > 1) {
+		printf("Usage: %s\n", argv[0]);
+		return 0;
+	}
+
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0,("cmd_srvsvc_srv_query_info: talloc_init failed\n"));
+		goto done;
+	}
+
+	/* Initialise RPC connection */
+
+	if (!cli_nt_session_open (cli, PIPE_NETLOGON)) {
+		DEBUG(0, ("Could not initialize srvsvc pipe!\n"));
+		goto done;
+	}
+
+	if ((result = cli_netlogon_logon_ctrl2(cli, mem_ctx, query_level))
+	     != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	/* Display results */
+
+ done:
+	return result;
+}
+
+static uint32 cmd_netlogon_logon_ctrl(struct cli_state *cli, int argc,
+				      char **argv)
+{
+	uint32 query_level = 1;
+	TALLOC_CTX *mem_ctx;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+
+	if (argc > 1) {
+		printf("Usage: %s\n", argv[0]);
+		return 0;
+	}
+
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0,("cmd_srvsvc_srv_query_info: talloc_init failed\n"));
+		goto done;
+	}
+
+	/* Initialise RPC connection */
+
+	if (!cli_nt_session_open (cli, PIPE_NETLOGON)) {
+		DEBUG(0, ("Could not initialize srvsvc pipe!\n"));
+		goto done;
+	}
+
+#if 0
+	if ((result = cli_netlogon_logon_ctrl(cli, mem_ctx, query_level))
+	     != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+#endif
+
+	/* Display results */
+
+ done:
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set netlogon_commands[] = {
-	{ "NETLOGON", 	NULL,			 	"" },
+	{ "NETLOGON", 	NULL,			  "" },
+	{ "logonctrl2", cmd_netlogon_logon_ctrl2, "Logon Control 2" },
+	{ "logonctrl",  cmd_netlogon_logon_ctrl,  "Logon Control" },
 	{ NULL, NULL, NULL }
 };
