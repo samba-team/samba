@@ -1,3 +1,16 @@
+2001-06-18  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/rd_req.c (krb5_rd_req): use krb5_auth_con* functions
+	and remove some comments
+	* lib/krb5/rd_safe.c (krb5_rd_safe): pick the keys in the right
+	order: remote - local - session
+	* lib/krb5/rd_rep.c (krb5_rd_rep): save the remote sub key in the
+	auth_context
+	* lib/krb5/rd_priv.c (krb5_rd_priv): pick keys in the correct
+	order: remote - local - session
+	* lib/krb5/mk_safe.c (krb5_mk_safe): pick keys in the right order,
+	local - remote - session
+
 2001-06-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/convert_creds.c: use starttime instead of authtime,

@@ -1,3 +1,17 @@
+2001-06-18  Assar Westerlund  <assar@sics.se>
+
+	* wrap.c: replace gss_krb5_getsomekey with gss_krb5_get_localkey
+	and gss_krb5_get_remotekey
+	* verify_mic.c: update krb5_auth_con function names use
+	gss_krb5_get_remotekey
+	* unwrap.c: replace gss_krb5_getsomekey with gss_krb5_get_localkey
+	and gss_krb5_get_remotekey
+	* gssapi_locl.h (gss_krb5_get_remotekey, gss_krb5_get_localkey):
+	add prototypes
+	* get_mic.c: update krb5_auth_con function names. use
+	gss_krb5_get_localkey
+	* accept_sec_context.c: update krb5_auth_con function names
+
 2001-05-17  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: bump version to 3:1:2
