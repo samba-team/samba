@@ -474,7 +474,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
     
 	/* See if it is one we want to handle. */
 
-	if (lp_lanman_printing_only() && strequal(fname, "\\spoolss"))
+	if (lp_disable_spoolss() && strequal(fname, "\\spoolss"))
 		return(ERROR(ERRSRV,ERRaccess));
 
 	for( i = 0; known_nt_pipes[i]; i++ )
