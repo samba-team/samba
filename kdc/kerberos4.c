@@ -247,7 +247,7 @@ do_version4(unsigned char *buf,
 	tgt = db_fetch(tgt_princ);
 	if(tgt == NULL){
 	    char *s;
-	    s = kdc_log_msg(context, 0, "Ticket-granting ticket not "
+	    s = kdc_log_msg(0, "Ticket-granting ticket not "
 			    "found in database: krbtgt.%s@%s", 
 			    realm, v4_realm);
 	    make_err_reply(reply, KFAILURE, s);
@@ -293,7 +293,7 @@ do_version4(unsigned char *buf,
 	
 	RCHECK(krb5_ret_int32(sp, &req_time), out2);
 	if(lsb)
-	    req_time = swap(req_time);
+	    req_time = swap32(req_time);
 	RCHECK(krb5_ret_int8(sp, &life), out2);
 	RCHECK(krb5_ret_stringz(sp, &sname), out2);
 	RCHECK(krb5_ret_stringz(sp, &sinst), out2);
@@ -327,8 +327,7 @@ do_version4(unsigned char *buf,
 	client = db_fetch(client_princ);
 	if(client == NULL){
 	    char *s;
-	    s = kdc_log_msg(context, 0, 
-			    "Client not found in database: %s.%s@%s", 
+	    s = kdc_log_msg(0, "Client not found in database: %s.%s@%s", 
 			    ad.pname, ad.pinst, ad.prealm);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, s);
 	    free(s);
@@ -347,8 +346,7 @@ do_version4(unsigned char *buf,
 	server = db_fetch(server_princ);
 	if(server == NULL){
 	    char *s;
-	    s = kdc_log_msg(context, 0, 
-			    "Server not found in database: %s.%s@%s", 
+	    s = kdc_log_msg(0, "Server not found in database: %s.%s@%s", 
 			    sname, sinst, v4_realm);
 	    make_err_reply(reply, KERB_ERR_PRINCIPAL_UNKNOWN, s);
 	    free(s);
