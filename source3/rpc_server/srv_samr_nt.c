@@ -3477,7 +3477,7 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	/* if the user is not in the group */
 	if(!user_in_unix_group_list(pdb_get_username(sam_pass), grp_name)) {
 		pdb_free_sam(&sam_pass);
-		return NT_STATUS_MEMBER_IN_ALIAS;
+		return NT_STATUS_MEMBER_NOT_IN_ALIAS;
 	}
 
 	smb_delete_user_group(grp_name, pdb_get_username(sam_pass));

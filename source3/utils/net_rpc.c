@@ -1364,8 +1364,8 @@ rpc_group_addmem_internals(const DOM_SID *domain_sid, const char *domain_name,
 		if (!NT_STATUS_IS_OK(result)) {
 			d_printf("Could not add %s to %s: %s\n",
 				 argv[1], argv[0], nt_errstr(result));
-			return result;
 		}
+		return result;
 	}
 
 	if (group_type == SID_NAME_ALIAS) {
@@ -1375,8 +1375,8 @@ rpc_group_addmem_internals(const DOM_SID *domain_sid, const char *domain_name,
 		if (!NT_STATUS_IS_OK(result)) {
 			d_printf("Could not add %s to %s: %s\n",
 				 argv[1], argv[0], nt_errstr(result));
-			return result;
 		}
+		return result;
 	}
 
 	d_printf("Can only add members to global or local groups which "
@@ -1533,8 +1533,8 @@ rpc_group_delmem_internals(const DOM_SID *domain_sid, const char *domain_name,
 		if (!NT_STATUS_IS_OK(result)) {
 			d_printf("Could not del %s to %s: %s\n",
 				 argv[1], argv[0], nt_errstr(result));
-			return result;
 		}
+		return result;
 	}
 
 	if (group_type == SID_NAME_ALIAS) {
@@ -1544,8 +1544,8 @@ rpc_group_delmem_internals(const DOM_SID *domain_sid, const char *domain_name,
 		if (!NT_STATUS_IS_OK(result)) {
 			d_printf("Could not add %s to %s: %s\n",
 				 argv[1], argv[0], nt_errstr(result));
-			return result;
 		}
+		return result;
 	}
 
 	d_printf("Can only delete members from global or local groups which "
