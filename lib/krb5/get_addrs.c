@@ -218,17 +218,19 @@ cleanup:
 krb5_error_code
 krb5_get_all_client_addrs (krb5_addresses *res)
 {
+    krb5_error_code ret = -1;
 #if defined(AF_INET6) && defined(SIOCGIF6CONF) && defined(SIOCGIF6FLAGS)
-    return find_all_addresses (res, 1,
-			       AF_INET6, SIOCGIF6CONF, SIOCGIF6FLAGS,
-			       sizeof(struct in6_ifreq));
+    ret = find_all_addresses (res, 1,
+			      AF_INET6, SIOCGIF6CONF, SIOCGIF6FLAGS,
+			      sizeof(struct in6_ifreq));
 #elif defined(AF_INET) && defined(SIOCGIFCONF) && defined(SIOCGIFFLAGS)
-    return find_all_addresses (res, 0,
-			       AF_INET, SIOCGIFCONF, SIOCGIFFLAGS,
-			       sizeof(struct ifreq));
-#else
-    return gethostname_fallback (res);
+    ret = find_all_addresses (res, 0,
+			      AF_INET, SIOCGIFCONF, SIOCGIFFLAGS,
+			      sizeof(struct ifreq));
 #endif
+    if(ret || res->len == 0)
+	return gethostname_fallback (res);
+    return ret;
 }
 
 /*
