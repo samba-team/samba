@@ -1925,6 +1925,20 @@ static WERROR cmd_spoolss_deleteform(struct cli_state *cli,
 
 /* Enumerate forms */
 
+static const char *get_form_flag(int form_flag)
+{
+	switch (form_flag) {
+	case FORM_USER:
+		return "FORM_USER";
+	case FORM_BUILTIN:
+		return "FORM_BUILTIN";
+	case FORM_PRINTER:
+		return "FORM_PRINTER";
+	default:
+		return "unknown";
+	}
+}
+
 static WERROR cmd_spoolss_enum_forms(struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
 				       const char **argv)
@@ -1980,7 +1994,14 @@ static WERROR cmd_spoolss_enum_forms(struct cli_state *cli,
 			rpcstr_pull(form_name, forms[i].name.buffer,
 				    sizeof(form_name), -1, STR_TERMINATE);
 
-		printf("%s\n", form_name);
+		printf("%s\n" \
+			"\tflag: %s (%d)\n" \
+			"\twidth: %d, length: %d\n" \
+			"\tleft: %d, right: %d, top: %d, bottom: %d\n\n", 
+			form_name, get_form_flag(forms[i].flag), forms[i].flag,
+			forms[i].width, forms[i].length, 
+			forms[i].left, forms[i].right, 
+			forms[i].top, forms[i].bottom);
 	}
 
  done:
