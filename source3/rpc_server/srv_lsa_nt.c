@@ -1280,7 +1280,7 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 
 	r_u->status = privilege_enum_account_rights(&q_u->sid.sid, &num_rights, &rights);
 
-	init_r_enum_acct_rights(r_u, num_rights, rights);
+	init_r_enum_acct_rights(r_u, num_rights, (const char **)rights);
 
 	for (i=0;i<num_rights;i++) {
 		free(rights[i]);
