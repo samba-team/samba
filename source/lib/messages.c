@@ -455,7 +455,7 @@ BOOL message_named_mutex(const char *name, unsigned int timeout)
 	}
 
 	if (ret == 0)
-		DEBUG(0,("message_named_mutex: got mutex for %s\n", name ));
+		DEBUG(10,("message_named_mutex: got mutex for %s\n", name ));
 
 	return (ret == 0);
 }
