@@ -1,3 +1,8 @@
+1999-09-14  Assar Westerlund  <assar@sics.se>
+
+	* otp.c (verify_user_otp): check return value from
+ 	des_read_pw_string
+
 Thu Apr  1 16:51:07 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* otpprint.c: use getarg
