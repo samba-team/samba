@@ -192,7 +192,7 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
 
 	for (i = 0; i < num_msrpcs; i++)
 	{
-		char *cli_name = NULL;
+		char *ncacn_np_srv_name = NULL;
 		struct ncacn_np_use *c = msrpcs[i];
 		vuser_key k;
 
@@ -205,18 +205,18 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
 		}
 
 		ncacn_np_name = c->cli->pipe_name;
-		cli_name = c->cli->smb->desthost;
+		ncacn_np_srv_name = c->cli->smb->desthost;
 
 		k = c->cli->smb->nt.key;
 
 		DEBUG(10, ("ncacn_np_find[%d]: %s %s %s %s [%d,%x]\n",
-			   i, ncacn_np_name, cli_name,
+			   i, ncacn_np_name, ncacn_np_srv_name,
 			   c->cli->smb->usr.user_name,
 			   c->cli->smb->usr.domain, k.pid, k.vuid));
 
-		if (strnequal("\\\\", cli_name, 2))
+		if (strnequal("\\\\", ncacn_np_srv_name, 2))
 		{
-			cli_name = &cli_name[2];
+			ncacn_np_srv_name = &ncacn_np_srv_name[2];
 		}
 
 		if (strnequal("\\PIPE\\", ncacn_np_name, 6))
@@ -228,7 +228,7 @@ static struct ncacn_np_use *ncacn_np_find(const char *srv_name,
 		{
 			continue;
 		}
-		if (!strequal(cli_name, sv_name))
+		if (!strequal(ncacn_np_srv_name, sv_name))
 		{
 			continue;
 		}
@@ -393,7 +393,7 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 /****************************************************************************
 delete a client state
 ****************************************************************************/
-BOOL ncacn_np_use_del(const char *pipe_name,
+BOOL ncacn_np_use_del(const char *srv_name, const char *pipe_name,
 		      const vuser_key * key,
 		      BOOL force_close, BOOL *connection_closed)
 {
@@ -416,27 +416,42 @@ BOOL ncacn_np_use_del(const char *pipe_name,
 		pipe_name = &pipe_name[6];
 	}
 
+	if (strnequal("\\\\", srv_name, 2))
+	{
+		srv_name = &srv_name[6];
+	}
+
 	for (i = 0; i < num_msrpcs; i++)
 	{
 		char *ncacn_np_name = NULL;
+		char *ncacn_np_srv_name = NULL;
 		struct ncacn_np_use *c = msrpcs[i];
 		vuser_key k;
 
-		if (c == NULL || c->cli == NULL)
+		if (c == NULL || c->cli == NULL || c->cli->smb == NULL)
 			continue;
 
 		ncacn_np_name = c->cli->pipe_name;
+		ncacn_np_srv_name = c->cli->smb->desthost;
 
 		k = c->cli->smb->nt.key;
 
-		DEBUG(10, ("use_del[%d]: %s %s %s [%d,%x]\n",
-			   i, ncacn_np_name, 
+		DEBUG(10, ("use_del[%d]: %s %s %s %s [%d,%x]\n",
+			   i, ncacn_np_name, ncacn_np_srv_name,
 			   c->cli->smb->usr.user_name,
 			   c->cli->smb->usr.domain, k.pid, k.vuid));
 
 		if (strnequal("\\PIPE\\", ncacn_np_name, 6))
 		{
 			ncacn_np_name = &ncacn_np_name[6];
+		}
+		if (!strequal(ncacn_np_srv_name, srv_name))
+		{
+			continue;
+		}
+		if (strnequal("\\\\", ncacn_np_srv_name, 2))
+		{
+			ncacn_np_srv_name = &ncacn_np_srv_name[6];
 		}
 		if (!strequal(ncacn_np_name, pipe_name))
 		{

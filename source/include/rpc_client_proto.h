@@ -716,7 +716,7 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 				  const char *srv_name,
 				  const struct ntuser_creds *ntc,
 				  BOOL reuse, BOOL *is_new_connection);
-BOOL ncacn_np_use_del(const char *pipe_name,
+BOOL ncacn_np_use_del(const char *srv_name, const char *pipe_name,
 		      const vuser_key * key,
 		      BOOL force_close, BOOL *connection_closed);
 void ncacn_np_use_enum(uint32 * num_cons, struct use_info ***use);
