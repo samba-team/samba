@@ -7,8 +7,12 @@
   pointer_default(unique)
 ] interface wkssvc
 {
+
+#define BOOL uint32
+
 	/******************/
 	/* Function: 0x00 */
+
 	typedef struct {
 		uint32 platform_id;
 		unistr *server;
@@ -36,10 +40,49 @@
 		uint32 logged_on_users;
 	} wkssvc_Info102;
 
+	typedef struct {
+		uint32 char_wait;
+		uint32 collection_time;
+		uint32 maximum_collection_count;
+		uint32 keep_connection;
+		uint32 max_commands;
+		uint32 session_timeout;
+		uint32 size_char_buf;
+		uint32 max_threads;
+		uint32 lock_quota;
+		uint32 lock_increment;
+		uint32 lock_maximum;
+		uint32 pipe_increment;
+		uint32 pipe_maximum;
+		uint32 cache_file_timeout;
+		uint32 dormant_file_limit;
+		uint32 read_ahead_throughput;
+		uint32 num_mailslot_buffers;
+		uint32 num_srv_announce_buffers;
+		uint32 max_illegal_dgram_events;
+		uint32 dgram_event_reset_freq;
+		BOOL log_election_packets;
+		BOOL use_opportunistic_locking;
+		BOOL use_unlock_behind;
+		BOOL use_close_behind;
+		BOOL buf_named_pipes;
+		BOOL use_lock_read_unlock;
+		BOOL utilize_nt_caching;
+		BOOL use_raw_read;
+		BOOL use_raw_write;
+		BOOL use_write_raw_data;
+		BOOL use_encryption;
+		BOOL buf_files_deny_write;
+		BOOL buf_read_only_files;
+		BOOL force_core_create_mode;
+		BOOL use_512_byte_max_transfer;
+	} wkssvc_Info502;
+
 	typedef union {
 		case (100) wkssvc_Info100 *info100;
 		case (101) wkssvc_Info101 *info101;
 		case (102) wkssvc_Info102 *info102;
+		case (502) wkssvc_Info502 *info502;
 	} wkssvc_Info;
 
 	WERROR wkssvc_QueryInfo(

@@ -27,7 +27,7 @@ static BOOL test_QueryInfo(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct wkssvc_QueryInfo r;
-	uint16 levels[] = {100, 101, 102};
+	uint16 levels[] = {100, 101, 102, 502};
 	int i;
 	BOOL ret = True;
 

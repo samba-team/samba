@@ -415,6 +415,53 @@ done:
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ndr_pull_wkssvc_Info502(struct ndr_pull *ndr, int ndr_flags, struct wkssvc_Info502 *r)
+{
+	NDR_CHECK(ndr_pull_struct_start(ndr));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->char_wait));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->collection_time));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->maximum_collection_count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->keep_connection));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->max_commands));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->session_timeout));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->size_char_buf));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->max_threads));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->lock_quota));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->lock_increment));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->lock_maximum));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->pipe_increment));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->pipe_maximum));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->cache_file_timeout));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->dormant_file_limit));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->read_ahead_throughput));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_mailslot_buffers));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_srv_announce_buffers));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->max_illegal_dgram_events));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->dgram_event_reset_freq));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->log_election_packets));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->use_opportunistic_locking));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->use_unlock_behind));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->use_close_behind));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->buf_named_pipes));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->use_lock_read_unlock));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->utilize_nt_caching));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->use_raw_read));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->use_raw_write));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->use_write_raw_data));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->use_encryption));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->buf_files_deny_write));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->buf_read_only_files));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->force_core_create_mode));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->use_512_byte_max_transfer));
+	ndr_pull_struct_end(ndr);
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_pull_wkssvc_Info(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union wkssvc_Info *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -451,6 +498,16 @@ NTSTATUS ndr_pull_wkssvc_Info(struct ndr_pull *ndr, int ndr_flags, uint16 *level
 	}
 	break; }
 
+	case 502: {
+		uint32 _ptr_info502;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info502));
+	if (_ptr_info502) {
+		NDR_ALLOC(ndr, r->info502);
+	} else {
+		r->info502 = NULL;
+	}
+	break; }
+
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
 	}
@@ -473,6 +530,12 @@ buffers:
 	case 102:
 	if (r->info102) {
 		NDR_CHECK(ndr_pull_wkssvc_Info102(ndr, NDR_SCALARS|NDR_BUFFERS, r->info102));
+	}
+	break;
+
+	case 502:
+	if (r->info502) {
+		NDR_CHECK(ndr_pull_wkssvc_Info502(ndr, NDR_SCALARS|NDR_BUFFERS, r->info502));
 	}
 	break;
 
@@ -918,6 +981,48 @@ void ndr_print_wkssvc_Info102(struct ndr_print *ndr, const char *name, struct wk
 	ndr->depth--;
 }
 
+void ndr_print_wkssvc_Info502(struct ndr_print *ndr, const char *name, struct wkssvc_Info502 *r)
+{
+	ndr_print_struct(ndr, name, "wkssvc_Info502");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "char_wait", r->char_wait);
+	ndr_print_uint32(ndr, "collection_time", r->collection_time);
+	ndr_print_uint32(ndr, "maximum_collection_count", r->maximum_collection_count);
+	ndr_print_uint32(ndr, "keep_connection", r->keep_connection);
+	ndr_print_uint32(ndr, "max_commands", r->max_commands);
+	ndr_print_uint32(ndr, "session_timeout", r->session_timeout);
+	ndr_print_uint32(ndr, "size_char_buf", r->size_char_buf);
+	ndr_print_uint32(ndr, "max_threads", r->max_threads);
+	ndr_print_uint32(ndr, "lock_quota", r->lock_quota);
+	ndr_print_uint32(ndr, "lock_increment", r->lock_increment);
+	ndr_print_uint32(ndr, "lock_maximum", r->lock_maximum);
+	ndr_print_uint32(ndr, "pipe_increment", r->pipe_increment);
+	ndr_print_uint32(ndr, "pipe_maximum", r->pipe_maximum);
+	ndr_print_uint32(ndr, "cache_file_timeout", r->cache_file_timeout);
+	ndr_print_uint32(ndr, "dormant_file_limit", r->dormant_file_limit);
+	ndr_print_uint32(ndr, "read_ahead_throughput", r->read_ahead_throughput);
+	ndr_print_uint32(ndr, "num_mailslot_buffers", r->num_mailslot_buffers);
+	ndr_print_uint32(ndr, "num_srv_announce_buffers", r->num_srv_announce_buffers);
+	ndr_print_uint32(ndr, "max_illegal_dgram_events", r->max_illegal_dgram_events);
+	ndr_print_uint32(ndr, "dgram_event_reset_freq", r->dgram_event_reset_freq);
+	ndr_print_uint32(ndr, "log_election_packets", r->log_election_packets);
+	ndr_print_uint32(ndr, "use_opportunistic_locking", r->use_opportunistic_locking);
+	ndr_print_uint32(ndr, "use_unlock_behind", r->use_unlock_behind);
+	ndr_print_uint32(ndr, "use_close_behind", r->use_close_behind);
+	ndr_print_uint32(ndr, "buf_named_pipes", r->buf_named_pipes);
+	ndr_print_uint32(ndr, "use_lock_read_unlock", r->use_lock_read_unlock);
+	ndr_print_uint32(ndr, "utilize_nt_caching", r->utilize_nt_caching);
+	ndr_print_uint32(ndr, "use_raw_read", r->use_raw_read);
+	ndr_print_uint32(ndr, "use_raw_write", r->use_raw_write);
+	ndr_print_uint32(ndr, "use_write_raw_data", r->use_write_raw_data);
+	ndr_print_uint32(ndr, "use_encryption", r->use_encryption);
+	ndr_print_uint32(ndr, "buf_files_deny_write", r->buf_files_deny_write);
+	ndr_print_uint32(ndr, "buf_read_only_files", r->buf_read_only_files);
+	ndr_print_uint32(ndr, "force_core_create_mode", r->force_core_create_mode);
+	ndr_print_uint32(ndr, "use_512_byte_max_transfer", r->use_512_byte_max_transfer);
+	ndr->depth--;
+}
+
 void ndr_print_wkssvc_Info(struct ndr_print *ndr, const char *name, uint16 level, union wkssvc_Info *r)
 {
 	ndr_print_union(ndr, name, level, "wkssvc_Info");
@@ -945,6 +1050,15 @@ void ndr_print_wkssvc_Info(struct ndr_print *ndr, const char *name, uint16 level
 	ndr->depth++;
 	if (r->info102) {
 		ndr_print_wkssvc_Info102(ndr, "info102", r->info102);
+	}
+	ndr->depth--;
+	break;
+
+	case 502:
+	ndr_print_ptr(ndr, "info502", r->info502);
+	ndr->depth++;
+	if (r->info502) {
+		ndr_print_wkssvc_Info502(ndr, "info502", r->info502);
 	}
 	ndr->depth--;
 	break;
