@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "24 April 2001" "" ""
+.TH "SMB.CONF" "5" "03 May 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -776,6 +776,9 @@ each parameter for details. Note that some are synonyms.
 \fIos2 driver map\fR
 .TP 0.2i
 \(bu
+\fIpam password change\fR
+.TP 0.2i
+\(bu
 \fIpanic action\fR
 .TP 0.2i
 \(bu
@@ -1410,6 +1413,50 @@ Example: \fBaddprinter command = /usr/bin/addprinter
 \fR.PP
 .TP
 \fBadd share command (G)\fR
+Samba 2.2.0 introduced the ability to dynamically 
+add and delete shares via the Windows NT 4.0 Server Manager. The 
+\fIadd share command\fR is used to define an 
+external program or script which will add a new service definition 
+to \fIsmb.conf\fR. In order to successfully 
+execute the \fIadd share command\fR, \fBsmbd\fR
+requires that the administrator be connected using a root account (i.e. 
+uid == 0).
+
+When executed, \fBsmbd\fR will automatically invoke the 
+\fIadd share command\fR with four parameters.
+.RS
+.TP 0.2i
+\(bu
+\fIconfigFile\fR - the location 
+of the global \fIsmb.conf\fR file. 
+.TP 0.2i
+\(bu
+\fIshareName\fR - the name of the new 
+share.
+.TP 0.2i
+\(bu
+\fIpathName\fR - path to an **existing**
+directory on disk.
+.TP 0.2i
+\(bu
+\fIcomment\fR - comment string to associate 
+with the new share.
+.RE
+.PP
+This parameter is only used for add file shares. To add printer shares, 
+see the \fIadd printer 
+command\fR.
+.PP
+.PP
+See also \fIdelete share
+command\fR.
+.PP
+.PP
+Default: \fBnone\fR
+.PP
+.PP
+Example: \fBadd share command = /usr/local/bin/addshare\fR
+.PP
 .TP
 \fBadd user script (G)\fR
 This is the full pathname to a script that will 
@@ -2077,6 +2124,42 @@ permissions, and DOS semantics prevent deletion of a read only file.
 Default: \fBdelete readonly = no\fR
 .TP
 \fBdelete share command (G)\fR
+Samba 2.2.0 introduced the ability to dynamically 
+add and delete shares via the Windows NT 4.0 Server Manager. The 
+\fIdelete share command\fR is used to define an 
+external program or script which will remove an existing service 
+definition from \fIsmb.conf\fR. In order to successfully 
+execute the \fIdelete share command\fR, \fBsmbd\fR
+requires that the administrator be connected using a root account (i.e. 
+uid == 0).
+
+When executed, \fBsmbd\fR will automatically invoke the 
+\fIdelete share command\fR with two parameters.
+.RS
+.TP 0.2i
+\(bu
+\fIconfigFile\fR - the location 
+of the global \fIsmb.conf\fR file. 
+.TP 0.2i
+\(bu
+\fIshareName\fR - the name of 
+the existing service.
+.RE
+.PP
+This parameter is only used to remove file shares. To delete printer shares, 
+see the \fIdelete printer 
+command\fR.
+.PP
+.PP
+See also \fIdelete share
+command\fR.
+.PP
+.PP
+Default: \fBnone\fR
+.PP
+.PP
+Example: \fBdelete share command = /usr/local/bin/delshare\fR
+.PP
 .TP
 \fBdelete user script (G)\fR
 This is the full pathname to a script that will 
@@ -4442,6 +4525,15 @@ containing in the Samba documentation.
 
 Default: \fBos2 driver map = <empty string>
 \fR.TP
+\fBpam password change (G)\fR
+With the addition of better PAM support in Samba 2.2, 
+this parameter, it is possible to use PAM's password change control 
+flag for Samba. If enabled, then PAM will be used for password
+changes when requested by an SMB client, and the \fIpasswd chat\fR string will 
+be ignored.
+
+Default: \fBpam password change = no\fR
+.TP
 \fBpanic action (G)\fR
 This is a Samba developer option that allows a 
 system command to be called when either  smbd(8)crashes. This is usually used to draw attention to the fact that 
