@@ -681,7 +681,7 @@ static void api_net_sam_logon( int uid,
     pstring my_name;
     pstring my_workgroup;
     pstring domain_groups;
-    char *other_sids;
+    pstring other_sids;
     uint32 r_uid;
     uint32 r_gid;
 
