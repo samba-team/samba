@@ -110,8 +110,9 @@ Ensure that the server credential returned matches the session key
 encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
-BOOL cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum, uint16 sec_chan, 
-                   uint32 neg_flags, DOM_CHAL *srv_chal)
+BOOL cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum,
+				const char *trust_acct, uint16 sec_chan, 
+				uint32 neg_flags, DOM_CHAL *srv_chal)
 {
   prs_struct rbuf;
   prs_struct buf; 
@@ -128,7 +129,7 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum, uint16 sec_chan,
          credstr(cli->clnt_cred.challenge.data), neg_flags));
 
   /* store the parameters */
-  make_q_auth_2(&q_a, cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
+  make_q_auth_2(&q_a, cli->srv_name_slash, trust_acct, sec_chan, global_myname,
                 &cli->clnt_cred.challenge, neg_flags);
 
   /* turn parameters into data stream */
@@ -573,7 +574,8 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
     return False;
   } 
   
-  if(cli_nt_setup_creds(&cli, nt_pipe_fnum, orig_trust_passwd_hash) == False) {
+  if(cli_nt_setup_creds(&cli, nt_pipe_fnum,
+     cli.mach_acct, orig_trust_passwd_hash, SEC_CHAN_WKSTA) == False) {
     DEBUG(0,("modify_trust_password: unable to setup the PDC credentials to machine \
 %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
     cli_nt_session_close(&cli, nt_pipe_fnum);

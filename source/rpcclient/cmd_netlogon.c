@@ -92,7 +92,9 @@ void cmd_netlogon_login_test(struct client_info *info)
 	/* open NETLOGON session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
 
-	res = res ? cli_nt_setup_creds(smb_cli, nt_pipe_fnum, trust_passwd) : False;
+	res = res ? cli_nt_setup_creds(smb_cli, nt_pipe_fnum,
+	                               smb_cli->mach_acct,
+	                               trust_passwd, SEC_CHAN_WKSTA) : False;
 
 	/* change the machine password? */
 	if (global_machine_password_needs_changing)
@@ -130,5 +132,45 @@ void cmd_netlogon_login_test(struct client_info *info)
 
 	fprintf(out_hnd,"cmd_nt_login: login (%s) test succeeded: %s\n",
 		nt_user_name, BOOLSTR(res));
+}
+
+/****************************************************************************
+experimental nt login.
+****************************************************************************/
+void cmd_netlogon_domain_test(struct client_info *info)
+{
+	uint16 nt_pipe_fnum;
+
+	fstring nt_trust_dom;
+	BOOL res = True;
+	unsigned char trust_passwd[16];
+	fstring inter_dom_acct;
+
+	if (!next_token(NULL, nt_trust_dom, NULL, sizeof(nt_trust_dom)))
+	{
+		fprintf(out_hnd,"domtest: must specify domain name\n");
+		return;
+	}
+
+	DEBUG(5,("do_nt_login_test: domain %s\n", nt_trust_dom));
+
+	fstrcpy(inter_dom_acct, nt_trust_dom);
+	fstrcat(inter_dom_acct, "$");
+
+	res = res ? trust_get_passwd(trust_passwd, smb_cli->domain, nt_trust_dom) : False;
+
+	/* open NETLOGON session.  negotiate credentials */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
+
+	res = res ? cli_nt_setup_creds(smb_cli, nt_pipe_fnum, inter_dom_acct,
+	                               trust_passwd, SEC_CHAN_DOMAIN) : False;
+
+	memset(trust_passwd, 0, 16);
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+
+	fprintf(out_hnd,"cmd_nt_login: credentials (%s) test succeeded: %s\n",
+		nt_trust_dom, BOOLSTR(res));
 }
 

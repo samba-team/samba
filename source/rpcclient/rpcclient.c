@@ -116,6 +116,7 @@ struct
   {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> Registry Key Security"},
   {"regtestsec", cmd_reg_test_key_sec, "<keyname> Test Registry Key Security"},
   {"ntlogin",    cmd_netlogon_login_test, "[username] [password] NT Domain login test"},
+  {"domtrust",    cmd_netlogon_domain_test, "<domain> NT Inter-Domain test"},
   {"wksinfo",    cmd_wks_query_info,   "Workstation Query Info"},
   {"srvinfo",    cmd_srv_query_info,   "Server Query Info"},
   {"srvsessions",cmd_srv_enum_sess,    "List sessions on a server"},

@@ -451,7 +451,7 @@ char *align2(char *q, char *base);
 void out_ascii(FILE *f, unsigned char *buf,int len);
 void out_data(FILE *f,char *buf1,int len, int per_line);
 void print_asc(int level, unsigned char *buf,int len);
-void dump_data(int level,char *buf1,int len);
+void dump_data(int level,char *buf1, int len);
 char *tab_depth(int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
@@ -1579,8 +1579,11 @@ void load_printers(void);
 
 /*The following definitions come from  rpc_client/cli_login.c  */
 
-BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum, unsigned char mach_pwd[16]);
-BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum, unsigned char *new_hashof_mach_pwd);
+BOOL cli_nt_setup_creds(struct cli_state *cli, uint16 fnum,
+				const char* trust_acct,
+				unsigned char trust_pwd[16],
+				uint16 sec_chan);
+BOOL cli_nt_srv_pwset(struct cli_state *cli, uint16 fnum, unsigned char *new_hashof_trust_pwd);
 BOOL cli_nt_login_interactive(struct cli_state *cli, uint16 fnum, char *domain, char *username, 
                               uint32 luid_low, char *password,
                               NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3);
@@ -1617,8 +1620,9 @@ BOOL lsa_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
 BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 status_level);
-BOOL cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum, uint16 sec_chan, 
-                   uint32 neg_flags, DOM_CHAL *srv_chal);
+BOOL cli_net_auth2(struct cli_state *cli, uint16 nt_pipe_fnum,
+				const char *trust_acct, uint16 sec_chan, 
+				uint32 neg_flags, DOM_CHAL *srv_chal);
 BOOL cli_net_req_chal(struct cli_state *cli, uint16 nt_pipe_fnum, DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
 BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum, uint8 hashed_mach_pwd[16]);
 BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr, 
@@ -1982,7 +1986,8 @@ void make_q_req_chal(NET_Q_REQ_CHAL *q_c,
 void net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth);
 void net_io_r_req_chal(char *desc,  NET_R_REQ_CHAL *r_c, prs_struct *ps, int depth);
 void make_q_auth_2(NET_Q_AUTH_2 *q_a,
-		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name,
 		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
 void net_io_q_auth_2(char *desc,  NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth);
 void net_io_r_auth_2(char *desc,  NET_R_AUTH_2 *r_a, prs_struct *ps, int depth);
@@ -2738,6 +2743,7 @@ void cmd_lsa_lookup_sids(struct client_info *info);
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */
 
 void cmd_netlogon_login_test(struct client_info *info);
+void cmd_netlogon_domain_test(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_reg.c  */
 
