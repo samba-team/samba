@@ -474,7 +474,7 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 ****************************************************************************/
 
 BOOL authorise_login(int snum,char *user, DATA_BLOB password, 
-		     BOOL *guest, BOOL *force)
+		     BOOL *guest)
 {
 	BOOL ok = False;
 	
@@ -485,8 +485,6 @@ BOOL authorise_login(int snum,char *user, DATA_BLOB password,
 
 	*guest = False;
   
-	if (GUEST_ONLY(snum))
-		*force = True;
 	/* there are several possibilities:
 		1) login as the given user with given password
 		2) login as a previously registered username with the given password
