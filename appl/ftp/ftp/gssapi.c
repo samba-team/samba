@@ -246,10 +246,10 @@ gss_auth(void *app_data, char *host)
     bindings = malloc(sizeof(*bindings));
     bindings->initiator_addrtype = GSS_C_AF_INET;
     bindings->initiator_address.length = 4;
-    bindings->initiator_address.value = &hisctladdr.sin_addr;
+    bindings->initiator_address.value = &myctladdr.sin_addr;
     bindings->acceptor_addrtype = GSS_C_AF_INET;
     bindings->acceptor_address.length = 4;
-    bindings->acceptor_address.value = &myctladdr.sin_addr;
+    bindings->acceptor_address.value = &hisctladdr.sin_addr;
     bindings->application_data.length = 0;
     bindings->application_data.value = NULL;
 
