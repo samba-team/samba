@@ -25,6 +25,8 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 
+#define BASEDIR "\\locktest"
+
 /*
   This test checks for two things:
 
@@ -35,7 +37,7 @@
 BOOL torture_locktest1(void)
 {
 	struct smbcli_state *cli1, *cli2;
-	const char *fname = "\\lockt1.lck";
+	const char *fname = BASEDIR "\\lockt1.lck";
 	int fnum1, fnum2, fnum3;
 	time_t t1, t2;
 	uint_t lock_timeout;
@@ -46,7 +48,9 @@ BOOL torture_locktest1(void)
 
 	printf("starting locktest1\n");
 
-	smbcli_unlink(cli1->tree, fname);
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return False;
+	}
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum1 == -1) {
@@ -190,7 +194,7 @@ BOOL torture_locktest1(void)
 BOOL torture_locktest2(void)
 {
 	struct smbcli_state *cli;
-	const char *fname = "\\lockt2.lck";
+	const char *fname = BASEDIR "\\lockt2.lck";
 	int fnum1, fnum2, fnum3;
 	BOOL correct = True;
 
@@ -200,7 +204,9 @@ BOOL torture_locktest2(void)
 
 	printf("starting locktest2\n");
 
-	smbcli_unlink(cli->tree, fname);
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
 
 	printf("Testing pid context\n");
 	
@@ -329,7 +335,7 @@ BOOL torture_locktest2(void)
 BOOL torture_locktest3(void)
 {
 	struct smbcli_state *cli1, *cli2;
-	const char *fname = "\\lockt3.lck";
+	const char *fname = BASEDIR "\\lockt3.lck";
 	int fnum1, fnum2, i;
 	uint32_t offset;
 	BOOL correct = True;
@@ -345,7 +351,9 @@ BOOL torture_locktest3(void)
 
 	printf("Testing 32 bit offset ranges\n");
 
-	smbcli_unlink(cli1->tree, fname);
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return False;
+	}
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum1 == -1) {
@@ -461,7 +469,7 @@ BOOL torture_locktest3(void)
 BOOL torture_locktest4(void)
 {
 	struct smbcli_state *cli1, *cli2;
-	const char *fname = "\\lockt4.lck";
+	const char *fname = BASEDIR "\\lockt4.lck";
 	int fnum1, fnum2, f;
 	BOOL ret;
 	uint8_t buf[1000];
@@ -473,7 +481,9 @@ BOOL torture_locktest4(void)
 
 	printf("starting locktest4\n");
 
-	smbcli_unlink(cli1->tree, fname);
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return False;
+	}
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	fnum2 = smbcli_open(cli2->tree, fname, O_RDWR, DENY_NONE);
@@ -629,7 +639,7 @@ BOOL torture_locktest4(void)
 BOOL torture_locktest5(void)
 {
 	struct smbcli_state *cli1, *cli2;
-	const char *fname = "\\lockt5.lck";
+	const char *fname = BASEDIR "\\lockt5.lck";
 	int fnum1, fnum2, fnum3;
 	BOOL ret;
 	uint8_t buf[1000];
@@ -641,7 +651,9 @@ BOOL torture_locktest5(void)
 
 	printf("starting locktest5\n");
 
-	smbcli_unlink(cli1->tree, fname);
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return False;
+	}
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	fnum2 = smbcli_open(cli2->tree, fname, O_RDWR, DENY_NONE);
@@ -759,6 +771,10 @@ BOOL torture_locktest6(void)
 		return False;
 	}
 
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
 	printf("starting locktest6\n");
 
 	for (i=0;i<1;i++) {
@@ -788,7 +804,7 @@ BOOL torture_locktest6(void)
 BOOL torture_locktest7(void)
 {
 	struct smbcli_state *cli1;
-	const char *fname = "\\lockt7.lck";
+	const char *fname = BASEDIR "\\lockt7.lck";
 	int fnum1;
 	int fnum2 = -1;
 	size_t size;
@@ -801,7 +817,9 @@ BOOL torture_locktest7(void)
 
 	printf("starting locktest7\n");
 
-	smbcli_unlink(cli1->tree, fname);
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return False;
+	}
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 
