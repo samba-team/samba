@@ -132,7 +132,7 @@ static unsigned pkcs7_enveloped_num[] =
 heim_oid pkcs7_enveloped_oid =
 	oid_enc(pkcs7_enveloped_num);
 static unsigned pkauthdata_num[] = 
-    { 1, 2, 6, 1, 5, 2, 3, 1 };
+    { 1, 3, 6, 1, 5, 2, 3, 1 };
 heim_oid heim_pkauthdata_oid =
 	oid_enc(pkauthdata_num);
 static unsigned pkdhkeydata_num[] = 
