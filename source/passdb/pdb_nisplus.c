@@ -1019,46 +1019,6 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 }
 
 /*************************************************************************
- Routine to search the nisplus passwd file for an entry matching the username
- *************************************************************************/
-BOOL pdb_getsampwuid(SAM_ACCOUNT * user, uid_t uid)
-{
-	nis_result *result;
-	char *nisname;
-	BOOL ret;
-	char *sp, *p = lp_smb_passwd_file();
-	pstring pfiletmp;
-
-	if (!*p)
-	{
-		DEBUG(0, ("no SMB password file set\n"));
-		return False;
-	}
-
-	if( (sp = strrchr( p, '/' )) )
-          safe_strcpy(pfiletmp, sp+1, sizeof(pfiletmp)-1);
-        else
-          safe_strcpy(pfiletmp, p, sizeof(pfiletmp)-1);
-        safe_strcat(pfiletmp, ".org_dir", sizeof(pfiletmp)-strlen(pfiletmp)-1);
-
-	nisname = make_nisname_from_uid(uid, pfiletmp);
-
-	DEBUG(10, ("search by uid: %s\n", nisname));
-
-	/* Search the table. */
-
-	if(!(result = nisp_get_nis_list(nisname, 0)))
-	{
-		return False;
-	}
-
-	ret = make_sam_from_nisresult(user, result);
-	nis_freeresult(result);
-
-	return ret;
-}
-
-/*************************************************************************
  Routine to remove entry from the nisplus smbpasswd table
  *************************************************************************/
 BOOL pdb_delete_sam_account(const char *sname)

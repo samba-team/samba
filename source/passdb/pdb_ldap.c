@@ -782,55 +782,6 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 }
 
 /**********************************************************************
- Get SAM_ACCOUNT entry from LDAP by uid 
-*********************************************************************/
-BOOL pdb_getsampwuid(SAM_ACCOUNT * user, uid_t uid)
-{
-	LDAP *ldap_struct;
-	LDAPMessage *result;
-	LDAPMessage *entry;
-
-	if (!ldap_open_connection(&ldap_struct))
-		return False;
-
-	if (!ldap_connect_system(ldap_struct))
-	{
-		ldap_unbind(ldap_struct);
-		return False;
-	}
-	if (ldap_search_one_user_by_uid(ldap_struct, uid, &result) !=
-	    LDAP_SUCCESS)
-	{
-		ldap_unbind(ldap_struct);
-		return False;
-	}
-
-	if (ldap_count_entries(ldap_struct, result) < 1)
-	{
-		DEBUG(0,
-		      ("We don't find this uid [%i] count=%d\n", uid,
-		       ldap_count_entries(ldap_struct, result)));
-		ldap_unbind(ldap_struct);
-		return False;
-	}
-	entry = ldap_first_entry(ldap_struct, result);
-	if (entry)
-	{
-		init_sam_from_ldap(user, ldap_struct, entry);
-		ldap_msgfree(result);
-		ldap_unbind(ldap_struct);
-		return True;
-	}
-	else
-	{
-		ldap_msgfree(result);
-		ldap_unbind(ldap_struct);
-		return False;
-	}
-}
-
-
-/**********************************************************************
 Delete entry from LDAP for username 
 *********************************************************************/
 BOOL pdb_delete_sam_account(const char *sname)

@@ -1418,48 +1418,6 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 }
 
 
-BOOL pdb_getsampwuid (SAM_ACCOUNT *sam_acct, uid_t uid)
-{
-	struct smb_passwd *smb_pw;
-	void *fp = NULL;
-
-	DEBUG(10, ("pdb_getsampwuid: search by uid: %d\n", (int)uid));
-
-	/* Open the sam password file - not for update. */
-	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);
-
-	if (fp == NULL) {
-		DEBUG(0, ("unable to open passdb database.\n"));
-		return False;
-	}
-
-	while ( ((smb_pw=getsmbfilepwent(fp)) != NULL) && (smb_pw->smb_userid != uid) )
-      		/* do nothing */ ;
-
-	endsmbfilepwent(fp, &pw_file_lock_depth);
-
-	/* did we locate the username in smbpasswd  */
-	if (smb_pw == NULL)
-		return False;
-	
-	DEBUG(10, ("pdb_getsampwuid: found by name: %s\n", smb_pw->smb_name));
-		
-	if (!sam_acct) {
-		DEBUG(10,("pdb_getsampwuid:SAM_ACCOUNT is NULL\n"));
-#if 0
-		smb_panic("NULL pointer passed to pdb_getsampwuid\n");
-#endif
-		return False;
-	}
-
-	/* now build the SAM_ACCOUNT */
-	if (!build_sam_account(sam_acct, smb_pw))
-		return False;
-
-	/* success */
-	return True;
-}
-
 BOOL pdb_getsampwrid(SAM_ACCOUNT *sam_acct,uint32 rid)
 {
 	struct smb_passwd *smb_pw;
