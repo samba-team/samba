@@ -535,7 +535,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SIVAL(p,0,0); p += 4;
       if (!was_8_3) {
 	      fstrcpy(p+2,fname);
-	      name_map_mangle(p+2,True,True,SNUM(conn));
+	      if(!name_map_mangle(p+2,True,True,SNUM(conn)))
+            (p+2)[12] = 0; 
 	      strupper(p+2);
 	      SSVAL(p, 0, strlen(p+2));
       } else {
