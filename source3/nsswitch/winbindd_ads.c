@@ -33,12 +33,15 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STRUCT *ads;
 	int rc;
+	char *password;
 
 	if (domain->private) {
 		return (ADS_STRUCT *)domain->private;
 	}
 
-	ads = ads_init(NULL, NULL, NULL, secrets_fetch_machine_password());
+	password = secrets_fetch_machine_password();
+	ads = ads_init(NULL, NULL, NULL, password);
+	free(password);
 	if (!ads) {
 		DEBUG(1,("ads_init for domain %s failed\n", domain->name));
 		return NULL;
