@@ -1304,7 +1304,7 @@ ptransfer(char *direction, long int bytes,
 	    prec = 0;
 	}
 	
-	printf("%ld bytes %s in %.3g seconds (%.*f %sbytes/s)\n",
+	printf("%ld bytes %s in %.3g seconds (%.*f %sbyte/s)\n",
 	       bytes, direction, s, prec, bs, unit);
     }
 }
