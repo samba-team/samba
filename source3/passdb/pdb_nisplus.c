@@ -876,8 +876,6 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 	pdb_set_workstations (pw_buf, ENTRY_VAL (obj, NPF_WORKSTATIONS), PDB_SET);
 	pdb_set_munged_dial (pw_buf, NULL, PDB_DEFAULT);
 
-	pdb_set_uid (pw_buf, atoi (ENTRY_VAL (obj, NPF_UID)), PDB_SET);
-	pdb_set_gid (pw_buf, atoi (ENTRY_VAL (obj, NPF_SMB_GRPID)), PDB_SET);
 	pdb_set_user_sid_from_rid (pw_buf,
 				   atoi (ENTRY_VAL (obj, NPF_USER_RID)), PDB_SET);
 	pdb_set_group_sid_from_rid (pw_buf,
@@ -949,8 +947,8 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 	if (!(pdb_get_acct_ctrl (pw_buf) & ACB_PWNOTREQ) &&
 	    strncasecmp (ptr, "NO PASSWORD", 11)) {
 		if (strlen (ptr) != 32 || !pdb_gethexpwd (ptr, smbntpwd)) {
-			DEBUG (0, ("malformed NT pwd entry:\
- uid = %d.\n", pdb_get_uid (pw_buf)));
+			DEBUG (0, ("malformed NT pwd entry:\ %s.\n",
+				   pdb_get_username (pw_buf)));
 			return False;
 		}
 		if (!pdb_set_nt_passwd (pw_buf, smbntpwd, PDB_SET))
@@ -1047,6 +1045,8 @@ static BOOL init_nisp_from_sam (nis_object * obj, const SAM_ACCOUNT * sampass,
 	BOOL need_to_modify = False;
 	const char *name = pdb_get_username (sampass);	/* from SAM */
 
+	uint32 u_rid;
+	uint32 g_rid; 
 	/* these must be static or allocate and free entry columns! */
 	static fstring uid;	/* from SAM */
 	static fstring user_rid;	/* from SAM */
@@ -1065,31 +1065,15 @@ static BOOL init_nisp_from_sam (nis_object * obj, const SAM_ACCOUNT * sampass,
 	static fstring acct_desc;	/* from SAM */
 	static char empty[1];	/* just an empty string */
 
-	slprintf (uid, sizeof (uid) - 1, "%u", pdb_get_uid (sampass));
-	slprintf (user_rid, sizeof (user_rid) - 1, "%u",
-		  pdb_get_user_rid (sampass) ? pdb_get_user_rid (sampass) :
-		  fallback_pdb_uid_to_user_rid (pdb_get_uid (sampass)));
-	slprintf (gid, sizeof (gid) - 1, "%u", pdb_get_gid (sampass));
+	if (!(u_rid = pdb_get_user_rid (sampass)))
+		return False;
+	if (!(g_rid = pdb_get_group_rid (sampass)))
+		return False;
 
-	{
-		uint32 rid;
-		GROUP_MAP map;
-
-		rid = pdb_get_group_rid (sampass);
-
-		if (rid == 0) {
-			if (pdb_getgrgid(&map, pdb_get_gid (sampass),
-					 MAPPING_WITHOUT_PRIV)) {
-				if (!sid_peek_check_rid
-				    (get_global_sam_sid (), &map.sid, &rid))
-					return False;
-			} else
-				rid = pdb_gid_to_group_rid (pdb_get_gid
-							    (sampass));
-		}
-
-		slprintf (group_rid, sizeof (group_rid) - 1, "%u", rid);
-	}
+	slprintf (uid, sizeof (uid) - 1, "%u", fallback_pdb_user_rid_to_uid (u_rid));
+	slprintf (user_rid, sizeof (user_rid) - 1, "%u", u_rid);
+	slprintf (gid, sizeof (gid) - 1, "%u", fallback_pdb_group_rid_to_uid (g_rid));
+	slprintf (group_rid, sizeof (group_rid) - 1, "%u", g_rid);
 
 	acb = pdb_encode_acct_ctrl (pdb_get_acct_ctrl (sampass),
 				    NEW_PW_FORMAT_SPACE_PADDED_LEN);
@@ -1133,51 +1117,27 @@ static BOOL init_nisp_from_sam (nis_object * obj, const SAM_ACCOUNT * sampass,
 
 
 		/* uid */
-		if (pdb_get_uid (sampass) != -1) {
-			if (!ENTRY_VAL (old, NPF_UID)
-			    || strcmp (ENTRY_VAL (old, NPF_UID), uid)) {
+		if (!ENTRY_VAL (old, NPF_UID) || strcmp (ENTRY_VAL (old, NPF_UID), uid)) {
 				need_to_modify = True;
-				set_single_attribute (obj, NPF_UID, uid,
-						      strlen (uid),
-						      EN_MODIFIED);
-			}
+				set_single_attribute (obj, NPF_UID, uid, strlen (uid), EN_MODIFIED);
 		}
 
 		/* user_rid */
-		if (pdb_get_user_rid (sampass)) {
-			if (!ENTRY_VAL (old, NPF_USER_RID) ||
-			    strcmp (ENTRY_VAL (old, NPF_USER_RID),
-				    user_rid)) {
+		if (!ENTRY_VAL (old, NPF_USER_RID) || strcmp (ENTRY_VAL (old, NPF_USER_RID), user_rid)) {
 				need_to_modify = True;
-				set_single_attribute (obj, NPF_USER_RID,
-						      user_rid,
-						      strlen (user_rid),
-						      EN_MODIFIED);
-			}
+				set_single_attribute (obj, NPF_USER_RID, user_rid, strlen (user_rid), EN_MODIFIED);
 		}
 
 		/* smb_grpid */
-		if (pdb_get_gid (sampass) != -1) {
-			if (!ENTRY_VAL (old, NPF_SMB_GRPID) ||
-			    strcmp (ENTRY_VAL (old, NPF_SMB_GRPID), gid)) {
+		if (!ENTRY_VAL (old, NPF_SMB_GRPID) || strcmp (ENTRY_VAL (old, NPF_SMB_GRPID), gid)) {
 				need_to_modify = True;
-				set_single_attribute (obj, NPF_SMB_GRPID, gid,
-						      strlen (gid),
-						      EN_MODIFIED);
-			}
+				set_single_attribute (obj, NPF_SMB_GRPID, gid, strlen (gid), EN_MODIFIED);
 		}
 
 		/* group_rid */
-		if (pdb_get_group_rid (sampass)) {
-			if (!ENTRY_VAL (old, NPF_GROUP_RID) ||
-			    strcmp (ENTRY_VAL (old, NPF_GROUP_RID),
-				    group_rid)) {
+		if (!ENTRY_VAL (old, NPF_GROUP_RID) || strcmp (ENTRY_VAL (old, NPF_GROUP_RID), group_rid)) {
 				need_to_modify = True;
-				set_single_attribute (obj, NPF_GROUP_RID,
-						      group_rid,
-						      strlen (group_rid),
-						      EN_MODIFIED);
-			}
+				set_single_attribute (obj, NPF_GROUP_RID, group_rid, strlen (group_rid), EN_MODIFIED);
 		}
 
 		/* acb */

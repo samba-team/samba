@@ -75,6 +75,9 @@ typedef struct auth_usersupplied_info
 typedef struct auth_serversupplied_info 
 {
 	BOOL guest;
+
+	uid_t uid;
+	gid_t gid;
 	
 	/* This groups info is needed for when we become_user() for this uid */
 	int n_groups;

@@ -66,7 +66,7 @@ static NTSTATUS unixsam_getsampwrid (struct pdb_methods *methods,
 			DEBUG(1, ("guest account %s does not seem to exist...\n", guest_account));
 			return nt_status;
 		}
-	} else if (pdb_rid_is_user(rid)) {
+	} else if (fallback_pdb_rid_is_user(rid)) {
 		pass = getpwuid_alloc(fallback_pdb_user_rid_to_uid (rid));
 	}
 

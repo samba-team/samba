@@ -661,23 +661,18 @@ static NTSTATUS get_user_groups_from_local_sam(SAM_ACCOUNT *sampass,
 	gid_t             gid;
 	int               n_unix_groups;
 	int               i;
-	struct passwd    *usr;	
 
 	*n_groups = 0;
 	*groups   = NULL;
 
-	if (!IS_SAM_UNIX_USER(sampass)) {
-		DEBUG(1, ("user %s does not have a unix identity!\n", pdb_get_username(sampass)));
-		return NT_STATUS_NO_SUCH_USER;
+	if (!sid_to_uid(pdb_get_user_sid(sampass), &uid) || !sid_to_gid(pdb_get_group_sid(sampass), &gid)) {
+		DEBUG(0, ("get_user_groups_from_local_sam: error fetching uid or gid for user!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
-
-	uid = pdb_get_uid(sampass);
-	gid = pdb_get_gid(sampass);
 	
 	n_unix_groups = groups_max();
 	if ((*unix_groups = malloc( sizeof(gid_t) * n_unix_groups ) ) == NULL) {
 		DEBUG(0, ("get_user_groups_from_local_sam: Out of memory allocating unix group list\n"));
-		passwd_free(&usr);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
@@ -686,7 +681,6 @@ static NTSTATUS get_user_groups_from_local_sam(SAM_ACCOUNT *sampass,
 		groups_tmp = Realloc(*unix_groups, sizeof(gid_t) * n_unix_groups);
 		if (!groups_tmp) {
 			SAFE_FREE(*unix_groups);
-			passwd_free(&usr);
 			return NT_STATUS_NO_MEMORY;
 		}
 		*unix_groups = groups_tmp;
@@ -694,7 +688,6 @@ static NTSTATUS get_user_groups_from_local_sam(SAM_ACCOUNT *sampass,
 		if (sys_getgrouplist(pdb_get_username(sampass), gid, *unix_groups, &n_unix_groups) == -1) {
 			DEBUG(0, ("get_user_groups_from_local_sam: failed to get the unix group list\n"));
 			SAFE_FREE(*unix_groups);
-			passwd_free(&usr);
 			return NT_STATUS_NO_SUCH_USER; /* what should this return value be? */
 		}
 	}
@@ -739,6 +732,10 @@ static NTSTATUS make_server_info(auth_serversupplied_info **server_info, SAM_ACC
 
 	(*server_info)->sam_fill_level = SAM_FILL_ALL;
 	(*server_info)->sam_account    = sampass;
+	if (!sid_to_uid(pdb_get_user_sid(sampass), &((*server_info)->uid)))
+		return NT_STATUS_UNSUCCESSFUL;
+	if (!sid_to_gid(pdb_get_group_sid(sampass), &((*server_info)->gid)))
+		return NT_STATUS_UNSUCCESSFUL;
 
 	return NT_STATUS_OK;
 }

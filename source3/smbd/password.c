@@ -141,15 +141,9 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 	/* the next functions should be done by a SID mapping system (SMS) as
 	 * the new real sam db won't have reference to unix uids or gids
 	 */
-	if (!IS_SAM_UNIX_USER(server_info->sam_account)) {
-		DEBUG(0,("Attempted session setup with invalid user.  No uid/gid in SAM_ACCOUNT\n"));
-		free(vuser);
-		free_server_info(&server_info);
-		return UID_FIELD_INVALID;
-	}
 	
-	vuser->uid = pdb_get_uid(server_info->sam_account);
-	vuser->gid = pdb_get_gid(server_info->sam_account);
+	vuser->uid = server_info->uid;
+	vuser->gid = server_info->gid;
 	
 	vuser->n_groups = server_info->n_groups;
 	if (vuser->n_groups) {

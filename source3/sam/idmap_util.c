@@ -97,14 +97,12 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
  was done correctly, False if not. sidtype is set by this function.
 *****************************************************************/  
 
-BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
+BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid)
 {
 	unid_t id;
 	int type;
 
 	DEBUG(10,("sid_to_uid: sid = [%s]\n", sid_string_static(psid)));
-
-	*sidtype = SID_NAME_USER;
 
 	type = ID_USERID;
 	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&id, &type, psid))) {
@@ -123,7 +121,7 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 			DEBUG(0, ("sid_to_uid: Error extracting RID from SID\n!"));
 			return False;
 		}
-		if (!pdb_rid_is_user(rid)) {
+		if (!fallback_pdb_rid_is_user(rid)) {
 			DEBUG(3, ("sid_to_uid: RID %u is *NOT* a user\n", (unsigned)rid));
 			return False;
 		}
@@ -140,14 +138,12 @@ BOOL sid_to_uid(const DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
  was done correctly, False if not.
 *****************************************************************/  
 
-BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
+BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 {
 	unid_t id;
 	int type;
 
 	DEBUG(10,("sid_to_gid: sid = [%s]\n", sid_string_static(psid)));
-
-	*sidtype = SID_NAME_ALIAS;
 
 	type = ID_GROUPID;
 	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&id, &type, psid))) {
@@ -166,7 +162,6 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 				return False;
 			
 			*pgid = map.gid;
-			*sidtype = map.sid_name_use;
 			return True;
 		} else {
 			uint32 rid;
@@ -175,12 +170,11 @@ BOOL sid_to_gid(const DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 				DEBUG(0, ("sid_to_gid: Error extracting RID from SID\n!"));
 				return False;
 			}
-			if (pdb_rid_is_user(rid)) {
+			if (fallback_pdb_rid_is_user(rid)) {
 				DEBUG(3, ("sid_to_gid: RID %u is *NOT* a group\n", (unsigned)rid));
 				return False;
 			}
 			*pgid = pdb_group_rid_to_gid(rid);
-			*sidtype = SID_NAME_ALIAS;	
 		}
 	}
 

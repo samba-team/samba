@@ -339,11 +339,8 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
             const char *service;
 
             pam_get_item( pamh, PAM_SERVICE, (const void **)&service );
-            _log_err( LOG_NOTICE
-                      , "failed auth request by %s for service %s as %s(%d)"
-                      , uidtoname( getuid() )
-                      , service ? service : "**unknown**", name
-                      , pdb_get_uid(sampass) );
+            _log_err( LOG_NOTICE, "failed auth request by %s for service %s as %s",
+                      uidtoname(getuid()), service ? service : "**unknown**", name);
             return PAM_AUTH_ERR;
         }
     }
@@ -378,6 +375,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
         pam_get_item( pamh, PAM_SERVICE, (const void **)&service );
 
         if (data_name != NULL) {
+	    int type;
             struct _pam_failed_auth *new = NULL;
             const struct _pam_failed_auth *old = NULL;
 
@@ -397,32 +395,34 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
                         retval = PAM_MAXTRIES;
                     }
                 } else {
-                    _log_err( LOG_NOTICE
-                      , "failed auth request by %s for service %s as %s(%d)"
-                      , uidtoname( getuid() )
-                      , service ? service : "**unknown**", name
-                      , pdb_get_uid(sampass) );
+                    _log_err(LOG_NOTICE,
+                      "failed auth request by %s for service %s as %s",
+                      uidtoname(getuid()),
+                      service ? service : "**unknown**", name);
                     new->count = 1;
                 }
+		if (!sid_to_uid(pdb_get_user_sid(sampass, &(new->id), &type))) {
+                    _log_err(LOG_NOTICE,
+                      "failed auth request by %s for service %s as %s",
+                      uidtoname(getuid()),
+                      service ? service : "**unknown**", name);
+		}		
                 new->user = smbpXstrDup( name );
-                new->id = pdb_get_uid(sampass);
                 new->agent = smbpXstrDup( uidtoname( getuid() ) );
                 pam_set_data( pamh, data_name, new, _cleanup_failures );
 
             } else {
                 _log_err( LOG_CRIT, "no memory for failure recorder" );
-                _log_err( LOG_NOTICE
-                      , "failed auth request by %s for service %s as %s(%d)"
-                      , uidtoname( getuid() )
-                      , service ? service : "**unknown**", name
-                      , pdb_get_uid(sampass) );
+                _log_err(LOG_NOTICE,
+                      "failed auth request by %s for service %s as %s(%d)",
+                      uidtoname(getuid()),
+                      service ? service : "**unknown**", name);
             }
         } else {
-            _log_err( LOG_NOTICE
-                      , "failed auth request by %s for service %s as %s(%d)"
-                      , uidtoname( getuid() )
-                      , service ? service : "**unknown**", name
-                      , pdb_get_uid(sampass) );
+            _log_err(LOG_NOTICE,
+                      "failed auth request by %s for service %s as %s(%d)",
+                      uidtoname(getuid()),
+                      service ? service : "**unknown**", name);
             retval = PAM_AUTH_ERR;
         }
     }

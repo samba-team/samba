@@ -590,8 +590,6 @@ typedef struct {
  */
 enum pdb_elements {
 	PDB_UNINIT,
-	PDB_UID,
-	PDB_GID,
 	PDB_SMBHOME,
 	PDB_PROFILE,
 	PDB_DRIVE,
@@ -634,10 +632,6 @@ enum pdb_value_state {
 	PDB_CHANGED
 };
 
-#define IS_SAM_UNIX_USER(x) \
-	(( pdb_get_init_flags(x, PDB_UID) != PDB_DEFAULT ) \
-	 && ( pdb_get_init_flags(x,PDB_GID) != PDB_DEFAULT ))
-
 #define IS_SAM_SET(x, flag)	(pdb_get_init_flags(x, flag) == PDB_SET)
 #define IS_SAM_CHANGED(x, flag)	(pdb_get_init_flags(x, flag) == PDB_CHANGED)
 #define IS_SAM_DEFAULT(x, flag)	(pdb_get_init_flags(x, flag) == PDB_DEFAULT)
@@ -676,8 +670,6 @@ typedef struct sam_passwd
 		const char * unknown_str ; /* don't know what this is, yet. */
 		const char * munged_dial ; /* munged path name and dial-back tel number */
 		
-		uid_t uid;          /* this is a unix uid_t */
-		gid_t gid;          /* this is a unix gid_t */
 		DOM_SID user_sid;    /* Primary User SID */
 		DOM_SID group_sid;   /* Primary Group SID */
 		
