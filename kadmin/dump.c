@@ -44,7 +44,7 @@ dump(struct dump_options *opt, int argc, char **argv)
 {
     krb5_error_code ret;
     FILE *f;
-    HDB *db;
+    HDB *db = NULL;
     
     if(!local_flag) {
 	krb5_warnx(context, "dump is only available in local (-l) mode");
@@ -58,18 +58,22 @@ dump(struct dump_options *opt, int argc, char **argv)
     else
 	f = fopen(argv[0], "w");
     
-    if(f == NULL)
-	krb5_warn(context, errno, "%s", argv[0]);
+    if(f == NULL) {
+	krb5_warn(context, errno, "open: %s", argv[0]);
+	goto out;
+    }
     ret = db->hdb_open(context, db, O_RDONLY, 0600);
     if(ret) {
 	krb5_warn(context, ret, "hdb_open");
 	goto out;
     }
 
-    hdb_foreach(context, db, opt->decrypt_flag ? HDB_F_DECRYPT : 0, hdb_print_entry, f);
+    hdb_foreach(context, db, opt->decrypt_flag ? HDB_F_DECRYPT : 0, 
+		hdb_print_entry, f);
+
     db->hdb_close(context, db);
 out:
-    if(f != stdout)
+    if(f && f != stdout)
 	fclose(f);
     return 0;
 }
