@@ -82,7 +82,7 @@ static int CopyAndAdvance(char** dst, char* src, int* n)
 {
   int l;
   if (!src || !dst || !n || !(*dst)) return(0);
-  l = push_ascii(*dst,src,*n-1, STR_TERMINATE);
+  l = push_ascii(*dst,src,*n, STR_TERMINATE);
   (*dst) += l;
   (*n) -= l;
   return l;
