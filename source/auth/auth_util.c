@@ -214,20 +214,16 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 		domain = lp_workgroup();
 
 	/* do what win2k does.  Always map unknown domains to our own
-	   and let the "passdb backend" handle unknown users */
+	   and let the "passdb backend" handle unknown users. */
 
 	if ( !is_trusted_domain(domain) ) 
-		domain = get_global_sam_name();
+		domain = get_default_sam_name();
 	
 	/* we know that it is a trusted domain (and we are allowing them) or it is our domain */
 	
-	return make_user_info(user_info, 
-			      smb_name, internal_username,
-			      client_domain, domain,
-			      wksta_name, 
-			      lm_pwd, nt_pwd,
-			      plaintext, 
-			      ntlmssp_flags, encrypted);
+	return make_user_info(user_info, smb_name, internal_username, 
+		client_domain, domain, wksta_name, lm_pwd, nt_pwd,
+		plaintext, ntlmssp_flags, encrypted);
 }
 
 /****************************************************************************
