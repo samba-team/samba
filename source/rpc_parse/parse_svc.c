@@ -3,9 +3,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Tridgell              1992-1999,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
+ *  Copyright (C) Paul Ashton                  1997-1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  make_svc_q_open_sc_man
  ********************************************************************/
-void make_svc_q_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
+BOOL make_svc_q_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
 				char *server, char *database,
 				uint32 des_access)  
 {
@@ -40,14 +40,16 @@ void make_svc_q_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
 	make_buf_unistr2(&(q_u->uni_db_name ), &(q_u->ptr_db_name), database);
 	q_u->des_access = des_access;
 
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a SVC_Q_OPEN_SC_MAN structure.
 ********************************************************************/
-void svc_io_q_open_sc_man(char *desc, SVC_Q_OPEN_SC_MAN *q_u, prs_struct *ps, int depth)
+BOOL svc_io_q_open_sc_man(char *desc, SVC_Q_OPEN_SC_MAN *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return;
+	if (q_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_q_open_sc_man");
 	depth++;
@@ -64,26 +66,30 @@ void svc_io_q_open_sc_man(char *desc, SVC_Q_OPEN_SC_MAN *q_u, prs_struct *ps, in
 
 	prs_uint32("des_access", ps, depth, &(q_u->des_access));
 	prs_align(ps);
+
+	return True;
 }
 
 /*******************************************************************
  make_svc_r_open_sc_man
  ********************************************************************/
-void make_svc_r_open_sc_man(SVC_R_OPEN_SC_MAN *r_u, POLICY_HND *hnd,
+BOOL make_svc_r_open_sc_man(SVC_R_OPEN_SC_MAN *r_u, POLICY_HND *hnd,
 				uint32 status)  
 {
 	DEBUG(5,("make_svc_r_unknown_0: %d\n", __LINE__));
 
 	memcpy(&(r_u->pol), hnd, sizeof(r_u->pol));
 	r_u->status = status;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, int depth)
+BOOL svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return;
+	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_r_open_sc_man");
 	depth++;
@@ -93,12 +99,14 @@ void svc_io_r_open_sc_man(char *desc,  SVC_R_OPEN_SC_MAN *r_u, prs_struct *ps, i
 	smb_io_pol_hnd("", &(r_u->pol), ps, depth);
 
 	prs_uint32("status      ", ps, depth, &(r_u->status));
+
+	return True;
 }
 
 /*******************************************************************
  make_svc_q_open_service
  ********************************************************************/
-void make_svc_q_open_service(SVC_Q_OPEN_SERVICE *q_u,
+BOOL make_svc_q_open_service(SVC_Q_OPEN_SERVICE *q_u,
 				POLICY_HND *hnd,
 				char *server,
 				uint32 des_access)  
@@ -109,14 +117,16 @@ void make_svc_q_open_service(SVC_Q_OPEN_SERVICE *q_u,
 	make_unistr2(&(q_u->uni_svc_name), server, strlen(server)+1);
 	q_u->des_access = des_access;
 
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a SVC_Q_OPEN_SERVICE structure.
 ********************************************************************/
-void svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, int depth)
+BOOL svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return;
+	if (q_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_q_open_service");
 	depth++;
@@ -131,26 +141,30 @@ void svc_io_q_open_service(char *desc, SVC_Q_OPEN_SERVICE *q_u, prs_struct *ps, 
 
 	prs_uint32("des_access", ps, depth, &(q_u->des_access));
 	prs_align(ps);
+
+	return True;
 }
 
 /*******************************************************************
  make_svc_r_open_service
  ********************************************************************/
-void make_svc_r_open_service(SVC_R_OPEN_SERVICE *r_u, POLICY_HND *hnd,
+BOOL make_svc_r_open_service(SVC_R_OPEN_SERVICE *r_u, POLICY_HND *hnd,
 				uint32 status)  
 {
 	DEBUG(5,("make_svc_r_unknown_0: %d\n", __LINE__));
 
 	memcpy(&(r_u->pol), hnd, sizeof(r_u->pol));
 	r_u->status = status;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth)
+BOOL svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return;
+	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_r_open_service");
 	depth++;
@@ -160,14 +174,16 @@ void svc_io_r_open_service(char *desc,  SVC_R_OPEN_SERVICE *r_u, prs_struct *ps,
 	smb_io_pol_hnd("", &(r_u->pol), ps, depth);
 
 	prs_uint32("status      ", ps, depth, &(r_u->status));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a SVC_Q_START_SERVICE structure.
 ********************************************************************/
-void svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps, int depth)
+BOOL svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps, int depth)
 {
-	if (q_s == NULL) return;
+	if (q_s == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_q_start_service");
 	depth++;
@@ -195,25 +211,29 @@ void svc_io_q_start_service(char *desc, SVC_Q_START_SERVICE *q_s, prs_struct *ps
 			smb_io_unistr2("", &(q_s->argv[i]), 1, ps, depth); 
 		}
 	}
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_r_start_service(char *desc,  SVC_R_START_SERVICE *r_s, prs_struct *ps, int depth)
+BOOL svc_io_r_start_service(char *desc,  SVC_R_START_SERVICE *r_s, prs_struct *ps, int depth)
 {
-	if (r_s == NULL) return;
+	if (r_s == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_r_start_service");
 	depth++;
 
 	prs_uint32("status", ps, depth, &(r_s->status));
+
+	return True;
 }
 
 /*******************************************************************
  make_svc_query_svc_cfg
  ********************************************************************/
-void make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
+BOOL make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
 				uint32 service_type, uint32 start_type,
 				uint32 error_control,
 				char* bin_path_name, char* load_order_grp, 
@@ -232,14 +252,16 @@ void make_svc_query_svc_cfg(QUERY_SERVICE_CONFIG *q_u,
 	make_buf_unistr2(&(q_u->uni_dependencies      ), &(q_u->ptr_dependencies      ), dependencies      );
 	make_buf_unistr2(&(q_u->uni_service_start_name), &(q_u->ptr_service_start_name), service_start_name);
 	make_buf_unistr2(&(q_u->uni_display_name      ), &(q_u->ptr_display_name      ), disp_name         );
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a QUERY_SERVICE_CONFIG structure.
 ********************************************************************/
-void svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth)
+BOOL svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return;
+	if (q_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_query_svc_cfg");
 	depth++;
@@ -266,16 +288,18 @@ void svc_io_query_svc_cfg(char *desc, QUERY_SERVICE_CONFIG *q_u, prs_struct *ps,
 	prs_align(ps);
 	smb_io_unistr2("uni_display_name      ", &(q_u->uni_display_name      ), q_u->ptr_display_name      , ps, depth); 
 	prs_align(ps);
+
+	return True;
 }
 
 /*******************************************************************
 makes an SVC_Q_ENUM_SVCS_STATUS structure.
 ********************************************************************/
-void make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_c, POLICY_HND *hnd,
+BOOL make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_c, POLICY_HND *hnd,
 				uint32 service_type, uint32 service_state,
 				uint32 buf_size, uint32 resume_hnd )
 {
-	if (q_c == NULL || hnd == NULL) return;
+	if (q_c == NULL || hnd == NULL) return False;
 
 	DEBUG(5,("make_svc_q_enum_svcs_status\n"));
 
@@ -284,14 +308,16 @@ void make_svc_q_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_c, POLICY_HND *hnd,
 	q_c->service_state = service_state;
 	q_c->buf_size = buf_size;
 	make_enum_hnd(&q_c->resume_hnd, resume_hnd);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_q_enum_svcs_status(char *desc,  SVC_Q_ENUM_SVCS_STATUS *q_u, prs_struct *ps, int depth)
+BOOL svc_io_q_enum_svcs_status(char *desc,  SVC_Q_ENUM_SVCS_STATUS *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return;
+	if (q_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_q_enum_svcs_status");
 	depth++;
@@ -305,17 +331,19 @@ void svc_io_q_enum_svcs_status(char *desc,  SVC_Q_ENUM_SVCS_STATUS *q_u, prs_str
 	prs_uint32("service_state", ps, depth, &(q_u->service_state));
 	prs_uint32("buf_size     ", ps, depth, &(q_u->buf_size     ));
 	smb_io_enum_hnd("resume_hnd", &(q_u->resume_hnd), ps, depth); 
+
+	return True;
 }
 
 /*******************************************************************
 makes an SVC_R_ENUM_SVCS_STATUS structure.
 ********************************************************************/
-void make_svc_r_enum_svcs_status(SVC_R_ENUM_SVCS_STATUS *r_c, 
+BOOL make_svc_r_enum_svcs_status(SVC_R_ENUM_SVCS_STATUS *r_c, 
 				ENUM_SRVC_STATUS *svcs, uint32 more_buf_size,
 				uint32 num_svcs, uint32 resume_hnd,
 				uint32 dos_status)
 {
-	if (r_c == NULL) return;
+	if (r_c == NULL) return False;
 
 	DEBUG(5,("make_svc_r_enum_svcs_status\n"));
 
@@ -324,6 +352,8 @@ void make_svc_r_enum_svcs_status(SVC_R_ENUM_SVCS_STATUS *r_c,
 	r_c->num_svcs      = num_svcs;
 	make_enum_hnd(&r_c->resume_hnd, resume_hnd);
 	r_c->dos_status = dos_status;
+
+	return True;
 }
 
 /*******************************************************************
@@ -334,10 +364,10 @@ not COMMUNICATE and get some CONSISTENCY TO THEIR DATA STRUCTURES!
 ARGH!
 
 ********************************************************************/
-void svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_struct *ps, int depth)
+BOOL svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_struct *ps, int depth)
 {
 	int i;
-	if (svc == NULL) return;
+	if (svc == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_r_enum_svcs_status");
 	depth++;
@@ -380,7 +410,7 @@ void svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_stru
 		{
 			DEBUG(0,("svc_io_r_enum_svcs_status: Realloc failed\n"));
 			ps->offset = 0x7fffffff;
-			return;
+			return False;
 		}
 
 		bzero(svc->svcs, svc->num_svcs * sizeof(ENUM_SRVC_STATUS));
@@ -426,7 +456,7 @@ void svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_stru
 
 		if (svc->svcs == NULL)
 		{
-			return;
+			return False;
 		}
 
 		for (i = 0; i < svc->num_svcs; i++)
@@ -482,14 +512,16 @@ void svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_stru
 		smb_io_enum_hnd("resume_hnd", &(svc->resume_hnd), ps, depth); 
 		prs_uint32("dos_status", ps, depth, &(svc->dos_status));
 	}
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_svc_status(char *desc,  SVC_STATUS *svc, prs_struct *ps, int depth)
+BOOL svc_io_svc_status(char *desc,  SVC_STATUS *svc, prs_struct *ps, int depth)
 {
-	if (svc == NULL) return;
+	if (svc == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_svc_status");
 	depth++;
@@ -503,28 +535,32 @@ void svc_io_svc_status(char *desc,  SVC_STATUS *svc, prs_struct *ps, int depth)
 	prs_uint32("svc_specific_exit_code", ps, depth, &(svc->svc_specific_exit_code));
 	prs_uint32("check_point", ps, depth, &(svc->check_point));
 	prs_uint32("wait_hint", ps, depth, &(svc->wait_hint));
+
+	return True;
 }
 
 /*******************************************************************
 makes an SVC_Q_QUERY_SVC_CONFIG structure.
 ********************************************************************/
-void make_svc_q_query_svc_config(SVC_Q_QUERY_SVC_CONFIG *q_c, POLICY_HND *hnd,
+BOOL make_svc_q_query_svc_config(SVC_Q_QUERY_SVC_CONFIG *q_c, POLICY_HND *hnd,
 				uint32 buf_size)
 {
-	if (q_c == NULL || hnd == NULL) return;
+	if (q_c == NULL || hnd == NULL) return False;
 
 	DEBUG(5,("make_svc_q_query_svc_config\n"));
 
 	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
 	q_c->buf_size = buf_size;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_q_query_svc_config(char *desc,  SVC_Q_QUERY_SVC_CONFIG *q_u, prs_struct *ps, int depth)
+BOOL svc_io_q_query_svc_config(char *desc,  SVC_Q_QUERY_SVC_CONFIG *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return;
+	if (q_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_q_query_svc_config");
 	depth++;
@@ -534,29 +570,33 @@ void svc_io_q_query_svc_config(char *desc,  SVC_Q_QUERY_SVC_CONFIG *q_u, prs_str
 	smb_io_pol_hnd("", &(q_u->pol), ps, depth); 
 	prs_align(ps);
 	prs_uint32("buf_size", ps, depth, &(q_u->buf_size));
+
+	return True;
 }
 
 /*******************************************************************
 makes an SVC_R_QUERY_SVC_CONFIG structure.
 ********************************************************************/
-void make_svc_r_query_svc_config(SVC_R_QUERY_SVC_CONFIG *r_c, 
+BOOL make_svc_r_query_svc_config(SVC_R_QUERY_SVC_CONFIG *r_c, 
 				QUERY_SERVICE_CONFIG *cfg,
 				uint32 buf_size)
 {
-	if (r_c == NULL) return;
+	if (r_c == NULL) return False;
 
 	DEBUG(5,("make_svc_r_query_svc_config\n"));
 
 	r_c->cfg      = cfg;
 	r_c->buf_size = buf_size;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_r_query_svc_config(char *desc,  SVC_R_QUERY_SVC_CONFIG *r_u, prs_struct *ps, int depth)
+BOOL svc_io_r_query_svc_config(char *desc,  SVC_R_QUERY_SVC_CONFIG *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return;
+	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_r_query_svc_config");
 	depth++;
@@ -566,14 +606,16 @@ void svc_io_r_query_svc_config(char *desc,  SVC_R_QUERY_SVC_CONFIG *r_u, prs_str
 	svc_io_query_svc_cfg("cfg", r_u->cfg, ps, depth); 
 	prs_uint32("buf_size", ps, depth, &(r_u->buf_size));
 	prs_uint32("status  ", ps, depth, &(r_u->status  ));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_q_query_disp_name(char *desc, SVC_Q_QUERY_DISP_NAME *q_u, prs_struct *ps, int depth)
+BOOL svc_io_q_query_disp_name(char *desc, SVC_Q_QUERY_DISP_NAME *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return;
+	if (q_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_q_query_disp_name");
 	depth++;
@@ -587,17 +629,19 @@ void svc_io_q_query_disp_name(char *desc, SVC_Q_QUERY_DISP_NAME *q_u, prs_struct
 	prs_align(ps);
 
 	prs_uint32("buf_size", ps, depth, &(q_u->buf_size));
+
+	return True;
 }
 
 /*******************************************************************
 makes an SVC_R_QUERY_DISP_NAME structure.
 ********************************************************************/
-void make_svc_r_query_disp_name(SVC_R_QUERY_DISP_NAME *r_d, 
+BOOL make_svc_r_query_disp_name(SVC_R_QUERY_DISP_NAME *r_d, 
 				char *disp_name, uint32 status)
 {
 	uint32 len = strlen(disp_name);
 
-	if (r_d == NULL) return;
+	if (r_d == NULL) return False;
 
 	DEBUG(5,("make_svc_r_query_disp_name\n"));
 
@@ -605,14 +649,16 @@ void make_svc_r_query_disp_name(SVC_R_QUERY_DISP_NAME *r_d,
 	r_d->buf_size = len;
 
 	r_d->status = status;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_r_query_disp_name(char *desc, SVC_R_QUERY_DISP_NAME *r_u, prs_struct *ps, int depth)
+BOOL svc_io_r_query_disp_name(char *desc, SVC_R_QUERY_DISP_NAME *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return;
+	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_r_query_disp_name");
 	depth++;
@@ -624,26 +670,30 @@ void svc_io_r_query_disp_name(char *desc, SVC_R_QUERY_DISP_NAME *r_u, prs_struct
 
 	prs_uint32("buf_size", ps, depth, &(r_u->buf_size));
 	prs_uint32("status  ", ps, depth, &(r_u->status  ));
+
+	return True;
 }
 
 /*******************************************************************
 makes an SVC_Q_CLOSE structure.
 ********************************************************************/
-void make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd)
+BOOL make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd)
 {
-	if (q_c == NULL || hnd == NULL) return;
+	if (q_c == NULL || hnd == NULL) return False;
 
 	DEBUG(5,("make_svc_q_close\n"));
 
 	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_q_close(char *desc,  SVC_Q_CLOSE *q_u, prs_struct *ps, int depth)
+BOOL svc_io_q_close(char *desc,  SVC_Q_CLOSE *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return;
+	if (q_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_q_close");
 	depth++;
@@ -652,14 +702,16 @@ void svc_io_q_close(char *desc,  SVC_Q_CLOSE *q_u, prs_struct *ps, int depth)
 
 	smb_io_pol_hnd("", &(q_u->pol), ps, depth); 
 	prs_align(ps);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth)
+BOOL svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return;
+	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "svc_io_r_close");
 	depth++;
@@ -670,5 +722,7 @@ void svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_u->status));
+
+	return True;
 }
 

@@ -3,9 +3,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Tridgell              1992-1999,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
+ *  Copyright (C) Paul Ashton                  1997-1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  make_wks_q_query_info
  ********************************************************************/
-void make_wks_q_query_info(WKS_Q_QUERY_INFO *q_u,
+BOOL make_wks_q_query_info(WKS_Q_QUERY_INFO *q_u,
 				char *server, uint16 switch_value)  
 {
 	DEBUG(5,("make_wks_q_query_info\n"));
@@ -38,14 +38,16 @@ void make_wks_q_query_info(WKS_Q_QUERY_INFO *q_u,
 	make_buf_unistr2(&(q_u->uni_srv_name), &(q_u->ptr_srv_name), server);
 	q_u->switch_value = switch_value;
 
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a WKS_Q_QUERY_INFO structure.
 ********************************************************************/
-void wks_io_q_query_info(char *desc, WKS_Q_QUERY_INFO *q_u, prs_struct *ps, int depth)
+BOOL wks_io_q_query_info(char *desc, WKS_Q_QUERY_INFO *q_u, prs_struct *ps, int depth)
 {
-	if (q_u == NULL) return;
+	if (q_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "wks_io_q_query_info");
 	depth++;
@@ -58,12 +60,14 @@ void wks_io_q_query_info(char *desc, WKS_Q_QUERY_INFO *q_u, prs_struct *ps, int 
 
 	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));
 	prs_align(ps);
+
+	return True;
 }
 
 /*******************************************************************
  wks_info_100
  ********************************************************************/
-void make_wks_info_100(WKS_INFO_100 *inf,
+BOOL make_wks_info_100(WKS_INFO_100 *inf,
 				uint32 platform_id, uint32 ver_major, uint32 ver_minor,
 				char *my_name, char *domain_name)
 {
@@ -75,14 +79,16 @@ void make_wks_info_100(WKS_INFO_100 *inf,
 
 	make_buf_unistr2(&(inf->uni_compname), &(inf->ptr_compname), my_name    );
 	make_buf_unistr2(&(inf->uni_lan_grp ), &(inf->ptr_lan_grp ), domain_name);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a WKS_INFO_100 structure.
 ********************************************************************/
-static void wks_io_wks_info_100(char *desc, WKS_INFO_100 *inf, prs_struct *ps, int depth)
+static BOOL wks_io_wks_info_100(char *desc, WKS_INFO_100 *inf, prs_struct *ps, int depth)
 {
-	if (inf == NULL) return;
+	if (inf == NULL) return False;
 
 	prs_debug(ps, depth, desc, "wks_io_wks_info_100");
 	depth++;
@@ -100,6 +106,8 @@ static void wks_io_wks_info_100(char *desc, WKS_INFO_100 *inf, prs_struct *ps, i
 
 	smb_io_unistr2("", &(inf->uni_lan_grp ), inf->ptr_lan_grp , ps, depth); 
 	prs_align(ps);
+
+	return True;
 }
 
 /*******************************************************************
@@ -108,7 +116,7 @@ static void wks_io_wks_info_100(char *desc, WKS_INFO_100 *inf, prs_struct *ps, i
  only supports info level 100 at the moment.
 
  ********************************************************************/
-void make_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
+BOOL make_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
 				uint32 switch_value, WKS_INFO_100 *wks100,
 				int status)  
 {
@@ -120,14 +128,16 @@ void make_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
 	r_u->wks100    = wks100;
 
 	r_u->status    = status;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int depth)
+BOOL wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return;
+	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "wks_io_r_query_info");
 	depth++;
@@ -141,5 +151,7 @@ void wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int
 	wks_io_wks_info_100("inf", r_u->wks100, ps, depth);
 
 	prs_uint32("status      ", ps, depth, &(r_u->status));
+
+	return True;
 }
 

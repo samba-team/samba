@@ -2,8 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Samba memory buffer functions
-   Copyright (C) Andrew Tridgell              1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Andrew Tridgell              1992-1999
+   Copyright (C) Luke Kenneth Casson Leighton 1996-1999
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -103,7 +103,7 @@ BOOL prs_grow(prs_struct *ps)
 /*******************************************************************
  stream a uint8
  ********************************************************************/
-BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
+BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL) return False;
@@ -117,7 +117,7 @@ BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
 /*******************************************************************
  stream a uint16
  ********************************************************************/
-BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
+BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL) return False;
@@ -131,7 +131,7 @@ BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
 /*******************************************************************
  hash a stream.
  ********************************************************************/
-BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
+BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
 {
 	char *q = mem_data(&(ps->data), offset);
 	if (q == NULL) return False;
@@ -152,7 +152,7 @@ BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
 /*******************************************************************
  stream a uint32
  ********************************************************************/
-BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
+BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL) return False;
@@ -167,7 +167,7 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 /******************************************************************
  stream an array of uint8s.  length is number of uint8s
  ********************************************************************/
-BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len)
+BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	int end_offset = ps->offset + len * sizeof(uint8);
@@ -184,7 +184,7 @@ BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *dat
 /******************************************************************
  stream an array of uint16s.  length is number of uint16s
  ********************************************************************/
-BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
+BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	int end_offset = ps->offset + len * sizeof(uint16);
@@ -201,7 +201,7 @@ BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *d
 /******************************************************************
  stream an array of uint32s.  length is number of uint32s
  ********************************************************************/
-BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
+BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	int end_offset = ps->offset + len * sizeof(uint32);
@@ -219,7 +219,7 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
  stream a "not" unicode string, length/buffer specified separately,
  in byte chars
  ********************************************************************/
-BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str)
+BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	int end_offset = ps->offset + str->buf_len;
@@ -237,7 +237,7 @@ BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *
  stream a string, length/buffer specified separately,
  in uint8 chars.
  ********************************************************************/
-BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str)
+BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	int end_offset = ps->offset + str->str_str_len * sizeof(uint8);
@@ -255,7 +255,7 @@ BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *
  stream a unicode string, length/buffer specified separately,
  in uint16 chars.
  ********************************************************************/
-BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str)
+BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	int end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
@@ -273,7 +273,7 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
  stream a unicode string, length/buffer specified separately,
  in uint16 chars.
  ********************************************************************/
-BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth)
+BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	int end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
@@ -290,7 +290,7 @@ BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int de
 /*******************************************************************
  stream a unicode  null-terminated string
  ********************************************************************/
-BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
+BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 {
 	int i = -1;
 	uint8 *start = (uint8*)mem_data(&(ps->data), ps->offset);
@@ -322,7 +322,7 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
  (up to max size of pstring - 1024 chars).
 
  ********************************************************************/
-BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size)
+BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size)
 {
 	uint8 *start = (uint8*)mem_data(&(ps->data), ps->offset);
 	int i = -1; /* start off at zero after 1st i++ */
@@ -358,13 +358,13 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, ui
  prs_uint16 wrapper.  call this and it sets up a pointer to where the
  uint16 should be stored, or gets the size if reading
  ********************************************************************/
-BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset)
+BOOL _prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *offset)
 {
 	(*offset) = ps->offset;
 	if (ps->io)
 	{
 		/* reading. */
-		return prs_uint16(name, ps, depth, data16);
+		return _prs_uint16(name, ps, depth, data16);
 	}
 	else
 	{
@@ -377,7 +377,7 @@ BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint3
  prs_uint16 wrapper.  call this and it retrospectively stores the size.
  does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
-BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
+BOOL _prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 				uint32 ptr_uint16, uint32 start_offset)
 {
 	if (!ps->io)
@@ -401,13 +401,13 @@ BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
  prs_uint32 wrapper.  call this and it sets up a pointer to where the
  uint32 should be stored, or gets the size if reading
  ********************************************************************/
-BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset)
+BOOL _prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset)
 {
 	(*offset) = ps->offset;
 	if (ps->io)
 	{
 		/* reading. */
-		return prs_uint32(name, ps, depth, data32);
+		return _prs_uint32(name, ps, depth, data32);
 	}
 	else
 	{
@@ -420,7 +420,7 @@ BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint3
  prs_uint32 wrapper.  call this and it retrospectively stores the size.
  does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
-BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
+BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 				uint32 ptr_uint32, uint32 data_size)
 {
 	if (!ps->io)

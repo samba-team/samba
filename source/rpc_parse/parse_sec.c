@@ -2,10 +2,10 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1998,
- *  Copyright (C) Jeremy R. Allison            1995-1998
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
- *  Copyright (C) Paul Ashton                  1997-1998.
+ *  Copyright (C) Andrew Tridgell              1992-1999,
+ *  Copyright (C) Jeremy R. Allison            1995-1999
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-1999,
+ *  Copyright (C) Paul Ashton                  1997-1999.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,17 +31,19 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_sec_access(SEC_ACCESS *t, uint32 mask)
+BOOL make_sec_access(SEC_ACCESS *t, uint32 mask)
 {
 	t->mask = mask;
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
-	{
-	if (t == NULL) return;
+BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
+{
+	if (t == NULL) return False;
 
 	prs_debug(ps, depth, desc, "sec_io_access");
 	depth++;
@@ -49,13 +51,15 @@ void sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
 	prs_align(ps);
 	
 	prs_uint32("mask", ps, depth, &(t->mask));
+
+	return True;
 }
 
 
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-void make_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 flag)
+BOOL make_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 flag)
 {
 	t->type = type;
 	t->flags = flag;
@@ -63,16 +67,18 @@ void make_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 f
 	t->info = mask;
 
 	sid_copy(&t->sid, sid);
+
+	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void sec_io_ace(char *desc, SEC_ACE *t, prs_struct *ps, int depth)
+BOOL sec_io_ace(char *desc, SEC_ACE *t, prs_struct *ps, int depth)
 {
 	uint32 old_offset;
 	uint32 offset_ace_size;
-	if (t == NULL) return;
+	if (t == NULL) return False;
 
 	prs_debug(ps, depth, desc, "sec_io_ace");
 	depth++;
@@ -90,12 +96,14 @@ void sec_io_ace(char *desc, SEC_ACE *t, prs_struct *ps, int depth)
 	smb_io_dom_sid("sid  ", &t->sid , ps, depth);
 
 	prs_uint16_post("size ", ps, depth, &t->size, offset_ace_size, old_offset);
+
+	return True;
 }
 
 /*******************************************************************
 makes a structure.  
 ********************************************************************/
-void make_sec_acl(SEC_ACL *t, uint16 revision, int num_aces, SEC_ACE *ace)
+BOOL make_sec_acl(SEC_ACL *t, uint16 revision, int num_aces, SEC_ACE *ace)
 {
 	int i;
 	t->revision = revision;
@@ -107,6 +115,8 @@ void make_sec_acl(SEC_ACL *t, uint16 revision, int num_aces, SEC_ACE *ace)
 	{
 		t->size += ace[i].size;
 	}
+
+	return True;
 }
 
 /*******************************************************************
@@ -126,13 +136,13 @@ reads or writes a structure.
 first of the xx_io_xx functions that allocates its data structures
  for you as it reads them.
 ********************************************************************/
-void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
+BOOL sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
 {
 	int i;
 	uint32 old_offset;
 	uint32 offset_acl_size;
 
-	if (t == NULL) return;
+	if (t == NULL) return False;
 
 	prs_debug(ps, depth, desc, "sec_io_acl");
 	depth++;
@@ -156,7 +166,7 @@ void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
 	{
 		DEBUG(0,("INVALID ACL\n"));
 		ps->offset = 0xfffffffe;
-		return;
+		return False;
 	}
 
 	for (i = 0; i < MIN(t->num_aces, MAX_SEC_ACES); i++)
@@ -169,6 +179,8 @@ void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	prs_uint16_post("size     ", ps, depth, &t->size    , offset_acl_size, old_offset);
+
+	return True;
 }
 
 
@@ -253,7 +265,8 @@ void free_sec_desc(SEC_DESC *t)
 	if (t->sacl != NULL)
 	{
 		free_sec_acl(t->dacl);
-}
+
+	}
 
 	if (t->owner_sid != NULL)
 	{
@@ -261,7 +274,7 @@ void free_sec_desc(SEC_DESC *t)
 	}
 
 	if (t->grp_sid != NULL)
-{
+	{
 		free(t->grp_sid);
 	}
 }
@@ -270,7 +283,7 @@ void free_sec_desc(SEC_DESC *t)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
+static BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 {
 #if 0
 	uint32 off_owner_sid;
@@ -281,7 +294,7 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 	uint32 old_offset;
 	uint32 max_offset = 0; /* after we're done, move offset to end */
 
-	if (t == NULL) return;
+	if (t == NULL) return False;
 
 	prs_debug(ps, depth, desc, "sec_io_desc");
 	depth++;
@@ -317,13 +330,13 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 			/* reading */
 			t->dacl = malloc(sizeof(*t->dacl));
 			ZERO_STRUCTP(t->dacl);
-	}
+		}
 
 		if (t->dacl == NULL)
 		{
 			DEBUG(0,("INVALID DACL\n"));
 			ps->offset = 0xfffffffe;
-			return;
+			return False;
 		}
 
 		sec_io_acl     ("dacl"        , t->dacl       , ps, depth);
@@ -355,7 +368,7 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		{
 			DEBUG(0,("INVALID SACL\n"));
 			ps->offset = 0xfffffffe;
-			return;
+			return False;
 		}
 
 		sec_io_acl     ("sacl"      , t->sacl       , ps, depth);
@@ -390,7 +403,7 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		{
 			DEBUG(0,("INVALID OWNER SID\n"));
 			ps->offset = 0xfffffffe;
-			return;
+			return False;
 		}
 
 		smb_io_dom_sid("owner_sid ", t->owner_sid , ps, depth);
@@ -407,20 +420,21 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 		if (ps->io)
 		{
 			ps->offset = old_offset + t->off_grp_sid;
-}
+
+		}
 		if (ps->io)
-{
+		{
 			/* reading */
 			t->grp_sid = malloc(sizeof(*t->grp_sid));
 			ZERO_STRUCTP(t->grp_sid);
 		}
 
 		if (t->grp_sid == NULL)
-	{
+		{
 			DEBUG(0,("INVALID GROUP SID\n"));
 			ps->offset = 0xfffffffe;
-			return;
-	}
+			return False;
+		}
 
 		smb_io_dom_sid("grp_sid", t->grp_sid, ps, depth);
 		prs_align(ps);
@@ -429,13 +443,15 @@ static void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 	max_offset = MAX(max_offset, ps->offset);
 
 	ps->offset = max_offset;
+
+	return True;
 }
 
 /*******************************************************************
 creates a SEC_DESC_BUF structure.
 ********************************************************************/
-void make_sec_desc_buf(SEC_DESC_BUF *buf, int len, SEC_DESC *data)
-	{
+BOOL make_sec_desc_buf(SEC_DESC_BUF *buf, int len, SEC_DESC *data)
+{
 	ZERO_STRUCTP(buf);
 
 	/* max buffer size (allocated size) */
@@ -443,6 +459,8 @@ void make_sec_desc_buf(SEC_DESC_BUF *buf, int len, SEC_DESC *data)
 	buf->undoc       = 0;
 	buf->len = data != NULL ? len : 0;
 	buf->sec = data;
+
+	return True;
 }
 
 /*******************************************************************
@@ -461,14 +479,14 @@ void free_sec_desc_buf(SEC_DESC_BUF *buf)
 /*******************************************************************
 reads or writes a SEC_DESC_BUF structure.
 ********************************************************************/
-void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
+BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 {
 	uint32 off_len;
 	uint32 off_max_len;
 	uint32 old_offset;
 	uint32 size;
 
-	if (sec == NULL) return;
+	if (sec == NULL) return False;
 
 	prs_debug(ps, depth, desc, "sec_io_desc_buf");
 	depth++;
@@ -491,7 +509,7 @@ void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 		{
 			DEBUG(0,("INVALID SEC_DESC\n"));
 			ps->offset = 0xfffffffe;
-			return;
+			return False;
 		}
 	}
 
@@ -504,5 +522,7 @@ void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 	size = ps->offset - old_offset;
 	prs_uint32_post("max_len", ps, depth, &(sec->max_len), off_max_len, size == 0 ? sec->max_len : size);
 	prs_uint32_post("len    ", ps, depth, &(sec->len    ), off_len    , size);
+
+	return True;
 }
 
