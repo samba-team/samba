@@ -236,7 +236,7 @@ void nb_writex(int handle, int offset, int size, int ret_size, NTSTATUS status)
 
 	check_status("WriteX", status, ret);
 
-	if (io.writex.out.nwritten != ret_size) {
+	if (NT_STATUS_IS_OK(ret) && io.writex.out.nwritten != ret_size) {
 		printf("[%d] Warning: WriteX got count %d expected %d\n", 
 		       nbench_line_count,
 		       io.writex.out.nwritten, ret_size);
@@ -274,7 +274,7 @@ void nb_write(int handle, int offset, int size, int ret_size, NTSTATUS status)
 
 	check_status("Write", status, ret);
 
-	if (io.write.out.nwritten != ret_size) {
+	if (NT_STATUS_IS_OK(ret) && io.write.out.nwritten != ret_size) {
 		printf("[%d] Warning: Write got count %d expected %d\n", 
 		       nbench_line_count,
 		       io.write.out.nwritten, ret_size);
@@ -363,7 +363,7 @@ void nb_readx(int handle, int offset, int size, int ret_size, NTSTATUS status)
 
 	check_status("ReadX", status, ret);
 
-	if (io.readx.out.nread != ret_size) {
+	if (NT_STATUS_IS_OK(ret) && io.readx.out.nread != ret_size) {
 		printf("[%d] Warning: ReadX got count %d expected %d\n", 
 		       nbench_line_count,
 		       io.readx.out.nread, ret_size);
@@ -532,7 +532,7 @@ void nb_findfirst(const char *mask, int level, int maxcnt, int count, NTSTATUS s
 
 	check_status("Search", status, ret);
 
-	if (io.t2ffirst.out.count != count) {
+	if (NT_STATUS_IS_OK(ret) && io.t2ffirst.out.count != count) {
 		printf("[%d] Warning: got count %d expected %d\n", 
 		       nbench_line_count,
 		       io.t2ffirst.out.count, count);
