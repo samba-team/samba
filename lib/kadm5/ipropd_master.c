@@ -193,26 +193,6 @@ remove_slave (krb5_context context, slave *s, slave **root)
     free (s);
 }
 
-static krb5_error_code 
-send_priv(krb5_context context, krb5_auth_context ac,
-	  krb5_data *data, int fd)
-{
-    krb5_data packet;
-    krb5_error_code ret;
-
-    ret = krb5_mk_priv (context,
-			ac,
-			data,
-			&packet,
-			NULL);
-    if (ret)
-	return ret;
-    
-    ret = krb5_write_message (context, &fd, &packet);
-    krb5_data_free(&packet);
-    return ret;
-}
-
 struct prop_context {
     krb5_auth_context auth_context;
     int fd;
@@ -236,7 +216,7 @@ prop_one (krb5_context context, HDB *db, hdb_entry *entry, void *v)
     memmove ((char *)data.data + 4, data.data, data.length - 4);
     _krb5_put_int (data.data, ONE_PRINC, 4);
 
-    ret = send_priv (context, slave->ac, &data, slave->fd);
+    ret = krb5_write_priv_message (context, slave->ac, &slave->fd, &data);
     krb5_data_free (&data);
     return ret;
 }
@@ -262,14 +242,10 @@ send_complete (krb5_context context, slave *s,
     data.data   = buf;
     data.length = 4;
 
-    ret = krb5_mk_priv (context, s->ac, &data, &priv_data, NULL);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_mk_priv");
+    ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
 
-    ret = krb5_write_message (context, &s->fd, &priv_data);
-    krb5_data_free (&priv_data);
     if (ret)
-	krb5_err (context, 1, ret, "krb5_write_message");
+	krb5_err (context, 1, ret, "krb5_write_priv_message");
 
     ret = hdb_foreach (context, db, 0, prop_one, s);
     if (ret)
@@ -277,15 +253,13 @@ send_complete (krb5_context context, slave *s,
 
     _krb5_put_int (buf, NOW_YOU_HAVE, 4);
     _krb5_put_int (buf + 4, current_version, 4);
+    data.length = 8;
 
-    ret = krb5_mk_priv (context, s->ac, &data, &priv_data, NULL);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_mk_priv");
+    ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
 
-    ret = krb5_write_message (context, &s->fd, &priv_data);
-    krb5_data_free (&priv_data);
     if (ret)
-	krb5_err (context, 1, ret, "krb5_write_message");
+	krb5_err (context, 1, ret, "krb5_write_priv_message");
+
     return 0;
 }
 
@@ -325,17 +299,10 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 
     _krb5_put_int(data.data, FOR_YOU, 4);
 
-    ret = krb5_mk_priv (context, s->ac, &data, &priv_data, NULL);
-    krb5_data_free(&data);
-    if (ret) {
-	krb5_warn (context, ret, "krb_mk_priv");
-	return 0;
-    }
+    ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
 
-    ret = krb5_write_message (context, &s->fd, &priv_data);
-    krb5_data_free (&priv_data);
     if (ret) {
-	krb5_warn (context, ret, "krb5_write_message");
+	krb5_warn (context, ret, "krb5_write_priv_message");
 	return 1;
     }
     return 0;
@@ -346,23 +313,13 @@ process_msg (krb5_context context, slave *s, int log_fd,
 	     const char *database, u_int32_t current_version)
 {
     int ret = 0;
-    krb5_data in, out;
+    krb5_data out;
     krb5_storage *sp;
     int32_t tmp;
 
-    ret = krb5_read_message (context, &s->fd, &in);
-    if (ret)
-	return 1;
-
-    if(in.length == 0) {
-	krb5_warnx (context, "connection from %s closed", s->name);
-	return 1;
-    }
-
-    ret = krb5_rd_priv (context, s->ac, &in, &out, NULL);
-    krb5_data_free (&in);
-    if (ret) {
-	krb5_warn (context, ret, "krb5_rd_priv");
+    ret = krb5_read_priv_message(context, s->ac, &s->fd, &out);
+    if(ret) {
+	krb5_warn (context, ret, "error reading message from %s", s->name);
 	return 1;
     }
 
