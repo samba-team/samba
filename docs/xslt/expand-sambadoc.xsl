@@ -75,7 +75,7 @@
 			&lt;!DOCTYPE </xsl:text><xsl:value-of select="name(.)"/><xsl:text disable-output-escaping="yes"> PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
 			"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
 
-			&lt;!ENTITY % globalentities SYSTEM 'global.ent'> %globalentities;
+			&lt;!ENTITY % globalentities SYSTEM 'entities/global.entities'> %globalentities;
 			]>
 		</xsl:text>
 		<xsl:copy>
