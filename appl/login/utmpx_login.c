@@ -34,7 +34,7 @@ utmpx_login(char *line, char *user, char *host)
 	    if (ut->ut_syslen > sizeof(ut->ut_host))
 		ut->ut_syslen = sizeof(ut->ut_host);
 	    ut->ut_type = USER_PROCESS;
-	    gettimeofday(&(ut->ut_tv));
+	    gettimeofday(&(ut->ut_tv), 0);
 	    pututxline(ut);
 	    updwtmpx(WTMPX_FILE, ut);
 	    ret = 0;
