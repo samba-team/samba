@@ -144,8 +144,6 @@ AC_TEST_PACKAGE(readline,readline.h,libreadline.a,-lreadline)
 AC_C_BIGENDIAN
 AC_C_INLINE
 
-AC_PATH_XTRA
-
 dnl 
 dnl See if there is any X11 present
 dnl
