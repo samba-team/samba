@@ -1056,9 +1056,10 @@ struct cli_state *server_cryptkey(void)
 		return NULL;
 	}
 
-	if (!attempt_netbios_session_request(cli, global_myname, desthost, &dest_ip))
+	if (!attempt_netbios_session_request(cli, global_myname, desthost, &dest_ip)) {
 		cli_shutdown(cli);
 		return NULL;
+	}
 
 	DEBUG(3,("got session\n"));
 
