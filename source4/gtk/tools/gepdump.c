@@ -22,21 +22,19 @@
 #include "includes.h"
 #include "gtk/common/gtk-smb.h"
 
-GtkWidget *mainwin;
-GtkWidget *entry_binding;
-GtkTreeStore *store_eps;
+static GtkWidget *mainwin;
+static GtkWidget *entry_binding;
+static GtkTreeStore *store_eps;
 
-static void on_quit1_activate                      (GtkMenuItem     *menuitem,
-                                        gpointer         user_data)
+static void on_quit1_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
 	gtk_main_quit();
 }
 
 
-static void on_about1_activate                     (GtkMenuItem     *menuitem,
-                                        gpointer         user_data)
+static void on_about1_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
-	GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog("gsmbtorture"));
+	GtkDialog *aboutwin = GTK_DIALOG(create_gtk_samba_about_dialog("gepdump"));
 	gtk_dialog_run(aboutwin);
 	gtk_widget_destroy(GTK_WIDGET(aboutwin));
 }
@@ -53,6 +51,7 @@ static const char *get_protocol_name(enum epm_protocols protocol)
 	case EPM_PROTOCOL_NETBIOS: return "NetBIOS";
 	case EPM_PROTOCOL_SMB: return "SMB";
 	case EPM_PROTOCOL_PIPE: return "PIPE";
+	case EPM_PROTOCOL_UNIX_DS: return "Unix";
 	default: return "Unknown";
 	}
 }
@@ -91,7 +90,7 @@ static void add_epm_entry(TALLOC_CTX *mem_ctx, const char *annotation, struct ep
 	}
 }
 
-static void on_dump_clicked                     (GtkButton *btn, gpointer         user_data)
+static void on_dump_clicked (GtkButton *btn, gpointer user_data)
 {
 	NTSTATUS status;
 	struct epm_Lookup r;
@@ -151,7 +150,7 @@ static void on_select_target_clicked(GtkButton *btn, gpointer         user_data)
 	struct dcerpc_binding *bd;
 	gint result;
 
-	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(FALSE, NULL));
+	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(TRUE, NULL));
 	result = gtk_dialog_run(GTK_DIALOG(d));
 	switch(result) {
 	case GTK_RESPONSE_ACCEPT:

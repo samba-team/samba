@@ -78,7 +78,6 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	GtkWidget *frame_security;
 	GtkWidget *vbox2;
 	GtkWidget *label3;
-	GtkWidget *frame_credentials;
 	GtkWidget *table1;
 	GtkWidget *lbl_username;
 	GtkWidget *lbl_password;
@@ -186,59 +185,59 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_widget_show (label3);
 	gtk_frame_set_label_widget (GTK_FRAME (frame_security), label3);
 
-	frame_credentials = gtk_frame_new (NULL);
-	gtk_widget_show (frame_credentials);
-	gtk_box_pack_start (GTK_BOX (dialog_vbox1), frame_credentials, TRUE, TRUE, 0);
+	gtk_rpc_binding_dialog->frame_credentials = gtk_frame_new (NULL);
+	gtk_widget_show (gtk_rpc_binding_dialog->frame_credentials);
+	gtk_box_pack_start (GTK_BOX (dialog_vbox1), gtk_rpc_binding_dialog->frame_credentials, TRUE, TRUE, 0);
 
 	table1 = gtk_table_new (3, 2, FALSE);
 	gtk_widget_show (table1);
-	gtk_container_add (GTK_CONTAINER (frame_credentials), table1);
+	gtk_container_add (GTK_CONTAINER (gtk_rpc_binding_dialog->frame_credentials), table1);
 
 	lbl_username = gtk_label_new ("Username:");
 	gtk_widget_show (lbl_username);
 	gtk_table_attach (GTK_TABLE (table1), lbl_username, 0, 1, 0, 1,
-			(GtkAttachOptions) (GTK_FILL),
-			(GtkAttachOptions) (0), 0, 0);
+					  (GtkAttachOptions) (GTK_FILL),
+					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (lbl_username), 0, 0.5);
 
 	lbl_password = gtk_label_new ("Password:");
 	gtk_widget_show (lbl_password);
 	gtk_table_attach (GTK_TABLE (table1), lbl_password, 0, 1, 1, 2,
-			(GtkAttachOptions) (GTK_FILL),
-			(GtkAttachOptions) (0), 0, 0);
+					  (GtkAttachOptions) (GTK_FILL),
+					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (lbl_password), 0, 0.5);
 
 	label9 = gtk_label_new ("");
 	gtk_widget_show (label9);
 	gtk_table_attach (GTK_TABLE (table1), label9, 0, 1, 2, 3,
-			(GtkAttachOptions) (GTK_FILL),
-			(GtkAttachOptions) (0), 0, 0);
+					  (GtkAttachOptions) (GTK_FILL),
+					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (label9), 0, 0.5);
 
 	gtk_rpc_binding_dialog->entry_password = gtk_entry_new ();
 	gtk_entry_set_visibility (GTK_ENTRY (gtk_rpc_binding_dialog->entry_password), FALSE);
 	gtk_widget_show (gtk_rpc_binding_dialog->entry_password);
 	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_password, 1, 2, 1, 2,
-			(GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-			(GtkAttachOptions) (0), 0, 0);
+					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+					  (GtkAttachOptions) (0), 0, 0);
 
 	gtk_rpc_binding_dialog->entry_username = gtk_entry_new ();
 	gtk_widget_show (gtk_rpc_binding_dialog->entry_username);
 	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_username, 1, 2, 0, 1,
-			(GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-			(GtkAttachOptions) (0), 0, 0);
+					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+					  (GtkAttachOptions) (0), 0, 0);
 
 	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_username), getenv("LOGNAME"));
 
 	gtk_rpc_binding_dialog->krb5_chk_button = gtk_check_button_new_with_mnemonic ("_Use kerberos");
 	gtk_widget_show (gtk_rpc_binding_dialog->krb5_chk_button);
 	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->krb5_chk_button, 1, 2, 2, 3,
-			(GtkAttachOptions) (GTK_FILL),
-			(GtkAttachOptions) (0), 0, 0);
+					  (GtkAttachOptions) (GTK_FILL),
+					  (GtkAttachOptions) (0), 0, 0);
 
-    g_signal_connect ((gpointer) gtk_rpc_binding_dialog->krb5_chk_button, "toggled",
-               G_CALLBACK (on_krb5_toggled),
-               gtk_rpc_binding_dialog);
+	g_signal_connect ((gpointer) gtk_rpc_binding_dialog->krb5_chk_button, "toggled",
+					  G_CALLBACK (on_krb5_toggled),
+					  gtk_rpc_binding_dialog);
 
 	/* Poor man's autodetection */
 	if(getenv("KRB5CCNAME")) {
@@ -247,7 +246,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 
 	lbl_credentials = gtk_label_new ("Credentials");
 	gtk_widget_show (lbl_credentials);
-	gtk_frame_set_label_widget (GTK_FRAME (frame_credentials), lbl_credentials);
+	gtk_frame_set_label_widget (GTK_FRAME (gtk_rpc_binding_dialog->frame_credentials), lbl_credentials);
 
 	dialog_action_area1 = GTK_DIALOG (gtk_rpc_binding_dialog)->action_area;
 	gtk_widget_show (dialog_action_area1);
@@ -304,6 +303,9 @@ GType gtk_rpc_binding_dialog_get_type (void)
 GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials, struct sam_pipe *sam_pipe)
 {
 	GtkRpcBindingDialog *d = GTK_RPC_BINDING_DIALOG ( gtk_type_new (gtk_rpc_binding_dialog_get_type ()));
+	if (nocredentials) {
+		gtk_widget_hide_all(d->frame_credentials);
+	}
 	d->sam_pipe = sam_pipe;
 	return GTK_WIDGET(d);
 }
