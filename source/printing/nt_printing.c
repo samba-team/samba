@@ -2526,7 +2526,8 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, char* key, fstring **subkeys 
 	
 	/* tag of the end */
 	
-	fstrcpy( subkeys_ptr[num_subkeys], "" );
+	if (num_subkeys)
+		fstrcpy(subkeys_ptr[num_subkeys], "" );
 	
 	*subkeys = subkeys_ptr;
 
