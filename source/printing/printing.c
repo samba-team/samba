@@ -600,7 +600,6 @@ void pjob_delete(int snum, uint32 jobid)
 	tdb_delete(pdb->tdb, print_key(jobid));
 	release_print_db(pdb);
 	rap_jobid_delete(snum, jobid);
-	remove_from_jobs_changed( snum, jobid );
 }
 
 /****************************************************************************
@@ -1685,8 +1684,6 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 			*errcode = map_werror_from_unix(errno);
 			return False;
 		}
-		
-		return True;
 	}
 	
 	if (!print_job_delete1(snum, jobid)) {
