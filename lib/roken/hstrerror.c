@@ -9,7 +9,9 @@
 #include <stdio.h>
 #include <netdb.h>
 
-static char *msg[] = {
+static
+const
+char *const msg[] = {
   "No error",
   "Authoritative Answer Host not found",
   "Non-Authoritive Host not found, or SERVERFAIL",
@@ -17,9 +19,10 @@ static char *msg[] = {
   "Valid name, no data record of requested type"
 };
 
+const
 char *hstrerror(int herr)
 {
-  if(herr >= 0 && herr <= 4)
+  if (herr >= 0 && herr <= 4)
     return msg[herr];
   return "Error number out of range (hstrerror)";
 }
