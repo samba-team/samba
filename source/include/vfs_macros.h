@@ -242,7 +242,7 @@
 #define SMB_VFS_NEXT_READDIR(handle, conn, dirp) ((handle)->vfs_next.ops.readdir((handle)->vfs_next.handles.readdir, (conn), (dirp))) 
 #define SMB_VFS_NEXT_SEEKDIR(handle, conn, dirp, offset) ((handle)->vfs_next.ops.seekdir((handle)->vfs_next.handles.seekdir, (conn), (dirp), (offset))) 
 #define SMB_VFS_NEXT_TELLDIR(handle, conn, dirp) ((handle)->vfs_next.ops.telldir((handle)->vfs_next.handles.telldir, (conn), (dirp))) 
-#define SMB_VFS_NEXT_REWINDDIR(handle, conn, dirp) ((handle)->vfs_next.ops.rewinddir((handle)->vfs_next.handles.rewinddir, (conn), (dirp))) 
+#define SMB_VFS_NEXT_REWINDDIR(handle, conn, dirp) ((handle)->vfs_next.ops.rewind_dir((handle)->vfs_next.handles.rewind_dir, (conn), (dirp))) 
 #define SMB_VFS_NEXT_DIR(handle, conn, dirp) ((handle)->vfs_next.ops.readdir((handle)->vfs_next.handles.readdir, (conn), (dirp))) 
 #define SMB_VFS_NEXT_MKDIR(handle, conn, path, mode) ((handle)->vfs_next.ops.mkdir((handle)->vfs_next.handles.mkdir,(conn), (path), (mode)))
 #define SMB_VFS_NEXT_RMDIR(handle, conn, path) ((handle)->vfs_next.ops.rmdir((handle)->vfs_next.handles.rmdir, (conn), (path)))
