@@ -35,6 +35,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE. 
  */
+/* $Id$ */
 
 #ifndef __KADM5_ADMIN_H__
 #define __KADM5_ADMIN_H__
@@ -174,6 +175,13 @@ typedef struct _kadm5_policy_ent_t {
 #define KADM5_CONFIG_FLAGS			(1 << 17)
 #define KADM5_CONFIG_ENCTYPES			(1 << 18)
 
+#define KADM5_ACL_GET		(1 << 0)
+#define KADM5_ACL_CREATE	(1 << 1)
+#define KADM5_ACL_MODIFY	(1 << 2)
+#define KADM5_ACL_CHPASS	(1 << 3)
+#define KADM5_ACL_DELETE	(1 << 4)
+#define KADM5_ACL_LIST		(1 << 5)
+
 typedef struct {
     int XXX;
 }krb5_key_salt_tuple;
@@ -213,7 +221,75 @@ typedef struct _kadm5_config_params {
 typedef krb5_error_code kadm5_ret_t;
 
 kadm5_ret_t
+kadm5_c_chpass_principal __P((
+	void *server_handle,
+	krb5_principal princ,
+	char *password));
+
+kadm5_ret_t
+kadm5_c_create_principal __P((
+	void *server_handle,
+	kadm5_principal_ent_t princ,
+	u_int32_t mask,
+	char *password));
+
+kadm5_ret_t
+kadm5_c_delete_principal __P((
+	void *server_handle,
+	krb5_principal princ));
+
+kadm5_ret_t
+kadm5_c_destroy __P((void *server_handle));
+
+kadm5_ret_t
 kadm5_c_flush __P((void *server_handle));
+
+kadm5_ret_t
+kadm5_c_get_principal __P((
+	void *server_handle,
+	krb5_principal princ,
+	kadm5_principal_ent_t out,
+	u_int32_t mask));
+
+kadm5_ret_t
+kadm5_c_init_with_password __P((
+	char *client_name,
+	char *pass,
+	char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_c_init_with_password_ctx __P((
+	krb5_context context,
+	char *client_name,
+	char *pass,
+	char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
+kadm5_c_modify_principal __P((
+	void *server_handle,
+	kadm5_principal_ent_t princ,
+	u_int32_t mask));
+
+kadm5_ret_t
+kadm5_c_randkey_principal __P((
+	void *server_handle,
+	krb5_principal princ,
+	krb5_keyblock **new_keys,
+	int *n_keys));
+
+kadm5_ret_t
+kadm5_c_rename_principal __P((
+	void *server_handle,
+	krb5_principal source,
+	krb5_principal target));
 
 kadm5_ret_t
 kadm5_chpass_principal __P((
@@ -268,6 +344,17 @@ kadm5_init_with_password __P((
 	void **server_handle));
 
 kadm5_ret_t
+kadm5_init_with_password_ctx __P((
+	krb5_context context,
+	char *client_name,
+	char *pass,
+	char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
 kadm5_modify_principal __P((
 	void *server_handle,
 	kadm5_principal_ent_t princ,
@@ -285,6 +372,21 @@ kadm5_rename_principal __P((
 	void *server_handle,
 	krb5_principal source,
 	krb5_principal target));
+
+kadm5_ret_t
+kadm5_ret_key_data __P((
+	krb5_storage *sp,
+	krb5_key_data *key));
+
+kadm5_ret_t
+kadm5_ret_principal_ent __P((
+	krb5_storage *sp,
+	kadm5_principal_ent_t princ));
+
+kadm5_ret_t
+kadm5_ret_tl_data __P((
+	krb5_storage *sp,
+	krb5_tl_data *tl));
 
 kadm5_ret_t
 kadm5_s_chpass_principal __P((
@@ -328,6 +430,17 @@ kadm5_s_init_with_password __P((
 	void **server_handle));
 
 kadm5_ret_t
+kadm5_s_init_with_password_ctx __P((
+	krb5_context context,
+	char *client_name,
+	char *pass,
+	char *service_name,
+	kadm5_config_params *realm_params,
+	unsigned long struct_version,
+	unsigned long api_version,
+	void **server_handle));
+
+kadm5_ret_t
 kadm5_s_modify_principal __P((
 	void *server_handle,
 	kadm5_principal_ent_t princ,
@@ -345,6 +458,26 @@ kadm5_s_rename_principal __P((
 	void *server_handle,
 	krb5_principal source,
 	krb5_principal target));
+
+kadm5_ret_t
+kadm5_store_key_data __P((
+	krb5_storage *sp,
+	krb5_key_data *key));
+
+kadm5_ret_t
+kadm5_store_principal_ent __P((
+	krb5_storage *sp,
+	kadm5_principal_ent_t princ));
+
+kadm5_ret_t
+kadm5_store_tl_data __P((
+	krb5_storage *sp,
+	krb5_tl_data *tl));
+
+kadm5_ret_t
+kadmind_dispatch __P((
+	void *kadm_handle,
+	krb5_storage *sp));
 
 #if 0
 /* unimplemented functions */
