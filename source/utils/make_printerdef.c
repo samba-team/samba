@@ -23,10 +23,10 @@
 #include "includes.h"
 
 /*
-#define DEBUG
+#define DEBUGIT
 */
 char *files_to_copy;
-char *driverfile;
+char *driverfile, *datafile, *helpfile, *languagemonitor, *datatype;
 char buffer[50][255];
 char sub_dir[50][2][255];
 
@@ -66,7 +66,7 @@ void build_subdir()
  
   while (*buffer[i]!='\0') { 
     data=scan(buffer[i],&entry);
-#ifdef DEBUG
+#ifdef DEBUGIT
     fprintf(stderr,"\tentry=data %s:%s\n",entry,data);
 #endif      
 
@@ -78,7 +78,7 @@ void build_subdir()
       strcpy(sub_dir[i][0],entry);
       strcpy(sub_dir[i][1],"color\\");
     }
-#ifdef DEBUG
+#ifdef DEBUGIT
     fprintf(stderr,"\tsubdir %s:%s\n",sub_dir[i][0],sub_dir[i][1]);
 #endif      
     i++;
@@ -105,7 +105,7 @@ void lookup_entry(FILE *fichier,char *chaine)
   strcat(temp2,"]");
   
   rewind(fichier);
-#ifdef DEBUG
+#ifdef DEBUGIT
   fprintf(stderr,"\tLooking for %s\n",chaine);
 #endif
   
@@ -131,7 +131,7 @@ void lookup_entry(FILE *fichier,char *chaine)
 		pointeur++;
 	}  
   }
-#ifdef DEBUG
+#ifdef DEBUGIT
   fprintf(stderr,"\t\tFound %d entries\n",pointeur-1);
 #endif
 }
@@ -150,7 +150,7 @@ char *find_desc(FILE *fichier,char *text)
 
   chaine=(char *)malloc(255*sizeof(char));
   long_desc=(char *)malloc(40*sizeof(char));
-  short_desc=(char *)malloc(13*sizeof(char));
+  short_desc=(char *)malloc(40*sizeof(char));
 
   while (!feof(fichier) && found==0)
   {
@@ -172,13 +172,14 @@ char *find_desc(FILE *fichier,char *text)
        p++;
       *p='\0';
     }
-    if (!strcmp(text,long_desc)) found=1;
+    if (!strcmp(text,long_desc)) 
+	found=1;
   }
   free(chaine);
+  if (!found || !crap) return(NULL);
   while(*crap==' ') crap++;
   strcpy(short_desc,crap);
-  if (found) return(short_desc);
-  else return(NULL); 
+  return(short_desc);
 }
 
 void scan_copyfiles(FILE *fichier, char *chaine)
@@ -186,10 +187,10 @@ void scan_copyfiles(FILE *fichier, char *chaine)
   char *part;
   int i;
   char direc[255];
-#ifdef DEBUG
+#ifdef DEBUGIT
   fprintf(stderr,"In scan_copyfiles Lookup up of %s\n",chaine);
 #endif 
-  part=strtok(chaine,", ");
+  part=strtok(chaine,",");
   do {
      /* If the entry start with a @ then it's a file to copy
      else it's an entry refering to files to copy
@@ -197,14 +198,15 @@ void scan_copyfiles(FILE *fichier, char *chaine)
      you can have a directory to append before the file name
     */
     if (*part=='@') {
-      strcpy(files_to_copy,", ");
-      strcpy(files_to_copy,part);
+      if (strlen(files_to_copy) != 0)
+        strcat(files_to_copy,",");
+      strcat(files_to_copy,&part[1]);
     } else {
       lookup_entry(fichier,part);
       i=0;
       strcpy(direc,"");
       while (*sub_dir[i][0]!='\0') {
-#ifdef DEBUG
+#ifdef DEBUGIT
  	fprintf(stderr,"\tsubdir %s:%s\n",sub_dir[i][0],sub_dir[i][1]);
 #endif      
       	if (strcmp(sub_dir[i][0],part)==0)
@@ -213,13 +215,14 @@ void scan_copyfiles(FILE *fichier, char *chaine)
       }	
       i=0;
       while (*buffer[i]!='\0') {
-        strcat(files_to_copy,", ");
+        if (strlen(files_to_copy) != 0)
+          strcat(files_to_copy,",");
 	strcat(files_to_copy,direc);
 	strcat(files_to_copy,buffer[i]);
 	i++;
       } 
     }
-    part=strtok(NULL,", ");
+    part=strtok(NULL,",");
   }
   while (part!=NULL);
 }
@@ -230,26 +233,87 @@ void scan_short_desc(FILE *fichier, char *short_desc)
   int i=0;
   char *chaine;
   char *temp;
-  char *copyfiles=0,*datasection=0,*datafile=0,*helpfile=0;
+  char *copyfiles=0,*datasection=0;
  
+  helpfile=0;
+  languagemonitor=0;
+  datatype="RAW";
   chaine=(char *)malloc(255*sizeof(char));
   temp=(char *)malloc(255*sizeof(char));
   
   driverfile=short_desc;
+  datafile=short_desc;
 
   lookup_entry(fichier,short_desc);
 
   while(*buffer[i]!='\0') {
-#ifdef DEBUG
+#ifdef DEBUGIT
     fprintf(stderr,"\tLookup up of %s\n",buffer[i]);
 #endif
-    if (strncmp(buffer[i],"CopyFiles",9)==0) copyfiles=scan(buffer[i],&temp);
-    if (strncmp(buffer[i],"DataSection",11)==0) datasection=scan(buffer[i],&temp);
-    if (strncmp(buffer[i],"DataFile",8)==0) datafile=scan(buffer[i],&temp);
-    if (strncmp(buffer[i],"DriverFile",10)==0) driverfile=scan(buffer[i],&temp);
-    if (strncmp(buffer[i],"HelpFile",8)==0) helpfile=scan(buffer[i],&temp);
+    if (strncmp(buffer[i],"CopyFiles",9)==0) 
+	copyfiles=scan(buffer[i],&temp);
+    else if (strncmp(buffer[i],"DataSection",11)==0) 
+	datasection=scan(buffer[i],&temp);
+    else if (strncmp(buffer[i],"DataFile",8)==0) 
+	datafile=scan(buffer[i],&temp);
+    else if (strncmp(buffer[i],"DriverFile",10)==0) 
+	driverfile=scan(buffer[i],&temp);
+    else if (strncmp(buffer[i],"HelpFile",8)==0) 
+	helpfile=scan(buffer[i],&temp);
+    else if (strncmp(buffer[i],"LanguageMonitor",15)==0) 
+	languagemonitor=scan(buffer[i],&temp);
+    else if (strncmp(buffer[i],"DefaultDataType",15)==0) 
+	datatype=scan(buffer[i],&temp);
     i++;	
   }
+
+  if (datasection) {
+    lookup_entry(fichier,datasection);
+
+    i = 0;
+    while(*buffer[i]!='\0') {
+#ifdef DEBUGIT
+      fprintf(stderr,"\tLookup up of %s\n",buffer[i]);
+#endif
+      if (strncmp(buffer[i],"CopyFiles",9)==0) 
+	  copyfiles=scan(buffer[i],&temp);
+      else if (strncmp(buffer[i],"DataSection",11)==0) 
+	  datasection=scan(buffer[i],&temp);
+      else if (strncmp(buffer[i],"DataFile",8)==0) 
+	  datafile=scan(buffer[i],&temp);
+      else if (strncmp(buffer[i],"DriverFile",10)==0) 
+	  driverfile=scan(buffer[i],&temp);
+      else if (strncmp(buffer[i],"HelpFile",8)==0) 
+	  helpfile=scan(buffer[i],&temp);
+      else if (strncmp(buffer[i],"LanguageMonitor",15)==0) 
+	  languagemonitor=scan(buffer[i],&temp);
+      else if (strncmp(buffer[i],"DefaultDataType",15)==0) 
+	  datatype=scan(buffer[i],&temp);
+      i++;	
+    }
+  }
+
+  if (languagemonitor && (*languagemonitor == '%')) {
+    ++languagemonitor;
+    languagemonitor[strlen(languagemonitor)-1] = '\0';
+    lookup_entry(fichier,"Strings");
+    i = 0;
+    while(*buffer[i]!='\0') {
+#ifdef DEBUGIT
+      fprintf(stderr,"\tLookup up of %s\n",buffer[i]);
+#endif
+      if (strncmp(buffer[i],languagemonitor,strlen(languagemonitor))==0)
+      {
+	temp = strtok(buffer[i],"=");
+	temp = strtok(NULL,",");
+	if (*temp == '"') ++temp;
+	strcpy(languagemonitor,temp);
+	break;
+      }
+      i++;	
+    }
+  }
+
   if (i) fprintf(stderr,"End of section found\n");
  
   fprintf(stderr,"CopyFiles: %s\n",copyfiles);
@@ -257,10 +321,8 @@ void scan_short_desc(FILE *fichier, char *short_desc)
   fprintf(stderr,"Datafile: %s\n",datafile);
   fprintf(stderr,"Driverfile: %s\n",driverfile);
   fprintf(stderr,"Helpfile: %s\n",helpfile);
+  fprintf(stderr,"LanguageMonitor: %s\n",languagemonitor);
   if (copyfiles) scan_copyfiles(fichier,copyfiles);
-/* if (datasection) scan_copyfiles(fichier,datasection);*/
-  if (datafile) scan_copyfiles(fichier,datafile);
-  if (helpfile) scan_copyfiles(fichier,helpfile);
 }
 
 int main(int argc, char *argv[])
@@ -293,8 +355,15 @@ int main(int argc, char *argv[])
   build_subdir();
 
   files_to_copy=(char *)malloc(2048*sizeof(char));
+  *files_to_copy='\0';
   scan_short_desc(inf_file,short_desc);
-  fprintf(stdout,"%s:%s:%s:",argv[2],short_desc,driverfile);
+  fprintf(stdout,"%s:%s:%s:",
+    argv[2],driverfile,datafile);
+  fprintf(stdout,"%s:",
+    helpfile?helpfile:"");
+  fprintf(stdout,"%s:",
+    languagemonitor?languagemonitor:"");
+  fprintf(stdout,"%s:",datatype);
   fprintf(stdout,"%s\n",files_to_copy);
   return 0;
 }
