@@ -1,0 +1,145 @@
+#
+# @(#) Test operation of WINBINDD_DOMAIN environment variable
+#
+# TODO: multiple domain tests
+#
+
+load_lib util-defs.exp
+load_lib "$srcdir/config/env.exp"
+
+# Get list of users and groups
+
+set user_list [util_start "getent passwd"]
+set group_list [util_start "getent group"]
+
+verbose "user list is:\n$user_list"
+verbose "group list is:\n$group_list"
+
+# Test simple inclusion
+
+set env(WINBINDD_DOMAIN) $domain
+set user_out [util_start "getent passwd"]
+set group_out [util_start "getent group"]
+
+set test_desc "users in WINBINDD_DOMAIN"
+if { $user_list != $user_out } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+set test_desc "groups in WINBINDD_DOMAIN"
+if { $group_list != $group_out } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+# Test non-inclusion of another domain
+
+set env(WINBINDD_DOMAIN) "asmithee"
+set user_out [util_start "getent passwd"]
+set group_out [util_start "getent group"]
+
+set test_desc "users in different WINBINDD_DOMAIN"
+if { [regexp $domain $user_out] } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+set test_desc "groups in different WINBINDD_DOMAIN"
+if { [regexp $domain $group_out] } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+# Test comma separated inclusion
+
+set env(WINBINDD_DOMAIN) "$domain,asmithee"
+set user_out [util_start "getent passwd"]
+set group_out [util_start "getent group"]
+
+set test_desc "users in comma separated WINBINDD_DOMAIN"
+if { $user_out != $user_list } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+set test_desc "groups in comma separated WINBINDD_DOMAIN"
+if { $group_out != $group_list } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+# Test comma separated different exclusion
+
+set env(WINBINDD_DOMAIN) "moose,asmithee"
+set user_out [util_start "getent passwd"]
+set group_out [util_start "getent group"]
+
+set test_desc "users in comma separated WINBINDD_DOMAIN"
+if { [regexp $domain $user_out] } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+set test_desc "groups in comma separated WINBINDD_DOMAIN"
+if { [regexp $domain $group_out] } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+set env(WINBINDD_DOMAIN) ""
+
+# Test _NO_WINBINDD environment var
+
+set env(_NO_WINBINDD) "1"
+set user_out [util_start "getent passwd"]
+set group_out [util_start "getent group"]
+
+set test_desc "users found with _NO_WINBINDD environment variable set"
+if { [regexp $domain $user_out] } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+set test_desc "groups found with _NO_WINBINDD environment variable set"
+if { [regexp $domain $group_out] } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+# Unset _NO_WINBINDD and make sure everything still works
+
+unset env(_NO_WINBINDD)
+
+set user_out [util_start "getent passwd"]
+set group_out [util_start "getent group"]
+
+set test_desc "no users found with _NO_WINBINDD environment variable set"
+if { $user_out != $user_list } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+set test_desc "no groups found with _NO_WINBINDD environment variable set"
+if { $group_out != $group_list } {
+    fail $test_desc
+} else {
+    pass $test_desc
+}
+
+# Make sure we unset the environment vars so we don't cause subsequent tests
+# any grief.
+
+catch { unset env(WINBINDD_DOMAIN) } tmp
+catch { unset env(_NO_WINBINDD) } tmp
