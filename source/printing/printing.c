@@ -612,12 +612,14 @@ static void print_unix_job(int snum, print_queue_struct *q, uint32 jobid)
 	pj.status = q->status;
 	pj.size = q->size;
 	pj.spooled = True;
-	pj.smbjob = (old_pj != NULL ? True : False);
 	fstrcpy(pj.filename, old_pj ? old_pj->filename : "");
-	if (jobid < UNIX_JOB_START)
+	if (jobid < UNIX_JOB_START) {
+		pj.smbjob = (old_pj != NULL ? True : False);
 		fstrcpy(pj.jobname, old_pj ? old_pj->jobname : "Remote Downlevel Document");
-	else
+	} else {
+		pj.smbjob = False;
 		fstrcpy(pj.jobname, old_pj ? old_pj->jobname : q->fs_file);
+	}
 	fstrcpy(pj.user, old_pj ? old_pj->user : q->fs_user);
 	fstrcpy(pj.queuename, old_pj ? old_pj->queuename : lp_const_servicename(snum));
 
