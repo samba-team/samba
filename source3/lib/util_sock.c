@@ -976,6 +976,7 @@ int create_pipe_sock(const char *socket_dir,
 		     const char *socket_name,
 		     mode_t dir_perms)
 {
+#ifdef HAVE_UNIXSOCKET
         struct sockaddr_un sunaddr;
         struct stat st;
         int sock;
@@ -1064,6 +1065,10 @@ int create_pipe_sock(const char *socket_dir,
         /* Success! */
         
         return sock;
+#else
+        DEBUG(0, ("create_pipe_sock: No Unix sockets on this system\n"));
+        return -1;
+#endif /* HAVE_UNIXSOCKET */
 }
 
 /*******************************************************************
