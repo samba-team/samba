@@ -34,6 +34,11 @@ expects to be started from
 .Nm inetd
 if stdin is a socket and expects to receive the dumped database over
 stdin otherwise.
+If the database is sent over the network, it is authenticated and
+encrypted.
+Only connections from
+.Li kadmin/hprop
+are accepted.
 .Pp
 Options supported:
 .Bl -tag -width Ds
