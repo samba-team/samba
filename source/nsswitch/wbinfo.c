@@ -605,21 +605,71 @@ static BOOL wbinfo_set_auth_user(char *username)
 	} else
 		password = "";
 
-	/* Store in secrets.tdb */
+	/* Store or remove DOMAIN\username%password in secrets.tdb */
 
 	secrets_init();
 
-	if (!secrets_store(SECRETS_AUTH_USER, user, 
-			   strlen(user) + 1) ||
-	    !secrets_store(SECRETS_AUTH_DOMAIN, domain, 
-			   strlen(domain) + 1) ||
-	    !secrets_store(SECRETS_AUTH_PASSWORD, password,
-			   strlen(password) + 1)) {
-		fprintf(stderr, "error storing authenticated user info\n");
-		return False;
+	if (user[0]) {
+
+		if (!secrets_store(SECRETS_AUTH_USER, user,
+				   strlen(user) + 1)) {
+			fprintf(stderr, "error storing username\n");
+			return False;
+		}
+
+		/* We always have a domain name added by the
+		   parse_wbinfo_domain_user() function. */
+
+		if (!secrets_store(SECRETS_AUTH_DOMAIN, domain,
+				   strlen(domain) + 1)) {
+			fprintf(stderr, "error storing domain name\n");
+			return False;
+		}
+
+	} else {
+		secrets_delete(SECRETS_AUTH_USER);
+		secrets_delete(SECRETS_AUTH_DOMAIN);
 	}
 
+	if (password[0]) {
+
+		if (!secrets_store(SECRETS_AUTH_PASSWORD, password,
+				   strlen(password) + 1)) {
+			fprintf(stderr, "error storing password\n");
+			return False;
+		}
+
+	} else
+		secrets_delete(SECRETS_AUTH_PASSWORD);
+
 	return True;
+}
+
+static void wbinfo_get_auth_user(void)
+{
+	char *user, *domain, *password;
+
+	/* Lift data from secrets file */
+
+	secrets_init();
+
+	user = secrets_fetch(SECRETS_AUTH_USER, NULL);
+	domain = secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
+	password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
+
+	if (!user && !domain && !password) {
+		printf("No authorised user configured\n");
+		return;
+	}
+
+	/* Pretty print authorised user info */
+
+	printf("%s%s%s%s%s\n", domain ? domain : "", domain ? "\\" : "",
+	       user, password ? "%" : "", password ? password : "");
+
+	SAFE_FREE(user);
+	SAFE_FREE(domain);
+	SAFE_FREE(password);
 }
 
 static BOOL wbinfo_ping(void)
@@ -660,12 +710,14 @@ static void usage(void)
 	printf("\t-p\t\t\t'ping' winbindd to see if it is alive\n");
 	printf("\t--sequence\t\tshow sequence numbers of all domains\n");
 	printf("\t--set-auth-user DOMAIN\\user%%password\tset password for restrict anonymous\n");
+	printf("\t--get-auth-user \tget password for restrict anonymous\n");
 }
 
 /* Main program */
 
 enum {
 	OPT_SET_AUTH_USER = 1000,
+	OPT_GET_AUTH_USER,
 	OPT_SEQUENCE
 };
 
@@ -701,6 +753,7 @@ int main(int argc, char **argv)
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r' },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a' },
 		{ "set-auth-user", 'A', POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER },
+		{ "get-auth-user", 'A', POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p' },
 		{ 0, 0, 0, 0 }
 	};
@@ -877,8 +930,10 @@ int main(int argc, char **argv)
                         break;
 		}
 		case OPT_SET_AUTH_USER:
-			if (!(wbinfo_set_auth_user(string_arg)))
-				goto done;
+			wbinfo_set_auth_user(string_arg);
+			break;
+		case OPT_GET_AUTH_USER:
+			wbinfo_get_auth_user();
 			break;
 		default:
 			fprintf(stderr, "Invalid option\n");
