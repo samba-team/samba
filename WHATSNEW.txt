@@ -1,6 +1,20 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha17
+- OpenLinux packaging updates (jht)
+- Locking updates - fix zero timeout (tridge, jra)
+- Default ACL support (jra, based on code from Olaf Frczyk <olaf@cbk.poznan.pl>)
+- printing updates - spoolss stuff (tpot)
+- 'make install' directory creation fixes (abartlet)
+- Lots of fixes for SID handling, local v domain sids etc
+- better mangle debugging (abartlet)
+- fixes to allow 'net' to return more than 1000 users from ADS (jmcd)
+ - winbind support to come very shortly
+- lock some more tdbs to allow concurrent access for backups
+- 'net' help cleanups (jmcd)
+- 'net join' automatic transport detection
+
 Changes in alpha16
 - LDAP schema updates (jerry)
 - initial ADS LDAP printer advertising (jmcd)
