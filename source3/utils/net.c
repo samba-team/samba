@@ -35,7 +35,7 @@
 /*                                                   */
 /*****************************************************/
 
-#include <includes.h>
+#include "includes.h"
 
 /***********************************************************************/
 /* Beginning of internationalization section.  Translatable constants  */
@@ -1190,7 +1190,7 @@ static int help_usage(void)
 "\n"\
 "Valid functions are:\n"\
 "  FILE SHARE SESSION SERVER DOMAIN PRINTQ USER GROUP\n"\
-"  VALIDATE GROUPMEMBER ADMIN SERVICE PASSWORD JOIN\n");
+"  VALIDATE GROUPMEMBER ADMIN SERVICE PASSWORD ADS\n");
 	return -1;
 }
 
@@ -1213,7 +1213,7 @@ static int net_help(int argc, const char **argv)
 		{"ADMIN", admin_usage},
 		{"SERVICE", service_usage},
 		{"PASSWORD", password_usage},
-		{"JOIN", net_join_usage},
+		{"ADS", net_ads_usage},
 		{NULL, NULL}};
 
 	return net_run_function(argc, argv, func, help_usage);
@@ -1234,7 +1234,7 @@ static struct functable net_func[] = {
 	{"ADMIN", net_admin},
 	{"SERVICE", net_service},
 	{"PASSWORD", net_password},
-	{"JOIN", net_join},
+	{"ADS", net_ads},
 	{"HELP", net_help},
 	{NULL, NULL}
 };
