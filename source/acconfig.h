@@ -122,7 +122,10 @@
 #undef USE_SETRESUID
 #undef USE_SETREUID
 #undef USE_SETUIDX
-#undef HAVE_LIBDL
+#undef HAVE_DLOPEN
+#undef HAVE_DLCLOSE
+#undef HAVE_DLSYM
+#undef HAVE_DLERROR
 #undef SYSCONF_SC_NGROUPS_MAX
 #undef HAVE_UT_UT_NAME
 #undef HAVE_UT_UT_USER
@@ -173,6 +176,7 @@
 #undef HAVE_DEVICE_MAJOR_FN
 #undef HAVE_DEVICE_MINOR_FN
 #undef HAVE_MAKEDEV_FN
+#undef HAVE_GETGROUPS_TOO_MANY_EGIDS
 /*
  * Add these definitions to allow VFS modules to
  * see the CPPFLAGS defines.
