@@ -1020,22 +1020,11 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 			}
 			
 			data_len++;
-	
-#if 0	/* JERRY */
-			/* send this in chunks of at most 127 events */	
-			if ( i && data_len && ((i % 64) == 0) ) {
-				cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
-					data_len, data, p->notify.change, 0 );
-				memset( data, 0x0, msg_group->num_msgs*sizeof(SPOOL_NOTIFY_INFO_DATA));
-				data_len = 0;
-			}
-#endif
 		}
 
 		/* send last bit */
-		if ( data_len )
-			cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
-					data_len, data, p->notify.change, 0 );
+		cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
+			data_len, data, p->notify.change, 0 );
 	}
 	
 done:
