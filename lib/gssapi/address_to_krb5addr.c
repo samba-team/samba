@@ -43,7 +43,7 @@ gss_address_to_krb5addr(OM_uint32 gss_addr_type,
 {
    int addr_type;
    struct sockaddr sa;
-   int sa_len = sizeof(sa);
+   int sa_size = sizeof(sa);
    krb5_error_code problem;
    
    if (gss_addr == NULL)
@@ -64,7 +64,7 @@ gss_address_to_krb5addr(OM_uint32 gss_addr_type,
    problem = krb5_h_addr2sockaddr (addr_type,
                                    gss_addr->value, 
                                    &sa, 
-                                   &sa_len, 
+                                   &sa_size, 
                                    port);
    if (problem)
       return GSS_S_FAILURE;
