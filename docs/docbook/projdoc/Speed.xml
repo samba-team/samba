@@ -192,8 +192,16 @@ case you may wish to change this option.
 
 <para>
 Slow logins are almost always due to the password checking time. Using
-the lowest practical <command>password level</command> will improve things. 
+the lowest practical <command>password level</command> will improve things. Note that 
+this problem only occurs on slow servers(e.g. 486 and lower).
 </para>
+
+</sect1>
+
+<sect1>
+<title>LDAP</title>
+
+<para>LDAP can be vastly improved by using the <ulink url="smb.conf.5.html#LDAPTRUSTIDS">ldap trust ids</ulink> parameter.</para>
 
 </sect1>
 
@@ -208,4 +216,8 @@ performance. Check the sections on the various clients in
 </para>
 
 </sect1>
+
+<sect1>
+<title>
+
 </chapter>
