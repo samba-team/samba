@@ -60,7 +60,6 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 	krb5_data password;
 	krb5_enctype *enctypes = NULL;
 	krb5_kvno kvno;
-	krb5_keyblock *key = NULL;
 
 	char *principal = NULL;
 	char *princ_s = NULL;
@@ -92,12 +91,6 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 	ret = krb5_kt_resolve(context, (char *) &keytab_name, &keytab);
 	if (ret) {
 		DEBUG(1,("ads_keytab_add_entry: krb5_kt_resolve failed (%s)\n", error_message(ret)));
-		goto out;
-	}
-
-	ret = get_kerberos_allowed_etypes(context,&enctypes);
-	if (ret) {
-		DEBUG(1,("ads_keytab_add_entry: get_kerberos_allowed_etypes failed (%s)\n",error_message(ret)));
 		goto out;
 	}
 
@@ -139,8 +132,9 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
 		DEBUG(3,("ads_keytab_add_entry: Will try to delete old keytab entries\n"));
 		while(!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
+			BOOL compare_ok = False;
 
-			ret = krb5_unparse_name(context, entry.principal, &ktprinc);
+			ret = krb5_unparse_name(context, kt_entry.principal, &ktprinc);
 			if (ret) {
 				DEBUG(1,("ads_keytab_add_entry: krb5_unparse_name failed (%s)\n", error_message(ret)));
 				goto out;
@@ -155,96 +149,112 @@ int ads_keytab_add_entry(const char *srvPrinc, ADS_STRUCT *ads)
 			 * with the new kvno.
 			 */
 
-			HERE
-
 #ifdef HAVE_KRB5_KT_COMPARE
-			if (krb5_kt_compare(context, &kt_entry, princ, 0, 0) == True && kt_entry.vno != kvno - 1) {
+			compare_ok = ((krb5_kt_compare(context, &kt_entry, princ, 0, 0) == True) && (kt_entry.vno != kvno - 1));
 #else
-			if (strcmp(ktprinc, princ_s) == 0 && kt_entry.vno != kvno - 1) {
+			compare_ok = ((strcmp(ktprinc, princ_s) == 0) && (kt_entry.vno != kvno - 1));
 #endif
-				SAFE_FREE(ktprinc);
-				DEBUG(1,("Found old entry for principal: %s (kvno %d) - trying to remove it.\n",
-					princ_s, entry.vno));
+			SAFE_FREE(ktprinc);
+
+			if (compare_ok) {
+				DEBUG(3,("ads_keytab_add_entry: Found old entry for principal: %s (kvno %d) - trying to remove it.\n",
+					princ_s, kt_entry.vno));
 				ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+				cursor = NULL;
 				if (ret) {
-					DEBUG(1,("krb5_kt_end_seq_get() failed (%s)\n", error_message(ret)));
+					DEBUG(1,("ads_keytab_add_entry: krb5_kt_end_seq_get() failed (%s)\n",
+						error_message(ret)));
 					goto out;
 				}
-				ret = krb5_kt_remove_entry(context, keytab, &entry);
+				ret = krb5_kt_remove_entry(context, keytab, &kt_entry);
 				if (ret) {
-					DEBUG(1,("krb5_kt_remove_entry failed (%s)\n", error_message(ret)));
+					DEBUG(1,("ads_keytab_add_entry: krb5_kt_remove_entry failed (%s)\n",
+						error_message(ret)));
 					goto out;
 				}
 				ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 				if (ret) {
-					DEBUG(1,("krb5_kt_start_seq failed (%s)\n", error_message(ret)));
+					DEBUG(1,("ads_keytab_add_entry: krb5_kt_start_seq failed (%s)\n",
+						error_message(ret)));
 					goto out;
 				}
-				ret = krb5_kt_free_entry(context, &entry);
+				ret = krb5_kt_free_entry(context, &kt_entry);
+				ZERO_STRUCT(kt_entry);
 				if (ret) {
-					DEBUG(1,("krb5_kt_remove_entry failed (%s)\n", error_message(ret)));
+					DEBUG(1,("ads_keytab_add_entry: krb5_kt_remove_entry failed (%s)\n",
+						error_message(ret)));
 					goto out;
 				}
 				continue;
-			} else {
-				SAFE_FREE(ktprinc);
 			}
 
-			ret = krb5_kt_free_entry(context, &entry);
+			/* Not a match, just free this entry and continue. */
+			ret = krb5_kt_free_entry(context, &kt_entry);
+			ZERO_STRUCT(kt_entry);
 			if (ret) {
-				DEBUG(1,("krb5_kt_free_entry failed (%s)\n", error_message(ret)));
+				DEBUG(1,("ads_keytab_add_entry: krb5_kt_free_entry failed (%s)\n", error_message(ret)));
 				goto out;
 			}
 		}
 
 		ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+		cursor = NULL;
 		if (ret) {
-			DEBUG(1,("krb5_kt_end_seq_get failed (%s)\n",error_message(ret)));
+			DEBUG(1,("ads_keytab_add_entry: krb5_kt_end_seq_get failed (%s)\n",error_message(ret)));
 			goto out;
 		}
 	}
 
-	/* Add keytab entries for all encryption types */
+	/* Ensure we don't double free. */
+	ZERO_STRUCT(kt_entry);
+	cursor = NULL;
+
+	/* If we get here, we have deleted all the old entries with kvno's not equal to the current kvno-1. */
+
+	ret = get_kerberos_allowed_etypes(context,&enctypes);
+	if (ret) {
+		DEBUG(1,("ads_keytab_add_entry: get_kerberos_allowed_etypes failed (%s)\n",error_message(ret)));
+		goto out;
+	}
+
+	/* Now add keytab entries for all encryption types */
 	for (i = 0; enctypes[i]; i++) {
-
-		key = (krb5_keyblock *) malloc(sizeof(*key));
-		if (!key) {
-			DEBUG(1,("Failed to allocate memory to store the keyblock.\n"));
-			ret = ENOMEM;
-			goto out;
-		}
-
-		if (create_kerberos_key_from_string(context, princ, &password, key, enctypes[i])) {
-			continue;
-		}
-
-		entry.principal = princ;
-		entry.vno       = kvno;
+		krb5_keyblock *keyp;
 
 #if !defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) && !defined(HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK)
 #error krb5_keytab_entry has no key or keyblock member
 #endif
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
-		entry.key = *key;
+		keyp = &kt_entry.key;
 #endif
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
-		entry.keyblock = *key;
+		keyp = &kt_entry.keyblock;
 #endif
-		DEBUG(3,("adding keytab entry for (%s) with encryption type (%d) and version (%d)\n",
-		princ_s, enctypes[i], entry.vno));
-		ret = krb5_kt_add_entry(context, keytab, &entry);
-		krb5_free_keyblock(context, key);
+		if (create_kerberos_key_from_string(context, princ, &password, keyp, enctypes[i])) {
+			continue;
+		}
+
+		kt_entry.principal = princ;
+		kt_entry.vno       = kvno;
+
+		DEBUG(3,("ads_keytab_add_entry: adding keytab entry for (%s) with encryption type (%d) and version (%d)\n",
+			princ_s, enctypes[i], kt_entry.vno));
+		ret = krb5_kt_add_entry(context, keytab, &kt_entry);
+		krb5_free_keyblock(context, keyp);
+		ZERO_STRUCT(kt_entry);
 		if (ret) {
-			DEBUG(1,("adding entry to keytab failed (%s)\n", error_message(ret)));
-			krb5_kt_close(context, keytab);
+			DEBUG(1,("ads_keytab_add_entry: adding entry to keytab failed (%s)\n", error_message(ret)));
 			goto out;
 		}
 	}
 
+	krb5_kt_close(context, keytab);
+	keytab = NULL; /* Done with keytab now. No double free. */
+
 	/* Update the LDAP with the SPN */
-	DEBUG(1,("Attempting to add/update '%s'\n", princ_s));
+	DEBUG(3,("ads_keytab_add_entry: Attempting to add/update '%s'\n", princ_s));
 	if (!ADS_ERR_OK(ads_add_spn(ads, global_myname(), srvPrinc))) {
-		DEBUG(1,("ads_add_spn failed.\n"));
+		DEBUG(1,("ads_keytab_add_entry: ads_add_spn failed.\n"));
 		goto out;
 	}
 
@@ -279,10 +289,10 @@ out:
 	return (int)ret;
 }
 
-
-/*
+/**********************************************************************
   Flushes all entries from the system keytab.
-*/
+***********************************************************************/
+
 int ads_keytab_flush(ADS_STRUCT *ads)
 {
 	krb5_error_code ret;
