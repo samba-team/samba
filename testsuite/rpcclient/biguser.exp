@@ -1,0 +1,93 @@
+#
+# @(#) Test creating and enumerating thousands of users
+#
+
+load_lib util-defs.exp
+load_lib "$srcdir/config/env.exp"
+
+set timeout 10
+verbose "Timeout is now $timeout seconds" 2
+
+#
+# Spawn rpcclient
+#
+
+spawn bin/rpcclient -S $ntserver -W $domain -U $ntuser
+
+# Ensure connection worked
+
+expect {
+    "session setup ok"         { verbose "session setup OK" }
+    -re "Connection:.*FAILED"  { perror "connection failed"; return -1 }
+    timeout                    { perror "expect: timed out"; return -1 }
+    eof                        { perror "expect: end of file"; return -1 }
+}
+
+# Wait for prompt
+
+set prompt "Administrator@MARZIPAN"
+
+expect {
+    $prompt            { verbose "got first prompt" }
+    timeout            { perror "expect: timed out"; return -1 }
+    eof                { perror "expect: end of file"; return -1 }
+}
+
+set num_test_users 5000
+
+# Create a large number of users
+
+for {set i 0} {$i < $num_test_users} {incr i 1} {
+
+    # Create user
+
+    send "createuser testuser$i\r"
+
+    expect {
+        "Create Domain User: OK"   { verbose "created user $i"; }
+        timeout                    { perror "expect: timed out"; return -1 }
+        eof                        { perror "expect: end of file"; return -1 }
+    }
+}
+
+# Get user info
+
+for {set i 0} {$i < $num_test_users} {incr i 1} {
+
+    # Create user
+
+    send "samuser testuser$i\r"
+
+    expect {
+        "User Name: testuser$i"    { verbose "got user $i"; }
+        timeout                    { perror "expect: timed out"; return -1 }
+        eof                        { perror "expect: end of file"; return -1 }
+    }
+}
+
+# Enumerate users
+
+send "enumusers\r"
+
+while 1 {
+    expect {
+        -re "User Name: (\[^\r]*)" { verbose "enum $expect_out(1,string)" }
+        $prompt { break }
+        timeout { perror "expect: timed out after enumusers"; return -1 }
+    }
+}
+
+# Delete users
+
+for {set i 0} {$i < $num_test_users} {incr i 1} {
+
+    # Create user
+
+    send "deluser testuser$i\r"
+
+    expect {
+        "Delete Domain User: OK"   { verbose "deleted user $i"; }
+        timeout                    { perror "expect: timed out"; return -1 }
+        eof                        { perror "expect: end of file"; return -1 }
+    }
+}

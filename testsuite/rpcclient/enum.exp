@@ -1,0 +1,227 @@
+#
+# Test rpcclient functionality
+#
+
+load_lib util-defs.exp
+load_lib "$srcdir/config/env.exp"
+load_lib "$srcdir/config/default-nt-names.exp"
+
+set timeout 10
+verbose "Timeout is now $timeout seconds" 2
+
+#
+# Spawn rpcclient
+#
+
+spawn bin/rpcclient -S $ntserver -W $domain -U $ntuser
+
+# Ensure connection worked
+
+expect {
+    "session setup ok"         { verbose "session setup OK" }
+    -re "Connection:.*FAILED"  { perror "connection failed"; return -1 }
+    timeout                    { perror "expect: timed out"; return -1 }
+    eof                        { perror "expect: end of file"; return -1 }
+}
+
+# Wait for prompt
+
+set prompt "Administrator@MARZIPAN"
+
+expect {
+    $prompt            { verbose "got first prompt" }
+    timeout            { perror "expect: timed out"; return -1 }
+    eof                { perror "expect: end of file"; return -1 }
+}
+
+#
+# Test enumerate domains
+#
+
+send "enumdomains\r"
+
+set got_domain 0
+set got_builtin 0
+
+while 1 {
+    expect {
+        -re "Domain Name: (\[^\r\]+)" { 
+
+            # Look for domain and builtin
+            
+            set dom $expect_out(1,string)
+
+            if { $dom == $domain } {
+                set got_domain 1
+            } elseif { $dom == "Builtin" } {
+                set got_builtin 1
+            } else {
+                note "got extra domain $dom"
+            }
+        }
+
+        $prompt { break }
+        timeout { perror "expect: timed out after enumdomains"; return -1 }
+    }
+}
+
+if {($got_builtin && $got_domain)} {
+    pass "enumdomains"
+} else {
+    fail "enumdomains"
+    if {!$got_domain} { puts "didn't receive domain $domain" }
+    if {!$got_builtin} { puts "didn't see domain Builtin" }
+}
+
+#
+# Test enumgroups
+#
+
+send "enumgroups\r"
+
+while 1 {
+    expect {
+        -re "Group Name: (\[^\r]*)" {
+            set group_list [lappend group_list "$domain/$expect_out(1,string)"]
+        }
+        $prompt { break }
+        timeout { perror "expect: timed out after enumdomains"; return -1 }
+    }
+}
+
+# Check all domain groups were found
+
+set notfound 0
+set notfound_list {}
+
+foreach group $domain_groups {
+    set ndx [lsearch $group_list $group]
+    if {$ndx >= 0} {
+        set group_list [lreplace $group_list $ndx $ndx]
+    } else {
+        set notfound 1
+        set notfound_list [lappend $notfound_list $group]
+    }
+}
+
+foreach group $group_list {
+    note "Found extra domain group $group"
+}
+
+if ($notfound) {
+    fail "enumgroups"
+    puts "Did not find the following domain groups:"
+    foreach group $notfound_list {
+        puts "\t$group"
+    }
+} else {
+    pass "enumgroups"
+}
+
+#
+# Test enumaliases
+#
+
+send "enumaliases\r"
+
+while 1 {
+    expect {
+        -re "Alias Name: (\[^\r]*)" {
+            set alias_list [lappend alias_list "$expect_out(1,string)"]
+        }
+        $prompt { break }
+        timeout { perror "expect: timed out after enumaliases"; return -1 }
+    }
+}
+
+# By default no domain aliases should be present but it's not an error to
+# have some defined
+
+foreach alias $alias_list {
+    note "Found extra domain alias $alias"
+}
+
+send "enumaliases -d builtin\r"
+
+set alias_list {}
+
+while 1 {
+    expect {
+        -re "Alias Name: (\[^\r]*)" {
+            set alias_list [lappend alias_list "BUILTIN/$expect_out(1,string)"]
+        }
+        $prompt { break }
+        timeout { perror "expect: timed out after enumaliases"; return -1 }
+    }
+}
+
+
+# Check all domain groups were found
+
+set notfound 0
+set notfound_list {}
+
+foreach alias $local_groups {
+    set ndx [lsearch $alias_list $alias]
+    if {$ndx >= 0} {
+        set alias_list [lreplace $alias_list $ndx $ndx]
+    } else {
+        set notfound 1
+        set notfound_list [lappend $notfound_list $alias]
+    }
+}
+
+if ($notfound) {
+    fail "enumaliases -d builtin"
+    puts "Did not find the following builtin aliases:"
+    foreach alias $notfound_list {
+        puts "\t$alias"
+    }
+} else {
+    pass "enumaliases -d builtin"
+}
+
+#
+# Test enumusers
+#
+
+send "enumusers\r"
+
+while 1 {
+    expect {
+        -re "User Name: (\[^\r]*)" {
+            set user_list [lappend user_list "$domain/$expect_out(1,string)"]
+        }
+        $prompt { break }
+        timeout { perror "expect: timed out after enumusers"; return -1 }
+    }
+}
+
+# Check all domain groups were found
+
+set notfound 0
+set notfound_list {}
+
+foreach user $domain_users {
+    set ndx [lsearch $user_list $user]
+    if {$ndx >= 0} {
+        set user_list [lreplace $user_list $ndx $ndx]
+    } else {
+        set notfound 1
+        set notfound_list [lappend $notfound_list $user]
+    }
+}
+
+foreach user $user_list {
+    note "Found extra domain user $user"
+}
+
+if ($notfound) {
+    fail "enumusers"
+    puts "Did not find the following domain users:"
+    foreach user $notfound_list {
+        puts "\t$user"
+    }
+} else {
+    pass "enumusers"
+}
