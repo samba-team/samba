@@ -68,18 +68,6 @@ RCSID("$Id$");
 
 #include <roken.h>
 
-static void
-socket_set_reuseaddr (int sock, int val)
-{
-#if defined(SO_REUSEADDR) && defined(HAVE_SETSOCKOPT)
-    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&val,
-		  sizeof(val)) < 0){
-	perror("setsockopt");
-	exit(1);
-    }
-#endif
-}
-
 static int
 listen_v4 (int port)
 {
