@@ -304,7 +304,7 @@ string_to_key_internal (const unsigned char *str,
 }
 
 krb5_error_code
-krb5_string_to_key (char *str,
+krb5_string_to_key (const char *str,
 		    krb5_data *salt,
 		    krb5_keytype ktype,
 		    krb5_keyblock *key)
