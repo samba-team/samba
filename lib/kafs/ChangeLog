@@ -1,5 +1,7 @@
 2003-04-11  Love Hörquist Åstrand  <lha@it.su.se>
 
+	* kafs.3: tell that cell-name is uppercased
+	
 	* Makefile.am: add INCLUDE_krb4 when using krb4, add INCLUDE_des
 	when using krb5, add strupr.c
 	
