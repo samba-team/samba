@@ -147,19 +147,20 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
-	f->fnum         = fnum;
-	f->session      = req->session;
-	f->smbpid       = req->smbpid;
-	f->pvfs         = pvfs;
-	f->pending_list = NULL;
-	f->lock_count   = 0;
+	f->fnum          = fnum;
+	f->session       = req->session;
+	f->smbpid        = req->smbpid;
+	f->pvfs          = pvfs;
+	f->pending_list  = NULL;
+	f->lock_count    = 0;
+	f->share_access  = io->generic.in.share_access;
+	f->impersonation = io->generic.in.impersonation;
 
 	f->handle->pvfs           = pvfs;
 	f->handle->name           = talloc_steal(f->handle, name);
 	f->handle->fd             = -1;
 	f->handle->locking_key    = data_blob(NULL, 0);
 	f->handle->create_options = io->generic.in.create_options;
-	f->handle->share_access   = io->generic.in.share_access;
 	f->handle->seek_offset    = 0;
 	f->handle->position       = 0;
 	f->handle->mode           = 0;
@@ -326,11 +327,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		access_mask = GENERIC_RIGHTS_FILE_READ | GENERIC_RIGHTS_FILE_WRITE;
 	}
 
-	if ((access_mask & SA_RIGHT_FILE_READ_EXEC) &&
-	    (access_mask & SA_RIGHT_FILE_WRITE_APPEND)) {
+	if (access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
 		flags = O_RDWR;
-	} else if (access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
-		flags = O_WRONLY;
 	} else {
 		flags = O_RDONLY;
 	}
@@ -407,19 +405,20 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	f->fnum = fnum;
-	f->session = req->session;
-	f->smbpid = req->smbpid;
-	f->pvfs = pvfs;
-	f->pending_list = NULL;
-	f->lock_count = 0;
+	f->fnum              = fnum;
+	f->session           = req->session;
+	f->smbpid            = req->smbpid;
+	f->pvfs              = pvfs;
+	f->pending_list      = NULL;
+	f->lock_count        = 0;
+	f->share_access      = io->generic.in.share_access;
+	f->access_mask       = access_mask;
+	f->impersonation     = io->generic.in.impersonation;
 
 	f->handle->pvfs              = pvfs;
 	f->handle->name              = talloc_steal(f->handle, name);
 	f->handle->fd                = fd;
 	f->handle->create_options    = io->generic.in.create_options;
-	f->handle->share_access      = io->generic.in.share_access;
-	f->handle->access_mask       = access_mask;
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
@@ -536,6 +535,86 @@ static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
 
 
 /*
+  special handling for openx DENY_DOS semantics
+
+  This function attempts a reference open using an existing handle. If its allowed,
+  then it returns NT_STATUS_OK, otherwise it returns any other code and normal
+  open processing continues.
+*/
+static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
+				   struct smbsrv_request *req, union smb_open *io,
+				   struct pvfs_file *f, struct odb_lock *lck)
+{
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_file *f2;
+	struct pvfs_filename *name;
+
+	/* search for an existing open with the right parameters. Note
+	   the magic ntcreatex options flag, which is set in the
+	   generic mapping code. This might look ugly, but its
+	   actually pretty much now w2k does it internally as well. 
+	   
+	   If you look at the BASE-DENYDOS test you will see that a
+	   DENY_DOS is a very special case, and in the right
+	   circumstances you actually get the _same_ handle back
+	   twice, rather than a new handle.
+	*/
+	for (f2=pvfs->open_files;f2;f2=f2->next) {
+		if (f2 != f &&
+		    f2->session == req->session &&
+		    f2->smbpid == req->smbpid &&
+		    (f2->handle->create_options & 
+		     (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
+		      NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
+		    (f2->access_mask & SA_RIGHT_FILE_WRITE_DATA) &&
+		    StrCaseCmp(f2->handle->name->original_name, 
+			       io->generic.in.fname)==0) {
+			break;
+		}
+	}
+
+	if (!f2) {
+		return NT_STATUS_SHARING_VIOLATION;
+	}
+
+	/* quite an insane set of semantics ... */
+	if (is_exe_filename(io->generic.in.fname) &&
+	    (f2->handle->create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
+		return NT_STATUS_SHARING_VIOLATION;
+	}
+
+	/*
+	  setup a reference to the existing handle
+	 */
+	talloc_free(f->handle);
+	f->handle = talloc_reference(f, f2->handle);
+
+	talloc_free(lck);
+
+	name = f->handle->name;
+
+	io->generic.out.oplock_level  = NO_OPLOCK;
+	io->generic.out.fnum	      = f->fnum;
+	io->generic.out.create_action = NTCREATEX_ACTION_EXISTED;
+	io->generic.out.create_time   = name->dos.create_time;
+	io->generic.out.access_time   = name->dos.access_time;
+	io->generic.out.write_time    = name->dos.write_time;
+	io->generic.out.change_time   = name->dos.change_time;
+	io->generic.out.attrib        = name->dos.attrib;
+	io->generic.out.alloc_size    = name->dos.alloc_size;
+	io->generic.out.size          = name->st.st_size;
+	io->generic.out.file_type     = FILE_TYPE_DISK;
+	io->generic.out.ipc_state     = 0;
+	io->generic.out.is_directory  = 0;
+
+	talloc_steal(f->pvfs, f);
+
+	return NT_STATUS_OK;
+}
+
+
+
+/*
   setup for a open retry after a sharing violation
 */
 static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
@@ -548,6 +627,16 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 	struct pvfs_open_retry *r;
 	NTSTATUS status;
 	struct timeval end_time;
+
+	if (io->generic.in.create_options & 
+	    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS | NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
+		/* see if we can satisfy the request using the special DENY_DOS
+		   code */
+		status = pvfs_open_deny_dos(ntvfs, req, io, f, lck);
+		if (NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	r = talloc_p(req, struct pvfs_open_retry);
 	if (r == NULL) {
@@ -638,10 +727,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* use the generic mapping code to avoid implementing all the
-	   different open calls. This won't allow openx to work
-	   perfectly as the mapping code has no way of knowing if two
-	   opens are on the same connection, so this will need to
-	   change eventually */	   
+	   different open calls. */
 	if (io->generic.level != RAW_OPEN_GENERIC) {
 		return ntvfs_map_open(req, io, ntvfs);
 	}
@@ -715,11 +801,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if ((access_mask & SA_RIGHT_FILE_READ_EXEC) &&
-	    (access_mask & SA_RIGHT_FILE_WRITE_APPEND)) {
+	if (access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
 		flags |= O_RDWR;
-	} else if (access_mask & SA_RIGHT_FILE_WRITE_APPEND) {
-		flags |= O_WRONLY;
 	} else {
 		flags |= O_RDONLY;
 	}
@@ -766,19 +849,20 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
-	f->fnum         = fnum;
-	f->session      = req->session;
-	f->smbpid       = req->smbpid;
-	f->pvfs         = pvfs;
-	f->pending_list = NULL;
-	f->lock_count   = 0;
+	f->fnum          = fnum;
+	f->session       = req->session;
+	f->smbpid        = req->smbpid;
+	f->pvfs          = pvfs;
+	f->pending_list  = NULL;
+	f->lock_count    = 0;
+	f->share_access  = io->generic.in.share_access;
+	f->access_mask   = access_mask;
+	f->impersonation = io->generic.in.impersonation;
 
 	f->handle->pvfs              = pvfs;
 	f->handle->fd                = -1;
 	f->handle->name              = talloc_steal(f->handle, name);
 	f->handle->create_options    = io->generic.in.create_options;
-	f->handle->share_access      = io->generic.in.share_access;
-	f->handle->access_mask       = access_mask;
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->have_opendb_entry = False;
