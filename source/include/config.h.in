@@ -247,6 +247,7 @@
 #undef I18N_SWAT
 #undef I18N_DEFAULT_PREF_LANG
 #undef HAVE_KRB5
+#undef BROKEN_REDHAT_7_SYSTEM_HEADERS
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -1036,9 +1037,6 @@
 
 /* Define if you have the nsl_s library (-lnsl_s).  */
 #undef HAVE_LIBNSL_S
-
-/* Define if you have the popt library (-lpopt).  */
-#undef HAVE_LIBPOPT
 
 /* Define if you have the resolv library (-lresolv).  */
 #undef HAVE_LIBRESOLV
