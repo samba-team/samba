@@ -35,6 +35,11 @@ bin/samrd
 bin/netlogond
 bin/winregd
 
+you will also need to add your own samba server as a trust account.
+one way to do this, in the usual manner, is:
+
+bin/smbpasswd -a -m your_samba_server_name
+
 if you need NT-style printing:
 
 bin/spoolssd
