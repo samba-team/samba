@@ -208,6 +208,7 @@ typedef struct krb5_cc_ops{
 typedef struct krb5_context_data{
     krb5_enctype *etypes;
     char *default_realm;
+    time_t max_skew;
     krb5_config_section *cf;
     struct error_table *et_list;
     krb5_cc_ops *cc_ops;
@@ -225,15 +226,9 @@ enum{
 
 
 typedef struct krb5_ticket {
-#if 0
+    EncTicketPart ticket;
+    krb5_principal client;
     krb5_principal server;
-    krb5_data enc_part;
-    krb5_data enc_part2;
-#endif
-    EncTicketPart tkt;
-    struct {
-	krb5_principal client;
-    } enc_part2;
 } krb5_ticket;
 
 #if 0
