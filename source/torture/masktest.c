@@ -121,8 +121,9 @@ static void get_real_name(struct smbcli_state *cli,
 	f_info_hit = False;
 
 	smbcli_list_new(cli->tree, mask, 
-		     FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
-		     listfn, NULL);
+			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
+			RAW_SEARCH_BOTH_DIRECTORY_INFO,
+			listfn, NULL);
 
 	if (f_info_hit) {
 		fstrcpy(short_name, last_hit.short_name);
