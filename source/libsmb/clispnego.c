@@ -447,11 +447,11 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply, NTSTATUS nt_status)
 	uint8 negResult;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		negResult = SPNGEO_NEG_RESULT_ACCEPT;
+		negResult = SPNEGO_NEG_RESULT_ACCEPT;
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		negResult = SPNGEO_NEG_RESULT_INCOMPLETE; 
+		negResult = SPNEGO_NEG_RESULT_INCOMPLETE; 
 	} else {
-		negResult = SPNGEO_NEG_RESULT_REJECT; 
+		negResult = SPNEGO_NEG_RESULT_REJECT; 
 	}
 
 	ZERO_STRUCT(data);
@@ -461,7 +461,7 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply, NTSTATUS nt_status)
 	asn1_push_tag(&data, ASN1_CONTEXT(0));
 	asn1_write_enumerated(&data, negResult);
 	asn1_pop_tag(&data);
-	if (negResult == SPNGEO_NEG_RESULT_INCOMPLETE) {
+	if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
 		asn1_push_tag(&data,ASN1_CONTEXT(1));
 		asn1_write_OID(&data, OID_NTLMSSP);
 		asn1_pop_tag(&data);
