@@ -40,53 +40,33 @@
 
 RCSID("$Id$");
 
-static char *
-get_logname(void)
-{
-    char *p;
-    if((p = getenv("USER")))
-	return p;
-    if((p = getenv("LOGNAME")))
-	return p;
-    if((p = getenv("USERNAME")))
-	return p;
-#if defined(HAVE_GETLOGIN) && !defined(POSIX_GETLOGIN)
-    if((p = getlogin()))
-	return p;
-#endif
-    return NULL;
-}
+/*
+ * Try to find out what's a reasonable default principal.
+ */
 
 krb5_error_code
 krb5_get_default_principal (krb5_context context,
 			    krb5_principal *princ)
 {
     krb5_error_code ret;
-    struct passwd *pw;
-    char *p;
     krb5_ccache id;
+    const char *user;
 
-    ret = krb5_cc_default(context, &id);
-    if(ret == 0){
-	ret = krb5_cc_get_principal(context, id, princ);
-	krb5_cc_close(context, id);
-	if(ret == 0)
+    ret = krb5_cc_default (context, &id);
+    if (ret == 0) {
+	ret = krb5_cc_get_principal (context, id, princ);
+	krb5_cc_close (context, id);
+	if (ret == 0)
 	    return 0;
     }
 
-    pw = getpwuid(getuid());
-    if(pw == NULL) {
-	p = get_logname();
-	if(p == NULL)
-	    return ENOTTY;
-	ret = krb5_make_principal(context, princ, NULL, p, NULL);
-    }else{
-	if(strcmp(pw->pw_name, "root") == 0){
-	    p = get_logname();
-	    ret = krb5_make_principal(context, princ, NULL, pw->pw_name, 
-				      "root", NULL);
-	}else
-	    ret = krb5_make_principal(context, princ, NULL, pw->pw_name, NULL);
+    user = get_default_username ();
+    if (user == NULL)
+	return ENOTTY;
+    if (getuid () == 0) {
+	ret = krb5_make_principal(context, princ, NULL, user, "root", NULL);
+    } else {
+	ret = krb5_make_principal(context, princ, NULL, user, NULL);
     }
     return ret;
 }
