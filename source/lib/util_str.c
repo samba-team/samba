@@ -479,11 +479,15 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 	
 	src_len = strlen(src);
 	dest_len = strlen(dest);
-	
+
 	if (src_len + dest_len > maxlength) {
 		DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
 			 (int)(src_len + dest_len - maxlength), src));
-		src_len = maxlength - dest_len;
+		if (maxlength > dest_len) {
+			memcpy(&dest[dest_len], src, maxlength - dest_len);
+		}
+		dest[maxlength] = 0;
+		return NULL;
 	}
 	
 	memcpy(&dest[dest_len], src, src_len);
