@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
-INCLUDES = -I$(top_builddir)/include -I$(srcdir)/.. -I$(srcdir)
+INCLUDES = -I$(top_builddir)/include -I$(srcdir)
 
 lib_LIBRARIES = liberror.a
 
