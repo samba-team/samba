@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean Francois Micouleau      1998-2000.
+   Copyright (C) Gerald Carter                2001-2002.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -404,6 +405,9 @@ PRINTER_MESSAGE_INFO;
 #define DPD_DELETE_UNUSED_FILES          0x00000001
 #define DPD_DELETE_SPECIFIC_VERSION      0x00000002
 #define DPD_DELETE_ALL_FILES             0x00000004
+
+#define DRIVER_ANY_VERSION		0xffffffff
+#define DRIVER_MAX_VERSION		4
 
 /* FLAGS for SPOOLSS_ADDPRINTERDRIVEREX */
 
