@@ -7,7 +7,7 @@ smb.conf(5)).
 
 Samba can act as a browse master for a workgroup and the ability for 
 samba to support domain logons and scripts is now available with features 
-still being added.  See DOMAIN.txt for more information.
+still being added.  See DOMAIN.txt for more information .
 
 To get browsing to work you need to run nmbd as usual, but will need
 to use the "workgroup" option in smb.conf to control what workgroup
