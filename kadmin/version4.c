@@ -46,14 +46,17 @@ RCSID("$Id$");
 #define KADM_NO_OPCODE -1
 #define KADM_NO_ENCRYPT -2
 
+/*
+ * make an error packet if we fail encrypting
+ */
+
 static void
-make_error_packet(int code, krb5_data *reply)
+make_you_loose_packet(int code, krb5_data *reply)
 {
     krb5_data_alloc(reply, KADM_VERSIZE + 4);
     memcpy(reply->data, KADM_ULOSE, KADM_VERSIZE);
     _krb5_put_int((char*)reply->data + KADM_VERSIZE, code, 4);
 }
-
 
 static int
 ret_fields(krb5_storage *sp, char *fields)
@@ -768,13 +771,12 @@ dispatch(krb5_context context,
     }
     krb5_storage_free(sp_in);
     if(retval) {
-	krb5_storage_free(sp_out);
-	make_error_packet(retval, reply);
-	return retval;
+	sp_out->seek(sp_out, KADM_VERSIZE, SEEK_SET);
+	krb5_store_int32(sp_out, retval);
     }
     krb5_storage_to_data(sp_out, reply);
     krb5_storage_free(sp_out);
-    return 0;
+    return retval;
 }
 
 /*
@@ -804,7 +806,7 @@ decode_packet(krb5_context context,
     
     if(message.length < KADM_VERSIZE
        || strncmp(msg, KADM_VERSTR, KADM_VERSIZE) != 0) {
-	make_error_packet(KADM_BAD_VER, reply);
+	make_you_loose_packet (KADM_BAD_VER, reply);
 	return;
     }
 
@@ -823,11 +825,11 @@ decode_packet(krb5_context context,
 				  "changepw", "kerberos", NULL);
 	if (ret) {
 	    krb5_warn (context, ret, "krb5_make_principal");
-	    make_error_packet (KADM_NOMEM, reply);
+	    make_you_loose_packet (KADM_NOMEM, reply);
 	    return;
 	}
 	ret = krb5_kt_read_service_key(context, 
-				       NULL,
+				       "HDB:",
 				       principal,
 				       0,
 /*				       ETYPE_DES_CBC_CRC,*/
@@ -836,10 +838,10 @@ decode_packet(krb5_context context,
 	krb5_free_principal(context, principal);
 	if(ret) {
 	    if(ret == KRB5_KT_NOTFOUND)
-		make_error_packet(KADM_NO_AUTH, reply);
+		make_you_loose_packet(KADM_NO_AUTH, reply);
 	    else
 		/* XXX */
-		make_error_packet(KADM_NO_AUTH, reply);
+		make_you_loose_packet(KADM_NO_AUTH, reply);
 	    krb5_warn(context, ret, "krb5_kt_read_service_key");
 	    return;
 	}
@@ -855,7 +857,7 @@ decode_packet(krb5_context context,
 		     client_addr->sin_addr.s_addr, &ad, NULL);
 
     if(ret) {
-	make_error_packet(krb_err_base + ret, reply);
+	make_you_loose_packet(krb_err_base + ret, reply);
 	krb5_warnx(context, "krb_rd_req: %d", ret);
 	return;
     }
@@ -872,7 +874,7 @@ decode_packet(krb5_context context,
 				       &kadm_handle);
     if (ret) {
 	krb5_warn (context, ret, "kadm5_init_with_password_ctx");
-	make_error_packet (KADM_NOMEM, reply);
+	make_you_loose_packet (KADM_NOMEM, reply);
 	goto out;
     }
     
@@ -880,14 +882,14 @@ decode_packet(krb5_context context,
 			      0, &ad.session);
     if(checksum != ad.checksum) {
 	krb5_warnx(context, "decode_packet: bad checksum");
-	make_error_packet (KADM_BAD_CHK, reply);
+	make_you_loose_packet (KADM_BAD_CHK, reply);
 	goto out;
     }
     des_set_key(&ad.session, schedule);
     ret = krb_rd_priv(msg + off, rlen, schedule, &ad.session, 
 		      client_addr, admin_addr, &msg_dat);
     if (ret) {
-	make_error_packet (krb_err_base + ret, reply);
+	make_you_loose_packet (krb_err_base + ret, reply);
 	krb5_warnx(context, "krb_rd_priv: %d", ret);
 	goto out;
     }
@@ -901,18 +903,13 @@ decode_packet(krb5_context context,
 	
 	retval = dispatch(context, kadm_handle,
 			  client, client_str, d, &r);
-	if (retval == 0) {
-	    krb5_data_alloc(reply, r.length + 26);
-	    reply->length = krb_mk_priv(r.data, reply->data, r.length, 
-					schedule, &ad.session, 
-					admin_addr, client_addr);
-	    if((ssize_t)reply->length < 0) {
-		make_error_packet(KADM_NO_ENCRYPT, reply);
-		goto out;
-	    }
-	} else { 
-	    reply->length = r.length;
-	    reply->data   = r.data;
+	krb5_data_alloc(reply, r.length + 26);
+	reply->length = krb_mk_priv(r.data, reply->data, r.length, 
+				    schedule, &ad.session, 
+				    admin_addr, client_addr);
+	if((ssize_t)reply->length < 0) {
+	    make_you_loose_packet(KADM_NO_ENCRYPT, reply);
+	    goto out;
 	}
     }
 out:
