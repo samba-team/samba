@@ -211,7 +211,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	  will need to do that once the credentials infrastructure is
 	  finalised for Samba4
 	*/
-	ep_description.type = ENDPOINT_SMB;
+	ep_description.type = NCACN_NP;
 	ep_description.info.smb_pipe = p->pipe_name;
 
 	/* tell the RPC layer the session_info */

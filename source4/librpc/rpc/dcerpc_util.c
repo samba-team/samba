@@ -233,13 +233,34 @@ NTSTATUS dcerpc_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+#define MAX_PROTSEQ		10
 
 static const struct {
 	const char *name;
 	enum dcerpc_transport_t transport;
-} ncacn_transports[] = {
-	{"ncacn_np",     NCACN_NP},
-	{"ncacn_ip_tcp", NCACN_IP_TCP}
+	int num_protocols;
+	enum epm_protocols protseq[MAX_PROTSEQ];
+} transports[] = {
+	{ "ncacn_np",     NCACN_NP, 3, 
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_SMB, EPM_PROTOCOL_PIPE }},
+	{ "ncacn_ip_tcp", NCACN_IP_TCP, 3, 
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_IP, EPM_PROTOCOL_TCP } }, 
+	{ "ncadg_ip_udp", NCACN_IP_UDP, 3, 
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_IP, EPM_PROTOCOL_UDP } },
+	{ "ncalrpc", NCALRPC, 1, 
+		{ EPM_PROTOCOL_NCALRPC } },
+	{ "ncacn_unix_stream", NCACN_UNIX_STREAM, 2, 
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_UNIX_DS } },
+	{ "ncadg_unix_dgram", NCADG_UNIX_DGRAM, 2, 
+		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_UNIX_DS } },
+	{ "ncacn_at_dsp", NCACN_AT_DSP, 3, 
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_APPLETALK, EPM_PROTOCOL_DSP } },
+	{ "ncadg_at_ddp", NCADG_AT_DDP, 3, 
+		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_APPLETALK, EPM_PROTOCOL_DDP } },
+	{ "ncacn_vns_ssp", NCACN_VNS_SPP, 3, 
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_STREETTALK, EPM_PROTOCOL_VINES_SPP } },
+	{ "ncacn_vns_ipc", NCACN_VNS_IPC, 3, 
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_STREETTALK, EPM_PROTOCOL_VINES_IPC }, },
 };
 
 static const struct {
@@ -264,9 +285,9 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 	int i;
 	const char *t_name=NULL;
 
-	for (i=0;i<ARRAY_SIZE(ncacn_transports);i++) {
-		if (ncacn_transports[i].transport == b->transport) {
-			t_name = ncacn_transports[i].name;
+	for (i=0;i<ARRAY_SIZE(transports);i++) {
+		if (transports[i].transport == b->transport) {
+			t_name = transports[i].name;
 		}
 	}
 	if (!t_name) {
@@ -339,13 +360,13 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0;i<ARRAY_SIZE(ncacn_transports);i++) {
-		if (strcasecmp(type, ncacn_transports[i].name) == 0) {
-			b->transport = ncacn_transports[i].transport;
+	for (i=0;i<ARRAY_SIZE(transports);i++) {
+		if (strcasecmp(type, transports[i].name) == 0) {
+			b->transport = transports[i].transport;
 			break;
 		}
 	}
-	if (i==ARRAY_SIZE(ncacn_transports)) {
+	if (i==ARRAY_SIZE(transports)) {
 		DEBUG(0,("Unknown dcerpc transport '%s'\n", type));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -442,7 +463,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 		for (i = 0; i < table->endpoints->count; i++) {
 			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
 
-			if (NT_STATUS_IS_OK(status) && default_binding.transport == ENDPOINT_SMB) {
+			if (NT_STATUS_IS_OK(status) && default_binding.transport == NCACN_NP) {
 				pipe_name = default_binding.options[0];	
 				break;
 				
@@ -603,6 +624,8 @@ NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **p,
 		status = dcerpc_pipe_connect_ncacn_ip_tcp(p, binding, pipe_uuid, pipe_version,
 							  domain, username, password);
 		break;
+	default:
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
 	return status;
@@ -677,6 +700,8 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 							  pipe_version, NULL, 
 							  NULL, NULL);
 		break;
+	default:
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
