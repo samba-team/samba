@@ -65,7 +65,7 @@ BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 
 /* Call winbindd to convert sid to name */
 
-BOOL winbind_lookup_sid(DOM_SID *sid, 
+BOOL winbind_lookup_sid(const DOM_SID *sid, 
 			fstring dom_name, fstring name, 
                         enum SID_NAME_USE *name_type)
 {
@@ -102,7 +102,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid,
 
 /* Call winbindd to convert SID to uid */
 
-BOOL winbind_sid_to_uid(uid_t *puid, DOM_SID *sid)
+BOOL winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -168,7 +168,7 @@ BOOL winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
 
 /* Call winbindd to convert SID to gid */
 
-BOOL winbind_sid_to_gid(gid_t *pgid, DOM_SID *sid)
+BOOL winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
