@@ -153,7 +153,7 @@ void reply_search(struct request_context *req)
 		sn->search_next.in.max_count     = SVAL(req->in.vwv, VWV(0));
 		
 		/* call backend */
-		req->async.status = req->conn->ntvfs_ops->search_next(req, 
+		req->async.status = req->tcon->ntvfs_ops->search_next(req, 
 			sn, &state, find_callback);
 		SSVAL(req->out.vwv, VWV(0), sn->search_next.out.count);
 	} else {
@@ -164,7 +164,7 @@ void reply_search(struct request_context *req)
 		sf->search_first.in.max_count     = SVAL(req->in.vwv, VWV(0));
 		
 		/* call backend */
-		req->async.status = req->conn->ntvfs_ops->search_first(req, 
+		req->async.status = req->tcon->ntvfs_ops->search_first(req, 
 			sf, &state, find_callback);
 		SSVAL(req->out.vwv, VWV(0), sf->search_first.out.count);
 	}
@@ -222,7 +222,7 @@ void reply_fclose(struct request_context *req)
 	req->async.private = sn;
 
 	/* call backend */
-	req->async.status = req->conn->ntvfs_ops->search_next(req, sn,
+	req->async.status = req->tcon->ntvfs_ops->search_next(req, sn,
 		NULL, NULL);
 
 	REQ_ASYNC_TAIL;

@@ -140,18 +140,18 @@ static NTSTATUS make_connection_snum(struct request_context *req,
 				     DATA_BLOB password, 
 				     const char *dev)
 {
-	struct tcon_context *conn;
+	struct smbsrv_tcon *tcon;
 	NTSTATUS status;
 
-	conn = conn_new(req->smb_ctx);
-	if (!conn) {
+	tcon = conn_new(req->smb_ctx);
+	if (!tcon) {
 		DEBUG(0,("Couldn't find free connection.\n"));
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
-	req->conn = conn;
+	req->tcon = tcon;
 
-	conn->service = snum;
-	conn->type = type;
+	tcon->service = snum;
+	tcon->type = type;
 
 	/*
 	 * New code to check if there's a share security descripter
@@ -160,42 +160,42 @@ static NTSTATUS make_connection_snum(struct request_context *req,
 	 *
 	 */
 
-	if (!share_access_check(req, conn, snum, SA_RIGHT_FILE_WRITE_DATA)) {
-		if (!share_access_check(req, conn, snum, SA_RIGHT_FILE_READ_DATA)) {
+	if (!share_access_check(req, tcon, snum, SA_RIGHT_FILE_WRITE_DATA)) {
+		if (!share_access_check(req, tcon, snum, SA_RIGHT_FILE_READ_DATA)) {
 			/* No access, read or write. */
 			DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
 				  lp_servicename(snum)));
-			conn_free(req->smb_ctx, conn);
+			conn_free(req->smb_ctx, tcon);
 			return NT_STATUS_ACCESS_DENIED;
 		} else {
-			conn->read_only = True;
+			tcon->read_only = True;
 		}
 	}
 
 	/* check number of connections */
-	if (!claim_connection(conn,
-			      lp_servicename(SNUM(conn)),
-			      lp_max_connections(SNUM(conn)),
+	if (!claim_connection(tcon,
+			      lp_servicename(SNUM(tcon)),
+			      lp_max_connections(SNUM(tcon)),
 			      False,0)) {
 		DEBUG(1,("too many connections - rejected\n"));
-		conn_free(req->smb_ctx, conn);
+		conn_free(req->smb_ctx, tcon);
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}  
 
 	/* init ntvfs function pointers */
 	status = ntvfs_init_connection(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("ntvfs_init_connection failed for service %s\n", lp_servicename(SNUM(conn))));
-		conn_free(req->smb_ctx, conn);
+		DEBUG(0, ("ntvfs_init_connection failed for service %s\n", lp_servicename(SNUM(tcon))));
+		conn_free(req->smb_ctx, tcon);
 		return status;
 	}
 	
 	/* Invoke NTVFS connection hook */
-	if (conn->ntvfs_ops->connect) {
-		status = conn->ntvfs_ops->connect(req, lp_servicename(snum));
+	if (tcon->ntvfs_ops->connect) {
+		status = tcon->ntvfs_ops->connect(req, lp_servicename(snum));
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("make_connection: NTVFS make connection failed!\n"));
-			conn_free(req->smb_ctx, conn);
+			conn_free(req->smb_ctx, tcon);
 			return status;
 		}
 	}
@@ -256,17 +256,17 @@ static NTSTATUS make_connection(struct request_context *req,
 /****************************************************************************
 close a cnum
 ****************************************************************************/
-void close_cnum(struct tcon_context *conn)
+void close_cnum(struct smbsrv_tcon *tcon)
 {
 	DEBUG(3,("%s closed connection to service %s\n",
-		 conn->smb_ctx->socket.client_addr, lp_servicename(SNUM(conn))));
+		 tcon->smb_ctx->socket.client_addr, lp_servicename(SNUM(tcon))));
 
-	yield_connection(conn, lp_servicename(SNUM(conn)));
+	yield_connection(tcon, lp_servicename(SNUM(tcon)));
 
 	/* tell the ntvfs backend that we are disconnecting */
-	conn->ntvfs_ops->disconnect(conn);
+	tcon->ntvfs_ops->disconnect(tcon);
 
-	conn_free(conn->smb_ctx, conn);
+	conn_free(tcon->smb_ctx, tcon);
 }
 
 
@@ -294,7 +294,7 @@ NTSTATUS tcon_backend(struct request_context *req, union smb_tcon *con)
 		}
 
 		con->tcon.out.max_xmit = req->smb_ctx->negotiate.max_recv;
-		con->tcon.out.cnum = req->conn->cnum;
+		con->tcon.out.cnum = req->tcon->cnum;
 		
 		return status;
 	} 
@@ -305,11 +305,11 @@ NTSTATUS tcon_backend(struct request_context *req, union smb_tcon *con)
 		return status;
 	}
 
-	con->tconx.out.cnum = req->conn->cnum;
-	con->tconx.out.dev_type = talloc_strdup(req->mem_ctx, req->conn->dev_type);
-	con->tconx.out.fs_type = talloc_strdup(req->mem_ctx, req->conn->fs_type);
-	con->tconx.out.options = SMB_SUPPORT_SEARCH_BITS | (lp_csc_policy(req->conn->service) << 2);
-	if (lp_msdfs_root(req->conn->service) && lp_host_msdfs()) {
+	con->tconx.out.cnum = req->tcon->cnum;
+	con->tconx.out.dev_type = talloc_strdup(req->mem_ctx, req->tcon->dev_type);
+	con->tconx.out.fs_type = talloc_strdup(req->mem_ctx, req->tcon->fs_type);
+	con->tconx.out.options = SMB_SUPPORT_SEARCH_BITS | (lp_csc_policy(req->tcon->service) << 2);
+	if (lp_msdfs_root(req->tcon->service) && lp_host_msdfs()) {
 		con->tconx.out.options |= SMB_SHARE_IN_DFS;
 	}
 
