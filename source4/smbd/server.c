@@ -299,7 +299,7 @@ static void setup_process_model(struct event_context *events,
 	reopen_logs();
 
 	DEBUG(0,("smbd version %s started.\n", SAMBA_VERSION));
-	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team 1992-2003\n"));
+	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team 1992-2004\n"));
 
 	/* Output the build options to the debug log */ 
 	build_options(False);
