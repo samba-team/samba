@@ -423,6 +423,50 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
                 return False;
 	}
 
+	/* If we are using a non-wildcard dc, nix out any entries that
+	   aren't in the password server list. */
+
+	if (!lp_wildcard_dc()) {
+		fstring desthost;
+		char *p = lp_passwordserver();
+		struct in_addr dest_ip, *new_ip_list = NULL;
+
+		new_ip_list = (struct in_addr *)
+			malloc(count * sizeof(struct in_addr));
+
+		if (!new_ip_list) goto done;
+
+		memset(new_ip_list, 0, count * sizeof(struct in_addr));
+
+		/* Iterate over list of addresses in password server param */
+
+		while(next_token(&p, desthost, LIST_SEP, sizeof(desthost))) {
+
+			/* Resolve to IP */
+			
+			if(!resolve_name(desthost, &dest_ip, 0x20)) {
+				DEBUG(1, ("get_any_dc_name(): Can't resolve address for %s\n", desthost));
+				continue;
+			}
+
+			/* Copy across matching entries to domain list */
+
+			for (i = 0; i < count; i++) {
+				if (ip_equal(ip_list[i], dest_ip)) {
+					memcpy(&new_ip_list[i],
+					       &ip_list[i], 
+					       sizeof(struct in_addr));
+				}
+			}
+		}
+
+		/* Replace resolve DC list with the filtered one */
+
+		memcpy(ip_list, new_ip_list, count * sizeof(struct in_addr));
+	done:
+		safe_free(new_ip_list);
+	}
+
 	/* Find a DC on the local network */
 
 	for (i = 0; i < count; i++) {
@@ -472,6 +516,9 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 	if (connected_ok) {
 		lookup_pdc_name(global_myname, domain, dc_ip, srv_name);
 		DEBUG(3, ("found dc %s\n", srv_name));
+	} else {
+		DEBUG(3, ("no domain controllers found for domain %s\n",
+			  domain));
 	}
 
 	safe_free((char *)ip_list);
