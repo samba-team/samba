@@ -1326,7 +1326,7 @@ sub FunctionTable($)
 	my @e = split / /, $if_endpoints;
 	my $endpoint_count = $#e + 1;
 
-	pidl "static const char *$interface->{NAME}\_endpoint_strings[] = {\n\t";
+	pidl "static const char * const $interface->{NAME}\_endpoint_strings[] = {\n\t";
 	for (my $i=0; $i < $#e; $i++) {
 		pidl "\"$e[$i]\", ";
 	}
