@@ -838,13 +838,6 @@ void smbsrv_accept(struct server_connection *conn)
 
 	sub_set_context(&smb_conn->substitute);
 
-	/* set an initial client name based on its IP address. This will be replaced with
-	   the netbios name later if it gives us one */
-	socket_addr = socket_get_peer_addr(conn->socket, smb_conn);
-	if (socket_addr) {
-		sub_set_remote_machine(socket_addr);
-	}
-
 	/* now initialise a few default values associated with this smb socket */
 	smb_conn->negotiate.max_send = 0xFFFF;
 
