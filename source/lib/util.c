@@ -2492,6 +2492,8 @@ BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout)
   int fromlen = sizeof(from);
   int32 msg_len = 0;
 
+  smb_read_error = 0;
+
   if(timeout != 0)
   {
     struct timeval to;
@@ -2642,6 +2644,8 @@ BOOL receive_message_or_smb(int smbfd, int oplock_fd,
   fd_set fds;
   int selrtn;
   struct timeval to;
+
+  smb_read_error = 0;
 
   *got_smb = False;
 
