@@ -11,7 +11,7 @@ ADD_OBJ_FILES = \
 		libcli/auth/credentials.o \
 		libcli/auth/session.o \
 		libcli/auth/ntlm_check.o \
-		libcli/auth/kerberos_kinit.o \
+		libcli/auth/kerberos.o \
 		libcli/auth/kerberos_verify.o \
 		libcli/auth/clikrb5.o \
 		libcli/auth/gensec.o \
