@@ -186,6 +186,7 @@ static void print_unix_job(int snum, print_queue_struct *q)
 struct traverse_struct {
 	print_queue_struct *queue;
 	int qcount, snum, maxcount, total_jobs;
+	time_t lpq_time;
 };
 
 /****************************************************************************
@@ -253,10 +254,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		   the job is added to printing.tdb when another smbd
 		   running print_queue_update() has completed a lpq and
 		   is currently traversing the printing tdb and deleting jobs.
-		   A workaround is to not delete the job if it has been 
-		   submitted less than lp_lpqcachetime() seconds ago. */
+		   Don't delete the job if it was submitted after the lpq_time. */
 
-		if ((cur_t - pjob.starttime) > lp_lpqcachetime())
+		if (pjob.starttime < ts->lpq_time)
 			tdb_delete(t, key);
 		else
 			ts->total_jobs++;
@@ -476,6 +476,7 @@ static void print_queue_update(int snum)
 	tstruct.qcount = qcount;
 	tstruct.snum = snum;
 	tstruct.total_jobs = 0;
+	tstruct.lpq_time = time(NULL);
 
 	tdb_traverse(tdb, traverse_fn_delete, (void *)&tstruct);
 
