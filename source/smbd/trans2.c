@@ -1787,6 +1787,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				*short_name = '\0';
 		}
 		strupper(short_name);
+		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
 		l = dos_PutUniCode(pdata + 4, short_name, sizeof(pstring), False);
 		data_size = 4 + l;
 		SIVAL(pdata,0,l);
@@ -1801,13 +1802,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		 * you like hearing about me suffering.... :-). JRA.
 		 */
 
-		if(strequal(".", fname) && (global_client_caps & CAP_UNICODE)) {
-			l = l*2;
-			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
-			dos_PutUniCode(pdata + 4, dos_fname,sizeof(pstring), False);
-		} else {
-			pstrcpy(pdata+4,dos_fname);
-		}
+		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
+		l = dos_PutUniCode(pdata + 4, dos_fname,sizeof(pstring), False);
 		data_size = 4 + l;
 		SIVAL(pdata,0,l);
 		break;
@@ -1873,6 +1869,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		{
 			size_t byte_len;
 
+			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
 			byte_len = dos_PutUniCode(pdata+4,dos_fname,max_data_bytes,False);
 			SIVAL(pdata,0,byte_len);
 			data_size = 4 + byte_len;

@@ -54,7 +54,7 @@ char* debug_classname_from_index(int ndx);
 int debug_lookup_classname(char* classname);
 BOOL debug_parse_params(char **params, int *debuglevel_class);
 BOOL debug_parse_levels(char *params_str);
-void debug_message(int msg_type, pid_t src, void *buf, size_t len);
+void debug_message(int msg_level, pid_t src, void *buf, size_t len);
 void debug_message_send(pid_t pid, int level);
 void setup_logging(char *pname, BOOL interactive);
 BOOL reopen_logs( void );
