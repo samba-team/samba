@@ -209,7 +209,6 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
 	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
-	uint32 smb_offs = IVAL(inbuf,smb_vwv3);
 	int smb_maxcnt = SVAL(inbuf,smb_vwv5);
 	int smb_mincnt = SVAL(inbuf,smb_vwv6);
 	int nread = -1;
@@ -220,7 +219,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	set_message(outbuf,12,0,True);
 	data = smb_buf(outbuf);
 
-	nread = read_pipe(p, data, smb_offs, smb_maxcnt);
+	nread = read_pipe(p, data, smb_maxcnt);
 
 	if (nread < 0)
 		return(UNIXERROR(ERRDOS,ERRnoaccess));

@@ -124,6 +124,7 @@ BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2)
 	pwd_obfuscate(pwd2);
 	return False;
 }
+
 /****************************************************************************
 reads a password
 ****************************************************************************/

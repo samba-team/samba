@@ -104,11 +104,10 @@ ssize_t write_pipe(pipes_struct *p, char *data, size_t n)
  read by an SMBtrans (file_offset != 0).
 
  ****************************************************************************/
-int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
+int read_pipe(pipes_struct *p, char *data, int n)
 {
-	DEBUG(6,("read_pipe: %x name: %s open: %s pos: %d len: %d",
-		 p->pnum, p->name, BOOLSTR(p->open),
-		 pos, n));
+	DEBUG(6,("read_pipe: %x name: %s open: %s len: %d",
+		 p->pnum, p->name, BOOLSTR(p->open), n));
 
 	if (!p || !p->open)
 	{

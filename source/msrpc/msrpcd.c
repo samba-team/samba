@@ -70,7 +70,7 @@ static int open_server_socket(void)
 	fstring dir;
 	fstring path;
 
-	slprintf(dir, sizeof(dir)-1, "/tmp/.msrpc");
+	slprintf(dir, sizeof(dir)-1, "%s/.msrpc", LOCKDIR);
 	slprintf(path, sizeof(path)-1, "%s/%s", dir, pipe_name);
 
 	s = create_pipe_socket(dir, 0700, path, 0700);
