@@ -646,7 +646,10 @@ typedef struct r_samr_open_domain_info
 
 } SAMR_R_OPEN_DOMAIN;
 
-#define MAX_SAM_ENTRIES 0x400
+#define MAX_SAM_ENTRIES_W2K 0x400
+#define MAX_SAM_ENTRIES_W95 50
+/* The following should be the greater of the preceeding two. */
+#define MAX_SAM_ENTRIES MAX_SAM_ENTRIES_W2K
 
 typedef struct samr_entry_info
 {
