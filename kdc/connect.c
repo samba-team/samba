@@ -50,7 +50,7 @@ static struct port_desc *ports;
 static int num_ports;
 
 static void
-add_port(const char *port_str, const char *protocol)
+add_port(int family, const char *port_str, const char *protocol)
 {
     struct servent *sp;
     int type;
@@ -73,14 +73,32 @@ add_port(const char *port_str, const char *protocol)
     else
 	return;
     for(i = 0; i < num_ports; i++){
-	if(ports[i].type == type && ports[i].port == port)
+	if(ports[i].type == type
+	   && ports[i].port == port
+	   && ports[i].family == family)
 	    return;
     }
     ports = realloc(ports, (num_ports + 1) * sizeof(*ports));
-    ports[num_ports].family = AF_INET;
-    ports[num_ports].type = type;
-    ports[num_ports].port = port;
+    ports[num_ports].family = family;
+    ports[num_ports].type   = type;
+    ports[num_ports].port   = port;
     num_ports++;
+}
+
+static void
+add_standard_ports (int family)
+{
+    add_port(family, "kerberos", "udp");
+    add_port(family, "kerberos", "tcp");
+    add_port(family, "kerberos-sec", "udp");
+    add_port(family, "kerberos-sec", "tcp");
+    add_port(family, "kerberos-iv", "udp");
+    add_port(family, "kerberos-iv", "tcp");
+    if(enable_http)
+	add_port(family, "http", "tcp");
+#ifdef KASERVER
+    add_port(family, "7004", "udp");
+#endif
 }
 
 static void
@@ -90,27 +108,30 @@ parse_ports(char *str)
     char *p;
     p = strtok_r(str, " \t", &pos);
     while(p){
-	if(strcmp(p, "+") == 0){
-	    add_port("kerberos", "udp");
-	    add_port("kerberos", "tcp");
-	    add_port("kerberos-sec", "udp");
-	    add_port("kerberos-sec", "tcp");
-	    add_port("kerberos-iv", "udp");
-	    add_port("kerberos-iv", "tcp");
-	    if(enable_http)
-		add_port("http", "tcp");
-#ifdef KASERVER
-	    add_port("7004", "udp");
+	if(strcmp(p, "+") == 0) {
+#ifdef AF_INET6
+	    add_standard_ports(AF_INET6);
+#else
+	    add_standard_ports(AF_INET);
 #endif
 	} else {
 	    char *q = strchr(p, '/');
 	    if(q){
 		*q = 0;
 		*q++;
-		add_port(p, q);
+#ifdef AF_INET6
+		add_port(AF_INET6, p, q);
+#else
+		add_port(AF_INET, p, q);
+#endif
 	    }else {
-		add_port(p, "udp");
-		add_port(p, "tcp");
+#ifdef AF_INET6
+		add_port(AF_INET6, p, "udp");
+		add_port(AF_INET6, p, "tcp");
+#else
+		add_port(AF_INET, p, "udp");
+		add_port(AF_INET, p, "tcp");
+#endif
 	    }
 	}
 	    
@@ -130,7 +151,13 @@ struct descr {
 static void 
 init_socket(struct descr *d, int family, int type, int port)
 {
+    struct sockaddr *sa;
     struct sockaddr_in sin;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    struct sockaddr_in6 sin6;
+#endif
+    int sa_len;
+
     memset(d, 0, sizeof(*d));
     d->s = socket(family, type, 0);
     if(d->s < 0){
@@ -145,10 +172,33 @@ init_socket(struct descr *d, int family, int type, int port)
     }
 #endif
     d->type = type;
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_port = port;
-    if(bind(d->s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
+    switch (family) {
+    case AF_INET :
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family      = family;
+	sin.sin_port        = port;
+	sin.sin_addr.s_addr = INADDR_ANY;
+	sa = (struct sockaddr *)&sin;
+	sa_len = sizeof(sin);
+	break;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    case AF_INET6 :
+	memset(&sin6, 0, sizeof(sin6));
+	sin6.sin6_family = family;
+	sin6.sin6_port   = port;
+	sin6.sin6_addr   = in6addr_any;
+	sa = (struct sockaddr *)&sin6;
+	sa_len = sizeof(sin6);
+	break;
+#endif
+    default :
+	krb5_warnx(context, "Unknown family: %d", family);
+	close(d->s);
+	d->s = -1;
+	return;
+    }
+	
+    if(bind(d->s, sa, sa_len) < 0){
 	krb5_warn(context, errno, "bind(%d)", ntohs(port));
 	close(d->s);
 	d->s = -1;
@@ -232,6 +282,12 @@ addr_to_string(struct sockaddr *addr, size_t addr_len, char *str, size_t len)
     case AF_INET:
 	strncpy(str, inet_ntoa(((struct sockaddr_in*)addr)->sin_addr), len);
 	break;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    case AF_INET6 :
+	inet_ntop(AF_INET6, &((struct sockaddr_in6*)addr)->sin6_addr,
+		  str, len);
+	break;
+#endif
     default:
 	snprintf(str, len, "<%d addr>", addr->sa_family);
     }
@@ -261,7 +317,11 @@ static void
 handle_udp(struct descr *d)
 {
     unsigned char *buf;
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    struct sockaddr_in6 from;
+#else
     struct sockaddr_in from;
+#endif
     int from_len = sizeof(from);
     size_t n;
     
@@ -303,7 +363,11 @@ handle_tcp(struct descr *d, int index, int min_free)
 {
     unsigned char buf[1024];
     char addr[32];
+#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
+    struct sockaddr_in6 from;
+#else
     struct sockaddr_in from;
+#endif    
     int from_len = sizeof(from);
     size_t n;
 
