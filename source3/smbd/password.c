@@ -1769,12 +1769,14 @@ BOOL server_validate(char *user, char *domain,
 	/* if logged in as guest then reject */
 	if ((SVAL(cli.inbuf,smb_vwv2) & 1) != 0) {
 		DEBUG(1,("password server %s gave us guest only\n", cli.desthost));
+                cli_ulogoff(&cli);
 		return(False);
 	}
 
 
 	if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
 		DEBUG(1,("password server %s refused IPC$ connect\n", cli.desthost));
+                cli_ulogoff(&cli);
 		return False;
 	}
 
@@ -1792,12 +1794,14 @@ BOOL server_validate(char *user, char *domain,
 		if (!cli_NetWkstaUserLogon(&cli,user,local_machine)) {
 			DEBUG(1,("password server %s failed NetWkstaUserLogon\n", cli.desthost));
 			cli_tdis(&cli);
+                        cli_ulogoff(&cli);
 			return False;
 		}
 
 		if (cli.privilages == 0) {
 			DEBUG(1,("password server %s gave guest privilages\n", cli.desthost));
 			cli_tdis(&cli);
+                        cli_ulogoff(&cli);
 			return False;
 		}
 
@@ -1806,6 +1810,7 @@ BOOL server_validate(char *user, char *domain,
 			 	cli.desthost,
 			 	cli.eff_name));
 			cli_tdis(&cli);
+                        cli_ulogoff(&cli);
 			return False;
 		}
 	}
