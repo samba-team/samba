@@ -1,0 +1,71 @@
+.TH SMBMNT 8 01/05/1998 smbmnt smbmnt
+.SH NAME
+smbmnt \- mount smb file system
+.SH SYNOPSIS
+.B smbmnt
+.B mount-point
+[
+.B -u
+.I uid
+] [
+.B -g
+.I gid
+] [
+.B -f
+.I file mode
+] [
+.B -d
+.I dir mode
+]
+
+.SH DESCRIPTION
+.B smbmnt 
+is a little helper application for the smbmount program. smbmnt is
+meant to be installed setuid root to enable normal users to mount
+their smb shares. Smbmnt checks whether the user calling it has write
+permissions on the mount point and then mounts the directory.
+
+.B -u
+.I uid,
+.B -g
+.I gid
+.RS 3
+A Lan Manager server does not tell us anything about the owner of a
+file. Unix requires that each file has an owner and a group it belongs
+to. With 
+.B -u
+and
+.B -g
+you can tell smbmount which id's it should assign to the files in the
+mounted direcory.
+
+The defaults for these values are the current uid and gid.
+.RE
+
+.B -f
+.I file mode,
+.B -d
+.I dir mode
+.RS 3
+Like 
+.B -u
+and
+.B -g,
+these options are also used to bridge differences in concepts between
+Lan Manager and unix. Lan Manager does not know anything about file
+permissions. So smbmount has to be told which permissions it should
+assign to the mounted files and direcories. The values have to be
+given as octal numbers. The default values are taken from the current
+umask, where the file mode is the current umask, and the dir mode adds
+execute permissions where the file mode gives read permissions.
+
+Note that these permissions can differ from the rights the server
+gives to us. If you do not have write permissions on the server, you
+can very well choose a file mode that tells that you have. This
+certainly cannot override the restrictions imposed by the server.
+.RE
+
+
+.SH SEE ALSO
+.B smbmount(8)
+
