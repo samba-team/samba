@@ -19,7 +19,6 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-#include "kdc.h"
 #include "hdb.h"
 
 
