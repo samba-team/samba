@@ -53,7 +53,7 @@ struct smbsrv_tcon {
 	struct smbsrv_tcon *next, *prev;
 
 	/* the server context that this was created on */
-	struct smbsrv_context *smb_ctx;
+	struct smbsrv_connection *smb_conn;
 
 	/* a talloc context for all data in this structure */
 	TALLOC_CTX *mem_ctx;
@@ -80,17 +80,17 @@ struct smbsrv_tcon {
 /* the context for a single SMB request. This is passed to any request-context 
    functions */
 struct smbsrv_request {
+	/* a talloc context for the lifetime of this request */
+	TALLOC_CTX *mem_ctx;
+
 	/* the server_context contains all context specific to this SMB socket */
-	struct smbsrv_context *smb_ctx;
+	struct smbsrv_connection *smb_conn;
 
 	/* conn is only set for operations that have a valid TID */
 	struct smbsrv_tcon *tcon;
 
 	/* the user context is derived from the vuid plus smb.conf options */
 	struct smbsrv_user *user_ctx;
-
-	/* a talloc context for the lifetime of this request */
-	TALLOC_CTX *mem_ctx;
 
 	/* a set of flags to control usage of the request. See REQ_CONTROL_* */
 	unsigned control_flags;
@@ -168,48 +168,6 @@ struct smbsrv_request {
 	} in, out;
 };
 
-
-
-/* the context associated with open files on an smb socket */
-struct files_context {
-	struct files_struct *files; /* open files */
-	struct bitmap *file_bmap; /* bitmap used to allocate file handles */
-
-	/* a fsp to use when chaining */
-	struct files_struct *chain_fsp;
-
-	/* a fsp to use to save when breaking an oplock. */
-	struct files_struct *oplock_save_chain_fsp;
-
-	/* how many files are open */
-	int files_used;
-
-	/* limit for maximum open files */
-	int real_max_open_files;
-};
-
-
-/* the context associated with open tree connects on a smb socket */
-struct tree_context {
-	struct smbsrv_tcon *tcons;
-
-	/* number of open connections */
-	struct bitmap *bmap;
-	int num_open;
-};
-
-/* context associated with currently valid session setups */
-struct users_context {
-	/* users from session setup */
-	char *session_users; /* was a pstring */
-
-	/* this holds info on user ids that are already validated for this VC */
-	struct user_struct *validated_users;
-	int next_vuid; /* initialise to VUID_OFFSET */
-	int num_validated_vuids;
-};
-
-
 /* this contains variables that should be used in % substitutions for
  * smb.conf parameters */
 struct substitute_context {
@@ -232,144 +190,162 @@ struct substitute_context {
 	char *user_name;
 };
 
-/* context that has been negotiated between the client and server */
-struct negotiate_context {
-	/* have we already done the NBT session establishment? */
-	BOOL done_nbt_session;
-
-	/* only one negprot per connection is allowed */
-	BOOL done_negprot;
-
-	/* multiple session setups are allowed, but some parameters are
-	   ignored in any but the first */
-	BOOL done_sesssetup;
-	
-	/* 
-	 * Size of data we can send to client. Set
-	 *  by the client for all protocols above CORE.
-	 *  Set by us for CORE protocol.
-	 */
-	unsigned max_send; /* init to BUFFER_SIZE */
-
-	/*
-	 * Size of the data we can receive. Set by us.
-	 * Can be modified by the max xmit parameter.
-	 */
-	unsigned max_recv; /* init to BUFFER_SIZE */
-
-	/* a guess at the remote architecture. Try not to rely on this - in almost
-	   all cases using these values is the wrong thing to do */
-	enum remote_arch_types ra_type;
-
-	/* the negotiatiated protocol */
-	enum protocol_types protocol;
-
-	/* authentication context for multi-part negprot */
-	struct auth_context *auth_context;
-
-	/* state of NTLMSSP auth */
-	struct auth_ntlmssp_state *ntlmssp_state;
-
-	/* did we tell the client we support encrypted passwords? */
-	BOOL encrypted_passwords;
-
-	/* did we send an extended security negprot reply? */
-	BOOL spnego_negotiated;
-
-	/* client capabilities */
-	uint32_t client_caps;
-
-	/* the timezone we sent to the client */
-	int zone_offset;
-};
-	
-/* this is the context for a SMB socket associated with the socket itself */
-struct socket_context {
-	/* the open file descriptor */
-	int fd; 
-
-	/* the last read error on the socket, if any (replaces smb_read_error global) */
-	int read_error;
-
-	/* a count of the number of packets we have received. We
-	 * actually only care about zero/non-zero at this stage */
-	unsigned pkt_count;
-
-	/* the network address of the client */
-	char *client_addr;
-};
-
-
-/* this holds long term state specific to the printing subsystem */
-struct printing_context {
-	struct notify_queue *notify_queue_head;
-};
-
-
-/* the server_context holds a linked list of pending requests,
- * this is used for blocking locks and requests blocked due to oplock
- * break requests */
-struct pending_request {
-	struct pending_request *next, *prev;
-
-	/* the request itself - needs to be freed */
-	struct smbsrv_request *request;
-};
-
-/* the timers context contains info on when we last did various
- * functions */
-struct timers_context {
-	/* when did we last do timeout processing? */
-	time_t last_timeout_processing;
-
-	/* when did we last sent a keepalive */
-	time_t last_keepalive_sent;
-	
-	/* when we last checked the smb.conf for auto-reload */
-	time_t last_smb_conf_reload;
-};
-
-
-struct signing_context {
-	DATA_BLOB mac_key;
-	uint64_t next_seq_num;
-	enum smb_signing_state signing_state;
-};
-
 #include "smbd/process_model.h"
 
 /* smb server context structure. This should contain all the state
- * information associated with a SMB server */
-struct smbsrv_context {
+ * information associated with a SMB server connection 
+ */
+struct smbsrv_connection {
 	/* a talloc context for all data in this structure */
 	TALLOC_CTX *mem_ctx;
 
-	struct negotiate_context negotiate;
+	/* this is the context for a SMB socket associated with the socket itself */
+	struct {
+		/* the open file descriptor */
+		int fd; 
+	
+		/* the last read error on the socket, if any (replaces smb_read_error global) */
+		int read_error;
+	
+		/* a count of the number of packets we have received. We
+		 * actually only care about zero/non-zero at this stage */
+		unsigned pkt_count;
+	
+		/* the network address of the client */
+		char *client_addr;
+	} socket;
+
+	/* context that has been negotiated between the client and server */
+	struct {
+		/* have we already done the NBT session establishment? */
+		BOOL done_nbt_session;
+	
+		/* only one negprot per connection is allowed */
+		BOOL done_negprot;
+	
+		/* multiple session setups are allowed, but some parameters are
+		   ignored in any but the first */
+		BOOL done_sesssetup;
+		
+		/* 
+		 * Size of data we can send to client. Set
+		 *  by the client for all protocols above CORE.
+		 *  Set by us for CORE protocol.
+		 */
+		unsigned max_send; /* init to BUFFER_SIZE */
+	
+		/*
+		 * Size of the data we can receive. Set by us.
+		 * Can be modified by the max xmit parameter.
+		 */
+		unsigned max_recv; /* init to BUFFER_SIZE */
+	
+		/* a guess at the remote architecture. Try not to rely on this - in almost
+		   all cases using these values is the wrong thing to do */
+		enum remote_arch_types ra_type;
+	
+		/* the negotiatiated protocol */
+		enum protocol_types protocol;
+	
+		/* authentication context for multi-part negprot */
+		struct auth_context *auth_context;
+	
+		/* state of NTLMSSP auth */
+		struct auth_ntlmssp_state *ntlmssp_state;
+	
+		/* did we tell the client we support encrypted passwords? */
+		BOOL encrypted_passwords;
+	
+		/* did we send an extended security negprot reply? */
+		BOOL spnego_negotiated;
+	
+		/* client capabilities */
+		uint32_t client_caps;
+	
+		/* the timezone we sent to the client */
+		int zone_offset;
+	} negotiate;
+
+	/* the context associated with open tree connects on a smb socket */
+	struct {
+		struct smbsrv_tcon *tcons;
+
+		/* number of open connections */
+		struct bitmap *bmap;
+		int num_open;
+	} tree;
+
+	/* the context associated with open files on an smb socket */
+	struct {
+		struct files_struct *files; /* open files */
+		struct bitmap *file_bmap; /* bitmap used to allocate file handles */
+	
+		/* a fsp to use when chaining */
+		struct files_struct *chain_fsp;
+	
+		/* a fsp to use to save when breaking an oplock. */
+		struct files_struct *oplock_save_chain_fsp;
+	
+		/* how many files are open */
+		int files_used;
+	
+		/* limit for maximum open files */
+		int real_max_open_files;
+	} file;
+
+	/* context associated with currently valid session setups */
+	struct {
+		/* users from session setup */
+		char *session_users; /* was a pstring */
+	
+		/* this holds info on user ids that are already validated for this VC */
+		struct user_struct *validated_users;
+		int next_vuid; /* initialise to VUID_OFFSET */
+		int num_validated_vuids;
+	} users;
+
+	/* this holds long term state specific to the printing subsystem */
+	struct {
+		struct notify_queue *notify_queue_head;
+	} print;
+
+	/* the server_context holds a linked list of pending requests,
+	 * this is used for blocking locks and requests blocked due to oplock
+	 * break requests */
+	struct _smbsrv_pending_request {
+		struct _smbsrv_pending_request *next, *prev;
+	
+		/* the request itself - needs to be freed */
+		struct smbsrv_request *request;
+	} *requests;
+
+	/* the timers context contains info on when we last did various
+	 * functions */
+	struct {
+		/* when did we last do timeout processing? */
+		time_t last_timeout_processing;
+	
+		/* when did we last sent a keepalive */
+		time_t last_keepalive_sent;
+		
+		/* when we last checked the smb.conf for auto-reload */
+		time_t last_smb_conf_reload;
+	} timers;
+
+	struct {
+		DATA_BLOB mac_key;
+		uint64_t next_seq_num;
+		enum smb_signing_state signing_state;
+	} signing;
 
 	struct substitute_context substitute;
 
-	struct socket_context socket;
-
-	struct files_context file;
-
-	struct tree_context tree;
-
-	struct users_context users;
-
-	struct printing_context print;
-
-	struct timers_context timers;
-
 	struct dcesrv_context dcesrv;
 
-	struct signing_context signing;
+	const struct model_ops *model_ops;
+
+	struct event_context *events;
 
 	/* the pid of the process handling this session */
 	pid_t pid;
-	
-	/* pointer to list of events that we are waiting on */
-	struct event_context *events;
-
-	/* process model specific operations */
-	const struct model_ops *model_ops;
 };

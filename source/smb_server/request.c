@@ -45,7 +45,7 @@ void req_destroy(struct smbsrv_request *req)
 construct a basic request packet, mostly used to construct async packets
 such as change notify and oplock break requests
 ****************************************************************************/
-struct smbsrv_request *init_smb_request(struct smbsrv_context *smb_ctx)
+struct smbsrv_request *init_smb_request(struct smbsrv_connection *smb_conn)
 {
 	struct smbsrv_request *req;
 	TALLOC_CTX *mem_ctx;
@@ -54,12 +54,12 @@ struct smbsrv_request *init_smb_request(struct smbsrv_context *smb_ctx)
 	   structure itself is also allocated inside this context, so
 	   we need to allocate it before we construct the request
 	*/
-	mem_ctx = talloc_init("request_context[%d]", smb_ctx->socket.pkt_count);
+	mem_ctx = talloc_init("request_context[%d]", smb_conn->socket.pkt_count);
 	if (!mem_ctx) {
 		return NULL;
 	}
 
-	smb_ctx->socket.pkt_count++;
+	smb_conn->socket.pkt_count++;
 
 	req = talloc(mem_ctx, sizeof(*req));
 	if (!req) {
@@ -69,7 +69,7 @@ struct smbsrv_request *init_smb_request(struct smbsrv_context *smb_ctx)
 	ZERO_STRUCTP(req);
 
 	/* setup the request context */
-	req->smb_ctx = smb_ctx;
+	req->smb_conn = smb_conn;
 	req->mem_ctx = mem_ctx;
 	
 	return req;
@@ -91,7 +91,7 @@ static void req_setup_chain_reply(struct smbsrv_request *req, uint_t wct, uint_t
 
 	req->out.buffer = talloc_realloc(req->mem_ctx, req->out.buffer, req->out.allocated);
 	if (!req->out.buffer) {
-		exit_server(req->smb_ctx, "allocation failed");
+		exit_server(req->smb_conn, "allocation failed");
 	}
 
 	req->out.hdr = req->out.buffer + NBT_HDR_SIZE;
@@ -125,7 +125,7 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 
 	req->out.buffer = talloc(req->mem_ctx, req->out.allocated);
 	if (!req->out.buffer) {
-		exit_server(req->smb_ctx, "allocation failed");
+		exit_server(req->smb_conn, "allocation failed");
 	}
 
 	req->out.hdr = req->out.buffer + NBT_HDR_SIZE;
@@ -175,7 +175,7 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 int req_max_data(struct smbsrv_request *req)
 {
 	int ret;
-	ret = req->smb_ctx->negotiate.max_send;
+	ret = req->smb_conn->negotiate.max_send;
 	ret -= PTR_DIFF(req->out.data, req->out.hdr);
 	if (ret < 0) ret = 0;
 	return ret;
@@ -262,7 +262,7 @@ void req_send_reply_nosign(struct smbsrv_request *req)
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
-	if (write_data(req->smb_ctx->socket.fd, req->out.buffer, req->out.size) != req->out.size) {
+	if (write_data(req->smb_conn->socket.fd, req->out.buffer, req->out.size) != req->out.size) {
 		smb_panic("failed to send reply\n");
 	}
 
@@ -306,7 +306,7 @@ void req_reply_dos_error(struct smbsrv_request *req, uint8_t eclass, uint16_t ec
 */
 void req_setup_error(struct smbsrv_request *req, NTSTATUS status)
 {
-	if (!lp_nt_status_support() || !(req->smb_ctx->negotiate.client_caps & CAP_STATUS32)) {
+	if (!lp_nt_status_support() || !(req->smb_conn->negotiate.client_caps & CAP_STATUS32)) {
 		/* convert to DOS error codes */
 		uint8_t eclass;
 		uint32_t ecode;

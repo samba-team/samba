@@ -46,8 +46,8 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_session_info *session_info;
 	DATA_BLOB null_blob;
 
-	if (!req->smb_ctx->negotiate.done_sesssetup) {
-		req->smb_ctx->negotiate.max_send = sess->old.in.bufsize;
+	if (!req->smb_conn->negotiate.done_sesssetup) {
+		req->smb_conn->negotiate.max_send = sess->old.in.bufsize;
 	}
 
 	null_blob.length = 0;
@@ -60,7 +60,7 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = req->smb_ctx->negotiate.auth_context->check_ntlm_password(req->smb_ctx->negotiate.auth_context, 
+	status = req->smb_conn->negotiate.auth_context->check_ntlm_password(req->smb_conn->negotiate.auth_context, 
 								       user_info, 
 								       &server_info);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -73,7 +73,7 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	}
 
 	sess->old.out.action = 0;
-	sess->old.out.vuid = register_vuid(req->smb_ctx, session_info, sess->old.in.user);
+	sess->old.out.vuid = register_vuid(req->smb_conn, session_info, sess->old.in.user);
 	sesssetup_common_strings(req, 
 				 &sess->old.out.os,
 				 &sess->old.out.lanman,
@@ -93,9 +93,9 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
 
-	if (!req->smb_ctx->negotiate.done_sesssetup) {
-		req->smb_ctx->negotiate.max_send = sess->nt1.in.bufsize;
-		req->smb_ctx->negotiate.client_caps = sess->nt1.in.capabilities;
+	if (!req->smb_conn->negotiate.done_sesssetup) {
+		req->smb_conn->negotiate.max_send = sess->nt1.in.bufsize;
+		req->smb_conn->negotiate.client_caps = sess->nt1.in.capabilities;
 	}
 
 	status = make_user_info_for_reply_enc(&user_info, 
@@ -106,7 +106,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = req->smb_ctx->negotiate.auth_context->check_ntlm_password(req->smb_ctx->negotiate.auth_context, 
+	status = req->smb_conn->negotiate.auth_context->check_ntlm_password(req->smb_conn->negotiate.auth_context, 
 								       user_info, 
 								       &server_info);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -119,7 +119,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	}
 
 	sess->nt1.out.action = 0;
-	sess->nt1.out.vuid = register_vuid(req->smb_ctx, session_info, sess->old.in.user);
+	sess->nt1.out.vuid = register_vuid(req->smb_conn, session_info, sess->old.in.user);
 	if (sess->nt1.out.vuid == UID_FIELD_INVALID) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -128,7 +128,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 				 &sess->nt1.out.lanman,
 				 &sess->nt1.out.domain);
 	
-	srv_setup_signing(req->smb_ctx, &session_info->session_key, &sess->nt1.in.password2);
+	srv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2);
 	return NT_STATUS_OK;
 }
 
@@ -157,7 +157,7 @@ NTSTATUS sesssetup_backend(struct smbsrv_request *req,
 			return sesssetup_spnego(req, sess);
 	}
 
-	req->smb_ctx->negotiate.done_sesssetup = True;
+	req->smb_conn->negotiate.done_sesssetup = True;
 
 	return NT_STATUS_INVALID_LEVEL;
 }
