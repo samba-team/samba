@@ -149,7 +149,7 @@ AC_BROKEN_VSNPRINTF
 
 AC_BROKEN_GLOB
 if test "$ac_cv_func_glob_working" != yes; then
-	LIBOBJS="$LIBOBJS glob.o"
+	AC_LIBOBJ(glob)
 fi
 AM_CONDITIONAL(have_glob_h, test "$ac_cv_func_glob_working" = yes)
 
@@ -184,7 +184,7 @@ AC_CHECK_FUNCS([				\
 ])
 
 if test "$ac_cv_func_cgetent" = no; then
-	LIBOBJS="$LIBOBJS getcap.o"
+	AC_LIBOBJ(getcap)
 fi
 
 AC_REQUIRE([AC_FUNC_GETLOGIN])
@@ -404,14 +404,14 @@ AC_HAVE_STRUCT_FIELD(struct sockaddr, sa_len, [#include <sys/types.h>
 if test "$ac_cv_func_getnameinfo" = "yes"; then
   rk_BROKEN_GETNAMEINFO
   if test "$ac_cv_func_getnameinfo_broken" = yes; then
-    LIBOBJS="$LIBOBJS getnameinfo.o"
+	AC_LIBOBJ(getnameinfo)
   fi
 fi
 
 if test "$ac_cv_func_getaddrinfo" = "yes"; then
   rk_BROKEN_GETADDRINFO
   if test "$ac_cv_func_getaddrinfo_numserv" = no; then
-    LIBOBJS="$LIBOBJS getaddrinfo.o freeaddrinfo.o"
+	AC_LIBOBJ(getaddrinfo freeaddrinfo)
   fi
 fi
 

@@ -32,8 +32,7 @@ int main()
 ])
 if test "$ac_cv_func_getcwd_broken" = yes; then
 	AC_DEFINE(BROKEN_GETCWD, 1, [Define if getcwd is broken (like in SunOS 4).])dnl
-	LIBOBJS="$LIBOBJS getcwd.o"
-	AC_SUBST(LIBOBJS)dnl
+	AC_LIBOBJ(getcwd)
 	AC_MSG_RESULT($ac_cv_func_getcwd_broken)
 else
 	AC_MSG_RESULT([seems ok])
