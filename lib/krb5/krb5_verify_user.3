@@ -1,4 +1,4 @@
-.\" Copyright (c) 2001 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2001 - 2003 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -36,8 +36,14 @@
 .Os HEIMDAL
 .Sh NAME
 .Nm krb5_verify_user ,
-.Nm krb5_verify_user_lrealm
-.Nd Heimdal password verifying functions
+.Nm krb5_verify_user_lrealm ,
+.Nm krb5_verify_user_opt ,
+.Nm krb5_verify_opt_init
+.Nm krb5_verify_opt_set_flags ,
+.Nm krb5_verify_opt_set_service ,
+.Nm krb5_verify_opt_set_secure ,
+.Nm krb5_verify_opt_set_keytab
+.Nd Heimdal password verifying functions.
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
@@ -46,16 +52,36 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn "krb5_verify_user" "krb5_context context" " krb5_principal principal" "krb5_ccache ccache" "const char *password" "krb5_boolean secure" "const char *service"
 .Ft krb5_error_code
 .Fn "krb5_verify_user_lrealm" "krb5_context context" "krb5_principal principal" "krb5_ccache ccache" "const char *password" "krb5_boolean secure" "const char *service"
+.Ft void
+.Fn krb5_verify_opt_init "krb5_verify_opt *opt"
+.Ft void
+.Fn krb5_verify_opt_set_ccache "krb5_verify_opt *opt" "krb5_ccache ccache"
+.Ft void
+.Fn krb5_verify_opt_set_keytab "krb5_verify_opt *opt" "krb5_keytab keytab"
+.Ft void
+.Fn krb5_verify_opt_set_secure "krb5_verify_opt *opt" "krb5_boolean secure"
+.Ft void
+.Fn krb5_verify_opt_set_service "krb5_verify_opt *opt" "const char *service"
+.Ft void
+.Fn krb5_verify_opt_set_flags "krb5_verify_opt *opt" "unsigned int flags"
+.Ft krb5_error_code
+.Fo krb5_verify_user_opt
+.Fa "krb5_context context"
+.Fa "krb5_principal principal"
+.Fa "const char *password"
+.Fa "krb5_verify_opt *opt"
+.Fc
 .Sh DESCRIPTION
 The
 .Nm krb5_verify_user
 function verifies the password supplied by a user.
-The principal whose
-password will be verified is specified in
+The principal whose password will be verified is specified in
 .Fa principal .
 New tickets will be obtained as a side-effect and stored in
 .Fa ccache
-(if NULL, the default ccache is used).
+(if 
+.Dv NULL ,
+the default ccache is used).
 If the password is not supplied in
 .Fa password
 (and is given as
@@ -81,6 +107,61 @@ After a successful return, the principal is set to the authenticated
 realm. If the call fails, the principal will not be meaningful, and
 should only be freed with
 .Xr krb5_free_principal 3 .
+.Pp
+.Fn krb5_verify_opt_init
+resets all opt to default values.
+.Pp
+None of the krb5_verify_opt_set function makes a copy of the data
+structure that they are called with. Its up the caller to free them
+after the
+.Fn krb5_verify_user_opt
+is called.
+.Pp
+.Fn krb5_verify_opt_set_ccache
+sets the
+.Fa ccache
+that user of
+.Fa opt
+will use. If not set, the default credential cache will be used.
+.Pp
+.Fn krb5_verify_opt_set_keytab
+sets the
+.Fa keytab
+that user of
+.Fa opt
+will use. If not set, the default keytab will be used.
+.Pp
+.Fn krb5_verify_opt_set_secure
+if
+.Fa secure
+if true, the password verification will require that the ticket will
+be verified against the locally stored service key. If not set,
+default value is true.
+.Pp
+.Fn krb5_verify_opt_set_service
+sets the
+.Fa service
+principal that user of
+.Fa opt
+will use. If not set, the
+.Ql host
+service will be used.
+.Pp
+.Fn krb5_verify_opt_set_flags
+sets
+.Fa flags
+that user of
+.Fa opt
+will use.
+.Pp
+.Fn krb5_verify_user_opt
+function verifies the
+.Fa password
+supplied by a user.
+The principal whose password will be verified is specified in
+.Fa principal .
+Options the to the verification process is pass in in
+.Fa opt .
 .Sh EXAMPLE
 Here is a example program that verifies a password. it uses the
 .Ql host/`hostname`
