@@ -1304,7 +1304,6 @@ struct shmem_ops *sysv_shm_open(int ronly);
 /*The following definitions come from  slprintf.c  */
 
 int vslprintf(char *str, int n, char *format, va_list ap);
-int slprintf(char *str, int n, char *format, ...);
 
 /*The following definitions come from  smbdes.c  */
 

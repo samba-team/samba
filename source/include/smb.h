@@ -847,8 +847,10 @@ struct connection_options {
 
 #ifdef __STDC__
 int Debug1(char *, ...);
+int slprintf(char *str, int n, char *format, ...);
 #else
 int Debug1();
+int slprintf();
 #endif
 
 #ifdef DFS_AUTH

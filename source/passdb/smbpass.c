@@ -364,7 +364,7 @@ BOOL add_smbpwd_entry(struct smb_passwd* pwd)
 
 	int fd;
 	int new_entry_length;
-	unsigned char *new_entry;
+	uchar *new_entry;
 	long offpos;
 
 	if (!*pfile)
@@ -501,7 +501,7 @@ Error was %s\n", pwd->smb_name, pfile, strerror(errno)));
 
 	new_entry_length = strlen(pwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 2;
 
-	if((new_entry = (char *)malloc( new_entry_length )) == 0)
+	if((new_entry = (uchar *)malloc( new_entry_length )) == 0)
 	{
 		DEBUG(0, ("add_smbpwd_entry(malloc): Failed to add entry for user %s to file %s. \
 Error was %s\n", 
@@ -512,8 +512,8 @@ Error was %s\n",
 		return False;
 	}
 
-	slprintf(new_entry, new_entry_length - 1, "%s:%u:", pwd->smb_name, (unsigned)pwd->smb_userid);
-	p = (unsigned char *)&new_entry[strlen(new_entry)];
+	slprintf((char *)new_entry, new_entry_length - 1, "%s:%u:", pwd->smb_name, (unsigned)pwd->smb_userid);
+	p = (unsigned char *)&new_entry[strlen((char *)new_entry)];
 
 	for( i = 0; i < 16; i++)
 	{
@@ -537,7 +537,7 @@ Error was %s\n",
 		             fd, new_entry_length, strlen(new_entry), new_entry));
 #endif
 
-	if ((wr_len = write(fd, new_entry, strlen(new_entry))) != strlen(new_entry))
+	if ((wr_len = write(fd, new_entry, strlen(new_entry))) != strlen((char *)new_entry))
 	{
 		DEBUG(0, ("add_smbpwd_entry(write): %d Failed to add entry for user %s to file %s. \
 Error was %s\n", wr_len, pwd->smb_name, pfile, strerror(errno)));
