@@ -157,7 +157,7 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
   for(i = 0; i < num_validated_users; i++) {
     vuser = &validated_users[i];
     if( vuser->uid == uid )
-      return i; /* User already validated */
+      return (uint16)(i + VUID_OFFSET); /* User already validated */
   }
 
   validated_users = (user_struct *)Realloc(validated_users,
