@@ -146,13 +146,12 @@ static int ms_fnmatch_lanman1(const smb_ucs2_t *pattern, const smb_ucs2_t *strin
 
    Returns 0 on match, -1 on fail.
 */
-static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string)
+static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string, int protocol)
 {
 	const smb_ucs2_t *p = pattern, *n = string;
 	smb_ucs2_t c;
-	extern int Protocol;
 
-	if (Protocol <= PROTOCOL_LANMAN2) {
+	if (protocol <= PROTOCOL_LANMAN2) {
 		return ms_fnmatch_lanman1(pattern, string);
 	}
 
@@ -165,23 +164,23 @@ static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string)
 
 		case UCS2_CHAR('>'):
 			if (n[0] == UCS2_CHAR('.')) {
-				if (! n[1] && ms_fnmatch_w(p, n+1) == 0) return 0;
-				if (ms_fnmatch_w(p, n) == 0) return 0;
+				if (! n[1] && ms_fnmatch_w(p, n+1, protocol) == 0) return 0;
+				if (ms_fnmatch_w(p, n, protocol) == 0) return 0;
 				return -1;
 			}
-			if (! *n) return ms_fnmatch_w(p, n);
+			if (! *n) return ms_fnmatch_w(p, n, protocol);
 			n++;
 			break;
 
 		case UCS2_CHAR('*'):
 			for (; *n; n++) {
-				if (ms_fnmatch_w(p, n) == 0) return 0;
+				if (ms_fnmatch_w(p, n, protocol) == 0) return 0;
 			}
 			break;
 
 		case UCS2_CHAR('<'):
 			for (; *n; n++) {
-				if (ms_fnmatch_w(p, n) == 0) return 0;
+				if (ms_fnmatch_w(p, n, protocol) == 0) return 0;
 				if (*n == UCS2_CHAR('.') && !strchr_wa(n+1,'.')) {
 					n++;
 					break;
@@ -190,7 +189,7 @@ static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string)
 			break;
 
 		case UCS2_CHAR('"'):
-			if (*n == 0 && ms_fnmatch_w(p, n) == 0) return 0;
+			if (*n == 0 && ms_fnmatch_w(p, n, protocol) == 0) return 0;
 			if (*n != UCS2_CHAR('.')) return -1;
 			n++;
 			break;
@@ -207,12 +206,21 @@ static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string)
 }
 
 
-int ms_fnmatch(const char *pattern, const char *string)
+int ms_fnmatch(const char *pattern, const char *string, int protocol)
 {
 	wpstring p, s;
+	int ret;
 
 	pstrcpy_wa(p, pattern);
 	pstrcpy_wa(s, string);
 
-	return ms_fnmatch_w(p, s);
+	ret = ms_fnmatch_w(p, s, protocol);
+/* 	DEBUG(0,("ms_fnmatch(%s,%s) -> %d\n", pattern, string, ret)); */
+	return ret;
+}
+
+/* a generic fnmatch function - uses for non-CIFS pattern matching */
+int gen_fnmatch(const char *pattern, const char *string)
+{
+	return ms_fnmatch(pattern, string, PROTOCOL_NT1);
 }

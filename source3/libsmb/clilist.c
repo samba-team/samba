@@ -216,7 +216,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			continue;
 		}
 
-                if (cli_is_error(cli)) 
+                if (cli_is_error(cli) || !rdata || !rparam) 
                         return -1;
 
 		if (total_received == -1) total_received = 0;

@@ -125,7 +125,7 @@ int ms_fnmatch_lanman(char *pattern, char *string)
 	return ms_fnmatch_lanman_core(pattern, string);
 }
 
-static BOOL reg_match_one(char *pattern, char *file)
+static BOOL reg_match_one(struct cli_state *cli, char *pattern, char *file)
 {
 	/* oh what a weird world this is */
 	if (old_list && strcmp(pattern, "*.*") == 0) return True;
@@ -138,20 +138,20 @@ static BOOL reg_match_one(char *pattern, char *file)
 
 	if (strcmp(file,"..") == 0) file = ".";
 
-	return ms_fnmatch(pattern, file)==0;
+	return ms_fnmatch(pattern, file, cli->protocol)==0;
 }
 
-static char *reg_test(char *pattern, char *long_name, char *short_name)
+static char *reg_test(struct cli_state *cli, char *pattern, char *long_name, char *short_name)
 {
 	static fstring ret;
 	fstrcpy(ret, "---");
 
 	pattern = 1+strrchr_m(pattern,'\\');
 
-	if (reg_match_one(pattern, ".")) ret[0] = '+';
-	if (reg_match_one(pattern, "..")) ret[1] = '+';
-	if (reg_match_one(pattern, long_name) || 
-	    (*short_name && reg_match_one(pattern, short_name))) ret[2] = '+';
+	if (reg_match_one(cli, pattern, ".")) ret[0] = '+';
+	if (reg_match_one(cli, pattern, "..")) ret[1] = '+';
+	if (reg_match_one(cli, pattern, long_name) || 
+	    (*short_name && reg_match_one(cli, pattern, short_name))) ret[2] = '+';
 	return ret;
 }
 
@@ -323,7 +323,7 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	fstrcpy(res1, "---");
 	cli_list(cli, mask, aHIDDEN | aDIR, listfn, NULL);
 
-	res2 = reg_test(mask, long_name, short_name);
+	res2 = reg_test(cli, mask, long_name, short_name);
 
 	if (showall || strcmp(res1, res2)) {
 		DEBUG(0,("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",

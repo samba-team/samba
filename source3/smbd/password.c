@@ -22,7 +22,6 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-extern int Protocol;
 extern struct in_addr ipzero;
 
 /* users from session setup */
