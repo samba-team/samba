@@ -149,19 +149,10 @@ void get_sam_domain_name(void)
 }
 
 /****************************************************************************
- obtain the sid from the PDC.  do some verification along the way...
+ obtain the sid from the PDC.
 ****************************************************************************/
 BOOL get_member_domain_sid(void)
 {
-	POLICY_HND pol;
-	fstring srv_name;
-	struct cli_state cli;
-	BOOL res = True;
-	DOM_SID sid3;
-	DOM_SID sid5;
-	fstring dom3;
-	fstring dom5;
-
 	switch (lp_server_role())
 	{
 		case ROLE_DOMAIN_NONE:
@@ -181,6 +172,27 @@ BOOL get_member_domain_sid(void)
 		}
 	}
 
+	return get_domain_sids(NULL, &global_member_sid);
+}
+
+/****************************************************************************
+ obtain the sid from the PDC.  do some verification along the way...
+****************************************************************************/
+BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5)
+{
+	POLICY_HND pol;
+	fstring srv_name;
+	struct cli_state cli;
+	BOOL res = True;
+	fstring dom3;
+	fstring dom5;
+
+	if (sid3 == NULL && sid5 == NULL)
+	{
+		/* don't waste my time... */
+		return False;
+	}
+
 	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
 	{
 		DEBUG(0,("get_member_domain_sid: unable to initialise client connection.\n"));
@@ -194,8 +206,14 @@ BOOL get_member_domain_sid(void)
 
 	fstrcpy(dom3, "");
 	fstrcpy(dom5, "");
-	ZERO_STRUCT(sid3);
-	ZERO_STRUCT(sid5);
+	if (sid3 != NULL)
+	{
+		ZERO_STRUCTP(sid3);
+	}
+	if (sid5 != NULL)
+	{
+		ZERO_STRUCTP(sid5);
+	}
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, global_myname);
@@ -207,11 +225,17 @@ BOOL get_member_domain_sid(void)
 	/* lookup domain controller; receive a policy handle */
 	res = res ? do_lsa_open_policy(&cli, srv_name, &pol, False) : False;
 
-	/* send client info query, level 3.  receive domain name and sid */
-	res = res ? do_lsa_query_info_pol(&cli, &pol, 3, dom3, &sid3) : False;
+	if (sid3 != NULL)
+	{
+		/* send client info query, level 3.  receive domain name and sid */
+		res = res ? do_lsa_query_info_pol(&cli, &pol, 3, dom3, sid3) : False;
+	}
 
-	/* send client info query, level 5.  receive domain name and sid */
-	res = res ? do_lsa_query_info_pol(&cli, &pol, 5, dom5, &sid5) : False;
+	if (sid5 != NULL)
+	{
+		/* send client info query, level 5.  receive domain name and sid */
+		res = res ? do_lsa_query_info_pol(&cli, &pol, 5, dom5, sid5) : False;
+	}
 
 	/* close policy handle */
 	res = res ? do_lsa_close(&cli, &pol) : False;
@@ -225,10 +249,16 @@ BOOL get_member_domain_sid(void)
 	{
 		pstring sid;
 		DEBUG(2,("LSA Query Info Policy\n"));
-		sid_to_string(sid, &sid3);
-		DEBUG(2,("Domain Member     - Domain: %s SID: %s\n", dom3, sid));
-		sid_to_string(sid, &sid5);
-		DEBUG(2,("Domain Controller - Domain: %s SID: %s\n", dom5, sid));
+		if (sid3 != NULL)
+		{
+			sid_to_string(sid, sid3);
+			DEBUG(2,("Domain Member     - Domain: %s SID: %s\n", dom3, sid));
+		}
+		if (sid5 != NULL)
+		{
+			sid_to_string(sid, sid5);
+			DEBUG(2,("Domain Controller - Domain: %s SID: %s\n", dom5, sid));
+		}
 
 		if (!strequal(dom3, global_myworkgroup) ||
 		    !strequal(dom5, global_myworkgroup))
@@ -241,16 +271,6 @@ BOOL get_member_domain_sid(void)
 	else
 	{
 		DEBUG(1,("lsa query info failed\n"));
-	}
-
-	if (!res)
-	{
-		DEBUG(0,("get_member_domain_sid: unable to obtain Domain member SID\n"));
-	}
-	else
-	{
-		/* this is a _lot_ of trouble to go to for just this info: */
-		global_member_sid = sid5;
 	}
 
 	return res;

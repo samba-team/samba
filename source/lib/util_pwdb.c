@@ -26,9 +26,11 @@
 extern int DEBUGLEVEL;
 extern DOM_SID global_sam_sid;
 extern fstring global_sam_name;
-extern DOM_SID global_sid_S_1_5_20;
+
+extern DOM_SID global_member_sid;
 extern fstring global_myworkgroup;
 
+extern DOM_SID global_sid_S_1_5_20;
 /*
  * A list of the rids of well known BUILTIN and Domain users
  * and groups.
@@ -416,7 +418,7 @@ BOOL pwdb_gethexpwd(const char *p, char *pwd)
 /*************************************************************
  initialise password databases, domain names, domain sid.
 **************************************************************/
-BOOL pwdb_initialise(void)
+BOOL pwdb_initialise(BOOL is_server)
 {
 	fstrcpy(global_myworkgroup, lp_workgroup());
 
@@ -430,15 +432,22 @@ BOOL pwdb_initialise(void)
 
 	generate_wellknown_sids();
 
-	if (!generate_sam_sid(global_sam_name))
+	if (is_server)
 	{
-		DEBUG(0,("ERROR: Samba cannot create a SAM SID for its domain (%s).\n",
-		          global_sam_name));
-		return False;
+		if (!generate_sam_sid(global_sam_name))
+		{
+			DEBUG(0,("ERROR: Samba cannot create a SAM SID for its domain (%s).\n",
+				  global_sam_name));
+			return False;
+		}
+	}
+	else
+	{
+		if (!get_domain_sids(&global_member_sid, &global_sam_sid))
+		{
+			return False;
+		}
 	}
 
-	if(!initialise_password_db())
-		return False;
-
-	return True;
+	return initialise_password_db();
 }

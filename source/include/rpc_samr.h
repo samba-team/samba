@@ -1145,15 +1145,26 @@ typedef struct r_samr_open_group_info
 } SAMR_R_OPEN_GROUP;
 
 
-/* SAMR_Q_UNKNOWN_21 - probably an open group in domain */
-typedef struct q_samr_unknown_21_info
+/* SAMR_Q_QUERY_ALIASMEM - query alias members */
+typedef struct q_samr_query_aliasmem_info
 {
-    POLICY_HND group_pol;        /* policy handle */
+	POLICY_HND alias_pol;        /* policy handle */
 
-	uint16 unknown_1;            /* 16 bit unknown - 0x0477 */
-	uint16 unknown_2;            /* 16 bit unknown - 0x0000 */
+} SAMR_Q_QUERY_ALIASMEM;
 
-} SAMR_Q_UNKNOWN_21;
+
+/* SAMR_R_QUERY_ALIASMEM - query alias members */
+typedef struct r_samr_query_aliasmem_info
+{
+	uint32 num_sids;
+	uint32 ptr;
+	uint32 num_sids1;
+
+	DOM_SID *sid;
+
+	uint32 status;
+
+} SAMR_R_QUERY_ALIASMEM;
 
 
 /* SAMR_Q_UNK_ALIASMEM - don't know! */

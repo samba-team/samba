@@ -695,13 +695,13 @@ static void samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 	{
 		if (q_u->switch_level == 3)
 		{
-			status = NT_STATUS_INVALID_INFO_CLASS;
-		}
-		else
-		{
 			r_e.ptr = 1;
 			ctr.switch_value = 3;
 			make_samr_alias_info3(&ctr.alias.info3, "<account description>");
+		}
+		else
+		{
+			status = NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
 
@@ -851,6 +851,104 @@ static void api_samr_query_useraliases( uint16 vuid, prs_struct *data, prs_struc
 
 	/* construct reply.  always indicate success */
 	samr_reply_query_useraliases(&q_u, rdata);
+}
+
+/*******************************************************************
+ samr_reply_query_aliasmem
+ ********************************************************************/
+static void samr_reply_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
+				prs_struct *rdata)
+{
+	uint32 status = 0;
+
+	LOCAL_GRP_MEMBER *mem_grp = NULL;
+	DOM_SID *sid = NULL;
+	int num_sids = 0;
+	DOM_SID alias_sid;
+	uint32 alias_rid;
+	fstring alias_sid_str;
+
+	SAMR_R_QUERY_ALIASMEM r_u;
+
+	DEBUG(5,("samr_query_aliasmem: %d\n", __LINE__));
+
+	/* find the policy handle.  open a policy on it. */
+	if (status == 0x0 && !get_lsa_policy_samr_sid(&q_u->alias_pol, &alias_sid))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+	else
+	{
+		sid_to_string(alias_sid_str, &alias_sid     );
+		sid_split_rid(&alias_sid, &alias_rid);
+	}
+
+	if (status == 0x0)
+	{
+		DEBUG(10,("sid is %s\n", alias_sid_str));
+
+		if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
+		{
+			DEBUG(10,("lookup on S-1-5-20\n"));
+
+			become_root(True);
+			status = getbuiltinrid(alias_rid, &mem_grp, &num_sids) ? 0xC0000000 | NT_STATUS_NO_SUCH_GROUP : 0x0;
+			unbecome_root(True);
+		}
+		else if (sid_equal(&alias_sid, &global_sam_sid))
+		{
+			DEBUG(10,("lookup on Domain SID\n"));
+
+			become_root(True);
+			status = getaliasrid(alias_rid, &mem_grp, &num_sids) ? 0xC0000000 | NT_STATUS_NO_SUCH_GROUP : 0x0;
+			unbecome_root(True);
+		}
+		else
+		{
+			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+		}
+	}
+
+	if (status == 0x0 && num_sids > 0)
+	{
+		sid = malloc(num_sids * sizeof(DOM_SID));
+		if (mem_grp != NULL && sid != NULL)
+		{
+			int i;
+			for (i = 0; i < num_sids; i++)
+			{
+				sid[i] = mem_grp[i].sid;
+			}
+			free(mem_grp);
+		}
+	}
+
+	make_samr_r_query_aliasmem(&r_u, num_sids, sid, status);
+
+	/* store the response in the SMB stream */
+	samr_io_r_query_aliasmem("", &r_u, rdata, 0);
+
+	if (sid != NULL)
+	{
+		free(sid);
+	}
+
+	DEBUG(5,("samr_query_aliasmem: %d\n", __LINE__));
+
+}
+
+/*******************************************************************
+ api_samr_query_aliasmem
+ ********************************************************************/
+static void api_samr_query_aliasmem( uint16 vuid, prs_struct *data, prs_struct *rdata)
+{
+	SAMR_Q_QUERY_ALIASMEM q_u;
+
+	/* grab the samr 0x21 */
+	samr_io_q_query_aliasmem("", &q_u, data, 0);
+
+	/* construct reply.  always indicate success */
+	samr_reply_query_aliasmem(&q_u, rdata);
 }
 
 /*******************************************************************
@@ -1669,6 +1767,7 @@ static void samr_reply_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_OPEN_ALIAS r_u;
+	DOM_SID sid;
 	BOOL pol_open = False;
 
 	/* set up the SAMR open_alias response */
@@ -1682,6 +1781,16 @@ static void samr_reply_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 
 	/* associate a RID with the (unique) handle. */
 	if (r_u.status == 0x0 && !set_lsa_policy_samr_rid(&(r_u.pol), q_u->rid_alias))
+	{
+		/* oh, whoops.  don't know what error message to return, here */
+		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	sid_copy(&sid, &global_sid_S_1_5_20);
+	sid_append_rid(&sid, q_u->rid_alias);
+
+	/* associate an alias SID with the (unique) handle. */
+	if (r_u.status == 0x0 && !set_lsa_policy_samr_sid(&(r_u.pol), &sid))
 	{
 		/* oh, whoops.  don't know what error message to return, here */
 		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -1728,6 +1837,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_ENUM_DOM_GROUPS"  , SAMR_ENUM_DOM_GROUPS  , api_samr_enum_dom_groups  },
 	{ "SAMR_ENUM_DOM_ALIASES" , SAMR_ENUM_DOM_ALIASES , api_samr_enum_dom_aliases },
 	{ "SAMR_QUERY_USERALIASES", SAMR_QUERY_USERALIASES, api_samr_query_useraliases},
+	{ "SAMR_QUERY_ALIASMEM"   , SAMR_QUERY_ALIASMEM   , api_samr_query_aliasmem   },
 	{ "SAMR_LOOKUP_NAMES"     , SAMR_LOOKUP_NAMES     , api_samr_lookup_names     },
 	{ "SAMR_OPEN_USER"        , SAMR_OPEN_USER        , api_samr_open_user        },
 	{ "SAMR_QUERY_USERINFO"   , SAMR_QUERY_USERINFO   , api_samr_query_userinfo   },

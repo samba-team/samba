@@ -261,6 +261,7 @@ char *rep_inet_ntoa(struct in_addr ip);
 
 void get_sam_domain_name(void);
 BOOL get_member_domain_sid(void);
+BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5);
 void generate_wellknown_sids(void);
 BOOL generate_sam_sid(char *domain_name);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain);
@@ -457,7 +458,7 @@ void pwdb_set_must_change_time(char *p, int max_len, time_t t);
 void pwdb_set_last_set_time(char *p, int max_len, time_t t);
 void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl);
 BOOL pwdb_gethexpwd(const char *p, char *pwd);
-BOOL pwdb_initialise(void);
+BOOL pwdb_initialise(BOOL server);
 
 /*The following definitions come from  lib/util_sid.c  */
 
@@ -2112,8 +2113,11 @@ void make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u, POLICY_HND *hnd,
 				DOM_SID *sid);
 void samr_io_q_add_aliasmem(char *desc,  SAMR_Q_ADD_ALIASMEM *q_u, prs_struct *ps, int depth);
 void samr_io_r_add_aliasmem(char *desc,  SAMR_R_ADD_ALIASMEM *r_u, prs_struct *ps, int depth);
-void make_samr_q_unknown_21(SAMR_Q_UNKNOWN_21 *q_c,
-				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2);
+void make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_c, POLICY_HND *hnd);
+void samr_io_q_query_aliasmem(char *desc,  SAMR_Q_QUERY_ALIASMEM *q_u, prs_struct *ps, int depth);
+void make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
+		uint32 num_sids, DOM_SID *sid, uint32 status);
+void samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struct *ps, int depth);
 void samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
 void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		uint32 num_rids, uint32 *rid, uint8 *type, uint32 status);

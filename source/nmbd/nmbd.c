@@ -677,7 +677,7 @@ static void usage(char *pname)
 
   reload_services( True );
 
-	if (!pwdb_initialise())
+	if (!pwdb_initialise(True))
 	{
 		exit(1);
 	}
