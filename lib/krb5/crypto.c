@@ -775,6 +775,8 @@ _key_schedule(krb5_context context,
 
     if(kt->schedule == NULL)
 	return 0;
+    if (key->schedule != NULL)
+	return 0;
     ALLOC(key->schedule, 1);
     if(key->schedule == NULL)
 	return ENOMEM;
