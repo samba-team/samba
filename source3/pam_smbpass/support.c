@@ -355,25 +355,6 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
     strncpy( data_name, FAIL_PREFIX, sizeof(FAIL_PREFIX) );
     strncpy( data_name + sizeof(FAIL_PREFIX) - 1, name, strlen( name ) + 1 );
 
-    /* First we check whether we've been given the password in already
-       encrypted form. */
-    if (strlen( p ) == 16 || (strlen( p ) == 32
-         && pdb_gethexpwd( p, (char *) hash_pass ))) {
-
-        if (!memcmp( hash_pass, pdb_get_lanman_passwd(sampass), 16 )
-            || (pdb_get_nt_passwd(sampass)
-                && !memcmp( hash_pass, pdb_get_nt_passwd(sampass), 16 )))
-        {
-            retval = PAM_SUCCESS;
-            if (data_name) {	/* reset failures */
-                pam_set_data( pamh, data_name, NULL, _cleanup_failures );
-            }
-            _pam_delete( data_name );
-            memset( hash_pass, '\0', 16 );
-            return retval;
-        }
-    }
-
     /*
      * The password we were given wasn't an encrypted password, or it
      * didn't match the one we have.  We encrypt the password now and try
