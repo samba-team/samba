@@ -60,22 +60,31 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 			return NT_STATUS_NO_LOGON_SERVERS;
 		}
 
-		if (!name_status_find("*", 0x20, 0x20, to_ip, remote_machine)) {
+		if (lp_security() == SEC_ADS) {
+			/* if in ADS mode then we know that port 445
+			   will work and *SMBSERVER will be recognised
+			   anyway. This avoids an expensive netbios
+			   lookup. */
+			fstrcpy(remote_machine, "*SMBSERVER");
+		} else if (!name_status_find("*", 0x20, 0x20, to_ip, remote_machine)) {
 			DEBUG(0, ("connect_to_domain_password_server: Can't "
 				  "resolve name for IP %s\n", server));
 			return NT_STATUS_NO_LOGON_SERVERS;
 		}
+
+		/* we know the IP - smb.conf specified it! */
+		dest_ip = to_ip;
 	} else {
 		fstrcpy(remote_machine, server);
+		strupper(remote_machine);
+		if (!resolve_name(remote_machine, &dest_ip, 0x20)) {
+			DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", 
+				 remote_machine));
+			return NT_STATUS_NO_LOGON_SERVERS;
+		}
 	}
 
 	standard_sub_basic(current_user_info.smb_name, remote_machine, sizeof(remote_machine));
-	strupper(remote_machine);
-
-	if(!resolve_name( remote_machine, &dest_ip, 0x20)) {
-		DEBUG(1,("connect_to_domain_password_server: Can't resolve address for %s\n", remote_machine));
-		return NT_STATUS_NO_LOGON_SERVERS;
-	}
   
 	if (ismyip(dest_ip)) {
 		DEBUG(1,("connect_to_domain_password_server: Password server loop - not using password server %s\n",
