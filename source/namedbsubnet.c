@@ -41,6 +41,7 @@ extern struct in_addr ipzero;
 
 extern pstring myname;
 extern fstring myworkgroup;
+extern char **my_netbios_names;
 
 BOOL updatedlists = True;
 int updatecount = 0;
@@ -214,13 +215,28 @@ void add_workgroup_to_subnet( struct subnet_record *d, char *group)
    */
   if (strequal(myworkgroup, group))
   {
+    int n;
+
     add_my_name_entry(d,group,0x0 ,nb_type|NB_ACTIVE|NB_GROUP);
     add_my_name_entry(d,group,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
-    /* add samba server name to workgroup list. */
-    add_server_entry(d,w,myname,w->ServerType|SV_TYPE_LOCAL_LIST_ONLY,0,
+
+    /* Add all our server names to the workgroup list. We remove any
+       browser or logon server flags from all but the primary name.
+     */
+    for( n = 0; my_netbios_names[n]; n++)
+    {    
+      char *name = my_netbios_names[n];
+      int stype = w->ServerType;
+
+      if(!strequal(myname, name))
+          stype &= ~(SV_TYPE_MASTER_BROWSER|SV_TYPE_POTENTIAL_BROWSER|
+                     SV_TYPE_DOMAIN_MASTER|SV_TYPE_DOMAIN_MEMBER);
+
+      add_server_entry(d,w,name,stype|SV_TYPE_LOCAL_LIST_ONLY,0,
 		lp_serverstring(),True);
-    DEBUG(3,("add_workgroup_to_subnet: Added server name entry %s to subnet %s\n",
-                myname, inet_ntoa(d->bcast_ip)));
+      DEBUG(3,("add_workgroup_to_subnet: Added server name entry %s \
+to subnet %s\n", name, inet_ntoa(d->bcast_ip)));
+    }
   }
 }
 

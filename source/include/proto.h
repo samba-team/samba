@@ -146,6 +146,7 @@ char *lp_wins_server(void);
 char *lp_interfaces(void);
 char *lp_socket_address(void);
 char *lp_nis_home_map_name(void);
+char *lp_netbios_aliases(void);
 BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
 BOOL lp_wins_proxy(void);
@@ -871,8 +872,8 @@ uint32 file_size(char *file_name);
 char *attrib_string(int mode);
 int StrCaseCmp(const char *s, const char *t);
 int StrnCaseCmp(const char *s, const char *t, int n);
-BOOL strequal(char *s1,char *s2);
-BOOL strnequal(char *s1,char *s2,int n);
+BOOL strequal(const char *s1,const char *s2);
+BOOL strnequal(const char *s1,const char *s2,int n);
 BOOL strcsequal(char *s1,char *s2);
 void strlower(char *s);
 void strupper(char *s);
@@ -965,6 +966,7 @@ void free_namearray(name_compare_entry *name_array);
 BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
 int file_lock(char *name,int timeout);
 void file_unlock(int fd);
+BOOL is_myname(const char *s);
 
 /*The following definitions come from  vt_mode.c  */
 

@@ -41,6 +41,7 @@ extern pstring myhostname;
 static pstring host_file;
 extern pstring myname;
 extern fstring myworkgroup;
+extern char **my_netbios_names;
 
 /* are we running as a daemon ? */
 static BOOL is_daemon = False;
@@ -363,7 +364,11 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 static BOOL init_structs()
 {
   extern fstring local_machine;
-  char *p;
+  char *p, *ptr;
+  int namecount;
+  int n;
+  int nodup;
+  pstring nbname;
 
   if (! *myname) {
     strcpy(myname,myhostname);
@@ -372,11 +377,61 @@ static BOOL init_structs()
   }
   strupper(myname);
 
+  /* Add any NETBIOS name aliases. Ensure that the first entry
+     is equal to myname. */
+  /* Work out the max number of netbios aliases that we have */
+  ptr=lp_netbios_aliases();
+  for (namecount=0; next_token(&ptr,nbname,NULL); namecount++)
+    ;
+  if (*myname)
+      namecount++;
+
+  /* Allocate space for the netbios aliases */
+  if((my_netbios_names=(char **)malloc(sizeof(char *)*(namecount+1))) == NULL)
+  {
+     DEBUG(0,("init_structs: malloc fail.\n"));
+     return False;
+  }
+ 
+  /* Use the myname string first */
+  namecount=0;
+  if (*myname)
+    my_netbios_names[namecount++] = myname;
+  
+  ptr=lp_netbios_aliases();
+  while (next_token(&ptr,nbname,NULL)) {
+    strupper(nbname);
+    /* Look for duplicates */
+    nodup=1;
+    for(n=0; n<namecount; n++) {
+      if (strcmp(nbname, my_netbios_names[n])==0)
+        nodup=0;
+    }
+    if (nodup)
+      my_netbios_names[namecount++]=strdup(nbname);
+  }
+  
+  /* Check the strdups succeeded. */
+  for(n = 0; n < namecount; n++)
+    if(my_netbios_names[n]==NULL)
+    {
+      DEBUG(0,("init_structs: malloc fail when allocating names.\n"));
+      return False;
+    }
+  
+  /* Terminate name list */
+  my_netbios_names[namecount++]=NULL;
+  
   strcpy(local_machine,myname);
   trim_string(local_machine," "," ");
   p = strchr(local_machine,' ');
-  if (p) *p = 0;
+  if (p) 
+    *p = 0;
   strlower(local_machine);
+
+  DEBUG(5, ("Netbios name list:-\n"));
+  for (n=0; my_netbios_names[n]; n++)
+    DEBUG(5, ("my_netbios_names[%d]=\"%s\"\n", n, my_netbios_names[n]));
 
   return True;
 }
@@ -493,14 +548,19 @@ static void usage(char *pname)
   DEBUG(1,("%s netbios nameserver version %s started\n",timestring(),VERSION));
   DEBUG(1,("Copyright Andrew Tridgell 1994-1997\n"));
 
-  get_myname(myhostname,NULL);
+  if(!get_myname(myhostname,NULL))
+  {
+    DEBUG(0,("Unable to get my hostname - exiting.\n"));
+    return -1;
+  }
 
   if (!reload_services(False))
     return(-1);	
 
   codepage_initialise(lp_client_code_page());
 
-  init_structs();
+  if(!init_structs())
+    return -1;
 
   reload_services(True);
 

@@ -112,7 +112,7 @@ void tell_become_backup(void)
 	      
 	      num_servers++;
 	      
-	      if (strequal(myname, s->serv.name)) continue;
+	      if (is_myname(s->serv.name)) continue;
 	      
 	      if (s->serv.type & SV_TYPE_BACKUP_BROWSER) {
 		num_backups++;
@@ -153,7 +153,7 @@ void tell_become_backup(void)
 BOOL same_context(struct dgram_packet *dgram)
 {
   if (!strequal(dgram->dest_name  .scope,scope )) return(True);
-  if ( strequal(dgram->source_name.name ,myname)) return(True);
+  if ( is_myname(dgram->source_name.name)) return(True);
   
   return(False);
 }
@@ -624,7 +624,7 @@ static void process_announce_request(struct packet_struct *p,char *buf)
   DEBUG(3,("process_announce_request: Announce request from %s to %s token=0x%X\n",
 	   name,namestr(&dgram->dest_name), token));
   
-  if (strequal(dgram->source_name.name,myname)) return;
+  if (is_myname(dgram->source_name.name)) return;
   
   /* XXXX BUG or FEATURE?: need to ensure that we are a member of
      this workgroup before announcing, particularly as we only
