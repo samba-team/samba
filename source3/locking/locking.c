@@ -454,8 +454,10 @@ int get_share_modes(connection_struct *conn,
 				i++;
 			} else {
 				DEBUG(10,("get_share_modes: deleted %s\n", share_mode_str(i, entry_p) ));
-				memcpy( &shares[i], &shares[i+1],
-					sizeof(share_mode_entry) * (num_share_modes - i - 1));
+				if (num_share_modes - i - 1 > 0) {
+					memcpy( &shares[i], &shares[i+1],
+						sizeof(share_mode_entry) * (num_share_modes - i - 1));
+				}
 				num_share_modes--;
 				del_count++;
 			}
@@ -575,8 +577,10 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 			if (ppse)
 				*ppse = memdup(&shares[i], sizeof(*shares));
 			data->u.num_share_mode_entries--;
-			memmove(&shares[i], &shares[i+1], 
-				dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares)));
+			if ((dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares))) > 0) {
+				memmove(&shares[i], &shares[i+1], 
+					dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares)));
+			}
 			del_count++;
 
 			DEBUG(10,("del_share_entry: deleting entry %d\n", i ));
