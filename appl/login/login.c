@@ -213,7 +213,7 @@ krb5_verify(struct passwd *pwd, const char *password)
 }
 
 static int
-krb5_start_session (struct passwd *pwd)
+krb5_start_session (const struct passwd *pwd)
 {
     krb5_error_code ret;
     char residual[64];
@@ -276,7 +276,7 @@ krb5_finish (void)
 static int pag_set = 0;
 
 static void
-krb5_get_afs_tokens (struct passwd *pwd)
+krb5_get_afs_tokens (const struct passwd *pwd)
 {
     char cell[64];
     char *pw_dir;
@@ -346,7 +346,7 @@ krb4_verify(struct passwd *pwd, const char *password)
 }
 
 static void
-krb4_get_afs_tokens (struct passwd *pwd)
+krb4_get_afs_tokens (const struct passwd *pwd)
 {
     char cell[64];
     char *pw_dir;
@@ -423,14 +423,22 @@ checknologin(void)
     exit(0);
 }
 
+/* 
+ * Actually log in the user.  `pwd' contains all the relevant
+ * information about the user.  `ttyn' is the complete name of the tty
+ * and `tty' the short name.
+ */
 
 static void
-do_login(struct passwd *pwd, char *tty, char *ttyn)
+do_login(const struct passwd *pwd, char *tty, char *ttyn)
 {
 #ifdef HAVE_SHADOW_H 
     struct spwd *sp;
 #endif
     int rootlogin = (pwd->pw_uid == 0);
+    gid_t tty_gid;
+    struct group *gr;
+    const char *home_dir;
 
     if(!rootlogin)
 	checknologin();
@@ -441,6 +449,25 @@ do_login(struct passwd *pwd, char *tty, char *ttyn)
 
     update_utmp(pwd->pw_name, remote_host ? remote_host : "",
 		tty, ttyn);
+
+    gr = getgrnam ("tty");
+    if (gr != NULL)
+	tty_gid = gr->gr_gid;
+    else
+	tty_gid = pwd->pw_gid;
+
+    if (chown (ttyn, pwd->pw_uid, pwd->pw_gid) < 0) {
+	warn("chown %s", ttyn);
+	if (rootlogin == 0)
+	    exit (1);
+    }
+
+    if (chmod (ttyn, S_IRUSR | S_IWUSR | S_IWGRP) < 0) {
+	warn("chmod %s", ttyn);
+	if (rootlogin == 0)
+	    exit (1);
+    }
+
 #ifdef HAVE_SETLOGIN
     if(setlogin(pwd->pw_name)){
 	warn("setlogin(%s)", pwd->pw_name);
@@ -528,11 +555,12 @@ do_login(struct passwd *pwd, char *tty, char *ttyn)
 	    free(ucap);
 	}
 #endif
-    if (chdir(pwd->pw_dir) < 0) {
+    home_dir = pwd->pw_dir;
+    if (chdir(home_dir) < 0) {
 	fprintf(stderr, "No home directory \"%s\"!\n", pwd->pw_dir);
 	if (chdir("/"))
 	    exit(0);
-	pwd->pw_dir = "/";
+	home_dir = "/";
 	fprintf(stderr, "Logging in with home = \"/\".\n");
     }
 #ifdef KRB5
@@ -549,7 +577,7 @@ do_login(struct passwd *pwd, char *tty, char *ttyn)
     krb4_get_afs_tokens (pwd);
 #endif /* KRB4 */
 
-    add_env("HOME", pwd->pw_dir);
+    add_env("HOME", home_dir);
     add_env("USER", pwd->pw_name);
     add_env("LOGNAME", pwd->pw_name);
     add_env("SHELL", pwd->pw_shell);
