@@ -161,7 +161,7 @@ static char **ads_push_strvals(TALLOC_CTX *ctx, const char **in_vals)
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
-		push_utf8_talloc(ctx, (void **) &values[i], in_vals[i]);
+		push_utf8_talloc(ctx, &values[i], in_vals[i]);
 	}
 	return values;
 }
@@ -180,7 +180,7 @@ static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
 	if (!values) return NULL;
 
 	for (i=0; in_vals[i]; i++) {
-		pull_utf8_talloc(ctx, (void **) &values[i], in_vals[i]);
+		pull_utf8_talloc(ctx, &values[i], in_vals[i]);
 	}
 	return values;
 }
@@ -219,8 +219,8 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	/* 0 means the conversion worked but the result was empty 
 	   so we only fail if it's negative.  In any case, it always 
 	   at least nulls out the dest */
-	if ((push_utf8_talloc(ctx, (void **) &utf8_exp, exp) < 0) ||
-	    (push_utf8_talloc(ctx, (void **) &utf8_path, bind_path) < 0)) {
+	if ((push_utf8_talloc(ctx, &utf8_exp, exp) < 0) ||
+	    (push_utf8_talloc(ctx, &utf8_path, bind_path) < 0)) {
 		rc = LDAP_NO_MEMORY;
 		goto done;
 	}
@@ -442,8 +442,8 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	/* 0 means the conversion worked but the result was empty 
 	   so we only fail if it's negative.  In any case, it always 
 	   at least nulls out the dest */
-	if ((push_utf8_talloc(ctx, (void **) &utf8_exp, exp) < 0) ||
-	    (push_utf8_talloc(ctx, (void **) &utf8_path, bind_path) < 0)) {
+	if ((push_utf8_talloc(ctx, &utf8_exp, exp) < 0) ||
+	    (push_utf8_talloc(ctx, &utf8_path, bind_path) < 0)) {
 		rc = LDAP_NO_MEMORY;
 		goto done;
 	}
@@ -999,7 +999,7 @@ void ads_process_results(ADS_STRUCT *ads, void *res,
 			char *field;
 			BOOL string; 
 
-			pull_utf8_talloc(ctx, (void **) &field, utf8_field);
+			pull_utf8_talloc(ctx, &field, utf8_field);
 			string = fn(field, NULL, data_area);
 
 			if (string) {
@@ -1287,7 +1287,7 @@ char *ads_pull_string(ADS_STRUCT *ads,
 	if (!values) return NULL;
 	
 	if (values[0]) {
-		rc = pull_utf8_talloc(mem_ctx, (void **)&ux_string, 
+		rc = pull_utf8_talloc(mem_ctx, &ux_string, 
 				      values[0]);
 		if (rc != -1)
 			ret = ux_string;
@@ -1321,7 +1321,7 @@ char **ads_pull_strings(ADS_STRUCT *ads,
 	ret = talloc(mem_ctx, sizeof(char *) * (n+1));
 
 	for (i=0;i<n;i++) {
-		if (pull_utf8_talloc(mem_ctx, (void **)&ret[i], values[i]) == -1) {
+		if (pull_utf8_talloc(mem_ctx, &ret[i], values[i]) == -1) {
 			return NULL;
 		}
 	}
