@@ -54,7 +54,11 @@ void D1(uchar *k, uchar *d, uchar *out)
   des_cblock deskey;
 
   str_to_key(k,(uchar *)deskey);
+#ifdef __FreeBSD__
+  des_set_key(&deskey,ks);
+#else /* __FreeBSD__ */
   des_set_key((des_cblock *)deskey,ks);
+#endif /* __FreeBsd */
   des_ecb_encrypt((des_cblock *)d,(des_cblock *)out, ks, DES_DECRYPT);
 }
 
@@ -64,7 +68,11 @@ void E1(uchar *k, uchar *d, uchar *out)
   des_cblock deskey;
 
   str_to_key(k,(uchar *)deskey);
+#ifdef __FreeBSD__
+  des_set_key(&deskey,ks);
+#else /* __FreeBsd__ */
   des_set_key((des_cblock *)deskey,ks);
+#endif /* __FreeBsd__ */
   des_ecb_encrypt((des_cblock *)d,(des_cblock *)out, ks, DES_ENCRYPT);
 }
  
