@@ -117,3 +117,43 @@ client_setup(krb5_context *context, int *argc, char **argv)
     *argc = optind;
     return port;
 }
+
+int
+client_doit (const char *hostname, int port, const char *service,
+	     int (*func)(int, const char *hostname, const char *service))
+{
+    struct addrinfo *ai, *a;
+    struct addrinfo hints;
+    int error;
+    char portstr[NI_MAXSERV];
+
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    snprintf (portstr, sizeof(portstr), "%u", port);
+
+    error = getaddrinfo (hostname, portstr, &hints, &ai);
+    if (error) {
+	errx (1, "%s: %s", hostname, gai_strerror(error));
+	return -1;
+    }
+
+    for (a = ai; a != NULL; a = a->ai_next) {
+	int s;
+
+	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
+	if (s < 0)
+	    continue;
+	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
+	    warn ("connect(%s)", hostname);
+	    close (s);
+	    continue;
+	}
+	freeaddrinfo (ai);
+	return (*func) (s, hostname, service);
+    }
+    warnx ("failed to contact %s", hostname);
+    freeaddrinfo (ai);
+    return 1;
+}
