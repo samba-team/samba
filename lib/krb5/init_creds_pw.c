@@ -91,33 +91,11 @@ init_cred (krb5_context context,
     
     if (client)
 	cred->client = client;
-    else {			/* XXX -> get_default_principal */
-	char *p;
-
-	p = getenv ("USER");
-	if (p) {
-	    ret = krb5_parse_name (context, p, &cred->client);
-	    if (ret)
-		goto out;
-	} else {
-	    struct passwd *pw;
-	    char *realm;
-
-	    pw = getpwuid (getuid ());
-	    if (pw == NULL) {
-		ret = ENOTTY;	/* XXX */
-		goto out;
-	    }
-	    ret = krb5_get_default_realm (context, &realm);
-	    if (ret)
-		goto out;
-	    ret = krb5_build_principal (context, &cred->client,
-					strlen(realm), realm,
-					pw->pw_name, NULL);
-	    free (realm);
-	    if (ret)
-		goto out;
-	}
+    else {
+	ret = krb5_get_default_principal (context,
+					  &cred->client);
+	if (ret)
+	    goto out;
     }
 
     client_realm = krb5_princ_realm (context, cred->client);
@@ -170,6 +148,49 @@ init_cred (krb5_context context,
 out:
     krb5_free_creds_contents (context, cred);
     return ret;
+}
+
+/*
+ * Parse the last_req data and show it to the user if it's interesting
+ */
+
+static void
+print_expire (krb5_context context,
+	      krb5_realm *realm,
+	      krb5_kdc_rep *rep,
+	      krb5_prompter_fct prompter,
+	      krb5_data *data)
+{
+    int i;
+    LastReq *lr = &rep->part2.last_req;
+    time_t t = time(0) + parse_time(get_config_string (context,
+						       *realm,
+						       "warn_pwexpire",
+						       "1 week"),
+				    NULL);
+
+    for (i = 0; i < lr->len; ++i) {
+	if (lr->val[i].lr_type == 6
+	    && lr->val[i].lr_value <= t) {
+	    char *p;
+	    
+	    asprintf (&p, "Your password will expire at %s",
+		      ctime(&lr->val[i].lr_value));
+	    (*prompter) (context, data, p, 0, NULL);
+	    free (p);
+	    return;
+	}
+    }
+
+    if (rep->part2.key_expiration
+	&& *rep->part2.key_expiration <= t) {
+	char *p;
+
+	asprintf (&p, "Your password/account will expire at %s",
+		  ctime(rep->part2.key_expiration));
+	(*prompter) (context, data, p, 0, NULL);
+	free (p);
+    }
 }
 
 krb5_error_code
@@ -296,10 +317,14 @@ krb5_get_init_creds_password(krb5_context context,
 			    NULL,
 			    NULL,
 			    &this_cred,
-			    NULL /* &kdc_reply */);
+			    &kdc_reply);
     memset (buf, 0, sizeof(buf));
     if (ret)
 	goto out;
+    if (prompter)
+	print_expire (context, client_realm, &kdc_reply, prompter, data);
+    krb5_free_kdc_rep (context, &kdc_reply);
+
     free (pre_auth_types);
     free (etypes);
     if (creds)
