@@ -36,6 +36,205 @@ static GtkWidget* create_openfilewin (void);
 static GtkWidget* create_savefilewin (void);
 struct registry_context *registry = NULL;
 
+static GtkWidget* create_FindDialog (void)
+{
+  GtkWidget *FindDialog;
+  GtkWidget *dialog_vbox2;
+  GtkWidget *vbox1;
+  GtkWidget *hbox1;
+  GtkWidget *label6;
+  GtkWidget *entry_pattern;
+  GtkWidget *frame3;
+  GtkWidget *alignment3;
+  GtkWidget *vbox2;
+  GtkWidget *checkbutton1;
+  GtkWidget *checkbutton2;
+  GtkWidget *checkbutton3;
+  GtkWidget *label7;
+  GtkWidget *dialog_action_area2;
+  GtkWidget *cancelbutton2;
+  GtkWidget *okbutton2;
+
+  FindDialog = gtk_dialog_new ();
+  gtk_window_set_title (GTK_WINDOW (FindDialog), "Find Key or Value");
+  gtk_window_set_type_hint (GTK_WINDOW (FindDialog), GDK_WINDOW_TYPE_HINT_DIALOG);
+
+  dialog_vbox2 = GTK_DIALOG (FindDialog)->vbox;
+
+  vbox1 = gtk_vbox_new (FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (dialog_vbox2), vbox1, TRUE, TRUE, 0);
+
+  hbox1 = gtk_hbox_new (FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (vbox1), hbox1, TRUE, TRUE, 0);
+
+  label6 = gtk_label_new ("Find String");
+  gtk_box_pack_start (GTK_BOX (hbox1), label6, FALSE, FALSE, 0);
+
+  entry_pattern = gtk_entry_new ();
+  gtk_box_pack_start (GTK_BOX (hbox1), entry_pattern, TRUE, TRUE, 0);
+
+  frame3 = gtk_frame_new (NULL);
+  gtk_box_pack_start (GTK_BOX (vbox1), frame3, TRUE, TRUE, 0);
+  gtk_frame_set_shadow_type (GTK_FRAME (frame3), GTK_SHADOW_NONE);
+
+  alignment3 = gtk_alignment_new (0.5, 0.5, 1, 1);
+  gtk_container_add (GTK_CONTAINER (frame3), alignment3);
+  gtk_alignment_set_padding (GTK_ALIGNMENT (alignment3), 0, 0, 12, 0);
+
+  vbox2 = gtk_vbox_new (FALSE, 0);
+  gtk_container_add (GTK_CONTAINER (alignment3), vbox2);
+
+  checkbutton1 = gtk_check_button_new_with_mnemonic ("_Key Names");
+  gtk_box_pack_start (GTK_BOX (vbox2), checkbutton1, FALSE, FALSE, 0);
+
+  checkbutton2 = gtk_check_button_new_with_mnemonic ("_Value Names");
+  gtk_box_pack_start (GTK_BOX (vbox2), checkbutton2, FALSE, FALSE, 0);
+
+  checkbutton3 = gtk_check_button_new_with_mnemonic ("Value _Data");
+  gtk_box_pack_start (GTK_BOX (vbox2), checkbutton3, FALSE, FALSE, 0);
+
+  label7 = gtk_label_new ("<b>Search in</b>");
+  gtk_frame_set_label_widget (GTK_FRAME (frame3), label7);
+  gtk_label_set_use_markup (GTK_LABEL (label7), TRUE);
+
+  dialog_action_area2 = GTK_DIALOG (FindDialog)->action_area;
+  gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area2), GTK_BUTTONBOX_END);
+
+  cancelbutton2 = gtk_button_new_from_stock ("gtk-cancel");
+  gtk_dialog_add_action_widget (GTK_DIALOG (FindDialog), cancelbutton2, GTK_RESPONSE_CANCEL);
+  GTK_WIDGET_SET_FLAGS (cancelbutton2, GTK_CAN_DEFAULT);
+
+  okbutton2 = gtk_button_new_from_stock ("gtk-ok");
+  gtk_dialog_add_action_widget (GTK_DIALOG (FindDialog), okbutton2, GTK_RESPONSE_OK);
+  GTK_WIDGET_SET_FLAGS (okbutton2, GTK_CAN_DEFAULT);
+
+  gtk_widget_show_all (dialog_vbox2);
+
+  return FindDialog;
+}
+
+static GtkWidget* create_SetValueDialog (void)
+{
+  GtkWidget *SetValueDialog;
+  GtkWidget *dialog_vbox1;
+  GtkWidget *table1;
+  GtkWidget *label3;
+  GtkWidget *label4;
+  GtkWidget *label5;
+  GtkWidget *entry_value_name;
+  GtkWidget *value_data;
+  GtkWidget *combo_data_type;
+  GtkWidget *dialog_action_area1;
+  GtkWidget *cancelbutton1;
+  GtkWidget *okbutton1;
+
+  SetValueDialog = gtk_dialog_new ();
+  gtk_window_set_title (GTK_WINDOW (SetValueDialog), "Set Registry Value");
+  GTK_WINDOW (SetValueDialog)->type = GTK_WINDOW_POPUP;
+  gtk_window_set_position (GTK_WINDOW (SetValueDialog), GTK_WIN_POS_CENTER);
+  gtk_window_set_resizable (GTK_WINDOW (SetValueDialog), FALSE);
+  gtk_window_set_type_hint (GTK_WINDOW (SetValueDialog), GDK_WINDOW_TYPE_HINT_DIALOG);
+
+  dialog_vbox1 = GTK_DIALOG (SetValueDialog)->vbox;
+
+  table1 = gtk_table_new (3, 2, FALSE);
+  gtk_box_pack_start (GTK_BOX (dialog_vbox1), table1, TRUE, TRUE, 0);
+
+  label3 = gtk_label_new ("Value name:");
+  gtk_table_attach (GTK_TABLE (table1), label3, 0, 1, 0, 1,
+                    (GtkAttachOptions) (GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
+  gtk_misc_set_alignment (GTK_MISC (label3), 0, 0.5);
+
+  label4 = gtk_label_new ("Data Type:");
+  gtk_table_attach (GTK_TABLE (table1), label4, 0, 1, 1, 2,
+                    (GtkAttachOptions) (GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
+  gtk_misc_set_alignment (GTK_MISC (label4), 0, 0.5);
+
+  label5 = gtk_label_new ("Data:");
+  gtk_table_attach (GTK_TABLE (table1), label5, 0, 1, 2, 3,
+                    (GtkAttachOptions) (GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
+  gtk_misc_set_alignment (GTK_MISC (label5), 0, 0.5);
+
+  entry_value_name = gtk_entry_new ();
+  gtk_table_attach (GTK_TABLE (table1), entry_value_name, 1, 2, 0, 1,
+                    (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
+
+  value_data = gtk_entry_new ();
+  gtk_table_attach (GTK_TABLE (table1), value_data, 1, 2, 2, 3,
+                    (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
+                    (GtkAttachOptions) (0), 0, 0);
+
+  combo_data_type = gtk_combo_box_entry_new_text ();
+  gtk_table_attach (GTK_TABLE (table1), combo_data_type, 1, 2, 1, 2,
+                    (GtkAttachOptions) (GTK_FILL),
+                    (GtkAttachOptions) (GTK_FILL), 0, 0);
+
+  dialog_action_area1 = GTK_DIALOG (SetValueDialog)->action_area;
+  gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);
+
+  cancelbutton1 = gtk_button_new_from_stock ("gtk-cancel");
+  gtk_dialog_add_action_widget (GTK_DIALOG (SetValueDialog), cancelbutton1, GTK_RESPONSE_CANCEL);
+  GTK_WIDGET_SET_FLAGS (cancelbutton1, GTK_CAN_DEFAULT);
+
+  okbutton1 = gtk_button_new_from_stock ("gtk-ok");
+  gtk_dialog_add_action_widget (GTK_DIALOG (SetValueDialog), okbutton1, GTK_RESPONSE_OK);
+  GTK_WIDGET_SET_FLAGS (okbutton1, GTK_CAN_DEFAULT);
+
+  gtk_widget_show_all (dialog_vbox1);
+
+  return SetValueDialog;
+}
+
+static GtkWidget* create_NewKeyDialog (void)
+{
+  GtkWidget *NewKeyDialog;
+  GtkWidget *dialog_vbox2;
+  GtkWidget *hbox1;
+  GtkWidget *label6;
+  GtkWidget *entry_key_name;
+  GtkWidget *dialog_action_area2;
+  GtkWidget *cancelbutton2;
+  GtkWidget *okbutton2;
+
+  NewKeyDialog = gtk_dialog_new ();
+  gtk_window_set_title (GTK_WINDOW (NewKeyDialog), "New Registry Key");
+  GTK_WINDOW (NewKeyDialog)->type = GTK_WINDOW_POPUP;
+  gtk_window_set_position (GTK_WINDOW (NewKeyDialog), GTK_WIN_POS_CENTER);
+  gtk_window_set_resizable (GTK_WINDOW (NewKeyDialog), FALSE);
+  gtk_window_set_type_hint (GTK_WINDOW (NewKeyDialog), GDK_WINDOW_TYPE_HINT_DIALOG);
+
+  dialog_vbox2 = GTK_DIALOG (NewKeyDialog)->vbox;
+
+  hbox1 = gtk_hbox_new (FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (dialog_vbox2), hbox1, TRUE, TRUE, 0);
+
+  label6 = gtk_label_new ("Name:");
+  gtk_box_pack_start (GTK_BOX (hbox1), label6, FALSE, FALSE, 0);
+
+  entry_key_name = gtk_entry_new ();
+  gtk_box_pack_start (GTK_BOX (hbox1), entry_key_name, TRUE, TRUE, 0);
+
+  dialog_action_area2 = GTK_DIALOG (NewKeyDialog)->action_area;
+  gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area2), GTK_BUTTONBOX_END);
+
+  cancelbutton2 = gtk_button_new_from_stock ("gtk-cancel");
+  gtk_dialog_add_action_widget (GTK_DIALOG (NewKeyDialog), cancelbutton2, GTK_RESPONSE_CANCEL);
+  GTK_WIDGET_SET_FLAGS (cancelbutton2, GTK_CAN_DEFAULT);
+
+  okbutton2 = gtk_button_new_from_stock ("gtk-ok");
+  gtk_dialog_add_action_widget (GTK_DIALOG (NewKeyDialog), okbutton2, GTK_RESPONSE_OK);
+  GTK_WIDGET_SET_FLAGS (okbutton2, GTK_CAN_DEFAULT);
+
+  gtk_widget_show_all (dialog_vbox2);
+
+  return NewKeyDialog;
+}
+
+
 static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *arg2)
 {
 	GtkTreeIter firstiter, iter, tmpiter;
@@ -230,33 +429,29 @@ static void on_quit_activate                       (GtkMenuItem     *menuitem,
 }
 
 
-static void on_cut_activate                        (GtkMenuItem     *menuitem,
-										gpointer         user_data)
-{
-	/* FIXME */
-}
-
-
-static void on_copy_activate                       (GtkMenuItem     *menuitem,
-										gpointer         user_data)
-{
-	/* FIXME */
-}
-
-
-static void on_paste_activate                      (GtkMenuItem     *menuitem,
-										gpointer         user_data)
-{
-	/* FIXME */
-}
-
-
 static void on_delete_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
 	/* FIXME */
 }
 
+static void on_add_key_activate                     (GtkMenuItem     *menuitem,
+										gpointer         user_data)
+{
+	/* FIXME */
+}
+
+static void on_add_value_activate                     (GtkMenuItem     *menuitem,
+										gpointer         user_data)
+{
+	/* FIXME */
+}
+
+static void on_find_activate                     (GtkMenuItem     *menuitem,
+										gpointer         user_data)
+{
+	/* FIXME */
+}
 
 static void on_about_activate                      (GtkMenuItem     *menuitem,
 										gpointer         user_data)
@@ -322,12 +517,11 @@ static GtkWidget* create_mainwin (void)
 	GtkWidget *open_remote;
 	GtkWidget *separatormenuitem1;
 	GtkWidget *quit;
-	GtkWidget *men_edit;
-	GtkWidget *men_edit_menu;
-	GtkWidget *cut;
-	GtkWidget *copy;
-	GtkWidget *paste;
+	GtkWidget *men_key;
+	GtkWidget *men_key_menu;
 	GtkWidget *delete;
+	GtkWidget *find;
+	GtkWidget *add_key, *add_value;
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *curcol;
 	GtkWidget *help;
@@ -418,27 +612,30 @@ static GtkWidget* create_mainwin (void)
 	quit = gtk_image_menu_item_new_from_stock ("gtk-quit", accel_group);
 	gtk_container_add (GTK_CONTAINER (menu_file_menu), quit);
 
-	men_edit = gtk_menu_item_new_with_mnemonic ("_Edit");
-	gtk_container_add (GTK_CONTAINER (menubar), men_edit);
+	men_key = gtk_menu_item_new_with_mnemonic ("_Key");
+	gtk_container_add (GTK_CONTAINER (menubar), men_key);
 
-	men_edit_menu = gtk_menu_new ();
-	gtk_menu_item_set_submenu (GTK_MENU_ITEM (men_edit), men_edit_menu);
+	men_key_menu = gtk_menu_new ();
+	gtk_menu_item_set_submenu (GTK_MENU_ITEM (men_key), men_key_menu);
 
-	cut = gtk_image_menu_item_new_from_stock ("gtk-cut", accel_group);
-	gtk_widget_set_sensitive(cut, False);
-	gtk_container_add (GTK_CONTAINER (men_edit_menu), cut);
+	add_key = gtk_image_menu_item_new_with_mnemonic("Add _Subkey");
+	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (add_key), gtk_image_new_from_stock ("gtk-add", GTK_ICON_SIZE_MENU));
 
-	copy = gtk_image_menu_item_new_from_stock ("gtk-copy", accel_group);
-	gtk_widget_set_sensitive(copy, False);
-	gtk_container_add (GTK_CONTAINER (men_edit_menu), copy);
+	gtk_widget_set_sensitive(add_key, False);
+	gtk_container_add (GTK_CONTAINER (men_key_menu), add_key);
 
-	paste = gtk_image_menu_item_new_from_stock ("gtk-paste", accel_group);
-	gtk_widget_set_sensitive(paste, False);
-	gtk_container_add (GTK_CONTAINER (men_edit_menu), paste);
+	add_value = gtk_image_menu_item_new_with_mnemonic("Add _Value");
+	gtk_widget_set_sensitive(add_value, False);
+	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (add_value), gtk_image_new_from_stock ("gtk-add", GTK_ICON_SIZE_MENU));
+	gtk_container_add (GTK_CONTAINER (men_key_menu), add_value);
+
+	find = gtk_image_menu_item_new_from_stock ("gtk-find", accel_group);
+	gtk_widget_set_sensitive(find, False);
+	gtk_container_add (GTK_CONTAINER (men_key_menu), find);
 
 	delete = gtk_image_menu_item_new_from_stock ("gtk-delete", accel_group);
 	gtk_widget_set_sensitive(delete, False);
-	gtk_container_add (GTK_CONTAINER (men_edit_menu), delete);
+	gtk_container_add (GTK_CONTAINER (men_key_menu), delete);
 
 	help = gtk_menu_item_new_with_mnemonic ("_Help");
 	gtk_container_add (GTK_CONTAINER (menubar), help);
@@ -525,14 +722,14 @@ static GtkWidget* create_mainwin (void)
 	g_signal_connect ((gpointer) quit, "activate",
 					  G_CALLBACK (on_quit_activate),
 					  NULL);
-	g_signal_connect ((gpointer) cut, "activate",
-					  G_CALLBACK (on_cut_activate),
+	g_signal_connect ((gpointer) add_key, "activate",
+					  G_CALLBACK (on_add_key_activate),
 					  NULL);
-	g_signal_connect ((gpointer) copy, "activate",
-					  G_CALLBACK (on_copy_activate),
+	g_signal_connect ((gpointer) add_value, "activate",
+					  G_CALLBACK (on_add_value_activate),
 					  NULL);
-	g_signal_connect ((gpointer) paste, "activate",
-					  G_CALLBACK (on_paste_activate),
+	g_signal_connect ((gpointer) find, "activate",
+					  G_CALLBACK (on_find_activate),
 					  NULL);
 	g_signal_connect ((gpointer) delete, "activate",
 					  G_CALLBACK (on_delete_activate),
@@ -634,3 +831,5 @@ static GtkWidget* create_savefilewin (void)
 	talloc_destroy(mem_ctx);
 	return 0;
 }
+
+
