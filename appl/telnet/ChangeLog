@@ -1,3 +1,8 @@
+1999-08-04  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/sys_term.c (rmut): work around utmpx strangness.  From
+ 	Miroslav Ruda <ruda@ics.muni.cz>
+
 1999-08-02  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/telnetd.c (doit): only free hp if != NULL.  From: Jonas

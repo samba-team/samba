@@ -1,5 +1,8 @@
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
+	* su.c: add support for shadow passwords and rewrite some logic.
+  	From Miroslav Ruda <ruda@ics.muni.cz>
+
 	* Makefile.am: add libkafs
 
 1999-06-15  Assar Westerlund  <assar@sics.se>
