@@ -166,8 +166,6 @@ int smbw_dir_open(const char *fname)
 	int fd;
 	char *s, *p;
 
-	DEBUG(4,("%s\n", __FUNCTION__));
-
 	if (!fname) {
 		errno = EINVAL;
 		return -1;
@@ -266,8 +264,6 @@ int smbw_dir_fstat(int fd, struct stat *st)
 {
 	struct smbw_dir *dir;
 
-	DEBUG(4,("%s\n", __FUNCTION__));
-
 	dir = smbw_dir(fd);
 	if (!dir) {
 		errno = EBADF;
@@ -290,11 +286,8 @@ int smbw_dir_close(int fd)
 {
 	struct smbw_dir *dir;
 
-	DEBUG(4,("%s\n", __FUNCTION__));
-
 	dir = smbw_dir(fd);
 	if (!dir) {
-		DEBUG(4,("%s(%d)\n", __FUNCTION__, __LINE__));
 		errno = EBADF;
 		return -1;
 	}
@@ -316,8 +309,6 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 {
 	struct smbw_dir *dir;
 	int n=0;
-
-	DEBUG(4,("%s\n", __FUNCTION__));
 
 	smbw_busy++;
 
@@ -370,8 +361,6 @@ int smbw_chdir(const char *name)
 		errno = EINVAL;
 		goto failed;
 	}
-
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, name));
 
 	/* work out what server they are after */
 	cwd = smbw_parse_path(name, server, share, path);
@@ -436,9 +425,6 @@ off_t smbw_dir_lseek(int fd, off_t offset, int whence)
 	struct smbw_dir *dir;
 	off_t ret;
 
-	DEBUG(4,("%s offset=%d whence=%d\n", __FUNCTION__, 
-		 (int)offset, whence));
-
 	dir = smbw_dir(fd);
 	if (!dir) {
 		errno = EBADF;
@@ -474,8 +460,6 @@ int smbw_mkdir(const char *fname, mode_t mode)
 	struct smbw_server *srv;
 	fstring server, share;
 	pstring path;
-
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
 
 	if (!fname) {
 		errno = EINVAL;
@@ -517,8 +501,6 @@ int smbw_rmdir(const char *fname)
 	struct smbw_server *srv;
 	fstring server, share;
 	pstring path;
-
-	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
 
 	if (!fname) {
 		errno = EINVAL;
@@ -594,8 +576,6 @@ a wrapper for fchdir()
 int smbw_fchdir(unsigned int fd)
 {
 	struct smbw_dir *dir;
-
-	DEBUG(4,("%s\n", __FUNCTION__));
 
 	smbw_busy++;
 

@@ -22,12 +22,6 @@
 
 #include "wrapper.h"
 
-#ifdef HAVE__OPEN
-__asm__(".globl _open; _open = open");
-#elif HAVE___OPEN
-__asm__(".globl __open; __open = open");
-#endif
-
  int open(const char *name, int flags, mode_t mode)
 {
 	if (smbw_path(name)) {
@@ -36,6 +30,19 @@ __asm__(".globl __open; __open = open");
 
 	return real_open(name, flags, mode);
 }
+
+#ifdef HAVE__OPEN
+ int _open(const char *name, int flags, mode_t mode) 
+{
+   return open(name, flags, mode);
+}
+#elif HAVE___OPEN
+ int __open(const char *name, int flags, mode_t mode) 
+{
+   return open(name, flags, mode);
+}
+#endif
+
 
 #ifdef HAVE_OPEN64
  int open64(const char *name, int flags, mode_t mode)
@@ -93,26 +100,25 @@ __asm__(".globl __open; __open = open");
 #endif
 
 
-#ifdef HAVE___CHDIR
-__asm__(".globl __chdir; __chdir = chdir");
-#elif HAVE__CHDIR
-__asm__(".globl _chdir; _chdir = chdir");
-#endif
-
  int chdir(const char *name)
 {
 	return smbw_chdir(name);
 }
 
-
-
-#ifdef HAVE___CLOSE
-__asm__(".globl __close; __close = close");
-#elif HAVE__CLOSE
-__asm__(".globl _close; _close = close");
+#ifdef HAVE___CHDIR
+ int __chdir(const char *name)
+{
+	return chdir(name);
+}
+#elif HAVE__CHDIR
+ int _chdir(const char *name)
+{
+	return chdir(name);
+}
 #endif
 
- ssize_t close(int fd)
+
+ int close(int fd)
 {
 	if (smbw_fd(fd)) {
 		return smbw_close(fd);
@@ -121,12 +127,18 @@ __asm__(".globl _close; _close = close");
 	return real_close(fd);
 }
 
-
-#ifdef HAVE___FCHDIR
-__asm__(".globl __fchdir; __fchdir = fchdir");
-#elif HAVE__FCHDIR
-__asm__(".globl _fchdir; _fchdir = fchdir");
+#ifdef HAVE___CLOSE
+ int __close(int fd)
+{
+	return close(fd);
+}
+#elif HAVE__CLOSE
+ int _close(int fd)
+{
+	return close(fd);
+}
 #endif
+
 
  int fchdir(int fd)
 {
@@ -137,12 +149,18 @@ __asm__(".globl _fchdir; _fchdir = fchdir");
 	return real_fchdir(fd);
 }
 
-
-#ifdef HAVE___FCNTL
-__asm__(".globl __fcntl; __fcntl = fcntl");
-#elif HAVE__FCNTL
-__asm__(".globl _fcntl; _fcntl = fcntl");
+#ifdef HAVE___FCHDIR
+ int __fchdir(int fd)
+{
+	return fchdir(fd);
+}
+#elif HAVE__FCHDIR
+ int _fchdir(int fd)
+{
+	return fchdir(fd);
+}
 #endif
+
 
  int fcntl(int fd, int cmd, long arg)
 {
@@ -154,12 +172,19 @@ __asm__(".globl _fcntl; _fcntl = fcntl");
 }
 
 
-
-#ifdef HAVE___GETDENTS
-__asm__(".globl __getdents; __getdents = getdents");
-#elif HAVE__GETDENTS
-__asm__(".globl _getdents; _getdents = getdents");
+#ifdef HAVE___FCNTL
+ int __fcntl(int fd, int cmd, long arg)
+{
+	return fcntl(fd, cmd, arg);
+}
+#elif HAVE__FCNTL
+ int _fcntl(int fd, int cmd, long arg)
+{
+	return fcntl(fd, cmd, arg);
+}
 #endif
+
+
 
  int getdents(int fd, struct dirent *dirp, unsigned int count)
 {
@@ -170,14 +195,20 @@ __asm__(".globl _getdents; _getdents = getdents");
 	return real_getdents(fd, dirp, count);
 }
 
-
-#ifdef HAVE___LSEEK
-__asm__(".globl __lseek; __lseek = lseek");
-#elif HAVE__LSEEK
-__asm__(".globl _lseek; _lseek = lseek");
+#ifdef HAVE___GETDENTS
+ int __getdents(int fd, struct dirent *dirp, unsigned int count)
+{
+	return getdents(fd, dirp, count);
+}
+#elif HAVE__GETDENTS
+ int _getdents(int fd, struct dirent *dirp, unsigned int count)
+{
+	return getdents(fd, dirp, count);
+}
 #endif
 
- ssize_t lseek(int fd, off_t offset, int whence)
+
+ off_t lseek(int fd, off_t offset, int whence)
 {
 	if (smbw_fd(fd)) {
 		return smbw_lseek(fd, offset, whence);
@@ -186,13 +217,18 @@ __asm__(".globl _lseek; _lseek = lseek");
 	return real_lseek(fd, offset, whence);
 }
 
-
-
-#ifdef HAVE___READ
-__asm__(".globl __read; __read = read");
-#elif HAVE__READ
-__asm__(".globl _read; _read = read");
+#ifdef HAVE___LSEEK
+ off_t __lseek(int fd, off_t offset, int whence)
+{
+	return lseek(fd, offset, whence);
+}
+#elif HAVE__LSEEK
+ off_t _lseek(int fd, off_t offset, int whence)
+{
+	return lseek(fd, offset, whence);
+}
 #endif
+
 
  ssize_t read(int fd, void *buf, size_t count)
 {
@@ -203,12 +239,18 @@ __asm__(".globl _read; _read = read");
 	return real_read(fd, buf, count);
 }
 
-
-#ifdef HAVE___WRITE
-__asm__(".globl __write; __write = write");
-#elif HAVE__WRITE
-__asm__(".globl _write; _write = write");
+#ifdef HAVE___READ
+ ssize_t __read(int fd, void *buf, size_t count)
+{
+	return read(fd, buf, count);
+}
+#elif HAVE__READ
+ ssize_t _read(int fd, void *buf, size_t count)
+{
+	return read(fd, buf, count);
+}
 #endif
+
 
  ssize_t write(int fd, void *buf, size_t count)
 {
@@ -218,6 +260,19 @@ __asm__(".globl _write; _write = write");
 
 	return real_write(fd, buf, count);
 }
+
+#ifdef HAVE___WRITE
+ ssize_t __write(int fd, void *buf, size_t count)
+{
+	return write(fd, buf, count);
+}
+#elif HAVE__WRITE
+ ssize_t _write(int fd, void *buf, size_t count)
+{
+	return write(fd, buf, count);
+}
+#endif
+
 
 
  int access(const char *name, int mode)
