@@ -201,6 +201,13 @@ void split_domain_name(const char *fullname, char *domain, char *name)
 		fstrcpy(domain, full_name);
 		fstrcpy(name, p+1);
 	} else {
+		if(!lp_domain_logons()) {
+			fstrcpy(domain, global_myname());
+			fstrcpy(name, full_name);
+		} else {
+			fstrcpy(domain, lp_workgroup());
+			fstrcpy(name, full_name);
+		}
 		fstrcpy(domain, global_myname());
 		fstrcpy(name, full_name);
 	}
