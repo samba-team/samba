@@ -366,7 +366,8 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 				if (secrets_fetch_domain_sid(global_myworkgroup,
 					&domain_sid))
 				{
-					name = global_myworkgroup;
+					/* I'm sure this should be myname, not myworkgroup. JRA. */
+					name = global_myname;
 					sid = &domain_sid;
 				}
 			default:
@@ -375,8 +376,24 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 		init_dom_query(&r_u->dom.id3, name, sid);
 		break;
 	case 0x05:
-		name = global_myname;
-		sid = &global_sam_sid;
+		/* AS/U shows this needs to be the same as level 3. JRA. */
+		switch (lp_server_role())
+		{
+			case ROLE_DOMAIN_PDC:
+			case ROLE_DOMAIN_BDC:
+				name = global_myworkgroup;
+				sid = &global_sam_sid;
+				break;
+			case ROLE_DOMAIN_MEMBER:
+				if (secrets_fetch_domain_sid(global_myworkgroup,
+					&domain_sid))
+				{
+					name = global_myname;
+					sid = &domain_sid;
+				}
+			default:
+				break;
+		}
 		init_dom_query(&r_u->dom.id5, name, sid);
 		break;
 	case 0x06:
