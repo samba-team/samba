@@ -40,10 +40,6 @@ struct smb_Dir {
 	char *dir_path;
 	struct name_cache_entry *name_cache;
 	unsigned int name_cache_index;
-	BOOL hide_unreadable;
-	BOOL hide_unwriteable;
-	BOOL hide_special;
-	BOOL use_veto;
 };
 
 struct dptr_struct {
@@ -142,7 +138,7 @@ static struct dptr_struct *dptr_get(int key, BOOL forclose)
 				if (dptrs_open >= MAX_OPEN_DIRECTORIES)
 					dptr_idleoldest();
 				DEBUG(4,("dptr_get: Reopening dptr key %d\n",key));
-				if (!(dptr->dir_hnd = OpenDir(dptr->conn, dptr->path, True))) {
+				if (!(dptr->dir_hnd = OpenDir(dptr->conn, dptr->path))) {
 					DEBUG(4,("dptr_get: Failed to open %s (%s)\n",dptr->path,
 						strerror(errno)));
 					return False;
@@ -205,7 +201,11 @@ BOOL dptr_set_wcard_and_attributes(int key, const char *wcard, uint16 attr)
 		dptr->wcard = SMB_STRDUP(wcard);
 		if (!dptr->wcard)
 			return False;
-		dptr->has_wild = ms_has_wild(wcard);
+		if (wcard[0] == '.' && wcard[1] == 0) {
+			dptr->has_wild = True;
+		} else {
+			dptr->has_wild = ms_has_wild(wcard);
+		}
 		return True;
 	}
 	return False;
@@ -378,7 +378,7 @@ int dptr_create(connection_struct *conn, pstring path, BOOL old_handle, BOOL exp
 	if (!*dir2)
 		dir2 = ".";
 
-	dir_hnd = OpenDir(conn, dir2, True);
+	dir_hnd = OpenDir(conn, dir2);
 	if (!dir_hnd) {
 		return (-2);
 	}
@@ -490,11 +490,6 @@ int dptr_CloseDir(struct dptr_struct *dptr)
 	return CloseDir(dptr->dir_hnd);
 }
 
-const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset)
-{
-	return ReadDirName(dptr->dir_hnd, poffset);
-}
-
 void dptr_SeekDir(struct dptr_struct *dptr, long offset)
 {
 	SeekDir(dptr->dir_hnd, offset);
@@ -505,9 +500,90 @@ long dptr_TellDir(struct dptr_struct *dptr)
 	return TellDir(dptr->dir_hnd);
 }
 
-BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, BOOL case_sensitive)
+/****************************************************************************
+ Return the next visible file name, skipping veto'd and invisible files.
+****************************************************************************/
+
+static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT_STAT *pst)
 {
-	return SearchDir(dptr->dir_hnd, name, poffset, case_sensitive);
+	/* Normal search for the next file. */
+	const char *name;
+	while ((name = ReadDirName(dptr->dir_hnd, poffset)) != NULL) {
+		if (is_visible_file(dptr->conn, dptr->path, name, pst, True)) {
+			return name;
+		}
+	}
+	return NULL;
+}
+
+/****************************************************************************
+ Return the next visible file name, skipping veto'd and invisible files.
+****************************************************************************/
+
+const char *dptr_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT_STAT *pst)
+{
+	pstring pathreal;
+
+	ZERO_STRUCTP(pst);
+	if (dptr->has_wild) {
+		return dptr_normal_ReadDirName(dptr, poffset, pst);
+	}
+
+	/* We know the stored wcard contains no wildcard characters. See if we can match
+	   with a stat call. If we can't, then set has_wild to true to
+	   prevent us from doing this on every call. */
+
+	/* First check if it should be visible. */
+	if (!is_visible_file(dptr->conn, dptr->path, dptr->wcard, pst, True)) {
+		dptr->has_wild = True;
+		return dptr_normal_ReadDirName(dptr, poffset, pst);
+	}
+
+	if (VALID_STAT(*pst)) {
+		return dptr->wcard;
+	}
+
+	pstrcpy(pathreal,dptr->path);
+	pstrcat(pathreal,"/");
+	pstrcat(pathreal,dptr->wcard);
+
+	if (SMB_VFS_STAT(dptr->conn,pathreal,pst) == 0) {
+		return dptr->wcard;
+	} else {
+		/* If we get any other error than ENOENT or ENOTDIR
+		   then the file exists we just can't stat it. */
+		if (errno != ENOENT && errno != ENOTDIR) {
+			return dptr->wcard;
+		}
+	}
+
+	dptr->has_wild = True;
+
+	/* In case sensitive mode we don't search - we know if it doesn't exist 
+	   with a stat we will fail. */
+
+	if (dptr->conn->case_sensitive) {
+		return NULL;
+	} else {
+		return dptr_normal_ReadDirName(dptr, poffset, pst);
+	}
+}
+
+/****************************************************************************
+ Search for a file by name, skipping veto'ed and not visible files.
+****************************************************************************/
+
+BOOL dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst)
+{
+	BOOL ret;
+
+	ZERO_STRUCTP(pst);
+	while ((ret = SearchDir(dptr->dir_hnd, name, poffset)) == True) {
+		if (is_visible_file(dptr->conn, dptr->path, name, pst, True)) {
+			return True;
+		}
+	}
+	return False;
 }
 
 /****************************************************************************
@@ -573,7 +649,7 @@ struct dptr_struct *dptr_fetch_lanman2(int dptr_num)
  Check a filetype for being valid.
 ****************************************************************************/
 
-BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int dirtype)
+BOOL dir_check_ftype(connection_struct *conn,int mode,int dirtype)
 {
 	int mask;
 
@@ -629,8 +705,8 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 		return(False);
 
 	while (!found) {
-		long curoff = TellDir(conn->dirptr->dir_hnd);
-		dname = ReadDirName(conn->dirptr->dir_hnd, &curoff);
+		long curoff = dptr_TellDir(conn->dirptr);
+		dname = dptr_ReadDirName(conn->dirptr, &curoff, &sbuf);
 
 		DEBUG(6,("readdir on dirptr 0x%lx now at offset %ld\n",
 			(long)conn->dirptr,TellDir(conn->dirptr->dir_hnd)));
@@ -661,14 +737,14 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype, pstring fname
 			pstrcpy(pathreal,path);
 			pstrcat(path,fname);
 			pstrcat(pathreal,dname);
-			if (SMB_VFS_STAT(conn, pathreal, &sbuf) != 0) {
+			if (!VALID_STAT(sbuf) && (SMB_VFS_STAT(conn, pathreal, &sbuf)) != 0) {
 				DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",path, strerror(errno) ));
 				continue;
 			}
 	  
 			*mode = dos_mode(conn,pathreal,&sbuf);
 
-			if (!dir_check_ftype(conn,*mode,&sbuf,dirtype)) {
+			if (!dir_check_ftype(conn,*mode,dirtype)) {
 				DEBUG(5,("[%s] attribs didn't match %x\n",filename,dirtype));
 				continue;
 			}
@@ -817,10 +893,57 @@ static BOOL file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 }
 
 /*******************************************************************
+ Should the file be seen by the client ?
+********************************************************************/
+
+BOOL is_visible_file(connection_struct *conn, const char *dir_path, const char *name, SMB_STRUCT_STAT *pst, BOOL use_veto)
+{
+	BOOL hide_unreadable = lp_hideunreadable(SNUM(conn));
+	BOOL hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
+	BOOL hide_special = lp_hide_special_files(SNUM(conn));
+
+	ZERO_STRUCT(pst);
+
+	if ((strcmp(".",name) == 0) || (strcmp("..",name) == 0)) {
+		return True; /* . and .. are always visible. */
+	}
+
+	/* If it's a vetoed file, pretend it doesn't even exist */
+	if (use_veto && IS_VETO_PATH(conn, name)) {
+		return False;
+	}
+
+	if (hide_unreadable || hide_unwriteable || hide_special) {
+		char *entry = NULL;
+
+		if (asprintf(&entry, "%s/%s", dir_path, name) == -1) {
+			return False;
+		}
+		/* Honour _hide unreadable_ option */
+		if (hide_unreadable && !user_can_read_file(conn, entry, pst)) {
+			SAFE_FREE(entry);
+			return False;
+		}
+		/* Honour _hide unwriteable_ option */
+		if (hide_unwriteable && !user_can_write_file(conn, entry, pst)) {
+			SAFE_FREE(entry);
+			return False;
+		}
+		/* Honour _hide_special_ option */
+		if (hide_special && !file_is_special(conn, entry, pst)) {
+			SAFE_FREE(entry);
+			return False;
+		}
+		SAFE_FREE(entry);
+	}
+	return True;
+}
+
+/*******************************************************************
  Open a directory.
 ********************************************************************/
 
-struct smb_Dir *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
+struct smb_Dir *OpenDir(connection_struct *conn, const char *name)
 {
 	struct smb_Dir *dirp = SMB_MALLOC_P(struct smb_Dir);
 	if (!dirp) {
@@ -829,7 +952,6 @@ struct smb_Dir *OpenDir(connection_struct *conn, const char *name, BOOL use_veto
 	ZERO_STRUCTP(dirp);
 
 	dirp->conn = conn;
-	dirp->use_veto = use_veto;
 
 	dirp->dir_path = SMB_STRDUP(name);
 	if (!dirp->dir_path) {
@@ -845,10 +967,6 @@ struct smb_Dir *OpenDir(connection_struct *conn, const char *name, BOOL use_veto
 	if (!dirp->name_cache) {
 		goto fail;
 	}
-
-	dirp->hide_unreadable = lp_hideunreadable(SNUM(conn));
-	dirp->hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
-	dirp->hide_special = lp_hide_special_files(SNUM(conn));
 
 	dptrs_open++;
 	return dirp;
@@ -892,6 +1010,7 @@ int CloseDir(struct smb_Dir *dirp)
 
 /*******************************************************************
  Read from a directory. Also return current offset.
+ Don't check for veto or invisible files.
 ********************************************************************/
 
 const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
@@ -902,40 +1021,6 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 	SeekDir(dirp, *poffset);
 	while ((n = vfs_readdirname(conn, dirp->dir))) {
 		struct name_cache_entry *e;
-
-		if (!((strcmp(".",n) == 0) || (strcmp("..",n) == 0))) {
-			/* If it's a vetoed file, pretend it doesn't even exist */
-			if (dirp->use_veto && IS_VETO_PATH(conn, n)) {
-				continue;
-			}
-
-			if (dirp->hide_unreadable || dirp->hide_unwriteable || dirp->hide_special) {
-				SMB_STRUCT_STAT st;
-				char *entry = NULL;
-				ZERO_STRUCT(st);
-
-				if (asprintf(&entry, "%s/%s/%s", conn->origpath, dirp->dir_path, n) == -1) {
-					return NULL;
-				}
-				/* Honour _hide unreadable_ option */
-				if (dirp->hide_unreadable && !user_can_read_file(conn, entry, &st)) {
-					SAFE_FREE(entry);
-					continue;
-				}
-				/* Honour _hide unwriteable_ option */
-				if (dirp->hide_unwriteable && !user_can_write_file(conn, entry, &st)) {
-					SAFE_FREE(entry);
-					continue;
-				}
-				/* Honour _hide_special_ option */
-				if (dirp->hide_special && !file_is_special(conn, entry, &st)) {
-					SAFE_FREE(entry);
-					continue;
-				}
-				SAFE_FREE(entry);
-			}
-		}
-
 		dirp->offset = SMB_VFS_TELLDIR(conn, dirp->dir);
 		if (dirp->offset == -1) {
 			return NULL;
@@ -974,9 +1059,10 @@ long TellDir(struct smb_Dir *dirp)
 
 /*******************************************************************
  Find an entry by name. Leave us at the offset after it.
+ Don't check for veto or invisible files.
 ********************************************************************/
 
-BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset, BOOL case_sensitive)
+BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 {
 	int i;
 	const char *entry;
@@ -985,7 +1071,7 @@ BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset, BOOL case_
 	/* Search back in the name cache. */
 	for (i = dirp->name_cache_index; i >= 0; i--) {
 		struct name_cache_entry *e = &dirp->name_cache[i];
-		if (e->name && (case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
+		if (e->name && (conn->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
 			*poffset = e->offset;
 			SeekDir(dirp, e->offset);
 			return True;
@@ -993,7 +1079,7 @@ BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset, BOOL case_
 	}
 	for (i = NAME_CACHE_SIZE-1; i > dirp->name_cache_index; i--) {
 		struct name_cache_entry *e = &dirp->name_cache[i];
-		if (e->name && (case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
+		if (e->name && (conn->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
 			*poffset = e->offset;
 			SeekDir(dirp, e->offset);
 			return True;
@@ -1004,7 +1090,7 @@ BOOL SearchDir(struct smb_Dir *dirp, const char *name, long *poffset, BOOL case_
 	SMB_VFS_REWINDDIR(conn, dirp->dir);
 	*poffset = 0;
 	while ((entry = ReadDirName(dirp, poffset))) {
-		if (case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
+		if (conn->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
 			return True;
 		}
 	}

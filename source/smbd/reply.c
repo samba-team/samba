@@ -1610,7 +1610,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 		const char *dname;
 		
 		if (check_name(directory,conn))
-			dir_hnd = OpenDir(conn, directory, True);
+			dir_hnd = OpenDir(conn, directory);
 		
 		/* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
 		   the pattern matches against the long name, otherwise the short name 
@@ -1625,9 +1625,14 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				pstrcpy(mask,"*");
 
 			while ((dname = ReadDirName(dir_hnd, &offset))) {
+				SMB_STRUCT_STAT st;
 				pstring fname;
 				BOOL sys_direntry = False;
 				pstrcpy(fname,dname);
+
+				if (!is_visible_file(conn, directory, dname, &st, True)) {
+					continue;
+				}
 
 				/* Quick check for "." and ".." */
 				if (fname[0] == '.') {
@@ -3368,7 +3373,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 	const char *dname = NULL;
 	BOOL ret = False;
 	long offset = 0;
-	struct smb_Dir *dir_hnd = OpenDir(conn, directory, False);
+	struct smb_Dir *dir_hnd = OpenDir(conn, directory);
 
 	if(dir_hnd == NULL)
 		return True;
@@ -3378,6 +3383,9 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 		SMB_STRUCT_STAT st;
 
 		if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+			continue;
+
+		if (!is_visible_file(conn, directory, dname, &st, False))
 			continue;
 
 		/* Construct the full name. */
@@ -3421,6 +3429,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 BOOL rmdir_internals(connection_struct *conn, char *directory)
 {
 	BOOL ok;
+	SMB_STRUCT_STAT st;
 
 	ok = (SMB_VFS_RMDIR(conn,directory) == 0);
 	if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn))) {
@@ -3432,12 +3441,14 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 		 */
 		BOOL all_veto_files = True;
 		const char *dname;
-		struct smb_Dir *dir_hnd = OpenDir(conn, directory, False);
+		struct smb_Dir *dir_hnd = OpenDir(conn, directory);
 
 		if(dir_hnd != NULL) {
 			long dirpos = TellDir(dir_hnd);
 			while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 				if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+					continue;
+				if (!is_visible_file(conn, directory, dname, &st, False))
 					continue;
 				if(!IS_VETO_PATH(conn, dname)) {
 					all_veto_files = False;
@@ -3449,9 +3460,10 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 				SeekDir(dir_hnd,dirpos);
 				while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 					pstring fullname;
-					SMB_STRUCT_STAT st;
 
 					if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+						continue;
+					if (!is_visible_file(conn, directory, dname, &st, False))
 						continue;
 
 					/* Construct the full name. */
@@ -3988,7 +4000,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		pstring destname;
 		
 		if (check_name(directory,conn))
-			dir_hnd = OpenDir(conn, directory, True);
+			dir_hnd = OpenDir(conn, directory);
 		
 		if (dir_hnd) {
 			long offset = 0;
@@ -4014,6 +4026,9 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 						}
 					}
 				}
+
+				if (!is_visible_file(conn, directory, dname, &sbuf1, False))
+					continue;
 
 				if(!mask_match(fname, mask, conn->case_sensitive))
 					continue;
@@ -4342,7 +4357,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		pstring destname;
 
 		if (check_name(directory,conn))
-			dir_hnd = OpenDir(conn, directory, True);
+			dir_hnd = OpenDir(conn, directory);
 
 		if (dir_hnd) {
 			long offset = 0;
@@ -4355,6 +4370,9 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 				pstring fname;
 				pstrcpy(fname,dname);
     
+				if (!is_visible_file(conn, directory, dname, &sbuf1, False))
+					continue;
+
 				if(!mask_match(fname, mask, conn->case_sensitive))
 					continue;
 
