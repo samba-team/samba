@@ -60,6 +60,8 @@ typedef struct _Printer{
 		fstring localmachine; 
 		uint32 printerlocal;
 		SPOOL_NOTIFY_OPTION *option;
+		POLICY_HND client_hnd;
+		uint32 client_connected;
 	} notify;
 	struct {
 		fstring machine;
@@ -78,6 +80,8 @@ typedef struct _counter_printer_0 {
 static ubi_dlList Printer_list;
 static ubi_dlList counter_list;
 
+static struct cli_state cli;
+static uint32 smb_connections=0;
 
 #define OPEN_HANDLE(pnum)    ((pnum!=NULL) && (pnum->open!=False) && (IVAL(pnum->printer_hnd.data,16)==(uint32)sys_getpid()))
 #define OUR_HANDLE(pnum) ((pnum==NULL)?"NULL":(IVAL(pnum->data,16)==sys_getpid()?"OURS":"OTHER"))
@@ -170,6 +174,30 @@ static void clear_handle(POLICY_HND *hnd)
 	ZERO_STRUCTP(hnd);
 }
 
+/***************************************************************************
+ Disconnect from the client
+****************************************************************************/
+static BOOL srv_spoolss_replycloseprinter(POLICY_HND *handle)
+{
+	uint32 status;
+
+	/* weird if the test succeds !!! */
+	if (smb_connections==0) {
+		DEBUG(0,("srv_spoolss_replycloseprinter:Trying to close non-existant notify backchannel !\n"));
+		return False;
+	}
+
+	if(!cli_spoolss_reply_close_printer(&cli, handle, &status))
+		return False;
+
+	/* if it's the last connection, deconnect the IPC$ share */
+	if (smb_connections==1)
+		if(!spoolss_disconnect_from_client(&cli))
+			return False;
+
+	smb_connections--;
+}
+
 /****************************************************************************
   close printer index by handle
 ****************************************************************************/
@@ -182,6 +210,10 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 		return False;
 	}
 
+	if (Printer->notify.client_connected==True)
+		if(!srv_spoolss_replycloseprinter(&Printer->notify.client_hnd))
+			return ERROR_INVALID_HANDLE;
+
 	Printer->open=False;
 	Printer->notify.flags=0;
 	Printer->notify.options=0;
@@ -189,7 +221,8 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 	Printer->notify.printerlocal=0;
 	safe_free(Printer->notify.option);
 	Printer->notify.option=NULL;
-	
+	Printer->notify.client_connected=False;
+
 	clear_handle(hnd);
 
 	ubi_dlRemThis(&Printer_list, Printer);
@@ -540,6 +573,57 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 	return True;
 }
 
+/***************************************************************************
+ receive the notify message
+****************************************************************************/
+static BOOL srv_spoolss_receive_message(char *printer)
+{      
+	uint32 status;
+	Printer_entry *find_printer;
+
+	find_printer = (Printer_entry *)ubi_dlFirst(&Printer_list);
+
+	/* Iterate the printer list. */
+	for(; find_printer; find_printer = (Printer_entry *)ubi_dlNext(find_printer)) {
+
+		/* 
+		 * if the entry is the given printer or if it's a printerserver
+		 * we send the message
+		 */
+
+		if (find_printer->printer_type==PRINTER_HANDLE_IS_PRINTER)
+			if (strcmp(find_printer->dev.handlename, printer))
+				continue;
+
+		if (find_printer->notify.client_connected==True)
+			if( !cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_ALL, 0x0, &status))
+				return False;
+
+	}
+}
+
+/***************************************************************************
+ send a notify event
+****************************************************************************/
+static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
+{
+	fstring printer;
+
+	Printer_entry *Printer=find_printer_index_by_hnd(handle);
+
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("srv_spoolss_sendnotify: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		return False;
+	}
+
+	if (Printer->printer_type==PRINTER_HANDLE_IS_PRINTER)
+		fstrcpy(printer, Printer->dev.handlename);
+	else
+		fstrcpy(printer, "");
+
+	srv_spoolss_receive_message(printer);
+}	
+
 /********************************************************************
  * spoolss_open_printer
  *
@@ -695,6 +779,8 @@ uint32 _spoolss_deleteprinter(POLICY_HND *handle)
 
 	if (!delete_printer_handle(handle))
 		return ERROR_INVALID_HANDLE;	
+
+	srv_spoolss_sendnotify(handle);
 		
 	return NT_STATUS_NO_PROBLEMO;
 }
@@ -896,6 +982,27 @@ uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 		return NT_STATUS_NO_PROBLEMO;
 }
 
+/***************************************************************************
+ connect to the client
+****************************************************************************/
+static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uint32 type, POLICY_HND *handle)
+{
+	uint32 status;
+
+	/*
+	 * If it's the first connection, contact the client 
+	 * and connect to the IPC$ share anonumously
+	 */
+	if (smb_connections==0)
+		if(!spoolss_connect_to_client(&cli, printer+2)) /* the +2 is to strip the leading 2 backslashs */
+			return False;
+
+	smb_connections++;
+
+	if(!cli_spoolss_reply_open_printer(&cli, printer, localprinter, type, &status, handle))
+		return False;
+}
+
 /********************************************************************
  * _spoolss_rffpcnex
  * ReplyFindFirstPrinterChangeNotifyEx
@@ -925,6 +1032,12 @@ uint32 _spoolss_rffpcnex(POLICY_HND *handle, uint32 flags, uint32 options,
 	Printer->notify.printerlocal=printerlocal;
 	Printer->notify.option=option;
 	unistr2_to_ascii(Printer->notify.localmachine, localmachine, sizeof(Printer->notify.localmachine)-1);
+
+	/* connect to the client machine and send a ReplyOpenPrinter */
+	if(srv_spoolss_replyopenprinter(Printer->notify.localmachine, 
+					Printer->notify.printerlocal, 1, 
+					&Printer->notify.client_hnd))
+		Printer->notify.client_connected=True;
 
 	return NT_STATUS_NO_PROBLEMO;
 }
@@ -3112,6 +3225,7 @@ uint32 _spoolss_startdocprinter(POLICY_HND *handle, uint32 level,
 	Printer->document_started=True;
 	(*jobid) = Printer->jobid;
 
+	srv_spoolss_sendnotify(handle);
 	return 0x0;
 }
 
@@ -3132,6 +3246,8 @@ uint32 _spoolss_enddocprinter(POLICY_HND *handle)
 	Printer->document_started=False;
 	print_job_end(Printer->jobid);
 	/* error codes unhandled so far ... */
+
+	srv_spoolss_sendnotify(handle);
 
 	return 0x0;
 }
@@ -3182,17 +3298,20 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 	switch (command) {
 	case PRINTER_CONTROL_PAUSE:
 		if (print_queue_pause(&user, snum, &errcode)) {
+			srv_spoolss_sendnotify(handle);
 			return 0;
 		}
 		break;
 	case PRINTER_CONTROL_RESUME:
 	case PRINTER_CONTROL_UNPAUSE:
 		if (print_queue_resume(&user, snum, &errcode)) {
+			srv_spoolss_sendnotify(handle);
 			return 0;
 		}
 		break;
 	case PRINTER_CONTROL_PURGE:
 		if (print_queue_purge(&user, snum, &errcode)) {
+			srv_spoolss_sendnotify(handle);
 			return 0;
 		}
 		break;
@@ -3449,6 +3568,8 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
  done:
 	free_a_printer(&printer, 2);
 
+	srv_spoolss_sendnotify(handle);
+
 	return result;
 }
 
@@ -3495,7 +3616,11 @@ uint32 _spoolss_fcpn(POLICY_HND *handle)
 		DEBUG(0,("_spoolss_fcpn: Invalid handle (%s)\n", OUR_HANDLE(handle)));
 		return ERROR_INVALID_HANDLE;
 	}
-	
+
+	if (Printer->notify.client_connected==True)
+		if(!srv_spoolss_replycloseprinter(&Printer->notify.client_hnd))
+			return ERROR_INVALID_HANDLE;
+
 	Printer->notify.flags=0;
 	Printer->notify.options=0;
 	Printer->notify.localmachine[0]='\0';
@@ -3504,7 +3629,8 @@ uint32 _spoolss_fcpn(POLICY_HND *handle)
 		safe_free(Printer->notify.option->ctr.type);
 	safe_free(Printer->notify.option);
 	Printer->notify.option=NULL;
-	
+	Printer->notify.client_connected=False;
+
 	return NT_STATUS_NO_PROBLEMO;
 }
 
@@ -3779,13 +3905,22 @@ uint32 _spoolss_setjob( POLICY_HND *handle,
 	switch (command) {
 	case JOB_CONTROL_CANCEL:
 	case JOB_CONTROL_DELETE:
-		if (print_job_delete(&user, jobid)) return 0x0;
+		if (print_job_delete(&user, jobid)) {
+			srv_spoolss_sendnotify(handle);
+			return 0x0;
+		}
 		break;
 	case JOB_CONTROL_PAUSE:
-		if (print_job_pause(&user, jobid)) return 0x0;
+		if (print_job_pause(&user, jobid)) {
+			srv_spoolss_sendnotify(handle);
+			return 0x0;
+		}		
 		break;
 	case JOB_CONTROL_RESUME:
-		if (print_job_resume(&user, jobid)) return 0x0;
+		if (print_job_resume(&user, jobid)) {
+			srv_spoolss_sendnotify(handle);
+			return 0x0;
+		}
 		break;
 	default:
 		return ERROR_INVALID_LEVEL;
@@ -4512,6 +4647,9 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	}
 
 	free_a_printer(&printer,2);
+
+	srv_spoolss_sendnotify(handle);
+
 	return NT_STATUS_NO_PROBLEMO;
 }
 

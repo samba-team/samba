@@ -1977,6 +1977,15 @@ uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 le
                              uint32 *needed);
 uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIVER_CTR *info);
 
+/*The following definitions come from  rpc_client/cli_spoolss_notify.c  */
+
+BOOL spoolss_disconnect_from_client( struct cli_state *cli);
+BOOL spoolss_connect_to_client( struct cli_state *cli, char *remote_machine);
+BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32 localprinter, uint32 type, uint32 *status, POLICY_HND *handle);
+BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle, 
+			     uint32 change_low, uint32 change_high, uint32 *status);
+BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, uint32 *status);
+
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
 BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
@@ -2935,10 +2944,17 @@ void free_print1_array(uint32 num_entries, PRINTER_INFO_1 **entries);
 void free_job1_array(uint32 num_entries, JOB_INFO_1 **entries);
 void free_job_info_2(JOB_INFO_2 *job);
 void free_job2_array(uint32 num_entries, JOB_INFO_2 **entries);
+BOOL make_spoolss_q_replyopenprinter(SPOOL_Q_REPLYOPENPRINTER *q_u, 
+			       const fstring string, uint32 printer, uint32 type);
 BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HND *hnd);
 BOOL spoolss_io_q_replycloseprinter(char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, prs_struct *ps, int depth);
+BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
+			        uint32 change_low, uint32 change_high);
+BOOL spoolss_io_q_reply_rrpcn(char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_reply_rrpcn(char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
@@ -3173,7 +3189,7 @@ uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid);
 uint32 _spoolss_setjob( POLICY_HND *handle,
 				uint32 jobid,
 				uint32 level,
-		                pipes_struct *p,
+                pipes_struct *p,
 				JOB_INFO *ctr,
 				uint32 command);
 uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,
