@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996 Kungliga Tekniska Hoegskolan (Royal Institute
+ * Copyright (c) 1995, 1996 Kungliga Tekniska Högskolan (Royal Institute
  * of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -17,7 +17,7 @@
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
  *      This product includes software developed by the Kungliga Tekniska
- *      Hoegskolan and its contributors.
+ *      Högskolan and its contributors.
  * 
  * 4. Neither the name of the Institute nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
@@ -91,6 +91,6 @@ mini_inetd (int port)
      close(s);
      dup2(s2, STDIN_FILENO);
      dup2(s2, STDOUT_FILENO);
-     dup2(s2, STDERR_FILENO);
+     /*     dup2(s2, STDERR_FILENO); */
      close(s2);
 }
