@@ -730,8 +730,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	saved_user_conn = current_user.conn;
 	saved_vuid = current_user.vuid;
 	saved_fsp_conn = fsp->conn;
-	vfs_GetWd(saved_fsp_conn,saved_dir);
 	change_to_root_user();
+	vfs_GetWd(saved_fsp_conn,saved_dir);
 	/* Save the chain fnum. */
 	file_chain_save();
 
