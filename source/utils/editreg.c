@@ -2862,6 +2862,16 @@ unsigned int nt_store_security(REGF *regf, KEY_SEC_DESC *sec)
 }
 
 /*
+ * Store a VAL LIST
+ */
+
+int nt_store_val_list(REGF *regf, VAL_LIST * values)
+{
+
+  return 0;
+}
+
+/*
  * Store a KEY in the file ...
  *
  * We store this depth first, and defer storing the lf struct until
@@ -2871,6 +2881,7 @@ unsigned int nt_store_security(REGF *regf, KEY_SEC_DESC *sec)
  * recurse down the LF structures ... 
  * 
  * We return the offset of the NK struct
+ * FIXME, FIXME, FIXME: Convert to using SIVAL and SSVAL ...
  */
 int nt_store_reg_key(REGF *regf, REG_KEY *key)
 {
@@ -2908,11 +2919,19 @@ int nt_store_reg_key(REGF *regf, REG_KEY *key)
    */
 
   sk_off = nt_store_security(regf, key->security);
+  nk_hdr->sk_off = sk_off;
 
   /*
    * Then, store the val list and store its offset
    */
-
+  if (key->values) {
+    nk_hdr->val_cnt = key->values->val_count;
+    nk_hdr->val_off = nt_store_val_list(regf, key->values);
+  }
+  else {
+    nk_hdr->val_off = -1;
+    nk_hdr->val_cnt = 0;
+  }
 
   /*
    * Finally, store the subkeys, and their offsets
