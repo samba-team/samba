@@ -453,14 +453,17 @@ static BOOL get_sam_group_entries(struct getent_state *ent, NTSTATUS *status)
 		
 		nt_status = domain->methods->enum_local_groups(domain, mem_ctx, &num_entries, &sam_grp_entries);
 		
-		if ( !NT_STATUS_IS_OK(nt_status) )
-			*status = nt_status;
-
-		DEBUG(4,("get_sam_group_entries: Returned %d local groups\n", num_entries));
+		if ( !NT_STATUS_IS_OK(nt_status) ) {
+			DEBUG(3,("get_sam_group_entries: Failed to enumerate domain local groups!\n"));
+			num_entries = 0;
+		}
+		else
+			DEBUG(4,("get_sam_group_entries: Returned %d local groups\n", num_entries));
 		
 		/* Copy entries into return buffer */
 
-		if ( num_entries ) {
+		if ( num_entries ) 
+		{
 			if ( !(tmp_name_list = Realloc( name_list, sizeof(struct acct_info) * (ent->num_sam_entries+num_entries))) )
 			{
 				DEBUG(0,("get_sam_group_entries: Failed to realloc more memory for %d local groups!\n", 
