@@ -180,24 +180,28 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->oplock_handler = cli_oplock_ack;
 
 	if (!cli->outbuf || !cli->inbuf)
-	{
-		return NULL;
-	}
+                goto error;
 
-	if ((cli->mem_ctx = talloc_init()) == NULL) {
-		free(cli->outbuf);
-		free(cli->inbuf);
-		return NULL;
-	}
+	if ((cli->mem_ctx = talloc_init()) == NULL)
+                goto error;
 
-	memset(cli->outbuf, '\0', cli->bufsize);
-	memset(cli->inbuf, '\0', cli->bufsize);
+	memset(cli->outbuf, 0, cli->bufsize);
+	memset(cli->inbuf, 0, cli->bufsize);
 
 	cli->nt_pipe_fnum = 0;
 
 	cli->initialised = 1;
 
 	return cli;
+
+        /* Clean up after malloc() error */
+
+ error:
+
+        safe_free(cli->inbuf);
+        safe_free(cli->outbuf);
+
+        return NULL;
 }
 
 /****************************************************************************
