@@ -39,6 +39,21 @@ unsigned int smb_echo_count = 0;
 extern BOOL global_encrypted_passwords_negotiated;
 
 /****************************************************************************
+ Ensure we check the path in the same way as W2K.
+****************************************************************************/
+
+static NTSTATUS check_path_syntax(const char *name)
+{
+	while (*name == '\\')
+		name++;
+	if (strequal(name, "."))
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	else if (strequal(name, ".."))
+		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Reply to a special message.
 ****************************************************************************/
 
@@ -379,9 +394,15 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	BOOL ok = False;
 	BOOL bad_path = False;
 	SMB_STRUCT_STAT sbuf;
+	NTSTATUS status;
+
 	START_PROFILE(SMBchkpth);
 
 	srvstr_pull_buf(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), STR_TERMINATE);
+
+	status = check_path_syntax(name);
+	if (!NT_STATUS_IS_OK(status))
+		return ERROR_NT(status);
 
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 
@@ -1234,10 +1255,6 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 	if (!CAN_WRITE(conn))
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 
-	/* Can't delete the root. */
-	if (strequal(fname, "./..") || strequal(fname, "./../"))
-		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
-
 	if (SMB_VFS_LSTAT(conn,fname,&sbuf) != 0)
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
@@ -1402,6 +1419,10 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	
 	srvstr_pull_buf(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), STR_TERMINATE);
 	
+	status = check_path_syntax(name);
+	if (!NT_STATUS_IS_OK(status))
+		return ERROR_NT(status);
+
 	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 	
 	DEBUG(3,("reply_unlink : %s\n",name));
