@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -49,8 +49,12 @@ error_message (long code)
 {
     static char msg[128];
     const char *p = com_right(_et_list, code);
-    if (p == NULL)
-	p = strerror(code);
+    if (p == NULL) {
+	if (code < 0)
+	    sprintf(msg, "Unknown error %ld", code);
+	else
+	    p = strerror(code);
+    }
     if (p != NULL && *p != '\0') {
 	strncpy(msg, p, sizeof(msg) - 1);
 	msg[sizeof(msg) - 1] = 0;
