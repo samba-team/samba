@@ -1,3 +1,9 @@
+2004-08-31  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c (krb5_get_init_creds): kdc_reply can be
+	set in case of failure too, free unconditionally on exit to avoid
+	memory leak
+
 2004-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/get_cred.c (set_auth_data): set pointer to NULL after
