@@ -279,23 +279,41 @@ sub bitmap_type_fn($)
 	return bitmap_type_decl($bitmap);
 }
 
+my %type_alignments = 
+    (
+     "char" => 1,
+     "int8" => 1,
+     "uint8" => 1,
+     "short" => 2,
+     "wchar_t" => 2,
+     "int16" => 2,
+     "uint16" => 2,
+     "long" => 4,
+     "int32" => 4,
+     "uint32" => 4,
+     "int64" => 4,
+     "uint64" => 4,
+     "NTTIME" => 4,
+     "NTTIME_1sec" => 4,
+     "time_t" => 4,
+     "DATA_BLOB" => 4,
+     "error_status_t" => 4,
+     "WERROR" => 4,
+     "boolean32" => 4,
+     "unsigned32" => 4,
+     "HYPER_T" => 8
+     );
+
 sub is_scalar_type($)
 {
-    my($type) = shift;
+    my $type = shift;
 
-    if ($type =~ /^u?int\d+/) {
+    if (defined $type_alignments{$type}) {
 	    return 1;
     }
-    if ($type =~ /char|short|long|NTTIME|NTTIME_1sec|
-	time_t|error_status_t|boolean32|unsigned32|
-	HYPER_T|wchar_t|DATA_BLOB|WERROR/x) {
-	    return 1;
-    }
-
     if (is_enum($type)) {
 	    return 1;
     }
-
     if (is_bitmap($type)) {
 	    return 1;
     }
@@ -312,30 +330,9 @@ sub type_align($)
     if (need_wire_pointer($e)) {
 	    return 4;
     }
-
-    return 1, if ($type eq "char");
-    return 1, if ($type eq "int8");
-    return 1, if ($type eq "uint8");
-
-    return 2, if ($type eq "short");
-    return 2, if ($type eq "wchar_t");
-    return 2, if ($type eq "int16");
-    return 2, if ($type eq "uint16");
-
-    return 4, if ($type eq "long");
-    return 4, if ($type eq "int32");
-    return 4, if ($type eq "uint32");
-
-    return 4, if ($type eq "int64");
-    return 4, if ($type eq "uint64");
-
-    return 4, if ($type eq "NTTIME");
-    return 4, if ($type eq "NTTIME_1sec");
-    return 4, if ($type eq "time_t");
-
-    return 4, if ($type eq "DATA_BLOB");
-
-    return 8, if ($type eq "HYPER_T");
+    if (my $ret = $type_alignments{$type}) {
+	    return $ret;
+    }
 
     # it must be an external type - all we can do is guess 
     return 4;
