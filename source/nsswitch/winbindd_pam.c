@@ -103,7 +103,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	fstring name_domain, name_user;
 	extern pstring global_myname;
 
-	DEBUG(3, ("[%5d]: pam auth crap%s\n", state->pid,
+	DEBUG(3, ("[%5d]: pam auth crap %s\n", state->pid,
 		  state->request.data.auth_crap.user));
 
 	/* Parse domain and username */
