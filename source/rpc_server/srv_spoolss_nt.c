@@ -762,9 +762,26 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
 
 		ZERO_STRUCTP(data);
 
-		/* Convert unix jobid to smb jobid */
+		/* 
+		 * if the is a printer notification handle and not a job notification 
+		 * type, then set the id to 0.  Other wise just use what was specified
+		 * in the message.  
+		 *
+		 * When registering change notification on a print server handle 
+		 * we always need to send back the id (snum) matching the printer
+		 * for which the change took place.  For change notify registered
+		 * on a printer handle, this does not matter and the id should be 0.
+		 *
+		 * --jerry
+		 */
 
-		id = msg->id;
+		if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER ) && ( msg->type == PRINTER_NOTIFY_TYPE ) )
+			id = 0;
+		else
+			id = msg->id;
+				
+
+		/* Convert unix jobid to smb jobid */
 
 		if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) {
 
