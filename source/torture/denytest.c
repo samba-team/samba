@@ -1396,6 +1396,13 @@ static struct {
 };
 
 
+static void progress_bar(unsigned i, unsigned total)
+{
+	if (i % 10 != 0) return;
+	printf("%5d/%5d\r", i, total);
+	fflush(stdout);
+}
+
 /*
   this produces a matrix of deny mode behaviour for 1 connection
  */
@@ -1425,6 +1432,8 @@ BOOL torture_denytest1(int dummy)
 	for (i=0; i<ARRAY_SIZE(denytable1); i++) {
 		enum deny_result res;
 		char *fname = fnames[denytable1[i].isexe];
+
+		progress_bar(i, ARRAY_SIZE(denytable1));
 
 		fnum1 = cli_open(&cli1, fname, 
 				 denytable1[i].mode1,
@@ -1507,6 +1516,8 @@ BOOL torture_denytest2(int dummy)
 	for (i=0; i<ARRAY_SIZE(denytable2); i++) {
 		enum deny_result res;
 		char *fname = fnames[denytable2[i].isexe];
+
+		progress_bar(i, ARRAY_SIZE(denytable1));
 
 		fnum1 = cli_open(&cli1, fname, 
 				 denytable2[i].mode1,
