@@ -9,7 +9,7 @@ bin_PROGRAMS = verify_krb5_conf
 noinst_PROGRAMS = dump_config test_get_addrs krbhst-test
 
 check_PROGRAMS = n-fold-test string-to-key-test derived-key-test store-test
-TESTS = n-fold-test string-to-key-test derived-key-test store-test
+TESTS = n-fold-test string-to-key-test derived-key-test store-test 
 
 LDADD = libkrb5.la \
 	$(LIB_des) \
@@ -30,7 +30,6 @@ libkrb5_la_SOURCES =				\
 	acl.c					\
 	add_et_list.c				\
 	addr_families.c				\
-	address.c				\
 	aname_to_localname.c			\
 	appdefault.c				\
 	asn1_glue.c				\
@@ -145,6 +144,7 @@ man_MANS =					\
 	krb5_config.3				\
 	krb5_context.3				\
 	krb5_free_principal.3			\
+	krb5_get_all_client_addrs.3		\
 	krb5_get_krbhst.3			\
 	krb5_init_context.3			\
 	krb5_keytab.3				\
@@ -152,6 +152,7 @@ man_MANS =					\
 	krb5_openlog.3				\
 	krb5_parse_name.3			\
 	krb5_sname_to_principal.3		\
+	krb5_timeofday.3			\
 	krb5_unparse_name.3			\
 	krb5_verify_user.3			\
 	krb5_warn.3				\
