@@ -139,9 +139,9 @@ start_session(int xserver, int fd, des_cblock *iv,
      char *filename;
      u_char zeros[6] = {0, 0, 0, 0, 0, 0};
 
-     if (read (fd, beg, sizeof(beg)) != sizeof(beg))
+     if (krb_net_read (fd, beg, sizeof(beg)) != sizeof(beg))
 	  return 1;
-     if (write (xserver, beg, 6) != 6)
+     if (krb_net_write (xserver, beg, 6) != 6)
 	  return 1;
      bigendianp = beg[0] == 'B';
      if (bigendianp) {
@@ -175,25 +175,25 @@ start_session(int xserver, int fd, des_cblock *iv,
 	       len[2] = d & 0xFF;
 	       len[3] = d >> 8;
 	  }
-	  if (write (xserver, len, 6) != 6)
+	  if (krb_net_write (xserver, len, 6) != 6)
 	       return 1;
-	  if(write (xserver, auth->name, n) != n)
+	  if(krb_net_write (xserver, auth->name, n) != n)
 	       return 1;
 	  npad = (4 - (n % 4)) % 4;
 	  if (npad) { 
-	       if (write (xserver, zeros, npad) != npad)
+	       if (krb_net_write (xserver, zeros, npad) != npad)
 		    return 1;
 	  }
-	  if (write (xserver, auth->data, d) != d)
+	  if (krb_net_write (xserver, auth->data, d) != d)
 	       return 1;
 	  dpad = (4 - (d % 4)) % 4;
 	  if (dpad) { 
-	       if (write (xserver, zeros, dpad) != dpad)
+	       if (krb_net_write (xserver, zeros, dpad) != dpad)
 		    return 1;
 	  }
 	  XauDisposeAuth(auth);
      } else {
-	  if(write(xserver, zeros, 6) != 6)
+	  if(krb_net_write(xserver, zeros, 6) != 6)
 	       return 1;
      }
 
@@ -261,7 +261,8 @@ doit (char *host, int passivep)
 	       fprintf (stderr, "%s: listen: %s\n", prog, strerror(errno));
 	       return 1;
 	  }
-	  if (write (otherside, &newaddr.sin_port, sizeof(newaddr.sin_port))
+	  if (krb_net_write (otherside, &newaddr.sin_port,
+			     sizeof(newaddr.sin_port))
 	      != sizeof(newaddr.sin_port)) {
 	       fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
 	       return 1;
@@ -275,9 +276,11 @@ doit (char *host, int passivep)
 	  } else if (pid > 0) {
 	       printf ("%d\t%s\n", display_num, xauthfile);
 	       exit (0);
+	  } else {
+	      fclose(stdout);
 	  }
      } else {
-	  rendez_vous = get_local_xsocket (1); /* XXX */
+	  rendez_vous = get_local_xsocket (&display_num); /* XXX */
 	  if (rendez_vous < 0)
 	       return 1;
 	  fn = active;

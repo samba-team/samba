@@ -6,7 +6,7 @@ char *prog;
 
 static u_int32_t display_num;
 static char xauthfile[MaxPathLen];
-static u_char cookie[32];
+static u_char cookie[16];
 static size_t cookie_len;
 
 #define COOKIE_TYPE "MIT-MAGIC-COOKIE-1"
@@ -69,7 +69,7 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	  return fatal (sock, "Cannot set uid");
      }
      umask(077);
-     if (write (sock, &ok, sizeof(ok)) != sizeof(ok))
+     if (krb_net_write (sock, &ok, sizeof(ok)) != sizeof(ok))
 	  return 1;
 
      memcpy(key, &auth.session, sizeof(des_cblock));
@@ -87,9 +87,9 @@ start_session (int fd, int sock, des_cblock *key,
      char *protocol_name, *protocol_data;
      u_char zeros[6] = {0, 0, 0, 0, 0, 0};
 
-     if (read (fd, beg, sizeof(beg)) != sizeof(beg))
+     if (krb_net_read (fd, beg, sizeof(beg)) != sizeof(beg))
 	  return 1;
-     if (write (sock, beg, 6) != 6)
+     if (krb_net_write (sock, beg, 6) != 6)
 	  return 1;
      bigendianp = beg[0] == 'B';
      if (bigendianp) {
@@ -103,16 +103,16 @@ start_session (int fd, int sock, des_cblock *key,
      dpad = (4 - (d % 4)) % 4;
      protocol_name = malloc(n + npad);
      protocol_data = malloc(d + dpad);
-     if (read (fd, protocol_name, n + npad) != n + npad)
+     if (krb_net_read (fd, protocol_name, n + npad) != n + npad)
 	  return 1;
-     if (read (fd, protocol_data, d + dpad) != d + dpad)
+     if (krb_net_read (fd, protocol_data, d + dpad) != d + dpad)
 	  return 1;
      if (strncmp (protocol_name, COOKIE_TYPE, strlen(COOKIE_TYPE)) != 0)
 	  return 1;
      if (d != cookie_len ||
 	 memcmp (protocol_data, cookie, cookie_len) != 0)
 	  return 1;
-     if (write (sock, zeros, 6) != 6)
+     if (krb_net_write (sock, zeros, 6) != 6)
 	  return 1;
      return copy_encrypted (fd, sock, key, schedule);
 }
@@ -198,23 +198,23 @@ doit(int sock)
 
      if (recv_conn (sock, &key, schedule, &thataddr))
 	  return 1;
-     if (read (sock, &passivep, sizeof(passivep)) != sizeof(passivep))
+     if (krb_net_read (sock, &passivep, sizeof(passivep)) != sizeof(passivep))
 	  return 1;
      if (passivep) {
 	  localx = get_local_xsocket (&display_num);
 	  if (localx < 0)
 	       return 1;
 	  tmp = htonl(display_num);
-	  if (write (sock, &tmp, sizeof(tmp)) != sizeof(tmp))
+	  if (krb_net_write (sock, &tmp, sizeof(tmp)) != sizeof(tmp))
 	       return 1;
 	  strncpy(xauthfile, tempnam("/tmp", NULL), sizeof(xauthfile));
-	  if (write (sock, xauthfile, sizeof(xauthfile)) !=
+	  if (krb_net_write (sock, xauthfile, sizeof(xauthfile)) !=
 	      sizeof(xauthfile))
 	       return 1;
 	  if(create_and_write_cookie (xauthfile, cookie,
 				      sizeof(cookie)))
 	       return 1;
-	  if (read (sock, &thataddr.sin_port, sizeof(thataddr.sin_port))
+	  if (krb_net_read (sock, &thataddr.sin_port, sizeof(thataddr.sin_port))
 	      != sizeof(thataddr.sin_port))
 	       return 1;
 	  for (;;) {
