@@ -6870,6 +6870,8 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u, SPOOL_R_SETPRINTERDATAEX *r_u)
 {
+	SPOOL_Q_SETPRINTERDATA q_u_local;
+	SPOOL_R_SETPRINTERDATA r_u_local;
         fstring key;
 
 	DEBUG(4,("_spoolss_setprinterdataex\n"));
@@ -6880,9 +6882,22 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
         unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
 
         if (strcmp(key, "PrinterDriverData") == 0)
-                DEBUG(10, ("pass me to setprinterdata\n"));
+	        return WERR_INVALID_PARAM;
+		
+	ZERO_STRUCT(q_u_local);	
+	ZERO_STRUCT(r_u_local);	
+	
+	/* make a copy to call _spoolss_setprinterdata() */
 
-        return WERR_INVALID_PARAM;
+	memcpy(&q_u_local.handle, &q_u->handle, sizeof(POLICY_HND));
+	copy_unistr2(&q_u_local.value, &q_u->value);
+	q_u_local.type = q_u->type;
+	q_u_local.max_len = q_u->max_len;
+	q_u_local.data = q_u->data;
+	q_u_local.real_len = q_u->real_len;
+	q_u_local.numeric_data = q_u->numeric_data;
+		
+	return _spoolss_setprinterdata(p, &q_u_local, &r_u_local);
 }
 
 /********************************************************************
