@@ -4288,7 +4288,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 
 	/* Setup the timeout in seconds. */
 
-	lock_timeout = ((lock_timeout == -1) ? -1 : (lock_timeout+499)/500);
+	lock_timeout = ((lock_timeout == -1) ? -1 : (lock_timeout+999)/1000);
 	
 	/* Now do any requested locks */
 	data += ((large_file_format ? 20 : 10)*num_ulocks);
