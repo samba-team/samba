@@ -556,7 +556,7 @@ CLASS="ENVAR"
 		to read the password. </P
 ><P
 >A third option is to use a credentials file which 
-		contains the plaintext of the username and password.  This 
+		contains the plaintext of the domain name, username and password.  This 
 		option is mainly provided for scripts where the admin doesn't 
 		wish to pass the credentials on the command line or via environment 
 		variables. If this method is used, make certain that the permissions 
@@ -589,7 +589,7 @@ CLASS="COMMAND"
 ><DD
 ><P
 >This option allows 
-		you to specify a file from which to read the username and 
+		you to specify a file from which to read the username, domain name, and 
 		password used in the connection.  The format of the file is 
 		</P
 ><P
@@ -603,13 +603,15 @@ WIDTH="90%"
 CLASS="PROGRAMLISTING"
 >username = &#60;value&#62; 
 password = &#60;value&#62;
+domain = &#60;value&#62;
 		</PRE
 ></TD
 ></TR
 ></TABLE
 ></P
 ><P
->Make certain that the permissions on the file restrict 
+>If the domain parameter is missing the current workgroup name
+		is used instead. Make certain that the permissions on the file restrict 
 		access from unwanted users. </P
 ></DD
 ><DT
