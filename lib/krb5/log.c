@@ -356,7 +356,7 @@ krb5_vlog_msg(krb5_context context,
      __attribute__((format (printf, 5, 0)))
 {
     char *msg;
-    char *actual;
+    const char *actual;
     char buf[64];
     time_t t;
     int i;
