@@ -51,5 +51,7 @@ int copy_encrypted (int fd1, int fd2, des_cblock *iv,
 
 RETSIGTYPE childhandler (int);
 
+extern char x_socket[];
+
 int get_local_xsocket (int *num);
 int connect_local_xsocket (unsigned dnr);
