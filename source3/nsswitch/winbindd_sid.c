@@ -72,8 +72,10 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
-/* Convert a sid to a string */
 
+/**
+ * Look up the SID for a qualified name.  
+ **/
 enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 {
 	enum SID_NAME_USE type;
