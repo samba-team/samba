@@ -303,7 +303,7 @@ echo "Moving tdb files in /var/lock/samba/*.tdb to /var/cache/samba/*.tdb"
 for i in /var/lock/samba/*.tdb
 do
 if [ -f $i ]; then
-	newname=`echo $i | sed -e's/lock/cache/'`
+	newname=`echo $i | sed -e's|var\/lock\/samba|var\/cache\/samba|'`
 	echo "Moving $i to $newname"
 	mv $i $newname
 fi
@@ -406,6 +406,9 @@ if [ $1 = 0 ] ; then
     if [ -e /var/log/samba ]; then
       rm -rf /var/log/samba
     fi
+	if [ -e /var/cache/samba ]; then
+		rm -rf /var/cache/samba
+	fi
 
     # Remove swat entries from /etc/inetd.conf and /etc/services
     cd /etc
