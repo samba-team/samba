@@ -472,7 +472,6 @@ Offset Size         Name
 						security and trusted */
 #define CIFS_UNIX_EXTATTR_CAP		    0x8 /* for support of chattr
 						(chflags) and lsattr */
-#define CIFS_UNIX_POSIX_LOCK		    0x10
 						
 
 #define SMB_QUERY_POSIX_FS_INFO     0x201
