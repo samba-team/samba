@@ -23,6 +23,8 @@
 */
 
 #include "includes.h"
+#include "smb_server/smb_server.h"
+
 
 
 #define CHECK_MIN_BLOB_SIZE(blob, size) do { \

@@ -32,6 +32,8 @@
 */
 
 #include "includes.h"
+#include "smb_server/smb_server.h"
+
 
 /*
   see if a filename ends in EXE COM DLL or SYM. This is needed for the

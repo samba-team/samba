@@ -25,6 +25,7 @@
 */
 
 #include "includes.h"
+#include "smb_server/smb_server.h"
 
 /* this is stored in ntvfs_private */
 struct nbench_private {

@@ -23,6 +23,8 @@
 
 #include "includes.h"
 #include "dlinklist.h"
+#include "smb_server/smb_server.h"
+
 
 NTSTATUS ntvfs_async_state_push(struct smbsrv_request *req,
 				void *private_data,
