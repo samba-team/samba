@@ -165,141 +165,6 @@ void get_single_attribute(LDAP *ldap_struct, LDAPMessage *entry, char *attribute
 }
 
 /*******************************************************************
- find a user or a machine return a smbpass struct.
-******************************************************************/
-struct passwd *Get_ldap_Pwnam(char *user)
-{
-	LDAP *ldap_struct;
-	LDAPMessage *result;
-	LDAPMessage *entry;
-	char **valeur;
-	BOOL machine=False;
-	BOOL sambaAccount=False;
-	int i;
-	
-	static struct passwd ldap_passwd;
-	static char pw_name[256];
-	static char pw_passwd[256];
-	static char pw_gecos[256];
-	static char pw_dir[256];
-	static char pw_shell[256];
-	ldap_passwd.pw_name=pw_name;
-	ldap_passwd.pw_passwd=pw_passwd;
-	ldap_passwd.pw_gecos=pw_gecos;
-	ldap_passwd.pw_dir=pw_dir;
-	ldap_passwd.pw_shell=pw_shell;
-	
-	DEBUG(0,("XXXX XXXX XXXX, ca merde serieux!\n"));
-
-	/* first clear the struct */
-	bzero(pw_name,sizeof(pw_name));
-	bzero(pw_passwd,sizeof(pw_passwd));
-	bzero(pw_gecos,sizeof(pw_gecos));
-	bzero(pw_dir,sizeof(pw_dir));
-	bzero(pw_shell,sizeof(pw_shell));	
-	ldap_passwd.pw_uid=-1;
-	ldap_passwd.pw_gid=-1;
-
-	
-	ldap_open_connection(&ldap_struct);
-	
-	/* 
-	   to get all the attributes (specially the userPassword )
-	   we have to connect under the system administrator account
-	*/
-	ldap_connect_system(ldap_struct);
-	
-	ldap_search_one_user(ldap_struct, user, &result);
-
-	if (ldap_count_entries(ldap_struct, result) != 1)
-	{
-		DEBUG(0,("%s: Strange %d user in the base!\n",
-		         timestring(), ldap_count_entries(ldap_struct, result) ));
-		return(False);	
-	}
-	/* take the first and unique entry */
-	entry=ldap_first_entry(ldap_struct, result);
-
-	/* check what kind of account it is */
-	/* as jeremy doesn't want to split getpwnam in 2 functions :-( */
-
-	if (user[strlen(user)-1]=='$')
-	{
-		machine=True;
-	}
-
-	if (!machine)
-	{
-		valeur=ldap_get_values(ldap_struct,entry, "objectclass");
-
-		/* check if the entry is a person objectclass*/
-		if (valeur!=NULL)
-		for (i=0;valeur[i]!=NULL;i++)
-		{
-			if (!strcmp(valeur[i],"sambaAccount")) sambaAccount=True;
-		}
-		ldap_value_free(valeur);
-				
-		if (sambaAccount)
-		{
-		/* we should have enough info to fill the struct */
-			strncpy(ldap_passwd.pw_name,user,strlen(user));
-
-			valeur=ldap_get_values(ldap_struct,entry, "uidAccount");
-			if (valeur != NULL)
-			{
-				ldap_passwd.pw_uid=atoi(valeur[0]);
-			}
-			ldap_value_free(valeur);
-			
-			valeur=ldap_get_values(ldap_struct,entry, "gidAccount");
-			if (valeur != NULL)
-			{
-				ldap_passwd.pw_gid=atoi(valeur[0]);
-			}
-			ldap_value_free(valeur);
-
-			valeur=ldap_get_values(ldap_struct,entry, "userPassword");
-			if (valeur != NULL) 
-			{
-			/*
-			 as we have the clear-text password, we have to crypt it !
-			 hum hum hum currently pass the clear text password to wait
-			*/
-			strncpy(ldap_passwd.pw_passwd,valeur[0],strlen(valeur[0]));
-			}
-			ldap_value_free(valeur);
-			
-			valeur=ldap_get_values(ldap_struct,entry, "gecos");
-			if (valeur != NULL) 
-			{
-				strncpy(ldap_passwd.pw_gecos,valeur[0],strlen(valeur[0]));
-			}
-			ldap_value_free(valeur);
-			
-			valeur=ldap_get_values(ldap_struct,entry, "homeDirectory");
-			if (valeur != NULL) 
-			{
-				strncpy(ldap_passwd.pw_dir,valeur[0],strlen(valeur[0]));
-			}
-			ldap_value_free(valeur);
-
-			valeur=ldap_get_values(ldap_struct,entry, "loginShell");
-			if (valeur != NULL) 
-			{
-				strncpy(ldap_passwd.pw_shell,valeur[0],strlen(valeur[0]));
-			}
-			ldap_value_free(valeur);		
-		}
-	}
-	else
-	{
-	}
-
-	ldap_unbind(ldap_struct);	
-}
-
-/*******************************************************************
  check if the returned entry is a sambaAccount objectclass.
 ******************************************************************/	
 BOOL ldap_check_user(LDAP *ldap_struct, LDAPMessage *entry)
@@ -352,7 +217,7 @@ static void ldap_get_user(LDAP *ldap_struct,LDAPMessage *entry,
                           struct smb_passwd *ldap_passwd)
 {	
 	static pstring user_name;
-	static unsigned char smbpwd[16];
+	static unsigned char ldappwd[16];
 	static unsigned char smbntpwd[16];
 	char **valeur;
 
@@ -372,8 +237,8 @@ static void ldap_get_user(LDAP *ldap_struct,LDAPMessage *entry,
 		E_md4hash((uchar *) valeur[0], smbntpwd);
   		valeur[0][14] = '\0';
   		strupper(valeur[0]);
- 		memset(smbpwd, '\0', 16);
-  		E_P16((uchar *) valeur[0], smbpwd);		
+ 		memset(ldappwd, '\0', 16);
+  		E_P16((uchar *) valeur[0], ldappwd);		
 		ldap_value_free(valeur);		
 	}
 			
@@ -388,7 +253,7 @@ static void ldap_get_user(LDAP *ldap_struct,LDAPMessage *entry,
 		if (ldap_passwd->acct_ctrl & ACB_NORMAL)
 		{
 			ldap_passwd->smb_name=user_name;
-			ldap_passwd->smb_passwd=smbpwd;
+			ldap_passwd->smb_passwd=ldappwd;
 			ldap_passwd->smb_nt_passwd=smbntpwd;
 		}
 		ldap_value_free(valeur); 
@@ -447,7 +312,7 @@ static void ldap_get_machine(LDAP *ldap_struct,LDAPMessage *entry,
 /*******************************************************************
  find a user or a machine return a smbpass struct.
 ******************************************************************/
-static struct smb_passwd *ldap_get_smbpwd_entry(char *name, int smb_userid)
+static struct smb_passwd *get_ldappwd_entry(char *name, int smb_userid)
 {
 	LDAP *ldap_struct;
 	LDAPMessage *result;
@@ -468,11 +333,11 @@ static struct smb_passwd *ldap_get_smbpwd_entry(char *name, int smb_userid)
 
 	if (name != NULL)
 	{
-		DEBUG(10, ("ldap_get_smbpwd_entry: search by name: %s\n", name));
+		DEBUG(10, ("get_ldappwd_entry: search by name: %s\n", name));
 	}
 	else 
 	{
-		DEBUG(10, ("ldap_get_smbpwd_entry: search by smb_userid: %x\n", smb_userid));
+		DEBUG(10, ("get_ldappwd_entry: search by smb_userid: %x\n", smb_userid));
 	}
 
 	if (!ldap_open_connection(&ldap_struct))
@@ -507,7 +372,7 @@ static struct smb_passwd *ldap_get_smbpwd_entry(char *name, int smb_userid)
 
 	if (name != NULL)
 	{
-		DEBUG(0,("ldap_get_smbpwd_entry: Found user: %s\n",name));
+		DEBUG(0,("get_ldappwd_entry: Found user: %s\n",name));
 
 		if (name[strlen(name)-1]=='$')
 			machine=True;
@@ -534,21 +399,108 @@ static struct smb_passwd *ldap_get_smbpwd_entry(char *name, int smb_userid)
 }
 
 /************************************************************************
+ Routine to add an entry to the ldap passwd file.
+
+ do not call this function directly.  use passdb.c instead.
+
+*************************************************************************/
+BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
+{
+  return True;
+}
+
+/************************************************************************
+ Routine to search the ldap passwd file for an entry matching the username.
+ and then modify its password entry. We can't use the startldappwent()/
+ getldappwent()/endldappwent() interfaces here as we depend on looking
+ in the actual file to decide how much room we have to write data.
+ override = False, normal
+ override = True, override XXXXXXXX'd out password or NO PASS
+
+ do not call this function directly.  use passdb.c instead.
+
+************************************************************************/
+BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
+{
+    return False;
+}
+
+/************************************************************************
  Routine to search ldap passwd by name.
+
+ do not call this function directly.  use passdb.c instead.
+
 *************************************************************************/
 
 struct smb_passwd *getldappwnam(char *name)
 {
-  return ldap_get_smbpwd_entry(name, 0);
+  return get_ldappwd_entry(name, 0);
 }
 
 /************************************************************************
  Routine to search ldap passwd by uid.
+
+ do not call this function directly.  use passdb.c instead.
+
 *************************************************************************/
 
 struct smb_passwd *getldappwuid(unsigned int uid)
 {
-  return ldap_get_smbpwd_entry(NULL, uid);
+  return get_ldappwd_entry(NULL, uid);
+}
+
+/***************************************************************
+ Start to enumerate the ldap passwd list. Returns a void pointer
+ to ensure no modification outside this module.
+
+ do not call this function directly.  use passdb.c instead.
+
+ ****************************************************************/
+void *startldappwent(BOOL update)
+{
+  return NULL;
+}
+
+/***************************************************************
+ End enumeration of the ldap passwd list.
+****************************************************************/
+void endldappwent(void *vp)
+{
+}
+
+/*************************************************************************
+ Routine to return the next entry in the ldap passwd list.
+
+ do not call this function directly.  use passdb.c instead.
+
+ *************************************************************************/
+struct smb_passwd *getldappwent(void *vp)
+{
+  return NULL;
+}
+
+/*************************************************************************
+ Return the current position in the ldap passwd list as an unsigned long.
+ This must be treated as an opaque token.
+
+ do not call this function directly.  use passdb.c instead.
+
+*************************************************************************/
+unsigned long getldappwpos(void *vp)
+{
+	return 0;
+}
+
+/*************************************************************************
+ Set the current position in the ldap passwd list from unsigned long.
+ This must be treated as an opaque token.
+
+ do not call this function directly.  use passdb.c instead.
+
+*************************************************************************/
+BOOL setldappwpos(void *vp, unsigned long tok)
+{
+	return False;
 }
 
 
