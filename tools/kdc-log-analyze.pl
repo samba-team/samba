@@ -92,6 +92,7 @@ my %tgs_xrealm_in_princ;
 my %enctype_session;
 my %enctype_ticket;
 my $restarts = 0;
+my $forward_non_forward = 0;
 my $v4_req = 0;
 my %v4_req_addr;
 my %v4_req_addr_nonlocal;
@@ -319,6 +320,8 @@ print "\tDistinct principals using DES: ", int(keys %princ_uses_des), "\n";
 print "\tTop ten principals using DES:\n";
 topten(\%princ_uses_des);
 
+printf("Requests to forward non-forwardable ticket: $forward_non_forward\n");
+
 print "\n";
 
 exit 0;
@@ -435,6 +438,9 @@ sub process_line {
 		$pa_failed_princ{$last_principal}++;
 		$pa_failed_addr{$last_addr}++;
 
+	} elsif (/Request to forward non-forwardable ticket/) {
+		$forward_non_forward++;
+	} elsif (/HTTP request:) {
 	} elsif (/krb_rd_req: Incorrect network address/) {
 	} elsif (/krb_rd_req: Ticket expired \(krb_rd_req\)/) {
 	} elsif (/Ticket expired \(.*\)/) {
@@ -480,22 +486,16 @@ sub process_line {
 }
 
 sub topten {
-	my ($list, $map) = @_;
-	my (@keys);
+	my ($list) = @_;
+	my @keys;
 
 	my $key;
 
 	@keys = (sort {$$list{$b} <=> $$list{$a}} (keys %{$list}));
 	splice @keys, 10;
 
-	if (defined $map) {
-		foreach $key (@keys) {
-			print "\t\t$$map{$key} - $$list{$key}\n";
-		}
-	} else {
-		foreach $key (@keys) {
-			print "\t\t$key - $$list{$key}\n";
-		}
+	foreach $key (@keys) {
+		print "\t\t$key - $$list{$key}\n";
 	}
 }
 
