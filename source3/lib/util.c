@@ -3090,12 +3090,10 @@ char *client_name(void)
   if (done) 
     return name_buf;
 
-  done = True;
   strcpy(name_buf,"UNKNOWN");
 
   if (getpeername(Client, &sa, &length) < 0) {
     DEBUG(0,("getpeername failed\n"));
-    done = False;
     return name_buf;
   }
 
@@ -3105,7 +3103,6 @@ char *client_name(void)
 			  AF_INET)) == 0) {
     DEBUG(1,("Gethostbyaddr failed for %s\n",client_addr()));
     StrnCpy(name_buf,client_addr(),sizeof(name_buf) - 1);
-    done = False;
   } else {
     StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
     if (!matchname(name_buf, sockin->sin_addr)) {
@@ -3113,6 +3110,7 @@ char *client_name(void)
       strcpy(name_buf,"UNKNOWN");
     }
   }
+  done = True;
   return name_buf;
 }
 
@@ -3129,7 +3127,6 @@ char *client_addr(void)
   if (done) 
     return addr_buf;
 
-  done = True;
   strcpy(addr_buf,"0.0.0.0");
 
   if (getpeername(Client, &sa, &length) < 0) {
@@ -3139,6 +3136,7 @@ char *client_addr(void)
 
   strcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
 
+  done = True;
   return addr_buf;
 }
 

@@ -24,7 +24,7 @@
 extern int DEBUGLEVEL;
 
 struct in_addr ipzero;
-struct in_addr ipgrp;
+struct in_addr wins_ip;
 static struct in_addr default_ip;
 static struct in_addr default_bcast;
 static struct in_addr default_nmask;
@@ -261,7 +261,7 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
   struct in_addr ip;
 
   ipzero = *interpret_addr2("0.0.0.0");
-  ipgrp = *interpret_addr2("255.255.255.255");
+  wins_ip = *interpret_addr2("255.255.255.255");
 
   while (next_token(&ptr,token,NULL)) {
     /* parse it into an IP address/netmasklength pair */

@@ -36,7 +36,7 @@ extern int ClientNMB;
 
 extern int DEBUGLEVEL;
 
-extern struct in_addr ipgrp;
+extern struct in_addr wins_ip;
 
 
 /****************************************************************************
@@ -120,35 +120,35 @@ void reply_name_release(struct packet_struct *p)
 	   namestr(&nmb->question.question_name)));
   
   if (!(d = find_req_subnet(p->ip, bcast)))
-  {
-    DEBUG(3,("response packet: bcast %s not known\n",
-			inet_ntoa(p->ip)));
-    return;
-  }
+    {
+      DEBUG(3,("response packet: bcast %s not known\n",
+	       inet_ntoa(p->ip)));
+      return;
+    }
 
   if (bcast)
-	search |= FIND_LOCAL;
+    search |= FIND_LOCAL;
   else
-	search |= FIND_WINS;
+    search |= FIND_WINS;
 
   n = find_name_search(&d, &nmb->question.question_name, 
-					search, ip);
+		       search, ip);
   
   /* XXXX under what conditions should we reject the removal?? */
   if (n && n->ip_flgs[0].nb_flags == nb_flags)
-  {
+    {
       success = True;
       
       remove_name(d,n);
       n = NULL;
-  }
+    }
   
   if (bcast) return;
   
   /* Send a NAME RELEASE RESPONSE (pos/neg) see rfc1002.txt 4.2.10-11 */
   send_name_response(p->fd,p->ip, nmb->header.name_trn_id, NMB_REL,
-						success, False,
-						&nmb->question.question_name, nb_flags, 0, ip);
+		     success, False,
+		     &nmb->question.question_name, nb_flags, 0, ip);
 }
 
 
@@ -190,7 +190,7 @@ void reply_name_reg(struct packet_struct *p)
     {
       /* apparently we should return 255.255.255.255 for group queries
 	 (email from MS) */
-      ip = ipgrp;
+      ip = wins_ip;
     }
   
   if (!(d = find_req_subnet(p->ip, bcast)))
@@ -393,8 +393,8 @@ void reply_name_status(struct packet_struct *p)
       
       if (!strequal(n->name.name,"*") &&
 	  !strequal(n->name.name,"__SAMBA__") &&
-	  (name_type < 0x1b || name_type > 0x20 || 
-	   ques_type < 0x1b || ques_type > 0x20 ||
+	  (name_type < 0x1b || name_type >= 0x20 || 
+	   ques_type < 0x1b || ques_type >= 0x20 ||
 	   strequal(qname, n->name.name)))
       {
         /* start with first bit of putting info in buffer: the name */
@@ -433,7 +433,7 @@ void reply_name_status(struct packet_struct *p)
       /* end of this name list: add wins names too? */
       struct subnet_record *w_d;
 
-      if (!(w_d = find_subnet(ipgrp))) break;
+      if (!(w_d = find_subnet(wins_ip))) break;
 
       if (w_d != d)
       {
@@ -520,7 +520,7 @@ void reply_name_query(struct packet_struct *p)
   }
   else
   {
-    if (!(d = find_subnet(ipgrp)))
+    if (!(d = find_subnet(wins_ip)))
     {
       DEBUG(3,("name query: wins search %s not known\n",
 				    inet_ntoa(p->ip)));

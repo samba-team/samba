@@ -33,7 +33,7 @@ extern int DEBUGLEVEL;
 
 extern pstring scope;
 extern struct in_addr ipzero;
-extern struct in_addr ipgrp;
+extern struct in_addr wins_ip;
 
 
 /***************************************************************************
@@ -51,146 +51,146 @@ static void dead_netbios_entry(struct subnet_record *d,
   {
     case NAME_QUERY_CONFIRM:
     {
-		if (!lp_wins_support()) return; /* only if we're a WINS server */
-
-		if (n->num_msgs == 0)
+      if (!lp_wins_support()) return; /* only if we're a WINS server */
+      
+      if (n->num_msgs == 0)
         {
-			/* oops. name query had no response. check that the name is
-			   unique and then remove it from our WINS database */
-
-			/* IMPORTANT: see query_refresh_names() */
-
-			if ((!NAME_GROUP(n->nb_flags)))
-			{
-				struct subnet_record *d1 = find_subnet(ipgrp);
-				if (d1)
-				{
-					/* remove the name that had been registered with us,
-					   and we're now getting no response when challenging.
-					   see rfc1001.txt 15.5.2
-					 */
-					remove_netbios_name(d1, n->name.name, n->name.name_type,
-									REGISTER, n->send_ip);
-				}
-			}
+	  /* oops. name query had no response. check that the name is
+	     unique and then remove it from our WINS database */
+	  
+	  /* IMPORTANT: see query_refresh_names() */
+	  
+	  if ((!NAME_GROUP(n->nb_flags)))
+	    {
+	      struct subnet_record *d1 = find_subnet(wins_ip);
+	      if (d1)
+		{
+		  /* remove the name that had been registered with us,
+		     and we're now getting no response when challenging.
+		     see rfc1001.txt 15.5.2
+		     */
+		  remove_netbios_name(d1, n->name.name, n->name.name_type,
+				      REGISTER, n->send_ip);
 		}
-		break;
+	    }
+	}
+      break;
+    }
+    
+  case NAME_QUERY_MST_CHK:
+    {
+      /* if no response received, the master browser must have gone
+	 down on that subnet, without telling anyone. */
+      
+      /* IMPORTANT: see response_netbios_packet() */
+      
+      if (n->num_msgs == 0)
+	browser_gone(n->name.name, n->send_ip);
+      break;
+    }
+  
+  case NAME_RELEASE:
+    {
+      /* if no response received, it must be OK for us to release the
+	 name. nobody objected (including a potentially dead or deaf
+	 WINS server) */
+      
+      /* IMPORTANT: see response_name_release() */
+      
+      if (ismyip(n->send_ip))
+	{
+	  name_unregister_work(d,n->name.name,n->name.name_type);
+	}
+      if (!n->bcast && n->num_msgs == 0)
+	{
+	  DEBUG(0,("WINS server did not respond to name release!\n"));
+	  /* XXXX whoops. we have problems. must deal with this */
+	}
+      break;
+    }
+  
+  case NAME_REGISTER_CHALLENGE:
+    {
+      /* name challenge: no reply. we can reply to the person that
+	 wanted the unique name and tell them that they can have it
+	 */
+      
+      add_name_respond(d,n->fd,d->myip, n->response_id ,&n->name,
+		       n->nb_flags, GET_TTL(0),
+		       n->reply_to_ip, False, n->reply_to_ip);
+      
+      if (!n->bcast && n->num_msgs == 0)
+	{
+	  DEBUG(1,("WINS server did not respond to name registration!\n"));
+	  /* XXXX whoops. we have problems. must deal with this */
+	}
+      break;
+    }
+  
+  case NAME_REGISTER:
+    {
+      /* if no response received, and we are using a broadcast registration
+	 method, it must be OK for us to register the name: nobody objected 
+	 on that subnet. if we are using a WINS server, then the WINS
+	 server must be dead or deaf.
+	 */
+      if (n->num_msgs == 0)
+	{
+	  if (n->bcast)
+	    {
+	      /* broadcast method: implicit acceptance of the name registration
+		 by not receiving any objections. */
+	      
+	      /* IMPORTANT: see response_name_reg() */
+	      
+	      name_register_work(d,n->name.name,n->name.name_type,
+				 n->nb_flags, n->ttl, n->reply_to_ip, n->bcast);
+	    }
+	  else
+	    {
+	      /* received no response. rfc1001.txt states that after retrying,
+		 we should assume the WINS server is dead, and fall back to
+		 broadcasting (see bits about M nodes: can't find any right
+		 now) */
+	      
+	      DEBUG(1,("WINS server did not respond to name registration!\n"));
+	      /* XXXX whoops. we have problems. must deal with this */
+	    }
+	}
+      break;
+    }
+  
+  case NAME_QUERY_DOMAIN:
+    {
+      /* if no response received, there is no domain controller on
+         this local subnet.  it's ok for us to register
+	 */
+      
+      if (!n->bcast)
+	{
+	  DEBUG(0,("NAME_QUERY_DOMAIN incorrectly used - contact samba-bugs!\n"));
+	  /* XXXX whoops. someone's using this to unicast a packet.  this state
+	     should only be used for broadcast checks
+	     */
+	  break;
+	}
+      if (n->num_msgs == 0)
+	{
+	  struct work_record *work = find_workgroupstruct(d,n->name.name,False);
+	  if (work && d)
+	    {
+	      become_domain_master(d,work);
+	    }
+	}
+      break;
     }
 
-	case NAME_QUERY_MST_CHK:
-	{
-	  /* if no response received, the master browser must have gone
-		 down on that subnet, without telling anyone. */
-
-	  /* IMPORTANT: see response_netbios_packet() */
-
-	  if (n->num_msgs == 0)
-		  browser_gone(n->name.name, n->send_ip);
-	  break;
-	}
-
-	case NAME_RELEASE:
-	{
-	  /* if no response received, it must be OK for us to release the
-		 name. nobody objected (including a potentially dead or deaf
-		 WINS server) */
-
-	  /* IMPORTANT: see response_name_release() */
-
-	  if (ismyip(n->send_ip))
-	  {
-		name_unregister_work(d,n->name.name,n->name.name_type);
-	  }
-	  if (!n->bcast && n->num_msgs == 0)
-	  {
-		 DEBUG(0,("WINS server did not respond to name release!\n"));
-         /* XXXX whoops. we have problems. must deal with this */
-	  }
-	  break;
-	}
-
-	case NAME_REGISTER_CHALLENGE:
-	{
-		/* name challenge: no reply. we can reply to the person that
-		   wanted the unique name and tell them that they can have it
-		 */
-
-		add_name_respond(d,n->fd,d->myip, n->response_id ,&n->name,
-						n->nb_flags, GET_TTL(0),
-						n->reply_to_ip, False, n->reply_to_ip);
-
-	  if (!n->bcast && n->num_msgs == 0)
-	  {
-		 DEBUG(1,("WINS server did not respond to name registration!\n"));
-         /* XXXX whoops. we have problems. must deal with this */
-	  }
+  default:
+    {
+      /* nothing to do but delete the dead expected-response structure */
+      /* this is normal. */
       break;
-	}
-
-	case NAME_REGISTER:
-	{
-	  /* if no response received, and we are using a broadcast registration
-		 method, it must be OK for us to register the name: nobody objected 
-		 on that subnet. if we are using a WINS server, then the WINS
-		 server must be dead or deaf.
-	   */
-	  if (n->num_msgs == 0)
-	  {
-	    if (n->bcast)
-	    {
-		  /* broadcast method: implicit acceptance of the name registration
-		     by not receiving any objections. */
-
-		  /* IMPORTANT: see response_name_reg() */
-
-		  name_register_work(d,n->name.name,n->name.name_type,
-				  n->nb_flags, n->ttl, n->reply_to_ip, n->bcast);
-	    }
-        else
-        {
-		  /* received no response. rfc1001.txt states that after retrying,
-		     we should assume the WINS server is dead, and fall back to
-		     broadcasting (see bits about M nodes: can't find any right
-             now) */
-		
-		  DEBUG(1,("WINS server did not respond to name registration!\n"));
-          /* XXXX whoops. we have problems. must deal with this */
-        }
-	  }
-	  break;
-	}
-
-	case NAME_QUERY_DOMAIN:
-	{
-	  /* if no response received, there is no domain controller on
-         this local subnet.  it's ok for us to register
-       */
-
-	  if (!n->bcast)
-	  {
-		 DEBUG(0,("NAME_QUERY_DOMAIN incorrectly used - contact samba-bugs!\n"));
-         /* XXXX whoops. someone's using this to unicast a packet.  this state
-            should only be used for broadcast checks
-          */
-         break;
-	  }
-	  if (n->num_msgs == 0)
-	  {
-        struct work_record *work = find_workgroupstruct(d,n->name.name,False);
-        if (work && d)
-        {
-          become_domain_master(d,work);
-        }
-	  }
-	  break;
-	}
-
-	default:
-	{
-	  /* nothing to do but delete the dead expected-response structure */
-	  /* this is normal. */
-	  break;
-	}
+    }
   }
 }
 
@@ -300,10 +300,9 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
 			int fd,int quest_type,enum state_type state,char *name,
 			int name_type,int nb_flags, time_t ttl,
 			int server_type, char *my_name, char *my_comment,
-		    BOOL bcast,BOOL recurse,
+			BOOL bcast,BOOL recurse,
 			struct in_addr send_ip, struct in_addr reply_to_ip)
 {
-  struct in_addr wins_ip = ipgrp;
   struct response_record *n;
   uint16 id = 0xffff;
 
@@ -311,7 +310,7 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
   if (ip_equal(wins_ip, send_ip)) return NULL;
 
   initiate_netbios_packet(&id, fd, quest_type, name, name_type,
-				      nb_flags, bcast, recurse, send_ip);
+			  nb_flags, bcast, recurse, send_ip);
 
   if (id == 0xffff) {
     DEBUG(4,("did not initiate netbios packet: %s\n", inet_ntoa(send_ip)));
@@ -319,9 +318,9 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
   }
   
   if ((n = make_response_queue_record(state,id,fd,
-						quest_type,name,name_type,nb_flags,ttl,
-						server_type,my_name, my_comment,
-						bcast,recurse,send_ip,reply_to_ip)))
+				      quest_type,name,name_type,nb_flags,ttl,
+				      server_type,my_name, my_comment,
+				      bcast,recurse,send_ip,reply_to_ip)))
     {
       add_response_record(d,n);
       return n;

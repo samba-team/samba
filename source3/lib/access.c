@@ -209,6 +209,10 @@ static int string_match(char *tok,char *s)
 
       if (!mydomain) yp_get_default_domain(&mydomain);
 
+      if (!mydomain) {
+        DEBUG(0,("Unable to get default yp domain.\n"));
+        return NO;
+      }
       if (!(hostname = strdup(s))) {
 	DEBUG(1,("out of memory for strdup!\n"));
 	return NO;

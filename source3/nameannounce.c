@@ -45,7 +45,7 @@ extern struct subnet_record *subnetlist;
 extern int  updatecount;
 extern int  workgroup_count;
 
-extern struct in_addr ipgrp;
+extern struct in_addr wins_ip;
 
 
 
@@ -216,7 +216,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
        (SV_TYPE_SERVER_UNIX, for example)
      */
 	uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT;
-	BOOL wins_iface = ip_equal(d->bcast_ip, ipgrp);
+	BOOL wins_iface = ip_equal(d->bcast_ip, wins_ip);
 	
 	if (wins_iface && server_type != 0)
 	{
@@ -261,7 +261,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 			do_announce_host(ANN_LocalMasterAnnouncement,
 							name            , 0x00, d->myip,
 							work->work_group, 0x1e, d->bcast_ip,
-							ttl*1000,
+							ttl,
 							name, server_type, comment);
 
 			DEBUG(3,("sending domain announce to %s for %s\n",
@@ -273,7 +273,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 				do_announce_host(ANN_DomainAnnouncement,
 							name    , 0x00, d->myip,
 							MSBROWSE, 0x01, d->bcast_ip,
-							ttl*1000,
+							ttl,
 							work->work_group, server_type ? domain_type : 0,
 							name);
 			}
@@ -286,7 +286,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 			do_announce_host(ANN_HostAnnouncement,
 							name            , 0x00, d->myip,
 							work->work_group, 0x1d, d->bcast_ip,
-							ttl*1000,
+							ttl,
 							name, server_type, comment);
 		}
 	}
@@ -309,24 +309,24 @@ void announce_host(time_t t)
     {
       struct work_record *work;
       
-      if (ip_equal(d->bcast_ip, ipgrp)) continue;
-
+      if (ip_equal(d->bcast_ip, wins_ip)) continue;
+      
       for (work = d->workgrouplist; work; work = work->next)
 	{
 	  uint32 stype = work->ServerType;
 	  struct server_record *s;
 	  BOOL announce = False;
 	  
-      /* must work on the code that does announcements at up to
-         30 seconds later if a master browser sends us a request
-         announce.
-       */
+	  /* must work on the code that does announcements at up to
+	     30 seconds later if a master browser sends us a request
+	     announce.
+	     */
 
 	  if (work->needannounce) {
 	    /* drop back to a max 3 minute announce - this is to prevent a
 	       single lost packet from stuffing things up for too long */
 	    work->announce_interval = MIN(work->announce_interval,
-						CHECK_TIME_MIN_HOST_ANNCE*60);
+					  CHECK_TIME_MIN_HOST_ANNCE*60);
 	    work->lastannounce_time = t - (work->announce_interval+1);
 	  }
 	  
@@ -339,7 +339,7 @@ void announce_host(time_t t)
 	    work->announce_interval += 60;
 	  
 	  work->lastannounce_time = t;
-
+	  
 	  for (s = work->serverlist; s; s = s->next) {
 	    if (strequal(myname, s->serv.name)) { 
 	      announce = True; 
@@ -353,18 +353,18 @@ void announce_host(time_t t)
 	  }
 	  
 	  if (work->needannounce)
-	  {
+	    {
 	      work->needannounce = False;
 	      break;
 	      /* sorry: can't do too many announces. do some more later */
-	  }
+	    }
 	}
-  }
+    }
 }
 
 
 /****************************************************************************
-  announce myself as a master to all other primary domain conrollers.
+  announce myself as a master to all other domain master browsers.
 
   this actually gets done in search_and_sync_workgroups() via the
   NAME_QUERY_DOM_SRV_CHK command, if there is a response from the
@@ -393,85 +393,76 @@ void announce_master(time_t t)
 	    }
 	}
     }
-  
+ 
+  DEBUG(4,( "announce_master: am_master = %d for workgroup %s\n", am_master, lp_workgroup()));
+
   if (!am_master) return; /* only proceed if we are a master browser */
   
+  /* Note that we don't do this if we are domain master browser. */
+
   for (d = subnetlist; d; d = d->next)
     {
-      struct work_record *work;
-      for (work = d->workgrouplist; work; work = work->next)
-	{
-	  struct server_record *s;
-	  for (s = work->serverlist; s; s = s->next)
-	    {
-	      if (strequal(s->serv.name, myname)) continue;
-	      
-	      /* all DOMs (which should also be master browsers) */
-	      if (s->serv.type & SV_TYPE_DOMAIN_CTRL)
-		{
-		  /* check the existence of a pdc for this workgroup, and if
-		     one exists at the specified ip, sync with it and announce
-		     ourselves as a master browser to it */
-		  
-		  if (!*lp_domain_controller() ||
-		      !strequal(lp_domain_controller(), s->serv.name))
-		    {
-		      if (!lp_wins_support() && *lp_wins_server())
-			{
-			  queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY,
-						 NAME_QUERY_DOM_SRV_CHK,
-						 work->work_group,0x1b,0,0,0,NULL,NULL,
-						 False, False, ipzero, ipzero);
-			}
-		      else
-			{
-			  struct subnet_record *d2;
-			  for (d2 = subnetlist; d2; d2 = d2->next)
-			    {
-			      queue_netbios_packet(d,ClientNMB,NMB_QUERY,
-						   NAME_QUERY_DOM_SRV_CHK,
-						   work->work_group,0x1b,0,0,0,NULL,NULL,
-						   True, False, d2->bcast_ip, d2->bcast_ip);
-			    }
-			}
-		    }
-		}
-	    }
-	  
-	  /* now do primary domain controller - the one that's not
-	     necessarily in our browse lists, although it ought to be
-	     this pdc is the one that we get TOLD about through smb.conf.
-	     basically, if it's on a subnet that we know about, it may end
-	     up in our browse lists (which is why it's explicitly excluded
-	     in the code above) */
-	  
-	  if (*lp_domain_controller())
-	    {
-	      struct in_addr ip;
-	      BOOL bcast = False;
-	      
-	      ip = *interpret_addr2(lp_domain_controller());
-	      
-	      if (zero_ip(ip)) {
-		ip = d->bcast_ip;
-		bcast = True;
-	      }
+      /* Try and find our workgroup on this subnet */
+      struct work_record *work = find_workgroupstruct(d, lp_workgroup(), True);
 
-	      DEBUG(2, ("Searching for DOM %s at %s\n",
-			lp_domain_controller(), inet_ntoa(ip)));
-	      
-	      /* check the existence of a pdc for this workgroup, and if
-		 one exists at the specified ip, sync with it and announce
-		 ourselves as a master browser to it */
-	      queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
-				     work->work_group,0x1b,0,0,0,NULL,NULL,
-				     bcast, False, ip, ip);
+      if (work)
+        {
+          char *name;
+          int   type;
+
+          if (*lp_domain_controller())
+            {
+              /* the domain controller option is used to manually specify
+                 the domain master browser to sync with
+               */
+
+              /* XXXX i'm not sure we should be using the domain controller
+                 option for this purpose.
+               */
+
+              name = lp_domain_controller();
+              type = 0x20;
+            }
+          else
+            {
+              /* assume that the domain master browser we want to sync
+                 with is our own domain.
+               */
+              name = work->work_group;
+              type = 0x1b;
+            }
+
+          /* check the existence of a dmb for this workgroup, and if
+             one exists at the specified ip, sync with it and announce
+             ourselves as a master browser to it
+           */
+
+          if (!lp_wins_support() && *lp_wins_server() &&
+               ip_equal(d->bcast_ip, wins_ip))
+            {
+              DEBUG(4, ("Local Announce: find %s<%02x> from WINS server %s\n",
+                         name, type, lp_wins_server()));
+
+              queue_netbios_pkt_wins(d,ClientNMB,
+                        NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
+                        name, type, 0,0,0,
+                        work->work_group,NULL,
+                        False, False, ipzero, ipzero);
+            }
+          else
+            {
+              DEBUG(4, ("Local Announce: find %s<%02x> on %s\n",
+                name, type, inet_ntoa(d->bcast_ip)));
+
+              queue_netbios_packet(d,ClientNMB,
+                         NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
+                         name, type, 0,0,0,
+                         work->work_group,NULL,
+                         True, False, d->bcast_ip, d->bcast_ip);
 	    }
 	}
     }
 }
-
-
 
 /****************************************************************************
   do all the "remote" announcements. These are used to put ourselves

@@ -35,7 +35,7 @@ extern int DEBUGLEVEL;
 
 extern pstring scope;
 extern struct in_addr ipzero;
-extern struct in_addr ipgrp;
+extern struct in_addr wins_ip;
 
 extern struct subnet_record *subnetlist;
 
@@ -153,10 +153,11 @@ struct name_record *find_name(struct name_record *n,
 			{
 				continue;
 	  		}
-
+			DEBUG(9,("find_name: found name %s\n", name->name));
 			return ret;
 		}
 	}
+    DEBUG(9,("find_name: name %s NOT FOUND\n", name->name));
     return NULL;
 }
 
@@ -172,27 +173,27 @@ struct name_record *find_name_search(struct subnet_record **d,
 			struct nmb_name *name,
 			int search, struct in_addr ip)
 {
-	if (d == NULL) return NULL; /* bad error! */
+  if (d == NULL) return NULL; /* bad error! */
 	
-    if (search & FIND_LOCAL) {
-      if (*d != NULL) {
-	struct name_record *n = find_name((*d)->namelist, name, search);
-	DEBUG(4,("find_name on local: %s %s search %x\n",
-		 namestr(name),inet_ntoa(ip), search));
-	if (n) return n;
-      }
+  if (search & FIND_LOCAL) {
+    if (*d != NULL) {
+      struct name_record *n = find_name((*d)->namelist, name, search);
+      DEBUG(4,("find_name on local: %s %s search %x\n",
+	       namestr(name),inet_ntoa(ip), search));
+      if (n) return n;
     }
+  }
 
-    if (!(search & FIND_WINS)) return NULL;
+  if (!(search & FIND_WINS)) return NULL;
 
-    /* find WINS subnet record. */
-    *d = find_subnet(ipgrp);
-    
-    if (*d == NULL) return NULL;
-    
-    DEBUG(4,("find_name on WINS: %s %s search %x\n",
-	     namestr(name),inet_ntoa(ip), search));
-    return find_name((*d)->namelist, name, search);
+  /* find WINS subnet record. */
+  *d = find_subnet(wins_ip);
+  
+  if (*d == NULL) return NULL;
+  
+  DEBUG(4,("find_name on WINS: %s %s search %x\n",
+	   namestr(name),inet_ntoa(ip), search));
+  return find_name((*d)->namelist, name, search);
 }
 
 
@@ -245,7 +246,7 @@ void dump_names(void)
         }
 		DEBUG(4,("\n"));
 
-      if (f && ip_equal(d->bcast_ip, ipgrp) && n->source == REGISTER)
+      if (f && ip_equal(d->bcast_ip, wins_ip) && n->source == REGISTER)
       {
       /* XXXX i have little imagination as to how to output nb_flags as
          anything other than as a hexadecimal number :-) */
@@ -281,7 +282,7 @@ void dump_names(void)
   ****************************************************************************/
 void load_netbios_names(void)
 {
-  struct subnet_record *d = find_subnet(ipgrp);
+  struct subnet_record *d = find_subnet(wins_ip);
   fstring fname;
 
   FILE *f;
@@ -466,8 +467,9 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
   
   if (!n2) add_name(d,n);
 
-  DEBUG(3,("Added netbios name %s at %s ttl=%d nb_flags=%2x\n",
-	        namestr(&n->name),inet_ntoa(ip),ttl,nb_flags));
+  DEBUG(3,("Added netbios name %s at %s ttl=%d nb_flags=%2x to interface %s\n",
+	   namestr(&n->name),inet_ntoa(ip),ttl,nb_flags,
+	   ip_equal(d->bcast_ip, wins_ip) ? "WINS" : inet_ntoa(d->bcast_ip)));
 
   return(n);
 }
@@ -520,7 +522,7 @@ struct name_record *dns_name_search(struct nmb_name *question, int Time)
 	char *r;
 	BOOL dns_type = (name_type == 0x20 || name_type == 0);
 	struct in_addr dns_ip;
-	struct subnet_record *d = find_subnet(ipgrp);
+	struct subnet_record *d = find_subnet(wins_ip);
 
 	if (d == NULL) return NULL;
 

@@ -32,6 +32,8 @@ extern int ClientNMB;
 
 extern int DEBUGLEVEL;
 
+extern struct in_addr wins_ip;
+
 /* this is our browse master/backup cache database */
 static struct browse_cache_record *browserlist = NULL;
 
@@ -88,7 +90,6 @@ void expire_browse_cache(time_t t)
 	}
     }
 }
-
 
 /****************************************************************************
   add a browser entry
@@ -166,21 +167,48 @@ static void start_sync_browse_entry(struct browse_cache_record *b)
   struct subnet_record *d;
   struct work_record *work;
 
-  if (!(d = find_subnet(b->ip))) return;
+  /* Look for the workgroup first on the local subnet. If this
+     fails try WINS - we may need to sync with the domain master,
+     or we may be the domain master and need to sync with subnet
+     masters.
+  */
 
-  if (!(work = find_workgroupstruct(d, b->group, False))) return;
+  if (!(d = find_subnet_all(b->ip))) {
+    DEBUG(0, ("start_sync_browse_entry: failed to get a \
+subnet for a browse cache entry workgroup %s, server %s\n", 
+                  b->group, b->name));
+    return;
+  }
 
-  /* only sync if we are the master */
-  if (AM_MASTER(work)) {
+  if (!(work = find_workgroupstruct(d, b->group, False))) {
+      DEBUG(0, ("start_sync_browse_entry: failed to get a \
+workgroup for a browse cache entry workgroup %s, server %s\n", 
+		b->group, b->name));
+      return;
+  }
 
-      /* first check whether the group we intend to sync with exists. if it
-         doesn't, the server must have died. o dear. */
+  /* only sync if we are a subnet master or domain master - but
+     we sync if we are a master for this workgroup on *any* 
+     of our interfaces. */
+  if (AM_MASTER(work) || AM_DOMMST(work) || AM_ANY_MASTER(work)) {
 
-      /* see response_netbios_packet() or expire_netbios_response_entries() */
-      queue_netbios_packet(d,ClientNMB,NMB_QUERY,
-                       b->local?NAME_QUERY_SYNC_LOCAL:NAME_QUERY_SYNC_REMOTE,
-					   b->group,0x20,0,0,0,NULL,NULL,
-					   False,False,b->ip,b->ip);
+    DEBUG(4, ("start_sync_browse_entry: Initiating %s sync with %s<0x20>, \
+workgroup %s\n",
+               b->local ? "local" : "remote", b->name, b->group));
+
+    /* first check whether the server we intend to sync with exists. if it
+       doesn't, the server must have died. o dear. */
+
+    /* see response_netbios_packet() or expire_netbios_response_entries() */
+    /* We cheat here by using the my_comment field of the response_record 
+       struct as the workgroup name we are going to do the sync for. 
+       This is because the reply packet doesn't include the workgroup, but 
+       we need it when the reply comes back.
+    */
+    queue_netbios_packet(d,ClientNMB,NMB_QUERY,
+			 b->local?NAME_QUERY_SYNC_LOCAL:NAME_QUERY_SYNC_REMOTE,
+			 b->name,0x20,0,0,0,NULL,b->group,
+			 False,False,b->ip,b->ip);
   }
 
   b->synced = True;
@@ -195,10 +223,14 @@ void do_browser_lists(time_t t)
   struct browse_cache_record *b;
   static time_t last = 0;
   
-  if (t-last < 20) return; /* don't do too many of these at once! */
+  if (t-last < 20) 
+   {
+     DEBUG(9,("do_browser_lists: returning due to t(%d) - last(%d) < 20\n",
+             t, last));
+     return; /* don't do too many of these at once! */
                            /* XXXX equally this period should not be too long
                               the server may die in the intervening gap */
-  
+   } 
   last = t;
   
   /* pick any entry in the list, preferably one whose time is up */
@@ -210,8 +242,14 @@ void do_browser_lists(time_t t)
   if (b && !b->synced)
   {
     /* sync with the selected entry then remove some dead entries */
+    DEBUG(4,("do_browser_lists: Initiating sync with %s, workgroup %s\n",
+              b->name, b->group));
     start_sync_browse_entry(b);
     expire_browse_cache(t - 60);
+  }
+  else
+  {
+    DEBUG(9, ("do_browser_lists: no entries to sync.\n"));
   }
 
 }

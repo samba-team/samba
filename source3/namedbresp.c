@@ -34,7 +34,6 @@ extern int DEBUGLEVEL;
 extern pstring scope;
 extern pstring myname;
 extern struct in_addr ipzero;
-extern struct in_addr ipgrp;
 
 int num_response_packets = 0;
 
@@ -117,9 +116,14 @@ struct response_record *make_response_queue_record(enum state_type state,
   n->recurse = recurse;
   n->send_ip = send_ip;
   n->reply_to_ip = reply_to_ip;
-  StrnCpy(my_name   , n->my_name   , sizeof(n->my_name   )-1);
-  StrnCpy(my_comment, n->my_comment, sizeof(n->my_comment)-1);
-
+  if(my_name)
+    StrnCpy(n->my_name, my_name, sizeof(n->my_name)-1);
+  else
+    *n->my_name = 0;
+  if(my_comment)
+    StrnCpy(n->my_comment, my_comment, sizeof(n->my_comment)-1);
+  else
+    *n->my_comment = 0;
   n->repeat_interval = 1; /* XXXX should be in ms */
   n->repeat_count = 3; /* 3 retries */
   n->repeat_time = time(NULL) + n->repeat_interval; /* initial retry time */

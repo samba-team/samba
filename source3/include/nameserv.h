@@ -75,6 +75,8 @@
 #define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
 #define AM_DOMMST(work) (work->ServerType & SV_TYPE_DOMAIN_MASTER)
 #define AM_DOMMEM(work) (work->ServerType & SV_TYPE_DOMAIN_MEMBER)
+#define AM_ANY_MASTER(work) (check_work_servertype(work->work_group, \
+SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER))
 
 /* microsoft browser NetBIOS name */
 #define MSBROWSE "\001\002__MSBROWSE__\002"
@@ -124,7 +126,7 @@ enum state_type
 	NAME_QUERY_SRV_CHK,
 	NAME_QUERY_FIND_MST,
 	NAME_QUERY_MST_CHK,
-	NAME_QUERY_DOMAIN,
+	NAME_QUERY_DOMAIN
 };
 
 /* a netbios name structure */
@@ -401,7 +403,8 @@ struct packet_struct
 #define CHECK_TIME_MAX_HOST_ANNCE  12
 
 /* announce as master to WINS server and any Primary Domain Controllers */
-#define CHECK_TIME_MST_ANNOUNCE    15
+/* ORIGINAL - changed for test by JRA #define CHECK_TIME_MST_ANNOUNCE    15 */
+#define CHECK_TIME_MST_ANNOUNCE    1
 
 /* do all remote announcements this often */
 #define REMOTE_ANNOUNCE_INTERVAL 180

@@ -344,6 +344,7 @@ char *getwd(char *);
 #endif
 
 #ifdef SGI5
+#include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <sys/statvfs.h>
 #include <string.h>
@@ -427,6 +428,7 @@ char *mktemp(char *); /* No standard include */
 #define SIGNAL_CAST ( void (*) (int) )
 #define STATFS3
 #define USE_F_FSIZE
+#define USE_SETSID
 #include <netinet/tcp.h>
 #ifdef OSF1_ENH_SEC
 #include <pwd.h>

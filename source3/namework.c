@@ -173,10 +173,10 @@ BOOL same_context(struct dgram_packet *dgram)
   resources. We just have to pass it to smbd (via browser.dat) and let
   the client choose using bit masks.
   ******************************************************************/
-static void process_announce(struct packet_struct *p,uint16 command,char *buf)
+static void process_localnet_announce(struct packet_struct *p,uint16 command,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  struct subnet_record *d = find_subnet(p->ip); 
+  struct subnet_record *d = find_subnet(p->ip);  /* Explicitly exclude WINS - local nets only */
   int update_count = CVAL(buf,0);
 
   int ttl = IVAL(buf,1)/1000;
@@ -278,25 +278,33 @@ static void process_announce(struct packet_struct *p,uint16 command,char *buf)
 static void process_master_announce(struct packet_struct *p,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  struct subnet_record *d = find_subnet(p->ip);
+  struct subnet_record *d = find_subnet_all(p->ip); /* Explicitly include WINS */
   char *name = buf;
   struct work_record *work;
   name[15] = 0;
   
-  DEBUG(3,("Master Announce from %s (%s)\n",name,inet_ntoa(p->ip)));
+  DEBUG(3,("process_master_announce: Master Announce from %s (%s)\n",name,inet_ntoa(p->ip)));
   
   if (same_context(dgram)) return;
   
-  if (!d) return;
+  if (!d) 
+    {
+      DEBUG(3,("process_master_announce: Cannot find interface\n"));
+      return;
+    }
   
-  if (!lp_domain_master()) return;
+  if (!lp_domain_master()) 
+    {
+      DEBUG(3,("process_master_announce: Not configured as domain master - ignoring master announce.\n"));
+      return;
+    }
   
   for (work = d->workgrouplist; work; work = work->next)
   {
-    if (AM_MASTER(work))
+    if (AM_MASTER(work) || AM_DOMMST(work) || AM_ANY_MASTER(work))
     {
 	  /* merge browse lists with them */
-	  add_browser_entry(name,0x1b, work->work_group,30,p->ip,True);
+	  add_browser_entry(name,0x1d, work->work_group,30,p->ip,True);
     }
   }
 }
@@ -612,13 +620,13 @@ static void process_announce_request(struct packet_struct *p,char *buf)
   struct dgram_packet *dgram = &p->packet.dgram;
   struct work_record *work;
   struct in_addr ip = dgram->header.source_ip;
-  struct subnet_record *d = find_subnet(ip);
+  struct subnet_record *d = find_subnet(ip); /* Explicitly NO WINS */
   int token = CVAL(buf,0);
   char *name = buf+1;
   
   name[15] = 0;
   
-  DEBUG(3,("Announce request from %s to %s token=0x%X\n",
+  DEBUG(3,("process_announce_request: Announce request from %s to %s token=0x%X\n",
 	   name,namestr(&dgram->dest_name), token));
   
   if (strequal(dgram->source_name.name,myname)) return;
@@ -630,8 +638,13 @@ static void process_announce_request(struct packet_struct *p,char *buf)
      if (strequal(dgram->dest_name, lp_workgroup()) return; ???
    */
 
-  if (!d) return;
-  
+  if (!d) 
+    {
+      DEBUG(3,("process_announce_request: No local interface to announce to %s\n",
+                name));
+      return;
+    }
+ 
   for (work = d->workgrouplist; work; work = work->next)
     {
      /* XXXX BUG: the destination name type should also be checked,
@@ -660,7 +673,7 @@ void process_browse_packet(struct packet_struct *p,char *buf,int len)
     case ANN_LocalMasterAnnouncement:
       {
         debug_browse_data(buf, len);
-	process_announce(p,command,buf+1);
+	process_localnet_announce(p,command,buf+1);
 	break;
       }
       
