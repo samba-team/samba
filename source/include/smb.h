@@ -583,6 +583,8 @@ typedef struct connection_struct
 	
 	uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
 
+	pid_t smbd_pid; /* smbd process id of user that *opened* this connection*/
+
 	/* following groups stuff added by ih */
 
 	time_t lastused;
@@ -1781,6 +1783,20 @@ struct pwd_info
 	uchar nt_cli_chal[128];
 	size_t nt_cli_chal_len;
 };
+
+typedef struct subst_creds
+{
+	uid_t uid;
+	fstring nt_username;
+	fstring client_addr;
+	fstring local_machine;
+	fstring client_name;
+	fstring remote_proto;
+	fstring remote_arch;
+	fstring myhostname;
+	fstring remote_machine;
+
+} CREDS_SUBST;
 
 #include "rpc_creds.h"
 

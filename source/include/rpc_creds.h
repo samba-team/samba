@@ -79,20 +79,6 @@ typedef struct user_creds
 
 } CREDS_HYBRID;
 
-typedef struct subst_creds
-{
-	fstring automount_server;
-	fstring client_addr;
-	fstring local_machine;
-	fstring client_name;
-	fstring remote_proto;
-	fstring timestring;
-	fstring remote_arch;
-	fstring myhostname;
-	fstring remote_machine;
-
-} CREDS_SUBST;
-
 typedef struct smbd_creds
 {
 	CREDS_HYBRID cred;

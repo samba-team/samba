@@ -14,7 +14,7 @@ static char *make_creds_key(uint32 pid, uint16 vuid, int *klen)
 	if (k != NULL)
 	{
 		*((uint32*)k) = pid;
-		*((uint16*)(k+sizeof(pid)) = pid;
+		*((uint16*)(k+sizeof(pid))) = vuid;
 
 		DEBUG(10,("make_creds_key: pid: %x vuid %x\n",
 		           pid, vuid));
