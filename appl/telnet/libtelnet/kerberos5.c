@@ -1,9 +1,3 @@
-/*
- *	$Source$
- *	$Author$
- *	$Id$
- */
-
 #if !defined(lint) && !defined(SABER)
 static
 #ifdef __STDC__

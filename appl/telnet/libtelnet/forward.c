@@ -1,8 +1,3 @@
-/*
- *    $Source$
- *    $Id$
- */
-
 #ifndef lint
 static char *rcsid_forward_c =
   "$Id$";
