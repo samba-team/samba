@@ -199,3 +199,34 @@ edit_entry(kadm5_principal_ent_t ent, int *mask)
 		     KADM5_ATTRIBUTES);
     return 0;
 }
+
+/* loop over all principals matching exp */
+int
+foreach_principal(const char *exp, 
+		  int (*func)(krb5_principal, void*), 
+		  void *data)
+{
+    char **princs;
+    int num_princs;
+    int i;
+    krb5_error_code ret;
+    krb5_principal princ_ent;
+    ret = kadm5_get_principals(kadm_handle, exp, &princs, &num_princs);
+    if(ret)
+	return ret;
+    for(i = 0; i < num_princs; i++) {
+	ret = krb5_parse_name(context, princs[i], &princ_ent);
+	if(ret){
+	    krb5_warn(context, ret, "krb5_parse_name(%s)", princs[i]);
+	    continue;
+	}
+	ret = (*func)(princ_ent, data);
+	krb5_free_principal(context, princ_ent);
+	if(ret) {
+	    krb5_warn(context, ret, "%s", princs[i]);
+	}
+    }
+    kadm5_free_name_list(kadm_handle, princs, &num_princs);
+    return 0;
+}
+
