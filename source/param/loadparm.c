@@ -967,8 +967,6 @@ static void   copy_service( service *pserviceDest,
 static BOOL   service_ok(int iService);
 static BOOL   do_parameter(char *pszParmName, char *pszParmValue);
 static BOOL   do_section(char *pszSectionName);
-static void   dump_globals(void);
-static void   dump_a_service(service *pService);
 static void init_copymap(service *pservice);
 
 
@@ -1610,18 +1608,15 @@ static void init_copymap(service *pservice)
 
 
 /***************************************************************************
-Process a parameter.
+Process a parameter for a particular service number. If snum < 0
+then assume we are in the globals
 ***************************************************************************/
-static BOOL do_parameter(char *pszParmName, char *pszParmValue)
+BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 {
    int parmnum;
    void *parm_ptr=NULL; /* where we are going to store the result */
    void *def_ptr=NULL;
 
-   if (!bInGlobalSection && bGlobalOnly) return(True);
-
-   DEBUG(3,("doing parameter %s = %s\n",pszParmName,pszParmValue));
-   
    parmnum = map_parameter(pszParmName);
 
    if (parmnum < 0)
@@ -1633,37 +1628,33 @@ static BOOL do_parameter(char *pszParmName, char *pszParmValue)
    def_ptr = parm_table[parmnum].ptr;
 
    /* we might point at a service, the default service or a global */
-   if (bInGlobalSection)
+   if (snum < 0) {
      parm_ptr = def_ptr;
-   else
-     {
-       if (parm_table[parmnum].class == P_GLOBAL)
-	 {
+   } else {
+       if (parm_table[parmnum].class == P_GLOBAL) {
 	   DEBUG(0,( "Global parameter %s found in service section!\n",pszParmName));
 	   return(True);
 	 }
-       parm_ptr = ((char *)pSERVICE(iServiceIndex)) + PTR_DIFF(def_ptr,&sDefault);
-     }
+       parm_ptr = ((char *)pSERVICE(snum)) + PTR_DIFF(def_ptr,&sDefault);
+   }
 
-   if (!bInGlobalSection)
-     {
-       int i;
-       if (!iSERVICE(iServiceIndex).copymap)
-	 init_copymap(pSERVICE(iServiceIndex));
-       
-       /* this handles the aliases - set the copymap for other entries with
-	  the same data pointer */
-       for (i=0;parm_table[i].label;i++)
-	 if (parm_table[i].ptr == parm_table[parmnum].ptr)
-	   iSERVICE(iServiceIndex).copymap[i] = False;
-     }
+   if (snum >= 0) {
+	   int i;
+	   if (!iSERVICE(snum).copymap)
+		   init_copymap(pSERVICE(snum));
+	   
+	   /* this handles the aliases - set the copymap for other entries with
+	      the same data pointer */
+	   for (i=0;parm_table[i].label;i++)
+		   if (parm_table[i].ptr == parm_table[parmnum].ptr)
+			   iSERVICE(snum).copymap[i] = False;
+   }
 
    /* if it is a special case then go ahead */
-   if (parm_table[parmnum].special)
-     {
-       parm_table[parmnum].special(pszParmValue,parm_ptr);
-       return(True);
-     }
+   if (parm_table[parmnum].special) {
+	   parm_table[parmnum].special(pszParmValue,parm_ptr);
+	   return(True);
+   }
 
    /* now switch on the type of variable it is */
    switch (parm_table[parmnum].type)
@@ -1712,44 +1703,101 @@ static BOOL do_parameter(char *pszParmName, char *pszParmValue)
 }
 
 /***************************************************************************
+Process a parameter.
+***************************************************************************/
+static BOOL do_parameter(char *pszParmName, char *pszParmValue)
+{
+   if (!bInGlobalSection && bGlobalOnly) return(True);
+
+   DEBUG(3,("doing parameter %s = %s\n",pszParmName,pszParmValue));
+
+   return lp_do_parameter(bInGlobalSection?-2:iServiceIndex, pszParmName, pszParmValue);
+}
+
+
+/***************************************************************************
 print a parameter of the specified type
 ***************************************************************************/
-static void print_parameter(parm_type type,void *ptr)
+static void print_parameter(parm_type type,void *ptr, FILE *f)
 {
   switch (type)
     {
     case P_BOOL:
-      printf("%s",BOOLSTR(*(BOOL *)ptr));
+      fprintf(f,"%s",BOOLSTR(*(BOOL *)ptr));
       break;
       
     case P_BOOLREV:
-      printf("%s",BOOLSTR(! *(BOOL *)ptr));
+      fprintf(f,"%s",BOOLSTR(! *(BOOL *)ptr));
       break;
       
     case P_INTEGER:
-      printf("%d",*(int *)ptr);
+      fprintf(f,"%d",*(int *)ptr);
       break;
       
     case P_CHAR:
-      printf("%c",*(char *)ptr);
+      fprintf(f,"%c",*(char *)ptr);
       break;
       
     case P_OCTAL:
-      printf("0%o",*(int *)ptr);
+      fprintf(f,"0%o",*(int *)ptr);
       break;
       
     case P_GSTRING:
     case P_UGSTRING:
       if ((char *)ptr)
-	printf("%s",(char *)ptr);
+	fprintf(f,"%s",(char *)ptr);
       break;
 
     case P_STRING:
     case P_USTRING:
       if (*(char **)ptr)
-	printf("%s",*(char **)ptr);
+	fprintf(f,"%s",*(char **)ptr);
       break;
     }
+}
+
+
+/***************************************************************************
+print a parameter of the specified type
+***************************************************************************/
+static void parameter_string(parm_type type,void *ptr,char *s)
+{
+	s[0] = 0;
+	
+	switch (type)
+		{
+		case P_BOOL:
+			sprintf(s, "%s",BOOLSTR(*(BOOL *)ptr));
+			break;
+			
+		case P_BOOLREV:
+			sprintf(s, "%s",BOOLSTR(! *(BOOL *)ptr));
+			break;
+			
+		case P_INTEGER:
+			sprintf(s, "%d",*(int *)ptr);
+			break;
+			
+		case P_CHAR:
+			sprintf(s, "%c",*(char *)ptr);
+			break;
+			
+		case P_OCTAL:
+			sprintf(s, "0%o",*(int *)ptr);
+			break;
+			
+		case P_GSTRING:
+		case P_UGSTRING:
+			if ((char *)ptr)
+				sprintf(s, "%s",(char *)ptr);
+			break;
+			
+		case P_STRING:
+		case P_USTRING:
+			if (*(char **)ptr)
+				sprintf(s, "%s",*(char **)ptr);
+			break;
+		}
 }
 
 
@@ -1845,32 +1893,32 @@ static BOOL do_section(char *pszSectionName)
 /***************************************************************************
 Display the contents of the global structure.
 ***************************************************************************/
-static void dump_globals(void)
+static void dump_globals(FILE *f)
 {
   int i;
-  printf("Global parameters:\n");
+  fprintf(f, "# Global parameters\n");
 
   for (i=0;parm_table[i].label;i++)
     if (parm_table[i].class == P_GLOBAL &&
 	parm_table[i].ptr &&
 	(i == 0 || (parm_table[i].ptr != parm_table[i-1].ptr)))
       {
-	printf("\t%s: ",parm_table[i].label);
-	print_parameter(parm_table[i].type,parm_table[i].ptr);
-	printf("\n");
+	fprintf(f,"\t%s = ",parm_table[i].label);
+	print_parameter(parm_table[i].type,parm_table[i].ptr, f);
+	fprintf(f,"\n");
       }
 }
 
 /***************************************************************************
 Display the contents of a single services record.
 ***************************************************************************/
-static void dump_a_service(service *pService)
+static void dump_a_service(service *pService, FILE *f)
 {
   int i;
   if (pService == &sDefault)
-    printf("\nDefault service parameters:\n");
+    fprintf(f,"\n\n# Default service parameters\n");
   else
-    printf("\nService parameters [%s]:\n",pService->szService);
+    fprintf(f,"\n[%s]\n",pService->szService);
 
   for (i=0;parm_table[i].label;i++)
     if (parm_table[i].class == P_LOCAL &&
@@ -1884,13 +1932,68 @@ static void dump_a_service(service *pService)
 						      ((char *)pService) + pdiff,
 						      ((char *)&sDefault) + pdiff))
 	  {
-	    printf("\t%s: ",parm_table[i].label);
+	    fprintf(f,"\t%s = ",parm_table[i].label);
 	    print_parameter(parm_table[i].type,
-			    ((char *)pService) + pdiff);
-	    printf("\n");
+			    ((char *)pService) + pdiff, f);
+	    fprintf(f,"\n");
 	  }
       }
 }
+
+
+/***************************************************************************
+return info about the next service  in a service. snum==-1 gives the default
+serice and snum==-2 gives the globals
+
+return 0 when out of parameters
+***************************************************************************/
+int lp_next_parameter(int snum, int *i, char *label, 
+			   char *value, int allparameters)
+{
+	if (snum == -2) {
+		/* do the globals */
+		for (;parm_table[*i].label;(*i)++)
+			if (parm_table[*i].class == P_GLOBAL &&
+			    parm_table[*i].ptr && 
+			    (*parm_table[*i].label != '-') &&
+			    ((*i) == 0 || 
+			     (parm_table[*i].ptr != parm_table[(*i)-1].ptr))) {
+				strcpy(label, parm_table[*i].label);
+				parameter_string(parm_table[*i].type,
+						 parm_table[*i].ptr,
+						 value);
+				(*i)++;
+				return 1;
+			}
+		return 0;
+	} else {
+		service *pService = (snum==-1?&sDefault:pSERVICE(snum));
+
+		for (;parm_table[*i].label;(*i)++)
+			if (parm_table[*i].class == P_LOCAL &&
+			    parm_table[*i].ptr && 
+			    (*parm_table[*i].label != '-') &&
+			    ((*i) == 0 || 
+			     (parm_table[*i].ptr != parm_table[(*i)-1].ptr))) {
+				int pdiff = PTR_DIFF(parm_table[*i].ptr,&sDefault);
+				
+				if (snum == -1 || allparameters ||
+				    !equal_parameter(parm_table[*i].type,
+						     ((char *)pService) + pdiff,
+						     ((char *)&sDefault) + pdiff)) {
+					strcpy(label, parm_table[*i].label);
+					parameter_string(parm_table[*i].type,
+							 ((char *)pService) + pdiff,
+							 value);
+					(*i)++;
+					return 1;
+				}
+			}
+	}
+
+  return 0;
+}
+
 
 #if 0
 /***************************************************************************
@@ -2000,7 +2103,7 @@ void lp_killunused(BOOL (*snumused)(int ))
 {
   int i;
   for (i=0;i<iNumServices;i++)
-    if (VALID(i) && !snumused(i))
+    if (VALID(i) && (!snumused || !snumused(i)))
       {
 	iSERVICE(i).valid = False;
 	free_service(pSERVICE(i));
@@ -2063,13 +2166,13 @@ int lp_numservices(void)
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
-void lp_dump(void)
+void lp_dump(FILE *f)
 {
    int iService;
 
-   dump_globals();
+   dump_globals(f);
    
-   dump_a_service(&sDefault);
+   dump_a_service(&sDefault, f);
 
    for (iService = 0; iService < iNumServices; iService++)
    {
@@ -2077,10 +2180,11 @@ void lp_dump(void)
        {
 	 if (iSERVICE(iService).szService[0] == '\0')
 	   break;
-	 dump_a_service(pSERVICE(iService));
+	 dump_a_service(pSERVICE(iService), f);
        }
    }
 }
+
 
 /***************************************************************************
 Return the number of the service with the given name, or -1 if it doesn't
@@ -2159,6 +2263,38 @@ static void set_default_server_announce_type()
 #endif
 }
 
+
+/*******************************************************************
+rename a service
+********************************************************************/
+void lp_rename_service(int snum, char *new_name)
+{
+	string_set(&pSERVICE(snum)->szService, new_name);
+}
+
+/*******************************************************************
+remove a service
+********************************************************************/
+void lp_remove_service(int snum)
+{
+	pSERVICE(snum)->valid = False;
+}
+
+/*******************************************************************
+copy a service
+********************************************************************/
+void lp_copy_service(int snum, char *new_name)
+{
+	char *oldname = lp_servicename(snum);
+	do_section(new_name);
+	if (snum >= 0) {
+		snum = lp_servicenumber(new_name);
+		if (snum >= 0)
+			lp_do_parameter(snum, "copy", oldname);
+	}
+}
+
+
 /*******************************************************************
  Get the default server type we will announce as via nmbd.
 ********************************************************************/
@@ -2213,3 +2349,4 @@ int lp_minor_announce_version(void)
   minor_version = atoi(p);
   return minor_version;
 }  
+
