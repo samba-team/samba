@@ -96,7 +96,7 @@ typedef struct obj_attr_info
 typedef struct lsa_q_open_pol_info
 {
 	uint32 ptr;         /* undocumented buffer pointer */
-	uint16 system_name; /* 0x5c - system name */
+	uint16 system_name; /* system name BUG!!! (should be \\server!) */
 	LSA_OBJ_ATTR attr ; /* object attributes */
 
 	uint32 des_access; /* desired access attributes */
