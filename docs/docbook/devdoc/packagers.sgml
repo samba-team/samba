@@ -16,7 +16,7 @@ from custom-build samba builds (distributions often patch packages). For
 example, a good version would be: </para>
 
 <para><programlisting>
-
+Version 2.999+3.0.alpha21-5 for Debian
 </programlisting></para>
 
 </sect1>
