@@ -52,38 +52,41 @@ APOptions ::=   BIT STRING {
 
 
 TicketFlags ::=   BIT STRING {
-		  reserved(0),
-		  forwardable(1),
-		  forwarded(2),
-		  proxiable(3),
-		  proxy(4),
-		  may-postdate(5),
-		  postdated(6),
-		  invalid(7),
-		  renewable(8),
-		  initial(9),
-		  pre-authent(10),
-		  hw-authent(11)
+		reserved(0),
+		forwardable(1),
+		forwarded(2),
+		proxiable(3),
+		proxy(4),
+		may-postdate(5),
+		postdated(6),
+		invalid(7),
+		renewable(8),
+		initial(9),
+		pre-authent(10),
+		hw-authent(11),
+		transited-policy-checked(12)
 }
 
 KDCOptions ::=   BIT STRING {
-		   reserved(0),
-		   forwardable(1),
-		   forwarded(2),
-		   proxiable(3),
-		   proxy(4),
-		   allow-postdate(5),
-		   postdated(6),
-		   unused7(7),
-		   renewable(8),
-		   unused9(9),
-		   unused10(10),
-		   unused11(11),
-		   renewable-ok(27),
-		   enc-tkt-in-skey(28),
-		   renew(30),
-		   validate(31)
-	    }
+		reserved(0),
+		forwardable(1),
+		forwarded(2),
+		proxiable(3),
+		proxy(4),
+		allow-postdate(5),
+		postdated(6),
+		unused7(7),
+		renewable(8),
+		unused9(9),
+		unused10(10),
+		unused11(11),
+		request-anonymous(14),
+		disable-transited-check(26),
+		renewable-ok(27),
+		enc-tkt-in-skey(28),
+		renew(30),
+		validate(31)
+}
 
 
 LastReq ::=   SEQUENCE OF SEQUENCE {
