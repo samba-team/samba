@@ -25,6 +25,7 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
     CPPFLAGS="${INCLUDE_des} ${CPPFLAGS}"
     LIB_des="-L${with_openssl}/lib"
   fi
+  LIB_des="${LIB_des} -lcrypto"
   LIB_des_a="$LIB_des"
   LIB_des_so="$LIB_des"
   LIB_des_appl="$LIB_des"
@@ -64,6 +65,7 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
   if test "$krb4_libdir"; then
     LIB_des="-L${krb4_libdir}"
   fi
+  LIB_des="${LIB_des} -ldes"
   CPPFLAGS="${CPPFLAGS} ${INCLUDE_des}"
   LIBS="${LIBS} ${LIB_des}"
   LIB_des_a="$LIB_des"
