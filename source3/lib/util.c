@@ -1820,11 +1820,9 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap)
 {
 	int n;
 	va_list ap2;
-#if defined(HAVE_VA_COPY)
-	__va_copy(ap2, ap);
-#else
-	ap2 = ap;
-#endif
+
+	VA_COPY(ap2, ap);
+
 	n = vasprintf(ptr, format, ap2);
 	if (n == -1 || ! *ptr) {
 		smb_panic("smb_xvasprintf: out of memory");

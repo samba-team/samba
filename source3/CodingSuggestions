@@ -59,8 +59,8 @@ Here are some other suggestions:
 6) explicitly add const qualifiers on parm passing in functions where parm
    is input only (somewhat controversial but const can be #defined away)
 
-7) when passing a va_list as an arg, or assigning one to another, check
-   for HAVE_VA_COPY, and use it if it exists.
+7) when passing a va_list as an arg, or assigning one to another
+   please use the VA_COPY() macro
 	reason: on some platforms, va_list is a struct that must be 
 		initialized in each function...can SEGV if you don't.
 
