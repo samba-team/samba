@@ -40,7 +40,7 @@ struct samdb_context {
 		return NT_STATUS_NO_MEMORY;\
 	} else if ((dn)->comp_num < (i)) {\
 		result = LDAP_INVALID_DN_SYNTAX;\
-		errstr = "Invalid DN";\
+		errstr = "Invalid DN (" #i " components needed for '" #dn "')";\
 		goto reply;\
 	}\
 } while(0)
@@ -176,7 +176,7 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 				     struct ldap_AddRequest *r)
 {
 	void *local_ctx;
-	struct ldap_dn *ldn;
+	struct ldap_dn *dn;
 	struct ldap_Result *add_result;
 	struct ldapsrv_reply *add_reply;
 	int ldb_ret;
@@ -192,15 +192,15 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	samdb = samdb_connect(local_ctx);
 	ALLOC_CHECK(samdb);
 
-	ldn = ldap_parse_dn(local_ctx, r->dn);
-	VALID_DN_SYNTAX(ldn,1);
+	dn = ldap_parse_dn(local_ctx, r->dn);
+	VALID_DN_SYNTAX(dn,1);
 
-	DEBUG(10, ("sldb_add: dn: [%s]\n", ldn->dn));
+	DEBUG(10, ("sldb_add: dn: [%s]\n", dn->dn));
 
 	msg = talloc_p(local_ctx, struct ldb_message);
 	ALLOC_CHECK(msg);
 
-	msg->dn = ldn->dn;
+	msg->dn = dn->dn;
 	msg->private_data = NULL;
 	msg->num_elements = 0;
 	msg->elements = NULL;
@@ -276,7 +276,7 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 				     struct ldap_DelRequest *r)
 {
 	void *local_ctx;
-	struct ldap_dn *ldn;
+	struct ldap_dn *dn;
 	struct ldap_Result *del_result;
 	struct ldapsrv_reply *del_reply;
 	int ldb_ret;
@@ -290,10 +290,10 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	samdb = samdb_connect(local_ctx);
 	ALLOC_CHECK(samdb);
 
-	ldn = ldap_parse_dn(local_ctx, r->dn);
-	VALID_DN_SYNTAX(ldn,1);
+	dn = ldap_parse_dn(local_ctx, r->dn);
+	VALID_DN_SYNTAX(dn,1);
 
-	DEBUG(10, ("sldb_Del: dn: [%s]\n", ldn->dn));
+	DEBUG(10, ("sldb_Del: dn: [%s]\n", dn->dn));
 
 reply:
 	del_reply = ldapsrv_init_reply(call, LDAP_TAG_DelResponse);
@@ -301,7 +301,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
-		ldb_ret = ldb_delete(samdb->ldb, ldn->dn);
+		ldb_ret = ldb_delete(samdb->ldb, dn->dn);
 		if (ldb_ret == 0) {
 			result = LDAP_SUCCESS;
 			errstr = NULL;
@@ -329,7 +329,7 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 				     struct ldap_ModifyRequest *r)
 {
 	void *local_ctx;
-	struct ldap_dn *ldn;
+	struct ldap_dn *dn;
 	struct ldap_Result *modify_result;
 	struct ldapsrv_reply *modify_reply;
 	int ldb_ret;
@@ -345,15 +345,15 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 	samdb = samdb_connect(local_ctx);
 	ALLOC_CHECK(samdb);
 
-	ldn = ldap_parse_dn(local_ctx, r->dn);
-	VALID_DN_SYNTAX(ldn,1);
+	dn = ldap_parse_dn(local_ctx, r->dn);
+	VALID_DN_SYNTAX(dn,1);
 
-	DEBUG(10, ("sldb_modify: dn: [%s]\n", ldn->dn));
+	DEBUG(10, ("sldb_modify: dn: [%s]\n", dn->dn));
 
 	msg = talloc_p(local_ctx, struct ldb_message);
 	ALLOC_CHECK(msg);
 
-	msg->dn = ldn->dn;
+	msg->dn = dn->dn;
 	msg->private_data = NULL;
 	msg->num_elements = 0;
 	msg->elements = NULL;
@@ -445,7 +445,7 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 				     struct ldap_CompareRequest *r)
 {
 	void *local_ctx;
-	struct ldap_dn *ldn;
+	struct ldap_dn *dn;
 	struct ldap_Result *compare;
 	struct ldapsrv_reply *compare_r;
 	int result = LDAP_SUCCESS;
@@ -453,7 +453,6 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	struct ldb_message **res;
 	const char *attrs[1];
 	const char *errstr = NULL;
-	const char *dn;
 	const char *filter;
 	int count;
 
@@ -463,10 +462,10 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 	samdb = samdb_connect(local_ctx);
 	ALLOC_CHECK(samdb);
 
-	ldn = ldap_parse_dn(local_ctx, r->dn);
-	VALID_DN_SYNTAX(ldn,1);
+	dn = ldap_parse_dn(local_ctx, r->dn);
+	VALID_DN_SYNTAX(dn,1);
 
-	DEBUG(10, ("sldb_Compare: dn: [%s]\n", ldn->dn));
+	DEBUG(10, ("sldb_Compare: dn: [%s]\n", dn->dn));
 	filter = talloc_asprintf(local_ctx, "(%s=%*s)", r->attribute, r->value.length, r->value.data);
 	ALLOC_CHECK(filter);
 
@@ -480,7 +479,7 @@ reply:
 
 	if (result == LDAP_SUCCESS) {
 		ldb_set_alloc(samdb->ldb, talloc_realloc_fn, samdb);
-		count = ldb_search(samdb->ldb, dn, LDB_SCOPE_BASE, filter, attrs, &res);
+		count = ldb_search(samdb->ldb, dn->dn, LDB_SCOPE_BASE, filter, attrs, &res);
 		if (count == 1) {
 			DEBUG(10,("sldb_Compare: matched\n"));
 			result = LDAP_COMPARE_TRUE;
