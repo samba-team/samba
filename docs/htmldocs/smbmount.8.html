@@ -1,329 +1,70 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->smbmount</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
-><BODY
-CLASS="REFENTRY"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><H1
-><A
-NAME="SMBMOUNT.8"
-></A
->smbmount</H1
-><DIV
-CLASS="REFNAMEDIV"
-><A
-NAME="AEN5"
-></A
-><H2
->Name</H2
->smbmount&nbsp;--&nbsp;mount an smbfs filesystem</DIV
-><DIV
-CLASS="REFSYNOPSISDIV"
-><A
-NAME="AEN8"
-></A
-><H2
->Synopsis</H2
-><P
-><B
-CLASS="COMMAND"
->smbmount</B
->  {service} {mount-point} [-o options]</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN14"
-></A
-><H2
->DESCRIPTION</H2
-><P
-><B
-CLASS="COMMAND"
->smbmount</B
-> mounts a Linux SMB filesystem. It 
-	is usually invoked as <B
-CLASS="COMMAND"
->mount.smbfs</B
-> by
-	the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->mount</SPAN
->(8)</SPAN
-> command when using the 
-	"-t smbfs" option. This command only works in Linux, and the kernel must
-	support the smbfs filesystem. </P
-><P
->Options to <B
-CLASS="COMMAND"
->smbmount</B
-> are specified as a comma-separated
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>smbmount</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="smbmount.8"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>smbmount &#8212; mount an smbfs filesystem</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt>smbmount</tt>  {service} {mount-point} [-o options]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p><b>smbmount</b> mounts a Linux SMB filesystem. It 
+	is usually invoked as <b>mount.smbfs</b> by
+	the <a href="mount.8.html">mount(8)</a> command when using the 
+	&quot;-t smbfs&quot; option. This command only works in Linux, and the kernel must
+	support the smbfs filesystem. </p><p>Options to <b>smbmount</b> are specified as a comma-separated
 	list of key=value pairs. It is possible to send options other
 	than those listed here, assuming that smbfs supports them. If
 	you get mount failures, check your kernel log for errors on
-	unknown options.</P
-><P
-><B
-CLASS="COMMAND"
->smbmount</B
-> is a daemon. After mounting it keeps running until
+	unknown options.</p><p><b>smbmount</b> is a daemon. After mounting it keeps running until
 	the mounted smbfs is umounted. It will log things that happen
-	when in daemon mode using the "machine name" smbmount, so
-	typically this output will end up in <TT
-CLASS="FILENAME"
->log.smbmount</TT
->. The <B
-CLASS="COMMAND"
->	smbmount</B
-> process may also be called mount.smbfs.</P
-><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->NOTE:</I
-></SPAN
-> <B
-CLASS="COMMAND"
->smbmount</B
-> 
-	calls <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbmnt</SPAN
->(8)</SPAN
-> to do the actual mount. You 
-	must make sure that <B
-CLASS="COMMAND"
->smbmnt</B
-> is in the path so 
-	that it can be found. </P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN35"
-></A
-><H2
->OPTIONS</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->username=&#60;arg&#62;</DT
-><DD
-><P
->specifies the username to connect as. If
-		this is not given, then the environment variable <VAR
-CLASS="ENVAR"
->		USER</VAR
-> is used. This option can also take the
-		form "user%password" or "user/workgroup" or
-		"user/workgroup%password" to allow the password and workgroup
-		to be specified as part of the username.</P
-></DD
-><DT
->password=&#60;arg&#62;</DT
-><DD
-><P
->specifies the SMB password. If this
+	when in daemon mode using the &quot;machine name&quot; smbmount, so
+	typically this output will end up in <tt>log.smbmount</tt>. The <b>
+	smbmount</b> process may also be called mount.smbfs.</p><p><span class="emphasis"><em>NOTE:</em></span> <b>smbmount</b> 
+	calls <a href="smbmnt.8.html">smbmnt(8)</a> to do the actual mount. You 
+	must make sure that <b>smbmnt</b> is in the path so 
+	that it can be found. </p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">username=&lt;arg&gt;</span></dt><dd><p>specifies the username to connect as. If
+		this is not given, then the environment variable <tt>
+		USER</tt> is used. This option can also take the
+		form &quot;user%password&quot; or &quot;user/workgroup&quot; or
+		&quot;user/workgroup%password&quot; to allow the password and workgroup
+		to be specified as part of the username.</p></dd><dt><span class="term">password=&lt;arg&gt;</span></dt><dd><p>specifies the SMB password. If this
 		option is not given then the environment variable
-		<VAR
-CLASS="ENVAR"
->PASSWD</VAR
-> is used. If it can find
-		no password <B
-CLASS="COMMAND"
->smbmount</B
-> will prompt
+		<tt>PASSWD</tt> is used. If it can find
+		no password <b>smbmount</b> will prompt
 		for a passeword, unless the guest option is
-		given. </P
-><P
->		Note that passwords which contain the argument delimiter
+		given. </p><p>
+		Note that passwords which contain the argument delimiter
 		character (i.e. a comma ',') will failed to be parsed correctly
 		on the command line.  However, the same password defined
 		in the PASSWD environment variable or a credentials file (see
 		below) will be read correctly.
-		</P
-></DD
-><DT
->credentials=&#60;filename&#62;</DT
-><DD
-><P
->specifies a file that contains a username and/or password. 
+		</p></dd><dt><span class="term">credentials=&lt;filename&gt;</span></dt><dd><p>specifies a file that contains a username and/or password. 
 The format of the file is:
-<PRE
-CLASS="PROGRAMLISTING"
->username = &#60;value&#62;
-password = &#60;value&#62;</PRE
-></P
-><P
->This is preferred over having passwords in plaintext in a
-		shared file, such as <TT
-CLASS="FILENAME"
->/etc/fstab</TT
->. Be sure to protect any
+</p><pre class="programlisting">
+username = &lt;value&gt;
+password = &lt;value&gt;
+</pre><p>This is preferred over having passwords in plaintext in a
+		shared file, such as <tt>/etc/fstab</tt>. Be sure to protect any
 		credentials file properly.
-		</P
-></DD
-><DT
->krb</DT
-><DD
-><P
->Use kerberos (Active Directory). </P
-></DD
-><DT
->netbiosname=&#60;arg&#62;</DT
-><DD
-><P
->sets the source NetBIOS name. It defaults 
-		to the local hostname. </P
-></DD
-><DT
->uid=&#60;arg&#62;</DT
-><DD
-><P
->sets the uid that will own all files on
+		</p></dd><dt><span class="term">krb</span></dt><dd><p>Use kerberos (Active Directory). </p></dd><dt><span class="term">netbiosname=&lt;arg&gt;</span></dt><dd><p>sets the source NetBIOS name. It defaults 
+		to the local hostname. </p></dd><dt><span class="term">uid=&lt;arg&gt;</span></dt><dd><p>sets the uid that will own all files on
 		the mounted filesystem.
 		It may be specified as either a username or a numeric uid.
-		</P
-></DD
-><DT
->gid=&#60;arg&#62;</DT
-><DD
-><P
->sets the gid that will own all files on
+		</p></dd><dt><span class="term">gid=&lt;arg&gt;</span></dt><dd><p>sets the gid that will own all files on
 		the mounted filesystem.
 		It may be specified as either a groupname or a numeric 
-		gid. </P
-></DD
-><DT
->port=&#60;arg&#62;</DT
-><DD
-><P
->sets the remote SMB port number. The default 
-		is 139. </P
-></DD
-><DT
->fmask=&#60;arg&#62;</DT
-><DD
-><P
->sets the file mask. This determines the 
+		gid. </p></dd><dt><span class="term">port=&lt;arg&gt;</span></dt><dd><p>sets the remote SMB port number. The default 
+		is 139. </p></dd><dt><span class="term">fmask=&lt;arg&gt;</span></dt><dd><p>sets the file mask. This determines the 
 		permissions that remote files have in the local filesystem. 
-		The default is based on the current umask. </P
-></DD
-><DT
->dmask=&#60;arg&#62;</DT
-><DD
-><P
->Sets the directory mask. This determines the 
+		The default is based on the current umask. </p></dd><dt><span class="term">dmask=&lt;arg&gt;</span></dt><dd><p>Sets the directory mask. This determines the 
 		permissions that remote directories have in the local filesystem. 
-		The default is based on the current umask. </P
-></DD
-><DT
->debug=&#60;arg&#62;</DT
-><DD
-><P
->Sets the debug level. This is useful for 
+		The default is based on the current umask. </p></dd><dt><span class="term">debug=&lt;arg&gt;</span></dt><dd><p>Sets the debug level. This is useful for 
 		tracking down SMB connection problems. A suggested value to
 		start with is 4. If set too high there will be a lot of
-		output, possibly hiding the useful output.</P
-></DD
-><DT
->ip=&#60;arg&#62;</DT
-><DD
-><P
->Sets the destination host or IP address.
-		</P
-></DD
-><DT
->workgroup=&#60;arg&#62;</DT
-><DD
-><P
->Sets the workgroup on the destination </P
-></DD
-><DT
->sockopt=&#60;arg&#62;</DT
-><DD
-><P
->Sets the TCP socket options. See the <A
-HREF="smb.conf.5.html#SOCKETOPTIONS"
-TARGET="_top"
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smb.conf</SPAN
->(5)</SPAN
-></A
-> <VAR
-CLASS="PARAMETER"
->socket options</VAR
-> option.
-		</P
-></DD
-><DT
->scope=&#60;arg&#62;</DT
-><DD
-><P
->Sets the NetBIOS scope </P
-></DD
-><DT
->guest</DT
-><DD
-><P
->Don't prompt for a password </P
-></DD
-><DT
->ro</DT
-><DD
-><P
->mount read-only </P
-></DD
-><DT
->rw</DT
-><DD
-><P
->mount read-write </P
-></DD
-><DT
->iocharset=&#60;arg&#62;</DT
-><DD
-><P
->		sets the charset used by the Linux side for codepage
+		output, possibly hiding the useful output.</p></dd><dt><span class="term">ip=&lt;arg&gt;</span></dt><dd><p>Sets the destination host or IP address.
+		</p></dd><dt><span class="term">workgroup=&lt;arg&gt;</span></dt><dd><p>Sets the workgroup on the destination </p></dd><dt><span class="term">sockopt=&lt;arg&gt;</span></dt><dd><p>Sets the TCP socket options. See the <a href="smb.conf.5.html#SOCKETOPTIONS" target="_top"><a href="smb.conf.5.html">smb.conf(5)</a></a> <i><tt>socket options</tt></i> option.
+		</p></dd><dt><span class="term">scope=&lt;arg&gt;</span></dt><dd><p>Sets the NetBIOS scope </p></dd><dt><span class="term">guest</span></dt><dd><p>Don't prompt for a password </p></dd><dt><span class="term">ro</span></dt><dd><p>mount read-only </p></dd><dt><span class="term">rw</span></dt><dd><p>mount read-write </p></dd><dt><span class="term">iocharset=&lt;arg&gt;</span></dt><dd><p>
+		sets the charset used by the Linux side for codepage
 		to charset translations (NLS). Argument should be the
 		name of a charset, like iso8859-1. (Note: only kernel
 		2.4.0 or later)
-		</P
-></DD
-><DT
->codepage=&#60;arg&#62;</DT
-><DD
-><P
->		sets the codepage the server uses. See the iocharset
+		</p></dd><dt><span class="term">codepage=&lt;arg&gt;</span></dt><dd><p>
+		sets the codepage the server uses. See the iocharset
 		option. Example value cp850. (Note: only kernel 2.4.0
 		or later)
-		</P
-></DD
-><DT
->ttl=&#60;arg&#62;</DT
-><DD
-><P
->		sets how long a directory listing is cached in milliseconds
+		</p></dd><dt><span class="term">ttl=&lt;arg&gt;</span></dt><dd><p>
+		sets how long a directory listing is cached in milliseconds
 		(also affects visibility of file size and date
 		changes). A higher value means that changes on the
 		server take longer to be noticed but it can give
@@ -332,139 +73,34 @@ CLASS="PARAMETER"
 		like 10000ms (10 seconds) is probably more reasonable
 		in many cases.
 		(Note: only kernel 2.4.2 or later)
-		</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN134"
-></A
-><H2
->ENVIRONMENT VARIABLES</H2
-><P
->The variable <VAR
-CLASS="ENVAR"
->USER</VAR
-> may contain the username of the
+		</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>ENVIRONMENT VARIABLES</h2><p>The variable <tt>USER</tt> may contain the username of the
 	person using the client.  This information is used only if the
 	protocol level is high enough to support session-level
 	passwords. The variable can be used to set both username and
-	password by using the format username%password.</P
-><P
->The variable <VAR
-CLASS="ENVAR"
->PASSWD</VAR
-> may contain the password of the
+	password by using the format username%password.</p><p>The variable <tt>PASSWD</tt> may contain the password of the
 	person using the client.  This information is used only if the
 	protocol level is high enough to support session-level
-	passwords.</P
-><P
->The variable <VAR
-CLASS="ENVAR"
->PASSWD_FILE</VAR
-> may contain the pathname
+	passwords.</p><p>The variable <tt>PASSWD_FILE</tt> may contain the pathname
 	of a file to read the password from. A single line of input is
-	read and used as the password.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN142"
-></A
-><H2
->BUGS</H2
-><P
->Passwords and other options containing , can not be handled.
+	read and used as the password.</p></div><div class="refsect1" lang="en"><h2>BUGS</h2><p>Passwords and other options containing , can not be handled.
 	For passwords an alternative way of passing them is in a credentials
-	file or in the PASSWD environment.</P
-><P
->The credentials file does not handle usernames or passwords with
-	leading space.</P
-><P
->One smbfs bug is important enough to mention here, even if it
-	is a bit misplaced:</P
-><P
-></P
-><UL
-><LI
-><P
->Mounts sometimes stop working. This is usually
+	file or in the PASSWD environment.</p><p>The credentials file does not handle usernames or passwords with
+	leading space.</p><p>One smbfs bug is important enough to mention here, even if it
+	is a bit misplaced:</p><div class="itemizedlist"><ul type="disc"><li><p>Mounts sometimes stop working. This is usually
 	caused by smbmount terminating. Since smbfs needs smbmount to
 	reconnect when the server disconnects, the mount will eventually go
 	dead. An umount/mount normally fixes this. At least 2 ways to
-	trigger this bug are known.</P
-></LI
-></UL
-><P
->Note that the typical response to a bug report is suggestion
+	trigger this bug are known.</p></li></ul></div><p>Note that the typical response to a bug report is suggestion
 	to try the latest version first. So please try doing that first,
 	and always include which versions you use of relevant software
-	when reporting bugs (minimum: samba, kernel, distribution)</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN151"
-></A
-><H2
->SEE ALSO</H2
-><P
->Documentation/filesystems/smbfs.txt in the linux kernel
-	source tree may contain additional options and information.</P
-><P
->FreeBSD also has a smbfs, but it is not related to smbmount</P
-><P
->For Solaris, HP-UX and others you may want to look at <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbsh</SPAN
->(1)</SPAN
-> or at other solutions, such as 
-	Sharity or perhaps replacing the SMB server with a NFS server.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN159"
-></A
-><H2
->AUTHOR</H2
-><P
->Volker Lendecke, Andrew Tridgell, Michael H. Warfield 
-	and others.</P
-><P
->The current maintainer of smbfs and the userspace
-	tools <B
-CLASS="COMMAND"
->smbmount</B
->, <B
-CLASS="COMMAND"
->smbumount</B
->,
-	and <B
-CLASS="COMMAND"
->smbmnt</B
-> is <A
-HREF="mailto:urban@teststation.com"
-TARGET="_top"
->Urban Widmark</A
->.
-	The <A
-HREF="mailto:samba@samba.org"
-TARGET="_top"
->SAMBA Mailing list</A
->
+	when reporting bugs (minimum: samba, kernel, distribution)</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p>Documentation/filesystems/smbfs.txt in the linux kernel
+	source tree may contain additional options and information.</p><p>FreeBSD also has a smbfs, but it is not related to smbmount</p><p>For Solaris, HP-UX and others you may want to look at <a href="smbsh.1.html">smbsh(1)</a> or at other solutions, such as 
+	Sharity or perhaps replacing the SMB server with a NFS server.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>Volker Lendecke, Andrew Tridgell, Michael H. Warfield 
+	and others.</p><p>The current maintainer of smbfs and the userspace
+	tools <b>smbmount</b>, <b>smbumount</b>,
+	and <b>smbmnt</b> is <a href="mailto:urban@teststation.com" target="_top">Urban Widmark</a>.
+	The <a href="mailto:samba@samba.org" target="_top">SAMBA Mailing list</a>
 	is the preferred place to ask questions regarding these programs.
-	</P
-><P
->The conversion of this manpage for Samba 2.2 was performed 
+	</p><p>The conversion of this manpage for Samba 2.2 was performed 
 	by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
-	was done by Alexander Bokovoy.</P
-></DIV
-></BODY
-></HTML
->
+	was done by Alexander Bokovoy.</p></div></div></body></html>

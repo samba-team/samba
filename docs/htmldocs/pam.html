@@ -1,201 +1,37 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->PAM Configuration for Centrally Managed Authentication</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
-REL="HOME"
-TITLE="SAMBA Project Documentation"
-HREF="samba-howto-collection.html"><LINK
-REL="UP"
-TITLE="Advanced Configuration"
-HREF="optional.html"><LINK
-REL="PREVIOUS"
-TITLE="Interdomain Trust Relationships"
-HREF="interdomaintrusts.html"><LINK
-REL="NEXT"
-TITLE="Stackable VFS modules"
-HREF="vfs.html"></HEAD
-><BODY
-CLASS="CHAPTER"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><DIV
-CLASS="NAVHEADER"
-><TABLE
-SUMMARY="Header navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TH
-COLSPAN="3"
-ALIGN="center"
->SAMBA Project Documentation</TH
-></TR
-><TR
-><TD
-WIDTH="10%"
-ALIGN="left"
-VALIGN="bottom"
-><A
-HREF="interdomaintrusts.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="80%"
-ALIGN="center"
-VALIGN="bottom"
-></TD
-><TD
-WIDTH="10%"
-ALIGN="right"
-VALIGN="bottom"
-><A
-HREF="vfs.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-></TABLE
-><HR
-ALIGN="LEFT"
-WIDTH="100%"></DIV
-><DIV
-CLASS="CHAPTER"
-><H1
-><A
-NAME="PAM"
-></A
->Chapter 20. PAM Configuration for Centrally Managed Authentication</H1
-><DIV
-CLASS="TOC"
-><DL
-><DT
-><B
->Table of Contents</B
-></DT
-><DT
->20.1. <A
-HREF="pam.html#AEN3507"
->Samba and PAM</A
-></DT
-><DT
->20.2. <A
-HREF="pam.html#AEN3558"
->Distributed Authentication</A
-></DT
-><DT
->20.3. <A
-HREF="pam.html#AEN3563"
->PAM Configuration in smb.conf</A
-></DT
-></DL
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN3507"
->20.1. Samba and PAM</A
-></H1
-><P
->A number of Unix systems (eg: Sun Solaris), as well as the 
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 20. PAM Configuration for Centrally Managed Authentication</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="InterdomainTrusts.html" title="Chapter 19. Interdomain Trust Relationships"><link rel="next" href="VFS.html" title="Chapter 21. Stackable VFS modules"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 20. PAM Configuration for Centrally Managed Authentication</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="InterdomainTrusts.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="VFS.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><h2 class="title"><a name="pam"></a>Chapter 20. PAM Configuration for Centrally Managed Authentication</h2></div><div><div class="author"><h3 class="author">John H. Terpstra</h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt>&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate"> (Jun 21 2001) </p></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="pam.html#id2897853">Samba and PAM</a></dt><dd><dl><dt><a href="pam.html#id2898634">PAM Configuration in smb.conf</a></dt><dt><a href="pam.html#id2898691">Password Synchronisation using pam_smbpass.so</a></dt></dl></dd><dt><a href="pam.html#id2898943">Distributed Authentication</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2897853"></a>Samba and PAM</h2></div></div><p>
+A number of Unix systems (eg: Sun Solaris), as well as the 
 xxxxBSD family and Linux, now utilize the Pluggable Authentication 
 Modules (PAM) facility to provide all authentication, 
 authorization and resource control services. Prior to the 
 introduction of PAM, a decision to use an alternative to 
-the system password database (<TT
-CLASS="FILENAME"
->/etc/passwd</TT
->) 
+the system password database (<tt>/etc/passwd</tt>) 
 would require the provision of alternatives for all programs that provide 
 security services. Such a choice would involve provision of 
-alternatives to such programs as: <B
-CLASS="COMMAND"
->login</B
->, 
-<B
-CLASS="COMMAND"
->passwd</B
->, <B
-CLASS="COMMAND"
->chown</B
->, etc.</P
-><P
->PAM provides a mechanism that disconnects these security programs 
+alternatives to such programs as: <b>login</b>, 
+<b>passwd</b>, <b>chown</b>, etc.
+</p><p>
+PAM provides a mechanism that disconnects these security programs 
 from the underlying authentication/authorization infrastructure.
-PAM is configured either through one file <TT
-CLASS="FILENAME"
->/etc/pam.conf</TT
-> (Solaris), 
-or by editing individual files that are located in <TT
-CLASS="FILENAME"
->/etc/pam.d</TT
->.</P
-><DIV
-CLASS="NOTE"
-><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->	If the PAM authentication module (loadable link library file) is located in the
+PAM is configured either through one file <tt>/etc/pam.conf</tt> (Solaris), 
+or by editing individual files that are located in <tt>/etc/pam.d</tt>.
+</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+	If the PAM authentication module (loadable link library file) is located in the
 	default location then it is not necessary to specify the path. In the case of
-	Linux, the default location is <TT
-CLASS="FILENAME"
->/lib/security</TT
->. If the module
-	is located other than default then the path may be specified as:
+	Linux, the default location is <tt>/lib/security</tt>. If the module
+	is located outside the default then the path must be specified as:
 	
-	<PRE
-CLASS="PROGRAMLISTING"
->	auth       required      /other_path/pam_strange_module.so
-	</PRE
->
-	</P
-></TD
-></TR
-></TABLE
-></DIV
-><P
->The following is an example <TT
-CLASS="FILENAME"
->/etc/pam.d/login</TT
-> configuration file. 
+	</p><pre class="programlisting">
+	auth       required      /other_path/pam_strange_module.so
+	</pre><p>
+	</p></div><p>
+The following is an example <tt>/etc/pam.d/login</tt> configuration file. 
 This example had all options been uncommented is probably not usable 
 as it stacks many conditions before allowing successful completion 
 of the login process. Essentially all conditions can be disabled 
-by commenting them out except the calls to <TT
-CLASS="FILENAME"
->pam_pwdb.so</TT
->.</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->	#%PAM-1.0
+by commenting them out except the calls to <tt>pam_pwdb.so</tt>.
+</p><pre class="programlisting">
+	#%PAM-1.0
 	# The PAM configuration file for the `login' service
 	#
 	auth 		required	pam_securetty.so
@@ -208,22 +44,13 @@ CLASS="PROGRAMLISTING"
 	session		required	pam_pwdb.so
 	# session 	optional	pam_lastlog.so
 	# password   	required   	pam_cracklib.so retry=3
-	password	required	pam_pwdb.so shadow md5</PRE
-></P
-><P
->PAM allows use of replacable modules. Those available on a 
-sample system include:</P
-><P
-><SAMP
-CLASS="PROMPT"
->$</SAMP
-><KBD
-CLASS="USERINPUT"
->/bin/ls /lib/security</KBD
->
-<PRE
-CLASS="PROGRAMLISTING"
->	pam_access.so    pam_ftp.so          pam_limits.so     
+	password	required	pam_pwdb.so shadow md5
+</pre><p>
+PAM allows use of replacable modules. Those available on a 
+sample system include:
+</p><p><tt>$</tt><b><tt>/bin/ls /lib/security</tt></b>
+</p><pre class="programlisting">
+	pam_access.so    pam_ftp.so          pam_limits.so     
 	pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
 	pam_cracklib.so  pam_group.so        pam_listfile.so   
 	pam_nologin.so   pam_rootok.so       pam_tally.so      
@@ -234,283 +61,220 @@ CLASS="PROGRAMLISTING"
 	pam_env.so       pam_ldap.so         pam_motd.so       
 	pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
 	pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
-	pam_userdb.so    pam_warn.so         pam_unix_session.so</PRE
-></P
-><P
->The following example for the login program replaces the use of 
-the <TT
-CLASS="FILENAME"
->pam_pwdb.so</TT
-> module which uses the system 
-password database (<TT
-CLASS="FILENAME"
->/etc/passwd</TT
->,
-<TT
-CLASS="FILENAME"
->/etc/shadow</TT
->, <TT
-CLASS="FILENAME"
->/etc/group</TT
->) with 
-the module <TT
-CLASS="FILENAME"
->pam_smbpass.so</TT
-> which uses the Samba 
+	pam_userdb.so    pam_warn.so         pam_unix_session.so
+</pre><p>
+The following example for the login program replaces the use of 
+the <tt>pam_pwdb.so</tt> module which uses the system 
+password database (<tt>/etc/passwd</tt>,
+<tt>/etc/shadow</tt>, <tt>/etc/group</tt>) with 
+the module <tt>pam_smbpass.so</tt> which uses the Samba 
 database which contains the Microsoft MD4 encrypted password 
 hashes. This database is stored in either 
-<TT
-CLASS="FILENAME"
->/usr/local/samba/private/smbpasswd</TT
->, 
-<TT
-CLASS="FILENAME"
->/etc/samba/smbpasswd</TT
->, or in 
-<TT
-CLASS="FILENAME"
->/etc/samba.d/smbpasswd</TT
->, depending on the 
+<tt>/usr/local/samba/private/smbpasswd</tt>, 
+<tt>/etc/samba/smbpasswd</tt>, or in 
+<tt>/etc/samba.d/smbpasswd</tt>, depending on the 
 Samba implementation for your Unix/Linux system. The 
-<TT
-CLASS="FILENAME"
->pam_smbpass.so</TT
-> module is provided by 
+<tt>pam_smbpass.so</tt> module is provided by 
 Samba version 2.2.1 or later. It can be compiled by specifying the 
-<B
-CLASS="COMMAND"
->--with-pam_smbpass</B
-> options when running Samba's
-<TT
-CLASS="FILENAME"
->configure</TT
-> script.  For more information
-on the <TT
-CLASS="FILENAME"
->pam_smbpass</TT
-> module, see the documentation
-in the <TT
-CLASS="FILENAME"
->source/pam_smbpass</TT
-> directory of the Samba 
-source distribution.</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->	#%PAM-1.0
+<b>--with-pam_smbpass</b> options when running Samba's
+<tt>configure</tt> script.  For more information
+on the <tt>pam_smbpass</tt> module, see the documentation
+in the <tt>source/pam_smbpass</tt> directory of the Samba 
+source distribution.
+</p><pre class="programlisting">
+	#%PAM-1.0
 	# The PAM configuration file for the `login' service
 	#
 	auth		required	pam_smbpass.so nodelay
 	account		required	pam_smbpass.so nodelay
 	session		required	pam_smbpass.so nodelay
-	password	required	pam_smbpass.so nodelay</PRE
-></P
-><P
->The following is the PAM configuration file for a particular 
-Linux system. The default condition uses <TT
-CLASS="FILENAME"
->pam_pwdb.so</TT
->.</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->	#%PAM-1.0
+	password	required	pam_smbpass.so nodelay
+</pre><p>
+The following is the PAM configuration file for a particular 
+Linux system. The default condition uses <tt>pam_pwdb.so</tt>.
+</p><pre class="programlisting">
+	#%PAM-1.0
 	# The PAM configuration file for the `samba' service
 	#
 	auth       required     pam_pwdb.so nullok nodelay shadow audit
 	account    required     pam_pwdb.so audit nodelay
 	session    required     pam_pwdb.so nodelay
-	password   required     pam_pwdb.so shadow md5</PRE
-></P
-><P
->In the following example the decision has been made to use the 
+	password   required     pam_pwdb.so shadow md5
+</pre><p>
+In the following example the decision has been made to use the 
 smbpasswd database even for basic samba authentication. Such a 
 decision could also be made for the passwd program and would 
 thus allow the smbpasswd passwords to be changed using the passwd 
-program.</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->	#%PAM-1.0
+program.
+</p><pre class="programlisting">
+	#%PAM-1.0
 	# The PAM configuration file for the `samba' service
 	#
 	auth       required     pam_smbpass.so nodelay
 	account    required     pam_pwdb.so audit nodelay
 	session    required     pam_pwdb.so nodelay
-	password   required     pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf</PRE
-></P
-><DIV
-CLASS="NOTE"
-><P
-></P
-><TABLE
-CLASS="NOTE"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
-HSPACE="5"
-ALT="Note"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->PAM allows stacking of authentication mechanisms. It is 
+	password   required     pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
+</pre><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>PAM allows stacking of authentication mechanisms. It is 
 also possible to pass information obtained within one PAM module through 
 to the next module in the PAM stack. Please refer to the documentation for 
 your particular system implementation for details regarding the specific 
 capabilities of PAM in this environment. Some Linux implmentations also 
-provide the <TT
-CLASS="FILENAME"
->pam_stack.so</TT
-> module that allows all 
+provide the <tt>pam_stack.so</tt> module that allows all 
 authentication to be configured in a single central file. The 
-<TT
-CLASS="FILENAME"
->pam_stack.so</TT
-> method has some very devoted followers 
+<tt>pam_stack.so</tt> method has some very devoted followers 
 on the basis that it allows for easier administration. As with all issues in 
 life though, every decision makes trade-offs, so you may want examine the 
-PAM documentation for further helpful information.</P
-></TD
-></TR
-></TABLE
-></DIV
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN3558"
->20.2. Distributed Authentication</A
-></H1
-><P
->The astute administrator will realize from this that the 
-combination of <TT
-CLASS="FILENAME"
->pam_smbpass.so</TT
->, 
-<B
-CLASS="COMMAND"
->winbindd</B
->, and a distributed 
+PAM documentation for further helpful information.
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><h3 class="title"><a name="id2898634"></a>PAM Configuration in smb.conf</h3></div></div><p>
+There is an option in smb.conf called <a href="smb.conf.5.html#OBEYPAMRESTRICTIONS" target="_top">obey pam restrictions</a>. 
+The following is from the on-line help for this option in SWAT;
+</p><p>
+When Samba is configured to enable PAM support (i.e. 
+<tt>--with-pam</tt>), this parameter will 
+control whether or not Samba should obey PAM's account 
+and session management directives. The default behavior 
+is to use PAM for clear text authentication only and to 
+ignore any account or session management. Note that Samba always 
+ignores PAM for authentication in the case of 
+<a href="smb.conf.5.html#ENCRYPTPASSWORDS" target="_top">encrypt passwords = yes</a>. 
+The reason is that PAM modules cannot support the challenge/response 
+authentication mechanism needed in the presence of SMB 
+password encryption. 
+</p><p>Default: <b>obey pam restrictions = no</b></p></div><div class="sect2" lang="en"><div class="titlepage"><div><h3 class="title"><a name="id2898691"></a>Password Synchronisation using pam_smbpass.so</h3></div></div><p>
+pam_smbpass is a PAM module which can be used on conforming systems to
+keep the smbpasswd (Samba password) database in sync with the unix
+password file. PAM (Pluggable Authentication Modules) is an API supported
+under some Unices, such as Solaris, HPUX and Linux, that provides a
+generic interface to authentication mechanisms.
+</p><p>
+For more information on PAM, see http://ftp.kernel.org/pub/linux/libs/pam/
+</p><p>
+This module authenticates a local smbpasswd user database.  If you require
+support for authenticating against a remote SMB server, or if you're
+concerned about the presence of suid root binaries on your system, it is
+recommended that you use pam_winbind instead.
+</p><pre class="programlisting">
+Options recognized by this module are as follows:
+
+        debug           -       log more debugging info
+        audit           -       like debug, but also logs unknown usernames
+        use_first_pass  -       don't prompt the user for passwords;
+                                take them from PAM_ items instead
+        try_first_pass  -       try to get the password from a previous
+                                PAM module, fall back to prompting the user
+        use_authtok     -       like try_first_pass, but *fail* if the new
+                                PAM_AUTHTOK has not been previously set.
+                                (intended for stacking password modules only)
+        not_set_pass    -       don't make passwords used by this module
+                                available to other modules.
+        nodelay         -       don't insert ~1 second delays on authentication
+                                failure.
+        nullok          -       null passwords are allowed.
+        nonull          -       null passwords are not allowed. Used to
+                                override the Samba configuration.
+        migrate         -       only meaningful in an &quot;auth&quot; context;
+                                used to update smbpasswd file with a
+                                password used for successful authentication.
+        smbconf=&lt; file &gt;  -     specify an alternate path to the smb.conf
+                                file.
+</pre><pre class="programlisting">
+Thanks go to the following people:
+
+	* Andrew Morgan &lt; morgan@transmeta.com &gt;, for providing the Linux-PAM
+	framework, without which none of this would have happened
+
+	* Christian Gafton &lt; gafton@redhat.com &gt; and Andrew Morgan again, for the
+	pam_pwdb module upon which pam_smbpass was originally based
+
+	* Luke Leighton &lt; lkcl@switchboard.net &gt; for being receptive to the idea,
+	and for the occasional good-natured complaint about the project's status
+	that keep me working on it :)
+
+	* and of course, all the other members of the Samba team
+	&lt;http://www.samba.org/samba/team.html&gt;, for creating a great product
+	and for giving this project a purpose
+
+	---------------------
+	Stephen Langasek &lt; vorlon@netexpress.net &gt;
+</pre><p>
+The following are examples of the use of pam_smbpass.so in the format of Linux
+<tt>/etc/pam.d/</tt> files structure. Those wishing to implement this
+tool on other platforms will need to adapt this appropriately.
+</p><div class="sect3" lang="en"><div class="titlepage"><div><h4 class="title"><a name="id2898803"></a>Password Synchonisation Configuration</h4></div></div><p>
+A sample PAM configuration that shows the use of pam_smbpass to make
+sure private/smbpasswd is kept in sync when /etc/passwd (/etc/shadow)
+is changed.  Useful when an expired password might be changed by an
+application (such as ssh).
+</p><pre class="programlisting">
+	#%PAM-1.0
+	# password-sync
+	#
+	auth       requisite        pam_nologin.so
+	auth       required         pam_unix.so
+	account    required         pam_unix.so
+	password   requisite        pam_cracklib.so retry=3
+	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
+	password   required         pam_smbpass.so nullok use_authtok try_first_pass
+	session    required         pam_unix.so
+</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><h4 class="title"><a name="id2898838"></a>Password Migration Configuration</h4></div></div><p>
+A sample PAM configuration that shows the use of pam_smbpass to migrate
+from plaintext to encrypted passwords for Samba.  Unlike other methods,
+this can be used for users who have never connected to Samba shares:
+password migration takes place when users ftp in, login using ssh, pop
+their mail, etc.
+</p><pre class="programlisting">
+	#%PAM-1.0
+	# password-migration
+	#
+	auth       requisite        pam_nologin.so
+	# pam_smbpass is called IFF pam_unix succeeds.
+	auth       requisite        pam_unix.so
+	auth       optional         pam_smbpass.so migrate
+	account    required         pam_unix.so
+	password   requisite        pam_cracklib.so retry=3
+	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
+	password   optional         pam_smbpass.so nullok use_authtok try_first_pass
+	session    required         pam_unix.so
+</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><h4 class="title"><a name="id2898875"></a>Mature Password Configuration</h4></div></div><p>
+A sample PAM configuration for a 'mature' smbpasswd installation.
+private/smbpasswd is fully populated, and we consider it an error if
+the smbpasswd doesn't exist or doesn't match the Unix password.
+</p><pre class="programlisting">
+	#%PAM-1.0
+	# password-mature
+	#
+	auth       requisite        pam_nologin.so
+	auth       required         pam_unix.so
+	account    required         pam_unix.so
+	password   requisite        pam_cracklib.so retry=3
+	password   requisite        pam_unix.so shadow md5 use_authtok try_first_pass
+	password   required         pam_smbpass.so use_authtok use_first_pass
+	session    required         pam_unix.so
+</pre></div><div class="sect3" lang="en"><div class="titlepage"><div><h4 class="title"><a name="id2898908"></a>Kerberos Password Integration Configuration</h4></div></div><p>
+A sample PAM configuration that shows pam_smbpass used together with
+pam_krb5.  This could be useful on a Samba PDC that is also a member of
+a Kerberos realm.
+</p><pre class="programlisting">
+	#%PAM-1.0
+	# kdc-pdc
+	#
+	auth       requisite        pam_nologin.so
+	auth       requisite        pam_krb5.so
+	auth       optional         pam_smbpass.so migrate
+	account    required         pam_krb5.so
+	password   requisite        pam_cracklib.so retry=3
+	password   optional         pam_smbpass.so nullok use_authtok try_first_pass
+	password   required         pam_krb5.so use_authtok try_first_pass
+	session    required         pam_krb5.so
+</pre></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2898943"></a>Distributed Authentication</h2></div></div><p>
+The astute administrator will realize from this that the 
+combination of <tt>pam_smbpass.so</tt>, 
+<b>winbindd</b>, and a distributed 
 passdb backend, such as ldap, will allow the establishment of a
 centrally managed, distributed 
 user/password database that can also be used by all 
 PAM (eg: Linux) aware programs and applications. This arrangement 
 can have particularly potent advantages compared with the 
 use of Microsoft Active Directory Service (ADS) in so far as 
-reduction of wide area network authentication traffic.</P
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN3563"
->20.3. PAM Configuration in smb.conf</A
-></H1
-><P
->There is an option in smb.conf called <A
-HREF="smb.conf.5.html#OBEYPAMRESTRICTIONS"
-TARGET="_top"
->obey pam restrictions</A
->. 
-The following is from the on-line help for this option in SWAT;</P
-><P
->When Samba is configured to enable PAM support (i.e. 
-<CODE
-CLASS="CONSTANT"
->--with-pam</CODE
->), this parameter will 
-control whether or not Samba should obey PAM's account 
-and session management directives. The default behavior 
-is to use PAM for clear text authentication only and to 
-ignore any account or session management. Note that Samba always 
-ignores PAM for authentication in the case of 
-<A
-HREF="smb.conf.5.html#ENCRYPTPASSWORDS"
-TARGET="_top"
->encrypt passwords = yes</A
->. 
-The reason is that PAM modules cannot support the challenge/response 
-authentication mechanism needed in the presence of SMB 
-password encryption. </P
-><P
->Default: <B
-CLASS="COMMAND"
->obey pam restrictions = no</B
-></P
-></DIV
-></DIV
-><DIV
-CLASS="NAVFOOTER"
-><HR
-ALIGN="LEFT"
-WIDTH="100%"><TABLE
-SUMMARY="Footer navigation table"
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
-><A
-HREF="interdomaintrusts.html"
-ACCESSKEY="P"
->Prev</A
-></TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="samba-howto-collection.html"
-ACCESSKEY="H"
->Home</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
-><A
-HREF="vfs.html"
-ACCESSKEY="N"
->Next</A
-></TD
-></TR
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
->Interdomain Trust Relationships</TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="optional.html"
-ACCESSKEY="U"
->Up</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
->Stackable VFS modules</TD
-></TR
-></TABLE
-></DIV
-></BODY
-></HTML
->
+reduction of wide area network authentication traffic.
+</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="InterdomainTrusts.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="VFS.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 19. Interdomain Trust Relationships </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 21. Stackable VFS modules</td></tr></table></div></body></html>

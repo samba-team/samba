@@ -1,295 +1,61 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->findsmb</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
-><BODY
-CLASS="REFENTRY"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><H1
-><A
-NAME="FINDSMB.1"
-></A
->findsmb</H1
-><DIV
-CLASS="REFNAMEDIV"
-><A
-NAME="AEN5"
-></A
-><H2
->Name</H2
->findsmb&nbsp;--&nbsp;list info about machines that respond to SMB 
-	name queries on a subnet</DIV
-><DIV
-CLASS="REFSYNOPSISDIV"
-><A
-NAME="AEN8"
-></A
-><H2
->Synopsis</H2
-><P
-><B
-CLASS="COMMAND"
->findsmb</B
->  [subnet broadcast address]</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN12"
-></A
-><H2
->DESCRIPTION</H2
-><P
->This perl script is part of the <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->Samba</SPAN
->(7)</SPAN
->
-	suite.</P
-><P
-><B
-CLASS="COMMAND"
->findsmb</B
-> is a perl script that
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>findsmb</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.59.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="findsmb.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>findsmb &#8212; list info about machines that respond to SMB 
+	name queries on a subnet</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt>findsmb</tt>  [subnet broadcast address]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This perl script is part of the <a href="Samba.7.html">Samba(7)</a>
+	suite.</p><p><b>findsmb</b> is a perl script that
 	prints out several pieces of information about machines 
 	on a subnet that respond to SMB  name query requests.
-	It uses <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->nmblookup</SPAN
->(1)</SPAN
->
-	and <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbclient</SPAN
->(1)</SPAN
->
+	It uses <a href="nmblookup.1.html">nmblookup(1)</a>
+	and <a href="smbclient.1.html">smbclient(1)</a>
 	to obtain this information.
-	</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN26"
-></A
-><H2
->OPTIONS</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->-r</DT
-><DD
-><P
->Controls whether <B
-CLASS="COMMAND"
->findsmb</B
-> takes
+	</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-r</span></dt><dd><p>Controls whether <b>findsmb</b> takes
 		bugs in Windows95 into account when trying to find a Netbios name
 		registered of the remote machine. This option is disabled by default
 		because it is specific to Windows 95 and Windows 95 machines only. 
-		If set, <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->nmblookup</SPAN
->(1)</SPAN
->
-		will be called with <CODE
-CLASS="CONSTANT"
->-B</CODE
-> option.</P
-></DD
-><DT
->subnet broadcast address</DT
-><DD
-><P
->Without this option, <B
-CLASS="COMMAND"
->findsmb
-		</B
-> will probe the subnet of the machine where 
-		<SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->findsmb</SPAN
->(1)</SPAN
->
+		If set, <a href="nmblookup.1.html">nmblookup(1)</a>
+		will be called with <tt>-B</tt> option.</p></dd><dt><span class="term">subnet broadcast address</span></dt><dd><p>Without this option, <b>findsmb
+		</b> will probe the subnet of the machine where 
+		<a href="findsmb.1.html">findsmb(1)</a>
 		is run. This value is passed to 
-		<SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->nmblookup</SPAN
->(1)</SPAN
->
-		as part of the <CODE
-CLASS="CONSTANT"
->-B</CODE
-> option.</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN50"
-></A
-><H2
->EXAMPLES</H2
-><P
->The output of <B
-CLASS="COMMAND"
->findsmb</B
-> lists the following 
+		<a href="nmblookup.1.html">nmblookup(1)</a>
+		as part of the <tt>-B</tt> option.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>EXAMPLES</h2><p>The output of <b>findsmb</b> lists the following 
 	information for all machines that respond to the initial 
-	<B
-CLASS="COMMAND"
->nmblookup</B
-> for any name: IP address, NetBIOS name, 
-	Workgroup name, operating system, and SMB server version.</P
-><P
->There will be a '+' in front of the workgroup name for 
+	<b>nmblookup</b> for any name: IP address, NetBIOS name, 
+	Workgroup name, operating system, and SMB server version.</p><p>There will be a '+' in front of the workgroup name for 
 	machines that are local master browsers for that workgroup. There 
 	will be an '*' in front of the workgroup name for 
 	machines that are the domain master browser for that workgroup. 
 	Machines that are running Windows, Windows 95 or Windows 98 will 
 	not show any information about the operating system or server 
-	version.</P
-><P
->The command with <CODE
-CLASS="CONSTANT"
->-r</CODE
-> option
-	must be run on a system without <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->nmbd</SPAN
->(8)</SPAN
->	running. 
+	version.</p><p>The command with <tt>-r</tt> option
+	must be run on a system without <a href="nmbd.8.html">nmbd(8)</a>	running. 
 
-	If <B
-CLASS="COMMAND"
->nmbd</B
-> is running on the system, you will 
+	If <b>nmbd</b> is running on the system, you will 
 	only  get the IP address and the DNS name of the machine. To 
 	get proper responses  from Windows 95 and Windows 98 machines, 
-	the command must be run as root and with <CODE
-CLASS="CONSTANT"
->-r</CODE
->
-	option on a machine without <B
-CLASS="COMMAND"
->nmbd</B
-> running.</P
-><P
->For example, running <B
-CLASS="COMMAND"
->findsmb</B
-> 
-	without <CODE
-CLASS="CONSTANT"
->-r</CODE
-> option set would yield output similar
-	to the following</P
-><PRE
-CLASS="SCREEN"
->   &nbsp;IP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION 
-   &nbsp;--------------------------------------------------------------------- 
-   &nbsp;192.168.35.10   MINESET-TEST1  [DMVENGR]
-   &nbsp;192.168.35.55   LINUXBOX      *[MYGROUP] [Unix] [Samba 2.0.6]
-  5&nbsp;192.168.35.56   HERBNT2        [HERB-NT]
-   &nbsp;192.168.35.63   GANDALF        [MVENGR] [Unix] [Samba 2.0.5a for IRIX]
-   &nbsp;192.168.35.65   SAUNA          [WORKGROUP] [Unix] [Samba 1.9.18p10]
-   &nbsp;192.168.35.71   FROGSTAR       [ENGR] [Unix] [Samba 2.0.0 for IRIX]
-   &nbsp;192.168.35.78   HERBDHCP1     +[HERB]
- 10&nbsp;192.168.35.88   SCNT2         +[MVENGR] [Windows NT 4.0] [NT LAN Manager 4.0]
-   &nbsp;192.168.35.93   FROGSTAR-PC    [MVENGR] [Windows 5.0] [Windows 2000 LAN Manager]
-   &nbsp;192.168.35.97   HERBNT1       *[HERB-NT] [Windows NT 4.0] [NT LAN Manager 4.0]</PRE
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN68"
-></A
-><H2
->VERSION</H2
-><P
->This man page is correct for version 3.0 of 
-	the Samba suite.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN71"
-></A
-><H2
->SEE ALSO</H2
-><P
-><SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->nmbd</SPAN
->(8)</SPAN
->,
-	<SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->smbclient</SPAN
->(1)</SPAN
->, and <SPAN
-CLASS="CITEREFENTRY"
-><SPAN
-CLASS="REFENTRYTITLE"
->nmblookup</SPAN
->(1)</SPAN
->
-	</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN83"
-></A
-><H2
->AUTHOR</H2
-><P
->The original Samba software and related utilities 
+	the command must be run as root and with <tt>-r</tt>
+	option on a machine without <b>nmbd</b> running.</p><p>For example, running <b>findsmb</b> 
+	without <tt>-r</tt> option set would yield output similar
+	to the following</p><pre class="screen">
+IP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION 
+--------------------------------------------------------------------- 
+192.168.35.10   MINESET-TEST1  [DMVENGR]
+192.168.35.55   LINUXBOX      *[MYGROUP] [Unix] [Samba 2.0.6]
+192.168.35.56   HERBNT2        [HERB-NT]
+192.168.35.63   GANDALF        [MVENGR] [Unix] [Samba 2.0.5a for IRIX]
+192.168.35.65   SAUNA          [WORKGROUP] [Unix] [Samba 1.9.18p10]
+192.168.35.71   FROGSTAR       [ENGR] [Unix] [Samba 2.0.0 for IRIX]
+192.168.35.78   HERBDHCP1     +[HERB]
+192.168.35.88   SCNT2         +[MVENGR] [Windows NT 4.0] [NT LAN Manager 4.0]
+192.168.35.93   FROGSTAR-PC    [MVENGR] [Windows 5.0] [Windows 2000 LAN Manager]
+192.168.35.97   HERBNT1       *[HERB-NT] [Windows NT 4.0] [NT LAN Manager 4.0]
+</pre></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
+	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="nmbd.8.html">nmbd(8)</a>,
+	<a href="smbclient.1.html">smbclient(1)</a>, and <a href="nmblookup.1.html">nmblookup(1)</a>
+	</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
-	to the way the Linux kernel is developed.</P
-><P
->The original Samba man pages were written by Karl Auer. 
+	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <A
-HREF="ftp://ftp.icce.rug.nl/pub/unix/"
-TARGET="_top"
->ftp://ftp.icce.rug.nl/pub/unix/</A
->) 
+	excellent piece of Open Source software, available at <a href="ftp://ftp.icce.rug.nl/pub/unix/" target="_top">ftp://ftp.icce.rug.nl/pub/unix/</a>) 
 	and updated for the Samba 2.0 release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook
-	XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</P
-></DIV
-></BODY
-></HTML
->
+	XML 4.2 for Samba 3.0 was done by Alexander Bokovoy.</p></div></div></body></html>
