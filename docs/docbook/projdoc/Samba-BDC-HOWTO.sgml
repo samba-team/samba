@@ -64,13 +64,9 @@ parameters in the [global]-section of the smb.conf have to be set:
 </para>
 
 <para><programlisting>
-[global]
-     workgroup = SAMBA
-     domain master = yes
-     domain logons = yes
-     encrypt passwords = yes
-     security = user
-     ....
+workgroup = SAMBA
+domain master = yes
+domain logons = yes
 </programlisting></para>
 
 <para>
@@ -160,48 +156,42 @@ Several things have to be done:
 
 <itemizedlist>
 
-	<listitem><para>
-	The file <filename>private/MACHINE.SID</filename> identifies the domain. When a samba
-	server is first started, it is created on the fly and must never be
-	changed again. This file has to be the same on the PDC and the BDC,
-	so the MACHINE.SID has to be copied from the PDC to the BDC.  Note that in the
-	latest Samba 2.2.x releases, the machine SID (and therefore domain SID) is stored
-	in the <filename>private/secrets.tdb</filename> database.  This file cannot just
-	be copied because Samba looks under the key <constant>SECRETS/SID/<replaceable>DOMAIN</replaceable></constant>.
-	where <replaceable>DOMAIN</replaceable> is the machine's netbios name.  Since this name has
-	to be unique for each SAMBA server, this lookup will fail.  </para>
-	<para>
-	A new option has been added to the <command>smbpasswd(8)</command>
-	command to help ease this problem.  When running <command>smbpasswd -S</command> as the root user,
-	the domain SID will be retrieved from a domain controller matching the value of the
-	<parameter>workgroup</parameter> parameter in <filename>smb.conf</filename> and stored as the
-	new Samba server's machine SID.  See the <ulink url="smbpasswd.8.html"><command>smbpasswd(8)</command></ulink>
-	man page for more details on this functionality.
-	</para></listitem>
+<listitem><para>
+The domain SID has to be the same on the PDC and the BDC. This used to
+be stored in the file private/MACHINE.SID. This file is not created
+anymore since Samba 2.2.5 or even earlier. Nowadays the domain SID is
+stored in the file private/secrets.tdb. Simply copying the secrets.tdb
+from the PDC to the BDC does not work, as the BDC would
+generate a new SID for itself and override the domain SID with this
+new BDC SID.</para>
 
-	<listitem><para>
-	The Unix user database has to be synchronized from the PDC to the
-	BDC. This means that both the /etc/passwd and /etc/group have to be
-	replicated from the PDC to the BDC. This can be done manually
-	whenever changes are made, or the PDC is set up as a NIS master
-	server and the BDC as a NIS slave server. To set up the BDC as a
-	mere NIS client would not be enough, as the BDC would not be able to
-	access its user database in case of a PDC failure.  LDAP is also a
-	potential vehicle for sharing this information.
-	</para></listitem>
+<para>
+To retrieve the domain SID from the PDC or an existing BDC and store it in the
+secrets.tdb, execute 'net rpc getsid' on the BDC.
+</para></listitem>
 
-	<listitem><para>
-	The Samba password database in the file <filename>private/smbpasswd</filename>
-	has to be replicated from the PDC to the BDC. This is a bit tricky, see the
-	next section.
-	</para></listitem>
+<listitem><para>
+The Unix user database has to be synchronized from the PDC to the
+BDC. This means that both the /etc/passwd and /etc/group have to be
+replicated from the PDC to the BDC. This can be done manually
+whenever changes are made, or the PDC is set up as a NIS master
+server and the BDC as a NIS slave server. To set up the BDC as a
+mere NIS client would not be enough, as the BDC would not be able to
+access its user database in case of a PDC failure.
+</para></listitem>
 
-	<listitem><para>
-	Any netlogon share has to be replicated from the PDC to the
-	BDC. This can be done manually whenever login scripts are changed,
-	or it can be done automatically together with the smbpasswd
-	synchronization.
-	</para></listitem>
+<listitem><para>
+The Samba password database in the file private/smbpasswd has to be
+replicated from the PDC to the BDC. This is a bit tricky, see the
+next section.
+</para></listitem>
+
+<listitem><para>
+Any netlogon share has to be replicated from the PDC to the
+BDC. This can be done manually whenever login scripts are changed,
+or it can be done automatically together with the smbpasswd
+synchronization.
+</para></listitem>
 
 </itemizedlist>
 
@@ -211,13 +201,9 @@ by setting
 </para>
 
 <para><programlisting>
-[global]
-     workgroup = SAMBA
-     domain master = yes
-     domain logons = yes
-     encrypt passwords = yes
-     security = user
-     ....
+workgroup = samba
+domain master = no
+domain logons = yes
 </programlisting></para>
 
 <para>
@@ -234,9 +220,8 @@ name is reserved for the Primary Domain Controller.
 
 <para>
 Replication of the smbpasswd file is sensitive. It has to be done
-whenever changes to the SAM are made. Every user's password change
-(including machine trust account password changes) is done in the
-smbpasswd file and has to be replicated to the BDC. So
+whenever changes to the SAM are made. Every user's password change is
+done in the smbpasswd file and has to be replicated to the BDC. So
 replicating the smbpasswd file very often is necessary.
 </para>
 
@@ -244,18 +229,11 @@ replicating the smbpasswd file very often is necessary.
 As the smbpasswd file contains plain text password equivalents, it
 must not be sent unencrypted over the wire. The best way to set up
 smbpasswd replication from the PDC to the BDC is to use the utility
-<command>rsync(1)</command>. <command>rsync</command> can use
-<command>ssh(1)</command> as a transport. <command>ssh</command> itself
-can be set up to accept <emphasis>only</emphasis> <command>rsync</command> transfer without requiring the user to
-type a password.  Refer to the man pages for these two tools for more details.
+rsync. rsync can use ssh as a transport. ssh itself can be set up to
+accept *only* rsync transfer without requiring the user to type a
+password.
 </para>
 
-<para>
-Another solution with high potential is to use Samba's <parameter>--with-ldapsam</parameter>
-for sharing and/or replicating the list of <constant>sambaAccount</constant> entries.
-This can all be done over SSL to ensure security.  See the <ulink url="Samba-LDAP-HOWTO.html">Samba-LDAP-HOWTO</ulink>
-for more details.
-</para>
 
 </sect2>
 </sect1>
