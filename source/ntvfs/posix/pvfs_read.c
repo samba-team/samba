@@ -51,6 +51,12 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_ACCESS_VIOLATION;
 	}
 
+	/* this matches w2k3 behaviour for attempted large reads */
+	if (rd->readx.in.maxcnt > UINT16_MAX) {
+		ret = 0;
+		goto done_read;
+	}
+	
 	status = pvfs_check_lock(pvfs, f, req->smbpid, 
 				 rd->readx.in.offset,
 				 rd->readx.in.maxcnt,
@@ -67,10 +73,11 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return pvfs_map_errno(pvfs, errno);
 	}
 
+done_read:
 	f->position = f->seek_offset = rd->readx.in.offset + ret;
 
 	rd->readx.out.nread = ret;
-	rd->readx.out.remaining = 0; /* should fill this in? */
+	rd->readx.out.remaining = 0xFFFF;
 	rd->readx.out.compaction_mode = 0; 
 
 	return NT_STATUS_OK;

@@ -194,7 +194,6 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 {
 	char *ret, *p, *p_start;
 	size_t len;
-	int num_components=0;
 
 	name->original_name = talloc_strdup(name, cifs_name);
 	name->stream_name = NULL;
@@ -242,7 +241,6 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 				return NT_STATUS_ILLEGAL_CHARACTER;
 			}
 			*p = '/';
-			num_components++;
 			break;
 		case ':':
 			if (!(flags & PVFS_RESOLVE_STREAMS)) {
@@ -268,14 +266,19 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 		case '|':
 			return NT_STATUS_ILLEGAL_CHARACTER;
 		case '.':
-			if (p[1] != '.' ||
-			    (p[2] != '\\' && p[2] != 0) ||
-			    (p != p_start && p[-1] != '/')) {
-				break;
+			/* see if it is definately a .. or
+			   . component. If it is then fail here, and
+			   let the next layer up try again after
+			   pvfs_reduce_name() if it wants to. This is
+			   much more efficient on average than always
+			   scanning for these separately */
+			if (p[1] == '.' && 
+			    (p[2] == 0 || p[2] == '\\') &&
+			    (p == p_start || p[-1] == '/')) {
+				return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			}
-			/* its definately a .. component */
-			num_components--;
-			if (num_components <= 0) {
+			if ((p[1] == 0 || p[1] == '\\') &&
+			    (p == p_start || p[-1] == '/')) {
 				return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			}
 			break;
@@ -287,6 +290,92 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 	name->full_name = ret;
 
 	return NT_STATUS_OK;
+}
+
+
+/*
+  reduce a name that contains .. components or repeated \ separators
+  return NULL if it can't be reduced
+*/
+const char *pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char *fname)
+{
+	codepoint_t c;
+	size_t c_size, len;
+	int i, num_components;
+	char **components;
+	char *p, *s, *ret;
+
+	s = talloc_strdup(mem_ctx, fname);
+	if (s == NULL) return NULL;
+
+	for (num_components=1, p=s; *p; p += c_size) {
+		c = next_codepoint(p, &c_size);
+		if (c == '\\') num_components++;
+	}
+	if (num_components < 2) {
+		talloc_free(s);
+		return NULL;
+	}
+
+	components = talloc_array_p(s, char *, num_components+1);
+	if (components == NULL) {
+		talloc_free(s);
+		return NULL;
+	}
+
+	components[0] = s;
+	for (i=0, p=s; *p; p += c_size) {
+		c = next_codepoint(p, &c_size);
+		if (c == '\\') {
+			*p = 0;
+			components[++i] = p+1;
+		}
+	}
+	components[i+1] = NULL;
+
+	/* remove any null components */
+	for (i=0;components[i];i++) {
+		if (strcmp(components[i], "") == 0 ||
+		    strcmp(components[i], ".") == 0) {
+			memmove(&components[i], &components[i+1], 
+				sizeof(char *)*(num_components-i));
+			i--;
+		}
+		if (strcmp(components[i], "..") == 0) {
+			if (i < 1) return NULL;
+			memmove(&components[i-1], &components[i+1], 
+				sizeof(char *)*(num_components-(i+1)));
+			i -= 2;
+		}
+	}
+
+	if (components[0] == NULL) {
+		talloc_free(s);
+		return talloc_strdup(mem_ctx, "\\");
+	}
+
+	for (len=i=0;components[i];i++) {
+		len += strlen(components[i]) + 1;
+	}
+
+	/* rebuild the name */
+	ret = talloc(mem_ctx, len+1);
+	if (ret == NULL) {
+		talloc_free(s);
+		return NULL;
+	}
+
+	for (len=0,i=0;components[i];i++) {
+		size_t len1 = strlen(components[i]);
+		ret[len] = '\\';
+		memcpy(ret+len+1, components[i], len1);
+		len += len1 + 1;
+	}	
+	ret[len] = 0;
+
+	talloc_free(s);
+	
+	return ret;
 }
 
 
@@ -316,6 +405,15 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	/* do the basic conversion to a unix formatted path,
 	   also checking for allowable characters */
 	status = pvfs_unix_path(pvfs, cifs_name, flags, *name);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD)) {
+		/* it might contain .. components which need to be reduced */
+		cifs_name = pvfs_reduce_name(*name, cifs_name);
+		if (cifs_name) {
+			status = pvfs_unix_path(pvfs, cifs_name, flags, *name);
+		}
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -42,14 +42,21 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	}
 
 	/* make sure its matches the given attributes */
-	if (!pvfs_match_attrib(pvfs, name, attrib, 0)) {
+	status = pvfs_match_attrib(pvfs, name, attrib, 0);
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(name);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return status;
 	}
 
 	status = pvfs_can_delete(pvfs, name);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(name);
 		return status;
+	}
+
+	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+		talloc_free(name);
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
 	/* finally try the actual unlink */
@@ -85,6 +92,11 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	if (name->exists && 
+	    (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) {
+		return NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+
 	dir = talloc_p(req, struct pvfs_dir);
 	if (dir == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -97,10 +109,18 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (dir->count == 0) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_NO_SUCH_FILE;
 	}
 
 	for (i=0;i<dir->count;i++) {
+
+		/* this seems to be a special case */
+		if ((unl->in.attrib & FILE_ATTRIBUTE_DIRECTORY) &&
+		    (strcmp(dir->names[i], ".") == 0 ||
+		    strcmp(dir->names[i], "..") == 0)) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+
 		status = pvfs_unlink_one(pvfs, req, dir->unix_path, 
 					 dir->names[i], unl->in.attrib);
 		if (NT_STATUS_IS_OK(status)) {
