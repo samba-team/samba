@@ -19,6 +19,12 @@ void ncalrpc_l_shutdown(struct msrpc_local *msrpc);
 BOOL ncalrpc_l_establish_connection(struct msrpc_local *msrpc,
 				    const char *pipe_name);
 
+/*The following definitions come from  lib/util_seaccess.c  */
+
+BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
+		     uint32 acc_req, uint32 * acc_grant,
+		     uint32 * status);
+
 /*The following definitions come from  rpc_parse/parse_at.c  */
 
 BOOL make_at_q_add_job(AT_Q_ADD_JOB *q_a, char *server,

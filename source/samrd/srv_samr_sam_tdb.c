@@ -344,9 +344,9 @@ uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf)
 
 
 	mask.mask = 0x20044;
-	make_sec_ace(&dace[0], &usr_sid         , 0, mask, 0);
+	make_sec_ace(&dace[0], &usr_sid, 0, mask, 0);
 	mask.mask = 0xf07ff;
-	make_sec_ace(&dace[1], &adm_sid         , 0, mask, 0);
+	make_sec_ace(&dace[1], &adm_sid, 0, mask, 0);
 	mask.mask = 0x2035b;
 	make_sec_ace(&dace[2], &glb_sid, 0, mask, 0);
 

@@ -59,7 +59,7 @@ typedef struct net_user_info_3
 	UNIHDR hdr_logon_script; /* logon script unicode string header */
 	UNIHDR hdr_profile_path; /* profile path unicode string header */
 	UNIHDR hdr_home_dir;     /* home directory unicode string header */
-	UNIHDR hdr_dir_drive;    /* home directory drive unicode string header */
+	UNIHDR hdr_dir_drive;    /* home drive unicode string header */
 
 	uint16 logon_count;  /* logon count */
 	uint16 bad_pw_count; /* bad password count */
@@ -70,13 +70,13 @@ typedef struct net_user_info_3
 	uint32 buffer_groups; /* undocumented buffer pointer to groups. */
 	uint32 user_flgs;     /* user flags */
 
-	uint8 user_sess_key[16]; /* unused user session key */
+	uint8 user_sess_key[16]; /* user session key */
 
 	UNIHDR hdr_logon_srv; /* logon server unicode string header */
 	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
 
 	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
-	uint8 padding[40];    /* unused padding bytes.  expansion room */
+	uint8 padding[40];    /* expansion room */
 
 	uint32 num_other_sids; /* 0 - num_sids */
 	uint32 buffer_other_sids; /* NULL - undocumented pointer to SIDs. */
