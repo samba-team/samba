@@ -100,7 +100,11 @@ install -m 644 examples/redhat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 rm -rf $RPM_BUILD_ROOT
 
 %post
+if [ -d /etc/pam.d ]; then
+install -m 644 examples/redhat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+else
 /sbin/pamconfig --add --service=samba --password=none --sesslist=none
+fi
 
 if [ ! -f /var/log/samba ]; then
 	touch /var/log/samba
@@ -109,7 +113,13 @@ fi
 
 %postun
 if [ "$1" = 0 ] ; then
-  /sbin/pamconfig --remove --service=samba --password=none --sesslist=none
+  if [ -x /etc/pam.d/samba ]; then
+    rm -f /etc/pam.d/samba
+  else
+    if [ -x /etc/pam.conf ]; then
+      /sbin/pamconfig --remove --service=samba --password=none --sesslist=none
+    fi
+  fi
 fi
 
 %files
@@ -141,6 +151,9 @@ fi
 %attr(-,root,root) %config /etc/rc.d/rc6.d/K35smb
 %attr(-,root,root) %config /etc/rc.d/rc2.d/K35smb
 %attr(-,root,root) %config /etc/logrotate.d/samba
+if [ -x /etc/pam.d/samba ]; then
+ %attr(-,root,root) %config /etc/pam.d/samba
+fi
 %attr(-,root,root) /usr/man/man1/smbstatus.1
 %attr(-,root,root) /usr/man/man1/smbclient.1
 %attr(-,root,root) /usr/man/man1/smbrun.1
