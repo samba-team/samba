@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,8 +39,8 @@ krb5_error_code
 krb5_mk_req(krb5_context context,
 	    krb5_auth_context *auth_context,
 	    const krb5_flags ap_req_options,
-	    char *service,
-	    char *hostname,
+	    const char *service,
+	    const char *hostname,
 	    krb5_data *in_data,
 	    krb5_ccache ccache,
 	    krb5_data *outbuf)
@@ -73,7 +73,7 @@ krb5_mk_req(krb5_context context,
 				*realms,
 				service,
 				real_hostname,
-			      NULL);
+				NULL);
     free (real_hostname);
     krb5_free_host_realm (context, realms);
 
