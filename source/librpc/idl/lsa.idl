@@ -490,11 +490,11 @@
 
 	typedef struct {
 		uint32 incoming_count;
-		[size_is(incoming_count)] lsa_TrustDomainInfoBuffer *incoming_current_auth_info;
-		[size_is(incoming_count)] lsa_TrustDomainInfoBuffer *incoming_previous_auth_info;
+		lsa_TrustDomainInfoBuffer *incoming_current_auth_info;
+		lsa_TrustDomainInfoBuffer *incoming_previous_auth_info;
 		uint32 outgoing_count;
-		[size_is(outgoing_count)] lsa_TrustDomainInfoBuffer *outgoing_current_auth_info;
-		[size_is(outgoing_count)] lsa_TrustDomainInfoBuffer *outgoing_previous_auth_info;
+		lsa_TrustDomainInfoBuffer *outgoing_current_auth_info;
+		lsa_TrustDomainInfoBuffer *outgoing_previous_auth_info;
 	} lsa_TrustDomainInfoAuthInfo;
 
 	typedef struct {
