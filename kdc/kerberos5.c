@@ -1146,6 +1146,7 @@ tgs_make_reply(KDC_REQ_BODY *b,
 	krb5_keytype kt;
 	ret = krb5_etype_to_keytype(context, sess_ktype, &kt);
 	krb5_generate_random_keyblock(context, kt, &et.key);
+	et.key.keytype = sess_ktype;
     }else
 	krb5_generate_random_keyblock(context, sess_ktype, &et.key);
     et.crealm = tgt->crealm;
