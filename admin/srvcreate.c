@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -107,7 +107,12 @@ srvcreate(int argc, char **argv)
         return 1;
       }
       if ( (entry.keyblock.keyvalue.length == 8) && 
-           (entry.keyblock.keytype == KEYTYPE_DES) ) {
+           (entry.keyblock.keytype == ETYPE_DES_CBC_MD5) ) {
+	  if (verbose) {
+	      printf ("%s.%s@%s vno %d\n", service, instance, realm,
+		      entry.vno);
+	  }
+
 	  write(fd, service, strlen(service)+1);
           write(fd, instance, strlen(instance)+1);
           write(fd, realm, strlen(realm)+1);
