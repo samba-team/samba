@@ -31,6 +31,11 @@
  * SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+RCSID("$Id$");
+#endif
+
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -352,9 +357,9 @@ syserr:			run_err("%s: %s", name, strerror(errno));
 			if (response() < 0)
 				goto next;
 		}
-#define	MODEMASK	(S_ISUID|S_ISGID|S_ISTXT|S_IRWXU|S_IRWXG|S_IRWXO)
-		(void)snprintf(buf, sizeof(buf), "C%04o %qd %s\n",
-		    stb.st_mode & MODEMASK, stb.st_size, last);
+#define	MODEMASK	(S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
+		(void)snprintf(buf, sizeof(buf), "C%04o %lu %s\n",
+		    stb.st_mode & MODEMASK, (unsigned long)stb.st_size, last);
 		(void)write(remout, buf, strlen(buf));
 		if (response() < 0)
 			goto next;
