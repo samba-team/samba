@@ -56,7 +56,8 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	}
 	
 	remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
-	status = make_user_info_for_reply_enc(&user_info, 
+	status = make_user_info_for_reply_enc(req->smb_conn,
+					      &user_info, 
 					      sess->old.in.user, sess->old.in.domain,
 					      remote_machine,
 					      sess->old.in.password,
@@ -115,7 +116,7 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 		if (sess->nt1.in.user && *sess->nt1.in.user) {
 			return NT_STATUS_ACCESS_DENIED;
 		} else {
-			make_user_info_guest(&user_info);
+			make_user_info_guest(req->smb_conn, &user_info);
 		}
 		
 		status = make_auth_context_subsystem(req->smb_conn, &auth_context);
@@ -137,7 +138,8 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 			return NT_STATUS_NO_MEMORY;
 		}
 		remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
-		status = make_user_info_for_reply_enc(&user_info, 
+		status = make_user_info_for_reply_enc(req->smb_conn,
+						      &user_info, 
 						      sess->nt1.in.user, sess->nt1.in.domain,
 						      remote_machine,
 						      sess->nt1.in.password1,

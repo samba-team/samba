@@ -504,7 +504,8 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 		}
 
 		chal = auth_context->get_ntlm_challenge(auth_context);
-		nt_status = make_user_info_netlogon_interactive(&user_info,
+		nt_status = make_user_info_netlogon_interactive(auth_context, 
+								&user_info,
 								r->in.logon.password->identity_info.account_name.string,
 								r->in.logon.password->identity_info.domain_name.string,
 								r->in.logon.password->identity_info.workstation.string,
@@ -521,7 +522,8 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 			return nt_status;
 		}
 
-		nt_status = make_user_info_netlogon_network(&user_info,
+		nt_status = make_user_info_netlogon_network(auth_context,
+							    &user_info,
 							    r->in.logon.network->identity_info.account_name.string,
 							    r->in.logon.network->identity_info.domain_name.string,
 							    r->in.logon.network->identity_info.workstation.string,
