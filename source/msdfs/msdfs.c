@@ -368,9 +368,9 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
 
 	DEBUG(10,("setting up version2 referral\nRequested path:\n"));
 
-#if 0 
-	requestedpathlen = (dos_struni2(uni_requestedpath,pathname,512)+1)*2;
-#endif
+        requestedpathlen = rpcstr_push(uni_requestedpath, pathname, -1,
+                                       STR_TERMINATE);
+
 	dump_data(10,uni_requestedpath,requestedpathlen);
 
 	DEBUG(10,("ref count = %u\n",junction->referral_count));
@@ -434,9 +434,8 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
 		SSVAL(pdata,offset+16,uni_reqpathoffset1-offset);
 		SSVAL(pdata,offset+18,uni_reqpathoffset2-offset);
 		/* copy referred path into current offset */
-#if 0
-		unilen = (dos_struni2(pdata+uni_curroffset,ref->alternate_path,512) +1)*2;
-#endif
+                unilen = rpcstr_push(pdata+uni_curroffset, ref->alternate_path,
+                                     -1, STR_UNICODE);
 		SSVAL(pdata,offset+20,uni_curroffset-offset);
 
 		uni_curroffset += unilen;
@@ -464,9 +463,8 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
 	
 	DEBUG(10,("setting up version3 referral\n"));
 
-#if 0
-	reqpathlen = (dos_struni2(uni_reqpath,pathname,512)+1)*2;
-#endif
+        reqpathlen = rpcstr_push(uni_reqpath, pathname, -1, STR_TERMINATE);
+
 	dump_data(10,uni_reqpath,reqpathlen);
 
 	uni_reqpathoffset1 = REFERRAL_HEADER_SIZE + VERSION3_REFERRAL_SIZE * junction->referral_count;
@@ -515,9 +513,9 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
 		SSVAL(pdata,offset+12,uni_reqpathoffset1-offset);
 		SSVAL(pdata,offset+14,uni_reqpathoffset2-offset);
 		/* copy referred path into current offset */
-#if 0
-		unilen = (dos_struni2(pdata+uni_curroffset,ref->alternate_path,512) +1)*2;
-#endif
+
+                unilen = rpcstr_push(pdata+uni_curroffset, ref->alternate_path,
+                                     -1, STR_UNICODE);
 		SSVAL(pdata,offset+16,uni_curroffset-offset);
 		/* copy 0x10 bytes of 00's in the ServiceSite GUID */
 		memset(pdata+offset+18,'\0',16);
