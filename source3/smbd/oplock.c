@@ -80,6 +80,7 @@ BOOL receive_local_message( char *buffer, int buffer_len, int timeout)
 	fd_set fds;
 	int selrtn = -1;
 
+	FD_ZERO(&fds);
 	smb_read_error = 0;
 
 	while (timeout > 0 && selrtn == -1) {
