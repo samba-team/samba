@@ -1,5 +1,8 @@
 2003-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/transited.c (krb5_domain_x500_decode): set *num_realms
+	to zero not num_realms
+
 	* kuser/kgetcred.1: add --no-transit-check
 	
 	* kuser/kgetcred.c: add --no-transit-check
