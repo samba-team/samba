@@ -112,8 +112,6 @@ do_connect (const char *hostname, int port, int nodelay)
 	errx (1, "getaddrinfo(%s): %s", hostname, gai_strerror(error));
 
     for (a = ai; a != NULL; a = a->ai_next) {
-	int s;
-
 	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (s < 0)
 	    continue;
