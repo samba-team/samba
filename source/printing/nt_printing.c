@@ -203,18 +203,19 @@ BOOL nt_printing_init(void)
 	}
 	tdb_unlock_bystring(tdb, vstring);
 
-	update_c_setprinter(TRUE);
+	update_c_setprinter(True);
 
     return True;
 }
 
 /*******************************************************************
-tdb traversal function for counting printers
+ tdb traversal function for counting printers.
 ********************************************************************/  
+
 static int traverse_counting_printers(TDB_CONTEXT *t, TDB_DATA key,
 									  TDB_DATA data, void *context)
 {
-	int *printer_count = (int*)context;
+	int32 *printer_count = (int*)context;
 
 	if (memcmp(PRINTERS_PREFIX, key.dptr, sizeof(PRINTERS_PREFIX)-1) == 0) {	
 		(*printer_count)++;
@@ -224,18 +225,17 @@ static int traverse_counting_printers(TDB_CONTEXT *t, TDB_DATA key,
 	return 0;
 }
 
-static int printer_count;  /* tdb traversal counter*/
-
 /*******************************************************************
-Update the spooler global c_setprinter. This variable is initialized
-when the parent smbd starts whith the number of existing printers. It
-is monotonically increased by the current number of printers *after*
-each add or delete printer RPC. Only Microsoft knows why... JRR020119
+ Update the spooler global c_setprinter. This variable is initialized
+ when the parent smbd starts whith the number of existing printers. It
+ is monotonically increased by the current number of printers *after*
+ each add or delete printer RPC. Only Microsoft knows why... JRR020119
 ********************************************************************/  
+
 uint32 update_c_setprinter(BOOL initialize)
 {
-	int c_setprinter;
-	printer_count = 0;
+	int32 c_setprinter;
+	int32 printer_count = 0;
 
 	tdb_lock_bystring(tdb, GLOBAL_C_SETPRINTER);
 
@@ -246,36 +246,38 @@ uint32 update_c_setprinter(BOOL initialize)
 	 * otherwise, bump it buty the current printer count
 	 */
 	if (!initialize)
-		c_setprinter = tdb_fetch_int(tdb, GLOBAL_C_SETPRINTER) + printer_count;
+		c_setprinter = tdb_fetch_int32(tdb, GLOBAL_C_SETPRINTER) + printer_count;
 	else
 		c_setprinter = printer_count;
 
 	DEBUG(10,("update_c_setprinter: c_setprinter = %d\n", c_setprinter));
-	tdb_store_int(tdb, GLOBAL_C_SETPRINTER, c_setprinter);
+	tdb_store_int32(tdb, GLOBAL_C_SETPRINTER, c_setprinter);
 
 	tdb_unlock_bystring(tdb, GLOBAL_C_SETPRINTER);
 
-	return c_setprinter;
+	return (uint32)c_setprinter;
 }
 
 /*******************************************************************
-Get the spooler global c_setprinter, accounting for initialization.
+ Get the spooler global c_setprinter, accounting for initialization.
 ********************************************************************/  
-uint32 get_c_setprinter()
-{
-	int c_setprinter = tdb_fetch_int(tdb, GLOBAL_C_SETPRINTER);
 
-	if (c_setprinter == -1)
-		c_setprinter = update_c_setprinter(TRUE);
+uint32 get_c_setprinter(void)
+{
+	int32 c_setprinter = tdb_fetch_int32(tdb, GLOBAL_C_SETPRINTER);
+
+	if (c_setprinter == (int32)-1)
+		c_setprinter = update_c_setprinter(True);
 
 	DEBUG(10,("get_c_setprinter: c_setprinter = %d\n", c_setprinter));
 	
-	return c_setprinter;
+	return (uint32)c_setprinter;
 }
 
 /****************************************************************************
- get builtin form struct list
+ Get builtin form struct list.
 ****************************************************************************/
+
 int get_builtin_ntforms(nt_forms_struct **list)
 {
 	*list = (nt_forms_struct *)memdup(&default_forms[0], sizeof(default_forms));
@@ -283,7 +285,7 @@ int get_builtin_ntforms(nt_forms_struct **list)
 }
 
 /****************************************************************************
- get a builtin form struct
+ Get a builtin form struct.
 ****************************************************************************/
 
 BOOL get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form)
