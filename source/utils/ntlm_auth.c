@@ -474,6 +474,10 @@ static DATA_BLOB get_challenge(void)
 	return chal;
 }
 
+/* 
+ * Test LM authentication, no NT response supplied
+ */
+
 static BOOL test_lm(void) 
 {
 	NTSTATUS nt_status;
@@ -530,6 +534,10 @@ static BOOL test_lm(void)
 	}
         return True;
 }
+
+/* 
+ * Test the normal 'LM and NTLM' combination
+ */
 
 static BOOL test_lm_ntlm(void) 
 {
@@ -602,6 +610,10 @@ static BOOL test_lm_ntlm(void)
         return pass;
 }
 
+/* 
+ * Test the NTLM response only, no LM.
+ */
+
 static BOOL test_ntlm(void) 
 {
 	BOOL pass = True;
@@ -654,6 +666,10 @@ static BOOL test_ntlm(void)
 	}
         return pass;
 }
+
+/* 
+ * Test the NTLM response only, but in the LM feild.
+ */
 
 static BOOL test_ntlm_in_lm(void) 
 {
@@ -716,6 +732,10 @@ static BOOL test_ntlm_in_lm(void)
 	}
         return pass;
 }
+
+/* 
+ * Test the NTLM response only, but in the both the NT and LM feilds.
+ */
 
 static BOOL test_ntlm_in_both(void) 
 {
@@ -786,6 +806,10 @@ static BOOL test_ntlm_in_both(void)
 
         return pass;
 }
+
+/* 
+ * Test the NTLMv2 response only
+ */
 
 static BOOL test_ntlmv2(void) 
 {
@@ -858,6 +882,10 @@ static BOOL test_ntlmv2(void)
         return pass;
 }
 
+/* 
+ * Test the NTLMv2 and LMv2 responses
+ */
+
 static BOOL test_lmv2_ntlmv2(void) 
 {
 	BOOL pass = True;
@@ -928,6 +956,10 @@ static BOOL test_lmv2_ntlmv2(void)
 #endif
         return pass;
 }
+
+/* 
+ * Test the LMv2 response only
+ */
 
 static BOOL test_lmv2(void) 
 {
@@ -1006,6 +1038,8 @@ static BOOL test_lmv2(void)
    - LM only
    - NT and LM		   
    - NT
+   - NT in LM feild
+   - NT in both feilds
    - NTLMv2
    - NTLMv2 and LMv2
    - LMv2
