@@ -47,6 +47,8 @@ static int            locks_only  = 0;            /* Added by RJS */
 static BOOL processes_only=False;
 static int show_brl;
 
+const char *username = NULL;
+
 /* added by OH */
 static void Ucrit_addUsername(const char *username)
 {
@@ -578,6 +580,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	int c;
 	static int profile_only = 0;
 	TDB_CONTEXT *tdb;
+	BOOL show_processes, show_locks, show_shares;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -585,7 +588,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		{"verbose",	'v', POPT_ARG_NONE, &verbose, 'v', "Be verbose" },
 		{"locks",	'L', POPT_ARG_NONE,	&locks_only, 'L', "Show locks only" },
 		{"shares",	'S', POPT_ARG_NONE,	&shares_only, 'S', "Show shares only" },
-		{"user", 'u', POPT_ARG_STRING,	0, 'u', "Switch to user" },
+		{"user", 	'u', POPT_ARG_STRING,	&username, 'u', "Switch to user" },
 		{"brief",	'b', POPT_ARG_NONE, 	&brief, 'b', "Be brief" },
 #ifdef WITH_PROFILE
 		{"profile",	'P', POPT_ARG_NONE,	&profile_only, 'P', "Do profiling" },
@@ -615,6 +618,15 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		}
 	}
 
+	/* setup the flags based on the possible combincations */
+
+	show_processes = !(shares_only || locks_only || profile_only) || processes_only;
+	show_locks     = !(shares_only || processes_only || profile_only) || locks_only;
+	show_shares    = !(processes_only || locks_only || profile_only) || shares_only;
+
+	if ( username )
+		Ucrit_addUsername( username );
+
 	if (verbose) {
 		d_printf("using configfile = %s\n", dyn_CONFIGFILE);
 	}
@@ -628,43 +640,50 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		return profile_dump();
 	}
 	
-	tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
-	if (!tdb) {
-		d_printf("sessionid.tdb not initialised\n");
-	} else {
-		if (locks_only) goto locks;
+	if ( show_processes ) {
+		tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
+		if (!tdb) {
+			d_printf("sessionid.tdb not initialised\n");
+		} else {
+			d_printf("\nSamba version %s\n",SAMBA_VERSION_STRING);
+			d_printf("PID     Username      Group         Machine                        \n");
+			d_printf("-------------------------------------------------------------------\n");
 
-		d_printf("\nSamba version %s\n",SAMBA_VERSION_STRING);
-		d_printf("PID     Username      Group         Machine                        \n");
-		d_printf("-------------------------------------------------------------------\n");
-
-		tdb_traverse(tdb, traverse_sessionid, NULL);
-		tdb_close(tdb);
-	}
-  
-	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
-	if (!tdb) {
-		d_printf("%s not initialised\n", lock_path("connections.tdb"));
-		d_printf("This is normal if an SMB client has never connected to your server.\n");
-	}  else  {
-		if (verbose) {
-			d_printf("Opened %s\n", lock_path("connections.tdb"));
+			tdb_traverse(tdb, traverse_sessionid, NULL);
+			tdb_close(tdb);
 		}
 
-		if (brief) 
-			exit(0);
-		
-		d_printf("\nService      pid     machine       Connected at\n");
-		d_printf("-------------------------------------------------------\n");
+		if (processes_only) 
+			exit(0);	
+	}
+  
+	if ( show_shares ) {
+		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
+		if (!tdb) {
+			d_printf("%s not initialised\n", lock_path("connections.tdb"));
+			d_printf("This is normal if an SMB client has never connected to your server.\n");
+		}  else  {
+			if (verbose) {
+				d_printf("Opened %s\n", lock_path("connections.tdb"));
+			}
 
-		tdb_traverse(tdb, traverse_fn1, NULL);
-		tdb_close(tdb);
+			if (brief) 
+				exit(0);
+		
+			d_printf("\nService      pid     machine       Connected at\n");
+			d_printf("-------------------------------------------------------\n");
+	
+			tdb_traverse(tdb, traverse_fn1, NULL);
+			tdb_close(tdb);
+
+			d_printf("\n");
+		}
+
+		if ( shares_only )
+			exit(0);
 	}
 
- locks:
-	if (processes_only) exit(0);
-
-	if (!shares_only) {
+	if ( show_locks ) {
 		int ret;
 
 		if (!locking_init(1)) {
