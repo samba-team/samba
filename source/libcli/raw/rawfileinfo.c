@@ -138,9 +138,24 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 		parms->all_info.out.nlink =                 IVAL(blob->data, 56);
 		parms->all_info.out.delete_pending =        CVAL(blob->data, 60);
 		parms->all_info.out.directory =             CVAL(blob->data, 61);
+#if 1
 		parms->all_info.out.ea_size =               IVAL(blob->data, 64);
 		smbcli_blob_pull_string(session, mem_ctx, blob,
 				     &parms->all_info.out.fname, 68, 72, STR_UNICODE);
+#else
+		/* this is what the CIFS spec says - and its totally
+		   wrong, but its useful having it here so we can
+		   quickly adapt to broken servers when running
+		   tests */
+		parms->all_info.out.ea_size =               IVAL(blob->data, 72);
+		/* access flags 4 bytes at 76
+		   current_position 8 bytes at 80
+		   mode 4 bytes at 88
+		   alignment 4 bytes at 92
+		*/
+		smbcli_blob_pull_string(session, mem_ctx, blob,
+					&parms->all_info.out.fname, 96, 100, STR_UNICODE);
+#endif
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALT_NAME_INFO:
