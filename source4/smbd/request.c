@@ -329,7 +329,7 @@ size_t req_push_str(struct request_context *req, char *dest, const char *str, in
 	const int max_bytes_per_char = 3;
 
 	if (!(flags & (STR_ASCII|STR_UNICODE))) {
-		flags |= (req->smb->negotiate.client_caps & CAP_UNICODE) ? STR_UNICODE : STR_ASCII;
+		flags |= (req->flags2 & FLAGS2_UNICODE_STRINGS) ? STR_UNICODE : STR_ASCII;
 	}
 
 	if (dest == NULL) {

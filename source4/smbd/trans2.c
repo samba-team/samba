@@ -136,7 +136,7 @@ static size_t trans2_push_data_string(struct request_context *req,
 	}
 
 	if (!(flags & (STR_ASCII|STR_UNICODE))) {
-		flags |= (req->smb->negotiate.client_caps & CAP_UNICODE) ? STR_UNICODE : STR_ASCII;
+		flags |= (req->flags2 & FLAGS2_UNICODE_STRINGS) ? STR_UNICODE : STR_ASCII;
 	}
 
 	if ((offset&1) && (flags & STR_UNICODE) && !(flags & STR_NOALIGN)) {
@@ -555,21 +555,21 @@ static NTSTATUS trans2_fileinfo_fill(struct request_context *req, struct smb_tra
 		SSVAL(trans->out.data.data,       62, 0); /* padding */
 		SIVAL(trans->out.data.data,       64, st->all_info.out.ea_size);
 		trans2_append_data_string(req, trans, &st->all_info.out.fname, 
-					  68, 0);
+					  68, STR_UNICODE);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
 		trans2_setup_reply(req, trans, 2, 4, 0);
 		SSVAL(trans->out.params.data, 0, 0);
-		trans2_append_data_string(req, trans, &st->name_info.out.fname, 0, 0);
+		trans2_append_data_string(req, trans, &st->name_info.out.fname, 0, STR_UNICODE);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
 		trans2_setup_reply(req, trans, 2, 4, 0);
 		SSVAL(trans->out.params.data, 0, 0);
-		trans2_append_data_string(req, trans, &st->alt_name_info.out.fname, 0, 0);
+		trans2_append_data_string(req, trans, &st->alt_name_info.out.fname, 0, STR_UNICODE);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_STREAM_INFO:
