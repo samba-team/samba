@@ -41,6 +41,7 @@ extern rid_name domain_alias_rids[];
  ********************************************************************/
 
 static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
+				int start_idx,
                                 int *total_entries, int *num_entries,
                                 int max_num_entries,
                                 uint16 acb_mask)
@@ -62,7 +63,18 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 	while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries)
 	{
-		int user_name_len = strlen(pwd->smb_name);
+		int user_name_len;
+
+		if (start_idx > 0)
+		{
+			/* skip the requested number of entries.
+			   not very efficient, but hey...
+			 */
+			start_idx--;
+			continue;
+		}
+
+		user_name_len = strlen(pwd->smb_name);
 		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len-1);
 		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len-1, 
 		               user_name_len-1, 1);
@@ -302,7 +314,7 @@ static void samr_reply_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_u,
 	DEBUG(5,("samr_reply_enum_dom_users: %d\n", __LINE__));
 
 	become_root(True);
-	get_sampwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, q_u->acb_mask);
+	get_sampwd_entries(pass, 0, &total_entries, &num_entries, MAX_SAM_ENTRIES, q_u->acb_mask);
 	unbecome_root(True);
 
 	make_samr_r_enum_dom_users(&r_e, total_entries,
@@ -473,7 +485,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 	if (r_e.status == 0x0)
 	{
 		become_root(True);
-		got_pwds = get_sampwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
+		got_pwds = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
 		unbecome_root(True);
 
 		switch (q_u->switch_level)
@@ -943,13 +955,11 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 	LOGON_HRS hrs;
 	int i;
 
-#ifdef DONT_CHECK_THIS_FOR_NOW
 	if (!pdb_rid_is_user(user_rid))
 	{
 		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
 		return False;
 	}
-#endif
 
 	become_root(True);
 	sam_pass = getsam21pwrid(user_rid);
