@@ -20,8 +20,7 @@ test_smb_conf_setup() {
     echo "127.0.0.6    DOMAIN">>$prefix/lib/lmhosts
     echo "127.0.0.7    HOSTSEQUIV">>$prefix/lib/lmhosts
 
-	echo $host > $prefix/lib/hosts.equiv
-    echo "localhost" >> $prefix/lib/hosts.equiv
+	echo "127.0.0.1" > $prefix/lib/hosts.equiv
 
     cp basicsmb.smb.conf.share $prefix/lib/smb.conf.share
     cp basicsmb.smb.conf.user $prefix/lib/smb.conf.user
