@@ -37,7 +37,9 @@ RCSID("$Id$");
 #endif
 
 #include <sys/types.h>
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
 #include <fcntl.h>
 
 #include "roken.h"
@@ -75,6 +77,10 @@ segv_handler(int sig)
 int
 main(int argc, char **argv)
 {
+#ifndef HAVE_MMAP
+    return 77;			/* signal to automake that this test
+                                   cannot be run */
+#else /* HAVE_MMAP */
     int ret;
     int i;
     struct sigaction sa;
@@ -119,4 +125,5 @@ main(int argc, char **argv)
 	    err (1, "munmap");
     }
     return val;
+#endif /* HAVE_MMAP */
 }
