@@ -758,6 +758,7 @@ static BOOL process( struct client_info *info, char *cmd_str)
 	        pstring pline;
 		BOOL at_sym = False;
 		pline[0] = 0;
+		safe_strcat(pline, "[", sizeof(pline)-1);
 		if (usr.domain[0] != 0)
 		{
 			safe_strcat(pline, usr.domain, sizeof(pline)-1);
@@ -775,7 +776,7 @@ static BOOL process( struct client_info *info, char *cmd_str)
 		}
 	
 		safe_strcat(pline, cli_info.dest_host, sizeof(pline)-1);
-		safe_strcat(pline, "$ ", sizeof(pline)-1);
+		safe_strcat(pline, "]$ ", sizeof(pline)-1);
 
 #ifndef HAVE_LIBREADLINE
 
