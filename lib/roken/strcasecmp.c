@@ -44,6 +44,7 @@ RCSID("$Id$");
 #include <string.h>
 #include <ctype.h>
 #include <stddef.h>
+#include "roken.h"
 
 #ifndef HAVE_STRCASECMP
 
