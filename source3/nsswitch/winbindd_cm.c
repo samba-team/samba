@@ -124,13 +124,74 @@ struct winbindd_cm_conn {
 
 struct winbindd_cm_conn *cm_conns = NULL;
 
-/* Get a domain controller name */
+/* Get a domain controller name.  Cache positive and negative lookups so we
+   don't go to the network too often when something is badly broken. */
 
-BOOL cm_get_dc_name(char *domain, fstring srv_name)
+#define GET_DC_NAME_CACHE_TIMEOUT 30 /* Seconds between dc lookups */
+
+struct get_dc_name_cache {
+        fstring domain_name;
+        fstring srv_name;
+        time_t lookup_time;
+        struct get_dc_name_cache *prev, *next;
+};
+
+static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 {
+        static struct get_dc_name_cache *get_dc_name_cache;
+        struct get_dc_name_cache *dcc;
 	struct in_addr *ip_list, dc_ip;
 	extern pstring global_myname;
 	int count, i;
+
+        /* Check the cache for previous lookups */
+
+        for (dcc = get_dc_name_cache; dcc; dcc = dcc->next) {
+
+                if (!strequal(domain, dcc->domain_name))
+                        continue; /* Not our domain */
+
+                if ((time(NULL) - dcc->lookup_time) > GET_DC_NAME_CACHE_TIMEOUT) {
+
+                        /* Cache entry has expired, delete it */
+
+                        DEBUG(10, ("get_dc_name_cache entry expired for %s\n",
+                                   domain));
+
+                        DLIST_REMOVE(get_dc_name_cache, dcc);
+                        free(dcc);
+
+                        break;
+                }
+
+                /* Return a positive or negative lookup for this domain */
+
+                if (dcc->srv_name[0]) {
+                        DEBUG(10, ("returning positive get_dc_name_cache "
+                                   "entry for %s\n", domain));
+                        fstrcpy(srv_name, dcc->srv_name);
+                        return True;
+                } else {
+                        DEBUG(10, ("returning negative get_dc_name_cache "
+                                   "entry for %s\n", domain));
+                        return False;
+                }
+        }
+
+        /* Add cache entry for this lookup. */
+
+        DEBUG(10, ("Creating get_dc_name_cache entry for %s\n", domain));
+
+        if (!(dcc = (struct get_dc_name_cache *)
+             malloc(sizeof(struct get_dc_name_cache))))
+                return False;
+
+        ZERO_STRUCTP(dcc);
+
+        fstrcpy(dcc->domain_name, domain);
+        dcc->lookup_time = time(NULL);
+
+        DLIST_ADD(get_dc_name_cache, dcc);
 
 	/* Lookup domain controller name */
 		
@@ -154,14 +215,31 @@ BOOL cm_get_dc_name(char *domain, fstring srv_name)
 	if (!lookup_pdc_name(global_myname, domain, &dc_ip, srv_name))
 		return False;
 
+        /* We have a name so make the cache entry positive now */
+
+        fstrcpy(dcc->srv_name, srv_name);
+
 	return True;
 }
 
-/* Open a new smb pipe connection to a DC on a given domain */
+/* Open a new smb pipe connection to a DC on a given domain.  Cache
+   negative creation attempts so we don't try and connect to broken
+   machines too often. */
+
+#define OPEN_CONNECTION_CACHE_TIMEOUT 30 /* Seconds between attempts */
+
+struct open_connection_cache {
+        fstring domain_name;
+        fstring controller;
+        time_t lookup_time;
+        struct open_connection_cache *prev, *next;
+};
 
 static BOOL cm_open_connection(char *domain, char *pipe_name,
                                struct winbindd_cm_conn *new_conn)
 {
+        static struct open_connection_cache *open_connection_cache;
+        struct open_connection_cache *occ;
 	struct nmb_name calling, called;
         extern pstring global_myname;
         fstring dest_host;
@@ -172,10 +250,42 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
         fstrcpy(new_conn->domain, domain);
         fstrcpy(new_conn->pipe_name, pipe_name);
         
-        /* Look for a domain controller for this domain */
+        /* Look for a domain controller for this domain.  Negative results
+           are cached so don't bother applying the caching for this
+           function just yet.  */
 
         if (!cm_get_dc_name(domain, new_conn->controller))
                 goto done;
+
+        /* Return false if we have tried to look up this domain and netbios
+           name before and failed. */
+
+        for (occ = open_connection_cache; occ; occ = occ->next) {
+                
+                if (!(strequal(domain, occ->domain_name) &&
+                      strequal(new_conn->controller, occ->controller)))
+                        continue; /* Not our domain */
+
+                if ((time(NULL) - occ->lookup_time) > OPEN_CONNECTION_CACHE_TIMEOUT) {
+                        /* Cache entry has expired, delete it */
+
+                        DEBUG(10, ("cm_open_connection cache entry expired "
+                                   "for %s, %s\n", domain,
+                                   new_conn->controller));
+
+                        DLIST_REMOVE(open_connection_cache, occ);
+                        free(occ);
+
+                        break;
+                }
+
+                /* The timeout hasn't expired yet so return false */
+
+                DEBUG(10, ("returning negative open_connection_cache entry "
+                           "for %s, %s\n", domain, new_conn->controller));
+
+                goto done;
+        }
 
         /* Initialise SMB connection */
 
@@ -205,6 +315,23 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
         result = True;
 
  done:
+        /* Create negative lookup cache entry for this domain and
+           controller */
+
+        if (!result) {
+                if (!(occ = (struct open_connection_cache *)
+                      malloc(sizeof(struct open_connection_cache))))
+                        return False;
+
+                ZERO_STRUCTP(occ);
+
+                fstrcpy(occ->domain_name, domain);
+                fstrcpy(occ->controller, new_conn->controller);
+                occ->lookup_time = time(NULL);
+
+                DLIST_ADD(open_connection_cache, occ);
+        }
+
         if (!result && new_conn->cli)
                 cli_shutdown(new_conn->cli);
 
@@ -218,7 +345,7 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
         if (!conn->cli->initialised)
                 return False;
 
-        if (!conn->cli->fd == -1)
+        if (conn->cli->fd == -1)
                 return False;
 	
         return True;
@@ -239,8 +366,10 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
                 if (strequal(conn->domain, domain) &&
                     strequal(conn->pipe_name, PIPE_LSARPC)) {
 
-                        if (!connection_ok(conn))
+                        if (!connection_ok(conn)) {
+                                DLIST_REMOVE(cm_conns, conn);
                                 return NULL;
+                        }
 
                         goto ok;
                 }
@@ -293,8 +422,10 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
                     strequal(conn->pipe_name, PIPE_SAMR) &&
                     conn->pipe_data.samr.pipe_type == SAM_PIPE_BASIC) {
 
-                        if (!connection_ok(conn))
+                        if (!connection_ok(conn)) {
+                                DLIST_REMOVE(cm_conns, conn);
                                 return NULL;
+                        }
 
                         goto ok;
                 }
@@ -347,8 +478,10 @@ CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
                     strequal(conn->pipe_name, PIPE_SAMR) &&
                     conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM) {
 
-                        if (!connection_ok(conn))
+                        if (!connection_ok(conn)) {
+                                DLIST_REMOVE(cm_conns, conn);
                                 return NULL;
+                        }
 
                         goto ok;
                 }
@@ -415,8 +548,10 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
                     conn->pipe_data.samr.pipe_type == SAM_PIPE_USER &&
                     conn->pipe_data.samr.rid == user_rid) {
 
-                        if (!connection_ok(conn))
+                        if (!connection_ok(conn)) {
+                                DLIST_REMOVE(cm_conns, conn);
                                 return NULL;
+                        }
                 
                         goto ok;
                 }
@@ -489,8 +624,10 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
                     conn->pipe_data.samr.pipe_type == SAM_PIPE_GROUP &&
                     conn->pipe_data.samr.rid == group_rid) {
 
-                        if (!connection_ok(conn))
+                        if (!connection_ok(conn)) {
+                                DLIST_REMOVE(cm_conns, conn);
                                 return NULL;
+                        }
                 
                         goto ok;
                 }
@@ -581,7 +718,7 @@ static void dump_conn_list(void)
 {
         struct winbindd_cm_conn *con;
 
-        DEBUG(0, ("\tDomain          Controller      Pipe\n"));
+        DEBUG(0, ("\tDomain          Controller      Pipe             Handle type\n"));
 
         for(con = cm_conns; con; con = con->next) {
                 char *msg;
