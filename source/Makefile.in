@@ -1026,11 +1026,6 @@ bin/smbpasswd.@SHLIBEXT@: passdb/pdb_smbpasswd.o
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.o \
 		@SONAMEFLAG@`basename $@`
 
-bin/unixsam.@SHLIBEXT@: passdb/pdb_unix.o
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_unix.o \
-		@SONAMEFLAG@`basename $@`
-
 bin/nisplussam.@SHLIBEXT@: passdb/pdb_nisplus.o
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_nisplus.o \
@@ -1056,11 +1051,6 @@ bin/extd_audit.@SHLIBEXT@: $(VFS_EXTD_AUDIT_OBJ)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_EXTD_AUDIT_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
-bin/fake_perms.@SHLIBEXT@: $(VFS_FAKE_PERMS_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ) \
-		@SONAMEFLAG@`basename $@`
-
 bin/recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_RECYCLE_OBJ) \
@@ -1069,6 +1059,11 @@ bin/recycle.@SHLIBEXT@: $(VFS_RECYCLE_OBJ)
 bin/netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_NETATALK_OBJ) \
+		@SONAMEFLAG@`basename $@`
+
+bin/fake_perms.@SHLIBEXT@: $(VFS_FAKE_PERMS_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ) \
 		@SONAMEFLAG@`basename $@`
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
