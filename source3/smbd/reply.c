@@ -556,7 +556,7 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
                             smb_apasswd, smb_apasslen, 
                             smb_ntpasswd, smb_ntpasslen);
   if(ret) {
-    struct passwd *pwd;
+    struct passwd *pwd=NULL;
 
     /*
      * User validated ok against Domain controller.
@@ -597,7 +597,7 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
 {
   BOOL ret = False;
   BOOL user_exists = True;
-  struct passwd *pwd;
+  struct passwd *pwd=NULL;
 
   if(lp_security() != SEC_DOMAIN)
     return False;
