@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
+
 /** List of various built-in passdb modules */
 
 const struct pdb_init_function_entry builtin_pdb_init_functions[] = {

@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
+
 /*
  * NOTE. All these functions are abstracted into a structure
  * that points to the correct function for the selected database. JRA.

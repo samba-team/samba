@@ -76,7 +76,8 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 	if (!sam_pwent) return -1;
 	
 	if (verbosity) {
-		printf ("Unix/NT username:     %s/%s\n",  pdb_get_username(sam_pwent),pdb_get_nt_username(sam_pwent));
+		printf ("Unix username:        %s\n",  pdb_get_username(sam_pwent));
+		printf ("NT username:          %s\n", pdb_get_nt_username(sam_pwent));
 		if (IS_SAM_UNIX_USER(sam_pwent)) {
 			uid = pdb_get_uid(sam_pwent);
 			gid = pdb_get_gid(sam_pwent);

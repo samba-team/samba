@@ -3,6 +3,7 @@
    program to send control messages to Samba processes
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) 2001, 2002 by Martin Pool
+   Copyright (C) Simo Sorce 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -106,16 +107,14 @@ Prints out the current Debug level returned by MSG_DEBUGLEVEL
 void debuglevel_function(int msg_type, pid_t src, void *buf, size_t len)
 {
 	int i;
-	int debuglevel_class[DBGC_LAST];
+	char *levels = (char *)buf;
+	pstring dbgcl;
 
-	memcpy(debuglevel_class, buf, len);
-
-	printf("Current debug level of PID %u is %d ",(unsigned int)src, debuglevel_class[0]);
-	for (i=1;i<DBGC_LAST;i++)
-		if (debuglevel_class[i])
-			printf("%s:%d ", debug_classname_from_index(i), debuglevel_class[i]);
-	printf("\n");
-
+	printf("Current debug levels of PID %u are:\n",(unsigned int)src);
+	
+	while(next_token(&levels, dbgcl, " ", sizeof(pstring)))
+		printf("%s\n", dbgcl);
+	
 	got_level = True;
 }
 
@@ -243,19 +242,36 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 
 	switch (mtype) {
 	case MSG_DEBUG: {
-		struct debuglevel_message dm;
+		char *buf, *b;
+		char **p;
+		int dim = 0;
 
 		if (!params || !params[0]) {
 			fprintf(stderr,"MSG_DEBUG needs a parameter\n");
 			return(False);
 		}
 
-		ZERO_STRUCT(dm);
-		if (!debug_parse_params(params, dm.debuglevel_class, dm.debuglevel_class_isset)) {
-			fprintf(stderr, "MSG_DEBUG error. Expected <class name>:level\n");
+		/* first pass retrieve total lenght */
+		for (p = params; p && *p ; p++)
+			dim += (strnlen(*p, 1024) +1); /* lenght + space */
+		b = buf = malloc(dim);
+		if (!buf) {
+			fprintf(stderr, "Out of memory!");
 			return(False);
-		} else
-			send_message(dest, MSG_DEBUG, &dm, sizeof(dm), False);
+		}
+		/* now build a single string with all parameters */
+		for(p = params; p && *p; p++) {
+			int l = strnlen(*p, 1024);
+			strncpy(b, *p, l);
+			b[l] = ' ';
+			b = b + l + 1;
+		}
+		b[-1] = '\0';
+
+		send_message(dest, MSG_DEBUG, buf, dim, False);
+
+		free(buf);
+  
 		break;
 	}
 

@@ -2,7 +2,7 @@
  * Unix SMB/CIFS implementation. 
  * SMB parameters and setup
  * Copyright (C) Andrew Tridgell 1992-1998
- * Copyright (C) Simo Sorce 2000
+ * Copyright (C) Simo Sorce 2000-2002
  * Copyright (C) Gerald Carter 2000
  * Copyright (C) Jeremy Allison 2001
  * Copyright (C) Andrew Bartlett 2002
@@ -23,6 +23,19 @@
  */
 
 #include "includes.h"
+
+#if 0 /* when made a module use this */
+
+static int tdbsam_debug_level = DBGC_ALL;
+#undef DBGC_CLASS
+#define DBGC_CLASS tdbsam_debug_level
+
+#else
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
+
+#endif
 
 #ifdef WITH_TDB_SAM
 
@@ -880,6 +893,14 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	NTSTATUS nt_status;
 	struct tdbsam_privates *tdb_state;
 
+#if 0 /* when made a module use this */
+	tdbsam_debug_level = debug_add_class("tdbsam");
+	if(tdbsam_debug_level == -1) {
+		tdbsam_debug_level = DBGC_ALL;
+		DEBUG(0, ("tdbsam: Couldn't register custom debugging class!\n"));
+	}
+#endif
+
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
 		return nt_status;
 	}
@@ -934,7 +955,7 @@ NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method,
 	(*pdb_method)->name = "tdbsam_nua";
 
 	tdb_state = (*pdb_method)->private_data;
-	
+
 	tdb_state->permit_non_unix_accounts = True;
 
 	if (!lp_non_unix_account_range(&low_nua_uid, &high_nua_uid)) {

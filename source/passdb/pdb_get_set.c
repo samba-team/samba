@@ -23,6 +23,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_PASSDB
+
 /**
  * @todo Redefine this to NULL, but this changes the API becouse
  *       much of samba assumes that the pdb_get...() funtions 
