@@ -311,7 +311,7 @@ mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR/etc/skel/Samba
 mkdir -p $DESTDIR/usr/share/samba/codepages/src $DESTDIR/sbin
 mkdir -p $DESTDIR/%{SVIdir}
-mkdir -p $DESTDIR/usr/lib
+mkdir -p $DESTDIR/usr/{include,lib}
 
 make LOGFILEBASE=/var/log/samba.d -C source  install
 
@@ -338,9 +338,10 @@ install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
 install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
 install -m 755 source/bin/debug2html $DESTDIR/usr/sbin/debug2html
 
-install -m 755 source/bin/libsmbclient.so.0.1 $DESTDIR/usr/lib
-ln -s libsmbclient.so.0.1 $DESTDIR/usr/lib/libsmbclient.so.0
-ln -s libsmbclient.so.0.1 $DESTDIR/usr/lib/libsmbclient.so
+install -m 755 source/bin/libsmbclient.so $DESTDIR/usr/lib
+install -m 755 source/bin/libsmbclient.a $DESTDIR/usr/lib
+ln -s libsmbclient.so $DESTDIR/usr/lib/libsmbclient.so.0
+ln -s libsmbclient.so $DESTDIR/usr/lib/libsmbclient.so.0.1
 install -m 644 source/include/libsmbclient.h $DESTDIR/usr/include
 
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
