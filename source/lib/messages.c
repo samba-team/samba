@@ -322,12 +322,19 @@ void message_register(int msg_type,
 
 	dfn = (struct dispatch_fns *)malloc(sizeof(*dfn));
 
-	ZERO_STRUCTP(dfn);
+	if (dfn != NULL) {
 
-	dfn->msg_type = msg_type;
-	dfn->fn = fn;
+		ZERO_STRUCTPN(dfn);
 
-	DLIST_ADD(dispatch_fns, dfn);
+		dfn->msg_type = msg_type;
+		dfn->fn = fn;
+
+		DLIST_ADD(dispatch_fns, dfn);
+	}
+	else {
+	
+		DEBUG(0,("message_register: Not enough memory. malloc failed!\n"));
+	}
 }
 
 /****************************************************************************
