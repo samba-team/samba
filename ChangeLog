@@ -1,3 +1,8 @@
+1999-07-26  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/hdb/Makefile.am: bump version number (changes to some
+	function signatures)
+
 1999-07-26  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am: bump version to 3:0:2
