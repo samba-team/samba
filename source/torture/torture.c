@@ -2419,6 +2419,8 @@ static struct {
 	{"RAW-CONTEXT", torture_raw_context, 0},
 	{"RAW-RENAME", torture_raw_rename, 0},
 	{"RAW-SEEK", torture_raw_seek, 0},
+	{"RAW-EAS", torture_raw_eas, 0},
+	{"RAW-STREAMS", torture_raw_streams, 0},
 	{"RAW-RAP", torture_raw_rap, 0},
 
 	/* protocol scanners */
