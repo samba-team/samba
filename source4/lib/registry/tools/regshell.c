@@ -408,8 +408,34 @@ static char **reg_completion(const char *text, int start, int end)
 	}
 
 	if (h) {
-		/*FIXME: What if HKEY_CLASSES_ROOT is not present ? */
-		reg_get_predefined_key(h, HKEY_CLASSES_ROOT, &curkey);
+		enum reg_predefined_key try_hkeys[] = {
+			HKEY_CLASSES_ROOT,
+			HKEY_CURRENT_USER,
+			HKEY_LOCAL_MACHINE,
+			HKEY_USERS,
+			HKEY_PERFORMANCE_DATA,
+			HKEY_CURRENT_CONFIG,
+			HKEY_DYN_DATA,
+			HKEY_PERFORMANCE_TEXT,
+			HKEY_PERFORMANCE_NLSTEXT,
+			0
+		};
+		int i;
+
+		for (i = 0; try_hkeys[i]; i++) {
+			WERROR err;
+			err = reg_get_predefined_key(h, HKEY_CLASSES_ROOT, &curkey);
+			if (W_ERROR_IS_OK(err)) {
+				break;
+			} else {
+				curkey = NULL;
+			}
+		}
+	}
+
+	if (!curkey) {
+		fprintf(stderr, "Unable to access any of the predefined keys\n");
+		return -1;
 	}
 	
 	poptFreeContext(pc);
