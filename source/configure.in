@@ -11,8 +11,12 @@ AC_SUBST(LDSHFLAGS)
 AC_SUBST(HOST_OS)
 AC_SUBST(LIBMSRPC)
 AC_SUBST(LIBMSRPC32)
+AC_SUBST(LIBNMB)
+AC_SUBST(LIBNMB32)
 AC_SUBST(LIBSMB)
 AC_SUBST(LIBSMB32)
+AC_SUBST(LIBSAMBA)
+AC_SUBST(LIBSAMBA32)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
@@ -271,6 +275,8 @@ case "$host_os" in
 		*irix*) AC_DEFINE(IRIX)
 			ATTEMPT_WRAP32_BUILD=yes
 			ATTEMPT_LIBSMB32_BUILD=yes
+			ATTEMPT_LIBNMB32_BUILD=yes
+			ATTEMPT_LIBSAMBA32_BUILD=yes
 			ATTEMPT_LIBMSRPC32_BUILD=yes
 		;;
 		*aix*) AC_DEFINE(AIX);;
@@ -678,6 +684,72 @@ AC_ARG_WITH(libmsrpc,
 	   echo No support for PIC code - disabling libmsrpc
 	   LIBMSRPC=""
 	   LIBMSRPC32=""
+	fi
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(yes)
+)
+
+#################################################
+# check for libsamba support
+AC_MSG_CHECKING(whether to use libsamba)
+AC_ARG_WITH(libsamba,
+[  --with-libsamba     Include SMB libsamba support (default)
+  --without-libsamba  Don't include SMB libsamba support ],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LIBSAMBA)
+	LIBSAMBA="bin/libsamba.so"
+
+	if test x$ATTEMPT_LIBSAMBA32_BUILD = x; then
+		LIBSAMBA32=""
+	else
+			LIBSAMBA32=bin/libsamba.32.so
+	fi
+
+# Conditions under which libsamba should not be built.
+
+	if test x$PICFLAG = x; then
+	   echo No support for PIC code - disabling libsamba
+	   LIBSAMBA=""
+	   LIBSAMBA32=""
+	fi
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(yes)
+)
+
+#################################################
+# check for libnmb support
+AC_MSG_CHECKING(whether to use libnmb)
+AC_ARG_WITH(libnmb,
+[  --with-libnmb     Include NMB libnmb support (default)
+  --without-libnmb  Don't include NMB libnmb support ],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LIBNMB)
+	LIBNMB="bin/libnmb.so"
+
+	if test x$ATTEMPT_LIBNMB32_BUILD = x; then
+		LIBNMB32=""
+	else
+			LIBNMB32=bin/libnmb.32.so
+	fi
+
+# Conditions under which libnmb should not be built.
+
+	if test x$PICFLAG = x; then
+	   echo No support for PIC code - disabling libnmb
+	   LIBNMB=""
+	   LIBNMB32=""
 	fi
     ;;
   *)

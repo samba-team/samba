@@ -97,7 +97,8 @@ SPROGS = bin/smbd bin/lsarpcd bin/svcctld bin/spoolssd bin/samrd \
          bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
 PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html 
-PROGS3 = @WRAP@ @WRAP32@ @LIBMSRPC@ @LIBMSRPC32@ @LIBSMB@ @LIBSMB32@
+PROGS3 = @WRAP@ @WRAP32@ @LIBNMB@ @LIBNMB32@ @LIBSAMBA@ @LIBSAMBA32@ \
+	@LIBMSRPC@ @LIBMSRPC32@ @LIBSMB@ @LIBSMB32@
 MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(PROGS3) $(MPROGS) bin/nmblookup bin/make_printerdef 
 
@@ -109,8 +110,12 @@ QUOTAOBJS=@QUOTAOBJS@
 # object file lists
 ######################################################################
 
+SAMBALIB = bin/libsamba.so @LIBSAMBA32@ 
 SMBLIB = bin/libsmb.so @LIBSMB32@ 
-RPCLIB = bin/libmsrpc.so @LIBMSRPC32@ 
+NMBLIB = bin/libnmb.so @LIBNMB32@ 
+MSRPCLIB = bin/libmsrpc.so @LIBMSRPC32@ 
+
+SAMBA_LIBS = $(SAMBALIB) $(SMBLIB) $(NMBLIB) $(MSRPCLIB)
 
 LIBSTATUS_OBJ = lib/util_status.o 
 
@@ -122,9 +127,9 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/time.o lib/ufc.o lib/util.o lib/genrand.o \
 		lib/username.o lib/vuser.o \
 		lib/access.o lib/smbrun.o \
-		lib/bitmap.o lib/crc32.o lib/util_sid.o lib/snprintf.o \
+		lib/bitmap.o lib/util_sid.o lib/snprintf.o \
 		lib/util_str.o lib/util_unistr.o \
-		lib/util_file.o mem_man/mem_man.o \
+		lib/util_file.o \
 		lib/util_sock.o lib/util_sec.o lib/util_array.o \
 		lib/vagent.o lib/util_hnd.o \
 		tdb/tdb.o
@@ -136,10 +141,15 @@ UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
 
 PARAM_OBJ = param/loadparm.o param/params.o 
 
-LIBSMB_OBJ = libsmb/clientgen.o libsmb/namequery.o libsmb/nmblib.o \
+LIBSAMBA_OBJ = $(PARAM_OBJ) $(LIB_OBJ)
+
+LIBNMB_OBJ = libsmb/namequery.o libsmb/nmblib.o
+
+LIBSMB_OBJ = libsmb/clientgen.o \
              libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
-             libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
-	     lib/md5.o lib/hmacmd5.o \
+             libsmb/smberr.o libsmb/credentials.o \
+		libsmb/pwd_cache.o \
+	     lib/crc32.o lib/md5.o lib/hmacmd5.o \
                  rpc_parse/parse_creds.o \
 		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
 		 rpc_parse/parse_misc.o
@@ -280,64 +290,64 @@ SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 		passdb/smbpassfile.o \
 		printing/nt_printing.o 
 
-SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(UBIQX_OBJ) \
+SMBD_OBJ = $(SMBD_OBJ1) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) \
            libsmb/clienttrust.o \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
-		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) 
 		
 
-SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) $(PARAM_OBJ) \
+SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
+           $(LOCKING_OBJ) $(PROFILE_OBJ)  \
 		$(LIBSTATUS_OBJ)
 
-WKSSVCD_OBJ = $(MSRPCD_OBJ) $(WKSSVCD_OBJ1) $(PARAM_OBJ) \
+WKSSVCD_OBJ = $(MSRPCD_OBJ) $(WKSSVCD_OBJ1) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ) 
 
-BROWSERD_OBJ = $(MSRPCD_OBJ) $(BROWSERD_OBJ1) $(PARAM_OBJ) \
+BROWSERD_OBJ = $(MSRPCD_OBJ) $(BROWSERD_OBJ1) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ) 
 
-WINREGD_OBJ = $(MSRPCD_OBJ) $(WINREGD_OBJ1) $(PARAM_OBJ) \
+WINREGD_OBJ = $(MSRPCD_OBJ) $(WINREGD_OBJ1) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ) 
 
-SVCCTLD_OBJ = $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(PARAM_OBJ) \
+SVCCTLD_OBJ = $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ) 
 
-LSARPCD_OBJ = $(MSRPCD_OBJ) $(LSARPCD_OBJ1) $(PARAM_OBJ) \
+LSARPCD_OBJ = $(MSRPCD_OBJ) $(LSARPCD_OBJ1) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
            $(SIDDB_OBJ) $(LOCKING_OBJ) \
-		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
-SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) $(PARAM_OBJ) \
+SPOOLSSD_OBJ = $(MSRPCD_OBJ) $(SPOOLSSD_OBJ1) \
 		$(UBIQX_OBJ) $(PRINTING_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
-           $(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+           $(LOCKING_OBJ) $(PROFILE_OBJ) 
 
-NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) $(PARAM_OBJ) \
+NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
-SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) $(PARAM_OBJ) \
+SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
 		$(UBIQX_OBJ) \
            $(RPC_SRVUTIL_OBJ) $(RPC_PARSE_OBJ2) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
@@ -352,41 +362,41 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_subnetdb.o nmbd/nmbd_winsproxy.o nmbd/nmbd_winsserver.o \
             nmbd/nmbd_workgroupdb.o nmbd/nmbd_synclists.o
 
-NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(UBIQX_OBJ) \
-            $(LIB_OBJ) $(RPC_PARSE_OBJ2)
+NMBD_OBJ = $(NMBD_OBJ1) $(UBIQX_OBJ) \
+             $(RPC_PARSE_OBJ2)
 
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o libsmb/passchange.o $(LOCKING_OBJ) \
-           $(PARAM_OBJ) \
+           \
            $(SIDDB_OBJ) $(PASSDB_OBJ) \
-           $(UBIQX_OBJ) $(LIB_OBJ) $(STUB_UID_OBJ)
+           $(UBIQX_OBJ)  $(STUB_UID_OBJ)
 
 SMBRUN_OBJ = utils/smbrun.o
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
-            $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ2)
+            $(UBIQX_OBJ)  $(RPC_PARSE_OBJ2)
 
-MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o $(PARAM_OBJ) \
-                       $(UBIQX_OBJ) $(LIB_OBJ)
+MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o \
+                       $(UBIQX_OBJ) 
 
-MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
-                      $(UBIQX_OBJ) $(LIB_OBJ)
+MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o \
+                      $(UBIQX_OBJ) 
 
-STATUS_OBJ = utils/status.o $(LIBSTATUS_OBJ) $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) $(STUB_UID_OBJ)
+STATUS_OBJ = utils/status.o $(LIBSTATUS_OBJ) $(LOCKING_OBJ) \
+             $(UBIQX_OBJ) $(PROFILE_OBJ)  $(STUB_UID_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
-               $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+               $(UBIQX_OBJ) 
 
-TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
-               $(LIB_OBJ)
+TESTPRNS_OBJ = utils/testprns.o $(PRINTING_OBJ) $(UBIQX_OBJ) \
+               
 
 SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o \
 		rpc_client/cli_netlogon_sync.o \
-		$(PARAM_OBJ) \
+		\
 		$(PASSDB_OBJ) \
            $(SIDDB_OBJ) $(STUB_UID_OBJ)\
-                $(UBIQX_OBJ) $(LIB_OBJ)
+                $(UBIQX_OBJ) 
 
 RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 		rpcclient/display_at.o \
@@ -409,48 +419,48 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 		rpcclient/cmd_atsvc.o \
 		rpcclient/cmd_spoolss.o \
 		rpcclient/cmd_eventlog.o \
-		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+		$(UBIQX_OBJ)  \
            $(SIDDB_OBJ) $(PASSDB_OBJ) \
 		$(STUB_UID_OBJ)
 
 SMBWRAPPER_OBJ = smbwrapper/smbw.o smbwrapper/wrapped.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o \
-		$(PARAM_OBJ) \
-                $(UBIQX_OBJ) $(LIB_OBJ)
+		\
+                $(UBIQX_OBJ) 
 
 CLIENT_OBJ = client/client.o client/clitar.o \
-             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ2)
+             $(UBIQX_OBJ)  $(RPC_PARSE_OBJ2)
 
 MOUNT_OBJ = client/smbmount.o client/clientutil.o \
-             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ2)
+             $(UBIQX_OBJ)  $(RPC_PARSE_OBJ2)
 
 MNT_OBJ = client/smbmnt.o \
-             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ2)
+             $(UBIQX_OBJ)  $(RPC_PARSE_OBJ2)
 
 UMOUNT_OBJ = client/smbumount.o \
-             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ2)
+             $(UBIQX_OBJ)  $(RPC_PARSE_OBJ2)
 
-NMB_AGENT_OBJ = utils/nmb-agent.o $(PARAM_OBJ) $(UBIQX_OBJ) \
-                $(LIB_OBJ) $(RPC_PARSE_OBJ2)
+NMB_AGENT_OBJ = utils/nmb-agent.o $(UBIQX_OBJ) \
+                 $(RPC_PARSE_OBJ2)
 
-NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
-                $(LIB_OBJ) libsmb/namequery.o libsmb/nmblib.o
+NMBLOOKUP_OBJ = utils/nmblookup.o $(UBIQX_OBJ) \
+                 libsmb/namequery.o libsmb/nmblib.o
 
 #$(RPC_PARSE_OBJ2)
 
-DEBUG2HTML_OBJ = utils/debug2html.o $(PARAM_OBJ) $(LIB_OBJ)
+DEBUG2HTML_OBJ = utils/debug2html.o 
 
-SMB_AGENT_OBJ = utils/smb-agent.o $(PARAM_OBJ) $(LIB_OBJ) \
+SMB_AGENT_OBJ = utils/smb-agent.o  \
 			$(RPC_PARSE_OBJ2) rpc_client/cli_use.o
 
-SMB_CLIENT_OBJ = smb-client.o $(PARAM_OBJ) $(LIB_OBJ)
+SMB_CLIENT_OBJ = smb-client.o 
 
-SMBTORTURE_OBJ = utils/torture.o $(PARAM_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_OBJ)
+SMBTORTURE_OBJ = utils/torture.o \
+                 $(UBIQX_OBJ) 
 
-SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_OBJ) \
+SMBFILTER_OBJ = utils/smbfilter.o \
+                 $(UBIQX_OBJ)  \
                  rpc_parse/parse_creds.o \
 		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
 		 rpc_parse/parse_misc.o
@@ -462,11 +472,12 @@ RPCTORTURE_OBJ = utils/rpctorture.o \
              rpcclient/cmd_samr.o \
              rpcclient/cmd_srvsvc.o \
              rpcclient/cmd_netlogon.o \
-             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+             $(UBIQX_OBJ)  \
            $(SIDDB_OBJ) \
 		$(PASSDB_OBJ) 
 
-PROTO_OBJ = $(LIB_OBJ) $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) \
+PROTO_OBJ =  $(LIB_OBJ) $(PARAM_OBJ) \
+		$(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) \
 		$(SAMRD_OBJ1) \
 		$(SRVSVCD_OBJ1) $(WKSSVCD_OBJ1) $(BROWSERD_OBJ1) \
 		$(SPOOLSSD_OBJ1) $(NETLOGOND_OBJ1) \
@@ -481,6 +492,12 @@ PROTO_OBJ = $(LIB_OBJ) $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) \
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
 
+LIBSAMBAPICOBJS = $(LIBSAMBA_OBJ:.o=.po)
+LIBAMBAPICOBJS32 = $(LIBSAMBA_OBJ:.o=.po32)
+
+LIBNMBPICOBJS = $(LIBNMB_OBJ:.o=.po)
+LIBNMBPICOBJS32 = $(LIBNMB_OBJ:.o=.po32)
+
 LIBSMBPICOBJS = $(LIBSMB_OBJ:.o=.po)
 LIBSMBPICOBJS32 = $(LIBSMB_OBJ:.o=.po32)
 
@@ -493,9 +510,13 @@ LIBMSRPCPICOBJS32 = $(RPC_CLIENT_OBJ:.o=.po32) $(RPC_PARSE_OBJ:.o=.po32)
 
 all : CHECK $(SPROGS) $(PROGS) 
 
+libnmb : CHECK $(NMBLIB)
+
 libsmb : CHECK $(SMBLIB)
 
-libmsrpc : CHECK $(RPCLIB)
+libmsrpc : CHECK $(MSRPCLIB)
+
+libsamba : CHECK $(SAMBALIB)
 
 smbwrapper : CHECK bin/smbsh bin/smbwrapper.so @WRAP32@
 
@@ -576,8 +597,16 @@ bin/libmsrpc.so: $(LIBMSRPCPICOBJS)
 	@$(LD) @LDSHFLAGS@ -o $@ $(LIBMSRPCPICOBJS) $(LIBS)
 
 bin/libmsrpc.32.so: $(LIBMSRPCPICOBJS32)
-	@echo Linking libsmb shared library $@
+	@echo Linking libmsrpc shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(LIBMSRPCPICOBJS32) $(LIBS)
+
+bin/libnmb.so: $(LIBNMBPICOBJS)
+	@echo Linking libnmb shared library $@
+	@$(LD) @LDSHFLAGS@ -o $@ $(LIBNMBPICOBJS) $(LIBS)
+
+bin/libnmb.32.so: $(LIBNMBPICOBJS32)
+	@echo Linking libnmb shared library $@
+	@$(LD) -32 @LDSHFLAGS@ -o $@ $(LIBNMBPICOBJS32) $(LIBS)
 
 bin/libsmb.so: $(LIBSMBPICOBJS)
 	@echo Linking libsmb shared library $@
@@ -587,114 +616,122 @@ bin/libsmb.32.so: $(LIBSMBPICOBJS32)
 	@echo Linking libsmb shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(LIBSMBPICOBJS32) $(LIBS)
 
-bin/smbd: $(SMBLIB) $(RPCLIB) $(SMBD_OBJ) bin/.dummy
+bin/libsamba.so: $(LIBSAMBAPICOBJS)
+	@echo Linking libsamba shared library $@
+	@$(LD) @LDSHFLAGS@ -o $@ $(LIBSAMBAPICOBJS) $(LIBS)
+
+bin/libsamba.32.so: $(LIBSAMBAPICOBJS32)
+	@echo Linking libsamba shared library $@
+	@$(LD) -32 @LDSHFLAGS@ -o $@ $(LIBSAMBAPICOBJS32) $(LIBS)
+
+bin/smbd: $(SAMBA_LIBS) $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SMBD_OBJ) \
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMBD_OBJ) \
 	$(LDFLAGS) $(LIBS) 
 
-bin/svcctld: $(SMBLIB) $(RPCLIB) $(SVCCTLD_OBJ) bin/.dummy
+bin/svcctld: $(SAMBA_LIBS) $(SVCCTLD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SVCCTLD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SVCCTLD_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/lsarpcd: $(SMBLIB) $(RPCLIB) $(LSARPCD_OBJ) bin/.dummy
+bin/lsarpcd: $(SAMBA_LIBS) $(LSARPCD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(LSARPCD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(LSARPCD_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/spoolssd: $(SMBLIB) $(RPCLIB) $(SPOOLSSD_OBJ) bin/.dummy
+bin/spoolssd: $(SAMBA_LIBS) $(SPOOLSSD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SPOOLSSD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SPOOLSSD_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/srvsvcd: $(SMBLIB) $(RPCLIB) $(SRVSVCD_OBJ) bin/.dummy
+bin/srvsvcd: $(SAMBA_LIBS) $(SRVSVCD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SRVSVCD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SRVSVCD_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/wkssvcd: $(SMBLIB) $(RPCLIB) $(WKSSVCD_OBJ) bin/.dummy
+bin/wkssvcd: $(SAMBA_LIBS) $(WKSSVCD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(WKSSVCD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(WKSSVCD_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/browserd: $(SMBLIB) $(RPCLIB) $(BROWSERD_OBJ) bin/.dummy
+bin/browserd: $(SAMBA_LIBS) $(BROWSERD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(BROWSERD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(BROWSERD_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/winregd: $(SMBLIB) $(RPCLIB) $(WINREGD_OBJ) bin/.dummy
+bin/winregd: $(SAMBA_LIBS) $(WINREGD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(WINREGD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(WINREGD_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/netlogond: $(SMBLIB) $(RPCLIB) $(NETLOGOND_OBJ) bin/.dummy
+bin/netlogond: $(SAMBA_LIBS) $(NETLOGOND_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(NETLOGOND_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(NETLOGOND_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/samrd: $(SMBLIB) $(RPCLIB) $(SAMRD_OBJ) bin/.dummy
+bin/samrd: $(SAMBA_LIBS) $(SAMRD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SAMRD_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SAMRD_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/nmbd: $(SMBLIB) $(NMBD_OBJ) bin/.dummy
+bin/nmbd: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(NMBD_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(NMBD_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/swat: $(SMBLIB) $(RPCLIB) $(SWAT_OBJ) bin/.dummy
+bin/swat: $(SAMBA_LIBS) $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SWAT_OBJ) $(LDFLAGS) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SWAT_OBJ) $(LDFLAGS) $(LIBS) 
 
 bin/smbrun: $(SMBRUN_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBRUN_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/rpcclient: $(SMBLIB) $(RPCLIB) $(RPCCLIENT_OBJ) bin/.dummy
+bin/rpcclient: $(SAMBA_LIBS) $(RPCCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(RPCCLIENT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(RPCCLIENT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbclient: $(SMBLIB) $(CLIENT_OBJ) bin/.dummy
+bin/smbclient: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(CLIENT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(CLIENT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbmount: $(SMBLIB) $(RPCLIB) $(MOUNT_OBJ) bin/.dummy
+bin/smbmount: $(SAMBA_LIBS) $(MOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(MOUNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(MOUNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbmnt: $(SMBLIB) $(RPCLIB) $(MNT_OBJ) bin/.dummy
+bin/smbmnt: $(SAMBA_LIBS) $(MNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(MNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(MNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbumount: $(SMBLIB) $(RPCLIB) $(UMOUNT_OBJ) bin/.dummy
+bin/smbumount: $(SAMBA_LIBS) $(UMOUNT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(UMOUNT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(UMOUNT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/testparm: $(TESTPARM_OBJ) bin/.dummy
+bin/testparm: $(SAMBALIB) $(TESTPARM_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/testprns: $(TESTPRNS_OBJ) bin/.dummy
+bin/testprns: $(SAMBALIB) $(TESTPRNS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(TESTPRNS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbstatus: $(SMBLIB) $(STATUS_OBJ) bin/.dummy
+bin/smbstatus: $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(STATUS_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(SAMBALIB) $(NMBLIB) $(STATUS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbpasswd: $(SMBLIB) $(RPCLIB) $(SMBPASSWD_OBJ) bin/.dummy
+bin/smbpasswd: $(SAMBA_LIBS) $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SMBPASSWD_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMBPASSWD_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
+bin/make_smbcodepage: $(SAMBALIB) $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(MAKE_SMBCODEPAGE_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/nmblookup: $(NMBLOOKUP_OBJ) bin/.dummy
+bin/nmblookup: $(SAMBALIB) $(NMBLIB) $(NMBLOOKUP_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(NMBLIB) $(SAMBALIB) $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ) bin/.dummy
+bin/make_printerdef: $(SAMBALIB) $(MAKE_PRINTERDEF_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MAKE_PRINTERDEF_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(MAKE_PRINTERDEF_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbtorture: $(SMBLIB) $(RPCLIB) $(SMBTORTURE_OBJ) bin/.dummy
+bin/smbtorture: $(SAMBA_LIBS) $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/rpctorture: $(SMBLIB) $(RPCLIB) $(RPCTORTURE_OBJ) bin/.dummy
+bin/rpctorture: $(SAMBA_LIBS) $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(RPCTORTURE_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(RPCTORTURE_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smb-client: $(SMB_CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
@@ -704,17 +741,17 @@ bin/nmb-agent: $(NMB_AGENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMB_AGENT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smb-agent: $(SMBLIB) $(RPCLIB) $(SMB_AGENT_OBJ) bin/.dummy
+bin/smb-agent: $(SAMBA_LIBS) $(SMB_AGENT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SMB_AGENT_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMB_AGENT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbfilter: $(SMBLIB) $(RPCLIB) $(SMBFILTER_OBJ) bin/.dummy
+bin/smbfilter: $(SAMBA_LIBS) $(SMBFILTER_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMBFILTER_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/debug2html: $(DEBUG2HTML_OBJ) bin/.dummy
+bin/debug2html: $(SAMBALIB) $(DEBUG2HTML_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBALIB) $(DEBUG2HTML_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbwrapper.so: $(SMBWRAPPERPICOBJS)
 	@echo Linking smbwrapper shared library $@
@@ -724,9 +761,9 @@ bin/smbwrapper.32.so: $(SMBWRAPPERPICOBJS32)
 	@echo Linking smbwrapper shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(SMBWRAPPERPICOBJS32) $(LIBS)
 
-bin/smbsh: $(SMBLIB) $(RPCLIB) $(SMBSH_OBJ) bin/.dummy
+bin/smbsh: $(SAMBA_LIBS) $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBLIB) $(RPCLIB) $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SAMBA_LIBS) $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
 
 install: installbin installman installscripts installcp installswat
 
