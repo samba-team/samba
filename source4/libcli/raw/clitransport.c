@@ -82,7 +82,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 
 	ZERO_STRUCT(transport->called);
 
-	fde.fd = sock->fd;
+	fde.fd = socket_get_fd(sock->sock);
 	fde.flags = EVENT_FD_READ;
 	fde.handler = smbcli_transport_event_handler;
 	fde.private = transport;
@@ -501,7 +501,7 @@ BOOL smbcli_transport_process(struct smbcli_transport *transport)
 {
 	smbcli_transport_process_send(transport);
 	smbcli_transport_process_recv(transport);
-	if (transport->socket->fd == -1) {
+	if (transport->socket->sock == NULL) {
 		return False;
 	}
 	return True;
@@ -515,7 +515,7 @@ BOOL smbcli_transport_process(struct smbcli_transport *transport)
 void smbcli_transport_send(struct smbcli_request *req)
 {
 	/* check if the transport is dead */
-	if (req->transport->socket->fd == -1) {
+	if (req->transport->socket->sock == NULL) {
 		req->state = SMBCLI_REQUEST_ERROR;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		return;
