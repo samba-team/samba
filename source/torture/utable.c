@@ -129,8 +129,12 @@ BOOL torture_casetable(int dummy)
 
 	memset(equiv, 0, sizeof(equiv));
 
-	cli_mkdir(cli, "\\utable");
 	cli_unlink(cli, "\\utable\\*");
+	cli_rmdir(cli, "\\utable");
+	if (!cli_mkdir(cli, "\\utable")) {
+		printf("Failed to create utable directory!\n");
+		return False;
+	}
 
 	for (c=1; c < 0x10000; c++) {
 		size_t size;
