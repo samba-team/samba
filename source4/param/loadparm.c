@@ -133,7 +133,7 @@ struct parm_struct
 		int ivalue;
 		char *svalue;
 		char cvalue;
-		char **lvalue;
+		const char **lvalue;
 	} def;
 };
 
@@ -1431,8 +1431,8 @@ const char *lp_parm_string(int lookup_service, const char *type, const char *opt
 /* Parametric option has following syntax: 'Type: option = value' */
 /* Returned value is allocated in 'lp_talloc' context */
 
-char **lp_parm_string_list(int lookup_service, const char *type, const char *option,
-			   const char *separator)
+const char **lp_parm_string_list(int lookup_service, const char *type, const char *option,
+				 const char *separator)
 {
 	const char *value = get_parametrics(lookup_service, type, option);
 	
@@ -1855,7 +1855,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 					strupper(*(char **)dest_ptr);
 					break;
 				case P_LIST:
-					*(char ***)dest_ptr = str_list_copy(NULL, *(const char ***)src_ptr);
+					*(const char ***)dest_ptr = str_list_copy(NULL, *(const char ***)src_ptr);
 					break;
 				default:
 					break;
@@ -2367,7 +2367,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_LIST:
-			*(char ***)parm_ptr = str_list_make(NULL, pszParmValue, NULL);
+			*(const char ***)parm_ptr = str_list_make(NULL, pszParmValue, NULL);
 			break;
 
 		case P_STRING:

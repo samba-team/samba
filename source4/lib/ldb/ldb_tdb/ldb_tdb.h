@@ -1,5 +1,7 @@
 
-#ifndef _SAMBA_BUILD_
+#ifdef _SAMBA_BUILD_
+#include "lib/tdb/include/tdb.h"
+#else
 #include "tdb.h"
 #endif
 
