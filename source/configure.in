@@ -142,7 +142,10 @@ exit(1);
 #
 # Tests needed for glibc 2.1 large file support.
 # 
-    *linux*|*hurd*)
+	*linux*)
+		AC_MSG_RESULT([disabling large file support for glibc2.1 on Linux])     
+		;;
+    *hurd*)
         AC_MSG_CHECKING([for LFS support])
         old_CPPFLAGS="$CPPFLAGS"
         CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"

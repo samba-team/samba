@@ -604,7 +604,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
 
 
 /****************************************************************************
-parse a lpq line
+parse a lpstat line
 
 here is an example of "lpstat -o dcslw" output under sysv
 
@@ -618,27 +618,47 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
   int count=0;
   char *p;
 
-  /* handle the dash in the job id */
-  pstring_sub(line,"-"," ");
-  
-  for (count=0; count<9 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
+  /* 
+   * Handle the dash in the job id, but make sure that we skip over
+   * the printer name in case we have a dash in that.
+   * Patch from Dom.Mitchell@palmerharvey.co.uk.
+   */
+
+  /*
+   * Move to the first space.
+   */
+  for (p = line ; !isspace(*p) && *p; p++)
+    ;
+
+  /*
+   * Back up until the last '-' character or
+   * start of line.
+   */
+  for (; (p >= line) && (*p != '-'); p--)
+    ;
+
+  if((p >= line) && (*p == '-'))
+    *p = ' ';
+
+  for (count=0; count<9 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++)
+    ;
 
   /* we must get 7 tokens */
   if (count < 7)
     return(False);
 
   /* the 2nd and 4th, 6th columns must be integer */
-  if (!isdigit((int)*tok[1]) || !isdigit((int)*tok[3])) return(False);
-  if (!isdigit((int)*tok[5])) return(False);
+  if (!isdigit((int)*tok[1]) || !isdigit((int)*tok[3]))
+    return(False);
+  if (!isdigit((int)*tok[5]))
+    return(False);
 
   /* if the user contains a ! then trim the first part of it */  
-  if ((p=strchr(tok[2],'!')))
-    {
+  if ((p=strchr(tok[2],'!'))) {
       fstring tmp;
       fstrcpy(tmp,p+1);
       fstrcpy(tok[2],tmp);
-    }
-    
+  }
 
   buf->job = atoi(tok[1]);
   buf->size = atoi(tok[3]);

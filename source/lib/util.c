@@ -2614,13 +2614,55 @@ void free_namearray(name_compare_entry *name_array)
 }
 
 /****************************************************************************
+ Pathetically try and map a 64 bit lock offset into 31 bits. I hate Windows :-).
+****************************************************************************/
+
+uint32 map_lock_offset(uint32 high, uint32 low)
+{
+  unsigned int i;
+  uint32 mask = 0;
+  uint32 highcopy = high;
+
+  /*
+   * Try and find out how many significant bits there are in high.
+   */
+
+  for(i = 0; highcopy; i++)
+    highcopy >>= 1;
+
+  /*
+   * We use 31 bits not 32 here as POSIX
+   * lock offsets may not be negative.
+   */
+
+  mask = (~0) << (31 - i);
+
+  if(low & mask)
+    return 0; /* Fail. */
+
+  high <<= (31 - i);
+
+  return (high|low);
+}
+
+/****************************************************************************
 routine to do file locking
 ****************************************************************************/
+
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 #if HAVE_FCNTL_LOCK
   SMB_STRUCT_FLOCK lock;
   int ret;
+#if defined(LARGE_SMB_OFF_T)
+  /*
+   * In the 64 bit locking case we store the original
+   * values in case we have to map to a 32 bit lock on
+   * a filesystem that doesn't support 64 bit locks.
+   */
+  SMB_OFF_T orig_offset = offset;
+  SMB_OFF_T orig_count = count;
+#endif /* LARGE_SMB_OFF_T */
 
   if(lp_ole_locking_compat()) {
     SMB_OFF_T mask2= ((SMB_OFF_T)0x3) << (SMB_OFF_T_BITS-4);
@@ -2677,7 +2719,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
     }
     /* 32 bit NFS file system, retry with smaller offset */
     errno = 0;
-    lock.l_len = count & 0xffffffff;
+    lock.l_len = count & 0x7fffffff;
     ret = fcntl(fd,op,&lock);
   }
 
@@ -2709,8 +2751,38 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
     /* perhaps it doesn't support this sort of locking?? */
     if (errno == EINVAL)
     {
+
+#if defined(LARGE_SMB_OFF_T)
+      {
+        /*
+         * Ok - if we get here then we have a 64 bit lock request
+         * that has returned EINVAL. Try and map to 31 bits for offset
+         * and length and try again. This may happen if a filesystem
+         * doesn't support 64 bit offsets (efs/ufs) although the underlying
+         * OS does.
+         */
+        uint32 off_low = (orig_offset & 0xFFFFFFFF);
+        uint32 off_high = ((orig_offset >> 32) & 0xFFFFFFFF);
+
+        lock.l_len = (orig_count & 0x7FFFFFFF);
+        lock.l_start = (SMB_OFF_T)map_lock_offset(off_high, off_low);
+        ret = fcntl(fd,op,&lock);
+        if (ret == -1)
+        {
+          if (errno == EINVAL)
+          {
+            DEBUG(3,("locking not supported? returning True\n"));
+            return(True);
+          }
+          return False;
+        }
+        DEBUG(3,("64 -> 32 bit modified lock call successful\n"));
+        return True;
+      }
+#else /* LARGE_SMB_OFF_T */
       DEBUG(3,("locking not supported? returning True\n"));
       return(True);
+#endif /* LARGE_SMB_OFF_T */
     }
 
     return(False);
