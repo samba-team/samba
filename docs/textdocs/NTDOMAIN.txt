@@ -9,8 +9,8 @@ Updated:	October 20, 1997
 Subject:	NT Domain Logons
 ===========================================================================
 
-As of 1.9.18alpha1, Samba supports logins for NT 4.0 Workstations, without
-the need, use or intervention of NT 4.0 Server.  This document describes
+As of 1.9.18alpha1, Samba supports logins for NT 3.51 and 4.0 Workstations,
+without the need, use or intervention of NT Server.  This document describes
 how to set this up.  Over the continued development of the 1.9.18alpha
 series, this process (and therefore this document) should become simpler.
 
