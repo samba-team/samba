@@ -3025,7 +3025,7 @@ else
 #include "confdefs.h"
 #include <unistd.h>
 #include <errno.h>
-main() { setresgid(1,1,1); exit(0);}
+main() { errno = 0; setresgid(1,1,1); exit(errno != 0 ? (errno==EPERM ? 0 : 1) : 0);}
 EOF
 if { (eval echo configure:3031: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest && (./conftest; exit) 2>/dev/null
 then

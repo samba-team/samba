@@ -190,7 +190,7 @@ fi
 AC_CACHE_CHECK([for real setresgid],samba_cv_have_setresgid,[
     AC_TRY_RUN([#include <unistd.h>
 #include <errno.h>
-main() { setresgid(1,1,1); exit(0);}],
+main() { errno = 0; setresgid(1,1,1); exit(errno != 0 ? (errno==EPERM ? 0 : 1) : 0);}],
 	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no)])
 if test x"$samba_cv_have_setresgid" = x"yes"; then
     AC_DEFINE(HAVE_SETRESGID)
