@@ -41,7 +41,7 @@
 			ndr2->offset = 0;\
 			NDR_CHECK(ndr_push_##type(ndr2, NDR_SCALARS|NDR_BUFFERS, r->in.level, &(*r->out.info)[i]));\
 		}\
-		if (*r->in.buf_size >= ndr->offset) {\
+		if (*r->in.buf_size >= ndr2->offset) {\
 			buffer = data_blob_const(ndr2->data, ndr2->offset);\
 		} else {\
 			r->out.info = NULL;\
