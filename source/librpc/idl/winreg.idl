@@ -1,0 +1,206 @@
+/*
+  winreg interface definition
+*/
+
+[ uuid(338cd001-2244-31f1-aaaa-900038001003),
+  version(1.0),
+  pointer_default(unique)
+] interface winreg
+{
+	/******************/
+	/* Function: 0x00 */
+	NTSTATUS winreg_OpenHKCR(
+	);
+
+	/******************/
+	/* Function: 0x01 */
+	NTSTATUS winreg_OpenHKCU(
+	);
+
+	typedef struct {
+		uint16 unknown0;
+		uint16 unknown1;
+	} winreg_OpenHKLMUnknown;
+
+	/******************/
+	/* Function: 0x02 */
+	NTSTATUS winreg_OpenHKLM(
+		[in]      winreg_OpenHKLMUnknown *unknown,
+		[in]      uint32 access_required,
+		[out,ref] policy_handle *handle
+	);
+
+	/******************/
+	/* Function: 0x03 */
+	NTSTATUS winreg_OpenHKPD(
+	);
+
+	/******************/
+	/* Function: 0x04 */
+	NTSTATUS winreg_OpenHKU(
+	);
+
+	/******************/
+	/* Function: 0x05 */
+	NTSTATUS winreg_CloseKey(
+		[in,out,ref] policy_handle *handle
+	);
+
+	/******************/
+	/* Function: 0x06 */
+	NTSTATUS winreg_CreateKey(
+	);
+
+	/******************/
+	/* Function: 0x07 */
+	NTSTATUS winreg_DeleteKey(
+	);
+
+	/******************/
+	/* Function: 0x08 */
+	NTSTATUS winreg_DeleteValue(
+	);
+
+	typedef struct {
+		uint32 low;
+		uint32 high;
+	} winreg_Time;
+
+	typedef struct {
+		[value(2*strlen_m(r->name))] uint16 name_len;
+		[value(r->name_len)]         uint16 name_size;
+		unistr_noterm *name;
+	} winreg_String;
+
+	/******************/
+	/* Function: 0x09 */
+	NTSTATUS winreg_EnumKey(
+	);
+
+	/******************/
+	/* Function: 0x0a */
+	NTSTATUS winreg_EnumValue(
+	);
+
+	/******************/
+	/* Function: 0x0b */
+	NTSTATUS winreg_FlushKey(
+	);
+
+	/******************/
+	/* Function: 0x0c */
+	NTSTATUS winreg_GetKeySecurity(
+	);
+
+	/******************/
+	/* Function: 0x0d */
+	NTSTATUS winreg_LoadKey(
+	);
+
+	/******************/
+	/* Function: 0x0e */
+	NTSTATUS winreg_NotifyChangeKeyValue(
+	);
+
+	/******************/
+	/* Function: 0x0f */
+	NTSTATUS winreg_OpenKey(
+	);
+
+	/******************/
+	/* Function: 0x10 */
+	NTSTATUS winreg_QueryInfoKey(
+	);
+
+	/******************/
+	/* Function: 0x11 */
+	NTSTATUS winreg_QueryValue(
+	);
+
+	/******************/
+	/* Function: 0x12 */
+	NTSTATUS winreg_ReplaceKey(
+	);
+
+	/******************/
+	/* Function: 0x13 */
+	NTSTATUS winreg_RestoreKey(
+	);
+
+	/******************/
+	/* Function: 0x14 */
+	NTSTATUS winreg_SaveKey(
+	);
+
+	/******************/
+	/* Function: 0x15 */
+	NTSTATUS winreg_SetKeySecurity(
+	);
+
+	/******************/
+	/* Function: 0x16 */
+	NTSTATUS winreg_SetValue(
+	);
+
+	/******************/
+	/* Function: 0x17 */
+	NTSTATUS winreg_UnLoadKey(
+	);
+
+	/******************/
+	/* Function: 0x18 */
+	NTSTATUS winreg_InitiateSystemShutdown(
+	);
+
+	/******************/
+	/* Function: 0x19 */
+	NTSTATUS winreg_AbortSystemShutdown(
+	);
+
+	/******************/
+	/* Function: 0x1a */
+	NTSTATUS winreg_GetVersion(
+		[in,ref] policy_handle *handle,
+		[out]    uint32 version
+	);
+
+	/******************/
+	/* Function: 0x1b */
+	NTSTATUS winreg_OpenHKCC(
+	);
+
+	/******************/
+	/* Function: 0x1c */
+	NTSTATUS winreg_OpenHKDD(
+	);
+
+	/******************/
+	/* Function: 0x1d */
+	NTSTATUS winreg_QueryMultipleValues(
+	);
+
+	/******************/
+	/* Function: 0x1e */
+	NTSTATUS winreg_InitiateSystemShutdownEx(
+	);
+
+	/******************/
+	/* Function: 0x1f */
+	NTSTATUS winreg_SaveKeyEx(
+	);
+
+	/******************/
+	/* Function: 0x20 */
+	NTSTATUS winreg_OpenHKPT(
+	);
+
+	/******************/
+	/* Function: 0x21 */
+	NTSTATUS winreg_OpenHKPN(
+	);
+
+	/******************/
+	/* Function: 0x21 */
+	NTSTATUS winreg_QueryMultipleValues2(
+	);
+}
