@@ -369,6 +369,8 @@ pa-pk-key-rep		INTEGER ::= 18 -- (pkinit)
 CRC32 INTEGER ::= 1 -- 
 rsa-md4 INTEGER ::= 2 --
 
+-- transited encodings
 
+DOMAIN-X500-COMPRESS INTEGER ::= 1
 
 END
