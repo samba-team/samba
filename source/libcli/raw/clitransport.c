@@ -250,9 +250,14 @@ static void cli_transport_process_send(struct cli_transport *transport)
 		req->out.buffer += ret;
 		req->out.size -= ret;
 		if (req->out.size == 0) {
-			req->state = CLI_REQUEST_RECV;
 			DLIST_REMOVE(transport->pending_send, req);
-			DLIST_ADD(transport->pending_recv, req);
+			if (req->one_way_request) {
+				req->state = CLI_REQUEST_DONE;
+				cli_request_destroy(req);
+			} else {
+				req->state = CLI_REQUEST_RECV;
+				DLIST_ADD(transport->pending_recv, req);
+			}
 		}
 	}
 
@@ -275,13 +280,14 @@ static void cli_transport_finish_recv(struct cli_transport *transport)
 	buffer = transport->recv_buffer.buffer;
 	len = transport->recv_buffer.req_size;
 
+	ZERO_STRUCT(transport->recv_buffer);
+
 	hdr = buffer+NBT_HDR_SIZE;
 	vwv = hdr + HDR_VWV;
 
 	/* see if it could be an oplock break request */
 	if (handle_oplock_break(transport, len, hdr, vwv)) {
 		talloc_free(transport->mem_ctx, buffer);
-		ZERO_STRUCT(transport->recv_buffer);
 		return;
 	}
 
@@ -377,7 +383,6 @@ async:
 	/* if this request has an async handler then call that to
 	   notify that the reply has been received. This might destroy
 	   the request so it must happen last */
-	ZERO_STRUCT(transport->recv_buffer);
 	DLIST_REMOVE(transport->pending_recv, req);
 	req->state = CLI_REQUEST_DONE;
 	if (req->async.fn) {
@@ -390,7 +395,6 @@ error:
 		DLIST_REMOVE(transport->pending_recv, req);
 		req->state = CLI_REQUEST_ERROR;
 	}
-	ZERO_STRUCT(transport->recv_buffer);
 }
 
 /*

@@ -39,8 +39,11 @@ BOOL cli_oplock_ack(struct cli_tree *tree, uint16_t fnum, uint16_t ack_level)
 	SSVAL(req->out.vwv,VWV(6),0);
 	SSVAL(req->out.vwv,VWV(7),0);
 
+	/* this request does not expect a reply, so tell the signing
+	   subsystem not to allocate an id for a reply */
+	req->one_way_request = 1;
+
 	ret = cli_request_send(req);	
-	cli_request_destroy(req);
 
 	return ret;
 }

@@ -220,7 +220,7 @@ static void cli_request_simple_sign_outgoing_message(struct cli_request *req)
 	
 	/* some requests (eg. NTcancel) are one way, and the sequence number
 	   should be increased by 1 not 2 */
-	if (req->one_way_request) {
+	if (req->sign_single_increment) {
 		data->next_seq_num += 1;
 	} else {
 		data->next_seq_num += 2;

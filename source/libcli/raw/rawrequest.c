@@ -324,7 +324,7 @@ BOOL handle_oplock_break(struct cli_transport *transport, uint_t len, const char
 {
 	/* we must be very fussy about what we consider an oplock break to avoid
 	   matching readbraw replies */
-	if (len != MIN_SMB_SIZE + VWV(8) ||
+	if (len != MIN_SMB_SIZE + VWV(8) + NBT_HDR_SIZE ||
 	    (CVAL(hdr, HDR_FLG) & FLAG_REPLY) ||
 	    CVAL(hdr,HDR_COM) != SMBlockingX ||
 	    SVAL(hdr, HDR_MID) != 0xFFFF ||

@@ -108,9 +108,10 @@ NTSTATUS smb_raw_ntcancel(struct cli_request *oldreq)
 
 	/* this request does not expect a reply, so tell the signing
 	   subsystem not to allocate an id for a reply */
+	req->sign_single_increment = 1;
 	req->one_way_request = 1;
 
 	cli_request_send(req);
 
-	return cli_request_destroy(req);
+	return NT_STATUS_OK;
 }
