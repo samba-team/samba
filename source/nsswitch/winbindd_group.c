@@ -57,7 +57,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	
 	/* Initialise group membership information */
 	
-	DEBUG(10, ("DB> ** fill_grent_mem(%s, 0x%x)\n",
+	DEBUG(10, ("fill_grent_mem(): group %s rid 0x%x\n",
 		   domain ? domain->name : "NULL", group_rid));
 
 	*num_gr_mem = 0;
@@ -80,11 +80,11 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 		return False;
 	}
 
-	DEBUG(10, ("DB> looked up %d names\n", num_names));
+	DEBUG(10, ("fill_grent_mem(): looked up %d names\n", num_names));
 
 	if (DEBUGLEVEL >= 10) {
 		for (i = 0; i < num_names; i++) {
-			DEBUG(10, ("DB>\t%20s %x %d\n", names[i], rid_mem[i],
+			DEBUG(10, ("\t%20s %x %d\n", names[i], rid_mem[i],
 				   name_types[i]));
 		}
 	}
@@ -103,7 +103,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 			
 		the_name = names[i];
 
-		DEBUG(10, ("DB> processing name %s\n", the_name));
+		DEBUG(10, ("fill_grent_mem(): processing name %s\n", the_name));
 
 		/* Only add domain users */
 
@@ -133,10 +133,10 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 		if (!buf) {
 			buf_len += len + 1; /* List is comma separated */
 			(*num_gr_mem)++;
-			DEBUG(10, ("DB> buf_len + %d = %d\n", len + 1,
+			DEBUG(10, ("fill_grent_mem(): buf_len + %d = %d\n", len + 1,
 				   buf_len));
 		} else {
-			DEBUG(10, ("DB> appending %s at index %d\n",
+			DEBUG(10, ("fill_grent_mem(): appending %s at index %d\n",
 				   name, len));
 			safe_strcpy(&buf[buf_ndx], name, len);
 			buf_ndx += len;
@@ -164,7 +164,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	*gr_mem = buf;
 	*gr_mem_len = buf_len;
 
-	DEBUG(10, ("DB> num_mem = %d, len = %d, mem = %s\n", *num_gr_mem,
+	DEBUG(10, ("fill_grent_mem(): num_mem = %d, len = %d, mem = %s\n", *num_gr_mem,
 		   buf_len, buf));
 
 	result = True;
@@ -178,7 +178,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	
 	free_char_array(num_names, names);
 	
-	DEBUG(10, ("DB> fill_grent_mem() returning %d\n", result));
+	DEBUG(10, ("fill_grent_mem(): returning %d\n", result));
 
 	return result;
 }
@@ -547,8 +547,6 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	ent->sam_entry_index = 0;
 	ent->got_all_sam_entries = (status != STATUS_MORE_ENTRIES);
 
-	DEBUG(10, ("DB> got %d sam entries\n", ent->num_sam_entries));
-
 	return ent->num_sam_entries > 0;
 }
 
@@ -601,7 +599,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 	tryagain:
 
-		DEBUG(10, ("DB> entry_index = %d, num_entries = %d\n",
+		DEBUG(10, ("getgrent(): entry_index = %d, num_entries = %d\n",
 			   ent->sam_entry_index, ent->num_sam_entries));
 
 		if (ent->num_sam_entries == ent->sam_entry_index) {
@@ -609,7 +607,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 			while(ent && !get_sam_group_entries(ent)) {
 				struct getent_state *next_ent;
 
-				DEBUG(10, ("DB> freeing state info for "
+				DEBUG(10, ("getgrent(): freeing state info for "
 					   "domain %s\n", ent->domain->name));
 
 				/* Free state information for this domain */
@@ -638,14 +636,14 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 			name_list[ent->sam_entry_index].rid,
 			&group_gid)) {
 			
-			DEBUG(1, ("could not look up gid for group %s\n",
+			DEBUG(1, ("getgrent(): could not look up gid for group %s\n",
 				  name_list[ent->sam_entry_index].acct_name));
 
 			ent->sam_entry_index++;
 			goto tryagain;
 		}
 
-		DEBUG(10, ("DB> got gid %d for group %x\n", group_gid,
+		DEBUG(10, ("getgrent(): got gid %d for group %x\n", group_gid,
 			   name_list[ent->sam_entry_index].rid));
 		
 		/* Fill in group entry */
@@ -679,13 +677,13 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 				gr_mem_list_len + gr_mem_len);
 
 			if (!new_gr_mem_list) {
-				DEBUG(0, ("out of memory\n"));
+				DEBUG(0, ("getgrent(): out of memory\n"));
 				free(gr_mem_list);
 				gr_mem_list_len = 0;
 				break;
 			}
 
-			DEBUG(10, ("DB> list_len = %d, mem_len = %d\n",
+			DEBUG(10, ("getgrent(): list_len = %d, mem_len = %d\n",
 				   gr_mem_list_len, gr_mem_len));
 
 			gr_mem_list = new_gr_mem_list;
@@ -707,7 +705,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 		
 		if (result) {
 
-			DEBUG(10, ("DB> adding group num_entries = %d\n",
+			DEBUG(10, ("getgrent(): adding group num_entries = %d\n",
 				   state->response.data.num_entries));
 
 			group_list_ndx++;
@@ -752,7 +750,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 	state->response.length += gr_mem_list_len;
 
-	DEBUG(10, ("DB> returning %d groups, length = %d\n",
+	DEBUG(10, ("getgrent(): returning %d groups, length = %d\n",
 		   group_list_ndx, gr_mem_list_len));
 
 	/* Out of domains */
