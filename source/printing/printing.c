@@ -71,6 +71,9 @@ uint16 pjobid_to_rap(int snum, uint32 jobid)
 	if (data.dptr && data.dsize == sizeof(uint16)) {
 		memcpy(&rap_jobid, data.dptr, sizeof(uint16));
 		SAFE_FREE(data.dptr);
+		DEBUG(10,("pjobid_to_rap: jobid %u maps to RAP jobid %u\n",
+				(unsigned int)jobid,
+				(unsigned int)rap_jobid));
 		return rap_jobid;
 	}
 	SAFE_FREE(data.dptr);
@@ -84,7 +87,7 @@ uint16 pjobid_to_rap(int snum, uint32 jobid)
 	tdb_store(rap_tdb, key, data, TDB_REPLACE);
 	tdb_store(rap_tdb, data, key, TDB_REPLACE);
 
-	DEBUG(10,("pjobid_to_rap: jobid %u maps to RAP jobid %u\n",
+	DEBUG(10,("pjobid_to_rap: created jobid %u maps to RAP jobid %u\n",
 				(unsigned int)jobid,
 				(unsigned int)rap_jobid));
 	return rap_jobid;
@@ -518,7 +521,7 @@ done:
  Remove a job structure from the database.
 ****************************************************************************/
 
-static void pjob_delete(int snum, uint32 jobid)
+void pjob_delete(int snum, uint32 jobid)
 {
 	struct printjob *pjob = print_job_find(snum, jobid);
 	uint32 job_status = 0;
