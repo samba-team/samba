@@ -1097,8 +1097,8 @@ installmodules: all modules installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(PDBLIBDIR) $(PDB_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(RPCLIBDIR) $(RPC_MODULES)
-	@$(SHEEL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(CHARSETLIBDIR) $(CHARSET_MODULES)
-	@$(SHEEL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(AUTHLIBDIR) $(AUTH_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(CHARSETLIBDIR) $(CHARSET_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(AUTHLIBDIR) $(AUTH_MODULES)
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
