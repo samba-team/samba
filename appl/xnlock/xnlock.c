@@ -579,7 +579,9 @@ verify_krb5(const char *password)
 {
     krb5_error_code ret;
     krb5_ccache id;
+#ifdef KRB4
     krb5_boolean get_v4_tgt;
+#endif
     
     krb5_cc_default(context, &id);
     ret = krb5_verify_user(context,
