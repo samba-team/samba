@@ -107,7 +107,7 @@ static BOOL check_error(struct cli_state *c,
 	uint8 class;
 	uint32 num;
 	int eno;
-	eno = cli_error(c, &class, &num);
+	eno = cli_error(c, &class, &num, NULL);
 	if ((eclass != class || ecode != num) &&
 	    num != (nterr&0xFFFFFF)) {
 		printf("unexpected error code class=%d code=%d\n", 

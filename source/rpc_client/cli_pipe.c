@@ -93,7 +93,7 @@ static BOOL rpc_read(struct cli_state *cli,
 		file_offset  += num_read;
 		data         += num_read;
 
-		if (cli_error(cli, NULL, &err)) return False;
+		if (cli_error(cli, NULL, &err, NULL)) return False;
 
 	} while (num_read > 0 && data_to_read > 0);
 	/* && err == (0x80000000 | STATUS_BUFFER_OVERFLOW)); */
@@ -378,7 +378,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
 
 		prs_mem_free(&hps);
 
-		if (cli_error(cli, NULL, &err)) return False;
+		if (cli_error(cli, NULL, &err, NULL)) return False;
 
 		if (first)
 		{

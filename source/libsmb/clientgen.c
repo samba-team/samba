@@ -108,6 +108,7 @@ char *cli_errstr(struct cli_state *cli)
 	static fstring error_message;
 	uint8 errclass;
 	uint32 errnum;
+	uint32 nt_rpc_error;
 	int i;      
 
 	/*  
@@ -117,7 +118,7 @@ char *cli_errstr(struct cli_state *cli)
 	 * errors, whose error code is in cli.rap_error.
 	 */ 
 
-	cli_error(cli, &errclass, &errnum);
+	cli_error(cli, &errclass, &errnum, &nt_rpc_error);
 
 	if (errclass != 0)
 	{
@@ -128,13 +129,13 @@ char *cli_errstr(struct cli_state *cli)
 	 * Was it an NT error ?
 	 */
 
-	if (cli->nt_error)
+	if (nt_rpc_error)
 	{
-		char *nt_msg = get_nt_error_msg(cli->nt_error);
+		char *nt_msg = get_nt_error_msg(nt_rpc_error);
 
 		if (nt_msg == NULL)
 		{
-			slprintf(error_message, sizeof(fstring) - 1, "NT code %d", cli->nt_error);
+			slprintf(error_message, sizeof(fstring) - 1, "NT code %d", nt_rpc_error);
 		}
 		else
 		{
@@ -338,7 +339,7 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 		return(False);
 	}
 
-	if (cli_error(cli, NULL, NULL))
+	if (cli_error(cli, NULL, NULL, NULL))
 	{
 		return(False);
 	}
@@ -391,7 +392,7 @@ static BOOL cli_receive_trans(struct cli_state *cli,int trans,
 				 CVAL(cli->inbuf,smb_com)));
 			return(False);
 		}
-		if (cli_error(cli, NULL, NULL))
+		if (cli_error(cli, NULL, NULL, NULL))
 		{
 			return(False);
 		}
@@ -1650,7 +1651,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
-			cli_error(cli, &eclass, &ecode);
+			cli_error(cli, &eclass, &ecode, NULL);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
 			msleep(100);
 		}
@@ -2013,7 +2014,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
-			cli_error(cli, &eclass, &ecode);
+			cli_error(cli, &eclass, &ecode, NULL);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
 			msleep(100);
 			continue;
@@ -2427,7 +2428,7 @@ void cli_shutdown(struct cli_state *cli)
   for 32 bit "warnings", a return code of 0 is expected.
 
 ****************************************************************************/
-int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
+int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_error)
 {
 	int  flgs2 = SVAL(cli->inbuf,smb_flg2);
 	char rcls;
@@ -2435,6 +2436,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 
 	if (eclass) *eclass = 0;
 	if (num   ) *num = 0;
+	if (nt_rpc_error) *nt_rpc_error = cli->nt_error;
 
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
 		/* 32 bit error codes detected */
@@ -2831,7 +2833,7 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL, NULL)) return False;
 
 	return True;
 }
@@ -2868,7 +2870,7 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL, NULL)) return False;
 
 	*grp = SVAL(cli->inbuf,smb_vwv0);
 
@@ -2901,7 +2903,7 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL, NULL)) return False;
 
 	return True;
 }      
@@ -2926,7 +2928,7 @@ BOOL cli_message_end(struct cli_state *cli, int grp)
 		return False;
 	}
 
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL, NULL)) return False;
 
 	return True;
 }      

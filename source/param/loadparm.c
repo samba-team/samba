@@ -155,6 +155,8 @@ typedef struct
   char *szLdapRoot;
   char *szLdapRootPassword; 
   char *szPanicAction;
+  char *szAddUserScript;
+  char *szDelUserScript;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -691,6 +693,8 @@ static struct parm_struct parm_table[] =
   {"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout,  NULL,   NULL,  0},
 
   {"Logon Options", P_SEP, P_SEPARATOR},
+  {"add user script",  P_STRING,  P_GLOBAL, &Globals.szAddUserScript,   NULL,   NULL,  0},
+  {"delete user script",P_STRING, P_GLOBAL, &Globals.szDelUserScript,   NULL,   NULL,  0},
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL,   NULL,  0},
   {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL,   NULL,  0},
   {"logon drive",      P_STRING,  P_GLOBAL, &Globals.szLogonDrive,      NULL,   NULL,  0},
@@ -1124,6 +1128,8 @@ static FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction)
+FN_GLOBAL_STRING(lp_adduser_script,&Globals.szAddUserScript)
+FN_GLOBAL_STRING(lp_deluser_script,&Globals.szDelUserScript)
 
 FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)
 FN_GLOBAL_STRING(lp_domain_admin_group,&Globals.szDomainAdminGroup)

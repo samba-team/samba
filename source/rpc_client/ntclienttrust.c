@@ -93,7 +93,7 @@ BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
 
 	if (!server_connect_init(&cli_trust, myhostname, dest_ip, dest_host))
 	{
-		cli_error(&cli_trust, &err_cls, &err_num);
+		cli_error(&cli_trust, &err_cls, &err_num, NULL);
 		DEBUG(1,("server_connect_init failed (%s)\n", cli_errstr(&cli_trust)));
 
 		cli_shutdown(&cli_trust);
@@ -141,7 +141,7 @@ BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
 		return False;
 	}
 
-	cli_error(&cli_trust, &err_cls, &err_num);
+	cli_error(&cli_trust, &err_cls, &err_num, NULL);
 
 	if (err_num == (0xC0000000 | NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT))
 	{

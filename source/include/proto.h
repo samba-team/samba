@@ -458,7 +458,7 @@ BOOL cli_session_request(struct cli_state *cli,
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
 struct cli_state *cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
-int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
+int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_error);
 void cli_sockopt(struct cli_state *cli, char *options);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 BOOL cli_reestablish_connection(struct cli_state *cli);
@@ -980,6 +980,8 @@ char *lp_nis_home_map_name(void);
 char *lp_netbios_aliases(void);
 char *lp_driverfile(void);
 char *lp_panic_action(void);
+char *lp_adduser_script(void);
+char *lp_deluser_script(void);
 char *lp_domain_groups(void);
 char *lp_domain_admin_group(void);
 char *lp_domain_guest_group(void);
@@ -2466,7 +2468,8 @@ BOOL server_validate(char *user, char *domain,
 		     char *ntpass, int ntpasslen);
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
-                             char *smb_ntpasswd, int smb_ntpasslen);
+                             char *smb_ntpasswd, int smb_ntpasslen,
+                             BOOL *user_exists);
 
 /*The following definitions come from  smbd/pipes.c  */
 

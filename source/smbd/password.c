@@ -1142,7 +1142,8 @@ use this machine as the password server.\n"));
 
 BOOL domain_client_validate( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
-                             char *smb_ntpasswd, int smb_ntpasslen)
+                             char *smb_ntpasswd, int smb_ntpasslen,
+                             BOOL *user_exists)
 {
   unsigned char local_challenge[8];
   unsigned char local_lm_response[24];
@@ -1158,6 +1159,9 @@ BOOL domain_client_validate( char *user, char *domain,
   BOOL connected_ok = False;
   struct nmb_name calling, called;
 
+  if(user_exists != NULL)
+    *user_exists = True; /* Only set false on a very specific error. */
+ 
   /* 
    * Check that the requested domain is not our own machine name.
    * If it is, we should never check the PDC here, we use our own local
@@ -1346,11 +1350,18 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
                           ((smb_apasslen != 0) ? smb_apasswd : NULL),
                           ((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
                           &ctr, &info3) == False) {
+    uint32 nt_rpc_err;
+
+    cli_error(&cli, NULL, NULL, &nt_rpc_err);
     DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
+
+    if((nt_rpc_err == NT_STATUS_NO_SUCH_USER) && (user_exists != NULL))
+      *user_exists = False;
+
     return False;
   }
 

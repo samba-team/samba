@@ -448,35 +448,111 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
 }
 
 /****************************************************************************
+ Create a UNIX user on demand.
+****************************************************************************/
+
+static int smb_create_user(char *unix_user)
+{
+  pstring add_script;
+  int ret;
+
+  pstrcpy(add_script, lp_adduser_script());
+  string_sub(add_script, "%u", unix_user);
+  ret = smbrun(add_script,NULL,False);
+  DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
+  return ret;
+}
+
+/****************************************************************************
+ Delete a UNIX user on demand.
+****************************************************************************/
+
+static int smb_delete_user(char *unix_user)
+{
+  pstring del_script;
+  int ret;
+
+  pstrcpy(del_script, lp_deluser_script());
+  string_sub(del_script, "%u", unix_user);
+  ret = smbrun(del_script,NULL,False);
+  DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
+  return ret;
+}
+
+/****************************************************************************
  Check for a valid username and password in security=server mode.
 ****************************************************************************/
 
-static BOOL check_server_security(char *orig_user, char *domain, 
+static BOOL check_server_security(char *orig_user, char *domain, char *unix_user,
                                   char *smb_apasswd, int smb_apasslen,
                                   char *smb_ntpasswd, int smb_ntpasslen)
 {
+  BOOL ret = False;
+
   if(lp_security() != SEC_SERVER)
     return False;
 
-  return server_validate(orig_user, domain, 
+  ret = server_validate(orig_user, domain, 
                             smb_apasswd, smb_apasslen, 
                             smb_ntpasswd, smb_ntpasslen);
+  if(ret) {
+    /*
+     * User validated ok against Domain controller.
+     * If the admin wants us to try and create a UNIX
+     * user on the fly, do so.
+     * Note that we can never delete users when in server
+     * level security as we never know if it was a failure
+     * due to a bad password, or the user really doesn't exist.
+     */
+    if(lp_adduser_script() && !Get_Pwnam(unix_user,True)) {
+      smb_create_user(unix_user);
+    }
+  }
+
+  return ret;
 }
 
 /****************************************************************************
  Check for a valid username and password in security=domain mode.
 ****************************************************************************/
 
-static BOOL check_domain_security(char *orig_user, char *domain, 
+static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user, 
                                   char *smb_apasswd, int smb_apasslen,
                                   char *smb_ntpasswd, int smb_ntpasslen)
 {
+  BOOL ret = False;
+  BOOL user_exists = True;
+
   if(lp_security() != SEC_DOMAIN)
     return False;
 
-  return domain_client_validate(orig_user, domain,
+  ret = domain_client_validate(orig_user, domain,
                                 smb_apasswd, smb_apasslen,
-                                smb_ntpasswd, smb_ntpasslen);
+                                smb_ntpasswd, smb_ntpasslen,
+                                &user_exists);
+
+  if(ret) {
+    /*
+     * User validated ok against Domain controller.
+     * If the admin wants us to try and create a UNIX
+     * user on the fly, do so.
+     */
+    if(user_exists && lp_adduser_script() && !Get_Pwnam(unix_user,True)) {
+      smb_create_user(unix_user);
+    }
+  } else {
+    /*
+     * User failed to validate ok against Domain controller.
+     * If the failure was "user doesn't exist" and admin 
+     * wants us to try and delete that UNIX user on the fly,
+     * do so.
+     */
+    if(!user_exists && lp_deluser_script() && Get_Pwnam(unix_user,True)) {
+      smb_delete_user(unix_user);
+    }
+  }
+
+  return ret;
 }
 
 /****************************************************************************
@@ -669,10 +745,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
    */
 
   if (!guest && 
-      !check_server_security(orig_user, domain,
+      !check_server_security(orig_user, domain, user,
                              smb_apasswd, smb_apasslen,
                              smb_ntpasswd, smb_ntpasslen) &&
-      !check_domain_security(orig_user, domain,
+      !check_domain_security(orig_user, domain, user,
                              smb_apasswd, smb_apasslen,
                              smb_ntpasswd, smb_ntpasslen) &&
       !check_hosts_equiv(user)
