@@ -3,5 +3,5 @@ REGEDIT4
 ;Subject:	Registry file to force multiple NT terminal server users to have their own connections.
 
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Rdr\Parameters]
-"MultipleUsersOnConnection"=dword:00000001
+"MultipleUsersOnConnection"=dword:00000000
 
