@@ -45,7 +45,7 @@ int	not42 = 1;
  * Buffer for sub-options, and macros
  * for suboptions buffer manipulations
  */
-unsigned char subbuffer[2048], *subpointer= subbuffer, *subend= subbuffer;
+unsigned char subbuffer[1024*64], *subpointer= subbuffer, *subend= subbuffer;
 
 #define	SB_CLEAR()	subpointer = subbuffer
 #define	SB_TERM()	{ subend = subpointer; SB_CLEAR(); }
@@ -1284,6 +1284,7 @@ doclientstat(void)
     clientstat(TELOPT_LINEMODE, WILL, 0);
 }
 
+#undef ADD
 #define	ADD(c)	 *ncp++ = c
 #define	ADD_DATA(c) { *ncp++ = c; if (c == SE || c == IAC) *ncp++ = c; }
 
