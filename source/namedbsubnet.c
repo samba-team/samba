@@ -224,7 +224,6 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
       (d = make_subnet(bcast_ip, mask_ip)))
     {
       struct work_record *w = find_workgroupstruct(d, name, add);
-	  extern pstring ServerComment;
       
       if (!w) return NULL;
 
@@ -239,7 +238,7 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
          lmhosts server entries to local interfaces */
       if (strequal(lp_workgroup(), name))
       {
-	    add_server_entry(d,w,myname,w->ServerType,0,ServerComment,True);
+	add_server_entry(d,w,myname,w->ServerType,0,lp_serverstring(),True);
         DEBUG(3,("Added server name entry %s at %s\n",
                   name,inet_ntoa(bcast_ip)));
       }

@@ -488,8 +488,6 @@ void response_netbios_packet(struct packet_struct *p);
 void reset_server(char *name, int state, struct in_addr ip);
 void tell_become_backup(void);
 BOOL same_context(struct dgram_packet *dgram);
-BOOL listening_name(struct work_record *work, struct nmb_name *n);
-BOOL listening_type(struct packet_struct *p, int command);
 void process_browse_packet(struct packet_struct *p,char *buf,int len);
 
 /*The following definitions come from  nmbd.c  */
