@@ -3238,7 +3238,7 @@ struct hostent *Get_Hostbyname(char *name)
       return(NULL);
     }
 
-  ret = gethostbyname(name2);
+  ret = sys_gethostbyname(name2);
   if (ret != NULL)
     {
       free(name2);
@@ -3247,7 +3247,7 @@ struct hostent *Get_Hostbyname(char *name)
 
   /* try with all lowercase */
   strlower(name2);
-  ret = gethostbyname(name2);
+  ret = sys_gethostbyname(name2);
   if (ret != NULL)
     {
       free(name2);
@@ -3256,7 +3256,7 @@ struct hostent *Get_Hostbyname(char *name)
 
   /* try with all uppercase */
   strupper(name2);
-  ret = gethostbyname(name2);
+  ret = sys_gethostbyname(name2);
   if (ret != NULL)
     {
       free(name2);

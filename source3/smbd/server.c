@@ -130,19 +130,21 @@ mode_t unix_mode(int cnum,int dosmode)
   if ( !IS_DOS_READONLY(dosmode) )
     result |= (S_IWUSR | S_IWGRP | S_IWOTH);
  
-  if (IS_DOS_DIR(dosmode))
+  if (IS_DOS_DIR(dosmode)) {
     result |= (S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH | S_IWUSR);
- 
-  if (MAP_ARCHIVE(cnum) && IS_DOS_ARCHIVE(dosmode))
-    result |= S_IXUSR;
+    result &= (lp_dir_mode(SNUM(cnum)) | 0700);
+  } else { 
+    if (MAP_ARCHIVE(cnum) && IS_DOS_ARCHIVE(dosmode))
+      result |= S_IXUSR;
 
-  if (MAP_SYSTEM(cnum) && IS_DOS_SYSTEM(dosmode))
-    result |= S_IXGRP;
+    if (MAP_SYSTEM(cnum) && IS_DOS_SYSTEM(dosmode))
+      result |= S_IXGRP;
  
-  if (MAP_HIDDEN(cnum) && IS_DOS_HIDDEN(dosmode))
-    result |= S_IXOTH;  
+    if (MAP_HIDDEN(cnum) && IS_DOS_HIDDEN(dosmode))
+      result |= S_IXOTH;  
  
-  result &= CREATE_MODE(cnum);
+    result &= CREATE_MODE(cnum);
+  }
   return(result);
 }
 

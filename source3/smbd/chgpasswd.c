@@ -41,7 +41,7 @@ static int findpty(char **slave)
 #ifdef SVR4
   extern char *ptsname();
 #else
-  static char line[12] = "/dev/ptyXX";
+  static char line[12];
   void *dirp;
   char *dpname;
 #endif
@@ -54,13 +54,17 @@ static int findpty(char **slave)
     return (master);
   }
 #else
+  strcpy( line, "/dev/ptyXX" );
+
   dirp = OpenDir("/dev");
   if (!dirp) return(-1);
   while ((dpname = ReadDirName(dirp)) != NULL) {
     if (strncmp(dpname, "pty", 3) == 0 && strlen(dpname) == 5) {
+      DEBUG(3,("pty: try to open %s, line was %s\n", dpname, line ) );
       line[8] = dpname[3];
       line[9] = dpname[4];
       if ((master = open(line, O_RDWR)) >= 0) {
+        DEBUG(3,("pty: opened %s\n", line ) );
 	line[5] = 't';
 	*slave = line;
 	CloseDir(dirp);
@@ -280,7 +284,7 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence)
       kill(pid, SIGKILL); /* be sure to end this process */
       return(False);
     }
-    if ((wpid = waitpid(pid, &wstat, 0)) < 0) {
+    if ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
       DEBUG(3,("The process is no longer waiting!\n\n"));
       return(False);
     }

@@ -276,6 +276,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 		    strequal(Connections[cnum].dirpath,".") ||
 		    strequal(Connections[cnum].dirpath,"/"));
   BOOL was_8_3;
+  int nt_extmode; /* Used for NT connections instead of mode */
 
   *fname = 0;
   *out_of_space = False;
@@ -356,6 +357,8 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
   nameptr = p;
 
   name_map_mangle(fname,False,SNUM(cnum));
+
+  nt_extmode = mode ? mode : NT_FILE_ATTRIBUTE_NORMAL;
 
   switch (info_level)
     {
@@ -440,7 +443,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       put_long_date(p,mdate); p += 8;
       SIVAL(p,0,size); p += 8;
       SIVAL(p,0,size); p += 8;
-      SIVAL(p,0,mode); p += 4;
+      SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
       SIVAL(p,0,0); p += 4;
       if (!was_8_3) {
@@ -468,7 +471,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       put_long_date(p,mdate); p += 8;
       SIVAL(p,0,size); p += 8;
       SIVAL(p,0,size); p += 8;
-      SIVAL(p,0,mode); p += 4;
+      SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
       strcpy(p,fname);
       p = pdata + len;
@@ -486,7 +489,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       put_long_date(p,mdate); p += 8;
       SIVAL(p,0,size); p += 8;
       SIVAL(p,0,size); p += 8;
-      SIVAL(p,0,mode); p += 4;
+      SIVAL(p,0,nt_extmode); p += 4;
       SIVAL(p,0,strlen(fname)); p += 4;
       SIVAL(p,0,0); p += 4;
       strcpy(p,fname);

@@ -238,6 +238,7 @@ BOOL lp_map_system(int );
 BOOL lp_delete_readonly(int );
 BOOL lp_fake_oplocks(int );
 int lp_create_mode(int );
+int lp_dir_mode(int );
 int lp_max_connections(int );
 int lp_defaultcase(int );
 int lp_minprintspace(int );
@@ -762,6 +763,7 @@ int sys_rename(char *from, char *to);
 int sys_chmod(char *fname,int mode);
 int sys_chown(char *fname,int uid,int gid);
 int sys_chroot(char *dname);
+struct hostent *sys_gethostbyname(char *name);
 
 /*The following definitions come from  testparm.c  */
 

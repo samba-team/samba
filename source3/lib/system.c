@@ -146,7 +146,11 @@ The wait() calls vary between systems
 ********************************************************************/
 int sys_waitpid(pid_t pid,int *status,int options)
 {
+#ifdef USE_WAITPID
   return waitpid(pid,status,options);
+#else /* USE_WAITPID */
+  return wait4(pid, status, options, NULL);
+#endif /* USE_WAITPID */
 }
 
 /*******************************************************************
@@ -235,3 +239,41 @@ int sys_chroot(char *dname)
   return(chroot(dname));
 #endif
 }
+
+/**************************************************************************
+A wrapper for gethostbyname() that tries avoids looking up hostnames 
+in the root domain, which can cause dial-on-demand links to come up for no
+apparent reason.
+****************************************************************************/
+struct hostent *sys_gethostbyname(char *name)
+{
+  char query[256], hostname[256];
+  char *domain;
+
+  /* Does this name have any dots in it? If so, make no change */
+
+  if (strchr(name, '.'))
+    return(gethostbyname(name));
+
+  /* Get my hostname, which should have domain name 
+     attached. If not, just do the gethostname on the
+     original string. 
+  */
+
+  gethostname(hostname, sizeof(hostname) - 1);
+  hostname[sizeof(hostname) - 1] = 0;
+  if ((domain = strchr(hostname, '.')) == NULL)
+    return(gethostbyname(name));
+
+  /* Attach domain name to query and do modified query.
+     If names too large, just do gethostname on the
+     original string.
+  */
+
+  if((strlen(name) + strlen(domain)) >= sizeof(query))
+    return(gethostbyname(name));
+
+  sprintf(query, "%s%s", name, domain);
+  return(gethostbyname(query));
+}
+
