@@ -24,8 +24,10 @@ der_put_int (unsigned char *p, size_t len, unsigned val, size_t *size)
 	}
 	if (val)
 	    return ASN1_OVERFLOW;
-	else
-	    return base - p;
+	else {
+	    *size = base - p;
+	    return 0;
+	}
     } else if (len < 1)
 	return ASN1_OVERFLOW;
     else {
