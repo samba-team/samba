@@ -1094,13 +1094,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
   if (total_data > 0 && IVAL(pdata,0) == total_data) {
     /* uggh, EAs for OS2 */
     DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-#if 0
-    SSVAL(params,0,ERROR_EAS_NOT_SUPPORTED);
-    send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
-    return(-1);
-#else
     return(ERROR(ERRDOS,ERROR_EAS_NOT_SUPPORTED));
-#endif
   }
 
   bzero(pdata,data_size);
@@ -1307,11 +1301,11 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
   if (total_data > 0 && IVAL(pdata,0) == total_data) {
     /* uggh, EAs for OS2 */
     DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-    SSVAL(params,0,ERROR_EAS_NOT_SUPPORTED);
-
-    send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
-  
-    return(-1);    
+#ifdef OS2_WPS_FIX /* This may become the main code stream in a later release */
+    return(ERROR(ERRDOS,ERRcannotopen));
+#else /* OS2_WPS_FIX */
+    return(ERROR(ERRDOS,ERROR_EAS_NOT_SUPPORTED));
+#endif /* OS2_WPS_FIX */
   }
 
   switch (info_level)
