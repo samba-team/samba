@@ -87,6 +87,7 @@ struct key_type {
     void (*random_key)(krb5_context, krb5_keyblock*);
     void (*schedule)(krb5_context, struct key_data *);
     struct salt_type *string_to_key;
+    void (*random_to_key)(krb5_context, krb5_keyblock*, const void*, size_t);
 };
 
 struct checksum_type {
@@ -149,6 +150,7 @@ static krb5_error_code hmac(krb5_context context,
 			    Checksum *result);
 static void free_key_data(krb5_context context, struct key_data *key);
 static krb5_error_code usage2arcfour (krb5_context, int *);
+static void xor (DES_cblock *, const unsigned char *);
 
 /************************************************************
  *                                                          *
@@ -332,6 +334,23 @@ DES_AFS3_string_to_key(krb5_context context,
 }
 
 static void
+krb5_DES_random_to_key(krb5_context context,
+		       krb5_keyblock *key,
+		       const void *data,
+		       size_t size)
+{
+    DES_cblock *k = key->keyvalue.data;
+    memcpy(k, data, key->keyvalue.length);
+    DES_set_odd_parity(k);
+    if(DES_is_weak_key(k))
+	xor(k, (const unsigned char*)"\0\0\0\0\0\0\0\xf0");
+}
+
+/*
+ *
+ */
+
+static void
 DES3_random_key(krb5_context context,
 		krb5_keyblock *key)
 {
@@ -459,6 +478,31 @@ DES3_string_to_key_derived(krb5_context context,
     memset(s, 0, len);
     free(s);
     return ret;
+}
+
+static void
+DES3_random_to_key(krb5_context context,
+		   krb5_keyblock *key,
+		   const void *data,
+		   size_t size)
+{
+    u_char *p = key->keyvalue.data;
+    const u_char *q = data;
+    DES_cblock *k;
+    int i, j;
+
+    p[7] = p[15] = p[23] = 0;
+    for (j = 0, i = 0; i < 21; i++) {
+	j = i / 7;
+	p[j + i] = q[i] & 0x7f;
+	p[(j * 8) + 7] = (p[(j * 8) + 7] << 1) | (q[i] >> 7);
+    }
+    k = key->keyvalue.data;
+    for (i = 0; i < 3; i++) {
+	DES_set_odd_parity(&k[i]);
+	if(DES_is_weak_key(&k[i]))
+	    xor(&k[i], (const unsigned char*)"\0\0\0\0\0\0\0\xf0");
+    }    
 }
 
 /*
@@ -718,7 +762,8 @@ struct key_type keytype_des = {
     sizeof(DES_key_schedule),
     krb5_DES_random_key,
     krb5_DES_schedule,
-    des_salt
+    des_salt,
+    krb5_DES_random_to_key
 };
 
 struct key_type keytype_des3 = {
@@ -729,7 +774,8 @@ struct key_type keytype_des3 = {
     3 * sizeof(DES_key_schedule), 
     DES3_random_key,
     DES3_schedule,
-    des3_salt
+    des3_salt,
+    DES3_random_to_key
 };
 
 struct key_type keytype_des3_derived = {
@@ -740,7 +786,8 @@ struct key_type keytype_des3_derived = {
     3 * sizeof(DES_key_schedule), 
     DES3_random_key,
     DES3_schedule,
-    des3_salt_derived
+    des3_salt_derived,
+    DES3_random_to_key
 };
 
 #ifdef ENABLE_AES
@@ -3886,11 +3933,10 @@ krb5_random_to_key(krb5_context context,
     if(ret) 
 	return ret;
     key->keytype = type;
-    memcpy(key->keyvalue.data, data, et->keytype->size);
-#if 0
-    if (et->random_to_key)
- 	ret = (*et->random_to_key)(context, key, data, size);
-#endif
+    if (et->keytype->random_to_key)
+ 	(*et->keytype->random_to_key)(context, key, data, size);
+    else
+	memcpy(key->keyvalue.data, data, et->keytype->size);
 
     return 0;
 }
