@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBCONTROL" "1" "03 August 2001" "" ""
+.TH "SMBCONTROL" "1" "06 December 2001" "" ""
 .SH NAME
 smbcontrol \- send messages to smbd or nmbd processes
 .SH SYNOPSIS
@@ -42,10 +42,19 @@ If a single process ID is given, the message is sent
 to only that process.
 .TP
 \fBmessage-type\fR
-One of: debug, 
+One of: close-share,
+debug, 
 force-election, ping
 , profile,  debuglevel, profilelevel, 
 or printer-notify.
+
+The close-share message-type sends a 
+message to smbd which will then close the client connections to
+the named share. Note that this doesn't affect client connections
+to any other shares. This message-type takes an argument of the
+share name for which client connections will be close, or the
+"*" character which will close all currently open shares.
+This message can only be sent to smbd.
 
 The debug message-type allows 
 the debug level to be set to the value specified by the 

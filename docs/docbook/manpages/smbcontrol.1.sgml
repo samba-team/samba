@@ -70,7 +70,7 @@
 		
 		<varlistentry>
 		<term>message-type</term>
-		<listitem><para>One of: <constand>close-share</constant>,
+		<listitem><para>One of: <constant>close-share</constant>,
 		<constant>debug</constant>, 
 		<constant>force-election</constant>, <constant>ping
 		</constant>, <constant>profile</constant>, <constant>
