@@ -145,7 +145,7 @@ include_HEADERS = 				\
 
 nodist_include_HEADERS = roken.h
 
-man_MANS = getarg.3
+man_MANS = getarg.3 parse_time.3
 
 SUFFIXES += .hin
 .hin.h:
