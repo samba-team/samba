@@ -633,7 +633,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 	cli_send_smb(cli);
 
 	if (timeout != 0) {
-		cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
+		cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 10*1000);
 	}
 
 	if (!cli_receive_smb(cli)) {
