@@ -428,8 +428,8 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
-	make_nmb_name(&calling, global_myname, 0x0, "");
-	make_nmb_name(&called , server, 0x20, "");
+	make_nmb_name(&calling, global_myname, 0x0
+	make_nmb_name(&called , server, 0x20);
 
 	DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
 
