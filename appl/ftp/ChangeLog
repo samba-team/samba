@@ -1,3 +1,9 @@
+2003-03-16  Love  <lha@stacken.kth.se>
+
+	* ftp/gssapi.c (gss_adat): now that gss_export_name exports a
+	principal, bandaid with gss_display_name, and check that oid is
+	GSS_KRB5_NT_PRINCIPAL_NAME, also free memory
+	
 2003-02-25  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftp/gssapi.c (gss_auth): print out the name we authenticated too
