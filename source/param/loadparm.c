@@ -1783,6 +1783,8 @@ static int add_a_service(service * pservice, char *name)
 	/* if not, then create one */
 	if (i == iNumServices)
 	{
+		service **tsp;
+
 #ifdef __INSURE__
 		service **oldservices = iNumServices ? malloc(sizeof(service *) * iNumServices) : NULL;
 
@@ -1790,10 +1792,19 @@ static int add_a_service(service * pservice, char *name)
 			memcpy(oldservices, ServicePtrs, sizeof(service *) * iNumServices);
 #endif
 
-		ServicePtrs =
-			(service **) Realloc(ServicePtrs,
-					     sizeof(service *) *
-					     num_to_alloc);
+		tsp = (service **) Realloc(ServicePtrs,
+						sizeof(service *) *
+						num_to_alloc);
+ 
+		if (!tsp) {
+			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
+			return (-1);
+		} else {
+			ServicePtrs = tsp;
+			ServicePtrs[iNumServices] =
+				(service *) malloc(sizeof(service));
+        }
+
 #ifdef __INSURE__
 		if (iNumServices && (memcmp(oldservices, ServicePtrs, sizeof(service *) * iNumServices) != 0)) {
 			smb_panic("add_a_service: Realloc corrupted ptrs...\n");
@@ -1801,11 +1812,7 @@ static int add_a_service(service * pservice, char *name)
 		safe_free(oldservices);
 #endif
 
-		if (ServicePtrs)
-			ServicePtrs[iNumServices] =
-				(service *) malloc(sizeof(service));
-
-		if (!ServicePtrs || !ServicePtrs[iNumServices])
+		if (!ServicePtrs[iNumServices])
 			return (-1);
 
 		iNumServices++;
