@@ -60,19 +60,24 @@ used by the ``KDC'' in AFS. Requires Kerberos 4 support.
 Enables experimental support for reading kaserver databases in hprop.
 This is useful when migrating from a kaserver to a Heimdal KDC.
 
+@item @kbd{--disable-otp}
+By default some of the application programs will build with support for
+one-time passwords (OTP).  Use this option to disable that support.
+
+@item @kbd{--enable-osfc2}
+Enable some C2 support for OSF/Digital Unix/Tru64.  Use this option if
+you are running your OSF operating system in C2 mode.
+
 @item @kbd{--with-readline=@file{dir}}
 Gives the path for the GNU Readline library, which will be used in some
 programs. If no readline library is found, the (simpler) editline
 library will be used instead.
 
-@item @kbd{--disable-otp}
-By default some of the application programs will build with support for
-one-time passwords (OTP).  Use this option to disable that support.
-
-@item @kbd{--enable-new-des3-code}
-To make the new key-deriving 3DES the default.
-
 @item @kbd{--with-hesiod=@file{dir}}
 Enables hesiod support in push.
+
+@item @kbd{--enable-netinfo}
+Add support for using netinfo to lookup configuration information.
+Probably only useful (and working) on NextStep/Mac OS X.
 
 @end table
