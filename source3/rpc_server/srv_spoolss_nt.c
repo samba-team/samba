@@ -101,7 +101,7 @@ typedef struct _counter_printer_0 {
 
 static ubi_dlList counter_list;
 
-static struct cli_state cli;
+static struct cli_state notify_cli; /* print notify back-channel */
 static uint32 smb_connections=0;
 
 
@@ -184,7 +184,7 @@ static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 		return;
 	}
 
-	result = cli_spoolss_reply_close_printer(&cli, cli.mem_ctx, handle);
+	result = cli_spoolss_reply_close_printer(&notify_cli, notify_cli.mem_ctx, handle);
 	
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
@@ -192,9 +192,9 @@ static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
-		cli_nt_session_close(&cli);
-		cli_ulogoff(&cli);
-		cli_shutdown(&cli);
+		cli_nt_session_close(&notify_cli);
+		cli_ulogoff(&notify_cli);
+		cli_shutdown(&notify_cli);
 		message_deregister(MSG_PRINTER_NOTIFY2);
 	}
 
@@ -793,7 +793,7 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
 
 		if (!p->notify.flags)
 			cli_spoolss_rrpcn(
-				&cli, mem_ctx, &p->notify.client_hnd, 
+				&notify_cli, mem_ctx, &p->notify.client_hnd, 
 				data_len, data, p->notify.change, 0);
 		else {
 			NT_PRINTER_INFO_LEVEL *printer = NULL;
@@ -810,7 +810,7 @@ static void process_notify2_message(struct spoolss_notify_msg *msg,
                            PRINTER_CHANGE_SET_PRINTER_DRIVER. */ 
 
 			cli_spoolss_routerreplyprinter(
-				&cli, mem_ctx, &p->notify.client_hnd,
+				&notify_cli, mem_ctx, &p->notify.client_hnd,
 				0, printer->info_2->changeid);
 
 			free_a_printer(&printer, 2);
@@ -1970,7 +1970,7 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 
-		if(!spoolss_connect_to_client(&cli, unix_printer))
+		if(!spoolss_connect_to_client(&notify_cli, unix_printer))
 			return False;
 			
 		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message);
@@ -1978,7 +1978,7 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 
 	smb_connections++;
 
-	result = cli_spoolss_reply_open_printer(&cli, cli.mem_ctx, printer, localprinter, 
+	result = cli_spoolss_reply_open_printer(&notify_cli, notify_cli.mem_ctx, printer, localprinter, 
 			type, handle);
 			
 	if (!W_ERROR_IS_OK(result))
