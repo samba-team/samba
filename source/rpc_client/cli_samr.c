@@ -552,8 +552,8 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli,
 {
 	prs_struct data;
 	prs_struct rdata;
-	SAMR_Q_UNKNOWN_12 q_o;
-	SAMR_R_UNKNOWN_12 r_o;
+	SAMR_Q_LOOKUP_RIDS q_o;
+	SAMR_R_LOOKUP_RIDS r_o;
 
 	if (pol == NULL || rid == 0 || num_gids == 0 || gids == NULL ||
 	    num_aliases == NULL || als_names == NULL || num_als_users == NULL )
@@ -567,17 +567,17 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli,
 	DEBUG(4,("SAMR Query Unknown 12.\n"));
 
 	/* store the parameters */
-	init_samr_q_unknown_12(&q_o, pol, rid, num_gids, gids);
+	init_samr_q_lookup_rids(&q_o, pol, rid, num_gids, gids);
 
 	/* turn parameters into data stream */
-	if(!samr_io_q_unknown_12("", &q_o,  &data, 0)) {
+	if(!samr_io_q_lookup_rids("", &q_o,  &data, 0)) {
 		prs_mem_free(&data);
 		prs_mem_free(&rdata);
 		return False;
 	}
 
 	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SAMR_UNKNOWN_12, &data, &rdata)) {
+	if (!rpc_api_pipe_req(cli, SAMR_LOOKUP_RIDS, &data, &rdata)) {
 		prs_mem_free(&data);
 		prs_mem_free(&rdata);
 		return False;
@@ -585,7 +585,7 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli,
 
 	prs_mem_free(&data);
 
-	if(!samr_io_r_unknown_12("", &r_o, &rdata, 0)) {
+	if(!samr_io_r_lookup_rids("", &r_o, &rdata, 0)) {
 		prs_mem_free(&rdata);
 		return False;
 	}

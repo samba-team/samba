@@ -1195,7 +1195,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 
 	/* do the actual command */
 	if(!api_rpc_cmds[fn_num].fn(p)) {
-		DEBUG(0,("api_rpcTNP: %s: failed.\n", rpc_name));
+		DEBUG(0,("api_rpcTNP: %s: %s failed.\n", rpc_name, api_rpc_cmds[fn_num].name));
 		prs_mem_free(&p->out_data.rdata);
 		return False;
 	}
