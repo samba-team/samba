@@ -1699,6 +1699,40 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 }
 
 /*************************************************************************
+ get_user_info_7. Safe. Only gives out account_name.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_SID *user_sid)
+{
+	SAM_ACCOUNT *smbpass=NULL;
+	BOOL ret;
+	NTSTATUS nt_status;
+
+	nt_status = pdb_init_sam_talloc(mem_ctx, &smbpass);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	become_root();
+	ret = pdb_getsampwsid(smbpass, user_sid);
+	unbecome_root();
+
+	if (ret==False) {
+		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	DEBUG(3,("User:[%s]\n", pdb_get_username(smbpass) ));
+
+	ZERO_STRUCTP(id7);
+	init_sam_user_info7(id7, pdb_get_username(smbpass) );
+
+	pdb_free_sam(&smbpass);
+
+	return NT_STATUS_OK;
+}
+/*************************************************************************
  get_user_info_10. Safe. Only gives out acb bits.
  *************************************************************************/
 
@@ -1889,6 +1923,14 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 	ctr->switch_value = q_u->switch_value;
 
 	switch (q_u->switch_value) {
+	case 0x07:
+		ctr->info.id7 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_7);
+		if (ctr->info.id7 == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_7(p->mem_ctx, ctr->info.id7, &info->sid)))
+			return r_u->status;
+		break;
 	case 0x10:
 		ctr->info.id10 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_10);
 		if (ctr->info.id10 == NULL)
