@@ -1,3 +1,13 @@
+1999-12-12  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/changepw.c (get_kdc_address): use
+ 	`krb5_get_krb_changepw_hst'
+
+	* lib/krb5/krbhst.c (krb5_get_krb_changepw_hst): add
+
+	* lib/krb5/get_host_realm.c: add support for _kerberos.domain
+ 	(according to draft-ietf-cat-krb-dns-locate-01.txt)
+
 1999-12-06  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2e
