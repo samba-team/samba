@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -51,6 +51,8 @@ struct kadm_func {
     kadm5_ret_t (*randkey_principal) (void*, krb5_principal, 
 				      krb5_keyblock**, int*);
     kadm5_ret_t (*rename_principal) (void*, krb5_principal, krb5_principal);
+    kadm5_ret_t (*chpass_principal_with_key) (void *, krb5_principal,
+					      int, krb5_key_data *);
 };
 
 /* XXX should be integrated */
@@ -109,7 +111,8 @@ enum kadm_ops {
     kadm_modify,
     kadm_randkey,
     kadm_get_privs,
-    kadm_get_princs
+    kadm_get_princs,
+    kadm_chpass_with_key
 };
 
 #define KADMIN_APPL_VERSION "KADM0.1"
@@ -164,9 +167,17 @@ _kadm5_set_keys __P((
 
 kadm5_ret_t
 _kadm5_set_keys2 __P((
+	kadm5_server_context *context,
 	hdb_entry *ent, 
 	int16_t n_key_data, 
 	krb5_key_data *key_data));
+
+kadm5_ret_t
+_kadm5_set_keys3 __P((
+	kadm5_server_context *context,
+	hdb_entry *ent, 
+	int n_keys,
+	krb5_keyblock *keyblocks));
 
 kadm5_ret_t
 _kadm5_set_keys_randomly __P((kadm5_server_context *context,
@@ -181,6 +192,7 @@ _kadm5_set_modifier __P((
 
 kadm5_ret_t
 _kadm5_setup_entry __P((
+	kadm5_server_context *context,
 	hdb_entry *ent,
 	u_int32_t mask,
 	kadm5_principal_ent_t princ,
