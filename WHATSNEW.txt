@@ -1,4 +1,68 @@
                  =================================
+                 Release Notes for Samba 3.0.3pre3
+                          XXXXX XX, 2004
+                 =================================
+
+This is a preview release of the Samba 3.0.3 code base and is
+provided for testing only.  This release is *not* intended for
+production servers.  Use at your own risk.
+
+There have been several bug fixes since the 3.0.2a release that
+we feel are important to make available to the Samba community
+for wider testings.  See the "Changes" section for details on
+exact updates.
+
+Common bugs fixed in this preview release include:
+
+  o <FILL ME IN>
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.3pre1
+-----------------------
+smb.conf changes
+----------------
+
+    Parameter Name              Action
+    --------------              ------
+
+    
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+
+
+o   Andrew Bartlet <abartlet@samba.org>
+
+
+o   Gerald Carter <jerry@samba.org>
+
+
+o   Steve French <sfrench@us.ibm.com>
+
+
+o   Volker Lendecke <vl@samba.org>
+
+
+o   Jianliang Lu <j.lu@tiesse.com>
+
+    
+o   Jim McDonough <jmcd@us.ibm.com>
+
+
+o   Andrew Tridgell <tridge@samba.org>
+
+
+
+Changes for older versions follow below:
+
+        --------------------------------------------------
+
+                 =================================
                  Release Notes for Samba 3.0.3pre2
                           April 5, 2004
                  =================================
@@ -20,13 +84,12 @@ Common bugs fixed in this preview release include:
 
 New features introduced in this preview release include:
 
-  o Experimental support for storing DOS attribute on files 
+  o Experimental support for storing DOS attribute on files
     and folders in Extended Attributes.
 
 
-######################################################################
-Changes
-#######
+Changes since 3.0.3pre1
+-----------------------
 smb.conf changes
 ----------------
 
@@ -112,8 +175,6 @@ o   Andrew Tridgell <tridge@samba.org>
     * Change tdb license to LGPL (see source/tdb/tdb.c).
     
     
-Changes for older versions follow below:
-
         --------------------------------------------------
 
                  =================================
