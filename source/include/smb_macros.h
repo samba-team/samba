@@ -44,7 +44,7 @@
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
 /* zero a structure given a pointer to the structure */
-#define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
+#define ZERO_STRUCTP(x) do { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); } while(0)
 
 /* zero a structure given a pointer to the structure - no zero check */
 #define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))
@@ -55,6 +55,9 @@
 
 /* pointer difference macro */
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))
+
+/* work out how many elements there are in a static array */
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
 /* assert macros */
 #define SMB_ASSERT(b) ((b)?(void)0: \

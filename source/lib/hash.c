@@ -30,10 +30,8 @@
 
 extern int DEBUGLEVEL;
 
-#define NUM_PRIMES 11
-
 static BOOL enlarge_hash_table(hash_table *table);
-static int primes[NUM_PRIMES] = 
+static int primes[] = 
         {17, 37, 67, 131, 257, 521, 1031, 2053, 4099, 8209, 16411};
 
 /****************************************************************************
@@ -62,7 +60,7 @@ BOOL hash_table_init(hash_table *table, int num_buckets, compare_function compar
 	table->comp_func = compare_func;
 	while (table->size < num_buckets) 
 		table->size <<= 1;
-	for (i = 0; i < NUM_PRIMES; i++) {
+	for (i = 0; i < ARRAY_SIZE(primes); i++) {
 		if (primes[i] > table->size) {
 			table->size = primes[i];
 			break;
@@ -94,11 +92,15 @@ BOOL hash_table_init(hash_table *table, int num_buckets, compare_function compar
 
 static int string_hash(int hash_size, const char *key)
 {
-	int j=0;
-	while (*key)
-		j = j*10 + *key++;
-	return(((j>=0)?j:(-j)) % hash_size);
+	u32 value;	/* Used to compute the hash value.  */
+	u32   i;	/* Used to cycle through random values. */
+
+	for (value = 0x238F13AF, i=0; key[i]; i++)
+		value = (value + (key[i] << (i*5 % 24)));
+
+	return (1103515243 * value + 12345) % hash_size;  
 }
+
 
 /* *************************************************************************
  * 	Search the hash table for the entry in the hash chain.
@@ -192,8 +194,8 @@ hash_element *hash_insert(hash_table *table, char *value, char *key)
 		bucket = hash_elem->bucket;
 		ubi_dlRemThis(&(table->lru_chain), &(hash_elem->lru_link.lru_link));
 		ubi_dlRemThis(bucket, (ubi_dlNodePtr)hash_elem);
-		free((char*)(hash_elem->value));
-		free(hash_elem);
+		SAFE_FREE(hash_elem->value);
+		SAFE_FREE(hash_elem);
 	}  else  {
 		table->num_elements += 1;
 	}
@@ -238,10 +240,8 @@ void hash_remove(hash_table *table, hash_element *hash_elem)
 	if (hash_elem) { 
 		ubi_dlRemove(&(table->lru_chain), &(hash_elem->lru_link.lru_link));
 		ubi_dlRemove(hash_elem->bucket, (ubi_dlNodePtr) hash_elem);
-		if(hash_elem->value)
-			free((char *)(hash_elem->value));
-		if(hash_elem)
-			free((char *) hash_elem);
+		SAFE_FREE(hash_elem->value);
+		SAFE_FREE(hash_elem);
 		table->num_elements--;
 	}
 }
@@ -285,8 +285,7 @@ static BOOL enlarge_hash_table(hash_table *table)
 			table->num_elements++;
 		}
 	}
-	if(buckets)
-		free((char *) buckets);
+	SAFE_FREE(buckets);
 
 	return True;
 }
@@ -309,14 +308,11 @@ void hash_clear(hash_table *table)
 	for (i = 0; i < table->size; bucket++, i++) {
 		while (bucket->count != 0) {
 			hash_elem = (hash_element *) ubi_dlRemHead(bucket);
-			if(hash_elem->value)
-				free((char *)(hash_elem->value));
-			if(hash_elem)
-				free((char *)hash_elem);
+			SAFE_FREE(hash_elem->value);
+			SAFE_FREE(hash_elem);
 		}
 	}
 	table->size = 0;
-	if(table->buckets)
-		free((char *) table->buckets);
+	SAFE_FREE(table->buckets);
 	table->buckets = NULL;
 }
