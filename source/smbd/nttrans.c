@@ -1823,41 +1823,6 @@ name = %s\n", fsp->fsp_name ));
 }
 
 /****************************************************************************
- Reply to query a security descriptor from an fsp. If it succeeds it allocates
- the space for the return elements and returns True.
-****************************************************************************/
-
-static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
-{
-  SMB_STRUCT_STAT sbuf;
-  mode_t mode;
-
-    if(fsp->is_directory || fsp->fd == -1) {
-      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
-        return 0;
-      }
-    } else {
-      if(fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
-        return 0;
-      }
-    }
-
-    if(fsp->is_directory) {
-      /*
-       * For directory ACLs we also add in the inherited permissions
-       * ACE entries. These are the permissions a file would get when
-       * being created in the directory.
-       */
-      mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
-    }
-    else
-    {
-	    mode = sbuf.st_mode;
-    }
-  return convertperms_unix_to_sd(&sbuf, fsp->is_directory, mode, ppdesc);
-}
-
-/****************************************************************************
  Reply to query a security descriptor - currently this is not implemented (it
  is planned to be though). Right now it just returns the same thing NT would
  when queried on a FAT filesystem. JRA.
@@ -1899,8 +1864,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   if(max_data_count < sec_desc_size) {
 
-    free_sec_desc(psd);
-    safe_free(psd);
+    free_sec_desc(&psd);
 
     send_nt_replies(inbuf, outbuf, bufsize, 0xC0000000|NT_STATUS_BUFFER_TOO_SMALL,
                     params, 4, *ppdata, 0);
@@ -1913,8 +1877,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   data = *ppdata = Realloc(*ppdata, sec_desc_size);
   if(data == NULL) {
-    free_sec_desc(psd);
-    safe_free(psd);
+    free_sec_desc(&psd);
     return(ERROR(ERRDOS,ERRnomem));
   }
 
@@ -1927,7 +1890,8 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
   prs_init(&pd, 0, 4, MARSHALL);
 
   /*
-   * copy the data out of the marshalled structure
+   * Setup the prs_struct to point at the memory we just
+   * allocated.
    */
 
   prs_give_memory( &pd, data, (uint32)sec_desc_size, False);
@@ -1936,11 +1900,8 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Finally, linearize into the outgoing buffer.
    */
 
-  if(!sec_io_desc( "sd data", psd, &pd, 1))
-  {
-    free_sec_desc(psd);
-    safe_free(psd);
-    prs_mem_free(&pd);
+  if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
+    free_sec_desc(&psd);
     DEBUG(0,("call_nt_transact_query_security_desc: Error in marshalling \
 security descriptor.\n"));
     /*
@@ -1953,9 +1914,7 @@ security descriptor.\n"));
    * Now we can delete the security descriptor.
    */
 
-  prs_mem_free(&pd);
-  free_sec_desc(psd);
-  safe_free(psd);
+  free_sec_desc(&psd);
 
   send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sec_desc_size);
   return -1;
@@ -1974,15 +1933,10 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   char *params= *ppparams;
   char *data = *ppdata;
   prs_struct pd;
-  SEC_DESC psd;
+  SEC_DESC *psd = NULL;
   uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
-  uid_t user = (uid_t)-1;
-  gid_t grp = (gid_t)-1;
-  mode_t perms = 0;
-  SMB_STRUCT_STAT sbuf;
   files_struct *fsp = NULL;
   uint32 security_info_sent = 0;
-  BOOL got_dacl = False;
 
   if(!lp_nt_acl_support())
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2015,10 +1969,8 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
    * Finally, unmarshall from the data buffer.
    */
 
-  if(!sec_io_desc( "sd data", &psd, &pd, 1))
-  {
+  if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
     free_sec_desc(&psd);
-    prs_mem_free(&pd);
     DEBUG(0,("call_nt_transact_set_security_desc: Error in unmarshalling \
 security descriptor.\n"));
     /*
@@ -2027,135 +1979,12 @@ security descriptor.\n"));
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  /*
-   * finished with the marshalling structure, already
-   */
-
-  prs_mem_free(&pd);
-
-  /*
-   * Get the current state of the file.
-   */
-
-  if(fsp->is_directory) {
-    if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
-      free_sec_desc(&psd);
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
-  } else {
-
-    int ret;
-
-    if(fsp->fd == -1)
-      ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
-    else
-      ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
-
-    if(ret != 0) {
-      free_sec_desc(&psd);
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
+  if (!set_nt_acl(fsp, psd)) {
+	free_sec_desc(&psd);
+	return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
-
-  /*
-   * Unpack the user/group/world id's and permissions.
-   */
-
-  if(!convertperms_sd_to_unix( &sbuf, &user, &grp, &perms, security_info_sent, &psd, fsp->is_directory)) {
-    free_sec_desc(&psd);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
-  if (psd.dacl != NULL)
-    got_dacl = True;
 
   free_sec_desc(&psd);
-
-  /*
-   * Do we need to chown ?
-   */
-
-  if((user != (uid_t)-1 || grp != (uid_t)-1) && (sbuf.st_uid != user || sbuf.st_gid != grp)) {
-
-    DEBUG(3,("call_nt_transact_set_security_desc: chown %s. uid = %u, gid = %u.\n",
-          fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
-
-    if(dos_chown( fsp->fsp_name, user, grp) == -1) {
-      DEBUG(3,("call_nt_transact_set_security_desc: chown %s, %u, %u failed. Error = %s.\n",
-            fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
-
-    /*
-     * Recheck the current state of the file, which may have changed.
-     * (suid/sgid bits, for instance)
-     */
-
-    if(fsp->is_directory) {
-      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
-        return(UNIXERROR(ERRDOS,ERRnoaccess));
-      }
-    } else {
-
-      int ret;
-    
-      if(fsp->fd == -1)
-        ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
-      else
-        ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
-  
-      if(ret != 0)
-        return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
-  }
-
-  /*
-   * Only change security if we got a DACL.
-   */
-
-  if((security_info_sent & DACL_SECURITY_INFORMATION) && got_dacl) {
-
-    /*
-     * Check to see if we need to change anything.
-     * Enforce limits on modified bits *only*. Don't enforce masks
-	 * on bits not changed by the user.
-     */
-
-    if(fsp->is_directory) {
-
-      perms &= (lp_dir_security_mask(SNUM(conn)) | sbuf.st_mode);
-      perms |= (lp_force_dir_security_mode(SNUM(conn)) & ( perms ^ sbuf.st_mode ));
-
-    } else {
-
-      perms &= (lp_security_mask(SNUM(conn)) | sbuf.st_mode); 
-      perms |= (lp_force_security_mode(SNUM(conn)) & ( perms ^ sbuf.st_mode ));
-
-    }
-
-    /*
-     * Preserve special bits.
-     */
-
-    perms |= (sbuf.st_mode & ~0777);
-
-    /*
-     * Do we need to chmod ?
-     */
-
-    if(sbuf.st_mode != perms) {
-
-      DEBUG(3,("call_nt_transact_set_security_desc: chmod %s. perms = 0%o.\n",
-            fsp->fsp_name, (unsigned int)perms ));
-
-      if(conn->vfs_ops.chmod(dos_to_unix(fsp->fsp_name, False), perms) == -1) {
-        DEBUG(3,("call_nt_transact_set_security_desc: chmod %s, 0%o failed. Error = %s.\n",
-              fsp->fsp_name, (unsigned int)perms, strerror(errno) ));
-        return(UNIXERROR(ERRDOS,ERRnoaccess));
-      }
-    }
-  }
-
   send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
   return -1;
 }
