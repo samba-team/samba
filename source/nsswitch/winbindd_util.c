@@ -73,6 +73,7 @@ void free_domain_list(void)
 	}
 }
 
+
 /* Add a trusted domain to our list of domains */
 static struct winbindd_domain *add_trusted_domain(const char *domain_name, const char *alt_name,
 						  struct winbindd_methods *methods,
@@ -116,12 +117,20 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		}
 	}
 
-        domain->methods = methods;
+	domain->methods = methods;
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
 	if (sid) {
 		sid_copy(&domain->sid, sid);
 	}
+	
+	/* see if this is a native mode win2k domain, but only for our own domain */
+	   
+	if ( strequal( lp_workgroup(), domain_name) ) 	{
+		domain->native_mode = cm_check_for_native_mode_win2k( domain_name );
+		DEBUG(5,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
+					domain->native_mode ? "native" : "mixed" ));
+	}	
 
 	/* Link to domain list */
 	DLIST_ADD(_domain_list, domain);
