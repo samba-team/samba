@@ -615,7 +615,7 @@ union smb_fileinfo {
 		union smb_fileinfo_in in;
 
 		struct {
-			uint32_t access_flags; /* seen 0x001f01ff from w2k3 */
+			uint32_t access_flags;
 		} out;
 	} access_information;
 
