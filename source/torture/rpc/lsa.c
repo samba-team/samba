@@ -309,6 +309,10 @@ static BOOL test_LookupSids2(struct dcerpc_pipe *p,
 		return False;
 	}
 
+	if (!test_LookupNames3(p, mem_ctx, handle, &names)) {
+		return False;
+	}
+
 	return True;
 }
 
