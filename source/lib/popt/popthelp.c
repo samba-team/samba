@@ -10,7 +10,8 @@
 static void displayArgs(poptContext con,
 		/*@unused@*/ enum poptCallbackReason foo,
 		struct poptOption * key, 
-		/*@unused@*/ const char * arg, /*@unused@*/ void * data) {
+		/*@unused@*/ const char * arg, /*@unused@*/ void * data)
+{
     if (key->shortName== '?')
 	poptPrintHelp(con, stdout, 0);
     else
@@ -55,7 +56,8 @@ getArgDescrip(const struct poptOption * opt, const char *translation_domain)
 
 static void singleOptionHelp(FILE * f, int maxLeftCol, 
 			     const struct poptOption * opt,
-			     const char *translation_domain) {
+			     const char *translation_domain)
+{
     int indentLength = maxLeftCol + 5;
     int lineLength = 79 - indentLength;
     const char * help = D_(translation_domain, opt->descrip);
@@ -109,7 +111,8 @@ out:
 }
 
 static int maxArgWidth(const struct poptOption * opt,
-		       const char * translation_domain) {
+		       const char * translation_domain)
+{
     int max = 0;
     int this;
     const char * s;
@@ -139,7 +142,8 @@ static int maxArgWidth(const struct poptOption * opt,
 
 static void singleTableHelp(FILE * f, const struct poptOption * table, 
 			    int left,
-			    const char *translation_domain) {
+			    const char *translation_domain)
+{
     const struct poptOption * opt;
     const char *sub_transdom;
 
@@ -167,7 +171,8 @@ static void singleTableHelp(FILE * f, const struct poptOption * table,
     }
 }
 
-static int showHelpIntro(poptContext con, FILE * f) {
+static int showHelpIntro(poptContext con, FILE * f)
+{
     int len = 6;
     const char * fn;
 
@@ -182,7 +187,8 @@ static int showHelpIntro(poptContext con, FILE * f) {
     return len;
 }
 
-void poptPrintHelp(poptContext con, FILE * f, /*@unused@*/ int flags) {
+ void poptPrintHelp(poptContext con, FILE * f, /*@unused@*/ int flags)
+{
     int leftColWidth;
 
     showHelpIntro(con, f);
@@ -197,7 +203,8 @@ void poptPrintHelp(poptContext con, FILE * f, /*@unused@*/ int flags) {
 
 static int singleOptionUsage(FILE * f, int cursor, 
 			     const struct poptOption * opt,
-			     const char *translation_domain) {
+			     const char *translation_domain)
+{
     int len = 3;
     char shortStr[2] = { '\0', '\0' };
     const char * item = shortStr;
@@ -232,7 +239,8 @@ static int singleOptionUsage(FILE * f, int cursor,
 }
 
 static int singleTableUsage(FILE * f, int cursor, const struct poptOption * table,
-		     const char *translation_domain) {
+		     const char *translation_domain)
+{
     const struct poptOption * opt;
     
     opt = table;
@@ -253,7 +261,8 @@ static int singleTableUsage(FILE * f, int cursor, const struct poptOption * tabl
 }
 
 static int showShortOptions(const struct poptOption * opt, FILE * f, 
-			    char * str) {
+			    char * str)
+{
     char s[300];		/* this is larger then the ascii set, so
 				   it should do just fine */
 
@@ -279,7 +288,8 @@ static int showShortOptions(const struct poptOption * opt, FILE * f,
     return strlen(s) + 4;
 }
 
-void poptPrintUsage(poptContext con, FILE * f, /*@unused@*/ int flags) {
+ void poptPrintUsage(poptContext con, FILE * f, /*@unused@*/ int flags)
+{
     int cursor;
 
     cursor = showHelpIntro(con, f);
@@ -295,7 +305,8 @@ void poptPrintUsage(poptContext con, FILE * f, /*@unused@*/ int flags) {
     fprintf(f, "\n");
 }
 
-void poptSetOtherOptionHelp(poptContext con, const char * text) {
+ void poptSetOtherOptionHelp(poptContext con, const char * text)
+{
     if (con->otherHelp) xfree(con->otherHelp);
     con->otherHelp = xstrdup(text);
 }
