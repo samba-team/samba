@@ -59,7 +59,7 @@ error_message (long code)
     if(p != NULL && *p != '\0')
 	strcpy_truncate(msg, p, sizeof(msg));
     else 
-	snprintf(msg, sizeof(msg), "Unknown error %ld", code);
+	sprintf(msg, "Unknown error %ld", code);
     return msg;
 }
 
@@ -73,27 +73,13 @@ init_error_table(const char **msgs, long base, int count)
 static void
 default_proc (const char *whoami, long code, const char *fmt, va_list args)
 {
-    char f[sizeof("%s: %s %s\r\n")] = "";
-    char *x;
-    const void *arg[3], **ap = arg;
-    
-    if(whoami) {
-	strcat_truncate(f, "%s: ", sizeof(f));
-	*ap++ = whoami;
-    }
-    if(code) {
-	strcat_truncate(f, "%s ", sizeof(f));
-	*ap++ = error_message(code);
-    }
-    if(fmt) {
-	strcat_truncate(f, "%s", sizeof(f));
-	*ap++ = fmt;
-    }
-    strcat_truncate(f, "\r\n", sizeof(f));
-    asprintf(&x, f, arg[0], arg[1], arg[2]);
-    vfprintf(stderr, x, args);
-    free(x);
-    fflush(stderr);
+    if (whoami)
+      fprintf(stderr, "%s: ", whoami);
+    if (code)
+      fprintf(stderr, "%s ", error_message(code));
+    if (fmt)
+      vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\r\n");	/* ??? */
 }
 
 static errf com_err_hook = default_proc;
