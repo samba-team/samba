@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include "talloc.h"
 #endif
 
@@ -54,7 +55,11 @@
 #endif
 
 #ifndef discard_const_p
-#define discard_const_p(type, ptr) ((type *)(ptr))
+#if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
+# define discard_const_p(type, ptr) ((type *)((intptr_t)(ptr)))
+#else
+# define discard_const_p(type, ptr) ((type *)(ptr))
+#endif
 #endif
 
 /* this null_context is only used if talloc_enable_leak_report() or
