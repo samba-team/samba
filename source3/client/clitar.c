@@ -85,7 +85,8 @@ static uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 #endif
 
 static char *tarbuf, *buffer_p;
-static int tp, ntarf, tbufsiz, ttarf;
+static int tp, ntarf, tbufsiz;
+static SMB_BIG_UINT ttarf;
 /* Incremental mode */
 BOOL tar_inc=False;
 /* Reset archive bit */
@@ -1486,7 +1487,7 @@ int process_tar(void)
     free(tarbuf);
     
     DEBUG(0, ("tar: dumped %d tar files\n", ntarf));
-    DEBUG(0, ("Total bytes written: %d\n", ttarf));
+    DEBUG(0, ("Total bytes written: %llu\n", ttarf));
     break;
   }
 
