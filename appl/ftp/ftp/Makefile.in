@@ -46,7 +46,7 @@ ftp_SOURCES =		\
 	krb4.c		\
 	main.c		\
 	ruserpass.c	\
-	security.c	\
+	security.c
 
 ftp_OBJS =		\
 	cmds.o		\
@@ -58,7 +58,7 @@ ftp_OBJS =		\
 	krb4.o		\
 	main.o		\
 	ruserpass.o	\
-	security.o	\
+	security.o
 
 OBJECTS = $(ftp_OBJS)
 SOURCES = $(ftp_SOURCES)
@@ -79,17 +79,22 @@ uninstall:
 	  rm -f $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
-ftp$(EXECSUFFIX): $(ftp_OBJS) # ../common/libcommon.a
+ftp$(EXECSUFFIX): $(ftp_OBJS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(ftp_OBJS) -L../common -lcommon -L$(LIBTOP)/krb -lkrb -L$(LIBTOP)/des -ldes -L$(LIBTOP)/roken -lroken $(LIBS) -L$(LIBTOP)/roken -lroken
 
-TAGS: $(SOURCES)
+TAGS:	$(SOURCES)
 	etags $(SOURCES)
 
-clean cleandir:
+clean:
 	rm -f *~ *.o core ftp$(EXECSUFFIX) \#*
 
-distclean: 
+mostlyclean: clean
+
+distclean: clean
 	rm -f Makefile
+
+realclean: distclean
+	rm -f TAGS
 
 $(OBJECTS): ../../../include/config.h
 
