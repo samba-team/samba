@@ -1,6 +1,73 @@
-#!/usr/local/bin/perl
-
-use Mysql;
+#!/bin/env perl
+#
+#  MYSQL Convert - Creates and initialises mysql tables for use by samba
+#
+#  Copyright (C) Benjamin Kuit                     1999,
+#  Copyright (C) Andrew Tridgell              1992-1999,
+#  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+#  Converts smbpasswd files into MySQL tables.
+#  Can understand Samba 1.19 and Samba 2.0 file formats.
+#  Assumes table structure:
+#           unix_name            char(20) not null,
+#           unix_uid             int(10)  unsigned not null,
+#           nt_name              char(20) not null,
+#           user_rid             int(10)  unsigned not null,
+#           smb_passwd           char(32),
+#           smb_nt_passwd        char(32),
+#           acct_ctrl            int(10) unsigned not null,
+#           pass_last_set_time   int(10) unsigned not null,
+#           unique (unix_name),
+#           unique (unix_uid)
+#  When given the --create option, mysql_convert will generate this
+#  statement.
+# 
+#  To move from flat file smbpasswd directly into a mysql table:
+#
+#  mysql_convert.pl --db=samba --table=smbpasswd --user=samba --create --infile=smbpasswd
+#
+#  Assumes mysql server on localhost, use --host if otherwise.
+#  To convert back to flat file:
+#
+#  mysql_convert.pl --db=samba --table=smbpasswd --user=samba --outfile=smbpasswd
+#
+#  If smbpasswd file already exists, use --file=append or --file=trash
+#  to determine whether to append or over-right the file.
+#
+#  In converting from NT Server PDC to Samba PDC:
+#  Run pwdump on NT Server to generate an smbpasswd file (Samba 1.19 format),
+#  called say NTpasslist.
+#  then:
+#
+#  mysql_convert.pl --db=samba --table=smbpasswd --user=samba --infile=NTpasslist --create --check
+#
+#  The --check option will change the unix_uid field to the real uid
+#  value of respective users, also filter out users that dont exist on
+#  the system.
+#
+#  If dont have mysql perl module:
+#
+#  mysql_convert.pl --table=smbpasswd --infile=NTpasslist --outfile=mysql.txt
+#
+#  Then use the mysql client:
+#
+#  mysql -u samba < mysql.txt
+#
 
 $ACB_DISABLED=0x0001;
 $ACB_HOMDIRREQ=0x0002;
@@ -17,7 +84,7 @@ $ACB_AUTOLOCK=0x0400;
 sub getoptionval {
 	my ($option) = @_;
 
-	my ($value) = ($option =~ /^[^=]+=\s*(\S.*\S)/ );
+	my ($value) = ($option =~ /^[^=]+=\s*(\S.*\S)\s*$/ );
 
 	return $value;
 }
@@ -240,6 +307,8 @@ elsif ( (not $dbname) || (not $dbtable) || (not $dbuser) ) {
 	&usage;
 }
 else {
+	use Mysql;
+
 	if ( ($need_password eq "yes") && ( not $dbpasswd )) {
 		$dbpasswd = getpass("Enter MySQL password for $dbuser: ");
 	}
