@@ -1476,6 +1476,32 @@ static uint32 size_of_systemtime(SYSTEMTIME *systime)
 }
 
 /*******************************************************************
+ * write a UNICODE string.
+ * used by all the RPC structs passing a buffer
+ ********************************************************************/
+static BOOL spoolss_smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int depth)
+{
+	if (uni == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "spoolss_smb_io_unistr");
+	depth++;
+	
+	/* there should be no align here as it can mess up
+	   parsing a NEW_BUFFER->prs */
+#if 0	/* JERRY */
+	if (!prs_align(ps))
+		return False;
+#endif
+		
+	if (!prs_unistr("unistr", ps, depth, uni))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
  * write a UNICODE string and its relative pointer.
  * used by all the RPC structs passing a buffer
  *
@@ -1627,16 +1653,23 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 				return False;
 			
 			l_chaine=str_len_uni(&chaine);
-			if((chaine2=(uint16 *)Realloc(chaine2, (l_chaine2+l_chaine+1)*sizeof(uint16))) == NULL)
-				return False;
+			
+			/* we're going to add two more bytes here in case this
+			   is the last string in the array and we need to add 
+			   an extra NULL for termination */
 			if (l_chaine > 0)
 			{
+				if((chaine2=(uint16 *)Realloc(chaine2, (l_chaine2+l_chaine+2)*sizeof(uint16))) == NULL)
+					return False;
 				memcpy(chaine2+l_chaine2, chaine.buffer, (l_chaine+1)*sizeof(uint16));
 				l_chaine2+=l_chaine+1;
 			}
 		
 		} while(l_chaine!=0);
 		
+		/* the end should be bould NULL terminated so add 
+		   the second one here */
+		chaine2[l_chaine2] = '\0';
 		*string=chaine2;
 
 		if(!prs_set_offset(ps, old_offset))
@@ -2968,7 +3001,7 @@ BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, uint32 flags,
 	q_u->flags=flags;
 	
 	q_u->servername_ptr = (servername != NULL) ? 1 : 0;
-	init_unistr2(&q_u->servername, servername, strlen(servername));
+	init_buf_unistr2(&q_u->servername, &q_u->servername_ptr, servername);
 
 	q_u->level=level;
 	q_u->buffer=buffer;
