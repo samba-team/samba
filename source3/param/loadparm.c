@@ -1571,7 +1571,6 @@ FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 /* local prototypes */
-static int strwicmp(char *psz1, char *psz2);
 static int map_parameter(char *pszParmName);
 static BOOL set_boolean(BOOL *pb, char *pszParmValue);
 static int getservicebyname(char *pszServiceName,
