@@ -369,13 +369,8 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 	int len;
 	if (!asn1_start_tag(data, ASN1_OCTET_STRING)) return False;
 	len = asn1_tag_remaining(data);
-	blob->data = malloc(len);
-	if (!blob->data) {
-		data->has_error = True;
-		return False;
-	}
+	*blob = data_blob(NULL, len);
 	asn1_read(data, blob->data, len);
-	blob->length = len;
 	asn1_end_tag(data);
 	return !data->has_error;
 }
