@@ -842,7 +842,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	p += 8;
 	SIVAL(p,0,fmode); /* File Attributes. */
 	p += 4;
-	SOFF_T(p, 0, file_len);
+	SOFF_T(p, 0, SMB_ROUNDUP_ALLOCATION(file_len));
 	p += 8;
 	SOFF_T(p,0,file_len);
 	p += 12;
@@ -1293,7 +1293,7 @@ static int call_nt_transact_create(connection_struct *conn,
   p += 8;
   SIVAL(p,0,fmode); /* File Attributes. */
   p += 4;
-  SOFF_T(p,0,file_len);
+  SOFF_T(p, 0, SMB_ROUNDUP_ALLOCATION(file_len));
   p += 8;
   SOFF_T(p,0,file_len);
 
@@ -1348,29 +1348,28 @@ static int call_nt_transact_notify_change(connection_struct *conn,
 				   char **ppsetup, 
 				   char **ppparams, char **ppdata)
 {
-  char *setup = *ppsetup;
-  files_struct *fsp;
-  uint32 flags;
+	char *setup = *ppsetup;
+	files_struct *fsp;
+	uint32 flags;
 
-  fsp = file_fsp(setup,4);
-  flags = IVAL(setup, 0);
+	fsp = file_fsp(setup,4);
+	flags = IVAL(setup, 0);
 
-  DEBUG(3,("call_nt_transact_notify_change\n"));
+	DEBUG(3,("call_nt_transact_notify_change\n"));
 
-  if(!fsp)
-    return ERROR_DOS(ERRDOS,ERRbadfid);
+	if(!fsp)
+		return ERROR_DOS(ERRDOS,ERRbadfid);
 
-  if((!fsp->is_directory) || (conn != fsp->conn))
-    return ERROR_DOS(ERRDOS,ERRbadfid);
+	if((!fsp->is_directory) || (conn != fsp->conn))
+		return ERROR_DOS(ERRDOS,ERRbadfid);
 
-  if (!change_notify_set(inbuf, fsp, conn, flags)) {
-	  return(UNIXERROR(ERRDOS,ERRbadfid));
-  }
+	if (!change_notify_set(inbuf, fsp, conn, flags))
+		return(UNIXERROR(ERRDOS,ERRbadfid));
 
-  DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
+	DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
 name = %s\n", fsp->fsp_name ));
 
-  return -1;
+	return -1;
 }
 
 /****************************************************************************
