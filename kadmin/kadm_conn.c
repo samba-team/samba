@@ -243,7 +243,8 @@ start_server(krb5_context context)
 	}
 
 	if(e) {
-	    krb5_warn(context, krb5_eai_to_heim_errno(e), "%s", portstr);
+	    krb5_warn(context, krb5_eai_to_heim_errno(e, errno),
+		      "%s", portstr);
 	    continue;
 	}
 	i = 0;
