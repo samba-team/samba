@@ -17,7 +17,7 @@
 @c not yet @include version.texi
 @set UPDATED $Date$
 @set EDITION 0.0
-@set VERSION 0.1m
+@set VERSION 0.2k
 
 @ifinfo
 @dircategory Heimdal
