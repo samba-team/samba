@@ -25,6 +25,7 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct spoolss_OpenPrinterEx r;
 	struct spoolss_UserLevel1 userlevel1;
+	struct policy_handle handle;
 	NTSTATUS status;
 
 	r.in.printername = "p";
@@ -33,6 +34,8 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.devmode_ctr.devmode = NULL;
 	r.in.access_required = 0x12345678;
 	r.in.level = 1;
+	r.out.handle = &handle;
+
 	userlevel1.size = 1234;
 	userlevel1.client = "hello";
 	userlevel1.user = "spottyfoot!";

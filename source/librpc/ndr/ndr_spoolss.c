@@ -1152,16 +1152,7 @@ NTSTATUS ndr_pull_spoolss_44(struct ndr_pull *ndr, struct spoolss_44 *r)
 
 NTSTATUS ndr_pull_spoolss_OpenPrinterEx(struct ndr_pull *ndr, struct spoolss_OpenPrinterEx *r)
 {
-	uint32 _ptr_handle;
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_handle));
-	if (_ptr_handle) {
-		NDR_ALLOC(ndr, r->out.handle);
-	} else {
-		r->out.handle = NULL;
-	}
-	if (r->out.handle) {
-		NDR_CHECK(ndr_pull_policy_handle(ndr, r->out.handle));
-	}
+	NDR_CHECK(ndr_pull_policy_handle(ndr, r->out.handle));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
