@@ -1,3 +1,7 @@
+2002-03-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/asn1/k5.asn1: add the GSS-API checksum type here
+
 2002-03-11  Assar Westerlund  <assar@assaris.sics.se>
 
 	* Release 0.4f
