@@ -71,26 +71,25 @@ static int num_args = sizeof(args) / sizeof(args[0]);
 static const char *
 expand_cell_name(const char *cell)
 {
-    FILE *F;
+    FILE *f;
     static char buf[128];
     char *p;
 
-    F = fopen(_PATH_CELLSERVDB, "r");
-    if(F == NULL)
+    f = fopen(_PATH_CELLSERVDB, "r");
+    if(f == NULL)
 	return cell;
-    do{
-	fgets(buf, 128, F);
+    while (fgets (buf, sizeof(buf), f) != NULL) {
 	if(buf[0] == '>'){
 	    for(p=buf; *p && !isspace(*p) && *p != '#'; p++)
 		;
-	    *p=0;
+	    *p = '\0';
 	    if(strstr(buf, cell)){
 		fclose(F);
 		return buf + 1;
 	    }
 	}
 	buf[0] = 0;
-    }while(!feof(F));
+    }
     fclose(F);
     return cell;
 }
