@@ -317,7 +317,7 @@ static struct event_context *smb_event_context(struct dcerpc_connection *c)
 {
 	struct smb_private *smb = c->transport.private;
 
-	return smb->tree->session->transport->event.ctx;
+	return smb->tree->session->transport->socket->event.ctx;
 }
 
 
