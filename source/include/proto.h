@@ -1761,6 +1761,7 @@ BOOL lp_shortpreservecase(int );
 BOOL lp_casemangle(int );
 BOOL lp_status(int );
 BOOL lp_hide_dot_files(int );
+BOOL lp_hideunreadable(int );
 BOOL lp_browseable(int );
 BOOL lp_readonly(int );
 BOOL lp_no_set_dir(int );

@@ -662,6 +662,35 @@ typedef struct
   char *current;
 } Dir;
 
+/*******************************************************************
+check to see if a user can read a file. This is only approximate,
+it is used as part of the "hide unreadable" option. Don't
+use it for anything security sensitive
+********************************************************************/
+
+static BOOL user_can_read_file(connection_struct *conn, char *name)
+{
+	SMB_STRUCT_STAT ste;
+
+	/* if we can't stat it does not show it */
+	if (vfs_stat(conn, name, &ste) != 0) return False;
+
+	if (ste.st_uid == conn->uid) {
+		return (ste.st_mode & S_IRUSR) == S_IRUSR;
+	} else {
+		int i;
+		if (ste.st_gid == conn->gid) {
+			return (ste.st_mode & S_IRGRP) == S_IRGRP;
+		}
+		for (i=0; i<conn->ngroups; i++) {
+			if (conn->groups[i] == ste.st_gid) {
+				return (ste.st_mode & S_IRGRP) == S_IRGRP;
+			}
+		}
+	}
+
+	return (ste.st_mode & S_IROTH) == S_IROTH;
+}
 
 /*******************************************************************
  Open a directory.
@@ -669,51 +698,71 @@ typedef struct
 
 void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 {
-  Dir *dirp;
-  char *n;
-  DIR *p = conn->vfs_ops.opendir(conn,dos_to_unix(name,False));
-  int used=0;
+	Dir *dirp;
+	char *n;
+	DIR *p = conn->vfs_ops.opendir(conn,dos_to_unix(name,False));
+	int used=0;
 
-  if (!p) return(NULL);
-  dirp = (Dir *)malloc(sizeof(Dir));
-  if (!dirp) {
-    conn->vfs_ops.closedir(conn,p);
-    return(NULL);
-  }
-  dirp->pos = dirp->numentries = dirp->mallocsize = 0;
-  dirp->data = dirp->current = NULL;
+	if (!p)
+		return(NULL);
+	dirp = (Dir *)malloc(sizeof(Dir));
+	if (!dirp) {
+		conn->vfs_ops.closedir(conn,p);
+		return(NULL);
+	}
+	dirp->pos = dirp->numentries = dirp->mallocsize = 0;
+	dirp->data = dirp->current = NULL;
 
-  while ((n = vfs_readdirname(conn, p)))
-  {
-    int l;
+	while ((n = vfs_readdirname(conn, p))) {
+		int l;
 
-    l = strlen(n)+1;
+		l = strlen(n)+1;
 
-    /* Return value of vfs_readdirname has already gone through 
-       unix_to_dos() */
+		/* Return value of vfs_readdirname has already gone through 
+			unix_to_dos() */
 
-    /* If it's a vetoed file, pretend it doesn't even exist */
-    if (use_veto && conn && IS_VETO_PATH(conn, n)) continue;
+		/* If it's a vetoed file, pretend it doesn't even exist */
+		if (use_veto && conn && IS_VETO_PATH(conn, n))
+			continue;
 
-    if (used + l > dirp->mallocsize) {
-      int s = MAX(used+l,used+2000);
-      char *r;
-      r = (char *)Realloc(dirp->data,s);
-      if (!r) {
-	DEBUG(0,("Out of memory in OpenDir\n"));
-	break;
-      }
-      dirp->data = r;
-      dirp->mallocsize = s;
-      dirp->current = dirp->data;
-    }
-    pstrcpy(dirp->data+used,n);
-    used += l;
-    dirp->numentries++;
-  }
+		/* Honour _hide unreadable_ option */
+		if (conn && lp_hideunreadable(SNUM(conn))) {
+			char *entry;
+			int ret;
 
-  conn->vfs_ops.closedir(conn,p);
-  return((void *)dirp);
+			entry = (char *)malloc(PATH_MAX);
+			if (!entry) {
+				DEBUG(0,("Out of memory in OpenDir\n"));
+				conn->vfs_ops.closedir(conn,p);
+				return(NULL);
+			}
+
+			slprintf(entry, PATH_MAX, "%s/%s/%s", conn->origpath, name, n);
+			ret = user_can_read_file(conn, entry);
+			free(entry);
+			if (!ret)
+				continue;
+		}
+
+		if (used + l > dirp->mallocsize) {
+			int s = MAX(used+l,used+2000);
+			char *r;
+			r = (char *)Realloc(dirp->data,s);
+			if (!r) {
+				DEBUG(0,("Out of memory in OpenDir\n"));
+				break;
+			}
+			dirp->data = r;
+			dirp->mallocsize = s;
+			dirp->current = dirp->data;
+		}
+		pstrcpy(dirp->data+used,n);
+		used += l;
+		dirp->numentries++;
+	}
+
+	conn->vfs_ops.closedir(conn,p);
+	return((void *)dirp);
 }
 
 
