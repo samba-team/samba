@@ -38,7 +38,9 @@ const struct auth_init_function_entry builtin_auth_init_functions[] = {
 	{ "winbind", auth_init_winbind },
 #ifdef DEVELOPER
 	{ "name_to_ntstatus", auth_init_name_to_ntstatus },
+	{ "fixed_challenge", auth_init_fixed_challenge },
 #endif
+	{ "plugin", auth_init_plugin },
 	{ NULL, NULL}
 };
 
@@ -393,11 +395,11 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		{
 		case SEC_DOMAIN:
 			DEBUG(5,("Making default auth method list for security=domain\n"));
-			auth_method_list = str_list_make("guest samstrict ntdomain");
+			auth_method_list = str_list_make("guest sam ntdomain");
 			break;
 		case SEC_SERVER:
 			DEBUG(5,("Making default auth method list for security=server\n"));
-			auth_method_list = str_list_make("guest samstrict smbserver");
+			auth_method_list = str_list_make("guest sam smbserver");
 			break;
 		case SEC_USER:
 			if (lp_encrypted_passwords()) {	
@@ -419,7 +421,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 			break;
 		case SEC_ADS:
 			DEBUG(5,("Making default auth method list for security=ADS\n"));
-			auth_method_list = str_list_make("guest samstrict ads ntdomain");
+			auth_method_list = str_list_make("guest sam ads ntdomain");
 			break;
 		default:
 			DEBUG(5,("Unknown auth method!\n"));
