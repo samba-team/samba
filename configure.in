@@ -63,7 +63,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 
 AC_CHECK_HEADERS(arpa/inet.h arpa/telnet.h bsdsetjmp.h crypt.h)
-AC_CHECK_HEADERS(curses.h db.h dbm.h dirent.h err.h fcntl.h grp.h)
+AC_CHECK_HEADERS(curses.h db.h dbm.h dirent.h err.h errno.h fcntl.h grp.h)
 AC_CHECK_HEADERS(limits.h ndbm.h net/if.h netdb.h netinet/in.h)
 AC_CHECK_HEADERS(netinet/in6.h netinet/in6_machtypes.h)
 AC_CHECK_HEADERS(netinet/in_systm.h netinet/ip.h paths.h)
@@ -309,6 +309,7 @@ AC_OUTPUT(Makefile 			\
 	lib/hdb/Makefile		\
 	lib/gssapi/Makefile		\
 	kuser/Makefile			\
+	kpasswd/Makefile		\
 	admin/Makefile			\
 	kdc/Makefile			\
 	appl/Makefile			\
