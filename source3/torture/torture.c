@@ -2781,7 +2781,7 @@ static BOOL run_rename(int dummy)
 	char *fname = "\\test.txt";
 	char *fname1 = "\\test1.txt";
 	BOOL correct = True;
-	int fnum1, fnum2;
+	int fnum1;
 
 	printf("starting rename test\n");
 	
