@@ -172,10 +172,7 @@ find_cells(char *file, char ***cells, int *index)
 	    if(strcmp((*cells)[i], cell) == 0)
 		break;
 	if(i == *index){
-	    if(*cells == NULL)
-		*cells = malloc((*index + 1) * sizeof(**cells));
-	    else
-		*cells = realloc(*cells, (*index + 1) * sizeof(**cells));
+	    *cells = realloc(*cells, (*index + 1) * sizeof(**cells));
 	    (*cells)[(*index)++] = strdup(cell);
 	}
     }
