@@ -25,6 +25,7 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include "lib/crypto/crypto.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 /*
   initialise the credentials state for old-style 64 bit session keys
@@ -127,6 +128,26 @@ static void creds_step(struct creds_CredentialState *creds)
 	creds->seed = time_cred;
 }
 
+
+/*
+  DES encrypt a 8 byte LMSessionKey buffer using the Netlogon session key
+*/
+void creds_des_encrypt_LMKey(struct creds_CredentialState *creds, struct netr_LMSessionKey *key)
+{
+	struct netr_LMSessionKey tmp;
+	des_crypt56(tmp.key, key->key, creds->session_key, 1);
+	*key = tmp;
+}
+
+/*
+  DES decrypt a 8 byte LMSessionKey buffer using the Netlogon session key
+*/
+void creds_des_decrypt_LMKey(struct creds_CredentialState *creds, struct netr_LMSessionKey *key)
+{
+	struct netr_LMSessionKey tmp;
+	des_crypt56(tmp.key, key->key, creds->session_key, 0);
+	*key = tmp;
+}
 
 /*
   DES encrypt a 16 byte password buffer using the session key
