@@ -21,6 +21,7 @@
 */
 
 struct event_context;
+struct event_ops;
 struct fd_event;
 struct timed_event;
 
@@ -31,6 +32,7 @@ typedef void (*event_timed_handler_t)(struct event_context *, struct timed_event
 				      struct timeval , void *);
 
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
+struct event_context *event_context_init_ops(TALLOC_CTX *mem_ctx, const struct event_ops *ops, void *private_data);
 
 struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
 			      int fd, uint16_t flags, event_fd_handler_t handler,
@@ -44,20 +46,19 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 int event_loop_once(struct event_context *ev);
 int event_loop_wait(struct event_context *ev);
 
-uint16_t event_fd_flags(struct fd_event *fde);
-void event_fd_setflags(struct fd_event *fde, uint16_t flags);
+uint16_t event_get_fd_flags(struct fd_event *fde);
+void event_set_fd_flags(struct fd_event *fde, uint16_t flags);
 
 /* bits for file descriptor event flags */
 #define EVENT_FD_READ 1
 #define EVENT_FD_WRITE 2
 
 #define EVENT_FD_WRITEABLE(fde) \
-	event_fd_setflags(fde, event_fd_flags(fde) | EVENT_FD_WRITE)
+	event_set_fd_flags(fde, event_get_fd_flags(fde) | EVENT_FD_WRITE)
 #define EVENT_FD_READABLE(fde) \
-	event_fd_setflags(fde, event_fd_flags(fde) | EVENT_FD_READ)
+	event_set_fd_flags(fde, event_get_fd_flags(fde) | EVENT_FD_READ)
 
 #define EVENT_FD_NOT_WRITEABLE(fde) \
-	event_fd_setflags(fde, event_fd_flags(fde) & ~EVENT_FD_WRITE)
+	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_WRITE)
 #define EVENT_FD_NOT_READABLE(fde) \
-	event_fd_setflags(fde, event_fd_flags(fde) & ~EVENT_FD_WRITE)
-
+	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_WRITE)
