@@ -83,7 +83,7 @@ manual carefully.</para>
 <title>Tools for printing faxes</title>
 
 <para>Your incomed faxes are in:
-<filename>/var/spool/fax/incoming</filename>
+<filename>/var/spool/fax/incoming</filename></para>
 
 <para>print it with:</para>
 
@@ -141,7 +141,7 @@ lp3|fax:\
         :sd=/usr/spool/lp3:\
         :if=/usr/local/etc/mgetty+sendfax/faxfilter:sh:sf:mx#0:\
         :lf=/usr/spool/lp3/fax-log:
-</programlisting>
+</programlisting></para>
 
 <para>Now, edit your <filename>smb.conf</filename> so you have a smb based printer named "fax"</para>
 
