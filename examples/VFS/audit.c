@@ -45,96 +45,29 @@
 #define SYSLOG_PRIORITY   LOG_NOTICE
 #endif
 
-/* Function prototypes */
-
-int audit_connect(struct connection_struct *conn, char *svc, char *user);
-void audit_disconnect(struct connection_struct *conn);
-DIR *audit_opendir(struct connection_struct *conn, char *fname);
-int audit_mkdir(struct connection_struct *conn, char *path, mode_t mode);
-int audit_rmdir(struct connection_struct *conn, char *path);
-int audit_open(struct connection_struct *conn, char *fname, int flags, mode_t mode);
-int audit_close(struct files_struct *fsp, int fd);
-int audit_rename(struct connection_struct *conn, char *old, char *new);
-int audit_unlink(struct connection_struct *conn, char *path);
-int audit_chmod(struct connection_struct *conn, char *path, mode_t mode);
-
-/* VFS operations */
-
-extern struct vfs_ops default_vfs_ops;   /* For passthrough operation */
-
-struct vfs_ops audit_ops = {
-    
-	/* Disk operations */
-
-	audit_connect,
-	audit_disconnect,
-	NULL,                     /* disk free */
-
-	/* Directory operations */
-
-	audit_opendir,
-	NULL,                     /* readdir */
-	audit_mkdir,
-	audit_rmdir,
-	NULL,                     /* closedir */
-
-	/* File operations */
-
-	audit_open,
-	audit_close,
-	NULL,                     /* read  */
-	NULL,                     /* write */
-	NULL,                     /* lseek */
-	audit_rename,
-	NULL,                     /* fsync */
-	NULL,                     /* stat  */
-	NULL,                     /* fstat */
-	NULL,                     /* lstat */
-	audit_unlink,
-	audit_chmod,
-	NULL,                     /* chown */
-	NULL,                     /* chdir */
-	NULL,                     /* getwd */
-	NULL,                     /* utime */
-	NULL,                     /* ftruncate */
-	NULL,                     /* lock */
-	NULL,                     /* fget_nt_acl */
-	NULL,                     /* get_nt_acl */
-	NULL,                     /* fset_nt_acl */
-	NULL                      /* set_nt_acl */
-};
-
-/* VFS initialisation function.  Return initialised vfs_ops structure
-   back to SAMBA. */
-
-struct vfs_ops *vfs_init(void)
-{
-	openlog("smbd_audit", LOG_PID, SYSLOG_FACILITY);
-	syslog(SYSLOG_PRIORITY, "VFS_INIT: &audit_ops: 0x%8.8x\n", 
-	       &audit_ops);
-	return(&audit_ops);
-}
+static struct vfs_ops *global_vfs_ops;
 
 /* Implementation of vfs_ops.  Pass everything on to the default
    operation but log event first. */
 
-int audit_connect(struct connection_struct *conn, char *svc, char *user)
+static int audit_connect(struct connection_struct *conn, const char *svc,
+                         const char *user)
 {
 	syslog(SYSLOG_PRIORITY, "connect to service %s by user %s\n", 
 	       svc, user);
 
-	return default_vfs_ops.connect(conn, svc, user);
+	return global_vfs_ops->connect(conn, svc, user);
 }
 
-void audit_disconnect(struct connection_struct *conn)
+static void audit_disconnect(struct connection_struct *conn)
 {
 	syslog(SYSLOG_PRIORITY, "disconnected\n");
-	default_vfs_ops.disconnect(conn);
+	global_vfs_ops->disconnect(conn);
 }
 
-DIR *audit_opendir(struct connection_struct *conn, char *fname)
+static DIR *audit_opendir(struct connection_struct *conn, const char *fname)
 {
-	DIR *result = default_vfs_ops.opendir(conn, fname);
+	DIR *result = global_vfs_ops->opendir(conn, fname);
 
 	syslog(SYSLOG_PRIORITY, "opendir %s %s%s\n",
 	       fname,
@@ -144,9 +77,10 @@ DIR *audit_opendir(struct connection_struct *conn, char *fname)
 	return result;
 }
 
-int audit_mkdir(struct connection_struct *conn, char *path, mode_t mode)
+static int audit_mkdir(struct connection_struct *conn, const char *path, 
+                       mode_t mode)
 {
-	int result = default_vfs_ops.mkdir(conn, path, mode);
+	int result = global_vfs_ops->mkdir(conn, path, mode);
 
 	syslog(SYSLOG_PRIORITY, "mkdir %s %s%s\n", 
 	       path,
@@ -156,9 +90,9 @@ int audit_mkdir(struct connection_struct *conn, char *path, mode_t mode)
 	return result;
 }
 
-int audit_rmdir(struct connection_struct *conn, char *path)
+static int audit_rmdir(struct connection_struct *conn, const char *path)
 {
-	int result = default_vfs_ops.rmdir(conn, path);
+	int result = global_vfs_ops->rmdir(conn, path);
 
 	syslog(SYSLOG_PRIORITY, "rmdir %s %s%s\n", 
 	       path, 
@@ -168,9 +102,10 @@ int audit_rmdir(struct connection_struct *conn, char *path)
 	return result;
 }
 
-int audit_open(struct connection_struct *conn, char *fname, int flags, mode_t mode)
+static int audit_open(struct connection_struct *conn, const char *fname, 
+                      int flags, mode_t mode) 
 {
-	int result = default_vfs_ops.open(conn, fname, flags, mode);
+	int result = global_vfs_ops->open(conn, fname, flags, mode);
 
 	syslog(SYSLOG_PRIORITY, "open %s (fd %d) %s%s%s\n", 
 	       fname, result,
@@ -181,9 +116,9 @@ int audit_open(struct connection_struct *conn, char *fname, int flags, mode_t mo
 	return result;
 }
 
-int audit_close(struct files_struct *fsp, int fd)
+static int audit_close(struct files_struct *fsp, int fd)
 {
-	int result = default_vfs_ops.close(fsp, fd);
+	int result = global_vfs_ops->close(fsp, fd);
 
 	syslog(SYSLOG_PRIORITY, "close fd %d %s%s\n",
 	       fd,
@@ -193,9 +128,10 @@ int audit_close(struct files_struct *fsp, int fd)
 	return result;
 }
 
-int audit_rename(struct connection_struct *conn, char *old, char *new)
+static int audit_rename(struct connection_struct *conn, const char *old, 
+                        const char *new)
 {
-	int result = default_vfs_ops.rename(conn, old, new);
+	int result = global_vfs_ops->rename(conn, old, new);
 
 	syslog(SYSLOG_PRIORITY, "rename %s -> %s %s%s\n",
 	       old, new,
@@ -205,9 +141,9 @@ int audit_rename(struct connection_struct *conn, char *old, char *new)
 	return result;    
 }
 
-int audit_unlink(struct connection_struct *conn, char *path)
+static int audit_unlink(struct connection_struct *conn, const char *path)
 {
-	int result = default_vfs_ops.unlink(conn, path);
+	int result = global_vfs_ops->unlink(conn, path);
 
 	syslog(SYSLOG_PRIORITY, "unlink %s %s%s\n",
 	       path,
@@ -217,9 +153,10 @@ int audit_unlink(struct connection_struct *conn, char *path)
 	return result;
 }
 
-int audit_chmod(struct connection_struct *conn, char *path, mode_t mode)
+static int audit_chmod(struct connection_struct *conn, const char *path, 
+                       mode_t mode)
 {
-	int result = default_vfs_ops.chmod(conn, path, mode);
+	int result = global_vfs_ops->chmod(conn, path, mode);
 
 	syslog(SYSLOG_PRIORITY, "chmod %s mode 0x%x %s%s\n",
 	       path, mode,
@@ -229,3 +166,28 @@ int audit_chmod(struct connection_struct *conn, char *path, mode_t mode)
 	return result;
 }
 
+/* VFS initialisation function.  Return initialised vfs_ops structure
+   back to SAMBA. */
+
+struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *ops)
+{
+        *vfs_version = SMB_VFS_INTERFACE_VERSION;
+
+	openlog("smbd_audit", LOG_PID, SYSLOG_FACILITY);
+	syslog(SYSLOG_PRIORITY, "initialised\n");
+
+        ops->connect = audit_connect;
+        ops->disconnect = audit_disconnect;
+        ops->opendir = audit_opendir;
+        ops->mkdir = audit_mkdir;
+        ops->rmdir = audit_rmdir;
+        ops->open = audit_open;
+        ops->close = audit_close;
+        ops->rename = audit_rename;
+        ops->unlink = audit_unlink;
+        ops->chmod = audit_chmod;
+
+        global_vfs_ops = ops;
+
+	return(ops);
+}
