@@ -349,8 +349,7 @@ ipv6_parse_addr (krb5_context context, const char *address, krb5_address *addr)
  * table
  */
 
-#define AF_ARANGE		(-100)
-#define KRB5_ADDRESS_ARANGE	AF_ARANGE
+#define KRB5_ADDRESS_ARANGE	(-100)
 
 struct arange {
     krb5_address low;
@@ -526,8 +525,10 @@ static struct addr_operations at[] = {
      ipv6_h_addr2addr,
      ipv6_uninteresting, ipv6_anyaddr, ipv6_print_addr, ipv6_parse_addr} ,
 #endif
+    {KRB5_ADDRESS_ADDRPORT, KRB5_ADDRESS_ADDRPORT, 0,
+     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
     /* fake address type */
-    {AF_ARANGE, KRB5_ADDRESS_ARANGE, sizeof(struct arange),
+    {KRB5_ADDRESS_ARANGE, KRB5_ADDRESS_ARANGE, sizeof(struct arange),
      NULL, NULL, NULL, NULL, NULL, NULL, NULL,
      arange_print_addr, arange_parse_addr, 
      arange_order_addr, arange_free, arange_copy }
@@ -773,6 +774,8 @@ krb5_address_order(krb5_context context,
 
     if(addr1->addr_type != addr2->addr_type)
 	return addr1->addr_type - addr2->addr_type;
+    if(addr1->address.length != addr2->address.length)
+	return addr1->address.length - addr2->address.length;
     return memcmp (addr1->address.data,
 		   addr2->address.data,
 		   addr1->address.length);
