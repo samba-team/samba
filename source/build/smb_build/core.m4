@@ -1,6 +1,7 @@
 dnl SMB Build Core System
 dnl -------------------------------------------------------
 dnl  Copyright (C) Stefan (metze) Metzmacher 2004
+dnl  Copyright (C) Jelmer Vernooij 2004
 dnl  Released under the GNU GPL
 dnl -------------------------------------------------------
 dnl
@@ -18,22 +19,13 @@ dnl		)
 AC_DEFUN([_SMB_BUILD_CORE],
 [
 
-echo "config.status: creating ./config.smb_build.pl"
-
-cat > config.smb_build.pl <<\_SMB_ACEOF
-#!$PERL -I$srcdir/build/smb_build
-#
-
+$PERL -I$srcdir/build/smb_build <<\_SMB_ACEOF
 use strict;
 
 my \$SMB_BUILD_CTX;
 
 use main;
 
-_SMB_ACEOF
-
-echo "#line 8 \"build/smb_build/core.m4\"" >> config.smb_build.pl
-cat >> config.smb_build.pl <<\_SMB_ACEOF
 ###########################################################
 ### First we list all info from configure		###
 ###########################################################
@@ -69,7 +61,5 @@ $SMB_INFO_BINARIES
 smb_build_main(\$SMB_BUILD_CTX);
 
 _SMB_ACEOF
-
-$PERL ./config.smb_build.pl || exit $?
 
 ])
