@@ -52,4 +52,7 @@ krb5_error_code recv_priv(krb5_context, krb5_auth_context, int, krb5_data*);
 krb5_error_code send_clear(krb5_context context, int fd, krb5_data data);
 krb5_error_code recv_clear(krb5_context context, int fd, krb5_data *out);
 
+int v4_prop(void *arg, Principal *p);
+int v4_prop_dump(void *arg, const char *file);
+
 #endif /* __HPROP_H__ */
