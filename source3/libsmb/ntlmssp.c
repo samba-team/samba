@@ -739,6 +739,12 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->session_key = session_key;
 	}
 
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		ntlmssp_state->session_key = data_blob(NULL, 0);
+	} else if (ntlmssp_state->session_key.length) {
+		nt_status = ntlmssp_sign_init(ntlmssp_state);
+	}
+
 	data_blob_free(&encrypted_session_key);
 	
 	/* allow arbitarily many authentications */
