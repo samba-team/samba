@@ -41,43 +41,54 @@ extern FILE* out_hnd;
 /****************************************************************************
 server get info query
 ****************************************************************************/
-void cmd_srv_query_info(struct client_info *info)
+BOOL net_srv_get_info(struct client_info *info,
+		uint32 info_level,
+		SRV_INFO_CTR *ctr)
 {
 	uint16 nt_pipe_fnum;
 	fstring dest_srv;
-	fstring tmp;
-	SRV_INFO_CTR ctr;
-	uint32 info_level = 101;
 
 	BOOL res = True;
-
-	bzero(&ctr, sizeof(ctr));
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
 	strupper(dest_srv);
 
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
-	{
-		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
-	}
-
-	DEBUG(4,("cmd_srv_query_info: server:%s info level: %d\n",
+	DEBUG(4,("net_srv_get_info: server:%s info level: %d\n",
 				dest_srv, (int)info_level));
-
-	DEBUG(5, ("cmd_srv_query_info: smb_cli->fd:%d\n", smb_cli->fd));
 
 	/* open LSARPC session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
 
 	/* send info level: receive requested info.  hopefully. */
 	res = res ? do_srv_net_srv_get_info(smb_cli, nt_pipe_fnum,
-				dest_srv, info_level, &ctr) : False;
+				dest_srv, info_level, ctr) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 
-	if (res)
+	return res;
+}
+
+/****************************************************************************
+server get info query
+****************************************************************************/
+void cmd_srv_query_info(struct client_info *info)
+{
+	uint32 info_level = 101;
+	SRV_INFO_CTR ctr;
+	fstring tmp;
+
+	bzero(&ctr, sizeof(ctr));
+
+	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
+	{
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
+	}
+
+	DEBUG(5, ("cmd_srv_query_info: smb_cli->fd:%d\n", smb_cli->fd));
+
+	if (net_srv_get_info(info, info_level, &ctr))
 	{
 		DEBUG(5,("cmd_srv_query_info: query succeeded\n"));
 
