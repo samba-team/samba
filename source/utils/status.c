@@ -35,10 +35,12 @@
 
 #include "includes.h"
 
-static pstring Ucrit_username = "";                   /* added by OH */
-static pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
-static int            Ucrit_MaxPid=0;                        /* added by OH */
-static unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
+#define SMB_MAXPIDS		2048
+static pstring 		Ucrit_username = "";               /* added by OH */
+static pid_t		Ucrit_pid[SMB_MAXPIDS];  /* Ugly !!! */   /* added by OH */
+static int		Ucrit_MaxPid=0;                    /* added by OH */
+static unsigned int	Ucrit_IsActive = 0;                /* added by OH */
+
 static int verbose, brief;
 static int            shares_only = 0;            /* Added by RJS */
 static int            locks_only  = 0;            /* Added by RJS */
@@ -49,26 +51,53 @@ static int show_brl;
 static void Ucrit_addUsername(const char *username)
 {
 	pstrcpy(Ucrit_username, username);
-	if(strlen(Ucrit_username) > 0)
+	
+	if ( strlen(Ucrit_username) > 0 )
 		Ucrit_IsActive = 1;
 }
 
 static unsigned int Ucrit_checkUsername(const char *username)
 {
-	if ( !Ucrit_IsActive) return 1;
-	if (strcmp(Ucrit_username,username) ==0) return 1;
+	if ( !Ucrit_IsActive ) 
+		return 1;
+	
+	if ( strcmp(Ucrit_username,username) == 0 ) 
+		return 1;
+	
 	return 0;
 }
 
 static unsigned int Ucrit_checkPid(pid_t pid)
 {
 	int i;
-	if ( !Ucrit_IsActive) return 1;
-	for (i=0;i<Ucrit_MaxPid;i++)
-		if( pid == Ucrit_pid[i] ) return 1;
+	
+	if ( !Ucrit_IsActive ) 
+		return 1;
+	
+	for (i=0;i<Ucrit_MaxPid;i++) {
+		if( pid == Ucrit_pid[i] ) 
+			return 1;
+	}
+	
 	return 0;
 }
 
+static BOOL Ucrit_addPid( pid_t pid )
+{
+	if ( !Ucrit_IsActive )
+		return True;
+
+	if ( Ucrit_MaxPid >= SMB_MAXPIDS ) {
+		d_printf("ERROR: More than %d pids for user %s!\n",
+			SMB_MAXPIDS, Ucrit_username);
+
+		return False;
+	}
+
+	Ucrit_pid[Ucrit_MaxPid++] = pid;
+	
+	return True;
+}
 
 static void print_share_mode(share_mode_entry *e, char *fname)
 {
@@ -525,6 +554,8 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	if (!process_exists(sessionid.pid) || !Ucrit_checkUsername(uidtoname(sessionid.uid))) {
 		return 0;
 	}
+
+	Ucrit_addPid( sessionid.pid );
 
 	d_printf("%5d   %-12s  %-12s  %-12s (%s)\n",
 	       (int)sessionid.pid, uidtoname(sessionid.uid), gidtoname(sessionid.gid), 
