@@ -91,12 +91,9 @@ typedef struct parse_struct
 typedef struct netsec_auth_struct
 {
 	RPC_AUTH_NETSEC_NEG netsec_neg;
+	uchar sess_key[16];
+	uchar sess_kf0[16];
 
-	HMACMD5Context    ctx2;
-	struct MD5Context ctx3;
-	HMACMD5Context    ctx4;
-
-	unsigned char netsec_hash[258];
 	uint32 seq_num;
 
 } netsec_auth_struct;

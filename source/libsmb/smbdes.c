@@ -360,7 +360,7 @@ void cred_hash3(uchar *out,uchar *in,uchar *key, int forw)
 
 void SamOEMhash( uchar *data, const uchar *key, int val)
 {
-  uchar s_box[256];
+  uchar hash[256];
   uchar index_i = 0;
   uchar index_j = 0;
   uchar j = 0;
@@ -373,18 +373,18 @@ void SamOEMhash( uchar *data, const uchar *key, int val)
 
   for (ind = 0; ind < 256; ind++)
   {
-    s_box[ind] = (uchar)ind;
+    hash[ind] = (uchar)ind;
   }
 
   for( ind = 0; ind < 256; ind++)
   {
      uchar tc;
 
-     j += (s_box[ind] + key[ind%16]);
+     j += (hash[ind] + key[ind%16]);
 
-     tc = s_box[ind];
-     s_box[ind] = s_box[j];
-     s_box[j] = tc;
+     tc = hash[ind];
+     hash[ind] = hash[j];
+     hash[j] = tc;
   }
   for( ind = 0; ind < len; ind++)
   {
@@ -392,14 +392,14 @@ void SamOEMhash( uchar *data, const uchar *key, int val)
     uchar t;
 
     index_i++;
-    index_j += s_box[index_i];
+    index_j += hash[index_i];
 
-    tc = s_box[index_i];
-    s_box[index_i] = s_box[index_j];
-    s_box[index_j] = tc;
+    tc = hash[index_i];
+    hash[index_i] = hash[index_j];
+    hash[index_j] = tc;
 
-    t = s_box[index_i] + s_box[index_j];
-    data[ind] = data[ind] ^ s_box[t];
+    t = hash[index_i] + hash[index_j];
+    data[ind] = data[ind] ^ hash[t];
   }
 }
 

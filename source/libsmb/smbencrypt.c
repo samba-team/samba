@@ -127,7 +127,7 @@ void E_md4hash(uchar *pwrd, uchar *p16)
 	/* Calculate length in bytes */
 	len = _my_wcslen(wpwd) * sizeof(int16);
 
-	mdfour(p16, (unsigned char *)wpwd, len);
+	mdfour(p16, (uchar *)wpwd, len);
 }
 
 /* Does the LM owf of a user's password */
@@ -201,7 +201,7 @@ void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16])
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	memset(nt_p16, '\0', 16);
-	mdfour(nt_p16, (unsigned char *)pwrd.buffer, pwrd.uni_str_len * 2);
+	mdfour(nt_p16, (uchar *)pwrd.buffer, pwrd.uni_str_len * 2);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("nt_owf_genW: pwd, nt#\n"));
@@ -506,8 +506,8 @@ void create_ntlmssp_resp(struct pwd_info *pwd,
                                 prs_struct *auth_resp)
 {
 	RPC_AUTH_NTLMSSP_RESP     ntlmssp_resp;
-	unsigned char lm_owf[24];
-	unsigned char nt_owf[128];
+	uchar lm_owf[24];
+	uchar nt_owf[128];
 	size_t nt_owf_len;
 
 	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf, &nt_owf_len, NULL);
@@ -590,3 +590,4 @@ BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 
 	return True;
 }
+

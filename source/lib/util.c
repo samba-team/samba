@@ -300,7 +300,7 @@ static int name_interpret(char *in,char *out)
   while(*in) 
     {
       *out++ = '.'; /* Scope names are separated by periods */
-      len = *(unsigned char *)in++;
+      len = *(uchar *)in++;
       StrnCpy(out, in, len);
       out += len;
       *out=0;
@@ -1079,7 +1079,7 @@ find a pointer to a netbios name
 ****************************************************************************/
 static char *name_ptr(char *buf,int ofs)
 {
-  unsigned char c = *(unsigned char *)(buf+ofs);
+  uchar c = *(uchar *)(buf+ofs);
 
   if ((c & 0xC0) == 0xC0)
     {
@@ -1113,7 +1113,7 @@ return the total storage length of a mangled name
 int name_len(char *s1)
 {
 	/* NOTE: this argument _must_ be unsigned */
-	unsigned char *s = (unsigned char *)s1;
+	uchar *s = (uchar *)s1;
 	int len;
 
 	/* If the two high bits of the byte are set, return 2. */
@@ -2956,7 +2956,7 @@ char *align2(char *q, char *base)
 	return q;
 }
 
-void out_ascii(FILE *f, const unsigned char *buf,int len)
+void out_ascii(FILE *f, const uchar *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
@@ -2967,7 +2967,7 @@ void out_ascii(FILE *f, const unsigned char *buf,int len)
 
 void out_struct(FILE *f, const char *buf1,int len, int per_line)
 {
-	const unsigned char *buf = (const unsigned char *)buf1;
+	const uchar *buf = (const uchar *)buf1;
 	int i;
 
 	if (len<=0)
@@ -2994,7 +2994,7 @@ void out_struct(FILE *f, const char *buf1,int len, int per_line)
 
 void out_data(FILE *f, const char *buf1,int len, int per_line)
 {
-	const unsigned char *buf = (const unsigned char *)buf1;
+	const uchar *buf = (const uchar *)buf1;
 	int i=0;
 	if (len<=0)
 	{
@@ -3033,7 +3033,7 @@ void out_data(FILE *f, const char *buf1,int len, int per_line)
 	}
 }
 
-void print_asc(int level, unsigned char const *buf,int len)
+void print_asc(int level, uchar const *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
@@ -3044,7 +3044,7 @@ void print_asc(int level, unsigned char const *buf,int len)
 
 void dump_data(int level, const char *buf1, int len)
 {
-	unsigned char const *buf = (unsigned char const *)buf1;
+	uchar const *buf = (uchar const *)buf1;
 	int i=0;
 	if (len<0) return;
 	if (len == 0)
@@ -3082,6 +3082,14 @@ void dump_data(int level, const char *buf1, int len)
 		if (n>0) print_asc(level,&buf[i-n],n); 
 		DEBUGADD(level,("\n"));    
 	}
+}
+
+void dump_data_pw(const char *msg, const uchar* data, size_t len)
+{
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("%s", msg));
+	dump_data(100, data, len);
+#endif
 }
 
 char *tab_depth(int depth)

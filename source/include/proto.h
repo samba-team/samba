@@ -239,6 +239,7 @@ void hmac_md5_init_limK_to_64(const uchar* key, int key_len,
 			HMACMD5Context *ctx);
 void hmac_md5_update(const uchar* text, int text_len, HMACMD5Context *ctx);
 void hmac_md5_final(uchar *digest, HMACMD5Context *ctx);
+void hmac_md5( uchar key[16], uchar* data, int data_len, uchar* digest);
 
 /*The following definitions come from  lib/interface.c  */
 
@@ -531,11 +532,12 @@ void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
 char *align4(char *q, char *base);
 char *align2(char *q, char *base);
-void out_ascii(FILE *f, const unsigned char *buf,int len);
+void out_ascii(FILE *f, const uchar *buf,int len);
 void out_struct(FILE *f, const char *buf1,int len, int per_line);
 void out_data(FILE *f, const char *buf1,int len, int per_line);
-void print_asc(int level, unsigned char const *buf,int len);
+void print_asc(int level, uchar const *buf,int len);
 void dump_data(int level, const char *buf1, int len);
+void dump_data_pw(const char *msg, const uchar* data, size_t len);
 char *tab_depth(int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
@@ -1015,6 +1017,7 @@ BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
 			int new_pwrd_size, uint32 *new_pw_len);
 BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 			int new_pw_len, BOOL nt_pass_set);
+void hmac_md5( uchar*  key, uchar* data, int data_len, uchar* digest);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
