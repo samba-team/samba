@@ -1495,13 +1495,12 @@ BOOL is_in_path(const char *name, name_compare_entry *namelist, BOOL case_sensit
 	pstring last_component;
 	char *p;
 
-	DEBUG(8, ("is_in_path: %s\n", name));
-
 	/* if we have no list it's obviously not in the path */
 	if((namelist == NULL ) || ((namelist != NULL) && (namelist[0].name == NULL))) {
-		DEBUG(8,("is_in_path: no name list.\n"));
 		return False;
 	}
+
+	DEBUG(8, ("is_in_path: %s\n", name));
 
 	/* Get the last component of the unix name. */
 	p = strrchr_m(name, '/');
