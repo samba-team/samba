@@ -214,18 +214,23 @@ krb5_init_context(krb5_context *context)
 void
 krb5_free_context(krb5_context context)
 {
-  int i;
+    int i;
 
-  free(context->etypes);
-  free(context->etypes_des);
-  krb5_free_host_realm (context, context->default_realms);
-  krb5_config_file_free (context, context->cf);
-  free_error_table (context->et_list);
-  for(i = 0; i < context->num_cc_ops; ++i)
-    free(context->cc_ops[i].prefix);
-  free(context->cc_ops);
-  free(context->kt_types);
-  free(context);
+    free(context->etypes);
+    free(context->etypes_des);
+    krb5_free_host_realm (context, context->default_realms);
+    krb5_config_file_free (context, context->cf);
+    free_error_table (context->et_list);
+    for(i = 0; i < context->num_cc_ops; ++i)
+	free(context->cc_ops[i].prefix);
+    free(context->cc_ops);
+    free(context->kt_types);
+    krb5_clear_error_string(context);
+    if(context->warn_dest != NULL)
+	krb5_closelog(context, context->warn_dest);
+    krb5_set_extra_addresses(context, NULL);
+    krb5_set_ignore_addresses(context, NULL);
+    free(context);
 }
 
 /*
@@ -355,9 +360,15 @@ krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
 krb5_error_code
 krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
 {
-    if(context->extra_addresses) {
+    if(context->extra_addresses)
 	krb5_free_addresses(context, context->extra_addresses);
-	free(context->extra_addresses);
+
+    if(addresses == NULL) {
+	if(context->extra_addresses != NULL) {
+	    free(context->extra_addresses);
+	    context->extra_addresses = NULL;
+	}
+	return 0;
     }
     if(context->extra_addresses == NULL) {
 	context->extra_addresses = malloc(sizeof(*context->extra_addresses));
@@ -393,9 +404,14 @@ krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
 krb5_error_code
 krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
 {
-    if(context->ignore_addresses) {
+    if(context->ignore_addresses)
 	krb5_free_addresses(context, context->ignore_addresses);
-	free(context->ignore_addresses);
+    if(addresses == NULL) {
+	if(context->ignore_addresses != NULL) {
+	    free(context->ignore_addresses);
+	    context->ignore_addresses = NULL;
+	}
+	return 0;
     }
     if(context->ignore_addresses == NULL) {
 	context->ignore_addresses = malloc(sizeof(*context->ignore_addresses));
