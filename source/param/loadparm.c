@@ -1716,6 +1716,8 @@ static void free_service(service * pservice)
 		pservice->copymap = NULL;
 	}
 
+	pservice->valid = False;
+
 	for (i = 0; parm_table[i].label; i++)
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
