@@ -48,6 +48,11 @@ NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
+	if (pvfs_is_open(pvfs, name1) ||
+	    pvfs_is_open(pvfs, name2)) {
+		return NT_STATUS_SHARING_VIOLATION;
+	}
+
 	if (name1->has_wildcard || name2->has_wildcard) {
 		DEBUG(3,("Rejecting wildcard rename '%s' -> '%s'\n", 
 			 ren->rename.in.pattern1, ren->rename.in.pattern2));
