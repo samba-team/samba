@@ -255,6 +255,7 @@ implemented */
 #define ERRbadshare 32 /* Share mode on file conflict with open mode */
 #define ERRlock 33 /* Lock request conflicts with existing lock */
 #define ERRunsup 50 /* Request unsupported, returned by Win 95, RJS 20Jun98 */
+#define ERRnosuchshare 67 /* You specified an invalid share name */
 #define ERRfilexists 80 /* File in operation already exists */
 #define ERRcannotopen 110 /* Cannot open the file specified */
 #define ERRunknownlevel 124
@@ -903,6 +904,9 @@ typedef enum
 {
   P_LOCAL,P_GLOBAL,P_SEPARATOR,P_NONE
 } parm_class;
+
+/* passed to br lock code */
+enum lock_type {READ_LOCK, WRITE_LOCK};
 
 struct enum_list {
 	int value;
