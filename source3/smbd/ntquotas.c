@@ -119,11 +119,8 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid,
 
 	id.uid = -1;
 
-#if defined(QUOTABLOCK_SIZE)
 	D.bsize     = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
-#else
-	D.bsize     = (SMB_BIG_UINT)1024;
-#endif
+
 	D.softlimit = limit_nt2unix(qt->softlim,D.bsize);
 	D.hardlimit = limit_nt2unix(qt->hardlim,D.bsize);
 	D.qflags     = qt->qflags;

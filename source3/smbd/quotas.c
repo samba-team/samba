@@ -29,6 +29,11 @@
 
 #ifndef HAVE_SYS_QUOTAS
 
+/* just a quick hack because sysquotas.h is included before linux/quota.h */
+#ifdef QUOTABLOCK_SIZE
+#undef QUOTABLOCK_SIZE
+#endif
+
 #ifdef WITH_QUOTAS
 
 #if defined(VXFS_QUOTA)

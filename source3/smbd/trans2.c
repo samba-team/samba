@@ -1480,7 +1480,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			SIVAL(pdata,4,0); /* characteristics */
 			break;
 
-#ifdef WITH_QUOTAS
+#ifdef HAVE_SYS_QUOTAS
 		case SMB_FS_QUOTA_INFORMATION:
 		/* 
 		 * what we have to send --metze:
@@ -1551,7 +1551,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			
 			break;
 		}
-#endif /* WITH_QUOTAS */
+#endif /* HAVE_SYS_QUOTAS */
 		case SMB_FS_OBJECTID_INFORMATION:
 			data_len = 64;
 			break;
@@ -1593,7 +1593,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 	return -1;
 }
 
-#ifdef WITH_QUOTAS
+#ifdef HAVE_SYS_QUOTAS
 /****************************************************************************
  Reply to a TRANS2_SETFSINFO (set filesystem info).
 ****************************************************************************/
@@ -1705,7 +1705,7 @@ static int call_trans2setfsinfo(connection_struct *conn,
 
 	return outsize;
 }
-#endif /* WITH_QUOTAS */
+#endif /* HAVE_SYS_QUOTAS */
 
 /****************************************************************************
  *  Utility function to set bad path error.
@@ -3492,7 +3492,7 @@ int reply_trans2(connection_struct *conn,
 		END_PROFILE_NESTED(Trans2_qfsinfo);
 	    break;
 
-#ifdef WITH_QUOTAS
+#ifdef HAVE_SYS_QUOTAS
 	case TRANSACT2_SETFSINFO:
 		START_PROFILE_NESTED(Trans2_setfsinfo);
 		outsize = call_trans2setfsinfo(conn, inbuf, outbuf, length, bufsize, 

@@ -177,6 +177,11 @@
 
 #endif /* HAVE_SYS_QUOTAS */
 
+
+#ifndef QUOTABLOCK_SIZE
+#define QUOTABLOCK_SIZE	1024
+#endif
+
 /**************************************************
  Some stuff for the sys_quota api.
  **************************************************/ 

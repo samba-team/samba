@@ -23,6 +23,7 @@
 
 #include "includes.h"
 
+#ifdef HAVE_SYS_QUOTAS
 
 #if defined(HAVE_QUOTACTL_4A) 
 /* long quotactl(int cmd, char *special, qid_t id, caddr_t addr) */
@@ -857,6 +858,12 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	return ret;		
 }
 
+#else /* HAVE_SYS_QUOTAS */
+ void dummy_sysquotas_c(void)
+{
+	return;
+}
+#endif /* HAVE_SYS_QUOTAS */
 
 #else /* ! AUTOCONF_TEST */
 /* this is the autoconf driver to test witch quota system we should use */
