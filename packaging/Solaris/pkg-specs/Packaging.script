@@ -1,5 +1,0 @@
-#!/bin/sh
-./mkprototype
-pkgmk -o -d /tmp -b `pwd` -f ./prototype
-cd /tmp
-pkgtrans . samba.pkg samba
