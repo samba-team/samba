@@ -63,7 +63,7 @@ do_cpw_entry(krb5_principal principal, void *data)
 {
     char *pw, pwbuf[128], prompt[128], *pr;
     struct cpw_entry_data *e = data;
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     
     pw = e->password;
     if(e->random == 0){
