@@ -206,6 +206,13 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path)
   if (*p == (char)0)
     return 0;
 
+  if (*p == '/') {
+
+    strncpy(server, lp_workgroup(), 16); /* FIXME: Danger here */
+    return 0;
+
+  }
+
   /* ok, its for us. Now parse out the server, share etc. */
 
   if (!next_token(&p, server, "/", sizeof(fstring))) {
@@ -1356,6 +1363,7 @@ int smbc_opendir(const char *fname)
       /* Check to see if <server><1D> translates, or <server><20> translates */
 
       if (resolve_name(server, &rem_ip, 0x1d)) { /* Found LMB */
+	pstring buserver;
 
 	smbc_file_table[slot]->dir_type = SMBC_SERVER;
 
@@ -1363,13 +1371,13 @@ int smbc_opendir(const char *fname)
 	 * Get the backup list ...
 	 */
 
-	cli_get_backup_server(my_netbios_name, server, server, sizeof(server));
+	cli_get_backup_server(my_netbios_name, server, buserver, sizeof(buserver));
 
 	/*
 	 * Get a connection to IPC$ on the server if we do not already have one
 	 */
 
-	srv = smbc_server(server, "IPC$");
+	srv = smbc_server(buserver, "IPC$");
 
 	if (!srv) {
 
@@ -1383,7 +1391,7 @@ int smbc_opendir(const char *fname)
 
 	/* Now, list the servers ... */
 
-	if (!cli_NetServerEnum(&srv->cli, lp_workgroup(), 0x0000FFFE, list_fn,
+	if (!cli_NetServerEnum(&srv->cli, server, 0x0000FFFE, list_fn,
 			       (void *)smbc_file_table[slot])) {
 
 	  if (smbc_file_table[slot]) free(smbc_file_table[slot]);
