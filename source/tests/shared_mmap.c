@@ -30,7 +30,7 @@ main()
 
 	close(fd);
 
-	if (sys_fork() == 0) {
+	if (fork() == 0) {
 		fd = open(DATA,O_RDWR);
 		if (fd == -1) exit(1);
 
