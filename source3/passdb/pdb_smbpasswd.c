@@ -1222,7 +1222,6 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 			return False;
 		}
 	} else {
-		
 		if (!NT_STATUS_IS_OK(pdb_fill_sam_pw(sam_pass, pwfile))) {
 			return False;
 		}
@@ -1380,14 +1379,19 @@ static NTSTATUS smbpasswd_getsampwnam(struct pdb_methods *my_methods,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_acct,uint32 rid)
+static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
+	fstring sid_str;
+	uint32 rid;
+	
+	DEBUG(10, ("smbpasswd_getsampwrid: search by sid: %s\n", sid_to_string(sid_str, sid)));
 
-	DEBUG(10, ("smbpasswd_getsampwrid: search by rid: %d\n", rid));
+	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
+		return NT_STATUS_UNSUCCESSFUL;
 
 	/* More special case 'guest account' hacks... */
 	if (rid == DOMAIN_USER_RID_GUEST) {
@@ -1431,16 +1435,16 @@ static NTSTATUS smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUN
 	if (!build_sam_account (smbpasswd_state, sam_acct, smb_pw))
 		return nt_status;
 
+	/* build_sam_account might change the SID on us, if the name was for the guest account */
+	if (NT_STATUS_IS_OK(nt_status) && !sid_equal(pdb_get_user_sid(sam_acct), sid)) {
+		fstring sid_string1, sid_string2;
+		DEBUG(1, ("looking for user with sid %s instead returned %s for account %s!?!\n",
+			  sid_to_string(sid_string1, sid), sid_to_string(sid_string2, pdb_get_user_sid(sam_acct)), pdb_get_username(sam_acct)));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
 	/* success */
 	return NT_STATUS_OK;
-}
-
-static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
-{
-	uint32 rid;
-	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
-		return NT_STATUS_UNSUCCESSFUL;
-	return smbpasswd_getsampwrid(my_methods, user, rid);
 }
 
 static NTSTATUS smbpasswd_add_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
@@ -1493,58 +1497,6 @@ static NTSTATUS smbpasswd_delete_sam_account (struct pdb_methods *my_methods, SA
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS smbpasswd_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
-				 DOM_SID sid, BOOL with_priv)
-{
-	return get_group_map_from_sid(sid, map, with_priv) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS smbpasswd_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
-				 gid_t gid, BOOL with_priv)
-{
-	return get_group_map_from_gid(gid, map, with_priv) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS smbpasswd_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
-				 char *name, BOOL with_priv)
-{
-	return get_group_map_from_ntname(name, map, with_priv) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS smbpasswd_add_group_mapping_entry(struct pdb_methods *methods,
-						GROUP_MAP *map)
-{
-	return add_mapping_entry(map, TDB_INSERT) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS smbpasswd_update_group_mapping_entry(struct pdb_methods *methods,
-						   GROUP_MAP *map)
-{
-	return add_mapping_entry(map, TDB_REPLACE) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS smbpasswd_delete_group_mapping_entry(struct pdb_methods *methods,
-						   DOM_SID sid)
-{
-	return group_map_remove(sid) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS smbpasswd_enum_group_mapping(struct pdb_methods *methods,
-					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **rmap, int *num_entries,
-					   BOOL unix_only, BOOL with_priv)
-{
-	return enum_group_mapping(sid_name_use, rmap, num_entries, unix_only,
-				  with_priv) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
 static void free_private_data(void **vp) 
 {
 	struct smbpasswd_privates **privates = (struct smbpasswd_privates**)vp;
@@ -1575,13 +1527,6 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 	(*pdb_method)->add_sam_account = smbpasswd_add_sam_account;
 	(*pdb_method)->update_sam_account = smbpasswd_update_sam_account;
 	(*pdb_method)->delete_sam_account = smbpasswd_delete_sam_account;
-	(*pdb_method)->getgrsid = smbpasswd_getgrsid;
-	(*pdb_method)->getgrgid = smbpasswd_getgrgid;
-	(*pdb_method)->getgrnam = smbpasswd_getgrnam;
-	(*pdb_method)->add_group_mapping_entry = smbpasswd_add_group_mapping_entry;
-	(*pdb_method)->update_group_mapping_entry = smbpasswd_update_group_mapping_entry;
-	(*pdb_method)->delete_group_mapping_entry = smbpasswd_delete_group_mapping_entry;
-	(*pdb_method)->enum_group_mapping = smbpasswd_enum_group_mapping;
 
 	/* Setup private data and free function */
 
