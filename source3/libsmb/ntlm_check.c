@@ -170,6 +170,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     const DATA_BLOB *challenge,
 			     const DATA_BLOB *lm_response,
 			     const DATA_BLOB *nt_response,
+			     const DATA_BLOB *lm_interactive_pwd,
+			     const DATA_BLOB *nt_interactive_pwd,
 			     const char *username, 
 			     const char *client_username, 
 			     const char *client_domain,
@@ -181,6 +183,47 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	if (nt_pw == NULL) {
 		DEBUG(3,("ntlm_password_check: NO NT password stored for user %s.\n", 
 			 username));
+	}
+
+	if (nt_interactive_pwd && nt_interactive_pwd->length && nt_pw) { 
+		if (nt_interactive_pwd->length != 16) {
+			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid NT password length (%d) supplied for user %s\n", (int)nt_interactive_pwd->length,
+				 username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+		if (memcmp(nt_interactive_pwd->data, nt_pw, 16) == 0) {
+			if (user_sess_key) {
+				*user_sess_key = data_blob(NULL, 16);
+				SMBsesskeygen_ntv1(nt_pw, NULL, user_sess_key->data);
+			}
+			return NT_STATUS_OK;
+		} else {
+			DEBUG(3,("ntlm_password_check: Interactive logon: NT password check failed for user %s\n",
+				 username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+	} else if (lm_interactive_pwd && lm_interactive_pwd->length && lm_pw) { 
+		if (lm_interactive_pwd->length != 16) {
+			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid LANMAN password length (%d) supplied for user %s\n", (int)lm_interactive_pwd->length,
+				 username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+		if (!lp_lanman_auth()) {
+			DEBUG(3,("ntlm_password_check: Interactive logon: only LANMAN password supplied for user %s, and LM passwords are disabled!\n",
+				 username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+		if (memcmp(lm_interactive_pwd->data, lm_pw, 16) == 0) {
+			return NT_STATUS_OK;
+		} else {
+			DEBUG(3,("ntlm_password_check: Interactive logon: LANMAN password check failed for user %s\n",
+				 username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
 	}
 
 	/* Check for cleartext netlogon. Used by Exchange 5.5. */
