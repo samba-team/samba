@@ -340,14 +340,14 @@ based solution fit into three basic categories.
 </para>
 
 <table frame="all"><title>The 3 Major Site Types</title>
-<tgroup cols="2" align="center">
+<tgroup cols="2">
 	<thead>
-	<row><entry align="center">Number of Users</entry><entry>Description</entry></row>
+	<row><entry>Number of Users</entry><entry>Description</entry></row>
 	</thead>
 	<tbody>
-	<row><entry align="center">&lt; 50</entry><entry><para>Want simple conversion with NO pain</para></entry></row>
-	<row><entry align="center">50 - 250</entry><entry><para>Want new features, can manage some in-house complexity</para></entry></row>
-	<row><entry align="center">&gt; 250</entry><entry><para>Solution/Implementation MUST scale well, complex needs. Cross departmental decision process. Local expertise in most areas</para></entry></row>
+	<row><entry>&lt; 50</entry><entry><para>Want simple conversion with NO pain</para></entry></row>
+	<row><entry>50 - 250</entry><entry><para>Want new features, can manage some in-house complexity</para></entry></row>
+	<row><entry>&gt; 250</entry><entry><para>Solution/Implementation MUST scale well, complex needs. Cross departmental decision process. Local expertise in most areas</para></entry></row>
 	</tbody>
 </tgroup>
 </table>
@@ -397,7 +397,7 @@ No matter what choice you make, the following rules will minimise down-stream pr
 </itemizedlist>
 
 <table frame="top"><title>Nature of the Conversion Choices</title>
-<tgroup cols="3" align="center">
+<tgroup cols="3">
 	<thead>
 	<row><entry>Simple</entry><entry>Upgraded</entry><entry>Redesign</entry></row>
 	</thead>

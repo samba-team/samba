@@ -543,16 +543,21 @@ should be named WINBIND.  A stanza like the following:
 WINBIND:
         program = /usr/lib/security/WINBIND
         options = authonly
-<programlisting></para>
+</programlisting></para>
 
-<para>can then be added to <filename>/usr/lib/security/methods.cfg</filename>. 
-This module only supports identification, but there have been success reports
-using the standard winbind pam module for authentication.  Use caution
-configuring loadable authentication modules as it is possible to make
-it impossible to logon to the system.  More information about the AIX
-authentication module API can be found at
-<link url="http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixprggd/kernextc/sec_load_mod.htm"/> and more information on administering the 
-modules at <link url="http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixbman/baseadmn/iandaadmin.htm"/>.
+<para>can then be added to
+<filename>/usr/lib/security/methods.cfg</filename>.  This module only
+supports identification, but there have been success reports using the
+standard winbind pam module for authentication.  Use caution configuring
+loadable authentication modules as it is possible to make it impossible
+to logon to the system.  More information about the AIX authentication
+module API can be found at &quot;Kernel Extensions and Device Support
+Programming Concepts for AIX&quot;: <link
+url="http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixprggd/kernextc/sec_load_mod.htm">
+Chapter 18. Loadable Authentication Module Programming Interface</link> 
+and more information on administering the  modules at <link
+url="http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixbman/baseadmn/iandaadmin.htm">
+&quot;System Management Guide: Operating System and Devices&quot;</link>.
 </para>
 </sect3>
 
@@ -563,7 +568,8 @@ modules at <link url="http://publibn.boulder.ibm.com/doc_link/en_US/a_doc_lib/ai
 Several parameters are needed in the smb.conf file to control 
 the behavior of <command>winbindd</command>. Configure 
 <filename>smb.conf</filename> These are described in more detail in 
-the <ulink url="winbindd.8.html">winbindd(8)</ulink> man page.  My 
+the <citerefentry><refentrytitle>winbindd</refentrytitle>
+<manvolnum>8</manvolnum></citerefentry> man page.  My 
 <filename>smb.conf</filename> file was modified to
 include the following entries in the [global] section:
 </para>

@@ -1,4 +1,5 @@
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book SYSTEM "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
 <!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 
@@ -24,9 +25,9 @@ documentation represents a major revision or layout as well as contents.
 The most recent version of this document can be found at
 <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
 on the "Documentation" page.  Please send updates to
-<ulink url="mailto:jelmer@samba.org">jelmer@samba.org</ulink>,
-<ulink url="mailto:jht@samba.org">jht@samba.org</ulink> or
-<ulink url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
+<ulink url="mailto:jelmer@samba.org">Jelmer Venrooij</ulink>,
+<ulink url="mailto:jht@samba.org">John Terpstra</ulink> or
+<ulink url="mailto:jerry@samba.org">Gerald (Jerry) Carter</ulink>.
 </para>
 
 <para>
@@ -50,6 +51,8 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 </legalnotice>
 </bookinfo>
 
+<!-- Contents -->
+<toc/>
 
 <!-- Chapters -->
 <part id="introduction">
@@ -126,4 +129,5 @@ Samba has several features that you might want or might not want to use. The cha
 &SWAT;
 &SPEED;
 </part>
+
 </book>
