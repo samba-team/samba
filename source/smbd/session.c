@@ -34,8 +34,8 @@ BOOL session_init(void)
 	if (tdb)
 		return True;
 
-	tdb = tdb_open_ex(lock_path("sessionid.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-		       O_RDWR | O_CREAT, 0644, smbd_tdb_log);
+	tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+		       O_RDWR | O_CREAT, 0644);
 	if (!tdb) {
 		DEBUG(1,("session_init: failed to open sessionid tdb\n"));
 		return False;
