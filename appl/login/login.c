@@ -113,6 +113,7 @@ krb5_verify(struct passwd *pwd, const char *password)
     krb5_context context;
     krb5_principal princ;
     krb5_ccache id;
+
     ret = krb5_init_context(&context);
     if(ret)
 	return 1;
@@ -134,7 +135,7 @@ krb5_verify(struct passwd *pwd, const char *password)
 			   password, 
 			   1,
 			   NULL);
-    if(ret == 0){
+    if(ret == 0) {
 	krb5_ccache id2;
 	char residual[32];
 	/* copy credentials to file cache */
@@ -142,10 +143,10 @@ krb5_verify(struct passwd *pwd, const char *password)
 		 (unsigned)pwd->pw_uid);
 	krb5_cc_resolve(context, residual, &id2);
 	if(seteuid(pwd->pw_uid))
-	    ;
+	    krb5_err (context, 1, errno, "seteuid");
 	ret = krb5_cc_copy_cache(context, id, id2);
 	if(seteuid(0))
-	    ;
+	    krb5_err (context, 1, errno, "seteuid");
 	ret = krb5_cc_close(context, id2);
 	add_env("KRB5CCNAME", residual);
 	ret = 0;
