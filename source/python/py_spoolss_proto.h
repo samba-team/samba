@@ -91,6 +91,9 @@ PyObject *spoolss_hnd_getprinterdata(PyObject *self, PyObject *args, PyObject *k
 PyObject *spoolss_hnd_setprinterdata(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_hnd_enumprinterdata(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_hnd_deleteprinterdata(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_getprinterdataex(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_setprinterdataex(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_enumprinterdataex(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_hnd_deleteprinterdataex(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_printers.c  */
