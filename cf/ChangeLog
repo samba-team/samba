@@ -1,3 +1,7 @@
+1999-07-29  Assar Westerlund  <assar@sics.se>
+
+	* have-struct-field.m4: quote macros when undefining
+
 1999-07-28  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am.common (install-build-headers): add dependencies
