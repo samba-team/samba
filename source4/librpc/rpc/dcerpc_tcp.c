@@ -117,6 +117,10 @@ static void tcp_process_recv(struct dcerpc_pipe *p)
 	struct tcp_private *tcp = p->transport.private;
 	ssize_t ret;
 
+	if (tcp->recv.data.data == NULL) {
+		tcp->recv.data = data_blob_talloc(tcp, NULL, MIN_HDR_SIZE);
+	}
+
 	/* read in the base header to get the fragment length */
 	if (tcp->recv.received < MIN_HDR_SIZE) {
 		uint32_t frag_length;
@@ -172,7 +176,8 @@ static void tcp_process_recv(struct dcerpc_pipe *p)
 
 	/* we have a full packet */
 	p->transport.recv_data(p, &tcp->recv.data, NT_STATUS_OK);
-
+	talloc_free(tcp->recv.data.data);
+	tcp->recv.data = data_blob(NULL, 0);
 	tcp->recv.received = 0;
 	tcp->recv.pending_count--;
 	if (tcp->recv.pending_count == 0) {
@@ -358,7 +363,7 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 	tcp->event_ctx = event_context_init();
 	tcp->pending_send = NULL;
 	tcp->recv.received = 0;
-	tcp->recv.data = data_blob_talloc(tcp, NULL, MIN_HDR_SIZE);
+	tcp->recv.data = data_blob(NULL, 0);
 	tcp->recv.pending_count = 0;
 
 	fde.fd = fd;
