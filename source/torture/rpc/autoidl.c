@@ -23,6 +23,42 @@
 #include "includes.h"
 
 
+/*
+  get a handle - doesn't really matter what type
+*/
+static BOOL get_policy_handle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_Connect r;
+
+	r.in.system_name = 0;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.handle = handle;
+
+	status = dcerpc_samr_Connect(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("samr_Connect failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
+static void fill_blob_handle(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+			     struct policy_handle *handle)
+{
+	DATA_BLOB b2;
+
+	if (blob->length < 20) {
+		return;
+	}
+
+	ndr_push_struct_blob(&b2, mem_ctx, handle, (ndr_push_flags_fn_t)ndr_push_policy_handle);
+
+	memcpy(blob->data, b2.data, 20);
+}
+
 static void reopen(struct dcerpc_pipe **p, const struct dcerpc_interface_table *iface)
 {
 	NTSTATUS status;
@@ -79,19 +115,27 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 	int i;
 	NTSTATUS status;
 	struct dcerpc_pipe *p = NULL;
+	struct policy_handle handle;
 
 	reopen(&p, iface);
 
+	get_policy_handle(p, mem_ctx, &handle);
+
 	/* work out the minimum amount of input data */
-	for (i=0;i<100;i++) {
+	for (i=0;i<2000;i++) {
 		stub_in = data_blob(NULL, i);
 		data_blob_clear(&stub_in);
+
+#if 1
+		fill_blob_handle(&stub_in, mem_ctx, &handle);
+#endif
 
 		status = dcerpc_request(p, opnum, mem_ctx, &stub_in, &stub_out);
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d\n", 
 			       opnum, stub_in.length, stub_out.length);
+			dump_data(0, stub_out.data, stub_out.length);
 			dcerpc_pipe_close(p);
 			test_ptr_scan(mem_ctx, iface, opnum, stub_in.length);
 			return;
@@ -115,21 +159,15 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 
 static void test_auto_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table *iface)
 {
-	int i;
-	for (i=0;i<100;i++) {
-		test_scan_call(mem_ctx, iface, i);
-	}
+	test_scan_call(mem_ctx, iface, 0x26);
 }
 
 BOOL torture_rpc_autoidl(int dummy)
 {
-        NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	const struct dcerpc_interface_table *iface;
-	char *host = lp_parm_string(-1, "torture", "host");
-	char *transport = lp_parm_string(-1, "torture", "transport");
 		
-	iface = idl_iface_by_name("browser");
+	iface = idl_iface_by_name("samr");
 	if (!iface) {
 		printf("Unknown interface!\n");
 		return False;
@@ -138,16 +176,6 @@ BOOL torture_rpc_autoidl(int dummy)
 	mem_ctx = talloc_init("torture_rpc_autoidl");
 
 	printf("\nProbing pipe '%s'\n", iface->name);
-
-	/* on TCP we need to find the right endpoint */
-	if (strcasecmp(transport, "ncacn_ip_tcp") == 0) {
-		uint32 port;
-		status = dcerpc_epm_map_tcp_port(host, iface->uuid, iface->if_version, &port);
-		if (!NT_STATUS_IS_OK(status)) {
-			return False;
-		}
-		lp_set_cmdline("torture:share", talloc_asprintf(mem_ctx, "%u", port));
-	}
 
 	test_auto_scan(mem_ctx, iface);
 
