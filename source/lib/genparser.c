@@ -34,12 +34,12 @@ static int all_zero(const char *ptr, unsigned size)
 }
 
 /* encode a buffer of bytes into a escaped string */
-static char *encode_bytes(const char *ptr, unsigned len)
+static char *encode_bytes(TALLOC_CTX *mem_ctx, const char *ptr, unsigned len)
 {
 	const char *hexdig = "0123456789abcdef";
 	char *ret, *p;
 	unsigned i;
-	ret = malloc(len*3 + 1); /* worst case size */
+	ret = talloc(mem_ctx, len*3 + 1); /* worst case size */
 	if (!ret) return NULL;
 	for (p=ret,i=0;i<len;i++) {
 		if (isalnum(ptr[i]) || isspace(ptr[i]) ||
@@ -61,11 +61,16 @@ static char *encode_bytes(const char *ptr, unsigned len)
 }
 
 /* decode an escaped string from encode_bytes() into a buffer */
-static char *decode_bytes(const char *s, unsigned *len) 
+static char *decode_bytes(TALLOC_CTX *mem_ctx, const char *s, unsigned *len) 
 {
 	char *ret, *p;
 	unsigned i;
-	ret = calloc(1, strlen(s)+1); /* worst case length */
+	int slen = strlen(s) + 1;
+
+	ret = talloc(mem_ctx, slen); /* worst case length */
+	if (!ret)
+		return NULL;
+	memset(ret, 0, slen);
 
 	if (*s == '{') s++;
 
@@ -75,7 +80,6 @@ static char *decode_bytes(const char *s, unsigned *len)
 		} else if (s[i] == '\\') {
 			unsigned v;
 			if (sscanf(&s[i+1], "%02x", &v) != 1 || v > 255) {
-				free(ret);
 				return NULL;
 			}
 			*(unsigned char *)p = v;
@@ -96,11 +100,11 @@ static char *decode_bytes(const char *s, unsigned *len)
    parse_string */
 
 /* allocate more space if needed */
-static int addgen_alloc(struct parse_string *p, int n)
+static int addgen_alloc(TALLOC_CTX *mem_ctx, struct parse_string *p, int n)
 {
 	if (p->length + n <= p->allocated) return 0;
 	p->allocated = p->length + n + 200;
-	p->s = realloc(p->s, p->allocated);
+	p->s = talloc_realloc(mem_ctx, p->s, p->allocated);
 	if (!p->s) {
 		errno = ENOMEM;
 		return -1;
@@ -109,9 +113,9 @@ static int addgen_alloc(struct parse_string *p, int n)
 }
 
 /* add a character to the buffer */
-static int addchar(struct parse_string *p, char c)
+static int addchar(TALLOC_CTX *mem_ctx, struct parse_string *p, char c)
 {
-	if (addgen_alloc(p, 2) != 0) {
+	if (addgen_alloc(mem_ctx, p, 2) != 0) {
 		return -1;
 	}
 	p->s[p->length++] = c;
@@ -120,10 +124,10 @@ static int addchar(struct parse_string *p, char c)
 }
 
 /* add a string to the buffer */
-int addstr(struct parse_string *p, const char *s)
+int addstr(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *s)
 {
 	int len = strlen(s);
-	if (addgen_alloc(p, len+1) != 0) {
+	if (addgen_alloc(mem_ctx, p, len+1) != 0) {
 		return -1;
 	}
 	memcpy(p->s + p->length, s, len+1);
@@ -132,10 +136,10 @@ int addstr(struct parse_string *p, const char *s)
 }
 
 /* add a string to the buffer with a tab prefix */
-static int addtabbed(struct parse_string *p, const char *s, unsigned indent)
+static int addtabbed(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *s, unsigned indent)
 {
 	int len = strlen(s);
-	if (addgen_alloc(p, indent+len+1) != 0) {
+	if (addgen_alloc(mem_ctx, p, indent+len+1) != 0) {
 		return -1;
 	}
 	while (indent--) {
@@ -147,7 +151,7 @@ static int addtabbed(struct parse_string *p, const char *s, unsigned indent)
 }
 
 /* note! this can only be used for results up to 60 chars wide! */
-int addshort(struct parse_string *p, const char *fmt, ...)
+int addshort(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *fmt, ...)
 {
 	char buf[60];
 	int n;
@@ -155,7 +159,7 @@ int addshort(struct parse_string *p, const char *fmt, ...)
 	va_start(ap, fmt);
 	n = vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
-	if (addgen_alloc(p, n + 1) != 0) {
+	if (addgen_alloc(mem_ctx, p, n + 1) != 0) {
 		return -1;
 	}
 	if (n != 0) {
@@ -170,7 +174,7 @@ int addshort(struct parse_string *p, const char *fmt, ...)
    this is here to make it easier for people to write dump functions 
    for their own types
  */
-int gen_addgen(struct parse_string *p, const char *fmt, ...)
+int gen_addgen(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *fmt, ...)
 {
 	char *buf = NULL;
 	int n;
@@ -178,7 +182,7 @@ int gen_addgen(struct parse_string *p, const char *fmt, ...)
 	va_start(ap, fmt);
 	n = vasprintf(&buf, fmt, ap);
 	va_end(ap);
-	if (addgen_alloc(p, n + 1) != 0) {
+	if (addgen_alloc(mem_ctx, p, n + 1) != 0) {
 		if (buf) free(buf);
 		return -1;
 	}
@@ -192,7 +196,8 @@ int gen_addgen(struct parse_string *p, const char *fmt, ...)
 }
 
 /* dump a enumerated type */
-int gen_dump_enum(const struct enum_struct *einfo,
+int gen_dump_enum(TALLOC_CTX *mem_ctx,
+		  const struct enum_struct *einfo,
 		  struct parse_string *p, 
 		  const char *ptr,
 		  unsigned indent)
@@ -201,36 +206,37 @@ int gen_dump_enum(const struct enum_struct *einfo,
 	int i;
 	for (i=0;einfo[i].name;i++) {
 		if (v == einfo[i].value) {
-			addstr(p, einfo[i].name);
+			addstr(mem_ctx, p, einfo[i].name);
 			return 0;
 		}
 	}
 	/* hmm, maybe we should just fail? */
-	return gen_dump_unsigned(p, ptr, indent);
+	return gen_dump_unsigned(mem_ctx, p, ptr, indent);
 }
 
 /* dump a single non-array element, hanlding struct and enum */
-static int gen_dump_one(struct parse_string *p, 
-			 const struct parse_struct *pinfo,
-			 const char *ptr,
-			 unsigned indent)
+static int gen_dump_one(TALLOC_CTX *mem_ctx,
+			struct parse_string *p, 
+			const struct parse_struct *pinfo,
+			const char *ptr,
+			unsigned indent)
 {
 	if (pinfo->dump_fn == gen_dump_char && pinfo->ptr_count == 1) {
-		char *s = encode_bytes(ptr, strlen(ptr));
-		if (addchar(p,'{') ||
-		    addstr(p, s) ||
-		    addstr(p, "}")) {
-			free(s);
+		char *s = encode_bytes(mem_ctx, ptr, strlen(ptr));
+		if (addchar(mem_ctx, p,'{') ||
+		    addstr(mem_ctx, p, s) ||
+		    addstr(mem_ctx, p, "}")) {
 			return -1;
 		}
 		return 0;
 	}
 
-	return pinfo->dump_fn(p, ptr, indent);
+	return pinfo->dump_fn(mem_ctx, p, ptr, indent);
 }
 
 /* handle dumping of an array of arbitrary type */
-static int gen_dump_array(struct parse_string *p,
+static int gen_dump_array(TALLOC_CTX *mem_ctx,
+			  struct parse_string *p,
 			  const struct parse_struct *pinfo, 
 			  const char *ptr,
 			  int array_len,
@@ -242,13 +248,12 @@ static int gen_dump_array(struct parse_string *p,
 	if (array_len != 0 && 
 	    pinfo->ptr_count == 0 &&
 	    pinfo->dump_fn == gen_dump_char) {
-		char *s = encode_bytes(ptr, array_len);
+		char *s = encode_bytes(mem_ctx, ptr, array_len);
 		if (!s) return -1;
-		if (addtabbed(p, pinfo->name, indent) ||
-		    addstr(p, " = {") ||
-		    addstr(p, s) ||
-		    addstr(p, "}\n")) {
-			free(s);
+		if (addtabbed(mem_ctx, p, pinfo->name, indent) ||
+		    addstr(mem_ctx, p, " = {") ||
+		    addstr(mem_ctx, p, s) ||
+		    addstr(mem_ctx, p, "}\n")) {
 			return -1;
 		}
 		free(s);
@@ -272,23 +277,23 @@ static int gen_dump_array(struct parse_string *p,
 			continue;
 		}
 		if (count == 0) {
-			if (addtabbed(p, pinfo->name, indent) ||
-			    addshort(p, " = %u:", i)) {
+			if (addtabbed(mem_ctx, p, pinfo->name, indent) ||
+			    addshort(mem_ctx, p, " = %u:", i)) {
 				return -1;
 			}
 		} else {
-			if (addshort(p, ", %u:", i) != 0) {
+			if (addshort(mem_ctx, p, ", %u:", i) != 0) {
 				return -1;
 			}
 		}
-		if (gen_dump_one(p, pinfo, p2, indent) != 0) {
+		if (gen_dump_one(mem_ctx, p, pinfo, p2, indent) != 0) {
 			return -1;
 		}
 		ptr += size;
 		count++;
 	}
 	if (count) {
-		return addstr(p, "\n");
+		return addstr(mem_ctx, p, "\n");
 	}
 	return 0;
 }
@@ -325,36 +330,35 @@ static int find_var(const struct parse_struct *pinfo,
 }
 
 
-int gen_dump_struct(const struct parse_struct *pinfo,
+int gen_dump_struct(TALLOC_CTX *mem_ctx,
+		    const struct parse_struct *pinfo,
 		    struct parse_string *p, 
 		    const char *ptr, 
 		    unsigned indent)
 {
-	char *s = gen_dump(pinfo, ptr, indent+1);
+	char *s = gen_dump(mem_ctx, pinfo, ptr, indent+1);
 	if (!s) return -1;
-	if (addstr(p, "{\n") || 
-	    addstr(p,s) || 
-	    addtabbed(p,"}", indent)) {
-		free(s);
+	if (addstr(mem_ctx, p, "{\n") || 
+	    addstr(mem_ctx, p, s) || 
+	    addtabbed(mem_ctx, p, "}", indent)) {
 		return -1;
 	}
-	free(s);
 	return 0;
 }
 
-static int gen_dump_string(struct parse_string *p,
+static int gen_dump_string(TALLOC_CTX *mem_ctx,
+			   struct parse_string *p,
 			   const struct parse_struct *pinfo, 
 			   const char *data, 
 			   unsigned indent)
 {
 	const char *ptr = *(char **)data;
-	char *s = encode_bytes(ptr, strlen(ptr));
-	if (addtabbed(p, pinfo->name, indent) ||
-	    addstr(p, " = ") ||
-	    addchar(p,'{') ||
-	    addstr(p, s) ||
-	    addstr(p, "}\n")) {
-		free(s);
+	char *s = encode_bytes(mem_ctx, ptr, strlen(ptr));
+	if (addtabbed(mem_ctx, p, pinfo->name, indent) ||
+	    addstr(mem_ctx, p, " = ") ||
+	    addchar(mem_ctx, p, '{') ||
+	    addstr(mem_ctx, p, s) ||
+	    addstr(mem_ctx, p, "}\n")) {
 		return -1;
 	}
 	return 0;
@@ -370,7 +374,7 @@ static int len_nullterm(const char *ptr, int size, int array_len)
 	if (size == 1) {
 		len = strnlen(ptr, array_len);
 	} else {
-		for (len=0;len<array_len;len++) {
+		for (len=0; len < array_len; len++) {
 			if (all_zero(ptr+len*size, size)) break;
 		}
 	}
@@ -383,7 +387,8 @@ static int len_nullterm(const char *ptr, int size, int array_len)
 
 /* the generic dump routine. Scans the parse information for this structure
    and processes it recursively */
-char *gen_dump(const struct parse_struct *pinfo, 
+char *gen_dump(TALLOC_CTX *mem_ctx,
+	       const struct parse_struct *pinfo, 
 	       const char *data, 
 	       unsigned indent)
 {
@@ -394,7 +399,7 @@ char *gen_dump(const struct parse_struct *pinfo,
 	p.allocated = 0;
 	p.s = NULL;
 
-	if (addstr(&p, "") != 0) {
+	if (addstr(mem_ctx, &p, "") != 0) {
 		return NULL;
 	}
 	
@@ -412,7 +417,7 @@ char *gen_dump(const struct parse_struct *pinfo,
 			if (pinfo[i].flags & FLAG_NULLTERM) {
 				len = len_nullterm(ptr, size, len);
 			}
-			if (gen_dump_array(&p, &pinfo[i], ptr, 
+			if (gen_dump_array(mem_ctx, &p, &pinfo[i], ptr, 
 					   len, indent)) {
 				goto failed;
 			}
@@ -433,7 +438,8 @@ char *gen_dump(const struct parse_struct *pinfo,
 				}
 				p2.ptr_count--;
 				p2.dynamic_len = NULL;
-				if (gen_dump_array(&p, &p2, *(char **)ptr, 
+				if (gen_dump_array(mem_ctx, &p, &p2,
+						   *(char **)ptr, 
 						   len, indent) != 0) {
 					goto failed;
 				}
@@ -447,7 +453,7 @@ char *gen_dump(const struct parse_struct *pinfo,
 		/* assume char* is a null terminated string */
 		if (pinfo[i].size == 1 && pinfo[i].ptr_count == 1 &&
 		    pinfo[i].dump_fn == gen_dump_char) {
-			if (gen_dump_string(&p, &pinfo[i], ptr, indent) != 0) {
+			if (gen_dump_string(mem_ctx, &p, &pinfo[i], ptr, indent) != 0) {
 				goto failed;
 			}
 			continue;
@@ -458,17 +464,16 @@ char *gen_dump(const struct parse_struct *pinfo,
 			ptr = *(const char **)ptr;
 		}
 
-		if (addtabbed(&p, pinfo[i].name, indent) ||
-		    addstr(&p, " = ") ||
-		    gen_dump_one(&p, &pinfo[i], ptr, indent) ||
-		    addstr(&p, "\n")) {
+		if (addtabbed(mem_ctx, &p, pinfo[i].name, indent) ||
+		    addstr(mem_ctx, &p, " = ") ||
+		    gen_dump_one(mem_ctx, &p, &pinfo[i], ptr, indent) ||
+		    addstr(mem_ctx, &p, "\n")) {
 			goto failed;
 		}
 	}
 	return p.s;
 
 failed:
-	free(p.s);
 	return NULL;
 }
 
@@ -495,7 +500,8 @@ static char *match_braces(char *s, char c)
 }
 
 /* parse routine for enumerated types */
-int gen_parse_enum(const struct enum_struct *einfo, 
+int gen_parse_enum(TALLOC_CTX *mem_ctx,
+		   const struct enum_struct *einfo, 
 		   char *ptr, 
 		   const char *str)
 {
@@ -524,37 +530,41 @@ int gen_parse_enum(const struct enum_struct *einfo,
 
 
 /* parse all base types */
-static int gen_parse_base(const struct parse_struct *pinfo, 
+static int gen_parse_base(TALLOC_CTX *mem_ctx,
+			  const struct parse_struct *pinfo, 
 			  char *ptr, 
 			  const char *str)
 {
 	if (pinfo->parse_fn == gen_parse_char && pinfo->ptr_count==1) {
 		unsigned len;
-		char *s = decode_bytes(str, &len);
+		char *s = decode_bytes(mem_ctx, str, &len);
 		if (!s) return -1;
 		*(char **)ptr = s;
 		return 0;
 	}
 
 	if (pinfo->ptr_count) {
+		unsigned size = pinfo->ptr_count>1?sizeof(void *):pinfo->size;
 		struct parse_struct p2 = *pinfo;
-		*(void **)ptr = calloc(1, pinfo->ptr_count>1?sizeof(void *):pinfo->size);
+		*(void **)ptr = talloc(mem_ctx, size);
 		if (! *(void **)ptr) {
 			return -1;
 		}
+		memset(*(void **)ptr, 0, size);
 		ptr = *(char **)ptr;
 		p2.ptr_count--;
-		return gen_parse_base(&p2, ptr, str);
+		return gen_parse_base(mem_ctx, &p2, ptr, str);
 	}
 
-	return pinfo->parse_fn(ptr, str);
+	return pinfo->parse_fn(mem_ctx, ptr, str);
 }
 
 /* parse a generic array */
-static int gen_parse_array(const struct parse_struct *pinfo, 
-			    char *ptr, 
-			    const char *str,
-			    int array_len)
+static int gen_parse_array(TALLOC_CTX *mem_ctx,
+			   const struct parse_struct *pinfo, 
+			   char *ptr, 
+			   const char *str,
+			   int array_len)
 {
 	char *p, *p2;
 	unsigned size = pinfo->size;
@@ -564,11 +574,10 @@ static int gen_parse_array(const struct parse_struct *pinfo,
 	    pinfo->ptr_count == 0 &&
 	    pinfo->dump_fn == gen_dump_char) {
 		unsigned len = 0;
-		char *s = decode_bytes(str, &len);
-		if (!s) return -1;
+		char *s = decode_bytes(mem_ctx, str, &len);
+		if (!s || (len > array_len)) return -1;
 		memset(ptr, 0, array_len);
 		memcpy(ptr, s, len);
-		free(s);
 		return 0;
 	}
 
@@ -593,7 +602,7 @@ static int gen_parse_array(const struct parse_struct *pinfo,
 			p[strlen(p)-1] = 0;
 		}
 
-		if (gen_parse_base(pinfo, ptr + idx*size, p) != 0) {
+		if (gen_parse_base(mem_ctx, pinfo, ptr + idx*size, p) != 0) {
 			return -1;
 		}
 
@@ -605,7 +614,8 @@ static int gen_parse_array(const struct parse_struct *pinfo,
 }
 
 /* parse one element, hanlding dynamic and static arrays */
-static int gen_parse_one(const struct parse_struct *pinfo, 
+static int gen_parse_one(TALLOC_CTX *mem_ctx,
+			 const struct parse_struct *pinfo, 
 			 const char *name, 
 			 char *data, 
 			 const char *str)
@@ -621,7 +631,8 @@ static int gen_parse_one(const struct parse_struct *pinfo,
 	}
 
 	if (pinfo[i].array_len) {
-		return gen_parse_array(&pinfo[i], data+pinfo[i].offset, 
+		return gen_parse_array(mem_ctx, &pinfo[i],
+				       data+pinfo[i].offset, 
 				       str, pinfo[i].array_len);
 	}
 
@@ -632,33 +643,33 @@ static int gen_parse_one(const struct parse_struct *pinfo,
 			return -1;
 		}
 		if (len > 0) {
-			unsigned size;
 			struct parse_struct p2 = pinfo[i];
 			char *ptr;
-			size = pinfo[i].ptr_count>1?sizeof(void*):pinfo[i].size;
-			ptr = calloc(len, size);
+			unsigned size = pinfo[i].ptr_count>1?sizeof(void*):pinfo[i].size;
+			ptr = talloc(mem_ctx, len*size);
 			if (!ptr) {
 				errno = ENOMEM;
 				return -1;
 			}
+			memset(ptr, 0, len*size);
 			*((char **)(data + pinfo[i].offset)) = ptr;
 			p2.ptr_count--;
 			p2.dynamic_len = NULL;
-			return gen_parse_array(&p2, ptr, str, len);
+			return gen_parse_array(mem_ctx, &p2, ptr, str, len);
 		}
 		return 0;
 	}
 
-	return gen_parse_base(&pinfo[i], data + pinfo[i].offset, str);
+	return gen_parse_base(mem_ctx, &pinfo[i], data + pinfo[i].offset, str);
 }
 
-int gen_parse_struct(const struct parse_struct *pinfo, char *ptr, const char *str)
+int gen_parse_struct(TALLOC_CTX * mem_ctx, const struct parse_struct *pinfo, char *ptr, const char *str)
 {
-	return gen_parse(pinfo, ptr, str);
+	return gen_parse(mem_ctx, pinfo, ptr, str);
 }
 
 /* the main parse routine */
-int gen_parse(const struct parse_struct *pinfo, char *data, const char *s)
+int gen_parse(TALLOC_CTX *mem_ctx, const struct parse_struct *pinfo, char *data, const char *s)
 {
 	char *str, *s0;
 	
@@ -694,7 +705,7 @@ int gen_parse(const struct parse_struct *pinfo, char *data, const char *s)
 
 		*str++ = 0;
 		
-		if (gen_parse_one(pinfo, name, data, value) != 0) {
+		if (gen_parse_one(mem_ctx, pinfo, name, data, value) != 0) {
 			free(s0);
 			return -1;
 		}
@@ -708,68 +719,68 @@ int gen_parse(const struct parse_struct *pinfo, char *data, const char *s)
 
 /* for convenience supply some standard dumpers and parsers here */
 
-int gen_parse_char(char *ptr, const char *str)
+int gen_parse_char(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 {
 	*(unsigned char *)ptr = atoi(str);
 	return 0;
 }
 
-int gen_parse_int(char *ptr, const char *str)
+int gen_parse_int(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 {
 	*(int *)ptr = atoi(str);
 	return 0;
 }
 
-int gen_parse_unsigned(char *ptr, const char *str)
+int gen_parse_unsigned(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 {
 	*(unsigned *)ptr = strtoul(str, NULL, 10);
 	return 0;
 }
 
-int gen_parse_time_t(char *ptr, const char *str)
+int gen_parse_time_t(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 {
 	*(time_t *)ptr = strtoul(str, NULL, 10);
 	return 0;
 }
 
-int gen_parse_double(char *ptr, const char *str)
+int gen_parse_double(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 {
 	*(double *)ptr = atof(str);
 	return 0;
 }
 
-int gen_parse_float(char *ptr, const char *str)
+int gen_parse_float(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
 {
 	*(float *)ptr = atof(str);
 	return 0;
 }
 
-int gen_dump_char(struct parse_string *p, const char *ptr, unsigned indent)
+int gen_dump_char(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, unsigned indent)
 {
-	return addshort(p, "%u", *(unsigned char *)(ptr));
+	return addshort(mem_ctx, p, "%u", *(unsigned char *)(ptr));
 }
 
-int gen_dump_int(struct parse_string *p, const char *ptr, unsigned indent)
+int gen_dump_int(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, unsigned indent)
 {
-	return addshort(p, "%d", *(int *)(ptr));
+	return addshort(mem_ctx, p, "%d", *(int *)(ptr));
 }
 
-int gen_dump_unsigned(struct parse_string *p, const char *ptr, unsigned indent)
+int gen_dump_unsigned(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, unsigned indent)
 {
-	return addshort(p, "%u", *(unsigned *)(ptr));
+	return addshort(mem_ctx, p, "%u", *(unsigned *)(ptr));
 }
 
-int gen_dump_time_t(struct parse_string *p, const char *ptr, unsigned indent)
+int gen_dump_time_t(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, unsigned indent)
 {
-	return addshort(p, "%u", *(time_t *)(ptr));
+	return addshort(mem_ctx, p, "%u", *(time_t *)(ptr));
 }
 
-int gen_dump_double(struct parse_string *p, const char *ptr, unsigned indent)
+int gen_dump_double(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, unsigned indent)
 {
-	return addshort(p, "%lg", *(double *)(ptr));
+	return addshort(mem_ctx, p, "%lg", *(double *)(ptr));
 }
 
-int gen_dump_float(struct parse_string *p, const char *ptr, unsigned indent)
+int gen_dump_float(TALLOC_CTX *mem_ctx, struct parse_string *p, const char *ptr, unsigned indent)
 {
-	return addshort(p, "%g", *(float *)(ptr));
+	return addshort(mem_ctx, p, "%g", *(float *)(ptr));
 }
