@@ -417,6 +417,7 @@ extern krb5_cc_ops krb5_mcc_ops;
 #define KPASSWD_PORT 464
 
 struct credentials; /* this is to keep the compiler happy */
+struct getargs;
 
 #include <krb5-protos.h>
 
