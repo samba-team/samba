@@ -1751,7 +1751,7 @@ void init_reg_q_shutdown(REG_Q_SHUTDOWN * q_s, const char *msg,
 
 	q_s->timeout = timeout;
 
-	q_s->do_reboot = reboot ? 1 : 0;
+	q_s->reboot = do_reboot ? 1 : 0;
 	q_s->force = force ? 1 : 0;
 
 }
