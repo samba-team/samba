@@ -12,7 +12,6 @@ def test_Connect(handle):
     r['access_mask'] = 0x02000000
 
     result = dcerpc.samr_Connect(pipe, r)
-
     dcerpc.samr_Close(pipe, result)
 
     print 'testing samr_Connect2'
@@ -68,7 +67,13 @@ def test_QuerySecurity(pipe, handle):
     r['sec_info'] = 7
 
     result = dcerpc.samr_QuerySecurity(pipe, r)
-    print result
+
+    r = {}
+    r['handle'] = handle
+    r['sec_info'] = 7
+    r['sdbuf'] = result['sdbuf']
+
+    result = dcerpc.samr_SetSecurity(pipe, r)
 
 # Parse command line
 
