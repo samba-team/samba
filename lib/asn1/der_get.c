@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include "der.h"
 
 /*
@@ -125,6 +124,29 @@ der_match_tag (unsigned char *p, int len, Der_class class, Der_type type,
     return l;
   else
     return -1;
+}
+
+int
+der_match_tag_and_length (unsigned char *p, int len,
+			  Der_class class, Der_type type, int tag,
+			  int *length_ret)
+{
+  int ret = 0;
+  int l;
+
+  l = der_match_tag (p, len, class, type, tag);
+  if (l < 0)
+    return l;
+  p += l;
+  len -= l;
+  ret += l;
+  l = der_get_length (p, len, length_ret);
+  if (l < 0)
+    return l;
+  p += l;
+  len -= l;
+  ret += l;
+  return ret;
 }
 
 int
