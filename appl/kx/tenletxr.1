@@ -10,6 +10,7 @@ forward X-connections backwards.
 .Sh SYNOPSIS
 .Nm tenletxr
 .Op Fl l Ar username
+.Op Fl k
 .Ar host
 .Op Ar port
 .Sh DESCRIPTION
@@ -27,6 +28,8 @@ The supported options are:
 .It Fl l
 Log in on the remote host as user
 .Ar username
+.It Fl k
+Disables keep-alives.
 .El
 .Sh EXAMPLE
 To login from host
