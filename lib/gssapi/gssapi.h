@@ -733,4 +733,11 @@ OM_uint32 gss_unseal
             int * qop_state
            );
 
+/*
+ * kerberos mechanism specific functions
+ */
+
+OM_uint32 gsskrb5_register_acceptor_identity
+        (char *identity);
+
 #endif /* GSSAPI_H_ */
