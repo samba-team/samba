@@ -530,7 +530,7 @@ BOOL net_io_r_srv_pwset(char *desc,  NET_R_SRV_PWSET *r_s, prs_struct *ps, int d
 /*************************************************************************
  make DOM_SID2 array from a string containing multiple sids
  *************************************************************************/
-static int make_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
+static int make_dom_sid2s(const char *sids_str, DOM_SID2 *sids, int max_sids)
 {
 	char *ptr;
 	pstring s2;
@@ -963,6 +963,134 @@ static BOOL smb_io_sam_info(char *desc,  DOM_SAM_INFO *sam, prs_struct *ps, int 
 	{
 		net_io_id_info_ctr("logon_info", sam->ctr, ps, depth);
 	}
+
+	return True;
+}
+
+/*************************************************************************
+ make_net_user_info3
+ *************************************************************************/
+BOOL make_net_user_info3W(NET_USER_INFO_3 *usr,
+
+	const NTTIME *logon_time,
+	const NTTIME *logoff_time,
+	const NTTIME *kickoff_time,
+	const NTTIME *pass_last_set_time,
+	const NTTIME *pass_can_change_time,
+	const NTTIME *pass_must_change_time,
+
+	const UNISTR2 *user_name, 
+	const UNISTR2 *full_name,
+	const UNISTR2 *log_scr,
+	const UNISTR2 *prof_path,
+	const UNISTR2 *home_dir,
+	const UNISTR2 *dir_drive,
+
+	uint16 logon_count,
+	uint16 bad_pw_count,
+
+	uint32 user_id,
+	uint32 group_id,
+	uint32 num_groups,
+	const DOM_GID *gids,
+	uint32 user_flgs,
+
+	const char sess_key[16],
+
+	const UNISTR2 *logon_srv,
+	const UNISTR2 *logon_dom,
+
+	const char *padding,
+
+	const DOM_SID *dom_sid,
+	const char *other_sids)
+{
+	/* only cope with one "other" sid, right now. */
+	/* need to count the number of space-delimited sids */
+	uint32 i;
+	int num_other_sids = 0;
+
+	int len_user_name    = user_name != NULL ? user_name->uni_str_len : 0;
+	int len_full_name    = full_name != NULL ? full_name->uni_str_len : 0;
+	int len_logon_script = log_scr   != NULL ? log_scr  ->uni_str_len : 0;
+	int len_profile_path = prof_path != NULL ? prof_path->uni_str_len : 0;
+	int len_home_dir     = home_dir  != NULL ? home_dir ->uni_str_len : 0;
+	int len_dir_drive    = dir_drive != NULL ? dir_drive->uni_str_len : 0;
+
+	int len_logon_srv  = logon_srv   != NULL ? logon_srv ->uni_str_len : 0;
+	int len_logon_dom  = logon_dom   != NULL ? logon_dom ->uni_str_len : 0;
+
+	usr->ptr_user_info = 1; /* yes, we're bothering to put USER_INFO data here */
+
+	usr->logon_time            = *logon_time;
+	usr->logoff_time           = *logoff_time;
+	usr->kickoff_time          = *kickoff_time;
+	usr->pass_last_set_time    = *pass_last_set_time;
+	usr->pass_can_change_time  = *pass_can_change_time;
+	usr->pass_must_change_time = *pass_must_change_time;
+
+	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   );
+	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   );
+	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script);
+	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path);
+	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    );
+	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   );
+
+	usr->logon_count = logon_count;
+	usr->bad_pw_count = bad_pw_count;
+
+	usr->user_id = user_id;
+	usr->group_id = group_id;
+	usr->num_groups = num_groups;
+	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
+	usr->user_flgs = user_flgs;
+
+	if (sess_key != NULL)
+	{
+		memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
+	}
+	else
+	{
+		bzero(usr->user_sess_key, sizeof(usr->user_sess_key));
+	}
+
+	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
+	make_uni_hdr(&(usr->hdr_logon_dom), len_logon_dom);
+
+	usr->buffer_dom_id = dom_sid ? 1 : 0; /* yes, put a domain SID in */
+
+	bzero(usr->padding, sizeof(usr->padding));
+	if (padding != NULL)
+	{	
+		memcpy(usr->padding, padding, 8);
+	}
+
+	num_other_sids = make_dom_sid2s(other_sids, usr->other_sids, LSA_MAX_SIDS);
+
+	usr->num_other_sids = num_other_sids;
+	usr->buffer_other_sids = num_other_sids != 0 ? 1 : 0; 
+	
+	copy_unistr2(&(usr->uni_user_name   ), user_name);
+	copy_unistr2(&(usr->uni_full_name   ), full_name);
+	copy_unistr2(&(usr->uni_logon_script), log_scr  );
+	copy_unistr2(&(usr->uni_profile_path), prof_path);
+	copy_unistr2(&(usr->uni_home_dir    ), home_dir );
+	copy_unistr2(&(usr->uni_dir_drive   ), dir_drive);
+
+	usr->num_groups2 = num_groups;
+
+	SMB_ASSERT_ARRAY(usr->gids, num_groups);
+
+	for (i = 0; i < num_groups; i++)
+	{
+		usr->gids[i] = gids[i];
+	}
+
+	copy_unistr2(&(usr->uni_logon_srv ), logon_srv);
+	copy_unistr2(&(usr->uni_logon_dom ), logon_dom);
+
+	make_dom_sid2(&(usr->dom_sid), dom_sid);
+	/* "other" sids are set up above */
 
 	return True;
 }

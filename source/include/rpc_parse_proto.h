@@ -203,6 +203,40 @@ BOOL make_sam_info(DOM_SAM_INFO *sam,
 				DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
 				NET_ID_INFO_CTR *ctr);
+BOOL make_net_user_info3W(NET_USER_INFO_3 *usr,
+
+	const NTTIME *logon_time,
+	const NTTIME *logoff_time,
+	const NTTIME *kickoff_time,
+	const NTTIME *pass_last_set_time,
+	const NTTIME *pass_can_change_time,
+	const NTTIME *pass_must_change_time,
+
+	const UNISTR2 *user_name, 
+	const UNISTR2 *full_name,
+	const UNISTR2 *log_scr,
+	const UNISTR2 *prof_path,
+	const UNISTR2 *home_dir,
+	const UNISTR2 *dir_drive,
+
+	uint16 logon_count,
+	uint16 bad_pw_count,
+
+	uint32 user_id,
+	uint32 group_id,
+	uint32 num_groups,
+	const DOM_GID *gids,
+	uint32 user_flgs,
+
+	const char sess_key[16],
+
+	const UNISTR2 *logon_srv,
+	const UNISTR2 *logon_dom,
+
+	const char *padding,
+
+	const DOM_SID *dom_sid,
+	const char *other_sids);
 BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
 
 	NTTIME *logon_time,
