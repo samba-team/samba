@@ -426,9 +426,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 		}
 	}
 #if 0	/* JERRY */
-
 	/* Win2k does not seem to put this parse align here */
-
 	if(!prs_align(ps))
 		return False;
 #endif
@@ -1723,11 +1721,18 @@ static uint32 size_of_relative_string(UNISTR *string)
 	uint32 size=0;
 	
 	size=str_len_uni(string);	/* the string length       */
-	size=size+1;			/* add the leading zero    */
+	size=size+1;			/* add the trailing zero   */
 	size=size*2;			/* convert in char         */
-	/* Ensure size is 4 byte multiple (prs_align is being called...). */
-	size += ((4 - (size & 3)) & 3);
 	size=size+4;			/* add the size of the ptr */	
+
+#if 0	/* JERRY */
+	/* 
+	 * Do not include alignment as Win2k does not align relative
+	 * strings within a buffer   --jerry 
+	 */
+	/* Ensure size is 4 byte multiple (prs_align is being called...). */
+	/* size += ((4 - (size & 3)) & 3); */
+#endif 
 
 	return size;
 }
@@ -1754,32 +1759,6 @@ static uint32 size_of_systemtime(SYSTEMTIME *systime)
 		return (4);
 	else 
 		return (sizeof(SYSTEMTIME) +4);
-}
-
-/*******************************************************************
- * write a UNICODE string.
- * used by all the RPC structs passing a buffer
- ********************************************************************/
-
-static BOOL spoolss_smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int depth)
-{
-	if (uni == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "spoolss_smb_io_unistr");
-	depth++;
-	
-	/* there should be no align here as it can mess up
-	   parsing a NEW_BUFFER->prs */
-#if 0	/* JERRY */
-	if (!prs_align(ps))
-		return False;
-#endif
-		
-	if (!prs_unistr("unistr", ps, depth, uni))
-		return False;
-
-	return True;
 }
 
 /*******************************************************************
@@ -1813,8 +1792,14 @@ static BOOL smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR *str
 		buffer->string_at_end -= (size_of_relative_string(string) - 4);
 		if(!prs_set_offset(ps, buffer->string_at_end))
 			return False;
+#if 0	/* JERRY */
+		/*
+		 * Win2k does not align strings in a buffer
+		 * Tested against WinNT 4.0 SP 6a & 2k SP2  --jerry
+		 */
 		if (!prs_align(ps))
 			return False;
+#endif
 		buffer->string_at_end = prs_offset(ps);
 		
 		/* write the string */
@@ -1841,7 +1826,7 @@ static BOOL smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR *str
 			return False;
 
 		/* read the string */
-		if (!spoolss_smb_io_unistr(desc, string, ps, depth))
+		if (!smb_io_unistr(desc, string, ps, depth))
 			return False;
 
 		if(!prs_set_offset(ps, old_offset))
@@ -1898,7 +1883,7 @@ static BOOL smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16
 			}
 
 			/* write the string */
-			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth)) {
+			if (!smb_io_unistr(desc, &chaine, ps, depth)) {
 				SAFE_FREE(chaine.buffer);
 				return False;
 			}
@@ -1937,7 +1922,7 @@ static BOOL smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16
 			return False;
 	
 		do {
-			if (!spoolss_smb_io_unistr(desc, &chaine, ps, depth))
+			if (!smb_io_unistr(desc, &chaine, ps, depth))
 				return False;
 			
 			l_chaine=str_len_uni(&chaine);
@@ -5028,12 +5013,7 @@ BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *mem_ctx,
 	case 3 :
 		make_spoolss_driver_info_3(mem_ctx, &q_u->info.info_3, info->info3);
 		break;
-		
-	/* info level 6 is supported by WinME and Win2k */
-	case 6:
-		/* WRITEME!!  will add later  --jerry */
-		break;
-		
+				
 	default:
 		DEBUG(0,("make_spoolss_q_addprinterdriver: Unknown info level [%d]\n", level));
 		break;

@@ -554,8 +554,6 @@ BOOL smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "smb_io_unistr");
 	depth++;
 
-	if(!prs_align(ps))
-		return False;
 	if(!prs_unistr("unistr", ps, depth, uni))
 		return False;
 
