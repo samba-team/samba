@@ -68,7 +68,7 @@ pop_send(POP *p)
     /*  Is the message flagged for deletion? */
     if (mp->flags & DEL_FLAG)
         return (pop_msg (p,POP_FAILURE,
-            "Message %d has been deleted.",msg_num));
+			 "Message %d has been deleted.",msg_num));
 
     /*  If this is a TOP command, get the number of lines to send */
     if (strcmp(p->pop_command,"top") == 0) {
@@ -85,61 +85,71 @@ pop_send(POP *p)
     /*  Display the number of bytes in the message */
     pop_msg(p, POP_SUCCESS, "%ld octets", mp->length);
 
+    if(IS_MAILDIR(p)){
+	int e = pop_maildir_open(p, mp);
+	if(e != POP_SUCCESS)
+	    return e;
+    }
+
     /*  Position to the start of the message */
     fseek(p->drop,mp->offset,0);
 
-    /*  Skip the first line (the sendmail "From" line) */
-    fgets (buffer,MAXMSGLINELEN,p->drop);
+    return_path_sent = 0;
+
+    if(!IS_MAILDIR(p)) {
+	/*  Skip the first line (the sendmail "From" line) */
+	fgets (buffer,MAXMSGLINELEN,p->drop);
 
 #ifdef RETURN_PATH_HANDLING
-    return_path_sent = 0;
-    if (strncmp(buffer,"From ",5) == 0) {
-	return_path_linlen = strlen(buffer);
-	for (return_path_adr = buffer+5;
-	     (*return_path_adr == ' ' || *return_path_adr == '\t') &&
-	     return_path_adr < buffer + return_path_linlen;
-	     return_path_adr++)
-	    ;
-	if (return_path_adr < buffer + return_path_linlen) {
-	    if ((return_path_end = strchr(return_path_adr, ' ')) != NULL)
-		*return_path_end = '\0';
-	    if (strlen(return_path_adr) != 0 && *return_path_adr != '\n') {
-		static char tmpbuf[MAXMSGLINELEN + 20];
-		strcpy(tmpbuf, "Return-Path: ");
-		strcat(tmpbuf, return_path_adr);
-		strcat(tmpbuf, "\n");
-		if (strlen(tmpbuf) < MAXMSGLINELEN) {
-		    pop_sendline (p,tmpbuf);
-		    if (hangup)
-			return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
-		    return_path_sent++;
+	if (strncmp(buffer,"From ",5) == 0) {
+	    return_path_linlen = strlen(buffer);
+	    for (return_path_adr = buffer+5;
+		 (*return_path_adr == ' ' || *return_path_adr == '\t') &&
+		     return_path_adr < buffer + return_path_linlen;
+		 return_path_adr++)
+		;
+	    if (return_path_adr < buffer + return_path_linlen) {
+		if ((return_path_end = strchr(return_path_adr, ' ')) != NULL)
+		    *return_path_end = '\0';
+		if (strlen(return_path_adr) != 0 && *return_path_adr != '\n') {
+		    static char tmpbuf[MAXMSGLINELEN + 20];
+		    strcpy(tmpbuf, "Return-Path: ");
+		    strcat(tmpbuf, return_path_adr);
+		    strcat(tmpbuf, "\n");
+		    if (strlen(tmpbuf) < MAXMSGLINELEN) {
+			pop_sendline (p,tmpbuf);
+			if (hangup)
+			    return pop_msg (p, POP_FAILURE,
+					    "SIGHUP or SIGPIPE flagged");
+			return_path_sent++;
+		    }
 		}
 	    }
 	}
-    }
 #endif
+    }
 
     /*  Send the header of the message followed by a blank line */
     while (fgets(buffer,MAXMSGLINELEN,p->drop)) {
 #ifdef RETURN_PATH_HANDLING
 	/* Don't send existing Return-Path-header if already sent own */
-	if (strncasecmp(buffer,"Return-Path:", 12) != 0 ||
-	    !return_path_sent)
+	if (!return_path_sent || strncasecmp(buffer, "Return-Path:", 12) != 0)
 #endif
-        pop_sendline (p,buffer);
+	    pop_sendline (p,buffer);
         /*  A single newline (blank line) signals the 
             end of the header.  sendline() converts this to a NULL, 
             so that's what we look for. */
         if (*buffer == 0) break;
         if (hangup)
-          return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
+	    return (pop_msg (p,POP_FAILURE,"SIGHUP or SIGPIPE flagged"));
     }
     /*  Send the message body */
     {
 	int blank_line = 0;
-	while (fgets(buffer,MAXMSGLINELEN,p->drop)) {
+	while (fgets(buffer, MAXMSGLINELEN, p->drop)) {
 	    /*  Look for the start of the next message */
-	    if (blank_line && strncmp(buffer,"From ",5) == 0) break;
+	    if (!IS_MAILDIR(p) && blank_line && strncmp(buffer,"From ",5) == 0)
+		break;
 	    blank_line = (strncmp(buffer, "\n", 1) == 0);
 	    /*  Decrement the lines sent (for a TOP command) */
 	    if (msg_lines >= 0 && msg_lines-- == 0) break;

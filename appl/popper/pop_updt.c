@@ -42,6 +42,9 @@ pop_updt (POP *p)
     }
 #endif /* DEBUG */
 
+    if(IS_MAILDIR(p))
+	return pop_maildir_update(p);
+
     if (p->msgs_deleted == p->msg_count) {
         /* Truncate before close, to avoid race condition,  DO NOT UNLINK!
            Another process may have opened,  and not yet tried to lock */

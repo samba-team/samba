@@ -191,6 +191,7 @@ typedef enum {                              /*  POP processing states */
 
 #define DEL_FLAG	1
 #define RETR_FLAG	2
+#define NEW_FLAG	4
 
 typedef struct {                                /*  Message information */
     int         number;                         /*  Message number relative to 
@@ -210,7 +211,10 @@ typedef struct {                                /*  Message information */
     char	*from;
     char	*date;
 #endif
+    char	*name;
 } MsgInfoList;
+
+#define IS_MAILDIR(P) ((P)->temp_drop[0] == '\0')
 
 typedef struct  {                               /*  POP parameter block */
     int                 debug;                  /*  Debugging requested */
@@ -327,3 +331,13 @@ int pop_msg(POP *p, int stat, char *format, ...)
 __attribute__ ((format (printf, 3, 4)))
 #endif
 ;
+
+void pop_sendline(POP*, char*);
+
+int pop_maildir_info (POP*);
+int pop_maildir_open (POP*, MsgInfoList*);
+int pop_maildir_update (POP*);
+
+void changeuser(POP*, struct passwd*);
+void parse_header(MsgInfoList*, char*);
+int add_missing_headers(POP*, MsgInfoList*);
