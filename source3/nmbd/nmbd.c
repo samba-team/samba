@@ -861,8 +861,10 @@ static void usage(char *pname)
 
   DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 
-  if ( !open_sockets( is_daemon, global_nmb_port ) )
+  if ( !open_sockets( is_daemon, global_nmb_port ) ) {
+    kill_async_dns_child();
     return 1;
+  }
 
   /* Determine all the IP addresses we have. */
   load_interfaces();
@@ -871,6 +873,7 @@ static void usage(char *pname)
   if( False == create_subnets() )
   {
     DEBUG(0,("ERROR: Failed when creating subnet lists. Exiting.\n"));
+    kill_async_dns_child();
     exit(1);
   }
 
@@ -882,6 +885,7 @@ static void usage(char *pname)
   if( !initialise_wins() )
   {
     DEBUG( 0, ( "nmbd: Failed when initialising WINS server.\n" ) );
+    kill_async_dns_child();
     exit(1);
   }
 
@@ -896,6 +900,7 @@ static void usage(char *pname)
   if( False == register_my_workgroup_and_names() )
   {
     DEBUG(0,("ERROR: Failed when creating my my workgroup. Exiting.\n"));
+    kill_async_dns_child();
     exit(1);
   }
 
@@ -906,5 +911,6 @@ static void usage(char *pname)
 
   if (dbf)
     x_fclose(dbf);
+  kill_async_dns_child();
   return(0);
 }
