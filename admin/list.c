@@ -74,7 +74,7 @@ do_list(const char *keytab_string)
     ret = krb5_kt_resolve(context, keytab_string, &keytab);
     if (ret) {
 	krb5_warn(context, ret, "resolving keytab %s", keytab_string);
-	goto out;
+	return 0;
     }
 
     printf ("%s:\n\n", keytab_string);
