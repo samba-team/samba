@@ -1,8 +1,24 @@
+Sat Feb 20 15:48:06 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/hdb/convert_db.c: little program for database conversion
+
+	* lib/hdb/db.c (DB_open): try to open database w/o .db extension
+
+	* lib/hdb/ndbm.c (NDBM_open): add test for database format
+
+	* lib/hdb/db.c (DB_open): add test for database format
+
+	* lib/asn1/gen_glue.c (generate_2int): don't depend on flags being
+ 	unsigned
+
+	* lib/hdb/hdb.c: change `hdb_set_master_key' to take an
+ 	EncryptionKey, and add a new function `hdb_set_master_keyfile' to
+ 	do what `hdb_set_master_key' used to do
+
+	* kdc/kstash.c: add `--convert-file' option to change keytype of
+ 	existing master key file
+
 Fri Feb 19 07:04:14 1999  Assar Westerlund  <assar@squid.pdc.kth.se>
-
-	* Release 0.1a
-
-Fri Feb 19 06:50:35 1999  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.1a
 
