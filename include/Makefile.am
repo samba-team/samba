@@ -9,13 +9,28 @@ noinst_PROGRAMS = bits
 INCLUDES=-DHOST=\"@CANONICAL_HOST@\"
 
 foodir = $(includedir)
-foo_DATA = \
-	base64.h des.h error.h getarg.h gssapi.h hdb.h kafs.h	\
-	krb5-protos.h krb5-types.h krb5.h md4.h md5.h otp.h	\
-	parse_time.h parse_units.h roken-common.h sha.h sl.h 	\
-	der.h xdbm.h						\
+foo_DATA =					\
+	base64.h				\
+	der.h					\
+	des.h					\
+	error.h					\
+	getarg.h				\
+	gssapi.h				\
+	hdb.h					\
+	kafs.h					\
+	krb5-protos.h				\
+	krb5-types.h				\
+	krb5.h					\
+	md4.h					\
+	md5.h					\
+	otp.h					\
+	parse_time.h				\
+	parse_units.h				\
+	roken-common.h				\
+	sha.h					\
+	sl.h					\
+	xdbm.h					\
 	@EXTRA_HDRS@
-
 
 EXTRA_DATA = err.h fnmatch.h
 
