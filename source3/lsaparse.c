@@ -244,7 +244,7 @@ char* lsa_io_r_req_chal(BOOL io, LSA_R_REQ_CHAL *r_c, char *q, char *base, int a
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-char* lsa_io_q_auth2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align)
+char* lsa_io_q_auth_2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align)
 {
 	if (q_a == NULL) return NULL;
 

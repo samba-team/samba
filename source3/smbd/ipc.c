@@ -2765,6 +2765,8 @@ struct
     { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
 #ifdef NTDOMAIN
     { "TransactNmPipe",	"lsarpc",	0x26,	api_ntLsarpcTNP },
+    { "TransactNmPipe",	"NETLOGON",	0x26,	api_netlogrpcTNP },
+    { "SetNmdPpHndState",	"NETLOGON",	1,	api_netlogrpcTNP },
 #else
     { "TransactNmPipe",	"lsarpc",	0x26,	api_LsarpcTNP },
 #endif
