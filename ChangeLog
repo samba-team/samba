@@ -1,5 +1,8 @@
 2004-04-25  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/store_fd.c (krb5_storage_from_fd): dup the file
+	descriptor so we don't have to keep track of it in two places
+	
 	* kuser/copy_cred_cache.c: krb5_cc_copy_cache_match now lives in
 	libkrb5
 
