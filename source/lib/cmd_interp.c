@@ -1068,8 +1068,7 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 			case 'l':
 			{
 				cmd_set_options |= CMD_INTER;
-				slprintf(debugf, sizeof(debugf) - 1,
-					 "%s.client", optarg);
+                                pstrcpy(debugf, optarg);
 				interactive = False;
 				break;
 			}
