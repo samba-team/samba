@@ -598,7 +598,7 @@ the buf_len member tells you how large the buffer is.
 ********************************************************************/
 BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 {
-	prs_debug(ps, depth, desc, "smb_io_buffer4");
+	prs_debug(ps, depth, desc, "smb_io_buffer5");
 	depth++;
 
 	if (buf5 == NULL) return False;

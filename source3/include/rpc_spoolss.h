@@ -804,6 +804,7 @@ SPOOL_Q_ENUMPRINTERS;
 
 typedef struct printer_info_ctr_info
 {
+	PRINTER_INFO_0 *printers_0;
 	PRINTER_INFO_1 *printers_1;
 	PRINTER_INFO_2 *printers_2;
 }
@@ -881,7 +882,7 @@ typedef struct driver_info_3
 	UNISTR datafile;
 	UNISTR configfile;
 	UNISTR helpfile;
-	UNISTR **dependentfiles;
+	uint16 *dependentfiles;
 	UNISTR monitorname;
 	UNISTR defaultdatatype;
 }
@@ -889,16 +890,11 @@ DRIVER_INFO_3;
 
 typedef struct driver_info_info
 {
-	union
-	{
-		DRIVER_INFO_1 *info1;
-		DRIVER_INFO_2 *info2;
-		DRIVER_INFO_3 *info3;
-	}
-	driver;
-
+	DRIVER_INFO_1 *info1;
+	DRIVER_INFO_2 *info2;
+	DRIVER_INFO_3 *info3;
 }
-DRIVER_INFO;
+PRINTER_DRIVER_CTR;
 
 typedef struct spool_q_getprinterdriver2
 {
