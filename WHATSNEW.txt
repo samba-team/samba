@@ -1,5 +1,4 @@
-
-          WHATS NEW IN 1.9.18p6 - May 11th 1998.
+          WHATS NEW IN 1.9.18p7 - May 12th 1998.
           ======================================
 
 This is the latest stable release of Samba. This is the
@@ -16,7 +15,22 @@ in filenames but the Samba Team considered the threat of a possible
 security hole to warrant an immediate patch release.
 
 It is highly recommended that all sites assume that the security hole
-is exploitable and upgrade to version 1.9.18p6 of Samba.
+is exploitable and upgrade to version 1.9.18p7 of Samba.
+
+The previous release 1.9.18p6, which was intended to fix the
+security hole, has compile problems on several platforms, and
+should not be used.
+
+If you have problems, or think you have found a bug please email 
+a report to :
+
+        samba-bugs@samba.anu.edu.au
+
+As always, all bugs are our responsibility.
+
+Regards,
+
+        The Samba Team. 
 
 
 Previous release notes for 1.9.18p5 follow.
