@@ -2,10 +2,12 @@
 
 RCSID("$Id$");
 
+sig_atomic_t exit_flag = 0;
+
 static RETSIGTYPE
 sigterm(int sig)
 {
-    exit(0);
+    exit_flag = 1;
 }
 
 int
