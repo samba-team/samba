@@ -259,7 +259,7 @@ static void dohash(char *out, char *in, char *key, int forw)
 	permute(out, rl, perm6, 64);
 }
 
-static void str_to_key(unsigned char *str,unsigned char *key)
+static void str_to_key(const unsigned char *str,unsigned char *key)
 {
 	int i;
 
@@ -277,7 +277,7 @@ static void str_to_key(unsigned char *str,unsigned char *key)
 }
 
 
-static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key, int forw)
+static void smbhash(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw)
 {
 	int i;
 	char outb[64];
@@ -305,14 +305,14 @@ static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key, i
 	}
 }
 
-void E_P16(unsigned char *p14,unsigned char *p16)
+void E_P16(const unsigned char *p14,unsigned char *p16)
 {
 	unsigned char sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
 	smbhash(p16, sp8, p14, 1);
 	smbhash(p16+8, sp8, p14+7, 1);
 }
 
-void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24)
+void E_P24(const unsigned char *p21, const unsigned char *c8, unsigned char *p24)
 {
 	smbhash(p24, c8, p21, 1);
 	smbhash(p24+8, c8, p21+7, 1);

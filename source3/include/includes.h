@@ -663,6 +663,9 @@ extern int errno;
 
 #include "mapping.h"
 
+#include "md5.h"
+#include "hmacmd5.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
