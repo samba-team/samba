@@ -818,7 +818,6 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
       else
 	DEBUG(0,("Invalid guest account %s??\n",guestname));
       *guest = True;
-      *force = True;
     }
 
   if (ok && !user_ok(user,snum))
