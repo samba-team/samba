@@ -25,6 +25,11 @@ extern int DEBUGLEVEL;
 
 time_t smb_last_time=(time_t)0;
 
+char *InBuffer = NULL;
+char *OutBuffer = NULL;
+char *last_inbuf = NULL;
+
+
 /* 
  * Size of data we can send to client. Set
  *  by the client for all protocols above CORE.
