@@ -74,7 +74,72 @@ CLASS="CHAPTER"
 ><A
 NAME="BROWSING-QUICK"
 ></A
->Chapter 2. Quick Cross Subnet Browsing / Cross Workgroup Browsing guide</H1
+>Chapter 3. Quick Cross Subnet Browsing / Cross Workgroup Browsing guide</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>3.1. <A
+HREF="browsing-quick.html#AEN306"
+>Discussion</A
+></DT
+><DT
+>3.2. <A
+HREF="browsing-quick.html#AEN327"
+>How browsing functions and how to deploy stable and 
+dependable browsing using Samba</A
+></DT
+><DT
+>3.3. <A
+HREF="browsing-quick.html#AEN341"
+>Use of the <B
+CLASS="COMMAND"
+>Remote Announce</B
+> parameter</A
+></DT
+><DT
+>3.4. <A
+HREF="browsing-quick.html#AEN364"
+>Use of the <B
+CLASS="COMMAND"
+>Remote Browse Sync</B
+> parameter</A
+></DT
+><DT
+>3.5. <A
+HREF="browsing-quick.html#AEN375"
+>Use of WINS</A
+></DT
+><DD
+><DL
+><DT
+>3.5.1. <A
+HREF="browsing-quick.html#AEN392"
+>WINS Replication</A
+></DT
+><DT
+>3.5.2. <A
+HREF="browsing-quick.html#AEN396"
+>Static WINS Entries</A
+></DT
+></DL
+></DD
+><DT
+>3.6. <A
+HREF="browsing-quick.html#AEN401"
+>Do NOT use more than one (1) protocol on MS Windows machines</A
+></DT
+><DT
+>3.7. <A
+HREF="browsing-quick.html#AEN409"
+>Name Resolution Order</A
+></DT
+></DL
+></DIV
 ><P
 >This document should be read in conjunction with Browsing and may
 be taken as the fast track guide to implementing browsing across subnets
@@ -113,8 +178,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN183"
->2.1. Discussion</A
+NAME="AEN306"
+>3.1. Discussion</A
 ></H1
 ><P
 >Firstly, all MS Windows networking is based on SMB (Server Message
@@ -204,8 +269,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN204"
->2.2. How browsing functions and how to deploy stable and 
+NAME="AEN327"
+>3.2. How browsing functions and how to deploy stable and 
 dependable browsing using Samba</A
 ></H1
 ><P
@@ -284,8 +349,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN218"
->2.3. Use of the <B
+NAME="AEN341"
+>3.3. Use of the <B
 CLASS="COMMAND"
 >Remote Announce</B
 > parameter</A
@@ -371,8 +436,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN241"
->2.4. Use of the <B
+NAME="AEN364"
+>3.4. Use of the <B
 CLASS="COMMAND"
 >Remote Browse Sync</B
 > parameter</A
@@ -413,8 +478,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN252"
->2.5. Use of WINS</A
+NAME="AEN375"
+>3.5. Use of WINS</A
 ></H1
 ><P
 >Use of WINS (either Samba WINS _or_ MS Windows NT Server WINS) is highly
@@ -509,14 +574,50 @@ CLASS="APPLICATION"
 ></TR
 ></TABLE
 ></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN392"
+>3.5.1. WINS Replication</A
+></H2
+><P
+>Samba-3 permits WINS replication through the use of the <TT
+CLASS="FILENAME"
+>wrepld</TT
+> utility.
+This tool is not currently capable of being used as it is still in active development.
+As soon as this tool becomes moderately functional we will prepare man pages and enhance this
+section of the documentation to provide usage and technical details.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN396"
+>3.5.2. Static WINS Entries</A
+></H2
+><P
+>New to Samba-3 is a tool called <TT
+CLASS="FILENAME"
+>winsedit</TT
+> that may be used to add
+static WINS entries to the WINS database. This tool can be used also to modify entries
+existing in the WINS database.</P
+><P
+>The development of the winsedit tool was made necessary due to the migration
+of the older style wins.dat file into a new tdb binary backend data store.</P
+></DIV
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN269"
->2.6. Do NOT use more than one (1) protocol on MS Windows machines</A
+NAME="AEN401"
+>3.6. Do NOT use more than one (1) protocol on MS Windows machines</A
 ></H1
 ><P
 >A very common cause of browsing problems results from installing more than
@@ -558,8 +659,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN277"
->2.7. Name Resolution Order</A
+NAME="AEN409"
+>3.7. Name Resolution Order</A
 ></H1
 ><P
 >Resolution of NetBIOS names to IP addresses can take place using a number

@@ -74,14 +74,164 @@ CLASS="CHAPTER"
 ><A
 NAME="PASSDB"
 ></A
->Chapter 3. User information database</H1
+>Chapter 4. User information database</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>4.1. <A
+HREF="passdb.html#AEN469"
+>Introduction</A
+></DT
+><DT
+>4.2. <A
+HREF="passdb.html#AEN476"
+>Important Notes About Security</A
+></DT
+><DD
+><DL
+><DT
+>4.2.1. <A
+HREF="passdb.html#AEN502"
+>Advantages of SMB Encryption</A
+></DT
+><DT
+>4.2.2. <A
+HREF="passdb.html#AEN508"
+>Advantages of non-encrypted passwords</A
+></DT
+></DL
+></DD
+><DT
+>4.3. <A
+HREF="passdb.html#AEN514"
+>The smbpasswd Command</A
+></DT
+><DT
+>4.4. <A
+HREF="passdb.html#AEN545"
+>Plain text</A
+></DT
+><DT
+>4.5. <A
+HREF="passdb.html#AEN550"
+>TDB</A
+></DT
+><DT
+>4.6. <A
+HREF="passdb.html#AEN553"
+>LDAP</A
+></DT
+><DD
+><DL
+><DT
+>4.6.1. <A
+HREF="passdb.html#AEN555"
+>Introduction</A
+></DT
+><DT
+>4.6.2. <A
+HREF="passdb.html#AEN575"
+>Introduction</A
+></DT
+><DT
+>4.6.3. <A
+HREF="passdb.html#AEN599"
+>Supported LDAP Servers</A
+></DT
+><DT
+>4.6.4. <A
+HREF="passdb.html#AEN604"
+>Schema and Relationship to the RFC 2307 posixAccount</A
+></DT
+><DT
+>4.6.5. <A
+HREF="passdb.html#AEN616"
+>Configuring Samba with LDAP</A
+></DT
+><DD
+><DL
+><DT
+>4.6.5.1. <A
+HREF="passdb.html#AEN618"
+>OpenLDAP configuration</A
+></DT
+><DT
+>4.6.5.2. <A
+HREF="passdb.html#AEN635"
+>Configuring Samba</A
+></DT
+></DL
+></DD
+><DT
+>4.6.6. <A
+HREF="passdb.html#AEN663"
+>Accounts and Groups management</A
+></DT
+><DT
+>4.6.7. <A
+HREF="passdb.html#AEN668"
+>Security and sambaAccount</A
+></DT
+><DT
+>4.6.8. <A
+HREF="passdb.html#AEN688"
+>LDAP specials attributes for sambaAccounts</A
+></DT
+><DT
+>4.6.9. <A
+HREF="passdb.html#AEN758"
+>Example LDIF Entries for a sambaAccount</A
+></DT
+></DL
+></DD
+><DT
+>4.7. <A
+HREF="passdb.html#AEN766"
+>MySQL</A
+></DT
+><DD
+><DL
+><DT
+>4.7.1. <A
+HREF="passdb.html#AEN768"
+>Creating the database</A
+></DT
+><DT
+>4.7.2. <A
+HREF="passdb.html#AEN778"
+>Configuring</A
+></DT
+><DT
+>4.7.3. <A
+HREF="passdb.html#AEN795"
+>Using plaintext passwords or encrypted password</A
+></DT
+><DT
+>4.7.4. <A
+HREF="passdb.html#AEN800"
+>Getting non-column data from the table</A
+></DT
+></DL
+></DD
+><DT
+>4.8. <A
+HREF="passdb.html#AEN808"
+>XML</A
+></DT
+></DL
+></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN335"
->3.1. Introduction</A
+NAME="AEN469"
+>4.1. Introduction</A
 ></H1
 ><P
 >Old windows clients send plain text passwords over the wire. 
@@ -121,8 +271,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN342"
->3.2. Important Notes About Security</A
+NAME="AEN476"
+>4.2. Important Notes About Security</A
 ></H1
 ><P
 >The unix and SMB password encryption techniques seem similar 
@@ -248,44 +398,62 @@ BORDER="0"
 ></TABLE
 ><P
 ></P
-><P
-><SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->Note :</I
-></SPAN
->All current release of 
-		Microsoft SMB/CIFS clients support authentication via the
-		SMB Challenge/Response mechanism described here.  Enabling
-		clear text authentication does not disable the ability
-		of the client to participate in encrypted authentication.</P
-><P
->MS Windows clients will cache the encrypted password alone.
-		Even when plain text passwords are re-enabled, through the appropriate
-		registry change, the plain text password is NEVER cached. This means that
-		in the event that a network connections should become disconnected (broken)
-		only the cached (encrypted) password will be sent to the resource server
-		to affect a auto-reconnect. If the resource server does not support encrypted
-		passwords the auto-reconnect will fail. <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->USE OF ENCRYPTED PASSWORDS
-		IS STRONGLY ADVISED.</I
-></SPAN
-></P
 ></TD
 ></TR
 ></TABLE
 ></DIV
 ><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>All current release of 
+	Microsoft SMB/CIFS clients support authentication via the
+	SMB Challenge/Response mechanism described here.  Enabling
+	clear text authentication does not disable the ability
+	of the client to participate in encrypted authentication.</P
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>MS Windows clients will cache the encrypted password alone.
+	Even when plain text passwords are re-enabled, through the appropriate
+	registry change, the plain text password is NEVER cached. This means that
+	in the event that a network connections should become disconnected (broken)
+	only the cached (encrypted) password will be sent to the resource server
+	to affect a auto-reconnect. If the resource server does not support encrypted
+	passwords the auto-reconnect will fail. <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>USE OF ENCRYPTED PASSWORDS
+	IS STRONGLY ADVISED.</I
+></SPAN
+></P
+><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN368"
->3.2.1. Advantages of SMB Encryption</A
+NAME="AEN502"
+>4.2.1. Advantages of SMB Encryption</A
 ></H2
 ><P
 ></P
@@ -323,8 +491,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN374"
->3.2.2. Advantages of non-encrypted passwords</A
+NAME="AEN508"
+>4.2.2. Advantages of non-encrypted passwords</A
 ></H2
 ><P
 ></P
@@ -358,8 +526,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN380"
->3.3. The smbpasswd Command</A
+NAME="AEN514"
+>4.3. The smbpasswd Command</A
 ></H1
 ><P
 >The smbpasswd utility is a utility similar to the 
@@ -461,8 +629,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN411"
->3.4. Plain text</A
+NAME="AEN545"
+>4.4. Plain text</A
 ></H1
 ><P
 >Older versions of samba retrieved user information from the unix user database 
@@ -481,8 +649,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN416"
->3.5. TDB</A
+NAME="AEN550"
+>4.5. TDB</A
 ></H1
 ><P
 >Samba can also store the user data in a "TDB" (Trivial Database). Using this backend 
@@ -494,16 +662,16 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN419"
->3.6. LDAP</A
+NAME="AEN553"
+>4.6. LDAP</A
 ></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN421"
->3.6.1. Introduction</A
+NAME="AEN555"
+>4.6.1. Introduction</A
 ></H2
 ><P
 >This document describes how to use an LDAP directory for storing Samba user
@@ -570,8 +738,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN441"
->3.6.2. Introduction</A
+NAME="AEN575"
+>4.6.2. Introduction</A
 ></H2
 ><P
 >Traditionally, when configuring <A
@@ -626,29 +794,9 @@ Identified (RID).</P
 >As a result of these defeciencies, a more robust means of storing user attributes
 used by smbd was developed.  The API which defines access to user accounts
 is commonly referred to as the samdb interface (previously this was called the passdb
-API, and is still so named in the CVS trees). In Samba 2.2.3, enabling support
-for a samdb backend (e.g. <VAR
-CLASS="PARAMETER"
->--with-ldapsam</VAR
-> or
-<VAR
-CLASS="PARAMETER"
->--with-tdbsam</VAR
->) requires compile time support.</P
+API, and is still so named in the CVS trees). </P
 ><P
->When compiling Samba to include the <VAR
-CLASS="PARAMETER"
->--with-ldapsam</VAR
-> autoconf
-option, smbd (and associated tools) will store and lookup user accounts in
-an LDAP directory.  In reality, this is very easy to understand.  If you are
-comfortable with using an smbpasswd file, simply replace "smbpasswd" with
-"LDAP directory" in all the documentation.</P
-><P
->There are a few points to stress about what the <VAR
-CLASS="PARAMETER"
->--with-ldapsam</VAR
->
+>There are a few points to stress about what the ldapsam
 does not provide.  The LDAP support referred to in the this documentation does not
 include:</P
 ><P
@@ -679,8 +827,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN470"
->3.6.3. Supported LDAP Servers</A
+NAME="AEN599"
+>4.6.3. Supported LDAP Servers</A
 ></H2
 ><P
 >The LDAP samdb code in 2.2.3 (and later) has been developed and tested
@@ -705,8 +853,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN475"
->3.6.4. Schema and Relationship to the RFC 2307 posixAccount</A
+NAME="AEN604"
+>4.6.4. Schema and Relationship to the RFC 2307 posixAccount</A
 ></H2
 ><P
 >Samba 3.0 includes the necessary schema file for OpenLDAP 2.0 in
@@ -762,16 +910,16 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN487"
->3.6.5. Configuring Samba with LDAP</A
+NAME="AEN616"
+>4.6.5. Configuring Samba with LDAP</A
 ></H2
 ><DIV
 CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN489"
->3.6.5.1. OpenLDAP configuration</A
+NAME="AEN618"
+>4.6.5.1. OpenLDAP configuration</A
 ></H3
 ><P
 >To include support for the sambaAccount object in an OpenLDAP directory
@@ -817,9 +965,7 @@ include	           /etc/openldap/schema/core.schema
 include            /etc/openldap/schema/cosine.schema
 include            /etc/openldap/schema/inetorgperson.schema
 include            /etc/openldap/schema/samba.schema
-
-## uncomment this line if you want to support the RFC2307 (NIS) schema
-## include         /etc/openldap/schema/nis.schema
+include            /etc/openldap/schema/nis.schema
 
 ....</PRE
 ></P
@@ -852,8 +998,8 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN506"
->3.6.5.2. Configuring Samba</A
+NAME="AEN635"
+>4.6.5.2. Configuring Samba</A
 ></H3
 ><P
 >The following parameters are available in smb.conf only with <VAR
@@ -968,8 +1114,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN534"
->3.6.6. Accounts and Groups management</A
+NAME="AEN663"
+>4.6.6. Accounts and Groups management</A
 ></H2
 ><P
 >As users accounts are managed thru the sambaAccount objectclass, you should
@@ -993,8 +1139,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN539"
->3.6.7. Security and sambaAccount</A
+NAME="AEN668"
+>4.6.7. Security and sambaAccount</A
 ></H2
 ><P
 >There are two important points to remember when discussing the security
@@ -1029,9 +1175,8 @@ CLASS="EMPHASIS"
 >These password hashes are clear text equivalents and can be used to impersonate
 the user without deriving the original clear text strings.  For more information
 on the details of LM/NT password hashes, refer to the <A
-HREF="ENCRYPTION.html"
-TARGET="_top"
->ENCRYPTION chapter</A
+HREF="passdb.html"
+>User Database</A
 > of the Samba-HOWTO-Collection.</P
 ><P
 >To remedy the first security issue, the "ldap ssl" smb.conf parameter defaults
@@ -1072,8 +1217,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN559"
->3.6.8. LDAP specials attributes for sambaAccounts</A
+NAME="AEN688"
+>4.6.8. LDAP specials attributes for sambaAccounts</A
 ></H2
 ><P
 >The sambaAccount objectclass is composed of the following attributes:</P
@@ -1279,8 +1424,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN629"
->3.6.9. Example LDIF Entries for a sambaAccount</A
+NAME="AEN758"
+>4.6.9. Example LDIF Entries for a sambaAccount</A
 ></H2
 ><P
 >The following is a working LDIF with the inclusion of the posixAccount objectclass:</P
@@ -1338,16 +1483,16 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN637"
->3.7. MySQL</A
+NAME="AEN766"
+>4.7. MySQL</A
 ></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN639"
->3.7.1. Creating the database</A
+NAME="AEN768"
+>4.7.1. Creating the database</A
 ></H2
 ><P
 >You either can set up your own table and specify the field names to pdb_mysql (see below
@@ -1382,8 +1527,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN649"
->3.7.2. Configuring</A
+NAME="AEN778"
+>4.7.2. Configuring</A
 ></H2
 ><P
 >This plugin lacks some good documentation, but here is some short info:</P
@@ -1493,8 +1638,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN666"
->3.7.3. Using plaintext passwords or encrypted password</A
+NAME="AEN795"
+>4.7.3. Using plaintext passwords or encrypted password</A
 ></H2
 ><P
 >I strongly discourage the use of plaintext passwords, however, you can use them:</P
@@ -1508,8 +1653,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN671"
->3.7.4. Getting non-column data from the table</A
+NAME="AEN800"
+>4.7.4. Getting non-column data from the table</A
 ></H2
 ><P
 >It is possible to have not all data in the database and making some 'constant'.</P
@@ -1534,8 +1679,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN679"
->3.8. XML</A
+NAME="AEN808"
+>4.8. XML</A
 ></H1
 ><P
 >This module requires libxml2 to be installed.</P

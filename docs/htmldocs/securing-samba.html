@@ -74,14 +74,53 @@ CLASS="CHAPTER"
 ><A
 NAME="SECURING-SAMBA"
 ></A
->Chapter 24. Securing Samba</H1
+>Chapter 25. Securing Samba</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>25.1. <A
+HREF="securing-samba.html#AEN4074"
+>Introduction</A
+></DT
+><DT
+>25.2. <A
+HREF="securing-samba.html#AEN4077"
+>Using host based protection</A
+></DT
+><DT
+>25.3. <A
+HREF="securing-samba.html#AEN4087"
+>Using interface protection</A
+></DT
+><DT
+>25.4. <A
+HREF="securing-samba.html#AEN4095"
+>Using a firewall</A
+></DT
+><DT
+>25.5. <A
+HREF="securing-samba.html#AEN4102"
+>Using a IPC$ share deny</A
+></DT
+><DT
+>25.6. <A
+HREF="securing-samba.html#AEN4111"
+>Upgrading Samba</A
+></DT
+></DL
+></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4003"
->24.1. Introduction</A
+NAME="AEN4074"
+>25.1. Introduction</A
 ></H1
 ><P
 >This note was attached to the Samba 2.2.8 release notes as it contained an
@@ -93,8 +132,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4006"
->24.2. Using host based protection</A
+NAME="AEN4077"
+>25.2. Using host based protection</A
 ></H1
 ><P
 >In many installations of Samba the greatest threat comes for outside
@@ -134,8 +173,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4016"
->24.3. Using interface protection</A
+NAME="AEN4087"
+>25.3. Using interface protection</A
 ></H1
 ><P
 >By default Samba will accept connections on any network interface that
@@ -149,8 +188,6 @@ links. This may not be what you want.</P
 CLASS="PROGRAMLISTING"
 >  interfaces = eth* lo
   bind interfaces only = yes</PRE
-></P
-><P
 ></P
 ><P
 >This tells Samba to only listen for connections on interfaces with a
@@ -170,8 +207,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4025"
->24.4. Using a firewall</A
+NAME="AEN4095"
+>25.4. Using a firewall</A
 ></H1
 ><P
 >Many people use a firewall to deny access to services that they don't
@@ -200,8 +237,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4032"
->24.5. Using a IPC$ share deny</A
+NAME="AEN4102"
+>25.5. Using a IPC$ share deny</A
 ></H1
 ><P
 >If the above methods are not suitable, then you could also place a
@@ -239,8 +276,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4041"
->24.6. Upgrading Samba</A
+NAME="AEN4111"
+>25.6. Upgrading Samba</A
 ></H1
 ><P
 >Please check regularly on <A

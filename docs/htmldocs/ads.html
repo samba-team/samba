@@ -17,7 +17,7 @@ TITLE="Samba Backup Domain Controller to Samba Domain Control"
 HREF="samba-bdc.html"><LINK
 REL="NEXT"
 TITLE="Samba as a NT4 or Win2k domain member"
-HREF="domain-security.html"></HEAD
+HREF="domain-member.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="domain-security.html"
+HREF="domain-member.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -74,7 +74,55 @@ CLASS="CHAPTER"
 ><A
 NAME="ADS"
 ></A
->Chapter 8. Samba as a ADS domain member</H1
+>Chapter 9. Samba as a ADS domain member</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>9.1. <A
+HREF="ads.html#AEN1364"
+>Setup your <TT
+CLASS="FILENAME"
+>smb.conf</TT
+></A
+></DT
+><DT
+>9.2. <A
+HREF="ads.html#AEN1377"
+>Setup your <TT
+CLASS="FILENAME"
+>/etc/krb5.conf</TT
+></A
+></DT
+><DT
+>9.3. <A
+HREF="ads.html#ADS-CREATE-MACHINE-ACCOUNT"
+>Create the computer account</A
+></DT
+><DT
+>9.4. <A
+HREF="ads.html#ADS-TEST-SERVER"
+>Test your server setup</A
+></DT
+><DT
+>9.5. <A
+HREF="ads.html#ADS-TEST-SMBCLIENT"
+>Testing with <SPAN
+CLASS="APPLICATION"
+>smbclient</SPAN
+></A
+></DT
+><DT
+>9.6. <A
+HREF="ads.html#AEN1425"
+>Notes</A
+></DT
+></DL
+></DIV
 ><P
 >This is a rough guide to setting up Samba 3.0 with kerberos authentication against a
 Windows2000 KDC. </P
@@ -83,8 +131,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1355"
->8.1. Setup your <TT
+NAME="AEN1364"
+>9.1. Setup your <TT
 CLASS="FILENAME"
 >smb.conf</TT
 ></A
@@ -151,8 +199,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1368"
->8.2. Setup your <TT
+NAME="AEN1377"
+>9.2. Setup your <TT
 CLASS="FILENAME"
 >/etc/krb5.conf</TT
 ></A
@@ -257,7 +305,7 @@ CLASS="SECT1"
 CLASS="SECT1"
 ><A
 NAME="ADS-CREATE-MACHINE-ACCOUNT"
->8.3. Create the computer account</A
+>9.3. Create the computer account</A
 ></H1
 ><P
 >As a user that has write permission on the Samba private directory
@@ -271,8 +319,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1396"
->8.3.1. Possible errors</A
+NAME="AEN1405"
+>9.3.1. Possible errors</A
 ></H2
 ><P
 ><P
@@ -297,7 +345,7 @@ CLASS="SECT1"
 CLASS="SECT1"
 ><A
 NAME="ADS-TEST-SERVER"
->8.4. Test your server setup</A
+>9.4. Test your server setup</A
 ></H1
 ><P
 >On a Windows 2000 client try <KBD
@@ -317,7 +365,7 @@ CLASS="SECT1"
 CLASS="SECT1"
 ><A
 NAME="ADS-TEST-SMBCLIENT"
->8.5. Testing with <SPAN
+>9.5. Testing with <SPAN
 CLASS="APPLICATION"
 >smbclient</SPAN
 ></A
@@ -341,8 +389,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1416"
->8.6. Notes</A
+NAME="AEN1425"
+>9.6. Notes</A
 ></H1
 ><P
 >You must change administrator password at least once after DC 
@@ -386,7 +434,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="domain-security.html"
+HREF="domain-member.html"
 ACCESSKEY="N"
 >Next</A
 ></TD

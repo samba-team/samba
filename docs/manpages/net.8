@@ -3,24 +3,29 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NET" "8" "07 april 2003" "" ""
+.TH "NET" "8" "17 April 2003" "" ""
 
 .SH NAME
 net \- Tool for administration of Samba and remote CIFS servers.
 .SH SYNOPSIS
 
-\fBnet\fR \fB<ads|rap|rpc>\fR [ \fB-h\fR ] [ \fB-w workgroup\fR ] [ \fB-W myworkgroup\fR ] [ \fB-U user\fR ] [ \fB-I ip-address\fR ] [ \fB-p port\fR ] [ \fB-n myname\fR ] [ \fB-s conffile\fR ] [ \fB-S server\fR ] [ \fB-C comment\fR ] [ \fB-M maxusers\fR ] [ \fB-F flags\fR ] [ \fB-j jobid\fR ] [ \fB-l\fR ] [ \fB-r\fR ] [ \fB-f\fR ] [ \fB-t timeout\fR ] [ \fB-P\fR ] [ \fB-D debuglevel\fR ]
+\fBnet\fR \fB<ads|rap|rpc>\fR [ \fB-h\fR ] [ \fB-w workgroup\fR ] [ \fB-W myworkgroup\fR ] [ \fB-U user\fR ] [ \fB-I ip-address\fR ] [ \fB-p port\fR ] [ \fB-n myname\fR ] [ \fB-s conffile\fR ] [ \fB-S server\fR ] [ \fB-l\fR ] [ \fB-P\fR ] [ \fB-D debuglevel\fR ]
 
 .SH "DESCRIPTION"
 .PP
 This tool is part of the \fBSamba\fR(7) suite.
 .PP
 The samba net utility is meant to work just like the net utility 
-available for windows and DOS.
+available for windows and DOS. The first argument should be used 
+to specify the protocol to use when executing a certain command. 
+ADS is used for ActiveDirectory, RAP is using for old (Win9x/NT3) 
+clients and RPC can be used for NT4 and Windows 2000. If this 
+argument is omitted, net will try to determine it automatically. 
+Not all commands are available on all protocols.
 .SH "OPTIONS"
 .TP
-\fB-h\fR
-Display summary of all available options.
+\fB-h|--help\fR
+Print a summary of command line options.
 .TP
 \fB-w target-workgroup\fR
 Sets target workgroup or domain. You have to specify 
@@ -34,111 +39,394 @@ User name to use
 .TP
 \fB-I ip-address\fR
 IP address of target server to use. You have to
-specify either this option or a target workgroup or a target server.
+specify either this option or a target workgroup or
+a target server.
 .TP
 \fB-p port\fR
-Port on the target server to connect to.
+Port on the target server to connect to (usually 139 or 445). 
+Defaults to trying 445 first, then 139.
 .TP
-\fB-n myname\fR
-Sets name of the client.
+\fB-n <primary NetBIOS name>\fR
+This option allows you to override
+the NetBIOS name that Samba uses for itself. This is identical
+to setting the \fINetBIOS
+name\fR parameter in the \fBsmb.conf\fR(5) file.  However, a command
+line setting will take precedence over settings in
+\fBsmb.conf\fR(5).
 .TP
-\fB-s conffile\fR
-Specify alternative configuration file that should be loaded.
+\fB-s <configuration file>\fR
+The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See \fIsmb.conf(5)\fR for more information.
+The default configuration file name is determined at 
+compile time.
 .TP
 \fB-S server\fR
 Name of target server. You should specify either 
 this option or a target workgroup or a target IP address.
 .TP
-\fB-C comment\fR
-FIXME
-.TP
-\fB-M maxusers\fR
-FIXME
-.TP
-\fB-F flags\fR
-FIXME
-.TP
-\fB-j jobid\fR
-FIXME
-.TP
 \fB-l\fR
-FIXME
-.TP
-\fB-r\fR
-FIXME
-.TP
-\fB-f\fR
-FIXME
-.TP
-\fB-t timeout\fR
-FIXME
+When listing data, give more information on each item.
 .TP
 \fB-P\fR
 Make queries to the external server using the machine account of the local server.
 .TP
-\fB-D debuglevel\fR
-set the debuglevel. Debug level 0 is the lowest
-and 100 being the highest. This should be set to 100 if you are
-planning on submitting a bug report to the Samba team (see
-\fIBUGS.txt\fR).
-.SH "TIME"
+\fB-d|--debug=debuglevel\fR
+\fIdebuglevel\fR is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.
+
+The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.
+
+Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.
+
+Note that specifying this parameter here will 
+override the log
+level file.
+.SH "COMMANDS"
+.SS "TIME"
 .PP
 The \fBNET TIME\fR command allows you to view the time on a remote server
 or synchronise the time on the local server with the time on the remote server.
-.TP
-\fB\fR
+.SS "TIME"
+.PP
 Without any options, the \fBNET TIME\fR command 
 displays the time on the remote server.
-.TP
-\fBSYSTEM\fR
-Displays the time on the remote server in a format ready for \fB/bin/date\fR
-.TP
-\fBSET\fR
-Tries to set the date and time of the local server to that on 
-the remote server using \fB/bin/date\fR.
-.TP
-\fBZONE\fR
-Displays the timezone in hours from GMT on the remote computer.
-.SH "RPC"
+.SS "TIME SYSTEM"
 .PP
-The \fBNET RPC\fR command allows you to do various 
-NT4 operations.
+Displays the time on the remote server in a format ready for \fB/bin/date\fR
+.SS "TIME SET"
+.PP
+Tries to set the date and time of the local server to that on 
+the remote server using \fB/bin/date\fR. 
+.SS "TIME ZONE"
+.PP
+Displays the timezone in hours from GMT on the remote computer.
+.SS "[RPC|ADS] JOIN [TYPE] [-U USERNAME[%PASSWORD]] [OPTIONS]"
+.PP
+Join a domain.  If the account already exists on the server, and 
+[TYPE] is MEMBER, the machine will attempt to join automatically. 
+(Assuming that the machine has been created in server manager)
+Otherwise, a password will be prompted for, and a new account may
+be created.
+.PP
+[TYPE] may be PDC, BDC or MEMBER to specify the type of server
+joining the domain.
+.SS "[RPC] OLDJOIN [OPTIONS]"
+.PP
+Join a domain. Use the OLDJOIN option to join the domain 
+using the old style of domain joining - you need to create a trust 
+account in server manager first.
+.SS "[RPC|ADS] USER"
+.SS "[RPC|ADS] USER DELETE TARGET"
+.PP
+Delete specified user
+.SS "[RPC|ADS] USER LIST"
+.PP
+List all users
+.SS "[RPC|ADS] USER INFO TARGET"
+.PP
+List the domain groups of a the specified user.
+.SS "[RPC|ADS] USER ADD NAME [PASSWORD] [-F USER FLAGS] [-C COMMENT]"
+.PP
+Add specified user.
+.SS "[RPC|ADS] GROUP"
+.SS "[RPC|ADS] GROUP [MISC OPTIONS] [TARGETS]"
+.PP
+List user groups.
+.SS "[RPC|ADS] GROUP DELETE NAME [MISC. OPTIONS]"
+.PP
+Delete specified group.
+.SS "[RPC|ADS] GROUP ADD NAME [-C COMMENT]"
+.PP
+Create specified group.
+.SS "[RAP|RPC] SHARE"
+.SS "[RAP|RPC] SHARE [MISC. OPTIONS] [TARGETS]"
+.PP
+Enumerates all exported resources (network shares) on target server.
+.SS "[RAP|RPC] SHARE ADD NAME=SERVERPATH [-C COMMENT] [-M MAXUSERS] [TARGETS]"
+.PP
+Adds a share from a server (makes the export active). Maxusers 
+specifies the number of users that can be connected to the 
+share simultaneously.
+.SS "SHARE DELETE SHARENAM"
+.PP
+Delete specified share.
+.SS "[RPC|RAP] FILE"
+.SS "[RPC|RAP] FILE"
+.PP
+List all open files on remote server.
+.SS "[RPC|RAP] FILE CLOSE FILEID"
+.PP
+Close file with specified \fIfileid\fR on 
+remote server.
+.SS "[RPC|RAP] FILE INFO FILEID"
+.PP
+Print information on specified \fIfileid\fR. 
+Currently listed are: file-id, username, locks, path, permissions.
+.SS "[RAP|RPC] FILE USER"
+.sp
+.RS
+.B "Note:"
+Currently NOT implemented.
+.RE
+.SS "SESSION"
+.SS "RAP SESSION"
+.PP
+Without any other options, SESSION enumerates all active SMB/CIFS 
+sessions on the target server.
+.SS "RAP SESSION DELETE|CLOSE CLIENT_NAME"
+.PP
+Close the specified sessions.
+.SS "RAP SESSION INFO CLIENT_NAME"
+.PP
+Give a list with all the open files in specified session.
+.SS "RAP SERVER DOMAIN"
+.PP
+List all servers in specified domain or workgroup. Defaults
+to local domain.
+.SS "RAP DOMAIN"
+.PP
+Lists all domains and workgroups visible on the 
+current network.
+.SS "RAP PRINTQ"
+.SS "RAP PRINTQ LIST QUEUE_NAME"
+.PP
+Lists the specified print queue and print jobs on the server.
+If the \fIQUEUE_NAME\fR is omitted, all 
+queues are listed.
+.SS "RAP PRINTQ DELETE JOBID"
+.PP
+Delete job with specified id.
+.SS "RAP VALIDATE USER [PASSWORD]"
+.PP
+Validate whether the specified user can log in to the 
+remote server. If the password is not specified on the commandline, it 
+will be prompted. 
+.sp
+.RS
+.B "Note:"
+Currently NOT implemented.
+.RE
+.SS "RAP GROUPMEMBER"
+.SS "RAP GROUPMEMBER LIST GROUP"
+.PP
+List all members of the specified group.
+.SS "RAP GROUPMEMBER DELETE GROUP USER"
+.PP
+Delete member from group.
+.SS "RAP GROUPMEMBER ADD GROUP USER"
+.PP
+Add member to group.
+.SS "RAP ADMIN COMMAND"
+.PP
+Execute the specified \fIcommand\fR on 
+the remote server. Only works with OS/2 servers.
+.sp
+.RS
+.B "Note:"
+Currently NOT implemented.
+.RE
+.SS "RAP SERVICE"
+.SS "RAP SERVICE START NAME [ARGUMENTS...]"
+.PP
+Start the specified service on the remote server. Not implemented yet.
+.sp
+.RS
+.B "Note:"
+Currently NOT implemented.
+.RE
+.SS "RAP SERVICE STOP"
+.PP
+Stop the specified service on the remote server.
+.sp
+.RS
+.B "Note:"
+Currently NOT implemented.
+.RE
+.SS "RAP PASSWORD USER OLDPASS NEWPASS"
+.PP
+Change password of \fIUSER\fR from \fIOLDPASS\fR to \fINEWPASS\fR.
+.SS "LOOKUP"
+.SS "LOOKUP HOST HOSTNAME [TYPE]"
+.PP
+Lookup the IP address of the given host with the specified type (netbios suffix). 
+The type defaults to 0x20 (workstation).
+.SS "LOOKUP LDAP [DOMAIN"
+.PP
+Give IP address of LDAP server of specified \fIDOMAIN\fR. Defaults to local domain.
+.SS "LOOKUP KDC [REALM]"
+.PP
+Give IP address of KDC for the specified \fIREALM\fR.
+Defaults to local realm.
+.SS "LOOKUP DC [DOMAIN]"
+.PP
+Give IP's of Domain Controllers for specified \fIDOMAIN\fR. Defaults to local domain.
+.SS "LOOKUP MASTER DOMAIN"
+.PP
+Give IP of master browser for specified \fIDOMAIN\fR
+or workgroup. Defaults to local domain.
+.SS "CACHE"
+.PP
+Samba uses a general caching interface called 'gencache'. It 
+can be controlled using 'NET CACHE'.
+.PP
+All the timeout parameters support the suffixes:
+
+s - Seconds
+
+m - Minutes
+
+h - Hours
+
+d - Days
+
+w - Weeks
+.SS "CACHE ADD KEY DATA TIME-OUT"
+.PP
+Add specified key+data to the cache with the given timeout.
+.SS "CACHE DEL KEY"
+.PP
+Delete key from the cache.
+.SS "CACHE SET KEY DATA TIME-OUT"
+.PP
+Update data of existing cache entry.
+.SS "CACHE SEARCH PATTERN"
+.PP
+Search for the specified pattern in the cache data.
+.SS "CACHE LIST"
+.PP
+List all current items in the cache.
+.SS "CACHE FLUSH"
+.PP
+Remove all the current items from the cache.
+.SS "GETLOCALSID [DOMAIN]"
+.PP
+Print the SID of the specified domain, or if the parameter is 
+omitted, the SID of the domain the local server is in.
+.SS "SETLOCALSID S-1-5-21-X-Y-Z"
+.PP
+Sets domain sid for the local server to the specified SID.
+.SS "MAXRID"
+.PP
+Prints out the highest RID currently in use on the local 
+server (by the active 'passdb backend').
+.SS "RPC INFO"
+.PP
+Print information about the domain of the remote server, 
+such as domain name, domain sid and number of users and groups.
+.SS "[RPC|ADS] TESTJOIN"
+.PP
+Check whether participation in a domain is still valid.
+.SS "[RPC|ADS] CHANGETRUSTPW"
+.PP
+Force change of domain trust password.
+.SS "RPC TRUSTDOM"
+.SS "RPC TRUSTDOM ADD DOMAIN"
+.PP
+Add a interdomain trust account for 
+\fIDOMAIN\fR to the remote server. 
+.SS "RPC TRUSTDOM DEL DOMAIM"
+.PP
+Remove interdomain trust account for 
+\fIDOMAIN\fR from the remote server. 
+.sp
+.RS
+.B "Note:"
+Currently NOT implemented.
+.RE
+.SS "RPC TRUSTDOM ESTABLISH DOMAIN"
+.PP
+Establish a trust relationship to a trusting domain. 
+Interdomain account must already be created on the remote PDC.
+.SS "RPC TRUSTDOM REVOKE DOMAIN"
+.PP
+Abandon relationship to trusted domain
+.SS "RPC TRUSTDOM LIST"
+.PP
+List all current interdomain trust relationships.
+.SS "RPC ABORTSHUTDOWN"
+.PP
+Abort the shutdown of a remote server.
+.SS "SHUTDOWN [-T TIMEOUT] [-R] [-F] [-C MESSAGE]"
+.PP
+Shut down the remote server.
 .TP
-\fBJOIN -U username[%password] [options]\fR
-Join a domain with specified username and password. Password 
-will be prompted if none is specified.
+\fB-r\fR
+Reboot after shutdown.
 .TP
-\fBJOIN [options except -U]\fR
-to join a domain created in server manager
+\fB-f\fR
+Force shutting down all applications.
 .TP
-\fBUSER [misc. options] [targets]\fR
-List users
+\fB-t timeout\fR
+Timeout before system will be shut down. An interactive 
+user of the system can use this time to cancel the shutdown.
 .TP
-\fBUSER DELETE <name> [misc options]\fR
-delete specified user
-.TP
-\fBUSER INFO <name> [misc options]\fR
-list the domain groups of the specified user
-.TP
-\fBUSER ADD <name> [password] [-F user flags] [misc. options]\fR
-Add specified user
-.TP
-\fBGROUP [misc options] [targets]\fR
-List user groups
-.TP
-\fBGROUP DELETE <name> [misc. options] [targets]\fR
-Delete specified group
-.TP
-\fBGROUP ADD <name> [-C comment]\fR
-Create specified group
-.TP
-\fBSHARE [misc. options] [targets]\fR
-enumerates all exported resources (network shares) on target server
-.TP
-\fBSHARE ADD <name=serverpath> [misc. options] [targets]\fR
-Adds a share from a server (makes the export active)
-.TP
-\fBSHARE DELETE <sharenam\fR
+\fB-C message\fR
+Display the specified message on the screen to 
+announce the shutdown.
+.SS "SAMDUMP"
+.PP
+Print out sam database of remote server. You need
+to run this on either a BDC. 
+.SS "VAMPIRE"
+.PP
+Export users, aliases and groups from remote server to 
+local server. Can only be run an a BDC.
+.SS "GETSID"
+.PP
+Fetch domain SID and store it in the local \fIsecrets.tdb\fR. 
+.SS "ADS LEAVE"
+.PP
+Make the remote host leave the domain it is part of. 
+.SS "ADS STATUS"
+.PP
+Print out status of machine account of the local machine in ADS.
+Prints out quite some debug info. Aimed at developers, regular 
+users should use \fBNET ADS TESTJOIN\fR.
+.SS "ADS PRINTER"
+.SS "ADS PRINTER INFO [PRINTER] [SERVER]"
+.PP
+Lookup info for \fIPRINTER\fR on \fISERVER\fR. The printer name defaults to "*", the 
+server name defaults to the local host.
+.SS "ADS PRINTER PUBLISH PRINTER"
+.PP
+Publish specified printer using ADS.
+.SS "ADS PRINTER REMOVE PRINTER"
+.PP
+Remove specified printer from ADS directory.
+.SS "ADS SEARCH EXPRESSION ATTRIBUTES..."
+.PP
+Perform a raw LDAP search on a ADS server and dump the results. The 
+expression is a standard LDAP search expression, and the 
+attributes are a list of LDAP fields to show in the results.
+.PP
+Example: \fBnet ads search '(objectCategory=group)' sAMAccountName\fR
+.SS "ADS DN DN (ATTRIBUTES)"
+.PP
+Perform a raw LDAP search on a ADS server and dump the results. The 
+DN standard LDAP DN, and the attributes are a list of LDAP fields 
+to show in the result. 
+.PP
+Example: \fBnet ads dn 'CN=administrator,CN=Users,DC=my,DC=domain' SAMAccountName\fR
+.SS "WORKGROUP"
+.PP
+Print out workgroup name for specified kerberos realm.
+.SS "HELP [COMMAND]"
+.PP
+Gives usage information for the specified command.
 .SH "VERSION"
 .PP
 This man page is incomplete for version 3.0 of the Samba 
@@ -150,6 +438,4 @@ were created by Andrew Tridgell. Samba is now developed
 by the Samba Team as an Open Source project similar 
 to the way the Linux kernel is developed.
 .PP
-The original Samba man pages were written by Karl Auer.
-The current set of manpages and documentation is maintained
-by the Samba Team in the same fashion as the Samba source code.
+The net manpage was written by Jelmer Vernooij.

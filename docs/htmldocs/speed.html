@@ -13,11 +13,11 @@ REL="UP"
 TITLE="Appendixes"
 HREF="appendixes.html"><LINK
 REL="PREVIOUS"
-TITLE="Migration from NT4 PDC to Samba-3 PDC"
-HREF="nt4migration.html"><LINK
+TITLE="SWAT - The Samba Web Admininistration Tool"
+HREF="swat.html"><LINK
 REL="NEXT"
-TITLE="Portability"
-HREF="portability.html"></HEAD
+TITLE="The samba checklist"
+HREF="diagnosis.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="nt4migration.html"
+HREF="swat.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -59,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="portability.html"
+HREF="diagnosis.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -74,14 +74,73 @@ CLASS="CHAPTER"
 ><A
 NAME="SPEED"
 ></A
->Chapter 28. Samba performance issues</H1
+>Chapter 32. Samba performance issues</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>32.1. <A
+HREF="speed.html#AEN4666"
+>Comparisons</A
+></DT
+><DT
+>32.2. <A
+HREF="speed.html#AEN4672"
+>Socket options</A
+></DT
+><DT
+>32.3. <A
+HREF="speed.html#AEN4679"
+>Read size</A
+></DT
+><DT
+>32.4. <A
+HREF="speed.html#AEN4684"
+>Max xmit</A
+></DT
+><DT
+>32.5. <A
+HREF="speed.html#AEN4689"
+>Log level</A
+></DT
+><DT
+>32.6. <A
+HREF="speed.html#AEN4692"
+>Read raw</A
+></DT
+><DT
+>32.7. <A
+HREF="speed.html#AEN4697"
+>Write raw</A
+></DT
+><DT
+>32.8. <A
+HREF="speed.html#AEN4701"
+>Slow Clients</A
+></DT
+><DT
+>32.9. <A
+HREF="speed.html#AEN4705"
+>Slow Logins</A
+></DT
+><DT
+>32.10. <A
+HREF="speed.html#AEN4708"
+>Client tuning</A
+></DT
+></DL
+></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4163"
->28.1. Comparisons</A
+NAME="AEN4666"
+>32.1. Comparisons</A
 ></H1
 ><P
 >The Samba server uses TCP to talk to the client. Thus if you are
@@ -111,8 +170,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4169"
->28.2. Socket options</A
+NAME="AEN4672"
+>32.2. Socket options</A
 ></H1
 ><P
 >There are a number of socket options that can greatly affect the
@@ -139,8 +198,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4176"
->28.3. Read size</A
+NAME="AEN4679"
+>32.3. Read size</A
 ></H1
 ><P
 >The option "read size" affects the overlap of disk reads/writes with
@@ -165,8 +224,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4181"
->28.4. Max xmit</A
+NAME="AEN4684"
+>32.4. Max xmit</A
 ></H1
 ><P
 >At startup the client and server negotiate a "maximum transmit" size,
@@ -188,8 +247,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4186"
->28.5. Log level</A
+NAME="AEN4689"
+>32.5. Log level</A
 ></H1
 ><P
 >If you set the log level (also known as "debug level") higher than 2
@@ -202,8 +261,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4189"
->28.6. Read raw</A
+NAME="AEN4692"
+>32.6. Read raw</A
 ></H1
 ><P
 >The "read raw" operation is designed to be an optimised, low-latency
@@ -224,8 +283,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4194"
->28.7. Write raw</A
+NAME="AEN4697"
+>32.7. Write raw</A
 ></H1
 ><P
 >The "write raw" operation is designed to be an optimised, low-latency
@@ -241,8 +300,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4198"
->28.8. Slow Clients</A
+NAME="AEN4701"
+>32.8. Slow Clients</A
 ></H1
 ><P
 >One person has reported that setting the protocol to COREPLUS rather
@@ -258,8 +317,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4202"
->28.9. Slow Logins</A
+NAME="AEN4705"
+>32.9. Slow Logins</A
 ></H1
 ><P
 >Slow logins are almost always due to the password checking time. Using
@@ -271,8 +330,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN4205"
->28.10. Client tuning</A
+NAME="AEN4708"
+>32.10. Client tuning</A
 ></H1
 ><P
 >Often a speed problem can be traced to the client. The client (for
@@ -389,7 +448,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="nt4migration.html"
+HREF="swat.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -407,7 +466,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="portability.html"
+HREF="diagnosis.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -417,7 +476,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Migration from NT4 PDC to Samba-3 PDC</TD
+>SWAT - The Samba Web Admininistration Tool</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -431,7 +490,7 @@ ACCESSKEY="U"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Portability</TD
+>The samba checklist</TD
 ></TR
 ></TABLE
 ></DIV
