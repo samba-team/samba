@@ -1,820 +1,2156 @@
 /*
- *  Unix SMB/CIFS implementation.
- *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-2000,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Paul Ashton                  1997-2000,
- *  Copyright (C) Jean Francois Micouleau      1998-2000,
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
+   Unix SMB/CIFS implementation.
+   RPC pipe client
+
+   Copyright (C) Gerald Carter                2001-2002,
+   Copyright (C) Tim Potter                   2000-2002,
+   Copyright (C) Andrew Tridgell              1994-2000,
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+   Copyright (C) Jean-Francois Micouleau      1999-2000.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
 
 #include "includes.h"
-#include "rpc_parse.h"
-#include "nterr.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_CLI
+/** @defgroup spoolss SPOOLSS - NT printing routines
+ *  @ingroup rpc_client
+ *
+ * @{
+ **/
 
-/****************************************************************************
-do a SPOOLSS Enum Printer Drivers
-****************************************************************************/
-uint32 spoolss_enum_printerdrivers(const char *srv_name, const char *environment,
-                                   uint32 level, NEW_BUFFER *buffer, uint32 offered,
-                                   uint32 *needed, uint32 *returned)
+/**********************************************************************
+ Initialize a new spoolss buff for use by a client rpc
+**********************************************************************/
+static void init_buffer(NEW_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx)
 {
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_ENUMPRINTERDRIVERS q_o;
-        SPOOL_R_ENUMPRINTERDRIVERS r_o;
-	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
-
-        struct cli_connection *con = NULL;
-
-        if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
-                return False;
-
-        prs_init(&buf, MAX_PDU_FRAG_LEN, ctx, MARSHALL);
-        prs_init(&rbuf, 0, ctx, UNMARSHALL);
-
-        /* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
-
-        DEBUG(5,("SPOOLSS Enum Printer Drivers (Server: %s Environment: %s level: %d)\n",
-                                srv_name, environment, level));
-
-        make_spoolss_q_enumprinterdrivers(&q_o, srv_name, environment,
-                                level, buffer, offered);
-
-        /* turn parameters into data stream */
-        if (spoolss_io_q_enumprinterdrivers("", &q_o, &buf, 0) &&
-	     rpc_con_pipe_req(con, SPOOLSS_ENUMPRINTERDRIVERS, &buf, &rbuf)) 
-	{
-	        prs_mem_free(&buf);
-        	ZERO_STRUCT(r_o);
-
-	        prs_switch_type(&buffer->prs, UNMARSHALL);
-	        prs_set_offset(&buffer->prs, 0);
-	        r_o.buffer=buffer;
-
-	        if(spoolss_io_r_enumprinterdrivers("", &r_o, &rbuf, 0)) 
-		{
-			if (r_o.status != NT_STATUS_OK)
-			{
-				DEBUG(3,("SPOOLSS_ENUMPRINTERDRIVERS:  %s\n", nt_errstr(r_o.status)));
-			}
-		        *needed=r_o.needed;
-		        *returned=r_o.returned;
-	        }
-	}
-
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-
-        cli_connection_unlink(con);
-
-        return r_o.status;
+	buffer->ptr = (size != 0);
+	buffer->size = size;
+	buffer->string_at_end = size;
+	prs_init(&buffer->prs, size, ctx, MARSHALL);
+	buffer->struct_start = prs_offset(&buffer->prs);
 }
 
-/****************************************************************************
-do a SPOOLSS Enum Printers
-****************************************************************************/
-uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
-                             NEW_BUFFER *buffer, uint32 offered,
-                             uint32 *needed, uint32 *returned)
+/*********************************************************************
+ Decode various spoolss rpc's and info levels
+ ********************************************************************/
+
+/**********************************************************************
+**********************************************************************/
+static void decode_printer_info_0(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
+				uint32 returned, PRINTER_INFO_0 **info)
 {
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_ENUMPRINTERS q_o;
-        SPOOL_R_ENUMPRINTERS r_o;
-	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
+        uint32 i;
+        PRINTER_INFO_0  *inf;
 
-        struct cli_connection *con = NULL;
+        inf=(PRINTER_INFO_0 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_0));
 
-        if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
-                return False;
+        buffer->prs.data_offset=0;
 
-        prs_init(&buf, MAX_PDU_FRAG_LEN, ctx, MARSHALL);
-        prs_init(&rbuf, 0, ctx, UNMARSHALL);
-
-        /* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
-
-        DEBUG(5,("SPOOLSS Enum Printers (Server: %s level: %d)\n", srv_name, level));
-
-        make_spoolss_q_enumprinters(&q_o, flags, "", level, buffer, offered);
-
-        /* turn parameters into data stream */
-        if (spoolss_io_q_enumprinters("", &q_o, &buf, 0) &&
-	   rpc_con_pipe_req(con, SPOOLSS_ENUMPRINTERS, &buf, &rbuf)) 
-	{
-	        ZERO_STRUCT(r_o);
-
-        	prs_switch_type(&buffer->prs, UNMARSHALL);
-	        prs_set_offset(&buffer->prs, 0);
-	        r_o.buffer=buffer;
-
-        	if(new_spoolss_io_r_enumprinters("", &r_o, &rbuf, 0)) 
-		{
-			if (r_o.status != NT_STATUS_OK)
-			{
-                        	/* report error code */
-                        	DEBUG(3,("SPOOLSS_ENUMPRINTERS: %s\n", nt_errstr(r_o.status)));
-			}
-
-        		*needed=r_o.needed;
-        		*returned=r_o.returned;
-        	}
-
+        for (i=0; i<returned; i++) {
+                smb_io_printer_info_0("", buffer, &inf[i], 0);
         }
 
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-
-        cli_connection_unlink(con);
-
-        return r_o.status;
+        *info=inf;
 }
 
-/****************************************************************************
-do a SPOOLSS Enum Ports
-****************************************************************************/
-uint32 spoolss_enum_ports(fstring srv_name, uint32 level,
-                             NEW_BUFFER *buffer, uint32 offered,
-                             uint32 *needed, uint32 *returned)
+/**********************************************************************
+**********************************************************************/
+static void decode_printer_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
+				uint32 returned, PRINTER_INFO_1 **info)
 {
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_ENUMPORTS q_o;
-        SPOOL_R_ENUMPORTS r_o;
-	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
+        uint32 i;
+        PRINTER_INFO_1  *inf;
 
-        struct cli_connection *con = NULL;
+        inf=(PRINTER_INFO_1 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_1));
 
-        if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
-                return False;
+        buffer->prs.data_offset=0;
 
-        prs_init(&buf, MAX_PDU_FRAG_LEN, ctx, MARSHALL);
-        prs_init(&rbuf, 0, ctx, UNMARSHALL);
-
-        /* create and send a MSRPC command with api SPOOLSS_ENUMPORTS */
-
-        DEBUG(5,("SPOOLSS Enum Ports (Server: %s level: %d)\n", srv_name, level));
-
-        make_spoolss_q_enumports(&q_o, "", level, buffer, offered);
-
-        /* turn parameters into data stream */
-        if (spoolss_io_q_enumports("", &q_o, &buf, 0) &&
-	     rpc_con_pipe_req(con, SPOOLSS_ENUMPORTS, &buf, &rbuf))
-	{
-	        prs_mem_free(&buf );
-        	ZERO_STRUCT(r_o);
-
-	        prs_switch_type(&buffer->prs, UNMARSHALL);
-	        prs_set_offset(&buffer->prs, 0);
-	        r_o.buffer=buffer;
-
-	        if(new_spoolss_io_r_enumports("", &r_o, &rbuf, 0)) 
-		{
-			if (r_o.status != NT_STATUS_OK)
-			{
-				DEBUG(3,("SPOOLSS_ENUMPORTS: %s\n", nt_errstr(r_o.status)));
-			}
-			
-	        	*needed=r_o.needed;
-	        	*returned=r_o.returned;
-		}
+        for (i=0; i<returned; i++) {
+                smb_io_printer_info_1("", buffer, &inf[i], 0);
         }
 
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-
-        cli_connection_unlink(con);
-
-        return r_o.status;
+        *info=inf;
 }
 
-/****************************************************************************
-do a SPOOLSS Enum Jobs
-****************************************************************************/
-uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjobs,
-                         uint32 level, NEW_BUFFER *buffer, uint32 offered,
-                         uint32 *needed, uint32 *returned)
+/**********************************************************************
+**********************************************************************/
+static void decode_printer_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+				uint32 returned, PRINTER_INFO_2 **info)
 {
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_ENUMJOBS q_o;
-        SPOOL_R_ENUMJOBS r_o;
-	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
+        uint32 i;
+        PRINTER_INFO_2  *inf;
 
-        if (hnd == NULL)
-                return NT_STATUS_INVALID_PARAMETER;
+        inf=(PRINTER_INFO_2 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_2));
 
-        prs_init(&buf, MAX_PDU_FRAG_LEN, ctx, MARSHALL);
-        prs_init(&rbuf, 0, ctx, UNMARSHALL);
+        buffer->prs.data_offset=0;
 
-        /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
+        for (i=0; i<returned; i++) {
+		/* a little initialization as we go */
+		inf[i].secdesc = NULL;
+                smb_io_printer_info_2("", buffer, &inf[i], 0);
+        }
 
-        DEBUG(5,("SPOOLSS Enum Jobs level: %d)\n", level));
-
-        make_spoolss_q_enumjobs(&q_o, hnd, firstjob, numofjobs, level, buffer, offered);
-
-        /* turn parameters into data stream */
-        if (spoolss_io_q_enumjobs("", &q_o, &buf, 0) &&
-	     rpc_hnd_pipe_req(hnd, SPOOLSS_ENUMJOBS, &buf, &rbuf))
-        {
-	        ZERO_STRUCT(r_o);
-	        prs_mem_free(&buf );
-
-	        r_o.buffer=buffer;
-
-	        if(spoolss_io_r_enumjobs("", &r_o, &rbuf, 0)) 
-		{
-			if (r_o.status != NT_STATUS_OK)
-			{
-				DEBUG(3,("SPOOLSS_ENUMJOBS: %s\n", nt_errstr(r_o.status)));
-			}
-	        	*needed=r_o.needed;
-		        *returned=r_o.returned;
-		}
-	}
-
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-
-        return r_o.status;
+        *info=inf;
 }
 
-/***************************************************************************
-do a SPOOLSS Enum printer datas
-****************************************************************************/
-uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx,
-                        	uint32 *valuelen, uint16 *value, uint32 *rvaluelen,
-                        	uint32 *type, uint32 *datalen, uint8 *data, 
-				uint32 *rdatalen)
+/**********************************************************************
+**********************************************************************/
+static void decode_printer_info_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+				uint32 returned, PRINTER_INFO_3 **info)
 {
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_ENUMPRINTERDATA q_o;
-        SPOOL_R_ENUMPRINTERDATA r_o;
-	TALLOC_CTX *mem_ctx = NULL;
-	
-        if (hnd == NULL)
-                return NT_STATUS_INVALID_PARAMETER;
+        uint32 i;
+        PRINTER_INFO_3  *inf;
 
-	if ((mem_ctx=talloc_init()) == NULL)
-	{
-		DEBUG(0,("msrpc_spoolss_enum_jobs: talloc_init failed!\n"));
-		return False;
-	}
-        prs_init(&buf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-        prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+        inf=(PRINTER_INFO_3 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_3));
 
-        /* create and send a MSRPC command with api  SPOOLSS_ENUMPRINTERDATA*/
+        buffer->prs.data_offset=0;
 
-        DEBUG(4,("SPOOLSS Enum Printer data\n"));
+        for (i=0; i<returned; i++) {
+		inf[i].secdesc = NULL;
+                smb_io_printer_info_3("", buffer, &inf[i], 0);
+        }
 
-        make_spoolss_q_enumprinterdata(&q_o, hnd, idx, *valuelen, *datalen);
-
-        /* turn parameters into data stream */
-        if (spoolss_io_q_enumprinterdata("", &q_o, &buf, 0) &&
-	     rpc_hnd_pipe_req(hnd, SPOOLSS_ENUMPRINTERDATA, &buf, &rbuf)) 
-	{
-	        ZERO_STRUCT(r_o);
-        	prs_mem_free(&buf );
-
-	        r_o.data=data;
-        	r_o.value=value;
-
-	        if(spoolss_io_r_enumprinterdata("", &r_o, &rbuf, 0))
-		{
-			if (r_o.status != NT_STATUS_OK)
-			{
-				DEBUG(3,("SPOOLSS_ENUMPRINTERDATA: %s\n", nt_errstr(r_o.status)));
-			}
-			
-			*valuelen=r_o.valuesize;
-		        *rvaluelen=r_o.realvaluesize;
-	        	*type=r_o.type;
-	        	*datalen=r_o.datasize;
-		        *rdatalen=r_o.realdatasize;
-
-		}
-	}
-
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
-
-        return r_o.status;
+        *info=inf;
 }
 
-/****************************************************************************
-do a SPOOLSS Enum printer datas
-****************************************************************************/
-uint32 spoolss_getprinter(const POLICY_HND *hnd, uint32 level,
-                             NEW_BUFFER *buffer, uint32 offered,
-                             uint32 *needed)
+/**********************************************************************
+**********************************************************************/
+static void decode_port_info_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			uint32 returned, PORT_INFO_1 **info)
 {
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_GETPRINTER q_o;
-        SPOOL_R_GETPRINTER r_o;
-	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
+        uint32 i;
+        PORT_INFO_1 *inf;
 
-        if (hnd == NULL)
-                return NT_STATUS_INVALID_PARAMETER;
+        inf=(PORT_INFO_1*)talloc(mem_ctx, returned*sizeof(PORT_INFO_1));
 
-        prs_init(&buf, MAX_PDU_FRAG_LEN, ctx, MARSHALL);
-        prs_init(&rbuf, 0, ctx, UNMARSHALL);
+        prs_set_offset(&buffer->prs, 0);
 
-        /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
+        for (i=0; i<returned; i++) {
+                smb_io_port_info_1("", buffer, &(inf[i]), 0);
+        }
 
-        DEBUG(5,("SPOOLSS Enum Printer data)\n"));
-
-        make_spoolss_q_getprinter(&q_o, hnd, level, buffer, offered);
-
-        /* turn parameters into data stream */
-        if (spoolss_io_q_getprinter("", &q_o, &buf, 0) &&
-             rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTER, &buf, &rbuf)) 
-	{
-	        ZERO_STRUCT(r_o);
-        	prs_mem_free(&buf );
-
-	        prs_switch_type(&buffer->prs, UNMARSHALL);
-        	prs_set_offset(&buffer->prs, 0);
-	        r_o.buffer=buffer;
-
-	        if(!spoolss_io_r_getprinter("", &r_o, &rbuf, 0)) 
-		{
-			if (r_o.status != NT_STATUS_OK)
-			{
-				DEBUG(3,("SPOOLSS_GETPRINTER: %s\n", nt_errstr(r_o.status)));
-			}
-		        *needed=r_o.needed;
-		}
-	}
-
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-
-        return r_o.status;
+        *info=inf;
 }
 
-/****************************************************************************
-do a SPOOLSS Enum printer driver
-****************************************************************************/
-uint32 spoolss_getprinterdriver(const POLICY_HND *hnd,
-                                const char *environment, uint32 level,
-                                NEW_BUFFER *buffer, uint32 offered,
-                                uint32 *needed)
+/**********************************************************************
+**********************************************************************/
+static void decode_port_info_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			uint32 returned, PORT_INFO_2 **info)
 {
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_GETPRINTERDRIVER2 q_o;
-        SPOOL_R_GETPRINTERDRIVER2 r_o;
-	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
+        uint32 i;
+        PORT_INFO_2 *inf;
 
-        if (hnd == NULL)
-                return NT_STATUS_INVALID_PARAMETER;
+        inf=(PORT_INFO_2*)talloc(mem_ctx, returned*sizeof(PORT_INFO_2));
 
-        prs_init(&buf, MAX_PDU_FRAG_LEN, ctx, MARSHALL);
-        prs_init(&rbuf, 0, ctx, UNMARSHALL);
+        prs_set_offset(&buffer->prs, 0);
 
-        /* create and send a MSRPC command with api SPOOLSS_ENUMJOBS */
+        for (i=0; i<returned; i++) {
+                smb_io_port_info_2("", buffer, &(inf[i]), 0);
+        }
 
-        DEBUG(5,("SPOOLSS Enum Printer driver)\n"));
-
-        make_spoolss_q_getprinterdriver2(&q_o, hnd, environment, level, 2, 0, buffer, offered);
-
-        /* turn parameters into data stream */
-        if (spoolss_io_q_getprinterdriver2("", &q_o, &buf, 0) &&
-	     rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTERDRIVER2, &buf, &rbuf)) 
-	{
-	        ZERO_STRUCT(r_o);
-        	prs_mem_free(&buf );
-
-	        prs_switch_type(&buffer->prs, UNMARSHALL);
-        	prs_set_offset(&buffer->prs, 0);
-	        r_o.buffer=buffer;
-
-	        if(spoolss_io_r_getprinterdriver2("", &r_o, &rbuf, 0)) 
-		{
-			if (r_o.status != NT_STATUS_OK)
-			{
-				DEBUG(3,("SPOOLSS_GETPRINTERDRIVER2: %s\n", nt_errstr(r_o.status)));
-			}
-
-		        *needed=r_o.needed;
-		}
-	}
-
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-
-        return r_o.status;
+        *info=inf;
 }
 
-
-
-/****************************************************************************
-do a SPOOLSS Open Printer Ex
-****************************************************************************/
-BOOL spoolss_open_printer_ex(  const char *printername,
-                         const char *datatype, uint32 access_required,
-                         const char *station,  const char *username,
-                        POLICY_HND *hnd)
+/**********************************************************************
+**********************************************************************/
+static void decode_printer_driver_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			uint32 returned, DRIVER_INFO_1 **info)
 {
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_OPEN_PRINTER_EX q_o;
-        BOOL valid_pol = False;
-        fstring srv_name;
-        char *s = NULL;
-        struct cli_connection *con = NULL;
-	TALLOC_CTX *mem_ctx = NULL;
-	
-        memset(srv_name, 0, sizeof(srv_name));
-        fstrcpy(srv_name, printername);
+        uint32 i;
+        DRIVER_INFO_1 *inf;
 
-        s = strchr_m(&srv_name[2], '\\');
-	if (s != NULL)
-		*s = '\0';
+        inf=(DRIVER_INFO_1 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_1));
 
-        if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
-                return False;
+        buffer->prs.data_offset=0;
 
-        if (hnd == NULL) 
-		return False;
+        for (i=0; i<returned; i++) {
+                smb_io_printer_driver_info_1("", buffer, &(inf[i]), 0);
+        }
 
-	if ((mem_ctx=talloc_init()) == NULL)
-	{
-		DEBUG(0,("msrpc_spoolss_enum_jobs: talloc_init failed!\n"));
-		return False;
-	}
-        prs_init(&buf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-        prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+        *info=inf;
+}
 
-        /* create and send a MSRPC command with api SPOOLSS_OPENPRINTEREX */
+/**********************************************************************
+**********************************************************************/
+static void decode_printer_driver_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			uint32 returned, DRIVER_INFO_2 **info)
+{
+        uint32 i;
+        DRIVER_INFO_2 *inf;
 
-        DEBUG(5,("SPOOLSS Open Printer Ex\n"));
+        inf=(DRIVER_INFO_2 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_2));
 
-        make_spoolss_q_open_printer_ex(&q_o, printername, datatype,
+        buffer->prs.data_offset=0;
+
+        for (i=0; i<returned; i++) {
+                smb_io_printer_driver_info_2("", buffer, &(inf[i]), 0);
+        }
+
+        *info=inf;
+}
+
+/**********************************************************************
+**********************************************************************/
+static void decode_printer_driver_3(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			uint32 returned, DRIVER_INFO_3 **info)
+{
+        uint32 i;
+        DRIVER_INFO_3 *inf;
+
+        inf=(DRIVER_INFO_3 *)talloc(mem_ctx, returned*sizeof(DRIVER_INFO_3));
+
+        buffer->prs.data_offset=0;
+
+        for (i=0; i<returned; i++) {
+                smb_io_printer_driver_info_3("", buffer, &(inf[i]), 0);
+        }
+
+        *info=inf;
+}
+
+/**********************************************************************
+**********************************************************************/
+static void decode_printerdriverdir_1 (TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer,
+			uint32 returned, DRIVER_DIRECTORY_1 **info
+)
+{
+	DRIVER_DIRECTORY_1 *inf;
+ 
+        inf=(DRIVER_DIRECTORY_1 *)talloc(mem_ctx, sizeof(DRIVER_DIRECTORY_1));
+
+        prs_set_offset(&buffer->prs, 0);
+
+        smb_io_driverdir_1("", buffer, inf, 0);
+ 
+	*info=inf;
+}
+
+/** Return a handle to the specified printer or print server.
+ *
+ * @param cli              Pointer to client state structure which is open
+ * on the SPOOLSS pipe.
+ *
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param printername      The name of the printer or print server to be
+ * opened in UNC format.
+ *
+ * @param datatype         Specifies the default data type for the printer.
+ *
+ * @param access_required  The access rights requested on the printer or
+ * print server.
+ *
+ * @param station          The UNC name of the requesting workstation.
+ *
+ * @param username         The name of the user requesting the open.
+ *
+ * @param pol              Returned policy handle.
+ */
+
+/*********************************************************************************
+ Win32 API - OpenPrinter()
+ ********************************************************************************/
+
+WERROR cli_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				char *printername, char *datatype, uint32 access_required,
+				char *station, char *username, POLICY_HND *pol)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_OPEN_PRINTER_EX q;
+	SPOOL_R_OPEN_PRINTER_EX r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_open_printer_ex(&q, printername, datatype,
                                        access_required, station, username);
 
-        /* turn parameters into data stream */
-        if (spoolss_io_q_open_printer_ex("", &q_o, &buf, 0) &&
-            rpc_con_pipe_req(con, SPOOLSS_OPENPRINTEREX, &buf, &rbuf))
-        {
-                SPOOL_R_OPEN_PRINTER_EX r_o;
-		BOOL p = True;
+	/* Marshall data and send request */
 
-                spoolss_io_r_open_printer_ex("", &r_o, &rbuf, 0);
+	if (!spoolss_io_q_open_printer_ex("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_OPENPRINTEREX, &qbuf, &rbuf))
+		goto done;
 
-                if (prs_offset(&rbuf)!= 0 && r_o.status != 0)
-                {
-                        /* report error code */
-                        DEBUG(3,("SPOOLSS_OPENPRINTEREX: %s\n", nt_errstr(r_o.status)));
-                        p = False;
-                }
+	/* Unmarshall response */
 
-                if (p)
-                {
-                        /* ok, at last: we're happy. return the policy handle */
-                        *hnd = r_o.handle;
+	if (!spoolss_io_r_open_printer_ex("", &r, &rbuf, 0))
+		goto done;
 
-			/* associate the handle returned with the current 
-			   state of the clienjt connection */
-			valid_pol = RpcHndList_set_connection(hnd, con);
+	/* Return output parameters */
 
-                }
-        }
+	result = r.status;
 
+	if (W_ERROR_IS_OK(result))
+		*pol = r.handle;
+
+ done:
+	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
 
-        return valid_pol;
+	return result;
 }
 
-/****************************************************************************
- do a SPOOLSS AddPrinterEx()
- **ALWAYS** uses as PRINTER_INFO level 2 struct
-****************************************************************************/
-BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 *info2)
+/** Close a printer handle
+ *
+ * @param cli              Pointer to client state structure which is open
+ * on the SPOOLSS pipe.
+ *
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param pol              Policy handle of printer or print server to close.
+ */
+/*********************************************************************************
+ Win32 API - ClosePrinter()
+ ********************************************************************************/
+
+WERROR cli_spoolss_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 POLICY_HND *pol)
 {
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_ADDPRINTEREX q_o;
-        SPOOL_R_ADDPRINTEREX r_o;
-	struct cli_connection *con = NULL;
-	TALLOC_CTX *mem_ctx = NULL;
-        fstring the_client_name;
-	BOOL valid_pol = True;
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_CLOSEPRINTER q;
+	SPOOL_R_CLOSEPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
 
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
 
+	/* Initialise parse structures */
 
-        if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
-                return NT_STATUS_ACCESS_DENIED;
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-        if (hnd == NULL)
-		return NT_STATUS_INVALID_PARAMETER;
+	/* Initialise input parameters */
 
-	if ((mem_ctx=talloc_init()) == NULL)
-	{
-		DEBUG(0,("spoolss_addprinterex: talloc_init() failed!\n"));
-		return NT_STATUS_ACCESS_DENIED;
+        make_spoolss_q_closeprinter(&q, pol);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_closeprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_CLOSEPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_closeprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (W_ERROR_IS_OK(result))
+		*pol = r.handle;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Enumerate printers on a print server.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param offered          Buffer size offered in the request.
+ * @param needed           Number of bytes needed to complete the request.
+ *                         may be NULL.
+ *
+ * @param flags            Selected from PRINTER_ENUM_* flags.
+ * @param level            Request information level.
+ *
+ * @param num_printers     Pointer to number of printers returned.  May be
+ *                         NULL.
+ * @param ctr              Return structure for printer information.  May
+ *                         be NULL.
+ */
+/*********************************************************************************
+ Win32 API - EnumPrinters()
+ ********************************************************************************/
+
+WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 uint32 offered, uint32 *needed,
+				 uint32 flags, uint32 level,
+				 uint32 *num_printers, PRINTER_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMPRINTERS q;
+        SPOOL_R_ENUMPRINTERS r;
+	NEW_BUFFER buffer;
+	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
+	
+	/* Initialise input parameters */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	make_spoolss_q_enumprinters(&q, flags, server, level, &buffer, 
+				    offered);
+
+	/* Marshall data and send request */
+	
+	if (!spoolss_io_q_enumprinters("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERS, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (spoolss_io_r_enumprinters("", &r, &rbuf, 0)) {
+		if (needed)
+			*needed = r.needed;
 	}
-        prs_init(&buf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-        prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
-        /* create and send a MSRPC command with api SPOOLSS_ENUMPORTS */
-        DEBUG(5,("SPOOLSS Add Printer Ex (Server: %s)\n", srv_name));
 	
-        fstrcpy(the_client_name, "\\\\");
-        fstrcat(the_client_name, con->pCli_state->desthost);
-        strupper(the_client_name);
+	result = r.status;
+
+	/* Return output parameters */
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
+
+	if (num_printers)
+		*num_printers = r.returned;
+
+	if (!ctr)
+		goto done;
+
+	switch (level) {
+	case 0:
+		decode_printer_info_0(mem_ctx, r.buffer, r.returned, 
+				      &ctr->printers_0);
+		break;
+	case 1:
+		decode_printer_info_1(mem_ctx, r.buffer, r.returned, 
+				      &ctr->printers_1);
+		break;
+	case 2:
+		decode_printer_info_2(mem_ctx, r.buffer, r.returned, 
+				      &ctr->printers_2);
+		break;
+	case 3:
+		decode_printer_info_3(mem_ctx, r.buffer, r.returned, 
+				      &ctr->printers_3);
+		break;
+	}			
 	
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 
-        make_spoolss_q_addprinterex(mem_ctx, &q_o, srv_name, the_client_name, 
-				    /* "Administrator", */
-				    con->pCli_state->user_name,
-				    2, info2);
+	return result;	
+}
 
-        /* turn parameters into data stream and send the request */
-        if (spoolss_io_q_addprinterex("", &q_o, &buf, 0) &&
-	    rpc_con_pipe_req(con, SPOOLSS_ADDPRINTEREX, &buf, &rbuf)) 
-	{
-        	ZERO_STRUCT(r_o);
+/*********************************************************************************
+ Win32 API - EnumPorts()
+ ********************************************************************************/
+/** Enumerate printer ports on a print server.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param offered          Buffer size offered in the request.
+ * @param needed           Number of bytes needed to complete the request.
+ *                         May be NULL.
+ *
+ * @param level            Requested information level.
+ *
+ * @param num_ports        Pointer to number of ports returned.  May be NULL.
+ * @param ctr              Pointer to structure holding port information.
+ *                         May be NULL.
+ */
 
-        	if(spoolss_io_r_addprinterex("", &r_o, &rbuf, 0)) 
-		{
-			if (r_o.status != NT_STATUS_OK)
-                        {
-				/* report error code */
-                        	DEBUG(3,("SPOOLSS_ADDPRINTEREX: %s\n", nt_errstr(r_o.status)));
-                        	valid_pol = False;
-			}
-        	}
+WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      uint32 offered, uint32 *needed,
+			      uint32 level, int *num_ports, PORT_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMPORTS q;
+        SPOOL_R_ENUMPORTS r;
+	NEW_BUFFER buffer;
+	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
+
+	/* Initialise input parameters */
+	
+	init_buffer(&buffer, offered, mem_ctx);
+	
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	
+	make_spoolss_q_enumports(&q, server, level, &buffer, offered);
+	
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enumports("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPORTS, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (spoolss_io_r_enumports("", &r, &rbuf, 0)) {
+		if (needed)
+			*needed = r.needed;
+	}
 		
-		if (valid_pol)
-		{
-                        /* ok, at last: we're happy. return the policy handle */
-                        copy_policy_hnd( hnd, &r_o.handle);
+	result = r.status;
 
-			/* associate the handle returned with the current 
-			   state of the clienjt connection */
-			RpcHndList_set_connection(hnd, con);
-		}
-        }
+	/* Return output parameters */
 
+	if (!W_ERROR_IS_OK(result))
+		goto done;
 
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
+	if (num_ports)
+		*num_ports = r.returned;
 
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
-
-        return valid_pol;
-}
-
-/****************************************************************************
-do a SPOOL Close
-****************************************************************************/
-BOOL spoolss_closeprinter(POLICY_HND *hnd)
-{
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_CLOSEPRINTER q_c;
-        BOOL valid_close = False;
-	TALLOC_CTX *mem_ctx = NULL;
+	if (!ctr)
+		goto done;
 	
-        if (hnd == NULL) 
-		return False;
+	switch (level) {
+	case 1:
+		decode_port_info_1(mem_ctx, r.buffer, r.returned, 
+				   &ctr->port.info_1);
+		break;
+	case 2:
+		decode_port_info_2(mem_ctx, r.buffer, r.returned, 
+				   &ctr->port.info_2);
+		break;
+	}			
 
-        /* create and send a MSRPC command with api SPOOLSS_CLOSEPRINTER */
-	if ((mem_ctx=talloc_init()) == NULL)
-	{
-		DEBUG(0,("msrpc_spoolss_enum_jobs: talloc_init failed!\n"));
-		return False;
-	}
-        prs_init(&buf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-        prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
-        DEBUG(4,("SPOOL Close Printer\n"));
-
-        /* store the parameters */
-        make_spoolss_q_closeprinter(&q_c, hnd);
-
-        /* turn parameters into data stream */
-        if (spoolss_io_q_closeprinter("", &q_c, &buf, 0) &&
-            rpc_hnd_pipe_req(hnd, SPOOLSS_CLOSEPRINTER, &buf, &rbuf))
-        {
-                SPOOL_R_CLOSEPRINTER r_c;
-
-                spoolss_io_r_closeprinter("", &r_c, &rbuf, 0);
-
-                if (prs_offset(&rbuf)!=0 && r_c.status != 0)
-                {
-                        /* report error code */
-                        DEBUG(3,("SPOOL_CLOSEPRINTER: %s\n", nt_errstr(r_c.status)));
-                }
-		else
-			valid_close = True;
-        }
-
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
-
-	/* disassociate with the cli_connection */
-        RpcHndList_del_connection(hnd);
-
-        return valid_close;
-}
-
-/****************************************************************************
-do a SPOOLSS Get printer datas
-****************************************************************************/
-uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
-                        uint32 in_size,
-                        uint32 *type,
-                        uint32 *out_size,
-                        uint8 *data,
-                        uint32 *needed)
-{
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_GETPRINTERDATA q_o;
-        SPOOL_R_GETPRINTERDATA r_o;
-	TALLOC_CTX *mem_ctx = NULL;
-
-        if (hnd == NULL)
-                return NT_STATUS_INVALID_PARAMETER;
-
-	if ((mem_ctx=talloc_init()) == NULL)
-	{
-		DEBUG(0,("msrpc_spoolss_enum_jobs: talloc_init failed!\n"));
-		return False;
-	}
-        prs_init(&buf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-        prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
-
-        /* create and send a MSRPC command with api SPOOLSS_GETPRINTERDATA */
-
-        DEBUG(5,("SPOOLSS Get Printer data)\n"));
-
-        make_spoolss_q_getprinterdata(&q_o, hnd,(UNISTR2 *)valuename, in_size);
-
-        /* turn parameters into data stream */
-        if (spoolss_io_q_getprinterdata("", &q_o, &buf, 0) &&
-             rpc_hnd_pipe_req(hnd, SPOOLSS_GETPRINTERDATA, &buf, &rbuf)) 
-	{
-	        ZERO_STRUCT(r_o);
-        	prs_mem_free(&buf );
-
-	        r_o.data=data;
-
-	        if(spoolss_io_r_getprinterdata("", &r_o, &rbuf, 0)) 
-		{
-			if (r_o.status != NT_STATUS_OK)
-			{
-				DEBUG(3,("SPOOLSS_GETPRINTERDATA: %s\n", nt_errstr(r_o.status)));
-			}
-
-		        *type=r_o.type;
-        		*out_size=r_o.size;
-	        	*needed=r_o.needed;
-		}
-	}
-
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-
-        return r_o.status;
-}
-
-/****************************************************************************
-do a SPOOLSS Get Printer Driver Direcotry
-****************************************************************************/
-uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 level,
-                             NEW_BUFFER *buffer, uint32 offered,
-                             uint32 *needed)
-{
-        prs_struct rbuf;
-        prs_struct buf;
-        SPOOL_Q_GETPRINTERDRIVERDIR q_o;
-        SPOOL_R_GETPRINTERDRIVERDIR r_o;
-	TALLOC_CTX *ctx = prs_get_mem_context(&buffer->prs);
-
-        struct cli_connection *con = NULL;
-
-        if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
-                return False;
-
-        prs_init(&buf, MAX_PDU_FRAG_LEN, ctx, MARSHALL);
-        prs_init(&rbuf, 0, ctx, UNMARSHALL);
-
-        /* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
-
-        DEBUG(5,("SPOOLSS GetPrinterDriverDir (Server: %s Env: %s level: %d)\n", 
-		  srv_name, env_name, level));
-
-        make_spoolss_q_getprinterdriverdir(&q_o, srv_name, env_name, level, 
-					   buffer, offered);
-
-        /* turn parameters into data stream */
-        if (spoolss_io_q_getprinterdriverdir("", &q_o, &buf, 0) &&
-             rpc_con_pipe_req(con, SPOOLSS_GETPRINTERDRIVERDIRECTORY, &buf, &rbuf)) 
-	{
-	        prs_mem_free(&buf );
-        	ZERO_STRUCT(r_o);
-
-	        prs_switch_type(&buffer->prs, UNMARSHALL);
-        	prs_set_offset(&buffer->prs, 0);
-	        r_o.buffer=buffer;
-
-        	if(spoolss_io_r_getprinterdriverdir("", &r_o, &rbuf, 0)) 
-		{
-			if (r_o.status != NT_STATUS_OK)
-			{
-				DEBUG(3,("SPOOLSS_GETPRINTERDRIVERDIRECTORY: %s\n", nt_errstr(r_o.status)));
-			}
-
-		        *needed=r_o.needed;
-		}
-	}
-
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
-
-        cli_connection_unlink(con);
-
-        return r_o.status;
-}
-
-/******************************************************************************
- AddPrinterDriver()
- *****************************************************************************/
-uint32 spoolss_addprinterdriver(const char *srv_name, uint32 level, PRINTER_DRIVER_CTR *info)
-{
-        prs_struct 			rbuf;
-        prs_struct 			buf;
-        SPOOL_Q_ADDPRINTERDRIVER 	q_o;
-        SPOOL_R_ADDPRINTERDRIVER 	r_o;
-	TALLOC_CTX 			*mem_ctx = NULL;
-	struct cli_connection 		*con = NULL;
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 	
-        if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
-                return False;
+	return result;	
+}
 
-	if ((mem_ctx=talloc_init()) == NULL)
-	{
-		DEBUG(0,("msrpc_spoolss_enum_jobs: talloc_init failed!\n"));
-		return False;
-	}
-        prs_init(&buf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-        prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+/*********************************************************************************
+ Win32 API - GetPrinter()
+ ********************************************************************************/
+
+WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      uint32 offered, uint32 *needed,
+			      POLICY_HND *pol, uint32 level, 
+			      PRINTER_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETPRINTER q;
+	SPOOL_R_GETPRINTER r;
+	NEW_BUFFER buffer;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise input parameters */
+
+	init_buffer(&buffer, offered, mem_ctx);
 	
-	/* make the ADDPRINTERDRIVER PDU */
-	make_spoolss_q_addprinterdriver(mem_ctx, &q_o, srv_name, level, info);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-	/* turn the data into an io stream */
-        if (spoolss_io_q_addprinterdriver("", &q_o, &buf, 0) &&
-	    rpc_con_pipe_req(con, SPOOLSS_ADDPRINTERDRIVER, &buf, &rbuf)) 
-	{
-        	ZERO_STRUCT(r_o);
+	make_spoolss_q_getprinter(mem_ctx, &q, pol, level, &buffer, offered);
+	
+	/* Marshall data and send request */
 
-        	if(spoolss_io_r_addprinterdriver("", &r_o, &rbuf, 0)) 
-		{
-			if (r_o.status != NT_STATUS_OK)
-			{
-                        	/* report error code */
-                        	DEBUG(3,("SPOOLSS_ADDPRINTERDRIVER: %s\n", nt_errstr(r_o.status)));
-			}
-		}
-        }
+	if (!spoolss_io_q_getprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTER, &qbuf, &rbuf))
+		goto done;
 
+	/* Unmarshall response */
 
-        prs_mem_free(&rbuf);
-        prs_mem_free(&buf );
+	if (!spoolss_io_r_getprinter("", &r, &rbuf, 0))
+		goto done;
 
-	if (mem_ctx)
-		talloc_destroy(mem_ctx);
+	if (needed)
+		*needed = r.needed;
+	
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (W_ERROR_IS_OK(result)) {
+		switch (level) {
+		case 0:
+			decode_printer_info_0(mem_ctx, r.buffer, 1, &ctr->printers_0);
+			break;
+		case 1:
+			decode_printer_info_1(mem_ctx, r.buffer, 1, &ctr->printers_1);
+			break;
+		case 2:
+			decode_printer_info_2(mem_ctx, r.buffer, 1, &ctr->printers_2);
+			break;
+		case 3:
+			decode_printer_info_3(mem_ctx, r.buffer, 1, &ctr->printers_3);
+			break;
+		}			
+	}
+	
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+
+/*********************************************************************************
+ Win32 API - SetPrinter()
+ ********************************************************************************/
+/** Set printer info 
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param pol              Policy handle on printer to set info.
+ * @param level            Information level to set.
+ * @param ctr              Pointer to structure holding printer information.
+ * @param command          Specifies the action performed.  See
+ * http://msdn.microsoft.com/library/default.asp?url=/library/en-us/gdi/prntspol_13ua.asp 
+ * for details.
+ *
+ */
+
+WERROR cli_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, uint32 level, 
+			      PRINTER_INFO_CTR *ctr, uint32 command)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETPRINTER q;
+	SPOOL_R_SETPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise input parameters */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 		
-	return r_o.status;
+	make_spoolss_q_setprinter(mem_ctx, &q, pol, level, ctr, command);
 
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_setprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_setprinter("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
 }
+
+/*********************************************************************************
+ Win32 API - GetPrinterDriver()
+ ********************************************************************************/
+/** Get installed printer drivers for a given printer
+ *
+ * @param cli              Pointer to client state structure which is open
+ * on the SPOOLSS pipe.
+ *
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param offered          Buffer size offered in the request.
+ * @param needed           Number of bytes needed to complete the request.
+ *                         may be NULL.
+ *
+ * @param pol              Pointer to an open policy handle for the printer
+ *                         opened with cli_spoolss_open_printer_ex().
+ * @param level            Requested information level.
+ * @param env              The print environment or archictecture.  This is
+ *                         "Windows NT x86" for NT4.
+ * @param ctr              Returned printer driver information.
+ */
+
+WERROR cli_spoolss_getprinterdriver(struct cli_state *cli, 
+				    TALLOC_CTX *mem_ctx, 
+				    uint32 offered, uint32 *needed,
+				    POLICY_HND *pol, uint32 level, 
+				    char *env, PRINTER_DRIVER_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETPRINTERDRIVER2 q;
+        SPOOL_R_GETPRINTERDRIVER2 r;
+	NEW_BUFFER buffer;
+	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	fstrcpy (server, cli->desthost);
+	strupper (server);
+
+	/* Initialise input parameters */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	make_spoolss_q_getprinterdriver2(&q, pol, env, level, 2, 2,
+					 &buffer, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getprinterdriver2 ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_GETPRINTERDRIVER2, &qbuf, &rbuf)) 
+		goto done;
+
+	/* Unmarshall response */
+
+	if (spoolss_io_r_getprinterdriver2 ("", &r, &rbuf, 0)) {
+		if (needed)
+			*needed = r.needed;
+	}
+
+	result = r.status;
+
+	/* Return output parameters */
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	if (!ctr)
+		goto done;
+
+	switch (level) {
+	case 1:
+		decode_printer_driver_1(mem_ctx, r.buffer, 1, &ctr->info1);
+		break;
+	case 2:
+		decode_printer_driver_2(mem_ctx, r.buffer, 1, &ctr->info2);
+		break;
+	case 3:
+		decode_printer_driver_3(mem_ctx, r.buffer, 1, &ctr->info3);
+		break;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+		
+	return result;	
+}
+
+/*********************************************************************************
+ Win32 API - EnumPrinterDrivers()
+ ********************************************************************************/
+/**********************************************************************
+ * Get installed printer drivers for a given printer
+ */
+WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli, 
+				       TALLOC_CTX *mem_ctx,
+				       uint32 offered, uint32 *needed,
+				       uint32 level, char *env,
+				       uint32 *num_drivers,
+				       PRINTER_DRIVER_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMPRINTERDRIVERS q;
+        SPOOL_R_ENUMPRINTERDRIVERS r;
+	NEW_BUFFER buffer;
+	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
+
+	/* Initialise input parameters */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Write the request */
+
+	make_spoolss_q_enumprinterdrivers(&q, server, env, level, &buffer, 
+					  offered);
+	
+	/* Marshall data and send request */
+	
+	if (!spoolss_io_q_enumprinterdrivers ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_ENUMPRINTERDRIVERS, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumprinterdrivers ("", &r, &rbuf, 0))
+		goto done;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (num_drivers)
+		*num_drivers = r.returned;
+
+	result = r.status;
+
+	/* Return output parameters */
+
+	if (W_ERROR_IS_OK(result) && (r.returned != 0)) {
+		*num_drivers = r.returned;
+
+		switch (level) {
+		case 1:
+			decode_printer_driver_1(mem_ctx, r.buffer, r.returned, &ctr->info1);
+			break;
+		case 2:
+			decode_printer_driver_2(mem_ctx, r.buffer, r.returned, &ctr->info2);
+			break;
+		case 3:
+			decode_printer_driver_3(mem_ctx, r.buffer, r.returned, &ctr->info3);
+			break;
+		}
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+		
+	return result;
+}
+
+
+/*********************************************************************************
+ Win32 API - GetPrinterDriverDirectory()
+ ********************************************************************************/
+/**********************************************************************
+ * Get installed printer drivers for a given printer
+ */
+WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli, 
+					TALLOC_CTX *mem_ctx,
+					uint32 offered, uint32 *needed,
+					uint32 level, char *env,
+					DRIVER_DIRECTORY_CTR *ctr)
+{
+	prs_struct 			qbuf, rbuf;
+	SPOOL_Q_GETPRINTERDRIVERDIR 	q;
+        SPOOL_R_GETPRINTERDRIVERDIR 	r;
+	NEW_BUFFER 			buffer;
+	WERROR result = W_ERROR(ERRgeneral);
+	fstring 			server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
+
+	/* Initialise input parameters */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Write the request */
+
+	make_spoolss_q_getprinterdriverdir(&q, server, env, level, &buffer, 
+					   offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getprinterdriverdir ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_GETPRINTERDRIVERDIRECTORY,
+			       &qbuf, &rbuf)) 
+		goto done;
+
+	/* Unmarshall response */
+
+	if (spoolss_io_r_getprinterdriverdir ("", &r, &rbuf, 0)) {
+		if (needed)
+			*needed = r.needed;
+	}
+		
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (W_ERROR_IS_OK(result)) {
+		switch (level) {
+		case 1:
+			decode_printerdriverdir_1(mem_ctx, r.buffer, 1, 
+						  &ctr->info1);
+			break;
+		}			
+	}
+		
+	done:
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/*********************************************************************************
+ Win32 API - AddPrinterDriver()
+ ********************************************************************************/
+/**********************************************************************
+ * Install a printer driver
+ */
+WERROR cli_spoolss_addprinterdriver (struct cli_state *cli, 
+				     TALLOC_CTX *mem_ctx, uint32 level,
+				     PRINTER_DRIVER_CTR *ctr)
+{
+	prs_struct 			qbuf, rbuf;
+	SPOOL_Q_ADDPRINTERDRIVER 	q;
+        SPOOL_R_ADDPRINTERDRIVER 	r;
+	WERROR result = W_ERROR(ERRgeneral);
+	fstring 			server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+	
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
+
+	/* Initialise input parameters */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Write the request */
+
+	make_spoolss_q_addprinterdriver (mem_ctx, &q, server, level, ctr);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_addprinterdriver ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTERDRIVER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_addprinterdriver ("", &r, &rbuf, 0))
+		goto done;
+		
+	/* Return output parameters */
+
+	result = r.status;
+
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+	
+	return result;	
+}
+
+/*********************************************************************************
+ Win32 API - AddPrinter()
+ ********************************************************************************/
+/**********************************************************************
+ * Install a printer
+ */
+WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 uint32 level, PRINTER_INFO_CTR*ctr)
+{
+	prs_struct 			qbuf, rbuf;
+	SPOOL_Q_ADDPRINTEREX 		q;
+        SPOOL_R_ADDPRINTEREX 		r;
+	WERROR result = W_ERROR(ERRgeneral);
+	fstring 			server,
+					client,
+					user;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+        slprintf (client, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (client);
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
+	fstrcpy  (user, cli->user_name);
+
+	/* Initialise input parameters */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Write the request */
+
+	make_spoolss_q_addprinterex (mem_ctx, &q, server, client, user,
+				     level, ctr);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_addprinterex ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTEREX, &qbuf, &rbuf)) 
+		goto done;
+		
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_addprinterex ("", &r, &rbuf, 0))
+		goto done;
+		
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+
+/*********************************************************************************
+ Win32 API - DeltePrinterDriver()
+ ********************************************************************************/
+/**********************************************************************
+ * Delete a Printer Driver from the server (does not remove 
+ * the driver files
+ */
+WERROR cli_spoolss_deleteprinterdriver (struct cli_state *cli, 
+					TALLOC_CTX *mem_ctx, char *arch,
+					char *driver)
+{
+	prs_struct 			qbuf, rbuf;
+	SPOOL_Q_DELETEPRINTERDRIVER	q;
+        SPOOL_R_DELETEPRINTERDRIVER	r;
+	WERROR result = W_ERROR(ERRgeneral);
+	fstring				server;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+
+	/* Initialise input parameters */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper (server);
+
+	/* Write the request */
+
+	make_spoolss_q_deleteprinterdriver(mem_ctx, &q, server, arch, driver);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_deleteprinterdriver ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli,SPOOLSS_DELETEPRINTERDRIVER , &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_deleteprinterdriver ("", &r, &rbuf, 0))
+		goto done;
+		
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+
+/*********************************************************************************
+ Win32 API - GetPrinterProcessorDirectory()
+ ********************************************************************************/
+
+WERROR cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
+					      TALLOC_CTX *mem_ctx,
+					      uint32 offered, uint32 *needed,
+					      char *name, char *environment,
+					      fstring procdir)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETPRINTPROCESSORDIRECTORY q;
+	SPOOL_R_GETPRINTPROCESSORDIRECTORY r;
+	int level = 1;
+	WERROR result = W_ERROR(ERRgeneral);
+	NEW_BUFFER buffer;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	make_spoolss_q_getprintprocessordirectory(
+		&q, name, environment, level, &buffer, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getprintprocessordirectory("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTPROCESSORDIRECTORY,
+			      &qbuf, &rbuf))
+		goto done;
+		
+	/* Unmarshall response */
+		
+	if (!spoolss_io_r_getprintprocessordirectory("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+		
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (W_ERROR_IS_OK(result))
+		fstrcpy(procdir, "Not implemented!");
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Add a form to a printer.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param handle           Policy handle opened with cli_spoolss_open_printer_ex
+ *                         or cli_spoolss_addprinterex.
+ * @param level            Form info level to add - should always be 1.
+ * @param form             A pointer to the form to be added.
+ *
+ */
+
+WERROR cli_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   POLICY_HND *handle, uint32 level, FORM *form)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ADDFORM q;
+	SPOOL_R_ADDFORM r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_addform(&q, handle, level, form);
+	
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_addform("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ADDFORM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_addform("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Set a form on a printer.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param handle           Policy handle opened with cli_spoolss_open_printer_ex 
+ *                         or cli_spoolss_addprinterex.
+ * @param level            Form info level to set - should always be 1.
+ * @param form             A pointer to the form to be set.
+ *
+ */
+
+WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   POLICY_HND *handle, uint32 level, char *form_name,
+			   FORM *form)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETFORM q;
+	SPOOL_R_SETFORM r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_setform(&q, handle, level, form_name, form);
+	
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_setform("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETFORM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_setform("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Get a form on a printer.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param handle           Policy handle opened with cli_spoolss_open_printer_ex 
+ *                         or cli_spoolss_addprinterex.
+ * @param formname         Name of the form to get
+ * @param level            Form info level to get - should always be 1.
+ *
+ */
+
+WERROR cli_spoolss_getform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   uint32 offered, uint32 *needed,
+			   POLICY_HND *handle, char *formname, uint32 level, 
+			   FORM_1 *form)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETFORM q;
+	SPOOL_R_GETFORM r;
+	WERROR result = W_ERROR(ERRgeneral);
+	NEW_BUFFER buffer;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_getform(&q, handle, formname, level, &buffer, offered);
+	
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getform("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETFORM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_getform("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (W_ERROR_IS_OK(result)) 
+		smb_io_form_1("", r.buffer, form, 0);
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Delete a form on a printer.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param handle           Policy handle opened with cli_spoolss_open_printer_ex 
+ *                         or cli_spoolss_addprinterex.
+ * @param form             The name of the form to delete.
+ *
+ */
+
+WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *handle, char *form_name)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_DELETEFORM q;
+	SPOOL_R_DELETEFORM r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_deleteform(&q, handle, form_name);
+	
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_deleteform("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEFORM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_deleteform("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+static void decode_forms_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			   uint32 num_forms, FORM_1 **forms)
+{
+	int i;
+
+	*forms = (FORM_1 *)talloc(mem_ctx, num_forms * sizeof(FORM_1));
+	buffer->prs.data_offset = 0;
+
+	for (i = 0; i < num_forms; i++)
+		smb_io_form_1("", buffer, &((*forms)[i]), 0);
+}
+
+/** Enumerate forms
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param offered          Buffer size offered in the request.
+ * @param needed           Number of bytes needed to complete the request.
+ *                         may be NULL.
+ *                         or cli_spoolss_addprinterex.
+ * @param level            Form info level to get - should always be 1.
+ * @param handle           Open policy handle
+ *
+ */
+
+WERROR cli_spoolss_enumforms(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			     uint32 offered, uint32 *needed,
+			     POLICY_HND *handle, int level, uint32 *num_forms,
+			     FORM_1 **forms)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMFORMS q;
+	SPOOL_R_ENUMFORMS r;
+	WERROR result = W_ERROR(ERRgeneral);
+	NEW_BUFFER buffer;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enumforms(&q, handle, level, &buffer, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enumforms("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMFORMS, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumforms("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (num_forms)
+		*num_forms = r.numofforms;
+
+	decode_forms_1(mem_ctx, r.buffer, *num_forms, forms);
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+static void decode_jobs_1(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			  uint32 num_jobs, JOB_INFO_1 **jobs)
+{
+	uint32 i;
+
+	*jobs = (JOB_INFO_1 *)talloc(mem_ctx, num_jobs * sizeof(JOB_INFO_1));
+	buffer->prs.data_offset = 0;
+
+	for (i = 0; i < num_jobs; i++) 
+		smb_io_job_info_1("", buffer, &((*jobs)[i]), 0);
+}
+
+static void decode_jobs_2(TALLOC_CTX *mem_ctx, NEW_BUFFER *buffer, 
+			  uint32 num_jobs, JOB_INFO_2 **jobs)
+{
+	uint32 i;
+
+	*jobs = (JOB_INFO_2 *)talloc(mem_ctx, num_jobs * sizeof(JOB_INFO_2));
+	buffer->prs.data_offset = 0;
+
+	for (i = 0; i < num_jobs; i++) 
+		smb_io_job_info_2("", buffer, &((*jobs)[i]), 0);
+}
+
+/* Enumerate jobs */
+
+WERROR cli_spoolss_enumjobs(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			    uint32 offered, uint32 *needed,
+			    POLICY_HND *hnd, uint32 level, uint32 firstjob, 
+			    uint32 num_jobs, uint32 *returned, JOB_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMJOBS q;
+	SPOOL_R_ENUMJOBS r;
+	WERROR result = W_ERROR(ERRgeneral);
+	NEW_BUFFER buffer;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enumjobs(&q, hnd, firstjob, num_jobs, level, &buffer, 
+				offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enumjobs("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMJOBS, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumjobs("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
+
+	*returned = r.returned;
+
+	switch(level) {
+	case 1:
+		decode_jobs_1(mem_ctx, r.buffer, r.returned,
+				ctr->job.job_info_1);
+		break;
+	case 2:
+		decode_jobs_2(mem_ctx, r.buffer, r.returned,
+				ctr->job.job_info_2);
+		break;
+	default:
+		DEBUG(3, ("unsupported info level %d", level));
+		break;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set job */
+
+WERROR cli_spoolss_setjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			  POLICY_HND *hnd, uint32 jobid, uint32 level, 
+			  uint32 command)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETJOB q;
+	SPOOL_R_SETJOB r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_setjob(&q, hnd, jobid, level, command);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_setjob("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETJOB, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_setjob("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Get job */
+
+WERROR cli_spoolss_getjob(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			  uint32 offered, uint32 *needed,
+			  POLICY_HND *hnd, uint32 jobid, uint32 level,
+			  JOB_INFO_CTR *ctr)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETJOB q;
+	SPOOL_R_GETJOB r;
+	WERROR result = W_ERROR(ERRgeneral);
+	NEW_BUFFER buffer;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	init_buffer(&buffer, offered, mem_ctx);
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_getjob(&q, hnd, jobid, level, &buffer, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getjob("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETJOB, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_getjob("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
+
+	switch(level) {
+	case 1:
+		decode_jobs_1(mem_ctx, r.buffer, 1, ctr->job.job_info_1);
+		break;
+	case 2:
+		decode_jobs_2(mem_ctx, r.buffer, 1, ctr->job.job_info_2);
+		break;
+	default:
+		DEBUG(3, ("unsupported info level %d", level));
+		break;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Startpageprinter.  Sent to notify the spooler when a page is about to be
+   sent to a printer. */ 
+
+WERROR cli_spoolss_startpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				    POLICY_HND *hnd)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_STARTPAGEPRINTER q;
+	SPOOL_R_STARTPAGEPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_startpageprinter(&q, hnd);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_startpageprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_STARTPAGEPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_startpageprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Endpageprinter.  Sent to notify the spooler when a page has finished
+   being sent to a printer. */
+
+WERROR cli_spoolss_endpageprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  POLICY_HND *hnd)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENDPAGEPRINTER q;
+	SPOOL_R_ENDPAGEPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_endpageprinter(&q, hnd);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_endpageprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENDPAGEPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_endpageprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Startdocprinter.  Sent to notify the spooler that a document is about
+   to be spooled for printing. */
+
+WERROR cli_spoolss_startdocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   POLICY_HND *hnd, char *docname, 
+				   char *outputfile, char *datatype, 
+				   uint32 *jobid)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_STARTDOCPRINTER q;
+	SPOOL_R_STARTDOCPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+	uint32 level = 1;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_startdocprinter(&q, hnd, level, docname, outputfile, 
+				       datatype);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_startdocprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_STARTDOCPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_startdocprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+	
+	if (W_ERROR_IS_OK(result))
+		*jobid = r.jobid;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Enddocprinter.  Sent to notify the spooler that a document has finished
+   being spooled. */
+
+WERROR cli_spoolss_enddocprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  POLICY_HND *hnd)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENDDOCPRINTER q;
+	SPOOL_R_ENDDOCPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enddocprinter(&q, hnd);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enddocprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENDDOCPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enddocprinter("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Get printer data */
+
+WERROR cli_spoolss_getprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  uint32 offered, uint32 *needed,
+				  POLICY_HND *hnd, char *valuename, 
+				  uint32 *data_type, char **data, 
+				  uint32 *data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETPRINTERDATA q;
+	SPOOL_R_GETPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_getprinterdata(&q, hnd, valuename, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_getprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+	/* Return output parameters */
+
+	if (data_type)
+		*data_type = r.type;
+
+	if (data) {
+		*data = (char *)talloc(mem_ctx, r.needed);
+		memcpy(*data, r.data, r.needed);
+	}
+
+	if (data_size) 
+		*data_size = r.needed;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Set printer data */
+
+WERROR cli_spoolss_setprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				  POLICY_HND *hnd, char *value, 
+				  uint32 data_type, char *data, 
+				  uint32 data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETPRINTERDATA q;
+	SPOOL_R_SETPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_setprinterdata(&q, hnd, value, data, data_size);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_setprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_setprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Enum printer data */
+
+WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   POLICY_HND *hnd, uint32 ndx,
+				   uint32 value_offered, uint32 data_offered,
+				   uint32 *value_needed, uint32 *data_needed,
+				   char **value, uint32 *data_type, char **data, 
+				   uint32 *data_size)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMPRINTERDATA q;
+	SPOOL_R_ENUMPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_enumprinterdata(&q, hnd, ndx, value_offered, data_offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_enumprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
+
+	/* Return data */
+
+	if (value_needed)
+		*value_needed = r.realvaluesize;
+
+	if (data_needed)
+		*data_needed = r.realdatasize;
+
+	if (data_type) 
+		*data_type = r.type;
+
+	if (value) {
+		fstring the_value;
+
+		rpcstr_pull(the_value, r.value, sizeof(the_value), -1, 
+			    STR_TERMINATE);
+		
+		*value = talloc_strdup(mem_ctx, the_value);
+	}
+
+	if (data)
+		*data = talloc_memdup(mem_ctx, r.data, r.realdatasize);
+
+	if (data_size)
+		*data_size = r.realdatasize;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Write data to printer */
+
+WERROR cli_spoolss_writeprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *hnd, uint32 data_size, char *data,
+				uint32 *num_written)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_WRITEPRINTER q;
+	SPOOL_R_WRITEPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_writeprinter(&q, hnd, data_size, data);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_writeprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_WRITEPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_writeprinter("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+	if (num_written)
+		*num_written = r.buffer_written;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Delete printer data */
+
+WERROR cli_spoolss_deleteprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				     POLICY_HND *hnd, char *valuename)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_DELETEPRINTERDATA q;
+	SPOOL_R_DELETEPRINTERDATA r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_deleteprinterdata(&q, hnd, valuename);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_deleteprinterdata("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEPRINTERDATA, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_deleteprinterdata("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** @} **/

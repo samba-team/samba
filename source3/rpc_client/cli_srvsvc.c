@@ -1,404 +1,445 @@
 /* 
- *  Unix SMB/CIFS implementation.
- *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Jeremy Allison                    1999.
- *  
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *  
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- */
+   Unix SMB/CIFS implementation.
+   NT Domain Authentication SMB / MSRPC client
+   Copyright (C) Andrew Tridgell 1994-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
+   Copyright (C) Tim Potter 2001
+   Copyright (C) Jim McDonough 2002
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
 
 #include "includes.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_RPC_CLI
-
-/****************************************************************************
-do a server net conn enum
-****************************************************************************/
-BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
-			char *server_name, char *qual_name,
-			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd)
+NTSTATUS cli_srvsvc_net_srv_get_info(struct cli_state *cli, 
+                                     TALLOC_CTX *mem_ctx,
+                                     uint32 switch_value, SRV_INFO_CTR *ctr)
 {
-	prs_struct data; 
-	prs_struct rdata;
-	SRV_Q_NET_CONN_ENUM q_o;
-	SRV_R_NET_CONN_ENUM r_o;
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_SRV_GET_INFO q;
+	SRV_R_NET_SRV_GET_INFO r;
+	NTSTATUS result;
 
-	if (server_name == NULL || ctr == NULL || preferred_len == 0)
-		return False;
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
 
-	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
+	/* Initialise parse structures */
 
-	/* create and send a MSRPC command with api SRV_NET_CONN_ENUM */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-	DEBUG(4,("SRV Net Server Connection Enum(%s, %s), level %d, enum:%8x\n",
-				server_name, qual_name, switch_value, get_enum_hnd(hnd)));
-				
-	ctr->switch_value = switch_value;
-	ctr->ptr_conn_ctr = 1;
-	ctr->conn.info0.num_entries_read = 0;
-	ctr->conn.info0.ptr_conn_info    = 1;
+	/* Initialise input parameters */
 
-	/* store the parameters */
-	init_srv_q_net_conn_enum(&q_o, server_name, qual_name,
-	                         switch_value, ctr,
-	                         preferred_len,
-	                         hnd);
+	init_srv_q_net_srv_get_info(&q, cli->srv_name_slash, switch_value);
 
-	/* turn parameters into data stream */
-	if(!srv_io_q_net_conn_enum("", &q_o, &data, 0)) {
-		prs_mem_free(&data);
-		prs_mem_free(&rdata);
-		return False;
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_srv_get_info("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_SRV_GET_INFO, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
-	/* send the data on \PIPE\ */
-	if(!rpc_api_pipe_req(cli, SRV_NET_CONN_ENUM, &data, &rdata)) {
-		prs_mem_free(&data);
-		prs_mem_free(&rdata);
-		return False;
+	/* Unmarshall response */
+
+	r.ctr = ctr;
+
+	if (!srv_io_r_net_srv_get_info("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
-	prs_mem_free(&data);
+	result = werror_to_ntstatus(r.status);
 
-	r_o.ctr = ctr;
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 
-	if(!srv_io_r_net_conn_enum("", &r_o, &rdata, 0)) {
-		prs_mem_free(&rdata);
-		return False;
-	}
-
-	if (r_o.status != 0) {
-		/* report error code */
-		DEBUG(0,("SRV_R_NET_SRV_CONN_ENUM: %s\n", nt_errstr(r_o.status)));
-		prs_mem_free(&rdata);
-		return False;
-	}
-
-	if (r_o.ctr->switch_value != switch_value) {
-		/* different switch levels.  oops. */
-		DEBUG(0,("SRV_R_NET_SRV_CONN_ENUM: info class %d does not match request %d\n",
-			r_o.ctr->switch_value, switch_value));
-		prs_mem_free(&rdata);
-		return False;
-	}
-
-	prs_mem_free(&rdata);
-	
-	return True;
+	return result;
 }
 
-/****************************************************************************
-do a server net sess enum
-****************************************************************************/
-
-BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
-			      char *server_name, char *qual_name,
-			      char *user_name,
-			      uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
-			      uint32 preferred_len,
-			      ENUM_HND *hnd)
+WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 uint32 info_level, SRV_SHARE_INFO_CTR *ctr,
+				 int preferred_len, ENUM_HND *hnd)
 {
-	prs_struct data; 
-	prs_struct rdata;
-	SRV_Q_NET_SESS_ENUM q_o;
-	SRV_R_NET_SESS_ENUM r_o;
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_SHARE_ENUM q;
+	SRV_R_NET_SHARE_ENUM r;
+	WERROR result = W_ERROR(ERRgeneral);
+	int i;
 
-	if (server_name == NULL || ctr == NULL || preferred_len == 0)
-		return False;
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
 
-	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
+	/* Initialise parse structures */
 
-	/* create and send a MSRPC command with api SRV_NET_SESS_ENUM */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-	DEBUG(4,("SRV Net Session Enum (%s), level %d, enum:%8x\n",
-				server_name, switch_value, get_enum_hnd(hnd)));
-				
-	ctr->switch_value = switch_value;
-	ctr->ptr_sess_ctr = 1;
-	ctr->sess.info0.num_entries_read = 0;
-	ctr->sess.info0.ptr_sess_info    = 1;
+	/* Initialise input parameters */
 
-	/* store the parameters */
-	init_srv_q_net_sess_enum(&q_o, server_name, qual_name, user_name,
-	                         switch_value, ctr,
-	                         preferred_len,
-	                         hnd);
+	init_srv_q_net_share_enum(
+		&q, cli->srv_name_slash, info_level, preferred_len, hnd);
 
-	/* turn parameters into data stream */
-	if(!srv_io_q_net_sess_enum("", &q_o, &data, 0)) {
-		prs_mem_free(&data);
-		prs_mem_free(&rdata);
-		return False;
-	}
+	/* Marshall data and send request */
 
-	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SRV_NET_SESS_ENUM, &data, &rdata)) {
-		prs_mem_free(&data);
-		prs_mem_free(&rdata);
-		return False;
-	}
+	if (!srv_io_q_net_share_enum("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_ENUM_ALL, &qbuf, &rbuf))
+		goto done;
 
-	prs_mem_free(&data);
+	/* Unmarshall response */
 
-	r_o.ctr = ctr;
+	if (!srv_io_r_net_share_enum("", &r, &rbuf, 0))
+		goto done;
 
-	if(!srv_io_r_net_sess_enum("", &r_o, &rdata, 0)) {
-		prs_mem_free(&rdata);
-		return False;
-	}
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* Oh yuck yuck yuck - we have to copy all the info out of the
+	   SRV_SHARE_INFO_CTR in the SRV_R_NET_SHARE_ENUM as when we do a
+	   prs_mem_free() it will all be invalidated.  The various share
+	   info structures suck badly too.  This really is gross. */
+
+	ZERO_STRUCTP(ctr);
+
+	if (!r.ctr.num_entries)
+		goto done;
+
+	ctr->info_level = info_level;
+	ctr->num_entries = r.ctr.num_entries;
+
+	switch(info_level) {
+	case 1:
+		ctr->share.info1 = (SRV_SHARE_INFO_1 *)talloc(
+			mem_ctx, sizeof(SRV_SHARE_INFO_1) * ctr->num_entries);
 		
-	if (r_o.status != 0) {
-		/* report error code */
-		DEBUG(0,("SRV_R_NET_SRV_SESS_ENUM: %s\n", nt_errstr(r_o.status)));
-		prs_mem_free(&rdata);
-		return False;
-	}
+		memset(ctr->share.info1, 0, sizeof(SRV_SHARE_INFO_1));
 
-	if (r_o.ctr->switch_value != switch_value) {
-		/* different switch levels.  oops. */
-		DEBUG(0,("SRV_R_NET_SRV_SESS_ENUM: info class %d does not match request %d\n",
-			r_o.ctr->switch_value, switch_value));
-		prs_mem_free(&rdata);
-		return False;
-	}
+		for (i = 0; i < ctr->num_entries; i++) {
+			SRV_SHARE_INFO_1 *info1 = &ctr->share.info1[i];
+			char *s;
+			
+			/* Copy pointer crap */
 
-	prs_mem_free(&rdata);
-	
-	return True;
-}
+			memcpy(&info1->info_1, &r.ctr.share.info1[i].info_1, 
+			       sizeof(SH_INFO_1));
 
-/****************************************************************************
-do a server net share enum
-****************************************************************************/
-BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
-			char *server_name, 
-			uint32 switch_value, SRV_R_NET_SHARE_ENUM *r_o,
-			uint32 preferred_len, ENUM_HND *hnd)
-{
-	prs_struct data; 
-	prs_struct rdata;
-	SRV_Q_NET_SHARE_ENUM q_o;
+			/* Duplicate strings */
 
-	if (server_name == NULL || preferred_len == 0)
-		return False;
-
-	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
-
-	/* create and send a MSRPC command with api SRV_NET_SHARE_ENUM */
-
-	DEBUG(4,("SRV Get Share Info (%s), level %d, enum:%8x\n",
-				server_name, switch_value, get_enum_hnd(hnd)));
-				
-	/* store the parameters */
-	init_srv_q_net_share_enum(&q_o, server_name, switch_value,
-				  preferred_len, hnd);
-
-	/* turn parameters into data stream */
-	if(!srv_io_q_net_share_enum("", &q_o, &data, 0)) {
-		prs_mem_free(&data);
-		prs_mem_free(&rdata);
-		return False;
-	}
-
-	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SRV_NET_SHARE_ENUM, &data, &rdata)) {
-		prs_mem_free(&data);
-		prs_mem_free(&rdata);
-		return False;
-	}
-
-	prs_mem_free(&data);
-
-	if(!srv_io_r_net_share_enum("", r_o, &rdata, 0)) {
-		prs_mem_free(&rdata);
-		return False;
-	}
+			s = unistr2_tdup(mem_ctx, &r.ctr.share.info1[i].info_1_str.uni_netname);
+			if (s)
+				init_unistr2(&info1->info_1_str.uni_netname, s, strlen(s) + 1);
 		
-	if (r_o->status != 0) {
-		/* report error code */
-		DEBUG(0,("SRV_R_NET_SHARE_ENUM: %s\n", nt_errstr(r_o->status)));
-		prs_mem_free(&rdata);
-		return False;
-	}
+			s = unistr2_tdup(mem_ctx, &r.ctr.share.info1[i].info_1_str.uni_remark);
+			if (s)
+				init_unistr2(&info1->info_1_str.uni_remark, s, strlen(s) + 1);
 
-	if (r_o->ctr.switch_value != switch_value) {
-		/* different switch levels.  oops. */
-		DEBUG(0,("SRV_R_NET_SHARE_ENUM: info class %d does not match request %d\n",
-			r_o->ctr.switch_value, switch_value));
-		prs_mem_free(&rdata);
-		return False;
-	}
+		}		
 
-	prs_mem_free(&rdata);
-	
-	return True;
-}
-
-/****************************************************************************
-do a server net file enum
-****************************************************************************/
-
-BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
-			char *server_name, char *qual_name,
-			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
-			uint32 preferred_len,
-			ENUM_HND *hnd)
-{
-	prs_struct data; 
-	prs_struct rdata;
-	SRV_Q_NET_FILE_ENUM q_o;
-	SRV_R_NET_FILE_ENUM r_o;
-
-	if (server_name == NULL || ctr == NULL || preferred_len == 0)
-		return False;
-
-	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
-
-	/* create and send a MSRPC command with api SRV_NET_FILE_ENUM */
-
-	DEBUG(4,("SRV Get File Info (%s), level %d, enum:%8x\n",
-				server_name, switch_value, get_enum_hnd(hnd)));
-				
-	q_o.file_level = switch_value;
-
-	ctr->switch_value = switch_value;
-	ctr->ptr_file_ctr = 1;
-	ctr->file.info3.num_entries_read = 0;
-	ctr->file.info3.ptr_file_info    = 1;
-
-	/* store the parameters */
-	init_srv_q_net_file_enum(&q_o, server_name, qual_name,
-	                         switch_value, ctr,
-	                         preferred_len,
-	                         hnd);
-
-	/* turn parameters into data stream */
-	if(!srv_io_q_net_file_enum("", &q_o, &data, 0)) {
-		prs_mem_free(&data);
-		prs_mem_free(&rdata);
-		return False;
-	}
-
-	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SRV_NET_FILE_ENUM, &data, &rdata)) {
-		prs_mem_free(&data);
-		prs_mem_free(&rdata);
-		return False;
-	}
-
-	prs_mem_free(&data);
-
-	r_o.ctr = ctr;
-
-	if(!srv_io_r_net_file_enum("", &r_o, &rdata, 0)) {
-		prs_mem_free(&rdata);
-		return False;
-	}
+		break;
+	case 2:
+		ctr->share.info2 = (SRV_SHARE_INFO_2 *)talloc(
+			mem_ctx, sizeof(SRV_SHARE_INFO_2) * ctr->num_entries);
 		
-	if (r_o.status != 0) {
-		/* report error code */
-		DEBUG(0,("SRV_R_NET_FILE_ENUM: %s\n", nt_errstr(r_o.status)));
-		prs_mem_free(&rdata);
-		return False;
-	}
+		memset(ctr->share.info2, 0, sizeof(SRV_SHARE_INFO_2));
 
-	if (r_o.ctr->switch_value != switch_value) {
-		/* different switch levels.  oops. */
-		DEBUG(0,("SRV_R_NET_FILE_ENUM: info class %d does not match request %d\n",
-			r_o.ctr->switch_value, switch_value));
-		prs_mem_free(&rdata);
-		return False;
-	}
+		for (i = 0; i < ctr->num_entries; i++) {
+			SRV_SHARE_INFO_2 *info2 = &ctr->share.info2[i];
+			char *s;
+			
+			/* Copy pointer crap */
 
-	prs_mem_free(&rdata);
-	
-	return True;
+			memcpy(&info2->info_2, &r.ctr.share.info2[i].info_2, 
+			       sizeof(SH_INFO_2));
+
+			/* Duplicate strings */
+
+			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_netname);
+			if (s)
+				init_unistr2(&info2->info_2_str.uni_netname, s, strlen(s) + 1);
+
+			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_remark);
+			if (s)
+				init_unistr2(&info2->info_2_str.uni_remark, s, strlen(s) + 1);
+
+			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_path);
+			if (s)
+				init_unistr2(&info2->info_2_str.uni_path, s, strlen(s) + 1);
+
+			s = unistr2_tdup(mem_ctx, &r.ctr.share.info2[i].info_2_str.uni_passwd);
+			if (s)
+				init_unistr2(&info2->info_2_str.uni_passwd, s, strlen(s) + 1);
+		}
+		break;
+	}
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
 }
 
-/****************************************************************************
-do a server get info 
-****************************************************************************/
-BOOL do_srv_net_srv_get_info(struct cli_state *cli,
-			char *server_name, uint32 switch_value, SRV_INFO_CTR *ctr)
+WERROR cli_srvsvc_net_share_del(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				const char *sharename)
 {
-	prs_struct data; 
-	prs_struct rdata;
-	SRV_Q_NET_SRV_GET_INFO q_o;
-	SRV_R_NET_SRV_GET_INFO r_o;
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_SHARE_DEL q;
+	SRV_R_NET_SHARE_DEL r;
+	WERROR result = W_ERROR(ERRgeneral);
 
-	if (server_name == NULL || switch_value == 0 || ctr == NULL)
-		return False;
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
 
-	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
+	/* Initialise parse structures */
 
-	/* create and send a MSRPC command with api SRV_NET_SRV_GET_INFO */
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-	DEBUG(4,("SRV Get Server Info (%s), level %d\n", server_name, switch_value));
+	/* Initialise input parameters */
 
-	/* store the parameters */
-	init_srv_q_net_srv_get_info(&q_o, server_name, switch_value);
+	init_srv_q_net_share_del(&q, cli->srv_name_slash, sharename);
 
-	/* turn parameters into data stream */
-	if(!srv_io_q_net_srv_get_info("", &q_o, &data, 0)) {
-		prs_mem_free(&data);
-		prs_mem_free(&rdata);
-		return False;
-	}
+	/* Marshall data and send request */
 
-	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SRV_NET_SRV_GET_INFO, &data, &rdata)) {
-		prs_mem_free(&data);
-		prs_mem_free(&rdata);
-		return False;
-	}
+	if (!srv_io_q_net_share_del("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_DEL, &qbuf, &rbuf))
+		goto done;
 
-	prs_mem_free(&data);
+	/* Unmarshall response */
 
-	r_o.ctr = ctr;
+	if (!srv_io_r_net_share_del("", &r, &rbuf, 0))
+		goto done;
 
-	if(!srv_io_r_net_srv_get_info("", &r_o, &rdata, 0)) {
-		prs_mem_free(&rdata);
-		return False;
-	}
+	result = r.status;
 
-	if (r_o.status != 0) {
-		/* report error code */
-		DEBUG(0,("SRV_R_NET_SRV_GET_INFO: %s\n", nt_errstr(r_o.status)));
-		prs_mem_free(&rdata);
-		return False;
-	}
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 
-	if (r_o.ctr->switch_value != q_o.switch_value) {
-		/* different switch levels.  oops. */
-		DEBUG(0,("SRV_R_NET_SRV_GET_INFO: info class %d does not match request %d\n",
-			r_o.ctr->switch_value, q_o.switch_value));
-		prs_mem_free(&rdata);
-		return False;
-	}
+	return result;
+}
 
-	prs_mem_free(&rdata);
+WERROR cli_srvsvc_net_share_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				char *netname, uint32 type, char *remark, 
+				uint32 perms, uint32 max_uses, uint32 num_uses,
+				char *path, char *passwd)
+{
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_SHARE_ADD q;
+	SRV_R_NET_SHARE_ADD r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	init_srv_q_net_share_add(&q,cli->srv_name_slash, netname, type, remark,
+				 perms, max_uses, num_uses, path, passwd);
+
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_share_add("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_ADD, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!srv_io_r_net_share_add("", &r, &rbuf, 0))
+		goto done;
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+
+WERROR cli_srvsvc_net_remote_tod(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 char *server, TIME_OF_DAY_INFO *tod)
+{
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_REMOTE_TOD q;
+	SRV_R_NET_REMOTE_TOD r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_srv_q_net_remote_tod(&q, cli->srv_name_slash);
+
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_remote_tod("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_REMOTE_TOD, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	r.tod = tod;
+
+	if (!srv_io_r_net_remote_tod("", &r, &rbuf, 0))
+		goto done;
+
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
+
+WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				uint32 file_level, const char *user_name,
+				SRV_FILE_INFO_CTR *ctr,	int preferred_len,
+				ENUM_HND *hnd)
+{
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_FILE_ENUM q;
+	SRV_R_NET_FILE_ENUM r;
+	WERROR result = W_ERROR(ERRgeneral);
+	int i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_srv_q_net_file_enum(&q, cli->srv_name_slash, NULL, user_name, 
+				 file_level, ctr, preferred_len, hnd);
+
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_file_enum("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_FILE_ENUM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!srv_io_r_net_file_enum("", &r, &rbuf, 0))
+		goto done;
+
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* copy the data over to the ctr */
+
+	ZERO_STRUCTP(ctr);
+
+	ctr->switch_value = file_level;
+
+	ctr->num_entries = ctr->num_entries2 = r.ctr.num_entries;
 	
-	return True;
+	switch(file_level) {
+	case 3:
+		ctr->file.info3 = (SRV_FILE_INFO_3 *)talloc(
+			mem_ctx, sizeof(SRV_FILE_INFO_3) * ctr->num_entries);
+
+		memset(ctr->file.info3, 0, 
+		       sizeof(SRV_FILE_INFO_3) * ctr->num_entries);
+
+		for (i = 0; i < r.ctr.num_entries; i++) {
+			SRV_FILE_INFO_3 *info3 = &ctr->file.info3[i];
+			char *s;
+			
+			/* Copy pointer crap */
+
+			memcpy(&info3->info_3, &r.ctr.file.info3[i].info_3, 
+			       sizeof(FILE_INFO_3));
+
+			/* Duplicate strings */
+
+			s = unistr2_tdup(mem_ctx, &r.ctr.file.info3[i].info_3_str.uni_path_name);
+			if (s)
+				init_unistr2(&info3->info_3_str.uni_path_name, s, strlen(s) + 1);
+		
+			s = unistr2_tdup(mem_ctx, &r.ctr.file.info3[i].info_3_str.uni_user_name);
+			if (s)
+				init_unistr2(&info3->info_3_str.uni_user_name, s, strlen(s) + 1);
+
+		}		
+
+		break;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+WERROR cli_srvsvc_net_file_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 uint32 file_id)
+{
+	prs_struct qbuf, rbuf;
+	SRV_Q_NET_FILE_CLOSE q;
+	SRV_R_NET_FILE_CLOSE r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_srv_q_net_file_close(&q, cli->srv_name_slash, file_id);
+
+	/* Marshall data and send request */
+
+	if (!srv_io_q_net_file_close("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SRV_NET_FILE_CLOSE, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!srv_io_r_net_file_close("", &r, &rbuf, 0))
+		goto done;
+
+	result = r.status;
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+	return result;
 }
