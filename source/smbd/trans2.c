@@ -1862,6 +1862,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		/* Get the 8.3 name - used if NT SMB was negotiated. */
 
 	case SMB_QUERY_FILE_ALT_NAME_INFO:
+	case SMB_FILE_ALTERNATE_NAME_INFORMATION:
 	{
 		pstring short_name;
 		pstrcpy(short_name,p);
@@ -2003,15 +2004,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		}
 #endif
 
-	case SMB_FILE_ALTERNATE_NAME_INFORMATION:
-		/* Last component of pathname. */
-		{
-			size_t byte_len = dos_PutUniCode(pdata+4,dos_fname,max_data_bytes,False);
-			SIVAL(pdata,0,byte_len);
-			data_size = 4 + byte_len;
-			break;
-		}
-		
 #if 0
 	/*
 	 * NT4 server just returns "invalid query" to this - if we try to answer 
