@@ -26,11 +26,15 @@ interface nbt
 
 	/* the opcodes are in the operation field, masked with
 	   NBT_OPCODE */
-        const int NBT_OPCODE_QUERY          =  (0<<11);
-	const int NBT_OPCODE_REGISTER       =  (5<<11);
-	const int NBT_OPCODE_RELEASE        =  (6<<11);
-	const int NBT_OPCODE_WACK           =  (7<<11);
-	const int NBT_OPCODE_REFRESH        =  (8<<11);
+	typedef enum {
+		NBT_OPCODE_QUERY          =  (0x0<<11),
+		NBT_OPCODE_REGISTER       =  (0x5<<11),
+		NBT_OPCODE_RELEASE        =  (0x6<<11),
+		NBT_OPCODE_WACK           =  (0x7<<11),
+		NBT_OPCODE_REFRESH        =  (0x8<<11),
+		NBT_OPCODE_REFRESH2       =  (0x9<<11),
+		NBT_OPCODE_MULTI_HOME_REG =  (0xf<<11)
+	} nbt_opcode;
 
 	/* rcode values */
 	typedef enum {
