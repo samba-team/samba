@@ -1566,10 +1566,10 @@ static void scrub_env(void)
   char **cpp, **cpp2;
   
   for (cpp2 = cpp = environ; *cpp; cpp++) {
-    if (!strncmp(*cpp, "LD_", 3) &&
-	!strncmp(*cpp, "_RLD_", 5) &&
-	!strncmp(*cpp, "LIBPATH=", 8) &&
-	!strncmp(*cpp, "IFS=", 4))
+    if (strncmp(*cpp, "LD_", 3) &&
+	strncmp(*cpp, "_RLD_", 5) &&
+	strncmp(*cpp, "LIBPATH=", 8) &&
+	strncmp(*cpp, "IFS=", 4))
       *cpp2++ = *cpp;
   }
   *cpp2 = 0;
