@@ -51,6 +51,7 @@ typedef struct DES_key_schedule
 int	DES_set_odd_parity(DES_cblock *);
 int	DES_is_weak_key(DES_cblock *);
 int	DES_set_key(DES_cblock *, DES_key_schedule *);
+int	DES_set_key_checked(DES_cblock *, DES_key_schedule *);
 int	DES_new_random_key(DES_cblock *);
 void	DES_string_to_key(const char *, DES_cblock *);
 int	DES_read_password(DES_cblock *, char *, int);
