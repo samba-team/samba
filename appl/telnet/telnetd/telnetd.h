@@ -34,9 +34,119 @@
  */
 
 
+#include <config.h>
+
+#include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <sys/types.h>
+#include <sys/param.h>
+
+#include <sys/socket.h>
+#ifdef TIME_WITH_SYS_TIME
+#include <sys/time.h>
+#include <time.h>
+#elif defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif /* HAVE_SYS_RESOURCE_H */
+#ifndef	_CRAY
+#include <sys/wait.h>
+#endif	/* CRAY */
+#include <fcntl.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+
+/* including both <sys/ioctl.h> and <termios.h> in SunOS 4 generates a
+   lot of warnings */
+
+#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
+#include <sys/ioctl.h>
+#endif
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#include <signal.h>
+#include <errno.h>
+#include <netdb.h>
+#include <syslog.h>
+#ifndef	LOG_DAEMON
+#define	LOG_DAEMON	0
+#endif
+#ifndef	LOG_ODELAY
+#define	LOG_ODELAY	0
+#endif
+#include <ctype.h>
+
+#ifdef HAVE_CURSES_H
+#include <curses.h>
+#endif
+#include <termios.h>
+#include <unistd.h>
+
 #include "defs.h"
+
+#include <arpa/telnet.h>
+
+#ifndef _POSIX_VDISABLE
+# ifdef VDISABLE
+#  define _POSIX_VDISABLE VDISABLE
+# else
+#  define _POSIX_VDISABLE ((unsigned char)'\377')
+# endif
+#endif
+
+
+#ifdef	_CRAY
+# ifdef	CRAY1
+# include <sys/pty.h>
+#  ifndef FD_ZERO
+# include <sys/select.h>
+#  endif /* FD_ZERO */
+# endif	/* CRAY1 */
+
+#include <memory.h>
+#endif	/* _CRAY */
+
+#ifdef __hpux
+#include <sys/ptyio.h>
+#endif
+
+#ifdef HAVE_UNAME
+#include <sys/utsname.h>
+#endif
+
 #include "ext.h"
+#include "pathnames.h"
 #include <protos.h>
+
+#ifdef SOCKS
+#include <socks.h>
+#endif
+
+#ifdef KRB4
+#include <des.h>
+#include <krb.h>
+#endif
+
+#ifdef AUTHENTICATION
+#include <libtelnet/auth.h>
+#include <libtelnet/misc.h>
+#ifdef ENCRYPTION
+#include <libtelnet/encrypt.h>
+#endif
+#endif
+
 #include <roken.h>
 
 #ifdef	DIAGNOSTICS
@@ -49,3 +159,11 @@
 extern	char **environ;
 extern	int errno;
 
+/* prototypes */
+
+/* appends data to nfrontp and advances */
+int output_data (const char *format, ...)
+#ifdef __GNUC__
+__attribute__ ((format (printf, 1, 2)))
+#endif
+;

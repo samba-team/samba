@@ -31,57 +31,52 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
+#include "telnetd.h"
 
 RCSID("$Id$");
 
-#if	defined(AUTHENTICATION) || defined(ENCRYPTION)
-#include "telnetd.h"
-#include <libtelnet/misc.h>
+#ifdef AUTHENTICATION
 
-	int
+int
 net_write(unsigned char *str, int len)
 {
-	if (nfrontp + len < netobuf + BUFSIZ) {
-		memmove(nfrontp, str, len);
-		nfrontp += len;
-		return(len);
-	}
-	return(0);
+    if (nfrontp + len < netobuf + BUFSIZ) {
+	memmove(nfrontp, str, len);
+	nfrontp += len;
+	return(len);
+    }
+    return(0);
 }
 
-	void
+void
 net_encrypt(void)
 {
-#if	defined(ENCRYPTION)
-	char *s = (nclearto > nbackp) ? nclearto : nbackp;
-	if (s < nfrontp && encrypt_output) {
-		(*encrypt_output)((unsigned char *)s, nfrontp - s);
-	}
-	nclearto = nfrontp;
+#ifdef ENCRYPTION
+    char *s = (nclearto > nbackp) ? nclearto : nbackp;
+    if (s < nfrontp && encrypt_output) {
+	(*encrypt_output)((unsigned char *)s, nfrontp - s);
+    }
+    nclearto = nfrontp;
 #endif
 }
 
-	int
+int
 telnet_spin(void)
 {
-	ttloop();
-	return(0);
+    ttloop();
+    return(0);
 }
 
-	char *
+char *
 telnet_getenv(char *val)
 {
-	extern char *getenv(const char *);
-	return(getenv(val));
+    extern char *getenv(const char *);
+    return(getenv(val));
 }
 
-	char *
+char *
 telnet_gets(char *prompt, char *result, int length, int echo)
 {
-	return NULL;
+    return NULL;
 }
 #endif

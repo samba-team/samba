@@ -34,16 +34,9 @@
 /* a *lot* of ugly global definitions that really should be removed...
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
+#include "telnetd.h"
 
 RCSID("$Id$");
-
-#include "defs.h"
-#include "ext.h"
-
 
 /*
  * Telnet server variable declarations
@@ -52,15 +45,6 @@ char	options[256];
 char	do_dont_resp[256];
 char	will_wont_resp[256];
 int	linemode;	/* linemode on/off */
-#ifdef	LINEMODE
-int	uselinemode;	/* what linemode to use (on/off) */
-int	editmode;	/* edit modes in use */
-int	useeditmode;	/* edit modes to use */
-int	alwayslinemode;	/* command line option */
-# ifdef	KLUDGELINEMODE
-int	lmodetype;	/* Client support for linemode */
-# endif	/* KLUDGELINEMODE */
-#endif	/* LINEMODE */
 int	flowmode;	/* current flow control state */
 int	restartany;	/* restart output on any character state */
 #ifdef DIAGNOSTICS
@@ -100,3 +84,24 @@ int log_unauth;
 
 /* do not print warning if connection is not encrypted */
 int no_warn;
+
+/*
+ * This function appends data to nfrontp and advances nfrontp.
+ */
+
+int
+output_data (const char *format, ...)
+{
+  va_list args;
+  size_t remaining, ret;
+
+  va_start(args, format);
+  remaining = BUFSIZ - (nfrontp - netobuf);
+  ret = vsnprintf (nfrontp,
+		   remaining,
+		   format,
+		   args);
+  nfrontp += ret;
+  va_end(args);
+  return ret;
+}

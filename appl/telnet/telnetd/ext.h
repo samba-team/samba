@@ -35,29 +35,22 @@
 
 /* $Id$ */
 
+#ifndef __EXT_H__
+#define __EXT_H__
+
 /*
  * Telnet server variable declarations
  */
 extern char	options[256];
 extern char	do_dont_resp[256];
 extern char	will_wont_resp[256];
-extern int	linemode;	/* linemode on/off */
-#ifdef	LINEMODE
-extern int	uselinemode;	/* what linemode to use (on/off) */
-extern int	editmode;	/* edit modes in use */
-extern int	useeditmode;	/* edit modes to use */
-extern int	alwayslinemode;	/* command line option */
-# ifdef	KLUDGELINEMODE
-extern int	lmodetype;	/* Client support for linemode */
-# endif	/* KLUDGELINEMODE */
-#endif	/* LINEMODE */
 extern int	flowmode;	/* current flow control state */
 extern int	restartany;	/* restart output on any character state */
 #ifdef DIAGNOSTICS
 extern int	diagnostic;	/* telnet diagnostic capabilities */
 #endif /* DIAGNOSTICS */
 extern int	require_otp;
-#if	defined(AUTHENTICATION)
+#ifdef AUTHENTICATION
 extern int	auth_level;
 #endif
 extern char *new_login;
@@ -82,101 +75,84 @@ extern int	ourpty, net;
 extern char	*line;
 extern int	SYNCHing;		/* we are in TELNET SYNCH mode */
 
-extern void
-	_termstat (void),
-	add_slc (int, int, int),
-	check_slc (void),
-	change_slc (int, int, int),
-	cleanup (int),
-	clientstat (int, int, int),
-	copy_termbuf (char *, int),
-	deferslc (void),
-	defer_terminit (void),
-	do_opt_slc (unsigned char *, int),
-	doeof (void),
-	dooption (int),
-	dontoption (int),
-	edithost (char *, char *),
-	fatal (int, char *),
-	fatalperror (int, char *),
-	get_slc_defaults (void),
-	init_env (void),
-	init_termbuf (void),
-	interrupt (void),
-	localstat (void),
-	flowstat (void),
-	netclear (void),
-	netflush (void),
-#ifdef DIAGNOSTICS
-	printoption (char *, int),
-	printdata (char *, char *, int),
-	printsub (int, unsigned char *, int),
-#endif
-	ptyflush (void),
-	putchr (int),
-	putf (char *, char *),
-	recv_ayt (void),
-	send_do (int, int),
-	send_dont (int, int),
-	send_slc (void),
-	send_status (void),
-	send_will (int, int),
-	send_wont (int, int),
-	sendbrk (void),
-	sendsusp (void),
-	set_termbuf (void),
-	start_login (char *, int, char *),
-	start_slc (int),
-#if	defined(AUTHENTICATION)
-	start_slave (char *),
-#else
-	start_slave (char *, int, char *),
-#endif
-	suboption (void),
-	telrcv (void),
-	ttloop (void),
-	tty_binaryin (int),
-	tty_binaryout (int);
+int net_write (unsigned char *str, int len);
+void net_encrypt (void);
+int telnet_spin (void);
+char *telnet_getenv (char *val);
+char *telnet_gets (char *prompt, char *result, int length, int echo);
+void get_slc_defaults (void);
+void telrcv (void);
+void send_do (int option, int init);
+void willoption (int option);
+void send_dont (int option, int init);
+void wontoption (int option);
+void send_will (int option, int init);
+void dooption (int option);
+void send_wont (int option, int init);
+void dontoption (int option);
+void suboption (void);
+void doclientstat (void);
+void send_status (void);
+void init_termbuf (void);
+void set_termbuf (void);
+int spcset (int func, cc_t *valp, cc_t **valpp);
+void set_utid (void);
+int getpty (int *ptynum);
+int tty_isecho (void);
+int tty_flowmode (void);
+int tty_restartany (void);
+void tty_setecho (int on);
+int tty_israw (void);
+void tty_binaryin (int on);
+void tty_binaryout (int on);
+int tty_isbinaryin (void);
+int tty_isbinaryout (void);
+int tty_issofttab (void);
+void tty_setsofttab (int on);
+int tty_islitecho (void);
+void tty_setlitecho (int on);
+int tty_iscrnl (void);
+void tty_tspeed (int val);
+void tty_rspeed (int val);
+void getptyslave (void);
+int cleanopen (char *line);
+void startslave (char *host, int autologin, char *autoname);
+void init_env (void);
+void start_login (char *host, int autologin, char *name);
+void cleanup (int sig);
+int main (int argc, char **argv);
+void usage (void);
+int getterminaltype (char *name);
+void _gettermname (void);
+int terminaltypeok (char *s);
+void doit (struct sockaddr_in *who);
+void telnet (int f, int p);
+void interrupt (void);
+void sendbrk (void);
+void sendsusp (void);
+void recv_ayt (void);
+void doeof (void);
+void flowstat (void);
+void clientstat (int code, int parm1, int parm2);
+void ttloop (void);
+int stilloob (int s);
+void ptyflush (void);
+char *nextitem (char *current);
+void netclear (void);
+void netflush (void);
+void writenet (unsigned char *ptr, int len);
+void fatal (int f, char *msg);
+void fatalperror (int f, char *msg);
+void edithost (char *pat, char *host);
+void putstr (char *s);
+void putchr (int cc);
+void putf (char *cp, char *where);
+void printoption (char *fmt, int option);
+void printsub (int direction, unsigned char *pointer, int length);
+void printdata (char *tag, char *ptr, int cnt);
 
-extern int
-	end_slc (unsigned char **),
-	getnpty (void),
-#ifndef convex
-	getpty (int *),
-#endif
-	login_tty (int),
-	spcset (int, cc_t *, cc_t **),
-	stilloob (int),
-	terminit (void),
-	termstat (void),
-	tty_flowmode (void),
-	tty_restartany (void),
-	tty_isbinaryin (void),
-	tty_isbinaryout (void),
-	tty_iscrnl (void),
-	tty_isecho (void),
-	tty_isediting (void),
-	tty_islitecho (void),
-	tty_isnewmap (void),
-	tty_israw (void),
-	tty_issofttab (void),
-	tty_istrapsig (void),
-	tty_linemode (void);
 
-extern void
-	tty_rspeed (int),
-	tty_setecho (int),
-	tty_setedit (int),
-	tty_setlinemode (int),
-	tty_setlitecho (int),
-	tty_setsig (int),
-	tty_setsofttab (int),
-	tty_tspeed (int),
-	willoption (int),
-	wontoption (int),
-	writenet (unsigned char *, int);
-
-#if	defined(ENCRYPTION)
+#ifdef ENCRYPTION
 extern void	(*encrypt_output) (unsigned char *, int);
 extern int	(*decrypt_input) (int);
 extern char	*nclearto;
@@ -223,4 +199,6 @@ extern int really_stream;
 # endif
 #endif
 
-#define DEFAULT_IM "\r\n\r\n" USE_IM "\r\n\r\n\n\r"
+#define DEFAULT_IM "\r\n\r\n" USE_IM "\r\n\r\n\r\n"
+
+#endif /* __EXT_H__ */

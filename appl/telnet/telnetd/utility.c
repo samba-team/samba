@@ -31,19 +31,10 @@
  * SUCH DAMAGE.
  */
 
-#include <config.h>
-#ifdef SOCKS
-#include <socks.h>
-#endif
-
-RCSID("$Id$");
-
 #define PRINTOPTIONS
 #include "telnetd.h"
 
-#ifdef HAVE_UNAME
-#include <sys/utsname.h>
-#endif
+RCSID("$Id$");
 
 /*
  * utility functions performing io related tasks
@@ -52,23 +43,22 @@ RCSID("$Id$");
 /*
  * ttloop
  *
- *	A small subroutine to flush the network output buffer, get some data
- * from the network, and pass it through the telnet state machine.  We
- * also flush the pty input buffer (by dropping its data) if it becomes
- * too full.
+ * A small subroutine to flush the network output buffer, get some
+ * data from the network, and pass it through the telnet state
+ * machine.  We also flush the pty input buffer (by dropping its data)
+ * if it becomes too full.
  */
 
-    void
+void
 ttloop(void)
 {
     void netflush(void);
-
-    DIAG(TD_REPORT, {snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
-			      "td: ttloop\r\n");
-		     nfrontp += strlen(nfrontp);});
-    if (nfrontp-nbackp) {
+    
+    DIAG(TD_REPORT, {
+	output_data("td: ttloop\r\n");
+    });
+    if (nfrontp-nbackp)
 	netflush();
-    }
     ncc = read(net, netibuf, sizeof netibuf);
     if (ncc < 0) {
 	syslog(LOG_INFO, "ttloop:  read: %m\n");
@@ -77,9 +67,9 @@ ttloop(void)
 	syslog(LOG_INFO, "ttloop:  peer died: %m\n");
 	exit(1);
     }
-    DIAG(TD_REPORT, {snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
-			      "td: ttloop read %d chars\r\n", ncc);
-		     nfrontp += strlen(nfrontp);});
+    DIAG(TD_REPORT, {
+	output_data("td: ttloop read %d chars\r\n", ncc);
+    });
     netip = netibuf;
     telrcv();			/* state machine */
     if (ncc > 0) {
@@ -91,9 +81,8 @@ ttloop(void)
 /*
  * Check a descriptor to see if out of band data exists on it.
  */
-    int
+int
 stilloob(int s)
-       	  		/* socket number */
 {
     static struct timeval timeout = { 0 };
     fd_set	excepts;
@@ -115,28 +104,26 @@ stilloob(int s)
     }
 }
 
-	void
+void
 ptyflush(void)
 {
-	int n;
+    int n;
 
-	if ((n = pfrontp - pbackp) > 0) {
-		DIAG((TD_REPORT | TD_PTYDATA),
-			{ snprintf(nfrontp,
-				   BUFSIZ - (nfrontp - netobuf),
-				   "td: ptyflush %d chars\r\n", n);
-			  nfrontp += strlen(nfrontp); });
-		DIAG(TD_PTYDATA, printdata("pd", pbackp, n));
-		n = write(ourpty, pbackp, n);
-	}
-	if (n < 0) {
-		if (errno == EWOULDBLOCK || errno == EINTR)
-			return;
-		cleanup(0);
-	}
-	pbackp += n;
-	if (pbackp == pfrontp)
-		pbackp = pfrontp = ptyobuf;
+    if ((n = pfrontp - pbackp) > 0) {
+	DIAG((TD_REPORT | TD_PTYDATA), { 
+	    output_data("td: ptyflush %d chars\r\n", n);
+	});
+	DIAG(TD_PTYDATA, printdata("pd", pbackp, n));
+	n = write(ourpty, pbackp, n);
+    }
+    if (n < 0) {
+	if (errno == EWOULDBLOCK || errno == EINTR)
+	    return;
+	cleanup(0);
+    }
+    pbackp += n;
+    if (pbackp == pfrontp)
+	pbackp = pfrontp = ptyobuf;
 }
 
 /*
@@ -149,7 +136,7 @@ ptyflush(void)
  * if the current address is a TELNET IAC ("I Am a Command")
  * character.
  */
-    char *
+char *
 nextitem(char *current)
 {
     if ((*current&0xff) != IAC) {
@@ -161,22 +148,22 @@ nextitem(char *current)
     case WILL:
     case WONT:
 	return current+3;
-    case SB:		/* loop forever looking for the SE */
-	{
-	    char *look = current+2;
+    case SB:{
+	/* loop forever looking for the SE */
+	char *look = current+2;
 
-	    for (;;) {
-		if ((*look++&0xff) == IAC) {
-		    if ((*look++&0xff) == SE) {
-			return look;
-		    }
+	for (;;) {
+	    if ((*look++&0xff) == IAC) {
+		if ((*look++&0xff) == SE) {
+		    return look;
 		}
 	    }
 	}
+    }
     default:
 	return current+2;
     }
-}  /* end of nextitem */
+}
 
 
 /*
@@ -195,52 +182,52 @@ nextitem(char *current)
  * caller should be setting the urgent data pointer AFTER calling
  * us in any case.
  */
-    void
+void
 netclear(void)
 {
     char *thisitem, *next;
     char *good;
 #define	wewant(p)	((nfrontp > p) && ((*p&0xff) == IAC) && \
-				((*(p+1)&0xff) != EC) && ((*(p+1)&0xff) != EL))
+			 ((*(p+1)&0xff) != EC) && ((*(p+1)&0xff) != EL))
 
-#if	defined(ENCRYPTION)
-    thisitem = nclearto > netobuf ? nclearto : netobuf;
+#ifdef ENCRYPTION
+	thisitem = nclearto > netobuf ? nclearto : netobuf;
 #else
-    thisitem = netobuf;
+	thisitem = netobuf;
 #endif
 
-    while ((next = nextitem(thisitem)) <= nbackp) {
-	thisitem = next;
-    }
-
-    /* Now, thisitem is first before/at boundary. */
-
-#if	defined(ENCRYPTION)
-    good = nclearto > netobuf ? nclearto : netobuf;
-#else
-    good = netobuf;	/* where the good bytes go */
-#endif
-
-    while (nfrontp > thisitem) {
-	if (wewant(thisitem)) {
-	    int length;
-
-	    next = thisitem;
-	    do {
-		next = nextitem(next);
-	    } while (wewant(next) && (nfrontp > next));
-	    length = next-thisitem;
-	    memmove(good, thisitem, length);
-	    good += length;
+	while ((next = nextitem(thisitem)) <= nbackp) {
 	    thisitem = next;
-	} else {
-	    thisitem = nextitem(thisitem);
 	}
-    }
 
-    nbackp = netobuf;
-    nfrontp = good;		/* next byte to be sent */
-    neturg = 0;
+	/* Now, thisitem is first before/at boundary. */
+
+#ifdef ENCRYPTION
+	good = nclearto > netobuf ? nclearto : netobuf;
+#else
+	good = netobuf;	/* where the good bytes go */
+#endif
+
+	while (nfrontp > thisitem) {
+	    if (wewant(thisitem)) {
+		int length;
+
+		next = thisitem;
+		do {
+		    next = nextitem(next);
+		} while (wewant(next) && (nfrontp > next));
+		length = next-thisitem;
+		memmove(good, thisitem, length);
+		good += length;
+		thisitem = next;
+	    } else {
+		thisitem = nextitem(thisitem);
+	    }
+	}
+
+	nbackp = netobuf;
+	nfrontp = good;		/* next byte to be sent */
+	neturg = 0;
 }  /* end of netclear */
 
 /*
@@ -248,7 +235,7 @@ netclear(void)
  *		Send as much data as possible to the network,
  *	handling requests for urgent data.
  */
-    void
+void
 netflush(void)
 {
     int n;
@@ -256,18 +243,15 @@ netflush(void)
 
     if ((n = nfrontp - nbackp) > 0) {
 	DIAG(TD_REPORT,
-	    { snprintf(nfrontp, BUFSIZ - (nfrontp - netobuf),
-		       "td: netflush %d chars\r\n", n);
-	      n += strlen(nfrontp);  /* get count first */
-	      nfrontp += strlen(nfrontp);  /* then move pointer */
-	    });
-#if	defined(ENCRYPTION)
+	     { n += output_data("td: netflush %d chars\r\n", n);
+	     });
+#ifdef ENCRYPTION
 	if (encrypt_output) {
-		char *s = nclearto ? nclearto : nbackp;
-		if (nfrontp - s > 0) {
-			(*encrypt_output)((unsigned char *)s, nfrontp-s);
-			nclearto = nfrontp;
-		}
+	    char *s = nclearto ? nclearto : nbackp;
+	    if (nfrontp - s > 0) {
+		(*encrypt_output)((unsigned char *)s, nfrontp-s);
+		nclearto = nfrontp;
+	    }
 	}
 #endif
 	/*
@@ -296,11 +280,11 @@ netflush(void)
     }
     if (n < 0) {
 	if (errno == EWOULDBLOCK || errno == EINTR)
-		return;
+	    return;
 	cleanup(0);
     }
     nbackp += n;
-#if	defined(ENCRYPTION)
+#ifdef ENCRYPTION
     if (nbackp > nclearto)
 	nclearto = 0;
 #endif
@@ -309,12 +293,12 @@ netflush(void)
     }
     if (nbackp == nfrontp) {
 	nbackp = nfrontp = netobuf;
-#if	defined(ENCRYPTION)
+#ifdef ENCRYPTION
 	nclearto = 0;
 #endif
     }
     return;
-}  /* end of netflush */
+}
 
 
 /*
@@ -327,19 +311,18 @@ netflush(void)
  *    ptr - A pointer to a character string to write
  *    len - How many bytes to write
  */
-	void
+void
 writenet(unsigned char *ptr, int len)
 {
-	/* flush buffer if no room for new data) */
-	if ((&netobuf[BUFSIZ] - nfrontp) < len) {
-		/* if this fails, don't worry, buffer is a little big */
-		netflush();
-	}
+    /* flush buffer if no room for new data) */
+    while ((&netobuf[BUFSIZ] - nfrontp) < len) {
+	/* if this fails, don't worry, buffer is a little big */
+	netflush();
+    }
 
-	memmove(nfrontp, ptr, len);
-	nfrontp += len;
-
-}  /* end of writenet */
+    memmove(nfrontp, ptr, len);
+    nfrontp += len;
+}
 
 
 /*
@@ -349,204 +332,196 @@ writenet(unsigned char *ptr, int len)
 
 void fatal(int f, char *msg)
 {
-	char buf[BUFSIZ];
+    char buf[BUFSIZ];
 
-	snprintf(buf, sizeof(buf), "telnetd: %s.\r\n", msg);
-#if	defined(ENCRYPTION)
-	if (encrypt_output) {
-		/*
-		 * Better turn off encryption first....
-		 * Hope it flushes...
-		 */
-		encrypt_send_end();
-		netflush();
-	}
+    snprintf(buf, sizeof(buf), "telnetd: %s.\r\n", msg);
+#ifdef ENCRYPTION
+    if (encrypt_output) {
+	/*
+	 * Better turn off encryption first....
+	 * Hope it flushes...
+	 */
+	encrypt_send_end();
+	netflush();
+    }
 #endif
-	write(f, buf, (int)strlen(buf));
-	sleep(1);	/*XXX*/
-	exit(1);
+    write(f, buf, (int)strlen(buf));
+    sleep(1);	/*XXX*/
+    exit(1);
 }
 
-	void
+void
 fatalperror(int f, char *msg)
 {
-	char buf[BUFSIZ];
-
-	snprintf(buf, sizeof(buf), "%s: %s", msg, strerror(errno));
-	fatal(f, buf);
+    char buf[BUFSIZ];
+    
+    snprintf(buf, sizeof(buf), "%s: %s", msg, strerror(errno));
+    fatal(f, buf);
 }
 
 char editedhost[32];
 
 void edithost(char *pat, char *host)
 {
-	char *res = editedhost;
+    char *res = editedhost;
 
-	if (!pat)
-		pat = "";
-	while (*pat) {
-		switch (*pat) {
+    if (!pat)
+	pat = "";
+    while (*pat) {
+	switch (*pat) {
 
-		case '#':
-			if (*host)
-				host++;
-			break;
+	case '#':
+	    if (*host)
+		host++;
+	    break;
 
-		case '@':
-			if (*host)
-				*res++ = *host++;
-			break;
+	case '@':
+	    if (*host)
+		*res++ = *host++;
+	    break;
 
-		default:
-			*res++ = *pat;
-			break;
-		}
-		if (res == &editedhost[sizeof editedhost - 1]) {
-			*res = '\0';
-			return;
-		}
-		pat++;
+	default:
+	    *res++ = *pat;
+	    break;
 	}
-	if (*host)
-		strncpy(res, host,
-				sizeof editedhost - (res - editedhost) -1);
-	else
-		*res = '\0';
-	editedhost[sizeof editedhost - 1] = '\0';
+	if (res == &editedhost[sizeof editedhost - 1]) {
+	    *res = '\0';
+	    return;
+	}
+	pat++;
+    }
+    if (*host)
+	strncpy(res, host,
+		sizeof editedhost - (res - editedhost) -1);
+    else
+	*res = '\0';
+    editedhost[sizeof editedhost - 1] = '\0';
 }
 
 static char *putlocation;
 
-	void
+void
 putstr(char *s)
 {
 
-	while (*s)
-		putchr(*s++);
+    while (*s)
+	putchr(*s++);
 }
 
-	void
+void
 putchr(int cc)
 {
-	*putlocation++ = cc;
+    *putlocation++ = cc;
 }
 
 /*
  * This is split on two lines so that SCCS will not see the M
  * between two % signs and expand it...
  */
-static char fmtstr[] = { "%l:%M\
-%P on %A, %d %B %Y" };
+static char fmtstr[] = { "%l:%M" "%P on %A, %d %B %Y" };
 
 void putf(char *cp, char *where)
 {
 #ifdef HAVE_UNAME
-        struct utsname name;
+    struct utsname name;
 #endif
-	char *slash;
-	time_t t;
-	char db[100];
+    char *slash;
+    time_t t;
+    char db[100];
 
-/* if we don't have uname, set these to sensible values */
-	char *sysname = "Unix", 
-	  *machine = "", 
-	  *release = "",
-	  *version = ""; 
+    /* if we don't have uname, set these to sensible values */
+    char *sysname = "Unix", 
+	*machine = "", 
+	*release = "",
+	*version = ""; 
 
 #ifdef HAVE_UNAME
-	uname(&name);
-	sysname=name.sysname;
-	machine=name.machine;
-	release=name.release;
-	version=name.version;
+    uname(&name);
+    sysname=name.sysname;
+    machine=name.machine;
+    release=name.release;
+    version=name.version;
 #endif
 
-	putlocation = where;
+    putlocation = where;
 
-	while (*cp) {
-		if (*cp != '%') {
-			putchr(*cp++);
-			continue;
-		}
-		switch (*++cp) {
-
-		case 't':
-#ifdef	STREAMSPTY
-			/* names are like /dev/pts/2 -- we want pts/2 */
-			slash = strchr(line+1, '/');
-#else
-			slash = strrchr(line, '/');
-#endif
-			if (slash == (char *) 0)
-				putstr(line);
-			else
-				putstr(&slash[1]);
-			break;
-
-		case 'h':
-			putstr(editedhost);
-			break;
-
-		case 's':
-		  putstr(sysname);
-		  break;
-
-		case 'm':
-		  putstr(machine);
-		  break;
-
-		case 'r':
-		  putstr(release);
-		  break;
-
-		case 'v':
-		  putstr(version);
-		  break;
-
-		case 'd':
-			time(&t);
-			strftime(db, sizeof(db), fmtstr, localtime(&t));
-			putstr(db);
-			break;
-
-		case '%':
-			putchr('%');
-			break;
-		}
-		cp++;
+    while (*cp) {
+	if (*cp != '%') {
+	    putchr(*cp++);
+	    continue;
 	}
+	switch (*++cp) {
+
+	case 't':
+#ifdef	STREAMSPTY
+	    /* names are like /dev/pts/2 -- we want pts/2 */
+	    slash = strchr(line+1, '/');
+#else
+	    slash = strrchr(line, '/');
+#endif
+	    if (slash == (char *) 0)
+		putstr(line);
+	    else
+		putstr(&slash[1]);
+	    break;
+
+	case 'h':
+	    putstr(editedhost);
+	    break;
+
+	case 's':
+	    putstr(sysname);
+	    break;
+
+	case 'm':
+	    putstr(machine);
+	    break;
+
+	case 'r':
+	    putstr(release);
+	    break;
+
+	case 'v':
+	    putstr(version);
+	    break;
+
+	case 'd':
+	    time(&t);
+	    strftime(db, sizeof(db), fmtstr, localtime(&t));
+	    putstr(db);
+	    break;
+
+	case '%':
+	    putchr('%');
+	    break;
+	}
+	cp++;
+    }
 }
 
 #ifdef DIAGNOSTICS
 /*
  * Print telnet options and commands in plain text, if possible.
  */
-	void
+void
 printoption(char *fmt, int option)
 {
-	if (TELOPT_OK(option))
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "%s %s\r\n",
-			 fmt,
-			 TELOPT(option));
-	else if (TELCMD_OK(option))
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "%s %s\r\n",
-			 fmt,
-			 TELCMD(option));
-	else
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "%s %d\r\n",
-			 fmt,
-			 option);
-	nfrontp += strlen(nfrontp);
-	return;
+    if (TELOPT_OK(option))
+	output_data("%s %s\r\n",
+		    fmt,
+		    TELOPT(option));
+    else if (TELCMD_OK(option))
+	output_data("%s %s\r\n",
+		    fmt,
+		    TELCMD(option));
+    else
+	output_data("%s %d\r\n",
+		    fmt,
+		    option);
+    return;
 }
 
-    void
+void
 printsub(int direction, unsigned char *pointer, int length)
         		          	/* '<' or '>' */
                  	         	/* where suboption data sits */
@@ -555,995 +530,624 @@ printsub(int direction, unsigned char *pointer, int length)
     int i;
     char buf[512];
 
-	if (!(diagnostic & TD_OPTIONS))
-		return;
+    if (!(diagnostic & TD_OPTIONS))
+	return;
 
-	if (direction) {
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "td: %s suboption ",
-		     direction == '<' ? "recv" : "send");
-	    nfrontp += strlen(nfrontp);
-	    if (length >= 3) {
-		int j;
+    if (direction) {
+	output_data("td: %s suboption ",
+		    direction == '<' ? "recv" : "send");
+	if (length >= 3) {
+	    int j;
 
-		i = pointer[length-2];
-		j = pointer[length-1];
+	    i = pointer[length-2];
+	    j = pointer[length-1];
 
-		if (i != IAC || j != SE) {
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "(terminated by ");
-		    nfrontp += strlen(nfrontp);
-		    if (TELOPT_OK(i))
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "%s ",
-				 TELOPT(i));
-		    else if (TELCMD_OK(i))
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "%s ",
-				 TELCMD(i));
-		    else
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "%d ",
-				 i);
-		    nfrontp += strlen(nfrontp);
-		    if (TELOPT_OK(j))
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "%s",
-				 TELOPT(j));
-		    else if (TELCMD_OK(j))
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "%s",
-				 TELCMD(j));
-		    else
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "%d",
-				 j);
-		    nfrontp += strlen(nfrontp);
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     ", not IAC SE!) ");
-		    nfrontp += strlen(nfrontp);
-		}
-	    }
-	    length -= 2;
-	}
-	if (length < 1) {
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "(Empty suboption??\?)");
-	    nfrontp += strlen(nfrontp);
-	    return;
-	}
-	switch (pointer[0]) {
-	case TELOPT_TTYPE:
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "TERMINAL-TYPE ");
-	    nfrontp += strlen(nfrontp);
-	    switch (pointer[1]) {
-	    case TELQUAL_IS:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "IS \"%.*s\"",
-			 length-2,
-			 (char *)pointer+2);
-		break;
-	    case TELQUAL_SEND:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "SEND");
-		break;
-	    default:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "- unknown qualifier %d (0x%x).",
-			 pointer[1], pointer[1]);
-	    }
-	    nfrontp += strlen(nfrontp);
-	    break;
-	case TELOPT_TSPEED:
-	    snprintf(nfrontp,
-		    BUFSIZ - (nfrontp - netobuf),
-		    "TERMINAL-SPEED");
-	    nfrontp += strlen(nfrontp);
-	    if (length < 2) {
-		snprintf(nfrontp,
-			BUFSIZ - (nfrontp - netobuf),
-			" (empty suboption??\?)");
-		nfrontp += strlen(nfrontp);
-		break;
-	    }
-	    switch (pointer[1]) {
-	    case TELQUAL_IS:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " IS %.*s",
-			 length-2,
-			 (char *)pointer+2);
-		nfrontp += strlen(nfrontp);
-		break;
-	    default:
-		if (pointer[1] == 1)
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     " SEND");
+	    if (i != IAC || j != SE) {
+		output_data("(terminated by ");
+		if (TELOPT_OK(i))
+		    output_data("%s ",
+				TELOPT(i));
+		else if (TELCMD_OK(i))
+		    output_data("%s ",
+				TELCMD(i));
 		else
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     " %d (unknown)",
-			     pointer[1]);
-		nfrontp += strlen(nfrontp);
-		for (i = 2; i < length; i++) {
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     " ?%d?",
-			     pointer[i]);
-		    nfrontp += strlen(nfrontp);
-		}
-		break;
+		    output_data("%d ",
+				i);
+		if (TELOPT_OK(j))
+		    output_data("%s",
+				TELOPT(j));
+		else if (TELCMD_OK(j))
+		    output_data("%s",
+				TELCMD(j));
+		else
+		    output_data("%d",
+				j);
+		output_data(", not IAC SE!) ");
 	    }
+	}
+	length -= 2;
+    }
+    if (length < 1) {
+	output_data("(Empty suboption??\?)");
+	return;
+    }
+    switch (pointer[0]) {
+    case TELOPT_TTYPE:
+	output_data("TERMINAL-TYPE ");
+	switch (pointer[1]) {
+	case TELQUAL_IS:
+	    output_data("IS \"%.*s\"",
+			length-2,
+			(char *)pointer+2);
 	    break;
-
-	case TELOPT_LFLOW:
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "TOGGLE-FLOW-CONTROL");
-	    nfrontp += strlen(nfrontp);
-	    if (length < 2) {
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " (empty suboption??\?)");
-		nfrontp += strlen(nfrontp);
-		break;
-	    }
-	    switch (pointer[1]) {
-	    case LFLOW_OFF:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " OFF");
-		break;
-	    case LFLOW_ON:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " ON");
-		break;
-	    case LFLOW_RESTART_ANY:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " RESTART-ANY");
-		break;
-	    case LFLOW_RESTART_XON:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " RESTART-XON");
-		break;
-	    default:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " %d (unknown)",
-			 pointer[1]);
-	    }
-	    nfrontp += strlen(nfrontp);
+	case TELQUAL_SEND:
+	    output_data("SEND");
+	    break;
+	default:
+	    output_data("- unknown qualifier %d (0x%x).",
+			pointer[1], pointer[1]);
+	}
+	break;
+    case TELOPT_TSPEED:
+	output_data("TERMINAL-SPEED");
+	if (length < 2) {
+	    output_data(" (empty suboption??\?)");
+	    break;
+	}
+	switch (pointer[1]) {
+	case TELQUAL_IS:
+	    output_data(" IS %.*s", length-2, (char *)pointer+2);
+	    break;
+	default:
+	    if (pointer[1] == 1)
+		output_data(" SEND");
+	    else
+		output_data(" %d (unknown)", pointer[1]);
 	    for (i = 2; i < length; i++) {
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " ?%d?",
-			 pointer[i]);
-		nfrontp += strlen(nfrontp);
+		output_data(" ?%d?", pointer[i]);
 	    }
 	    break;
+	}
+	break;
 
-	case TELOPT_NAWS:
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "NAWS");
-	    nfrontp += strlen(nfrontp);
-	    if (length < 2) {
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " (empty suboption??\?)");
-		nfrontp += strlen(nfrontp);
-		break;
-	    }
-	    if (length == 2) {
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " ?%d?",
-			 pointer[1]);
-		nfrontp += strlen(nfrontp);
-		break;
-	    }
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     " %d %d (%d)",
-		     pointer[1],
-		     pointer[2],
-		(int)((((unsigned int)pointer[1])<<8)|((unsigned int)pointer[2])));
-	    nfrontp += strlen(nfrontp);
-	    if (length == 4) {
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " ?%d?",
-			 pointer[3]);
-		nfrontp += strlen(nfrontp);
-		break;
-	    }
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     " %d %d (%d)",
-		     pointer[3], pointer[4],
-		(int)((((unsigned int)pointer[3])<<8)|((unsigned int)pointer[4])));
-	    nfrontp += strlen(nfrontp);
-	    for (i = 5; i < length; i++) {
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " ?%d?",
-			 pointer[i]);
-		nfrontp += strlen(nfrontp);
-	    }
+    case TELOPT_LFLOW:
+	output_data("TOGGLE-FLOW-CONTROL");
+	if (length < 2) {
+	    output_data(" (empty suboption??\?)");
 	    break;
+	}
+	switch (pointer[1]) {
+	case LFLOW_OFF:
+	    output_data(" OFF");
+	    break;
+	case LFLOW_ON:
+	    output_data(" ON");
+	    break;
+	case LFLOW_RESTART_ANY:
+	    output_data(" RESTART-ANY");
+	    break;
+	case LFLOW_RESTART_XON:
+	    output_data(" RESTART-XON");
+	    break;
+	default:
+	    output_data(" %d (unknown)",
+			pointer[1]);
+	}
+	for (i = 2; i < length; i++) {
+	    output_data(" ?%d?",
+			pointer[i]);
+	}
+	break;
 
-	case TELOPT_LINEMODE:
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "LINEMODE ");
-	    nfrontp += strlen(nfrontp);
-	    if (length < 2) {
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " (empty suboption??\?)");
-		nfrontp += strlen(nfrontp);
+    case TELOPT_NAWS:
+	output_data("NAWS");
+	if (length < 2) {
+	    output_data(" (empty suboption??\?)");
+	    break;
+	}
+	if (length == 2) {
+	    output_data(" ?%d?",
+			pointer[1]);
+	    break;
+	}
+	output_data(" %u %u(%u)",
+		    pointer[1],
+		    pointer[2],
+		    (((unsigned int)pointer[1])<<8) + pointer[2]);
+	if (length == 4) {
+	    output_data(" ?%d?",
+			pointer[3]);
+	    break;
+	}
+	output_data(" %u %u(%u)",
+		    pointer[3],
+		    pointer[4],
+		    (((unsigned int)pointer[3])<<8) + pointer[4]);
+	for (i = 5; i < length; i++) {
+	    output_data(" ?%d?",
+			pointer[i]);
+	}
+	break;
+
+    case TELOPT_LINEMODE:
+	output_data("LINEMODE ");
+	if (length < 2) {
+	    output_data(" (empty suboption??\?)");
+	    break;
+	}
+	switch (pointer[1]) {
+	case WILL:
+	    output_data("WILL ");
+	    goto common;
+	case WONT:
+	    output_data("WONT ");
+	    goto common;
+	case DO:
+	    output_data("DO ");
+	    goto common;
+	case DONT:
+	    output_data("DONT ");
+	common:
+	    if (length < 3) {
+		output_data("(no option??\?)");
 		break;
 	    }
-	    switch (pointer[1]) {
-	    case WILL:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "WILL ");
-		goto common;
-	    case WONT:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "WONT ");
-		goto common;
-	    case DO:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "DO ");
-		goto common;
-	    case DONT:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "DONT ");
-	    common:
-		nfrontp += strlen(nfrontp);
-		if (length < 3) {
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "(no option??\?)");
-		    nfrontp += strlen(nfrontp);
-		    break;
-		}
-		switch (pointer[2]) {
-		case LM_FORWARDMASK:
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "Forward Mask");
-		    nfrontp += strlen(nfrontp);
-		    for (i = 3; i < length; i++) {
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " %x", pointer[i]);
-			nfrontp += strlen(nfrontp);
-		    }
-		    break;
-		default:
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "%d (unknown)",
-			     pointer[2]);
-		    nfrontp += strlen(nfrontp);
-		    for (i = 3; i < length; i++) {
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " %d",
-				 pointer[i]);
-			nfrontp += strlen(nfrontp);
-		    }
-		    break;
-		}
-		break;
-
-	    case LM_SLC:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "SLC");
-		nfrontp += strlen(nfrontp);
-		for (i = 2; i < length - 2; i += 3) {
-		    if (SLC_NAME_OK(pointer[i+SLC_FUNC]))
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " %s",
-				 SLC_NAME(pointer[i+SLC_FUNC]));
-		    else
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " %d",
-				 pointer[i+SLC_FUNC]);
-		    nfrontp += strlen(nfrontp);
-		    switch (pointer[i+SLC_FLAGS]&SLC_LEVELBITS) {
-		    case SLC_NOSUPPORT:
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " NOSUPPORT"); break;
-		    case SLC_CANTCHANGE:
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " CANTCHANGE"); break;
-		    case SLC_VARIABLE:
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " VARIABLE");
-			break;
-		    case SLC_DEFAULT:
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " DEFAULT");
-			break;
-		    }
-		    nfrontp += strlen(nfrontp);
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "%s%s%s",
-			     pointer[i+SLC_FLAGS]&SLC_ACK ? "|ACK" : "",
-			     pointer[i+SLC_FLAGS]&SLC_FLUSHIN ? "|FLUSHIN" : "",
-			     pointer[i+SLC_FLAGS]&SLC_FLUSHOUT ? "|FLUSHOUT" : "");
-		    nfrontp += strlen(nfrontp);
-		    if (pointer[i+SLC_FLAGS]& ~(SLC_ACK|SLC_FLUSHIN|
-						SLC_FLUSHOUT| SLC_LEVELBITS)) {
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "(0x%x)",
-				 pointer[i+SLC_FLAGS]);
-			nfrontp += strlen(nfrontp);
-		    }
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     " %d;",
-			     pointer[i+SLC_VALUE]);
-		    nfrontp += strlen(nfrontp);
-		    if ((pointer[i+SLC_VALUE] == IAC) &&
-			(pointer[i+SLC_VALUE+1] == IAC))
-				i++;
-		}
-		for (; i < length; i++) {
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     " ?%d?",
-			     pointer[i]);
-		    nfrontp += strlen(nfrontp);
-		}
-		break;
-
-	    case LM_MODE:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "MODE ");
-		nfrontp += strlen(nfrontp);
-		if (length < 3) {
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "(no mode??\?)");
-		    nfrontp += strlen(nfrontp);
-		    break;
-		}
-		{
-		    char tbuf[32];
-		    snprintf(tbuf,
-			     sizeof(tbuf),
-			     "%s%s%s%s%s",
-			     pointer[2]&MODE_EDIT ? "|EDIT" : "",
-			     pointer[2]&MODE_TRAPSIG ? "|TRAPSIG" : "",
-			     pointer[2]&MODE_SOFT_TAB ? "|SOFT_TAB" : "",
-			     pointer[2]&MODE_LIT_ECHO ? "|LIT_ECHO" : "",
-			     pointer[2]&MODE_ACK ? "|ACK" : "");
-		    snprintf(nfrontp,
-			    BUFSIZ - (nfrontp - netobuf),
-			    "%s",
-			    tbuf[1] ? &tbuf[1] : "0");
-		    nfrontp += strlen(nfrontp);
-		}
-		if (pointer[2]&~(MODE_EDIT|MODE_TRAPSIG|MODE_ACK)) {
-		    snprintf(nfrontp,
-			    BUFSIZ - (nfrontp - netobuf),
-			     " (0x%x)",
-			     pointer[2]);
-		    nfrontp += strlen(nfrontp);
-		}
+	    switch (pointer[2]) {
+	    case LM_FORWARDMASK:
+		output_data("Forward Mask");
 		for (i = 3; i < length; i++) {
-		    snprintf(nfrontp,
-			    BUFSIZ - (nfrontp - netobuf),
-			     " ?0x%x?",
-			     pointer[i]);
-		    nfrontp += strlen(nfrontp);
+		    output_data(" %x", pointer[i]);
 		}
 		break;
 	    default:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "%d (unknown)",
-			 pointer[1]);
-		nfrontp += strlen(nfrontp);
-		for (i = 2; i < length; i++) {
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     " %d", pointer[i]);
-		    nfrontp += strlen(nfrontp);
+		output_data("%d (unknown)",
+			    pointer[2]);
+		for (i = 3; i < length; i++) {
+		    output_data(" %d",
+				pointer[i]);
 		}
+		break;
 	    }
 	    break;
 
-	case TELOPT_STATUS: {
-	    char *cp;
-	    int j, k;
-
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "STATUS");
-	    nfrontp += strlen(nfrontp);
-
-	    switch (pointer[1]) {
-	    default:
-		if (pointer[1] == TELQUAL_SEND)
-		    snprintf(nfrontp,
-			    BUFSIZ - (nfrontp - netobuf),
-			     " SEND");
+	case LM_SLC:
+	    output_data("SLC");
+	    for (i = 2; i < length - 2; i += 3) {
+		if (SLC_NAME_OK(pointer[i+SLC_FUNC]))
+		    output_data(" %s",
+				SLC_NAME(pointer[i+SLC_FUNC]));
 		else
-		    snprintf(nfrontp,
-			    BUFSIZ - (nfrontp - netobuf),
-			     " %d (unknown)",
-			     pointer[1]);
-		nfrontp += strlen(nfrontp);
-		for (i = 2; i < length; i++) {
-		    snprintf(nfrontp,
-			    BUFSIZ - (nfrontp - netobuf),
-			     " ?%d?",
-			     pointer[i]);
-		    nfrontp += strlen(nfrontp);
+		    output_data(" %d",
+				pointer[i+SLC_FUNC]);
+		switch (pointer[i+SLC_FLAGS]&SLC_LEVELBITS) {
+		case SLC_NOSUPPORT:
+		    output_data(" NOSUPPORT");
+		    break;
+		case SLC_CANTCHANGE:
+		    output_data(" CANTCHANGE");
+		    break;
+		case SLC_VARIABLE:
+		    output_data(" VARIABLE");
+		    break;
+		case SLC_DEFAULT:
+		    output_data(" DEFAULT");
+		    break;
 		}
+		output_data("%s%s%s",
+			    pointer[i+SLC_FLAGS]&SLC_ACK ? "|ACK" : "",
+			    pointer[i+SLC_FLAGS]&SLC_FLUSHIN ? "|FLUSHIN" : "",
+			    pointer[i+SLC_FLAGS]&SLC_FLUSHOUT ? "|FLUSHOUT" : "");
+		if (pointer[i+SLC_FLAGS]& ~(SLC_ACK|SLC_FLUSHIN|
+					    SLC_FLUSHOUT| SLC_LEVELBITS)) {
+		    output_data("(0x%x)",
+				pointer[i+SLC_FLAGS]);
+		}
+		output_data(" %d;",
+			    pointer[i+SLC_VALUE]);
+		if ((pointer[i+SLC_VALUE] == IAC) &&
+		    (pointer[i+SLC_VALUE+1] == IAC))
+		    i++;
+	    }
+	    for (; i < length; i++) {
+		output_data(" ?%d?",
+			    pointer[i]);
+	    }
+	    break;
+
+	case LM_MODE:
+	    output_data("MODE ");
+	    if (length < 3) {
+		output_data("(no mode??\?)");
 		break;
-	    case TELQUAL_IS:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " IS\r\n");
-		nfrontp += strlen(nfrontp);
+	    }
+	    {
+		char tbuf[32];
+		snprintf(tbuf,
+			 sizeof(tbuf),
+			 "%s%s%s%s%s",
+			 pointer[2]&MODE_EDIT ? "|EDIT" : "",
+			 pointer[2]&MODE_TRAPSIG ? "|TRAPSIG" : "",
+			 pointer[2]&MODE_SOFT_TAB ? "|SOFT_TAB" : "",
+			 pointer[2]&MODE_LIT_ECHO ? "|LIT_ECHO" : "",
+			 pointer[2]&MODE_ACK ? "|ACK" : "");
+		output_data("%s",
+			    tbuf[1] ? &tbuf[1] : "0");
+	    }
+	    if (pointer[2]&~(MODE_EDIT|MODE_TRAPSIG|MODE_ACK)) {
+		output_data(" (0x%x)",
+			    pointer[2]);
+	    }
+	    for (i = 3; i < length; i++) {
+		output_data(" ?0x%x?",
+			 pointer[i]);
+	    }
+	    break;
+	default:
+	    output_data("%d (unknown)",
+			pointer[1]);
+	    for (i = 2; i < length; i++) {
+		output_data(" %d", pointer[i]);
+	    }
+	}
+	break;
 
-		for (i = 2; i < length; i++) {
-		    switch(pointer[i]) {
-		    case DO:	cp = "DO"; goto common2;
-		    case DONT:	cp = "DONT"; goto common2;
-		    case WILL:	cp = "WILL"; goto common2;
-		    case WONT:	cp = "WONT"; goto common2;
-		    common2:
-			i++;
-			if (TELOPT_OK(pointer[i]))
-			    snprintf(nfrontp,
-				     BUFSIZ - (nfrontp - netobuf),
-				     " %s %s",
-				     cp,
-				     TELOPT(pointer[i]));
-			else
-			    snprintf(nfrontp,
-				     BUFSIZ - (nfrontp - netobuf),
-				     " %s %d",
-				     cp,
-				     pointer[i]);
-			nfrontp += strlen(nfrontp);
+    case TELOPT_STATUS: {
+	char *cp;
+	int j, k;
 
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "\r\n");
-			nfrontp += strlen(nfrontp);
+	output_data("STATUS");
+
+	switch (pointer[1]) {
+	default:
+	    if (pointer[1] == TELQUAL_SEND)
+		output_data(" SEND");
+	    else
+		output_data(" %d (unknown)",
+			    pointer[1]);
+	    for (i = 2; i < length; i++) {
+		output_data(" ?%d?",
+			    pointer[i]);
+	    }
+	    break;
+	case TELQUAL_IS:
+	    output_data(" IS\r\n");
+
+	    for (i = 2; i < length; i++) {
+		switch(pointer[i]) {
+		case DO:	cp = "DO"; goto common2;
+		case DONT:	cp = "DONT"; goto common2;
+		case WILL:	cp = "WILL"; goto common2;
+		case WONT:	cp = "WONT"; goto common2;
+		common2:
+		i++;
+		if (TELOPT_OK(pointer[i]))
+		    output_data(" %s %s",
+				cp,
+				TELOPT(pointer[i]));
+		else
+		    output_data(" %s %d",
+				cp,
+				pointer[i]);
+
+		output_data("\r\n");
+		break;
+
+		case SB:
+		    output_data(" SB ");
+		    i++;
+		    j = k = i;
+		    while (j < length) {
+			if (pointer[j] == SE) {
+			    if (j+1 == length)
+				break;
+			    if (pointer[j+1] == SE)
+				j++;
+			    else
+				break;
+			}
+			pointer[k++] = pointer[j++];
+		    }
+		    printsub(0, &pointer[i], k - i);
+		    if (i < length) {
+			output_data(" SE");
+			i = j;
+		    } else
+			i = j - 1;
+
+		    output_data("\r\n");
+
+		    break;
+
+		default:
+		    output_data(" %d",
+				pointer[i]);
+		    break;
+		}
+	    }
+	    break;
+	}
+	break;
+    }
+
+    case TELOPT_XDISPLOC:
+	output_data("X-DISPLAY-LOCATION ");
+	switch (pointer[1]) {
+	case TELQUAL_IS:
+	    output_data("IS \"%.*s\"",
+			length-2,
+			(char *)pointer+2);
+	    break;
+	case TELQUAL_SEND:
+	    output_data("SEND");
+	    break;
+	default:
+	    output_data("- unknown qualifier %d (0x%x).",
+			pointer[1], pointer[1]);
+	}
+	break;
+
+    case TELOPT_NEW_ENVIRON:
+	output_data("NEW-ENVIRON ");
+	goto env_common1;
+    case TELOPT_OLD_ENVIRON:
+	output_data("OLD-ENVIRON");
+    env_common1:
+	switch (pointer[1]) {
+	case TELQUAL_IS:
+	    output_data("IS ");
+	    goto env_common;
+	case TELQUAL_SEND:
+	    output_data("SEND ");
+	    goto env_common;
+	case TELQUAL_INFO:
+	    output_data("INFO ");
+	env_common:
+	    {
+		int noquote = 2;
+		for (i = 2; i < length; i++ ) {
+		    switch (pointer[i]) {
+		    case NEW_ENV_VAR:
+			output_data("\" VAR " + noquote);
+			noquote = 2;
 			break;
 
-		    case SB:
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " SB ");
-			nfrontp += strlen(nfrontp);
-			i++;
-			j = k = i;
-			while (j < length) {
-			    if (pointer[j] == SE) {
-				if (j+1 == length)
-				    break;
-				if (pointer[j+1] == SE)
-				    j++;
-				else
-				    break;
-			    }
-			    pointer[k++] = pointer[j++];
-			}
-			printsub(0, &pointer[i], k - i);
-			if (i < length) {
-			    snprintf(nfrontp,
-				    BUFSIZ - (nfrontp - netobuf),
-				    " SE");
-			    nfrontp += strlen(nfrontp);
-			    i = j;
-			} else
-			    i = j - 1;
+		    case NEW_ENV_VALUE:
+			output_data("\" VALUE " + noquote);
+			noquote = 2;
+			break;
 
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "\r\n");
-			nfrontp += strlen(nfrontp);
+		    case ENV_ESC:
+			output_data("\" ESC " + noquote);
+			noquote = 2;
+			break;
 
+		    case ENV_USERVAR:
+			output_data("\" USERVAR " + noquote);
+			noquote = 2;
 			break;
 
 		    default:
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " %d",
-				 pointer[i]);
-			nfrontp += strlen(nfrontp);
-			break;
-		    }
-		}
-		break;
-	    }
-	    break;
-	  }
-
-	case TELOPT_XDISPLOC:
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "X-DISPLAY-LOCATION ");
-	    nfrontp += strlen(nfrontp);
-	    switch (pointer[1]) {
-	    case TELQUAL_IS:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "IS \"%.*s\"",
-			 length-2,
-			 (char *)pointer+2);
-		break;
-	    case TELQUAL_SEND:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "SEND");
-		break;
-	    default:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "- unknown qualifier %d (0x%x).",
-			 pointer[1], pointer[1]);
-	    }
-	    nfrontp += strlen(nfrontp);
-	    break;
-
-	case TELOPT_NEW_ENVIRON:
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "NEW-ENVIRON ");
-	    goto env_common1;
-	case TELOPT_OLD_ENVIRON:
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "OLD-ENVIRON");
-	env_common1:
-	    nfrontp += strlen(nfrontp);
-	    switch (pointer[1]) {
-	    case TELQUAL_IS:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "IS ");
-		goto env_common;
-	    case TELQUAL_SEND:
-		snprintf(nfrontp,
-			BUFSIZ - (nfrontp - netobuf),
-			"SEND ");
-		goto env_common;
-	    case TELQUAL_INFO:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "INFO ");
-	    env_common:
-		nfrontp += strlen(nfrontp);
-		{
-		    int noquote = 2;
-		    for (i = 2; i < length; i++ ) {
-			switch (pointer[i]) {
-			case NEW_ENV_VAR:
-			    snprintf(nfrontp,
-				     BUFSIZ - (nfrontp - netobuf),
-				     "\" VAR " + noquote);
-			    nfrontp += strlen(nfrontp);
-			    noquote = 2;
-			    break;
-
-			case NEW_ENV_VALUE:
-			    snprintf(nfrontp,
-				     BUFSIZ - (nfrontp - netobuf),
-				     "\" VALUE " + noquote);
-			    nfrontp += strlen(nfrontp);
-			    noquote = 2;
-			    break;
-
-			case ENV_ESC:
-			    snprintf(nfrontp,
-				     BUFSIZ - (nfrontp - netobuf),
-				     "\" ESC " + noquote);
-			    nfrontp += strlen(nfrontp);
-			    noquote = 2;
-			    break;
-
-			case ENV_USERVAR:
-			    snprintf(nfrontp,
-				     BUFSIZ - (nfrontp - netobuf),
-				     "\" USERVAR " + noquote);
-			    nfrontp += strlen(nfrontp);
-			    noquote = 2;
-			    break;
-
-			default:
-			    if (isprint(pointer[i]) && pointer[i] != '"') {
-				if (noquote) {
-				    *nfrontp++ = '"';
-				    noquote = 0;
-				}
-				*nfrontp++ = pointer[i];
-			    } else {
-				snprintf(nfrontp,
-					 BUFSIZ - (nfrontp - netobuf),
-					 "\" %03o " + noquote,
-					 pointer[i]);
-				nfrontp += strlen(nfrontp);
-				noquote = 2;
+			if (isprint(pointer[i]) && pointer[i] != '"') {
+			    if (noquote) {
+				output_data ("\"");
+				noquote = 0;
 			    }
-			    break;
+			    output_data ("%c", pointer[i]);
+			} else {
+			    output_data("\" %03o " + noquote,
+					pointer[i]);
+			    noquote = 2;
 			}
-		    }
-		    if (!noquote)
-			*nfrontp++ = '"';
-		    break;
-		}
-	    }
-	    break;
-
-#if	defined(AUTHENTICATION)
-	case TELOPT_AUTHENTICATION:
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "AUTHENTICATION");
-	    nfrontp += strlen(nfrontp);
-
-	    if (length < 2) {
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " (empty suboption??\?)");
-		nfrontp += strlen(nfrontp);
-		break;
-	    }
-	    switch (pointer[1]) {
-	    case TELQUAL_REPLY:
-	    case TELQUAL_IS:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " %s ",
-			 (pointer[1] == TELQUAL_IS) ?
-				"IS" : "REPLY");
-		nfrontp += strlen(nfrontp);
-		if (AUTHTYPE_NAME_OK(pointer[2]))
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "%s ",
-			     AUTHTYPE_NAME(pointer[2]));
-		else
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "%d ",
-			     pointer[2]);
-		nfrontp += strlen(nfrontp);
-		if (length < 3) {
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "(partial suboption??\?)");
-		    nfrontp += strlen(nfrontp);
-		    break;
-		}
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "%s|%s",
-			 ((pointer[3] & AUTH_WHO_MASK) == AUTH_WHO_CLIENT) ?
-			 "CLIENT" : "SERVER",
-			 ((pointer[3] & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) ?
-			 "MUTUAL" : "ONE-WAY");
-		nfrontp += strlen(nfrontp);
-
-		auth_printsub(&pointer[1], length - 1, buf, sizeof(buf));
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "%s",
-			 buf);
-		nfrontp += strlen(nfrontp);
-		break;
-
-	    case TELQUAL_SEND:
-		i = 2;
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " SEND ");
-		nfrontp += strlen(nfrontp);
-		while (i < length) {
-		    if (AUTHTYPE_NAME_OK(pointer[i]))
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "%s ",
-				 AUTHTYPE_NAME(pointer[i]));
-		    else
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "%d ",
-				 pointer[i]);
-		    nfrontp += strlen(nfrontp);
-		    if (++i >= length) {
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "(partial suboption??\?)");
-			nfrontp += strlen(nfrontp);
 			break;
 		    }
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "%s|%s ",
-			((pointer[i] & AUTH_WHO_MASK) == AUTH_WHO_CLIENT) ?
-							"CLIENT" : "SERVER",
-			((pointer[i] & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) ?
-							"MUTUAL" : "ONE-WAY");
-		    nfrontp += strlen(nfrontp);
-		    ++i;
 		}
+		if (!noquote)
+		    output_data ("\"");
 		break;
-
-	    case TELQUAL_NAME:
-		i = 2;
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " NAME \"");
-		nfrontp += strlen(nfrontp);
-		while (i < length)
-		    *nfrontp++ = pointer[i++];
-		*nfrontp++ = '"';
-		break;
-
-	    default:
-		    for (i = 2; i < length; i++) {
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 " ?%d?",
-				 pointer[i]);
-			nfrontp += strlen(nfrontp);
-		    }
-		    break;
 	    }
+	}
+	break;
+
+#ifdef AUTHENTICATION
+    case TELOPT_AUTHENTICATION:
+	output_data("AUTHENTICATION");
+
+	if (length < 2) {
+	    output_data(" (empty suboption??\?)");
 	    break;
-#endif
-
-#if	defined(ENCRYPTION)
-	case TELOPT_ENCRYPT:
-	    snprintf(nfrontp,
-		     BUFSIZ - (nfrontp - netobuf),
-		     "ENCRYPT");
-	    nfrontp += strlen(nfrontp);
-	    if (length < 2) {
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " (empty suboption?)");
-		nfrontp += strlen(nfrontp);
+	}
+	switch (pointer[1]) {
+	case TELQUAL_REPLY:
+	case TELQUAL_IS:
+	    output_data(" %s ",
+			(pointer[1] == TELQUAL_IS) ?
+			"IS" : "REPLY");
+	    if (AUTHTYPE_NAME_OK(pointer[2]))
+		output_data("%s ",
+			    AUTHTYPE_NAME(pointer[2]));
+	    else
+		output_data("%d ",
+			    pointer[2]);
+	    if (length < 3) {
+		output_data("(partial suboption??\?)");
 		break;
 	    }
-	    switch (pointer[1]) {
-	    case ENCRYPT_START:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " START");
-		nfrontp += strlen(nfrontp);
-		break;
+	    output_data("%s|%s",
+			((pointer[3] & AUTH_WHO_MASK) == AUTH_WHO_CLIENT) ?
+			"CLIENT" : "SERVER",
+			((pointer[3] & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) ?
+			"MUTUAL" : "ONE-WAY");
 
-	    case ENCRYPT_END:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " END");
-		nfrontp += strlen(nfrontp);
-		break;
+	    auth_printsub(&pointer[1], length - 1, buf, sizeof(buf));
+	    output_data("%s",
+			buf);
+	    break;
 
-	    case ENCRYPT_REQSTART:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " REQUEST-START");
-		nfrontp += strlen(nfrontp);
-		break;
-
-	    case ENCRYPT_REQEND:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " REQUEST-END");
-		nfrontp += strlen(nfrontp);
-		break;
-
-	    case ENCRYPT_IS:
-	    case ENCRYPT_REPLY:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " %s ",
-			 (pointer[1] == ENCRYPT_IS) ?
-				"IS" : "REPLY");
-		nfrontp += strlen(nfrontp);
-		if (length < 3) {
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     " (partial suboption?)");
-		    nfrontp += strlen(nfrontp);
-		    break;
-		}
-		if (ENCTYPE_NAME_OK(pointer[2]))
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     "%s ",
-			     ENCTYPE_NAME(pointer[2]));
+	case TELQUAL_SEND:
+	    i = 2;
+	    output_data(" SEND ");
+	    while (i < length) {
+		if (AUTHTYPE_NAME_OK(pointer[i]))
+		    output_data("%s ",
+				AUTHTYPE_NAME(pointer[i]));
 		else
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     " %d (unknown)",
-			     pointer[2]);
-		nfrontp += strlen(nfrontp);
-
-		encrypt_printsub(&pointer[1], length - 1, buf, sizeof(buf));
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "%s",
-			 buf);
-		nfrontp += strlen(nfrontp);
-		break;
-
-	    case ENCRYPT_SUPPORT:
-		i = 2;
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " SUPPORT ");
-		nfrontp += strlen(nfrontp);
-		while (i < length) {
-		    if (ENCTYPE_NAME_OK(pointer[i]))
-			snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-				 "%s ",
-				 ENCTYPE_NAME(pointer[i]));
-		    else
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "%d ",
-				 pointer[i]);
-		    nfrontp += strlen(nfrontp);
-		    i++;
+		    output_data("%d ",
+				pointer[i]);
+		if (++i >= length) {
+		    output_data("(partial suboption??\?)");
+		    break;
 		}
-		break;
-
-	    case ENCRYPT_ENC_KEYID:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " ENC_KEYID %d",
-			 pointer[1]);
-		nfrontp += strlen(nfrontp);
-		goto encommon;
-
-	    case ENCRYPT_DEC_KEYID:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " DEC_KEYID %d",
-			 pointer[1]);
-		nfrontp += strlen(nfrontp);
-		goto encommon;
-
-	    default:
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " %d (unknown)",
-			 pointer[1]);
-		nfrontp += strlen(nfrontp);
-	    encommon:
-		for (i = 2; i < length; i++) {
-		    snprintf(nfrontp,
-			     BUFSIZ - (nfrontp - netobuf),
-			     " %d",
-			     pointer[i]);
-		    nfrontp += strlen(nfrontp);
-		}
-		break;
+		output_data("%s|%s ",
+			    ((pointer[i] & AUTH_WHO_MASK) == AUTH_WHO_CLIENT) ?
+			    "CLIENT" : "SERVER",
+			    ((pointer[i] & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) ?
+			    "MUTUAL" : "ONE-WAY");
+		++i;
 	    }
 	    break;
-#endif
+
+	case TELQUAL_NAME:
+	    i = 2;
+	    output_data(" NAME \"%.*s\"",
+			length - 2,
+			pointer);
+	    break;
 
 	default:
-	    if (TELOPT_OK(pointer[0]))
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "%s (unknown)",
-			 TELOPT(pointer[0]));
-	    else
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "%d (unknown)",
-			 pointer[i]);
-	    nfrontp += strlen(nfrontp);
-	    for (i = 1; i < length; i++) {
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " %d",
-			 pointer[i]);
-		nfrontp += strlen(nfrontp);
+	    for (i = 2; i < length; i++) {
+		output_data(" ?%d?",
+			    pointer[i]);
 	    }
 	    break;
 	}
-	snprintf(nfrontp,
-		 BUFSIZ - (nfrontp - netobuf),
-		 "\r\n");
-	nfrontp += strlen(nfrontp);
+	break;
+#endif
+
+#ifdef ENCRYPTION
+    case TELOPT_ENCRYPT:
+	output_data("ENCRYPT");
+	if (length < 2) {
+	    output_data(" (empty suboption?)");
+	    break;
+	}
+	switch (pointer[1]) {
+	case ENCRYPT_START:
+	    output_data(" START");
+	    break;
+
+	case ENCRYPT_END:
+	    output_data(" END");
+	    break;
+
+	case ENCRYPT_REQSTART:
+	    output_data(" REQUEST-START");
+	    break;
+
+	case ENCRYPT_REQEND:
+	    output_data(" REQUEST-END");
+	    break;
+
+	case ENCRYPT_IS:
+	case ENCRYPT_REPLY:
+	    output_data(" %s ",
+			(pointer[1] == ENCRYPT_IS) ?
+			"IS" : "REPLY");
+	    if (length < 3) {
+		output_data(" (partial suboption?)");
+		break;
+	    }
+	    if (ENCTYPE_NAME_OK(pointer[2]))
+		output_data("%s ",
+			    ENCTYPE_NAME(pointer[2]));
+	    else
+		output_data(" %d (unknown)",
+			    pointer[2]);
+
+	    encrypt_printsub(&pointer[1], length - 1, buf, sizeof(buf));
+	    output_data("%s",
+			buf);
+	    break;
+
+	case ENCRYPT_SUPPORT:
+	    i = 2;
+	    output_data(" SUPPORT ");
+	    while (i < length) {
+		if (ENCTYPE_NAME_OK(pointer[i]))
+		    output_data("%s ",
+				ENCTYPE_NAME(pointer[i]));
+		else
+		    output_data("%d ",
+				pointer[i]);
+		i++;
+	    }
+	    break;
+
+	case ENCRYPT_ENC_KEYID:
+	    output_data(" ENC_KEYID %d", pointer[1]);
+	    goto encommon;
+
+	case ENCRYPT_DEC_KEYID:
+	    output_data(" DEC_KEYID %d", pointer[1]);
+	    goto encommon;
+
+	default:
+	    output_data(" %d (unknown)", pointer[1]);
+	encommon:
+	    for (i = 2; i < length; i++) {
+		output_data(" %d", pointer[i]);
+	    }
+	    break;
+	}
+	break;
+#endif
+
+    default:
+	if (TELOPT_OK(pointer[0]))
+	    output_data("%s (unknown)",
+			TELOPT(pointer[0]));
+	else
+	    output_data("%d (unknown)",
+			pointer[i]);
+	for (i = 1; i < length; i++) {
+	    output_data(" %d", pointer[i]);
+	}
+	break;
+    }
+    output_data("\r\n");
 }
 
 /*
  * Dump a data buffer in hex and ascii to the output data stream.
  */
-	void
+void
 printdata(char *tag, char *ptr, int cnt)
 {
-	int i;
-	char xbuf[30];
+    int i;
+    char xbuf[30];
 
-	while (cnt) {
-		/* flush net output buffer if no room for new data) */
-		if ((&netobuf[BUFSIZ] - nfrontp) < 80) {
-			netflush();
-		}
-
-		/* add a line of output */
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 "%s: ",
-			 tag);
-		nfrontp += strlen(nfrontp);
-		for (i = 0; i < 20 && cnt; i++) {
-			snprintf(nfrontp,
-				 BUFSIZ - (nfrontp - netobuf),
-				 "%02x",
-				 *ptr);
-			nfrontp += strlen(nfrontp);
-			if (isprint(*ptr)) {
-				xbuf[i] = *ptr;
-			} else {
-				xbuf[i] = '.';
-			}
-			if (i % 2) {
-				*nfrontp = ' ';
-				nfrontp++;
-			}
-			cnt--;
-			ptr++;
-		}
-		xbuf[i] = '\0';
-		snprintf(nfrontp,
-			 BUFSIZ - (nfrontp - netobuf),
-			 " %s\r\n",
-			 xbuf);
-		nfrontp += strlen(nfrontp);
+    while (cnt) {
+	/* flush net output buffer if no room for new data) */
+	if ((&netobuf[BUFSIZ] - nfrontp) < 80) {
+	    netflush();
 	}
+
+	/* add a line of output */
+	output_data("%s: ", tag);
+	for (i = 0; i < 20 && cnt; i++) {
+	    output_data("%02x", *ptr);
+	    if (isprint(*ptr)) {
+		xbuf[i] = *ptr;
+	    } else {
+		xbuf[i] = '.';
+	    }
+	    if (i % 2) {
+		output_data(" ");
+	    }
+	    cnt--;
+	    ptr++;
+	}
+	xbuf[i] = '\0';
+	output_data(" %s\r\n", xbuf);
+    }
 }
 #endif /* DIAGNOSTICS */
