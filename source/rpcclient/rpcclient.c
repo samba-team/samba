@@ -408,6 +408,9 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
 	char *p = cmd;
 	uint32 result=0;
 
+	if (cmd[strlen(cmd) - 1] == '\n')
+		cmd[strlen(cmd) - 1] = '\0';
+
 	if (!next_token(&p, buf, " ", sizeof(buf))) {
 		return 0;
 	}
@@ -633,7 +636,6 @@ static void usage(char *pname)
 	/* There are no pointers in ntuser_creds struct so zero it out */
 	ZERO_STRUCTP (&creds);
 	
-
 	/* Load command lists */
 	add_command_set(rpcclient_commands);
 	add_command_set(separator_command);
