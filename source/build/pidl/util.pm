@@ -327,6 +327,7 @@ my %type_mappings =
      "uint64"       => "uint64_t",
      "dlong"        => "int64_t",
      "udlong"       => "uint64_t",
+     "udlongr"      => "uint64_t",
      "hyper"        => "uint64_t",
      "NTTIME_1sec"  => "NTTIME",
      "NTTIME_hyper" => "NTTIME",

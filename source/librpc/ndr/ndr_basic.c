@@ -132,6 +132,19 @@ NTSTATUS ndr_pull_udlong(struct ndr_pull *ndr, int ndr_flags, uint64_t *v)
 }
 
 /*
+  parse a udlongr
+*/
+NTSTATUS ndr_pull_udlongr(struct ndr_pull *ndr, int ndr_flags, uint64_t *v)
+{
+	NDR_PULL_ALIGN(ndr, 4);
+	NDR_PULL_NEED_BYTES(ndr, 8);
+	*v = ((uint64_t)NDR_IVAL(ndr, ndr->offset)) << 32;
+	*v |= NDR_IVAL(ndr, ndr->offset+4);
+	ndr->offset += 8;
+	return NT_STATUS_OK;
+}
+
+/*
   parse a dlong
 */
 NTSTATUS ndr_pull_dlong(struct ndr_pull *ndr, int ndr_flags, int64_t *v)
@@ -329,7 +342,7 @@ NTSTATUS ndr_push_int32(struct ndr_push *ndr, int ndr_flags, int32_t v)
 }
 
 /*
-  push a uint64
+  push a udlong
 */
 NTSTATUS ndr_push_udlong(struct ndr_push *ndr, int ndr_flags, uint64_t v)
 {
@@ -337,6 +350,19 @@ NTSTATUS ndr_push_udlong(struct ndr_push *ndr, int ndr_flags, uint64_t v)
 	NDR_PUSH_NEED_BYTES(ndr, 8);
 	NDR_SIVAL(ndr, ndr->offset, (v & 0xFFFFFFFF));
 	NDR_SIVAL(ndr, ndr->offset+4, (v>>32));
+	ndr->offset += 8;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a udlongr
+*/
+NTSTATUS ndr_push_udlongr(struct ndr_push *ndr, int ndr_flags, uint64_t v)
+{
+	NDR_PUSH_ALIGN(ndr, 4);
+	NDR_PUSH_NEED_BYTES(ndr, 8);
+	NDR_SIVAL(ndr, ndr->offset+4, (v>>32));
+	NDR_SIVAL(ndr, ndr->offset, (v & 0xFFFFFFFF));
 	ndr->offset += 8;
 	return NT_STATUS_OK;
 }
@@ -1105,6 +1131,11 @@ void ndr_print_udlong(struct ndr_print *ndr, const char *name, uint64_t v)
 		   (uint32_t)(v >> 32),
 		   (uint32_t)(v & 0xFFFFFFFF),
 		   v);
+}
+
+void ndr_print_udlongr(struct ndr_print *ndr, const char *name, uint64_t v)
+{
+	ndr_print_udlong(ndr, name, v);
 }
 
 void ndr_print_dlong(struct ndr_print *ndr, const char *name, int64_t v)

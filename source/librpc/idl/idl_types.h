@@ -81,7 +81,6 @@
 */
 #define utf8string       [flag(STR_UTF8|STR_NULLTERM)]                string
 
-
 #define NDR_NOALIGN       LIBNDR_FLAG_NOALIGN
 #define NDR_REMAINING     LIBNDR_FLAG_REMAINING
 #define NDR_ALIGN2        LIBNDR_FLAG_ALIGN2

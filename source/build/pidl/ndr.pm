@@ -30,6 +30,7 @@ sub RegisterPrimitives()
      "uint32"         => 4,
      "dlong"          => 4,
      "udlong"         => 4,
+     "udlongr"        => 4,
      "NTTIME"         => 4,
      "NTTIME_1sec"    => 4,
      "time_t"         => 4,
