@@ -117,7 +117,7 @@ _nss_winbind_getpwuid_solwrap(nss_backend_t* be, void* args)
 
 static NSS_STATUS _nss_winbind_passwd_destr (nss_backend_t * be, void *args)
 {
-	free(be);
+	SAFE_FREE(be);
 	NSS_DEBUG("_nss_winbind_passwd_destr");
 	return NSS_STATUS_SUCCESS;
 }
@@ -241,7 +241,7 @@ _nss_winbind_getgroupsbymember_solwrap(nss_backend_t* be, void* args)
 static NSS_STATUS
 _nss_winbind_group_destr (nss_backend_t* be, void* args)
 {
-	free(be);
+	SAFE_FREE(be);
 	NSS_DEBUG("_nss_winbind_group_destr");
 	return NSS_STATUS_SUCCESS;
 }

@@ -104,7 +104,7 @@ static BOOL get_id_from_rid(char *domain_name, uint32 rid, uid_t *id,
             result = True;
         }
 
-        free(data.dptr);
+        SAFE_FREE(data.dptr);
 
     } else {
 
@@ -187,7 +187,7 @@ BOOL get_rid_from_id(int id, uint32 *rid, struct winbindd_domain **domain,
             result = True;
         }
     done:            
-        free(data.dptr);
+        SAFE_FREE(data.dptr);
     }
 
     return result;

@@ -167,8 +167,7 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 		host_addresses++;
 	}
 
-	if (ip_list)
-		free(ip_list);
+	SAFE_FREE(ip_list);
 
 	memcpy(buffer, name, namelen);
 	he->h_name = buffer;

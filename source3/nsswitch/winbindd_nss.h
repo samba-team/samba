@@ -22,6 +22,10 @@
    Boston, MA  02111-1307, USA.   
 */
 
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if(x) {free(x); x=NULL;} } while(0)
+#endif
+
 #ifndef _WINBINDD_NTDOM_H
 #define _WINBINDD_NTDOM_H
 

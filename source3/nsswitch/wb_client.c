@@ -347,7 +347,7 @@ int winbind_initgroups(char *user, gid_t gid)
 	/* Free response data if necessary */
 
  done:
-	safe_free(groups);
+	SAFE_FREE(groups);
 
 	return result;
 }
@@ -381,7 +381,7 @@ int winbind_getgroups(char *user, int size, gid_t *list)
 	}
 
  done:
-	safe_free(groups);
+	SAFE_FREE(groups);
 	return result;
 }
 

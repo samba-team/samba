@@ -281,7 +281,7 @@ static void process_request(struct winbindd_cli_state *state)
 	/* Free response data - we may be interrupted and receive another
 	   command before being able to send this data off. */
 
-	safe_free(state->response.extra_data);  
+	SAFE_FREE(state->response.extra_data);  
 
 	ZERO_STRUCT(state->response);
 
@@ -363,12 +363,12 @@ static void remove_client(struct winbindd_cli_state *state)
 		/* We may have some extra data that was not freed if the
 		   client was killed unexpectedly */
 
-		safe_free(state->response.extra_data);
+		SAFE_FREE(state->response.extra_data);
 		
 		/* Remove from list and free */
 		
 		DLIST_REMOVE(client_list, state);
-		free(state);
+		SAFE_FREE(state);
 		num_clients--;
 	}
 }
@@ -454,8 +454,7 @@ static void client_write(struct winbindd_cli_state *state)
 		
 		state->finished = True;
 
-		safe_free(state->response.extra_data);
-		state->response.extra_data = NULL;
+		SAFE_FREE(state->response.extra_data);
 
 		return;
 	}
@@ -472,8 +471,7 @@ static void client_write(struct winbindd_cli_state *state)
 		
 		if (state->write_extra_data) {
 
-			safe_free(state->response.extra_data);
-			state->response.extra_data = NULL;
+			SAFE_FREE(state->response.extra_data);
 
 			state->write_extra_data = False;
 

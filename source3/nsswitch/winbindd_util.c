@@ -297,7 +297,7 @@ void winbindd_kill_all_connections(void)
 
 		next = domain->next;
 		DLIST_REMOVE(domain_list, domain);
-		free(domain);
+		SAFE_FREE(domain);
 
 		domain = next;
 	}
@@ -326,7 +326,7 @@ static BOOL get_any_dc_name(char *domain, fstring srv_name)
 	
  got_ip:
 	dc_ip = ip_list[i];
-	free(ip_list);
+	SAFE_FREE(ip_list);
 		
 	if (!lookup_pdc_name(global_myname, domain, &dc_ip, srv_name))
 		return False;
@@ -682,11 +682,11 @@ void free_getent_state(struct getent_state *state)
 
         /* Free sam entries then list entry */
 
-        safe_free(state->sam_entries);
+        SAFE_FREE(state->sam_entries);
         DLIST_REMOVE(state, state);
         next = temp->next;
 
-        free(temp);
+        SAFE_FREE(temp);
         temp = next;
     }
 }
