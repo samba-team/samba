@@ -621,68 +621,6 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 	return -1;
 }
 
-
-/**
- * Pack SID passed by pointer
- *
- * @param pack_buf pointer to buffer which is to be filled with packed data
- * @param bufsize size of packing buffer
- * @param sid pointer to sid to be packed
- *
- * @return length of the packed representation of the whole structure
- **/
-size_t tdb_sid_pack(TDB_CONTEXT *tdb, char* pack_buf, int bufsize, DOM_SID* sid)
-{
-	int idx;
-	size_t len = 0;
-	
-	if (!sid || !pack_buf) return -1;
-	
-	len += tdb_pack(tdb, pack_buf + len, bufsize - len, "bb", sid->sid_rev_num,
-	                sid->num_auths);
-	
-	for (idx = 0; idx < 6; idx++) {
-		len += tdb_pack(tdb, pack_buf + len, bufsize - len, "b", sid->id_auth[idx]);
-	}
-	
-	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_pack(tdb, pack_buf + len, bufsize - len, "d", sid->sub_auths[idx]);
-	}
-	
-	return len;
-}
-
-
-/**
- * Unpack SID into a pointer
- *
- * @param pack_buf pointer to buffer with packed representation
- * @param bufsize size of the buffer
- * @param sid pointer to sid structure to be filled with unpacked data
- *
- * @return size of structure unpacked from buffer
- **/
-size_t tdb_sid_unpack(TDB_CONTEXT *tdb, char* pack_buf, int bufsize, DOM_SID* sid)
-{
-	int idx, len = 0;
-	
-	if (!sid || !pack_buf) return -1;
-
-	len += tdb_unpack(tdb, pack_buf + len, bufsize - len, "bb",
-	                  &sid->sid_rev_num, &sid->num_auths);
-			  
-	for (idx = 0; idx < 6; idx++) {
-		len += tdb_unpack(tdb, pack_buf + len, bufsize - len, "b", &sid->id_auth[idx]);
-	}
-	
-	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_unpack(tdb, pack_buf + len, bufsize - len, "d", &sid->sub_auths[idx]);
-	}
-	
-	return len;
-}
-
-
 /****************************************************************************
  Print out debug messages.
 ****************************************************************************/
