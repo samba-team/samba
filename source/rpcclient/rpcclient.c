@@ -657,15 +657,12 @@ static void usage(char *pname)
 	while(1) {
 		pstring prompt;
 		char *line;
-		uint32 result;
 
 		slprintf(prompt, sizeof(prompt) - 1, "rpcclient $> ");
 
 		line = smb_readline(prompt, NULL, completion_fn);
 
-		result = process_cmd(&cli, line);
+		process_cmd(&cli, line);
 	}
-	
-	return 0;
 }
 
