@@ -88,6 +88,8 @@ krb5_error_code hdb_init_db(krb5_context, HDB*);
 
 Key *hdb_unseal_key(Key*, krb5_data);
 void hdb_seal_key(Key*, krb5_data);
+void hdb_unseal_keys(hdb_entry*, krb5_data);
+void hdb_seal_keys(hdb_entry*, krb5_data);
 void hdb_free_key(Key*);
 
 #define HDB_DB_DIR "/var/heimdal"
