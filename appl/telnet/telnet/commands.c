@@ -2336,8 +2336,18 @@ tn(int argc, char **argv)
 #endif
     } while (connected == 0);
     cmdrc(hostp, hostname);
-    if (autologin && user == NULL)
-	user = (char *)get_default_username ();
+    if (autologin && user == NULL) {
+	struct passwd *pw;
+
+	user = (char *)get_default_username();
+	if (user == NULL ||
+	    ((pw = k_getpwnam((char *)user)) && pw->pw_uid != getuid())) {
+		if ((pw = k_getpwuid(getuid())))
+			user = pw->pw_name;
+		else
+			user = NULL;
+	}
+    }
     if (user) {
 	env_define((unsigned char *)"USER", (unsigned char *)user);
 	env_export((unsigned char *)"USER");
