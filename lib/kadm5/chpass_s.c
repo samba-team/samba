@@ -68,6 +68,7 @@ change(void *server_handle,
 	_kadm5_free_keys (server_handle, num_keys, keys);
 	goto out2;
     }
+    ent.kvno++;
     if (cond)
 	cmp = _kadm5_cmp_keys (ent.keys.val, ent.keys.len,
 			       keys, num_keys);
@@ -154,6 +155,7 @@ kadm5_s_chpass_principal_with_key(void *server_handle,
     ret = _kadm5_set_keys2(context, &ent, n_key_data, key_data);
     if(ret)
 	goto out2;
+    ent.kvno++;
     ret = _kadm5_set_modifier(context, &ent);
     if(ret)
 	goto out2;
