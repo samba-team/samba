@@ -48,8 +48,8 @@ static int fd_open(struct connection_struct *conn, char *fname,
 		fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),flags,mode);
 	}
 
-	DEBUG(10,("fd_open: name %s, mode = %d, fd = %d. %s\n", fname, (int)mode, fd,
-		(fd == -1) ? strerror(errno) : "" ));
+	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n", fname,
+		flags, (int)mode, fd, (fd == -1) ? strerror(errno) : "" ));
 
 	return fd;
 }
@@ -647,7 +647,22 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 			flags = O_RDWR; 
 			break;
 		default:
-			flags = O_RDONLY;
+			/*
+			 * This little piece of insanity is inspired by the
+			 * fact that an NT client can open a file for O_RDONLY,
+			 * but set the create disposition to FILE_EXISTS_TRUNCATE.
+			 * If the client *can* write to the file, then it expects to
+			 * truncate the file, even though it is opening for readonly.
+			 * Quicken uses this stupid trick in backup file creation...
+			 * Thanks *greatly* to "David W. Chapman Jr." <dwcjr@inethouston.net>
+			 * for helping track this one down. It didn't bite us in 2.0.x
+			 * as we always opened files read-write in that release. JRA.
+			 */
+
+			if (flags2 & O_TRUNC)
+				flags = O_RDWR; 
+			else
+				flags = O_RDONLY;
 			break;
 	}
 
