@@ -43,6 +43,8 @@ _kadm5_client_send(kadm5_client_context *context, krb5_storage *sp)
     size_t len;
     krb5_storage *sock;
 
+    assert(context->sock != -1);
+
     len = sp->seek(sp, 0, SEEK_CUR);
     ret = krb5_data_alloc(&msg, len);
     sp->seek(sp, 0, SEEK_SET);
