@@ -33,7 +33,7 @@
 	<title>Configuring samba (smb.conf)</title>
 
 	<para>
-	Samba's configuration is stored in the smb.conf file, 
+	Samba's configuration is stored in the &smb.conf; file, 
 	that usually resides in <filename>/etc/samba/smb.conf</filename> 
 	or <filename>/usr/local/samba/lib/smb.conf</filename>. You can either 
 	edit this file yourself or do it using one of the many graphical 
@@ -67,7 +67,7 @@
 	
 	<para>
 	This will allow connections by anyone with an account on the server, using either
-	their login name or "<command>homes</command>" as the service name.
+	their login name or "<parameter>homes</parameter>" as the service name.
 	(Note that the workgroup that Samba must also be set.)
 	</para>
 	
@@ -79,7 +79,7 @@
 
 	<para>
 	For more information about security settings for the 
-	<command>[homes]</command> share please refer to the chapter 
+	<parameter>[homes]</parameter> share please refer to the chapter 
 	<link linkend="securing-samba">Securing Samba</link>.
 	</para>
 
@@ -88,7 +88,7 @@
 
 	<para>
 	It's important that you test the validity of your <filename>smb.conf</filename>
-	file using the <application>testparm</application> program. If testparm runs OK
+	file using the &testparm; program. If testparm runs OK
 	then it will list the loaded services. If not it will give an error message.
 	</para>
 
@@ -97,7 +97,7 @@
 	</para>
 
 	<para>
-	Always run testparm again when you change <filename>smb.conf</filename>!
+	Always run testparm again when you change &smb.conf;!
 	</para>
 
 </sect3>
@@ -115,7 +115,7 @@
 
 	<para>
 	To launch SWAT just run your favorite web browser and 
-	point it at "http://localhost:901/". Replace
+	point it at <ulink url="http://localhost:901/">http://localhost:901/</ulink>. Replace
 	<replaceable>localhost</replaceable>
 	with the name of the computer you are running samba on if you 
 	are running samba on a different computer than your browser.
@@ -160,7 +160,7 @@
 	would be the name of the host where you installed &smbd;. 
 	The <replaceable>aservice</replaceable> is 
 	any service you have defined in the &smb.conf;
-	file. Try your user name if you just have a <command>[homes]</command>
+	file. Try your user name if you just have a <parameter>[homes]</parameter>
 	section
 	in &smb.conf;.</para>
 
@@ -214,7 +214,7 @@ The following questions and issues get raised on the samba mailing list over and
 <para>
 Site that is running Samba on an AIX box. They are sharing out about 2 terabytes using samba.
 Samba was installed using smitty and the binaries. We seem to be experiencing a memory problem
-with this box.  When I do a svmon -Pu the monitoring program shows that smbd has several
+with this box.  When I do a <command>svmon -Pu</command> the monitoring program shows that &smbd; has several
 processes of smbd running:
 </para>
 
@@ -224,7 +224,7 @@ is it normal for it to be taking up this much memory?
 </para>
 
 <para>
-<programlisting>
+<screen>
 Inuse * 4096 = amount of memory being used by this process
 
      Pid Command        Inuse      Pin     Pgsp  Virtual   64-bit    Mthrd
@@ -251,30 +251,30 @@ Inuse * 4096 = amount of memory being used by this process
    19110 smbd            8404     1906      181     4862        N        N
 
    Total memory used:  841,592,832 bytes
-</programlisting>
+</screen>
 </para>
 
 
 <para>
 <emphasis>ANSWER:</emphasis> Samba consists on three core programs:
-<emphasis>nmbd, smbd, winbindd</emphasis>. <command>nmbd</command> is the name server message daemon,
-<command>smbd</command> is the server message daemon, <command>winbind</command> is the daemon that
+&nmbd;, &smbd;, &winbindd;. &nmbd; is the name server message daemon,
+&smbd; is the server message daemon, &winbindd; is the daemon that
 handles communication with Domain Controllers.
 </para>
 
 <para>
 If your system is NOT running as a WINS server, then there will be one (1) single instance of
- <command>nmbd</command> running on your system. If it is running as a WINS server then there will be
+ &nmbd; running on your system. If it is running as a WINS server then there will be
 two (2) instances - one to handle the WINS requests.
 </para>
 
 <para>
-<command>smbd</command> handles ALL connection requests and then spawns a new process for each client
+&smbd; handles ALL connection requests and then spawns a new process for each client
 connection made. That is why you are seeing so many of them, one (1) per client connection.
 </para>
 
 <para>
-<command>winbindd</command> will run as one or two daemons, depending on whether or not it is being
+&winbindd; will run as one or two daemons, depending on whether or not it is being
 run in "split mode" (in which case there will be two instances).
 </para>
 
