@@ -176,8 +176,9 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
 		if (SMB_VFS_FSTAT(fsp,fsp->fd,&st) == 0) {
 			int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
 			fsp->size = (SMB_BIG_UINT)st.st_size;
-			if (MAP_ARCHIVE(fsp->conn) && !IS_DOS_ARCHIVE(dosmode))
-				file_chmod(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st);
+			if ((lp_store_dos_attributes(SNUM(fsp->conn)) || MAP_ARCHIVE(fsp->conn)) && !IS_DOS_ARCHIVE(dosmode)) {
+				file_set_dosmode(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st);
+			}
 
 			/*
 			 * If this is the first write and we have an exclusive oplock then setup

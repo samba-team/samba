@@ -269,10 +269,14 @@ int register_vuid(auth_serversupplied_info *server_info, DATA_BLOB session_key, 
 		vuser->homes_snum = -1;
 	}
 	
-	if (lp_server_signing() && !vuser->guest && !srv_is_signing_active()) {
+	if (srv_is_signing_negotiated() && !vuser->guest && !srv_signing_started()) {
 		/* Try and turn on server signing on the first non-guest sessionsetup. */
 		srv_set_signing(vuser->session_key, response_blob);
 	}
+	
+	/* fill in the current_user_info struct */
+	set_current_user_info( &vuser->user );
+
 
 	return vuser->vuid;
 }

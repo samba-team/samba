@@ -280,7 +280,6 @@ typedef struct
 	BOOL bDebugPid;
 	BOOL bDebugUid;
 	BOOL bHostMSDfs;
-	BOOL bUnicode;
 	BOOL bUseMmap;
 	BOOL bHostnameLookups;
 	BOOL bUnixExtensions;
@@ -380,6 +379,7 @@ typedef struct
 	BOOL bMap_system;
 	BOOL bMap_hidden;
 	BOOL bMap_archive;
+	BOOL bStoreDosAttributes;
 	BOOL bLocking;
 	BOOL bStrictLocking;
 	BOOL bPosixLocking;
@@ -413,6 +413,7 @@ typedef struct
 	BOOL bProfileAcls;
 	BOOL bMap_acl_inherit;
 	BOOL bAfs_Share;
+	BOOL bEASupport;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -501,6 +502,7 @@ static service sDefault = {
 	False,			/* bMap_system */
 	False,			/* bMap_hidden */
 	True,			/* bMap_archive */
+	False,			/* bStoreDosAttributes */
 	True,			/* bLocking */
 	True,			/* bStrictLocking */
 	True,			/* bPosixLocking */
@@ -534,6 +536,7 @@ static service sDefault = {
 	False,			/* bProfileAcls */
 	False,			/* bMap_acl_inherit */
 	False,			/* bAfs_Share */
+	False,			/* bEASupport */
 	
 	NULL,			/* Parametric options */
 
@@ -880,13 +883,13 @@ static struct parm_struct parm_table[] = {
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_ADVANCED}, 
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
 	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
-	{"unicode", P_BOOL, P_GLOBAL, &Globals.bUnicode, NULL, NULL, FLAG_ADVANCED}, 
 	{"read bmpx", P_BOOL, P_GLOBAL, &Globals.bReadbmpx, NULL, NULL, FLAG_ADVANCED}, 
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, FLAG_ADVANCED}, 
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, FLAG_ADVANCED}, 
 	{"disable netbios", P_BOOL, P_GLOBAL, &Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED}, 
 
 	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, handle_acl_compatibility,  NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"ea support", P_BOOL, P_LOCAL, &sDefault.bEASupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"nt acl support", P_BOOL, P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, FLAG_ADVANCED}, 
 	{"nt status support", P_BOOL, P_GLOBAL, &Globals.bNTStatusSupport, NULL, NULL, FLAG_ADVANCED}, 
@@ -993,6 +996,7 @@ static struct parm_struct parm_table[] = {
 	{"mangled names", P_BOOL, P_LOCAL, &sDefault.bMangledNames, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"mangled map", P_STRING, P_LOCAL, &sDefault.szMangledMap, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_DEPRECATED }, 
 	{"stat cache", P_BOOL, P_GLOBAL, &Globals.bStatCache, NULL, NULL, FLAG_ADVANCED}, 
+	{"store dos attributes", P_BOOL, P_LOCAL, &sDefault.bStoreDosAttributes, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 
 	{N_("Domain Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1420,7 +1424,6 @@ static void init_globals(void)
 	Globals.bPamPasswordChange = False;
 	Globals.bPasswdChatDebug = False;
 	Globals.iPasswdChatTimeout = 2; /* 2 second default. */
-	Globals.bUnicode = True;	/* Do unicode on the wire by default */
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = True; /* Use NT status by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
@@ -1735,7 +1738,6 @@ FN_GLOBAL_BOOL(lp_pam_password_change, &Globals.bPamPasswordChange)
 FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug, &Globals.bPasswdChatDebug)
 FN_GLOBAL_INTEGER(lp_passwd_chat_timeout, &Globals.iPasswdChatTimeout)
-FN_GLOBAL_BOOL(lp_unicode, &Globals.bUnicode)
 FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
@@ -1845,6 +1847,7 @@ FN_LOCAL_BOOL(lp_guest_only, bGuest_only)
 FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
 FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
+FN_LOCAL_BOOL(lp_store_dos_attributes, bStoreDosAttributes)
 FN_LOCAL_BOOL(lp_locking, bLocking)
 FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
@@ -1872,6 +1875,7 @@ FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
+FN_LOCAL_BOOL(lp_ea_support, bEASupport)
 FN_LOCAL_BOOL(_lp_use_sendfile, bUseSendfile)
 FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_BOOL(lp_map_acl_inherit, bMap_acl_inherit)
@@ -2657,7 +2661,16 @@ static void add_to_file_list(const char *fname, const char *subfname)
 BOOL lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
-	DEBUG(6, ("lp_file_list_changed()\n"));
+	char *username;
+
+ 	DEBUG(6, ("lp_file_list_changed()\n"));
+
+	/* get the username for substituion -- preference to the current_user_info */
+	if ( strlen( current_user_info.smb_name ) != 0 )
+		username = current_user_info.smb_name;
+	else
+		username = sub_get_smb_name();
+		
 
 	while (f) {
 		pstring n2;
@@ -3806,9 +3819,18 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	pstring n2;
 	BOOL bRetval;
 	param_opt_struct *data, *pdata;
+	char *username;
 
 	pstrcpy(n2, pszFname);
-	standard_sub_basic(current_user_info.smb_name, n2,sizeof(n2));
+	
+	/* get the username for substituion -- preference to the current_user_info */
+	
+	if ( strlen( current_user_info.smb_name ) != 0 )
+		username = current_user_info.smb_name;
+	else
+		username = sub_get_smb_name();
+		
+	standard_sub_basic( username, n2,sizeof(n2) );
 
 	add_to_file_list(pszFname, n2);
 

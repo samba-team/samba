@@ -85,6 +85,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 				 const uchar *part_passwd,
 				 const DATA_BLOB *sec_blob,
 				 const char *user, const char *domain,
+				 BOOL upper_case_domain, /* should the domain be transformed into upper case? */
 				 DATA_BLOB *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
@@ -122,7 +123,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 
 	memcpy(client_response, ntv2_response->data, sizeof(client_response));
 
-	if (!ntv2_owf_gen(part_passwd, user, domain, kr)) {
+	if (!ntv2_owf_gen(part_passwd, user, domain, upper_case_domain, kr)) {
 		return False;
 	}
 
@@ -169,6 +170,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     const DATA_BLOB *challenge,
 			     const DATA_BLOB *lm_response,
 			     const DATA_BLOB *nt_response,
+			     const DATA_BLOB *lm_interactive_pwd,
+			     const DATA_BLOB *nt_interactive_pwd,
 			     const char *username, 
 			     const char *client_username, 
 			     const char *client_domain,
@@ -180,6 +183,47 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	if (nt_pw == NULL) {
 		DEBUG(3,("ntlm_password_check: NO NT password stored for user %s.\n", 
 			 username));
+	}
+
+	if (nt_interactive_pwd && nt_interactive_pwd->length && nt_pw) { 
+		if (nt_interactive_pwd->length != 16) {
+			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid NT password length (%d) supplied for user %s\n", (int)nt_interactive_pwd->length,
+				 username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+		if (memcmp(nt_interactive_pwd->data, nt_pw, 16) == 0) {
+			if (user_sess_key) {
+				*user_sess_key = data_blob(NULL, 16);
+				SMBsesskeygen_ntv1(nt_pw, NULL, user_sess_key->data);
+			}
+			return NT_STATUS_OK;
+		} else {
+			DEBUG(3,("ntlm_password_check: Interactive logon: NT password check failed for user %s\n",
+				 username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+	} else if (lm_interactive_pwd && lm_interactive_pwd->length && lm_pw) { 
+		if (lm_interactive_pwd->length != 16) {
+			DEBUG(3,("ntlm_password_check: Interactive logon: Invalid LANMAN password length (%d) supplied for user %s\n", (int)lm_interactive_pwd->length,
+				 username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+		if (!lp_lanman_auth()) {
+			DEBUG(3,("ntlm_password_check: Interactive logon: only LANMAN password supplied for user %s, and LM passwords are disabled!\n",
+				 username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+
+		if (memcmp(lm_interactive_pwd->data, lm_pw, 16) == 0) {
+			return NT_STATUS_OK;
+		} else {
+			DEBUG(3,("ntlm_password_check: Interactive logon: LANMAN password check failed for user %s\n",
+				 username));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
 	}
 
 	/* Check for cleartext netlogon. Used by Exchange 5.5. */
@@ -235,13 +279,24 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	if (nt_response->length >= 24 && nt_pw) {
 		if (nt_response->length > 24) {
 			/* We have the NT MD4 hash challenge available - see if we can
-			   use it (ie. does it exist in the smbpasswd file).
+			   use it 
 			*/
 			DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with domain [%s]\n", client_domain));
 			if (smb_pwd_check_ntlmv2( nt_response, 
 						  nt_pw, challenge, 
-					  client_username, 
+						  client_username, 
 						  client_domain,
+						  False,
+						  user_sess_key)) {
+				return NT_STATUS_OK;
+			}
+			
+			DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with uppercased version of domain [%s]\n", client_domain));
+			if (smb_pwd_check_ntlmv2( nt_response, 
+						  nt_pw, challenge, 
+						  client_username, 
+						  client_domain,
+						  True,
 						  user_sess_key)) {
 				return NT_STATUS_OK;
 			}
@@ -251,6 +306,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 						  nt_pw, challenge, 
 						  client_username, 
 						  "",
+						  False,
 						  user_sess_key)) {
 				return NT_STATUS_OK;
 			} else {
@@ -334,6 +390,17 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				  nt_pw, challenge, 
 				  client_username,
 				  client_domain,
+				  False,
+				  NULL)) {
+		return NT_STATUS_OK;
+	}
+	
+	DEBUG(4,("ntlm_password_check: Checking LMv2 password with upper-cased version of domain %s\n", client_domain));
+	if (smb_pwd_check_ntlmv2( lm_response, 
+				  nt_pw, challenge, 
+				  client_username,
+				  client_domain,
+				  True,
 				  NULL)) {
 		return NT_STATUS_OK;
 	}
@@ -343,6 +410,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				  nt_pw, challenge, 
 				  client_username,
 				  "",
+				  False,
 				  NULL)) {
 		return NT_STATUS_OK;
 	}

@@ -4310,8 +4310,114 @@ BOOL torture_chkpath_test(int dummy)
 	return ret;
 }
 
+static BOOL run_eatest(int dummy)
+{
+	static struct cli_state *cli;
+	const char *fname = "\\eatest.txt";
+	BOOL correct = True;
+	int fnum, i;
+	size_t num_eas;
+	struct ea_struct *ea_list = NULL;
+	TALLOC_CTX *mem_ctx = talloc_init("eatest");
 
+	printf("starting eatest\n");
+	
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+	
+	cli_unlink(cli, fname);
+	fnum = cli_nt_create_full(cli, fname, 0,
+				   FIRST_DESIRED_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 
+				   0x4044, 0);
 
+	if (fnum == -1) {
+		printf("open failed - %s\n", cli_errstr(cli));
+		return False;
+	}
+
+	for (i = 0; i < 10; i++) {
+		fstring ea_name, ea_val;
+
+		slprintf(ea_name, sizeof(ea_name), "EA_%d", i);
+		memset(ea_val, (char)i+1, i+1);
+		if (!cli_set_ea_fnum(cli, fnum, ea_name, ea_val, i+1)) {
+			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
+			return False;
+		}
+	}
+	
+	cli_close(cli, fnum);
+	for (i = 0; i < 10; i++) {
+		fstring ea_name, ea_val;
+
+		slprintf(ea_name, sizeof(ea_name), "EA_%d", i+10);
+		memset(ea_val, (char)i+1, i+1);
+		if (!cli_set_ea_path(cli, fname, ea_name, ea_val, i+1)) {
+			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
+			return False;
+		}
+	}
+	
+	if (!cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list)) {
+		printf("ea_get list failed - %s\n", cli_errstr(cli));
+		correct = False;
+	}
+
+	printf("num_eas = %d\n", num_eas);
+
+	if (num_eas != 20) {
+		printf("Should be 20 EA's stored... failing.\n");
+		correct = False;
+	}
+
+	for (i = 0; i < num_eas; i++) {
+		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
+		dump_data(0, ea_list[i].value.data, ea_list[i].value.length);
+	}
+
+	/* Setting EA's to zero length deletes them. Test this */
+	printf("Now deleting all EA's....\n");
+
+	for (i = 0; i < 20; i++) {
+		fstring ea_name;
+		slprintf(ea_name, sizeof(ea_name), "EA_%d", i);
+		if (!cli_set_ea_path(cli, fname, ea_name, "", 0)) {
+			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
+			return False;
+		}
+	}
+	
+	if (!cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list)) {
+		printf("ea_get list failed - %s\n", cli_errstr(cli));
+		correct = False;
+	}
+
+	printf("num_eas = %d\n", num_eas);
+	for (i = 0; i < num_eas; i++) {
+		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
+		dump_data(0, ea_list[i].value.data, ea_list[i].value.length);
+	}
+
+	if (num_eas != 0) {
+		printf("deleting EA's failed.\n");
+		correct = False;
+	}
+
+	/* Try and delete a non existant EA. */
+	if (!cli_set_ea_path(cli, fname, "foo", "", 0)) {
+		printf("deleting non-existant EA 'foo' should succeed. %s\n", cli_errstr(cli));
+		correct = False;
+	}
+
+	talloc_destroy(mem_ctx);
+	if (!torture_close_connection(cli)) {
+		correct = False;
+	}
+	
+	return correct;
+}
 
 static BOOL run_dirtest1(int dummy)
 {
@@ -4650,6 +4756,7 @@ static struct {
 	{"IOCTL",  torture_ioctl_test, 0},
 	{"CHKPATH",  torture_chkpath_test, 0},
 	{"FDSESS", run_fdsesstest, 0},
+	{ "EATEST", run_eatest, 0},
 	{NULL, NULL, 0}};
 
 

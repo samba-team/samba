@@ -992,7 +992,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	fsp = open_file_shared(conn, filepath, &stat_buf,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   0, 0, &access_mode, &action);
+						   FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
 	if (!fsp) {
 		/* Old file not found, so by definition new file is in fact newer */
 		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
@@ -1021,7 +1021,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	fsp = open_file_shared(conn, filepath, &stat_buf,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   0, 0, &access_mode, &action);
+						   FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
 	if (!fsp) {
 		/* New file not found, this shouldn't occur if the caller did its job */
 		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
@@ -1137,7 +1137,7 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	fsp = open_file_shared(conn, driverpath, &st,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   0, 0, &access_mode, &action);
+						   FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &action);
 	if (!fsp) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
@@ -3292,7 +3292,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 			info.parameters);
 
 	/* Samba has to have shared raw drivers. */
-	info.attributes |= PRINTER_ATTRIBUTE_SAMBA;
+	info.attributes = PRINTER_ATTRIBUTE_SAMBA;
 
 	/* Restore the stripped strings. */
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());

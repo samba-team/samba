@@ -1649,7 +1649,7 @@ struct ip_service {
 
 typedef struct smb_sign_info {
 	void (*sign_outgoing_message)(char *outbuf, struct smb_sign_info *si);
-	BOOL (*check_incoming_message)(char *inbuf, struct smb_sign_info *si);
+	BOOL (*check_incoming_message)(char *inbuf, struct smb_sign_info *si, BOOL must_be_ok);
 	void (*free_signing_context)(struct smb_sign_info *si);
 	void *signing_context;
 
@@ -1657,6 +1657,18 @@ typedef struct smb_sign_info {
 	BOOL allow_smb_signing;
 	BOOL doing_signing;
 	BOOL mandatory_signing;
+	BOOL seen_valid; /* Have I ever seen a validly signed packet? */
 } smb_sign_info;
+
+struct ea_struct {
+	uint8 flags;
+	char *name;
+	DATA_BLOB value;
+};
+
+/* EA names used internally in Samba. KEEP UP TO DATE with prohibited_ea_names in trans2.c !. */
+#define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
+/* EA to use for DOS attributes */
+#define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
 
 #endif /* _SMB_H */

@@ -366,7 +366,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 /* Lookup user information from a rid or username. */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
-			   DOM_SID *user_sid, 
+			   const DOM_SID *user_sid, 
 			   WINBIND_USERINFO *user_info)
 {
 	CLI_POLICY_HND *hnd = NULL;
@@ -465,7 +465,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  DOM_SID *user_sid,
+				  const DOM_SID *user_sid,
 				  uint32 *num_groups, DOM_SID ***user_grpsids)
 {
 	CLI_POLICY_HND *hnd;
@@ -571,7 +571,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 /* Lookup group membership given a rid.   */
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				DOM_SID *group_sid, uint32 *num_names, 
+				const DOM_SID *group_sid, uint32 *num_names, 
 				DOM_SID ***sid_mem, char ***names, 
 				uint32 **name_types)
 {

@@ -45,6 +45,31 @@ static NTSTATUS cmd_netlogon_logon_ctrl2(struct cli_state *cli,
 	return result;
 }
 
+static NTSTATUS cmd_netlogon_getdcname(struct cli_state *cli, 
+				       TALLOC_CTX *mem_ctx, int argc, 
+				       const char **argv)
+{
+	fstring dcname;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (argc != 2) {
+		fprintf(stderr, "Usage: %s domainname\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = cli_netlogon_getdcname(cli, mem_ctx, argv[1], dcname);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Display results */
+
+	printf("%s\n", dcname);
+
+ done:
+	return result;
+}
+
 static NTSTATUS cmd_netlogon_logon_ctrl(struct cli_state *cli, 
                                         TALLOC_CTX *mem_ctx, int argc, 
                                         const char **argv)
@@ -309,6 +334,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "NETLOGON" },
 
 	{ "logonctrl2", RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl2, NULL, PI_NETLOGON, "Logon Control 2",     "" },
+	{ "getdcname", RPC_RTYPE_NTSTATUS, cmd_netlogon_getdcname, NULL, PI_NETLOGON, "Get trusted DC name",     "" },
 	{ "logonctrl",  RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl,  NULL, PI_NETLOGON, "Logon Control",       "" },
 	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, PI_NETLOGON, "Sam Synchronisation", "" },
 	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, PI_NETLOGON, "Query Sam Deltas",    "" },

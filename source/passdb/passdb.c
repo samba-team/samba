@@ -704,7 +704,7 @@ BOOL fallback_pdb_rid_is_user(uint32 rid)
  Convert a rid into a name. Used in the lookup SID rpc.
  ********************************************************************/
 
-BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use)
+BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use)
 {
 	uint32 rid;
 	SAM_ACCOUNT *sam_account = NULL;

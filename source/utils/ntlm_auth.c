@@ -366,6 +366,7 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *n
 					&ntlmssp_state->chal,
 					&ntlmssp_state->lm_resp,
 					&ntlmssp_state->nt_resp, 
+					NULL, NULL,
 					ntlmssp_state->user, 
 					ntlmssp_state->user, 
 					ntlmssp_state->domain,
@@ -1111,7 +1112,8 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 
 		pstr_sprintf(user, "%s@%s", opt_username, opt_domain);
 
-		if ((retval = kerberos_kinit_password(user, opt_password, 0))) {
+		if ((retval = kerberos_kinit_password(user, opt_password, 
+						      0, NULL))) {
 			DEBUG(10, ("Requesting TGT failed: %s\n", error_message(retval)));
 			x_fprintf(x_stdout, "NA\n");
 			return True;

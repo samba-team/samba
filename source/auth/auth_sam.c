@@ -57,7 +57,8 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 	nt_pw = pdb_get_nt_passwd(sampass);
 
 	return ntlm_password_check(mem_ctx, &auth_context->challenge, 
-				   &user_info->lm_resp, &user_info->nt_resp,  
+				   &user_info->lm_resp, &user_info->nt_resp, 
+				   &user_info->lm_interactive_pwd, &user_info->nt_interactive_pwd,
 				   username, 
 				   user_info->smb_name.str, 
 				   user_info->client_domain.str, 

@@ -38,7 +38,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "1"
+#define MOUNT_CIFS_VERSION_MINOR "2"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
 #define MOUNT_CIFS_VENDOR_SUFFIX ""
@@ -117,19 +117,20 @@ static int open_cred_file(char * file_name)
 
 		/* eat leading white space */
 		for(i=0;i<4096;i++) {
-			if(line_buf[i] == '\0')
+			if((line_buf[i] != ' ') && (line_buf[i] != '\t'))
 				break;
-			else if((line_buf[i] != ' ') && (line_buf[i] != '\t'))
-				break;
+			/* if whitespace - skip past it */
 			line_buf++;
 		}
-
 		if (strncasecmp("username",line_buf,8) == 0) {
 			temp_val = strchr(line_buf + i,'=');
 			if(temp_val) {
 				/* go past equals sign */
 				temp_val++;
-				length = strlen(temp_val);
+				for(length = 0;length<4087;length++) {
+					if(temp_val[length] == '\n')
+						break;
+				}
 				if(length > 4086) {
 					printf("cifs.mount failed due to malformed username in credentials file");
 					memset(line_buf,0,4096);
@@ -150,7 +151,10 @@ static int open_cred_file(char * file_name)
 			if(temp_val) {
 				/* go past equals sign */
 				temp_val++;
-				length = strlen(temp_val);
+				for(length = 0;length<65;length++) {
+					if(temp_val[length] == '\n')
+						break;
+				}
 				if(length > 64) {
 					printf("cifs.mount failed: password in credentials file too long\n");
 					memset(line_buf,0, 4096);
@@ -161,9 +165,11 @@ static int open_cred_file(char * file_name)
 				} else {
 					if(mountpassword == NULL) {
 						mountpassword = calloc(65,1);
-					}
+					} else
+						memset(mountpassword,0,64);
 					if(mountpassword) {
-						strncpy(mountpassword,temp_val,64);
+						/* BB add handling for commas in password here */
+						strncpy(mountpassword,temp_val,length);
 						got_password = 1;
 					}
 				}
@@ -841,11 +847,32 @@ int main(int argc, char ** argv)
 			mountent.mnt_fsname = share_name;
 			mountent.mnt_dir = mountpoint; 
 			mountent.mnt_type = "cifs"; 
-			mountent.mnt_opts = "";
+			mountent.mnt_opts = malloc(200);
+			if(mountent.mnt_opts) {
+				memset(mountent.mnt_opts,0,200);
+				if(flags & MS_RDONLY)
+					strcat(mountent.mnt_opts,"ro");
+				else
+					strcat(mountent.mnt_opts,"rw");
+				if(flags & MS_MANDLOCK)
+					strcat(mountent.mnt_opts,",mand");
+				else
+					strcat(mountent.mnt_opts,",nomand");
+				if(flags & MS_NOEXEC)
+					strcat(mountent.mnt_opts,",noexec");
+				if(flags & MS_NOSUID)
+					strcat(mountent.mnt_opts,",nosuid");
+				if(flags & MS_NODEV)
+					strcat(mountent.mnt_opts,",nodev");
+				if(flags & MS_SYNCHRONOUS)
+					strcat(mountent.mnt_opts,",synch");
+			}
 			mountent.mnt_freq = 0;
 			mountent.mnt_passno = 0;
 			rc = addmntent(pmntfile,&mountent);
 			endmntent(pmntfile);
+			if(mountent.mnt_opts)
+				free(mountent.mnt_opts);
 		} else {
 		    printf("could not update mount table\n");
 		}

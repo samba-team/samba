@@ -10,6 +10,8 @@ typedef struct {
 	time_t last_attempt; /* last attempt to reconnect */
 	int ldap_port;
 	
+	int is_mine;	/* do I own this structure's memory? */
+	
 	/* info needed to find the server */
 	struct {
 		char *realm;
@@ -27,6 +29,7 @@ typedef struct {
 		char *kdc_server;
 		unsigned flags;
 		int time_offset;
+		time_t expire;
 	} auth;
 
 	/* info derived from the servers config */

@@ -61,6 +61,10 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 			while (IS_DIRECTORY_SEP(*s)) {
 				s++;
 			}
+			if ((s[0] == '.') && (s[1] == '\0')) {
+				ret = NT_STATUS_OBJECT_NAME_INVALID;
+				break;
+			}
 			if ((d != destname) && (*s != '\0')) {
 				/* We only care about non-leading or trailing '/' or '\\' */
 				*d++ = '/';
@@ -84,7 +88,8 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 			}
 			/* Are we at the start ? Can't go back further if so. */
 			if (d == destname) {
-				return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+				ret = NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+				break;
 			}
 			/* Go back one level... */
 			/* We know this is safe as '/' cannot be part of a mb sequence. */
@@ -95,7 +100,7 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 				d--;
 			}
 			s += 3;
-		} else if ((s[0] == '.') && IS_DIRECTORY_SEP(s[1])) {
+		} else if ((s[0] == '.') && (IS_DIRECTORY_SEP(s[1]) || (s[1] == '\0'))) {
 
 			/*
 			 * No mb char starts with '.' so we're safe checking the directory separator here.
@@ -105,11 +110,14 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 
 			if (s == srcname) {
 				ret = NT_STATUS_OBJECT_NAME_INVALID;
+				break;
 			} else {
-				if (s[2] == '\0') {
-					return NT_STATUS_INVALID_PARAMETER;
+				if (s[1] != '\0' && s[2] == '\0') {
+					ret = NT_STATUS_INVALID_PARAMETER;
+					break;
 				}
 				ret = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+				break;
 			}
 			s++;
 		} else {
@@ -128,6 +136,7 @@ NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 						break;
 					default:
 						DEBUG(0,("check_path_syntax: character length assumptions invalid !\n"));
+						*d = '\0';
 						return NT_STATUS_INVALID_PARAMETER;
 				}
 			}
@@ -678,8 +687,9 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		else
 			mode &= ~aDIR;
 
-		if (check_name(fname,conn))
-			ok =  (file_chmod(conn,fname,mode,NULL) == 0);
+		if (check_name(fname,conn)) {
+			ok = (file_set_dosmode(conn,fname,mode,NULL) == 0);
+		}
 	} else {
 		ok = True;
 	}
@@ -1008,12 +1018,12 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 	int share_mode;
 	SMB_OFF_T size = 0;
 	time_t mtime=0;
-	mode_t unixmode;
 	int rmode=0;
 	SMB_STRUCT_STAT sbuf;
 	BOOL bad_path = False;
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+	uint16 dos_attr = SVAL(inbuf,smb_vwv1);
 	NTSTATUS status;
 	START_PROFILE(SMBopen);
  
@@ -1029,10 +1039,8 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
     
-	unixmode = unix_mode(conn,aARCH,fname);
-      
 	fsp = open_file_shared(conn,fname,&sbuf,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-			unixmode, oplock_request,&rmode,NULL);
+			(uint32)dos_attr, oplock_request,&rmode,NULL);
 
 	if (!fsp) {
 		END_PROFILE(SMBopen);
@@ -1089,7 +1097,6 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	uint32 smb_time = make_unix_date3(inbuf+smb_vwv6);
 #endif
 	int smb_ofun = SVAL(inbuf,smb_vwv8);
-	mode_t unixmode;
 	SMB_OFF_T size=0;
 	int fmode=0,mtime=0,rmode=0;
 	SMB_STRUCT_STAT sbuf;
@@ -1121,9 +1128,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
     
-	unixmode = unix_mode(conn,smb_attr | aARCH, fname);
-      
-	fsp = open_file_shared(conn,fname,&sbuf,smb_mode,smb_ofun,unixmode,
+	fsp = open_file_shared(conn,fname,&sbuf,smb_mode,smb_ofun,(uint32)smb_attr,
 			oplock_request, &rmode,&smb_action);
       
 	if (!fsp) {
@@ -1215,7 +1220,6 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	int com;
 	int outsize = 0;
 	int createmode;
-	mode_t unixmode;
 	int ofun = 0;
 	BOOL bad_path = False;
 	files_struct *fsp;
@@ -1240,8 +1244,6 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	if (createmode & aVOLID)
 		DEBUG(0,("Attempt to create file (%s) with volid set - please report this\n",fname));
   
-	unixmode = unix_mode(conn,createmode,fname);
-  
 	if(com == SMBmknew) {
 		/* We should fail if file exists. */
 		ofun = FILE_CREATE_IF_NOT_EXIST;
@@ -1252,7 +1254,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	/* Open file in dos compatibility share mode. */
 	fsp = open_file_shared(conn,fname,&sbuf,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
-			ofun, unixmode, oplock_request, NULL, NULL);
+			ofun, (uint32)createmode, oplock_request, NULL, NULL);
   
 	if (!fsp) {
 		END_PROFILE(SMBcreate);
@@ -1269,7 +1271,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
  
 	DEBUG( 2, ( "new file %s\n", fname ) );
-	DEBUG( 3, ( "mknew %s fd=%d dmode=%d umode=%o\n", fname, fsp->fd, createmode, (int)unixmode ) );
+	DEBUG( 3, ( "mknew %s fd=%d dmode=%d\n", fname, fsp->fd, createmode ) );
 
 	END_PROFILE(SMBcreate);
 	return(outsize);
@@ -1283,8 +1285,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 {
 	pstring fname;
 	int outsize = 0;
-	int createmode;
-	mode_t unixmode;
+	int createattr;
 	BOOL bad_path = False;
 	files_struct *fsp;
 	int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
@@ -1292,22 +1293,25 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	SMB_STRUCT_STAT sbuf;
 	char *p, *s;
 	NTSTATUS status;
+	unsigned int namelen;
 
 	START_PROFILE(SMBctemp);
 
-	createmode = SVAL(inbuf,smb_vwv0);
+	createattr = SVAL(inbuf,smb_vwv0);
 	srvstr_get_path(inbuf, fname, smb_buf(inbuf)+1, sizeof(fname), 0, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBctemp);
 		return ERROR_NT(status);
 	}
-	pstrcat(fname,"\\TMXXXXXX");
+	if (*fname) {
+		pstrcat(fname,"/TMXXXXXX");
+	} else {
+		pstrcat(fname,"TMXXXXXX");
+	}
 
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
-  
-	unixmode = unix_mode(conn,createmode,fname);
   
 	tmpfd = smb_mkstemp(fname);
 	if (tmpfd == -1) {
@@ -1322,7 +1326,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	fsp = open_file_shared(conn,fname,&sbuf,
 		SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB),
 		FILE_EXISTS_OPEN|FILE_FAIL_IF_NOT_EXIST,
-		unixmode, oplock_request, NULL, NULL);
+		(uint32)createattr, oplock_request, NULL, NULL);
 
 	/* close fd from smb_mkstemp() */
 	close(tmpfd);
@@ -1343,10 +1347,13 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		s++;
 
 	p = smb_buf(outbuf);
+#if 0
+	/* Tested vs W2K3 - this doesn't seem to be here - null terminated filename is the only
+	   thing in the byte section. JRA */
 	SSVALS(p, 0, -1); /* what is this? not in spec */
-	SSVAL(p, 2, strlen(s));
-	p += 4;
-	p += srvstr_push(outbuf, p, s, -1, STR_ASCII);
+#endif
+	namelen = srvstr_push(outbuf, p, s, -1, STR_ASCII|STR_TERMINATE);
+	p += namelen;
 	outsize = set_message_end(outbuf, p);
 
 	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
@@ -1356,8 +1363,8 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		SCVAL(outbuf,smb_flg,CVAL(outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 
 	DEBUG( 2, ( "created temp file %s\n", fname ) );
-	DEBUG( 3, ( "ctemp %s fd=%d dmode=%d umode=%o\n",
-			fname, fsp->fd, createmode, (int)unixmode ) );
+	DEBUG( 3, ( "ctemp %s fd=%d umode=%o\n",
+			fname, fsp->fd, sbuf.st_mode ) );
 
 	END_PROFILE(SMBctemp);
 	return(outsize);
@@ -1384,7 +1391,7 @@ static NTSTATUS can_rename(char *fname,connection_struct *conn, SMB_STRUCT_STAT 
 	unix_ERR_code = 0;
 
 	fsp = open_file_shared1(conn, fname, pst, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
-		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
+		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
 
 	if (!fsp) {
 		NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
@@ -1449,7 +1456,7 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype, BOO
 	unix_ERR_code = 0;
 
 	fsp = open_file_shared1(conn, fname, &sbuf, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
-		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
+		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
 
 	if (!fsp) {
 		NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
@@ -1568,13 +1575,14 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				
 				if (sys_direntry) {
 					error = NT_STATUS_OBJECT_NAME_INVALID;
-					continue;
+					break;
 				}
 
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 				error = can_delete(fname,conn,dirtype,bad_path);
-				if (!NT_STATUS_IS_OK(error))
+				if (!NT_STATUS_IS_OK(error)) {
 					continue;
+				}
 				if (SMB_VFS_UNLINK(conn,fname) == 0)
 					count++;
 				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
@@ -3401,6 +3409,9 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 		if (*p2 == '?') {
 			*p2 = *p;
 			p2++;
+		} else if (*p2 == '*') {
+			pstrcpy(p2, p);
+			break;
 		} else {
 			p2++;
 		}
@@ -3414,6 +3425,9 @@ static BOOL resolve_wildcards(const char *name1, char *name2)
 		if (*p2 == '?') {
 			*p2 = *p;
 			p2++;
+		} else if (*p2 == '*') {
+			pstrcpy(p2, p);
+			break;
 		} else {
 			p2++;
 		}
@@ -3830,7 +3844,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 				
 				if (sysdir_entry) {
 					error = NT_STATUS_OBJECT_NAME_INVALID;
-					continue;
+					break;
 				}
 
 				error = NT_STATUS_ACCESS_DENIED;
@@ -3853,6 +3867,14 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					continue;
 				}
 				
+				if (strcsequal(fname,destname)) {
+					rename_open_files(conn, sbuf1.st_dev, sbuf1.st_ino, newname);
+					DEBUG(3,("rename_internals: identical names in wildcard rename %s - success\n", fname));
+					count++;
+					error = NT_STATUS_OK;
+					continue;
+				}
+
 				if (!replace_if_exists && 
                                     vfs_file_exist(conn,destname, NULL)) {
 					DEBUG(6,("file_exist %s\n", destname));
@@ -3949,7 +3971,8 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	SMB_OFF_T ret=-1;
 	files_struct *fsp1,*fsp2;
 	pstring dest;
-  
+ 	uint32 dosattrs;
+ 
 	*err_ret = 0;
 
 	pstrcpy(dest,dest1);
@@ -3967,7 +3990,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		return(False);
 
 	fsp1 = open_file_shared(conn,src,&src_sbuf,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),0,0,&Access,&action);
+					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),FILE_ATTRIBUTE_NORMAL,0,&Access,&action);
 
 	if (!fsp1)
 		return(False);
@@ -3975,11 +3998,12 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	if (!target_is_directory && count)
 		ofun = FILE_EXISTS_OPEN;
 
+	dosattrs = dos_mode(conn, src, &src_sbuf);
 	if (SMB_VFS_STAT(conn,dest,&sbuf2) == -1)
 		ZERO_STRUCTP(&sbuf2);
 
 	fsp2 = open_file_shared(conn,dest,&sbuf2,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-			ofun,src_sbuf.st_mode,0,&Access,&action);
+			ofun,dosattrs,0,&Access,&action);
 
 	if (!fsp2) {
 		close_file(fsp1,False);

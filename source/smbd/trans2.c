@@ -50,6 +50,325 @@ SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 }
 
 /****************************************************************************
+ Utility functions for dealing with extended attributes.
+****************************************************************************/
+
+static const char *prohibited_ea_names[] = {
+	SAMBA_POSIX_INHERITANCE_EA_NAME,
+	SAMBA_XATTR_DOS_ATTRIB,
+	NULL
+};
+
+/****************************************************************************
+ Refuse to allow clients to overwrite our private xattrs.
+****************************************************************************/
+
+static BOOL samba_private_attr_name(const char *unix_ea_name)
+{
+	int i;
+
+	for (i = 0; prohibited_ea_names[i]; i++) {
+		if (strequal( prohibited_ea_names[i], unix_ea_name))
+			return True;
+	}
+	return False;
+}
+
+struct ea_list {
+	struct ea_list *next, *prev;
+	struct ea_struct ea;
+};
+
+/****************************************************************************
+ Get one EA value. Fill in a struct ea_struct.
+****************************************************************************/
+
+static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
+				const char *fname, char *ea_name, struct ea_struct *pea)
+{
+	/* Get the value of this xattr. Max size is 64k. */
+	size_t attr_size = 256;
+	char *val = NULL;
+	ssize_t sizeret;
+
+ again:
+
+	val = talloc_realloc(mem_ctx, val, attr_size);
+	if (!val) {
+		return False;
+	}
+
+	if (fsp && fsp->fd != -1) {
+		sizeret = SMB_VFS_FGETXATTR(fsp, fsp->fd, ea_name, val, attr_size);
+	} else {
+		sizeret = SMB_VFS_GETXATTR(conn, fname, ea_name, val, attr_size);
+	}
+
+	if (sizeret == -1 && errno == ERANGE && attr_size != 65536) {
+		attr_size = 65536;
+		goto again;
+	}
+
+	if (sizeret == -1) {
+		return False;
+	}
+
+	DEBUG(10,("get_ea_value: EA %s is of length %d: ", ea_name, sizeret));
+	dump_data(10, val, sizeret);
+
+	pea->flags = 0;
+	if (strnequal(ea_name, "user.", 5)) {
+		pea->name = &ea_name[5];
+	} else {
+		pea->name = ea_name;
+	}
+	pea->value.data = val;
+	pea->value.length = (size_t)sizeret;
+	return True;
+}
+
+/****************************************************************************
+ Return a linked list of the total EA's. Plus a guess as to the total size
+ (NB. The is not the total size on the wire - we need to convert to DOS
+ codepage for that).
+****************************************************************************/
+
+static struct ea_list *get_ea_list(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp, const char *fname, size_t *pea_total_len)
+{
+	/* Get a list of all xattrs. Max namesize is 64k. */
+	size_t ea_namelist_size = 1024;
+	char *ea_namelist;
+	char *p;
+	ssize_t sizeret;
+	int i;
+	struct ea_list *ea_list_head = NULL;
+
+	if (pea_total_len) {
+		*pea_total_len = 0;
+	}
+
+	if (!lp_ea_support(SNUM(conn))) {
+		return NULL;
+	}
+
+	for (i = 0, ea_namelist = talloc(mem_ctx, ea_namelist_size); i < 6;
+			ea_namelist = talloc_realloc(mem_ctx, ea_namelist, ea_namelist_size), i++) {
+		if (fsp && fsp->fd != -1) {
+			sizeret = SMB_VFS_FLISTXATTR(fsp, fsp->fd, ea_namelist, ea_namelist_size);
+		} else {
+			sizeret = SMB_VFS_LISTXATTR(conn, fname, ea_namelist, ea_namelist_size);
+		}
+
+		if (sizeret == -1 && errno == ERANGE) {
+			ea_namelist_size *= 2;
+		} else {
+			break;
+		}
+	}
+
+	if (sizeret == -1)
+		return NULL;
+
+	DEBUG(10,("get_ea_list: ea_namelist size = %d\n", sizeret ));
+
+	if (sizeret) {
+		for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p) + 1) {
+			struct ea_list *listp, *tmp;
+
+			if (strnequal(p, "system.", 7) || samba_private_attr_name(p))
+				continue;
+		
+			listp = talloc(mem_ctx, sizeof(struct ea_list));
+			if (!listp)
+				return NULL;
+
+			if (!get_ea_value(mem_ctx, conn, fsp, fname, p, &listp->ea)) {
+				return NULL;
+			}
+
+			if (pea_total_len) {
+				*pea_total_len += 4 + strlen(p) + 1 + listp->ea.value.length;
+			}
+			DLIST_ADD_END(ea_list_head, listp, tmp);
+		}
+	}
+
+	/* Add on 4 for total length. */
+	if (pea_total_len) {
+		*pea_total_len += 4;
+	}
+	return ea_list_head;
+}
+
+/****************************************************************************
+ Fill a qfilepathinfo buffer with EA's.
+****************************************************************************/
+
+static unsigned int fill_ea_buffer(char *pdata, unsigned int total_data_size,
+	connection_struct *conn, files_struct *fsp, const char *fname)
+{
+	unsigned int ret_data_size = 4;
+	char *p = pdata;
+	size_t total_ea_len;
+	TALLOC_CTX *mem_ctx = talloc_init("fill_ea_buffer");
+	struct ea_list *ea_list = get_ea_list(mem_ctx, conn, fsp, fname, &total_ea_len);
+
+	SMB_ASSERT(total_data_size >= 4);
+
+	SIVAL(pdata,0,0);
+	if (!mem_ctx) {
+		return 4;
+	}
+
+	if (!ea_list) {
+		talloc_destroy(mem_ctx);
+		return 4;
+	}
+
+	if (total_ea_len > total_data_size) {
+		talloc_destroy(mem_ctx);
+		return 4;
+	}
+
+	total_data_size -= 4;
+	for (p = pdata + 4; ea_list; ea_list = ea_list->next) {
+		size_t dos_namelen;
+		fstring dos_ea_name;
+		push_ascii_fstring(dos_ea_name, ea_list->ea.name);
+		dos_namelen = strlen(dos_ea_name);
+		if (dos_namelen > 255 || dos_namelen == 0) {
+			break;
+		}
+		if (ea_list->ea.value.length > 65535) {
+			break;
+		}
+		if (4 + dos_namelen + 1 + ea_list->ea.value.length > total_data_size) {
+			break;
+		}
+
+		/* We know we have room. */
+		SCVAL(p,0,ea_list->ea.flags);
+		SCVAL(p,1,dos_namelen);
+		SSVAL(p,2,ea_list->ea.value.length);
+		fstrcpy(p+4, dos_ea_name);
+		memcpy( p + 4 + dos_namelen + 1, ea_list->ea.value.data, ea_list->ea.value.length);
+
+		total_data_size -= 4 + dos_namelen + 1 + ea_list->ea.value.length;
+		p += 4 + dos_namelen + 1 + ea_list->ea.value.length;
+	}
+
+	ret_data_size = PTR_DIFF(p, pdata);
+	talloc_destroy(mem_ctx);
+	SIVAL(pdata,0,ret_data_size);
+	return ret_data_size;
+}
+
+static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp, const char *fname)
+{
+	size_t total_ea_len = 0;
+	TALLOC_CTX *mem_ctx = talloc_init("estimate_ea_size");
+
+	(void)get_ea_list(mem_ctx, conn, fsp, fname, &total_ea_len);
+	talloc_destroy(mem_ctx);
+	return total_ea_len;
+}
+
+/****************************************************************************
+ Set or delete an extended attribute.
+****************************************************************************/
+
+static NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname,
+			char *pdata, int total_data)
+{
+	unsigned int namelen;
+	unsigned int ealen;
+	int ret;
+	fstring unix_ea_name;
+
+	if (!lp_ea_support(SNUM(conn))) {
+		return NT_STATUS_EAS_NOT_SUPPORTED;
+	}
+
+	if (total_data < 8) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (IVAL(pdata,0) > total_data) {
+		DEBUG(10,("set_ea: bad total data size (%u) > %u\n", IVAL(pdata,0), (unsigned int)total_data));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	pdata += 4;
+	namelen = CVAL(pdata,1);
+	ealen = SVAL(pdata,2);
+	pdata += 4;
+	if (total_data < 8 + namelen + 1 + ealen) {
+		DEBUG(10,("set_ea: bad total data size (%u) < 8 + namelen (%u) + 1 + ealen (%u)\n",
+			(unsigned int)total_data, namelen, ealen));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (pdata[namelen] != '\0') {
+		DEBUG(10,("set_ea: ea name not null terminated\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	fstrcpy(unix_ea_name, "user."); /* All EA's must start with user. */
+	pull_ascii(&unix_ea_name[5], pdata, sizeof(fstring) - 5, -1, STR_TERMINATE);
+	pdata += (namelen + 1);
+
+	DEBUG(10,("set_ea: ea_name %s ealen = %u\n", unix_ea_name, ealen));
+	if (ealen) {
+		DEBUG(10,("set_ea: data :\n"));
+		dump_data(10, pdata, ealen);
+	}
+
+	if (samba_private_attr_name(unix_ea_name)) {
+		DEBUG(10,("set_ea: ea name %s is a private Samba name.\n", unix_ea_name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (ealen == 0) {
+		/* Remove the attribute. */
+		if (fsp && (fsp->fd != -1)) {
+			DEBUG(10,("set_ea: deleting ea name %s on file %s by file descriptor.\n",
+				unix_ea_name, fsp->fsp_name));
+			ret = SMB_VFS_FREMOVEXATTR(fsp, fsp->fd, unix_ea_name);
+		} else {
+			DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
+				unix_ea_name, fname));
+			ret = SMB_VFS_REMOVEXATTR(conn, fname, unix_ea_name);
+		}
+#ifdef ENOATTR
+		/* Removing a non existent attribute always succeeds. */
+		DEBUG(10,("set_ea: deleting ea name %s didn't exist - succeeding by default.\n", unix_ea_name));
+		if (ret == -1 && errno == ENOATTR) {
+			ret = 0;
+		}
+#endif
+	} else {
+		if (fsp && (fsp->fd != -1)) {
+			DEBUG(10,("set_ea: setting ea name %s on file %s by file descriptor.\n",
+				unix_ea_name, fsp->fsp_name));
+			ret = SMB_VFS_FSETXATTR(fsp, fsp->fd, unix_ea_name, pdata, ealen, 0);
+		} else {
+			DEBUG(10,("set_ea: setting ea name %s on file %s.\n",
+				unix_ea_name, fname));
+			ret = SMB_VFS_SETXATTR(conn, fname, unix_ea_name, pdata, ealen, 0);
+		}
+	}
+
+	if (ret == -1) {
+		if (errno == ENOTSUP) {
+			return NT_STATUS_EAS_NOT_SUPPORTED;
+		}
+		return map_nt_error_from_unix(errno);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
   Send the required number of replies back.
   We assume all fields other than the data fields are
   set correctly for the type of call.
@@ -220,7 +539,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	int32 open_size;
 	char *pname;
 	pstring fname;
-	mode_t unixmode;
 	SMB_OFF_T size=0;
 	int fmode=0,mtime=0,rmode;
 	SMB_INO_T inode = 0;
@@ -268,9 +586,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 	}
 
-	unixmode = unix_mode(conn,open_attr | aARCH, fname);
-      
-	fsp = open_file_shared(conn,fname,&sbuf,open_mode,open_ofun,unixmode,
+	fsp = open_file_shared(conn,fname,&sbuf,open_mode,open_ofun,(uint32)open_attr,
 		oplock_request, &rmode,&smb_action);
       
 	if (!fsp) {
@@ -2048,8 +2364,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 
 		case SMB_INFO_QUERY_ALL_EAS:
-			data_size = 4;
-			SIVAL(pdata,0,0); /* ea size */
+			/* We have data_size bytes to put EA's into. */
+			data_size = fill_ea_buffer(pdata, data_size, conn, fsp, fname);
 			break;
 
 		case SMB_FILE_BASIC_INFORMATION:
@@ -2095,8 +2411,12 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 		case SMB_FILE_EA_INFORMATION:
 		case SMB_QUERY_FILE_EA_INFO:
+		{
+			unsigned int ea_size = estimate_ea_size(conn, fsp, fname);
 			data_size = 4;
+			SIVAL(pdata,0,ea_size);
 			break;
+		}
 
 		/* Get the 8.3 name - used if NT SMB was negotiated. */
 		case SMB_QUERY_FILE_ALT_NAME_INFO:
@@ -2703,7 +3023,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		case SMB_INFO_SET_EA:
-			return(ERROR_DOS(ERRDOS,ERReasnotsupported));
+			status = set_ea(conn, fsp, fname, pdata, total_data);
+			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
+				return ERROR_NT(status);
+			break;
 
 		/* XXXX um, i don't think this is right.
 			it's also not in the cifs6.txt spec.
@@ -2808,7 +3131,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 					new_fsp = open_file_shared1(conn, fname, &sbuf,FILE_WRITE_DATA,
 									SET_OPEN_MODE(DOS_OPEN_RDWR),
 									(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-									0, 0, &access_mode, &action);
+									FILE_ATTRIBUTE_NORMAL,
+									0, &access_mode, &action);
  
 					if (new_fsp == NULL)
 						return(UNIXERROR(ERRDOS,ERRbadpath));
@@ -3203,8 +3527,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		DEBUG(10,("call_trans2setfilepathinfo: file %s : setting dos mode %x\n", fname, dosmode ));
 
-		if(file_chmod(conn, fname, dosmode, NULL)) {
-			DEBUG(2,("chmod of %s failed (%s)\n", fname, strerror(errno)));
+		if(file_set_dosmode(conn, fname, dosmode, NULL)) {
+			DEBUG(2,("file_set_dosmode of %s failed (%s)\n", fname, strerror(errno)));
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}
 	}
@@ -3234,7 +3558,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			new_fsp = open_file_shared(conn, fname, &sbuf,
 						SET_OPEN_MODE(DOS_OPEN_RDWR),
 						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						0, 0, &access_mode, &action);
+						FILE_ATTRIBUTE_NORMAL,
+						0, &access_mode, &action);
 	
 			if (new_fsp == NULL)
 				return(UNIXERROR(ERRDOS,ERRbadpath));

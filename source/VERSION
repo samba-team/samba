@@ -41,7 +41,7 @@ SAMBA_VERSION_REVISION=
 # e.g. SAMBA_VERSION_PRE_RELEASE=1                     #
 #  ->  "2.2.9pre1"                                     #
 ########################################################
-SAMBA_VERSION_PRE_RELEASE=1
+SAMBA_VERSION_PRE_RELEASE=2
 
 ########################################################
 # For 'rc' releases the version will be                #
@@ -93,7 +93,7 @@ SAMBA_VERSION_TEST_RELEASE=
 # e.g. SAMBA_VERSION_IS_CVS_SNAPSHOT=yes               #
 #  ->  "CVS 3.0.0rc2"                                  #
 ########################################################
-SAMBA_VERSION_IS_CVS_SNAPSHOT=
+SAMBA_VERSION_IS_CVS_SNAPSHOT=yes
 
 ########################################################
 # This can be set by vendors if they want...           #

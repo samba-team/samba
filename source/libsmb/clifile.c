@@ -1161,3 +1161,257 @@ NTSTATUS cli_raw_ioctl(struct cli_state *cli, int fnum, uint32 code, DATA_BLOB *
 
 	return NT_STATUS_OK;
 }
+
+/*********************************************************
+ Set an extended attribute utility fn.
+*********************************************************/
+
+static BOOL cli_set_ea(struct cli_state *cli, uint16 setup, char *param, unsigned int param_len,
+			const char *ea_name, const char *ea_val, size_t ea_len)
+{	
+	unsigned int data_len = 0;
+	char *data = NULL;
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+	size_t ea_namelen = strlen(ea_name);
+
+	data_len = 4 + 4 + ea_namelen + 1 + ea_len;
+	data = malloc(data_len);
+	if (!data) {
+		return False;
+	}
+	p = data;
+	SIVAL(p,0,data_len);
+	p += 4;
+	SCVAL(p, 0, 0); /* EA flags. */
+	SCVAL(p, 1, ea_namelen);
+	SSVAL(p, 2, ea_len);
+	memcpy(p+4, ea_name, ea_namelen+1); /* Copy in the name. */
+	memcpy(p+4+ea_namelen+1, ea_val, ea_len);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		NULL,                        /* name */
+		-1, 0,                          /* fid, flags */
+		&setup, 1, 0,                   /* setup, length, max */
+		param, param_len, 2,            /* param, length, max */
+		data,  data_len, cli->max_xmit /* data, length, max */
+		)) {
+			return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+		&rparam, &param_len,
+		&rdata, &data_len)) {
+			return False;
+	}
+
+	SAFE_FREE(data);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	return True;
+}
+
+/*********************************************************
+ Set an extended attribute on a pathname.
+*********************************************************/
+
+BOOL cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_name, const char *ea_val, size_t ea_len)
+{
+	uint16 setup = TRANSACT2_SETPATHINFO;
+	unsigned int param_len = 0;
+	char param[sizeof(pstring)+6];
+	size_t srclen = 2*(strlen(path)+1);
+	char *p;
+
+	memset(param, 0, sizeof(param));
+	SSVAL(param,0,SMB_INFO_SET_EA);
+	p = &param[6];
+
+	p += clistr_push(cli, p, path, MIN(srclen, sizeof(param)-6), STR_TERMINATE);
+	param_len = PTR_DIFF(p, param);
+
+	return cli_set_ea(cli, setup, param, param_len, ea_name, ea_val, ea_len);
+}
+
+/*********************************************************
+ Set an extended attribute on an fnum.
+*********************************************************/
+
+BOOL cli_set_ea_fnum(struct cli_state *cli, int fnum, const char *ea_name, const char *ea_val, size_t ea_len)
+{
+	char param[6];
+	uint16 setup = TRANSACT2_SETFILEINFO;
+
+	memset(param, 0, 6);
+	SSVAL(param,0,fnum);
+	SSVAL(param,2,SMB_INFO_SET_EA);
+
+	return cli_set_ea(cli, setup, param, 6, ea_name, ea_val, ea_len);
+}
+
+/*********************************************************
+ Get an extended attribute list tility fn.
+*********************************************************/
+
+static BOOL cli_get_ea_list(struct cli_state *cli,
+		uint16 setup, char *param, unsigned int param_len,
+		TALLOC_CTX *ctx,
+		size_t *pnum_eas,
+		struct ea_struct **pea_list)
+{
+	unsigned int data_len = 0;
+	unsigned int rparam_len, rdata_len;
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+	size_t ea_size;
+	size_t num_eas;
+	BOOL ret = False;
+	struct ea_struct *ea_list;
+
+	*pnum_eas = 0;
+	*pea_list = NULL;
+
+	if (!cli_send_trans(cli, SMBtrans2,
+			NULL,           /* Name */
+			-1, 0,          /* fid, flags */
+			&setup, 1, 0,   /* setup, length, max */
+			param, param_len, 10, /* param, length, max */
+			NULL, data_len, cli->max_xmit /* data, length, max */
+				)) {
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+			&rparam, &rparam_len,
+			&rdata, &rdata_len)) {
+		return False;
+	}
+
+	if (!rdata || rdata_len < 4) {
+		goto out;
+	}
+
+	ea_size = (size_t)IVAL(rdata,0);
+	if (ea_size > rdata_len) {
+		goto out;
+	}
+
+	if (ea_size == 0) {
+		/* No EA's present. */
+		ret = True;
+		goto out;
+	}
+
+	p = rdata + 4;
+	ea_size -= 4;
+
+	/* Validate the EA list and count it. */
+	for (num_eas = 0; ea_size >= 4; num_eas++) {
+		unsigned int ea_namelen = CVAL(p,1);
+		unsigned int ea_valuelen = SVAL(p,2);
+		if (ea_namelen == 0) {
+			goto out;
+		}
+		if (4 + ea_namelen + 1 + ea_valuelen > ea_size) {
+			goto out;
+		}
+		ea_size -= 4 + ea_namelen + 1 + ea_valuelen;
+		p += 4 + ea_namelen + 1 + ea_valuelen;
+	}
+
+	if (num_eas == 0) {
+		ret = True;
+		goto out;
+	}
+
+	*pnum_eas = num_eas;
+	if (!pea_list) {
+		/* Caller only wants number of EA's. */
+		ret = True;
+		goto out;
+	}
+
+	ea_list = (struct ea_struct *)talloc(ctx, num_eas*sizeof(struct ea_struct));
+	if (!ea_list) {
+		goto out;
+	}
+
+	ea_size = (size_t)IVAL(rdata,0);
+	p = rdata + 4;
+
+	for (num_eas = 0; num_eas < *pnum_eas; num_eas++ ) {
+		struct ea_struct *ea = &ea_list[num_eas];
+		fstring unix_ea_name;
+		unsigned int ea_namelen = CVAL(p,1);
+		unsigned int ea_valuelen = SVAL(p,2);
+
+		ea->flags = CVAL(p,0);
+		unix_ea_name[0] = '\0';
+		pull_ascii_fstring(unix_ea_name, p + 4);
+		ea->name = talloc_strdup(ctx, unix_ea_name);
+		/* Ensure the value is null terminated (in case it's a string). */
+		ea->value = data_blob_talloc(ctx, NULL, ea_valuelen + 1);
+		if (!ea->value.data) {
+			goto out;
+		}
+		if (ea_valuelen) {
+			memcpy(ea->value.data, p+4+ea_namelen+1, ea_valuelen);
+		}
+		ea->value.data[ea_valuelen] = 0;
+		ea->value.length--;
+		p += 4 + ea_namelen + 1 + ea_valuelen;
+	}
+
+	*pea_list = ea_list;
+	ret = True;
+
+ out :
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+	return ret;
+}
+
+/*********************************************************
+ Get an extended attribute list from a pathname.
+*********************************************************/
+
+BOOL cli_get_ea_list_path(struct cli_state *cli, const char *path,
+		TALLOC_CTX *ctx,
+		size_t *pnum_eas,
+		struct ea_struct **pea_list)
+{
+	uint16 setup = TRANSACT2_QPATHINFO;
+	unsigned int param_len = 0;
+	char param[sizeof(pstring)+6];
+	char *p;
+
+	p = param;
+	memset(p, 0, 6);
+	SSVAL(p, 0, SMB_INFO_QUERY_ALL_EAS);
+	p += 6;
+	p += clistr_push(cli, p, path, sizeof(pstring)-6, STR_TERMINATE);
+	param_len = PTR_DIFF(p, param);
+
+	return cli_get_ea_list(cli, setup, param, param_len, ctx, pnum_eas, pea_list);
+}
+
+/*********************************************************
+ Get an extended attribute list from an fnum.
+*********************************************************/
+
+BOOL cli_get_ea_list_fnum(struct cli_state *cli, int fnum,
+		TALLOC_CTX *ctx,
+		size_t *pnum_eas,
+		struct ea_struct **pea_list)
+{
+	uint16 setup = TRANSACT2_QFILEINFO;
+	char param[6];
+
+	memset(param, 0, 6);
+	SSVAL(param,0,fnum);
+	SSVAL(param,2,SMB_INFO_SET_EA);
+
+	return cli_get_ea_list(cli, setup, param, 6, ctx, pnum_eas, pea_list);
+}

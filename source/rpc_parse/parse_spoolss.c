@@ -2561,7 +2561,7 @@ BOOL smb_io_printer_info_2(const char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 
 		return False;
 	
 	/* parse the sec_desc */
-	if (has_secdesc) {
+	if (info->secdesc) {
 		if (!prs_set_offset(ps, sd_offset))
 			return False;
 		if (!smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))

@@ -331,6 +331,55 @@ NTSTATUS cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* GetDCName */
+
+NTSTATUS cli_netlogon_getdcname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				const char *domainname, fstring dcname)
+{
+	prs_struct qbuf, rbuf;
+	NET_Q_GETDCNAME q;
+	NET_R_GETDCNAME r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_net_q_getdcname(&q, cli->srv_name_slash, domainname);
+
+	/* Marshall data and send request */
+
+	if (!net_io_q_getdcname("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, NET_GETDCNAME, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!net_io_r_getdcname("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	result = r.status;
+
+	if (NT_STATUS_IS_OK(result))
+		rpcstr_pull_unistr2_fstring(dcname, &r.uni_dcname);
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /****************************************************************************
 Generate the next creds to use.
 ****************************************************************************/
