@@ -88,7 +88,6 @@ static WERROR rpc_query_key(REG_KEY *k);
 
 static WERROR rpc_open_registry(REG_HANDLE *h, const char *location, const char *credentials)
 {
-	char *binding = strdup(location);
 	NTSTATUS status;
 	char *user, *pass;
 
@@ -98,7 +97,7 @@ static WERROR rpc_open_registry(REG_HANDLE *h, const char *location, const char 
 	pass = strchr(user, '%');
 	*pass = '\0'; pass++;
 
-	status = dcerpc_pipe_connect((struct dcerpc_pipe **)&h->backend_data, binding, 
+	status = dcerpc_pipe_connect((struct dcerpc_pipe **)&h->backend_data, h->location, 
                     DCERPC_WINREG_UUID,
                     DCERPC_WINREG_VERSION,
                      lp_workgroup(),
