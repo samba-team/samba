@@ -14,6 +14,8 @@ RCSID("$Header$");
 #include <signal.h>
 #include <setjmp.h>
 #include <errno.h>
+#include <string.h>
+#include <signal.h>
 
 #include <krb.h>
 #include <kafs.h>
@@ -31,8 +33,7 @@ RCSID("$Header$");
 #define ToAsciiUpper(c) ((c) - 'a' + 'A')
 
 static void
-foldup(a, b)
-     char *a, *b;
+foldup(char *a, char *b)
 {
   for (; *b; a++, b++)
     if (IsAsciiLower(*b))
@@ -45,7 +46,7 @@ foldup(a, b)
 #define _PATH_THISCELL "/usr/vice/etc/ThisCell"
 
 static char *
-k_cell()
+k_cell(void)
 {
     static char cell[64];
 
@@ -245,7 +246,7 @@ k_setpag(void)
 static jmp_buf catch_SIGSYS;
 
 static void
-SIGSYS_handler()
+SIGSYS_handler(int sig)
 {
   errno = 0;
   signal(SIGSYS, SIGSYS_handler); /* Need to reinstall handler on SYSV */

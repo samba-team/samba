@@ -178,7 +178,7 @@ char *new_login = LOGIN_PATH;
  * set_termbuf() writes the structure into the kernel.
  */
 
-	void
+void
 init_termbuf()
 {
 # ifdef  STREAMSPTY

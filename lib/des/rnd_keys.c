@@ -4,7 +4,11 @@
 #include <sys/time.h>
 
 #include <unistd.h>
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -23,7 +27,7 @@ static u_int32_t sequence_index[2];
 static int initialized;
 static des_cblock default_seed = {0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef};
 static void
-do_initialize()
+do_initialize(void)
 {
   des_set_odd_parity(&default_seed);
   des_set_random_generator_seed(&default_seed);

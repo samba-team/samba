@@ -4,11 +4,11 @@
  * This section is for machines using multiple entry point AFS syscalls!
  */
 
-#if defined(sun) && !defined(__svr4__)
+#if SunOS == 4
 #define AFS_SYSCALL	31
 #endif
 
-#if defined(sun) && defined(__svr4__)
+#if SunOS == 5
 #define AFS_SYSCALL	105
 #endif
 

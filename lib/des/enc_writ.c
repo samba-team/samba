@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <errno.h>
+#include <stdlib.h>
 #include "des_locl.h"
 
 extern int LEFT_JUSTIFIED;

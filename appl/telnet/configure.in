@@ -275,14 +275,14 @@ AC_CHECK_HEADERS(sys/select.h sys/stream.h sys/strtty.h sys/str_tty.h)
 AC_CHECK_HEADERS(sys/tty.h termio.h termios.h utmpx.h sys/uio.h)
 
 
-#
-# Simple test for streamspty, based on the existance of getmsg()
-#
-
+# Simple test for streamspty, based on the existance of getmsg(), alas
+# this breaks on SunOS4 which have streams but BSD-like ptys
 
 AC_MSG_CHECKING(for streamspty)
-krb_cv_sys_streamspty="$ac_cv_func_getmsg"
-
+krb_cv_sys_streamspty="no"
+if expr "`uname -sr`" : "SunOS 4" > /dev/null; then :; else
+	krb_cv_sys_streamspty="$ac_cv_func_getmsg"
+fi
 if test "$krb_cv_sys_streamspty" = yes; then
 	AC_DEFINE(STREAMSPTY)
 fi

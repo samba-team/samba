@@ -39,7 +39,7 @@
 #include <bsdsetjmp.h>
 #endif
 /* not with SunOS 4 */
-#if defined(HAVE_SYS_IOCTL_H) && !(defined(sun) && !defined(__svr4__))
+#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
 #include <sys/ioctl.h>
 #endif
 #ifdef HAVE_SYS_FILIO_H

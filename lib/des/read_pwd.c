@@ -44,11 +44,6 @@ struct IOSB {
 #define NSIG 32
 #endif
 
-static void read_till_nl();
-static int read_pw();
-static void recsig();
-static void pushsig();
-static void popsig();
 #ifdef MSDOS
 static int noecho_fgets();
 #endif
@@ -56,69 +51,43 @@ static int noecho_fgets();
 static void (*savsig[NSIG])();
 static jmp_buf save;
 
-int des_read_password(key,prompt,verify)
-des_cblock *key;
-char *prompt;
-int verify;
-	{
-	int ok;
-	char buf[BUFSIZ],buff[BUFSIZ];
+static void recsig(int sig)
+{
+	longjmp(save,1);
+}
 
-	if ((ok=read_pw(buf,buff,BUFSIZ,prompt,verify)) == 0)
-		des_string_to_key(buf,key);
-	bzero(buf,BUFSIZ);
-	bzero(buff,BUFSIZ);
-	return(ok);
-	}
+static void pushsig(void)
+{
+	int i;
 
-int des_read_2passwords(key1,key2,prompt,verify)
-des_cblock *key1;
-des_cblock *key2;
-char *prompt;
-int verify;
-	{
-	int ok;
-	char buf[BUFSIZ],buff[BUFSIZ];
+	for (i=0; i<NSIG; i++)
+		savsig[i]=signal(i,recsig);
+}
 
-	if ((ok=read_pw(buf,buff,BUFSIZ,prompt,verify)) == 0)
-		des_string_to_2keys(buf,key1,key2);
-	bzero(buf,BUFSIZ);
-	bzero(buff,BUFSIZ);
-	return(ok);
-	}
+static void popsig(void)
+{
+	int i;
 
-int des_read_pw_string(buf,length,prompt,verify)
-char *buf;
-int length;
-char *prompt;
-int verify;
-	{
-	char buff[BUFSIZ];
-	int ret;
+	for (i=0; i<NSIG; i++)
+		signal(i,savsig[i]);
+}
 
-	ret=read_pw(buf,buff,(length>BUFSIZ)?BUFSIZ:length,prompt,verify);
-	bzero(buff,BUFSIZ);
-	return(ret);
-	}
 
-static void read_till_nl(in)
-FILE *in;
-	{
+static void read_till_nl(FILE *in)
+{
 #define SIZE 4
 	char buf[SIZE+1];
 
 	do	{
 		fgets(buf,SIZE,in);
-		} while (strchr(buf,'\n') == NULL);
-	}
+	} while (strchr(buf,'\n') == NULL);
+}
+
+
 
 /* return 0 if ok, 1 (or -1) otherwise */
-static int read_pw(buf,buff,size,prompt,verify)
-char *buf,*buff;
-int size;
-char *prompt;
-int verify;
-	{
+static int read_pw(char *buf, char *buff, int size, char *prompt,int verify)
+{
 #ifndef VMS
 #ifndef MSDOS
 	struct sgttyb tty_orig,tty_new;
@@ -235,26 +204,51 @@ error:
 	return(!ok);
 	}
 
-static void pushsig()
+int des_read_password(key,prompt,verify)
+des_cblock *key;
+char *prompt;
+int verify;
 	{
-	int i;
+	int ok;
+	char buf[BUFSIZ],buff[BUFSIZ];
 
-	for (i=0; i<NSIG; i++)
-		savsig[i]=signal(i,recsig);
+	if ((ok=read_pw(buf,buff,BUFSIZ,prompt,verify)) == 0)
+		des_string_to_key(buf,key);
+	bzero(buf,BUFSIZ);
+	bzero(buff,BUFSIZ);
+	return(ok);
 	}
 
-static void popsig()
+int des_read_2passwords(key1,key2,prompt,verify)
+des_cblock *key1;
+des_cblock *key2;
+char *prompt;
+int verify;
 	{
-	int i;
+	int ok;
+	char buf[BUFSIZ],buff[BUFSIZ];
 
-	for (i=0; i<NSIG; i++)
-		signal(i,savsig[i]);
+	if ((ok=read_pw(buf,buff,BUFSIZ,prompt,verify)) == 0)
+		des_string_to_2keys(buf,key1,key2);
+	bzero(buf,BUFSIZ);
+	bzero(buff,BUFSIZ);
+	return(ok);
 	}
 
-static void recsig()
+int des_read_pw_string(buf,length,prompt,verify)
+char *buf;
+int length;
+char *prompt;
+int verify;
 	{
-	longjmp(save,1);
+	char buff[BUFSIZ];
+	int ret;
+
+	ret=read_pw(buf,buff,(length>BUFSIZ)?BUFSIZ:length,prompt,verify);
+	bzero(buff,BUFSIZ);
+	return(ret);
 	}
+
 
 #ifdef MSDOS
 static int noecho_fgets(buf,size,tty)
