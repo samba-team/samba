@@ -355,66 +355,64 @@ static NTSTATUS cmd_none(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 static NTSTATUS cmd_schannel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			     int argc, const char **argv)
 {
+	NTSTATUS ret;
 	uchar trust_password[16];
 	uint32 sec_channel_type;
-	uint32 neg_flags = 0x000001ff;
-	NTSTATUS result;
 	static uchar zeros[16];
+
+	if (argc == 2) {
+		strhex_to_str(cli->auth_info.sess_key,
+			      strlen(argv[1]), 
+			      argv[1]);
+		memcpy(cli->sess_key, cli->auth_info.sess_key, sizeof(cli->sess_key));
+
+		cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
+		cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
+		cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
+
+		return NT_STATUS_OK;
+	}
 
 	/* Cleanup */
 
-	if ((memcmp(cli->auth_info.sess_key, zeros, sizeof(cli->auth_info.sess_key)) != 0) 
-	    && (cli->saved_netlogon_pipe_fnum != 0)) {
+	if ((memcmp(cli->auth_info.sess_key, zeros, sizeof(cli->auth_info.sess_key)) != 0)) {
 		if (cli->pipe_auth_flags == (AUTH_PIPE_NETSEC|AUTH_PIPE_SIGN|AUTH_PIPE_SEAL)) {
+			/* already in this mode nothing to do */
 			return NT_STATUS_OK;
 		} else {
-			/* still have session, just need to use it again */
+			/* schannel is setup, just need to use it again */
 			cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
 			cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
 			cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
 			if (cli->nt_pipe_fnum != 0)
 				cli_nt_session_close(cli);
+			return NT_STATUS_OK;
 		}
 	}
 	
 	if (cli->nt_pipe_fnum != 0)
 		cli_nt_session_close(cli);
 
-	cli->pipe_auth_flags = 0;
-	
+	cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
+	cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
+	cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
+
 	if (!secrets_fetch_trust_account_password(lp_workgroup(),
 						  trust_password,
 						  NULL, &sec_channel_type)) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
-	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
-		DEBUG(0, ("Could not initialise %s\n",
-			  get_pipe_name_from_index(PI_NETLOGON)));
-		return NT_STATUS_UNSUCCESSFUL;
+
+	ret = cli_nt_setup_netsec(cli, sec_channel_type, trust_password);
+	if (NT_STATUS_IS_OK(ret)) {
+		char *hex_session_key;
+		hex_encode(cli->auth_info.sess_key,
+			   sizeof(cli->auth_info.sess_key),
+			   &hex_session_key);
+		printf("Got Session key: %s\n", hex_session_key);
+		SAFE_FREE(hex_session_key);
 	}
-
-	neg_flags |= NETLOGON_NEG_SCHANNEL;
-
-	result = cli_nt_setup_creds(cli, sec_channel_type, trust_password,
-				    &neg_flags, 2);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		ZERO_STRUCT(cli->auth_info.sess_key);
-		cli->pipe_auth_flags = 0;
-		return result;
-	}
-
-	memcpy(cli->auth_info.sess_key, cli->sess_key,
-	       sizeof(cli->auth_info.sess_key));
-
-	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum;
-
-	cli->pipe_auth_flags = AUTH_PIPE_NETSEC;
-	cli->pipe_auth_flags |= AUTH_PIPE_SIGN;
-	cli->pipe_auth_flags |= AUTH_PIPE_SEAL;
-
-	return NT_STATUS_OK; 
+	return ret;
 }
 
 /* Built in rpcclient commands */

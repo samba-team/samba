@@ -5,6 +5,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
  *  Copyright (C) Paul Ashton                       1998.
  *  Copyright (C) Jeremy Allison                    1999.
+ *  Copyright (C) Andrew Bartlett                   2003.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1568,9 +1569,6 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 		}
 	}
 	
-	/* doing schannel, not per-user auth */
-	cli->pipe_auth_flags = AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL;
-	
 	if (!rpc_pipe_bind(cli, PI_NETLOGON, global_myname())) {
 		DEBUG(2,("rpc bind to %s failed\n", PIPE_NETLOGON));
 		cli_close(cli, cli->nt_pipe_fnum);
@@ -1580,6 +1578,57 @@ NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
 	return NT_STATUS_OK;
 }
 
+
+NTSTATUS cli_nt_setup_netsec(struct cli_state *cli, int sec_chan,
+			     const uchar trust_password[16])
+{
+	NTSTATUS result;	
+	uint32 neg_flags = 0x000001ff;
+	cli->pipe_auth_flags = 0;
+
+	if (lp_client_schannel() == False) {
+		return NT_STATUS_OK;
+	}
+
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+		DEBUG(0, ("Could not initialise %s\n",
+			  get_pipe_name_from_index(PI_NETLOGON)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (lp_client_schannel() != False)
+		neg_flags |= NETLOGON_NEG_SCHANNEL;
+
+	neg_flags |= NETLOGON_NEG_SCHANNEL;
+
+	result = cli_nt_setup_creds(cli, sec_chan, trust_password,
+				    &neg_flags, 2);
+
+	if (!(neg_flags & NETLOGON_NEG_SCHANNEL) 
+	    && lp_client_schannel() == True) {
+		DEBUG(1, ("Could not negotiate SCHANNEL with the DC!\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		ZERO_STRUCT(cli->auth_info.sess_key);
+		ZERO_STRUCT(cli->sess_key);
+		cli->pipe_auth_flags = 0;
+		cli_nt_session_close(cli);
+		return result;
+	}
+
+	memcpy(cli->auth_info.sess_key, cli->sess_key,
+	       sizeof(cli->auth_info.sess_key));
+
+	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum;
+	cli->nt_pipe_fnum = 0;
+
+	/* doing schannel, not per-user auth */
+	cli->pipe_auth_flags = AUTH_PIPE_NETSEC | AUTH_PIPE_SIGN | AUTH_PIPE_SEAL;
+
+	return NT_STATUS_OK;
+}
 
 const char *cli_pipe_get_name(struct cli_state *cli)
 {
