@@ -1,43 +1,29 @@
-# editing 10 records
-# record 1
 dn: key=control,key=currentcontrolset,key=system,hive=
 key: control
 
-# record 2
 dn: key=services,key=control,key=currentcontrolset,key=system,hive=
 key: services
 
-# record 3
 dn: value=ProductType,key=productoptions,key=control,key=currentcontrolset,key=system,hive=
 value: ProductType
-data: WinNT
+data:: VwBpAG4ATgBUAA=
 type: 1
 
-# record 4
 dn: key=productoptions,key=control,key=currentcontrolset,key=system,hive=
 key: productoptions
 
-# record 5
 dn: key=system,hive=
 key: system
 
-# record 6
-dn: @BASEINFO
-sequenceNumber: 13
-
-# record 7
 dn: key=netlogon,key=services,key=currentcontrolset,key=system,hive=
 key: netlogon
 
-# record 8
 dn: key=services,key=currentcontrolset,key=system,hive=
 key: services
 
-# record 9
 dn: key=print,key=control,key=currentcontrolset,key=system,hive=
 key: print
 
-# record 10
 dn: key=currentcontrolset,key=system,hive=
 key: currentcontrolset
 
