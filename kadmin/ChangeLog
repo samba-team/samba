@@ -1,3 +1,9 @@
+2003-11-18  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmind.c (main): move opening the logfile to after reading
+	kdc.conf move the loading of hdb keytab ops closer to where its
+	used From: Jeffrey Hutzelman <jhutz@cmu.edu>
+	
 2003-10-04  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* util.c (str2time_t): allow whitespace between date and time
