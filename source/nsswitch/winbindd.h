@@ -28,7 +28,7 @@
 #include "includes.h"
 #include "nterr.h"
 
-#include "winbindd_ntdom.h"
+#include "winbindd_nss.h"
 
 /* Naughty global stuff */
 

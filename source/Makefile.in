@@ -747,9 +747,9 @@ WINBINDD_OBJ = \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
 
-NTDOM_OBJ = nsswitch/ntdom.o nsswitch/common.o
+WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/common.o
 
-NTDOM_ICOBJS = $(NTDOM_OBJ:.o=.po)
+WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 
 ######################################################################
 # now the rules...
@@ -785,7 +785,7 @@ rpctorture : CHECK bin/rpctorture
 
 smbfilter : CHECK bin/smbfilter
 
-nsswitch: CHECK nsswitch/libnss_ntdom.so bin/winbindd nsswitch/pam_winbind.so
+nsswitch: CHECK nsswitch/libnss_winbind.so bin/winbindd nsswitch/pam_winbind.so
 
 check: all nsswitch
 	$(RUNTEST) $(RUNTESTDEFAULTFLAGS) $(RUNTESTFLAGS)
@@ -1127,9 +1127,9 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
 
-nsswitch/libnss_ntdom.so: $(NTDOM_ICOBJS)
+nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
-	@$(LINK) -shared -o $@ $(NTDOM_ICOBJS)
+	@$(LINK) -shared -o $@ $(WINBIND_NSS_PICOBJS)
 
 bin/pam_ntdom_auth.so: $(PAM_NTDOM_LIBS) $(PAM_NTDOM_OBJ) bin/.dummy
 	@echo Linking $@
