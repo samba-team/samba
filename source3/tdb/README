@@ -64,6 +64,10 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 
    possible tdb_flags are:
     TDB_CLEAR_IF_FIRST - clear database if we are the only one with it open
+    TDB_INTERNAL - don't use a file, instaed store the data in
+                   memory. The filename is ignored in this case.
+    TDB_NOLOCK - don't do any locking
+    TDB_NOMMAP - don't use mmap
 
 ----------------------------------------------------------------------
 char *tdb_error(TDB_CONTEXT *tdb);

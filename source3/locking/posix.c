@@ -1088,14 +1088,14 @@ BOOL posix_locking_init(void)
 		return True;
 
 	if (!posix_lock_tdb)
-		posix_lock_tdb = tdb_open(NULL, 0, TDB_CLEAR_IF_FIRST,
-   	            O_RDWR|O_CREAT, 0644);
+		posix_lock_tdb = tdb_open(NULL, 0, TDB_INTERNAL,
+					  O_RDWR|O_CREAT, 0644);
     if (!posix_lock_tdb) {
         DEBUG(0,("Failed to open POSIX byte range locking database.\n"));
 		return False;
     }
 	if (!posix_pending_close_tdb)
-		posix_pending_close_tdb = tdb_open(NULL, 0, TDB_CLEAR_IF_FIRST,
+		posix_pending_close_tdb = tdb_open(NULL, 0, TDB_INTERNAL,
    	            O_RDWR|O_CREAT, 0644);
     if (!posix_pending_close_tdb) {
         DEBUG(0,("Failed to open POSIX pending close database.\n"));

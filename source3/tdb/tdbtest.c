@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 
 	unlink("test.gdbm");
 
-	db = tdb_open("test.db", 0, TDB_CLEAR_IF_FIRST, 
+	db = tdb_open("test.tdb", 0, TDB_CLEAR_IF_FIRST, 
 		      O_RDWR | O_CREAT | O_TRUNC, 0600);
 	gdbm = gdbm_open("test.gdbm", 512, GDBM_WRITER|GDBM_NEWDB|GDBM_FAST, 
 			 0600, NULL);
