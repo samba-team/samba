@@ -129,13 +129,13 @@ BOOL ntv2_owf_gen(const uchar owf[16],
 
 	user_byte_len = push_ucs2_allocate(&user, user_in);
 	if (user_byte_len < 0) {
-		DEBUG(0, ("push_uss2_allocate() for user returned %d (probably malloc() failure)\n", user_byte_len));
+		DEBUG(0, ("push_ucs2_allocate() for user returned %d (probably malloc() failure)\n", user_byte_len));
 		return False;
 	}
 
 	domain_byte_len = push_ucs2_allocate(&domain, domain_in);
 	if (domain_byte_len < 0) {
-		DEBUG(0, ("push_uss2_allocate() for domain returned %d (probably malloc() failure)\n", user_byte_len));
+		DEBUG(0, ("push_ucs2_allocate() for domain returned %d (probably malloc() failure)\n", domain_byte_len));
 		return False;
 	}
 
