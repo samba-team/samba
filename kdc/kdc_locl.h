@@ -79,6 +79,7 @@
 
 extern require_preauth;
 extern sig_atomic_t exit_flag;
+extern char *keyfile;
 
 extern struct timeval now;
 #define kdc_time (now.tv_sec)
@@ -96,6 +97,8 @@ krb5_error_code do_version4();
 void loop (krb5_context);
 
 void kdc_log(int, const char *fmt, ...);
+
+Key *unseal_key(Key *key);
 
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
 
