@@ -1,3 +1,7 @@
+2002-05-08  Jacques Vidrine <n@nectar.com>
+
+	* acquire_cred.c: initialize gssapi; handle null desired_name
+
 2002-03-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: remove non-functional stuff accidentally committed
