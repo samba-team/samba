@@ -506,6 +506,10 @@ static void process_loop(int accept_sock)
 		int maxfd = accept_sock, selret;
 		struct timeval timeout;
 
+		/* Handle messages */
+
+		message_dispatch();
+
 		/* Free up temporary memory */
 
 		lp_talloc_free();
@@ -670,8 +674,9 @@ int main(int argc, char **argv)
 	int opt;
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
-	   SIGUSR2 is received before a handler is installed */
+	   SIGUSR[12] is received before a handler is installed */
 
+ 	CatchSignal(SIGUSR1, SIG_IGN);
  	CatchSignal(SIGUSR2, SIG_IGN);
 
 	fault_setup((void (*)(void *))fault_quit );
@@ -805,10 +810,18 @@ int main(int argc, char **argv)
 	CatchSignal(SIGTERM, termination_handler);
 
 	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
-	CatchSignal(SIGUSR1, SIG_IGN);	               /* Samba messages */
 
 	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
 	CatchSignal(SIGHUP, sighup_handler);
+
+	/* Initialise messaging system */
+
+	if (!message_init()) {
+		DEBUG(0, ("unable to initialise messaging system\n"));
+		exit(1);
+	}
+
+	register_msg_pool_usage();
 
 	/* Create UNIX domain socket */
 	
