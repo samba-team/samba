@@ -484,6 +484,7 @@ static int ut_id_encode(int i, char *fourbyte)
 */
 static BOOL sys_utmp_fill(struct utmp *u,
 			  const char *username, const char *hostname,
+			  struct in_addr *ipaddr,
 			  const char *id_str, int id_num)
 {			  
 	struct timeval timeval;
@@ -538,8 +539,9 @@ static BOOL sys_utmp_fill(struct utmp *u,
 #if defined(HAVE_UT_UT_HOST)
 	utmp_strcpy(u->ut_host, hostname, sizeof(u->ut_host));
 #endif
-
 #if defined(HAVE_UT_UT_ADDR)
+	if (ipaddr)
+		u->ut_addr = ipaddr->s_addr;
 	/*
 	 * "(unsigned long) ut_addr" apparently exists on at least HP-UX 10.20.
 	 * Volunteer to implement, please ...
@@ -561,6 +563,7 @@ static BOOL sys_utmp_fill(struct utmp *u,
 ****************************************************************************/
 
 void sys_utmp_yield(const char *username, const char *hostname, 
+		    struct in_addr *ipaddr,
 		    const char *id_str, int id_num)
 {
 	struct utmp u;
@@ -576,7 +579,7 @@ void sys_utmp_yield(const char *username, const char *hostname,
 	u.ut_type = DEAD_PROCESS;
 #endif
 
-	if (!sys_utmp_fill(&u, username, hostname, id_str, id_num)) return;
+	if (!sys_utmp_fill(&u, username, hostname, ipaddr, id_str, id_num)) return;
 
 	sys_utmp_update(&u, NULL, False);
 }
@@ -586,6 +589,7 @@ void sys_utmp_yield(const char *username, const char *hostname,
 ****************************************************************************/
 
 void sys_utmp_claim(const char *username, const char *hostname, 
+		    struct in_addr *ipaddr,
 		    const char *id_str, int id_num)
 {
 	struct utmp u;
@@ -596,7 +600,7 @@ void sys_utmp_claim(const char *username, const char *hostname,
 	u.ut_type = USER_PROCESS;
 #endif
 
-	if (!sys_utmp_fill(&u, username, hostname, id_str, id_num)) return;
+	if (!sys_utmp_fill(&u, username, hostname, ipaddr, id_str, id_num)) return;
 
 	sys_utmp_update(&u, hostname, True);
 }
