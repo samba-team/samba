@@ -160,7 +160,7 @@ interface dcerpc
 		DCERPC_PKT_BIND_ACK    = 12,
 		DCERPC_PKT_BIND_NAK    = 13,
 		DCERPC_PKT_ALTER       = 14,
-		DCERPC_PKT_ALTER_ACK   = 15,
+		DCERPC_PKT_ALTER_RESP  = 15,
 		DCERPC_PKT_AUTH3       = 16,
 		DCERPC_PKT_SHUTDOWN    = 17,
 		DCERPC_PKT_CO_CANCEL   = 18,
@@ -168,15 +168,15 @@ interface dcerpc
 	} dcerpc_pkt_type;
 
 	typedef [nodiscriminant] union {
-		[case(DCERPC_PKT_REQUEST)]   dcerpc_request  request;
-		[case(DCERPC_PKT_RESPONSE)]  dcerpc_response response;
-		[case(DCERPC_PKT_BIND)]      dcerpc_bind     bind;
-		[case(DCERPC_PKT_BIND_ACK)]  dcerpc_bind_ack bind_ack;
-		[case(DCERPC_PKT_ALTER)]     dcerpc_bind     alter;
-		[case(DCERPC_PKT_ALTER_ACK)] dcerpc_bind_ack alter_ack;
-		[case(DCERPC_PKT_FAULT)]     dcerpc_fault    fault;
-		[case(DCERPC_PKT_AUTH3)]     dcerpc_auth3    auth3;
-		[case(DCERPC_PKT_BIND_NAK)]  dcerpc_bind_nak bind_nak;
+		[case(DCERPC_PKT_REQUEST)]    dcerpc_request  request;
+		[case(DCERPC_PKT_RESPONSE)]   dcerpc_response response;
+		[case(DCERPC_PKT_BIND)]       dcerpc_bind     bind;
+		[case(DCERPC_PKT_BIND_ACK)]   dcerpc_bind_ack bind_ack;
+		[case(DCERPC_PKT_ALTER)]      dcerpc_bind     alter;
+		[case(DCERPC_PKT_ALTER_RESP)] dcerpc_bind_ack alter_resp;
+		[case(DCERPC_PKT_FAULT)]      dcerpc_fault    fault;
+		[case(DCERPC_PKT_AUTH3)]      dcerpc_auth3    auth3;
+		[case(DCERPC_PKT_BIND_NAK)]   dcerpc_bind_nak bind_nak;
 	} dcerpc_payload;
 
 

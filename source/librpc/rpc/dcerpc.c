@@ -562,6 +562,18 @@ static NTSTATUS full_request(struct dcerpc_connection *c,
 	return state->status;
 }
 
+/*
+  map a bind nak reason to a NTSTATUS
+*/
+static NTSTATUS dcerpc_map_reason(uint16_t reason)
+{
+	switch (reason) {
+	case DCERPC_BIND_REASON_ASYNTAX:
+		return NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX;
+	}
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
 
 /* 
    perform a bind using the given syntax 
@@ -622,7 +634,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 
 	if (pkt.ptype == DCERPC_PKT_BIND_NAK) {
 		DEBUG(2,("dcerpc: bind_nak reason %d\n", pkt.u.bind_nak.reject_reason));
-		return NT_STATUS_ACCESS_DENIED;
+		return dcerpc_map_reason(pkt.u.bind_nak.reject_reason);
 	}
 
 	if ((pkt.ptype != DCERPC_PKT_BIND_ACK) ||
@@ -1387,20 +1399,23 @@ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	if (pkt.ptype == DCERPC_PKT_BIND_NAK) {
-		DEBUG(2,("dcerpc: alter_nak reason %d\n", pkt.u.bind_nak.reject_reason));
-		return NT_STATUS_ACCESS_DENIED;
+	if (pkt.ptype == DCERPC_PKT_ALTER_RESP &&
+	    pkt.u.alter_resp.num_results == 1 &&
+	    pkt.u.alter_resp.ctx_list[0].result != 0) {
+		DEBUG(2,("dcerpc: alter_resp failed - reason %d\n", 
+			 pkt.u.alter_resp.ctx_list[0].reason));
+		return dcerpc_map_reason(pkt.u.alter_resp.ctx_list[0].reason);
 	}
 
-	if ((pkt.ptype != DCERPC_PKT_ALTER_ACK) ||
-	    pkt.u.alter_ack.num_results == 0 ||
-	    pkt.u.alter_ack.ctx_list[0].result != 0) {
+	if (pkt.ptype != DCERPC_PKT_ALTER_RESP ||
+	    pkt.u.alter_resp.num_results == 0 ||
+	    pkt.u.alter_resp.ctx_list[0].result != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* the alter_ack might contain a reply set of credentials */
-	if (p->conn->security_state.auth_info && pkt.u.alter_ack.auth_info.length) {
-		status = ndr_pull_struct_blob(&pkt.u.alter_ack.auth_info,
+	/* the alter_resp might contain a reply set of credentials */
+	if (p->conn->security_state.auth_info && pkt.u.alter_resp.auth_info.length) {
+		status = ndr_pull_struct_blob(&pkt.u.alter_resp.auth_info,
 					      mem_ctx,
 					      p->conn->security_state.auth_info,
 					      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);

@@ -49,9 +49,16 @@ BOOL torture_rpc_alter_context(void)
 	}
 
 	printf("Opening secondary DSSETUP context\n");
-	status = dcerpc_secondary_context(p, &p2, 1, DCERPC_DSSETUP_UUID, DCERPC_DSSETUP_VERSION);
+	status = dcerpc_secondary_context(p, &p2, DCERPC_DSSETUP_UUID, DCERPC_DSSETUP_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("dcerpc_alter_context failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("Opening bad secondary connection\n");
+	status = dcerpc_secondary_context(p, &p2, DCERPC_DSSETUP_UUID, DCERPC_DSSETUP_VERSION+100);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_alter_context with wrong version should fail\n");
 		return False;
 	}
 

@@ -1272,8 +1272,8 @@ void dcerpc_log_packet(const struct dcerpc_interface_table *ndr,
 
   this uses dcerpc_alter_context() to create a new dcerpc context_id
 */
-NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, struct dcerpc_pipe **pp2,
-				  uint32_t context_id,
+NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 
+				  struct dcerpc_pipe **pp2,
 				  const char *pipe_uuid,
 				  uint32_t pipe_version)
 {
@@ -1286,7 +1286,7 @@ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, struct dcerpc_pipe **pp
 	}
 	p2->conn = talloc_reference(p2, p->conn);
 
-	p2->context_id = context_id;
+	p2->context_id = ++p->conn->next_context_id;
 
 	status = GUID_from_string(pipe_uuid, &p2->syntax.uuid);
 	if (!NT_STATUS_IS_OK(status)) {

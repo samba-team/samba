@@ -580,22 +580,22 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	dcesrv_init_hdr(&pkt);
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
-	pkt.ptype = DCERPC_PKT_ALTER_ACK;
+	pkt.ptype = DCERPC_PKT_ALTER_RESP;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.u.alter_ack.max_xmit_frag = 0x2000;
-	pkt.u.alter_ack.max_recv_frag = 0x2000;
-	pkt.u.alter_ack.assoc_group_id = call->pkt.u.bind.assoc_group_id;
-	pkt.u.alter_ack.secondary_address = NULL;
-	pkt.u.alter_ack.num_results = 1;
-	pkt.u.alter_ack.ctx_list = talloc_p(call, struct dcerpc_ack_ctx);
-	if (!pkt.u.alter_ack.ctx_list) {
+	pkt.u.alter_resp.max_xmit_frag = 0x2000;
+	pkt.u.alter_resp.max_recv_frag = 0x2000;
+	pkt.u.alter_resp.assoc_group_id = call->pkt.u.bind.assoc_group_id;
+	pkt.u.alter_resp.secondary_address = NULL;
+	pkt.u.alter_resp.num_results = 1;
+	pkt.u.alter_resp.ctx_list = talloc_p(call, struct dcerpc_ack_ctx);
+	if (!pkt.u.alter_resp.ctx_list) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	pkt.u.alter_ack.ctx_list[0].result = result;
-	pkt.u.alter_ack.ctx_list[0].reason = reason;
-	GUID_from_string(NDR_GUID, &pkt.u.alter_ack.ctx_list[0].syntax.uuid);
-	pkt.u.alter_ack.ctx_list[0].syntax.if_version = NDR_GUID_VERSION;
-	pkt.u.alter_ack.auth_info = data_blob(NULL, 0);
+	pkt.u.alter_resp.ctx_list[0].result = result;
+	pkt.u.alter_resp.ctx_list[0].reason = reason;
+	GUID_from_string(NDR_GUID, &pkt.u.alter_resp.ctx_list[0].syntax.uuid);
+	pkt.u.alter_resp.ctx_list[0].syntax.if_version = NDR_GUID_VERSION;
+	pkt.u.alter_resp.auth_info = data_blob(NULL, 0);
 
 	if (!dcesrv_auth_alter_ack(call, &pkt)) {
 		return dcesrv_bind_nak(call, 0);

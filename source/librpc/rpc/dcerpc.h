@@ -76,6 +76,9 @@ struct dcerpc_connection {
 
 	/* private pointer for pending full requests */
 	void *full_request_private;
+
+	/* the next context_id to be assigned */
+	uint32_t next_context_id;
 };
 
 /*
