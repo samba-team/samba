@@ -41,8 +41,24 @@ static BOOL create_noauth_pdu(struct cli_connection *con,
 	prs_struct hdr;
 	int data_len;
 	int frag_len;
+	int max_recv_frag;
 	char *d = prs_data(data, data_start);
 	struct ntdom_info *nt = cli_conn_get_ntinfo(con);
+
+	if (nt == NULL)
+	{
+		DEBUG(1, ("WARNING: create_noauth_pdu: no ntinfo for con\n"));
+		return False;
+	}
+
+	max_recv_frag = nt->max_recv_frag;
+
+	if (max_recv_frag == 0)
+	{
+		max_recv_frag = 256;
+		DEBUG(1, ("WARNING: create_noauth_pdu: max_recv_frag==0, "
+			  "setting to 0x%x as work-around\n", max_recv_frag));
+	}
 
 	*flags = 0;
 
@@ -57,9 +73,9 @@ static BOOL create_noauth_pdu(struct cli_connection *con,
 		(*flags) |= RPC_FLG_FIRST;
 	}
 
-	if (data_len > nt->max_recv_frag)
+	if (data_len > max_recv_frag)
 	{
-		data_len = nt->max_recv_frag + 0x18;
+		data_len = max_recv_frag;
 	}
 	else
 	{
