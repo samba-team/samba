@@ -469,8 +469,7 @@ BOOL authorise_login(int snum,char *user, DATA_BLOB password,
 		 */
 
 		if (!vuser) {
-			DEBUG(1,("authorise_login: refusing user %s with no session setup\n",
-					user));
+			DEBUG(1,("authorise_login: refusing user '%s' with no session setup\n", user));
 			return False;
 		}
 
