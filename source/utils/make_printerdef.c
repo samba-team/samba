@@ -25,14 +25,50 @@
 /*
 #define DEBUGIT
 */
+
 char *files_to_copy;
 char *driverfile, *datafile, *helpfile, *languagemonitor, *datatype;
 char buffer[50][255];
+char sbuffer[50][255];
 char sub_dir[50][2][255];
 
 void usage(char *name)
 {
  fprintf(stderr,"%s: printer.def \"Printer Name\"\n", name);
+}
+
+char *myfgets(char *s, int n, FILE *stream)
+{
+  char *LString1;
+  char *LString2;
+  char *temp;
+  char String[255];
+  char NewString[255];
+  int i;
+
+  fgets(s,n,stream);
+  while (LString1 = strchr(s,'%')) {
+    if (!(LString2 = strchr(LString1+1,'%'))) break;
+    *LString2 = '\0';
+    strcpy(String,LString1+1);
+    i = 0;
+    while(*sbuffer[i]!='\0') {
+      if (strncmp(sbuffer[i],String,strlen(String))==0)
+      {
+	strcpy(String,sbuffer[i]);
+	if (temp = strchr(String,'=')) ++temp;
+	strcpy(String,temp);
+	break;
+      }
+      i++;	
+    }
+    *LString1 = '\0';
+    strcpy(NewString,s);
+    strcat(NewString,String);
+    strcat(NewString,LString2+1);
+    strcpy(s, NewString);
+  }
+  return(s);
 }
 
 /*
@@ -86,6 +122,56 @@ void build_subdir()
 }
 
 /*
+   Lockup Strings entry in a file
+   Return all the lines between the entry and the next one or the end of file
+   An entry is something between braces.
+*/
+void lookup_strings(FILE *fichier)
+{
+  int found=0,pointeur=0,i=0;
+  char *temp,*temp2;
+  
+  temp=(char *)malloc(255*sizeof(char));
+  temp2=(char *)malloc(255*sizeof(char));
+  
+  *sbuffer[0]='\0';
+  
+  strcpy(temp2,"[Strings]");
+  
+  rewind(fichier);
+#ifdef DEBUGIT
+  fprintf(stderr,"\tLooking for Strings\n");
+#endif
+  
+  while (!feof(fichier) && found==0) {
+  	*temp='\0';
+  	fgets(temp,255,fichier);
+	if (strncmp(temp,temp2,strlen(temp2))==0) found=1;
+  }
+
+
+  while (!feof(fichier) && found==1) {
+  	*temp='\0';
+  	fgets(temp,255,fichier);
+	if (*temp=='[') {
+		found=2;
+		*sbuffer[pointeur]='\0';
+	}
+	else {
+		strcpy(sbuffer[pointeur],temp);
+		i=strlen(sbuffer[pointeur])-1;
+		while (sbuffer[pointeur][i]=='\r' || sbuffer[pointeur][i]=='\n')
+			sbuffer[pointeur][i--]='\0';
+		pointeur++;
+	}  
+  }
+#ifdef DEBUGIT
+  fprintf(stderr,"\t\tFound %d entries\n",pointeur-1);
+#endif
+}
+
+
+/*
    Lockup an entry in a file
    Return all the lines between the entry and the next one or the end of file
    An entry is something between braces.
@@ -111,14 +197,14 @@ void lookup_entry(FILE *fichier,char *chaine)
   
   while (!feof(fichier) && found==0) {
   	*temp='\0';
-  	fgets(temp,255,fichier);
+  	myfgets(temp,255,fichier);
 	if (strncmp(temp,temp2,strlen(temp2))==0) found=1;
   }
 
 
   while (!feof(fichier) && found==1) {
   	*temp='\0';
-  	fgets(temp,255,fichier);
+  	myfgets(temp,255,fichier);
 	if (*temp=='[') {
 		found=2;
 		*buffer[pointeur]='\0';
@@ -136,8 +222,6 @@ void lookup_entry(FILE *fichier,char *chaine)
 #endif
 }
 
-
-
 char *find_desc(FILE *fichier,char *text)
 {
   char *chaine;
@@ -151,10 +235,15 @@ char *find_desc(FILE *fichier,char *text)
   chaine=(char *)malloc(255*sizeof(char));
   long_desc=(char *)malloc(40*sizeof(char));
   short_desc=(char *)malloc(40*sizeof(char));
+  if (!chaine || !long_desc || !short_desc) {
+    fprintf(stderr,"Unable to malloc memory\n");
+    exit(1);
+  }
 
+  rewind(fichier);
   while (!feof(fichier) && found==0)
   {
-    fgets(chaine,255,fichier);
+    myfgets(chaine,255,fichier);
 
     long_desc=strtok(chaine,"=");
     crap=strtok(NULL,",\r");
@@ -185,6 +274,7 @@ char *find_desc(FILE *fichier,char *text)
 void scan_copyfiles(FILE *fichier, char *chaine)
 {
   char *part;
+  char *mpart;
   int i;
   char direc[255];
 #ifdef DEBUGIT
@@ -217,9 +307,38 @@ void scan_copyfiles(FILE *fichier, char *chaine)
       }	
       i=0;
       while (*buffer[i]!='\0') {
-	part = &buffer[i][strlen(buffer[i])-1];
-	if (*part == '=')
-	  *part = '\0';
+/*
+ * HP inf files have strange entries that this attempts to address
+ * Entries in the Copy sections normally have only a single file name
+ * on each line. I have seen the following format in various HP inf files:
+ * 
+ * pscript.hlp =  pscript.hl_
+ * hpdcmon.dll,hpdcmon.dl_
+ * ctl3dv2.dll,ctl3dv2.dl_,ctl3dv2.tmp
+ *
+ * In the first 2 cases you want the first file name - in the last case
+ * you only want the last file name (at least that is what a Win95
+ * machine sent). This may still be wrong but at least I get the same list
+ * of files as seen on a printer test page.
+ */
+        part = strchr(buffer[i],'=');
+        if (part) {
+          *part = '\0';
+	  while (--part > buffer[i])
+	    if ((*part == ' ') || (*part =='\t')) *part = '\0';
+	    else break;
+	} else {
+	  part = strchr(buffer[i],',');
+	  if (part) {
+	    if (mpart = strrchr(part+1,',')) {
+		strcpy(buffer[i],mpart+1);
+	    } else
+		*part = '\0';
+            while (--part > buffer[i])
+              if ((*part == ' ') || (*part =='\t')) *part = '\0';
+              else break;
+	  }
+	}
         if (strlen(files_to_copy) != 0)
           strcat(files_to_copy,",");
 	strcat(files_to_copy,direc);
@@ -257,19 +376,19 @@ void scan_short_desc(FILE *fichier, char *short_desc)
 #ifdef DEBUGIT
     fprintf(stderr,"\tLookup up of %s\n",buffer[i]);
 #endif
-    if (strncmp(buffer[i],"CopyFiles",9)==0) 
+    if (strncasecmp(buffer[i],"CopyFiles",9)==0) 
 	copyfiles=scan(buffer[i],&temp);
-    else if (strncmp(buffer[i],"DataSection",11)==0) 
+    else if (strncasecmp(buffer[i],"DataSection",11)==0) 
 	datasection=scan(buffer[i],&temp);
-    else if (strncmp(buffer[i],"DataFile",8)==0) 
+    else if (strncasecmp(buffer[i],"DataFile",8)==0) 
 	datafile=scan(buffer[i],&temp);
-    else if (strncmp(buffer[i],"DriverFile",10)==0) 
+    else if (strncasecmp(buffer[i],"DriverFile",10)==0) 
 	driverfile=scan(buffer[i],&temp);
-    else if (strncmp(buffer[i],"HelpFile",8)==0) 
+    else if (strncasecmp(buffer[i],"HelpFile",8)==0) 
 	helpfile=scan(buffer[i],&temp);
-    else if (strncmp(buffer[i],"LanguageMonitor",15)==0) 
+    else if (strncasecmp(buffer[i],"LanguageMonitor",15)==0) 
 	languagemonitor=scan(buffer[i],&temp);
-    else if (strncmp(buffer[i],"DefaultDataType",15)==0) 
+    else if (strncasecmp(buffer[i],"DefaultDataType",15)==0) 
 	datatype=scan(buffer[i],&temp);
     i++;	
   }
@@ -282,43 +401,29 @@ void scan_short_desc(FILE *fichier, char *short_desc)
 #ifdef DEBUGIT
       fprintf(stderr,"\tLookup up of %s\n",buffer[i]);
 #endif
-      if (strncmp(buffer[i],"CopyFiles",9)==0) 
+      if (strncasecmp(buffer[i],"CopyFiles",9)==0) 
 	  copyfiles=scan(buffer[i],&temp);
-      else if (strncmp(buffer[i],"DataSection",11)==0) 
+      else if (strncasecmp(buffer[i],"DataSection",11)==0) 
 	  datasection=scan(buffer[i],&temp);
-      else if (strncmp(buffer[i],"DataFile",8)==0) 
+      else if (strncasecmp(buffer[i],"DataFile",8)==0) 
 	  datafile=scan(buffer[i],&temp);
-      else if (strncmp(buffer[i],"DriverFile",10)==0) 
+      else if (strncasecmp(buffer[i],"DriverFile",10)==0) 
 	  driverfile=scan(buffer[i],&temp);
-      else if (strncmp(buffer[i],"HelpFile",8)==0) 
+      else if (strncasecmp(buffer[i],"HelpFile",8)==0) 
 	  helpfile=scan(buffer[i],&temp);
-      else if (strncmp(buffer[i],"LanguageMonitor",15)==0) 
+      else if (strncasecmp(buffer[i],"LanguageMonitor",15)==0) 
 	  languagemonitor=scan(buffer[i],&temp);
-      else if (strncmp(buffer[i],"DefaultDataType",15)==0) 
+      else if (strncasecmp(buffer[i],"DefaultDataType",15)==0) 
 	  datatype=scan(buffer[i],&temp);
       i++;	
     }
   }
 
-  if (languagemonitor && (*languagemonitor == '%')) {
-    ++languagemonitor;
-    languagemonitor[strlen(languagemonitor)-1] = '\0';
-    lookup_entry(fichier,"Strings");
-    i = 0;
-    while(*buffer[i]!='\0') {
-#ifdef DEBUGIT
-      fprintf(stderr,"\tLookup up of %s\n",buffer[i]);
-#endif
-      if (strncmp(buffer[i],languagemonitor,strlen(languagemonitor))==0)
-      {
-	temp = strtok(buffer[i],"=");
-	temp = strtok(NULL,",");
+  if (languagemonitor) {
+	temp = strtok(languagemonitor,",");
 	if (*temp == '"') ++temp;
 	strcpy(languagemonitor,temp);
-	break;
-      }
-      i++;	
-    }
+	if (temp = strchr(languagemonitor,'"')) *temp = '\0';
   }
 
   if (i) fprintf(stderr,"End of section found\n");
@@ -349,6 +454,8 @@ int main(int argc, char *argv[])
     fprintf(stderr,"Description file not found, bye\n");
     return(-1);
   }
+
+  lookup_strings(inf_file);
 
   short_desc=find_desc(inf_file,argv[2]);
   if (short_desc==NULL)
