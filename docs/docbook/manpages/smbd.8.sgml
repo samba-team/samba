@@ -17,6 +17,7 @@
 		<command>smbd</command>
 		<arg choice="opt">-D</arg>
 		<arg choice="opt">-a</arg>
+		<arg choice="opt">-i</arg>
 		<arg choice="opt">-o</arg>
 		<arg choice="opt">-P</arg>
 		<arg choice="opt">-h</arg>
@@ -92,6 +93,16 @@
 		<listitem><para>If this parameter is specified, each new 
 		connection will append log messages to the log file.  
 		This is the default.</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>-i</term>
+		<listitem><para>If this parameter is specified it causes the
+		server to run "interactively", not as a daemon, even if the
+		server is executed on the command line of a shell. Setting this
+		parameter negates the implicit deamon mode when run from the
+		command line.
+		</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
