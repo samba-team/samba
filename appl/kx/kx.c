@@ -371,6 +371,7 @@ doit_active (char *host, char *user,
     int i;
     size_t rem;
     u_int32_t other_port;
+    int error;
 
     otherside = connect_host (host, user, &key, schedule, port,
 			      &me, &him);
@@ -454,8 +455,12 @@ doit_active (char *host, char *user,
 	snprintf (display, display_size, "localhost:%u", display_num);
     else
 	snprintf (display, display_size, ":%u", display_num);
-    if (create_and_write_cookie (xauthfile, xauthfile_size, cookie, cookie_len))
+    error = create_and_write_cookie (xauthfile, xauthfile_size,
+				     cookie, cookie_len);
+    if (error) {
+	warnx ("failed creating cookie file: %s", strerror(error));
 	return 1;
+    }
     status_output (debugpp);
     for (;;) {
 	fd_set fdset;
