@@ -171,7 +171,8 @@ static void print_winbindd_status(void)
 static void flush_caches(void)
 {
 	/* Clear cached user and group enumation info */	
-	wcache_flush_cache();
+	if (!opt_dual_daemon) /* Until we have coherent cache flush. */
+		wcache_flush_cache();
 }
 
 /* Handle the signal by unlinking socket and exiting */
@@ -661,7 +662,8 @@ static void process_loop(void)
 		}
 
 #if 0
-		winbindd_check_cache_size(time(NULL));
+		if (!opt_dual_daemon) /* Until we have coherent cache flush. */
+			winbindd_check_cache_size(time(NULL));
 #endif
 
 		/* Check signal handling things */
