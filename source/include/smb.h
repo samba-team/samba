@@ -491,7 +491,6 @@ typedef struct connection_struct
 	BOOL ipc;
 	BOOL read_only;
 	BOOL admin_user;
-	BOOL print_admin_user;
 	char *dirpath;
 	char *connectpath;
 	char *origpath;

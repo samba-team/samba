@@ -4521,7 +4521,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	/* Always allow root or printer admins to do anything */
 
 	if (user->uid == 0 || 
-	    user_in_list(uidtoname(user->uid), lp_printer_admin(snum))) {
+	    user_in_plist(uidtoname(user->uid), lp_printer_admin(snum))) {
 		return True;
 	}
 

@@ -391,12 +391,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	} else
 		conn->admin_user = False;
     
-	if (user_in_plist(user,lp_printer_admin(snum)) ) {
-		conn->print_admin_user = True;
-		DEBUG(1,("make_connection: %s logged in as printer admin user\n",user));
-	} else
-		conn->print_admin_user = False;
-    
 	conn->force_user = force;
 	conn->vuid = vuid;
 	conn->uid = pass->pw_uid;
