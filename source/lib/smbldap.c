@@ -806,6 +806,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 	int rc;
 	char *ldap_dn;
 	char *ldap_secret;
+	int version;
 
 	/* get the password */
 	if (!fetch_ldap_pw(&ldap_dn, &ldap_secret)) {
@@ -855,7 +856,14 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 
 	ldap_state->num_failures = 0;
 
+	ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
+
+	if (smbldap_has_control(ldap_state, ADS_PAGE_CTL_OID) && version == 3) {
+		ldap_state->paged_results = True;
+	}
+
 	DEBUG(3, ("ldap_connect_system: succesful connection to the LDAP server\n"));
+	DEBUGADD(3, ("ldap_connect_system: LDAP server %s support paged results\n", ldap_state->paged_results?"does":"does not"));
 	return rc;
 }
 
@@ -1431,3 +1439,96 @@ char *smbldap_get_dn(LDAP *ld, LDAPMessage *entry)
 	return unix_dn;
 }
 
+/*******************************************************************
+ Check if root-dse has a certain Control or Extension
+********************************************************************/
+
+static BOOL smbldap_check_root_dse(struct smbldap_state *ldap_state, const char **attrs, const char *value) 
+{
+	LDAPMessage *msg = NULL;
+	LDAPMessage *entry = NULL;
+	char **values = NULL;
+	int rc, num_result, num_values, i;
+	BOOL result = False;
+
+	if (!attrs[0]) {
+		DEBUG(3,("smbldap_check_root_dse: nothing to look for\n"));
+		return False;
+	}
+
+	if (!strequal(attrs[0], "supportedExtension") && 
+	    !strequal(attrs[0], "supportedControl")) {
+		DEBUG(3,("smbldap_check_root_dse: no idea what to query root-dse for: %s ?\n", attrs[0]));
+		return False;
+	}
+
+	rc = ldap_search_s(ldap_state->ldap_struct, "", LDAP_SCOPE_BASE, 
+			   "(objectclass=*)", attrs, 0 , &msg);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(3,("smbldap_check_root_dse: Could not search rootDSE\n"));
+		return False;
+	}
+
+	num_result = ldap_count_entries(ldap_state->ldap_struct, msg);
+
+	if (num_result != 1) {
+		DEBUG(3,("smbldap_check_root_dse: Expected one rootDSE, got %d\n", num_result));
+		goto done;
+	}
+
+	entry = ldap_first_entry(ldap_state->ldap_struct, msg);
+
+	if (entry == NULL) {
+		DEBUG(3,("smbldap_check_root_dse: Could not retrieve rootDSE\n"));
+		goto done;
+	}
+
+	values = ldap_get_values(ldap_state->ldap_struct, entry, attrs[0]);
+
+	if (values == NULL) {
+		DEBUG(5,("smbldap_check_root_dse: LDAP Server does not support any %s\n", attrs[0]));
+		goto done;
+	}
+
+	num_values = ldap_count_values(values);
+
+	if (num_values == 0) {
+		DEBUG(5,("smbldap_check_root_dse: LDAP Server does not have any %s\n", attrs[0]));
+		goto done;
+	}
+
+	for (i=0; i<num_values; i++) {
+		if (strcmp(values[i], value) == 0)
+			result = True;
+	}
+
+
+ done:
+	if (values != NULL)
+		ldap_value_free(values);
+	if (msg != NULL)
+		ldap_msgfree(msg);
+
+	return result;
+}
+
+/*******************************************************************
+ Check if LDAP-Server supports a certain Control (OID in string format)
+********************************************************************/
+
+BOOL smbldap_has_control(struct smbldap_state *ldap_state, const char *control)
+{
+	const char *attrs[] = { "supportedControl", NULL };
+	return smbldap_check_root_dse(ldap_state, attrs, control);
+}
+
+/*******************************************************************
+ Check if LDAP-Server supports a certain Extension (OID in string format)
+********************************************************************/
+
+BOOL smbldap_has_extension(struct smbldap_state *ldap_state, const char *extension)
+{
+	const char *attrs[] = { "supportedExtension", NULL };
+	return smbldap_check_root_dse(ldap_state, attrs, extension);
+}
