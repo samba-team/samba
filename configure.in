@@ -1,7 +1,8 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
 AC_PREREQ(2.53)
-AC_INIT(heimdal, 0.4f, heimdal-bugs@pdc.kth.se)
+test -z "$CFLAGS" && CFLAGS="-g"
+AC_INIT(Heimdal, 0.4f, heimdal-bugs@pdc.kth.se)
 AM_CONFIG_HEADER(include/config.h)
 
 dnl Checks for programs.
@@ -9,7 +10,7 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_CC_STDC
 
-AM_INIT_AUTOMAKE(heimdal,0.4f)
+AM_INIT_AUTOMAKE
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
@@ -49,8 +50,6 @@ case "$host" in
 	aix=4
 	;;
 esac
-
-test -z "$CFLAGS" && CFLAGS="-g"
 
 AC_OBJEXT
 AC_EXEEXT
@@ -511,11 +510,10 @@ AC_OUTPUT
 dnl
 dnl This is the release version name-number[beta]
 dnl
-HEIMDALVERSION="$PACKAGE-$VERSION"
 
 cat > include/newversion.h.in <<EOF
-const char *heimdal_long_version = "@(#)\$Version: $HEIMDALVERSION by @USER@ on @HOST@ ($host) @DATE@ \$";
-const char *heimdal_version = "$HEIMDALVERSION";
+const char *heimdal_long_version = "@([#])\$Version: $PACKAGE_STRING by @USER@ on @HOST@ ($host) @DATE@ \$";
+const char *heimdal_version = "AC_PACKAGE_STRING";
 EOF
 
 if test -f include/version.h && cmp -s include/newversion.h.in include/version.h.in; then
