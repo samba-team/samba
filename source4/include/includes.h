@@ -776,8 +776,9 @@ extern int errno;
 
 #include "mutex.h"
 
-#include "libcli/rpc/librpc.h"
-#include "libcli/rpc/rpc_sec.h"
+#include "libcli/ndr/libndr.h"
+#include "libcli/ndr/ndr_sec.h"
+#include "libcli/rpc/dcerpc.h"
 
 /*
  * Type for wide character dirent structure.

@@ -22,13 +22,13 @@
 
 #include "includes.h"
 
-#define NDR_NEED_BYTES(ndr, n) do { \
+#define NDR_PULL_NEED_BYTES(ndr, n) do { \
 	if ((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size) { \
 		return NT_STATUS_BUFFER_TOO_SMALL; \
 	} \
 } while(0)
 
-#define NDR_ALIGN(ndr, n) do { \
+#define NDR_PULL_ALIGN(ndr, n) do { \
 	ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
 	if (ndr->offset >= ndr->data_size) { \
 		return NT_STATUS_BUFFER_TOO_SMALL; \
@@ -38,10 +38,10 @@
 /*
   parse a GUID
 */
-NTSTATUS ndr_parse_guid(struct ndr_parse *ndr, GUID *guid)
+NTSTATUS ndr_pull_guid(struct ndr_pull *ndr, GUID *guid)
 {
 	int i;
-	NDR_NEED_BYTES(ndr, GUID_SIZE);
+	NDR_PULL_NEED_BYTES(ndr, GUID_SIZE);
 	for (i=0;i<GUID_SIZE;i++) {
 		guid->info[i] = CVAL(ndr->data, ndr->offset + i);
 	}
@@ -53,9 +53,9 @@ NTSTATUS ndr_parse_guid(struct ndr_parse *ndr, GUID *guid)
 /*
   parse a u8
 */
-NTSTATUS ndr_parse_u8(struct ndr_parse *ndr, uint8 *v)
+NTSTATUS ndr_pull_u8(struct ndr_pull *ndr, uint8 *v)
 {
-	NDR_NEED_BYTES(ndr, 1);
+	NDR_PULL_NEED_BYTES(ndr, 1);
 	*v = CVAL(ndr->data, ndr->offset);
 	ndr->offset += 1;
 	return NT_STATUS_OK;
@@ -65,10 +65,10 @@ NTSTATUS ndr_parse_u8(struct ndr_parse *ndr, uint8 *v)
 /*
   parse a u16
 */
-NTSTATUS ndr_parse_u16(struct ndr_parse *ndr, uint16 *v)
+NTSTATUS ndr_pull_u16(struct ndr_pull *ndr, uint16 *v)
 {
-	NDR_ALIGN(ndr, 2);
-	NDR_NEED_BYTES(ndr, 2);
+	NDR_PULL_ALIGN(ndr, 2);
+	NDR_PULL_NEED_BYTES(ndr, 2);
 	if (ndr->flags & LIBNDR_FLAG_BIGENDIAN) {
 		*v = RSVAL(ndr->data, ndr->offset);
 	} else {
@@ -82,10 +82,10 @@ NTSTATUS ndr_parse_u16(struct ndr_parse *ndr, uint16 *v)
 /*
   parse a u32
 */
-NTSTATUS ndr_parse_u32(struct ndr_parse *ndr, uint32 *v)
+NTSTATUS ndr_pull_u32(struct ndr_pull *ndr, uint32 *v)
 {
-	NDR_ALIGN(ndr, 4);
-	NDR_NEED_BYTES(ndr, 4);
+	NDR_PULL_ALIGN(ndr, 4);
+	NDR_PULL_NEED_BYTES(ndr, 4);
 	if (ndr->flags & LIBNDR_FLAG_BIGENDIAN) {
 		*v = RIVAL(ndr->data, ndr->offset);
 	} else {
@@ -95,3 +95,46 @@ NTSTATUS ndr_parse_u32(struct ndr_parse *ndr, uint32 *v)
 	return NT_STATUS_OK;
 }
 
+
+
+#define NDR_PUSH_NEED_BYTES(ndr, n) NDR_CHECK(ndr_push_expand(ndr, ndr->offset+(n)))
+
+#define NDR_PUSH_ALIGN(ndr, n) do { \
+	ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
+	NDR_CHECK(ndr_push_expand(ndr, ndr->offset)); \
+} while(0)
+
+/*
+  push a u8
+*/
+NTSTATUS ndr_push_u8(struct ndr_push *ndr, uint8 v)
+{
+	NDR_PUSH_NEED_BYTES(ndr, 1);
+	SCVAL(ndr->data, ndr->offset, v);
+	ndr->offset += 1;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a u16
+*/
+NTSTATUS ndr_push_u16(struct ndr_push *ndr, uint16 v)
+{
+	NDR_PUSH_ALIGN(ndr, 2);
+	NDR_PUSH_NEED_BYTES(ndr, 2);
+	SSVAL(ndr->data, ndr->offset, v);
+	ndr->offset += 2;
+	return NT_STATUS_OK;
+}
+
+/*
+  push a u32
+*/
+NTSTATUS ndr_push_u32(struct ndr_push *ndr, uint32 v)
+{
+	NDR_PUSH_ALIGN(ndr, 4);
+	NDR_PUSH_NEED_BYTES(ndr, 4);
+	SIVAL(ndr->data, ndr->offset, v);
+	ndr->offset += 4;
+	return NT_STATUS_OK;
+}
