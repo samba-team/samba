@@ -41,7 +41,7 @@ SOURCES = $(SOURCES_OTP) $(SOURCES_OTPPRINT)
 all: $(PROGS)
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $<
+	$(CC) -c $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)

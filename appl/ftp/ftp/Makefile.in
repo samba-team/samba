@@ -48,7 +48,7 @@ SOURCES = $(ftp_SOURCES)
 all: $(PROGS)
 
 .c.o:
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(DEFS) $<
+	$(CC) -c -I$(srcdir) -I../../../include $(DEFS) $(CFLAGS) $(CPPFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)

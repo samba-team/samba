@@ -29,7 +29,7 @@ LIB = $(LIBNAME).$(LIBEXT)
 all: $(LIB)
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I$(srcdir) -I../../../include $(DEFS) $<
+	$(CC) -c -I$(srcdir) -I../../../include $(DEFS) $(CFLAGS) $(CPPFLAGS) $<
 
 $(LIB): $(libcommon_OBJS)
 	rm -f $@

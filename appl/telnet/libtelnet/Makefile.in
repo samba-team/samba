@@ -27,7 +27,7 @@ all: $(LIB)
 libtop = @libtop@
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DEFS) -I../../../include -I$(srcdir)/.. $<
+	$(CC) -c $(DEFS) -I../../../include -I$(srcdir)/.. $(CFLAGS) $(CPPFLAGS) $<
 
 $(LIB): $(OBJECTS)
 	rm -f $@

@@ -47,7 +47,7 @@ Wall:
 	make CFLAGS="$(XINCS) -g -Wall -Wno-comment -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $<
+	$(CC) -c $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(bindir)

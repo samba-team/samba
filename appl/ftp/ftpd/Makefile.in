@@ -53,7 +53,7 @@ OBJECTS = $(ftpd_OBJS)
 all: $(PROGS)
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I$(srcdir) -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $<
+	$(CC) -c -I$(srcdir) -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $(CFLAGS) $(CPPFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(libexecdir)
