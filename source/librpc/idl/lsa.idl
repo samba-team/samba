@@ -263,7 +263,7 @@
 		[in,ref]     policy_handle *handle,
 		[in,ref]     lsa_TrustInformation *info,
 		[in]         uint32 access_mask,
-		[out,ref]    policy_handle *dom_handle
+		[out,ref]    policy_handle *trustdom_handle
 		);
 
 

@@ -639,7 +639,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	struct lsa_CreateTrustedDomain r;
 	struct lsa_TrustInformation trustinfo;
 	struct dom_sid *domsid;
-	struct policy_handle dom_handle;
+	struct policy_handle trustdom_handle;
 
 	printf("Testing CreateTrustedDomain\n");
 
@@ -651,7 +651,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	r.in.handle = handle;
 	r.in.info = &trustinfo;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.dom_handle = &dom_handle;
+	r.out.trustdom_handle = &trustdom_handle;
 
 	status = dcerpc_lsa_CreateTrustedDomain(p, mem_ctx, &r);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
@@ -663,7 +663,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (!test_Delete(p, mem_ctx, &dom_handle)) {
+	if (!test_Delete(p, mem_ctx, &trustdom_handle)) {
 		return False;
 	}
 

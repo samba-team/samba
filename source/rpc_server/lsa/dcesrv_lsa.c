@@ -36,7 +36,8 @@
 enum lsa_handle {
 	LSA_HANDLE_POLICY,
 	LSA_HANDLE_ACCOUNT,
-	LSA_HANDLE_SECRET
+	LSA_HANDLE_SECRET,
+	LSA_HANDLE_TRUSTED_DOMAIN
 };
 
 /*
@@ -79,6 +80,15 @@ struct lsa_secret_state {
 	BOOL global;
 };
 
+/*
+  state associated with a lsa_OpenTrustedDomain() operation
+*/
+struct lsa_trusted_domain_state {
+	struct lsa_policy_state *policy;
+	uint32_t access_mask;
+	const char *trusted_domain_dn;
+};
+
 /* 
   lsa_Close 
 */
@@ -112,6 +122,16 @@ static NTSTATUS lsa_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 	if (h->wire_handle.handle_type == LSA_HANDLE_SECRET) {
 		struct lsa_secret_state *secret_state = h->data;
 		ret = samdb_delete(secret_state->sam_ctx, mem_ctx, secret_state->secret_dn);
+		talloc_free(h);
+		if (ret != 0) {
+			return NT_STATUS_INVALID_HANDLE;
+		}
+
+		return NT_STATUS_OK;
+	} else if (h->wire_handle.handle_type == LSA_HANDLE_TRUSTED_DOMAIN) {
+		struct lsa_trusted_domain_state *trusted_domain_state = h->data;
+		ret = samdb_delete(trusted_domain_state->policy->sam_ctx, mem_ctx, 
+				   trusted_domain_state->trusted_domain_dn);
 		talloc_free(h);
 		if (ret != 0) {
 			return NT_STATUS_INVALID_HANDLE;
@@ -520,11 +540,346 @@ static NTSTATUS lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 }
 
 
+/*
+  lsa_CreateTrustedDomainEx2
+*/
+static NTSTATUS lsa_CreateTrustedDomainEx2(struct dcesrv_call_state *dce_call,
+					   TALLOC_CTX *mem_ctx,
+					   struct lsa_CreateTrustedDomainEx2 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_CreateTrustedDomainEx
+*/
+static NTSTATUS lsa_CreateTrustedDomainEx(struct dcesrv_call_state *dce_call,
+					  TALLOC_CTX *mem_ctx,
+					  struct lsa_CreateTrustedDomainEx *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
 /* 
   lsa_CreateTrustedDomain 
 */
 static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct lsa_CreateTrustedDomain *r)
+{
+	struct dcesrv_handle *policy_handle;
+	struct lsa_policy_state *policy_state;
+	struct lsa_trusted_domain_state *trusted_domain_state;
+	struct dcesrv_handle *handle;
+	struct ldb_message **msgs, *msg;
+	const char *attrs[] = {
+		NULL
+	};
+	const char *name;
+	int ret;
+
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+	ZERO_STRUCTP(r->out.trustdom_handle);
+	
+	policy_state = policy_handle->data;
+
+	if (!r->in.info->name.string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	name = r->in.info->name.string;
+	
+	trusted_domain_state = talloc(mem_ctx, struct lsa_trusted_domain_state);
+	if (!trusted_domain_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	trusted_domain_state->policy = policy_state;
+
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the trusted_domain record */
+	ret = samdb_search(trusted_domain_state->policy->sam_ctx,
+			   mem_ctx, policy_state->system_dn, &msgs, attrs,
+			   "(&(cn=%s)(objectclass=trustedDomain))", 
+			   r->in.info->name.string);
+	if (ret > 0) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+	
+	if (ret < 0 || ret > 1) {
+		DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	
+	msg->dn = talloc_asprintf(mem_ctx, "cn=%s,%s", r->in.info->name.string, 
+				  policy_state->system_dn);
+	if (!msg->dn) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	samdb_msg_add_string(trusted_domain_state->policy->sam_ctx, mem_ctx, msg, "cn", name);
+	samdb_msg_add_string(trusted_domain_state->policy->sam_ctx, mem_ctx, msg, "flatname", name);
+
+	if (r->in.info->sid) {
+		const char *sid_string = dom_sid_string(mem_ctx, r->in.info->sid);
+		if (!sid_string) {
+			return NT_STATUS_NO_MEMORY;
+		}
+			
+		samdb_msg_add_string(trusted_domain_state->policy->sam_ctx, mem_ctx, msg, "securityIdentifier", name);
+	}
+
+	/* pull in all the template attributes.  Note this is always from the global samdb */
+	ret = samdb_copy_template(trusted_domain_state->policy->sam_ctx, mem_ctx, msg, 
+				  "(&(name=TemplateTrustedDomain)(objectclass=trustedDomainTemplate))");
+	if (ret != 0) {
+		DEBUG(0,("Failed to load TemplateTrustedDomain from samdb\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	samdb_msg_add_string(trusted_domain_state->policy->sam_ctx, mem_ctx, msg, "objectClass", "trustedDomain");
+	
+	trusted_domain_state->trusted_domain_dn = talloc_reference(trusted_domain_state, msg->dn);
+
+	/* create the trusted_domain */
+	ret = samdb_add(trusted_domain_state->policy->sam_ctx, mem_ctx, msg);
+	if (ret != 0) {
+		DEBUG(0,("Failed to create trusted_domain record %s\n", msg->dn));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_TRUSTED_DOMAIN);
+	if (!handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	handle->data = talloc_steal(handle, trusted_domain_state);
+	
+	trusted_domain_state->access_mask = r->in.access_mask;
+	trusted_domain_state->policy = talloc_reference(trusted_domain_state, policy_state);
+	
+	*r->out.trustdom_handle = handle->wire_handle;
+	
+	return NT_STATUS_OK;
+}
+
+/* 
+  lsa_OpenTrustedDomain
+*/
+static NTSTATUS lsa_OpenTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				      struct lsa_OpenTrustedDomain *r)
+{
+	struct dcesrv_handle *policy_handle;
+	
+	struct lsa_policy_state *policy_state;
+	struct lsa_trusted_domain_state *trusted_domain_state;
+	struct dcesrv_handle *handle;
+	struct ldb_message **msgs;
+	const char *attrs[] = {
+		NULL
+	};
+
+	const char *sid_string;
+	int ret;
+
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+	ZERO_STRUCTP(r->out.trustdom_handle);
+	policy_state = policy_handle->data;
+
+	trusted_domain_state = talloc(mem_ctx, struct lsa_trusted_domain_state);
+	if (!trusted_domain_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	trusted_domain_state->policy = policy_state;
+
+	sid_string = dom_sid_string(mem_ctx, r->in.sid);
+	if (!sid_string) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the trusted_domain record */
+	ret = samdb_search(trusted_domain_state->policy->sam_ctx,
+			   mem_ctx, policy_state->system_dn, &msgs, attrs,
+			   "(&(securityIdentifier=%s)(objectclass=trustedDomain))", 
+			   sid_string);
+	if (ret == 0) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	
+	if (ret != 1) {
+		DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	trusted_domain_state->trusted_domain_dn = talloc_reference(trusted_domain_state, msgs[0]->dn);
+	
+	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_TRUSTED_DOMAIN);
+	if (!handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	handle->data = talloc_steal(handle, trusted_domain_state);
+	
+	trusted_domain_state->access_mask = r->in.access_mask;
+	trusted_domain_state->policy = talloc_reference(trusted_domain_state, policy_state);
+	
+	*r->out.trustdom_handle = handle->wire_handle;
+	
+	return NT_STATUS_OK;
+}
+
+
+/*
+  lsa_OpenTrustedDomainByName
+*/
+static NTSTATUS lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce_call,
+					    TALLOC_CTX *mem_ctx,
+					    struct lsa_OpenTrustedDomainByName *r)
+{
+	struct dcesrv_handle *policy_handle;
+	
+	struct lsa_policy_state *policy_state;
+	struct lsa_trusted_domain_state *trusted_domain_state;
+	struct dcesrv_handle *handle;
+	struct ldb_message **msgs;
+	const char *attrs[] = {
+		NULL
+	};
+
+	int ret;
+
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+	ZERO_STRUCTP(r->out.trustdom_handle);
+	policy_state = policy_handle->data;
+
+	if (!r->in.name.string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	trusted_domain_state = talloc(mem_ctx, struct lsa_trusted_domain_state);
+	if (!trusted_domain_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* search for the trusted_domain record */
+	ret = samdb_search(trusted_domain_state->policy->sam_ctx,
+			   mem_ctx, policy_state->system_dn, &msgs, attrs,
+			   "(&(cn=%s)(objectclass=trustedDomain))", 
+			   r->in.name.string);
+	if (ret == 0) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	
+	if (ret != 1) {
+		DEBUG(0,("Found %d records matching DN %s\n", ret, policy_state->system_dn));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	trusted_domain_state->trusted_domain_dn = talloc_reference(trusted_domain_state, msgs[0]->dn);
+	
+	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_TRUSTED_DOMAIN);
+	if (!handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	handle->data = talloc_steal(handle, trusted_domain_state);
+	
+	trusted_domain_state->access_mask = r->in.access_mask;
+	trusted_domain_state->policy = talloc_reference(trusted_domain_state, policy_state);
+	
+	*r->out.trustdom_handle = handle->wire_handle;
+	
+	return NT_STATUS_OK;
+}
+
+
+/* 
+  lsa_QueryTrustedDomainInfoBySid
+*/
+static NTSTATUS lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+						struct lsa_QueryTrustedDomainInfoBySid *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_SetTrustDomainInfo
+*/
+static NTSTATUS lsa_SetTrustDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_SetTrustDomainInfo *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_DeleteTrustDomain
+*/
+static NTSTATUS lsa_DeleteTrustDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_DeleteTrustDomain *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_QueryTrustedDomainInfo
+*/
+static NTSTATUS lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_QueryTrustedDomainInfo *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_SetInformationTrustedDomain
+*/
+static NTSTATUS lsa_SetInformationTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_SetInformationTrustedDomain *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  lsa_QueryTrustedDomainInfoByName
+*/
+static NTSTATUS lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state *dce_call,
+						 TALLOC_CTX *mem_ctx,
+						 struct lsa_QueryTrustedDomainInfoByName *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_SetTrustedDomainInfoByName
+*/
+static NTSTATUS lsa_SetTrustedDomainInfoByName(struct dcesrv_call_state *dce_call,
+					       TALLOC_CTX *mem_ctx,
+					       struct lsa_SetTrustedDomainInfoByName *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_EnumTrustedDomainsEx
+*/
+static NTSTATUS lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct lsa_EnumTrustedDomainsEx *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  lsa_CloseTrustedDomainEx
+*/
+static NTSTATUS lsa_CloseTrustedDomainEx(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct lsa_CloseTrustedDomainEx *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -990,7 +1345,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 					   const struct lsa_RightSet *rights)
 {
 	const char *sidstr;
-	struct ldb_message msg;
+	struct ldb_message *msg;
 	struct ldb_message_element el;
 	int i, ret;
 	const char *dn;
@@ -1001,21 +1356,23 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	msg = ldb_msg_new(mem_ctx);
+	if (msg == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	dn = samdb_search_string(state->sam_ctx, mem_ctx, NULL, "dn", 
 				 "objectSid=%s", sidstr);
 	if (dn == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	msg.dn = talloc_strdup(mem_ctx, dn);
-	if (msg.dn == NULL) {
+	msg->dn = talloc_strdup(mem_ctx, dn);
+	if (msg->dn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	msg.num_elements = 1;
-	msg.elements = &el;
-	el.flags = ldb_flag;
-	el.name = talloc_strdup(mem_ctx, "privilege");
-	if (el.name == NULL) {
+
+	if (ldb_msg_add_empty(state->sam_ctx->ldb, msg, "privilege", ldb_flag)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1066,7 +1423,7 @@ static NTSTATUS lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_OK;
 	}
 
-	ret = samdb_modify(state->sam_ctx, mem_ctx, &msg);
+	ret = samdb_modify(state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
 		if (ldb_flag == LDB_FLAG_MOD_DELETE) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -1217,36 +1574,6 @@ static NTSTATUS lsa_SetSystemAccessAccount(struct dcesrv_call_state *dce_call, T
 
 
 /* 
-  lsa_OpenTrustedDomain
-*/
-static NTSTATUS lsa_OpenTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_OpenTrustedDomain *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  lsa_QueryTrustedDomainInfo
-*/
-static NTSTATUS lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_QueryTrustedDomainInfo *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  lsa_SetInformationTrustedDomain
-*/
-static NTSTATUS lsa_SetInformationTrustedDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_SetInformationTrustedDomain *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
   lsa_CreateSecret 
 */
 static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -1278,6 +1605,7 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	if (!secret_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	secret_state->policy = policy_state;
 
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
@@ -1342,6 +1670,15 @@ static NTSTATUS lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		msg->dn = talloc_asprintf(mem_ctx, "cn=%s,cn=LSA Secrets", name);
 		samdb_msg_add_string(secret_state->sam_ctx, mem_ctx, msg, "cn", name);
 	} 
+
+	/* pull in all the template attributes.  Note this is always from the global samdb */
+	ret = samdb_copy_template(secret_state->policy->sam_ctx, mem_ctx, msg, 
+				  "(&(name=TemplateSecret)(objectclass=secretTemplate))");
+	if (ret != 0) {
+		DEBUG(0,("Failed to load TemplateSecret from samdb\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	samdb_msg_add_string(secret_state->sam_ctx, mem_ctx, msg, "objectClass", "secret");
 	
 	secret_state->secret_dn = talloc_reference(secret_state, msg->dn);
@@ -1401,6 +1738,7 @@ static NTSTATUS lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	if (!secret_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	secret_state->policy = policy_state;
 
 	if (strncmp("G$", r->in.name.string, 2) == 0) {
 		name = &r->in.name.string[2];
@@ -1953,36 +2291,6 @@ static NTSTATUS lsa_RemoveAccountRights(struct dcesrv_call_state *dce_call,
 
 
 /* 
-  lsa_QueryTrustedDomainInfoBySid
-*/
-static NTSTATUS lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-						struct lsa_QueryTrustedDomainInfoBySid *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  lsa_SetTrustDomainInfo
-*/
-static NTSTATUS lsa_SetTrustDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_SetTrustDomainInfo *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  lsa_DeleteTrustDomain
-*/
-static NTSTATUS lsa_DeleteTrustDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_DeleteTrustDomain *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
   lsa_StorePrivateData
 */
 static NTSTATUS lsa_StorePrivateData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
@@ -2068,56 +2376,6 @@ static NTSTATUS lsa_SetInfoPolicy2(struct dcesrv_call_state *dce_call,
 }
 
 /*
-  lsa_QueryTrustedDomainInfoByName
-*/
-static NTSTATUS lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state *dce_call,
-						 TALLOC_CTX *mem_ctx,
-						 struct lsa_QueryTrustedDomainInfoByName *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-/*
-  lsa_SetTrustedDomainInfoByName
-*/
-static NTSTATUS lsa_SetTrustedDomainInfoByName(struct dcesrv_call_state *dce_call,
-					       TALLOC_CTX *mem_ctx,
-					       struct lsa_SetTrustedDomainInfoByName *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-/*
-  lsa_EnumTrustedDomainsEx
-*/
-static NTSTATUS lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_call,
-					 TALLOC_CTX *mem_ctx,
-					 struct lsa_EnumTrustedDomainsEx *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-/*
-  lsa_CreateTrustedDomainEx
-*/
-static NTSTATUS lsa_CreateTrustedDomainEx(struct dcesrv_call_state *dce_call,
-					  TALLOC_CTX *mem_ctx,
-					  struct lsa_CreateTrustedDomainEx *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-/*
-  lsa_CloseTrustedDomainEx
-*/
-static NTSTATUS lsa_CloseTrustedDomainEx(struct dcesrv_call_state *dce_call,
-					 TALLOC_CTX *mem_ctx,
-					 struct lsa_CloseTrustedDomainEx *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-/*
   lsa_QueryDomainInformationPolicy
 */
 static NTSTATUS lsa_QueryDomainInformationPolicy(struct dcesrv_call_state *dce_call,
@@ -2133,16 +2391,6 @@ static NTSTATUS lsa_QueryDomainInformationPolicy(struct dcesrv_call_state *dce_c
 static NTSTATUS lsa_SetDomInfoPolicy(struct dcesrv_call_state *dce_call,
 				     TALLOC_CTX *mem_ctx,
 				     struct lsa_SetDomInfoPolicy *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-/*
-  lsa_OpenTrustedDomainByName
-*/
-static NTSTATUS lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce_call,
-					    TALLOC_CTX *mem_ctx,
-					    struct lsa_OpenTrustedDomainByName *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -2393,18 +2641,6 @@ static NTSTATUS lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 
 	return status;
-}
-
-
-
-/*
-  lsa_CreateTrustedDomainEx2
-*/
-static NTSTATUS lsa_CreateTrustedDomainEx2(struct dcesrv_call_state *dce_call,
-					   TALLOC_CTX *mem_ctx,
-					   struct lsa_CreateTrustedDomainEx2 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 /* 

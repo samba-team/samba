@@ -23,12 +23,13 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "lib/ldb/include/ldb.h"
+#include "system/time.h"
 
 /*
   connect to the SAM database
   return an opaque context pointer on success, or NULL on failure
  */
-void *samdb_connect(TALLOC_CTX *mem_ctx)
+struct ldb_wrap *samdb_connect(TALLOC_CTX *mem_ctx)
 {
 	return ldb_wrap_connect(mem_ctx, lp_sam_url(), 0, NULL);
 }
@@ -604,7 +605,9 @@ int samdb_copy_template(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx,
 			     strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
 			     strcasecmp((char *)el->values[j].data, "groupTemplate") == 0 ||
 			     strcasecmp((char *)el->values[j].data, "foreignSecurityTemplate") == 0 ||
-			     strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0)) {
+			     strcasecmp((char *)el->values[j].data, "aliasTemplate") == 0 || 
+			     strcasecmp((char *)el->values[j].data, "trustedDomainTemplate") == 0 || 
+			     strcasecmp((char *)el->values[j].data, "secretTemplate") == 0)) {
 				continue;
 			}
 			samdb_msg_add_string(sam_ctx, mem_ctx, msg, el->name, 
@@ -919,6 +922,19 @@ int samdb_msg_set_ldaptime(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct
 */
 int samdb_add(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
+	struct GUID guid;
+	const char *guidstr;
+	time_t now = time(NULL);
+	/* a new GUID */
+	guid = GUID_random();
+	guidstr = GUID_string(mem_ctx, &guid);
+	if (!guidstr) {
+		return -1;
+	}
+
+	samdb_msg_add_string(sam_ctx, mem_ctx, msg, "objectGUID", guidstr);
+	samdb_msg_set_ldaptime(sam_ctx, mem_ctx, msg, "whenCreated", now);
+	samdb_msg_set_ldaptime(sam_ctx, mem_ctx, msg, "whenChanged", now);
 	return ldb_add(sam_ctx->ldb, msg);
 }
 
@@ -935,6 +951,8 @@ int samdb_delete(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, const char *dn)
 */
 int samdb_modify(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg)
 {
+	time_t now = time(NULL);
+	samdb_msg_set_ldaptime(sam_ctx, mem_ctx, msg, "whenChanged", now);
 	return ldb_modify(sam_ctx->ldb, msg);
 }
 

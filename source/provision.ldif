@@ -960,3 +960,21 @@ objectClass: Template
 objectClass: foreignSecurityPrincipalTemplate
 cn: TemplateForeignSecurityPrincipal
 name: TemplateForeignSecurityPrincipal
+
+dn: CN=TemplateSecret,CN=Templates,${BASEDN}
+objectClass: top
+objectClass: leaf
+objectClass: Template
+objectClass: secretTemplate
+cn: TemplateSecret
+name: TemplateSecret
+instanceType: 4
+
+dn: CN=TemplateTrustedDomain,CN=Templates,${BASEDN}
+objectClass: top
+objectClass: leaf
+objectClass: Template
+objectClass: trustedDomainTemplate
+cn: TemplateTrustedDomain
+name: TemplateTrustedDomain
+instanceType: 4
