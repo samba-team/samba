@@ -45,9 +45,11 @@ struct dcerpc_pipe *dcerpc_pipe_init(void)
 	ZERO_STRUCT(p->security_state.user);
 	p->security_state.private_data = NULL;
 	p->security_state.ops = NULL;
+	p->binding_string = NULL;
 	p->flags = 0;
 	p->srv_max_xmit_frag = 0;
 	p->srv_max_recv_frag = 0;
+	p->last_fault_code = 0;
 
 	return p;
 }
