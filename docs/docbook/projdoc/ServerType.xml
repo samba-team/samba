@@ -136,7 +136,7 @@ There are in the SMB/CIFS networking world only two types of security: <emphasis
 and <emphasis>SHARE Level</emphasis>. We refer to these collectively as <emphasis>security levels</emphasis>. In implementing these two <emphasis>security levels</emphasis> samba provides flexibilities
 that are not available with Microsoft Windows NT4 / 200x servers. Samba knows of five (5)
 ways that allow the security levels to be implemented. In actual fact, Samba implements
-<emphasis>SHARE Level</emphasis> security only one way, but has for ways of implementing
+<emphasis>SHARE Level</emphasis> security only one way, but has four ways of implementing
 <emphasis>USER Level</emphasis> security. Collectively, we call the samba implementations
 <emphasis>Security Modes</emphasis>. These are: <emphasis>SHARE</emphasis>, <emphasis>USER</emphasis>, <emphasis>DOMAIN</emphasis>,
 <emphasis>ADS</emphasis>, and <emphasis>SERVER</emphasis>
@@ -158,7 +158,7 @@ available and whether an action is allowed.
 <title>User Level Security</title>
 
 <para>
-We will describe<parameter>user level</parameter> security first, as its simpler.
+We will describe <parameter>user level</parameter> security first, as its simpler.
 In <emphasis>user level</emphasis> security the client will send a
 <emphasis>session setup</emphasis> command directly after the protocol negotiation.
 This contains a username and password. The server can either accept or reject that
