@@ -1,3 +1,9 @@
+Sun Apr 11 03:47:23 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/krb5/krb5.conf.5: update to reality
+
+	* lib/krb5/krb5_425_conv_principal.3: update to reality
+
 1999-04-11  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_host_realm.c: handle more than one realm for a host
