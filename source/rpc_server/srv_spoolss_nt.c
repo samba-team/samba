@@ -1255,7 +1255,7 @@ static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
 
 /**********************************************************************
  callback to receive a MSG_PRINTER_DRVUPGRADE message and interate
- over all printers, upgrading ones as neessary 
+ over all printers, upgrading ones as necessary 
  **********************************************************************/
  
 void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
@@ -1303,7 +1303,7 @@ void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 }
 
 /********************************************************************
- Update the cahce for all printq's with a registered client 
+ Update the cache for all printq's with a registered client 
  connection
  ********************************************************************/
 
