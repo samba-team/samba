@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,7 +42,7 @@
 RCSID("$Id$");
 
 struct checksum_type {
-    int type;
+    krb5_cksumtype type;
     size_t blocksize;
     size_t checksumsize;
     krb5_keytype keytype;

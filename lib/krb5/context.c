@@ -104,7 +104,7 @@ krb5_init_context(krb5_context *context)
 		if(krb5_string_to_etype(p, etypes[j], &p->etypes[k]) == 0)
 		    k++;
 	    }
-	    p->etypes[k] = 0;
+	    p->etypes[k] = ETYPE_NULL;
 	    krb5_config_free_strings(etypes);
 	}
     }
@@ -156,7 +156,7 @@ default_etypes(krb5_enctype **etype)
 	ETYPE_DES_CBC_MD5,
 	ETYPE_DES_CBC_MD4,
 	ETYPE_DES_CBC_CRC,
-	0
+	ETYPE_NULL
     };
     *etype = malloc(sizeof(p));
     if(*etype == NULL)
