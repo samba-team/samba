@@ -17,14 +17,40 @@ des_SOURCES = des.c des_ver.h
 
 LDADD = $(lib_LTLIBRARIES)
 
-libdes_la_SOURCES = \
-	cbc3_enc.c cbc_cksm.c cbc_enc.c \
-	cfb64ede.c cfb64enc.c cfb_enc.c des_enc.c \
-	ecb3_enc.c ecb_enc.c ede_enc.c enc_read.c \
-	enc_writ.c fcrypt.c key_par.c md4.c md5.c \
-	ncbc_enc.c ofb64ede.c ofb64enc.c ofb_enc.c \
-	pcbc_enc.c qud_cksm.c read_pwd.c rnd_keys.c \
-	set_key.c sha.c str2key.c xcbc_enc.c des_locl.h podd.h sk.h spr.h
+libdes_la_SOURCES =	\
+	cbc3_enc.c	\
+	cbc_cksm.c	\
+	cbc_enc.c	\
+	cfb64ede.c	\
+	cfb64enc.c	\
+	cfb_enc.c	\
+	des_enc.c	\
+	des_locl.h	\
+	ecb3_enc.c	\
+	ecb_enc.c	\
+	ede_enc.c	\
+	enc_read.c	\
+	enc_writ.c	\
+	fcrypt.c	\
+	hash.h		\
+	key_par.c	\
+	md4.c		\
+	md5.c		\
+	ncbc_enc.c	\
+	ofb64ede.c	\
+	ofb64enc.c	\
+	ofb_enc.c	\
+	pcbc_enc.c	\
+	podd.h		\
+	qud_cksm.c	\
+	read_pwd.c	\
+	rnd_keys.c	\
+	set_key.c	\
+	sha.c		\
+	sk.h		\
+	spr.h		\
+	str2key.c	\
+	xcbc_enc.c
 
 EXTRA_libdes_la_SOURCES = dllmain.c passwd_dialog.aps passwd_dialog.clw \
 	passwd_dialog.rc passwd_dialog.res passwd_dlg.c passwd_dlg.h resource.h
