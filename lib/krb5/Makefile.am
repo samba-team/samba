@@ -138,19 +138,21 @@ man_MANS =					\
 	krb5.conf.5				\
 	krb5_425_conv_principal.3		\
 	krb5_appdefault.3			\
+	krb5_auth_context.3			\
 	krb5_build_principal.3			\
 	krb5_config.3				\
+	krb5_context.3				\
 	krb5_free_principal.3			\
+	krb5_get_krbhst.3			\
+	krb5_init_context.3			\
+	krb5_keytab.3				\
+	krb5_krbhst_init.3			\
 	krb5_openlog.3				\
 	krb5_parse_name.3			\
 	krb5_sname_to_principal.3		\
 	krb5_unparse_name.3			\
 	krb5_warn.3				\
-	verify_krb5_conf.8			\
-	krb5_auth_context.3			\
-	krb5_context.3				\
-	krb5_init_context.3			\
-	krb5_keytab.3
+	verify_krb5_conf.8
 
 include_HEADERS = krb5.h krb5-protos.h krb5-private.h krb5_err.h heim_err.h
 
