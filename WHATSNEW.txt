@@ -1,5 +1,18 @@
+
               WHATS NEW IN Samba 3.0 alphaX
               =============================
+
+Changes in alpha2
+
+- we no longer use cyrus-sasl for LDAP SASL/gssapi. This makes our ADS
+  code much more robust.
+- winbindd cache code rewritten to be much more efficient. It also
+  copes much better with server outages.
+- jfm implemented full group mapping and smb.conf option 'domain admin
+  group' is now gone. Consult the GROUP-MAPPING-HOWTO.txt to know how
+  to gain back administrator rights.
+- docs update started
+- numerous small bugfixes
 
 Changes in alpha1
 
