@@ -371,7 +371,7 @@ static WINBINDD_GR* string2group( char *string )
 		if ( num_gr_members ) {
 			fstring buffer;
 			
-			gr_members = (char**)smb_xmalloc(sizeof(char*)*num_gr_members+1);
+			gr_members = (char**)smb_xmalloc(sizeof(char*)*(num_gr_members+1));
 			
 			i = 0;
 			while ( next_token(&str, buffer, ",", sizeof(buffer)) && i<num_gr_members ) {
@@ -815,9 +815,11 @@ static BOOL wb_delgrpmember( WINBINDD_GR *grp, const char *user )
 	if ( !grp || !user )
 		return False;
 	
-	for ( i=0; i<grp->num_gr_mem && !found; i++ ) {
-		if ( StrCaseCmp( grp->gr_mem[i], user ) == 0 ) 
+	for ( i=0; i<grp->num_gr_mem; i++ ) {
+		if ( StrCaseCmp( grp->gr_mem[i], user ) == 0 ) {
 			found = True;
+			break;
+		}
 	}
 	
 	if ( !found ) 
@@ -826,8 +828,10 @@ static BOOL wb_delgrpmember( WINBINDD_GR *grp, const char *user )
 	/* still some remaining members */
 
 	if ( grp->num_gr_mem > 1 ) {
-		memmove( grp->gr_mem[i], grp->gr_mem[i+1], sizeof(char*)*(grp->num_gr_mem-(i+1)) );
+		SAFE_FREE(grp->gr_mem[i]);
 		grp->num_gr_mem--;
+		grp->gr_mem[i] = grp->gr_mem[grp->num_gr_mem];
+		grp->gr_mem[grp->num_gr_mem] = NULL;
 	}
 	else {	/* last one */
 		free_winbindd_gr( grp );
@@ -1237,7 +1241,7 @@ enum winbindd_result winbindd_remove_user_from_group(struct winbindd_cli_state *
 	group = state->request.data.acct_mgt.groupname;
 	user = state->request.data.acct_mgt.username;
 	
-	DEBUG(3, ("[%5lu]:  remove_user_to_group: delete %s from %s\n", (unsigned long)state->pid, 
+	DEBUG(3, ("[%5lu]:  remove_user_from_group: delete %s from %s\n", (unsigned long)state->pid, 
 		user, group));
 	
 	/* don't worry about checking the username since we're removing it anyways */
@@ -1245,7 +1249,7 @@ enum winbindd_result winbindd_remove_user_from_group(struct winbindd_cli_state *
 	/* make sure it is a valid group */
 	
 	if ( !(grp = wb_getgrnam( group )) ) {
-		DEBUG(4,("winbindd_remove_user_to_group: Cannot remove a user to a non-extistent group\n"));
+		DEBUG(4,("winbindd_remove_user_from_group: Cannot remove a user from a non-extistent group\n"));
 		return WINBINDD_ERROR;	
 	}
 	
