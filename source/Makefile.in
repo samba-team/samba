@@ -20,7 +20,7 @@ srcdir=@srcdir@
 builddir=@builddir@
 SHELL=/bin/sh
 
-BASEDIR=$(prefix)
+BASEDIR= @prefix@
 BINDIR = @bindir@
 SBINDIR = @sbindir@
 LIBDIR = @libdir@
