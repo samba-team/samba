@@ -2305,6 +2305,10 @@ static int add_a_service(const service *pservice, const char *name)
 	copy_service(ServicePtrs[i], &tservice, NULL);
 	if (name)
 		string_set(&ServicePtrs[i]->szService, name);
+		
+	DEBUG(8,("add_a_service: Creating snum = %d for %s\n", 
+		i, ServicePtrs[i]->szService));
+		
 	return (i);
 }
 
@@ -2344,7 +2348,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	ServicePtrs[i]->autoloaded = True;
 
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
-	       user, newHomedir));
+	       user, ServicePtrs[i]->szPath ));
 	
 	return (True);
 }
