@@ -170,7 +170,7 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 {
 	/* Static buffers we will return. */
 	static DOMAIN_GRP gp_buf;
-	struct group *unix_grp = NULL;
+	struct group unix_grp;
 	struct unix_entries *grps = (struct unix_entries *)vp;
 
 	if (grps == NULL)
@@ -204,12 +204,12 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 	{
 		DOM_NAME_MAP gmep;
 
-		unix_grp = &grps->grps[grps->grp_idx];
+		memcpy(&unix_grp, &grps->grps[grps->grp_idx], sizeof(unix_grp));
 
 		DEBUG(10,("getgrpunixpwent: enum unix group entry %s\n",
-		           unix_grp->gr_name));
+		           unix_grp.gr_name));
 			
-		if (!lookupsmbgrpgid(unix_grp->gr_gid, &gmep))
+		if (!lookupsmbgrpgid(unix_grp.gr_gid, &gmep))
 		{
 			continue;
 		}
@@ -230,7 +230,7 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 		break;
 	}
 
-	if (unix_grp == NULL || grps->grp_idx >= grps->num_grps)
+	if (grps->grp_idx >= grps->num_grps)
 	{
 		return NULL;
 	}
@@ -242,8 +242,8 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 		(*mem) = NULL;
 		(*num_mem) = 0;
 
-		unix_grp = getgrgid(unix_grp->gr_gid);
-		get_unixgroup_members(unix_grp, num_mem, mem);
+		memcpy(&unix_grp, getgrgid(unix_grp.gr_gid), sizeof(unix_grp));
+		get_unixgroup_members(&unix_grp, num_mem, mem);
 	}
 
 	{
