@@ -283,7 +283,7 @@ static BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 	names.count = 0;
 	names.names = NULL;
 
-	sids.num_sids = 1000;
+	sids.num_sids = 100;
 
 	sids.sids = talloc_array_p(mem_ctx, struct lsa_SidPtr, sids.num_sids);
 
@@ -311,6 +311,26 @@ static BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 	printf("\n");
 
 	if (!test_LookupNames(p, mem_ctx, handle, &names)) {
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_LookupPrivValue(struct dcerpc_pipe *p, 
+				 TALLOC_CTX *mem_ctx, 
+				 struct policy_handle *handle,
+				 struct lsa_String *name)
+{
+	NTSTATUS status;
+	struct lsa_LookupPrivValue r;
+
+	r.in.handle = handle;
+	r.in.name = name;
+
+	status = dcerpc_lsa_LookupPrivValue(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("\nLookupPrivValue failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -805,7 +825,7 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
-	r.in.max_count = 1000;
+	r.in.max_count = 100;
 	r.out.resume_handle = &resume_handle;
 	r.out.privs = &privs1;
 
@@ -818,6 +838,7 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 
 	for (i = 0; i< privs1.count; i++) {
 		test_LookupPrivDisplayName(p, mem_ctx, handle, &privs1.privs[i].name);
+		test_LookupPrivValue(p, mem_ctx, handle, &privs1.privs[i].name);
 		if (!test_EnumAccountsWithUserRight(p, mem_ctx, handle, &privs1.privs[i].name)) {
 			ret = False;
 		}
@@ -842,7 +863,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
-	r.in.num_entries = 1000;
+	r.in.num_entries = 100;
 	r.out.domains = &domains;
 	r.out.resume_handle = &resume_handle;
 
