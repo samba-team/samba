@@ -9,7 +9,7 @@
 #include <string.h>
 #include "symbol.h"
 #include "lex.h"
-#include "asn1_locl.h"
+#include "gen_locl.h"
 
 RCSID("$Id$");
 

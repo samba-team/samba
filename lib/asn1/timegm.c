@@ -1,4 +1,4 @@
-#include "asn1_locl.h"
+#include "der_locl.h"
 
 RCSID("$Id$");
 

@@ -2,7 +2,7 @@
  * Hash table functions
  */
 
-#include "asn1_locl.h"
+#include "gen_locl.h"
 
 RCSID("$Id$");
 

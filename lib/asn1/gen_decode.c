@@ -1,4 +1,4 @@
-#include "asn1_locl.h"
+#include "gen_locl.h"
 
 RCSID("$Id$");
 
@@ -139,8 +139,8 @@ decode_type (char *name, Type *t)
 	  decode_type (s, m->type);
 	  fprintf (codefile,
 		   "if(dce_fix){\n"
-		   "e = der_match_tag_and_length (p, len, 0, 0, 0, "
-		   "&reallen, &l);\n"
+		   "e = der_match_tag_and_length (p, len, "
+		   "(Der_class)0, (Der_type)0, 0, &reallen, &l);\n"
 		   "FORW;\n"
 		   "}else \n"
 		   "len = oldlen - newlen;\n"
@@ -155,7 +155,8 @@ decode_type (char *name, Type *t)
     }
     fprintf(codefile,
 	    "if(dce_fix){\n"
-	    "e = der_match_tag_and_length (p, len, 0, 0, 0, &reallen, &l);\n"
+	    "e = der_match_tag_and_length (p, len, "
+	    "(Der_class)0, (Der_type)0, 0, &reallen, &l);\n"
 	    "FORW;\n"
 	    "}\n"
 	    "}\n");
@@ -206,7 +207,8 @@ decode_type (char *name, Type *t)
     decode_type (name, t->subtype);
     fprintf(codefile,
 	    "if(dce_fix){\n"
-	    "e = der_match_tag_and_length (p, len, 0, 0, 0, &reallen, &l);\n"
+	    "e = der_match_tag_and_length (p, len, "
+	    "(Der_class)0, (Der_type)0, 0, &reallen, &l);\n"
 	    "FORW;\n"
 	    "}\n"
 	    "}\n");
@@ -315,7 +317,8 @@ generate_seq_type_decode (Symbol *s)
 	     "ret += l;\n"
 	     "if (dce_fix) {\n"
 	     "size_t reallen;\n\n"
-	     "e = der_match_tag_and_length(p, len, 0, 0, 0, &reallen, &l);\n"
+	     "e = der_match_tag_and_length(p, len, "
+	     "(Der_class)0, (Der_type)0, 0, &reallen, &l);\n"
 	     "if (e)\n"
 	     "return e;\n"
 	     "ret += l;\n"

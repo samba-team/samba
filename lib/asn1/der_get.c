@@ -1,4 +1,4 @@
-#include "libasn1.h"
+#include "der_locl.h"
 
 RCSID("$Id$");
 
