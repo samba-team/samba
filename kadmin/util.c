@@ -191,8 +191,6 @@ edit_attributes (const char *prompt, krb5_flags *attr, int *mask, int bit)
 int
 edit_entry(kadm5_principal_ent_t ent, int *mask)
 {
-    char buf[1024], resp[1024];
-    
     edit_time ("Max ticket life", &ent->max_life, mask,
 	       KADM5_MAX_LIFE);
     edit_time ("Max renewable life", &ent->max_renewable_life, mask,
