@@ -98,7 +98,7 @@ void add_name_respond(struct subnet_record *d, int fd, struct in_addr from_ip,
   /* see rfc1002.txt - 4.2.10 and 4.2.11 */
   send_name_response(fd,from_ip, response_id, NMB_REG,
                      new_owner,
-                     True, False,
+                     True, True,
                      name, nb_flags, ttl, reply_to_ip);
 }
 
@@ -183,7 +183,6 @@ void reply_name_reg(struct packet_struct *p)
   int   qname_type = question->name_type;
  
   BOOL bcast = nmb->header.nm_flags.bcast;
-  BOOL release_is_to_wins_server = nmb->header.nm_flags.recursion_desired;
   
   int ttl = GET_TTL(nmb->additional->ttl);
   int nb_flags = nmb->additional->rdata[0];
@@ -314,21 +313,21 @@ void reply_name_reg(struct packet_struct *p)
 
     /* initiate some enquiries to the current owner. */
 	queue_netbios_packet(d,ClientNMB,NMB_QUERY,
-			 NAME_REGISTER_CHALLENGE,
-			 reply_name->name,reply_name->name_type,
-	                 nb_flags,0,0,NULL,NULL,
-			 True, False,
+             NAME_REGISTER_CHALLENGE,
+             reply_name->name,reply_name->name_type,
+             nb_flags,0,0,NULL,NULL,
+			 False, False,
              n->ip_flgs[0].ip, p->ip);
   }
   else
   {
-    /* Send a NAME REGISTRATION RESPONSE (pos/neg) see rfc1002.txt 4.2.13-14
+    /* Send a NAME REGISTRATION RESPONSE (pos/neg) see rfc1002.txt 4.2.5-6
        or an END-NODE CHALLENGE REGISTRATION RESPONSE see rfc1002.txt 4.2.7
      */
 
   	send_name_response(p->fd,p->ip, nmb->header.name_trn_id, NMB_REG,
 			success,
-            release_is_to_wins_server, False,
+            True, True,
 			reply_name, nb_flags, ttl, ip);
   }
 }
@@ -517,8 +516,8 @@ void reply_name_query(struct packet_struct *p)
   int name_type = question->name_type;
 
   BOOL bcast = nmb->header.nm_flags.bcast;
-  BOOL query_is_to_wins_server = nmb->header.nm_flags.recursion_desired;
-
+  BOOL query_is_to_wins_server = (!bcast && 
+             nmb->header.nm_flags.recursion_desired);
   int ttl=0;
   int rcode = 0;
   int nb_flags = 0;
@@ -527,6 +526,7 @@ void reply_name_query(struct packet_struct *p)
   struct subnet_record *d = NULL;
   BOOL success = True;
   struct name_record *n = NULL;
+  BOOL acting_as_wins_server = lp_wins_support();
 
   /* directed queries are for WINS server: broadcasts are local SELF queries.
      the exception is Domain Master names.  */
@@ -656,11 +656,12 @@ void reply_name_query(struct packet_struct *p)
   /* see rfc1002.txt 4.2.13 */
 
   reply_netbios_packet(p,nmb->header.name_trn_id,
-			   rcode,NMB_QUERY,0,
-               query_is_to_wins_server, /* recursion_available flag */
-               True,                    /* recursion_desired_flag */
-		       &nmb->question.question_name,
-               0x20, 0x01,
-		       ttl,
-		       rdata, success ? 6 : 0);
+     rcode,NMB_QUERY,0,
+     (query_is_to_wins_server && acting_as_wins_server ? 
+              True : False), /* recursion_available flag */
+     True, /* recursion_desired_flag */ 
+     &nmb->question.question_name,
+     0x20, 0x01,
+     ttl,
+     rdata, success ? 6 : 0);
 }
