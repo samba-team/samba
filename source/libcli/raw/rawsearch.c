@@ -210,6 +210,15 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 	tp.in.max_param = 10;
 	tp.in.max_data = smb_raw_max_trans_data(tree, 10);
 	tp.in.setup = &setup;
+
+	if (info_level == RAW_SEARCH_EA_LIST) {
+		if (!ea_push_name_list(mem_ctx, 
+				       &tp.in.data,
+				       io->t2ffirst.in.num_names,
+				       io->t2ffirst.in.ea_names)) {
+			return NT_STATUS_NO_MEMORY;
+		}		
+	}
 	
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 12);
 	if (!tp.in.params.data) {
@@ -223,7 +232,7 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 	SIVAL(tp.in.params.data, 8, io->t2ffirst.in.storage_type);
 
 	smbcli_blob_append_string(tree->session, mem_ctx, &tp.in.params,
-			       io->t2ffirst.in.pattern, STR_TERMINATE);
+				  io->t2ffirst.in.pattern, STR_TERMINATE);
 
 	status = smb_raw_trans2(tree, mem_ctx, &tp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -262,6 +271,15 @@ static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
 	tp.in.max_param = 10;
 	tp.in.max_data = smb_raw_max_trans_data(tree, 10);
 	tp.in.setup = &setup;
+
+	if (info_level == RAW_SEARCH_EA_LIST) {
+		if (!ea_push_name_list(mem_ctx, 
+				       &tp.in.data,
+				       io->t2fnext.in.num_names,
+				       io->t2fnext.in.ea_names)) {
+			return NT_STATUS_NO_MEMORY;
+		}		
+	}
 	
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 12);
 	if (!tp.in.params.data) {
@@ -306,6 +324,9 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 			       union smb_search_data *data)
 {
 	uint_t len, ofs;
+	uint32_t ea_size;
+	DATA_BLOB eablob;
+	NTSTATUS status;
 
 	switch (level) {
 	case RAW_SEARCH_GENERIC:
@@ -359,6 +380,44 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 					   &data->ea_size.name,
 					   26, 27, STR_LEN8BIT | STR_TERMINATE | STR_NOALIGN);
 		return len + 27 + 1;
+
+	case RAW_SEARCH_EA_LIST:
+		if (flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
+			if (blob->length < 4) return -1;
+			data->ea_list.resume_key = IVAL(blob->data, 0);
+			blob->data += 4;
+			blob->length -= 4;
+		}
+		if (blob->length < 28) return -1;
+		data->ea_list.create_time = raw_pull_dos_date2(tree->session->transport,
+							       blob->data + 0);
+		data->ea_list.access_time = raw_pull_dos_date2(tree->session->transport,
+							       blob->data + 4);
+		data->ea_list.write_time  = raw_pull_dos_date2(tree->session->transport,
+							       blob->data + 8);
+		data->ea_list.size        = IVAL(blob->data, 12);
+		data->ea_list.alloc_size  = IVAL(blob->data, 16);
+		data->ea_list.attrib      = SVAL(blob->data, 20);
+		ea_size                   = IVAL(blob->data, 22);
+		if (ea_size > 0xFFFF) {
+			return -1;
+		}
+		eablob.data = blob->data + 22;
+		eablob.length = ea_size;
+		if (eablob.length > blob->length - 24) {
+			return -1;
+		}
+		status = ea_pull_list(&eablob, mem_ctx, 
+				      &data->ea_list.eas.num_eas,
+				      &data->ea_list.eas.eas);
+		if (!NT_STATUS_IS_OK(status)) {
+			return -1;
+		}
+		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
+					      &data->ea_list.name,
+					      22+ea_size, 23+ea_size, 
+					      STR_LEN8BIT | STR_TERMINATE | STR_NOALIGN);
+		return len + ea_size + 23 + 1;
 
 	case RAW_SEARCH_DIRECTORY_INFO:
 		if (blob->length < 65) return -1;

@@ -34,14 +34,6 @@
 		goto done; \
 	}} while (0)
 
-static DATA_BLOB data_blob_string_const(const char *str)
-{
-	DATA_BLOB blob;
-	blob.data = discard_const(str);
-	blob.length = strlen(str);
-	return blob;
-}
-
 static BOOL check_ea(struct smbcli_state *cli, 
 		     const char *fname, const char *eaname, const char *value)
 {

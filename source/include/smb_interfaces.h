@@ -1675,6 +1675,7 @@ enum smb_search_level {RAW_SEARCH_GENERIC                 = 0xF000,
 		       RAW_SEARCH_FUNIQUE,                /* SMBfunique */ 
 		       RAW_SEARCH_STANDARD                = SMB_FIND_STANDARD,
 		       RAW_SEARCH_EA_SIZE                 = SMB_FIND_EA_SIZE,
+		       RAW_SEARCH_EA_LIST                 = SMB_FIND_EA_LIST,
 		       RAW_SEARCH_DIRECTORY_INFO          = SMB_FIND_DIRECTORY_INFO,
 		       RAW_SEARCH_FULL_DIRECTORY_INFO     = SMB_FIND_FULL_DIRECTORY_INFO,
 		       RAW_SEARCH_NAME_INFO               = SMB_FIND_NAME_INFO,
@@ -1715,6 +1716,10 @@ union smb_search_first {
 			uint16_t flags;
 			uint32_t storage_type;
 			const char *pattern;
+
+			/* the ea names are only used for RAW_SEARCH_EA_LIST */
+			uint_t num_names;
+			struct ea_name *ea_names;
 		} in;
 		struct {
 			uint16_t handle;
@@ -1761,6 +1766,10 @@ union smb_search_next {
 			uint32_t resume_key;
 			uint16_t flags;
 			const char *last_name;
+
+			/* the ea names are only used for RAW_SEARCH_EA_LIST */
+			uint_t num_names;
+			struct ea_name *ea_names;
 		} in;
 		struct {
 			uint16_t count;
@@ -1804,6 +1813,19 @@ union smb_search_data {
 		uint32_t ea_size;
 		WIRE_STRING name;
 	} ea_size;
+
+	/* trans2 findfirst RAW_SEARCH_EA_LIST level */
+	struct {
+		uint32_t resume_key;
+		time_t create_time;
+		time_t access_time;
+		time_t write_time;
+		uint32_t size;
+		uint32_t alloc_size;
+		uint16_t attrib;
+		struct smb_ea_list eas;
+		WIRE_STRING name;
+	} ea_list;
 
 	/* RAW_SEARCH_DIRECTORY_INFO interface */
 	struct {

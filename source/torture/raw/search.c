@@ -548,6 +548,13 @@ static NTSTATUS multiple_search(struct smbcli_state *cli,
 		ret = False; \
 	}} while (0)
 
+#define CHECK_STRING(v, correct) do { \
+	if (StrCaseCmp(v, correct) != 0) { \
+		printf("(%s) Incorrect value %s='%s' - should be '%s'\n", \
+		       __location__, #v, v, correct); \
+		ret = False; \
+	}} while (0)
+
 
 static int search_both_compare(union smb_search_data *d1, union smb_search_data *d2)
 {
@@ -1171,6 +1178,116 @@ done:
 }
 
 
+/* 
+   testing of the rather strange ea_list level
+*/
+static BOOL test_ea_list(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	int  fnum;
+	BOOL ret = True;
+	NTSTATUS status;
+	union smb_search_first io;
+	union smb_search_next nxt;
+	struct multiple_result result;
+	union smb_setfileinfo setfile;
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	printf("Testing RAW_SEARCH_EA_LIST level\n");
+
+	fnum = smbcli_open(cli->tree, BASEDIR "\\file1.txt", O_CREAT|O_RDWR, DENY_NONE);
+	smbcli_close(cli->tree, fnum);
+
+	fnum = smbcli_open(cli->tree, BASEDIR "\\file2.txt", O_CREAT|O_RDWR, DENY_NONE);
+	smbcli_close(cli->tree, fnum);
+
+	fnum = smbcli_open(cli->tree, BASEDIR "\\file3.txt", O_CREAT|O_RDWR, DENY_NONE);
+	smbcli_close(cli->tree, fnum);
+
+	setfile.generic.level = RAW_SFILEINFO_EA_SET;
+	setfile.generic.file.fname = BASEDIR "\\file2.txt";
+	setfile.ea_set.in.num_eas = 2;
+	setfile.ea_set.in.eas = talloc_array_p(mem_ctx, struct ea_struct, 2);
+	setfile.ea_set.in.eas[0].flags = 0;
+	setfile.ea_set.in.eas[0].name.s = "EA ONE";
+	setfile.ea_set.in.eas[0].value = data_blob_string_const("VALUE 1");
+	setfile.ea_set.in.eas[1].flags = 0;
+	setfile.ea_set.in.eas[1].name.s = "SECOND EA";
+	setfile.ea_set.in.eas[1].value = data_blob_string_const("Value Two");
+
+	status = smb_raw_setpathinfo(cli->tree, &setfile);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	setfile.generic.file.fname = BASEDIR "\\file3.txt";
+	status = smb_raw_setpathinfo(cli->tree, &setfile);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	
+	ZERO_STRUCT(result);
+	result.mem_ctx = mem_ctx;
+
+	io.t2ffirst.level = RAW_SEARCH_EA_LIST;
+	io.t2ffirst.in.search_attrib = 0;
+	io.t2ffirst.in.max_count = 2;
+	io.t2ffirst.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME;
+	io.t2ffirst.in.storage_type = 0;
+	io.t2ffirst.in.pattern = BASEDIR "\\*";
+	io.t2ffirst.in.num_names = 2;
+	io.t2ffirst.in.ea_names = talloc_array_p(mem_ctx, struct ea_name, 2);
+	io.t2ffirst.in.ea_names[0].name.s = "SECOND EA";
+	io.t2ffirst.in.ea_names[1].name.s = "THIRD EA";
+
+	status = smb_raw_search_first(cli->tree, mem_ctx,
+				      &io, &result, multiple_search_callback);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	nxt.t2fnext.level = RAW_SEARCH_EA_LIST;
+	nxt.t2fnext.in.handle = io.t2ffirst.out.handle;
+	nxt.t2fnext.in.max_count = 2;
+	nxt.t2fnext.in.resume_key = result.list[1].ea_list.resume_key;
+	nxt.t2fnext.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME | FLAG_TRANS2_FIND_CONTINUE;
+	nxt.t2fnext.in.last_name = "file2.txt";
+	nxt.t2fnext.in.num_names = 2;
+	nxt.t2fnext.in.ea_names = talloc_array_p(mem_ctx, struct ea_name, 2);
+	nxt.t2fnext.in.ea_names[0].name.s = "SECOND EA";
+	nxt.t2fnext.in.ea_names[1].name.s = "THIRD EA";
+
+	status = smb_raw_search_next(cli->tree, mem_ctx,
+				     &nxt, &result, multiple_search_callback);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+
+	CHECK_VALUE(result.count, 3);
+	CHECK_VALUE(result.list[0].ea_list.eas.num_eas, 2);
+	CHECK_STRING(result.list[0].ea_list.name.s, "file1.txt");
+	CHECK_STRING(result.list[0].ea_list.eas.eas[0].name.s, "SECOND EA");
+	CHECK_VALUE(result.list[0].ea_list.eas.eas[0].value.length, 0);
+	CHECK_STRING(result.list[0].ea_list.eas.eas[1].name.s, "THIRD EA");
+	CHECK_VALUE(result.list[0].ea_list.eas.eas[1].value.length, 0);
+
+	CHECK_STRING(result.list[1].ea_list.name.s, "file2.txt");
+	CHECK_STRING(result.list[1].ea_list.eas.eas[0].name.s, "SECOND EA");
+	CHECK_VALUE(result.list[1].ea_list.eas.eas[0].value.length, 9);
+	CHECK_STRING(result.list[1].ea_list.eas.eas[0].value.data, "Value Two");
+	CHECK_STRING(result.list[1].ea_list.eas.eas[1].name.s, "THIRD EA");
+	CHECK_VALUE(result.list[1].ea_list.eas.eas[1].value.length, 0);
+
+	CHECK_STRING(result.list[2].ea_list.name.s, "file3.txt");
+	CHECK_STRING(result.list[2].ea_list.eas.eas[0].name.s, "SECOND EA");
+	CHECK_VALUE(result.list[2].ea_list.eas.eas[0].value.length, 9);
+	CHECK_STRING(result.list[2].ea_list.eas.eas[0].value.data, "Value Two");
+	CHECK_STRING(result.list[2].ea_list.eas.eas[1].name.s, "THIRD EA");
+	CHECK_VALUE(result.list[2].ea_list.eas.eas[1].value.length, 0);
+
+done:
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
+
 
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
@@ -1193,6 +1310,7 @@ BOOL torture_raw_search(void)
 	ret &= test_modify_search(cli, mem_ctx);
 	ret &= test_many_dirs(cli, mem_ctx);
 	ret &= test_os2_delete(cli, mem_ctx);
+	ret &= test_ea_list(cli, mem_ctx);
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
