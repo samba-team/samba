@@ -62,6 +62,10 @@ struct fileinfo {
 #define LS_SIZE		32
 #define LS_INODE	64
 
+#ifndef S_ISTXT
+#define S_ISTXT S_ISVTX
+#endif
+
 static void
 make_fileinfo(const char *filename, struct fileinfo *file, int flags)
 {
@@ -89,8 +93,10 @@ make_fileinfo(const char *filename, struct fileinfo *file, int flags)
 	file->mode[0] = 'l';
     else if(S_ISSOCK(st->st_mode))
 	file->mode[0] = 's';
+#ifdef S_ISWHT
     else if(S_ISWHT(st->st_mode))
 	file->mode[0] = 'w';
+#endif
     else 
 	file->mode[0] = '?';
     {
@@ -137,8 +143,8 @@ make_fileinfo(const char *filename, struct fileinfo *file, int flags)
     }
     
     if(S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode)) {
-	asprintf(&file->major, "%u", major(st->st_rdev));
-	asprintf(&file->minor, "%u", minor(st->st_rdev));
+	asprintf(&file->major, "%u", (unsigned)major(st->st_rdev));
+	asprintf(&file->minor, "%u", (unsigned)minor(st->st_rdev));
     } else
 	asprintf(&file->size, "%lu", (unsigned long)st->st_size);
 
