@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -82,7 +82,7 @@ kt_remove(int argc, char **argv)
     krb5_error_code ret;
     krb5_keytab_entry entry;
     char *principal_string = NULL;
-    krb5_principal principal;
+    krb5_principal principal = NULL;
     int kvno = 0;
     char *keytype_string = NULL;
     krb5_keytype keytype = KEYTYPE_NULL;
@@ -128,6 +128,12 @@ kt_remove(int argc, char **argv)
 		return 0;
 	    }
 	}
+    }
+    if (!principal && !keytype && !kvno) {
+	krb5_warnx(context, 
+		   "You must give at least one of "
+		   "principal, keytype or kvno.");
+	return 0;
     }
     entry.principal = principal;
     entry.keyblock.keytype = keytype;
