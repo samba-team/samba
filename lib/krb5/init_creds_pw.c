@@ -1091,6 +1091,7 @@ init_cred_loop(krb5_context context,
     size_t size;
     int pa_counter;
     METHOD_DATA md;
+    int send_to_kdc_flags = 0;
 
     memset(&md, 0, sizeof(md));
     memset(&rep, 0, sizeof(rep));
@@ -1137,7 +1138,9 @@ init_cred_loop(krb5_context context,
 	if(len != req.length)
 	    krb5_abortx(context, "internal error in ASN.1 encoder");
 
-	ret = krb5_sendto_kdc (context, &req, &creds->client->realm, &resp);
+	ret = krb5_sendto_kdc_flags (context, &req, 
+				     &creds->client->realm, &resp,
+				     send_to_kdc_flags);
 	krb5_data_free(&req);
 	if (ret)
 	    goto out;
@@ -1150,17 +1153,13 @@ init_cred_loop(krb5_context context,
 	} else {
 	    /* let's try to parse it as a KRB-ERROR */
 	    KRB_ERROR error;
-	    int ret2;
 
-	    ret2 = krb5_rd_error(context, &resp, &error);
-	    if(ret2) {
-		if (resp.data && ((char*)resp.data)[0] == 4)
-		    ret = KRB5KRB_AP_ERR_V4_REPLY;
-		else
-		    ret = ret2;
-		krb5_data_free(&resp);
+	    ret = krb5_rd_error(context, &resp, &error);
+	    if(ret && resp.data && ((char*)resp.data)[0] == 4)
+		ret = KRB5KRB_AP_ERR_V4_REPLY;
+	    krb5_data_free(&resp);
+	    if (ret)
 		goto out;
-	    }
 
 	    ret = krb5_error_from_rd_error(context, &error, creds);
 
@@ -1169,23 +1168,33 @@ init_cred_loop(krb5_context context,
 	     * more try.
 	     */
 
-	    if (ret != KRB5KDC_ERR_PREAUTH_REQUIRED) {
+	    if (ret == KRB5KDC_ERR_PREAUTH_REQUIRED) {
+		free_METHOD_DATA(&md);
+		memset(&md, 0, sizeof(md));
+
+		ret = decode_METHOD_DATA(error.e_data->data, 
+					 error.e_data->length, 
+					 &md, 
+					 NULL);
 		krb5_free_error_contents(context, &error);
+		if (ret) {
+		    krb5_set_error_string(context,
+					  "failed to decode METHOD DATA");
+		    goto out;
+		} 
+	    } else if (ret == KRB5KRB_ERR_RESPONSE_TOO_BIG) {
+		if (send_to_kdc_flags & KRB5_KRBHST_FLAGS_LARGE_MSG) {
+		    if (ret_as_reply)
+			ret_as_reply->error = error;
+		    goto out;
+		}
+		krb5_free_error_contents(context, &error);
+		send_to_kdc_flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
+	    } else {
 		if (ret_as_reply)
 		    ret_as_reply->error = error;
-		goto out;
-	    }
-
-	    free_METHOD_DATA(&md);
-	    memset(&md, 0, sizeof(md));
-
-	    ret = decode_METHOD_DATA(error.e_data->data, 
-				     error.e_data->length, 
-				     &md, 
-				     NULL);
-	    krb5_free_error_contents(context, &error);
-	    if (ret) {
-		krb5_set_error_string(context, "failed to decode METHOD DATA");
+		else
+		    krb5_free_error_contents(context, &error);
 		goto out;
 	    }
 	}
@@ -1195,9 +1204,6 @@ init_cred_loop(krb5_context context,
 				 &ctx->as_req, &rep, &key);
     if (ret)
 	goto out;
-
-    free_METHOD_DATA(&md);
-    memset(&md, 0, sizeof(md));
 
     ret = _krb5_extract_ticket(context,
 			       &rep,
@@ -1214,6 +1220,9 @@ init_cred_loop(krb5_context context,
     krb5_free_keyblock(context, key);
 
 out:
+    free_METHOD_DATA(&md);
+    memset(&md, 0, sizeof(md));
+
     if (ret == 0 && ret_as_reply)
 	*ret_as_reply = rep;
     else
