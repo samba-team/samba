@@ -582,6 +582,7 @@ WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 /* Get printer info */
+
 WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			      uint32 offered, uint32 *needed,
 			      POLICY_HND *pol, uint32 level, 
@@ -647,52 +648,56 @@ WERROR cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;	
 }
 
-/**********************************************************************
- * Set printer info 
+/** Set printer info 
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param pol              Policy handle on printer to set info.
+ * @param level            Information level to set.
+ * @param ctr              Pointer to structure holding printer information.
+ * @param command          Specifies the action performed.  See
+ * http://msdn.microsoft.com/library/default.asp?url=/library/en-us/gdi/prntspol_13ua.asp 
+ * for details.
+ *
  */
-NTSTATUS cli_spoolss_setprinter(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	uint32 level, 
-	PRINTER_INFO_CTR *ctr,
-	uint32 command
-)
+
+WERROR cli_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, uint32 level, 
+			      PRINTER_INFO_CTR *ctr, uint32 command)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_SETPRINTER q;
 	SPOOL_R_SETPRINTER r;
-	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
+	WERROR result = W_ERROR(ERRgeneral);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Initialise input parameters */
+
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 		
 	make_spoolss_q_setprinter(mem_ctx, &q, pol, level, ctr, command);
 
 	/* Marshall data and send request */
+
 	if (!spoolss_io_q_setprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTER, &qbuf, &rbuf)) 
-	{
-		result = NT_STATUS_ACCESS_DENIED;
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTER, &qbuf, &rbuf))
 		goto done;
-	}
 
 	/* Unmarshall response */
-	if (!spoolss_io_r_setprinter("", &r, &rbuf, 0)) 
-	{
+
+	if (!spoolss_io_r_setprinter("", &r, &rbuf, 0))
 		goto done;
-	}
 	
-	result = werror_to_ntstatus(r.status);
-		
+	result = r.status;
+
 done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
-
 
 	return result;	
 }
@@ -870,20 +875,17 @@ WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli,
 /**********************************************************************
  * Get installed printer drivers for a given printer
  */
-NTSTATUS cli_spoolss_getprinterdriverdir (
-	struct cli_state 	*cli, 
-	TALLOC_CTX		*mem_ctx,
-	uint32 			level,
-	char* 			env,
-	DRIVER_DIRECTORY_CTR  	*ctr
-)
+WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli, 
+					TALLOC_CTX *mem_ctx,
+					uint32 offered, uint32 *needed,
+					uint32 level, char *env,
+					DRIVER_DIRECTORY_CTR *ctr)
 {
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_GETPRINTERDRIVERDIR 	q;
         SPOOL_R_GETPRINTERDRIVERDIR 	r;
 	NEW_BUFFER 			buffer;
-	uint32 				needed = 100;
-	NTSTATUS 			result;
+	WERROR result = W_ERROR(ERRgeneral);
 	fstring 			server;
 
 	ZERO_STRUCT(q);
@@ -892,67 +894,63 @@ NTSTATUS cli_spoolss_getprinterdriverdir (
         slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 
-	do 
-	{
-		/* Initialise input parameters */
-		init_buffer(&buffer, needed, mem_ctx);
+	/* Initialise input parameters */
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	init_buffer(&buffer, offered, mem_ctx);
 
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-		/* write the request */
-		make_spoolss_q_getprinterdriverdir(&q, server, env, level, &buffer, needed);
+	/* Write the request */
 
-		/* Marshall data and send request */
-		if (!spoolss_io_q_getprinterdriverdir ("", &q, &qbuf, 0) ||
-		    !rpc_api_pipe_req (cli, SPOOLSS_GETPRINTERDRIVERDIRECTORY, &qbuf, &rbuf)) 
-		{
-			result = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
+	make_spoolss_q_getprinterdriverdir(&q, server, env, level, &buffer, 
+					   offered);
 
-		/* Unmarshall response */
-		if (spoolss_io_r_getprinterdriverdir ("", &r, &rbuf, 0)) 
-		{
-			needed = r.needed;
-		}
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getprinterdriverdir ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_GETPRINTERDRIVERDIRECTORY,
+			       &qbuf, &rbuf)) 
+		goto done;
+
+	/* Unmarshall response */
+
+	if (spoolss_io_r_getprinterdriverdir ("", &r, &rbuf, 0)) {
+		if (needed)
+			*needed = r.needed;
+	}
 		
-		/* Return output parameters */
-		result = werror_to_ntstatus(r.status);
-		if (NT_STATUS_IS_OK(result))
-		{
-			switch (level) 
-			{
-			case 1:
-				decode_printerdriverdir_1(mem_ctx, r.buffer, 1, &ctr->info1);
-				break;
-			}			
-		}
+	/* Return output parameters */
 
+	result = r.status;
+
+	if (W_ERROR_IS_OK(result)) {
+		switch (level) {
+		case 1:
+			decode_printerdriverdir_1(mem_ctx, r.buffer, 1, 
+						  &ctr->info1);
+			break;
+		}			
+	}
+		
 	done:
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
-
-	return result;	
+	return result;
 }
 
 /**********************************************************************
  * Install a printer driver
  */
-NTSTATUS cli_spoolss_addprinterdriver (
-	struct cli_state 	*cli, 
-	TALLOC_CTX		*mem_ctx,
-	uint32 			level,
-	PRINTER_DRIVER_CTR  	*ctr
-)
+WERROR cli_spoolss_addprinterdriver (struct cli_state *cli, 
+				     TALLOC_CTX *mem_ctx, uint32 level,
+				     PRINTER_DRIVER_CTR *ctr)
 {
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_ADDPRINTERDRIVER 	q;
         SPOOL_R_ADDPRINTERDRIVER 	r;
-	NTSTATUS 			result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result = W_ERROR(ERRgeneral);
 	fstring 			server;
 
 	ZERO_STRUCT(q);
@@ -962,31 +960,28 @@ NTSTATUS cli_spoolss_addprinterdriver (
         strupper (server);
 
 	/* Initialise input parameters */
+
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
+	/* Write the request */
 
-	/* write the request */
 	make_spoolss_q_addprinterdriver (mem_ctx, &q, server, level, ctr);
 
 	/* Marshall data and send request */
-	result = NT_STATUS_UNSUCCESSFUL;
-	if (!spoolss_io_q_addprinterdriver ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTERDRIVER, &qbuf, &rbuf)) 
-	{
-		goto done;
-	}
 
-		
-	/* Unmarshall response */
-	result = NT_STATUS_UNSUCCESSFUL;
-	if (!spoolss_io_r_addprinterdriver ("", &r, &rbuf, 0))
-	{
+	if (!spoolss_io_q_addprinterdriver ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTERDRIVER, &qbuf, &rbuf))
 		goto done;
-	}
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_addprinterdriver ("", &r, &rbuf, 0))
+		goto done;
 		
 	/* Return output parameters */
-	result = werror_to_ntstatus(r.status);
+
+	result = r.status;
 
 done:
 	prs_mem_free(&qbuf);
@@ -998,17 +993,13 @@ done:
 /**********************************************************************
  * Install a printer 
  */
-NTSTATUS cli_spoolss_addprinterex (
-	struct cli_state 	*cli, 
-	TALLOC_CTX		*mem_ctx,
-	uint32 			level,
-	PRINTER_INFO_CTR  	*ctr
-)
+WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 uint32 level, PRINTER_INFO_CTR*ctr)
 {
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_ADDPRINTEREX 		q;
         SPOOL_R_ADDPRINTEREX 		r;
-	NTSTATUS 			result;
+	WERROR result = W_ERROR(ERRgeneral);
 	fstring 			server,
 					client,
 					user;
@@ -1021,36 +1012,33 @@ NTSTATUS cli_spoolss_addprinterex (
         slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 	fstrcpy  (user, cli->user_name);
-	
 
 	/* Initialise input parameters */
+
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
+	/* Write the request */
 
-	/* write the request */
-	make_spoolss_q_addprinterex (mem_ctx, &q, server, client, user, level, ctr);
+	make_spoolss_q_addprinterex (mem_ctx, &q, server, client, user,
+				     level, ctr);
 
 	/* Marshall data and send request */
-	result = NT_STATUS_UNSUCCESSFUL;
+
 	if (!spoolss_io_q_addprinterex ("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req (cli, SPOOLSS_ADDPRINTEREX, &qbuf, &rbuf)) 
-	{
 		goto done;
-	}
-
 		
 	/* Unmarshall response */
-	result = NT_STATUS_UNSUCCESSFUL;
+
 	if (!spoolss_io_r_addprinterex ("", &r, &rbuf, 0))
-	{
 		goto done;
-	}
 		
 	/* Return output parameters */
-	result = werror_to_ntstatus(r.status);
 
-done:
+	result = r.status;
+
+ done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
@@ -1061,53 +1049,47 @@ done:
  * Delete a Printer Driver from the server (does not remove 
  * the driver files
  */
-NTSTATUS cli_spoolss_deleteprinterdriver (
-	struct cli_state 	*cli, 
-	TALLOC_CTX		*mem_ctx,
-	char			*arch,
-	char			*driver
-)
+WERROR cli_spoolss_deleteprinterdriver (struct cli_state *cli, 
+					TALLOC_CTX *mem_ctx, char *arch,
+					char *driver)
 {
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_DELETEPRINTERDRIVER	q;
         SPOOL_R_DELETEPRINTERDRIVER	r;
-	NTSTATUS			result;
+	WERROR result = W_ERROR(ERRgeneral);
 	fstring				server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-
 	/* Initialise input parameters */
+
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
         slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 
-	/* write the request */
-	make_spoolss_q_deleteprinterdriver (mem_ctx, &q, server, arch, driver);
+	/* Write the request */
+
+	make_spoolss_q_deleteprinterdriver(mem_ctx, &q, server, arch, driver);
 
 	/* Marshall data and send request */
-	result = NT_STATUS_UNSUCCESSFUL;
-	if (!spoolss_io_q_deleteprinterdriver ("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli,SPOOLSS_DELETEPRINTERDRIVER , &qbuf, &rbuf)) 
-	{
-		goto done;
-	}
 
+	if (!spoolss_io_q_deleteprinterdriver ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli,SPOOLSS_DELETEPRINTERDRIVER , &qbuf, &rbuf))
+		goto done;
 		
 	/* Unmarshall response */
-	result = NT_STATUS_UNSUCCESSFUL;
+
 	if (!spoolss_io_r_deleteprinterdriver ("", &r, &rbuf, 0))
-	{
 		goto done;
-	}
 		
 	/* Return output parameters */
-	result = werror_to_ntstatus(r.status);
 
-done:
+	result = r.status;
+
+ done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
@@ -1116,59 +1098,55 @@ done:
 
 /* Get print processor directory */
 
-NTSTATUS cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
-						TALLOC_CTX *mem_ctx,
-						char *name,
-						char *environment,
-						fstring procdir)
+WERROR cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
+					      TALLOC_CTX *mem_ctx,
+					      uint32 offered, uint32 *needed,
+					      char *name, char *environment,
+					      fstring procdir)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTPROCESSORDIRECTORY q;
 	SPOOL_R_GETPRINTPROCESSORDIRECTORY r;
-	NTSTATUS result;
 	int level = 1;
+	WERROR result = W_ERROR(ERRgeneral);
 	NEW_BUFFER buffer;
-	uint32 needed = 100;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
 	/* Initialise parse structures */
 
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
 
-	do {
-		init_buffer(&buffer, needed, mem_ctx);
+	init_buffer(&buffer, offered, mem_ctx);
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	make_spoolss_q_getprintprocessordirectory(
+		&q, name, environment, level, &buffer, offered);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_getprintprocessordirectory("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTPROCESSORDIRECTORY, 
+			      &qbuf, &rbuf))
+		goto done;
 		
-		make_spoolss_q_getprintprocessordirectory(&q, name, 
-							  environment, level,
-							  &buffer, needed);
-
-		/* Marshall data and send request */
-
-		if (!spoolss_io_q_getprintprocessordirectory("", &q, &qbuf, 0) ||
-		    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTPROCESSORDIRECTORY, &qbuf, &rbuf)) {
-			result = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
+	/* Unmarshall response */
 		
-		/* Unmarshall response */
-		
-		if (!spoolss_io_r_getprintprocessordirectory("", &r, &rbuf, 0)) {
-			result = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
+	if (!spoolss_io_r_getprintprocessordirectory("", &r, &rbuf, 0))
+		goto done;
 
-		/* Return output parameters */
+	/* Return output parameters */
 		
-		result = werror_to_ntstatus(r.status);
+	result = r.status;
 
-	} while (NT_STATUS_V(result) == 
-		 NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
+	if (needed)
+		*needed = r.needed;
+
+	if (W_ERROR_IS_OK(result))
+		fstrcpy(procdir, "Not implemented!");
 
  done:
 	prs_mem_free(&qbuf);

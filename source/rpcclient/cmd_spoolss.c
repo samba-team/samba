@@ -717,7 +717,7 @@ static NTSTATUS cmd_spoolss_getdriver(struct cli_state *cli,
 	if (opened_hnd)
 		cli_spoolss_close_printer (cli, mem_ctx, &pol);
 	
-	return result;
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /***********************************************************************
@@ -815,32 +815,36 @@ static NTSTATUS cmd_spoolss_getdriverdir(struct cli_state *cli,
                                          TALLOC_CTX *mem_ctx,
                                          int argc, char **argv)
 {
-	NTSTATUS		result;
+	WERROR result;
 	fstring			env;
 	DRIVER_DIRECTORY_CTR	ctr;
+	uint32 needed;
 
-	if (argc > 2) 
-	{
+	if (argc > 2) {
 		printf("Usage: %s [environment]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	/* get the arguments need to open the printer handle */
+	/* Get the arguments need to open the printer handle */
+
 	if (argc == 2)
 		fstrcpy (env, argv[1]);
 	else
 		fstrcpy (env, "Windows NT x86");
 
 	/* Get the directory.  Only use Info level 1 */
-	result = cli_spoolss_getprinterdriverdir (cli, mem_ctx, 1, env, &ctr);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
 
-	
-	display_printdriverdir_1 (ctr.info1);
+	result = cli_spoolss_getprinterdriverdir(
+		cli, mem_ctx, 0, &needed, 1, env, &ctr);
 
-	return result;
+	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+		result = cli_spoolss_getprinterdriverdir(
+			cli, mem_ctx, needed, NULL, 1, env, &ctr);
+
+	if (W_ERROR_IS_OK(result))
+		display_printdriverdir_1(ctr.info1);
+
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /*******************************************************************************
@@ -955,7 +959,7 @@ static NTSTATUS cmd_spoolss_addprinterdriver(struct cli_state *cli,
                                              TALLOC_CTX *mem_ctx,
                                              int argc, char **argv)
 {
-	NTSTATUS		result;
+	WERROR result;
 	uint32                  level = 3;
 	PRINTER_DRIVER_CTR	ctr;
 	DRIVER_INFO_3		info3;
@@ -992,14 +996,15 @@ static NTSTATUS cmd_spoolss_addprinterdriver(struct cli_state *cli,
 
 	ctr.info3 = &info3;
 	result = cli_spoolss_addprinterdriver (cli, mem_ctx, level, &ctr);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+
+	if (W_ERROR_IS_OK(result)) {
+		rpcstr_pull(driver_name, info3.name.buffer, 
+			    sizeof(driver_name), 0, STR_TERMINATE);
+		printf ("Printer Driver %s successfully installed.\n", 
+			driver_name);
 	}
 
-	rpcstr_pull(driver_name, info3.name.buffer, sizeof(driver_name), 0, STR_TERMINATE);
-	printf ("Printer Driver %s successfully installed.\n", driver_name);
-
-	return result;
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 
@@ -1007,7 +1012,7 @@ static NTSTATUS cmd_spoolss_addprinterex(struct cli_state *cli,
                                          TALLOC_CTX *mem_ctx, 
                                          int argc, char **argv)
 {
-	NTSTATUS		result;
+	WERROR result;
 	uint32			level = 2;
 	PRINTER_INFO_CTR	ctr;
 	PRINTER_INFO_2		info2;
@@ -1053,13 +1058,11 @@ static NTSTATUS cmd_spoolss_addprinterex(struct cli_state *cli,
 
 	ctr.printers_2 = &info2;
 	result = cli_spoolss_addprinterex (cli, mem_ctx, level, &ctr);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
 
-	printf ("Printer %s successfully installed.\n", argv[1]);
+	if (W_ERROR_IS_OK(result))
+		printf ("Printer %s successfully installed.\n", argv[1]);
 
-	return result;
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli, 
@@ -1068,7 +1071,6 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 {
 	POLICY_HND		pol;
 	WERROR                  result;
-	NTSTATUS		nt_status;
 	uint32			level = 2;
 	BOOL			opened_hnd = False;
 	PRINTER_INFO_CTR	ctr;
@@ -1096,11 +1098,9 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 					     MAXIMUM_ALLOWED_ACCESS, 
 					     servername, user, &pol);
 
-	nt_status = W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-
-	if (!NT_STATUS_IS_OK(nt_status))
+	if (!W_ERROR_IS_OK(result))
 		goto done;
- 
+
 	opened_hnd = True;
 
 	/* Get printer info */
@@ -1124,9 +1124,9 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 
 	init_unistr(&ctr.printers_2->drivername, argv[2]);
 
-	nt_status = cli_spoolss_setprinter(cli, mem_ctx, &pol, level, &ctr, 0);
+	result = cli_spoolss_setprinter(cli, mem_ctx, &pol, level, &ctr, 0);
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
+	if (!W_ERROR_IS_OK(result)) {
 		printf("SetPrinter call failed!\n");
 		goto done;;
 	}
@@ -1139,7 +1139,7 @@ done:
 	if (opened_hnd)
 		cli_spoolss_close_printer(cli, mem_ctx, &pol);
 	
-	return nt_status;		
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 
@@ -1147,7 +1147,7 @@ static NTSTATUS cmd_spoolss_deletedriver(struct cli_state *cli,
                                          TALLOC_CTX *mem_ctx,
                                          int argc, char **argv)
 {
-	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result;
 	fstring			servername;
 	int			i;
 	
@@ -1165,30 +1165,33 @@ static NTSTATUS cmd_spoolss_deletedriver(struct cli_state *cli,
 	for (i=0; archi_table[i].long_archi; i++)
 	{
 		/* make the call to remove the driver */
-		result = cli_spoolss_deleteprinterdriver(cli, mem_ctx, 
-							 archi_table[i].long_archi, argv[1]);
-		if (!NT_STATUS_IS_OK(result)) {
-			printf ("Failed to remove driver %s for arch [%s] - error %s!\n", 
-				argv[1], archi_table[i].long_archi, get_nt_error_msg(result));
-		}
-		else
-			printf ("Driver %s removed for arch [%s].\n", argv[1], archi_table[i].long_archi);
+		result = cli_spoolss_deleteprinterdriver(
+			cli, mem_ctx, archi_table[i].long_archi, argv[1]);
+
+		if (!W_ERROR_IS_OK(result)) {
+			printf ("Failed to remove driver %s for arch [%s] - error 0x%x!\n", 
+				argv[1], archi_table[i].long_archi, 
+				W_ERROR_V(result));
+		} else
+			printf ("Driver %s removed for arch [%s].\n", argv[1], 
+				archi_table[i].long_archi);
 	}
 		
-	return NT_STATUS_OK;		
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 static NTSTATUS cmd_spoolss_getprintprocdir(struct cli_state *cli, 
 					    TALLOC_CTX *mem_ctx,
 					    int argc, char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result;
 	char *servername = NULL, *environment = NULL;
 	fstring procdir;
+	uint32 needed;
 	
 	/* parse the command arguements */
-	if (argc < 2 || argc > 3) {
-		printf ("Usage: %s <server> [environment]\n", argv[0]);
+	if (argc > 2) {
+		printf ("Usage: %s [environment]\n", argv[0]);
 		return NT_STATUS_OK;
         }
 
@@ -1196,22 +1199,27 @@ static NTSTATUS cmd_spoolss_getprintprocdir(struct cli_state *cli,
 		return NT_STATUS_NO_MEMORY;
 	strupper(servername);
 
-	if (asprintf(&environment, "%s", (argc == 3) ? argv[2] : 
-		 			PRINTER_DRIVER_ARCHITECTURE) < 0) {
+	if (asprintf(&environment, "%s", (argc == 2) ? argv[1] : 
+		     PRINTER_DRIVER_ARCHITECTURE) < 0) {
 		SAFE_FREE(servername);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	result = cli_spoolss_getprintprocessordirectory(
-		cli, mem_ctx, servername, environment, procdir);
+		cli, mem_ctx, 0, &needed, servername, environment, procdir);
 
-	if (NT_STATUS_IS_OK(result))
-		printf("%s", procdir);
+	if (W_ERROR_V(result) == ERRinsufficientbuffer)
+		result = cli_spoolss_getprintprocessordirectory(
+			cli, mem_ctx, needed, NULL, servername, environment, 
+			procdir);
+
+	if (W_ERROR_IS_OK(result))
+		printf("%s\n", procdir);
 
 	SAFE_FREE(servername);
 	SAFE_FREE(environment);
 
-	return result;
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 /* Add a form */
