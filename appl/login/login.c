@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -167,7 +167,7 @@ exec_shell(const char *shell, int fallback)
     err(1, "%s", shell);
 }
 
-static enum { AUTH_KRB4, AUTH_KRB5 } auth;
+static enum { NONE = 0, AUTH_KRB4 = 1, AUTH_KRB5 = 2 } auth;
 
 #ifdef KRB5
 static krb5_context context;
@@ -179,7 +179,6 @@ krb5_verify(struct passwd *pwd, const char *password)
     krb5_error_code ret;
     krb5_principal princ;
 
-    ret = krb5_init_context(&context);
     if(ret)
 	return 1;
 	    
@@ -206,6 +205,48 @@ krb5_verify(struct passwd *pwd, const char *password)
     return ret;
 }
 
+#ifdef KRB4
+static void
+krb5_to4 (krb5_ccache id)
+{
+    if (krb5_config_get_bool(context, NULL,
+			     "libdefaults",
+			     "krb4_get_tickets",
+			     NULL)) {
+        CREDENTIALS c;
+        krb5_creds mcred, cred;
+        char krb4tkfile[MAXPATHLEN];
+	krb5_error_code ret;
+	krb5_principal princ;
+
+	ret = krb5_cc_get_principal (context, id, &princ);
+	if (ret)
+	    return;
+
+	krb5_make_principal(context, &mcred.server,
+			    princ->realm,
+			    "krbtgt",
+			    princ->realm,
+			    NULL);
+	krb5_free_principal (context, princ);
+
+	ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
+	if(ret == 0) {
+	    ret = krb524_convert_creds_kdc(context, id, &cred, &c);
+	    if(ret == 0) {
+		snprintf(krb4tkfile,sizeof(krb4tkfile),"%s%d",TKT_ROOT,
+			 getuid());
+		krb_set_tkt_string(krb4tkfile);
+		tf_setup(&c, c.pname, c.pinst);
+	    }
+	    memset(&c, 0, sizeof(c));
+	    krb5_free_creds_contents(context, &cred);
+	}
+	krb5_free_principal(context, mcred.server);
+    }
+}
+#endif /* KRB4 */
+
 static int
 krb5_start_session (const struct passwd *pwd)
 {
@@ -224,35 +265,7 @@ krb5_start_session (const struct passwd *pwd)
 	return ret;
     }
 #ifdef KRB4
-    if (krb5_config_get_bool(context, NULL,
-			     "libdefaults",
-			     "krb4_get_tickets",
-			     NULL)) {
-        CREDENTIALS c;
-        krb5_creds mcred, cred;
-        krb5_realm realm;
-        char krb4tkfile[MAXPATHLEN];
-
-        krb5_get_default_realm(context, &realm);
-	krb5_make_principal(context, &mcred.server, realm,
-			    "krbtgt",
-			    realm,
-			    NULL);
-	free (realm);
-	ret = krb5_cc_retrieve_cred(context, id2, 0, &mcred, &cred);
-	if(ret == 0) {
-	    ret = krb524_convert_creds_kdc(context, id2, &cred, &c);
-	    if(ret == 0) {
-		snprintf(krb4tkfile,sizeof(krb4tkfile),"%s%d",TKT_ROOT,
-			 getuid());
-		krb_set_tkt_string(krb4tkfile);
-		tf_setup(&c, c.pname, c.pinst);
-	    }
-	    memset(&c, 0, sizeof(c));
-	    krb5_free_creds_contents(context, &cred);
-	}
-	krb5_free_principal(context, mcred.server);
-    }
+    krb5_to4 (id2);
 #endif
     krb5_cc_close(context, id2);
     krb5_cc_destroy(context, id);
@@ -279,9 +292,6 @@ krb5_get_afs_tokens (const struct passwd *pwd)
     if (!k_hasafs ())
 	return;
 
-    ret = krb5_init_context(&context);
-    if(ret)
-	return;
     ret = krb5_cc_default(context, &id2);
  
     if (ret == 0) {
@@ -563,6 +573,17 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 	krb5_finish ();
     }
 #ifdef KRB4
+    else if (auth == 0) {
+	krb5_error_code ret;
+	krb5_ccache id;
+
+	ret = krb5_cc_default (context, &id);
+	if (ret == 0) {
+	    krb5_to4 (id);
+	    krb5_cc_close (context, id);
+	}
+    }
+
     krb5_get_afs_tokens (pwd);
 #endif /* KRB4 */
 #endif /* KRB5 */
@@ -626,6 +647,10 @@ main(int argc, char **argv)
     int ask = 1;
     
     set_progname(argv[0]);
+
+#ifdef KRB5
+    krb5_init_context(&context);
+#endif
 
     openlog("login", LOG_ODELAY, LOG_AUTH);
 
