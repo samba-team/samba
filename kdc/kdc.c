@@ -30,8 +30,11 @@ krb5_encrypt (krb5_context context,
 	      krb5_keyblock *keyblock,
 	      krb5_data *result);
 
+krb5_error_code
 krb5_mk_error(krb5_principal princ, 
 	      krb5_error_code error_code,
+	      char *e_text,
+	      krb5_data *e_data,
 	      krb5_data *err)
 {
     KRB_ERROR msg;
@@ -44,6 +47,10 @@ krb5_mk_error(krb5_principal princ,
     msg.error_code = error_code;
     msg.realm = princ->realm.data;
     krb5_principal2principalname(&msg.sname, princ);
+    if (e_text)
+	msg.e_text = &e_text;
+    if (e_data)
+	msg.e_data = e_data;
     err->length = encode_KRB_ERROR(buf + sizeof(buf) - 1, sizeof(buf), &msg);
     err->data = malloc(err->length);
     memcpy(err->data, buf + sizeof(buf) - err->length, err->length);
@@ -68,12 +75,45 @@ as_rep(krb5_context context,
        KDC_REP *rep,
        krb5_data *data)
 {
-    KDCOptions f = req->req_body.kdc_options;
     KDC_REQ_BODY *b = &req->req_body;
+    KDCOptions f = b->kdc_options;
     hdb_entry *client, *server;
     int use_etype;
     EncTicketPart *et = calloc(1, sizeof(*et));
     EncKDCRepPart *ek = calloc(1, sizeof(*ek));
+
+    /* PREAUTH */
+
+#ifdef PREAUTH_ENC_TIMESTAMP
+    if(req->padata == NULL || req->padata->len < 1 ||
+       req->padata->val->padata_type != pa_enc_timestamp) {
+	PA_DATA foo;
+	u_char buf[16];
+	int len;
+	krb5_data foo_data;
+	krb5_principal princ;
+
+	principalname2krb5_principal (&princ, *(b->cname), b->realm);
+
+	foo.padata_type = pa_enc_timestamp;
+	foo.padata_value.length = 0;
+	foo.padata_value.data   = NULL;
+
+	len = encode_PA_DATA(buf + sizeof(buf) - 1,
+			     sizeof(buf),
+			     &foo);
+	foo_data.length = len;
+	foo_data.data   = buf + sizeof(buf) - len;
+
+	krb5_mk_error (princ,
+		       KRB5KDC_ERR_PREAUTH_REQUIRED,
+		       "Need to use PA-ENC-TIMESTAMP",
+		       &foo_data,
+		       data);
+
+	return 0;
+    }
+#endif /* PREAUTH_ENC_TIMESTAMP */
 
     client = db_fetch(context, b->cname, b->realm);
     server = db_fetch(context, b->sname, b->realm);
