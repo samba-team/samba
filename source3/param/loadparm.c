@@ -1441,7 +1441,7 @@ static void init_globals(void)
 #else
 	Globals.bUseMmap = True;
 #endif
-	Globals.bUnixExtensions = False;
+	Globals.bUnixExtensions = True;
 
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
