@@ -3136,53 +3136,55 @@ static BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 *usr, prs_struct *ps
 
 	if(!smb_io_unistr2("uni_user_name   ", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth)) /* username unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_full_name.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_full_name   ", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth)) /* user's full name unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_home_dir.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_home_dir    ", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth)) /* home directory unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_dir_drive.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_dir_drive   ", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth)) /* home directory drive unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_logon_script.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_logon_script", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth)) /* logon script unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_profile_path.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_profile_path", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth)) /* profile path unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_acct_desc.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_acct_desc   ", &usr->uni_acct_desc, usr->hdr_acct_desc.buffer, ps, depth)) /* user description unicode string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_workstations.buffer))
 		return False;
 	if(!smb_io_unistr2("uni_workstations", &usr->uni_workstations, usr->hdr_workstations.buffer, ps, depth)) /* worksations user can log on from */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_unknown_str.buffer))
 		return False;
-	if(!smb_io_unistr2("uni_unknown_str ", &usr->uni_unknown_str, usr->hdr_unknown_str .buffer, ps, depth)) /* unknown string */
+	if(!smb_io_unistr2("uni_user_comment", &usr->uni_unknown_str, usr->hdr_unknown_str.buffer, ps, depth)) /* unknown string */
 		return False;
-	if(!prs_align(ps))
+	if(!prs_align_needed(ps, usr->hdr_munged_dial.buffer))
 		return False;
-	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial, usr->hdr_munged_dial .buffer, ps, depth)) /* worksations user can log on from */
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
-		return False;
-	if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
+	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial, usr->hdr_munged_dial.buffer, ps, depth)) /* worksations user can log on from */
 		return False;
 
-	if (usr->ptr_logon_hrs)
+	if (usr->ptr_logon_hrs) {
+	
+		if(!prs_align(ps))
+			return False;
+		if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
+			return False;
+		if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
+			return False;
+
 		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
 			return False;
+	}
 
 	return True;
 }
@@ -4251,23 +4253,18 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 *usr, prs_struct *ps
 		return False;
 
 	/* ok, this is only guess-work (as usual) */
-	if (usr->unknown_5 != 0x0) {
+	if (usr->ptr_logon_hrs) {
 		if(!prs_align(ps))
 			return False;
 		if(!prs_uint32("unknown_6", ps, depth, &usr->unknown_6))
 			return False;
 		if(!prs_uint32("padding4", ps, depth, &usr->padding4))
 			return False;
+		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
+			return False;
 	} else if (UNMARSHALLING(ps)) {
 		usr->unknown_6 = 0;
 		usr->padding4 = 0;
-	}
-
-	if (usr->ptr_logon_hrs) {
-		if(!prs_align(ps))
-			return False;
-		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
-			return False;
 	}
 
 	return True;
