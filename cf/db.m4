@@ -92,10 +92,10 @@ if test "$db_type" = "unknown" -o "$ac_cv_func_dbm_firstkey" = ""; then
 
   AC_FIND_FUNC_NO_LIBS(dbm_firstkey, ndbm, [
   #include <stdio.h>
-  #if defined(HAVE_DBM_H)
-  #include <dbm.h>
-  #elif defined(HAVE_NDBM_H)
+  #if defined(HAVE_NDBM_H)
   #include <ndbm.h>
+  #elif defined(HAVE_DBM_H)
+  #include <dbm.h>
   #else
   #error no ndbm.h
   #endif
