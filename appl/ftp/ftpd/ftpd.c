@@ -1776,7 +1776,8 @@ renamecmd(char *from, char *to)
 static void
 dolog(struct sockaddr *sa, int sa_len)
 {
-	getnameinfo (sa, sa_len, remotehost, sizeof(remotehost), NULL, 0, 0);
+	getnameinfo_verified (sa, sa_len, remotehost, sizeof(remotehost),
+			      NULL, 0, 0);
 #ifdef HAVE_SETPROCTITLE
 	snprintf(proctitle, sizeof(proctitle), "%s: connected", remotehost);
 	setproctitle(proctitle);
