@@ -1,5 +1,11 @@
-2005-04-04  Love Hörnquist Åstrand <lha@it.su.se>
+2005-04-04 Love Hörnquist Åstrand <lha@it.su.se>
 
+	* strpftime-test.c: print size_t by casting to unsigned long
+	
+	* base64-test.c: print size_t by casting to unsigned long
+	
+	* hex-test.c: print size_t by casting to unsigned long
+	
 	* resolve-test.c: print size_t by casting to unsigned long
 	
 2005-04-01 Love Hörnquist Åstrand <lha@it.su.se>
