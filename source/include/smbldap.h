@@ -107,7 +107,9 @@ typedef struct _attrib_map_entry {
 /* structures */
 
 extern ATTRIB_MAP_ENTRY attrib_map_v22[];
+extern ATTRIB_MAP_ENTRY attrib_map_to_delete_v22[];
 extern ATTRIB_MAP_ENTRY attrib_map_v30[];
+extern ATTRIB_MAP_ENTRY attrib_map_to_delete_v30[];
 extern ATTRIB_MAP_ENTRY dominfo_attr_list[];
 extern ATTRIB_MAP_ENTRY groupmap_attr_list[];
 extern ATTRIB_MAP_ENTRY groupmap_attr_list_to_delete[];
