@@ -16,5 +16,5 @@
 </description>
 
 <value type="default"/>
-<value type="example">/usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u</value>
+<value type="example">/usr/sbin/adduser -n -g machines -c Machine -d /var/lib/nobody -s /bin/false %u</value>
 </samba:parameter>
