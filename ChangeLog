@@ -1,3 +1,13 @@
+Sat Mar  8 01:01:17 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/encrypt.c: New file.
+
+	* lib/krb5/Makefile.am: More -I
+
+	* configure.in: Test for big endian, random, rand, setitimer
+
+	* lib/asn1/gen.c: perhaps even decodes bitstrings
+
 Sat Feb  8 15:59:56 1997  Assar Westerlund  <assar@pdc.kth.se>
 
 	* lib/asn1/parse.y: ifdef HAVE_STRDUP
