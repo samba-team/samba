@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -75,11 +75,12 @@ loop (int s, int errsock)
 
 	readset = real_readset;
 	ret = select (max(s, errsock) + 1, &readset, NULL, NULL, NULL);
-	if (ret < 0)
+	if (ret < 0) {
 	    if (errno == EINTR)
 		continue;
 	    else
 		err (1, "select");
+	}
 	if (FD_ISSET(s, &readset)) {
 	    ret = do_read (s, buf, sizeof(buf));
 	    if (ret < 0)
