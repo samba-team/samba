@@ -54,7 +54,7 @@ MANPAGES = $(wildcard $(MANPAGEDIR)/*.?.xml)
 
 # Lists of files to process
 LATEX_FIGURES = xslt/figures/caution.pdf xslt/figures/important.pdf xslt/figures/note.pdf xslt/figures/tip.pdf xslt/figures/warning.pdf
-MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES_SOURCES))
+MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES))
 
 help: 
 	@echo "Supported make targets:"
@@ -104,10 +104,10 @@ $(DOCBOOKDIR)/%.xml: $(MANPAGEDIR)/%.xml xslt/expand-sambadoc.xsl
 	mkdir -p $(@D)
 	$(XSLTPROC) --xinclude --stringparam latex.imagebasedir "$*/" --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
-$(DOCBOOKDIR)/manpages.xml: $(MANPAGES_SOURCES) xslt/manpage-summary.xsl
+$(DOCBOOKDIR)/manpages.xml: $(MANPAGES) xslt/manpage-summary.xsl
 	mkdir -p $(@D)
 	echo "<article><variablelist>" > $@
-	for I in $(MANPAGES_SOURCES); do $(XSLTPROC) xslt/manpage-summary.xsl $$I >> $@; done
+	for I in $(MANPAGES); do $(XSLTPROC) xslt/manpage-summary.xsl $$I >> $@; done
 	echo "</variablelist></article>" >> $@
 
 # HTML docs
@@ -209,7 +209,7 @@ $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml
 	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm --stringparam manifest.in.base.dir "$@/" --stringparam base.dir "$@/" http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
 
 # Plucker docs
-$(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html $(PLUCKERDIR)
+$(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html 
 	mkdir -p $(@D)
 	$(PLUCKERBUILD) -v -M1 --stayonhost  --noimages --zlib-compression -H file:$< -f $* -p $(PLUCKERDIR)
 

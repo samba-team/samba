@@ -53,7 +53,7 @@
 		</xsl:if>
 	</xsl:template>
 
-	<xsl:template match="/">
+	<xsl:template match="/" mode="default">
 		<xsl:processing-instruction  
 			name="xml-stylesheet">href="pearson.css"  
 			type="text/css"</xsl:processing-instruction>
@@ -85,24 +85,30 @@
 		</bookinfo>
 	</xsl:template>
 
-	<xsl:template match="bookinfo/author">
-		<!-- author>
+	<xsl:template match="author">
+		<author>
+			<xsl:apply-templates/>
+		</author>
+	</xsl:template>
+
+	<xsl:template match="editor">
+		<editor>
+			<xsl:apply-templates/>
+		</editor>
+	</xsl:template>
+
+	<xsl:template match="chapter">
+		<chapter>
+			<xsl:call-template name="transform.id.attribute"/>
+			<xsl:apply-templates/>
+		</chapter>
+	</xsl:template>
+
+	<xsl:template match="chapter/title/command">
 		<xsl:apply-templates/>
-	</author -->
-</xsl:template>
+	</xsl:template>
 
-<xsl:template match="chapter">
-	<chapter>
-		<xsl:call-template name="transform.id.attribute"/>
-		<xsl:apply-templates/>
-	</chapter>
-</xsl:template>
-
-<xsl:template match="chapter/title/command">
-	<xsl:apply-templates/>
-</xsl:template>
-
-   <xsl:template match="index">
+	<xsl:template match="index">
        <xsl:comment> XXX insert index here </xsl:comment>
    </xsl:template>
 
@@ -154,16 +160,54 @@
 	   <title><xsl:apply-templates/></title>
    </xsl:template>
 
+	<xsl:param name="notpchilds" select="'variablelist itemizedlist orderedlist'"/>
 
-   <xsl:template match="para">
-	   <p><xsl:apply-templates/></p>
-	   <!-- p><xsl:apply-templates><value-of  
-			   select="normalize-space()"/></xsl:apply-templates></p -->
-   </xsl:template>
+	<xsl:template match="para"> 
+		<!-- loop thru all elements: -->
+		<xsl:for-each select="*|text()">
+			<xsl:choose>
+				<xsl:when test="string-length(name(.)) > 0 and contains($notpchilds,name(.))">
+					<xsl:message><xsl:text>Removing from p:</xsl:text><xsl:value-of select="name(.)"/></xsl:message>
+					<xsl:apply-templates select="."/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:call-template name="hstartpara"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:for-each>
+	</xsl:template>
 
-   <xsl:template match="tip">
-	   <tip><xsl:apply-templates/></tip>
-   </xsl:template>
+	<!-- Do open paragraph when previous sibling was not a valid p child -->
+	<xsl:template name="hstartpara">
+		<xsl:if test="not(preceding-sibling::*[1]) or (contains($notpchilds,name(preceding-sibling::*[1])) and not(string-length(name(.)) > 0))">
+			<p>
+				<xsl:apply-templates select="."/>
+				<xsl:for-each select="following-sibling::*[not(contains($notpchilds,name(.)) and string-length(name(.)) > 0)]">
+					<xsl:apply-templates select="."/>
+				</xsl:for-each>
+			</p>
+		</xsl:if>
+	</xsl:template>
+
+	<xsl:template name="hsubpara">
+		<xsl:param name="data"/>
+		<xsl:apply-templates select="$data"/>
+		<xsl:if test="$data[following-sibling::*[1]]">
+			<xsl:param name="next" select="$data[following-sibling::*[1]]"/>
+			<xsl:message><xsl:value-of select="name(.)"/></xsl:message>
+			<xsl:if test="$next and (not(contains($notpchilds,name($next))) or $next[text()])">
+				<xsl:message><xsl:text>Followed by : </xsl:text><xsl:value-of select="name($next)"/></xsl:message>
+				<xsl:call-template name="hsubpara">
+					<xsl:with-param name="data" select="$next"/>
+				</xsl:call-template>
+				<xsl:message><xsl:text>Done Followed by : </xsl:text><xsl:value-of select="name($next)"/></xsl:message>
+			</xsl:if>
+		</xsl:if>
+	</xsl:template>
+
+	<xsl:template match="tip">
+		<tip><xsl:apply-templates/></tip>
+	</xsl:template>
 
    <xsl:template match="warning|important|caution">
 	   <stop><xsl:apply-templates/></stop>
@@ -819,18 +863,8 @@
    match="quote"><quote><xsl:apply-templates/></quote></xsl:template -->
 
 
-   <!-- Literaturverzeichnis -->
-   <xsl:template match="author">
-	   <xsl:apply-templates/>,
-   </xsl:template>
-
-   <xsl:template match="editor">
-	   <!--FIXME: More information referring to editor ? -->
-	   <xsl:apply-templates/>,
-   </xsl:template>
-
    <xsl:template match="othername">
-	   <xsl:apply-templates/>
+	   <xsl:text>(</xsl:text><xsl:apply-templates/><xsl:text>)</xsl:text>0
    </xsl:template>
    <xsl:template match="firstname">
 	   <xsl:apply-templates/><xsl:text> </xsl:text>
