@@ -282,9 +282,7 @@ static ufc_long longmask[32] = {
  * bzero and some don't have memset.
  */
 
-static void clearmem(start, cnt)
-  char *start;
-  int cnt;
+static void clearmem(char *start, int cnt)
   { while(cnt--)
       *start++ = '\0';
   }
@@ -300,7 +298,7 @@ static int initialized = 0;
  * by fcrypt users.
  */
 
-static void ufc_init_des()
+static void ufc_init_des(void)
   { int comes_from_bit;
     int bit, sg;
     ufc_long j;
@@ -469,9 +467,7 @@ static void ufc_init_des()
  */
 
 #ifdef _UFC_32_
-static void shuffle_sb(k, saltbits)
-  long32 *k;
-  ufc_long saltbits;
+static void shuffle_sb(long32 *k, ufc_long saltbits)
   { ufc_long j;
     long32 x;
     for(j=4096; j--;) {
@@ -483,9 +479,7 @@ static void shuffle_sb(k, saltbits)
 #endif
 
 #ifdef _UFC_64_
-static void shuffle_sb(k, saltbits)
-  long64 *k;
-  ufc_long saltbits;
+static void shuffle_sb(long64 *k, ufc_long saltbits)
   { ufc_long j;
     long64 x;
     for(j=4096; j--;) {
@@ -544,8 +538,7 @@ static void setup_salt(char *s1)
     current_saltbits = saltbits;
   }
 
-static void ufc_mk_keytab(key)
-  char *key;
+static void ufc_mk_keytab(char *key)
   { ufc_long v1, v2, *k1;
     int i;
 #ifdef _UFC_32_
@@ -594,8 +587,7 @@ static void ufc_mk_keytab(key)
  * Undo an extra E selection and do final permutations
  */
 
-ufc_long *_ufc_dofinalperm(l1, l2, r1, r2)
-  ufc_long l1,l2,r1,r2;
+ufc_long *_ufc_dofinalperm(ufc_long l1, ufc_long l2, ufc_long r1, ufc_long r2)
   { ufc_long v1, v2, x;
     static ufc_long ary[2];
 
@@ -633,9 +625,7 @@ ufc_long *_ufc_dofinalperm(l1, l2, r1, r2)
  * prefixing with the salt
  */
 
-static char *output_conversion(v1, v2, salt)
-  ufc_long v1, v2;
-  char *salt;
+static char *output_conversion(ufc_long v1, ufc_long v2, char *salt)
   { static char outbuf[14];
     int i, s;
 
@@ -703,8 +693,7 @@ extern long32 _ufc_sb0[], _ufc_sb1[], _ufc_sb2[], _ufc_sb3[];
 
 #define SBA(sb, v) (*(long32*)((char*)(sb)+(v)))
 
-static ufc_long *_ufc_doit(l1, l2, r1, r2, itr)
-  ufc_long l1, l2, r1, r2, itr;
+static ufc_long *_ufc_doit(ufc_long l1, ufc_long l2, ufc_long r1, ufc_long r2, ufc_long itr)
   { int i;
     long32 s, *k;
 
@@ -743,8 +732,7 @@ extern long64 _ufc_sb0[], _ufc_sb1[], _ufc_sb2[], _ufc_sb3[];
 
 #define SBA(sb, v) (*(long64*)((char*)(sb)+(v)))
 
-static ufc_long *_ufc_doit(l1, l2, r1, r2, itr)
-  ufc_long l1, l2, r1, r2, itr;
+static ufc_long *_ufc_doit(ufc_long l1, ufc_long l2, ufc_long r1, ufc_long r2, ufc_long itr)
   { int i;
     long64 l, r, s, *k;
 
