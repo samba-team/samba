@@ -504,8 +504,8 @@ clear_descr(struct descr *d)
 static int
 de_http(char *buf)
 {
-    char *p, *q;
-    for(p = q = buf; *p; p++, q++) {
+    unsigned char *p, *q;
+    for(p = q = (unsigned char *)buf; *p; p++, q++) {
 	if(*p == '%' && isxdigit(p[1]) && isxdigit(p[2])) {
 	    unsigned int x;
 	    if(sscanf(p + 1, "%2x", &x) != 1)
