@@ -102,6 +102,8 @@ ipropd_slave_SOURCES = ipropd_slave.c iprop.h kadm5_locl.h
 
 truncate_log_SOURCES = truncate_log.c
 
+man_MANS = kadm5_pwcheck.3
+
 LDADD = \
 	libkadm5srv.la \
 	$(top_builddir)/lib/hdb/libhdb.la \
