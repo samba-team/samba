@@ -143,7 +143,6 @@ typedef struct
 	char *szLogonPath;
 	char *szLogonDrive;
 	char *szLogonHome;
-	char *szSmbrun;
 	char *szWINSserver;
 	char *szCodingSystem;
 	char *szInterfaces;
@@ -1205,7 +1204,6 @@ static void init_globals(void)
 	string_set(&Globals.szUtmpHostname, "%m");
 	Globals.bUtmp = False;
 #endif
-	string_set(&Globals.szSmbrun, SMBRUN);
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 	pstrcpy(s, "Samba ");
 	pstrcat(s, VERSION);
