@@ -5860,6 +5860,17 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 		result = WERR_BADFID;
 		goto done;
 	}
+	
+	/* Check the user has permissions to change the security
+	   descriptor.  By experimentation with two NT machines, the user
+	   requires Full Access to the printer to change security
+	   information. */
+
+	if ( Printer->access_granted != PRINTER_ACCESS_ADMINISTER ) {
+		DEBUG(4,("update_printer_sec: updated denied by printer permissions\n"));
+		result = WERR_ACCESS_DENIED;
+		goto done;
+	}
 
 	/* NT seems to like setting the security descriptor even though
 	   nothing may have actually changed. */
@@ -5906,20 +5917,6 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 
 	if (sec_desc_equal(new_secdesc_ctr->sec, old_secdesc_ctr->sec)) {
 		result = WERR_OK;
-		goto done;
-	}
-
-	/* Work out which user is performing the operation */
-
-	get_current_user(&user, p);
-
-	/* Check the user has permissions to change the security
-	   descriptor.  By experimentation with two NT machines, the user
-	   requires Full Access to the printer to change security
-	   information. */
-
-	if (!print_access_check(&user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
 
