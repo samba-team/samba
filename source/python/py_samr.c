@@ -276,9 +276,9 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 	static char *kwlist[] = { "server", "creds", "access", NULL };
 	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS;
 	char *server, *errstr;
-	struct cli_state *cli;
+	struct cli_state *cli = NULL;
 	POLICY_HND hnd;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 	PyObject *result = NULL, *creds = NULL;
 	NTSTATUS ntstatus;
 
@@ -287,8 +287,7 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 		    &creds, &desired_access)) 
 		return NULL;
 
-	if (!(cli = open_pipe_creds(
-		      server, creds, cli_lsa_initialise, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PIPE_SAMR, &errstr))) {
 		PyErr_SetString(samr_error, errstr);
 		free(errstr);
 		return NULL;
@@ -312,6 +311,14 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 	result = new_samr_connect_hnd_object(cli, mem_ctx, &hnd);
 
 done:
+	if (!result) {
+		if (cli)
+			cli_shutdown(cli);
+
+		if (mem_ctx)
+			talloc_destroy(cli);
+	}
+
 	return result;
 }
 
