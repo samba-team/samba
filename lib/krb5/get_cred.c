@@ -119,42 +119,29 @@ krb5_get_credentials (krb5_context context,
     a.req_body.enc_authorization_data = NULL;
 
     {
+	krb5_data in_data;
 	unsigned char buf[1024];
+	krb5_auth_context ac = NULL;
 	int len;
-	Checksum c;
-	krb5_creds cred, mcred;
 	
-	krb5_build_principal(context, &mcred.server, 
-			     in_creds->client->realm.length,
-			     in_creds->client->realm.data,
-			     "krbtgt", a.req_body.realm, NULL);
-	krb5_cc_retrieve_cred(context, ccache, 0, &mcred, &cred);
-	memcpy(&key, cred.session.contents.data, sizeof(key));
 
 	len = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
 				  &a.req_body);
-	err = krb5_create_checksum (context,
-				    CKSUMTYPE_RSA_MD4,
-				    buf + sizeof(buf) - len,
-				    len,
-				    &c);
-	if (err)
-	  return err;
-	err = krb5_build_authenticator (context, NULL,
-					&cred,
-					&c,
-					NULL,
-					&authenticator);
-	if (err)
-	  return err;
+	in_data.length;
+	in_data.data = buf + sizeof(buf) - len;
+	
+	err = krb5_mk_req(context,
+			  &ac,
+			  0,
+			  "krbtgt",
+			  a.req_body.realm,
+			  &in_data,
+			  ccache,
+			  &foo.padata_value);
+	if(err)
+	    return err;
 
 	foo.padata_type = pa_tgs_req;
-	err = krb5_build_ap_req(context, &cred, 
-				0,
-				authenticator,
-				&foo.padata_value);
-	if(err)
-	  return err;
     }
 
     a.padata = malloc(sizeof(*a.padata));
