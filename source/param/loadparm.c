@@ -131,11 +131,6 @@ typedef struct
 	char **szNetbiosAliases;
 	char *szDomainOtherSIDs;
 	char *szNameResolveOrder;
-	char *szLdapServer;
-	char *szLdapSuffix;
-	char *szLdapFilter;
-	char *szLdapRoot;
-	char *szLdapRootPassword;
 	char *szPanicAction;
 	char *szAddUserScript;
 	char *szDelUserScript;
@@ -200,9 +195,14 @@ typedef struct
 	int min_passwd_length;
 	int oplock_break_wait_time;
 	int winbind_cache_time;
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 	int ldap_port;
-#endif				/* WITH_LDAP */
+	int ldap_ssl;
+	char *szLdapServer;
+	char *szLdapSuffix;
+	char *szLdapFilter;
+	char *szLdapAdminDn;
+#endif				/* WITH_LDAP_SAM */
 #ifdef WITH_SSL
 	int sslVersion;
 	char **sslHostsRequire;
@@ -567,6 +567,21 @@ static struct enum_list enum_printing[] = {
 #endif /* DEVELOPER */
 	{-1, NULL}
 };
+
+#ifdef WITH_LDAP_SAM
+static struct enum_list enum_ldap_ssl[] = {
+	{LDAP_SSL_ON, "Yes"},
+	{LDAP_SSL_ON, "yes"},
+	{LDAP_SSL_ON, "on"},
+	{LDAP_SSL_ON, "On"},
+	{LDAP_SSL_OFF, "no"},
+	{LDAP_SSL_OFF, "No"},
+	{LDAP_SSL_OFF, "off"},
+	{LDAP_SSL_OFF, "Off"},
+	{LDAP_SSL_START_TLS, "start tls"},
+	{-1, NULL}
+};
+#endif /* WITH_LDAP_SAM */
 
 /* Types of machine we can announce as. */
 #define ANNOUNCE_AS_NT_SERVER 1
@@ -939,16 +954,16 @@ static struct parm_struct parm_table[] = {
 	{"strict locking", P_BOOL, P_LOCAL, &sDefault.bStrictLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"share modes", P_BOOL, P_LOCAL, &sDefault.bShareModes, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 	{"Ldap Options", P_SEP, P_SEPARATOR},
 	
 	{"ldap server", P_STRING, P_GLOBAL, &Globals.szLdapServer, NULL, NULL, 0},
 	{"ldap port", P_INTEGER, P_GLOBAL, &Globals.ldap_port, NULL, NULL, 0}, 
 	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, NULL, NULL, 0},
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, 0},
-	{"ldap root", P_STRING, P_GLOBAL, &Globals.szLdapRoot, NULL, NULL, 0},
-	{"ldap root passwd", P_STRING, P_GLOBAL, &Globals.szLdapRootPassword, NULL, NULL, 0},
-#endif /* WITH_LDAP */
+	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, 0},
+	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, 0},
+#endif /* WITH_LDAP_SAM */
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, 0},
@@ -1287,11 +1302,14 @@ static void init_globals(void)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
-#ifdef WITH_LDAP
-	/* default values for ldap */
+#ifdef WITH_LDAP_SAM
 	string_set(&Globals.szLdapServer, "localhost");
+	string_set(&Globals.szLdapSuffix, "");
+	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
+	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_port = 389;
-#endif /* WITH_LDAP */
+	Globals.ldap_ssl = LDAP_SSL_OFF;
+#endif /* WITH_LDAP_SAM */
 
 #ifdef WITH_SSL
 	Globals.sslVersion = SMB_SSL_V23;
@@ -1492,13 +1510,14 @@ FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
-#ifdef WITH_LDAP
+#ifdef WITH_LDAP_SAM
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
-FN_GLOBAL_STRING(lp_ldap_root, &Globals.szLdapRoot)
-FN_GLOBAL_STRING(lp_ldap_rootpasswd, &Globals.szLdapRootPassword)
-#endif /* WITH_LDAP */
+FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
+FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
+FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
+#endif /* WITH_LDAP_SAM */
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
@@ -1598,9 +1617,6 @@ FN_GLOBAL_INTEGER(lp_stat_cache_size, &Globals.stat_cache_size)
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
-#ifdef WITH_LDAP
-FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
-#endif				/* WITH_LDAP */
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)

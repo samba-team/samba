@@ -655,6 +655,7 @@ typedef struct sam_passwd
 #define LOCAL_TRUST_ACCOUNT 0x10
 #define LOCAL_SET_NO_PASSWORD 0x20
 #define LOCAL_SET_PASSWORD 0x40
+#define LOCAL_SET_LDAP_ADMIN_PW 0x80
 
 /* key and data in the connections database - used in smbstatus and smbd */
 struct connections_key {
@@ -1315,6 +1316,12 @@ enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 ,PRINT_TEST,PRINT_VLP
 #endif /* DEVELOPER */
 };
+
+/* LDAP schema types */
+enum schema_types {SCHEMA_COMPAT, SCHEMA_AD, SCHEMA_SAMBA};
+
+/* LDAP SSL options */
+enum ldap_ssl_types {LDAP_SSL_ON, LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_SAMBA};

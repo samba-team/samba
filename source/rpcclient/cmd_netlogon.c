@@ -152,6 +152,7 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
         uint32 database_id = 0, num_deltas;
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
+	DOM_CRED ret_creds;
 
         if (argc > 2) {
                 fprintf(stderr, "Usage: %s [database_id]\n", argv[0]);
@@ -181,9 +182,12 @@ static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli,
                 goto done;
         }
 
+	/* on first call the returnAuthenticator is empty */
+	memset(&ret_creds, 0, sizeof(ret_creds));
+ 
         /* Synchronise sam database */
 
-	result = cli_netlogon_sam_sync(cli, mem_ctx, database_id,
+	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, database_id,
 				       &num_deltas, &hdr_deltas, &deltas);
 
 	if (!NT_STATUS_IS_OK(result))
