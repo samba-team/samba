@@ -61,7 +61,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	fstring name_domain, name_user;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
-        uint32 smb_uid_low;
+	uint32 sec_channel_type;
         NET_USER_INFO_3 info3;
         struct cli_state *cli = NULL;
 	uchar chal[8];
@@ -111,21 +111,20 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	 */
 
 	if (!secrets_fetch_trust_account_password(
-                lp_workgroup(), trust_passwd, &last_change_time)) {
+                lp_workgroup(), trust_passwd, &last_change_time,
+		&sec_channel_type)) {
 		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
                           "password for domain %s\n", lp_workgroup()));
 		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		goto done;
 	}
 
-	/* We really don't care what LUID we give the user. */
-
-	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
-
 	ZERO_STRUCT(info3);
 	
 	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
+        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, 
+				     sec_channel_type, 
+				     &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
@@ -169,6 +168,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	NTSTATUS result;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
+	uint32 sec_channel_type;
         NET_USER_INFO_3 info3;
         struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -256,7 +256,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	 */
 
 	if (!secrets_fetch_trust_account_password (
-                contact_domain, trust_passwd, &last_change_time)) {
+                contact_domain, trust_passwd, &last_change_time,
+		&sec_channel_type)) {
 		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
                           "password for domain %s\n", contact_domain));
 		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -266,7 +267,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	ZERO_STRUCT(info3);
 
 	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(contact_domain, trust_passwd, &cli);
+        result = cm_get_netlogon_cli(contact_domain, trust_passwd, sec_channel_type, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n", nt_errstr(result)));

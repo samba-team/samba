@@ -393,15 +393,16 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	if (cmd_entry->pipe_idx == PI_NETLOGON) {
 		uchar trust_password[16];
+		uint32 sec_channel_type;
 
 		if (!secrets_fetch_trust_account_password(lp_workgroup(),
 							  trust_password,
-							  NULL)) {
+							  NULL, &sec_channel_type)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
 		if (!cli_nt_open_netlogon(cli, trust_password,
-					  SEC_CHAN_WKSTA)) {
+					  sec_channel_type)) {
 			DEBUG(0, ("Could not initialise NETLOGON pipe\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}

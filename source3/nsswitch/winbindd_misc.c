@@ -34,13 +34,14 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 	uchar trust_passwd[16];
         int num_retries = 0;
         struct cli_state *cli;
+	uint32 sec_channel_type;
 	DEBUG(3, ("[%5d]: check machine account\n", state->pid));
 
 	/* Get trust account password */
 
  again:
 	if (!secrets_fetch_trust_account_password(
-		    lp_workgroup(), trust_passwd, NULL)) {
+		    lp_workgroup(), trust_passwd, NULL, &sec_channel_type)) {
 		result = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
@@ -49,7 +50,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
            the trust account password. */
 
 	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
+        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, sec_channel_type, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
@@ -234,7 +235,7 @@ enum winbindd_result winbindd_netbios_name(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
-/* What's my name again? */
+/* Where can I find the privilaged pipe? */
 
 enum winbindd_result winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 {

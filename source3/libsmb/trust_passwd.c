@@ -1,7 +1,7 @@
 /* 
  *  Unix SMB/CIFS implementation.
- *  Routines to change trust account passwords.
- *  Copyright (C) Andrew Bartlett                   2001.
+ *  Routines to operate on various trust relationships
+ *  Copyright (C) Andrew Bartlett                   2001
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,12 +30,13 @@
 **********************************************************/
 static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 					 unsigned char orig_trust_passwd_hash[16],
-					 unsigned char new_trust_passwd_hash[16])
+					 unsigned char new_trust_passwd_hash[16],
+					 uint32 sec_channel_type)
 {
 	NTSTATUS result;
 	uint32 neg_flags = 0x000001ff;
 
-	result = cli_nt_setup_creds(cli, get_sec_chan(), orig_trust_passwd_hash, &neg_flags, 2);
+	result = cli_nt_setup_creds(cli, sec_channel_type, orig_trust_passwd_hash, &neg_flags, 2);
 	
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1,("just_change_the_password: unable to setup creds (%s)!\n",
@@ -59,7 +60,9 @@ static NTSTATUS just_change_the_password(struct cli_state *cli, TALLOC_CTX *mem_
 **********************************************************/
 
 NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				      unsigned char orig_trust_passwd_hash[16])
+				      const char *domain,
+				      unsigned char orig_trust_passwd_hash[16],
+				      uint32 sec_channel_type)
 {
 	unsigned char new_trust_passwd_hash[16];
 	char *new_trust_passwd;
@@ -73,7 +76,7 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	E_md4hash(new_trust_passwd, new_trust_passwd_hash);
 
 	nt_status = just_change_the_password(cli, mem_ctx, orig_trust_passwd_hash,
-					     new_trust_passwd_hash);
+					     new_trust_passwd_hash, sec_channel_type);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("%s : trust_pw_change_and_store_it: Changed password.\n", 
@@ -82,7 +85,7 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
 		 * Return the result of trying to write the new password
 		 * back into the trust account file.
 		 */
-		if (!secrets_store_machine_password(new_trust_passwd)) {
+		if (!secrets_store_machine_password(new_trust_passwd, domain, sec_channel_type)) {
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
@@ -96,21 +99,26 @@ NTSTATUS trust_pw_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx
  already setup the connection to the NETLOGON pipe
 **********************************************************/
 
-NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+NTSTATUS trust_pw_find_change_and_store_it(struct cli_state *cli, 
+					   TALLOC_CTX *mem_ctx, 
 					   const char *domain) 
 {
 	unsigned char old_trust_passwd_hash[16];
 	char *up_domain;
-	
+	uint32 sec_channel_type = 0;
+
 	up_domain = talloc_strdup(mem_ctx, domain);
 
 	if (!secrets_fetch_trust_account_password(domain,
 						  old_trust_passwd_hash, 
-						  NULL)) {
+						  NULL, &sec_channel_type)) {
 		DEBUG(0, ("could not fetch domain secrets for domain %s!\n", domain));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	return trust_pw_change_and_store_it(cli, mem_ctx, old_trust_passwd_hash);
+	return trust_pw_change_and_store_it(cli, mem_ctx, domain,
+					    old_trust_passwd_hash,
+					    sec_channel_type);
 	
-}					 
+}
+

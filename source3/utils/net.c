@@ -68,7 +68,7 @@ int opt_force = 0;
 int opt_port = 0;
 int opt_maxusers = -1;
 const char *opt_comment = "";
-char *opt_container = "cn=Users";
+const char *opt_container = "cn=Users";
 int opt_flags = -1;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;
@@ -76,6 +76,27 @@ static int opt_machine_pass = 0;
 
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
+
+uint32 get_sec_channel_type(const char *param) 
+{
+	if (!(param && *param)) {
+		return get_default_sec_channel();
+	} else {
+		if (strcasecmp(param, "PDC")==0) {
+			return SEC_CHAN_BDC;
+		} else if (strcasecmp(param, "BDC")==0) {
+			return SEC_CHAN_BDC;
+		} else if (strcasecmp(param, "MEMBER")==0) {
+			return SEC_CHAN_WKSTA;
+#if 0			
+		} else if (strcasecmp(param, "DOMAIN")==0) {
+			return SEC_CHAN_DOMAIN;
+#endif
+		} else {
+			return get_default_sec_channel();
+		}
+	}
+}
 
 /*
   run a function from a function table. If not found then
@@ -623,11 +644,11 @@ static struct functable net_func[] = {
 	}
 
 	if (!opt_workgroup) {
-		opt_workgroup = lp_workgroup();
+		opt_workgroup = smb_xstrdup(lp_workgroup());
 	}
 	
 	if (!opt_target_workgroup) {
-		opt_target_workgroup = strdup(lp_workgroup());
+		opt_target_workgroup = smb_xstrdup(lp_workgroup());
 	}
 	
 	if (!init_names())
@@ -636,7 +657,7 @@ static struct functable net_func[] = {
 	load_interfaces();
 
 	if (opt_machine_pass) {
-		char *user;
+		char *user = NULL;
 		/* it is very useful to be able to make ads queries as the
 		   machine account for testing purposes and for domain leave */
 
@@ -645,9 +666,10 @@ static struct functable net_func[] = {
 			exit(1);
 		}
 
+		opt_password = secrets_fetch_machine_password(opt_workgroup, NULL, NULL);
+
 		asprintf(&user,"%s$", global_myname());
 		opt_user_name = user;
-		opt_password = secrets_fetch_machine_password();
 		if (!opt_password) {
 			d_printf("ERROR: Unable to fetch machine password\n");
 			exit(1);

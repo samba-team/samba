@@ -2031,6 +2031,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	} else {
 		pstrcpy(newHomedir, lp_pathname(iDefaultService));
 		string_sub(newHomedir,"%H", pszHomedir, sizeof(newHomedir)); 
+		string_sub(newHomedir,"%S", pszHomename, sizeof(newHomedir)); 
 	}
 
 	string_set(&ServicePtrs[i]->szPath, newHomedir);
