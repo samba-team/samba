@@ -7,7 +7,6 @@
 #include <netinet/in.h>
 
 #include <errno.h>
-#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +15,8 @@
 #include "base64.h"
 #include "extern.h"
 #include "auth.h"
+
+#include <roken.h>
 
 static AUTH_DAT auth_dat;
 static des_key_schedule schedule;

@@ -83,6 +83,8 @@ static char rcsid[] = "$NetBSD: ftpcmd.y,v 1.6 1995/06/03 22:46:45 mycroft Exp $
 #include "extern.h"
 #include "auth.h"
 
+#include <roken.h>
+
 off_t	restart_point;
 
 static	int cmd_type;

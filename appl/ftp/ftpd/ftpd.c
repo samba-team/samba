@@ -66,7 +66,6 @@ RCSID("$Id$");
 #include <fcntl.h>
 #include <glob.h>
 #include <limits.h>
-#include <netdb.h>
 #include <pwd.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -92,6 +91,8 @@ RCSID("$Id$");
 
 void yyparse();
 
+extern char *optarg;
+extern int optind, opterr;
 
 #ifndef LOG_FTP
 #define LOG_FTP LOG_DAEMON

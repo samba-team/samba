@@ -63,6 +63,8 @@ static char rcsid[] = "$NetBSD: popen.c,v 1.5 1995/04/11 02:45:00 cgd Exp $";
 
 #include "extern.h"
 
+#include <roken.h>
+
 /*
  * Special version of popen which avoids call to shell.  This ensures noone
  * may create a pipe to a hidden program as a side effect of a list or dir

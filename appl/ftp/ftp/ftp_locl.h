@@ -46,10 +46,12 @@ extern int h_errno;
 
 #include "krb4.h"
 
+extern char *optarg;
+extern int optind, opterr;
+
 #if defined(__sun__) && !defined(__svr4)
 int fclose(FILE*);
 int pclose(FILE*);
-extern int optind;
 #endif
 
 #endif /* __FTP_LOCL_H__ */
