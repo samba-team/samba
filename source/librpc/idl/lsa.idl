@@ -445,7 +445,7 @@
 	typedef enum {
 		LSA_TRUSTED_DOMAIN_INFO_NAME=1,
 		LSA_TRUSTED_DOMAIN_INFO_2=2,
-		LSA_TRUSTED_DOMAIN_INFO_FLAGS=3,
+		LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET=3,
 		LSA_TRUSTED_DOMAIN_INFO_PASSWORD=4,
 		LSA_TRUSTED_DOMAIN_INFO_5=5,
 		LSA_TRUSTED_DOMAIN_INFO_INFO_EX=6,
@@ -459,8 +459,8 @@
 	} lsa_TrustDomainInfoName;
 
 	typedef struct {
-		uint32        flags;
-	} lsa_TrustDomainInfoFlags;
+		uint32        posix_offset;
+	} lsa_TrustDomainInfoPosixOffset;
 
 	typedef struct {
 		lsa_DATA_BUF *password;
@@ -498,7 +498,7 @@
 
 	typedef struct {
 		lsa_TrustDomainInfoInfoEx info_ex;
-		lsa_TrustDomainInfoFlags flags;
+		lsa_TrustDomainInfoPosixOffset posix_offset;
 		lsa_TrustDomainInfoAuthInfo  auth_info;
 	} lsa_TrustDomainInfoFullInfo;
 
@@ -510,20 +510,20 @@
 	typedef struct {
 		lsa_TrustDomainInfoInfoEx info_ex;
 		lsa_DATA_BUF2        data1;
-		lsa_TrustDomainInfoFlags flags;
+		lsa_TrustDomainInfoPosixOffset posix_offset;
 		lsa_TrustDomainInfoAuthInfo  auth_info;
 	} lsa_TrustDomainInfoInfoAll;
 
 	typedef union {
-		[case(LSA_TRUSTED_DOMAIN_INFO_NAME)]      lsa_TrustDomainInfoName      name;
-		[case(LSA_TRUSTED_DOMAIN_INFO_FLAGS)]     lsa_TrustDomainInfoFlags     flags;
-		[case(LSA_TRUSTED_DOMAIN_INFO_PASSWORD)]  lsa_TrustDomainInfoPassword  password;
-		[case(LSA_TRUSTED_DOMAIN_INFO_5)]         lsa_TrustDomainInfo5         info5;
-		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX)]   lsa_TrustDomainInfoInfoEx    info_ex;
-		[case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO)] lsa_TrustDomainInfoAuthInfo  auth_info;
-		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)] lsa_TrustDomainInfoFullInfo  full_info;
+		[case(LSA_TRUSTED_DOMAIN_INFO_NAME)]         lsa_TrustDomainInfoName        name;
+		[case(LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET)] lsa_TrustDomainInfoPosixOffset posix_offset;
+		[case(LSA_TRUSTED_DOMAIN_INFO_PASSWORD)]     lsa_TrustDomainInfoPassword    password;
+		[case(LSA_TRUSTED_DOMAIN_INFO_5)]            lsa_TrustDomainInfo5           info5;
+		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX)]      lsa_TrustDomainInfoInfoEx      info_ex;
+		[case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO)]    lsa_TrustDomainInfoAuthInfo    auth_info;
+		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)]    lsa_TrustDomainInfoFullInfo    full_info;
 		[case(11)]    lsa_TrustDomainInfo11 info11;
-		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_ALL)]  lsa_TrustDomainInfoInfoAll   info_all;
+		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_ALL)]     lsa_TrustDomainInfoInfoAll     info_all;
 	} lsa_TrustedDomainInfo;
 
 	/* Function:       0x1a */
