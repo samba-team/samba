@@ -33,8 +33,7 @@ extern int DEBUGLEVEL;
  *                       system.
  */
 
-void
-cups_printer_fn(void (*fn)(char *, char *))
+void cups_printer_fn(void (*fn)(char *, char *))
 {
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
@@ -202,6 +201,6 @@ int cups_printername_ok(char *name)
 }
 
 #else
-/* this keeps fussy compilers happy */
-void print_cups_dummy(void) {}
+ /* this keeps fussy compilers happy */
+ void print_cups_dummy(void) {}
 #endif /* HAVE_LIBCUPS */
