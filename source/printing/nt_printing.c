@@ -1678,6 +1678,14 @@ BOOL print_access_check(struct current_user *user, int snum,
 	BOOL result;
 	char *pname;
 	int i;
+	
+	/* If the user is NULL then we are being called by the lanman
+	   printing system.  Let the lower level printing permissions
+	   handle this. */
+
+	if (user == NULL) {
+		return True;
+	}
 
 	/* Get printer name */
 
