@@ -138,16 +138,16 @@ BOOL dbgtext();
  *                 DEBUGADD( 2, ("Some additional text.\n") );
  */
 #define DEBUGLVL( level ) \
-  ( (DEBUGLEVEL>=(level)) \
+  ( (DEBUGLEVEL >= (level)) \
    && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) )
 
 #define DEBUG( level, body ) \
-  ((DEBUGLEVEL>=(level) && \
-    dbghdr(level, FILE_MACRO, FUNCTION_MACRO, (__LINE__)))? \
-    (void)(dbgtext body) : (void)0)
+  ( ( DEBUGLEVEL >= (level) \
+   && dbghdr( level, FILE_MACRO, FUNCTION_MACRO, (__LINE__) ) ) \
+      ? (void)(dbgtext body) : (void)0 )
 
 #define DEBUGADD( level, body ) \
-     (DEBUGLEVEL>=(level)?(void)(dbgtext body) : (void)0);
+     ( (DEBUGLEVEL >= (level)) ? (void)(dbgtext body) : (void)0 )
 
 /* End Debugging code section.
  * -------------------------------------------------------------------------- **
