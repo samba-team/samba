@@ -203,7 +203,7 @@ ipv6_sockaddr2addr (const struct sockaddr *sa, krb5_address *a)
 #ifdef IN6_EXTRACT_V4ADDR
 #define IN6_ADDR_V6_TO_V4(x) (&IN6_EXTRACT_V4ADDR(x))
 #else
-#define IN6_ADDR_V6_TO_V4(x) ((struct in_addr *)&(x)->s6_addr32[3])
+#define IN6_ADDR_V6_TO_V4(x) ((struct in_addr *)&(x)->s6_addr[12])
 #endif
 #endif
 	memcpy (buf, IN6_ADDR_V6_TO_V4(&sin6->sin6_addr), 4);
