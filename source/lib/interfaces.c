@@ -41,10 +41,6 @@
 #include <sys/time.h>
 #include <net/if.h>
 
-#ifndef SIOCGIFCONF
-#include <sys/sockio.h>
-#endif
-
 #ifdef AUTOCONF_TEST
 struct iface_struct {
 	char name[16];
@@ -54,6 +50,16 @@ struct iface_struct {
 #else
 #include "config.h"
 #include "interfaces.h"
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+#ifndef SIOCGIFCONF
+#ifdef HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif
 #endif
 
 #ifdef HAVE_STDLIB_H
