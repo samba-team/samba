@@ -195,7 +195,6 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 	fstring tok;
 	const char *p;
 	const char **attrs;
-	const char **search_attrs;
 
 	/* Unfortunatly there is no proper way to detect syncrepl-support in
 	 * smbldap_connect_system(). The syncrepl OIDs are submitted for publication
@@ -247,13 +246,8 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 
 	}
 
-	if (!(str_list_copy(&search_attrs, attrs))) {
-		ntstatus = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
 	rc = smbldap_search(ldap_state->smbldap_state, suffix,
-			    LDAP_SCOPE_BASE, "(objectclass=*)", search_attrs, 0, &msg);
+			    LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, &msg);
 
 	if (rc != LDAP_SUCCESS) {
 
@@ -320,7 +314,6 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 		ldap_msgfree(msg);
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
-	str_list_free(&search_attrs);
 
 	return ntstatus;
 }
