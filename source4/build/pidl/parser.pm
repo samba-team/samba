@@ -8,8 +8,6 @@
 package IdlParser;
 
 use strict;
-use client;
-use proxy;
 use needed;
 
 # the list of needed functions
@@ -853,7 +851,7 @@ sub ParseStructNdrSize($)
 	my $static = fn_prefix($t);
 	my $sizevar;
 
-	pidl $static . "size_t ndr_size_$t->{NAME}(int ret, struct $t->{NAME} *r, int flags)\n";
+	pidl $static . "size_t ndr_size_$t->{NAME}(int ret, const struct $t->{NAME} *r, int flags)\n";
 	pidl "{\n";
 
 	if (util::has_property($t->{DATA}, "flag")) {
@@ -1062,7 +1060,7 @@ sub ParseUnionNdrSize($)
 	my $t = shift;
 	my $static = fn_prefix($t);
 
-	pidl $static . "size_t ndr_size_$t->{NAME}(int ret, union $t->{NAME} *data, uint16 level, int flags)\n";
+	pidl $static . "size_t ndr_size_$t->{NAME}(int ret, const union $t->{NAME} *data, uint16 level, int flags)\n";
 	pidl "{\n";
 	if (util::has_property($t->{DATA}, "flag")) {
 		pidl "\tflags = flags | " . $t->{DATA}->{PROPERTIES}->{flag} . ";\n";	
@@ -1599,13 +1597,6 @@ sub RegistrationFunction($$)
 		pidl "\tif (NT_STATUS_IS_ERR(status)) {\n";
 		pidl "\t\treturn status;\n";
 		pidl "\t}\n\n";
-
-		if (util::has_property($interface, "object")) {
-			pidl "\tstatus = dcom_$interface->{NAME}_init();\n";
-			pidl "\tif (NT_STATUS_IS_ERR(status)) {\n";
-			pidl "\t\treturn status;\n";
-			pidl "\t}\n\n";
-		}
 	}
 	pidl "\treturn status;\n";
 	pidl "}\n\n";
@@ -1633,12 +1624,6 @@ sub Parse($$)
 		if ($x->{TYPE} eq "INTERFACE") { 
 			needed::BuildNeeded($x);
 			ParseInterface($x);
-
-			if (util::has_property($x, "object")) {
-				pidl IdlProxy::ParseInterface($x);
-			} else {
-				pidl IdlClient::ParseInterface($x);
-			}
 		}
 	}
 
