@@ -101,6 +101,13 @@ struct composite_context *resolve_name_nbtlist_send(struct nbt_name *name,
 	status = nbt_name_dup(state, name, &state->name);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
+	state->name.name = strupper_talloc(state, state->name.name);
+	if (state->name.name == NULL) goto failed;
+	if (state->name.scope) {
+		state->name.scope = strupper_talloc(state, state->name.scope);
+		if (state->name.scope == NULL) goto failed;
+	}
+
 	state->nbtsock = nbt_name_socket_init(state, event_ctx);
 	if (state->nbtsock == NULL) goto failed;
 

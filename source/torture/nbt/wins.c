@@ -114,6 +114,42 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	CHECK_VALUE(query.out.num_addrs, 1);
 	CHECK_STRING(query.out.reply_addrs[0], myaddress);
 
+
+	query.in.name.name = strupper_talloc(mem_ctx, name->name);
+	if (query.in.name.name &&
+	    strcmp(query.in.name.name, name->name) != 0) {
+		printf("check case sensitivity\n");
+		status = nbt_name_query(nbtsock, mem_ctx, &query);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			printf("No response from %s for name query\n", address);
+			return False;
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			printf("Bad response from %s for name query - %s\n",
+			       address, nt_errstr(status));
+			return False;
+		}
+	}
+
+	query.in.name = *name;
+	if (name->scope) {
+		query.in.name.scope = strupper_talloc(mem_ctx, name->scope);
+	}
+	if (query.in.name.scope &&
+	    strcmp(query.in.name.scope, name->scope) != 0) {
+		printf("check case sensitivity on scope\n");
+		status = nbt_name_query(nbtsock, mem_ctx, &query);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			printf("No response from %s for name query\n", address);
+			return False;
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			printf("Bad response from %s for name query - %s\n",
+			       address, nt_errstr(status));
+			return False;
+		}
+	}
+
 	printf("refresh the name\n");
 	refresh.in.name = *name;
 	refresh.in.wins_servers = str_list_make(mem_ctx, address, NULL);
@@ -176,6 +212,7 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 
 
 	printf("query the name to make sure its gone\n");
+	query.in.name = *name;
 	status = nbt_name_query(nbtsock, mem_ctx, &query);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("ERROR: Name query success after release\n");
@@ -220,6 +257,9 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, const char *address)
 	ret &= nbt_test_wins_name(mem_ctx, address, &name);
 
 	name.name = talloc_asprintf(mem_ctx, ".");
+	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+
+	name.name = talloc_asprintf(mem_ctx, "%5u-\377\200\300FOO", r);
 	ret &= nbt_test_wins_name(mem_ctx, address, &name);
 
 	return ret;
