@@ -184,6 +184,11 @@ static struct cli_state *do_connection(char *the_service)
 		}
 	}
 
+	/* This should be right for current smbfs. Future versions will support
+	  large files as well as unicode and oplocks. */
+	c->capabilities &= ~(CAP_UNICODE | CAP_LARGE_FILES | CAP_NT_SMBS |
+				CAP_NT_FIND | CAP_STATUS32 | CAP_LEVEL_II_OPLOCKS);
+	c->force_dos_errors = True;
 	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
@@ -355,6 +360,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 		   If we don't do this we will "leak" sockets and memory on
 		   each reconnection we have to make. */
 		cli_shutdown(c);
+		c = NULL;
 
 		if (!closed) {
 			/* redirect stdout & stderr since we can't know that
@@ -633,31 +639,31 @@ static void usage(void)
 	printf("Version %s\n\n",VERSION);
 
 	printf(
-"Options:
-      username=<arg>                  SMB username
-      password=<arg>                  SMB password
-      credentials=<filename>          file with username/password
-      netbiosname=<arg>               source NetBIOS name
-      uid=<arg>                       mount uid or username
-      gid=<arg>                       mount gid or groupname
-      port=<arg>                      remote SMB port number
-      fmask=<arg>                     file umask
-      dmask=<arg>                     directory umask
-      debug=<arg>                     debug level
-      ip=<arg>                        destination host or IP address
-      workgroup=<arg>                 workgroup on destination
-      sockopt=<arg>                   TCP socket options
-      scope=<arg>                     NetBIOS scope
-      iocharset=<arg>                 Linux charset (iso8859-1, utf8)
-      codepage=<arg>                  server codepage (cp850)
-      ttl=<arg>                       dircache time to live
-      guest                           don't prompt for a password
-      ro                              mount read-only
-      rw                              mount read-write
-
-This command is designed to be run from within /bin/mount by giving
-the option '-t smbfs'. For example:
-  mount -t smbfs -o username=tridge,password=foobar //fjall/test /data/test
+"Options:\n\
+      username=<arg>                  SMB username\n\
+      password=<arg>                  SMB password\n\
+      credentials=<filename>          file with username/password\n\
+      netbiosname=<arg>               source NetBIOS name\n\
+      uid=<arg>                       mount uid or username\n\
+      gid=<arg>                       mount gid or groupname\n\
+      port=<arg>                      remote SMB port number\n\
+      fmask=<arg>                     file umask\n\
+      dmask=<arg>                     directory umask\n\
+      debug=<arg>                     debug level\n\
+      ip=<arg>                        destination host or IP address\n\
+      workgroup=<arg>                 workgroup on destination\n\
+      sockopt=<arg>                   TCP socket options\n\
+      scope=<arg>                     NetBIOS scope\n\
+      iocharset=<arg>                 Linux charset (iso8859-1, utf8)\n\
+      codepage=<arg>                  server codepage (cp850)\n\
+      ttl=<arg>                       dircache time to live\n\
+      guest                           don't prompt for a password\n\
+      ro                              mount read-only\n\
+      rw                              mount read-write\n\
+\n\
+This command is designed to be run from within /bin/mount by giving\n\
+the option '-t smbfs'. For example:\n\
+  mount -t smbfs -o username=tridge,password=foobar //fjall/test /data/test\n\
 ");
 }
 
@@ -808,6 +814,7 @@ static void parse_mount_smb(int argc, char **argv)
 	/* here we are interactive, even if run from autofs */
 	setup_logging("mount.smbfs",True);
 
+#if 0 /* JRA - Urban says not needed ? */
 	/* CLI_FORCE_ASCII=false makes smbmount negotiate unicode. The default
 	   is to not announce any unicode capabilities as current smbfs does
 	   not support it. */
@@ -816,6 +823,7 @@ static void parse_mount_smb(int argc, char **argv)
 		unsetenv("CLI_FORCE_ASCII");
 	else
 		setenv("CLI_FORCE_ASCII", "true", 1);
+#endif
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
