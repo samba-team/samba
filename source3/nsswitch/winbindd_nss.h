@@ -157,6 +157,7 @@ typedef struct winbindd_gr {
 #define WBFLAG_ALLOCATE_RID		0x0040
 #define WBFLAG_PAM_UNIX_NAME            0x0080
 #define WBFLAG_PAM_AFS_TOKEN            0x0100
+#define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
 
 /* Winbind request structure */
 
@@ -179,6 +180,7 @@ struct winbindd_request {
                            character is. */	
 			fstring user;
 			fstring pass;
+		        fstring required_membership_sid;
 		} auth;              /* pam_winbind auth module */
                 struct {
                         unsigned char chal[8];
@@ -189,6 +191,7 @@ struct winbindd_request {
                         fstring nt_resp;
                         uint16 nt_resp_len;
 			fstring workstation;
+		        fstring required_membership_sid;
                 } auth_crap;
                 struct {
                     fstring user;

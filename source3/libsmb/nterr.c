@@ -717,3 +717,31 @@ NTSTATUS nt_status_string_to_code(char *nt_status_str)
 	}
 	return NT_STATUS_UNSUCCESSFUL;
 }
+
+
+/**
+ * Squash an NT_STATUS in line with security requirements.
+ * In an attempt to avoid giving the whole game away when users
+ * are authenticating, NT replaces both NT_STATUS_NO_SUCH_USER and 
+ * NT_STATUS_WRONG_PASSWORD with NT_STATUS_LOGON_FAILURE in certain situations 
+ * (session setups in particular).
+ *
+ * @param nt_status NTSTATUS input for squashing.
+ * @return the 'squashed' nt_status
+ **/
+
+NTSTATUS nt_status_squash(NTSTATUS nt_status)
+{
+	if NT_STATUS_IS_OK(nt_status) {
+		return nt_status;		
+	} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
+		/* Match WinXP and don't give the game away */
+		return NT_STATUS_LOGON_FAILURE;
+		
+	} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) {
+		/* Match WinXP and don't give the game away */
+		return NT_STATUS_LOGON_FAILURE;
+	} else {
+		return nt_status;
+	}  
+}
