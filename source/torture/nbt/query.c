@@ -75,7 +75,7 @@ static BOOL bench_namequery(TALLOC_CTX *mem_ctx, struct nbt_name *name, const ch
 			req->async.fn = increment_handler;
 			req->async.private = result;
 			num_sent++;
-			if (num_sent % 100 == 0) {
+			if (num_sent % 1000 == 0) {
 				printf("%.1f queries per second (%d failures)  \r", 
 				       result->num_pass / timeval_elapsed(&tv),
 				       result->num_fail);

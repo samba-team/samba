@@ -328,8 +328,7 @@ NTSTATUS ldapsrv_flush_responses(struct ldapsrv_connection *conn)
 /*
   called when a LDAP socket becomes readable
 */
-static void ldapsrv_recv(struct stream_connection *conn, struct timeval t,
-			 uint16_t flags)
+static void ldapsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
 	struct ldapsrv_connection *ldap_conn = talloc_get_type(conn->private, struct ldapsrv_connection);
 	uint8_t *buf;
@@ -424,8 +423,7 @@ static void ldapsrv_recv(struct stream_connection *conn, struct timeval t,
 /*
   called when a LDAP socket becomes writable
 */
-static void ldapsrv_send(struct stream_connection *conn, struct timeval t,
-			 uint16_t flags)
+static void ldapsrv_send(struct stream_connection *conn, uint16_t flags)
 {
 	struct ldapsrv_connection *ldap_conn = talloc_get_type(conn->private, struct ldapsrv_connection);
 

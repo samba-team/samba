@@ -35,7 +35,6 @@ static void smbcli_transport_process_send(struct smbcli_transport *transport);
 */
 static void smbcli_transport_event_handler(struct event_context *ev, 
 					   struct fd_event *fde, 
-					   struct timeval t, 
 					   uint16_t flags, void *private)
 {
 	struct smbcli_transport *transport = talloc_get_type(private,

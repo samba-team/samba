@@ -67,7 +67,7 @@ static void construct_reply(struct smbsrv_request *req);
 receive a SMB request header from the wire, forming a request_context
 from the result
 ****************************************************************************/
-static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn, struct timeval t)
+static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn)
 {
 	NTSTATUS status;
 	ssize_t len;
@@ -140,7 +140,7 @@ static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn, struct t
 	}
 
 	/* we have a full packet */
-	req->request_time = t;
+	req->request_time = timeval_current();
 	req->chained_fnum = -1;
 	req->in.allocated = req->in.size;
 	req->in.hdr = req->in.buffer + NBT_HDR_SIZE;
@@ -653,14 +653,14 @@ void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char 
 /*
   called when a SMB socket becomes readable
 */
-static void smbsrv_recv(struct stream_connection *conn, struct timeval t, uint16_t flags)
+static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
 	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private, struct smbsrv_connection);
 	NTSTATUS status;
 
 	DEBUG(10,("smbsrv_recv\n"));
 
-	status = receive_smb_request(smb_conn, t);
+	status = receive_smb_request(smb_conn);
 	if (NT_STATUS_IS_ERR(status)) {
 		talloc_free(conn->event.fde);
 		conn->event.fde = NULL;
@@ -675,7 +675,7 @@ static void smbsrv_recv(struct stream_connection *conn, struct timeval t, uint16
 /*
   called when a SMB socket becomes writable
 */
-static void smbsrv_send(struct stream_connection *conn, struct timeval t, uint16_t flags)
+static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 {
 	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private, struct smbsrv_connection);
 

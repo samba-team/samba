@@ -65,7 +65,7 @@ static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uin
   a handler for read events on a connection to a backend server
 */
 static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde, 
-				struct timeval t, uint16_t flags, void *private)
+				uint16_t flags, void *private)
 {
 	struct cvfs_private *cvfs = talloc_get_type(private, struct cvfs_private);
 	struct smbsrv_tcon *tcon = cvfs->tcon;

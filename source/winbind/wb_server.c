@@ -60,7 +60,7 @@ static void winbind_accept(struct stream_connection *conn)
 /*
   receive some data on a winbind connection
 */
-static void winbind_recv(struct stream_connection *conn, struct timeval t, uint16_t flags)
+static void winbind_recv(struct stream_connection *conn, uint16_t flags)
 {
 	struct wbserver_connection *wbconn = talloc_get_type(conn->private, struct wbserver_connection);
 	NTSTATUS status;
@@ -95,7 +95,7 @@ static void winbind_recv(struct stream_connection *conn, struct timeval t, uint1
 /*
   called when we can write to a connection
 */
-static void winbind_send(struct stream_connection *conn, struct timeval t, uint16_t flags)
+static void winbind_send(struct stream_connection *conn, uint16_t flags)
 {
 	struct wbserver_connection *wbconn = talloc_get_type(conn->private, struct wbserver_connection);
 
