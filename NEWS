@@ -1,4 +1,14 @@
-Changed in release 0.1h:
+Changes in release 0.1i:
+
+ * start using `struct sockaddr_storage' which simplifies the code
+   (with a fallback definition if it's not defined)
+ * bug fixes (including in hprop and kf)
+ * don't use mawk which seems to mishandle roken.awk
+ * get_addrs should be able to handle v6 addresses on Linux (with the
+   required patch to the Linux kernel -- ask within)
+ * rshd builds with shadow passwords
+
+Changes in release 0.1h:
 
  * kf: new program for forwarding credentials
  * portability fixes
