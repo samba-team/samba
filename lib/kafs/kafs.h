@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -185,6 +185,11 @@ krb5_error_code krb5_realm_of_cell __P((const char *cell, char **realm));
 #define _PATH_ARLA_THISCELL	_PATH_ARLA_VICE "ThisCell"
 #define _PATH_ARLA_CELLSERVDB 	_PATH_ARLA_VICE "CellServDB"
 #define _PATH_ARLA_THESECELLS	_PATH_ARLA_VICE "TheseCells"
+
+#define _PATH_OPENAFS_DEBIAN_VICE		"/etc/openafs"
+#define _PATH_OPENAFS_DEBIAN_THISCELL		_PATH_OPENAFS_DEBIAN_VICE "ThisCell"
+#define _PATH_OPENAFS_DEBIAN_CELLSERVDB 	_PATH_OPENAFS_DEBIAN_VICE "CellServDB"
+#define _PATH_OPENAFS_DEBIAN_THESECELLS		_PATH_OPENAFS_DEBIAN_VICE "TheseCells"
 
 extern int _kafs_debug;
 
