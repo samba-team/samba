@@ -1,3 +1,8 @@
+2000-08-06  Assar Westerlund  <assar@sics.se>
+
+	* ipropd_slave.c (receive_everything): make `fd' an int instead of
+	a pointer.  From Derrick J Brashear <shadow@dementia.org>
+
 2000-08-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* admin.h: change void** to void*
