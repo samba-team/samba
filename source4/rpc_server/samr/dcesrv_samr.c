@@ -118,13 +118,13 @@ static NTSTATUS samr_QuerySecurity(struct dcesrv_call_state *dce_call, TALLOC_CT
 				   struct samr_QuerySecurity *r)
 {
 	struct dcesrv_handle *h;
-	struct samr_SdBuf *sd;
+	struct sec_desc_buf *sd;
 
 	r->out.sdbuf = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
 
-	sd = talloc_p(mem_ctx, struct samr_SdBuf);
+	sd = talloc_p(mem_ctx, struct sec_desc_buf);
 	if (sd == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -164,6 +164,24 @@ static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx,
 	return domain_handle;
 }
 
+static struct sec_desc_buf *samsync_query_sec_desc(TALLOC_CTX *mem_ctx, 
+						   struct samsync_state *samsync_state, 
+						   struct policy_handle *handle) 
+{
+	struct samr_QuerySecurity r;
+	NTSTATUS status;
+
+	r.in.handle = handle;
+	r.in.sec_info = 0x7;
+
+	status = dcerpc_samr_QuerySecurity(samsync_state->p_samr, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("QuerySecurity failed - %s\n", nt_errstr(status));
+		return NULL;
+	}
+
+	return r.out.sdbuf;
+}
 
 #define TEST_UINT64_EQUAL(i1, i2) do {\
 	if (i1 != i2) {\
@@ -187,6 +205,7 @@ static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx,
 	      ret = False;\
 	} \
 } while (0)
+
 #define TEST_STRING_EQUAL(s1, s2) do {\
 	if (!((!s1.string || s1.string[0]=='\0') && (!s2.string || s2.string[0]=='\0')) \
 	    && strcmp_safe(s1.string, s2.string) != 0) {\
@@ -194,6 +213,25 @@ static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx,
 		     s1.string, s2.string);\
 	      ret = False;\
 	} \
+} while (0)
+
+/* The ~SEC_DESC_SACL_PRESENT is because we don't, as administrator,
+ * get back the SACL part of the SD when we ask over SAMR */
+
+#define TEST_SEC_DESC_EQUAL(sd1, handle) do {\
+        struct sec_desc_buf *sdbuf = samsync_query_sec_desc(mem_ctx, samsync_state, \
+						            handle); \
+	if (!sdbuf || !sdbuf->sd) { \
+	        ret = False; \
+        } else {\
+		if (!security_descriptor_mask_equal(sd1.sd, sdbuf->sd, \
+ 			    ~SEC_DESC_SACL_PRESENT)) {\
+			printf("Security Descriptor Mismatch for %s:\n", #sd1);\
+		        ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor, "SamSync", sd1.sd);\
+		        ndr_print_debug((ndr_print_fn_t)ndr_print_security_descriptor, "SamR", sdbuf->sd);\
+			ret = False;\
+		}\
+	}\
 } while (0)
 
 static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
@@ -279,6 +317,8 @@ static BOOL samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	TEST_TIME_EQUAL(q[13].out.info->info13.domain_create_time, 
 			domain->domain_create_time);
 
+	TEST_SEC_DESC_EQUAL(domain->sdbuf, samsync_state->domain_handle[database_id]);
+
 	return ret;
 }
 
@@ -350,6 +390,8 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 
 	q.in.user_handle = &user_handle;
 	q.in.level = 21;
+
+	TEST_SEC_DESC_EQUAL(user->sdbuf, &user_handle);
 
 	nt_status = dcerpc_samr_QueryUserInfo(samsync_state->p_samr, mem_ctx, &q);
 	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, &user_handle)) {
@@ -546,6 +588,8 @@ static BOOL samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 	q.in.alias_handle = &alias_handle;
 	q.in.level = 1;
 
+	TEST_SEC_DESC_EQUAL(alias->sdbuf, &alias_handle);
+
 	nt_status = dcerpc_samr_QueryAliasInfo(samsync_state->p_samr, mem_ctx, &q);
 	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, &alias_handle)) {
 		return False;
@@ -592,6 +636,8 @@ static BOOL samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	q.in.group_handle = &group_handle;
 	q.in.level = 1;
+
+	TEST_SEC_DESC_EQUAL(group->sdbuf, &group_handle);
 
 	nt_status = dcerpc_samr_QueryGroupInfo(samsync_state->p_samr, mem_ctx, &q);
 	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, &group_handle)) {
