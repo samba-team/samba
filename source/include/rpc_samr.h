@@ -4,7 +4,10 @@
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1997-2000
-   Copyright (C) Jean François Micouleau      1998-2001.
+   Copyright (C) Jean François Micouleau      1998-2001
+   Copyright (C) Anthony Liguori              2002
+   Copyright (C) Jim McDonough                2002
+   
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -144,6 +147,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_GET_DOM_PWINFO    0x38
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
+#define SAMR_CONNECT4          0x3E
 
 /* Access bits to the SAM-object */
 
@@ -1869,6 +1873,19 @@ typedef struct r_samr_connect_info
 	NTSTATUS status;         /* return status */
 
 } SAMR_R_CONNECT;
+
+/* SAMR_Q_CONNECT4 */
+typedef struct q_samr_connect4_info
+{
+	uint32 ptr_srv_name; /* pointer to server name */
+	UNISTR2 uni_srv_name;
+
+	uint32 unk_0; /* possible server name type, 1 for IP num, 2 for name */
+	uint32 access_mask;
+} SAMR_Q_CONNECT4;
+
+/* SAMR_R_CONNECT4 - same format as connect */
+typedef struct r_samr_connect_info SAMR_R_CONNECT4;       
 
 /* SAMR_Q_GET_DOM_PWINFO */
 typedef struct q_samr_get_dom_pwinfo

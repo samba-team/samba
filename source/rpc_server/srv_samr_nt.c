@@ -3,10 +3,12 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Marc Jacobsen			    1999.
- *  Copyright (C) Jeremy Allison               2001-2002.
- *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Marc Jacobsen			    1999,
+ *  Copyright (C) Jeremy Allison               2001-2002,
+ *  Copyright (C) Jean François Micouleau      1998-2001,
+ *  Copyright (C) Anthony Liguori                   2002,
+ *  Copyright (C) Jim McDonough                     2002.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -2419,6 +2421,56 @@ NTSTATUS _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u
 
 	if (!pipe_access_check(p)) {
 		DEBUG(3, ("access denied to samr_connect\n"));
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		return r_u->status;
+	}
+
+	samr_make_sam_obj_sd(p->mem_ctx, &psd, &sd_size);
+	se_map_generic(&des_access, &sam_generic_mapping);
+	if (!NT_STATUS_IS_OK(nt_status = 
+			     access_check_samr_object(psd, p->pipe_user.nt_user_token, 
+						      des_access, &acc_granted, "_samr_connect"))) {
+		return nt_status;
+	}
+
+	r_u->status = NT_STATUS_OK;
+
+	/* associate the user's SID and access granted with the new handle. */
+	if ((info = get_samr_info_by_sid(NULL)) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	info->acc_granted = acc_granted;
+	info->status = q_u->access_mask;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->connect_pol, free_samr_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	DEBUG(5,("_samr_connect: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/*******************************************************************
+ samr_connect4
+ ********************************************************************/
+
+NTSTATUS _samr_connect4(pipes_struct *p, SAMR_Q_CONNECT4 *q_u, SAMR_R_CONNECT4 *r_u)
+{
+	struct samr_info *info = NULL;
+	SEC_DESC *psd = NULL;
+	uint32    acc_granted;
+	uint32    des_access = q_u->access_mask;
+	size_t    sd_size;
+	NTSTATUS  nt_status;
+
+
+	DEBUG(5,("_samr_connect4: %d\n", __LINE__));
+
+	/* Access check */
+
+	if (!pipe_access_check(p)) {
+		DEBUG(3, ("access denied to samr_connect4\n"));
 		r_u->status = NT_STATUS_ACCESS_DENIED;
 		return r_u->status;
 	}
