@@ -2,7 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  UUID server routines
  *  Copyright (C) Theodore Ts'o               1996, 1997,
- *  Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002.
+ *  Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002, 2003
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -88,4 +88,87 @@ const char *smb_uuid_string_static(const struct uuid uu)
 		 uu.node[0], uu.node[1], uu.node[2], 
 		 uu.node[3], uu.node[4], uu.node[5]);
 	return out;
+}
+
+BOOL smb_string_to_uuid(const char *in, struct uuid* uu)
+{
+	BOOL ret = False;
+	const char *ptr = in;
+	char *end = (char *)in;
+	int i;
+
+	if (!in || !uu) goto out;
+
+	uu->time_low = strtoul(ptr, &end, 16);
+	if ((end - ptr) != 8 || *end != '-') goto out;
+	ptr = (end + 1);
+
+	uu->time_mid = strtoul(ptr, &end, 16);
+	if ((end - ptr) != 4 || *end != '-') goto out;
+	ptr = (end + 1);
+
+	uu->time_hi_and_version = strtoul(ptr, &end, 16);
+	if ((end - ptr) != 4 || *end != '-') goto out;
+	ptr = (end + 1);
+
+	for (i = 0; i < 2; i++) {
+		int adj = 0;
+		if (*ptr >= '0' && *ptr <= '9') {
+			adj = '0';
+		} else if (*ptr >= 'a' && *ptr <= 'f') {
+			adj = 'a';
+		} else if (*ptr >= 'A' && *ptr <= 'F') {
+			adj = 'A';
+		} else {
+			goto out;
+		}
+		uu->clock_seq[i] = (*ptr - adj) << 4;
+		ptr++;
+
+		if (*ptr >= '0' && *ptr <= '9') {
+			adj = '0';
+		} else if (*ptr >= 'a' && *ptr <= 'f') {
+			adj = 'a';
+		} else if (*ptr >= 'A' && *ptr <= 'F') {
+			adj = 'A';
+		} else {
+			goto out;
+		}
+		uu->clock_seq[i] |= (*ptr - adj);
+		ptr++;
+	}
+
+	if (*ptr != '-') goto out;
+	ptr++;
+
+	for (i = 0; i < 6; i++) {
+		int adj = 0;
+		if (*ptr >= '0' && *ptr <= '9') {
+			adj = '0';
+		} else if (*ptr >= 'a' && *ptr <= 'f') {
+			adj = 'a';
+		} else if (*ptr >= 'A' && *ptr <= 'F') {
+			adj = 'A';
+		} else {
+			goto out;
+		}
+		uu->node[i] = (*ptr - adj) << 4;
+		ptr++;
+
+		if (*ptr >= '0' && *ptr <= '9') {
+			adj = '0';
+		} else if (*ptr >= 'a' && *ptr <= 'f') {
+			adj = 'a';
+		} else if (*ptr >= 'A' && *ptr <= 'F') {
+			adj = 'A';
+		} else {
+			goto out;
+		}
+		uu->node[i] |= (*ptr - adj);
+		ptr++;
+	}
+
+	ret = True;
+out:
+        return ret;
 }
