@@ -48,13 +48,13 @@ generate_2int (Symbol *s)
     int tag = -1;
 
     fprintf (headerfile,
-	     "int %s2int(%s);\n",
+	     "unsigned %s2int(%s);\n",
 	     s->gen_name, s->gen_name);
 
     fprintf (codefile,
-	     "int %s2int(%s f)\n"
+	     "unsigned %s2int(%s f)\n"
 	     "{\n"
-	     "int r = 0;\n",
+	     "unsigned r = 0;\n",
 	     s->gen_name, s->gen_name);
 
     for (m = t->members; m && m->val != tag; m = m->next) {
@@ -76,11 +76,11 @@ generate_int2 (Symbol *s)
     int tag = -1;
 
     fprintf (headerfile,
-	     "%s int2%s(int);\n",
+	     "%s int2%s(unsigned);\n",
 	     s->gen_name, s->gen_name);
 
     fprintf (codefile,
-	     "%s int2%s(int n)\n"
+	     "%s int2%s(unsigned n)\n"
 	     "{\n"
 	     "\t%s flags;\n\n",
 	     s->gen_name, s->gen_name, s->gen_name);
