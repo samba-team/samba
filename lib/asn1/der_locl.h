@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -49,6 +49,8 @@
 #include <errno.h>
 #include <roken.h>
 
-#include <libasn1.h>
+#include <asn1-common.h>
+#include <asn1_err.h>
+#include <der.h>
 
 #endif /* __DER_LOCL_H__ */

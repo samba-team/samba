@@ -102,6 +102,7 @@ referencenames	: IDENT ',' referencenames
 		;
 
 imports_decl	: IMPORTS referencenames FROM IDENT ';'
+		{ add_import($4); }
 		;
 
 type_decl	: IDENT EEQUAL type

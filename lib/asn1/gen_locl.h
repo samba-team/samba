@@ -66,6 +66,7 @@ void generate_glue (const Symbol *s);
 void init_generate (const char *filename, const char *basename);
 const char *filename (void);
 void close_generate(void);
+void add_import(const char *module);
 int yyparse(void);
 
 extern FILE *headerfile, *codefile, *logfile;

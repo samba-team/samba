@@ -43,6 +43,27 @@ static const char *orig_filename;
 static char header[1024];
 static char headerbase[1024] = STEM;
 
+/*
+ * list of all IMPORTs
+ */
+
+struct import {
+    const char *module;
+    struct import *next;
+};
+
+static struct import *imports = NULL;
+
+void
+add_import (const char *module)
+{
+    struct import *tmp = emalloc (sizeof(*tmp));
+
+    tmp->module = module;
+    tmp->next   = imports;
+    imports     = tmp;
+}
+
 const char *
 filename (void)
 {
@@ -388,6 +409,7 @@ generate_type_header (const Symbol *s)
 void
 generate_type (const Symbol *s)
 {
+    struct import *i;
     char *filename;
 
     asprintf (&filename, "%s_%s.x", STEM, s->gen_name);
@@ -399,16 +421,23 @@ generate_type (const Symbol *s)
     fprintf (codefile, 
 	     "/* Generated from %s */\n"
 	     "/* Do not edit */\n\n"
-	     "#include \"libasn1.h\"\n\n"
-#if 0
 	     "#include <stdio.h>\n"
 	     "#include <stdlib.h>\n"
 	     "#include <time.h>\n"
-	     "#include <" STEM ".h>\n\n"
+	     "#include <errno.h>\n",
+	     orig_filename);
+
+    for (i = imports; i != NULL; i = i->next)
+	fprintf (codefile,
+		 "#include <%s_asn1.h>\n",
+		 i->module);
+    fprintf (codefile,
+	     "#include <%s.h>\n",
+	     headerbase);
+    fprintf (codefile,
 	     "#include <asn1_err.h>\n"
 	     "#include <der.h>\n"
-#endif
-	     ,orig_filename);
+	     "#include <parse_units.h>\n\n");
     generate_type_header (s);
     generate_type_encode (s);
     generate_type_decode (s);
