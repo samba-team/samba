@@ -59,6 +59,8 @@ static SL_cmd cmds[] = {
       "remove old and superceeded entries" },
     { "remove", 	kt_remove,	"remove",
       "remove key from keytab" },
+    { "rename", 	kt_rename,	"rename from to",
+      "rename entry" },
     { "srvconvert",	srvconv,	"srvconvert [flags]",
       "convert v4 srvtab to keytab" },
     { "srv2keytab" },

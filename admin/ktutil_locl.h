@@ -81,6 +81,7 @@ int kt_get (int argc, char **argv);
 int kt_list(int argc, char **argv);
 int kt_purge(int argc, char **argv);
 int kt_remove(int argc, char **argv);
+int kt_rename(int argc, char **argv);
 int srvconv(int argc, char **argv);
 int srvcreate(int argc, char **argv);
 
