@@ -588,6 +588,20 @@ pk_rd_padata(krb5_context context,
  */
 
 static krb5_error_code
+BN_to_integer(krb5_context context, BIGNUM *bn, heim_integer *integer)
+{
+    integer->length = BN_num_bytes(bn);
+    integer->data = malloc(integer->length);
+    if (integer->data == NULL) {
+	krb5_clear_error_string(context);
+	return ENOMEM;
+    }
+    BN_bn2bin(bn, integer->data);
+    integer->negative = bn->neg;
+    return 0;
+}
+
+static krb5_error_code
 pk_mk_pa_reply_enckey(krb5_context context,
       	              pk_client_params *client_params,
 		      const KDC_REQ *req,
@@ -698,14 +712,23 @@ pk_mk_pa_reply_enckey(krb5_context context,
     ri->rid.u.issuerAndSerialNumber.issuer.length = buf.length;
 
     serial = &ri->rid.u.issuerAndSerialNumber.serialNumber;
-    OPENSSL_ASN1_MALLOC_ENCODE(ASN1_INTEGER,
-			       serial->data,
-			       serial->length,
-			       X509_get_serialNumber(client_params->certificate->cert),
-			       ret);
-    if (ret) {
-	krb5_clear_error_string(context);
-	goto out;
+    {
+	ASN1_INTEGER *isn;
+	BIGNUM *bn;
+
+	isn = X509_get_serialNumber(client_params->certificate->cert);
+	bn = ASN1_INTEGER_to_BN(isn, NULL);
+	if (bn == NULL) {
+	    ret = ENOMEM;
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
+	ret = BN_to_integer(context, bn, serial);
+	BN_free(bn);
+	if (ret) {
+	    krb5_clear_error_string(context);
+	    goto out;
+	}
     }
 
     {
@@ -1031,9 +1054,7 @@ add_principal_mapping(const char *principal_name, const char * subject)
 
 
 krb5_error_code
-pk_initialize(const char *cert_file,
-	      const char *key_file,
-	      const char *ca_dir)
+pk_initialize(const char *user_id, const char *x509_anchors)
 {
     const krb5_config_binding *binding; 
     krb5_error_code ret;
@@ -1043,9 +1064,8 @@ pk_initialize(const char *cert_file,
 
     ret = _krb5_pk_load_openssl_id(context,
 				   &kdc_identity,
-				   cert_file,
-				   key_file,
-				   ca_dir,
+				   user_id,
+				   x509_anchors,
 				   NULL,
 				   NULL);
     if (ret) {
@@ -1055,10 +1075,10 @@ pk_initialize(const char *cert_file,
     }
 
     binding = krb5_config_get_list(context, 
-			     NULL,
-			     "kdc",
-			     "pki-allowed-principals",
-			     NULL);
+				   NULL,
+				   "kdc",
+				   "pki-allowed-principals",
+				   NULL);
     while (binding) {
 	if (binding->type != krb5_config_string)
 	    continue;
