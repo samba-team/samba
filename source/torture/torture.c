@@ -2827,6 +2827,61 @@ static BOOL run_pipe_number(int dummy)
 }
 
 
+
+
+/*
+  open N connections to the server and just hold them open
+  used for testing performance when there are N idle users
+  already connected
+ */
+ static BOOL torture_holdcon(int dummy)
+{
+	int i;
+	struct cli_state **cli;
+	int num_dead = 0;
+
+	printf("Opening %d connections\n", torture_numops);
+	
+	cli = malloc(sizeof(struct cli_state *) * torture_numops);
+
+	for (i=0;i<torture_numops;i++) {
+		if (!torture_open_connection(&cli[i])) {
+			return False;
+		}
+		printf("opened %d connections\r", i);
+		fflush(stdout);
+	}
+
+	printf("\nStarting pings\n");
+
+	while (1) {
+		for (i=0;i<torture_numops;i++) {
+			NTSTATUS status;
+			if (cli[i]) {
+				status = cli_chkpath(cli[i]->tree, "\\");
+				if (!NT_STATUS_IS_OK(status)) {
+					printf("Connection %d is dead\n", i);
+					cli[i] = NULL;
+					num_dead++;
+				}
+				usleep(100);
+			}
+		}
+
+		if (num_dead == torture_numops) {
+			printf("All connections dead - finishing\n");
+			break;
+		}
+
+		printf(".");
+		fflush(stdout);
+	}
+
+	return True;
+}
+
+
+
 /*
   Test open mode returns on read-only files.
  */
@@ -3943,6 +3998,7 @@ static struct {
 	{"PIPE_NUMBER", run_pipe_number, 0},
 	{"IOCTL",  torture_ioctl_test, 0},
 	{"CHKPATH",  torture_chkpath_test, 0},
+	{"HOLDCON",  torture_holdcon, 0},
 	{"RAW-QFSINFO", torture_raw_qfsinfo, 0},
 	{"RAW-QFILEINFO", torture_raw_qfileinfo, 0},
 	{"RAW-SFILEINFO", torture_raw_sfileinfo, 0},
