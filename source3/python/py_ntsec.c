@@ -50,12 +50,7 @@ BOOL py_to_SID(DOM_SID *sid, PyObject *obj)
 	if (!PyString_Check(obj))
 		return False;
 
-	result = string_to_sid(sid, PyString_AsString(obj));
-
-	if (result)
-		DEBUG(0, ("py: got sid %s\n", PyString_AsString(obj)));
-
-	return result;
+	return string_to_sid(sid, PyString_AsString(obj));
 }
 
 BOOL py_from_ACE(PyObject **dict, SEC_ACE *ace)
@@ -96,15 +91,11 @@ BOOL py_to_ACE(SEC_ACE *ace, PyObject *dict)
 
 	ace_type = PyInt_AsLong(obj);
 
-	DEBUG(0, ("py: got ace_type %d\n", ace_type));
-
 	if (!(obj = PyDict_GetItemString(dict, "flags")) ||
 	    !PyInt_Check(obj))
 		return False;
 
 	ace_flags = PyInt_AsLong(obj);
-
-	DEBUG(0, ("py: got ace_flags %d\n", ace_flags));
 
 	if (!(obj = PyDict_GetItemString(dict, "trustee")) ||
 	    !PyString_Check(obj))
@@ -113,17 +104,17 @@ BOOL py_to_ACE(SEC_ACE *ace, PyObject *dict)
 	if (!py_to_SID(&trustee, obj))
 		return False;
 
-	DEBUG(0, ("py: got trustee\n"));
-
 	if (!(obj = PyDict_GetItemString(dict, "mask")) ||
 	    !PyInt_Check(obj))
 		return False;
 
 	sec_access.mask = PyInt_AsLong(obj);
 
-	DEBUG(0, ("py: got mask 0x%08x\n", sec_access.mask));
-
 	init_sec_ace(ace, &trustee, ace_type, sec_access, ace_flags);
+
+	/* Fill in size field */
+
+	ace->size = SEC_ACE_HEADER_SIZE + sid_size(&trustee);
 
 	return True;
 }
@@ -168,25 +159,22 @@ BOOL py_to_ACL(SEC_ACL *acl, PyObject *dict, TALLOC_CTX *mem_ctx)
 
 	acl->revision = PyInt_AsLong(obj);
 
-	DEBUG(0, ("py: got revision %d\n", acl->revision));
-
 	if (!(obj = PyDict_GetItemString(dict, "ace_list")) ||
 	    !PyList_Check(obj)) 
 		return False;
 	
 	acl->num_aces = PyList_Size(obj);
 
-	DEBUG(0, ("py: got num_aces %d\n", acl->num_aces));
-
 	acl->ace = talloc(mem_ctx, acl->num_aces * sizeof(SEC_ACE));
+	acl->size = SEC_ACL_HEADER_SIZE;
 
 	for (i = 0; i < acl->num_aces; i++) {
 		PyObject *py_ace = PyList_GetItem(obj, i);
 
-		if (!py_to_ACE(acl->ace, py_ace))
+		if (!py_to_ACE(&acl->ace[i], py_ace))
 			return False;
 
-		DEBUG(0, ("py: got ace %d\n", i));
+		acl->size += acl->ace[i].size;
 	}
 
 	return True;
@@ -221,8 +209,8 @@ BOOL py_to_SECDESC(SEC_DESC **sd, PyObject *dict, TALLOC_CTX *mem_ctx)
 	uint16 revision;
 	DOM_SID owner_sid, group_sid;
 	SEC_ACL sacl, dacl;
-	size_t sd_size;
 	BOOL got_dacl = False, got_sacl = False;
+	BOOL got_owner_sid = False, got_group_sid = False;
 
 	ZERO_STRUCT(dacl); ZERO_STRUCT(sacl);
 	ZERO_STRUCT(owner_sid); ZERO_STRUCT(group_sid);
@@ -232,29 +220,41 @@ BOOL py_to_SECDESC(SEC_DESC **sd, PyObject *dict, TALLOC_CTX *mem_ctx)
 
 	revision = PyInt_AsLong(obj);
 
-	if (!(obj = PyDict_GetItemString(dict, "owner_sid")))
-		return False;
+	if ((obj = PyDict_GetItemString(dict, "owner_sid"))) {
 
-	if (!py_to_SID(&owner_sid, obj))
-		return False;
+		if (obj != Py_None) {
 
-	if (!(obj = PyDict_GetItemString(dict, "group_sid")))
-		return False;
+			if (!py_to_SID(&owner_sid, obj))
+				return False;
 
-	if (!py_to_SID(&group_sid, obj))
-		return False;
+			got_owner_sid = True;
+		}
+	}
+
+	if ((obj = PyDict_GetItemString(dict, "group_sid"))) {
+
+		if (obj != Py_None) {
+
+			if (!py_to_SID(&group_sid, obj))
+				return False;
+			
+			got_group_sid = True;
+		}
+	}
 
 	if ((obj = PyDict_GetItemString(dict, "dacl"))) {
 
-		if (!py_to_ACL(&dacl, obj, mem_ctx))
-			return False;
+		if (obj != Py_None) {
 
-		got_dacl = True;
+			if (!py_to_ACL(&dacl, obj, mem_ctx))
+				return False;
+			
+			got_dacl = True;
+		}
 	}
 
-	DEBUG(0, ("py: got dacl\n"));
-
 	if ((obj = PyDict_GetItemString(dict, "sacl"))) {
+
 		if (obj != Py_None) {
 
 			if (!py_to_ACL(&sacl, obj, mem_ctx))
@@ -264,11 +264,11 @@ BOOL py_to_SECDESC(SEC_DESC **sd, PyObject *dict, TALLOC_CTX *mem_ctx)
 		}
 	}
 
-	DEBUG(0, ("py: got sacl\n"));
-
-	*sd = make_sec_desc(mem_ctx, revision, &owner_sid, &group_sid,
+	*sd = make_sec_desc(mem_ctx, revision, 
+			    got_owner_sid ? &owner_sid : NULL, 
+			    got_group_sid ? &group_sid : NULL,
 			    got_sacl ? &sacl : NULL, 
-			    got_dacl ? &dacl : NULL, &sd_size);
+			    got_dacl ? &dacl : NULL);
 	
 	return True;
 }
