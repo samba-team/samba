@@ -73,9 +73,7 @@ static const struct {
 	{ NTLMSSP_CLIENT_1, "ntlmssp-client-1", manage_client_ntlmssp_request},
 	{ GSS_SPNEGO, "gss-spnego", manage_gss_spnego_request},
 	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gss_spnego_client_request},
-#ifdef DEVELOPER
 	{ NTLM_SERVER_1, "ntlm-server-1", manage_ntlm_server_1_request},
-#endif
 	{ NUM_HELPER_MODES, NULL, NULL}
 };
 
