@@ -104,7 +104,7 @@
 # run a specific logon batch file per workstation (machine)
 ;   logon script = %m.bat
 # run a specific logon batch file per username
-;   logon script = %u.bat
+;   logon script = %U.bat
 
 # Where to store roving profiles (only for Win95 and WinNT)
 #        %L substitutes for this servers netbios name, %U is username
@@ -206,7 +206,7 @@
 
 # a service which has a different directory for each machine that connects
 # this allows you to tailor configurations to incoming machines. You could
-# also use the %u option to tailor it by user name.
+# also use the %U option to tailor it by user name.
 # The %m gets replaced with the machine name that is connecting.
 ;[pchome]
 ;  comment = PC Directories
