@@ -318,10 +318,15 @@ int file_utime(int cnum, char *fname, struct utimbuf *times)
   struct stat sb;
   int ret = -1;
 
+  errno = 0;
+
   if(sys_utime(fname, times) == 0)
     return 0;
 
-  if((errno != EPERM) || !lp_dos_filetimes(SNUM(cnum)))
+  if((errno != EPERM) && (errno != EACCESS))
+    return -1;
+
+  if(!lp_dos_filetimes(SNUM(cnum)))
     return -1;
 
   /* We have permission (given by the Samba admin) to
