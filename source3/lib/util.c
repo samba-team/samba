@@ -3754,7 +3754,7 @@ void standard_sub_basic(char *str)
 	struct passwd *pass;
 	char *username = sam_logon_in_ssb ? samlogon_user : sesssetup_user;
 
-	for (s = str ; (p = strchr(s,'%')) != NULL ; s = p )
+	for (s = str ; s && *s && (p = strchr(s,'%')); s = p )
 	{
 		switch (*(p+1))
 		{
