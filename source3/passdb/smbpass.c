@@ -329,7 +329,13 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
       pw_buf.smb_nt_passwd = NULL;
       pw_buf.smb_passwd = NULL;
       pw_buf.acct_ctrl |= ACB_DISABLED;
+
+#if 0 /* JFM */
+	/* commented to continue in the case of a trust account disabled */
+	/* samr_create_user() is adding disabled accounts */
+
       return &pw_buf;
+#endif
     }
 
     if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
