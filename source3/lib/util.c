@@ -3729,6 +3729,16 @@ void reset_globals_after_fork(void)
 {
   global_client_name_done = False;
   global_client_addr_done = False;
+
+  /*
+   * Re-seed the random crypto generator, so all smbd's
+   * started from the same parent won't generate the same
+   * sequence.
+   */
+  {
+    char dummy;
+    generate_random_buffer( &dummy, 1, True);
+  } 
 }
  
 /*******************************************************************
