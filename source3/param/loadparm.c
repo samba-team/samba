@@ -296,6 +296,7 @@ typedef struct
   char *volume;
   char *fstype;
   char *vfsObjectFile;
+  struct vfs_options *vfsOptions;
   int  iMinPrintSpace;
   int  iCreate_mask;
   int  iCreate_force_mode;
@@ -390,6 +391,7 @@ static service sDefault =
   NULL,    /* volume */
   NULL,    /* fstype */
   NULL,    /* vfs object */
+  NULL,    /* vfs options */
   0,       /* iMinPrintSpace */
   0744,    /* iCreate_mask */
   0000,    /* iCreate_force_mode */
@@ -459,6 +461,7 @@ static BOOL handle_copy(char *pszParmValue, char **ptr);
 static BOOL handle_character_set(char *pszParmValue,char **ptr);
 static BOOL handle_coding_system(char *pszParmValue,char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
+static BOOL handle_vfs_option(char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -810,7 +813,6 @@ static struct parm_struct parm_table[] =
   {"available",        P_BOOL,    P_LOCAL,  &sDefault.bAvailable,       NULL,   NULL,  0},
   {"volume",           P_STRING,  P_LOCAL,  &sDefault.volume,           NULL,   NULL,  0},
   {"fstype",           P_STRING,  P_LOCAL,  &sDefault.fstype,           NULL,   NULL,  0},
-  {"vfs object",       P_STRING,  P_LOCAL,  &sDefault.vfsObjectFile,    handle_vfs_object,   NULL,  0},
   {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL,   NULL,  0},
   {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL,   NULL,  FLAG_GLOBAL},
   {"follow symlinks",  P_BOOL,    P_LOCAL,  &sDefault.bSymlinks,        NULL,   NULL,  FLAG_GLOBAL},
@@ -824,6 +826,10 @@ static struct parm_struct parm_table[] =
   {"fake directory create times", P_BOOL,P_LOCAL,  &sDefault.bFakeDirCreateTimes, NULL,   NULL, FLAG_GLOBAL},
   {"panic action",     P_STRING,  P_GLOBAL, &Globals.szPanicAction,     NULL,   NULL,  0},
 
+  {"VFS options", P_SEP, P_SEPARATOR},
+
+  {"vfs object",       P_STRING,  P_LOCAL,  &sDefault.vfsObjectFile,    handle_vfs_object,   NULL,  0},
+  {"vfs option",       P_PTR,  P_LOCAL,  &sDefault.vfsOptions,       handle_vfs_option,   NULL,  0}, 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL, 0}
 };
 
@@ -1169,6 +1175,9 @@ static char *lp_string(char *s)
  char fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
 #define FN_LOCAL_INTEGER(fn_name,val) \
  int fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
+
+struct vfs_options *lp_vfsoptions(int i) 
+{ return(LP_SNUM_OK(i) ? pSERVICE(i)->vfsOptions : sDefault.vfsOptions); }
 
 FN_GLOBAL_STRING(lp_logfile,&Globals.szLogFile)
 FN_GLOBAL_STRING(lp_smbrun,&Globals.szSmbrun)
@@ -1888,6 +1897,65 @@ static BOOL handle_vfs_object(char *pszParmValue,char **ptr)
 
     /* Do any other initialisation required for vfs.  Note that
        anything done here may have linking repercussions in nmbd. */
+
+    return True;
+}
+
+/***************************************************************************
+  handle the interpretation of the vfs option parameter
+ *************************************************************************/
+static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
+{
+    struct vfs_options *new_option, **options = (struct vfs_options **)ptr;
+    int i;
+    
+    /* Create new vfs option */
+
+    new_option = (struct vfs_options *)malloc(sizeof(*new_option));
+    if (new_option == NULL) {
+	return False;
+    }
+
+    ZERO_STRUCTP(new_option);
+
+    /* Get name and value */
+    
+    new_option->name = strtok(pszParmValue, "=");
+
+    if (new_option->name == NULL) {
+	return False;
+    }
+
+    while(isspace(*new_option->name)) {
+	*new_option->name++;
+    }
+
+    for (i = strlen(new_option->name); i > 0; i--) {
+	if (!isspace(new_option->name[i - 1])) break;
+    }
+
+    new_option->name[i] = '\0';
+    new_option->name = strdup(new_option->name);
+
+    new_option->value = strtok(NULL, "=");
+
+    if (new_option->value != NULL) {
+
+	while(isspace(*new_option->value)) {
+	    *new_option->value++;
+	}
+	
+	for (i = strlen(new_option->value); i > 0; i--) {
+	    if (!isspace(new_option->value[i - 1])) break;
+	}
+	
+	new_option->value[i] = '\0';
+	new_option->value = strdup(new_option->value);
+    }
+
+    /* Add to list */
+
+    DLIST_ADD(*options, new_option);
 
     return True;
 }
