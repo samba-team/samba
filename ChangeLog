@@ -1,5 +1,13 @@
 2001-09-18  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kdc/hprop.c: more free's
+
+	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_keytab): free key
+	proc data
+
+	* lib/krb5/expand_hostname.c (krb5_expand_hostname_realms): free
+	addrinfo
+
 	* lib/hdb/mkey.c (hdb_set_master_keyfile): clear error string when
 	not returning error
 
