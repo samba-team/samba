@@ -107,6 +107,7 @@ typedef struct {
 	char *buf;
 	char *p;
 	size_t size;
+	char *end_section_p;
 } myFILE;
 
 static int mygetc(myFILE *f)
@@ -123,6 +124,22 @@ static void myfile_close(myFILE *f)
 		return;
 	SAFE_FREE(f->buf);
 	SAFE_FREE(f);
+}
+
+/* Find the end of the section. We must use mb functions for this. */
+static int FindSectionEnd(myFILE *f)
+{
+	f->end_section_p = strchr_m(f->p, ']');
+	return f->end_section_p ? 1 : 0;
+}
+
+static int AtSectionEnd(myFILE *f)
+{
+	if (f->p == f->end_section_p + 1) {
+		f->end_section_p = NULL;
+		return 1;
+	}
+	return 0;
 }
 
 /* -------------------------------------------------------------------------- **
@@ -230,6 +247,13 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
 		    /* character written to bufr[] is a space, then <end>     */
 		    /* will be one less than <i>.                             */
 
+
+	/* Find the end of the section. We must use mb functions for this. */
+	if (!FindSectionEnd(InFile)) {
+		DEBUG(0, ("%s No terminating ']' character in section.\n", func) );
+		return False;
+	}
+
 	c = EatWhitespace( InFile );    /* We've already got the '['.  Scan */
 					/* past initial white space.        */
 
@@ -247,20 +271,8 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
 			bSize += BUFR_INC;
 		}
 
-		/* Handle a single character. */
+		/* Handle a single character other than section end. */
 		switch( c ) {
-			case ']': /* Found the closing bracket.         */
-				bufr[end] = '\0';
-				if( 0 == end ) {
-					/* Don't allow an empty name.       */
-					DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
-					return False;
-				}
-				if( !sfunc(bufr) )            /* Got a valid name.  Deal with it. */
-					return False;
-				EatComment( InFile );     /* Finish off the line.             */
-				return True;
-
 			case '\n': /* Got newline before closing ']'.    */
 				i = Continuation( bufr, i );    /* Check for line continuation.     */
 				if( i < 0 ) {
@@ -284,6 +296,21 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
 					c = mygetc( InFile );
 				}
 		}
+
+		if (AtSectionEnd(InFile)) {
+			/* Got to the closing bracket. */
+			bufr[end] = '\0';
+			if( 0 == end ) {
+				/* Don't allow an empty name.       */
+				DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
+				return False;
+			}
+			if( !sfunc(bufr) )            /* Got a valid name.  Deal with it. */
+				return False;
+			EatComment( InFile );     /* Finish off the line.             */
+			return True;
+		}
+
 	}
 
 	/* We arrive here if we've met the EOF before the closing bracket. */
@@ -513,6 +540,7 @@ static myFILE *OpenConfFile( const char *FileName )
 	}
 
 	ret->p = ret->buf;
+	ret->end_section_p = NULL;
 	return( ret );
 }
 
