@@ -230,7 +230,11 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	if (!pdb_find_alias(name, sid))
 		return NT_STATUS_NONE_MAPPED;
 
-	*type = SID_NAME_ALIAS;
+	if (sid_check_is_in_builtin(sid))
+		*type = SID_NAME_WKN_GRP;
+	else
+		*type = SID_NAME_ALIAS;
+
 	return NT_STATUS_OK;
 }
 
@@ -251,7 +255,10 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 		return NT_STATUS_NONE_MAPPED;
 
 	*name = talloc_strdup(mem_ctx, info.acct_name);
-	*type = SID_NAME_ALIAS;
+	if (sid_check_is_in_builtin(sid))
+		*type = SID_NAME_WKN_GRP;
+	else
+		*type = SID_NAME_ALIAS;
 
 	return NT_STATUS_OK;
 }
