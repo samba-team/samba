@@ -22,7 +22,6 @@
 */
 
 #include "winbindd.h"
-#include "sids.h"
 
 BOOL domain_handles_open(struct winbindd_domain *domain)
 {
