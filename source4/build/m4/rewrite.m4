@@ -281,7 +281,13 @@ AC_CHECK_TYPES(intptr_t)
 
 ############################################
 # we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the plugin loading code
-AC_SEARCH_LIBS(dlopen, [dl], [SMB_EXT_LIB(DL, [$ac_cv_search_dlopen])])
+AC_SEARCH_LIBS(dlopen, [dl], [
+			   tmp=$ac_cv_search_dlopen
+			   if test "$ac_cv_search_dlopen" = "none required"; then 
+			       tmp=""
+			   fi
+			   SMB_EXT_LIB(DL, [$tmp])]
+			   )
 # dlopen/dlclose/dlsym/dlerror will be checked again later and defines will be set then
 
 ############################################
