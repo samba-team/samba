@@ -1030,7 +1030,7 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 /* Initialise client credentials for authenticated pipe access */
 
 static void init_creds(struct ntuser_creds *creds, char* username,
-		       char* domain, char* password, int pass_len)
+		       char* domain, char* password)
 {
 	ZERO_STRUCTP(creds);
 
@@ -1052,7 +1052,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     struct in_addr *dest_ip, int port,
 			     char *service, char *service_type,
 			     char *user, char *domain, 
-			     char *password, int pass_len) 
+			     char *password) 
 {
 	struct ntuser_creds creds;
 	NTSTATUS nt_status;
@@ -1113,7 +1113,8 @@ again:
 		return nt_status;
 	}
 
-	if (!cli_session_setup(cli, user, password, pass_len, password, pass_len, 
+	if (!cli_session_setup(cli, user, password, strlen(password)+1, 
+			       password, strlen(password)+1, 
 			       domain)) {
 		DEBUG(1,("failed session setup\n"));
 		nt_status = cli_nt_error(cli);
@@ -1125,7 +1126,7 @@ again:
 
 	if (service) {
 		if (!cli_send_tconX(cli, service, service_type,
-				    (char*)password, pass_len)) {
+				    (char*)password, strlen(password)+1)) {
 			DEBUG(1,("failed tcon_X\n"));
 			nt_status = cli_nt_error(cli);
 			cli_shutdown(cli);
@@ -1135,7 +1136,7 @@ again:
 		}
 	}
 
-	init_creds(&creds, user, domain, password, pass_len);
+	init_creds(&creds, user, domain, password);
 	cli_init_creds(cli, &creds);
 
 	*output_cli = cli;

@@ -428,7 +428,7 @@ static struct cli_state *init_connection(struct cli_state **cli,
 						dest_ip, 0,
 						"IPC$", "IPC",  
 						username, domain,
-						password, strlen(password)))) {
+						password))) {
 		return *cli;
 	} else {
 		return NULL;
