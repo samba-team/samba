@@ -37,7 +37,7 @@ void exit_server(struct server_context *smb, const char *reason)
   setup a single listener of any type
  */
 static void setup_listen(struct event_context *events,
-			 struct model_ops *model_ops, 
+			 const struct model_ops *model_ops, 
 			 void (*accept_handler)(struct event_context *,struct fd_event *,time_t,uint16),
 			 struct in_addr *ifip, unsigned port)
 {
@@ -72,7 +72,7 @@ static void setup_listen(struct event_context *events,
   add a socket address to the list of events, one event per port
 */
 static void add_socket(struct event_context *events, 
-		       struct model_ops *model_ops, 
+		       const struct model_ops *model_ops, 
 		       struct in_addr *ifip)
 {
 	char *ptr, *tok;

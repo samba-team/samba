@@ -190,7 +190,7 @@ void init_rpc_session(struct event_context *ev, void *private, int fd)
   setup a single rpc listener
  */
 static void setup_listen_rpc(struct event_context *events,
-			     struct model_ops *model_ops, 
+			     const struct model_ops *model_ops, 
 			     struct in_addr *ifip, uint32 *port,
 			     struct rpc_server_context *r,
 			     const struct dcesrv_endpoint *endpoint)
