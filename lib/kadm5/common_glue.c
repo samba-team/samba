@@ -153,6 +153,15 @@ kadm5_rename_principal(void *server_handle,
 }
 
 kadm5_ret_t
+kadm5_get_principals(void *server_handle,
+		     const char *exp,
+		     char ***princs,
+		     int *count)
+{
+    return __CALL(get_principals(server_handle, exp, princs, count));
+}
+
+kadm5_ret_t
 kadm5_get_privs(void *server_handle,
 		u_int32_t *privs)
 {
