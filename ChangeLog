@@ -1,5 +1,7 @@
 Fri Apr  3 03:54:54 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/krb5/str2key.c: Fix DES3 string-to-key.
+
 	* lib/krb5/keytab.c: Get default keytab name from context.
 
 	* lib/krb5/context.c: Get `default_keytab_name' value.
