@@ -1798,6 +1798,16 @@ posix perms.\n", fsp->fsp_name ));
 	return True;
 }
 
+static int nt_ace_comp( SEC_ACE *a1, SEC_ACE *a2)
+{
+	if (a1->type == a2->type)
+		return 0;
+
+	if (a1->type == SEC_ACE_TYPE_ACCESS_DENIED && a2->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
+		return -1;
+	return 1;
+}
+
 /****************************************************************************
  Reply to query a security descriptor from an fsp. If it succeeds it allocates
  the space for the return elements and returns the size needed to return the
@@ -1913,6 +1923,13 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 			init_sec_ace(&nt_ace_list[num_aces++], &ace->sid, nt_acl_type, acc, 
 					SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
 		}
+
+		/*
+		 * Sort to force deny entries to the front.
+		 */
+
+		if (num_acls + num_dir_acls)
+			qsort( nt_ace_list, num_acls + num_dir_acls, sizeof(nt_ace_list[0]), QSORT_CAST nt_ace_comp);
 	}
 
 	if (num_acls) {
