@@ -258,9 +258,9 @@ read and used as the password.
 		<para>
 The primary mechanism for making configuration changes and for reading 
 debug information for the cifs vfs is via the Linux /proc filesystem.
-In the directory /proc/fs/cifs are various configuration files and
-pseudo files which can display debug information.  For more
-information see the kernel file fs/cifs/README
+In the directory <filename>/proc/fs/cifs</filename> are various 
+configuration files and pseudo files which can display debug information.  
+For more information see the kernel file <filename>fs/cifs/README</filename>.
 </para>
 </refsect1>
 
