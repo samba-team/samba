@@ -198,3 +198,33 @@ PyObject *spoolss_enumprinterdata(PyObject *self, PyObject *args, PyObject *kw)
 
 	return result;
 }
+
+PyObject *spoolss_deleteprinterdata(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	static char *kwlist[] = { "value", NULL };
+	char *value;
+	WERROR werror;
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "s", kwlist, &value))
+	    return NULL;
+
+	/* Call rpc function */
+
+	werror = cli_spoolss_deleteprinterdata(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, value);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+PyObject *spoolss_deleteprinterdataex(PyObject *self, PyObject *args, PyObject *kw)
+{
+}
