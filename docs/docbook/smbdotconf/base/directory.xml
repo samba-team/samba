@@ -1,9 +1,0 @@
-<samba:parameter name="directory"
-                 context="S"
-                 hide="1"
-                 xmlns:samba="http://samba.org/common">
-                
-<listitem>
-        <para>Synonym for <link linkend="PATH"><parameter moreinfo="none">path</parameter></link>.</para>
-</listitem>
-</samba:parameter>
