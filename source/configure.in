@@ -3178,6 +3178,8 @@ AC_ARG_WITH(libsmbclient,
   *)
      if test $BLDSHARED = true; then
         INSTALLCLIENTCMD_SH="\$(INSTALLCMD)"
+	## build the static version of libsmbclient as well
+	INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
         LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
         LIBSMBCLIENT=libsmbclient
         AC_MSG_RESULT(yes)
