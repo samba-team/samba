@@ -4185,6 +4185,7 @@ static struct {
 	{"BASE-OPENATTR", run_openattrtest, 0},
 	{"BASE-CHARSET", torture_charset, 0},
 	{"BASE-CHKPATH",  torture_chkpath_test, 0},
+	{"BASE-SECLEAK",  torture_sec_leak, 0},
 
 	/* benchmarking tests */
 	{"BENCH-HOLDCON",  torture_holdcon, 0},
