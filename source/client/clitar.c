@@ -1093,7 +1093,7 @@ static int get_file(file_info2 finfo)
 static int get_dir(file_info2 finfo)
 {
 
-  DEBUG(5, ("Creating directory: %s\n", finfo.name));
+  DEBUG(0, ("restore directory %s\n", finfo.name));
 
   if (!ensurepath(finfo.name)) {
 
