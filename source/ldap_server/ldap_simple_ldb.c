@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "ldap_parse.h"
 
 /* TODO: samdb_context is not a pulblic struct */
 struct samdb_context {
@@ -92,6 +93,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 				     struct ldap_SearchRequest *r)
 {
 	NTSTATUS status;
+	struct ldap_dn *bdn;
 	struct ldap_Result *done;
 	struct ldap_SearchResEntry *ent;
 	struct ldapsrv_reply *ent_r, *done_r;
@@ -107,7 +109,8 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
-	basedn = sldb_fix_dn(r->basedn);
+	bdn = ldap_parse_dn(call, r->basedn);
+	basedn = bdn->dn;
 	if (basedn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -213,6 +216,7 @@ queue_reply:
 static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_AddRequest *r)
 {
+	struct ldap_dn *bdn;
 	struct ldap_Result *add_result;
 	struct ldapsrv_reply *add_reply;
 	int ldb_ret;
@@ -226,7 +230,8 @@ static NTSTATUS sldb_Add(struct ldapsrv_partition *partition, struct ldapsrv_cal
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
-	dn = sldb_fix_dn(r->dn);
+	bdn = ldap_parse_dn(call, r->dn);
+	dn = bdn->dn;
 	if (dn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -312,6 +317,7 @@ invalid_input:
 static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_DelRequest *r)
 {
+	struct ldap_dn *bdn;
 	struct ldap_Result *del_result;
 	struct ldapsrv_reply *del_reply;
 	int ldb_ret;
@@ -323,7 +329,8 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
-	dn = sldb_fix_dn(r->dn);
+	bdn = ldap_parse_dn(call, r->dn);
+	dn = bdn->dn;
 	if (dn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -362,6 +369,7 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_ModifyRequest *r)
 {
+	struct ldap_dn *bdn;
 	struct ldap_Result *modify_result;
 	struct ldapsrv_reply *modify_reply;
 	int ldb_ret;
@@ -375,7 +383,8 @@ static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
-	dn = sldb_fix_dn(r->dn);
+	bdn = ldap_parse_dn(call, r->dn);
+	dn = bdn->dn;
 	if (dn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -477,6 +486,7 @@ invalid_input:
 static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_CompareRequest *r)
 {
+	struct ldap_dn *bdn;
 	struct ldap_Result *compare;
 	struct ldapsrv_reply *compare_r;
 	int result = 80;
@@ -491,7 +501,8 @@ static NTSTATUS sldb_Compare(struct ldapsrv_partition *partition, struct ldapsrv
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
-	dn = sldb_fix_dn(r->dn);
+	bdn = ldap_parse_dn(call, r->dn);
+	dn = bdn->dn;
 	if (dn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
