@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -244,7 +244,23 @@ ipv6_anyaddr (struct sockaddr *sa, int *sa_size, int port)
 static int
 ipv6_print_addr (const krb5_address *addr, char *str, size_t len)
 {
-    abort ();			/* XXX - not done yet */
+    char buf[128], buf2[3];
+#ifdef HAVE_INET_NTOP
+    if(inet_ntop(AF_INET6, addr->address.data, buf, sizeof(buf)) == NULL)
+#endif
+	{
+	    /* XXX this is pretty ugly, but better than abort() */
+	    int i;
+	    unsigned char *p = addr->address.data;
+	    buf[0] = '\0';
+	    for(i = 0; i < addr->address.length; i++) {
+		snprintf(buf2, sizeof(buf2), "%02x", p[i]);
+		if(i > 0)
+		    strcat_truncate(buf, ":", sizeof(buf));
+		strcat_truncate(buf, buf2, sizeof(buf));
+	    }
+	}
+    return snprintf(str, len, "IPv6:%s", buf);
 }
 
 #endif /* IPv6 */
