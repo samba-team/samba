@@ -78,10 +78,50 @@ BOOL become_service(connection_struct *conn,BOOL do_chdir)
 	return(True);
 }
 
+/****************************************************************************
+ Add a home service. Returns the new service number or -1 if fail.
+****************************************************************************/
+
+int add_home_service(char *service, char *homedir)
+{
+	int iHomeService;
+	int iService;
+	fstring new_service;
+	char *usr_p = NULL;
+
+	if (!service || !homedir)
+		return -1;
+
+	if ((iHomeService = lp_servicenumber(HOMES_NAME)) < 0)
+		return -1;
+
+	/*
+	 * If this is a winbindd provided username, remove
+	 * the domain component before adding the service.
+	 * Log a warning if the "path=" parameter does not
+	 * include any macros.
+	 */
+
+	fstrcpy(new_service, service);
+
+	if ((usr_p = strchr(service,*lp_winbind_separator())) != NULL)
+		fstrcpy(new_service, usr_p+1);
+
+	lp_add_home(new_service,iHomeService,homedir);
+	iService = lp_servicenumber(new_service);
+
+	if ((iService != -1) && usr_p && (strstr(lp_pathname(iService),"%D") == NULL))
+		DEBUG(0,("find_service: Service %s added for user %s - contains non-local (Domain) user \
+with non-domain parameterised path (%s). This may be cause the wrong directory to be seen.\n",
+		new_service, service, lp_pathname(iService) ));
+
+	return iService;
+}
 
 /****************************************************************************
-  find a service entry. service is always in dos codepage
+ Find a service entry. service is always in dos codepage.
 ****************************************************************************/
+
 int find_service(char *service)
 {
    int iService;
@@ -108,35 +148,7 @@ int find_service(char *service)
       DEBUG(3,("checking for home directory %s gave %s\n",service,
             phome_dir?phome_dir:"(NULL)"));
 
-      if (phome_dir)
-      {   
-        int iHomeService;
-        if ((iHomeService = lp_servicenumber(HOMES_NAME)) >= 0)
-        {
-          /*
-           * If this is a winbindd provided username, remove
-           * the domain component before adding the service.
-           * Log a warning if the "path=" parameter does not
-           * include any macros.
-           */
-
-          fstring new_service;
-          char *usr_p = NULL;
-
-          fstrcpy(new_service, service);
-
-          if ((usr_p = strchr(service,*lp_winbind_separator())) != NULL)
-            fstrcpy(new_service, usr_p+1);
-
-          lp_add_home(new_service,iHomeService,phome_dir);
-          iService = lp_servicenumber(new_service);
-
-          if (usr_p && (strchr(lp_pathname(iService),'%') == NULL))
-              DEBUG(0,("find_service: Service %s added for user %s - contains non-local (Domain) user \
-with non parameterised path (%s). This may be cause the wrong directory to be seen.\n",
-                 new_service, service, lp_pathname(iService) ));
-        }
-      }
+      iService = add_home_service(service,phome_dir);
    }
 
    /* If we still don't have a service, attempt to add it as a printer. */
