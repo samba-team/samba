@@ -28,7 +28,6 @@
 #define REGISTER 0
 #endif
 
-struct cli_state *cli;
 extern BOOL in_client;
 static int port = 0;
 pstring cur_dir = "\\";
@@ -97,10 +96,169 @@ static unsigned int put_total_time_ms = 0;
 /* totals globals */
 static double dir_total;
 
-#define USENMB
+struct client_connection {
+	struct client_connection *prev, *next;
+	struct cli_state *cli;
+};
 
-/* some forward declarations */
-static struct cli_state *do_connect(const char *server, const char *share);
+struct cli_state *cli;
+struct client_connection *connections;
+
+/********************************************************************
+ Return a connection to a server.
+********************************************************************/
+
+static struct cli_state *do_connect(const char *server, const char *share)
+{
+	struct cli_state *c;
+	struct nmb_name called, calling;
+	const char *server_n;
+	struct in_addr ip;
+	pstring servicename;
+	char *sharename;
+	
+	/* make a copy so we don't modify the global string 'service' */
+	pstrcpy(servicename, share);
+	sharename = servicename;
+	if (*sharename == '\\') {
+		server = sharename+2;
+		sharename = strchr_m(server,'\\');
+		if (!sharename) return NULL;
+		*sharename = 0;
+		sharename++;
+	}
+
+	server_n = server;
+	
+	zero_ip(&ip);
+
+	make_nmb_name(&calling, global_myname(), 0x0);
+	make_nmb_name(&called , server, name_type);
+
+ again:
+	zero_ip(&ip);
+	if (have_ip) ip = dest_ip;
+
+	/* have to open a new connection */
+	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) != port) ||
+	    !cli_connect(c, server_n, &ip)) {
+		d_printf("Connection to %s failed\n", server_n);
+		return NULL;
+	}
+
+	c->protocol = max_protocol;
+	c->use_kerberos = use_kerberos;
+	cli_setup_signing_state(c, cmdline_auth_info.signing_state);
+		
+
+	if (!cli_session_request(c, &calling, &called)) {
+		char *p;
+		d_printf("session request to %s failed (%s)\n", 
+			 called.name, cli_errstr(c));
+		cli_shutdown(c);
+		if ((p=strchr_m(called.name, '.'))) {
+			*p = 0;
+			goto again;
+		}
+		if (strcmp(called.name, "*SMBSERVER")) {
+			make_nmb_name(&called , "*SMBSERVER", 0x20);
+			goto again;
+		}
+		return NULL;
+	}
+
+	DEBUG(4,(" session request ok\n"));
+
+	if (!cli_negprot(c)) {
+		d_printf("protocol negotiation failed\n");
+		cli_shutdown(c);
+		return NULL;
+	}
+
+	if (!got_pass) {
+		char *pass = getpass("Password: ");
+		if (pass) {
+			pstrcpy(password, pass);
+			got_pass = 1;
+		}
+	}
+
+	if (!cli_session_setup(c, username, 
+			       password, strlen(password),
+			       password, strlen(password),
+			       lp_workgroup())) {
+		/* if a password was not supplied then try again with a null username */
+		if (password[0] || !username[0] || use_kerberos ||
+		    !cli_session_setup(c, "", "", 0, "", 0, lp_workgroup())) { 
+			d_printf("session setup failed: %s\n", cli_errstr(c));
+			if (NT_STATUS_V(cli_nt_error(c)) == 
+			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
+				d_printf("did you forget to run kinit?\n");
+			cli_shutdown(c);
+			return NULL;
+		}
+		d_printf("Anonymous login successful\n");
+	}
+
+	if (*c->server_domain) {
+		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
+			c->server_domain,c->server_os,c->server_type));
+	} else if (*c->server_os || *c->server_type){
+		DEBUG(1,("OS=[%s] Server=[%s]\n",
+			 c->server_os,c->server_type));
+	}		
+	DEBUG(4,(" session setup ok\n"));
+
+	if (!cli_send_tconX(c, sharename, "?????",
+			    password, strlen(password)+1)) {
+		d_printf("tree connect failed: %s\n", cli_errstr(c));
+		cli_shutdown(c);
+		return NULL;
+	}
+
+	DEBUG(4,(" tconx ok\n"));
+
+	return c;
+}
+
+/********************************************************************
+ Add a new connection to the list
+********************************************************************/
+
+static struct cli_state* add_new_connection( const char *server, const char *share )
+{
+	struct client_connection *node;
+	
+	node = SMB_XMALLOC_P( struct client_connection );
+	
+	node->cli = do_connect( server, share );
+
+	if ( !node->cli ) {
+		SAFE_FREE( node );
+		return NULL;
+	}
+
+	DLIST_ADD( connections, node );
+
+	return node->cli;
+
+}
+
+/********************************************************************
+ Return a connection to a server.
+********************************************************************/
+
+static struct cli_state* find_connection ( const char *server, const char *share )
+{
+	struct client_connection *p;
+
+	for ( p=connections; p; p=p->next ) {
+		if ( strequal(server, p->cli->desthost) && strequal(share,p->cli->share) )
+			return p->cli;
+	}
+
+	return NULL;
+}
 
 /****************************************************************************
  Write to a local file with CR/LF->LF translation if appropriate. Return the 
@@ -2424,6 +2582,8 @@ static void server_fn(const char *name, uint32 m,
 
 static BOOL list_servers(const char *wk_grp)
 {
+	fstring state;
+
 	if (!cli->server_domain)
 		return False;
 
@@ -2431,16 +2591,18 @@ static BOOL list_servers(const char *wk_grp)
         	d_printf("\n\tServer               Comment\n");
         	d_printf("\t---------            -------\n");
 	};
+	fstrcpy( state, "Server" );
 	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn,
-			  "Server");
+			  state);
 
 	if (!grepable) {
 	        d_printf("\n\tWorkgroup            Master\n");
 	        d_printf("\t---------            -------\n");
 	}; 
 
+	fstrcpy( state, "Workgroup" );
 	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM,
-			  server_fn, "Workgroup");
+			  server_fn, state);
 	return True;
 }
 
@@ -2496,6 +2658,101 @@ static int cmd_logon(void)
 	}
 
 	d_printf("Current VUID is %d\n", cli->vuid);
+	return 0;
+}
+
+
+/****************************************************************************
+ Add a connection to a new //server/share path
+****************************************************************************/
+
+static int cmd_add_connect(void)
+{
+	pstring path;
+	struct cli_state *new_cli;
+
+	if ( !next_token_nr(NULL, path, NULL, sizeof(path)) ) {
+		d_printf("connect <uncpath>\n");
+		return 0;
+	}
+
+	string_replace(path, '/','\\');
+
+	new_cli = add_new_connection( "", path );
+
+	/* if successful, set this as the current connection */
+
+	if ( new_cli ) 
+		cli = new_cli;
+
+	return 0;
+}
+
+/****************************************************************************
+ list active connections
+****************************************************************************/
+
+static int cmd_list_connect(void)
+{
+	struct client_connection *p;
+	int i;
+
+	for ( p=connections,i=0; p; p=p->next,i++ ) {
+		d_printf("%d:\tserver=%s, share=%s\n", 
+			i, p->cli->desthost, p->cli->share );
+	}
+
+	return 0;
+}
+
+/****************************************************************************
+ set the current active_connection
+****************************************************************************/
+
+static int cmd_set_connect(void)
+{
+	pstring path;
+	char *server, *share;
+	struct cli_state *c;
+
+	if ( !next_token_nr(NULL, path, NULL, sizeof(path)) ) {
+		d_printf("setconnect <uncpath>\n");
+		return 0;
+	}
+
+	if ( strlen(path) < 5 ) {
+		d_printf("Invalid UNC path [%s]\n", path );
+		return 1;
+	}
+
+
+	string_replace(path, '/','\\');
+
+	share = strrchr_m( path, '\\' );
+	if ( !share ) {
+		d_printf("Invalid UNC path [%s]\n", path );
+		return 1;
+	};
+
+	*share = '\0';
+	share++;
+
+	if ( path[0] != '\\' ||  path[1]!='\\' ) {
+		d_printf("Invalid UNC path [%s]\n", path );
+		return 1;
+	}
+
+	server = path+2;
+
+	c = find_connection( server, share );
+	if ( !c ) {
+		d_printf("Cannot find existing connection for //%s/%s\n",
+			server, share);
+		return 1;
+	}
+
+	cli = c;
+
 	return 0;
 }
 
@@ -2570,6 +2827,9 @@ static struct
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
   {"vuid",cmd_vuid,"change current vuid",{COMPL_NONE,COMPL_NONE}},
   {"logon",cmd_logon,"establish new logon",{COMPL_NONE,COMPL_NONE}},
+  {"addconnect",cmd_add_connect,"add a connection to a new //server/share",{COMPL_NONE,COMPL_NONE}},
+  {"listconnect",cmd_list_connect,"list open connections",{COMPL_NONE,COMPL_NONE}},
+  {"setconnect",cmd_set_connect,"set the current active connection",{COMPL_NONE,COMPL_NONE}},
   
   /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
@@ -2644,7 +2904,7 @@ static int process_command_string(char *cmd)
 	/* establish the connection if not already */
 	
 	if (!cli) {
-		cli = do_connect(desthost, service);
+		cli = add_new_connection(desthost, service);
 		if (!cli)
 			return 0;
 	}
@@ -2952,123 +3212,6 @@ static int process_stdin(void)
 	return rc;
 }
 
-/***************************************************** 
- Return a connection to a server.
-*******************************************************/
-
-static struct cli_state *do_connect(const char *server, const char *share)
-{
-	struct cli_state *c;
-	struct nmb_name called, calling;
-	const char *server_n;
-	struct in_addr ip;
-	pstring servicename;
-	char *sharename;
-	
-	/* make a copy so we don't modify the global string 'service' */
-	pstrcpy(servicename, share);
-	sharename = servicename;
-	if (*sharename == '\\') {
-		server = sharename+2;
-		sharename = strchr_m(server,'\\');
-		if (!sharename) return NULL;
-		*sharename = 0;
-		sharename++;
-	}
-
-	server_n = server;
-	
-	zero_ip(&ip);
-
-	make_nmb_name(&calling, global_myname(), 0x0);
-	make_nmb_name(&called , server, name_type);
-
- again:
-	zero_ip(&ip);
-	if (have_ip) ip = dest_ip;
-
-	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, port) != port) ||
-	    !cli_connect(c, server_n, &ip)) {
-		d_printf("Connection to %s failed\n", server_n);
-		return NULL;
-	}
-
-	c->protocol = max_protocol;
-	c->use_kerberos = use_kerberos;
-	cli_setup_signing_state(c, cmdline_auth_info.signing_state);
-		
-
-	if (!cli_session_request(c, &calling, &called)) {
-		char *p;
-		d_printf("session request to %s failed (%s)\n", 
-			 called.name, cli_errstr(c));
-		cli_shutdown(c);
-		if ((p=strchr_m(called.name, '.'))) {
-			*p = 0;
-			goto again;
-		}
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
-
-	DEBUG(4,(" session request ok\n"));
-
-	if (!cli_negprot(c)) {
-		d_printf("protocol negotiation failed\n");
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	if (!got_pass) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			pstrcpy(password, pass);
-			got_pass = 1;
-		}
-	}
-
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       lp_workgroup())) {
-		/* if a password was not supplied then try again with a null username */
-		if (password[0] || !username[0] || use_kerberos ||
-		    !cli_session_setup(c, "", "", 0, "", 0, lp_workgroup())) { 
-			d_printf("session setup failed: %s\n", cli_errstr(c));
-			if (NT_STATUS_V(cli_nt_error(c)) == 
-			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
-				d_printf("did you forget to run kinit?\n");
-			cli_shutdown(c);
-			return NULL;
-		}
-		d_printf("Anonymous login successful\n");
-	}
-
-	if (*c->server_domain) {
-		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			c->server_domain,c->server_os,c->server_type));
-	} else if (*c->server_os || *c->server_type){
-		DEBUG(1,("OS=[%s] Server=[%s]\n",
-			 c->server_os,c->server_type));
-	}		
-	DEBUG(4,(" session setup ok\n"));
-
-	if (!cli_send_tconX(c, sharename, "?????",
-			    password, strlen(password)+1)) {
-		d_printf("tree connect failed: %s\n", cli_errstr(c));
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	DEBUG(4,(" tconx ok\n"));
-
-	return c;
-}
-
 /****************************************************************************
  Process commands from the client.
 ****************************************************************************/
@@ -3077,7 +3220,7 @@ static int process(char *base_directory)
 {
 	int rc = 0;
 
-	cli = do_connect(desthost, service);
+	cli = add_new_connection(desthost, service);
 	if (!cli) {
 		return 1;
 	}
@@ -3100,7 +3243,7 @@ static int process(char *base_directory)
 
 static int do_host_query(char *query_host)
 {
-	cli = do_connect(query_host, "IPC$");
+	cli = add_new_connection(query_host, "IPC$");
 	if (!cli)
 		return 1;
 
@@ -3113,7 +3256,7 @@ static int do_host_query(char *query_host)
 
 		cli_shutdown(cli);
 		port = 139;
-		cli = do_connect(query_host, "IPC$");
+		cli = add_new_connection(query_host, "IPC$");
 	}
 
 	if (cli == NULL) {
@@ -3128,7 +3271,6 @@ static int do_host_query(char *query_host)
 	return(0);
 }
 
-
 /****************************************************************************
  Handle a tar operation.
 ****************************************************************************/
@@ -3139,7 +3281,7 @@ static int do_tar_op(char *base_directory)
 
 	/* do we already have a connection? */
 	if (!cli) {
-		cli = do_connect(desthost, service);	
+		cli = add_new_connection(desthost, service);	
 		if (!cli)
 			return 1;
 	}

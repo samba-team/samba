@@ -339,7 +339,7 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
 
   if ((fnum = cli_open(cli, title, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE)) == -1)
   {
-    fprintf(stderr, "ERROR: %s opening remote file %s\n",
+    fprintf(stderr, "ERROR: %s opening remote spool %s\n",
             cli_errstr(cli), title);
     return (1);
   }
@@ -357,7 +357,7 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   {
     if (cli_write(cli, fnum, 0, buffer, tbytes, nbytes) != nbytes)
     {
-      fprintf(stderr, "ERROR: Error writing file: %s\n", cli_errstr(cli));
+      fprintf(stderr, "ERROR: Error writing spool: %s\n", cli_errstr(cli));
       break;
     }
 
@@ -366,7 +366,7 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
 
   if (!cli_close(cli, fnum))
   {
-    fprintf(stderr, "ERROR: %s closing remote file %s\n",
+    fprintf(stderr, "ERROR: %s closing remote spool %s\n",
             cli_errstr(cli), title);
     return (1);
   }
