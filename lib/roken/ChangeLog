@@ -1,5 +1,13 @@
+1999-12-22  Assar Westerlund  <assar@sics.se>
+
+	* roken.h.in (sockaddr_storage): drop leading underscore on
+ 	`public' fields.  this was the consensus on the ipng mailing list
+
 1999-12-21  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.am (strpftime-test): define sources to avoid having
+ 	'.o'
+	* Makefile.am (print_version.h): use $(EXEEXT)
 	* Makefile.am (roken.h): add $(EXEEXT) to make this work on cygwin
  	et al
 
