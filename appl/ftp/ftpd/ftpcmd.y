@@ -503,7 +503,7 @@ cmd
 		{
 			reply(200,
 			    "Current IDLE time limit is %d seconds; max %d",
-				timeout, maxtimeout);
+				ftpd_timeout, maxtimeout);
 		}
 	| SITE SP IDLE SP NUMBER CRLF
 		{
@@ -512,11 +512,11 @@ cmd
 			"Maximum IDLE time must be between 30 and %d seconds",
 				    maxtimeout);
 			} else {
-				timeout = $5;
-				(void) alarm((unsigned) timeout);
+				ftpd_timeout = $5;
+				(void) alarm((unsigned) ftpd_timeout);
 				reply(200,
 				    "Maximum IDLE time set to %d seconds",
-				    timeout);
+				    ftpd_timeout);
 			}
 		}
 
@@ -1008,10 +1008,11 @@ toolong(int signo)
 {
 
 	reply(421,
-	    "Timeout (%d seconds): closing control connection.", timeout);
+	    "Timeout (%d seconds): closing control connection.",
+	      ftpd_timeout);
 	if (logging)
 		syslog(LOG_INFO, "User %s timed out after %d seconds",
-		    (pw ? pw -> pw_name : "unknown"), timeout);
+		    (pw ? pw -> pw_name : "unknown"), ftpd_timeout);
 	dologout(1);
 }
 
@@ -1029,7 +1030,7 @@ yylex(void)
 
 		case CMD:
 			(void) signal(SIGALRM, toolong);
-			(void) alarm((unsigned) timeout);
+			(void) alarm((unsigned) ftpd_timeout);
 			if (getline(cbuf, sizeof(cbuf)-1) == NULL) {
 				reply(221, "You could at least say goodbye.");
 				dologout(0);
