@@ -180,7 +180,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	struct dcerpc_binding ep_description;
 	struct ipc_private *private = ntvfs->private_data;
 	int fnum;
-	struct server_connection *srv_conn;
+	struct stream_connection *srv_conn = req->smb_conn->connection;
 
 	if (!req->session || !req->session->session_info) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -210,11 +210,6 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	*/
 	ep_description.transport = NCACN_NP;
 	ep_description.endpoint = p->pipe_name;
-
-	/* TOTO: pass in full server_connection in here */
-	srv_conn = talloc_zero(p, struct server_connection);
-	NT_STATUS_HAVE_NO_MEMORY(srv_conn);
-	srv_conn->event.ctx	= talloc_reference(srv_conn, req->smb_conn->connection->event.ctx);
 
 	/* The session info is refcount-increased in the 
 	 * dcesrv_endpoint_search_connect() function

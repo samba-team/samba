@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
+
    thread model: standard (1 thread per client connection)
-   Copyright (C) Andrew Tridgell 2003
+
+   Copyright (C) Andrew Tridgell 2003-2005
    Copyright (C) James J Myers 2003 <myersjj@samba.org>
    Copyright (C) Stefan (metze) Metzmacher 2004
    
@@ -30,89 +32,85 @@
 #include "events.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
-#include "process_model.h"
+
+struct new_conn_state {
+	struct event_context *ev;
+	struct socket_context *sock;
+	void (*new_conn)(struct event_context *, struct socket_context *, uint32_t , void *);
+	void *private;
+};
 
 static void *thread_connection_fn(void *thread_parm)
 {
-	struct server_connection *conn = thread_parm;
+	struct new_conn_state *new_conn = talloc_get_type(thread_parm, struct new_conn_state);
 
-	conn->connection.id = pthread_self();
+	new_conn->new_conn(new_conn->ev, new_conn->sock, pthread_self(), new_conn->private);
 
-	/* wait for action */
-	event_loop_wait(conn->event.ctx);
+	/* run this connection from here */
+	event_loop_wait(new_conn->ev);
 
-#if 0
-	pthread_cleanup_pop(1);  /* will invoke terminate_mt_connection() */
-#endif
+	talloc_free(new_conn);
+
 	return NULL;
 }
 
 /*
   called when a listening socket becomes readable
 */
-static void thread_accept_connection(struct event_context *ev, struct fd_event *srv_fde, 
-			      struct timeval t, uint16_t flags)
+static void thread_accept_connection(struct event_context *ev, 
+				     struct socket_context *sock,
+				     void (*new_conn)(struct event_context *, struct socket_context *, 
+						      uint32_t , void *), 
+				     void *private)
 {		
 	NTSTATUS status;
-	struct socket_context *sock;
 	int rc;
 	pthread_t thread_id;
 	pthread_attr_t thread_attr;
-	struct server_stream_socket *stream_socket = srv_fde->private;
-	struct server_connection *conn;
+	struct new_conn_state *state;
+	struct event_context *ev2;
+
+	ev2 = event_context_init(ev);
+	if (ev2 == NULL) return;
+
+	state = talloc(ev2, struct new_conn_state);
+	if (state == NULL) {
+		talloc_free(ev2);
+		return;
+	}
+
+	state->new_conn = new_conn;
+	state->private  = private;
+	state->ev       = ev2;
 
 	/* accept an incoming connection. */
-	status = socket_accept(stream_socket->socket, &sock);
+	status = socket_accept(sock, &state->sock);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(ev2);
 		return;
 	}
 
-	/* create new detached thread for this connection.  The new
-	   thread gets a new event_context with a single fd_event for
-	   receiving from the new socket. We set that thread running
-	   with the main event loop, then return. When we return the
-	   main event_context is continued.
-	*/
-
-	ev = event_context_init(stream_socket);
-	if (!ev) {
-		socket_destroy(sock);
-		return;
-	}
-
-	conn = server_setup_connection(ev, stream_socket, sock, t, -1);
-	if (!conn) {
-		event_context_destroy(ev);
-		socket_destroy(sock);
-		return;
-	}
-
-	talloc_steal(conn, ev);
-	talloc_steal(conn, sock);
+	talloc_steal(state, state->sock);
 
 	pthread_attr_init(&thread_attr);
 	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
-	rc = pthread_create(&thread_id, &thread_attr, thread_connection_fn, conn);
+	rc = pthread_create(&thread_id, &thread_attr, thread_connection_fn, state);
 	pthread_attr_destroy(&thread_attr);
 	if (rc == 0) {
 		DEBUG(4,("accept_connection_thread: created thread_id=%lu for fd=%d\n", 
 			(unsigned long int)thread_id, socket_get_fd(sock)));
 	} else {
 		DEBUG(0,("accept_connection_thread: thread create failed for fd=%d, rc=%d\n", socket_get_fd(sock), rc));
-		event_context_destroy(ev);
-		socket_destroy(sock);
-		return;
+		talloc_free(ev2);
 	}
 }
 
 /* called when a SMB connection goes down */
-static void thread_terminate_connection(struct server_connection *conn, const char *reason) 
+static void thread_terminate_connection(struct event_context *event_ctx, const char *reason) 
 {
 	DEBUG(10,("thread_terminate_connection: reason[%s]\n",reason));
 
-	if (conn) {
-		talloc_free(conn);
-	}
+	talloc_free(event_ctx);
 
 	/* terminate this thread */
 	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
@@ -342,6 +340,7 @@ static void thread_log_task_id(int fd)
 	write(fd, s, strlen(s));
 	free(s);
 }
+
 /****************************************************************************
 catch serious errors
 ****************************************************************************/
@@ -406,7 +405,7 @@ static void thread_fault_handler(int sig)
 /*
   called when the process model is selected
 */
-static void thread_model_init(struct server_context *server)
+static void thread_model_init(struct event_context *event_context)
 {
 	struct mutex_ops m_ops;
 	struct debug_ops d_ops;
@@ -438,89 +437,12 @@ static void thread_model_init(struct server_context *server)
 	register_debug_handlers("thread", &d_ops);	
 }
 
-static void thread_model_exit(struct server_context *server, const char *reason)
-{
-	DEBUG(1,("thread_model_exit: reason[%s]\n",reason));
-	talloc_free(server);
-	exit(0);
-}
-
-static void *thread_task_fn(void *thread_parm)
-{
-	struct server_task *task = thread_parm;
-
-	task->task.id = pthread_self();
-
-	task->event.ctx = event_context_init(task);
-	if (!task->event.ctx) {
-		server_terminate_task(task, "event_context_init() failed");
-		return NULL; 
-	}
-
-	task->messaging.ctx = messaging_init(task, task->task.id, task->event.ctx);
-	if (!task->messaging.ctx) {
-		server_terminate_task(task, "messaging_init() failed");
-		return NULL;
-	}
-
-	task->task.ops->task_init(task);
-
-	/* wait for action */
-	event_loop_wait(task->event.ctx);
-
-	server_terminate_task(task, "exit");
-#if 0
-	pthread_cleanup_pop(1);  /* will invoke terminate_mt_connection() */
-#endif
-	return NULL;
-}
-/*
-  called to create a new event context for a new task
-*/
-static void thread_create_task(struct server_task *task)
-{
-	int rc;
-	pthread_t thread_id;
-	pthread_attr_t thread_attr;
-
-	pthread_attr_init(&thread_attr);
-	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
-	rc = pthread_create(&thread_id, &thread_attr, thread_task_fn, task);
-	pthread_attr_destroy(&thread_attr);
-	if (rc == 0) {
-		DEBUG(4,("thread_create_task: created thread_id=%lu for task='%s'\n", 
-			(unsigned long int)thread_id, task->task.ops->name));
-	} else {
-		DEBUG(0,("thread_create_task: thread create failed for task='%s', rc=%d\n", task->task.ops->name, rc));
-		return;
-	}
-	return;
-}
-
-/*
-  called to destroy a new event context for a new task
-*/
-static void thread_terminate_task(struct server_task *task, const char *reason)
-{
-	DEBUG(2,("thread_terminate_task: reason[%s]\n",reason));
-
-	talloc_free(task);
-
-	/* terminate this thread */
-	pthread_exit(NULL);  /* thread cleanup routine will do actual cleanup */
-}
 
 static const struct model_ops thread_ops = {
 	.name			= "thread",
-
 	.model_init		= thread_model_init,
-	.model_exit		= thread_model_exit,
-
 	.accept_connection	= thread_accept_connection,
 	.terminate_connection	= thread_terminate_connection,
-
-	.create_task		= thread_create_task,
-	.terminate_task		= thread_terminate_task
 };
 
 /*

@@ -22,12 +22,11 @@
 #include "includes.h"
 #include "events.h"
 #include "smb_server/smb_server.h"
-#include "smbd/process_model.h"
 
 /*
   setup the events for the chosen process model
 */
-const struct model_ops *process_model_startup(struct server_context *srv_ctx, const char *model)
+const struct model_ops *process_model_startup(struct event_context *ev, const char *model)
 {
 	const struct model_ops *ops;
 
@@ -37,7 +36,7 @@ const struct model_ops *process_model_startup(struct server_context *srv_ctx, co
 		exit(-1);
 	}
 
-	ops->model_init(srv_ctx);
+	ops->model_init(ev);
 
 	return ops;
 }
@@ -107,7 +106,6 @@ const struct process_model_critical_sizes *process_model_version(void)
 	static const struct process_model_critical_sizes critical_sizes = {
 		PROCESS_MODEL_VERSION,
 		sizeof(struct model_ops),
-		sizeof(struct smbsrv_connection),
 		sizeof(struct event_context),
 		sizeof(struct fd_event)
 	};

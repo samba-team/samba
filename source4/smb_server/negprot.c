@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "smb_server/smb_server.h"
+#include "smbd/service_stream.h"
 
 
 /* initialise the auth_context for this server and return the cryptkey */
@@ -144,7 +145,7 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 	SSVAL(req->out.vwv, VWV(3), lp_maxmux());
 	SSVAL(req->out.vwv, VWV(4), 1);
 	SSVAL(req->out.vwv, VWV(5), raw); 
-	SIVAL(req->out.vwv, VWV(6), req->smb_conn->connection->connection.id);
+	SIVAL(req->out.vwv, VWV(6), req->smb_conn->connection->server_id);
 	srv_push_dos_date(req->smb_conn, req->out.vwv, VWV(8), t);
 	SSVAL(req->out.vwv, VWV(10), req->smb_conn->negotiate.zone_offset/60);
 	SIVAL(req->out.vwv, VWV(11), 0); /* reserved */
@@ -198,7 +199,7 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 	SSVAL(req->out.vwv, VWV(3), lp_maxmux());
 	SSVAL(req->out.vwv, VWV(4), 1);
 	SSVAL(req->out.vwv, VWV(5), raw); 
-	SIVAL(req->out.vwv, VWV(6), req->smb_conn->connection->connection.id);
+	SIVAL(req->out.vwv, VWV(6), req->smb_conn->connection->server_id);
 	srv_push_dos_date(req->smb_conn, req->out.vwv, VWV(8), t);
 	SSVAL(req->out.vwv, VWV(10), req->smb_conn->negotiate.zone_offset/60);
 	SIVAL(req->out.vwv, VWV(11), 0);
@@ -310,7 +311,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	SSVAL(req->out.vwv+1, VWV(2), 1); /* num vcs */
 	SIVAL(req->out.vwv+1, VWV(3), req->smb_conn->negotiate.max_recv);
 	SIVAL(req->out.vwv+1, VWV(5), 0x10000); /* raw size. full 64k */
-	SIVAL(req->out.vwv+1, VWV(7), req->smb_conn->connection->connection.id); /* session key */
+	SIVAL(req->out.vwv+1, VWV(7), req->smb_conn->connection->server_id); /* session key */
 	SIVAL(req->out.vwv+1, VWV(9), capabilities);
 	push_nttime(req->out.vwv+1, VWV(11), nttime);
 	SSVALS(req->out.vwv+1,VWV(15), req->smb_conn->negotiate.zone_offset/60);
@@ -443,7 +444,6 @@ void reply_negprot(struct smbsrv_request *req)
   
 	if(choice != -1) {
 		sub_set_remote_proto(supported_protocols[protocol].short_name);
-		reload_services(req->smb_conn, True);
 		supported_protocols[protocol].proto_reply_fn(req, choice);
 		DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
 	} else {
