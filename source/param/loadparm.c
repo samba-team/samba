@@ -292,6 +292,7 @@ typedef struct
 	int restrict_anonymous;
 	int name_cache_timeout;
 	int client_signing;
+	int server_signing;
 	param_opt_struct *param_opt;
 }
 global;
@@ -693,15 +694,17 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{False, "False"},
 	{False, "0"},
 	{False, "Off"},
+	{False, "disabled"},
 	{True, "Yes"},
 	{True, "True"},
 	{True, "1"},
 	{True, "On"},
-	{Required, "Required"},
-	{Required, "Mandatory"},
-	{Required, "Force"},
-	{Required, "Forced"},
-	{Required, "Enforced"},
+	{True, "enabled"},
+	{Required, "required"},
+	{Required, "mandatory"},
+	{Required, "force"},
+	{Required, "forced"},
+	{Required, "enforced"},
 	{-1, NULL}
 };
 
@@ -894,6 +897,7 @@ static struct parm_struct parm_table[] = {
 	{"unix extensions", P_BOOL, P_GLOBAL, &Globals.bUnixExtensions, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"use spnego", P_BOOL, P_GLOBAL, &Globals.bUseSpnego, NULL, NULL, FLAG_DEVELOPER},
 	{"client signing", P_ENUM, P_GLOBAL, &Globals.client_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"server signing", P_ENUM, P_GLOBAL, &Globals.server_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_DEVELOPER},
 
 	{"Tuning Options", P_SEP, P_SEPARATOR},
@@ -1885,7 +1889,8 @@ FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
 FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)
 FN_GLOBAL_INTEGER(lp_name_cache_timeout, &Globals.name_cache_timeout)
-FN_GLOBAL_BOOL(lp_client_signing, &Globals.client_signing)
+FN_GLOBAL_INTEGER(lp_client_signing, &Globals.client_signing)
+FN_GLOBAL_INTEGER(lp_server_signing, &Globals.server_signing)
 
 /* local prototypes */
 

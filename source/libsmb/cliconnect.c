@@ -989,6 +989,11 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;	
 
+	if ((cli->protocol < PROTOCOL_NT1) && (lp_client_signing() == Required)) {
+		DEBUG(1,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
+		return False;
+	}
+
 	if (cli->protocol >= PROTOCOL_NT1) {    
 		/* NT protocol */
 		cli->sec_mode = CVAL(cli->inbuf,smb_vwv1);
