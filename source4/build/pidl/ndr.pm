@@ -12,6 +12,7 @@ use needed;
 
 # list of known types
 our %typedefs;
+our %typefamily;
 
 sub RegisterPrimitives()
 {
@@ -315,7 +316,7 @@ sub end_flags($)
 
 #####################################################################
 # work out the correct alignment for a structure or union
-sub struct_alignment
+sub find_largest_alignment($)
 {
 	my $s = shift;
 
@@ -350,22 +351,7 @@ sub align_type
 	my $dt = $typedefs{$e}->{DATA};
 
 	return $dt->{ALIGN} if ($dt->{ALIGN});
-
-	if ($dt->{TYPE} eq "STRUCT") {
-		$dt->{ALIGN} = struct_alignment($dt);
-	} elsif($dt->{TYPE} eq "UNION") {
-		$dt->{ALIGN} = struct_alignment($dt);
-	} elsif ($dt->{TYPE} eq "ENUM") {
-	   	$dt->{ALIGN} = align_type(util::enum_type_fn($typedefs{$e}->{DATA}));
-	} elsif ($dt->{TYPE} eq "BITMAP") {
-		$dt->{ALIGN} = align_type(util::bitmap_type_fn($typedefs{$e}->{DATA}));
-	} 
-
-	if (not defined($dt->{ALIGN})) {
-		die("Internal pidl error. Unable to determine alignment for data type $dt->{TYPE}!");
-	}
-	
-	return $dt->{ALIGN};
+	return $typefamily{$dt->{TYPE}}->{ALIGN}($dt);
 }
 
 #####################################################################
@@ -877,7 +863,7 @@ sub ParseStructPush($)
 
 	pidl "\tNDR_CHECK(ndr_push_struct_start(ndr));\n";
 
-	my $align = struct_alignment($struct);
+	my $align = find_largest_alignment($struct);
 	pidl "\tNDR_CHECK(ndr_push_align(ndr, $align));\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
@@ -954,6 +940,12 @@ sub ParseEnumPrint($)
 	end_flags($enum);
 }
 
+$typefamily{ENUM} = {
+	PUSH_FN_BODY => \&ParseEnumPush,
+	PULL_FN_BODY => \&ParseEnumPull,
+	PRINT_FN_BODY => \&ParseEnumPrint,
+	ALIGN => sub { return align_type(util::enum_type_fn(shift)); }
+};
 
 #####################################################################
 # generate a push function for a bitmap
@@ -1026,6 +1018,13 @@ sub ParseBitmapPrint($)
 	end_flags($bitmap);
 }
 
+$typefamily{BITMAP} = {
+	PUSH_FN_BODY => \&ParseBitmapPush,
+	PULL_FN_BODY => \&ParseBitmapPull,
+	PRINT_FN_BODY => \&ParseBitmapPrint,
+	ALIGN => sub { return align_type(util::bitmap_type_fn(shift)); }
+};
+
 #####################################################################
 # generate a struct print function
 sub ParseStructPrint($)
@@ -1096,7 +1095,7 @@ sub ParseStructPull($)
 		pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &$conform_e->{CONFORMANT_SIZE}));\n";
 	}
 
-	my $align = struct_alignment($struct);
+	my $align = find_largest_alignment($struct);
 	pidl "\tNDR_CHECK(ndr_pull_align(ndr, $align));\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
@@ -1136,6 +1135,14 @@ sub ParseStructNdrSize($)
 	pidl "\treturn ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_$t->{NAME});\n";
 	pidl "}\n\n";
 }
+
+$typefamily{STRUCT} = {
+	PUSH_FN_BODY => \&ParseStructPush,
+	PULL_FN_BODY => \&ParseStructPull,
+	PRINT_FN_BODY => \&ParseStructPrint,
+	SIZE_FN => \&ParseStructNdrSize,
+	ALIGN => \&find_largest_alignment
+};
 
 #####################################################################
 # calculate size of ndr struct
@@ -1303,28 +1310,14 @@ sub ParseUnionPull($)
 	end_flags($e);
 }
 
-my %typefamily = (
-	STRUCT => {
-		PUSH_FN_BODY => \&ParseStructPush,
-		PULL_FN_BODY => \&ParseStructPull,
-		PRINT_FN_BODY => \&ParseStructPrint
-	},
-	UNION => {
-		PUSH_FN_BODY => \&ParseUnionPush,
-		PULL_FN_BODY => \&ParseUnionPull,
-		PRINT_FN_BODY => \&ParseUnionPrint
-	},
-	ENUM => {
-		PUSH_FN_BODY => \&ParseEnumPush,
-		PULL_FN_BODY => \&ParseEnumPull,
-		PRINT_FN_BODY => \&ParseEnumPrint
-	},
-	BITMAP => {
-		PUSH_FN_BODY => \&ParseBitmapPush,
-		PULL_FN_BODY => \&ParseBitmapPull,
-		PRINT_FN_BODY => \&ParseBitmapPrint
-	}
-);
+$typefamily{UNION} = {
+	PUSH_FN_BODY => \&ParseUnionPush,
+	PULL_FN_BODY => \&ParseUnionPull,
+	PRINT_FN_BODY => \&ParseUnionPrint,
+	SIZE_FN => \&ParseUnionNdrSize,
+	ALIGN => \&find_largest_alignment
+};
+
 	
 #####################################################################
 # parse a typedef - push side
@@ -1338,25 +1331,23 @@ sub ParseTypedefPush($)
 		return;
 	}
 
-	if (defined($e->{PROPERTIES}) && !defined($e->{DATA}->{PROPERTIES})) {
-		$e->{DATA}->{PROPERTIES} = $e->{PROPERTIES};
-	}
+	pidl $static . "NTSTATUS ndr_push_$e->{NAME}";
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r)";
+		pidl "(struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r)";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $e->{NAME} *r)";
+		pidl "(struct ndr_push *ndr, int ndr_flags, int level, union $e->{NAME} *r)";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, enum $e->{NAME} r)";
+		pidl "(struct ndr_push *ndr, int ndr_flags, enum $e->{NAME} r)";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
 		my $type_decl = util::bitmap_type_decl($e->{DATA});
-		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, $type_decl r)";
+		pidl "(struct ndr_push *ndr, int ndr_flags, $type_decl r)";
 	}
 
 	pidl "\n{\n";
@@ -1372,30 +1363,28 @@ sub ParseTypedefPull($)
 	my($e) = shift;
 	my $static = fn_prefix($e);
 
-	if (defined($e->{PROPERTIES}) && !defined($e->{DATA}->{PROPERTIES})) {
-		$e->{DATA}->{PROPERTIES} = $e->{PROPERTIES};
-	}
-
 	if (! needed::is_needed("pull_$e->{NAME}")) {
 #		print "pull_$e->{NAME} not needed\n";
 		return;
 	}
 
+	pidl $static . "NTSTATUS ndr_pull_$e->{NAME}";
+
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r)";
+		pidl "(struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r)";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, int level, union $e->{NAME} *r)";
+		pidl "(struct ndr_pull *ndr, int ndr_flags, int level, union $e->{NAME} *r)";
 		}
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
-		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, enum $e->{NAME} *r)";
+		pidl "(struct ndr_pull *ndr, int ndr_flags, enum $e->{NAME} *r)";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
 		my $type_decl = util::bitmap_type_decl($e->{DATA});
-		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, $type_decl *r)";
+		pidl "(struct ndr_pull *ndr, int ndr_flags, $type_decl *r)";
 	}
 
 	pidl "\n{\n";
@@ -1410,30 +1399,28 @@ sub ParseTypedefPrint($)
 {
 	my($e) = shift;
 
-	if (defined($e->{PROPERTIES}) && !defined($e->{DATA}->{PROPERTIES})) {
-		$e->{DATA}->{PROPERTIES} = $e->{PROPERTIES};
-	}
+	pidl "void ndr_print_$e->{NAME}";
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, struct $e->{NAME} *r)";
+		pidl "(struct ndr_print *ndr, const char *name, struct $e->{NAME} *r)";
 		pidl "\n{\n";
 		pidl "\tndr_print_struct(ndr, name, \"$e->{NAME}\");\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, int level, union $e->{NAME} *r)";
+		pidl "(struct ndr_print *ndr, const char *name, int level, union $e->{NAME} *r)";
 		pidl "\n{\n";
 		pidl "\tndr_print_union(ndr, name, level, \"$e->{NAME}\");\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
-		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, enum $e->{NAME} r)";
+		pidl "(struct ndr_print *ndr, const char *name, enum $e->{NAME} r)";
 		pidl "\n{\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
 		my $type_decl = util::bitmap_type_decl($e->{DATA});
-		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $type_decl r)";
+		pidl "(struct ndr_print *ndr, const char *name, $type_decl r)";
 		pidl "\n{\n";
 	}
 
@@ -1449,12 +1436,8 @@ sub ParseTypedefNdrSize($)
 	if (! needed::is_needed("ndr_size_$t->{NAME}")) {
 		return;
 	}
-	
-	($t->{DATA}->{TYPE} eq "STRUCT") &&
-		ParseStructNdrSize($t);
 
-	($t->{DATA}->{TYPE} eq "UNION") &&
-		ParseUnionNdrSize($t);
+	$typefamily{$t->{DATA}->{TYPE}}->{SIZE_FN}($t);
 }
 
 #####################################################################
@@ -1872,6 +1855,10 @@ sub LoadInterface($)
 		    $typedefs{$d->{NAME}} = $d;
 			if ($d->{DATA}->{TYPE} eq "STRUCT" or $d->{DATA}->{TYPE} eq "UNION") {
 				CheckPointerTypes($d->{DATA}, $x->{PROPERTIES}->{pointer_default});
+			}
+
+			if (defined($d->{PROPERTIES}) && !defined($d->{DATA}->{PROPERTIES})) {
+				$d->{DATA}->{PROPERTIES} = $d->{PROPERTIES};
 			}
 		}
 		if ($d->{TYPE} eq "FUNCTION") {
