@@ -230,7 +230,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
       pw_buf.smb_passwd = NULL;
       pw_buf.acct_ctrl |= ACB_PWNOTREQ;
     } else {
-      if (!pdb_gethexpwd((char *)p, (char *)smbpwd)) {
+      if (!pdb_gethexpwd((char *)p, smbpwd)) {
         DEBUG(0, ("getsmbfilepwent: Malformed Lanman password entry (non hex chars)\n"));
         continue;
       }
@@ -247,7 +247,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
                 the lanman password. */
     if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':')) {
       if (*p != '*' && *p != 'X') {
-        if(pdb_gethexpwd((char *)p,(char *)smbntpwd))
+        if(pdb_gethexpwd((char *)p,smbntpwd))
           pw_buf.smb_nt_passwd = smbntpwd;
       }
       p += 33; /* Move to the first character of the line after

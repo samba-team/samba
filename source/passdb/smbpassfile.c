@@ -210,7 +210,7 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
    * Get the hex password.
    */
 
-  if (!pdb_gethexpwd((char *)linebuf, (char *)ret_pwd) || linebuf[32] != ':' || 
+  if (!pdb_gethexpwd((char *)linebuf, ret_pwd) || linebuf[32] != ':' || 
          strncmp(&linebuf[33], "TLC-", 4)) {
     DEBUG(0,("get_trust_account_password: Malformed trust password file (incorrect format).\n"));
 #ifdef DEBUG_PASSWORD
