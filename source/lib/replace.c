@@ -41,7 +41,7 @@ ftruncate for operating systems that don't have it
       fl.l_type = F_WRLCK;
       return fcntl(f, F_FREESP, &fl);
 }
-#endif
+#endif /* HAVE_FTRUNCATE */
 
 
 #ifndef HAVE_MKTIME
@@ -119,10 +119,11 @@ Corrections by richard.kettlewell@kewill.com
     }
   return unlink (zfrom);
 }
-#endif
+#endif /* HAVE_RENAME */
 
 
 #ifndef HAVE_INNETGR
+#if defined(HAVE_SETNETGRENT) && defined(HAVE_GETNETGRENT) && defined(HAVE_ENDNETGRENT)
 /*
  * Search for a match in a netgroup. This replaces it on broken systems.
  */
@@ -142,7 +143,8 @@ Corrections by richard.kettlewell@kewill.com
 	endnetgrent();
 	return (0);
 }
-#endif
+#endif /* HAVE_SETNETGRENT HAVE_GETNETGRENT HAVE_ENDNETGRENT */
+#endif /* HAVE_INNETGR */
 
 
 
@@ -160,7 +162,7 @@ Corrections by richard.kettlewell@kewill.com
 	}
 	/* yikes! no SETGROUPS or INITGROUPS? how can this work? */
 	return(0);
-#else
+#else /* HAVE_SETGROUPS */
 	gid_t  grouplst[NGROUPS_MAX];
 	int    i,j;
 	struct group *g;
@@ -186,9 +188,9 @@ Corrections by richard.kettlewell@kewill.com
 	}
 	endgrent();
 	return(setgroups(i,grouplst));
-#endif
+#endif /* HAVE_SETGROUPS */
 }
-#endif
+#endif /* HAVE_INITGROUPS */
 
 
 #if (defined(SecureWare) && defined(SCO))
@@ -260,7 +262,7 @@ needs.
 	}
 	return(dest);
 }
-#endif
+#endif /* HAVE_MEMMOVE */
 
 #ifndef HAVE_STRDUP
 /****************************************************************************
@@ -268,7 +270,7 @@ duplicate a string
 ****************************************************************************/
  char *strdup(const char *s)
 {
-	int len;
+	size_t len;
 	char *ret;
 
 	if (!s) return(NULL);
@@ -279,7 +281,7 @@ duplicate a string
 	memcpy(ret,s,len);
 	return(ret);
 }
-#endif
+#endif /* HAVE_STRDUP */
 
 #ifdef REPLACE_INET_NTOA
 char *rep_inet_ntoa(struct in_addr ip)
@@ -289,11 +291,11 @@ char *rep_inet_ntoa(struct in_addr ip)
 #if WORDS_BIGENDIAN
 	slprintf(buf, 17, "%d.%d.%d.%d", 
 		 (int)p[0], (int)p[1], (int)p[2], (int)p[3]);
-#else
+#else /* WORDS_BIGENDIAN */
 	slprintf(buf, 17, "%d.%d.%d.%d", 
 		 (int)p[3], (int)p[2], (int)p[1], (int)p[0]);
-#endif
+#endif /* WORDS_BIGENDIAN */
 	return buf;
 }
-#endif
+#endif /* REPLACE_INET_NTOA */
 
