@@ -313,7 +313,9 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 	/* Register a home dir service for this user */
 	if ((!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir)
 		&& (lp_servicenumber(vuser->user.unix_name) < 0)) {
-		add_home_service(vuser->user.unix_name, vuser->unix_homedir);	  
+		vuser->homes_snum = add_home_service(vuser->user.unix_name, vuser->user.unix_name, vuser->unix_homedir);	  
+	} else {
+		vuser->homes_snum = -1;
 	}
 	
 	return vuser->vuid;
@@ -472,42 +474,19 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
 ****************************************************************************/
 
 BOOL authorise_login(int snum,char *user, DATA_BLOB password, 
-		     BOOL *guest,BOOL *force,uint16 vuid)
+		     BOOL *guest, BOOL *force)
 {
 	BOOL ok = False;
-	user_struct *vuser = get_valid_user_struct(vuid);
-
+	
 #if DEBUG_PASSWORD
-	DEBUG(100,("authorise_login: checking authorisation on user=%s pass=%s vuid=%d\n",
-			user,password.data, vuid));
+	DEBUG(100,("authorise_login: checking authorisation on user=%s pass=%s\n",
+		   user,password.data));
 #endif
 
 	*guest = False;
   
 	if (GUEST_ONLY(snum))
 		*force = True;
-
-	if (!GUEST_ONLY(snum) && (lp_security() > SEC_SHARE)) {
-
-		/*
-		 * We should just use the given vuid from a sessionsetup_and_X.
-		 */
-
-		if (!vuser) {
-			DEBUG(1,("authorise_login: refusing user '%s' with no session setup\n", user));
-			return False;
-		}
-
-		if ((!vuser->guest && user_ok(vuser->user.unix_name,snum)) || 
-		    (vuser->guest && GUEST_OK(snum))) {
-			fstrcpy(user,vuser->user.unix_name);
-			*guest = vuser->guest;
-			DEBUG(3,("authorise_login: ACCEPTED: validated based on vuid as %sguest \
-(user=%s)\n", vuser->guest ? "" : "non-", user));
-			return True;
-		}
-	}
- 
 	/* there are several possibilities:
 		1) login as the given user with given password
 		2) login as a previously registered username with the given password
@@ -520,84 +499,61 @@ BOOL authorise_login(int snum,char *user, DATA_BLOB password,
 		if the service is guest_only then steps 1 to 5 are skipped
 	*/
 
-	if (!(GUEST_ONLY(snum) && GUEST_OK(snum))) {
-		/* check for a previously registered guest username */
-		if (!ok && (vuser != 0) && vuser->guest) {	  
-			if (user_ok(vuser->user.unix_name,snum) &&
-					password_ok(vuser->user.unix_name, password)) {
-				fstrcpy(user, vuser->user.unix_name);
-				*guest = False;
-				DEBUG(3,("authorise_login: ACCEPTED: given password with registered user %s\n", user));
+	/* now check the list of session users */
+	if (!ok) {
+		char *auser;
+		char *user_list = strdup(session_users);
+		if (!user_list)
+			return(False);
+		
+		for (auser=strtok(user_list,LIST_SEP); !ok && auser;
+		     auser = strtok(NULL,LIST_SEP)) {
+			fstring user2;
+			fstrcpy(user2,auser);
+			if (!user_ok(user2,snum))
+				continue;
+			
+			if (password_ok(user2,password)) {
 				ok = True;
+				fstrcpy(user,user2);
+				DEBUG(3,("authorise_login: ACCEPTED: session list username (%s) \
+and given password ok\n", user));
 			}
 		}
-
-		/* now check the list of session users */
-		if (!ok) {
-			char *auser;
-			char *user_list = strdup(session_users);
-			if (!user_list)
-				return(False);
-
-			for (auser=strtok(user_list,LIST_SEP); !ok && auser;
-									auser = strtok(NULL,LIST_SEP)) {
+		
+		SAFE_FREE(user_list);
+	}
+	
+	/* check the user= fields and the given password */
+	if (!ok && lp_username(snum)) {
+		char *auser;
+		pstring user_list;
+		StrnCpy(user_list,lp_username(snum),sizeof(pstring));
+		
+		pstring_sub(user_list,"%S",lp_servicename(snum));
+		
+		for (auser=strtok(user_list,LIST_SEP); auser && !ok;
+		     auser = strtok(NULL,LIST_SEP)) {
+			if (*auser == '@') {
+				auser = validate_group(auser+1,password,snum);
+				if (auser) {
+					ok = True;
+					fstrcpy(user,auser);
+					DEBUG(3,("authorise_login: ACCEPTED: group username \
+and given password ok (%s)\n", user));
+				}
+			} else {
 				fstring user2;
 				fstrcpy(user2,auser);
-				if (!user_ok(user2,snum))
-					continue;
-		  
-				if (password_ok(user2,password)) {
+				if (user_ok(user2,snum) && password_ok(user2,password)) {
 					ok = True;
 					fstrcpy(user,user2);
-					DEBUG(3,("authorise_login: ACCEPTED: session list username (%s) \
-and given password ok\n", user));
-				}
-			}
-
-			SAFE_FREE(user_list);
-		}
-
-		/* check for a previously validated username/password pair */
-		if (!ok && (lp_security() > SEC_SHARE) && (vuser != 0) && !vuser->guest &&
-							user_ok(vuser->user.unix_name,snum)) {
-			fstrcpy(user,vuser->user.unix_name);
-			*guest = False;
-			DEBUG(3,("authorise_login: ACCEPTED: validated uid (%s) as non-guest\n",
-				user));
-			ok = True;
-		}
-
-		/* check the user= fields and the given password */
-		if (!ok && lp_username(snum)) {
-			char *auser;
-			pstring user_list;
-			StrnCpy(user_list,lp_username(snum),sizeof(pstring));
-
-			pstring_sub(user_list,"%S",lp_servicename(snum));
-	  
-			for (auser=strtok(user_list,LIST_SEP); auser && !ok;
-											auser = strtok(NULL,LIST_SEP)) {
-				if (*auser == '@') {
-					auser = validate_group(auser+1,password,snum);
-					if (auser) {
-						ok = True;
-						fstrcpy(user,auser);
-						DEBUG(3,("authorise_login: ACCEPTED: group username \
+					DEBUG(3,("authorise_login: ACCEPTED: user list username \
 and given password ok (%s)\n", user));
-					}
-				} else {
-					fstring user2;
-					fstrcpy(user2,auser);
-					if (user_ok(user2,snum) && password_ok(user2,password)) {
-						ok = True;
-						fstrcpy(user,user2);
-						DEBUG(3,("authorise_login: ACCEPTED: user list username \
-and given password ok (%s)\n", user));
-					}
 				}
 			}
 		}
-	} /* not guest only */
+	}
 
 	/* check for a normal guest connection */
 	if (!ok && GUEST_OK(snum)) {

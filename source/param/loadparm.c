@@ -1879,9 +1879,12 @@ static int add_a_service(const service * pservice, const char *name)
 add a new home service, with the specified home directory, defaults coming 
 from service ifrom.
 ***************************************************************************/
-BOOL lp_add_home(const char *pszHomename, int iDefaultService, const char *pszHomedir)
+BOOL lp_add_home(const char *pszHomename, int iDefaultService, 
+		 const char *user, const char *pszHomedir)
 {
 	int i;
+	pstring newHomedir;
+
 	SMB_STRUCT_STAT buf;
 
 	/* if the user's home directory doesn't exist, then don't
@@ -1895,8 +1898,16 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService, const char *pszHo
 		return (False);
 
 	if (!(*(ServicePtrs[i]->szPath))
-	    || strequal(ServicePtrs[i]->szPath, lp_pathname(-1)))
-		string_set(&ServicePtrs[i]->szPath, pszHomedir);
+	    || strequal(ServicePtrs[i]->szPath, lp_pathname(-1))) {
+		pstrcpy(newHomedir, pszHomedir);
+	} else {
+		pstrcpy(newHomedir, lp_pathname(iDefaultService));
+		standard_sub_home(iDefaultService, pszHomename, user, 
+				  pszHomedir, newHomedir);
+	}
+
+	string_set(&ServicePtrs[i]->szPath, newHomedir);
+
 	if (!(*(ServicePtrs[i]->comment)))
 	{
 		pstring comment;
@@ -1908,7 +1919,8 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService, const char *pszHo
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
 
 	DEBUG(3,
-	      ("adding home directory %s at %s\n", pszHomename, pszHomedir));
+	      ("adding home's share [%s] for user %s at %s\n", pszHomename, 
+	       user, newHomedir));
 
 	return (True);
 }
@@ -3329,13 +3341,13 @@ static void lp_add_auto_services(char *str)
 	homes = lp_servicenumber(HOMES_NAME);
 
 	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
-		char *home = get_user_service_home_dir(p);
+		char *home = get_user_home_dir(p);
 
 		if (lp_servicenumber(p) >= 0)
 			continue;
 
 		if (home && homes >= 0)
-			lp_add_home(p, homes, home);
+			lp_add_home(p, homes, p, home);
 	}
 	SAFE_FREE(s);
 }

@@ -1605,6 +1605,9 @@ typedef struct user_struct
 	uint8 session_key[16];
 
 	int session_id; /* used by utmp and pam session code */
+	
+	int homes_snum;
+
 } user_struct;
 
 
