@@ -254,10 +254,8 @@ void add_workgroup_to_subnet( struct subnet_record *d, char *group)
 
     add_my_name_entry(d,group,0x0 ,nb_type|NB_ACTIVE|NB_GROUP);
 
-    /* Only register the WORKGROUP<0x1e> name if we could be a local master
-       browser. */
-    if(lp_local_master())
-      add_my_name_entry(d,group,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
+    /* Register the WORKGROUP<0x1e> name. */
+    add_my_name_entry(d,group,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
 
     /* Add all our server names to the workgroup list. We remove any
        browser or logon server flags from all but the primary name.
