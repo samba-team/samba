@@ -22,12 +22,13 @@
 """These tests are run by Samba's "make check"."""
 
 import strings, comfychair
+import smbcontrol
 
 # There should not be any actual tests in here: this file just serves
 # to define the ones run by default.  They're imported from other
 # modules.
 
-tests = strings.tests
+tests = strings.tests + smbcontrol.tests
 
 if __name__ == '__main__':
     comfychair.main(tests)
