@@ -164,4 +164,7 @@ handle_v4(krb5_context context, int len, int fd);
 void
 random_password(char *pw, size_t len);
 
+void parse_ports(krb5_context, const char*);
+int start_server(krb5_context);
+
 #endif /* __ADMIN_LOCL_H__ */
