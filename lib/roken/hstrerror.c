@@ -29,7 +29,7 @@ char *
 hstrerror(int herr)
 {
   if (0 <= herr && herr < h_nerr)
-    return h_errlist[herr];
+    return (char *) h_errlist[herr];
   else
     return "Error number out of range (hstrerror)";
 }
