@@ -358,6 +358,12 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_sta
 	}
 
  done:
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Failed to add user %s - %s\n", acct_name, 
+			 get_nt_error_msg(result));
+	} else {
+		d_printf("Added user %s\n", acct_name);
+	}
 	return result;
 }
 
