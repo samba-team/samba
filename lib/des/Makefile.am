@@ -5,13 +5,13 @@ include $(top_srcdir)/Makefile.am.common
 lib_LTLIBRARIES = libdes.la
 libdes_la_LDFLAGS = -version-info 3:1:0
 
-include_HEADERS = des.h md4.h md5.h sha.h rc4.h aes.h
+include_HEADERS = des.h md4.h md5.h sha.h rc2.h rc4.h aes.h
 
 build_HEADERZ = $(include_HEADERS)
 
-check_PROGRAMS = destest mdtest md5crypt_test rctest
+check_PROGRAMS = destest mdtest md5crypt_test rctest rc2test
 
-TESTS = destest mdtest md5crypt_test rctest
+TESTS = destest mdtest md5crypt_test rctest rc2test
 CHECK_LOCAL = no-check-local
 bin_PROGRAMS = des #rpw speed
 
@@ -46,6 +46,7 @@ libdes_la_SOURCES =	\
 	pcbc_enc.c	\
 	podd.h		\
 	qud_cksm.c	\
+	rc2.c		\
 	rc4.c		\
 	read_pwd.c	\
 	rijndael-alg-fst.c \
