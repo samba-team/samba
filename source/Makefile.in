@@ -811,10 +811,10 @@ Makefile: $(srcdir)/Makefile.in config.status
 test_prefix=/tmp/test-samba
 # Run regression suite using the external "satyr" framework
 check:
-	@echo "sorry, samba self-test without installation does not work yet"
-	@echo "Please try specifying a scratch directory to"
-	@echo "      ./configure --prefix DIR"
-	@echo "then run \"make install installcheck\""
+	@echo "** Sorry, samba self-test without installation does not work "
+	@echo "** yet.  Please try specifying a scratch directory to"
+	@echo "**       ./configure --prefix DIR"
+	@echo "** then run \"make install installcheck\""
 	exit 1
 
 # 	-rm -rf $(test_prefix)/lib
