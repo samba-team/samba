@@ -8363,5 +8363,3 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 
 	return result;
 }
-
-
