@@ -247,11 +247,19 @@ void req_grow_data(struct smbsrv_request *req, uint_t new_size)
 */
 void req_send_reply_nosign(struct smbsrv_request *req)
 {
+	NTSTATUS status;
+	DATA_BLOB tmp_blob;
+	size_t sendlen;
+
 	if (req->out.size > NBT_HDR_SIZE) {
 		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
-	if (write_data(req->smb_conn->connection->event.fde->fd, req->out.buffer, req->out.size) != req->out.size) {
+	tmp_blob.data = req->out.buffer;
+	tmp_blob.length = req->out.size;
+
+	status = socket_send(req->smb_conn->connection->socket, req, &tmp_blob, &sendlen, SOCKET_FLAG_BLOCK);
+	if (!NT_STATUS_IS_OK(status) || (req->out.size != sendlen)) {
 		smbsrv_terminate_connection(req->smb_conn, "failed to send reply\n");
 	}
 

@@ -51,7 +51,9 @@ struct async_info {
 static void idle_func(struct smbcli_transport *transport, void *p_private)
 {
 	struct cvfs_private *private = p_private;
-	if (socket_pending(private->tcon->smb_conn->connection->event.fde->fd)) {
+	int fd = socket_get_fd(private->tcon->smb_conn->connection->socket);
+
+	if (socket_pending(fd)) {
 		smbd_process_async(private->tcon->smb_conn);
 	}
 }

@@ -31,15 +31,18 @@ struct dcesrv_socket_context {
 /*
   write_fn callback for dcesrv_output()
 */
-static ssize_t dcerpc_write_fn(void *private, const void *buf, size_t count)
+static ssize_t dcerpc_write_fn(void *private, DATA_BLOB *out)
 {
-	struct fd_event *fde = private;
-	ssize_t ret;
-	ret = write(fde->fd, buf, count);
-	if (ret == -1 && errno == EINTR) {
-		return 0;
+	NTSTATUS status;
+	struct socket_context *sock = private;
+	size_t sendlen;
+
+	status = socket_send(sock, sock, out, &sendlen, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
 	}
-	return ret;
+
+	return sendlen;
 }
 
 void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
@@ -52,24 +55,24 @@ void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char 
 */
 static void add_socket_rpc(struct server_service *service, 
 		       const struct model_ops *model_ops,
-		       struct socket_context *socket_ctx,
 		       struct dcesrv_context *dce_ctx, 
 		       struct in_addr *ifip)
 {
 	struct dcesrv_endpoint *e;
+	char *ip_str = talloc_strdup(service->mem_ctx, inet_ntoa(*ifip));
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
 		if (e->ep_description.type == ENDPOINT_TCP) {
 			struct server_socket *sock;
 			struct dcesrv_socket_context *dcesrv_sock;
 
-			sock = service_setup_socket(service,model_ops,socket_ctx,ifip, &e->ep_description.info.tcp_port);
+			sock = service_setup_socket(service,model_ops, ip_str, &e->ep_description.info.tcp_port);
 			if (!sock) {
 				DEBUG(0,("service_setup_socket(port=%u) failed\n",e->ep_description.info.tcp_port));
 				continue;
 			}
 
-			dcesrv_sock = talloc_p(sock->mem_ctx, struct dcesrv_socket_context);
+			dcesrv_sock = talloc_p(sock, struct dcesrv_socket_context);
 			if (!dcesrv_sock) {
 				DEBUG(0,("talloc_p(sock->mem_ctx, struct dcesrv_socket_context) failed\n"));
 				continue;
@@ -78,10 +81,12 @@ static void add_socket_rpc(struct server_service *service,
 			/* remeber the enpoint of this socket */
 			dcesrv_sock->endpoint		= e;
 			dcesrv_sock->dcesrv_ctx		= dce_ctx;
-			
+
 			sock->private_data = dcesrv_sock;
 		}
 	}
+
+	talloc_free(ip_str);
 }
 
 /****************************************************************************
@@ -99,7 +104,7 @@ void dcesrv_tcp_init(struct server_service *service, const struct model_ops *mod
 			if (ifip == NULL) {
 				continue;
 			}
-			add_socket_rpc(service, model_ops, NULL, dce_ctx,  ifip);
+			add_socket_rpc(service, model_ops, dce_ctx,  ifip);
 		}
 	} else {
 		struct in_addr *ifip;
@@ -109,7 +114,7 @@ void dcesrv_tcp_init(struct server_service *service, const struct model_ops *mod
 		}
 
 		ifip = interpret_addr2(mem_ctx, lp_socket_address());
-		add_socket_rpc(service, model_ops, NULL, dce_ctx,  ifip);
+		add_socket_rpc(service, model_ops, dce_ctx,  ifip);
 		talloc_destroy(mem_ctx);
 	}
 
@@ -135,45 +140,32 @@ void dcesrv_tcp_accept(struct server_connection *conn)
 
 	conn->private_data = dcesrv_conn;
 
-	/* TODO: this should to the generic code
-	 *       but the smb server can't handle it yet
-	 *	 --metze
-	 */ 
-	set_blocking(conn->event.fde->fd, False);
-
 	return;	
 }
 
 void dcesrv_tcp_recv(struct server_connection *conn, time_t t, uint16_t flags)
 {
+	NTSTATUS status;
 	struct dcesrv_connection *dce_conn = conn->private_data;
-	DATA_BLOB blob;
-	ssize_t ret;
+	DATA_BLOB tmp_blob;
 
 	DEBUG(10,("dcesrv_tcp_recv\n"));
 
-	blob = data_blob(NULL, 0x4000);
-	if (!blob.data) {
+	status = socket_recv(conn->socket, conn->socket, &tmp_blob, 0x4000, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_IS_ERR(status)) {
+			dcesrv_terminate_connection(dce_conn, "eof on socket");
+			return;
+		}
+		return;
+	}
+
+	status = dcesrv_input(dce_conn, &tmp_blob);
+	talloc_free(tmp_blob.data);
+	if (!NT_STATUS_IS_OK(status)) {
 		dcesrv_terminate_connection(dce_conn, "eof on socket");
 		return;
 	}
-
-	ret = read(conn->event.fde->fd, blob.data, blob.length);
-	if (ret == 0 || (ret == -1 && errno != EINTR)) {
-		data_blob_free(&blob);
-		dcesrv_terminate_connection(dce_conn, "eof on socket");
-		return;
-	}
-	if (ret == -1) {
-		data_blob_free(&blob);
-		return;
-	}
-
-	blob.length = ret;
-
-	dcesrv_input(dce_conn, &blob);
-
-	data_blob_free(&blob);
 
 	if (dce_conn->call_list && dce_conn->call_list->replies) {
 		conn->event.fde->flags |= EVENT_FD_WRITE;
@@ -189,16 +181,17 @@ void dcesrv_tcp_send(struct server_connection *conn, time_t t, uint16_t flags)
 
 	DEBUG(10,("dcesrv_tcp_send\n"));
 
-	status = dcesrv_output(dce_conn, conn->event.fde, dcerpc_write_fn);
-	if (NT_STATUS_IS_ERR(status)) {
-		/* TODO: destroy fd_event? */
+	status = dcesrv_output(dce_conn, conn->socket, dcerpc_write_fn);
+	if (!NT_STATUS_IS_OK(status)) {
+		dcesrv_terminate_connection(dce_conn, "eof on socket");
+		return;
 	}
 
 	if (!dce_conn->call_list || !dce_conn->call_list->replies) {
 		conn->event.fde->flags &= ~EVENT_FD_WRITE;
 	}
 
-	return;	
+	return;
 }
 
 void dcesrv_tcp_idle(struct server_connection *conn, time_t t)
