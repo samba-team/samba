@@ -40,45 +40,21 @@ krb5_expand_hostname (krb5_context context,
 		      const char *orig_hostname,
 		      char **new_hostname)
 {
-    struct hostent *he = NULL;
+    struct addrinfo *ai, hints;
     int error;
-    char *tmp;
 
-#ifdef HAVE_IPV6
-    {
-	struct in6_addr sin6;
+    memset (&hints, 0, sizeof(hints));
+    hints.ai_flags = AI_CANONNAME;
 
-	if (he == NULL && inet_pton (AF_INET6, orig_hostname, &sin6) == 1)
-	    he = getipnodebyaddr (&sin6, sizeof(sin6), AF_INET6, &error);
-    }
-#endif
-    {
-	struct in_addr sin;
-
-	if (he == NULL && inet_pton (AF_INET, orig_hostname, &sin) == 1)
-	    he = getipnodebyaddr (&sin, sizeof(sin), AF_INET, &error);
-    }
-#ifdef HAVE_IPV6
-    if (he == NULL)
-	he = getipnodebyname (orig_hostname, AF_INET6, 0, &error);
-#endif
-    if (he == NULL)
-	he = getipnodebyname (orig_hostname, AF_INET, 0, &error);
-
-    if (he == NULL) {
+    error = getaddrinfo (orig_hostname, NULL, &hints, &ai);
+    if (error) {
 	*new_hostname = strdup (orig_hostname);
 	if (*new_hostname == NULL)
 	    return ENOMEM;
 	return 0;
     }
-    tmp = he->h_name;
-    if (strchr (tmp, '.') == NULL
-	&& he->h_aliases != NULL
-	&& he->h_aliases[0] != NULL
-	&& strchr (he->h_aliases[0], '.') != NULL)
-	tmp = he->h_aliases[0];
-    *new_hostname = strdup (tmp);
-    freehostent (he);
+    *new_hostname = strdup(ai->ai_canonname);
+    freeaddrinfo (ai);
     if (*new_hostname == NULL)
 	return ENOMEM;
     return 0;
