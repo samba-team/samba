@@ -1517,7 +1517,7 @@ FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
-FN_GLOBAL_INTEGER(lp_min_wins_ttl, &Globals.max_wins_ttl)
+FN_GLOBAL_INTEGER(lp_min_wins_ttl, &Globals.min_wins_ttl)
 FN_GLOBAL_INTEGER(lp_max_log_size, &Globals.max_log_size)
 FN_GLOBAL_INTEGER(lp_max_open_files, &Globals.max_open_files)
 FN_GLOBAL_INTEGER(lp_maxxmit, &Globals.max_xmit)
@@ -3043,7 +3043,7 @@ void lp_add_one_printer(char *name, char *comment)
 	int printers = lp_servicenumber(PRINTERS_NAME);
 	int i;
 
-    if (lp_servicenumber(name) < 0)
+	if (lp_servicenumber(name) < 0)
 	{
 		lp_add_printer(name, printers);
 		if ((i = lp_servicenumber(name)) >= 0)

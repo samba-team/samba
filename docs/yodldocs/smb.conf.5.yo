@@ -369,6 +369,9 @@ it() bf(%I) = The IP address of the client machine.
 label(percentT)
 it() bf(%T) = the current date and time.
 
+label(percentDollar)
+it() bf(%$(envvar)) = The value of the environment variable bf(envar).
+
 endit()
 
 There are some quite creative things that can be done with these
