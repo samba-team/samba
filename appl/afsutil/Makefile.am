@@ -7,7 +7,7 @@ AFSPROGS = afslog
 endif
 bin_PROGRAMS = $(AFSPROGS)
 
-EXTRA_bin_PROGRAMS = afslog
+afslog_SOURCES = afslog.c
 
 LDADD = $(LIB_kafs) \
 	$(LIB_krb4) \
