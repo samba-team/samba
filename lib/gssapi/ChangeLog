@@ -1,3 +1,7 @@
+2003-06-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: can't have sequence.c in two different places
+
 2003-06-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* wrap.c (sub_wrap_size): gss_wrap_size_limit() has
