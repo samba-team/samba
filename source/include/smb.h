@@ -482,7 +482,6 @@ typedef struct files_struct
 	SMB_OFF_T size;
 	mode_t mode;
 	uint16 vuid;
-	int smbpid;
 	write_bmpx_struct *wbmpx_ptr;
 	write_cache *wcp;
 	struct timeval open_time;
@@ -527,6 +526,7 @@ struct unlock_list {
 	struct unlock_list *prev;
 	SMB_BIG_UINT start;
 	SMB_BIG_UINT size;
+	uint16 smbpid;
 };
 
 typedef struct

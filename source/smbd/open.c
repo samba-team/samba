@@ -26,7 +26,6 @@ extern int DEBUGLEVEL;
 extern pstring sesssetup_user;
 extern uint16 global_oplock_port;
 extern BOOL global_client_failed_oplock_break;
-extern int global_smbpid;
 
 /****************************************************************************
  fd support routines - attempt to do a dos_open.
@@ -165,7 +164,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->dev = sbuf.st_dev;
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
-	fsp->smbpid = global_smbpid;
 	fsp->size = 0;
 	fsp->pos = -1;
 	fsp->can_lock = True;
@@ -799,7 +797,6 @@ files_struct *open_file_stat(connection_struct *conn,
 	fsp->mode = 0;
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
-	fsp->smbpid = global_smbpid;
 	fsp->size = 0;
 	fsp->pos = -1;
 	fsp->can_lock = False;
@@ -923,7 +920,6 @@ files_struct *open_directory(connection_struct *conn,
 	fsp->mode = 0;
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
-	fsp->smbpid = global_smbpid;
 	fsp->size = 0;
 	fsp->pos = -1;
 	fsp->can_lock = True;

@@ -28,7 +28,6 @@ struct timeval smb_last_time;
 static char *InBuffer = NULL;
 char *OutBuffer = NULL;
 char *last_inbuf = NULL;
-int global_smbpid;
 
 /* 
  * Size of data we can send to client. Set
@@ -419,6 +418,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   static int num_smb_messages = 
     sizeof(smb_messages) / sizeof(struct smb_message_struct);
   int match;
+  extern int global_smbpid;
 
   if (pid == (pid_t)-1)
     pid = getpid();
