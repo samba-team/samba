@@ -17,8 +17,8 @@
 		<command>wbinfo</command>
 		<arg choice="opt">-u</arg>
 		<arg choice="opt">-g</arg>
-		<arg choice="opt">-h name</arg>
 		<arg choice="opt">-i ip</arg>
+		<arg choice="opt">-N netbios-name</arg>
 		<arg choice="opt">-n name</arg>
 		<arg choice="opt">-s sid</arg>
 		<arg choice="opt">-U uid</arg>
@@ -30,6 +30,7 @@
 		<arg choice="opt">-r user</arg>
 		<arg choice="opt">-a user%password</arg>
 		<arg choice="opt">-A user%password</arg>
+		<arg choice="opt">-p</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -72,10 +73,9 @@
 		<command>winbindd(8)</command>. </para></listitem>
 		</varlistentry>
 		
-		
 		<varlistentry>
-		<term>-h name</term>
-		<listitem><para>The <parameter>-h</parameter> option 
+		<term>-N name</term>
+		<listitem><para>The <parameter>-N</parameter> option 
 		queries <command>winbindd(8)</command> to query the WINS
 		server for the IP address associated with the NetBIOS name
 		specified by the <parameter>name</parameter> parameter.
@@ -84,8 +84,8 @@
 
 
 		<varlistentry>
-		<term>-i ip</term>
-		<listitem><para>The <parameter>-i</parameter> option 
+		<term>-I ip</term>
+		<listitem><para>The <parameter>-I</parameter> option 
 		queries <command>winbindd(8)</command> to send a node status
 		request to get the NetBIOS name associated with the IP address
 		specified by the <parameter>ip</parameter> parameter.
@@ -210,7 +210,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
+	<para>This man page is correct for version 3.0 of 
 	the Samba suite.</para>
 </refsect1>
 

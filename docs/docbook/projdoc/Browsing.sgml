@@ -461,7 +461,7 @@ all smb.conf files :
 </para>
 
 <para>
-<command>		wins server = &gt;name or IP address&lt;</command>
+<command>wins server = &gt;name or IP address&lt;</command>
 </para>
 
 <para>
@@ -512,7 +512,7 @@ set the following option in the [global] section of the smb.conf file :
 </para>
 
 <para>
-<command>		domain master = yes</command>
+<command>domain master = yes</command>
 </para>
 
 <para>

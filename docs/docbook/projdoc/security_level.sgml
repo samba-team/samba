@@ -9,40 +9,7 @@
 	</author>
 </chapterinfo>
 
-<title>Security levels</title>
-
-<sect1>
-<title>Introduction</title>
-
-<para>
-Samba supports the following options to the global smb.conf parameter
-</para>
-
-<para><programlisting>
-[global]
-<ulink url="smb.conf.5.html#SECURITY"><parameter>security</parameter></ulink> = [share|user(default)|domain|ads]
-</programlisting></para>
-
-<para>
-Please refer to the smb.conf man page for usage information and to the document
-<ulink url="DOMAIN_MEMBER.html">DOMAIN_MEMBER.html</ulink> for further background details
-on domain mode security.  The Windows 2000 Kerberos domain security model
-(security = ads) is described in the <ulink url="ADS-HOWTO.html">ADS-HOWTO.html</ulink>.
-</para>
-
-<para>
-Of the above, "security = server" means that Samba reports to clients that
-it is running in "user mode" but actually passes off all authentication
-requests to another "user mode" server. This requires an additional
-parameter "password server =" that points to the real authentication server.
-That real authentication server can be another Samba server or can be a
-Windows NT server, the later natively capable of encrypted password support.
-</para>
-
-</sect1>
-
-<sect1>
-<title>More complete description of security levels</title>
+<title>User and Share security level (for servers not in a domain)</title>
 
 <para>
 A SMB server tells the client at startup what "security level" it is
@@ -136,5 +103,14 @@ cryptographically impossible to translate from unix style encryption
 to SMB style encryption, although there are some fairly simple management
 schemes by which the two could be kept in sync.
 </para>
-</sect1>
+
+<para>
+"security = server" means that Samba reports to clients that
+it is running in "user mode" but actually passes off all authentication
+requests to another "user mode" server. This requires an additional
+parameter "password server =" that points to the real authentication server.
+That real authentication server can be another Samba server or can be a
+Windows NT server, the later natively capable of encrypted password support.
+</para>
+
 </chapter>

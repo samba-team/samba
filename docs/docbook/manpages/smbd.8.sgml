@@ -16,13 +16,10 @@
 	<cmdsynopsis>
 		<command>smbd</command>
 		<arg choice="opt">-D</arg>
-		<arg choice="opt">-a</arg>
 		<arg choice="opt">-i</arg>
-		<arg choice="opt">-o</arg>
-		<arg choice="opt">-P</arg>
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-V</arg>
-                <arg choice="opt">-b</arg>
+		<arg choice="opt">-b</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-l &lt;log directory&gt;</arg>
 		<arg choice="opt">-p &lt;port number&gt;</arg>
@@ -90,13 +87,6 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-a</term>
-		<listitem><para>If this parameter is specified, each new 
-		connection will append log messages to the log file.  
-		This is the default.</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
 		<term>-i</term>
 		<listitem><para>If this parameter is specified it causes the
 		server to run "interactively", not as a daemon, even if the
@@ -107,28 +97,13 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-o</term>
-		<listitem><para>If this parameter is specified, the 
-		log files will be overwritten when opened.  By default, 
-		<command>smbd</command> will append entries to the log 
-		files.</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
-		<term>-P</term>
-		<listitem><para>Passive option. Causes <command>smbd</command> not to 
-		send any network traffic out. Used for debugging by 
-		the developers only.</para></listitem>
-		</varlistentry>
-		
-		<varlistentry>
 		<term>-h</term>
 		<listitem><para>Prints the help information (usage) 
 		for <command>smbd</command>.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-v</term>
+		<term>-V</term>
 		<listitem><para>Prints the version number for 
 		<command>smbd</command>.</para></listitem>
 		</varlistentry>
@@ -322,7 +297,7 @@
 	</para>
 
 	<itemizedlist>
-	<listitem><para><emphasis>Account Validation</emphasis>:  All acccesses to a 
+	<listitem><para><emphasis>Account Validation</emphasis>:  All accesses to a 
 	samba server are checked 
 	against PAM to see if the account is vaild, not disabled and is permitted to 
 	login at this time.  This also applies to encrypted logins.
@@ -340,7 +315,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
+	<para>This man page is correct for version 3.0 of 
 	the Samba suite.</para>
 </refsect1>
 

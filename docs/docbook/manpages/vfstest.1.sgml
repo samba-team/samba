@@ -1,4 +1,7 @@
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+]>
+
 <refentry id="vfstest">
 
 <refmeta>
@@ -43,25 +46,13 @@
 
 		<varlistentry>
 		<term>-c|--command=command</term>
-		<listitem><para>Execute the specified (colon-seperated) commands.
+		<listitem><para>Execute the specified (colon-separated) commands.
 		See below for the commands that are available.
 		</para> </listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>-d|--debug=debuglevel</term>
-		<listitem><para>set the debuglevel. Debug level 0 is the lowest
-		and 100 being the highest. This should be set to 100 if you are
-		planning on submitting a bug report to the Samba team (see
-		<filename>BUGS.txt</filename>).
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>-h|--help</term>
-		<listitem><para>Print a summary of command line options.
-		</para></listitem>
-		</varlistentry>
+		&stdarg.debuglevel;
+		&stdarg.help;
 
 		<varlistentry>
 		<term>-l|--logfile=logbasename</term>

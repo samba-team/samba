@@ -7,7 +7,14 @@
 			<address><email>tridge@samba.org</email></address>
 		</affiliation>
 	</author>
-	<pubdate> 1 November 1999</pubdate>
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address><email>jelmer@samba.org</email></address>
+		</affiliation>
+	</author>
+	<pubdate>$Id: Diagnosis.sgml,v 1.1.2.3 2002/11/22 00:32:23 tpot Exp $</pubdate>
 </chapterinfo>
 
 <title>Diagnosing your samba server</title>
@@ -23,15 +30,15 @@ then it is probably working fine.
 </para>
 
 <para>
-You should do ALL the tests, in the order shown. I have tried to
+You should do ALL the tests, in the order shown. We have tried to
 carefully choose them so later tests only use capabilities verified in
 the earlier tests.
 </para>
 
 <para>
-If you send me an email saying "it doesn't work" and you have not
-followed this test procedure then you should not be surprised if I
-ignore your email.
+If you send one of the samba mailing lists  an email saying "it doesn't work"
+and you have not followed this test procedure then you should not be surprised
+your email is ignored.
 </para>
 
 </sect1>
@@ -40,11 +47,8 @@ ignore your email.
 <title>Assumptions</title>
 
 <para>
-In all of the tests I assume you have a Samba server called BIGSERVER
-and a PC called ACLIENT both in workgroup TESTGROUP. I also assume the
-PC is running windows for workgroups with a recent copy of the
-microsoft tcp/ip stack. Alternatively, your PC may be running Windows
-95 or Windows NT (Workstation or Server).
+In all of the tests it is assumed you have a Samba server called 
+BIGSERVER and a PC called ACLIENT both in workgroup TESTGROUP.
 </para>
 
 <para>
@@ -52,7 +56,7 @@ The procedure is similar for other types of clients.
 </para>
 
 <para>
-I also assume you know the name of an available share in your
+It is also assumed you know the name of an available share in your
 smb.conf. I will assume this share is called "tmp". You can add a
 "tmp" share like by adding the following to smb.conf:
 </para>
@@ -68,7 +72,7 @@ smb.conf. I will assume this share is called "tmp". You can add a
 </para>
 
 <para>
-THESE TESTS ASSUME VERSION 2.0.6 OR LATER OF THE SAMBA SUITE. SOME
+THESE TESTS ASSUME VERSION 3.0.0 OR LATER OF THE SAMBA SUITE. SOME
 COMMANDS SHOWN DID NOT EXIST IN EARLIER VERSIONS
 </para>
 
@@ -99,7 +103,7 @@ configuration file is faulty.
 </para>
 
 <para>
-Note:	Your smb.conf file may be located in: <filename>/etc</filename>
+Note:	Your smb.conf file may be located in: <filename>/etc/samba</filename>
 	Or in:   <filename>/usr/local/samba/lib</filename>
 </para>
 </sect2>

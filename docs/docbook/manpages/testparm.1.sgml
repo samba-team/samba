@@ -20,8 +20,9 @@
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-v</arg>
 		<arg choice="opt">-L &lt;servername&gt;</arg>
+		<arg choice="opt">-t &lt;encoding&gt;</arg>
 		<arg choice="req">config filename</arg>
-		<arg choice="opt">hostname  hostIP</arg>
+		<arg choice="opt">hostname hostIP</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -87,6 +88,12 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>-t encoding</term>
+		<listitem><para>
+		Output data in specified encoding.
+		</para></listitem>
+
+		<varlistentry>
 		<term>configfilename</term>
 		<listitem><para>This is the name of the configuration file 
 		to check. If this parameter is not present then the 
@@ -144,7 +151,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
+	<para>This man page is correct for version 3.0 of 
 	the Samba suite.</para>
 </refsect1>
 
@@ -173,4 +180,3 @@
 </refsect1>
 
 </refentry>
-

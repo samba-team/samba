@@ -1269,10 +1269,10 @@
 		<term><anchor id="ANNOUNCEVERSION">announce version (G)</term>
 		<listitem><para>This specifies the major and minor version numbers 
 		that nmbd will use when announcing itself as a server. The default 
-		is 4.2.  Do not change this parameter unless you have a specific 
+		is 4.9.  Do not change this parameter unless you have a specific 
 		need to set a Samba server to be a downlevel server.</para>
 
-		<para>Default: <command>announce version = 4.5</command></para>
+		<para>Default: <command>announce version = 4.9</command></para>
 
 		<para>Example: <command>announce version = 2.0</command></para>
 		</listitem>
@@ -2300,7 +2300,7 @@
 		<term><anchor id="DOMAINLOGONS">domain logons (G)</term>
 		<listitem><para>If set to <constant>yes</constant>, the Samba server will serve 
 		Windows 95/98 Domain logons for the <link linkend="WORKGROUP">
-		<parameter>workgroup</parameter></link> it is in. Samba 2.2 also 
+		<parameter>workgroup</parameter></link> it is in. Samba 2.2
 		has limited capability to act as a domain controller for Windows 
 		NT 4 Domains.  For more details on setting up this feature see 
 		the Samba-PDC-HOWTO included in the <filename>htmldocs/</filename>
@@ -2862,7 +2862,7 @@
 		system print command such as <command>lpr(1)</command> or <command>
 		lp(1)</command>.</para>
 
-	        <para>This paramater does not accept % macros, because
+	        <para>This parameter does not accept % macros, because
 	        many parts of the system require this value to be
 	        constant for correct operation.</para>
 		
@@ -3475,7 +3475,7 @@
 			<parameter>ldap	server</parameter>.  Only
 			available when the backwards-compatiblity <command>
 			--with-ldapsam</command> option is specified
-			to configure.  See <link linkend="PASSDBBACKEND"><paramater>passdb backend</parameter></link></para></listitem>
+			to configure.  See <link linkend="PASSDBBACKEND"><parameter>passdb backend</parameter></link></para></listitem>
 		</itemizedlist>		
 		
 		<para>Default : <command>ldap ssl = start_tls</command></para>
@@ -3791,7 +3791,7 @@
 		<listitem><para>The value of the parameter (a astring) allows 
 		the debug level (logging level) to be specified in the 
 		<filename>smb.conf</filename> file. This parameter has been
-		extended since 2.2.x series, now it allow to specify the debug
+		extended since the 2.2.x series, now it allow to specify the debug
 		level for multiple debug classes. This is to give greater 
 		flexibility in the configuration of the system.</para>
 
@@ -5338,7 +5338,7 @@
 		<term><anchor id="PASSDBBACKEND">passdb backend (G)</term>
 		<listitem><para>This option allows the administrator to chose which backends to retrieve and store passwords with. This allows (for example) both 
                 smbpasswd and tdbsam to be used without a recompile. 
-                Multiple backends can be specified, seperated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
+                Multiple backends can be specified, separated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
                 Experimental backends must still be selected
                 (eg --with-tdbsam) at configure time.
 		</para>
@@ -5387,8 +5387,8 @@
 		        <para>LDAP connections should be secured where
                         possible.  This may be done using either
                         Start-TLS (see <link linkend="LDAPSSL">
-                        <parameter>ldap ssl</parameter>) or by
-                        specifying <paramater>ldaps://</paramater> in
+                        <parameter>ldap ssl</parameter></link>) or by
+                        specifying <parameter>ldaps://</parameter> in
                         the URL argument.  
                         </para></listitem>
 			
@@ -7499,7 +7499,8 @@
 		<varlistentry>
 		<term><anchor id="UNICODE">unicode (G)</term>
 		<listitem><para>Specifies whether Samba should try 
-		to use unicode on the wire by default. 
+		to use unicode on the wire by default. Note: This does NOT
+		mean that samba will assume that the unix machine uses unicode!
 		</para>
 
 		<para>Default: <command>unicode = yes</command></para>
@@ -7515,6 +7516,7 @@
 		</para>
 
 		<para>Default: <command>unix charset = ASCII</command></para>
+		<para>Example: <command>unix charset = UTF8</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -8053,11 +8055,10 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 		<varlistentry>
 		<term><anchor id="VFSOBJECT">vfs object (S)</term>
-		<listitem><para>This parameter specifies a shared object file that 
-		is used for Samba VFS I/O operations.  By default, normal 
+		<listitem><para>This parameter specifies a shared object files that 
+		are used for Samba VFS I/O operations.  By default, normal 
 		disk I/O operations are used but these can be overloaded 
-		with a VFS object.  The Samba VFS layer is new to Samba 2.2 and 
-		must be enabled at compile time with --with-vfs.</para>
+		with one or more VFS objects. </para>
 		
 		<para>Default : <emphasis>no value</emphasis></para>
 		</listitem>
@@ -8069,9 +8070,8 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		<varlistentry>
 		<term><anchor id="VFSOPTIONS">vfs options (S)</term>
 		<listitem><para>This parameter allows parameters to be passed 
-		to the vfs layer at initialization time.  The Samba VFS layer 
-		is new to Samba 2.2 and must be enabled at compile time 
-		with --with-vfs.  See also <link linkend="VFSOBJECT"><parameter>
+		to the vfs layer at initialization time. 
+		See also <link linkend="VFSOBJECT"><parameter>
 		vfs object</parameter></link>.</para>
 		
 		<para>Default : <emphasis>no value</emphasis></para>
