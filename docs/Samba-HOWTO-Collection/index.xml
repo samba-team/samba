@@ -135,6 +135,7 @@ Samba has several features that you might want or might not want to use. The cha
 <xi:include href="Passdb.xml"/>
 <xi:include href="Group-Mapping.xml"/>
 <xi:include href="IDMAP.xml"/>
+<xi:include href="RightsAndPriviliges.xml"/>
 <xi:include href="AccessControls.xml"/>
 <xi:include href="locking.xml"/>
 <xi:include href="Securing.xml"/>
