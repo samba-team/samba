@@ -276,6 +276,24 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 		return NULL;
 }
 
+/** strdup_upper with a talloc */
+char *talloc_strdup_upper(TALLOC_CTX *t, const char *p)
+{
+	char *r;
+	if (p) {
+		char *q = strdup_upper(p);
+		if (q) { 
+			r = talloc_strdup(t, q);
+			SAFE_FREE(q);
+			return r;
+		} else {
+			return NULL;
+		}
+	} else {
+		return NULL;
+	}
+}
+
 /** strdup_w with a talloc */
 smb_ucs2_t *talloc_strdup_w(TALLOC_CTX *t, const smb_ucs2_t *p)
 {

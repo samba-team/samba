@@ -358,7 +358,9 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		memcpy(p,nt_response.data, nt_response.length); p += nt_response.length;
 	}
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE);
-	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE);
+
+	/* Upper case here might help some NTLMv2 implementations */
+	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
 	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
@@ -649,7 +651,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 			   for checking the first reply from the server */
 			cli_calculate_sign_mac(cli);
 			
-			if (!cli_check_sign_mac(cli, True)) {
+			if (!cli_check_sign_mac(cli, False)) {
 				nt_status = NT_STATUS_ACCESS_DENIED;
 			}
 		}
@@ -874,7 +876,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && *pass && passlen != 24) {
 		if (!lp_client_lanman_auth()) {
-			DEBUG(1, ("Server requested LANMAN password but 'client use lanman auth'"
+			DEBUG(1, ("Server requested LANMAN password (share-level security) but 'client use lanman auth'"
 				  " is disabled\n"));
 			return False;
 		}
