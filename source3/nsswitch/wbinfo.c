@@ -1179,7 +1179,7 @@ int main(int argc, char **argv)
 			break;
 		case 'O':
 			if ( !wbinfo_remove_user_from_group(string_arg) ) {
-				d_printf("Could not remove user kfrom group\n");
+				d_printf("Could not remove user from group\n");
 				goto done;
 			}
 			break;
