@@ -49,7 +49,7 @@ NTSTATUS sam_get_methods_by_sid(const SAM_CONTEXT *context, SAM_METHODS **sam_me
 	DEBUG(5,("sam_get_methods_by_sid: %d\n", __LINE__));
 
 	/* invalid sam_context specified */
-	SAM_ASSERT(context && context->methods)
+	SAM_ASSERT(context && context->methods);
 
 	tmp_methods = context->methods;
 
@@ -75,7 +75,7 @@ NTSTATUS sam_get_methods_by_name(const SAM_CONTEXT *context, SAM_METHODS **sam_m
 	DEBUG(5,("sam_get_methods_by_name: %d\n", __LINE__));
 
 	/* invalid sam_context specified */
-	SAM_ASSERT(context && context->methods)
+	SAM_ASSERT(context && context->methods);
 
 	tmp_methods = context->methods;
 
@@ -224,7 +224,7 @@ NTSTATUS context_sam_enum_domains(const SAM_CONTEXT *context, const NT_USER_TOKE
 	DEBUG(5,("context_sam_enum_domains: %d\n", __LINE__));
 
 	/* invalid sam_context specified */
-	SAM_ASSERT(context && context->methods)
+	SAM_ASSERT(context && context->methods);
 
 	if (!NT_STATUS_IS_OK(nt_status = samr_make_sam_obj_sd(context->mem_ctx, &sd, &sd_size))) {
 		DEBUG(4,("samr_make_sam_obj_sd failed\n"));
@@ -291,7 +291,7 @@ NTSTATUS context_sam_lookup_domain(const SAM_CONTEXT *context, const NT_USER_TOK
 	DEBUG(5,("context_sam_lookup_domain: %d\n", __LINE__));
 
 	/* invalid sam_context specified */
-	SAM_ASSERT(context && context->methods)
+	SAM_ASSERT(context && context->methods);
 
 	if (!NT_STATUS_IS_OK(nt_status = samr_make_sam_obj_sd(context->mem_ctx, &sd, &sd_size))) {
 		DEBUG(4,("samr_make_sam_obj_sd failed\n"));
