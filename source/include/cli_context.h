@@ -58,7 +58,7 @@ struct smbcli_negotiate {
 	uint_t readbraw_supported:1;
 	uint_t writebraw_supported:1;
 
-	const char *server_domain;
+	char *server_domain;
 };
 	
 /* this is the context for a SMB socket associated with the socket itself */
