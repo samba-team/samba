@@ -27,7 +27,7 @@ struct nesting {
 	struct nesting *next;
 };
 
-typedef struct {
+typedef struct asn1_data {
 	uint8_t *data;
 	size_t length;
 	off_t ofs;
