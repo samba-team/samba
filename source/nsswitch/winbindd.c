@@ -159,8 +159,7 @@ static int create_sock(void)
     unlink(path);
     memset(&sunaddr, 0, sizeof(sunaddr));
     sunaddr.sun_family = AF_UNIX;
-    strncpy(sunaddr.sun_path, path,
-            sizeof(sunaddr.sun_path));
+    safe_strcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
     
     if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
         DEBUG(0, ("bind failed on winbind socket %s: %s\n",
@@ -192,8 +191,8 @@ static void process_request(struct winbindd_cli_state *state)
     state->response.result = WINBINDD_ERROR;
     state->response.length = sizeof(struct winbindd_response);
 
-    fprintf(stderr, "processing command %s from pid %d\n", 
-            winbindd_cmd_to_string(state->request.cmd), state->pid);
+    DEBUG(3,("processing command %s from pid %d\n", 
+            winbindd_cmd_to_string(state->request.cmd), state->pid));
 
     switch(state->request.cmd) {
         
@@ -266,7 +265,7 @@ static void new_connection(int accept_sock)
         return;
     }
 
-    fprintf(stderr, "accepted socket %d\n", sock);
+    DEBUG(3,("accepted socket %d\n", sock));
 
     /* Create new connection structure */
 
@@ -342,10 +341,9 @@ static void client_read(struct winbindd_cli_state *state)
     /* Read failed, kill client */
 
     if (n == -1 || n == 0) {
-
-        fprintf(stderr, "read failed on sock %d, pid %d: %s\n",
+	    DEBUG(3,("read failed on sock %d, pid %d: %s\n",
                 state->sock, state->pid, 
-                (n == -1) ? sys_errlist[errno] : "EOF");
+                (n == -1) ? sys_errlist[errno] : "EOF"));
 
         state->finished = True;
         return;
@@ -387,9 +385,9 @@ static void client_write(struct winbindd_cli_state *state)
 
     if (n == -1 || n == 0) {
 
-        fprintf(stderr, "write failed on sock %d, pid %d: %s\n",
-                state->sock, state->pid, 
-                (n == -1) ? sys_errlist[errno] : "EOF");
+	    DEBUG(3,("write failed on sock %d, pid %d: %s\n",
+		     state->sock, state->pid, 
+		     (n == -1) ? sys_errlist[errno] : "EOF"));
 
         state->finished = True;
         return;
@@ -552,11 +550,23 @@ int main(int argc, char **argv)
     extern fstring global_myname;
     extern pstring debugf;
     int accept_sock;
+    BOOL interactive = False;
+    int opt;
+
+    while ((opt = getopt(argc, argv, "i")) != EOF) {
+	    switch (opt) {
+		case 'i':
+			interactive = True;
+			break;
+		default:
+			printf("Unknown option %c (%d)\n", (char)opt, opt);
+			exit(1);
+		}
+    }
 
     /* Initialise samba/rpc client stuff */
-
-    setup_logging("winbindd", True); /* XXX change to false for daemon log */
     slprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
+    setup_logging("winbindd", interactive);
     reopen_logs();
 
     if (!*global_myname) {
@@ -577,6 +587,11 @@ int main(int argc, char **argv)
         DEBUG(0, ("error opening config file\n"));
         exit(1);
     }
+
+    if (!interactive) {
+	    become_daemon();
+    }
+    load_interfaces();
 
     pwdb_initialise(False);
 
