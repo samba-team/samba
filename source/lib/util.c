@@ -1508,6 +1508,15 @@ void print_asc(int level, unsigned char *buf,int len)
 		DEBUG(level,("%c", isprint(buf[i])?buf[i]:'.'));
 }
 
+void print_hex_bytes(int level, const unsigned char *buf, int len)
+{
+	int idx;
+
+	for (idx = 0; idx < len; idx++) {
+		DEBUG(level, ("%02x ", buf[idx]));
+	}
+}
+
 void dump_data(int level,char *buf1,int len)
 {
   unsigned char *buf = (unsigned char *)buf1;
