@@ -98,6 +98,9 @@ gss_accept_sec_context
   (*context_handle)->more_flags = 0;
   (*context_handle)->ticket = NULL;
 
+  if (src_name != NULL)
+      *src_name = NULL;
+
   kret = krb5_auth_con_init (gssapi_krb5_context,
 			     &(*context_handle)->auth_context);
   if (kret) {
@@ -226,7 +229,7 @@ gss_accept_sec_context
     goto failure;
   }
 
-  if (src_name) {
+  if (src_name != NULL) {
     kret = krb5_copy_principal (gssapi_krb5_context,
 				ticket->client,
 				src_name);
@@ -359,6 +362,10 @@ failure:
     krb5_free_principal (gssapi_krb5_context,
 			 (*context_handle)->target);
   free (*context_handle);
+  if (src_name != NULL) {
+      gss_release_name (&minor, src_name);
+      *src_name = NULL;
+  }
   *context_handle = GSS_C_NO_CONTEXT;
   *minor_status = kret;
   return GSS_S_FAILURE;
