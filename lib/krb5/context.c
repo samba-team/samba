@@ -55,16 +55,16 @@ krb5_init_context(krb5_context *context)
     p->max_skew = 5 * 60;
     tmp = krb5_config_get_string (p->cf, "libdefaults", "clockskew", NULL);
     if(tmp){
-	unsigned val;
-	if(sscanf(tmp, "%u", &val) == 1)
+	int val = parse_time(tmp, NULL);
+	if(val >= 0)
 	    p->max_skew = val;
     }
     p->kdc_timeout = 3;
     tmp = krb5_config_get_string (p->cf, "libdefaults", "kdc_timeout", NULL);
     if(tmp){
-	unsigned val;
-	if(sscanf(tmp, "%u", &val) == 1)
-	    p->kdc_timeout = val;
+	int val = parse_time(tmp, NULL);
+	if(val >= 0) 
+	    p->kdc_timeout;
     }
     krb5_set_default_realm(p, NULL);
     *context = p;
