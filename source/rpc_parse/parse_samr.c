@@ -5994,6 +5994,15 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	usr->group_rid = group_rid;
 	usr->acb_info  = pdb_get_acct_ctrl(pw);
 
+	/*
+	  Look at a user on a real NT4 PDC with usrmgr, press
+	  'ok'. Then you will see that fields_present is set to
+	  0x08f827fa. Look at the user immediately after that again,
+	  and you will see that 0x00fffff is returned. This solves
+	  the problem that you get access denied after having looked
+	  at the user.
+	  -- Volker
+	*/
 	usr->fields_present = pdb_build_fields_present(pw);
 
 	usr->logon_divs = pdb_get_logon_divs(pw); 
