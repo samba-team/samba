@@ -512,6 +512,7 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	fstring		srv_port_name;
 	BOOL		valid_port = False;
 	TALLOC_CTX	*mem_ctx = NULL;
+	uint32		result;
 
         fstrcpy(srv_name, "\\\\");
         fstrcat(srv_name, info->dest_host);
@@ -589,21 +590,22 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	 * Need to build the PRINTER_INFO_2 struct here.
 	 * I think it would be better only to deal with a PRINTER_INFO_2
 	 * and the abstract the creation of a SPOOL_PRINTER_INFO_LEVEL_2
-	 * from that rather than dealing with the struct passed dircetly 
+	 * from that rather than dealing with the struct passed directly 
 	 * on the wire.  We don't need the extra *_ptr fields, etc... 
 	 * here anyways.  --jerry
 	 */
-	init_unistr( &print_info_2.servername, 	srv_name);
+	ZERO_STRUCTP(&print_info_2);
+	/* init_unistr( &print_info_2.servername, 	srv_name); */
 	init_unistr( &print_info_2.printername,	printer_name);
-	init_unistr( &print_info_2.sharename, 	printer_name);
+	/* init_unistr( &print_info_2.sharename, 	share_name); */
 	init_unistr( &print_info_2.portname,	port_name);
 	init_unistr( &print_info_2.drivername,	driver_name);
 	init_unistr( &print_info_2.comment,	"Created by rpcclient");
-	init_unistr( &print_info_2.location,	"");
-	init_unistr (&print_info_2.sepfile,	"");
+	/* init_unistr( &print_info_2.location,	"");
+	init_unistr( &print_info_2.sepfile,	""); */
 	init_unistr( &print_info_2.printprocessor, "winprint");
 	init_unistr( &print_info_2.datatype,	"RAW");
-	init_unistr( &print_info_2.parameters,	"");
+	/* init_unistr( &print_info_2.parameters,	""); */
 	print_info_2.devmode = NULL;
 	print_info_2.secdesc = NULL;
 	print_info_2.attributes 	= 0;
@@ -618,7 +620,7 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 
 	/* if successful, spoolss_addprinterex() should return True and hnd 
 	   should be a valid handle to an open printer */
-	if (spoolss_addprinterex(&hnd, &print_info_2))
+	if ((result = spoolss_addprinterex(&hnd, srv_name, &print_info_2)) == NT_STATUS_NOPROBLEMO)
 	{
 		if (!spoolss_closeprinter( &hnd ))
 		{
@@ -627,7 +629,7 @@ uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]
 	}
 	else
 	{
-		report (out_hnd, "cmd_spoolss_addprinterex: spoolss_addprinterex FAILED!\n");
+		report (out_hnd, "cmd_spoolss_addprinterex: spoolss_addprinterex FAILED! [%d]\n", result);
 	}
 
 	
