@@ -55,7 +55,7 @@ krb5_sock_to_principal (krb5_context context,
     if (getsockname (sock, (struct sockaddr *)&addr, &len) < 0)
 	return errno;
     
-    hostent = gethostbyaddr (&addr.sin_addr,
+    hostent = gethostbyaddr ((const char *)&addr.sin_addr,
 			     sizeof(addr.sin_addr),
 			     addr.sin_family);
     if (hostent == NULL)

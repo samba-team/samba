@@ -269,7 +269,9 @@ pop_init(POP *p,int argcount,char **argmessage)
     p->ipport = ntohs(cs.sin_port);
 
     /*  Get the canonical name of the host to whom I am speaking */
-    ch = gethostbyaddr((char *)&cs.sin_addr, sizeof(cs.sin_addr), AF_INET);
+    ch = gethostbyaddr((const char *)&cs.sin_addr,
+		       sizeof(cs.sin_addr),
+		       AF_INET);
     if (ch == NULL){
         pop_log(p,POP_PRIORITY,
             "Unable to get canonical name of client, err = %d",errno);
