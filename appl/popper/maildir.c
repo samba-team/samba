@@ -211,7 +211,7 @@ int
 pop_maildir_open(POP *p, MsgInfoList *mp)
 {
     char tmp[MAXDROPLEN];
-    make_path(p, mp, mp->flags & NEW_FLAG, tmp, sizeof(tmp);
+    make_path(p, mp, mp->flags & NEW_FLAG, tmp, sizeof(tmp));
     if(p->drop)
 	fclose(p->drop);
     p->drop = fopen(tmp, "r");
