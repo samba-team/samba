@@ -151,9 +151,10 @@ if test "$with_krb4" != "no"; then
 	[#ifndef HAVE_KRB_GET_KDC_TIME_DIFF
 #define krb_get_kdc_time_diff() (0)
 #endif])
-	AC_CACHE_CHECK(for KRB_SENDAUTH_VERS,
+	AC_CACHE_CHECK([for KRB_SENDAUTH_VERS],
 		ac_cv_func_krb_sendauth_vers,
-		[AC_TRY_COMPILE([#include <krb.h>],[
+		[AC_TRY_COMPILE([#include <krb.h>
+			#include <prot.h>],[
 		char *x = KRB_SENDAUTH_VERS],
 		ac_cv_func_krb_sendauth_vers=yes,
 		ac_cv_func_krb_sendauth_vers=no)
@@ -161,8 +162,6 @@ if test "$with_krb4" != "no"; then
 	if test "$ac_cv_func_krb_sendauth_vers" != yes; then
 		AC_DEFINE(KRB_SENDAUTH_VERS, ["AUTHV0.1"],
 			[This is the krb4 sendauth version.])
-		AC_DEFINE(KRB_SENDAUTH_VLEN, 8],
-			[Length of KRB_SENDAUTH_VERS.])
 	fi
 	AC_CACHE_CHECK(for krb_mk_req with const arguments,
 		ac_cv_func_krb_mk_req_const,
