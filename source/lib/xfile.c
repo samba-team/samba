@@ -187,7 +187,13 @@ int x_vfprintf(XFILE *f, const char *format, va_list ap)
 {
 	char *p;
 	int len, ret;
-	len = vasprintf(&p, format, ap);
+	va_list ap2;
+#if defined(HAVE_VA_COPY)
+	__va_copy(ap2, ap);
+#else
+	ap2 = ap;
+#endif
+	len = vasprintf(&p, format, ap2);
 	if (len <= 0) return len;
 	ret = x_fwrite(p, 1, len, f);
 	SAFE_FREE(p);
