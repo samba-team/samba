@@ -27,6 +27,15 @@
 
 	* configure.in: AM_PROG_LIBTOOL -> AC_PROG_LIBTOOL
 
+2000-07-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: set ACLOCAL_AMFLAGS
+
+2000-07-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* getaddrinfo_hostspec.c: add new function that takes socktype
+	hint as parameter
+
 2000-07-09  Assar Westerlund  <assar@sics.se>
 
 	* rtbl.c (rtbl_add_column): initialize `col' completely
