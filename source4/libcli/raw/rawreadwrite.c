@@ -40,7 +40,7 @@ struct cli_request *smb_raw_read_send(struct cli_tree *tree, union smb_read *par
 		return NULL;
 		
 	case RAW_READ_READBRAW:
-		if (parms->readbraw.in.offset >= 0x80000000) {
+		if (tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES) {
 			bigoffset = True;
 		}
 		SETUP_REQUEST(SMBreadbraw, bigoffset? 10:8, 0);
@@ -72,7 +72,7 @@ struct cli_request *smb_raw_read_send(struct cli_tree *tree, union smb_read *par
 		break;
 
 	case RAW_READ_READX:
-		if (parms->readx.in.offset >= 0x80000000) {
+		if (tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES) {
 			bigoffset = True;
 		}
 		SETUP_REQUEST(SMBreadX, bigoffset ? 12 : 10, 0);
@@ -232,7 +232,7 @@ struct cli_request *smb_raw_write_send(struct cli_tree *tree, union smb_write *p
 		break;
 
 	case RAW_WRITE_WRITEX:
-		if (parms->writex.in.offset >= 0x80000000) {
+		if (tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES) {
 			bigoffset = True;
 		}
 		SETUP_REQUEST(SMBwriteX, bigoffset ? 14 : 12, parms->writex.in.count);
@@ -243,7 +243,7 @@ struct cli_request *smb_raw_write_send(struct cli_tree *tree, union smb_write *p
 		SIVAL(req->out.vwv, VWV(5), 0); /* reserved */
 		SSVAL(req->out.vwv, VWV(7), parms->writex.in.wmode);
 		SSVAL(req->out.vwv, VWV(8), parms->writex.in.remaining);
-		SSVAL(req->out.vwv, VWV(9), 0); /* reserved */
+		SSVAL(req->out.vwv, VWV(9), parms->writex.in.count>>16);
 		SSVAL(req->out.vwv, VWV(10), parms->writex.in.count);
 		SSVAL(req->out.vwv, VWV(11), PTR_DIFF(req->out.data, req->out.hdr));
 		if (bigoffset) {
