@@ -64,6 +64,7 @@ RCSID("$Id$");
 #include "encrypt.h"
 #include "misc.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef SOCKS
@@ -654,7 +655,7 @@ encrypt_start(unsigned char *data, int cnt)
 	return;
     }
 
-    if (ep = finddecryption(decrypt_mode)) {
+    if ((ep = finddecryption(decrypt_mode))) {
 	decrypt_input = ep->input;
 	if (encrypt_verbose)
 	    printf("[ Input is now decrypted with type %s ]\r\n",
@@ -728,7 +729,8 @@ encrypt_request_start(unsigned char *data, int cnt)
 
 static unsigned char str_keyid[(MAXKEYLEN*2)+5] = { IAC, SB, TELOPT_ENCRYPT };
 
-void encrypt_keyid(struct key_info *kp, unsigned char *keyid, int len)
+static void
+encrypt_keyid(struct key_info *kp, unsigned char *keyid, int len)
 {
     Encryptions *ep;
     int dir = kp->dir;
