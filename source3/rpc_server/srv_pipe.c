@@ -273,8 +273,8 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 	const uchar *smb_passwd_ptr = NULL;
 	
-	auth_usersupplied_info *user_info;
-	auth_serversupplied_info *server_info;
+	auth_usersupplied_info *user_info = NULL;
+	auth_serversupplied_info *server_info = NULL;
 
 	uid_t *puid;
 	uid_t *pgid;
@@ -294,8 +294,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	/* 
 	 * Setup an empty password for a guest user.
 	 */
-
- 	memset(null_smb_passwd,0,16);
 
 	/*
 	 * We always negotiate UNICODE.
@@ -338,8 +336,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 		fstrcpy(pipe_user_name, lp_guestaccount(-1));
 		DEBUG(100,("Null user in NTLMSSP verification. Using guest = %s\n", pipe_user_name));
 
-		smb_passwd_ptr = null_smb_passwd;
-		
 	} else {
 
 	 	/* 
@@ -382,6 +378,9 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 			free_server_info(&server_info);
 			return False;
 		}
+	} else {
+		/* This includes a NULLed out first_8_lm_hash */
+		make_server_info_guest(&server_info);
 	}
 
 	/*
@@ -450,8 +449,8 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 
 	/* Create an NT_USER_TOKEN struct for this user. */
 	p->pipe_user.nt_user_token = create_nt_token(p->pipe_user.uid,p->pipe_user.gid,
-						p->pipe_user.ngroups, p->pipe_user.groups,
-						guest_user);
+						     p->pipe_user.ngroups, p->pipe_user.groups,
+						     guest_user);
 
 	p->ntlmssp_auth_validated = True;
 
