@@ -1019,57 +1019,6 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 }
 
 /****************************************************************************
-re-establishes a connection
-****************************************************************************/
-BOOL cli_reestablish_connection(struct cli_state *cli)
-{
-	struct nmb_name calling;
-	struct nmb_name called;
-	fstring dest_host;
-	fstring share;
-	fstring dev;
-	BOOL do_tcon = False;
-	int oldfd = cli->fd;
-
-	if (!cli->initialised || cli->fd == -1)
-	{
-		DEBUG(3,("cli_reestablish_connection: not connected\n"));
-		return False;
-	}
-
-	/* copy the parameters necessary to re-establish the connection */
-
-	if (cli->cnum != 0)
-	{
-		fstrcpy(share, cli->share);
-		fstrcpy(dev  , cli->dev);
-		do_tcon = True;
-	}
-
-	memcpy(&called , &(cli->called ), sizeof(called ));
-	memcpy(&calling, &(cli->calling), sizeof(calling));
-	fstrcpy(dest_host, cli->full_dest_host_name);
-
-	DEBUG(5,("cli_reestablish_connection: %s connecting to %s (ip %s) - %s [%s]\n",
-		 nmb_namestr(&calling), nmb_namestr(&called), 
-		 inet_ntoa(cli->dest_ip),
-		 cli->user_name, cli->domain));
-
-	cli->fd = -1;
-
-	if (cli_establish_connection(cli,
-				     dest_host, &cli->dest_ip,
-				     &calling, &called,
-				     share, dev, False, do_tcon)) {
-		if ((cli->fd != oldfd) && (oldfd != -1)) {
-			close( oldfd );
-		}
-		return True;
-	}
-	return False;
-}
-
-/****************************************************************************
 establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
 BOOL cli_establish_connection(struct cli_state *cli, 

@@ -62,26 +62,19 @@ BOOL cli_receive_smb(struct cli_state *cli)
 }
 
 /****************************************************************************
-  send an smb to a fd and re-establish if necessary
+  send an smb to a fd.
 ****************************************************************************/
+
 BOOL cli_send_smb(struct cli_state *cli)
 {
 	size_t len;
 	size_t nwritten=0;
 	ssize_t ret;
-	BOOL reestablished=False;
 
 	len = smb_len(cli->outbuf) + 4;
 
 	while (nwritten < len) {
 		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
-		if (ret <= 0 && errno == EPIPE && !reestablished) {
-			if (cli_reestablish_connection(cli)) {
-				reestablished = True;
-				nwritten=0;
-				continue;
-			}
-		}
 		if (ret <= 0) {
 			DEBUG(0,("Error writing %d bytes to client. %d\n",
 				 (int)len,(int)ret));
