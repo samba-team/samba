@@ -34,7 +34,7 @@ static BOOL use_oplocks;
 
 #define FILENAME "\\locktest.dat"
 #define LOCKRANGE 1000
-#define LOCKBASE 0;
+#define LOCKBASE 0
 
 /*
 #define LOCKBASE (0x40000000 - 50)
