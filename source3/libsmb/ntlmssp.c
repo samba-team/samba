@@ -487,9 +487,8 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 	}
 
 	SAFE_FREE(server_domain);
-	data_blob_free(&struct_blob);
-	
 	if (challenge_blob.length != 8) {
+		data_blob_free(&struct_blob);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -500,9 +499,11 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		
 		if (!SMBNTLMv2encrypt(ntlmssp_state->user, 
 				      ntlmssp_state->domain, 
-				      ntlmssp_state->password, challenge_blob, 
-				      &lm_response, &nt_response, NULL, &session_key)) {
+				      ntlmssp_state->password, &challenge_blob, 
+				      &struct_blob, 
+				      &lm_response, &nt_response, &session_key)) {
 			data_blob_free(&challenge_blob);
+			data_blob_free(&struct_blob);
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
@@ -522,6 +523,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_client_state *ntlmssp_st
 		session_key = data_blob(NULL, 16);
 		SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 	}
+	data_blob_free(&struct_blob);
 
 	/* this generates the actual auth packet */
 	if (!msrpc_gen(next_request, auth_gen_string, 

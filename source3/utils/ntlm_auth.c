@@ -832,26 +832,25 @@ static BOOL test_ntlmv2(void)
 	NTSTATUS nt_status;
 	uint32 flags = 0;
 	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
-	DATA_BLOB lmv2_response = data_blob(NULL, 0);
 	DATA_BLOB nt_session_key = data_blob(NULL, 0);
-	DATA_BLOB lm_session_key = data_blob(NULL, 0);
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(get_winbind_netbios_name(), get_winbind_domain());
 
-	uchar lm_key[16];
 	uchar nt_key[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 
-	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(nt_key);
 	
-	flags |= WINBIND_PAM_LMKEY;
 	flags |= WINBIND_PAM_NTKEY;
 
-	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, chall,
-			      &lmv2_response, &ntlmv2_response, 
-			      &lm_session_key, &nt_session_key)) {
+	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, &chall,
+			      &names_blob,
+			      NULL, &ntlmv2_response, 
+			      &nt_session_key)) {
+		data_blob_free(&names_blob);
 		return False;
 	}
+	data_blob_free(&names_blob);
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -859,11 +858,10 @@ static BOOL test_ntlmv2(void)
 					      NULL, 
 					      &ntlmv2_response,
 					      flags,
-					      lm_key,
+					      NULL, 
 					      nt_key,
 					      &error_string);
 	
-	data_blob_free(&lmv2_response);
 	data_blob_free(&ntlmv2_response);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -874,16 +872,6 @@ static BOOL test_ntlmv2(void)
 		return False;
 	}
 
-#if 0
-	if (memcmp(lm_session_key.data, lm_key, 
-		   sizeof(lm_key)) != 0) {
-		DEBUG(1, ("LM Session Key does not match expectations!\n"));
- 		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 16);
- 		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_session_key.data, lm_session_key.length);
-		pass = False;
-	}
 	if (memcmp(nt_session_key.data, nt_key, 
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
@@ -893,7 +881,6 @@ static BOOL test_ntlmv2(void)
 		dump_data(1, nt_session_key.data, nt_session_key.length);
 		pass = False;
 	}
-#endif
         return pass;
 }
 
@@ -909,24 +896,24 @@ static BOOL test_lmv2_ntlmv2(void)
 	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
 	DATA_BLOB lmv2_response = data_blob(NULL, 0);
 	DATA_BLOB nt_session_key = data_blob(NULL, 0);
-	DATA_BLOB lm_session_key = data_blob(NULL, 0);
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(get_winbind_netbios_name(), get_winbind_domain());
 
-	uchar lm_key[16];
 	uchar nt_key[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 
 	ZERO_STRUCT(nt_key);
-	ZERO_STRUCT(lm_key);
 	
-	flags |= WINBIND_PAM_LMKEY;
 	flags |= WINBIND_PAM_NTKEY;
 
-	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, chall,
+	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, &chall,
+			      &names_blob,
 			      &lmv2_response, &ntlmv2_response, 
-			      &lm_session_key, &nt_session_key)) {
+			      &nt_session_key)) {
+		data_blob_free(&names_blob);
 		return False;
 	}
+	data_blob_free(&names_blob);
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -934,7 +921,7 @@ static BOOL test_lmv2_ntlmv2(void)
 					      &lmv2_response,
 					      &ntlmv2_response,
 					      flags,
-					      lm_key,
+					      NULL, 
 					      nt_key,
 					      &error_string);
 	
@@ -949,16 +936,6 @@ static BOOL test_lmv2_ntlmv2(void)
 		return False;
 	}
 
-#if 0
-	if (memcmp(lm_session_key.data, lm_key, 
-		   sizeof(lm_key)) != 0) {
-		DEBUG(1, ("LM Session Key does not match expectations!\n"));
- 		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 16);
- 		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_session_key.data, lm_session_key.length);
-		pass = False;
-	}
 	if (memcmp(nt_session_key.data, nt_key, 
 		   sizeof(nt_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
@@ -968,7 +945,6 @@ static BOOL test_lmv2_ntlmv2(void)
 		dump_data(1, nt_session_key.data, nt_session_key.length);
 		pass = False;
 	}
-#endif
         return pass;
 }
 
@@ -981,25 +957,15 @@ static BOOL test_lmv2(void)
 	BOOL pass = True;
 	NTSTATUS nt_status;
 	uint32 flags = 0;
-	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
 	DATA_BLOB lmv2_response = data_blob(NULL, 0);
-	DATA_BLOB nt_session_key = data_blob(NULL, 0);
-	DATA_BLOB lm_session_key = data_blob(NULL, 0);
 
-	uchar lm_key[16];
-	uchar nt_key[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 
-	ZERO_STRUCT(nt_key);
-	ZERO_STRUCT(lm_key);
-	
-	flags |= WINBIND_PAM_LMKEY;
-	flags |= WINBIND_PAM_NTKEY;
-
-	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, chall,
-			      &lmv2_response, &ntlmv2_response, 
-			      &lm_session_key, &nt_session_key)) {
+	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, &chall,
+			      NULL, 
+			      &lmv2_response, NULL,
+			      NULL)) {
 		return False;
 	}
 
@@ -1009,12 +975,11 @@ static BOOL test_lmv2(void)
 					      &lmv2_response,
 					      NULL, 
 					      flags,
-					      lm_key,
-					      nt_key,
+					      NULL, 
+					      NULL,
 					      &error_string);
 	
 	data_blob_free(&lmv2_response);
-	data_blob_free(&ntlmv2_response);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_printf("%s (0x%x)\n", 
@@ -1024,26 +989,6 @@ static BOOL test_lmv2(void)
 		return False;
 	}
 
-#if 0	
-	if (memcmp(lm_session_key.data, lm_key, 
-		   sizeof(lm_key)) != 0) {
-		DEBUG(1, ("LM Session Key does not match expectations!\n"));
- 		DEBUG(1, ("lm_key:\n"));
-		dump_data(1, lm_key, 16);
- 		DEBUG(1, ("expected:\n"));
-		dump_data(1, lm_session_key.data, lm_session_key.length);
-		pass = False;
-	}
-	if (memcmp(nt_session_key.data, nt_key, 
-		   sizeof(nt_key)) != 0) {
-		DEBUG(1, ("NT Session Key does not match expectations!\n"));
- 		DEBUG(1, ("nt_key:\n"));
-		dump_data(1, nt_key, 16);
- 		DEBUG(1, ("expected:\n"));
-		dump_data(1, nt_session_key.data, nt_session_key.length);
-		pass = False;
-	}
-#endif
         return pass;
 }
 
@@ -1145,24 +1090,24 @@ static BOOL test_ntlmv2_broken(BOOL break_lmv2)
 	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
 	DATA_BLOB lmv2_response = data_blob(NULL, 0);
 	DATA_BLOB nt_session_key = data_blob(NULL, 0);
-	DATA_BLOB lm_session_key = data_blob(NULL, 0);
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(get_winbind_netbios_name(), get_winbind_domain());
 
-	uchar lm_key[16];
 	uchar nt_key[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 
 	ZERO_STRUCT(nt_key);
-	ZERO_STRUCT(lm_key);
 	
-	flags |= WINBIND_PAM_LMKEY;
 	flags |= WINBIND_PAM_NTKEY;
-
-	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, chall,
+	 
+	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, &chall,
+			      &names_blob,
 			      &lmv2_response, &ntlmv2_response, 
-			      &lm_session_key, &nt_session_key)) {
+			      &nt_session_key)) {
+		data_blob_free(&names_blob);
 		return False;
 	}
+	data_blob_free(&names_blob);
 
 	/* Heh - this should break the appropriate password hash nicely! */
 
@@ -1177,7 +1122,7 @@ static BOOL test_ntlmv2_broken(BOOL break_lmv2)
 					      &lmv2_response,
 					      &ntlmv2_response,
 					      flags,
-					      lm_key,
+					      NULL,
 					      nt_key,
 					      &error_string);
 	
