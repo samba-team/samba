@@ -35,12 +35,99 @@ sub el_name($)
 	return $e->{NAME};
 }
 
+my %property_list = (
+	# interface
+	"helpstring"		=> {},
+	"version"		=> {},
+	"uuid"			=> {},
+	"endpoint"		=> {},
+	"pointer_default"	=> {},
+	"depends"		=> {},
+	"authservice"		=> {},
+
+	# dcom
+	"object"		=> {},
+	"local"			=> {},
+	"iid_is"		=> {},
+	"call_as"		=> {},
+	"iid_is"		=> {},
+	"idempotent"		=> {},
+
+	# function
+	"id"			=> {},# what is that? --metze 
+	"in"			=> {},
+	"out"			=> {},
+
+	# pointer
+	"ref"			=> {},
+	"ptr"			=> {},
+	"unique"		=> {},
+	"relative"		=> {},
+
+	# ndr_size
+	"gensize"		=> {},
+	"value"			=> {},
+	"flag"			=> {},
+
+	# generic
+	"public"		=> {},
+	"nopush"		=> {},
+	"nopull"		=> {},
+	"noprint"		=> {},
+
+	# union
+	"switch_is"		=> {},
+	"switch_type"		=> {},
+	"nodiscriminant"	=> {},
+	"case"			=> {},
+	"default"		=> {},
+
+	# subcontext
+	"subcontext"		=> {},
+	"subcontext_size"	=> {},
+	"compression"		=> {},
+
+	# enum
+	"enum8bit"		=> {},
+	"enum16bit"		=> {},
+	"v1_enum"		=> {},
+
+	# bitmap
+	"bitmap8bit"		=> {},
+	"bitmap16bit"		=> {},
+	"bitmap32bit"		=> {},
+	"bitmap64bit"		=> {},
+
+	# array
+	"range"			=> {},
+	"size_is"		=> {},
+	"length_is"		=> {},
+	"length_of"		=> {}, # what is that? --metze
+);
+
+#####################################################################
+# check for unknown properties
+sub ValidProperties($)
+{
+	my $e = shift;
+
+	return unless defined $e->{PROPERTIES};
+
+	foreach my $key (keys %{$e->{PROPERTIES}}) {
+		if (not defined $property_list{$key}) {
+			fatal(el_name($e) . ": unknown property '$key'\n");
+		}
+	}
+}
+
 #####################################################################
 # parse a struct
 sub ValidElement($)
 {
 	my $e = shift;
-	
+
+	ValidProperties($e);
+
 	if (util::has_property($e, "ptr")) {
 		fatal(el_name($e) . " : pidl does not support full NDR pointers yet\n");
 	}
@@ -95,6 +182,8 @@ sub ValidStruct($)
 {
 	my($struct) = shift;
 
+	ValidProperties($struct);
+
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		$e->{PARENT} = $struct;
 		ValidElement($e);
@@ -106,6 +195,8 @@ sub ValidStruct($)
 sub ValidUnion($)
 {
 	my($union) = shift;
+
+	ValidProperties($union);
 
 	if (util::has_property($union->{PARENT}, "nodiscriminant") and util::has_property($union->{PARENT}, "switch_type")) {
 		fatal($union->{PARENT}->{NAME} . ": switch_type() on union without discriminant");
@@ -140,6 +231,8 @@ sub ValidTypedef($)
 	my($typedef) = shift;
 	my $data = $typedef->{DATA};
 
+	ValidProperties($typedef);
+
 	$data->{PARENT} = $typedef;
 
 	if (ref($data) eq "HASH") {
@@ -159,6 +252,8 @@ sub ValidFunction($)
 {
 	my($fn) = shift;
 
+	ValidProperties($fn);
+
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		$e->{PARENT} = $fn;
 		if (util::has_property($e, "ref") && !$e->{POINTERS}) {
@@ -174,6 +269,8 @@ sub ValidInterface($)
 {
 	my($interface) = shift;
 	my($data) = $interface->{DATA};
+
+	ValidProperties($interface);
 
 	if (util::has_property($interface, "pointer_default") && 
 		$interface->{PROPERTIES}->{pointer_default} eq "ptr") {
