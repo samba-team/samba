@@ -132,9 +132,62 @@ struct security_descriptor *security_descriptor_ptr_from_python(TALLOC_CTX *mem_
 	return NULL;
 }
 
-PyObject *security_descriptor_to_python(struct security_descriptor *obj)
+PyObject *dom_sid_to_python(struct dom_sid *obj)
 {
-	return PyDict_New();
+	return PyString_FromString("<sid>");
+}
+
+PyObject *security_acl_to_python(struct security_acl *obj)
+{
+	PyObject *result = PyDict_New();
+	PyObject *ace_list;
+	int i;
+
+	if (!obj) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+
+	PyDict_SetItem(result, PyString_FromString("revision"), PyInt_FromLong(obj->revision));
+	PyDict_SetItem(result, PyString_FromString("size"), PyInt_FromLong(obj->size));
+
+	ace_list = PyList_New(obj->num_aces);
+
+	for(i = 0; i < obj->num_aces; i++) {
+		PyObject *ace = PyDict_New();
+
+		PyDict_SetItem(ace, PyString_FromString("type"), PyInt_FromLong(obj->aces[i].type));
+		PyDict_SetItem(ace, PyString_FromString("flags"), PyInt_FromLong(obj->aces[i].flags));
+		PyDict_SetItem(ace, PyString_FromString("access_mask"), PyInt_FromLong(obj->aces[i].access_mask));
+		PyDict_SetItem(ace, PyString_FromString("trustee"), dom_sid_to_python(&obj->aces[i].trustee));
+
+		PyList_SetItem(ace_list, i, ace);
+	}
+
+	PyDict_SetItem(result, PyString_FromString("aces"), ace_list);
+
+	return result;
+}
+
+PyObject *security_descriptor_to_python(TALLOC_CTX *mem_ctx, struct security_descriptor *obj)
+{
+	PyObject *result = PyDict_New();
+
+	if (!obj) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+
+	PyDict_SetItem(result, PyString_FromString("revision"), PyInt_FromLong(obj->revision));
+	PyDict_SetItem(result, PyString_FromString("type"), PyInt_FromLong(obj->type));
+
+	PyDict_SetItem(result, PyString_FromString("owner_sid"), dom_sid_to_python(obj->owner_sid));
+	PyDict_SetItem(result, PyString_FromString("group_sid"), dom_sid_to_python(obj->group_sid));
+
+	PyDict_SetItem(result, PyString_FromString("sacl"), security_acl_to_python(obj->sacl));
+	PyDict_SetItem(result, PyString_FromString("dacl"), security_acl_to_python(obj->dacl));
+
+	return result;
 }
 
 struct dom_sid2 *dom_sid2_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
@@ -142,7 +195,7 @@ struct dom_sid2 *dom_sid2_ptr_from_python(TALLOC_CTX *mem_ctx, PyObject *obj)
 	return NULL;
 }
 
-PyObject *dom_sid2_to_python(struct dom_sid2 *obj)
+PyObject *dom_sid2_to_python(TALLOC_CTX *mem_ctx, struct dom_sid2 *obj)
 {
 	return PyDict_New();
 }
