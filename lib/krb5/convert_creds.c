@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -168,5 +168,6 @@ krb524_convert_creds_kdc(krb5_context context,
     }
 out:
     krb5_storage_free(sp);
+    krb5_data_free(&reply);
     return ret;
 }
