@@ -1,3 +1,11 @@
+2000-11-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* pfrom.1: work around bug in grog that makes it think it needs
+	mdoc.old
+
+	* push.8: work around bug in grog that makes it think it needs
+	mdoc.old
+
 2000-11-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* push.c: add space to usage
