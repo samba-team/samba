@@ -70,17 +70,25 @@ arg_printusage (struct getargs *args,
 		const char *extra_string)
 {
     int i;
+    size_t max_len = 0;
 
     fprintf (stderr, "Usage: %s", __progname);
     for (i = 0; i < num_args; ++i) {
+	size_t len = 0;
+
 	if (args[i].long_name) {
+	    len += 2 + strlen(args[i].long_name);
 	    fprintf (stderr, " [--%s", args[i].long_name);
 	    print_arg (&args[i]);
 	}
 	if (args[i].short_name) {
+	    len += 2;
 	    fprintf (stderr, " [-%c", args[i].short_name);
 	    print_arg (&args[i]);
 	}
+	if (args[i].long_name && args[i].short_name)
+	    len += 4;
+	max_len = max(max_len, len);
     }
     if (extra_string)
 	fprintf (stderr, " %s\n", extra_string);
@@ -88,14 +96,23 @@ arg_printusage (struct getargs *args,
 	fprintf (stderr, "\n");
     for (i = 0; i < num_args; ++i) {
 	if (args[i].help) {
+	    size_t count = 0;
+
 	    if (args[i].short_name) {
 		fprintf (stderr, "-%c", args[i].short_name);
-		if (args[i].long_name)
-		    fprintf (stderr, " or ");
+		count += 2;
 	    }
-	    if (args[i].long_name)
+	    if (args[i].short_name && args[i].long_name) {
+		fprintf (stderr, " or ");
+		count += 4;
+	    }
+	    if (args[i].long_name) {
 		fprintf (stderr, "--%s", args[i].long_name);
-	    fprintf (stderr, "\t%s\n", args[i].help);
+		count += 2 + strlen(args[i].long_name);
+	    }
+	    while(count++ <= max_len)
+		putc (' ', stderr);
+	    fprintf (stderr, "%s\n", args[i].help);
 	}
     }
 }
