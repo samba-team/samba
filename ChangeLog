@@ -1,3 +1,14 @@
+2003-10-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kdc.8: document enforce-transited-policy
+
+	* kdc/kerberos5.c: always check transited policy if flag set
+	either globally or on principal
+
+	* kdc/config.c: add flag to always check transited policy
+
+	* lib/hdb/hdb.asn1: add flag to enforce transited policy
+
 2003-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/transited.c (krb5_domain_x500_decode): set *num_realms
