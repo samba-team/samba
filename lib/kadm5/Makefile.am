@@ -31,7 +31,7 @@ install-build-headers:: $(kadm5include_HEADERS)
 		fi ; \
 	done
 
-C_SOURCES =					\
+SOURCES_client =					\
 	admin.h					\
 	chpass_c.c				\
 	common_glue.c				\
@@ -53,7 +53,7 @@ C_SOURCES =					\
 	rename_c.c				\
 	send_recv.c
 
-S_SOURCES =					\
+SOURCES_server =					\
 	acl.c					\
 	admin.h					\
 	bump_pw_expire.c			\
@@ -84,8 +84,8 @@ S_SOURCES =					\
 	set_modifier.c				\
 	password_quality.c
 
-libkadm5srv_la_SOURCES = $(S_SOURCES) server_glue.c
-libkadm5clnt_la_SOURCES = $(C_SOURCES) client_glue.c
+libkadm5srv_la_SOURCES = $(SOURCES_server) server_glue.c
+libkadm5clnt_la_SOURCES = $(SOURCES_client) client_glue.c
 
 dump_log_SOURCES = dump_log.c kadm5_locl.h
 
