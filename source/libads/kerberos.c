@@ -87,6 +87,10 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	int ret;
 	extern pstring global_myname;
 	fstring myname;
+
+	/* we don't want this to affect the users ccache */
+	setenv("KRB5CCNAME", lock_path("winbindd_ccache"), 1);
+
 	fstrcpy(myname, global_myname);
 	strlower(myname);
 	asprintf(&s, "HOST/%s@%s", global_myname, ads->realm);
