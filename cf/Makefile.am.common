@@ -4,7 +4,11 @@ AUTOMAKE_OPTIONS = foreign no-dependencies
 
 SUFFIXES = .et .h
 
-INCLUDES = -I$(top_builddir)/include $(INCLUDES_roken)
+if do_roken_rename
+RR = -DROKEN_RENAME
+endif
+
+INCLUDES = -I$(top_builddir)/include $(INCLUDES_roken) $(RR)
 
 AM_CFLAGS += $(WFLAGS)
 
