@@ -56,7 +56,7 @@ int decode_generalized_time (unsigned char*, size_t, time_t*, size_t*);
 
 
 int der_put_int (unsigned char *p, size_t len, unsigned val, size_t*);
-int der_put_length (unsigned char *p, size_t len, unsigned val, size_t*);
+int der_put_length (unsigned char *p, size_t len, size_t val, size_t*);
 int der_put_general_string (unsigned char *p, size_t len, general_string *str, size_t*);
 int der_put_octet_string (unsigned char *p, size_t len, octet_string *data, size_t*);
 int der_put_tag (unsigned char *p, size_t len, Der_class class, Der_type type,
