@@ -463,12 +463,14 @@ static void client_read(struct winbindd_cli_state *state)
 	/* Read data */
 
 	do {
-		n = read(state->sock, state->read_buf_len + (char *)&state->request, 
-				 sizeof(state->request) - state->read_buf_len);
+
+		n = read(state->sock, state->read_buf_len + 
+			 (char *)&state->request, 
+			 sizeof(state->request) - state->read_buf_len);
+
 	} while (n == -1 && errno == EINTR);
 	
-	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n,
-			sizeof(state->request) - n - state->read_buf_len ));
+	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n, sizeof(state->request) - n - state->read_buf_len ));
 
 	/* Read failed, kill client */
 	
@@ -664,8 +666,6 @@ static void process_loop(int accept_sock)
                     
 					client_read(state);
 
-#if 0
-					/* JRA - currently there's no length field in the request... */
 					/* 
 					 * If we have the start of a
 					 * packet, then check the
@@ -674,19 +674,14 @@ static void process_loop(int accept_sock)
 					 * Mock Swedish.
 					 */
 
-					if (state->read_buf_len >= sizeof(int)
-					    && *(int *) state->buf != sizeof(state->request)) {
-
-						struct winbindd_cli_state *rem_state = state;
-
+					if (state->read_buf_len >= sizeof(uint32)
+					    && *(uint32 *) &state->request != sizeof(state->request)) {
 						DEBUG(0,("process_loop: Invalid request size (%d) send, should be (%d)\n",
-								*(int *) rem_state->buf, sizeof(rem_state->request) ));
+								*(uint32 *) &state->request, sizeof(state->request)));
 
-						state = state_next;
-						remove_client(rem_state);
-						continue;
+						remove_client(state);
+						break;
 					}
-#endif
 
 					/* A request packet might be 
 					   complete */
