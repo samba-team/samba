@@ -1063,8 +1063,8 @@ char *DirCacheCheck( const char *path, const char *name, int snum )
 			NULL != entry;
 			entry = (dir_cache_entry *)ubi_dlNext( entry ) ) {
 		if( entry->snum == snum
-				&& 0 == strcmp( name, entry->name )
-				&& 0 == strcmp( path, entry->path ) ) {
+				&& entry->name && 0 == strcmp( name, entry->name )
+				&& entry->path && 0 == strcmp( path, entry->path ) ) {
 			DEBUG(4, ("Got dir cache hit on %s %s -> %s\n",path,name,entry->dname));
 			return( entry->dname );
 		}
