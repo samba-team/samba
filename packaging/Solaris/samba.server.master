@@ -37,7 +37,7 @@ case "$1" in
 'restart')
    killproc nmbd
    killproc smbd
-   BASE=/usr/local/samba
+   BASE=__BASEDIR__/samba
    $BASE/bin/smbd -D -s$BASE/lib/smb.conf
    $BASE/bin/nmbd -D -l$BASE/var/log -s$BASE/lib/smb.conf
    ;;
