@@ -685,24 +685,34 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		}
 
 		if (spnego_state->no_response_expected) {
-			nt_status = NT_STATUS_OK;
+			if (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED) {
+				DEBUG(1,("gensec_update ok but not accepted\n"));
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+			} else {
+				nt_status = NT_STATUS_OK;
+			}
 		} else {
 			nt_status = gensec_update(spnego_state->sub_sec_security,
 						  out_mem_ctx, 
 						  spnego.negTokenTarg.responseToken, 
 						  &unwrapped_out);
-		} 
-		
-		
-		if (NT_STATUS_IS_OK(nt_status) 
-		    && (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED)) {
-		    	DEBUG(1,("gensec_update ok but not accepted\n"));
-			nt_status = NT_STATUS_INVALID_PARAMETER;
+
+			if (NT_STATUS_IS_OK(nt_status)) {
+				spnego_state->no_response_expected = True;
+			}
 		} 
 		
 		spnego_free_data(&spnego);
 
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)
+			&& !NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(1, ("SPNEGO(%s) login failed: %s\n", 
+				  spnego_state->sub_sec_security->ops->name, 
+				  nt_errstr(nt_status)));
+			return nt_status;
+		}
+
+		if (unwrapped_out.length) {
 			/* compose reply */
 			spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
 			spnego_out.negTokenTarg.negResult = SPNEGO_NONE_RESULT;
@@ -716,30 +726,21 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			}
 		
 			spnego_state->state_position = SPNEGO_CLIENT_TARG;
-		} else if (NT_STATUS_IS_OK(nt_status)) {
-			/* all done - server has accepted, and we agree */
-			
-			if (unwrapped_out.length) {
-				spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
-				spnego_out.negTokenTarg.negResult = SPNEGO_NONE_RESULT;
-				spnego_out.negTokenTarg.supportedMech = NULL;
-				spnego_out.negTokenTarg.responseToken = unwrapped_out;
-				spnego_out.negTokenTarg.mechListMIC = null_data_blob;
-				
-				if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
-					DEBUG(1, ("Failed to write SPNEGO reply to NEG_TOKEN_TARG\n"));
-					return NT_STATUS_INVALID_PARAMETER;
-				}
-			} else {
-				*out = null_data_blob;
-			}
-
-			spnego_state->state_position = SPNEGO_DONE;
+			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		} else {
-			DEBUG(1, ("SPNEGO(%s) login failed: %s\n", 
-				  spnego_state->sub_sec_security->ops->name, 
-				  nt_errstr(nt_status)));
+
+			/* all done - server has accepted, and we agree */
+			*out = null_data_blob;
+
+			if (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED) {
+				/* unless of course it did not accept */
+				DEBUG(1,("gensec_update ok but not accepted\n"));
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+			}
 		}
+		
+		spnego_state->state_position = SPNEGO_DONE;
+
 		return nt_status;
 	}
 	case SPNEGO_DONE:
