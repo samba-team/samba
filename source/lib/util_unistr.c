@@ -728,7 +728,7 @@ smb_ucs2_t *multibyte_to_unicode(smb_ucs2_t *dst, const char *src,
 
 	dst_len /= sizeof(smb_ucs2_t); /* Convert to smb_ucs2_t units. */
 
-	for(i = 0; (i < (dst_len  - 1)) && src[i];) {
+	for(i = 0; (i < (dst_len  - 1)) && *src;) {
 		size_t skip = skip_multibyte_char(*src);
 		smb_ucs2_t val = (*src & 0xff);
 
