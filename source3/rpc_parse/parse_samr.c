@@ -1,3 +1,5 @@
+#define OLD_NTDOMAIN 1
+
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -3606,3 +3608,7 @@ BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct
 
 	return True;
 }
+
+
+#undef OLD_NTDOMAIN
+

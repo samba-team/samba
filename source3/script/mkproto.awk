@@ -23,10 +23,6 @@ END {
     print "/*The following definitions come from ",FILENAME," */"
     print ""
     current_file=FILENAME
-#    if (current_file=="ldap.c") {
-#      print "#ifdef USE_LDAP"
-#      use_ldap_define = 1;
-#    }
   }
   if (inheader) {
     if (match($0,"[)][ \t]*$")) {
@@ -37,6 +33,20 @@ END {
     }
     next;
   }
+}
+
+# special handling for code merge of TNG to head
+/^#define OLD_NTDOMAIN 1/ {
+  printf "#if OLD_NTDOMAIN\n"
+}
+/^#undef OLD_NTDOMAIN/ {
+  printf "#endif\n"
+}
+/^#define NEW_NTDOMAIN 1/ {
+  printf "#if NEW_NTDOMAIN\n"
+}
+/^#undef NEW_NTDOMAIN/ {
+  printf "#endif\n"
 }
 
 # we handle the loadparm.c fns separately

@@ -1762,6 +1762,7 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
+#if OLD_NTDOMAIN
 BOOL get_samr_query_usergroups(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain, uint32 user_rid,
 				uint32 *num_groups, DOM_GID *gid);
@@ -1800,6 +1801,7 @@ BOOL do_samr_query_usergroups(struct cli_state *cli,
 BOOL do_samr_query_userinfo(struct cli_state *cli, 
 				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
+#endif
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
@@ -2225,6 +2227,7 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_stru
 
 /*The following definitions come from  rpc_parse/parse_samr.c  */
 
+#if OLD_NTDOMAIN
 void init_samr_q_close_hnd(SAMR_Q_CLOSE_HND *q_c, POLICY_HND *hnd);
 BOOL samr_io_q_close_hnd(char *desc,  SAMR_Q_CLOSE_HND *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int depth);
@@ -2401,6 +2404,7 @@ void init_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 BOOL samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth);
 void init_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER *r_u, uint32 status);
 BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
+#endif
 
 /*The following definitions come from  rpc_parse/parse_sec.c  */
 
@@ -2697,6 +2701,7 @@ BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
+#if OLD_NTDOMAIN
 BOOL create_next_pdu(pipes_struct *p);
 BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *rpc_in_p);
 BOOL setup_fault_pdu(pipes_struct *p);
@@ -2705,6 +2710,7 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in);
 BOOL api_pipe_request(pipes_struct *p);
 BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
 				prs_struct *rpc_in);
+#endif
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
@@ -2727,7 +2733,9 @@ BOOL api_reg_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_samr.c  */
 
+#if OLD_NTDOMAIN
 BOOL api_samr_rpc(pipes_struct *p, prs_struct *data);
+#endif
 
 /*The following definitions come from  rpc_server/srv_spoolss.c  */
 
@@ -3503,6 +3511,8 @@ int tdb_get_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int tdb_get_int(TDB_CONTEXT *tdb, char *keystr);
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
+int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);
+TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr);
 
 /*The following definitions come from  utils/nbio.c  */
 
