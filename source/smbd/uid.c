@@ -148,6 +148,8 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 	 */
 
 	if((group_c = *lp_force_group(snum))) {
+		BOOL is_guest = False;
+
 		if(group_c == '+') {
 
 			/*
@@ -173,7 +175,10 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		 * re-create it.
 		 */
 
-		token = create_nt_token(uid, gid, current_user.ngroups, current_user.groups);
+		if (vuser && vuser->guest)
+			is_guest = True;
+
+		token = create_nt_token(uid, gid, current_user.ngroups, current_user.groups, is_guest);
 		must_free_token = True;
 	}
 	

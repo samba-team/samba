@@ -2223,10 +2223,11 @@ void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
                            uint32 status);
 BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
 BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth);
-void init_lsa_sid_enum(LSA_SID_ENUM *sen, int num_entries, DOM_SID **sids);
-void init_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
-				int num_sids, DOM_SID **sids,
-				uint16 level);
+void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen, 
+		       int num_entries, DOM_SID **sids);
+void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l, 
+			POLICY_HND *hnd, int num_sids, DOM_SID **sids,
+			uint16 level);
 BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
 BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
 void init_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
@@ -3679,7 +3680,7 @@ user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
-NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups);
+NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
 		     char *domain,BOOL guest);
 void add_session_user(char *user);
@@ -3808,6 +3809,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 
 /*The following definitions come from  smbd/sec_ctx.c  */
 
+#if OLD_NTDOMAIN
 int get_current_groups(int *p_ngroups, gid_t **p_groups);
 void delete_nt_token(NT_USER_TOKEN **pptoken);
 NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken);
@@ -3817,6 +3819,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 void set_root_sec_ctx(void);
 BOOL pop_sec_ctx(void);
 void init_sec_ctx(void);
+#endif
 
 /*The following definitions come from  smbd/server.c  */
 
@@ -3892,6 +3895,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 
 /*The following definitions come from  smbd/vfs-wrap.c  */
 
+#if OLD_NTDOMAIN
 int vfswrap_dummy_connect(connection_struct *conn, char *service, char *user);
 void vfswrap_dummy_disconnect(connection_struct *conn);
 SMB_BIG_UINT vfswrap_disk_free(connection_struct *conn, char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
@@ -3923,9 +3927,11 @@ size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
 size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
 BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd);
 BOOL vfswrap_set_nt_acl(files_struct *fsp, char *name, uint32 security_info_sent, SEC_DESC *psd);
+#endif
 
 /*The following definitions come from  smbd/vfs.c  */
 
+#if OLD_NTDOMAIN
 int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st);
@@ -3942,6 +3948,7 @@ char *vfs_readdirname(connection_struct *conn, void *p);
 int vfs_ChDir(connection_struct *conn, char *path);
 char *vfs_GetWd(connection_struct *conn, char *path);
 BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks);
+#endif
 
 /*The following definitions come from  smbwrapper/realcalls.c  */
 
