@@ -61,10 +61,8 @@ int main(int argc, char **argv)
     EncryptionKey key;
     FILE *f;
     size_t len;
-    int optind = 0;
     krb5_context context = NULL;
     
-
     krb5_program_setup(&context, argc, argv, args, num_args, NULL);
 
     if(help_flag)

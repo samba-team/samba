@@ -85,7 +85,6 @@ NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
     DBM *d = (DBM*)db->db;
     datum key, value;
     krb5_data key_data, data;
-    krb5_principal principal;
     krb5_error_code ret;
 
     if(first)

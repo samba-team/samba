@@ -46,7 +46,6 @@ hdb_next_keytype2key(krb5_context context,
 		     krb5_keytype keytype,
 		     Key **key)
 {
-    krb5_error_code ret;
     int i;
     if(*key) 
 	i = *key - e->keys.val + 1;
