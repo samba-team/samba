@@ -282,7 +282,7 @@ install -m 755 source/bin/libsmbclient.a $DESTDIR/usr/lib
 
 # Add smbwrapper support
 install -m 755 source/bin/smbsh $DESTDIR/usr/bin
-install -m 755 source/bin/smbwrappers.so $DESTDIR/usr/lib
+install -m 755 source/bin/smbwrapper.so $DESTDIR/usr/lib
 
 # Ancilliary support files
 cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
@@ -371,7 +371,7 @@ pam_*                                   base
 vfs_*                                   base
 pdb_*                                   base
 smbsh                                   base
-smbwrappers.so				base
+smbwrapper.so				base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$) base
 %{_defaultdocdir}/samba-                doc
 smb(mount|mnt|umount)                   smbfs
