@@ -202,6 +202,10 @@ erase_file(const char *filename)
 	else
 	    return errno;
     }
+    if (unlink(filename) < 0) {
+        close (fd);
+        return errno;
+    }
     ret = fstat (fd, &sb2);
     if (ret < 0) {
 	close (fd);
@@ -213,17 +217,6 @@ erase_file(const char *filename)
     if (sb1.st_dev != sb2.st_dev || sb1.st_ino != sb2.st_ino) {
 	close (fd);
 	return EPERM;
-    }
-
-    if (unlink(filename) < 0) {
-        close (fd);
-        return errno;
-    }
-
-    ret = fstat (fd, &sb2);
-    if (ret < 0) {
-	close (fd);
-	return errno;
     }
 
     /* there are still hard links to this file */
