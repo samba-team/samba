@@ -61,7 +61,6 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
 BOOL pdb_generate_sam_sid(void)
 {
 	int fd;
-	char *p;
 	pstring sid_file;
 	fstring sid_string;
 	SMB_STRUCT_STAT st;
@@ -69,11 +68,7 @@ BOOL pdb_generate_sam_sid(void)
 
 	generate_wellknown_sids();
 
-	pstrcpy(sid_file, lp_smb_passwd_file());
-	p = strrchr_m(sid_file, '/');
-	if(p != NULL) {
-		*++p = '\0';
-	}
+	pstrcpy(sid_file, lp_private_dir());
 
 	if (!directory_exist(sid_file, NULL)) {
 		if (mkdir(sid_file, 0700) != 0) {
@@ -83,7 +78,7 @@ BOOL pdb_generate_sam_sid(void)
 		}
 	}
 
-	pstrcat(sid_file, "MACHINE.SID");
+	pstrcat(sid_file, "/MACHINE.SID");
     
 	if((fd = sys_open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
 		DEBUG(0,("unable to open or create file %s. Error was %s\n",
