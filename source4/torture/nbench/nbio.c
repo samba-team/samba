@@ -215,9 +215,7 @@ void nb_createx(const char *fname,
 
 	talloc_destroy(mem_ctx);
 
-	if (strcmp(fname, "\\clients") != 0) {
-		check_status("NTCreateX", status, ret);
-	}
+	check_status("NTCreateX", status, ret);
 
 	if (!NT_STATUS_IS_OK(ret)) return;
 
@@ -427,6 +425,17 @@ void nb_rmdir(const char *dname, NTSTATUS status)
 	ret = smb_raw_rmdir(c->tree, &io);
 
 	check_status("Rmdir", status, ret);
+}
+
+void nb_mkdir(const char *dname, NTSTATUS status)
+{
+	union smb_mkdir io;
+
+	io.mkdir.level = RAW_MKDIR_MKDIR;
+	io.mkdir.in.path = dname;
+
+	/* NOTE! no error checking. Used for base fileset creation */
+	smb_raw_mkdir(c->tree, &io);
 }
 
 void nb_rename(const char *old, const char *new, NTSTATUS status)

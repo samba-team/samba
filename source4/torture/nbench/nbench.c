@@ -106,6 +106,8 @@ again:
 			nb_deltree(params[1]);
 		} else if (!strcmp(params[0],"Rmdir")) {
 			nb_rmdir(params[1], status);
+		} else if (!strcmp(params[0],"Mkdir")) {
+			nb_mkdir(params[1], status);
 		} else if (!strcmp(params[0],"QUERY_PATH_INFORMATION")) {
 			nb_qpathinfo(params[1], ival(params[2]), status);
 		} else if (!strcmp(params[0],"QUERY_FILE_INFORMATION")) {
