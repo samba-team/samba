@@ -35,6 +35,105 @@ extern pstring global_myname;
 #define PRINTER_HANDLE_IS_PRINTER	0
 #define PRINTER_HANDLE_IS_PRINTSERVER	1
 
+BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
+                          NT_PRINTER_INFO_LEVEL *printer,
+			  uint32 level)
+{
+	switch (level)
+	{
+		case 2: 
+		{
+			uni_2_asc_printer_info_2(uni->info_2,
+			                         &(printer->info_2));
+			break;
+		}
+		default:
+			break;
+	}
+	
+
+
+	return True;
+}
+
+BOOL convert_printer_driver_info(SPOOL_PRINTER_DRIVER_INFO_LEVEL uni,
+                                 NT_PRINTER_DRIVER_INFO_LEVEL *printer,
+			         uint32 level)
+{
+	switch (level)
+	{
+		case 3: 
+		{
+			printer->info_3=NULL;
+			uni_2_asc_printer_driver_3(uni.info_3, &(printer->info_3));						
+			break;
+		}
+		default:
+			break;
+	}
+	
+
+
+	return True;
+}
+
+BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
+{
+	unistr_to_ascii(nt_devmode->devicename,
+	                devmode.devicename.buffer,
+			31);
+
+	unistr_to_ascii(nt_devmode->formname,
+	                devmode.formname.buffer,
+			31);
+
+	nt_devmode->specversion=devmode.specversion;
+	nt_devmode->driverversion=devmode.driverversion;
+	nt_devmode->size=devmode.size;
+	nt_devmode->driverextra=devmode.driverextra;
+	nt_devmode->fields=devmode.fields;
+	nt_devmode->orientation=devmode.orientation;
+	nt_devmode->papersize=devmode.papersize;
+	nt_devmode->paperlength=devmode.paperlength;
+	nt_devmode->paperwidth=devmode.paperwidth;
+	nt_devmode->scale=devmode.scale;
+	nt_devmode->copies=devmode.copies;
+	nt_devmode->defaultsource=devmode.defaultsource;
+	nt_devmode->printquality=devmode.printquality;
+	nt_devmode->color=devmode.color;
+	nt_devmode->duplex=devmode.duplex;
+	nt_devmode->yresolution=devmode.yresolution;
+	nt_devmode->ttoption=devmode.ttoption;
+	nt_devmode->collate=devmode.collate;
+
+	nt_devmode->logpixels=devmode.logpixels;
+	nt_devmode->bitsperpel=devmode.bitsperpel;
+	nt_devmode->pelswidth=devmode.pelswidth;
+	nt_devmode->pelsheight=devmode.pelsheight;
+	nt_devmode->displayflags=devmode.displayflags;
+	nt_devmode->displayfrequency=devmode.displayfrequency;
+	nt_devmode->icmmethod=devmode.icmmethod;
+	nt_devmode->icmintent=devmode.icmintent;
+	nt_devmode->mediatype=devmode.mediatype;
+	nt_devmode->dithertype=devmode.dithertype;
+	nt_devmode->reserved1=devmode.reserved1;
+	nt_devmode->reserved2=devmode.reserved2;
+	nt_devmode->panningwidth=devmode.panningwidth;
+	nt_devmode->panningheight=devmode.panningheight;
+	
+	if (nt_devmode->driverextra != 0) 
+	{
+		/* if we had a previous private delete it and make a new one */
+		if (nt_devmode->private != NULL)
+			free(nt_devmode->private);
+		nt_devmode->private=(uint8 *)malloc(nt_devmode->driverextra * sizeof(uint8));
+		memcpy(nt_devmode->private, devmode.private, nt_devmode->driverextra);
+	}
+	
+
+	return True;
+}
+
 
 /* structure to store the printer handles */
 /* and a reference to what it's pointing to */
@@ -2293,51 +2392,53 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 	return 0x0;
 }
 
-#if 0
-
 /********************************************************************
  * api_spoolss_getprinter
  * called from the spoolss dispatcher
  *
  ********************************************************************/
-static void control_printer(POLICY_HND handle, uint32 command)
+static uint32 control_printer(const POLICY_HND *handle, uint32 command)
 {
 	int pnum;
 	int snum;
 	pnum = find_printer_index_by_hnd(handle);
 
-	if ( get_printer_snum(&handle, &snum) )
+	if ( pnum == -1 || !get_printer_snum(handle, &snum) )
 	{		 
-		switch (command)
-		{
-			case PRINTER_CONTROL_PAUSE:
-				/* pause the printer here */
-				status_printqueue(NULL, snum, LPSTAT_STOPPED);
-				break;
-
-			case PRINTER_CONTROL_RESUME:
-			case PRINTER_CONTROL_UNPAUSE:
-				/* UN-pause the printer here */
-				status_printqueue(NULL, snum, LPSTAT_OK);
-				break;
-			case PRINTER_CONTROL_PURGE:
-				/* Envoi des dragées FUCA dans l'imprimante */
-				break;
-		}
+		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	switch (command)
+	{
+		case PRINTER_CONTROL_PAUSE:
+			/* pause the printer here */
+			return status_printqueue(NULL, snum, LPSTAT_STOPPED);
+
+		case PRINTER_CONTROL_RESUME:
+		case PRINTER_CONTROL_UNPAUSE:
+			/* UN-pause the printer here */
+			return status_printqueue(NULL, snum, LPSTAT_OK);
+		case PRINTER_CONTROL_PURGE:
+			/* Envoi des dragées FUCA dans l'imprimante */
+			break;
+	}
+
+	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
 /********************************************************************
  * called by spoolss_api_setprinter
  * when updating a printer description
  ********************************************************************/
-static void update_printer(POLICY_HND handle, uint32 level,
-                           SPOOL_PRINTER_INFO_LEVEL info, DEVICEMODE *devmode)
+static uint32 update_printer(const POLICY_HND *handle, uint32 level,
+                           const SPOOL_PRINTER_INFO_LEVEL *info,
+                           const DEVICEMODE *devmode)
 {
 	int pnum;
 	int snum;
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_DEVICEMODE *nt_devmode;
+	uint32 status = 0x0;
 
 	nt_devmode=NULL;
 	
@@ -2347,98 +2448,84 @@ static void update_printer(POLICY_HND handle, uint32 level,
 	{
 		DEBUG(0,("Send a mail to samba-bugs@samba.org\n"));
 		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
-		return;
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	pnum = find_printer_index_by_hnd(&handle);
-	
-	if ( get_printer_snum(&handle, &snum) )
-	{
-		get_a_printer(&printer, level, lp_servicename(snum));
-
-		DEBUGADD(8,("Converting info_2 struct\n"));
-		convert_printer_info(info, &printer, level);
-		
-		if ((info.info_2)->devmode_ptr != 0)
-		{
-			/* we have a valid devmode
-			   convert it and link it*/
-			
-			/* the nt_devmode memory is already alloced
-			 * while doing the get_a_printer call
-			 * but the devmode private part is not
-			 * it's done by convert_devicemode
-			 */
-			DEBUGADD(8,("Converting the devicemode struct\n"));
-			nt_devmode=printer.info_2->devmode;
-			
-			init_devicemode(nt_devmode);
-					
-			convert_devicemode(*devmode, nt_devmode);
-			
-			/* now clear the memory used in 
-			 * the RPC parsing routine
-			 */
-			if (devmode->private != NULL)
-				free(devmode->private);
-			free(devmode);
-		}
-		else
-		{
-			if (printer.info_2->devmode != NULL)
-			{
-				free(printer.info_2->devmode);
-			}
-			printer.info_2->devmode=NULL;
-		}
-				
-		add_a_printer(printer, level);
-		free_a_printer(printer, level);
-	}	
-}
-
-/****************************************************************************
-****************************************************************************/
-uint32 _spoolss_setprinter(SPOOL_Q_SETPRINTER *q_u, prs_struct *rdata)
-{
-	SPOOL_R_SETPRINTER r_u;
-
-	/*
-	  Let's the sun shine !!!
-	  Always respond everything is alright
-	*/
-	
-	status=0x0;
-
-	spoolss_io_r_setprinter("",&r_u,rdata,0);
-}
-
-/****************************************************************************
-****************************************************************************/
-static void api_spoolss_setprinter(rpcsrv_struct *p, prs_struct *data,
-                                   prs_struct *rdata)
-{
-	SPOOL_Q_SETPRINTER q_u;
-	int pnum;
-	spoolss_io_q_setprinter("", &q_u, data, 0);
-	
 	pnum = find_printer_index_by_hnd(handle);
-	
-	if (OPEN_HANDLE(pnum))
+	if ( pnum == -1 || !get_printer_snum(handle, &snum) )
 	{
-		/* check the level */	
-		switch (level)
-		{
-			case 0:
-				control_printer(handle, command);
-				break;
-			case 2:
-				update_printer(handle, level, info, devmode);
-				break;
-		}
+		return NT_STATUS_INVALID_HANDLE;
 	}
-	spoolss_setprinter(&q_u, rdata);
+	get_a_printer(&printer, level, lp_servicename(snum));
+
+	DEBUGADD(8,("Converting info_2 struct\n"));
+	convert_printer_info(info, &printer, level);
+	
+	if ((info->info_2)->devmode_ptr != 0)
+	{
+		/* we have a valid devmode
+		   convert it and link it*/
+		
+		/* the nt_devmode memory is already alloced
+		 * while doing the get_a_printer call
+		 * but the devmode private part is not
+		 * it's done by convert_devicemode
+		 */
+		DEBUGADD(8,("Converting the devicemode struct\n"));
+		nt_devmode=printer.info_2->devmode;
+		
+		init_devicemode(nt_devmode);
+				
+		convert_devicemode(*devmode, nt_devmode);
+	}
+	else
+	{
+		if (printer.info_2->devmode != NULL)
+		{
+			free(printer.info_2->devmode);
+		}
+		printer.info_2->devmode=NULL;
+	}
+			
+	if (status == 0x0)
+	{
+		status = add_a_printer(printer, level);
+	}
+	if (status == 0x0)
+	{
+		status = free_a_printer(printer, level);
+	}
+
+	return status;
 }
+
+/****************************************************************************
+****************************************************************************/
+uint32 _spoolss_setprinter( const POLICY_HND *handle,
+				uint32 level,
+				const SPOOL_PRINTER_INFO_LEVEL *info,
+				const DEVICEMODE *devmode,
+				uint32 sec_buf_size,
+				const char *sec_buf,
+				uint32 command)
+{
+	int pnum = find_printer_index_by_hnd(handle);
+	
+	if (!OPEN_HANDLE(pnum))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	/* check the level */	
+	switch (level)
+	{
+		case 0: return control_printer(handle, command);
+		case 2: return update_printer(handle, level, info, devmode);
+	}
+
+	return NT_STATUS_INVALID_INFO_CLASS;
+}
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/

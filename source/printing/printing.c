@@ -1175,8 +1175,7 @@ void printjob_decode(int jobid, int *snum, int *job)
 /****************************************************************************
  Change status of a printer queue
 ****************************************************************************/
-
-void status_printqueue(connection_struct *conn,int snum,int status)
+uint32 status_printqueue(connection_struct *conn,int snum,int status)
 {
   char *queuestatus_command = (status==LPSTAT_STOPPED ? 
                                lp_queuepausecommand(snum):lp_queueresumecommand(snum));
@@ -1193,7 +1192,7 @@ void status_printqueue(connection_struct *conn,int snum,int status)
   if (!queuestatus_command || !(*queuestatus_command)) {
     DEBUG(5,("No queuestatus command to %s job\n",
           (status==LPSTAT_STOPPED?"pause":"resume")));
-    return;
+    return NT_STATUS_INVALID_PARAMETER;
   }
 
   pstrcpy(syscmd,queuestatus_command);
@@ -1210,6 +1209,8 @@ void status_printqueue(connection_struct *conn,int snum,int status)
   ret = smbrun(syscmd,NULL,False);
   DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
   lpq_reset(snum); /* queue has changed */
+
+	return ret == 0 ? 0x0 : NT_STATUS_INVALID_PARAMETER;
 }
 
 

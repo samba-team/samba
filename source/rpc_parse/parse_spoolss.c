@@ -3656,7 +3656,7 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 	return True;
 }
 
-BOOL uni_2_asc_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 *uni,
+BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
                               NT_PRINTER_INFO_LEVEL_2  **asc)
 {
 	NT_PRINTER_INFO_LEVEL_2 *d;
@@ -3693,104 +3693,6 @@ BOOL uni_2_asc_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 	unistr2_to_ascii(d->printprocessor, &(uni->printprocessor), sizeof(d->printprocessor)-1);
 	unistr2_to_ascii(d->datatype,       &(uni->datatype),       sizeof(d->datatype)-1);
 	unistr2_to_ascii(d->parameters,     &(uni->parameters),     sizeof(d->parameters)-1);
-
-	return True;
-}
-
-BOOL convert_printer_info(SPOOL_PRINTER_INFO_LEVEL uni,
-                          NT_PRINTER_INFO_LEVEL *printer,
-			  uint32 level)
-{
-	switch (level)
-	{
-		case 2: 
-		{
-			uni_2_asc_printer_info_2(uni.info_2, &(printer->info_2));
-			break;
-		}
-		default:
-			break;
-	}
-	
-
-
-	return True;
-}
-
-BOOL convert_printer_driver_info(SPOOL_PRINTER_DRIVER_INFO_LEVEL uni,
-                                 NT_PRINTER_DRIVER_INFO_LEVEL *printer,
-			         uint32 level)
-{
-	switch (level)
-	{
-		case 3: 
-		{
-			printer->info_3=NULL;
-			uni_2_asc_printer_driver_3(uni.info_3, &(printer->info_3));						
-			break;
-		}
-		default:
-			break;
-	}
-	
-
-
-	return True;
-}
-
-BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
-{
-	unistr_to_ascii(nt_devmode->devicename,
-	                devmode.devicename.buffer,
-			31);
-
-	unistr_to_ascii(nt_devmode->formname,
-	                devmode.formname.buffer,
-			31);
-
-	nt_devmode->specversion=devmode.specversion;
-	nt_devmode->driverversion=devmode.driverversion;
-	nt_devmode->size=devmode.size;
-	nt_devmode->driverextra=devmode.driverextra;
-	nt_devmode->fields=devmode.fields;
-	nt_devmode->orientation=devmode.orientation;
-	nt_devmode->papersize=devmode.papersize;
-	nt_devmode->paperlength=devmode.paperlength;
-	nt_devmode->paperwidth=devmode.paperwidth;
-	nt_devmode->scale=devmode.scale;
-	nt_devmode->copies=devmode.copies;
-	nt_devmode->defaultsource=devmode.defaultsource;
-	nt_devmode->printquality=devmode.printquality;
-	nt_devmode->color=devmode.color;
-	nt_devmode->duplex=devmode.duplex;
-	nt_devmode->yresolution=devmode.yresolution;
-	nt_devmode->ttoption=devmode.ttoption;
-	nt_devmode->collate=devmode.collate;
-
-	nt_devmode->logpixels=devmode.logpixels;
-	nt_devmode->bitsperpel=devmode.bitsperpel;
-	nt_devmode->pelswidth=devmode.pelswidth;
-	nt_devmode->pelsheight=devmode.pelsheight;
-	nt_devmode->displayflags=devmode.displayflags;
-	nt_devmode->displayfrequency=devmode.displayfrequency;
-	nt_devmode->icmmethod=devmode.icmmethod;
-	nt_devmode->icmintent=devmode.icmintent;
-	nt_devmode->mediatype=devmode.mediatype;
-	nt_devmode->dithertype=devmode.dithertype;
-	nt_devmode->reserved1=devmode.reserved1;
-	nt_devmode->reserved2=devmode.reserved2;
-	nt_devmode->panningwidth=devmode.panningwidth;
-	nt_devmode->panningheight=devmode.panningheight;
-	
-	if (nt_devmode->driverextra != 0) 
-	{
-		/* if we had a previous private delete it and make a new one */
-		if (nt_devmode->private != NULL)
-			free(nt_devmode->private);
-		nt_devmode->private=(uint8 *)malloc(nt_devmode->driverextra * sizeof(uint8));
-		memcpy(nt_devmode->private, devmode.private, nt_devmode->driverextra);
-	}
-	
 
 	return True;
 }

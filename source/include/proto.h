@@ -1903,7 +1903,7 @@ void del_printqueue(connection_struct *conn,int snum,int jobid);
 void status_printjob(connection_struct *conn,int snum,int jobid,int status);
 int printjob_encode(int snum, int job);
 void printjob_decode(int jobid, int *snum, int *job);
-void status_printqueue(connection_struct *conn,int snum,int status);
+uint32 status_printqueue(connection_struct *conn,int snum,int status);
 void load_printers(void);
 
 /*The following definitions come from  profile/profile.c  */
@@ -3637,15 +3637,8 @@ BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, pr
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
                                 NT_PRINTER_DRIVER_INFO_LEVEL_3 **asc);
-BOOL uni_2_asc_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 *uni,
+BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
                               NT_PRINTER_INFO_LEVEL_2  **asc);
-BOOL convert_printer_info(SPOOL_PRINTER_INFO_LEVEL uni,
-                          NT_PRINTER_INFO_LEVEL *printer,
-			  uint32 level);
-BOOL convert_printer_driver_info(SPOOL_PRINTER_DRIVER_INFO_LEVEL uni,
-                                 NT_PRINTER_DRIVER_INFO_LEVEL *printer,
-			         uint32 level);
-BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode);
 BOOL spoolss_io_r_getprinterdriverdir(char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_getprinterdriverdir(char *desc, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_enumprintprocessors(char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r_u, prs_struct *ps, int depth);
@@ -4842,6 +4835,13 @@ msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  spoolssd/srv_spoolss_nt.c  */
 
+BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
+                          NT_PRINTER_INFO_LEVEL *printer,
+			  uint32 level);
+BOOL convert_printer_driver_info(SPOOL_PRINTER_DRIVER_INFO_LEVEL uni,
+                                 NT_PRINTER_DRIVER_INFO_LEVEL *printer,
+			         uint32 level);
+BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode);
 void init_printer_hnd(void);
 uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 
@@ -4901,7 +4901,13 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 				uint32 buffer_size,
 				const uint8 *buffer,
 				uint32 *buffer_written);
-uint32 _spoolss_setprinter(SPOOL_Q_SETPRINTER *q_u, prs_struct *rdata);
+uint32 _spoolss_setprinter( const POLICY_HND *handle,
+				uint32 level,
+				const SPOOL_PRINTER_INFO_LEVEL *info,
+				const DEVICEMODE *devmode,
+				uint32 sec_buf_size,
+				const char *sec_buf,
+				uint32 command);
 uint32 _spoolss_fcpn(SPOOL_Q_FCPN *q_u, prs_struct *rdata);
 uint32 _spoolss_addjob(SPOOL_Q_ADDJOB *q_u, prs_struct *rdata);
 uint32 _spoolss_enumjobs(SPOOL_Q_ENUMJOBS *q_u, prs_struct *rdata);

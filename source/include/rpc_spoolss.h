@@ -1257,6 +1257,8 @@ typedef struct spool_q_setprinter
 	SPOOL_PRINTER_INFO_LEVEL info;
 
 	DEVICEMODE *devmode;
+
+	/* lkclXXXX jean-francois, see SEC_DESC_BUF code */
 	struct
 	{
 		uint32 size_of_buffer;
@@ -1264,6 +1266,7 @@ typedef struct spool_q_setprinter
 	} security;
 
 	uint32 command;
+
 } SPOOL_Q_SETPRINTER;
 
 typedef struct spool_r_setprinter

@@ -812,149 +812,26 @@ static void api_spoolss_writeprinter(rpcsrv_struct *p, prs_struct *data,
 	spoolss_io_r_writeprinter("",&r_u,rdata,0);		
 }
 
-/********************************************************************
- * api_spoolss_getprinter
- * called from the spoolss dispatcher
- *
- ********************************************************************/
-static void control_printer(POLICY_HND handle, uint32 command)
-{
-	int pnum;
-	int snum;
-	pnum = find_printer_index_by_hnd(&(handle));
-
-	if ( get_printer_snum(&handle, &snum) )
-	{		 
-		switch (command)
-		{
-			case PRINTER_CONTROL_PAUSE:
-				/* pause the printer here */
-				status_printqueue(NULL, snum, LPSTAT_STOPPED);
-				break;
-
-			case PRINTER_CONTROL_RESUME:
-			case PRINTER_CONTROL_UNPAUSE:
-				/* UN-pause the printer here */
-				status_printqueue(NULL, snum, LPSTAT_OK);
-				break;
-			case PRINTER_CONTROL_PURGE:
-				/* Envoi des dragées FUCA dans l'imprimante */
-				break;
-		}
-	}
-}
-
-/********************************************************************
- * called by spoolss_api_setprinter
- * when updating a printer description
- ********************************************************************/
-static void update_printer(POLICY_HND handle, uint32 level,
-                           SPOOL_PRINTER_INFO_LEVEL info, DEVICEMODE *devmode)
-{
-	int pnum;
-	int snum;
-	NT_PRINTER_INFO_LEVEL printer;
-	NT_DEVICEMODE *nt_devmode;
-
-	nt_devmode=NULL;
-	
-	DEBUG(8,("update_printer\n"));
-	
-	if (level!=2)
-	{
-		DEBUG(0,("Send a mail to samba-bugs@samba.org\n"));
-		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
-		return;
-	}
-
-	pnum = find_printer_index_by_hnd(&handle);
-	
-	if ( get_printer_snum(&handle, &snum) )
-	{
-		get_a_printer(&printer, level, lp_servicename(snum));
-
-		DEBUGADD(8,("Converting info_2 struct\n"));
-		convert_printer_info(info, &printer, level);
-		
-		if ((info.info_2)->devmode_ptr != 0)
-		{
-			/* we have a valid devmode
-			   convert it and link it*/
-			
-			/* the nt_devmode memory is already alloced
-			 * while doing the get_a_printer call
-			 * but the devmode private part is not
-			 * it's done by convert_devicemode
-			 */
-			DEBUGADD(8,("Converting the devicemode struct\n"));
-			nt_devmode=printer.info_2->devmode;
-			
-			init_devicemode(nt_devmode);
-					
-			convert_devicemode(*devmode, nt_devmode);
-			
-			/* now clear the memory used in 
-			 * the RPC parsing routine
-			 */
-			if (devmode->private != NULL)
-				free(devmode->private);
-			free(devmode);
-		}
-		else
-		{
-			if (printer.info_2->devmode != NULL)
-			{
-				free(printer.info_2->devmode);
-			}
-			printer.info_2->devmode=NULL;
-		}
-				
-		add_a_printer(printer, level);
-		free_a_printer(printer, level);
-	}	
-}
-
-/****************************************************************************
-****************************************************************************/
-static void spoolss_reply_setprinter(SPOOL_Q_SETPRINTER *q_u, prs_struct *rdata)
-{
-	SPOOL_R_SETPRINTER r_u;
-
-	/*
-	  Let's the sun shine !!!
-	  Always respond everything is alright
-	*/
-	
-	r_u.status=0x0;
-
-	spoolss_io_r_setprinter("",&r_u,rdata,0);
-}
-
 /****************************************************************************
 ****************************************************************************/
 static void api_spoolss_setprinter(rpcsrv_struct *p, prs_struct *data,
                                    prs_struct *rdata)
 {
 	SPOOL_Q_SETPRINTER q_u;
-	int pnum;
+	SPOOL_R_SETPRINTER r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	spoolss_io_q_setprinter("", &q_u, data, 0);
-	
-	pnum = find_printer_index_by_hnd(&(q_u.handle));
-	
-	if (OPEN_HANDLE(pnum))
-	{
-		/* check the level */	
-		switch (q_u.level)
-		{
-			case 0:
-				control_printer(q_u.handle, q_u.command);
-				break;
-			case 2:
-				update_printer(q_u.handle, q_u.level, q_u.info, q_u.devmode);
-				break;
-		}
-	}
-	spoolss_reply_setprinter(&q_u, rdata);
+	DEBUG(0,("api_spoolss_setprinter: typecast sec_des to uint8*!\n"));
+	r_u.status = _spoolss_setprinter(&q_u.handle,
+	                                 q_u.level, &q_u.info,
+	                                 q_u.devmode,
+	                                 q_u.security.size_of_buffer,
+	                                 (const uint8*)q_u.security.data,
+	                                 q_u.command);
+	spoolss_io_r_setprinter("",&r_u,rdata,0);
 }
 
 /****************************************************************************
@@ -1585,7 +1462,7 @@ static void api_spoolss_addprinterex(rpcsrv_struct *p, prs_struct *data, prs_str
 	printer.info_2=NULL;
 
 	/* convert from UNICODE to ASCII */
-	convert_printer_info(q_u.info, &printer, q_u.level);
+	convert_printer_info(&q_u.info, &printer, q_u.level);
 
 	/* write the ASCII on disk */
 	add_a_printer(printer, q_u.level);
