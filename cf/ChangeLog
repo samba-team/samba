@@ -1,3 +1,8 @@
+2002-09-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* make-proto.pl: check the processed string for closing ), not the
+	source
+
 2002-09-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* crypto.m4: use m4 macros for test cases, also test for older
