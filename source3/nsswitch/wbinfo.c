@@ -845,31 +845,30 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'a': {
-					  BOOL got_error = False;
+				BOOL got_error = False;
 
-					  if (!wbinfo_auth(string_arg)) {
-						  d_printf("Could not authenticate user %s with "
-								   "plaintext password\n", string_arg);
-						  got_error = True;
-					  }
+				if (!wbinfo_auth(string_arg)) {
+					d_printf("Could not authenticate user %s with "
+						"plaintext password\n", string_arg);
+					got_error = True;
+				}
 
-					  if (!wbinfo_auth_crap(string_arg)) {
-						  d_printf("Could not authenticate user %s with "
-								   "challenge/response\n", string_arg);
-						  got_error = True;
-					  }
+				if (!wbinfo_auth_crap(string_arg)) {
+					d_printf("Could not authenticate user %s with "
+						"challenge/response\n", string_arg);
+					got_error = True;
+				}
 
-					  if (got_error)
-						  goto done;
-					  break;
-				  }
-		case 'p': {
-					  if (!wbinfo_ping()) {
-						  d_printf("could not ping winbindd!\n");
-						  goto done;
-					  }
-					  break;
-				  }
+				if (got_error)
+					goto done;
+				break;
+			}
+		case 'p':
+			if (!wbinfo_ping()) {
+				d_printf("could not ping winbindd!\n");
+				goto done;
+			}
+			break;
 		case OPT_SET_AUTH_USER:
 			wbinfo_set_auth_user(string_arg);
 			break;
