@@ -271,7 +271,7 @@ AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/
 AC_CHECK_HEADERS(nss.h nss_common.h sys/security.h security/pam_appl.h security/pam_modules.h)
 AC_CHECK_HEADERS(stropts.h poll.h)
 AC_CHECK_HEADERS(sys/capability.h syscall.h sys/syscall.h)
-AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h acl/acl.h)
+AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h)
 
 # For experimental utmp support (lastlog on some BSD-like systems)
 AC_CHECK_HEADERS(utmp.h utmpx.h lastlog.h)
@@ -2170,15 +2170,6 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)])
 				if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
 					AC_DEFINE(HAVE_ACL_GET_PERM_NP)
 				fi
-			fi
-			AC_CACHE_CHECK([for XFS ACL support],samba_cv_HAVE_XFS_ACLS,[
-			AC_TRY_COMPILE([#include <sys/types.h>
-#include <acl/acl.h>],
-[ char test_str[13] = SGI_ACL_FILE; ],
-samba_cv_HAVE_XFS_ACLS=yes,samba_cv_XFS_POSIX_ACLS=no)])
-			if test x"$samba_cv_HAVE_XFS_ACLS" = x"yes"; then
-				AC_MSG_RESULT(Using XFS ACLs)
-				AC_DEFINE(HAVE_XFS_ACLS)
 			fi
             ;;
         esac
