@@ -456,7 +456,7 @@ va_dcl
     p->usedlen += needed;
   }
   else {
-    if (p->errcode == NERR_Success) p->errcode = NERR_BufTooSmall;
+    if (p->errcode == NERR_Success) p->errcode = ERROR_MORE_DATA;
   }
   return 1;
 }
