@@ -79,6 +79,10 @@ void smbw_init(void)
 
 	load_interfaces();
 
+	if ((p=smbw_getshared("SERVICESF"))) {
+		pstrcpy(servicesf, p);
+	}
+
 	lp_load(servicesf,True,False,False);
 
 	get_myname(global_myname);
@@ -257,7 +261,6 @@ static char *smbw_find_workgroup(void)
 	char *p;
 	struct in_addr *ip_list = NULL;
 	int count = 0;
-	int i;
 
 	/* first off see if an existing workgroup name exists */
 	p = smbw_getshared("WORKGROUP");
