@@ -154,6 +154,20 @@ sub SaveStructure($$)
 }
 
 #####################################################################
+# find an interface in an array of interfaces
+sub get_interface($$)
+{
+	my($if) = shift;
+	my($n) = shift;
+
+	foreach(@{$if}) {
+		if($_->{NAME} eq $n) { return $_; }
+	}
+	
+	return 0;
+}
+
+#####################################################################
 # see if a pidl property list contains a give property
 sub has_property($$)
 {

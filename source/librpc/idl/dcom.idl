@@ -10,27 +10,22 @@ interface ObjectRpcBaseTypes
 {
 	WERROR stub();
 	
-	typedef [public] struct {
-		uint32 upper;
-		uint32 lower;
-	} hyper;
-
 	//////////////////////////////////////////////////////////////
 	// Identifier Definitions
 	////////////////////////////////////////////////////////////
 
 	// Machine Identifier
-#define MID hyper
+#define MID HYPER_T
 
 
 	 // Object Exporter Identifier
-#define OXID hyper
+#define OXID HYPER_T
 	
 	 // Object Identifer
-#define OID hyper
+#define OID HYPER_T
 	
 	// Ping Set Identifier
-#define SETID hyper
+#define SETID HYPER_T
 
 	// Interface Pointer Identifier
 #define IPID GUID
@@ -186,7 +181,7 @@ interface ObjectRpcBaseTypes
 	const uint32 SORF_NULL = 0x0; // convenient for initializing SORF
 	const uint32 SORF_NOPING = 0x1000;// Pinging is not required 
 	// standard object reference
-	typedef struct 
+	typedef [public] struct 
 	{
 		uint32 flags; // STDOBJREF flags (see above)
 		uint32 cPublicRefs; // count of references passed
@@ -241,6 +236,26 @@ interface ObjectRpcBaseTypes
 	} MInterfacePointer;
 
 }
+
+[
+	object,
+	uuid(00000000-0000-0000-C000-000000000046)
+]
+interface IUnknown
+{
+	/*****************/
+	/* Function 0x00 */
+	HRESULT QueryInterface();
+
+	/*****************/
+	/* Function 0x01 */
+	uint32 AddRef();
+
+	/*****************/
+	/* Function 0x02 */
+	uint32 Release();
+}
+
 //////////////////////////////////////////////////////////////////
 
 // The remote version of Iunknown. This interface exists on every
@@ -252,9 +267,10 @@ interface ObjectRpcBaseTypes
 //
 [
 	uuid(00000131-0000-0000-C000-000000000046),
+	object,
 	version(0.0)
 ]
-interface IRemUnknown // : IUnknown
+interface IRemUnknown : IUnknown
 {
 	typedef struct 
 	{
@@ -262,7 +278,7 @@ interface IRemUnknown // : IUnknown
 		STDOBJREF std; // data for returned interface
 	}
 	REMQIRESULT;
-	
+
 	HRESULT RemQueryInterface (
 		 [in] IPID *ripid, // interface to QI on
 		 [in] uint32 cRefs, // count of AddRefs requested
@@ -291,15 +307,18 @@ interface IRemUnknown // : IUnknown
 		);
 }
 
+
+
 // Derived from IRemUnknown, this interface supports Remote Query interface
 // for objects that supply additional data beyond the STDOBJREF in their
 // marshaled interface packets.
 [
+object,
 uuid(00000143-0000-0000-C000-000000000046),
 version(0.0)
 ]
 
-interface IRemUnknown2 //: IRemUnknown
+interface IRemUnknown2 : IRemUnknown
 {
 	HRESULT RemQueryInterface2 (
 		 [in] IPID *ripid,
@@ -308,7 +327,6 @@ interface IRemUnknown2 //: IRemUnknown
 		 [out, size_is(cIids)] HRESULT *phr
 		 //FIXME [out, size_is(cIids)] MInterfacePointer **ppMIF
 		);
-
 }
 
 [ uuid(99fcfec4-5260-101b-bbcb-00aa0021347a),
@@ -339,7 +357,7 @@ interface IOXIDResolver
 	// Returns S_TRUE if the SetId is known by the object exporter,
 	// S_FALSE if not.
 	[idempotent] WERROR SimplePing (
-		 [in] policy_handle hRpc,
+		 [in,ref] policy_handle *hRpc,
 		 [in] SETID *pSetId // Must not be zero
 		);
 	
@@ -364,13 +382,13 @@ interface IOXIDResolver
 	// can be used to validate the binding
 	// from the client.
 	[idempotent] WERROR ServerAlive (
-									 [in] policy_handle hRpc
+									 [in,ref] policy_handle *hRpc
 									);
 	// Method to get the protocol sequences, string bindings,
 	// RemoteUnknown IPID and COM version for an object server
 	// given its OXID. Supported by DCOM
 	// version 5.2 and above.
-	[idempotent] error_status_t ResolveOxid2 (
+	[idempotent] WERROR ResolveOxid2 (
 											  [in] policy_handle hRpc,
 											  [in] OXID *pOxid,
 											  [in] uint16 cRequestedProtseqs,
@@ -452,13 +470,10 @@ interface ISystemActivator
 	/* Function 0x03 */
 	NTSTATUS isa_Unknown3();
 
-
 	// Binding strings and the OBJREF_SIGNATURE in this call
 	/*****************/
 	/* Function 0x04 */
 	NTSTATUS isa_Unknown4();
-
-
 }
 
 [

@@ -4,7 +4,6 @@
   miscellaneous IDL structures
 */
 
-[] 
 interface misc
 {
 	/* a NULL sid */

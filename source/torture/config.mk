@@ -49,6 +49,7 @@ REQUIRED_SUBSYSTEMS = \
 ADD_OBJ_FILES = \
 		torture/rpc/lsa.o \
 		torture/rpc/echo.o \
+		torture/rpc/dcom.o \
 		torture/rpc/dfs.o \
 		torture/rpc/drsuapi.o \
 		torture/rpc/spoolss.o \
