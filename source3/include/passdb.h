@@ -57,7 +57,7 @@ typedef struct pdb_context
 	
 	BOOL (*pdb_getsampwnam)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const char *username);
 	
-	BOOL (*pdb_getsampwsid)(struct pdb_context *, SAM_ACCOUNT *sam_acct, DOM_SID *sid);
+	BOOL (*pdb_getsampwsid)(struct pdb_context *, SAM_ACCOUNT *sam_acct, const DOM_SID *sid);
 	
 	BOOL (*pdb_add_sam_account)(struct pdb_context *, SAM_ACCOUNT *sampass);
 	
@@ -88,7 +88,7 @@ typedef struct pdb_methods
 	
 	BOOL (*getsampwnam)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const char *username);
 	
-	BOOL (*getsampwsid)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, DOM_SID *Sid);
+	BOOL (*getsampwsid)(struct pdb_methods *, SAM_ACCOUNT *sam_acct, const DOM_SID *Sid);
 	
 	BOOL (*add_sam_account)(struct pdb_methods *, SAM_ACCOUNT *sampass);
 	
