@@ -2757,7 +2757,7 @@ the more special MIME type
 <emphasis>application/cups.vnd-postscript</emphasis>),
 which therefore also leads to the page accounting in
 <emphasis>/var/log/cups/page_log</emphasis> not
-receiving the exact mumber of pages; instead the dummy page number
+receiving the exact number of pages; instead the dummy page number
 of "1" is logged in a standard setup)</para></listitem>
 
 <listitem><para>the Adobe driver has more options to "mis-configure" the
