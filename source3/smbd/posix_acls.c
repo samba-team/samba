@@ -460,7 +460,7 @@ static struct pai_val *load_inherited_info(files_struct *fsp)
 		}
 	} while (ret == -1);
 
-	DEBUG(10,("load_inherited_info: ret = %d for file %s\n", ret, fsp->fsp_name));
+	DEBUG(10,("load_inherited_info: ret = %lu for file %s\n", (unsigned long)ret, fsp->fsp_name));
 
 	if (ret == -1) {
 		/* No attribute or not supported. */

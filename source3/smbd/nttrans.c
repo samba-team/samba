@@ -1956,8 +1956,8 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		DEBUGADD(10,("for SID: %s\n",sid_string_static(&sid)));
 
 		if (!NT_STATUS_IS_OK(sid_to_uid(&sid, &uid))) {
-			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_len[%u]\n",
-				sid_string_static(&sid),sid_len));
+			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_len[%lu]\n",
+				sid_string_static(&sid),(unsigned long)sid_len));
 			uid = (-1);
 		}
 		
@@ -2168,7 +2168,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			sid_len = IVAL(pdata,4);
 
 			if (data_count < 8+sid_len) {
-				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %d bytes data\n",data_count,8+sid_len));
+				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %lu bytes data\n",data_count,(unsigned long(8+sid_len)));
 				return ERROR_DOS(ERRDOS,ERRunknownlevel);				
 			}
 
@@ -2301,7 +2301,7 @@ static int call_nt_transact_set_user_quota(connection_struct *conn, char *inbuf,
 	sid_len = IVAL(pdata,4);
 
 	if (data_count < 40+sid_len) {
-		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %d bytes data\n",data_count,40+sid_len));
+		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %lu bytes data\n",data_count,(unsigned long)40+sid_len));
 		return ERROR_DOS(ERRDOS,ERRunknownlevel);		
 	}
 
