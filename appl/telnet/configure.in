@@ -248,6 +248,7 @@ AC_CHECK_FUNCS(frevoke revoke setsid setpgid getmsg)
 AC_CHECK_FUNCS(tgetent setupterm ptsname ttyname unlockpt grantpt)
 
 AC_FIND_FUNC(logout, util)
+AC_FIND_FUNC(logwtmp, util)
 
 AC_SUBST(HAVE_LIBTERMCAP)
 
