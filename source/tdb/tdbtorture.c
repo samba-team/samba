@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include "tdb.h"
 
 /* this tests tdb by doing lots of ops from several simultaneous
@@ -16,8 +17,10 @@
 
 
 
-#define DELETE_PROB 7
-#define STORE_PROB 5
+#define DELETE_PROB 10
+#define STORE_PROB 3
+#define TRAVERSE_PROB 8
+#define CULL_PROB 60
 #define KEYLEN 3
 #define DATALEN 100
 
@@ -30,6 +33,14 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 	va_start(ap, format);
 	vfprintf(stdout, format, ap);
 	va_end(ap);
+#if 0
+	{
+		char *ptr;
+		asprintf(&ptr,"xterm -e gdb /proc/%d/exe %d", getpid(), getpid());
+		system(ptr);
+		free(ptr);
+	}
+#endif	
 }
 
 static void fatal(char *why)
@@ -51,6 +62,15 @@ static char *randbuf(int len)
 	return buf;
 }
 
+static int cull_traverse(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf,
+			 void *state)
+{
+	if (random() % CULL_PROB == 0) {
+		tdb_delete(db, key);
+	}
+	return 0;
+}
+
 static void addrec_db(void)
 {
 	int klen, dlen;
@@ -69,12 +89,14 @@ static void addrec_db(void)
 	data.dptr = d;
 	data.dsize = dlen+1;
 
-	if (rand() % DELETE_PROB == 0) {
+	if (random() % DELETE_PROB == 0) {
 		tdb_delete(db, key);
-	} else if (rand() % STORE_PROB == 0) {
+	} else if (random() % STORE_PROB == 0) {
 		if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
 			fatal("tdb_store failed");
 		}
+	} else if (random() % TRAVERSE_PROB == 0) {
+		tdb_traverse(db, cull_traverse, NULL);
 	} else {
 		data = tdb_fetch(db, key);
 		if (data.dptr) free(data.dptr);
@@ -92,20 +114,23 @@ static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf,
 }
 
 #ifndef NPROC
-#define NPROC 8
+#define NPROC 6
 #endif
 
 #ifndef NLOOPS
-#define NLOOPS 5000000
+#define NLOOPS 200000
 #endif
 
 int main(int argc, char *argv[])
 {
 	int i, seed=0;
 	int loops = NLOOPS;
+	pid_t pids[NPROC];
+
+	pids[0] = getpid();
 
 	for (i=0;i<NPROC-1;i++) {
-		if (fork() == 0) break;
+		if ((pids[i+1]=fork()) == 0) break;
 	}
 
 	db = tdb_open("test.tdb", 0, TDB_CLEAR_IF_FIRST, 
@@ -116,13 +141,31 @@ int main(int argc, char *argv[])
 	tdb_logging_function(db, tdb_log);
 
 	srand(seed + getpid());
+	srandom(seed + getpid() + time(NULL));
 	for (i=0;i<loops;i++) addrec_db();
 
-	printf("traversed %d records\n", tdb_traverse(db, NULL, NULL));
-	printf("traversed %d records\n", tdb_traverse(db, traverse_fn, NULL));
-	printf("traversed %d records\n", tdb_traverse(db, traverse_fn, NULL));
+	tdb_traverse(db, NULL, NULL);
+	tdb_traverse(db, traverse_fn, NULL);
+	tdb_traverse(db, traverse_fn, NULL);
 
 	tdb_close(db);
+
+	if (getpid() == pids[0]) {
+		for (i=0;i<NPROC-1;i++) {
+			int status;
+			if (waitpid(pids[i+1], &status, 0) != pids[i+1]) {
+				printf("failed to wait for %d\n",
+				       (int)pids[i+1]);
+				exit(1);
+			}
+			if (WEXITSTATUS(status) != 0) {
+				printf("child %d exited with status %d\n",
+				       (int)pids[i+1], WEXITSTATUS(status));
+				exit(1);
+			}
+		}
+		printf("OK\n");
+	}
 
 	return 0;
 }
