@@ -3,7 +3,7 @@
  
 
 
-<html><head><title>nmblookup</title>
+<html><head><title>nmblookup (1)</title>
 
 <link rev="made" href="mailto:samba-bugs@samba.anu.edu.au">
 </head>
@@ -11,7 +11,7 @@
 
 <hr>
 
-<h1>nmblookup</h1>
+<h1>nmblookup (1)</h1>
 <h2>Samba</h2>
 <h2>23 Oct 1998</h2>
 
@@ -31,7 +31,7 @@
 <p><br>This program is part of the <strong>Samba</strong> suite.
 <p><br><strong>nmblookup</strong> is used to query NetBIOS names and map them to IP
 addresses in a network using NetBIOS over TCP/IP queries. The options
-allow the name queries to be directed at a particlar IP broadcast area
+allow the name queries to be directed at a particular IP broadcast area
 or to a particular machine. All queries are done over UDP.
 <p><br><a name="OPTIONS"></a>
 <h2>OPTIONS</h2>
@@ -49,12 +49,13 @@ NetBIOS processing code on a machine is used instead. See rfc1001,
 rfc1002 for details.
 <p><br><a name="minusS"></a>
 <li><strong><strong>-S</strong></strong> Once the name query has returned an IP address then do a
-node status query as well.
+node status query as well. A node status query returns the NetBIOS names 
+registered by a host.
 <p><br><a name="minusr"></a>
 <li><strong><strong>-r</strong></strong> Try and bind to UDP port 137 to send and receive UDP
 datagrams. The reason for this option is a bug in Windows 95 where it
 ignores the source port of the requesting packet and only replies to
-UDP port 137. Unfortunately, on most UNIX systems root privillage is
+UDP port 137. Unfortunately, on most UNIX systems root privilage is
 needed to bind to this port, and in addition, if the
 <a href="nmbd.8.html"><strong>nmbd</strong></a> daemon is running on this machine it also
 binds to this port.
@@ -89,11 +90,11 @@ level</strong></a> parameter in the <a href="smb.conf.5.html"><strong>smb.conf
 (5)</strong></a> file.
 <p><br><a name="minuss"></a>
 <li><strong><strong>-s smb.conf</strong></strong> This parameter specifies the pathname to the
-Samba configuration file, smb.conf. This file controls all aspects of
-the Samba setup on the machine and smbclient also needs to read this
-file.
+Samba configuration file, <a href="smb.conf.5.html"><strong>smb.conf</strong></a>. 
+This file controls all aspects of
+the Samba setup on the machine.
 <p><br><a name="minusi"></a>
-<li><strong><strong>-i scope</strong></strong> This specifies a NetBIOS scope that smbclient will use
+<li><strong><strong>-i scope</strong></strong> This specifies a NetBIOS scope that <strong>nmblookup</strong> will use
 to communicate with when generating NetBIOS names. For details on the
 use of NetBIOS scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes
 are <em>very</em> rarely used, only set this parameter if you are the
@@ -103,14 +104,15 @@ communicate with.
 <li><strong><strong>name</strong></strong> This is the NetBIOS name being queried. Depending upon
 the previous options this may be a NetBIOS name or IP address. If a
 NetBIOS name then the different name types may be specified by
-appending <code>#&lt;type&gt;</code> to the name.
+appending <code>#&lt;type&gt;</code> to the name. This name may also be <code>"*"</code>,
+which will return all registered names within a broadcast area.
 <p><br></ul>
 <p><br><a name="EXAMPLES"></a>
 <h2>EXAMPLES</h2>
     
-<p><br><strong>nmblookup</strong> can be used to query a WINS server (in the same way .B
-nslookup is used to query DNS servers). To query a WINS server,
-nmblookup must be called like this:
+<p><br><strong>nmblookup</strong> can be used to query a WINS server (in the same way
+<strong>nslookup</strong> is used to query DNS servers). To query a WINS server,
+<strong>nmblookup</strong> must be called like this:
 <p><br><code>nmblookup -U server -R 'name'</code>
 <p><br>For example, running :
 <p><br><code>nmblookup -U samba.anu.edu.au -R IRIX#1B'</code>
@@ -129,7 +131,7 @@ browser (1B name type) for the IRIX workgroup.
 <h2>AUTHOR</h2>
     
 <p><br>The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+Andrew Tridgell <a href="mailto:samba-bugs@samba.anu.edu.au"><em>samba-bugs@samba.anu.edu.au</em></a>. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 <p><br>The original Samba man pages were written by Karl Auer. The man page

@@ -1,4 +1,4 @@
-.TH "smbpasswd" "5" "23 Oct 1998" "Samba" "SAMBA" 
+.TH "smbpasswd " "5" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smbpasswd \- The Samba encrypted password file
@@ -12,7 +12,7 @@ smbpasswd is the \fBSamba\fP encrypted password file\&.
 This file is part of the \fBSamba\fP suite\&.
 .PP 
 smbpasswd is the \fBSamba\fP encrypted password file\&. It contains
-the username, unix user id and the SMB hashed passwords of the
+the username, Unix user id and the SMB hashed passwords of the
 user, as well as account flag information and the time the password
 was last changed\&. This file format has been evolving with Samba
 and has had several different formats in the past\&.
@@ -20,7 +20,7 @@ and has had several different formats in the past\&.
 .SH "FILE FORMAT" 
 .PP 
 The format of the smbpasswd file used by Samba 2\&.0 is very similar to
-the familiar unix \fBpasswd (5)\fP file\&. It is an ASCII file containing
+the familiar Unix \fBpasswd (5)\fP file\&. It is an ASCII file containing
 one line for each user\&. Each field within each line is separated from
 the next by a colon\&. Any entry beginning with # is ignored\&. The
 smbpasswd file contains the following information for each user:
@@ -38,7 +38,9 @@ in the standard UNIX passwd file\&.
 .br 
 .IP 
 This is the UNIX uid\&. It must match the uid field for the same
-user entry in the standard UNIX passwd file\&.
+user entry in the standard UNIX passwd file\&. If this does not
+match then Samba will refuse to recognize this \fBsmbpasswd\fP file entry
+as being valid for a user\&.
 .IP 
 .IP "\fBLanman Password Hash\fP" 
 .br 
@@ -49,7 +51,7 @@ digits\&. The \fILANMAN\fP hash is created by DES encrypting a well known
 string with the users password as the DES key\&. This is the same
 password used by Windows 95/98 machines\&. Note that this password hash
 is regarded as weak as it is vulnerable to dictionary attacks and if
-two users choose the same password this entry will be identical (ie\&.
+two users choose the same password this entry will be identical (i\&.e\&.
 the password is not \fI"salted"\fP as the UNIX password is)\&. If the
 user has a null password this field will contain the characters
 \f(CW"NO PASSWORD"\fP as the start of the hex string\&. If the hex string
@@ -59,7 +61,7 @@ server\&.
 .IP 
 \fIWARNING !!\fP\&. Note that, due to the challenge-response nature of the
 SMB/CIFS authentication protocol, anyone with a knowledge of this
-password hash will be able to impersonate the user of the network\&.
+password hash will be able to impersonate the user on the network\&.
 For this reason these hashes are known as \fI"plain text equivalent"\fP
 and must \fINOT\fP be made available to anyone but the root user\&. To
 protect these passwords the \fBsmbpasswd\fP file is placed in a
@@ -80,12 +82,12 @@ This password hash is considered more secure than the \fBLanman
 Password Hash\fP as it preserves the case of the
 password and uses a much higher quality hashing algorithm\&. However, it
 is still the case that if two users choose the same password this
-entry will be identical (ie\&. the password is not \fI"salted"\fP as the
+entry will be identical (i\&.e\&. the password is not \fI"salted"\fP as the
 UNIX password is)\&.
 .IP 
 \fIWARNING !!\fP\&. Note that, due to the challenge-response nature of the
 SMB/CIFS authentication protocol, anyone with a knowledge of this
-password hash will be able to impersonate the user of the network\&.
+password hash will be able to impersonate the user on the network\&.
 For this reason these hashes are known as \fI"plain text equivalent"\fP
 and must \fINOT\fP be made available to anyone but the root user\&. To
 protect these passwords the \fBsmbpasswd\fP file is placed in a
@@ -105,8 +107,8 @@ any of the characters\&.
 .IP 
 .IP 
 .IP o 
-\fB\'U\'\fP This means this is a \fI"User"\fP account, ie\&. an ordinary
-user\&. Only \fBUser\fP and \fBWorskstation Trust\fP accounts are
+\fB\'U\'\fP This means this is a \fI"User"\fP account, i\&.e\&. an ordinary
+user\&. Only \fBUser\fP and \fBWorkstation Trust\fP accounts are
 currently supported in the \fBsmbpasswd\fP file\&.
 .IP 
 .IP o 
@@ -118,7 +120,7 @@ will only allow users to log on with no password if the
 in the \fBsmb\&.conf (5)\fP config file\&.
 .IP 
 .IP o 
-\fB\'D\'\fP This means the account is diabled and no SMB/CIFS logins 
+\fB\'D\'\fP This means the account is disabled and no SMB/CIFS logins 
 will be	allowed for this user\&.
 .IP 
 .IP o 
@@ -196,13 +198,15 @@ algorithm\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba\&.anu\&.edu\&.au)\&. Samba is now developed
+Andrew Tridgell \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 
 The original Samba man pages were written by Karl Auer\&. The man page
 sources were converted to YODL format (another excellent piece of Open
-Source software) and updated for the Samba2\&.0 release by Jeremy
+Source software, available at
+\fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP) 
+and updated for the Samba2\&.0 release by Jeremy
 Allison, \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&.
 .PP 
 See \fBsamba (7)\fP to find out how to get a full

@@ -1,4 +1,4 @@
-.TH "smbd" "8" "23 Oct 1998" "Samba" "SAMBA" 
+.TH "smbd " "8" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smbd \- server to provide SMB/CIFS services to clients
@@ -11,7 +11,8 @@ smbd \- server to provide SMB/CIFS services to clients
 .PP 
 This program is part of the \fBSamba\fP suite\&.
 .PP 
-\fBsmbd\fP is the server daemon that provides filesharing services to
+\fBsmbd\fP is the server daemon that provides filesharing and printing
+services to
 Windows clients\&. The server provides filespace and printer services to
 clients using the SMB (or CIFS) protocol\&. This is compatible with the
 LanManager protocol, and can service LanManager clients\&.  These
@@ -20,18 +21,20 @@ Windows NT, OS/2, DAVE for Macintosh, and smbfs for Linux\&.
 .PP 
 An extensive description of the services that the server can provide
 is given in the man page for the configuration file controlling the
-attributes of those services (see \fBsmb\&.conf (5)\fP)\&.  This man page
+attributes of those services (see 
+\fBsmb\&.conf (5)\fP\&.  This man page
 will not describe the services, but will concentrate on the
 administrative aspects of running the server\&.
 .PP 
 Please note that there are significant security implications to
-running this server, and the \fBsmb\&.conf (5)\fP manpage should be
+running this server, and the 
+\fBsmb\&.conf (5)\fP manpage should be
 regarded as mandatory reading before proceeding with installation\&.
 .PP 
 A session is created whenever a client requests one\&. Each client gets
 a copy of the server for each session\&. This copy then services all
 connections made by the client during that session\&. When all
-connections from its client are are closed, the copy of the server for
+connections from its client are closed, the copy of the server for
 that client terminates\&.
 .PP 
 The configuration file, and any files that it includes, are
@@ -117,14 +120,12 @@ This parameter is not normally specified except in the above
 situation\&.
 .IP 
 .IP "\fB-s configuration file\fP" 
-The default configuration file name is
-determined at compile time\&.
-.IP 
 The file specified contains the configuration details required by the
 server\&.  The information in this file includes server-specific
 information such as what printcap file to use, as well as descriptions
 of all the services that the server is to provide\&. See \fBsmb\&.conf
 (5)\fP for more information\&.
+The default configuration file name is determined at compile time\&.
 .IP 
 .IP "\fB-i scope\fP" 
 This specifies a NetBIOS scope that the server will use
@@ -148,22 +149,22 @@ out\&. Used for debugging by the developers only\&.
 .PP 
 If the server is to be run by the inetd meta-daemon, this file must
 contain suitable startup information for the meta-daemon\&. See the
-section \fIINSTALLATION\fP below\&.
+section INSTALLATION below\&.
 .PP 
 \fB/etc/rc\fP
 .PP 
-(or whatever initialisation script your system uses)\&.
+(or whatever initialization script your system uses)\&.
 .PP 
 If running the server as a daemon at startup, this file will need to
 contain an appropriate startup sequence for the server\&. See the
-section \fIINSTALLATION\fP below\&.
+section INSTALLATION below\&.
 .PP 
 \fB/etc/services\fP
 .PP 
 If running the server via the meta-daemon inetd, this file must
-contain a mapping of service name (eg\&., netbios-ssn) to service port
-(eg\&., 139) and protocol type (eg\&., tcp)\&. See the section
-\fIINSTALLATION\fP below\&.
+contain a mapping of service name (e\&.g\&., netbios-ssn) to service port
+(e\&.g\&., 139) and protocol type (e\&.g\&., tcp)\&. See the section
+INSTALLATION below\&.
 .PP 
 \fB/usr/local/samba/lib/smb\&.conf\fP
 .PP 
@@ -213,11 +214,11 @@ exists in Linux, as testing on other systems has thus far shown them
 to be immune\&.
 .PP 
 The server log files should be put in a directory readable and
-writable only by root, as the log files may contain sensitive
+writeable only by root, as the log files may contain sensitive
 information\&.
 .PP 
 The configuration file should be placed in a directory readable and
-writable only by root, as the configuration file controls security for
+writeable only by root, as the configuration file controls security for
 the services offered by the server\&. The configuration file can be made
 readable by all if desired, but this is not necessary for correct
 operation of the server and is not recommended\&. A sample configuration
@@ -245,8 +246,9 @@ utilities such as the tcpd TCP-wrapper may be used for extra security\&.
 For serious use as file server it is recommended that \fBsmbd\fP be run
 as a daemon\&.
 .PP 
-When you\'ve decided, continue with either \fIRUNNING THE SERVER AS A
-DAEMON\fP or \fIRUNNING THE SERVER ON REQUEST\fP\&.
+When you\'ve decided, continue with either 
+RUNNING THE SERVER AS A DAEMON or 
+RUNNING THE SERVER ON REQUEST\&.
 .PP 
 .SH "RUNNING THE SERVER AS A DAEMON" 
 .PP 
@@ -270,18 +272,18 @@ configuration file location and debug level as desired:
 .PP 
 \f(CW/usr/local/samba/bin/smbd -D -l /var/adm/smblogs/log -s /usr/local/samba/lib/smb\&.conf\fP
 .PP 
-(The above should appear in your initialisation script as a single line\&. 
+(The above should appear in your initialization script as a single line\&. 
 Depending on your terminal characteristics, it may not appear that way in
 this man page\&. If the above appears as more than one line, please treat any 
 newlines or indentation as a single space or TAB character\&.)
 .PP 
 If the options used at compile time are appropriate for your system,
-all parameters except the desired debug level and \fB-D\fP may be
-omitted\&. See the section \fIOPTIONS\fP above\&.
+all parameters except \fB-D\fP may be
+omitted\&. See the section OPTIONS above\&.
 .PP 
 .SH "RUNNING THE SERVER ON REQUEST" 
 .PP 
-If your system uses a meta-daemon such as inetd, you can arrange to
+If your system uses a meta-daemon such as \fBinetd\fP, you can arrange to
 have the smbd server started whenever a process attempts to connect to
 it\&. This requires several changes to the startup files on the host
 machine\&. If you are experimenting as an ordinary user rather than as
@@ -329,10 +331,10 @@ start with, the following two services should be all you need:
 
 
 [homes]
-  writable = yes
+  writeable = yes
 
 [printers]
- writable = no
+ writeable = no
  printable = yes
  path = /tmp
  public = yes
@@ -356,7 +358,8 @@ If your machine\'s name is "fred" and your name is "mary", you should
 now be able to connect to the service \f(CW\e\efred\emary\fP\&.
 .PP 
 To properly test and experiment with the server, we recommend using
-the smbclient program (see \fBsmbclient (1)\fP) and also going through
+the smbclient program (see 
+\fBsmbclient (1)\fP) and also going through
 the steps outlined in the file \fIDIAGNOSIS\&.txt\fP in the \fIdocs/\fP
 directory of your Samba installation\&.
 .PP 
@@ -374,8 +377,8 @@ The number and nature of diagnostics available depends on the debug
 level used by the server\&. If you have problems, set the debug level to
 3 and peruse the log files\&.
 .PP 
-Most messages are reasonably self-explanatory\&. Unfortunately, at time
-of creation of this man page there are too many diagnostics available
+Most messages are reasonably self-explanatory\&. Unfortunately, at the time
+this man page was created, there are too many diagnostics available
 in the source code to warrant describing each and every diagnostic\&. At
 this stage your best bet is still to grep the source code and inspect
 the conditions that gave rise to the diagnostics you are seeing\&.
@@ -387,7 +390,7 @@ configuration file within a short period of time\&.
 .PP 
 To shut down a users smbd process it is recommended that SIGKILL (-9)
 \fINOT\fP be used, except as a last resort, as this may leave the shared
-memory area in an inconsistant state\&. The safe way to terminate an
+memory area in an inconsistent state\&. The safe way to terminate an
 smbd is to send it a SIGTERM (-15) signal and wait for it to die on
 its own\&.
 .PP 
@@ -417,7 +420,7 @@ http://samba\&.anu\&.edu\&.au/cifs/\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell (samba-bugs@samba\&.anu\&.edu\&.au)\&. Samba is now developed
+Andrew Tridgell \fIsamba-bugs@samba\&.anu\&.edu\&.au\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 

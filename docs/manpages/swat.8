@@ -1,4 +1,4 @@
-.TH "swat" "8" "23 Oct 1998" "Samba" "SAMBA" 
+.TH "swat " "8" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 swat \- swat - Samba Web Administration Tool
@@ -17,8 +17,7 @@ addition, a swat configuration page has help links to all the
 configurable options in the \fBsmb\&.conf\fP file
 allowing an administrator to easily look up the effects of any change\&.
 .PP 
-\fBswat\fP can be run as a stand-alone daemon, from \fBinetd\fP,
-or invoked via CGI from a Web server\&.
+\fBswat\fP is run from \fBinetd\fP
 .PP 
 .SH "OPTIONS" 
 .PP 
@@ -36,14 +35,11 @@ of all the services that the server is to provide\&. See smb\&.conf
 .IP 
 .IP "\fB-a\fP" 
 .IP 
-This option is only used if \fBswat\fP is running as it\'s own mini-web
-server (see the \fBINSTALLATION\fP section below)\&.
+This option disables authentication and puts \fBswat\fP in demo mode\&. In
+that mode anyone will be able to modify the
+\fBsmb\&.conf\fP file\&.
 .IP 
-This option removes the need for authentication needed to modify the
-\fBsmb\&.conf\fP file\&. \fI**THIS IS ONLY MEANT FOR
-DEMOING SWAT AND MUST NOT BE SET IN NORMAL SYSTEMS**\fP as it would
-allow \fI*ANYONE*\fP to modify the \fBsmb\&.conf\fP
-file, thus giving them root access\&.
+Do NOT enable this option on a production server\&.
 .IP 
 .PP 
 .SH "INSTALLATION" 
@@ -64,13 +60,10 @@ would put these in:
  
 
 .PP 
-.SH "RUNNING VIA INETD" 
+.SH "INETD INSTALLATION" 
 .PP 
 You need to edit your \f(CW/etc/inetd\&.conf\fP and \f(CW/etc/services\fP to
-enable \fBSWAT\fP to be launched via inetd\&. Note that \fBswat\fP can also
-be launched via the cgi-bin mechanisms of a web server (such as
-apache) and that is described below in the section \fBRUNNING VIA
-CGI-BIN\fP\&.
+enable \fBSWAT\fP to be launched via inetd\&. 
 .PP 
 In \f(CW/etc/services\fP you need to add a line like this:
 .PP 
@@ -88,81 +81,31 @@ In \f(CW/etc/inetd\&.conf\fP you should add a line like this:
 .PP 
 \f(CWswat    stream  tcp     nowait\&.400  root    /usr/local/samba/bin/swat swat\fP
 .PP 
-If you just want to see a demo of how swat works and don\'t want to be
-able to actually change any Samba config via swat then you may chose
-to change \f(CW"root"\fP to some other user that does not have permission
-to write to \fBsmb\&.conf\fP\&.
-.PP 
 One you have edited \f(CW/etc/services\fP and \f(CW/etc/inetd\&.conf\fP you need
 to send a HUP signal to inetd\&. To do this use \f(CW"kill -1 PID"\fP where
 PID is the process ID of the inetd daemon\&.
 .PP 
-.SH "RUNNING VIA CGI-BIN" 
-.PP 
-To run \fBswat\fP via your web servers cgi-bin capability you need to
-copy the \fBswat\fP binary to your cgi-bin directory\&. Note that you
-should run \fBswat\fP either via \fBinetd\fP or via
-cgi-bin but not both\&.
-.PP 
-Then you need to create a \f(CWswat/\fP directory in your web servers root
-directory and copy the \f(CWimages/*\fP and \f(CWhelp/*\fP files found in the
-\f(CWswat/\fP directory of your Samba source distribution into there so
-that they are visible via the URL \f(CWhttp://your\&.web\&.server/swat/\fP
-.PP 
-Next you need to make sure you modify your web servers authentication
-to require a username/pssword for the URL
-\f(CWhttp://your\&.web\&.server/cgi-bin/swat\fP\&. \fI**Don\'t forget this
-step!**\fP If you do forget it then you will be allowing anyone to edit
-your Samba configuration which would allow them to easily gain root
-access on your machine\&.
-.PP 
-After testing the authentication you need to change the ownership and
-permissions on the \fBswat\fP binary\&. It should be owned by root wth the
-setuid bit set\&. It should be ONLY executable by the user that the web
-server runs as\&. Make sure you do this carefully!
-.PP 
-for example, the following would be correct if the web server ran as
-group \f(CW"nobody"\fP\&.
-.PP 
-\f(CW-rws--x---    1 root     nobody    \fP
-.PP 
-You must also realise that this means that any user who can run
-programs as the \f(CW"nobody"\fP group can run \fBswat\fP and modify your
-Samba config\&. Be sure to think about this!
-.PP 
 .SH "LAUNCHING" 
 .PP 
-To launch \fBswat\fP just run your favourite web browser and point it at
-\f(CWhttp://localhost:901/\fP or \f(CWhttp://localhost/cgi-bin/swat/\fP
-depending on how you installed it\&.
+To launch \fBswat\fP just run your favorite web browser and point it at
+\f(CWhttp://localhost:901/\fP\&.
 .PP 
-Note that you can attach to \fBswat\fP from any IP connected machine but
+\fBNote that you can attach to \fBswat\fP from any IP connected machine but
 connecting from a remote machine leaves your connection open to
 password sniffing as passwords will be sent in the clear over the
-wire\&.
-.PP 
-If installed via \fBinetd\fP then you should be prompted for a
-username/password when you connect\&. You will need to provide the
-username \f(CW"root"\fP and the correct root password\&. More sophisticated
-authentication options are planned for future versions of \fBswat\fP\&.
-.PP 
-If installed via cgi-bin then you should receive whatever
-authentication request you configured in your web server\&.
+wire\&.\fP
 .PP 
 .SH "FILES" 
 .PP 
 \fB/etc/inetd\&.conf\fP
 .PP 
-If the server is to be run by the inetd meta-daemon, this file must
-contain suitable startup information for the meta-daemon\&. See the
-section \fBRUNNING VIA INETD\fP above\&.
+This file must contain suitable startup information for the
+meta-daemon\&. 
 .PP 
 \fB/etc/services\fP
 .PP 
-If running the server via the meta-daemon inetd, this file must
-contain a mapping of service name (eg\&., swat) to service port
-(eg\&., 901) and protocol type (eg\&., tcp)\&. See the section
-\fBRUNNING VIA INETD\fP above\&.
+This file must contain a mapping of service name (e\&.g\&., swat) to
+service port (e\&.g\&., 901) and protocol type (e\&.g\&., tcp)\&. 
 .PP 
 \fB/usr/local/samba/lib/smb\&.conf\fP
 .PP 

@@ -1,4 +1,4 @@
-.TH "smbclient" "1" "23 Oct 1998" "Samba" "SAMBA" 
+.TH "smbclient " "1" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smbclient \- ftp-like client to access SMB/CIFS resources on servers
@@ -108,7 +108,7 @@ subnet\&. To specify a particular broadcast address the \fB-B\fP option
 may be used\&.
 .IP 
 .IP 
-If this parameter is not set then the name resolver order defined
+If this parameter is not set then the name resolve order defined
 in the \fBsmb\&.conf\fP file parameter 
 (\fBname resolve order\fP)
 will be used\&.
@@ -257,7 +257,7 @@ the environment variable \f(CWUSER\fP or \f(CWLOGNAME\fP in that order\&.  If no
 username is supplied and neither environment variable exists the
 username "GUEST" will be used\&.
 .IP 
-If the \f(CWUSER\fP environment variable containts a \'%\' character,
+If the \f(CWUSER\fP environment variable contains a \'%\' character,
 everything after that will be treated as a password\&. This allows you
 to set the environment variable to be \f(CWUSER=username%password\fP so
 that a password is not passed on the command line (where it may be
@@ -321,7 +321,7 @@ Samba source code for the complete list\&.
 .IP 
 .IP "\fB-m max protocol level\fP" 
 With the new code in Samba2\&.0,
-\fBsmbclient\fP allways attempts to connect at the maximum
+\fBsmbclient\fP always attempts to connect at the maximum
 protocols level the server supports\&. This parameter is
 preserved for backwards compatibility, but any string
 following the \fB-m\fP will be ignored\&.
@@ -350,13 +350,13 @@ Extract (restore) a local tar file back to a
 share\&. Unless the \fB-D\fP option is given, the tar files will be
 restored from the top level of the share\&. Must be followed by the name
 of the tar file, device or \f(CW"-"\fP for standard input\&. Mutually exclusive
-with the \fBc\fP flag\&. Restored files have theuir creation times (mtime)
+with the \fBc\fP flag\&. Restored files have their creation times (mtime)
 set to the date saved in the tar file\&. Directories currently do not
 get their creation dates restored properly\&.
 .IP 
 .IP "\fBI\fP" 
 Include files and directories\&. Is the default
-behaviour when filenames are specified above\&. Causes tar files to
+behavior when filenames are specified above\&. Causes tar files to
 be included in an extract or create (and therefore everything else to
 be excluded)\&. See example below\&.  Filename globbing does not work for
 included files for extractions (yet)\&.
@@ -465,13 +465,13 @@ be case sensitive, depending on the command\&.
 You can specify file names which have spaces in them by quoting the
 name with double quotes, for example "a long file name"\&.
 .PP 
-Parameters shown in square brackets (eg\&., "[parameter]") are
+Parameters shown in square brackets (e\&.g\&., "[parameter]") are
 optional\&. If not given, the command will use suitable
-defaults\&. Parameters shown in angle brackets (eg\&., "<parameter>") are
+defaults\&. Parameters shown in angle brackets (e\&.g\&., "<parameter>") are
 required\&.
 .PP 
 Note that all commands operating on the server are actually performed
-by issuing a request to the server\&. Thus the behaviour may vary from
+by issuing a request to the server\&. Thus the behavior may vary from
 server to server, depending on how the server was implemented\&.
 .PP 
 The commands available are given here in alphabetical order\&.
@@ -608,7 +608,8 @@ mode to suit either binary data (such as graphical information) or
 text\&. Subsequent print commands will use the currently set print
 mode\&.
 .IP 
-dir(\fBprompt\fP) Toggle prompting for filenames during
+.IP "\fBprompt\fP" 
+Toggle prompting for filenames during
 operation of the \fBmget\fP and \fBmput\fP
 commands\&.
 .IP 
@@ -623,16 +624,19 @@ the server\&. If specified, name the remote copy "remote file name"\&.
 Note that all transfers in smbclient are binary\&. See also the
 \fBlowercase\fP command\&.
 .IP 
-dir(\fBqueue\fP) Displays the print queue, showing the job
+.IP "\fBqueue\fP" 
+Displays the print queue, showing the job
 id, name, size and current status\&.
 .IP 
 .IP "\fBquit\fP" 
 See the \fBexit\fP command\&.
 .IP 
-dir(\fBrd <directory name>\fP) See the \fBrmdir\fP
+.IP "\fBrd <directory name>\fP" 
+See the \fBrmdir\fP
 command\&.
 .IP 
-dir(\fBrecurse\fP) Toggle directory recursion for the
+.IP "\fBrecurse\fP" 
+Toggle directory recursion for the
 commands \fBmget\fP and \fBmput\fP\&.
 .IP 
 When toggled ON, these commands will process all directories in the
@@ -648,7 +652,8 @@ directory on the source machine that match the mask specified to the
 and any mask specified using the \fBmask\fP command will be
 ignored\&.
 .IP 
-dir(\fBrm <mask>\fP) Remove all files matching mask from
+.IP "\fBrm <mask>\fP" 
+Remove all files matching mask from
 the current working directory on the server\&.
 .IP 
 .IP "\fBrmdir <directory name>\fP" 
@@ -657,7 +662,7 @@ directory (user access privileges permitting) from the server\&.
 .IP 
 .IP "\fBtar <c|x>[IXbgNa]\fP" 
 Performs a tar operation - see
-the \fB-T\fP command line option above\&. Behaviour may be
+the \fB-T\fP command line option above\&. Behavior may be
 affected by the \fBtarmode\fP command (see below)\&. Using
 g (incremental) and N (newer) will affect tarmode settings\&. Note that
 using the "-" option with tar x may not work - use the command line
@@ -668,8 +673,9 @@ Blocksize\&. Must be
 followed by a valid (greater than zero) blocksize\&. Causes tar file to
 be written out in blocksize*TBLOCK (usually 512 byte) blocks\&.
 .IP 
-dir(\fBtarmode <full|inc|reset|noreset>\fP) Changes tar\'s
-behaviour with regard to archive bits\&. In full mode, tar will back up
+.IP "\fBtarmode <full|inc|reset|noreset>\fP" 
+Changes tar\'s
+behavior with regard to archive bits\&. In full mode, tar will back up
 everything regardless of the archive bit setting (this is the default
 mode)\&. In incremental mode, tar will only back up files with the
 archive bit set\&. In reset mode, tar will reset the archive bit on all
@@ -687,7 +693,7 @@ would make myfile read only\&.
 .SH "NOTES" 
 .PP 
 Some servers are fussy about the case of supplied usernames,
-passwords, share names (aka service names) and machine names\&. If you
+passwords, share names (AKA service names) and machine names\&. If you
 fail to connect try giving all parameters in uppercase\&.
 .PP 
 It is often necessary to use the \fB-n\fP option when connecting to some
@@ -720,7 +726,7 @@ should be executable by all\&. The client should \fINOT\fP be setuid or
 setgid!
 .PP 
 The client log files should be put in a directory readable and
-writable only by the user\&.
+writeable only by the user\&.
 .PP 
 To test the client, you will need to know the name of a running
 SMB/CIFS server\&. It is possible to run \fBsmbd (8)\fP

@@ -3,7 +3,7 @@
  
 
 
-<html><head><title>smbpasswd</title>
+<html><head><title>smbpasswd (8)</title>
 
 <link rev="made" href="mailto:samba-bugs@samba.anu.edu.au">
 </head>
@@ -11,7 +11,7 @@
 
 <hr>
 
-<h1>smbpasswd</h1>
+<h1>smbpasswd (8)</h1>
 <h2>Samba</h2>
 <h2>23 Oct 1998</h2>
 
@@ -35,7 +35,7 @@ user it allows the user to change the password used for their SMB
 sessions on any machines that store SMB passwords.
 <p><br>By default (when run with no arguments) it will attempt to change the
 current users SMB password on the local machine. This is similar to
-the way the <strong>passwd (1)</strong> program works. <strong>smbpasswd</strong> differs from
+the way the <strong>passwd (1)</strong> program works. <strong>smbpasswd</strong> differs from how
 the <strong>passwd</strong> program works however in that it is not <em>setuid root</em>
 but works in a client-server mode and communicates with a locally
 running <a href="smbd.8.html"><strong>smbd</strong></a>. As a consequence in order for this
@@ -49,13 +49,13 @@ correctly. No passwords will be echoed on the screen whilst being
 typed. If you have a blank smb password (specified by the string "NO
 PASSWORD" in the <a href="smbpasswd.5.html"><strong>smbpasswd</strong></a> file) then just
 press the &lt;Enter&gt; key when asked for your old password.
-<p><br><strong>smbpasswd</strong> also can be used by a normal user to change their SMB
+<p><br><strong>smbpasswd</strong> can also be used by a normal user to change their SMB
 password on remote machines, such as Windows NT Primary Domain
 Controllers. See the <a href="smbpasswd.8.html#minusr">(<strong>-r</strong>)</a> and
 <a href="smbpasswd.8.html#minusU"><strong>-U</strong></a> options below.
 <p><br>When run by root, <strong>smbpasswd</strong> allows new users to be added and
 deleted in the <a href="smbpasswd.5.html"><strong>smbpasswd</strong></a> file, as well as
-changes to the attributes of the user in this file to be made. When
+allows changes to the attributes of the user in this file to be made. When
 run by root, <strong>smbpasswd</strong> accesses the local
 <a href="smbpasswd.5.html"><strong>smbpasswd</strong></a> file directly, thus enabling
 changes to be made even if <a href="smbd.8.html"><strong>smbd</strong></a> is not running.
@@ -69,8 +69,8 @@ be added to the local <a href="smbpasswd.5.html"><strong>smbpasswd</strong></a> 
 the new password typed (type &lt;Enter&gt; for the old password). This
 option is ignored if the username following already exists in the
 <a href="smbpasswd.5.html"><strong>smbpasswd</strong></a> file and it is treated like a
-regular change password command. Note that the user to be added .B
-must already exist in the system password file (usually /etc/passwd)
+regular change password command. Note that the user to be added
+<strong>must</strong> already exist in the system password file (usually /etc/passwd)
 else the request to add the user will fail.
 <p><br>This option is only available when running <strong>smbpasswd</strong> as
 root.
@@ -142,6 +142,9 @@ username.
 specified must be the Primary Domain Controller for the domain (Backup
 Domain Controllers only have a read-only copy of the user account
 database and will not allow the password change).
+<p><br><em>Note</em> that Windows 95/98 do not have a real password database
+so it is not possible to change passwords specifying a Win95/98 
+machine as remote machine target.
 <p><br><a name="minusR"></a>
 <li><strong><strong>-R name resolve order</strong></strong> This option allows the user of
 smbclient to determine what name resolution services to use when
@@ -155,11 +158,12 @@ resolved as follows :
 <p><br><a name="host"></a>
 <li > <strong>host</strong> : Do a standard host name to IP address resolution,
 using the system /etc/hosts, NIS, or DNS lookups. This method of name
-resolution is operating system depended for instance on IRIX or
-Solaris this may be controlled by the <em>/etc/nsswitch.conf</em> file).
+resolution is operating system dependent. For instance on IRIX or
+Solaris, this may be controlled by the <em>/etc/nsswitch.conf</em> file).
 <p><br><a name="wins"></a>
-<li > <strong>wins</strong> : Query a name with the IP address listed in the <a href="smb.conf.5.html#winsserver"><strong>wins
-server</strong></a> parameter in the smb.conf file. If 
+<li > <strong>wins</strong> : Query a name with the IP address listed in the 
+<a href="smb.conf.5.html#winsserver"><strong>wins server</strong></a> parameter in the 
+<a href="smb.conf.5.html"><strong>smb.conf file</strong></a>. If 
 no WINS server has been specified this method will be ignored.
 <p><br><a name="bcast"></a>
 <li > <strong>bcast</strong> : Do a broadcast on each of the known local interfaces
@@ -168,7 +172,7 @@ in the smb.conf file. This is the least reliable of the name resolution
 methods as it depends on the target host being on a locally connected
 subnet.
 <p><br></ul>
-<p><br>If this parameter is not set then the name resolver order defined
+<p><br>If this parameter is not set then the name resolve order defined
 in the <a href="smb.conf.5.html"><strong>smb.conf</strong></a> file parameter 
 <a href="smb.conf.5.html#nameresolveorder"><strong>name resolve order</strong></a>
 will be used.
@@ -202,7 +206,7 @@ Controller for the Domain (found in the
 the machine account password used to create the secure Domain
 communication.  This password is then stored by <strong>smbpasswd</strong> in a
 file, read only by root, called <code>&lt;Domain&gt;.&lt;Machine&gt;.mac</code> where
-<code>&lt;Domain&gt;</code> is the name of the Domain we are joining and tt&lt;Machine&gt;
+<code>&lt;Domain&gt;</code> is the name of the Domain we are joining and <code>&lt;Machine&gt;</code>
 is the primary NetBIOS name of the machine we are running on.
 <p><br>Once this operation has been performed the
 <a href="smb.conf.5.html"><strong>smb.conf</strong></a> file may be updated to set the
@@ -224,19 +228,19 @@ different systems to change these passwords.
 <li><strong><strong>-h</strong></strong> This option prints the help string for <strong>smbpasswd</strong>, 
 selecting the correct one for running as root or as an ordinary user.
 <p><br><a name="minuss"></a>
-<li><strong><strong>-s</strong></strong> This option causes <strong>smbpasswd</strong> to be silent (ie. not
+<li><strong><strong>-s</strong></strong> This option causes <strong>smbpasswd</strong> to be silent (i.e. not
 issue prompts) and to read it's old and new passwords from standard 
 input, rather than from <code>/dev/tty</code> (like the <strong>passwd (1)</strong> program
 does). This option is to aid people writing scripts to drive <strong>smbpasswd</strong>
 <p><br><a name="username"></a>
-dir(<strong>username</strong>) This specifies the username for all of the <em>root
+<li><strong><strong>username</strong></strong> This specifies the username for all of the <em>root
 only</em> options to operate on. Only root can specify this parameter as
 only root has the permission needed to modify attributes directly
 in the local <a href="smbpasswd.5.html"><strong>smbpasswd</strong></a> file.
 <p><br><a name="NOTES"></a>
 <h2>NOTES</h2>
     
-<p><br>As <strong>smbpasswd</strong> works in client-server mode communicating with a
+<p><br>Since <strong>smbpasswd</strong> works in client-server mode communicating with a
 local <a href="smbd.8.html"><strong>smbd</strong></a> for a non-root user then the <strong>smbd</strong>
 daemon must be running for this to work. A common problem is to add a
 restriction to the hosts that may access the <strong>smbd</strong> running on the

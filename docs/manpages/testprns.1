@@ -1,7 +1,7 @@
-.TH "testparm" "1" "23 Oct 1998" "Samba" "SAMBA" 
+.TH "testprns " "1" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
-testparm \- check printer name for validity with smbd 
+testprns \- check printer name for validity with smbd 
 .PP 
 .SH "SYNOPSIS" 
 .PP 
@@ -27,7 +27,7 @@ The printer name to validate\&.
 .IP 
 Printer names are taken from the first field in each record in the
 printcap file, single printer names and sets of aliases separated by
-vertical bars ("|") are recognised\&. Note that no validation or
+vertical bars ("|") are recognized\&. Note that no validation or
 checking of the printcap syntax is done beyond that required to
 extract the printer name\&. It may be that the print spooling system is
 more forgiving or less forgiving than \fBtestprns\fP\&. However, if

@@ -1,5 +1,5 @@
 !==
-!== RoutedNetworks.txt for Samba release 2.0.0-alpha11 09 Oct 1998
+!== RoutedNetworks.txt for Samba release 2.0.0-beta1 13 Nov 1998
 !==
 #NOFNR Flag in LMHosts to Communicate Across Routers
 
@@ -64,4 +64,3 @@ HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Nbt\Parameters:
 
 
   This will cause the directed Name Queries to not go out for any
-remote machines. 
