@@ -1,14 +1,12 @@
-Subject:	Veto Files for Virus and Worm Control
-Date:		October 10, 2001
-Contributor:	John H Terpstra <jht@samba.org>
-Support:	This is user supported documentation.
-		This information was captured from a posting to the samba
-		mailing list.
+While this article is specific to the recent Nimda worm, 
+the information can be applied to preventing the spread
+of many Win32 viruses.  Thanks to the Samba Users Group of Japan
+(SUGJ) for this article.
 ===============================================================================
 Steps againt Nimba Worm for Samba
 
-Author: HASEGAWA Yohsuke
-Translator: TAKAHASHI Motonobu
+Author: HASEGAWA Yosuke
+Translator: TAKAHASHI Motonobu <monyo@samba.gr.jp>
 
 The information in this article applies to
     Samba 2.0.x
