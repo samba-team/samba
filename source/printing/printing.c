@@ -247,7 +247,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
     return(False);
 
   /* the Job and Total columns must be integer */
-  if (!isdigit(*tok[JOBTOK]) || !isdigit(*tok[TOTALTOK])) return(False);
+  if (!isdigit((int)*tok[JOBTOK]) || !isdigit((int)*tok[TOTALTOK])) return(False);
 
   buf->job = atoi(tok[JOBTOK]);
   buf->size = atoi(tok[TOTALTOK]);
@@ -340,7 +340,7 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
     return(False);
   }
 
-  if (!isdigit(*tokarr[LPRNG_JOBTOK]) || !isdigit(*tokarr[LPRNG_TOTALTOK])) {
+  if (!isdigit((int)*tokarr[LPRNG_JOBTOK]) || !isdigit((int)*tokarr[LPRNG_TOTALTOK])) {
     return(False);
   }
 
@@ -349,7 +349,7 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
 
   if (strequal(tokarr[LPRNG_RANKTOK],"active")) {
     buf->status = LPQ_PRINTING;
-  } else if (isdigit(*tokarr[LPRNG_RANKTOK])) {
+  } else if (isdigit((int)*tokarr[LPRNG_RANKTOK])) {
     buf->status = LPQ_QUEUED;
   } else {
     buf->status = LPQ_PAUSED;

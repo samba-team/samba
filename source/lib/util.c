@@ -147,7 +147,7 @@ like atoi but gets the value up to the separater character
 ****************************************************************************/
 char *Atoic(char *p, int *n, char *c)
 {
-	if (!isdigit(*p))
+	if (!isdigit((int)*p))
 	{
 		DEBUG(5, ("Atoic: malformed number\n"));
 		return NULL;
@@ -155,7 +155,7 @@ char *Atoic(char *p, int *n, char *c)
 
 	(*n) = atoi(p);
 
-	while ((*p) && isdigit(*p))
+	while ((*p) && isdigit((int)*p))
 	{
 		p++;
 	}
