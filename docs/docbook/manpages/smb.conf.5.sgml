@@ -595,7 +595,7 @@
 	<itemizedlist>
 		<listitem><para><link linkend="ABORTSHUTDOWNSCRIPT"><parameter>abort shutdown script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDGROUPSCRIPT"><parameter>add group script</parameter></link></para></listitem>
-		<listitem><para><link linkend="ADDPRINTERCOMMAND"><parameter>add printer command</parameter></link></para></listitem>
+		<listitem><para><link linkend="ADDPRINTERCOMMAND"><parameter>addprinter command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDSHARECOMMAND"><parameter>add share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDUSERTOGROUPSCRIPT"><parameter>add user to group script</parameter></link></para></listitem>
@@ -621,27 +621,30 @@
 		<listitem><para><link linkend="DEBUGLEVEL"><parameter>debuglevel</parameter></link></para></listitem>
 		<listitem><para><link linkend="DEFAULT"><parameter>default</parameter></link></para></listitem>
 		<listitem><para><link linkend="DEFAULTSERVICE"><parameter>default service</parameter></link></para></listitem>
-		<listitem><para><link linkend="DELETEPRINTERCOMMAND"><parameter>delete printer command</parameter></link></para></listitem>
+		<listitem><para><link linkend="DELETEPRINTERCOMMAND"><parameter>deleteprinter command</parameter></link></para></listitem>
 		<listitem><para><link linkend="DELETESHARECOMMAND"><parameter>delete share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="DELETEUSERSCRIPT"><parameter>delete user script</parameter></link></para></listitem>
 		<listitem><para><link linkend="DELETEUSERFROMGROUPSCRIPT"><parameter>delete user from group script</parameter></link></para></listitem>
 		<listitem><para><link linkend="DFREECOMMAND"><parameter>dfree command</parameter></link></para></listitem>
 		<listitem><para><link linkend="DISABLENETBIOS"><parameter>disable netbios</parameter></link></para></listitem>
 		<listitem><para><link linkend="DISABLESPOOLSS"><parameter>disable spoolss</parameter></link></para></listitem>
+		<listitem><para><link linkend="DISPLAYCHARSET"><parameter>disable charset</parameter></link></para></listitem>
 		<listitem><para><link linkend="DNSPROXY"><parameter>dns proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINADMINGROUP"><parameter>domain admin group</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINGUESTGROUP"><parameter>domain guest group</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINLOGONS"><parameter>domain logons</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINMASTER"><parameter>domain master</parameter></link></para></listitem>
+		<listitem><para><link linkend="DOSCHARSET"><parameter>dos charset</parameter></link></para></listitem>
 		<listitem><para><link linkend="ENCRYPTPASSWORDS"><parameter>encrypt passwords</parameter></link></para></listitem>
 		<listitem><para><link linkend="ENHANCEDBROWSING"><parameter>enhanced browsing</parameter></link></para></listitem>
 		<listitem><para><link linkend="ENUMPORTSCOMMAND"><parameter>enumports command</parameter></link></para></listitem>
 		<listitem><para><link linkend="GETWDCACHE"><parameter>getwd cache</parameter></link></para></listitem>
 		<listitem><para><link linkend="HIDELOCALUSERS"><parameter>hide local users</parameter></link></para></listitem>
 		<listitem><para><link linkend="HIDEUNREADABLE"><parameter>hide unreadable</parameter></link></para></listitem>
-		<listitem><para><link linkend="HIDEUNWRITEABLE"><parameter>hide unwriteable</parameter></link></para></listitem>
+		<listitem><para><link linkend="HIDEUNWRITEABLEFILES"><parameter>hide unwriteable files</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOMEDIRMAP"><parameter>homedir map</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOSTMSDFS"><parameter>host msdfs</parameter></link></para></listitem>
+		<listitem><para><link linkend="HOSTNAMELOOKUPS"><parameter>hostname lookups</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOSTSEQUIV"><parameter>hosts equiv</parameter></link></para></listitem>
 		<listitem><para><link linkend="INTERFACES"><parameter>interfaces</parameter></link></para></listitem>
 		<listitem><para><link linkend="KEEPALIVE"><parameter>keepalive</parameter></link></para></listitem>
@@ -689,11 +692,13 @@
 		<listitem><para><link linkend="MINPASSWORDLENGTH"><parameter>min password length</parameter></link></para></listitem>
 		<listitem><para><link linkend="MINPROTOCOL"><parameter>min protocol</parameter></link></para></listitem>
 		<listitem><para><link linkend="MINWINSTTL"><parameter>min wins ttl</parameter></link></para></listitem>
+		<listitem><para><link linkend="NAMECACHETIMEOUT"><parameter>name cache timeout</parameter></link></para></listitem>
 		<listitem><para><link linkend="NAMERESOLVEORDER"><parameter>name resolve order</parameter></link></para></listitem>
 		<listitem><para><link linkend="NETBIOSALIASES"><parameter>netbios aliases</parameter></link></para></listitem>
 		<listitem><para><link linkend="NETBIOSNAME"><parameter>netbios name</parameter></link></para></listitem>
 		<listitem><para><link linkend="NETBIOSSCOPE"><parameter>netbios scope</parameter></link></para></listitem>
 		<listitem><para><link linkend="NISHOMEDIR"><parameter>nis homedir</parameter></link></para></listitem>
+		<listitem><para><link linkend="NTLMAUTH"><parameter>ntlm auth</parameter></link></para></listitem>
 		<listitem><para><link linkend="NONUNIXACCOUNTRANGE"><parameter>non unix account range</parameter></link></para></listitem>
 		<listitem><para><link linkend="NTPIPESUPPORT"><parameter>nt pipe support</parameter></link></para></listitem>
 		<listitem><para><link linkend="NTSTATUSSUPPORT"><parameter>nt status support</parameter></link></para></listitem>
@@ -704,6 +709,7 @@
 		<listitem><para><link linkend="OS2DRIVERMAP"><parameter>os2 driver map</parameter></link></para></listitem>
 		<listitem><para><link linkend="PAMPASSWORDCHANGE"><parameter>pam password change</parameter></link></para></listitem>
 		<listitem><para><link linkend="PANICACTION"><parameter>panic action</parameter></link></para></listitem>
+		<listitem><para><link linkend="PARANOIDSERVERSECURITY"><parameter>paranoid server security</parameter></link></para></listitem>
 		<listitem><para><link linkend="PASSDBBACKEND"><parameter>passdb backend</parameter></link></para></listitem>
 		<listitem><para><link linkend="PASSWDCHAT"><parameter>passwd chat</parameter></link></para></listitem>
 		<listitem><para><link linkend="PASSWDCHATDEBUG"><parameter>passwd chat debug</parameter></link></para></listitem>
@@ -721,6 +727,7 @@
 		<listitem><para><link linkend="READBMPX"><parameter>read bmpx</parameter></link></para></listitem>
 		<listitem><para><link linkend="READRAW"><parameter>read raw</parameter></link></para></listitem>
 		<listitem><para><link linkend="READSIZE"><parameter>read size</parameter></link></para></listitem>
+		<listitem><para><link linkend="REALM"><parameter>realm</parameter></link></para></listitem>
 		<listitem><para><link linkend="REMOTEANNOUNCE"><parameter>remote announce</parameter></link></para></listitem>
 		<listitem><para><link linkend="REMOTEBROWSESYNC"><parameter>remote browse sync</parameter></link></para></listitem>
 		<listitem><para><link linkend="RESTRICTANONYMOUS"><parameter>restrict anonymous</parameter></link></para></listitem>
@@ -732,6 +739,7 @@
 		<listitem><para><link linkend="SHOWADDPRINTERWIZARD"><parameter>show add printer wizard</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link></para></listitem>
 		<listitem><para><link linkend="SMBPASSWDFILE"><parameter>smb passwd file</parameter></link></para></listitem>
+		<listitem><para><link linkend="SMBPORTS"><parameter>smb ports</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETADDRESS"><parameter>socket address</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETOPTIONS"><parameter>socket options</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOURCEENVIRONMENT"><parameter>source environment</parameter></link></para></listitem>
@@ -747,6 +755,8 @@
 		<listitem><para><link linkend="TIMESERVER"><parameter>time server</parameter></link></para></listitem>
 		<listitem><para><link linkend="TIMESTAMPLOGS"><parameter>timestamp logs</parameter></link></para></listitem>
 		<listitem><para><link linkend="TOTALPRINTJOBS"><parameter>total print jobs</parameter></link></para></listitem>
+		<listitem><para><link linkend="UNICODE"><parameter>unicode</parameter></link></para></listitem>
+		<listitem><para><link linkend="UNIXCHARSET"><parameter>unix charset</parameter></link></para></listitem>
 		<listitem><para><link linkend="UNIXEXTENSIONS"><parameter>unix extensions</parameter></link></para></listitem>
 		<listitem><para><link linkend="UNIXPASSWORDSYNC"><parameter>unix password sync</parameter></link></para></listitem>
 		<listitem><para><link linkend="UPDATEENCRYPTED"><parameter>update encrypted</parameter></link></para></listitem>
@@ -756,6 +766,7 @@
 		<listitem><para><link linkend="USERNAMEMAP"><parameter>username map</parameter></link></para></listitem>
 		<listitem><para><link linkend="UTMP"><parameter>utmp</parameter></link></para></listitem>
 		<listitem><para><link linkend="UTMPDIRECTORY"><parameter>utmp directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="WTMPDIRECTORY"><parameter>wtmp directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDCACHETIME"><parameter>winbind cache time</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDENUMUSERS"><parameter>winbind enum users</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDENUMGROUPS"><parameter>winbind enum groups</parameter></link></para></listitem>
@@ -764,6 +775,7 @@
 		<listitem><para><link linkend="WINBINDUID"><parameter>winbind uid</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDUSEDEFAULTDOMAIN"><parameter>winbind use default domain</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSHOOK"><parameter>wins hook</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINSPARTNERS"><parameter>wins partners</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSPROXY"><parameter>wins proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSSERVER"><parameter>wins server</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINSSUPPORT"><parameter>wins support</parameter></link></para></listitem>
@@ -784,7 +796,7 @@
 		<listitem><para><link linkend="ALLOWHOSTS"><parameter>allow hosts</parameter></link></para></listitem>
 		<listitem><para><link linkend="AVAILABLE"><parameter>available</parameter></link></para></listitem>
 		<listitem><para><link linkend="BLOCKINGLOCKS"><parameter>blocking locks</parameter></link></para></listitem>
-		<listitem><para><link linkend="BLOCKSIZE"><parameter>block size</parameter></link></para></listitem>
+<listitem><para><link linkend="BLOCKSIZE"><parameter>block size</parameter></link></para></listitem>
 		<listitem><para><link linkend="BROWSABLE"><parameter>browsable</parameter></link></para></listitem>
 		<listitem><para><link linkend="BROWSEABLE"><parameter>browseable</parameter></link></para></listitem>
 		<listitem><para><link linkend="CASESENSITIVE"><parameter>case sensitive</parameter></link></para></listitem>
@@ -896,6 +908,7 @@
 		<listitem><para><link linkend="VALIDUSERS"><parameter>valid users</parameter></link></para></listitem>
 		<listitem><para><link linkend="VETOFILES"><parameter>veto files</parameter></link></para></listitem>
 		<listitem><para><link linkend="VETOOPLOCKFILES"><parameter>veto oplock files</parameter></link></para></listitem>
+		<listitem><para><link linkend="VFSPATH"><parameter>vfs path</parameter></link></para></listitem>
 		<listitem><para><link linkend="VFSOBJECT"><parameter>vfs object</parameter></link></para></listitem>
 		<listitem><para><link linkend="VFSOPTIONS"><parameter>vfs options</parameter></link></para></listitem>
 		<listitem><para><link linkend="VOLUME"><parameter>volume</parameter></link></para></listitem>
@@ -930,7 +943,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><anchor id="ADDPRINTERCOMMAND">add printer command (G)</term>
+		<term><anchor id="ADDPRINTERCOMMAND">addprinter command (G)</term>
 		<listitem><para>With the introduction of MS-RPC based printing
 		support for Windows NT/2000 clients in Samba 2.2, The MS Add
 		Printer Wizard (APW) icon is now also available in the 
@@ -947,7 +960,7 @@
 		shared by <ulink url="smbd.8.html"><command>smbd(8)</command>
 		</ulink>.</para>
 		
-		<para>The <parameter>add printer command</parameter> is
+		<para>The <parameter>addprinter command</parameter> is
 		automatically invoked with the following parameter (in 
 		order:</para>
 		
@@ -967,14 +980,14 @@
 		only.  The remaining fields in the structure are generated from answers
 		to the APW questions.</para>
 		
-		<para>Once the <parameter>add printer command</parameter> has 
+		<para>Once the <parameter>addprinter command</parameter> has 
 		been executed, <command>smbd</command> will reparse the <filename>
 		smb.conf</filename> to determine if the share defined by the APW
 		exists.  If the sharename is still invalid, then <command>smbd
 		</command> will return an ACCESS_DENIED error to the client.</para>
 		
 		<para>See also <link linkend="DELETEPRINTERCOMMAND"><parameter>
-		delete printer command</parameter></link>, <link 
+		deleteprinter command</parameter></link>, <link 
 		linkend="printing"><parameter>printing</parameter></link>,
 		<link linkend="SHOWADDPRINTERWIZARD"><parameter>show add
 		printer wizard</parameter></link></para>
@@ -1024,7 +1037,7 @@
 		
 		<para>
 		This parameter is only used for add file shares.  To add printer shares, 
-		see the <link linkend="ADDPRINTERCOMMAND"><parameter>add printer 
+		see the <link linkend="ADDPRINTERCOMMAND"><parameter>addprinter 
 		command</parameter></link>.
 		</para>
 		
@@ -1862,7 +1875,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><anchor id="DELETEPRINTERCOMMAND">delete printer command (G)</term>
+		<term><anchor id="DELETEPRINTERCOMMAND">deleteprinter command (G)</term>
 		<listitem><para>With the introduction of MS-RPC based printer
 		support for Windows NT/2000 clients in Samba 2.2, it is now 
 		possible to delete printer at run time by issuing the 
@@ -1875,19 +1888,19 @@
 		from the print system and from <filename>smb.conf</filename>.
 		</para>
 		
-		<para>The <parameter>delete printer command</parameter> is 
+		<para>The <parameter>deleteprinter command</parameter> is 
 		automatically called with only one parameter: <parameter>
 		"printer name"</parameter>.</para>
 		
 				
-		<para>Once the <parameter>delete printer command</parameter> has 
+		<para>Once the <parameter>deleteprinter command</parameter> has 
 		been executed, <command>smbd</command> will reparse the <filename>
 		smb.conf</filename> to associated printer no longer exists.  
 		If the sharename is still valid, then <command>smbd
 		</command> will return an ACCESS_DENIED error to the client.</para>
 		
 		<para>See also <link linkend="ADDPRINTERCOMMAND"><parameter>
-		add printer command</parameter></link>, <link 
+		addprinter command</parameter></link>, <link 
 		linkend="printing"><parameter>printing</parameter></link>,
 		<link linkend="SHOWADDPRINTERWIZARD"><parameter>show add
 		printer wizard</parameter></link></para>
@@ -1946,7 +1959,7 @@
 		
 		<para>
 		This parameter is only used to remove file shares.  To delete printer shares, 
-		see the <link linkend="DELETEPRINTERCOMMAND"><parameter>delete printer 
+		see the <link linkend="DELETEPRINTERCOMMAND"><parameter>deleteprinter 
 		command</parameter></link>.
 		</para>
 		
@@ -2230,6 +2243,19 @@
 		</listitem>
 		</varlistentry>
 		
+		<varlistentry>
+		<term><anchor id="DISPLAYCHARSET">display charset (G)</term>
+		<listitem><para>Specifies the charset that samba will use 
+		to print messages to stdout and stderr and SWAT will use. 
+		Should generally be the same as the <command>unix charset</command>.
+		</para>
+
+		<para>Default: <command>display charset = ASCII</command></para>
+
+		<para>Example: <command>display charset = UTF8</command></para>
+
+		</listitem>
+		</varlistentry>
 		
 		
 		<varlistentry>
@@ -2374,7 +2400,20 @@
 		</listitem>
 		</varlistentry>
 		
+		<varlistentry>
+		<term><anchor id="DOSCHARSET">dos charset (G)</term>
+		<listitem><para>DOS SMB clients assume the server has 
+		the same charset as they do. This option specifies which 
+		charset Samba should talk to DOS clients.
+		</para>
 
+		<para>The default depends on which charsets you have instaled. 
+		Samba tries to use charset 850 but falls back to ASCII in 
+		case it is not available. Run <ulink url="testparm.1.html">testparm(1)
+		</ulink> to check the default on your system.
+		</para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="DOSFILEMODE">dos filemode (S)</term>
@@ -2661,8 +2700,7 @@
 		
 		
 		<varlistentry>
-		<term><anchor id="FORCEDIRECTORYSECURITYMODE">force directory 
-		security mode (S)</term>
+		<term><anchor id="FORCEDIRECTORYSECURITYMODE">force directory security mode (S)</term>
 		<listitem><para>This parameter controls what UNIX permission bits 
 		can be modified when a Windows NT client is manipulating the UNIX 
 		permission on a directory using the native NT security dialog box.</para>
@@ -2733,8 +2771,6 @@
 		</listitem>
 		</varlistentry>
 
-
-
 		<varlistentry>
 		<term><anchor id="FORCESECURITYMODE">force security mode (S)</term>
 		<listitem><para>This parameter controls what UNIX permission 
@@ -2768,6 +2804,8 @@
 		<para>Example: <command>force security mode = 700</command></para>
 		</listitem>
 		</varlistentry>
+
+
 		
 		
 		
@@ -2968,7 +3006,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><anchor id="HIDEUNWRITEABLE">hide unwriteable (G)</term>
+		<term><anchor id="HIDEUNWRITEABLEFILES">hide unwriteable files (G)</term>
 		<listitem><para>This parameter prevents clients from seeing
 		the existance of files that cannot be written to. Defaults to off.
 		Note that unwriteable directories are shown as usual.
@@ -3026,6 +3064,21 @@
 		</para>
 		
 		<para>Default: <command>host msdfs = no</command></para>
+		</listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term><anchor id="HOSTNAMELOOKUPS">hostname lookups (G)</term>
+		<listitem><para>Specifies whether samba should use (expensive)
+		hostname lookups or use the ip addresses instead. An example place
+		where hostname lookups are currently used is when checking 
+		the <command>hosts deny</command> and <command>hosts allow</command>.
+		</para>
+
+		<para>Default: <command>hostname lookups = yes</command></para>
+
+		<para>Example: <command>hostname lookups = no</command></para>
+
 		</listitem>
 		</varlistentry>
 
@@ -4228,7 +4281,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><anchor id="MANGLINGMETHOD">mangling mathod(G)</term>
+		<term><anchor id="MANGLINGMETHOD">mangling method (G)</term>
 		<listitem><para> controls the algorithm used for the generating
 		the mangled names. Can take two different values, "hash" and
 		"hash2". "hash" is  the default and is the algorithm that has been
@@ -4780,6 +4833,18 @@
 		</listitem>
 		</varlistentry>
 	  
+		<varlistentry>
+		<term><anchor id="NAMECACHETIMEOUT">name cache timeout (G)</term>
+		<listitem><para>Specifies the number of seconds it takes before 
+		entries in samba's hostname resolve cache time out. If 
+		the timeout is set to 0. the caching is disabled.
+		</para>
+
+
+		<para>Default: <command>name cache timeout = 660</command></para>
+		<para>Example: <command>name cache timeout = 0</command></para>
+		</listitem>
+		</varlistentry>
 	  
 		<varlistentry> 
 		<term><anchor id="NAMERESOLVEORDER">name resolve order (G)</term>
@@ -5127,7 +5192,19 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="NTLMAUTH">ntlm auth (G)</term>
+		<listitem><para>This parameter determines whether or not <ulink url="smbd.8.html">smbd</ulink> will
+		attempt to authenticate users using the NTLM password hash.
+		If disabled, only the lanman password hashes will be used. 
+		</para>
 
+		<para>Please note that at least this option or <command>lanman auth</command> should be enabled in order to be able to log in.
+		</para>
+		
+		<para>Default : <command>ntlm auth = yes</command></para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="OSLEVEL">os level (G)</term>
@@ -5208,6 +5285,18 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="PARANOIDSERVERSECURITY">paranoid server security (G)</term>
+		<listitem><para>Some version of NT 4.x allow non-guest 
+		users with a bad passowrd. When this option is enabled, samba will not 
+		use a broken NT 4.x server as password server, but instead complain
+		to the logs and exit.
+		</para>
+
+		<para>Default: <command>paranoid server security = no</command></para>
+
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="PASSDBBACKEND">passdb backend (G)</term>
@@ -6306,6 +6395,18 @@
 		</varlistentry>
 
 
+		<varlistentry>
+		<term><anchor id="REALM">realm (G)</term>
+		<listitem><para>
+		This option specifies the kerberos realm to use. The realm is 
+		used as the ADS equivalent of the NT4<command>domain</command>. It
+		is usually set to the DNS name of the kerberos server.
+		</para>
+		
+		<para>Default: <command>realm = </command></para>
+		<para>Example: <command>realm = mysambabox.mycompany.com</command></para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="REMOTEANNOUNCE">remote announce (G)</term>
@@ -6965,7 +7066,16 @@
 		</varlistentry>
 
 
+		<varlistentry>
+		<term><anchor id="SMBPORTS">smb ports (G)</term>
+		<listitem><para>Specifies which ports the server should listen on
+		for SMB traffic.
+		</para>
 
+		<para>Default: <command>smb ports = 445 139</command></para>
+
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="SOCKETADDRESS">socket address (G)</term>
@@ -7342,8 +7452,27 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="UNICODE">unicode (G)</term>
+		<listitem><para>Specifies whether Samba should try 
+		to use unicode on the wire by default. 
+		</para>
 
+		<para>Default: <command>unicode = yes</command></para>
 
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><anchor id="UNIXCHARSET">unix charset (G)</term>
+		<listitem><para>Specifies the charset the unix machine 
+		Samba runs on uses. Samba needs to know this in order to be able to 
+		convert text to the charsets other SMB clients use.
+		</para>
+
+		<para>Default: <command>unix charset = ASCII</command></para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="UNIXEXTENSIONS">unix extensions(G)</term>
@@ -7709,8 +7838,6 @@
 		</listitem>
 		</varlistentry>
 
-
-
 		<varlistentry>
 		<term><anchor id="UTMPDIRECTORY">utmp directory(G)</term>
 		<listitem><para>This parameter is only available if Samba has 
@@ -7724,11 +7851,30 @@
 		<filename>/var/run/utmp</filename> on Linux).</para>
 
 		<para>Default: <emphasis>no utmp directory</emphasis></para>
+		<para>Example: <command>utmp directory = /var/run/utmp</command></para>
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="WTMPDIRECTORY">wtmp directory(G)</term>
+		<listitem><para>This parameter is only available if Samba has 
+		been configured and compiled with the option <command>
+		--with-utmp</command>. It specifies a directory pathname that is
+		used to store the wtmp or wtmpx files (depending on the UNIX system) that
+		record user connections to a Samba server. The difference with
+		the utmp directory is the fact that user info is kept after a user 
+		has logged out.
+		
+		See also the <link linkend="UTMP">
+		<parameter>utmp</parameter></link> parameter. By default this is 
+		not set, meaning the system will use whatever utmp file the 
+		native system is set to use (usually 
+		<filename>/var/run/wtmp</filename> on Linux).</para>
 
-
+		<para>Default: <emphasis>no wtmp directory</emphasis></para>
+		<para>Example: <command>wtmp directory = /var/log/wtmp</command></para>
+		</listitem>
+		</varlistentry>
 
 
 		<varlistentry>
@@ -7832,7 +7978,18 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="VFSPATH">vfs path (S)</term>
+		<listitem><para>This parameter specifies the directory
+		to look in for vfs modules. The name of every <command>vfs object
+		</command> will be prepended by this directory
+		</para>
 
+		<para>Default: <command>vfs path = </command></para>
+		<para>Example: <command>vfs path = /usr/lib/samba/vfs</command></para>
+
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="VFSOBJECT">vfs object (S)</term>
@@ -8203,6 +8360,20 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 
 
 
+		<varlistentry>
+		<term><anchor id="WINSPARTNERS">wins partners (G)</term>
+		<listitem><para>A space separated list of partners' IP addresses for 
+		WINS replication. WINS partners are always defined as push/pull 
+		partners as defining only one way WINS replication is unreliable. 
+		WINS replication is currently experimental and unreliable between 
+		samba servers.
+		</para>
+
+		<para>Default: <command>wins partners = </command></para>
+
+		<para>Example: <command>wins partners = 192.168.0.1 172.16.1.2</command></para>
+		</listitem>
+		</varlistentry>
 
 
 		<varlistentry>
