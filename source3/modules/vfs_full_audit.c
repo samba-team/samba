@@ -86,6 +86,12 @@ static DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct 
 			  const char *fname);
 static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
 				    connection_struct *conn, DIR *dirp);
+static void smb_full_audit_seekdir(vfs_handle_struct *handle, connection_struct *conn,
+			DIR *dirp, long offset);
+static long smb_full_audit_telldir(vfs_handle_struct *handle, connection_struct *conn,
+			DIR *dirp);
+static void smb_full_audit_rewinddir(vfs_handle_struct *handle, connection_struct *conn,
+			DIR *dirp);
 static int smb_full_audit_mkdir(vfs_handle_struct *handle, connection_struct *conn,
 		       const char *path, mode_t mode);
 static int smb_full_audit_rmdir(vfs_handle_struct *handle, connection_struct *conn,
@@ -303,6 +309,12 @@ static vfs_op_tuple audit_op_tuples[] = {
 	{SMB_VFS_OP(smb_full_audit_opendir),	SMB_VFS_OP_OPENDIR,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_readdir),	SMB_VFS_OP_READDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_seekdir),	SMB_VFS_OP_SEEKDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_telldir),	SMB_VFS_OP_TELLDIR,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_rewinddir),	SMB_VFS_OP_REWINDDIR,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_mkdir),	SMB_VFS_OP_MKDIR,
 	 SMB_VFS_LAYER_LOGGER},
@@ -788,10 +800,10 @@ static DIR *smb_full_audit_opendir(vfs_handle_struct *handle, connection_struct 
 	return result;
 }
 
-static struct dirent *smb_full_audit_readdir(vfs_handle_struct *handle,
+static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
 				    connection_struct *conn, DIR *dirp)
 {
-	struct dirent *result;
+	SMB_STRUCT_DIRENT *result;
 
 	result = SMB_VFS_NEXT_READDIR(handle, conn, dirp);
 
@@ -801,6 +813,36 @@ static struct dirent *smb_full_audit_readdir(vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_READDIR, True, handle, "");
 
 	return result;
+}
+
+static void smb_full_audit_seekdir(vfs_handle_struct *handle, connection_struct *conn,
+			DIR *dirp, long offset)
+{
+	SMB_VFS_NEXT_SEEKDIR(handle, conn, dirp, offset);
+
+	do_log(SMB_VFS_OP_SEEKDIR, True, handle, "");
+	return;
+}
+
+static long smb_full_audit_telldir(vfs_handle_struct *handle, connection_struct *conn,
+			DIR *dirp)
+{
+	long result;
+
+	result = SMB_VFS_NEXT_TELLDIR(handle, conn, dirp);
+
+	do_log(SMB_VFS_OP_OPENDIR, True, handle, "");
+
+	return result;
+}
+
+static void smb_full_audit_rewinddir(vfs_handle_struct *handle, connection_struct *conn,
+			DIR *dirp)
+{
+	SMB_VFS_NEXT_REWINDDIR(handle, conn, dirp);
+
+	do_log(SMB_VFS_OP_REWINDDIR, True, handle, "");
+	return;
 }
 
 static int smb_full_audit_mkdir(vfs_handle_struct *handle, connection_struct *conn,
