@@ -2978,7 +2978,7 @@ static int named_pipe(int cnum,uint16 vuid, char *outbuf,char *name,
 		      int suwcnt,int tdscnt,int tpscnt,
 		      int msrcnt,int mdrcnt,int mprcnt)
 {
-	DEBUG(3,("named pipe command on <%s> name\n"));
+	DEBUG(3,("named pipe command on <%s> name\n", name));
 
 	if (strequal(name,"LANMAN"))
 	{

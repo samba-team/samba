@@ -634,7 +634,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		return False;
 	}
 
-	smb_io_rpc_hdr(True, &hdr, data, data, 4, 5);
+	smb_io_rpc_hdr(True, &hdr, data, data, 4, 0);
 
 	if (hdr.pkt_type == RPC_BIND) /* RPC BIND */
 	{
@@ -643,13 +643,13 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 		return True;
 	}
 
-	DEBUG(4,("netlogon TransactNamedPipe op %x\n",hdr.reserved));
+	DEBUG(4,("netlogon TransactNamedPipe op %x\n",hdr.cancel_count));
 
 	if ((vuser = get_valid_user_struct(uid)) == NULL) return False;
 
 	DEBUG(3,("Username of UID %d is %s\n", vuser->uid, vuser->name));
 
-	switch (hdr.reserved)
+	switch (hdr.cancel_count)
 	{
 		case LSA_REQCHAL:
 		{
@@ -693,7 +693,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 
 		default:
 		{
-  			DEBUG(4, ("**** netlogon, unknown code: %lx\n", hdr.reserved));
+  			DEBUG(4, ("**** netlogon, unknown code: %lx\n", hdr.cancel_count));
 			break;
 		}
 	}

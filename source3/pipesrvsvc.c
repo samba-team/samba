@@ -188,81 +188,84 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len)
 {
-  extern pstring myname;
-  char *q;
+	RPC_HDR hdr;
 
-  int    pkttype;
-  uint32 call_id;
-  uint16 opnum;
-
-  if (data == NULL)
-  {
-    DEBUG(2,("api_srvsvcTNP: NULL data parameter\n"));
-    return False;
-  }
-
-  /* really should decode these with a RPC_HDR structure */
-  pkttype = CVAL(data, 2);
-  call_id = SVAL(data,12);
-  opnum   = SVAL(data,22);
-
-  if (pkttype == RPC_BIND) /* RPC BIND */
-  {
-    DEBUG(4,("srvsvc rpc bind %x\n",pkttype));
-    LsarpcTNP1(data,rdata,rdata_len);
-    return True;
-  }
-
-  DEBUG(4,("srvsvc TransactNamedPipe op %x\n",opnum));
-  initrpcreply(data, *rdata);
-  DEBUG(4,("srvsvc LINE %d\n",__LINE__));
-  get_myname(myname,NULL);
-
-  switch (opnum)
-  {
-    case NETSHAREENUM:
+	if (data == NULL)
 	{
-	  api_srv_net_share_info( param, data, rdata, rdata_len);
+		DEBUG(2,("api_srvsvcTNP: NULL data received\n"));
+		return False;
+	}
 
-      create_rpc_reply(call_id, *rdata, *rdata_len);
-      break;
-    }
+	smb_io_rpc_hdr(True, &hdr, data, data, 4, 0);
 
-    case NETSERVERGETINFO:
-    {
-      char *servername;
-      uint32 level;
-      UNISTR2 uni_str;
-      q = data + 0x18;
-      servername = q + 16;
-      q = skip_unicode_string(servername,1);
-      if (strlen(unistr(servername)) % 2 == 0)
-	q += 2;
-    level = IVAL(q, 0); q += 4;
-     /* ignore the rest for the moment */
-      q = *rdata + 0x18;
-      SIVAL(q, 0, 101); q += 4; /* switch value */
-      SIVAL(q, 0, 2); q += 4; /* bufptr */
-      SIVAL(q, 0, 0x1f4); q += 4; /* platform id */
-      SIVAL(q, 0, 2); q += 4; /* bufptr for name */
-      SIVAL(q, 0, 5); q += 4; /* major version */
-      SIVAL(q, 0, 4); q += 4; /* minor version == 5.4 */
-      SIVAL(q, 0, 0x4100B); q += 4; /* type */
-      SIVAL(q, 0, 2); q += 4; /* comment */
-      make_unistr2(&uni_str, myname, strlen(myname));
-      q = smb_io_unistr2(False, &uni_str, q, *rdata, 4, 0);
+	if (hdr.pkt_type == RPC_BIND) /* RPC BIND */
+	{
+		DEBUG(4,("srvsvc rpc bind %x\n",hdr.pkt_type));
+		LsarpcTNP1(data,rdata,rdata_len);
+		return True;
+	}
 
-      make_unistr2(&uni_str, lp_serverstring(), strlen(lp_serverstring()));
-      q = smb_io_unistr2(False, &uni_str, q, *rdata, 4, 0);
+	DEBUG(4,("srvsvc TransactNamedPipe op %x\n",hdr.cancel_count));
 
-      q = align_offset(q, *rdata, 4);
+	switch (hdr.cancel_count)
+	{
+		case NETSHAREENUM:
+		{
+			api_srv_net_share_info( param, data, rdata, rdata_len);
+			create_rpc_reply(hdr.call_id, *rdata, *rdata_len);
+			break;
+		}
 
-      endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
-      break;
-    }
-    default:
-      DEBUG(4, ("srvsvc, unknown code: %lx\n", opnum));
-  }
-  return(True);
+		case NETSERVERGETINFO:
+		{
+			extern pstring myname;
+			char *q;
+			char *servername;
+			uint32 level;
+			UNISTR2 uni_str;
+
+			q = data + 0x18;
+
+			servername = q + 16;
+			q = skip_unicode_string(servername,1);
+			if (strlen(unistr(servername)) % 2 == 0)
+			q += 2;
+			level = IVAL(q, 0); q += 4;
+
+			/* ignore the rest for the moment */
+			initrpcreply(data, *rdata);
+			q = *rdata + 0x18;
+
+			SIVAL(q, 0, 101); q += 4; /* switch value */
+			SIVAL(q, 0, 2); q += 4; /* bufptr */
+			SIVAL(q, 0, 0x1f4); q += 4; /* platform id */
+			SIVAL(q, 0, 2); q += 4; /* bufptr for name */
+			SIVAL(q, 0, 5); q += 4; /* major version */
+			SIVAL(q, 0, 4); q += 4; /* minor version == 5.4 */
+			SIVAL(q, 0, 0x4100B); q += 4; /* type */
+			SIVAL(q, 0, 2); q += 4; /* comment */
+
+			get_myname(myname,NULL);
+
+			make_unistr2(&uni_str, myname, strlen(myname));
+			q = smb_io_unistr2(False, &uni_str, q, *rdata, 4, 0);
+
+			make_unistr2(&uni_str, lp_serverstring(), strlen(lp_serverstring()));
+			q = smb_io_unistr2(False, &uni_str, q, *rdata, 4, 0);
+
+			q = align_offset(q, *rdata, 4);
+
+			endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
+			break;
+		}
+
+		default:
+		{
+			DEBUG(4, ("srvsvc, unknown code: %lx\n", hdr.cancel_count));
+			break;
+		}
+	}
+
+	return(True);
 }
 

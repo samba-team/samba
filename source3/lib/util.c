@@ -4304,7 +4304,7 @@ char *unistrn2(uint16 *buf, int len)
 	char *lbuf = lbufs[nexti];
 	char *p;
 	nexti = (nexti+1)%8;
-	for (p = lbuf; *buf && p-lbuf < MAXUNI-2 && len >= 0; len--, p++, buf++)
+	for (p = lbuf; *buf && p-lbuf < MAXUNI-2 && len > 0; len--, p++, buf++)
 	{
 		*p = *buf;
 	}
