@@ -71,7 +71,7 @@ for ln in $LANGS; do
 
 done
 
-# Install html documentation
+# Install html documentation (if html documentation tree is here)
 
 if [ -d $SRCDIR../docs/htmldocs/ ]; then
 

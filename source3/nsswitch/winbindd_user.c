@@ -37,7 +37,8 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 				char *full_name, struct winbindd_pw *pw)
 {
 	fstring output_username;
-	pstring homedir;
+	char *homedir;
+	char *shell;
 	fstring sid_string;
 	
 	if (!pw || !dom_name || !user_name)
@@ -72,24 +73,32 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	   shell. */
 	
 	/* The substitution of %U and %D in the 'template homedir' is done
-	   by lp_string() calling standard_sub_basic(). */
+	   by alloc_sub_specified() below. */
 
-	fstrcpy(current_user_info.smb_name, user_name);
-	sub_set_smb_name(user_name);
 	fstrcpy(current_user_info.domain, dom_name);
 
-	pstrcpy(homedir, lp_template_homedir());
+	homedir = alloc_sub_specified(lp_template_homedir(), user_name, dom_name, pw->pw_uid, pw->pw_gid);
+
+	if (!homedir)
+		return False;
 	
 	safe_strcpy(pw->pw_dir, homedir, sizeof(pw->pw_dir) - 1);
 	
-	safe_strcpy(pw->pw_shell, lp_template_shell(), 
+	SAFE_FREE(homedir);
+	
+	shell = alloc_sub_specified(lp_template_shell(), user_name, dom_name, pw->pw_uid, pw->pw_gid);
+
+	if (!shell)
+		return False;
+
+	safe_strcpy(pw->pw_shell, shell, 
 		    sizeof(pw->pw_shell) - 1);
 	
 	/* Password - set to "x" as we can't generate anything useful here.
 	   Authentication can be done using the pam_winbind module. */
 
 	safe_strcpy(pw->pw_passwd, "x", sizeof(pw->pw_passwd) - 1);
-	
+
 	return True;
 }
 
@@ -115,7 +124,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	/* Parse domain and username */
 
 	parse_domain_user(state->request.data.username, 
-		name_domain, name_user);
+			  name_domain, name_user);
 	
 	/* if this is our local domain (or no domain), the do a local tdb search */
 	
@@ -131,16 +140,16 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 
 	/* should we deal with users for our domain? */
 	
-	if ( lp_winbind_trusted_domains_only() && strequal(name_domain, lp_workgroup())) {
-		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting getpwnam() for %s\\%s.\n", 
-			name_domain, name_user));
-		return WINBINDD_ERROR;
-	}	
-	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(5, ("no such domain: %s\n", name_domain));
 		return WINBINDD_ERROR;
 	}
+	
+	if ( domain->primary && lp_winbind_trusted_domains_only()) {
+		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting getpwnam() for %s\\%s.\n", 
+			name_domain, name_user));
+		return WINBINDD_ERROR;
+	}	
 	
 	/* Get rid and name type from name */
 
@@ -149,15 +158,13 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 
-	if (name_type != SID_NAME_USER) {
+	if (name_type != SID_NAME_USER && name_type != SID_NAME_COMPUTER) {
 		DEBUG(1, ("name '%s' is not a user name: %d\n", name_user, 
 			  name_type));
 		return WINBINDD_ERROR;
 	}
 	
-	/* Get some user info.  Split the user rid from the sid obtained
-	   from the winbind_lookup_by_name() call and use it in a
-	   winbind_lookup_userinfo() */
+	/* Get some user info. */
     
 	if (!(mem_ctx = talloc_init("winbindd_getpwnam([%s]\\[%s])", 
 					  name_domain, name_user))) {
@@ -529,15 +536,6 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 		}
 
 		name_list = ent->sam_entries;
-
-		/* Skip machine accounts */
-
-		if (name_list[ent->sam_entry_index].
-		    name[strlen(name_list[ent->sam_entry_index].name) - 1] 
-		    == '$') {
-			ent->sam_entry_index++;
-			continue;
-		}
 
 		/* Lookup user info */
 		

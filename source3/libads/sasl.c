@@ -124,13 +124,13 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 {
 	DATA_BLOB blob;
 	struct berval cred, *scred;
-	unsigned char sk[16];
+	DATA_BLOB session_key;
 	int rc;
 
-	blob = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, sk);
+	rc = spnego_gen_negTokenTarg(principal, ads->auth.time_offset, &blob, &session_key);
 
-	if (!blob.data) {
-		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
+	if (rc) {
+		return ADS_ERROR_KRB5(rc);
 	}
 
 	/* now send the auth packet and we should be done */
@@ -140,6 +140,7 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads, const char *princip
 	rc = ldap_sasl_bind_s(ads->ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
 
 	data_blob_free(&blob);
+	data_blob_free(&session_key);
 
 	return ADS_ERROR(rc);
 }
@@ -165,6 +166,8 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	}
 
 	blob = data_blob(scred->bv_val, scred->bv_len);
+
+	ber_bvfree(scred);
 
 #if 0
 	file_save("sasl_spnego.dat", blob.data, blob.length);
@@ -196,9 +199,13 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		status = ads_sasl_spnego_krb5_bind(ads, principal);
 		if (ADS_ERR_OK(status))
 			return status;
-		if (ads_kinit_password(ads) == 0) {
+
+		status = ADS_ERROR_KRB5(ads_kinit_password(ads)); 
+
+		if (ADS_ERR_OK(status)) {
 			status = ads_sasl_spnego_krb5_bind(ads, principal);
 		}
+
 		/* only fallback to NTLMSSP if allowed */
 		if (ADS_ERR_OK(status) || 
 		    !(ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP)) {

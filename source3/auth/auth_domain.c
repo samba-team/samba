@@ -33,10 +33,10 @@ extern BOOL global_machine_password_needs_changing;
  * @param server either a machine name or text IP address to
  *               connect to.
  * @param setup_creds_as domain account to setup credentials as
- * @param sec_chan switch value to distinguish between domain
+ * @param sec_chan a switch value to distinguish between domain
  *                 member and interdomain authentication
  * @param trust_passwd the trust password to establish the
- *                     credentials
+ *                     credentials with.
  *
  **/
 

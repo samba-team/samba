@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "includes.h"
 #include "printing.h"
 
 static TALLOC_CTX *send_ctx;

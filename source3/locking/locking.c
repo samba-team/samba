@@ -361,7 +361,7 @@ void unlock_share_entry(connection_struct *conn,
 }
 
 /*******************************************************************
- Lock a hash bucket entry. Use an fsp for convenience.
+ Lock a hash bucket entry. use a fsp for convenience
 ******************************************************************/
 
 BOOL lock_share_entry_fsp(files_struct *fsp)
@@ -370,7 +370,7 @@ BOOL lock_share_entry_fsp(files_struct *fsp)
 }
 
 /*******************************************************************
- Unlock a hash bucket entry. Use an fsp for convenience.
+ Unlock a hash bucket entry.
 ******************************************************************/
 
 void unlock_share_entry_fsp(files_struct *fsp)

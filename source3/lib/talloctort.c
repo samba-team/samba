@@ -51,9 +51,9 @@ int main(void)
 	}
 
 	for (i = 0; i < NCTX; i++) {
-		printf("talloc@%p %-40s %dkB\n", ctx[i],
+		printf("talloc@%p %-40s %ldkB\n", ctx[i],
 		       talloc_pool_name(ctx[i]),
-		       talloc_pool_size(ctx[i]) >> 10);
+		       (unsigned long)talloc_pool_size(ctx[i]) >> 10);
 	}
 
 	printf("%s", talloc_describe_all(ctx[0]));
