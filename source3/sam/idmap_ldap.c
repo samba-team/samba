@@ -711,8 +711,12 @@ static NTSTATUS verify_idpool( void )
 			get_attr_key2string(idpool_attr_list, LDAP_ATTR_UIDNUMBER), uid_str );
 		smbldap_set_mod( &mods, LDAP_MOD_ADD,
 			get_attr_key2string(idpool_attr_list, LDAP_ATTR_GIDNUMBER), gid_str );
-		
-		rc = smbldap_modify(ldap_state.smbldap_state, lp_ldap_idmap_suffix(), mods);
+		if (mods) {
+			rc = smbldap_modify(ldap_state.smbldap_state, lp_ldap_idmap_suffix(), mods);
+			ldap_mods_free( mods, True );
+		} else {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 
 	return ( rc==LDAP_SUCCESS ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL );
