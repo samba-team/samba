@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -71,6 +71,15 @@
 #include <krb5.h>
 #endif
 
+#ifndef _PATH_BSHELL
+#define _PATH_BSHELL "/bin/sh"
+#endif
+#ifndef _PATH_TTY
+#define _PATH_TTY "/dev/tty"
+#endif
+#ifndef _PATH_DEV
+#define _PATH_DEV "/dev/"
+#endif
 #ifndef _PATH_WTMP
 #ifdef WTMP_FILE
 #define _PATH_WTMP WTMP_FILE
@@ -79,10 +88,12 @@
 #endif
 #endif
 
-int read_string(const char*, char*, size_t, int);
-
 char *clean_ttyname (char*);
 char *make_id (char*);
-
+void  prepare_utmp (struct utmp*, char*, const char*, const char*);
+int   read_string (const char*, char*, size_t, int);
+void  stty_default (void);
+void  utmp_login (char*, const char*, const char*);
+int   utmpx_login (char*, const char*, const char*);
 
 #endif /* __LOGIN_LOCL_H__ */
