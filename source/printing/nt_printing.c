@@ -1885,7 +1885,7 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 			break;
 		}
 		default:
-			DEBUGADD(1,("Level not implemented\n"));
+			DEBUGADD(106,("dump_a_printer_driver: Level %u not implemented\n", (unsigned int)level));
 			result=1;
 			break;
 	}
@@ -2728,7 +2728,7 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			break;
 		}
 		default:
-			DEBUGADD(1,("Level not implemented\n"));
+			DEBUGADD(106,("dump_a_printer: Level %u not implemented\n", (unsigned int)level ));
 			result=1;
 			break;
 	}

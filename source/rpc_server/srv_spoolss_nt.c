@@ -6270,19 +6270,16 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		   problems unmarshalling the response */
 
 		*out_max_value_len=(in_value_len/sizeof(uint16));
-		if((*out_value=(uint16 *)malloc(in_value_len*sizeof(uint8))) == NULL)
+		if((*out_value=(uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL)
 			return WERR_NOMEM;
 
-		ZERO_STRUCTP(*out_value);
 		*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, "", in_value_len, True);
 
 		/* the data is counted in bytes */
 		*out_max_data_len = in_data_len;
 		*out_data_len = in_data_len;
-		if((*data_out=(uint8 *)malloc(in_data_len*sizeof(uint8))) == NULL)
+		if((*data_out=(uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL)
 			return WERR_NOMEM;
-
-		memset(*data_out,'\0',in_data_len);
 
 		return WERR_NO_MORE_ITEMS;
 	}
