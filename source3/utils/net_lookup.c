@@ -79,8 +79,8 @@ static int net_lookup_ldap(int argc, const char **argv)
 #ifdef HAVE_LDAP
 	char *srvlist;
 	const char *domain;
-	int rc, count;
-	struct in_addr *addr;
+	int rc;
+	struct in_addr addr;
 	struct hostent *hostent;
 
 	if (argc > 0)
@@ -96,10 +96,10 @@ static int net_lookup_ldap(int argc, const char **argv)
 	}
 
      	DEBUG(9, ("Looking up DC for domain %s\n", domain));
-	if (!get_dc_list(True, domain, &addr, &count))
+	if (!get_pdc_ip(domain, &addr))
 		return -1;
 
-	hostent = gethostbyaddr((char *) &addr->s_addr, sizeof(addr->s_addr),
+	hostent = gethostbyaddr((char *) &addr.s_addr, sizeof(addr.s_addr),
 				AF_INET);
 	if (!hostent)
 		return -1;
@@ -124,7 +124,7 @@ static int net_lookup_ldap(int argc, const char **argv)
 
 static int net_lookup_dc(int argc, const char **argv)
 {
-	struct in_addr *ip_list;
+	struct in_addr *ip_list, addr;
 	char *pdc_str = NULL;
 	const char *domain=opt_target_workgroup;
 	int count, i;
@@ -133,13 +133,13 @@ static int net_lookup_dc(int argc, const char **argv)
 		domain=argv[0];
 
 	/* first get PDC */
-	if (!get_dc_list(True, domain, &ip_list, &count))
+	if (!get_pdc_ip(domain, &addr))
 		return -1;
 
-	asprintf(&pdc_str, "%s", inet_ntoa(*ip_list));
+	asprintf(&pdc_str, "%s", inet_ntoa(addr));
 	d_printf("%s\n", pdc_str);
 
-	if (!get_dc_list(False, domain, &ip_list, &count)) {
+	if (!get_dc_list(domain, &ip_list, &count)) {
 		SAFE_FREE(pdc_str);
 		return 0;
 	}

@@ -494,8 +494,7 @@ static struct cli_state *init_connection(struct cli_state **cli,
                                          char *password)
 {
         extern pstring global_myname;
-        struct in_addr *dest_ip;
-        int count;
+        struct in_addr pdc_ip;
         fstring dest_host;
 
 	/* Initialise myname */
@@ -511,13 +510,13 @@ static struct cli_state *init_connection(struct cli_state **cli,
 
         /* Look up name of PDC controller */
 
-        if (!get_dc_list(True, lp_workgroup(), &dest_ip, &count)) {
+        if (!get_pdc_ip(lp_workgroup(), &pdc_ip)) {
                 DEBUG(0, ("Cannot find domain controller for domain %s\n",
                           lp_workgroup()));
                 return NULL;
         }
 
-        if (!lookup_dc_name(global_myname, lp_workgroup(), dest_ip, 
+        if (!lookup_dc_name(global_myname, lp_workgroup(), pdc_ip, 
 			    dest_host)) {
                 DEBUG(0, ("Could not lookup up PDC name for domain %s\n",
                           lp_workgroup()));
@@ -525,7 +524,7 @@ static struct cli_state *init_connection(struct cli_state **cli,
         }
 
 	if (NT_STATUS_IS_OK(cli_full_connection(cli, global_myname, dest_host,
-						dest_ip, 0,
+						pdc_ip, 0,
 						"IPC$", "IPC",  
 						username, domain,
 						password, 0))) {
