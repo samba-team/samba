@@ -66,8 +66,8 @@ typedef struct hash_element {
 typedef struct hash_table {
         ubi_dlList      *buckets;
         ubi_dlList      lru_chain;     
-        int     num_elements;	
-        int     size;
+        unsigned     num_elements;	
+        unsigned     size;
         compare_function        comp_func; 
 } hash_table;
 
