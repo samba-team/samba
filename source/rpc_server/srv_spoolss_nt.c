@@ -919,6 +919,12 @@ Can't find printer handle we created for priunter %s\n", name ));
 			return ERROR_ACCESS_DENIED;
 		}
 
+		if ((printer_default->access_required & SPECIFIC_RIGHTS_MASK)& ~(PRINTER_ACCESS_ADMINISTER|PRINTER_ACCESS_USE)) {
+			DEBUG(3, ("access DENIED for printer open - unknown bits\n"));
+			close_printer_handle(p, handle);
+			return ERROR_ACCESS_DENIED;
+                }
+
 		if (printer_default->access_required & PRINTER_ACCESS_ADMINISTER)
 			printer_default->access_required = PRINTER_ACCESS_ADMINISTER;
 		else
