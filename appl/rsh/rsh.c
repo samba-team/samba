@@ -571,8 +571,10 @@ doit_broken (int argc,
     if (connect(priv_socket1, addr, socket_sockaddr_size(addr)) < 0) {
 	char **h;
 
-	if (hostent->h_addr_list[1] == NULL)
+	if (hostent->h_addr_list[1] == NULL) {
+	    freehostent (hostent);
 	    return 1;
+	}
 
 	close(priv_socket1);
 	close(priv_socket2);
@@ -658,6 +660,7 @@ doit (const char *hostname,
 	errx (1, "gethostbyname '%s' failed: %s",
 	      hostname,
 	      hstrerror(error));
+
     af = hostent->h_addrtype;
     for (h = hostent->h_addr_list; *h != NULL; ++h) {
 	int s;
@@ -690,6 +693,7 @@ doit (const char *hostname,
 	} else
 	    errsock = -1;
     
+	freehostent (hostent);
 	ret = proto (s, errsock,
 		     hostname,
 		     local_user, remote_user,
@@ -697,6 +701,7 @@ doit (const char *hostname,
 	close (s);
 	return ret;
     }
+    freehostent (hostent);
     return 1;
 }
 

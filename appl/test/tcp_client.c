@@ -52,10 +52,6 @@ proto (int sock, const char *hostname, const char *service)
     krb5_data packet;
     u_int32_t len, net_len;
 
-    status = krb5_init_context(&context);
-    if (status)
-	krb5_err (context, 1, status, "krb5_init_context");
-
     status = krb5_auth_con_init (context, &auth_context);
     if (status)
 	krb5_err (context, 1, status, "krb5_auth_con_init");
@@ -170,8 +166,10 @@ doit (const char *hostname, int port, const char *service)
 	    close (s);
 	    continue;
 	}
+	freehostent (hostent);
 	return proto (s, hostname, service);
     }
+    freehostent (hostent);
     return 1;
 }
 
