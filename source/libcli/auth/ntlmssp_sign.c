@@ -66,7 +66,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 					      const uint8_t *data, size_t length, 
 					      const uint8_t *whole_pdu, size_t pdu_length, 
 					      enum ntlmssp_direction direction,
-					      DATA_BLOB *sig, BOOL encrypt_sig) 
+					      DATA_BLOB *sig, BOOL encrypt_sig)
 {
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 
@@ -120,9 +120,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		}
 		ntlmssp_state->ntlm_seq_num++;
 
-		if (encrypt_sig) {
-			arcfour_crypt_sbox(ntlmssp_state->ntlmssp_hash, sig->data+4, sig->length-4);
-		}
+		arcfour_crypt_sbox(ntlmssp_state->ntlmssp_hash, sig->data+4, sig->length-4);
 	}
 	dump_data_pw("calculated ntlmssp signature\n", sig->data, sig->length);
 	return NT_STATUS_OK;
@@ -245,13 +243,14 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 		/* The order of these two operations matters - we must first seal the packet,
 		   then seal the sequence number - this is becouse the send_seal_hash is not
 		   constant, but is is rather updated with each iteration */
-		
-		arcfour_crypt_sbox(ntlmssp_state->send_seal_hash, data, length);
-
 		nt_status = ntlmssp_make_packet_signature(ntlmssp_state, sig_mem_ctx, 
 							  data, length, 
 							  whole_pdu, pdu_length, 
-							  NTLMSSP_SEND, sig, True);
+							  NTLMSSP_SEND, sig, False);
+		arcfour_crypt_sbox(ntlmssp_state->send_seal_hash, data, length);
+		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
+			arcfour_crypt_sbox(ntlmssp_state->send_seal_hash, sig->data+4, 8);
+		}
 	} else {
 		uint32_t crc;
 		crc = crc32_calc_buffer((const char *)data, length);
@@ -259,12 +258,13 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		/* The order of these two operations matters - we must first seal the packet,
-		   then seal the sequence number - this is becouse the ntlmssp_hash is not
-		   constant, but is is rather updated with each iteration */
-		
-		arcfour_crypt_sbox(ntlmssp_state->ntlmssp_hash, data, length);
+		/* The order of these two operations matters - we must
+		   first seal the packet, then seal the sequence
+		   number - this is becouse the ntlmssp_hash is not
+		   constant, but is is rather updated with each
+		   iteration */
 
+		arcfour_crypt_sbox(ntlmssp_state->ntlmssp_hash, data, length);
 		arcfour_crypt_sbox(ntlmssp_state->ntlmssp_hash, sig->data+4, sig->length-4);
 		/* increment counter on send */
 		ntlmssp_state->ntlm_seq_num++;
@@ -297,24 +297,14 @@ NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 
 	dump_data_pw("ntlmssp sealed data\n", data, length);
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-
-		/* We have to pass the data past the arcfour pad in
-		 * the correct order, so we must encrypt the signature
-		 * after we decrypt the main body.  however, the
-		 * signature is calculated over the encrypted data */
+		arcfour_crypt_sbox(ntlmssp_state->recv_seal_hash, data, length);
 
 		nt_status = ntlmssp_make_packet_signature(ntlmssp_state, sig_mem_ctx, 
 							  data, length, 
 							  whole_pdu, pdu_length, 
-							  NTLMSSP_RECEIVE, &local_sig, False);
+							  NTLMSSP_RECEIVE, &local_sig, True);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
-		}
-
-		arcfour_crypt_sbox(ntlmssp_state->recv_seal_hash, data, length);
-
-		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
-			arcfour_crypt_sbox(ntlmssp_state->send_seal_hash,  local_sig.data + 4, 8);
 		}
 
 		if (local_sig.length != sig->length ||
