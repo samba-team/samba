@@ -731,18 +731,18 @@ fi
 
 
 # compile with optimization and without debugging by default
-OPTIM=${CFLAGS-"-O"}
+CFLAGS="-O ${CFLAGS}"
 
 # Check whether --enable-debug or --disable-debug was given.
 if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
   if eval "test x$enable_debug = xyes"; then
-	OPTIM="-g"
+	CFLAGS="${CFLAGS} -g"
     fi
 fi
 
 
-CFLAGS="${CFLAGS:=} $OPTIM"
+
 
 # Extract the first word of "gcc", so it can be a program name with args.
 set dummy gcc; ac_word=$2
@@ -1049,7 +1049,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL_PROGRAM}'
 
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
-for ac_prog in gawk mawk nawk awk
+for ac_prog in mawk gawk nawk awk
 do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2

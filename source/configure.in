@@ -108,14 +108,14 @@ AC_SUBST(PICFLAG)
 AC_SUBST(SHLIBEXT)
 
 # compile with optimization and without debugging by default
-OPTIM=${CFLAGS-"-O"}
+CFLAGS="-O ${CFLAGS}"
 
 AC_ARG_ENABLE(debug, [  --enable-debug        turn on debugging [default=no]],
     [if eval "test x$enable_debug = xyes"; then
-	OPTIM="-g"
+	CFLAGS="${CFLAGS} -g"
     fi])
 
-CFLAGS="${CFLAGS:=} $OPTIM"
+
 
 dnl Checks for programs.
 AC_PROG_CC
