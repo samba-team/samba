@@ -289,8 +289,11 @@ int winbind_initgroups(char *user, gid_t gid)
 	/* Call normal initgroups if we are a local user */
 
 	if (!strchr(user, *lp_winbind_separator())) {
+		DEBUG(10,("winbind_initgroups: local user %s\n", user ));
 		return initgroups(user, gid);
 	}
+
+	DEBUG(10,("winbind_initgroups: remote user %s\n", user ));
 
 	result = wb_getgroups(user, &groups);
 
