@@ -59,6 +59,9 @@ extern fstring local_machine;
 #define SNLEN 15		/* service name length */
 #define QNLEN 12		/* queue name maximum length */
 
+#define MAJOR_VERSION 2
+#define MINOR_VERSION 0
+
 extern int Client;
 
 static int CopyExpanded(int cnum, int snum, char** dst, char* src, int* n)
@@ -1406,14 +1409,16 @@ static BOOL api_SetUserPassword(int cnum,int uid, char *param,char *data,
 
   *rdata_len = 0;
 
-  SSVAL(*rparam,0,NERR_Success);
+  SSVAL(*rparam,0,NERR_badpass);
   SSVAL(*rparam,2,0);		/* converter word */
 
   DEBUG(3,("Set password for <%s>\n",user));
 
-  if (!password_ok(user,pass1,strlen(pass1),NULL,False) || 
-      !chgpasswd(user,pass1,pass2))
-    SSVAL(*rparam,0,NERR_badpass);
+  if (password_ok(user,pass1,strlen(pass1),NULL,False) &&
+      chgpasswd(user,pass1,pass2))
+  {
+    SSVAL(*rparam,0,NERR_Success);
+  }
 
   bzero(pass1,sizeof(fstring));
   bzero(pass2,sizeof(fstring));	 
@@ -1740,9 +1745,10 @@ static BOOL api_RNetServerGetInfo(int cnum,int uid, char *param,char *data,
       }
       if (servers) free(servers);
 
-      SCVAL(p,0,2);		/* version_major */
-      SCVAL(p,1,0);		/* version_minor */
+      SCVAL(p,0,MAJOR_VERSION);
+      SCVAL(p,1,MINOR_VERSION);
       SIVAL(p,2,servertype);
+
       if (mdrcnt == struct_len) {
 	SIVAL(p,6,0);
       } else {
@@ -1817,8 +1823,8 @@ static BOOL api_NetWkstaGetInfo(int cnum,int uid, char *param,char *data,
   p2 = skip_string(p2,1);
   p += 4;
 
-  SCVAL(p,0,2); /* major version?? */
-  SCVAL(p,1,1); /* minor version?? */
+  SCVAL(p,0,MAJOR_VERSION); 
+  SCVAL(p,1,MINOR_VERSION); 
   p += 2;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));

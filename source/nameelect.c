@@ -376,7 +376,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
       
         if (lp_domain_logons())
 	    {
-	      update_type |= SV_TYPE_DOMAIN_CTRL;
+	      update_type |= SV_TYPE_DOMAIN_CTRL|SV_TYPE_SERVER_UNIX;
 	    }
 
 		work->ServerType |= update_type;

@@ -3454,11 +3454,11 @@ static void process(void)
 	       */
 	    static int error_count=0;
 	    static time_t error_time=0;
-	    if (error_count==0) {
+	    if (error_count++==0) {
 	      error_time = t;
 	    } else if (error_time != t) {
 	      error_count = 0;
-	    } else if (error_count++ > 2) {
+	    } else if (error_count > 2) {
 	      exit_server("looping in process()\n");
 	    }
 	  }

@@ -334,6 +334,7 @@ static void interpret_interfaces(char *s, struct interface **interfaces,
     DEBUG(2,("Warning: inconsistant interface %s\n",inet_ntoa(iface->ip)));
   }
 
+  iface->next = NULL;
   (*interfaces) = last_iface = iface;
 
   DEBUG(1,("Added interface ip=%s ",inet_ntoa(iface->ip)));
