@@ -1177,7 +1177,7 @@ set_flags               DB_LOG_AUTOREMOVE
 </example>
 
 <example id="ch6-slapdconf">
-<title>LDAP Master Configuration File &smbmdash; <filename>/etc/openldap/slapd.conf</filename></title>
+<title>LDAP Master Configuration File &smbmdash; <filename>/etc/openldap/slapd.conf</filename> Part A</title>
 <screen>
 include		/etc/openldap/schema/core.schema
 include		/etc/openldap/schema/cosine.schema
@@ -1220,7 +1220,12 @@ rootdn		"cn=Manager,dc=abmas,dc=biz"
 rootpw          {SSHA}86kTavd9Dw3FAz6qzWTrCOKX/c0Qe+UV
 
 directory	/data/ldap
+</screen>
+</example>
 
+<example id="ch6-slapdconf2">
+<title>LDAP Master Configuration File &smbmdash; <filename>/etc/openldap/slapd.conf</filename> Part B</title>
+<screen>
 # Indices to maintain
 index objectClass           eq
 index cn                    pres,sub,eq
@@ -2145,7 +2150,8 @@ Starting ldap-server                           done
 Using workgroup name from smb.conf: sambaDomainName=MEGANET2
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 => Warning: you must update smbldap.conf configuration file to :
-=> sambaUnixIdPooldn parameter must be set to "sambaDomainName=MEGANET2,dc=abmas,dc=biz"
+=> sambaUnixIdPooldn parameter must be set
+	to "sambaDomainName=MEGANET2,dc=abmas,dc=biz"
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Using builtin directory structure
 adding new entry: dc=abmas,dc=biz
