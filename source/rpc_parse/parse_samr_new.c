@@ -5295,119 +5295,143 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
 	if(!prs_align(ps))
 	  return False;
 
-	smb_io_time("logon_time           ", &(usr->logon_time), ps, depth);
-	smb_io_time("logoff_time          ", &(usr->logoff_time), ps, depth);
-	smb_io_time("kickoff_time         ", &(usr->kickoff_time), ps, depth);
-	smb_io_time("pass_last_set_time   ", &(usr->pass_last_set_time), ps,
-		    depth);
-	smb_io_time("pass_can_change_time ", &(usr->pass_can_change_time), ps,
-		    depth);
-	smb_io_time("pass_must_change_time", &(usr->pass_must_change_time),
-		    ps, depth);
+	if(!smb_io_time("logon_time           ", &usr->logon_time, ps, depth))
+		return False;
+	if(!smb_io_time("logoff_time          ", &usr->logoff_time, ps, depth))
+		return False;
+	if(!smb_io_time("kickoff_time         ", &usr->kickoff_time), ps, depth))
+		return False;
+	if(!smb_io_time("pass_last_set_time   ", &usr->pass_last_set_time, ps, depth))
+		return False;
+	if(!smb_io_time("pass_can_change_time ", &usr->pass_can_change_time, ps, depth))
+		return False;
+	if(!smb_io_time("pass_must_change_time", &usr->pass_must_change_time, ps, depth))
+		return False;
 
-	smb_io_unihdr("hdr_user_name   ", &(usr->hdr_user_name), ps, depth);	/* username unicode string header */
-	smb_io_unihdr("hdr_full_name   ", &(usr->hdr_full_name), ps, depth);	/* user's full name unicode string header */
-	smb_io_unihdr("hdr_home_dir    ", &(usr->hdr_home_dir), ps, depth);	/* home directory unicode string header */
-	smb_io_unihdr("hdr_dir_drive   ", &(usr->hdr_dir_drive), ps, depth);	/* home directory drive */
-	smb_io_unihdr("hdr_logon_script", &(usr->hdr_logon_script), ps, depth);	/* logon script unicode string header */
-	smb_io_unihdr("hdr_profile_path", &(usr->hdr_profile_path), ps, depth);	/* profile path unicode string header */
-	smb_io_unihdr("hdr_acct_desc   ", &(usr->hdr_acct_desc), ps, depth);	/* account desc */
-	smb_io_unihdr("hdr_workstations", &(usr->hdr_workstations), ps, depth);	/* wkstas user can log on from */
-	smb_io_unihdr("hdr_unknown_str ", &(usr->hdr_unknown_str), ps, depth);	/* unknown string */
-	smb_io_unihdr("hdr_munged_dial ", &(usr->hdr_munged_dial), ps, depth);	/* wkstas user can log on from */
+	if(!smb_io_unihdr("hdr_user_name   ", &usr->hdr_user_name, ps, depth))	/* username unicode string header */
+		return False;
+	if(!smb_io_unihdr("hdr_full_name   ", &usr->hdr_full_name, ps, depth))	/* user's full name unicode string header */
+		return False;
+	if(!smb_io_unihdr("hdr_home_dir    ", &usr->hdr_home_dir, ps, depth))	/* home directory unicode string header */
+		return False;
+	if(!smb_io_unihdr("hdr_dir_drive   ", &usr->hdr_dir_drive, ps, depth))	/* home directory drive */
+		return False;
+	if(!smb_io_unihdr("hdr_logon_script", &usr->hdr_logon_script, ps, depth))	/* logon script unicode string header */
+		return False;
+	if(!smb_io_unihdr("hdr_profile_path", &usr->hdr_profile_path, ps, depth))	/* profile path unicode string header */
+		return False;
+	if(!smb_io_unihdr("hdr_acct_desc   ", &usr->hdr_acct_desc, ps, depth))	/* account desc */
+		return False;
+	if(!smb_io_unihdr("hdr_workstations", &usr->hdr_workstations, ps, depth))	/* wkstas user can log on from */
+		return False;
+	if(!smb_io_unihdr("hdr_unknown_str ", &usr->hdr_unknown_str, ps, depth))	/* unknown string */
+		return False;
+	if(!smb_io_unihdr("hdr_munged_dial ", &usr->hdr_munged_dial, ps, depth))	/* wkstas user can log on from */
+		return False;
 
-	if(!prs_uint8s(False, "lm_pwd        ", ps, depth, usr->lm_pwd)
+	if(!prs_uint8s(False, "lm_pwd        ", ps, depth, usr->lm_pwd, sizeof(usr->lm_pwd)))
 	   return False;
-		   sizeof(usr->lm_pwd));
-	if(!prs_uint8s(False, "nt_pwd        ", ps, depth, usr->nt_pwd)
+	if(!prs_uint8s(False, "nt_pwd        ", ps, depth, usr->nt_pwd, sizeof(usr->nt_pwd)))
 	   return False;
-		   sizeof(usr->nt_pwd));
 
-	if(!prs_uint32("user_rid      ", ps, depth, &(usr->user_rid));	/* User ID *)
-									   return False;
-	if(!prs_uint32("group_rid     ", ps, depth, &(usr->group_rid));	/* Group ID *)
-									   return False;
-	if(!prs_uint32("acb_info      ", ps, depth, &(usr->acb_info)))
-	return False;
+	if(!prs_uint32("user_rid      ", ps, depth, &usr->user_rid))	/* User ID */
+		return False;
+	if(!prs_uint32("group_rid     ", ps, depth, &usr->group_rid))	/* Group ID */
+		return False;
+	if(!prs_uint32("acb_info      ", ps, depth, &usr->acb_info))
+		return False;
 
-	if(!prs_uint32("unknown_3     ", ps, depth, &(usr->unknown_3)))
-	return False;
-	if(!prs_uint16("logon_divs    ", ps, depth, &(usr->logon_divs));	/* logon divisions per week *)
-										   return False;
+	if(!prs_uint32("unknown_3     ", ps, depth, &usr->unknown_3))
+		return False;
+	if(!prs_uint16("logon_divs    ", ps, depth, &usr->logon_divs))	/* logon divisions per week */
+		return False;
 	if(!prs_align(ps))
 	  return False;
-	if(!prs_uint32("ptr_logon_hrs ", ps, depth, &(usr->ptr_logon_hrs)))
-	return False;
-	if(!prs_uint8s(False, "padding1      ", ps, depth, usr->padding1)
-	return False;
-		   sizeof(usr->padding1));
-	if(!prs_uint32("unknown_5     ", ps, depth, &(usr->unknown_5)))
-	return False;
+	if(!prs_uint32("ptr_logon_hrs ", ps, depth, &usr->ptr_logon_hrs))
+		return False;
+	if(!prs_uint8s(False, "padding1      ", ps, depth, usr->padding1, sizeof(usr->padding1)))
+		return False;
+	if(!prs_uint32("unknown_5     ", ps, depth, &usr->unknown_5))
+		return False;
 
-	if(!prs_uint8s(False, "password      ", ps, depth, usr->pass)
-	return False;
-		   sizeof(usr->pass));
+	if(!prs_uint8s(False, "password      ", ps, depth, usr->pass, sizeof(usr->pass)))
+		return False;
 
 	/* here begins pointed-to data */
 
-	smb_io_unistr2("uni_user_name   ", &(usr->uni_user_name),
-		       usr->hdr_user_name.buffer, ps, depth);	/* username unicode string */
+	if(!smb_io_unistr2("uni_user_name   ", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth))	/* username unicode string */
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_unistr2("uni_full_name   ", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth))	/* user's full name unicode string */
+		return False;
+
 	if(!prs_align(ps))
 	  return False;
-	smb_io_unistr2("uni_full_name   ", &(usr->uni_full_name),
-		       usr->hdr_full_name.buffer, ps, depth);	/* user's full name unicode string */
+
+	if(!smb_io_unistr2("uni_home_dir    ", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth))	/* home directory unicode string */
+		return False;
+
 	if(!prs_align(ps))
 	  return False;
-	smb_io_unistr2("uni_home_dir    ", &(usr->uni_home_dir),
-		       usr->hdr_home_dir.buffer, ps, depth);	/* home directory unicode string */
+
+	if(!smb_io_unistr2("uni_dir_drive   ", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth))	/* home directory drive unicode string */
+		return False;
+
 	if(!prs_align(ps))
 	  return False;
-	smb_io_unistr2("uni_dir_drive   ", &(usr->uni_dir_drive),
-		       usr->hdr_dir_drive.buffer, ps, depth);	/* home directory drive unicode string */
+
+	if(!smb_io_unistr2("uni_logon_script", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth))	/* logon script unicode string */
+		return False;
+
 	if(!prs_align(ps))
 	  return False;
-	smb_io_unistr2("uni_logon_script", &(usr->uni_logon_script),
-		       usr->hdr_logon_script.buffer, ps, depth);	/* logon script unicode string */
+
+	if(!smb_io_unistr2("uni_profile_path", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth))	/* profile path unicode string */
+		return False;
+
 	if(!prs_align(ps))
 	  return False;
-	smb_io_unistr2("uni_profile_path", &(usr->uni_profile_path),
-		       usr->hdr_profile_path.buffer, ps, depth);	/* profile path unicode string */
+
+	if(!smb_io_unistr2("uni_acct_desc   ", &usr->uni_acct_desc, usr->hdr_acct_desc.buffer, ps, depth))	/* user desc unicode string */
+		return False;
+
 	if(!prs_align(ps))
 	  return False;
-	smb_io_unistr2("uni_acct_desc   ", &(usr->uni_acct_desc),
-		       usr->hdr_acct_desc.buffer, ps, depth);	/* user desc unicode string */
+
+	if(!smb_io_unistr2("uni_workstations", &usr->uni_workstations, usr->hdr_workstations.buffer, ps, depth))	/* worksations user can log on from */
+		return False;
+
 	if(!prs_align(ps))
 	  return False;
-	smb_io_unistr2("uni_workstations", &(usr->uni_workstations),
-		       usr->hdr_workstations.buffer, ps, depth);	/* worksations user can log on from */
+
+	if(!smb_io_unistr2("uni_unknown_str ", &usr->uni_unknown_str, usr->hdr_unknown_str.buffer, ps, depth))	/* unknown string */
+		return False;
+
 	if(!prs_align(ps))
 	  return False;
-	smb_io_unistr2("uni_unknown_str ", &(usr->uni_unknown_str),
-		       usr->hdr_unknown_str.buffer, ps, depth);	/* unknown string */
-	if(!prs_align(ps))
-	  return False;
-	smb_io_unistr2("uni_munged_dial ", &(usr->uni_munged_dial),
-		       usr->hdr_munged_dial.buffer, ps, depth);	/* worksations user can log on from */
+
+	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial, usr->hdr_munged_dial.buffer, ps, depth))
+		return False;
+
 	if(!prs_align(ps))
 	  return False;
 
 	/* ok, this is only guess-work (as usual) */
-	if (usr->unknown_3 != 0x0)
-	{
-	  if(!prs_uint32("unknown_6     ", ps, depth, &(usr->unknown_6)))
+	if (usr->unknown_3 != 0x0) {
+	  if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
 	    return False;
-	  if(!prs_uint32("padding4      ", ps, depth, &(usr->padding4)))
+	  if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
 	    return False;
-	}
-	else if (UNMARSHALLING(ps))
-	{
+	} else if (UNMARSHALLING(ps)) {
 		usr->unknown_6 = 0;
 		usr->padding4 = 0;
 	}
 
-	if (usr->ptr_logon_hrs)
-	{
-		sam_io_logon_hrs("logon_hrs", &(usr->logon_hrs), ps, depth);
+	if (usr->ptr_logon_hrs)	{
+		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
+			return False;
 		if(!prs_align(ps))
 		  return False;
 	}
@@ -5424,6 +5448,7 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
+
 void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 			   const NTTIME * logon_time,
 			   const NTTIME * logoff_time,
@@ -5469,16 +5494,16 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	usr->pass_can_change_time = *pass_can_change_time;
 	usr->pass_must_change_time = *pass_must_change_time;
 
-	init_uni_hdr(&(usr->hdr_user_name), len_user_name);
-	init_uni_hdr(&(usr->hdr_full_name), len_full_name);
-	init_uni_hdr(&(usr->hdr_home_dir), len_home_dir);
-	init_uni_hdr(&(usr->hdr_dir_drive), len_dir_drive);
-	init_uni_hdr(&(usr->hdr_logon_script), len_logon_script);
-	init_uni_hdr(&(usr->hdr_profile_path), len_profile_path);
-	init_uni_hdr(&(usr->hdr_acct_desc), len_description);
-	init_uni_hdr(&(usr->hdr_workstations), len_workstations);
-	init_uni_hdr(&(usr->hdr_unknown_str), len_unknown_str);
-	init_uni_hdr(&(usr->hdr_munged_dial), len_munged_dial);
+	init_uni_hdr(&usr->hdr_user_name, len_user_name);
+	init_uni_hdr(&usr->hdr_full_name, len_full_name);
+	init_uni_hdr(&usr->hdr_home_dir, len_home_dir);
+	init_uni_hdr(&usr->hdr_dir_drive, len_dir_drive);
+	init_uni_hdr(&usr->hdr_logon_script, len_logon_script);
+	init_uni_hdr(&usr->hdr_profile_path, len_profile_path);
+	init_uni_hdr(&usr->hdr_acct_desc, len_description);
+	init_uni_hdr(&usr->hdr_workstations, len_workstations);
+	init_uni_hdr(&usr->hdr_unknown_str, len_unknown_str);
+	init_uni_hdr(&usr->hdr_munged_dial, len_munged_dial);
 
 	memcpy_zero(usr->lm_pwd, lm_pwd, sizeof(usr->lm_pwd));
 	memcpy_zero(usr->nt_pwd, nt_pwd, sizeof(usr->nt_pwd));
@@ -5494,23 +5519,21 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 
 	ZERO_STRUCT(usr->padding1);
 
-	copy_unistr2(&(usr->uni_user_name), user_name);
-	copy_unistr2(&(usr->uni_full_name), full_name);
-	copy_unistr2(&(usr->uni_home_dir), home_dir);
-	copy_unistr2(&(usr->uni_dir_drive), dir_drive);
-	copy_unistr2(&(usr->uni_logon_script), log_scr);
-	copy_unistr2(&(usr->uni_profile_path), prof_path);
-	copy_unistr2(&(usr->uni_acct_desc), desc);
-	copy_unistr2(&(usr->uni_workstations), wkstas);
-	copy_unistr2(&(usr->uni_unknown_str), unk_str);
-	copy_unistr2(&(usr->uni_munged_dial), mung_dial);
+	copy_unistr2(&usr->uni_user_name, user_name);
+	copy_unistr2(&usr->uni_full_name, full_name);
+	copy_unistr2(&usr->uni_home_dir, home_dir);
+	copy_unistr2(&usr->uni_dir_drive, dir_drive);
+	copy_unistr2(&usr->uni_logon_script, log_scr);
+	copy_unistr2(&usr->uni_profile_path, prof_path);
+	copy_unistr2(&usr->uni_acct_desc, desc);
+	copy_unistr2(&usr->uni_workstations, wkstas);
+	copy_unistr2(&usr->uni_unknown_str, unk_str);
+	copy_unistr2(&usr->uni_munged_dial, mung_dial);
 
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
-	memcpy_zero(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
-
-	return True;
+	memcpy_zero(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
 }
 
 /*************************************************************************
@@ -5521,6 +5544,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
+
 void init_sam_user_info21A(SAM_USER_INFO_21 * usr,
 			   NTTIME * logon_time,
 			   NTTIME * logoff_time,
@@ -5564,16 +5588,16 @@ void init_sam_user_info21A(SAM_USER_INFO_21 * usr,
 	usr->pass_can_change_time = *pass_can_change_time;
 	usr->pass_must_change_time = *pass_must_change_time;
 
-	init_uni_hdr(&(usr->hdr_user_name), len_user_name);
-	init_uni_hdr(&(usr->hdr_full_name), len_full_name);
-	init_uni_hdr(&(usr->hdr_home_dir), len_home_dir);
-	init_uni_hdr(&(usr->hdr_dir_drive), len_dir_drive);
-	init_uni_hdr(&(usr->hdr_logon_script), len_logon_script);
-	init_uni_hdr(&(usr->hdr_profile_path), len_profile_path);
-	init_uni_hdr(&(usr->hdr_acct_desc), len_description);
-	init_uni_hdr(&(usr->hdr_workstations), len_workstations);
-	init_uni_hdr(&(usr->hdr_unknown_str), len_unknown_str);
-	init_uni_hdr(&(usr->hdr_munged_dial), len_munged_dial);
+	init_uni_hdr(&usr->hdr_user_name, len_user_name);
+	init_uni_hdr(&usr->hdr_full_name, len_full_name);
+	init_uni_hdr(&usr->hdr_home_dir, len_home_dir);
+	init_uni_hdr(&usr->hdr_dir_drive, len_dir_drive);
+	init_uni_hdr(&usr->hdr_logon_script, len_logon_script);
+	init_uni_hdr(&usr->hdr_profile_path, len_profile_path);
+	init_uni_hdr(&usr->hdr_acct_desc, len_description);
+	init_uni_hdr(&usr->hdr_workstations, len_workstations);
+	init_uni_hdr(&usr->hdr_unknown_str, len_unknown_str);
+	init_uni_hdr(&usr->hdr_munged_dial, len_munged_dial);
 
 	ZERO_STRUCT(usr->nt_pwd);
 	ZERO_STRUCT(usr->lm_pwd);
@@ -5589,28 +5613,27 @@ void init_sam_user_info21A(SAM_USER_INFO_21 * usr,
 
 	ZERO_STRUCT(usr->padding1);
 
-	init_unistr2(&(usr->uni_user_name), user_name, len_user_name);
-	init_unistr2(&(usr->uni_full_name), full_name, len_full_name);
-	init_unistr2(&(usr->uni_home_dir), home_dir, len_home_dir);
-	init_unistr2(&(usr->uni_dir_drive), dir_drive, len_dir_drive);
-	init_unistr2(&(usr->uni_logon_script), log_scr, len_logon_script);
-	init_unistr2(&(usr->uni_profile_path), prof_path, len_profile_path);
-	init_unistr2(&(usr->uni_acct_desc), desc, len_description);
-	init_unistr2(&(usr->uni_workstations), wkstas, len_workstations);
-	init_unistr2(&(usr->uni_unknown_str), unk_str, len_unknown_str);
-	init_unistr2(&(usr->uni_munged_dial), mung_dial, len_munged_dial);
+	init_unistr2(&usr->uni_user_name, user_name, len_user_name);
+	init_unistr2(&usr->uni_full_name, full_name, len_full_name);
+	init_unistr2(&usr->uni_home_dir, home_dir, len_home_dir);
+	init_unistr2(&usr->uni_dir_drive, dir_drive, len_dir_drive);
+	init_unistr2(&usr->uni_logon_script, log_scr, len_logon_script);
+	init_unistr2(&usr->uni_profile_path, prof_path, len_profile_path);
+	init_unistr2(&usr->uni_acct_desc, desc, len_description);
+	init_unistr2(&usr->uni_workstations, wkstas, len_workstations);
+	init_unistr2(&usr->uni_unknown_str, unk_str, len_unknown_str);
+	init_unistr2(&usr->uni_munged_dial, mung_dial, len_munged_dial);
 
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
-	memcpy_zero(&(usr->logon_hrs), hrs, sizeof(usr->logon_hrs));
-
-	return True;
+	memcpy_zero(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+HERE
 static BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
 			prs_struct *ps, int depth)
 {
