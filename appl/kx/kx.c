@@ -70,7 +70,7 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
 		   krb_get_err_text(status));
 	  return -1;
      }
-     if (read (s, &b, sizeof(b)) != sizeof(b)) {
+     if (krb_net_read (s, &b, sizeof(b)) != sizeof(b)) {
 	  fprintf (stderr, "%s: read: %s\n", prog,
 		   strerror(errno));
 	  return -1;
@@ -78,14 +78,14 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
      if (b) {
 	  char buf[BUFSIZ];
 
-	  read (s, buf, sizeof(buf));
+	  krb_net_read (s, buf, sizeof(buf));
 	  buf[BUFSIZ - 1] = '\0';
 
 	  fprintf (stderr, "%s: %s: %s\n", prog, host, buf);
 	  return -1;
      }
      b = passivep;
-     if (write (s, &b, sizeof(b)) != sizeof(b)) {
+     if (krb_net_write (s, &b, sizeof(b)) != sizeof(b)) {
 	  fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
 	  return -1;
      }
@@ -95,7 +95,7 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
 	  return -1;
      }
      sscanf (tmp, "%u", &display_num);
-     if (read (s, xauthfile, sizeof(xauthfile)) != sizeof(xauthfile)) {
+     if (krb_net_read (s, xauthfile, sizeof(xauthfile)) != sizeof(xauthfile)) {
 	  fprintf (stderr, "%s: read: %s\n", prog,
 		   strerror(errno));
 	  return -1;
@@ -114,7 +114,7 @@ active (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
      kxd = connect_host (host, iv, schedule, 0); /* XXX */
      if (kxd < 0)
 	  return 1;
-     if (write (kxd, &zero, sizeof(zero)) != sizeof(zero)) {
+     if (krb_net_write (kxd, &zero, sizeof(zero)) != sizeof(zero)) {
 	  fprintf (stderr, "%s: write: %s\n", prog,
 		   strerror(errno));
 	  return 1;
