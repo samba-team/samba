@@ -10,6 +10,7 @@
 use strict;
 package input;
 
+my $subsystem_output_type = "OBJLIST";
 our $srcdir = ".";
 
 sub strtrim($)
@@ -52,8 +53,7 @@ sub check_subsystem($$)
 		printf("Subsystem: %s disabled!\n",$subsys->{NAME});
 	}
 	
-	# FIXME: Make this configurable (so it can be STATIC_LIBRARY, for example)
-	$subsys->{OUTPUT_TYPE} = "OBJLIST";
+	$subsys->{OUTPUT_TYPE} = $subsystem_output_type;
 }
 
 sub check_module($$)
@@ -89,7 +89,7 @@ sub check_module($$)
 		$mod->{ENABLE} = "YES";
 		push (@{$CTX->{INPUT}{$mod->{SUBSYSTEM}}{REQUIRED_SUBSYSTEMS}}, $mod->{NAME});
 		printf("Module: %s...static\n",$mod->{NAME});
-		$mod->{OUTPUT_TYPE} = "OBJLIST";
+		$mod->{OUTPUT_TYPE} = $subsystem_output_type;
 	} else {
 		$mod->{ENABLE} = "NO";
 		printf("Module: %s...not\n",$mod->{NAME});
@@ -150,6 +150,8 @@ sub calc_unique_deps
 sub check($)
 {
 	my $CTX = shift;
+
+	($subsystem_output_type = $ENV{SUBSYSTEM_OUTPUT_TYPE}) if (defined($ENV{"SUBSYSTEM_OUTPUT_TYPE"}));
 
 	foreach my $part (values %{$CTX->{INPUT}}) {
 		($part->{ENABLE} = "YES") if not defined($part->{ENABLE});
