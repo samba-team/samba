@@ -466,7 +466,7 @@ is joined to the domain. </para>
 <para>Since each Samba machine trust account requires a corresponding
 Unix account, a method for automatically creating the
 Unix account is usually supplied; this requires configuration of the
-<ulink url="smb.conf.5.html#ADDUSERSCRIPT">add user script</ulink> 
+<ulink url="smb.conf.5.html#ADDMACHINESCRIPT">add machine script</ulink> 
 option in <filename>smb.conf</filename>.  This
 method is not required, however; corresponding Unix accounts may also
 be created manually.
@@ -479,7 +479,7 @@ be created manually.
 <para><programlisting>
 [global]
    # &lt;...remainder of parameters...&gt;
-   add user script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u 
+   add machine script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u 
 </programlisting></para>
 
 </sect2>
@@ -621,7 +621,7 @@ wrong?
 
 <para>
 This problem is caused by the PDC not having a suitable machine trust account. 
-If you are using the <parameter>add user script</parameter> method to create 
+If you are using the <parameter>add machine script</parameter> method to create 
 accounts then this would indicate that it has not worked. Ensure the domain 
 admin user system is working.
 </para>
