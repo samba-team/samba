@@ -2963,21 +2963,10 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		 * Close ordinary file.
 		 */
 		int close_err;
+		pstring file_name;
 
-		/*
-		 * If there was a modify time outstanding,
-		 * try and set it here.
-		 */
-		if(fsp->pending_modtime)
-			set_filetime(conn, fsp->fsp_name, fsp->pending_modtime);
-
-		/*
-		 * Now take care of any time sent in the close.
-		 */
-		mtime = make_unix_date3(inbuf+smb_vwv1);
-		
-		/* try and set the date */
-		set_filetime(conn, fsp->fsp_name,mtime);
+		/* Save the name for time set in close. */
+		pstrcpy( file_name, fsp->fsp_name);
 
 		DEBUG(3,("close fd=%d fnum=%d (numopen=%d)\n",
 			 fsp->fd, fsp->fnum,
@@ -2994,6 +2983,16 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 			END_PROFILE(SMBclose);
 			return (UNIXERROR(ERRHRD,ERRgeneral));
 		}
+
+		/*
+		 * Now take care of any time sent in the close.
+		 */
+
+		mtime = make_unix_date3(inbuf+smb_vwv1);
+		
+		/* try and set the date */
+		set_filetime(conn, file_name, mtime);
+
 	}  
 
 	END_PROFILE(SMBclose);

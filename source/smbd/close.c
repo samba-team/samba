@@ -123,6 +123,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	size_t share_entry_count = 0;
 	BOOL delete_on_close = False;
 	connection_struct *conn = fsp->conn;
+	time_t pending_modtime = fsp->pending_modtime;
 	int err = 0;
 	int err1 = 0;
 
@@ -200,14 +201,22 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 		check_magic(fsp,conn);
 	}
 
+	/*
+	 * Ensure pending modtime is set after close.
+	 */
+
+	if(fsp->pending_modtime) {
+		int saved_errno = errno;
+		set_filetime(conn, fsp->fsp_name, fsp->pending_modtime);
+		errno = saved_errno;
+	}
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
 		 conn->user,fsp->fsp_name,
 		 conn->num_files_open, err ? strerror(err) : ""));
 
-	if (fsp->fsp_name) {
+	if (fsp->fsp_name)
 		string_free(&fsp->fsp_name);
-	}
 
 	file_free(fsp);
 
