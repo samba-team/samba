@@ -544,35 +544,6 @@ abortsend(int sig)
 
 #define HASHBYTES 1024
 
-/*
- * Allocate a buffer enough to handle st->st_blksize, if
- * there is such a field, otherwise BUFSIZ.
- */
-
-static void *
-alloc_buffer (void *oldbuf, size_t *sz, struct stat *st)
-{
-    size_t new_sz;
-
-    new_sz = BUFSIZ;
-#ifdef HAVE_ST_BLKSIZE
-    if (st)
-	new_sz = max(BUFSIZ, st->st_blksize);
-#endif
-    if(new_sz > *sz) {
-	if (oldbuf)
-	    free (oldbuf);
-	oldbuf = malloc (new_sz);
-	if (oldbuf == NULL) {
-	    warn ("malloc");
-	    *sz = 0;
-	    return NULL;
-	}
-	*sz = new_sz;
-    }
-    return oldbuf;
-}
-
 static int
 copy_stream(FILE *from, FILE *to)
 {
@@ -1091,7 +1062,8 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 	}
     break2:
 	if (bare_lfs) {
-	    printf("WARNING! %d bare linefeeds received in ASCII mode\n", bare_lfs);
+	    printf("WARNING! %d bare linefeeds received in ASCII mode\n",
+		   bare_lfs);
 	    printf("File may not have transferred correctly.\n");
 	}
 	if (hash) {
