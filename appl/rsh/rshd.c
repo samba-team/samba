@@ -46,7 +46,7 @@ krb5_keyblock *keyblock;
 des_key_schedule schedule;
 des_cblock iv;
 
-int do_encrypt;
+int do_encrypt = 0;
 
 static void
 syslog_and_die (const char *m, ...)
@@ -87,6 +87,28 @@ read_str (int s, char *str, size_t sz, char *expl)
 	++str;
     }
     fatal (s, "%s too long", expl);
+}
+
+static int
+recv_bsd_auth (int s, u_char *buf,
+	       struct sockaddr_in thisaddr,
+	       struct sockaddr_in thataddr,
+	       char *client_username,
+	       char *server_username,
+	       char *cmd)
+{
+    struct passwd *pwd;
+
+    read_str (s, client_username, USERNAME_SZ, "local username");
+    read_str (s, server_username, USERNAME_SZ, "remote username");
+    read_str (s, cmd, COMMAND_SZ, "command");
+    pwd = getpwnam(server_username);
+    if (pwd == NULL)
+	fatal(s, "Login incorrect.");
+    if (iruserok(thataddr.sin_addr.s_addr, pwd->pw_uid == 0, client_username,
+		 server_username))
+	fatal(s, "Login incorrect.");
+    return 0;
 }
 
 #ifdef KRB4
@@ -309,7 +331,7 @@ loop (int from0, int to0,
       int to1,   int from1,
       int to2,   int from2)
 {
-    struct fd_set real_readset;
+    fd_set real_readset;
     int max_fd;
     int count = 2;
 
@@ -320,7 +342,7 @@ loop (int from0, int to0,
     max_fd = max(from0, max(from1, from2)) + 1;
     for (;;) {
 	int ret;
-	struct fd_set readset = real_readset;
+	fd_set readset = real_readset;
 	char buf[RSH_BUFSIZ];
 
 	ret = select (max_fd, &readset, NULL, NULL, NULL);
@@ -405,8 +427,14 @@ setup_copier (void)
     }
 }
 
+static int
+is_reserved(u_short port)
+{
+    return ntohs(port) < IPPORT_RESERVED;
+}
+
 static void
-doit (void)
+doit (int do_kerberos, int check_rhosts)
 {
     u_char buf[BUFSIZ];
     u_char *p;
@@ -431,6 +459,9 @@ doit (void)
 	syslog_and_die ("getpeername: %m");
     }
 
+    if (!do_kerberos && !is_reserved(thataddr.sin_port))
+	fatal(s, "Permission denied");
+
     p = buf;
     port = 0;
     for(;;) {
@@ -443,6 +474,10 @@ doit (void)
 	else
 	    syslog_and_die ("non-digit in port number: %c", *p);
     }
+
+    if (!do_kerberos && !is_reserved(htons(port)))
+	fatal(s, "Permission denied");
+
     if (port) {
 	int priv_port = IPPORT_RESERVED - 1;
 
@@ -463,25 +498,35 @@ doit (void)
 	    syslog_and_die ("connect: %m");
     }
     
-    if (net_read (s, buf, 4) != 4)
-	syslog_and_die ("reading auth info: %m");
+    if(do_kerberos) {
+	if (net_read (s, buf, 4) != 4)
+	    syslog_and_die ("reading auth info: %m");
     
 #ifdef KRB4
-    if (recv_krb4_auth (s, buf, thisaddr, thataddr,
-			client_user,
-			server_user,
-			cmd) == 0)
-	auth_method = AUTH_KRB4;
-    else
-#endif /* KRB4 */
-    if(recv_krb5_auth (s, buf, thisaddr, thataddr,
+	if (recv_krb4_auth (s, buf, thisaddr, thataddr,
 			    client_user,
 			    server_user,
 			    cmd) == 0)
-	auth_method = AUTH_KRB5;
-    else
-	syslog_and_die ("unrecognized auth protocol: %x %x %x %x",
-			buf[0], buf[1], buf[2], buf[3]);
+	    auth_method = AUTH_KRB4;
+	else
+#endif /* KRB4 */
+	    if(recv_krb5_auth (s, buf, thisaddr, thataddr,
+			       client_user,
+			       server_user,
+			       cmd) == 0)
+		auth_method = AUTH_KRB5;
+	    else
+		syslog_and_die ("unrecognized auth protocol: %x %x %x %x",
+				buf[0], buf[1], buf[2], buf[3]);
+    } else {
+	if(recv_bsd_auth (s, buf, thisaddr, thataddr,
+			  client_user,
+			  server_user,
+			  cmd) == 0)
+	    auth_method = AUTH_BROKEN;
+	else
+	    syslog_and_die("recv_bsd_auth failed");
+    }
 
     pwd = getpwnam (server_user);
     if (pwd == NULL)
@@ -535,58 +580,102 @@ doit (void)
 }
 
 static void
-usage (void)
+usage (int ret)
 {
-    syslog (LOG_ERR, "Usage: %s [-ix] [-p port]", __progname);
-    exit (1);
+    syslog (LOG_ERR, "Usage: %s [-ixkl] [-p port]", __progname);
+    exit (ret);
 }
+
+static int do_inetd = 1;
+static char *port_str;
+static int do_rhosts;
+static int do_kerberos = 0;
+static int do_version;
+static int do_help = 0;
+
+struct getargs args[] = {
+    { "inetd",  'i', arg_negative_flag,	&do_inetd,
+      "Expect to be started by inetd",	NULL },
+    { "kerberos", 'k', arg_flag,	&do_kerberos,
+      "Implement kerberised services",	NULL },
+    { "encrypt", 'x', arg_flag,		&do_encrypt,
+      "Implement encrypted service",	NULL },
+    { "rhosts",	'l',	arg_negative_flag, &do_rhosts,
+      "Check users .rhosts",		NULL },
+    { "port",	'p', arg_string,	&port_str,	"Use this port",
+      "number-or-service" },
+    { "version", 0,  arg_flag,		&do_version,	"Print version",
+      NULL },
+    { "help",	 0,  arg_flag,		&do_help,	NULL,
+      NULL }
+};
+
+#if 0
+
+static void
+usage (int ret)
+{
+    arg_printusage (args,
+		    sizeof(args) / sizeof(args[0]),
+		    "host command");
+    exit (ret);
+}
+
+#endif
 
 int
 main(int argc, char **argv)
 {
-    int c;
-    int inetd = 0;
+    int optind = 0;
     int port = 0;
 
     set_progname (argv[0]);
     roken_openlog ("rshd", LOG_ODELAY | LOG_PID, LOG_AUTH);
 
-    while ((c = getopt(argc, argv, "ixp:")) != EOF) {
-	switch (c) {
-	case 'i' :
-	    inetd = 1;
-	    break;
-	case 'x' :
-	    do_encrypt = 1;
-	    break;
-	case 'p': {
-	    struct servent *s = roken_getservbyname (optarg, "tcp");
+    if (getarg(args, sizeof(args) / sizeof(args[0]), argc, argv,
+	       &optind))
+	usage(1);
 
-	    if (s)
-		port = s->s_port;
-	    else {
-		char *ptr;
+    if(do_help)
+	usage (0);
 
-		port = strtol (optarg, &ptr, 10);
-		if (port == 0 && ptr == optarg)
-		    syslog_and_die ("Bad port `%s'", optarg);
-		port = htons(port);
-	    }
-	    break;
-	}
-	default :
-	    usage ();
+    if (do_version) {
+	printf ("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	return 0;
+    }
+
+    if(port_str) {
+	struct servent *s = roken_getservbyname (port_str, "tcp");
+
+	if (s)
+	    port = s->s_port;
+	else {
+	    char *ptr;
+
+	    port = strtol (port_str, &ptr, 10);
+	    if (port == 0 && ptr == port_str)
+		syslog_and_die("Bad port `%s'", port_str);
+	    port = htons(port);
 	}
     }
-    if (inetd) {
-	if (port == 0)
-	    if (do_encrypt)
-		port = krb5_getportbyname (context, "ekshell", "tcp", 545);
-	    else
-		port = krb5_getportbyname (context, "kshell",  "tcp", 544);
+
+    if (do_encrypt)
+	do_kerberos = 1;
+
+    if (!do_inetd) {
+	if (port == 0) {
+	    if (do_kerberos) {
+		if (do_encrypt)
+		    port = krb5_getportbyname (context, "ekshell", "tcp", 545);
+		else
+		    port = krb5_getportbyname (context, "kshell",  "tcp", 544);
+	    } else {
+		port = krb5_getportbyname(context, "shell", "tcp", 514);
+	    }
+	}
 	mini_inetd (port);
     }
 
-    doit ();
+    doit (do_kerberos, do_rhosts);
     return 0;
 }
