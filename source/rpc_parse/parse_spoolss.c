@@ -418,10 +418,10 @@ BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_
  * make a structure.
  ********************************************************************/
 BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, 
-		char *printername,
+		const char *printername,
 		uint32 cbbuf, uint32 devmod, uint32 des_access,
-		char *station,
-		char *username)
+		const char *station,
+		const char *username)
 {
 	int len_name = printername != NULL ? strlen(printername) : 0;
 	int len_sta  = station     != NULL ? strlen(station    ) : 0;
@@ -1722,7 +1722,7 @@ static BOOL spoolss_io_read_buffer(char *desc, prs_struct *ps, int depth, BUFFER
 		if (ps->io)
 		{
 			/* reading */
-			buffer->data=(uint8 *)malloc( buffer->size * sizeof(uint8) );
+			buffer->data=(uint8 *)Realloc(NULL, buffer->size * sizeof(uint8) );
 		}
 		if (buffer->data == NULL)
 		{
@@ -2022,6 +2022,7 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 	int i;
 	uint32 start_offset, end_offset, beginning;
 	uint32 bufsize_required=0;
+	uint32 tmp_ct = 0;
 
 	PRINTER_INFO_1 *info1;
 	PRINTER_INFO_2 *info2;
@@ -2102,7 +2103,6 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 	
 	for(i=0;i<r_u->returned;i++)
 	{
-		uint32 tmp_ct = 0;
 
 		switch (r_u->level)
 		{
@@ -2113,7 +2113,7 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 					/* reading */
 					r_u->printer.printers_1[i] = add_print1_to_array(&tmp_ct, &r_u->printer.printers_1, NULL);
 				}
-				info1=r_u->printer.printers_1[i];
+				info1 = r_u->printer.printers_1[i];
 				if (info1 == NULL)
 				{
 					return False;
@@ -2129,7 +2129,7 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 					/* reading */
 					r_u->printer.printers_2[i] = add_print2_to_array(&tmp_ct, &r_u->printer.printers_2, NULL);
 				}
-				info2=r_u->printer.printers_2[i];
+				info2 = r_u->printer.printers_2[i];
 				if (info2 == NULL)
 				{
 					return False;
@@ -2148,7 +2148,7 @@ BOOL spoolss_io_r_enumprinters(char *desc,
 	prs_uint32("count", ps, depth, &(r_u->returned));
 	prs_uint32("status", ps, depth, &(r_u->status));
 
-	if (ps->io)
+	if (!ps->io)
 	{
 		/* writing */
 		free_r_enumprinters(r_u);
@@ -2539,7 +2539,7 @@ void free_r_enumjobs(SPOOL_R_ENUMJOBS *r_u)
 ********************************************************************/  
 BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth)
 {		
-	uint32 useless_ptr=0xADDE0FF0;
+	uint32 useless_ptr = 0;
 	uint32 start_offset, end_offset, beginning;
 	uint32 bufsize_required=0;
 	uint32 tmp_ct = 0;
@@ -2550,8 +2550,6 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 
 	prs_align(ps);
 	
-	prs_uint32("pointer", ps, depth, &useless_ptr);
-
 	if (!ps->io)
 	{
 		/* writing */
@@ -2587,92 +2585,102 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 		if (r_u->offered<bufsize_required)
 		{	
 			/* it's too small */
-			r_u->status=ERROR_INSUFFICIENT_BUFFER;	/* say so */
-			r_u->offered=0;				/* don't send back the buffer */
+			r_u->status = ERROR_INSUFFICIENT_BUFFER; /* say so */
+			r_u->offered = bufsize_required;
+			useless_ptr = 0;
 			
 			DEBUG(4,("spoolss_io_r_enumjobs, buffer too small\n"));
 
 		}
+		else
+		{
+			useless_ptr = 1;
+		}
 		mem_grow_data(&(ps->data), ps->io, r_u->offered, 0);
 	}
 
+	prs_uint32("pointer", ps, depth, &useless_ptr);
 	prs_uint32("size of buffer", ps, depth, &(r_u->offered));
 
-	beginning=ps->offset;
-	start_offset=ps->offset;
-	end_offset=start_offset+r_u->offered;
-	
-	tmp_ct = 0;
-
-	if (ps->io)
+	if (useless_ptr != 0)
 	{
-		/* reading */
-		ps->offset = beginning + r_u->offered;
+		beginning=ps->offset;
+		start_offset=ps->offset;
+		end_offset=start_offset+r_u->offered;
+		
+		tmp_ct = 0;
 
+		if (ps->io)
+		{
+			/* reading */
+			ps->offset = beginning + r_u->offered;
+
+			prs_align(ps);
+			prs_uint32("buffer size", ps, depth, &(bufsize_required));
+			prs_uint32("numofjobs", ps, depth, &(r_u->numofjobs));
+
+			ps->offset = beginning;
+		}
+		
+		switch (r_u->level)
+		{
+			case 1:
+			{
+				JOB_INFO_1 *info;
+				for (i=0; i<r_u->numofjobs; i++)
+				{
+					if (ps->io)
+					{
+						/* reading */
+						r_u->job.job_info_1[i] = add_job1_to_array(&tmp_ct, &r_u->job.job_info_1, NULL);
+					}
+					info = r_u->job.job_info_1[i];
+					smb_io_job_info_1(desc, 
+							  info, 
+							  ps, 
+							  depth, 
+							  &start_offset, 
+							  &end_offset);
+				}
+				break;
+			}
+			case 2:
+			{
+				JOB_INFO_2 *info;
+				for (i=0; i<r_u->numofjobs; i++)
+				{
+					if (ps->io)
+					{
+						/* reading */
+						r_u->job.job_info_2[i] = add_job2_to_array(&tmp_ct, &r_u->job.job_info_2, NULL);
+					}
+					info = r_u->job.job_info_2[i];
+					smb_io_job_info_2(desc, 
+							  info, 
+							  ps, 
+							  depth, 
+							  &start_offset, 
+							  &end_offset);
+				}
+				break;
+			}
+		
+		}		
+		ps->offset=beginning+r_u->offered;
 		prs_align(ps);
+		
+		/*
+		 * if the buffer was too small, send the minimum required size
+		 * if it was too large, send the real needed size
+		 */
+			
 		prs_uint32("buffer size", ps, depth, &(bufsize_required));
-		prs_uint32("numofjobs", ps, depth, &(r_u->numofjobs));
-
-		ps->offset = beginning;
 	}
-	
-	switch (r_u->level)
-	{
-		case 1:
-		{
-			JOB_INFO_1 *info;
-			for (i=0; i<r_u->numofjobs; i++)
-			{
-				if (ps->io)
-				{
-					/* reading */
-					r_u->job.job_info_1[i] = add_job1_to_array(&tmp_ct, &r_u->job.job_info_1, NULL);
-				}
-				info = r_u->job.job_info_1[i];
-				smb_io_job_info_1(desc, 
-						  info, 
-						  ps, 
-						  depth, 
-						  &start_offset, 
-						  &end_offset);
-			}
-			break;
-		}
-		case 2:
-		{
-			JOB_INFO_2 *info;
-			for (i=0; i<r_u->numofjobs; i++)
-			{
-				if (ps->io)
-				{
-					/* reading */
-					r_u->job.job_info_2[i] = add_job2_to_array(&tmp_ct, &r_u->job.job_info_2, NULL);
-				}
-				info = r_u->job.job_info_2[i];
-				smb_io_job_info_2(desc, 
-						  info, 
-						  ps, 
-						  depth, 
-						  &start_offset, 
-						  &end_offset);
-			}
-			break;
-		}
-	
-	}		
-	ps->offset=beginning+r_u->offered;
-	prs_align(ps);
-	
-	/*
-	 * if the buffer was too small, send the minimum required size
-	 * if it was too large, send the real needed size
-	 */
-	 	
-	prs_uint32("buffer size", ps, depth, &(bufsize_required));
+
 	prs_uint32("numofjobs", ps, depth, &(r_u->numofjobs));	
 	prs_uint32("status", ps, depth, &(r_u->status));
 
-	if (ps->io)
+	if (!ps->io)
 	{
 		/* writing */
 		free_r_enumjobs(r_u);
@@ -2683,7 +2691,7 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 
 /*******************************************************************
 ********************************************************************/  
-BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, PRINTER_HND *hnd,
+BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const PRINTER_HND *hnd,
 				uint32 firstjob,
 				uint32 numofjobs,
 				uint32 level,
@@ -2711,8 +2719,7 @@ BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, PRINTER_HND *hnd,
 ********************************************************************/  
 BOOL spoolss_io_q_enumjobs(char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, int depth)
 {
-
-	prs_debug(ps, depth, desc, "");
+	prs_debug(ps, depth, desc, "spoolss_io_q_enumjobs");
 	depth++;
 
 	prs_align(ps);

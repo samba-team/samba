@@ -194,6 +194,8 @@ struct acct_info
 
 #define PRINT_INFO_FN(fn)\
 	void (*fn)(const char*, uint32, uint32, void  *const *const)
+#define JOB_INFO_FN(fn)\
+	void (*fn)(const char*, const char*, uint32, uint32, void *const *const)
 
 #endif /* _NT_DOMAIN_H */
 

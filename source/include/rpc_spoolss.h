@@ -478,10 +478,6 @@ typedef struct devicemode_container
 #define COLLATE_FALSE  0
 #define COLLATE_TRUE   1
 
-#define ERROR_INVALID_HANDLE		  6
-#define ERROR_INVALID_PARAMETER		 87
-#define ERROR_INSUFFICIENT_BUFFER	122
-
 typedef struct s_header_type
 {
 	uint32 type;
@@ -1015,6 +1011,7 @@ typedef struct spool_r_enumjobs
 	union {
 		JOB_INFO_1 **job_info_1;
 		JOB_INFO_2 **job_info_2;
+		void *info;
 	} job;
 	uint32 offered;
 	uint32 numofjobs;
