@@ -1,5 +1,10 @@
 Thu Apr  8 14:35:34 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* sia/sia.c: remove definition of KRB_VERIFY_USER (moved to
+ 	config.h)
+
+	* sia/Makefile.am: make it build w/o krb4
+
 	* afskauthlib/verify.c: add krb5 support
 
 	* afskauthlib/Makefile.am: build afskauthlib.so

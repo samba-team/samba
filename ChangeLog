@@ -1,3 +1,9 @@
+Sat Apr 10 22:52:28 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* kadmin/kadmin.c: complain about un-recognised commands
+
+	* admin/ktutil.c: complain about un-recognised commands
+
 Sat Apr 10 15:41:49 1999  Assar Westerlund  <assar@sics.se>
 
 	* kadmin/load.c (doit): fix error message
