@@ -1586,7 +1586,7 @@ static BOOL can_delete(char *fname,int cnum,int dirtype)
   }
   if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
     return(False);
-  if (!check_file_sharing(cnum,fname)) return(False);
+  if (!check_file_sharing(cnum,fname,False)) return(False);
   return(True);
 }
 
@@ -3039,7 +3039,7 @@ static BOOL can_rename(char *fname,int cnum)
   if (!CAN_WRITE(cnum)) return(False);
 
   if (sys_lstat(fname,&sbuf) != 0) return(False);
-  if (!check_file_sharing(cnum,fname)) return(False);
+  if (!check_file_sharing(cnum,fname,True)) return(False);
 
   return(True);
 }

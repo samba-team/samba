@@ -1574,7 +1574,7 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 check if the share mode on a file allows it to be deleted or unlinked
 return True if sharing doesn't prevent the operation
 ********************************************************************/
-BOOL check_file_sharing(int cnum,char *fname)
+BOOL check_file_sharing(int cnum,char *fname, BOOL rename_op)
 {
   int i;
   int ret = False;
@@ -1621,21 +1621,41 @@ BOOL check_file_sharing(int cnum,char *fname)
         if(share_entry->op_type & BATCH_OPLOCK)
         {
 
-          DEBUG(5,("check_file_sharing: breaking oplock (%x) on file %s, \
+          /*
+           * It appears that the NT redirector may have a bug, in that
+           * it tries to do an SMBmv on a file that it has open with a
+           * batch oplock, and then fails to respond to the oplock break
+           * request. This only seems to occur when the client is doing an
+           * SMBmv to the smbd it is using - thus we try and detect this
+           * condition by checking if the file being moved is open and oplocked by
+           * this smbd process, and then not sending the oplock break in this
+           * special case. If the file was open with a deny mode that 
+           * prevents the move the SMBmv will fail anyway with a share
+           * violation error. JRA.
+           */
+          if(rename_op && (share_entry->pid == pid))
+          {
+            DEBUG(0,("check_file_sharing: NT redirector workaround - rename attempted on \
+batch oplocked file %s, dev = %x, inode = %x\n", fname, dev, inode));
+          }
+          else
+          {
+            DEBUG(5,("check_file_sharing: breaking oplock (%x) on file %s, \
 dev = %x, inode = %x\n", share_entry->op_type, fname, dev, inode));
 
-          /* Oplock break.... */
-          unlock_share_entry(cnum, dev, inode, token);
-          if(request_oplock_break(share_entry, dev, inode) == False)
-          {
-            free((char *)old_shares);
-            DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
+            /* Oplock break.... */
+            unlock_share_entry(cnum, dev, inode, token);
+            if(request_oplock_break(share_entry, dev, inode) == False)
+            {
+              free((char *)old_shares);
+              DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
 dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
-            return False;
+              return False;
+            }
+            lock_share_entry(cnum, dev, inode, &token);
+            broke_oplock = True;
+            break;
           }
-          lock_share_entry(cnum, dev, inode, &token);
-          broke_oplock = True;
-          break;
         }
 
         /* someone else has a share lock on it, check to see 
