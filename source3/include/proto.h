@@ -51,6 +51,7 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  clitar.c  */
 
+int strslashcmp(char *s1, char *s2);
 int padit(char *buf, int bufsize, int padsize);
 void cmd_block(void);
 void cmd_tarmode(void);
@@ -146,6 +147,7 @@ char *lp_wins_server(void);
 char *lp_interfaces(void);
 char *lp_socket_address(void);
 char *lp_nis_home_map_name(void);
+char *lp_announce_version(void);
 char *lp_netbios_aliases(void);
 BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
@@ -189,6 +191,7 @@ int lp_maxdisksize(void);
 int lp_lpqcachetime(void);
 int lp_syslog(void);
 int lp_client_code_page(void);
+int lp_announce_as(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );
@@ -268,10 +271,10 @@ BOOL lp_load(char *pszFname,BOOL global_only);
 int lp_numservices(void);
 void lp_dump(void);
 int lp_servicenumber(char *pszServiceName);
+char *volume_label(int snum);
 int lp_default_server_announce(void);
 int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
-char *volume_label(int snum);
 
 /*The following definitions come from  locking.c  */
 
@@ -620,6 +623,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 
 /*The following definitions come from  replace.c  */
 
@@ -726,16 +730,13 @@ void close_cnum(int cnum, uint16 vuid);
 BOOL yield_connection(int cnum,char *name,int max_connections);
 BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear);
 void exit_server(char *reason);
-void standard_sub(int cnum,char *string);
+void standard_sub(int cnum,char *str);
 char *smb_fn_name(int type);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
 
-smb_shm_offset_t smb_shm_alloc(int size);
-smb_shm_offset_t smb_shm_addr2offset(void *addr);
-smb_shm_offset_t smb_shm_get_userdef_off(void);
 BOOL smb_shm_create_hash_table( unsigned int size );
 BOOL smb_shm_open( char *file_name, int size);
 BOOL smb_shm_close( void );
@@ -873,7 +874,7 @@ uint32 file_size(char *file_name);
 char *attrib_string(int mode);
 int StrCaseCmp(const char *s, const char *t);
 int StrnCaseCmp(const char *s, const char *t, int n);
-BOOL strequal(const char *s1,const char *s2);
+BOOL strequal(const char *s1, const char *s2);
 BOOL strnequal(const char *s1,const char *s2,int n);
 BOOL strcsequal(char *s1,char *s2);
 void strlower(char *s);
@@ -951,7 +952,7 @@ BOOL zero_ip(struct in_addr ip);
 void reset_globals_after_fork();
 char *client_name(void);
 char *client_addr(void);
-void standard_sub_basic(char *string);
+void standard_sub_basic(char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 int PutUniCode(char *dst,char *src);
 struct hostent *Get_Hostbyname(char *name);
