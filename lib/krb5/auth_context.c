@@ -44,6 +44,7 @@ krb5_auth_con_free(krb5_context context,
 	free(auth_context->remote_address);
     }
     free_EncryptionKey(&auth_context->key);
+    free_EncryptionKey(&auth_context->remote_subkey);
     free (auth_context);
     return 0;
 }
