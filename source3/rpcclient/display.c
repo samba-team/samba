@@ -1662,12 +1662,12 @@ void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *
 	}
 }
 
-static char *get_at_time_str(uint32 time)
+static char *get_at_time_str(uint32 t)
 {
 	static fstring timestr;
 	unsigned int hours, minutes, seconds;
 
-	hours = time / 1000;
+	hours = t / 1000;
 	seconds = hours % 60;
 	hours /= 60;
 	minutes = hours % 60;

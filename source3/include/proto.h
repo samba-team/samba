@@ -1914,6 +1914,8 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli, uint16 fnum,
 			ENUM_HND *hnd);
 BOOL do_srv_net_srv_get_info(struct cli_state *cli, uint16 fnum,
 			char *server_name, uint32 switch_value, SRV_INFO_CTR *ctr);
+BOOL do_srv_net_remote_tod(struct cli_state *cli, uint16 fnum,
+			   char *server_name, TIME_OF_DAY_INFO *tod);
 
 /*The following definitions come from  rpc_client/cli_svcctl.c  */
 
@@ -2856,6 +2858,7 @@ void srv_io_q_net_srv_get_info(char *desc,  SRV_Q_NET_SRV_GET_INFO *q_n, prs_str
 void make_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
 				uint32 switch_value, SRV_INFO_CTR *ctr, uint32 status);
 void srv_io_r_net_srv_get_info(char *desc,  SRV_R_NET_SRV_GET_INFO *r_n, prs_struct *ps, int depth);
+void make_srv_q_net_remote_tod(SRV_Q_NET_REMOTE_TOD *q_t, char *server_name);
 void srv_io_q_net_remote_tod(char *desc,  SRV_Q_NET_REMOTE_TOD *q_n, prs_struct *ps, int depth);
 void make_time_of_day_info(TIME_OF_DAY_INFO *tod, uint32 elapsedt, uint32 msecs,
                            uint32 hours, uint32 mins, uint32 secs, uint32 hunds,
@@ -3076,6 +3079,7 @@ void cmd_srv_enum_conn(struct client_info *info);
 void cmd_srv_enum_shares(struct client_info *info);
 void cmd_srv_enum_sess(struct client_info *info);
 void cmd_srv_enum_files(struct client_info *info);
+void cmd_time(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_svcctl.c  */
 

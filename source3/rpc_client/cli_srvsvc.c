@@ -409,3 +409,59 @@ BOOL do_srv_net_srv_get_info(struct cli_state *cli, uint16 fnum,
 	return valid_info;
 }
 
+/****************************************************************************
+get server time
+****************************************************************************/
+BOOL do_srv_net_remote_tod(struct cli_state *cli, uint16 fnum,
+			   char *server_name, TIME_OF_DAY_INFO *tod)
+{
+	prs_struct data; 
+	prs_struct rdata;
+	SRV_Q_NET_REMOTE_TOD q_t;
+	BOOL valid_info = False;
+
+	if (server_name == NULL || tod == NULL) return False;
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api SRV_NET_REMOTE_TOD */
+
+	DEBUG(4,("SRV Remote TOD (%s)\n", server_name));
+
+	/* store the parameters */
+	make_srv_q_net_remote_tod(&q_t, server_name);
+
+	/* turn parameters into data stream */
+	srv_io_q_net_remote_tod("", &q_t, &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SRV_NET_REMOTE_TOD, &data, &rdata))
+	{
+		SRV_R_NET_REMOTE_TOD r_t;
+		BOOL p;
+
+		r_t.tod = tod;
+
+		srv_io_r_net_remote_tod("", &r_t, &rdata, 0);
+		p = rdata.offset != 0;
+		p = rdata.offset != 0;
+		
+		if (p && r_t.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SRV_R_NET_REMOTE_TOD: %s\n", get_nt_error_msg(r_t.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_info = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+	
+	return valid_info;
+}

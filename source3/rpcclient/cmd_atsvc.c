@@ -43,7 +43,6 @@ checks for a /OPTION:param style option
 static BOOL checkopt(char *input, char *optname, char **params)
 {
 	char *inend;
-	int i, len;
 
 	if (*input++ != '/')
 		return False;
@@ -85,7 +84,7 @@ static BOOL at_parse_days(char *str, uint32 *monthdays, uint8 *weekdays)
 			*nexttok++ = 0;
 		}
 
-		if (isdigit(*tok))
+		if (isdigit((int)*tok))
 		{
 			day = strtol(tok, NULL, 10);
 			if (day == 0 || day > 31)
@@ -131,6 +130,38 @@ static BOOL at_parse_days(char *str, uint32 *monthdays, uint8 *weekdays)
 	return True;
 }
 
+#define SOON_OFFSET 2 /* seconds */
+
+/****************************************************************************
+schedule the job 'soon'
+****************************************************************************/
+static BOOL at_soon(char *dest_srv, uint32 *hours, uint32 *minutes, uint32 *seconds)
+{
+	uint16 nt_pipe_fnum;
+	TIME_OF_DAY_INFO tod;
+	BOOL res = True;
+
+	/* open srvsvc session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SRVSVC, &nt_pipe_fnum) : False;
+
+	/* enumerate files on server */
+	res = res ? do_srv_net_remote_tod(smb_cli, nt_pipe_fnum,
+					  dest_srv, &tod) : False;
+
+	/* Close the session */
+	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+
+	if (res)
+	{
+		*hours = (tod.hours - ((int)tod.zone/60)) % 24;
+		*minutes = tod.mins;
+		*seconds = (tod.secs + SOON_OFFSET) % 60;
+		return True;
+	}
+
+	return False;
+}
+
 
 /****************************************************************************
 scheduler add job
@@ -168,28 +199,36 @@ void cmd_at(struct client_info *info)
 		if (*p == 0)   /* Entirely numeric field */
 			continue;
 
-		if ((p == temp) || (sscanf(temp, "%d:%d:%d",
-				     &hours, &minutes, &seconds) < 2))
+		if (!strcasecmp(temp, "NOW"))
 		{
-			printf("at { time [/INTERACTIVE] [{/EVERY|/NEXT}:5,Sun,...] command | [/DEL] [jobid] }\n\n");
-			return;
+			if (!at_soon(dest_wks, &hours, &minutes, &seconds))
+			{
+				return;
+			}
 		}
-		
-		p = strchr(temp, 0);
-		
-		if (!strcasecmp(p-2, "AM"))
+		else if (sscanf(temp, "%d:%d:%d", &hours, &minutes, &seconds) > 2)
 		{
-			hours = (hours == 12) ? 0 : hours;
-		}
+			p = strchr(temp, 0);
 
-		if (!strcasecmp(p-2, "PM"))
-		{
-			hours = (hours == 12) ? 12 : hours + 12;
-		}
+			if (!strcasecmp(p-2, "AM"))
+			{
+				hours = (hours == 12) ? 0 : hours;
+			}
 
-		if (hours > 23 || minutes > 59 || seconds > 59)
+			if (!strcasecmp(p-2, "PM"))
+			{
+				hours = (hours == 12) ? 12 : hours + 12;
+			}
+
+			if (hours > 23 || minutes > 59 || seconds > 59)
+			{
+				printf("\tInvalid time.\n\n");
+				return;
+			}
+		}
+		else
 		{
-			printf("\tInvalid time.\n\n");
+			printf("at { {time | NOW} [/INTERACTIVE] [{/EVERY|/NEXT}:5,Sun,...] command\n\t| [/DEL] [jobid] }\n\n");
 			return;
 		}
 
