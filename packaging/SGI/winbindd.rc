@@ -21,7 +21,7 @@ fi
 
 case $1 in
 'start')
-	if $IS_ON winbindd && test -x $WINBINDD; then
+	if $IS_ON winbind && test -x $WINBINDD; then
 	    $KILLALL -15 winbindd
 	    $ECHO "winbindd:\c"
 	    $WINBINDD ; $ECHO " winbindd."
