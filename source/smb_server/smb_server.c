@@ -173,7 +173,6 @@ static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn)
   These flags determine some of the permissions required to do an operation 
 */
 #define AS_USER (1<<0)
-#define USE_MUTEX (1<<1)
 
 /* 
    define a list of possible SMB messages and their corresponding
@@ -299,12 +298,12 @@ static const struct smb_message_struct
 /* 0x6d */ { NULL, NULL, 0 },
 /* 0x6e */ { NULL, NULL, 0 },
 /* 0x6f */ { NULL, NULL, 0 },
-/* 0x70 */ { "SMBtcon",reply_tcon,USE_MUTEX},
+/* 0x70 */ { "SMBtcon",reply_tcon,0},
 /* 0x71 */ { "SMBtdis",reply_tdis,0},
-/* 0x72 */ { "SMBnegprot",reply_negprot,USE_MUTEX},
-/* 0x73 */ { "SMBsesssetupX",reply_sesssetup,USE_MUTEX},
+/* 0x72 */ { "SMBnegprot",reply_negprot,0},
+/* 0x73 */ { "SMBsesssetupX",reply_sesssetup,0},
 /* 0x74 */ { "SMBulogoffX", reply_ulogoffX, 0}, /* ulogoff doesn't give a valid TID */
-/* 0x75 */ { "SMBtconX",reply_tcon_and_X,USE_MUTEX},
+/* 0x75 */ { "SMBtconX",reply_tcon_and_X,0},
 /* 0x76 */ { NULL, NULL, 0 },
 /* 0x77 */ { NULL, NULL, 0 },
 /* 0x78 */ { NULL, NULL, 0 },
@@ -520,15 +519,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		return;
 	}
 
-	/* THREAD TESTING: use mutex to serialize calls to critical
-	   functions with global state */
-	if (flags & USE_MUTEX) {
-		MUTEX_LOCK_BY_ID(MUTEX_SMBD);
-	}
 	smb_messages[type].fn(req);
-	if (flags & USE_MUTEX) {
-		MUTEX_UNLOCK_BY_ID(MUTEX_SMBD);
-	}
 }
 
 

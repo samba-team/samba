@@ -19,8 +19,8 @@ Cambridge, MA 02139, USA.  */
 /* Modified to use with samba by Jeremy Allison, 8th July 1995. */
 
 #include "includes.h"
-#include "include/system/terminal.h"
-#include "include/system/wait.h"
+#include "system/terminal.h"
+#include "system/wait.h"
 
 #ifdef REPLACE_GETPASS
 

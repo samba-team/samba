@@ -21,15 +21,15 @@
 */
 
 #include "includes.h"
+#include <pthread.h>
+#ifdef HAVE_BACKTRACE
+#include <execinfo.h>
+#endif
+#include "system/wait.h"
 #include "events.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
 #include "process_model.h"
-#include "include/system/wait.h"
-#include "pthread.h"
-#ifdef HAVE_BACKTRACE
-#include "execinfo.h"
-#endif
 
 static void *thread_connection_fn(void *thread_parm)
 {
@@ -65,8 +65,6 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 	/* accept an incoming connection. */
 	status = socket_accept(server_socket->socket, &sock);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("accept_connection_single: accept: %s\n",
-			 nt_errstr(status)));
 		return;
 	}
 	
@@ -79,14 +77,12 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 
 	ev = event_context_init(server_socket);
 	if (!ev) {
-		DEBUG(0,("thread_accept_connection: failed to create event_context!\n"));
 		socket_destroy(sock);
 		return; 
 	}
 
 	conn = server_setup_connection(ev, server_socket, sock, t, pthread_self());
 	if (!conn) {
-		DEBUG(0,("server_setup_connection(ev, server_socket, sock, t) failed\n"));
 		event_context_destroy(ev);
 		socket_destroy(sock);
 		return;
@@ -120,7 +116,7 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 /* called when a SMB connection goes down */
 static void thread_terminate_connection(struct server_connection *conn, const char *reason) 
 {
-	DEBUG(0,("thread_terminate_connection: reason[%s]\n",reason));
+	DEBUG(10,("thread_terminate_connection: reason[%s]\n",reason));
 
 	if (conn) {
 		talloc_free(conn);
