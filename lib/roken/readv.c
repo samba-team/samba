@@ -54,7 +54,7 @@ readv(int d, const struct iovec *iov, int iovcnt)
     for(i = 0; i < iovcnt; ++i)
 	tot += iov[i].iov_len;
     buf = malloc(tot);
-    if (tut != 0 && buf == NULL) {
+    if (tot != 0 && buf == NULL) {
 	errno = ENOMEM;
 	return -1;
     }
