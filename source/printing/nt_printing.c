@@ -502,110 +502,7 @@ static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
 	ssize_t byte_count;
 
 	if ((buf=malloc(PE_HEADER_SIZE)) == NULL) {
-		DEBUG(0,("get_file_version: PE file [%s] PE Header malloc failed bytes = %d\n",
-				fname, PE_HEADER_SIZE));
-		goto error_exit;
-	}
-
-	/* Note: DOS_HEADER_SIZE < malloc'ed PE_HEADER_SIZE */
-	if ((byte_count = vfs_read_data(fsp, buf, DOS_HEADER_SIZE)) < DOS_HEADER_SIZE) {
-		DEBUG(3,("get_file_version: File [%s] DOS header too short, bytes read = %d\n",
-				fname, byte_count));
-		goto no_version_info;
-	}
-
-	/* Is this really a DOS header? */
-	if (SVAL(buf,DOS_HEADER_MAGIC_OFFSET) != DOS_HEADER_MAGIC) {
-		DEBUG(6,("get_file_version: File [%s] bad DOS magic = 0x%x\n",
-				fname, SVAL(buf,DOS_HEADER_MAGIC_OFFSET)));
-		goto no_version_info;
-	}
-
-	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
-		DEBUG(3,("get_file_version: File [%s] too short, errno = %d\n",
-				fname, errno));
-		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
-		goto no_version_info;
-	}
-
-	if ((byte_count = vfs_read_data(fsp, buf, PE_HEADER_SIZE)) < PE_HEADER_SIZE) {
-		DEBUG(3,("get_file_version: File [%s] Windows header too short, bytes read = %d\n",
-				fname, byte_count));
-		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
-		goto no_version_info;
-	}
-
-	/* The header may be a PE (Portable Executable) or an NE (New Executable) */
-	if (IVAL(buf,PE_HEADER_SIGNATURE_OFFSET) == PE_HEADER_SIGNATURE) {
-		int num_sections;
-		int section_table_bytes;
-		
-		if (SVAL(buf,PE_HEADER_MACHINE_OFFSET) != PE_HEADER_MACHINE_I386) {
-			DEBUG(3,("get_file_version: PE file [%s] wrong machine = 0x%x\n",
-					fname, SVAL(buf,PE_HEADER_MACHINE_OFFSET)));
-			/* At this point, we assume the file is in error. It still could be somthing
-			 * else besides a PE file, but it unlikely at this point.
-			 */
-			goto error_exit;
-		}
-
-		/* get the section table */
-		num_sections        = SVAL(buf,PE_HEADER_NUMBER_OF_SECTIONS);
-		section_table_bytes = num_sections * PE_HEADER_SECT_HEADER_SIZE;
-		free(buf);
-		if ((buf=malloc(section_table_bytes)) == NULL) {
-			DEBUG(0,("get_file_version: PE file [%s] section table malloc failed bytes = %d\n",
-					fname, section_table_bytes));
-			goto error_exit;
-		}
-
-		if ((byte_count = vfs_read_data(fsp, buf, section_table_bytes)) < section_table_bytes) {
-			DEBUG(3,("get_file_version: PE file [%s] Section header too short, bytes read = %d\n",
-					fname, byte_count));
-			goto error_exit;
-		}
-
-		/* Iterate the section table looking for the resource section ".rsrc" */
-		for (i = 0; i < num_sections; i++) {
-			int sec_offset = i * PE_HEADER_SECT_HEADER_SIZE;
-
-			if (strcmp(".rsrc", &buf[sec_offset+PE_HEADER_SECT_NAME_OFFSET]) == 0) {
-				int section_pos   = IVAL(buf,sec_offset+PE_HEADER_SECT_PTR_DATA_OFFSET);
-				int section_bytes = IVAL(buf,sec_offset+PE_HEADER_SECT_SIZE_DATA_OFFSET);
-
-				free(buf);
-				if ((buf=malloc(section_bytes)) == NULL) {
-					DEBUG(0,("get_file_version: PE file [%s] version malloc failed bytes = %d\n",
-							fname, section_bytes));
-					goto error_exit;
-				}
-
-				/* Seek to the start of the .rsrc section info */
-				if (fsp->conn->vfs_ops.lseek(fsp, fsp->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
-					DEBUG(3,("get_file_version: PE file [%s] too short for section info, errno = %d\n",
-							fname, errno));
-					goto error_exit;
-				}
-
-				if ((byte_count = vfs_read_data(fsp, buf, section_bytes)) < section_bytes) {
-					DEBUG(3,("get_file_version: PE file [%s] .rsrc section too short, bytes read = %d\n",
-							fname, byte_count));
-					goto error_exit;
-				}
-
-				for (i=0; i<section_bytes-VS_VERSION_INFO_UNICODE_SIZE; i++) {
-					/* Scan for 1st 3 unicoded bytes followed by word aligned magic value */
-					if (buf[i] == 'V' && buf[i+1] == '\0' && buf[i+2] == 'S') {
-						/* Align to next long address */
-						int pos = (i + sizeof(VS_SIGNATURE)*2 + 3) & 0xfffffffc;
-
-						if (IVAL(buf,pos) == VS_MAGIC_VALUE) {
-							*major = IVAL(buf,pos+VS_MAJOR_OFFSET);
-							*minor = IVAL(buf,pos+VS_MINOR_OFFSET);
-							
-							DEBUG(6,("get_file_version: PE file [%s] Version = %08x:%08x (%d.%d.%d.%d)\n",
-									  fname, *major, *minor,
+		DEBUG(0,("get_file_version: PE file [%s] PE Header malloc failed by
 									  (*major>>16)&0xffff, *major&0xffff,
 									  (*minor>>16)&0xffff, *minor&0xffff));
 							free(buf);
@@ -2732,158 +2629,7 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			 */
 			NTTIME time_nt;
 			time_t time_unix = time(NULL);
-			unix_to_nt_time(&time_nt, time_unix);
-			if (printer.info_2->changeid==time_nt.low)
-				printer.info_2->changeid++;
-			else
-				printer.info_2->changeid=time_nt.low;
-
-			printer.info_2->c_setprinter++;
-
-			result=update_a_printer_2(printer.info_2);
-			break;
-		}
-		default:
-			result=1;
-			break;
-	}
-	
-	return result;
-}
-
-/****************************************************************************
- Initialize printer devmode & data with previously saved driver init values.
-****************************************************************************/
-static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
-{
-	int                     len = 0;
-	pstring                 key;
-	TDB_DATA                kbuf, dbuf;
-	NT_PRINTER_PARAM        *current;
-	NT_PRINTER_INFO_LEVEL_2 info;
-
-	ZERO_STRUCT(info);
-
-	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-
-	dbuf = tdb_fetch(tdb, kbuf);
-	if (!dbuf.dptr)
-		return False;
-
-	/*
-	 * Get the saved DEVMODE..
-	 */
-	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
-
-	/*
-	 * The saved DEVMODE contains the devicename from the printer used during
-	 * the initialization save. Change it to reflect the new printer.
-	 */
-	ZERO_STRUCT(info.devmode->devicename);
-	fstrcpy(info.devmode->devicename, info_ptr->printername);
-
-	/* 
-	 * 	Bind the saved DEVMODE to the new the printer.
-	 */
-	free_nt_devicemode(&info_ptr->devmode);
-	info_ptr->devmode = info.devmode;
-
-	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
-			info_ptr->printername, info_ptr->drivername));
-
-	/* 
-	 * There should not be any printer data 'specifics' already set during the
-	 * add printer operation, if there are delete them. 
-	 */
-	while ( (current=info_ptr->specific) != NULL ) {
-		info_ptr->specific=current->next;
-		safe_free(current->data);
-		safe_free(current);
-	}
-
-	/* 
-	 * Add the printer data 'specifics' to the new printer
-	 */
-	len += unpack_specifics(&info_ptr->specific,dbuf.dptr+len, dbuf.dsize-len);
-
-	safe_free(dbuf.dptr);
-
-	return True;	
-}
-
-/****************************************************************************
- Initialize printer devmode & data with previously saved driver init values.
- When a printer is created using AddPrinter, the drivername bound to the
- printer is used to lookup previously saved driver initialization info, which
- is bound to the new printer.
-****************************************************************************/
-
-uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
-{
-	uint32 result;
-	
-	switch (level)
-	{
-		case 2:
-		{
-			result=set_driver_init_2(printer->info_2);
-			break;
-		}
-		default:
-			result=1;
-			break;
-	}
-	
-	return result;
-}
-
-/****************************************************************************
- Pack up the DEVMODE and specifics for a printer into a 'driver init' entry 
- in the tdb. Note: this is different from the driver entry and the printer
- entry. There should be a single driver init entry for each driver regardless
- of whether it was installed from NT or 2K. Technically, they should be
- different, but they work out to the same struct.
-****************************************************************************/
-static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
-{
-	pstring key;
-	char *buf;
-	int buflen, len, ret;
-	TDB_DATA kbuf, dbuf;
-
-	buf = NULL;
-	buflen = 0;
-
- again:	
-	len = 0;
-	len += pack_devicemode(info->devmode, buf+len, buflen-len);
-
-	len += pack_specifics(info->specific, buf+len, buflen-len);
-
-	if (buflen != len) {
-		buf = (char *)Realloc(buf, len);
-		buflen = len;
-		goto again;
-	}
-
-	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info->drivername);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-	dbuf.dptr = buf;
-	dbuf.dsize = len;
-
-	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
-
-	if (ret == -1)
-		DEBUG(8, ("update_driver_init_2: error updating printer init to tdb on disk\n"));
-
-	safe_free(buf);
+			unix_to_nt_time(&time_nt, time_unix
 
 	DEBUG(10,("update_driver_init_2: Saved printer [%s] init DEVMODE & specifics for driver [%s]\n",
 		 info->sharename, info->drivername));
@@ -3443,16 +3189,19 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	if (winbind_lookup_name(lp_workgroup(), &owner_sid, &name_type)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
+                uint32 owner_rid;
 
-		/* Backup plan - make printer owned by admins or root.  This should
-		   emulate a lanman printer as security settings can't be
-		   changed. */
+		/* Backup plan - make printer owned by admins or root.
+		   This should emulate a lanman printer as security
+		   settings can't be changed. */
 
-		if (!lookup_name( "Printer Administrators", &owner_sid, &name_type) &&
-			!lookup_name( "Administrators", &owner_sid, &name_type) &&
-			!lookup_name( "Administrator", &owner_sid, &name_type) &&
-			!lookup_name("root", &owner_sid, &name_type)) {
-						sid_copy(&owner_sid, &global_sid_World);
+		sid_peek_rid(&owner_sid, &owner_rid);
+
+		if (owner_rid != BUILTIN_ALIAS_RID_PRINT_OPS &&
+		    owner_rid != BUILTIN_ALIAS_RID_ADMINS &&
+		    owner_rid != DOMAIN_USER_RID_ADMIN &&
+		    !lookup_name("root", &owner_sid, &name_type)) {
+			sid_copy(&owner_sid, &global_sid_World);
 		}
 	}
 
@@ -3505,6 +3254,7 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	char *temp;
 
 	mem_ctx = talloc_init();
+
 	if (mem_ctx == NULL)
 		return False;
 
@@ -3519,14 +3269,24 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	if (tdb_prs_fetch(tdb, key, &ps, mem_ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
-		DEBUG(4,("using default secdesc for %s\n", printername));
+		DEBUG(4,("creating default secdesc for %s\n", printername));
 
 		if (!(*secdesc_ctr = construct_default_printer_sdb())) {
 			talloc_destroy(mem_ctx);
 			return False;
 		}
 
+                /* Save default security descriptor for later */
+
+                prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sec) +
+                         sizeof(SEC_DESC_BUF), 4, mem_ctx, MARSHALL);
+
+                if (sec_io_desc_buf("nt_printing_setsec", secdesc_ctr, &ps, 1))
+                        tdb_prs_store(tdb, key, &ps);
+
 		talloc_destroy(mem_ctx);
+                prs_mem_free(&ps);
+
 		return True;
 	}
 
@@ -3670,17 +3430,16 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	BOOL result;
 	char *pname;
 	extern struct current_user current_user;
+        user_struct *us;
 	
 	/* If user is NULL then use the current_user structure */
 
 	if (!user) user = &current_user;
 
-	/* Always allow root or printer admins to do anything */
+	/* Always printer admins to do anything */
 
-	if (user->uid == 0 ||
-	    user_in_list(uidtoname(user->uid), lp_printer_admin(snum))) {
-		return True;
-	}
+        if ((us = get_valid_user_struct(user->vuid)) && us->printer_admin)
+                return True;
 
 	/* Get printer name */
 
