@@ -993,7 +993,10 @@
 
 	/************************/
 	/* Function    0x38     */
-	NTSTATUS samr_GET_DOM_PWINFO();
+	NTSTATUS samr_GetDomPwInfo(
+		[in]        samr_Name *name,
+		[out]       samr_PwInfo info
+		);
 
 	/************************/
 	/* Function    0x39     */
@@ -1005,19 +1008,42 @@
 
 	/************************/
 	/* Function    0x3a     */
-	NTSTATUS samr_SET_USERINFO2();
+	/*
+	  seems to be an exact alias for samr_SetUserInfo() 
+	*/
+	NTSTATUS samr_SetUserInfo2(
+		[in,ref]                   policy_handle *handle,
+		[in]                       uint16 level,
+		[in,ref,switch_is(level)]  samr_UserInfo *info
+		);
 
 	/************************/
 	/* Function    0x3b     */
-	NTSTATUS samr_SET_BOOT_KEY_INFORMATION();
+	/*
+	  this one is mysterious. I have a few guesses, but nothing working yet
+	*/
+	NTSTATUS samr_SetBootKeyInformation(
+		[in,ref]   policy_handle *handle
+		[in]       uint32 unknown1,
+		[in]       uint32 unknown2,
+		[in]       uint32 unknown3
+		);
 
 	/************************/
 	/* Function    0x3c     */
-	NTSTATUS samr_GET_BOOT_KEY_INFORMATION();
+	NTSTATUS samr_GetBootKeyInformation(
+		[in,ref]   policy_handle *handle,
+		[out]      uint32 unknown
+		);
 
 	/************************/
 	/* Function    0x3d     */
-	NTSTATUS samr_CONNECT3();
+	NTSTATUS samr_Connect3(
+		[in] unistr *system_name,
+		[in] uint32 unknown,
+		[in] uint32 access_mask,
+		[out,ref]  policy_handle *handle
+		);
 
 	/************************/
 	/* Function    0x3e     */

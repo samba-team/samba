@@ -106,6 +106,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_SetUserInfo s;
+	struct samr_SetUserInfo2 s2;
 	struct samr_QueryUserInfo q;
 	struct samr_QueryUserInfo q0;
 	union samr_UserInfo u;
@@ -113,6 +114,10 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	s.in.handle = handle;
 	s.in.info = &u;
+
+	s2.in.handle = handle;
+	s2.in.info = &u;
+
 	q.in.handle = handle;
 	q.out.info = &u;
 	q0 = q;
@@ -147,12 +152,14 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		q.in.level = lvl1; \
 		TESTCALL(QueryUserInfo, q) \
 		s.in.level = lvl1; \
+		s2.in.level = lvl1; \
 		u = *q.out.info; \
 		init_samr_Name(&u.info ## lvl1.field1, value); \
 		if (lvl1 == 21) { \
 			u.info21.fields_present = fpval; \
 		} \
 		TESTCALL(SetUserInfo, s) \
+		TESTCALL(SetUserInfo2, s2) \
 		init_samr_Name(&u.info ## lvl1.field1, ""); \
 		TESTCALL(QueryUserInfo, q); \
 		u = *q.out.info; \
@@ -168,12 +175,14 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		q.in.level = lvl1; \
 		TESTCALL(QueryUserInfo, q) \
 		s.in.level = lvl1; \
+		s2.in.level = lvl1; \
 		u = *q.out.info; \
 		u.info ## lvl1.field1 = value; \
 		if (lvl1 == 21) { \
 			u.info21.fields_present = fpval; \
 		} \
 		TESTCALL(SetUserInfo, s) \
+		TESTCALL(SetUserInfo2, s2) \
 		u.info ## lvl1.field1 = 0; \
 		TESTCALL(QueryUserInfo, q); \
 		u = *q.out.info; \
@@ -243,7 +252,6 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 #endif
 	return ret;
 }
-
 
 static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			     struct policy_handle *handle)
@@ -348,6 +356,27 @@ static BOOL test_GetGroupsForUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 
 }
+
+static BOOL test_GetDomPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			      struct samr_Name *domain_name)
+{
+	NTSTATUS status;
+	struct samr_GetDomPwInfo r;
+	BOOL ret = True;
+
+	printf("Testing GetDomPwInfo\n");
+
+	r.in.name = domain_name;
+
+	status = dcerpc_samr_GetDomPwInfo(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetDomPwInfo failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
 static BOOL test_GetUserPwInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			       struct policy_handle *handle)
 {
@@ -1962,6 +1991,26 @@ static BOOL test_RidToSid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_GetBootKeyInformation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				       struct policy_handle *domain_handle)
+{
+    	struct samr_GetBootKeyInformation r;
+	NTSTATUS status;
+	BOOL ret = True;
+
+	printf("Testing GetBootKeyInformation\n");
+
+	r.in.handle = domain_handle;
+
+	status = dcerpc_samr_GetBootKeyInformation(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetBootKeyInformation failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
 static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				struct policy_handle *domain_handle,
 				struct policy_handle *group_handle)
@@ -2197,6 +2246,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	if (!test_GetBootKeyInformation(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
 	if (!policy_handle_empty(&user_handle) &&
 	    !test_DeleteUser(p, mem_ctx, &user_handle)) {
 		ret = False;
@@ -2224,6 +2277,7 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_LookupDomain r;
+	BOOL ret = True;
 
 	printf("Testing LookupDomain(%s)\n", domain->name);
 
@@ -2236,11 +2290,15 @@ static BOOL test_LookupDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (!test_OpenDomain(p, mem_ctx, handle, r.out.sid)) {
-		return False;
+	if (!test_GetDomPwInfo(p, mem_ctx, domain)) {
+		ret = False;
 	}
 
-	return True;	
+	if (!test_OpenDomain(p, mem_ctx, handle, r.out.sid)) {
+		ret = False;
+	}
+
+	return ret;
 }
 
 
@@ -2285,9 +2343,12 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_Connect r;
 	struct samr_Connect2 r2;
+	struct samr_Connect3 r3;
 	struct samr_Connect4 r4;
 	struct samr_Connect5 r5;
 	BOOL ret = True;
+
+	printf("testing samr_Connect\n");
 
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -2299,6 +2360,8 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
+	printf("testing samr_Connect2\n");
+
 	r2.in.system_name = "";
 	r2.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r2.out.handle = handle;
@@ -2308,6 +2371,21 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("Connect2 failed - %s\n", nt_errstr(status));
 		ret = False;
 	}
+
+	printf("testing samr_Connect3\n");
+
+	r3.in.system_name = "";
+	r3.in.unknown = 0;
+	r3.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r3.out.handle = handle;
+
+	status = dcerpc_samr_Connect3(p, mem_ctx, &r3);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Connect3 failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	printf("testing samr_Connect4\n");
 
 	r4.in.system_name = "";
 	r4.in.unknown = 0;
@@ -2319,6 +2397,8 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("Connect4 failed - %s\n", nt_errstr(status));
 		ret = False;
 	}
+
+	printf("testing samr_Connect5\n");
 
 	r5.in.system_name = "";
 	r5.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
