@@ -26,32 +26,18 @@
 #include "rpc_parse.h"
 #include "rpc_client.h"
 
-/*
- * MSRPC_NONE:	no connection
- * MSRPC_LOCAL:	local loopback over a UNIX domain socket (not supported)
- * MSRPC_SMB:	network rpc connection
- */
-enum { MSRPC_NONE, MSRPC_LOCAL, MSRPC_SMB };
-
 struct cli_connection
 {
-	uint32 num_connections;
-	char *srv_name;
-	char *pipe_name;
-	struct user_creds usr_creds;
+	uint32 			num_connections;
+	char 			*srv_name;
+	char 			*pipe_name;
+	struct user_creds 	usr_creds;
 
-	int type;
+	struct cli_state 	*pCli_state;
 
-	union
-	{
-		struct ncacn_np *smb;
-		struct msrpc_local *local;
-		void *cli;
-	} msrpc;
-
-	cli_auth_fns *auth;
-	void *auth_info;
-	void *auth_creds;
+	cli_auth_fns 		*auth;
+	void 			*auth_info;
+	void 			*auth_creds;
 };
 
 static struct cli_connection **con_list = NULL;
@@ -118,17 +104,17 @@ static struct cli_connection *cli_con_get(const char *srv_name,
         BOOL is_new_connection = False;
 	CREDS_NT usr;
         struct ntuser_creds *ntc = NULL;
-        vuser_key key;
+	struct ncacn_np *pNcacn;
 
+	/*
+	 * initialization stuff
+	 */
         con = (struct cli_connection *)malloc(sizeof(*con));
-
         if (con == NULL)
         {
                 return NULL;
         }
-
         memset(con, 0, sizeof(*con));
-        con->type = MSRPC_NONE;
 
         copy_user_creds(&con->usr_creds, NULL);
         con->usr_creds.reuse = reuse;
@@ -141,76 +127,65 @@ static struct cli_connection *cli_con_get(const char *srv_name,
         {
                 con->pipe_name = strdup(pipe_name);
         }
-
-	/* setup a network RPC connection */
         if (usr_creds != NULL)
         {
                 ntc = &usr_creds->ntc;
         }
-        con->type = MSRPC_SMB;
-        con->msrpc.smb = ncacn_np_use_add(pipe_name, user_key, srv_name,
+
+	/* fix me XXXX **WHAT** a hack.  The cli_state* is malloc'd
+	   deep within the call stack, so we can grab that pointer.
+ 	   ncacn_np* is stored in an array which is currently handled
+	   by underlying systems.   --jerry */
+        pNcacn = ncacn_np_use_add(pipe_name, user_key, srv_name,
                                           ntc, reuse,
                                           &is_new_connection);
+	con->pCli_state = pNcacn->smb;
 
-        if (con->msrpc.smb == NULL)
+        if (con->pCli_state == NULL)
                 return NULL;
 
-        key = con->msrpc.smb->smb->key;
-        con->msrpc.smb->smb->key.pid = 0;
-        con->msrpc.smb->smb->key.vuid = UID_FIELD_INVALID;
-	create_ntc_from_cli_state ( &usr, con->msrpc.smb->smb );
+        con->pCli_state->key.pid = 0;
+        con->pCli_state->key.vuid = UID_FIELD_INVALID;
+	create_ntc_from_cli_state ( &usr, con->pCli_state );
         copy_nt_creds(&con->usr_creds.ntc, &usr);
 
-        if (con->msrpc.cli != NULL)
+        if (is_new_connection)
         {
-                if (is_new_connection)
+        	con->auth_info = NULL;
+                con->auth_creds = auth_creds;
+
+                if (auth != NULL)
                 {
-                        con->auth_info = NULL;
-                        con->auth_creds = auth_creds;
-
-                        if (auth != NULL)
-                        {
-                                con->auth = auth;
-                        }
-                        else
-                        {
-                                con->auth = &cli_noauth_fns;
-                        }
-
-                        if (!rpc_pipe_bind(con->msrpc.smb->smb, pipe_name, global_myname))
-                        {
-                                DEBUG(0, ("rpc_pipe_bind failed\n"));
-                                cli_connection_free(con);
-                                return NULL;
-                        }
+                	con->auth = auth;
                 }
                 else
                 {
-                        con->auth_info = cli_conn_get_auth_creds(con);
-                        con->auth = cli_conn_get_authfns(con);
-                        if (con->auth_info != NULL)
-                        {
-                                DEBUG(1,("cli_con_get: TODO: auth reuse\n"));
-                                cli_connection_free(con);
-                                return NULL;
-                        }
-                        else
-                        {
-                                con->auth = &cli_noauth_fns;
-                        }
+                        con->auth = &cli_noauth_fns;
+                }
+
+                if (!rpc_pipe_bind(con->pCli_state, pipe_name, global_myname))
+                {
+                	DEBUG(0, ("rpc_pipe_bind failed\n"));
+                	cli_connection_free(con);
+                	return NULL;
+                }
+	}
+        else
+        {
+        	con->auth_info = cli_conn_get_auth_creds(con);
+                con->auth = cli_conn_get_authfns(con);
+                if (con->auth_info != NULL)
+                {
+                        DEBUG(1,("cli_con_get: TODO: auth reuse\n"));
+                        cli_connection_free(con);
+                        return NULL;
+                }
+                else
+                {
+                        con->auth = &cli_noauth_fns;
                 }
         }
 
-        if (con->msrpc.cli == NULL)
-        {
-                cli_connection_free(con);
-                return NULL;
-        }
-
-        if (con->type == MSRPC_SMB)
-        {
-                con->msrpc.smb->smb->key = key;
-        }
         add_con_to_array(&num_cons, &con_list, con);
         return con;
 }
@@ -222,29 +197,18 @@ terminate client connection
 void cli_connection_free(struct cli_connection *con)
 {
         BOOL closed = False;
-        void *oldcli = NULL;
+        struct cli_state *oldcli = NULL;
         int i;
 
         DEBUG(10, ("cli_connection_free: %d\n", __LINE__));
 
-        if (con->msrpc.cli != NULL)
+        if (con->pCli_state != NULL)
         {
-		/* only currently support type == MSRPC_SMB so this is a little
-		   redundant --jerry */
-                switch (con->type)
-                {
-                        case MSRPC_SMB:
-                        {
-                                DEBUG(10, ("msrpc smb connection\n"));
-                                ncacn_np_use_del(con->srv_name,
-                                                 con->pipe_name,
-                                                 &con->msrpc.smb->smb->key,
-                                                 False, &closed);
-                                oldcli = con->msrpc.local;
-                                con->msrpc.smb = NULL;
-                                break;
-                        }
-                }
+        	DEBUG(10, ("msrpc smb connection\n"));
+                ncacn_np_use_del(con->srv_name, con->pipe_name,
+                                 &con->pCli_state->key, False, &closed);
+		oldcli = con->pCli_state;
+                con->pCli_state = NULL;
         }
 
         DEBUG(10, ("cli_connection_free: closed: %s\n", BOOLSTR(closed)));
@@ -254,35 +218,26 @@ void cli_connection_free(struct cli_connection *con)
                 for (i = 0; i < num_cons; i++)
                 {
                         struct cli_connection *c = con_list[i];
-                        if (c != NULL && con != c && c->msrpc.cli == oldcli)
+                        if (c != NULL && con != c && c->pCli_state == oldcli)
                         {
                                 /* WHOOPS! fnum already open: too bad!!!
                                    get rid of all other connections that
                                    were using that connection
                                  */
-                                switch (c->type)
-                                {
-                                        case MSRPC_LOCAL:
-                                        {
-                                                c->msrpc.local = NULL;
-                                                break;
-                                        }
-                                        case MSRPC_SMB:
-                                        {
-                                                c->msrpc.smb = NULL;
-                                                break;
-                                        }
-                                }
+                                 c->pCli_state = NULL;
                         }
                 }
         }
 
-        if (con->msrpc.cli != NULL)
-        {
-                free(con->msrpc.cli);
-        }
-        con->msrpc.cli = NULL;
-
+	/* don't free the cli_state since it is being handled
+	   by the *clis list in rpc_client/cli_use.c.
+	   This code needs to be fixed badly.  It is **way**
+	   to complicated.  --jerry */
+	/* if (oldcli != NULL)
+	{
+		free(oldcli);
+	} */
+        
         if (con->srv_name != NULL)
         {
                 free(con->srv_name);
@@ -408,7 +363,7 @@ BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
 	/* Why does this use prs->data_offset?  --jerry */
         /* prs_realloc_data(data, data->data_offset); */
 
-        ret = rpc_api_pipe_req(con->msrpc.smb->smb, op_num, data, rdata);
+        ret = rpc_api_pipe_req(con->pCli_state, op_num, data, rdata);
         prs_dump("out_rpcclient", (int)op_num, rdata);
         return ret;
 }
@@ -419,23 +374,14 @@ BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
 *****************************************************************************/
 BOOL rpc_con_ok(struct cli_connection *con)
 {
-        if (!con) return False;
+        if (!con) 
+		return False;
 
-        switch (con->type)
-        {
-                case MSRPC_SMB:
-                        {
-                                struct cli_state *cli;
-                                if (!con->msrpc.smb) return False;
-                                cli = con->msrpc.smb->smb;
-                                if (cli->fd == -1) return False;
-                                return True;
-                        }
-                        break;
+        if (!con->pCli_state)
+		return False;
+        if (con->pCli_state->fd == -1) 
+		return False;
 
-                case MSRPC_LOCAL:
-                        return True;
-        }
-        return False;
+        return True;
 }
 
