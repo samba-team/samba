@@ -916,8 +916,8 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	tdb_store_int(tdb, "INFO/nextjob", jobid);
 
 	/* we have a job entry - now create the spool file */
-	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%sXXXXXX", 
-		 path, PRINT_SPOOL_PREFIX);
+	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%s%.6d.XXXXXX", 
+		 path, PRINT_SPOOL_PREFIX, jobid);
 	pjob.fd = smb_mkstemp(pjob.filename);
 
 	if (pjob.fd == -1) {
