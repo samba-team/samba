@@ -1216,8 +1216,7 @@ The following parameters are frequently needed in this share section:
 		validated by the Domain Controller in order to logon to the Windows NT session), then guest
 		access is not necessary. Of course, in a workgroup environment where you just want
 		to print without worrying about silly accounts and security, then configure the share for
-		guest access. You should consider adding <smbconfoption><name>map to guest</name><value>Bad
-		User</value></smbconfoption> in the <smbconfsection>[global]</smbconfsection> section
+		guest access. You should consider adding <smbconfoption name="map to guest">Bad	User</smbconfoption> in the <smbconfsection>[global]</smbconfsection> section
 		as well. Make sure you understand what this parameter does before using it.
 		</para></note>
 		</listitem>
@@ -2255,14 +2254,14 @@ dialogs look the same, but only one
 of them does what you intend. You need to be Administrator or Print Administrator to do this for all
 users. Here is how I reproduce it in an XP Professional:
 </para>
-The following list needs periods after the letters and numbers:::::::::
+
 <orderedlist numeration="upperalpha">
 	<listitem><para>The first <quote>wrong</quote> way:
 	<orderedlist numeration="arabic">
 		<listitem><para>Open the <guiicon>Printers</guiicon> folder.</para></listitem>
 
 		<listitem><para>Right-click on the printer (<emphasis>remoteprinter on cupshost</emphasis>) and
-		select in context menu <guimenu>Printing Preferences...</guimenu></para></listitem>.
+		select in context menu <guimenu>Printing Preferences...</guimenu>.</para></listitem>
 
 		<listitem><para>Look at this dialog closely and remember what it looks like.</para></listitem>
 	</orderedlist></para></listitem>
@@ -2276,10 +2275,10 @@ The following list needs periods after the letters and numbers:::::::::
 			<guimenuitem>Properties</guimenuitem></para></listitem>
 
 			<listitem><para>Click on the <guilabel>General</guilabel>
-			tab</para></listitem>.
+			tab.</para></listitem>
 
 			<listitem><para>Click on the <guibutton>Printing
-			Preferences...</guibutton></para></listitem> button.
+			Preferences...</guibutton> button.</para></listitem>
 
 			<listitem><para>A new dialog opens. Keep this dialog open and go back
 			to the parent dialog.</para></listitem>

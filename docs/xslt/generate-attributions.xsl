@@ -6,7 +6,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 				version="1.1">
 
-				<xsl:output method="xml" doctype-public="-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" doctype-system="http://www.samba.org/samba/DTD/samba-doc" omit-xml-declaration="yes" indent="yes"/>
+				<xsl:output method="xml" doctype-public="-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" doctype-system="http://www.samba.org/samba/DTD/samba-doc" indent="yes"/>
 
 <!-- Remove all character data -->
 <xsl:template match="@*|node()">

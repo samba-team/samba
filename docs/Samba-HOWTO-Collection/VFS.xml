@@ -154,8 +154,7 @@ This can be done using a configuration similar to the one shown in <link linkend
 					<parameter>log file</parameter> settings.</para>
 					<para>An example of detailed per-user and per-machine logging can
 					be obtained by setting 
-					<smbconfoption><name>log level</name>
-					<value>/var/log/samba/%U.%m.log</value></smbconfoption>.
+					<smbconfoption name="log level">/var/log/samba/%U.%m.log</smbconfoption>.
 					</para></listitem>
 		</itemizedlist>
 

@@ -89,7 +89,7 @@ SMB support is quite good.</para>
 <para>For details on the use of <command>ethereal</command>, read the well-written 
 Ethereal User Guide.</para>
 
-<image id="ethereal1"><imagefile>ethereal1</imagefile><imagedescription>Starting a capture.</imagedescription></image>
+<image id="ethereal1"><imagedescription>Starting a capture.</imagedescription><imagefile>ethereal1</imagefile></image>
 
 <para>Listen for data on ports 137, 138, 139, and 445. For example, use
 the filter <userinput>port 137, port 138, port 139, or port
@@ -98,7 +98,7 @@ the filter <userinput>port 137, port 138, port 139, or port
 <para>A console version of ethereal is available as well and is called 
 <command>tethereal</command>.</para>
 
-<image id="ethereal2"><imagefile>ethereal2</imagefile><imagedescription>Main ethereal data window.</imagedescription></image>
+<image id="ethereal2"><imagedescription>Main ethereal data window.</imagedescription><imagefile>ethereal2</imagefile></image>
 
 </sect2>
 
@@ -265,7 +265,7 @@ If you do post a message to one of the lists, please observe the following guide
 
 	<listitem><para>If you have a complete Netmon trace (from the opening of
 	the pipe to the error), you can send the *.CAP file as well.</para></listitem> 
-	    `
+	    
 	<listitem><para>Please think carefully before attaching a document to an email.
 	Consider pasting the relevant parts into the body of the message. The Samba
 	mailing lists go to a huge number of people. Do they all need a copy of your 
