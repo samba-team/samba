@@ -204,9 +204,11 @@ int vfswrap_rename(char *old, char *new)
     return result;
 }
 
-void vfswrap_fsync(int fd)
+int vfswrap_fsync(int fd)
 {
-    fsync(fd);
+#ifdef HAVE_FSYNC
+    return fsync(fd);
+#endif
 }
 
 int vfswrap_stat(char *fname, SMB_STRUCT_STAT *sbuf)

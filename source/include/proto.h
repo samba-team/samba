@@ -4854,7 +4854,7 @@ ssize_t vfswrap_read(int fd, char *data, size_t n);
 ssize_t vfswrap_write(int fd, char *data, size_t n);
 SMB_OFF_T vfswrap_lseek(int filedes, SMB_OFF_T offset, int whence);
 int vfswrap_rename(char *old, char *new);
-void vfswrap_fsync(int fd);
+int vfswrap_fsync(int fd);
 int vfswrap_stat(char *fname, SMB_STRUCT_STAT *sbuf);
 int vfswrap_fstat(int fd, SMB_STRUCT_STAT *sbuf);
 int vfswrap_lstat(char *path, 
