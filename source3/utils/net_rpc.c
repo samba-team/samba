@@ -21,6 +21,171 @@
 #include "includes.h"
 #include "../utils/net.h"
 
+
+typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, struct cli_state *, TALLOC_CTX *, int, const char **);
+
+
+static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
+{
+	DOM_SID *domain_sid;
+	POLICY_HND pol;
+	NTSTATUS result = NT_STATUS_OK;
+	uint32 info_class = 5;
+	fstring domain_name;
+	TALLOC_CTX *mem_ctx;
+	
+	if (!(domain_sid = malloc(sizeof(DOM_SID)))){
+		DEBUG(0,("fetch_domain_sid: malloc returned NULL!\n"));
+		goto error;
+	}
+	    
+	if (!(mem_ctx=talloc_init()))
+	{
+		DEBUG(0,("fetch_domain_sid: talloc_init returned NULL!\n"));
+		goto error;
+	}
+
+
+	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
+		fprintf(stderr, "could not initialise lsa pipe\n");
+		goto error;
+	}
+	
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto error;
+	}
+
+	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
+					   domain_name, domain_sid);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto error;
+	}
+
+	cli_lsa_close(cli, mem_ctx, &pol);
+	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
+
+	return domain_sid;
+
+ error:
+	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		fprintf(stderr, "error: %s\n", get_nt_error_msg(result));
+	}
+
+	exit(1);
+}
+
+
+static int run_rpc_command(const char *pipe_name, 
+			   rpc_command_fn fn,
+			   int argc, const char **argv) 
+{
+	struct cli_state *cli = net_make_ipc_connection(0);
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS nt_status;
+	DOM_SID *domain_sid = net_get_remote_domain_sid(cli);
+	/* Create mem_ctx */
+	
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0, ("talloc_init() failed\n"));
+		cli_shutdown(cli);
+		return -1;
+	}
+	
+	if (!cli_nt_session_open(cli, pipe_name)) {
+		DEBUG(0, ("Could not initialise samr pipe\n"));
+	}
+	
+	nt_status = fn(domain_sid, cli, mem_ctx, argc, argv);
+	
+	if (cli->nt_pipe_fnum)
+		cli_nt_session_close(cli);
+	
+	talloc_destroy(mem_ctx);
+
+	return (!NT_STATUS_IS_OK(nt_status));
+}
+
+static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				       int argc, const char **argv) {
+	
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	const char *acct_name;
+	uint16 acb_info;
+	uint32 unknown, user_rid;
+
+	if (argc != 1) {
+		d_printf("Usage: net rpc user add username\n");
+		return NT_STATUS_OK;
+	}
+
+	acct_name = argv[0];
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Create domain user */
+
+	acb_info = ACB_NORMAL;
+	unknown = 0xe005000b; /* No idea what this is - a permission mask? */
+
+	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
+					  acct_name, acb_info, unknown,
+					  &user_pol, &user_rid);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+ done:
+	return result;
+}
+
+static int rpc_user_add(int argc, const char **argv) 
+{
+	return run_rpc_command(PIPE_SAMR, rpc_user_add_internals,
+			       argc, argv);
+}
+
+static int rpc_user_usage(int argc, const char **argv) 
+{
+	d_printf("  net rpc user add \t to add a user\n");
+	return -1;
+}
+
+static int rpc_user(int argc, const char **argv) 
+{
+	struct functable func[] = {
+		{"add", rpc_user_add},
+		{NULL, NULL}
+	};
+	
+	if (argc == 0) {
+		rpc_user_usage(argc, argv);
+	}
+
+	return net_run_function(argc, argv, func, rpc_user_usage);
+}
+
 int net_rpc_usage(int argc, const char **argv) 
 {
 	d_printf("  net rpc join \tto join a domin \n");
@@ -31,6 +196,7 @@ int net_rpc(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"join", net_rpc_join},
+		{"user", rpc_user},
 		{NULL, NULL}
 	};
 	return net_run_function(argc, argv, func, net_rpc_usage);
