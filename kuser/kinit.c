@@ -38,6 +38,19 @@
 
 #include "kuser_locl.h"
 RCSID("$Id$");
+#include <getarg.h>
+
+int forwardable;
+int preauth = 1;
+int renewable;
+int version_flag = 0;
+
+struct getargs args[] = {
+    { "forwardable",		'f', arg_flag, &forwardable, NULL },
+    { "preauthentication",	'p', arg_negative_flag, &preauth, NULL },
+    { "renewable",		'r', arg_flag, &renewable, NULL },
+    { "version", 		0,   arg_flag, &version_flag, NULL }
+};
 
 static void
 usage (void)
@@ -57,31 +70,30 @@ main (int argc, char **argv)
     krb5_preauthtype pre_auth_types[] = {KRB5_PADATA_ENC_TIMESTAMP};
     int c;
     char *realm;
-    int preauth = 1;
 
     union {
 	krb5_flags i;
 	KDCOptions f;
     }options;
+    int optind = 0;
 
     set_progname (argv[0]);
     memset(&cred, 0, sizeof(cred));
     options.i = 0;
-    while ((c = getopt (argc, argv, "frp")) != EOF) {
-	switch (c) {
-	case 'f':
-	    options.f.forwardable = 1;
-	    break;
-	case 'p':
-	    preauth = 0;
-	    break;
-	case 'r':
-	    options.f.renewable = 1;
-	    cred.times.renew_till = 1 << 30;
-	    break;
-	default:
-	    usage ();
-	}
+    
+    while(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+	usage();
+    
+    if(version_flag){
+	printf("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	exit(0);
+    }
+
+    options.f.forwardable = forwardable;
+
+    if(renewable){
+	options.f.renewable = 1;
+	cred.times.renew_till = 1 << 30;
     }
     argc -= optind;
     argv += optind;
