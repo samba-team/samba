@@ -1538,17 +1538,6 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
 
-  if (!check_name(fname,conn))
-  {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    file_free(fsp);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
- 
   unixmode = unix_mode(conn,aARCH,fname);
       
   open_file_shared(fsp,conn,fname,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
@@ -1639,17 +1628,6 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   fsp = file_new();
   if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
-
-  if (!check_name(fname,conn))
-  {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    file_free(fsp);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
 
   unixmode = unix_mode(conn,smb_attr | aARCH, fname);
       
@@ -1781,17 +1759,6 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
 
-  if (!check_name(fname,conn))
-  {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    file_free(fsp);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
-
   if(com == SMBmknew)
   {
     /* We should fail if file exists. */
@@ -1860,17 +1827,6 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   fsp = file_new();
   if (fsp)
     return(ERROR(ERRSRV,ERRnofids));
-
-  if (!check_name(fname,conn))
-  {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    file_free(fsp);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
 
   pstrcpy(fname2,(char *)smbd_mktemp(fname));
 
@@ -3071,11 +3027,6 @@ int reply_printopen(connection_struct *conn,
 		return(ERROR(ERRSRV,ERRnofids));
 	
 	pstrcpy(fname2,(char *)smbd_mktemp(fname));
-
-	if (!check_name(fname2,conn)) {
-		file_free(fsp);
-		return(ERROR(ERRDOS,ERRnoaccess));
-	}
 
 	/* Open for exclusive use, write only. */
 	open_file_shared(fsp,conn,fname2, SET_DENY_MODE(DENY_ALL)|SET_OPEN_MODE(DOS_OPEN_WRONLY),

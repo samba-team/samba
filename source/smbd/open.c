@@ -809,6 +809,9 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
         fname, share_mode, ofun, (int)mode,  oplock_request ));
 
+  if (!check_name(fname,conn)) {
+      return;
+  }
 
   /* ignore any oplock requests if oplocks are disabled */
   if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break) {
