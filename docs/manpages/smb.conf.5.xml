@@ -483,14 +483,6 @@ alias|alias|alias|alias...
 	<variablelist>
 	
 	<varlistentry>
-		<term>mangle case = yes/no</term>
-		<listitem><para> controls whether names that have characters that 
-		aren't of the <quote>default</quote> case are mangled. For example, 
-		if this is yes, a name like <quote>Mail</quote> will be mangled. 
-		Default <emphasis>no</emphasis>.</para></listitem>
-		</varlistentry> 
-	
-		<varlistentry>
 		<term>case sensitive = yes/no/auto</term>
 		<listitem><para>controls whether filenames are case sensitive. If 
 		they aren't, Samba must do a filename search and match on passed 
