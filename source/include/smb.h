@@ -44,15 +44,6 @@
 #define SHMEM_SIZE 102400
 #endif
 
-/* Default number of hash buckets used in shared memory share mode */
-#ifndef SHMEM_HASH_SIZE
-#ifdef SEMMSL
-#define SHMEM_HASH_SIZE (SEMMSL-1)
-#else
-#define SHMEM_HASH_SIZE 15
-#endif
-#endif
-
 #define NMB_PORT 137
 #define DGRAM_PORT 138
 #define SMB_PORT 139
@@ -1425,6 +1416,7 @@ struct shmem_ops {
 	BOOL (*lock_hash_entry)(unsigned int);
 	BOOL (*unlock_hash_entry)( unsigned int );
 	BOOL (*get_usage)(int *,int *,int *);
+	unsigned (*hash_size)(void);
 };
 
 

@@ -245,7 +245,6 @@ int lp_passwordlevel(void);
 int lp_usernamelevel(void);
 int lp_readsize(void);
 int lp_shmem_size(void);
-int lp_shmem_hash_size(void);
 int lp_deadtime(void);
 int lp_maxprotocol(void);
 int lp_security(void);
@@ -880,11 +879,11 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
 
-struct shmem_ops *smb_shm_open(char *file_name, int size, int ronly);
+struct shmem_ops *smb_shm_open(int ronly);
 
 /*The following definitions come from  shmem_sysv.c  */
 
-struct shmem_ops *sysv_shm_open(int size, int ronly);
+struct shmem_ops *sysv_shm_open(int ronly);
 
 /*The following definitions come from  smbdes.c  */
 

@@ -166,7 +166,6 @@ typedef struct
   int max_ttl;
   int ReadSize;
   int shmem_size;
-  int shmem_hash_size;
   int client_code_page;
   int announce_as;   /* This is initialised in init_globals */
   BOOL bDNSproxy;
@@ -479,7 +478,6 @@ struct parm_struct
   {"time offset",      P_INTEGER, P_GLOBAL, &extra_time_offset,         NULL},
   {"read size",        P_INTEGER, P_GLOBAL, &Globals.ReadSize,          NULL},
   {"shared mem size",  P_INTEGER, P_GLOBAL, &Globals.shmem_size,        NULL},
-  {"shared file entries",  P_INTEGER, P_GLOBAL, &Globals.shmem_hash_size, NULL},
   {"coding system",    P_INTEGER, P_GLOBAL, &coding_system, handle_coding_system},
   {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	NULL},
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL},
@@ -674,7 +672,6 @@ static void init_globals(void)
   Globals.max_ttl = 60*60*4; /* 2 hours default */
   Globals.ReadSize = 16*1024;
   Globals.shmem_size = SHMEM_SIZE;
-  Globals.shmem_hash_size = SHMEM_HASH_SIZE;
   Globals.announce_as = ANNOUNCE_AS_NT;
   Globals.bUnixRealname = False;
 #if (defined(NETGROUP) && defined(AUTOMOUNT))
@@ -918,7 +915,6 @@ FN_GLOBAL_INTEGER(lp_passwordlevel,&Globals.pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel,&Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_readsize,&Globals.ReadSize)
 FN_GLOBAL_INTEGER(lp_shmem_size,&Globals.shmem_size)
-FN_GLOBAL_INTEGER(lp_shmem_hash_size,&Globals.shmem_hash_size)
 FN_GLOBAL_INTEGER(lp_deadtime,&Globals.deadtime)
 FN_GLOBAL_INTEGER(lp_maxprotocol,&Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_security,&Globals.security)
