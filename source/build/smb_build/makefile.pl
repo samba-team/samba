@@ -758,6 +758,7 @@ scripting/swig/_tdb.so: scripting/swig/tdb.py scripting/swig/tdb_wrap.o \$(PYTHO
 		\$(PYTHON_TDB_OBJ)
 
 PYTHON_DCERPC_OBJ = \$(SUBSYSTEM_LIBRPC_RAW_OBJS) \\
+	\$(SUBSYSTEM_LIBDCOM_OBJS) \\
 	\$(SUBSYSTEM_LIBNDR_RAW_OBJS) \\
 	\$(SUBSYSTEM_LIBNDR_GEN_OBJS) \\
 	\$(SUBSYSTEM_LIBBASIC_OBJS) \\
