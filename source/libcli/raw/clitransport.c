@@ -354,7 +354,7 @@ static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 	req->in.allocated = req->in.size;
 
 	/* handle NBT session replies */
-	if (req->in.buffer[0] != 0) {
+	if (req->in.size >= 4 && req->in.buffer[0] != 0) {
 		req->status = NT_STATUS_OK;
 		goto async;
 	}
