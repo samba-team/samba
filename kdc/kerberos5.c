@@ -282,6 +282,7 @@ as_rep(krb5_context context,
 #endif
 	    et->renew_till = malloc(sizeof(*et->renew_till));
 	    *et->renew_till = t;
+	    et->flags.renewable = 1;
 	}
     }
     
@@ -390,10 +391,27 @@ out2:
 
 
 static krb5_error_code
-check_tgs_flags(KDC_REQ_BODY *b, 
+check_tgs_flags(krb5_context context, KDC_REQ_BODY *b, 
 		EncTicketPart *tgt, EncTicketPart *et)
 {
     KDCOptions f = b->kdc_options;
+	
+    if(f.validate){
+	if(!tgt->flags.invalid || tgt->starttime == NULL){
+	    kdc_log(0, "Bad request to validate ticket");
+	    return KRB5KDC_ERR_BADOPTION;
+	}
+	if(*tgt->starttime < kdc_time){
+	    kdc_log(0, "Early request to validate ticket");
+	    return KRB5KRB_AP_ERR_TKT_NYV;
+	}
+	/* XXX  tkt = tgt */
+	et->flags.invalid = 0;
+    }else if(tgt->flags.invalid){
+	kdc_log(0, "Ticket-granting ticket has INVALID flag set");
+	return KRB5KRB_AP_ERR_TKT_INVALID;
+    }
+
     if(f.forwardable){
 	if(!tgt->flags.forwardable){
 	    kdc_log(0, "Bad request for forwardable ticket");
@@ -408,7 +426,6 @@ check_tgs_flags(KDC_REQ_BODY *b,
 	}
 	et->flags.forwarded = 1;
 	et->caddr = b->addresses;
-	/* resp.caddr := req.addresses */
     }
     if(tgt->flags.forwarded)
 	et->flags.forwarded = 1;
@@ -427,8 +444,10 @@ check_tgs_flags(KDC_REQ_BODY *b,
 	}
 	et->flags.proxy = 1;
 	et->caddr = b->addresses;
-	/* resp.caddr := req.addresses */
     }
+    if(tgt->flags.proxy)
+	et->flags.proxy = 1;
+
     if(f.allow_postdate){
 	if(!tgt->flags.may_postdate){
 	    kdc_log(0, "Bad request for post-datable ticket");
@@ -441,23 +460,37 @@ check_tgs_flags(KDC_REQ_BODY *b,
 	    kdc_log(0, "Bad request for postdated ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
+	if(b->from)
+	    *et->starttime = *b->from;
 	et->flags.postdated = 1;
 	et->flags.invalid = 1;
-	et->starttime = malloc(sizeof(*et->starttime));
-	*et->starttime = *b->from;
+    }else if(b->from && *b->from > kdc_time + context->max_skew){
+	kdc_log(0, "Ticket cannot be postdated");
+	return KRB5KDC_ERR_CANNOT_POSTDATE;
     }
-    if(f.validate){
-	if(!tgt->flags.invalid || tgt->starttime == NULL){
-	    kdc_log(0, "Bad request to validate ticket");
+
+    if(f.renewable){
+	if(!tgt->flags.renewable){
+	    kdc_log(0, "Bad request for renewable ticket");
 	    return KRB5KDC_ERR_BADOPTION;
 	}
-	if(*tgt->starttime < kdc_time){
-	    kdc_log(0, "Early request to validate ticket");
-	    return KRB5KRB_AP_ERR_TKT_NYV;
-	}
-	/* XXX  tkt = tgt */
-	et->flags.invalid = 0;
+	et->flags.renewable = 1;
+	et->renew_till = malloc(sizeof(*et->renew_till));
+	*et->renew_till = *b->rtime;
     }
+    if(f.renew){
+	time_t old_life;
+	if(!tgt->flags.renewable || tgt->renew_till == NULL){
+	    kdc_log(0, "Request to renew non-renewable ticket");
+	    return KRB5KDC_ERR_BADOPTION;
+	}
+	old_life = tgt->endtime;
+	if(tgt->starttime)
+	    old_life -= *tgt->starttime;
+	else
+	    old_life -= tgt->authtime;
+	et->endtime = *et->starttime + old_life;
+    }	    
     
     /* check for excess flags */
     return 0;
@@ -494,79 +527,72 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
     memset(&et, 0, sizeof(et));
     memset(&ek, 0, sizeof(ek));
     
-    ret = check_tgs_flags(b, tgt, &et);
+    rep.pvno = 5;
+    rep.msg_type = krb_tgs_rep;
+
+    et.authtime = tgt->authtime;
+    et.endtime = tgt->endtime;
+    et.starttime = malloc(sizeof(*et.starttime));
+    *et.starttime = kdc_time;
+    
+    ret = check_tgs_flags(context, b, tgt, &et);
     if(ret)
 	return ret;
 
-    rep.pvno = 5;
-    rep.msg_type = krb_tgs_rep;
-    copy_Realm(&tgt->crealm, &rep.crealm);
-    copy_PrincipalName(&tgt->cname, &rep.cname);
-    rep.ticket.tkt_vno = 5;
     copy_Realm(krb5_princ_realm(context, server->principal), 
 	       &rep.ticket.realm);
     krb5_principal2principalname(&rep.ticket.sname, server->principal);
+    copy_Realm(&tgt->crealm, &rep.crealm);
+    copy_PrincipalName(&tgt->cname, &rep.cname);
+    rep.ticket.tkt_vno = 5;
 
+    ek.caddr = et.caddr;
     if(et.caddr == NULL)
 	et.caddr = tgt->caddr;
-    else
-	ek.caddr = et.caddr;
-    et.authtime = tgt->authtime;
-	    
-    if(f.renew){
-	time_t old_life;
-	if(!tgt->flags.renewable)
-	    return KRB5KDC_ERR_BADOPTION;
-	if(*tgt->renew_till >= kdc_time)
-	    return KRB5KRB_AP_ERR_TKT_EXPIRED;
-	/* XXX tkt = tgt */
-	et.starttime = malloc(sizeof(*et.starttime));
-	*et.starttime = kdc_time;
-	old_life = tgt->endtime - *tgt->starttime;
-	et.endtime = min(*tgt->renew_till,
-			 *et.starttime + old_life);
-    }else{
-	time_t till;
-	et.starttime = malloc(sizeof(*et.starttime));
-	*et.starttime = kdc_time;
-	till = b->till;
-	if(till == 0)
-	    till = MAX_TIME;
-	if(client->max_life)
-	    till = min(till, *et.starttime + client->max_life);
-	if(server->max_life)
-	    till = min(till, *et.starttime + server->max_life);
-	till = min(till, tgt->endtime);
-#if 0
-	till = min(till, et.starttime + realm->max_life);
-#endif
-	et.endtime = till;
-	if(f.renewable_ok && 
-	   et.endtime < b->till && 
-	   tgt->flags.renewable){
-	    f.renewable = 1;
-	    b->rtime = malloc(sizeof(*b->rtime));
-	    *b->rtime = min(b->till, *tgt->renew_till);
-	}
-    }
-    if(f.renewable && tgt->flags.renewable && b->rtime){
-	time_t rtime;
-	rtime = *b->rtime;
-	if(rtime == 0)
-	    rtime = MAX_TIME;
-	et.flags.renewable = 1;
-	if(client->max_renew)
-	    rtime = min(rtime, *et.starttime + client->max_renew);
-	if(server->max_renew)
-	    rtime = min(rtime, *et.starttime + server->max_renew);
-	rtime = min(rtime, *tgt->renew_till);
-#if 0
-	rtime = min(rtime, *et.starttime + realm->max_renew);
-#endif
-	et.renew_till = malloc(sizeof(*et.renew_till));
-	*et.renew_till = rtime;
-    }
 
+    {
+	time_t life;
+	life = et.endtime - *et.starttime;
+	if(client->max_life)
+	    life = min(life, client->max_life);
+	if(server->max_life)
+	    life = min(life, server->max_life);
+	et.endtime = *et.starttime + life;
+    }
+    if(f.renewable_ok && tgt->flags.renewable && 
+       et.renew_till == NULL && et.endtime < b->till){
+	et.flags.renewable = 1;
+	et.renew_till = malloc(sizeof(*et.renew_till));
+	*et.renew_till = b->till;
+    }
+    if(et.renew_till){
+	time_t renew;
+	renew = *et.renew_till - et.authtime;
+	if(client->max_renew)
+	    renew = min(renew, client->max_renew);
+	if(server->max_renew)
+	    renew = min(renew, server->max_renew);
+	*et.renew_till = et.authtime + renew;
+    }
+	    
+    if(et.renew_till){
+	*et.renew_till = min(*et.renew_till, *tgt->renew_till);
+	*et.starttime = min(*et.starttime, *et.renew_till);
+	et.endtime = min(et.endtime, *et.renew_till);
+    }
+    
+    *et.starttime = min(*et.starttime, et.endtime);
+
+    if(*et.starttime == et.endtime){
+	ret = KRB5KDC_ERR_NEVER_VALID;
+	goto out;
+    }
+    if(et.renew_till && et.endtime == *et.renew_till){
+	free(et.renew_till);
+	et.renew_till = NULL;
+	et.flags.renewable = 0;
+    }
+    
     et.flags.pre_authent = tgt->flags.pre_authent;
     et.flags.hw_authent = tgt->flags.hw_authent;
 	    
@@ -821,7 +847,7 @@ tgs_rep2(krb5_context context,
 	client = db_fetch(context, cp);
 
 	kdc_log(0, "TGS-REQ %s from %s for %s", cpn, from, spn);
-
+	
 	if(server == NULL){
 	    kdc_log(0, "Server not found in database: %s", spn);
 	    /* do foreign realm stuff */
@@ -832,6 +858,15 @@ tgs_rep2(krb5_context context,
 	if(client == NULL){
 	    kdc_log(0, "Client not found in database: %s", cpn);
 	    ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+	    goto out;
+	}
+
+	if((b->kdc_options.validate || b->kdc_options.renew) && 
+	   !krb5_principal_compare(context, 
+				   krbtgt->principal,
+				   server->principal)){
+	    kdc_log(0, "Inconsistent request.");
+	    ret = KRB5KDC_ERR_SERVER_NOMATCH;
 	    goto out;
 	}
 	
