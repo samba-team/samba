@@ -78,11 +78,12 @@ char *cli_errstr(struct cli_state *cli)
 			if (rap_errmap[i].err == cli->rap_error) {
 				return rap_errmap[i].message;
 			}
-			slprintf(cli_error_message, sizeof(cli_error_message) - 1, "RAP code %d", 
-				cli->rap_error);
-
-			return cli_error_message;
 		} 
+
+		slprintf(cli_error_message, sizeof(cli_error_message) - 1, "RAP code %d", 
+			cli->rap_error);
+
+		return cli_error_message;
 	}
 
         /* Case #2: 32-bit NT errors */
