@@ -337,7 +337,7 @@ BOOL null_mtime(time_t mtime)
 /*******************************************************************
   create a 16 bit dos packed date
 ********************************************************************/
-static uint16 make_dos_date1(time_t unixdate,struct tm *t)
+static uint16 make_dos_date1(struct tm *t)
 {
   uint16 ret=0;
   ret = (((unsigned)(t->tm_mon+1)) >> 3) | ((t->tm_year-80) << 1);
@@ -348,7 +348,7 @@ static uint16 make_dos_date1(time_t unixdate,struct tm *t)
 /*******************************************************************
   create a 16 bit dos packed time
 ********************************************************************/
-static uint16 make_dos_time1(time_t unixdate,struct tm *t)
+static uint16 make_dos_time1(struct tm *t)
 {
   uint16 ret=0;
   ret = ((((unsigned)t->tm_min >> 3)&0x7) | (((unsigned)t->tm_hour) << 3));
@@ -369,8 +369,8 @@ static uint32 make_dos_date(time_t unixdate)
   if (!t)
     return 0xFFFFFFFF;
 
-  ret = make_dos_date1(unixdate,t);
-  ret = ((ret&0xFFFF)<<16) | make_dos_time1(unixdate,t);
+  ret = make_dos_date1(t);
+  ret = ((ret&0xFFFF)<<16) | make_dos_time1(t);
 
   return(ret);
 }
