@@ -349,13 +349,13 @@ static void ufc_init_des(void)
     clearmem((char*)eperm32tab, sizeof(eperm32tab));
 
     for(bit = 0; bit < 48; bit++) {
-      ufc_long mask1,comes_from;
+      ufc_long inner_mask1,comes_from;
 	
       comes_from = perm32[esel[bit]-1]-1;
-      mask1      = bytemask[comes_from % 8];
+      inner_mask1      = bytemask[comes_from % 8];
 	
       for(j = 256; j--;) {
-	if(j & mask1)
+	if(j & inner_mask1)
 	  eperm32tab[comes_from / 8][j][bit / 24] |= BITMASK(bit % 24);
       }
     }
@@ -430,7 +430,7 @@ static void ufc_init_des(void)
     clearmem((char*)efp, sizeof efp);
     for(bit = 0; bit < 64; bit++) {
       int o_bit, o_long;
-      ufc_long word_value, mask1, mask2;
+      ufc_long word_value, inner_mask1, inner_mask2;
       int comes_from_f_bit, comes_from_e_bit;
       int comes_from_word, bit_within_word;
 
@@ -450,12 +450,12 @@ static void ufc_init_des(void)
       comes_from_word  = comes_from_e_bit / 6;        /* 0..15 */
       bit_within_word  = comes_from_e_bit % 6;        /* 0..5  */
 
-      mask1 = longmask[bit_within_word + 26];
-      mask2 = longmask[o_bit];
+      inner_mask1 = longmask[bit_within_word + 26];
+      inner_mask2 = longmask[o_bit];
 
       for(word_value = 64; word_value--;) {
-	if(word_value & mask1)
-	  efp[comes_from_word][word_value][o_long] |= mask2;
+	if(word_value & inner_mask1)
+	  efp[comes_from_word][word_value][o_long] |= inner_mask2;
       }
     }
     initialized++;
@@ -498,9 +498,9 @@ static unsigned char current_salt[3] = "&&"; /* invalid value */
 static ufc_long current_saltbits = 0;
 static int direction = 0;
 
-static void setup_salt(char *s1)
+static void setup_salt(const char *s1)
   { ufc_long i, j, saltbits;
-    unsigned char *s2 = (unsigned char *)s1;
+    const unsigned char *s2 = (const unsigned char *)s1;
 
     if(!initialized)
       ufc_init_des();
@@ -625,7 +625,7 @@ ufc_long *_ufc_dofinalperm(ufc_long l1, ufc_long l2, ufc_long r1, ufc_long r2)
  * prefixing with the salt
  */
 
-static char *output_conversion(ufc_long v1, ufc_long v2, char *salt)
+static char *output_conversion(ufc_long v1, ufc_long v2, const char *salt)
   { static char outbuf[14];
     int i, s;
 
@@ -653,7 +653,7 @@ static char *output_conversion(ufc_long v1, ufc_long v2, char *salt)
 
 static ufc_long *_ufc_doit(ufc_long , ufc_long, ufc_long, ufc_long, ufc_long);
    
-char *ufc_crypt(char *key,char *salt)
+char *ufc_crypt(const char *key,const char *salt)
   { ufc_long *s;
     char ktab[9];
 
