@@ -254,7 +254,7 @@ static void my_wcstombs(char *dst, uint16 *src, size_t len)
 
 static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
-  if((data_len - fname_len > 1) || (inbuf[data_offset] == '\0')) {
+  if((data_len - fname_len >= 1) || (inbuf[data_offset] == '\0')) {
     /*
      * NT 5.0 Beta 2 or Windows 2000 final release (!) has kindly sent us a UNICODE string
      * without bothering to set the unicode bit. How kind.
