@@ -127,8 +127,8 @@ int reply_sends(connection_struct *conn,
   outsize = set_message(outbuf,0,0,True);
 
   p = smb_buf(inbuf)+1;
-  p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_TERMINATE) + 1;
-  p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_TERMINATE) + 1;
+  p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
+  p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
 
   msg = p;
 
@@ -169,8 +169,8 @@ int reply_sendstrt(connection_struct *conn,
   msgpos = 0;
 
   p = smb_buf(inbuf)+1;
-  p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_TERMINATE) + 1;
-  p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_TERMINATE) + 1;
+  p += srvstr_pull_buf(inbuf, msgfrom, p, sizeof(msgfrom), STR_ASCII|STR_TERMINATE) + 1;
+  p += srvstr_pull_buf(inbuf, msgto, p, sizeof(msgto), STR_ASCII|STR_TERMINATE) + 1;
 
   DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
 
