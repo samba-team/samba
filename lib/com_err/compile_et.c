@@ -36,6 +36,7 @@
  * SUCH DAMAGE. 
  */
 
+#undef ROKEN_RENAME
 #include "compile_et.h"
 
 RCSID("$Id$");
