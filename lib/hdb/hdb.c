@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -319,7 +319,7 @@ hdb_list_builtin(krb5_context context, char **list)
 {
     const struct hdb_method *h;
     size_t len = 0;
-    char *p, *buf = NULL;
+    char *buf = NULL;
 
     for (h = methods; h->prefix != NULL; ++h) {
 	if (h->prefix[0] == '\0')
