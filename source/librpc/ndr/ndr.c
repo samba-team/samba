@@ -436,6 +436,8 @@ static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 					   size_t sub_size,
 					   struct ndr_pull *ndr2)
 {
+	ndr2->flags = ndr->flags;
+
 	switch (sub_size) {
 	case 0: {
 		uint32_t size = ndr->data_size - ndr->offset;
