@@ -75,16 +75,16 @@ o   Timur Bakeyev <timur@com.bat.ru>
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * BUG 2262: Add support in configure.in for *freebsd6*.
-    * BUG 2266: Portability fixes for queota code on FreeBSD4.
+    * BUG 2266: Portability fixes for quota code on FreeBSD4.
     * BUG 2264: Remove shutdown and abortshutdown commands from 
       rpcclient in favor of using the same functions in 'net'.
-    * BUG 2295: Prevent mbd from returning an emptry servername
+    * BUG 2295: Prevent smbd from returning an empty server name
       in certain lanman api calls.
     * BUG 2290: Fix autogen.sh script in examples (based on original
       patch from Lars Mueller).
     * Fix bug enumerating domain trusts in security = ads.
     * Fix segv in rpcclient's dsenumdomtrusts.
-    * Fix bug in expansion of %U and %G in included filesnames.
+    * Fix bug in expansion of %U and %G in included filenames.
     * BUG 2291: Restrict creation of server trust and domain trust
       accounts to members of the "Domain Admins" group.
     
