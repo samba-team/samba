@@ -395,7 +395,7 @@ void make_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf)
 	if (buf != NULL)
 	{
 		*ptr = 1;
-		make_unistr2(str, buf, strlen(buf));
+		make_unistr2(str, buf, strlen(buf)+1);
 	}
 	else
 	{
@@ -475,10 +475,10 @@ creates a UNISTR2 structure.
 ********************************************************************/
 void make_unistr2(UNISTR2 *str, char *buf, int len)
 {
-	/* set up string lengths. add one if string is not null-terminated */
-	str->uni_max_len = len+1;
+	/* set up string lengths. */
+	str->uni_max_len = len;
 	str->undoc       = 0;
-	str->uni_str_len = len+1;
+	str->uni_str_len = len;
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
 	struni2(str->buffer, buf);
@@ -608,7 +608,7 @@ static void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name)
 	if (logon_srv != NULL)
 	{
 		log->undoc_buffer = 1;
-		make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv));
+		make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv)+1);
 	}
 	else
 	{
@@ -618,7 +618,7 @@ static void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name)
 	if (comp_name != NULL)
 	{
 		log->undoc_buffer2 = 1;
-		make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name));
+		make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name)+1);
 	}
 	else
 	{
@@ -665,12 +665,12 @@ void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
 
 	log->undoc_buffer = 1;
 
-	make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv));
-	make_unistr2(&(log->uni_acct_name), acct_name, strlen(acct_name));
+	make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv)+1);
+	make_unistr2(&(log->uni_acct_name), acct_name, strlen(acct_name)+1);
 
 	log->sec_chan = sec_chan;
 
-	make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name));
+	make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name)+1);
 }
 
 /*******************************************************************

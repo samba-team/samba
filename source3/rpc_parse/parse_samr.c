@@ -2694,7 +2694,7 @@ void make_samr_q_connect(SAMR_Q_CONNECT *q_u,
 
 	/* make PDC server name \\server */
 	q_u->ptr_srv_name = len_srv_name > 0 ? 1 : 0; 
-	make_unistr2(&(q_u->uni_srv_name), srv_name, len_srv_name);  
+	make_unistr2(&(q_u->uni_srv_name), srv_name, len_srv_name+1);  
 
 	/* example values: 0x0000 0002 */
 	q_u->unknown_0 = unknown_0; 

@@ -418,7 +418,7 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 
 	got_grps = True;
 	num_entries = 1;
-	make_unistr2(&(pass[0].uni_user_name), dummy_group, strlen(dummy_group));
+	make_unistr2(&(pass[0].uni_user_name), dummy_group, strlen(dummy_group)-1);
 	pass[0].user_rid = DOMAIN_GROUP_RID_ADMINS;
 
 	if (r_e.status == 0 && got_grps)
@@ -481,7 +481,7 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		char *name;
 		while (num_entries < MAX_SAM_ENTRIES && ((name = builtin_alias_rids[num_entries].name) != NULL))
 		{
-			make_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name));
+			make_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)-1);
 			pass[num_entries].user_rid = builtin_alias_rids[num_entries].rid;
 			num_entries++;
 		}

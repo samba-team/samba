@@ -1377,6 +1377,7 @@ static void srv_io_info_ctr(char *desc,  SRV_INFO_CTR *ctr, prs_struct *ps, int 
 				break;
 			}
 		}
+		prs_align(ps);
 	}
 }
 
