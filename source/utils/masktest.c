@@ -137,9 +137,17 @@ struct cli_state *connect_one(char *share)
 	return c;
 }
 
+static char *resultp;
 
 void listfn(file_info *f, const char *s)
 {
+	if (strcmp(f->name,".") == 0) {
+		resultp[0] = '+';
+	} else if (strcmp(f->name,"..") == 0) {
+		resultp[1] = '+';		
+	} else {
+		resultp[2] = '+';
+	}
 }
 
 
@@ -147,7 +155,10 @@ static void testpair(struct cli_state *cli1, struct cli_state *cli2,
 		     char *mask, char *file)
 {
 	int fnum;
-	int count1, count2;
+	fstring res1, res2;
+
+	fstrcpy(res1, "---");
+	fstrcpy(res2, "---");
 
 	fnum = cli_open(cli1, file, O_CREAT|O_TRUNC|O_RDWR, 0);
 	if (fnum == -1) {
@@ -163,15 +174,15 @@ static void testpair(struct cli_state *cli1, struct cli_state *cli2,
 	}
 	cli_close(cli2, fnum);
 
-	count1 = cli_list(cli1, mask, aHIDDEN | aDIR, listfn);
-	count2 = cli_list(cli2, mask, aHIDDEN | aDIR, listfn);
+	resultp = res1;
+	cli_list(cli1, mask, aHIDDEN | aDIR, listfn);
 
-	if (count1 == -1) count1=0;
-	if (count2 == -1) count2=0;
+	resultp = res2;
+	cli_list(cli2, mask, aHIDDEN | aDIR, listfn);
 
-	if (showall || count1 != count2) {
-		DEBUG(0,("mask=[%s] file=[%s] count1=%d count2=%d\n",
-			 mask, file, count1, count2));
+	if (showall || strcmp(res1, res2)) {
+		DEBUG(0,("%s %s mask=[%s] file=[%s]\n",
+			 res1, res2, mask, file));
 	}
 
 	cli_unlink(cli1, file);
