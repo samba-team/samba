@@ -1,4 +1,4 @@
-# Microsoft Developer Studio Generated NMAKE File, Format Version 4.10
+# Microsoft Developer Studio Generated NMAKE File, Format Version 4.20
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Dynamic-Link Library" 0x0102
@@ -487,8 +487,15 @@ DEP_CPP_QUD_C=\
 # Begin Source File
 
 SOURCE=.\fcrypt.c
+DEP_CPP_FCRYP=\
+	"..\..\include\win32\config.h"\
+	"..\..\include\win32\ktypes.h"\
+	".\des.h"\
+	".\des_locl.h"\
+	".\md5.h"\
+	
 
-"$(INTDIR)\fcrypt.obj" : $(SOURCE) "$(INTDIR)"
+"$(INTDIR)\fcrypt.obj" : $(SOURCE) $(DEP_CPP_FCRYP) "$(INTDIR)"
 
 
 # End Source File
@@ -623,8 +630,8 @@ DEP_CPP_SUPP_=\
 SOURCE=.\rnd_keys.c
 DEP_CPP_RND_K=\
 	"..\..\include\protos.h"\
-	"..\..\include\sys/bitypes.h"\
 	"..\..\include\win32\config.h"\
+	"..\..\include\win32\ktypes.h"\
 	".\des.h"\
 	".\des_locl.h"\
 	{$(INCLUDE)}"\sys\stat.h"\
@@ -643,8 +650,8 @@ DEP_CPP_RPC_E=\
 	"..\..\include\win32\config.h"\
 	".\des.h"\
 	".\des_locl.h"\
+	".\des_ver.h"\
 	".\rpc_des.h"\
-	".\version.h"\
 	
 
 "$(INTDIR)\rpc_enc.obj" : $(SOURCE) $(DEP_CPP_RPC_E) "$(INTDIR)"
@@ -689,7 +696,6 @@ DEP_CPP_READ_=\
 	"..\..\include\win32\config.h"\
 	".\des.h"\
 	".\des_locl.h"\
-	".\passwd_dlg.h"\
 	
 
 "$(INTDIR)\read_pwd.obj" : $(SOURCE) $(DEP_CPP_READ_) "$(INTDIR)"

@@ -1,4 +1,4 @@
-# Microsoft Developer Studio Generated NMAKE File, Format Version 4.10
+# Microsoft Developer Studio Generated NMAKE File, Format Version 4.20
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Dynamic-Link Library" 0x0102
@@ -31,9 +31,9 @@ NULL=nul
 ################################################################################
 # Begin Project
 # PROP Target_Last_Scanned "roken - Win32 Debug"
-RSC=rc.exe
 MTL=mktyplib.exe
 CPP=cl.exe
+RSC=rc.exe
 
 !IF  "$(CFG)" == "roken - Win32 Release"
 
@@ -50,21 +50,23 @@ CPP=cl.exe
 OUTDIR=.\Release
 INTDIR=.\Release
 
-ALL : ".\Release\roken.dll"
+ALL : "$(OUTDIR)\roken.dll"
 
 CLEAN : 
-	-@erase ".\Release\gettimeofday.obj"
-	-@erase ".\Release\roken.dll"
-	-@erase ".\Release\roken.exp"
-	-@erase ".\Release\roken.lib"
-	-@erase ".\Release\strcasecmp.obj"
+	-@erase "$(INTDIR)\gettimeofday.obj"
+	-@erase "$(INTDIR)\snprintf.obj"
+	-@erase "$(INTDIR)\strcasecmp.obj"
+	-@erase "$(INTDIR)\strtok_r.obj"
+	-@erase "$(OUTDIR)\roken.dll"
+	-@erase "$(OUTDIR)\roken.exp"
+	-@erase "$(OUTDIR)\roken.lib"
 
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\krb" /I "..\des" /I "..\..\include" /I "..\..\include\win32" /I "." /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "HAVE_CONFIG_H" /YX /c
-CPP_PROJ=/nologo /MT /W3 /GX /O2 /I "..\krb" /I "..\des" /I "..\..\include" /I\
+# ADD CPP /nologo /MT /GX /O2 /I "..\krb" /I "..\des" /I "..\..\include" /I "..\..\include\win32" /I "." /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "HAVE_CONFIG_H" /YX /c
+CPP_PROJ=/nologo /MT /GX /O2 /I "..\krb" /I "..\des" /I "..\..\include" /I\
  "..\..\include\win32" /I "." /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D\
  "HAVE_CONFIG_H" /Fp"$(INTDIR)/roken.pch" /YX /Fo"$(INTDIR)/" /c 
 CPP_OBJS=.\Release/
@@ -82,19 +84,21 @@ BSC32_SBRS= \
 	
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /base:0x68e7780 /subsystem:windows /dll /machine:I386
 LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib\
  advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib\
- odbccp32.lib /nologo /subsystem:windows /dll /incremental:no\
+ odbccp32.lib /nologo /base:0x68e7780 /subsystem:windows /dll /incremental:no\
  /pdb:"$(OUTDIR)/roken.pdb" /machine:I386 /def:".\roken.def"\
  /out:"$(OUTDIR)/roken.dll" /implib:"$(OUTDIR)/roken.lib" 
 DEF_FILE= \
 	".\roken.def"
 LINK32_OBJS= \
-	".\Release\gettimeofday.obj" \
-	".\Release\strcasecmp.obj"
+	"$(INTDIR)\gettimeofday.obj" \
+	"$(INTDIR)\snprintf.obj" \
+	"$(INTDIR)\strcasecmp.obj" \
+	"$(INTDIR)\strtok_r.obj"
 
-".\Release\roken.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+"$(OUTDIR)\roken.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
@@ -114,25 +118,27 @@ LINK32_OBJS= \
 OUTDIR=.\Debug
 INTDIR=.\Debug
 
-ALL : ".\Debug\roken.dll"
+ALL : "$(OUTDIR)\roken.dll"
 
 CLEAN : 
-	-@erase ".\Debug\gettimeofday.obj"
-	-@erase ".\Debug\roken.dll"
-	-@erase ".\Debug\roken.exp"
-	-@erase ".\Debug\roken.ilk"
-	-@erase ".\Debug\roken.lib"
-	-@erase ".\Debug\roken.pdb"
-	-@erase ".\Debug\strcasecmp.obj"
-	-@erase ".\Debug\vc40.idb"
-	-@erase ".\Debug\vc40.pdb"
+	-@erase "$(INTDIR)\gettimeofday.obj"
+	-@erase "$(INTDIR)\snprintf.obj"
+	-@erase "$(INTDIR)\strcasecmp.obj"
+	-@erase "$(INTDIR)\strtok_r.obj"
+	-@erase "$(INTDIR)\vc40.idb"
+	-@erase "$(INTDIR)\vc40.pdb"
+	-@erase "$(OUTDIR)\roken.dll"
+	-@erase "$(OUTDIR)\roken.exp"
+	-@erase "$(OUTDIR)\roken.ilk"
+	-@erase "$(OUTDIR)\roken.lib"
+	-@erase "$(OUTDIR)\roken.pdb"
 
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /Zi /Od /I "..\krb" /I "..\des" /I "..\..\include" /I "..\..\include\win32" /I "." /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "HAVE_CONFIG_H" /YX /c
-CPP_PROJ=/nologo /MTd /W3 /Gm /GX /Zi /Od /I "..\krb" /I "..\des" /I\
+# ADD CPP /nologo /MTd /Gm /GX /Zi /Od /I "..\krb" /I "..\des" /I "..\..\include" /I "..\..\include\win32" /I "." /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "HAVE_CONFIG_H" /YX /c
+CPP_PROJ=/nologo /MTd /Gm /GX /Zi /Od /I "..\krb" /I "..\des" /I\
  "..\..\include" /I "..\..\include\win32" /I "." /D "_DEBUG" /D "WIN32" /D\
  "_WINDOWS" /D "HAVE_CONFIG_H" /Fp"$(INTDIR)/roken.pch" /YX /Fo"$(INTDIR)/"\
  /Fd"$(INTDIR)/" /c 
@@ -151,19 +157,21 @@ BSC32_SBRS= \
 	
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /debug /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /debug /machine:I386
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /base:0x68e7780 /subsystem:windows /dll /debug /machine:I386
 LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib\
  advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib\
- odbccp32.lib /nologo /subsystem:windows /dll /incremental:yes\
+ odbccp32.lib /nologo /base:0x68e7780 /subsystem:windows /dll /incremental:yes\
  /pdb:"$(OUTDIR)/roken.pdb" /debug /machine:I386 /def:".\roken.def"\
  /out:"$(OUTDIR)/roken.dll" /implib:"$(OUTDIR)/roken.lib" 
 DEF_FILE= \
 	".\roken.def"
 LINK32_OBJS= \
-	".\Debug\gettimeofday.obj" \
-	".\Debug\strcasecmp.obj"
+	"$(INTDIR)\gettimeofday.obj" \
+	"$(INTDIR)\snprintf.obj" \
+	"$(INTDIR)\strcasecmp.obj" \
+	"$(INTDIR)\strtok_r.obj"
 
-".\Debug\roken.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+"$(OUTDIR)\roken.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
@@ -203,42 +211,6 @@ LINK32_OBJS= \
 ################################################################################
 # Begin Source File
 
-SOURCE=\TEMP\jimpa3\lib\krb\gettimeofday.c
-DEP_CPP_GETTI=\
-	"..\..\include\protos.h"\
-	"..\..\include\sys/bitypes.h"\
-	"..\..\include\sys/cdefs.h"\
-	"..\..\include\win32\config.h"\
-	"..\des\des.h"\
-	"..\krb\krb.h"\
-	"..\krb\krb_locl.h"\
-	"..\krb\prot.h"\
-	"..\krb\resolve.h"\
-	".\roken.h"\
-	{$(INCLUDE)}"\sys\stat.h"\
-	{$(INCLUDE)}"\sys\types.h"\
-	
-
-!IF  "$(CFG)" == "roken - Win32 Release"
-
-
-".\Release\gettimeofday.obj" : $(SOURCE) $(DEP_CPP_GETTI) "$(INTDIR)"
-   $(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ELSEIF  "$(CFG)" == "roken - Win32 Debug"
-
-
-".\Debug\gettimeofday.obj" : $(SOURCE) $(DEP_CPP_GETTI) "$(INTDIR)"
-   $(CPP) $(CPP_PROJ) $(SOURCE)
-
-
-!ENDIF 
-
-# End Source File
-################################################################################
-# Begin Source File
-
 SOURCE=.\roken.def
 
 !IF  "$(CFG)" == "roken - Win32 Release"
@@ -258,19 +230,65 @@ DEP_CPP_STRCA=\
 	{$(INCLUDE)}"\sys\types.h"\
 	
 
-!IF  "$(CFG)" == "roken - Win32 Release"
+"$(INTDIR)\strcasecmp.obj" : $(SOURCE) $(DEP_CPP_STRCA) "$(INTDIR)"
 
 
-".\Release\strcasecmp.obj" : $(SOURCE) $(DEP_CPP_STRCA) "$(INTDIR)"
+# End Source File
+################################################################################
+# Begin Source File
+
+SOURCE="\TEMP\krb4-970903\lib\krb\gettimeofday.c"
+DEP_CPP_GETTI=\
+	"..\..\include\protos.h"\
+	"..\..\include\sys/cdefs.h"\
+	"..\..\include\win32\config.h"\
+	"..\..\include\win32\ktypes.h"\
+	"..\des\des.h"\
+	"..\krb\krb.h"\
+	"..\krb\krb_locl.h"\
+	"..\krb\krb_log.h"\
+	"..\krb\prot.h"\
+	"..\krb\resolve.h"\
+	".\roken.h"\
+	{$(INCLUDE)}"\sys\stat.h"\
+	{$(INCLUDE)}"\sys\types.h"\
+	
+
+"$(INTDIR)\gettimeofday.obj" : $(SOURCE) $(DEP_CPP_GETTI) "$(INTDIR)"
+   $(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-!ELSEIF  "$(CFG)" == "roken - Win32 Debug"
+# End Source File
+################################################################################
+# Begin Source File
+
+SOURCE=.\snprintf.c
+DEP_CPP_SNPRI=\
+	"..\..\include\protos.h"\
+	"..\..\include\win32\config.h"\
+	".\roken.h"\
+	{$(INCLUDE)}"\sys\stat.h"\
+	{$(INCLUDE)}"\sys\types.h"\
+	
+
+"$(INTDIR)\snprintf.obj" : $(SOURCE) $(DEP_CPP_SNPRI) "$(INTDIR)"
 
 
-".\Debug\strcasecmp.obj" : $(SOURCE) $(DEP_CPP_STRCA) "$(INTDIR)"
+# End Source File
+################################################################################
+# Begin Source File
 
+SOURCE=.\strtok_r.c
+DEP_CPP_STRTO=\
+	"..\..\include\protos.h"\
+	"..\..\include\win32\config.h"\
+	".\roken.h"\
+	{$(INCLUDE)}"\sys\stat.h"\
+	{$(INCLUDE)}"\sys\types.h"\
+	
 
-!ENDIF 
+"$(INTDIR)\strtok_r.obj" : $(SOURCE) $(DEP_CPP_STRTO) "$(INTDIR)"
+
 
 # End Source File
 # End Target
