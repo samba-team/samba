@@ -41,9 +41,6 @@
 
 RCSID("$Id$");
 
-static int help_flag;
-static int version_flag;
-
 void
 krb5_std_usage(int code, struct getargs *args, int num_args)
 {
