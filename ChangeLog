@@ -1,3 +1,7 @@
+Thu Aug 13 23:46:29 1998  Assar Westerlund  <assar@emma.pdc.kth.se>
+
+	* Release 0.0t
+
 Thu Aug 13 22:40:17 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/config_file.c (parse_binding): remove trailing
