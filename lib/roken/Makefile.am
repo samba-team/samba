@@ -38,12 +38,9 @@ libroken_la_SOURCES =		\
 	base64.c		\
 	bswap.c			\
 	concat.c		\
-	emalloc.c		\
 	environment.c		\
 	eread.c			\
-	erealloc.c		\
 	esetenv.c		\
-	estrdup.c		\
 	ewrite.c		\
 	getaddrinfo_hostspec.c	\
 	get_default_username.c	\
@@ -82,6 +79,10 @@ EXTRA_libroken_la_SOURCES =	\
 	chown.c			\
 	copyhostent.c		\
 	daemon.c		\
+	ecalloc.c		\
+	emalloc.c		\
+	erealloc.c		\
+	estrdup.c		\
 	err.c			\
 	err.hin			\
 	errx.c			\
