@@ -41,6 +41,8 @@ BOOL test_bind_sasl(struct ldap_connection *conn, const char *username, const ch
 	NTSTATUS status;
 	BOOL ret = True;
 
+	printf("Testing sasl bind as user\n");
+
 	status = torture_ldap_bind_sasl(conn, username, domain, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;
@@ -53,7 +55,7 @@ BOOL test_multibind(struct ldap_connection *conn, const char *userdn, const char
 {
 	BOOL ret = True;
 
-	printf("\nTesting multiple binds on a single connnection as anonymous and user\n");
+	printf("Testing multiple binds on a single connnection as anonymous and user\n");
 
 	ret = test_bind_simple(conn, NULL, NULL);
 	if (!ret) {
@@ -80,7 +82,7 @@ BOOL torture_ldap_basic(int dummy)
 	const char *domain = lp_workgroup();
 	const char *password = lp_parm_string(-1, "torture", "password");
 	const char *userdn = lp_parm_string(-1, "torture", "ldap_userdn");
-	const char *basedn = lp_parm_string(-1, "torture", "ldap_basedn");
+	/*const char *basedn = lp_parm_string(-1, "torture", "ldap_basedn");*/
 	const char *secret = lp_parm_string(-1, "torture", "ldap_secret");
 	char *url;
 
