@@ -272,6 +272,11 @@ void ROKEN_LIB_FUNCTION print_version(const char *);
 ssize_t ROKEN_LIB_FUNCTION eread (int fd, void *buf, size_t nbytes);
 ssize_t ROKEN_LIB_FUNCTION ewrite (int fd, const void *buf, size_t nbytes);
 
+struct hostent;
+
+char *
+hostent_find_fqdn (const struct hostent *he);
+
 void
 esetenv(const char *var, const char *val, int rewrite);
 
