@@ -54,6 +54,8 @@ struct ldapsrv_call {
 	} *replies;
 };
 
+struct ldapsrv_service;
+
 struct ldapsrv_connection {
 	struct server_connection *connection;
 
@@ -64,4 +66,36 @@ struct ldapsrv_connection {
 	struct rw_buffer out_buffer;
 
 	struct ldapsrv_call *calls;
+
+	struct ldapsrv_service *service;
+};
+
+struct ldapsrv_partition;
+
+struct ldapsrv_partition_ops {
+	NTSTATUS (*Bind)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_BindRequest *r);
+	NTSTATUS (*Unbind)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_UnbindRequest *r);
+	NTSTATUS (*Search)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_SearchRequest *r);
+	NTSTATUS (*Modify)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyRequest *r);
+	NTSTATUS (*Add)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_AddRequest *r);
+	NTSTATUS (*Del)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_DelRequest *r);
+	NTSTATUS (*ModifyDN)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ModifyDNRequest *r);
+	NTSTATUS (*Compare)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_CompareRequest *r);
+	NTSTATUS (*Abandon)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_AbandonRequest *r);
+	NTSTATUS (*Extended)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_ExtendedRequest *r);
+};
+
+struct ldapsrv_partition {
+	struct ldapsrv_partition *prev,*next;
+
+	void *private_data;
+	const struct ldapsrv_partition_ops *ops;
+
+	const char *base_dn;
+};
+
+struct ldapsrv_service {
+	struct ldapsrv_partition *rootDSE;
+	struct ldapsrv_partition *default_partition;
+	struct ldapsrv_partition *partitions;
 };

@@ -24,7 +24,7 @@
 /*
   close the socket and shutdown a server_context
 */
-static void ldapsrv_terminate_connection(struct ldapsrv_connection *ldap_conn, const char *reason)
+void ldapsrv_terminate_connection(struct ldapsrv_connection *ldap_conn, const char *reason)
 {
 	server_terminate_connection(ldap_conn->connection, reason);
 }
@@ -173,7 +173,7 @@ static BOOL ldap_append_to_buf(struct ldap_message *msg, struct rw_buffer *buf)
 	return res;
 }
 
-static struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, enum ldap_request_tag type)
+struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, enum ldap_request_tag type)
 {
 	struct ldapsrv_reply *reply;
 
@@ -191,7 +191,22 @@ static struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, enum 
 	return reply;
 }
 
-static void ldapsrv_unwilling(struct ldapsrv_call *call, int error)
+void ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
+{
+	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+}
+
+struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn, const char *dn)
+{
+	static const struct ldapsrv_partition_ops null_ops;
+	static struct ldapsrv_partition null_part = {
+		.ops = &null_ops
+	};
+
+	return &null_part;
+}
+
+void ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 {
 	struct ldapsrv_reply *reply;
 	struct ldap_ExtendedResponse *r;
@@ -213,7 +228,7 @@ static void ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	r->value.data = NULL;
 	r->value.length = 0;
 
-	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+	ldapsrv_queue_reply(call, reply);
 }
 
 static void ldapsrv_BindRequest(struct ldapsrv_call *call)
@@ -222,8 +237,7 @@ static void ldapsrv_BindRequest(struct ldapsrv_call *call)
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 
-	DEBUG(5, ("Binding as %s with pw %s\n",
-		  req->dn, req->creds.password));
+	DEBUG(5, ("BindRequest dn: %s\n",req->dn));
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
 	if (!reply) {
@@ -238,144 +252,140 @@ static void ldapsrv_BindRequest(struct ldapsrv_call *call)
 	resp->response.referral = NULL;
 	resp->SASL.secblob = data_blob(NULL, 0);
 
-	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+	ldapsrv_queue_reply(call, reply);
 }
 
 static void ldapsrv_UnbindRequest(struct ldapsrv_call *call)
 {
-//	struct ldap_UnbindRequest *req = &call->request->r.UnbindRequest;
-	DEBUG(10, ("Unbind\n"));
+/*	struct ldap_UnbindRequest *req = &call->request->r.UnbindRequest;*/
+	DEBUG(10, ("UnbindRequest\n"));
 }
 
 static void ldapsrv_SearchRequest(struct ldapsrv_call *call)
 {
 	struct ldap_SearchRequest *req = &call->request.r.SearchRequest;
-	struct ldapsrv_reply *reply;
-	struct ldap_Result *resp;
+	struct ldapsrv_partition *part;
 
-	DEBUG(10, ("Search filter: %s\n", req->filter));
+	DEBUG(10, ("SearchRequest"));
+	DEBUGADD(10, (" basedn: %s", req->basedn));
+	DEBUGADD(10, (" filter: %s\n", req->filter));
 
-	/* Is this a rootdse request? */
-	if ((strlen(req->basedn) == 0) &&
-	    (req->scope == LDAP_SEARCH_SCOPE_BASE) &&
-	    strequal(req->filter, "(objectclass=*)")) {
+	if ((strcasecmp("", req->basedn) == 0) &&
+	    (req->scope == LDAP_SEARCH_SCOPE_BASE)) {
+		ldapsrv_RootDSE_Search(call, req);
+		return;
+	} 
 
-	}
+	part = ldapsrv_get_partition(call->conn, req->basedn);
 
-	reply = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
-	if (!reply) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+	if (!part->ops->Search) {
+		ldapsrv_unwilling(call, 2);
 		return;
 	}
 
-	resp = &reply->msg.r.SearchResultDone;
-	resp->resultcode = 0;
-	resp->dn = NULL;
-	resp->errormessage = NULL;
-	resp->referral = NULL;
-
-	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+	part->ops->Search(part, call, req);
 }
 
 static void ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 {
-//	struct ldap_ModifyRequest *req = &call->request.r.ModifyRequest;
-	struct ldapsrv_reply *reply;
+	struct ldap_ModifyRequest *req = &call->request.r.ModifyRequest;
+	struct ldapsrv_partition *part;
 
-	DEBUG(10, ("Modify\n"));
+	DEBUG(10, ("ModifyRequest"));
+	DEBUGADD(10, (" dn: %s", req->dn));
 
-	reply = ldapsrv_init_reply(call, LDAP_TAG_ModifyResponse);
-	if (!reply) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+	part = ldapsrv_get_partition(call->conn, req->dn);
+
+	if (!part->ops->Modify) {
+		ldapsrv_unwilling(call, 2);
 		return;
 	}
 
-	ZERO_STRUCT(reply->msg.r);
-
-	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+	part->ops->Modify(part, call, req);
 }
 
 static void ldapsrv_AddRequest(struct ldapsrv_call *call)
 {
-//	struct ldap_AddRequest *req = &call->request.r.AddRequest;
-	struct ldapsrv_reply *reply;
+	struct ldap_AddRequest *req = &call->request.r.AddRequest;
+	struct ldapsrv_partition *part;
 
-	DEBUG(10, ("Add\n"));
+	DEBUG(10, ("AddRequest"));
+	DEBUGADD(10, (" dn: %s", req->dn));
 
-	reply = ldapsrv_init_reply(call, LDAP_TAG_AddResponse);
-	if (!reply) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+	part = ldapsrv_get_partition(call->conn, req->dn);
+
+	if (!part->ops->Add) {
+		ldapsrv_unwilling(call, 2);
 		return;
 	}
 
-	ZERO_STRUCT(reply->msg.r);
-
-	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+	part->ops->Add(part, call, req);
 }
 
 static void ldapsrv_DelRequest(struct ldapsrv_call *call)
 {
-//	struct ldap_DelRequest *req = &call->request.r.DelRequest;
-	struct ldapsrv_reply *reply;
+	struct ldap_DelRequest *req = &call->request.r.DelRequest;
+	struct ldapsrv_partition *part;
 
-	DEBUG(10, ("Del\n"));
+	DEBUG(10, ("DelRequest"));
+	DEBUGADD(10, (" dn: %s", req->dn));
 
-	reply = ldapsrv_init_reply(call, LDAP_TAG_DelResponse);
-	if (!reply) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+	part = ldapsrv_get_partition(call->conn, req->dn);
+
+	if (!part->ops->Del) {
+		ldapsrv_unwilling(call, 2);
 		return;
 	}
 
-	ZERO_STRUCT(reply->msg.r);
-
-	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+	part->ops->Del(part, call, req);
 }
 
 static void ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 {
-//	struct ldap_ModifyDNRequest *req = &call->request.r.ModifyDNRequest;
-	struct ldapsrv_reply *reply;
+	struct ldap_ModifyDNRequest *req = &call->request.r.ModifyDNRequest;
+	struct ldapsrv_partition *part;
 
-	DEBUG(10, ("Modify\n"));
+	DEBUG(10, ("ModifyDNRequrest"));
+	DEBUGADD(10, (" dn: %s", req->dn));
+	DEBUGADD(10, (" newrdn: %s", req->newrdn));
 
-	reply = ldapsrv_init_reply(call, LDAP_TAG_ModifyResponse);
-	if (!reply) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+	part = ldapsrv_get_partition(call->conn, req->dn);
+
+	if (!part->ops->ModifyDN) {
+		ldapsrv_unwilling(call, 2);
 		return;
 	}
 
-	ZERO_STRUCT(reply->msg.r);
-
-	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+	part->ops->ModifyDN(part, call, req);
 }
 
 static void ldapsrv_CompareRequest(struct ldapsrv_call *call)
 {
-//	struct ldap_CompareRequest *req = &call->request.r.CompareRequest;
-	struct ldapsrv_reply *reply;
+	struct ldap_CompareRequest *req = &call->request.r.CompareRequest;
+	struct ldapsrv_partition *part;
 
-	DEBUG(10, ("Compare\n"));
+	DEBUG(10, ("CompareRequest"));
+	DEBUGADD(10, (" dn: %s", req->dn));
 
-	reply = ldapsrv_init_reply(call, LDAP_TAG_CompareResponse);
-	if (!reply) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+	part = ldapsrv_get_partition(call->conn, req->dn);
+
+	if (!part->ops->Compare) {
+		ldapsrv_unwilling(call, 2);
 		return;
 	}
 
-	ZERO_STRUCT(reply->msg.r);
-
-	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+	part->ops->Compare(part, call, req);
 }
 
 static void ldapsrv_AbandonRequest(struct ldapsrv_call *call)
 {
-//	struct ldap_AbandonRequest *req = &call->request.r.AbandonRequest;
-	DEBUG(10, ("Abandon\n"));
+/*	struct ldap_AbandonRequest *req = &call->request.r.AbandonRequest;*/
+	DEBUG(10, ("AbandonRequest\n"));
 }
 
 static void ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
 {
-//	struct ldap_ExtendedRequest *req = &call->request.r.ExtendedRequest;
+/*	struct ldap_ExtendedRequest *req = &call->request.r.ExtendedRequest;*/
 	struct ldapsrv_reply *reply;
 
 	DEBUG(10, ("Extended\n"));
@@ -388,7 +398,7 @@ static void ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
 
 	ZERO_STRUCT(reply->msg.r);
 
-	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+	ldapsrv_queue_reply(call, reply);
 }
 
 static void ldapsrv_do_call(struct ldapsrv_call *call)
