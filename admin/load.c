@@ -88,6 +88,8 @@ parse_time(time_t *t, char *s)
 unsigned*
 parse_integer(unsigned *u, char *s)
 {
+    if(strcmp(s, "-") == 0)
+	return NULL;
     if(u == NULL)
 	u = malloc(sizeof(*u));
     sscanf(s, "%u", u);
@@ -115,6 +117,7 @@ parse_keys(hdb_entry *ent, char *str)
 	ent->keys.val = key;
 	key = ent->keys.val + ent->keys.len;
 	ent->keys.len++;
+	memset(key, 0, sizeof(*key));
 	sscanf(p, "%d", &tmp);
 	key->mkvno = tmp;
 	p = strtok_r(NULL, ":", &save);
