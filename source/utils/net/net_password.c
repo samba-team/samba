@@ -165,7 +165,7 @@ static int net_password_set_help(struct net_context *ctx, int argc, const char *
 	return 0;	
 }
 
-static const struct net_functable const net_password_functable[] = {
+static const struct net_functable net_password_functable[] = {
 	{"change", net_password_change, net_password_change_usage,  net_password_change_help},
 	{"set", net_password_set, net_password_set_usage,  net_password_set_help},
 	{NULL, NULL}
