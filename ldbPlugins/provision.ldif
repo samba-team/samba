@@ -17,6 +17,8 @@ ntPwdHash: HIDDEN
 ntPwdHistory: HIDDEN
 lmPwdHash: HIDDEN
 lmPwdHistory: HIDDEN
+createTimestamp: HIDDEN
+modifyTimestamp: HIDDEN
 
 dn: @SUBCLASSES
 top: domain
@@ -29,6 +31,9 @@ organizationalPerson: user
 user: computer
 template: userTemplate
 template: groupTemplate
+
+dn: @MODULES
+@MODULE: timestamps
 
 dn: ${BASEDN}
 objectClass: top

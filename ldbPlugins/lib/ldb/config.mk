@@ -1,4 +1,12 @@
 ################################################
+# Start MODULE libldb_timestamps
+[MODULE::libldb_timestamps]
+INIT_OBJ_FILES = \
+		lib/ldb/modules/timestamps.o
+# End MODULE libldb_timestamps
+################################################
+
+################################################
 # Start MODULE libldb_ldap
 [MODULE::libldb_ldap]
 INIT_OBJ_FILES = \
@@ -36,7 +44,8 @@ ADD_OBJ_FILES = \
 		lib/ldb/common/util.o \
 		lib/ldb/common/ldb_utf8.o \
 		lib/ldb/common/ldb_alloc.o \
-		lib/ldb/common/ldb_debug.o
+		lib/ldb/common/ldb_debug.o \
+		lib/ldb/common/ldb_modules.o
 REQUIRED_SUBSYSTEMS = \
 		LIBREPLACE
 #
