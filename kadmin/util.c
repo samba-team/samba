@@ -41,32 +41,122 @@
 
 RCSID("$Id$");
 
+/*
+ * util.c - functions for parsing, unparsing, and editing different
+ * types of data used in kadmin.
+ */
+
+/*
+ * attributes 
+ */
+
 struct units kdb_attrs[] = {
-    { "new-princ", KRB5_KDB_NEW_PRINC },
-    { "support-desmd5", KRB5_KDB_SUPPORT_DESMD5 },
-    { "pwchange-service", KRB5_KDB_PWCHANGE_SERVICE },
-    { "disallow-svr", KRB5_KDB_DISALLOW_SVR },
-    { "requires-pw-change", KRB5_KDB_REQUIRES_PWCHANGE },
-    { "requires-hw-auth", KRB5_KDB_REQUIRES_HW_AUTH },
-    { "requires-pre-auth", KRB5_KDB_REQUIRES_PRE_AUTH },
-    { "disallow-all-tix", KRB5_KDB_DISALLOW_ALL_TIX },
-    { "disallow-dup-skey", KRB5_KDB_DISALLOW_DUP_SKEY },
-    { "disallow-proxiable", KRB5_KDB_DISALLOW_PROXIABLE },
-    { "disallow-renewable", KRB5_KDB_DISALLOW_RENEWABLE },
-    { "disallow-tgt-based", KRB5_KDB_DISALLOW_TGT_BASED },
-    { "disallow-forwardable", KRB5_KDB_DISALLOW_FORWARDABLE },
-    { "disallow-postdated", KRB5_KDB_DISALLOW_POSTDATED },
+    { "new-princ",		KRB5_KDB_NEW_PRINC },
+    { "support-desmd5",		KRB5_KDB_SUPPORT_DESMD5 },
+    { "pwchange-service",	KRB5_KDB_PWCHANGE_SERVICE },
+    { "disallow-svr",		KRB5_KDB_DISALLOW_SVR },
+    { "requires-pw-change",	KRB5_KDB_REQUIRES_PWCHANGE },
+    { "requires-hw-auth",	KRB5_KDB_REQUIRES_HW_AUTH },
+    { "requires-pre-auth",	KRB5_KDB_REQUIRES_PRE_AUTH },
+    { "disallow-all-tix",	KRB5_KDB_DISALLOW_ALL_TIX },
+    { "disallow-dup-skey",	KRB5_KDB_DISALLOW_DUP_SKEY },
+    { "disallow-proxiable",	KRB5_KDB_DISALLOW_PROXIABLE },
+    { "disallow-renewable",	KRB5_KDB_DISALLOW_RENEWABLE },
+    { "disallow-tgt-based",	KRB5_KDB_DISALLOW_TGT_BASED },
+    { "disallow-forwardable",	KRB5_KDB_DISALLOW_FORWARDABLE },
+    { "disallow-postdated",	KRB5_KDB_DISALLOW_POSTDATED },
     { NULL }
 };
 
 /*
- * Convert the time `t' to a string representation in `str' (of max
- * size `len').  If include_time also include time, otherwise just
- * date.
+ * convert the attributes in `attributes' into a printable string
+ * in `str, len'
  */
 
 void
-timeval2str(time_t t, char *str, size_t len, int include_time)
+attributes2str(krb5_flags attributes, char *str, size_t len)
+{
+    unparse_flags (attributes, kdb_attrs, str, len);
+}
+
+/*
+ * convert the string in `str' into attributes in `flags'
+ * return 0 if parsed ok, else -1.
+ */
+
+int
+str2attributes(const char *str, krb5_flags *flags)
+{
+    int res;
+
+    res = parse_flags (str, kdb_attrs, *flags);
+    if (res < 0)
+	return res;
+    else {
+	*flags = res;
+	return 0;
+    }
+}
+
+/*
+ * try to parse the string `resp' into attributes in `attr', also
+ * setting the `bit' in `mask' if attributes are given and valid.
+ */
+
+int
+parse_attributes (const char *resp, krb5_flags *attr, int *mask, int bit)
+{
+    krb5_flags tmp = *attr;
+
+    if (resp[0] == '\0')
+	return 0;
+    else if (str2attributes(resp, &tmp) == 0) {
+	*attr = tmp;
+	if (mask)
+	    *mask |= bit;
+	return 0;
+    } else if(*resp == '?') {
+	print_flags_table (kdb_attrs, stderr);
+    } else {
+	fprintf (stderr, "Unable to parse '%s'\n", resp);
+    }
+    return -1;
+}
+
+/*
+ * allow the user to edit the attributes in `attr', prompting with `prompt'
+ */
+
+int
+edit_attributes (const char *prompt, krb5_flags *attr, int *mask, int bit)
+{
+    char buf[1024], resp[1024];
+
+    if (mask && (*mask & bit))
+	return 0;
+
+    attributes2str(*attr, buf, sizeof(buf));
+    for (;;) {
+	get_response("Attributes", buf, resp, sizeof(resp));
+	if (parse_attributes (resp, attr, mask, bit) == 0)
+	    break;
+    }
+    return 0;
+}
+
+/*
+ * time_t
+ * the special value 0 means ``never''
+ */
+
+/*
+ * Convert the time `t' to a string representation in `str' (of max
+ * size `len').  If include_time also include time, otherwise just
+ * date.  
+ */
+
+void
+time_t2str(time_t t, char *str, size_t len, int include_time)
 {
     if(t) {
 	if(include_time)
@@ -79,11 +169,11 @@ timeval2str(time_t t, char *str, size_t len, int include_time)
 
 /*
  * Convert the time representation in `str' to a time in `time'.
- * Return 0 if succesful, else 1.
+ * Return 0 if succesful, else -1.
  */
 
 int
-str2timeval (const char *str, time_t *time)
+str2time_t (const char *str, time_t *time)
 {
     const char *p;
     struct tm tm;
@@ -98,7 +188,7 @@ str2timeval (const char *str, time_t *time)
     p = strptime (str, "%Y-%m-%d", &tm);
 
     if (p == NULL)
-	return 1;
+	return -1;
 
     /* Do it on the end of the day */
     tm.tm_hour = 23;
@@ -111,6 +201,59 @@ str2timeval (const char *str, time_t *time)
     return 0;
 }
 
+/*
+ * try to parse the time in `resp' storing it in `value'
+ */
+
+int
+parse_timet (const char *resp, krb5_timestamp *value, int *mask, int bit)
+{
+    time_t tmp;
+
+    if (str2time_t(resp, &tmp) == 0) {
+	*value = tmp;
+	if(mask)
+	    *mask |= bit;
+	return 0;
+    } else if(*resp == '?') {
+	printf ("Print date on format YYYY-mm-dd [hh:mm:ss]\n");
+    } else {
+	fprintf (stderr, "Unable to parse time '%s'\n", resp);
+    }
+    return -1;
+}
+
+/*
+ * allow the user to edit the time in `value'
+ */
+
+int
+edit_timet (const char *prompt, krb5_timestamp *value, int *mask, int bit)
+{
+    char buf[1024], resp[1024];
+
+    if (mask && (*mask & bit))
+	return 0;
+
+    time_t2str (*value, buf, sizeof (buf), 0);
+
+    for (;;) {
+	get_response(prompt, buf, resp, sizeof(resp));
+	if (parse_timet (resp, value, mask, bit))
+	    break;
+    }
+    return 0;
+}
+
+/*
+ * deltat
+ * the special value 0 means ``unlimited''
+ */
+
+/*
+ * convert the delta_t value in `t' into a printable form in `str, len'
+ */
+
 void
 deltat2str(unsigned t, char *str, size_t len)
 {
@@ -119,6 +262,11 @@ deltat2str(unsigned t, char *str, size_t len)
     else
 	snprintf(str, len, "unlimited");
 }
+
+/*
+ * parse the delta value in `str', storing result in `*delta'
+ * return 0 if ok, else -1
+ */
 
 int
 str2deltat(const char *str, unsigned *delta)
@@ -138,130 +286,53 @@ str2deltat(const char *str, unsigned *delta)
     }
 }
 
-void
-attr2str(krb5_flags attributes, char *str, size_t len)
-{
-    unparse_flags (attributes, kdb_attrs, str, len);
-}
+/*
+ * try to parse the string in `resp' into a deltad in `value'
+ * `mask' will get the bit `bit' set if a value was given.
+ */
 
 int
-str2attr(const char *str, krb5_flags *flags)
+parse_deltat (const char *resp, krb5_deltat *value, int *mask, int bit)
 {
-    int res;
+    unsigned tmp;
 
-    res = parse_flags (str, kdb_attrs, *flags);
-    if (res < 0)
-	return res;
-    else {
-	*flags = res;
+    if (str2deltat(resp, &tmp) == 0) {
+	*value = tmp;
+	if (mask)
+	    *mask |= bit;
 	return 0;
+    } else if(*resp == '?') {
+	print_time_table (stderr);
+    } else {
+	fprintf (stderr, "Unable to parse time '%s'\n", resp);
     }
+    return -1;
 }
 
-void
-get_response(const char *prompt, const char *def, char *buf, size_t len)
-{
-    char *p;
+/*
+ * allow the user to edit the deltat in `value'
+ */
 
-    printf("%s [%s]:", prompt, def);
-    if(fgets(buf, len, stdin) == NULL)
-	*buf = '\0';
-    p = strchr(buf, '\n');
-    if(p)
-	*p = '\0';
-    if(strcmp(buf, "") == 0)
-	strncpy(buf, def, len);
-    buf[len-1] = 0;
-}
-
-int 
-get_deltat(const char *prompt, const char *def, unsigned *delta)
-{
-    char buf[128];
-    get_response(prompt, def, buf, sizeof(buf));
-    return str2deltat(buf, delta);
-}
-
-static int
+int
 edit_deltat (const char *prompt, krb5_deltat *value, int *mask, int bit)
 {
     char buf[1024], resp[1024];
 
-    if (*mask & bit)
+    if (mask && (*mask & bit))
 	return 0;
 
     deltat2str(*value, buf, sizeof(buf));
     for (;;) {
-	unsigned tmp;
-
 	get_response(prompt, buf, resp, sizeof(resp));
-	if (str2deltat(resp, &tmp) == 0) {
-	    *value = tmp;
-	    *mask |= bit;
+	if (parse_deltat (resp, value, mask, bit) == 0)
 	    break;
-	} else if(*resp == '?') {
-	    print_time_table (stderr);
-	} else {
-	    fprintf (stderr, "Unable to parse time '%s'\n", resp);
-	}
     }
     return 0;
 }
 
-static int
-edit_time (const char *prompt, krb5_timestamp *value, int *mask, int bit)
-{
-    char buf[1024], resp[1024];
-
-    if (*mask & bit)
-	return 0;
-
-    timeval2str (*value, buf, sizeof (buf), 0);
-
-    for (;;) {
-	time_t tmp;
-
-	get_response(prompt, buf, resp, sizeof(resp));
-	if (str2timeval(resp, &tmp) == 0) {
-	    *value = tmp;
-	    *mask |= bit;
-	    break;
-	} else if(*resp == '?') {
-	    printf ("Print date on format YYYY-mm-dd [hh:mm:ss]\n");
-	} else {
-	    fprintf (stderr, "Unable to parse time '%s'\n", resp);
-	}
-    }
-    return 0;
-}
-
-static int
-edit_attributes (const char *prompt, krb5_flags *attr, int *mask, int bit)
-{
-    char buf[1024], resp[1024];
-
-    if (*mask & bit)
-	return 0;
-
-    attr2str(*attr, buf, sizeof(buf));
-    for (;;) {
-	krb5_flags tmp = *attr;
-
-	get_response("Attributes", buf, resp, sizeof(resp));
-	if (resp[0] == '\0')
-	    break;
-	else if (str2attr(resp, &tmp) == 0) {
-	    *attr = tmp;
-	    *mask |= bit;
-	    break;
-	} else if(*resp == '?') {
-	    print_flags_table (kdb_attrs, stderr);
-	} else {
-	    fprintf (stderr, "Unable to parse '%s'\n", resp);
-	}
-    }
-    return 0;
-}
+/*
+ * allow the user to edit `ent'
+ */
 
 int
 edit_entry(kadm5_principal_ent_t ent, int *mask,
@@ -279,12 +350,12 @@ edit_entry(kadm5_principal_ent_t ent, int *mask,
 
     if (default_ent && (default_mask & KADM5_PRINC_EXPIRE_TIME))
 	ent->princ_expire_time = default_ent->princ_expire_time;
-    edit_time ("Principal expiration time", &ent->princ_expire_time, mask,
+    edit_timet ("Principal expiration time", &ent->princ_expire_time, mask,
 	       KADM5_PRINC_EXPIRE_TIME);
 
     if (default_ent && (default_mask & KADM5_PW_EXPIRATION))
 	ent->pw_expiration = default_ent->pw_expiration;
-    edit_time ("Password expiration time", &ent->pw_expiration, mask,
+    edit_timet ("Password expiration time", &ent->pw_expiration, mask,
 	       KADM5_PW_EXPIRATION);
 
     if (default_ent && (default_mask & KADM5_ATTRIBUTES))
@@ -306,51 +377,64 @@ set_entry(krb5_context context,
 	  int *mask,
 	  const char *max_ticket_life,
 	  const char *max_renewable_life,
+	  const char *expiration,
+	  const char *pw_expiration,
 	  const char *attributes)
 {
-    unsigned tmp;
-
     if (max_ticket_life != NULL) {
-	if (str2deltat (max_ticket_life, &tmp) != 0) {
-	    krb5_warnx (context, "unable to parse `%s'",
-			max_ticket_life);
+	if (parse_deltat (max_ticket_life, &ent->max_life, 
+			  mask, KADM5_MAX_LIFE)) {
+	    krb5_warnx (context, "unable to parse `%s'", max_ticket_life);
 	    return 1;
 	}
-	ent->max_life = tmp;
-	*mask |= KADM5_MAX_LIFE;
     }
     if (max_renewable_life != NULL) {
-	if (str2deltat (max_renewable_life, &tmp) != 0) {
-	    krb5_warnx (context, "unable to parse `%s'",
-			max_renewable_life);
+	if (parse_deltat (max_renewable_life, &ent->max_renewable_life, 
+			  mask, KADM5_MAX_RLIFE)) {
+	    krb5_warnx (context, "unable to parse `%s'", max_renewable_life);
 	    return 1;
 	}
-	ent->max_renewable_life = tmp;
-	*mask |= KADM5_MAX_RLIFE;
+    }
+
+    if (expiration) {
+	if (parse_timet (expiration, &ent->princ_expire_time, 
+			mask, KADM5_PRINC_EXPIRE_TIME)) {
+	    krb5_warnx (context, "unable to parse `%s'", expiration);
+	    return 1;
+	}
+    }
+    if (pw_expiration) {
+	if (parse_timet (pw_expiration, &ent->pw_expiration, 
+			 mask, KADM5_PW_EXPIRATION)) {
+	    krb5_warnx (context, "unable to parse `%s'", pw_expiration);
+	    return 1;
+	}
     }
     if (attributes != NULL) {
-	krb5_flags flags = 0;
-
-	if (str2attr (attributes, &flags) != 0) {
-	    krb5_warnx (context, "unable to parse `%s'",
-			attributes);
+	if (parse_attributes (attributes, &ent->attributes, 
+			      mask, KADM5_ATTRIBUTES)) {
+	    krb5_warnx (context, "unable to parse `%s'", attributes);
 	    return 1;
-	} else {
-	    ent->attributes = flags;
-	    *mask |= KADM5_ATTRIBUTES;
 	}
     }
     return 0;
 }
+
+/*
+ * Does `string' contain any globing characters?
+ */
 
 static int
 is_expression(const char *string)
 {
     const char *p;
     int quote = 0;
+
     for(p = string; *p; p++) {
-	if(quote)
+	if(quote) {
+	    quote = 0;
 	    continue;
+	}
 	if(*p == '\\')
 	    quote++;
 	else if(strchr("[]*?", *p) != NULL) 
@@ -419,3 +503,23 @@ foreach_principal(const char *exp,
     return 0;
 }
 
+/*
+ * prompt with `prompt' and default value `def', and store the reply
+ * in `buf, len'
+ */
+
+void
+get_response(const char *prompt, const char *def, char *buf, size_t len)
+{
+    char *p;
+
+    printf("%s [%s]:", prompt, def);
+    if(fgets(buf, len, stdin) == NULL)
+	*buf = '\0';
+    p = strchr(buf, '\n');
+    if(p)
+	*p = '\0';
+    if(strcmp(buf, "") == 0)
+	strncpy(buf, def, len);
+    buf[len-1] = 0;
+}
