@@ -192,7 +192,8 @@ reload the list of network interfaces
 static void reload_interfaces(void)
 {
 	int n;
-	struct subnet_record *sr;
+	struct subnet_record *subrec;
+	extern BOOL rescan_listen_set;
 
 	if (!interfaces_changed()) return;
 
@@ -203,35 +204,36 @@ static void reload_interfaces(void)
 	/* find any interfaces that need adding */
 	for (n=iface_count() - 1; n >= 0; n--) {
 		struct interface *iface = get_interface(n);
-		for (sr=subnetlist; sr; sr=sr->next) {
-			if (ip_equal(iface->ip, sr->myip) &&
-			    ip_equal(iface->nmask, sr->mask_ip)) break;
+		for (subrec=subnetlist; subrec; subrec=subrec->next) {
+			if (ip_equal(iface->ip, subrec->myip) &&
+			    ip_equal(iface->nmask, subrec->mask_ip)) break;
 		}
-		if (!sr) {
+		if (!subrec) {
 			/* it wasn't found! add it */
-			sr = make_normal_subnet(iface);
-			if (sr) register_my_workgroup_one_subnet(sr);
+			subrec = make_normal_subnet(iface);
+			if (subrec) register_my_workgroup_one_subnet(subrec);
 		}
 	}
 
 	/* find any interfaces that need deleting */
-	for (sr=subnetlist; sr; sr=sr->next) {
+	for (subrec=subnetlist; subrec; subrec=subrec->next) {
 		for (n=iface_count() - 1; n >= 0; n--) {
 			struct interface *iface = get_interface(n);
-			if (ip_equal(iface->ip, sr->myip) &&
-			    ip_equal(iface->nmask, sr->mask_ip)) break;
+			if (ip_equal(iface->ip, subrec->myip) &&
+			    ip_equal(iface->nmask, subrec->mask_ip)) break;
 		}
 		if (n == -1) {
-			/* oops, an interface has disapeared. This s
+			/* oops, an interface has disapeared. This is
 			 tricky, we don't dare actually free the
 			 interface as it could be being used, so
 			 instead we just wear the memory leak and
 			 remove it from the list of interfaces without
 			 freeing it */
-			DLIST_REMOVE(subnetlist, sr);
+			close_subnet(subrec);
 		}
 	}
 	
+	rescan_listen_set = True;
 }
 
 

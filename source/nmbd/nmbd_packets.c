@@ -37,6 +37,9 @@ extern struct in_addr loopback_ip;
 
 static void queue_packet(struct packet_struct *packet);
 
+BOOL rescan_listen_set = False;
+
+
 /*******************************************************************
   The global packet linked-list. Incoming entries are 
   added to the end of this list. It is supposed to remain fairly 
@@ -1720,6 +1723,10 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
   }
 
   *listen_number = (count*2) + 2;
+
+  if (*ppset) free(*ppset);
+  if (*psock_array) free(*psock_array);
+
   *ppset = pset;
   *psock_array = sock_array;
  
@@ -1743,13 +1750,14 @@ BOOL listen_for_packets(BOOL run_election)
   int dns_fd;
 #endif
 
-  if(listen_set == NULL)
+  if(listen_set == NULL || rescan_listen_set)
   {
     if(create_listen_fdset(&listen_set, &sock_array, &listen_number))
     {
       DEBUG(0,("listen_for_packets: Fatal error. unable to create listen set. Exiting.\n"));
       return True;
     }
+    rescan_listen_set = False;
   }
 
   memcpy((char *)&fds, (char *)listen_set, sizeof(fd_set));

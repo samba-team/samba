@@ -87,6 +87,28 @@ static int namelist_entry_compare( ubi_trItemPtr Item, ubi_trNodePtr Node )
   return( memcmp( Item, &(NR->name), sizeof(struct nmb_name) ) ); 
   } /* namelist_entry_compare */
 
+
+/****************************************************************************
+stop listening on a subnet
+we don't free the record as we don't have proper reference counting for it
+yet and it may be in use by a response record
+  ****************************************************************************/
+void close_subnet(struct subnet_record *subrec)
+{
+	DLIST_REMOVE(subnetlist, subrec);
+
+	if (subrec->dgram_sock != -1) {
+		close(subrec->dgram_sock);
+		subrec->dgram_sock = -1;
+	}
+	if (subrec->nmb_sock != -1) {
+		close(subrec->nmb_sock);
+		subrec->nmb_sock = -1;
+	}
+}
+
+
+
 /****************************************************************************
   Create a subnet entry.
   ****************************************************************************/
