@@ -47,7 +47,7 @@ static BOOL zero_zero;
 
 #define NASTY_POSIX_LOCK_HACK 0
 
-static struct cli_credentials servers[NSERVERS];
+static struct cli_credentials *servers[NSERVERS];
 
 enum lock_op {OP_LOCK, OP_UNLOCK, OP_REOPEN};
 
@@ -121,7 +121,7 @@ static struct smbcli_state *connect_one(char *share, int snum)
 		status = smbcli_full_connection(NULL, &c, myname,
 						server, 
 						share, NULL,
-						&servers[snum]);
+						servers[snum]);
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}
@@ -477,13 +477,16 @@ static void usage(void)
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
+	servers[0] = cli_credentials_init(talloc_autofree_context());
+	servers[1] = cli_credentials_init(talloc_autofree_context());
+
 	seed = time(NULL);
 
 	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OR:B:M:EZW:")) != EOF) {
 		switch (opt) {
 		case 'U':
-			i = servers[0].username?1:0;
-			cli_credentials_parse_string(&servers[0], optarg, CRED_SPECIFIED);
+			i = servers[0]->username?1:0;
+			cli_credentials_parse_string(servers[i], optarg, CRED_SPECIFIED);
 
 			break;
 		case 'R':
@@ -531,13 +534,13 @@ static void usage(void)
 		}
 	}
 
-	if (!servers[0].username) {
+	if (!servers[0]->username) {
 		usage();
 		return -1;
 	}
-	if (!servers[1].username) {
-		servers[1].username = servers[0].username;
-		servers[1].password = servers[0].password;
+	if (!servers[1]->username) {
+		servers[1]->username = servers[0]->username;
+		servers[1]->password = servers[0]->password;
 	}
 
 	locktest_init_subsystems;
