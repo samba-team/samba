@@ -11,7 +11,8 @@ RCSID("$Id$");
 /* Public principal handling functions */
 
 void
-krb5_free_principal(krb5_principal p)
+krb5_free_principal(krb5_context context,
+		    krb5_principal p)
 {
     krb5_principal_free(p);
 }
@@ -337,12 +338,12 @@ krb5_copy_principal(krb5_context context,
 	return ENOMEM;
     p->type = inprinc->type;
     if(krb5_data_copy(&p->realm, inprinc->realm.data, inprinc->realm.length)){
-	krb5_free_principal(p);
+	krb5_free_principal(context, p);
 	return ENOMEM;
     }
     p->comp = ALLOC(inprinc->ncomp, krb5_data);
     if(!p->comp){
-	krb5_free_principal(p);
+	krb5_free_principal(context, p);
 	return ENOMEM;
     }
   
@@ -350,7 +351,7 @@ krb5_copy_principal(krb5_context context,
 	p->comp[i].length = 0;
 	if(krb5_data_copy(&p->comp[i], inprinc->comp[i].data, 
 			  inprinc->comp[i].length)){
-	    krb5_free_principal(p);
+	    krb5_free_principal(context, p);
 	    return ENOMEM;
 	}
 	p->ncomp = i+1;
@@ -409,3 +410,25 @@ krb5_425_conv_principal(krb5_context context,
 
 
 			
+krb5_error_code
+krb5_sname_to_principal (krb5_context context,
+			 const char *hostname,
+			 const char *sname,
+			 int32_t type,
+			 krb5_principal *ret_princ)
+{
+    krb5_error_code ret;
+    char **r;
+
+    ret = krb5_get_host_realm (context, hostname, &r);
+    if (ret)
+	return ret;
+    
+    return krb5_build_principal (context,
+				 ret_princ,
+				 strlen(r[0]),
+				 r[0],
+				 sname,
+				 hostname,
+				 0);
+}
