@@ -173,11 +173,15 @@ static NTSTATUS internal_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID
 	key.dptr = keystr;
 	key.dsize = strlen(keystr) + 1;
 
-	DEBUG(10,("internal_get_id_from_sid: fetching record %s\n", keystr ));
+	DEBUG(10,("internal_get_id_from_sid: fetching record %s of type 0x%x\n", keystr, type ));
 
 	data = tdb_fetch(idmap_tdb, key);
-	if (!data.dptr)
+	if (!data.dptr) {
+		DEBUG(10,("internal_get_id_from_sid: record %s not found\n", keystr ));
 		return ret;
+	} else {
+		DEBUG(10,("internal_get_id_from_sid: record %s -> %s\n", keystr, data.dptr ));
+	}
 
 	if (type == ID_EMPTY || type == ID_USERID) {
 		fstring scanstr;
