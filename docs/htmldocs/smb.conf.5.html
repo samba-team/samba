@@ -889,10 +889,10 @@ shares in a net view and in the browse list.
 <p><br><strong>Example:</strong>
 <code>	browseable = No</code>
 <p><br><a name="casesensitive"></a>
-<li><strong><strong>case sensitive (G)</strong></strong>
+<li><strong><strong>case sensitive (S)</strong></strong>
 <p><br>See the discussion in the section <a href="smb.conf.5.html#NAMEMANGLING"><strong>NAME MANGLING</strong></a>.
 <p><br><a name="casesignames"></a>
-<li><strong><strong>casesignames (G)</strong></strong>
+<li><strong><strong>casesignames (S)</strong></strong>
 <p><br>Synonym for <a href="smb.conf.5.html#casesensitive"><strong>"case sensitive"</strong></a>.
 <p><br><a name="changenotifytimeout"></a>
 <li><strong><strong>change notify timeout (G)</strong></strong>
@@ -3993,7 +3993,7 @@ smaller size, reducing by a factor of 0.8 until the OS accepts it.
 <p><br><strong>Example:</strong>
 <code>	shared mem size = 5242880 ; Set to 5mb for a large number of files.</code>
 <p><br><a name="shortpreservecase"></a>
-<li><strong><strong>short preserve case (G)</strong></strong>
+<li><strong><strong>short preserve case (S)</strong></strong>
 <p><br>This boolean parameter controls if new files which conform to 8.3
 syntax, that is all in upper case and of suitable length, are created
 upper case, or if they are forced to be the <code>"default"</code> case. This
@@ -4606,7 +4606,7 @@ print job.
 <p><br><strong>Example:</strong>
 <code>	username map = /usr/local/samba/lib/users.map</code>
 <p><br><a name="validchars"></a>
-<li><strong><strong>valid chars (S)</strong></strong>
+<li><strong><strong>valid chars (G)</strong></strong>
 <p><br>The option allows you to specify additional characters that should be
 considered valid by the server in filenames. This is particularly
 useful for national character sets, such as adding u-umlaut or a-ring.

@@ -33,6 +33,8 @@ from the mount(8) command when using the "-t smb" option. The kernel
 must support the smbfs filesystem.
 <p><br>Options to smbmount are specified as a comma separated list of
 key=value pairs. 
+<p><br>NOTE: smbmount calls smbmnt to do the actual mount. You must make sure
+that smbmnt is in the path so that it can be found.
 <p><br><ul>
 <li><strong><strong>username=&lt;arg&gt;</strong></strong> specifies the username to connect as. If this is
 not given then the environment variable USER is used. This option can
