@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
    Samba Web Administration Tool
-   Copyright (C) Andrew Tridgell 1997-1998
+   Version 3.0.0
+   Copyright (C) Andrew Tridgell 1997-2002
+   Copyright (C) John H Terpstra 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -297,7 +299,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 /****************************************************************************
   display a set of parameters for a service 
 ****************************************************************************/
-static void show_parameters(int snum, int allparameters, int advanced, int printers)
+static void show_parameters(int snum, int allparameters, unsigned int parm_filter, int printers)
 {
 	int i = 0;
 	struct parm_struct *parm;
@@ -316,7 +318,7 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 			if (printers & !(parm->flags & FLAG_PRINT)) continue;
 			if (!printers & !(parm->flags & FLAG_SHARE)) continue;
 		}
-		if (!advanced) {
+		if (parm_filter == FLAG_BASIC) {
 			if (!(parm->flags & FLAG_BASIC)) {
 				void *ptr = parm->ptr;
 
@@ -363,6 +365,12 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 			}
 			if (printers && !(parm->flags & FLAG_PRINT)) continue;
 		}
+		if (parm_filter == FLAG_WIZARD) {
+			if (!((parm->flags & FLAG_WIZARD))) continue;
+		}
+		if (parm_filter == FLAG_ADVANCED) {
+			if (!((parm->flags & FLAG_ADVANCED))) continue;
+		}
 		if (heading && heading != last_heading) {
 			d_printf("<tr><td></td></tr><tr><td><b><u>%s</u></b></td></tr>\n", _(heading));
 			last_heading = heading;
@@ -393,7 +401,7 @@ static void write_config(FILE *f, BOOL show_defaults)
 }
 
 /****************************************************************************
-  save and reoad the smb.conf config file 
+  save and reload the smb.conf config file 
 ****************************************************************************/
 static int save_reload(int snum)
 {
@@ -497,6 +505,7 @@ static void show_main_buttons(void)
 		image_link(_("Globals"), "globals", "images/globals.gif");
 		image_link(_("Shares"), "shares", "images/shares.gif");
 		image_link(_("Printers"), "printers", "images/printers.gif");
+		image_link(_("Wizard"), "wizard", "images/wizard.gif");
 	}
 	if (have_read_access) {
 		image_link(_("Status"), "status", "images/status.gif");
@@ -505,6 +514,18 @@ static void show_main_buttons(void)
 	image_link(_("Password Management"), "passwd", "images/passwd.gif");
 
 	d_printf("<HR>\n");
+}
+
+/****************************************************************************
+ * Handle Display/Edit Mode CGI
+ ****************************************************************************/
+static void ViewModeBoxes(int mode)
+{
+	d_printf("<p>%s\n", _("Configuration View:&nbsp"));
+	d_printf("<input type=radio name=\"ViewMode\" value=0 %s>Basic\n", (mode == 0) ? "checked" : "");
+	d_printf("<input type=radio name=\"ViewMode\" value=1 %s>Advanced\n", (mode == 1) ? "checked" : "");
+	d_printf("<input type=radio name=\"ViewMode\" value=2 %s>Developer\n", (mode == 2) ? "checked" : "");
+	d_printf("</p><br>\n");
 }
 
 /****************************************************************************
@@ -542,24 +563,239 @@ static void viewconfig_page(void)
 }
 
 /****************************************************************************
-  display a globals editing page  
+  second screen of the wizard ... Fetch Configuration Parameters
 ****************************************************************************/
-static void globals_page(void)
+static void wizard_params_page(void)
 {
-	int advanced = 0;
+	unsigned int parm_filter = FLAG_WIZARD;
 
-	d_printf("<H2>%s</H2>\n", _("Global Variables"));
+	/* Here we first set and commit all the parameters that were selected
+ 	   in the previous screen. */
 
-	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
-		advanced = 1;
+	d_printf("<H2>Wizard Parameter Edit Page</H2>\n");
 
 	if (cgi_variable("Commit")) {
 		commit_parameters(GLOBALS_SNUM);
 		save_reload(0);
 	}
 
-	d_printf("<FORM name=\"swatform\" method=post>\n");
+	d_printf("<form name=\"swatform\" method=post action=wizard_params>\n");
 
+	if (have_write_access) {
+		d_printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
+	}
+
+	d_printf("<input type=reset name=\"Reset Values\" value=\"Reset\">\n");
+	d_printf("<p>\n");
+	
+	d_printf("<table>\n");
+	show_parameters(GLOBALS_SNUM, 1, parm_filter, 0);
+	d_printf("</table>\n");
+	d_printf("</form>\n");
+}
+
+/****************************************************************************
+  Utility to just rewrite the smb.conf file - effectively just cleans it up
+****************************************************************************/
+static void rewritecfg_file(void)
+{
+	commit_parameters(GLOBALS_SNUM);
+	save_reload(0);
+	d_printf("<H2>Note: smb.conf %s</H2>\n", _("file has been read and rewritten"));
+}
+
+/****************************************************************************
+  wizard to create/modify the smb.conf file
+****************************************************************************/
+static void wizard_page(void)
+{
+	/* Set some variables to collect data from smb.conf */
+	int role = 0;
+	int winstype = 0;
+	int have_home = -1;
+	int HomeExpo = 0;
+	int SerType = 0;
+
+	if (cgi_variable("Rewrite")) {
+		(void) rewritecfg_file();
+		return;
+	}
+
+	if (cgi_variable("GetWizardParams")){
+		(void) wizard_params_page();
+		return;
+	}
+
+	if (cgi_variable("Commit")){
+		SerType = atoi(cgi_variable("ServerType"));
+		winstype = atoi(cgi_variable("WINSType"));
+		have_home = lp_servicenumber(HOMES_NAME);
+		HomeExpo = atoi(cgi_variable("HomeExpo"));
+
+		/* Plain text passwords are too badly broken - use encrypted passwords only */
+		lp_do_parameter( GLOBALS_SNUM, "encrypt passwords", "Yes");
+		
+		switch ( SerType ){
+			case 0:
+				/* Stand-alone Server */
+				lp_do_parameter( GLOBALS_SNUM, "security", "USER" );
+				lp_do_parameter( GLOBALS_SNUM, "domain logons", "No" );
+				break;
+			case 1:
+				/* Domain Member */
+				lp_do_parameter( GLOBALS_SNUM, "security", "DOMAIN" );
+				lp_do_parameter( GLOBALS_SNUM, "domain logons", "No" );
+				break;
+			case 2:
+				/* Domain Controller */
+				lp_do_parameter( GLOBALS_SNUM, "security", "USER" );
+				lp_do_parameter( GLOBALS_SNUM, "domain logons", "Yes" );
+				break;
+		}
+		switch ( winstype ) {
+			case 0:
+				lp_do_parameter( GLOBALS_SNUM, "wins support", "No" );
+				lp_do_parameter( GLOBALS_SNUM, "wins server", "" );
+				break;
+			case 1:
+				lp_do_parameter( GLOBALS_SNUM, "wins support", "Yes" );
+				lp_do_parameter( GLOBALS_SNUM, "wins server", "" );
+				break;
+			case 2:
+				lp_do_parameter( GLOBALS_SNUM, "wins support", "No" );
+				lp_do_parameter( GLOBALS_SNUM, "wins server", cgi_variable("WINSAddr"));
+				break;
+		}
+
+		/* Have to create Homes share? */
+		if ((HomeExpo == 1) && (have_home == -1)) {
+			pstring unix_share;
+			
+			pstrcpy(unix_share,HOMES_NAME);
+			load_config(False);
+			lp_copy_service(GLOBALS_SNUM, unix_share);
+			iNumNonAutoPrintServices = lp_numservices();
+			have_home = lp_servicenumber(HOMES_NAME);
+			lp_do_parameter( have_home, "read only", "No");
+			lp_do_parameter( have_home, "valid users", "%S");
+			lp_do_parameter( have_home, "browseable", "No");
+			commit_parameters(have_home);
+		}
+
+		/* Need to Delete Homes share? */
+		if ((HomeExpo == 0) && (have_home != -1)) {
+			lp_remove_service(have_home);
+			have_home = -1;
+		}
+
+		commit_parameters(GLOBALS_SNUM);
+		save_reload(0);
+	}
+	else
+	{
+		/* Now determine smb.conf WINS settings */
+		if (lp_wins_support())
+			winstype = 1;
+/*		if (strlen(lp_wins_server_list()) != 0 )
+ *		winstype = 2;
+ */		
+
+		/* Do we have a homes share? */
+		have_home = lp_servicenumber(HOMES_NAME);
+	}
+	if ((winstype == 2) && lp_wins_support())
+		winstype = 3;
+
+	role = lp_server_role();
+	
+	/* Here we go ... */
+	d_printf("<H2>Samba Configuration Wizard</H2>\n");
+	d_printf("<form method=post action=wizard>\n");
+
+	if (have_write_access) {
+		d_printf(_("The \"Rewrite smb.conf file\" button will clear the smb.conf file of all default values and of comments.\n"));
+		d_printf(_("The same will happen if you press the commit button."));
+		d_printf("<br><br>");
+		d_printf("<center>");
+		d_printf("<input type=submit name=\"Rewrite\" value=%s> &nbsp;&nbsp;",_("Rewrite smb.conf file"));
+		d_printf("<input type=submit name=\"Commit\" value=%s> &nbsp;&nbsp;",_("Commit"));
+		d_printf("<input type=submit name=\"GetWizardParams\" value=%s>", _("Edit Parameter Values"));
+		d_printf("</center>");
+	}
+
+	d_printf("<hr>");
+	d_printf("<center><table border=0>");
+	d_printf("<tr><td><b>%s</b></td>\n", "Server Type:&nbsp;");
+	d_printf("<td><input type=radio name=\"ServerType\" value=0 %s> Stand Alone&nbsp;</td>", (role == ROLE_STANDALONE) ? "checked" : "");
+	d_printf("<td><input type=radio name=\"ServerType\" value=1 %s> Domain Member&nbsp;</td>", (role == ROLE_DOMAIN_MEMBER) ? "checked" : ""); 
+	d_printf("<td><input type=radio name=\"ServerType\" value=2 %s> Domain Controller&nbsp;</td>", (role == ROLE_DOMAIN_PDC) ? "checked" : "");
+	d_printf("</tr>");
+	if (role == ROLE_DOMAIN_BDC) {
+		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Unusual Type in smb.conf - Please Select New Mode</font></td></tr>");
+	}
+	d_printf("<tr><td><b>%s</b></td>\n", "Configure WINS As:&nbsp;");
+	d_printf("<td><input type=radio name=\"WINSType\" value=0 %s> Not Used&nbsp;</td>", (winstype == 0) ? "checked" : "");
+	d_printf("<td><input type=radio name=\"WINSType\" value=1 %s> Server for client use&nbsp;</td>", (winstype == 1) ? "checked" : "");
+	d_printf("<td><input type=radio name=\"WINSType\" value=2 %s> Client of another WINS server&nbsp;</td>", (winstype == 2) ? "checked" : "");
+	d_printf("<tr><td></td><td></td><td></td><td>Remote WINS Server&nbsp;<input type=text size=\"16\" name=\"WINSAddr\" value=\"%s\"></td></tr>",lp_wins_server_list());
+	if (winstype == 3) {
+		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Error: WINS Server Mode and WINS Support both set in smb.conf</font></td></tr>");
+		d_printf("<tr><td></td><td colspan=3><font color=\"#ff0000\">Please Select desired WINS mode above.</font></td></tr>");
+	}
+	d_printf("</tr>");
+	d_printf("<tr><td><b>%s</b></td>\n","Expose Home Directories:&nbsp;");
+	d_printf("<td><input type=radio name=\"HomeExpo\" value=1 %s> Yes</td>", (have_home == -1) ? "" : "checked ");
+	d_printf("<td><input type=radio name=\"HomeExpo\" value=0 %s> No</td>", (have_home == -1 ) ? "checked" : "");
+	d_printf("<td></td></tr>");
+	
+	/* Enable this when we are ready ....
+	 * d_printf("<tr><td><b>%s</b></td>\n","Is Print Server:&nbsp;");
+	 * d_printf("<td><input type=radio name=\"PtrSvr\" value=1 %s> Yes</td>");
+	 * d_printf("<td><input type=radio name=\"PtrSvr\" value=0 %s> No</td>");
+	 * d_printf("<td></td></tr>");
+	 */
+	
+	d_printf("</table></center>");
+	d_printf("<hr>");
+
+	d_printf(_("The above configuration options will set multiple parameters and will generally assist with rapid Samba deployment.\n"));
+	d_printf("</form>\n");
+}
+
+
+/****************************************************************************
+  display a globals editing page  
+****************************************************************************/
+static void globals_page(void)
+{
+	unsigned int parm_filter = FLAG_BASIC;
+	int mode = 0;
+
+	d_printf("<H2>%s</H2>\n", _("Global Variables"));
+
+	if (cgi_variable("Commit")) {
+		commit_parameters(GLOBALS_SNUM);
+		save_reload(0);
+	}
+
+	if ( cgi_variable("ViewMode") )
+		mode = atoi(cgi_variable("ViewMode"));
+
+	d_printf("<form name=\"swatform\" method=post action=globals>\n");
+
+	ViewModeBoxes( mode );
+	switch ( mode ) {
+		case 0:
+			parm_filter = FLAG_BASIC;
+			break;
+		case 1:
+			parm_filter = FLAG_ADVANCED;
+			break;
+		case 2:
+			parm_filter = FLAG_DEVELOPER;
+			break;
+	}
+	d_printf("<br>\n");
 	if (have_write_access) {
 		d_printf("<input type=submit name=\"Commit\" value=\"%s\">\n",
 			_("Commit Changes"));
@@ -567,22 +803,12 @@ static void globals_page(void)
 
 	d_printf("<input type=reset name=\"Reset Values\" value=\"%s\">\n", 
 		 _("Reset Values"));
-	if (advanced == 0) {
-		d_printf("<input type=submit name=\"Advanced\" value=\"%s\">\n", _("Advanced View"));
-	} else {
-		d_printf("<input type=submit name=\"Basic\" value=\"%s\">\n", _("Basic View"));
-	}
+
 	d_printf("<p>\n");
-	
 	d_printf("<table>\n");
-	show_parameters(GLOBALS_SNUM, 1, advanced, 0);
+	show_parameters(GLOBALS_SNUM, 1, parm_filter, 0);
 	d_printf("</table>\n");
-
-	if (advanced) {
-		d_printf("<input type=hidden name=\"Advanced\" value=1>\n");
-	}
-
-	d_printf("</FORM>\n");
+	d_printf("</form>\n");
 }
 
 /****************************************************************************
@@ -595,15 +821,13 @@ static void shares_page(void)
 	char *s;
 	int snum = -1;
 	int i;
-	int advanced = 0;
+	int mode = 0;
+	unsigned int parm_filter = FLAG_BASIC;
 
 	if (share)
 		snum = lp_servicenumber(share);
 
 	d_printf("<H2>%s</H2>\n", _("Share Parameters"));
-
-	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
-		advanced = 1;
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
@@ -628,7 +852,21 @@ static void shares_page(void)
 	d_printf("<FORM name=\"swatform\" method=post>\n");
 
 	d_printf("<table>\n");
-	d_printf("<tr>\n");
+	if ( cgi_variable("ViewMode") )
+		mode = atoi(cgi_variable("ViewMode"));
+	ViewModeBoxes( mode );
+	switch ( mode ) {
+		case 0:
+			parm_filter = FLAG_BASIC;
+			break;
+		case 1:
+			parm_filter = FLAG_ADVANCED;
+			break;
+		case 2:
+			parm_filter = FLAG_DEVELOPER;
+			break;
+	}
+	d_printf("<br><tr>\n");
 	d_printf("<td><input type=submit name=selectshare value=\"%s\"></td>\n", _("Choose Share"));
 	d_printf("<td><select name=share>\n");
 	if (snum < 0)
@@ -662,22 +900,13 @@ static void shares_page(void)
 		}
 
 		d_printf("<input type=reset name=\"Reset Values\" value=\"%s\">\n", _("Reset Values"));
-		if (advanced == 0) {
-			d_printf("<input type=submit name=\"Advanced\" value=\"%s\">\n", _("Advanced View"));
-		} else {
-			d_printf("<input type=submit name=\"Basic\" value=\"%s\">\n", _("Basic View"));
-		}
 		d_printf("<p>\n");
 	}
 
 	if (snum >= 0) {
 		d_printf("<table>\n");
-		show_parameters(snum, 1, advanced, 0);
+		show_parameters(snum, 1, parm_filter, 0);
 		d_printf("</table>\n");
-	}
-
-	if (advanced) {
-		d_printf("<input type=hidden name=\"Advanced\" value=1>\n");
 	}
 
 	d_printf("</FORM>\n");
@@ -922,7 +1151,8 @@ static void printers_page(void)
 	char *s;
 	int snum=-1;
 	int i;
-	int advanced = 0;
+	int mode = 0;
+	unsigned int parm_filter = FLAG_BASIC;
 
 	if (share)
 		snum = lp_servicenumber(share);
@@ -934,9 +1164,6 @@ static void printers_page(void)
         d_printf(_("are autoloaded printers from "));
         d_printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">%s</A>\n", _("Printcap Name"));
         d_printf(_("Attempting to delete these printers from SWAT will have no effect.\n"));
-
-	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
-		advanced = 1;
 
 	if (cgi_variable("Commit") && snum >= 0) {
 		commit_parameters(snum);
@@ -965,6 +1192,20 @@ static void printers_page(void)
 
 	d_printf("<FORM name=\"swatform\" method=post>\n");
 
+	if ( cgi_variable("ViewMode") )
+		mode = atoi(cgi_variable("ViewMode"));
+	ViewModeBoxes( mode );
+	switch ( mode ) {
+		case 0:
+			parm_filter = FLAG_BASIC;
+			break;
+		case 1:
+			parm_filter = FLAG_ADVANCED;
+			break;
+		case 2:
+			parm_filter = FLAG_DEVELOPER;
+			break;
+	}
 	d_printf("<table>\n");
 	d_printf("<tr><td><input type=submit name=selectshare value=\"%s\"></td>\n", _("Choose Printer"));
 	d_printf("<td><select name=share>\n");
@@ -1003,24 +1244,14 @@ static void printers_page(void)
 			d_printf("<input type=submit name=\"Commit\" value=\"%s\">\n", _("Commit Changes"));
 		}
 		d_printf("<input type=reset name=\"Reset Values\" value=\"%s\">\n", _("Reset Values"));
-		if (advanced == 0) {
-			d_printf("<input type=submit name=\"Advanced\" value=\"%s\">\n", _("Advanced View"));
-		} else {
-			d_printf("<input type=submit name=\"Basic\" value=\"%s\">\n", _("Basic View"));
-		}
 		d_printf("<p>\n");
 	}
 
 	if (snum >= 0) {
 		d_printf("<table>\n");
-		show_parameters(snum, 1, advanced, 1);
+		show_parameters(snum, 1, parm_filter, 1);
 		d_printf("</table>\n");
 	}
-
-	if (advanced) {
-		d_printf("<input type=hidden name=\"Advanced\" value=1>\n");
-	}
-
 	d_printf("</FORM>\n");
 }
 
@@ -1109,6 +1340,12 @@ static void printers_page(void)
 		viewconfig_page();
 	} else if (strcmp(page,"passwd")==0) {
 		passwd_page();
+	} else if (have_read_access && strcmp(page,"wizard")==0) {
+		wizard_page();
+	} else if (have_read_access && strcmp(page,"wizard_params")==0) {
+		wizard_params_page();
+	} else if (have_read_access && strcmp(page,"rewritecfg")==0) {
+		rewritecfg_file();
 	} else {
 		welcome_page();
 	}
