@@ -33,7 +33,10 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 							TALLOC_CTX *mem_ctx,
 							struct dssetup_DsRoleGetPrimaryDomainInformation *r)
 {
-	ZERO_STRUCT(r->out);
+	union dssetup_DsRoleInfo *info;
+
+	info = talloc_p(mem_ctx, union dssetup_DsRoleInfo);
+	W_ERROR_HAVE_NO_MEMORY(info);
 
 	switch (r->in.level) {
 	case DS_ROLE_BASIC_INFORMATION:
@@ -42,7 +45,6 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 		const char * const attrs[] = { "dnsDomain", "nTMixedDomain", "objectGUID", "name", NULL };
 		int ret;
 		struct ldb_message **res;
-		union dssetup_DsRoleInfo *info;
 		enum dssetup_DsRole role = DS_ROLE_STANDALONE_SERVER;
 		uint32 flags = 0;
 		const char *domain = NULL;
@@ -51,9 +53,6 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 		struct GUID domain_guid;
 
 		ZERO_STRUCT(domain_guid);
-
-		info = talloc_p(mem_ctx, union dssetup_DsRoleInfo);
-		W_ERROR_HAVE_NO_MEMORY(info);
 
 		switch (lp_server_role()) {
 		case ROLE_STANDALONE:
@@ -120,11 +119,6 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 	}
 	case DS_ROLE_UPGRADE_STATUS:
 	{
-		union dssetup_DsRoleInfo *info;
-
-		info = talloc_p(mem_ctx, union dssetup_DsRoleInfo);
-		W_ERROR_HAVE_NO_MEMORY(info);
-
 		info->upgrade.upgrading     = DS_ROLE_NOT_UPGRADING;
 		info->upgrade.previous_role = DS_ROLE_PREVIOUS_UNKNOWN;
 
@@ -133,11 +127,6 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 	}
 	case DS_ROLE_OP_STATUS:
 	{
-		union dssetup_DsRoleInfo *info;
-
-		info = talloc_p(mem_ctx, union dssetup_DsRoleInfo);
-		W_ERROR_HAVE_NO_MEMORY(info);
-
 		info->opstatus.status = DS_ROLE_OP_IDLE;
 
 		r->out.info = info;
