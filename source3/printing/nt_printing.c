@@ -24,6 +24,7 @@
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;
+extern DOM_SID global_sid_World; 
 
 static TDB_CONTEXT *tdb; /* used for driver files */
 
@@ -1483,37 +1484,13 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 /****************************************************************************
 store a security desc for a printer
 ****************************************************************************/
-uint32 nt_printing_setsec(char *printername, struct current_user *user,
-			  SEC_DESC_BUF *secdesc_ctr)
+uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	prs_struct ps;
 	fstring key;
-	uint32 acc_granted, status;
-
-	/* Get old security descriptor */
-
-	if (!nt_printing_getsec(printername, &old_secdesc_ctr)) {
-		DEBUG(3, ("could not get old security descriptor for "
-			  "printer %s", printername));
-		return ERROR_INVALID_FUNCTION;
-	}
-
-	/* Check the user has permissions to change the security
-	   descriptor.  By experimentation with two NT machines, the user
-	   requires Full Access to the printer to change security
-	   information. */ 
-
-	if (!se_access_check(old_secdesc_ctr->sec, user->uid, user->gid,
-			     user->ngroups, user->groups, 
-			     PRINTER_ACE_FULL_CONTROL, &acc_granted,
-			     &status)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
-		free_sec_desc_buf(&old_secdesc_ctr);
-		return status;
-	}
+	uint32 status;
 
         /* The old owner and group sids of the security descriptor are not
 	   present when new ACEs are added or removed by changing printer
@@ -1594,7 +1571,6 @@ uint32 nt_printing_setsec(char *printername, struct current_user *user,
 
 static SEC_DESC_BUF *construct_default_printer_sdb(void)
 {
-	extern DOM_SID global_sid_World; 
 	SEC_ACE ace;
 	SEC_ACCESS sa;
 	SEC_ACL *psa = NULL;
@@ -1613,12 +1589,15 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	/* Make the security descriptor owned by the Administrators group
 	   on the PDC of the domain. */
 
-	if (!winbind_lookup_name("Administrator", &owner_sid, &name_type)) {
-		/*
-		 * Backup - make owner the everyone sid. This may be a security
-		 * hole for print control .... check. JRA.
-		 */
-		sid_copy( &owner_sid, &global_sid_World);
+	if (winbind_lookup_name(lp_workgroup(), &owner_sid, &name_type)) {
+		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
+	} else {
+
+		/* Backup plan - make printer owned by world.  This should
+		   emulate a lanman printer as security settings can't be
+		   changed. */
+
+		sid_copy(&owner_sid, &global_sid_World);
 	}
 
 	/* The ACL revision number in rpc_secdesc.h differs from the one
@@ -1660,6 +1639,8 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	prs_struct ps;
 	fstring key;
 
+	/* Fetch security descriptor from tdb */
+
 	slprintf(key, sizeof(key), "SECDESC/%s", printername);
 
 	if (tdb_prs_fetch(tdb, key, &ps)!=0 ||
@@ -1671,6 +1652,49 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 			return False;
 
 		return True;
+	}
+
+	/* If security descriptor is owned by S-1-1-0 and winbindd is up,
+	   this security descriptor has been created when winbindd was
+	   down.  Take ownership of security descriptor. */
+
+	if (sid_equal((*secdesc_ctr)->sec->owner_sid, &global_sid_World)) {
+		DOM_SID owner_sid;
+		uint8 name_type;
+
+		/* Change sd owner to workgroup administrator */
+
+		if (winbind_lookup_name(lp_workgroup(), &owner_sid,
+					&name_type)) {
+			SEC_DESC_BUF *new_secdesc_ctr = NULL;
+			SEC_DESC *psd = NULL;
+			size_t size;
+
+			/* Create new sd */
+
+			sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
+
+			psd = make_sec_desc((*secdesc_ctr)->sec->revision,
+					    (*secdesc_ctr)->sec->type,
+					    &owner_sid,
+					    (*secdesc_ctr)->sec->grp_sid,
+					    (*secdesc_ctr)->sec->sacl,
+					    (*secdesc_ctr)->sec->dacl,
+					    &size);
+
+			new_secdesc_ctr = make_sec_desc_buf(size, psd);
+
+			free_sec_desc(&psd);
+
+			/* Swap with other one */
+
+			free_sec_desc_buf(secdesc_ctr);
+			*secdesc_ctr = new_secdesc_ctr;
+
+			/* Set it */
+
+			nt_printing_setsec(printername, *secdesc_ctr);
+		}
 	}
 
 	prs_mem_free(&ps);
@@ -1758,9 +1782,8 @@ BOOL print_access_check(struct current_user *user, int snum,
 
 	/* Check access */
 
-	result = se_access_check(secdesc->sec, user->uid, user->gid,
-				 user->ngroups, user->groups,
-				 required_access, &access_granted, &status);
+	result = se_access_check(secdesc->sec, user, required_access, 
+				 &access_granted, &status);
 
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
 
