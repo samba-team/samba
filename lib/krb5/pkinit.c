@@ -119,6 +119,18 @@ static unsigned des_ede3_cbc_num[] =
     { 1, 2, 840, 113549, 3, 7 };
 heim_oid heim_des_ede3_cbc_oid =
 	oid_enc(des_ede3_cbc_num);
+static unsigned des_aes_128_cbc_num[] = 
+    { 2, 16, 840, 1, 101, 3, 4, 1, 2 };
+heim_oid heim_aes_128_cbc_oid =
+	oid_enc(des_aes_128_cbc_num);
+static unsigned des_aes_192_cbc_num[] = 
+    { 2, 16, 840, 1, 101, 3, 4, 1, 22 };
+heim_oid heim_aes_192_cbc_oid =
+	oid_enc(des_aes_192_cbc_num);
+static unsigned des_aes_256_cbc_num[] = 
+    { 2, 16, 840, 1, 101, 3, 4, 1, 42 };
+heim_oid heim_aes_256_cbc_oid =
+	oid_enc(des_aes_256_cbc_num);
 static unsigned pkcs7_data_num[] = 
     { 1, 2, 840, 113549, 1, 7, 1 };
 heim_oid pkcs7_data_oid =
@@ -1234,6 +1246,8 @@ pk_rd_pa_reply_enckey(krb5_context context,
     struct krb5_pk_cert *host = NULL;
     heim_octet_string encryptedContent;
     heim_octet_string *any;
+    krb5_data ivec;
+    krb5_data params;
 
 
     memset(&tmp_key, 0, sizeof(tmp_key));
@@ -1241,6 +1255,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     krb5_data_zero(&plain);
     krb5_data_zero(&eContent);
     krb5_data_zero(&encryptedContent);
+    krb5_data_zero(&ivec);
 
     user_cert = sk_X509_value(ctx->id->cert, 0);
 
@@ -1326,115 +1341,36 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	goto out;
     }
 
+    params.data = ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->data;
+    params.length = ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->length;
 
+    /* XXXX krb5_crypto_oid2enctype */
     if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm, &heim_rc2CBC_oid) == 0) {
-	/* use rc2-cbc */
-	RC2CBCParameter params;
-	int bits;
-
-	plain.data = malloc(encryptedContent.length);
-	if (plain.data == NULL) {
-	    krb5_set_error_string(context, "malloc - out of memory");
-	    ret = ENOMEM;
-	    goto out;
-	}
-	plain.length = encryptedContent.length;
-
-	ret = decode_RC2CBCParameter(ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->data,
-				     ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->length,
-				     &params,
-				     &size);
-	if (ret) {
-	    krb5_set_error_string(context, "failed decoding rc2 parameters");
-	    goto out;
-	}
-
-	switch (params.rc2ParameterVersion) {
-	case 160:
-	    bits = 40;
-	    break;
-	case 120:
-	    bits = 64;
-	    break;
-	case 58:
-	    bits = 128;
-	    break;
-	default:
-	    krb5_set_error_string(context,
-				  "rc2ParameterVersion %d unsupported",
-				  params.rc2ParameterVersion);
-	    ret = KRB5_BADMSGTYPE;
-	    goto out;
-	}
-	if (params.iv.length != 8) {
-	    free_RC2CBCParameter(&params);
-	    krb5_set_error_string(context, "rc2 iv wrong size: %d", 
-				  params.iv.length);
-	    ret = KRB5_BADMSGTYPE;
-	    goto out;
-	}
-
-	{
-	    RC2_KEY key;
-
-	    RC2_set_key(&key, tmp_key.keyvalue.length,
-			tmp_key.keyvalue.data, bits);
-
-	    RC2_cbc_encrypt(encryptedContent.data,
-			    plain.data,
-			    encryptedContent.length, &key,
-			    params.iv.data, 0);
-	}
-	free_RC2CBCParameter(&params);
-
-    } else if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm,
-			    &heim_des_ede3_cbc_oid) == 0) {
-	/* use des-ede3-cbc */
-	CBCParameter params;
-
-	ret = decode_CBCParameter(ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->data,
-				  ed.encryptedContentInfo.contentEncryptionAlgorithm.parameters->length,
-				  &params,
-				  &size);
-	if (ret) {
-	    krb5_set_error_string(context, "failed decoding des3 parameters");
-	    goto out;
-	}
-
-	if (params.length != 8) {
-	    free_CBCParameter(&params);
-	    krb5_set_error_string(context, "des3 iv wrong size: %d", 
-				  params.length);
-	    ret = KRB5_BADMSGTYPE;
-	    goto out;
-	}
-
+	tmp_key.keytype = ETYPE_RC2_CBC_NONE;
+    } else if (heim_oid_cmp(&ed.encryptedContentInfo.contentEncryptionAlgorithm.algorithm, &heim_des_ede3_cbc_oid) == 0) {
 	tmp_key.keytype = ETYPE_DES3_CBC_NONE;
-	ret = krb5_crypto_init(context,
-			       &tmp_key,
-			       0,
-			       &crypto);
-	if (ret) {
-	    free_CBCParameter(&params);
-	    goto out;
-	}
-	ret = krb5_decrypt_ivec(context, crypto,
-				0,
-				encryptedContent.data,
-				encryptedContent.length,
-				&plain,
-				params.data);
-	free_CBCParameter(&params);
-	krb5_crypto_destroy(context, crypto);
-	if (ret)
-	    goto out;
-	
     } else {
 	krb5_set_error_string(context, "PKINIT no support for oid "
 			      "in contentEncryptionAlgorithm");
 	ret = KRB5KRB_AP_ERR_BADKEYVER; 
 	goto out;
     }
+
+    ret = krb5_crypto_init(context, &tmp_key, 0, &crypto);
+    if (ret)
+	goto out;
+
+    ret = krb5_crypto_get_params(context, crypto, &params,
+				 &ivec);
+    if (ret)
+	goto out;
+
+    ret = krb5_decrypt_ivec(context, crypto,
+			    0,
+			    encryptedContent.data,
+			    encryptedContent.length,
+			    &plain,
+			    ivec.data);
 
     p = plain.data;
     length = plain.length;
@@ -1505,6 +1441,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
     krb5_data_free(&eContent);
     krb5_free_keyblock_contents(context, &tmp_key);
     krb5_data_free(&plain);
+    krb5_data_free(&ivec);
 
     return ret;
 }
