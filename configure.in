@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
-AC_PREREQ(2.14.-1.1)dnl 2.14a
+AC_PREREQ(2.52)
 AC_INIT(heimdal, 0.4e, heimdal-bugs@pdc.kth.se)
 AM_CONFIG_HEADER(include/config.h)
 
@@ -157,7 +157,6 @@ if test "$with_krb4" != "no"; then
 	CFLAGS="$save_CFLAGS"
 	LIB_kdb="-lkdb -lkrb"
 	if test "$krb4_libdir"; then
-		test_LIB_krb4="-L$krb4_libdir"
 		LIB_krb4="-R $krb4_libdir $LIB_krb4"
 		LIB_kdb="-R $krb4_libdir -L$krb4_libdir $LIB_kdb"
 	fi
