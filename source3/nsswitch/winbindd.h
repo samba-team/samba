@@ -4,7 +4,7 @@
    Winbind daemon for ntdom nss module
 
    Copyright (C) Tim Potter 2000
-   Copyright (C) Jim McDonough 2003
+   Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
    
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
