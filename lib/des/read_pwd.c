@@ -93,6 +93,10 @@
 #define SGTTY
 #endif
 
+#if defined(HAVE_SGTTY_H) && defined(__NeXT__)
+#define SGTTY
+#endif
+
 #ifdef TERMIOS
 #include <termios.h>
 #define TTY_STRUCT		struct termios
