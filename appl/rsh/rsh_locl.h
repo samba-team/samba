@@ -43,6 +43,7 @@
 #endif
 
 #include <stdio.h>
+#include <assert.h>
 #include <stdarg.h>
 #include <ctype.h>
 #ifdef HAVE_SYS_TYPES_H
