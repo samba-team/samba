@@ -3521,6 +3521,104 @@ static BOOL run_opentest(int dummy)
 	return correct;
 }
 
+static uint32 initial_open_attrs[] = {
+		FILE_ATTRIBUTE_NORMAL,
+		FILE_ATTRIBUTE_READONLY,
+		FILE_ATTRIBUTE_HIDDEN,
+		FILE_ATTRIBUTE_SYSTEM
+};
+
+static uint32 trunc_open_attrs[] = {
+		FILE_ATTRIBUTE_NORMAL,
+		FILE_ATTRIBUTE_READONLY,
+		FILE_ATTRIBUTE_HIDDEN,
+		FILE_ATTRIBUTE_SYSTEM,
+		FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_HIDDEN,
+		FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_SYSTEM,
+		FILE_ATTRIBUTE_HIDDEN,FILE_ATTRIBUTE_SYSTEM
+};
+
+struct trunc_open_results {
+	uint32 nt_error_code;
+	uint32 trunc_result_attr;
+};
+
+#if 0
+statuc struct trunc_open_results attr_results[] = {
+	{NT_STATUS_OK, FILE_ATTRIBUTE_NORMAL},
+}
+#endif
+
+static BOOL run_openattrtest(int dummy)
+{
+	static struct cli_state cli1;
+	const char *fname = "\\openattr.file";
+	int fnum1;
+	BOOL correct = True;
+	uint16 attr;
+	int i, j;
+
+	printf("starting open attr test\n");
+	
+	if (!torture_open_connection(&cli1)) {
+		return False;
+	}
+	
+	cli_sockopt(&cli1, sockops);
+
+	for (i = 0; i < sizeof(initial_open_attrs)/sizeof(uint32); i++) {
+		cli_setatr(&cli1, fname, 0, 0);
+		cli_unlink(&cli1, fname);
+		fnum1 = cli_nt_create_full(&cli1, fname,FILE_WRITE_DATA, initial_open_attrs[i],
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
+		if (fnum1 == -1) {
+			printf("open %d (1) of %s failed (%s)\n", i, fname, cli_errstr(&cli1));
+			return False;
+		}
+
+		if (!cli_close(&cli1, fnum1)) {
+			printf("close %d (1) of %s failed (%s)\n", i, fname, cli_errstr(&cli1));
+			return False;
+		}
+
+		for (j = 0; j < sizeof(trunc_open_attrs)/sizeof(uint32); j++) {
+			fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA|FILE_WRITE_DATA, trunc_open_attrs[j],
+					   FILE_SHARE_NONE, FILE_OVERWRITE, 0);
+
+			if (fnum1 == -1) {
+				printf("open %d (2) of %s failed (%u:%s)\n", j, fname, 0, cli_errstr(&cli1));
+				continue;
+			}
+
+			if (!cli_close(&cli1, fnum1)) {
+				printf("close %d (2) of %s failed (%s)\n", j, fname, cli_errstr(&cli1));
+				return False;
+			}
+
+			if (!cli_getatr(&cli1, fname, &attr, NULL, NULL)) {
+				printf("test 9 getatr(2) failed (%s)\n", cli_errstr(&cli1));
+				return False;
+			}
+
+			printf("getatr [%x] trunc [%x] got attribute %x\n",
+					initial_open_attrs[i],
+					trunc_open_attrs[j],
+					(unsigned int)attr);
+		}
+	}
+
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
+
+	printf("open attr test %s.\n", correct ? "passed" : "failed");
+
+	if (!torture_close_connection(&cli1)) {
+		correct = False;
+	}
+	return correct;
+}
+
 static void list_fn(file_info *finfo, const char *name, void *state)
 {
 	
@@ -3916,6 +4014,9 @@ static struct {
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
+#if 0
+	{"OPENATTR", run_openattrtest, 0},
+#endif
 	{"XCOPY", run_xcopy, 0},
 	{"RENAME", run_rename, 0},
 	{"DELETE", run_deletetest, 0},
