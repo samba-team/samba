@@ -5,7 +5,7 @@
 #
 
 IS_ON=/etc/chkconfig
-KILLALL=/sbin/killall
+KILL=/usr/bin/kill
 
 SAMBAD=/usr/samba/bin/smbd
 #SAMBA_OPTS=-d2
@@ -25,28 +25,49 @@ fi
 case $1 in
 'profile')
 	if $IS_ON samba && test -x $SAMBAD; then
-	    $KILLALL -15 smbd nmbd smbd.profile nmbd.profile
+	    ps -p `cat /usr/samba/var/locks/smbd.pid` | grep smbd > /dev/null
+	    if [ $? -eq 0 ]; then
+		$KILL -15 `cat /usr/samba/var/locks/smbd.pid`
+	    fi
+	    ps -p `cat /usr/samba/var/locks/nmbd.pid` | grep nmbd > /dev/null
+	    if [ $? -eq 0 ]; then
+		$KILL -15 `cat /usr/samba/var/locks/nmbd.pid`
+	    fi
 	    $ECHO "Samba:\c"
-	    $SAMBAD.profile $SAMBA_OPTS -D; $ECHO " smbd.profile\c"
-	    $NMBD.profile $NMBD_OPTS -D; $ECHO " nmbd.profile\c"
+	    $SAMBAD.profile $SAMBA_OPTS; $ECHO " smbd.profile\c"
+	    $NMBD.profile $NMBD_OPTS; $ECHO " nmbd.profile\c"
 	    $ECHO "."
 	fi
 	;;
 'start')
 	if $IS_ON samba && test -x $SAMBAD; then
-	    $KILLALL -15 smbd nmbd smbd.profile nmbd.profile
+	    ps -p `cat /usr/samba/var/locks/smbd.pid` | grep smbd > /dev/null
+	    if [ $? -eq 0 ]; then
+		$KILL -15 `cat /usr/samba/var/locks/smbd.pid`
+	    fi
+	    ps -p `cat /usr/samba/var/locks/nmbd.pid` | grep nmbd > /dev/null
+	    if [ $? -eq 0 ]; then
+		$KILL -15 `cat /usr/samba/var/locks/nmbd.pid`
+	    fi
 	    $ECHO "Samba:\c"
-	    $SAMBAD $SAMBA_OPTS -D; $ECHO " smbd\c"
-	    $NMBD $NMBD_OPTS -D; $ECHO " nmbd\c"
+	    $SAMBAD $SAMBA_OPTS; $ECHO " smbd\c"
+	    $NMBD $NMBD_OPTS; $ECHO " nmbd\c"
 	    $ECHO "."
 	fi
 	;;
 'stop')
 	$ECHO "Stopping Samba Servers."
-	$KILLALL -15 smbd nmbd smbd.profile nmbd.profile
+	ps -p `cat /usr/samba/var/locks/smbd.pid` | grep smbd > /dev/null
+	if [ $? -eq 0 ]; then
+	    $KILL -15 `cat /usr/samba/var/locks/smbd.pid`
+	fi
+	ps -p `cat /usr/samba/var/locks/nmbd.pid` | grep nmbd > /dev/null
+	if [ $? -eq 0 ]; then
+	    $KILL -15 `cat /usr/samba/var/locks/nmbd.pid`
+	fi
 	exit 0
 	;;
 *)
-	echo "usage: /etc/init.d/samba {start|stop}"
+	echo "usage: /etc/init.d/samba {start|stop|profile}"
 	;;
 esac
