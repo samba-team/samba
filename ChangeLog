@@ -1,3 +1,8 @@
+Tue Apr 20 12:42:08 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* kpasswd/sample_passwd_check.c: sample password checking
+ 	functions
+
 Mon Apr 19 12:32:04 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* configure.in: check for dlopen, and dlfcn.h
