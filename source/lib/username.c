@@ -451,7 +451,7 @@ BOOL user_in_list(char *user,char *list)
 
 	while (next_token(&p,tok,LIST_SEP, sizeof(tok))) {
 
-		DEBUG(10,("user_in_list: checking user |%s| in group |%s|\n", user, tok));
+		DEBUG(10,("user_in_list: checking user |%s| against |%s|\n", user, tok));
 
 		/*
 		 * Check raw username.
