@@ -874,9 +874,9 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 static int smbldap_open(struct smbldap_state *ldap_state)
 {
 	int rc, opt_rc;
-	SMB_ASSERT(ldap_state);
 	BOOL reopen = False;
 		
+	SMB_ASSERT(ldap_state);
 #ifndef NO_LDAP_SECURITY
 	if (geteuid() != 0) {
 		DEBUG(0, ("smbldap_open: cannot access LDAP when not root..\n"));
