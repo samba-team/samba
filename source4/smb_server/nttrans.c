@@ -221,6 +221,8 @@ void reply_nttrans(struct smbsrv_request *req)
 
 		req_grow_data(req, this_param + this_data + (align1 + align2));
 
+		SSVAL(req->out.vwv, 0, 0); /* reserved */
+		SCVAL(req->out.vwv, 2, 0); /* reserved */
 		SIVAL(req->out.vwv, 3, trans.out.params.length);
 		SIVAL(req->out.vwv, 7, trans.out.data.length);
 
@@ -235,7 +237,7 @@ void reply_nttrans(struct smbsrv_request *req)
 
 		SCVAL(req->out.vwv, 35, trans.out.setup_count);
 		for (i=0;i<trans.out.setup_count;i++) {
-			SSVAL(req->out.vwv, VWV(18+i)+1, trans.out.setup[i]);
+			SSVAL(req->out.vwv, VWV(18+i), trans.out.setup[i]);
 		}
 
 		memset(req->out.data, 0, align1);
