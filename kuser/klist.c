@@ -62,7 +62,11 @@ print_cred(krb5_context context, krb5_creds *cred)
 
     gettimeofday(&now, NULL);
 
-    printf ("%s  ", printable_time(cred->times.authtime));
+    if(cred->times.starttime)
+	printf ("%s  ", printable_time(cred->times.starttime));
+    else
+	printf ("%s  ", printable_time(cred->times.authtime));
+    
     if(cred->times.endtime > now.tv_sec)
 	printf ("%s  ", printable_time(cred->times.endtime));
     else
