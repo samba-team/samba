@@ -2,6 +2,11 @@
 
 	* kxd.c (recv_conn): better errors when getting unrecognized data
 
+1999-11-25  Assar Westerlund  <assar@sics.se>
+
+	* krb4.c (krb4_authenticate): obtain the `local' address when
+	doing NAT.  also turn on passive mode.  From <thn@stacken.kth.se>
+	
 1999-11-18  Assar Westerlund  <assar@sics.se>
 
 	* krb5.c (krb5_destroy): free the correct part of the context
