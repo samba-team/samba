@@ -39,10 +39,10 @@ static void nttrans_setup_reply(struct smbsrv_request *req,
 {
 	trans->out.setup_count = setup_count;
 	if (setup_count != 0) {
-		trans->out.setup = talloc_zero(req->mem_ctx, sizeof(uint16_t) * setup_count);
+		trans->out.setup = talloc_zero(req, sizeof(uint16_t) * setup_count);
 	}
-	trans->out.params = data_blob_talloc(req->mem_ctx, NULL, param_size);
-	trans->out.data = data_blob_talloc(req->mem_ctx, NULL, data_size);
+	trans->out.params = data_blob_talloc(req, NULL, param_size);
+	trans->out.data = data_blob_talloc(req, NULL, data_size);
 }
 
 
@@ -163,7 +163,7 @@ void reply_nttrans(struct smbsrv_request *req)
 	}
 
 	/* parse out the setup words */
-	trans.in.setup = talloc(req->mem_ctx, trans.in.setup_count * sizeof(uint16_t));
+	trans.in.setup = talloc(req, trans.in.setup_count * sizeof(uint16_t));
 	if (!trans.in.setup) {
 		req_reply_error(req, NT_STATUS_NO_MEMORY);
 		return;

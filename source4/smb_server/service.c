@@ -311,8 +311,8 @@ NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 	}
 
 	con->tconx.out.cnum = req->tcon->cnum;
-	con->tconx.out.dev_type = talloc_strdup(req->mem_ctx, req->tcon->dev_type);
-	con->tconx.out.fs_type = talloc_strdup(req->mem_ctx, req->tcon->fs_type);
+	con->tconx.out.dev_type = talloc_strdup(req, req->tcon->dev_type);
+	con->tconx.out.fs_type = talloc_strdup(req, req->tcon->fs_type);
 	con->tconx.out.options = SMB_SUPPORT_SEARCH_BITS | (lp_csc_policy(req->tcon->service) << 2);
 	if (lp_msdfs_root(req->tcon->service) && lp_host_msdfs()) {
 		con->tconx.out.options |= SMB_SHARE_IN_DFS;

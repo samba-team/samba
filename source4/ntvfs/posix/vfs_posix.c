@@ -1,8 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
+
    POSIX NTVFS backend
-   Copyright (C) Andrew Tridgell 2003
-   Copyright (C) Stefan (metze) Metzmacher 2004
+
+   Copyright (C) Andrew Tridgell 2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,6 +25,8 @@
 */
 
 #include "include/includes.h"
+#include "vfs_posix.h"
+
 
 /*
   connect to a share - used when a tree_connect operation comes
@@ -33,16 +36,31 @@
 */
 static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 {
-	DEBUG(0,   ("Connection to share [%s] ACCESS DENIED!\n", sharename));
-	DEBUGADD(0,("This is because your using the 'ntvfs handler = default'.\n"));
-	DEBUGADD(0,("This backend is not functional at the moment.\n"));
-	DEBUGADD(0,("Please use one of the following backends:\n"));
-	DEBUGADD(0,("cifs - a proxy to another cifs-server\n"));
-	DEBUGADD(0,("simple - a very, very simple posix backend\n"));
-	DEBUGADD(0,("         all file acess is done as user 'root'\n"));
-	DEBUGADD(0,("         Please don't use this a sensitive data!!!\n"));
+	struct smbsrv_tcon *tcon = req->tcon;
+	struct pvfs_state *pvfs;
+	struct stat st;
 
-	return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
+	DEBUG(0,("WARNING: the posix vfs handler is incomplete - you probably want \"ntvfs handler = simple\"\n"));
+
+	pvfs = talloc_named(tcon, sizeof(struct pvfs_state), "pvfs_connect(%s)", sharename);
+	if (pvfs == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	pvfs->base_directory = talloc_strdup(pvfs, lp_pathname(tcon->service));
+
+	/* the directory must exist. Note that we deliberately don't
+	   check that it is readable */
+	if (stat(pvfs->base_directory, &st) != 0 || !S_ISDIR(st.st_mode)) {
+		DEBUG(0,("pvfs_connect: '%s' is not a directory, when connecting to [%s]\n", 
+			 pvfs->base_directory, sharename));
+		return NT_STATUS_BAD_NETWORK_NAME;
+	}
+
+	tcon->fs_type = talloc_strdup(tcon, "NTFS");
+	tcon->dev_type = talloc_strdup(tcon, "A:");
+
+	return NT_STATUS_OK;
 }
 
 /*
