@@ -23,7 +23,6 @@
 #include "lib/com/com.h"
 #include "librpc/gen_ndr/com_dcom.h"
 
-#define CLSID_SIMPLE "5e9ddec7-5767-11cf-beab-00aa006c3606"
 #define DEFAULT_TRANS 4096
 
 static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
