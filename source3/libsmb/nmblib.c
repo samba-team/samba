@@ -625,16 +625,17 @@ static void interpret_node_status(char *p, char *master,char *rname)
       char qname[17];
       int type;
       fstring flags;
+      int i;
       *flags = 0;
       StrnCpy(qname,p,15);
       type = CVAL(p,15);
       p += 16;
 
-      if (p[0] & 0x80) strcat(flags,"<GROUP> ");
-      if ((p[0] & 0x60) == 0) strcat(flags,"B ");
-      if ((p[0] & 0x60) == 1) strcat(flags,"P ");
-      if ((p[0] & 0x60) == 2) strcat(flags,"M ");
-      if ((p[0] & 0x60) == 3) strcat(flags,"_ ");
+      strcat(flags, (p[0] & 0x80) ? "<GROUP> " : "        ");
+      if ((p[0] & 0x60) == 0x00) strcat(flags,"B ");
+      if ((p[0] & 0x60) == 0x20) strcat(flags,"P ");
+      if ((p[0] & 0x60) == 0x40) strcat(flags,"M ");
+      if ((p[0] & 0x60) == 0x60) strcat(flags,"_ ");
       if (p[0] & 0x10) strcat(flags,"<DEREGISTERING> ");
       if (p[0] & 0x08) strcat(flags,"<CONFLICT> ");
       if (p[0] & 0x04) strcat(flags,"<ACTIVE> ");
@@ -650,7 +651,10 @@ static void interpret_node_status(char *p, char *master,char *rname)
 	trim_string(rname,NULL," ");
       }
       
-      DEBUG(level,("\t%s (type=0x%x)\t%s\n",qname,type,flags));
+      for (i = strlen( qname) ; --i >= 0 ; ) {
+	if (!isprint(qname[i])) qname[i] = '.';
+      }
+      DEBUG(level,("\t%-15s <%02x> - %s\n",qname,type,flags));
       p+=2;
     }
   DEBUG(level,("num_good_sends=%d num_good_receives=%d\n",

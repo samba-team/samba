@@ -79,6 +79,7 @@ extern BOOL lp_strip_dot(void);
 extern BOOL lp_encrypted_passwords(void);
 extern BOOL lp_syslog_only(void);
 extern BOOL lp_browse_list(void);
+extern BOOL lp_proxy_name_resolution(void);
 extern int  lp_numservices(void);
 extern int  lp_keepalive(void);
 extern int  lp_passwordlevel(void);
@@ -154,6 +155,7 @@ extern char lp_magicchar(int iService);
 extern int lp_max_connections(int iService);
 extern BOOL lp_add_home(char *pservice,int ifrom,char *phome);
 extern char *lp_string(char *s);
+extern BOOL lp_delete_readonly(int iService);
 char *my_workgroup(void);
 
 #endif

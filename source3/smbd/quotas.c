@@ -1,3 +1,4 @@
+#ifdef QUOTAS
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -19,12 +20,28 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+
+/* 
+ * This is one of the most system dependent parts of Samba, and its
+ * done a litle differently. Each system has its own way of doing 
+ * things :-(
+ */
+
 #include "includes.h"
 
 
-#ifdef QUOTAS
-
 #ifdef LINUX
+
+#ifdef __KERNEL__
+# undef __KERNEL__
+# include <sys/quota.h>
+# define __KERNEL__
+#else
+# include <sys/quota.h>
+#endif
+
+#include <mntent.h>
+
 /****************************************************************************
 try to get the disk space from disk quotas (LINUX version)
 ****************************************************************************/
@@ -115,6 +132,10 @@ static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 }
 
 #elif defined(CRAY)
+
+#include <sys/quota.h>
+#include <mntent.h>
+
 /****************************************************************************
 try to get the disk space from disk quotas (CRAY VERSION)
 ****************************************************************************/
@@ -214,6 +235,7 @@ static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 
 #elif defined(SUNOS5)
 
+#include <devnm.h>
 #include <fcntl.h>
 #include <sys/fs/ufs_quota.h>
 
@@ -228,29 +250,32 @@ static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   struct dqblk D;
   struct quotctl command;
   int file;
+  int ret;
  
   if((file=open(path, O_RDONLY))<0) return(False);
 
   euser_id = geteuid();
   user_id = getuid();
 
-  setuid(0);  /* Solaris seems to want to give info only to super-user */
-  seteuid(0);
-
   command.op = Q_GETQUOTA;
   command.uid = euser_id;
   command.addr = (caddr_t) &D;
  
-  if(ioctl(file, Q_QUOTACTL, &command)<0)
-    {
-     close(file);
-     DEBUG(2,("disk_quotas ioctl (Solaris) failed\n"));
-     return(False);
-    }
-  close(file);
+  setuid(0);  /* Solaris seems to want to give info only to super-user */
+  seteuid(0);
+
+  ret = ioctl(file, Q_QUOTACTL, &command);
 
   setuid(user_id);  /* Restore the original UID status */
   seteuid(euser_id);
+
+  if (ret < 0) {
+    close(file);
+    DEBUG(2,("disk_quotas ioctl (Solaris) failed\n"));
+    return(False);
+  }
+  close(file);
+
 
   /* Use softlimit to determine disk space. A user exceeding the quota is told
    * that there's no space left. Writes might actually work for a bit if the
@@ -274,6 +299,9 @@ DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %d, dfree %d, dsize %d\n"
 }
 
 #else
+
+#include <sys/quota.h>
+#include <devnm.h>
 
 /****************************************************************************
 try to get the disk space from disk quotas - default version
@@ -327,4 +355,5 @@ static BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 }
 
 #endif
-#endif
+#endif /* QUOTAS */
+

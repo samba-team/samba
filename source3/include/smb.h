@@ -624,7 +624,6 @@ int smb_numwords(char *buf);
 int get_share_mode(int cnum,struct stat *sbuf,int *pid);
 void del_share_mode(int fnum);
 BOOL set_share_mode(int fnum,int mode);
-int DSTDiff(time_t t);
 void TimeInit(void);
 void put_long_date(char *p,time_t t);
 time_t interpret_long_date(char *p);
@@ -822,14 +821,12 @@ int chain_reply(int type,char *inbuf,char *inbuf2,char *outbuf,char *outbuf2,int
 void close_cnum(int cnum,int uid);
 char *smb_errstr(char *inbuf);
 void GetTimeOfDay(struct timeval *tval);
-struct tm *LocalTime(time_t *t,int);
+struct tm *LocalTime(time_t *t);
 int TimeDiff(time_t t);
 BOOL set_filetime(char *fname,time_t mtime);
 char *dirname_dos(char *path,char *buf);
 BOOL get_myname(char *myname,struct in_addr *ip);
 void expand_mask(char *Mask, BOOL);
-BOOL sane_unix_date(time_t unixdate);
-time_t start_of_month(void);
 char *smb_fn_name(int cnum);
 void get_machine_info(void);
 int open_socket_in(int type, int port, int dlevel);
@@ -966,7 +963,8 @@ enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANM
 enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER};
 
 /* printing types */
-enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,PRINT_QNX};
+enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
+		     PRINT_QNX,PRINT_PLP};
 
 
 /* case handling */

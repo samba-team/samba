@@ -149,7 +149,7 @@ process time fields
 ********************************************************************/
 static time_t EntryTime(string tok[], int ptr, int count, int minimum)
 {
-  time_t jobtime;
+  time_t jobtime,jobtime1;
 
   jobtime = time(NULL);		/* default case: take current time */
   if (count >= minimum) {
@@ -181,7 +181,9 @@ static time_t EntryTime(string tok[], int ptr, int count, int minimum)
       t->tm_hour = hour;
       t->tm_min = min;
       t->tm_sec = sec;
-      jobtime = mktime(t);
+      jobtime1 = mktime(t);
+      if (jobtime1 != (time_t)-1)
+	jobtime = jobtime1;
     }
   }
   return jobtime;
@@ -596,6 +598,78 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
 }
 
 
+/****************************************************************************
+  parse a lpq line for the plp printing system
+  Bertrand Wallrich <Bertrand.Wallrich@loria.fr>
+****************************************************************************/
+static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
+{
+  string tok[5];
+  int count=0;
+
+  /* handle the case of "(standard input)" as a filename */
+  string_sub(line,"stdin","STDIN");
+  string_sub(line,"(","\"");
+  string_sub(line,")","\"");
+  
+  for (count=0; count<8 && next_token(&line,tok[count],NULL); count++) ;
+
+  /* we must get 5 tokens */
+  if (count < 8)
+    return(False);
+
+  /* the 4rd must be integer */
+  if (!isdigit(*tok[3])) return(False);
+
+  /* if the fname contains a space then use STDIN */
+  if (strchr(tok[3],' '))
+    strcpy(tok[3],"STDIN");
+
+  /* only take the last part of the filename */
+  {
+    string tmp;
+    char *p = strrchr(tok[5],'/');
+    if (p)
+      {
+        strcpy(tmp,p+1);
+        strcpy(tok[5],tmp);
+      }
+  }
+
+
+  buf->job = atoi(tok[3]);
+
+  /* calcul de la taille du fichier */
+  if (!isdigit(*tok[7])) {  buf->size = atoi(tok[7]) * 1.0 ; }
+  else {
+    string tmp;
+    strcpy(tmp,tok[7]);
+    if (strchr(tok[7],'K')) {
+      strncpy(tok[7],tmp,strlen(tmp)-1);
+      buf->size = atoi(tok[7]);
+      buf->size = buf->size * 1024;
+    }
+    if (strchr(tok[7],'M')) {
+      strncpy(tok[7],tmp,strlen(tmp)-1);
+      buf->size = atoi(tok[7]);
+      buf->size = buf->size * 1024.0 * 1000.0;
+    }
+    if (strchr(tok[7],'G')) {
+      strncpy(tok[7],tmp,strlen(tmp)-1);
+      buf->size = atoi(tok[7]);
+      buf->size = buf->size * 1024.0 * 1000000.0;
+    }
+
+  }
+  buf->status = strequal(tok[0],"active")?LPQ_PRINTING:LPQ_QUEUED;
+  buf->priority = 0;
+  buf->time = time(NULL);
+  StrnCpy(buf->user,tok[1],sizeof(buf->user)-1);
+  StrnCpy(buf->file,tok[5],sizeof(buf->file)-1);
+  return(True);
+}
+
+
 
 char *stat0_strings[] = { "enabled", "online", "idle", "no entries", "free", "ready", NULL };
 char *stat1_strings[] = { "offline", "disabled", "down", "off", "waiting", "no daemon", NULL };
@@ -623,6 +697,9 @@ static BOOL parse_lpq_entry(int snum,char *line,
       break;
     case PRINT_QNX:
       ret = parse_lpq_qnx(line,buf,first);
+      break;
+    case PRINT_PLP:
+      ret = parse_lpq_plp(line,buf,first);
       break;
     default:
       ret = parse_lpq_bsd(line,buf,first);

@@ -1181,7 +1181,9 @@ static BOOL can_delete(char *fname,int cnum,int dirtype)
   if (sys_lstat(fname,&sbuf) != 0) return(False);
   fmode = dos_mode(cnum,fname,&sbuf);
   if (fmode & aDIR) return(False);
-  if (fmode & aRONLY) return(False);
+  if (!lp_delete_readonly(SNUM(cnum))) {
+    if (fmode & aRONLY) return(False);
+  }
   if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
     return(False);
   if (!check_file_sharing(cnum,fname)) return(False);

@@ -38,6 +38,7 @@ pstring myname = "";
 pstring password = "";
 pstring username="";
 pstring workgroup=WORKGROUP;
+char *cmdstr="";
 BOOL got_pass = False;
 BOOL connect_as_printer = False;
 BOOL connect_as_ipc = False;
@@ -482,7 +483,7 @@ static void display_finfo(file_info *finfo)
 	   CNV_LANG(finfo->name),
 	   attrib_string(finfo->mode),
 	   finfo->size,
-	   asctime(LocalTime(&t,GMT_TO_LOCAL))));
+	   asctime(LocalTime(&t))));
 }
 
 /****************************************************************************
@@ -2669,7 +2670,7 @@ static void cmd_newer(void)
     {
       newer_than = sbuf.st_mtime;
       DEBUG(1,("Getting files newer than %s",
-	       asctime(LocalTime(&newer_than,GMT_TO_LOCAL))));
+	       asctime(LocalTime(&newer_than))));
     }
   else
     newer_than = 0;
@@ -3031,7 +3032,7 @@ static BOOL send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setu
     static BOOL done_time = False;
     if (!done_time) {
       DEBUG(1,("Server time is %sTimezone is UTC%+02.1f\n",
-	       asctime(LocalTime(&servertime,GMT_TO_LOCAL)),
+	       asctime(LocalTime(&servertime)),
 	       -(double)(serverzone/3600.0)));
       done_time = True;
     }
@@ -4002,6 +4003,7 @@ BOOL process(char *base_directory)
 {
   extern FILE *dbf;
   pstring line;
+  char *cmd;
 
   char *InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   char *OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -4016,7 +4018,44 @@ BOOL process(char *base_directory)
 
   if (*base_directory) do_cd(base_directory);
 
-  while (!feof(stdin))
+  cmd = cmdstr;
+  if (cmd[0] != '\0') while (cmd[0] != '\0')
+    {
+      char *p;
+      fstring tok;
+      int i;
+
+      if ((p = strchr(cmd, ';')) == 0)
+	{
+	  strncpy(line, cmd, 999);
+	  line[1000] = '\0';
+	  cmd += strlen(cmd);
+	}
+      else
+	{
+	  if (p - cmd > 999) p = cmd + 999;
+	  strncpy(line, cmd, p - cmd);
+	  line[p - cmd] = '\0';
+	  cmd = p + 1;
+	}
+
+      /* input language code to internal one */
+      CNV_INPUT (line);
+      
+      /* and get the first part of the command */
+      {
+	char *ptr = line;
+	if (!next_token(&ptr,tok,NULL)) continue;
+      }
+
+      if ((i = process_tok(tok)) >= 0)
+	commands[i].fn(InBuffer,OutBuffer);
+      else if (i == -2)
+	DEBUG(0,("%s: command abbreviation ambiguous\n",CNV_LANG(tok)));
+      else
+	DEBUG(0,("%s: command not found\n",CNV_LANG(tok)));
+    }
+  else while (!feof(stdin))
     {
       fstring tok;
       int i;
@@ -4099,6 +4138,7 @@ void usage(char *pname)
   DEBUG(0,("\t-E                    write messages to stderr instead of stdout\n"));
   DEBUG(0,("\t-U username           set the network username\n"));
   DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
+  DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
 #ifdef KANJI
   DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
 #endif /* KANJI */
@@ -4195,10 +4235,9 @@ int main(int argc,char *argv[])
 
 #ifdef KANJI
   setup_term_code (KANJI);
-  while ((opt = getopt (argc, argv, "B:O:M:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:")) != EOF)
-#else
-  while ((opt = getopt (argc, argv, "B:O:M:i:Nn:d:Pp:l:hI:EB:U:L:m:W:T:D:")) != EOF)
-#endif /* KANJI */
+#endif
+  while ((opt = 
+	  getopt(argc, argv,"B:O:M:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
     switch (opt)
       {
       case 'm':
@@ -4281,19 +4320,23 @@ int main(int argc,char *argv[])
       case 'p':
 	port = atoi(optarg);
 	break;
+      case 'c':
+	cmdstr = optarg;
+	got_pass = True;
+	break;
       case 'h':
 	usage(pname);
 	exit(0);
 	break;
-#ifdef KANJI
       case 't':
+#ifdef KANJI
 	if (!setup_term_code (optarg)) {
 	    DEBUG(0, ("%s: unknown terminal code name\n", optarg));
 	    usage (pname);
 	    exit (1);
 	}
+#endif
 	break;
-#endif /* KANJI */
       default:
 	usage(pname);
 	exit(1);

@@ -198,27 +198,6 @@
 #include <shadow.h>
 #endif
 
-/* this might be different on different systems */
-#ifdef QUOTAS 
-#ifdef LINUX
-#ifdef __KERNEL__
-#undef __KERNEL__
-#include <sys/quota.h>
-#define __KERNEL__
-#else
-#include <sys/quota.h>
-#endif
-#include <mntent.h>
-#else
-#include <sys/quota.h>
-#ifndef CRAY
-#include <devnm.h>
-#else
-#include <mntent.h>
-#endif
-#endif
-#endif
-
 #ifdef SYSLOG
 #include <syslog.h>
 #endif
@@ -499,6 +478,8 @@ char *mktemp(char *); /* No standard include */
 #define USE_WAITPID
 #define SIGNAL_CAST (void (*)())
 #define DEFAULT_PRINTING PRINT_AIX
+/* we undef this because sys/param.h is broken in aix. uggh. */
+#undef MAXHOSTNAMELEN
 #endif
 
 

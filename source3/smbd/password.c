@@ -287,15 +287,13 @@ static void update_protected_database( char *user, BOOL result)
 #ifdef OSF1_ENH_SEC
   struct pr_passwd *mypasswd;
   time_t starttime;
-  long tz;
 
   mypasswd = getprpwnam (user);
   starttime = time (NULL);
-  tz = mktime ( localtime ( &starttime ) );
 
   if (result)
     {
-      mypasswd->ufld.fd_slogin = tz;
+      mypasswd->ufld.fd_slogin = starttime;
       mypasswd->ufld.fd_nlogins = 0;
       
       putprpwnam(user,mypasswd);
@@ -304,7 +302,7 @@ static void update_protected_database( char *user, BOOL result)
     }
   else
     {
-      mypasswd->ufld.fd_ulogin = tz;
+      mypasswd->ufld.fd_ulogin = starttime;
       mypasswd->ufld.fd_nlogins = mypasswd->ufld.fd_nlogins + 1;
       if ( mypasswd->ufld.fd_max_tries != 0 && mypasswd->ufld.fd_nlogins > mypasswd->ufld.fd_max_tries )
 	{
