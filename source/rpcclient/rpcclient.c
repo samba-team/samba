@@ -594,19 +594,16 @@ static void usage(void)
 
  int main(int argc, char *argv[])
 {
-	extern char 		*optarg;
-	extern int 		optind;
 	extern pstring 		global_myname;
 	static int		got_pass = 0;
 	BOOL 			interactive = True;
 	int 			opt;
 	int 			olddebug;
-	static char		*cmdstr = "";
+	static char		*cmdstr = "", *server;
 	struct cli_state	*cli;
 	fstring 		password="",
 				username="",
-				domain="",
-				server="";
+		domain="";
 	static char 		*opt_authfile=NULL,
 				*opt_username=NULL,
 				*opt_domain=NULL,
@@ -649,78 +646,65 @@ static void usage(void)
 		return 0;
 	}
 	
-	if (strncmp("//", argv[1], 2) == 0 || strncmp("\\\\", argv[1], 2) == 0)
-		argv[1] += 2;
-
-	pstrcpy(server, argv[1]);
-
-	argv++;
-	argc--;
-
-	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
-			    POPT_CONTEXT_KEEP_FIRST);
+	pc = poptGetContext("rpcclient", argc, (const char **) argv,
+			    long_options, 0);
 	
-	while (argc > optind) {
-		while((opt = poptGetNextOpt(pc)) != -1) {
-			switch (opt) {
-			case 'A':
-				/* only get the username, password, and domain from the file */
-				read_authfile (opt_authfile, username, password, domain);
-				if (strlen (password))
-					got_pass = 1;
-				break;
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case 'A':
+			/* only get the username, password, and domain from the file */
+			read_authfile (opt_authfile, username, password, domain);
+			if (strlen (password))
+				got_pass = 1;
+			break;
+			
+		case 'l':
+			slprintf(logfile, sizeof(logfile) - 1, "%s.client", 
+				 opt_logfile);
+			lp_set_logfile(logfile);
+			interactive = False;
+			break;
+			
+		case 's':
+			pstrcpy(dyn_CONFIGFILE, opt_configfile);
+			break;
+			
+		case 'd':
+			DEBUGLEVEL = opt_debuglevel;
+			break;
+			
+		case 'U': {
+			char *lp;
 
-			case 'l':
-				slprintf(logfile, sizeof(logfile) - 1, "%s.client", 
-					 opt_logfile);
-				lp_set_logfile(logfile);
-				interactive = False;
- 				break;
+			pstrcpy(username,opt_username);
 
-			case 's':
-				pstrcpy(dyn_CONFIGFILE, opt_configfile);
-				break;
-
-			case 'd':
-				DEBUGLEVEL = opt_debuglevel;
-				break;
-
-			case 'U': {
-				char *lp;
-				pstrcpy(username,opt_username);
-				if ((lp=strchr_m(username,'%'))) {
-					*lp = 0;
-					pstrcpy(password,lp+1);
-					got_pass = 1;
-					memset(strchr_m(opt_username,'%')+1,'X',strlen(password));
-				}
-				break;
+			if ((lp=strchr_m(username,'%'))) {
+				*lp = 0;
+				pstrcpy(password,lp+1);
+				got_pass = 1;
+				memset(strchr_m(opt_username,'%') + 1, 'X',
+				       strlen(password));
 			}
-		
-			case 'W':
-				pstrcpy(domain, opt_domain);
-				break;
-				
-			case 'h':
-			default:
-				usage();
-				exit(1);
-			}
+			break;
 		}
-
-		if (argc > optind) {
-			if (strncmp("//", argv[optind], 2) == 0 ||
-			    strncmp("\\\\", argv[optind], 2) == 0)
-			{
-				argv[optind] += 2;
-			}
-
-			pstrcpy(server, argv[optind]);
-			optind ++;
+			
+		case 'W':
+			pstrcpy(domain, opt_domain);
+			break;
+			
+		case 'h':
+		default:
+			usage();
+			exit(1);
 		}
 	}
 
-	if (!server[0]) {
+	/* Get server as remaining unparsed argument.  Print usage if more
+	   than one unparsed argument is present. */
+
+	server = poptGetArg(pc);
+	
+	if (!server || poptGetArg(pc)) {
 		usage();
 		return 1;
 	}
