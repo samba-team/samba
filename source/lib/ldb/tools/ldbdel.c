@@ -64,6 +64,8 @@ static void usage(void)
 	printf("Options:\n");
 	printf("  -r               recursively delete the given subtree\n");
 	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
+	printf("  -o options       pass options like modules to activate\n");
+	printf("              e.g: -o modules:timestamps\n");
 	printf("\n");
 	printf("Deletes records from a ldb\n\n");
 	exit(1);
