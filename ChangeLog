@@ -1,3 +1,18 @@
+2003-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/klist.c (check_for_tgt): use krb5_cc_clear_mcred
+	
+	* appl/test/uu_client.c (proto): use krb5_cc_clear_mcred
+	
+	* lib/krb5/get_cred.c (init_tgs_req): in case of error, don't free
+	in the req_body addresses since they where pass in by caller
+	(find_cred): use krb5_cc_clear_mcred
+
+	* lib/krb5/krb5_ccache.3: document krb5_cc_clear_mcred
+	
+	* lib/krb5/cache.c (krb5_cc_clear_mcred): new function, clear a
+	krb5_creds to use with krb5_cc_retrieve_cred
+	
 2003-06-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb.c (find_dynamic_method): if there isn't a prefix,

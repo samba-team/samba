@@ -1,4 +1,8 @@
-2003-05-08  Love Hörnquist Åstrand <lha@it.su.se>
+2003-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* afskauthlib/verify.c (verify_krb5): use krb5_cc_clear_mcred
+	
+2003-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* sia/Makefile.am: inline COMPILE since (modern) automake doesn't
 	add it by itself for some reason

@@ -1,3 +1,7 @@
+2003-07-07  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* xnlock.c (verify_krb5): use krb5_cc_clear_mcred
+	
 2003-05-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* no checks here

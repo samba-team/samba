@@ -1,3 +1,7 @@
+2003-07-07  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* login.c (krb5_to4): use krb5_cc_clear_mcred
+	
 2003-03-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* Makefile.am: install man pages
