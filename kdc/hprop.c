@@ -55,7 +55,7 @@ static krb5_data msched5;
 #ifdef KRB4
 static int v4_db;
 
-#ifdef KA_SERVER
+#ifdef KASERVER_DB
 static int ka_db;
 static char *afs_cell;
 #endif
@@ -226,7 +226,7 @@ out:
     return ret;
 }
 
-#ifdef KA_SERVER
+#ifdef KASERVER_DB
 
 #include "kadb.h"
 
@@ -337,7 +337,7 @@ ka_dump(struct prop_data *pd, const char *file, const char *cell)
     return 0;
 }
 
-#endif /* KA_SERVER */
+#endif /* KASERVER_DB */
 
 #endif /* KRB4 */
 
@@ -350,7 +350,7 @@ struct getargs args[] = {
 #ifdef KRB4
     { "v4-db",    '4',	arg_flag, &v4_db, "use version 4 database" },
 #endif
-#ifdef KA_SERVER
+#ifdef KASERVER_DB
     { "ka-db",	  'K',  arg_flag, &ka_db, "use kaserver database" },
     { "cell",	  'c',  arg_string, &afs_cell, "name of AFS cell" },
 #endif
@@ -468,7 +468,7 @@ int main(int argc, char **argv)
 	if(e) krb5_errx(context, 1, "kdb_get_master_key: %s", krb_get_err_text(e));
 	e = krb_get_lrealm(realm, 1);
 	if(e) krb5_errx(context, 1, "krb_get_lrealm: %s", krb_get_err_text(e));
-#ifdef KA_SERVER
+#ifdef KASERVER_DB
     }else if(ka_db) {
 	e = krb_get_lrealm(realm, 1);
 	if(e) krb5_errx(context, 1, "krb_get_lrealm: %s", krb_get_err_text(e));
@@ -496,7 +496,7 @@ int main(int argc, char **argv)
 	    if(e)
 		krb5_errx(context, 1, "kerb_db_iterate: %s", 
 			  krb_get_err_text(e));
-#ifdef KA_SERVER
+#ifdef KASERVER_DB
 	} else if(ka_db) {
 	    e = ka_dump(&pd, database, afs_cell);
 	    if(e) krb5_errx(context, 1, "ka_dump: %s", krb_get_err_text(e));
@@ -553,7 +553,7 @@ int main(int argc, char **argv)
 #ifdef KRB4
 		if(v4_db)
 		    e = kerb_db_iterate ((k_iter_proc_t)v4_prop, &pd);
-#ifdef KA_SERVER
+#ifdef KASERVER_DB
 		else if(ka_db) {
 		    e = ka_dump(&pd, database, afs_cell);
 		    if(e) krb5_errx(context, 1, "ka_dump: %s", 
