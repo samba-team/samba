@@ -45,6 +45,9 @@ interface dcerpc
 		[flag(NDR_REMAINING)] DATA_BLOB stub_and_verifier;
 	} dcerpc_request;
 
+	const int DCERPC_BIND_PROVIDER_REJECT = 2;
+	const int DCERPC_BIND_REASON_ASYNTAX  = 1;
+
 	typedef struct {
 		uint16 result;
 		uint16 reason;
@@ -80,6 +83,8 @@ interface dcerpc
 
 
 	const int DCERPC_FAULT_OP_RNG_ERROR = 0x1c010002;
+	const int DCERPC_FAULT_NDR          = 0x000006f7;
+	const int DCERPC_FAULT_OTHER        = 0x00000001;
 
 	/* we return this fault when we haven't yet run the test
 	   to see what fault w2k3 returns in this case */
@@ -150,7 +155,7 @@ interface dcerpc
 		[case(DCERPC_PKT_ALTER_ACK)] dcerpc_bind_ack alter_ack;
 		[case(DCERPC_PKT_FAULT)]     dcerpc_fault    fault;
 		[case(DCERPC_PKT_AUTH3)]     dcerpc_auth3    auth;
-		[case(DCERPC_PKT_BIND_NAK)]  dcerpc_bind_nak nak;
+		[case(DCERPC_PKT_BIND_NAK)]  dcerpc_bind_nak bind_nak;
 	} dcerpc_payload;
 
 
