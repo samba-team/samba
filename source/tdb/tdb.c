@@ -696,9 +696,12 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 	rec_ptr = tdb_find(tdb, key, hash, &rec);
 
 	if (rec_ptr) {
-		ret.dptr = tdb_alloc_read(tdb,
-					  rec_ptr + sizeof(rec) + rec.key_len,
+		if (rec.data_len)
+			ret.dptr = tdb_alloc_read(tdb,
+						  rec_ptr + sizeof(rec) + rec.key_len,
 					  rec.data_len);
+		else
+			ret.dptr = NULL;
 		ret.dsize = rec.data_len;
 	}
 	
@@ -1106,7 +1109,8 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 
 	memcpy(p, &rec, sizeof(rec));
 	memcpy(p+sizeof(rec), key.dptr, key.dsize);
-	memcpy(p+sizeof(rec)+key.dsize, dbuf.dptr, dbuf.dsize);
+	if (dbuf.dsize)
+		memcpy(p+sizeof(rec)+key.dsize, dbuf.dptr, dbuf.dsize);
 
 	if (tdb_write(tdb, rec_ptr, p, sizeof(rec)+key.dsize+dbuf.dsize) == -1)
 		goto fail;

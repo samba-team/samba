@@ -591,6 +591,13 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 	*printer = '\0';
 	fstrcpy(printer,buf);
 
+	if (len == 0) {
+		DEBUG(0,("srv_spoolss_receive_message: got null message !\n"));
+		return;
+	}
+
+	DEBUG(10,("srv_spoolss_receive_message: Got message about printer %s\n", printer ));
+
 	find_printer = (Printer_entry *)ubi_dlFirst(&Printer_list);
 
 	/* Iterate the printer list. */
@@ -631,6 +638,8 @@ static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
 		fstrcpy(printer, "");
 
 	/*srv_spoolss_receive_message(printer);*/
+	DEBUG(10,("srv_spoolss_sendnotify: Sending message about printer %s\n", printer ));
+
 	message_send_all(MSG_PRINTER_NOTIFY, printer, strlen(printer) + 1); /* Null terminate... */
 
 	return True;
