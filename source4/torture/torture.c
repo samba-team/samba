@@ -4128,6 +4128,7 @@ static void usage(void)
 	if (strncmp(argv[1], "ncacn_", 6) == 0) {
 		lp_set_cmdline("torture:binding", argv[1]);
 	} else {
+		char *binding = NULL;
 		if (strncmp(argv[1], "//", 2)) {
 			usage();
 		}
@@ -4143,7 +4144,8 @@ static void usage(void)
 		lp_set_cmdline("torture:host", host);
 		lp_set_cmdline("torture:share", share);
 		lp_set_cmdline("torture:password", "");
-		lp_set_cmdline("torture:transport", "ncacn_np");
+		asprintf(&binding, "ncacn_np:%s", host);
+		lp_set_cmdline("torture:binding", binding);
 	}
 
 	if (getenv("LOGNAME")) {
