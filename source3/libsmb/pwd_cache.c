@@ -45,14 +45,14 @@ void pwd_init(struct pwd_info *pwd)
 /****************************************************************************
 de-obfuscates a password
 ****************************************************************************/
-static void pwd_deobfuscate(struct pwd_info *pwd)
+static void pwd_deobfuscate(const struct pwd_info *pwd)
 {
 }
 
 /****************************************************************************
 obfuscates a password
 ****************************************************************************/
-static void pwd_obfuscate(struct pwd_info *pwd)
+static void pwd_obfuscate(const struct pwd_info *pwd)
 {
 }
 
@@ -167,7 +167,7 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 /****************************************************************************
  gets lm and nt hashed passwords
  ****************************************************************************/
-void pwd_get_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
+void pwd_get_lm_nt_16(const struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 {
 	pwd_deobfuscate(pwd);
 	if (lm_pwd != NULL)
