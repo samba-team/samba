@@ -19,6 +19,8 @@ Mirror sites include:
 	ftp://sunsite.mff.cuni.cz/Net/Protocols/Samba/
 --- Denmark ---  
 	ftp://sunsite.auc.dk/pub/unix/networking/samba/
+--- Finland ---
+	ftp://nic.funet.fi/pub/mirrors/samba.anu.edu.au/
 --- Germany ---  
 	ftp://ftp.uni-trier.de/pub/unix/network/samba/
 --- Greece ---
