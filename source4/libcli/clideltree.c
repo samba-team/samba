@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "client.h"
+#include "clilist.h"
 
 struct delete_state {
 	struct smbcli_tree *tree;
@@ -30,7 +30,7 @@ struct delete_state {
 /* 
    callback function for torture_deltree() 
 */
-static void delete_fn(struct file_info *finfo, const char *name, void *state)
+static void delete_fn(struct clilist_file_info *finfo, const char *name, void *state)
 {
 	struct delete_state *dstate = state;
 	char *s, *n;
@@ -41,14 +41,14 @@ static void delete_fn(struct file_info *finfo, const char *name, void *state)
 	n[strlen(n)-1] = 0;
 	asprintf(&s, "%s%s", n, finfo->name);
 
-	if (finfo->mode & FILE_ATTRIBUTE_READONLY) {
+	if (finfo->attrib & FILE_ATTRIBUTE_READONLY) {
 		if (NT_STATUS_IS_ERR(smbcli_setatr(dstate->tree, s, 0, 0))) {
 			DEBUG(2,("Failed to remove READONLY on %s - %s\n",
 				 s, smbcli_errstr(dstate->tree)));			
 		}
 	}
 
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (finfo->attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		char *s2;
 		asprintf(&s2, "%s\\*", s);
 		smbcli_unlink(dstate->tree, s2);

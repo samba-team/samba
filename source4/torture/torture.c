@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "dynconfig.h"
-#include "client.h"
+#include "clilist.h"
 #include "lib/cmdline/popt_common.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
@@ -37,7 +37,6 @@ static int procnum; /* records process count number when forking */
 static struct smbcli_state *current_cli;
 static BOOL use_oplocks;
 static BOOL use_level_II_oplocks;
-static BOOL use_kerberos;
 
 BOOL torture_showall = False;
 
@@ -98,9 +97,6 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 	const char *username = lp_parm_string(-1, "torture", "username");
 	const char *userdomain = lp_parm_string(-1, "torture", "userdomain");
 	const char *password = lp_parm_string(-1, "torture", "password");
-
-	if (use_kerberos)
-		flags |= SMBCLI_FULL_CONNECTION_USE_KERBEROS;
 
 	status = smbcli_full_connection(NULL,
 					c, lp_netbios_name(),
