@@ -14,6 +14,7 @@ krb5_mk_req_extended(krb5_context context,
   Authenticator *auth;
   krb5_data authenticator;
   Checksum c;
+  Checksum *c_opt;
 
   if (*auth_context == NULL) {
       r = krb5_auth_con_init(context, auth_context);
@@ -26,16 +27,22 @@ krb5_mk_req_extended(krb5_context context,
 		  in_creds->session.keyvalue.data,
 		  in_creds->session.keyvalue.length);
 
-  r = krb5_create_checksum (context,
-			    (*auth_context)->cksumtype,
-			    in_data->data,
-			    in_data->length,
-			    &c);
+  if (in_data) {
+
+      r = krb5_create_checksum (context,
+				(*auth_context)->cksumtype,
+				in_data->data,
+				in_data->length,
+				&c);
+      c_opt = &c;
+  } else {
+      c_opt = NULL;
+  }
   
   r = krb5_build_authenticator (context,
 				*auth_context,
 				in_creds,
-				&c,
+				c_opt,
 				&auth,
 				&authenticator);
   if (r)
