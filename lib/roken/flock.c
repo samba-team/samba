@@ -40,13 +40,11 @@
 #include <config.h>
 #endif
 
-#ifndef HAVE_GETUID
+#ifndef HAVE_FLOCK
+RCSID("$Id$");
 
 #include "roken.h"
 
-#ifdef HAVE_CONFIG_H
-RCSID("$Id$");
-#endif
 
 #define OP_MASK (LOCK_SH | LOCK_EX | LOCK_UN)
 
