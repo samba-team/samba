@@ -8,7 +8,7 @@ manpagename(smbclient)(ftp-like client to access SMB/CIFS resources on servers)
 label(SYNOPSIS)
 manpagesynopsis()
 
-bf(smbclient) link(servicename)(servicename) [link(password)(password)] [link(-s smb.conf)(minuss)] [link(-B IP addr)(minusB)] [link(-O socket options)(minusO)][link(-R name resolve order)(minusR)] [link(-M NetBIOS name)(minusM)] [link(-i scope)(minusi)] [link(-N)(minusN)] [link(-n NetBIOS name)(minusn)] [link(-d debuglevel)(minusd)] [link(-P)(minusP)] [link(-p port)(minusp)] [link(-l log basename)(minusl)] [link(-h)(minush)] [link(-I dest IP)(minusI)] [link(-E)(minusE)] [link(-U username)(minusU)] [link(-L NetBIOS name)(minusL)] [link(-t terminal code)(minust)] [link(-m max protocol)(minusm)] [link(-b buffersize)(minusb)] [link(-W workgroup)(minusW)] [link(-T<c|x>IXFqgbNan)(minusT)] [link(-D directory)(minusD)] [link(-c command string)(minusc)]
+bf(smbclient) link(servicename)(servicename) [link(password)(password)] [link(-s smb.conf)(minuss)] [link(-O socket options)(minusO)][link(-R name resolve order)(minusR)] [link(-M NetBIOS name)(minusM)] [link(-i scope)(minusi)] [link(-N)(minusN)] [link(-n NetBIOS name)(minusn)] [link(-d debuglevel)(minusd)] [link(-P)(minusP)] [link(-p port)(minusp)] [link(-l log basename)(minusl)] [link(-h)(minush)] [link(-I dest IP)(minusI)] [link(-E)(minusE)] [link(-U username)(minusU)] [link(-L NetBIOS name)(minusL)] [link(-t terminal code)(minust)] [link(-m max protocol)(minusm)] [link(-b buffersize)(minusb)] [link(-W workgroup)(minusW)] [link(-T<c|x>IXFqgbNan)(minusT)] [link(-D directory)(minusD)] [link(-c command string)(minusc)]
 
 label(DESCRIPTION)
 manpagedescription()
@@ -71,9 +71,6 @@ Samba configuration file, smb.conf. This file controls all aspects of
 the Samba setup on the machine and smbclient also needs to read this
 file.
 
-label(minusB)
-dit(bf(-B IP addr)) The IP address to use when sending a broadcast packet.
-
 label(minusO)
 dit(bf(-O socket options)) TCP socket options to set on the client
 socket. See the url(socket options)(smb.conf.5.html#socketoptions)
@@ -107,8 +104,7 @@ it() bf(bcast) : Do a broadcast on each of the known local interfaces
 listed in the url(bf(interfaces))(smb.conf.5.html#interfaces) parameter
 in the smb.conf file. This is the least reliable of the name resolution
 methods as it depends on the target host being on a locally connected
-subnet. To specify a particular broadcast address the link(bf(-B))(minusB) option 
-may be used.
+subnet. 
 
 endit()
 
