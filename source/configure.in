@@ -213,26 +213,84 @@ AC_CHECK_FUNCS(pwrite _pwrite __pwrite pwrite64 _pwrite64 __pwrite64)
 AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
 
 #
-# These next two checks are needed for DEC OSF1
-# but don't hurt anywhere else.
+# Check for the functions putprpwnam, set_auth_parameters,
+# getspnam, bigcrypt and getprpwnam in -lsec and -lsecurity
+# Needed for OSF1 and HPUX.
 #
+
 if test x"$ac_cv_func_putprpwnam" = x"no"; then
-    AC_CHECK_LIB(security, putprpwnam, [LIBS="$LIBS -lsecurity";
-      AC_DEFINE(HAVE_PUTPRPWNAM)])
+    case "$LIBS" in
+    *-lsecurity*) ;;
+    *) AC_CHECK_LIB(security, putprpwnam) ;;
+    esac
+    case "$LIBS" in
+    *-lsec*) ;;
+    *) AC_CHECK_LIB(sec, putprpwnam) ;;
+    esac
+    if test x"$ac_cv_lib_security_putprpwnam" = x"yes" ||
+       test x"$ac_cv_lib_sec_putprpwnam" = x"yes"; then
+        AC_DEFINE(HAVE_PUTPRPWNAM)
+    fi
 fi
 
 if test x"$ac_cv_func_set_auth_parameters" = x"no"; then
-    AC_CHECK_LIB(security, set_auth_parameters, [LIBS="$LIBS -lsecurity";
-      AC_DEFINE(HAVE_SET_AUTH_PARAMETERS)])
+    case "$LIBS" in
+    *-lsecurity*) ;;
+    *) AC_CHECK_LIB(security, set_auth_parameters) ;;
+    esac
+    case "$LIBS" in
+    *-lsec*) ;;
+    *) AC_CHECK_LIB(sec, set_auth_parameters) ;;
+    esac
+    if test x"$ac_cv_lib_security_set_auth_parameters" = x"yes" ||
+       test x"$ac_cv_lib_sec_set_auth_parameters" = x"yes"; then
+        AC_DEFINE(HAVE_SET_AUTH_PARAMETERS)
+    fi
 fi
 
-#
-# This next check is needed for HPUX,
-# again, shouldn't hurt anywhere else.
-#
 if test x"$ac_cv_func_getspnam" = x"no"; then
-    AC_CHECK_LIB(sec, getspnam, [LIBS="$LIBS -lsec";
-      AC_DEFINE(HAVE_GETSPNAM)])
+    case "$LIBS" in
+    *-lsecurity*) ;;
+    *) AC_CHECK_LIB(security, getspnam) ;;
+    esac
+    case "$LIBS" in
+    *-lsec*) ;;
+    *) AC_CHECK_LIB(sec, getspnam) ;;
+    esac
+    if test x"$ac_cv_lib_security_getspnam" = x"yes" ||
+       test x"$ac_cv_lib_sec_getspnam" = x"yes"; then
+        AC_DEFINE(HAVE_GETSPNAM)
+    fi
+fi
+
+if test x"$ac_cv_func_bigcrypt" = x"no"; then
+    case "$LIBS" in
+    *-lsecurity*) ;;
+    *) AC_CHECK_LIB(security, bigcrypt) ;;
+    esac
+    case "$LIBS" in
+    *-lsec*) ;;
+    *) AC_CHECK_LIB(sec, bigcrypt) ;;
+    esac
+    if test x"$ac_cv_lib_security_bigcrypt" = x"yes" ||
+       test x"$ac_cv_lib_sec_bigcrypt" = x"yes"; then
+        AC_DEFINE(HAVE_BIGCRYPT)
+    fi
+fi
+
+if test x"$ac_cv_func_getprpwnam" = x"no"; then
+    case "$LIBS" in
+    *-lsecurity*) ;;
+    *) AC_CHECK_LIB(security, getprpwnam) ;;
+    esac
+    case "$LIBS" in
+    *-lsec*) ;;
+    *) AC_CHECK_LIB(sec, getprpwnam) ;;
+    esac
+    if test x"$ac_cv_lib_security_getprpwnam" = x"yes" ||
+       test x"$ac_cv_lib_sec_getprpwnam" = x"yes"; then
+        AC_DEFINE(HAVE_GETPRPWNAM)
+    fi
 fi
 
 # this bit needs to be modified for each OS that is suported by

@@ -170,6 +170,12 @@ password ?).\n", cli->desthost ));
       }
     }
 
+#if 0
+    /*
+     * Try commenting this out to see if this makes the connect
+     * work for a NT 3.51 PDC. JRA.
+     */
+
     if (ok && r_a.srv_flgs.neg_flags != q_a.clnt_flgs.neg_flags)
     {
       /* report different neg_flags */
@@ -177,6 +183,7 @@ password ?).\n", cli->desthost ));
           q_a.clnt_flgs.neg_flags, r_a.srv_flgs.neg_flags));
       ok = False;
     }
+#endif
 
   }
 
