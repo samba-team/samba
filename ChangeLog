@@ -1,3 +1,7 @@
+2000-08-16  Assar Westerlund  <assar@juguete.sics.se>
+
+	* Release 0.3b
+
 2000-08-16  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am: bump version to 13:0:0
