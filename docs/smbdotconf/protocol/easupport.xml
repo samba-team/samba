@@ -10,7 +10,7 @@
     the share must support extended attributes (such as provided on XFS and EXT3 on Linux, with the
     correct kernel patches). On Linux the filesystem must have been mounted with the mount
         option user_xattr in order for extended attributes to work, also
-        extended attributes must be compiled into the Linux kernel.
+		extended attributes must be compiled into the Linux kernel.</para>
 </description>
 
 <value type="default">no</value>
