@@ -212,8 +212,8 @@ int smbc_errno(struct cli_state *c)
                 status = cli_nt_error(c);
                 ret = cli_errno_from_nt(status);
 
-                DEBUG(3,("smbc errno 0x%08x -> %d\n",
-                         status, ret));
+                DEBUG(3,("smbc errno %s -> %d\n",
+                         get_nt_error_msg(status), ret));
         }
 
 	return ret;

@@ -24,16 +24,16 @@
 
 extern int DEBUGLEVEL;
 
-static uint32 cmd_netlogon_logon_ctrl2(struct cli_state *cli, int argc,
+static NTSTATUS cmd_netlogon_logon_ctrl2(struct cli_state *cli, int argc,
 				       char **argv)
 {
 	uint32 query_level = 1;
 	TALLOC_CTX *mem_ctx;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	if (argc > 1) {
 		printf("Usage: %s\n", argv[0]);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	if (!(mem_ctx = talloc_init())) {
@@ -48,8 +48,8 @@ static uint32 cmd_netlogon_logon_ctrl2(struct cli_state *cli, int argc,
 		goto done;
 	}
 
-	if ((result = cli_netlogon_logon_ctrl2(cli, mem_ctx, query_level))
-	     != NT_STATUS_OK) {
+	result = cli_netlogon_logon_ctrl2(cli, mem_ctx, query_level);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -59,18 +59,18 @@ static uint32 cmd_netlogon_logon_ctrl2(struct cli_state *cli, int argc,
 	return result;
 }
 
-static uint32 cmd_netlogon_logon_ctrl(struct cli_state *cli, int argc,
+static NTSTATUS cmd_netlogon_logon_ctrl(struct cli_state *cli, int argc,
 				      char **argv)
 {
 #if 0
 	uint32 query_level = 1;
 #endif
 	TALLOC_CTX *mem_ctx;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	if (argc > 1) {
 		printf("Usage: %s\n", argv[0]);
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	if (!(mem_ctx = talloc_init())) {
@@ -86,8 +86,8 @@ static uint32 cmd_netlogon_logon_ctrl(struct cli_state *cli, int argc,
 	}
 
 #if 0
-	if ((result = cli_netlogon_logon_ctrl(cli, mem_ctx, query_level))
-	     != NT_STATUS_OK) {
+	result = cli_netlogon_logon_ctrl(cli, mem_ctx, query_level);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 #endif
@@ -169,10 +169,10 @@ static void display_sam_sync(uint32 num_deltas, SAM_DELTA_HDR *hdr_deltas,
 
 /* Perform sam synchronisation */
 
-static uint32 cmd_netlogon_sam_sync(struct cli_state *cli, int argc,
+static NTSTATUS cmd_netlogon_sam_sync(struct cli_state *cli, int argc,
                                     char **argv)
 {
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         unsigned char trust_passwd[16];
         TALLOC_CTX *mem_ctx;
         uint32 database_id = 0, num_deltas;
@@ -181,7 +181,7 @@ static uint32 cmd_netlogon_sam_sync(struct cli_state *cli, int argc,
 
         if (argc > 2) {
                 printf("Usage: %s [database_id]\n", argv[0]);
-                return 0;
+                return NT_STATUS_OK;
         }
 
         if (argc == 2)
@@ -219,9 +219,9 @@ static uint32 cmd_netlogon_sam_sync(struct cli_state *cli, int argc,
 
         /* Synchronise sam database */
 
-	if ((result = cli_netlogon_sam_sync(cli, mem_ctx, database_id,
-                                            &num_deltas, &hdr_deltas, &deltas))
-            != NT_STATUS_OK) {
+	result = cli_netlogon_sam_sync(cli, mem_ctx, database_id,
+				       &num_deltas, &hdr_deltas, &deltas);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
@@ -238,10 +238,10 @@ static uint32 cmd_netlogon_sam_sync(struct cli_state *cli, int argc,
 
 /* Perform sam delta synchronisation */
 
-static uint32 cmd_netlogon_sam_deltas(struct cli_state *cli, int argc,
+static NTSTATUS cmd_netlogon_sam_deltas(struct cli_state *cli, int argc,
                                       char **argv)
 {
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         unsigned char trust_passwd[16];
         TALLOC_CTX *mem_ctx = NULL;
         uint32 database_id, num_deltas, tmp;
@@ -251,7 +251,7 @@ static uint32 cmd_netlogon_sam_deltas(struct cli_state *cli, int argc,
 
         if (argc != 3) {
                 printf("Usage: %s database_id seqnum\n", argv[0]);
-                return 0;
+                return NT_STATUS_OK;
         }
 
         database_id = atoi(argv[1]);
@@ -292,10 +292,10 @@ static uint32 cmd_netlogon_sam_deltas(struct cli_state *cli, int argc,
 
         /* Synchronise sam database */
 
-	if ((result = cli_netlogon_sam_deltas(cli, mem_ctx, database_id,
-                                              seqnum, &num_deltas, 
-                                              &hdr_deltas, &deltas))
-            != NT_STATUS_OK) {
+	result = cli_netlogon_sam_deltas(cli, mem_ctx, database_id,
+					 seqnum, &num_deltas, 
+					 &hdr_deltas, &deltas);
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 

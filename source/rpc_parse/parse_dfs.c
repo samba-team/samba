@@ -66,7 +66,7 @@ BOOL dfs_io_r_dfs_exist(char *desc, DFS_R_DFS_EXIST *q_d, prs_struct *ps, int de
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_ntstatus("exist flag", ps, 0, &q_d->status))
+	if(!prs_uint32("exist flag", ps, 0, &q_d->status))
 		return False;
 
 	return True;
