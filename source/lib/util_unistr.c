@@ -414,6 +414,38 @@ UNISTR2 *unistr2_assign_ascii_str(UNISTR2 *str, const char *buf)
 	return unistr2_assign_ascii(str, buf, (buf ? strlen(buf) : 0));
 }
 
+void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
+{
+	BOOL found;
+	uint32 i = 0;
+
+	if (from == NULL || from->buffer==NULL)
+	{
+		unistr2_assign(to, NULL, 0);
+		return;
+	}
+
+	/* get the length; UNISTR **are** NUL terminated */
+	found = False;
+	while (!found)
+	{
+		if ((from->buffer)[i]=='\0')
+			found = True;
+		else
+			i++;
+	}
+	i++;
+
+	if (!found)
+	{
+		DEBUG(0,("init_unistr2_from_unistr: non-null terminiated UNISTR!\n"));
+		return;
+	}
+
+	unistr2_assign(to, from->buffer, i);
+}
+
+
 /*******************************************************************
 grows the buffer of a UNISTR2.
   doesn't shrink
