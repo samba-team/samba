@@ -3117,6 +3117,68 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 	return True;
 }
 
+/****************************************************************************
+****************************************************************************/
+static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
+{
+	pid_t local_pid = sys_getpid();
+	char *cmd = lp_addprinter_cmd();
+	char *path;
+	char **qlines;
+	pstring tmp_file;
+	pstring command;
+	pstring driverlocation;
+	int numlines;
+	int ret;
+
+	if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
+		path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
+	else
+		path = tmpdir();
+
+	/* build driver path... only 9X architecture is needed for legacy reasons */
+	slprintf(driverlocation, sizeof(driverlocation)-1, "\\\\%s\\print$\\WIN40\\0",
+			global_myname);
+	/* change \ to \\ for the shell */
+	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
+	
+	slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
+	slprintf(command, sizeof(command), "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
+			cmd, printer->info_2->printername, printer->info_2->sharename,
+			printer->info_2->portname, printer->info_2->drivername,
+			printer->info_2->location, driverlocation);
+
+	unlink(tmp_file);
+	DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
+	ret = smbrun(command, tmp_file, False);
+	DEBUGADD(10,("returned [%d]\n", ret));
+
+	if ( ret != 0 ) {
+		unlink(tmp_file);
+		free_a_printer(&printer,2);
+		return False;
+	}
+
+	numlines = 0;
+	qlines = file_lines_load(tmp_file, &numlines);
+	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
+	DEBUGADD(10,("Line[0] = [%s]\n", qlines[0]));
+	DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
+	unlink(tmp_file);
+
+	if(numlines) {
+		// Set the portname to what the script says the portname should be
+		strncpy(printer->info_2->portname, qlines[0], sizeof(printer->info_2->portname));
+
+		// Send SIGHUP to process group... is there a better way?
+		kill(0, SIGHUP);
+		add_all_printers();
+	}
+
+	file_lines_free(qlines);
+	return True;
+}
+
 /********************************************************************
  * called by spoolss_api_setprinter
  * when updating a printer description
@@ -3206,6 +3268,12 @@ static uint32 update_printer(POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
+	if (*lp_addprinter_cmd() )
+		if ( !add_printer_hook(printer) ) {
+			result = ERROR_ACCESS_DENIED;
+			goto done;
+		}
+	
 	if (add_a_printer(*printer, 2)!=0) {
 		/* I don't really know what to return here !!! */
 		result = ERROR_ACCESS_DENIED;
@@ -4127,68 +4195,6 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 		return ERROR_INVALID_LEVEL;
 		break;
 	}
-}
-
-/****************************************************************************
-****************************************************************************/
-static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
-{
-	pid_t local_pid = sys_getpid();
-	char *cmd = lp_addprinter_cmd();
-	char *path;
-	char **qlines;
-	pstring tmp_file;
-	pstring command;
-	pstring driverlocation;
-	int numlines;
-	int ret;
-
-	if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
-		path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
-	else
-		path = tmpdir();
-
-	/* build driver path... only 9X architecture is needed for legacy reasons */
-	slprintf(driverlocation, sizeof(driverlocation)-1, "\\\\%s\\print$\\WIN40\\0",
-			global_myname);
-	/* change \ to \\ for the shell */
-	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
-	
-	slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-	slprintf(command, sizeof(command), "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
-			cmd, printer->info_2->printername, printer->info_2->sharename,
-			printer->info_2->portname, printer->info_2->drivername,
-			printer->info_2->location, driverlocation);
-
-	unlink(tmp_file);
-	DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
-	ret = smbrun(command, tmp_file, False);
-	DEBUGADD(10,("returned [%d]\n", ret));
-
-	if ( ret != 0 ) {
-		unlink(tmp_file);
-		free_a_printer(&printer,2);
-		return False;
-	}
-
-	numlines = 0;
-	qlines = file_lines_load(tmp_file, &numlines);
-	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
-	DEBUGADD(10,("Line[0] = [%s]\n", qlines[0]));
-	DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
-	unlink(tmp_file);
-
-	if(numlines) {
-		// Set the portname to what the script says the portname should be
-		strncpy(printer->info_2->portname, qlines[0], sizeof(printer->info_2->portname));
-
-		// Send SIGHUP to process group... is there a better way?
-		kill(0, SIGHUP);
-		add_all_printers();
-	}
-
-	file_lines_free(qlines);
-	return True;
 }
 
 /****************************************************************************
