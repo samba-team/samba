@@ -351,7 +351,7 @@ const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
 	if (p != NULL && p->open)
 	{
 		DEBUG(3,("Getting policy vuser_key pnum=%x pid=%d vuid=%x\n",
-		          p->key.pid, p->key.vuid, p->pnum));
+		          p->pnum, p->key.pid, p->key.vuid));
 		return &p->key;
 	}
 

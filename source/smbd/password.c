@@ -75,7 +75,6 @@ BOOL password_ok(const char *orig_user, const char *domain,
 		return False;
 	}
 
-	ZERO_STRUCTP(info3);
 	/*
 	 * SMB password check
 	 */
