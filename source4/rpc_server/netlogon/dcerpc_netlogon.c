@@ -317,12 +317,17 @@ static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TAL
 }
 
 
-static BOOL netr_creds_server_step_check(struct server_pipe_state *pipe_state,
-					 struct netr_Authenticator *received_authenticator,
-					 struct netr_Authenticator *return_authenticator) 
+static NTSTATUS netr_creds_server_step_check(struct server_pipe_state *pipe_state,
+					     struct netr_Authenticator *received_authenticator,
+					     struct netr_Authenticator *return_authenticator) 
 {
+	if (!pipe_state) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (!pipe_state->authenticated) {
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 	return creds_server_step_check(pipe_state->creds, 
 				       received_authenticator, 
@@ -351,13 +356,9 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	const char **domain_attrs = attrs;
 	ZERO_STRUCT(mod);
 
-	if (!pipe_state) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (!netr_creds_server_step_check(pipe_state, &r->in.credential, &r->out.return_authenticator)) {
-		return NT_STATUS_ACCESS_DENIED;
+	nt_status = netr_creds_server_step_check(pipe_state, &r->in.credential, &r->out.return_authenticator);
+	if (NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
 
 	sam_ctx = samdb_connect(mem_ctx);
@@ -461,9 +462,10 @@ static WERROR netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   netr_LogonSamLogonWithFlags
 
+  This version of the function allows other wrappers to say 'do not check the credentials'
 */
-static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					    struct netr_LogonSamLogonWithFlags *r)
+static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				     struct netr_LogonSamLogonEx *r)
 {
 	struct server_pipe_state *pipe_state = dce_call->conn->private;
 
@@ -478,30 +480,21 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	struct netr_SamInfo3 *sam3;
 	struct netr_SamInfo6 *sam6;
 	
-	if (!pipe_state) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	r->out.return_authenticator = talloc_p(mem_ctx, struct netr_Authenticator);
-	if (!r->out.return_authenticator) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!netr_creds_server_step_check(pipe_state, r->in.credential, r->out.return_authenticator)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	switch (r->in.logon_level) {
 	case 1:
 	case 3:
 	case 5:
-		creds_arcfour_crypt(pipe_state->creds, 
-				    r->in.logon.password->lmpassword.hash, 
-				    sizeof(r->in.logon.password->lmpassword.hash));
-		creds_arcfour_crypt(pipe_state->creds, 
-				    r->in.logon.password->ntpassword.hash, 
-				    sizeof(r->in.logon.password->ntpassword.hash));
+		if (pipe_state->creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+			creds_arcfour_crypt(pipe_state->creds, 
+					    r->in.logon.password->lmpassword.hash, 
+					    sizeof(r->in.logon.password->lmpassword.hash));
+			creds_arcfour_crypt(pipe_state->creds, 
+					    r->in.logon.password->ntpassword.hash, 
+					    sizeof(r->in.logon.password->ntpassword.hash));
+		} else {
+			creds_des_decrypt(pipe_state->creds, &r->in.logon.password->lmpassword);
+			creds_des_decrypt(pipe_state->creds, &r->in.logon.password->ntpassword);
+		}
 
 		nt_status = make_auth_context_subsystem(pipe_state, &auth_context);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -600,9 +593,13 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	if ((r->in.validation_level != 6) 
 	    && memcmp(sam->key.key, zeros,  
 		      sizeof(sam->key.key)) != 0) {
-		creds_arcfour_crypt(pipe_state->creds, 
-				    sam->key.key, 
-				    sizeof(sam->key.key));
+
+		/* This key is sent unencrypted without the ARCFOUR flag set */
+		if (pipe_state->creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+			creds_arcfour_crypt(pipe_state->creds, 
+					    sam->key.key, 
+					    sizeof(sam->key.key));
+		}
 	}
 	
 	if (server_info->lm_session_key.length == sizeof(sam->LMSessKey.key)) {
@@ -617,9 +614,14 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	if ((r->in.validation_level != 6) 
 	    && memcmp(sam->LMSessKey.key, zeros,  
 		      sizeof(sam->LMSessKey.key)) != 0) {
-		creds_arcfour_crypt(pipe_state->creds, 
-				    sam->LMSessKey.key, 
-				    sizeof(sam->LMSessKey.key));
+		if (pipe_state->creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+			creds_arcfour_crypt(pipe_state->creds, 
+					    sam->LMSessKey.key, 
+					    sizeof(sam->LMSessKey.key));
+		} else {
+			creds_des_encrypt_LMKey(pipe_state->creds, 
+						&sam->LMSessKey);
+		}
 	}
 
 	switch (r->in.validation_level) {
@@ -654,6 +656,45 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 	r->out.authoritative = 1;
 
 	return NT_STATUS_OK;
+}
+
+/* 
+  netr_LogonSamLogonWithFlags
+
+*/
+static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					    struct netr_LogonSamLogonWithFlags *r)
+{
+	NTSTATUS nt_status;
+	struct netr_LogonSamLogonEx r2;
+
+	struct server_pipe_state *pipe_state = dce_call->conn->private;
+
+	r->out.return_authenticator = talloc_p(mem_ctx, struct netr_Authenticator);
+	if (!r->out.return_authenticator) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = netr_creds_server_step_check(pipe_state, r->in.credential, r->out.return_authenticator);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	ZERO_STRUCT(r2);
+
+	r2.in.server_name = r->in.server_name;
+	r2.in.workstation = r->in.workstation;
+	r2.in.logon_level = r->in.logon_level;
+	r2.in.logon = r->in.logon;
+	r2.in.validation_level = r->in.validation_level;
+	r2.in.flags = r->in.flags;
+
+	nt_status = netr_LogonSamLogonEx(dce_call, mem_ctx, &r2);
+
+	r->out.validation = r2.out.validation;
+	r->out.authoritative = r2.out.authoritative;
+
+	return nt_status;
 }
 
 /* 
@@ -940,13 +981,10 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	int ret1, ret2, i;
 	NTSTATUS status;
 
-	if (!pipe_state) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (!netr_creds_server_step_check(pipe_state, 
-					  r->in.credential, r->out.credential)) {
-		return NT_STATUS_ACCESS_DENIED;
+	status = netr_creds_server_step_check(pipe_state, 
+					      r->in.credential, r->out.credential);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	sam_ctx = samdb_connect(mem_ctx);
@@ -1128,16 +1166,6 @@ static WERROR netr_DSRADDRESSTOSITENAMESEXW(struct dcesrv_call_state *dce_call, 
 */
 static WERROR netr_DSRGETDCSITECOVERAGEW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DSRGETDCSITECOVERAGEW *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/* 
-  netr_LogonSamLogonEx
-*/
-static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_LogonSamLogonEx *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

@@ -285,48 +285,57 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			 (unsigned long)nt_response->length, username));		
 	}
 	
-	if (nt_response->length >= 24 && nt_pw) {
-		if (nt_response->length > 24) {
-			/* We have the NT MD4 hash challenge available - see if we can
-			   use it 
-			*/
-			DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with domain [%s]\n", client_domain));
-			if (smb_pwd_check_ntlmv2(mem_ctx,
-						 nt_response, 
-						 nt_pw, challenge, 
-						 client_username, 
-						 client_domain,
-						 False,
-						 user_sess_key)) {
-				return NT_STATUS_OK;
+	if (nt_response->length > 24 && nt_pw) {
+		/* We have the NT MD4 hash challenge available - see if we can
+		   use it 
+		*/
+		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with domain [%s]\n", client_domain));
+		if (smb_pwd_check_ntlmv2(mem_ctx,
+					 nt_response, 
+					 nt_pw, challenge, 
+					 client_username, 
+					 client_domain,
+					 False,
+					 user_sess_key)) {
+			if (lm_sess_key) {
+				*lm_sess_key = *user_sess_key;
+				lm_sess_key->length = 8;
 			}
-			
-			DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with uppercased version of domain [%s]\n", client_domain));
-			if (smb_pwd_check_ntlmv2(mem_ctx,
-						 nt_response, 
-						 nt_pw, challenge, 
-						 client_username, 
-						 client_domain,
-						 True,
-						 user_sess_key)) {
-				return NT_STATUS_OK;
-			}
-			
-			DEBUG(4,("ntlm_password_check: Checking NTLMv2 password without a domain\n"));
-			if (smb_pwd_check_ntlmv2(mem_ctx,
-						 nt_response, 
-						 nt_pw, challenge, 
-						 client_username, 
-						 "",
-						 False,
-						 user_sess_key)) {
-				return NT_STATUS_OK;
-			} else {
-				DEBUG(3,("ntlm_password_check: NTLMv2 password check failed\n"));
-				return NT_STATUS_WRONG_PASSWORD;
-			}
+			return NT_STATUS_OK;
 		}
-
+		
+		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with uppercased version of domain [%s]\n", client_domain));
+		if (smb_pwd_check_ntlmv2(mem_ctx,
+					 nt_response, 
+					 nt_pw, challenge, 
+					 client_username, 
+					 client_domain,
+					 True,
+					 user_sess_key)) {
+			if (lm_sess_key) {
+				*lm_sess_key = *user_sess_key;
+				lm_sess_key->length = 8;
+			}
+			return NT_STATUS_OK;
+		}
+		
+		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password without a domain\n"));
+		if (smb_pwd_check_ntlmv2(mem_ctx,
+					 nt_response, 
+					 nt_pw, challenge, 
+					 client_username, 
+					 "",
+					 False,
+					 user_sess_key)) {
+			if (lm_sess_key) {
+				*lm_sess_key = *user_sess_key;
+				lm_sess_key->length = 8;
+			}
+			return NT_STATUS_OK;
+		} else {
+			DEBUG(3,("ntlm_password_check: NTLMv2 password check failed\n"));
+		}
+	} else if (nt_response->length == 24 && nt_pw) {
 		if (lp_ntlm_auth()) {		
 			/* We have the NT MD4 hash challenge available - see if we can
 			   use it (ie. does it exist in the smbpasswd file).
@@ -338,7 +347,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 						 user_sess_key)) {
 				/* The LM session key for this response is not very secure, 
 				   so use it only if we otherwise allow LM authentication */
-
+				
 				if (lp_lanman_auth() && lm_pw) {
 					*lm_sess_key = data_blob_talloc(mem_ctx, lm_pw, 8);
 				}
@@ -409,7 +418,11 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 client_username,
 				 client_domain,
 				 False,
-				 NULL)) {
+				 user_sess_key)) {
+		if (lm_sess_key) {
+			*lm_sess_key = *user_sess_key;
+			lm_sess_key->length = 8;
+		}
 		return NT_STATUS_OK;
 	}
 	
@@ -420,7 +433,11 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 client_username,
 				 client_domain,
 				 True,
-				 NULL)) {
+				 user_sess_key)) {
+		if (lm_sess_key) {
+			*lm_sess_key = *user_sess_key;
+			lm_sess_key->length = 8;
+		}
 		return NT_STATUS_OK;
 	}
 	
@@ -431,7 +448,11 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 client_username,
 				 "",
 				 False,
-				 NULL)) {
+				 user_sess_key)) {
+		if (lm_sess_key) {
+			*lm_sess_key = *user_sess_key;
+			lm_sess_key->length = 8;
+		}
 		return NT_STATUS_OK;
 	}
 

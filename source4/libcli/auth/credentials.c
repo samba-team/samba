@@ -273,6 +273,7 @@ void creds_server_init(struct creds_CredentialState *creds,
 	}
 
 	*initial_credential = creds->server;
+	creds->negotiate_flags = negotiate_flags;
 }
 
 /*
@@ -290,10 +291,14 @@ BOOL creds_server_check(const struct creds_CredentialState *creds,
 	return True;
 }
 
-BOOL creds_server_step_check(struct creds_CredentialState *creds,
+NTSTATUS creds_server_step_check(struct creds_CredentialState *creds,
 			     struct netr_Authenticator *received_authenticator,
 			     struct netr_Authenticator *return_authenticator) 
 {
+	if (!received_authenticator || !return_authenticator) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* TODO: this may allow the a replay attack on a non-signed
 	   connection. Should we check that this is increasing? */
 	creds->sequence = received_authenticator->timestamp;
@@ -301,9 +306,9 @@ BOOL creds_server_step_check(struct creds_CredentialState *creds,
 	if (creds_server_check(creds, &received_authenticator->cred)) {
 		return_authenticator->cred = creds->server;
 		return_authenticator->timestamp = creds->sequence;
-		return True;
+		return NT_STATUS_OK;
 	} else {
 		ZERO_STRUCTP(return_authenticator);
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 }
