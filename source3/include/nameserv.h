@@ -22,6 +22,12 @@
    
 */
 
+#define INFO_VERSION	"INFO/version"
+#define INFO_COUNT	"INFO/num_entries"
+#define INFO_ID_HIGH	"INFO/id_high"
+#define INFO_ID_LOW	"INFO/id_low"
+#define ENTRY_PREFIX 	"ENTRY/"
+
 #define PERMANENT_TTL 0
 
 /* NTAS uses 2, NT uses 1, WfWg uses 0 */
@@ -83,6 +89,33 @@ enum netbios_reply_type_code { NMB_QUERY, NMB_STATUS, NMB_REG, NMB_REG_REFRESH,
 #define NB_NODETYPEMASK 0x60
 /* Mask applied to outgoing NetBIOS flags. */
 #define NB_FLGMSK 0xE0
+
+/* The wins flags. Looks like the nbflags ! */
+#define WINS_UNIQUE	0x00 /* Unique record */
+#define WINS_NGROUP	0x01 /* Normal Group eg: 1B */
+#define WINS_SGROUP	0x02 /* Special Group eg: 1C */
+#define WINS_MHOMED	0x03 /* MultiHomed */
+
+#define WINS_ACTIVE	0x00 /* active record */
+#define WINS_RELEASED	0x04 /* released record */
+#define WINS_TOMBSTONED 0x08 /* tombstoned record */
+#define WINS_DELETED	0x0C /* deleted record */
+
+#define WINS_STATE_MASK	0x0C
+
+#define WINS_LOCAL	0x00 /* local record */
+#define WINS_REMOTE	0x10 /* remote record */
+
+#define WINS_BNODE	0x00 /* Broadcast node */
+#define WINS_PNODE	0x20 /* PtP node */
+#define WINS_MNODE	0x40 /* Mixed node */
+#define WINS_HNODE	0x60 /* Hybrid node */
+
+#define WINS_NONSTATIC	0x00 /* dynamic record */
+#define WINS_STATIC	0x80 /* static record */
+
+#define WINS_STATE_ACTIVE(p) (((p)->data.wins_flags & WINS_STATE_MASK) == WINS_ACTIVE)
+
 
 /* NetBIOS flag identifier. */
 #define NAME_GROUP(p)  ((p)->data.nb_flags & NB_GROUP)
@@ -180,6 +213,11 @@ struct nmb_data
 
   time_t death_time; /* The time the record must be removed (do not remove if 0). */
   time_t refresh_time; /* The time the record should be refreshed. */
+  
+  SMB_BIG_UINT id;		/* unique id */
+  struct in_addr wins_ip;	/* the adress of the wins server this record comes from */
+
+  int wins_flags;		/* similar to the netbios flags but different ! */
 };
 
 /* This structure represents an entry in a local netbios name list. */
@@ -556,6 +594,12 @@ struct packet_struct
    affects non-permanent self names (in seconds) */
 #define MAX_REFRESH_TIME (60*20)
 
+/* The Extinction interval: 4 days, time a node will stay in released state  */
+#define EXTINCTION_INTERVAL (4*24*60*60)
+
+/* The Extinction time-out: 1 day, time a node will stay in deleted state */
+#define EXTINCTION_TIMEOUT (24*60*60)
+
 /* Macro's to enumerate subnets either with or without
    the UNICAST subnet. */
 
@@ -567,6 +611,18 @@ extern struct subnet_record *remote_broadcast_subnet;
 #define FIRST_SUBNET subnetlist
 #define NEXT_SUBNET_EXCLUDING_UNICAST(x) ((x)->next)
 #define NEXT_SUBNET_INCLUDING_UNICAST(x) (get_next_subnet_maybe_unicast((x)))
+
+/* wins replication record used between nmbd and wrepld */
+typedef struct _WINS_RECORD {
+	char name[17];
+	char type;
+	int nb_flags;
+	int wins_flags;
+	SMB_BIG_UINT id;
+	int num_ips;
+	struct in_addr ip[25];
+	struct in_addr wins_ip;
+} WINS_RECORD;
 
 /* To be removed. */
 enum state_type { TEST };
