@@ -34,15 +34,14 @@ static BOOL masked_match(const char *tok, const char *slash, const char *s)
                 mask = interpret_addr(slash + 1);
         } else {
 		mask = (uint32)((ALLONES >> atoi(slash + 1)) ^ ALLONES);
+		/* convert to network byte order */
+		mask = htonl(mask);
         }
 
 	if (net == INADDR_NONE || mask == INADDR_NONE) {
 		DEBUG(0,("access: bad net/mask access control: %s\n", tok));
 		return (False);
 	}
-	
-	/* convert to network byte order */
-	mask = htonl(mask);
 	
 	return ((addr & mask) == net);
 }
