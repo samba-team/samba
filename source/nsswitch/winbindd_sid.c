@@ -434,3 +434,23 @@ done:
 
 	return WINBINDD_OK;
 }
+
+enum winbindd_result winbindd_allocate_rid(struct winbindd_cli_state *state)
+{
+	if ( !state->privileged ) {
+		DEBUG(2, ("winbindd_allocate_rid: non-privileged access "
+			  "denied!\n"));
+		return WINBINDD_ERROR;
+	}
+
+	/* We tell idmap to always allocate a user RID. There might be a good
+	 * reason to keep RID allocation for users to even and groups to
+	 * odd. This needs discussion I think. For now only allocate user
+	 * rids. */
+
+	if (!NT_STATUS_IS_OK(idmap_allocate_rid(&state->response.data.rid,
+						USER_RID_TYPE)))
+		return WINBINDD_ERROR;
+
+	return WINBINDD_OK;
+}

@@ -362,7 +362,7 @@ static BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
  Remove a group mapping entry.
 ****************************************************************************/
 
-static BOOL group_map_remove(DOM_SID sid)
+static BOOL group_map_remove(const DOM_SID *sid)
 {
 	TDB_DATA kbuf, dbuf;
 	pstring key;
@@ -375,7 +375,7 @@ static BOOL group_map_remove(DOM_SID sid)
 
 	/* the key is the SID, retrieving is direct */
 
-	sid_to_string(string_sid, &sid);
+	sid_to_string(string_sid, sid);
 	slprintf(key, sizeof(key), "%s%s", GROUP_PREFIX, string_sid);
 
 	kbuf.dptr = key;
@@ -1266,7 +1266,7 @@ NTSTATUS pdb_default_update_group_mapping_entry(struct pdb_methods *methods,
 NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
 						   DOM_SID sid)
 {
-	return group_map_remove(sid) ?
+	return group_map_remove(&sid) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1289,13 +1289,45 @@ NTSTATUS pdb_default_find_alias(struct pdb_methods *methods,
 NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 				  const char *name, uint32 *rid)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	DOM_SID sid;
+	enum SID_NAME_USE type;
+	uint32 new_rid;
+	gid_t gid;
+
+	if (lookup_name(get_global_sam_name(), name, &sid, &type))
+		return NT_STATUS_ALIAS_EXISTS;
+
+	if (!winbind_allocate_rid(&new_rid))
+		return NT_STATUS_ACCESS_DENIED;
+
+	sid_copy(&sid, get_global_sam_sid());
+	sid_append_rid(&sid, new_rid);
+
+	/* Here we allocate the gid */
+	if (!winbind_sid_to_gid(&gid, &sid)) {
+		DEBUG(0, ("Could not get gid for new RID\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!add_initial_entry(gid, sid_string_static(&sid), SID_NAME_ALIAS,
+			       name, "")) {
+		DEBUG(0, ("Could not add group mapping entry for alias %s\n",
+			  name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	*rid = new_rid;
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS pdb_default_delete_alias(struct pdb_methods *methods,
 				  const DOM_SID *sid)
 {
-	return NT_STATUS_ACCESS_DENIED;
+	if (!group_map_remove(sid))
+		return NT_STATUS_ACCESS_DENIED;
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS pdb_default_enum_aliases(struct pdb_methods *methods,
