@@ -10,8 +10,6 @@
 
 /* $Id$ */
 
-/*  LINTLIBRARY */
-
 /* 
  *  Header file for the POP programs
  */
@@ -92,19 +90,17 @@
 #define   K_LOCK_UN   LOCK_UN         /* Unlock */
 #endif
 
-#define NULLCP          ((char *) 0)
-#define SPACE           32
-#define TAB             9
+#ifndef TRUE
 #define TRUE            1
 #define FALSE           0
-#define NEWLINE         '\n'
+#endif
 
 #define MAXUSERNAMELEN  65
 #define MAXDROPLEN      64
 #define MAXLINELEN      1024
 #define MAXMSGLINELEN   1024
 #define MAXCMDLEN       4
-#define MAXPARMCOUNT    5
+#define MAXPARMCOUNT    10
 #define MAXPARMLEN      10
 #define ALLOC_MSGS  20
 #define MAIL_COMMAND    "/usr/lib/sendmail"
@@ -119,6 +115,10 @@
 #endif
 #ifdef HAVE_MAILLOCK_H
 #include <maillock.h>
+#endif
+
+#if defined(SKEY)
+#include <skey.h>
 #endif
 
 #if defined(KRB4_MAILDIR)
@@ -145,8 +145,6 @@
 #define POP_FAILURE     0
 #define POP_TERMINATE   '.'
 #define POP_TIMEOUT     120     /* timeout connection after this many secs */
-
-extern int              errno;
 
 extern int              pop_timeout;
 
@@ -252,6 +250,13 @@ typedef struct  {                               /*  POP parameter block */
     int                 parm_count;             /*  Number of parameters in 
                                                     parsed list */
     int			kerberosp;		/*  Using KPOP? */
+#ifdef KERBEROS
+    AUTH_DAT		kdata;
+#endif
+#ifdef SKEY
+    struct skey		sk;			/*  Skey state */
+    int			permit_passwd;          /*  allow cleartext pwd? */
+#endif
 } POP;
 
 int pop_dele(POP *p);
@@ -273,6 +278,7 @@ int pop_xtnd(POP *p);
 #ifdef UIDL
 int pop_uidl(POP *p);
 #endif
+int pop_help(POP *p);
 state_table *pop_get_command(POP *p, char *mp);
 void pop_lower(char *buf);
 xtnd_table *pop_get_subcommand(POP *p);
