@@ -882,7 +882,6 @@ int dfs_path_error(char* inbuf, char* outbuf);
 int setup_dfs_referral(char* pathname, int max_referral_level, 
 		       char** ppdata);
 BOOL is_msdfs_volume(connection_struct* conn, char* path);
-void unistr_to_dos(char* dst,char* src)	       ;
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
@@ -1397,7 +1396,6 @@ char *lp_veto_files(int );
 char *lp_hide_files(int );
 char *lp_veto_oplocks(int );
 char *lp_driverlocation(int );
-
 BOOL lp_msdfs_root(int );
 BOOL lp_autoloaded(int );
 BOOL lp_preexec_close(int );
