@@ -55,6 +55,9 @@ typedef struct {
 */
 #define dom_sid2 dom_sid
 
+/* same struct as dom_sid but inside a 28 bytes fixed buffer in NDR */
+#define dom_sid28 dom_sid
+
 
 /*
   this header defines the structures and unions used between the SMB
