@@ -698,7 +698,7 @@ static void usage(void)
 	/* open a connection to the specified server */
 	ZERO_STRUCTP (&cli);
 	if (!setup_connection (&cli, server, &creds)) {
-		return 0;
+		return 1;
 	}
 	
 	/* There are no pointers in ntuser_creds struct so zero it out */
