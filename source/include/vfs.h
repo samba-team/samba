@@ -41,6 +41,9 @@
  * This next constant specifies the version number of the VFS interface
  * this smbd will load. Increment this if *ANY* changes are made to the
  * vfs_ops below. JRA.
+ *
+ * If you change anything here, please also update modules/vfs_full_audit.c.
+ * VL.
  */
 
 /* Changed to version 2 for CIFS UNIX extensions (mknod and link added). JRA. */

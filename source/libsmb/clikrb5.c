@@ -359,8 +359,8 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 {
 	krb5_error_code retval;
 	krb5_data packet;
-	krb5_ccache ccdef;
-	krb5_context context;
+	krb5_context context = NULL;
+	krb5_ccache ccdef = NULL;
 	krb5_auth_context auth_context = NULL;
 	krb5_enctype enc_types[] = {
 #ifdef ENCTYPE_ARCFOUR_HMAC
@@ -411,8 +411,17 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 #endif
 
 failed:
-	if ( context )
+
+	if ( context ) {
+#if 0 	/* JERRY -- disabled since it causes heimdal 0.6.1rc3 to die 
+	   SuSE 9.1 Pro */
+		if (ccdef)
+			krb5_cc_close(context, ccdef);
+#endif
+		if (auth_context)
+			krb5_auth_con_free(context, auth_context);
 		krb5_free_context(context);
+	}
 		
 	return retval;
 }

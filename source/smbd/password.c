@@ -488,7 +488,13 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 	/* now check the list of session users */
 	if (!ok) {
 		char *auser;
-		char *user_list = strdup(session_userlist);
+		char *user_list = NULL;
+
+		if ( session_userlist )
+			user_list = strdup(session_userlist);
+		else
+			user_list = strdup("");
+
 		if (!user_list)
 			return(False);
 		

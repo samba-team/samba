@@ -75,28 +75,41 @@ done
 
 if [ -d $SRCDIR../docs/htmldocs/ ]; then
 
-    for f in $SRCDIR../docs/htmldocs/*.html; do
-	FNAME=$SWATDIR/help/`basename $f`
-	echo $FNAME
-	cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-	chmod 0644 $FNAME
-    done
+    for dir in htmldocs/ htmldocs/howto htmldocs/guide htmldocs/devel
+    do 
+    
+      if [ ! -d $SRCDIR../docs/$dir ]; then
+        continue
+      fi
+      
+      INSTALLDIR=$SWATDIR/help/`echo $dir | sed 's/htmldocs\///g'`
+      if [ ! -d $INSTALLDIR ]; then
+        mkdir $INSTALLDIR
+      fi
 
-    if [ -d $SRCDIR../docs/htmldocs/images/ ]; then
-        if [ ! -d $SWATDIR/help/images/ ]; then
-            mkdir $SWATDIR/help/images
-            if [ ! -d $SWATDIR/help/images/ ]; then
-                echo Failed to make directory $SWATDIR/help/images, does $USER have privileges?
-                exit 1
-            fi
-        fi
-        for f in $SRCDIR../docs/htmldocs/images/*.png; do
-            FNAME=$SWATDIR/help/images/`basename $f`
-            echo $FNAME
-            cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-            chmod 0644 $FNAME
-        done
-    fi
+      for f in $SRCDIR../docs/$dir/*.html; do
+	  FNAME=$INSTALLDIR/`basename $f`
+	  echo $FNAME
+	  cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+	  chmod 0644 $FNAME
+      done
+
+      if [ -d $SRCDIR../docs/$dir/images/ ]; then
+          if [ ! -d $INSTALLDIR/images/ ]; then
+              mkdir $INSTALLDIR/images
+              if [ ! -d $INSTALLDIR/images/ ]; then
+                  echo Failed to make directory $SWATDIR/help/images, does $USER have privileges?
+                  exit 1
+              fi
+          fi
+          for f in $SRCDIR../docs/$dir/images/*.png; do
+              FNAME=$INSTALLDIR/`basename $f`
+              echo $FNAME
+              cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+              chmod 0644 $FNAME
+          done
+      fi
+    done
 fi
 
 # Install Using Samba book (but only if it is there)

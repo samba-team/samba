@@ -94,6 +94,8 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	safe_strcpy(pw->pw_shell, shell, 
 		    sizeof(pw->pw_shell) - 1);
 	
+	SAFE_FREE(shell);
+
 	/* Password - set to "x" as we can't generate anything useful here.
 	   Authentication can be done using the pam_winbind module. */
 

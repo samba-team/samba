@@ -367,6 +367,9 @@ void cli_nt_netlogon_netsec_session_close(struct cli_state *cli)
 
 void cli_close_connection(struct cli_state *cli)
 {
+	cli_nt_session_close(cli);
+	cli_nt_netlogon_netsec_session_close(cli);
+
 	/*
 	 * tell our peer to free his resources.  Wihtout this, when an
 	 * application attempts to do a graceful shutdown and calls
@@ -382,9 +385,6 @@ void cli_close_connection(struct cli_state *cli)
 	if ( (cli->cnum != (uint16)-1) && (cli->smb_rw_error != DO_NOT_DO_TDIS ) )
 		cli_tdis(cli);
         
-	cli_nt_session_close(cli);
-	cli_nt_netlogon_netsec_session_close(cli);
-
 	SAFE_FREE(cli->outbuf);
 	SAFE_FREE(cli->inbuf);
 

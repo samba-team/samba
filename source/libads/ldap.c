@@ -1984,15 +1984,17 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 
 	value = ads_pull_string(ads, ctx, res, "ldapServiceName");
 	if (!value) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
 
 	timestr = ads_pull_string(ads, ctx, res, "currentTime");
 	if (!timestr) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
 	}
 
-	ldap_msgfree(res);
+	ads_msgfree(ads, res);
 
 	p = strchr(value, ':');
 	if (!p) {
@@ -2054,6 +2056,7 @@ ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
 			   attrs, &res);
 	if (!ADS_ERR_OK(rc)) return rc;
 	if (!ads_pull_sid(ads, res, "objectSid", sid)) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR_SYSTEM(ENOENT);
 	}
 	ads_msgfree(ads, res);

@@ -1807,7 +1807,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                             server, sizeof(server),
                             share, sizeof(share),
                             path, sizeof(path),
-                            user, sizeof(path),
+                            user, sizeof(user),
                             password, sizeof(password),
                             options, sizeof(options))) {
 	        DEBUG(4, ("no valid path\n"));
@@ -1902,8 +1902,8 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                      * the first choice and fall back to MSBROWSE if the
                      * wildcard query fails.
                      */
-		    if (!name_status_find("*", 0, 0x1d, server_ip, server) &&
-                        !name_status_find(MSBROWSE, 1, 0x1d, server_ip, server)) {
+		    if (!name_status_find("*", 0, 0x20, server_ip, server) &&
+                        !name_status_find(MSBROWSE, 1, 0x1b, server_ip, server)) {
 			errno = ENOENT;
 			return NULL;
 		    }
@@ -1991,6 +1991,12 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                         DEBUG(99, ("Found master browser %s\n", inet_ntoa(ip_list[i].ip)));
                         
                         cli = get_ipc_connect_master_ip(&ip_list[i], workgroup, &u_info);
+
+			/* cli == NULL is the master browser refused to talk or 
+			   could not be found */
+			if ( !cli )
+				continue;
+
                         fstrcpy(server, cli->desthost);
                         cli_shutdown(cli);
 

@@ -146,7 +146,7 @@ cd ..
 
 # Install other stuff
 install -m644 %{SOURCE10} $RPM_BUILD_ROOT%{_sysconfdir}/samba/smb.conf
-install -m644 %{SOURCE8} $RPM_BUILD_ROOT/etc/samba/smbusers
+install -m644 %{SOURCE9} $RPM_BUILD_ROOT/etc/samba/smbusers
 install -m755 %{SOURCE8} $RPM_BUILD_ROOT%{_bindir}
 install -m644 %{SOURCE7} $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 %{SOURCE1} $RPM_BUILD_ROOT/etc/logrotate.d/samba
@@ -183,8 +183,8 @@ install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_lib}/libnss_win
 # make install puts libsmbclient.so in the wrong place on x86_64
 rm -f $RPM_BUILD_ROOT/usr/lib || true
 mkdir -p $RPM_BUILD_ROOT%{_libdir} $RPM_BUILD_ROOT%{_includedir}
-install -m 644 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{_libdir}/libsmbclient.so
-install -m 644 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libdir}/libsmbclient.a
+install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{_libdir}/libsmbclient.so
+install -m 755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libdir}/libsmbclient.a
 install -m 644 source/include/libsmbclient.h $RPM_BUILD_ROOT%{_includedir}
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d
