@@ -1,3 +1,8 @@
+2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* pop_pass.c: use
+	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free
+
 2003-09-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* popper.c (tgets): avoid be clobbered by `longjmp' or `vfork'
