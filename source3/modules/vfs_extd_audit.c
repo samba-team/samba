@@ -4,6 +4,7 @@
  *
  * Copyright (C) Tim Potter, 1999-2000
  * Copyright (C) Alexander Bokovoy, 2002
+ * Copyright (C) John H Terpstra, 2003
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
