@@ -28,20 +28,21 @@ Event ::= SEQUENCE {
 }
 
 HDBFlags ::= BIT STRING {
-	initial(0),		-- require as-req
-	forwardable(1),		-- may issue forwardable
-	proxiable(2),		-- may issue proxiable
-	renewable(3),		-- may issue renewable
-	postdate(4),		-- may issue postdatable
-	server(5),		-- may be server
-	client(6),		-- may be client
-	invalid(7),		-- entry is invalid
-	require-preauth(8),	-- must use preauth
-	change-pw(9),		-- change password service
-	require-hwauth(10),	-- must use hwauth
-	ok-as-delegate(11),	-- as in TicketFlags
-	user-to-user(12),	-- may use user-to-user auth
-	immutable(13)		-- may not be deleted
+	initial(0),			-- require as-req
+	forwardable(1),			-- may issue forwardable
+	proxiable(2),			-- may issue proxiable
+	renewable(3),			-- may issue renewable
+	postdate(4),			-- may issue postdatable
+	server(5),			-- may be server
+	client(6),			-- may be client
+	invalid(7),			-- entry is invalid
+	require-preauth(8),		-- must use preauth
+	change-pw(9),			-- change password service
+	require-hwauth(10),		-- must use hwauth
+	ok-as-delegate(11),		-- as in TicketFlags
+	user-to-user(12),		-- may use user-to-user auth
+	immutable(13),			-- may not be deleted
+	enforce-transited-policy(14)	-- always check transited policy
 }
 
 GENERATION ::= SEQUENCE {
