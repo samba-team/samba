@@ -96,7 +96,7 @@ void init_subsystems(void)
 /****************************************************************************
  Reload the services file.
 **************************************************************************/
-BOOL reload_services(struct smbsrv_context *smb, BOOL test)
+BOOL reload_services(struct smbsrv_connection *smb, BOOL test)
 {
 	BOOL ret;
 	

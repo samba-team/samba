@@ -160,7 +160,7 @@ void reply_tcon_and_X(struct smbsrv_request *req)
 	}
 
 	/* construct reply - two variants */
-	if (req->smb_ctx->negotiate.protocol < PROTOCOL_NT1) {
+	if (req->smb_conn->negotiate.protocol < PROTOCOL_NT1) {
 		req_setup_reply(req, 2, 0);
 
 		SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
@@ -277,7 +277,7 @@ static void reply_getatr_send(struct smbsrv_request *req)
 	req_setup_reply(req, 10, 0);
 
 	SSVAL(req->out.vwv,         VWV(0), st->getattr.out.attrib);
-	srv_push_dos_date3(req->smb_ctx, req->out.vwv, VWV(1), st->getattr.out.write_time);
+	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(1), st->getattr.out.write_time);
 	SIVAL(req->out.vwv,         VWV(3), st->getattr.out.size);
 
 	REQ_VWV_RESERVED(5, 5);
@@ -327,7 +327,7 @@ void reply_setatr(struct smbsrv_request *req)
 
 	st->setattr.level = RAW_SFILEINFO_SETATTR;
 	st->setattr.in.attrib     = SVAL(req->in.vwv, VWV(0));
-	st->setattr.in.write_time = srv_pull_dos_date3(req->smb_ctx, req->in.vwv + VWV(1));
+	st->setattr.in.write_time = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 	
 	req_pull_ascii4(req, &st->setattr.file.fname, req->in.data, STR_TERMINATE);
 
@@ -404,7 +404,7 @@ static void reply_open_send(struct smbsrv_request *req)
 
 	SSVAL(req->out.vwv, VWV(0), oi->open.out.fnum);
 	SSVAL(req->out.vwv, VWV(1), oi->open.out.attrib);
-	srv_push_dos_date3(req->smb_ctx, req->out.vwv, VWV(2), oi->open.out.write_time);
+	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(2), oi->open.out.write_time);
 	SIVAL(req->out.vwv, VWV(4), oi->open.out.size);
 	SSVAL(req->out.vwv, VWV(6), oi->open.out.rmode);
 
@@ -463,7 +463,7 @@ static void reply_open_and_X_send(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(1), 0);
 	SSVAL(req->out.vwv, VWV(2), oi->openx.out.fnum);
 	SSVAL(req->out.vwv, VWV(3), oi->openx.out.attrib);
-	srv_push_dos_date3(req->smb_ctx, req->out.vwv, VWV(4), oi->openx.out.write_time);
+	srv_push_dos_date3(req->smb_conn, req->out.vwv, VWV(4), oi->openx.out.write_time);
 	SIVAL(req->out.vwv, VWV(6), oi->openx.out.size);
 	SSVAL(req->out.vwv, VWV(8), oi->openx.out.access);
 	SSVAL(req->out.vwv, VWV(9), oi->openx.out.ftype);
@@ -496,7 +496,7 @@ void reply_open_and_X(struct smbsrv_request *req)
 	oi->openx.in.open_mode    = SVAL(req->in.vwv, VWV(3));
 	oi->openx.in.search_attrs = SVAL(req->in.vwv, VWV(4));
 	oi->openx.in.file_attrs   = SVAL(req->in.vwv, VWV(5));
-	oi->openx.in.write_time   = srv_pull_dos_date3(req->smb_ctx, req->in.vwv + VWV(6));
+	oi->openx.in.write_time   = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(6));
 	oi->openx.in.open_func    = SVAL(req->in.vwv, VWV(8));
 	oi->openx.in.size         = IVAL(req->in.vwv, VWV(9));
 	oi->openx.in.timeout      = IVAL(req->in.vwv, VWV(11));
@@ -549,7 +549,7 @@ void reply_mknew(struct smbsrv_request *req)
 
 	oi->mknew.level = RAW_OPEN_MKNEW;
 	oi->mknew.in.attrib  = SVAL(req->in.vwv, VWV(0));
-	oi->mknew.in.write_time  = srv_pull_dos_date3(req->smb_ctx, req->in.vwv + VWV(1));
+	oi->mknew.in.write_time  = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 
 	req_pull_ascii4(req, &oi->mknew.in.fname, req->in.data, STR_TERMINATE);
 
@@ -600,7 +600,7 @@ void reply_ctemp(struct smbsrv_request *req)
 
 	oi->ctemp.level = RAW_OPEN_CTEMP;
 	oi->ctemp.in.attrib = SVAL(req->in.vwv, VWV(0));
-	oi->ctemp.in.write_time = srv_pull_dos_date3(req->smb_ctx, req->in.vwv + VWV(1));
+	oi->ctemp.in.write_time = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 
 	/* the filename is actually a directory name, the server provides a filename
 	   in that directory */
@@ -1184,7 +1184,7 @@ void reply_close(struct smbsrv_request *req)
 
 	io->close.level = RAW_CLOSE_CLOSE;
 	io->close.in.fnum  = req_fnum(req, req->in.vwv,  VWV(0));
-	io->close.in.write_time = srv_pull_dos_date3(req->smb_ctx, req->in.vwv + VWV(1));
+	io->close.in.write_time = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 
 	req->async.send_fn = reply_simple_send;
 
@@ -1231,7 +1231,7 @@ void reply_writeclose(struct smbsrv_request *req)
 	io->writeclose.in.fnum   = req_fnum(req, req->in.vwv, VWV(0));
 	io->writeclose.in.count  = SVAL(req->in.vwv, VWV(1));
 	io->writeclose.in.offset = IVAL(req->in.vwv, VWV(2));
-	io->writeclose.in.mtime  = srv_pull_dos_date3(req->smb_ctx, req->in.vwv + VWV(4));
+	io->writeclose.in.mtime  = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(4));
 	io->writeclose.in.data   = req->in.data + 1;
 
 	/* make sure they gave us the data they promised */
@@ -1446,7 +1446,7 @@ void reply_printqueue_send(struct smbsrv_request *req)
 	req->out.ptr = req->out.data + 3;
 
 	for (i=0;i<lpq->retq.out.count;i++) {
-		srv_push_dos_date2(req->smb_ctx, req->out.ptr, 0 , lpq->retq.out.queue[i].time);
+		srv_push_dos_date2(req->smb_conn, req->out.ptr, 0 , lpq->retq.out.queue[i].time);
 		SCVAL(req->out.ptr,  4, lpq->retq.out.queue[i].status);
 		SSVAL(req->out.ptr,  5, lpq->retq.out.queue[i].job);
 		SIVAL(req->out.ptr,  7, lpq->retq.out.queue[i].size);
@@ -1806,9 +1806,9 @@ void reply_setattrE(struct smbsrv_request *req)
 
 	info->setattre.level = RAW_SFILEINFO_SETATTRE;
 	info->setattre.file.fnum =      req_fnum(req, req->in.vwv,    VWV(0));
-	info->setattre.in.create_time = srv_pull_dos_date2(req->smb_ctx, req->in.vwv + VWV(1));
-	info->setattre.in.access_time = srv_pull_dos_date2(req->smb_ctx, req->in.vwv + VWV(3));
-	info->setattre.in.write_time  = srv_pull_dos_date2(req->smb_ctx, req->in.vwv + VWV(5));
+	info->setattre.in.create_time = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(1));
+	info->setattre.in.access_time = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(3));
+	info->setattre.in.write_time  = srv_pull_dos_date2(req->smb_conn, req->in.vwv + VWV(5));
 
 	req->async.send_fn = reply_simple_send;
 
@@ -1852,9 +1852,9 @@ static void reply_getattrE_send(struct smbsrv_request *req)
 	/* setup reply */
 	req_setup_reply(req, 11, 0);
 
-	srv_push_dos_date2(req->smb_ctx, req->out.vwv, VWV(0), info->getattre.out.create_time);
-	srv_push_dos_date2(req->smb_ctx, req->out.vwv, VWV(2), info->getattre.out.access_time);
-	srv_push_dos_date2(req->smb_ctx, req->out.vwv, VWV(4), info->getattre.out.write_time);
+	srv_push_dos_date2(req->smb_conn, req->out.vwv, VWV(0), info->getattre.out.create_time);
+	srv_push_dos_date2(req->smb_conn, req->out.vwv, VWV(2), info->getattre.out.access_time);
+	srv_push_dos_date2(req->smb_conn, req->out.vwv, VWV(4), info->getattre.out.write_time);
 	SIVAL(req->out.vwv,         VWV(6), info->getattre.out.size);
 	SIVAL(req->out.vwv,         VWV(8), info->getattre.out.alloc_size);
 	SSVAL(req->out.vwv,        VWV(10), info->getattre.out.attrib);
@@ -2111,7 +2111,7 @@ void reply_ulogoffX(struct smbsrv_request *req)
 		DEBUG(0,("REWRITE: not closing user files\n"));
 	}
 
-	invalidate_vuid(req->smb_ctx, vuid);
+	invalidate_vuid(req->smb_conn, vuid);
 
 	req_setup_reply(req, 2, 0);
 
@@ -2298,8 +2298,8 @@ void reply_special(struct smbsrv_request *req)
 	
 	switch (msg_type) {
 	case 0x81: /* session request */
-		if (req->smb_ctx->negotiate.done_nbt_session) {
-			exit_server(req->smb_ctx, "multiple session request not permitted");
+		if (req->smb_conn->negotiate.done_nbt_session) {
+			exit_server(req->smb_conn, "multiple session request not permitted");
 		}
 		
 		SCVAL(buf,0,0x82);
@@ -2307,7 +2307,7 @@ void reply_special(struct smbsrv_request *req)
 		
 		DEBUG(0,("REWRITE: not parsing netbios names in NBT session request!\n"));
 		
-		req->smb_ctx->negotiate.done_nbt_session = True;
+		req->smb_conn->negotiate.done_nbt_session = True;
 		
 		req->out.buffer = buf;
 		req->out.size = 4;

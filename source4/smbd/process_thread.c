@@ -126,7 +126,7 @@ static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde
 }
 
 /* called when a SMB connection goes down */
-static void terminate_connection(struct smbsrv_context *server, const char *reason) 
+static void terminate_connection(struct smbsrv_connection *server, const char *reason) 
 {
 	server_terminate(server);
 
@@ -465,7 +465,7 @@ static void model_startup(void)
 	register_debug_handlers("thread", &d_ops);	
 }
 
-static void thread_exit_server(struct smbsrv_context *smb, const char *reason)
+static void thread_exit_server(struct smbsrv_connection *smb, const char *reason)
 {
 	DEBUG(1,("thread_exit_server: reason[%s]\n",reason));
 }

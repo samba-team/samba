@@ -26,7 +26,7 @@
 put a dos date into a buffer (time/date format)
 This takes GMT time and puts local time for zone_offset in the buffer
 ********************************************************************/
-void srv_push_dos_date(struct smbsrv_context *smb_server,
+void srv_push_dos_date(struct smbsrv_connection *smb_server,
 		      uint8_t *buf, int offset, time_t unixdate)
 {
 	push_dos_date(buf, offset, unixdate, smb_server->negotiate.zone_offset);
@@ -36,7 +36,7 @@ void srv_push_dos_date(struct smbsrv_context *smb_server,
 put a dos date into a buffer (date/time format)
 This takes GMT time and puts local time in the buffer
 ********************************************************************/
-void srv_push_dos_date2(struct smbsrv_context *smb_server,
+void srv_push_dos_date2(struct smbsrv_connection *smb_server,
 		       char *buf, int offset, time_t unixdate)
 {
 	push_dos_date2(buf, offset, unixdate, smb_server->negotiate.zone_offset);
@@ -46,7 +46,7 @@ void srv_push_dos_date2(struct smbsrv_context *smb_server,
 put a dos 32 bit "unix like" date into a buffer. This routine takes
 GMT and converts it to LOCAL time in zone_offset before putting it
 ********************************************************************/
-void srv_push_dos_date3(struct smbsrv_context *smb_server,
+void srv_push_dos_date3(struct smbsrv_connection *smb_server,
 		       char *buf, int offset, time_t unixdate)
 {
 	push_dos_date3(buf, offset, unixdate, smb_server->negotiate.zone_offset);
@@ -55,7 +55,7 @@ void srv_push_dos_date3(struct smbsrv_context *smb_server,
 /*******************************************************************
 convert a dos date
 ********************************************************************/
-time_t srv_pull_dos_date(struct smbsrv_context *smb_server, 
+time_t srv_pull_dos_date(struct smbsrv_connection *smb_server, 
 			 const uint8_t *date_ptr)
 {
 	return pull_dos_date(date_ptr, smb_server->negotiate.zone_offset);
@@ -64,7 +64,7 @@ time_t srv_pull_dos_date(struct smbsrv_context *smb_server,
 /*******************************************************************
 like srv_pull_dos_date() but the words are reversed
 ********************************************************************/
-time_t srv_pull_dos_date2(struct smbsrv_context *smb_server, 
+time_t srv_pull_dos_date2(struct smbsrv_connection *smb_server, 
 			  const uint8_t *date_ptr)
 {
 	return pull_dos_date2(date_ptr, smb_server->negotiate.zone_offset);
@@ -74,7 +74,7 @@ time_t srv_pull_dos_date2(struct smbsrv_context *smb_server,
   create a unix GMT date from a dos date in 32 bit "unix like" format
   these arrive in server zone, with corresponding DST
   ******************************************************************/
-time_t srv_pull_dos_date3(struct smbsrv_context *smb_server,
+time_t srv_pull_dos_date3(struct smbsrv_connection *smb_server,
 			  const uint8_t *date_ptr)
 {
 	return pull_dos_date3(date_ptr, smb_server->negotiate.zone_offset);
