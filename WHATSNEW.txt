@@ -1,3 +1,87 @@
+		   =================================
+                   Release Notes for Samba 3.0.11rc1
+                                Jan 28, 2005
+                   ==================================
+
+This is a release candidate of the Samba 3.0.11 code base and is 
+provided for testing only.  While close to the final stable release, 
+this snapshot is *not* intended for production servers.  If all 
+goes well, this this version will become the final 3.0.11 stable 
+release (with possible minor changes).
+
+Common bugs fixed in 3.0.11rc1 include:
+
+  o Crash in smbd when using CUPS printing.
+  o Parsing error of other SIDs included in the user_info_3
+    structure returned from domain controllers.
+    
+
+Administrator Domain SID
+------------------------
+
+Please note that when configured as a DC, it is now required 
+that an account in the server's passdb backend be set to the 
+domain SID of the default Administrator account.  To obtain the 
+domain SID on a Samba DC, run the following command:
+
+root# net getlocalsid
+SID for domain FOO is: S-1-5-21-4294955119-3368514841-2087710299
+
+You may then assign the Domain Administrator rid to an account 
+via pdbedit:
+
+root# pdbedit -U S-1-5-21-4294955119-3368514841-2087710299-500 \
+-u root -r
+
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.11pre2
+------------------------
+
+commits
+-------
+o   Jeremy Allison <jra@samba.org>
+    * BUG 2092: Prevent auto-anonymous logins via libsmbclient 
+      for better use by desktop environments such as GNOME.
+    * Ensure we can't remove a level II oplock without having the
+      shared memory area locked.
+            
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * RedHat and Fedora Packaging fixes for perl dependencies.
+    * Remove unused schema items from OpenLDAP schema file.
+    * Remove duplicate enumeration of "Windows x86" architecture
+      when listing printer drivers via rpcclient.
+    * Fail set_privileges() if 'enable privileges = no' to prevent 
+      confused admins.
+    * Fix segfault in cups_queue_get().
+    * Tighten restrictions on changing user passwords when 
+      the connected user possesses the SeMachineAccountPrivilege.
+    
+    
+o   Guenther Deschner <gd@samba.org>
+    * Fix configure.in tests using KRB5_CONFIG variable and krb5-
+      config utility.
+    * Require assignment of Administrator SID in the passdb 
+      backend.  No longer default to 'root' or 'admin users' list.
+    * Enhance LDAP failure debug messages.
+    
+    
+o   Volker Lendecke <vl@samba.org>
+    * Allow 'rpcclient -c enumtrust' to enumerate more than 10 trusts.
+    * Fix parsing of other_sids in net_user_info3.
+    * Correct bad failure logic when user was not a member of any 
+      domain local groups.
+    
+
+Changes for older versions follow below:
+
+      --------------------------------------------------
+		   
 		   ==================================
                    Release Notes for Samba 3.0.11pre2
                                 Jan 21, 2005
@@ -11,7 +95,7 @@ to the Samba community for wider testing.
 
 Common bugs fixed in 3.0.11pre2 include:
 
-  o Ineffeciencies when searching non-AD LDAP directories.
+  o Inefficiencies when searching non-AD LDAP directories.
   o Failure to expand variables in user domain attributes
     in tdbsam and ldapsam.
   o Memory leaks.
@@ -22,16 +106,41 @@ Additional features introduced in Samba 3.0.11pre1:
 
   o Support for the Windows privilege model to assign rights
     to specific SIDs.
-  o New adminstrative options to the 'net rpc' command.
+  o New administrative options to the 'net rpc' command.
 
+
+LDAP Changes
+------------
+
+If "ldap user suffix" or "ldap machine suffix" are defined in
+smb.conf, all user-accounts must reside below the user suffix,
+and all machine trust-accounts must be located below the machine
+suffix.
+
+
+Privilege Model
+---------------
+
+Samba 3.0.11pre2 supports the following assignable rights
+
+SeMachineAccountPrivilege  Add machines to domain
+SePrintOperatorPrivilege   Manage printers
+SeAddUsersPrivilege        Add users and groups to the domain
+SeRemoteShutdownPrivilege  Force shutdown from a remote system
+SeDiskOperatorPrivilege    Manage disk shares
+
+These rights can be assigned to arbitrary users or groups
+via the 'net rpc rights grant/revoke' command.  More details
+of Samba's privilege implementation will be available in a
+forthcoming HOWTO. 
 
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.0.10
---------------------
+Changes since 3.0.11pre1
+------------------------
 
 smb.conf changes
 ----------------
@@ -163,8 +272,6 @@ o   Simo Sorce <idra@samba.org>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Fixes for pdb_mysql.
 
-
-Changes for older versions follow below:
 
       --------------------------------------------------
                    
