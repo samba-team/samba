@@ -1843,8 +1843,6 @@ void start_login(host, autologin, name)
 	 * the login banner message gets lost...
 	 */
 	sleep(1);
-	if (k_hasafs())
-		k_setpag();	/* Put users process in an new pag */
 #ifdef SHOW_LOGIN_ARGS
 	{ 
 	  int i;
