@@ -168,7 +168,9 @@ static int print_run_command(int snum,char *command,
   
 	pstring_sub(syscmd, "%p", p);
 	standard_sub_snum(snum,syscmd);
-  
+
+    /* Convert script args to unix-codepage */
+    dos_to_unix(syscmd, True);
 	ret = smbrun(syscmd,outfile,False);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
@@ -575,7 +577,7 @@ BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
 	   owns their job. */
 
 	if (!owner && 
-	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
+	    !print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
 		*errcode = ERROR_ACCESS_DENIED;
 		return False;
@@ -617,7 +619,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	owner = is_owner(user, jobid);
 
 	if (!owner &&
-	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
+	    !print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 		*errcode = ERROR_ACCESS_DENIED;
 		return False;
@@ -668,7 +670,7 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 	owner = is_owner(user, jobid);
 
 	if (!is_owner(user, jobid) &&
-	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
+	    !print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		*errcode = ERROR_ACCESS_DENIED;
 		return False;
@@ -807,7 +809,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		return -1;
 	}
 
-	if (print_queue_length(snum) > lp_maxprintjobs(snum)) {
+	if (lp_maxprintjobs(snum) && print_queue_length(snum) > lp_maxprintjobs(snum)) {
 		errno = ENOSPC;
 		return -1;
 	}
@@ -1202,7 +1204,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 
 	njobs = print_queue_status(snum, &queue, &status);
 	for (i=0;i<njobs;i++) {
-		if (print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
+		if (print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
 			print_job_delete1(queue[i].job);
 		}
 	}

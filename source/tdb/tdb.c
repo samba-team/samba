@@ -850,8 +850,13 @@ int tdb_traverse(TDB_CONTEXT *tdb, tdb_traverse_func fn, void *state)
 {
 	TDB_DATA key, dbuf;
 	struct list_struct rec;
-	struct tdb_traverse_lock tl = { tdb->travlocks.next, 0, 0 };
+	struct tdb_traverse_lock tl = { NULL, 0, 0 };
 	int ret, count = 0;
+
+        /* This was in the initializaton, above, but the IRIX compiler
+         * did not like it.  crh
+         */
+        tl.next = tdb->travlocks.next;
 
 	/* fcntl locks don't stack: beware traverse inside traverse */
 	tdb->travlocks.next = &tl;

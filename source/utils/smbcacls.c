@@ -37,6 +37,7 @@ static int numeric;
 
 enum acl_mode {ACL_SET, ACL_DELETE, ACL_MODIFY, ACL_ADD };
 enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
+enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
 struct perm_value {
 	char *perm;
@@ -108,18 +109,19 @@ static void SidToString(fstring str, DOM_SID *sid)
 
 	/* Ask LSA to convert the sid to a name */
 
-	if (open_policy_hnd() &&
+	if (!open_policy_hnd() ||
 	    cli_lsa_lookup_sids(&lsa_cli, &pol, 1, sid, &names, &types, 
-				&num_names) == NT_STATUS_NOPROBLEMO) {
-
-		/* Converted OK */
-
-		fstrcpy(str, names[0]);
-
-		safe_free(names[0]);
-		safe_free(names);
-		safe_free(types);
+				&num_names) != NT_STATUS_NOPROBLEMO) {
+		return;
 	}
+
+	/* Converted OK */
+	
+	fstrcpy(str, names[0]);
+	
+	safe_free(names[0]);
+	safe_free(names);
+	safe_free(types);
 }
 
 /* convert a string to a SID, either numeric or username/group */
@@ -130,17 +132,14 @@ static BOOL StringToSid(DOM_SID *sid, char *str)
 	int num_sids;
 	BOOL result = True;
 	
-	/* Short cut */
-
 	if (strncmp(str, "S-", 2) == 0) {
-		result = string_to_sid(sid, str);
-		goto done;
+		return string_to_sid(sid, str);
 	}
 
-	if (open_policy_hnd() &&
+	if (!open_policy_hnd() ||
 	    cli_lsa_lookup_names(&lsa_cli, &pol, 1, &str, &sids, &types, 
 				 &num_sids) != NT_STATUS_NOPROBLEMO) {
-		result = string_to_sid(sid, str);
+		result = False;
 		goto done;
 	}
 
@@ -347,7 +346,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 	SEC_ACL *dacl=NULL;
 	int revision=1;
 
-	while (next_token(&p, tok, " \t,\r\n", sizeof(tok))) {
+	while (next_token(&p, tok, "\t,\r\n", sizeof(tok))) {
 
 		if (strncmp(tok,"REVISION:", 9) == 0) {
 			revision = strtol(tok+9, NULL, 16);
@@ -438,28 +437,51 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 
 }
 
+/* Some systems seem to require unicode pathnames for the ntcreate&x call
+   despite Samba negotiating ascii filenames.  Try with unicode pathname if
+   the ascii version fails. */
+
+int do_cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
+{
+	int result;
+
+	result = cli_nt_create(cli, fname, DesiredAccess);
+
+	if (result == -1) {
+		uint32 errnum, nt_rpc_error;
+		uint8 errclass;
+
+		cli_error(cli, &errclass, &errnum, &nt_rpc_error);
+
+		if (errclass == ERRDOS && errnum == ERRbadpath) {
+			result = cli_nt_create_uni(cli, fname, DesiredAccess);
+		}
+	}
+
+	return result;
+}
 
 /***************************************************** 
 dump the acls for a file
 *******************************************************/
-static void cacl_dump(struct cli_state *cli, char *filename)
+static int cacl_dump(struct cli_state *cli, char *filename)
 {
 	int fnum;
 	SEC_DESC *sd;
 
-	if (test_args) return;
+	if (test_args) return EXIT_OK;
 
-	fnum = cli_nt_create(cli, filename, 0x20000);
+	fnum = do_cli_nt_create(cli, filename, 0x20000);
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
-		return;
+		return EXIT_FAILED;
 	}
 
 	sd = cli_query_secdesc(cli, fnum);
 
 	if (!sd) {
 		printf("ERROR: secdesc query failed: %s\n", cli_errstr(cli));
-		return;
+		return EXIT_FAILED;
 	}
 
 	sec_desc_print(stdout, sd);
@@ -467,6 +489,8 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 	free_sec_desc(&sd);
 
 	cli_close(cli, fnum);
+
+	return EXIT_OK;
 }
 
 /***************************************************** 
@@ -474,21 +498,25 @@ Change the ownership or group ownership of a file. Just
 because the NT docs say this can't be done :-). JRA.
 *******************************************************/
 
-static void owner_set(struct cli_state *cli, enum chown_mode change_mode, char *filename, char *new_username)
+static int owner_set(struct cli_state *cli, enum chown_mode change_mode, 
+		     char *filename, char *new_username)
 {
 	int fnum;
 	DOM_SID sid;
 	SEC_DESC *sd, *old;
 	size_t sd_size;
 
-	fnum = cli_nt_create(cli, filename, READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS);
+	fnum = do_cli_nt_create(cli, filename, 
+				READ_CONTROL_ACCESS | WRITE_DAC_ACCESS
+				| WRITE_OWNER_ACCESS);
+
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
-		return;
+		return EXIT_FAILED;
 	}
 
 	if (!StringToSid(&sid, new_username))
-		return;
+		return EXIT_PARSE_ERROR;
 
 	old = cli_query_secdesc(cli, fnum);
 
@@ -505,30 +533,81 @@ static void owner_set(struct cli_state *cli, enum chown_mode change_mode, char *
 	free_sec_desc(&old);
 
 	cli_close(cli, fnum);
+
+	return EXIT_OK;
+}
+
+/* The MSDN is contradictory over the ordering of ACE entries in an ACL.
+   However NT4 gives a "The information may have been modified by a
+   computer running Windows NT 5.0" if denied ACEs do not appear before
+   allowed ACEs. */
+
+static void sort_acl(SEC_ACL *the_acl)
+{
+	SEC_ACE *tmp_ace;
+	int i, ace_ndx = 0;
+	BOOL do_denied = True;
+
+	tmp_ace = (SEC_ACE *)malloc(sizeof(SEC_ACE) * the_acl->num_aces);
+
+	if (!tmp_ace) return;
+
+ copy_aces:
+	
+	for (i = 0; i < the_acl->num_aces; i++) {
+
+		/* Copy denied ACEs */
+
+		if (do_denied &&
+		    the_acl->ace[i].type == SEC_ACE_TYPE_ACCESS_DENIED) {
+			tmp_ace[ace_ndx] = the_acl->ace[i];
+			ace_ndx++;
+		}
+
+		/* Copy other ACEs */
+
+		if (!do_denied &&
+		    the_acl->ace[i].type != SEC_ACE_TYPE_ACCESS_DENIED) {
+			tmp_ace[ace_ndx] = the_acl->ace[i];
+			ace_ndx++;
+		}
+	}
+
+	if (do_denied) {
+		do_denied = False;
+		goto copy_aces;
+	}
+
+	free(the_acl->ace);
+	the_acl->ace = tmp_ace;
 }
 
 /***************************************************** 
 set the ACLs on a file given an ascii description
 *******************************************************/
-static void cacl_set(struct cli_state *cli, char *filename, 
-		     char *the_acl, enum acl_mode mode)
+static int cacl_set(struct cli_state *cli, char *filename, 
+		    char *the_acl, enum acl_mode mode)
 {
 	int fnum;
 	SEC_DESC *sd, *old;
 	int i, j;
 	size_t sd_size;
+	int result = EXIT_OK;
 
 	sd = sec_desc_parse(the_acl);
 
-	if (!sd) return;
-	if (test_args) return;
+	if (!sd) return EXIT_PARSE_ERROR;
+	if (test_args) return EXIT_OK;
 
-	/* the desired access below is the only one I could find that works with
-	   NT4, W2KP and Samba */
-	fnum = cli_nt_create(cli, filename, MAXIMUM_ALLOWED_ACCESS | 0x60000);
+	/* The desired access below is the only one I could find that works
+	   with NT4, W2KP and Samba */
+
+	fnum = do_cli_nt_create(cli, filename, 
+				MAXIMUM_ALLOWED_ACCESS | 0x60000);
+
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
-		return;
+		return EXIT_FAILED;
 	}
 
 	old = cli_query_secdesc(cli, fnum);
@@ -605,17 +684,28 @@ static void cacl_set(struct cli_state *cli, char *filename,
 		free_sec_desc(&sd);
 	}
 
+	/* Denied ACE entries must come before allowed ones */
+
+	sort_acl(old->dacl);
+
+	/* Create new security descriptor and set it */
+
 	sd = make_sec_desc(old->revision, old->owner_sid, old->grp_sid, 
 			   NULL, old->dacl, &sd_size);
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
+		result = EXIT_FAILED;
 	}
+
+	/* Clean up */
 
 	free_sec_desc(&sd);
 	free_sec_desc(&old);
 
 	cli_close(cli, fnum);
+
+	return result;
 }
 
 
@@ -712,7 +802,7 @@ struct cli_state *connect_one(char *share)
 static void usage(void)
 {
 	printf(
-"Usage: smbcacls //server1/share1 filename -U username [options]\n\
+"Usage: smbcacls //server1/share1 filename [options]\n\
 \n\
 \t-D <acls>               delete an acl\n\
 \t-M <acls>               modify an acl\n\
@@ -748,14 +838,15 @@ You can string acls together with spaces, commas or newlines\n\
 	enum acl_mode mode;
 	char *the_acl = NULL;
 	enum chown_mode change_mode = REQUEST_NONE;
+	int result;
 
 	setlinebuf(stdout);
 
 	dbf = stderr;
 
-	if (argc < 4 || argv[1][0] == '-') {
+	if (argc < 3 || argv[1][0] == '-') {
 		usage();
-		exit(1);
+		exit(EXIT_PARSE_ERROR);
 	}
 
 	setup_logging(argv[0],True);
@@ -776,6 +867,14 @@ You can string acls together with spaces, commas or newlines\n\
 
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
+
+		if ((p=strchr(username,'%'))) {
+			*p = 0;
+			pstrcpy(password,p+1);
+			got_pass = True;
+			memset(strchr(getenv("USER"), '%') + 1, 'X',
+			       strlen(password));
+		}
 	}
 
 	seed = time(NULL);
@@ -832,11 +931,11 @@ You can string acls together with spaces, commas or newlines\n\
 
 		case 'h':
 			usage();
-			exit(1);
+			exit(EXIT_PARSE_ERROR);
 
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
-			exit(1);
+			exit(EXIT_PARSE_ERROR);
 		}
 	}
 
@@ -845,21 +944,35 @@ You can string acls together with spaces, commas or newlines\n\
 	
 	if (argc > 0) {
 		usage();
-		exit(1);
+		exit(EXIT_PARSE_ERROR);
 	}
+
+	/* Make connection to server */
 
 	if (!test_args) {
 		cli = connect_one(share);
-		if (!cli) exit(1);
+		if (!cli) exit(EXIT_FAILED);
 	}
+
+	{
+		char *s;
+
+		s = filename;
+		while(*s) {
+			if (*s == '/') *s = '\\';
+			s++;
+		}
+	}
+
+	/* Perform requested action */
 
 	if (change_mode != REQUEST_NONE) {
-		owner_set(cli, change_mode, filename, owner_username);
+		result = owner_set(cli, change_mode, filename, owner_username);
 	} else if (the_acl) {
-		cacl_set(cli, filename, the_acl, mode);
+		result = cacl_set(cli, filename, the_acl, mode);
 	} else {
-		cacl_dump(cli, filename);
+		result = cacl_dump(cli, filename);
 	}
 
-	return(0);
+	return result;
 }

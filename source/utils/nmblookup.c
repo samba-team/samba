@@ -80,6 +80,55 @@ static void usage(void)
   printf("\n");
 }
 
+/****************************************************************************
+turn a node status flags field into a string
+****************************************************************************/
+static char *node_status_flags(unsigned char flags)
+{
+	static fstring ret;
+	fstrcpy(ret,"");
+	
+	fstrcat(ret, (flags & 0x80) ? "<GROUP> " : "        ");
+	if ((flags & 0x60) == 0x00) fstrcat(ret,"B ");
+	if ((flags & 0x60) == 0x20) fstrcat(ret,"P ");
+	if ((flags & 0x60) == 0x40) fstrcat(ret,"M ");
+	if ((flags & 0x60) == 0x60) fstrcat(ret,"H ");
+	if (flags & 0x10) fstrcat(ret,"<DEREGISTERING> ");
+	if (flags & 0x08) fstrcat(ret,"<CONFLICT> ");
+	if (flags & 0x04) fstrcat(ret,"<ACTIVE> ");
+	if (flags & 0x02) fstrcat(ret,"<PERMANENT> ");
+	
+	return ret;
+}
+
+/****************************************************************************
+do a node status query
+****************************************************************************/
+static void do_node_status(int fd, char *name, int type, struct in_addr ip)
+{
+	struct nmb_name nname;
+	int count, i, j;
+	struct node_status *status;
+	fstring cleanname;
+
+	printf("Looking up status of %s\n",inet_ntoa(ip));
+	make_nmb_name(&nname, name, type);
+	status = name_status_query(fd,&nname,ip, &count);
+	if (status) {
+		for (i=0;i<count;i++) {
+			fstrcpy(cleanname, status[i].name);
+			for (j=0;cleanname[j];j++) {
+				if (!isprint(cleanname[j])) cleanname[j] = '.';
+			}
+			printf("\t%-15s <%02x> - %s\n",
+			       cleanname,status[i].type,
+			       node_status_flags(status[i].flags));
+		}
+		free(status);
+	}
+	printf("\n");
+}
+
 
 /****************************************************************************
 send out one query
@@ -125,9 +174,7 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 	   was valid - ie. name_query returned true.
 	*/
 	if (find_status) {
-		printf("Looking up status of %s\n",inet_ntoa(ip_list[0]));
-		name_status(ServerFD,lookup,lookup_type,True,ip_list[0],NULL,NULL);
-		printf("\n");
+		do_node_status(ServerFD, lookup, lookup_type, ip_list[0]);
 	}
 
 	safe_free(ip_list);
@@ -245,9 +292,7 @@ int main(int argc,char *argv[])
       {
         fstrcpy(lookup,"*");
         ip = *interpret_addr2(argv[i]);
-        printf("Looking up status of %s\n",inet_ntoa(ip));
-        name_status(ServerFD,lookup,lookup_type,True,ip,NULL,NULL);
-        printf("\n");
+	do_node_status(ServerFD, lookup, lookup_type, ip);
         continue;
       }
 

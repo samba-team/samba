@@ -436,6 +436,7 @@ struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd);
 
 /*The following definitions come from  lib/util_seaccess.c  */
 
+void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping);
 BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		     uint32 acc_desired, uint32 *acc_granted, uint32 *status);
 
@@ -694,6 +695,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
 int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess);
+int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess);
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, 
@@ -814,14 +816,17 @@ BOOL deal_with_creds(uchar sess_key[8],
 
 /*The following definitions come from  libsmb/namequery.c  */
 
-BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
-		 struct in_addr to_ip,char *master,char *rname);
+struct node_status *name_status_query(int fd,struct nmb_name *name,
+				      struct in_addr to_ip, int *num_names);
+BOOL name_status_find(int type, struct in_addr to_ip, char *name);
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count);
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
+BOOL name_resolve_bcast(const char *name, int name_type,
+			struct in_addr **return_ip_list, int *return_count);
 BOOL is_ip_address(const char *name);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
 BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
@@ -856,7 +861,7 @@ int name_len(char *s1);
 /*The following definitions come from  libsmb/nterr.c  */
 
 BOOL get_safe_nt_error_msg(uint32 nt_code,char *msg, size_t len);
-const char *get_nt_error_msg(uint32 nt_code);
+char *get_nt_error_msg(uint32 nt_code);
 
 /*The following definitions come from  libsmb/passchange.c  */
 
@@ -1790,6 +1795,7 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
                         fstring value, uint8 **data, uint32 *type, uint32 *len);
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr);
 BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr);
+void map_printer_permissions(SEC_DESC *sd);
 BOOL print_access_check(struct current_user *user, int snum, int access_type);
 BOOL print_time_access_check(int snum);
 #endif
