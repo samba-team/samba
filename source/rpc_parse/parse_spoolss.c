@@ -5935,7 +5935,7 @@ BOOL spoolss_io_r_deleteform(char *desc, SPOOL_R_DELETEFORM *r_u, prs_struct *ps
 
 BOOL spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=0;
+	uint32 useless_ptr=1;
 	prs_debug(ps, depth, desc, "spoolss_io_q_addform");
 	depth++;
 
@@ -5980,7 +5980,7 @@ BOOL spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int 
 
 BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=0;
+	uint32 useless_ptr=1;
 	prs_debug(ps, depth, desc, "spoolss_io_q_setform");
 	depth++;
 
