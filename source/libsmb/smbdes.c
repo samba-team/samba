@@ -259,7 +259,7 @@ static void dohash(char *out, char *in, char *key, int forw)
 	permute(out, rl, perm6, 64);
 }
 
-static void str_to_key(unsigned char *str,unsigned char *key)
+static void str_to_key(const uchar *str, uchar *key)
 {
 	int i;
 
@@ -277,7 +277,7 @@ static void str_to_key(unsigned char *str,unsigned char *key)
 }
 
 
-void smbhash(unsigned char *out, const uchar *in, unsigned char *key, int forw)
+void smbhash(unsigned char *out, const uchar *in, const uchar *key, int forw)
 {
 	int i;
 	char outb[64];

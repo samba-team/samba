@@ -852,7 +852,7 @@ void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
 
 /*The following definitions come from  libsmb/smbdes.c  */
 
-void smbhash(unsigned char *out, const uchar *in, unsigned char *key, int forw);
+void smbhash(unsigned char *out, const uchar *in, const uchar *key, int forw);
 void E_P16(unsigned char *p14,unsigned char *p16);
 void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
 void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out);
@@ -894,7 +894,7 @@ void ntv2_owf_gen(const uchar owf[16],
 				uchar kr_buf[16]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
-BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, char nt_hash[16]);
+BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key);
 void create_ntlmssp_resp(struct pwd_info *pwd,
 				char *domain, char *user_name, char *my_name,
 				uint32 ntlmssp_cli_flgs,
