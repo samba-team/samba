@@ -1,3 +1,14 @@
+Changes in release 0.2j:
+
+ * builds on Irix
+
+ * ftpd works in passive mode
+
+ * should build on cygwin
+
+ * work around broken IPv6-code on OpenBSD 2.6, also add configure
+   option --disable-ipv6
+
 Changes in release 0.2i:
 
  * use getaddrinfo in the missing places.
