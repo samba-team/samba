@@ -1,5 +1,6 @@
 2000-07-24  Assar Westerlund  <assar@sics.se>
 
+	* kadmin.c (commands): add quit
 	* load.c (doit): truncate the log since there's no way of knowing
 	what changes are going to be added
 
