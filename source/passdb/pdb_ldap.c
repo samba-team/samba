@@ -422,22 +422,22 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	pstrcpy(domain, lp_workgroup());
 
 	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
-	pass_last_set_time = (time_t) strtol(temp, NULL, 16);
+	pass_last_set_time = (time_t) atol(temp);
 
 	get_single_attribute(ldap_struct, entry, "logonTime", temp);
-	logon_time = (time_t) strtol(temp, NULL, 16);
+	logon_time = (time_t) atol(temp);
 
 	get_single_attribute(ldap_struct, entry, "logoffTime", temp);
-	logoff_time = (time_t) strtol(temp, NULL, 16);
+	logoff_time = (time_t) atol(temp);
 
 	get_single_attribute(ldap_struct, entry, "kickoffTime", temp);
-	kickoff_time = (time_t) strtol(temp, NULL, 16);
+	kickoff_time = (time_t) atol(temp);
 
 	get_single_attribute(ldap_struct, entry, "pwdCanChange", temp);
-	pass_can_change_time = (time_t) strtol(temp, NULL, 16);
+	pass_can_change_time = (time_t) atol(temp);
 
 	get_single_attribute(ldap_struct, entry, "pwdMustChange", temp);
-	pass_must_change_time = (time_t) strtol(temp, NULL, 16);
+	pass_must_change_time = (time_t) atol(temp);
 
 	/* recommend that 'gecos' and 'displayName' should refer to the same
 	 * attribute OID.  userFullName depreciated, only used by Samba
@@ -493,9 +493,9 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	get_single_attribute(ldap_struct, entry, "description", acct_desc);
 	get_single_attribute(ldap_struct, entry, "userWorkstations", workstations);
 	get_single_attribute(ldap_struct, entry, "rid", temp);
-	user_rid = (uint32)strtol(temp, NULL, 10);
+	user_rid = (uint32)atol(temp);
 	get_single_attribute(ldap_struct, entry, "primaryGroupID", temp);
-	group_rid = (uint32)strtol(temp, NULL, 10);
+	group_rid = (uint32)atol(temp);
 
 
 	/* These values MAY be in LDAP, but they can also be retrieved through 
@@ -575,6 +575,7 @@ Initialize SAM_ACCOUNT from an LDAP query
 static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * sampass)
 {
 	pstring temp;
+	uint32  i; 
 
 	*mods = NULL;
 
