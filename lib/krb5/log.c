@@ -47,10 +47,10 @@ static struct facility*
 log_realloc(krb5_log_facility *f)
 {
     struct facility *fp;
-    f->len++;
-    fp = realloc(f->val, f->len * sizeof(*f->val));
+    fp = realloc(f->val, (f->len + 1) * sizeof(*f->val));
     if(fp == NULL)
 	return NULL;
+    f->len++;
     f->val = fp;
     fp += f->len - 1;
     return fp;
