@@ -303,6 +303,8 @@ BOOL secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 
 	/* unpack trusted domain password */
 	pass_len = tdb_trusted_dom_pass_unpack(pass_buf, size, &pass);
+	SAFE_FREE(pass_buf);
+
 	if (pass_len != size) {
 		DEBUG(5, ("Invalid secrets size. Unpacked data doesn't match trusted_dom_pass structure.\n"));
 		return False;
@@ -573,7 +575,12 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 	NTSTATUS status;
 
 	if (!secrets_init()) return NT_STATUS_ACCESS_DENIED;
-
+	
+	if (!pass) {
+		DEBUG(0, ("talloc_zero failed!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+				
 	*num_domains = 0;
 	start_idx = *enum_ctx;
 
@@ -610,16 +617,13 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 				
 		packed_pass = secrets_fetch(secrets_key, &size);
 		packed_size = tdb_trusted_dom_pass_unpack(packed_pass, size, pass);
-
-		if (size != packed_size) {
-			DEBUG(2, ("Secrets record %s is invalid!\n", secrets_key));
-			if (size) SAFE_FREE(packed_pass);
-
-			continue;
-		}
-		
 		/* packed representation isn't needed anymore */
 		SAFE_FREE(packed_pass);
+		
+		if (size != packed_size) {
+			DEBUG(2, ("Secrets record %s is invalid!\n", secrets_key));
+			continue;
+		}
 		
 		pull_ucs2_fstring(dom_name, pass->uni_name);
 		DEBUG(18, ("Fetched secret record num %d.\nDomain name: %s, SID: %s\n",
