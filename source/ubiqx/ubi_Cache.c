@@ -90,19 +90,30 @@
  *
  * -------------------------------------------------------------------------- **
  *
- *  Log: ubi_Cache.c,v
+ *  Log: ubi_Cache.c,v 
+ *  Revision 0.1  1998/05/20 04:36:02  crh
+ *  The C file now includes ubi_null.h.  See ubi_null.h for more info.
+ *
  *  Revision 0.0  1997/12/18 06:24:33  crh
  *  Initial Revision.
  *
  * ========================================================================== **
  */
 
-#include "../includes.h"
-#include "ubi_Cache.h"  /* Header for *this* module. */
+#include "ubi_null.h"     /* ubiqx NULL source.       */
+#include "ubi_Cache.h"    /* Header for *this* module. */
 
 /* -------------------------------------------------------------------------- **
  * Static data...
  */
+
+/*  commented out until I make use of it...
+static char ModuleID[] = 
+"ubi_Cache\n\
+\tRevision: 0.1 \n\
+\tDate: 1998/05/20 04:36:02 \n\
+\tAuthor: crh \n";
+*/
 
 /* -------------------------------------------------------------------------- **
  * Internal functions...

@@ -26,7 +26,14 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_BinTree.c,v
+ * Log: ubi_BinTree.c,v 
+ * Revision 4.2  1998/05/20 04:32:36  crh
+ * The C file now includes ubi_null.h.  See ubi_null.h for more info.
+ * Also, the balance and gender fields of the node were declared as
+ * signed char.  As I understand it, at least one SunOS or Solaris
+ * compiler doesn't like "signed char".  The declarations were
+ * wrong anyway, so I changed them to simple "char".
+ *
  * Revision 4.1  1998/03/31 06:11:57  crh
  * Thomas Aglassinger sent E'mail pointing out errors in the
  * dereferencing of function pointers, and a missing typecast.
@@ -122,18 +129,17 @@
  * ========================================================================== **
  */
 
-#include "../includes.h"
-#include "ubi_BinTree.h"            /* Header for this module          */
-
+#include "ubi_null.h"     /* ubiqx NULL source.       */
+#include "ubi_BinTree.h"  /* Header for this module.  */
 
 /* ========================================================================== **
  * Static data.
  */
 
 static char ModuleID[] = "ubi_BinTree\n\
-\tRevision: 4.1\n\
-\tDate: 1998/03/31 06:11:57\n\
-\tAuthor: crh\n";
+\tRevision: 4.2 \n\
+\tDate: 1998/05/20 04:32:36 \n\
+\tAuthor: crh \n";
 
 /* ========================================================================== **
  * Internal (private) functions.
@@ -206,14 +212,14 @@ static ubi_btNodePtr TreeFind( ubi_btItemPtr  findme,
   {
   register ubi_btNodePtr tmp_p      = p;
   ubi_btNodePtr          tmp_pp     = NULL;
-  signed char            tmp_gender = ubi_trEQUAL;
+  char                   tmp_gender = ubi_trEQUAL;
   int                    tmp_cmp;
 
   while( tmp_p
      && (ubi_trEQUAL != (tmp_cmp = ubi_trAbNormal((*CmpFunc)(findme, tmp_p)))) )
     {
     tmp_pp     = tmp_p;                 /* Keep track of previous node. */
-    tmp_gender = (signed char)tmp_cmp;  /* Keep track of sex of child.  */
+    tmp_gender = (char)tmp_cmp;         /* Keep track of sex of child.  */
     tmp_p      = tmp_p->Link[tmp_cmp];  /* Go to child. */
     }
   *parentp = tmp_pp;                /* Return results. */
@@ -477,7 +483,7 @@ ubi_btNodePtr ubi_btInitNode( ubi_btNodePtr NodePtr )
 
 ubi_btRootPtr ubi_btInitTree( ubi_btRootPtr   RootPtr,
                               ubi_btCompFunc  CompFunc,
-                              unsigned char   Flags )
+                              char            Flags )
   /* ------------------------------------------------------------------------ **
    * Initialize the fields of a Tree Root header structure.
    *

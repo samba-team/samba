@@ -92,7 +92,10 @@
  *
  * -------------------------------------------------------------------------- **
  *
- *  Log: ubi_Cache.h,v
+ *  Log: ubi_Cache.h,v 
+ *  Revision 0.1  1998/05/20 04:36:02  crh
+ *  The C file now includes ubi_null.h.  See ubi_null.h for more info.
+ *
  *  Revision 0.0  1997/12/18 06:25:23  crh
  *  Initial Revision.
  *

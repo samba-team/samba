@@ -38,7 +38,10 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_SplayTree.h,v
+ * Log: ubi_SplayTree.h,v 
+ * Revision 4.1  1998/05/20 04:37:54  crh
+ * The C file now includes ubi_null.h.  See ubi_null.h for more info.
+ *
  * Revision 4.0  1998/03/10 03:40:57  crh
  * Minor comment changes.  The revision number is now 4.0 to match the
  * BinTree and AVLtree modules.

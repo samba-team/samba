@@ -28,7 +28,14 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_BinTree.h,v
+ * Log: ubi_BinTree.h,v 
+ * Revision 4.2  1998/05/20 04:32:36  crh
+ * The C file now includes ubi_null.h.  See ubi_null.h for more info.
+ * Also, the balance and gender fields of the node were declared as
+ * signed char.  As I understand it, at least one SunOS or Solaris
+ * compiler doesn't like "signed char".  The declarations were
+ * wrong anyway, so I changed them to simple "char".
+ *
  * Revision 4.1  1998/03/31 06:13:47  crh
  * Thomas Aglassinger sent E'mail pointing out errors in the
  * dereferencing of function pointers, and a missing typecast.
@@ -263,8 +270,8 @@ typedef void *ubi_btItemPtr;          /* A pointer to key data within a node. */
  */
 typedef struct ubi_btNodeStruct {
   struct ubi_btNodeStruct *Link[ 3 ];
-  signed char              gender;
-  signed char              balance;
+  char                     gender;
+  char                     balance;
   } ubi_btNode;
 
 typedef ubi_btNode *ubi_btNodePtr;     /* Pointer to an ubi_btNode structure. */
@@ -326,7 +333,7 @@ typedef struct {
   ubi_btNodePtr  root;     /* A pointer to the root node of the tree       */
   ubi_btCompFunc cmp;      /* A pointer to the tree's comparison function  */
   unsigned long  count;    /* A count of the number of nodes in the tree   */
-  unsigned char  flags;    /* Overwrite Y|N, Duplicate keys Y|N...         */
+  char           flags;    /* Overwrite Y|N, Duplicate keys Y|N...         */
   } ubi_btRoot;
 
 typedef ubi_btRoot *ubi_btRootPtr;  /* Pointer to an ubi_btRoot structure. */
@@ -367,7 +374,7 @@ ubi_btNodePtr ubi_btInitNode( ubi_btNodePtr NodePtr );
 
 ubi_btRootPtr  ubi_btInitTree( ubi_btRootPtr   RootPtr,
                                ubi_btCompFunc  CompFunc,
-                               unsigned char   Flags );
+                               char            Flags );
   /* ------------------------------------------------------------------------ **
    * Initialize the fields of a Tree Root header structure.
    *  
