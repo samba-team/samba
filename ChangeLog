@@ -1,3 +1,13 @@
+Sun Mar 22 00:47:22 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/kadm5/delete_s.c: Check immutable bit.
+
+	* kadmin/kadmin.c: Pass client name to kadm5_init.
+
+	* lib/kadm5/init_c.c: Get creds for client name passed in.
+
+	* kdc/hprop.c (v4_prop): Check for `changepw.kerberos'.
+
 Sat Mar 21 22:57:13 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/mk_error.c: Verify that error_code is in the range
