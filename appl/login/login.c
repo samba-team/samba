@@ -418,6 +418,19 @@ checknologin(void)
     exit(0);
 }
 
+/* print contents of a file */
+static void
+show_file(const char *file)
+{
+    FILE *f;
+    char buf[BUFSIZ];
+    if((f = fopen(file, "r")) == NULL)
+	return;
+    while (fgets(buf, sizeof(buf), f))
+	fputs(buf, stdout);
+    fclose(f);
+}
+
 /* 
  * Actually log in the user.  `pwd' contains all the relevant
  * information about the user.  `ttyn' is the complete name of the tty
@@ -608,6 +621,18 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 		if(buf[0] == '\0')
 		    continue;
 		login_read_env(buf);
+	    }
+	}
+    }
+    {
+	const char *str = login_conf_get_string("motd");
+	char buf[MAXPATHLEN];
+
+	if(str != NULL) {
+	    while(strsep_copy(&str, ",", buf, sizeof(buf)) != -1) {
+		if(buf[0] == '\0')
+		    continue;
+		show_file(buf);
 	    }
 	}
     }
