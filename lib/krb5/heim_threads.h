@@ -66,7 +66,7 @@
 /* XXX hole for Jacques to fill in :)
    #el if defined(__FreeBSD_version) &&  */
 
-#elif define(ENABLE_PTHREAD_SUPPORT)
+#elif defined(ENABLE_PTHREAD_SUPPORT)
 
 #define HEIMDAL_MUTEX pthread_mutex_t
 #define HEIMDAL_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
@@ -84,8 +84,8 @@
 #define HEIMDAL_MUTEX_INITIALIZER 0
 #define HEIMDAL_MUTEX_init(m)  do { (*(m)) = 0; } while(0)
 #define HEIMDAL_MUTEX_lock(m)  do { if ((*(m))++ != 0) abort(); } while(0)
-#define HEIMDAL_MUTEX_unlock do { if ((*(m))-- != 1) abort(); } while(0)
-#define HEIMDAL_MUTEX_destroy do {if ((*(m)) != 0) abort(); } while(0)
+#define HEIMDAL_MUTEX_unlock(m) do { if ((*(m))-- != 1) abort(); } while(0)
+#define HEIMDAL_MUTEX_destroy(m) do {if ((*(m)) != 0) abort(); } while(0)
 
 #else /* no thread support, no debug case */
 
@@ -93,8 +93,8 @@
 #define HEIMDAL_MUTEX_INITIALIZER 0
 #define HEIMDAL_MUTEX_init(m)  do { } while(0)
 #define HEIMDAL_MUTEX_lock(m)  do { } while(0)
-#define HEIMDAL_MUTEX_unlock do { } while(0)
-#define HEIMDAL_MUTEX_destroy do { } while(0)
+#define HEIMDAL_MUTEX_unlock(m) do { } while(0)
+#define HEIMDAL_MUTEX_destroy(m) do { } while(0)
 
 #endif /* no thread support */
 
