@@ -3,7 +3,7 @@
    Common popt routines
 
    Copyright (C) Tim Potter 2001,2002
-   Copyright (C) Jelmer Vernooij 2002,2003
+   Copyright (C) Jelmer Vernooij 2002,2003,2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
