@@ -135,7 +135,7 @@ char * strlwr(char *);
 int strnlen(char*, int);
 #endif
 
-#ifndef HAVE_STRTOK_R
+#ifdef NEED_STRTOK_R_PROTO
 char *strtok_r(char *s1, const char *s2, char **lasts);
 #endif
 
