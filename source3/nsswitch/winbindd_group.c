@@ -923,14 +923,11 @@ static void add_gid_to_array_unique(gid_t gid, gid_t **gids, int *num)
 {
 	int i;
 
-	if ((*num) >= groups_max())
-		return;
-
 	for (i=0; i<*num; i++) {
 		if ((*gids)[i] == gid)
 			return;
 	}
-	
+
 	*gids = Realloc(*gids, (*num+1) * sizeof(gid_t));
 
 	if (*gids == NULL)
