@@ -5,6 +5,8 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 WFLAGS=@WFLAGS@
 CFLAGS=$(WFLAGS) @CFLAGS@
 
+YFLAGS = -d
+
 lib_LIBRARIES = libasn1.a
 
 SUFFIXES = .x
@@ -50,16 +52,6 @@ libasn1_a_SOURCES = der_get.c der_put.c der_free.c der_length.c der_copy.c \
 asn1_compile_LDADD = -L../roken -lroken @LEXLIB@
 
 CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) $(foo) asn1_files
-
-parse.c: parse.y
-	$(YACC) -d $(YFLAGS) $(srcdir)/parse.y
-	mv y.tab.c parse.c
-
-parse.h: parse.c
-	mv y.tab.h parse.h
-
-lex.c: lex.l
-	$(LEX) $(LFLAGS) -t $(srcdir)/lex.l > lex.c
 
 lex.o: parse.h
 
