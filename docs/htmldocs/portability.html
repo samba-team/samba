@@ -8,10 +8,13 @@ NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
-HREF="samba-project-documentation.html"><LINK
+HREF="samba-howto-collection.html"><LINK
 REL="PREVIOUS"
 TITLE="Group mapping HOWTO"
-HREF="groupmapping.html"></HEAD
+HREF="groupmapping.html"><LINK
+REL="NEXT"
+TITLE="Samba and other CIFS clients"
+HREF="other-clients.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -52,7 +55,11 @@ VALIGN="bottom"
 WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
->&nbsp;</TD
+><A
+HREF="other-clients.html"
+ACCESSKEY="N"
+>Next</A
+></TD
 ></TR
 ></TABLE
 ><HR
@@ -64,7 +71,7 @@ CLASS="CHAPTER"
 ><A
 NAME="PORTABILITY"
 ></A
->Chapter 22. Portability</H1
+>Chapter 21. Portability</H1
 ><P
 >Samba works on a wide range of platforms but the interface all the 
 platforms provide is not always compatible. This chapter contains 
@@ -74,9 +81,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3201"
+NAME="AEN3011"
 ></A
->22.1. HPUX</H1
+>21.1. HPUX</H1
 ><P
 >HP's implementation of supplementary groups is, er, non-standard (for
 hysterical reasons).  There are two group files, /etc/group and
@@ -100,9 +107,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3206"
+NAME="AEN3016"
 ></A
->22.2. SCO Unix</H1
+>21.2. SCO Unix</H1
 ><P
 > 
 If you run an old version of  SCO Unix then you may need to get important 
@@ -117,9 +124,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3210"
+NAME="AEN3020"
 ></A
->22.3. DNIX</H1
+>21.3. DNIX</H1
 ><P
 >DNIX has a problem with seteuid() and setegid(). These routines are
 needed for Samba to work correctly, but they were left out of the DNIX
@@ -224,9 +231,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3239"
+NAME="AEN3049"
 ></A
->22.4. RedHat Linux Rembrandt-II</H1
+>21.4. RedHat Linux Rembrandt-II</H1
 ><P
 >By default RedHat Rembrandt-II during installation adds an
 entry to /etc/hosts as follows:
@@ -269,7 +276,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="samba-project-documentation.html"
+HREF="samba-howto-collection.html"
 ACCESSKEY="H"
 >Home</A
 ></TD
@@ -277,7 +284,11 @@ ACCESSKEY="H"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="other-clients.html"
+ACCESSKEY="N"
+>Next</A
+></TD
 ></TR
 ><TR
 ><TD
@@ -294,7 +305,7 @@ VALIGN="top"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->&nbsp;</TD
+>Samba and other CIFS clients</TD
 ></TR
 ></TABLE
 ></DIV
