@@ -75,7 +75,7 @@ static void free_samr_info(void *ptr)
 
 	if (info->disp_info.user_dbloaded){
 		for (i=0; i<info->disp_info.num_account; i++)
-			SAFE_FREE(info->disp_info.disp_user_info[i].sam);
+			pdb_free_sam(&info->disp_info.disp_user_info[i].sam);
 
 		SAFE_FREE(info->disp_info.disp_user_info);
 	}
