@@ -816,6 +816,8 @@ static GtkWidget* create_savefilewin (void)
 		POPT_TABLEEND
 	};
 
+	gregedit_init_subsystems;
+
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 

@@ -147,6 +147,7 @@ sub _do_depend_subsystems($)
 	foreach my $key (sort keys %{$CTX->{INPUT}{SUBSYSTEMS}}) {
 		my $name = $CTX->{INPUT}{SUBSYSTEMS}{$key}{NAME};
 		my @STATIC_MODULES_LIST = ();
+		my @INIT_FUNCTIONS = ();
 
 		#
 		# skip when the subsystem was disabled
@@ -159,28 +160,19 @@ sub _do_depend_subsystems($)
 		# create the subsystems used OBJ_LIST
 		#
 		my @OBJ_LIST = ();
-		foreach my $elem (@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{INIT_OBJ_FILES}}) {
-			push(@OBJ_LIST,$elem);
-		}
-		foreach my $elem (@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{ADD_OBJ_FILES}}) {
-			push(@OBJ_LIST,$elem);
-		}
+		push (@OBJ_LIST, @{$CTX->{INPUT}{SUBSYSTEMS}{$key}{INIT_OBJ_FILES}});
+		push (@OBJ_LIST, @{$CTX->{INPUT}{SUBSYSTEMS}{$key}{ADD_OBJ_FILES}});
 
 		#
 		# create the subsystems used SUBSYSTEMS_LIST
 		#
 		my @SUBSYSTEMS_LIST = ();
-		foreach my $elem (@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{REQUIRED_SUBSYSTEMS}}) {
-			push(@SUBSYSTEMS_LIST,$elem);
-		}
-
+		push (@SUBSYSTEMS_LIST, (@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{REQUIRED_SUBSYSTEMS}}));
 		#
 		# create the subsystems used LIBRARIES_LIST
 		#
 		my @LIBRARIES_LIST = ();
-		foreach my $elem (@{$CTX->{INPUT}{SUBSYSTEMS}{$key}{REQUIRED_LIBRARIES}}) {
-			push(@LIBRARIES_LIST,$elem);
-		}
+		push (@LIBRARIES_LIST, @{$CTX->{INPUT}{SUBSYSTEMS}{$key}{REQUIRED_LIBRARIES}});
 
 		#
 		# now collect the info from the subsystems static modules
@@ -204,35 +196,29 @@ sub _do_depend_subsystems($)
 			# add it to the STATIC_MODULES_LIST
 			#
 			push(@STATIC_MODULES_LIST,$subkey);
+			push (@INIT_FUNCTIONS, $CTX->{INPUT}{MODULES}{$subkey}{INIT_FUNCTION}) if $CTX->{INPUT}{MODULES}{$subkey}{INIT_FUNCTION} ne "";
 
 			#
 			# add OBJS of static modules to the subsystems used OBJ_LIST
 			#
-			foreach my $elem (@{$CTX->{INPUT}{MODULES}{$subkey}{INIT_OBJ_FILES}}) {
-				push(@OBJ_LIST,$elem);
-			}
-			foreach my $elem (@{$CTX->{INPUT}{MODULES}{$subkey}{ADD_OBJ_FILES}}) {
-				push(@OBJ_LIST,$elem);
-			}
+			push (@OBJ_LIST, (@{$CTX->{INPUT}{MODULES}{$subkey}{INIT_OBJ_FILES}}));
+			push (@OBJ_LIST, (@{$CTX->{INPUT}{MODULES}{$subkey}{ADD_OBJ_FILES}}));
 
 			#
 			# add SUBSYSTEMS of static modules to the subsystems used SUBSYSTEMS_LIST
 			#
-			foreach my $elem (@{$CTX->{INPUT}{MODULES}{$subkey}{REQUIRED_SUBSYSTEMS}}) {
-				push(@SUBSYSTEMS_LIST,$elem);
-			}
+			push (@SUBSYSTEMS_LIST, (@{$CTX->{INPUT}{MODULES}{$subkey}{REQUIRED_SUBSYSTEMS}}));
 
 			#
 			# add LIBRARIES of static modules to  the subsystems used LIBRARIES_LIST
 			#
-			foreach my $elem (@{$CTX->{INPUT}{MODULES}{$subkey}{REQUIRED_LIBRARIES}}) {
-				push(@LIBRARIES_LIST,$elem);
-			}
+			push (@LIBRARIES_LIST, (@{$CTX->{INPUT}{MODULES}{$subkey}{REQUIRED_LIBRARIES}}));
 		}
 
 		#
 		# set the lists
 		#
+		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{INIT_FUNCTIONS}} = @INIT_FUNCTIONS;
 		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{OBJ_LIST}} = @OBJ_LIST;
 		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{STATIC_MODULES_LIST}} = @STATIC_MODULES_LIST;
 		@{$CTX->{DEPEND}{SUBSYSTEMS}{$key}{SUBSYSTEMS_LIST}} = @SUBSYSTEMS_LIST;
@@ -303,9 +289,7 @@ sub _do_depend_shared_modules($)
 		# create the shared modules used SUBSYSTEMS_LIST
 		#
 		my @SUBSYSTEMS_LIST = ();
-		foreach my $elem (@{$CTX->{INPUT}{MODULES}{$key}{REQUIRED_SUBSYSTEMS}}) {
-			push(@SUBSYSTEMS_LIST,$elem);
-		}
+		push (@SUBSYSTEMS_LIST, (@{$CTX->{INPUT}{MODULES}{$key}{REQUIRED_SUBSYSTEMS}}));
 
 		#
 		# now try to resolve the dependencies for the shared module
@@ -316,9 +300,7 @@ sub _do_depend_shared_modules($)
 		# create the shared modules used LIBRARIES_LIST
 		#
 		my @LIBRARIES_LIST = ();
-		foreach my $elem (@{$CTX->{INPUT}{MODULES}{$key}{REQUIRED_LIBRARIES}}) {
-			push(@LIBRARIES_LIST,$elem);
-		}
+		push (@LIBRARIES_LIST, @{$CTX->{INPUT}{MODULES}{$key}{REQUIRED_LIBRARIES}});
 
 		#
 		# add the LIBARARIES of each subsysetm in the @SUBSYSTEMS_LIST
@@ -361,9 +343,7 @@ sub _do_depend_libraries($)
 		# create the libraries used SUBSYSTEMS_LIST
 		#
 		my @SUBSYSTEMS_LIST = ();
-		foreach my $elem (@{$CTX->{INPUT}{LIBRARIES}{$key}{REQUIRED_SUBSYSTEMS}}) {
-			push(@SUBSYSTEMS_LIST,$elem);
-		}
+		push (@SUBSYSTEMS_LIST, @{$CTX->{INPUT}{LIBRARIES}{$key}{REQUIRED_SUBSYSTEMS}});
 
 		#
 		# now try to resolve the dependencies for the library
@@ -374,9 +354,7 @@ sub _do_depend_libraries($)
 		# create the libraries used LIBRARIES_LIST
 		#
 		my @LIBRARIES_LIST = ();
-		foreach my $elem (@{$CTX->{INPUT}{LIBRARIES}{$key}{REQUIRED_LIBRARIES}}) {
-			push(@LIBRARIES_LIST,$elem);
-		}
+		push (@LIBRARIES_LIST, @{$CTX->{INPUT}{LIBRARIES}{$key}{REQUIRED_LIBRARIES}});
 
 		#
 		# add the LIBARARIES of each subsysetm in the @SUBSYSTEMS_LIST
@@ -419,22 +397,26 @@ sub _do_depend_binaries($)
 		# create the binaries used SUBSYSTEMS_LIST
 		#
 		my @SUBSYSTEMS_LIST = ();
-		foreach my $elem (@{$CTX->{INPUT}{BINARIES}{$key}{REQUIRED_SUBSYSTEMS}}) {
-			push(@SUBSYSTEMS_LIST,$elem);
-		}
+		push (@SUBSYSTEMS_LIST, @{$CTX->{INPUT}{BINARIES}{$key}{REQUIRED_SUBSYSTEMS}});
 
 		#
 		# now try to resolve the dependencies for the binary
 		#
 		@SUBSYSTEMS_LIST = _do_calc_subsystem_list($CTX, \@SUBSYSTEMS_LIST);
 
+		my @INIT_FUNCTIONS = ();
+
+		foreach my $subkey (@SUBSYSTEMS_LIST)
+		{
+			push (@INIT_FUNCTIONS, $CTX->{INPUT}{SUBSYSTEMS}{$subkey}{INIT_FUNCTION}) if $CTX->{INPUT}{SUBSYSTEMS}{$subkey}{INIT_FUNCTION} ne "";
+			
+		}
+
 		#
 		# create the binaries used LIBRARIES_LIST
 		#
 		my @LIBRARIES_LIST = ();
-		foreach my $elem (@{$CTX->{INPUT}{BINARIES}{$key}{REQUIRED_LIBRARIES}}) {
-			push(@LIBRARIES_LIST,$elem);
-		}
+		push (@LIBRARIES_LIST, @{$CTX->{INPUT}{BINARIES}{$key}{REQUIRED_LIBRARIES}});
 
 		#
 		# add the LIBARARIES of each subsysetm in the @SUBSYSTEMS_LIST
@@ -446,6 +428,7 @@ sub _do_depend_binaries($)
 		#
 		@{$CTX->{DEPEND}{BINARIES}{$key}{SUBSYSTEMS_LIST}} = @SUBSYSTEMS_LIST;
 		@{$CTX->{DEPEND}{BINARIES}{$key}{LIBRARIES_LIST}} = @LIBRARIES_LIST;
+		@{$CTX->{DEPEND}{BINARIES}{$key}{INIT_FUNCTIONS}} = @INIT_FUNCTIONS;
 	}
 
 	return;

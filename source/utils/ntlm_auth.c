@@ -861,6 +861,8 @@ enum {
 		POPT_TABLEEND
 	};
 
+	ntlm_auth_init_subsystems;
+
 	/* Samba client initialisation */
 
 	setup_logging("ntlm_auth", DEBUG_STDERR);

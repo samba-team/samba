@@ -175,7 +175,7 @@ static BOOL $name\__op_interface_by_name(struct dcesrv_interface *iface, const c
 	return False;	
 }
 	
-NTSTATUS dcerpc_$name\_init(void)
+NTSTATUS dcerpc_server_$name\_init(void)
 {
 	NTSTATUS ret;
 	struct dcesrv_endpoint_server ep_server;

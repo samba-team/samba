@@ -100,7 +100,9 @@ static void lazy_initialize_iconv(void)
 	if (!initialized) {
 		initialized = True;
 		register_subsystem("charset", charset_register_backend);
-		
+
+		charset_init_static_modules;
+
 		for(i = 0; builtin_functions[i].name; i++) 
 			register_backend("charset", &builtin_functions[i]);
 	}

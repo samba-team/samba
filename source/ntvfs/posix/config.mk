@@ -1,6 +1,7 @@
 ################################################
 # Start MODULE ntvfs_posix
 [MODULE::ntvfs_posix]
+INIT_FUNCTION = ntvfs_posix_init 
 INIT_OBJ_FILES = \
 		ntvfs/posix/vfs_posix.o
 ADD_OBJ_FILES = \

@@ -232,5 +232,6 @@ static int binary_net(int argc, const char **argv)
 
  int main(int argc, const char **argv)
 {
+	net_init_subsystems;
 	return binary_net(argc, argv);
 }

@@ -321,20 +321,19 @@ static NTSTATUS register_server_service_ops(const void *_ops)
 /*
   initialise the SERVER SERVICE subsystem
 */
-BOOL server_service_init(void)
+NTSTATUS server_service_init(void)
 {
 	NTSTATUS status;
 
 	status = register_subsystem("service", register_server_service_ops); 
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return status;
 	}
 
-	/* FIXME: Perhaps panic if a basic endpoint server, such as EPMAPER, fails to initialise? */
-	static_init_server_service;
+	server_service_init_static_modules;
 
 	DEBUG(3,("SERVER SERVICE subsystem version %d initialised\n", SERVER_SERVICE_VERSION));
-	return True;
+	return NT_STATUS_OK;
 }
 
 
