@@ -258,4 +258,5 @@ copy an IP address from one buffer to another
 
 #define vfs_chdir(conn,fname) ((conn)->vfs_ops.chdir((conn),fname))
 
+#define USE_TDB_MMAP_FLAG (!lp_use_mmap() ? TDB_NOMMAP : TDB_DEFAULT)
 #endif /* _SMB_MACROS_H */
