@@ -14,6 +14,7 @@ DEFS 	= @DEFS@
 CFLAGS 	= @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS = @LIBS@
+MKDIRHIER = @top_srcdir@/mkdirhier-sh
 
 INSTALL = @INSTALL@
 
