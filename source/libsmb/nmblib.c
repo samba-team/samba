@@ -824,8 +824,10 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
 	extern pstring global_scope;
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
 	StrnCpy( n->name, name, 15 );
-	unix_to_dos(n->name);
+
 	strupper( n->name );
+	unix_to_dos(n->name);
+
 	n->name_type = (unsigned int)type & 0xFF;
 	StrnCpy( n->scope, global_scope, 63 );
 	strupper( n->scope );
@@ -1185,7 +1187,6 @@ mangle a name into netbios format
 int name_mangle( char *In, char *Out, char name_type )
   {
   int   i;
-  int   c;
   int   len;
   char  buf[20];
   char *p = Out;
@@ -1205,9 +1206,8 @@ int name_mangle( char *In, char *Out, char name_type )
   /* Now convert the name to the rfc1001/1002 format. */
   for( i = 0; i < 16; i++ )
     {
-    c = toupper( buf[i] );
-    p[i*2]     = ( (c >> 4) & 0x000F ) + 'A';
-    p[(i*2)+1] = (c & 0x000F) + 'A';
+    p[i*2]     = ( (buf[i] >> 4) & 0x000F ) + 'A';
+    p[(i*2)+1] = (buf[i] & 0x000F) + 'A';
     }
   p += 32;
   p[0] = '\0';
