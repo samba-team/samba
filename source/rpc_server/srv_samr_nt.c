@@ -775,18 +775,18 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 
 	/* well-known aliases */
 	if (strequal(sid_str, "S-1-5-32")) {
-		char *name;
+		char *alias_name;
 		while (!lp_hide_local_users() &&
 				num_entries < max_entries && 
-				((name = builtin_alias_rids[num_entries].name) != NULL)) {
+				((alias_name = builtin_alias_rids[num_entries].name) != NULL)) {
 
-			fstrcpy(d_grp[num_entries].name, name);
+			fstrcpy(d_grp[num_entries].name, alias_name);
 			d_grp[num_entries].rid = builtin_alias_rids[num_entries].rid;
 
 			num_entries++;
 		}
 	} else if (strequal(sid_str, sam_sid_str) && !lp_hide_local_users()) {
-		char *name;
+		fstring name;
 		char *sep;
 		struct sys_grent *glist;
 		struct sys_grent *grp;
@@ -796,7 +796,7 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */
 		/* thing to do, since NT member servers return their local     */
-                /* groups in the same situation.                               */
+		/* groups in the same situation.                               */
 
 		/* use getgrent_list() to retrieve the list of groups to avoid
 		 * problems with getgrent possible infinite loop by internal
@@ -808,8 +808,8 @@ static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 star
 		for (;(num_entries < max_entries) && (grp != NULL); grp = grp->next) {
 			int i;
 			uint32 trid;
-			name = grp->gr_name;
 
+			fstrcpy(name,grp->gr_name);
 			DEBUG(10,("get_group_alias_entries: got group %s\n", name ));
 
 			/* Don't return winbind groups as they are not local! */

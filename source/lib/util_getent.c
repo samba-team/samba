@@ -37,14 +37,20 @@ struct sys_grent * getgrent_list(void)
 		DEBUG (0, ("Out of memory in getgrent_list!\n"));
 		return NULL;
 	}
+	memset(gent, '\0', sizeof(struct sys_grent));
 	glist = gent;
 	
 	setgrent();
 	grp = getgrent();
+	if (grp == NULL) {
+		endgrent();
+		free(glist);
+		return NULL;
+	}
+
 	while (grp != NULL) {
 		int i,num;
 		
-		memset(gent, '\0', sizeof(struct sys_grent));
 		if (grp->gr_name) {
 			if ((gent->gr_name = strdup(grp->gr_name)) == NULL)
 				goto err;
@@ -63,6 +69,8 @@ struct sys_grent * getgrent_list(void)
 		if ((gent->gr_mem = (char **) malloc(num+1 * sizeof(char *))) == NULL)
 			goto err;
 
+		memset(gent->gr_mem, '\0', num+1 * sizeof(char *));
+
 		for (i=0; i < num; i++) {
 			if ((gent->gr_mem[i] = strdup(grp->gr_mem[i])) == NULL)
 				goto err;
@@ -75,6 +83,7 @@ struct sys_grent * getgrent_list(void)
 			if (gent->next == NULL)
 				goto err;
 			gent = gent->next;
+			memset(gent, '\0', sizeof(struct sys_grent));
 		}
 	}
 	
@@ -97,7 +106,6 @@ struct sys_grent * getgrent_list(void)
 void grent_free (struct sys_grent *glist)
 {
 	while (glist) {
-		char **ary;
 		struct sys_grent *temp;
 		
 		if (glist->gr_name)
@@ -105,11 +113,9 @@ void grent_free (struct sys_grent *glist)
 		if (glist->gr_passwd)
 			free(glist->gr_passwd);
 		if (glist->gr_mem) {
-			ary = glist->gr_mem;
-			while (*ary) {
-				free(*ary);
-				ary++;
-			}
+			int i;
+			for (i = 0; glist->gr_mem[i]; i++)
+				free(glist->gr_mem[i]);
 			free(glist->gr_mem);
 		}
 		temp = glist->next;
