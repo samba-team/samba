@@ -24,8 +24,8 @@
 
 #include "includes.h"
 
-#include <ldap.h>
 #include <lber.h>
+#include <ldap.h>
 
 #define ADD_USER 1
 #define MODIFY_USER 2
@@ -223,11 +223,7 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 	static unsigned char smblmpwd[16];
 	static unsigned char smbntpwd[16];
 
-	user->smb_name = NULL;
-	user->smb_passwd = NULL;
-	user->smb_nt_passwd = NULL;
-	user->smb_userid = 0;
-	user->pass_last_set_time  = (time_t)-1;
+	pdb_init_smb(user);
 
 	bzero(smblmpwd, sizeof(smblmpwd));
 	bzero(smbntpwd, sizeof(smbntpwd));
@@ -292,16 +288,11 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 	static pstring temp;
 	static struct smb_passwd pw_buf;
 
+	pdb_init_sam(user);
+
 	ldap_get_smb_passwd(ldap_struct, entry, &pw_buf);
 	
-	bzero(user, sizeof(*user));
-
-	user->logon_time            = (time_t)-1;
-	user->logoff_time           = (time_t)-1;
-	user->kickoff_time          = (time_t)-1;
 	user->pass_last_set_time    = pw_buf.pass_last_set_time;
-	user->pass_can_change_time  = (time_t)-1;
-	user->pass_must_change_time = (time_t)-1;
 
 	get_single_attribute(ldap_struct, entry, "logonTime", temp);
 	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);

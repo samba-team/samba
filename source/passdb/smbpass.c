@@ -111,7 +111,7 @@ struct sam_passwd *getsmb21pwent(void *vp)
 	pwfile = getpwnam(pw_buf->smb_name);
 	if (pwfile == NULL) return NULL;
 
-	bzero(&user, sizeof(user));
+	pdb_init_sam(&user);
 
 	pstrcpy(samlogon_user, pw_buf->smb_name);
 
@@ -153,13 +153,6 @@ struct sam_passwd *getsmb21pwent(void *vp)
 		pstrcpy(acct_desc    , "");
 		pstrcpy(workstations , "");
 	}
-
-	user.logon_time            = (time_t)-1;
-	user.logoff_time           = (time_t)-1;
-	user.kickoff_time          = (time_t)-1;
-	user.pass_last_set_time    = pw_buf->pass_last_set_time;
-	user.pass_can_change_time  = (time_t)-1;
-	user.pass_must_change_time = (time_t)-1;
 
 	user.smb_name     = pw_buf->smb_name;
 	user.full_name    = full_name;
@@ -213,8 +206,9 @@ struct smb_passwd *getsmbpwent(void *vp)
     return NULL;
   }
 
+  pdb_init_smb(&pw_buf);
+
   pw_buf.acct_ctrl = ACB_NORMAL;  
-  pw_buf.pass_last_set_time = (time_t)-1;
 
   /*
    * Scan the file, a line at a time and check if the name matches.
