@@ -870,7 +870,7 @@ static BOOL tdb_del_driver(const char *short_archi, int version, const char *dri
 	TDB_DATA 	kbuf;
 
 	/* delete the tdb data first */
-	slprintf(key, sizeof(key)-1, "%s/%s/%d/%s", DRIVERS_PREFIX,
+	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX,
 		short_archi, version, drivername);
 
 	DEBUG(5,("tdb_del_driver: key = [%s]\n", key));
