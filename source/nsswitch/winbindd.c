@@ -27,7 +27,6 @@
 
 BOOL opt_nocache = False;
 BOOL opt_dual_daemon = True;
-BOOL opt_lsa_daemon = False;
 int max_busy_children = 0;
 
 /* Reload configuration */
@@ -187,17 +186,6 @@ static BOOL do_sighup;
 static void sighup_handler(int signum)
 {
 	do_sighup = True;
-	sys_select_signal();
-}
-
-static BOOL do_sigchld;
-
-static void sigchld_handler(int signum)
-{
-	while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0)
-		;
-
-	do_sigchld = True;
 	sys_select_signal();
 }
 
@@ -932,13 +920,6 @@ static void process_loop(void)
 			print_winbindd_status();
 			do_sigusr2 = False;
 		}
-
-		if (do_sigchld) {
-#if 0
-			check_children();
-#endif
-			do_sigchld = False;
-		}
 	}
 }
 
@@ -959,7 +940,6 @@ int main(int argc, char **argv)
 		{ "foreground", 'F', POPT_ARG_VAL, &Fork, False, "Daemon in foreground mode" },
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
 		{ "single-daemon", 'Y', POPT_ARG_VAL, &opt_dual_daemon, False, "Single daemon mode" },
-		{ "lsa-daemon", 'L', POPT_ARG_VAL, &opt_lsa_daemon, True, "LSA daemon mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, True, "Disable caching" },
 		{ "num-clients", 'c', POPT_ARG_INT, &num_children, True, "Number of winbind children" },
 		POPT_COMMON_SAMBA
@@ -1069,7 +1049,6 @@ int main(int argc, char **argv)
 	CatchSignal(SIGINT, termination_handler);      /* Exit on these sigs */
 	CatchSignal(SIGQUIT, termination_handler);
 	CatchSignal(SIGTERM, termination_handler);
-	CatchSignal(SIGCHLD, sigchld_handler);
 
 	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
 
@@ -1095,10 +1074,6 @@ int main(int argc, char **argv)
 
 		for (i=0; i<num_children; i++)
 			do_dual_daemon();
-	}
-
-	if (opt_lsa_daemon) {
-		do_single_daemons();
 	}
 
 	/* Initialise messaging system */

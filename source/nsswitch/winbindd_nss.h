@@ -294,24 +294,4 @@ struct winbindd_response {
 	void *extra_data;               /* getgrnam, getgrgid, getgrent */
 };
 
-struct wb_client_state {
-	int lsa_socket;
-	int idmap_socket;
-
-	int num_sam_sockets;
-	char **sam_socket_sids;
-	int *sam_sockets;
-
-	int num_domains;
-	char **domain_sids;
-	char **domain_names;
-
-	int current_domain;
-	int resume_key;
-
-	int current_user, num_users;
-	char **user_sids;
-	char **user_names;
-};
-
 #endif
