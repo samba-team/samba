@@ -653,7 +653,7 @@ account password for domain %s.\n", domain));
     if(modify_trust_password( domain, remote_machine, 
                               old_trust_passwd_hash, new_trust_passwd_hash)) {
       DEBUG(0,("%s : change_trust_account_password: Changed password for \
-domain %s.\n", timestring(), domain));
+domain %s.\n", timestring(False), domain));
       /*
        * Return the result of trying to write the new password
        * back into the trust account file.
@@ -669,6 +669,6 @@ domain %s.\n", timestring(), domain));
   memset(old_trust_passwd_hash, 0, 16);
 
   DEBUG(0,("%s : change_trust_account_password: Failed to change password for \
-domain %s.\n", timestring(), domain));
+domain %s.\n", timestring(False), domain));
   return False;
 }

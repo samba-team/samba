@@ -508,7 +508,7 @@ enum client_action
 	strupper(global_myname);
 	fstrcpy(cli_info.myhostname, global_myname);
 
-	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
+	DEBUG(3,("%s client started (version %s)\n",timestring(False),VERSION));
 
 	if (*smb_cli->domain == 0)
 	{

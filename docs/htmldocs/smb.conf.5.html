@@ -414,7 +414,10 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#codingsystem"><strong>coding system</strong></a>
 <p><br><li > <a href="smb.conf.5.html#configfile"><strong>config file</strong></a>
 <p><br><li > <a href="smb.conf.5.html#deadtime"><strong>deadtime</strong></a>
+<p><br><li > <a href="smb.conf.5.html#debughirestimestamp"><strong>debug hires timestamp</strong></a>
+<p><br><li > <a href="smb.conf.5.html#debugpid"><strong>debug pid</strong></a>
 <p><br><li > <a href="smb.conf.5.html#debugtimestamp"><strong>debug timestamp</strong></a>
+<p><br><li > <a href="smb.conf.5.html#debuguid"><strong>debug uid</strong></a>
 <p><br><li > <a href="smb.conf.5.html#debuglevel"><strong>debuglevel</strong></a>
 <p><br><li > <a href="smb.conf.5.html#default"><strong>default</strong></a>
 <p><br><li > <a href="smb.conf.5.html#defaultservice"><strong>default service</strong></a>
@@ -1098,6 +1101,17 @@ performed.
 <code>	deadtime = 0</code>
 <p><br><strong>Example:</strong>
 <code>	deadtime = 15</code>
+<p><br><a name="debughirestimestamp"></a>
+<li><strong><strong>debug hires timestamp (G)</strong></strong>
+<p><br>Sometimes the timestamps in the log messages are needed with a
+resolution of higher that seconds, this boolean parameter adds
+microsecond resolution to the timestamp message header when turned on.
+<p><br>Note that the parameter <a href="smb.conf.5.html#debugtimestamp"><strong>debug timestamp</strong></a>
+must be on for this to have an effect.
+<p><br><strong>Default:</strong>
+<code> debug hires timestamp = No</code>
+<p><br><strong>Example:</strong>
+<code> debug hires timestamp = Yes</code>
 <p><br><a name="debugtimestamp"></a>
 <li><strong><strong>debug timestamp (G)</strong></strong>
 <p><br>Samba2.0 debug log messages are timestamped by default. If you are
@@ -1108,6 +1122,29 @@ off.
 <code>	debug timestamp = Yes</code>
 <p><br><strong>Example:</strong>
 <code>	debug timestamp = No</code>
+<p><br><a name="debugpid"></a>
+<li><strong><strong>debug pid (G)</strong></strong>
+<p><br>When using only one log file for more then one forked smbd-process
+there may be hard to follow which process outputs which message.
+This boolean parameter is adds the process-id to the timestamp message
+headers in the logfile when turned on.
+<p><br>Note that the parameter <a href="smb.conf.5.html#debugtimestamp"><strong>debug timestamp</strong></a>
+must be on for this to have an effect.
+<p><br><strong>Default:</strong>
+<code>	debug pid = No</code>
+<p><br><strong>Example:</strong>
+<code>	debug pid = Yes</code>
+<p><br><a name="debuguid"></a>
+<li><strong><strong>debug uid (G)</strong></strong>
+<p><br>Samba is sometimes run as root and sometime run as the connected
+user, this boolean parameter inserts the current euid, egid, uid
+and gid to the timestamp message headers in the log file if turned on.
+<p><br>Note that the parameter <a href="smb.conf.5.html#debugtimestamp"><strong>debug timestamp</strong></a>
+must be on for this to have an effect.
+<p><br><strong>Default:</strong>
+<code>	debug uid = No</code>
+<p><br><strong>Example:</strong>
+<code>	debug uid = Yes</code>
 <p><br><a name="debuglevel"></a>
 <li><strong><strong>debug level (G)</strong></strong>
 <p><br>The value of the parameter (an integer) allows the debug level
@@ -2407,28 +2444,9 @@ end.
 <p><br>See the section on <a href="smb.conf.5.html#NAMEMANGLING"><strong>"NAME MANGLING"</strong></a>.
 <p><br><a name="manglelocks"></a>
 <li><strong><strong>mangle locks (S)</strong></strong>
-<p><br>This option is new with Samba 2.0.4 and above. It only has an effect on locking
-when Samba is running on a 32-bit platform such as Linux (2.0, 2.2) on x86 but not on
-64-bit platforms such as IRIX, Solaris 2.7 and above, AIX 4.2 etc.
-<p><br>This option was introduced as NT clients have a bug in that they still send 64-bit
-lock requests to servers like Samba on 32-bit platforms that have explicitly 
-told the client that they do not support 64-bit file access.
-<p><br>If this option is set to "True" (the default) on a 32-bit system then Samba
-will truncate any lock length greater than 31 bits (the POSIX limit on 32-bit
-systems) and then attempt to mangle the lock offset from a 64-bit value to a
-high 32 bit value. It does this by examining the number of bits set in the
-top 32 bits, looking at the lower 31 bits starting from the 31st bit going
-downward (the POSIX limit on 32-bit systems) for a range of zero bits that
-this can be mapped into and then mapping the upper set bits into the lower
-set bits.
-<p><br>If no space can be found then a locking error is returned to the client.
-<p><br>Note that this option has <strong>NO</strong> effect on 64 bit systems. It should not
-be turned off on 32 bit systems unless it can be shown that this is causing
-a locking problem for a client application.
-<p><br><strong>Default:</strong>
-<code>		mangle locks = Yes</code>
-<p><br><strong>Example:</strong>
-<code>		mangle locks = No</code>
+<p><br>This option is was introduced with Samba 2.0.4 and above and has been
+removed in Samba 2.0.6 as Samba now dynamically configures such things
+on 32 bit systems.
 <p><br><a name="mangledmap"></a>
 <li><strong><strong>mangled map (S)</strong></strong>
 <p><br>This is for those who want to directly map UNIX file names which can

@@ -513,10 +513,10 @@ void dbgflush( void )
  *
  * ************************************************************************** **
  */
+
 BOOL dbghdr( int level, char *file, char *func, int line )
-  {
-  if( format_pos )
-    {
+{
+  if( format_pos ) {
     /* This is a fudge.  If there is stuff sitting in the format_bufr, then
      * the *right* thing to do is to call
      *   format_debug_text( "\n" );
@@ -527,7 +527,7 @@ BOOL dbghdr( int level, char *file, char *func, int line )
      * that a new header is *not* desired.
      */
     return( True );
-    }
+  }
 
 #ifdef WITH_SYSLOG
   /* Set syslog_level. */
@@ -541,15 +541,31 @@ BOOL dbghdr( int level, char *file, char *func, int line )
   /* Print the header if timestamps are turned on.  If parameters are
    * not yet loaded, then default to timestamps on.
    */
-  if( lp_timestamp_logs() || !(lp_loaded()) )
-    {
+  if( lp_timestamp_logs() || !(lp_loaded()) ) {
+    char header_str[200];
+
+	header_str[0] = '\0';
+
+	if( lp_debug_pid())
+	  slprintf(header_str,sizeof(header_str)-1,", pid=%u",(unsigned int)getpid());
+
+	if( lp_debug_uid()) {
+      size_t hs_len = strlen(header_str);
+	  slprintf(header_str + hs_len,
+               sizeof(header_str) - 1 - hs_len,
+			   ", effective(%u, %u), real(%u, %u)",
+               (unsigned int)geteuid(), (unsigned int)getegid(),
+			   (unsigned int)getuid(), (unsigned int)getgid()); 
+	}
+  
     /* Print it all out at once to prevent split syslog output. */
-    (void)Debug1( "[%s, %d] %s:%s(%d)\n",
-                  timestring(), level, file, func, line );
-    }
+    (void)Debug1( "[%s, %d%s] %s:%s(%d)\n",
+                  timestring(lp_debug_hires_timestamp()), level,
+				  header_str, file, func, line );
+  }
 
   return( True );
-  } /* dbghdr */
+}
 
 /* ************************************************************************** **
  * Add text to the body of the "current" debug message via the format buffer.

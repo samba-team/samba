@@ -241,6 +241,9 @@ typedef struct
   BOOL bKernelOplocks;
   BOOL bAllowTrustedDomains;
   BOOL bRestrictAnonymous;
+  BOOL bDebugHiresTimestamp;
+  BOOL bDebugPid;
+  BOOL bDebugUid;
 } global;
 
 static global Globals;
@@ -626,6 +629,9 @@ static struct parm_struct parm_table[] =
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL,   NULL,  0},
   {"timestamp logs",   P_BOOL,    P_GLOBAL, &Globals.bTimestampLogs,    NULL,   NULL,  0},
   {"debug timestamp",  P_BOOL,    P_GLOBAL, &Globals.bTimestampLogs,    NULL,   NULL,  0},
+  {"debug hires timestamp",  P_BOOL,    P_GLOBAL, &Globals.bDebugHiresTimestamp,    NULL,   NULL,  0},
+  {"debug pid",        P_BOOL,    P_GLOBAL, &Globals.bDebugPid,         NULL,   NULL,  0},
+  {"debug uid",        P_BOOL,    P_GLOBAL, &Globals.bDebugUid,         NULL,   NULL,  0},
   {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE|FLAG_PRINT},
 
   {"Protocol Options", P_SEP, P_SEPARATOR},
@@ -907,6 +913,9 @@ static void init_globals(void)
   Globals.syslog = 1;
   Globals.bSyslogOnly = False;
   Globals.bTimestampLogs = True;
+  Globals.bDebugHiresTimestamp = False;
+  Globals.bDebugPid = False;
+  Globals.bDebugUid = False;
   Globals.max_ttl = 60*60*24*3; /* 3 days default. */
   Globals.max_wins_ttl = 60*60*24*6; /* 6 days default. */
   Globals.min_wins_ttl = 60*60*6; /* 6 hours default. */
@@ -1230,6 +1239,9 @@ FN_GLOBAL_BOOL(lp_encrypted_passwords,&Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_update_encrypted,&Globals.bUpdateEncrypt)
 FN_GLOBAL_BOOL(lp_syslog_only,&Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_timestamp_logs,&Globals.bTimestampLogs)
+FN_GLOBAL_BOOL(lp_debug_hires_timestamp,&Globals.bDebugHiresTimestamp)
+FN_GLOBAL_BOOL(lp_debug_pid,&Globals.bDebugPid)
+FN_GLOBAL_BOOL(lp_debug_uid,&Globals.bDebugUid)
 FN_GLOBAL_BOOL(lp_browse_list,&Globals.bBrowseList)
 FN_GLOBAL_BOOL(lp_unix_realname,&Globals.bUnixRealname)
 FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)

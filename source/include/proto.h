@@ -197,7 +197,7 @@ time_t make_unix_date(void *date_ptr);
 time_t make_unix_date2(void *date_ptr);
 time_t make_unix_date3(void *date_ptr);
 char *http_timestring(time_t t);
-char *timestring(void );
+char *timestring(BOOL hires);
 time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs);
 
 /*The following definitions come from  lib/ufc.c  */
@@ -1060,6 +1060,9 @@ BOOL lp_encrypted_passwords(void);
 BOOL lp_update_encrypted(void);
 BOOL lp_syslog_only(void);
 BOOL lp_timestamp_logs(void);
+BOOL lp_debug_hires_timestamp(void);
+BOOL lp_debug_pid(void);
+BOOL lp_debug_uid(void);
 BOOL lp_browse_list(void);
 BOOL lp_unix_realname(void);
 BOOL lp_nis_home_map(void);
