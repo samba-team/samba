@@ -47,7 +47,6 @@ test -z "$CFLAGS" && CFLAGS="-g"
 dnl Checks for programs.
 AC_PROG_CC_STDC
 
-AC_CYGWIN
 AC_OBJEXT
 AC_EXEEXT
 
@@ -69,15 +68,12 @@ AC_PROG_LIBTOOL
 
 AC_WFLAGS(-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs)
 
-berkeley_db=db
-AC_ARG_WITH(berkeley-db,
-[  --without-berkeley-db   if you don't want berkeley db],[
-if test "$withval" = no; then
-	berkeley_db=""
-fi
-])
+rk_DB
 
-AC_ROKEN(10,[/usr/heimdal /usr/athena],[lib/roken],[$(top_builddir)/lib/roken/libroken.la],[-I$(top_builddir)/lib/roken -I$(top_srcdir)/lib/roken])
+dnl AC_ROKEN(10,[/usr/heimdal /usr/athena],[lib/roken],[$(top_builddir)/lib/roken/libroken.la],[-I$(top_builddir)/lib/roken -I$(top_srcdir)/lib/roken])
+
+rk_ROKEN(lib/roken)
+LIB_roken="\$(top_builddir)/lib/vers/libvers.la $LIB_roken"
 
 AC_TEST_PACKAGE_NEW(openldap,[#include <ldap.h>],[-lldap -llber],,,OPENLDAP)
 
@@ -260,13 +256,6 @@ AC_STRUCT_TM
 dnl Checks for header files.
 AC_HEADER_STDC
 
-if test "$berkeley_db"; then
-  AC_CHECK_HEADERS([				\
-	db.h					\
-	db_185.h				\
-  ])
-fi
-
 AC_CHECK_HEADERS([\
 	arpa/ftp.h				\
 	arpa/inet.h				\
@@ -425,47 +414,11 @@ dnl Checks for library functions.
 AC_BROKEN_SNPRINTF
 AC_BROKEN_VSNPRINTF
 
-AC_BROKEN_GLOB
-
-if test "$ac_cv_func_glob_working" != yes; then
-	LIBOBJS="$LIBOBJS glob.o"
-fi
-AM_CONDITIONAL(have_glob_h, test "$ac_cv_func_glob_working" = yes)
-
-dnl these should happen after tests for *snprintf
-
-AC_FIND_FUNC_NO_LIBS2(dbopen, $berkeley_db, [
-#include <stdio.h>
-#if defined(HAVE_DB_185_H)
-#include <db_185.h>
-#elif defined(HAVE_DB_H)
-#include <db.h>
-#endif
-],[NULL, 0, 0, 0, NULL])
-
-AC_FIND_FUNC_NO_LIBS(dbm_firstkey, $berkeley_db gdbm ndbm)
-AC_FIND_FUNC_NO_LIBS(db_create, $berkeley_db)
-
-DBLIB="$LIB_dbopen"
-if test "$LIB_dbopen" != "$LIB_db_create"; then
-        DBLIB="$DBLIB $LIB_db_create"
-fi
-if test "$LIB_dbopen" != "$LIB_dbm_firstkey"; then
-	DBLIB="$DBLIB $LIB_dbm_firstkey"
-fi
-AC_SUBST(DBLIB)dnl
-
 AC_CHECK_FUNCS([				\
 	_getpty					\
 	_scrsize				\
-	asnprintf				\
-	asprintf				\
-	cgetent					\
 	fcntl					\
-	getconfattr				\
 	getmsg					\
-	getrlimit				\
-	getspnam				\
 	gettimeofday				\
 	getuid					\
 	grantpt					\
@@ -487,25 +440,14 @@ AC_CHECK_FUNCS([				\
 	setutent				\
 	sigaction				\
 	strstr					\
-	sysconf					\
-	sysctl					\
 	timegm					\
 	ttyname					\
 	ttyslot					\
 	umask					\
-	uname					\
 	unlockpt				\
-	vasnprintf				\
-	vasprintf				\
 	vhangup					\
 	yp_get_default_domain			\
 ])
-
-if test "$ac_cv_func_cgetent" = no; then
-	LIBOBJS="$LIBOBJS getcap.o"
-fi
-
-AC_FUNC_GETLOGIN
 
 KRB_CAPABILITIES
 
@@ -533,290 +475,9 @@ AC_CHECK_FUNCS(getudbnam setlim)
 
 rk_RETSIGTYPE
 
-AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
-[#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif],
-17)
-if test "$ac_cv_func_hstrerror" = yes; then
-AC_NEED_PROTO([
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif],
-hstrerror)
-fi
-
-dnl sigh, wish this could be done in a loop
-if test "$ac_cv_func_asprintf" = yes; then
-AC_NEED_PROTO([
-#include <stdio.h>
-#include <string.h>],
-asprintf)dnl
-fi
-if test "$ac_cv_func_vasprintf" = yes; then
-AC_NEED_PROTO([
-#include <stdio.h>
-#include <string.h>],
-vasprintf)dnl
-fi
-if test "$ac_cv_func_asnprintf" = yes; then
-AC_NEED_PROTO([
-#include <stdio.h>
-#include <string.h>],
-asnprintf)dnl
-fi
-if test "$ac_cv_func_vasnprintf" = yes; then
-AC_NEED_PROTO([
-#include <stdio.h>
-#include <string.h>],
-vasnprintf)dnl
-fi
-
-AC_BROKEN([					\
-	chown					\
-	copyhostent				\
-	daemon					\
-	err					\
-	errx					\
-	fchown					\
-	flock					\
-	fnmatch					\
-	freeaddrinfo				\
-	freehostent				\
-	gai_strerror				\
-	getaddrinfo				\
-	getcwd					\
-	getdtablesize				\
-	getegid					\
-	geteuid					\
-	getgid					\
-	gethostname				\
-	getipnodebyaddr				\
-	getipnodebyname				\
-	getnameinfo				\
-	getopt					\
-	getusershell				\
-	inet_aton				\
-	inet_ntop				\
-	inet_pton				\
-	initgroups				\
-	innetgr					\
-	iruserok				\
-	lstat					\
-	memmove					\
-	mkstemp					\
-	putenv					\
-	rcmd					\
-	readv					\
-	recvmsg					\
-	sendmsg					\
-	setegid					\
-	setenv					\
-	seteuid					\
-	strcasecmp				\
-	strdup					\
-	strerror				\
-	strftime				\
-	strlcat					\
-	strlcpy					\
-	strlwr					\
-	strncasecmp				\
-	strndup					\
-	strnlen					\
-	strptime				\
-	strsep					\
-	strsep_copy				\
-	strtok_r				\
-	strupr					\
-	swab					\
-	unsetenv				\
-	verr					\
-	verrx					\
-	vsyslog					\
-	vwarn					\
-	vwarnx					\
-	warn					\
-	warnx					\
-	writev					\
-])
-
-dnl AC_BROKEN2(inet_aton,
-dnl [
-dnl #ifdef HAVE_SYS_TYPES_H
-dnl #include <sys/types.h>
-dnl #endif
-dnl #ifdef HAVE_SYS_SOCKET_H
-dnl #include <sys/socket.h>
-dnl #endif
-dnl #ifdef HAVE_NETINET_IN_H
-dnl #include <netinet/in.h>
-dnl #endif
-dnl #ifdef HAVE_ARPA_INET_H
-dnl #include <arpa/inet.h>
-dnl #endif])
-
-AC_NEED_PROTO([#include <stdlib.h>], setenv)
-AC_NEED_PROTO([#include <stdlib.h>], unsetenv)
-AC_NEED_PROTO([#include <unistd.h>], gethostname)
-AC_NEED_PROTO([#include <unistd.h>], mkstemp)
-AC_NEED_PROTO([#include <unistd.h>], getusershell)
-
-AC_NEED_PROTO([
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif],
-inet_aton)
-
-AC_FIND_FUNC_NO_LIBS(crypt, crypt)dnl
-
-dnl
-dnl libroken references crypt and dbopen
-dnl
-
-LIB_roken="\$(top_builddir)/lib/vers/libvers.la ${LIB_roken}"
-AC_SUBST(LIB_roken)dnl
-
 rk_BROKEN_REALLOC
 
 dnl AC_KRB_FUNC_GETCWD_BROKEN
-
-dnl
-dnl Checks for prototypes and declarations
-dnl
-
-AC_PROTO_COMPAT([
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-],
-gethostbyname, struct hostent *gethostbyname(const char *))
-
-AC_PROTO_COMPAT([
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-],
-gethostbyaddr, struct hostent *gethostbyaddr(const void *, size_t, int))
-
-AC_PROTO_COMPAT([
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
-],
-getservbyname, struct servent *getservbyname(const char *, const char *))
-
-AC_PROTO_COMPAT([
-#ifdef HAVE_SYSLOG_H
-#include <syslog.h>
-#endif
-],
-openlog, void openlog(const char *, int, int))
-
-AC_NEED_PROTO([
-#ifdef HAVE_CRYPT_H
-#include <crypt.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-],
-crypt)
-
-AC_NEED_PROTO([
-#include <string.h>
-],
-strtok_r)
-
-AC_NEED_PROTO([
-#include <string.h>
-],
-strsep)
-
-AC_CHECK_VAR([#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif],
-h_errno)
-
-AC_CHECK_VAR([#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif],
-h_errlist)
-
-AC_CHECK_VAR([#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif],
-h_nerr)
-
-AC_CHECK_VAR([#ifdef HAVE_ERR_H
-#include <err.h>
-#endif],[__progname])
-
-AC_CHECK_DECLARATION([#include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif], optarg)
-AC_CHECK_DECLARATION([#include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif], optind)
-AC_CHECK_DECLARATION([#include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif], opterr)
-AC_CHECK_DECLARATION([#include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif], optopt)
-
-AC_CHECK_DECLARATION([#include <stdlib.h>], environ)
 
 dnl
 dnl Check for fields in struct utmp
@@ -842,9 +503,7 @@ dnl
 dnl or do we have a variable `timezone' ?
 dnl
 
-AC_CHECK_VAR(
-[#include <time.h>],
-timezone)
+rk_CHECK_VAR(timezone, [#include <time.h>])
 
 AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
 
@@ -960,7 +619,7 @@ if false; then
 fi
 LTLIBOBJS=`echo "$LIBOBJS" | sed 's/\.o/\.lo/g'`
 AC_SUBST(LTLIBOBJS)
-AC_OUTPUT(Makefile 			\
+AC_CONFIG_FILES(Makefile 		\
 	include/Makefile		\
 	include/kadm5/Makefile		\
 	lib/Makefile			\
@@ -980,6 +639,7 @@ AC_OUTPUT(Makefile 			\
 	lib/kdfs/Makefile		\
 	lib/krb5/Makefile		\
 	lib/otp/Makefile		\
+	lib/roken/Makefile		\
 	lib/sl/Makefile			\
 	lib/vers/Makefile		\
 	kuser/Makefile			\
@@ -1010,6 +670,8 @@ AC_OUTPUT(Makefile 			\
 	appl/dceutils/Makefile		\
 	doc/Makefile			\
 )
+
+AC_OUTPUT
 
 dnl
 dnl This is the release version name-number[beta]
