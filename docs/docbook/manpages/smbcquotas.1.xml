@@ -176,7 +176,7 @@
 	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.</para>
 
-	<para><command>smbcacls</command> was written by Stefan Metzmacher.</para>
+	<para><command>smbcquotas</command> was written by Stefan Metzmacher.</para>
 </refsect1>
 
 </refentry>
