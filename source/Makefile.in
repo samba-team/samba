@@ -147,6 +147,13 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
 		rpc_parse/parse_creds.o
 
+RPC_PARSE_NEW_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
+                rpc_parse/parse_reg.o rpc_parse/parse_rpc.o \
+                rpc_parse/parse_samr_new.o rpc_parse/parse_srv.o \
+                rpc_parse/parse_wks.o \
+		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
+		rpc_parse/parse_creds.o
+
 RPC_CLIENT_OBJ = \
 		rpc_client/cli_login.o    \
 		rpc_client/cli_netlogon.o \
@@ -261,7 +268,7 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-             $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ)
+             $(RPC_PARSE_NEW_OBJ) $(PASSDB_OBJ) $(LIBMSRPC_OBJ)
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po
 
@@ -329,7 +336,8 @@ SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
-	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1) $(LIBMSRPC_OBJ)
+	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ) \
+	    $(LIBMSRPC_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
