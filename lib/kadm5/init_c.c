@@ -478,7 +478,9 @@ init_context(const char *client_name,
     kadm5_ret_t ret;
     kadm5_server_context *ctx;
     
-    krb5_init_context(&context);
+    ret = krb5_init_context(&context);
+    if (ret)
+	return ret;
     ret = kadm5_c_init_with_context(context,
 				    client_name,
 				    password,
