@@ -402,6 +402,7 @@ consists of one or more of
 .BR X ,
 .BR b ,
 .BR g ,
+.BR q ,
 .BR N
 or
 .BR a ;
@@ -465,6 +466,10 @@ Incremental. Only back up files that have the archive bit set. Useful
 only with the
 .B c
 flag.
+
+.B q
+Quiet. Keeps tar from printing diagnostics as it works.  This is the
+same as tarmode quiet.
 
 .B N
 Newer than. Must be followed by the name of a file whose date is
