@@ -2423,11 +2423,12 @@ int lookup_printerkey( NT_PRINTER_DATA *data, char *name )
 
 uint32 get_printer_subkeys( NT_PRINTER_DATA *data, char* key, fstring **subkeys )
 {
-	int	i;
+	int	i, j;
 	int	key_len;
 	int	num_subkeys = 0;
 	char	*p;
 	fstring	*ptr, *subkeys_ptr = NULL;
+	fstring subkeyname;
 	
 	if ( !data )
 		return 0;
@@ -2445,7 +2446,22 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, char* key, fstring **subkeys 
 			/* get subkey path */
 
 			p = data->keys[i].name + key_len;
+			if ( *p == '\\' )
+				p++;
+			fstrcpy( subkeyname, p );
+			if ( (p = strchr( subkeyname, '\\' )) )
+				*p = '\0';
 			
+			/* don't add a key more than once */
+			
+			for ( j=0; j<num_subkeys; j++ ) {
+				if ( strequal( subkeys_ptr[j], subkeyname ) )
+					break;
+			}
+			
+			if ( j != num_subkeys )
+				continue;
+
 			/* found a match, so allocate space and copy the name */
 			
 			if ( !(ptr = Realloc( subkeys_ptr, (num_subkeys+2)*sizeof(fstring))) ) {
@@ -2456,14 +2472,7 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, char* key, fstring **subkeys 
 			}
 			
 			subkeys_ptr = ptr;
-			
-			/* copy the subkey name and trim off any trailing 
-			   subkeys below it */
-			   
-			fstrcpy( subkeys_ptr[num_subkeys], p );
-			p = strchr( subkeys_ptr[num_subkeys], '\\' );
-			if ( p )
-				*p = '\0';
+			fstrcpy( subkeys_ptr[num_subkeys], subkeyname );
 			num_subkeys++;
 		}
 		
@@ -2481,31 +2490,99 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, char* key, fstring **subkeys 
 /****************************************************************************
  ***************************************************************************/
  
-WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2 )
+WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key )
 {
-	WERROR 		result = WERR_OK;
 	NT_PRINTER_DATA	*data;
 	int		i;
+	int		removed_keys = 0;
+	int		empty_slot;
 	
 	data = &p2->data;
+	empty_slot = data->num_keys;
+
+	if ( !key )
+		return WERR_INVALID_PARAM;
+	
+	/* remove all keys */
+
+	if ( !strlen(key) ) 
+	{
+		for ( i=0; i<data->num_keys; i++ ) 
+		{
+			DEBUG(8,("delete_all_printer_data: Removed all Printer Data from key [%s]\n",
+				data->keys[i].name));
+		
+			SAFE_FREE( data->keys[i].name );
+			regval_ctr_destroy( &data->keys[i].values );
+		}
+	
+		DEBUG(8,("delete_all_printer_data: Removed all Printer Data from printer [%s]\n",
+			p2->printername ));
+	
+		SAFE_FREE( data->keys );
+		ZERO_STRUCTP( data );
+
+		return WERR_OK;
+	}
+
+	/* remove a specific key (and all subkeys) */
 	
 	for ( i=0; i<data->num_keys; i++ ) 
 	{
-		DEBUG(8,("delete_all_printer_data: Removed all Printer Data from key [%s]\n",
-			data->keys[i].name));
+		if ( StrnCaseCmp( data->keys[i].name, key, strlen(key)) == 0 )
+		{
+			DEBUG(8,("delete_all_printer_data: Removed all Printer Data from key [%s]\n",
+				data->keys[i].name));
 		
-		SAFE_FREE( data->keys[i].name );
-		regval_ctr_destroy( &data->keys[i].values );
-	}
-	
-	SAFE_FREE( data->keys );
+			SAFE_FREE( data->keys[i].name );
+			regval_ctr_destroy( &data->keys[i].values );
+		
+			/* mark the slot as empty */
 
-	DEBUG(8,("delete_all_printer_data: Removed all Printer Data from printer [%s]\n",
-		p2->printername ));
+			ZERO_STRUCTP( &data->keys[i] );
+		}
+	}
+
+	/* find the first empty slot */
+
+	for ( i=0; i<data->num_keys; i++ ) {
+		if ( !data->keys[i].name ) {
+			empty_slot = i;
+			removed_keys++;
+			break;
+		}
+	}
+
+	if ( i == data->num_keys )
+		/* nothing was removed */
+		return WERR_INVALID_PARAM;
+
+	/* move everything down */
 	
-	ZERO_STRUCTP( data );
-	
-	return result;
+	for ( i=empty_slot+1; i<data->num_keys; i++ ) {
+		if ( data->keys[i].name ) {
+			memcpy( &data->keys[empty_slot], &data->keys[i], sizeof(NT_PRINTER_KEY) ); 
+			ZERO_STRUCTP( &data->keys[i] );
+			empty_slot++;
+			removed_keys++;
+		}
+	}
+
+	/* update count */
+		
+	data->num_keys -= removed_keys;
+
+	/* sanity check to see if anything is left */
+
+	if ( !data->num_keys )
+	{
+		DEBUG(8,("delete_all_printer_data: No keys left for printer [%s]\n", p2->printername ));
+
+		SAFE_FREE( data->keys );
+		ZERO_STRUCTP( data );
+	}
+
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -2655,7 +2732,7 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 		
 		regval_ctr_addvalue( &printer_data->keys[key_index].values, valuename, type, data_p, size );
 
-		DEBUG(8,("specific: [%s\\%s], len: %d\n", keyname, valuename, size));
+		DEBUG(8,("specific: [%s:%s], len: %d\n", keyname, valuename, size));
 	}
 
 	return len;
@@ -3103,7 +3180,7 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	 * should not be any (if there are delete them).
 	 */
 	 
-	delete_all_printer_data( info_ptr );
+	delete_all_printer_data( info_ptr, "" );
 	
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
 
