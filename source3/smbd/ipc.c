@@ -293,17 +293,17 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	DEBUG(10,("api_fd_reply: p:%p max_trans_reply: %d\n", p, p->max_trans_reply));
 
 	switch (subcommand) {
-	case 0x26:
+	case TRANSACT_DCERPCCMD:
 		/* dce/rpc command */
 		reply = write_to_pipe(p, data, tdscnt);
 		if (reply)
 			reply = api_rpc_trans_reply(outbuf, p);
 		break;
-	case 0x53:
+	case TRANSACT_WAITNAMEDPIPEHANDLESTATE:
 		/* Wait Named Pipe Handle state */
 		reply = api_WNPHS(outbuf, p, params, tpscnt);
 		break;
-	case 0x01:
+	case TRANSACT_SETNAMEDPIPEHANDLESTATE:
 		/* Set Named Pipe Handle state */
 		reply = api_SNPHS(outbuf, p, params, tpscnt);
 		break;
