@@ -189,10 +189,10 @@ extract_ticket(krb5_context context,
 
     krb5_timeofday (context, &sec_now);
     if (context->kdc_sec_offset == 0
-	&& krb5_config_get_string (context->cf,
-				   "libdefaults",
-				   "kdc_timesync",
-				   NULL) != NULL) {
+	&& krb5_config_get_bool (context->cf,
+				 "libdefaults",
+				 "kdc_timesync",
+				 NULL)) {
 	context->kdc_sec_offset = rep->part2.authtime - sec_now;
 	krb5_timeofday (context, &sec_now);
     }
