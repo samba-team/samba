@@ -145,4 +145,27 @@ You should then remove the line:
 <para>from the DNIX section of <filename>includes.h</filename></para>
 
 </sect1>
+
+<sect1>
+<title>RedHat Linux Rembrandt-II</title>
+
+<para>
+By default RedHat Rembrandt-II during installation adds an
+entry to /etc/hosts as follows:
+<programlisting>
+	127.0.0.1 loopback "hostname"."domainname"
+</programlisting>
+</para>
+	
+<para>
+This causes Samba to loop back onto the loopback interface.
+The result is that Samba fails to communicate correctly with
+the world and therefor may fail to correctly negotiate who
+is the master browse list holder and who is the master browser.
+</para>
+
+<para>
+Corrective Action:	Delete the entry after the word loopback
+	in the line starting 127.0.0.1
+</para>
 </chapter>

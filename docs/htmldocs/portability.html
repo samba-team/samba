@@ -5,11 +5,10 @@
 >Portability</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
-HREF="Samba-HOWTO.html"><LINK
+HREF="samba-project-documentation.html"><LINK
 REL="PREVIOUS"
 TITLE="Group mapping HOWTO"
 HREF="groupmapping.html"></HEAD
@@ -63,7 +62,9 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="PORTABILITY">Chapter 21. Portability</H1
+NAME="PORTABILITY"
+></A
+>Chapter 22. Portability</H1
 ><P
 >Samba works on a wide range of platforms but the interface all the 
 platforms provide is not always compatible. This chapter contains 
@@ -73,7 +74,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3119">21.1. HPUX</H1
+NAME="AEN3201"
+></A
+>22.1. HPUX</H1
 ><P
 >HP's implementation of supplementary groups is, er, non-standard (for
 hysterical reasons).  There are two group files, /etc/group and
@@ -97,7 +100,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3124">21.2. SCO Unix</H1
+NAME="AEN3206"
+></A
+>22.2. SCO Unix</H1
 ><P
 > 
 If you run an old version of  SCO Unix then you may need to get important 
@@ -112,7 +117,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3128">21.3. DNIX</H1
+NAME="AEN3210"
+></A
+>22.3. DNIX</H1
 ><P
 >DNIX has a problem with seteuid() and setegid(). These routines are
 needed for Samba to work correctly, but they were left out of the DNIX
@@ -212,6 +219,30 @@ CLASS="FILENAME"
 >includes.h</TT
 ></P
 ></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3239"
+></A
+>22.4. RedHat Linux Rembrandt-II</H1
+><P
+>By default RedHat Rembrandt-II during installation adds an
+entry to /etc/hosts as follows:
+<PRE
+CLASS="PROGRAMLISTING"
+>	127.0.0.1 loopback "hostname"."domainname"</PRE
+></P
+><P
+>This causes Samba to loop back onto the loopback interface.
+The result is that Samba fails to communicate correctly with
+the world and therefor may fail to correctly negotiate who
+is the master browse list holder and who is the master browser.</P
+><P
+>Corrective Action:	Delete the entry after the word loopback
+	in the line starting 127.0.0.1</P
+></DIV
 ></DIV
 ><DIV
 CLASS="NAVFOOTER"
@@ -238,7 +269,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="Samba-HOWTO.html"
+HREF="samba-project-documentation.html"
 ACCESSKEY="H"
 >Home</A
 ></TD

@@ -5,11 +5,10 @@
 >Samba performance issues</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
-HREF="Samba-HOWTO.html"><LINK
+HREF="samba-project-documentation.html"><LINK
 REL="PREVIOUS"
 TITLE="Improved browsing in samba"
 HREF="improved-browsing.html"><LINK
@@ -70,13 +69,17 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="SPEED">Chapter 16. Samba performance issues</H1
+NAME="SPEED"
+></A
+>Chapter 17. Samba performance issues</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2732">16.1. Comparisons</H1
+NAME="AEN2814"
+></A
+>17.1. Comparisons</H1
 ><P
 >The Samba server uses TCP to talk to the client. Thus if you are
 trying to see if it performs well you should really compare it to
@@ -105,13 +108,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2738">16.2. Oplocks</H1
+NAME="AEN2820"
+></A
+>17.2. Oplocks</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2740">16.2.1. Overview</H2
+NAME="AEN2822"
+></A
+>17.2.1. Overview</H2
 ><P
 >Oplocks are the way that SMB clients get permission from a server to
 locally cache file operations. If a server grants an oplock
@@ -145,7 +152,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2748">16.2.2. Level2 Oplocks</H2
+NAME="AEN2830"
+></A
+>17.2.2. Level2 Oplocks</H2
 ><P
 >With Samba 2.0.5 a new capability - level2 (read only) oplocks is
 supported (although the option is off by default - see the smb.conf
@@ -167,7 +176,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2754">16.2.3. Old 'fake oplocks' option - deprecated</H2
+NAME="AEN2836"
+></A
+>17.2.3. Old 'fake oplocks' option - deprecated</H2
 ><P
 >Samba can also fake oplocks, by granting a oplock whenever a client 
 asks for one. This is controlled using the smb.conf option "fake 
@@ -186,7 +197,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2758">16.3. Socket options</H1
+NAME="AEN2840"
+></A
+>17.3. Socket options</H1
 ><P
 >There are a number of socket options that can greatly affect the
 performance of a TCP based server like Samba.</P
@@ -212,7 +225,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2765">16.4. Read size</H1
+NAME="AEN2847"
+></A
+>17.4. Read size</H1
 ><P
 >The option "read size" affects the overlap of disk reads/writes with
 network reads/writes. If the amount of data being transferred in
@@ -236,7 +251,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2770">16.5. Max xmit</H1
+NAME="AEN2852"
+></A
+>17.5. Max xmit</H1
 ><P
 >At startup the client and server negotiate a "maximum transmit" size,
 which limits the size of nearly all SMB commands. You can set the
@@ -257,7 +274,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2775">16.6. Locking</H1
+NAME="AEN2857"
+></A
+>17.6. Locking</H1
 ><P
 >By default Samba does not implement strict locking on each read/write
 call (although it did in previous versions). If you enable strict
@@ -272,7 +291,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2779">16.7. Share modes</H1
+NAME="AEN2861"
+></A
+>17.7. Share modes</H1
 ><P
 >Some people find that opening files is very slow. This is often
 because of the "share modes" code needed to fully implement the dos
@@ -300,7 +321,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2784">16.8. Log level</H1
+NAME="AEN2866"
+></A
+>17.8. Log level</H1
 ><P
 >If you set the log level (also known as "debug level") higher than 2
 then you may suffer a large drop in performance. This is because the
@@ -312,7 +335,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2787">16.9. Wide lines</H1
+NAME="AEN2869"
+></A
+>17.9. Wide lines</H1
 ><P
 >The "wide links" option is now enabled by default, but if you disable
 it (for better security) then you may suffer a performance hit in
@@ -324,7 +349,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2790">16.10. Read raw</H1
+NAME="AEN2872"
+></A
+>17.10. Read raw</H1
 ><P
 >The "read raw" operation is designed to be an optimised, low-latency
 file read operation. A server may choose to not support it,
@@ -344,7 +371,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2795">16.11. Write raw</H1
+NAME="AEN2877"
+></A
+>17.11. Write raw</H1
 ><P
 >The "write raw" operation is designed to be an optimised, low-latency
 file write operation. A server may choose to not support it,
@@ -359,7 +388,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2799">16.12. Read prediction</H1
+NAME="AEN2881"
+></A
+>17.12. Read prediction</H1
 ><P
 >Samba can do read prediction on some of the SMB commands. Read
 prediction means that Samba reads some extra data on the last file it
@@ -383,7 +414,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2806">16.13. Memory mapping</H1
+NAME="AEN2888"
+></A
+>17.13. Memory mapping</H1
 ><P
 >Samba supports reading files via memory mapping them. One some
 machines this can give a large boost to performance, on others it
@@ -402,7 +435,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2811">16.14. Slow Clients</H1
+NAME="AEN2893"
+></A
+>17.14. Slow Clients</H1
 ><P
 >One person has reported that setting the protocol to COREPLUS rather
 than LANMAN2 gave a dramatic speed improvement (from 10k/s to 150k/s).</P
@@ -417,7 +452,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2815">16.15. Slow Logins</H1
+NAME="AEN2897"
+></A
+>17.15. Slow Logins</H1
 ><P
 >Slow logins are almost always due to the password checking time. Using
 the lowest practical "password level" will improve things a lot. You
@@ -428,7 +465,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2818">16.16. Client tuning</H1
+NAME="AEN2900"
+></A
+>17.16. Client tuning</H1
 ><P
 >Often a speed problem can be traced to the client. The client (for
 example Windows for Workgroups) can often be tuned for better TCP
@@ -530,7 +569,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2850">16.17. My Results</H1
+NAME="AEN2932"
+></A
+>17.17. My Results</H1
 ><P
 >Some people want to see real numbers in a document like this, so here
 they are. I have a 486sx33 client running WfWg 3.11 with the 3.11b
@@ -578,7 +619,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="Samba-HOWTO.html"
+HREF="samba-project-documentation.html"
 ACCESSKEY="H"
 >Home</A
 ></TD
