@@ -353,7 +353,7 @@ static int interpret_short_filename(char *p,file_info *finfo)
   but should otherwise not be used
   ****************************************************************************/
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
-		 void (*fn)(file_info *, const char *))
+		 void (*fn)(file_info *, const char *, void *), void *state)
 {
 	char *p;
 	int received = 0;
@@ -373,12 +373,9 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		if (first)	
-			set_message(cli->outbuf,2,5 + strlen(mask),True);
-		else
-			set_message(cli->outbuf,2,5 + 21,True);
+		set_message(cli->outbuf,2,0,True);
 
-		CVAL(cli->outbuf,smb_com) = SMBffirst;
+		CVAL(cli->outbuf,smb_com) = SMBsearch;
 
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
@@ -389,21 +386,19 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = smb_buf(cli->outbuf);
 		*p++ = 4;
       
-		if (first)
-			pstrcpy(p,mask);
-		else
-			pstrcpy(p,"");
-		p += strlen(p) + 1;
-      
+		p += clistr_push(cli, p, first?mask:"", -1, CLISTR_TERMINATE|CLISTR_CONVERT);      
 		*p++ = 5;
 		if (first) {
 			SSVAL(p,0,0);
+			p += 2;
 		} else {
 			SSVAL(p,0,21);
 			p += 2;
 			memcpy(p,status,21);
+			p += 21;
 		}
 
+		cli_setup_bcc(cli, p);
 		cli_send_smb(cli);
 		if (!cli_receive_smb(cli)) break;
 
@@ -433,7 +428,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		set_message(cli->outbuf,2,5 + 21,True);
+		set_message(cli->outbuf,2,0,True);
 		CVAL(cli->outbuf,smb_com) = SMBfclose;
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
@@ -449,7 +444,9 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		SSVAL(p, 0, 21);
 		p += 2;
 		memcpy(p,status,21);
+		p += 21;
 		
+		cli_setup_bcc(cli, p);
 		cli_send_smb(cli);
 		if (!cli_receive_smb(cli)) {
 			DEBUG(0,("Error closing search: %s\n",smb_errstr(cli->inbuf)));
@@ -459,7 +456,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 	for (p=dirlist,i=0;i<num_received;i++) {
 		file_info finfo;
 		p += interpret_short_filename(p,&finfo);
-		fn(&finfo, Mask);
+		fn(&finfo, Mask, state);
 	}
 
 	if (dirlist) free(dirlist);

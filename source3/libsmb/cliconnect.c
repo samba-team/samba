@@ -144,10 +144,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 		uint32 capabilities;
 
 		capabilities = CAP_NT_SMBS;
-		if (cli->use_level_II_oplocks) 
+		if (cli->use_level_II_oplocks) {
 			capabilities |= CAP_LEVEL_II_OPLOCKS;
-		if (getenv("USE_UNICODE") && 
-		    (cli->capabilities & CAP_UNICODE)) {
+		}
+		if (cli->capabilities & CAP_UNICODE) {
 			capabilities |= CAP_UNICODE;
 		}
 		set_message(cli->outbuf,13,0,True);
@@ -453,8 +453,10 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	cli->max_xmit = MIN(cli->max_xmit, CLI_BUFFER_SIZE);
 
-	/* this ensures cli_use_unicode is setup - delete this call later (tridge) */
-	cli_setup_packet(cli);
+	/* a way to force ascii SMB */
+	if (getenv("CLI_FORCE_ASCII")) {
+		cli->capabilities &= ~CAP_UNICODE;
+	}
 
 	return True;
 }
