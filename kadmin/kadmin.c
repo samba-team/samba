@@ -74,6 +74,12 @@ static struct getargs args[] = {
 static int num_args = sizeof(args) / sizeof(args[0]);
 
 static SL_cmd commands[] = {
+    /* commands that are only available with `-l' */
+    { "dump",		dump, "dump [file]"},
+    { "load",		load, "load file"},
+    { "merge",		merge, "merge file"},
+    { "init",		init, "init realm..."},
+    /* common commands */
     { "add_new_key",	add_new_key, 	"add_new_key principal"},
     { "ank"},
     { "cpw",		cpw_entry, 	"cpw_entry principal..."},
@@ -141,6 +147,7 @@ main(int argc, char **argv)
     kadm5_config_params conf;
     int optind = 0;
     int e;
+    SL_cmd *cmd;
 
     set_progname(argv[0]);
 
@@ -178,14 +185,15 @@ main(int argc, char **argv)
     conf.admin_server = admin_server;
     conf.mask |= KADM5_CONFIG_ADMIN_SERVER;
 
-    if(local_flag)
+    if(local_flag){
 	ret = kadm5_s_init_with_password_ctx(context, 
 					     KADM5_ADMIN_SERVICE,
 					     "password",
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
 					     &kadm_handle);
-    else
+	cmd = commands;
+    } else {
 	ret = kadm5_c_init_with_password_ctx(context, 
 					     /* XXX these are not used */
 					     "client",
@@ -193,13 +201,15 @@ main(int argc, char **argv)
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
 					     &kadm_handle);
+	cmd = commands + 4; /* XXX */
+    }
     
     if(ret)
 	krb5_err(context, 1, ret, "kadm5_init_with_password");
     if (argc != 0)
-	exit(sl_command(commands, argc, argv));
+	exit(sl_command(cmd, argc, argv));
 
-    ret = sl_loop(commands, "kadmin> ") != 0;
+    ret = sl_loop(cmd, "kadmin> ") != 0;
     kadm5_destroy(kadm_handle);
     krb5_free_context(context);
     return ret;
