@@ -3286,12 +3286,14 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 
 	/* Domain name of the trust */
 	if (entry) {
-		ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
-						   attr_domain, attr_val, sizeof(attr_val));
-		if (ret)
-			if (strncmp(pdb_get_tp_domain_name_c(trustpw), attr_val, sizeof(attr_val)))
-				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-						 attr_domain, pdb_get_tp_domain_name_c(trustpw));
+		if (strlen(pdb_get_tp_domain_name_c(trustpw))) {
+			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
+							   attr_domain, attr_val, sizeof(attr_val));
+			if (ret)
+				if (strncmp(pdb_get_tp_domain_name_c(trustpw), attr_val, sizeof(attr_val)))
+					smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+							 attr_domain, pdb_get_tp_domain_name_c(trustpw));
+		}
 	} else {
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 				 attr_domain, pdb_get_tp_domain_name_c(trustpw));
@@ -3323,10 +3325,11 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 						   attr_sid, attr_val, sizeof(attr_val));
 		if (ret) {
 			/* pattern of "empty sid compare" */
-			DOM_SID empty;
-			memset(&empty, 0, sizeof(empty));
+			DOM_SID empty_sid;
+			memset(&empty_sid, 0, sizeof(empty_sid));
+			const void *empty = &empty_sid, *new = &sid;
 
-			if (memcmp((void*)sid, (void*)&empty, sizeof(DOM_SID)) &&
+			if (memcmp(new, empty, sizeof(DOM_SID)) &&
 			    strncmp(sid_to_string(sidstr, sid), attr_val, sizeof(attr_val)))
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 						 attr_sid, sidstr);
