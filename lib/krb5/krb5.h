@@ -393,6 +393,7 @@ typedef struct krb5_context_data {
     char *error_string;
     char error_buf[256];
     krb5_addresses *ignore_addresses;
+    char *default_cc_name;
 } krb5_context_data;
 
 typedef struct krb5_ticket {
