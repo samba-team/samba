@@ -1,5 +1,7 @@
 1999-06-13  Assar Westerlund  <assar@sics.se>
 
+	* krb-struct-spwd.m4: consequent name of cache variables
+
 	* krb-func-getlogin.m4: new file for testing for posix (broken)
  	getlogin
 
