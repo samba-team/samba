@@ -2152,6 +2152,12 @@ static int do_message_op(void)
 
 	ip = ipzero;
 	if (have_ip) ip = dest_ip;
+	else {
+		if (!resolve_name( desthost, &ip, name_type )) {
+			DEBUG(0,("Unable to resolve name %s\n", desthost));
+			return 1;
+		}
+	}
 
 	if (!(cli=cli_initialise(NULL)) || !cli_connect(cli, desthost, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", desthost));
