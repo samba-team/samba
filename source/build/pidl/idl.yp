@@ -247,7 +247,8 @@ sub _Error {
 	print "Syntax error at $file:$line near '$last_token'\n";
 }
 
-sub _Lexer {
+sub _Lexer($)
+{
 	my($parser)=shift;
 
         $parser->YYData->{INPUT}
@@ -257,9 +258,12 @@ again:
 	$parser->YYData->{INPUT} =~ s/^[ \t]*//;
 
 	for ($parser->YYData->{INPUT}) {
-		if (s/^\# (\d+) \"(.*?)\"( \d+|)//) {
-			$parser->YYData->{LINE} = $1;
-			$parser->YYData->{INPUT_FILENAME} = $2;
+		if (/^\#/) {
+			if (s/^\# (\d+) \"(.*?)\"( \d+|)//) {
+				$parser->YYData->{LINE} = $1-1;
+				$parser->YYData->{INPUT_FILENAME} = $2;
+				goto again;
+			}
 			goto again;
 		}
 		if (s/^(\n)//) {
