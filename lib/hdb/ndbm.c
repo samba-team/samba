@@ -68,7 +68,7 @@ NDBM_fetch(krb5_context context, HDB *db, hdb_entry *entry)
     value = dbm_fetch(d, key);
     krb5_data_free(&data);
     if(value.dptr == NULL)
-	return KRB5_HDB_NOENTRY;
+	return HDB_ERR_NOENTRY;
     
     data.data = value.dptr;
     data.length = value.dsize;
@@ -132,7 +132,7 @@ NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
     else
 	key = dbm_nextkey(d);
     if(key.dptr == NULL)
-	return KRB5_HDB_NOENTRY;
+	return HDB_ERR_NOENTRY;
     key_data.data = key.dptr;
     key_data.length = key.dsize;
     value = dbm_fetch(d, key);
