@@ -82,7 +82,7 @@ void encrypt_display(void);
 void encrypt_enc_keyid(unsigned char*, int);
 void encrypt_end(void);
 void encrypt_gen_printsub(unsigned char*, int, unsigned char*, int);
-void encrypt_init(char*, int);
+void encrypt_init(const char*, int);
 void encrypt_is(unsigned char*, int);
 void encrypt_list_types(void);
 void encrypt_not(void);
