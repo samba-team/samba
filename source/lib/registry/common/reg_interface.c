@@ -384,10 +384,10 @@ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key, 
 		}
 	}
 
-	if(!W_ERROR_IS_OK(error) && !W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS))
-		return error;
-	
-	return WERR_OK;
+	if (W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS))
+		return WERR_DEST_NOT_FOUND;
+
+	return error;
 }
 
 WERROR reg_key_del(struct registry_key *parent, const char *name)
