@@ -1,5 +1,8 @@
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
+	* telnet/main.c: add -G and config file support.  From Miroslav
+ 	Ruda <ruda@ics.muni.cz>
+
 	* telnetd/sys_term.c (rmut): work around utmpx strangness.  From
  	Miroslav Ruda <ruda@ics.muni.cz>
 

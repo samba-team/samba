@@ -1,5 +1,12 @@
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
+	* rshd.c: re-write the handling of forwarded credentials and
+ 	stuff.  From Miroslav Ruda <ruda@ics.muni.cz>
+
+	* rsh_locl.h: always include kafs.h
+
+	* rsh.c: add `-z' and `-G' options
+
 	* rsh.c (loop): shutdown one side of the TCP connection on EOF.
   	From Brian A May <bmay@dgs.monash.edu.au>
 

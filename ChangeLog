@@ -1,5 +1,30 @@
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/get_in_tkt.c: type correctness
+
+	* lib/krb5/get_for_creds.c (krb5_fwd_tgs_creds): set forwarded in
+ 	flags.  From Miroslav Ruda <ruda@ics.muni.cz>
+
+	* kuser/kinit.c (main): add config file support for forwardable
+ 	and krb4 support.  From Miroslav Ruda <ruda@ics.muni.cz>
+
+	* kdc/kerberos5.c (as_rep): add an empty X500-compress string as
+ 	transited.
+	(fix_transited_encoding): check length.
+	From Miroslav Ruda <ruda@ics.muni.cz>
+
+	* kdc/hpropd.c (dump_krb4): check the realm so that we don't dump
+ 	principals in some other realm. From Miroslav Ruda
+ 	<ruda@ics.muni.cz>
+	(main): rename sa_len -> sin_len, sa_lan is a define on some
+	platforms.
+
+	* appl/kf/kfd.c: add regpag support. From Miroslav Ruda
+ 	<ruda@ics.muni.cz>
+
+	* appl/kf/kf.c: add `-G' and forwardable option in krb5.conf.
+  	From Miroslav Ruda <ruda@ics.muni.cz>
+
 	* lib/krb5/config_file.c (parse_list): don't run past end of line
 
 	* appl/test/gss_common.h: new prototypes

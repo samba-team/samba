@@ -1,3 +1,17 @@
+1999-08-04  Assar Westerlund  <assar@sics.se>
+
+	* utmpx_login.c (utmpx_login): fix for Solaris.  From Miroslav
+ 	Ruda <ruda@ics.muni.cz>
+
+	* login_locl.h: add <shadow.h> and some prototypes
+
+	* login.c: fixes with v4 and shadow support.  From Miroslav Ruda
+ 	<ruda@ics.muni.cz>
+
+	* shadow.c: new file with functions for handling shadow passwords
+
+	* Makefile.am: add shadow
+
 1999-07-22  Assar Westerlund  <assar@sics.se>
 
 	* login.c (main): generate a better tty name

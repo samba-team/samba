@@ -1,3 +1,8 @@
+1999-08-04  Assar Westerlund  <assar@sics.se>
+
+	* display_status.c (calling_error, routine_error): right shift the
+ 	code to make it possible to index into the arrays
+
 1999-07-28  Assar Westerlund  <assar@sics.se>
 
 	* gssapi.h (GSS_C_AF_INET6): add
