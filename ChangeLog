@@ -1,3 +1,13 @@
+Mon Sep  8 02:57:14 1997  Assar Westerlund  <assar@sics.se>
+
+	* admin/util.c (init_des_key): increase kvno
+	(set_password): return -1 if `des_read_pw_string' failed
+
+	* admin/mod.c (doit2): check the return value from `set_password'
+
+	* admin/ank.c (doit): don't add a new entry if `set_password'
+ 	failed
+
 Mon Sep  8 02:20:16 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/transited.c: something that might resemble
