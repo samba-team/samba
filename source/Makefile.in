@@ -634,7 +634,7 @@ bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 
 bin/smbwrapper.@SHLIBEXT@: $(PICOBJS) bin/.dummy
 	@echo Linking shared library $@
-	@$(SHLD) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LIBS) \
+	@$(SHLD) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LDFLAGS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`
 
 bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32) bin/.dummy
@@ -653,7 +653,7 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS) bin/.dummy
 
 bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ) bin/.dummy
 	@echo Linking shared library $@
-	$(SHLD) @LDSHFLAGS@ -o $@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) -lc \
+	$(SHLD) @LDSHFLAGS@ -o $@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) $(LDAPLIBS) -lc \
 		@SONAMEFLAG@`basename $@`
 
 nsswitch/libnss_wins.so: $(NSS_OBJ)
