@@ -199,8 +199,8 @@ size_t __unsafe_string_function_usage_here2__(void);
 #define safe_strcat_fn2 safe_strcat_fn
 #define push_string_fn2 push_string_fn
 #define pull_string_fn2 pull_string_fn
-#define clistr_push_fn2 clistr_push_fn2
-#define clistr_pull_fn2 clistr_pull_fn2
+#define clistr_push_fn2 clistr_push_fn
+#define clistr_pull_fn2 clistr_pull_fn
 
 #endif
 
