@@ -7,12 +7,6 @@
  This file will need to go away before the rewrite is complete
 */
 
-BOOL set_current_service(void *conn, BOOL x)
-{ return True; }
-
-void change_to_root_user(void)
-{}
-
 BOOL pcap_printername_ok(const char *service, const char *foo)
 { return True; }
 
@@ -100,9 +94,6 @@ BOOL reload_services(struct smbsrv_connection *smb, BOOL test)
 	reopen_logs();
 
 	load_interfaces();
-
-	/* this forces service parameters to be flushed */
-	set_current_service(NULL,True);
 
 	return(ret);
 }
