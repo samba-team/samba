@@ -1,3 +1,8 @@
+2002-08-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* resolve.c (dns_srv_order): do alignment tricks with the random()
+	state (from NetBSD)
+
 2002-08-27  Assar Westerlund  <assar@kth.se>
 
 	* resolve.c (parse_reply): verify the lengths (both external and
