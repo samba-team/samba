@@ -2085,7 +2085,7 @@ static int process_command_string(char *cmd)
 	if (!cli) {
 		cli = do_connect(desthost, service);
 		if (!cli)
-			return;
+			return 0;
 	}
 	
 	while (cmd[0] != '\0')    {
