@@ -6955,11 +6955,10 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 {
 	POLICY_HND	*handle = &q_u->handle; 
 	uint32 		in_size = q_u->size;
-	uint32 		*num_entries = &r_u->returned;
-	uint32 		*needed = &r_u->needed;
+	uint32 		num_entries, 
+			needed;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	PRINTER_ENUM_VALUES	*enum_values = NULL;
-	PRINTER_ENUM_VALUES_CTR	ctr;
 	fstring 	key, value;
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
 	int 		snum;
@@ -7008,15 +7007,16 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	 */
 	result = WERR_OK;
 	param_index		= 0;
-	*needed 		= 0;
+	needed 			= 0;
+	num_entries		= 0;
 	
 	while (get_specific_param_by_index(*printer, 2, param_index, value, &data, &type, &data_len)) 
 	{
 		PRINTER_ENUM_VALUES	*ptr;
 
-		*num_entries++;
+		DEBUG(10,("retrieved value number [%d] [%s]\n", num_entries, value));
 
-		if ((ptr=talloc_realloc(p->mem_ctx, enum_values, *num_entries * sizeof(PRINTER_ENUM_VALUES))) == NULL)
+		if ((ptr=talloc_realloc(p->mem_ctx, enum_values, (num_entries+1) * sizeof(PRINTER_ENUM_VALUES))) == NULL)
 		{
 			DEBUG(0,("talloc_realloc failed to allocate more memory!\n"));
 			result = WERR_NOMEM;
@@ -7025,12 +7025,12 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 		enum_values = ptr;
 
 		/* copy the data */
-		init_unistr(&enum_values[*num_entries].valuename, value);
-		enum_values[*num_entries].value_len = (strlen(value)+1) * 2;
-		enum_values[*num_entries].type      = type;
-		enum_values[*num_entries].data_len  = data_len;
-		enum_values[*num_entries].data      = talloc_memdup(p->mem_ctx, data, data_len);
-		if (!enum_values[*num_entries].data) {
+		init_unistr(&enum_values[num_entries].valuename, value);
+		enum_values[num_entries].value_len = (strlen(value)+1) * 2;
+		enum_values[num_entries].type      = type;
+		enum_values[num_entries].data_len  = data_len;
+		enum_values[num_entries].data      = talloc_memdup(p->mem_ctx, data, data_len);
+		if (!enum_values[num_entries].data) {
 			DEBUG(0,("talloc_realloc failed to allocate more memory for data!\n"));
 			result = WERR_NOMEM;
 			goto done;
@@ -7038,30 +7038,28 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 
 		/* keep track of the size of the array in bytes */
 		
-		*needed += spoolss_size_printer_enum_values(&enum_values[*num_entries]);
-			  
+		needed += spoolss_size_printer_enum_values(&enum_values[num_entries]);
+		
+		num_entries++;
 		param_index++;
 	}
 	
-	if (*needed > in_size) {
+	/* don't forget initial uin32(needed) at beginning of PRINTER_ENUM_VALUES_CTR */
+	r_u->needed 		= needed + 4;
+	r_u->returned 		= num_entries;
+
+	if (needed > in_size) {
 		result = WERR_MORE_DATA;
 		goto done;
 	}
 		
-	/* marshall the data into buffer */
+	/* copy data into the reply */
 	
-	if (!alloc_buffer_size(&r_u->buffer, *needed)) {
-		DEBUG(0, ("_spoolss_enumprinterdataex: allocate_buffer_size() failed to allocate [%d] bytes!\n",
-			*needed));
-		result = WERR_INSUFFICIENT_BUFFER;
-	}
+	r_u->ctr.size        	= r_u->needed;
+	r_u->ctr.size_of_array 	= r_u->returned;
+	r_u->ctr.values 	= enum_values;
 	
-	ctr.size        	= *needed;
-	ctr.size_of_array 	= *num_entries;
-	ctr.values 		= enum_values;
 	
-	smb_io_printer_enum_values_ctr("", &r_u->buffer, &ctr, 0);
-			
 		
 done:	
 	free_a_printer(&printer, 2);

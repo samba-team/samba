@@ -1948,7 +1948,7 @@ SPOOL_Q_ENUMPRINTERDATAEX;
 
 typedef struct spool_r_enumprinterdataex
 {
-	NEW_BUFFER buffer;
+	PRINTER_ENUM_VALUES_CTR ctr;
 	uint32 needed;
 	uint32 returned;
 	WERROR status;

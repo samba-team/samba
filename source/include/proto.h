@@ -3548,10 +3548,6 @@ BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_
                                           prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u, 
                                           prs_struct *ps, int depth);
-BOOL smb_io_printer_enum_values(char *desc, NEW_BUFFER *buffer, 
-				PRINTER_ENUM_VALUES *pValue, int depth);
-BOOL smb_io_printer_enum_values_ctr(char *desc, NEW_BUFFER *buffer, 
-				PRINTER_ENUM_VALUES_CTR *ctr, int depth);
 BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
 BOOL make_spoolss_q_addprinterdriver(
