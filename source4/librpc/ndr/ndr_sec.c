@@ -56,6 +56,65 @@ NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, struct dom_sid *
 	return ndr_push_dom_sid(ndr, ndr_flags, sid);
 }
 
+/*
+  parse a dom_sid28 - this is a dom_sid in a fixed 28 byte buffer, so we need to ensure there are only upto 5 sub_auth
+*/
+NTSTATUS ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid)
+{
+	NTSTATUS status;
+	struct ndr_pull *subndr;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+
+	subndr = talloc_zero(ndr, struct ndr_pull);
+	NT_STATUS_HAVE_NO_MEMORY(subndr);
+
+	subndr->data		= ndr->data + ndr->offset;
+	subndr->data_size	= 28;
+	subndr->offset		= 0;
+
+	NDR_CHECK(ndr_pull_advance(ndr, 28));
+
+	status = ndr_pull_dom_sid(subndr, ndr_flags, sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* handle a w2k bug which send random data in the buffer */
+		ZERO_STRUCTP(sid);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+  push a dom_sid28 - this is a dom_sid in a 28 byte fixed buffer
+*/
+NTSTATUS ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, struct dom_sid *sid)
+{
+	uint32_t old_offset;
+	uint32_t padding;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+
+	if (sid->num_auths > 5) {
+		return ndr_push_error(ndr, NDR_ERR_RANGE, 
+				      "dom_sid28 allows only upto 5 sub auth [%u]", 
+				      sid->num_auths);
+	}
+
+	old_offset = ndr->offset;
+	NDR_CHECK(ndr_push_dom_sid(ndr, ndr_flags, sid));
+
+	padding = 28 - (ndr->offset - old_offset);
+
+	if (padding > 0) {
+		NDR_CHECK(ndr_push_zero(ndr, padding));
+	}
+
+	return NT_STATUS_OK;
+}
 
 /*
   print a dom_sid
@@ -65,7 +124,12 @@ void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, struct dom_sid *
 	ndr->print(ndr, "%-25s: %s", name, dom_sid_string(ndr, sid));
 }
 
-void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, struct dom_sid2 *sid)
+void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, struct dom_sid *sid)
+{
+	ndr_print_dom_sid(ndr, name, sid);
+}
+
+void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, struct dom_sid *sid)
 {
 	ndr_print_dom_sid(ndr, name, sid);
 }
