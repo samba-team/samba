@@ -8,6 +8,7 @@
  *  Copyright (C) Rafal Szczesniak                  2002,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002,
  *  Copyright (C) Simo Sorce                        2003.
+ *  Copyright (C) Gerald (Jerry) Carter             2005.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -345,6 +346,8 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 	return NT_STATUS_OK;
 }
 
+#if 0	/* AD DC work in ongoing in Samba 4 */
+
 /***************************************************************************
  Init_dns_dom_info.
 ***************************************************************************/
@@ -384,6 +387,8 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 		init_dom_sid2(&r_l->dom_sid, dom_sid);
 	}
 }
+#endif	/* AD DC work in ongoing in Samba 4 */
+
 
 /***************************************************************************
  _lsa_open_policy2.
@@ -776,9 +781,6 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	DEBUG(10,("_lsa_enum_privs: enum_context:%d total entries:%d\n", 
 		enum_context, num_privs));
 	
-	if ( !(entries = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_PRIV_ENTRY, num_privs + 1)))
-		return NT_STATUS_NO_MEMORY;
-
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
@@ -790,7 +792,6 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 
 	if ( !(entries = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_PRIV_ENTRY, num_privs )) )
 		return NT_STATUS_NO_MEMORY;
-
 
 	for (i = 0; i < num_privs; i++) {
 		if( i < enum_context) {
@@ -1143,7 +1144,7 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 		
 	/* check to see if the pipe_user is root or a Domain Admin since 
 	   account_pol.tdb was already opened as root, this is all we have */
-
+	   
 	get_current_user( &user, p );
 	if ( user.uid != sec_initial_uid() 
 		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
@@ -1184,7 +1185,7 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 
 	/* check to see if the pipe_user is root or a Domain Admin since 
 	   account_pol.tdb was already opened as root, this is all we have */
-
+	   
 	get_current_user( &user, p );
 	if ( user.uid != sec_initial_uid()
 		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) ) 
@@ -1261,6 +1262,8 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 	return r_u->status;
 }
 
+#if 0 	/* AD DC work in ongoing in Samba 4 */
+
 /***************************************************************************
  ***************************************************************************/
 
@@ -1323,6 +1326,7 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 
 	return r_u->status;
 }
+#endif	/* AD DC work in ongoing in Samba 4 */
 
 /***************************************************************************
  ***************************************************************************/
@@ -1473,4 +1477,32 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 	return r_u->status;
 }
 
+
+NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, LSA_R_LOOKUP_PRIV_VALUE *r_u)
+{
+	struct lsa_info *info = NULL;
+	fstring name;
+	LUID_ATTR priv_luid;
+	SE_PRIV mask;
+	
+	/* find the connection policy handle. */
+	
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
+		
+	unistr2_to_ascii(name, &q_u->privname.unistring, sizeof(name));
+	
+	DEBUG(10,("_lsa_priv_get_dispname: name = %s\n", name));
+
+	if ( !se_priv_from_name( name, &mask ) )
+		return NT_STATUS_NO_SUCH_PRIVILEGE;
+
+	priv_luid = get_privilege_luid( &mask );
+
+	r_u->luid.low  = priv_luid.luid.low;
+	r_u->luid.high = priv_luid.luid.high;
+		
+
+	return NT_STATUS_OK;
+}
 
