@@ -37,6 +37,10 @@
 
 2001-03-06  Assar Westerlund  <assar@sics.se>
 
+	* acconfig.h: include roken_rename.h when appropriate
+
+2001-03-06  Assar Westerlund  <assar@sics.se>
+
 	* lib/krb5/krb5.h (krb5_enctype): remove trailing comma
 
 2001-03-04  Assar Westerlund  <assar@sics.se>
