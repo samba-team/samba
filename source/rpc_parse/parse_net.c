@@ -2129,7 +2129,7 @@ static BOOL net_io_sam_account_info(const char *desc, uint8 sess_key[16],
 		if (!prs_uint32("pwd_len", ps, depth, &len))
                         return False;
 		old_offset = prs_offset(ps);
-		if (len == 0x44)
+		if (len > 0)
 		{
 			if (ps->io)
 			{
