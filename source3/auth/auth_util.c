@@ -972,6 +972,7 @@ struct passwd *smb_getpwnam( char *domuser )
 	p = strchr( domuser, *lp_winbind_separator() );
 
 	if ( p ) {
+		p += 1;
 		fstrcpy( mapped_username, p );
 		map_username( mapped_username );	
 		return Get_Pwnam(mapped_username);
