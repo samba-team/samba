@@ -170,7 +170,7 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
    */
 
   if (security_info_sent & OWNER_SECURITY_INFORMATION) {
-	sid_copy(&owner_sid, psd->owner_sid)
+	sid_copy(&owner_sid, psd->owner_sid);
     if (!sid_to_uid( &owner_sid, puser, &sid_type))
       DEBUG(3,("unpack_nt_permissions: unable to validate owner sid.\n"));
   }
@@ -181,7 +181,7 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
    */
 
   if (security_info_sent & GROUP_SECURITY_INFORMATION) {
-	sid_copy(&grp, psd->grp_sid)
+	sid_copy(&grp_sid, psd->grp_sid);
     if (!sid_to_gid( &grp_sid, pgrp, &sid_type))
       DEBUG(3,("unpack_nt_permissions: unable to validate group sid.\n"));
   }
