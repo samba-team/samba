@@ -30,9 +30,7 @@
 static int pytdbpack_calc_reqd_len(char *format_str,
 				   PyObject *val_seq);
 
-static PyObject *pytdbpack_unpack_item(char,
-				       char **pbuf,
-				       int *plen);
+static PyObject *pytdbpack_unpack_item(char, char **pbuf, int *plen, PyObject *);
 
 static PyObject *pytdbpack_pack_data(const char *format_str,
 				     PyObject *val_seq,
@@ -220,8 +218,9 @@ pytdbpack_unpack(PyObject *self,
 
 	format_len = strlen(format_str);
 	
-	/* allocate list to hold results */
-	val_list = PyList_New(format_len);
+	/* Allocate list to hold results.  Initially empty, and we append
+	   results as we go along. */
+	val_list = PyList_New(0);
 	if (!val_list)
 		goto failed;
 	ret_tuple = PyTuple_New(2);
@@ -230,7 +229,6 @@ pytdbpack_unpack(PyObject *self,
 	
 	/* For every object, unpack.  */
 	for (ppacked = packed_str, i = 0; i < format_len; i++) {
-		PyObject *val_obj;
 		char format;
 
 		format = format_str[i];
@@ -246,13 +244,9 @@ pytdbpack_unpack(PyObject *self,
 			}
 		}
 
-		val_obj = pytdbpack_unpack_item(format,
-						&ppacked,
-						&packed_len);
-		if (!val_obj)
+		if (!pytdbpack_unpack_item(format, &ppacked, &packed_len, val_list))
 			goto failed;
-
-		PyList_SET_ITEM(val_list, i, val_obj);
+		
 		last_format = format;
 	}
 
@@ -269,7 +263,8 @@ pytdbpack_unpack(PyObject *self,
 	return ret_tuple;
 
   failed:
-	/* handle failure: deallocate anything */
+	/* handle failure: deallocate anything.  XDECREF forms handle NULL
+	   pointers for objects that haven't been allocated yet. */
 	Py_XDECREF(val_list);
 	Py_XDECREF(ret_tuple);
 	Py_XDECREF(rest_string);
@@ -482,12 +477,13 @@ unpack_string(char **pbuf, int *plen)
 
 
 static PyObject *
-unpack_buffer(char **pbuf, int *plen)
+unpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 {
 	/* first get 32-bit len */
 	long slen;
 	unsigned char *b;
 	unsigned char *start;
+	PyObject *str_obj = NULL, *len_obj = NULL;
 	
 	if (*plen < 4) {
 		unpack_err_too_short();
@@ -518,7 +514,24 @@ unpack_buffer(char **pbuf, int *plen)
 	(*pbuf) += slen;
 	(*plen) -= slen;
 
-	return PyString_FromStringAndSize(start, slen);
+	if (!(len_obj = PyInt_FromLong(slen)))
+		goto failed;
+
+	if (PyList_Append(val_list, len_obj) == -1)
+		goto failed;
+	
+	if (!(str_obj = PyString_FromStringAndSize(start, slen)))
+		goto failed;
+	
+	if (PyList_Append(val_list, str_obj) == -1)
+		goto failed;
+	
+	return val_list;
+
+  failed:
+	Py_XDECREF(len_obj);	/* handles NULL */
+	Py_XDECREF(str_obj);
+	return NULL;
 }
 
 
@@ -528,24 +541,27 @@ unpack_buffer(char **pbuf, int *plen)
    *PBUF is advanced, and *PLEN reduced to reflect the amount of data that has
    been consumed.
 
-   Returns a reference to the unpacked Python object, or NULL for failure.
+   Returns a reference to None, or NULL for failure.
 */
 static PyObject *pytdbpack_unpack_item(char ch,
 				       char **pbuf,
-				       int *plen)
+				       int *plen,
+				       PyObject *val_list)
 {
+	PyObject *result;
+	
 	if (ch == 'w') {	/* 16-bit int */
-		return unpack_int16(pbuf, plen);
+		result = unpack_int16(pbuf, plen);
 	}
 	else if (ch == 'd' || ch == 'p') { /* 32-bit int */
 		/* pointers can just come through as integers */
-		return unpack_uint32(pbuf, plen);
+		result = unpack_uint32(pbuf, plen);
 	}
 	else if (ch == 'f' || ch == 'P') { /* nul-term string  */
-		return unpack_string(pbuf, plen);
+		result = unpack_string(pbuf, plen);
 	}
 	else if (ch == 'B') { /* length, buffer */
-		return unpack_buffer(pbuf, plen);
+		return unpack_buffer(pbuf, plen, val_list);
 	}
 	else {
 		PyErr_Format(PyExc_ValueError,
@@ -554,6 +570,14 @@ static PyObject *pytdbpack_unpack_item(char ch,
 		
 		return NULL;
 	}
+
+	/* otherwise OK */
+	if (!result)
+		return NULL;
+	if (PyList_Append(val_list, result) == -1)
+		return NULL;
+	
+	return val_list;
 }
 
 
