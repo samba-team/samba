@@ -234,7 +234,7 @@ krb5_cc_default(krb5_context context,
 {
     const char *p = krb5_cc_default_name(context);
 
-    if (p)
+    if (p == NULL)
 	return ENOMEM;
     return krb5_cc_resolve(context, p, id);
 }
