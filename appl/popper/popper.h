@@ -122,9 +122,7 @@
 #include <maillock.h>
 #endif
 
-#if defined(SKEY)
-#include <skey.h>
-#endif
+#include <otp.h>
 
 #if defined(KRB4_MAILDIR)
 #define POP_MAILDIR	KRB4_MAILDIR
@@ -232,10 +230,8 @@ typedef struct  {                               /*  POP parameter block */
 #ifdef KERBEROS
     AUTH_DAT		kdata;
 #endif
-#ifdef SKEY
-    struct skey		sk;			/*  Skey state */
-    int			permit_passwd;          /*  allow cleartext pwd? */
-#endif
+    int			no_passwd;		/*  Dont allow cleartext */
+    OtpContext		otp_ctx;		/*  OTP context */
 } POP;
 
 typedef struct {                                /*  State information for 

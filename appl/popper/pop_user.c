@@ -14,23 +14,17 @@ RCSID("$Id$");
 int
 pop_user (POP *p)
 {
-#ifdef SKEY
-    char ss[256], msg[256];
-#endif
+    char ss[256];
 
-    /*  Save the user name */
     strcpy(p->user, p->pop_parm[1]);
 
-#ifdef SKEY
-    p->permit_passwd = skeyaccess(k_getpwnam (p->user), NULL,
-				  p->client, NULL);
-    if (skeychallenge (&p->sk, p->user, ss) == 0) {
-	return pop_msg(p, POP_SUCCESS, "Password [%s] required for %s.",
+    if (otp_challenge (&p->otp_ctx, p->user, ss, sizeof(ss)) == 0) {
+	return pop_msg(p, POP_SUCCESS, "Password %s required for %s.",
 		       ss, p->user);
-    } else if (!p->permit_passwd)
-	return pop_msg(p, POP_FAILURE, "Access unauthorized for %s.",
-		       p->user);
-#endif
-    /*  Tell the user that the password is required */
-    return pop_msg(p, POP_SUCCESS, "Password required for %s.", p->user);
+    } else if (p->no_passwd) {
+	char *s = otp_error(&p->otp_ctx);
+	return pop_msg(p, POP_FAILURE, "Permission denied%s%s",
+		       s ? ":" : "", s);
+    } else
+	return pop_msg(p, POP_SUCCESS, "Password required for %s.", p->user);
 }
