@@ -595,7 +595,7 @@ void free_sec_desc(SEC_DESC **ppsd)
 	psd = *ppsd;
 
 	free_sec_acl(&psd->dacl);
-	free_sec_acl(&psd->dacl);
+	free_sec_acl(&psd->sacl);
 	free(psd->owner_sid);
 	free(psd->grp_sid);
 	free(psd);
