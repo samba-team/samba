@@ -2537,7 +2537,7 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	map_sz_into_ctr(ctr, SPOOL_REG_PRINTERNAME, info2->sharename);
 	map_sz_into_ctr(ctr, SPOOL_REG_SHORTSERVERNAME, global_myname());
 
-	get_myfullname(longname);
+	get_mydnsfullname(longname);
 	map_sz_into_ctr(ctr, SPOOL_REG_SERVERNAME, longname);
 
 	asprintf(&allocated_string, "\\\\%s\\%s", longname, info2->sharename);

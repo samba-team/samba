@@ -1250,7 +1250,7 @@ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_I
 
 				/* This should be a 'netbios domain -> DNS domain' mapping */
 				dnsdomname[0] = '\0';
-				get_mydomname(dnsdomname);
+				get_mydnsdomname(dnsdomname);
 				strlower_m(dnsdomname);
 				
 				dns_name = dnsdomname;

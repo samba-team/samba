@@ -321,7 +321,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					char *q_orig = q;
 					int str_offset;
 
-					get_mydomname(domain);
+					get_mydnsdomname(domain);
 					get_myname(hostname);
 	
 					if (SVAL(uniuser, 0) == 0) {
