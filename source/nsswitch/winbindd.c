@@ -519,6 +519,12 @@ static void process_loop(void)
 		/* Initialise fd lists for select() */
 
 		listen_sock = open_winbindd_socket();
+
+		if (listen_sock == -1) {
+			perror("open_winbind_socket");
+			exit(1);
+		}
+
 		maxfd = listen_sock;
 
 		FD_ZERO(&r_fds);

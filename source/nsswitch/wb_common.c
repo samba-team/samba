@@ -24,8 +24,7 @@
    Boston, MA  02111-1307, USA.   
 */
 
-#include "winbind_nss_config.h"
-#include "winbindd_nss.h"
+#include "winbind_client.h"
 
 /* Global variables.  These are effectively the client state information */
 
