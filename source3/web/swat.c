@@ -519,10 +519,15 @@ static void show_main_buttons(void)
  ****************************************************************************/
 static void ViewModeBoxes(int mode)
 {
-	d_printf("<p>%s\n", _("Configuration View:&nbsp"));
+	d_printf("<p>%s\n", _("Configuration View:&nbsp Current View is:&nbsp"));
 	d_printf("<input type=radio name=\"ViewMode\" value=0 %s>Basic\n", (mode == 0) ? "checked" : "");
 	d_printf("<input type=radio name=\"ViewMode\" value=1 %s>Advanced\n", (mode == 1) ? "checked" : "");
 	d_printf("<input type=radio name=\"ViewMode\" value=2 %s>Developer\n", (mode == 2) ? "checked" : "");
+	d_printf("</p><br>\n");
+	d_printf("<p>%s\n", _("Change View To:&nbsp"));
+	d_printf("<input type=submit name=\"BasicMode\" value=\"%s\">\n", _("Basic Mode"));
+	d_printf("<input type=submit name=\"AdvMode\" value=\"%s\">\n", _("Advanced Mode"));
+	d_printf("<input type=submit name=\"DevMode\" value=\"%s\">\n", _("Developer Mode"));
 	d_printf("</p><br>\n");
 }
 
@@ -778,6 +783,12 @@ static void globals_page(void)
 
 	if ( cgi_variable("ViewMode") )
 		mode = atoi(cgi_variable("ViewMode"));
+	if ( cgi_variable("BasicMode"))
+		mode = 0;
+	if ( cgi_variable("AdvMode"))
+		mode = 1;
+	if ( cgi_variable("DevMode"))
+		mode = 2;
 
 	d_printf("<form name=\"swatform\" method=post action=globals>\n");
 
@@ -852,6 +863,11 @@ static void shares_page(void)
 	d_printf("<table>\n");
 	if ( cgi_variable("ViewMode") )
 		mode = atoi(cgi_variable("ViewMode"));
+	if ( cgi_variable("BasicMode"))
+		mode = 0;
+	if ( cgi_variable("AdvMode"))
+		mode = 1;
+	if ( cgi_variable("DevMode"))
 	ViewModeBoxes( mode );
 	switch ( mode ) {
 		case 0:
