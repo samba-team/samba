@@ -35,8 +35,11 @@
 /* I know the __attribute__ stuff is ugly, but it does ensure we get the 
    arguemnts to DEBUG() right. We have got them wrong too often in the 
    past.
+   The PRINTFLIKE comment does the equivalent for SGI MIPSPro.
  */
+/* PRINTFLIKE1 */
 int  Debug1( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
+/* PRINTFLIKE1 */
 BOOL dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 BOOL dbghdr( int level, const char *file, const char *func, int line );
 
