@@ -346,11 +346,11 @@ void cmd_lsa_query_secret(struct client_info *info)
 				&info->dom.lsa_info_pol, False) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_secret(smb_cli, nt_pipe_fnum,
+	res1 = res ? lsa_open_secret(smb_cli, nt_pipe_fnum,
 				&info->dom.lsa_info_pol,
 				secret_name, 0x20003, &hnd_secret) : False;
 
-	res1 = res ? lsa_query_secret(smb_cli, nt_pipe_fnum,
+	res1 = res1 ? lsa_query_secret(smb_cli, nt_pipe_fnum,
 				&hnd_secret, enc_secret, &last_update) : False;
 
 	res1 = res1 ? lsa_close(smb_cli, nt_pipe_fnum, &hnd_secret) : False;
