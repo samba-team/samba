@@ -197,7 +197,7 @@ krb524_convert_creds_kdc(krb5_context context,
 				      v4creds->realm);
 	if(ret)
 	    goto out;
-	v4creds->issue_date = v5_creds->times.authtime;
+	v4creds->issue_date = v5_creds->times.starttime;
 	v4creds->lifetime = _krb_time_to_life(v4creds->issue_date,
 					      v5_creds->times.endtime);
 	ret = krb5_524_conv_principal(context, v5_creds->client, 
