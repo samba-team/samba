@@ -1670,62 +1670,63 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,ch
   fstring sharename;
   fstring comment;
   pstring pathname;
-  pstring command;
-  int offset;
+  char *command, *cmdname;
+  uint offset;
   int snum;
-  int res;
+  int res = ERRunsup;
   
   /* check it's a supported varient */
   if (!prefix_ok(str1,RAP_WShareAdd_REQ)) return False;
   if (!check_share_info(uLevel,str2)) return False;
-  if (uLevel != 2) {
-    *rparam_len = 4;
-    *rparam = REALLOC(*rparam,*rparam_len);
-    *rdata_len = 0;
-    SSVAL(*rparam,0,NERR_notsupported);
-    SSVAL(*rparam,2,0);
-    return True;
-  }
+  if (uLevel != 2) return False;
 
   pull_ascii_fstring(sharename,data);
   snum = find_service(sharename);
   if (snum >= 0) { /* already exists */
-    *rparam_len = 4;
-    *rparam = REALLOC(*rparam,*rparam_len);
-    SSVAL(*rparam,0,ERRfilexists);
-    SSVAL(*rparam,2,0);
-    return True;
+    res = ERRfilexists;
+    goto error_exit;
   }
 
   /* only support disk share adds */
-  if (SVAL(data,14)!=STYPE_DISKTREE) {
-    *rparam_len = 4;
-    *rparam = REALLOC(*rparam,*rparam_len);
-    *rdata_len = 0;
-    SSVAL(*rparam,0,NERR_notsupported);
-    SSVAL(*rparam,2,0);
-    return True;
-  }
+  if (SVAL(data,14)!=STYPE_DISKTREE) return False;
 
   offset = IVAL(data, 16);
+  if (offset >= mdrcnt) {
+    res = ERRinvalidparam;
+    goto error_exit;
+  }
   pull_ascii_fstring(comment, offset? (data+offset) : "");
+
   offset = IVAL(data, 26);
+  if (offset >= mdrcnt) {
+    res = ERRinvalidparam;
+    goto error_exit;
+  }
   pull_ascii_pstring(pathname, offset? (data+offset) : "");
 
   string_replace(sharename, '"', ' ');
   string_replace(pathname, '"', ' ');
   string_replace(comment, '"', ' ');
 
-  slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
+  cmdname = lp_add_share_cmd();
+
+  if (!cmdname || *cmdname == '\0') return False;
+
+  asprintf(&command, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
 	   lp_add_share_cmd(), CONFIGFILE, sharename, pathname, comment);
 
-  DEBUG(10,("api_RNetShareAdd: Running [%s]\n", command ));
-  if ((res = smbrun(command, NULL)) != 0) {
-    DEBUG(0,("api_RNetShareAdd: Running [%s] returned (%d)\n", command, res ));
-    return ERRnoaccess;
-  } else
-    message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False);
-  return True;
+  if (command) {
+    DEBUG(10,("api_RNetShareAdd: Running [%s]\n", command ));
+    if ((res = smbrun(command, NULL)) != 0) {
+      DEBUG(1,("api_RNetShareAdd: Running [%s] returned (%d)\n", command, res ));
+      SAFE_FREE(command);
+      res = ERRnoaccess;
+      goto error_exit;
+    } else {
+      SAFE_FREE(command);
+      message_send_all(conn_tdb_ctx(), MSG_SMB_CONF_UPDATED, NULL, 0, False);
+    }
+  } else return False;
 
   *rparam_len = 6;
   *rparam = REALLOC(*rparam,*rparam_len);
@@ -1734,7 +1735,16 @@ static BOOL api_RNetShareAdd(connection_struct *conn,uint16 vuid, char *param,ch
   SSVAL(*rparam,4,*rdata_len);
   *rdata_len = 0;
   
-  return(True);
+  return True;
+
+ error_exit:
+  *rparam_len = 4;
+  *rparam = REALLOC(*rparam,*rparam_len);
+  *rdata_len = 0;
+  SSVAL(*rparam,0,res);
+  SSVAL(*rparam,2,0);
+  return True;
+
 }
 
 /****************************************************************************
