@@ -169,14 +169,14 @@ as_rep(krb5_context context,
 	    }
 	}
 	/* XXX */
-	if(found_pa == 0)
+	if(found_pa == 0 && require_enc_timestamp)
 	    goto use_pa;
 	if(et->flags.pre_authent == 0){
 	    kdc_log(0, "%s -- %s", e_text, client_name);
 	    e_text = NULL;
 	    goto out;
 	}
-    }else{
+    }else if (require_enc_timestamp) {
 	PA_DATA foo;
 	u_char buf[16];
 	size_t len;
@@ -318,9 +318,17 @@ as_rep(krb5_context context,
     ek->nonce = b->nonce;
     ek->flags = et->flags;
     ek->authtime = et->authtime;
-    ek->starttime = et->starttime;
+    if (et->starttime) {
+	ek->starttime = malloc(sizeof(*ek->starttime));
+	*(ek->starttime) = *(et->starttime);
+    } else
+	ek->starttime = et->starttime;
     ek->endtime = et->endtime;
-    ek->renew_till = et->renew_till;
+    if (et->renew_till) {
+	ek->renew_till = malloc(sizeof(*ek->renew_till));
+	*(ek->renew_till) = *(et->renew_till);
+    } else
+	ek->renew_till = et->renew_till;
     copy_Realm(&rep.ticket.realm, &ek->srealm);
     copy_PrincipalName(&rep.ticket.sname, &ek->sname);
     if(et->caddr){
