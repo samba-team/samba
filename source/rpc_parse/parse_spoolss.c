@@ -6451,7 +6451,3 @@ BOOL spoolss_io_r_enumprinterdataex(char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, 
 
 	return True;
 }
-
-
-
-}
