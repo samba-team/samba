@@ -408,13 +408,10 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
     p++;
 
     if (*p == '*' || *p == 'X') {
-      /* Password deliberately invalid - end here. */
-      DEBUG(10, ("getsmbfilepwent: entry invalidated for user %s\n", user_name));
-      pw_buf->smb_nt_passwd = NULL;
-      pw_buf->smb_passwd = NULL;
-      pw_buf->acct_ctrl |= ACB_DISABLED;
-      return pw_buf;
-    }
+	    /* NULL LM password */
+	    pw_buf->smb_passwd = NULL;
+	    DEBUG(10, ("getsmbfilepwent: LM password for user %s invalidated\n", user_name));
+     }
 
     if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
       DEBUG(0, ("getsmbfilepwent: malformed password entry (passwd too short)\n"));
