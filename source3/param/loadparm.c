@@ -268,6 +268,7 @@ static global Globals;
 typedef struct
 {
   BOOL valid;
+  BOOL autoloaded;
   char *szService;
   char *szPath;
   char *szUsername;
@@ -381,6 +382,7 @@ typedef struct
 static service sDefault = 
 {
   True,   /* valid */
+  False,  /* not autoloaded */
   NULL,    /* szService */
   NULL,    /* szPath */
   NULL,    /* szUsername */
@@ -2778,8 +2780,10 @@ void lp_add_one_printer(char *name,char *comment)
 
 	if (lp_servicenumber(name) < 0)  {
 		lp_add_printer(name,printers);
-		if ((i=lp_servicenumber(name)) >= 0)
+		if ((i=lp_servicenumber(name)) >= 0) {
 			string_set(&iSERVICE(i).comment,comment);
+			iSERVICE(i).autoloaded = True;
+		}
 	}
 }
 
@@ -2788,7 +2792,7 @@ have we loaded a services file yet?
 ***************************************************************************/
 BOOL lp_loaded(void)
 {
-  return(bLoaded);
+	return(bLoaded);
 }
 
 /***************************************************************************
@@ -2796,13 +2800,27 @@ unload unused services
 ***************************************************************************/
 void lp_killunused(BOOL (*snumused)(int ))
 {
-  int i;
-  for (i=0;i<iNumServices;i++)
-    if (VALID(i) && (!snumused || !snumused(i)))
-      {
-	iSERVICE(i).valid = False;
-	free_service(pSERVICE(i));
-      }
+	int i;
+	for (i=0;i<iNumServices;i++) {
+		BOOL killthisone;
+
+		if (!VALID(i)) continue;
+
+		killthisone = (!snumused || !snumused(i));
+
+		/* we also want to remove autoloaded printers that are no longer
+		   in /etc/printcap */
+		if (!killthisone && 
+		    iSERVICE(i).autoloaded && iSERVICE(i).bPrint_ok && 
+		    !pcap_printername_ok(iSERVICE(i).szPrintername, NULL)) {
+			killthisone = True;
+		}
+
+		if (killthisone) {
+			iSERVICE(i).valid = False;
+			free_service(pSERVICE(i));
+		}
+	}
 }
 
 
