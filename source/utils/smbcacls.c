@@ -118,7 +118,8 @@ static void SidToString(fstring str, DOM_SID *sid)
 
 	if (!open_policy_hnd() ||
 	    cli_lsa_lookup_sids(&lsa_cli, &pol, 1, sid, &names, &types, 
-				&num_names) != NT_STATUS_NOPROBLEMO) {
+				&num_names) != NT_STATUS_NOPROBLEMO ||
+	    !names || !names[0]) {
 		return;
 	}
 
@@ -834,7 +835,7 @@ You can string acls together with spaces, commas or newlines\n\
  int main(int argc,char *argv[])
 {
 	char *share;
-	char *filename;
+	pstring filename;
 	extern char *optarg;
 	extern int optind;
 	extern FILE *dbf;
@@ -860,7 +861,7 @@ You can string acls together with spaces, commas or newlines\n\
 	setup_logging(argv[0],True);
 
 	share = argv[1];
-	filename = argv[2];
+	pstrcpy(filename, argv[2]);
 	all_string_sub(share,"/","\\",0);
 
 	argc -= 2;
@@ -962,14 +963,12 @@ You can string acls together with spaces, commas or newlines\n\
 		if (!cli) exit(EXIT_FAILED);
 	}
 
-	{
-		char *s;
-
-		s = filename;
-		while(*s) {
-			if (*s == '/') *s = '\\';
-			s++;
-		}
+	all_string_sub(filename, "/", "\\", 0);
+	if (filename[0] != '\\') {
+		pstring s;
+		s[0] = '\\';
+		safe_strcpy(&s[1], filename, sizeof(pstring)-1);
+		pstrcpy(filename, s);
 	}
 
 	/* Perform requested action */
