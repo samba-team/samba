@@ -532,7 +532,7 @@ operatingSystemVersion: 4.0
 dNSHostName: ${DNSNAME}
 objectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
 isCriticalSystemObject: TRUE
-unicodePwd: ${RANDPASS}
+unicodePwd: ${JOINPASS}
 servicePrincipalName: HOST/${DNSNAME}
 servicePrincipalName: HOST/${NETBIOSNAME}
 servicePrincipalName: CIFS/${DNSNAME}
