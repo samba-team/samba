@@ -1115,9 +1115,9 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint security_i
 	if (psd->off_grp_sid==0)
 		security_info_sent &= ~GROUP_SECURITY_INFORMATION;
 	if (psd->off_sacl==0)
-		security_info_sent &= ~DACL_SECURITY_INFORMATION;
-	if (psd->off_dacl==0)
 		security_info_sent &= ~SACL_SECURITY_INFORMATION;
+	if (psd->off_dacl==0)
+		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	
 	ret = set_nt_acl( fsp, security_info_sent, psd);
 
