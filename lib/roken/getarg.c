@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,12 +45,14 @@ RCSID("$Id$");
 #include <roken.h>
 #include "getarg.h"
 
+#define ISFLAG(X) ((X).type == arg_flag || (X).type == arg_negative_flag)
+
 static size_t
 print_arg (FILE *stream, int mdoc, int longp, struct getargs *arg)
 {
     const char *s;
 
-    if (arg->type == arg_flag || arg->type == arg_negative_flag)
+    if (ISFLAG(*arg))
 	return 0;
 
     if(mdoc){
@@ -277,8 +279,7 @@ arg_match_long(struct getargs *args, size_t num_args,
 		    ++partial_match;
 		    partial = &args[i];
 		    optarg  = p + p_len;
-		} else if (args[i].type == arg_flag
-			   && strncmp (p, "no-", 3) == 0) {
+		} else if (ISFLAG(args[i]) && strncmp (p, "no-", 3) == 0) {
 		    negate = !negate;
 		    p += 3;
 		    p_len -= 3;
@@ -296,7 +297,7 @@ arg_match_long(struct getargs *args, size_t num_args,
 	else
 	    return ARG_ERR_NO_MATCH;
     
-    if(*optarg != '=' && (current->type != arg_flag && *optarg == 0))
+    if(*optarg == '\0' && !ISFLAG(*current))
 	return ARG_ERR_NO_MATCH;
     switch(current->type){
     case arg_integer:
@@ -318,9 +319,10 @@ arg_match_long(struct getargs *args, size_t num_args,
 	return 0;
     }
     case arg_flag:
+    case arg_negative_flag:
     {
 	int *flag = current->value;
-	if(*optarg == 0 ||
+	if(*optarg == '\0' ||
 	   strcmp(optarg + 1, "yes") == 0 || 
 	   strcmp(optarg + 1, "true") == 0){
 	    *flag = !negate;
