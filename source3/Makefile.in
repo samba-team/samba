@@ -237,7 +237,7 @@ SMBPASSWD_OBJ = utils/smbpasswd.o lib/msrpc-client.o $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o \
-		lib/cmd_interp.o \
+		lib/cmd_interp.o lib/util_list.o \
 	   	lib/msrpc-client.o \
 		rpc_client/cli_connect.o \
 		rpc_client/cli_use.o \
