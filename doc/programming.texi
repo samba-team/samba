@@ -45,7 +45,7 @@ replay cache, and checksum types.
 
 See the manual page for @manpage{krb5_auth_context,3}.
 
-@subsection Keytab managment
+@subsection Keytab management
 
 A keytab is a storage for locally stored keys. Heimdal includes keytab
 support for Kerberos 5 keytabs, Kerberos 4 srvtab, AFS-KeyFile's,
