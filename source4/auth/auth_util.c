@@ -273,7 +273,7 @@ NTSTATUS make_user_info_anonymous(TALLOC_CTX *mem_ctx, struct auth_usersupplied_
 ***************************************************************************/
 NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 					      const char *account_name,
-					      uint16 validation_level,
+					      uint16_t validation_level,
 					      union netr_Validation *validation,
 					      struct auth_serversupplied_info **_server_info)
 {
