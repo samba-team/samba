@@ -25,41 +25,39 @@ To use it you need to do this:
 
 You will be asked for a username and password. After that you will be
 returned to a shell prompt. It is actually a subshell running with
-smbwrapper enabled. You can confirm this by checking if the SMBW_USER
-environment variable is defined.
+smbwrapper enabled. 
 
 Now try to access /smb/SERVER for some SMB server name and see what
-happens. If you set SMBW_WORKGROUP to your workgroup or have workgroup
-set in yoru smb.conf then listing /smb/ should list all SMB servers in
-your workgroup.
+happens. If you use the -W option to set your workgroup or have
+workgroup set in your smb.conf then listing /smb/ should list all SMB
+servers in your workgroup.
 
 
-ENVIRONMENT VARIABLES
----------------------
+OPTIONS
+-------
 
-SMBW_USER
- This is usually set by smbsh but you can set it manually. It
- specifies the username you will connect to servers with.
+-U username
+   specify the username and optional password (as user%password)
 
-SMBW_PASSWORD
- This is usually set by smbsh but you can set it manually. It
- specifies the password used to connect to smb servers.
-
-SMBW_DEBUG
+-d debug level
  This is an integer that controls the internal debug level of smbw. It
  defaults to 0, which means no debug info.
 
-SMBW_LOGFILE
+-l logfile
  The place where smbw debug logs are put. If this is not set then
  stderr is used.
 
-SMBW_PREFIX
+-P prefix
  The root of the SMB filesystem. This defaults to /smb/ but you can
  set it to any name you like.
 
-SMBW_WORKGROUP
+-W workgroup
  This is the workgroup used for browsing (ie. listing machines in the
  /smb/ directory). It defaults to the one set in smb.conf.
+
+-R resolve order
+ This allows you to override the setting of the name resolve order
+ from smb.conf
 
 
 ATTRIBUTE MAPPING
@@ -92,3 +90,5 @@ things that I know don't work:
 
 If you want to help with the development of this code then join the
 samba-technical mailing list.
+
+

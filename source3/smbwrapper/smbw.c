@@ -85,6 +85,10 @@ void smbw_init(void)
 		DEBUGLEVEL = atoi(p);
 	}
 
+	if ((p=smbw_getshared("RESOLVE_ORDER"))) {
+		lp_set_name_resolve_order(p);
+	}
+
 	if ((p=smbw_getshared("PREFIX"))) {
 		slprintf(smbw_prefix,sizeof(fstring)-1, "/%s/", p);
 		string_sub(smbw_prefix,"//", "/");
@@ -101,6 +105,8 @@ void smbw_init(void)
 	smbw_busy--;
 
 	set_maxfiles(SMBW_MAX_OPEN);
+
+	BlockSignals(True,SIGPIPE);
 
 	errno = eno;
 }

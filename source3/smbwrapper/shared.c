@@ -35,13 +35,14 @@ void smbw_setup_shared(void)
 	int fd;
 	pstring s, name;
 
-	slprintf(s,sizeof(s)-1, "%s/msg.XXXXXX",tmpdir());
+	slprintf(s,sizeof(s)-1, "%s/smbw.XXXXXX",tmpdir());
 
 	fstrcpy(name,(char *)mktemp(s));
 
 	/* note zero permissions! don't change this */
 	fd = open(name,O_RDWR|O_CREAT|O_TRUNC|O_EXCL,0); 
 	if (fd == -1) goto failed;
+	unlink(name);
 
 	shared_fd = set_maxfiles(SMBW_MAX_OPEN);
 	
