@@ -616,6 +616,8 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
 	struct handle_list *hl;
 	fstring printer;
 	char *msg = (char *)buf;
+	POLICY_HND sent_hnd;
+	BOOL valid_sent_hnd = False;
 
 	*printer = '\0';
 
@@ -625,24 +627,21 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
 	}
 
 	/*
-	 * If this is a message to ourselves, just send a change notify with
-	 * the given handle, we know it's still open.
+	 * If this is a message to ourselves, take note of the fact.
+	 * we'll be looking for the handle attached to the pipe to find
+	 * the open printer instance.
 	 */
 
 	fstrcpy(printer,&msg[4 + sizeof(POLICY_HND)]);
 	DEBUG(10,("srv_spoolss_receive_message: Got message about printer %s\n", printer ));
 
 	if (IVAL(buf,0) == (uint32)sys_getpid()) {
-		POLICY_HND sent_pol;
-
-		memcpy(&sent_pol, &msg[4], sizeof(POLICY_HND));
+		memcpy(&sent_hnd, &msg[4], sizeof(POLICY_HND));
 		DEBUG(10,("srv_spoolss_receive_message: using our own handle.\n"));
-		cli_spoolss_reply_rrpcn(&cli, &sent_pol, PRINTER_CHANGE_ALL, 0x0, &status);
-		return;
+		valid_sent_hnd = True;
 	}
 
 	/*
-	 * Not a locally opened handle.
 	 * We need to enumerate all printers. The handle list is shared
 	 * across pipes of the same name, so just find the first open
 	 * spoolss pipe.
@@ -661,6 +660,26 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
 		return;
 	}
 
+	/*
+	 * If a handle was sent from this process, look for it only, don't
+	 * do the full search.
+	 */
+
+	if (valid_sent_hnd) {
+		Printer_entry *find_printer = find_printer_index_by_hnd(p, &sent_hnd);
+
+		if (!find_printer) {
+			DEBUG(0,("srv_spoolss_receive_message: Cannot find printer by sent handle.\n"));
+			return;
+		}
+
+		if (find_printer->notify.client_connected==True)
+			cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_ALL, 0x0, &status);
+
+		return;		
+	}
+
+	/* Handle was sent from a different process. */
 	/* Iterate the printer list on this pipe. */
 	for (pol = hl->Policy; pol; pol = pol->next ) {
 		Printer_entry *find_printer = (Printer_entry *)pol->data_ptr;
@@ -683,8 +702,9 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
 }
 
 /***************************************************************************
- send a notify event
+ Send a notify event.
 ****************************************************************************/
+
 static BOOL srv_spoolss_sendnotify(pipes_struct *p, POLICY_HND *handle)
 {
 	pstring msg;
