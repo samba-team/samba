@@ -243,7 +243,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 		*name = names[0];
 		DEBUG(5,("Mapped sid to [%s]\\[%s]\n", domains[0], *name));
 
-		/* Parinoia */
+		/* Paranoia */
 		if (strcasecmp(domain->name, domains[0]) != 0) {
 			DEBUG(1, ("domain name from domain param and PDC lookup return differ! (%s vs %s)\n", domain->name, domains[0]));
 			return NT_STATUS_UNSUCCESSFUL;
