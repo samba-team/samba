@@ -132,11 +132,6 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 		return False;
 	}
 
-	if (lck1->start >= (lck2->start + lck2->size) ||
-	    lck2->start >= (lck1->start + lck1->size)) {
-		return False;
-	}
-	    
 	return brl_overlap(lck1, lck2);
 } 
 
@@ -193,10 +188,6 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
 			return False;
 	}
 
-	if (lck1->start >= (lck2->start + lck2->size) ||
-	    lck2->start >= (lck1->start + lck1->size))
-		return False;
-	    
 	return brl_overlap(lck1, lck2);
 } 
 
