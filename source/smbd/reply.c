@@ -431,7 +431,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
     passlen2 = MIN(passlen2, MAX_PASS_LEN);
 
-    if(doencrypt) {
+    if(doencrypt || (lp_security() == SEC_SERVER)) {
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
       memcpy(smb_apasswd,p,smb_apasslen);
