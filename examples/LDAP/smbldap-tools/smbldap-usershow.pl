@@ -34,8 +34,8 @@ my %Options;
 my $ok = getopts('?', \%Options);
 
 if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
-	print "Usage: $0 [-?] username\n";
-	print "  -?	show this help message\n";
+  print "Usage: $0 [-?] username\n";
+  print "  -?	show this help message\n";
 	exit (1);
 }
 

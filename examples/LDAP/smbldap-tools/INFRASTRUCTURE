@@ -1,3 +1,5 @@
+# $Source: /data/src/mirror/cvs/samba/examples/LDAP/smbldap-tools/INFRASTRUCTURE,v $
+#
 ## Some notes about the architecture
 
 
@@ -40,6 +42,15 @@ the Domain Administrators Group, use the following smb.conf directive (see
 man smb.conf for more):
 
 	domain admin group = " @"Domain Admins" "
+
+However, to make pdb_ldap accept bind without being uid=0, a quick and
+dirty patch must be applied to 2.2.4 (see samba-2.2.4-ldapbindnotuid0.patch).
+This patch is Q&D because the check is there because Samba store admin 
+credentials to establish the LDAP connection. The uid == 0 check was to 
+ensure that a normal user could not get write access to the LDAP backend.
+A more logical situation should be done for 2.2.5 by checking if the user
+is a member of the domain admin group (reported to Jerremy and Gerald 
+2002-05-28).
 
 Other built in groups are really cosmetic ones with Samba 2.2.x. We did not
 removed them because one of these days, we whish to use Samba 3.0 where 

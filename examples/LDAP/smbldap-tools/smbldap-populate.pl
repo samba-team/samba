@@ -2,6 +2,7 @@
 
 # Populate a LDAP base for Samba-LDAP usage
 #
+
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -39,66 +40,66 @@ use vars qw(%oc);
 
 # objectclass of the suffix
 %oc = (
-    "ou" => "organizationalUnit",
-    "o" => "organization",
-    "dc" => "dcObject",
-);
+	   "ou" => "organizationalUnit",
+	   "o" => "organization",
+	   "dc" => "dcObject",
+	  );
 
 
 my %Options;
 
 my $ok = getopts('a:b:?', \%Options);
 if ( (!$ok) || ($Options{'?'}) ) {
-	print "Usage: $0 [-ab?] [ldif]\n";
-	print "  -a	administrator login name (default: Administrator)\n";
-	print "  -b	guest login name (default: nobody)\n";
-	print "  -?	show this help message\n";
-	print "  ldif	file to add to ldap (default: suffix, Groups,";
-	print " Users, Computers and builtin users )\n";
-	exit (1);
+  print "Usage: $0 [-ab?] [ldif]\n";
+  print "  -a	administrator login name (default: Administrator)\n";
+  print "  -b	guest login name (default: nobody)\n";
+  print "  -?	show this help message\n";
+  print "  ldif	file to add to ldap (default: suffix, Groups,";
+  print " Users, Computers and builtin users )\n";
+  exit (1);
 }
 
 my $_ldifName;
 my $tmp_ldif_file="/tmp/$$.ldif";
 
 if (@ARGV >= 1) {
-    $_ldifName = $ARGV[0];
+  $_ldifName = $ARGV[0];
 }
 
 my $adminName = $Options{'a'};
 if (!defined($adminName)) {
-    $adminName = "Administrator";
+  $adminName = "Administrator";
 }
 
 my $guestName = $Options{'b'};
 if (!defined($guestName)) {
-    $guestName = "nobody";
+  $guestName = "nobody";
 }
 
 if (!defined($_ldifName)) {
-    my $attr;
-    my $val;
-    my $objcl;
+  my $attr;
+  my $val;
+  my $objcl;
 
   print "Using builtin directory structure\n";
-    if ($suffix =~ m/([^=]+)=([^,]+)/) {
+  if ($suffix =~ m/([^=]+)=([^,]+)/) {
 	$attr = $1;
 	$val = $2;
 	$objcl = $oc{$attr} if (exists $oc{$attr});
 	if (!defined($objcl)) {
-	    $objcl = "myhardcodedobjectclass";
+	  $objcl = "myhardcodedobjectclass";
 	}
-    } else {
+  } else {
 	die "can't extract first attr and value from suffix $suffix";
-    }
-    #print "$attr=$val\n";
-    my ($organisation,$ext) = ($suffix =~ m/dc=(\w+),dc=(\w+)$/);
+  }
+  #print "$attr=$val\n";
+  my ($organisation,$ext) = ($suffix =~ m/dc=(.*),dc=(.*)$/);
 
-    #my $FILE="|cat";
+  #my $FILE="|cat";
   my $FILE=$tmp_ldif_file;
   open (FILE, ">$FILE") || die "Can't open file $FILE: $!\n";
 
-    print FILE <<EOF;
+  print FILE <<EOF;
 dn: $suffix
 objectClass: $objcl
 objectclass: organization
@@ -121,7 +122,7 @@ dn: uid=$adminName,$usersdn
 cn: $adminName
 sn: $adminName
 objectClass: inetOrgPerson
-objectClass: sambaSAMAccount
+objectClass: sambaSamAccount
 objectClass: posixAccount
 gidNumber: 512
 uid: $adminName
@@ -148,7 +149,7 @@ dn: uid=$guestName,$usersdn
 cn: $guestName
 sn: $guestName
 objectClass: inetOrgPerson
-objectClass: sambaSAMAccount
+objectClass: sambaSamAccount
 objectClass: posixAccount
 gidNumber: 514
 uid: $guestName
@@ -172,87 +173,138 @@ loginShell: /bin/false
 
 dn: cn=Domain Admins,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 512
 cn: Domain Admins
 memberUid: $adminName
-description: Netbios Domain Administrators (need smb.conf configuration)
+description: Netbios Domain Administrators
+sambaSID: $SID-512
+sambaGroupType: 2
+displayName: Domain Admins
 
 dn: cn=Domain Users,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 513
 cn: Domain Users
-description: Netbios Domain Users (not implemented yet)
+description: Netbios Domain Users
+sambaSID: $SID-513
+sambaGroupType: 2
+displayName: Domain Users
 
 dn: cn=Domain Guests,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 514
 cn: Domain Guests
-description: Netbios Domain Guests Users (not implemented yet)
+description: Netbios Domain Guests Users
+sambaSID: $SID-514
+sambaGroupType: 2
+displayName: Domain Guests
 
 dn: cn=Administrators,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 544
 cn: Administrators
-description: Netbios Domain Members can fully administer the computer/sambaDomainName (not implemented yet)
+description: Netbios Domain Members can fully administer the computer/sambaDomainName
+sambaSID: $SID-544
+sambaGroupType: 2
+displayName: Administrators
 
 dn: cn=Users,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 545
 cn: Users
-description: Netbios Domain Ordinary users (not implemented yet)
+description: Netbios Domain Ordinary users
+sambaSID: $SID-545
+sambaGroupType: 2
+displayName: users
 
 dn: cn=Guests,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 546
 cn: Guests
 memberUid: $guestName
-description: Netbios Domain Users granted guest access to the computer/sambaDomainName (not implemented yet)
-
+description: Netbios Domain Users granted guest access to the computer/sambaDomainName
+sambaSID: $SID-546
+sambaGroupType: 2
+displayName: Guests
 
 dn: cn=Power Users,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 547
 cn: Power Users
-description: Netbios Domain Members can share directories and printers (not implemented yet)
+description: Netbios Domain Members can share directories and printers
+sambaSID: $SID-547
+sambaGroupType: 2
+displayName: Power Users
 
 dn: cn=Account Operators,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 548
 cn: Account Operators
-description: Netbios Domain Users to manipulate users accounts (not implemented yet)
+description: Netbios Domain Users to manipulate users accounts
+sambaSID: $SID-548
+sambaGroupType: 2
+displayName: Account Operators
 
 dn: cn=Server Operators,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 549
 cn: Server Operators
-description: Netbios Domain Server Operators (need smb.conf configuration)
+description: Netbios Domain Server Operators
+sambaSID: $SID-549
+sambaGroupType: 2
+displayName: Server Operators
 
 dn: cn=Print Operators,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 550
 cn: Print Operators
-description: Netbios Domain Print Operators (need smb.conf configuration)
+description: Netbios Domain Print Operators
+sambaSID: $SID-550
+sambaGroupType: 2
+displayName: Print Operators
 
 dn: cn=Backup Operators,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 551
 cn: Backup Operators
-description: Netbios Domain Members can bypass file security to back up files (not implemented yet)
+description: Netbios Domain Members can bypass file security to back up files
+sambaSID: $SID-551
+sambaGroupType: 2
+displayName: Backup Operators
 
 dn: cn=Replicator,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 552
 cn: Replicator
-description: Netbios Domain Supports file replication in a sambaDomainName (not implemented yet)
+description: Netbios Domain Supports file replication in a sambaDomainName
+sambaSID: $SID-552
+sambaGroupType: 2
+displayName: Replicator
 
 dn: cn=Domain Computers,$groupsdn
 objectClass: posixGroup
+objectClass: sambaGroupMapping
 gidNumber: 553
 cn: Domain Computers
 description: Netbios Domain Computers accounts
+sambaSID: $SID-553
+sambaGroupType: 2
+displayName: Domain Computers
 
 EOF
-    close FILE;
+  close FILE;
 } else {
   $tmp_ldif_file=$_ldifName;
 }
@@ -280,11 +332,11 @@ exit(0);
 
 =head1 NAME
 
-       smbldap-populate.pl - Populate your LDAP database
+smbldap-populate.pl - Populate your LDAP database
 
 =head1 SYNOPSIS
 
-       smbldap-populate.pl [ldif-file]
+  smbldap-populate.pl [ldif-file]
 
 =head1 DESCRIPTION
 

@@ -1,5 +1,6 @@
-%define version	0.8
-%define release	1
+# $Source: /data/src/mirror/cvs/samba/examples/LDAP/smbldap-tools/smbldap-tools.spec,v $
+%define version	0.8.2
+%define release 1
 %define name 	smbldap-tools
 %define realname  smbldap-tools
 
@@ -35,6 +36,7 @@ Source18:	smbldap-populate.pl
 Source19:	smbldap-migrate-accounts.pl
 Source20:	smbldap-migrate-groups.pl
 Source21:	INFRA
+Source22:	smb.conf
 BuildRoot: 	/%{_tmppath}/%{name}
 Prefix: /usr/local
 BuildRequires: perl >= 5.6
@@ -86,13 +88,21 @@ install -m 644 %{SOURCE14} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/FILES
 install -m 644 %{SOURCE15} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/README
 install -m 644 %{SOURCE16} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/TODO
 install -m 644 %{SOURCE21} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/INFRA
+install -m 644 %{SOURCE22} $RPM_BUILD_ROOT/usr/share/doc/smbldap-tools/smb.conf
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post
-ln -sf %{prefix}/sbin/smbldap_tools.pm /usr/lib/perl5/site_perl/smbldap_tools.pm
-ln -sf %{prefix}/sbin/smbldap_conf.pm /usr/lib/perl5/site_perl/smbldap_conf.pm
+# from smbldap-tools-0.8-2, librairies are loaded with the FindBin perl package
+if [ -f /usr/lib/perl5/site_perl/smbldap_tools.pm ];
+then
+	rm -f /usr/lib/perl5/site_perl/smbldap_tools.pm
+fi
+if [ -f /usr/lib/perl5/site_perl/smbldap_conf.pm ];
+then
+	rm -f /usr/lib/perl5/site_perl/smbldap_conf.pm
+fi
 chgrp 512 %{prefix}/sbin/smbldap-useradd.pl %{prefix}/sbin/smbldap_conf.pm || echo "An error occured while changing groups of smbldap-useradd.pl and smbldap_conf.pm in /usr/local/sbin. For proper operations, please ensure that they have the same posix group as the Samba domain administrator if there's a local Samba PDC."
 perl -i -pe 's/_SLAVELDAP_/localhost/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_MASTERLDAP_/localhost/' %{prefix}/sbin/smbldap_conf.pm
@@ -101,11 +111,11 @@ perl -i -pe 's/_USERS_/Users/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_COMPUTERS_/Computers/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_GROUPS_/Groups/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_LOGINSHELL_/\/bin\/bash/' %{prefix}/sbin/smbldap_conf.pm
-perl -i -pe 's/_HOMEPREFIX_/\/home\//' %{prefix}/sbin/smbldap_conf.pm
+perl -i -pe 's/_HOMEPREFIX_/\/home/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_BINDDN_/cn=Manager,\$suffix/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_BINDPW_/secret/' %{prefix}/sbin/smbldap_conf.pm
 perl -i -pe 's/_PDCNAME_/PDC-SRV/' %{prefix}/sbin/smbldap_conf.pm
-perl -i -pe 's/_HOMEDRIVE_/H/' %{prefix}/sbin/smbldap_conf.pm
+perl -i -pe 's/_HOMEDRIVE_/H:/' %{prefix}/sbin/smbldap_conf.pm
 
 # FIXME: links should not be removed on upgrade
 #%postun
@@ -118,53 +128,13 @@ perl -i -pe 's/_HOMEDRIVE_/H/' %{prefix}/sbin/smbldap_conf.pm
 %defattr(-,root,root)
 %{prefix}/sbin/*.pl
 %{prefix}/sbin/smbldap_tools.pm
-%config %{prefix}/sbin/smbldap_conf.pm
+%config(noreplace) %{prefix}/sbin/smbldap_conf.pm
 %{prefix}/sbin/mkntpwd
 %doc /usr/share/doc/%{name}/
 
 
 %changelog
-* Fri Aug 22 2003 Jerome Tournier <jerome.tournier@idealx.com> 0.8-1
-- support for Samba3.0
+* Fri Nov 28 2003 Jerome Tournier <jerome.tournier@idealx.com> 0.8.2-1
+- new smb.conf file as example configuration file
+- see Changelog file for updates in scripts
 
-* Thu Sep 26 2002 Gérald Macinenti <gmacinenti@IDEALX.com> 0.7-2
-- top and account objectclasses replaced by InetOrgPerson
-
-* Sat Jun  1 2002 Olivier Lemaire <olem@IDEALX.com> 0.7-1
-- some bugfixes about smbldap-populate
-- bugfixed the smbpasswd call in smbldap-useradd
-- cleaned up the smbldap_conf
-- more documentation
-
-* Tue Apr 30 2002 Brad Langhorst <brad@langhorst.com> 0.6-2
-- changed requires samba-common to samba
-- replaced /usr/local with %{prefix} to allow relocation
-
-* Tue Feb 5 2002 David Le Corfec <dlc@IDEALX.com> 0.6-1
-- v0.6
-
-* Mon Feb 4 2002 David Le Corfec <dlc@IDEALX.com> 0.5-1
-- v0.5
-
-* Mon Jan 14 2002 David Le Corfec <dlc@IDEALX.com> 0.3-4
-- internal changes
-- should upgrade smoothly from now on
-
-* Mon Jan 14 2002 David Le Corfec <dlc@IDEALX.com> 0.2-1
-- added migration scripts
-
-* Fri Dec 28 2001 David Le Corfec <dlc@IDEALX.com> 0.1-5
-- numeric group for chmod
-
-* Thu Dec 27 2001 David Le Corfec <dlc@IDEALX.com> 0.1-4
-- misc bugfixes
-
-* Mon Dec 18 2001 David Le Corfec <dlc@IDEALX.com> 0.1-3
-- changed files attrs for domain admins to add users
-- added smbldap-populate.pl
-
-* Fri Dec 14 2001 David Le Corfec <dlc@IDEALX.com>
-- added mkntpwd
-
-* Wed Dec 12 2001 Olivier Lemaire <olivier.lemaire@IDEALX.com>
-- Spec file was generated, and tested atomically.
