@@ -159,6 +159,7 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 		DEBUG(10,("posix_lock_in_range: negative range: offset = %.0f, count = %.0f. Ignoring lock.\n",
 				(double)offset, (double)count ));
 		return False;
+	}
 
 	/*
 	 * In this case SMB_OFF_T is 64 bits, the offset and count
