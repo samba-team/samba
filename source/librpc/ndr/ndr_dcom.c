@@ -33,16 +33,16 @@ NTSTATUS ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DU
 		return NT_STATUS_OK;
 	}
 
-	NDR_CHECK(ndr_pull_uint32(ndr, &conformant_size));
-	NDR_CHECK(ndr_pull_uint16(ndr, &num_entries));
-	NDR_CHECK(ndr_pull_uint16(ndr, &security_offset));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &conformant_size));
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &num_entries));
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &security_offset));
 
 	ar->stringbindings = talloc_array(ndr, struct STRINGBINDING *, num_entries);
 	ar->stringbindings[0] = NULL;
 
 	do {
 		/* 'Peek' */
-		NDR_CHECK(ndr_pull_uint16(ndr, &towerid));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &towerid));
 
 		if (towerid > 0) {
 			ndr->offset -= 2; 
@@ -61,7 +61,7 @@ NTSTATUS ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct DU
 
 	do {
 		/* 'Peek' */
-		NDR_CHECK(ndr_pull_uint16(ndr, &towerid));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &towerid));
 
 		if (towerid > 0) {
 			ndr->offset -= 2; 
@@ -124,14 +124,14 @@ NTSTATUS ndr_pull_STRINGARRAY(struct ndr_pull *ndr, int ndr_flags, struct STRING
 		return NT_STATUS_OK;
 	}
 
-	NDR_CHECK(ndr_pull_uint16(ndr, &num_entries));
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &num_entries));
 
 	ar->stringbindings = talloc_array(ndr, struct STRINGBINDING *, 1);
 	ar->stringbindings[0] = NULL;
 
 	do {
 		/* 'Peek' */
-		NDR_CHECK(ndr_pull_uint16(ndr, &towerid));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &towerid));
 
 		if (towerid > 0) {
 			ndr->offset -= 2; 

@@ -346,17 +346,6 @@ sub type_align($)
     return 4;
 }
 
-# this is used to determine if the ndr push/pull functions will need
-# a ndr_flags field to split by buffers/scalars
-sub is_builtin_type($)
-{
-    my($type) = shift;
-
-    return 1, if (is_scalar_type($type));
-
-    return 0;
-}
-
 # determine if an element needs a reference pointer on the wire
 # in its NDR representation
 sub need_wire_pointer($)

@@ -59,7 +59,7 @@ void ndr_check_padding(struct ndr_pull *ndr, size_t n)
 /*
   parse a uint8
 */
-NTSTATUS ndr_pull_uint8(struct ndr_pull *ndr, uint8_t *v)
+NTSTATUS ndr_pull_uint8(struct ndr_pull *ndr, int ndr_flags, uint8_t *v)
 {
 	NDR_PULL_NEED_BYTES(ndr, 1);
 	*v = CVAL(ndr->data, ndr->offset);
@@ -71,7 +71,7 @@ NTSTATUS ndr_pull_uint8(struct ndr_pull *ndr, uint8_t *v)
 /*
   parse a uint16
 */
-NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, uint16_t *v)
+NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *v)
 {
 	NDR_PULL_ALIGN(ndr, 2);
 	NDR_PULL_NEED_BYTES(ndr, 2);
@@ -84,7 +84,7 @@ NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, uint16_t *v)
 /*
   parse a uint32_t
 */
-NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32_t *v)
+NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *v)
 {
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
@@ -96,7 +96,7 @@ NTSTATUS ndr_pull_uint32(struct ndr_pull *ndr, uint32_t *v)
 /*
   parse a int32_t
 */
-NTSTATUS ndr_pull_int32(struct ndr_pull *ndr, int32_t *v)
+NTSTATUS ndr_pull_int32(struct ndr_pull *ndr, int ndr_flags, int32_t *v)
 {
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
@@ -111,7 +111,7 @@ NTSTATUS ndr_pull_int32(struct ndr_pull *ndr, int32_t *v)
 NTSTATUS ndr_pull_ptr(struct ndr_pull *ndr, uint32_t *v)
 {
 	NTSTATUS status;
-	status = ndr_pull_uint32(ndr, v);
+	status = ndr_pull_uint32(ndr, NDR_SCALARS, v);
 	if (*v != 0) {
 		ndr->ptr_count++;
 	}
@@ -121,7 +121,7 @@ NTSTATUS ndr_pull_ptr(struct ndr_pull *ndr, uint32_t *v)
 /*
   parse a udlong
 */
-NTSTATUS ndr_pull_udlong(struct ndr_pull *ndr, uint64_t *v)
+NTSTATUS ndr_pull_udlong(struct ndr_pull *ndr, int ndr_flags, uint64_t *v)
 {
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 8);
@@ -134,27 +134,27 @@ NTSTATUS ndr_pull_udlong(struct ndr_pull *ndr, uint64_t *v)
 /*
   parse a dlong
 */
-NTSTATUS ndr_pull_dlong(struct ndr_pull *ndr, int64_t *v)
+NTSTATUS ndr_pull_dlong(struct ndr_pull *ndr, int ndr_flags, int64_t *v)
 {
-	return ndr_pull_udlong(ndr, (uint64_t *)v);
+	return ndr_pull_udlong(ndr, ndr_flags, (uint64_t *)v);
 }
 
 /*
   parse a hyper
 */
-NTSTATUS ndr_pull_hyper(struct ndr_pull *ndr, uint64_t *v)
+NTSTATUS ndr_pull_hyper(struct ndr_pull *ndr, int ndr_flags, uint64_t *v)
 {
 	NDR_PULL_ALIGN(ndr, 8);
-	return ndr_pull_udlong(ndr, v);
+	return ndr_pull_udlong(ndr, ndr_flags, v);
 }
 
 /*
   pull a NTSTATUS
 */
-NTSTATUS ndr_pull_NTSTATUS(struct ndr_pull *ndr, NTSTATUS *status)
+NTSTATUS ndr_pull_NTSTATUS(struct ndr_pull *ndr, int ndr_flags, NTSTATUS *status)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, &v));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*status = NT_STATUS(v);
 	return NT_STATUS_OK;
 }
@@ -162,9 +162,9 @@ NTSTATUS ndr_pull_NTSTATUS(struct ndr_pull *ndr, NTSTATUS *status)
 /*
   push a NTSTATUS
 */
-NTSTATUS ndr_push_NTSTATUS(struct ndr_push *ndr, NTSTATUS status)
+NTSTATUS ndr_push_NTSTATUS(struct ndr_push *ndr, int ndr_flags, NTSTATUS status)
 {
-	return ndr_push_uint32(ndr, NT_STATUS_V(status));
+	return ndr_push_uint32(ndr, ndr_flags, NT_STATUS_V(status));
 }
 
 void ndr_print_NTSTATUS(struct ndr_print *ndr, const char *name, NTSTATUS *r)
@@ -175,10 +175,10 @@ void ndr_print_NTSTATUS(struct ndr_print *ndr, const char *name, NTSTATUS *r)
 /*
   pull a WERROR
 */
-NTSTATUS ndr_pull_WERROR(struct ndr_pull *ndr, WERROR *status)
+NTSTATUS ndr_pull_WERROR(struct ndr_pull *ndr, int ndr_flags, WERROR *status)
 {
 	uint32_t v;
-	NDR_CHECK(ndr_pull_uint32(ndr, &v));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
 	*status = W_ERROR(v);
 	return NT_STATUS_OK;
 }
@@ -186,9 +186,9 @@ NTSTATUS ndr_pull_WERROR(struct ndr_pull *ndr, WERROR *status)
 /*
   push a WERROR
 */
-NTSTATUS ndr_push_WERROR(struct ndr_push *ndr, WERROR status)
+NTSTATUS ndr_push_WERROR(struct ndr_push *ndr, int ndr_flags, WERROR status)
 {
-	return ndr_push_uint32(ndr, W_ERROR_V(status));
+	return ndr_push_uint32(ndr, NDR_SCALARS, W_ERROR_V(status));
 }
 
 void ndr_print_WERROR(struct ndr_print *ndr, const char *name, WERROR r)
@@ -229,7 +229,7 @@ NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *da
 		return NT_STATUS_OK;
 	}
 	for (i=0;i<n;i++) {
-		NDR_CHECK(ndr_pull_uint16(ndr, &data[i]));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -244,7 +244,7 @@ NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *da
 		return NT_STATUS_OK;
 	}
 	for (i=0;i<n;i++) {
-		NDR_CHECK(ndr_pull_uint32(ndr, &data[i]));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -259,7 +259,7 @@ NTSTATUS ndr_pull_array_hyper(struct ndr_pull *ndr, int ndr_flags, uint64_t *dat
 		return NT_STATUS_OK;
 	}
 	for (i=0;i<n;i++) {
-		NDR_CHECK(ndr_pull_hyper(ndr, &data[i]));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -274,7 +274,7 @@ NTSTATUS ndr_pull_array_WERROR(struct ndr_pull *ndr, int ndr_flags, WERROR *data
 		return NT_STATUS_OK;
 	}
 	for (i=0;i<n;i++) {
-		NDR_CHECK(ndr_pull_WERROR(ndr, &data[i]));
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -284,7 +284,7 @@ NTSTATUS ndr_pull_array_WERROR(struct ndr_pull *ndr, int ndr_flags, WERROR *data
 /*
   push a uint8
 */
-NTSTATUS ndr_push_uint8(struct ndr_push *ndr, uint8_t v)
+NTSTATUS ndr_push_uint8(struct ndr_push *ndr, int ndr_flags, uint8_t v)
 {
 	NDR_PUSH_NEED_BYTES(ndr, 1);
 	SCVAL(ndr->data, ndr->offset, v);
@@ -295,7 +295,7 @@ NTSTATUS ndr_push_uint8(struct ndr_push *ndr, uint8_t v)
 /*
   push a uint16
 */
-NTSTATUS ndr_push_uint16(struct ndr_push *ndr, uint16_t v)
+NTSTATUS ndr_push_uint16(struct ndr_push *ndr, int ndr_flags, uint16_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 2);
 	NDR_PUSH_NEED_BYTES(ndr, 2);
@@ -307,7 +307,7 @@ NTSTATUS ndr_push_uint16(struct ndr_push *ndr, uint16_t v)
 /*
   push a uint32_t
 */
-NTSTATUS ndr_push_uint32(struct ndr_push *ndr, uint32_t v)
+NTSTATUS ndr_push_uint32(struct ndr_push *ndr, int ndr_flags, uint32_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 4);
@@ -319,7 +319,7 @@ NTSTATUS ndr_push_uint32(struct ndr_push *ndr, uint32_t v)
 /*
   push a int32_t
 */
-NTSTATUS ndr_push_int32(struct ndr_push *ndr, int32_t v)
+NTSTATUS ndr_push_int32(struct ndr_push *ndr, int ndr_flags, int32_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 4);
@@ -331,7 +331,7 @@ NTSTATUS ndr_push_int32(struct ndr_push *ndr, int32_t v)
 /*
   push a uint64
 */
-NTSTATUS ndr_push_udlong(struct ndr_push *ndr, uint64_t v)
+NTSTATUS ndr_push_udlong(struct ndr_push *ndr, int ndr_flags, uint64_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 8);
@@ -344,18 +344,18 @@ NTSTATUS ndr_push_udlong(struct ndr_push *ndr, uint64_t v)
 /*
   push a int64
 */
-NTSTATUS ndr_push_dlong(struct ndr_push *ndr, int64_t v)
+NTSTATUS ndr_push_dlong(struct ndr_push *ndr, int ndr_flags, int64_t v)
 {
-	return ndr_push_udlong(ndr, (uint64_t)v);
+	return ndr_push_udlong(ndr, NDR_SCALARS, (uint64_t)v);
 }
 
 /*
   push a hyper
 */
-NTSTATUS ndr_push_hyper(struct ndr_push *ndr, uint64_t v)
+NTSTATUS ndr_push_hyper(struct ndr_push *ndr, int ndr_flags, uint64_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 8);
-	return ndr_push_udlong(ndr, v);
+	return ndr_push_udlong(ndr, NDR_SCALARS, v);
 }
 
 NTSTATUS ndr_push_align(struct ndr_push *ndr, size_t size)
@@ -413,7 +413,7 @@ NTSTATUS ndr_push_array_uint16(struct ndr_push *ndr, int ndr_flags, const uint16
 		return NT_STATUS_OK;
 	}
 	for (i=0;i<n;i++) {
-		NDR_CHECK(ndr_push_uint16(ndr, data[i]));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -428,7 +428,7 @@ NTSTATUS ndr_push_array_uint32(struct ndr_push *ndr, int ndr_flags, const uint32
 		return NT_STATUS_OK;
 	}
 	for (i=0;i<n;i++) {
-		NDR_CHECK(ndr_push_uint32(ndr, data[i]));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -443,7 +443,7 @@ NTSTATUS ndr_push_array_hyper(struct ndr_push *ndr, int ndr_flags, const uint64_
 		return NT_STATUS_OK;
 	}
 	for (i=0;i<n;i++) {
-		NDR_CHECK(ndr_push_hyper(ndr, data[i]));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -458,7 +458,7 @@ NTSTATUS ndr_push_array_WERROR(struct ndr_push *ndr, int ndr_flags, const WERROR
 		return NT_STATUS_OK;
 	}
 	for (i=0;i<n;i++) {
-		NDR_CHECK(ndr_push_WERROR(ndr, data[i]));
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -492,7 +492,7 @@ NTSTATUS ndr_push_ptr(struct ndr_push *ndr, const void *p)
 		ndr->ptr_count++;
 		ptr = ndr->ptr_count;
 	}
-	return ndr_push_uint32(ndr, ptr);
+	return ndr_push_uint32(ndr, NDR_SCALARS, ptr);
 }
 
 
@@ -539,13 +539,13 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 	switch (flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
-		NDR_CHECK(ndr_pull_uint32(ndr, &len1));
-		NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &ofs));
 		if (ofs != 0) {
 			return ndr_pull_error(ndr, NDR_ERR_STRING, "non-zero array offset with string flags 0x%x\n",
 					      ndr->flags & LIBNDR_STRING_FLAGS);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, &len2));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len2));
 		if (len2 > len1) {
 			return ndr_pull_error(ndr, NDR_ERR_STRING, 
 					      "Bad string lengths len1=%u ofs=%u len2=%u\n", 
@@ -582,7 +582,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 
 	case LIBNDR_FLAG_STR_SIZE4:
 	case LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
-		NDR_CHECK(ndr_pull_uint32(ndr, &len1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
 		NDR_PULL_NEED_BYTES(ndr, (len1 + c_len_term)*byte_mul);
 		if (len1 == 0) {
 			*s = talloc_strdup(ndr, "");
@@ -614,12 +614,12 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 
 	case LIBNDR_FLAG_STR_LEN4:
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_NOTERM:
-		NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &ofs));
 		if (ofs != 0) {
 			return ndr_pull_error(ndr, NDR_ERR_STRING, "non-zero array offset with string flags 0x%x\n",
 					      ndr->flags & LIBNDR_STRING_FLAGS);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, &len1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &len1));
 		NDR_PULL_NEED_BYTES(ndr, (len1 + c_len_term)*byte_mul);
 		if (len1 == 0) {
 			*s = talloc_strdup(ndr, "");
@@ -652,7 +652,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 
 	case LIBNDR_FLAG_STR_SIZE2:
 	case LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM:
-		NDR_CHECK(ndr_pull_uint16(ndr, &len3));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &len3));
 		NDR_PULL_NEED_BYTES(ndr, (len3 + c_len_term)*byte_mul);
 		if (len3 == 0) {
 			*s = talloc_strdup(ndr, "");
@@ -683,7 +683,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_BYTESIZE:
-		NDR_CHECK(ndr_pull_uint16(ndr, &len3));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &len3));
 		NDR_PULL_NEED_BYTES(ndr, len3);
 		if (len3 == 0) {
 			*s = talloc_strdup(ndr, "");
@@ -788,9 +788,9 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 
 	switch (flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
-		NDR_CHECK(ndr_push_uint32(ndr, c_len+c_len_term));
-		NDR_CHECK(ndr_push_uint32(ndr, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, c_len+c_len_term));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len+c_len_term));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len+c_len_term));
 		NDR_PUSH_NEED_BYTES(ndr, byte_mul*(c_len+1));
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len+1,
@@ -804,9 +804,9 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		break;
 
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
-		NDR_CHECK(ndr_push_uint32(ndr, c_len));
-		NDR_CHECK(ndr_push_uint32(ndr, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, c_len));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
 		NDR_PUSH_NEED_BYTES(ndr, c_len*byte_mul);
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len,
@@ -819,8 +819,8 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		break;
 
 	case LIBNDR_FLAG_STR_LEN4:
-		NDR_CHECK(ndr_push_uint32(ndr, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, c_len + c_len_term));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len + c_len_term));
 		NDR_PUSH_NEED_BYTES(ndr, byte_mul*(c_len+1));
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len + 1,
@@ -833,7 +833,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE4:
-		NDR_CHECK(ndr_push_uint32(ndr, c_len + c_len_term));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len + c_len_term));
 		NDR_PUSH_NEED_BYTES(ndr, byte_mul*(c_len+1));
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len + 1,
@@ -846,7 +846,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE2:
-		NDR_CHECK(ndr_push_uint16(ndr, c_len + c_len_term));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, c_len + c_len_term));
 		NDR_PUSH_NEED_BYTES(ndr, byte_mul*(c_len+1));
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len + 1,
@@ -871,7 +871,7 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_BYTESIZE:
-		NDR_CHECK(ndr_push_uint16(ndr, c_len*byte_mul));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, c_len*byte_mul));
 		NDR_PUSH_NEED_BYTES(ndr, c_len*byte_mul);
 		ret = convert_string(CH_UNIX, chset, 
 				     s, s_len,
@@ -945,37 +945,37 @@ size_t ndr_string_array_size(struct ndr_push *ndr, const char *s)
 /*
   push a NTTIME
 */
-NTSTATUS ndr_push_NTTIME(struct ndr_push *ndr, NTTIME t)
+NTSTATUS ndr_push_NTTIME(struct ndr_push *ndr, int ndr_flags, NTTIME t)
 {
-	NDR_CHECK(ndr_push_udlong(ndr, t));
+	NDR_CHECK(ndr_push_udlong(ndr, ndr_flags, t));
 	return NT_STATUS_OK;
 }
 
 /*
   pull a NTTIME
 */
-NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, NTTIME *t)
+NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, int ndr_flags, NTTIME *t)
 {
-	NDR_CHECK(ndr_pull_udlong(ndr, t));
+	NDR_CHECK(ndr_pull_udlong(ndr, ndr_flags, t));
 	return NT_STATUS_OK;
 }
 
 /*
   push a NTTIME
 */
-NTSTATUS ndr_push_NTTIME_1sec(struct ndr_push *ndr, NTTIME t)
+NTSTATUS ndr_push_NTTIME_1sec(struct ndr_push *ndr, int ndr_flags, NTTIME t)
 {
 	t /= 10000000;
-	NDR_CHECK(ndr_push_hyper(ndr, t));
+	NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, t));
 	return NT_STATUS_OK;
 }
 
 /*
   pull a NTTIME_1sec
 */
-NTSTATUS ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, NTTIME *t)
+NTSTATUS ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, int ndr_flags, NTTIME *t)
 {
-	NDR_CHECK(ndr_pull_hyper(ndr, t));
+	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, t));
 	(*t) *= 10000000;
 	return NT_STATUS_OK;
 }
@@ -983,36 +983,36 @@ NTSTATUS ndr_pull_NTTIME_1sec(struct ndr_pull *ndr, NTTIME *t)
 /*
   pull a NTTIME_hyper
 */
-NTSTATUS ndr_pull_NTTIME_hyper(struct ndr_pull *ndr, NTTIME *t)
+NTSTATUS ndr_pull_NTTIME_hyper(struct ndr_pull *ndr, int ndr_flags, NTTIME *t)
 {
-	NDR_CHECK(ndr_pull_hyper(ndr, t));
+	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, t));
 	return NT_STATUS_OK;
 }
 
 /*
   push a NTTIME_hyper
 */
-NTSTATUS ndr_push_NTTIME_hyper(struct ndr_push *ndr, NTTIME t)
+NTSTATUS ndr_push_NTTIME_hyper(struct ndr_push *ndr, int ndr_flags, NTTIME t)
 {
-	NDR_CHECK(ndr_push_hyper(ndr, t));
+	NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, t));
 	return NT_STATUS_OK;
 }
 
 /*
   push a time_t
 */
-NTSTATUS ndr_push_time_t(struct ndr_push *ndr, time_t t)
+NTSTATUS ndr_push_time_t(struct ndr_push *ndr, int ndr_flags, time_t t)
 {
-	return ndr_push_uint32(ndr, t);
+	return ndr_push_uint32(ndr, ndr_flags, t);
 }
 
 /*
   pull a time_t
 */
-NTSTATUS ndr_pull_time_t(struct ndr_pull *ndr, time_t *t)
+NTSTATUS ndr_pull_time_t(struct ndr_pull *ndr, int ndr_flags, time_t *t)
 {
 	uint32_t tt;
-	NDR_CHECK(ndr_pull_uint32(ndr, &tt));
+	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &tt));
 	*t = tt;
 	return NT_STATUS_OK;
 }
@@ -1021,10 +1021,10 @@ NTSTATUS ndr_pull_time_t(struct ndr_pull *ndr, time_t *t)
 /*
   pull a ipv4address
 */
-NTSTATUS ndr_pull_ipv4address(struct ndr_pull *ndr, const char **address)
+NTSTATUS ndr_pull_ipv4address(struct ndr_pull *ndr, int ndr_flags, const char **address)
 {
 	struct ipv4_addr in;
-	NDR_CHECK(ndr_pull_uint32(ndr, &in.addr));
+	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &in.addr));
 	in.addr = htonl(in.addr);
 	*address = talloc_strdup(ndr, sys_inet_ntoa(in));
 	NT_STATUS_HAVE_NO_MEMORY(*address);
@@ -1034,10 +1034,10 @@ NTSTATUS ndr_pull_ipv4address(struct ndr_pull *ndr, const char **address)
 /*
   push a ipv4address
 */
-NTSTATUS ndr_push_ipv4address(struct ndr_push *ndr, const char *address)
+NTSTATUS ndr_push_ipv4address(struct ndr_push *ndr, int ndr_flags, const char *address)
 {
 	uint32_t addr = interpret_addr(address);
-	NDR_CHECK(ndr_push_uint32(ndr, htonl(addr)));
+	NDR_CHECK(ndr_push_uint32(ndr, ndr_flags, htonl(addr)));
 	return NT_STATUS_OK;
 }
 
@@ -1290,7 +1290,7 @@ void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_BLOB r)
 /*
   push a DATA_BLOB onto the wire. 
 */
-NTSTATUS ndr_push_DATA_BLOB(struct ndr_push *ndr, DATA_BLOB blob)
+NTSTATUS ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flags, DATA_BLOB blob)
 {
 	if (ndr->flags & LIBNDR_ALIGN_FLAGS) {
 		if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
@@ -1303,7 +1303,7 @@ NTSTATUS ndr_push_DATA_BLOB(struct ndr_push *ndr, DATA_BLOB blob)
 		NDR_PUSH_ALLOC_SIZE(ndr, blob.data, blob.length);
 		data_blob_clear(&blob);
 	} else if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
-		NDR_CHECK(ndr_push_uint32(ndr, blob.length));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.length));
 	}
 	NDR_CHECK(ndr_push_bytes(ndr, blob.data, blob.length));
 	return NT_STATUS_OK;
@@ -1312,7 +1312,7 @@ NTSTATUS ndr_push_DATA_BLOB(struct ndr_push *ndr, DATA_BLOB blob)
 /*
   pull a DATA_BLOB from the wire. 
 */
-NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, DATA_BLOB *blob)
+NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, int ndr_flags, DATA_BLOB *blob)
 {
 	uint32_t length;
 
@@ -1330,7 +1330,7 @@ NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, DATA_BLOB *blob)
 	} else if (ndr->flags & LIBNDR_FLAG_REMAINING) {
 		length = ndr->data_size - ndr->offset;
 	} else {
-		NDR_CHECK(ndr_pull_uint32(ndr, &length));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &length));
 	}
 	NDR_PULL_NEED_BYTES(ndr, length);
 	*blob = data_blob_talloc(ndr, ndr->data+ndr->offset, length);

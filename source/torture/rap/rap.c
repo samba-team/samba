@@ -83,20 +83,20 @@ static void rap_cli_push_paramdesc(struct rap_call *call, char desc)
 static void rap_cli_push_word(struct rap_call *call, uint16 val)
 {
 	rap_cli_push_paramdesc(call, 'W');
-	ndr_push_uint16(call->ndr_push_param, val);
+	ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, val);
 }
 
 static void rap_cli_push_dword(struct rap_call *call, uint32 val)
 {
 	rap_cli_push_paramdesc(call, 'D');
-	ndr_push_uint32(call->ndr_push_param, val);
+	ndr_push_uint32(call->ndr_push_param, NDR_SCALARS, val);
 }
 
 static void rap_cli_push_rcvbuf(struct rap_call *call, int len)
 {
 	rap_cli_push_paramdesc(call, 'r');
 	rap_cli_push_paramdesc(call, 'L');
-	ndr_push_uint16(call->ndr_push_param, len);
+	ndr_push_uint16(call->ndr_push_param, NDR_SCALARS, len);
 	call->rcv_datalen = len;
 }
 
@@ -130,8 +130,8 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 	const char *p;
 	size_t len;
 
-	NDR_CHECK(ndr_pull_uint16(ndr, &string_offset));
-	NDR_CHECK(ndr_pull_uint16(ndr, &ignore));
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &string_offset));
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &ignore));
 
 	string_offset -= convert;
 
@@ -173,7 +173,7 @@ static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, struct rap_call *call)
 	trans.in.setup = NULL;
 	trans.in.trans_name = "\\PIPE\\LANMAN";
 
-	NDR_CHECK(ndr_push_uint16(params, call->callno));
+	NDR_CHECK(ndr_push_uint16(params, NDR_SCALARS, call->callno));
 	if (call->paramdesc)
 		NDR_CHECK(ndr_push_string(params, NDR_SCALARS, call->paramdesc));
 	if (call->datadesc)
@@ -236,10 +236,10 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.status));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.convert));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.count));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.available));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
 	r->out.info = talloc_array(call, union rap_shareenum_info,
 				     r->out.count);
@@ -261,7 +261,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
 					      (uint8_t *)&r->out.info[i].info1.pad, 1));
 			NDR_OK(ndr_pull_uint16(call->ndr_pull_data,
-					       &r->out.info[i].info1.type));
+					       NDR_SCALARS, &r->out.info[i].info1.type));
 			NDR_OK(rap_pull_string(call, call->ndr_pull_data,
 					       r->out.convert,
 					       &r->out.info[i].info1.comment));
@@ -330,10 +330,10 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 
 	result = NT_STATUS_INVALID_PARAMETER;
 
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.status));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.convert));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.count));
-	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, &r->out.available));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.status));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.convert));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.count));
+	NDR_OK(ndr_pull_uint16(call->ndr_pull_param, NDR_SCALARS, &r->out.available));
 
 	r->out.info = talloc_array(call, union rap_server_info,
 				     r->out.count);
@@ -357,7 +357,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
 					      &r->out.info[i].info1.version_minor, 1));
 			NDR_OK(ndr_pull_uint32(call->ndr_pull_data,
-					       &r->out.info[i].info1.servertype));
+					       NDR_SCALARS, &r->out.info[i].info1.servertype));
 			NDR_OK(rap_pull_string(call, call->ndr_pull_data,
 					       r->out.convert,
 					       &r->out.info[i].info1.comment));

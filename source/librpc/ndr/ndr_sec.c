@@ -34,7 +34,7 @@ NTSTATUS ndr_pull_dom_sid2(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, &num_auths));
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &num_auths));
 	NDR_CHECK(ndr_pull_dom_sid(ndr, ndr_flags, sid));
 	if (sid->num_auths != num_auths) {
 		return ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, 
@@ -52,7 +52,7 @@ NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, struct dom_sid *
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NT_STATUS_OK;
 	}
-	NDR_CHECK(ndr_push_uint32(ndr, sid->num_auths));
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, sid->num_auths));
 	return ndr_push_dom_sid(ndr, ndr_flags, sid);
 }
 
