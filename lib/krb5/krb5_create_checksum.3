@@ -1,4 +1,4 @@
-.\" Copyright (c) 1999 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1999-2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,37 +31,72 @@
 .\"
 .\" $Id$
 .\"
-.Dd August 23, 2003
+.Dd March 20, 2004
 .Dt NAME 3
 .Os HEIMDAL
 .Sh NAME
+.Nm krb5_checksum ,
+.Nm krb5_checksum_disable ,
 .Nm krb5_checksum_is_collision_proof ,
+.Nm krb5_checksum_is_disabled ,
 .Nm krb5_checksum_is_keyed ,
 .Nm krb5_checksumsize ,
 .Nm krb5_create_checksum ,
 .Nm krb5_verify_checksum ,
 .Nm krb5_crypto_get_checksum_type
-.Nd creates and verifies checksums
+.Nm krb5_free_checksum ,
+.Nm krb5_free_checksum_contents ,
+.Nm krb5_copy_checksum
+.Nd creates, handles and verifies checksums
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
 .In krb5.h
+.Pp
+.Li "struct krb5_checksum;"
+.Ft void
+.Fn krb5_checksum_disable "krb5_context context" "krb5_cksumtype type"
+.Ft krb5_boolean
+.Fn krb5_checksum_is_collision_proof "krb5_context context" "krb5_cksumtype type"
+.Ft krb5_boolean
+.Fn krb5_checksum_is_disabled "krb5_context context" "krb5_cksumtype type"
+.Ft krb5_boolean
+.Fn krb5_checksum_is_keyed "krb5_context context" "krb5_cksumtype type"
 .Ft krb5_error_code
 .Fn krb5_create_checksum "krb5_context context" "krb5_crypto crypto" "unsigned usage_or_type" "void *data" "size_t len" "Checksum *result"
 .Ft krb5_error_code
 .Fn krb5_verify_checksum "krb5_context context" "krb5_crypto crypto" "krb5_key_usage usage" "void *data" "size_t len" "Checksum *cksum"
-.Ft krb5_boolean
-.Fn krb5_checksum_is_collision_proof "krb5_context context" "krb5_cksumtype type"
-.Ft krb5_boolean
-.Fn krb5_checksum_is_keyed "krb5_context context" "krb5_cksumtype type"
 .Ft krb5_error_code
 .Fo krb5_crypto_get_checksum_type
 .Fa "krb5_context context"
 .Fa "krb5_crypto crypto"
 .Fa "krb5_cksumtype *type"
 .Fc
+.Ft void
+.Fo krb5_free_checksum
+.Fa "krb5_context context"
+.Fa "krb5_checksum *cksum"
+.Fc
+.Ft void
+.Fo krb5_free_checksum_contents
+.Fa "krb5_context context"
+.Fa "krb5_checksum *cksum"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_copy_checksum
+.Fa "krb5_context context"
+.Fa "const krb5_checksum *old"
+.Fa "krb5_checksum **new"
+.Fc
 .Sh DESCRIPTION
-These functions are used to create and verify checksums.
+The
+.Li krb5_checksum
+structure holds a Kerberos checksum.
+There is no component inside
+.Li krb5_checksum
+that is directly referable.
+.Pp
+The functions are used to create and verify checksums.
 .Fn krb5_create_checksum
 creates a checksum of the specified data, and puts it in
 .Fa result .
@@ -80,7 +115,7 @@ specifies a key-usage.
 .Pp
 .Fn krb5_verify_checksum
 verifies the
-.Fa checksum ,
+.Fa checksum
 against the provided data.
 .Pp
 .Fn krb5_checksum_is_collision_proof
@@ -104,6 +139,26 @@ This function is useful in combination with
 .Fn krb5_checksumsize
 when you want to know the size a checksum will
 use when you create it.
+.Pp
+.Fn krb5_copy_checksum
+returns a copy of the checksum
+.Fn krb5_free_checksum
+should use used to free the
+.Fa new
+checksum.
+.Pp
+.Fn krb5_free_checksum
+free the checksum and the content of the checksum.
+.Pp
+.Fn krb5_free_checksum_contents
+frees the content of checksum in
+.Fa cksum .
+.Pp
+.Nm krb5_checksum_is_disabled
+returns non-zero if the checksum type is disabled.
+.Pp
+.Nm krb5_checksum_disable
+globally disables the checksum type. 
 .\" .Sh EXAMPLE
 .\" .Sh BUGS
 .Sh SEE ALSO
