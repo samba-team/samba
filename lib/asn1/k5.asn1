@@ -327,6 +327,7 @@ krb-error INTEGER ::= 30 -- Error response
 -- pa-data types
 
 pa-tgs-req INTEGER ::= 1 --
+pa-enc-timestamp INTEGER ::= 2 --
 
 -- checksumtypes
 
