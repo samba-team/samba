@@ -1,3 +1,15 @@
+2004-06-12  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmind.c: drop keyfile, not used, found by
+	Elrond <elrond@samba-tng.org>
+	
+	* kadmin.c: if keyfile is set, pass in to libkadm5 bug pointed out
+	by Elrond <elrond@samba-tng.org>
+	
+2004-05-31  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmin.c: add --ad flag, XXX rewrite the init kadm5 interface
+	
 2004-05-13  Johan Danielsson  <joda@pdc.kth.se>
 
 	* nuke kerberos 4 kadmin goo
