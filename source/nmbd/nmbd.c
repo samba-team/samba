@@ -66,6 +66,15 @@ static void terminate(void)
 }
 
 /**************************************************************************** **
+ Handle a SHUTDOWN message from smbcontrol.
+ **************************************************************************** */
+
+static void nmbd_terminate(int msg_type, pid_t src, void *buf, size_t len)
+{
+	terminate();
+}
+
+/**************************************************************************** **
  Catch a SIGTERM signal.
  **************************************************************************** */
 
@@ -857,6 +866,7 @@ static void usage(char *pname)
   message_init();
   message_register(MSG_FORCE_ELECTION, nmbd_message_election);
   message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
+  message_register(MSG_SHUTDOWN, nmbd_terminate);
 
   DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 
