@@ -23,8 +23,11 @@ libdir = $(exec_prefix)/lib
 libexecdir = $(exec_prefix)/libexec
 bindir = $(exec_prefix)/bin
 
-PROG_BIN	= kx rxterm rxtelnet
-PROG_LIBEXEC	= kxd
+X_PROGS_BIN = kx rxterm rxtelnet
+X_PROGS_LIBEXEC = kxd
+
+PROG_BIN	= @MAKE_X_PROGS_BIN@
+PROG_LIBEXEC	= @MAKE_X_PROGS_LIBEXEC@
 PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
 
 SOURCES_KX     = kx.c
