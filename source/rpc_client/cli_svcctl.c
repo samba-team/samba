@@ -20,69 +20,89 @@
 
 
 #include "includes.h"
-
-/*******************************************************************
-*******************************************************************/
-
-WERROR cli_svcctl_open_scm( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                            SVCCTL_Q_OPEN_SCMANAGER *in, SVCCTL_R_OPEN_SCMANAGER *out )
-{
-	prs_struct qbuf, rbuf;
-
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 	
-	out->status = WERR_GENERAL_FAILURE;
-
-	/* Marshall data and send request */
-
-	if ( svcctl_io_q_open_scmanager("", in, &qbuf, 0) ) {
-		if ( rpc_api_pipe_req(cli, PI_SVCCTL, SVCCTL_OPEN_SCMANAGER_W, &qbuf, &rbuf) ) {
-			/* Unmarshall response */
-			if (!svcctl_io_r_open_scmanager("", out, &rbuf, 0)) {
-				out->status = WERR_GENERAL_FAILURE;
-			}		
-		}
-	}
-
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
-	return out->status;
+/* macro to expand cookie-cutter code */
+		   
+#define CLI_DO_RPC( cli, mem_ctx, pipe_num, opnum, in, out, qbuf, rbuf, q_io_fn, r_io_fn, default_error) \
+{	out.status = default_error;\
+	prs_init( &qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL ); \
+	prs_init( &rbuf, 0, mem_ctx, UNMARSHALL );\
+	if ( q_io_fn("", &in, &qbuf, 0) ) {\
+		if ( rpc_api_pipe_req(cli, pipe_num, opnum, &qbuf, &rbuf) ) {\
+			if (!r_io_fn("", &out, &rbuf, 0)) {\
+				out.status = default_error;\
+			}\
+		}\
+	}\
+	prs_mem_free( &qbuf );\
+	prs_mem_free( &rbuf );\
 }
 
-/*******************************************************************
-*******************************************************************/
 
-WERROR cli_svcctl_close_service( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-                            SVCCTL_Q_CLOSE_SERVICE *in, SVCCTL_R_CLOSE_SERVICE *out )
+/********************************************************************
+********************************************************************/
+
+WERROR cli_svcctl_open_scm( struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                              POLICY_HND *hSCM, uint32 access_desired )
 {
+	SVCCTL_Q_OPEN_SCMANAGER in;
+	SVCCTL_R_OPEN_SCMANAGER out;
 	prs_struct qbuf, rbuf;
-
-	/* Initialise parse structures */
-
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	fstring server;
 	
-	out->status = WERR_GENERAL_FAILURE;
+	ZERO_STRUCT(in);
+	ZERO_STRUCT(out);
+	
+	/* leave the database name NULL to get the default service db */
 
-	/* Marshall data and send request */
+	in.database = NULL;
 
-	if ( svcctl_io_q_close_service("", in, &qbuf, 0) ) {
-		if ( rpc_api_pipe_req(cli, PI_SVCCTL, SVCCTL_CLOSE_SERVICE, &qbuf, &rbuf) ) {
-			/* Unmarshall response */
-			if (!svcctl_io_r_close_service("", out, &rbuf, 0)) {
-				out->status = WERR_GENERAL_FAILURE;
-			}		
-		}
-	}
+	/* set the server name */
 
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
+	if ( !(in.servername = TALLOC_P( mem_ctx, UNISTR2 )) )
+		return WERR_NOMEM;
+	fstr_sprintf( server, "\\\\%s", cli->desthost );
+	init_unistr2( in.servername, server, UNI_STR_TERMINATE );
 
-	return out->status;
+	in.access = access_desired;
+	
+	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_OPEN_SCMANAGER_W, 
+	            in, out, 
+	            qbuf, rbuf,
+	            svcctl_io_q_open_scmanager,
+	            svcctl_io_r_open_scmanager, 
+	            WERR_GENERAL_FAILURE );
+	
+	if ( !W_ERROR_IS_OK( out.status ) )
+		return out.status;
+
+	memcpy( hSCM, &out.handle, sizeof(POLICY_HND) );
+	
+	return out.status;
+}
+
+/********************************************************************
+********************************************************************/
+
+WERROR close_service_handle( struct cli_state *cli, TALLOC_CTX *mem_ctx, POLICY_HND *hService )
+{
+	SVCCTL_Q_CLOSE_SERVICE in;
+	SVCCTL_R_CLOSE_SERVICE out;
+	prs_struct qbuf, rbuf;
+	
+	ZERO_STRUCT(in);
+	ZERO_STRUCT(out);
+	
+	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
+	
+	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_CLOSE_SERVICE, 
+	            in, out, 
+	            qbuf, rbuf,
+	            svcctl_io_q_close_service,
+	            svcctl_io_r_close_service, 
+	            WERR_GENERAL_FAILURE );
+
+	return out.status;
 }
 
 /*******************************************************************
@@ -90,93 +110,70 @@ WERROR cli_svcctl_close_service( struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 WERROR cli_svcctl_enumerate_services( struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                       POLICY_HND *hSCM, uint32 type, uint32 state, 
-				      uint32 *resume, uint32 buffer_size, RPC_BUFFER *buffer,
-				      uint32 returned )
+				      uint32 *resume, uint32 returned  )
 {
+	SVCCTL_Q_ENUM_SERVICES_STATUS in;
+	SVCCTL_R_ENUM_SERVICES_STATUS out;
 	prs_struct qbuf, rbuf;
-	SVCCTL_Q_ENUM_SERVICES_STATUS q;
-	SVCCTL_R_ENUM_SERVICES_STATUS r;
-	WERROR result = WERR_GENERAL_FAILURE;
 
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
+	ZERO_STRUCT(in);
+	ZERO_STRUCT(out);
 
-	/* Initialise parse structures */
+	CLI_DO_RPC( cli, mem_ctx, PI_SVCCTL, SVCCTL_ENUM_SERVICES_STATUS_W, 
+	            in, out, 
+	            qbuf, rbuf,
+	            svcctl_io_q_enum_services_status,
+	            svcctl_io_r_enum_services_status, 
+	            WERR_GENERAL_FAILURE );
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	if ( !W_ERROR_IS_OK(out.status) ) 
+		return out.status;
 
-	/* Initialise input parameters */
-
-
-	/* Marshall data and send request */
-	
-	if (!svcctl_io_q_enum_services_status("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, PI_SVCCTL, SVCCTL_ENUM_SERVICES_STATUS_W, &qbuf, &rbuf)) {
-		goto done;
-	}
-
-	/* Unmarshall response */
-
-	if (!svcctl_io_r_enum_services_status("", &r, &rbuf, 0)) {
-		goto done;
-	}
-
-	/* Return output parameters */
-
-	if (W_ERROR_IS_OK(result = r.status)) {
-		*buffer = r.buffer;
-	}
-
-done:
-	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
-
-	return result;
+	return out.status;
 }
 
 /*******************************************************************
 *******************************************************************/
 
-NTSTATUS cli_svcctl_start_service(struct cli_state *cli, TALLOC_CTX *mem_ctx )
+WERROR cli_svcctl_start_service(struct cli_state *cli, TALLOC_CTX *mem_ctx )
 {
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
 /*******************************************************************
 *******************************************************************/
 
-NTSTATUS cli_svcctl_control_service(struct cli_state *cli, TALLOC_CTX *mem_ctx )
+WERROR cli_svcctl_control_service(struct cli_state *cli, TALLOC_CTX *mem_ctx )
 {
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
 /*******************************************************************
 *******************************************************************/
 
-NTSTATUS cli_svcctl_query_status(struct cli_state *cli, TALLOC_CTX *mem_ctx )
+WERROR cli_svcctl_query_status(struct cli_state *cli, TALLOC_CTX *mem_ctx )
 {
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
 /*******************************************************************
 *******************************************************************/
 
-NTSTATUS cli_svcctl_query_config(struct cli_state *cli, TALLOC_CTX *mem_ctx )
+WERROR cli_svcctl_query_config(struct cli_state *cli, TALLOC_CTX *mem_ctx )
 {
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
 /*******************************************************************
 *******************************************************************/
 
-NTSTATUS cli_svcctl_get_dispname(struct cli_state *cli, TALLOC_CTX *mem_ctx )
+WERROR cli_svcctl_get_dispname(struct cli_state *cli, TALLOC_CTX *mem_ctx )
 {
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
