@@ -185,12 +185,6 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 {
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
-	int push_flags = STR_TERMINATE;
-
-	if (capabilities & CAP_UNICODE)
-		push_flags |= STR_UNICODE;
-	else
-		push_flags |= STR_ASCII;
 
 	set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
@@ -204,7 +198,7 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 	SSVAL(cli->outbuf,smb_vwv8,0);
 	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
 	p = smb_buf(cli->outbuf);
-	p += clistr_push(cli, p, pass, -1, push_flags); /* password */
+	p += clistr_push(cli, p, pass, -1, STR_TERMINATE); /* password */
 	SSVAL(cli->outbuf,smb_vwv7,PTR_DIFF(p, smb_buf(cli->outbuf)));
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE); /* username */
 	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE); /* workgroup */
