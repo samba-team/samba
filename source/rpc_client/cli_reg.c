@@ -406,7 +406,7 @@ BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 
 	DEBUG(4,("REG Query Info\n"));
 
-	init_reg_q_info(&q_o, hnd, "ProductType", time(NULL), 4, 1);
+	init_reg_q_info(&q_o, hnd, "ProductType");
 
 	/* turn parameters into data stream */
 	if(!reg_io_q_info("", &q_o, &buf, 0)) {
@@ -438,9 +438,7 @@ BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
 		return False;
 	}
 
-	fstrcpy(type, dos_buffer2_to_str(&r_o.uni_type));
-	(*unk_0) = r_o.unknown_0;
-	(*unk_1) = r_o.unknown_1;
+	fstrcpy(type, dos_buffer2_to_str(r_o.uni_val));
 
 	prs_mem_free(&rbuf);
 
