@@ -60,7 +60,7 @@ BOOL change_to_guest(void)
 
 static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 {
-	int i;
+	unsigned i;
 	for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++)
 		if (conn->vuid_cache.list[i] == vuser->vuid)
 			return(True);
@@ -70,7 +70,7 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 		return False;
 	}
 	
-	if (!user_ok(vuser->user.unix_name,snum))
+	if (!user_ok(vuser->user.unix_name,snum, vuser->groups, vuser->n_groups))
 		return(False);
 
 	if (!share_access_check(conn, snum, vuser, conn->read_only ? FILE_READ_DATA : FILE_WRITE_DATA)) {
