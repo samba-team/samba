@@ -120,7 +120,10 @@ typedef struct net_user_info_3
 	UNISTR2 uni_logon_dom; /* logon domain unicode string */
 
 	DOM_SID2 dom_sid;           /* domain SID */
-	DOM_SID2 other_sids[LSA_MAX_SIDS]; /* undocumented - domain SIDs */
+
+	uint32 num_other_groups;        /* other groups */
+	DOM_GID *other_gids; /* group info */
+	DOM_SID2 *other_sids; /* undocumented - domain SIDs */
 
 } NET_USER_INFO_3;
 
