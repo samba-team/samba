@@ -765,7 +765,7 @@ BOOL cli_session_setup_x(struct cli_state *cli,
       cli_send_smb(cli, True);
       if (!cli_receive_smb(cli))
 	{
-		DEBUG(10,("cli_session_setup: receive smb failed\n"));
+		DEBUG(10,("cli_session_setup_x: receive smb failed\n"));
 	      return False;
 	}
 
@@ -799,26 +799,59 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 				char *ntpass, int *ntpasslen,
 				BOOL ntlmv2)
 {
+	BOOL ntpass_ok = ntpass != NULL && ntpasslen != NULL;
+
+	if (pass == NULL || passlen == NULL)
+	{
+		DEBUG(0,("cli_calc_session_pwds: pass and passlen are NULL\n"));
+		return False;
+	}
+	if ((ntpass != NULL || ntpasslen != NULL) &&
+	    (ntpass == NULL || ntpasslen == NULL))
+	{
+		DEBUG(0,("cli_calc_session_pwds: ntpasswd pointers invalid\n"));
+		return False;
+	}
+
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("cli_calc_session_pwds.  pass, ntpass\n"));
 	dump_data(100, pass, *passlen);
-	dump_data(100, ntpass, *ntpasslen);
+	if (ntpass_ok)
+	{
+		dump_data(100, ntpass, *ntpasslen);
+	}
 #endif
 	if (!IS_BITS_SET_ALL(cli->sec_mode, 1))
 	{
 		/* if in share level security then don't send a password now */
-		fstrcpy(pword, "");
+		pword[0] = '\0';
 		*passlen=1;
-		fstrcpy(ntpword, "");
-		*ntpasslen=1;
+		if (ntpass_ok)
+		{
+			ntpword[0] = '\0';
+			*ntpasslen=1;
+		}
+		return True;
 	} 
 	else if ((*passlen == 0 || *passlen == 1) && (pass[0] == '\0'))
 	{
 		/* Null session connect. */
 		pword  [0] = '\0';
-		ntpword[0] = '\0';
+		if (ntpass_ok)
+		{
+			ntpword[0] = '\0';
+			*ntpasslen=1;
+		}
+
+		return True;
 	}
-	else if (*passlen == 24 && *ntpasslen >= 24)
+
+	if (!ntpass_ok)
+	{
+		return False;
+	}
+
+	if (*passlen == 24 && *ntpasslen >= 24)
 	{
 		if (IS_BITS_SET_ALL(cli->sec_mode, 2))
 		{
@@ -828,7 +861,7 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 		}
 		else
 		{
-			DEBUG(0,("cli_session_setup: encrypted passwords not supported by server\n"));
+			DEBUG(0,("cli_calc_session_pwds: encrypted passwords not supported by server\n"));
 			return False;
 		}
 	}
@@ -839,8 +872,9 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 		fstrcpy(ntpword, "");
 		*ntpasslen = 0;
 	}
-	else /* passlen != 0 && ntpasslen != 0 && server supports encryption */
+	else if (ntpasslen != NULL)
 	{
+		/* passlen != 0, ntpasslen != 0 && server supports encryption */
 		if (ntlmv2)
 		{
 			/* plain-text password requesting to be encrypted */
