@@ -26,6 +26,7 @@ extern int Protocol;
 extern int max_recv;
 extern fstring global_myworkgroup;
 extern fstring remote_machine;
+BOOL global_encrypted_passwords_negotiated;
 
 /****************************************************************************
 reply for the core protocol
@@ -66,16 +67,17 @@ static int reply_lanman1(char *outbuf)
 {
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int secword=0;
-  BOOL doencrypt = lp_encrypted_passwords();
   time_t t = time(NULL);
 
-  if (lp_security()>=SEC_USER) secword |= 1;
-  if (doencrypt) secword |= 2;
+  global_encrypted_passwords_negotiated = lp_encrypted_passwords();
 
-  set_message(outbuf,13,doencrypt?8:0,True);
+  if (lp_security()>=SEC_USER) secword |= 1;
+  if (global_encrypted_passwords_negotiated) secword |= 2;
+
+  set_message(outbuf,13,global_encrypted_passwords_negotiated?8:0,True);
   SSVAL(outbuf,smb_vwv1,secword); 
   /* Create a token value and add it to the outgoing packet. */
-  if (doencrypt) 
+  if (global_encrypted_passwords_negotiated) 
     generate_next_challenge(smb_buf(outbuf));
 
   Protocol = PROTOCOL_LANMAN1;
@@ -103,11 +105,12 @@ static int reply_lanman2(char *outbuf)
 {
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int secword=0;
-  BOOL doencrypt = lp_encrypted_passwords();
   time_t t = time(NULL);
   struct cli_state *cli = NULL;
   char cryptkey[8];
   char crypt_len = 0;
+
+  global_encrypted_passwords_negotiated = lp_encrypted_passwords();
 
   if (lp_security() == SEC_SERVER) {
 	  cli = server_cryptkey();
@@ -115,13 +118,13 @@ static int reply_lanman2(char *outbuf)
 
   if (cli) {
 	  DEBUG(3,("using password server validation\n"));
-	  doencrypt = ((cli->sec_mode & 2) != 0);
+	  global_encrypted_passwords_negotiated = ((cli->sec_mode & 2) != 0);
   }
 
   if (lp_security()>=SEC_USER) secword |= 1;
-  if (doencrypt) secword |= 2;
+  if (global_encrypted_passwords_negotiated) secword |= 2;
 
-  if (doencrypt) {
+  if (global_encrypted_passwords_negotiated) {
 	  crypt_len = 8;
 	  if (!cli) {
 		  generate_next_challenge(cryptkey);
@@ -134,7 +137,7 @@ static int reply_lanman2(char *outbuf)
   set_message(outbuf,13,crypt_len,True);
   SSVAL(outbuf,smb_vwv1,secword); 
   SIVAL(outbuf,smb_vwv6,sys_getpid());
-  if (doencrypt) 
+  if (global_encrypted_passwords_negotiated) 
 	  memcpy(smb_buf(outbuf), cryptkey, 8);
 
   Protocol = PROTOCOL_LANMAN2;
@@ -162,13 +165,14 @@ static int reply_nt1(char *outbuf)
 		CAP_LEVEL_II_OPLOCKS|CAP_STATUS32;
 
 	int secword=0;
-	BOOL doencrypt = lp_encrypted_passwords();
 	time_t t = time(NULL);
 	struct cli_state *cli = NULL;
 	char cryptkey[8];
 	char crypt_len = 0;
 	char *p, *q;
 	
+	global_encrypted_passwords_negotiated = lp_encrypted_passwords();
+
 	if (lp_security() == SEC_SERVER) {
 		DEBUG(5,("attempting password server validation\n"));
 		cli = server_cryptkey();
@@ -178,12 +182,12 @@ static int reply_nt1(char *outbuf)
 	
 	if (cli) {
 		DEBUG(3,("using password server validation\n"));
-		doencrypt = ((cli->sec_mode & 2) != 0);
+		global_encrypted_passwords_negotiated = ((cli->sec_mode & 2) != 0);
 	} else {
 		DEBUG(3,("not using password server validation\n"));
 	}
 	
-	if (doencrypt) {
+	if (global_encrypted_passwords_negotiated) {
 		crypt_len = 8;
 		if (!cli) {
 			generate_next_challenge(cryptkey);
@@ -216,7 +220,7 @@ static int reply_nt1(char *outbuf)
 		capabilities |= CAP_DFS;
 	
 	if (lp_security() >= SEC_USER) secword |= 1;
-	if (doencrypt) secword |= 2;
+	if (global_encrypted_passwords_negotiated) secword |= 2;
 	
 	set_message(outbuf,17,0,True);
 	
@@ -235,7 +239,7 @@ static int reply_nt1(char *outbuf)
 	SSVALS(outbuf,smb_vwv15+1,TimeDiff(t)/60);
 	
 	p = q = smb_buf(outbuf);
-	if (doencrypt) memcpy(p, cryptkey, 8);
+	if (global_encrypted_passwords_negotiated) memcpy(p, cryptkey, 8);
 	p += 8;
 	p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
 			 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
