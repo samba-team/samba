@@ -395,7 +395,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	(*server_info)->allow_password_change
 		= samdb_result_allow_password_change(sam_ctx, mem_ctx, 
 						     domain_dn, msgs[0], "pwdLastSet");
-	(*server_info)->allow_password_change
+	(*server_info)->force_password_change
 		= samdb_result_force_password_change(sam_ctx, mem_ctx, 
 						     domain_dn, msgs[0], "pwdLastSet");
 
