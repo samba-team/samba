@@ -1036,35 +1036,6 @@ PYTHON_OBJS = $(LIB_OBJ) $(LIBSMB_OBJ) $(RPC_PARSE_OBJ) $(UBIQX_OBJ) \
 	$(PARAM_OBJ) $(LIBMSRPC_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	$(SECRETS_OBJ) $(KRBCLIENT_OBJ)
 
-PY_SPOOLSS_PROTO_OBJ = python/py_spoolss.o \
-		python/py_spoolss_printers.o python/py_spoolss_printers_conv.o\
-		python/py_spoolss_forms.o python/py_spoolss_forms_conv.o \
-		python/py_spoolss_ports.o python/py_spoolss_ports_conv.o \
-		python/py_spoolss_drivers.o python/py_spoolss_drivers_conv.o \
-		python/py_spoolss_jobs.o python/py_spoolss_jobs_conv.o \
-		python/py_spoolss_printerdata.o
-
-PY_LSA_PROTO_OBJ = python/py_lsa.o
-
-PY_COMMON_PROTO_OBJ = python/py_common.c python/py_ntsec.c
-
-python_proto: python_spoolss_proto python_lsa_proto python_common_proto
-
-python_spoolss_proto:
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
-		-h _PY_SPOOLSS_PROTO_H python/py_spoolss_proto.h \
-		$(PY_SPOOLSS_PROTO_OBJ)
-
-python_lsa_proto:
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
-		-h _PY_LSA_PROTO_H python/py_lsa_proto.h \
-		$(PY_LSA_PROTO_OBJ)
-
-python_common_proto:
-	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
-		-h _PY_COMMON_PROTO_H python/py_common_proto.h \
-		$(PY_COMMON_PROTO_OBJ)
-
 python_ext: $(PYTHON_OBJS)
 	@if test -z "$(PYTHON)"; then \
 		echo Use the option --with-python to configure python; \
