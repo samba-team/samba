@@ -71,7 +71,7 @@ char* kdc_log_msg (int, const char*, ...);
 char* kdc_log_msg_va (int, const char*, va_list);
 void kdc_openlog (krb5_config_section*);
 void loop (void);
-void set_master_key (EncryptionKey*);
+void set_master_key (EncryptionKey);
 krb5_error_code tgs_rep (KDC_REQ*, krb5_data*, const char*);
 Key* unseal_key (Key*);
 
