@@ -25,6 +25,7 @@ static char *so_path = "/lib/libnss_winbind.so";
 static char *nss_name = "winbind";
 static int nss_errno;
 static NSS_STATUS last_error;
+static int total_errors;
 
 static void *find_fn(const char *name)
 {
@@ -52,7 +53,7 @@ static void *find_fn(const char *name)
 static void report_nss_error(const char *who, NSS_STATUS status)
 {
 	last_error = status;
-
+	total_errors++;
 	printf("ERROR %s: NSS_STATUS=%d  %d (nss_errno=%d)\n", 
 	       who, status, NSS_STATUS_SUCCESS, nss_errno);
 }
@@ -352,21 +353,25 @@ static void nss_test_errors(void)
 
 	pwd = getpwnam("nosuchname");
 	if (pwd || last_error != NSS_STATUS_NOTFOUND) {
+		total_errors++;
 		printf("ERROR Non existant user gave error %d\n", last_error);
 	}
 
 	pwd = getpwuid(0xFFF0);
 	if (pwd || last_error != NSS_STATUS_NOTFOUND) {
+		total_errors++;
 		printf("ERROR Non existant uid gave error %d\n", last_error);
 	}
 
 	grp = getgrnam("nosuchgroup");
 	if (grp || last_error != NSS_STATUS_NOTFOUND) {
+		total_errors++;
 		printf("ERROR Non existant group gave error %d\n", last_error);
 	}
 
 	grp = getgrgid(0xFFF0);
 	if (grp || last_error != NSS_STATUS_NOTFOUND) {
+		total_errors++;
 		printf("ERROR Non existant gid gave error %d\n", last_error);
 	}
 }
@@ -380,5 +385,7 @@ static void nss_test_errors(void)
 	nss_test_groups();
 	nss_test_errors();
 
-	return 0;
+	printf("total_errors=%d\n", total_errors);
+
+	return total_errors;
 }
