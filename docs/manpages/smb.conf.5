@@ -270,6 +270,9 @@ personality".
 your NIS auto.map entry.  If you have not compiled Samba with -DAUTOMOUNT
 then this value will be the same as %L.
 
+%R = the selected protocol level after protocol negotiation. As of 
+Samba 1.9.18 it can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1.
+
 %d = The process id of the current server process
 
 %a = the architecture of the remote machine. Only some are recognised,
@@ -448,8 +451,6 @@ password server
 preferred master
 
 preload
-
-printing
 
 printcap name
 
@@ -641,6 +642,8 @@ print command
 printer driver
 
 printer driver location
+
+printing
 
 print ok
 
@@ -2864,7 +2867,7 @@ Related paramerers.
 .B printer driver file
 
 
-.SS printing (G)
+.SS printing (S)
 This parameters controls how printer status information is interpreted
 on your system, and also affects the default values for the "print
 command", "lpq command" and "lprm command".
@@ -2876,6 +2879,7 @@ bsd", "printing = sysv", "printing = hpux", "printing = aix",
 To see what the defaults are for the other print commands when using
 these three options use the "testparm" program.
 
+As of version 1.9.18 of Samba this option can be set on a per printer basis
 
 .SS protocol (G)
 The value of the parameter (a string) is the highest protocol level that will

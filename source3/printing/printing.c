@@ -832,7 +832,7 @@ static BOOL parse_lpq_entry(int snum,char *line,
 {
   BOOL ret;
 
-  switch (lp_printing())
+  switch (lp_printing(snum))
     {
     case PRINT_SYSV:
       ret = parse_lpq_sysv(line,buf,first);
