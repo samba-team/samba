@@ -319,7 +319,7 @@ void E_P24(uchar *p21, uchar *c8, uchar *p24)
 	smbhash(p24+16, c8, p21+14, 1);
 }
 
-void D_P16(uchar *p14, uchar *in, uchar *out)
+void D_P16(const uchar *p14, const uchar *in, uchar *out)
 {
 	smbhash(out, in, p14, 0);
         smbhash(out+8, in+8, p14+7, 0);

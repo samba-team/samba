@@ -1,9 +1,5 @@
 
 #if 0
-	BOOL samr_chgpasswd_user( struct cli_connection *con, 
-			const char *srv_name, const char *user_name,
-			const char nt_newpass[516], const uchar nt_oldhash[16],
-			const char lm_newpass[516], const uchar lm_oldhash[16]);
 	BOOL samr_unknown_38(struct cli_connection *con, const char *srv_name);
 	BOOL samr_query_dom_info(  POLICY_HND *domain_pol, uint16 switch_value,
 					SAM_UNK_CTR *ctr);
@@ -1411,27 +1407,31 @@ uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol,
 	return status;
 }
 
-#if 0
-
 /*******************************************************************
  samr_reply_lookup_names
  ********************************************************************/
-uint32 _samr_lookup_names(const SAMR_Q_LOOKUP_NAMES *q_u,
-				prs_struct *rdata)
+uint32 _samr_lookup_names(POLICY_HND *pol,
+				
+			uint32 num_names1,
+			uint32 flags,
+			uint32 ptr,
+			const UNISTR2 *uni_name,
+
+			uint32 *num_rids1,
+			uint32 rid[MAX_SAM_ENTRIES],
+			uint32 *num_types1,
+			uint8 type[MAX_SAM_ENTRIES] )
 {
-	uint32 rid [MAX_SAM_ENTRIES];
-	uint8  type[MAX_SAM_ENTRIES];
 	uint32 status     = 0;
 	int i;
 	int num_rids = num_names1;
 	DOM_SID pol_sid;
 	fstring tmp;
-
-	SAMR_R_LOOKUP_NAMES r_u;
+	BOOL found_one = False;
 
 	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
 
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &pol, &pol_sid))
+	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), pol, &pol_sid))
 	{
 		status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
@@ -1447,18 +1447,20 @@ uint32 _samr_lookup_names(const SAMR_Q_LOOKUP_NAMES *q_u,
 
 	SMB_ASSERT_ARRAY(uni_name, num_rids);
 
-	for (i = 0; i < num_rids && status == 0; i++)
+	for (i = 0; i < num_rids; i++)
 	{
 		DOM_SID sid;
 		fstring name;
+		uint32 status1;
 		unistr2_to_ascii(name, &uni_name[i], sizeof(name)-1);
 
-		status = lookup_name(name, &sid, &(type[i]));
-		if (status == 0x0)
+		status1 = lookup_name(name, &sid, &(type[i]));
+		if (status1 == 0x0)
 		{
+			found_one = True;
 			sid_split_rid(&sid, &rid[i]);
 		}
-		if ((status != 0x0) || !sid_equal(&pol_sid, &sid))
+		if ((status1 != 0x0) || !sid_equal(&pol_sid, &sid))
 		{
 			rid [i] = 0xffffffff;
 			type[i] = SID_NAME_UNKNOWN;
@@ -1467,53 +1469,40 @@ uint32 _samr_lookup_names(const SAMR_Q_LOOKUP_NAMES *q_u,
 		sid_to_string(tmp, &sid);
 		DEBUG(10,("name: %s sid: %s rid: %x type: %d\n",
 			name, tmp, rid[i], type[i]));
-		
 	}
 
-	make_samr_r_lookup_names(&r_u, num_rids, rid, type, status);
+	if (!found_one)
+	{
+		status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+	}
+	else
+	{
+		(*num_rids1) = num_rids;
+		(*num_types1) = num_rids;
+	}
 
-	/* store the response in the SMB stream */
-	samr_io_r_lookup_names("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
+	return status;
 }
 
 /*******************************************************************
  samr_reply_chgpasswd_user
  ********************************************************************/
-uint32 _samr_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
-				prs_struct *rdata)
+uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
+				const UNISTR2 *uni_user_name,
+				const char nt_newpass[516],
+				const uchar nt_oldhash[16],
+				const char lm_newpass[516],
+				const uchar lm_oldhash[16])
 {
-	SAMR_R_CHGPASSWD_USER r_u;
 	uint32 status = 0x0;
 	fstring user_name;
 	fstring wks;
-	uchar *lm_newpass = NULL;
-	uchar *nt_newpass = NULL;
-	uchar *lm_oldhash = NULL;
-	uchar *nt_oldhash = NULL;
 
-	unistr2_to_ascii(user_name, &uni_user_name, sizeof(user_name)-1);
-	unistr2_to_ascii(wks, &uni_dest_host, sizeof(wks)-1);
+	unistr2_to_ascii(user_name, uni_user_name, sizeof(user_name)-1);
+	unistr2_to_ascii(wks, uni_dest_host, sizeof(wks)-1);
 
 	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
-	if (lm_newpass.ptr)
-	{
-		lm_newpass = lm_newpass.pass;
-	}
-	if (lm_oldhash.ptr)
-	{
-		lm_oldhash = lm_oldhash.hash;
-	}
-	if (nt_newpass.ptr)
-	{
-        	nt_newpass = nt_newpass.pass;
-	}
-	if (nt_oldhash.ptr)
-	{
-        	nt_oldhash = nt_oldhash.hash;
-        }
 	if (!pass_oem_change(user_name,
 	                     lm_newpass, lm_oldhash,
 	                     nt_newpass, nt_oldhash))
@@ -1521,14 +1510,10 @@ uint32 _samr_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 	}
 
-	make_samr_r_chgpasswd_user(&r_u, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_chgpasswd_user("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_chgpasswd_user: %d\n", __LINE__));
+	return status;
 }
 
+#if 0
 
 /*******************************************************************
  samr_reply_unknown_38

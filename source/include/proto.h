@@ -998,7 +998,7 @@ void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24],
 void smbhash(uchar *out, const uchar *in, const uchar *key, int forw);
 void E_P16(uchar *p14,uchar *p16);
 void E_P24(uchar *p21, uchar *c8, uchar *p24);
-void D_P16(uchar *p14, uchar *in, uchar *out);
+void D_P16(const uchar *p14, const uchar *in, uchar *out);
 void E_old_pw_hash( const uchar *p14, const uchar *in, uchar *out);
 void cred_hash1(uchar *out,uchar *in,uchar *key);
 void cred_hash2(uchar *out,uchar *in,uchar *key);
@@ -4286,10 +4286,23 @@ uint32 _samr_query_useraliases(const POLICY_HND *pol,
 uint32 _samr_delete_dom_alias(POLICY_HND *alias_pol);
 uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol, 
 				uint32 *num_mem, DOM_SID2 **sid);
-uint32 _samr_lookup_names(const SAMR_Q_LOOKUP_NAMES *q_u,
-				prs_struct *rdata);
-uint32 _samr_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
-				prs_struct *rdata);
+uint32 _samr_lookup_names(POLICY_HND *pol,
+				
+			uint32 num_names1,
+			uint32 flags,
+			uint32 ptr,
+			const UNISTR2 *uni_name,
+
+			uint32 *num_rids1,
+			uint32 rid[MAX_SAM_ENTRIES],
+			uint32 *num_types1,
+			uint8 type[MAX_SAM_ENTRIES] );
+uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
+				const UNISTR2 *uni_user_name,
+				const char nt_newpass[516],
+				const uchar nt_oldhash[16],
+				const char lm_newpass[516],
+				const uchar lm_oldhash[16]);
 uint32 _samr_unknown_38(SAMR_Q_UNKNOWN_38 *q_u,
 				prs_struct *rdata);
 uint32 _samr_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
@@ -4339,14 +4352,14 @@ BOOL last_challenge(unsigned char *challenge);
 
 /*The following definitions come from  smbd/chgpasswd.c  */
 
-BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
-BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
+BOOL chgpasswd(const char *_name,char *oldpass,char *newpass, BOOL as_root);
+BOOL chgpasswd(const char *name,char *oldpass,char *newpass, BOOL as_root);
 BOOL check_lanman_password(char *user, uchar *pass1, 
                            uchar *pass2, struct smb_passwd **psmbpw);
 BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2);
-BOOL pass_oem_change(char *user,
-			uchar *lmdata, uchar *lmhash,
-			uchar *ntdata, uchar *nthash);
+BOOL pass_oem_change(const char *user,
+			const uchar *lmdata, const uchar *lmhash,
+			const uchar *ntdata, const uchar *nthash);
 BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd,
 				BOOL unicode, BOOL override);
 BOOL update_smbpassword_file(char *user, char *password);

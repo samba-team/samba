@@ -511,130 +511,27 @@ static void api_samr_query_aliasmem( rpcsrv_struct *p, prs_struct *data, prs_str
 }
 
 /*******************************************************************
- samr_reply_lookup_names
- ********************************************************************/
-static void samr_reply_lookup_names(const SAMR_Q_LOOKUP_NAMES *q_u,
-				prs_struct *rdata)
-{
-	uint32 rid [MAX_SAM_ENTRIES];
-	uint8  type[MAX_SAM_ENTRIES];
-	uint32 status     = 0;
-	int i;
-	int num_rids = q_u->num_names1;
-	DOM_SID pol_sid;
-	fstring tmp;
-
-	SAMR_R_LOOKUP_NAMES r_u;
-
-	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
-
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->pol, &pol_sid))
-	{
-		status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;
-	}
-
-	sid_to_string(tmp, &pol_sid);
-	DEBUG(5,("pol_sid: %s\n", tmp));
-
-	if (num_rids > MAX_SAM_ENTRIES)
-	{
-		num_rids = MAX_SAM_ENTRIES;
-		DEBUG(5,("samr_lookup_names: truncating entries to %d\n", num_rids));
-	}
-
-	SMB_ASSERT_ARRAY(q_u->uni_name, num_rids);
-
-	for (i = 0; i < num_rids && status == 0; i++)
-	{
-		DOM_SID sid;
-		fstring name;
-		unistr2_to_ascii(name, &q_u->uni_name[i], sizeof(name)-1);
-
-		status = lookup_name(name, &sid, &(type[i]));
-		if (status == 0x0)
-		{
-			sid_split_rid(&sid, &rid[i]);
-		}
-		if ((status != 0x0) || !sid_equal(&pol_sid, &sid))
-		{
-			rid [i] = 0xffffffff;
-			type[i] = SID_NAME_UNKNOWN;
-		}
-
-		sid_to_string(tmp, &sid);
-		DEBUG(10,("name: %s sid: %s rid: %x type: %d\n",
-			name, tmp, rid[i], type[i]));
-		
-	}
-
-	make_samr_r_lookup_names(&r_u, num_rids, rid, type, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_lookup_names("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
-}
-
-/*******************************************************************
  api_samr_lookup_names
  ********************************************************************/
 static void api_samr_lookup_names( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_LOOKUP_NAMES q_u;
+	SAMR_R_LOOKUP_NAMES r_u;
+
+	uint32 rid [MAX_SAM_ENTRIES];
+	uint8  type[MAX_SAM_ENTRIES];
+	uint32 num_rids  = 0;
+	uint32 num_types = 0;
+
+	uint32 status     = 0;
+
 	samr_io_q_lookup_names("", &q_u, data, 0);
-	samr_reply_lookup_names(&q_u, rdata);
+	status = _samr_lookup_names(&q_u.pol, q_u.num_names1,
+	                             q_u.flags, q_u.ptr, q_u.uni_name,
+	                             &num_rids, rid, &num_types, type);
 	samr_free_q_lookup_names(&q_u);
-}
-
-/*******************************************************************
- samr_reply_chgpasswd_user
- ********************************************************************/
-static void samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
-				prs_struct *rdata)
-{
-	SAMR_R_CHGPASSWD_USER r_u;
-	uint32 status = 0x0;
-	fstring user_name;
-	fstring wks;
-	uchar *lm_newpass = NULL;
-	uchar *nt_newpass = NULL;
-	uchar *lm_oldhash = NULL;
-	uchar *nt_oldhash = NULL;
-
-	unistr2_to_ascii(user_name, &q_u->uni_user_name, sizeof(user_name)-1);
-	unistr2_to_ascii(wks, &q_u->uni_dest_host, sizeof(wks)-1);
-
-	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
-
-	if (q_u->lm_newpass.ptr)
-	{
-		lm_newpass = q_u->lm_newpass.pass;
-	}
-	if (q_u->lm_oldhash.ptr)
-	{
-		lm_oldhash = q_u->lm_oldhash.hash;
-	}
-	if (q_u->nt_newpass.ptr)
-	{
-        	nt_newpass = q_u->nt_newpass.pass;
-	}
-	if (q_u->nt_oldhash.ptr)
-	{
-        	nt_oldhash = q_u->nt_oldhash.hash;
-        }
-	if (!pass_oem_change(user_name,
-	                     lm_newpass, lm_oldhash,
-	                     nt_newpass, nt_oldhash))
-	{
-		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
-	}
-
-	make_samr_r_chgpasswd_user(&r_u, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_chgpasswd_user("", &r_u, rdata, 0);
-
-	DEBUG(5,("samr_chgpasswd_user: %d\n", __LINE__));
+	make_samr_r_lookup_names(&r_u, num_rids, rid, type, status);
+	samr_io_r_lookup_names("", &r_u, rdata, 0);
 }
 
 /*******************************************************************
@@ -643,8 +540,37 @@ static void samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 static void api_samr_chgpasswd_user( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_CHGPASSWD_USER q_u;
+	SAMR_R_CHGPASSWD_USER r_u;
+	uchar *lm_newpass = NULL;
+	uchar *nt_newpass = NULL;
+	uchar *lm_oldhash = NULL;
+	uchar *nt_oldhash = NULL;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	samr_io_q_chgpasswd_user("", &q_u, data, 0);
-	samr_reply_chgpasswd_user(&q_u, rdata);
+	if (q_u.lm_newpass.ptr)
+	{
+		lm_newpass = q_u.lm_newpass.pass;
+	}
+	if (q_u.lm_oldhash.ptr)
+	{
+		lm_oldhash = q_u.lm_oldhash.hash;
+	}
+	if (q_u.nt_newpass.ptr)
+	{
+        	nt_newpass = q_u.nt_newpass.pass;
+	}
+	if (q_u.nt_oldhash.ptr)
+	{
+        	nt_oldhash = q_u.nt_oldhash.hash;
+        }
+	r_u.status = _samr_chgpasswd_user(&q_u.uni_dest_host,
+	                          &q_u.uni_user_name,
+	                          lm_newpass, nt_newpass,
+	                          lm_oldhash, nt_oldhash);
+	samr_io_r_chgpasswd_user("", &r_u, rdata, 0);
 }
 
 

@@ -1283,7 +1283,7 @@ SAMR_Q_LOOKUP_NAMES - do a conversion from Names to RIDs+types.
 /* SAMR_Q_LOOKUP_NAMES */
 typedef struct q_samr_lookup_names_info
 {
-    POLICY_HND pol;       /* policy handle */
+	POLICY_HND pol;       /* policy handle */
 
 	uint32 num_names1;      /* number of names being looked up */
 	uint32 flags;           /* 0x0000 03e8 - unknown */

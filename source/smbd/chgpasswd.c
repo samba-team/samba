@@ -106,13 +106,17 @@ static int findpty(char **slave)
   return (-1);
 }
 
-static int dochild(int master,char *slavedev, char *name, char *passwordprogram, BOOL as_root)
+static int dochild(int master,char *slavedev, const char *_name, char *passwordprogram, BOOL as_root)
 {
   int slave;
   struct termios stermios;
-  const struct passwd *pass = Get_Pwnam(name,True);
+  const struct passwd *pass;
   int gid;
   int uid;
+
+	fstring name;
+	fstrcpy(name, _name);
+  pass = Get_Pwnam(name,True);
 
   if (pass == NULL) {
     DEBUG(0,("dochild: user name %s doesn't exist in the UNIX password database.\n",
@@ -297,7 +301,7 @@ static int talktochild(int master, char *chatsequence)
 }
 
 
-static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL as_root)
+static BOOL chat_with_program(char *passwordprogram,const char *name,char *chatsequence, BOOL as_root)
 {
   char *slavedev;
   int master;
@@ -372,13 +376,15 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
 }
 
 
-BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
+BOOL chgpasswd(const char *_name,char *oldpass,char *newpass, BOOL as_root)
 {
   pstring passwordprogram;
   pstring chatsequence;
   int i;
   int len;
+	fstring name;
 
+	fstrcpy(name, _name);
   strlower(name); 
   DEBUG(3,("Password change for user: %s\n",name));
 
@@ -446,7 +452,7 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 }
 
 #else /* ALLOW_CHANGE_PASSWORD */
-BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
+BOOL chgpasswd(const char *name,char *oldpass,char *newpass, BOOL as_root)
 {
   DEBUG(0,("Password changing not compiled in (user=%s)\n",name));
   return(False);
@@ -567,9 +573,9 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2
  but does use the lm OEM password to check the nt hashed-hash.
 
 ************************************************************/
-static BOOL check_oem_password(char *user,
-			uchar *lmdata, uchar *lmhash,
-			uchar *ntdata, uchar *nthash,
+static BOOL check_oem_password(const char *user,
+			const uchar *_lmdata, const uchar *lmhash,
+			const uchar *_ntdata, const uchar *nthash,
                         struct smb_passwd **psmbpw, UNISTR2 *new_passwd)
 {
 	static uchar null_pw[16];
@@ -581,8 +587,20 @@ static BOOL check_oem_password(char *user,
 	uchar unenc_old_pw[16];
 	char no_pw[2];
 	uint32 len;
+	uchar lmdata[512];
+	uchar ntdata[512];
 
-	BOOL nt_pass_set = (ntdata != NULL && nthash != NULL);
+	BOOL nt_pass_set = (_ntdata != NULL && nthash != NULL);
+
+	if (_lmdata != NULL)
+	{
+		memcpy(lmdata, _lmdata, sizeof(lmdata));
+	}
+
+	if (_ntdata != NULL)
+	{
+		memcpy(ntdata, _ntdata, sizeof(ntdata));
+	}
 
 	become_root(False);
 	(*psmbpw) = smbpw = getsmbpwnam(user);
@@ -710,9 +728,9 @@ static BOOL check_oem_password(char *user,
 /***********************************************************
  Code to check and change the OEM hashed password.
 ************************************************************/
-BOOL pass_oem_change(char *user,
-			uchar *lmdata, uchar *lmhash,
-			uchar *ntdata, uchar *nthash)
+BOOL pass_oem_change(const char *user,
+			const uchar *lmdata, const uchar *lmhash,
+			const uchar *ntdata, const uchar *nthash)
 {
 	UNISTR2 new_passwd;
 	struct smb_passwd *sampw = NULL;
