@@ -157,6 +157,8 @@ static struct policy *find_policy_by_hnd_internal(pipes_struct *p, POLICY_HND *h
 	DEBUG(4,("Policy not found: "));
 	dump_data(4, (char *)hnd, sizeof(*hnd));
 
+	p->bad_handle_fault_state = True;
+
 	return NULL;
 }
 

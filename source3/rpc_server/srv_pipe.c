@@ -1188,6 +1188,13 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		return False;
 	}
 
+	if (p->bad_handle_fault_state) {
+		DEBUG(4,("api_rpcTNP: bad handle fault return.\n"));
+		p->bad_handle_fault_state = False;
+		setup_fault_pdu(p, NT_STATUS(0x1C00001A));
+		return True;
+	}
+
 	slprintf(name, sizeof(name)-1, "out_%s", rpc_name);
 	offset2 = prs_offset(&p->out_data.rdata);
 	prs_set_offset(&p->out_data.rdata, offset1);
