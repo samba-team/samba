@@ -722,6 +722,7 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LS
 		if ( (map.privilege & privs[i].se_priv) == privs[i].se_priv) {
 			
 			set=(LUID_ATTR *)talloc_realloc(p->mem_ctx, set, (count+1)*sizeof(LUID_ATTR));
+			if (set == NULL) return NT_STATUS_NO_MEMORY;
 
 			set[count].luid.low=privs[i].se_priv;
 			set[count].luid.high=1;

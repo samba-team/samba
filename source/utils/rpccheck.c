@@ -40,6 +40,7 @@ main()
 	DEBUGLEVEL=10;
 
 	ctx=talloc_init();
+	if (!ctx) exit(1);
 
 	prs_init(&ps, 1600, 4, ctx, MARSHALL);
 
