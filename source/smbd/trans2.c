@@ -2400,7 +2400,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		c_time &= ~1;
 		sbuf.st_atime &= ~1;
-		sbuf.st_mtime &= ~1;
+		sbuf.st_ctime &= ~1;
 		sbuf.st_mtime &= ~1;
 	}
 
@@ -2859,70 +2859,6 @@ NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
 
 	unlock_share_entry_fsp(fsp);
 	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- Returns true if this pathname is within the share, and thus safe.
-****************************************************************************/
-
-static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in)
-{
-#ifdef PATH_MAX
-	char resolved_name[PATH_MAX+1];
-#else
-	pstring resolved_name;
-#endif
-	fstring last_component;
-	pstring link_dest;
-	pstring link_test;
-	char *p;
-	BOOL bad_path = False;
-	SMB_STRUCT_STAT sbuf;
-
-	pstrcpy(link_dest, link_dest_in);
-	unix_convert(link_dest,conn,0,&bad_path,&sbuf);
-
-	p = strrchr_m(link_dest, '/');
-	if (p) {
-		fstrcpy(last_component, p+1);
-		*p = '\0';
-	} else {
-		fstrcpy(last_component, link_dest);
-		pstrcpy(link_dest, "./");
-	}
-		
-	if (SMB_VFS_REALPATH(conn,link_dest,resolved_name) == NULL)
-		return -1;
-
-	DEBUG(10,("ensure_link_is_safe: realpath: link_dest (%s) -> real name (%s)\n",
-			link_dest, resolved_name ));
-
-	pstrcpy(link_dest, resolved_name);
-	pstrcat(link_dest, "/");
-	pstrcat(link_dest, last_component);
-
-	if (*link_dest != '/') {
-		/* Relative path. */
-		pstrcpy(link_test, conn->connectpath);
-		pstrcat(link_test, "/");
-		pstrcat(link_test, link_dest);
-	} else {
-		pstrcpy(link_test, link_dest);
-	}
-
-	DEBUG(10,("ensure_link_is_safe: connectpath = %s, absolute resolved path = %s\n",
-		conn->connectpath, link_test ));
-
-	/*
-	 * Check if the link is within the share.
-	 */
-
-	if (strncmp(conn->connectpath, link_test, strlen(conn->connectpath))) {
-		errno = EACCES;
-		return -1;
-	}
-
-	return 0;
 }
 
 /****************************************************************************
@@ -3506,12 +3442,16 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), -1, STR_TERMINATE);
 
 			/* !widelinks forces the target path to be within the share. */
+			/* This means we can interpret the target as a pathname. */
 			if (!lp_widelinks(SNUM(conn))) {
 				pstring rel_name;
 				char *last_dirp = NULL;
 
 				unix_format(link_target);
-
+				if (*link_target == '/') {
+					/* No absolute paths allowed. */
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
 				pstrcpy(rel_name, newname);
 				last_dirp = strrchr_m(rel_name, '/');
 				if (last_dirp) {
@@ -3520,11 +3460,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 					pstrcpy(rel_name, "./");
 				}
 				pstrcat(rel_name, link_target);
-				if (ensure_link_is_safe(conn, rel_name) != 0) {
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
-				}
 
-				if (check_name(link_target, conn)) {
+				if (!check_name(rel_name, conn)) {
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
 			}
