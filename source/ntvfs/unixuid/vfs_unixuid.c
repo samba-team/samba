@@ -35,7 +35,7 @@ static NTSTATUS sid_to_unixuid(struct ntvfs_module_context *ntvfs,
 			       struct smbsrv_request *req, struct dom_sid *sid, uid_t *uid)
 {
 	struct unixuid_private *private = ntvfs->private_data;
-	const char *attrs[] = { "sAMAccountName", "UnixID", "UnixName", "sAMAccountType", NULL };
+	const char *attrs[] = { "sAMAccountName", "unixID", "unixName", "sAMAccountType", NULL };
 	int ret;
 	const char *s;
 	void *ctx;
@@ -47,7 +47,7 @@ static NTSTATUS sid_to_unixuid(struct ntvfs_module_context *ntvfs,
 
 	ret = samdb_search(private->samctx, ctx, NULL, &res, attrs, "objectSid=%s", sidstr);
 	if (ret != 1) {
-		DEBUG(2,("Unable to map sid %s to unix uid\n", sidstr));
+		DEBUG(0,("sid_to_unixuid: unable to find sam record for sid %s\n", sidstr));
 		talloc_free(ctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -60,7 +60,7 @@ static NTSTATUS sid_to_unixuid(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* first try to get the uid directly */
-	s = samdb_result_string(res[0], "UnixID", NULL);
+	s = samdb_result_string(res[0], "unixID", NULL);
 	if (s != NULL) {
 		*uid = strtoul(s, NULL, 0);
 		talloc_free(ctx);
@@ -68,11 +68,11 @@ static NTSTATUS sid_to_unixuid(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* next try via the UnixName attribute */
-	s = samdb_result_string(res[0], "UnixName", NULL);
+	s = samdb_result_string(res[0], "unixName", NULL);
 	if (s != NULL) {
 		struct passwd *pwd = getpwnam(s);
 		if (!pwd) {
-			DEBUG(0,("UnixName %s for sid %s does not exist as a local user\n", s, sidstr));
+			DEBUG(0,("unixName %s for sid %s does not exist as a local user\n", s, sidstr));
 			talloc_free(ctx);
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -109,7 +109,7 @@ static NTSTATUS sid_to_unixgid(struct ntvfs_module_context *ntvfs,
 			       struct smbsrv_request *req, struct dom_sid *sid, gid_t *gid)
 {
 	struct unixuid_private *private = ntvfs->private_data;
-	const char *attrs[] = { "sAMAccountName", "UnixID", "UnixName", "sAMAccountType", NULL };
+	const char *attrs[] = { "sAMAccountName", "unixID", "unixName", "sAMAccountType", NULL };
 	int ret;
 	const char *s;
 	void *ctx;
@@ -121,7 +121,7 @@ static NTSTATUS sid_to_unixgid(struct ntvfs_module_context *ntvfs,
 
 	ret = samdb_search(private->samctx, ctx, NULL, &res, attrs, "objectSid=%s", sidstr);
 	if (ret != 1) {
-		DEBUG(2,("Unable to map sid %s to unix gid\n", sidstr));
+		DEBUG(0,("sid_to_unixgid: unable to find sam record for sid %s\n", sidstr));
 		talloc_free(ctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -134,7 +134,7 @@ static NTSTATUS sid_to_unixgid(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* first try to get the gid directly */
-	s = samdb_result_string(res[0], "UnixID", NULL);
+	s = samdb_result_string(res[0], "unixID", NULL);
 	if (s != NULL) {
 		*gid = strtoul(s, NULL, 0);
 		talloc_free(ctx);
@@ -142,11 +142,11 @@ static NTSTATUS sid_to_unixgid(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* next try via the UnixName attribute */
-	s = samdb_result_string(res[0], "UnixName", NULL);
+	s = samdb_result_string(res[0], "unixName", NULL);
 	if (s != NULL) {
 		struct group *grp = getgrnam(s);
 		if (!grp) {
-			DEBUG(0,("UnixName '%s' for sid %s does not exist as a local group\n", s, sidstr));
+			DEBUG(0,("unixName '%s' for sid %s does not exist as a local group\n", s, sidstr));
 			talloc_free(ctx);
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -708,10 +708,6 @@ NTSTATUS ntvfs_unixuid_init(void)
 
 	ZERO_STRUCT(ops);
 
-	/* fill in the name and type */
-	ops.name = "unixuid";
-	ops.type = NTVFS_DISK;
-	
 	/* fill in all the operations */
 	ops.connect = unixuid_connect;
 	ops.disconnect = unixuid_disconnect;
@@ -742,12 +738,21 @@ NTSTATUS ntvfs_unixuid_init(void)
 	ops.trans = unixuid_trans;
 	ops.logoff = unixuid_logoff;
 
-	/* register ourselves with the NTVFS subsystem. */
-	ret = register_backend("ntvfs", &ops);
+	ops.name = "unixuid";
 
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,("Failed to register unixuid backend!\n"));
-	}
+	/* we register under all 3 backend types, as we are not type specific */
+	ops.type = NTVFS_DISK;	
+	ret = register_backend("ntvfs", &ops);
+	if (!NT_STATUS_IS_OK(ret)) goto failed;
+
+	ops.type = NTVFS_PRINT;	
+	ret = register_backend("ntvfs", &ops);
+	if (!NT_STATUS_IS_OK(ret)) goto failed;
+
+	ops.type = NTVFS_IPC;	
+	ret = register_backend("ntvfs", &ops);
+	if (!NT_STATUS_IS_OK(ret)) goto failed;
 	
+failed:
 	return ret;
 }
