@@ -1,0 +1,78 @@
+<chapter id="groupmapping">
+<chapterinfo>
+	<author>
+		<firstname>Jean François</firstname><surname>Micouleau</surname>
+	</author>
+</chapterinfo>
+
+<title>Group mapping HOWTO</title>
+
+<para> 
+Starting with Samba 3.0 alpha 2, a new group mapping function is available. The
+current method (likely to change) to manage the groups is a new command called
+<command>smbgroupedit</command>.
+</para>
+
+<para>
+The first immediate reason to use the group mapping on a PDC, is that
+the <command>domain admin group</command> of <filename>smb.conf</filename> is 
+now gone. This parameter was used to give the listed users local admin rights 
+on their workstations. It was some magic stuff that simply worked but didn't
+scale very well for complex setups.
+</para>
+
+<para>
+Let me explain how it works on NT/W2K, to have this magic fade away.
+When installing NT/W2K on a computer, the installer program creates some users
+and groups. Notably the 'Administrators' group, and gives to that group some
+privileges like the ability to change the date and time or to kill any process
+(or close too) running on the local machine. The 'Administrator' user is a
+member of the 'Administrators' group, and thus 'inherit' the 'Administrators'
+group privileges. If a 'joe' user is created and become a member of the
+'Administrator' group, 'joe' has exactly the same rights as 'Administrator'.
+</para>
+
+<para>
+When a NT/W2K machine is joined to a domain, during that phase, the "Domain
+Administrators' group of the PDC is added to the 'Administrators' group of the
+workstation. Every members of the 'Domain Administrators' group 'inherit' the
+rights of the 'Administrators' group when logging on the workstation.
+</para>
+
+<para>
+You are now wondering how to make some of your samba PDC users members of the
+'Domain Administrators' ? That's really easy.
+</para>
+
+<orderedlist> 
+<listitem><para>create a unix group (usually in <filename>/etc/group</filename>), let's call it domadm</para></listitem>
+<listitem><para>add to this group the users that must be Administrators. For example if you want joe,john and mary, your entry in <filename>/etc/group</filename> will look like:</para>
+
+<para><programlisting>
+domadm:x:502:joe,john,mary
+</programlisting></para>
+
+</listitem>
+
+<listitem><para>Map this domadm group to the <command>domain admins</command> group by running the command:</para>
+
+<para><command>smbgroupedit -c "Domain Admins" -u domadm</command></para></listitem>
+
+</orderedlist>
+
+<para>You're set, joe, john and mary are domain administrators !</para>
+
+<para>
+Like the Domain Admins group, you can map any arbitrary Unix group to any NT
+group. You can also make any Unix group a domain group. For example, on a domain
+member machine (an NT/W2K or a samba server running winbind), you would like to
+give access to a certain directory to some users who are member of a group on
+your samba PDC. Flag that group as a domain group by running:
+</para>
+
+<para><command>smbgroupedit -a unixgroup -td</command></para>
+
+<para>You can list the various groups in the mapping database like this</para>
+<para><command>smbgroupedit -v</command></para>
+
+</chapter>

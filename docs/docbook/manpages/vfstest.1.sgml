@@ -52,7 +52,8 @@
 		<term>-d|--debug=debuglevel</term>
 		<listitem><para>set the debuglevel. Debug level 0 is the lowest 
 		and 100 being the highest. This should be set to 100 if you are
-		planning on submitting a bug report to the Samba team (see <filename>BUGS.txt</filename>). 
+		planning on submitting a bug report to the Samba team (see 
+		<filename>BUGS.txt</filename>). 
 		</para></listitem>
 		</varlistentry>
 		
