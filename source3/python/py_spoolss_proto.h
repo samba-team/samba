@@ -63,6 +63,7 @@ PyObject *spoolss_hnd_endpageprinter(PyObject *self, PyObject *args, PyObject *k
 PyObject *spoolss_hnd_startdocprinter(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_hnd_enddocprinter(PyObject *self, PyObject *args, PyObject *kw);
 PyObject *spoolss_hnd_writeprinter(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_hnd_addjob(PyObject *self, PyObject *args, PyObject *kw);
 
 /* The following definitions come from python/py_spoolss_jobs_conv.c  */
 
