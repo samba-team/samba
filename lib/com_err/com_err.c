@@ -108,7 +108,7 @@ com_err (const char *whoami,
     va_list ap;
     va_start(ap, fmt);
     com_err_va (whoami, code, fmt, ap);
-    va_end(pvar);
+    va_end(ap);
 }
 
 errf
