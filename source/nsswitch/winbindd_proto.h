@@ -5,9 +5,25 @@
 
 /*The following definitions come from  nsswitch/winbindd.c  */
 
-void do_print_client_info(void);
-void do_flush_cache(void);
 int main(int argc, char **argv);
+
+/*The following definitions come from  nsswitch/winbindd_cache.c  */
+
+void winbindd_cache_init(void);
+void winbindd_fill_user_cache(char *domain_name, 
+                              struct acct_info *sam_entries,
+                              int num_sam_entries);
+void expire_cache_data(char *domain_name, char *cache_type);
+void winbindd_fill_group_cache(char *domain_name,
+                               struct acct_info *sam_entries,
+                               int num_sam_entries);
+BOOL winbindd_fetch_user_cache(char *domain_name,
+                               struct acct_info **sam_entries,
+                               int *num_entries);
+BOOL winbindd_fetch_group_cache(char *domain_name,
+                                struct acct_info **sam_entries,
+                                int *num_entries);
+void winbindd_flush_cache(void);
 
 /*The following definitions come from  nsswitch/winbindd_group.c  */
 
