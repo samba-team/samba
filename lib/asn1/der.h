@@ -28,8 +28,8 @@ enum {
 /**/
 
 struct krb5_data {
-  unsigned len;
-  unsigned char *data;
+    size_t len;
+    unsigned char *data;
 };
 
 typedef struct krb5_data krb5_data;
