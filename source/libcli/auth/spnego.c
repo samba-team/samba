@@ -324,7 +324,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		char **mechType;
 		char *my_mechs[] = {NULL, NULL};
 		int i;
-		NTSTATUS nt_status;
+		NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
 
 		if (!in.length) {
 			/* client to produce negTokenInit */
@@ -334,14 +334,17 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		len = spnego_read_data(in, &spnego);
 		
 		if (len == -1) {
+			DEBUG(1, ("Invalid SPNEGO request:\n"));
+			dump_data(1, (const char *)in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
 		/* OK, so it's real SPNEGO, check the packet's the one we expect */
 		if (spnego.type != spnego_state->expected_packet) {
-			spnego_free_data(&spnego);
 			DEBUG(1, ("Invalid SPENGO request: %d, expected %d\n", spnego.type, 
 				  spnego_state->expected_packet));
+			dump_data(1, (const char *)in.data, in.length);
+			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
@@ -419,14 +422,17 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		len = spnego_read_data(in, &spnego);
 		
 		if (len == -1) {
+			DEBUG(1, ("Invalid SPNEGO request:\n"));
+			dump_data(1, (const char *)in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
 		/* OK, so it's real SPNEGO, check the packet's the one we expect */
 		if (spnego.type != spnego_state->expected_packet) {
-			spnego_free_data(&spnego);
 			DEBUG(1, ("Invalid SPENGO request: %d, expected %d\n", spnego.type, 
 				  spnego_state->expected_packet));
+			dump_data(1, (const char *)in.data, in.length);
+			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
@@ -478,14 +484,17 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		len = spnego_read_data(in, &spnego);
 		
 		if (len == -1) {
+			DEBUG(1, ("Invalid SPNEGO request:\n"));
+			dump_data(1, (const char *)in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
 		/* OK, so it's real SPNEGO, check the packet's the one we expect */
 		if (spnego.type != spnego_state->expected_packet) {
-			spnego_free_data(&spnego);
-			DEBUG(1, ("Invalid SPENGO request: %d, expected %d\n", spnego.type, 
+			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
 				  spnego_state->expected_packet));
+			dump_data(1, (const char *)in.data, in.length);
+			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	
@@ -505,6 +514,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		
 		if (NT_STATUS_IS_OK(nt_status) 
 		    && (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED)) {
+		    	DEBUG(1,("gensec_update ok but not accepted\n"));
 			nt_status = NT_STATUS_INVALID_PARAMETER;
 		}
 		
