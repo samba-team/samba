@@ -13,6 +13,7 @@ struct _SMBCSRV {
 	struct cli_state cli;
 	dev_t dev;
 	BOOL no_pathinfo2;
+        BOOL no_nt_session;
 	int server_fd;
 
 	SMBCSRV *next, *prev;
@@ -34,7 +35,7 @@ struct smbc_dir_list {
 struct _SMBCFILE {
 	int cli_fd; 
 	char *fname;
-	off_t offset;
+	SMB_OFF_T offset;
 	struct _SMBCSRV *srv;
 	BOOL file;
 	struct smbc_dir_list *dir_list, *dir_end, *dir_next;
@@ -51,8 +52,17 @@ struct smbc_internal_data {
 	int     _initialized;
 
 	/** INTERNAL: dirent pointer location 
+         *
+         * Leave room for any urlencoded filename and the comment field.
+         *
+         * We really should use sizeof(struct smbc_dirent) plus (NAME_MAX * 3)
+         * plus whatever the max length of a comment is, plus a couple of null
+         * terminators (one after the filename, one after the comment).
+         *
+         * According to <linux/limits.h>, NAME_MAX is 255.  Is it longer
+         * anyplace else?
 	 */
-	char    _dirent[512];  
+	char    _dirent[1024];
 
 	/** INTERNAL: server connection list
 	 */

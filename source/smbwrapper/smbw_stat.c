@@ -69,17 +69,33 @@ BOOL smbw_getatr(struct smbw_server *srv, char *path,
 		 time_t *c_time, time_t *a_time, time_t *m_time,
 		 SMB_INO_T *ino)
 {
+        time_t c_a_m_time;
+        /*
+         * "size" (size_t) is only 32 bits.  Rather than change the interface
+         * in this code as we change cli_qpathinfo2() and cli_getatr() to
+         * support 64-bit file sizes, we'll use a temporary variable and
+         * maintain the interface size_t.  At some point, someone may want to
+         * change the interface as well.  djl
+         */
+        SMB_OFF_T fullsize;
+
 	DEBUG(4,("sending qpathinfo\n"));
 
 	if (!srv->no_pathinfo2 &&
 	    cli_qpathinfo2(&srv->cli, path, c_time, a_time, m_time, NULL,
-			   size, mode, ino)) return True;
+			   &fullsize, mode, ino)) {
+                if (size != NULL) *size = (size_t) fullsize;
+                return True;
+        }
 
 	/* if this is NT then don't bother with the getatr */
 	if (srv->cli.capabilities & CAP_NT_SMBS) return False;
 
-	if (cli_getatr(&srv->cli, path, mode, size, m_time)) {
-		a_time = c_time = m_time;
+	if (cli_getatr(&srv->cli, path, mode, &fullsize, &c_a_m_time)) {
+                if (a_time != NULL) *a_time = c_a_m_time;
+                if (c_time != NULL) *a_time = c_a_m_time;
+                if (m_time != NULL) *a_time = c_a_m_time;
+                if (size != NULL) *size = (size_t) fullsize;
 		srv->no_pathinfo2 = True;
 		return True;
 	}
@@ -129,7 +145,7 @@ int smbw_fstat(int fd, struct stat *st)
 {
 	struct smbw_file *file;
 	time_t c_time, a_time, m_time;
-	size_t size;
+	SMB_OFF_T size;
 	uint16 mode;
 	SMB_INO_T ino = 0;
 

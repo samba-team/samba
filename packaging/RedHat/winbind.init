@@ -26,11 +26,8 @@ CONFIG=/etc/samba/smb.conf
 
 start() {
 	echo -n "Starting Winbind services: "
-	RETVAL=1
-	if [ "`egrep -i '(idmap.*uid|winbind.*uid)' $CONFIG | egrep -v [\#\;]`" ]; then
-		daemon winbindd 
-		RETVAL=$?
-	fi
+	daemon winbindd 
+	RETVAL=$?
 	echo
 	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/winbind || \
 	   RETVAL=1
@@ -38,11 +35,8 @@ start() {
 }	
 stop() {
 	echo -n "Shutting down Winbind services: "
-	RETVAL=1
-	if [ "`egrep -i '(idmap.*uid|winbind.*uid)' $CONFIG | egrep -v [\#\;]`" ]; then
-		killproc winbindd
-		RETVAL=$?
-	fi
+	killproc winbindd
+	RETVAL=$?
 	echo
 	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/winbind
 	return $RETVAL

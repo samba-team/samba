@@ -129,6 +129,19 @@ struct smbc_dirent
 #define SMBC_XATTR_FLAG_REPLACE      0x2 /* fail if attr does not exist */
 
 
+/*
+ * Mappings of the DOS mode bits, as returned by smbc_getxattr() when the
+ * attribute name "system.dos_attr.mode" (or "system.dos_attr.*" or
+ * "system.*") is specified.
+ */
+#define SMBC_DOS_MODE_READONLY       0x01
+#define SMBC_DOS_MODE_HIDDEN         0x02
+#define SMBC_DOS_MODE_SYSTEM         0x04
+#define SMBC_DOS_MODE_VOLUME_ID      0x08
+#define SMBC_DOS_MODE_DIRECTORY      0x10
+#define SMBC_DOS_MODE_ARCHIVE        0x20
+
+
 #ifndef ENOATTR
 # define ENOATTR ENOENT        /* No such attribute */
 #endif
@@ -455,13 +468,73 @@ struct _SMBCCTX {
 	 */
 	struct smbc_server_cache * server_cache;
 
+	int flags;
+	
+        /** user options selections that apply to this session
+         */
+        struct _smbc_options {
+
+                /*
+                 * From how many local master browsers should the list of
+                 * workgroups be retrieved?  It can take up to 12 minutes or
+                 * longer after a server becomes a local master browser, for
+                 * it to have the entire browse list (the list of
+                 * workgroups/domains) from an entire network.  Since a client
+                 * never knows which local master browser will be found first,
+                 * the one which is found first and used to retrieve a browse
+                 * list may have an incomplete or empty browse list.  By
+                 * requesting the browse list from multiple local master
+                 * browsers, a more complete list can be generated.  For small
+                 * networks (few workgroups), it is recommended that this
+                 * value be set to 0, causing the browse lists from all found
+                 * local master browsers to be retrieved and merged.  For
+                 * networks with many workgroups, a suitable value for this
+                 * variable is probably somewhere around 3. (Default: 3).
+                 */
+                int browse_max_lmb_count;
+
+                /*
+                 * There is a difference in the desired return strings from
+                 * smbc_readdir() depending upon whether the filenames are to
+                 * be displayed to the user, or whether they are to be
+                 * appended to the path name passed to smbc_opendir() to call
+                 * a further smbc_ function (e.g. open the file with
+                 * smbc_open()).  In the former case, the filename should be
+                 * in "human readable" form.  In the latter case, the smbc_
+                 * functions expect a URL which must be url-encoded.  Those
+                 * functions decode the URL.  If, for example, smbc_readdir()
+                 * returned a file name of "abc%20def.txt", passing a path
+                 * with this file name attached to smbc_open() would cause
+                 * smbc_open to attempt to open the file "abc def.txt" since
+                 * the %20 is decoded into a space.
+                 *
+                 * Set this option to True if the names returned by
+                 * smbc_readdir() should be url-encoded such that they can be
+                 * passed back to another smbc_ call.  Set it to False if the
+                 * names returned by smbc_readdir() are to be presented to the
+                 * user.
+                 *
+                 * For backwards compatibility, this option defaults to False.
+                 */
+                int urlencode_readdir_entries;
+
+                /*
+                 * Some Windows versions appear to have a limit to the number
+                 * of concurrent SESSIONs and/or TREE CONNECTions.  In
+                 * one-shot programs (i.e. the program runs and then quickly
+                 * ends, thereby shutting down all connections), it is
+                 * probably reasonable to establish a new connection for each
+                 * share.  In long-running applications, the limitation can be
+                 * avoided by using only a single connection to each server,
+                 * and issuing a new TREE CONNECT when the share is accessed.
+                 */
+                int one_share_per_server;
+        } options;
+	
 	/** INTERNAL DATA
 	 * do _NOT_ touch this from your program !
 	 */
 	struct smbc_internal_data * internal;
-
-	int flags;
-	
 };
 
 /* Flags for SMBCCTX->flags */
@@ -1957,5 +2030,76 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv);
 #ifdef __cplusplus
 }
 #endif
+
+/**@ingroup directory
+ * Convert strings of %xx to their single character equivalent.
+ *
+ * @param dest      A pointer to a buffer in which the resulting decoded
+ *                  string should be placed.  This may be a pointer to the
+ *                  same buffer as src_segment.
+ * 
+ * @param src       A pointer to the buffer containing the URL to be decoded.
+ *                  Any %xx sequences herein are converted to their single
+ *                  character equivalent.  Each 'x' must be a valid hexadecimal
+ *                  digit, or that % sequence is left undecoded.
+ *
+ * @param max_dest_len
+ *                  The size of the buffer pointed to by dest_segment.
+ * 
+ * @return          The number of % sequences which could not be converted
+ *                  due to lack of two following hexadecimal digits.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+int
+smbc_urldecode(char *dest, char * src, size_t max_dest_len);
+#ifdef __cplusplus
+}
+#endif
+
+
+/*
+ * Convert any characters not specifically allowed in a URL into their %xx
+ * equivalent.
+ *
+ * @param dest      A pointer to a buffer in which the resulting encoded
+ *                  string should be placed.  Unlike smbc_urldecode(), this
+ *                  must be a buffer unique from src.
+ * 
+ * @param src       A pointer to the buffer containing the string to be encoded.
+ *                  Any character not specifically allowed in a URL is converted
+ *                  into its hexadecimal value and encoded as %xx.
+ *
+ * @param max_dest_len
+ *                  The size of the buffer pointed to by dest_segment.
+ * 
+ * @returns         The remaining buffer length.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+int
+smbc_urlencode(char * dest, char * src, int max_dest_len);
+#ifdef __cplusplus
+}
+#endif
+
+
+/**@ingroup directory
+ * Return the version of the linked Samba code, and thus the version of the
+ * libsmbclient code.
+ *
+ * @return          The version string.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+const char *
+smbc_version(void);
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif /* SMBCLIENT_H_INCLUDED */
