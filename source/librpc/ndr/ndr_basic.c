@@ -206,12 +206,15 @@ NTSTATUS ndr_push_uint32(struct ndr_push *ndr, uint32 v)
 	return NT_STATUS_OK;
 }
 
-/*
-  align to a uint32
-*/
-NTSTATUS ndr_push_align_uint32(struct ndr_push *ndr)
+NTSTATUS ndr_push_align(struct ndr_push *ndr, size_t size)
 {
-	NDR_PUSH_ALIGN(ndr, 4);
+	NDR_PUSH_ALIGN(ndr, size);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_align(struct ndr_pull *ndr, size_t size)
+{
+	NDR_PULL_ALIGN(ndr, size);
 	return NT_STATUS_OK;
 }
 

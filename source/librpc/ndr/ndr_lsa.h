@@ -133,9 +133,15 @@ struct lsa_AuditEventsInfo {
 	struct lsa_AuditSettings *settings;
 };
 
+struct lsa_PrimaryDomainInfo {
+	struct lsa_Name name;
+	struct dom_sid2 *sid;
+};
+
 union lsa_PolicyInformation {
 /* [case(1)] */ struct lsa_AuditLogInfo audit_log;
 /* [case(2)] */ struct lsa_AuditEventsInfo audit_events;
+/* [case(3)] */ struct lsa_PrimaryDomainInfo domain;
 };
 
 struct lsa_QueryInfoPolicy {

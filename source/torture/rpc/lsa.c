@@ -501,6 +501,8 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 		r.in.handle = handle;
 		r.in.level = i;
 
+		printf("\ntrying QueryInfoPolicy level %d\n", i);
+
 		status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
