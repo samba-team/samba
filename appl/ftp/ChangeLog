@@ -1,3 +1,8 @@
+2001-02-05  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/popen.c (ftpd_popen): avoid overwriting the bounds of argv
+	and gargv
+
 2001-01-30  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/gss_userok.c: use gss_krb5_copy_ccache

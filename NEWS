@@ -2,6 +2,8 @@ Changes in release 0.3e
 
  * rcp program included
 
+ * fix buffer overrun in ftpd
+
  * handle omitted sequence numbers as zeroes to handle MIT krb5 that
    cannot generate zero sequence numbers
 
