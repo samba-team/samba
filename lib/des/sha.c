@@ -208,10 +208,10 @@ calc (struct sha *m, u_int32_t *in)
  * From `Performance analysis of MD5' by Joseph D. Touch <touch@isi.edu>
  */
 
+#if !defined(WORDS_BIGENDIAN)
 static inline u_int32_t
 swap_u_int32_t (u_int32_t t)
 {
-#if !defined(WORDS_BIGENDIAN)
 #define ROL(x,n) ((x)<<(n))|((x)>>(32-(n)))
   u_int32_t temp1, temp2;
 
@@ -221,10 +221,8 @@ swap_u_int32_t (u_int32_t t)
   temp2  &= 0x00ff00ff;
   temp1 <<= 8;
   return temp1 | temp2;
-#else
-  return t;
-#endif
 }
+#endif
 
 struct x32{
   unsigned int a:32;
