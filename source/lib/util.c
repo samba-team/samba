@@ -3433,99 +3433,95 @@ char *readdirname(void *p)
 }
 
 
-BOOL is_vetoed_name(char *name)
+BOOL is_hidden_path(int snum, char *name)
 {
-  char *namelist = lp_veto_files();
-  char *nameptr = namelist;
-  char *name_end;
-
-  /* if we have no list it's obviously not vetoed */
-  if((nameptr == NULL ) || (*nameptr == '\0')) 
-    return 0;
-
-  /* if the name doesn't exist in the list, it's obviously ok too */
-  if(strstr(namelist,name) == NULL ) 
-    return 0;
-
-  /* now, we need to find the names one by one and check them
-     they can contain spaces and all sorts of stuff so we
-     separate them with of all things '/' which can never be in a filename
-     I could use "" but then I have to break them all out
-     maybe such a routine exists somewhere?
-  */
-  while(*nameptr) 
-    {
-      if ( *nameptr == '/' ) 
-        {
-          nameptr++;
-          continue;
-        }
-      if((name_end = strchr(nameptr,'/'))!=NULL) 
-        {
-          *name_end = 0;
-        }
-      /* a match! it's veto'd */
-      if(strcmp(name,nameptr) == 0) 
-        return 1;
-      if(name_end == NULL) 
-        return 0;
-      /* next segment please */
-      nameptr = name_end + 1;
-    }
-  return 0;
+   return is_in_path(name, lp_hide_files(snum));
 }
 
-BOOL is_vetoed_path(char *name)
+BOOL is_vetoed_name(int snum, char *name)
 {
-  char *namelist = lp_veto_files();
+   return is_in_path(name, lp_veto_files(snum));
+}
+
+BOOL is_in_path(char *name, char *namelist)
+{
+
   char *nameptr = namelist;
-  char *sub;
   char *name_end;
-  int len;
 
-  /* if we have no list it's obviously not vetoed */
+  DEBUG(5, ("is_in_path: %s list: %s\n", name, namelist));
+
+  /* if we have no list it's obviously not in the path */
   if((nameptr == NULL ) || (*nameptr == '\0')) 
-    return 0;
-
+  {
+    DEBUG(5,("is_in_path: no name list.  return False\n"));
+    return False;
+  }
 
   /* now, we need to find the names one by one and check them
      they can contain spaces and all sorts of stuff so we
-     separate them with of all things '/' which can never be in a filename
+     separate them with of all things '\' which can never be in a filename
      I could use "" but then I have to break them all out
      maybe such a routine exists somewhere?
   */
-  while(*nameptr) 
+ 
+  /* lkcl 03jul97 - the separator character used to be a '/'.
+     i changed it to a '\', after examining the code, and seeing
+     that unix_convert is called before check_path and dos_mode.
+     unix_convert changes, in the path, all dos '\'s to unix '/'s.
+
+     therefore, users might want to match against '/'s in the path,
+     and therefore '\' must be used as the separator.
+
+     the alternatives are:
+
+     1) move all check_path and dos_mode calls to before the
+        unix_convert calls.
+
+     2) have a corresponding dos_convert call, which can be used
+        in here to reverse '/'s into '\'s and vice-versa.  users
+        would specify the lp_veto_files and lp_hide_files parameters
+        in dos mode path format ('\' for directory separator), with a
+        list separator of '/', and they would be swapped inside this
+        function, before making the search.
+
+   */
+
+  while (*nameptr) 
     {
-      if ( *nameptr == '/' ) 
-        {
+      if ( *nameptr == '\\' ) 
+      {
+          /* cope with multiple (useless) \s) */
           nameptr++;
           continue;
-        }
-      if((name_end = strchr(nameptr,'/'))!=NULL) 
-        {
+      }
+      /* find the next \ */
+      if ((name_end = strchr(nameptr,'\\')) != NULL) 
+      {
           *name_end = 0;
-        }
+      }
 
-      len = strlen(nameptr);
-      sub = name;
-      /* If the name doesn't exist in the path, try the next name.. */
-      while( sub && ((sub = strstr(sub,nameptr)) != NULL)) 
-        {
-           /* Is it a whole component? */
-           if(((sub == name) || (sub[-1] == '/'))
-                && ((sub[len] == '\0') || (sub[len] == '/'))) 
-             {
-               return 1;
-             }
-           /* skip to the next component of the path */
-              sub =strchr(sub,'/');
-         }
-      if(name_end == NULL) 
-        return 0;
+      /* look for a match. */
+      if (mask_match(name, nameptr, case_sensitive, False))
+      {
+         DEBUG(5,("is_in_path: mask match succeeded\n"));
+         return True;
+      }
+
+      /* oops - the last check for a \ didn't find one. */
+      if (name_end == NULL)
+      {
+         DEBUG(5,("is_in_path: last name.  failed\n"));
+         return False;
+      }
+
       /* next segment please */
       nameptr = name_end + 1;
     }
-  return 0;
+  
+  DEBUG(5,("is_in_path: not found\n"));
+
+  return False;
 }
 
 /****************************************************************************

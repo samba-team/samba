@@ -782,7 +782,7 @@ static int call_trans2findnext(char *inbuf, char *outbuf, int length, int bufsiz
     return(ERROR(ERRDOS,ERRnomem));
 
   /* Check that the dptr is valid */
-  if(!(Connections[cnum].dirptr = dptr_fetch_lanman2(params, dptr_num)))
+  if(!(Connections[cnum].dirptr = dptr_fetch_lanman2(SNUM(cnum), params, dptr_num)))
     return(ERROR(ERRDOS,ERRnofiles));
 
   string_set(&Connections[cnum].dirpath,dptr_path(dptr_num));

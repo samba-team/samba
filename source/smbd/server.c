@@ -179,6 +179,8 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
   int result = 0;
   extern struct current_user current_user;
 
+  DEBUG(5,("dos_mode: %d %s\n", cnum, path));
+
   if (CAN_WRITE(cnum) && !lp_alternate_permissions(SNUM(cnum))) {
     if (!((sbuf->st_mode & S_IWOTH) ||
 	  Connections[cnum].admin_user ||
@@ -221,6 +223,21 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
       if (p[0] == '.' && p[1] != '.' && p[1] != 0)
 	result |= aHIDDEN;
     }
+
+  if (is_hidden_path(SNUM(cnum), path))
+  {
+    result |= aHIDDEN;
+  }
+
+  DEBUG(5,("dos_mode returning "));
+
+  if (result & aHIDDEN) DEBUG(5, ("h"));
+  if (result & aRONLY ) DEBUG(5, ("r"));
+  if (result & aSYSTEM) DEBUG(5, ("s"));
+  if (result & aDIR   ) DEBUG(5, ("d"));
+  if (result & aARCH  ) DEBUG(5, ("a"));
+
+  DEBUG(5,("\n"));
 
   return(result);
 }
@@ -361,7 +378,7 @@ static BOOL scan_directory(char *path, char *name,int snum,BOOL docache)
     check_mangled_stack(name);
 
   /* open the directory */
-  if (!(cur_dir = OpenDir(path, True))) 
+  if (!(cur_dir = OpenDir(snum, path, True))) 
     {
       DEBUG(3,("scan dir didn't open dir [%s]\n",path));
       return(False);
@@ -791,7 +808,7 @@ BOOL check_name(char *name,int cnum)
 
   errno = 0;
 
-  if( is_vetoed_path(name)) 
+  if( is_vetoed_name(SNUM(cnum), name)) 
     {
       DEBUG(5,("file path name %s vetoed\n",name));
       return(0);
