@@ -1185,7 +1185,8 @@ static int socketpair_tcp(int fd[2])
 
 	close(listener);
 	if (connect_done == 0) {
-		if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) != 0) goto failed;
+		if (connect(fd[1],(struct sockaddr *)&sock,sizeof(sock)) != 0
+		    && errno != EISCONN) goto failed;
 	}
 
 	set_blocking(fd[1], 1);
