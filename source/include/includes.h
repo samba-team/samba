@@ -752,6 +752,14 @@ typedef struct smb_wpasswd {
 #define SYSV 1
 #endif
 
+/*
+ * Veritas File System.  Often in addition to native.
+ * Quotas different.
+ */
+#if defined(HAVE_SYS_FS_VX_QUOTA_H)
+#define VXFS_QUOTA
+#endif  
+
 #ifndef DEFAULT_PRINTING
 #ifdef HAVE_CUPS
 #define DEFAULT_PRINTING PRINT_CUPS
