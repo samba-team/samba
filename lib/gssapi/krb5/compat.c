@@ -108,4 +108,6 @@ gss_krb5_compat_des3_mic(OM_uint32 *minor_status, gss_ctx_id_t ctx, int on)
 	ctx->more_flags &= ~COMPAT_OLD_DES3;
     }
     ctx->more_flags |= COMPAT_OLD_DES3_SELECTED;
+
+    return 0;
 }
