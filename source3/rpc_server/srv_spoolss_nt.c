@@ -917,7 +917,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	Printer=find_printer_index_by_hnd(p, handle);
 	if (!Printer) {
 		DEBUG(0,(" _spoolss_open_printer_ex: logic error. \
-Can't find printer handle we created for priunter %s\n", name ));
+Can't find printer handle we created for printer %s\n", name ));
 		close_printer_handle(p,handle);
 		return WERR_INVALID_PRINTER_NAME;
 	}
