@@ -5,7 +5,8 @@ if test t$BLDSHARED = ttrue; then
 fi
 LIBWINREG=libwinregistry
 
-PKG_CHECK_MODULES(GCONF, gconf-2.0, [ SMB_MODULE_DEFAULT(registry_gconf,STATIC)
+#disable registry_gconf for now
+PKG_CHECK_MODULES(GCONF, gconf-2.0, [ SMB_MODULE_DEFAULT(registry_gconf,NOT)
 				CFLAGS="$CFLAGS $GCONF_CFLAGS";], [AC_MSG_WARN([GConf not found, not building registry_gconf])])
 AC_CONFIG_FILES(lib/registry/winregistry.pc)
 
