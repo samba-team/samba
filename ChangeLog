@@ -1,3 +1,8 @@
+2002-04-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/crypto.c (usage2arcfour): don't abort if the usage is
+	unknown
+
 2002-04-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: use rk_DESTDIRS
