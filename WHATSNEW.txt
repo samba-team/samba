@@ -1,4 +1,4 @@
-          WHATS NEW IN Samba (The Next Generation) 1.5
+          WHATS NEW IN Samba (The Next Generation) 1.6
           ============================================
 
 This is an ALPHA release of Samba TNG, the UNIX based SMB/CIFS file,
@@ -47,7 +47,7 @@ smbclient, has over sixty five commands that provide equivalent
 functionality for the same Windows NT (tm) Administrative tools,
 including the ability to remotely shut down a Windows NT (tm) Server.
 
-rpcclient has now been joined by net, samedit, regedit, spoolss,
+rpcclient has now been joined by net, samedit, regedit, ntspool,
 eventlog, lsa, cmdat and svccontrol.  If anyone can think of better
 names for these, suggestions are welcomed.
 
