@@ -71,7 +71,7 @@ interface drsuapi
 
 	WERROR drsuapi_DsReplicaSync(
 		[in,ref] policy_handle *bind_handle,
-		[in] uint32 level,
+		[in] int32 level,
 		[in,switch_is(level)] drsuapi_DsReplicaSyncRequest req
 		);
 
