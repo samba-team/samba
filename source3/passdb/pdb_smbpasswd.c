@@ -1248,7 +1248,7 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 /*****************************************************************
  Functions to be implemented by the new passdb API 
  ****************************************************************/
-static BOOL smbpasswd_setsampwent (struct pdb_methods *my_methods, BOOL update)
+static NTSTATUS smbpasswd_setsampwent (struct pdb_methods *my_methods, BOOL update)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	
@@ -1275,7 +1275,10 @@ static BOOL smbpasswd_setsampwent (struct pdb_methods *my_methods, BOOL update)
 							     &(smbpasswd_state->pw_file_lock_depth));
 	}
 	
-	return (smbpasswd_state->pw_file != NULL);		   
+	if (smbpasswd_state->pw_file != NULL)
+		return NT_STATUS_OK;
+	else
+		return NT_STATUS_UNSUCCESSFUL;  
 }
 
 static void smbpasswd_endsampwent (struct pdb_methods *my_methods)
@@ -1286,8 +1289,9 @@ static void smbpasswd_endsampwent (struct pdb_methods *my_methods)
  
 /*****************************************************************
  ****************************************************************/
-static BOOL smbpasswd_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user)
+static NTSTATUS smbpasswd_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *user)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *pw_buf=NULL;
 	BOOL done = False;
@@ -1298,7 +1302,7 @@ static BOOL smbpasswd_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *u
 #if 0
 		smb_panic("NULL pointer passed to getsampwent (smbpasswd)\n");
 #endif
-		return False;
+		return nt_status;
 	}
 
 	while (!done)
@@ -1306,7 +1310,7 @@ static BOOL smbpasswd_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *u
 		/* do we have an entry? */
 		pw_buf = getsmbfilepwent(smbpasswd_state, smbpasswd_state->pw_file);
 		if (pw_buf == NULL) 
-			return False;
+			return nt_status;
 
 		/* build the SAM_ACCOUNT entry from the smb_passwd struct. 
 		   We loop in case the user in the pdb does not exist in 
@@ -1318,7 +1322,7 @@ static BOOL smbpasswd_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *u
 	DEBUG(5,("getsampwent (smbpasswd): done\n"));
 
 	/* success */
-	return True;
+	return NT_STATUS_OK;
 }
 
 
@@ -1327,9 +1331,10 @@ static BOOL smbpasswd_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *u
  call getpwnam() for unix account information until we have found
  the correct entry
  ***************************************************************/
-static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods, 
+static NTSTATUS smbpasswd_getsampwnam(struct pdb_methods *my_methods, 
 				  SAM_ACCOUNT *sam_acct, const char *username)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
@@ -1343,7 +1348,7 @@ static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods,
 
 	if (fp == NULL) {
 		DEBUG(0, ("unable to open passdb database.\n"));
-		return False;
+		return nt_status;
 	}
 
 	while ( ((smb_pw=getsmbfilepwent(smbpasswd_state, fp)) != NULL)&& (!strequal(smb_pw->smb_name, username)) )
@@ -1354,7 +1359,7 @@ static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods,
 
 	/* did we locate the username in smbpasswd  */
 	if (smb_pw == NULL)
-		return False;
+		return nt_status;
 	
 	DEBUG(10, ("getsampwnam (smbpasswd): found by name: %s\n", smb_pw->smb_name));
 
@@ -1363,19 +1368,20 @@ static BOOL smbpasswd_getsampwnam(struct pdb_methods *my_methods,
 #if 0
 		smb_panic("NULL pointer passed to pdb_getsampwnam\n");
 #endif
-		return False;
+		return nt_status;
 	}
 		
 	/* now build the SAM_ACCOUNT */
 	if (!build_sam_account(smbpasswd_state, sam_acct, smb_pw))
-		return False;
+		return nt_status;
 
 	/* success */
-	return True;
+	return NT_STATUS_OK;
 }
 
-static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_acct,uint32 rid)
+static NTSTATUS smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *sam_acct,uint32 rid)
 {
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
@@ -1387,7 +1393,7 @@ static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 		const char *guest_account = lp_guestaccount();
 		if (!(guest_account && *guest_account)) {
 			DEBUG(1, ("Guest account not specfied!\n"));
-			return False;
+			return nt_status;
 		}
 		return smbpasswd_getsampwnam(my_methods, sam_acct, guest_account);
 	}
@@ -1397,7 +1403,7 @@ static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 
 	if (fp == NULL) {
 		DEBUG(0, ("unable to open passdb database.\n"));
-		return False;
+		return nt_status;
 	}
 
 	while ( ((smb_pw=getsmbfilepwent(smbpasswd_state, fp)) != NULL) && (fallback_pdb_uid_to_user_rid(smb_pw->smb_userid) != rid) )
@@ -1408,7 +1414,7 @@ static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 
 	/* did we locate the username in smbpasswd  */
 	if (smb_pw == NULL)
-		return False;
+		return nt_status;
 	
 	DEBUG(10, ("getsampwrid (smbpasswd): found by name: %s\n", smb_pw->smb_name));
 		
@@ -1417,44 +1423,44 @@ static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 #if 0
 		smb_panic("NULL pointer passed to pdb_getsampwrid\n");
 #endif
-		return False;
+		return nt_status;
 	}
 
 	/* now build the SAM_ACCOUNT */
 	if (!build_sam_account (smbpasswd_state, sam_acct, smb_pw))
-		return False;
+		return nt_status;
 
 	/* success */
-	return True;
+	return NT_STATUS_OK;
 }
 
-static BOOL smbpasswd_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
+static NTSTATUS smbpasswd_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	return smbpasswd_getsampwrid(my_methods, user, rid);
 }
 
-static BOOL smbpasswd_add_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
+static NTSTATUS smbpasswd_add_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd smb_pw;
 	
 	/* convert the SAM_ACCOUNT */
 	if (!build_smb_pass(&smb_pw, sampass)) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	/* add the entry */
 	if(!add_smbfilepwd_entry(smbpasswd_state, &smb_pw)) {
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	return True;
+	return NT_STATUS_OK;
 }
 
-static BOOL smbpasswd_update_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
+static NTSTATUS smbpasswd_update_sam_account(struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 	struct smb_passwd smb_pw;
@@ -1462,25 +1468,28 @@ static BOOL smbpasswd_update_sam_account(struct pdb_methods *my_methods, SAM_ACC
 	/* convert the SAM_ACCOUNT */
 	if (!build_smb_pass(&smb_pw, sampass)) {
 		DEBUG(0, ("smbpasswd_update_sam_account: build_smb_pass failed!\n"));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	/* update the entry */
 	if(!mod_smbfilepwd_entry(smbpasswd_state, &smb_pw)) {
 		DEBUG(0, ("smbpasswd_update_sam_account: mod_smbfilepwd_entry failed!\n"));
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	return True;
+	return NT_STATUS_OK;
 }
 
-static BOOL smbpasswd_delete_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
+static NTSTATUS smbpasswd_delete_sam_account (struct pdb_methods *my_methods, SAM_ACCOUNT *sampass)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
 
 	const char *username = pdb_get_username(sampass);
 
-	return del_smbfilepwd_entry(smbpasswd_state, username);
+	if (del_smbfilepwd_entry(smbpasswd_state, username))
+		return NT_STATUS_OK;
+
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 static void free_private_data(void **vp) 

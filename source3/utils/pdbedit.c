@@ -62,7 +62,7 @@ extern BOOL AllowDebugChange;
 static int export_database (struct pdb_context *in, struct pdb_context *out) {
 	SAM_ACCOUNT *user = NULL;
 
-	if (!in->pdb_setsampwent(in, 0)) {
+	if (NT_STATUS_IS_ERR(in->pdb_setsampwent(in, 0))) {
 		fprintf(stderr, "Can't sampwent!\n");
 		return 1;
 	}
@@ -72,7 +72,7 @@ static int export_database (struct pdb_context *in, struct pdb_context *out) {
 		return 1;
 	}
 
-	while (in->pdb_getsampwent(in, user)) {
+	while (NT_STATUS_IS_OK(in->pdb_getsampwent(in, user))) {
 		out->pdb_add_sam_account(out, user);
 		if (!NT_STATUS_IS_OK(pdb_reset_sam(user))){
 			fprintf(stderr, "Can't reset SAM_ACCOUNT!\n");
@@ -188,7 +188,7 @@ static int print_user_info (struct pdb_context *in, char *username, BOOL verbosi
 		return -1;
 	}
 	
-	ret = in->pdb_getsampwnam (in, sam_pwent, username);
+	ret = NT_STATUS_IS_OK(in->pdb_getsampwnam (in, sam_pwent, username));
 
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
@@ -210,7 +210,7 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL check, ret;
 	
-	check = in->pdb_setsampwent(in, False);
+	check = NT_STATUS_IS_OK(in->pdb_setsampwent(in, False));
 	if (!check) {
 		return 1;
 	}
@@ -218,7 +218,7 @@ static int print_users_list (struct pdb_context *in, BOOL verbosity, BOOL smbpwd
 	check = True;
 	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
 
-	while (check && (ret = in->pdb_getsampwent (in, sam_pwent))) {
+	while (check && (ret = NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent)))) {
 		if (verbosity)
 			printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
@@ -242,7 +242,7 @@ static int set_user_info (struct pdb_context *in, char *username, char *fullname
 	
 	pdb_init_sam(&sam_pwent);
 	
-	ret = in->pdb_getsampwnam (in, sam_pwent, username);
+	ret = NT_STATUS_IS_OK(in->pdb_getsampwnam (in, sam_pwent, username));
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
 		pdb_free_sam(&sam_pwent);
@@ -260,7 +260,7 @@ static int set_user_info (struct pdb_context *in, char *username, char *fullname
 	if (profile)
 		pdb_set_profile_path (sam_pwent, profile, True);
 	
-	if (in->pdb_update_sam_account (in, sam_pwent))
+	if (NT_STATUS_IS_OK(in->pdb_update_sam_account (in, sam_pwent)))
 		print_user_info (in, username, True, False);
 	else {
 		fprintf (stderr, "Unable to modify entry!\n");
@@ -328,7 +328,7 @@ static int new_user (struct pdb_context *in, char *username, char *fullname, cha
 	
 	pdb_set_acct_ctrl (sam_pwent, ACB_NORMAL);
 	
-	if (in->pdb_add_sam_account (in, sam_pwent)) { 
+	if (NT_STATUS_IS_OK(in->pdb_add_sam_account (in, sam_pwent))) { 
 		print_user_info (in, username, True, False);
 	} else {
 		fprintf (stderr, "Unable to add user! (does it alredy exist?)\n");
@@ -370,7 +370,7 @@ static int new_machine (struct pdb_context *in, char *machinename)
 	
 	pdb_set_group_sid_from_rid(sam_pwent, DOMAIN_GROUP_RID_COMPUTERS);
 	
-	if (in->pdb_add_sam_account (in, sam_pwent)) {
+	if (NT_STATUS_IS_OK(in->pdb_add_sam_account (in, sam_pwent))) {
 		print_user_info (in, name, True, False);
 	} else {
 		fprintf (stderr, "Unable to add machine! (does it already exist?)\n");
@@ -393,12 +393,12 @@ static int delete_user_entry (struct pdb_context *in, char *username)
 		return -1;
 	}
 
-	if (!in->pdb_getsampwnam(in, samaccount, username)) {
+	if (NT_STATUS_IS_ERR(in->pdb_getsampwnam(in, samaccount, username))) {
 		fprintf (stderr, "user %s does not exist in the passdb\n", username);
 		return -1;
 	}
 
-	return in->pdb_delete_sam_account (in, samaccount);
+	return NT_STATUS_IS_OK(in->pdb_delete_sam_account (in, samaccount));
 }
 
 /*********************************************************
@@ -418,12 +418,12 @@ static int delete_machine_entry (struct pdb_context *in, char *machinename)
 		return -1;
 	}
 
-	if (!in->pdb_getsampwnam(in, samaccount, name)) {
+	if (NT_STATUS_IS_ERR(in->pdb_getsampwnam(in, samaccount, name))) {
 		fprintf (stderr, "machine %s does not exist in the passdb\n", name);
 		return -1;
 	}
 
-	return in->pdb_delete_sam_account (in, samaccount);
+	return NT_STATUS_IS_OK(in->pdb_delete_sam_account (in, samaccount));
 }
 
 /*********************************************************
