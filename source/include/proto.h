@@ -1157,6 +1157,9 @@ uint32 _lsa_close(POLICY_HND *hnd);
 uint32 _lsa_create_secret(const POLICY_HND *hnd,
 			const UNISTR2 *secret_name, uint32 des_access,
 			POLICY_HND *hnd_secret);
+uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
+				STRING2 *curval, NTTIME *curtime,
+				STRING2 *oldval, NTTIME *oldtime);
 uint32 _lsa_open_secret(const POLICY_HND *hnd,
 			const UNISTR2 *secret_name, uint32 des_access,
 			POLICY_HND *hnd_secret);

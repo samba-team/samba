@@ -553,6 +553,75 @@ uint32 _lsa_create_secret(const POLICY_HND *hnd,
 }
 
 /***************************************************************************
+ _lsa_query_secret
+ ***************************************************************************/
+uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
+				STRING2 *curval, NTTIME *curtime,
+				STRING2 *oldval, NTTIME *oldtime)
+{
+	TDB_CONTEXT *tdb = NULL;
+	UNISTR2 secret_name;
+	LSA_SECRET *sec = NULL;
+	uchar user_sess_key[16];
+
+	if (!pol_get_usr_sesskey(get_global_hnd_cache(), hnd_secret,
+	                         user_sess_key))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	dump_data_pw("sess_key:", user_sess_key, 16);
+
+	ZERO_STRUCT(sec);
+	ZERO_STRUCT(secret_name);
+
+	if (!get_tdbsecname(get_global_hnd_cache(), hnd_secret, &tdb,
+	                    &secret_name))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!tdb_lookup_secret(tdb, &secret_name, &sec))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (sec == NULL)
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+		
+	if (curtime != NULL)
+	{
+		(*curtime) = sec->curinfo.last_update;
+	}
+	if (oldtime != NULL)
+	{
+		(*oldtime) = sec->oldinfo.last_update;
+	}
+	if (curval != NULL)
+	{
+		if (!nt_encrypt_string2(curval, &sec->curinfo.value.enc_secret,
+		                        user_sess_key))
+		{
+			safe_free(sec);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+	if (oldval != NULL)
+	{
+		if (!nt_encrypt_string2(oldval, &sec->oldinfo.value.enc_secret,
+		                        user_sess_key))
+		{
+			safe_free(sec);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+	safe_free(sec);
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/***************************************************************************
  _lsa_open_secret
  ***************************************************************************/
 uint32 _lsa_open_secret(const POLICY_HND *hnd,

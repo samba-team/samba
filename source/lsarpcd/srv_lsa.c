@@ -472,6 +472,53 @@ static void api_lsa_create_secret( rpcsrv_struct *p, prs_struct *data,
 }
 
 /***************************************************************************
+ api_lsa_query_secret.  AGH!  HACK! :)
+ ***************************************************************************/
+static void api_lsa_query_secret( rpcsrv_struct *p, prs_struct *data,
+                                  prs_struct *rdata)
+{
+	LSA_R_QUERY_SECRET r_o;
+	LSA_Q_QUERY_SECRET q_o;
+	NTTIME *curtim = NULL;
+	NTTIME *oldtim = NULL;
+	STRING2 *curval = NULL;
+	STRING2 *oldval = NULL;
+
+	ZERO_STRUCT(r_o);
+	ZERO_STRUCT(q_o);
+
+	lsa_io_q_query_secret("", &q_o, data, 0);
+
+	/* HACK! */
+	if (q_o.sec.curinfo.ptr_value  != 0) curval = &q_o.sec.curinfo.value.enc_secret;
+	if (q_o.sec.curinfo.ptr_update != 0) curtim = &q_o.sec.curinfo.last_update;
+	if (q_o.sec.oldinfo.ptr_value  != 0) oldval = &q_o.sec.oldinfo.value.enc_secret;
+	if (q_o.sec.oldinfo.ptr_update != 0) oldtim = &q_o.sec.oldinfo.last_update;
+
+	r_o.status = _lsa_query_secret(&q_o.pol,
+	                                curval, curtim,
+	                                oldval, oldtim);
+
+	memcpy(&r_o.sec, &q_o.sec, sizeof(r_o.sec)); /* urgh! HACK! */
+	if (r_o.sec.curinfo.ptr_value != 0) /* MORE HACK! */
+	{
+		r_o.sec.curinfo.value.ptr_secret = 1;
+		make_strhdr2(&r_o.sec.curinfo.value.hdr_secret,
+		              r_o.sec.curinfo.value.enc_secret.str_str_len,
+		              r_o.sec.curinfo.value.enc_secret.str_max_len, 1);
+	}
+	if (r_o.sec.oldinfo.ptr_value != 0) /* MORE HACK! */
+	{
+		r_o.sec.curinfo.value.ptr_secret = 1;
+		make_strhdr2(&r_o.sec.oldinfo.value.hdr_secret,
+		              r_o.sec.oldinfo.value.enc_secret.str_str_len,
+		              r_o.sec.oldinfo.value.enc_secret.str_max_len, 1);
+	}
+
+	lsa_io_r_query_secret("", &r_o, rdata, 0);
+}
+
+/***************************************************************************
  api_lsa_open_secret
  ***************************************************************************/
 static void api_lsa_open_secret( rpcsrv_struct *p, prs_struct *data,
@@ -501,6 +548,7 @@ static const struct api_struct api_lsa_cmds[] =
 	{ "LSA_ENUMTRUSTDOM"   , LSA_ENUMTRUSTDOM   , api_lsa_enum_trust_dom },
 	{ "LSA_CLOSE"          , LSA_CLOSE          , api_lsa_close          },
 	{ "LSA_OPENSECRET"     , LSA_OPENSECRET     , api_lsa_open_secret    },
+	{ "LSA_QUERYSECRET"    , LSA_QUERYSECRET    , api_lsa_query_secret   },
 	{ "LSA_CREATESECRET"   , LSA_CREATESECRET   , api_lsa_create_secret  },
 	{ "LSA_LOOKUPSIDS"     , LSA_LOOKUPSIDS     , api_lsa_lookup_sids    },
 	{ "LSA_LOOKUPNAMES"    , LSA_LOOKUPNAMES    , api_lsa_lookup_names   },
