@@ -855,7 +855,6 @@ BOOL init_drv_info_3_members (DRIVER_INFO_3 *info, char *args)
 	for (i=0; i<len; i++)
 	{
 		info->dependentfiles[i] = (uint16)str2[i];
-		info->dependentfiles[i] = info->dependentfiles[i] << 8;
 	}
 	info->dependentfiles[len+1] = '\0';
 
