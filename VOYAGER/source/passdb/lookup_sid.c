@@ -31,8 +31,7 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid,
 	struct passwd *pwd;
 	struct group *grp;
 	char *unix_name;
-	BOOL is_user;
-	BOOL res;
+	BOOL res, is_user;
 
 	if (winbind_lookup_name(domain, name, psid, name_type))
 		return True;
@@ -43,7 +42,6 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid,
 	become_root();
 	res = nt_to_unix_name(NULL, name, &unix_name, &is_user);
 	unbecome_root();
-
 	if (!res)
 		return False;
 
@@ -89,7 +87,6 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
 		char *ntname;
 
 		fstrcpy(dom_name, get_global_sam_name());
-
 		become_root();
 		unix_username_to_ntname(NULL, pwd->pw_name, &ntname);
 		unbecome_root();
@@ -106,7 +103,6 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
 		char *ntname;
 
 		fstrcpy(dom_name, get_global_sam_name());
-
 		become_root();
 		unix_groupname_to_ntname(NULL, grp->gr_name, &ntname);
 		unbecome_root();
@@ -126,7 +122,7 @@ BOOL sid_to_local_user_name(const DOM_SID *sid, fstring username)
 	fstring name;
 	char *unix_name;
 	enum SID_NAME_USE type;
-	BOOL is_user;
+	BOOL res, is_user;
 
 	if (!sid_check_is_in_our_domain(sid))
 		return False;
@@ -136,8 +132,11 @@ BOOL sid_to_local_user_name(const DOM_SID *sid, fstring username)
  
 	if (type != SID_NAME_USER)
 		return False;
- 
-	if (!nt_to_unix_name(NULL, name, &unix_name, &is_user))
+
+	become_root();
+	res = nt_to_unix_name(NULL, name, &unix_name, &is_user);
+	unbecome_root();
+	if (!res)
 		return False;
 
 	if (!is_user) {
@@ -159,7 +158,7 @@ BOOL sid_to_local_dom_grp_name(const DOM_SID *sid, fstring groupname)
 	fstring name;
 	char *unix_name;
 	enum SID_NAME_USE type;
-	BOOL is_user;
+	BOOL res, is_user;
 
 	if (!sid_check_is_in_our_domain(sid))
 		return False;
@@ -170,7 +169,10 @@ BOOL sid_to_local_dom_grp_name(const DOM_SID *sid, fstring groupname)
 	if (type != SID_NAME_DOM_GRP)
 		return False;
 
-	if (!nt_to_unix_name(NULL, name, &unix_name, &is_user))
+	become_root();
+	res = nt_to_unix_name(NULL, name, &unix_name, &is_user);
+	unbecome_root();
+	if (!res)
 		return False;
 
 	if (is_user) {

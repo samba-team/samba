@@ -1087,10 +1087,15 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 		
+#if 0
+	/* TODO... Hmm. This needs investigation. In the domain member case,
+	   what is the name mapping? */
+
 	if (!pdb_set_nt_username(sam_account, nt_username, PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
+#endif
 
 	if (!pdb_set_username(sam_account, nt_username, PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);

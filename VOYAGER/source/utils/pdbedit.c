@@ -97,7 +97,6 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 	
 	if (verbosity) {
 		printf ("Unix username:        %s\n", pdb_get_username(sam_pwent));
-		printf ("NT username:          %s\n", pdb_get_nt_username(sam_pwent));
 		printf ("Account Flags:        %s\n", pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent), NEW_PW_FORMAT_SPACE_PADDED_LEN));
 		printf ("User SID:             %s\n",
 			sid_string_static(pdb_get_user_sid(sam_pwent)));

@@ -196,6 +196,15 @@ struct acct_info
     uint32 rid; /* domain-relative RID */
 };
 
+struct user_display_info
+{
+	char *name;
+	char *full_name;
+	char *desc;
+	uint32 rid;
+	uint16 acb;
+};
+
 /*****************************************************************
  Functions to be implemented by the new (v2) passdb API 
 ****************************************************************/

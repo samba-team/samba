@@ -259,14 +259,6 @@ const char* pdb_get_domain (const SAM_ACCOUNT *sampass)
 		return (NULL);
 }
 
-const char* pdb_get_nt_username (const SAM_ACCOUNT *sampass)
-{
-	if (sampass)
-		return (sampass->private.nt_username);
-	else
-		return (NULL);
-}
-
 const char* pdb_get_fullname (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
@@ -683,33 +675,6 @@ BOOL pdb_set_domain(SAM_ACCOUNT *sampass, const char *domain, enum pdb_value_sta
 	}
 
 	return pdb_set_init_flags(sampass, PDB_DOMAIN, flag);
-}
-
-/*********************************************************************
- Set the user's NT name.
- ********************************************************************/
-
-BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, const char *nt_username, enum pdb_value_state flag)
-{
-	if (!sampass)
-		return False;
-
-	if (nt_username) { 
-		DEBUG(10, ("pdb_set_nt_username: setting nt username %s, was %s\n", nt_username,
-			(sampass->private.nt_username)?(sampass->private.nt_username):"NULL"));
- 
-		sampass->private.nt_username = talloc_strdup(sampass->mem_ctx, nt_username);
-		
-		if (!sampass->private.nt_username) {
-			DEBUG(0, ("pdb_set_nt_username: talloc_strdup() failed!\n"));
-			return False;
-		}
-
-	} else {
-		sampass->private.nt_username = PDB_NOT_QUITE_NULL;
-	}
-
-	return pdb_set_init_flags(sampass, PDB_NTUSERNAME, flag);
 }
 
 /*********************************************************************

@@ -940,7 +940,6 @@ BOOL init_sam_from_buffer_v0(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 	pdb_set_username(sampass, username, PDB_SET); 
 	pdb_set_domain(sampass, domain, PDB_SET);
-	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 	pdb_set_fullname(sampass, fullname, PDB_SET);
 
 	if (homedir) {
@@ -1093,7 +1092,7 @@ uint32 init_buffer_from_sam_v0 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	else
 		domain_len = 0;
 
-	nt_username = pdb_get_nt_username(sampass);
+	nt_username = "";
 	if (nt_username)
 		nt_username_len = strlen(nt_username) +1;
 	else
@@ -1357,7 +1356,6 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 
 	pdb_set_username(sampass, username, PDB_SET); 
 	pdb_set_domain(sampass, domain, PDB_SET);
-	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 	pdb_set_fullname(sampass, fullname, PDB_SET);
 
 	if (homedir) {
@@ -1512,7 +1510,7 @@ uint32 init_buffer_from_sam_v1 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	else
 		domain_len = 0;
 
-	nt_username = pdb_get_nt_username(sampass);
+	nt_username = "";
 	if (nt_username)
 		nt_username_len = strlen(nt_username) +1;
 	else

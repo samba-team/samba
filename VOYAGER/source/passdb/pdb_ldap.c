@@ -428,7 +428,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			bad_password_time;
 	pstring 	username, 
 			domain,
-			nt_username,
 			fullname,
 			homedir,
 			dir_drive,
@@ -454,7 +453,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	 */
 	username[0] 	= '\0';
 	domain[0] 	= '\0';
-	nt_username[0] 	= '\0';
 	fullname[0] 	= '\0';
 	homedir[0] 	= '\0';
 	dir_drive[0] 	= '\0';
@@ -482,14 +480,11 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 
 	DEBUG(2, ("init_sam_from_ldap: Entry found for user: %s\n", username));
 
-	pstrcpy(nt_username, username);
-
 	pstrcpy(domain, ldap_state->domain_name);
 	
 	pdb_set_username(sampass, username, PDB_SET);
 
 	pdb_set_domain(sampass, domain, PDB_DEFAULT);
-	pdb_set_nt_username(sampass, nt_username, PDB_SET);
 
 	/* deal with different attributes between the schema first */
 	
@@ -1040,7 +1035,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 				temp);
 		}
 		if (badcount == 0) {
-			DEBUG(7, ("bad password count is reset, deleting login cache entry for %s\n", pdb_get_nt_username(sampass)));
+			DEBUG(7, ("bad password count is reset, deleting login cache entry for %s\n", pdb_get_username(sampass)));
 			login_cache_delentry(sampass);
 		} else {
 			LOGIN_CACHE cache_entry ={time(NULL),

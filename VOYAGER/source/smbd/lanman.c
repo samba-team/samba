@@ -1703,7 +1703,9 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 			break;
 		}
 
+		become_root();
 		unix_groupname_to_ntname(NULL, grent->gr_name, &name);
+		unbecome_root();
 
 		/* truncate the name at 21 chars. */
 		memcpy(p, name, 21); 

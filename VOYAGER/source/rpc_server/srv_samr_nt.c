@@ -39,7 +39,7 @@ extern DOM_SID global_sid_Builtin;
 typedef struct _disp_info {
 	BOOL user_dbloaded;
 	uint32 num_user_account;
-	SAM_ACCOUNT *disp_user_info;
+	struct user_display_info *disp_user_info;
 	BOOL group_dbloaded;
 	uint32 num_group_account;
 	DOMAIN_GRP *disp_group_info;
@@ -152,15 +152,7 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 
 static void free_samr_users(struct samr_info *info) 
 {
-	int i;
-
-	if (info->disp_info.user_dbloaded){
-		for (i=0; i<info->disp_info.num_user_account; i++) {
-			SAM_ACCOUNT *sam = &info->disp_info.disp_user_info[i];
-			/* Not really a free, actually a 'clear' */
-			pdb_free_sam(&sam);
-		}
-	}
+	info->disp_info.disp_user_info = NULL;
 	info->disp_info.user_dbloaded=False;
 	info->disp_info.num_user_account=0;
 }
@@ -207,7 +199,7 @@ static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOOL all_machines)
 {
 	SAM_ACCOUNT *pwd = NULL;
-	SAM_ACCOUNT *pwd_array = NULL;
+	struct user_display_info *pwd_array = NULL;
 	NTSTATUS nt_status = NT_STATUS_OK;
 	TALLOC_CTX *mem_ctx = info->mem_ctx;
 
@@ -230,6 +222,8 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOO
 
 	for (; (NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(mem_ctx, &pwd))) 
 		     && pdb_getsampwent(pwd) == True; pwd=NULL) {
+
+		struct user_display_info *user_info;
 		
 		if (all_machines) {
 			if (!((pdb_get_acct_ctrl(pwd) & ACB_WSTRUST) 
@@ -250,8 +244,11 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOO
 		if (info->disp_info.num_user_account % MAX_SAM_ENTRIES == 0) {
 		
 			DEBUG(10,("load_sampwd_entries: allocating more memory\n"));
-			pwd_array=(SAM_ACCOUNT *)talloc_realloc(mem_ctx, info->disp_info.disp_user_info, 
-			                  (info->disp_info.num_user_account+MAX_SAM_ENTRIES)*sizeof(SAM_ACCOUNT));
+			pwd_array=(struct user_display_info *)
+				talloc_realloc(mem_ctx,
+					       info->disp_info.disp_user_info, 
+					       (info->disp_info.num_user_account+MAX_SAM_ENTRIES)*
+					       sizeof(struct user_display_info));
 
 			if (pwd_array==NULL)
 				return NT_STATUS_NO_MEMORY;
@@ -260,9 +257,48 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOO
 		}
 	
 		/* Copy the SAM_ACCOUNT into the array */
-		info->disp_info.disp_user_info[info->disp_info.num_user_account]=*pwd;
 
-		DEBUG(10,("load_sampwd_entries: entry: %d\n", info->disp_info.num_user_account));
+		user_info = &info->disp_info.disp_user_info[info->disp_info.num_user_account];
+
+		{
+			/* This might need optimizing. Get the User's RID */
+
+			struct passwd *pw = getpwnam(pdb_get_username(pwd));
+			DOM_SID sid;
+
+			if (pw == NULL) {
+				DEBUG(1, ("User %s in passdb not in unix\n",
+					  pdb_get_username(pwd)));
+				continue;
+			}
+			uid_to_sid(&sid, pw->pw_uid);
+
+			if (!sid_peek_check_rid(&info->sid, &sid,
+						&user_info->rid)) {
+				DEBUG(0, ("init_sam_dispinfo_1: User %s has "
+					  "SID %s, which conflicts with the "
+					  "domain sid %s.\n", 
+					  pdb_get_username(pwd),
+					  sid_string_static(&sid),
+					  sid_string_static(&info->sid)));
+				continue;
+			}
+			    
+
+		}
+
+		unix_username_to_ntname(mem_ctx, pdb_get_username(pwd),
+					&user_info->name);
+		user_info->full_name = talloc_strdup(mem_ctx,
+						     pdb_get_fullname(pwd));
+		user_info->desc = talloc_strdup(mem_ctx,
+						pdb_get_acct_desc(pwd));
+		user_info->acb = pdb_get_acct_ctrl(pwd);
+
+		pdb_free_sam(&pwd);
+
+		DEBUG(10,("load_sampwd_entries: entry: %d\n",
+			  info->disp_info.num_user_account));
 
 		info->disp_info.num_user_account++;	
 	}
@@ -339,7 +375,9 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info,
 		fstrcpy(grp_array[i].comment, comment);
 		SAFE_FREE(comment);
 		
+		become_root();
 		unix_groupname_to_ntname(NULL, gent->gr_name, &ntname);
+		unbecome_root();
 		fstrcpy(grp_array[i].name, ntname);
 		SAFE_FREE(ntname);
 
@@ -708,15 +746,13 @@ makes a SAM_ENTRY / UNISTR2* structure from a user list.
 ********************************************************************/
 
 static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR2 **uni_name_pp,
-					 uint32 num_entries, uint32 start_idx, SAM_ACCOUNT *disp_user_info,
+					 uint32 num_entries, uint32 start_idx,
+					 struct user_display_info *disp_user_info,
 					 DOM_SID *domain_sid)
 {
 	uint32 i;
 	SAM_ENTRY *sam;
 	UNISTR2 *uni_name;
-	SAM_ACCOUNT *pwd = NULL;
-	UNISTR2 uni_temp_name;
-	const char *temp_name;
 
 	*sam_pp = NULL;
 	*uni_name_pp = NULL;
@@ -734,25 +770,12 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 	}
 
 	for (i = 0; i < num_entries; i++) {
-		DOM_SID user_sid;
-		uint32 user_rid;
+		UNISTR2 uni_temp_name;
+		struct user_display_info *pwd = &disp_user_info[i+start_idx];
 
-		pwd = &disp_user_info[i+start_idx];
-		temp_name = pdb_get_username(pwd);
-		init_unistr2(&uni_temp_name, temp_name, UNI_STR_TERMINATE);
-
-		uid_to_sid(&user_sid, pdb_get_gid(pwd));
-
-		if (!sid_peek_check_rid(domain_sid, &user_sid, &user_rid)) {
-			DEBUG(0, ("make_user_sam_entry_list: User %s has SID %s, which conflicts with "
-				  "the domain sid %s.  Failing operation.\n", 
-				  temp_name, sid_string_static(&user_sid),
-				  sid_string_static(domain_sid)));
-
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		init_sam_entry(&sam[i], &uni_temp_name, user_rid);
+		init_unistr2(&uni_temp_name, pwd->name,
+			     UNI_STR_TERMINATE);
+		init_sam_entry(&sam[i], &uni_temp_name, pwd->rid);
 		copy_unistr2(&uni_name[i], &uni_temp_name);
 	}
 
@@ -3865,7 +3888,9 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	pdb_get_group_comment(p->mem_ctx, name, &comment);
+	become_root();
 	unix_groupname_to_ntname(p->mem_ctx, name, &ntname);
+	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid)))
 		return NT_STATUS_INVALID_HANDLE;

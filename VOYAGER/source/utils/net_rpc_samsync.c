@@ -240,7 +240,8 @@ fail:
 		(old_string && new_string && (strcmp(old_string, new_string) != 0))
 
 static void sam_account_from_delta(SAM_ACCOUNT *account,
-				   SAM_ACCOUNT_INFO *delta)
+				   SAM_ACCOUNT_INFO *delta,
+				   const char *unix_name)
 {
 	const char *old_string, *new_string;
 	time_t unix_time, stored_time;
@@ -250,17 +251,10 @@ static void sam_account_from_delta(SAM_ACCOUNT *account,
 	/* Username, fullname, home dir, dir drive, logon script, acct
 	   desc, workstations, profile. */
 
-	if (delta->hdr_acct_name.buffer) {
-		old_string = pdb_get_nt_username(account);
-		new_string = unistr2_static(&delta->uni_acct_name);
+	{
+		old_string = pdb_get_username(account);
+		new_string = unix_name;
 
-		if (STRING_CHANGED) {
-			pdb_set_nt_username(account, new_string, PDB_CHANGED);
-              
-		}
-         
-		/* Unix username is the same - for sanity */
-		old_string = pdb_get_username( account );
 		if (STRING_CHANGED) {
 			pdb_set_username(account, new_string, PDB_CHANGED);
 		}
@@ -508,7 +502,7 @@ static BOOL fetch_account_info(TALLOC_CTX *mem_ctx, const DOM_SID *dom_sid,
 	/* Ok, finally get the additional NT attributes right */
 
 	pdb_init_sam(&sam_account);
-	sam_account_from_delta(sam_account, delta);
+	sam_account_from_delta(sam_account, delta, pwd->pw_name);
 
 	if (!pdb_add_sam_account(sam_account)) {
 		d_printf("Could not add sam account\n");
@@ -888,11 +882,6 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 
 	if (!idmap_init(lp_idmap_backend())) {
 		d_printf("Could not init idmap\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!delete_name_mappings()) {
-		d_printf("Could not delete name mappings\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
