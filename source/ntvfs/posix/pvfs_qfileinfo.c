@@ -324,7 +324,7 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	h = f->handle;
 
 	access_needed = pvfs_fileinfo_access(info->generic.level);
-	if (!(f->access_mask & access_needed)) {
+	if ((f->access_mask & access_needed) != access_needed) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
