@@ -54,7 +54,7 @@ krb5_copy_ticket(krb5_context context,
     krb5_ticket *tmp;
 
     *to = NULL;
-    tmp = malloc(sizef(*tmp));
+    tmp = malloc(sizeof(*tmp));
     if(tmp == NULL) {
 	krb5_set_error_string (context, "malloc: out of memory");
 	return ENOMEM;
