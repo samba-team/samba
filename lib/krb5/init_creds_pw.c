@@ -142,7 +142,8 @@ init_cred (krb5_context context,
 	krb5_princ_set_realm (context, cred->server, &server_realm);
     } else {
 	ret = krb5_make_principal(context, &cred->server, 
-				  *client_realm, "krbtgt", *client_realm, NULL);
+				  *client_realm, "krbtgt", *client_realm,
+				  NULL);
 	if (ret)
 	    goto out;
     }
@@ -510,7 +511,6 @@ krb5_get_init_creds_keytab(krb5_context context,
     krb5_enctype *etypes = NULL;
     krb5_preauthtype *pre_auth_types = NULL;
     krb5_creds this_cred;
-    /* krb5_kdc_rep kdc_reply; */
     krb5_keytab_entry kt_ent;
     
     ret = get_init_creds_common(context, creds, client, start_time,
@@ -539,7 +539,7 @@ krb5_get_init_creds_keytab(krb5_context context,
 			    NULL,
 			    NULL,
 			    &this_cred,
-			    NULL /* &kdc_reply */);
+			    NULL);
     krb5_kt_free_entry(context, &kt_ent);
     if (ret)
 	goto out;
