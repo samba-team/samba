@@ -52,9 +52,7 @@ static NTSTATUS ads_resolve_dc(fstring remote_machine,
 	/* a full ads_connect() is actually overkill, as we don't srictly need
 	   to do the SASL auth in order to get the info we need, but libads
 	   doesn't offer a better way right now */
-	if (!ADS_ERR_OK(ads_connect(ads))) {
-		return NT_STATUS_NO_LOGON_SERVERS;		
-	}
+	ads_connect(ads);
 #endif
 
 	fstrcpy(remote_machine, ads->ldap_server_name);
