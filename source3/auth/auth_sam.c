@@ -204,7 +204,7 @@ NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user
 	DEBUG(4,("smb_password_ok: Checking SMB password for user %s\n",sampass->username));
 
 	/* Quit if the account was disabled. */
-	if(acct_ctrl & ACB_DISABLED) {
+	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(1,("Account for user '%s' was disabled.\n", sampass->username));
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
@@ -212,52 +212,53 @@ NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user
 	/* Test account expire time */
 	
 	kickoff_time = pdb_get_kickoff_time(sampass);
-	if (kickoff_time != (time_t)-1) {
-		if (time(NULL) > kickoff_time) {
-			DEBUG(1,("Account for user '%s' has expried.\n", sampass->username));
-			DEBUG(3,("Account expired at '%ld' unix time.\n", (long)kickoff_time));
-			return NT_STATUS_ACCOUNT_EXPIRED;
-		}
+	if (kickoff_time != 0 && time(NULL) > kickoff_time) {
+		DEBUG(1,("Account for user '%s' has expried.\n", sampass->username));
+		DEBUG(3,("Account expired at '%ld' unix time.\n", (long)kickoff_time));
+		return NT_STATUS_ACCOUNT_EXPIRED;
 	}
 
 	/* Test workstation. Workstation list is comma separated. */
 
 	workstation_list = strdup(pdb_get_workstations(sampass));
 
-	if (workstation_list) {
-		if (*workstation_list) {
-			BOOL invalid_ws = True;
-			char *s = workstation_list;
+	if (!workstation_list) return NT_STATUS_NO_MEMORY;
+
+	if (*workstation_list) {
+		BOOL invalid_ws = True;
+		char *s = workstation_list;
 			
-			fstring tok;
+		fstring tok;
 			
-			while (next_token(&s, tok, ",", sizeof(tok))) {
-				DEBUG(10,("checking for workstation match %s and %s (len=%d)\n",
-					  tok, user_info->wksta_name.str, user_info->wksta_name.len));
-				if(strequal(tok, user_info->wksta_name.str)) {
-					invalid_ws = False;
-					break;
-				}
+		while (next_token(&s, tok, ",", sizeof(tok))) {
+			DEBUG(10,("checking for workstation match %s and %s (len=%d)\n",
+				  tok, user_info->wksta_name.str, user_info->wksta_name.len));
+			if(strequal(tok, user_info->wksta_name.str)) {
+				invalid_ws = False;
+				break;
 			}
-			
-			SAFE_FREE(workstation_list);		
-			if (invalid_ws) 
-				return NT_STATUS_INVALID_WORKSTATION;
-		} else {
-			SAFE_FREE(workstation_list);
 		}
+		
+		SAFE_FREE(workstation_list);		
+		if (invalid_ws) 
+			return NT_STATUS_INVALID_WORKSTATION;
 	} else {
-		return NT_STATUS_NO_MEMORY;
+		SAFE_FREE(workstation_list);
 	}
+
 	
 	{
 		time_t must_change_time = pdb_get_pass_must_change_time(sampass);
-		if (must_change_time == 0) {
-			DEBUG(1,("Account for user '%s' must change password at next logon! (ie now).\n", sampass->username));
+		time_t last_set_time = pdb_get_pass_last_set_time(sampass);
+
+		/* check for immediate expiry "must change at next logon" */
+		if (must_change_time == 0 && last_set_time != 0) {
+			DEBUG(1,("Account for user '%s' password must change!.\n", sampass->username));
 			return NT_STATUS_PASSWORD_MUST_CHANGE;
 		}
 
-		if (must_change_time != (time_t)-1 && must_change_time < time(NULL)) {
+		/* check for expired password */
+		if (must_change_time < time(NULL) && must_change_time != 0) {
 			DEBUG(1,("Account for user '%s' password expired!.\n", sampass->username));
 			DEBUG(1,("Password expired at '%ld' unix time.\n", (long)must_change_time));
 			return NT_STATUS_PASSWORD_EXPIRED;
@@ -265,12 +266,12 @@ NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user
 	}
 
 	if (acct_ctrl & ACB_DOMTRUST) {
-		DEBUG(0,("session_trust_account: Domain trust account %s denied by server\n", sampass->username));
+		DEBUG(2,("session_trust_account: Domain trust account %s denied by server\n", sampass->username));
 		return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
 	}
 	
 	if (acct_ctrl & ACB_SVRTRUST) {
-		DEBUG(0,("session_trust_account: Server trust account %s denied by server\n", sampass->username));
+		DEBUG(2,("session_trust_account: Server trust account %s denied by server\n", sampass->username));
 		return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
 	}
 	

@@ -1219,10 +1219,11 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 	
 	pdb_set_dir_drive     (sam_pass, lp_logon_drive());
 
-	/* FIXME!!  What should this be set to?  New smb.conf parameter maybe?
-	   max password age?   For now, we'll use the current time + 21 days. 
-	   --jerry */
-	pdb_set_pass_must_change_time (sam_pass, time(NULL)+1814400);
+	/* the smbpasswd format doesn't have a must change time field, so
+	   we can't get this right. The best we can do is to set this to 
+	   some time in the future. 21 days seems as reasonable as any other value :) 
+	*/
+	pdb_set_pass_must_change_time (sam_pass, pw_buf->pass_last_set_time + MAX_PASSWORD_AGE);
 
 	/* check if this is a user account or a machine account */
 	if (samlogon_user[strlen(samlogon_user)-1] != '$')

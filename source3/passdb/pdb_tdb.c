@@ -466,9 +466,6 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	pdb_set_uid (user, uid);
 	pdb_set_gid (user, gid);
 
-	/* 21 days from present */
-	pdb_set_pass_must_change_time(user, time(NULL)+1814400);	
-
 	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_logon_script(user));
 	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_profile_path(user));
 	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
