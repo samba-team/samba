@@ -1,3 +1,18 @@
+2003-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kaserver.c (do_getticket): if times data is shorter then 8
+	byte, request is mailformed.
+
+	* kdc/kaserver.c (do_authenticate): if request length is less then
+	8, its a bad request and fail. Pointed out by Marco Foglia
+	<marco@foglia.org>
+
+	* lib/krb5/verify_krb5_conf.c: add flag --warn-mit-syntax that
+	warns for mit syntax is used and just ignore the mit syntax when
+	its used
+
+	* lib/krb5/verify_krb5_conf.c: parse [kdc]use_2b and [gssapi]
+	
 2003-10-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/asn1/lex.l: add BOOLEAN
