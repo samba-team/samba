@@ -35,7 +35,7 @@
 
 typedef struct file_info
 {
-	SMB_OFF_T size;
+	SMB_BIG_UINT size;
 	uint16 mode;
 	uid_t uid;
 	gid_t gid;
