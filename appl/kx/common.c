@@ -112,16 +112,16 @@ get_local_xsocket (int *num)
 	  struct stat statbuf;
 
 	  sprintf (addr.sun_path, TMPX11 "/X%u", dpy);
-	  if(lstat(addr.sun_path, &statbuf) < 0 && errno == ENOENT)
+	  if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+	       if (errno == EADDRINUSE)
+		    continue;
+	       else
+		    return -1;
+	  else
 	       break;
      }
      if (dpy == 256) {
 	  fprintf (stderr, "%s: no free x-servers\n", prog);
-	  return -1;
-     }
-     if(bind (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-	  fprintf (stderr, "%s: bind: %s\n", prog,
-		   strerror(errno));
 	  return -1;
      }
      if (listen (fd, SOMAXCONN) < 0) {
