@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "rpc_parse.h"
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;
@@ -3599,11 +3600,11 @@ uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environmen
 	
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
+uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 				uint32 in_value_len, uint32 in_data_len,
 				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
 				uint32 *out_type,
-				uint32 *out_max_data_len, uint8  **out_data, uint32 *out_data_len)
+				uint32 *out_max_data_len, uint8  **out_pdata, uint32 *out_data_len)
 {
 	NT_PRINTER_INFO_LEVEL printer;
 	
@@ -3627,7 +3628,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
 	*out_type=0;
 
 	*out_max_data_len=0;
-	*out_data=NULL;
+	*out_pdata=NULL;
 	*out_data_len=0;
 
 	DEBUG(5,("spoolss_enumprinterdata\n"));
@@ -3678,7 +3679,7 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
 	 * that's the number of bytes not the number of unicode chars
 	 */
  
-	if (!get_specific_param_by_index(printer, 2, index, value, &data, &type, &data_len)) {
+	if (!get_specific_param_by_index(printer, 2, idx, value, &data, &type, &data_len)) {
 		free_a_printer(printer, 2);
 		return 0x0103; /* ERROR_NO_MORE_ITEMS */
 	}
@@ -3701,8 +3702,8 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
 
 	/* the data is counted in bytes */
 	*out_max_data_len=in_data_len;
-	*out_data=(uint8 *)malloc(in_data_len*sizeof(uint8));
-	memcpy(*out_data, data, data_len);
+	*out_pdata=(uint8 *)malloc(in_data_len*sizeof(uint8));
+	memcpy(*out_pdata, data, data_len);
 	*out_data_len=data_len;
 
 	safe_free(data);

@@ -168,7 +168,7 @@ void display_printer_info_ctr(FILE *out_hnd, enum action_type action, uint32 lev
 /****************************************************************************
 connection info container display function
 ****************************************************************************/
-void display_printer_enumdata(FILE *out_hnd, enum action_type action, uint32 index, 
+void display_printer_enumdata(FILE *out_hnd, enum action_type action, uint32 idx, 
 				uint32 valuelen, uint16 *value, uint32 rvaluelen,
 				uint32 type, 
 				uint32 datalen, uint8 *data, uint32 rdatalen)
@@ -183,7 +183,7 @@ void display_printer_enumdata(FILE *out_hnd, enum action_type action, uint32 ind
 			report(out_hnd, "\ttype\tdatalen\tdata\trdatalen\n");
 			break;
 		case ACTION_ENUMERATE:
-			report(out_hnd, "\t%d", index);
+			report(out_hnd, "\t%d", idx);
 			report(out_hnd, "\t%d", valuelen);
 			unistr_to_ascii(buffer, value, sizeof(buffer)-1);
 			report(out_hnd, "\t%s", buffer);

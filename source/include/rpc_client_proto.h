@@ -372,7 +372,7 @@ uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
 uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjobs,
 			 uint32 level, NEW_BUFFER *buffer, uint32 offered, 
 			 uint32 *needed, uint32 *returned);
-uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 index, 
+uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx, 
 			uint32 *valuelen, uint16 *value, uint32 *rvaluelen, 
 			uint32 *type, 
 			uint32 *datalen, uint8 *data, uint32 *rdatalen);

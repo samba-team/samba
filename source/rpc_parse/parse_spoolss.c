@@ -24,15 +24,19 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "rpc_parse.h"
 
-#ifdef TNG
-	#define prs_uint16 _prs_uint16
-	#define prs_uint32 _prs_uint32
-	#define prs_uint8s _prs_uint8s
-	#define prs_uint16s _prs_uint16s
-	#define prs_unistr _prs_unistr
-	#define init_unistr2 make_unistr2
-#endif
+#undef prs_uint16
+#undef prs_uint32
+#undef prs_uint8s
+#undef prs_uint16s
+#undef prs_unistr
+#define prs_uint16 _prs_uint16
+#define prs_uint32 _prs_uint32
+#define prs_uint8s _prs_uint8s
+#define prs_uint16s _prs_uint16s
+#define prs_unistr _prs_unistr
+#define init_unistr2 make_unistr2
 
 
 extern int DEBUGLEVEL;
@@ -633,7 +637,7 @@ static BOOL spoolss_io_printer_default(char *desc, PRINTER_DEFAULT *pd, prs_stru
  * init a structure.
  ********************************************************************/
 BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, fstring printername, fstring datatype, 
-					uint32 access_required, fstring client_name, fstring user_name)
+					uint32 access_required, fstring cli_name, fstring user_name)
 {
 	DEBUG(5,("make_spoolss_q_open_printer_ex\n"));
 	q_u->printername_ptr = (printername!=NULL)?1:0;
@@ -651,14 +655,14 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, fstring printe
 	q_u->user_switch=1;
 	q_u->user_ctr.level=1;
 	q_u->user_ctr.ptr=1;
-	q_u->user_ctr.user1.size=strlen(client_name)+strlen(user_name)+8;
-	q_u->user_ctr.user1.client_name_ptr = (client_name!=NULL)?1:0;
+	q_u->user_ctr.user1.size=strlen(cli_name)+strlen(user_name)+8;
+	q_u->user_ctr.user1.client_name_ptr = (cli_name!=NULL)?1:0;
 	q_u->user_ctr.user1.user_name_ptr = (user_name!=NULL)?1:0;
 	q_u->user_ctr.user1.build=1381;
 	q_u->user_ctr.user1.major=2;
 	q_u->user_ctr.user1.minor=0;
 	q_u->user_ctr.user1.processor=0;
-	init_unistr2(&(q_u->user_ctr.user1.client_name), client_name, strlen(client_name));
+	init_unistr2(&(q_u->user_ctr.user1.client_name), cli_name, strlen(cli_name));
 	init_unistr2(&(q_u->user_ctr.user1.user_name), user_name, strlen(user_name));
 	
 	return True;
@@ -3790,10 +3794,10 @@ BOOL spoolss_io_q_enumprinterdata(char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_
 
 /*******************************************************************
 ********************************************************************/  
-BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, POLICY_HND *hnd, uint32 index, uint32 valuelen, uint32 datalen)
+BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, POLICY_HND *hnd, uint32 idx, uint32 valuelen, uint32 datalen)
 {
 	memcpy(&(q_u->handle), hnd, sizeof(q_u->handle));
-	q_u->index=index;
+	q_u->index=idx;
 	q_u->valuesize=valuelen;
 	q_u->datasize=datalen;
 

@@ -157,7 +157,7 @@ uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjob
 /****************************************************************************
 do a SPOOLSS Enum printer datas
 ****************************************************************************/
-uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 index, 
+uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 idx, 
 			uint32 *valuelen, uint16 *value, uint32 *rvaluelen, 
 			uint32 *type, 
 			uint32 *datalen, uint8 *data, uint32 *rdatalen)
@@ -177,7 +177,7 @@ uint32 spoolss_enum_printerdata(const POLICY_HND *hnd, uint32 index,
 
 	DEBUG(5,("SPOOLSS Enum Printer data)\n"));
 
-	make_spoolss_q_enumprinterdata(&q_o, hnd, index, *valuelen, *datalen);
+	make_spoolss_q_enumprinterdata(&q_o, hnd, idx, *valuelen, *datalen);
 
 	/* turn parameters into data stream */
 	if (!spoolss_io_q_enumprinterdata("", &q_o, &buf, 0)) {
