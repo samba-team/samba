@@ -538,7 +538,7 @@ done:
 
 BOOL is_8_3(const char *fname, BOOL check_case)
 {
-	char *f;
+	const char *f;
 	smb_ucs2_t *ucs2name;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
