@@ -1,4 +1,5 @@
 #! /bin/sh
+set -x
 
 echo "fixing distribution in $1..."
 
