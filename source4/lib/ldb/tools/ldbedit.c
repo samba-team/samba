@@ -218,7 +218,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 
 	fclose(f);
 
-	ldb_asprintf(ldb, &cmd, "%s %s", editor, template);
+	asprintf(&cmd, "%s %s", editor, template);
 
 	if (!cmd) {
 		unlink(template);
