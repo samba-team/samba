@@ -277,17 +277,23 @@ struct use_info
 #endif
 
 #ifndef _DOM_SID
-/* DOM_SID - security id */
+/**
+ * @brief Security Identifier
+ *
+ * @sa http://msdn.microsoft.com/library/default.asp?url=/library/en-us/security/accctrl_38yn.asp
+ **/
 typedef struct sid_info
 {
-  uint8  sid_rev_num;             /* SID revision number */
-  uint8  num_auths;               /* number of sub-authorities */
-  uint8  id_auth[6];              /* Identifier Authority */
+  uint8  sid_rev_num;             /**< SID revision number */
+  uint8  num_auths;               /**< Number of sub-authorities */
+  uint8  id_auth[6];              /**< Identifier Authority */
   /*
-   * Note that the values in these uint32's are in *native* byteorder,
-   * not neccessarily little-endian...... JRA.
+   *  Pointer to sub-authorities.
+   *
+   * @note The values in these uint32's are in *native* byteorder, not
+   * neccessarily little-endian...... JRA.
    */
-  uint32 sub_auths[MAXSUBAUTHS];  /* pointer to sub-authorities. */
+  uint32 sub_auths[MAXSUBAUTHS];  
 
 } DOM_SID;
 #define _DOM_SID
