@@ -5,7 +5,8 @@
 [SUBSYSTEM::DCERPC_COMMON]
 ADD_OBJ_FILES = \
 		rpc_server/common/server_info.o \
-		rpc_server/common/share_info.o
+		rpc_server/common/share_info.o \
+		rpc_server/common/gendb.o
 #
 # End SUBSYSTEM DCERPC_COMMON
 ################################################
@@ -122,7 +123,6 @@ INIT_OBJ_FILES = \
 		rpc_server/spoolss/dcesrv_spoolss.o \
 		rpc_server/spoolss/spoolssdb.o
 REQUIRED_SUBSYSTEMS = \
-		SAMDB \
 		DCERPC_COMMON
 # End MODULE dcerpc_lsa
 ################################################
