@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\" 
-.Dd March 10, 2003
+.Dd March 19, 2003
 .Dt GSS_ACQUIRE_CRED 3
 .Os HEIMDAL
 .Sh NAME
@@ -366,7 +366,7 @@ described in
 and
 .Li RFC2744 .
 .Pp
-Gssapi supports the following mechanisms
+Heimdals gssapis implementation supports the following mechanisms
 .Bl -bullet
 .It
 .Li GSS_KRB5_MECHANISM
@@ -388,7 +388,8 @@ Gssapi have some generic name types
 .Li GSS_C_NT_EXPORT_NAME
 .El
 .Pp
-Gssapi that supports Kerberos 5 have some additional name types
+Gssapi implementations that supports Kerberos 5 have some additional
+name types
 .Bl -bullet
 .It
 .Li GSS_KRB5_NT_PRINCIPAL_NAME
@@ -417,6 +418,16 @@ and will in the later case contain the OID type of the name.
 The name should only be used for printing.
 Access control should be done with the result of
 .Fn gss_export_name .
+.Pp
+.Fn gss_sign ,
+.Fn gss_verify ,
+.Fn gss_seal ,
+and
+.Fn gss_unseal
+are part of the GSSAPI V1 interface and are obsolete. The functions
+should not be used for new applications.
+They are provided so that version 1 applications can link against the
+library.
 .Pp
 .Fn gss_krb5_copy_ccache
 is an extension to the
