@@ -1,3 +1,8 @@
+Sun Nov  9 09:11:14 1997  Assar Westerlund  <assar@sics.se>
+
+	* pop_dropinfo.c: be careful with mails without msg-id, subject,
+ 	or from
+
 Wed Oct 29 02:09:24 1997  Assar Westerlund  <assar@sics.se>
 
 	* pop_pass.c: conditionalize OTP-support
