@@ -1146,8 +1146,8 @@ char *dns_to_netbios_name(const char *dns_name)
 }
 
 /****************************************************************************
- Interpret the weird netbios "name". Return the name type. Outputs in DOS
- codepage.
+ Interpret the weird netbios "name". Return the name type. Outputs in UNIX
+ charset.
 ****************************************************************************/
 
 static int name_interpret(char *in,char *out)
@@ -1184,11 +1184,12 @@ static int name_interpret(char *in,char *out)
       in += len;
     }
 #endif
+  dos_to_unix(out);
   return(ret);
 }
 
 /****************************************************************************
- mangle a name into netbios format. In must be in DOS codepage.
+ mangle a name into netbios format. In must be in UNIX charset.
  Note:  <Out> must be (33 + strlen(scope) + 2) bytes long, at minimum.
 ****************************************************************************/
 
@@ -1206,7 +1207,7 @@ int name_mangle( char *In, char *Out, char name_type )
   if (strcmp(In,"*") == 0)
     buf[0] = '*';
   else
-    (void)slprintf( buf, sizeof(buf) - 1, "%-15.15s%c", In, name_type );
+    (void)slprintf( buf, sizeof(buf) - 1, "%-15.15s%c", unix_to_dos_static(In), name_type );
 
   /* Place the length of the first field into the output buffer. */
   p[0] = 32;
@@ -1264,7 +1265,7 @@ static char *name_ptr(char *buf,int ofs)
 }  
 
 /****************************************************************************
- Extract a netbios name from a buf.
+ Extract a netbios name from a buf. Extracts as UNIX charset.
 ****************************************************************************/
 
 int name_extract(char *buf,int ofs,char *name)
