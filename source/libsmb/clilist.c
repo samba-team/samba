@@ -71,6 +71,7 @@ static int interpret_long_filename(struct cli_state *cli,
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 30);
 			p += 31;
+			/* check for unisys! */
 			p += clistr_pull(cli, finfo->name, p,
 					 sizeof(finfo->name),
 					 len, 
@@ -114,7 +115,7 @@ static int interpret_long_filename(struct cli_state *cli,
 				if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
 				clistr_pull(cli, finfo->short_name, p,
 					    sizeof(finfo->short_name),
-					    24, flags);
+					    slen, flags);
 			}
 			p += 24; /* short name? */	  
 			clistr_pull(cli, finfo->name, p,
