@@ -580,18 +580,18 @@ static GtkWidget* create_mainwin (void)
 		open_nt4 = gtk_image_menu_item_new_with_mnemonic("Open _NT4 file");
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_nt4);
 
-		g_signal_connect ((gpointer) open_nt4, "activate",
-						  G_CALLBACK (on_open_file_activate),
-						  (gpointer)"nt4");
+		g_signal_connect(open_nt4, "activate",
+				 G_CALLBACK (on_open_file_activate),
+				 discard_const_p(char, "nt4"));
 	}
 
 	if(reg_has_backend("w95")) {
 		open_w95 = gtk_image_menu_item_new_with_mnemonic("Open Win_9x file");
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_w95);
 
-		g_signal_connect ((gpointer) open_w95, "activate",
-						  G_CALLBACK (on_open_file_activate),
-						  (gpointer)"w95");
+		g_signal_connect (open_w95, "activate",
+				  G_CALLBACK (on_open_file_activate),
+				  discard_const_p(char, "w95"));
 	}
 
 	if(reg_has_backend("gconf")) {
@@ -616,9 +616,9 @@ static GtkWidget* create_mainwin (void)
 		open_ldb = gtk_image_menu_item_new_with_mnemonic("Open _LDB file");
 		gtk_container_add (GTK_CONTAINER (menu_file_menu), open_ldb);
 
-		g_signal_connect ((gpointer) open_ldb, "activate",
-						  G_CALLBACK (on_open_file_activate),
-						  (gpointer)"ldb");
+		g_signal_connect(open_ldb, "activate",
+				 G_CALLBACK (on_open_file_activate),
+				 discard_const_p(char, "ldb"));
 	}
 
 	save = gtk_image_menu_item_new_from_stock ("gtk-save", accel_group);

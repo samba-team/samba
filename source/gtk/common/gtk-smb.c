@@ -289,7 +289,7 @@ GType gtk_rpc_binding_dialog_get_type (void)
 
 GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials, struct sam_pipe *sam_pipe)
 {
-	GtkRpcBindingDialog *d = GTK_RPC_BINDING_DIALOG ( gtk_type_new (gtk_rpc_binding_dialog_get_type ()));
+	GtkRpcBindingDialog *d = GTK_RPC_BINDING_DIALOG ( g_object_new (gtk_rpc_binding_dialog_get_type (), NULL));
 	if (nocredentials) {
 		gtk_widget_hide_all(d->frame_credentials);
 	}

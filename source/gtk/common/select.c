@@ -123,7 +123,7 @@ GType gtk_select_domain_dialog_get_type (void)
                                                                                                                              
 GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe)
 {
-	GtkSelectDomainDialog *d = gtk_type_new (gtk_select_domain_dialog_get_type ());
+	GtkSelectDomainDialog *d = g_object_new(gtk_select_domain_dialog_get_type (), NULL);
 	NTSTATUS status;
 	struct samr_EnumDomains r;
 	struct samr_Connect cr;
@@ -258,5 +258,5 @@ GType gtk_select_host_dialog_get_type (void)
                                                                                                                              
 GtkWidget *gtk_select_host_dialog_new (struct sam_pipe *sam_pipe, BOOL nocredentials)
 {
-        return GTK_WIDGET ( gtk_type_new (gtk_select_host_dialog_get_type ()));
+        return GTK_WIDGET ( g_object_new (gtk_select_host_dialog_get_type (), NULL ));
 }
