@@ -382,8 +382,8 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	uint32 alias_rid;
 	const char **names = NULL;
 	uint32 num_names = 0;
-	DOM_SID *sids; 
-	uint32 num_sids;
+	DOM_SID *sids = NULL; 
+	uint32 num_sids = 0;
 	int i;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
@@ -424,17 +424,17 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	res3 = res3 ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &fnum_lsa) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res3 = res3 ? lsa_open_policy(smb_cli, fnum,
+	res3 = res3 ? lsa_open_policy(smb_cli, fnum_lsa,
 				srv_name,
 				&info->dom.lsa_info_pol, True) : False;
 
 	/* send lsa lookup sids call */
-	res4 = res3 ? lsa_lookup_names(smb_cli, fnum, 
+	res4 = res3 ? lsa_lookup_names(smb_cli, fnum_lsa, 
 				       &info->dom.lsa_info_pol,
 				       num_names, names, 
 				       &sids, &num_sids) : False;
 
-	res3 = res3 ? lsa_close(smb_cli, fnum, &info->dom.lsa_info_pol) : False;
+	res3 = res3 ? lsa_close(smb_cli, fnum_lsa, &info->dom.lsa_info_pol) : False;
 
 	cli_nt_session_close(smb_cli, fnum_lsa);
 
@@ -1557,17 +1557,17 @@ void cmd_sam_enum_aliases(struct client_info *info)
 				res3 = res3 ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &fnum_lsa) : False;
 
 				/* lookup domain controller; receive a policy handle */
-				res3 = res3 ? lsa_open_policy(smb_cli, fnum,
+				res3 = res3 ? lsa_open_policy(smb_cli, fnum_lsa,
 							srv_name,
 							&info->dom.lsa_info_pol, True) : False;
 
 				/* send lsa lookup sids call */
-				res4 = res3 ? lsa_lookup_sids(smb_cli, fnum, 
+				res4 = res3 ? lsa_lookup_sids(smb_cli, fnum_lsa, 
 							       &info->dom.lsa_info_pol,
 				                               num_aliases, sids, 
 				                               &names, &num_names) : False;
 
-				res3 = res3 ? lsa_close(smb_cli, fnum, &info->dom.lsa_info_pol) : False;
+				res3 = res3 ? lsa_close(smb_cli, fnum_lsa, &info->dom.lsa_info_pol) : False;
 
 				cli_nt_session_close(smb_cli, fnum_lsa);
 

@@ -1234,7 +1234,7 @@ typedef struct q_samr_add_alias_mem_info
 {
 	POLICY_HND alias_pol;       /* policy handle */
 
-	DOM_SID sid; /* member sid to be added to the alias */
+	DOM_SID2 sid; /* member sid to be added to the alias */
 
 } SAMR_Q_ADD_ALIASMEM;
 
