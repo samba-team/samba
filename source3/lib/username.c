@@ -425,75 +425,96 @@ BOOL user_in_group_list(const char *user, const char *gname)
 
 BOOL user_in_list(const char *user,char **list)
 {
+	if (!list || !*list)
+		return False;
 
-  if (!list || !*list) return False;
+	DEBUG(10,("user_in_list: checking user %s in list\n", user));
 
-  DEBUG(10,("user_in_list: checking user %s in list\n", user));
+	while (*list) {
+		/*
+		 * Check raw username.
+		 */
+		if (strequal(user, *list))
+			return(True);
 
-  while (*list) {
-    /*
-     * Check raw username.
-     */
-    if (strequal(user, *list))
-      return(True);
+		/*
+		 * Now check to see if any combination
+		 * of UNIX and netgroups has been specified.
+		 */
 
-    /*
-     * Now check to see if any combination
-     * of UNIX and netgroups has been specified.
-     */
+		if(**list == '@') {
+			/*
+			 * Old behaviour. Check netgroup list
+			 * followed by UNIX list.
+			 */
+			if(user_in_netgroup_list(user, *list +1))
+				return True;
+			if(user_in_group_list(user, *list +1))
+				return True;
+		} else if (**list == '+') {
 
-    if(**list == '@') {
-      /*
-       * Old behaviour. Check netgroup list
-       * followed by UNIX list.
-       */
-      if(user_in_netgroup_list(user, *list +1))
-        return True;
-      if(user_in_group_list(user, *list +1))
-        return True;
-    } else if (**list == '+') {
+			if((*(*list +1)) == '&') {
+				/*
+				 * Search UNIX list followed by netgroup.
+				 */
+				if(user_in_group_list(user, *list +2))
+					return True;
+				if(user_in_netgroup_list(user, *list +2))
+					return True;
 
-      if((*(*list +1)) == '&') {
-        /*
-         * Search UNIX list followed by netgroup.
-         */
-        if(user_in_group_list(user, *list +2))
-          return True;
-        if(user_in_netgroup_list(user, *list +2))
-          return True;
+			} else {
 
-      } else {
+				/*
+				 * Just search UNIX list.
+				 */
 
-        /*
-         * Just search UNIX list.
-         */
+				if(user_in_group_list(user, *list +1))
+					return True;
+			}
 
-        if(user_in_group_list(user, *list +1))
-          return True;
-      }
+		} else if (**list == '&') {
 
-    } else if (**list == '&') {
+			if(*(*list +1) == '+') {
+				/*
+				 * Search netgroup list followed by UNIX list.
+				 */
+				if(user_in_netgroup_list(user, *list +2))
+					return True;
+				if(user_in_group_list(user, *list +2))
+					return True;
+			} else {
+				/*
+				 * Just search netgroup list.
+				 */
+				if(user_in_netgroup_list(user, *list +1))
+					return True;
+			}
+		} else if (strchr(*list,*lp_winbind_separator()) != NULL) {
+			/*
+			 * If user name did not match and token is not
+			 * a unix group and the token has a winbind separator in the
+			 * name then see if it is a Windows group.
+			 */
 
-      if(*(*list +1) == '+') {
-        /*
-         * Search netgroup list followed by UNIX list.
-         */
-        if(user_in_netgroup_list(user, *list +2))
-          return True;
-        if(user_in_group_list(user, *list +2))
-          return True;
-      } else {
-        /*
-         * Just search netgroup list.
-         */
-        if(user_in_netgroup_list(user, *list +1))
-          return True;
-      }
-    }
+			DOM_SID g_sid;
+			enum SID_NAME_USE name_type;
+			BOOL winbind_answered = False;
+			BOOL ret;
+
+			/* Check to see if name is a Windows group */
+			if (winbind_lookup_name(*list, &g_sid, &name_type) && name_type == SID_NAME_DOM_GRP) {
+
+				/* Check if user name is in the Windows group */
+				ret = user_in_winbind_group_list(user, *list, &winbind_answered);
+
+				if (winbind_answered && ret == True)
+					return ret;
+			}
+		}
     
-    list++;
-  }
-  return(False);
+		list++;
+	}
+	return(False);
 }
 
 /* The functions below have been taken from password.c and slightly modified */
