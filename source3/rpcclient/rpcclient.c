@@ -116,7 +116,7 @@ static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
 		struct cmd_set *temp_set = temp_list->cmd_set;
 
 		while(temp_set->name) {
-			printf("%s\t%s\n", temp_set->name,
+			printf("%15s\t\t%s\n", temp_set->name,
 			       temp_set->description);
 			temp_set++;
 		}
@@ -149,13 +149,21 @@ static uint32 cmd_quit(struct cli_state *cli, int argc, char **argv)
 /* Build in rpcclient commands */
 
 static struct cmd_set rpcclient_commands[] = {
+	{ "GENERAL OPTIONS", 	NULL, 	"" },
 	{ "help", 	cmd_help, 	"Print list of commands" },
-	{ "debuglevel", cmd_debuglevel, "Set debug level" },
-	{ "quit", 	cmd_quit, 	"Exit program" },
 	{ "?", 		cmd_help, 	"Print list of commands" },
+	{ "debuglevel", cmd_debuglevel, "Set debug level" },
+	{ "exit", 	cmd_quit, 	"Exit program" },
+	{ "quit", 	cmd_quit, 	"Exit program" },
 
 	{ NULL, NULL, NULL }
 };
+
+static struct cmd_set separator_command[] = {
+	{ "---------------", NULL,	"----------------------" },
+	{ NULL, NULL, NULL }
+};
+
 
 void add_command_set(struct cmd_set *cmd_set)
 {
@@ -213,11 +221,16 @@ static uint32 do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, char *cmd
 	}
 
 	/* Call the function */
+	if (cmd_entry->fn) {
+		result = cmd_entry->fn(cli, argc, argv);
+	}
+	else {
+		fprintf (stderr, "Invalid command\n");
+		result = NT_STATUS_INVALID_PARAMETER;
+	}
 
-	result = cmd_entry->fn(cli, argc, argv);
-				
+						
 	/* Cleanup */
-
 	for (i = 0; i < argc; i++) {
 		free(argv[i]);
 	}
@@ -445,7 +458,7 @@ static void usage(char *pname)
 	 */
 	if (!got_pass) {
 		init_rpcclient_creds (&creds, username, workgroup, "");
-		pwd_read(&creds.pwd, "Password : ", lp_encrypted_passwords());
+		pwd_read(&creds.pwd, "Enter Password: ", lp_encrypted_passwords());
 	}
 	else {
 		init_rpcclient_creds (&creds, username, workgroup, password);
@@ -464,9 +477,13 @@ static void usage(char *pname)
 
 	/* Load command lists */
 	add_command_set(rpcclient_commands);
+	add_command_set(separator_command);
 	add_command_set(spoolss_commands);
+	add_command_set(separator_command);
 	add_command_set(lsarpc_commands);
+	add_command_set(separator_command);
 	add_command_set(samr_commands);
+	add_command_set(separator_command);
 
 
 	/* Do anything specified with -c */

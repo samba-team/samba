@@ -31,6 +31,16 @@ extern pstring global_myname;
 extern pstring username, password;
 extern pstring workgroup;
 
+/**********************************************************************
+ * dummy function  -- placeholder
+  */
+static uint32 cmd_spoolss_not_implemented (struct cli_state *cli, 
+					   int argc, char **argv)
+{
+	printf ("(*) This command is not currently implemented.\n");
+	return NT_STATUS_NO_PROBLEMO;
+}
+
 /****************************************************************************
  display sec_ace structure
  ****************************************************************************/
@@ -82,6 +92,55 @@ static void display_sec_desc(SEC_DESC *sec)
 	if (sec->off_sacl) display_sec_acl(sec->sacl);
 	if (sec->off_dacl) display_sec_acl(sec->dacl);
 }
+
+/***********************************************************************
+ * Get printer information
+ */
+static uint32 cmd_spoolss_open_printer_ex(struct cli_state *cli, int argc, char **argv)
+{
+	uint32 		result = NT_STATUS_UNSUCCESSFUL; 
+	pstring		printername;
+	fstring		server, user;
+	POLICY_HND	hnd;
+	
+	if (argc != 2) {
+		printf("Usage: openprinter <printername>\n");
+		return NT_STATUS_NOPROBLEMO;
+	}
+	
+	if (!cli)
+		return NT_STATUS_UNSUCCESSFUL;
+		
+
+	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	strupper (server);
+	fstrcpy  (user, cli->user_name);
+	fstrcpy  (printername, argv[1]);
+
+		
+	/* Initialise RPC connection */
+	if (!cli_nt_session_open (cli, PIPE_SPOOLSS)) {
+		fprintf (stderr, "Could not initialize spoolss pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Enumerate printers */
+	result = cli_spoolss_open_printer_ex (cli, printername, "", 
+				PRINTER_ACCESS_USE, server, user, &hnd);
+
+	if (result == NT_STATUS_NOPROBLEMO) {
+		printf ("Printer %s opened successfully\n", printername);
+		result = cli_spoolss_close_printer (cli, &hnd);
+		if (result != NT_STATUS_NOPROBLEMO) {
+			printf ("Error closing printer handle! (%s)\n", get_nt_error_msg(result));
+		}
+	}
+
+	cli_nt_session_close(cli);
+
+	return result;
+}
+
 
 /****************************************************************************
 printer info level 0 display function
@@ -245,7 +304,8 @@ static uint32 cmd_spoolss_enum_printers(struct cli_state *cli, int argc, char **
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* Enumerate printers */
+	/* Enumerate printers  -- Should we enumerate types other 
+	   than PRINTER_ENUM_LOCAL?  Maybe accept as a parameter?  --jerry */
 	ZERO_STRUCT(ctr);
 	result = cli_spoolss_enum_printers(cli, PRINTER_ENUM_LOCAL, 
 					   info_level, &returned, &ctr);
@@ -355,8 +415,9 @@ static uint32 cmd_spoolss_enum_ports(struct cli_state *cli, int argc, char **arg
 	return result;
 }
 
-/* Get printer information */
-
+/***********************************************************************
+ * Get printer information
+ */
 static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **argv)
 {
 	POLICY_HND pol;
@@ -382,8 +443,7 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 		info_level = atoi(argv[2]);
 	}
 
-	slprintf(printer_name, sizeof(fstring), "\\\\%s\\%s",
-		 server, argv[1]);
+	slprintf(printer_name, sizeof(fstring), "\\\\%s\\%s", server, argv[1]);
 
 	slprintf(station_name, sizeof(fstring), "\\\\%s", global_myname);
 
@@ -422,7 +482,8 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 	}
 
  done: 
-	if (opened_hnd) cli_spoolss_closeprinter(cli, &pol);
+	if (opened_hnd) 
+		cli_spoolss_close_printer(cli, &pol);
 
 	cli_nt_session_close(cli);
 
@@ -430,12 +491,19 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 }
 
 /* List of commands exported by this module */
-
 struct cmd_set spoolss_commands[] = {
 
-	{ "enumprinters", 	cmd_spoolss_enum_printers, 	"Enumerate printers" },
+	{ "SPOOLSS", 		NULL, 				"" },
+	{ "adddriver",		cmd_spoolss_not_implemented,	"Add a print driver (*)" },
+	{ "addprinter",		cmd_spoolss_not_implemented,	"Add a printer (*)" },
+	{ "enumdata",		cmd_spoolss_not_implemented,	"Enumerate printer data (*)" },
+	{ "enumjobs",		cmd_spoolss_not_implemented,	"Enumerate print jobs (*)" },
 	{ "enumports", 		cmd_spoolss_enum_ports, 	"Enumerate printer ports" },
+	{ "enumprinters", 	cmd_spoolss_enum_printers, 	"Enumerate printers" },
+	{ "getdata",		cmd_spoolss_not_implemented,	"Get print driver data (*)" },
+	{ "getdriver",		cmd_spoolss_not_implemented,	"Get print driver information (*)" },
+	{ "getdriverdir",	cmd_spoolss_not_implemented,	"Get print driver upload directory (*)" },
 	{ "getprinter", 	cmd_spoolss_getprinter, 	"Get printer info" },
-
+	{ "openprinter",	cmd_spoolss_open_printer_ex,	"Open printer handle" },
 	{ NULL, NULL, NULL }
 };

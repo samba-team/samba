@@ -136,7 +136,7 @@ uint32 cli_spoolss_open_printer_ex(struct cli_state *cli, char *printername,
 
 /* Close a printer handle */
 
-uint32 cli_spoolss_closeprinter(struct cli_state *cli, POLICY_HND *pol)
+uint32 cli_spoolss_close_printer(struct cli_state *cli, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_CLOSEPRINTER q;
