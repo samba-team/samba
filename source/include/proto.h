@@ -2834,6 +2834,8 @@ BOOL make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u,
 BOOL spoolss_io_q_enumprinterdrivers(char *desc, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, int depth);
 BOOL new_spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth);
+BOOL spoolss_io_q_getform(char *desc, SPOOL_Q_GETFORM *q_u, prs_struct *ps, int depth);
+BOOL new_spoolss_io_r_getform(char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, int depth);
 BOOL new_spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumports(char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth);
 BOOL spool_io_printer_info_level_1(char *desc, SPOOL_PRINTER_INFO_LEVEL_1 *il, prs_struct *ps, int depth);
@@ -3158,6 +3160,7 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 uint32 _new_spoolss_enumforms( POLICY_HND *handle, uint32 level, 
 			       NEW_BUFFER *buffer, uint32 offered, 
 			       uint32 *needed, uint32 *numofforms);
+uint32 _spoolss_getform( POLICY_HND *handle, uint32 level, UNISTR2 *formname, NEW_BUFFER *buffer, uint32 offered, uint32 *needed);
 uint32 _spoolss_enumports( UNISTR2 *name, uint32 level, 
 			   NEW_BUFFER *buffer, uint32 offered, 
 			   uint32 *needed, uint32 *returned);

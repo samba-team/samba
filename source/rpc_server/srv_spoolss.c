@@ -775,6 +775,43 @@ static BOOL api_spoolss_enumprinterdrivers(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+static BOOL api_spoolss_getform(pipes_struct *p)
+{
+	SPOOL_Q_GETFORM q_u;
+	SPOOL_R_GETFORM r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!new_spoolss_allocate_buffer(&q_u.buffer))
+		return False;
+
+	if (!spoolss_io_q_getform("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_getform: unable to unmarshall SPOOL_Q_GETFORM.\n"));
+		return False;
+	}
+
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
+
+	r_u.status = _spoolss_getform(&q_u.handle, q_u.level, 
+				&q_u.formname, r_u.buffer, q_u.offered, &r_u.needed);
+
+	if (!new_spoolss_io_r_getform("",&r_u,rdata,0)) {
+		DEBUG(0,("new_spoolss_io_r_getform: unable to marshall SPOOL_R_GETFORM.\n"));
+		new_spoolss_free_buffer(q_u.buffer);
+		return False;
+	}
+
+	new_spoolss_free_buffer(q_u.buffer);
+
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
 static BOOL api_spoolss_enumforms(pipes_struct *p)
 {
 	SPOOL_Q_ENUMFORMS q_u;
@@ -1293,6 +1330,7 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_SETPRINTERDATA",            SPOOLSS_SETPRINTERDATA,            api_spoolss_setprinterdata            },
  {"SPOOLSS_ADDFORM",                   SPOOLSS_ADDFORM,                   api_spoolss_addform                   },
  {"SPOOLSS_DELETEFORM",                SPOOLSS_DELETEFORM,                api_spoolss_deleteform                },
+ {"SPOOLSS_GETFORM",                   SPOOLSS_GETFORM,                   api_spoolss_getform                   },
  {"SPOOLSS_SETFORM",                   SPOOLSS_SETFORM,                   api_spoolss_setform                   },
  {"SPOOLSS_ENUMPRINTPROCESSORS",       SPOOLSS_ENUMPRINTPROCESSORS,       api_spoolss_enumprintprocessors       },
  {"SPOOLSS_ENUMMONITORS",              SPOOLSS_ENUMMONITORS,              api_spoolss_enumprintmonitors         },
