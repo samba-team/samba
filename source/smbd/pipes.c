@@ -423,13 +423,13 @@ static void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len)
 	hdr->reserved     = 0;               /* reserved */
 }
 
-static void make_rpc_reply(char *inbuf, char *q, char *base, int data_len)
+static void make_rpc_reply(char *inbuf, char *q, int data_len)
 {
 	uint32 callid = RIVAL(inbuf, 12);
 	RPC_HDR hdr;
 
 	create_rpc_reply(&hdr, callid, data_len);
-	smb_io_rpc_hdr(False, &hdr, q, base, 4);
+	smb_io_rpc_hdr(False, &hdr, q, q, 4);
 }
 
 static int lsa_reply_open_policy(char *q, char *base)
@@ -455,6 +455,18 @@ static void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate)
 	hdr->undoc       = terminate;
 }
 
+static void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate)
+{
+	make_uni_hdr(&(hdr->unihdr), max_len, len, terminate);
+	hdr->undoc_buffer = len > 0 ? 1 : 0;
+}
+
+static void make_unistr(UNISTR *str, char *buf)
+{
+	/* store the string (null-terminated copy) */
+	PutUniCode((char *)(str->buffer), buf);
+}
+
 static void make_unistr2(UNISTR2 *str, char *buf, int len, char terminate)
 {
 	/* set up string lengths. add one if string is not null-terminated */
@@ -467,6 +479,16 @@ static void make_unistr2(UNISTR2 *str, char *buf, int len, char terminate)
 
 	/* overwrite the last character: some strings are terminated with 4 not 0 */
 	str->buffer[len] = (uint16)terminate;
+}
+
+static void make_dom_sid2(DOM_SID2 *sid2, char *sid_str)
+{
+	int len_sid_str = strlen(sid_str);
+
+	sid2->type = 0x5;
+	sid2->undoc = 0;
+	make_uni_hdr2(&(sid2->hdr), len_sid_str, len_sid_str, 0);
+	make_unistr  (&(sid2->str), sid_str);
 }
 
 static void make_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
@@ -503,6 +525,79 @@ static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 
 	/* store the response in the SMB stream */
 	q = lsa_io_r_query(False, &r_q, q, base, 4);
+
+	/* return length of SMB data stored */
+	return q - start; 
+}
+
+/* pretty much hard-coded choice of "other" sids, unfortunately... */
+static void make_dom_ref(DOM_R_REF *ref,
+				char *dom_name, char *dom_sid,
+				char *other_sid1, char *other_sid2, char *other_sid3)
+{
+	int len_dom_name   = strlen(dom_name);
+	int len_other_sid1 = strlen(other_sid1);
+	int len_other_sid2 = strlen(other_sid2);
+	int len_other_sid3 = strlen(other_sid3);
+
+	ref->undoc_buffer = 1;
+	ref->num_ref_doms_1 = 4;
+	ref->buffer_dom_name = 1;
+	ref->max_entries = 32;
+	ref->num_ref_doms_2 = 4;
+
+	make_uni_hdr2(&(ref->hdr_dom_name  ), len_dom_name  , len_dom_name  , 0);
+	make_uni_hdr2(&(ref->hdr_ref_dom[0]), len_other_sid1, len_other_sid1, 0);
+	make_uni_hdr2(&(ref->hdr_ref_dom[1]), len_other_sid2, len_other_sid2, 0);
+	make_uni_hdr2(&(ref->hdr_ref_dom[2]), len_other_sid3, len_other_sid3, 0);
+
+	if (dom_name != NULL)
+	{
+		make_unistr(&(ref->uni_dom_name), dom_name);
+	}
+
+	make_dom_sid(&(ref->ref_dom[0]), dom_sid   );
+	make_dom_sid(&(ref->ref_dom[1]), other_sid1);
+	make_dom_sid(&(ref->ref_dom[2]), other_sid2);
+	make_dom_sid(&(ref->ref_dom[3]), other_sid3);
+}
+
+static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
+				int num_entries, char *dom_sids[MAX_LOOKUP_SIDS],
+				char *dom_name, char *dom_sid,
+				char *other_sid1, char *other_sid2, char *other_sid3)
+{
+	int i;
+
+	make_dom_ref(&(r_l->dom_ref), dom_name, dom_sid,
+	             other_sid1, other_sid2, other_sid3);
+
+	r_l->num_entries = num_entries;
+	r_l->undoc_buffer = 1;
+	r_l->num_entries2 = num_entries;
+
+	for (i = 0; i < num_entries; i++)
+	{
+		make_dom_sid2(&(r_l->dom_sid[i]), dom_sids[i]);
+	}
+
+	r_l->num_entries3 = num_entries;
+}
+
+static int lsa_reply_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, char *q, char *base,
+				char *dom_name, char *dom_sid,
+				char *other_sid1, char *other_sid2, char *other_sid3)
+{
+	char *start = q;
+	LSA_R_LOOKUP_SIDS r_l;
+
+	/* set up the LSA Lookup SIDs response */
+	make_reply_lookup_sids(&r_l, 0, NULL, /* q_l->num_entries, q_l->dom_sids, */
+				dom_name, dom_sid, other_sid1, other_sid2, other_sid3);
+	r_l.status = 0x0;
+
+	/* store the response in the SMB stream */
+	q = lsa_io_r_lookup_sids(False, &r_l, q, base, 4);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -756,4 +851,45 @@ static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
 
 	/* return length of SMB data stored */
 	return q - start; 
+}
+
+
+static void api_lsa_open_policy( char *param, char *data,
+                             char **rdata, int *rdata_len )
+{
+	int reply_len;
+
+	/* we might actually want to decode the query, but it's not necessary */
+	/* lsa_io_q_open_policy(...); */
+
+	/* return a 20 byte policy handle */
+	reply_len = lsa_reply_open_policy(*rdata + 0x18, *rdata + 0x18);
+
+	/* construct header, now that we know the reply length */
+	make_rpc_reply(data, *rdata, reply_len);
+	*rdata_len = reply_len + 0x18;
+}
+
+static void api_lsa_query_info( char *param, char *data,
+                                char **rdata, int *rdata_len )
+{
+	int reply_len;
+
+	LSA_Q_QUERY_INFO q_i;
+	pstring dom_name;
+	pstring dom_sid;
+
+	/* grab the info class and policy handle */
+	lsa_io_q_query(True, &q_i, data + 0x18, data + 0x18, 4);
+
+	pstrcpy(dom_name, lp_workgroup());
+	pstrcpy(dom_sid , lp_domainsid());
+
+	/* construct reply.  return status is always 0x0 */
+	reply_len = lsa_reply_query_info(&q_i, *rdata + 0x18, *rdata + 0x18, 
+									 dom_name, dom_sid);
+
+	/* construct header, now that we know the reply length */
+	make_rpc_reply(data, *rdata, reply_len);
+	*rdata_len = reply_len + 0x18;
 }

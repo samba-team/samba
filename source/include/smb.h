@@ -326,6 +326,7 @@ typedef struct domsid2_info
 {
   uint32 type; /* value is 5 */
   uint32 undoc; /* value is 0 */
+
   UNIHDR2 hdr; /* XXXX conflict between hdr and str for length */
   UNISTR  str; /* XXXX conflict between hdr and str for length */
 
@@ -488,7 +489,8 @@ typedef struct lsa_r_open_pol_info
 /* LSA_Q_QUERY_INFO - LSA query info policy */
 typedef struct lsa_query_info
 {
-    uint16 info_class; /* info class (also a policy handle?) */
+	LSA_POL_HND pol; /* policy handle */
+    uint16 info_class; /* info class */
 
 } LSA_Q_QUERY_INFO;
 

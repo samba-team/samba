@@ -45,6 +45,8 @@ char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int al
 {
 	if (q_q == NULL) return NULL;
 
+	q = smb_io_pol_hnd(io, &(q_q->pol), q, base, align);
+
 	RW_SVAL(io, q, q_q->info_class, 0); q += 2;
 
 	return q;

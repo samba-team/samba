@@ -140,6 +140,7 @@ typedef struct
   char *szNISHomeMapName;
   char *szAnnounceVersion; /* This is initialised in init_globals */
   char *szNetbiosAliases;
+  char *szDomainSID;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -436,6 +437,7 @@ struct parm_struct
   {"passwd chat",      P_STRING,  P_GLOBAL, &Globals.szPasswdChat,      NULL},
   {"valid chars",      P_STRING,  P_GLOBAL, &Globals.szValidChars,      handle_valid_chars},
   {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL},
+  {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL},
   {"domain controller",P_STRING,  P_GLOBAL, &Globals.szDomainController,NULL},
   {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL},
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set},
@@ -838,6 +840,8 @@ FN_GLOBAL_STRING(lp_socket_address,&Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
 FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
+
+FN_GLOBAL_STRING(lp_domainsid,&Globals.szDomainSID)
 
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
