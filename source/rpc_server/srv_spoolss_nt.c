@@ -529,12 +529,20 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		}
 	}
 
+	
 	/* do another loop to look for printernames */
 	
 	for (snum=0; !found && snum<n_services; snum++) {
 
-		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
+		/* no point in checking if this is not a printer or 
+		   we aren't allowing printername != sharename */
+
+		if ( !(lp_snum_ok(snum) 
+			&& lp_print_ok(snum) 
+			&& !lp_force_printername(snum)) ) 
+		{
 			continue;
+		}
 		
 		fstrcpy(sname, lp_servicename(snum));
 
@@ -555,16 +563,16 @@ static BOOL set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		}
 		
 		printername++;
-			
+		
 		if ( strequal(printername, aprinter) ) {
 			found = True;
 		}
 		
 		DEBUGADD(10, ("printername: %s\n", printername));
 		
-		free_a_printer( &printer, 2);
+			free_a_printer( &printer, 2);
 	}
-		
+
 	if ( !found ) {
 		DEBUGADD(4,("Printer not found\n"));
 		return False;
@@ -5955,18 +5963,26 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", global_myname());
 	fstrcpy(info->sharename, lp_servicename(snum));
 	
-	/* make sure printername is in \\server\printername format */
+	/* check to see if we allow printername != sharename */
+
+	if ( lp_force_printername(snum) ) {
+		slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
+			global_myname(), info->sharename );
+	} else {
+
+		/* make sure printername is in \\server\printername format */
 	
-	fstrcpy( printername, info->printername );
-	p = printername;
-	if ( printername[0] == '\\' && printername[1] == '\\' ) {
-		if ( (p = strchr_m( &printername[2], '\\' )) != NULL )
-			p++;
+		fstrcpy( printername, info->printername );
+		p = printername;
+		if ( printername[0] == '\\' && printername[1] == '\\' ) {
+			if ( (p = strchr_m( &printername[2], '\\' )) != NULL )
+				p++;
+		}
+		
+		slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
+			 global_myname(), p );
 	}
-	
-	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
-		 global_myname(), p );
-		 
+
 	info->attributes |= PRINTER_ATTRIBUTE_SAMBA;
 	info->attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
 	
