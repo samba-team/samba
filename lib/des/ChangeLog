@@ -1,4 +1,4 @@
-2003-07-23  Love  <lha@stacken.kth.se>
+2003-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rijndael-alg-fst.h,rijndael-alg-fst.c,aes.c,aes.h:
 	Makefile.am: add AES support

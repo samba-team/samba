@@ -1,3 +1,9 @@
+2003-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (hmac): make it return an error when out of
+	memory, update callsites to either return error or use krb5_abortx
+	(krb5_hmac): expose hmac
+
 2003-07-22  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* lib/krb5/keyblock.c (krb5_keyblock_get_enctype): return enctype
