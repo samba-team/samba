@@ -775,8 +775,10 @@ bin/smbsh: $(SAMBA_LIBS) $(SMBSH_OBJ) bin/.dummy
 install: install-libs installbin installman installscripts installcp installswat
 
 installdirs:
-	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) \
-	$(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(CODEPAGEDIR)
+	@for p in $(BASEDIR) $(SBINDIR) $(BINDIR) $(LIBDIR) $(VARDIR) \
+		$(CODEPAGEDIR); do \
+	    $(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) $$p; \
+	done
 
 install-libs: all installdirs
 	@list='$(SHARED_LIBS)'; for p in $$list; do \
