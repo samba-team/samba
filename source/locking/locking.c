@@ -113,6 +113,8 @@ BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *
 ****************************************************************************/
 BOOL locking_init(int read_only)
 {
+	if (share_ops) return True;
+
 #ifdef FAST_SHARE_MODES
 	share_ops = locking_shm_init(read_only);
 	if (!share_ops) {
@@ -135,7 +137,9 @@ BOOL locking_init(int read_only)
   ******************************************************************/
 BOOL locking_end(void)
 {
-	return share_ops->stop_mgmt();
+	if (share_ops)
+		return share_ops->stop_mgmt();
+	return True;
 }
 
 
