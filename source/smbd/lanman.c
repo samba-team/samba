@@ -737,11 +737,12 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		PACKS(desc,"z","");		/* pszSepFile */
 		PACKS(desc,"z","WinPrint");	/* pszPrProc */
 		PACKS(desc,"z","");		/* pszParms */
-		if (!status || !status->message[0]) {
-			PACKS(desc,"z",Expand(conn,snum,lp_comment(snum))); /* pszComment */
+		PACKS(desc,"z",NULL);		/* pszComment - don't ask.... JRA */
+		/* "don't ask" that it's done this way to fix corrupted 
+		   Win9X/ME printer comments. */
+		if (!status) {
 			PACKI(desc,"W",LPSTAT_OK); /* fsStatus */
 		} else {
-			PACKS(desc,"z",status->message); /* pszComment */
 			PACKI(desc,"W",printq_status(status->status)); /* fsStatus */
 		}
 		PACKI(desc,(uLevel == 3 ? "W" : "N"),count);	/* cJobs */
