@@ -60,6 +60,7 @@ binary-arch: checkroot build
 	mkdir -p debian/tmp/usr/share/man/man7 
 	cp $(DOCSPATH)/output/manpages/*.1 debian/tmp/usr/share/man/man1
 	cp $(DOCSPATH)/output/manpages/*.7 debian/tmp/usr/share/man/man7
+	cp $(SOURCEPATH)/build/pidl/pidl.pl debian/tmp/usr/bin/pidl
 	debstd 
 	dpkg-gencontrol -isp -psamba4
 	chown -R root:root debian/tmp

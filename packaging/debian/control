@@ -52,6 +52,18 @@ Depends: ${shlibs:Depends}
 Description: Tools for viewing and manipulating 
  FIXME
 
+Package: pidl
+Architecture: any
+Depends: perl
+Description: IDL compiler written in Perl
+ FIXME
+ 
+Package: samba4-dev
+Architecture: any
+Depends: pidl
+Description: Tools for extending Samba
+ Contains Samba includes and tools
+
 Package: ldb-tools
 Architecture: any
 Depends: ${shlibs:Depends}
