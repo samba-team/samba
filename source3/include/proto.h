@@ -3095,7 +3095,6 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
 				 POLICY_HND *handle);
 uint32 _spoolss_closeprinter(POLICY_HND *handle);
-uint32 _spoolss_abortprinter(POLICY_HND *handle, pipes_struct *p);
 uint32 _spoolss_deleteprinter(POLICY_HND *handle);
 uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 				uint32 in_size,
@@ -3127,6 +3126,7 @@ uint32 _spoolss_writeprinter( POLICY_HND *handle,
 				uint32 buffer_size,
 				uint8 *buffer,
 				uint32 *buffer_written);
+uint32 _spoolss_abortprinter(POLICY_HND *handle, pipes_struct *p);
 uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   DEVMODE_CTR devmode_ctr,
@@ -3812,6 +3812,7 @@ int vfs_init_default(connection_struct *conn);
 BOOL vfs_init_custom(connection_struct *conn);
 BOOL vfs_directory_exist(connection_struct *conn, char *dname,
                          SMB_STRUCT_STAT *st);
+int vfs_unlink(connection_struct *conn, char *fname);
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
 SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp, 

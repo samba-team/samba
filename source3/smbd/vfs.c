@@ -243,6 +243,15 @@ BOOL vfs_directory_exist(connection_struct *conn, char *dname,
 }
 
 /*******************************************************************
+ vfs Unlink wrapper that calls dos_to_unix.
+********************************************************************/
+
+int vfs_unlink(connection_struct *conn, char *fname)
+{
+  return(conn->vfs_ops.unlink(dos_to_unix(fname,False)));
+} 
+
+/*******************************************************************
   check if a vfs file exists
 ********************************************************************/
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
