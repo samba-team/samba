@@ -2915,7 +2915,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 
 	talloc_destroy(mem_ctx);
 	 
-	DEBUG(0, ("Success!\n"));
+	d_printf("Trust to domain %s established\n", domain_name);
 	return 0;
 }
 
