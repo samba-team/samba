@@ -896,58 +896,6 @@ static NTSTATUS tdbsam_add_sam_account (struct pdb_methods *my_methods, SAM_ACCO
 		return NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS tdbsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
-				DOM_SID sid, BOOL with_priv)
-{
-	return get_group_map_from_sid(sid, map, with_priv) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS tdbsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
-				gid_t gid, BOOL with_priv)
-{
-	return get_group_map_from_gid(gid, map, with_priv) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS tdbsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
-				char *name, BOOL with_priv)
-{
-	return get_group_map_from_ntname(name, map, with_priv) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS tdbsam_add_group_mapping_entry(struct pdb_methods *methods,
-					       GROUP_MAP *map)
-{
-	return add_mapping_entry(map, TDB_INSERT) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS tdbsam_update_group_mapping_entry(struct pdb_methods *methods,
-						  GROUP_MAP *map)
-{
-	return add_mapping_entry(map, TDB_REPLACE) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS tdbsam_delete_group_mapping_entry(struct pdb_methods *methods,
-						  DOM_SID sid)
-{
-	return group_map_remove(sid) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
-static NTSTATUS tdbsam_enum_group_mapping(struct pdb_methods *methods,
-					  enum SID_NAME_USE sid_name_use,
-					  GROUP_MAP **rmap, int *num_entries,
-					  BOOL unix_only, BOOL with_priv)
-{
-	return enum_group_mapping(sid_name_use, rmap, num_entries, unix_only,
-				  with_priv) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
-}
-
 static void free_private_data(void **vp) 
 {
 	struct tdbsam_privates **tdb_state = (struct tdbsam_privates **)vp;
@@ -985,13 +933,6 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	(*pdb_method)->add_sam_account = tdbsam_add_sam_account;
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
-	(*pdb_method)->getgrsid = tdbsam_getgrsid;
-	(*pdb_method)->getgrgid = tdbsam_getgrgid;
-	(*pdb_method)->getgrnam = tdbsam_getgrnam;
-	(*pdb_method)->add_group_mapping_entry = tdbsam_add_group_mapping_entry;
-	(*pdb_method)->update_group_mapping_entry = tdbsam_update_group_mapping_entry;
-	(*pdb_method)->delete_group_mapping_entry = tdbsam_delete_group_mapping_entry;
-	(*pdb_method)->enum_group_mapping = tdbsam_enum_group_mapping;
 
 	tdb_state = talloc_zero(pdb_context->mem_ctx, sizeof(struct tdbsam_privates));
 

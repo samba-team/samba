@@ -1,6 +1,7 @@
 /*
- * Unix password backend for samba
+ * 'Guest' password backend for samba
  * Copyright (C) Jelmer Vernooij 2002
+ * Copyright (C) Andrew Bartlett 2003
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -23,9 +24,16 @@
   Lookup a name in the SAM database
  ******************************************************************/
 
-static NTSTATUS unixsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname)
+static NTSTATUS guestsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *user, const char *sname)
 {
+	NTSTATUS nt_status;
 	struct passwd *pass;
+	const char *guest_account = lp_guestaccount();
+	if (!(guest_account && *guest_account)) {
+		DEBUG(1, ("NULL guest account!?!?\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	if (!methods) {
 		DEBUG(0,("invalid methods\n"));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -34,9 +42,17 @@ static NTSTATUS unixsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *u
 		DEBUG(0,("invalid name specified"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	pass = Get_Pwnam(sname);
 
-	return pdb_fill_sam_pw(user, pass);
+	if (!strequal(guest_account, sname)) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+		
+	pass = getpwnam_alloc(guest_account);
+
+	nt_status = pdb_fill_sam_pw(user, pass);
+
+	passwd_free(&pass);
+	return nt_status;
 }
 
 
@@ -44,7 +60,7 @@ static NTSTATUS unixsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *u
   Search by rid
  **************************************************************************/
 
-static NTSTATUS unixsam_getsampwrid (struct pdb_methods *methods, 
+static NTSTATUS guestsam_getsampwrid (struct pdb_methods *methods, 
 				 SAM_ACCOUNT *user, uint32 rid)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -64,14 +80,10 @@ static NTSTATUS unixsam_getsampwrid (struct pdb_methods *methods,
 		pass = getpwnam_alloc(guest_account);
 		if (!pass) {
 			DEBUG(1, ("guest account %s does not seem to exist...\n", guest_account));
-			return nt_status;
+			return NT_STATUS_NO_SUCH_USER;
 		}
-	} else if (pdb_rid_is_user(rid)) {
-		pass = getpwuid_alloc(fallback_pdb_user_rid_to_uid (rid));
-	}
-
-	if (pass == NULL) {
-		return nt_status;
+	} else {
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	nt_status = pdb_fill_sam_pw(user, pass);
@@ -80,30 +92,15 @@ static NTSTATUS unixsam_getsampwrid (struct pdb_methods *methods,
 	return nt_status;
 }
 
-static NTSTATUS unixsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
+static NTSTATUS guestsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
-		return NT_STATUS_UNSUCCESSFUL;
-	return unixsam_getsampwrid(my_methods, user, rid);
+		return NT_STATUS_NO_SUCH_USER;
+	return guestsam_getsampwrid(my_methods, user, rid);
 }
 
-/***************************************************************************
-  Updates a SAM_ACCOUNT
-
-  This isn't a particulary practical option for pdb_unix.  We certainly don't
-  want to twidde the filesystem, so what should we do?
-
-  Current plan is to transparently add the account.  It should appear
-  as if the pdb_unix version was modified, but its actually stored somehwere.
- ****************************************************************************/
-
-static NTSTATUS unixsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
-{
-	return methods->parent->pdb_add_sam_account(methods->parent, newpwd);
-}
-
-NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
+NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 	
@@ -116,9 +113,10 @@ NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 		return nt_status;
 	}
 	
-	(*pdb_method)->name = "unixsam";
-	(*pdb_method)->getsampwnam = unixsam_getsampwnam;
-	(*pdb_method)->getsampwsid = unixsam_getsampwsid;
+	(*pdb_method)->name = "guestsam";
+	
+	(*pdb_method)->getsampwnam = guestsam_getsampwnam;
+	(*pdb_method)->getsampwsid = guestsam_getsampwsid;
 	
 	/* There's not very much to initialise here */
 	return NT_STATUS_OK;
