@@ -223,8 +223,10 @@ foreach_principal(const char *exp,
 	princs[0] = strdup(exp);
 	ret = 0;
     }
-    if(ret)
+    if(ret) {
+	krb5_warn(context, ret, "kadm5_get_principals");
 	return ret;
+    }
     for(i = 0; i < num_princs; i++) {
 	ret = krb5_parse_name(context, princs[i], &princ_ent);
 	if(ret){
