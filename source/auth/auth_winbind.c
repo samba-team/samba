@@ -26,44 +26,18 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, NET_USER_INFO_3 *info3)
-{
-	uint8_t *info3_ndr;
-	size_t len = response->length - sizeof(response);
-	prs_struct ps;
-	if (len > 0) {
-		info3_ndr = response->extra_data;
-		if (!prs_init(&ps, len, mem_ctx, UNMARSHALL)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		prs_copy_data_in(&ps, info3_ndr, len);
-		prs_set_offset(&ps,0);
-		if (!net_io_user_info3("", info3, &ps, 1, 3)) {
-			DEBUG(2, ("get_info3_from_ndr: could not parse info3 struct!\n"));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		prs_mem_free(&ps);
-
-		return NT_STATUS_OK;
-	} else {
-		DEBUG(2, ("get_info3_from_ndr: No info3 struct found!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-}
-
 /* Authenticate a user with a challenge/response */
 
 static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
-				       void *my_private_data, 
-				       TALLOC_CTX *mem_ctx,
-				       const auth_usersupplied_info *user_info, 
-				       auth_serversupplied_info **server_info)
+				     void *my_private_data, 
+				     TALLOC_CTX *mem_ctx,
+				     const struct auth_usersupplied_info *user_info, 
+				     struct auth_serversupplied_info **server_info)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
         NSS_STATUS result;
 	NTSTATUS nt_status;
-        NET_USER_INFO_3 info3;
 
 	if (!user_info) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -79,14 +53,14 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
-
+#if 0
 	request.data.auth_crap.flags = WINBIND_PAM_INFO3_NDR;
-
-	push_utf8_fstring(request.data.auth_crap.user, 
-			  user_info->smb_name.str);
-	push_utf8_fstring(request.data.auth_crap.domain, 
+#endif
+	fstrcpy(request.data.auth_crap.user, 
+		user_info->smb_name.str);
+	fstrcpy(request.data.auth_crap.domain, 
 			  user_info->domain.str);
-	push_utf8_fstring(request.data.auth_crap.workstation, 
+	fstrcpy(request.data.auth_crap.workstation, 
 			  user_info->wksta_name.str);
 
 	memcpy(request.data.auth_crap.chal, auth_context->challenge.data, sizeof(request.data.auth_crap.chal));
@@ -106,6 +80,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	nt_status = NT_STATUS(response.data.auth.nt_status);
 
 	if (result == NSS_STATUS_SUCCESS && response.extra_data) {
+#if 0
 		if (NT_STATUS_IS_OK(nt_status)) {
 			if (NT_STATUS_IS_OK(nt_status = get_info3_from_ndr(mem_ctx, &response, &info3))) { 
 				nt_status = 
@@ -117,6 +92,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 							       &info3); 
 			}
 		}
+#endif
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 	}
@@ -125,7 +101,9 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_winbind(struct auth_context *auth_context, 
+					  const char *param, 
+					  struct auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
@@ -133,4 +111,19 @@ NTSTATUS auth_init_winbind(struct auth_context *auth_context, const char *param,
 	(*auth_method)->name = "winbind";
 	(*auth_method)->auth = check_winbind_security;
 	return NT_STATUS_OK;
+}
+
+NTSTATUS auth_winbind_init(void)
+{
+	NTSTATUS ret;
+	struct auth_operations ops;
+
+	ops.name = "winbind";
+	ops.init = auth_init_winbind;
+	ret = register_backend("auth", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' auth backend!\n",
+			ops.name));
+		return ret;
+	}
 }
