@@ -281,7 +281,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	     return PAM_USER_UNKNOWN;
 	 case 0:
 	     /* Otherwise, the authentication looked good */
-	     _pam_log(LOG_NOTICE, "user '%s' granted acces", username);
+	     _pam_log(LOG_NOTICE, "user '%s' granted access", username);
 	     return PAM_SUCCESS;
 	 default:
 	     /* we don't know anything about this return value */
@@ -338,7 +338,7 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 	    return PAM_USER_UNKNOWN;
 	case 0:
 	    /* Otherwise, the authentication looked good */
-	    _pam_log(LOG_NOTICE, "user '%s' granted acces", username);
+	    _pam_log(LOG_NOTICE, "user '%s' granted access", username);
 	    return PAM_SUCCESS;
 	default:
 	    /* we don't know anything about this return value */
