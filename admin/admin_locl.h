@@ -49,6 +49,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -92,13 +93,23 @@ DECL(help);
 DECL(exit_kdb_edit);
 DECL(set_db);
 
+/* util.c */
+
 void init_des_key(hdb_entry *ent);
 void set_keys(hdb_entry *ent, char *password);
 char *time2str(time_t t);
 void event2string(Event *ev, char **str);
 int flags2int(HDBFlags *f);
 
-time_t gettime(const char *prompt, const char *def);
-size_t puttime(time_t t, char *s, size_t len);
+void init_entry (HDB *db, hdb_entry *ent);
+void set_created_by (hdb_entry *ent);
+void set_modified_by (hdb_entry *ent);
+void edit_entry(hdb_entry *ent);
+void set_password(hdb_entry *ent);
+
+/* life.c */
+
+time_t getlife(const char *prompt, const char *def);
+size_t putlife(time_t t, char *s, size_t len);
 
 #endif /* __ADMIN_LOCL_H__ */
