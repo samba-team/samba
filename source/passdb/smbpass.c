@@ -208,6 +208,10 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 			}
 
 			/* Now try and get the last change time. */
+                        while (*p != ']' && *p != ':') 
+                        {
+                                p++;
+                        }
 			if (*p == ']')
 			{
 				p++;

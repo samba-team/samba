@@ -360,6 +360,8 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 	static struct sam_passwd pw_buf;
 	static fstring nt_name;
 	static fstring unix_name;
+        static time_t t;
+        static int time_count = 0;
 
 	if (user == NULL) return NULL;
 
@@ -374,7 +376,30 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 	pw_buf.smb_passwd         = user->smb_passwd;
 	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
 	pw_buf.acct_ctrl          = user->acct_ctrl;
-	unix_to_nt_time(&pw_buf.pass_last_set_time, user->pass_last_set_time);
+
+        /* Just update the time counter every 1,000 times though this function */
+        switch (time_count) {
+                case 0: 
+                        DEBUG(3, ("Called time() in smb_to_sam function\n"));
+                        time (&t);
+                        time_count++;
+                        break;
+                case 1000:
+                        time_count = 0;
+                        break;
+                default:
+                        time_count++;
+                        break;
+        }
+
+        if ( user->pass_last_set_time == (time_t)-1 )
+        {
+                user->pass_last_set_time = t;
+        }
+        unix_to_nt_time(&pw_buf.pass_last_set_time, user->pass_last_set_time);
+        unix_to_nt_time(&pw_buf.pass_can_change_time , user->pass_last_set_time);
+        unix_to_nt_time(&pw_buf.pass_must_change_time, t+3628800);
+
 
 	return &pw_buf;
 }
