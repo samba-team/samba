@@ -31,7 +31,7 @@ static PyObject * pytdbpack_number(char ch, PyObject *val_iter, PyObject *packed
 static PyObject * pytdbpack_str_850(PyObject *val_iter, PyObject *packed_list);
 static PyObject * pytdbpack_buffer(PyObject *val_iter, PyObject *packed_list);
 
-static PyObject *pytdbpack_unpack_item(char, char **pbuf, int *plen, PyObject *);
+static PyObject *pytdbunpack_item(char, char **pbuf, int *plen, PyObject *);
 
 static PyObject *pytdbpack_data(const char *format_str,
 				     PyObject *val_seq,
@@ -117,7 +117,7 @@ notes:
 ";
 
 
-static char const pytdbpack_unpack_doc[] =
+static char const pytdbunpack_doc[] =
 "unpack(format, buffer) -> (values, rest)
 Unpack Samba binary data according to format string.
 
@@ -418,7 +418,7 @@ static void pack_bytes(long len, const char *from,
 
 
 static PyObject *
-pytdbpack_unpack(PyObject *self,
+pytdbunpack(PyObject *self,
 		 PyObject *args)
 {
 	char *format_str, *packed_str, *ppacked;
@@ -447,7 +447,7 @@ pytdbpack_unpack(PyObject *self,
 	for (ppacked = packed_str, i = 0; i < format_len && format_str[i] != '$'; i++) {
 		last_format = format_str[i];
 		/* packed_len is reduced in place */
-		if (!pytdbpack_unpack_item(format_str[i], &ppacked, &packed_len, val_list))
+		if (!pytdbunpack_item(format_str[i], &ppacked, &packed_len, val_list))
 			goto failed;
 	}
 
@@ -460,7 +460,7 @@ pytdbpack_unpack(PyObject *self,
 			return NULL;
 		} 
 		while (packed_len > 0)
-			if (!pytdbpack_unpack_item(last_format, &ppacked, &packed_len, val_list))
+			if (!pytdbunpack_item(last_format, &ppacked, &packed_len, val_list))
 				goto failed;
 	}
 	
@@ -625,7 +625,7 @@ unpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 
    Returns a reference to None, or NULL for failure.
 */
-static PyObject *pytdbpack_unpack_item(char ch,
+static PyObject *pytdbunpack_item(char ch,
 				       char **pbuf,
 				       int *plen,
 				       PyObject *val_list)
@@ -669,7 +669,7 @@ static PyObject *pytdbpack_unpack_item(char ch,
 
 static PyMethodDef pytdbpack_methods[] = {
 	{ "pack", pytdbpack, METH_VARARGS, (char *) pytdbpack_doc },
-	{ "unpack", pytdbpack_unpack, METH_VARARGS, (char *) pytdbpack_unpack_doc },
+	{ "unpack", pytdbunpack, METH_VARARGS, (char *) pytdbunpack_doc },
 };
 
 DL_EXPORT(void)
