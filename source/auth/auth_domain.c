@@ -410,7 +410,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 
 	if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time))
 	{
-		DEBUG(0, ("check_ntdomain_security: could not fetch trust account password for domain %s\n", lp_workgroup()));
+		DEBUG(0, ("check_ntdomain_security: could not fetch trust account password for domain '%s'\n", domain));
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
