@@ -8324,7 +8324,6 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	info_1=(JOB_INFO_1 *)malloc(sizeof(JOB_INFO_1));
 
 	if (info_1 == NULL) {
-		SAFE_FREE(queue);
 		return WERR_NOMEM;
 	}
 		
@@ -8334,7 +8333,6 @@ static WERROR getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	}
 	
 	if (found==False) {
-		SAFE_FREE(queue);
 		SAFE_FREE(info_1);
 		/* NT treats not found as bad param... yet another bad choice */
 		return WERR_INVALID_PARAM;
