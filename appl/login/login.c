@@ -184,6 +184,38 @@ do_login(struct passwd *pwd)
 	if(rootlogin == 0)
 	    exit(1);
     }
+    /* perhaps work some magic */
+    if(do_osfc2_magic(pwd->pw_uid))
+	sleepexit(1);
+#if defined(HAVE_GETUDBNAM) && defined(HAVE_SETLIM)
+    {
+	struct udb *udb;
+	long t;
+	const long maxcpu = 46116860184; /* some random constant */
+	udb = getudbnam(pwd->pw_name);
+	if(udb == UDB_NULL)
+	    errx(1, "Failed to get UDB entry.");
+	t = udb->ue_pcpulim[UDBRC_INTER];
+	if(t == 0 || t > maxcpu)
+	    t = CPUUNLIM;
+	else
+	    t *= 100 * CLOCKS_PER_SEC;
+
+	if(limit(C_PROC, 0, L_CPU, t) < 0)
+	    warn("limit C_PROC");
+
+	t = udb->ue_jcpulim[UDBRC_INTER];
+	if(t == 0 || t > maxcpu)
+	    t = CPUUNLIM;
+	else
+	    t *= 100 * CLOCKS_PER_SEC;
+
+	if(limit(C_JOBPROCS, 0, L_CPU, t) < 0)
+	    warn("limit C_JOBPROCS");
+
+	nice(udb->ue_nice[UDBRC_INTER]);
+    }
+#endif
     if (chdir(pwd->pw_dir) < 0) {
 	fprintf(stderr, "No home directory \"%s\"!\n", pwd->pw_dir);
 	if (chdir("/"))
