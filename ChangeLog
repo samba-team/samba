@@ -1,3 +1,8 @@
+2003-12-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb.asn1: remove enforce-transited-policy, its no longer
+	used
+
 2003-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* lib/krb5/pkinit.c (_krb5_pk_create_sign): fill in NULL as
