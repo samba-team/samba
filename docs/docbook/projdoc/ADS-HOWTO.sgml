@@ -125,7 +125,7 @@ server? Does it have an encoding type of DES-CBC-MD5 ?
 <para>
 On your Samba server try to login to a Win2000 server or your Samba
 server using smbclient and kerberos. Use smbclient as usual, but
-specify the -k option to choose kerberos authentication.
+specify the <parameter>-k</parameter> option to choose kerberos authentication.
 </para>
 
 </sect1>
