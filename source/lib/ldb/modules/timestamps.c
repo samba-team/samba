@@ -230,6 +230,14 @@ static int timestamps_unlock(struct ldb_module *module, const char *lockname)
 static const char *timestamps_errstring(struct ldb_module *module)
 {
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "timestamps_errstring\n");
+	if (data->error_string) {
+		char *error;
+
+		error = data->error_string;
+		data->error_string = NULL;
+		return error;
+	}
+
 	return ldb_next_errstring(module);
 }
 
@@ -256,14 +264,22 @@ struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *o
 #endif
 {
 	struct ldb_module *ctx;
+	struct private_data *data;
 
 	ctx = talloc_p(ldb, struct ldb_module);
 	if (!ctx)
 		return NULL;
 
+	data = talloc_p(ctx, struct private_data);
+	if (!data) {
+		talloc_free(ctx);
+		return NULL;
+	}
+
+	data->error_string = NULL;
+	ctx->private_data = data;
 	ctx->ldb = ldb;
 	ctx->prev = ctx->next = NULL;
-	ctx->private_data = NULL;
 	ctx->ops = &timestamps_ops;
 
 	return ctx;
