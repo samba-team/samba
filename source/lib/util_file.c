@@ -362,7 +362,7 @@ char *file_pload(char *syscmd, size_t *size)
 	while ((n = read(fd, buf, sizeof(buf))) > 0) {
 		tp = Realloc(p, total + n + 1);
 		if (!tp) {
-		        DEBUG(0,("file_pload: failed to exand buffer!\n"));
+		        DEBUG(0,("file_pload: failed to expand buffer!\n"));
 			close(fd);
 			SAFE_FREE(p);
 			return NULL;
@@ -372,6 +372,9 @@ char *file_pload(char *syscmd, size_t *size)
 	}
 	if (p) p[total] = 0;
 
+	/* FIXME: Perhaps ought to check that the command completed
+	 * successfully (returned 0); if not the data may be
+	 * truncated. */
 	sys_pclose(fd);
 
 	if (size) *size = total;
