@@ -257,10 +257,11 @@ static BOOL wbinfo_check_secret(void)
 		
 	d_printf("checking the trust secret via RPC calls %s\n", 
 		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
-	
-	d_printf("error code was %s (0x%x)\n", 
-		 response.data.auth.nt_status_string, 
-		 response.data.auth.nt_status);
+
+	if (result != NSS_STATUS_SUCCESS)	
+		d_printf("error code was %s (0x%x)\n", 
+		 	 response.data.auth.nt_status_string, 
+		 	 response.data.auth.nt_status);
 	
 	return result == NSS_STATUS_SUCCESS;	
 }
