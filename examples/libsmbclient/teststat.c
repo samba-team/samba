@@ -8,6 +8,7 @@
 
 int main(int argc, char * argv[]) 
 { 
+    int             debug = 0;
     char            buffer[16384]; 
     char            mtime[32];
     char            ctime[32];
@@ -39,7 +40,7 @@ int main(int argc, char * argv[])
         return 1;
     }
 
-    smbc_init(get_auth_data_fn, 0); 
+    smbc_init(get_auth_data_fn, debug); 
     
     if (smbc_stat(pSmbPath, &st) < 0)
     {
