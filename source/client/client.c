@@ -1099,7 +1099,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 		/* size of file is not known */
 	} else {
 		f = x_fopen(lname,O_RDONLY, 0);
-		if (!f && reput) {
+		if (f && reput) {
 			if (x_tseek(f, start, SEEK_SET) == -1) {
 				d_printf("Error seeking local file\n");
 				return 1;
