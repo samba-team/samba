@@ -1216,7 +1216,13 @@ init_env(void)
 
 static void scrub_env(void)
 {
-    static char *remove[] = { "LD_", "_RLD_", "LIBPATH=", "IFS=", NULL };
+    static char *remove[] = {
+      "LD_", "_RLD_", "LIBPATH=",
+      "IFS=", "ENV=",
+      "LOCALDOMAIN=", "RES_OPTIONS=",
+      "TERMINFO=", "TERMINFO_DIRS=", "TERMPATH=", "TERMCAP=/",
+      NULL
+    };
 
     char **cpp, **cpp2;
     char **p;
