@@ -1,3 +1,9 @@
+2003-10-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/transited.c (krb5_domain_x500_encode): 
+	if num_realms ==0, set encoding and return (avoids malloc(0)),
+	check return value for malloc
+
 2003-10-21  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/kerberos5.c (fix_transited_encoding): always print
@@ -5,6 +11,8 @@
 	
 2003-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* doc/setup.texi: spelling, From: Tracy Di Marco White
+	
 	* kdc/kerberos5.c (fix_transited_encoding): set transited type
 	
 2003-10-21  Johan Danielsson  <joda@pdc.kth.se>
