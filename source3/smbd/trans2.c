@@ -522,16 +522,10 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SIVAL(p,0,strlen(fname)); p += 4;
       SIVAL(p,0,0); p += 4;
       if (!was_8_3) {
-	      /* NT4 always uses unicode here */
-	      fstring short_name, ushort_name;
-	      int slen;
-	      pstrcpy(short_name,fname);
-	      name_map_mangle(short_name,True,True,SNUM(conn));
-	      strupper(short_name);
-	      slen = strlen(short_name);
-	      ascii_to_unistr(ushort_name, short_name, 24);
-	      memcpy(p+2, ushort_name, 2*slen);
-	      SSVAL(p, 0, 2*slen);
+	      fstrcpy(p+2,fname);
+	      name_map_mangle(p+2,True,True,SNUM(conn));
+	      strupper(p+2);
+	      SSVAL(p, 0, strlen(p+2));
       } else {
 	      SSVAL(p,0,0);
 	      *(p+2) = 0;
