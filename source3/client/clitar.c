@@ -994,7 +994,7 @@ static int get_file(file_info2 finfo)
   DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, (int)finfo.size));
 
   if (ensurepath(finfo.name) && 
-      (fnum=cli_open(cli, finfo.name, O_WRONLY|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
+      (fnum=cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
       DEBUG(0, ("abandoning restore\n"));
       return(False);
   }

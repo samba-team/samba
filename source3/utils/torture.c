@@ -749,7 +749,7 @@ static void run_denytest(int dummy)
 
 	cli_unlink(&cli1, fname);
 
-	fnum1 = cli_open(&cli1, fname, O_WRONLY|O_CREAT, DENY_NONE);
+	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT, DENY_NONE);
 	cli_write(&cli1, fnum1, 0, fname, 0, strlen(fname));
 	cli_close(&cli1, fnum1);
 

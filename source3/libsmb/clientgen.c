@@ -1231,18 +1231,13 @@ int cli_nt_create(struct cli_state *cli, char *fname)
 
 /****************************************************************************
 open a file
+WARNING: if you open with O_WRONLY then getattrE won't work!
 ****************************************************************************/
 int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 {
 	char *p;
 	unsigned openfn=0;
 	unsigned accessmode=0;
-
-	/* you must open for RW not just write - otherwise getattrE doesn't
-	   work! */
-	if ((flags & O_ACCMODE) == O_WRONLY && strncmp(cli->dev, "LPT", 3)) {
-		flags = (flags & ~O_ACCMODE) | O_RDWR;
-	}
 
 	if (flags & O_CREAT)
 		openfn |= (1<<4);
@@ -1266,6 +1261,10 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 		accessmode |= (1<<14);
 	}
 #endif /* O_SYNC */
+
+	if (share_mode == DENY_FCB) {
+		accessmode = 0xFF;
+	}
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);

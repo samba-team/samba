@@ -981,7 +981,7 @@ static void do_put(char *rname,char *lname)
 	struct timeval tp_start;
 	GetTimeOfDay(&tp_start);
 
-	fnum = cli_open(cli, rname, O_WRONLY|O_CREAT|O_TRUNC, DENY_NONE);
+	fnum = cli_open(cli, rname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
   
 	if (fnum == -1) {
 		DEBUG(0,("%s opening remote file %s\n",cli_errstr(cli),rname));
