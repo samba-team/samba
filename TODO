@@ -72,8 +72,6 @@ fix to use rpc?
 
 the replay cache is, in its current state, not very useful
 
-always generates a new subkey in an authenticator
-
 should the sequence numbers be XORed?
 
 OTP?
