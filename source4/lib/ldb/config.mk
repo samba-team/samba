@@ -8,6 +8,15 @@ INIT_OBJ_FILES = \
 ################################################
 
 ################################################
+# Start MODULE libldb_schema
+[MODULE::libldb_schema]
+SUBSYSTEM = LIBLDB
+INIT_OBJ_FILES = \
+		lib/ldb/modules/schema.o
+# End MODULE libldb_schema
+################################################
+
+################################################
 # Start MODULE libldb_ldap
 [MODULE::libldb_ldap]
 SUBSYSTEM = LIBLDB
