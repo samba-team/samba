@@ -319,8 +319,6 @@ typedef struct
 {
   int service;
   BOOL force_user;
-  int uid; /* uid of user who *opened* this connection */
-  int gid; /* gid of user who *opened* this connection */
   struct uid_cache uid_cache;
   void *dirptr;
   BOOL open;
@@ -332,6 +330,9 @@ typedef struct
   char *connectpath;
   char *origpath;
   char *user; /* name of user who *opened* this connection */
+  int uid; /* uid of user who *opened* this connection */
+  int gid; /* gid of user who *opened* this connection */
+  uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
   /* following groups stuff added by ih */
   /* This groups info is valid for the user that *opened* the connection */
   int ngroups;
@@ -822,6 +823,14 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #define UNIXERROR(defclass,deferror) unix_error_packet(inbuf,outbuf,defclass,deferror,__LINE__)
 
 #define ROUNDUP(x,g) (((x)+((g)-1))&~((g)-1))
+
+/*
+ * Global value meaing that the smb_uid field should be
+ * ingored (in share level security and protocol level == CORE)
+ */
+
+#define UID_FIELD_INVALID 0
+#define VUID_OFFSET 100 /* Amount to bias returned vuid numbers */
 
 #endif 
 /* _SMB_H */
