@@ -57,9 +57,9 @@ ac_help="$ac_help
   --with-quotas     Include experimental disk-quota support
   --without-quotas  Don't include experimental disk-quota support (default)"
 ac_help="$ac_help
-  --with-privatedir=DIR     Where to put smbpasswd ($(prefix)/private)"
+  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)"
 ac_help="$ac_help
-  --with-swatdir=DIR     Where to put SWAT files ($(prefix)/swat)"
+  --with-swatdir=DIR     Where to put SWAT files ($ac_default_prefix/swat)"
 
 # Initialize some variables set by options.
 # The variables have the same names as the options, with
