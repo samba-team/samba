@@ -1221,7 +1221,6 @@ int sys_acl_free_acl(SMB_ACL_T the_acl)
 	return acl_free(the_acl);
 }
 
->>>>>>> 1.15
 #else /* No ACLs. */
 
 int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
