@@ -194,7 +194,7 @@ BOOL change_trust_account_password( const char *domain, char *remote_machine)
 			goto failed;
 		}
 
-		if ( !lookup_dc_name(global_myname_unix(), domain, &pdc_ip, dc_name) ) 
+		if ( !name_status_find(domain, 0x1c, 0x20, pdc_ip, dc_name) ) 
 			goto failed;
 	}
 	/* supoport old deprecated "smbpasswd -j DOMAIN -r MACHINE" behavior */

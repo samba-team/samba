@@ -1234,7 +1234,7 @@ static void release_server_mutex(void)
 ************************************************************************/
 
 static BOOL connect_to_domain_password_server(struct cli_state **ppcli, 
-						char *server, unsigned char *trust_passwd, BOOL *retry)
+						const char *server, unsigned char *trust_passwd, BOOL *retry)
 {
 	struct in_addr dest_ip;
 	fstring remote_machine;
@@ -1408,22 +1408,11 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
  Utility function to attempt a connection to an IP address of a DC.
 ************************************************************************/
 
-static BOOL attempt_connect_to_dc(struct cli_state **ppcli, struct in_addr *ip, unsigned char *trust_passwd)
+static BOOL attempt_connect_to_dc(struct cli_state **ppcli, const char *dc_name, unsigned char *trust_passwd)
 {
-	fstring dc_name;
 	int i;
 	BOOL retry = True;
 	BOOL ret = False;
-
-	/*
-	 * Ignore addresses we have already tried.
-	 */
-
-	if (is_zero_ip(*ip))
-		return False;
-
-	if (!lookup_dc_name(global_myname_unix(), lp_workgroup_unix(), ip, dc_name))
-		return False;
 
 	for (i = 0; (ret == False) && retry && (i < NUM_CLI_AUTH_CONNECT_RETRIES); i++)
 		ret = connect_to_domain_password_server(ppcli, dc_name, trust_passwd, &retry);
@@ -1435,92 +1424,17 @@ static BOOL attempt_connect_to_dc(struct cli_state **ppcli, struct in_addr *ip, 
  the PDC and BDC's for this DOMAIN, and query them in turn.
 ************************************************************************/
 
-static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_passwd, time_t last_change_time)
+static BOOL find_connect_dc(struct cli_state **ppcli, unsigned char *trust_passwd )
 {
-	struct in_addr *ip_list = NULL;
-	int count = 0;
-	int i;
-	BOOL connected_ok = False;
-	time_t time_now = time(NULL);
-	BOOL use_pdc_only = False;
-	BOOL list_ordered;
+	struct in_addr dc_ip;
+	fstring srv_name;
 
-	/*
-	 * If the time the machine password has changed
-	 * was less than an hour ago then we need to contact
-	 * the PDC only, as we cannot be sure domain replication
-	 * has yet taken place. Bug found by Gerald (way to go
-	 * Gerald !). JRA.
-	 */
-
-	if (time_now - last_change_time < 3600)
-		use_pdc_only = True;
-
-	if (use_pdc_only) {
-		struct in_addr pdc_ip;
-
-		if (!get_pdc_ip(lp_workgroup_unix(), &pdc_ip))
-			return False;
-
-		if ((ip_list = (struct in_addr *)
-		     malloc(sizeof(struct in_addr))) == NULL) 
-			return False;
-
-		ip_list[0] = pdc_ip;
-		count = 1;
-
-	} else {
-		if ( !get_dc_list(lp_workgroup_unix(), &ip_list, &count, &list_ordered) )
-			return False;
+	if ( !get_dc_name(lp_workgroup_unix(), srv_name, &dc_ip) ) {
+		DEBUG(0,("find_connect_dc: Failed to find an DCs for %s\n", lp_workgroup_unix()));
+		return False;
 	}
-
-	/*
-	 * if the list is not ordered, then try and contact a PDC/BDC who has 
-	 * the same network address as any of our interfaces.
-	 */
-	 
-	for(i = 0; i < count; i++) {
-		if( !list_ordered && !is_local_net(ip_list[i]) )
-			continue;
-
-		if((connected_ok = attempt_connect_to_dc(ppcli, &ip_list[i], trust_passwd))) 
-			break;
-		
-		zero_ip(&ip_list[i]); /* Tried and failed. */
-	}
-
-	/*
-	 * Secondly try and contact a random PDC/BDC.
-	 */
-	if(!connected_ok) {
-		i = (sys_random() % count);
-
-		if (!is_zero_ip(ip_list[i])) {
-			if (!(connected_ok = attempt_connect_to_dc(ppcli, &ip_list[i], trust_passwd)))
-				zero_ip(&ip_list[i]); /* Tried and failed. */
-		}
-	}
-
-	/*
-	 * Finally go through the IP list in turn, ignoring any addresses
-	 * we have already tried.
-	 */
-	if(!connected_ok) {
-		/*
-		 * Try and connect to any of the other IP addresses in the PDC/BDC list.
-		 * Note that from a WINS server the #1 IP address is the PDC.
-		 */
-		for(i = 0; i < count; i++) {
-			if (is_zero_ip(ip_list[i]))
-				continue;
-
-			if((connected_ok = attempt_connect_to_dc(ppcli, &ip_list[i], trust_passwd)))
-				break;
-		}
-	}
-
-	SAFE_FREE(ip_list);
-	return connected_ok;
+	
+	return attempt_connect_to_dc( ppcli, srv_name, trust_passwd );
 }
 
 /***********************************************************************
@@ -1675,6 +1589,7 @@ static BOOL domain_client_validate_winbindd( char *user, char *domain,
 	}
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 	prs_give_memory( &rbuf, raw_data, (uint32)raw_data_len, False);
+	prs_set_offset( &rbuf, RPC_HEADER_LEN+RPC_HDR_RESP_LEN );
 	r.user = &info3;
 
 	if (!net_io_r_sam_logon("", &r, &rbuf, 0)) {
@@ -1757,7 +1672,6 @@ static BOOL domain_client_validate_direct( char *user, char *domain,
 	NET_USER_INFO_3 info3;
 	struct cli_state *pcli = NULL;
 	uint32 smb_uid_low;
-	BOOL connected_ok = False;
 	time_t last_change_time;
 	NTSTATUS status;
 
@@ -1846,11 +1760,9 @@ static BOOL domain_client_validate_direct( char *user, char *domain,
 	 * see if they were valid.
 	 */
 
-	/* find_connect_pdc() handles all the lookups and connect attempts for us */
+	/* find_connect_dc() handles all the lookups and connect attempts for us */
 	
-	connected_ok = find_connect_pdc(&pcli, trust_passwd, last_change_time);
-
-	if (!connected_ok) {
+	if ( !find_connect_dc(&pcli, trust_passwd ) ) {
 		DEBUG(0,("domain_client_validate_direct: Domain password server not available.\n"));
 		if (pcli)
 			cli_shutdown(pcli);
@@ -1873,7 +1785,7 @@ static BOOL domain_client_validate_direct( char *user, char *domain,
 		release_server_mutex();
 
 		/* BEGIN_ADMIN_LOG */
-		sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication via Microsoft networking was unsuccessful. User name: %s\\%s, Error : %s"), 
+		sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication via Microsoft networking was unsuccessful. User name: %s\\%s, Error: %s"), 
 			domain, user, get_friendly_nt_error_msg(status));
 		/* END_ADMIN_LOG */
 
@@ -1959,7 +1871,7 @@ BOOL domain_client_validate( char *user, char *domain,
 			smb_ntpasswd, smb_ntpasslen,
 			user_exists, pptoken, &winbindd_ok);
 
-	if (!ret && winbindd_ok)
+	if (ret && winbindd_ok)
 		return ret;
 
 	DEBUG(0,("domain_client_validate: winbindd auth failed, falling back to smbd auth \

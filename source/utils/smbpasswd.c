@@ -352,8 +352,7 @@ static int join_domain_byuser(char *domain, char *remote,
 			return 1;
 		}
 
-		if (!lookup_dc_name(global_myname_unix(), domain, &dest_ip, 
-				    pdc_name)) {
+		if ( !name_status_find(domain, 0x1c, 0x20, dest_ip, pdc_name) ) {
 			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
 			return 1;
 		}
@@ -657,7 +656,7 @@ static int set_domain_sid_from_dc( const char *domain, const char *remote )
 			return 1;
 		}
 
-		if (!lookup_dc_name(global_myname_unix(), domain, &ip_list[0], pdc_name)) {
+		if ( !name_status_find(domain, 0x1c, 0x20, ip_list[0], pdc_name) ) {
 			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
 			return 1;
 		}

@@ -374,3 +374,33 @@ void secrets_named_mutex_release(const char *name, size_t *p_ref_count)
 	*p_ref_count = --ref_count;
 	DEBUG(10,("secrets_named_mutex_release: ref_count for mutex %s = %u\n", name, (unsigned int)ref_count ));
 }
+
+/*********************************************************
+ Check to see if we must talk to the PDC to avoid sam 
+ sync delays
+ ********************************************************/
+ 
+BOOL must_use_pdc( const char *domain )
+{
+	time_t	now = time(NULL);
+	time_t  last_change_time;
+	unsigned char	passwd[16];   
+	
+	if ( !secrets_fetch_trust_account_password(domain, passwd, &last_change_time) )
+		return False;
+		
+	/*
+	 * If the time the machine password has changed
+	 * was less than about 15 minutes then we need to contact
+	 * the PDC only, as we cannot be sure domain replication
+	 * has yet taken place. Bug found by Gerald (way to go
+	 * Gerald !). JRA.
+	 */
+	 
+	if ( now - last_change_time < SAM_SYNC_WINDOW )
+		return True;
+		
+	return False;
+
+}
+

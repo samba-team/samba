@@ -988,31 +988,41 @@ BOOL find_master_ip(const char *group, struct in_addr *master_ip)
 }
 
 /********************************************************
- Lookup a DC name given a Domain name and IP address.
+ Resolve a name of format \\server_name or \\ipaddress
+ into a name.  also, cut the \\ from the front for us.
 *********************************************************/
 
-BOOL lookup_dc_name(const char *srcname, const char *domain, 
-		    struct in_addr *dc_ip, char *ret_name)
+BOOL resolve_srv_name(const char *srv_name, fstring dest_host, struct in_addr *ip)
 {
-	fstring dc_name;
 	BOOL ret;
+	const char *sv_name = srv_name;
 
-	
-	/*
-	 * Due to the fact win WinNT *sucks* we must do a node status
-	 * query here... JRA.
-	 */
+	DEBUG(10,("resolve_srv_name: %s\n", srv_name));
 
-	*dc_name = '\0';
-
-	ret = name_status_find(domain, 0x1c, 0x20, *dc_ip, dc_name);
-
-	if(ret && *dc_name) {
-		fstrcpy(ret_name, dc_name);
+	if (srv_name == NULL || strequal("\\\\.", srv_name)) {
+		fstrcpy(dest_host, global_myname_unix());
+		ip = interpret_addr2("127.0.0.1");
 		return True;
 	}
 
-	return False;
+	if (strnequal("\\\\", srv_name, 2)) {
+		sv_name = &srv_name[2];
+	}
+
+	fstrcpy(dest_host, sv_name);
+	/* treat the '*' name specially - it is a magic name for the PDC */
+	if (strcmp(dest_host,"*") == 0) {
+		ret = resolve_name(lp_workgroup_unix(), ip, 0x1B);
+		name_status_find(lp_workgroup_unix(), 0x1c, 0x20, *ip, dest_host);
+	} else {
+		ret = resolve_name(dest_host, ip, 0x20);
+	}
+
+	if (is_ipaddress(dest_host)) {
+		fstrcpy(dest_host, "*SMBSERVER");
+	}
+
+	return ret;
 }
 
 /********************************************************
@@ -1192,41 +1202,3 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, BOOL 
 	return internal_resolve_name(domain, 0x1C, ip_list, count);
 }
 
-/********************************************************
- Resolve a name of format \\server_name or \\ipaddress
- into a name.  also, cut the \\ from the front for us.
-*********************************************************/
-
-BOOL resolve_srv_name(const char *srv_name, fstring dest_host, struct in_addr *ip)
-{
-	BOOL ret;
-	const char *sv_name = srv_name;
-
-	DEBUG(10,("resolve_srv_name: %s\n", srv_name));
-
-	if (srv_name == NULL || strequal("\\\\.", srv_name)) {
-		fstrcpy(dest_host, global_myname_unix());
-		ip = interpret_addr2("127.0.0.1");
-		return True;
-	}
-
-	if (strnequal("\\\\", srv_name, 2)) {
-		sv_name = &srv_name[2];
-	}
-
-	fstrcpy(dest_host, sv_name);
-	/* treat the '*' name specially - it is a magic name for the PDC */
-	if (strcmp(dest_host,"*") == 0) {
-		ret = resolve_name(lp_workgroup_unix(), ip, 0x1B);
-		lookup_dc_name(global_myname_unix(), lp_workgroup_unix(), 
-			       ip, dest_host);
-	} else {
-		ret = resolve_name(dest_host, ip, 0x20);
-	}
-
-	if (is_ipaddress(dest_host)) {
-		fstrcpy(dest_host, "*SMBSERVER");
-	}
-
-	return ret;
-}

@@ -149,7 +149,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
 				libsmb/cli_netlogon.o libsmb/cli_srvsvc.o libsmb/cli_dfs.o \
 				libsmb/cli_reg.o rpc_client/cli_ds.o \
-				rpc_client/cli_pipe.o libsmb/cli_pipe_util.o
+				rpc_client/cli_pipe.o libsmb/cli_pipe_util.o 
 
 REGOBJS_OBJ = registry/reg_objects.o
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
@@ -177,7 +177,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 
 RPC_CLIENT_OBJ = rpc_client/cli_netlogon.o rpc_client/cli_pipe.o \
 		 rpc_client/cli_login.o rpc_client/cli_trust.o \
-		 libsmb/cli_spoolss_notify.o
+		 libsmb/cli_spoolss_notify.o libsmb/namequery_dc.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
@@ -404,7 +404,7 @@ WINBINDD_OBJ1 = \
 NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
 		smbd/password.o smbd/utmp.o smbd/session.o smbd/uid.o smbd/sec_ctx.o \
 		rpc_client/cli_netlogon.o rpc_client/cli_login.o \
-		smbd/chgpasswd.o
+		smbd/chgpasswd.o libsmb/namequery_dc.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \

@@ -75,108 +75,6 @@ struct winbindd_cm_conn {
 
 static struct winbindd_cm_conn *cm_conns = NULL;
 
-/* Get a domain controller name */
-
-static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
-{
-	struct in_addr *ip_list = NULL, dc_ip, exclude_ip;
-	int count, i;
-	BOOL list_ordered;
-
-	zero_ip(&exclude_ip);
-
-#if 0	/* There has got to be a better way than this */
-
-	/* Lookup domain controller name. Try the real PDC first to avoid
-	   SAM sync delays */
-	if ( get_pdc_ip(domain, &dc_ip) ) {
-		if (name_status_find(domain, 0x1c, 0x20, dc_ip, srv_name)) {
-			goto done;
-		}
-		/* Didn't get name, remember not to talk to this DC. */
-		exclude_ip = dc_ip;
-	}
-#endif
-
-	if (!get_dc_list( domain, &ip_list, &count, &list_ordered) ) {
-		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
-		return False;
-	}
-
-	/* Remove the entry we've already failed with (should be the PDC). */
-
-	for (i = 0; i < count; i++) {
-		if (ip_equal( exclude_ip, ip_list[i]))
-			zero_ip(&ip_list[i]);
-	}
-
-	/* 
-	 * Pick a nice close server. Look for DC on local net 
-	 * (assuming we don't have a list of preferred DC's)
-	 */
-
-	for (i = 0; i < count; i++) {
-		if (is_zero_ip(ip_list[i]))
-			continue;
-
-		if ( !list_ordered && !is_local_net(ip_list[i]) )
-			continue;
-		
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
-			dc_ip = ip_list[i];
-			goto done;
-		}
-		
-		zero_ip(&ip_list[i]);
-	}
-
-	/*
-	 * Secondly try and contact a random PDC/BDC.
-	 */
-
-	i = (sys_random() % count);
-
-	if (!is_zero_ip(ip_list[i]) &&
-	    name_status_find(domain, 0x1c, 0x20,
-			     ip_list[i], srv_name)) {
-		dc_ip = ip_list[i];
-		goto done;
-	}
-	zero_ip(&ip_list[i]); /* Tried and failed. */
-
-	/* Finally return first DC that we can contact */
-
-	for (i = 0; i < count; i++) {
-		if (is_zero_ip(ip_list[i]))
-			continue;
-
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
-			dc_ip = ip_list[i];
-			goto done;
-		}
-	}
-
-	SAFE_FREE(ip_list);
-
-	/* No-one to talk to )-: */
-	return False;		/* Boo-hoo */
-	
- done:
-	/* We have the netbios name and IP address of a domain controller.
-	   Ideally we should sent a SAMLOGON request to determine whether
-	   the DC is alive and kicking.  If we can catch a dead DC before
-	   performing a cli_connect() we can avoid a 30-second timeout. */
-
-	DEBUG(3, ("cm_get_dc_name: Returning DC %s (%s) for domain %s\n", srv_name,
-		  inet_ntoa(dc_ip), domain));
-
-	*ip_out = dc_ip;
-
-	SAFE_FREE(ip_list);
-
-	return True;
-}
-
 /* Choose between anonymous or authenticated connections.  We need to use
    an authenticated connection if DCs have the RestrictAnonymous registry
    entry set > 0, or the "Additional restrictions for anonymous
@@ -286,7 +184,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	   are cached so don't bother applying the caching for this
 	   function just yet.  */
 
-	if (!cm_get_dc_name(domain, new_conn->controller, &dc_ip)) {
+	if (!get_dc_name(domain, new_conn->controller, &dc_ip)) {
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		add_failed_connection_entry(new_conn, result);
 		return result;
