@@ -971,6 +971,11 @@ fi
 # Check for comparison_fn_t
 AC_CACHE_CHECK([for comparison_fn_t],samba_cv_HAVE_COMPARISON_FN_T,[
 AC_TRY_COMPILE([
+/* Enable GNU extensions on systems that have them */
+/* as comparison_fn_t is defined under __USE_GNU on these */
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE
+#endif
 #include <stdlib.h>
 int list_find(const void *needle, 
 	      const void *base, size_t nmemb, size_t size, comparison_fn_t comp_fn)
