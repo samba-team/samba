@@ -46,7 +46,8 @@ kadm5_s_destroy(void *server_handle)
     kadm5_ret_t ret;
     kadm5_server_context *context = server_handle;
     ret = context->db->destroy(context->context, context->db);
-    krb5_free_context(context->context);
+    if(context->my_context)
+	krb5_free_context(context->context);
     free(context->config.realm);
     return ret;
 }
