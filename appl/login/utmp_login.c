@@ -12,6 +12,7 @@ void utmp_login(char *tty, char *username, char *hostname)
     int fd;
 
     char *ttyx; /* tty w/o /dev/* */
+    char *id;
 
     ttyx = tty;
 
@@ -49,7 +50,10 @@ void utmp_login(char *tty, char *username, char *hostname)
 
 # ifdef HAVE_UT_ID
     /* any particular reason to not include "tty" ? */
-    strncpy(utmp.ut_id, ttyx, sizeof(utmp.ut_id));
+    id = ttyx;
+    if(strncmp(ttyx, "tty", 3) == 0)
+	id += 3;
+    strncpy(utmp.ut_id, id, sizeof(utmp.ut_id));
 # endif
 
 
