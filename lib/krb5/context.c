@@ -138,6 +138,7 @@ init_context_from_config_file(krb5_context context)
 	krb5_config_free_strings(adr);
     }
     
+    INIT_FIELD(context, bool, scan_interfaces, TRUE, "scan_interfaces");
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_try_txt, FALSE, "srv_try_txt");
     INIT_FIELD(context, bool, srv_try_rfc2052, TRUE, "srv_try_rfc2052");
