@@ -70,9 +70,11 @@ extract_ticket(krb5_context context,
     err = (*decrypt_proc)(context, key, decryptarg, rep);
     if (err)
 	return err;
+#if 0 /* moved to krb5_get_in_tkt */
     memset (key->keyvalue.data, 0, key->keyvalue.length);
     krb5_data_free (&key->keyvalue);
     free (key);
+#endif
 
     principalname2krb5_principal(&creds->server, 
 				 rep->part1.ticket.sname, 
@@ -92,8 +94,8 @@ extract_ticket(krb5_context context,
 	creds->times.renew_till = 0;
     creds->times.authtime = rep->part2.authtime;
     creds->times.endtime  = rep->part2.endtime;
-    creds->addresses.number = 0;
-    creds->addresses.addrs = NULL;
+    creds->addresses.len = 0;
+    creds->addresses.val = NULL;
 #if 0 /* What? */
     if (rep->part2.req.values)
 	free (rep->part2.req.values);
@@ -136,7 +138,8 @@ extract_ticket(krb5_context context,
 krb5_error_code
 krb5_get_in_tkt(krb5_context context,
 		krb5_flags options,
-		krb5_address *const *addrs,
+		const krb5_addresses *addrs,
+/*		krb5_address *const *addrs,*/
 		const krb5_enctype *etypes,
 		const krb5_preauthtype *ptypes,
 		krb5_key_proc key_proc,
@@ -161,6 +164,7 @@ krb5_get_in_tkt(krb5_context context,
 
     a.pvno = 5;
     a.msg_type = krb_as_req;
+    a.req_body.kdc_options.forwardable = options; /* XXX */
     a.req_body.cname = malloc(sizeof(*a.req_body.cname));
     a.req_body.sname = malloc(sizeof(*a.req_body.sname));
     krb5_principal2principalname (a.req_body.cname, creds->client);
@@ -175,7 +179,7 @@ krb5_get_in_tkt(krb5_context context,
 #endif
 
     a.req_body.till  = creds->times.endtime;
-    a.req_body.nonce = 17;
+    a.req_body.nonce = 17;	/* XXX */
     if (etypes)
 	abort ();
     else {
@@ -185,15 +189,16 @@ krb5_get_in_tkt(krb5_context context,
 	    return ret;
 	a.req_body.etype.len = 1;
     }
-    if (addrs){
-	abort ();
-    } else {
-	a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
+    
+    a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
 
-	ret = krb5_get_all_client_addrs ((krb5_addresses*)a.req_body.addresses);
-	if (ret)
-	    return ret;
-    }
+    if (addrs)
+	ret = krb5_copy_addresses(context, addrs, a.req_body.addresses);
+    else
+	ret = krb5_get_all_client_addrs (a.req_body.addresses);
+    if (ret)
+	return ret;
+
     a.req_body.enc_authorization_data = NULL;
     a.req_body.additional_tickets = NULL;
 
@@ -303,6 +308,9 @@ krb5_get_in_tkt(krb5_context context,
     
     ret = extract_ticket(context, &rep, creds, key, keyseed, 
 			 decrypt_proc, decryptarg);
+    memset (key->keyvalue.data, 0, key->keyvalue.length);
+    krb5_data_free (&key->keyvalue);
+    free (key);
 
     free_KDC_REP(&rep.part1);
     if(ret) 
