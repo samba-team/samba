@@ -138,7 +138,7 @@ static int get_queue_status(int, print_status_struct *);
 struct tdb_print_db {
 	struct tdb_print_db *next, *prev;
 	TDB_CONTEXT *tdb;
-	int locked;
+	int ref_count;
 	fstring printer_name;
 };
 
@@ -158,6 +158,7 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 	for (p = print_db_head, last_entry = print_db_head; p; p = p->next) {
 		if (p->tdb && strequal(p->printer_name, printername)) {
 			DLIST_PROMOTE(print_db_head, p);
+			p->ref_count++;
 			return p;
 		}
 		num_open++;
@@ -170,7 +171,7 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 		DLIST_PROMOTE(print_db_head, last_entry);
 
 		for (p = print_db_head; p; p = p->next) {
-			if (p->locked)
+			if (p->ref_count)
 				continue;
 			if (p->tdb) {
 				if (tdb_close(print_db_head->tdb)) {
@@ -215,31 +216,14 @@ static struct tdb_print_db *get_print_db_byname(const char *printername)
 		return NULL;
 	}
 	fstrcpy(p->printer_name, printername);
+	p->ref_count++;
 	return p;
 }
 
-/****************************************************************************
- Lock a pdb entry by string.
-****************************************************************************/
-
-static int pdb_entry_lock(struct tdb_print_db *pdb, char *key)
+static void release_print_db( struct tdb_print_db *pdb)
 {
-	if (pdb->locked == 0) {
-		if (tdb_lock_bystring(pdb->tdb, key) == -1)
-			return -1;
-	}
-	pdb->locked++;
-}
-
-/****************************************************************************
- Unlock a pdb entry by string.
-****************************************************************************/
-
-static void pdb_entry_unlock(struct tdb_print_db *pdb, char *key)
-{
-	pdb->locked--;
-	if (pdb->locked == 0)
-		tdb_unlock_bystring(pdb->tdb, key);
+	pdb->ref_count--;
+	SMB_ASSERT(pdb->ref_count >= 0);
 }
 
 /****************************************************************************
@@ -273,7 +257,7 @@ BOOL print_backend_init(void)
 		pdb = get_print_db_byname(lp_const_servicename(snum));
 		if (!pdb)
 			continue;
-		if (pdb_entry_lock(pdb, sversion) == -1) {
+		if (tdb_lock_bystring(pdb->tdb, sversion) == -1) {
 			DEBUG(0,("print_backend_init: Failed to open printer %s database\n", lp_const_servicename(snum) ));
 			return False;
 		}
@@ -281,7 +265,7 @@ BOOL print_backend_init(void)
 			tdb_traverse(pdb->tdb, tdb_traverse_delete_fn, NULL);
 			tdb_store_int32(pdb->tdb, sversion, PRINT_DATABASE_VERSION);
 		}
-		pdb_entry_unlock(pdb, sversion);
+		tdb_unlock_bystring(pdb->tdb, sversion);
 	}
 
 	/* select the appropriate printing interface... */
@@ -341,6 +325,8 @@ static struct printjob *print_job_find(int snum, uint32 jobid)
 		return NULL;
 
 	ret = tdb_fetch(pdb->tdb, print_key(jobid));
+	release_print_db(pdb);
+
 	if (!ret.dptr || ret.dsize != sizeof(pjob))
 		return NULL;
 
@@ -391,6 +377,7 @@ uint32 sysjob_to_jobid(int unix_jobid)
 		pdb = get_print_db_byname(lp_const_servicename(snum));
 		if (pdb)
 			tdb_traverse(pdb->tdb, unixjob_traverse_fn, &unix_jobid);
+		release_print_db(pdb);
 		if (sysjob_to_jobid_value != (uint32)-1)
 			return sysjob_to_jobid_value;
 	}
@@ -492,6 +479,8 @@ static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
 	new_data.dsize = sizeof(*pjob);
 	ret = (tdb_store(pdb->tdb, print_key(jobid), new_data, TDB_REPLACE) == 0);
 
+	release_print_db(pdb);
+
 	/* Send notify updates for what has changed */
 
 	if (ret && (old_data.dsize == 0 || old_data.dsize == sizeof(*pjob))) {
@@ -520,6 +509,7 @@ static void pjob_delete(int snum, uint32 jobid)
 	if (!pjob) {
 		DEBUG(5, ("pjob_delete(): we were asked to delete nonexistent job %u\n",
 					(unsigned int)jobid));
+		release_print_db(pdb);
 		return;
 	}
 
@@ -540,6 +530,7 @@ static void pjob_delete(int snum, uint32 jobid)
 	/* Remove from printing.tdb */
 
 	tdb_delete(pdb->tdb, print_key(jobid));
+	release_print_db(pdb);
 	rap_jobid_delete(snum, jobid);
 }
 
@@ -692,6 +683,7 @@ static void print_cache_flush(int snum)
 		return;
 	slprintf(key, sizeof(key)-1, "CACHE/%s", printername);
 	tdb_store_int32(pdb->tdb, key, -1);
+	release_print_db(pdb);
 }
 
 /****************************************************************************
@@ -712,6 +704,7 @@ static pid_t get_updating_pid(fstring printer_name)
 	key.dsize = strlen(keystr);
 
 	data = tdb_fetch(pdb->tdb, key);
+	release_print_db(pdb);
 	if (!data.dptr || data.dsize != sizeof(pid_t))
 		return (pid_t)-1;
 
@@ -746,6 +739,7 @@ static void set_updating_pid(const fstring printer_name, BOOL delete)
 
 	if (delete) {
 		tdb_delete(pdb->tdb, key);
+		release_print_db(pdb);
 		return;
 	}
 	
@@ -753,6 +747,7 @@ static void set_updating_pid(const fstring printer_name, BOOL delete)
 	data.dsize = sizeof(pid_t);
 
 	tdb_store(pdb->tdb, key, data, TDB_REPLACE);	
+	release_print_db(pdb);
 }
 
 /****************************************************************************
@@ -781,14 +776,17 @@ static void print_queue_update(int snum)
 	 * This is essentially a mutex on the update.
 	 */
 
-	if (get_updating_pid(printer_name) != -1)
+	if (get_updating_pid(printer_name) != -1) {
+		release_print_db(pdb);
 		return;
+	}
 
 	/* Lock the queue for the database update */
 
 	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
-	if (pdb_entry_lock(pdb, keystr) == -1) {
+	if (tdb_lock_bystring(pdb->tdb, keystr) == -1) {
 		DEBUG(0,("print_queue_update: Failed to lock printer %s database\n", printer_name));
+		release_print_db(pdb);
 		return;
 	}
 
@@ -802,7 +800,8 @@ static void print_queue_update(int snum)
 		/*
 		 * Someone else is doing the update, exit.
 		 */
-		pdb_entry_unlock(pdb, keystr);
+		tdb_unlock_bystring(pdb->tdb, keystr);
+		release_print_db(pdb);
 		return;
 	}
 
@@ -818,7 +817,7 @@ static void print_queue_update(int snum)
 	 * the update.
 	 */
 
-	pdb_entry_unlock(pdb, keystr);
+	tdb_unlock_bystring(pdb->tdb, keystr);
 
 	/*
 	 * Update the cache time FIRST ! Stops others even
@@ -909,6 +908,7 @@ static void print_queue_update(int snum)
 
 	/* Delete our pid from the db. */
 	set_updating_pid(printer_name, True);
+	release_print_db(pdb);
 }
 
 /****************************************************************************
@@ -918,9 +918,13 @@ static void print_queue_update(int snum)
 BOOL print_job_exists(int snum, uint32 jobid)
 {
 	struct tdb_print_db *pdb = get_print_db_byname(lp_const_servicename(snum));
+	BOOL ret;
+
 	if (!pdb)
 		return False;
-	return tdb_exists(pdb->tdb, print_key(jobid));
+	ret = tdb_exists(pdb->tdb, print_key(jobid));
+	release_print_db(pdb);
+	return ret;
 }
 
 /****************************************************************************
@@ -1205,8 +1209,10 @@ static BOOL print_cache_expired(int snum)
 		DEBUG(3, ("print cache expired for queue %s \
 (last_qscan_time = %d, time now = %d, qcachetime = %d)\n", printername,
 			(int)last_qscan_time, (int)time_now, (int)lp_lpqcachetime() ));
+		release_print_db(pdb);
 		return True;
 	}
+	release_print_db(pdb);
 	return False;
 }
 
@@ -1228,6 +1234,7 @@ static int get_queue_status(int snum, print_status_struct *status)
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 	data = tdb_fetch(pdb->tdb, key);
+	release_print_db(pdb);
 	if (data.dptr) {
 		if (data.dsize == sizeof(print_status_struct)) {
 			memcpy(status, data.dptr, sizeof(print_status_struct));
@@ -1287,6 +1294,7 @@ static int get_total_jobs(void)
 		jobs = tdb_fetch_int32(pdb->tdb, "INFO/total_jobs");
 		if (jobs > 0)
 			total_jobs += jobs;
+		release_print_db(pdb);
 	}
 	return total_jobs;
 }
@@ -1313,11 +1321,13 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 
 	if (!print_access_check(user, snum, PRINTER_ACCESS_USE)) {
 		DEBUG(3, ("print_job_start: job start denied by security descriptor\n"));
+		release_print_db(pdb);
 		return (uint32)-1;
 	}
 
 	if (!print_time_access_check(snum)) {
 		DEBUG(3, ("print_job_start: job start denied by time check\n"));
+		release_print_db(pdb);
 		return (uint32)-1;
 	}
 
@@ -1329,6 +1339,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 		if (sys_fsusage(path, &dspace, &dsize) == 0 &&
 		    dspace < 2*(SMB_BIG_UINT)lp_minprintspace(snum)) {
 			DEBUG(3, ("print_job_start: disk space check failed.\n"));
+			release_print_db(pdb);
 			errno = ENOSPC;
 			return (uint32)-1;
 		}
@@ -1337,6 +1348,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 	/* for autoloaded printers, check that the printcap entry still exists */
 	if (lp_autoloaded(snum) && !pcap_printername_ok(lp_const_servicename(snum), NULL)) {
 		DEBUG(3, ("print_job_start: printer name %s check failed.\n", lp_const_servicename(snum) ));
+		release_print_db(pdb);
 		errno = ENOENT;
 		return (uint32)-1;
 	}
@@ -1345,6 +1357,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 	if (lp_maxprintjobs(snum) && (njobs = print_queue_length(snum,NULL)) > lp_maxprintjobs(snum)) {
 		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per queue (%d).\n",
 			njobs, lp_maxprintjobs(snum) ));
+		release_print_db(pdb);
 		errno = ENOSPC;
 		return (uint32)-1;
 	}
@@ -1353,6 +1366,7 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 	if (lp_totalprintjobs() && get_total_jobs() > lp_totalprintjobs()) {
 		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per system (%d).\n",
 			njobs, lp_totalprintjobs() ));
+		release_print_db(pdb);
 		errno = ENOSPC;
 		return (uint32)-1;
 	}
@@ -1379,8 +1393,9 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 	fstrcpy(pjob.queuename, lp_const_servicename(snum));
 
 	/* lock the database */
-	if (pdb_entry_lock(pdb, "INFO/nextjob") == -1) {
+	if (tdb_lock_bystring(pdb->tdb, "INFO/nextjob") == -1) {
 		DEBUG(0,("print_job_start: failed to lock printing database %s\n", printername ));
+		release_print_db(pdb);
 		return (uint32)-1;
 	}
 
@@ -1425,7 +1440,8 @@ to open spool file %s.\n", pjob.filename));
 
 	pjob_store(snum, jobid, &pjob);
 
-	pdb_entry_unlock(pdb, "INFO/nextjob");
+	tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
+	release_print_db(pdb);
 
 	/*
 	 * If the printer is marked as postscript output a leading
@@ -1444,7 +1460,8 @@ to open spool file %s.\n", pjob.filename));
 	if (jobid != -1)
 		pjob_delete(snum, jobid);
 
-	pdb_entry_unlock(pdb, "INFO/nextjob");
+	tdb_unlock_bystring(pdb->tdb, "INFO/nextjob");
+	release_print_db(pdb);
 
 	DEBUG(3, ("print_job_start: returning fail. Error = %s\n", strerror(errno) ));
 	return -1;
@@ -1677,13 +1694,17 @@ int print_queue_status(int snum,
 	
 	tdb_traverse(pdb->tdb, traverse_count_fn_queue, (void *)&tsc);
 
-	if (tsc.count == 0)
+	if (tsc.count == 0) {
+		release_print_db(pdb);
 		return 0;
+	}
 
 	/* Allocate the queue size. */
 	if ((tstruct.queue = (print_queue_struct *)
-	     malloc(sizeof(print_queue_struct)*tsc.count)) == NULL)
+	     malloc(sizeof(print_queue_struct)*tsc.count)) == NULL) {
+		release_print_db(pdb);
 		return 0;
+	}
 
 	/*
 	 * Fill in the queue.
@@ -1695,6 +1716,7 @@ int print_queue_status(int snum,
 	tstruct.snum = snum;
 
 	tdb_traverse(pdb->tdb, traverse_fn_queue, (void *)&tstruct);
+	release_print_db(pdb);
 
 	/* Sort the queue by submission time otherwise they are displayed
 	   in hash order. */
