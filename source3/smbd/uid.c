@@ -310,17 +310,6 @@ static void pop_conn_ctx(void)
 	ctx_p->vuid = UID_FIELD_INVALID;
 }
 
-void init_conn_ctx(void)
-{
-    int i;
- 
-    /* Initialise connection context stack */
-	for (i = 0; i < MAX_SEC_CTX_DEPTH; i++) {
-		conn_ctx_stack[i].conn = NULL;
-		conn_ctx_stack[i].vuid = UID_FIELD_INVALID;
-    }
-}
-
 /****************************************************************************
  Temporarily become a root user.  Must match with unbecome_root(). Saves and
  restores the connection context.
