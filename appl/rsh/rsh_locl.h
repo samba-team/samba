@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -147,5 +147,10 @@ extern des_cblock iv;
 
 #define PATH_RSH BINDIR "/rsh"
 
+#if defined(KRB4) || defined(KRB5)
 ssize_t do_read (int fd, void *buf, size_t sz);
 ssize_t do_write (int fd, void *buf, size_t sz);
+#else
+#define do_write(F, B, L) write((F), (B), (L))
+#define do_read(F, B, L) read((F), (B), (L))
+#endif

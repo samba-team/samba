@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -33,6 +33,8 @@
 
 #include "rsh_locl.h"
 RCSID("$Id$");
+
+#if defined(KRB4) || defined(KRB5)
 
 ssize_t
 do_read (int fd,
@@ -123,3 +125,4 @@ do_write (int fd, void *buf, size_t sz)
     } else
 	return write (fd, buf, sz);
 }
+#endif /* KRB4 || KRB5 */
