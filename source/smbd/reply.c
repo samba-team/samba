@@ -2672,7 +2672,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	DEBUG(3,("writebraw1 fnum=%d start=%.0f num=%d wrote=%d sync=%d\n",
 		fsp->fnum, (double)startpos, (int)numtowrite, (int)nwritten, (int)write_through));
 
-	if (nwritten < numtowrite)  {
+	if (nwritten < (ssize_t)numtowrite)  {
 		END_PROFILE(SMBwritebraw);
 		return(UNIXERROR(ERRHRD,ERRdiskfull));
 	}
