@@ -14,7 +14,7 @@ NTSTATUS ndr_push_echo_EchoData(struct ndr_push *ndr, struct echo_EchoData *r)
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
 	if (r->in.in_data) {
 		NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
-		NDR_CHECK(ndr_push_array_uint8(ndr, r->in.in_data, r->in.len));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.in_data, r->in.len));
 	}
 
 	return NT_STATUS_OK;
@@ -25,7 +25,7 @@ NTSTATUS ndr_push_echo_SinkData(struct ndr_push *ndr, struct echo_SinkData *r)
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
 	if (r->in.data) {
 		NDR_CHECK(ndr_push_uint32(ndr, r->in.len));
-		NDR_CHECK(ndr_push_array_uint8(ndr, r->in.data, r->in.len));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.data, r->in.len));
 	}
 
 	return NT_STATUS_OK;
@@ -62,7 +62,7 @@ NTSTATUS ndr_pull_echo_EchoData(struct ndr_pull *ndr, struct echo_EchoData *r)
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->out.out_data, r->in.len, sizeof(r->out.out_data[0]));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, r->out.out_data, r->in.len));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.out_data, r->in.len));
 	}
 
 	return NT_STATUS_OK;
@@ -84,7 +84,7 @@ NTSTATUS ndr_pull_echo_SourceData(struct ndr_pull *ndr, struct echo_SourceData *
 			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should be %u", _array_size, r->in.len);
 		}
 	}
-		NDR_CHECK(ndr_pull_array_uint8(ndr, r->out.data, r->in.len));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.data, r->in.len));
 	}
 
 	return NT_STATUS_OK;

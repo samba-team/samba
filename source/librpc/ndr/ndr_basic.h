@@ -1,9 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-
-   definitions for marshalling/unmarshalling security descriptors
-   and related structures
-
+   rpc interface definitions - basic types
    Copyright (C) Andrew Tridgell 2003
    
    This program is free software; you can redistribute it and/or modify
@@ -22,25 +19,7 @@
 */
 
 
-/* use the same structure for dom_sid2 as dom_sid */
-#define dom_sid2 dom_sid
-
-/* query security descriptor */
-struct smb_query_secdesc {
-	struct {
-		uint16 fnum;
-		uint32 secinfo_flags;
-	} in;
-	struct {
-		struct security_descriptor *sd;
-	} out;
+struct policy_handle {
+       uint8 data[20];
 };
 
-/* set security descriptor */
-struct smb_set_secdesc {
-	struct {
-		uint16 fnum;
-		uint32 secinfo_flags;
-		struct security_descriptor *sd;
-	} in;
-};

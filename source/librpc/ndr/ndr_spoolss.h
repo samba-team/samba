@@ -35,6 +35,7 @@ struct spoolss_DeviceMode {
 	uint32 reserved2;
 	uint32 panningwidth;
 	uint32 panningheight;
+	uint8 *private;
 };
 
 struct spoolss_PrinterInfo1 {
@@ -70,7 +71,7 @@ struct spoolss_PrinterInfo2 {
 
 struct spoolss_PrinterInfo3 {
 	uint32 flags;
-	struct security_descriptor *secdesc;
+	struct security_descriptor secdesc;
 };
 
 struct spoolss_PrinterInfo4 {
@@ -165,13 +166,13 @@ struct spoolss_EnumJobs {
 		uint32 firstjob;
 		uint32 numjobs;
 		uint32 level;
-		struct uint8_buf *buffer;
-		uint32 offered;
+		DATA_BLOB *buffer;
+		uint32 *buf_size;
 	} in;
 
 	struct {
-		struct uint8_buf *buffer;
-		uint32 needed;
+		DATA_BLOB *buffer;
+		uint32 *buf_size;
 		uint32 numjobs;
 		NTSTATUS result;
 	} out;
@@ -893,7 +894,8 @@ struct spoolss_EnumPrinterData {
 		struct policy_handle *handle;
 		uint32 enum_index;
 		uint32 value_offered;
-		uint32 data_offered;
+		DATA_BLOB *buffer;
+		uint32 *buf_size;
 	} in;
 
 	struct {
@@ -901,8 +903,8 @@ struct spoolss_EnumPrinterData {
 		const char *value_name;
 		uint32 value_needed;
 		uint32 printerdata_type;
-		struct uint8_buf printerdata;
-		uint32 data_needed;
+		DATA_BLOB *buffer;
+		uint32 *buf_size;
 		NTSTATUS result;
 	} out;
 

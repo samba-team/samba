@@ -41,11 +41,13 @@ NTSTATUS ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int ndr_flags, struct
 	NDR_CHECK(ndr_push_uint32(ndr, r->reserved2));
 	NDR_CHECK(ndr_push_uint32(ndr, r->panningwidth));
 	NDR_CHECK(ndr_push_uint32(ndr, r->panningheight));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->private, r->driverextra));
 	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_push_nstring(ndr, NDR_BUFFERS, &r->devicename));
 		NDR_CHECK(ndr_push_nstring(ndr, NDR_BUFFERS, &r->formname));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_BUFFERS, r->private, r->driverextra));
 done:
 	return NT_STATUS_OK;
 }
@@ -125,13 +127,11 @@ NTSTATUS ndr_push_spoolss_PrinterInfo3(struct ndr_push *ndr, int ndr_flags, stru
 	NDR_CHECK(ndr_push_struct_start(ndr));
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	NDR_CHECK(ndr_push_uint32(ndr, r->flags));
-	NDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, r->secdesc, (ndr_push_const_fn_t) ndr_push_security_descriptor));
+	NDR_CHECK(ndr_push_security_descriptor(ndr, NDR_SCALARS, &r->secdesc));
 	ndr_push_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	if (r->secdesc) {
-	NDR_CHECK(ndr_push_relative(ndr, NDR_BUFFERS, r->secdesc, (ndr_push_const_fn_t) ndr_push_security_descriptor));
-	}
+		NDR_CHECK(ndr_push_security_descriptor(ndr, NDR_BUFFERS, &r->secdesc));
 done:
 	return NT_STATUS_OK;
 }
@@ -331,9 +331,9 @@ NTSTATUS ndr_push_spoolss_EnumJobs(struct ndr_push *ndr, struct spoolss_EnumJobs
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.level));
 	NDR_CHECK(ndr_push_ptr(ndr, r->in.buffer));
 	if (r->in.buffer) {
-		NDR_CHECK(ndr_push_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.buffer));
+		NDR_CHECK(ndr_push_DATA_BLOB(ndr, *r->in.buffer));
 	}
-	NDR_CHECK(ndr_push_uint32(ndr, r->in.offered));
+	NDR_CHECK(ndr_push_uint32(ndr, *r->in.buf_size));
 
 	return NT_STATUS_OK;
 }
@@ -852,7 +852,11 @@ NTSTATUS ndr_push_spoolss_EnumPrinterData(struct ndr_push *ndr, struct spoolss_E
 	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.enum_index));
 	NDR_CHECK(ndr_push_uint32(ndr, r->in.value_offered));
-	NDR_CHECK(ndr_push_uint32(ndr, r->in.data_offered));
+	NDR_CHECK(ndr_push_ptr(ndr, r->in.buffer));
+	if (r->in.buffer) {
+		NDR_CHECK(ndr_push_DATA_BLOB(ndr, *r->in.buffer));
+	}
+	NDR_CHECK(ndr_push_uint32(ndr, *r->in.buf_size));
 
 	return NT_STATUS_OK;
 }
@@ -1034,11 +1038,14 @@ NTSTATUS ndr_pull_spoolss_DeviceMode(struct ndr_pull *ndr, int ndr_flags, struct
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->reserved2));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->panningwidth));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->panningheight));
+		NDR_ALLOC_N_SIZE(ndr, r->private, r->driverextra, sizeof(r->private[0]));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->private, r->driverextra));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 		NDR_CHECK(ndr_pull_nstring(ndr, NDR_BUFFERS, &r->devicename));
 		NDR_CHECK(ndr_pull_nstring(ndr, NDR_BUFFERS, &r->formname));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_BUFFERS, r->private, r->driverextra));
 done:
 	return NT_STATUS_OK;
 }
@@ -1096,15 +1103,15 @@ done:
 
 NTSTATUS ndr_pull_spoolss_PrinterInfo3(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo3 *r)
 {
-	uint32 _ptr_secdesc;
 	NDR_CHECK(ndr_pull_struct_start(ndr));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->flags));
-	NDR_CHECK(ndr_pull_relative(ndr, (const void **)&r->secdesc, sizeof(*r->secdesc), (ndr_pull_flags_fn_t)ndr_pull_security_descriptor));
+	NDR_CHECK(ndr_pull_security_descriptor(ndr, NDR_SCALARS, &r->secdesc));
 	ndr_pull_struct_end(ndr);
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_security_descriptor(ndr, NDR_BUFFERS, &r->secdesc));
 done:
 	return NT_STATUS_OK;
 }
@@ -1294,9 +1301,9 @@ NTSTATUS ndr_pull_spoolss_EnumJobs(struct ndr_pull *ndr, struct spoolss_EnumJobs
 		r->out.buffer = NULL;
 	}
 	if (r->out.buffer) {
-		NDR_CHECK(ndr_pull_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.buffer));
+		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, r->out.buffer));
 	}
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.needed));
+	NDR_CHECK(ndr_pull_uint32(ndr, r->out.buf_size));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.numjobs));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
@@ -1788,6 +1795,7 @@ NTSTATUS ndr_pull_spoolss_47(struct ndr_pull *ndr, struct spoolss_47 *r)
 NTSTATUS ndr_pull_spoolss_EnumPrinterData(struct ndr_pull *ndr, struct spoolss_EnumPrinterData *r)
 {
 	uint32 _ptr_value_name;
+	uint32 _ptr_buffer;
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.value_len));
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_value_name));
 	if (_ptr_value_name) {
@@ -1800,8 +1808,16 @@ NTSTATUS ndr_pull_spoolss_EnumPrinterData(struct ndr_pull *ndr, struct spoolss_E
 	}
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.value_needed));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.printerdata_type));
-	NDR_CHECK(ndr_pull_uint8_buf(ndr, NDR_SCALARS|NDR_BUFFERS, &r->out.printerdata));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.data_needed));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_buffer));
+	if (_ptr_buffer) {
+		NDR_ALLOC(ndr, r->out.buffer);
+	} else {
+		r->out.buffer = NULL;
+	}
+	if (r->out.buffer) {
+		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, r->out.buffer));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, r->out.buf_size));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -2006,6 +2022,10 @@ void ndr_print_spoolss_DeviceMode(struct ndr_print *ndr, const char *name, struc
 	ndr_print_uint32(ndr, "reserved2", r->reserved2);
 	ndr_print_uint32(ndr, "panningwidth", r->panningwidth);
 	ndr_print_uint32(ndr, "panningheight", r->panningheight);
+	ndr_print_ptr(ndr, "private", r->private);
+	ndr->depth++;
+		ndr_print_array_uint8(ndr, "private", r->private, r->driverextra);
+	ndr->depth--;
 	ndr->depth--;
 }
 
@@ -2063,12 +2083,7 @@ void ndr_print_spoolss_PrinterInfo3(struct ndr_print *ndr, const char *name, str
 	ndr_print_struct(ndr, name, "spoolss_PrinterInfo3");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "flags", r->flags);
-	ndr_print_ptr(ndr, "secdesc", r->secdesc);
-	ndr->depth++;
-	if (r->secdesc) {
-		ndr_print_security_descriptor(ndr, "secdesc", r->secdesc);
-	}
-	ndr->depth--;
+	ndr_print_security_descriptor(ndr, "secdesc", &r->secdesc);
 	ndr->depth--;
 }
 

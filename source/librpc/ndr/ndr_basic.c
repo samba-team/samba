@@ -108,8 +108,11 @@ NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char *data, uint32 n)
 /*
   pull an array of uint8
 */
-NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, char *data, uint32 n)
+NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, int ndr_flags, char *data, uint32 n)
 {
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
 	return ndr_pull_bytes(ndr, data, n);
 }
 
@@ -117,9 +120,12 @@ NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, char *data, uint32 n)
 /*
   pull an array of uint16
 */
-NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, uint16 *data, uint32 n)
+NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, int ndr_flags, uint16 *data, uint32 n)
 {
 	uint32 i;
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
 	for (i=0;i<n;i++) {
 		NDR_CHECK(ndr_pull_uint16(ndr, &data[i]));
 	}
@@ -129,9 +135,12 @@ NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, uint16 *data, uint32 n)
 /*
   pull a const array of uint32
 */
-NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, uint32 *data, uint32 n)
+NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, int ndr_flags, uint32 *data, uint32 n)
 {
 	uint32 i;
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
 	for (i=0;i<n;i++) {
 		NDR_CHECK(ndr_pull_uint32(ndr, &data[i]));
 	}
@@ -224,17 +233,23 @@ NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
 /*
   push an array of uint8
 */
-NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, const char *data, uint32 n)
+NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const char *data, uint32 n)
 {
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
 	return ndr_push_bytes(ndr, data, n);
 }
 
 /*
   push an array of uint32
 */
-NTSTATUS ndr_push_array_uint32(struct ndr_push *ndr, const uint32 *data, uint32 n)
+NTSTATUS ndr_push_array_uint32(struct ndr_push *ndr, int ndr_flags, const uint32 *data, uint32 n)
 {
 	int i;
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
 	for (i=0;i<n;i++) {
 		NDR_CHECK(ndr_push_uint32(ndr, data[i]));
 	}
@@ -597,5 +612,26 @@ NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, DATA_BLOB *blob)
 	NDR_PULL_NEED_BYTES(ndr, length);
 	*blob = data_blob_talloc(ndr->mem_ctx, ndr->data+ndr->offset, length);
 	ndr->offset += length;
+	return NT_STATUS_OK;
+}
+
+
+/*
+  parse a policy handle
+*/
+NTSTATUS ndr_pull_policy_handle(struct ndr_pull *ndr, 
+				struct policy_handle *r)
+{
+	NDR_CHECK(ndr_pull_bytes(ndr, r->data, 20));
+	return NT_STATUS_OK;
+}
+
+/*
+  push a policy handle
+*/
+NTSTATUS ndr_push_policy_handle(struct ndr_push *ndr, 
+				struct policy_handle *r)
+{
+	NDR_CHECK(ndr_push_bytes(ndr, r->data, 20));
 	return NT_STATUS_OK;
 }
