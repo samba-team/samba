@@ -3156,24 +3156,27 @@ label(logonpath)
 dit(bf(logon path (G)))
 
 This parameter specifies the home directory where roaming profiles
-(USER.DAT / USER.MAN files for Windows 95/98) are stored.
+(NTuser.dat etc files for Windows NT) are stored.  Contrary to previous 
+versions of these manual pages, it has nothing to do with Win 9X roaming
+profiles.  To find out how to handle roaming profiles for Win 9X system, see 
+the tt("logon home") parameter.
 
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.  It also specifies
-the directory from which the tt("desktop"), tt("start menu"),
-tt("network neighborhood") and tt("programs") folders, and their
-contents, are loaded and displayed on your Windows 95/98 client.
+the directory from which the tt("application data"), (tt("desktop"), tt("start menu"),
+tt("network neighborhood"), tt("programs") and other folders, and their
+contents, are loaded and displayed on your Windows NT client.
 
 The share and the path must be readable by the user for the
-preferences and directories to be loaded onto the Windows 95/98
+preferences and directories to be loaded onto the Windows NT
 client.  The share must be writeable when the logs in for the first
-time, in order that the Windows 95/98 client can create the user.dat
+time, in order that the Windows NT client can create the user.dat
 and other directories.
 
 Thereafter, the directories and any of the contents can, if required, be
 made read-only.  It is not advisable that the USER.DAT file be made
 read-only - rename it to USER.MAN to achieve the desired effect (a
-em(MAN)datory profile).
+em(MAN)datory profile). Hmmm, this para is suspect ... RJS
 
 Windows clients can sometimes maintain a connection to the [homes]
 share, even though there is no user logged in.  Therefore, it is vital
