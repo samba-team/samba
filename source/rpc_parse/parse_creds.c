@@ -52,7 +52,8 @@ reads or writes a structure.
 ********************************************************************/
 BOOL creds_io_unix(char *desc, CREDS_UNIX *r_u, prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return False;
+	if (r_u == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "creds_io_unix");
 	depth++;
@@ -111,7 +112,8 @@ BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC *r_u, prs_struct *ps, int dept
 {
 	uint32 i;
 
-	if (r_u == NULL) return False;
+	if (r_u == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "creds_io_unix_sec");
 	depth++;
@@ -121,21 +123,21 @@ BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC *r_u, prs_struct *ps, int dept
 	prs_uint32("uid", ps, depth, &(r_u->uid));
 	prs_uint32("gid", ps, depth, &(r_u->gid));
 	prs_uint32("num_grps", ps, depth, (uint32 *)&(r_u->num_grps));
-	if (r_u->num_grps != 0)
-	{
-		r_u->grps = (uint32*)Realloc(r_u->grps,
-				       sizeof(r_u->grps[0]) *
-				       r_u->num_grps);
-		if (r_u->grps == NULL)
-		{
+	if (r_u->num_grps != 0) {
+		uint32 *tgr;
+
+		tgr = (uint32*)Realloc(r_u->grps,
+						sizeof(r_u->grps[0]) *
+						r_u->num_grps);
+		if (tgr == NULL) {
 			creds_free_unix_sec(r_u);
 			return False;
-		}
+		} else
+			r_u->grps = tgr;
 	}
+
 	for (i = 0; i < r_u->num_grps; i++)
-	{
 		prs_uint32("", ps, depth, &(r_u->grps[i]));
-	}
 	return True;
 }
 
@@ -197,16 +199,17 @@ BOOL creds_io_nt_sec(char *desc, CREDS_NT_SEC *r_u, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	prs_uint32("num_grps", ps, depth, &(r_u->num_grps));
-	if (r_u->num_grps != 0)
-	{
-		r_u->grp_rids = (uint32*)Realloc(r_u->grp_rids,
-				       sizeof(r_u->grp_rids[0]) *
-				       r_u->num_grps);
-		if (r_u->grp_rids == NULL)
-		{
+	if (r_u->num_grps != 0) {
+		uint32 *tgr;
+
+		tgr = (uint32*)Realloc(r_u->grp_rids,
+                       sizeof(r_u->grp_rids[0]) *
+                       r_u->num_grps);
+		if (tgr == NULL) {
 			creds_free_nt_sec(r_u);
 			return False;
-		}
+		} else
+			r_u->grp_rids = tgr;
 	}
 	for (i = 0; i < r_u->num_grps; i++)
 	{
