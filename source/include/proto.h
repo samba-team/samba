@@ -974,6 +974,7 @@ void *sys_dlopen(const char *name, int flags);
 void *sys_dlsym(void *handle, char *symbol);
 int sys_dlclose (void *handle);
 const char *sys_dlerror(void);
+void sys_adminlog(int priority, const char *format_str, ...);
 
 /*The following definitions come from  lib/talloc.c  */
 
@@ -1912,6 +1913,7 @@ BOOL lp_strip_dot(void);
 BOOL lp_encrypted_passwords(void);
 BOOL lp_update_encrypted(void);
 BOOL lp_syslog_only(void);
+BOOL lp_admin_log(void);
 BOOL lp_timestamp_logs(void);
 BOOL lp_debug_hires_timestamp(void);
 BOOL lp_debug_pid(void);
