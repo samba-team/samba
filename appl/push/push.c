@@ -96,7 +96,7 @@ usage (int ret)
 }
 
 static int
-do_connect (char *host, int port, int nodelay)
+do_connect (const char *host, int port, int nodelay)
 {
     struct hostent *h;
     struct sockaddr_in addr;
@@ -202,10 +202,10 @@ write_state_destroy (struct write_state *w)
 
 static int
 doit(int s,
-     char *host,
-     char *user,
-     char *outfilename,
-     char *header_str,
+     const char *host,
+     const char *user,
+     const char *outfilename,
+     const char *header_str,
      int leavep,
      int verbose,
      int forkp)
@@ -430,11 +430,11 @@ doit(int s,
 
 #ifdef KRB5
 static int
-do_v5 (char *host,
+do_v5 (const char *host,
        int port,
-       char *user,
-       char *filename,
-       char *header_str,
+       const char *user,
+       const char *filename,
+       const char *header_str,
        int leavep,
        int verbose,
        int forkp)
@@ -484,11 +484,11 @@ do_v5 (char *host,
 
 #ifdef KRB4
 static int
-do_v4 (char *host,
+do_v4 (const char *host,
        int port,
-       char *user,
-       char *filename,
-       char *header_str,
+       const char *user,
+       const char *filename,
+       const char *header_str,
        int leavep,
        int verbose,
        int forkp)
@@ -507,7 +507,7 @@ do_v4 (char *host,
 		       s,
 		       &ticket, 
 		       "pop",
-		       host,
+		       (char *)host,
 		       krb_realmofhost(host),
 		       getpid(),
 		       &msg_data,
@@ -529,7 +529,7 @@ do_v4 (char *host,
 #ifdef HESIOD_INTERFACES
 
 static char *
-hesiod_get_pobox (char **user)
+hesiod_get_pobox (const char **user)
 {
     void *context;
     struct hesiod_postoffice *hpo;
@@ -560,7 +560,7 @@ hesiod_get_pobox (char **user)
 #else /* !HESIOD_INTERFACES */
 
 static char *
-hesiod_get_pobox (char **user)
+hesiod_get_pobox (const char **user)
 {
     char *ret = NULL;
     struct hes_postoffice *hpo;
@@ -587,7 +587,7 @@ hesiod_get_pobox (char **user)
 #endif /* HESIOD */
 
 static char *
-get_pobox (char **user)
+get_pobox (const char **user)
 {
     char *ret = NULL;
 
@@ -603,9 +603,10 @@ get_pobox (char **user)
 }
 
 static void
-parse_pobox (char *a0, char **host, char **user)
+parse_pobox (char *a0, const char **host, const char **user)
 {
-    char *h, *u;
+    const char *h, *u;
+    char *p;
     int po = 0;
 
     if (a0 == NULL) {
@@ -628,27 +629,28 @@ parse_pobox (char *a0, char **host, char **user)
 	a0 += 3;
 	po++;
     }
-    h = strchr(a0, '@');
-    if(h)
-	*h++ = '\0';
-    else
+    p = strchr(a0, '@');
+    if(p != NULL) {
+	*p++ = '\0';
+	h = p;
+    } else {
 	h = a0;
-    u = strchr(a0, ':');
-    if(u)
-	*u++ = '\0';
-    else
+    }
+    p = strchr(a0, ':');
+    if(p != NULL) {
+	*p++ = '\0';
+	u = p;
+    } else {
 	u = a0;
+    }
     if(h == u) {
 	/* some inconsistent compatibility with various mailers */
 	if(po) {
 	    h = get_pobox (&u);
 	} else {
-	    struct passwd *pwd = getpwuid(getuid());
-	    if (pwd == NULL)
-		errx (1, "Who are you?");
-	    u = strdup(pwd->pw_name);
+	    u = get_default_username ();
 	    if (u == NULL)
-		errx (1, "strdup: out of memory");
+		errx (1, "Who are you?");
 	}
     }
     *host = h;
@@ -661,7 +663,8 @@ main(int argc, char **argv)
     int port = 0;
     int optind = 0;
     int ret = 1;
-    char *host, *user, *filename = NULL, *pobox = NULL;
+    const char *host, *user, *filename = NULL;
+    char *pobox = NULL;
 
     set_progname (argv[0]);
 
