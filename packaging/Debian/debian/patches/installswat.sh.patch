@@ -1,5 +1,5 @@
---- samba-3.0alpha23.orig/source/script/installswat.sh	2001-10-17 16:00:14.000000000 -0400
-+++ samba-3.0alpha23/source/script/installswat.sh	2003-04-06 03:18:29.000000000 -0400
+--- samba_3_0/source/script/installswat.sh.orig	2003-08-28 18:03:10.000000000 -0400
++++ samba_3_0/source/script/installswat.sh	2003-08-28 18:11:14.000000000 -0400
 @@ -9,7 +9,7 @@
  echo Installing the Samba Web Administration Tool
  
@@ -36,7 +36,7 @@
        FNAME=$SWATDIR/$ln/help/`basename $f`
        echo $FNAME
        if [ "x$BOOKDIR" = "x" ]; then
-@@ -49,31 +45,31 @@
+@@ -49,26 +45,24 @@
        cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
        rm -f $f
        chmod 0644 $FNAME
@@ -62,23 +62,15 @@
        cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
        chmod 0644 $FNAME
 + done
++
  done
  
 +# Install html documentation
 +for f in $SRCDIR../docs/htmldocs/*.html; do
-+      FNAME=$SWATDIR/help/`basename $f`
-+      echo $FNAME
-+      ln -s ../../../doc/samba-doc/htmldocs/`basename $f` $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
-+#      chmod 0644 $FNAME
++	FNAME=$SWATDIR/help/`basename $f`
++	echo $FNAME
++	ln -s ../../../doc/samba-doc/htmldocs/`basename $f` $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
++	chmod 0644 $FNAME
  done
  
- # Install Using Samba book
- 
--if [ "x$BOOKDIR" != "x" ]; then
-+# For Debian we do not install anything here, we just create a symlink
-+#	pointing to /usr/share/doc/samba-doc/htmldocs/using_samba/ in
-+#	debian/rules (peloy@debian.org)
-+if /bin/false; then
- 
-     # Create directories
- 
+ # Install Using Samba book (but only if it is there)
