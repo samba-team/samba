@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "../utils/net.h"
 
+extern pstring global_myname;
+
 /**
  * @file net_rpc.c
  *
@@ -296,6 +298,17 @@ int net_rpc_join(int argc, const char **argv)
 
 /****************************************************************************/
 
+/**
+ * Basic usage function for 'net rpc user'
+ * @param argc	Standard main() style argc.
+ * @param argv	Standard main() style argv.  Initial components are already
+ *		stripped.
+ **/
+
+static int rpc_user_usage(int argc, const char **argv)
+{
+	return net_help_user(argc, argv);
+}
 
 /** 
  * Add a new user to a remote RPC server
@@ -307,7 +320,7 @@ int net_rpc_join(int argc, const char **argv)
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
+ * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return Normal NTSTATUS return.
@@ -323,7 +336,8 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_sta
 	uint32 unknown, user_rid;
 
 	if (argc != 1) {
-		d_printf("Usage: net rpc user add username\n");
+		d_printf("User must be specified\n");
+		rpc_user_usage(argc, argv);
 		return NT_STATUS_OK;
 	}
 
@@ -372,7 +386,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_sta
  * Add a new user to a remote RPC server
  *
  * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
+ * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
@@ -385,16 +399,277 @@ static int rpc_user_add(int argc, const char **argv)
 }
 
 /** 
- * Basic usage function for 'net rpc user'
+ * Delete a user from a remote RPC server
+ *
+ * All paramaters are provided by the run_rpc_command funcion, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
+ * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
+ *
+ * @return Normal NTSTATUS return.
  **/
 
-static int rpc_user_usage(int argc, const char **argv) 
+static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid, 
+				       struct cli_state *cli, 
+				       TALLOC_CTX *mem_ctx, 
+				       int argc, const char **argv)
 {
-	d_printf("  net rpc user add \t to add a user\n");
-	return -1;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	POLICY_HND connect_pol, domain_pol, user_pol;
+
+	if (argc < 1) {
+		d_printf("User must be specified\n");
+		rpc_user_usage(argc, argv);
+		return NT_STATUS_OK;
+	}
+	/* Get sam policy and domain handles */
+
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Get handle on user */
+
+	{
+		uint32 *user_rids, num_rids, *name_types;
+		uint32 flags = 0x000003e8; /* Unknown */
+
+		result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+					       flags, 1, (char **) &argv[0],
+					       &num_rids, &user_rids,
+					       &name_types);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+
+		result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+					    MAXIMUM_ALLOWED_ACCESS,
+					    user_rids[0], &user_pol);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+	}
+
+	/* Delete user */
+
+	result = cli_samr_delete_dom_user(cli, mem_ctx, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Display results */
+
+ done:
+	return result;
+
+}	
+
+/** 
+ * Delete a user from a remote RPC server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+
+static int rpc_user_delete(int argc, const char **argv) 
+{
+	return run_rpc_command(PIPE_SAMR, 0, rpc_user_del_internals,
+			       argc, argv);
+}
+
+/** 
+ * List user's groups on a remote RPC server
+ *
+ * All paramaters are provided by the run_rpc_command funcion, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS 
+rpc_user_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+			TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 *rids, num_rids, *name_types, num_names;
+	uint32 flags = 0x000003e8; /* Unknown */
+	int i;
+	char **names;
+	DOM_GID *user_gids;
+
+	if (argc < 1) {
+		d_printf("User must be specified\n");
+		rpc_user_usage(argc, argv);
+		return NT_STATUS_OK;
+	}
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	/* Get handle on user */
+
+	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+				       flags, 1, (char **) &argv[0],
+				       &num_rids, &rids, &name_types);
+
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+				    MAXIMUM_ALLOWED_ACCESS,
+				    rids[0], &user_pol);
+	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	result = cli_samr_query_usergroups(cli, mem_ctx, &user_pol,
+					   &num_rids, &user_gids);
+
+	/* Look up rids */
+
+	rids = (uint32 *)talloc(mem_ctx, sizeof(uint32) * num_rids);
+
+	for (i = 0; i < num_rids; i++)
+                rids[i] = user_gids[i].g_rid;
+
+	result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol,
+				      flags, num_rids, rids,
+				      &num_names, &names, &name_types);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Display results */
+
+	for (i = 0; i < num_names; i++)
+		printf("%s\n", names[i]);
+
+ done:
+	return result;
+}
+
+/** 
+ * List a user's groups from a remote RPC server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+
+static int rpc_user_info(int argc, const char **argv) 
+{
+	return run_rpc_command(PIPE_SAMR, 0, rpc_user_info_internals,
+			       argc, argv);
+}
+
+/** 
+ * List users on a remote RPC server
+ *
+ * All paramaters are provided by the run_rpc_command funcion, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS 
+rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+			TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 start_idx=0, max_entries=250, num_entries, i;
+	SAM_DISPINFO_CTR ctr;
+	SAM_DISPINFO_1 info1;
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Query domain users */
+	ZERO_STRUCT(ctr);
+	ZERO_STRUCT(info1);
+	ctr.sam.info1 = &info1;
+	if (opt_long_list_entries)
+		d_printf("\nUser name             Comment"\
+			 "\n-----------------------------\n");
+	do {
+		fstring user, desc;
+		result = cli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
+						 &start_idx, 1, &num_entries,
+						 max_entries, &ctr);
+		for (i = 0; i < num_entries; i++) {
+			unistr2_to_ascii(user, &(&ctr.sam.info1->str[i])->uni_acct_name, sizeof(user)-1);
+			if (opt_long_list_entries) 
+				unistr2_to_ascii(desc, &(&ctr.sam.info1->str[i])->uni_acct_desc, sizeof(desc)-1);
+			
+			if (opt_long_list_entries)
+				printf("%-21.21s %-50.50s\n", user, desc);
+			else
+				printf("%-21.21s\n", user);
+		}
+	} while (!NT_STATUS_IS_OK(result));
+
+ done:
+	return result;
 }
 
 /** 
@@ -404,15 +679,22 @@ static int rpc_user_usage(int argc, const char **argv)
  *              stripped
  **/
 
-static int rpc_user(int argc, const char **argv) 
+int net_rpc_user(int argc, const char **argv) 
 {
 	struct functable func[] = {
 		{"add", rpc_user_add},
+		{"info", rpc_user_info},
+		{"delete", rpc_user_delete},
 		{NULL, NULL}
 	};
 	
 	if (argc == 0) {
-		return rpc_user_usage(argc, argv);
+		if (opt_long_list_entries) {
+		} else {
+		}
+			return run_rpc_command(PIPE_SAMR, 0, 
+					       rpc_user_list_internals,
+					       argc, argv);
 	}
 
 	return net_run_function(argc, argv, func, rpc_user_usage);
@@ -928,6 +1210,44 @@ static int rpc_trustdom(int argc, const char **argv)
 	return (net_run_function(argc, argv, func, rpc_user_usage));
 }
 
+/**
+ * Check if a server will take rpc commands
+ * @param flags	Type of server to connect to (PDC, DMB, localhost)
+ *		if the host is not explicitly specified
+ * @return  BOOL (true means rpc supported)
+ */
+BOOL net_rpc_check(unsigned flags)
+{
+	struct cli_state cli;
+	BOOL ret = False;
+	struct in_addr server_ip;
+	char *server_name = NULL;
+
+	/* flags (i.e. server type) may depend on command */
+	if (!net_find_server(flags, &server_ip, &server_name))
+		goto done;
+
+	ZERO_STRUCT(cli);
+	if (cli_initialise(&cli) == False)
+		return False;
+
+	if (!cli_connect(&cli, server_name, &server_ip))
+		goto done;
+	if (!attempt_netbios_session_request(&cli, global_myname, 
+					     server_name, &server_ip))
+		goto done;
+	if (!cli_negprot(&cli))
+		goto done;
+	if (cli.protocol < PROTOCOL_NT1)
+		goto done;
+
+	ret = True;
+ done:
+	cli_shutdown(&cli);
+	return ret;
+}
+
+
 /****************************************************************************/
 
 
@@ -968,7 +1288,7 @@ int net_rpc_help(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"join", rpc_join_usage},
-		{"user", rpc_user_usage},
+		{"user", net_help_user},
 		/*{"changetrustpw", rpc_changetrustpw_usage}, */
 		{"trustdom", rpc_trustdom_usage},
 		/*{"abortshutdown", rpc_shutdown_abort_usage},*/
@@ -996,7 +1316,7 @@ int net_rpc(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"join", net_rpc_join},
-		{"user", rpc_user},
+		{"user", net_rpc_user},
 		{"changetrustpw", rpc_changetrustpw},
 		{"trustdom", rpc_trustdom},
 		{"abortshutdown", rpc_shutdown_abort},

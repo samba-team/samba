@@ -605,20 +605,9 @@ int net_rap_printq(int argc, const char **argv)
 }
 
 	
-int net_rap_user_usage(int argc, const char **argv)
+static int net_rap_user_usage(int argc, const char **argv)
 {
-	d_printf("\nnet rap user [misc. options] [targets]\n\tList users\n");
-	d_printf("\nnet rap user DELETE <name> [misc. options] [targets]"\
-		 "\n\tDelete specified user\n");
-	d_printf("\nnet rap user INFO <name> [misc. options] [targets]"\
-		 "\n\tList the domain groups of the specified user\n");
-	d_printf("\nnet rap user ADD <name> [-F user flags] [misc. options]"\
-		 " [targets]\n\tAdd specified user\n");
-
-	net_common_flags_usage(argc, argv);
-	d_printf(
-	 "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");
-	return -1;
+	return net_help_user(argc, argv);
 } 
 	
 static void user_fn(const char *user_name, const char *comment,
