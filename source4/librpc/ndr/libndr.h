@@ -98,6 +98,7 @@ struct ndr_print {
 #define LIBNDR_FLAG_STR_NOTERM   (1<<5)
 #define LIBNDR_FLAG_STR_NULLTERM (1<<6)
 #define LIBNDR_FLAG_STR_SIZE2    (1<<7)
+#define LIBNDR_FLAG_STR_BYTESIZE (1<<8)
 #define LIBNDR_STRING_FLAGS      (0xFC)
 
 #define LIBNDR_FLAG_REF_ALLOC    (1<<10)
