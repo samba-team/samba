@@ -984,8 +984,6 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 
 	/* Get domain policy handle */
 
-	string_to_sid(&domain_sid, "S-1-5-32");
-
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      access_mask, 
 				      &domain_sid, &domain_pol);
