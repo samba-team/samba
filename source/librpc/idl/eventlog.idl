@@ -1,0 +1,32 @@
+/*
+  eventlog interface definition
+*/
+[ uuid(82273fdc-e32a-17c3-3f78-827929dc23ea),
+  version(1.0),
+  pointer_default(unique)
+] interface eventlog
+{
+	/******************/
+	/* Function: 0x00 */
+	NTSTATUS eventlog_OpenEventLog(
+		[in]	  unistr *servername,
+		[in]	  unistr *sourcename,
+		[out,ref] policy_handle *handle
+	);
+
+	/******************/
+	/* Function: 0x01 */
+	NTSTATUS eventlog_GetNumRecords(
+	);
+
+	/******************/
+	/* Function: 0x02 */
+	NTSTATUS eventlog_ReadEventLog(
+	);
+
+	/******************/
+	/* Function: 0x03 */
+	NTSTATUS eventlog_CloseEventLog(
+		[in,out,ref]     policy_handle *handle
+	);
+}

@@ -3995,6 +3995,7 @@ static struct {
         {"RPC-WKSSVC", torture_rpc_wkssvc, 0},
         {"RPC-SRVSVC", torture_rpc_srvsvc, 0},
         {"RPC-ATSVC", torture_rpc_atsvc, 0},
+        {"RPC-EVENTLOG", torture_rpc_eventlog, 0},
 	{NULL, NULL, 0}};
 
 

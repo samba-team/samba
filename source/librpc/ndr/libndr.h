@@ -200,3 +200,4 @@ typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32, v
 #include "librpc/gen_ndr/ndr_wkssvc.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "librpc/gen_ndr/ndr_atsvc.h"
+#include "librpc/gen_ndr/ndr_eventlog.h"
