@@ -1,16 +1,45 @@
 2004-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c: adapt to rename of oid_cmp to heim_oid_cmp
+	
+	* lib/krb5/pkinit.c: adapt to rename of oid_cmp to heim_oid_cmp
+	
 	* lib/hdb/db3.c: fix all db >= 4.1 cases
 	
 	* doc/setup.texi: add text about hostname to realm mapping using
 	DNS
 
+2004-02-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c: update error codes
+	
+	* lib/krb5/krb5_err.et: prefix pkinit error codes with KRB5_
+
+	* lib/krb5/pkinit.c: update error codes
+	
 2004-02-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: indent, use krb5_abortx() instead of abort()
+	
+	* lib/krb5/init_creds_pw.c (process_pa_data_to_key): spelling
 	
 	* lib/krb5/store.c: handle memory allocate errors
 
 	* lib/krb5/fcache.c (_krb5_xlock): handle that everything was ok,
 	and don't put an error in the error strings then
+	
+2004-02-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c: s/heim_big_integer/heim_integer/
+	
+	* lib/krb5/pkinit.c: s/heim_big_integer/heim_integer/
+	
+	* kdc/pkinit.c: adapt to asn1 bignum code, use HEIM_PKINIT errors
+	
+	* lib/krb5/pkinit.c: adapt to asn1 bignum code, use HEIM_PKINIT
+	errors
+	
+	* lib/krb5/heim_err.et: add HEIM_PKINIT specific errors
 	
 2004-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
