@@ -284,6 +284,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	uint32_t share_access = io->generic.in.share_access;
 	uint32_t access_mask = io->generic.in.access_mask;
 	mode_t mode;
+	uint32_t attrib;
 
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
@@ -313,7 +314,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
-	mode = pvfs_fileperms(pvfs, io->ntcreatex.in.file_attr | FILE_ATTRIBUTE_ARCHIVE);
+	attrib = io->ntcreatex.in.file_attr | FILE_ATTRIBUTE_ARCHIVE;
+	mode = pvfs_fileperms(pvfs, attrib);
 
 	/* create the file */
 	fd = open(name->full_name, flags | O_CREAT | O_EXCL, mode);
@@ -330,7 +332,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	name->dos.attrib = io->ntcreatex.in.file_attr;
+	name->dos.attrib = attrib;
 	status = pvfs_dosattrib_save(pvfs, name, fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(pvfs->idtree_fnum, fnum);
