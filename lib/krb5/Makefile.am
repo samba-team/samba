@@ -16,6 +16,7 @@ libkrb5_a_SOURCES = \
 	changepw.c \
 	checksum.c \
 	config_file.c \
+	convert_creds.c \
 	constants.c \
 	context.c \
 	crc.c \
@@ -80,6 +81,8 @@ libkrb5_a_SOURCES = \
 	version.c \
 	warn.c \
 	write_message.c
+
+INCLUDES = $(INCLUDE_krb4)
 
 libkrb5_a_LIBADD = ../error/error.o ../error/krb5_err.o \
 	../error/asn1_err.o ../error/hdb_err.o ../error/heim_err.o
