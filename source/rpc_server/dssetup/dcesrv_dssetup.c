@@ -55,8 +55,6 @@ static WERROR dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_call_state
 		info = talloc_p(mem_ctx, union dssetup_DsRoleInfo);
 		W_ERROR_HAVE_NO_MEMORY(info);
 
-		/* TODO: we need to find out what we should return as standalone server */
-
 		switch (lp_server_role()) {
 		case ROLE_STANDALONE:
 			role		= DS_ROLE_STANDALONE_SERVER;
