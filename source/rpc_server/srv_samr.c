@@ -116,24 +116,24 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 static char *unmap_unixname(char *unix_user_name, int name_idx)
 {
-	FILE *f;
 	char *mapfile = lp_username_map();
 	char *s;
-	pstring buf;
+	char **lines;
 	static pstring tok;
+	int i;
 
 	if (!*unix_user_name) return NULL;
 	if (!*mapfile) return NULL;
 
-	f = sys_fopen(mapfile,"r");
-	if (!f) {
+	lines = file_lines_load(mapfile, NULL);
+	if (!lines) {
 		DEBUG(0,("unmap_unixname: can't open username map %s\n", mapfile));
 		return NULL;
 	}
 
 	DEBUG(5,("unmap_unixname: scanning username map %s, index: %d\n", mapfile, name_idx));
 
-	while((s=fgets_slash(buf,sizeof(buf),f))!=NULL) {
+	for (i=0; lines[i]; i++) {
 		char *unixname = s;
 		char *dosname = strchr(unixname,'=');
 
@@ -169,16 +169,16 @@ static char *unmap_unixname(char *unix_user_name, int name_idx)
 
 		if (name_idx >= 0) {
 			DEBUG(0,("unmap_unixname: index too high - not that many DOS names\n"));
-			fclose(f);
+			file_lines_free(lines);
 			return NULL;
 		} else {
-			fclose(f);
+			file_lines_free(lines);
 			return tok;
 		}
 	}
 
 	DEBUG(0,("unmap_unixname: Couldn't find the UNIX user name\n"));
-	fclose(f);
+	file_lines_free(lines);
 	return NULL;
 }
 
