@@ -773,7 +773,7 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   Keep track of the number of running smbd's. This functionality is used to
   'hard' limit Samba overhead on resource constrained systems. 
 ****************************************************************************/
-static BOOL smbd_process_limit()
+static BOOL smbd_process_limit(void)
 {
 	int  total_smbds;
 	

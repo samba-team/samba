@@ -648,7 +648,7 @@ BOOL spoolss_closeprinter(POLICY_HND *hnd)
 /****************************************************************************
 do a SPOOLSS Get printer datas
 ****************************************************************************/
-uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
+uint32 spoolss_getprinterdata(const POLICY_HND *hnd, UNISTR2 *valuename,
                         uint32 in_size,
                         uint32 *type,
                         uint32 *out_size,

@@ -109,7 +109,7 @@ find client state.  server name, user name, domain name and password must all
 match.
 ****************************************************************************/
 static struct msrpc_use *msrpc_find(const char* pipe_name,
-				const struct user_creds *usr_creds)
+				    struct user_creds *usr_creds)
 {
 	int i;
 	struct user_creds null_usr;
@@ -199,7 +199,7 @@ init client state
 ****************************************************************************/
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
 				uint32 pid,
-				const struct user_creds *usr_creds,
+				struct user_creds *usr_creds,
 				BOOL redir)
 {
 	struct msrpc_use *cli;

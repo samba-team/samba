@@ -135,9 +135,9 @@ char *classname_table[] = {
 /****************************************************************************
 utility access to debug class names's
 ****************************************************************************/
-char* debug_classname_from_index(int index)
+char* debug_classname_from_index(int idx)
 {
-	return classname_table[index];
+	return classname_table[idx];
 }
 
 /****************************************************************************
@@ -162,7 +162,7 @@ parse the debug levels from smbcontrol. Example debug level parameter:
 ****************************************************************************/
 BOOL debug_parse_params(char **params, int *debuglevel_class)
 {
-	int   i, index;
+	int   i, idx;
 	char *class_name;
 	char *class_level;
 	
@@ -183,8 +183,8 @@ BOOL debug_parse_params(char **params, int *debuglevel_class)
 	for (; i < DBGC_LAST && params[i]; i++) {
 		if ((class_name=strtok(params[i],":")) &&
 			(class_level=strtok(NULL, "\0")) &&
-            ((index = debug_lookup_classname(class_name)) != -1)) {
-				debuglevel_class[index] = atoi(class_level);
+            ((idx = debug_lookup_classname(class_name)) != -1)) {
+				debuglevel_class[idx] = atoi(class_level);
 		} else {
 			DEBUG(0,("debug_parse_params: unrecognized debug class name or format [%s]\n", params[i]));
 			return False;
@@ -208,7 +208,7 @@ BOOL debug_parse_levels(char *params_str)
 	ZERO_ARRAY(params);
 	ZERO_ARRAY(debuglevel_class);
 
-	if (params[0]=strtok(params_str," ,")) {
+	if ( (params[0]=strtok(params_str," ,")) ) {
 		for (i=1; i<DBGC_LAST;i++) {
 			if ((params[i]=strtok(NULL," ,"))==NULL)
 				break;

@@ -58,7 +58,7 @@ uint32 crc32_calc_buffer( char *buffer, uint32 count);
 
 /*The following definitions come from  lib/debug.c  */
 
-char* debug_classname_from_index(int index);
+char* debug_classname_from_index(int idx);
 int debug_lookup_classname(char* classname);
 BOOL debug_parse_params(char **params, int *debuglevel_class);
 BOOL debug_parse_levels(char *params_str);
@@ -192,7 +192,7 @@ void init_msrpc_use(void);
 void free_msrpc_use(void);
 struct msrpc_state *msrpc_use_add(const char* pipe_name,
 				uint32 pid,
-				const struct user_creds *usr_creds,
+				struct user_creds *usr_creds,
 				BOOL redir);
 BOOL msrpc_use_del(const char* pipe_name,
 				const struct user_creds *usr_creds,
@@ -2097,7 +2097,7 @@ BOOL spoolss_open_printer_ex(  const char *printername,
                         POLICY_HND *hnd);
 BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 *info2);
 BOOL spoolss_closeprinter(POLICY_HND *hnd);
-uint32 spoolss_getprinterdata(const POLICY_HND *hnd, const UNISTR2 *valuename,
+uint32 spoolss_getprinterdata(const POLICY_HND *hnd, UNISTR2 *valuename,
                         uint32 in_size,
                         uint32 *type,
                         uint32 *out_size,

@@ -1297,7 +1297,7 @@ static void init_globals(void)
 
 */
 
-	Globals.bMsAddPrinterWizard = False;
+	Globals.bMsAddPrinterWizard = True;
 	Globals.bPreferredMaster = Auto;	/* depending on bDomainMaster */
 	Globals.os_level = 20;
 	Globals.bLocalMaster = True;

@@ -684,7 +684,9 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
 				 POLICY_HND *handle)
 {
+#if 0
 	uint32 result = NT_STATUS_NO_PROBLEMO;
+#endif
 	fstring name;
 	int snum;
 	struct current_user user;
@@ -771,7 +773,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		/* map an empty access mask to the minimum access mask */
 		if (printer_default->access_required == 0x0)
 			printer_default->access_required = PRINTER_ACCESS_USE;
-		
+
 		if (!print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(handle);
@@ -786,6 +788,64 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 		 * here ! This is insanity.... JRA.
 		 */
 
+		/*
+		 * If the openprinterex rpc call contains a devmode,
+		 * it's a per-user one. This per-user devmode is derivated
+		 * from the global devmode. Openprinterex() contains a per-user 
+		 * devmode for when you do EMF printing and spooling.
+		 * In the EMF case, the NT workstation is only doing half the job
+		 * of rendering the page. The other half is done by running the printer
+		 * driver on the server.
+		 * The EMF file doesn't contain the page description (paper size, orientation, ...).
+		 * The EMF file only contains what is to be printed on the page.
+		 * So in order for the server to know how to print, the NT client sends
+		 * a devicemode attached to the openprinterex call.
+		 * But this devicemode is short lived, it's only valid for the current print job.
+		 *
+		 * If Samba would have supported EMF spooling, this devicemode would
+		 * have been attached to the handle, to sent it to the driver to correctly
+		 * rasterize the EMF file.
+		 *
+		 * As Samba only supports RAW spooling, we only receive a ready-to-print file,
+		 * we just act as a pass-thru between windows and the printer.
+		 *
+		 * In order to know that Samba supports only RAW spooling, NT has to call
+		 * getprinter() at level 2 (attribute field) or NT has to call startdoc()
+		 * and until NT sends a RAW job, we refuse it.
+		 *
+		 * But to call getprinter() or startdoc(), you first need a valid handle,
+		 * and to get an handle you have to call openprintex(). Hence why you have
+		 * a devicemode in the openprinterex() call.
+		 *
+		 *
+		 * Differences between NT4 and NT 2000.
+		 * NT4:
+		 * ---
+		 * On NT4, you only have a global devicemode. This global devicemode can be changed
+		 * by the administrator (or by a user with enough privs). Everytime a user
+		 * wants to print, the devicemode is resetted to the default. In Word, everytime
+		 * you print, the printer's characteristics are always reset to the global devicemode.
+		 *
+		 * NT 2000:
+		 * -------
+		 * In W2K, there is the notion of per-user devicemode. The first time you use
+		 * a printer, a per-user devicemode is build from the global devicemode.
+		 * If you change your per-user devicemode, it is saved in the registry, under the
+		 * H_KEY_CURRENT_KEY sub_tree. So that everytime you print, you have your default
+		 * printer preferences available.
+		 *
+		 * To change the per-user devicemode: it's the "Printing Preferences ..." button
+		 * on the General Tab of the printer properties windows.
+		 *
+		 * To change the global devicemode: it's the "Printing Defaults..." button
+		 * on the Advanced Tab of the printer properties window.
+		 *
+		 * JFM.
+		 */
+
+
+
+#if 0
 		if (printer_default->devmode_cont.devmode != NULL) {
 			result = printer_write_default_dev( snum, printer_default);
 			if (result != 0) {
@@ -793,6 +853,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 				return result;
 			}
 		}
+#endif
 	}
 
 	return NT_STATUS_NO_PROBLEMO;
@@ -843,9 +904,11 @@ BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 	 * as we will be overwriting it.
 	 */
 		
-	if (nt_devmode == NULL)
+	if (nt_devmode == NULL) {
+		DEBUG(5, ("convert_devicemode: allocating a generic devmode\n"));
 		if ((nt_devmode = construct_nt_devicemode(printername)) == NULL)
 			return False;
+	}
 
 	unistr_to_dos(nt_devmode->devicename, (const char *)devmode->devicename.buffer, 31);
 	unistr_to_dos(nt_devmode->formname, (const char *)devmode->formname.buffer, 31);
@@ -4016,9 +4079,13 @@ static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
 		return False; /* if either is exclusively NULL are not equal */
 	}
 
-	if (!strequal(d1->devicename, d2->devicename) ||
-	    !strequal(d1->formname, d2->formname)) {
-		DEBUG(10, ("nt_devicemode_equal(): device,form not equal\n"));
+	if (!strequal(d1->devicename, d2->devicename)) {
+		DEBUG(10, ("nt_devicemode_equal(): device not equal (%s != %s)\n", d1->devicename, d2->devicename));
+		return False;
+	}
+
+	if (!strequal(d1->formname, d2->formname)) {
+		DEBUG(10, ("nt_devicemode_equal(): formname not equal (%s != %s)\n", d1->formname, d2->formname));
 		return False;
 	}
 
