@@ -4707,7 +4707,7 @@ BOOL sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int 
 
  *************************************************************************/
 BOOL make_sam_user_info24(SAM_USER_INFO_24 *usr,
-	char newpass[516], uint16 passlen)
+	const char newpass[516], uint16 passlen)
 {
 	memcpy(usr->pass, newpass, sizeof(usr->pass));
 	usr->unk_0 = passlen;
