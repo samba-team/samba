@@ -87,6 +87,7 @@ const char *opt_destination = NULL;
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
+extern struct in_addr loopback_ip;
 extern BOOL AllowDebugChange;
 
 uint32 get_sec_channel_type(const char *param) 
@@ -321,7 +322,6 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 		}
 		*server_name = SMB_STRDUP(inet_ntoa(opt_dest_ip));
 	} else if (!(flags & NET_FLAGS_LOCALHOST_DEFAULT_INSANE)) {
-		extern struct in_addr loopback_ip;
 		*server_ip = loopback_ip;
 		*server_name = SMB_STRDUP("127.0.0.1");
 	}

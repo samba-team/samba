@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern DOM_SID global_sid_Builtin;
+
 static TDB_CONTEXT *tdb; /* used for driver files */
 
 #define DATABASE_VERSION_V1 1 /* native byte format. */
@@ -1253,8 +1255,6 @@ NTSTATUS pdb_default_enum_aliases(struct pdb_methods *methods,
 				  uint32 *num_aliases,
 				  struct acct_info **info)
 {
-	extern DOM_SID global_sid_Builtin;
-
 	GROUP_MAP *map;
 	int i, num_maps;
 	enum SID_NAME_USE type = SID_NAME_UNKNOWN;

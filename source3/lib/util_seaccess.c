@@ -22,6 +22,8 @@
 #include "includes.h"
 
 extern DOM_SID global_sid_Builtin;
+extern DOM_SID global_sid_World;
+extern NT_USER_TOKEN anonymous_token;
 
 /*********************************************************************************
  Check an ACE against a SID.  We return the remaining needed permission
@@ -214,7 +216,6 @@ BOOL se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 		     uint32 acc_desired, uint32 *acc_granted, 
 		     NTSTATUS *status)
 {
-	extern NT_USER_TOKEN anonymous_token;
 	size_t i;
 	SEC_ACL *the_acl;
 	fstring sid_str;
@@ -323,7 +324,6 @@ BOOL se_access_check(const SEC_DESC *sd, const NT_USER_TOKEN *token,
 
 NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
 {
-	extern DOM_SID global_sid_World;
 	DOM_SID adm_sid;
 	DOM_SID act_sid;
 

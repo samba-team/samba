@@ -27,6 +27,9 @@
 
 #include "includes.h"
 
+extern struct current_user current_user;
+extern userdom_struct current_user_info;
+
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES
 #endif
@@ -2116,7 +2119,6 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	int snum;
 	fstring sharename;
 	int errcode;
-	extern struct current_user current_user;
 	WERROR werr = WERR_OK;
 
 	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
@@ -2183,7 +2185,6 @@ static BOOL api_WPrintQueueCtrl(connection_struct *conn,uint16 vuid, char *param
 	int errcode = NERR_notsupported;
 	int snum;
 	WERROR werr = WERR_OK;
-	extern struct current_user current_user;
 
 	/* check it's a supported varient */
 	if (!(strcsequal(str1,"z") && strcsequal(str2,"")))
@@ -2435,7 +2436,6 @@ static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param
   char *str2 = skip_string(str1,1);
   char *p = skip_string(str2,1);
   char *p2;
-  extern userdom_struct current_user_info;
   int level = SVAL(p,0);
 
   DEBUG(4,("NetWkstaGetInfo level %d\n",level));

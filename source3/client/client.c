@@ -29,6 +29,9 @@
 #define REGISTER 0
 #endif
 
+extern BOOL AllowDebugChange;
+extern BOOL override_logfile;
+extern char tar_type;
 extern BOOL in_client;
 static int port = 0;
 pstring cur_dir = "\\";
@@ -3286,13 +3289,10 @@ static int do_message_op(void)
 
  int main(int argc,char *argv[])
 {
-	extern BOOL AllowDebugChange;
-	extern BOOL override_logfile;
 	pstring base_directory;
 	int opt;
 	pstring query_host;
 	BOOL message = False;
-	extern char tar_type;
 	pstring term_code;
 	static const char *new_name_resolve_order = NULL;
 	poptContext pc;

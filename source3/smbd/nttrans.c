@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+extern DOM_SID global_sid_World;
+extern int max_send;
 extern enum protocol_types Protocol;
 extern int smb_read_error;
 extern int global_oplock_break;
@@ -83,7 +85,6 @@ static char *nttrans_realloc(char **ptr, size_t size)
 static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, NTSTATUS nt_error, char *params,
                            int paramsize, char *pdata, int datasize)
 {
-	extern int max_send;
 	int data_to_send = datasize;
 	int params_to_send = paramsize;
 	int useable_space;
@@ -2020,7 +2021,6 @@ static int call_nt_transact_rename(connection_struct *conn, char *inbuf, char *o
 
 static size_t get_null_nt_acl(TALLOC_CTX *mem_ctx, SEC_DESC **ppsd)
 {
-	extern DOM_SID global_sid_World;
 	size_t sd_size;
 
 	*ppsd = make_standard_sec_desc( mem_ctx, &global_sid_World, &global_sid_World, NULL, &sd_size);

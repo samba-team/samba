@@ -26,6 +26,9 @@
 
 #include "includes.h"
 
+extern struct dcinfo last_dcinfo;
+extern userdom_struct current_user_info;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -424,7 +427,6 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	init_net_r_auth_2(r_u, &srv_cred, &srv_flgs, status);
 
 	if (NT_STATUS_IS_OK(status)) {
-		extern struct dcinfo last_dcinfo;
 		last_dcinfo = p->dc;
 	}
 
@@ -575,7 +577,6 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	fstring nt_username, nt_domain, nt_workstation;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
-	extern userdom_struct current_user_info;
 	SAM_ACCOUNT *sampw;
 	struct auth_context *auth_context = NULL;
 	        
