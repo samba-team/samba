@@ -53,11 +53,31 @@ TALLOC_CTX *talloc_init(void)
 	return t;
 }
 
+static int make_new_chunk(TALLOC_CTX *t, size_t size)
+{
+	struct talloc_chunk *c;
+	size_t asize = (size + (TALLOC_CHUNK_SIZE-1)) & ~(TALLOC_CHUNK_SIZE-1);
+
+	c = (struct talloc_chunk *)malloc(sizeof(*c));
+	if (!c) return 0;
+	c->next = t->list;
+	c->ptr = (void *)malloc(asize);
+	if (!c->ptr) {
+		free(c);
+		return 0;
+	}
+	c->alloc_size = 0;
+	c->total_size = asize;
+	t->list = c;
+	t->total_alloc_size += asize;
+	return 1;
+}
+
 /* allocate a bit of memory from the specified pool */
 void *talloc(TALLOC_CTX *t, size_t size)
 {
 	void *p;
-	char *cp;
+	char *prefix_p;
 	if (size == 0)
 	{
 		/* debugging value used to track down
@@ -67,35 +87,27 @@ void *talloc(TALLOC_CTX *t, size_t size)
 		return p;
 	}
 
-	/* normal code path */
+	/* Add in prefix of TALLOC_ALIGN, and ensure it's a multiple of TALLOC_ALIGN's */
+
 	size = (size + TALLOC_ALIGN + (TALLOC_ALIGN-1)) & ~(TALLOC_ALIGN-1);
 
 	if (!t->list || (t->list->total_size - t->list->alloc_size) < size) {
-		struct talloc_chunk *c;
-		size_t asize = (size + (TALLOC_CHUNK_SIZE-1)) & ~(TALLOC_CHUNK_SIZE-1);
-
-		c = (struct talloc_chunk *)malloc(sizeof(*c));
-		if (!c) return NULL;
-		c->next = t->list;
-		c->ptr = (void *)malloc(asize);
-		if (!c->ptr) {
-			free(c);
+		if (!make_new_chunk(t, size))
 			return NULL;
-		}
-		c->alloc_size = 0;
-		c->total_size = asize;
-		t->list = c;
-		t->total_alloc_size += asize;
 	}
 
 	p = ((char *)t->list->ptr) + t->list->alloc_size;
 
 	/* Ensure the prefix is recognisable. */
-	cp = (char *)p;
-	memset(cp + sizeof(size_t) + sizeof(t->list), 0xff, TALLOC_ALIGN - (sizeof(size_t) + sizeof(t->list)));
+
+	prefix_p = (char *)p;
+
+	memset(prefix_p + sizeof(size_t) + sizeof(t->list), 0xff, TALLOC_ALIGN - (sizeof(size_t) + sizeof(t->list)));
+
 	/* Setup the legth and back pointer prefix. */
-	memcpy(cp, &size, sizeof(size_t));
-	memcpy(cp + sizeof(size_t), &t->list, sizeof(t->list));
+
+	memcpy(prefix_p, &size, sizeof(size_t));
+	memcpy(prefix_p + sizeof(size_t), &t->list, sizeof(t->list));
 
 	p = ((char *)t->list->ptr) + t->list->alloc_size + TALLOC_ALIGN;
 	t->list->alloc_size += size;
@@ -167,7 +179,6 @@ void *talloc_memdup(TALLOC_CTX *t, void *p, size_t size)
 void *talloc_realloc(TALLOC_CTX *t, void *p, size_t size)
 {
 	char *base_p;
-	void *new_p;
 	struct talloc_chunk *c;
 	size_t internal_current_size;
 	size_t internal_new_size;
@@ -192,33 +203,50 @@ void *talloc_realloc(TALLOC_CTX *t, void *p, size_t size)
 	memcpy(&internal_current_size, base_p, sizeof(size_t));
 	memcpy(&c, base_p + sizeof(size_t), sizeof(c));
 
-	/* Shrinking is also easy. */
+	/* Don't do anything on shrink. */
 
 	if (internal_new_size <= internal_current_size)
 		return p;
 
-	/* Can we extend in place ? */
+	if (c->ptr == base_p && c->alloc_size == internal_current_size) {
+		/* We are alone in this chunk. Use standard realloc. */
+		c->ptr = realloc(c->ptr, internal_new_size);
+		if (!c->ptr)
+			return NULL;
 
-	if ((base_p + internal_current_size == ((char *)c->ptr) + c->alloc_size) &&
-		(base_p + internal_new_size <= ((char *)c->ptr) + c->total_size)) {
+		/* ensure this new chunk is not used for anything else. */
+		c->alloc_size = internal_new_size;
+		c->total_size = internal_new_size;
+		memcpy(c->ptr, &internal_new_size, sizeof(size_t));
 
-		/* Change the internal current size. */
-		memcpy(base_p, &internal_new_size, sizeof(size_t));
-		c->alloc_size += (internal_new_size - internal_current_size);
+		t->total_alloc_size += (internal_new_size - internal_current_size);
 
-#if 0 /* DEBUG */
-		DEBUG(0,("talloc_realloc: Extended in place : curr_size = %u, new_size = %u\n",
-				internal_current_size, internal_new_size ));
-#endif /* DEBUG */
-
-		return p;
+		return ((char *)c->ptr) + TALLOC_ALIGN;
 	}
 
-	/* Can't extend in place, alloc new size and copy. */
+	/* We are part of another chunk. Create a new chunk and move out. */
+	if (!make_new_chunk(t, internal_new_size))
+		return NULL;
 
-	new_p = talloc(t, size);
-	if (new_p)
-		memcpy(new_p, p, internal_current_size - TALLOC_ALIGN);
+	c = t->list;
 
-	return new_p;
+	base_p = (char *)c->ptr;
+
+	/* Ensure the prefix is recognisable. */
+
+	memset(base_p + sizeof(size_t) + sizeof(t->list), 0xff, TALLOC_ALIGN - (sizeof(size_t) + sizeof(t->list)));
+
+	/* Setup the legth and back pointer prefix. */
+
+	memcpy(base_p, &internal_new_size, sizeof(size_t));
+	memcpy(base_p + sizeof(size_t), &t->list, sizeof(t->list));
+
+	/* Copy the old data. */
+	memcpy(base_p + TALLOC_ALIGN, p, internal_current_size - TALLOC_ALIGN);
+
+	p = base_p + TALLOC_ALIGN;
+	c->alloc_size = internal_new_size;
+	c->total_size = internal_new_size;
+
+	return p;
 }
