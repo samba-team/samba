@@ -21,7 +21,6 @@
 */
 
 #include "winbindd.h"
-#include "sids.h"
 
 /* Convert a string  */
 

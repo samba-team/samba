@@ -20,8 +20,6 @@
 */
 
 #include "includes.h"
-#include "nterr.h"
-#include "sids.h"
 
 /**********************************************************************************
  Check if this ACE has a SID in common with the token.
