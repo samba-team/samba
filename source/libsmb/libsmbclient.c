@@ -1241,6 +1241,19 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 
 }
 
+static void
+dir_list_fn(file_info *finfo, const char *mask, void *state)
+{
+
+  fprintf(stderr, "Finfo->name=%s, mask=%s\n", finfo->name, mask);
+  if (add_dirent((struct smbc_file *)state, finfo->name, "", SMBC_FILE) < 0) {
+
+    /* Handle an error ... */
+
+  } 
+
+}
+
 int smbc_opendir(const char *fname)
 {
   struct in_addr addr;
@@ -1447,8 +1460,35 @@ int smbc_opendir(const char *fname)
     }
     else { /* The server and share are specified ... work from there ... */
 
+      /* Well, we connect to the server and list the directory */
 
+      smbc_file_table[slot]->dir_type = SMBC_FILE_SHARE;
 
+      srv = smbc_server(server, share);
+
+      if (!srv) {
+
+	if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	smbc_file_table[slot] = NULL;
+	return -1;
+
+      }
+
+      smbc_file_table[slot]->srv = srv;
+
+      /* Now, list the files ... */
+
+      pstrcat(path, "\\*");
+
+      if (!cli_list(&srv->cli, path, aDIR | aSYSTEM | aHIDDEN, dir_list_fn, 
+		    (void *)smbc_file_table[slot])) {
+
+	if (smbc_file_table[slot]) free(smbc_file_table[slot]);
+	smbc_file_table[slot] = NULL;
+	errno = smbc_errno(&srv->cli);
+	return -1;
+
+      }
     }
 
   }
