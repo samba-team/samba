@@ -125,17 +125,21 @@ send a message to a named destination
 static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL duplicates)
 {
 	pid_t pid;
-	TDB_CONTEXT *the_tdb;
-
-	the_tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
-	if (!the_tdb) {
-		fprintf(stderr,"Failed to open connections database in send_message.\n");
-		return False;
-	}
-
 	/* "smbd" is the only broadcast operation */
 	if (strequal(dest,"smbd")) {
-		return message_send_all(the_tdb,msg_type, buf, len, duplicates);
+		TDB_CONTEXT *tdb;
+		BOOL ret;
+
+		tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
+		if (!tdb) {
+			fprintf(stderr,"Failed to open connections database in send_message.\n");
+			return False;
+		}
+
+		ret = message_send_all(tdb,msg_type, buf, len, duplicates);
+		tdb_close(tdb);
+
+		return ret;
 	} else if (strequal(dest,"nmbd")) {
 		pid = pidfile_pid(dest);
 		if (pid == 0) {

@@ -327,6 +327,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		printf("----------------------------------------------\n");
 	}
 	tdb_traverse(tdb, traverse_fn1, NULL);
+	tdb_close(tdb);
 
  locks:
 	if (processes_only) exit(0);
