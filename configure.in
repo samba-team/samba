@@ -317,6 +317,7 @@ AC_CHECK_HEADERS([\
 	sys/wait.h				\
 	syslog.h				\
 	term.h					\
+	termcap.h				\
 	termio.h				\
 	termios.h				\
 	time.h					\
