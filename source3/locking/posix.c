@@ -53,7 +53,7 @@ struct posix_lock {
 };
 
 /*
- * The data in POSIX pending close records is an unsorted linear array of ints
+ * The data in POSIX pending close records is an unsorted linear array of int
  * records.  It is unnecessary to store the count as tdb provides the
  * size of the record.
  */
@@ -73,7 +73,7 @@ static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	static struct posix_lock_key key;
 	TDB_DATA kbuf;
-	key.dev = dev;
+	key.device = dev;
 	key.inode = inode;
 	kbuf.dptr = (char *)&key;
 	kbuf.dsize = sizeof(key);
@@ -95,10 +95,8 @@ static TDB_DATA locking_key_fsp(files_struct *fsp)
 
 static BOOL add_fd_to_close_entry(files_struct *fsp)
 {
-	struct posix_lock_key = locking_key_fsp(fsp);
-	TDB_DATA kbuf, dbuf;
-	size_t count = 0;
-	int *fd_array = NULL;
+	TDB_DATA kbuf = locking_key_fsp(fsp);
+	TDB_DATA dbuf;
 
 	dbuf.dptr = NULL;
 
@@ -129,8 +127,7 @@ static BOOL add_fd_to_close_entry(files_struct *fsp)
 
 static void delete_close_entries(files_struct *fsp)
 {
-    struct posix_lock_key = locking_key_fsp(fsp);
-    TDB_DATA kbuf, dbuf;
+	TDB_DATA kbuf = locking_key_fsp(fsp);
 
 	tdb_lockchain(posix_pending_close_tdb, kbuf);
 	if (tdb_delete(posix_pending_close_tdb, kbuf) == -1)
@@ -145,8 +142,8 @@ static void delete_close_entries(files_struct *fsp)
 
 static size_t get_posix_pending_close_entries(files_struct *fsp, int **entries)
 {
-	struct posix_lock_key = locking_key_fsp(fsp);
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA kbuf = locking_key_fsp(fsp);
+	TDB_DATA dbuf;
 	size_t count = 0;
 
 	*entries = NULL;
@@ -175,8 +172,8 @@ static size_t get_posix_pending_close_entries(files_struct *fsp, int **entries)
 
 static size_t get_posix_lock_entries(files_struct *fsp, struct posix_lock **entries)
 {
-	struct posix_lock_key = locking_key_fsp(fsp);
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA kbuf = locking_key_fsp(fsp);
+	TDB_DATA dbuf;
 	size_t count = 0;
 
 	*entries = NULL;
@@ -191,8 +188,8 @@ static size_t get_posix_lock_entries(files_struct *fsp, struct posix_lock **entr
 		return 0;
 	}
 
-	*entries = (struct posix_lock_struct *)dbuf.dptr;
-	count = (size_t)(dbuf.dsize / sizeof(struct posix_lock_struct));
+	*entries = (struct posix_lock *)dbuf.dptr;
+	count = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
 
     tdb_unlockchain(posix_lock_tdb, kbuf);
 
@@ -251,7 +248,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	 * from the tdb and close them all.
 	 */
 
-	count = get_posix_pending_close_entries(fsp, &fd_array)
+	count = get_posix_pending_close_entries(fsp, &fd_array);
 
 	if (count) {
 		DEBUG(10,("fd_close_posix: doing close on %u fd's.\n", (unsigned int)count ));
@@ -307,8 +304,8 @@ static const char *posix_lock_type_name(int lock_type)
 
 static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size, int lock_type)
 {
-	struct posix_lock_key = locking_key_fsp(fsp);
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA kbuf = locking_key_fsp(fsp);
+	TDB_DATA dbuf;
 	struct posix_lock pl;
 
 	/*
@@ -325,14 +322,14 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	tdb_lockchain(posix_lock_tdb, kbuf);
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
-	dbuf.dptr = Realloc(dbuf.dptr, dbuf.dsize + sizeof(*pl));
+	dbuf.dptr = Realloc(dbuf.dptr, dbuf.dsize + sizeof(pl));
 	if (!dbuf.dptr) {
 		DEBUG(0,("add_posix_lock_entry: Realloc fail !\n"));
 		goto fail;
 	}
 
-	memcpy(dbuf.dptr + dbuf.dsize, rec, sizeof(*pl));
-	dbuf.dsize += sizeof(*pl);
+	memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(pl));
+	dbuf.dsize += sizeof(pl);
 
 	if (tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE) == -1) {
 		DEBUG(0,("add_posix_lock: Failed to add lock entry on file %s\n", fsp->fsp_name));
@@ -351,7 +348,7 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
  fail:
     if (dbuf.dptr)
 		free(dbuf.dptr);
-    tdb_unlockchain(tdb, kbuf);
+    tdb_unlockchain(posix_lock_tdb, kbuf);
     return False;
 }
 
@@ -361,8 +358,8 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 
 static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T size)
 {
-	struct posix_lock_key = locking_key_fsp(fsp);
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA kbuf = locking_key_fsp(fsp);
+	TDB_DATA dbuf;
 	struct posix_lock *locks;
 	size_t i, count;
 
@@ -377,13 +374,13 @@ static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_
 	}
 
 	/* There are existing locks - find a match. */
-	locks = (struct lock_struct *)dbuf.dptr;
-	count = (size_t(dbuf.dsize / sizeof(*locks));
+	locks = (struct posix_lock *)dbuf.dptr;
+	count = (size_t)(dbuf.dsize / sizeof(*locks));
 
 	for (i=0; i<count; i++) { 
 		struct posix_lock *pl = &locks[i];
 
-		if (pl->fd == fd &&
+		if (pl->fd == fsp->fd &&
 			pl->start == start &&
 			pl->size == size) {
 			/* Found it - delete it. */
@@ -394,11 +391,11 @@ static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_
 					memmove(&locks[i], &locks[i+1], sizeof(*locks)*((count-1) - i));
 				}
 				dbuf.dsize -= sizeof(*locks);
-				tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+				tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
 			}
 
 			free(dbuf.dptr);
-			tdb_unlockchain(tdb, kbuf);
+			tdb_unlockchain(posix_lock_tdb, kbuf);
 			return True;
 		}
 	}
@@ -408,7 +405,7 @@ static BOOL delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_
  fail:
     if (dbuf.dptr)
 		free(dbuf.dptr);
-    tdb_unlockchain(tdb, kbuf);
+    tdb_unlockchain(posix_lock_tdb, kbuf);
     return False;
 }
 
@@ -648,7 +645,7 @@ BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_co
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
 
 	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, type = %s\n",
-			fsp->fsp_name, (double)u_offset, (double)u_count, lock_type_name(lock_type) ));
+			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -680,7 +677,7 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
 
 	DEBUG(5,("set_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
-			fsp->fsp_name, (double)u_offset, (double)u_count, lock_type_name(lock_type) ));
+			fsp->fsp_name, (double)u_offset, (double)u_count, posix_lock_type_name(lock_type) ));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -691,9 +688,9 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 		return True;
 
 	/*
-	 * Note that setting multiple overlapping read locks on different
+	 * Note that setting multiple overlapping locks on different
 	 * file descriptors will not be held separately by the kernel (POSIX
-	 * braindamage), but will be merged into one continuous read lock
+	 * braindamage), but will be merged into one continuous lock
 	 * range. We cope with this case in the release_posix_lock code
 	 * below. JRA.
 	 */
@@ -716,7 +713,6 @@ struct unlock_list {
     struct unlock_list *prev;
     SMB_OFF_T start;
     SMB_OFF_T size;
-	int fd;
 };
 
 /****************************************************************************
@@ -727,48 +723,36 @@ struct unlock_list {
 
 static struct unlock_list *posix_unlock_list(TALLOC_CTX *ctx, struct unlock_list *ulhead, files_struct *fsp)
 {
-	struct lock_key key;
-	TDB_DATA kbuf, dbuf;
-	struct lock_struct *locks;
-	int num_locks, i;
-
-	/*
-	 * Setup the key for this fetch.
-	 */
-	key.device = dev;
-	key.inode = ino;
-	kbuf.dptr = (char *)&key;
-	kbuf.dsize = sizeof(key);
+	TDB_DATA kbuf = locking_key_fsp(fsp);
+	TDB_DATA dbuf;
+	struct posix_lock *locks;
+	size_t num_locks, i;
 
 	dbuf.dptr = NULL;
 
-	tdb_lockchain(tdb, kbuf);
-	dbuf = tdb_fetch(tdb, kbuf);
+	tdb_lockchain(posix_lock_tdb, kbuf);
+	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
 	if (!dbuf.dptr) {
-		tdb_unlockchain(tdb, kbuf);
+		tdb_unlockchain(posix_lock_tdb, kbuf);
 		return ulhead;
 	}
 	
-	locks = (struct lock_struct *)dbuf.dptr;
-	num_locks = dbuf.dsize / sizeof(*locks);
+	locks = (struct posix_lock *)dbuf.dptr;
+	num_locks = (size_t)(dbuf.dsize / sizeof(*locks));
 
 	/*
 	 * Check the current lock list on this dev/inode pair.
 	 * Quit if the list is deleted.
 	 */
 
-	DEBUG(10,("brl_unlock_list: curr: start=%.0f,size=%.0f\n",
+	DEBUG(10,("posix_unlock_list: curr: start=%.0f,size=%.0f\n",
 		(double)ulhead->start, (double)ulhead->size ));
 
 	for (i=0; i<num_locks && ulhead; i++) {
 
-		struct lock_struct *lock = &locks[i];
+		struct posix_lock *lock = &locks[i];
 		struct unlock_list *ul_curr;
-
-		/* If it's not this process, ignore it. */
-		if (lock->context.pid != pid)
-			continue;
 
 		/*
 		 * Walk the unlock list, checking for overlaps. Note that
@@ -778,7 +762,7 @@ static struct unlock_list *posix_unlock_list(TALLOC_CTX *ctx, struct unlock_list
 
 		for (ul_curr = ulhead; ul_curr;) {
 
-			DEBUG(10,("brl_unlock_list: lock: start=%.0f,size=%.0f:",
+			DEBUG(10,("posix_unlock_list: lock: start=%.0f,size=%.0f:",
 				(double)lock->start, (double)lock->size ));
 
 			if ( (ul_curr->start >= (lock->start + lock->size)) ||
@@ -908,14 +892,13 @@ BECOMES.....
 													sizeof(struct unlock_list));
 
 				if(ul_new == NULL) {
-					DEBUG(0,("brl_unlock_list: talloc fail.\n"));
+					DEBUG(0,("posix_unlock_list: talloc fail.\n"));
 					return NULL; /* The talloc_destroy takes care of cleanup. */
 				}
 
 				ZERO_STRUCTP(ul_new);
 				ul_new->start = lock->start + lock->size;
 				ul_new->size = ul_curr->start + ul_curr->size - ul_new->start;
-				ul_new->smbpid = ul_curr->smbpid;
 
 				/* Add into the dlink list after the ul_curr point - NOT at ulhead. */
 				DLIST_ADD(ul_curr, ul_new);
@@ -941,7 +924,7 @@ new: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
 		} /* end for ( ul_curr = ulhead; ul_curr;) */
 	} /* end for (i=0; i<num_locks && ul_head; i++) */
 
-	tdb_unlockchain(tdb, kbuf);
+	tdb_unlockchain(posix_lock_tdb, kbuf);
 
 	if (dbuf.dptr)
 		free(dbuf.dptr);
@@ -950,11 +933,11 @@ new: start=%.0f,size=%.0f\n", (double)ul_curr->start, (double)ul_curr->size,
 }
 
 /****************************************************************************
- POSIX function to release a lock given a list. Returns True if the
+ POSIX function to release a lock. Returns True if the
  lock could be released, False if not.
 ****************************************************************************/
 
-static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
+BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
@@ -964,7 +947,7 @@ static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG
 	struct unlock_list *ul = NULL;
 
 	DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
-		fsp->fsp_name, (double)offset, (double)count ));
+		fsp->fsp_name, (double)u_offset, (double)u_count ));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -973,6 +956,13 @@ static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG
 
 	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
 		return True;
+
+	/*
+	 * We treat this as one unlock request for POSIX accounting purposes even
+	 * if it may have been split into multiple smaller POSIX unlock ranges.
+	 */ 
+
+	delete_posix_lock_entry(fsp, offset, count);
 
 	if ((ul_ctx = talloc_init()) == NULL) {
         DEBUG(0,("release_posix_lock: unable to init talloc context.\n"));
@@ -993,15 +983,14 @@ static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG
 	ZERO_STRUCTP(ul);
 	ul->start = offset;
 	ul->size = count;
-	ul->fd = fsp->fd;
 
 	DLIST_ADD(ulist, ul);
 
 	/*
 	 * The following call calculates if there are any
-	 * overlapping read locks held by this process on
-	 * other fd's open on the same file and creates a
-	 * list of unlock ranges that will allow other
+	 * overlapping locks held by this process on
+	 * fd's open on the same file and creates a
+	 * list of unlock ranges that will allow
 	 * POSIX lock ranges to remain on the file whilst the
 	 * unlocks are performed.
 	 */
@@ -1013,108 +1002,43 @@ static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG
 	 */
 
 	for(; ulist; ulist = ulist->next) {
-		SMB_OFF_T offset = ulist->start;
-		SMB_OFF_T count = ulist->size;
-
-		DEBUG(5,("release_posix_lock: Real unlock: offset = %.0f, count = %.0f\n",
-			(double)offset, (double)count ));
+		offset = ulist->start;
+		count = ulist->size;
 
 		if(u_count == 0) {
 
 			/*
-			 * This lock must overlap with an existing read-only lock
-			 * held by another fd. Don't do any POSIX call.
+			 * This lock must overlap with an existing lock.
+			 * Don't do any POSIX call.
 			 */
 
 			continue;
 		}
 
-		/*
-		 * If the requested lock won't fit in the POSIX range, we will
-		 * pretend it was successful.
-		 */
-
-		if(!posix_lock_in_range(&offset, &count, offset, count))
-			continue;
-
 		DEBUG(5,("release_posix_lock: Real unlock: offset = %.0f, count = %.0f\n",
 			(double)offset, (double)count ));
 
-		ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,F_UNLCK);
+		if (!fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,F_UNLCK))
+			ret = False;
 	}
 
     talloc_destroy(ul_ctx);
-
-	/*
-	 * We treat this as one unlock request for POSIX accounting purposes even
-	 * if it may have been split into multiple smaller POSIX unlock ranges.
-	 */ 
-
-	delete_posix_lock_entry(fsp->
 
 	return ret;
 }
 
 /****************************************************************************
- Return a lock list associated with an open file.
+ Remove all lock entries for a specific dev/inode pair from the tdb.
 ****************************************************************************/
 
-struct unlock_list *brl_getlocklist( TALLOC_CTX *ctx, SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
+static void delete_posix_lock_entries(files_struct *fsp)
 {
-	struct lock_key key;
-	TDB_DATA kbuf, dbuf;
-	int i, count;
-	struct lock_struct *locks;
-	struct unlock_list *ulist = NULL;
+	TDB_DATA kbuf = locking_key_fsp(fsp);
 
-	key.device = dev;
-	key.inode = ino;
-	kbuf.dptr = (char *)&key;
-	kbuf.dsize = sizeof(key);
-
-	dbuf.dptr = NULL;
-
-	tdb_lockchain(tdb, kbuf);
-	dbuf = tdb_fetch(tdb, kbuf);
-
-	if (!dbuf.dptr) {
-		tdb_unlockchain(tdb, kbuf);
-		return NULL;
-	}
-
-	/* There are existing locks - allocate an entry for each one. */
-	locks = (struct lock_struct *)dbuf.dptr;
-	count = dbuf.dsize / sizeof(*locks);
-
-	for (i=0; i<count; i++) {
-		struct lock_struct *lock = &locks[i];
-
-		if (lock->context.tid == tid &&
-		    lock->context.pid == pid &&
-		    lock->fnum == fnum) {
-
-				struct unlock_list *ul_new = (struct unlock_list *)talloc(ctx,
-													sizeof(struct unlock_list));
-
-				if(ul_new == NULL) {
-					DEBUG(0,("brl_getlocklist: talloc fail.\n"));
-					return NULL; /* The talloc_destroy takes care of cleanup. */
-				}
-
-				ZERO_STRUCTP(ul_new);
-				ul_new->start = lock->start;
-				ul_new->size = lock->size;
-				ul_new->smbpid = lock->context.smbpid;
-
-				DLIST_ADD(ulist, ul_new);
-		}
-	}
-
-	if (dbuf.dptr)
-		free(dbuf.dptr);
-	tdb_unlockchain(tdb, kbuf);
-
-	return ulist;
+	tdb_lockchain(posix_lock_tdb, kbuf);
+	if (tdb_delete(posix_lock_tdb, kbuf) == -1)
+		DEBUG(0,("delete_close_entries: tdb_delete fail !\n"));
+	tdb_unlockchain(posix_lock_tdb, kbuf);
 }
 
 /****************************************************************************
@@ -1123,86 +1047,86 @@ struct unlock_list *brl_getlocklist( TALLOC_CTX *ctx, SMB_DEV_T dev, SMB_INO_T i
 
 void posix_locking_close_file(files_struct *fsp)
 {
-	TALLOC_CTX *ul_ctx = NULL;
-	struct unlock_list *ul = NULL;
-	int eclass;
-	uint32 ecode;
-	struct pending_closes *pc;
+	struct posix_lock *entries = NULL;
+	size_t count, i;
 
-		/*
-		 * Optimization for the common case where we are the only
-		 * opener of a file. If all fd entries are our own, we don't
-		 * need to explicitly release all the locks via the POSIX functions,
-		 * we can just release all the brl locks, as in the no POSIX locking case.
-		 */
+	/*
+	 * Optimization for the common case where we are the only
+	 * opener of a file. If all fd entries are our own, we don't
+	 * need to explicitly release all the locks via the POSIX functions,
+	 * we can just remove all the entries in the tdb and allow the
+	 * close to remove the real locks.
+	 */
 
-		if ((pc = find_pending_close_entry(fsp->dev, fsp->inode)) != NULL) {
+	count = get_posix_lock_entries(fsp, &entries);
 
-			if (pc->fd_array_size == 1 && pc->fd_array[0] == fsp->fd ) {
-				/*
-				 * Just release all the brl locks, no need to release individually.
-				 */
-
-				brl_close(fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
-				return;
-			}
-		}
-
-		if ((ul_ctx = talloc_init()) == NULL) {
-			DEBUG(0,("locking_close_file: unable to init talloc context.\n"));
-			return;
-		}
-
-		/*
-		 * We need to release all POSIX locks we have on this
-		 * fd. Get all our existing locks from the tdb locking database.
-		 */
-
-		ul = brl_getlocklist(ul_ctx, fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
-
-		/*
-		 * Now unlock all of them. This will remove the brl entry also
-		 * for each lock. Note we need to make sure the global_smbpid matches
-		 * the one associated with each lock in case the client plays games
-		 * with smbpids (like smbtorture does :-).
-		 */
-
-		for(; ul; ul = ul->next) {
-			global_smbpid = ul->smbpid;
-			do_unlock(fsp,fsp->conn,ul->size,ul->start,&eclass,&ecode);
-		}
-	
-		talloc_destroy(ul_ctx);
-
-	} else {
-
-		/*
-		 * Just release all the brl locks, no need to release individually.
-		 */
-
-		brl_close(fsp->dev, fsp->inode, pid, fsp->conn->cnum, fsp->fnum);
+	if (count == 0) {
+		DEBUG(10,("posix_locking_close_file: file %s has no outstanding locks.\n", fsp->fsp_name ));
+		return;
 	}
+
+	for (i = 0; i < count; i++) {
+		if (entries[i].fd != fsp->fd )
+			break;
+	}
+
+	if (i == count) {
+		/* All locks are ours. */
+		DEBUG(10,("posix_locking_close_file: file %s has %u outstanding locks, but all on one fd.\n", 
+			fsp->fsp_name, (unsigned int)count ));
+		free((char *)entries);
+		delete_posix_lock_entries(fsp);
+		return;
+	}
+
+	/*
+	 * Difficult case. We need to delete all our locks, whilst leaving
+	 * all other POSIX locks in place.
+	 */
+
+	for (i = 0; i < count; i++) {
+		struct posix_lock *pl = &entries[i];
+		release_posix_lock(fsp, (SMB_BIG_UINT)pl->start, (SMB_BIG_UINT)pl->size );
+	}
+	free((char *)entries);
 }
 
 /*******************************************************************
  Create the in-memory POSIX lock databases.
 ********************************************************************/
 
-void posix_lock_init(void)
+BOOL posix_locking_init(void)
 {
 	if (posix_lock_tdb && posix_pending_close_tdb)
-		return;
+		return True;
 
 	if (!posix_lock_tdb)
 		posix_lock_tdb = tdb_open(NULL, 0, TDB_CLEAR_IF_FIRST,
    	            O_RDWR|O_CREAT, 0644);
     if (!posix_lock_tdb) {
         DEBUG(0,("Failed to open POSIX byte range locking database.\n"));
+		return False;
     }
 	if (!posix_pending_close_tdb)
 		posix_pending_close_tdb = tdb_open(NULL, 0, TDB_CLEAR_IF_FIRST,
    	            O_RDWR|O_CREAT, 0644);
     if (!posix_pending_close_tdb) {
         DEBUG(0,("Failed to open POSIX pending close database.\n"));
+		return False;
     }
+
+	return True;
+}
+
+/*******************************************************************
+ Delete the in-memory POSIX lock databases.
+********************************************************************/
+
+BOOL posix_locking_end(void)
+{
+    if (posix_lock_tdb && tdb_close(posix_lock_tdb) != 0)
+		return False;
+    if (posix_pending_close_tdb && tdb_close(posix_pending_close_tdb) != 0)
+		return False;
+	return True;
 }

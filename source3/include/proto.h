@@ -816,8 +816,6 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	      uint16 smbpid, pid_t pid, uint16 tid,
 	      br_off start, br_off size, 
 	      enum brl_type lock_type);
-struct unlock_list *brl_unlock_list(TALLOC_CTX *ctx, struct unlock_list *ulhead,
-							pid_t pid, SMB_DEV_T dev, SMB_INO_T ino);
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
 		br_off start, br_off size);
@@ -826,12 +824,10 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino,
 		  br_off start, br_off size, 
 		  enum brl_type lock_type);
 void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum);
-struct unlock_list *brl_getlocklist( TALLOC_CTX *ctx, SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum);
 int brl_forall(BRLOCK_FN(fn));
 
 /*The following definitions come from  locking/locking.c  */
 
-int fd_close_posix(struct connection_struct *conn, files_struct *fsp);
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       enum brl_type lock_type);
@@ -859,6 +855,16 @@ BOOL remove_share_oplock(files_struct *fsp);
 BOOL downgrade_share_oplock(files_struct *fsp);
 BOOL modify_share_mode(files_struct *fsp, int new_mode, uint16 new_oplock);
 int share_mode_forall(SHAREMODE_FN(fn));
+
+/*The following definitions come from  locking/posix.c  */
+
+int fd_close_posix(struct connection_struct *conn, files_struct *fsp);
+BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type);
+BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type);
+BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count);
+void posix_locking_close_file(files_struct *fsp);
+BOOL posix_locking_init(void);
+BOOL posix_locking_end(void);
 
 /*The following definitions come from  msdfs/msdfs.c  */
 
