@@ -1,3 +1,13 @@
+2001-06-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/kinit.c: move ticket conversion code to separate function,
+	and call that from a couple of places, like when renewing a
+	ticket; also add a flag for just converting a ticket
+
+	* lib/krb5/init_creds_pw.c: set renew-life to some sane value
+
+	* kdc/524.c: don't send more data than required
+
 2001-06-24  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/store_fd.c (krb5_storage_from_fd): check malloc returns
