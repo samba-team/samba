@@ -3729,7 +3729,6 @@ char **lp_list_make(char *string)
 BOOL lp_list_copy(char ***dest, char **src)
 {
 	char **list, **rlist;
-	char *tok;
 	int num, lsize;
 	
 	*dest = NULL;
