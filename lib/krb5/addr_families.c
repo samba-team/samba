@@ -386,6 +386,55 @@ ipv6_parse_addr (krb5_context context, const char *address, krb5_address *addr)
     return -1;
 }
 
+static int
+ipv6_mask_boundary(krb5_context context, const krb5_address *inaddr,
+		   unsigned long len, krb5_address *low, krb5_address *high)
+{
+    struct in6_addr addr, laddr, haddr;
+    u_int32_t m;
+    int i, sub_len;
+
+    if (len > 128) {
+	krb5_set_error_string(context, "IPv6 prefix too large (%ld)", len);
+	return KRB5_PROG_ATYPE_NOSUPP;
+    }
+
+    if (inaddr->address.length != sizeof(addr)) {
+	krb5_set_error_string(context, "IPv6 addr bad length");
+	return KRB5_PROG_ATYPE_NOSUPP;
+    }
+
+    memcpy(&addr, inaddr->address.data, inaddr->address.length);
+
+    for (i = 0; i < 16; i++) {
+	sub_len = min(8, len);
+
+	m = 0xff << (8 - sub_len);
+	
+	laddr.s6_addr[i] = addr.s6_addr[i] & m;
+	haddr.s6_addr[i] = (addr.s6_addr[i] & m) | ~m;
+
+	if (len > 8)
+	    len -= 8;
+	else
+	    len = 0;
+    }
+
+    low->addr_type = KRB5_ADDRESS_INET6;
+    if (krb5_data_alloc(&low->address, sizeof(laddr.s6_addr)) != 0)
+	return -1;
+    memcpy(low->address.data, laddr.s6_addr, sizeof(laddr.s6_addr));
+
+    high->addr_type = KRB5_ADDRESS_INET6;
+    if (krb5_data_alloc(&high->address, sizeof(haddr.s6_addr)) != 0) {
+	krb5_free_address(context, low);
+	return -1;
+    }
+    memcpy(high->address.data, haddr.s6_addr, sizeof(haddr.s6_addr));
+
+    return 0;
+}
+
 #endif /* IPv6 */
 
 /*
@@ -654,7 +703,7 @@ static struct addr_operations at[] = {
      ipv6_h_addr2sockaddr,
      ipv6_h_addr2addr,
      ipv6_uninteresting, ipv6_anyaddr, ipv6_print_addr, ipv6_parse_addr,
-     NULL, NULL, NULL } ,
+     NULL, NULL, NULL, ipv6_mask_boundary } ,
 #endif
     {KRB5_ADDRESS_ADDRPORT, KRB5_ADDRESS_ADDRPORT, 0,
      NULL, NULL, NULL, NULL, NULL, 
@@ -1085,6 +1134,11 @@ krb5_make_addrport (krb5_context context,
 
     return 0;
 }
+
+/*
+ * Calculate the boundary addresses of `inaddr'/`prefixlen' and store
+ * them in `low' and `high'.
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_address_prefixlen_boundary(krb5_context context,
