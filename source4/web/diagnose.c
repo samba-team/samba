@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "../web/swat_proto.h"
 
 #ifdef WITH_WINBIND
 
