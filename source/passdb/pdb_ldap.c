@@ -411,28 +411,28 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	}
 
 	get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive);
-	DEBUG(0,("homeDrive is set to %s\n",dir_drive));
+	DEBUG(5,("homeDrive is set to %s\n",dir_drive));
 	if (!*dir_drive) {
 		pstrcpy(dir_drive, lp_logon_drive());
 		DEBUG(5,("homeDrive fell back to %s\n",dir_drive));
 	}
 
 	get_single_attribute(ldap_struct, entry, "smbHome", homedir);
-	DEBUG(0,("smbHome is set to %s\n",homedir));
+	DEBUG(5,("smbHome is set to %s\n",homedir));
 	if (!*homedir) {
 		pstrcpy(homedir, lp_logon_home());
 		DEBUG(5,("smbHome fell back to %s\n",homedir));
 	}
 
 	get_single_attribute(ldap_struct, entry, "scriptPath", logon_script);
-	DEBUG(0,("scriptPath is set to %s\n",logon_script));
+	DEBUG(5,("scriptPath is set to %s\n",logon_script));
 	if (!*logon_script) {
 		pstrcpy(logon_script, lp_logon_script());
 		DEBUG(5,("scriptPath fell back to %s\n",logon_script));
 	}
 
 	get_single_attribute(ldap_struct, entry, "profilePath", profile_path);
-	DEBUG(0,("profilePath is set to %s\n",profile_path));
+	DEBUG(5,("profilePath is set to %s\n",profile_path));
 	if (!*profile_path) {
 		pstrcpy(profile_path, lp_logon_path());
 		DEBUG(5,("profilePath fell back to %s\n",profile_path));
