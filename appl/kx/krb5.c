@@ -51,6 +51,10 @@ struct krb5_kx_context {
 
 typedef struct krb5_kx_context krb5_kx_context;
 
+/*
+ * Destroy the krb5 context in `c'.
+ */
+
 static void
 krb5_destroy (kx_context *c)
 {
@@ -66,6 +70,11 @@ krb5_destroy (kx_context *c)
 	krb5_free_context (kc->context);
     free (kc->context);
 }
+
+/*
+ * Read the authentication information from `s' and return 0 if
+ * succesful, else -1.
+ */
 
 static int
 krb5_authenticate (kx_context *kc, int s)
@@ -121,6 +130,12 @@ krb5_authenticate (kx_context *kc, int s)
     return 0;
 }
 
+/*
+ * Read an encapsulated krb5 packet from `fd' into `buf' (of size
+ * `len').  Return the number of bytes read or 0 on EOF or -1 on
+ * error.
+ */
+
 static ssize_t
 krb5_read (kx_context *kc,
 	   int fd, void *buf, size_t len)
@@ -160,6 +175,11 @@ krb5_read (kx_context *kc,
     return data_len;
 }
 
+/*
+ * Write an encapsulated krb5 packet on `fd' with the data in `buf,
+ * len'.  Return len or -1 on error.
+ */
+
 static ssize_t
 krb5_write(kx_context *kc,
 	   int fd, const void *buf, size_t len)
@@ -193,6 +213,11 @@ krb5_write(kx_context *kc,
     return len;
 }
 
+/*
+ * Copy from the unix socket `from_fd' encrypting to `to_fd'.
+ * Return 0, -1 or len.
+ */
+
 static int
 copy_out (kx_context *kc, int from_fd, int to_fd)
 {
@@ -209,6 +234,11 @@ copy_out (kx_context *kc, int from_fd, int to_fd)
     return krb5_write (kc, to_fd, buf, len);
 }
 	
+/*
+ * Copy from the socket `from_fd' decrypting to `to_fd'.
+ * Return 0, -1 or len.
+ */
+
 static int
 copy_in (kx_context *kc, int from_fd, int to_fd)
 {
@@ -227,6 +257,11 @@ copy_in (kx_context *kc, int from_fd, int to_fd)
 
     return krb5_net_write (c->context, &to_fd, buf, len);
 }
+
+/*
+ * Copy data between `fd1' and `fd2', encrypting in one direction and
+ * decrypting in the other.
+ */
 
 static int
 krb5_copy_encrypted (kx_context *kc, int fd1, int fd2)
@@ -257,6 +292,11 @@ krb5_copy_encrypted (kx_context *kc, int fd1, int fd2)
     }
 }
 
+/*
+ * Return 0 if the user authenticated on `kc' is allowed to login as
+ * `user'.
+ */
+
 static int
 krb5_userok (kx_context *kc, char *user)
 {
@@ -270,6 +310,10 @@ krb5_userok (kx_context *kc, char *user)
 
     return !krb5_kuserok (context, c->client, user);
 }
+
+/*
+ * Create an instance of an krb5 context.
+ */
 
 void
 krb5_make_context (kx_context *kc)
@@ -291,6 +335,11 @@ krb5_make_context (kx_context *kc)
     c = (krb5_kx_context *)kc->data;
     krb5_init_context (&c->context);
 }
+
+/*
+ * Receive authentication information on `sock' (first four bytes
+ * in `buf').
+ */
 
 int
 recv_v5_auth (kx_context *kc, int sock, u_char *buf)
