@@ -63,13 +63,13 @@
 	<smbconfexample id="smbconfminimal">
 		<title>A minimal smb.conf</title>
 
-		<smbconfsection>[global]</smbconfsection>
+		<smbconfsection name="[global]"/>
 		<smbconfoption name="workgroup">WKG</smbconfoption>
 		<smbconfoption name="netbios name">MYNAME</smbconfoption>
-		<smbconfsection>[share1]</smbconfsection>
+		<smbconfsection name="[share1]"/>
 		<smbconfoption name="path">/tmp</smbconfoption>
 
-		<smbconfsection>[share2]</smbconfsection>
+		<smbconfsection name="[share2]"/>
 		<smbconfoption name="path">/my_shared_folder</smbconfoption>
 		<smbconfoption name="comment">Some random files</smbconfoption>
 	</smbconfexample>
@@ -150,10 +150,10 @@
 	<indexterm><primary>simple configuration</primary></indexterm>
 	<smbconfexample id="simple-example">
 		<title>Another simple smb.conf File</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="workgroup">&example.workgroup;</smbconfoption>
 
-<smbconfsection>[homes]</smbconfsection>
+<smbconfsection name="[homes]"/>
 <smbconfoption name="guest ok">no</smbconfoption>
 <smbconfoption name="read only">no</smbconfoption>
 	</smbconfexample>
@@ -161,7 +161,7 @@
 	
 	<para>
 	This will allow connections by anyone with an account on the server, using either
-	their login name or <smbconfsection>homes</smbconfsection> as the service name.
+	their login name or <smbconfsection name="homes"/> as the service name.
 	(Note: The workgroup that Samba should appear in must also be set. The default
 	workgroup name is WORKGROUP.)
 	</para>
@@ -172,7 +172,7 @@
 
 	<para>
 	For more information about security settings for the 
-	<smbconfsection>[homes]</smbconfsection> share please refer to 
+	<smbconfsection name="[homes]"/> share please refer to 
 	<link linkend="securing-samba">Securing Samba</link> chapter.
 	</para>
 
@@ -263,7 +263,7 @@
 	
 	<para>Typically <replaceable>yourhostname</replaceable> is the name of the host on which &smbd;
 	has been installed. The <replaceable>aservice</replaceable> is any service that has been defined in the &smb.conf;
-	file. Try your user name if you just have a <smbconfsection>[homes]</smbconfsection> section in the &smb.conf; file.</para>
+	file. Try your user name if you just have a <smbconfsection name="[homes]"/> section in the &smb.conf; file.</para>
 
 	<para>Example: If the UNIX host is called <replaceable>bambi</replaceable> and a valid login name
 	is <replaceable>fred</replaceable>, you would type:</para>

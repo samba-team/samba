@@ -178,7 +178,7 @@ Logon scripts can help to ensure that all users gain the share and printer conne
 Logon scripts can be created on-the-fly so all commands executed are specific to the
 rights and privileges granted to the user. The preferred controls should be affected through
 group membership so group information can be used to create a custom logon script using
-the <smbconfoption name="root preexec"/> parameters to the <smbconfsection>NETLOGON</smbconfsection> share.
+the <smbconfoption name="root preexec"/> parameters to the <smbconfsection name="NETLOGON"/> share.
 </para>
 
 <para>

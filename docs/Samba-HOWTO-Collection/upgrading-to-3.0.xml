@@ -587,7 +587,7 @@ complete descriptions of new or modified parameters.
 		</para>
 
 		<smbconfblock>
-		<smbconfsection>[global]</smbconfsection>
+		<smbconfsection name="[global]"/>
 		<member>...</member>
 		<smbconfoption name="idmap backend">ldap:ldap://onterose/</smbconfoption>
 		<smbconfoption name="ldap idmap suffix">ou=idmap,dc=quenya,dc=org</smbconfoption>

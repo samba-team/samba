@@ -172,7 +172,7 @@ $(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
 # PDF thru Fo
 $(FOPDFDIR)/%.pdf: $(FODIR)/%.fo
 	mkdir -p $(@D)
-	$(FOP) -q -d $< -pdf $@
+	JAVA_OPTS=-Xmx250m $(FOP) -q -d $< -pdf $@
 
 $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml
 	mkdir -p $@/images
@@ -226,7 +226,7 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 
 # Validation verification
 %-validate: %/index.xml
-	-$(XMLLINT) --xinclude --noent --postvalid --noout $<
+	-cd $(<D) && $(XMLLINT) --xinclude --noent --postvalid --noout $(<F)
 
 # Find undocumented parameters
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl scripts/find_missing_manpages.pl

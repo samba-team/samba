@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="kerberos">
   <title>Active Directory, Kerberos, and Security</title>
 
@@ -1941,7 +1941,7 @@ other::r-x
 	    <para><indexterm>
 		<primary>valid users</primary>
 	      </indexterm>
-		The <parameter>valid users</parameter> did not work on the <smbconfsection>[homes]</smbconfsection>.
+		The <parameter>valid users</parameter> did not work on the <smbconfsection name="[homes]"/>.
 		Has this functionality been restored yet?
 		</para>
 
@@ -1952,7 +1952,7 @@ other::r-x
 		<primary>meta-service</primary>
 	      </indexterm>
 		Yes. This was fixed in Samba-3.0.2. The use of this parameter is strongly recommended as a safeguard
-		on the <smbconfsection>[homes]</smbconfsection> meta-service. The correct way to specify this is:
+		on the <smbconfsection name="[homes]"/> meta-service. The correct way to specify this is:
 		<smbconfoption name="valid users">%S</smbconfoption>.
 		</para>
 

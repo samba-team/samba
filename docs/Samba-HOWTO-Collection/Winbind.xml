@@ -576,10 +576,9 @@ linkend="winbindcfg">the next example</link>, was modified to include the necess
 </para>
 
 <para>
-<smbconfexample id="winbindcfg">
+<smbconfexample id="winbindcfg" fragment="1">
 		<title>smb.conf for Winbind set-up</title>
-<smbconfsection>[global]</smbconfsection>
-<member>&lt;...&gt;</member>
+<smbconfsection name="[global]"/>
 <smbconfcomment> separate domain and username with '\', like DOMAIN\username</smbconfcomment>
 <smbconfoption name="winbind separator">\</smbconfoption>
 <smbconfcomment> use uids from 10000 to 20000 for domain users</smbconfcomment>
