@@ -336,8 +336,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 
   retries--;
 
-  while (1)
-  {
+	while (1) {
 	  struct timeval tval2;
       struct in_addr *tmp_ip_list;
 
@@ -365,8 +364,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 
 		    if( DEBUGLVL( 3 ) ) {
 		      /* Only executed if DEBUGLEVEL >= 3 */
-		      dbgtext( "Negative name query response, rcode 0x%02x: ",
-				nmb2->header.rcode );
+					dbgtext( "Negative name query response, rcode 0x%02x: ", nmb2->header.rcode );
 		      switch( nmb2->header.rcode ) {
 		        case 0x01:
 			  dbgtext( "Request was invalidly formatted.\n" );
@@ -399,7 +397,8 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 			  /* 
 			   * XXXX what do we do with this? Could be a
 			   * redirect, but we'll discard it for the
-			   * moment.  */
+				 * moment.
+				 */
 			  free_packet(p2);
 			  continue;
 		  }
@@ -415,8 +414,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
           ip_list = tmp_ip_list;
 
 		  if (ip_list) {
-			  DEBUG(2,("Got a positive name query response from %s ( ",
-				   inet_ntoa(p2->ip)));
+				DEBUG(2,("Got a positive name query response from %s ( ", inet_ntoa(p2->ip)));
 			  for (i=0;i<nmb2->answers->rdlength/6;i++) {
 				  putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
 				  DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
@@ -439,8 +437,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
   }
 
   /* Reach here if we've timed out waiting for replies.. */
-  if( !bcast && !found )
-    {
+	if( !bcast && !found ) {
     /* Timed out wating for WINS server to respond.  Mark it dead. */
     wins_srv_died( to_ip );
     }
