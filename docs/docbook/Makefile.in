@@ -21,7 +21,7 @@ MANPAGES_NAMES=findsmb.1 smbclient.1 \
 	smbpasswd.8 testprns.1 \
 	smb.conf.5 wbinfo.1 pdbedit.8 \
 	smbcacls.1 smbsh.1 winbindd.8 \
-	vfstest.1 \
+	tdbbackup.8 vfstest.1 \
 	profiles.1 smbtree.1 ntlm_auth.1 \
 	editreg.1 smbcquotas.1
 
