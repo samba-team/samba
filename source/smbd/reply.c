@@ -215,19 +215,20 @@ int reply_tcon(connection_struct *conn,
 
 	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
 		pstrcpy(user,validated_username(vuid));
+	} else {
+		
+		/*
+		 * Pass the user through the NT -> unix user mapping
+		 * function.
+		 */
+		
+		(void)map_username(user);
+		
+		/*
+		 * Do any UNIX username case mangling.
+		 */
+		(void)Get_Pwnam( user, True);
 	}
-
-	/*
-	 * Pass the user through the NT -> unix user mapping
-	 * function.
-	 */
-   
-	(void)map_username(user);
-
-	/*
-	 * Do any UNIX username case mangling.
-	 */
-	(void)Get_Pwnam( user, True);
 
 	conn = make_connection(service,user,password,pwlen,dev,vuid,&ecode);
   
@@ -309,20 +310,22 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	if (*user == '\0' && (lp_security() != SEC_SHARE) && validated_username(vuid)) {
 		pstrcpy(user,validated_username(vuid));
+	} else {
+
+		/*
+		 * Pass the user through the NT -> unix user mapping
+		 * function.
+		 */
+		
+		(void)map_username(user);
+		
+		/*
+		 * Do any UNIX username case mangling.
+		 */
+		(void)Get_Pwnam(user, True);
+		
 	}
 
-	/*
-	 * Pass the user through the NT -> unix user mapping
-	 * function.
-	 */
-	
-	(void)map_username(user);
-	
-	/*
-	 * Do any UNIX username case mangling.
-	 */
-	(void)Get_Pwnam(user, True);
-	
 	conn = make_connection(service,user,password,passlen,devicename,vuid,&ecode);
 	
 	if (!conn) {
@@ -892,9 +895,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   /*
    * Always try the "DOMAIN\user" lookup first, as this is the most
    * specific case. If this fails then try the simple "user" lookup.
+   * But don't do this for guests, as this is always a local user.
    */
  
-  {
+  if (!guest) {
     pstring dom_user;
  
     /* Work out who's who */
@@ -906,20 +910,20 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       pstrcpy(user, dom_user);
       DEBUG(3,("Using unix username %s\n", dom_user));
     }
+
+    /*
+     * Pass the user through the NT -> unix user mapping
+     * function.
+     */
+    
+    (void)map_username(user);
+    
+    /*
+     * Do any UNIX username case mangling.
+     */
+    smb_getpwnam(user, True);
   }
-
-  /*
-   * Pass the user through the NT -> unix user mapping
-   * function.
-   */
-   
-  (void)map_username(user);
-
-  /*
-   * Do any UNIX username case mangling.
-   */
-  smb_getpwnam(user, True);
-
+  
   add_session_user(user);
 
   /* 
