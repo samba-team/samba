@@ -39,6 +39,7 @@ pstring smb_login_passwd = "";
 pstring username="";
 pstring workgroup=WORKGROUP;
 BOOL got_pass = False;
+BOOL no_pass = False;
 BOOL connect_as_printer = False;
 BOOL connect_as_ipc = False;
 
@@ -661,7 +662,8 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
 	    {
 	      got_pass = False;
 	      DEBUG(3,("resending login\n"));
-	      goto get_pass;
+	      if (! no_pass)
+	          goto get_pass;
 	    }
 	      
 	  DEBUG(0,("Session setup failed for username=%s myname=%s destname=%s   %s\n",
