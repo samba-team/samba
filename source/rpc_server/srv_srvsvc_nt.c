@@ -252,33 +252,6 @@ static BOOL delete_share_security(int snum)
 }
 
 /*******************************************************************
- Does this security descriptor map to a read only share ?
-********************************************************************/
-
-static BOOL read_only_share_sd(SEC_DESC *psd)
-{
-	int i;
-	SEC_ACL *ps_dacl = NULL;
-
-	if (!psd)
-		return True;
-
-	ps_dacl = psd->dacl;
-	if (!ps_dacl)
-		return True;
-
-	for (i = 0; i < ps_dacl->num_aces; i++) {
-		SEC_ACE *psa = &ps_dacl->ace[i];
-
-		if (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED &&
-				psa->info.mask & FILE_WRITE_DATA)
-			return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
  Map any generic bits to file specific bits.
 ********************************************************************/
 
@@ -1355,7 +1328,6 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	int snum;
 	int ret;
 	char *ptr;
-	BOOL read_only = False;
 	SEC_DESC *psd = NULL;
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
@@ -1383,7 +1355,6 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
 		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
 		type = q_u->info.share.info2.info_2.type;
-		read_only = False; /* No SD means "Everyone full access. */
 		break;
 	case 502:
 		unistr2_to_ascii(share_name, &q_u->info.share.info502.info_502_str.uni_netname, sizeof(share_name));
@@ -1392,7 +1363,6 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		type = q_u->info.share.info502.info_502.type;
 		psd = q_u->info.share.info502.info_502_str.sd;
 		map_generic_share_sd_bits(psd);
-		read_only = read_only_share_sd(psd);
 		break;
 	case 1005:
 		/* DFS only level. */
@@ -1421,9 +1391,8 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	string_replace(ptr, '"', ' ');
 	string_replace(comment, '"', ' ');
 
-	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
-			lp_add_share_cmd(), share_name, ptr, comment,
-			read_only ? "read only = yes" : "read only = no" );
+	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\"",
+			lp_add_share_cmd(), share_name, ptr, comment);
 	dos_to_unix(command, True);  /* Convert to unix-codepage */
 
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
