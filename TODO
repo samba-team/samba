@@ -54,6 +54,10 @@ anonymous credentials not implemented
 
 add 3des, rc4
 
+** lib/hdb
+
+make keytab code look through all databases
+
 ** lib/kadm5
 
 add policies?
