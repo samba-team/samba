@@ -212,7 +212,7 @@ done
 cd source/codepages
 for i in codepage* CP*.TXT
 do
-install -m644 source/codepages/$i $RPM_BUILD_ROOT/etc/codepages/src
+install -m644 $i $RPM_BUILD_ROOT/etc/codepages/src
 done
 cd ../..
 
