@@ -173,8 +173,8 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	
 	/* Free memory allocated in winbindd_lookup_groupmem() */
 	
-	safe_free(name_types);
-	safe_free(rid_mem);
+	SAFE_FREE(name_types);
+	SAFE_FREE(rid_mem);
 	
 	free_char_array(num_names, names);
 	
@@ -489,11 +489,8 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 
 	/* Free any existing group info */
 
-	if (ent->sam_entries) {
-		free(ent->sam_entries);
-		ent->sam_entries = NULL;
-		ent->num_sam_entries = 0;
-	}
+	SAFE_FREE(ent->sam_entries);
+	ent->num_sam_entries = 0;
 		
 	/* Enumerate domain groups */
 		
@@ -522,7 +519,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 			       sam_grp_entries, 
 			       num_entries * sizeof(struct acct_info));
 
-			safe_free(sam_grp_entries);
+			SAFE_FREE(sam_grp_entries);
 		}
 
 		ent->num_sam_entries += num_entries;
@@ -610,13 +607,13 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 				/* Free state information for this domain */
 
-				safe_free(ent->sam_entries);
+				SAFE_FREE(ent->sam_entries);
 				ent->sam_entries = NULL;
 
 				next_ent = ent->next;
 				DLIST_REMOVE(state->getgrent_state, ent);
 				
-				free(ent);
+				SAFE_FREE(ent);
 				ent = next_ent;
 			}
 
@@ -676,7 +673,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 			if (!new_gr_mem_list && (group_list[group_list_ndx].num_gr_mem != 0)) {
 				DEBUG(0, ("getgrent(): out of memory\n"));
-				free(gr_mem_list);
+				SAFE_FREE(gr_mem_list);
 				gr_mem_list_len = 0;
 				break;
 			}
@@ -689,7 +686,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 			memcpy(&gr_mem_list[gr_mem_list_len], gr_mem,
 			       gr_mem_len);
 
-			safe_free(gr_mem);
+			SAFE_FREE(gr_mem);
 
 			group_list[group_list_ndx].gr_mem_ofs = 
 				gr_mem_list_len;
@@ -731,9 +728,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	if (!new_extra_data) {
 		DEBUG(0, ("out of memory\n"));
 		group_list_ndx = 0;
-		safe_free(state->response.extra_data);
-		state->response.extra_data = NULL;
-		safe_free(gr_mem_list);
+		SAFE_FREE(state->response.extra_data);
+		SAFE_FREE(gr_mem_list);
 
 		return WINBINDD_ERROR;
 	}
@@ -744,7 +740,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	       [group_list_ndx * sizeof(struct winbindd_gr)], 
 	       gr_mem_list, gr_mem_list_len);
 
-       	safe_free(gr_mem_list);
+       	SAFE_FREE(gr_mem_list);
 
 	state->response.length += gr_mem_list_len;
 
@@ -840,8 +836,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
  
 		if (!ted) {
 			DEBUG(0,("winbindd_list_groups: failed to enlarge buffer!\n"));
-			if (extra_data)
-				free(extra_data);
+			SAFE_FREE(extra_data);
 			return WINBINDD_ERROR;
 		} else
 			extra_data = ted;
@@ -977,7 +972,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	result = WINBINDD_OK;
 
  done:
-	safe_free(user_groups);
+	SAFE_FREE(user_groups);
 
 	return result;
 }

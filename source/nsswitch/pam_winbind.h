@@ -68,13 +68,7 @@ do {                             \
  * Don't just free it, forget it too.
  */
 
-#define _pam_drop(X) \
-do {                 \
-    if (X) {         \
-        free(X);     \
-        X=NULL;      \
-    }                \
-} while (0)  
+#define _pam_drop(X) SAFE_FREE(X)
 
 #define  x_strdup(s)  ( (s) ? strdup(s):NULL )     
 #endif

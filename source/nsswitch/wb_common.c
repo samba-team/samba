@@ -36,7 +36,7 @@ static char *excluded_domain;
 */
 void winbind_exclude_domain(const char *domain)
 {
-	if (excluded_domain) free(excluded_domain);
+	SAFE_FREE(excluded_domain);
 	excluded_domain = strdup(domain);
 }
 
@@ -311,10 +311,8 @@ void free_response(struct winbindd_response *response)
 {
 	/* Free any allocated extra_data */
 
-	if (response && response->extra_data) {
-		free(response->extra_data);
-		response->extra_data = NULL;
-	}
+	if (response)
+		SAFE_FREE(response->extra_data);
 }
 
 /* Handle simple types of requests */

@@ -82,7 +82,7 @@ BOOL wb_lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
 	if (!NT_STATUS_IS_OK(result) && pol->cli) {
 		if (pol->cli->initialised)
 			cli_shutdown(pol->cli);
-		free(pol->cli);
+		SAFE_FREE(pol->cli);
 	}
 
 	return NT_STATUS_IS_OK(result);
@@ -228,7 +228,7 @@ BOOL wb_samr_connect(char *server, uint32 access_mask, CLI_POLICY_HND *pol)
 	if (!NT_STATUS_IS_OK(result) && pol->cli) {
 		if (pol->cli->initialised)
 			cli_shutdown(pol->cli);
-		free(pol->cli);
+		SAFE_FREE(pol->cli);
 	}
 
 	return NT_STATUS_IS_OK(result);

@@ -398,12 +398,9 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 
 	/* Free any existing user info */
 
-	if (ent->sam_entries) {
-		free(ent->sam_entries);
-		ent->sam_entries = NULL;
-		ent->num_sam_entries = 0;
-	}
-
+	SAFE_FREE(ent->sam_entries);
+	ent->num_sam_entries = 0;
+	
 	/* Call query_dispinfo to get a list of usernames and user rids */
 
 	do {
@@ -425,8 +422,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 
 			if (!tnl) {
 				DEBUG(0,("get_sam_user_entries: Realloc failed.\n"));
-				if (name_list)
-					free(name_list);
+				SAFE_FREE(name_list);
 				return WINBINDD_ERROR;
 			} else
 				name_list = tnl;
@@ -535,13 +531,12 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
 				/* Free state information for this domain */
 
-				safe_free(ent->sam_entries);
-				ent->sam_entries = NULL;
+				SAFE_FREE(ent->sam_entries);
 
 				next_ent = ent->next;
 				DLIST_REMOVE(state->getpwent_state, ent);
 
-				free(ent);
+				SAFE_FREE(ent);
 				ent = next_ent;
 			}
  
@@ -653,7 +648,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 			
 			if (!ted) {
 				DEBUG(0,("winbindd_list_users: failed to enlarge buffer!\n"));
-				if (extra_data) free(extra_data);
+				SAFE_FREE(extra_data);
 				return WINBINDD_ERROR;
 			}
 			else extra_data = ted;

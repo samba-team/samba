@@ -55,7 +55,7 @@ static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd,
 
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
 	memcpy(ret_pwd, pass->hash, 16);
-	free(pass);
+	SAFE_FREE(pass);
 	return True;
 }
 
@@ -152,7 +152,7 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 
 		if (!ted) {
 			DEBUG(0,("winbindd_list_trusted_domains: failed to enlarge buffer!\n"));
-			if (extra_data) free(extra_data);
+			SAFE_FREE(extra_data);
 			return WINBINDD_ERROR;
 		}
 		else extra_data = ted;

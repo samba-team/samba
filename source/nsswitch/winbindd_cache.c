@@ -61,7 +61,7 @@ static uint32 cached_sequence_number(char *domain_name)
 		goto refetch;
 	}
 	memcpy(&rec, dbuf.dptr, sizeof(rec));
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	if (t < (rec.mod_time + lp_winbind_cache_time())) {
 		DEBUG(3,("cached sequence number for %s is %u\n",
@@ -359,7 +359,7 @@ static BOOL fetch_cache_entry(char *domain, char *cache_type, char *name,
         
         /* Copy found entry into buffer */        
         memcpy((char *)buf, data.dptr, len < data.dsize ? len : data.dsize);
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 	return True;
 }
 
