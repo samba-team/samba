@@ -92,7 +92,7 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 	static struct get_dc_name_cache *get_dc_name_cache;
 	struct get_dc_name_cache *dcc;
 	struct in_addr *ip_list, dc_ip;
-	int count, i;
+	int count, i = 0;
 
 	/* Check the cache for previous lookups */
 
@@ -147,37 +147,63 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}
+
+	/* Pick a nice close server */
+	   
+	if (strequal(lp_passwordserver(), "*")) {
 		
-	/* Firstly choose a PDC/BDC who has the same network address as any
-	   of our interfaces. */
-	
+		/* Look for DC on local net */
+
+		for (i = 0; i < count; i++) {
+			if (is_local_net(ip_list[i]) &&
+			    name_status_find(domain, 0x1c, 0x20,
+					     ip_list[i], srv_name)) {
+				dc_ip = ip_list[i];
+				goto done;
+			}
+			zero_ip(&ip_list[i]);
+		}
+
+		/* Look for other DCs */
+
+		for (i = 0; i < count; i++) {
+			if (!is_zero_ip(ip_list[i]) &&
+			    name_status_find(domain, 0x1c, 0x20,
+					     ip_list[i], srv_name)) {
+				dc_ip = ip_list[i];
+				goto done;
+			}
+		}
+
+		/* No-one to talk to )-: */
+
+		return False;
+	}
+
+	/* Return first DC that we can contact */
+
 	for (i = 0; i < count; i++) {
-		if(is_local_net(ip_list[i]))
-			goto got_ip;
+		if (name_status_find(domain, 0x1c, 0x20, ip_list[i],
+				     srv_name)) {
+			dc_ip = ip_list[i];
+			goto done;
+		}
 	}
 
-	if (count == 0) {
-		DEBUG(3, ("No domain controllers for domain %s\n", domain));
-		return False;
-	}
+	return False;		/* Boo-hoo */
 	
-	i = (sys_random() % count);
-	
- got_ip:
-	dc_ip = ip_list[i];
-	SAFE_FREE(ip_list);
-		
-	/* We really should be doing a GETDC call here rather than a node
-	   status lookup. */
-
-	if (!name_status_find(domain, 0x1c, 0x20, dc_ip, srv_name)) {
-		DEBUG(3, ("Error looking up DC name for %s in domain %s\n", inet_ntoa(dc_ip), domain));
-		return False;
-	}
+ done:
+	/* We have the netbios name and IP address of a domain controller.
+	   Ideally we should sent a SAMLOGON request to determine whether
+	   the DC is alive and kicking.  If we can catch a dead DC before
+	   performing a cli_connect() we can avoid a 30-second timeout. */
 
 	/* We have a name so make the cache entry positive now */
 
 	fstrcpy(dcc->srv_name, srv_name);
+
+	DEBUG(3, ("Returning DC %s (%s) for domain %s\n", srv_name,
+		  inet_ntoa(dc_ip), domain));
 
 	return True;
 }
@@ -239,14 +265,14 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
 	fstrcpy(new_conn->pipe_name, pipe_name);
 	
 	/* Look for a domain controller for this domain.  Negative results
-		are cached so don't bother applying the caching for this
-		function just yet.  */
+	   are cached so don't bother applying the caching for this
+	   function just yet.  */
 
 	if (!cm_get_dc_name(domain, new_conn->controller))
 		goto done;
 
 	/* Return false if we have tried to look up this domain and netbios
-		name before and failed. */
+	   name before and failed. */
 
 	for (occ = open_connection_cache; occ; occ = occ->next) {
 		
