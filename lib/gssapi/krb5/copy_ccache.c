@@ -74,6 +74,12 @@ gss_krb5_extract_authz_data_from_sec_context(OM_uint32 *minor_status,
     ad_data->length = 0;
     
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    if (context_handle->ticket == NULL) {
+	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+	*minor_status = EINVAL;
+	return GSS_S_FAILURE;
+    }
+
     ret = krb5_ticket_get_authorization_data_type(gssapi_krb5_context,
 						  context_handle->ticket,
 						  ad_type,
