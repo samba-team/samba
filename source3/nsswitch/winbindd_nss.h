@@ -55,6 +55,7 @@ enum winbindd_cmd {
 	/* PAM authenticate and password change */
 
 	WINBINDD_PAM_AUTH,
+        WINBINDD_PAM_AUTH_CRAP,
 	WINBINDD_PAM_CHAUTHTOK,
 
 	/* List various things */
@@ -99,6 +100,14 @@ struct winbindd_request {
 			fstring user;
 			fstring pass;
 		} auth;              /* pam_winbind auth module */
+                struct {
+                        char chal[8];
+                        fstring user;
+                        fstring lm_resp;
+                        uint16 lm_resp_len;
+                        fstring nt_resp;
+                        uint16 nt_resp_len;
+                } auth_crap;
                 struct {
                     fstring user;
                     fstring oldpass;
