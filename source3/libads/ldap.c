@@ -998,6 +998,14 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	const char *servicePrincipalName[5] = {NULL, NULL, NULL, NULL, NULL};
 	char *psp, *psp2;
 	unsigned acct_control;
+	unsigned exists=0;
+	LDAPMessage *res;
+
+	status = ads_find_machine_acct(ads, (void **)&res, hostname);
+	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
+		DEBUG(0, ("Host account for %s already exists - modifying old account\n", hostname));
+		exists=1;
+	}
 
 	if (!(ctx = talloc_init("machine_account")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -1045,18 +1053,23 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 
 	if (!(mods = ads_init_mods(ctx)))
 		goto done;
-	
-	ads_mod_str(ctx, &mods, "cn", hostname);
-	ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
-	ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
+
+	if (!exists) {
+		ads_mod_str(ctx, &mods, "cn", hostname);
+		ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
+		ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
+		ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
+	}
+	ads_mod_str(ctx, &mods, "dNSHostName", hostname);
 	ads_mod_str(ctx, &mods, "userPrincipalName", host_upn);
 	ads_mod_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
-	ads_mod_str(ctx, &mods, "dNSHostName", hostname);
-	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
 	ads_mod_str(ctx, &mods, "operatingSystemVersion", SAMBA_VERSION_STRING);
 
-	ret = ads_gen_add(ads, new_dn, mods);
+	if (!exists) 
+		ret = ads_gen_add(ads, new_dn, mods);
+	else
+		ret = ads_gen_mod(ads, new_dn, mods);
 
 	if (!ADS_ERR_OK(ret))
 		goto done;
@@ -1065,11 +1078,13 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	 * it shouldn't be mandatory and probably we just 
 	 * don't have enough rights to do it.
 	 */
-	status = ads_set_machine_sd(ads, hostname, new_dn);
-
-	if (!ADS_ERR_OK(status)) {
-		DEBUG(0, ("Warning: ads_set_machine_sd: %s\n",
-				ads_errstr(status)));
+	if (!exists) {
+		status = ads_set_machine_sd(ads, hostname, new_dn);
+	
+		if (!ADS_ERR_OK(status)) {
+			DEBUG(0, ("Warning: ads_set_machine_sd: %s\n",
+					ads_errstr(status)));
+		}
 	}
 done:
 	talloc_destroy(ctx);
@@ -1309,6 +1324,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname,
 	host = strdup(hostname);
 	strlower_m(host);
 
+	/*
 	status = ads_find_machine_acct(ads, (void **)&res, host);
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
 		DEBUG(0, ("Host account for %s already exists - deleting old account\n", host));
@@ -1319,6 +1335,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname,
 			return status;
 		}
 	}
+	*/
 
 	status = ads_add_machine_acct(ads, host, account_type, org_unit);
 	if (!ADS_ERR_OK(status)) {
