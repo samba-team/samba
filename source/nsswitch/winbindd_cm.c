@@ -352,11 +352,17 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
 
 static BOOL connection_ok(struct winbindd_cm_conn *conn)
 {
-	if (!conn->cli->initialised)
+	if (!conn->cli->initialised) {
+		DEBUG(3, ("Connection to %s for domain %s (pipe %s) was never initialised!\n", 
+			  conn->controller, conn->domain, conn->pipe_name));
 		return False;
+	}
 
-	if (conn->cli->fd == -1)
+	if (conn->cli->fd == -1) {
+		DEBUG(3, ("Connection to %s for domain %s (pipe %s) has died or was never started (fd == -1)\n", 
+			  conn->controller, conn->domain, conn->pipe_name));
 		return False;
+	}
 	
 	return True;
 }
@@ -377,8 +383,9 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
 		    strequal(conn->pipe_name, PIPE_LSARPC)) {
 
 			if (!connection_ok(conn)) {
+				cli_shutdown(conn->cli);
 				DLIST_REMOVE(cm_conns, conn);
-				return NULL;
+				SAFE_FREE(conn);
 			}
 
 			goto ok;
@@ -429,8 +436,9 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 		if (strequal(conn->domain, domain) && strequal(conn->pipe_name, PIPE_SAMR)) {
 
 			if (!connection_ok(conn)) {
+				cli_shutdown(conn->cli);
 				DLIST_REMOVE(cm_conns, conn);
-				return NULL;
+				SAFE_FREE(conn);
 			}
 
 			goto ok;
@@ -486,6 +494,7 @@ CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid)
 		    conn->pipe_data.samr.pipe_type == SAM_PIPE_DOM) {
 
 			if (!connection_ok(conn)) {
+				/* Shutdown cli?  Free conn?  Allow retry of DC? */
 				DLIST_REMOVE(cm_conns, conn);
 				return NULL;
 			}
@@ -556,6 +565,7 @@ CLI_POLICY_HND *cm_get_sam_user_handle(char *domain, DOM_SID *domain_sid,
 		    conn->pipe_data.samr.rid == user_rid) {
 
 			if (!connection_ok(conn)) {
+				/* Shutdown cli?  Free conn?  Allow retry of DC? */
 				DLIST_REMOVE(cm_conns, conn);
 				return NULL;
 			}
@@ -632,6 +642,7 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 		    conn->pipe_data.samr.rid == group_rid) {
 
 			if (!connection_ok(conn)) {
+				/* Shutdown cli?  Free conn?  Allow retry of DC? */
 				DLIST_REMOVE(cm_conns, conn);
 				return NULL;
 			}
@@ -697,29 +708,59 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 			     struct cli_state **cli)
 {
-	struct winbindd_cm_conn conn;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct winbindd_cm_conn *conn;
+	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	BOOL new_conn = False; /* Is this a new connection, to add to the list? */
 
 	/* Open an initial conection */
 
-	ZERO_STRUCT(conn);
-
-	if (!cm_open_connection(domain, PIPE_NETLOGON, &conn)) {
-		DEBUG(3, ("Could not open a connection to %s\n", domain));
-		return result;
+	for (conn = cm_conns; conn; conn = conn->next) {
+		if (strequal(conn->domain, domain) && 
+		    strequal(conn->pipe_name, PIPE_NETLOGON)) {
+			if (!connection_ok(conn)) {
+				cli_shutdown(conn->cli);
+				DLIST_REMOVE(cm_conns, conn);
+				SAFE_FREE(conn);
+			} else {
+				break;
+			}
+		}
 	}
 
-	result = new_cli_nt_setup_creds(conn.cli, trust_passwd);
+	if (!conn) {
+		if (!(conn = (struct winbindd_cm_conn *) malloc(sizeof(struct winbindd_cm_conn))))
+			return NT_STATUS_NO_MEMORY;
+
+		ZERO_STRUCTP(conn);
+		
+		if (!cm_open_connection(domain, PIPE_NETLOGON, conn)) {
+			DEBUG(3, ("Could not open a connection to %s\n", domain));
+			free(conn);
+			return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		}
+		
+		new_conn = True;
+	}
+	
+	result = new_cli_nt_setup_creds(conn->cli, trust_passwd);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
 			get_nt_error_msg(result)));
-			cli_shutdown(conn.cli);
+			cli_shutdown(conn->cli);
+			DLIST_REMOVE(cm_conns, conn);
+			SAFE_FREE(conn);
 			return result;
 	}
 
+	/* Add to list */
+
+	if (new_conn) {
+		DLIST_ADD(cm_conns, conn);
+	}
+
 	if (cli)
-		*cli = conn.cli;
+		*cli = conn->cli;
 
 	return result;
 }

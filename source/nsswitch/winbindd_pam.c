@@ -93,12 +93,12 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
 
 	ZERO_STRUCT(info3);
-
+	
+	/* Don't shut this down - it belongs to the connection cache code */
         result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
                 goto done;
         }
 
@@ -111,15 +111,12 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	uni_group_cache_store_netlogon(mem_ctx, &info3);
 done:
 
-	if (cli) 
-		cli_shutdown(cli);
-
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, get_nt_error_msg(result));
 	fstrcpy(state->response.data.auth.error_string, get_nt_error_msg(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
-	DEBUG(2, ("Plain-text authenticaion for user %s returned %s (PAM: %d)\n", 
+	DEBUG(3, ("Plain-text authenticaion for user %s returned %s (PAM: %d)\n", 
 	      state->request.data.auth.user, 
 	      state->response.data.auth.nt_status_string,
 	      state->response.data.auth.pam_error));	      
@@ -188,6 +185,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	ZERO_STRUCT(info3);
 
+	/* Don't shut this down - it belongs to the connection cache code */
         result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
@@ -207,15 +205,12 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 done:
 
-	if (cli)
-		cli_shutdown(cli);
-
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
 	fstrcpy(state->response.data.auth.nt_status_string, get_nt_error_msg(result));
 	fstrcpy(state->response.data.auth.error_string, get_nt_error_msg(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
-	DEBUG(2, ("NTLM CRAP authenticaion for user [%s]\\[%s] returned %s (PAM: %d)\n", 
+	DEBUG(3, ("NTLM CRAP authenticaion for user [%s]\\[%s] returned %s (PAM: %d)\n", 
 	      state->request.data.auth_crap.domain, 
 	      state->request.data.auth_crap.user, 
 	      state->response.data.auth.nt_status_string,

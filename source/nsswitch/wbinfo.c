@@ -162,7 +162,6 @@ static BOOL wbinfo_list_domains(void)
 static BOOL wbinfo_show_sequence(void)
 {
 	struct winbindd_response response;
-	fstring name;
 
 	ZERO_STRUCT(response);
 
