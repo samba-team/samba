@@ -26,7 +26,16 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_BinTree.c,v 
+ * Log: ubi_BinTree.c,v
+ * Revision 4.12  2004/06/06 04:51:56  crh
+ * Fixed a small typo in ubi_BinTree.c (leftover testing cruft).
+ * Did a small amount of formatting touchup to ubi_BinTree.h.
+ *
+ * Revision 4.11  2004/06/06 03:14:09  crh
+ * Rewrote the ubi_btLeafNode() function.  It now takes several paths in an
+ * effort to find a deeper leaf node.  There is a small amount of extra
+ * overhead, but it is limited.
+ *
  * Revision 4.10  2000/06/06 20:38:40  crh
  * In the ReplaceNode() function, the old node header was being copied
  * to the new node header using a byte-by-byte copy.  This was causing
@@ -181,14 +190,15 @@
 
 #include "ubi_BinTree.h"  /* Header for this module.   */
 
+
 /* ========================================================================== **
  * Static data.
  */
 
 static char ModuleID[] = "ubi_BinTree\n\
-\tRevision: 4.10 \n\
-\tDate: 2000/06/06 20:38:40 \n\
-\tAuthor: crh \n";
+\tRevision: 4.12\n\
+\tDate: 2004/06/06 04:51:56\n\
+\tAuthor: crh\n";
 
 /* ========================================================================== **
  * Internal (private) functions.
@@ -1061,8 +1071,8 @@ ubi_btNodePtr ubi_btLeafNode( ubi_btNodePtr leader )
    *
    *  Input:  leader  - Pointer to a node at which to start the descent.
    *
-   *  Output: A pointer to a leaf node selected in a somewhat arbitrary
-   *          manner.
+   *  Output: A pointer to a leaf node, selected in a somewhat arbitrary
+   *          manner but with an effort to dig deep.
    *
    *  Notes:  I wrote this function because I was using splay trees as a
    *          database cache.  The cache had a maximum size on it, and I
@@ -1071,7 +1081,7 @@ ubi_btNodePtr ubi_btLeafNode( ubi_btNodePtr leader )
    *          tend toward the bottom of the tree, meaning that leaf nodes
    *          are good candidates for removal.  (I really can't think of
    *          any other reason to use this function.)
-   *        + In a simple binary tree or an AVL tree, the most recently
+   *        + In a simple binary tree, or in an AVL tree, the most recently
    *          added nodes tend to be nearer the bottom, making this a *bad*
    *          way to choose which node to remove from the cache.
    *        + Randomizing the traversal order is probably a good idea.  You
@@ -1079,25 +1089,55 @@ ubi_btNodePtr ubi_btLeafNode( ubi_btNodePtr leader )
    *          in pointers to nodes other than the root node each time.  A
    *          pointer to any node in the tree will do.  Of course, if you
    *          pass a pointer to a leaf node you'll get the same thing back.
+   *        + In an unbalanced splay tree, if you simply traverse downward
+   *          until you hit a leaf node it is possible to accidentally
+   *          stumble onto a short path.  The result will be a leaf node
+   *          that is actually very high in the tree--possibly a very
+   *          recently accessed node.  Not good.  This function can follow
+   *          multiple paths in an effort to find a leaf node deeper
+   *          in the tree.  Following a single path, of course, is the
+   *          fastest way to find a leaf node.  A complete traversal would
+   *          be sure to find the deepest leaf but would be very costly in
+   *          terms of time.  This function uses a compromise that has
+   *          worked well in testing.
    *
    * ------------------------------------------------------------------------ **
    */
   {
-  ubi_btNodePtr follower = NULL;
+  #define MAXPATHS 4  /* Set higher for more maximum paths, lower for fewer.  */
+  ubi_trNodePtr p[MAXPATHS];
+  ubi_trNodePtr q[MAXPATHS];
   int           whichway = ubi_trLEFT;
+  int           paths;
+  int           i, j;
 
-  while( NULL != leader )
+  /* If the subtree is empty, return NULL.
+   */
+  if( NULL == leader )
+    return( NULL );
+
+  /* Initialize the p[] array with a pointer to the single node we've been
+   * given as a starting point.
+   */
+  p[0]  = leader;
+  paths = 1;
+  while( paths > 0 )
     {
-    follower = leader;
-    leader   = follower->Link[ whichway ];
-    if( NULL == leader )
+    for( i = 0; i < paths; i++ )
+      q[i] = p[i];
+
+    for( i = j = 0; (i < paths) && (j < MAXPATHS); i++ )
       {
+      if( NULL != q[i]->Link[whichway] )
+        p[j++] = q[i]->Link[whichway];
       whichway = ubi_trRevWay( whichway );
-      leader   = follower->Link[ whichway ];
+      if( (j < MAXPATHS) && (NULL != q[i]->Link[whichway]) )
+        p[j++] = q[i]->Link[whichway];
       }
+    paths = j;
     }
 
-  return( follower );
+  return( q[0] );
   } /* ubi_btLeafNode */
 
 int ubi_btModuleID( int size, char *list[] )
