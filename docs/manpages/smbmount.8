@@ -26,7 +26,7 @@ To mount an smb file system, I suggest using the option
 .B -c
 for smbmount to pass the mount command. For example, use
 
-smbmount "\\\\server\\tmp" -c 'mount /mnt -u 123 -g 456'
+smbmount '\\\\server\\tmp' -c 'mount /mnt -u 123 -g 456'
 
 to mount the tmp share of server on /mnt, giving it a local uid 123
 and a local gid 456.
