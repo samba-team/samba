@@ -296,6 +296,7 @@ ssize_t spnego_read_data(DATA_BLOB data, struct spnego_data *token)
 			}
 			break;
 		default:
+			asn1.has_error = True;
 			break;
 		}
 	}
