@@ -1573,7 +1573,7 @@ main(){
        if (cd == 0 || cd == (iconv_t)-1) {
           cd = iconv_open("IBM850", "UCS-2LE"); /* Solaris has this */
           if (cd == 0 || cd == (iconv_t)-1) {
-             cd = iconv_open("ISO-8859-1", "UCS-2LE"); /* Solaris has this */
+             cd = iconv_open("ISO-8859-1", "UTF-8"); /* IRIX has this */
              if (cd == 0 || cd == (iconv_t)-1) {
                 return -1;
 	     }
