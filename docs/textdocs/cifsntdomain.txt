@@ -1,6 +1,3 @@
-!==
-!== cifsntdomain.txt for Samba release 1.9.18alpha9 30 Oct 1997
-!==
 NT Domain Authentication
 ------------------------
 
@@ -12,7 +9,7 @@ Authors:	- Luke Kenneth Casson Leighton (lkcl@switchboard.net)
 		  Copyright (C) 1997 Paul Ashton
 		  Copyright (C) 1997 Duncan Stansfield
 
-Version:	0.023 (29oct97)
+Version:	0.024 (01Nov97)
 --------
 
 Distribution:	Unlimited and encouraged, for the purposes of implementation
@@ -611,19 +608,45 @@ and must carry out an SMBclose on the file handle once you are finished.
 
 Trans Requests must be sent with two setup UINT16s, no UINT16 params (none
 known about), and UINT8 data parameters sufficient to contain the MSRPC
-header, and MSRPC data.  The first UINT16 setup parameter must be 0x26.  The
-second UINT16 parameter must be the file handle for the pipe, obtained above.
+header, and MSRPC data.  The first UINT16 setup parameter must be either
+0x0026 to indicate an RPC, or 0x0001 to indicate Set Named Pipe Handle
+state.  The second UINT16 parameter must be the file handle for the pipe,
+obtained above.
+
+The Data section for an API Command of 0x0026 (RPC pipe) in the Trans
+Request is the RPC Header, followed by the RPC Data.  The Data section for
+an API Command of 0x0001 (Set Named Pipe Handle state) is two bytes.  The
+only value seen for these two bytes is 0x00 0x43.
+
 
 MSRPC Responses are sent as response data inside standard SMB Trans
 responses, with the MSRPC Header, MSRPC Data and MSRPC tail.
 
-[section on MSRPC Bind and BindAck to be added once they are understood].
 
 It is suspected that the Trans Requests will need to be at least 2-byte
 aligned (probably 4-byte).  This is standard practice for SMBs.  It is also
 independent of the observed 4-byte alignments with the start of the MSRPC
 header, including the 4-byte alignment between the MSRPC header and the
 MSRPC data.
+
+
+First, an SMBtconX connection is made to the IPC$ share.  The connection
+must be made using encrypted passwords, not clear-text.  Then, an SMBopenX
+is made on the pipe.  Then, a Set Named Pipe Handle State must be sent,
+after which the pipe is ready to accept API commands.  Lastly, and SMBclose
+is sent.
+
+
+To be resolved:
+
+    lkcl/01nov97 there appear to be two additional bytes after the null-
+    terminated \PIPE\ name for the RPC pipe.  Values seen so far are
+    listed below:
+
+        initial SMBopenX request:         RPC API command 0x26 params:
+
+        "\\PIPE\\lsarpc"                  0x65 0x63; 0x72 0x70; 0x44 0x65;
+        "\\PIPE\\srvsvc"                  0x73 0x76; 0x4E 0x00; 0x5C 0x43;
 
 
 3.2) Header
@@ -803,9 +826,21 @@ Response:
     RPC_ResBind
 
 
+
 4) NTLSA Transact Named Pipe
 ----------------------------
         
+The sequence of actions taken on this pipe are:
+
+- Establish a connection to the IPC$ share (SMBtconX).  use encrypted passwords.
+- Open an RPC Pipe with the name "\\PIPE\\lsarpc".  Store the file handle.
+- Using the file handle, send a Set Named Pipe Handle state to 0x4300.
+- Send an LSA Open Policy request.  Store the Policy Handle.
+- Using the Policy Handle, send LSA Query Info Policy requests, etc.
+- Using the Policy Handle, send an LSA Close.
+- Close the IPC$ share.
+
+
 Defines for this pipe, identifying the query are:
 
 - LSA Open Policy:               0x2c
@@ -972,6 +1007,19 @@ Response:
 
 5) NETLOGON rpc Transact Named Pipe
 -----------------------------------
+
+The sequence of actions taken on this pipe are:
+
+- Establish a connection to the IPC$ share (SMBtconX).  use encrypted passwords.
+- Open an RPC Pipe with the name "\\PIPE\\NETLOGON".  Store the file handle.
+- Using the file handle, send a Set Named Pipe Handle state to 0x4300.
+- Create Client Challenge. Send LSA Request Challenge.  Store Server Challenge.
+- Calculate Session Key.  Send an LSA Auth 2 Challenge.  Store Auth2 Challenge.
+- Calc/Verify Client Creds.  Send LSA Srv PW Set.  Calc/Verify Server Creds.
+- Calc/Verify Client Creds.  Send LSA SAM Logon .  Calc/Verify Server Creds.
+- Calc/Verify Client Creds.  Send LSA SAM Logoff.  Calc/Verify Server Creds.
+- Close the IPC$ share.
+
 
 Defines for this pipe, identifying the query are:
 
