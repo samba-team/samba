@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Tim Potter      2000
    Copyright (C) Jeremy Allison  2000
+   Copyright (C) Jelmer Vernooij 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -744,11 +745,11 @@ static struct cli_state *connect_one(const char *share)
 	int opt;
 	char *p;
 	enum acl_mode mode = SMB_ACL_SET;
-	static const char *the_acl = NULL;
+	static char *the_acl = NULL;
 	enum chown_mode change_mode = REQUEST_NONE;
 	int result;
 	fstring path;
-	fstring filename;
+	pstring filename;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -808,22 +809,22 @@ static struct cli_state *connect_one(const char *share)
 			break;
 
 		case 'S':
-			the_acl = poptGetOptArg(pc);
+			the_acl = smb_xstrdup(poptGetOptArg(pc));
 			mode = SMB_ACL_SET;
 			break;
 
 		case 'D':
-			the_acl = poptGetOptArg(pc);
+			the_acl = smb_xstrdup(poptGetOptArg(pc));
 			mode = SMB_ACL_DELETE;
 			break;
 
 		case 'M':
-			the_acl = poptGetOptArg(pc);
+			the_acl = smb_xstrdup(poptGetOptArg(pc));
 			mode = SMB_ACL_MODIFY;
 			break;
 
 		case 'A':
-			the_acl = poptGetOptArg(pc);
+			the_acl = smb_xstrdup(poptGetOptArg(pc));
 			mode = SMB_ACL_ADD;
 			break;
 
@@ -852,7 +853,7 @@ static struct cli_state *connect_one(const char *share)
 		return -1;
 	}
 	
-	fstrcpy(filename, poptGetArg(pc));
+	pstrcpy(filename, poptGetArg(pc));
 
 	all_string_sub(path,"/","\\",0);
 
