@@ -22,6 +22,7 @@ foo=$(gen_SOURCES:%.c=%.x)
 
 
 libasn1_a_SOURCES = der_get.c der_put.c der_free.c der_length.c der_copy.c \
+		timegm.c \
 		$(gen_SOURCES)
 
 noinst_PROGRAMS = asn1_compile
