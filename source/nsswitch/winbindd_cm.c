@@ -70,7 +70,6 @@ struct winbindd_cm_conn {
 	fstring domain;
 	fstring controller;
 	fstring pipe_name;
-	size_t mutex_ref_count;
 	struct cli_state *cli;
 	POLICY_HND pol;
 };
