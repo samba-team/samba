@@ -221,10 +221,10 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	p = param;
 	SSVAL(p,0,0x68); /* api number */
 	p += 2;
-	pstrcpy_base(p,"WrLehDz",param);
+	pstrcpy_base(p,"WrLehDz", param);
 	p = skip_string(p,1);
   
-	pstrcpy_base(p,"B16BBDz",param);
+	pstrcpy_base(p,"B16BBDz", param);
 
 	p = skip_string(p,1);
 	SSVAL(p,0,uLevel);
@@ -233,7 +233,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	SIVAL(p,0,stype);
 	p += 4;
 
-	p += push_pstring(p, workgroup);
+	p += push_pstring_base(p, workgroup, param);
 	
 	if (cli_api(cli, 
                     param, PTR_DIFF(p,param), 8,        /* params, length, max */
@@ -281,7 +281,7 @@ Send a SamOEMChangePassword command
 BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
                              const char *old_password)
 {
-  char param[16+sizeof(fstring)];
+  pstring param;
   char data[532];
   char *p = param;
   unsigned char old_pw_hash[16];
@@ -300,11 +300,11 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
 
   SSVAL(p,0,214); /* SamOEMChangePassword command. */
   p += 2;
-  pstrcpy(p, "zsT");
+  pstrcpy_base(p, "zsT", param);
   p = skip_string(p,1);
-  pstrcpy(p, "B516B16");
+  pstrcpy_base(p, "B516B16", param);
   p = skip_string(p,1);
-  pstrcpy(p,user);
+  pstrcpy_base(p,user, param);
   p = skip_string(p,1);
   SSVAL(p,0,532);
   p += 2;
@@ -317,7 +317,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
    */
   E_deshash(old_password, old_pw_hash);
 
-  clistr_push(cli, dos_new_password, new_password, -1, STR_TERMINATE|STR_ASCII);
+  clistr_push(cli, dos_new_password, new_password, sizeof(dos_new_password), STR_TERMINATE|STR_ASCII);
 
   if (!make_oem_passwd_hash( data, dos_new_password, old_pw_hash, False))
     return False;
@@ -685,7 +685,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 	int count=8;
 	char *p;
 	BOOL ret;
-	int len;
+	unsigned int len;
 
 	p = param;
 	memset(p, 0, 6);
