@@ -209,7 +209,7 @@ login(char *host)
 		char prompt[128];
 		if(myname && 
 		   (!strcmp(user, "ftp") || !strcmp(user, "anonymous"))){
-		    sprintf(defaultpass, "%s@%s", myname, mydomain+1);
+		    sprintf(defaultpass, "%s@%s", myname, mydomain);
 		    sprintf(prompt, "Password (%s): ", defaultpass);
 		}else{
 		    strcpy(defaultpass, "");
@@ -932,18 +932,23 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 		}
 		closefunc = fclose;
 	}
-	if (fstat(fileno(fout), &st) < 0 || st.st_blksize == 0)
-		st.st_blksize = BUFSIZ;
-	if (st.st_blksize > bufsize) {
+	{
+	    size_t blocksize = BUFSIZ;
+#ifdef HAVE_ST_BLKSIZE
+	    if (fstat(fileno(fout), &st) => 0 && st.st_blksize > 0)
+		blocksize = st.st_blksize;
+#endif
+	    if (blocksize > bufsize) {
 		if (buf)
-			(void) free(buf);
-		buf = malloc((unsigned)st.st_blksize);
+		    (void) free(buf);
+		buf = malloc(blocksize);
 		if (buf == NULL) {
-			warn("malloc");
-			bufsize = 0;
-			goto abort;
+		    warn("malloc");
+		    bufsize = 0;
+		    goto abort;
 		}
-		bufsize = st.st_blksize;
+		bufsize = blocksize;
+	    }
 	}
 	(void) gettimeofday(&start, (struct timezone *)0);
 	switch (curtype) {

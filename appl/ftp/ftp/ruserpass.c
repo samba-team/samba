@@ -75,6 +75,8 @@ ruserpass(char *host, char **aname, char **apass, char **aacct)
 	    strcpy(myhostname, "");
 	if((mydomain = strchr(myhostname, '.')) == NULL)
 	    mydomain = myhostname;
+	else
+	    mydomain++;
 	hdir = getenv("HOME");
 	if (hdir == NULL)
 		hdir = ".";
@@ -107,11 +109,13 @@ next:
 			if (strcasecmp(hostname, tokval) == 0)
 				goto match;
 			if ((tmp = strchr(hostname, '.')) != NULL &&
+			    tmp++ &&
 			    strcasecmp(tmp, mydomain) == 0 &&
 			    strncasecmp(hostname, tokval, tmp-hostname) == 0 &&
 			    tokval[tmp - hostname] == '\0')
 				goto match;
 			if ((tmp = strchr(host, '.')) != NULL &&
+			    tmp++ &&
 			    strcasecmp(tmp, mydomain) == 0 &&
 			    strncasecmp(host, tokval, tmp - host) == 0 &&
 			    tokval[tmp - host] == '\0')
