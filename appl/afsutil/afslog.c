@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,7 +39,9 @@ RCSID("$Id$");
 #ifdef KRB5
 #include <krb5.h>
 #endif
+#ifdef KRB4
 #include <krb.h>
+#endif
 #include <kafs.h>
 #include <roken.h>
 #include <getarg.h>
@@ -55,12 +57,24 @@ static char *realm;
 static getarg_strings files;
 static int unlog_flag;
 static int verbose;
+#ifdef KRB4
+static int use_krb4 = 1;
+#endif
+#ifdef KRB5
+static int use_krb5 = 1;
+#endif
 
 struct getargs args[] = {
     { "cell",	'c', arg_strings, &cells, "cells to get tokens for", "cell" },
     { "file",	'p', arg_strings, &files, "files to get tokens for", "path" },
     { "realm",	'k', arg_string, &realm, "realm for afs cell", "realm" },
     { "unlog",	'u', arg_flag, &unlog_flag, "remove tokens" },
+#ifdef KRB4
+    { "v4",	 0, arg_negative_flag, &use_krb4, "use Kerberos 4" },
+#endif
+#ifdef KRB5
+    { "v5",	 0, arg_negative_flag, &use_krb5, "use Kerberos 5" },
+#endif
 #if 0
     { "create-user", 0, arg_flag, &create_user, "create user if not found" },
 #endif
@@ -214,21 +228,35 @@ afslog_file(const char *path)
 static int
 do_afslog(const char *cell)
 {
-    int ret;
+    int k5ret, k4ret;
+
+    k5ret = k4ret = 0;
+
 #ifdef KRB5
-    if(context != NULL && id != NULL) {
-	ret = krb5_afslog(context, id, cell, NULL);
-	if(ret == 0)
+    if(context != NULL && id != NULL && use_krb5) {
+	k5ret = krb5_afslog(context, id, cell, NULL);
+	if(k5ret == 0)
 	    return 0;
-    if(verbose)
-	    warnx("krb5_afslog(%s): %s", cell, 
-		  krb5_get_err_text(context, ret));
     }
 #endif
-    ret = krb_afslog(cell, NULL);
-    if(ret)
-	warnx("krb_afslog(%s): %s", cell, krb_get_err_text(ret));
-    return ret;
+#if KRB4
+    if (use_krb4) {
+	k4ret = krb_afslog(cell, NULL);
+	if(k4ret == 0)
+	    return 0;
+    }
+#endif
+#ifdef KRB5
+    if (k5ret)
+	warnx("krb5_afslog(%s): %s", cell, krb5_get_err_text(context, k5ret));
+#endif
+#ifdef KRB4
+    if (k4ret)
+	warnx("krb_afslog(%s): %s", cell, krb_get_err_text(k4ret));
+#endif
+    if (k5ret || k4ret)
+	return 1;
+    return 0;
 }
 
 int
