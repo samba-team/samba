@@ -435,10 +435,11 @@ static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 
 	len=strcspn(mnttype, ":");
 	pathname=strstr(mnttype, ":");
-	cutstr = (char *) malloc(sizeof(char) * len );
+	cutstr = (char *) malloc(len+1);
 	if (!cutstr)
 		return False;
 
+	memset(cutstr, '\0', len+1);
 	host = strncat(cutstr,mnttype, sizeof(char) * len );
 	DEBUG(5,("nfs_quotas: looking for mount on \"%s\"\n", cutstr));
 	DEBUG(5,("nfs_quotas: of path \"%s\"\n", mnttype));
