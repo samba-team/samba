@@ -302,7 +302,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 		return NT_STATUS_OK;
 	}
 
-	if (!enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV)) {
+	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -894,7 +894,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 	/* well-known aliases */
 	if (sid_equal(sid, &global_sid_Builtin) && !lp_hide_local_users()) {
 		
-		enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
+		pdb_enum_group_mapping(SID_NAME_WKN_GRP, &map, (int *)&num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
 		
 		if (num_entries != 0) {		
 			*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
@@ -931,7 +931,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		for (; (num_entries < max_entries) && (grp != NULL); grp = grp->next) {
 			uint32 trid;
 			
-			if(!get_group_map_from_gid(grp->gr_gid, &smap, MAPPING_WITHOUT_PRIV))
+			if(!pdb_getgrgid(&smap, grp->gr_gid, MAPPING_WITHOUT_PRIV))
 				continue;
 			
 			if (smap.sid_name_use!=SID_NAME_ALIAS) {
@@ -1012,7 +1012,7 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 
 	*p_num_entries = 0;
 
-	enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
+	pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
 
 	num_entries=group_entries-start_idx;
 
@@ -1337,7 +1337,7 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	    !sid_check_is_in_builtin(&sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	if (!get_group_map_from_sid(sid, &map, MAPPING_WITHOUT_PRIV))
+	if (!pdb_getgrsid(&map, sid, MAPPING_WITHOUT_PRIV))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	switch (q_u->switch_level) {
@@ -3798,7 +3798,7 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	if ( (grp=getgrgid(gid)) != NULL)
 		return NT_STATUS_ACCESS_DENIED;
 
-	if(!group_map_remove(group_sid))
+	if(!pdb_delete_group_mapping_entry(group_sid))
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (!close_policy_hnd(p, &q_u->group_pol))
@@ -3861,7 +3861,7 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* don't check if we removed it as it could be an un-mapped group */
-	group_map_remove(alias_sid);
+	pdb_delete_group_mapping_entry(alias_sid);
 
 	if (!close_policy_hnd(p, &q_u->alias_pol))
 		return NT_STATUS_OBJECT_NAME_INVALID;
@@ -4091,7 +4091,7 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if(!add_mapping_entry(&map, TDB_REPLACE)) {
+	if(!pdb_update_group_mapping_entry(&map)) {
 		free_privilege(&map.priv_set);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -4135,7 +4135,7 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if(!add_mapping_entry(&map, TDB_REPLACE)) {
+	if(!pdb_update_group_mapping_entry(&map)) {
 		free_privilege(&map.priv_set);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}

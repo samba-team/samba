@@ -856,7 +856,7 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* get the list of mapped groups (domain, local, builtin) */
-	if(!enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
+	if(!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV))
 		return NT_STATUS_OK;
 
 	if (q_u->enum_context >= num_entries)
@@ -971,7 +971,7 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LS
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!get_group_map_from_sid(info->sid, &map, MAPPING_WITH_PRIV))
+	if (!pdb_getgrsid(&map, info->sid, MAPPING_WITH_PRIV))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	DEBUG(10,("_lsa_enum_privsaccount: %d privileges\n", map.priv_set.count));
@@ -1012,7 +1012,7 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!get_group_map_from_sid(info->sid, &map, MAPPING_WITHOUT_PRIV))
+	if (!pdb_getgrsid(&map, info->sid, MAPPING_WITHOUT_PRIV))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	/*
@@ -1043,12 +1043,12 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!get_group_map_from_sid(info->sid, &map, MAPPING_WITH_PRIV))
+	if (!pdb_getgrsid(&map, info->sid, MAPPING_WITH_PRIV))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	map.systemaccount=q_u->access;
 
-	if(!add_mapping_entry(&map, TDB_REPLACE))
+	if(!pdb_update_group_mapping_entry(&map))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	free_privilege(&map.priv_set);
@@ -1075,7 +1075,7 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!get_group_map_from_sid(info->sid, &map, MAPPING_WITH_PRIV))
+	if (!pdb_getgrsid(&map, info->sid, MAPPING_WITH_PRIV))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	set=&q_u->set;
@@ -1092,7 +1092,7 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 		add_privilege(&map.priv_set, *luid_attr);
 	}
 
-	if(!add_mapping_entry(&map, TDB_REPLACE))
+	if(!pdb_update_group_mapping_entry(&map))
 		return NT_STATUS_NO_SUCH_GROUP;
 	
 	free_privilege(&map.priv_set);	
@@ -1119,7 +1119,7 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!get_group_map_from_sid(info->sid, &map, MAPPING_WITH_PRIV))
+	if (!pdb_getgrsid(&map, info->sid, MAPPING_WITH_PRIV))
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	if (q_u->allrights!=0) {
@@ -1149,7 +1149,7 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 		remove_privilege(&map.priv_set, *luid_attr);
 	}
 
-	if(!add_mapping_entry(&map, TDB_REPLACE))
+	if(!pdb_update_group_mapping_entry(&map))
 		return NT_STATUS_NO_SUCH_GROUP;
 	
 	free_privilege(&map.priv_set);	

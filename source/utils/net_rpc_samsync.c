@@ -324,8 +324,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		pdb_update_sam_account(sam_account);
 	}
 
-	if (!get_group_map_from_sid(*pdb_get_group_sid(sam_account),
-				    &map, False)) {
+	if (!pdb_getgrsid(&map, *pdb_get_group_sid(sam_account), False)) {
 		DEBUG(0, ("Primary group of %s has no mapping!\n",
 			  pdb_get_username(sam_account)));
 		pdb_free_sam(&sam_account);
@@ -353,7 +352,7 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	DOM_SID group_sid;
 	fstring sid_string;
 	GROUP_MAP map;
-	int flag = TDB_INSERT;
+	BOOL insert = True;
 
 	unistr2_to_ascii(name, &delta->uni_grp_name, sizeof(name)-1);
 	unistr2_to_ascii(comment, &delta->uni_grp_desc, sizeof(comment)-1);
@@ -363,9 +362,9 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	sid_append_rid(&group_sid, rid);
 	sid_to_string(sid_string, &group_sid);
 
-	if (get_group_map_from_sid(group_sid, &map, False)) {
+	if (pdb_getgrsid(&map, group_sid, False)) {
 		grp = getgrgid(map.gid);
-		flag = 0; /* Don't TDB_INSERT, mapping exists */
+		insert = False;
 	}
 
 	if (grp == NULL)
@@ -392,7 +391,10 @@ fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	map.priv_set.count = 0;
 	map.priv_set.set = NULL;
 
-	add_mapping_entry(&map, flag);
+	if (insert)
+		pdb_add_group_mapping_entry(&map);
+	else
+		pdb_update_group_mapping_entry(&map);
 
 	return NT_STATUS_OK;
 }
@@ -530,7 +532,7 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	DOM_SID alias_sid;
 	fstring sid_string;
 	GROUP_MAP map;
-	int insert_flag = TDB_INSERT;
+	BOOL insert = True;
 
 	unistr2_to_ascii(name, &delta->uni_als_name, sizeof(name)-1);
 	unistr2_to_ascii(comment, &delta->uni_als_desc, sizeof(comment)-1);
@@ -540,9 +542,9 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	sid_append_rid(&alias_sid, rid);
 	sid_to_string(sid_string, &alias_sid);
 
-	if (get_group_map_from_sid(alias_sid, &map, False)) {
+	if (pdb_getgrsid(&map, alias_sid, False)) {
 		grp = getgrgid(map.gid);
-		insert_flag = 0; /* Don't TDB_INSERT, mapping exists */
+		insert = False;
 	}
 
 	if (grp == NULL) {
@@ -573,7 +575,10 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	map.priv_set.count = 0;
 	map.priv_set.set = NULL;
 
-	add_mapping_entry(&map, insert_flag);
+	if (insert)
+		pdb_add_group_mapping_entry(&map);
+	else
+		pdb_update_group_mapping_entry(&map);
 
 	return NT_STATUS_OK;
 }

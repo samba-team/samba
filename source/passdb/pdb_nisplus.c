@@ -1080,9 +1080,8 @@ static BOOL init_nisp_from_sam (nis_object * obj, const SAM_ACCOUNT * sampass,
 		rid = pdb_get_group_rid (sampass);
 
 		if (rid == 0) {
-			if (get_group_map_from_gid
-			    (pdb_get_gid (sampass), &map,
-			     MAPPING_WITHOUT_PRIV)) {
+			if (pdb_getgrgid(&map, pdb_get_gid (sampass),
+					 MAPPING_WITHOUT_PRIV)) {
 				if (!sid_peek_check_rid
 				    (get_global_sam_sid (), &map.sid, &rid))
 					return False;

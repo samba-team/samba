@@ -69,7 +69,7 @@ static BOOL get_sid_from_input(DOM_SID *sid, char *input)
 	
 	if (StrnCaseCmp( input, "S-", 2)) {
 		/* Perhaps its the NT group name? */
-		if (!get_group_map_from_ntname(input, &map, MAPPING_WITHOUT_PRIV)) {
+		if (!pdb_getgrnam(&map, input, MAPPING_WITHOUT_PRIV)) {
 			printf("NT Group %s doesn't exist in mapping DB\n", input);
 			return False;
 		} else {
@@ -133,7 +133,7 @@ static int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type
 	}
 
 	/* Get the current mapping from the database */
-	if(!get_group_map_from_sid(sid, &map, MAPPING_WITH_PRIV)) {
+	if(!pdb_getgrsid(&map, sid, MAPPING_WITH_PRIV)) {
 		printf("This SID does not exist in the database\n");
 		return -1;
 	}
@@ -177,7 +177,7 @@ static int changegroup(char *sid_string, char *group, enum SID_NAME_USE sid_type
 	if (privilege!=NULL)
 		convert_priv_from_text(&map.priv_set, privilege);
 
-	if (!add_mapping_entry(&map, TDB_REPLACE)) {
+	if (!pdb_add_group_mapping_entry(&map)) {
 		printf("Count not update group database\n");
 		free_privilege(&map.priv_set);
 		return -1;
@@ -198,7 +198,7 @@ static int deletegroup(char *group)
 		return -1;
 	}
 
-	if(!group_map_remove(sid)) {
+	if(!pdb_delete_group_mapping_entry(sid)) {
 		printf("removing group %s from the mapping db failed!\n", group);
 		return -1;
 	}
@@ -220,7 +220,7 @@ static int listgroup(enum SID_NAME_USE sid_type, BOOL long_list)
 	if (!long_list)
 		printf("NT group (SID) -> Unix group\n");
 		
-	if (!enum_group_mapping(sid_type, &map, &entries, ENUM_ALL_MAPPED, MAPPING_WITH_PRIV))
+	if (!pdb_enum_group_mapping(sid_type, &map, &entries, ENUM_ALL_MAPPED, MAPPING_WITH_PRIV))
 		return -1;
 	
 	for (i=0; i<entries; i++) {
