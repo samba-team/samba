@@ -18,7 +18,7 @@
 #endif
 
 #if defined(_AIX)
-#define AFS_SYSCALL	38
+/* _AIX is too weird */
 #endif
 
 #if defined(sgi)
