@@ -81,7 +81,7 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 	/* start off with no events */
 	ZERO_STRUCTP(ev);
 
-	ev->ref_count = 1;
+	ev->events = talloc(ev, 0);
 
 	return ev;
 }
@@ -91,11 +91,6 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 */
 void event_context_destroy(struct event_context *ev)
 {
-	ev->ref_count--;
-	if (ev->ref_count != 0) {
-		return;
-	}
-
 	talloc_free(ev);
 }
 
@@ -121,17 +116,17 @@ static void calc_maxfd(struct event_context *ev)
 
   this is used by modules that need to call on the events of a lower module
 */
-struct event_context * event_context_merge(struct event_context *ev, struct event_context *ev2)
+struct event_context *event_context_merge(struct event_context *ev, struct event_context *ev2)
 {
 	DLIST_CONCATENATE(ev->fd_events, ev2->fd_events, struct fd_event *);
 	DLIST_CONCATENATE(ev->timed_events, ev2->timed_events, struct timed_event *);
 	DLIST_CONCATENATE(ev->loop_events, ev2->loop_events, struct loop_event *);
 
-	ev->ref_count++;
-
 	ev2->fd_events = NULL;
 	ev2->timed_events = NULL;
 	ev2->loop_events = NULL;
+
+	talloc_steal(ev->events, ev2->events);
 
 	event_context_destroy(ev2);
 
@@ -147,7 +142,7 @@ struct event_context * event_context_merge(struct event_context *ev, struct even
 */
 struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e) 
 {
-	e = talloc_memdup(ev, e, sizeof(*e));
+	e = talloc_memdup(ev->events, e, sizeof(*e));
 	if (!e) return NULL;
 	DLIST_ADD(ev->fd_events, e);
 	e->ref_count = 1;
@@ -217,7 +212,7 @@ void event_remove_fd_all_handler(struct event_context *ev, void *handler)
 */
 struct timed_event *event_add_timed(struct event_context *ev, struct timed_event *e) 
 {
-	e = talloc_memdup(ev, e, sizeof(*e));
+	e = talloc_memdup(ev->events, e, sizeof(*e));
 	if (!e) return NULL;
 	e->ref_count = 1;
 	DLIST_ADD(ev->timed_events, e);
@@ -246,7 +241,7 @@ BOOL event_remove_timed(struct event_context *ev, struct timed_event *e1)
 */
 struct loop_event *event_add_loop(struct event_context *ev, struct loop_event *e)
 {
-	e = talloc_memdup(ev, e, sizeof(*e));
+	e = talloc_memdup(ev->events, e, sizeof(*e));
 	if (!e) return NULL;
 	e->ref_count = 1;
 	DLIST_ADD(ev->loop_events, e);
@@ -302,7 +297,7 @@ int event_loop_once(struct event_context *ev)
 		struct loop_event *next = le->next;
 		if (le->ref_count == 0) {
 			DLIST_REMOVE(ev->loop_events, le);
-			talloc_unlink(ev, le);
+			talloc_unlink(ev->events, le);
 		} else {
 			le->ref_count++;
 			le->handler(ev, le, t);
@@ -323,7 +318,7 @@ int event_loop_once(struct event_context *ev)
 			if (ev->maxfd == fe->fd) {
 				ev->maxfd = EVENT_INVALID_MAXFD;
 			}
-			talloc_unlink(ev, fe);
+			talloc_unlink(ev->events, fe);
 		} else {
 			if (fe->flags & EVENT_FD_READ) {
 				FD_SET(fe->fd, &r_fds);
@@ -404,7 +399,7 @@ int event_loop_once(struct event_context *ev)
 		struct timed_event *next = te->next;
 		if (te->ref_count == 0) {
 			DLIST_REMOVE(ev->timed_events, te);
-			talloc_unlink(ev, te);
+			talloc_unlink(ev->events, te);
 		} else if (te->next_event <= t) {
 			te->ref_count++;
 			te->handler(ev, te, t);

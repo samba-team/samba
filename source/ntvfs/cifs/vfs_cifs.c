@@ -138,7 +138,6 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	private->transport = private->tree->session->transport;
 	private->tree->session->pid = SVAL(req->in.hdr, HDR_PID);
 	private->tcon = req->tcon;
-	/*private->ops  = ntvfs_backend_byname("cifs", NTVFS_DISK);*/
 
 	tcon->fs_type = talloc_strdup(tcon, "NTFS");
 	tcon->dev_type = talloc_strdup(tcon, "A:");
@@ -151,7 +150,8 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	private->transport->event.fde->private = private;
 
 	private->transport->event.ctx = event_context_merge(tcon->smb_conn->connection->event.ctx,
-			    					private->transport->event.ctx);
+							    private->transport->event.ctx);
+	talloc_reference(private, private->transport->event.ctx);
 
 	return NT_STATUS_OK;
 }

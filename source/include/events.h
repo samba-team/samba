@@ -68,7 +68,8 @@ struct event_context {
 		int code;
 	} exit;
 
-	int ref_count;
+	/* we hang the events off here, to make merging easy */
+	void *events;
 };
 
 
