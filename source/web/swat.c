@@ -1261,10 +1261,16 @@ static void printers_page(void)
  **/
  int main(int argc, char *argv[])
 {
-	extern char *optarg;
-	extern int optind;
 	int opt;
 	char *page;
+	poptContext pc;
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{ "disable-authentication", 'a', POPT_ARG_VAL, &demo_mode, TRUE, "Disable authentication (demo mode)" },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_configfile},
+		{ 0, 0, 0, 0 }
+	};
 
 	fault_setup(NULL);
 	umask(S_IWGRP | S_IWOTH);
@@ -1288,16 +1294,13 @@ static void printers_page(void)
 	close(2);
 	open("/dev/null", O_WRONLY);
 
-	while ((opt = getopt(argc, argv,"s:a")) != EOF) {
-		switch (opt) {
-		case 's':
-			pstrcpy(dyn_CONFIGFILE,optarg);
-			break;	  
-		case 'a':
-			demo_mode = True;
-			break;	  
-		}
-	}
+	pc = poptGetContext("swat", argc, (const char **) argv, long_options, 0);
+
+	/* Parse command line options */
+
+	while((opt = poptGetNextOpt(pc)) != -1) { }
+
+	poptFreeContext(pc);
 
 	setup_logging(argv[0],False);
 	load_config(True);

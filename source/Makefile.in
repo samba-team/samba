@@ -2,7 +2,7 @@
 # Makefile.in for Samba - rewritten for autoconf support
 # Copyright Andrew Tridgell 1992-1998
 # Copyright (C) 2001 by Martin Pool <mbp@samba.org>
-# Copyright Andrew Barteltt 2002
+# Copyright Andrew Bartlett 2002
 # Copyright (C) 2003 Anthony Liguori <aliguor@us.ibm.com>
 ###########################################################################
 
@@ -290,8 +290,6 @@ PDB_MYSQL_OBJ = passdb/pdb_mysql.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
-# passdb/smbpass.o passdb/ldap.o passdb/nispass.o 
-
 PROFILE_OBJ = profile/profile.o
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
@@ -375,7 +373,8 @@ SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
 
 SWAT_OBJ = $(SWAT_OBJ1) $(PRINTING_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
            $(PARAM_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
-	   $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ)
+	   $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
+	   $(POPT_LIB_OBJ)
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -717,10 +716,10 @@ bin/wrepld@EXEEXT@: $(WREPL_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(WREPL_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/swat@EXEEXT@: $(SWAT_OBJ) bin/.dummy
+bin/swat@EXEEXT@: $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(LIBS) 
+	  $(AUTHLIBS) $(LIBS) @BUILD_POPT@
 
 bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
