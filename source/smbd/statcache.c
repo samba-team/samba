@@ -239,5 +239,11 @@ BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath,
  */
 BOOL reset_stat_cache( void )
 {
-  return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));
+	static BOOL initialised;
+	if (!initialised) {
+		initialised = True;
+		return hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, (compare_function)(strcmp));
+	}
+	hash_clear(&stat_cache);
+	return True;
 } /* reset_stat_cache  */
