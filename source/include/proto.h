@@ -3761,7 +3761,7 @@ void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
 NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
-                               *groups, BOOL is_guest);
+                               *groups, BOOL is_guest, NT_USER_TOKEN *sup_tok);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, 
                      char *requested_name, char *domain,BOOL guest, NT_USER_TOKEN *ptok);
 void add_session_user(char *user);
@@ -3959,7 +3959,7 @@ BOOL become_authenticated_pipe_user(pipes_struct *p);
 BOOL unbecome_authenticated_pipe_user(pipes_struct *p);
 void become_root(void);
 void unbecome_root(void);
-void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER_TOKEN *ptok);
+void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER_TOKEN **pptok);
 BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
 BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
