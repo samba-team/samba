@@ -417,7 +417,9 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DATA_BLOB secblob;
 	int i;
 	DATA_BLOB chal;
-	BOOL got_kerberos = False;
+#ifdef HAVE_KRB5
+	BOOL got_kerberos_mechanism = False;
+#endif
 	NTSTATUS nt_status;
 
 	/* parse out the OIDs and the first sec blob */
@@ -434,11 +436,13 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	   server sent back krb5/mskrb5/ntlmssp as mechtypes, but the 
 	   client (2ksp3) replied with ntlmssp/mskrb5/krb5 and an 
 	   NTLMSSP mechtoken.                 --jerry              */
-	
+
+#ifdef HAVE_KRB5	
 	if (strcmp(OID_KERBEROS5, OIDs[0]) == 0 ||
 	    strcmp(OID_KERBEROS5_OLD, OIDs[0]) == 0) {
-		got_kerberos = True;
+		got_kerberos_mechanism = True;
 	}
+#endif
 		
 	for (i=0;OIDs[i];i++) {
 		DEBUG(3,("Got OID %s\n", OIDs[i]));
@@ -447,7 +451,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DEBUG(3,("Got secblob of size %lu\n", (unsigned long)secblob.length));
 
 #ifdef HAVE_KRB5
-	if (got_kerberos && (SEC_ADS == lp_security())) {
+	if (got_kerberos_mechanism && (SEC_ADS == lp_security())) {
 		int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
 						length, bufsize, &secblob);
 		data_blob_free(&secblob);
