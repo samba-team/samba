@@ -670,12 +670,13 @@ static int cups_job_submit(int snum, struct printjob *pjob)
  * 'cups_queue_get()' - Get all the jobs in the print queue.
  */
 
-static int cups_queue_get(const char *printer_name,
+static int cups_queue_get(const char *sharename,
                enum printing_types printing_type,
                char *lpq_command,
                print_queue_struct **q, 
                print_status_struct *status)
 {
+	fstring		printername;
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
 			*response = NULL;	/* IPP Response */
@@ -711,7 +712,15 @@ static int cups_queue_get(const char *printer_name,
 
 	*q = NULL;
 
-	DEBUG(5,("cups_queue_get(%s, %p, %p)\n", printer_name, q, status));
+	/* HACK ALERT!!!  The porblem with support the 'printer name' 
+	   option is that we key the tdb off the sharename.  So we will 
+	   overload the lpq_command string to pass in the printername 
+	   (which is basically what we do for non-cups printers ... using 
+	   the lpq_command to get the queue listing). */
+
+	fstrcpy( printername, lpq_command );
+
+	DEBUG(5,("cups_queue_get(%s, %p, %p)\n", printername, q, status));
 
        /*
         * Make sure we don't ask for passwords...
@@ -733,7 +742,7 @@ static int cups_queue_get(const char *printer_name,
         * Generate the printer URI...
 	*/
 
-	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s", printer_name);
+	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s", printername);
 
        /*
 	* Build an IPP_GET_JOBS request, which requires the following
@@ -936,14 +945,14 @@ static int cups_queue_get(const char *printer_name,
 	*/
 
 	if ((response = cupsDoRequest(http, request, "/")) == NULL) {
-		DEBUG(0,("Unable to get printer status for %s - %s\n", printer_name,
+		DEBUG(0,("Unable to get printer status for %s - %s\n", printername,
 			 ippErrorString(cupsLastError())));
 		*q = queue;
 		goto out;
 	}
 
 	if (response->request.status.status_code >= IPP_OK_CONFLICT) {
-		DEBUG(0,("Unable to get printer status for %s - %s\n", printer_name,
+		DEBUG(0,("Unable to get printer status for %s - %s\n", printername,
 			 ippErrorString(response->request.status.status_code)));
 		*q = queue;
 		goto out;
