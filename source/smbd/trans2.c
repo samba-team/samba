@@ -30,6 +30,8 @@ extern connection_struct Connections[];
 extern files_struct Files[];
 extern BOOL case_sensitive;
 extern int Client;
+extern int oplock_sock;
+extern int smb_read_error;
 
 /****************************************************************************
   Send the required number of replies back.
@@ -1702,11 +1704,19 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
 
       while( num_data_sofar < total_data || num_params_sofar < total_params)
 	{
-	  if(!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT) ||
-	     CVAL(inbuf, smb_com) != SMBtranss2)
+          BOOL ret;
+
+          ret = receive_next_smb(Client,oplock_sock,inbuf,bufsize,
+                             SMB_SECONDARY_WAIT);
+
+	  if((ret && (CVAL(inbuf, smb_com) != SMBtranss2)) || !ret)
 	    {
 	      outsize = set_message(outbuf,0,0,True);
-	      DEBUG(2,("Invalid secondary trans2 packet\n"));
+              if(ret)
+                DEBUG(0,("reply_trans2: Invalid secondary trans2 packet\n"));
+              else
+                DEBUG(0,("reply_trans2: %s in getting secondary trans2 response.\n",
+                         (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 	      free(params);
 	      free(data);
 	      return(ERROR(ERRSRV,ERRerror));
