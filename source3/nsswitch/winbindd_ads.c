@@ -706,7 +706,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				char ***names,
 				DOM_SID **dom_sids)
 {
-	ADS_STRUCT *ads = NULL;
+	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 
 	*num_domains = 0;
@@ -723,25 +723,15 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 /* find the domain sid for a domain */
 static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 {
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	const char *attrs[] = {"objectSid", NULL};
-	ADS_STRUCT *ads = NULL;
-	void *res;
+	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 
 	ads = ads_cached_connection(domain);
-	if (!ads) goto done;
+	if (!ads) return NT_STATUS_UNSUCCESSFUL;
 
-	rc = ads_do_search(ads, ads->bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
-			   attrs, &res);
-	if (!ADS_ERR_OK(rc)) goto done;
-	if (ads_pull_sid(ads, res, "objectSid", sid)) {
-		status = NT_STATUS_OK;
-	}
-	ads_msgfree(ads, res);
+	rc = ads_domain_sid(ads, sid);
 
-done:
-	return status;
+	return ads_ntstatus(rc);
 }
 
 /* the ADS backend methods are exposed via this structure */
