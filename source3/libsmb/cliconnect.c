@@ -600,8 +600,11 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 		}
 		if (cli->fd != -1) cli->port = port;
 	}
-	if (cli->fd == -1)
+	if (cli->fd == -1) {
+		DEBUG(1,("Error connecting to %s (%s)\n",
+			 inet_ntoa(*ip),strerror(errno)));
 		return False;
+	}
 
 	set_socket_options(cli->fd,user_socket_options);
 
