@@ -1417,8 +1417,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
     case 6:
       return ERROR_DOS(ERRDOS,ERRbadfunc); /* os/2 needs this */      
 
+    case SMB_FILE_BASIC_INFORMATION:
     case SMB_QUERY_FILE_BASIC_INFO:
-	case 1004:
 
       if (info_level == SMB_QUERY_FILE_BASIC_INFO)
 	      data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
@@ -1444,15 +1444,18 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
       break;
 
+    case SMB_FILE_STANDARD_INFORMATION:
     case SMB_QUERY_FILE_STANDARD_INFO:
-      data_size = 22;
-      SOFF_T(pdata,0,size);
+      data_size = 24;
+      /* Fake up allocation size. */
+      SOFF_T(pdata,0,SMB_ROUNDUP(size + 1, ((SMB_OFF_T)0x1000000)));
       SOFF_T(pdata,8,size);
       SIVAL(pdata,16,sbuf.st_nlink);
       CVAL(pdata,20) = 0;
       CVAL(pdata,21) = (mode&aDIR)?1:0;
       break;
 
+    case SMB_FILE_EA_INFORMATION:
     case SMB_QUERY_FILE_EA_INFO:
       data_size = 4;
       break;
@@ -1492,6 +1495,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	    SIVAL(pdata,0,len);
 	    break;
 
+    case SMB_FILE_ALLOCATION_INFORMATION:
+    case SMB_FILE_END_OF_FILE_INFORMATION:
     case SMB_QUERY_FILE_ALLOCATION_INFO:
     case SMB_QUERY_FILE_END_OF_FILEINFO:
 	    data_size = 8;
@@ -1530,39 +1535,19 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       data_size = PTR_DIFF(pdata,(*ppdata));
       break;
 
-	/*
-	 * Windows 2000 completely undocumented new SMB info levels.
-	 * Thanks Microsoft.... sure you're working on making this
-	 * protocol a standard.... sure you are... :-).
-	 * Lying rat-bastards. JRA.
-	 */
-
-	case 1005:
-		SIVAL(pdata,0,mode);
-		SIVAL(pdata,4,0); /* ??? */
-		SOFF_T(pdata,8,size);
-		SIVAL(pdata,16,1); /* ??? */
-		SIVAL(pdata,20,0); /* ??? */
-		data_size = 24;
-		break;
-
-	case 1006:
-		SIVAL(pdata,0,0x907); /* ??? */
-		SIVAL(pdata,4,0x690000); /* ??? */
+	case SMB_FILE_INTERNAL_INFORMATION:
+		/* This should be an index number - looks like dev/ino to me :-) */
+		SIVAL(pdata,0,sbuf.st_dev);
+		SIVAL(pdata,4,sbuf.st_ino);
 		data_size = 8;
 		break;
 
-	case 1007:
-		SIVAL(pdata,0,0); /* ??? */
-		data_size = 4;
-		break;
-
-	case 1008:
+	case SMB_FILE_ACCESS_INFORMATION:
 		SIVAL(pdata,0,0x12019F); /* ??? */
 		data_size = 4;
 		break;
 
-	case 1009:
+	case SMB_FILE_NAME_INFORMATION:
 		/* Pathname with leading '\'. */
 		{
 			pstring new_fname;
@@ -1576,19 +1561,23 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 		}
 
-	case 1014:
-		SIVAL(pdata,0,0); /* ??? */
-		SIVAL(pdata,4,0); /* ??? */
-		data_size = 8;
+	case SMB_FILE_DISPOSITION_INFORMATION:
+		data_size = 1;
+		CVAL(pdata,0) = delete_pending;
 		break;
 
-	case 1016:
-		SIVAL(pdata,0,0); /* ??? */
+	case SMB_FILE_POSITION_INFORMATION:
+		data_size = 8;
+		SOFF_T(pdata,0,pos);
+		break;
+
+	case SMB_FILE_MODE_INFORMATION:
+		SIVAL(pdata,0,mode);
 		data_size = 4;
 		break;
 
-	case 1017:
-		SIVAL(pdata,0,0); /* ??? */
+	case SMB_FILE_ALIGNMENT_INFORMATION:
+		SIVAL(pdata,0,0); /* No alignment needed. */
 		data_size = 4;
 		break;
 
@@ -1617,7 +1606,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		}
 #endif
 
-	case 1021:
+	case SMB_FILE_ALTERNATE_NAME_INFORMATION:
 		/* Last component of pathname. */
 		{
 			size_t byte_len = dos_PutUniCode(pdata+4,fname,max_data_bytes,False);
@@ -1640,14 +1629,14 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		}
 		break;
 
-	case 1028:
+	case SMB_FILE_COMPRESSION_INFORMATION:
 		SOFF_T(pdata,0,size);
 		SIVAL(pdata,8,0); /* ??? */
 		SIVAL(pdata,12,0); /* ??? */
 		data_size = 16;
 		break;
 
-	case 1034:
+	case SMB_FILE_NETWORK_OPEN_INFORMATION:
 		put_long_date(pdata,c_time);
 		put_long_date(pdata+8,sbuf.st_atime);
 		put_long_date(pdata+16,sbuf.st_mtime); /* write time */
@@ -1660,7 +1649,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		data_size = 56;
 		break;
 
-	case 1035:
+	case SMB_FILE_ATTRIBUTE_TAG_INFORMATION:
 		SIVAL(pdata,0,mode);
 		SIVAL(pdata,4,0);
 		data_size = 8;
