@@ -41,7 +41,7 @@ case "$host_os" in
         *aix*) AC_DEFINE(AIX);;
         *hpux*) AC_DEFINE(HPUX);;
         *qnx*) AC_DEFINE(QNX);;
-        *osf1*) AC_DEFINE(OSF1);;
+        *osf*) AC_DEFINE(OSF1);;
         *sco*) AC_DEFINE(SCO);;
         *next2*) AC_DEFINE(NEXT2);;
 esac

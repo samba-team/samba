@@ -39,6 +39,10 @@ case "$host_os" in
 		export _RLDN32_LIST
 		export _RLD_LIST
 		;;
+	*osf*)
+		_RLD_LIST=$SMBW_LIBDIR/smbwrapper.so:DEFAULT
+		export _RLD_LIST
+		;;	        
 	*) 
 		LD_PRELOAD=$SMBW_LIBDIR/smbwrapper.so
 		export LD_PRELOAD
