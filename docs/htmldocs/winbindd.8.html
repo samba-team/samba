@@ -36,7 +36,7 @@ NAME="AEN8"
 ><P
 ><B
 CLASS="COMMAND"
->nmblookup</B
+>winbindd</B
 >  [-d debuglevel] [-i] [-S] [-r] [-A] [-h] [-B &#60;broadcast address&#62;] [-U &#60;unicast address&#62;] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-i &#60;NetBIOS scope&#62;] [-T] {name}</P
 ></DIV
 ><DIV
@@ -586,9 +586,8 @@ CLASS="PARAMETER"
 > can be any
 	Domain user that has administrator privileges on the machine.
 	Substitute your domain name for "DOMAIN" and the name of your PDC
-	for "PDC".
-
-	<P
+	for "PDC".</P
+><P
 >Next copy <TT
 CLASS="FILENAME"
 >libnss_winbind.so</TT
@@ -617,17 +616,13 @@ CLASS="FILENAME"
 CLASS="FILENAME"
 >/lib/libnss_winbind.so.1</TT
 >.</P
->
-
-	<P
+><P
 >Finally, setup a <TT
 CLASS="FILENAME"
 >smb.conf</TT
 > containing directives like the 
 	following:  </P
-> 
-
-	<P
+><P
 ><TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -651,10 +646,7 @@ CLASS="PROGRAMLISTING"
 ></TR
 ></TABLE
 ></P
->
-  
-
-	<P
+><P
 >Now start winbindd and you should find that your user and 
 	group database is expanded to include your NT users and groups, 
 	and that you can login to your unix box as a domain user, using 
@@ -667,7 +659,6 @@ CLASS="COMMAND"
 >getent group
 	</B
 > to confirm the correct operation of winbindd.</P
-></P
 ></DIV
 ><DIV
 CLASS="REFSECT1"

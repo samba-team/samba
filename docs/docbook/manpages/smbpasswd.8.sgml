@@ -25,7 +25,7 @@
 		<arg choice="opt">-R &lt;name resolve order&gt;</arg>	
 		<arg choice="opt">-m</arg>	
 		<arg choice="opt">-j DOMAIN</arg>	
-		<arg choice="opt">-U username</arg>	
+		<arg choice="opt">-U username[%password]</arg>	
 		<arg choice="opt">-h</arg>	
 		<arg choice="opt">-s</arg>	
 		<arg choice="opt">username</arg>	
