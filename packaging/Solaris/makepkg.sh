@@ -28,6 +28,20 @@ add_dynamic_entries()
     echo f none samba/lib/codepages/codepage.$p=source/codepages/codepage.$p 0644 root other
   done
 
+  # Create unicode maps
+  if [ ! -f $DISTR_BASE/source/bin/make_unicodemap ]; then
+    echo "Missing $DISTR_BASE/source/bin/make_unicodemap. Aborting." >&2
+    exit 1
+  fi
+
+  # Pull in all the unicode map files from source/codepages/CP*.TXT
+  list=`find $DISTR_BASE/source/codepages -name "CP*.TXT" | sed 's|^.*CP\(.*\)\.TXT|\1|'`
+  for umap in $list
+  do
+    $DISTR_BASE/source/bin/make_unicodemap $umap $DISTR_BASE/source/codepages/CP$umap.TXT $DISTR_BASE/source/codepages/unicode_map.$umap
+    echo f none samba/lib/codepages/unicode_map.$umap=source/codepages/unicode_map.$umap 0644 root other
+  done
+
   # Add the binaries, docs and SWAT files
 
   echo "#\n# Binaries \n#"
@@ -39,14 +53,26 @@ add_dynamic_entries()
     fi
   done
   echo "#\n# HTML documentation \n#"
-  echo d none samba/docs/htmldocs 0755 root other
-  cd $DISTR_BASE/docs/htmldocs
-  for htmldoc in *
+  cd $DISTR_BASE
+  list=`find docs/htmldocs -type d | grep -v "/CVS$"`
+  for docdir in $list
   do
-    if [ -f $htmldoc ]; then
-      echo f none samba/docs/htmldocs/$htmldoc=docs/htmldocs/$htmldoc 0644 root other
+    if [ -d $docdir ]; then
+	echo d none samba/$docdir 0755 root other
     fi
   done
+
+  list=`find docs/htmldocs -type f | grep -v /CVS/`
+  for htmldoc in $list
+  do
+    if [ -f $htmldoc ]; then
+      echo f none samba/$htmldoc=$htmldoc 0644 root other
+    fi
+  done
+
+  # Create a symbolic link to the Samba book in docs/ for beginners
+  echo 's none samba/docs/samba_book=htmldocs/using_samba'
+
   echo "#\n# Text Docs \n#"
   echo d none samba/docs/textdocs 0755 root other
   cd $DISTR_BASE/docs/textdocs
@@ -58,12 +84,12 @@ add_dynamic_entries()
   done
   echo "#\n# SWAT \n#"
   cd $DISTR_BASE
-  list=`find swat -type d`
+  list=`find swat -type d | grep -v "/CVS$"`
   for i in $list
   do
     echo "d none samba/$i 0755 root other"
   done
-  list=`find swat -type f`
+  list=`find swat -type f | grep -v /CVS/`
   for i in $list
   do
     echo "f none samba/$i=$i 0644 root other"
@@ -76,6 +102,12 @@ add_dynamic_entries()
       echo f none samba/swat/help/$htmldoc=docs/htmldocs/$htmldoc 0644 root other
     fi
   done
+
+  echo "#\n# Using Samba Book files for SWAT\n#"
+  cd $DISTR_BASE/docs/htmldocs
+
+# set up a symbolic link instead of duplicating the book tree
+  echo 's none samba/swat/using_samba=../docs/htmldocs/using_samba'
 
 }
 
