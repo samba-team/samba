@@ -243,7 +243,7 @@ parse_reply(unsigned char *data, int len)
 	    
 	default:
 	    (*rr)->u.data = (unsigned char*)malloc(size);
-	    if((*rr)->u.data == NULL) {
+	    if(size != 0 && (*rr)->u.data == NULL) {
 		dns_free_data(r);
 		return NULL;
 	    }
