@@ -11,6 +11,10 @@ following two changes *ONLY* from the 2.2.0 release.
     and described in the security advisory below.
 2). Fix for the hosts allow/hosts deny parameters not being honoured.
 
+No other changes are being made for this release to ensure a security fix only.
+For new functionality (including these security fixes) download Samba 2.2.1
+when it is available.
+
 The security advisory follows :
 
 
