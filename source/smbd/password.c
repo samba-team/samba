@@ -394,7 +394,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],
 		 smb_pass->smb_name));
 
 	if(smb_pass->acct_ctrl & ACB_DISABLED) {
-		DEBUG(3,("account for user %s was disabled.\n", 
+		DEBUG(1,("account for user %s was disabled.\n", 
 			 smb_pass->smb_name));
 		return(False);
 	}

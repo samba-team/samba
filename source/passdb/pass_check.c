@@ -162,6 +162,7 @@ static BOOL afs_auth(char *user,char *password)
 				       &reason) == 0) {
 		return(True);
 	}
+	DEBUG(1,("AFS authentication for \"%s\" failed (%s)\n", user, reason));
 	return(False);
 }
 #endif
