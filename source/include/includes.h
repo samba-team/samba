@@ -77,6 +77,11 @@
 #endif
 #endif
 
+#ifdef HAVE_LIBINTL_H
+#include <libintl.h>
+#endif
+
+
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
@@ -849,6 +854,10 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #define getpass(prompt) getsmbpass((prompt))
 #endif
 
+#ifndef HAVE_GETTEXT
+#define gettext(x) x
+#endif
+
 /*
  * Some older systems seem not to have MAXHOSTNAMELEN
  * defined.
@@ -949,7 +958,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 extern int DEBUGLEVEL;
 
 #define MAX_SEC_CTX_DEPTH 8    /* Maximum number of security contexts */
-
 
 #ifdef GLIBC_HACK_FCNTL64
 /* this is a gross hack. 64 bit locking is completely screwed up on

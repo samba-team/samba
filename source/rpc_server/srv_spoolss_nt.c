@@ -36,6 +36,16 @@ extern pstring global_myname;
 #define PRINTER_HANDLE_IS_PRINTER	0
 #define PRINTER_HANDLE_IS_PRINTSERVER	1
 
+/* Table to map the driver version */
+/* to OS */
+char * drv_ver_to_os[] = {
+    "WIN9X",   /* driver version/cversion 0 */
+    "",        /* unused ? */
+    "WINNT",   /* driver version/cversion 2 */
+    "WIN2K",   /* driver version/cversion 3 */      
+};
+
+
 /* structure to store the printer handles */
 /* and a reference to what it's pointing to */
 /* and the notify info asked about */
@@ -274,6 +284,58 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 }	
 
 /****************************************************************************
+  delete a printer. This will call a script to remove entries from smb.conf
+  and /etc/printcap. In spoolss_addprinterex_level_2 the add_printer_hook
+  is called before the access check is called. If the access check fails we
+  still need to clean up!
+****************************************************************************/
+static uint32 delete_printer_hook(char * sharename)
+{
+	if (*lp_deleteprinter_cmd()) {
+
+		pid_t local_pid = sys_getpid();
+		char *cmd = lp_deleteprinter_cmd();
+		char *path;
+		pstring tmp_file;
+		pstring command;
+		int ret;
+		int i;
+
+		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
+			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
+		else
+			path = tmpdir();
+		
+		slprintf(command, sizeof(command)-1, "%s \"%s\"", cmd,
+					 sharename);
+		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
+        slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
+
+		unlink(tmp_file);
+		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
+		ret = smbrun(command, tmp_file, False);
+		if (ret != 0) {
+			unlink(tmp_file);
+			return ERROR_INVALID_HANDLE; /* What to return here? */
+		}
+		DEBUGADD(10,("returned [%d]\n", ret));
+		DEBUGADD(10,("Unlinking output file [%s]\n", tmp_file));
+		unlink(tmp_file);
+
+		/* Send SIGHUP to process group... is there a better way? */
+		kill(0, SIGHUP);
+
+		if ( ( i = lp_servicenumber( sharename ) ) >= 0 ) {
+			lp_killservice( i );
+			return ERROR_SUCCESS;
+		} else
+			return ERROR_ACCESS_DENIED;
+	}
+
+	return ERROR_SUCCESS;
+}	
+
+/****************************************************************************
   delete a printer given a handle
 ****************************************************************************/
 static uint32 delete_printer_handle(POLICY_HND *hnd)
@@ -300,49 +362,7 @@ static uint32 delete_printer_handle(POLICY_HND *hnd)
 		return ERROR_ACCESS_DENIED;
 	}
 
-	if (*lp_deleteprinter_cmd()) {
-
-		pid_t local_pid = sys_getpid();
-		char *cmd = lp_deleteprinter_cmd();
-		char *path;
-		pstring tmp_file;
-		pstring command;
-		int ret;
-		int i;
-
-		if (*lp_pathname(lp_servicenumber(PRINTERS_NAME)))
-			path = lp_pathname(lp_servicenumber(PRINTERS_NAME));
-		else
-			path = tmpdir();
-		
-		/* Printer->dev.handlename equals portname equals sharename */
-		slprintf(command, sizeof(command)-1, "%s \"%s\"", cmd,
-					Printer->dev.handlename);
-		dos_to_unix(command, True);  /* Convert printername to unix-codepage */
-        slprintf(tmp_file, sizeof(tmp_file), "%s/smbcmd.%d", path, local_pid);
-
-		unlink(tmp_file);
-		DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
-		ret = smbrun(command, tmp_file, False);
-		if (ret != 0) {
-			unlink(tmp_file);
-			return ERROR_INVALID_HANDLE; /* What to return here? */
-		}
-		DEBUGADD(10,("returned [%d]\n", ret));
-		DEBUGADD(10,("Unlinking output file [%s]\n", tmp_file));
-		unlink(tmp_file);
-
-		/* Send SIGHUP to process group... is there a better way? */
-		kill(0, SIGHUP);
-
-		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
-			lp_killservice( i );
-			return ERROR_SUCCESS;
-		} else
-			return ERROR_ACCESS_DENIED;
-	}
-
-	return ERROR_SUCCESS;
+        return delete_printer_hook(Printer->dev.handlename);
 }	
 
 /****************************************************************************
@@ -5514,6 +5534,7 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 
 	/* you must be a printer admin to add a new printer */
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+	        delete_printer_hook(printer->info_2->sharename);
 		free_a_printer(&printer,2);
 		return ERROR_ACCESS_DENIED;		
 	}
@@ -5523,6 +5544,7 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	 */
 
 	if (!check_printer_ok(printer->info_2, snum)) {
+	        delete_printer_hook(printer->info_2->sharename);
 		free_a_printer(&printer,2);
 		return ERROR_INVALID_PARAMETER;
 	}
@@ -5536,12 +5558,14 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	
 	/* write the ASCII on disk */
 	if (add_a_printer(*printer, 2) != 0) {
+	        delete_printer_hook(printer->info_2->sharename);
 		free_a_printer(&printer,2);
 		return ERROR_ACCESS_DENIED;
 	}
 
 	if (!open_printer_hnd(handle, name)) {
 		/* Handle open failed - remove addition. */
+	        delete_printer_hook(printer->info_2->sharename);
 		del_a_printer(printer->info_2->sharename);
 		free_a_printer(&printer,2);
 		return ERROR_ACCESS_DENIED;
@@ -5610,6 +5634,20 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 		err = ERROR_ACCESS_DENIED;
 		goto done;
 	}
+	
+        /* BEGIN_ADMIN_LOG */
+        switch(level)
+	{
+	    case 3:
+		sys_adminlog(LOG_INFO,(char *)gettext("Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s."),
+		driver.info_3->name,drv_ver_to_os[driver.info_3->cversion],uidtoname(user.uid));
+		break;
+	    case 6:   
+               	sys_adminlog(LOG_INFO,(char *)gettext("Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s."),
+		driver.info_6->name,drv_ver_to_os[driver.info_6->version],uidtoname(user.uid));
+		break;
+        }
+        /* END_ADMIN_LOG */
 
  done:
 	free_a_printer_driver(driver, level);

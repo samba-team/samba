@@ -712,6 +712,13 @@ BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
 		*errcode = ERROR_ACCESS_DENIED;
+
+		/* BEGIN_ADMIN_LOG */
+		sys_adminlog( LOG_ERR, (char *)
+			gettext( "Permission denied-- user not allowed to delete, pause, or resume print job. User name: %s. Printer name: %s." ),
+			uidtoname(user->uid), dos_to_unix(PRINTERNAME(snum),TRUE) );
+		/* END_ADMIN_LOG */
+
 		return False;
 	}
 
@@ -754,6 +761,13 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 		*errcode = ERROR_ACCESS_DENIED;
+
+		/* BEGIN_ADMIN_LOG */
+		sys_adminlog( LOG_ERR, (char *)
+			gettext( "Permission denied-- user not allowed to delete, pause, or resume print job. User name: %s. Printer name: %s." ),
+			uidtoname(user->uid), dos_to_unix(PRINTERNAME(snum),TRUE) );
+		/* END_ADMIN_LOG */
+
 		return False;
 	}
 
@@ -805,6 +819,13 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		*errcode = ERROR_ACCESS_DENIED;
+
+		/* BEGIN_ADMIN_LOG */
+		sys_adminlog( LOG_ERR, (char *)
+			gettext( "Permission denied-- user not allowed to delete, pause, or resume print job. User name: %s. Printer name: %s." ),
+			uidtoname(user->uid), dos_to_unix(PRINTERNAME(snum),TRUE) );
+		/* END_ADMIN_LOG */
+
 		return False;
 	}
 

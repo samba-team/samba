@@ -225,6 +225,9 @@ void wins_srv_died( struct in_addr boothill_ip )
       entry->ip_addr.s_addr = 0;  /* Force a re-lookup at re-birth. */
       DEBUG( 2, ( "wins_srv_died(): WINS server %s appears to be down.\n", 
                   entry->server ) );
+      /* BEGIN_ADMIN_LOG */
+      sys_adminlog(LOG_CRIT,(char *)gettext("Cannot communicate with WINS server. WINS server address: %s."),entry->server);
+      /* END_ADMIN_LOG */
       return;
       }
     entry = (list_entry *)ubi_slNext( entry );

@@ -69,6 +69,12 @@ name %s on subnet %s.\n", inet_ntoa(p->ip), nmb_namestr(question_name), subrec->
       DEBUG(5,("query_name_response: On subnet %s - negative response \
 from IP %s for name %s. Error code was %d.\n", subrec->subnet_name, inet_ntoa(p->ip), 
                       nmb_namestr(question_name), nmb->header.rcode));
+
+      /* BEGIN_ADMIN_LOG */
+      sys_adminlog(LOG_CRIT,(char *)gettext("Failed WINS name resolution. Unresolved name: %s. WINS server address: %s.")
+			,question_name->name,inet_ntoa(p->ip));
+      /* END_ADMIN_LOG */
+
     }
     else
     {

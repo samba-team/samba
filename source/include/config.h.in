@@ -526,6 +526,9 @@
 /* Define if you have the getspnam function.  */
 #undef HAVE_GETSPNAM
 
+/* Define if you have the gettext function.  */
+#undef HAVE_GETTEXT
+
 /* Define if you have the getutmpx function.  */
 #undef HAVE_GETUTMPX
 
@@ -735,6 +738,9 @@
 
 /* Define if you have the <lastlog.h> header file.  */
 #undef HAVE_LASTLOG_H
+
+/* Define if you have the <libintl.h> header file.  */
+#undef HAVE_LIBINTL_H
 
 /* Define if you have the <limits.h> header file.  */
 #undef HAVE_LIMITS_H

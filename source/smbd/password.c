@@ -594,6 +594,7 @@ return True if the password is correct, False otherwise
 ****************************************************************************/
 BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 {
+	BOOL ret;
 	if (pwlen == 24 || (lp_encrypted_passwords() && (pwlen == 0) && lp_null_passwords()))
 	{
 		/* if 24 bytes long assume it is an encrypted password */
@@ -605,8 +606,16 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 			return False;
 		}
 
-		return pass_check_smb(user, global_myworkgroup,
+		ret = pass_check_smb(user, global_myworkgroup,
 		                      challenge, (uchar *)password, (uchar *)password, pwd);
+		if (!ret)
+		{
+			/* BEGIN_ADMIN_LOG */
+			if (lp_security() == SEC_DOMAIN)
+				sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication via Microsoft networking was unsuccessful. User name: %s."), user);
+			/* END_ADMIN_LOG */
+		}
+		return ret;
 	} 
 
 	return pass_check(user, password, pwlen, pwd, 
