@@ -189,7 +189,7 @@ static NTSTATUS do_cmd(struct sam_context *sam, struct cmd_set *cmd_entry, char 
 {
 	char *p = cmd, **argv = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 	pstring buf;
 	int argc = 0, i;
 

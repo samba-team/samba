@@ -264,7 +264,7 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
 	char *p = cmd, **argv = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	pstring buf;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 	int argc = 0, i;
 
 	/* Count number of arguments first time through the loop then
