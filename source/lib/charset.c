@@ -198,10 +198,9 @@ static void add_dos_char(int lower, BOOL map_lower_to_upper,
 /****************************************************************************
 initialise the charset arrays
 ****************************************************************************/
-void charset_initialise(int client_codepage)
+void charset_initialise()
 {
   int i;
-  unsigned char (*cp)[4];
 
 #ifdef LC_ALL
   /* include <locale.h> in includes.h if available for OS                  */
@@ -215,7 +214,7 @@ void charset_initialise(int client_codepage)
 
   for (i=0;i<=127;i++) {
     if (isalnum((char)i) || strchr("._^$~!#%&-{}()@'`",(char)i))
-      add_dos_char(i,0,False,False);
+      add_dos_char(i,False,0,False);
   }
 
   for (i=0; i<=255; i++) {
@@ -224,9 +223,17 @@ void charset_initialise(int client_codepage)
     if (isupper(c)) lower_char_map[i] = tolower(c);
     if (islower(c)) upper_char_map[i] = toupper(c);
   }
+}
 
- if(client_codepage != -1)
-   DEBUG(6,("charset_initialise: client code page = %d\n", client_codepage));
+/****************************************************************************
+initialise the client codepage.
+****************************************************************************/
+void codepage_initialise(int client_codepage)
+{
+  int i;
+  unsigned char (*cp)[4] = NULL;
+
+  DEBUG(6,("codepage_initialise: client code page = %d\n", client_codepage));
 
   /*
    * Known client codepages - these can be added to.
@@ -239,16 +246,12 @@ void charset_initialise(int client_codepage)
     case 437:
       cp = cp_437;
       break;
-    case -1: /* pre-initialize call so that toupper/tolower work
-                before smb.conf is read. */
-      cp = NULL;
-      break;
     default:
-      /* Default charset - currently 850 */
-      DEBUG(6,("charset_initialise: Using default client codepage %d\n", 850));
+      /* Use default codepage - currently 850 */
+      DEBUG(6,("codepage_initialise: Using default client codepage %d\n", 
+               850));
       cp = cp_850;
       break;
-    
   }
 
   if(cp)

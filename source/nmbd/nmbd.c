@@ -421,7 +421,7 @@ static void usage(char *pname)
 
   setup_logging(argv[0],False);
 
-  charset_initialise(-1);
+  charset_initialise();
 
 #ifdef LMHOSTSFILE
   strcpy(host_file,LMHOSTSFILE);
@@ -498,7 +498,7 @@ static void usage(char *pname)
   if (!reload_services(False))
     return(-1);	
 
-  charset_initialise(lp_client_code_page());
+  codepage_initialise(lp_client_code_page());
 
   init_structs();
 

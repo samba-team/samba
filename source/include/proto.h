@@ -14,7 +14,8 @@ int interpret_character_set(char *str, int def);
 
 /*The following definitions come from  charset.c  */
 
-void charset_initialise(int client_codepage);
+void charset_initialise(void);
+void codepage_initialise(int client_codepage);
 void add_char_string(char *s);
 
 /*The following definitions come from  chgpasswd.c  */
@@ -243,6 +244,7 @@ BOOL lp_share_modes(int );
 BOOL lp_onlyuser(int );
 BOOL lp_manglednames(int );
 BOOL lp_widelinks(int );
+BOOL lp_symlinks(int );
 BOOL lp_syncalways(int );
 BOOL lp_map_system(int );
 BOOL lp_delete_readonly(int );

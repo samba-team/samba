@@ -4431,7 +4431,7 @@ static void usage(char *pname)
   setup_logging(pname,True);
 
   TimeInit();
-  charset_initialise(0);
+  charset_initialise();
 
   pid = getpid();
   uid = getuid();
