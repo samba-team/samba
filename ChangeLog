@@ -1,3 +1,8 @@
+2000-07-22  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/changepw.c: use a datagram socket and remove the
+	sequence numbers
+
 2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/klist.c: make -a and -n aliases for -v
@@ -8,6 +13,17 @@
 	krb5_read_priv_message et.al
 
 	* lib/krb5/read_message.c (krb5_read_message): return error if EOF
+
+2000-07-20  Assar Westerlund  <assar@sics.se>
+
+	* kpasswd/kpasswd.c: print usage consistently
+	* kdc/hprop.h (HPROP_KEYTAB): use HDB for the keytab
+	* kdc/hpropd.c: add --keytab
+	* kdc/hpropd.c: don't care what principal we recvauth as
+
+	* lib/krb5/get_cred.c: be more careful of not returning creds at
+	all when an error is returned
+	* lib/krb5/fcache.c (fcc_gen_new): do mkstemp correctly
 
 2000-07-19  Johan Danielsson  <joda@pdc.kth.se>
 

@@ -1,3 +1,8 @@
+2000-07-22  Assar Westerlund  <assar@sics.se>
+
+	* version4.c: map both princ_expire_time and pw_expiration to v4
+	principal expiration
+
 2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* version4.c (handle_v4): check for termination
@@ -8,6 +13,18 @@
 	a flag otherwise exit rightaway
 
 	* server.c: use krb5_read_priv_message; (v5_loop): check for EOF
+
+2000-07-20  Assar Westerlund  <assar@sics.se>
+
+	* init.c (init): also create `kadmin/hprop'
+	* kadmind.c: ports is a string argument
+	* kadm_conn.c (start_server): fix printf format
+
+	* kadmin_locl.h: add <sys/select.h>
+	* kadm_conn.c: remove sys/select.h.  make signal handlers
+	type-correct and static
+
+	* kadmin_locl.h: add limits.h and sys/select.h
 
 2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
 
