@@ -791,14 +791,12 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 	char *printer_name;
 	int snum, ret;
 	fstring jobstr;
-	BOOL owner;
 	
 	if (!pjob || !user) return False;
 
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
-	owner = is_owner(user, jobid);
 
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {

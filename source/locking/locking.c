@@ -396,7 +396,6 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 {
 	TDB_DATA dbuf;
 	struct locking_data *data;
-	share_mode_entry *shares;
 	char *p=NULL;
 	int size;
 		
@@ -410,12 +409,11 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		pstrcat(fname, "/");
 		pstrcat(fname, fsp->fsp_name);
 
-		size = sizeof(*data) + sizeof(*shares) + strlen(fname) + 1;
+		size = sizeof(*data) + sizeof(share_mode_entry) + strlen(fname) + 1;
 		p = (char *)malloc(size);
 		data = (struct locking_data *)p;
-		shares = (share_mode_entry *)(p + sizeof(*data));
 		data->num_share_mode_entries = 1;
-		pstrcpy(p + sizeof(*data) + sizeof(*shares), fname);
+		pstrcpy(p + sizeof(*data) + sizeof(share_mode_entry), fname);
 		fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 		dbuf.dptr = p;
 		dbuf.dsize = size;
@@ -426,14 +424,13 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 
 	/* we're adding to an existing entry - this is a bit fiddly */
 	data = (struct locking_data *)dbuf.dptr;
-	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
 
 	data->num_share_mode_entries++;
-	size = dbuf.dsize + sizeof(*shares);
+	size = dbuf.dsize + sizeof(share_mode_entry);
 	p = malloc(size);
 	memcpy(p, dbuf.dptr, sizeof(*data));
 	fill_share_mode(p + sizeof(*data), fsp, port, op_type);
-	memcpy(p + sizeof(*data) + sizeof(*shares), dbuf.dptr + sizeof(*data),
+	memcpy(p + sizeof(*data) + sizeof(share_mode_entry), dbuf.dptr + sizeof(*data),
 	       dbuf.dsize - sizeof(*data));
 	free(dbuf.dptr);
 	dbuf.dptr = p;

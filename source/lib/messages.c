@@ -78,10 +78,7 @@ return current debug level
 ****************************************************************************/
 void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-        int level;
-	
 	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %d\n",src));
-        level = DEBUGLEVEL;
 	message_send_pid(src, MSG_DEBUGLEVEL, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS), True);
 }
 

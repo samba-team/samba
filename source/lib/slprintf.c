@@ -78,7 +78,6 @@ va_dcl
 	char *format;
 #endif
 	va_list ap;  
-	int ret;
 	pstring str;
 
 #ifdef HAVE_STDARG_H
@@ -90,7 +89,7 @@ va_dcl
 #endif
 	str[0] = 0;
 
-	ret = vslprintf(str,sizeof(str),format,ap);
+	vslprintf(str,sizeof(str),format,ap);
 	va_end(ap);
 	return write(fd, str, strlen(str));
 }

@@ -976,7 +976,6 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
   while(time_left >= 0)
   {
     char op_break_reply[OPBRK_CMD_HEADER_LEN+OPLOCK_BREAK_MSG_LEN];
-    int32 reply_msg_len;
     uint16 reply_from_port;
     char *reply_msg_start;
     fd_set fds;
@@ -1027,7 +1026,6 @@ should be %d\n", (int)pid, share_entry->op_port, global_oplock_port));
       return False;
     }
 
-    reply_msg_len = IVAL(op_break_reply,OPBRK_CMD_LEN_OFFSET);
     reply_from_port = SVAL(op_break_reply,OPBRK_CMD_PORT_OFFSET);
 
     reply_msg_start = &op_break_reply[OPBRK_CMD_HEADER_LEN];
