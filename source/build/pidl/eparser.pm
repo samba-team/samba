@@ -19,7 +19,7 @@ sub ParamSimpleNdrType($)
     my($p) = shift;
     my($res);
 
-    $res .= "\toffset = dissect_ndr_$p->{TYPE}(tvb, offset, pinfo, tree, drep, hf_$p->{NAME}, NULL);\n";
+    $res .= "\toffset = dissect_ndr_$p->{TYPE}(tvb, offset, pinfo, tree, drep, hf_$p->{NAME}_$p->{TYPE}, NULL);\n";
 
     return $res;
 }
@@ -29,7 +29,7 @@ sub ParamPolicyHandle($)
     my($p) = shift;
     my($res);
 
-    $res .= "\toffset = dissect_nt_policy_hnd(tvb, offset, pinfo, tree, drep, hf_policy_hnd, NULL, NULL, FALSE, FALSE);\n";
+    $res .= "\toffset = dissect_nt_policy_hnd(tvb, offset, pinfo, tree, drep, hf_policy_handle, NULL, NULL, FALSE, FALSE);\n";
 
     return $res;
 }
@@ -39,7 +39,7 @@ sub ParamString($)
     my($p) = shift;
     my($res);
 
-    $res .= "\toffset = dissect_ndr_pointer_cb(tvb, offset, pinfo, tree, drep, dissect_ndr_wchar_cvstring, NDR_POINTER_UNIQUE, \"$p->{NAME}\", hf_$p->{NAME}, cb_wstr_postprocess, GINT_TO_POINTER(1));\n";
+    $res .= "\toffset = dissect_ndr_pointer_cb(tvb, offset, pinfo, tree, drep, dissect_ndr_wchar_cvstring, NDR_POINTER_UNIQUE, \"$p->{NAME}\", hf_$p->{NAME}_string, cb_wstr_postprocess, GINT_TO_POINTER(1));\n";
 
     return $res;
 }
@@ -104,7 +104,7 @@ sub ParseFunction($)
 	$res .= ParseParameter($d), if defined($d->{PROPERTIES}{out});
     }
 
-    $res .= "\n\toffset = dissect_ntstatus(tvb, offset, pinfo, tree, drep, hf_samr_rc, NULL);\n\n";
+    $res .= "\n\toffset = dissect_ntstatus(tvb, offset, pinfo, tree, drep, hf_rc, NULL);\n\n";
 
     $res .= "\treturn offset;\n";
     $res .= "}\n\n";
@@ -144,6 +144,8 @@ sub Pass1ModuleHeader($)
 
 #include "packet-dcerpc.h"
 #include "packet-dcerpc-nt.h"
+
+extern const value_string NT_errors[];
 
 EOF
 
@@ -203,9 +205,9 @@ sub Pass1Interface($)
     $res .= << "EOF";
 static int proto_dcerpc_$name = -1;
 
-static int hf_${name}_opnum = -1;
-static int hf_${name}_rc = -1;
-static int hf_policy_hnd = -1;
+static int hf_opnum = -1;
+static int hf_rc = -1;
+static int hf_policy_handle = -1;
 
 static gint ett_dcerpc_$name = -1;
 
@@ -216,12 +218,13 @@ EOF
 	foreach my $args ($fn->{DATA}) {
 	    foreach my $params (@{$args}) {
 
-		next, if defined $hf_info{$params->{NAME}};
+		my $hf_name = "$params->{NAME}_$params->{TYPE}";
+		next, if defined $hf_info{$hf_name};
 
 		# Make a note about new field
 
-		$res .= "static int hf_$params->{NAME} = -1;\n";
-		$hf_info{$params->{NAME}} = {
+		$res .= "static int hf_$hf_name = -1;\n";
+		$hf_info{$hf_name} = {
 		    'ft' => type2ft($params->{TYPE}),
 		    'base' => type2base($params->{TYPE})
 		    };
@@ -298,7 +301,14 @@ sub Parse($)
 	$res .= Pass3Interface($d), if $d->{TYPE} eq "INTERFACE";
     }
 
-    my $hf_register_info = "";
+    my $hf_register_info = << "EOF";
+\t{ &hf_opnum,
+\t  { \"Operation\", \"$name.opnum\", FT_UINT16, BASE_DEC, NULL, 0x0, \"Operation\", HFILL }},
+\t{ &hf_policy_handle,
+\t  { \"Policy handle\", \"$name.policy\", FT_BYTES, BASE_NONE, NULL, 0x0, \"Policy handle\", HFILL }},
+\t{ &hf_rc,
+\t  { \"Return code\", \"$name.rc\", FT_UINT32, BASE_HEX, VALS(NT_errors), 0x0, \"Return status code\", HFILL }},
+EOF
 
     foreach my $hf (keys(%hf_info)) {
 	$hf_register_info .= "\t{ &hf_$hf,\n";
@@ -333,7 +343,7 @@ proto_reg_handoff_dcerpc_$name(void)
 {
         dcerpc_init_uuid(proto_dcerpc_$name, ett_dcerpc_$name, 
 			 &uuid_dcerpc_$name, ver_dcerpc_$name, 
-			 dcerpc_${name}_dissectors, hf_${name}_opnum);
+			 dcerpc_${name}_dissectors, hf_opnum);
 }
 EOF
 
