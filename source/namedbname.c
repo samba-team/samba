@@ -113,7 +113,7 @@ static void add_name(struct subnet_record *d, struct name_record *n)
   n->next = NULL;
   n->prev = n2;
 
-  if((d == wins_subnet) && lp_wins_support())
+  if((d == wins_client_subnet) && lp_wins_support())
     updatedlists = True;
 }
 
@@ -144,17 +144,18 @@ void remove_name(struct subnet_record *d, struct name_record *n)
     free(nlist);
   }
 
-  if((d == wins_subnet) && lp_wins_support())
+  if((d == wins_client_subnet) && lp_wins_support())
     updatedlists = True;
 }
 
 
 /****************************************************************************
-  find a name in a namelist.
+  find a name in a subnet.
   **************************************************************************/
-struct name_record *find_name(struct name_record *n,
-			struct nmb_name *name, int search)
+struct name_record *find_name_on_subnet(struct subnet_record *d,
+			struct nmb_name *name, BOOL self_only)
 {
+  struct name_record *n = d->namelist;
   struct name_record *ret;
   
   for (ret = n; ret; ret = ret->next)
@@ -162,55 +163,19 @@ struct name_record *find_name(struct name_record *n,
     if (name_equal(&ret->name,name))
     {
       /* self search: self names only */
-      if ((search&FIND_SELF) == FIND_SELF && ret->source != SELF)
+      if (self_only && (ret->source != SELF))
       {
         continue;
       }
-      DEBUG(9,("find_name: found name %s(%02x) source=%d\n", 
-                name->name, name->name_type, ret->source));
+      DEBUG(9,("find_name_on_subnet: on subnet %s - found name %s(%02x) source=%d\n", 
+                inet_ntoa(d->bcast_ip), name->name, name->name_type, ret->source));
       return ret;
     }
   }
-  DEBUG(9,("find_name: name %s(%02x) NOT FOUND\n", name->name, 
-            name->name_type));
+  DEBUG(9,("find_name_on_subnet: on subnet %s - name %s(%02x) NOT FOUND\n", 
+            inet_ntoa(d->bcast_ip), name->name, name->name_type));
   return NULL;
 }
-
-
-/****************************************************************************
-  find a name in the domain database namelist 
-  search can be any of:
-  FIND_SELF - look exclusively for names the samba server has added for itself
-  FIND_LOCAL - look for names in the local subnet record.
-  FIND_WINS - look for names in the WINS record
-  **************************************************************************/
-struct name_record *find_name_search(struct subnet_record **d,
-				     struct nmb_name *name,
-				     int search, struct in_addr ip)
-{
-  if (d == NULL) return NULL; /* bad error! */
-	
-  if (search & FIND_LOCAL) {
-    if (*d != NULL) {
-      struct name_record *n = find_name((*d)->namelist, name, search);
-      DEBUG(4,("find_name on local: %s %s search %x\n",
-	       namestr(name),inet_ntoa(ip), search));
-      if (n) return n;
-    }
-  }
-
-  if (!(search & FIND_WINS)) return NULL;
-
-  /* find WINS subnet record. */
-  *d = wins_subnet;
-  
-  if (*d == NULL) return NULL;
-  
-  DEBUG(4,("find_name on WINS: %s %s search %x\n",
-	   namestr(name),inet_ntoa(ip), search));
-  return find_name((*d)->namelist, name, search);
-}
-
 
 /****************************************************************************
   dump a copy of the name table
@@ -223,7 +188,7 @@ void dump_names(void)
   
   FILE *f;
  
-  if(lp_wins_support() == False || wins_subnet == 0)
+  if(lp_wins_support() == False || wins_client_subnet == NULL)
     return;
  
   fstrcpy(fname,lp_lockdir());
@@ -243,12 +208,12 @@ void dump_names(void)
   
   DEBUG(4,("Dump of WINS name table:\n"));
   
-  for (n = wins_subnet->namelist; n; n = n->next)
+  for (n = wins_client_subnet->namelist; n; n = n->next)
    {
      int i;
 
-     DEBUG(4,("%15s ", inet_ntoa(wins_subnet->bcast_ip)));
-     DEBUG(4,("%15s ", inet_ntoa(wins_subnet->mask_ip)));
+     DEBUG(4,("%15s ", inet_ntoa(wins_client_subnet->bcast_ip)));
+     DEBUG(4,("%15s ", inet_ntoa(wins_client_subnet->mask_ip)));
      DEBUG(4,("%-19s TTL=%ld ",
 	       namestr(&n->name),
 	       n->death_time?n->death_time-t:0));
@@ -298,7 +263,7 @@ void dump_names(void)
   ****************************************************************************/
 void load_netbios_names(void)
 {
-  struct subnet_record *d = wins_subnet;
+  struct subnet_record *d = wins_client_subnet;
   fstring fname;
 
   FILE *f;
@@ -398,7 +363,7 @@ void load_netbios_names(void)
         time_t t = (ttd?ttd-time(NULL):0) / 3;
 
         /* add netbios entry read from the wins.dat file. IF it's ok */
-        add_netbios_entry(d,name,type,nb_flags,t,source,ipaddr,True,True);
+        add_netbios_entry(d,name,type,nb_flags,t,source,ipaddr,True);
       }
     }
 
@@ -410,14 +375,13 @@ void load_netbios_names(void)
   remove an entry from the name list
   ****************************************************************************/
 void remove_netbios_name(struct subnet_record *d,
-			char *name,int type, enum name_source source,
-			 struct in_addr ip)
+			char *name,int type, enum name_source source)
 {
   struct nmb_name nn;
   struct name_record *n;
 
   make_nmb_name(&nn, name, type, scope);
-  n = find_name_search(&d, &nn, FIND_LOCAL, ip);
+  n = find_name_on_subnet(d, &nn, FIND_ANY_NAME);
   
   if (n && n->source == source) remove_name(d,n);
 }
@@ -435,26 +399,21 @@ void remove_netbios_name(struct subnet_record *d,
 
   ****************************************************************************/
 struct name_record *add_netbios_entry(struct subnet_record *d,
-		char *name, int type, int nb_flags, 
-		int ttl, enum name_source source, struct in_addr ip,
-		BOOL new_only,BOOL wins)
+		char *name, int type, int nb_flags, int ttl, 
+                enum name_source source, struct in_addr ip, BOOL new_only)
 {
   struct name_record *n;
   struct name_record *n2=NULL;
-  struct subnet_record *found_subnet = 0;
-  int search = 0;
-  BOOL self = (source == SELF);
+  BOOL self = (source == SELF) ? FIND_SELF_NAME : FIND_ANY_NAME;
+  /* It's a WINS add if we're adding to the wins_client_subnet. */
+  BOOL wins = ( wins_client_subnet && (d == wins_client_subnet));
 
-  /* add the name to the WINS list if the name comes from a directed query */
-  search |= wins ? FIND_WINS : FIND_LOCAL;
-
-  /* If it's a local search then we need to set the subnet
-     we are looking at. */
-  if(search & FIND_LOCAL)
-    found_subnet = d;
-
-  /* search for SELF names only */
-  search |= self ? FIND_SELF : 0;
+  if(d == NULL)
+  {
+    DEBUG(0,("add_netbios_entry: called with NULL subnet record. This is a bug - \
+please report this.!\n"));
+    return NULL;
+  }
 
   if (!self)
   {
@@ -490,13 +449,12 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 
   make_nmb_name(&n->name,name,type,scope);
 
-  if ((n2 = find_name_search(&found_subnet, &n->name, search, new_only?ipzero:ip)))
+  if ((n2 = find_name_on_subnet(d, &n->name, self)))
   {
     free(n->ip_flgs);
     free(n);
     if (new_only || (n2->source==SELF && source!=SELF)) return n2;
     n = n2;
-    d = found_subnet;
   }
 
   if (ttl)
@@ -513,7 +471,7 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
 
   DEBUG(3,("Added netbios name %s at %s ttl=%d nb_flags=%2x to interface %s\n",
 	   namestr(&n->name),inet_ntoa(ip),ttl,nb_flags,
-	   ip_equal(d->bcast_ip, wins_ip) ? "WINS" : (char *)inet_ntoa(d->bcast_ip)));
+	   wins ? "WINS" : (char *)inet_ntoa(d->bcast_ip)));
 
   return(n);
 }

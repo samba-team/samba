@@ -55,7 +55,7 @@ struct subnet_record *subnetlist = NULL;
 
 /* WINS subnet - keep this separate so enumeration code doesn't
    run onto it by mistake. */
-struct subnet_record *wins_subnet = NULL;
+struct subnet_record *wins_client_subnet = NULL;
 
 extern uint16 nb_type; /* samba's NetBIOS name type */
 
@@ -83,50 +83,34 @@ static void add_subnet(struct subnet_record *d)
 
 
 /****************************************************************************
-  find a subnet in the subnetlist - not including WINS.
+  find a subnet in the subnetlist that a given IP address could
+  match - not including WINS. Returns NULL if no match.
   **************************************************************************/
-struct subnet_record *find_subnet(struct in_addr bcast_ip)
+struct subnet_record *find_subnet(struct in_addr ip)
 {   
-  struct subnet_record *d;
+  struct subnet_record *d = NULL;
   
   /* search through subnet list for broadcast/netmask that matches
      the source ip address. */
   
   for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_EXCLUDING_WINS(d))
     {
-      if (same_net(bcast_ip, d->bcast_ip, d->mask_ip))
-        return d;
+      if (same_net(ip, d->bcast_ip, d->mask_ip))
+        break;
     }
   
-  return (NULL);
-}
-
-
-/****************************************************************************
-  finds the appropriate subnet structure. directed packets (non-bcast) are
-  assumed to come from a point-to-point (P or M node), and so the subnet we
-  return in this instance is the WINS 'pseudo-subnet' with ip 255.255.255.255
-  ****************************************************************************/
-struct subnet_record *find_req_subnet(struct in_addr ip, BOOL bcast)
-{
-  if (bcast)
-  {
-    /* identify the subnet the broadcast request came from */
-    return find_subnet(*iface_bcast(ip));
-  }
-  /* Return the subnet with the pseudo-ip of 255.255.255.255 */
-  return wins_subnet;
+  return d;
 }
 
 /****************************************************************************
   find a subnet in the subnetlist - if the subnet is not found
-  then return the WINS subnet.
+  then return the WINS client subnet.
   **************************************************************************/
-struct subnet_record *find_subnet_all(struct in_addr bcast_ip)
+struct subnet_record *find_subnet_all(struct in_addr ip)
 {
-  struct subnet_record *d = find_subnet(bcast_ip);
+  struct subnet_record *d = find_subnet(ip);
   if(!d)
-    return wins_subnet;
+    return wins_client_subnet;
   return d;
 }
 
@@ -235,7 +219,7 @@ static struct subnet_record *add_subnet_entry(struct in_addr myip,
     return d;
   }
   if(ip_equal(bcast_ip, wins_ip))
-    return wins_subnet;
+    return wins_client_subnet;
   return find_subnet(bcast_ip);
 }
 
@@ -329,7 +313,7 @@ void add_my_subnets(char *group)
   if (lp_wins_support() || lp_wins_server())
   {
     struct in_addr wins_nmask = ipzero;
-    wins_subnet = add_subnet_entry(ipzero, wins_ip, wins_nmask, group, create_subnets, False);
+    wins_client_subnet = add_subnet_entry(ipzero, wins_ip, wins_nmask, group, create_subnets, False);
   }
 
   /* Ensure we only create the subnets once. */

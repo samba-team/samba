@@ -282,7 +282,7 @@ static void process_master_announce(struct packet_struct *p,char *buf)
   
   if (same_context(dgram)) return;
   
-  if (!wins_subnet) 
+  if (!wins_client_subnet) 
     {
       DEBUG(3,("process_master_announce: No wins subnet !\n"));
       return;
@@ -294,12 +294,12 @@ static void process_master_announce(struct packet_struct *p,char *buf)
       return;
     }
   
-  for (work = wins_subnet->workgrouplist; work; work = work->next)
+  for (work = wins_client_subnet->workgrouplist; work; work = work->next)
   {
     if (AM_MASTER(work) || AM_DOMMST(work))
     {
 	  /* merge browse lists with them */
-	  add_browser_entry(name,0x1d, work->work_group,30,wins_subnet,p->ip,True);
+	  add_browser_entry(name,0x1d, work->work_group,30,wins_client_subnet,p->ip,True);
     }
   }
 }

@@ -59,18 +59,12 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
       a de-registration packet to the local subnet before removing the
       name from its local-subnet name database. */
 
-  int search = FIND_SELF;
   struct name_record n;
   struct name_record *n2=NULL;
       
   make_nmb_name(&n.name,name,type,scope);
 
-  if(d == wins_subnet)
-    search |= FIND_WINS;
-  else
-    search |= FIND_LOCAL;
-
-  if ((n2 = find_name_search(&d, &n.name, search, ipzero)))
+  if ((n2 = find_name_on_subnet(d, &n.name, FIND_SELF_NAME)))
   {
     /* check name isn't already being de-registered */
     if (NAME_DEREG(n2->ip_flgs[0].nb_flags))
@@ -94,7 +88,7 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
      first try to release them, this is too dangerous with our current
      name structures as otherwise we will end up replying to names we
      don't really own */  
-  remove_netbios_name(d,name,type,SELF,n2->ip_flgs[0].ip);
+  remove_netbios_name(d,name,type,SELF);
 
   if (ip_equal(d->bcast_ip, wins_ip))
   {
@@ -134,7 +128,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
      it must be re-registered, rather than just registered */
 
   make_nmb_name(&n, name, type, scope);
-  if (find_name(d->namelist, &n, SELF))
+  if (find_name_on_subnet(d, &n, FIND_SELF_NAME))
 	re_reg = True;
 
   /* XXXX BUG: if samba is offering WINS support, it should still add the
@@ -182,30 +176,30 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
   ****************************************************************************/
 void add_domain_logon_names(void)
 {
-	struct subnet_record *d;
+  struct subnet_record *d;
 
-	if (!lp_domain_logons()) return;
+  if (!lp_domain_logons()) return;
 
-	for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
-	{
-		struct work_record *work = find_workgroupstruct(d, myworkgroup, True);
+  for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
+  {
+    struct work_record *work = find_workgroupstruct(d, myworkgroup, True);
 
-		if (work && work->log_state == LOGON_NONE)
-		{
-			struct nmb_name n;
-			make_nmb_name(&n,myworkgroup,0x1c,scope);
+    if (work && work->log_state == LOGON_NONE)
+    {
+      struct nmb_name n;
+      make_nmb_name(&n,myworkgroup,0x1c,scope);
 
-			if (!find_name(d->namelist, &n, FIND_SELF))
-			{
-				/* logon servers are group names. don't expect failure */
+      if (!find_name_on_subnet(d, &n, FIND_SELF_NAME))
+      {
+        /* logon servers are group names. don't expect failure */
 
-				DEBUG(0,("%s attempting to become logon server for %s %s\n",
-						timestring(), myworkgroup, inet_ntoa(d->bcast_ip)));
+        DEBUG(0,("%s attempting to become logon server for %s %s\n",
+              timestring(), myworkgroup, inet_ntoa(d->bcast_ip)));
 
-				become_logon_server(d, work);
-			}
-		}
-	}
+        become_logon_server(d, work);
+      }
+    }
+  }
 }
 
 
@@ -227,7 +221,7 @@ void add_domain_master_bcast(void)
       struct nmb_name n;
       make_nmb_name(&n,myworkgroup,0x1b,scope);
 
-      if (!find_name(d->namelist, &n, FIND_SELF))
+      if (!find_name_on_subnet(d, &n, FIND_SELF_NAME))
       {
         DEBUG(0,("%s add_domain_names: attempting to become domain \
 master browser on workgroup %s %s\n", timestring(), myworkgroup, inet_ntoa(d->bcast_ip)));
@@ -259,57 +253,57 @@ for domain master on workgroup %s\n", inet_ntoa(d->bcast_ip), myworkgroup));
   ****************************************************************************/
 void add_domain_master_wins(void)
 {
-	struct work_record *work;
+  struct work_record *work;
 
-	if (!lp_domain_master() || wins_subnet == NULL) return;
+  if (!lp_domain_master() || wins_client_subnet == NULL) return;
 
-	work = find_workgroupstruct(wins_subnet, myworkgroup, True);
+  work = find_workgroupstruct(wins_client_subnet, myworkgroup, True);
 
-	if (work && work->dom_state == DOMAIN_NONE)
-	{
-		struct nmb_name n;
-		make_nmb_name(&n,myworkgroup,0x1b,scope);
+  if (work && work->dom_state == DOMAIN_NONE)
+  {
+    struct nmb_name n;
+    make_nmb_name(&n,myworkgroup,0x1b,scope);
 
-		if (!find_name(wins_subnet->namelist, &n, FIND_SELF))
-		{
-			DEBUG(0,("%s add_domain_names: attempting to become domain \
+    if (!find_name_on_subnet(wins_client_subnet, &n, FIND_SELF_NAME))
+    {
+      DEBUG(0,("%s add_domain_names: attempting to become domain \
 master browser on workgroup %s %s\n",
-			timestring(), myworkgroup, inet_ntoa(wins_subnet->bcast_ip)));
+      timestring(), myworkgroup, inet_ntoa(wins_client_subnet->bcast_ip)));
 
-			if (lp_wins_support())
-			{
-				/* use the wins server's capabilities (indirectly).  if
-				   someone has already registered the domain<1b>
-				   name with the WINS server, then the WINS
-				   server's job is to _check_ that the owner still
-				   wants it, before giving it away.
-				*/
+      if (lp_wins_support())
+      {
+        /* use the wins server's capabilities (indirectly).  if
+           someone has already registered the domain<1b>
+           name with the WINS server, then the WINS
+           server's job is to _check_ that the owner still
+           wants it, before giving it away.
+         */
 
-				DEBUG(1,("%s initiate become domain master for %s\n",
-						  timestring(), myworkgroup));
+        DEBUG(1,("%s initiate become domain master for %s\n",
+                    timestring(), myworkgroup));
 
-				become_domain_master(wins_subnet, work);
-			}
-			else
-			{
-				/* send out a query to establish whether there's a 
-				   domain controller on the WINS subnet.  if not,
-				   we can become a domain controller.  it's only
-				   polite that we check, before claiming the
-				   NetBIOS name 0x1b.
-				*/
+        become_domain_master(wins_client_subnet, work);
+      }
+      else
+      {
+        /* send out a query to establish whether there's a 
+           domain controller on the WINS subnet.  if not,
+           we can become a domain controller.  it's only
+           polite that we check, before claiming the
+           NetBIOS name 0x1b.
+         */
 
-				DEBUG(0,("add_domain_names:querying WINS \
+        DEBUG(0,("add_domain_names:querying WINS \
 for domain master on workgroup %s\n", myworkgroup));
 
-				queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,
-									   NAME_QUERY_DOMAIN,
-									   myworkgroup, 0x1b,
-									   0, 0,0,NULL,NULL,
-									   ipzero, ipzero);
-			}
-		}
-	}
+        queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,
+                               NAME_QUERY_DOMAIN,
+                               myworkgroup, 0x1b,
+                               0, 0,0,NULL,NULL,
+                               ipzero, ipzero);
+      }
+    }
+  }
 }
 
 
@@ -332,7 +326,7 @@ void add_domain_names(time_t t)
 	add_domain_logon_names();
 
 	/* do the domain master names */
-	if (wins_subnet != NULL)
+	if (wins_client_subnet != NULL)
 	{
 		/* if the registration of the <1b> name is successful, then
 		   add_domain_master_bcast() will be called.  this will
@@ -366,7 +360,6 @@ void add_my_names(void)
   for (d = FIRST_SUBNET; d; d = NEXT_SUBNET_INCLUDING_WINS(d))
   {
     int n;
-    BOOL wins = (lp_wins_support() && (d == wins_subnet));
 
     /* Add all our names including aliases. */
     for (n=0; my_netbios_names[n]; n++) 
@@ -378,10 +371,10 @@ void add_my_names(void)
     
     /* these names are added permanently (ttl of zero) and will NOT be
        refreshed with the WINS server  */
-    add_netbios_entry(d,"*",0x0,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
-    add_netbios_entry(d,"*",0x20,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
-    add_netbios_entry(d,"__SAMBA__",0x20,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
-    add_netbios_entry(d,"__SAMBA__",0x00,nb_type|NB_ACTIVE,0,SELF,d->myip,False,wins);
+    add_netbios_entry(d,"*",0x0,nb_type|NB_ACTIVE,0,SELF,d->myip,False);
+    add_netbios_entry(d,"*",0x20,nb_type|NB_ACTIVE,0,SELF,d->myip,False);
+    add_netbios_entry(d,"__SAMBA__",0x20,nb_type|NB_ACTIVE,0,SELF,d->myip,False);
+    add_netbios_entry(d,"__SAMBA__",0x00,nb_type|NB_ACTIVE,0,SELF,d->myip,False);
   }
 }
 
@@ -452,7 +445,7 @@ void refresh_my_names(time_t t)
 void query_refresh_names(time_t t)
 {
 	struct name_record *n;
-	struct subnet_record *d = wins_subnet;
+	struct subnet_record *d = wins_client_subnet;
 
 	static time_t lasttime = 0;
 

@@ -91,8 +91,8 @@ void add_name_respond(struct subnet_record *d, int fd, struct in_addr from_ip,
 				BOOL new_owner, struct in_addr reply_to_ip)
 {
   /* register the old or the new owners' ip */
-  add_netbios_entry(d,name->name,name->name_type,
-                    nb_flags,ttl,REGISTER,register_ip,False,True);
+  add_netbios_entry(wins_client_subnet,name->name,name->name_type,
+                    nb_flags,ttl,REGISTER,register_ip,False);
 
   /* reply yes or no to the host that requested the name */
   /* see rfc1002.txt - 4.2.10 and 4.2.11 */
@@ -115,7 +115,6 @@ void reply_name_release(struct packet_struct *p)
   BOOL bcast = nmb->header.nm_flags.bcast;
   struct name_record *n;
   struct subnet_record *d = NULL;
-  int search = 0;
   BOOL success = False;
   
   putip((char *)&ip,&nmb->additional->rdata[2]);  
@@ -123,20 +122,19 @@ void reply_name_release(struct packet_struct *p)
   DEBUG(3,("Name release on name %s\n",
 	   namestr(&nmb->question.question_name)));
   
-  if (!(d = find_req_subnet(p->ip, bcast)))
-    {
-      DEBUG(3,("response packet: bcast %s not known\n",
-	       inet_ntoa(p->ip)));
-      return;
-    }
-
-  if (bcast)
-    search |= FIND_LOCAL;
+  if(!bcast)
+    d = wins_client_subnet;
   else
-    search |= FIND_WINS;
+    d = find_subnet(p->ip);
 
-  n = find_name_search(&d, &nmb->question.question_name, 
-		       search, ip);
+  if (!d)
+  {
+    DEBUG(3,("response packet: can't match address %s to subnet\n",
+	       inet_ntoa(p->ip)));
+    return;
+  }
+
+  n = find_name_on_subnet(d, &nmb->question.question_name, FIND_ANY_NAME);
   
   /* XXXX under what conditions should we reject the removal?? */
   /* For now - remove if the names match and the group bit matches. */
@@ -196,7 +194,6 @@ void reply_name_reg(struct packet_struct *p)
   BOOL secured_redirect = False;
 
   struct in_addr ip, from_ip;
-  int search = 0;
   
   putip((char *)&from_ip,&nmb->additional->rdata[2]);
   ip = from_ip;
@@ -211,20 +208,20 @@ void reply_name_reg(struct packet_struct *p)
       ip = *interpret_addr2("255.255.255.255");
     }
   
-  if (!(d = find_req_subnet(p->ip, bcast)))
+  if (!bcast)
+	d = wins_client_subnet;
+  else
+	d = find_subnet(p->ip);
+
+  if (!d)
   {
-    DEBUG(3,("reply_name_reg: subnet %s not known\n",
+    DEBUG(3,("reply_name_reg: can't match address %s to subnet\n",
 				inet_ntoa(p->ip)));
     return;
   }
 
-  if (bcast)
-	search |= FIND_LOCAL;
-  else
-	search |= FIND_WINS;
-
   /* see if the name already exists */
-  n = find_name_search(&d, question, search, from_ip);
+  n = find_name_on_subnet(d, question, FIND_ANY_NAME);
   
   if (n)
   {
@@ -280,8 +277,7 @@ void reply_name_reg(struct packet_struct *p)
   {
       DEBUG(3,("not found\n"));
       /* add the name to our name/subnet, or WINS, database */
-      n = add_netbios_entry(d,qname,qname_type,nb_flags,ttl,REGISTER,ip,
-				True,!bcast);
+      n = add_netbios_entry(d,qname,qname_type,nb_flags,ttl,REGISTER,ip,True);
   }
   
   /* if samba owns a unique name on a subnet, then it must respond and
@@ -373,23 +369,36 @@ void reply_name_status(struct packet_struct *p)
   char *countptr, *buf, *bufend, *buf0;
   int names_added,i;
   struct name_record *n;
-  struct subnet_record *d = NULL;
-  int search = FIND_SELF | FIND_WINS | FIND_LOCAL;
+  struct subnet_record *d = wins_client_subnet;
+  BOOL bcast = nmb->header.nm_flags.bcast;
 
-  /* NOTE: we always treat a name status lookup as a bcast */ 
-  if (!(d = find_req_subnet(p->ip, True)))
+  /* This query shoud only be made point to point. */
+  if(bcast) 
   {
-    DEBUG(3,("Name status req: bcast %s not known\n",
+    DEBUG(3,("Name status req: ignoring bcast from %s\n",
 			inet_ntoa(p->ip)));
     return;
   }
 
-  DEBUG(3,("Name status for name %s %s\n",
+  if(d == NULL)
+  {
+    /* We are working broadcast only (no wins_client_subnet). 
+       Use the first matching subnet. If none matches 
+       then return.
+     */
+    if((d = find_subnet(p->ip)) == NULL)
+    {
+      DEBUG(3,("Name status req: can't match address %s to subnet\n",
+                                inet_ntoa(p->ip)));
+      return;
+    }
+  }
+    
+  DEBUG(3,("Name status for name %s from ip %s\n",
 	   namestr(&nmb->question.question_name), 
 	   inet_ntoa(p->ip)));
 
-  n = find_name_search(&d, &nmb->question.question_name,
-				search, p->ip);
+  n = find_name_on_subnet(d, &nmb->question.question_name, FIND_SELF_NAME);
   
   if (!n) return;
   
@@ -455,7 +464,7 @@ void reply_name_status(struct packet_struct *p)
       /* end of this name list: add wins names too? */
       struct subnet_record *w_d;
 
-      if (!(w_d = wins_subnet)) break;
+      if (!(w_d = wins_client_subnet)) break;
 
       if (w_d != d)
       {
@@ -532,9 +541,9 @@ void reply_name_query(struct packet_struct *p)
   if (query_is_to_wins_server)
   {
     /* queries to the WINS server involve the WINS server subnet */
-    if (!(d = wins_subnet))
+    if (!(d = wins_client_subnet))
     {
-      DEBUG(3,("name query: wins search %s not known\n",
+      DEBUG(3,("name query: wins server query from %s and no wins subnet being used.\n",
 				    inet_ntoa(p->ip)));
       success = False;
     }
@@ -546,9 +555,9 @@ void reply_name_query(struct packet_struct *p)
        server entries.  not good.
      */
 
-    if (!(d = find_subnet(*iface_bcast(p->ip))))
+    if (!(d = find_subnet_all(p->ip)))
     {
-      DEBUG(3,("name query: interface for %s not known\n",
+      DEBUG(3,("name query: can't match address %s to subnet\n",
 				    inet_ntoa(p->ip)));
       success = False;
     }
@@ -567,10 +576,13 @@ void reply_name_query(struct packet_struct *p)
   if (success)
   {
     /* look up the name in the cache */
-    n = find_name_search(&d, question, FIND_LOCAL, p->ip);
+    n = find_name_on_subnet(d, question, FIND_ANY_NAME);
 
-    /* check for a previous DNS lookup */
-    if (!n && (n = find_name_search(&d, question, FIND_WINS, p->ip))) {
+    /* check for a previous DNS lookup (these are stored 
+       on the wins_client_subnet name list, if it exists */
+
+    if (!n && wins_client_subnet && (d != wins_client_subnet) &&
+         (n = find_name_on_subnet(wins_client_subnet, question, FIND_ANY_NAME))) {
 	    if (n->source != DNS && n->source != DNSFAIL) {
 		    n = NULL;
 	    } else {
@@ -589,7 +601,7 @@ void reply_name_query(struct packet_struct *p)
     /* do we want to do dns lookups? */
     if (success && !n && (lp_dns_proxy() || !bcast)) {
 	    BOOL dns_type = (name_type == 0x20 || name_type == 0);
-	    if (dns_type && wins_subnet) {
+	    if (dns_type && wins_client_subnet) {
 		    /* add it to the dns name query queue */
 		    if (queue_dns_query(p, question, &n))
 			    return;

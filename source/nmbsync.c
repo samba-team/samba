@@ -147,7 +147,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 
   if (!d || !work ) return;
 
-  if(d != wins_subnet) {
+  if(d != wins_client_subnet) {
       DEBUG(0,
         ("sync_browse_lists: ERROR sync requested on non-WINS subnet.\n"));
       return;

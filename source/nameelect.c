@@ -207,7 +207,7 @@ void name_unregister_work(struct subnet_record *d, char *name, int name_type)
     int remove_type_domain = 0;
     int remove_type_logon  = 0;
 
-    remove_netbios_name(d,name,name_type,SELF,ipzero);
+    remove_netbios_name(d,name,name_type,SELF);
 
     if (!(work = find_workgroupstruct(d, name, False))) return;
 
@@ -254,7 +254,8 @@ void name_register_work(struct subnet_record *d, char *name, int name_type,
       struct work_record *work = find_workgroupstruct(d, 
                                   myworkgroup, False);
 
-      add_netbios_entry(d,name,name_type,nb_flags,ttl,source,ip,True,!bcast);
+      struct subnet_record *add_subnet = (!bcast) ? wins_client_subnet : d;
+      add_netbios_entry(add_subnet,name,name_type,nb_flags,ttl,source,ip,True);
 
       if (work)
       {
@@ -488,7 +489,7 @@ void become_domain_master(struct subnet_record *d, struct work_record *work)
 			DEBUG(0,("Samba is now a domain master browser for workgroup %s on subnet %s\n", 
 			work->work_group, inet_ntoa(d->bcast_ip)));
 
-			if (d == wins_subnet)
+			if (d == wins_client_subnet)
 			{
 				/* ok! we successfully registered by unicast with the
 				   WINS server.  we now expect to become the domain
@@ -642,8 +643,8 @@ void unbecome_domain_master(struct subnet_record *d, struct work_record *work,
     }
 
     /* Unregister the 1b name from the WINS server. */
-    if(wins_subnet != NULL)
-      remove_name_entry(wins_subnet, myworkgroup, 0x1b);
+    if(wins_client_subnet != NULL)
+      remove_name_entry(wins_client_subnet, myworkgroup, 0x1b);
   }
 }
 
