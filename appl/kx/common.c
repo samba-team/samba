@@ -50,6 +50,12 @@ int xauthfile_size = sizeof(xauthfile);
 u_char cookie[16];
 size_t cookie_len = sizeof(cookie);
 
+/*
+ * Copy data from `fd1' to `fd2', {en,de}crypting with cfb64
+ * with `mode' and state stored in `iv', `schedule', and `num'.
+ * Return -1 if error, 0 if eof, else 1
+ */
+
 static int
 do_enccopy (int fd1, int fd2, int mode, des_cblock *iv,
 	    des_key_schedule schedule, int *num)
@@ -82,8 +88,8 @@ do_enccopy (int fd1, int fd2, int mode, des_cblock *iv,
  */
 
 int
-copy_encrypted (int fd1, int fd2, des_cblock *iv,
-		des_key_schedule schedule)
+copy_encrypted (int fd1, int fd2,
+		des_cblock *iv, des_key_schedule schedule)
 {
      des_cblock iv1, iv2;
      int num1 = 0, num2 = 0;
@@ -223,6 +229,14 @@ try_pipe (struct x_socket *s, int dpy, const char *pattern)
 }
 #endif /* MAY_HAVE_X11_PIPES */
 
+/*
+ * Try to create a TCP socket in `s' corresponding to display `dpy'.
+ *
+ * 0 if all is OK
+ * -1 if bind failed badly
+ * 1 if dpy is already used
+ */
+
 static int
 try_tcp (struct x_socket *s, int dpy)
 {
@@ -279,6 +293,10 @@ NULL
 };
 #endif
 
+/*
+ * Create the directory corresponding to `path' or fail.
+ */
+
 static void
 try_mkdir (const char *path)
 {
@@ -297,6 +315,14 @@ try_mkdir (const char *path)
     umask (oldmask);
     free (dir);
 }
+
+/*
+ * Allocate a display, returning the number of sockets in `number' and
+ * all the corresponding sockets in `sockets'.  If `tcp_socket' is
+ * true, also allcoaet a TCP socket.
+ *
+ * The return value is the display allocated or -1 if an error occurred.
+ */
 
 int
 get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
@@ -382,7 +408,8 @@ get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
 }
 
 /*
- *
+ * Change owner on the `n' sockets in `sockets' to `uid', `gid'.
+ * Return 0 is succesful or -1 if an error occurred.
  */
 
 int
@@ -398,7 +425,8 @@ chown_xsockets (int n, struct x_socket *sockets, uid_t uid, gid_t gid)
 }
 
 /*
- *
+ * Connect to local display `dnr' with local transport.
+ * Return a file descriptor.
  */
 
 int
@@ -421,11 +449,18 @@ connect_local_xsocket (unsigned dnr)
      err (1, "connecting to local display %u", dnr);
 }
 
+/*
+ * Create a cookie file with a random cookie for the localhost.  The
+ * file name will be stored in `xauthfile' (but not larger than
+ * `xauthfile_size'), and the cookie returned in `cookie', `cookie_sz'.
+ * Return 0 if succesful, or errno.
+ */
+
 int
 create_and_write_cookie (char *xauthfile,
-			 size_t size,
+			 size_t xauthfile_size,
 			 u_char *cookie,
-			 size_t sz)
+			 size_t cookie_sz)
 {
      Xauth auth;
      char tmp[64];
@@ -433,7 +468,7 @@ create_and_write_cookie (char *xauthfile,
      FILE *f;
      char hostname[MaxHostNameLen];
      struct in_addr loopback;
-     struct hostent *h;
+     int saved_errno;
 
      gethostname (hostname, sizeof(hostname));
      loopback.s_addr = htonl(INADDR_LOOPBACK);
@@ -446,30 +481,27 @@ create_and_write_cookie (char *xauthfile,
      auth.number = tmp;
      auth.name = COOKIE_TYPE;
      auth.name_length = strlen(auth.name);
-     auth.data_length = sz;
+     auth.data_length = cookie_sz;
      auth.data = (char*)cookie;
-     des_rand_data (cookie, sz);
+     des_rand_data (cookie, cookie_sz);
 
-     strcpy_truncate(xauthfile, "/tmp/AXXXXXX", size);
+     strcpy_truncate(xauthfile, "/tmp/AXXXXXX", xauthfile_size);
      fd = mkstemp(xauthfile);
      if(fd < 0) {
+	 saved_errno = errno;
 	 syslog(LOG_ERR, "create_and_write_cookie: mkstemp: %m");
-         return 1;
+         return saved_errno;
      }
      f = fdopen(fd, "r+");
      if(f == NULL){
+	 saved_errno = errno;
 	 close(fd);
-	 return 1;
+	 return errno;
      }
      if(XauWriteAuth(f, &auth) == 0) {
-	  fclose(f);
-	  return 1;
-     }
-
-     h = gethostbyname (hostname);
-     if (h == NULL) {
-	  fclose (f);
-	  return 1;
+	 saved_errno = errno;
+	 fclose(f);
+	 return saved_errno;
      }
 
      /*
@@ -487,12 +519,13 @@ create_and_write_cookie (char *xauthfile,
 #endif
 
      if (XauWriteAuth(f, &auth) == 0) {
-	  fclose (f);
-	  return 1;
+	 saved_errno = errno;
+	 fclose (f);
+	 return saved_errno;
      }
 
      if(fclose(f))
-	  return 1;
+	 return errno;
      return 0;
 }
 
