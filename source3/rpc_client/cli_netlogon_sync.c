@@ -62,7 +62,7 @@ BOOL synchronise_passdb(void)
 		return False;
 	}
 
-	ret = do_sam_sync(&cli, trust_passwd, global_myname,
+	ret = do_sam_sync(&cli, trust_passwd, cli.mach_acct, global_myname,
 	                  hdr_deltas, deltas, &num);
 
 	if (ret)

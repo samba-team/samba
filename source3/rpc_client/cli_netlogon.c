@@ -490,7 +490,12 @@ password ?).\n", cli->desthost ));
 /***************************************************************************
 Synchronise SAM Database (requires SEC_CHAN_BDC).
 ****************************************************************************/
-BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id, uint32 *num_deltas, SAM_DELTA_HDR *hdr_deltas, SAM_DELTA_CTR *deltas)
+BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum,
+				const char* srv_name,
+				uint32 database_id,
+				uint32 *num_deltas,
+				SAM_DELTA_HDR *hdr_deltas,
+				SAM_DELTA_CTR *deltas)
 {
 	NET_Q_SAM_SYNC q_s;
 	prs_struct rbuf;
@@ -505,7 +510,7 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 	
 	/* create and send a MSRPC command with api NET_SAM_SYNC */
 	
-	make_q_sam_sync(&q_s, cli->srv_name_slash, global_myname,
+	make_q_sam_sync(&q_s, cli->srv_name_slash, srv_name,
 			&new_clnt_cred, database_id);
 	
 	/* turn parameters into data stream */
@@ -556,6 +561,7 @@ BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 databas
 
 
 BOOL do_sam_sync(struct cli_state *cli, uchar trust_passwd[16],
+				const char* acct_name,
 				const char* srv_name,
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
 				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],
@@ -573,12 +579,13 @@ BOOL do_sam_sync(struct cli_state *cli, uchar trust_passwd[16],
 	res = res ? cli_nt_session_open(cli, PIPE_NETLOGON, &nt_pipe_fnum) : False;
 
 	res = res ? cli_nt_setup_creds(cli, nt_pipe_fnum, 
-	                               cli->mach_acct, srv_name,
+	                               acct_name, srv_name,
 	                               trust_passwd, SEC_CHAN_BDC) == 0x0 : False;
 
 	memset(trust_passwd, 0, 16);
 
-	res = res ? cli_net_sam_sync(cli, nt_pipe_fnum, 0, num_deltas, hdr_deltas, deltas) : False;
+	res = res ? cli_net_sam_sync(cli, nt_pipe_fnum, srv_name,
+	                             0, num_deltas, hdr_deltas, deltas) : False;
 
 	/* close the session */
 	cli_nt_session_close(cli, nt_pipe_fnum);

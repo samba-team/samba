@@ -1280,8 +1280,9 @@ static void req_alias_info(struct client_info *info, uint16 fnum,
 	ptr_sid = (uint32*)  malloc(sizeof(ptr_sid[0]) * 1);
 	als_sid = (DOM_SID2*)malloc(sizeof(als_sid[0]) * 1);
 
-	make_dom_sid2(&als_sid[0], sid1);
+        sid_copy(&als_sid[0].sid, sid1);
 	sid_append_rid(&als_sid[0].sid, user_rid);
+	als_sid[0].num_auths = als_sid[0].sid.num_auths;
 
 	ptr_sid[0] = 1;
 
@@ -1365,6 +1366,7 @@ int msrpc_sam_enum_users(struct client_info *info,
 	uint32 user_idx;
 	BOOL res = True;
 	BOOL res1 = True;
+	BOOL res2 = True;
 	uint32 start_idx = 0x0;
 	uint16 unk_0 = 0x0;
 	uint16 acb_mask = 0;
@@ -1412,39 +1414,37 @@ int msrpc_sam_enum_users(struct client_info *info,
 	            &info->dom.samr_pol_connect, ace_perms, &sid1,
 	            &info->dom.samr_pol_open_domain) : False;
 
-#if 0
 	/* connect to the S-1-5-20 domain */
-	res1 = res ? samr_open_domain(smb_cli, fnum, 
+	res2 = res ? samr_open_domain(smb_cli, fnum, 
 	            &info->dom.samr_pol_connect, ace_perms, &sid_1_5_20,
 	            &info->dom.samr_pol_open_builtindom) : False;
-#endif
-
-	/* read some users */
-	while (res1 && status == STATUS_MORE_ENTRIES)
-	{
-		status = samr_enum_dom_users(smb_cli, fnum, 
-	             &info->dom.samr_pol_open_domain,
-	             &start_idx, acb_mask, unk_1, 0x01,
-	             &info->dom.sam, &info->dom.num_sam_entries);
-	}
-			
-
-	if (res1 && info->dom.num_sam_entries == 0)
-	{
-		report(out_hnd, "No users\n");
-	}
 
 	if (res1)
 	{
+		/* read some users */
+		while (status == STATUS_MORE_ENTRIES)
+		{
+			status = samr_enum_dom_users(smb_cli, fnum, 
+			     &info->dom.samr_pol_open_domain,
+			     &start_idx, acb_mask, unk_1, 0x01,
+			     &info->dom.sam, &info->dom.num_sam_entries);
+		}
+				
+
+		if (info->dom.num_sam_entries == 0)
+		{
+			report(out_hnd, "No users\n");
+		}
+
 		/* query all the users */
 		for (user_idx = 0; res && user_idx <
-		              info->dom.num_sam_entries; user_idx++)
+			      info->dom.num_sam_entries; user_idx++)
 		{
 			uint32 user_rid = info->dom.sam[user_idx].rid;
 
 			report(out_hnd, "User RID: %8x  User Name: %s\n",
-			        user_rid,
-			        info->dom.sam[user_idx].acct_name);
+				user_rid,
+				info->dom.sam[user_idx].acct_name);
 
 			if (request_group_info)
 			{
@@ -1463,12 +1463,10 @@ int msrpc_sam_enum_users(struct client_info *info,
 		}
 	}
 
-#if 0
-	res1 = res1 ? samr_close(smb_cli, fnum,
+	res2 = res2 ? samr_close(smb_cli, fnum,
 	            &info->dom.samr_pol_open_builtindom) : False;
-#endif
 
-	res = res ? samr_close(smb_cli, fnum,
+	res1 = res1 ? samr_close(smb_cli, fnum,
 	            &info->dom.samr_pol_open_domain) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
