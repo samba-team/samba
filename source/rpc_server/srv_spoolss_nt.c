@@ -5634,7 +5634,7 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
-			printer->info_2->location, driverlocation, remote_machine);
+			printer->info_2->location, printer->info_2->comment, remote_machine);
 
 	/* Convert script args to unix-codepage */
 	dos_to_unix(command);
