@@ -749,7 +749,11 @@ int main(int argc, char ** argv)
 
 	if((getuid() != 0) && (geteuid() == 0)) {
 		if((statbuf.st_uid == getuid()) && (S_IRWXU == (statbuf.st_mode & S_IRWXU))) {
-			printf("setuid mount allowed\n");
+#ifndef CIFS_ALLOW_USR_SUID
+			/* Do not allow user mounts to control suid flag
+			for mount unless explicitly built that way */
+			flags |= MS_NOSUID;
+#endif						
 		} else {
 			printf("mount error: permission denied or not superuser and cifs.mount not installed SUID\n"); 
 			return -1;
