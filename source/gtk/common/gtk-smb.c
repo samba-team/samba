@@ -307,7 +307,7 @@ struct dcerpc_binding *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d
 {
 	struct dcerpc_binding *binding = talloc_p(mem_ctx, struct dcerpc_binding);
 
-	binding->object = NULL;
+	ZERO_STRUCT(binding->object);
 
 	/* Format: TRANSPORT:host[\pipe\foo,foo,foo] */
 

@@ -61,6 +61,11 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 	if (fork() == 0) {
 		void *msg_ctx2 = messaging_init(mem_ctx, 1, ev);
+	
+		if (!msg_ctx2) {
+			exit(1);
+		}
+		
 		messaging_register(msg_ctx2, NULL, MY_PING, ping_message);
 		messaging_register(msg_ctx2, mem_ctx, MY_EXIT, exit_message);
 		event_loop_wait(ev);
@@ -70,6 +75,11 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	sleep(2);
 
 	msg_ctx = messaging_init(mem_ctx, 2, ev);
+
+	if (!msg_ctx) {
+		printf("messaging_init() failed\n");
+		return False;
+	}
 
 	messaging_register(msg_ctx, &pong_count, MY_PONG, pong_message);
 
