@@ -173,6 +173,27 @@ static ADS_STATUS sam_ads_do_search(struct sam_ads_privates *private, const char
 	return ads_do_search_retry(private->ads_struct, bind_path, scope, exp, attrs, res);		
 }
 
+
+/*********************************************
+here we have to check the update serial number
+ - this is the core of the ldap cache
+*********************************************/
+static ADS_STATUS sam_ads_usn_is_valid(ADS_STRUCT *ads_struct, uint32 usn_in, uint32 *usn_out)
+{
+	ADS_STATUS	ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+
+	SAM_ASSERT(ads_struct && usn_out);
+
+	ads_status = ads_USN(ads_struct, usn_out);
+	if (!ADS_ERR_OK(ads_status))
+		return ads_status;	
+	
+	if (*usn_out == usn_in)
+		return ADS_SUCCESS;
+		
+	return ads_status;	
+}
+
 /***********************************************
 Initialize SAM_ACCOUNT_HANDLE from an ADS query
 ************************************************/
@@ -290,14 +311,116 @@ static ADS_STATUS sam_ads_get_tree_sec_desc(const SAM_METHODS *sam_method, const
 
 static ADS_STATUS sam_ads_account_policy_get(const SAM_METHODS *sam_method, int field, uint32 *value)
 {
-	ADS_STATUS	ads_status = ADS_ERROR_NT(NT_STATUS_NOT_IMPLEMENTED);
-	DEBUG(0,("sam_ads: %s needs to be done! %s\n",__FUNCTION__,ads_errstr(ads_status)));
+	ADS_STATUS		ads_status = ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	struct sam_ads_privates *privates = (struct sam_ads_privates *)sam_method->private_data;
+	ADS_STRUCT		*ads_struct = privates->ads_struct;
+	void			*ap_res;
+	void			*ap_msg;
+	const char		*ap_attrs[] = {"minPwdLength","pwdHistoryLength",
+						/*"mustLogonToChangePass",*/"lockoutDuration"
+						"maxPwdAge","minPwdAge",NULL};
+						/*lockOutObservationWindow 
+						lockoutThreshold $ pwdProperties*/
+	static uint32		ap[9];
+	static uint32		ap_usn = 0;
+	uint32			tmp_usn = 0;
 
 	SAM_ASSERT(sam_method && value);
 	
-	/* Fix Me */
+	ads_status = sam_ads_usn_is_valid(ads_struct,ap_usn,&tmp_usn);
+	if (!ADS_ERR_OK(ads_status)) {
+		ads_status = sam_ads_do_search(privates, ads_struct->config.bind_path, LDAP_SCOPE_BASE, "(objectClass=*)", ap_attrs, &ap_res);
+		if (!ADS_ERR_OK(ads_status))
+			return ads_status; 
+		
+		if (ads_count_replies(ads_struct, ap_res) != 1) {
+			ads_msgfree(ads_struct, ap_res);
+			return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+		}
+
+		if (!(ap_msg = ads_first_entry(ads_struct, ap_res))) {
+			ads_msgfree(ads_struct, ap_res);
+			return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+		}
+		
+		if (!ads_pull_uint32(ads_struct, ap_msg, ap_attrs[0], &ap[0])) {
+			/* AP_MIN_PASSWORD_LEN */
+			ap[0] = MINPASSWDLENGTH;/* 5 chars minimum */
+		}
+		if (!ads_pull_uint32(ads_struct, ap_msg, ap_attrs[1], &ap[1])) {
+			/* AP_PASSWORD_HISTORY */
+			ap[1] = 0;/* don't keep any old password */
+		}
+		if (!ads_pull_uint32(ads_struct, ap_msg, ap_attrs[2], &ap[2])) {
+			/* AP_USER_MUST_LOGON_TO_CHG_PASS */
+			ap[2] = 0;/* don't force user to logon */
+		}
+		if (!ads_pull_uint32(ads_struct, ap_msg, ap_attrs[3], &ap[3])) {
+			/* AP_MAX_PASSWORD_AGE */
+			ap[3] = MAX_PASSWORD_AGE;/* 21 days */
+		}
+		if (!ads_pull_uint32(ads_struct, ap_msg, ap_attrs[4], &ap[4])) {
+			/* AP_MIN_PASSWORD_AGE */
+			ap[4] = 0;/* 0 days */
+		}		
+		if (!ads_pull_uint32(ads_struct, ap_msg, ap_attrs[5], &ap[5])) {
+			/* AP_LOCK_ACCOUNT_DURATION */
+			ap[5] = 0;/* lockout for 0 minutes */
+		}
+		if (!ads_pull_uint32(ads_struct, ap_msg, ap_attrs[6], &ap[6])) {
+			/* AP_RESET_COUNT_TIME */
+			ap[6] = 0;/* reset immediatly */
+		}
+		if (!ads_pull_uint32(ads_struct, ap_msg, ap_attrs[7], &ap[7])) {
+			/* AP_BAD_ATTEMPT_LOCKOUT */
+			ap[7] = 0;/* don't lockout */
+		}
+		if (!ads_pull_uint32(ads_struct, ap_msg, ap_attrs[8], &ap[8])) {
+			/* AP_TIME_TO_LOGOUT */
+			ap[8] = -1;/* don't force logout */
+		}
+		
+		ads_msgfree(ads_struct, ap_res);
+		ap_usn = tmp_usn;
+	}
+
 	switch(field) {
-		/* Fix Me */
+		case AP_MIN_PASSWORD_LEN:
+			*value = ap[0];
+			ads_status = ADS_ERROR_NT(NT_STATUS_OK);
+			break;
+		case AP_PASSWORD_HISTORY:
+			*value = ap[1];
+			ads_status = ADS_ERROR_NT(NT_STATUS_OK);
+			break;
+		case AP_USER_MUST_LOGON_TO_CHG_PASS:
+			*value = ap[2];
+			ads_status = ADS_ERROR_NT(NT_STATUS_OK);
+			break;
+		case AP_MAX_PASSWORD_AGE:
+			*value = ap[3];
+			ads_status = ADS_ERROR_NT(NT_STATUS_OK);
+			break;
+		case AP_MIN_PASSWORD_AGE:
+			*value = ap[4];
+			ads_status = ADS_ERROR_NT(NT_STATUS_OK);
+			break;
+		case AP_LOCK_ACCOUNT_DURATION:
+			*value = ap[5];
+			ads_status = ADS_ERROR_NT(NT_STATUS_OK);
+			break;
+		case AP_RESET_COUNT_TIME:
+			*value = ap[6];
+			ads_status = ADS_ERROR_NT(NT_STATUS_OK);
+			break;
+		case AP_BAD_ATTEMPT_LOCKOUT:
+			*value = ap[7];
+			ads_status = ADS_ERROR_NT(NT_STATUS_OK);
+			break;
+		case AP_TIME_TO_LOGOUT:
+			*value = ap[8];
+			ads_status = ADS_ERROR_NT(NT_STATUS_OK);
+			break;
 		default: *value = 0; break;
 	}
 	
@@ -351,24 +474,10 @@ static NTSTATUS sam_ads_get_sec_desc(const SAM_METHODS *sam_method, const NT_USE
 		return ads_ntstatus(ads_status);
 	}
 
-	sec_desc_msg  = ads_first_entry(ads_struct, sec_desc_res);
-
 	if (!(mem_ctx = talloc_init_named("sec_desc parse in sam_ads"))) {
 		DEBUG(1, ("talloc_init_named() failed for sec_desc parse context in sam_ads"));
 		ads_msgfree(ads_struct, sec_desc_res);
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!ads_pull_sd(ads_struct, mem_ctx, sec_desc_msg, sec_desc_attrs[0], sd)) {
-		talloc_destroy(mem_ctx);
-		ads_msgfree(ads_struct, sec_desc_res);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!ADS_ERR_OK(ads_status)) {
-		talloc_destroy(mem_ctx);
-		ads_msgfree(ads_struct, sec_desc_res);
-		return ads_ntstatus(ads_status);
 	}
 
 	if (ads_count_replies(ads_struct, sec_desc_res) != 1) {
@@ -413,11 +522,20 @@ static NTSTATUS sam_ads_lookup_sid(const SAM_METHODS *sam_method, const NT_USER_
 			    TALLOC_CTX *mem_ctx, const DOM_SID *sid, char **name, 
 			    enum SID_NAME_USE *type)
 {
+	ADS_STATUS		ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	struct sam_ads_privates *privates = (struct sam_ads_privates *)sam_method->private_data;
 	ADS_STRUCT 		*ads_struct = privates->ads_struct;
-	SAM_ASSERT(sam_method);
+	SEC_DESC		*my_sd;
 
-	/* Ignoring access_token for now */
+	SAM_ASSERT(sam_method && access_token && mem_ctx && sid && name && type);
+
+	ads_status = sam_ads_get_tree_sec_desc(sam_method, ADS_ROOT_TREE, &my_sd);
+	if (!ADS_ERR_OK(ads_status))
+		return ads_ntstatus(ads_status);
+
+	ads_status = sam_ads_access_check(sam_method, my_sd, access_token, DOMAIN_READ);
+	if (!ADS_ERR_OK(ads_status))
+		return ads_ntstatus(ads_status);
 
 	return ads_sid_to_name(ads_struct, mem_ctx, sid, name, type);
 }
@@ -425,11 +543,20 @@ static NTSTATUS sam_ads_lookup_sid(const SAM_METHODS *sam_method, const NT_USER_
 static NTSTATUS sam_ads_lookup_name(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, 
 			     const char *name, DOM_SID *sid, enum SID_NAME_USE *type)
 {
+	ADS_STATUS		ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	struct sam_ads_privates *privates = (struct sam_ads_privates *)sam_method->private_data;
 	ADS_STRUCT 		*ads_struct = privates->ads_struct;
-	SAM_ASSERT(sam_method);
+	SEC_DESC		*my_sd;
 
-	/* Ignoring access_token for now */
+	SAM_ASSERT(sam_method && access_token && name && sid && type);
+
+	ads_status = sam_ads_get_tree_sec_desc(sam_method, ADS_ROOT_TREE, &my_sd);
+	if (!ADS_ERR_OK(ads_status))
+		return ads_ntstatus(ads_status);
+
+	ads_status = sam_ads_access_check(sam_method, my_sd, access_token, DOMAIN_READ);
+	if (!ADS_ERR_OK(ads_status))
+		return ads_ntstatus(ads_status);
 
 	return ads_name_to_sid(ads_struct, name, sid, type);
 }
@@ -458,7 +585,7 @@ static NTSTATUS sam_ads_get_domain_handle(const SAM_METHODS *sam_method, const N
 
 	DEBUG(5,("sam_ads_get_domain_handle: %d\n",__LINE__));
 	
-	SAM_ASSERT(sam_method && domain);
+	SAM_ASSERT(sam_method && access_token && domain);
 	
 	(*domain) = NULL;
 
@@ -572,7 +699,6 @@ static NTSTATUS sam_ads_create_account(const SAM_METHODS *sam_method,
 				const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
 {
 	ADS_STATUS		ads_status = ADS_STATUS_NOT_IMPLEMENTED;
-	struct sam_ads_privates *privates = (struct sam_ads_privates *)sam_method->private_data;
 	SEC_DESC		*sd = NULL;
 
 	SAM_ASSERT(sam_method && access_token && account_name && account);
@@ -967,7 +1093,6 @@ Init the ADS SAM backend
 NTSTATUS sam_init_ads(SAM_METHODS *sam_method, const char *module_params)
 {
 	ADS_STATUS              ads_status;
-	NTSTATUS 		nt_status;
 	struct sam_ads_privates *sam_ads_state;
 	TALLOC_CTX 		*mem_ctx;
 	
