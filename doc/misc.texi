@@ -37,7 +37,7 @@ says that people with `admin' instances should be given `enabled' shells
 when logging in.
 
 The numbers after the principal on the `srvtab' line are principal type,
-timestamp (in seconds since 1970), key version number (4), keytype (1 ==
+time stamp (in seconds since 1970), key version number (4), keytype (1 ==
 des), key length (always 8 with des), and then the key.
 
 To make the Heimdal KDC produce tickets that the Cisco can decode you
@@ -94,9 +94,9 @@ encryption types.
 Its only possible (in all cases) to do this for DES encryption types because
 only then the token (the AFS equivalent of a ticket) will be be smaller
 than the maximum size that can fit in the token cache in
-openafs/transarc client. Its so tight fit that some extra wrapping on the ASN1/DER encoding is removed from the Kerberos ticket.
+OpenAFS/Transarc client. Its so tight fit that some extra wrapping on the ASN1/DER encoding is removed from the Kerberos ticket.
 
-2b uses a Kerberos 5 EncTicketPart instead of a Kerberos 4 dito for
+2b uses a Kerberos 5 EncTicketPart instead of a Kerberos 4 ditto for
 the part of the ticket that is encrypted with the service's key. The
 client doesn't know what's inside the encrypted data so to the client it doesn't matter.
 
@@ -117,3 +117,8 @@ them to the string list option @code{[kdc]use_2b} in the kdc's
 	use_2b = afs@@SU.SE
 	use_2b = afs/it.su.se@@SU.SE
 @end example
+
+@subsection Configuring AFS clients
+
+There is no need to configure AFS clients. The only software that
+needs to be installed/upgrade is a Kerberos 5 enabled file{afslog}.
