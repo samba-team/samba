@@ -700,6 +700,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   int   smb_ntpasslen = 0;   
   pstring smb_ntpasswd;
   BOOL valid_nt_password = False;
+  BOOL valid_lm_password = False;
   pstring user;
   pstring orig_user;
   BOOL guest=False;
@@ -935,15 +936,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
    * security=domain.
    */
 
-  if (!guest && 
-			  !check_server_security(orig_user, domain, user,
-									 smb_apasswd, smb_apasslen,
-									 smb_ntpasswd, smb_ntpasslen) &&
-			  !check_domain_security(orig_user, domain, user,
-                             smb_apasswd, smb_apasslen,
-                             smb_ntpasswd, smb_ntpasslen) &&
-      !check_hosts_equiv(user)
-     )
+  if (!guest && !check_server_security(orig_user, domain, user, 
+         smb_apasswd, smb_apasslen, smb_ntpasswd, smb_ntpasslen) &&
+      !check_domain_security(orig_user, domain, user, smb_apasswd,
+         smb_apasslen, smb_ntpasswd, smb_ntpasslen) &&
+      !check_hosts_equiv(user))
   {
 
     /* 
@@ -959,12 +956,26 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     if(smb_ntpasslen)
     {
       if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL))
-        DEBUG(2,("NT Password did not match for user '%s' ! Defaulting to Lanman\n", user));
+        DEBUG(2,("NT Password did not match for user '%s'!\n", user));
       else
         valid_nt_password = True;
     } 
+    
+    
+    /* check the LanMan password only if necessary and if allowed 
+       by lp_lanman_auth() */
+    if (!valid_nt_password && lp_lanman_auth())
+    {
+      DEBUG(2,("Defaulting to Lanman password for %s\n", user));
+      valid_lm_password = password_ok(user, smb_apasswd,smb_apasslen,NULL);
+    }
+      
 
-    if (!valid_nt_password && !password_ok(user, smb_apasswd,smb_apasslen,NULL))
+    /* The true branch will be executed if 
+       (1) the NT password failed (or was not tried), and 
+       (2) LanMan authentication failed (or was disabled) 
+     */
+    if (!valid_nt_password && !valid_lm_password)
     {
       if (lp_security() >= SEC_USER) 
       {
