@@ -30,10 +30,9 @@
 extern int DEBUGLEVEL;
 
 #if 0
-static BOOL tdb_lookup_user_als(TDB_CONTEXT *tdb,
-				const DOM_SID *sid,
-				uint32 *num_rids,
-				uint32 **rids)
+static BOOL tdb_lookup_user_als(TDB_CONTEXT * tdb,
+				const DOM_SID * sid,
+				uint32 * num_rids, uint32 ** rids)
 {
 	prs_struct key;
 	prs_struct data;
@@ -61,10 +60,9 @@ static BOOL tdb_lookup_user_als(TDB_CONTEXT *tdb,
 	return True;
 }
 
-static BOOL tdb_lookup_user_grps(TDB_CONTEXT *tdb,
-				uint32 rid,
-				uint32 *num_gids,
-				DOM_GID **gids)
+static BOOL tdb_lookup_user_grps(TDB_CONTEXT * tdb,
+				 uint32 rid,
+				 uint32 * num_gids, DOM_GID ** gids)
 {
 	prs_struct key;
 	prs_struct data;
@@ -91,7 +89,7 @@ static BOOL tdb_lookup_user_grps(TDB_CONTEXT *tdb,
 }
 
 #endif
-BOOL tdb_lookup_user(TDB_CONTEXT *tdb, SAM_USER_INFO_21 *usr)
+BOOL tdb_lookup_user(TDB_CONTEXT * tdb, SAM_USER_INFO_21 * usr)
 {
 	prs_struct key;
 	prs_struct data;
@@ -119,21 +117,20 @@ BOOL tdb_lookup_user(TDB_CONTEXT *tdb, SAM_USER_INFO_21 *usr)
 }
 
 #if 0
-static BOOL tdb_store_user_grps(TDB_CONTEXT *tdb,
-				uint32 rid, uint32 num_gids,
-				DOM_GID *gids)
+static BOOL tdb_store_user_grps(TDB_CONTEXT * tdb,
+				uint32 rid, uint32 num_gids, DOM_GID * gids)
 {
 	prs_struct key;
 	prs_struct data;
 
-	DEBUG(10,("storing user group GIDs %x\n", rid));
+	DEBUG(10, ("storing user group GIDs %x\n", rid));
 
 	prs_init(&key, 0, 4, False);
 	prs_init(&data, 0, 4, False);
 
 	if (!_prs_uint32("rid", &key, 0, &rid) ||
 	    !samr_io_gids("grps", &num_gids, &gids, &data, 0) ||
-	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
+	    prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
 	{
 		prs_free_data(&key);
 		prs_free_data(&data);
@@ -145,10 +142,9 @@ static BOOL tdb_store_user_grps(TDB_CONTEXT *tdb,
 	return True;
 }
 
-static BOOL tdb_store_user_als(TDB_CONTEXT *tdb,
-				const DOM_SID *sid,
-				uint32 num_rids,
-				uint32 *rids)
+static BOOL tdb_store_user_als(TDB_CONTEXT * tdb,
+			       const DOM_SID * sid,
+			       uint32 num_rids, uint32 * rids)
 {
 	prs_struct key;
 	prs_struct data;
@@ -158,8 +154,8 @@ static BOOL tdb_store_user_als(TDB_CONTEXT *tdb,
 
 	if (DEBUGLVL(10))
 	{
-		DEBUG(10,("storing user alias RIDs %s\n",
-		            sid_to_string(tmp, sid)));
+		DEBUG(10, ("storing user alias RIDs %s\n",
+			   sid_to_string(tmp, sid)));
 	}
 
 	prs_init(&key, 0, 4, False);
@@ -167,7 +163,7 @@ static BOOL tdb_store_user_als(TDB_CONTEXT *tdb,
 
 	if (!smb_io_dom_sid("sid", &s, &key, 0) ||
 	    !samr_io_rids("rids", &num_rids, &rids, &data, 0) ||
-	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
+	    prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
 	{
 		prs_free_data(&key);
 		prs_free_data(&data);
@@ -181,7 +177,7 @@ static BOOL tdb_store_user_als(TDB_CONTEXT *tdb,
 
 #endif
 
-static BOOL tdb_store_user(TDB_CONTEXT *tdb, SAM_USER_INFO_21 *usr)
+static BOOL tdb_store_user(TDB_CONTEXT * tdb, SAM_USER_INFO_21 * usr)
 {
 	prs_struct key;
 	prs_struct data;
@@ -192,7 +188,7 @@ static BOOL tdb_store_user(TDB_CONTEXT *tdb, SAM_USER_INFO_21 *usr)
 
 	if (!_prs_uint8("usr", &key, 0, &k) ||
 	    !sam_io_user_info21("usr", usr, &data, 0) ||
-	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
+	    prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
 	{
 		prs_free_data(&key);
 		prs_free_data(&data);
@@ -204,7 +200,7 @@ static BOOL tdb_store_user(TDB_CONTEXT *tdb, SAM_USER_INFO_21 *usr)
 	return True;
 }
 
-static BOOL tdb_set_userinfo_10(TDB_CONTEXT *tdb, uint16 acb_info)
+static BOOL tdb_set_userinfo_10(TDB_CONTEXT * tdb, uint16 acb_info)
 {
 	SAM_USER_INFO_21 usr;
 
@@ -231,14 +227,15 @@ static BOOL tdb_set_userinfo_10(TDB_CONTEXT *tdb, uint16 acb_info)
 	return True;
 }
 
-static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT *tdb, 
-				const uchar lm_pwd[16], const uchar nt_pwd[16])
+static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT * tdb,
+				  const uchar lm_pwd[16],
+				  const uchar nt_pwd[16])
 {
 	SAM_USER_INFO_21 usr;
 
 	if (tdb_writelock(tdb) != 0)
 	{
-		DEBUG(5,("tdb_set_userinfo_pwds: write lock failed\n"));
+		DEBUG(5, ("tdb_set_userinfo_pwds: write lock failed\n"));
 		return False;
 	}
 
@@ -261,9 +258,10 @@ static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT *tdb,
 	return True;
 }
 
-static BOOL tdb_set_userinfo_23(TDB_CONTEXT *tdb, 
-				const SAM_USER_INFO_23 *usr23,
-				const uchar lm_pwd[16], const uchar nt_pwd[16])
+static BOOL tdb_set_userinfo_23(TDB_CONTEXT * tdb,
+				const SAM_USER_INFO_23 * usr23,
+				const uchar lm_pwd[16],
+				const uchar nt_pwd[16])
 {
 	SAM_USER_INFO_21 usr;
 
@@ -279,35 +277,30 @@ static BOOL tdb_set_userinfo_23(TDB_CONTEXT *tdb,
 	}
 
 	if (!make_sam_user_info21W(&usr,
-				&usr23->logon_time, 
-				&usr23->logoff_time, 
-				&usr23->kickoff_time, 
-				&usr23->pass_last_set_time, 
-				&usr23->pass_can_change_time, 
-				&usr23->pass_must_change_time, 
-
-				&usr23->uni_user_name, 
-				&usr23->uni_full_name,
-				&usr23->uni_home_dir,
-				&usr23->uni_dir_drive,
-				&usr23->uni_logon_script,
-				&usr23->uni_profile_path,
-				&usr23->uni_acct_desc,
-				&usr23->uni_workstations,
-				&usr23->uni_unknown_str,
-				&usr23->uni_munged_dial,
-
-				lm_pwd, nt_pwd,
-
-				usr.user_rid, 
-				usr23->group_rid,
-				usr23->acb_info, 
-
-				usr.unknown_3,
-				usr23->logon_divs,
-				&usr23->logon_hrs,
-				usr23->unknown_5,
-				usr.unknown_6))
+				   &usr23->logon_time,
+				   &usr23->logoff_time,
+				   &usr23->kickoff_time,
+				   &usr23->pass_last_set_time,
+				   &usr23->pass_can_change_time,
+				   &usr23->pass_must_change_time,
+				   &usr23->uni_user_name,
+				   &usr23->uni_full_name,
+				   &usr23->uni_home_dir,
+				   &usr23->uni_dir_drive,
+				   &usr23->uni_logon_script,
+				   &usr23->uni_profile_path,
+				   &usr23->uni_acct_desc,
+				   &usr23->uni_workstations,
+				   &usr23->uni_unknown_str,
+				   &usr23->uni_munged_dial,
+				   lm_pwd, nt_pwd,
+				   usr.user_rid,
+				   usr23->group_rid,
+				   usr23->acb_info,
+				   usr.unknown_3,
+				   usr23->logon_divs,
+				   &usr23->logon_hrs,
+				   usr23->unknown_5, usr.unknown_6))
 	{
 		tdb_writeunlock(tdb);
 		return False;
@@ -327,15 +320,14 @@ static BOOL tdb_set_userinfo_23(TDB_CONTEXT *tdb,
  samr_reply_get_usrdom_pwinfo
  ********************************************************************/
 uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
-				uint32 *unknown_0,
-				uint32 *unknown_1)
+			       uint32 * unknown_0, uint32 * unknown_1)
 {
 	uint32 rid;
 	TDB_CONTEXT *tdb = NULL;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_tdbrid(get_global_hnd_cache(), user_pol, &tdb,
-	                                       NULL, NULL, &rid))
+			NULL, NULL, &rid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -343,7 +335,7 @@ uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 	*unknown_0 = 0x00150000;
 	*unknown_1 = 0x00000000;
 
-	DEBUG(5,("samr_get_usrdom_pwinfo: %d\n", __LINE__));
+	DEBUG(5, ("samr_get_usrdom_pwinfo: %d\n", __LINE__));
 
 	return NT_STATUS_NOPROBLEMO;
 }
@@ -352,8 +344,7 @@ uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
  samr_reply_query_usergroups
  ********************************************************************/
 uint32 _samr_query_usergroups(const POLICY_HND *pol,
-				uint32 *num_groups,
-				DOM_GID **gids)
+			      uint32 * num_groups, DOM_GID ** gids)
 {
 #if 0
 	uint32 rid;
@@ -363,7 +354,7 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 	(*gids) = NULL;
 	(*num_groups) = 0;
 
-	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
+	DEBUG(5, ("samr_query_usergroups: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_tdbsam(get_global_hnd_cache(), pol, &usr_tdb))
@@ -380,19 +371,20 @@ uint32 _samr_query_usergroups(const POLICY_HND *pol,
 
 	return NT_STATUS_NOPROBLEMO;
 }
+
 /*******************************************************************
  samr_reply_query_useraliases
  ********************************************************************/
 uint32 _samr_query_useraliases(const POLICY_HND *domain_pol,
-				const uint32 *ptr_sid, const DOM_SID2 *sid,
-				uint32 *num_aliases, uint32 **rid)
+			       const uint32 * ptr_sid, const DOM_SID2 * sid,
+			       uint32 * num_aliases, uint32 ** rid)
 {
 #if 0
 	TDB_CONTEXT *tdb = NULL;
 	DOM_SID dom_sid;
 #endif
 
-	DEBUG(5,("samr_query_useraliases: %d\n", __LINE__));
+	DEBUG(5, ("samr_query_useraliases: %d\n", __LINE__));
 
 	(*rid) = NULL;
 	(*num_aliases) = 0;
@@ -405,7 +397,7 @@ uint32 _samr_query_useraliases(const POLICY_HND *domain_pol,
 #if 0
 	/* find the policy handle.  open a policy on it. */
 	if (!get_tdbsam(get_global_hnd_cache(), domain_pol,
-	                     NULL, NULL, &tdb, NULL, NULL, &dom_sid))
+			NULL, NULL, &tdb, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -422,27 +414,26 @@ uint32 _samr_query_useraliases(const POLICY_HND *domain_pol,
  samr_reply_open_user
  ********************************************************************/
 uint32 _samr_open_user(const POLICY_HND *domain_pol,
-					uint32 access_mask, uint32 user_rid, 
-					POLICY_HND *user_pol)
+		       uint32 access_mask, uint32 user_rid,
+		       POLICY_HND *user_pol)
 {
 	DOM_SID dom_sid;
 
 	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
-					NULL, NULL, NULL,
-					NULL, NULL, &dom_sid))
+			   NULL, NULL, NULL, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	return samr_open_user_tdb(domain_pol, &dom_sid, NULL,
-	                           user_pol, access_mask, user_rid);
+				  user_pol, access_mask, user_rid);
 }
 
 /*******************************************************************
  samr_reply_query_userinfo
  ********************************************************************/
 uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR *ctr)
+			    SAM_USERINFO_CTR * ctr)
 {
 	TDB_CONTEXT *tdb_usr = NULL;
 	SAM_USER_INFO_21 usr;
@@ -457,7 +448,7 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	DEBUG(5,("samr_reply_query_userinfo\n"));
+	DEBUG(5, ("samr_reply_query_userinfo\n"));
 
 	return make_samr_userinfo_ctr_usr21(ctr, switch_value, &usr);
 }
@@ -465,8 +456,8 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 /*******************************************************************
  set_user_info_24
  ********************************************************************/
-static BOOL set_user_info_24(TDB_CONTEXT *usr_tdb, 
-				const SAM_USER_INFO_24 *id24)
+static BOOL set_user_info_24(TDB_CONTEXT * usr_tdb,
+			     const SAM_USER_INFO_24 * id24)
 {
 	static uchar nt_hash[16];
 	static uchar lm_hash[16];
@@ -489,8 +480,8 @@ static BOOL set_user_info_24(TDB_CONTEXT *usr_tdb,
 /*******************************************************************
  set_user_info_12
  ********************************************************************/
-static BOOL set_user_info_12(TDB_CONTEXT *usr_tdb, 
-				const SAM_USER_INFO_12 *id12)
+static BOOL set_user_info_12(TDB_CONTEXT * usr_tdb,
+			     const SAM_USER_INFO_12 * id12)
 {
 	return tdb_set_userinfo_pwds(usr_tdb, id12->lm_pwd, id12->nt_pwd);
 }
@@ -498,8 +489,8 @@ static BOOL set_user_info_12(TDB_CONTEXT *usr_tdb,
 /*******************************************************************
  set_user_info_23
  ********************************************************************/
-static BOOL set_user_info_23(TDB_CONTEXT *usr_tdb, 
-				const SAM_USER_INFO_23 *id23)
+static BOOL set_user_info_23(TDB_CONTEXT * usr_tdb,
+			     const SAM_USER_INFO_23 * id23)
 {
 	static uchar nt_hash[16];
 	static uchar lm_hash[16];
@@ -512,7 +503,7 @@ static BOOL set_user_info_23(TDB_CONTEXT *usr_tdb,
 		return False;
 	}
 
-	if (!decode_pw_buffer(id23->pass, (char*)new_pw.buffer, 256, &len))
+	if (!decode_pw_buffer(id23->pass, (char *)new_pw.buffer, 256, &len))
 	{
 		return False;
 	}
@@ -529,12 +520,12 @@ static BOOL set_user_info_23(TDB_CONTEXT *usr_tdb,
  samr_reply_set_userinfo
  ********************************************************************/
 uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR *ctr)
+			  SAM_USERINFO_CTR * ctr)
 {
 	TDB_CONTEXT *tdb_usr = NULL;
 	uchar user_sess_key[16];
 
-	DEBUG(5,("samr_reply_set_userinfo: %d\n", __LINE__));
+	DEBUG(5, ("samr_reply_set_userinfo: %d\n", __LINE__));
 
 	/* find the domain rid associated with the policy handle */
 	if (!get_tdbsam(get_global_hnd_cache(), pol, &tdb_usr))
@@ -549,7 +540,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 
 	if (ctr == NULL)
 	{
-		DEBUG(5,("samr_reply_set_userinfo: NULL info level\n"));
+		DEBUG(5, ("samr_reply_set_userinfo: NULL info level\n"));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -561,7 +552,8 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			SAM_USER_INFO_12 *id12 = ctr->info.id12;
 			if (!set_user_info_12(tdb_usr, id12))
 			{
-				DEBUG(10,("_samr_set_userinfo 0x12 failed\n"));
+				DEBUG(10,
+				      ("_samr_set_userinfo 0x12 failed\n"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			break;
@@ -573,7 +565,8 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			SamOEMhash(id24->pass, user_sess_key, True);
 			if (!set_user_info_24(tdb_usr, id24))
 			{
-				DEBUG(10,("_samr_set_userinfo 0x18 failed\n"));
+				DEBUG(10,
+				      ("_samr_set_userinfo 0x18 failed\n"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			break;
@@ -584,7 +577,7 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			SAM_USER_INFO_23 *id23 = ctr->info.id23;
 			SamOEMhash(id23->pass, user_sess_key, 1);
 			dump_data_pw("pass buff:\n",
-			              id23->pass, sizeof(id23->pass));
+				     id23->pass, sizeof(id23->pass));
 			dbgflush();
 
 			if (!set_user_info_23(tdb_usr, id23))
@@ -606,8 +599,8 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 /*******************************************************************
  set_user_info_10
  ********************************************************************/
-static BOOL set_user_info_10(TDB_CONTEXT *usr_tdb, 
-				const SAM_USER_INFO_10 *id16)
+static BOOL set_user_info_10(TDB_CONTEXT * usr_tdb,
+			     const SAM_USER_INFO_10 * id16)
 {
 	return tdb_set_userinfo_10(usr_tdb, id16->acb_info);
 }
@@ -616,7 +609,7 @@ static BOOL set_user_info_10(TDB_CONTEXT *usr_tdb,
  samr_reply_set_userinfo2
  ********************************************************************/
 uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR *ctr)
+			   SAM_USERINFO_CTR * ctr)
 {
 	TDB_CONTEXT *tdb_usr = NULL;
 
@@ -626,11 +619,11 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(5,("samr_reply_set_userinfo2\n"));
+	DEBUG(5, ("samr_reply_set_userinfo2\n"));
 
 	if (ctr == NULL)
 	{
-		DEBUG(5,("samr_reply_set_userinfo2: NULL info level\n"));
+		DEBUG(5, ("samr_reply_set_userinfo2: NULL info level\n"));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -657,8 +650,8 @@ uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 	return NT_STATUS_NOPROBLEMO;
 }
 
-static void create_user_info_21(SAM_USER_INFO_21 *usr,
-				const UNISTR2 *uni_user_name,
+static void create_user_info_21(SAM_USER_INFO_21 * usr,
+				const UNISTR2 * uni_user_name,
 				uint16 acb_info, uint32 user_rid,
 				uint32 group_rid)
 {
@@ -677,47 +670,47 @@ static void create_user_info_21(SAM_USER_INFO_21 *usr,
 	usr->user_rid = user_rid;
 	usr->group_rid = group_rid;
 
-	make_uni_hdr(&(usr->hdr_full_name   ), 0);
-	make_uni_hdr(&(usr->hdr_home_dir    ), 1);
-	make_uni_hdr(&(usr->hdr_dir_drive   ), 0);
+	make_uni_hdr(&(usr->hdr_full_name), 0);
+	make_uni_hdr(&(usr->hdr_home_dir), 1);
+	make_uni_hdr(&(usr->hdr_dir_drive), 0);
 	make_uni_hdr(&(usr->hdr_logon_script), 0);
 	make_uni_hdr(&(usr->hdr_profile_path), 1);
-	make_uni_hdr(&(usr->hdr_acct_desc   ), 0);
+	make_uni_hdr(&(usr->hdr_acct_desc), 0);
 	make_uni_hdr(&(usr->hdr_workstations), 0);
-	make_uni_hdr(&(usr->hdr_unknown_str ), 0);
-	make_uni_hdr(&(usr->hdr_munged_dial ), 0);
+	make_uni_hdr(&(usr->hdr_unknown_str), 0);
+	make_uni_hdr(&(usr->hdr_munged_dial), 0);
 
-	make_unistr2(&(usr->uni_user_name   ), "", 0);
-	make_unistr2(&(usr->uni_full_name   ), "", 0);
-	make_unistr2(&(usr->uni_home_dir    ), "", 1);
-	make_unistr2(&(usr->uni_dir_drive   ), "", 0);
+	make_unistr2(&(usr->uni_user_name), "", 0);
+	make_unistr2(&(usr->uni_full_name), "", 0);
+	make_unistr2(&(usr->uni_home_dir), "", 1);
+	make_unistr2(&(usr->uni_dir_drive), "", 0);
 	make_unistr2(&(usr->uni_logon_script), "", 0);
 	make_unistr2(&(usr->uni_profile_path), "", 1);
-	make_unistr2(&(usr->uni_acct_desc   ), "", 0 );
+	make_unistr2(&(usr->uni_acct_desc), "", 0);
 	make_unistr2(&(usr->uni_workstations), "", 0);
-	make_unistr2(&(usr->uni_unknown_str ), "", 0 );
-	make_unistr2(&(usr->uni_munged_dial ), "", 0 );
+	make_unistr2(&(usr->uni_unknown_str), "", 0);
+	make_unistr2(&(usr->uni_munged_dial), "", 0);
 
 	copy_unistr2(&usr->uni_user_name, uni_user_name);
 	make_uni_hdr(&usr->hdr_user_name, uni_user_name->uni_str_len);
 
-	usr->unknown_3 = 0xffffff; /* don't know */
-	usr->logon_divs = 168; /* hours per week */
+	usr->unknown_3 = 0xffffff;	/* don't know */
+	usr->logon_divs = 168;	/* hours per week */
 	usr->ptr_logon_hrs = 1;
 	usr->logon_hrs.len = 21;
-	memset(&usr->logon_hrs.hours, 0xff, sizeof(usr->logon_hrs.hours)); 
-	usr->unknown_5 = 0x00020000; /* don't know */
-	usr->unknown_6 = 0x000004ec; /* don't know */
+	memset(&usr->logon_hrs.hours, 0xff, sizeof(usr->logon_hrs.hours));
+	usr->unknown_5 = 0x00020000;	/* don't know */
+	usr->unknown_6 = 0x000004ec;	/* don't know */
 }
 
 /*******************************************************************
  _samr_create_user
  ********************************************************************/
 uint32 _samr_create_user(const POLICY_HND *domain_pol,
-				const UNISTR2 *uni_username,
-				uint16 acb_info, uint32 access_mask, 
-				POLICY_HND *user_pol,
-				uint32 *unknown_0, uint32 *user_rid)
+			 const UNISTR2 * uni_username,
+			 uint16 acb_info, uint32 access_mask,
+			 POLICY_HND *user_pol,
+			 uint32 * unknown_0, uint32 * user_rid)
 {
 	DOM_SID dom_sid;
 	DOM_SID usr_sid;
@@ -754,31 +747,31 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 
 	/* find the domain sid associated with the policy handle */
 	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
-					NULL, NULL, NULL,
-					NULL, NULL, &dom_sid))
+			   NULL, NULL, NULL, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	status1 = _samr_lookup_names(domain_pol, 1,  0x3e8, 1, uni_username,
-
-			&num_rids,
-			&rid,
-			&num_types,
-			&type);
+	status1 = _samr_lookup_names(domain_pol, 1, 0x3e8, 1, uni_username,
+				     &num_rids, &rid, &num_types, &type);
 
 	if (status1 == NT_STATUS_NOPROBLEMO)
 	{
 		switch (type)
 		{
-			case SID_NAME_USER: return NT_STATUS_USER_EXISTS;
-			case SID_NAME_ALIAS: return NT_STATUS_ALIAS_EXISTS;
+			case SID_NAME_USER:
+				return NT_STATUS_USER_EXISTS;
+			case SID_NAME_ALIAS:
+				return NT_STATUS_ALIAS_EXISTS;
 			case SID_NAME_DOM_GRP:
-			case SID_NAME_WKN_GRP: return NT_STATUS_GROUP_EXISTS;
-			case SID_NAME_DOMAIN: return NT_STATUS_DOMAIN_EXISTS;
+			case SID_NAME_WKN_GRP:
+				return NT_STATUS_GROUP_EXISTS;
+			case SID_NAME_DOMAIN:
+				return NT_STATUS_DOMAIN_EXISTS;
 			default:
 			{
-				DEBUG(3,("create user: unknown, ignoring\n"));
+				DEBUG(3,
+				      ("create user: unknown, ignoring\n"));
 				break;
 			}
 		}
@@ -791,26 +784,25 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 		gid_t *groups = NULL;
 #endif
 		fstring user_name;
-		unistr2_to_ascii(user_name, uni_username, sizeof(user_name)-1);
+		unistr2_to_ascii(user_name, uni_username,
+				 sizeof(user_name) - 1);
 		pass = Get_Pwnam(user_name, False);
-		DEBUG(10,("create user: %s\n", user_name));
+		DEBUG(10, ("create user: %s\n", user_name));
 		if (pass == NULL)
 		{
-			DEBUG(0,("create user: no unix user named %s\n",
-			          user_name));
+			DEBUG(0, ("create user: no unix user named %s\n",
+				  user_name));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 #if 0
-		get_unixgroups(user_name,pass->pw_uid,pass->pw_gid,
-				&n_groups,
-		       		&groups);
+		get_unixgroups(user_name, pass->pw_uid, pass->pw_gid,
+			       &n_groups, &groups);
 
 		for (i = 0; i < n_groups; i++)
 		{
 			if (sursalg_unixid_to_sam_sid(groups[i],
-			                               SID_NAME_ALIAS,
-			                               &grp_sid,
-						       True))
+						      SID_NAME_ALIAS,
+						      &grp_sid, True))
 			{
 				uint32 grp_rid = 0xffffffff;
 				if (!sid_split_rid(&grp_sid, &grp_rid))
@@ -819,15 +811,16 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 				}
 				if (sid_equal(&grp_sid, &dom_sid))
 				{
-					als_rids = g_renew(uint32, als_rids, num_alss+1);
+					als_rids =
+						g_renew(uint32, als_rids,
+							num_alss + 1);
 					als_rids[num_alss] = grp_rid;
 					num_alss++;
 				}
 			}
 			if (sursalg_unixid_to_sam_sid(groups[i],
-			                               SID_NAME_DOM_GRP,
-			                               &grp_sid,
-						       True))
+						      SID_NAME_DOM_GRP,
+						      &grp_sid, True))
 			{
 				uint32 grp_rid = 0xffffffff;
 				if (!sid_split_rid(&grp_sid, &grp_rid))
@@ -836,9 +829,11 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 				}
 				if (sid_equal(&grp_sid, &global_sam_sid))
 				{
-					gids = g_renew(DOM_GID, gids, num_gids+1);
+					gids =
+						g_renew(DOM_GID, gids,
+							num_gids + 1);
 					gids[num_gids].g_rid = grp_rid;
-					gids[num_gids].attr  = 0x7;
+					gids[num_gids].attr = 0x7;
 					num_gids++;
 				}
 			}
@@ -848,30 +843,29 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 
 	/* create a User SID for the unix user */
 	if (!sursalg_unixid_to_sam_sid(pass->pw_uid, SID_NAME_USER, &usr_sid,
-	                               True))
+				       True))
 	{
-		DEBUG(0,("create user: unix uid %d to RID failed\n",
-		          pass->pw_uid));
+		DEBUG(0, ("create user: unix uid %d to RID failed\n",
+			  pass->pw_uid));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* create a Group SID for the unix user */
-	if (!sursalg_unixid_to_sam_sid(pass->pw_gid, SID_NAME_DOM_GRP, &grp_sid,
-	                               True))
+	if (!sursalg_unixid_to_sam_sid
+	    (pass->pw_gid, SID_NAME_DOM_GRP, &grp_sid, True))
 	{
-		DEBUG(0,("create user: unix uid %d to RID failed\n",
-		          pass->pw_uid));
+		DEBUG(0, ("create user: unix uid %d to RID failed\n",
+			  pass->pw_uid));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	sid_copy(&sid, &usr_sid);
 
-	if (!sid_split_rid(&sid, user_rid) ||
-	    !sid_equal(&dom_sid, &sid))
+	if (!sid_split_rid(&sid, user_rid) || !sid_equal(&dom_sid, &sid))
 	{
 		fstring tmp;
-		DEBUG(0,("create user: invalid User SID %s\n",
-		         sid_to_string(tmp, &usr_sid)));
+		DEBUG(0, ("create user: invalid User SID %s\n",
+			  sid_to_string(tmp, &usr_sid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -879,13 +873,13 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	    !sid_equal(&dom_sid, &grp_sid))
 	{
 		fstring tmp;
-		DEBUG(0,("create user: invalid Group SID %s\n",
-		         sid_to_string(tmp, &grp_sid)));
+		DEBUG(0, ("create user: invalid Group SID %s\n",
+			  sid_to_string(tmp, &grp_sid)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	create_user_info_21(&usr, uni_username, acb_info,
-	                    (*user_rid), group_rid);
+			    (*user_rid), group_rid);
 
 	tdb_usr = open_usr_db(&dom_sid, (*user_rid), O_RDWR | O_CREAT);
 
@@ -915,7 +909,7 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	*unknown_0 = 0x000703ff;
 
 	return samr_open_user_tdb(domain_pol, &dom_sid, tdb_usr,
-	                           user_pol, access_mask, *user_rid);
+				  user_pol, access_mask, *user_rid);
 }
 
 /*******************************************************************
@@ -923,6 +917,6 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
  ********************************************************************/
 uint32 _samr_delete_dom_user(POLICY_HND *user_pol)
 {
-	DEBUG(0,("samr_delete_dom_user: not implemented\n"));
+	DEBUG(0, ("samr_delete_dom_user: not implemented\n"));
 	return NT_STATUS_ACCESS_DENIED;
 }

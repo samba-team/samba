@@ -64,152 +64,15 @@ static void usage(void)
 
 	if (getuid() == 0) {
 		printf("  -R ORDER             name resolve order\n");
-		printf("  -j DOMAIN            join domain name\n");
-		printf("  -S                   synchronise with PDC (if we are BDC)\n");
 		printf("  -a                   add user\n");
 		printf("  -d                   disable user\n");
 		printf("  -e                   enable user\n");
 		printf("  -n                   set no password\n");
-		printf("  -m                   workstation trust account\n");
-		printf("  -b                   backup domain controller account\n");
-		printf("  -i                   inter-domain trust account\n");
 		printf("  -p                   user cannot change password\n");
 		printf("  -x                   user can change password\n");
 	}
 	
 	exit(1);
-}
-
-/*********************************************************
-Join a domain.
-**********************************************************/
-static int create_interdomain_trust_acct(char *domain, char *name)
-{
-	fstring trust_passwd;
-	uchar hash[16];
-	uint16 sec_chan;
-
-	switch (lp_server_role())
-	{
-		case ROLE_DOMAIN_PDC:
-		{
-			DEBUG(0, ("Joining domain - we are PDC\n"));
-			sec_chan = SEC_CHAN_DOMAIN;
-			break;
-		}
-		case ROLE_DOMAIN_BDC:
-		{
-			DEBUG(0, ("Cannot set up inter-domain trust as BDC!\n"));
-			return 1;
-		}
-		default:
-		{
-			DEBUG(0, ("Cannot set up inter-domain trust as workstation!\n"));
-			return 1;
-		}
-	}
-
-#if 0
-	pstrcpy(remote_machine, remote ? remote : lp_passwordserver());
-
-	if (!remote_machine[0])
-	{
-		fprintf(stderr, "You must specify the PDC via 'password server' or -r.");
-		return 1;
-	}
-#endif
-
-	fstrcpy(trust_passwd, name);
-	strlower(trust_passwd);
-	E_md4hash( (uchar *)trust_passwd, hash);
-
-	if (!create_trust_account_file(domain, name, hash))
-	{
-		return 1;
-	}
-	
-#if 0
-	if(!change_trust_account_password(domain, remote_machine, sec_chan))
-	{
-		fprintf(stderr,"Unable to join domain %s.\n",domain);
-		return 1;
-	}
-#endif
-	printf("Created Inter-Domain Trust Account for %s.\n",domain);
-	return 0;
-}
-
-/*********************************************************
-Join a domain.
-**********************************************************/
-static int join_domain(char *domain, char *remote)
-{
-	pstring remote_machine;
-	fstring trust_passwd;
-	uchar hash[16];
-	uint16 sec_chan;
-
-	switch (lp_server_role())
-	{
-		case ROLE_DOMAIN_PDC:
-		{
-			DEBUG(0, ("Joining Domain as PDC\n"));
-			pstrcpy(remote_machine, global_myname);
-			sec_chan = SEC_CHAN_WKSTA;
-			break;
-		}
-		case ROLE_DOMAIN_BDC:
-		{
-			DEBUG(0, ("Joining Domain as BDC\n"));
-			pstrcpy(remote_machine, remote ? remote : lp_passwordserver());
-
-			sec_chan = SEC_CHAN_BDC;
-			break;
-		}
-		default:
-		{
-			DEBUG(0, ("Joining Domain as Workstation\n"));
-			pstrcpy(remote_machine, remote ? remote : lp_passwordserver());
-			sec_chan = SEC_CHAN_WKSTA;
-		}
-	}
-
-	if (!remote_machine[0])
-	{
-		fprintf(stderr, "You must specify the PDC via 'password server' or -r.");
-		return 1;
-	}
-
-	fstrcpy(trust_passwd, global_myname);
-	strlower(trust_passwd);
-
-	E_md4hash( (uchar *)trust_passwd, hash);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("trust account password: %s\n", trust_passwd));
-	dump_data(100, hash, 16);
-#endif
-
-	if (!create_trust_account_file(domain, global_myname, hash))
-	{
-		return 1;
-	}
-	
-        if(!trust_password_lock( domain, global_myname, True))
-	{
-          DEBUG(0,("process: unable to open the trust account password file for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-		return 1;
-        }
-	if(!change_trust_account_password(domain, remote_machine, sec_chan))
-	{
-		fprintf(stderr,"Unable to join domain %s.\n",domain);
-		return 1;
-	}
-	trust_password_unlock();
-
-	printf("Joined domain %s.\n",domain);
-	return 0;
 }
 
 
@@ -344,11 +207,6 @@ static int process_root(int argc, char *argv[])
 	int ch;
 	uint16 acb_info = 0;
 	uint16 acb_mask = 0;
-	BOOL joining_domain = False;
-	BOOL sam_sync = False;
-	BOOL wks_trust_account = False;
-	BOOL srv_trust_account = False;
-	BOOL dom_trust_account = False;
 	BOOL add_user = False;
 	BOOL disable_user = False;
 	BOOL enable_user = False;
@@ -357,11 +215,9 @@ static int process_root(int argc, char *argv[])
 	BOOL lock_password = False;
 	BOOL unlock_password = False;
 	char *user_name = NULL;
-	char *new_domain = NULL;
 	char *new_passwd = NULL;
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
-	int ret;
 
 	while ((ch = getopt(argc, argv, "abdehimnpxj:Sr:sR:D:U:")) != EOF)
 	{
@@ -413,29 +269,32 @@ static int process_root(int argc, char *argv[])
 			}
 			case 'i':
 			{
-				dom_trust_account = True;
+				fprintf(stderr, "The -i option has been disabled.  Please use samedit's createtrust command.\n");
+				exit(-1);
 				break;
 			}
 			case 'b':
 			{
-				srv_trust_account = True;
+				fprintf(stderr, "The -b option is disabled.  Please use samedit's createuser account$ -j command.\n");
+				exit(-1);
 				break;
 			}
 			case 'm':
 			{
-				wks_trust_account = True;
+				fprintf(stderr, "The -m option is disabled.  Please use samedit's createuser account$ command.\n");
+				exit(-1);
 				break;
 			}
 			case 'j':
 			{
-				new_domain = optarg;
-				strupper(new_domain);
-				joining_domain = True;
+				fprintf(stderr, "The -j option is disabled.  Please use samedit's createuser account$ -j command.\n");
+				exit(-1);
 				break;
 			}
 			case 'S':
 			{
-				sam_sync = True;
+				fprintf(stderr, "The -S option is disabled.  Please use samedit's samsync command.\n");
+				exit(-1);
 				break;
 			}
 			case 'U':
@@ -463,36 +322,6 @@ static int process_root(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	/*
-	 * Ensure add_user and either remote machine or join domain are
-	 * not both set.
-	 */	
-	if (add_user && ((remote_machine != NULL) || joining_domain))
-	{
-		usage();
-	}
-
-	if (sam_sync && lp_server_role() != ROLE_DOMAIN_BDC) {
-		fprintf(stderr, "The -S option can only be used on a Backup Domain Controller.\n");
-		return 1;
-	}
-	
-	if (joining_domain)
-	{
-		if (!dom_trust_account)
-		{
-			if (argc != 0) usage();
-			ret = join_domain(new_domain, remote_machine);
-
-			if ((ret != 0) || (!sam_sync))
-				return ret;
-		}
-	}
-
-	if (sam_sync)
-	{
-		return synchronise_passdb();
-	}
 
 	/*
 	 * Deal with root - can add a user, but only locally.
@@ -521,50 +350,10 @@ static int process_root(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (wks_trust_account || srv_trust_account || dom_trust_account)
-	{
-		/* add the $ automatically */
-		static fstring buf;
-
-		/*
-		 * Remove any trailing '$' before we
-		 * generate the initial trust password.
-		 */
-
-		if (user_name[strlen(user_name)-1] == '$') {
-			user_name[strlen(user_name)-1] = 0;
-		}
-
-		if (add_user) {
-			new_passwd = xstrdup(user_name);
-			strlower(new_passwd);
-		}
-
-		/*
-		 * Now ensure the username ends in '$' for
-		 * the trust add.
-		 */
-
-		slprintf(buf, sizeof(buf)-1, "%s$", user_name);
-		user_name = buf;
-	}
-
 	if (!remote_machine && !Get_Pwnam(user_name, True)) {
 		fprintf(stderr, "User \"%s\" was not found in system password file.\n", 
 			user_name);
 		exit(1);
-	}
-
-	if (joining_domain)
-	{
-		if (dom_trust_account)
-		{
-			ret = create_interdomain_trust_acct(new_domain,
-			                                    global_myworkgroup);
-
-			if ((ret != 0) || (!sam_sync))
-				return ret;
-		}
 	}
 
 	if (remote_machine != NULL) {
@@ -627,27 +416,6 @@ static int process_root(int argc, char *argv[])
 		acb_info &= ~ACB_PWLOCK;
 	}
 	
-	if (wks_trust_account)
-	{
-		acb_mask |= ACB_WSTRUST;
-		acb_info |= ACB_WSTRUST;
-	}
-	else if (srv_trust_account)
-	{
-		acb_mask |= ACB_SVRTRUST;
-		acb_info |= ACB_SVRTRUST;
-	}
-	else if (dom_trust_account)
-	{
-		acb_mask |= ACB_DOMTRUST;
-		acb_info |= ACB_DOMTRUST;
-	}
-	else
-	{
-		acb_mask |= ACB_NORMAL;
-		acb_info |= ACB_NORMAL;
-	}
-
 	if (!password_change(remote_machine, user_name, old_passwd, new_passwd,
 			     add_user, acb_info, acb_mask))
 	{

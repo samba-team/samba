@@ -124,42 +124,33 @@ BOOL net_sam_sync(const char* srv_name,
 
 /*The following definitions come from  rpc_client/cli_lsarpc.c  */
 
-BOOL get_domain_sids(const char *domain, DOM_SID *sid3, DOM_SID *sid5);
-BOOL get_trust_sid_and_domain(const char* myname, char *server,
-				DOM_SID *sid,
-				char *domain, size_t len);
+BOOL get_domain_sids(const char *domain, DOM_SID * sid3, DOM_SID * sid5);
+BOOL get_trust_sid_and_domain(const char *myname, char *server,
+			      DOM_SID * sid, char *domain, size_t len);
 BOOL lsa_open_policy(const char *system_name, POLICY_HND *hnd,
-			BOOL sec_qos, uint32 des_access);
-BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
-			BOOL sec_qos, uint32 des_access);
-BOOL lsa_create_secret( const POLICY_HND *hnd,
-				const char *secret_name,
-				uint32 des_access,
-				POLICY_HND *hnd_secret);
-BOOL lsa_open_secret( const POLICY_HND *hnd,
-				const char *secret_name,
-				uint32 des_access,
-				POLICY_HND *hnd_secret);
-uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 *secret);
-BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
-		      NTTIME *last_update);
-BOOL lsa_lookup_names( POLICY_HND *hnd,
-			int num_names,
-			char **names,
-			DOM_SID **sids,
-			uint32 **types,
-			int *num_sids);
+		     BOOL sec_qos, uint32 des_access);
+BOOL lsa_open_policy2(const char *system_name, POLICY_HND *hnd,
+		      BOOL sec_qos, uint32 des_access);
+BOOL lsa_create_secret(const POLICY_HND *hnd,
+		       const char *secret_name,
+		       uint32 des_access, POLICY_HND *hnd_secret);
+BOOL lsa_open_secret(const POLICY_HND *hnd,
+		     const char *secret_name,
+		     uint32 des_access, POLICY_HND *hnd_secret);
+uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 * secret);
+BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 * secret, NTTIME * last_update);
+BOOL lsa_lookup_names(POLICY_HND *hnd,
+		      int num_names,
+		      char **names,
+		      DOM_SID ** sids, uint32 ** types, int *num_sids);
 BOOL lsa_lookup_sids(POLICY_HND *hnd,
-			int num_sids,
-			DOM_SID **sids,
-			char ***names,
-			uint32 **types,
-			int *num_names);
+		     int num_sids,
+		     DOM_SID ** sids,
+		     char ***names, uint32 ** types, int *num_names);
 BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
-			fstring domain_name, DOM_SID *domain_sid);
-BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
-			uint32 *num_doms, char ***names,
-			DOM_SID ***sids);
+			fstring domain_name, DOM_SID * domain_sid);
+BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,
+			uint32 * num_doms, char ***names, DOM_SID *** sids);
 BOOL lsa_close(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
@@ -477,31 +468,30 @@ BOOL wks_query_info( char *srv_name, uint32 switch_value,
 
 uint32 lookup_lsa_names(const char *srv_name,
 			uint32 num_names, char **names,
-			uint32 *num_sids, DOM_SID **sids, uint32 **types);
+			uint32 * num_sids, DOM_SID ** sids, uint32 ** types);
 uint32 lookup_lsa_name(const char *domain,
-				char *name, DOM_SID *sid, uint32 *type);
+		       char *name, DOM_SID * sid, uint32 * type);
 uint32 lookup_lsa_sid(const char *domain,
-				DOM_SID *sid, char *name, uint32 *type);
-BOOL msrpc_lsa_create_secret(const char* srv_name, const char* secret_name,
-				uint32 access_rights);
-BOOL msrpc_lsa_set_secret(const char* srv_name,
-				const char* secret_name,
-				const char* data, int len);
-BOOL msrpc_lsa_query_secret(const char* srv_name,
-				const char* secret_name,
-				STRING2 *secret,
-				NTTIME *last_update);
-BOOL msrpc_lsa_query_trust_passwd(const char* srv_name,
-				const char* secret_name,
-				uchar trust_passwd[16]);
+		      DOM_SID * sid, char *name, uint32 * type);
+BOOL msrpc_lsa_create_secret(const char *srv_name, const char *secret_name,
+			     uint32 access_rights);
+BOOL msrpc_lsa_set_secret(const char *srv_name,
+			  const char *secret_name, const char *data, int len);
+BOOL msrpc_lsa_query_secret(const char *srv_name,
+			    const char *secret_name,
+			    STRING2 * secret, NTTIME * last_update);
+BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
+				  const char *secret_name,
+				  uchar trust_passwd[16],
+				  NTTIME * last_update);
 
 /*The following definitions come from  rpc_client/msrpc_netlogon.c  */
 
-uint32 check_domain_security(const char *orig_user, const char *domain, 
-				const uchar *challenge,
-				const char *smb_apasswd, int smb_apasslen,
-				const char *smb_ntpasswd, int smb_ntpasslen,
-				NET_USER_INFO_3 *info3);
+uint32 check_domain_security(const char *orig_user, const char *domain,
+			     const uchar * challenge,
+			     const char *smb_apasswd, int smb_apasslen,
+			     const char *smb_ntpasswd, int smb_ntpasslen,
+			     NET_USER_INFO_3 * info3);
 
 /*The following definitions come from  rpc_client/msrpc_samr.c  */
 

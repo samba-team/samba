@@ -595,8 +595,7 @@ typedef struct tdb_name_info
 	uint32 num_names;
 	BOOL found_one;
 
-}
-TDB_NAME_INFO;
+} TDB_NAME_INFO;
 
 /******************************************************************
 tdb_userlookup_names
@@ -656,7 +655,7 @@ BOOL dom_user_traverse(const DOM_SID * dom_sid,
 		TDB_CONTEXT *usr_tdb;
 		uint32 rid = strtoul(dpname, (char **)NULL, 16);
 
-		DEBUG(10,("dom_user_traverse: %s\n", dpname));
+		DEBUG(10, ("dom_user_traverse: %s\n", dpname));
 
 		if (rid == 0)
 		{
@@ -742,7 +741,8 @@ typedef struct tdb_rid_info
 	UNISTR2 *uni_name;
 	uint32 num_rids;
 	BOOL found_one;
-} TDB_RID_INFO;
+}
+TDB_RID_INFO;
 /******************************************************************
 tdb_userlookup_rids
 ********************************************************************/

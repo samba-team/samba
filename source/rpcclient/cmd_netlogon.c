@@ -35,7 +35,7 @@ extern int DEBUGLEVEL;
 
 extern struct user_creds *usr_creds;
 
-extern FILE* out_hnd;
+extern FILE *out_hnd;
 
 
 /****************************************************************************
@@ -43,10 +43,6 @@ experimental nt login.
 ****************************************************************************/
 void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 {
-#if 0
-	extern BOOL global_machine_password_needs_changing;
-#endif
-
 	fstring nt_user_name;
 	BOOL res = True;
 	char *nt_password;
@@ -106,8 +102,10 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 		}
 		if (nt_user_name[0] == 0)
 		{
-			report(out_hnd,"ntlogin: must specify username with anonymous connection\n");
-			report(out_hnd,"ntlogin [[DOMAIN\\]user] [password]\n");
+			report(out_hnd,
+			       "ntlogin: must specify username with anonymous connection\n");
+			report(out_hnd,
+			       "ntlogin [[DOMAIN\\]user] [password]\n");
 			return;
 		}
 	}
@@ -124,14 +122,14 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 		if (p != NULL)
 		{
 			*p = 0;
-			fstrcpy(nt_user_name, p+1);
+			fstrcpy(nt_user_name, p + 1);
 		}
-		
+
 	}
 
 	if (domain[0] == 0)
 	{
-		report(out_hnd,"no domain specified.\n");
+		report(out_hnd, "no domain specified.\n");
 	}
 
 	argc--;
@@ -148,60 +146,50 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 
 	nt_lm_owf_gen(nt_password, nt_pw, lm_pw);
 
-	DEBUG(5,("do_nt_login_test: username %s from: %s\n",
-	            nt_user_name, info->myhostname));
+	DEBUG(5, ("do_nt_login_test: username %s from: %s\n",
+		  nt_user_name, info->myhostname));
 
 	fstrcpy(trust_acct, info->myhostname);
 	fstrcat(trust_acct, "$");
 
 	res = res ? msrpc_lsa_query_trust_passwd(wks_name, "$MACHINE.ACC",
-	                                         trust_passwd) : False;
+						 trust_passwd, NULL) : False;
 
 	res = res ? cli_nt_setup_creds(srv_name, domain, info->myhostname,
-	                               trust_acct, 
-	                               trust_passwd, SEC_CHAN_WKSTA) == 0x0 : False;
+				       trust_acct,
+				       trust_passwd,
+				       SEC_CHAN_WKSTA) == 0x0 : False;
 
-#if 0
-	/* change the trust password? */
-	if (global_machine_password_needs_changing)
-	{
-		uchar new_trust_passwd[16];
-		generate_random_buffer(new_trust_passwd, 16, True);
-		res = res ? cli_nt_srv_pwset(srv_name, info->myhostname, new_trust_passwd, SEC_CHAN_WKSTA) : False;
-
-		if (res)
-		{
-			global_machine_password_needs_changing = !set_trust_account_password(new_trust_passwd);
-		}
-
-		memset(new_trust_passwd, 0, 16);
-	}
-#endif
 
 	memset(trust_passwd, 0, 16);
 
 	/* do an NT login */
 	res = res ? (cli_nt_login_interactive(srv_name, info->myhostname,
-	                 domain, nt_user_name,
-	                 getuid(), lm_pw, nt_pw,
-	                 &info->dom.ctr, &info->dom.user_info3) == 0x0) : False;
+					      domain, nt_user_name,
+					      getuid(), lm_pw, nt_pw,
+					      &info->dom.ctr,
+					      &info->dom.user_info3) ==
+		     0x0) : False;
 
 
 #if 0
 	/* ok!  you're logged in!  do anything you like, then... */
 
 	/* do an NT logout */
-	res = res ? cli_nt_logoff(srv_name, info->myhostname, &info->dom.ctr) : False;
+	res =
+		res ? cli_nt_logoff(srv_name, info->myhostname,
+				    &info->dom.ctr) : False;
 #endif
 
-	report(out_hnd,"cmd_nt_login: login (%s) test succeeded: %s\n",
-		nt_user_name, BOOLSTR(res));
+	report(out_hnd, "cmd_nt_login: login (%s) test succeeded: %s\n",
+	       nt_user_name, BOOLSTR(res));
 }
 
 /****************************************************************************
 experimental nt login.
 ****************************************************************************/
-void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
+void cmd_netlogon_domain_test(struct client_info *info, int argc,
+			      char *argv[])
 {
 	char *nt_trust_dom;
 	BOOL res = True;
@@ -242,13 +230,13 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 2)
 	{
-		report(out_hnd,"domtest: must specify domain name\n");
+		report(out_hnd, "domtest: must specify domain name\n");
 		return;
 	}
 
 	nt_trust_dom = argv[1];
 
-	DEBUG(5,("do_nt_login_test: domain %s\n", nt_trust_dom));
+	DEBUG(5, ("do_nt_login_test: domain %s\n", nt_trust_dom));
 
 	fstrcpy(trust_sec_name, "G$$");
 	fstrcat(trust_sec_name, nt_trust_dom);
@@ -258,16 +246,16 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[])
 	fstrcat(inter_dom_acct, "$");
 
 	res = res ? msrpc_lsa_query_trust_passwd(wks_name, trust_sec_name,
-	                                  trust_passwd) : False;
+						 trust_passwd, NULL) : False;
 	res = res ? cli_nt_setup_creds(srv_name, domain,
-	                               info->myhostname, inter_dom_acct,
-	                               trust_passwd, 
-	                               SEC_CHAN_DOMAIN) == 0x0 : False;
+				       info->myhostname, inter_dom_acct,
+				       trust_passwd,
+				       SEC_CHAN_DOMAIN) == 0x0 : False;
 
 	memset(trust_passwd, 0, 16);
 
-	report(out_hnd,"cmd_nt_login: credentials (%s) test succeeded: %s\n",
-		nt_trust_dom, BOOLSTR(res));
+	report(out_hnd, "cmd_nt_login: credentials (%s) test succeeded: %s\n",
+	       nt_trust_dom, BOOLSTR(res));
 }
 
 /****************************************************************************
@@ -316,18 +304,20 @@ void cmd_sam_sync(struct client_info *info, int argc, char *argv[])
 	}
 
 	if (!msrpc_lsa_query_trust_passwd(wks_name, "$MACHINE.ACC",
-	                                  trust_passwd))
+					  trust_passwd, NULL))
 	{
 		report(out_hnd, "cmd_sam_sync: no trust account password\n");
 		return;
 	}
 
 	if (net_sam_sync(srv_name, domain, info->myhostname,
-		trust_acct, trust_passwd,
-	    hdr_deltas, deltas, &num))
+			 trust_acct, trust_passwd, hdr_deltas, deltas, &num))
 	{
-		display_sam_sync(out_hnd, ACTION_HEADER   , hdr_deltas, deltas, num);
-		display_sam_sync(out_hnd, ACTION_ENUMERATE, hdr_deltas, deltas, num);
-		display_sam_sync(out_hnd, ACTION_FOOTER   , hdr_deltas, deltas, num);
+		display_sam_sync(out_hnd, ACTION_HEADER, hdr_deltas, deltas,
+				 num);
+		display_sam_sync(out_hnd, ACTION_ENUMERATE, hdr_deltas,
+				 deltas, num);
+		display_sam_sync(out_hnd, ACTION_FOOTER, hdr_deltas, deltas,
+				 num);
 	}
 }

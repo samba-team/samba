@@ -411,6 +411,8 @@ void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
+	ZERO_STRUCT(secret);
+
 	if (argc > 2)
 	{
 		report(out_hnd, "querysecret <secret name>\n");
@@ -419,7 +421,7 @@ void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 
 	secret_name = argv[1];
 
-	if (msrpc_lsa_query_secret(srv_name, secret_name, &secret, &last_update))
+	if (msrpc_lsa_query_secret(srv_name, secret_name, NULL, &last_update))
 	{
 		int i;
 		report(out_hnd, "\tValue       : ");

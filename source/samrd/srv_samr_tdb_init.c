@@ -27,7 +27,7 @@
 
 extern int DEBUGLEVEL;
 
-uint32 initialise_dom_tdb(const DOM_SID *sid)
+uint32 initialise_dom_tdb(const DOM_SID * sid)
 {
 	pstring usr;
 	pstring grp;
@@ -38,20 +38,20 @@ uint32 initialise_dom_tdb(const DOM_SID *sid)
 
 	mkdir(passdb_path(tmp), 0755);
 
-	slprintf(usr, sizeof(usr)-1, "%s/usr", tmp);
+	slprintf(usr, sizeof(usr) - 1, "%s/usr", tmp);
 	mkdir(passdb_path(usr), 0755);
 
-	slprintf(grp, sizeof(grp)-1, "%s/grp", tmp);
+	slprintf(grp, sizeof(grp) - 1, "%s/grp", tmp);
 	mkdir(passdb_path(grp), 0755);
 
-	slprintf(als, sizeof(als)-1, "%s/als", tmp);
+	slprintf(als, sizeof(als) - 1, "%s/als", tmp);
 	mkdir(passdb_path(als), 0755);
 
 	return NT_STATUS_NOPROBLEMO;
 }
 
-static BOOL create_domain(TDB_CONTEXT *tdb, const char* domain,
-				const DOM_SID *sid)
+static BOOL create_domain(TDB_CONTEXT * tdb, const char *domain,
+			  const DOM_SID * sid)
 {
 	prs_struct key;
 	prs_struct data;
@@ -60,7 +60,7 @@ static BOOL create_domain(TDB_CONTEXT *tdb, const char* domain,
 
 	sid_copy(&s, sid);
 
-	DEBUG(10,("creating domain %s\n", domain));
+	DEBUG(10, ("creating domain %s\n", domain));
 
 	make_unistr2(&uni_domain, domain, strlen(domain));
 
@@ -69,7 +69,7 @@ static BOOL create_domain(TDB_CONTEXT *tdb, const char* domain,
 
 	if (!smb_io_unistr2("dom", &uni_domain, True, &key, 0) ||
 	    !smb_io_dom_sid("sid", &s, &data, 0) ||
-	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
+	    prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
 	{
 		prs_free_data(&key);
 		prs_free_data(&data);
@@ -81,14 +81,16 @@ static BOOL create_domain(TDB_CONTEXT *tdb, const char* domain,
 	return True;
 }
 
-static uint32 init_dom_tdbs(const DOM_SID *sam_sid)
+static uint32 init_dom_tdbs(const DOM_SID * sam_sid)
 {
 	uint32 status;
 
-	DEBUG(0,("initialise_dom_tdb: TODO - create BUILTIN domain aliases\n"));
+	DEBUG(0,
+	      ("initialise_dom_tdb: TODO - create BUILTIN domain aliases\n"));
 
 	status = initialise_dom_tdb(sam_sid);
-	if (status != 0x0) return status;
+	if (status != 0x0)
+		return status;
 	status = initialise_dom_tdb(&global_sid_S_1_5_20);
 	return status;
 }
@@ -96,7 +98,7 @@ static uint32 init_dom_tdbs(const DOM_SID *sam_sid)
 /***************************************************************************
  create various sam tdb databases, initialising them as necessary.
  ***************************************************************************/
-uint32 initialise_sam_tdb( const char* sam_name, const DOM_SID *sam_sid)
+uint32 initialise_sam_tdb(const char *sam_name, const DOM_SID * sam_sid)
 {
 	pstring srv_db_name;
 	fstring dom_name;
@@ -110,10 +112,12 @@ uint32 initialise_sam_tdb( const char* sam_name, const DOM_SID *sam_sid)
 		return init_dom_tdbs(sam_sid);
 	}
 
-	DEBUG(0,("initialise_sam_tdb: creating %s\n", srv_db_name));
+	DEBUG(0, ("initialise_sam_tdb: creating %s\n", srv_db_name));
 
 	/* create if not-exist with root-readwrite, all others read */
-	sam_tdb = tdb_open(passdb_path("sam.tdb"),0,0,O_RDWR|O_CREAT,0644);
+	sam_tdb =
+		tdb_open(passdb_path("sam.tdb"), 0, 0, O_RDWR | O_CREAT,
+			 0644);
 
 	if (sam_tdb == NULL)
 	{
@@ -137,5 +141,5 @@ uint32 initialise_sam_tdb( const char* sam_name, const DOM_SID *sam_sid)
 BOOL pwdbsam_initialise(void)
 {
 	return initialise_sam_tdb(global_sam_name, &global_sam_sid) ==
-	       NT_STATUS_NOPROBLEMO;
+		NT_STATUS_NOPROBLEMO;
 }

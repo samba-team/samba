@@ -49,7 +49,6 @@ extern char *InBuffer;
 extern char *OutBuffer;
 extern int smb_read_error;
 extern BOOL reload_after_sighup;
-extern BOOL global_machine_password_needs_changing;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 extern int max_send;
@@ -813,6 +812,8 @@ void smbd_process(void)
     int last_keepalive=0;
     int service_load_counter = 0;
     BOOL got_smb = False;
+	BOOL trust_pwd_needs_changing = False;
+	NTTIME ntlct;
 
     if (deadtime <= 0)
       deadtime = DEFAULT_SMBD_TIMEOUT;
@@ -909,12 +910,17 @@ void smbd_process(void)
 	      return;
       }
 
-      if(global_machine_password_needs_changing)
+	if (msrpc_lsa_query_secret("\\\\.", "$MACHINE.ACC", NULL, &ntlct))
+	{
+		if (time(NULL) > nt_time_to_unix(&ntlct) + lp_machine_password_timeout())
+		{
+			trust_pwd_needs_changing = True;
+		}
+	}
+
+      if(trust_pwd_needs_changing)
       {
         unsigned char trust_passwd_hash[16];
-        time_t lct;
-        pstring remote_machine_list;
-        int sec_chan = SEC_CHAN_WKSTA;
 
         /*
          * We're in domain level security, and the code that
@@ -922,41 +928,8 @@ void smbd_process(void)
          * password needs changing.
          */
 
-        /*
-         * First, open the machine password file with an exclusive lock.
-         */
-
-        if(!trust_password_lock( global_myworkgroup, global_myname, True)) {
-          DEBUG(0,("process: unable to open the machine account password file for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-          continue;
-        }
-
-        if(!get_trust_account_password( trust_passwd_hash, &lct)) {
-          DEBUG(0,("process: unable to read the machine account password for \
-machine %s in domain %s.\n", global_myname, global_myworkgroup ));
-          trust_password_unlock();
-          continue;
-        }
-
-        /*
-         * Make sure someone else hasn't already done this.
-         */
-
-        if(t < lct + lp_machine_password_timeout()) {
-          trust_password_unlock();
-          global_machine_password_needs_changing = False;
-          continue;
-        }
-
-        pstrcpy(remote_machine_list, lp_passwordserver());
-        if (lp_server_role() == ROLE_DOMAIN_BDC)
-          sec_chan = SEC_CHAN_BDC;
-
-        change_trust_account_password(global_myworkgroup, remote_machine_list,
-                                        sec_chan);
-        trust_password_unlock();
-        global_machine_password_needs_changing = False;
+	  generate_random_buffer( trust_passwd_hash, 16, True);
+          msrpc_lsa_set_secret("\\\\.", "$MACHINE.ACC", trust_passwd_hash, 16);
       }
 
       /*

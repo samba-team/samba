@@ -25,7 +25,7 @@
 
 extern int DEBUGLEVEL;
 
-BOOL tdb_delete_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk)
+BOOL tdb_delete_secret(TDB_CONTEXT * tdb, const UNISTR2 * uk)
 {
 	prs_struct key;
 	UNISTR2 k;
@@ -33,8 +33,8 @@ BOOL tdb_delete_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk)
 
 	copy_unistr2(&k, uk);
 
-	unistr2_to_ascii(tmp, uk, sizeof(tmp)-1);
-	DEBUG(10,("delete secret %s\n", tmp));
+	unistr2_to_ascii(tmp, uk, sizeof(tmp) - 1);
+	DEBUG(10, ("delete secret %s\n", tmp));
 
 	prs_init(&key, 0, 4, False);
 	if (!smb_io_unistr2("key", &k, 1, &key, 0))
@@ -49,7 +49,8 @@ BOOL tdb_delete_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk)
 	return True;
 }
 
-BOOL tdb_lookup_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET **usr)
+BOOL tdb_lookup_secret(TDB_CONTEXT * tdb, const UNISTR2 * uk,
+		       LSA_SECRET ** usr)
 {
 	prs_struct key;
 	prs_struct data;
@@ -68,8 +69,8 @@ BOOL tdb_lookup_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET **usr)
 		ZERO_STRUCTP((*usr));
 	}
 
-	unistr2_to_ascii(tmp, uk, sizeof(tmp)-1);
-	DEBUG(10,("lookup secret %s\n", tmp));
+	unistr2_to_ascii(tmp, uk, sizeof(tmp) - 1);
+	DEBUG(10, ("lookup secret %s\n", tmp));
 
 	prs_init(&key, 0, 4, False);
 	if (!smb_io_unistr2("key", &k, 1, &key, 0))
@@ -91,7 +92,7 @@ BOOL tdb_lookup_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET **usr)
 		prs_free_data(&data);
 		return False;
 	}
-		
+
 
 	if (usr != NULL)
 	{
@@ -110,7 +111,7 @@ BOOL tdb_lookup_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET **usr)
 	return True;
 }
 
-BOOL tdb_store_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET *usr)
+BOOL tdb_store_secret(TDB_CONTEXT * tdb, const UNISTR2 * uk, LSA_SECRET * usr)
 {
 	prs_struct key;
 	prs_struct data;
@@ -119,8 +120,8 @@ BOOL tdb_store_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET *usr)
 
 	copy_unistr2(&k, uk);
 
-	unistr2_to_ascii(tmp, uk, sizeof(tmp)-1);
-	DEBUG(10,("storing secret %s\n", tmp));
+	unistr2_to_ascii(tmp, uk, sizeof(tmp) - 1);
+	DEBUG(10, ("storing secret %s\n", tmp));
 
 
 	prs_init(&key, 0, 4, False);
@@ -128,7 +129,7 @@ BOOL tdb_store_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET *usr)
 
 	if (!smb_io_unistr2("key", &k, 1, &key, 0) ||
 	    !lsa_io_secret("usr", usr, &data, 0) ||
-	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
+	    prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
 	{
 		prs_free_data(&key);
 		prs_free_data(&data);
@@ -153,7 +154,7 @@ TDB_CONTEXT *open_secret_db(int perms)
 	strupper(domname);
 	strupper(srvname);
 
-	slprintf(domsec, sizeof(domsec)-1, "%s.%s.tdb", domname, srvname);
+	slprintf(domsec, sizeof(domsec) - 1, "%s.%s.tdb", domname, srvname);
 
 	return tdb_open(lock_path(domsec), 0, 0, perms, 0600);
 }
@@ -181,26 +182,22 @@ BOOL secret_init_db(void)
 
 	if (tdb != NULL)
 	{
-		DEBUG(10,("secret_init_db: opened\n"));
+		DEBUG(10, ("secret_init_db: opened\n"));
 		return True;
 	}
-	
+
 	tdb = open_secret_db(O_RDWR | O_CREAT);
 
 	if (tdb == NULL)
 	{
-		DEBUG(0,("secret_init_db: failed\n"));
+		DEBUG(0, ("secret_init_db: failed\n"));
 		return False;
 	}
-	
-	DEBUG(10,("secret_init_db: opened first time: initialising.\n"));
 
-	if (!trust_get_passwd_time(trust_passwd, domname, srvname, &crt))
-	{
-		DEBUG(10,("secret_init_db: no old $MACHINE.ACC: creating.\n"));
-		generate_random_buffer(trust_passwd, 16, True);
-		unix_to_nt_time(&crt, time(NULL));
-	}
+	DEBUG(10, ("secret_init_db: opened first time: initialising.\n"));
+
+	generate_random_buffer(trust_passwd, 16, True);
+	unix_to_nt_time(&crt, time(NULL));
 
 	make_unistr2(&name, an, strlen(an));
 	ZERO_STRUCT(sec);
@@ -210,12 +207,12 @@ BOOL secret_init_db(void)
 	make_strhdr2(&sec.curinfo.value.hdr_secret, 24, 24, 1);
 
 	sec.curinfo.value.enc_secret.str_max_len = 24;
-	sec.curinfo.value.enc_secret.undoc       = 0;
+	sec.curinfo.value.enc_secret.undoc = 0;
 	sec.curinfo.value.enc_secret.str_str_len = 24;
 
 	SIVAL(sec.curinfo.value.enc_secret.buffer, 0, 16);
 	SIVAL(sec.curinfo.value.enc_secret.buffer, 4, 0x01);
-	memcpy(sec.curinfo.value.enc_secret.buffer+8, trust_passwd, 16);
+	memcpy(sec.curinfo.value.enc_secret.buffer + 8, trust_passwd, 16);
 
 	sec.oldinfo.ptr_update = 1;
 	sec.oldinfo.last_update = crt;
@@ -229,4 +226,3 @@ BOOL secret_init_db(void)
 
 	return ret;
 }
-

@@ -84,6 +84,12 @@ uint32 _svc_close(POLICY_HND *pol)
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
+	/* strikerXXXX Luke, is this line below needed, or does close_policy_hnd()
+       * take care of this? */
+
+	/* set up the REG unknown_1 response */
+	bzero(pol->data, POL_HND_SIZE);
+
 	return NT_STATUS_NOPROBLEMO;
 }
 

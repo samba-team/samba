@@ -34,7 +34,7 @@ extern int DEBUGLEVEL;
 
 uint32 lookup_lsa_names(const char *srv_name,
 			uint32 num_names, char **names,
-			uint32 *num_sids, DOM_SID **sids, uint32 **types)
+			uint32 * num_sids, DOM_SID ** sids, uint32 ** types)
 {
 	BOOL res1 = True;
 	BOOL res2 = True;
@@ -64,15 +64,17 @@ uint32 lookup_lsa_names(const char *srv_name,
 		return NT_STATUS_NONE_MAPPED | 0xC0000000;
 	}
 
-	res1 = res1 ? lsa_open_policy(srv_name, &lsa_pol, True, 0x02000000) : False;
+	res1 =
+		res1 ? lsa_open_policy(srv_name, &lsa_pol, True,
+				       0x02000000) : False;
 
 	res2 = res1 ? lsa_lookup_names(&lsa_pol,
-				       num_names, names, 
+				       num_names, names,
 				       sids, types, num_sids) : False;
 
 	res1 = res1 ? lsa_close(&lsa_pol) : False;
 
-	if (! res2)
+	if (!res2)
 	{
 		return NT_STATUS_NONE_MAPPED | 0xC0000000;
 	}
@@ -82,7 +84,7 @@ uint32 lookup_lsa_names(const char *srv_name,
 
 
 uint32 lookup_lsa_name(const char *domain,
-				char *name, DOM_SID *sid, uint32 *type)
+		       char *name, DOM_SID * sid, uint32 * type)
 {
 	fstring srv_name;
 	BOOL res3 = True;
@@ -90,7 +92,7 @@ uint32 lookup_lsa_name(const char *domain,
 	char **names = NULL;
 	uint32 *types = NULL;
 	int num_names = 0;
-	DOM_SID *sids = NULL; 
+	DOM_SID *sids = NULL;
 	int num_sids = 0;
 	POLICY_HND lsa_pol;
 
@@ -103,11 +105,13 @@ uint32 lookup_lsa_name(const char *domain,
 	names = &name;
 
 	/* lookup domain controller; receive a policy handle */
-	res3 = res3 ? lsa_open_policy(srv_name, &lsa_pol, True, 0x02000000) : False;
+	res3 =
+		res3 ? lsa_open_policy(srv_name, &lsa_pol, True,
+				       0x02000000) : False;
 
 	/* send lsa lookup sids call */
 	res4 = res3 ? lsa_lookup_names(&lsa_pol,
-				       num_names, names, 
+				       num_names, names,
 				       &sids, &types, &num_sids) : False;
 
 	res3 = res3 ? lsa_close(&lsa_pol) : False;
@@ -125,12 +129,12 @@ uint32 lookup_lsa_name(const char *domain,
 	{
 		free(types);
 	}
-	
+
 	if (sids != NULL)
 	{
 		free(sids);
 	}
-	
+
 	return 0x0;
 }
 
@@ -138,7 +142,7 @@ uint32 lookup_lsa_name(const char *domain,
 lookup sids
 ****************************************************************************/
 uint32 lookup_lsa_sid(const char *domain,
-				DOM_SID *sid, char *name, uint32 *type)
+		      DOM_SID * sid, char *name, uint32 * type)
 {
 	POLICY_HND lsa_pol;
 	fstring srv_name;
@@ -159,12 +163,14 @@ uint32 lookup_lsa_sid(const char *domain,
 	add_sid_to_array(&num_sids, &sids, sid);
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy( srv_name, &lsa_pol, True, 0x02000000) : False;
+	res =
+		res ? lsa_open_policy(srv_name, &lsa_pol, True,
+				      0x02000000) : False;
 
 	/* send lsa lookup sids call */
-	res1 = res ? lsa_lookup_sids( &lsa_pol,
-	                               num_sids, sids,
-	                               &names, &types, &num_names) : False;
+	res1 = res ? lsa_lookup_sids(&lsa_pol,
+				     num_sids, sids,
+				     &names, &types, &num_names) : False;
 
 	res = res ? lsa_close(&lsa_pol) : False;
 
@@ -178,7 +184,7 @@ uint32 lookup_lsa_sid(const char *domain,
 
 	free_sid_array(num_sids, sids);
 	free_char_array(num_names, names);
-	
+
 	if (types != NULL)
 	{
 		free(types);
@@ -190,8 +196,8 @@ uint32 lookup_lsa_sid(const char *domain,
 /****************************************************************************
 nt lsa create secret
 ****************************************************************************/
-BOOL msrpc_lsa_create_secret(const char* srv_name, const char* secret_name,
-				uint32 access_rights)
+BOOL msrpc_lsa_create_secret(const char *srv_name, const char *secret_name,
+			     uint32 access_rights)
 {
 	BOOL res = True;
 	BOOL res1;
@@ -200,12 +206,13 @@ BOOL msrpc_lsa_create_secret(const char* srv_name, const char* secret_name,
 	POLICY_HND lsa_pol;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy( srv_name,
-				&lsa_pol, True, 0x02000000) : False;
+	res = res ? lsa_open_policy(srv_name,
+				    &lsa_pol, True, 0x02000000) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res1 = res ? lsa_create_secret( &lsa_pol,
-				secret_name, access_rights, &pol_sec) : False;
+	res1 = res ? lsa_create_secret(&lsa_pol,
+				       secret_name, access_rights,
+				       &pol_sec) : False;
 
 	res1 = res1 ? lsa_close(&pol_sec) : False;
 
@@ -217,9 +224,8 @@ BOOL msrpc_lsa_create_secret(const char* srv_name, const char* secret_name,
 /****************************************************************************
 nt lsa query secret
 ****************************************************************************/
-BOOL msrpc_lsa_set_secret(const char* srv_name,
-				const char* secret_name,
-				const char* data, int len)
+BOOL msrpc_lsa_set_secret(const char *srv_name,
+			  const char *secret_name, const char *data, int len)
 {
 	BOOL res = True;
 	BOOL res1;
@@ -231,23 +237,25 @@ BOOL msrpc_lsa_set_secret(const char* srv_name,
 
 	ZERO_STRUCT(secret);
 
-	secret.str_max_len = len+8;
-	secret.undoc       = 0;
-	secret.str_str_len = len+8;
+	secret.str_max_len = len + 8;
+	secret.undoc = 0;
+	secret.str_str_len = len + 8;
 
 	SIVAL(secret.buffer, 0, len);
 	SIVAL(secret.buffer, 4, 0x01);
-	memcpy(secret.buffer+8, data, len);
+	memcpy(secret.buffer + 8, data, len);
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy2( srv_name,
-				&lsa_pol, True, 0x02000000) : False;
+	res = res ? lsa_open_policy2(srv_name,
+				     &lsa_pol, True, 0x02000000) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res1 = res ? lsa_open_secret( &lsa_pol,
-				secret_name, 0x020003, &pol_sec) : False;
+	res1 = res ? lsa_open_secret(&lsa_pol,
+				     secret_name, 0x020003, &pol_sec) : False;
 
-	res2 = res1 ? (lsa_set_secret(&pol_sec, &secret) == NT_STATUS_NOPROBLEMO) : False;
+	res2 =
+		res1 ? (lsa_set_secret(&pol_sec, &secret) ==
+			NT_STATUS_NOPROBLEMO) : False;
 
 	res1 = res1 ? lsa_close(&pol_sec) : False;
 
@@ -259,10 +267,9 @@ BOOL msrpc_lsa_set_secret(const char* srv_name,
 /****************************************************************************
 nt lsa query secret
 ****************************************************************************/
-BOOL msrpc_lsa_query_secret(const char* srv_name,
-				const char* secret_name,
-				STRING2 *secret,
-				NTTIME *last_update)
+BOOL msrpc_lsa_query_secret(const char *srv_name,
+			    const char *secret_name,
+			    STRING2 * secret, NTTIME * last_update)
 {
 	BOOL res = True;
 	BOOL res1;
@@ -272,12 +279,13 @@ BOOL msrpc_lsa_query_secret(const char* srv_name,
 	POLICY_HND lsa_pol;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? lsa_open_policy2( srv_name,
-				&lsa_pol, False, 0x02000000) : False;
+	res = res ? lsa_open_policy2(srv_name,
+				     &lsa_pol, False, 0x02000000) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res1 = res ? lsa_open_secret( &lsa_pol,
-				secret_name, 0x02000000, &pol_sec) : False;
+	res1 = res ? lsa_open_secret(&lsa_pol,
+				     secret_name, 0x02000000,
+				     &pol_sec) : False;
 
 	res2 = res1 ? lsa_query_secret(&pol_sec, secret, last_update) : False;
 
@@ -290,15 +298,15 @@ BOOL msrpc_lsa_query_secret(const char* srv_name,
 
 /****************************************************************************
 ****************************************************************************/
-BOOL msrpc_lsa_query_trust_passwd(const char* srv_name,
-				const char* secret_name,
-				uchar trust_passwd[16])
+BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
+				  const char *secret_name,
+				  uchar trust_passwd[16],
+				  NTTIME * last_update)
 {
 	STRING2 secret;
-	NTTIME last_update;
 
 	if (!msrpc_lsa_query_secret(srv_name, secret_name, &secret,
-	                           &last_update))
+				    last_update))
 	{
 		return False;
 	}
@@ -314,7 +322,6 @@ BOOL msrpc_lsa_query_trust_passwd(const char* srv_name,
 	{
 		return False;
 	}
-	memcpy(trust_passwd, secret.buffer+8, 16);
+	memcpy(trust_passwd, secret.buffer + 8, 16);
 	return True;
 }
-

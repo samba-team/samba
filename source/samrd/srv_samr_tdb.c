@@ -37,14 +37,16 @@ typedef struct tdb_dom_info
 	TDB_CONTEXT *als_tdb;
 	DOM_SID sid;
 
-} TDB_DOM_INFO;
+}
+TDB_DOM_INFO;
 
 typedef struct tdb_sid_info
 {
 	TDB_CONTEXT *tdb;
 	DOM_SID sid;
 
-} TDB_SID_INFO;
+}
+TDB_SID_INFO;
 
 typedef struct tdb_rid_info
 {
@@ -53,18 +55,20 @@ typedef struct tdb_rid_info
 	TDB_CONTEXT *als_tdb;
 	uint32 rid;
 
-} TDB_RID_INFO;
+}
+TDB_RID_INFO;
 
 typedef struct tdb_sam_info
 {
 	TDB_CONTEXT *tdb;
 
-} TDB_SAM_INFO;
+}
+TDB_SAM_INFO;
 
 static void free_tdbdom_info(void *dev)
 {
-	TDB_DOM_INFO *tdbi = (TDB_DOM_INFO *)dev;
-	DEBUG(10,("free dom info \n"));
+	TDB_DOM_INFO *tdbi = (TDB_DOM_INFO *) dev;
+	DEBUG(10, ("free dom info \n"));
 	if (tdbi->usr_tdb != NULL)
 	{
 		tdb_close(tdbi->usr_tdb);
@@ -90,8 +94,8 @@ static void free_tdbdom_info(void *dev)
 
 static void free_tdbrid_info(void *dev)
 {
-	TDB_RID_INFO *tdbi = (TDB_RID_INFO *)dev;
-	DEBUG(10,("free rid info\n"));
+	TDB_RID_INFO *tdbi = (TDB_RID_INFO *) dev;
+	DEBUG(10, ("free rid info\n"));
 	if (tdbi->usr_tdb != NULL)
 	{
 		tdb_close(tdbi->usr_tdb);
@@ -109,8 +113,8 @@ static void free_tdbrid_info(void *dev)
 
 static void free_tdbsam_info(void *dev)
 {
-	TDB_SAM_INFO *tdbi = (TDB_SAM_INFO *)dev;
-	DEBUG(10,("free sam info\n"));
+	TDB_SAM_INFO *tdbi = (TDB_SAM_INFO *) dev;
+	DEBUG(10, ("free sam info\n"));
 	if (tdbi->tdb != NULL)
 	{
 		tdb_close(tdbi->tdb);
@@ -120,8 +124,8 @@ static void free_tdbsam_info(void *dev)
 
 static void free_tdbsid_info(void *dev)
 {
-	TDB_SID_INFO *tdbi = (TDB_SID_INFO *)dev;
-	DEBUG(10,("free policy connection\n"));
+	TDB_SID_INFO *tdbi = (TDB_SID_INFO *) dev;
+	DEBUG(10, ("free policy connection\n"));
 	if (tdbi->tdb != NULL)
 	{
 		tdb_close(tdbi->tdb);
@@ -133,10 +137,8 @@ static void free_tdbsid_info(void *dev)
   set samr rid
 ****************************************************************************/
 BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *usr_tdb,
-				TDB_CONTEXT *grp_tdb,
-				TDB_CONTEXT *als_tdb,
-				uint32 rid)
+		TDB_CONTEXT * usr_tdb,
+		TDB_CONTEXT * grp_tdb, TDB_CONTEXT * als_tdb, uint32 rid)
 {
 	TDB_RID_INFO *dev = malloc(sizeof(*dev));
 
@@ -146,16 +148,16 @@ BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
 		dev->usr_tdb = usr_tdb;
 		dev->grp_tdb = grp_tdb;
 		dev->als_tdb = als_tdb;
-		if (set_policy_state(cache, hnd, NULL, /*free_tdbrid_info*/
-		                     (void*)dev))
+		if (set_policy_state(cache, hnd, NULL,	/*free_tdbrid_info */
+				     (void *)dev))
 		{
-			DEBUG(3,("Service setting policy rid=%x\n", rid));
+			DEBUG(3, ("Service setting policy rid=%x\n", rid));
 			return True;
 		}
 		free(dev);
 		return False;
 	}
-	DEBUG(3,("Error setting policy rid\n"));
+	DEBUG(3, ("Error setting policy rid\n"));
 	return False;
 }
 
@@ -163,19 +165,18 @@ BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
   get samr rid
 ****************************************************************************/
 BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **usr_tdb,
-				TDB_CONTEXT **grp_tdb,
-				TDB_CONTEXT **als_tdb,
-				uint32 *rid)
+		TDB_CONTEXT ** usr_tdb,
+		TDB_CONTEXT ** grp_tdb, TDB_CONTEXT ** als_tdb, uint32 * rid)
 {
-	TDB_RID_INFO *dev = (TDB_RID_INFO*)get_policy_state_info(cache, hnd);
+	TDB_RID_INFO *dev =
+		(TDB_RID_INFO *) get_policy_state_info(cache, hnd);
 
 	if (dev != NULL)
 	{
 		if (rid != NULL)
 		{
 			(*rid) = dev->rid;
-			DEBUG(3,("Service getting policy rid=%x\n", (*rid)));
+			DEBUG(3, ("Service getting policy rid=%x\n", (*rid)));
 		}
 		if (usr_tdb != NULL)
 		{
@@ -192,7 +193,7 @@ BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
 		return True;
 	}
 
-	DEBUG(3,("Error getting policy rid\n"));
+	DEBUG(3, ("Error getting policy rid\n"));
 	return False;
 }
 
@@ -200,7 +201,7 @@ BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
   set samr sid
 ****************************************************************************/
 BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *tdb)
+		TDB_CONTEXT * tdb)
 {
 	pstring sidstr;
 	TDB_SAM_INFO *dev = malloc(sizeof(*dev));
@@ -209,15 +210,16 @@ BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
 	{
 		dev->tdb = tdb;
 
-		if (set_policy_state(cache, hnd, free_tdbsam_info, (void*)dev))
+		if (set_policy_state
+		    (cache, hnd, free_tdbsam_info, (void *)dev))
 		{
-			DEBUG(3,("Service setting policy sid=%s\n", sidstr));
+			DEBUG(3, ("Service setting policy sid=%s\n", sidstr));
 			return True;
 		}
 		free(dev);
 		return False;
 	}
-	DEBUG(3,("Error setting policy sid\n"));
+	DEBUG(3, ("Error setting policy sid\n"));
 	return False;
 }
 
@@ -225,9 +227,10 @@ BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
   get samr sid
 ****************************************************************************/
 BOOL get_tdbsam(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **tdb)
+		TDB_CONTEXT ** tdb)
 {
-	TDB_SAM_INFO *dev = (TDB_SAM_INFO*)get_policy_state_info(cache, hnd);
+	TDB_SAM_INFO *dev =
+		(TDB_SAM_INFO *) get_policy_state_info(cache, hnd);
 
 	if (dev != NULL)
 	{
@@ -239,7 +242,7 @@ BOOL get_tdbsam(struct policy_cache *cache, const POLICY_HND *hnd,
 		return True;
 	}
 
-	DEBUG(3,("Error getting policy sid\n"));
+	DEBUG(3, ("Error getting policy sid\n"));
 	return False;
 }
 
@@ -247,19 +250,18 @@ BOOL get_tdbsam(struct policy_cache *cache, const POLICY_HND *hnd,
   set samr sid
 ****************************************************************************/
 BOOL set_tdbdomsid(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *usr_tdb,
-				TDB_CONTEXT *usg_tdb,
-				TDB_CONTEXT *usa_tdb,
-				TDB_CONTEXT *grp_tdb,
-				TDB_CONTEXT *als_tdb,
-				const DOM_SID *sid)
+		   TDB_CONTEXT * usr_tdb,
+		   TDB_CONTEXT * usg_tdb,
+		   TDB_CONTEXT * usa_tdb,
+		   TDB_CONTEXT * grp_tdb,
+		   TDB_CONTEXT * als_tdb, const DOM_SID * sid)
 {
 	pstring sidstr;
 	TDB_DOM_INFO *dev;
 
 	dev = malloc(sizeof(*dev));
 
-	DEBUG(3,("Setting policy sid=%s\n", sid_to_string(sidstr, sid)));
+	DEBUG(3, ("Setting policy sid=%s\n", sid_to_string(sidstr, sid)));
 
 	if (dev != NULL)
 	{
@@ -270,15 +272,16 @@ BOOL set_tdbdomsid(struct policy_cache *cache, POLICY_HND *hnd,
 		dev->grp_tdb = grp_tdb;
 		dev->als_tdb = als_tdb;
 
-		if (set_policy_state(cache, hnd, free_tdbdom_info, (void*)dev))
+		if (set_policy_state
+		    (cache, hnd, free_tdbdom_info, (void *)dev))
 		{
-			DEBUG(3,("Service setting policy sid=%s\n", sidstr));
+			DEBUG(3, ("Service setting policy sid=%s\n", sidstr));
 			return True;
 		}
 		free(dev);
 		return False;
 	}
-	DEBUG(3,("Error setting policy sid\n"));
+	DEBUG(3, ("Error setting policy sid\n"));
 	return False;
 }
 
@@ -286,23 +289,23 @@ BOOL set_tdbdomsid(struct policy_cache *cache, POLICY_HND *hnd,
   get samr sid
 ****************************************************************************/
 BOOL get_tdbdomsid(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **usr_tdb,
-				TDB_CONTEXT **usg_tdb,
-				TDB_CONTEXT **usa_tdb,
-				TDB_CONTEXT **grp_tdb,
-				TDB_CONTEXT **als_tdb,
-				DOM_SID *sid)
+		   TDB_CONTEXT ** usr_tdb,
+		   TDB_CONTEXT ** usg_tdb,
+		   TDB_CONTEXT ** usa_tdb,
+		   TDB_CONTEXT ** grp_tdb,
+		   TDB_CONTEXT ** als_tdb, DOM_SID * sid)
 {
-	TDB_DOM_INFO *dev = (TDB_DOM_INFO*)get_policy_state_info(cache, hnd);
+	TDB_DOM_INFO *dev =
+		(TDB_DOM_INFO *) get_policy_state_info(cache, hnd);
 
 	if (dev != NULL)
 	{
 		pstring tmp;
 		if (sid != NULL)
-		{	
+		{
 			sid_copy(sid, &dev->sid);
-			DEBUG(3,("Getting policy sid=%s\n",
-			          sid_to_string(tmp, sid)));
+			DEBUG(3, ("Getting policy sid=%s\n",
+				  sid_to_string(tmp, sid)));
 		}
 		if (usr_tdb != NULL)
 		{
@@ -327,7 +330,7 @@ BOOL get_tdbdomsid(struct policy_cache *cache, const POLICY_HND *hnd,
 		return True;
 	}
 
-	DEBUG(3,("Error getting policy sid\n"));
+	DEBUG(3, ("Error getting policy sid\n"));
 	return False;
 }
 
@@ -335,29 +338,30 @@ BOOL get_tdbdomsid(struct policy_cache *cache, const POLICY_HND *hnd,
   set samr sid
 ****************************************************************************/
 BOOL set_tdbsid(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *tdb, const DOM_SID *sid)
+		TDB_CONTEXT * tdb, const DOM_SID * sid)
 {
 	pstring sidstr;
 	TDB_SID_INFO *dev;
 
 	dev = malloc(sizeof(*dev));
 
-	DEBUG(3,("Setting policy sid=%s\n", sid_to_string(sidstr, sid)));
+	DEBUG(3, ("Setting policy sid=%s\n", sid_to_string(sidstr, sid)));
 
 	if (dev != NULL)
 	{
 		sid_copy(&dev->sid, sid);
 		dev->tdb = tdb;
 
-		if (set_policy_state(cache, hnd, free_tdbsid_info, (void*)dev))
+		if (set_policy_state
+		    (cache, hnd, free_tdbsid_info, (void *)dev))
 		{
-			DEBUG(3,("Service setting policy sid=%s\n", sidstr));
+			DEBUG(3, ("Service setting policy sid=%s\n", sidstr));
 			return True;
 		}
 		free(dev);
 		return False;
 	}
-	DEBUG(3,("Error setting policy sid\n"));
+	DEBUG(3, ("Error setting policy sid\n"));
 	return False;
 }
 
@@ -365,18 +369,19 @@ BOOL set_tdbsid(struct policy_cache *cache, POLICY_HND *hnd,
   get samr sid
 ****************************************************************************/
 BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **tdb, DOM_SID *sid)
+		TDB_CONTEXT ** tdb, DOM_SID * sid)
 {
-	TDB_SID_INFO *dev = (TDB_SID_INFO*)get_policy_state_info(cache, hnd);
+	TDB_SID_INFO *dev =
+		(TDB_SID_INFO *) get_policy_state_info(cache, hnd);
 
 	if (dev != NULL)
 	{
 		pstring tmp;
 		if (sid != NULL)
-		{	
+		{
 			sid_copy(sid, &dev->sid);
-			DEBUG(3,("Getting policy sid=%s\n",
-			          sid_to_string(tmp, sid)));
+			DEBUG(3, ("Getting policy sid=%s\n",
+				  sid_to_string(tmp, sid)));
 		}
 		if (tdb != NULL)
 		{
@@ -386,40 +391,39 @@ BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 		return True;
 	}
 
-	DEBUG(3,("Error getting policy sid\n"));
+	DEBUG(3, ("Error getting policy sid\n"));
 	return False;
 }
 
-TDB_CONTEXT *open_usr_db(const DOM_SID *sid, uint32 rid, int perms)
+TDB_CONTEXT *open_usr_db(const DOM_SID * sid, uint32 rid, int perms)
 {
 	pstring tmp;
 	pstring usr;
 
 	sid_to_string(tmp, sid);
-	slprintf(usr, sizeof(usr)-1, "%s/usr/%x", tmp, rid);
+	slprintf(usr, sizeof(usr) - 1, "%s/usr/%x", tmp, rid);
 
-	return tdb_open(passdb_path(usr),0,0,perms, 0644);
+	return tdb_open(passdb_path(usr), 0, 0, perms, 0644);
 }
 
 /*******************************************************************
  opens a samr entiry by rid, returns a policy handle.
  ********************************************************************/
-uint32 samr_open_user_tdb( const POLICY_HND *parent_pol,
-				const DOM_SID *sid,
-				TDB_CONTEXT *usr_tdb,
-				POLICY_HND *pol,
-				uint32 ace_perms, uint32 rid)
+uint32 samr_open_user_tdb(const POLICY_HND *parent_pol,
+			  const DOM_SID * sid,
+			  TDB_CONTEXT * usr_tdb,
+			  POLICY_HND *pol, uint32 ace_perms, uint32 rid)
 {
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_policy_hnd_link(get_global_hnd_cache(),
-		parent_pol, pol, ace_perms))
+				  parent_pol, pol, ace_perms))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (usr_tdb == NULL && ace_perms == SEC_RIGHTS_MAXIMUM_ALLOWED)
 	{
-		DEBUG(10,("samr_open_user_tdb: max perms requested\n"));
+		DEBUG(10, ("samr_open_user_tdb: max perms requested\n"));
 
 		usr_tdb = open_usr_db(sid, rid, O_RDWR);
 		if (usr_tdb == NULL)
@@ -435,12 +439,16 @@ uint32 samr_open_user_tdb( const POLICY_HND *parent_pol,
 		BOOL perms_write;
 
 		perms_write = IS_BITS_SET_SOME(ace_perms,
-		                SEC_RIGHTS_WRITE_OWNER|SEC_RIGHTS_WRITE_DAC);
+					       SEC_RIGHTS_WRITE_OWNER |
+					       SEC_RIGHTS_WRITE_DAC);
 		perms_read = IS_BITS_SET_ALL(ace_perms, SEC_RIGHTS_READ);
 
-		if (perms_write              ) perms = O_WRONLY;
-		if (perms_read               ) perms = O_RDONLY;
-		if (perms_write && perms_read) perms = O_RDWR;
+		if (perms_write)
+			perms = O_WRONLY;
+		if (perms_read)
+			perms = O_RDONLY;
+		if (perms_write && perms_read)
+			perms = O_RDWR;
 
 		usr_tdb = open_usr_db(sid, rid, O_RDWR);
 	}
@@ -461,4 +469,3 @@ uint32 samr_open_user_tdb( const POLICY_HND *parent_pol,
 
 	return NT_STATUS_NOPROBLEMO;
 }
-

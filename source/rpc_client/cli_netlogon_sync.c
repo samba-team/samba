@@ -54,15 +54,14 @@ BOOL synchronise_passdb(void)
 	fstrcat(trust_acct, "$");
 
 	if (!msrpc_lsa_query_trust_passwd("\\\\.", "$MACHINE.ACC",
-	                                  trust_passwd))
+					  trust_passwd, NULL))
 	{
 		return False;
 	}
 
 	ret = net_sam_sync(lp_passwordserver(), lp_workgroup(),
-	                  global_myname, trust_acct,
-	                  trust_passwd,
-	                  hdr_deltas, deltas, &num);
+			   global_myname, trust_acct,
+			   trust_passwd, hdr_deltas, deltas, &num);
 
 	if (ret)
 	{
@@ -78,13 +77,17 @@ BOOL synchronise_passdb(void)
 			pwdb_init_smb(&pwd);
 
 			pwd.user_rid = acc->user_rid;
-			unistr2_to_ascii(nt_name, &(acc->uni_acct_name), sizeof(fstring)-1);
+			unistr2_to_ascii(nt_name, &(acc->uni_acct_name),
+					 sizeof(fstring) - 1);
 			pwd.nt_name = nt_name;
 			pwd.acct_ctrl = acc->acb_info;
-			pwd.pass_last_set_time = nt_time_to_unix(&(acc->pwd_last_set_time));
-			
-			sam_pwd_hash(acc->user_rid, smb_passwd, acc->pass.buf_lm_pwd, 0);
-			sam_pwd_hash(acc->user_rid, smb_nt_passwd, acc->pass.buf_nt_pwd, 0);
+			pwd.pass_last_set_time =
+				nt_time_to_unix(&(acc->pwd_last_set_time));
+
+			sam_pwd_hash(acc->user_rid, smb_passwd,
+				     acc->pass.buf_lm_pwd, 0);
+			sam_pwd_hash(acc->user_rid, smb_nt_passwd,
+				     acc->pass.buf_nt_pwd, 0);
 			pwd.smb_passwd = smb_passwd;
 			pwd.smb_nt_passwd = smb_nt_passwd;
 
@@ -97,8 +100,9 @@ BOOL synchronise_passdb(void)
 				success = add_smbpwd_entry(&pwd);
 			}
 
-			DEBUG(0, ("Attempted to %s account for %s: %s\n", mode,
-				  nt_name, success ? "OK" : "FAILED"));
+			DEBUG(0,
+			      ("Attempted to %s account for %s: %s\n", mode,
+			       nt_name, success ? "OK" : "FAILED"));
 		}
 	}
 

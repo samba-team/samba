@@ -35,12 +35,11 @@ extern pstring global_myname;
 /******************************************************************
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
-static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
-				uint16 level,
-				SAM_USERINFO_CTR *ctr,
-				DOM_GID **gids,
-				uint32 *num_grps,
-				BOOL set)
+static uint32 direct_samr_userinfo(const UNISTR2 * uni_user,
+				   uint16 level,
+				   SAM_USERINFO_CTR * ctr,
+				   DOM_GID ** gids,
+				   uint32 * num_grps, BOOL set)
 {
 	POLICY_HND sam_pol;
 	POLICY_HND dom_pol;
@@ -59,7 +58,7 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 	if (status_sam == NT_STATUS_NOPROBLEMO)
 	{
 		status_dom = _samr_open_domain(&sam_pol, 0x02000000,
-		                               &global_sam_sid, &dom_pol);
+					       &global_sam_sid, &dom_pol);
 	}
 	if (status_dom == NT_STATUS_NOPROBLEMO)
 	{
@@ -68,9 +67,9 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 		uint32 num_types;
 
 		status_usr = _samr_lookup_names(&dom_pol, 1, 0x3e8,
-		                                1, uni_user,
-		                                &num_rids, &user_rid,
-		                                &num_types, &type);
+						1, uni_user,
+						&num_rids, &user_rid,
+						&num_types, &type);
 		if (type != SID_NAME_USER)
 		{
 			status_usr = NT_STATUS_ACCESS_DENIED;
@@ -79,14 +78,14 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 	if (status_usr == NT_STATUS_NOPROBLEMO)
 	{
 		status_usr = _samr_open_user(&dom_pol, 0x02000000,
-		                             user_rid, &usr_pol);
+					     user_rid, &usr_pol);
 	}
 	if (status_usr == NT_STATUS_NOPROBLEMO)
 	{
 		if (set && gids != NULL && num_grps != NULL)
 		{
 			status_grp = _samr_query_usergroups(&usr_pol,
-			                                    num_grps, gids);
+							    num_grps, gids);
 		}
 		if (set)
 		{
@@ -94,12 +93,16 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 		}
 		else
 		{
-			status_pwd = _samr_query_userinfo(&usr_pol, level, ctr);
+			status_pwd =
+				_samr_query_userinfo(&usr_pol, level, ctr);
 		}
 	}
-	if (status_usr == NT_STATUS_NOPROBLEMO) _samr_close(&usr_pol);
-	if (status_dom == NT_STATUS_NOPROBLEMO) _samr_close(&dom_pol);
-	if (status_sam == NT_STATUS_NOPROBLEMO) _samr_close(&sam_pol);
+	if (status_usr == NT_STATUS_NOPROBLEMO)
+		_samr_close(&usr_pol);
+	if (status_dom == NT_STATUS_NOPROBLEMO)
+		_samr_close(&dom_pol);
+	if (status_sam == NT_STATUS_NOPROBLEMO)
+		_samr_close(&sam_pol);
 
 	if (status_pwd != NT_STATUS_NOPROBLEMO)
 	{
@@ -133,19 +136,21 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 	make_unistr2(&uni_trust_acct, trust_acct, strlen(trust_acct));
 
 #if 0
-    /*
-     * Currently this code is redundent as we already have a filter
-     * by hostname list. What this code really needs to do is to 
-     * get a hosts allowed/hosts denied list from the SAM database
-     * on a per user basis, and make the access decision there.
-     * I will leave this code here for now as a reminder to implement
-     * this at a later date. JRA.
-     */
+	/*
+	 * Currently this code is redundent as we already have a filter
+	 * by hostname list. What this code really needs to do is to 
+	 * get a hosts allowed/hosts denied list from the SAM database
+	 * on a per user basis, and make the access decision there.
+	 * I will leave this code here for now as a reminder to implement
+	 * this at a later date. JRA.
+	 */
 
 	if (!allow_access(lp_domain_hostsdeny(), lp_domain_hostsallow(),
-	                  client_connection_name(), client_connection_addr()))
+			  client_connection_name(), client_connection_addr()))
 	{
-		DEBUG(0,("get_md4pw: Workstation %s denied access to domain\n", trust_acct));
+		DEBUG(0,
+		      ("get_md4pw: Workstation %s denied access to domain\n",
+		       trust_acct));
 		return False;
 	}
 #endif /* 0 */
@@ -153,9 +158,10 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 	if (strequal(trust_name, global_myname))
 	{
 		BOOL ret;
-		DEBUG(10,("get_md4pw: loop-back, use $MACHINE.ACC\n"));
+		DEBUG(10, ("get_md4pw: loop-back, use $MACHINE.ACC\n"));
 		ret = msrpc_lsa_query_trust_passwd("\\\\.",
-		                                        "$MACHINE.ACC", md4pw);
+						   "$MACHINE.ACC", md4pw,
+						   NULL);
 		return ret ? NT_STATUS_ACCESS_DENIED : NT_STATUS_NOPROBLEMO;
 	}
 
@@ -164,7 +170,7 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 	 */
 	become_root(True);
 	status_pwd = direct_samr_userinfo(&uni_trust_acct, 0x12, &ctr,
-					   NULL, NULL, False);
+					  NULL, NULL, False);
 	unbecome_root(True);
 
 	if (status_pwd == NT_STATUS_NOPROBLEMO)
@@ -181,8 +187,7 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 /*************************************************************************
  net_login_interactive:
  *************************************************************************/
-static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
-				struct dcinfo *dc)
+static uint32 net_login_interactive(NET_ID_INFO_1 * id1, struct dcinfo *dc)
 {
 	const UNISTR2 *uni_samusr = &id1->uni_user_name;
 	uint32 status = NT_STATUS_NOPROBLEMO;
@@ -194,8 +199,8 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	SAM_USERINFO_CTR ctr;
 
 	become_root(True);
-	status = direct_samr_userinfo(uni_samusr, 0x12, &ctr, 
-	                                   NULL, NULL, False);
+	status = direct_samr_userinfo(uni_samusr, 0x12, &ctr,
+				      NULL, NULL, False);
 	unbecome_root(True);
 
 	if (status != NT_STATUS_NOPROBLEMO)
@@ -215,8 +220,8 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	dump_data_pw("lm owf password:", lm_pwd, 16);
 	dump_data_pw("nt owf password:", nt_pwd, 16);
 
-	SamOEMhash((uchar *)lm_pwd, key, 0);
-	SamOEMhash((uchar *)nt_pwd, key, 0);
+	SamOEMhash((uchar *) lm_pwd, key, 0);
+	SamOEMhash((uchar *) nt_pwd, key, 0);
 
 	dump_data_pw("decrypt of lm owf password:", lm_pwd, 16);
 	dump_data_pw("decrypt of nt owf password:", nt_pwd, 16);
@@ -235,9 +240,8 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 /*************************************************************************
  net_login_network:
  *************************************************************************/
-static uint32 net_login_general(NET_ID_INFO_4 *id4,
-				struct dcinfo *dc,
-				char usr_sess_key[16])
+static uint32 net_login_general(NET_ID_INFO_4 * id4,
+				struct dcinfo *dc, char usr_sess_key[16])
 {
 	fstring user;
 	fstring domain;
@@ -245,24 +249,24 @@ static uint32 net_login_general(NET_ID_INFO_4 *id4,
 
 	int pw_len = id4->str_general.str_str_len;
 
-	unistr2_to_ascii(user  , &id4->uni_user_name, sizeof(user)-1);
-	unistr2_to_ascii(domain, &id4->uni_domain_name, sizeof(domain)-1);
+	unistr2_to_ascii(user, &id4->uni_user_name, sizeof(user) - 1);
+	unistr2_to_ascii(domain, &id4->uni_domain_name, sizeof(domain) - 1);
 	general = id4->str_general.buffer;
 
-	DEBUG(5,("net_login_general: user:%s domain:%s", user, domain));
+	DEBUG(5, ("net_login_general: user:%s domain:%s", user, domain));
 #ifdef DEBUG_PASSWORD
-	DEBUG(100,("password:%s", general));
+	DEBUG(100, ("password:%s", general));
 #endif
-	DEBUG(5,("\n"));
+	DEBUG(5, ("\n"));
 
-	DEBUG(0,("net_login_general: TODO - \"update encrypted\" disabled\n"));
+	DEBUG(0,
+	      ("net_login_general: TODO - \"update encrypted\" disabled\n"));
 
 	if (pass_check(user, general, pw_len, NULL,
 #if 0
-	                    lp_update_encrypted() ?
-	                    update_smbpassword_file :
+		       lp_update_encrypted()? update_smbpassword_file :
 #endif
-	                    NULL) ) 
+		       NULL))
 	{
 		unsigned char key[16];
 
@@ -270,20 +274,20 @@ static uint32 net_login_general(NET_ID_INFO_4 *id4,
 		memcpy(key, dc->sess_key, 8);
 
 #ifdef DEBUG_PASSWORD
-		DEBUG(100,("key:"));
+		DEBUG(100, ("key:"));
 		dump_data(100, key, 16);
 
-		DEBUG(100,("user sess key:"));
+		DEBUG(100, ("user sess key:"));
 		dump_data(100, usr_sess_key, 16);
 #endif
-		SamOEMhash((uchar *)usr_sess_key, key, 0);
+		SamOEMhash((uchar *) usr_sess_key, key, 0);
 
 #ifdef DEBUG_PASSWORD
-		DEBUG(100,("encrypt of user session key:"));
+		DEBUG(100, ("encrypt of user session key:"));
 		dump_data(100, usr_sess_key, 16);
 #endif
 
-                  return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 	}
 
 	return NT_STATUS_WRONG_PASSWORD;
@@ -292,11 +296,10 @@ static uint32 net_login_general(NET_ID_INFO_4 *id4,
 /*************************************************************************
  net_login_network:
  *************************************************************************/
-static uint32 net_login_network(NET_ID_INFO_2 *id2,
+static uint32 net_login_network(NET_ID_INFO_2 * id2,
 				uint16 acb_info,
 				struct dcinfo *dc,
-				char usr_sess_key[16],
-				char lm_pw8[8])
+				char usr_sess_key[16], char lm_pw8[8])
 {
 	const UNISTR2 *uni_samusr = &id2->uni_user_name;
 	fstring user;
@@ -309,12 +312,12 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	int nt_pw_len = id2->hdr_nt_chal_resp.str_str_len;
 	int lm_pw_len = id2->hdr_lm_chal_resp.str_str_len;
 
-	unistr2_to_ascii(user  , uni_samusr, sizeof(user)-1);
-	unistr2_to_ascii(domain, &id2->uni_domain_name, sizeof(domain)-1);
+	unistr2_to_ascii(user, uni_samusr, sizeof(user) - 1);
+	unistr2_to_ascii(domain, &id2->uni_domain_name, sizeof(domain) - 1);
 
 	become_root(True);
-	status = direct_samr_userinfo(uni_samusr, 0x12, &ctr, 
-	                                   NULL, NULL, False);
+	status = direct_samr_userinfo(uni_samusr, 0x12, &ctr,
+				      NULL, NULL, False);
 	unbecome_root(True);
 
 	if (status != NT_STATUS_NOPROBLEMO)
@@ -323,16 +326,18 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 		return status;
 	}
 
-	DEBUG(5,("net_login_network: lm_len:%d nt_len:%d user:%s domain:%s\n",
-		lm_pw_len, nt_pw_len, user, domain));
+	DEBUG(5,
+	      ("net_login_network: lm_len:%d nt_len:%d user:%s domain:%s\n",
+	       lm_pw_len, nt_pw_len, user, domain));
 
 	if (smb_password_ok(acb_info, ctr.info.id12->lm_pwd,
-	                    ctr.info.id12->nt_pwd,
-	                    id2->lm_chal, 
-	                    user, domain,
-	                    (const uchar *)id2->lm_chal_resp.buffer, lm_pw_len, 
-	                    (const uchar *)id2->nt_chal_resp.buffer, nt_pw_len,
-	                    usr_sess_key)) 
+			    ctr.info.id12->nt_pwd,
+			    id2->lm_chal,
+			    user, domain,
+			    (const uchar *)id2->lm_chal_resp.buffer,
+			    lm_pw_len,
+			    (const uchar *)id2->nt_chal_resp.buffer,
+			    nt_pw_len, usr_sess_key))
 	{
 		unsigned char key[16];
 
@@ -345,10 +350,11 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 		dump_data_pw("user sess key:", usr_sess_key, 16);
 		dump_data_pw("lm_pw8:", lm_pw8, 16);
 
-		SamOEMhash((uchar *)lm_pw8, key, 3);
-		SamOEMhash((uchar *)usr_sess_key, key, 0);
+		SamOEMhash((uchar *) lm_pw8, key, 3);
+		SamOEMhash((uchar *) usr_sess_key, key, 0);
 
-		dump_data_pw("encrypt of user session key:", usr_sess_key, 16);
+		dump_data_pw("encrypt of user session key:", usr_sess_key,
+			     16);
 		dump_data_pw("encrypt of lm_pw8:", lm_pw8, 16);
 
 		status = NT_STATUS_NOPROBLEMO;
@@ -364,11 +370,10 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 /*************************************************************************
  _net_req_chal
  *************************************************************************/
-uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
-				const UNISTR2 *uni_logon_client,
-				const DOM_CHAL *clnt_chal,
-				DOM_CHAL *srv_chal,
-				uint16 remote_pid	) 
+uint32 _net_req_chal(const UNISTR2 * uni_logon_server,
+		     const UNISTR2 * uni_logon_client,
+		     const DOM_CHAL * clnt_chal,
+		     DOM_CHAL * srv_chal, uint16 remote_pid)
 {
 	fstring trust_acct;
 	fstring trust_name;
@@ -377,7 +382,8 @@ uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
 
 	ZERO_STRUCT(dc);
 
-	unistr2_to_ascii(trust_acct, uni_logon_client, sizeof(trust_acct)-1);
+	unistr2_to_ascii(trust_acct, uni_logon_client,
+			 sizeof(trust_acct) - 1);
 
 	fstrcpy(trust_name, trust_acct);
 	strlower(trust_name);
@@ -391,22 +397,24 @@ uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
 	}
 
 	/* copy the client credentials */
-	memcpy(dc.clnt_chal.data          , clnt_chal->data, sizeof(clnt_chal->data));
-	memcpy(dc.clnt_cred.challenge.data, clnt_chal->data, sizeof(clnt_chal->data));
+	memcpy(dc.clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
+	memcpy(dc.clnt_cred.challenge.data, clnt_chal->data,
+	       sizeof(clnt_chal->data));
 
 	/* create a server challenge for the client */
 	/* Set these to random values. */
 	generate_random_buffer(srv_chal->data, sizeof(srv_chal->data), False);
 
 	/* copy the server credentials */
-	memcpy(dc.srv_chal.data          , srv_chal->data, sizeof(srv_chal->data));
-	memcpy(dc.srv_cred.challenge.data, srv_chal->data, sizeof(srv_chal->data));
+	memcpy(dc.srv_chal.data, srv_chal->data, sizeof(srv_chal->data));
+	memcpy(dc.srv_cred.challenge.data, srv_chal->data,
+	       sizeof(srv_chal->data));
 
 	bzero(dc.sess_key, sizeof(dc.sess_key));
 
 	/* from client / server challenges and md4 password, generate sess key */
 	cred_session_key(&(dc.clnt_chal), &(dc.srv_chal),
-				 (char *)dc.md4pw, dc.sess_key);
+			 (char *)dc.md4pw, dc.sess_key);
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -426,15 +434,16 @@ uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
 /*******************************************************************
 creates a NETLOGON_INFO_3 structure.
 ********************************************************************/
-static BOOL make_netinfo_3(NETLOGON_INFO_3 *info, uint32 flags, uint32 logon_attempts)
+static BOOL make_netinfo_3(NETLOGON_INFO_3 * info, uint32 flags,
+			   uint32 logon_attempts)
 {
-	info->flags          = flags;
+	info->flags = flags;
 	info->logon_attempts = logon_attempts;
-	info->reserved_1     = 0x0;
-	info->reserved_2     = 0x0;
-	info->reserved_3     = 0x0;
-	info->reserved_4     = 0x0;
-	info->reserved_5     = 0x0;
+	info->reserved_1 = 0x0;
+	info->reserved_2 = 0x0;
+	info->reserved_3 = 0x0;
+	info->reserved_4 = 0x0;
+	info->reserved_5 = 0x0;
 
 	return True;
 }
@@ -443,9 +452,10 @@ static BOOL make_netinfo_3(NETLOGON_INFO_3 *info, uint32 flags, uint32 logon_att
 /*******************************************************************
 creates a NETLOGON_INFO_1 structure.
 ********************************************************************/
-static BOOL make_netinfo_1(NETLOGON_INFO_1 *info, uint32 flags, uint32 pdc_status)
+static BOOL make_netinfo_1(NETLOGON_INFO_1 * info, uint32 flags,
+			   uint32 pdc_status)
 {
-	info->flags      = flags;
+	info->flags = flags;
 	info->pdc_status = pdc_status;
 
 	return True;
@@ -454,18 +464,20 @@ static BOOL make_netinfo_1(NETLOGON_INFO_1 *info, uint32 flags, uint32 pdc_statu
 /*******************************************************************
 creates a NETLOGON_INFO_2 structure.
 ********************************************************************/
-static BOOL make_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
-				uint32 tc_status, char *trusted_dc_name)
+static BOOL make_netinfo_2(NETLOGON_INFO_2 * info, uint32 flags,
+			   uint32 pdc_status, uint32 tc_status,
+			   char *trusted_dc_name)
 {
 	int len_dc_name = strlen(trusted_dc_name);
-	info->flags      = flags;
+	info->flags = flags;
 	info->pdc_status = pdc_status;
 	info->ptr_trusted_dc_name = 1;
-	info->tc_status  = tc_status;
+	info->tc_status = tc_status;
 
 	if (trusted_dc_name != NULL)
 	{
-		make_unistr2(&(info->uni_trusted_dc_name), trusted_dc_name, len_dc_name+1);
+		make_unistr2(&(info->uni_trusted_dc_name), trusted_dc_name,
+			     len_dc_name + 1);
 	}
 	else
 	{
@@ -478,12 +490,12 @@ static BOOL make_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_statu
 /*************************************************************************
  _net_logon_ctrl2
  *************************************************************************/
-uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name, 
-				uint32 function_code,
-				uint32 query_level,
-				uint32 switch_value,
-				uint32 *reply_switch_value,
-				NETLOGON_INFO *logon_info)
+uint32 _net_logon_ctrl2(const UNISTR2 * uni_server_name,
+			uint32 function_code,
+			uint32 query_level,
+			uint32 switch_value,
+			uint32 * reply_switch_value,
+			NETLOGON_INFO * logon_info)
 {
 	/* lkclXXXX - guess what - absolutely no idea what these are! */
 	uint32 flags = 0x0;
@@ -498,19 +510,19 @@ uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name,
 	{
 		case 1:
 		{
-			make_netinfo_1(&logon_info->info1, flags, pdc_status);	
+			make_netinfo_1(&logon_info->info1, flags, pdc_status);
 			break;
 		}
 		case 2:
 		{
 			make_netinfo_2(&logon_info->info2, flags, pdc_status,
-			               tc_status, trusted_domain);	
+				       tc_status, trusted_domain);
 			break;
 		}
 		case 3:
 		{
 			make_netinfo_3(&logon_info->info3, flags,
-			                logon_attempts);	
+				       logon_attempts);
 			break;
 		}
 		default:
@@ -527,9 +539,8 @@ uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name,
 /*************************************************************************
  _net_trust_dom_list
  *************************************************************************/
-uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
-				   uint32 function_code,
-				   BUFFER2 *uni_trust_dom_name)
+uint32 _net_trust_dom_list(const UNISTR2 * uni_server_name,
+			   uint32 function_code, BUFFER2 * uni_trust_dom_name)
 {
 	char **doms = NULL;
 	uint32 num_doms = 0;
@@ -544,7 +555,7 @@ uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
 		uni_trust_dom_name->buf_len = 0x2;
 	}
 	uni_trust_dom_name->undoc = 0x1;
-	
+
 	free_char_array(num_doms, doms);
 
 	return NT_STATUS_NOPROBLEMO;
@@ -553,10 +564,9 @@ uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
 /*************************************************************************
  _net_auth
  *************************************************************************/
-uint32 _net_auth(const DOM_LOG_INFO *clnt_id,
-			     const DOM_CHAL *clnt_chal,
-			     DOM_CHAL *srv_chal,
-			     uint16 remote_pid)
+uint32 _net_auth(const DOM_LOG_INFO * clnt_id,
+		 const DOM_CHAL * clnt_chal,
+		 DOM_CHAL * srv_chal, uint16 remote_pid)
 {
 	UTIME srv_time;
 	fstring trust_name;
@@ -567,7 +577,7 @@ uint32 _net_auth(const DOM_LOG_INFO *clnt_id,
 	srv_time.time = 0;
 
 	unistr2_to_ascii(trust_name, &clnt_id->uni_comp_name,
-	                             sizeof(trust_name)-1);
+			 sizeof(trust_name) - 1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -575,17 +585,21 @@ uint32 _net_auth(const DOM_LOG_INFO *clnt_id,
 	}
 
 	/* check that the client credentials are valid */
-	if (!cred_assert(clnt_chal, dc.sess_key, &(dc.clnt_cred.challenge), srv_time))
+	if (!cred_assert
+	    (clnt_chal, dc.sess_key, &(dc.clnt_cred.challenge), srv_time))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* create server challenge for inclusion in the reply */
-	cred_create(dc.sess_key, &(dc.srv_cred.challenge), srv_time, srv_chal);
+	cred_create(dc.sess_key, &(dc.srv_cred.challenge), srv_time,
+		    srv_chal);
 
 	/* copy the received client credentials for use next time */
-	memcpy(dc.clnt_cred.challenge.data, clnt_chal->data, sizeof(clnt_chal->data));
-	memcpy(dc.srv_cred .challenge.data, clnt_chal->data, sizeof(clnt_chal->data));
+	memcpy(dc.clnt_cred.challenge.data, clnt_chal->data,
+	       sizeof(clnt_chal->data));
+	memcpy(dc.srv_cred.challenge.data, clnt_chal->data,
+	       sizeof(clnt_chal->data));
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -598,12 +612,11 @@ uint32 _net_auth(const DOM_LOG_INFO *clnt_id,
 /*************************************************************************
  _net_auth_2
  *************************************************************************/
-uint32 _net_auth_2(const DOM_LOG_INFO *clnt_id,
-				 const DOM_CHAL *clnt_chal,
-				 const NEG_FLAGS *clnt_flgs,
-				 DOM_CHAL *srv_chal,
-				 NEG_FLAGS *srv_flgs,
-				 uint16 remote_pid)
+uint32 _net_auth_2(const DOM_LOG_INFO * clnt_id,
+		   const DOM_CHAL * clnt_chal,
+		   const NEG_FLAGS * clnt_flgs,
+		   DOM_CHAL * srv_chal,
+		   NEG_FLAGS * srv_flgs, uint16 remote_pid)
 {
 	UTIME srv_time;
 	fstring trust_name;
@@ -614,7 +627,7 @@ uint32 _net_auth_2(const DOM_LOG_INFO *clnt_id,
 	srv_time.time = 0;
 
 	unistr2_to_ascii(trust_name, &(clnt_id->uni_comp_name),
-	                             sizeof(trust_name)-1);
+			 sizeof(trust_name) - 1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -623,17 +636,20 @@ uint32 _net_auth_2(const DOM_LOG_INFO *clnt_id,
 
 	/* check that the client credentials are valid */
 	if (!cred_assert(clnt_chal, dc.sess_key,
-			    &(dc.clnt_cred.challenge), srv_time))
+			 &(dc.clnt_cred.challenge), srv_time))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* create server challenge for inclusion in the reply */
-	cred_create(dc.sess_key, &(dc.srv_cred.challenge), srv_time, srv_chal);
+	cred_create(dc.sess_key, &(dc.srv_cred.challenge), srv_time,
+		    srv_chal);
 
 	/* copy the received client credentials for use next time */
-	memcpy(dc.clnt_cred.challenge.data, clnt_chal->data, sizeof(clnt_chal->data));
-	memcpy(dc.srv_cred .challenge.data, clnt_chal->data, sizeof(clnt_chal->data));
+	memcpy(dc.clnt_cred.challenge.data, clnt_chal->data,
+	       sizeof(clnt_chal->data));
+	memcpy(dc.srv_cred.challenge.data, clnt_chal->data,
+	       sizeof(clnt_chal->data));
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -669,10 +685,9 @@ uint32 _net_auth_2(const DOM_LOG_INFO *clnt_id,
 /*************************************************************************
  _net_srv_pwset
  *************************************************************************/
-uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
-			    const uint8 pwd[16],
-			    DOM_CRED *srv_cred,
-			    uint16 remote_pid)
+uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
+		      const uint8 pwd[16],
+		      DOM_CRED * srv_cred, uint16 remote_pid)
 {
 	pstring trust_acct;
 	unsigned char hash3_pwd[16];
@@ -687,8 +702,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 	ZERO_STRUCT(dc);
 
 	uni_samusr = &(clnt_id->login.uni_comp_name);
-	unistr2_to_ascii(trust_name, uni_samusr,
-	                             sizeof(trust_name)-1);
+	unistr2_to_ascii(trust_name, uni_samusr, sizeof(trust_name) - 1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -696,7 +710,8 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (!deal_with_creds(dc.sess_key, &(dc.clnt_cred), &(clnt_id->cred), srv_cred))
+	if (!deal_with_creds
+	    (dc.sess_key, &(dc.clnt_cred), &(clnt_id->cred), srv_cred))
 	{
 		/* lkclXXXX take a guess at a sensible error code to return... */
 		return NT_STATUS_ACCESS_DENIED;
@@ -705,18 +720,19 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 	memcpy(&(dc.srv_cred), &(dc.clnt_cred), sizeof(dc.clnt_cred));
 
 	unistr2_to_ascii(trust_acct, &(clnt_id->login.uni_acct_name),
-				 sizeof(trust_acct)-1);
+			 sizeof(trust_acct) - 1);
 
-	DEBUG(3,("Server Password Set Wksta:[%s]\n", trust_acct));
+	DEBUG(3, ("Server Password Set Wksta:[%s]\n", trust_acct));
 
 	become_root(True);
-	status_pwd = direct_samr_userinfo(uni_samusr, 0x12, &ctr, 
-	                                   NULL, NULL, False);
+	status_pwd = direct_samr_userinfo(uni_samusr, 0x12, &ctr,
+					  NULL, NULL, False);
 	unbecome_root(True);
 
 	acb_info = ctr.info.id12->acb_info;
 
-	if (IS_BITS_SET_SOME(acb_info, ACB_NORMAL|ACB_DISABLED|ACB_PWNOTREQ))
+	if (IS_BITS_SET_SOME
+	    (acb_info, ACB_NORMAL | ACB_DISABLED | ACB_PWNOTREQ))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -758,35 +774,35 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 		free_samr_userinfo_ctr(&ctr);
 		return status_pwd;
 	}
-	
+
 	/* Some debug output, needed an iterater variable */
 	{
 		int i;
 
-		DEBUG(100,("Server password set : new given value was :\n"));
-		for(i = 0; i < 16; i++)
+		DEBUG(100, ("Server password set : new given value was :\n"));
+		for (i = 0; i < 16; i++)
 		{
-			DEBUG(100,("%02X ", pwd[i]));
+			DEBUG(100, ("%02X ", pwd[i]));
 		}
-		DEBUG(100,("\n"));
+		DEBUG(100, ("\n"));
 	}
 
-	cred_hash3( hash3_pwd, pwd, dc.sess_key, 0);
+	cred_hash3(hash3_pwd, pwd, dc.sess_key, 0);
 
 	/* lies!  nt and lm passwords are _not_ the same: don't care */
 	memcpy(ctr.info.id12->lm_pwd, hash3_pwd, sizeof(hash3_pwd));
 	memcpy(ctr.info.id12->nt_pwd, hash3_pwd, sizeof(hash3_pwd));
 
 	become_root(True);
-	status_pwd = direct_samr_userinfo(uni_samusr, 0x12, &ctr, 
-	                                   NULL, NULL, True);
+	status_pwd = direct_samr_userinfo(uni_samusr, 0x12, &ctr,
+					  NULL, NULL, True);
 	unbecome_root(True);
 
 	if (status_pwd != NT_STATUS_NOPROBLEMO)
 	{
 		return status_pwd;
 	}
-	
+
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_INVALID_HANDLE;
@@ -798,12 +814,11 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 /*************************************************************************
  _net_sam_logon
  *************************************************************************/
-uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
-				    uint16 validation_level,
-				    DOM_CRED *srv_creds,
-				    uint16 *switch_value,
-				    NET_USER_INFO_3 *user,
-				    uint16 remote_pid)
+uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
+		      uint16 validation_level,
+		      DOM_CRED * srv_creds,
+		      uint16 * switch_value,
+		      NET_USER_INFO_3 * user, uint16 remote_pid)
 {
 	UNISTR2 *uni_samusr = NULL;
 	UNISTR2 *uni_domain = NULL;
@@ -815,21 +830,21 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	uint32 status_pwd = 0x0;
 	SAM_USERINFO_CTR ctr;
 
-	NTTIME logon_time           ;
-	NTTIME logoff_time          ;
-	NTTIME kickoff_time         ;
-	NTTIME pass_last_set_time   ;
-	NTTIME pass_can_change_time ;
+	NTTIME logon_time;
+	NTTIME logoff_time;
+	NTTIME kickoff_time;
+	NTTIME pass_last_set_time;
+	NTTIME pass_can_change_time;
 	NTTIME pass_must_change_time;
 
-	UNISTR2 *uni_nt_name     ;
-	UNISTR2 *uni_full_name   ;
+	UNISTR2 *uni_nt_name;
+	UNISTR2 *uni_full_name;
 	UNISTR2 *uni_logon_script;
 	UNISTR2 *uni_profile_path;
-	UNISTR2 *uni_home_dir    ;
-	UNISTR2 *uni_dir_drive   ;
+	UNISTR2 *uni_home_dir;
+	UNISTR2 *uni_dir_drive;
 
-	uint32 user_rid ;
+	uint32 user_rid;
 	uint32 group_rid;
 
 	int num_gids = 0;
@@ -843,7 +858,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	UNISTR2 uni_sam_name;
 
 	unistr2_to_ascii(trust_name, &(sam_id->client.login.uni_comp_name),
-	                             sizeof(trust_name)-1);
+			 sizeof(trust_name) - 1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -851,12 +866,12 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (!deal_with_creds(dc.sess_key, &dc.clnt_cred, 
-	                     &(sam_id->client.cred), srv_creds))
+	if (!deal_with_creds(dc.sess_key, &dc.clnt_cred,
+			     &(sam_id->client.cred), srv_creds))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	
+
 	memcpy(&dc.srv_cred, &dc.clnt_cred, sizeof(dc.clnt_cred));
 
 	/* find the username */
@@ -868,7 +883,9 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 			uni_samusr = &(sam_id->ctr->auth.id1.uni_user_name);
 			uni_domain = &(sam_id->ctr->auth.id1.uni_domain_name);
 
-			DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", global_sam_name));
+			DEBUG(3,
+			      ("SAM Logon (Interactive). Domain:[%s].  ",
+			       global_sam_name));
 			break;
 		}
 		case NETWORK_LOGON_TYPE:
@@ -876,7 +893,9 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 			uni_samusr = &(sam_id->ctr->auth.id2.uni_user_name);
 			uni_domain = &(sam_id->ctr->auth.id2.uni_domain_name);
 
-			DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", global_sam_name));
+			DEBUG(3,
+			      ("SAM Logon (Network). Domain:[%s].  ",
+			       global_sam_name));
 			break;
 		}
 		case GENERAL_LOGON_TYPE:
@@ -884,22 +903,23 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 			uni_samusr = &(sam_id->ctr->auth.id4.uni_user_name);
 			uni_domain = &(sam_id->ctr->auth.id4.uni_domain_name);
 
-			DEBUG(3,("SAM Logon (General). Domain:[%s].  ", global_sam_name));
+			DEBUG(3,
+			      ("SAM Logon (General). Domain:[%s].  ",
+			       global_sam_name));
 			break;
 		}
 		default:
 		{
-			DEBUG(2,("SAM Logon: unsupported switch value\n"));
+			DEBUG(2, ("SAM Logon: unsupported switch value\n"));
 			return NT_STATUS_INVALID_INFO_CLASS;
 		}
-	} 
+	}
 
 	/* check username exists */
 
-	unistr2_to_ascii(nt_username, uni_samusr,
-			 sizeof(nt_username)-1);
+	unistr2_to_ascii(nt_username, uni_samusr, sizeof(nt_username) - 1);
 
-	DEBUG(3,("User:[%s]\n", nt_username));
+	DEBUG(3, ("User:[%s]\n", nt_username));
 
 	/*
 	 * IMPORTANT: do a General Login BEFORE the others,
@@ -914,7 +934,9 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	{
 		/* general login.  cleartext password */
 		uint32 status = NT_STATUS_NOPROBLEMO;
-		status = net_login_general(&(sam_id->ctr->auth.id4), &dc, usr_sess_key);
+		status =
+			net_login_general(&(sam_id->ctr->auth.id4), &dc,
+					  usr_sess_key);
 		enc_user_sess_key = usr_sess_key;
 
 		if (status != NT_STATUS_NOPROBLEMO)
@@ -928,8 +950,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	 * added by "update encrypted" in general login
 	 */
 	become_root(True);
-	status_pwd = direct_samr_userinfo(uni_samusr, 21, &ctr, 
-	                                   &gids, &num_gids, False);
+	status_pwd = direct_samr_userinfo(uni_samusr, 21, &ctr,
+					  &gids, &num_gids, False);
 	unbecome_root(True);
 
 	if (status_pwd != NT_STATUS_NOPROBLEMO)
@@ -937,7 +959,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 		free_samr_userinfo_ctr(&ctr);
 		return status_pwd;
 	}
-	
+
 	acb_info = ctr.info.id21->acb_info;
 	if (IS_BITS_SET_ALL(acb_info, ACB_DISABLED))
 	{
@@ -953,17 +975,17 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	{
 		return NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT;
 	}
-	 
+
 	if (IS_BITS_SET_ALL(acb_info, ACB_WSTRUST))
 	{
 		return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
 	}
 
-	logon_time            = ctr.info.id21->logon_time;
-	logoff_time           = ctr.info.id21->logoff_time;
-	kickoff_time          = ctr.info.id21->kickoff_time;
-	pass_last_set_time    = ctr.info.id21->pass_last_set_time;
-	pass_can_change_time  = ctr.info.id21->pass_can_change_time;
+	logon_time = ctr.info.id21->logon_time;
+	logoff_time = ctr.info.id21->logoff_time;
+	kickoff_time = ctr.info.id21->kickoff_time;
+	pass_last_set_time = ctr.info.id21->pass_last_set_time;
+	pass_can_change_time = ctr.info.id21->pass_can_change_time;
 	pass_must_change_time = ctr.info.id21->pass_must_change_time;
 
 	uni_nt_name = &ctr.info.id21->uni_user_name;
@@ -973,7 +995,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	uni_logon_script = &ctr.info.id21->uni_logon_script;
 	uni_profile_path = &ctr.info.id21->uni_profile_path;
 
-	user_rid  = ctr.info.id21->user_rid;
+	user_rid = ctr.info.id21->user_rid;
 	group_rid = ctr.info.id21->group_rid;
 
 	/* validate password - if required */
@@ -986,13 +1008,21 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 			case INTERACTIVE_LOGON_TYPE:
 			{
 				/* interactive login. */
-				status = net_login_interactive(&(sam_id->ctr->auth.id1), &dc);
+				status =
+					net_login_interactive(&
+							      (sam_id->ctr->
+							       auth.id1),
+							      &dc);
 				break;
 			}
 			case NETWORK_LOGON_TYPE:
 			{
 				/* network login.  lm challenge and 24 byte responses */
-				status = net_login_network(&(sam_id->ctr->auth.id2), acb_info, &dc, usr_sess_key, lm_pw8);
+				status =
+					net_login_network(&
+							  (sam_id->ctr->auth.
+							   id2), acb_info,
+&dc, usr_sess_key, lm_pw8);
 				padding = lm_pw8;
 				enc_user_sess_key = usr_sess_key;
 				break;
@@ -1012,48 +1042,33 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	}
 
 	/* lkclXXXX this is the point at which, if the login was
-	successful, that the SAM Local Security Authority should
-	record that the user is logged in to the domain.
-	*/
+	   successful, that the SAM Local Security Authority should
+	   record that the user is logged in to the domain.
+	 */
 
 	/* return the profile plus other bits :-) */
 
 	make_unistr2(&uni_myname, global_myname, strlen(global_myname));
 	make_unistr2(&uni_sam_name, global_sam_name, strlen(global_sam_name));
 
-	make_net_user_info3W(user,
-		&logon_time,
-		&logoff_time,
-		&kickoff_time,
-		&pass_last_set_time,
-		&pass_can_change_time,
-		&pass_must_change_time,
-
-		uni_nt_name         , /* user_name */
-		uni_full_name       , /* full_name */
-		uni_logon_script    , /* logon_script */
-		uni_profile_path    , /* profile_path */
-		uni_home_dir        , /* home_dir */
-		uni_dir_drive       , /* dir_drive */
-
-		0, /* logon_count */
-		0, /* bad_pw_count */
-
-		user_rid   , /* RID user_id */
-		group_rid  , /* RID group_id */
-		num_gids,    /* uint32 num_groups */
-		gids    , /* DOM_GID *gids */
-		0x20    , /* uint32 user_flgs (?) */
-
-		enc_user_sess_key, /* char usr_sess_key[16] */
-
-		&uni_myname  , /* char *logon_srv */
-		&uni_sam_name, /* char *logon_dom */
-
-		padding,
-
-		&global_sam_sid, /* DOM_SID *dom_sid */
-		NULL); /* char *other_sids */
+	make_net_user_info3W(user, &logon_time, &logoff_time, &kickoff_time, &pass_last_set_time, &pass_can_change_time, &pass_must_change_time, uni_nt_name,	/* user_name */
+			     uni_full_name,	/* full_name */
+			     uni_logon_script,	/* logon_script */
+			     uni_profile_path,	/* profile_path */
+			     uni_home_dir,	/* home_dir */
+			     uni_dir_drive,	/* dir_drive */
+			     0,	/* logon_count */
+			     0,	/* bad_pw_count */
+			     user_rid,	/* RID user_id */
+			     group_rid,	/* RID group_id */
+			     num_gids,	/* uint32 num_groups */
+			     gids,	/* DOM_GID *gids */
+			     0x20,	/* uint32 user_flgs (?) */
+			     enc_user_sess_key,	/* char usr_sess_key[16] */
+			     &uni_myname,	/* char *logon_srv */
+			     &uni_sam_name,	/* char *logon_dom */
+			     padding, &global_sam_sid,	/* DOM_SID *dom_sid */
+			     NULL);	/* char *other_sids */
 
 	/* Free any allocated groups array. */
 	safe_free(gids);
@@ -1070,9 +1085,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 /*************************************************************************
  _net_sam_logoff
  *************************************************************************/
-uint32 _net_sam_logoff(const DOM_SAM_INFO *sam_id,
-			     DOM_CRED *srv_creds,
-			     uint16 remote_pid)
+uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
+		       DOM_CRED * srv_creds, uint16 remote_pid)
 {
 	fstring trust_name;
 	struct dcinfo dc;
@@ -1080,7 +1094,7 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO *sam_id,
 	ZERO_STRUCT(dc);
 
 	unistr2_to_ascii(trust_name, &(sam_id->client.login.uni_comp_name),
-	                             sizeof(trust_name)-1);
+			 sizeof(trust_name) - 1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -1088,8 +1102,8 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO *sam_id,
 	}
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (!deal_with_creds(dc.sess_key, &(dc.clnt_cred), 
-	                &(sam_id->client.cred), srv_creds))
+	if (!deal_with_creds(dc.sess_key, &(dc.clnt_cred),
+			     &(sam_id->client.cred), srv_creds))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1107,16 +1121,15 @@ uint32 _net_sam_logoff(const DOM_SAM_INFO *sam_id,
 /*************************************************************************
  _net_sam_sync
  *************************************************************************/
-uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
-			   const UNISTR2 *uni_cli_name,
-			   uint32 database_id,
-			   uint32 restart_state,
-			   uint32 *sync_context,
-			   uint32 max_size,
-			   uint32 *num_deltas,
-			   uint32 *num_deltas2,
-			   SAM_DELTA_HDR *hdr_deltas,
-			   SAM_DELTA_CTR *deltas)
+uint32 _net_sam_sync(const UNISTR2 * uni_srv_name,
+		     const UNISTR2 * uni_cli_name,
+		     uint32 database_id,
+		     uint32 restart_state,
+		     uint32 * sync_context,
+		     uint32 max_size,
+		     uint32 * num_deltas,
+		     uint32 * num_deltas2,
+		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas)
 {
 	fstring trust_name;
 
@@ -1133,7 +1146,7 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 	uint32 num_sam_users = 0;
 	uint32 idx;
 
-	unistr2_to_ascii(trust_name, uni_cli_name, sizeof(trust_name)-1);
+	unistr2_to_ascii(trust_name, uni_cli_name, sizeof(trust_name) - 1);
 
 	(*sync_context) = 1;
 
@@ -1142,7 +1155,8 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	if (_samr_open_domain(&sam_pol, 0x02000000,
-			&global_sam_sid, &dom_pol) != NT_STATUS_NOPROBLEMO)
+			      &global_sam_sid,
+			      &dom_pol) != NT_STATUS_NOPROBLEMO)
 	{
 		_samr_close(&sam_pol);
 		return NT_STATUS_ACCESS_DENIED;
@@ -1155,13 +1169,14 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 	do
 	{
 		enum_status = _samr_enum_dom_users(&dom_pol,
-					&start_idx, 
-					0x0, 0x0, 0x10000,
-			                &sam,
-			                &uni_acct_name,
-			                &num_sam_users);
+						   &start_idx,
+						   0x0, 0x0, 0x10000,
+						   &sam,
+						   &uni_acct_name,
+						   &num_sam_users);
 
-	} while (enum_status == STATUS_MORE_ENTRIES);
+	}
+	while (enum_status == STATUS_MORE_ENTRIES);
 
 	for (idx = 0; idx < num_sam_users; idx++)
 	{
@@ -1171,28 +1186,29 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 
 		ZERO_STRUCT(ctr);
 
-		status_usr = _samr_open_user(&dom_pol, 0x02000000, sam[idx].rid,
-		                             &usr_pol);
-		if (status_usr == NT_STATUS_NOPROBLEMO &&
-		    _samr_query_userinfo(&usr_pol, 0x21, &ctr) ==
-		                  NT_STATUS_NOPROBLEMO)
+		status_usr =
+			_samr_open_user(&dom_pol, 0x02000000, sam[idx].rid,
+					&usr_pol);
+		if (status_usr == NT_STATUS_NOPROBLEMO
+		    && _samr_query_userinfo(&usr_pol, 0x21,
+					    &ctr) == NT_STATUS_NOPROBLEMO)
 		{
 			SAM_USER_INFO_21 *usr = ctr.info.id21;
 
 			make_sam_delta_hdr(&hdr_deltas[i], 5, usr->user_rid);
 			make_sam_account_info(&deltas[i].account_info,
-				 	    &usr->uni_user_name,
-				 	    &usr->uni_full_name, usr->user_rid,
-				 	    usr->group_rid,
-				 	    &usr->uni_home_dir, 
-				 	    &usr->uni_dir_drive,
-				 	    &usr->uni_logon_script, 
-				 	    &usr->uni_acct_desc,
-				 	    usr->acb_info, 
-				 	    &usr->uni_profile_path,
-				 	    &usr->uni_workstations, 
-				 	    &usr->uni_unknown_str, 
-				 	    &usr->uni_munged_dial);
+					      &usr->uni_user_name,
+					      &usr->uni_full_name,
+					      usr->user_rid, usr->group_rid,
+					      &usr->uni_home_dir,
+					      &usr->uni_dir_drive,
+					      &usr->uni_logon_script,
+					      &usr->uni_acct_desc,
+					      usr->acb_info,
+					      &usr->uni_profile_path,
+					      &usr->uni_workstations,
+					      &usr->uni_unknown_str,
+					      &usr->uni_munged_dial);
 
 			i++;
 			free_samr_userinfo_ctr(&ctr);
@@ -1219,4 +1235,3 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 
 	return NT_STATUS_NOPROBLEMO;
 }
-

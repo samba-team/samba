@@ -37,12 +37,14 @@ extern pstring global_myworkgroup;
  Do the same as security=server, but using NT Domain calls and a session
  key from the workstation trust account password.
 ************************************************************************/
-static uint32 domain_client_validate( const char *user, const char *domain, 
-				const char *acct_name, uint16 acct_type,
-				const char *challenge,
-				const char *smb_apasswd, int smb_apasslen, 
-				const char *smb_ntpasswd, int smb_ntpasslen,
-				NET_USER_INFO_3 *info3)
+static uint32 domain_client_validate(const char *user, const char *domain,
+				     const char *acct_name, uint16 acct_type,
+				     const char *challenge,
+				     const char *smb_apasswd,
+				     int smb_apasslen,
+				     const char *smb_ntpasswd,
+				     int smb_ntpasslen,
+				     NET_USER_INFO_3 * info3)
 {
 	unsigned char trust_passwd[16];
 	NET_ID_INFO_CTR ctr;
@@ -51,9 +53,9 @@ static uint32 domain_client_validate( const char *user, const char *domain,
 	fstring trust_acct;
 	fstring srv_name;
 	BOOL cleartext = smb_apasslen != 0 && smb_apasslen != 24 &&
-	                 smb_ntpasslen == 0;
+		smb_ntpasslen == 0;
 
-	DEBUG(100,("domain_client_validate: %s %s\n", user, domain));
+	DEBUG(100, ("domain_client_validate: %s %s\n", user, domain));
 #ifdef DEBUG_PASSWORD
 	dump_data_pw("lmpw:", smb_apasswd, smb_apasslen);
 	dump_data_pw("ntpw:", smb_ntpasswd, smb_ntpasslen);
@@ -63,20 +65,21 @@ static uint32 domain_client_validate( const char *user, const char *domain,
 	fstrcat(trust_acct, "$");
 
 	/* 
-	* Check that the requested domain is not our own machine name.
-	* If it is, we should never check the PDC here, we use our own local
-	* password file.
-	*/
+	   * Check that the requested domain is not our own machine name.
+	   * If it is, we should never check the PDC here, we use our own local
+	   * password file.
+	 */
 
 	if (!get_any_dc_name(domain, srv_name))
 	{
-		DEBUG(3,("domain_client_validate: could not find domain %s\n",
-				domain));
+		DEBUG(3,
+		      ("domain_client_validate: could not find domain %s\n",
+		       domain));
 		return False;
 	}
 
-	if (!msrpc_lsa_query_trust_passwd( "\\\\.", "$MACHINE.ACC",
-	                                   trust_passwd))
+	if (!msrpc_lsa_query_trust_passwd("\\\\.", "$MACHINE.ACC",
+					  trust_passwd, NULL))
 	{
 		return False;
 	}
@@ -90,76 +93,83 @@ static uint32 domain_client_validate( const char *user, const char *domain,
 	 */
 
 	/*
-	* Ok - we have an anonymous connection to the IPC$ share.
-	* Now start the NT Domain stuff :-).
-	*/
+	   * Ok - we have an anonymous connection to the IPC$ share.
+	   * Now start the NT Domain stuff :-).
+	 */
 
-	status = cli_nt_setup_creds(srv_name, domain, global_myname, trust_acct,
-	                      trust_passwd, acct_type);
+	status =
+		cli_nt_setup_creds(srv_name, domain, global_myname,
+				   trust_acct, trust_passwd, acct_type);
 	if (status != 0x0)
 	{
-		DEBUG(0,("domain_client_validate: credentials failed (%s)\n",
-		          srv_name));
+		DEBUG(0, ("domain_client_validate: credentials failed (%s)\n",
+			  srv_name));
 		return status;
 	}
 
 	/* We really don't care what LUID we give the user. */
-	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
+	generate_random_buffer((unsigned char *)&smb_uid_low, 4, False);
 
 	if (challenge == NULL && !cleartext)
 	{
 		status = cli_nt_login_interactive(srv_name,
-			global_myname, 
-	                domain, user,
-	                smb_uid_low, 
-			smb_apasswd, smb_ntpasswd, 
-			&ctr, info3);
+						  global_myname,
+						  domain, user,
+						  smb_uid_low,
+						  smb_apasswd, smb_ntpasswd,
+						  &ctr, info3);
 	}
 	else if (challenge == NULL)
 	{
 		status = cli_nt_login_general(srv_name,
-			global_myname, 
-	                domain, user,
-	                smb_uid_low, 
-			smb_apasswd, 
-			&ctr, info3);
+					      global_myname,
+					      domain, user,
+					      smb_uid_low,
+					      smb_apasswd, &ctr, info3);
 	}
 	else
 	{
 		status = cli_nt_login_network(srv_name,
-			global_myname, 
-	                domain, user,
-		        smb_uid_low, (const char *)challenge,
-			(const uchar*)smb_apasswd, smb_apasslen,
-			(const uchar*)smb_ntpasswd, smb_ntpasslen,
-			&ctr, info3);
+					      global_myname,
+					      domain, user,
+					      smb_uid_low,
+					      (const char *)challenge,
+					      (const uchar *)smb_apasswd,
+					      smb_apasslen,
+					      (const uchar *)smb_ntpasswd,
+					      smb_ntpasslen, &ctr, info3);
 	}
 
-	if (status == (NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT|0xc0000000))
+	if (status ==
+	    (NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT | 0xc0000000))
 	{
-		DEBUG(10,("domain_client_validate: wks trust valid:%s\n",
-		           user));
+		DEBUG(10, ("domain_client_validate: wks trust valid:%s\n",
+			   user));
 		return status;
 	}
 
-	if (status == (NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT|0xc0000000))
+	if (status == (NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT | 0xc0000000))
 	{
-		DEBUG(10,("domain_client_validate: srv trust valid:%s\n",
-		           user));
+		DEBUG(10, ("domain_client_validate: srv trust valid:%s\n",
+			   user));
 		return status;
 	}
 
-	if (status == (NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT|0xc0000000))
+	if (status ==
+	    (NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT | 0xc0000000))
 	{
-		DEBUG(10,("domain_client_validate: interdom trust valid:%s\n",
-		           user));
+		DEBUG(10,
+		      ("domain_client_validate: interdom trust valid:%s\n",
+		       user));
 		return status;
 	}
 
 	if (status != 0x0)
 	{
-		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
-		%s to Domain controller %s.\n", user, domain, srv_name));
+		DEBUG(0,
+		      ("domain_client_validate: unable to validate password for user %s in domain \
+		%s to Domain controller %s.\n",
+		       user, domain, srv_name));
 		return status;
 	}
 
@@ -169,8 +179,8 @@ static uint32 domain_client_validate( const char *user, const char *domain,
 	 * locked out / disabled" etc!!!!
 	 */
 
-	DEBUG(10,("domain_client_validate: user %s\%s OK\n", domain, user));
-	DEBUG(3,("domain_client_validate: check lockout / pwd expired!\n"));
+	DEBUG(10, ("domain_client_validate: user %s\%s OK\n", domain, user));
+	DEBUG(3, ("domain_client_validate: check lockout / pwd expired!\n"));
 
 	return 0x0;
 }
@@ -178,11 +188,11 @@ static uint32 domain_client_validate( const char *user, const char *domain,
 /****************************************************************************
  Check for a valid username and password in security=domain mode.
 ****************************************************************************/
-uint32 check_domain_security(const char *orig_user, const char *domain, 
-				const uchar *challenge,
-				const char *smb_apasswd, int smb_apasslen,
-				const char *smb_ntpasswd, int smb_ntpasslen,
-				NET_USER_INFO_3 *info3)
+uint32 check_domain_security(const char *orig_user, const char *domain,
+			     const uchar * challenge,
+			     const char *smb_apasswd, int smb_apasslen,
+			     const char *smb_ntpasswd, int smb_ntpasslen,
+			     NET_USER_INFO_3 * info3)
 {
 	fstring acct_name;
 	uint16 acct_type = 0;
@@ -210,12 +220,11 @@ uint32 check_domain_security(const char *orig_user, const char *domain,
 		acct_type = SEC_CHAN_DOMAIN;
 	}
 
-	DEBUG(10,("check_domain_security: %s(%d)\n", acct_name, acct_type));
+	DEBUG(10, ("check_domain_security: %s(%d)\n", acct_name, acct_type));
 
-	return domain_client_validate(orig_user, domain, 
-	                        acct_name, acct_type,
-	                        challenge,
-	                        smb_apasswd, smb_apasslen,
-	                        smb_ntpasswd, smb_ntpasslen,
-				info3);
+	return domain_client_validate(orig_user, domain,
+				      acct_name, acct_type,
+				      challenge,
+				      smb_apasswd, smb_apasslen,
+				      smb_ntpasswd, smb_ntpasslen, info3);
 }

@@ -625,6 +625,10 @@ void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodifi
 struct policy_cache *get_global_hnd_cache(void);
 struct policy_cache *init_policy_cache(int num_pol_hnds);
 void free_policy_cache(struct policy_cache *cache);
+BOOL policy_hnd_set_name(struct policy_cache *cache,
+			 POLICY_HND *hnd, const char *name);
+const char *policy_hnd_get_name(struct policy_cache *cache,
+				const POLICY_HND *hnd);
 BOOL dup_policy_hnd(struct policy_cache *cache,
 				POLICY_HND *hnd,
 				const POLICY_HND *from);
@@ -644,6 +648,12 @@ int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
 BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
 				void(*fn)(void*), void *dev);
 void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
+BOOL policy_hnd_set_state_type(struct policy_cache *cache,
+			       POLICY_HND *hnd, int type);
+int policy_hnd_get_state_type(struct policy_cache *cache,
+			      const POLICY_HND *hnd);
+BOOL policy_hnd_check_state_type(struct policy_cache *cache,
+				 const POLICY_HND *hnd, int type);
 BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
 BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
 				POLICY_HND *to);
@@ -1116,9 +1126,10 @@ msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  lsarpcd/secret_db.c  */
 
-BOOL tdb_delete_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk);
-BOOL tdb_lookup_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET **usr);
-BOOL tdb_store_secret( TDB_CONTEXT *tdb, const UNISTR2 *uk, LSA_SECRET *usr);
+BOOL tdb_delete_secret(TDB_CONTEXT * tdb, const UNISTR2 * uk);
+BOOL tdb_lookup_secret(TDB_CONTEXT * tdb, const UNISTR2 * uk,
+		       LSA_SECRET ** usr);
+BOOL tdb_store_secret(TDB_CONTEXT * tdb, const UNISTR2 * uk, LSA_SECRET * usr);
 TDB_CONTEXT *open_secret_db(int perms);
 BOOL secret_init_db(void);
 
@@ -1189,53 +1200,45 @@ msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  netlogond/srv_netlogon_nt.c  */
 
-uint32 _net_req_chal(	const UNISTR2 *uni_logon_server,
-				const UNISTR2 *uni_logon_client,
-				const DOM_CHAL *clnt_chal,
-				DOM_CHAL *srv_chal,
-				uint16 remote_pid	) ;
-uint32 _net_logon_ctrl2(const	UNISTR2 *uni_server_name, 
-				uint32 function_code,
-				uint32 query_level,
-				uint32 switch_value,
-				uint32 *reply_switch_value,
-				NETLOGON_INFO *logon_info);
-uint32 _net_trust_dom_list(const UNISTR2 *uni_server_name,
-				   uint32 function_code,
-				   BUFFER2 *uni_trust_dom_name);
-uint32 _net_auth(const DOM_LOG_INFO *clnt_id,
-			     const DOM_CHAL *clnt_chal,
-			     DOM_CHAL *srv_chal,
-			     uint16 remote_pid);
-uint32 _net_auth_2(const DOM_LOG_INFO *clnt_id,
-				 const DOM_CHAL *clnt_chal,
-				 const NEG_FLAGS *clnt_flgs,
-				 DOM_CHAL *srv_chal,
-				 NEG_FLAGS *srv_flgs,
-				 uint16 remote_pid);
-uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
-			    const uint8 pwd[16],
-			    DOM_CRED *srv_cred,
-			    uint16 remote_pid);
-uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
-				    uint16 validation_level,
-				    DOM_CRED *srv_creds,
-				    uint16 *switch_value,
-				    NET_USER_INFO_3 *user,
-				    uint16 remote_pid);
-uint32 _net_sam_logoff(const DOM_SAM_INFO *sam_id,
-			     DOM_CRED *srv_creds,
-			     uint16 remote_pid);
-uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
-			   const UNISTR2 *uni_cli_name,
-			   uint32 database_id,
-			   uint32 restart_state,
-			   uint32 *sync_context,
-			   uint32 max_size,
-			   uint32 *num_deltas,
-			   uint32 *num_deltas2,
-			   SAM_DELTA_HDR *hdr_deltas,
-			   SAM_DELTA_CTR *deltas);
+uint32 _net_req_chal(const UNISTR2 * uni_logon_server,
+		     const UNISTR2 * uni_logon_client,
+		     const DOM_CHAL * clnt_chal,
+		     DOM_CHAL * srv_chal, uint16 remote_pid);
+uint32 _net_logon_ctrl2(const UNISTR2 * uni_server_name,
+			uint32 function_code,
+			uint32 query_level,
+			uint32 switch_value,
+			uint32 * reply_switch_value,
+			NETLOGON_INFO * logon_info);
+uint32 _net_trust_dom_list(const UNISTR2 * uni_server_name,
+			   uint32 function_code, BUFFER2 * uni_trust_dom_name);
+uint32 _net_auth(const DOM_LOG_INFO * clnt_id,
+		 const DOM_CHAL * clnt_chal,
+		 DOM_CHAL * srv_chal, uint16 remote_pid);
+uint32 _net_auth_2(const DOM_LOG_INFO * clnt_id,
+		   const DOM_CHAL * clnt_chal,
+		   const NEG_FLAGS * clnt_flgs,
+		   DOM_CHAL * srv_chal,
+		   NEG_FLAGS * srv_flgs, uint16 remote_pid);
+uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
+		      const uint8 pwd[16],
+		      DOM_CRED * srv_cred, uint16 remote_pid);
+uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
+		      uint16 validation_level,
+		      DOM_CRED * srv_creds,
+		      uint16 * switch_value,
+		      NET_USER_INFO_3 * user, uint16 remote_pid);
+uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
+		       DOM_CRED * srv_creds, uint16 remote_pid);
+uint32 _net_sam_sync(const UNISTR2 * uni_srv_name,
+		     const UNISTR2 * uni_cli_name,
+		     uint32 database_id,
+		     uint32 restart_state,
+		     uint32 * sync_context,
+		     uint32 max_size,
+		     uint32 * num_deltas,
+		     uint32 * num_deltas2,
+		     SAM_DELTA_HDR * hdr_deltas, SAM_DELTA_CTR * deltas);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
@@ -2203,42 +2206,33 @@ BOOL net_sam_sync(const char* srv_name,
 
 /*The following definitions come from  rpc_client/cli_lsarpc.c  */
 
-BOOL get_domain_sids(const char *domain, DOM_SID *sid3, DOM_SID *sid5);
-BOOL get_trust_sid_and_domain(const char* myname, char *server,
-				DOM_SID *sid,
-				char *domain, size_t len);
+BOOL get_domain_sids(const char *domain, DOM_SID * sid3, DOM_SID * sid5);
+BOOL get_trust_sid_and_domain(const char *myname, char *server,
+			      DOM_SID * sid, char *domain, size_t len);
 BOOL lsa_open_policy(const char *system_name, POLICY_HND *hnd,
-			BOOL sec_qos, uint32 des_access);
-BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
-			BOOL sec_qos, uint32 des_access);
-BOOL lsa_create_secret( const POLICY_HND *hnd,
-				const char *secret_name,
-				uint32 des_access,
-				POLICY_HND *hnd_secret);
-BOOL lsa_open_secret( const POLICY_HND *hnd,
-				const char *secret_name,
-				uint32 des_access,
-				POLICY_HND *hnd_secret);
-uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 *secret);
-BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
-		      NTTIME *last_update);
-BOOL lsa_lookup_names( POLICY_HND *hnd,
-			int num_names,
-			char **names,
-			DOM_SID **sids,
-			uint32 **types,
-			int *num_sids);
+		     BOOL sec_qos, uint32 des_access);
+BOOL lsa_open_policy2(const char *system_name, POLICY_HND *hnd,
+		      BOOL sec_qos, uint32 des_access);
+BOOL lsa_create_secret(const POLICY_HND *hnd,
+		       const char *secret_name,
+		       uint32 des_access, POLICY_HND *hnd_secret);
+BOOL lsa_open_secret(const POLICY_HND *hnd,
+		     const char *secret_name,
+		     uint32 des_access, POLICY_HND *hnd_secret);
+uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 * secret);
+BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 * secret, NTTIME * last_update);
+BOOL lsa_lookup_names(POLICY_HND *hnd,
+		      int num_names,
+		      char **names,
+		      DOM_SID ** sids, uint32 ** types, int *num_sids);
 BOOL lsa_lookup_sids(POLICY_HND *hnd,
-			int num_sids,
-			DOM_SID **sids,
-			char ***names,
-			uint32 **types,
-			int *num_names);
+		     int num_sids,
+		     DOM_SID ** sids,
+		     char ***names, uint32 ** types, int *num_names);
 BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
-			fstring domain_name, DOM_SID *domain_sid);
-BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
-			uint32 *num_doms, char ***names,
-			DOM_SID ***sids);
+			fstring domain_name, DOM_SID * domain_sid);
+BOOL lsa_enum_trust_dom(POLICY_HND *hnd, uint32 * enum_ctx,
+			uint32 * num_doms, char ***names, DOM_SID *** sids);
 BOOL lsa_close(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
@@ -2560,31 +2554,30 @@ BOOL wks_query_info( char *srv_name, uint32 switch_value,
 
 uint32 lookup_lsa_names(const char *srv_name,
 			uint32 num_names, char **names,
-			uint32 *num_sids, DOM_SID **sids, uint32 **types);
+			uint32 * num_sids, DOM_SID ** sids, uint32 ** types);
 uint32 lookup_lsa_name(const char *domain,
-				char *name, DOM_SID *sid, uint32 *type);
+		       char *name, DOM_SID * sid, uint32 * type);
 uint32 lookup_lsa_sid(const char *domain,
-				DOM_SID *sid, char *name, uint32 *type);
-BOOL msrpc_lsa_create_secret(const char* srv_name, const char* secret_name,
-				uint32 access_rights);
-BOOL msrpc_lsa_set_secret(const char* srv_name,
-				const char* secret_name,
-				const char* data, int len);
-BOOL msrpc_lsa_query_secret(const char* srv_name,
-				const char* secret_name,
-				STRING2 *secret,
-				NTTIME *last_update);
-BOOL msrpc_lsa_query_trust_passwd(const char* srv_name,
-				const char* secret_name,
-				uchar trust_passwd[16]);
+		      DOM_SID * sid, char *name, uint32 * type);
+BOOL msrpc_lsa_create_secret(const char *srv_name, const char *secret_name,
+			     uint32 access_rights);
+BOOL msrpc_lsa_set_secret(const char *srv_name,
+			  const char *secret_name, const char *data, int len);
+BOOL msrpc_lsa_query_secret(const char *srv_name,
+			    const char *secret_name,
+			    STRING2 * secret, NTTIME * last_update);
+BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
+				  const char *secret_name,
+				  uchar trust_passwd[16],
+				  NTTIME * last_update);
 
 /*The following definitions come from  rpc_client/msrpc_netlogon.c  */
 
-uint32 check_domain_security(const char *orig_user, const char *domain, 
-				const uchar *challenge,
-				const char *smb_apasswd, int smb_apasslen,
-				const char *smb_ntpasswd, int smb_ntpasslen,
-				NET_USER_INFO_3 *info3);
+uint32 check_domain_security(const char *orig_user, const char *domain,
+			     const uchar * challenge,
+			     const char *smb_apasswd, int smb_apasslen,
+			     const char *smb_ntpasswd, int smb_ntpasslen,
+			     NET_USER_INFO_3 * info3);
 
 /*The following definitions come from  rpc_client/msrpc_samr.c  */
 
@@ -3360,7 +3353,8 @@ void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[]);
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */
 
 void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[]);
-void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[]);
+void cmd_netlogon_domain_test(struct client_info *info, int argc,
+			      char *argv[]);
 void cmd_sam_sync(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_reg.c  */
@@ -3768,75 +3762,65 @@ uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID *sid);
 /*The following definitions come from  samrd/srv_samr_dom_tdb.c  */
 
 uint32 _samr_open_domain(const POLICY_HND *connect_pol,
-				uint32 ace_perms,
-				const DOM_SID *sid,
-				POLICY_HND *domain_pol);
-uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx, 
-				uint16 acb_mask, uint16 unk_1, uint32 size,
-				SAM_ENTRY **sam,
-				UNISTR2 **uni_acct_name,
-				uint32 *num_sam_users);
+			 uint32 ace_perms,
+			 const DOM_SID * sid, POLICY_HND *domain_pol);
+uint32 _samr_enum_dom_users(const POLICY_HND *pol, uint32 * start_idx,
+			    uint16 acb_mask, uint16 unk_1, uint32 size,
+			    SAM_ENTRY ** sam,
+			    UNISTR2 ** uni_acct_name, uint32 * num_sam_users);
 uint32 _samr_enum_dom_groups(const POLICY_HND *pol,
-				uint32 *start_idx, uint32 size,
-				SAM_ENTRY **sam,
-				UNISTR2 **uni_acct_name,
-				uint32 *num_sam_groups);
+			     uint32 * start_idx, uint32 size,
+			     SAM_ENTRY ** sam,
+			     UNISTR2 ** uni_acct_name,
+			     uint32 * num_sam_groups);
 uint32 _samr_enum_dom_aliases(const POLICY_HND *pol,
-					uint32 *start_idx, uint32 size,
-					SAM_ENTRY **sam,
-					UNISTR2 **uni_acct_name,
-					uint32 *num_sam_aliases);
-uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
-					uint32 start_idx,
-					uint32 max_entries,
-					uint32 max_size,
-					uint32 *data_size,
-					uint32 *num_entries,
-					SAM_DISPINFO_CTR *ctr);
+			      uint32 * start_idx, uint32 size,
+			      SAM_ENTRY ** sam,
+			      UNISTR2 ** uni_acct_name,
+			      uint32 * num_sam_aliases);
+uint32 _samr_query_dispinfo(const POLICY_HND *domain_pol, uint16 level,
+			    uint32 start_idx,
+			    uint32 max_entries,
+			    uint32 max_size,
+			    uint32 * data_size,
+			    uint32 * num_entries, SAM_DISPINFO_CTR * ctr);
+BOOL dom_user_traverse(const DOM_SID * dom_sid,
+		       int (*fn) (TDB_CONTEXT *, void *), void *state);
 uint32 _samr_lookup_names(const POLICY_HND *dom_pol,
-				
-			uint32 num_names,
-			uint32 flags,
-			uint32 ptr,
-			const UNISTR2 *uni_name,
-
-			uint32 *num_rids,
-			uint32 rid[MAX_SAM_ENTRIES],
-			uint32 *num_types,
-			uint32 type[MAX_SAM_ENTRIES]);
+			  uint32 num_names,
+			  uint32 flags,
+			  uint32 ptr,
+			  const UNISTR2 * uni_name,
+			  uint32 * num_rids,
+			  uint32 rid[MAX_SAM_ENTRIES],
+			  uint32 * num_types, uint32 type[MAX_SAM_ENTRIES]);
 uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
-				uint32 num_rids, uint32 flags,
-				const uint32 *rids,
-				uint32 *num_names,
-				UNIHDR **hdr_name, UNISTR2** uni_name,
-				uint32 **types);
+			 uint32 num_rids, uint32 flags,
+			 const uint32 * rids,
+			 uint32 * num_names,
+			 UNIHDR ** hdr_name, UNISTR2 ** uni_name,
+			 uint32 ** types);
 uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
-				uint16 switch_value,
-				SAM_UNK_CTR *ctr);
-uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID *sid);
+			    uint16 switch_value, SAM_UNK_CTR * ctr);
+uint32 _samr_unknown_2d(const POLICY_HND *domain_pol, const DOM_SID * sid);
 
 /*The following definitions come from  samrd/srv_samr_grp_tdb.c  */
 
 uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown);
 uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid);
 uint32 _samr_delete_dom_group(POLICY_HND *group_pol);
-uint32 _samr_query_groupmem(const POLICY_HND *group_pol, 
-					uint32 *num_mem,
-					uint32 **rid,
-					uint32 **attr);
+uint32 _samr_query_groupmem(const POLICY_HND *group_pol,
+			    uint32 * num_mem, uint32 ** rid, uint32 ** attr);
 uint32 _samr_set_groupinfo(const POLICY_HND *pol,
-				uint16 switch_level,
-				const GROUP_INFO_CTR* ctr);
+			   uint16 switch_level, const GROUP_INFO_CTR * ctr);
 uint32 _samr_query_groupinfo(const POLICY_HND *pol,
-				uint16 switch_level,
-				GROUP_INFO_CTR* ctr);
+			     uint16 switch_level, GROUP_INFO_CTR * ctr);
 uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
-				const UNISTR2 *uni_acct_name,
-				uint32 access_mask,
-				POLICY_HND *group_pol, uint32 *group_rid);
+			      const UNISTR2 * uni_acct_name,
+			      uint32 access_mask,
+			      POLICY_HND *group_pol, uint32 * group_rid);
 uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
-				uint32 group_rid,
-				POLICY_HND *group_pol);
+			uint32 group_rid, POLICY_HND *group_pol);
 
 /*The following definitions come from  samrd/srv_samr_nt5ldap.c  */
 
@@ -4023,48 +4007,41 @@ uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf);
 /*The following definitions come from  samrd/srv_samr_tdb.c  */
 
 BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *usr_tdb,
-				TDB_CONTEXT *grp_tdb,
-				TDB_CONTEXT *als_tdb,
-				uint32 rid);
+		TDB_CONTEXT * usr_tdb,
+		TDB_CONTEXT * grp_tdb, TDB_CONTEXT * als_tdb, uint32 rid);
 BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **usr_tdb,
-				TDB_CONTEXT **grp_tdb,
-				TDB_CONTEXT **als_tdb,
-				uint32 *rid);
+		TDB_CONTEXT ** usr_tdb,
+		TDB_CONTEXT ** grp_tdb, TDB_CONTEXT ** als_tdb, uint32 * rid);
 BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *tdb);
+		TDB_CONTEXT * tdb);
 BOOL get_tdbsam(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **tdb);
+		TDB_CONTEXT ** tdb);
 BOOL set_tdbdomsid(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *usr_tdb,
-				TDB_CONTEXT *usg_tdb,
-				TDB_CONTEXT *usa_tdb,
-				TDB_CONTEXT *grp_tdb,
-				TDB_CONTEXT *als_tdb,
-				const DOM_SID *sid);
+		   TDB_CONTEXT * usr_tdb,
+		   TDB_CONTEXT * usg_tdb,
+		   TDB_CONTEXT * usa_tdb,
+		   TDB_CONTEXT * grp_tdb,
+		   TDB_CONTEXT * als_tdb, const DOM_SID * sid);
 BOOL get_tdbdomsid(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **usr_tdb,
-				TDB_CONTEXT **usg_tdb,
-				TDB_CONTEXT **usa_tdb,
-				TDB_CONTEXT **grp_tdb,
-				TDB_CONTEXT **als_tdb,
-				DOM_SID *sid);
+		   TDB_CONTEXT ** usr_tdb,
+		   TDB_CONTEXT ** usg_tdb,
+		   TDB_CONTEXT ** usa_tdb,
+		   TDB_CONTEXT ** grp_tdb,
+		   TDB_CONTEXT ** als_tdb, DOM_SID * sid);
 BOOL set_tdbsid(struct policy_cache *cache, POLICY_HND *hnd,
-				TDB_CONTEXT *tdb, const DOM_SID *sid);
+		TDB_CONTEXT * tdb, const DOM_SID * sid);
 BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
-				TDB_CONTEXT **tdb, DOM_SID *sid);
-TDB_CONTEXT *open_usr_db(const DOM_SID *sid, uint32 rid, int perms);
-uint32 samr_open_user_tdb( const POLICY_HND *parent_pol,
-				const DOM_SID *sid,
-				TDB_CONTEXT *usr_tdb,
-				POLICY_HND *pol,
-				uint32 ace_perms, uint32 rid);
+		TDB_CONTEXT ** tdb, DOM_SID * sid);
+TDB_CONTEXT *open_usr_db(const DOM_SID * sid, uint32 rid, int perms);
+uint32 samr_open_user_tdb(const POLICY_HND *parent_pol,
+			  const DOM_SID * sid,
+			  TDB_CONTEXT * usr_tdb,
+			  POLICY_HND *pol, uint32 ace_perms, uint32 rid);
 
 /*The following definitions come from  samrd/srv_samr_tdb_init.c  */
 
-uint32 initialise_dom_tdb(const DOM_SID *sid);
-uint32 initialise_sam_tdb( const char* sam_name, const DOM_SID *sam_sid);
+uint32 initialise_dom_tdb(const DOM_SID * sid);
+uint32 initialise_sam_tdb(const char *sam_name, const DOM_SID * sam_sid);
 BOOL pwdbsam_initialise(void);
 
 /*The following definitions come from  samrd/srv_samr_usr_nt5ldap.c  */
@@ -4097,30 +4074,28 @@ uint32 _samr_delete_dom_user(POLICY_HND *user_pol);
 
 /*The following definitions come from  samrd/srv_samr_usr_tdb.c  */
 
-BOOL tdb_lookup_user(TDB_CONTEXT *tdb, SAM_USER_INFO_21 *usr);
+BOOL tdb_lookup_user(TDB_CONTEXT * tdb, SAM_USER_INFO_21 * usr);
 uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
-				uint32 *unknown_0,
-				uint32 *unknown_1);
+			       uint32 * unknown_0, uint32 * unknown_1);
 uint32 _samr_query_usergroups(const POLICY_HND *pol,
-				uint32 *num_groups,
-				DOM_GID **gids);
+			      uint32 * num_groups, DOM_GID ** gids);
 uint32 _samr_query_useraliases(const POLICY_HND *domain_pol,
-				const uint32 *ptr_sid, const DOM_SID2 *sid,
-				uint32 *num_aliases, uint32 **rid);
+			       const uint32 * ptr_sid, const DOM_SID2 * sid,
+			       uint32 * num_aliases, uint32 ** rid);
 uint32 _samr_open_user(const POLICY_HND *domain_pol,
-					uint32 access_mask, uint32 user_rid, 
-					POLICY_HND *user_pol);
+		       uint32 access_mask, uint32 user_rid,
+		       POLICY_HND *user_pol);
 uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR *ctr);
+			    SAM_USERINFO_CTR * ctr);
 uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR *ctr);
+			  SAM_USERINFO_CTR * ctr);
 uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
-				SAM_USERINFO_CTR *ctr);
+			   SAM_USERINFO_CTR * ctr);
 uint32 _samr_create_user(const POLICY_HND *domain_pol,
-				const UNISTR2 *uni_username,
-				uint16 acb_info, uint32 access_mask, 
-				POLICY_HND *user_pol,
-				uint32 *unknown_0, uint32 *user_rid);
+			 const UNISTR2 * uni_username,
+			 uint16 acb_info, uint32 access_mask,
+			 POLICY_HND *user_pol,
+			 uint32 * unknown_0, uint32 * user_rid);
 uint32 _samr_delete_dom_user(POLICY_HND *user_pol);
 
 /*The following definitions come from  smbd/blocking.c  */

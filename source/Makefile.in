@@ -173,7 +173,7 @@ LIBSMB_OBJ = libsmb/clientgen.o \
              libsmb/smberr.o libsmb/credentials.o \
 		libsmb/pwd_cache.o \
 	     lib/crc32.o lib/md5.o lib/hmacmd5.o \
-		lib/util_hnd.o passdb/smbpassfile.o \
+		lib/util_hnd.o \
                  rpc_parse/parse_creds.o \
                 rpc_parse/parse_net.o \
 		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
@@ -343,7 +343,6 @@ SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 
 SMBD_OBJ = $(SMBD_OBJ1) $(UNIXPASSDB_OBJ) \
            $(RPC_SERVER_OBJ) \
-           libsmb/clienttrust.o \
            lib/domain_namemap.o \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
@@ -451,7 +450,6 @@ TESTPARM_OBJ = utils/testparm.o
 TESTPRNS_OBJ = utils/testprns.o printing/pcap.o printing/print_svid.o
 
 SMBPASSWD_OBJ = utils/smbpasswd.o libsmb/passchange.o \
-		libsmb/clienttrust.o \
            rpc_server/srv_lookup.o \
 		rpc_client/cli_netlogon_sync.o \
            $(SIDDB_OBJ) $(STUB_UID_OBJ)

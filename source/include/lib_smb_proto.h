@@ -28,6 +28,10 @@ void MD5Transform(uint32 buf[4], const uchar inext[64]);
 struct policy_cache *get_global_hnd_cache(void);
 struct policy_cache *init_policy_cache(int num_pol_hnds);
 void free_policy_cache(struct policy_cache *cache);
+BOOL policy_hnd_set_name(struct policy_cache *cache,
+			 POLICY_HND *hnd, const char *name);
+const char *policy_hnd_get_name(struct policy_cache *cache,
+				const POLICY_HND *hnd);
 BOOL dup_policy_hnd(struct policy_cache *cache,
 				POLICY_HND *hnd,
 				const POLICY_HND *from);
@@ -47,6 +51,12 @@ int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
 BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
 				void(*fn)(void*), void *dev);
 void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
+BOOL policy_hnd_set_state_type(struct policy_cache *cache,
+			       POLICY_HND *hnd, int type);
+int policy_hnd_get_state_type(struct policy_cache *cache,
+			      const POLICY_HND *hnd);
+BOOL policy_hnd_check_state_type(struct policy_cache *cache,
+				 const POLICY_HND *hnd, int type);
 BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
 BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
 				POLICY_HND *to);
