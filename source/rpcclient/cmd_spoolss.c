@@ -1285,7 +1285,7 @@ static uint32 cmd_spoolss_setdriver (struct cli_state *cli, int argc, char **arg
 	ctr.printers_2 = &info2;
 	if ((result = cli_spoolss_getprinter(cli, mem_ctx, &pol, level, &ctr)) != NT_STATUS_NOPROBLEMO) 
 	{
-		printf ("Unable to retreive printer information!\n");
+		printf ("Unable to retrieve printer information!\n");
 		goto done;
 	}
 
