@@ -1,3 +1,10 @@
+2000-02-24  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/fcache.c (fcc_initialize, fcc_store_cred): verify that
+	stores and close succeed
+	* lib/krb5/store.c (krb5_store_creds): check to see that the
+	stores are succesful.
+
 2000-02-23  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2q
