@@ -74,7 +74,7 @@ sub ParseElement($$)
 
     # Arg is a policy handle
 	    
-    if (util::has_property($elt->{PROPERTIES}, "context_handle")) {
+    if (util::has_property($elt, "context_handle")) {
 	$res .= "\toffset = prs_policy_hnd(tvb, offset, pinfo, tree);\n";
 	return;
     }
@@ -110,7 +110,7 @@ sub ParseElement($$)
 		$res .= "\t\tif (ptr_$elt->{NAME})\n\t";
 	    }
 	    
-	    if (util::has_property($elt->{PROPERTIES}, "size_is")) {
+	    if (util::has_property($elt, "size_is")) {
 		ParseArray($elt);
 	    } else {
 		$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, ";
@@ -221,7 +221,7 @@ sub ParseFunctionArg($$)
     my($arg) = shift;
     my($io) = shift;		# "in" or "out"
 
-    if (util::has_property($arg->{PROPERTIES}, $io)) {
+    if (util::has_property($arg, $io)) {
 
 	# For some reason, pointers to elements in function definitions
 	# aren't parsed.

@@ -147,9 +147,11 @@ sub LoadStructure($)
 # see if a pidl property list contains a give property
 sub has_property($$)
 {
-	my($props) = shift;
+	my($e) = shift;
 	my($p) = shift;
-	
+
+	my($props) = $e->{PROPERTIES};
+
 	foreach my $d (@{$props}) {
 		if (ref($d) ne "HASH") {
 			if ($d eq $p) {
