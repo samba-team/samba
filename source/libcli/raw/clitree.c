@@ -173,9 +173,13 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.calling_name = my_name;
 	io.in.service = service;
 	io.in.service_type = service_type;
-	io.in.user = user;
 	io.in.domain = domain;
-	io.in.password = password;
+	io.in.user = user;
+	if (user && user[0]) {
+		io.in.password = password;
+	} else {
+		io.in.password = NULL;
+	}
 	
 	status = smb_composite_connect(&io, parent_ctx);
 	if (NT_STATUS_IS_OK(status)) {
