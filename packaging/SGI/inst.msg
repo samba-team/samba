@@ -12,7 +12,7 @@ echo
 echo http://`hostname`:901
 echo 
 echo The original versions of /etc/services and
-echo /etc/inetd.conf were saved echo with a .O extension.
+echo /etc/inetd.conf were saved with a .O extension.
 echo
 echo If you do not wish SWAT to be enabled you may
 echo run the script /usr/samba/scripts/removeswat.sh
