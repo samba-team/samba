@@ -36,6 +36,7 @@ struct gensec_gssapi_state {
 	gss_name_t server_name;
 	gss_name_t client_name;
 	int want_flags, got_flags;
+	const gss_OID_desc *gss_oid;
 };
 static int gensec_gssapi_destory(void *ptr) 
 {
@@ -89,6 +90,19 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
 		gensec_gssapi_state->want_flags |= GSS_C_CONF_FLAG;
+	}
+
+	if (strcmp(gensec_security->ops->oid, GENSEC_OID_KERBEROS5) == 0) {
+		static const gss_OID_desc gensec_gss_krb5_mechanism_oid_desc =
+			{9, (void *)discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02")};
+
+		gensec_gssapi_state->gss_oid = &gensec_gss_krb5_mechanism_oid_desc;
+	} else if (strcmp(gensec_security->ops->oid, GENSEC_OID_SPNEGO) == 0) {
+		static const gss_OID_desc gensec_gss_spnego_mechanism_oid_desc =
+			{6, (void *)discard_const_p(char, "\x2b\x06\x01\x05\x05\x02")};
+		gensec_gssapi_state->gss_oid = &gensec_gss_spnego_mechanism_oid_desc;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	return NT_STATUS_OK;
@@ -162,7 +176,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	OM_uint32 maj_stat, min_stat;
 	OM_uint32 min_stat2;
 	gss_buffer_desc input_token, output_token;
-
+	gss_OID gss_oid_p;
 	input_token.length = in.length;
 	input_token.value = in.data;
 
@@ -173,7 +187,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 						GSS_C_NO_CREDENTIAL, 
 						&gensec_gssapi_state->gssapi_context, 
 						gensec_gssapi_state->server_name, 
-						GSS_C_NO_OID, 
+						discard_const_p(gss_OID_desc, gensec_gssapi_state->gss_oid),
 						gensec_gssapi_state->want_flags, 
 						0, 
 						gensec_gssapi_state->input_chan_bindings,
@@ -192,11 +206,12 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 						  &input_token, 
 						  gensec_gssapi_state->input_chan_bindings,
 						  &gensec_gssapi_state->client_name, 
-						  NULL /* mech oid */,
+						  &gss_oid_p,
 						  &output_token, 
 						  &gensec_gssapi_state->got_flags, 
 						  NULL, 
 						  NULL);
+		gensec_gssapi_state->gss_oid = gss_oid_p;
 		break;
 	}
 	default:
@@ -309,9 +324,24 @@ static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	return False;
 }
 
-static const struct gensec_security_ops gensec_gssapi_security_ops = {
-	.name		= "gssapi",
+/* As a server, this could in theory accept any GSSAPI mech */
+static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
+	.name		= "gssapi_krb5",
+	.sasl_name	= "GSSAPI",
 	.oid            = GENSEC_OID_KERBEROS5,
+	.client_start   = gensec_gssapi_client_start,
+	.server_start   = gensec_gssapi_server_start,
+	.update 	= gensec_gssapi_update,
+	.wrap           = gensec_gssapi_wrap,
+	.unwrap         = gensec_gssapi_unwrap,
+	.have_feature   = gensec_gssapi_have_feature
+
+};
+
+static const struct gensec_security_ops gensec_gssapi_spnego_security_ops = {
+	.name		= "gssapi_spnego",
+	.sasl_name	= "GSS-SPNEGO",
+	.oid            = GENSEC_OID_SPNEGO,
 	.client_start   = gensec_gssapi_client_start,
 	.server_start   = gensec_gssapi_server_start,
 	.update 	= gensec_gssapi_update,
@@ -325,10 +355,17 @@ NTSTATUS gensec_gssapi_init(void)
 {
 	NTSTATUS ret;
 
-	ret = gensec_register(&gensec_gssapi_security_ops);
+	ret = gensec_register(&gensec_gssapi_krb5_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
-			gensec_gssapi_security_ops.name));
+			gensec_gssapi_krb5_security_ops.name));
+		return ret;
+	}
+
+	ret = gensec_register(&gensec_gssapi_spnego_security_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' gensec backend!\n",
+			gensec_gssapi_spnego_security_ops.name));
 		return ret;
 	}
 
