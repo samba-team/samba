@@ -23,16 +23,16 @@
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%d) Incorrect status %s - should be %s\n", \
-		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
+		printf("(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = False; \
 		goto done; \
 	}} while (0)
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%d) Incorrect %s %d - should be %d\n", \
-		       __LINE__, #v, (int)v, (int)correct); \
+		printf("(%s) Incorrect %s %d - should be %d\n", \
+		       __location__, #v, (int)v, (int)correct); \
 		ret = False; \
 	}} while (0)
 
