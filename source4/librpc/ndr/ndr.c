@@ -432,7 +432,7 @@ NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, const char 
   handle subcontext buffers, which in midl land are user-marshalled, but
   we use magic in pidl to make them easier to cope with
 */
-static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr, 
+NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr, 
 					   size_t sub_size,
 					   struct ndr_pull *ndr2)
 {
@@ -466,45 +466,9 @@ static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 }
 
 /*
-  handle subcontext buffers, which in midl land are user-marshalled, but
-  we use magic in pidl to make them easier to cope with
-*/
-NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr, size_t sub_size,
-				      void *base, ndr_pull_flags_fn_t fn)
-{
-	struct ndr_pull *ndr2;
-	NDR_ALLOC(ndr, ndr2);
-	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, ndr2));
-	NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, base));
-	if (sub_size) {
-		NDR_CHECK(ndr_pull_advance(ndr, ndr2->data_size));
-	} else {
-		NDR_CHECK(ndr_pull_advance(ndr, ndr2->offset));
-	}
-	return NT_STATUS_OK;
-}
-
-NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr, size_t sub_size,
-				      uint32_t level, void *base, ndr_pull_union_fn_t fn)
-{
-	struct ndr_pull *ndr2;
-
-	NDR_ALLOC(ndr, ndr2);
-	NDR_CHECK(ndr_pull_subcontext_header(ndr, sub_size, ndr2));
-	NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, level, base));
-	if (sub_size) {
-		NDR_CHECK(ndr_pull_advance(ndr, ndr2->data_size));
-	} else {
-		NDR_CHECK(ndr_pull_advance(ndr, ndr2->offset));
-	}
-	return NT_STATUS_OK;
-}
-
-
-/*
   push a subcontext header 
 */
-static NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr, 
+NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr, 
 					   size_t sub_size,
 					   struct ndr_push *ndr2)
 {
@@ -526,44 +490,6 @@ static NTSTATUS ndr_push_subcontext_header(struct ndr_push *ndr,
 	}
 	return NT_STATUS_OK;
 }
-
-/*
-  handle subcontext buffers, which in midl land are user-marshalled, but
-  we use magic in pidl to make them easier to cope with
-*/
-NTSTATUS ndr_push_subcontext_flags_fn(struct ndr_push *ndr, size_t sub_size,
-				      void *base, ndr_push_flags_fn_t fn)
-{
-	struct ndr_push *ndr2;
-
-	ndr2 = ndr_push_init_ctx(ndr);
-	if (!ndr2) return NT_STATUS_NO_MEMORY;
-
-	ndr2->flags = ndr->flags;
-	NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, base));
-	NDR_CHECK(ndr_push_subcontext_header(ndr, sub_size, ndr2));
-	NDR_CHECK(ndr_push_bytes(ndr, ndr2->data, ndr2->offset));
-	return NT_STATUS_OK;
-}
-
-/*
-  handle subcontext buffers for function that take a union
-*/
-NTSTATUS ndr_push_subcontext_union_fn(struct ndr_push *ndr, size_t sub_size,
-				      uint32_t level, void *base, ndr_push_union_fn_t fn)
-{
-	struct ndr_push *ndr2;
-
-	ndr2 = ndr_push_init_ctx(ndr);
-	if (!ndr2) return NT_STATUS_NO_MEMORY;
-
-	ndr2->flags = ndr->flags;
-	NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, level, base));
-	NDR_CHECK(ndr_push_subcontext_header(ndr, sub_size, ndr2));
-	NDR_CHECK(ndr_push_bytes(ndr, ndr2->data, ndr2->offset));
-	return NT_STATUS_OK;
-}
-
 
 /*
   mark the start of a structure
