@@ -25,7 +25,6 @@
 #ifdef HAVE_GTK
 
 #define GTK_DISABLE_DEPRECATED
-
 #include <gtk/gtk.h>
 
 typedef struct _GtkSelectDomainDialog GtkSelectDomainDialog;
@@ -73,6 +72,14 @@ struct _GtkSelectHostDialogClass
 #define GTK_SELECT_HOST_DIALOG(obj)          GTK_CHECK_CAST (obj, gtk_select_host_dialog_get_type (), GtkSelectHostDialog)
 #define GTK_SELECT_HOST_DIALOG_CLASS(klass)  GTK_CHECK_CLASS_CAST (klass, gtk_select_host_dialog_class_get_type (), GtkSelectHostDialogClass)
 #define IS_GTK_SELECT_HOST_DIALOG(obj)       GTK_CHECK_TYPE (obj, gtk_select_host_dialog_get_type ())
+
+GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe);
+GType gtk_select_domain_dialog_get_type (void);
+struct policy_handle gtk_select_domain_dialog_get_handle(GtkSelectDomainDialog *d);
+GtkWidget *gtk_select_host_dialog_new (struct dcerpc_pipe *sam_pipe, BOOL nocredentials);
+const char *gtk_select_host_dialog_get_host (GtkSelectHostDialog *d);
+GType gtk_select_host_dialog_get_type (void);
+
 
 #endif
 
