@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,6 +48,7 @@ krb5_mk_rep(krb5_context context,
   krb5_error_code ret;
   AP_REP ap;
   EncAPRepPart body;
+  krb5_enctype etype;
   u_char buf[1024];
   size_t len;
 
@@ -66,9 +67,11 @@ krb5_mk_rep(krb5_context context,
   } else
     body.seq_number = NULL;
 
-  ap.enc_part.etype = (*auth_context)->keyblock->keytype;
+  krb5_keytype_to_etype(context, (*auth_context)->keyblock->keytype, &etype);
+  ap.enc_part.etype = etype;
   ap.enc_part.kvno  = NULL;
-  encode_EncAPRepPart (buf + sizeof(buf) - 1, sizeof(buf), &body, &len);
+  krb5_encode_EncAPRepPart (context, buf + sizeof(buf) - 1, sizeof(buf), 
+			    &body, &len);
   ret = krb5_encrypt (context, buf + sizeof(buf) - len, len,
 		      ap.enc_part.etype,
 		      (*auth_context)->keyblock, &ap.enc_part.cipher);
