@@ -1056,9 +1056,10 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVS
 NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA_R_GETSYSTEMACCOUNT *r_u)
 {
 	struct lsa_info *info=NULL;
-	r_u->status = NT_STATUS_OK;
 	fstring name, dom_name;
 	enum SID_NAME_USE type;
+
+	r_u->status = NT_STATUS_OK;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
