@@ -54,7 +54,7 @@ my @local_networks_re =
       "130\.237",
       "193\.11\.3[0-9]\.",
       "130.242.128",
-      "2001:6b0:5"
+      "2001:6b0:5:"
       );
 
 my $as_req = 0;
@@ -431,6 +431,9 @@ sub process_line {
 	} elsif (/524 cross-realm (.*) -> (.*) disabled/) {
 		$v4_cross++;
 		$v4_cross_realm{$1."->".$2}++;
+	} elsif (/cross-realm (.*) -> (.*): no transit through realm (.*)/) {
+	} elsif (/cross-realm (.*) -> (.*) via \[([^\]]+)\]/) {
+	} elsif (/cross-realm (.*) -> (.*)) {
 	} elsif (/sending ([0-9]+) bytes to IPv[46]:([0-9\.:a-fA-F]+)/) {
 		$bw_addr{$2} += $1;
 	} elsif (/Using ([-a-z0-9]+)\/([-a-z0-9]+)/) {
