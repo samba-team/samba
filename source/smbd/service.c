@@ -226,6 +226,11 @@ struct server_connection *server_setup_connection(struct event_context *ev, stru
 	srv_conn->event.fde	= event_add_fd(ev,&fde);
 	srv_conn->event.idle	= event_add_timed(ev,&idle);
 
+	if (!socket_check_access(sock, "smbd", lp_hostsallow(-1), lp_hostsdeny(-1))) {
+		server_terminate_connection(srv_conn, "denied by access rules");
+		return NULL;
+	}
+
 	return srv_conn;
 }
 

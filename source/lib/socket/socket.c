@@ -160,6 +160,15 @@ NTSTATUS socket_set_option(struct socket_context *sock, const char *option, cons
 	return sock->ops->set_option(sock, option, val);
 }
 
+char *socket_get_peer_name(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+{
+	if (!sock->ops->get_peer_name) {
+		return NULL;
+	}
+
+	return sock->ops->get_peer_name(sock, mem_ctx);
+}
+
 char *socket_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	if (!sock->ops->get_peer_addr) {
