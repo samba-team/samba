@@ -15,9 +15,9 @@ COMMON_SOURCES = \
 	create_s.c delete_c.c delete_s.c destroy_c.c		\
 	destroy_s.c ent_setup.c error.c flush.c free.c		\
 	get_c.c get_s.c init_c.c init_s.c kadm5_err.c		\
-	marshall.c modify_c.c modify_s.c randkey_c.c		\
-	randkey_s.c rename_c.c rename_s.c send_recv.c		\
-	server.c set_keys.c set_modifier.c
+	marshall.c modify_c.c modify_s.c privs_c.c privs_s.c	\
+	randkey_c.c randkey_s.c rename_c.c rename_s.c 		\
+	send_recv.c server.c set_keys.c set_modifier.c
 
 libkadm5srv_a_SOURCES = $(COMMON_SOURCES) server_glue.c
 libkadm5clnt_a_SOURCES = $(COMMON_SOURCES) client_glue.c
