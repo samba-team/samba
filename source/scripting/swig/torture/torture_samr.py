@@ -49,7 +49,7 @@ def test_CreateUser2(pipe, domain_handle):
         return domain_handle.CreateUser2(username, 0x0080) # WSTRUST
     except dcerpc.NTSTATUS, arg:
         if arg[0] == 0x0c0000063L:
-            domain_handle.OpenUser(username).DeleteUser()
+            test_OpenUser_byname(pipe, domain_handle, username).DeleteUser()
             return domain_handle.CreateUser2(username)
         raise
 
@@ -57,44 +57,21 @@ def test_LookupName(pipe, domain_handle, name):
 
     print 'test samr_LookupNames'
 
-    r = {}
-    r['domain_handle'] = domain_handle
-    r['num_names'] = 1
-    r['names'] = []
-    r['names'].append({'name': name})
-
-    result = dcerpc.samr_LookupNames(pipe, r)
-
-    rid = result['rids']['ids'][0]
-
-    r['num_names'] = 2
-    r['names'].append({'name': 'xxNONAMExx'})
-
+    domain_handle.LookupNames(['Administrator', 'xxNONAMExx'])
 
     try:
-        dcerpc.samr_LookupNames(pipe, r)
+        domain_handle.LookupNames(['xxNONAMExx'])
     except dcerpc.NTSTATUS, arg:
-        if arg[0] != dcerpc.STATUS_SOME_UNMAPPED:
+        if arg[0] != 0xc0000073L:
             raise dcerpc.NTSTATUS(arg)
 
-    r['num_names'] = 0
-
-    dcerpc.samr_LookupNames(pipe, r)
-
-    return rid
+    return domain_handle.LookupNames([name])
 
 def test_OpenUser_byname(pipe, domain_handle, user_name):
 
-    rid = test_LookupName(pipe, domain_handle, user_name)
+    rids, types = test_LookupName(pipe, domain_handle, user_name)
 
-    r = {}
-    r['domain_handle'] = domain_handle
-    r['access_mask'] = 0x02000000
-    r['rid'] = rid
-
-    result = dcerpc.samr_OpenUser(pipe, r)
-
-    return result['user_handle']
+    return domain_handle.OpenUser(rids[0])
 
 def test_DeleteUser_byname(pipe, domain_handle, user_name):
 
@@ -218,7 +195,7 @@ def test_CreateUser(pipe, domain_handle):
 
 def test_DeleteAlias_byname(pipe, domain_handle, alias_name):
 
-    rid = test_LookupName(pipe, domain_handle, alias_name)
+    rid = test_LookupNames(pipe, domain_handle, alias_name)
 
     r = {}
     r['domain_handle'] = domain_handle
@@ -339,7 +316,7 @@ def test_CreateAlias(pipe, domain_handle, domain_sid):
 
 def test_DeleteGroup_byname(pipe, domain_handle, group_name):
     
-    rid = test_LookupName(pipe, domain_handle, group_name)
+    rid = test_LookupNames(pipe, domain_handle, group_name)
 
     r = {}
     r['domain_handle'] = domain_handle
