@@ -1432,6 +1432,7 @@ static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 static void api_samr_query_useraliases( pipes_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_USERALIASES q_u;
+	ZERO_STRUCT(q_u);
 	samr_io_q_query_useraliases("", &q_u, data, 0);
 	samr_reply_query_useraliases(&q_u, rdata);
 	samr_free_q_query_useraliases(&q_u);
@@ -1797,6 +1798,7 @@ static void samr_reply_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 static void api_samr_lookup_rids( pipes_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_LOOKUP_RIDS q_u;
+	ZERO_STRUCT(q_u);
 	samr_io_q_lookup_rids("", &q_u, data, 0);
 	samr_reply_lookup_rids(&q_u, rdata);
 	samr_free_q_lookup_rids(&q_u);
