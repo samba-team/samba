@@ -200,7 +200,8 @@ unsigned char * env_default(int init, int welldefined);
 unsigned char * env_getvalue(unsigned char *var);
 
 void set_escape_char(char *s);
-unsigned long sourceroute(char *arg, char **cpp, int *lenp);
+int sourceroute(struct addrinfo *ai, char *arg, char **cpp,
+		int *prototp, int *optp);
 
 #if	defined(AUTHENTICATION)
 int auth_enable (char *);
