@@ -328,6 +328,9 @@ do_version4(unsigned char *buf,
 	memcpy(&auth.dat, buf, pos);
 	auth.length = pos;
 	krb_set_key(tkey->key.keyvalue.data, 0);
+
+	krb_ignore_ip_address = !check_ticket_addresses;
+
 	ret = krb_rd_req(&auth, "krbtgt", realm, 
 			 addr->sin_addr.s_addr, &ad, 0);
 	if(ret){
