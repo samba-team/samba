@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_des)
+INCLUDES += $(INCLUDE_des) $(ROKEN_RENAME)
 
 noinst_PROGRAMS = otptest
 
@@ -33,7 +33,12 @@ libotp_la_SOURCES = \
 	otp_locl.h \
 	otp_md.h \
 	roken_rename.h \
-	$(ndbm_wrap)
+	$(ndbm_wrap) \
+	$(ROKEN_SRCS)
+
+if do_roken_rename
+ROKEN_SRCS = snprintf.c strcasecmp.c strncasecmp.c strlwr.c
+endif
 
 $(libotp_la_OBJECTS): $(ndbm_wrap)
 
@@ -42,3 +47,12 @@ ndbm_wrap.c:
 ndbm_wrap.h:
 	(echo '#define dbm_rename(X) __otp_ ## X'; cat $(srcdir)/../roken/ndbm_wrap.h) > ndbm_wrap.h
 
+
+snprintf.c:
+	$(LN_S) $(srcdir)/../roken/snprintf.c .
+strcasecmp.c:
+	$(LN_S) $(srcdir)/../roken/strcasecmp.c .
+strncasecmp.c:
+	$(LN_S) $(srcdir)/../roken/strncasecmp.c .
+strlwr.c:
+	$(LN_S) $(srcdir)/../roken/strlwr.c .
