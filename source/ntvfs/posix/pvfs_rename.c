@@ -174,7 +174,6 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* finally try the actual rename */
 	if (rename(name1->full_name, fname2) == -1) {
 		talloc_free(mem_ctx);
 		return pvfs_map_errno(pvfs, errno);
@@ -241,18 +240,14 @@ static NTSTATUS pvfs_rename_wildcard(struct pvfs_state *pvfs,
 }
 
 /*
-  rename a set of files
+  rename a set of files - SMBmv interface
 */
-NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
-		     struct smbsrv_request *req, union smb_rename *ren)
+static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
+			       struct smbsrv_request *req, union smb_rename *ren)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct pvfs_filename *name1, *name2;
-
-	if (ren->generic.level != RAW_RENAME_RENAME) {
-		return NT_STATUS_INVALID_LEVEL;
-	}
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, ren->rename.in.pattern1, 0, &name1);
@@ -281,6 +276,11 @@ NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
+	status = pvfs_match_attrib(pvfs, name1, ren->rename.in.attrib, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	status = pvfs_can_rename(pvfs, name1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -292,3 +292,109 @@ NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
 	
 	return NT_STATUS_OK;
 }
+
+
+/*
+  rename a set of files - ntrename interface
+*/
+static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
+			       struct smbsrv_request *req, union smb_rename *ren)
+{
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	NTSTATUS status;
+	struct pvfs_filename *name1, *name2;
+
+	switch (ren->ntrename.in.flags) {
+	case RENAME_FLAG_RENAME:
+	case RENAME_FLAG_HARD_LINK:
+	case RENAME_FLAG_COPY:
+	case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
+		break;
+	default:
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* resolve the cifs name to a posix name */
+	status = pvfs_resolve_name(pvfs, req, ren->ntrename.in.old_name, 0, &name1);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = pvfs_resolve_name(pvfs, req, ren->ntrename.in.new_name, 0, &name2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (name1->has_wildcard || name2->has_wildcard) {
+		return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+	}
+
+	if (!name1->exists) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (strcmp(name1->full_name, name2->full_name) == 0) {
+		return NT_STATUS_OK;
+	}
+
+	if (name2->exists) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	status = pvfs_match_attrib(pvfs, name1, ren->ntrename.in.attrib, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = pvfs_can_rename(pvfs, name1);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	switch (ren->ntrename.in.flags) {
+	case RENAME_FLAG_RENAME:
+		if (rename(name1->full_name, name2->full_name) == -1) {
+			return pvfs_map_errno(pvfs, errno);
+		}
+		break;
+
+	case RENAME_FLAG_HARD_LINK:
+		if (link(name1->full_name, name2->full_name) == -1) {
+			return pvfs_map_errno(pvfs, errno);
+		}
+		break;
+
+	case RENAME_FLAG_COPY:
+		return pvfs_copy_file(pvfs, name1, name2);
+
+	case RENAME_FLAG_MOVE_CLUSTER_INFORMATION:
+		return NT_STATUS_INVALID_PARAMETER;
+
+	default:
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	
+	return NT_STATUS_OK;
+}
+
+/*
+  rename a set of files - ntrename interface
+*/
+NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
+		     struct smbsrv_request *req, union smb_rename *ren)
+{
+	switch (ren->generic.level) {
+	case RAW_RENAME_RENAME:
+		return pvfs_rename_mv(ntvfs, req, ren);
+
+	case RAW_RENAME_NTRENAME:
+		return pvfs_rename_nt(ntvfs, req, ren);
+
+	default:
+		break;
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
+
