@@ -1,4 +1,10 @@
+2002-05-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* broken2.m4 []-less is apparently the way to go
+
 2002-05-19  Johan Danielsson  <joda@pdc.kth.se>
+
+	* otp.m4: check db_type instead of precence of dbm_firstkey
 
 	* roken-frag.m4: don't AC_LIBOBJ more than one function at a time
 
