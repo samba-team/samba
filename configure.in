@@ -51,7 +51,9 @@ dnl AC_KRB_PROG_YACC
 AC_PROG_YACC
 AM_PROG_LEX
 AC_PROG_RANLIB
-AC_PROG_AWK
+dnl AC_PROG_AWK
+dnl mawk seems to mishandle \# in lib/roken/roken.awk
+AC_CHECK_PROGS(AWK, gawk nawk awk, )
 AC_KRB_PROG_LN_S
 
 AC_MIPS_ABI
