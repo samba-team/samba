@@ -256,6 +256,7 @@ void *Realloc(void *p,size_t size);
 BOOL get_myname(char *my_name);
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2);
 int interpret_protocol(char *str,int def);
+BOOL is_ipaddress(const char *str);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
@@ -533,6 +534,7 @@ BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipad
 void endlmhosts(FILE *fp);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
 BOOL find_master_ip(char *group, struct in_addr *master_ip);
+BOOL get_dc_list(char *group, struct in_addr **ip_list, int *count);
 
 /*The following definitions come from  libsmb/nmblib.c  */
 

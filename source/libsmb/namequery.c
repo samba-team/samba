@@ -29,8 +29,9 @@ extern int DEBUGLEVEL;
 BOOL global_in_nmbd = False;
 
 /****************************************************************************
-interpret a node status response
+ Interpret a node status response.
 ****************************************************************************/
+
 static void _interpret_node_status(char *p, char *master,char *rname)
 {
   int numnames = CVAL(p,0);
@@ -81,12 +82,11 @@ static void _interpret_node_status(char *p, char *master,char *rname)
 	       IVAL(p,20),IVAL(p,24)));
 }
 
-
 /****************************************************************************
-  do a netbios name status query on a host
+ Do a netbios name status query on a host.
+ The "master" parameter is a hack used for finding workgroups.
+**************************************************************************/
 
-  the "master" parameter is a hack used for finding workgroups.
-  **************************************************************************/
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 		 struct in_addr to_ip,char *master,char *rname,
 		 void (*fn)(struct packet_struct *))
@@ -188,12 +188,12 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
   return(False);
 }
 
-
 /****************************************************************************
-  do a netbios name query to find someones IP
-  returns an array of IP addresses or NULL if none
-  *count will be set to the number of addresses returned
-  ****************************************************************************/
+ Do a netbios name query to find someones IP.
+ Returns an array of IP addresses or NULL if none.
+ *count will be set to the number of addresses returned.
+****************************************************************************/
+
 struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOOL recurse,
          struct in_addr to_ip, int *count, void (*fn)(struct packet_struct *))
 {
@@ -344,6 +344,7 @@ FILE *startlmhosts(char *fname)
 /********************************************************
  Parse the next line in the lmhosts file.
 *********************************************************/
+
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr)
 {
   pstring line;
@@ -435,14 +436,19 @@ void endlmhosts(FILE *fp)
 }
 
 /********************************************************
-resolve via "bcast" method
+ Resolve via "bcast" method.
 *********************************************************/
-static BOOL resolve_bcast(const char *name, struct in_addr *return_ip, int name_type)
+
+static BOOL resolve_bcast(const char *name, int name_type,
+				struct in_addr **return_ip_list, int *return_count)
 {
 	int sock, i;
 	struct in_addr *iplist = NULL;
 	int count;
 	int num_interfaces = iface_count();
+
+	*return_ip_list = NULL;
+	*return_count = 0;
 	
 	/*
 	 * "bcast" means do a broadcast lookup on all the local interfaces.
@@ -464,11 +470,9 @@ static BOOL resolve_bcast(const char *name, struct in_addr *return_ip, int name_
 		struct in_addr sendto_ip;
 		/* Done this way to fix compiler error on IRIX 5.x */
 		sendto_ip = *iface_bcast(*iface_n_ip(i));
-		iplist = name_query(sock, name, name_type, True, 
-				    True, sendto_ip, &count, NULL);
-		if(iplist != NULL) {
-			*return_ip = iplist[0];
-			free((char *)iplist);
+		*return_ip_list = name_query(sock, name, name_type, True, 
+				    True, sendto_ip, return_count, NULL);
+		if(*return_ip_list != NULL) {
 			close(sock);
 			return True;
 		}
@@ -478,62 +482,63 @@ static BOOL resolve_bcast(const char *name, struct in_addr *return_ip, int name_
 	return False;
 }
 
-
-
 /********************************************************
-resolve via "wins" method
+ Resolve via "wins" method.
 *********************************************************/
-static BOOL resolve_wins(const char *name, struct in_addr *return_ip, int name_type)
+
+static BOOL resolve_wins(const char *name, int name_type,
+                         struct in_addr **return_iplist, int *return_count)
 {
-      int sock;
-      struct in_addr wins_ip;
-      BOOL wins_ismyip;
+	int sock;
+	struct in_addr wins_ip;
+	BOOL wins_ismyip;
 
-      /*
-       * "wins" means do a unicast lookup to the WINS server.
-       * Ignore if there is no WINS server specified or if the
-       * WINS server is one of our interfaces (if we're being
-       * called from within nmbd - we can't do this call as we
-       * would then block).
-       */
+	*return_iplist = NULL;
+	*return_count = 0;
+	
+	/*
+	 * "wins" means do a unicast lookup to the WINS server.
+	 * Ignore if there is no WINS server specified or if the
+	 * WINS server is one of our interfaces (if we're being
+	 * called from within nmbd - we can't do this call as we
+	 * would then block).
+	 */
 
-      DEBUG(3,("resolve_name: Attempting wins lookup for name %s<0x%x>\n", name, name_type));
+	DEBUG(3,("resolve_name: Attempting wins lookup for name %s<0x%x>\n", name, name_type));
 
-      if(!*lp_wins_server()) {
-	      DEBUG(3,("resolve_name: WINS server resolution selected and no WINS server present.\n"));
-	      return False;
-      }
+	if(!*lp_wins_server()) {
+		DEBUG(3,("resolve_name: WINS server resolution selected and no WINS server present.\n"));
+		return False;
+	}
 
-      wins_ip = *interpret_addr2(lp_wins_server());
-      wins_ismyip = ismyip(wins_ip);
+	wins_ip = *interpret_addr2(lp_wins_server());
+	wins_ismyip = ismyip(wins_ip);
 
-      if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
-	      sock = open_socket_in( SOCK_DGRAM, 0, 3,
-				     interpret_addr(lp_socket_address()), True );
+	if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
+		sock = open_socket_in( SOCK_DGRAM, 0, 3,
+							interpret_addr(lp_socket_address()), True );
 	      
-	      if (sock != -1) {
-		      struct in_addr *iplist = NULL;
-		      int count;
-		      iplist = name_query(sock, name, name_type, False, 
-					  True, wins_ip, &count, NULL);
-		      if(iplist != NULL) {
-			      *return_ip = iplist[0];
-			      free((char *)iplist);
-			      close(sock);
-			      return True;
-		      }
-		      close(sock);
-	      }
-      }
+		if (sock != -1) {
+			struct in_addr *iplist = NULL;
+			*return_iplist = name_query(sock, name, name_type, False, 
+								True, wins_ip, return_count, NULL);
+			if(*return_iplist != NULL) {
+				close(sock);
+				return True;
+			}
+			close(sock);
+		}
+	}
 
-      return False;
+	return False;
 }
 
-
 /********************************************************
-resolve via "lmhosts" method
+ Resolve via "lmhosts" method.
 *********************************************************/
-static BOOL resolve_lmhosts(const char *name, struct in_addr *return_ip, int name_type)
+
+static BOOL resolve_lmhosts(const char *name, int name_type,
+                         struct in_addr **return_iplist, int *return_count)
 {
 	/*
 	 * "lmhosts" means parse the local lmhosts file.
@@ -542,16 +547,27 @@ static BOOL resolve_lmhosts(const char *name, struct in_addr *return_ip, int nam
 	FILE *fp;
 	pstring lmhost_name;
 	int name_type2;
+	struct in_addr return_ip;
+
+	*return_iplist = NULL;
+	*return_count = 0;
 
 	DEBUG(3,("resolve_name: Attempting lmhosts lookup for name %s<0x%x>\n", name, name_type));
 
 	fp = startlmhosts( LMHOSTSFILE );
 	if(fp) {
-		while (getlmhostsent(fp, lmhost_name, &name_type2, return_ip)) {
+		while (getlmhostsent(fp, lmhost_name, &name_type2, &return_ip)) {
 			if (strequal(name, lmhost_name) && 
                 ((name_type2 == -1) || (name_type == name_type2))
                ) {
 				endlmhosts(fp);
+				*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
+				if(*return_iplist == NULL) {
+					DEBUG(3,("resolve_lmhosts: malloc fail !\n"));
+					return False;
+				}
+				**return_iplist = return_ip;
+				*return_count = 1;
 				return True; 
 			}
 		}
@@ -562,82 +578,95 @@ static BOOL resolve_lmhosts(const char *name, struct in_addr *return_ip, int nam
 
 
 /********************************************************
-resolve via "hosts" method
+ Resolve via "hosts" method.
 *********************************************************/
-static BOOL resolve_hosts(const char *name, struct in_addr *return_ip)
+
+static BOOL resolve_hosts(const char *name,
+                         struct in_addr **return_iplist, int *return_count)
 {
 	/*
 	 * "host" means do a localhost, or dns lookup.
 	 */
 	struct hostent *hp;
 
+	*return_iplist = NULL;
+	*return_count = 0;
+
 	DEBUG(3,("resolve_name: Attempting host lookup for name %s<0x20>\n", name));
 	
 	if (((hp = Get_Hostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
-		putip((char *)return_ip,(char *)hp->h_addr);
+		struct in_addr return_ip;
+		putip((char *)&return_ip,(char *)hp->h_addr);
+		*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
+		if(*return_iplist == NULL) {
+			DEBUG(3,("resolve_hosts: malloc fail !\n"));
+			return False;
+		}
+		**return_iplist = return_ip;
+		*return_count = 1;
 		return True;
 	}
 	return False;
 }
 
-
 /********************************************************
- Resolve a name into an IP address. Use this function if
- the string is either an IP address, DNS or host name
- or NetBIOS name. This uses the name switch in the
+ Internal interface to resolve a name into an IP address.
+ Use this function if the string is either an IP address, DNS
+ or host name or NetBIOS name. This uses the name switch in the
  smb.conf to determine the order of name resolution.
 *********************************************************/
-BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
+
+static BOOL internal_resolve_name(const char *name, int name_type,
+                         		struct in_addr **return_iplist, int *return_count)
 {
   int i;
-  BOOL pure_address = True;
   pstring name_resolve_list;
   fstring tok;
   char *ptr;
+  BOOL allones = (strcmp(name,"255.255.255.255") == 0);
+  BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
+  BOOL is_address = is_ipaddress(name);
+  *return_iplist = NULL;
+  *return_count = 0;
 
-  if (strcmp(name,"0.0.0.0") == 0) {
-    return_ip->s_addr = 0;
+  if (allzeros || allones || is_address) {
+	*return_iplist = (struct in_addr *)malloc(sizeof(struct in_addr));
+	if(*return_iplist == NULL) {
+		DEBUG(3,("internal_resolve_name: malloc fail !\n"));
+		return False;
+	}
+	if(is_address) { 
+		/* if it's in the form of an IP address then get the lib to interpret it */
+		(*return_iplist)->s_addr = inet_addr(name);
+    } else {
+		(*return_iplist)->s_addr = allones ? 0xFFFFFFFF : 0;
+		*return_count = 1;
+	}
     return True;
   }
-  if (strcmp(name,"255.255.255.255") == 0) {
-    return_ip->s_addr = 0xFFFFFFFF;
-    return True;
-  }
-   
-  for (i=0; pure_address && name[i]; i++)
-    if (!(isdigit((int)name[i]) || name[i] == '.'))
-      pure_address = False;
   
-  /* Check that a pure number is not misinterpreted as an IP */
-  pure_address = pure_address && (strchr(name, '.') != NULL);
- 
-  /* if it's in the form of an IP address then get the lib to interpret it */
-  if (pure_address) {
-    return_ip->s_addr = inet_addr(name);
-    return True;
-  }
-
   pstrcpy(name_resolve_list, lp_name_resolve_order());
   ptr = name_resolve_list;
-  if (!ptr || !*ptr) ptr = "host";
+  if (!ptr || !*ptr)
+    ptr = "host";
 
   while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
 	  if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-		  if (name_type == 0x20 && resolve_hosts(name, return_ip)) {
+		  if (name_type == 0x20 && resolve_hosts(name, return_iplist, return_count)) {
 			  return True;
 		  }
 	  } else if(strequal( tok, "lmhosts")) {
-		  if (resolve_lmhosts(name, return_ip, name_type)) {
+		  if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
 			  return True;
 		  }
 	  } else if(strequal( tok, "wins")) {
 		  /* don't resolve 1D via WINS */
 		  if (name_type != 0x1D &&
-		      resolve_wins(name, return_ip, name_type)) {
+		      resolve_wins(name, name_type, return_iplist, return_count)) {
 			  return True;
 		  }
 	  } else if(strequal( tok, "bcast")) {
-		  if (resolve_bcast(name, return_ip, name_type)) {
+		  if (resolve_bcast(name, name_type, return_iplist, return_count)) {
 			  return True;
 		  }
 	  } else {
@@ -645,17 +674,65 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	  }
   }
 
+  if((*return_iplist) != NULL) {
+    free((char *)(*return_iplist));
+    *return_iplist = NULL;
+  }
   return False;
 }
 
+/********************************************************
+ Internal interface to resolve a name into one IP address.
+ Use this function if the string is either an IP address, DNS
+ or host name or NetBIOS name. This uses the name switch in the
+ smb.conf to determine the order of name resolution.
+*********************************************************/
 
+BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
+{
+	struct in_addr *ip_list = NULL;
+	int count = 0;
+
+	if(!internal_resolve_name(name, name_type, &ip_list, &count)) {
+		*return_ip = ip_list[0];
+		free((char *)ip_list);
+		return True;
+	}
+	if(ip_list != NULL)
+		free((char *)ip_list);
+	return False;
+}
 
 /********************************************************
-find the IP address of the master browser or DMB for a workgroup
+ Find the IP address of the master browser or DMB for a workgroup.
 *********************************************************/
+
 BOOL find_master_ip(char *group, struct in_addr *master_ip)
 {
-	if (resolve_name(group, master_ip, 0x1D)) return True;
+	struct in_addr *ip_list = NULL;
+	int count = 0;
 
-	return resolve_name(group, master_ip, 0x1B);
+	if (internal_resolve_name(group, 0x1D, &ip_list, &count)) {
+		*master_ip = ip_list[0];
+		free((char *)ip_list);
+		return True;
+	}
+	if(internal_resolve_name(group, 0x1B, &ip_list, &count)) {
+		*master_ip = ip_list[0];
+		free((char *)ip_list);
+		return True;
+	}
+
+	if(ip_list != NULL)
+		free((char *)ip_list);
+	return False;
+}
+
+/********************************************************
+ Get the IP address list of the PDC/BDC's of a Domain.
+*********************************************************/
+
+BOOL get_dc_list(char *group, struct in_addr **ip_list, int *count)
+{
+	return internal_resolve_name(group, 0x1C, ip_list, count);
 }

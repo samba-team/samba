@@ -546,7 +546,6 @@ static void send_backup_list_response(struct subnet_record *subrec,
   char outbuf[1024];
   char *p, *countptr;
   unsigned int count = 0;
-  int len;
 #if 0
   struct server_record *servrec;
 #endif
@@ -587,7 +586,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 
   for (servrec = work->serverlist; servrec; servrec = servrec->next)
   { 
-    len = PTR_DIFF(p, outbuf);
+    int len = PTR_DIFF(p, outbuf);
     if((sizeof(outbuf) - len) < 16)
       break;
 
@@ -612,8 +611,6 @@ static void send_backup_list_response(struct subnet_record *subrec,
 #endif
 
   SCVAL(countptr, 0, count);
-
-  len = PTR_DIFF(p, outbuf);
 
   DEBUG(4,("send_backup_list_response: sending response to %s<00> IP %s with %d servers.\n",
           send_to_name->name, inet_ntoa(sendto_ip), count));
