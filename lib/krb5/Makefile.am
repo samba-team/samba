@@ -18,6 +18,7 @@ TESTS =						\
 	test_cc					\
 	test_config				\
 	test_time				\
+	test_crypto				\
 	name-45-test
 
 check_PROGRAMS = $(TESTS)
