@@ -1596,6 +1596,7 @@ BOOL nt_to_unix_name(const char *nt_name, char **unix_name, BOOL *is_user)
 	char *key;
 	int ret;
 	fstring tmp_ntname;
+	fstring tmp_unixname;
 
 	if (!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping\n"));
@@ -1615,14 +1616,19 @@ BOOL nt_to_unix_name(const char *nt_name, char **unix_name, BOOL *is_user)
 	if (!dbuf.dptr)
 		return False;
 
-	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ffd", &tmp_ntname,
-			 unix_name, is_user);
+	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ffd", tmp_ntname,
+			 tmp_unixname, is_user);
 
 	SAFE_FREE(lcname);
 	SAFE_FREE(key);
 	SAFE_FREE(dbuf.dptr);
 
-	return (ret > 0);
+	if (ret > 0) {
+		*unix_name = strdup(tmp_unixname);
+		return True;
+	}
+
+	return False;
 }
 
 struct find_unixname_closure {

@@ -30,7 +30,8 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid,
 {
 	struct passwd *pwd;
 	struct group *grp;
-	fstring mapped_name;
+	char *unix_name;
+	BOOL is_user;
 
 	if (winbind_lookup_name(domain, name, psid, name_type))
 		return True;
@@ -38,21 +39,25 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid,
 	if (!strequal(domain, get_global_sam_name()))
 		return False;
 
-	fstrcpy(mapped_name, name);
-	map_username(mapped_name);
+	if (!nt_to_unix_name(name, &unix_name, &is_user))
+		return False;
 
-	if (((pwd = getpwnam(mapped_name)) != NULL) &&
-	    (NT_STATUS_IS_OK(uid_to_sid(psid, pwd->pw_uid)))) {
-		*name_type = SID_NAME_USER;
-		return True;
+	if (is_user) {
+		if (((pwd = getpwnam(unix_name)) != NULL) &&
+		    (NT_STATUS_IS_OK(uid_to_sid(psid, pwd->pw_uid)))) {
+			SAFE_FREE(unix_name);
+			*name_type = SID_NAME_USER;
+			return True;
+		}
+	} else {
+		if (((grp = getgrnam(unix_name)) != NULL) &&
+		    (NT_STATUS_IS_OK(gid_to_sid(psid, grp->gr_gid)))) {
+			*name_type = SID_NAME_DOM_GRP;
+			return True;
+		}
 	}
 
-	if (((grp = getgrnam(name)) != NULL) &&
-	    (NT_STATUS_IS_OK(gid_to_sid(psid, grp->gr_gid)))) {
-		*name_type = SID_NAME_DOM_GRP;
-		return True;
-	}
-
+	SAFE_FREE(unix_name);
 	return False;
 }
 
