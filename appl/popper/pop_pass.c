@@ -26,8 +26,8 @@ krb4_verify_password (POP *p)
 	      TKT_ROOT "_popper.%u", (unsigned)getpid());
     krb_set_tkt_string (tkt);
 
-    status = krb_verify_user(p->user,
-			     "", lrealm, p->pop_parm[1], 1, "pop");
+    status = krb_verify_user(p->user, "", lrealm,
+			     p->pop_parm[1], KRB_VERIFY_SECURE, "pop");
     dest_tkt(); /* no point in keeping the tickets */
     return status;
 }
