@@ -91,9 +91,8 @@ struct winbindd_domain {
     BOOL got_domain_info;                  /* Got controller and sid */
 
     /* Cached handles to samr pipe */
-
-    POLICY_HND sam_handle, sam_dom_handle, sam_blt_handle;
-    BOOL sam_handle_open, sam_dom_handle_open, sam_blt_handle_open;
+    POLICY_HND sam_handle, sam_dom_handle;
+    BOOL sam_handle_open, sam_dom_handle_open;
 
     struct winbindd_domain *prev, *next;   /* Linked list info */
 };

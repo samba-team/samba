@@ -606,12 +606,14 @@ int main(int argc, char **argv)
     pwdb_initialise(False);
 
     ZERO_STRUCT(server_state);
-    establish_connections();
 
     /* Winbind daemon initialisation */
     if (!winbindd_param_init()) {
         return 1;
     }
+
+    /* try to establish the connections now, but don't fail if we can't */
+    establish_connections();
 
     if (!winbindd_idmap_init()) {
         return 1;

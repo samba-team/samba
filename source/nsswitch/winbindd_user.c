@@ -250,12 +250,6 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
                 continue;
         }
 
-        /* No point looking up BUILTIN users as they don't exist */
-
-        if (strcmp(tmp->name, "BUILTIN") == 0) {
-            continue;
-        }
-
         /* Create a state record for this domain */
 
         if ((domain_state = (struct getent_state *)

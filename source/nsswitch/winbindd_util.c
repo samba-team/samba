@@ -27,8 +27,7 @@
 BOOL domain_handles_open(struct winbindd_domain *domain)
 {
 	return domain->sam_handle_open &&
-		domain->sam_dom_handle_open &&
-		domain->sam_blt_handle_open;
+		domain->sam_dom_handle_open;
 }
 
 static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
@@ -137,15 +136,6 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 		if (!domain->sam_dom_handle_open) return False;
 	}
 	
-	/* Open sam builtin handle if it isn't already open */
-	if (!domain->sam_blt_handle_open) {
-		domain->sam_blt_handle_open =
-			samr_open_domain(&domain->sam_handle,
-					 SEC_RIGHTS_MAXIMUM_ALLOWED, global_sid_builtin,
-					 &domain->sam_blt_handle);
-		if (!domain->sam_blt_handle_open) return False;
-	}
-	
 	return True;
 }
 
@@ -167,11 +157,6 @@ BOOL establish_connections(void)
 			}
 		}
 
-
-		if (!add_trusted_domain("BUILTIN")) {
-			DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
-			return False;
-		}
 
 		/* Add our workgroup - keep handle to look up trusted domains */
 		if (!add_trusted_domain(lp_workgroup())) {
@@ -272,23 +257,10 @@ BOOL get_domain_info(struct winbindd_domain *domain)
 
     DEBUG(1, ("Getting domain info for domain %s\n", domain->name));
 
-    /* Lookup domain sid */
-        
-    if (strequal(domain->name, "BUILTIN")) {
-        if (!lookup_domain_sid(lp_workgroup(), domain)) {
-            DEBUG(0, ("could not find sid for domain %s\n", 
-                      domain->name));
-            return False;
-        }
-        
-        /* Fake up sid and domain controller */
-        
-        sid_copy(&domain->sid, global_sid_builtin);
-        fstrcpy(domain->name, "BUILTIN");
-        
-    } else if (!lookup_domain_sid(domain->name, domain)) {
-        DEBUG(0, ("could not find sid for domain %s\n", domain->name));
-        return False;
+    /* Lookup domain sid */        
+    if (!lookup_domain_sid(domain->name, domain)) {
+	    DEBUG(0, ("could not find sid for domain %s\n", domain->name));
+	    return False;
     }
     
     /* Lookup OK */
@@ -428,18 +400,11 @@ int winbindd_lookup_aliasmem(struct winbindd_domain *domain,
                              DOM_SID ***sids, char ***names, 
                              enum SID_NAME_USE **name_types)
 {
-    POLICY_HND *pol;
-
     /* Open sam handles */
     if (!domain_handles_open(domain)) return False;
 
-    if (sid_equal(global_sid_builtin, &domain->sid)) {
-        pol = &domain->sam_blt_handle;
-    } else {
-        pol = &domain->sam_dom_handle;
-    }
-
-    return sam_query_aliasmem(domain->controller, pol, alias_rid, num_names, 
+    return sam_query_aliasmem(domain->controller, 
+			      &domain->sam_dom_handle, alias_rid, num_names, 
 			      sids, names, name_types);
 }
 
@@ -540,8 +505,6 @@ BOOL winbindd_param_init(void)
         return False;
     }
     
-    /* Add builtin domain */
-
     return True;
 }
 

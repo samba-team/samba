@@ -646,40 +646,25 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
                 if (!domain_handles_open(ent->domain)) goto cleanup;
 
-                if (strcmp(ent->domain->name, "BUILTIN") == 0) {
-
-                    /* Enumerate aliases */
-
-                    do {
+		/* Enumerate domain groups */
+                    
+		do {
                         status =
-                            samr_enum_dom_aliases(&ent->domain->sam_blt_handle,
-                                                  &start_ndx, 0x100000,
-                                                  &ent->sam_entries,
-                                                  &ent->num_sam_entries);
-                    } while (status == STATUS_MORE_ENTRIES);
+				samr_enum_dom_groups(&ent->domain->sam_dom_handle,
+						     &start_ndx, 0x100000,
+						     &ent->sam_entries,
+						     &ent->num_sam_entries);
+		} while (status == STATUS_MORE_ENTRIES);
                     
-                } else {
+		/* Enumerate domain aliases */
                     
-                    /* Enumerate domain groups */
-                    
-                    do {
-                        status =
-                            samr_enum_dom_groups(&ent->domain->sam_dom_handle,
-                                                 &start_ndx, 0x100000,
-                                                 &ent->sam_entries,
-                                             &ent->num_sam_entries);
-                    } while (status == STATUS_MORE_ENTRIES);
-                    
-                    /* Enumerate domain aliases */
-                    
-                    do {
+		do {
                         status = 
-                            samr_enum_dom_aliases(&ent->domain->sam_dom_handle,
-                                                  &start_ndx2, 0x100000,
-                                                  &ent->sam_entries,
-                                                  &ent->num_sam_entries);
-                    } while (status == STATUS_MORE_ENTRIES);
-                }
+				samr_enum_dom_aliases(&ent->domain->sam_dom_handle,
+						      &start_ndx2, 0x100000,
+						      &ent->sam_entries,
+						      &ent->num_sam_entries);
+		} while (status == STATUS_MORE_ENTRIES);
                 
                 /* Fill cache with received entries */
 
