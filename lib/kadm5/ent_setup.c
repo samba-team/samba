@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,7 +56,7 @@ attr_to_flags(unsigned attr, HDBFlags *flags)
     /* HW_AUTH */
     flags->server =		!(attr & KRB5_KDB_DISALLOW_SVR);
     flags->change_pw = 	       !!(attr & KRB5_KDB_PWCHANGE_SERVICE);
-    flags->client =	       !!(attr & KRB5_KDB_DISALLOW_SVR);
+    flags->client =	        1; /* XXX */
 }
 
 kadm5_ret_t
@@ -79,13 +79,15 @@ _kadm5_setup_entry(hdb_entry *ent, kadm5_principal_ent_t princ,
 	ent->flags.postdate = 1;
     }
     if(mask & KADM5_MAX_LIFE)
-	set_value(ent->max_life, princ->max_life);
+	if(princ->max_life)
+	    set_value(ent->max_life, princ->max_life);
     else if(def && def->max_life)
 	set_value(ent->max_life, def->max_life);
     if(mask & KADM5_KVNO)
 	ent->kvno = princ->kvno;
     if(mask & KADM5_MAX_RLIFE)
-	set_value(ent->max_renew, princ->max_renewable_life);
+	if(princ->max_renewable_life)
+	    set_value(ent->max_renew, princ->max_renewable_life);
     else if(def && def->max_renewable_life)
 	set_value(ent->max_renew, def->max_renewable_life);
     if(mask & KADM5_TL_DATA){
