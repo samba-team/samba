@@ -1069,6 +1069,8 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	struct samr_domain_state *d_state;
 	int i;
 	NTSTATUS status = NT_STATUS_OK;
+	struct samr_String *names;
+	uint32_t *ids;
 
 	ZERO_STRUCT(r->out.names);
 	ZERO_STRUCT(r->out.types);
@@ -1080,30 +1082,20 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	if (r->in.num_rids == 0)
 		return NT_STATUS_OK;
 
-	r->out.names.names = talloc_array_p(mem_ctx, struct samr_String,
-					    r->in.num_rids);
-	if (r->out.names.names == NULL)
-		return NT_STATUS_NO_MEMORY;
+	names = talloc_array_p(mem_ctx, struct samr_String, r->in.num_rids);
+	ids = talloc_array_p(mem_ctx, uint32_t, r->in.num_rids);
 
-	r->out.types.ids = talloc_array_p(mem_ctx, uint32_t, r->in.num_rids);
-	if (r->out.types.ids == NULL)
+	if ((names == NULL) || (ids == NULL))
 		return NT_STATUS_NO_MEMORY;
-
-	r->out.names.count = r->in.num_rids;
-	r->out.types.count = r->in.num_rids;
 
 	for (i=0; i<r->in.num_rids; i++) {
 		struct ldb_message **res;
 		int count;
 		const char * const attrs[] = { 	"sAMAccountType",
 						"sAMAccountName", NULL };
-		struct samr_String *str;
 		uint32_t atype;
 
-		str = &r->out.names.names[i];
-
-		ZERO_STRUCTP(str);
-		r->out.types.ids[i] = 0;
+		ids[i] = SID_NAME_UNKNOWN;
 
 		count = samdb_search(d_state->sam_ctx, mem_ctx,
 				     d_state->domain_dn, &res, attrs,
@@ -1114,8 +1106,8 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			continue;
 		}
 
-		str->string = samdb_result_string(res[0], "sAMAccountName",
-						  NULL);
+		names[i].string = samdb_result_string(res[0], "sAMAccountName",
+						      NULL);
 		
 		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
 		if (atype == 0) {
@@ -1123,14 +1115,20 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 			continue;
 		}
 
-		r->out.types.ids[i] = samdb_atype_map(atype);
+		ids[i] = samdb_atype_map(atype);
 		
-		if (r->out.types.ids[i] == SID_NAME_UNKNOWN) {
+		if (ids[i] == SID_NAME_UNKNOWN) {
 			status = STATUS_SOME_UNMAPPED;
 			continue;
 		}
 	}
-	
+
+	r->out.names.names = names;
+	r->out.names.count = r->in.num_rids;
+
+	r->out.types.ids = ids;
+	r->out.types.count = r->in.num_rids;
+
 	return status;
 }
 
