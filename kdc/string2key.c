@@ -37,8 +37,40 @@
  */
 
 #include "kdc_locl.h"
+#include <getarg.h>
 
 RCSID("$Id$");
+
+int version5;
+int version4;
+int afs;
+char *principal;
+char *cell;
+char *password;
+int version;
+int help;
+
+struct getargs args[] = {
+    { "version5", '5', arg_flag,   &version5, "Output Kerberos v5 string-to-key" },
+    { "version4", '4', arg_flag,   &version4, "Output Kerberos v4 string-to-key" },
+#ifdef KRB4
+    { "afs",      'a', arg_flag,   &afs, "Output AFS string-to-key" },
+    { "cell",     'c', arg_string, &cell, "AFS cell to use", "cell" },
+#endif
+    { "password", 'w', arg_string, &password, "Password to use", "password" },
+    { "principal",'p', arg_string, &principal, "Kerberos v5 principal to use", "principal" },
+    { "version",    0, arg_flag,   &version, "print version" },
+    { "help",       0, arg_flag,   &help, NULL }
+};
+
+int num_args = sizeof(args) / sizeof(args[0]);
+
+void
+usage(int status)
+{
+    arg_printusage (args, num_args, "password");
+    exit(status);
+}
 
 int main(int argc, char **argv)
 {
@@ -47,14 +79,71 @@ int main(int argc, char **argv)
     krb5_data salt;
     krb5_keyblock key;
     int i;
-    krb5_init_context(&context);
-    krb5_parse_name(context, argv[1], &princ);
-    salt.length = 0;
-    salt.data = NULL;
-    krb5_get_salt(princ, &salt);
-    krb5_string_to_key(argv[2], &salt, &key);
-    for(i = 0; i < key.keyvalue.length; i++)
-	printf("%02x", ((unsigned char*)key.keyvalue.data)[i]);
-    printf("\n");
+    int optind;
+    char buf[1024];
+
+    set_progname(argv[0]);
+    optind = 0;
+    if(getarg(args, num_args, argc, argv, &optind))
+	usage(1);
+    
+    if(help)
+	usage(0);
+    
+    if(version){
+	fprintf(stderr, "string2key (%s-%s)\n", PACKAGE, VERSION);
+	exit(0);
+    }
+    if(version5 && principal == NULL){
+	printf("Kerberos v5 principal: ");
+	fgets(buf, sizeof(buf), stdin);
+	buf[strlen(buf) - 1] = 0;
+	principal = strdup(buf);
+    }
+#ifdef KRB4
+    if(afs && cell == NULL){
+	printf("AFS cell: ");
+	fgets(buf, sizeof(buf), stdin);
+	buf[strlen(buf) - 1] = 0;
+	cell = strdup(buf);
+    }
+#endif
+    if(argv[optind])
+	password = argv[optind];
+    if(password == NULL){
+	des_read_pw_string(buf, sizeof(buf), "Password: ", 0);
+	password = buf;
+    }
+	
+    if(version5){
+	krb5_init_context(&context);
+	krb5_parse_name(context, principal, &princ);
+	salt.length = 0;
+	salt.data = NULL;
+	krb5_get_salt(princ, &salt);
+	krb5_string_to_key(password, &salt, &key);
+	printf("Kerberos v5 key: ");
+	for(i = 0; i < key.keyvalue.length; i++)
+	    printf("%02x", ((unsigned char*)key.keyvalue.data)[i]);
+	printf("\n");
+    }
+    if(version4){
+	des_cblock key;
+	des_string_to_key(password, &key);
+	printf("Kerberos v4 key: ");
+	for(i = 0; i < 8; i++)
+	    printf("%02x", ((unsigned char*)key)[i]);
+	printf("\n");
+    }
+#ifdef KRB4
+    if(afs){
+	des_cblock key;
+	afs_string_to_key(password, cell, &key);
+	printf("AFS key:         ");
+	for(i = 0; i < 8; i++)
+	    printf("%02x", ((unsigned char*)key)[i]);
+	printf("\n");
+    }
+#endif
     return 0;
 }
