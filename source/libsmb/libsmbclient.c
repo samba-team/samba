@@ -553,7 +553,9 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 
   }
 
-  if (path[strlen(path) - 1] == '\\') {
+  /* Hmmm, the test for a directory is suspect here ... FIXME */
+
+  if (strlen(path) > 0 && path[strlen(path) - 1] == '\\') {
     
     fd = -1;
 
@@ -801,6 +803,7 @@ int smbc_close(int fd)
 
   }
 
+  if (fe->fname) free(fe->fname);
   free(fe);
   smbc_file_table[fd - smbc_start_fd] = NULL;
 
@@ -1741,7 +1744,12 @@ int smbc_closedir(int fd)
 
   smbc_remove_dir(fe); /* Clean it up */
 
-  if (fe) free(fe);    /* Free the space too */
+  if (fe) {
+
+    if (fe->fname) free(fe->fname);
+    free(fe);    /* Free the space too */
+
+  }
 
   smbc_file_table[fd - smbc_start_fd] = NULL;
 
@@ -1989,6 +1997,20 @@ int smbc_mkdir(const char *fname, mode_t mode)
 }
 
 /*
+ * Our list function simply checks to see if a directory is not empty
+ */
+
+static int smbc_rmdir_dirempty = True;
+
+static void rmdir_list_fn(file_info *finfo, const char *mask, void *state)
+{
+
+  if (strncmp(finfo->name, ".", 1) != 0 && strncmp(finfo->name, "..", 2) != 0)
+    smbc_rmdir_dirempty = False;
+
+}
+
+/*
  * Routine to remove a directory
  */
 
@@ -2050,6 +2072,34 @@ int smbc_rmdir(const char *fname)
   if (!cli_rmdir(&srv->cli, path)) {
 
     errno = smbc_errno(&srv->cli);
+
+    if (errno == EACCES) {  /* Check if the dir empty or not */
+
+      pstring lpath; /* Local storage to avoid buffer overflows */
+
+      smbc_rmdir_dirempty = True;  /* Make this so ... */
+
+      pstrcpy(lpath, path);
+      pstrcat(lpath, "\\*");
+
+      if (cli_list(&srv->cli, lpath, aDIR | aSYSTEM | aHIDDEN, rmdir_list_fn,
+		   NULL) < 0) {
+
+	/* Fix errno to ignore latest error ... */
+
+	DEBUG(5, ("smbc_rmdir: cli_list returned an error: %d\n", 
+		  smbc_errno(&srv->cli)));
+	errno = EACCES;
+
+      }
+
+      if (smbc_rmdir_dirempty)
+	errno = EACCES;
+      else
+	errno = ENOTEMPTY;
+
+    }
+
     return -1;
 
   } 
