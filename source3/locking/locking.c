@@ -585,6 +585,122 @@ for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries
   return(True);
 }
 
+/*******************************************************************
+Remove an oplock port and mode entry from a share mode.
+********************************************************************/
+BOOL remove_share_oplock(int fnum, share_lock_token token)
+{
+#ifdef USE_OPLOCKS
+  uint32 dev, inode;
+  smb_shm_offset_t *mode_array;
+  unsigned int hash_entry;
+  share_mode_record *file_scanner_p;
+  share_mode_record *file_prev_p;
+  share_mode_entry *entry_scanner_p;
+  share_mode_entry *entry_prev_p;
+  BOOL found = False;
+  int pid = getpid();
+
+  dev = Files[fnum].fd_ptr->dev;
+  inode = Files[fnum].fd_ptr->inode;
+
+  hash_entry = HASH_ENTRY(dev, inode);
+
+  if(hash_entry > lp_shmem_hash_size() )
+  {
+    DEBUG(0,
+      ("PANIC ERROR:remove_share_oplock (FAST_SHARE_MODES): hash_entry %d too large \
+(max = %d)\n",
+      hash_entry, lp_shmem_hash_size() ));
+    return False;
+  }
+
+  mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+
+  if(mode_array[hash_entry] == NULL_OFFSET)
+  {
+    DEBUG(0,("PANIC ERROR:remove_share_oplock (FAST_SHARE_MODES): hash bucket %d empty\n",
+                  hash_entry));
+    return False;
+  } 
+    
+  file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[hash_entry]);
+  file_prev_p = file_scanner_p;
+    
+  while(file_scanner_p)
+  { 
+    if( (file_scanner_p->st_dev == dev) && (file_scanner_p->st_ino == inode) )
+    {
+      found = True;
+      break;
+    }
+    else
+    {
+      file_prev_p = file_scanner_p ;
+      file_scanner_p = (share_mode_record *)
+                        smb_shm_offset2addr(file_scanner_p->next_offset);
+    }
+  } 
+   
+  if(!found)
+  { 
+     DEBUG(0,("ERROR:remove_share_oplock (FAST_SHARE_MODES): no entry found for dev %d, \
+inode %d in hash bucket %d\n", dev, inode, hash_entry));
+     return False;
+  } 
+
+  if(file_scanner_p->locking_version != LOCKING_VERSION)
+  {
+    DEBUG(0,("ERROR: remove_share_oplock (FAST_SHARE_MODES): Deleting old share mode \
+record due to old locking version %d for file dev %d, inode %d hash bucket %d\n",
+       file_scanner_p->locking_version, dev, inode, hash_entry ));
+    if(file_prev_p == file_scanner_p)
+      mode_array[hash_entry] = file_scanner_p->next_offset;
+    else
+      file_prev_p->next_offset = file_scanner_p->next_offset;
+    smb_shm_free(smb_shm_addr2offset(file_scanner_p));
+    return False;
+  }
+
+  found = False;
+  entry_scanner_p = (share_mode_entry*)smb_shm_offset2addr(
+                                         file_scanner_p->share_mode_entries);
+  entry_prev_p = entry_scanner_p;
+  while(entry_scanner_p)
+  {
+    if( (pid == entry_scanner_p->pid) && 
+        (entry_scanner_p->op_port != 0) &&
+        (entry_scanner_p->op_type != 0) && 
+        (memcmp(&entry_scanner_p->time, 
+                &Files[fnum].open_time,sizeof(struct timeval)) == 0) )
+    {
+      /* Delete the oplock info. */
+      entry_scanner_p->op_port = 0;
+      entry_scanner_p->op_type = 0;
+      found = True;
+      break;
+    }
+    else
+    {
+      entry_prev_p = entry_scanner_p;
+      entry_scanner_p = (share_mode_entry *)
+                          smb_shm_offset2addr(entry_scanner_p->next_share_mode_entry);
+    }
+  } 
+
+  if(!found)
+  {
+    DEBUG(0,("ERROR: remove_share_oplock (FAST_SHARE_MODES): No oplock granted share \
+mode record found dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_entry));
+    return False;
+  }
+
+  return True;
+#else /* USE_OPLOCKS */
+  return False;
+#endif /* USE_OPLOCKS */
+}
+
 #else /* FAST_SHARE_MODES */
 
 /* SHARE MODE LOCKS USING SLOW DESCRIPTION FILES */
@@ -941,8 +1057,8 @@ position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
       SIVAL(p,SME_SEC_OFFSET,share_array[i].time.tv_sec);
       SIVAL(p,SME_USEC_OFFSET,share_array[i].time.tv_usec);
 #ifdef USE_OPLOCKS
-      SIVAL(p,SME_PORT_OFFSET,share_array[i].op_port);
-      SIVAL(p,SME_OPLOCK_TYPE_OFFSET,share_array[i].op_type);
+      SSVAL(p,SME_PORT_OFFSET,share_array[i].op_port);
+      SSVAL(p,SME_OPLOCK_TYPE_OFFSET,share_array[i].op_type);
 #endif /* USE_OPLOCKS */
     }
 
@@ -1271,5 +1387,129 @@ mode file %s to size %d (%s)\n", fname, header_size + (SMF_ENTRY_LENGTH*num_entr
 mode 0x%X pid=%d\n",fname,fs_p->share_mode,pid));
 
   return True;
+}
+
+/*******************************************************************
+Remove an oplock port and mode entry from a share mode.
+********************************************************************/
+BOOL remove_share_oplock(int fnum, share_lock_token token)
+{
+#ifdef USE_OPLOCKS
+  pstring fname;
+  int fd = (int)token;
+  char *buf = 0;
+  char *base = 0;
+  int num_entries;
+  int fsize;
+  int i;
+  files_struct *fs_p = &Files[fnum];
+  int pid;
+  BOOL found = False;
+  BOOL new_file;
+
+  share_name(fs_p->cnum, fs_p->fd_ptr->dev, 
+                       fs_p->fd_ptr->inode, fname);
+
+  if(read_share_file( fs_p->cnum, fd, fname, &buf, &new_file) != 0)
+  {
+    DEBUG(0,("ERROR: remove_share_oplock: Failed to read share file %s\n",
+                  fname));
+    return False;
+  }
+
+  if(new_file == True)
+  {
+    DEBUG(0,("ERROR: remove_share_oplock: share file %s is new (size zero), \
+deleting it.\n", fname));
+    delete_share_file(fs_p->cnum, fname);
+    return False;
+  }
+
+  num_entries = IVAL(buf,SMF_NUM_ENTRIES_OFFSET);
+
+  DEBUG(5,("remove_share_oplock: share file %s has %d share mode entries.\n",
+            fname, num_entries));
+
+  /* PARANOIA TEST */
+  if(num_entries < 0)
+  {
+    DEBUG(0,("PANIC ERROR:remove_share_oplock: num_share_mode_entries < 0 (%d) \
+for share file %d\n", num_entries, fname));
+    return False;
+  }
+
+  if(num_entries == 0)
+  {
+    /* No entries - just delete the file. */
+    DEBUG(0,("remove_share_oplock: share file %s has no share mode entries - deleting.\n",
+              fname));
+    if(buf)
+      free(buf);
+    delete_share_file(fs_p->cnum, fname);
+    return False;
+  }
+
+  pid = getpid();
+
+  /* Go through the entries looking for the particular one
+     we have set - remove the oplock settings on it.
+  */
+
+  base = buf + SMF_HEADER_LENGTH + SVAL(buf,SMF_FILENAME_LEN_OFFSET);
+
+  for(i = 0; i < num_entries; i++)
+  {
+    char *p = base + (i*SMF_ENTRY_LENGTH);
+
+    if((IVAL(p,SME_SEC_OFFSET) != fs_p->open_time.tv_sec) || 
+       (IVAL(p,SME_USEC_OFFSET) != fs_p->open_time.tv_usec) ||
+       (IVAL(p,SME_SHAREMODE_OFFSET) != fs_p->share_mode) || 
+       (IVAL(p,SME_PID_OFFSET) != pid) ||
+       (SVAL(p,SME_PORT_OFFSET) == 0) ||
+       (SVAL(p,SME_OPLOCK_TYPE_OFFSET) == 0))
+      continue;
+
+    DEBUG(5,("remove_share_oplock: clearing oplock on entry number %d (of %d) \
+from the share file %s\n", i, num_entries, fname));
+
+    SSVAL(p,SME_PORT_OFFSET,0);
+    SSVAL(p,SME_OPLOCK_TYPE_OFFSET,0);
+    found = True;
+    break;
+  }
+
+  if(!found)
+  {
+    DEBUG(0,("remove_share_oplock: entry not found in share file %s\n", fname));
+    if(buf)
+      free(buf);
+    return False;
+  }
+
+  /* Re-write the file - and truncate it at the correct point. */
+  if(lseek(fd, 0, SEEK_SET) != 0)
+  {
+    DEBUG(0,("ERROR: remove_share_oplock: lseek failed to reset to \
+position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
+    if(buf)
+      free(buf);
+    return False;
+  }
+
+  fsize = (base - buf) + (SMF_ENTRY_LENGTH*num_entries);
+  if(write(fd, buf, fsize) != fsize)
+  {
+    DEBUG(0,("ERROR: remove_share_oplock: failed to re-write share \
+mode file %s (%s)\n", fname, strerror(errno)));
+    if(buf)
+      free(buf);
+    return False;
+  }
+
+  return True;
+
+#else /* USE_OPLOCKS */
+  return False;
+#endif /* USE_OPLOCKS */
 }
 #endif /* FAST_SHARE_MODES */

@@ -1458,23 +1458,74 @@ BOOL check_file_sharing(int cnum,char *fname)
   struct stat sbuf;
   share_lock_token token;
   int pid = getpid();
+  uint32 dev, inode;
 
   if(!lp_share_modes(SNUM(cnum)))
     return True;
 
   if (stat(fname,&sbuf) == -1) return(True);
 
-  lock_share_entry(cnum, (uint32)sbuf.st_dev, (uint32)sbuf.st_ino, &token);
-  num_share_modes = get_share_modes(cnum, token, 
-                     (uint32)sbuf.st_dev, (uint32)sbuf.st_ino, &old_shares);
+  dev = (uint32)sbuf.st_dev;
+  inode = (uint32)sbuf.st_ino;
 
-  for( i = 0; i < num_share_modes; i++)
+  lock_share_entry(cnum, dev, inode, &token);
+  num_share_modes = get_share_modes(cnum, token, dev, inode, &old_shares);
+
+  /*
+   * Check if the share modes will give us access.
+   */
+
+  if(num_share_modes != 0)
   {
-    if (old_shares[i].share_mode != DENY_DOS)
-      goto free_and_exit;
+    BOOL broke_oplock;
 
-    if(old_shares[i].pid != pid)
-      goto free_and_exit;
+    do
+    {
+
+      broke_oplock = False;
+      for(i = 0; i < num_share_modes; i++)
+      {
+        min_share_mode_entry *share_entry = &old_shares[i];
+
+        /* someone else has a share lock on it, check to see 
+           if we can too */
+        if ((share_entry->share_mode != DENY_DOS) || (share_entry->pid != pid))
+          goto free_and_exit;
+
+#ifdef USE_OPLOCKS
+        /* 
+         * The share modes would give us access. Check if someone
+         * has an oplock on this file. If so we must break it before
+         * continuing. 
+         */
+        if(share_entry->op_type & BATCH_OPLOCK)
+        {
+
+          DEBUG(5,("check_file_sharing: breaking oplock (%x) on file %s, \
+dev = %x, inode = %x\n", share_entry->op_type, fname, dev, inode));
+
+          /* Oplock break.... */
+          unlock_share_entry(cnum, dev, inode, token);
+          if(request_oplock_break(share_entry, dev, inode) == False)
+          {
+            free((char *)old_shares);
+            DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
+dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
+            return False;
+          }
+          lock_share_entry(cnum, dev, inode, &token);
+          broke_oplock = True;
+          break;
+        }
+#endif /* USE_OPLOCKS */
+      } /* end for */
+
+      if(broke_oplock)
+      {
+        free((char *)old_shares);
+        num_share_modes = get_share_modes(cnum, token, dev, inode, &old_shares);
+      }
+    } while(broke_oplock);
   }
 
   /* XXXX exactly what share mode combinations should be allowed for
@@ -1485,7 +1536,7 @@ BOOL check_file_sharing(int cnum,char *fname)
 
 free_and_exit:
 
-  unlock_share_entry(cnum, (uint32)sbuf.st_dev, (uint32)sbuf.st_ino, token);
+  unlock_share_entry(cnum, dev, inode, token);
   if(old_shares != NULL)
     free((char *)old_shares);
   return(ret);
@@ -1576,6 +1627,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
   share_lock_token token;
   uint32 dev = 0;
   uint32 inode = 0;
+  int num_share_modes = 0;
 
   fs_p->open = False;
   fs_p->fd_ptr = 0;
@@ -1647,7 +1699,6 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 
   if (lp_share_modes(SNUM(cnum))) 
   {
-    int num_shares = 0;
     int i;
     min_share_mode_entry *old_shares = 0;
 
@@ -1657,14 +1708,14 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
       inode = (uint32)sbuf.st_ino;
       lock_share_entry(cnum, dev, inode, &token);
       share_locked = True;
-      num_shares = get_share_modes(cnum, token, dev, inode, &old_shares);
+      num_share_modes = get_share_modes(cnum, token, dev, inode, &old_shares);
     }
 
     /*
      * Check if the share modes will give us access.
      */
 
-    if(share_locked && (num_shares != 0))
+    if(share_locked && (num_share_modes != 0))
     {
       BOOL broke_oplock;
 
@@ -1672,7 +1723,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
       {
 
         broke_oplock = False;
-        for(i = 0; i < num_shares; i++)
+        for(i = 0; i < num_share_modes; i++)
         {
           min_share_mode_entry *share_entry = &old_shares[i];
 
@@ -1696,7 +1747,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
           if(share_entry->op_type & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
           {
 
-            DEBUG(5,("open file shared: breaking oplock (%x) on file %s, \
+            DEBUG(5,("open_file_shared: breaking oplock (%x) on file %s, \
 dev = %x, inode = %x\n", share_entry->op_type, fname, dev, inode));
 
             /* Oplock break.... */
@@ -1704,7 +1755,7 @@ dev = %x, inode = %x\n", share_entry->op_type, fname, dev, inode));
             if(request_oplock_break(share_entry, dev, inode) == False)
             {
               free((char *)old_shares);
-              DEBUG(0,("open file shared: FAILED when breaking oplock (%x) on file %s, \
+              DEBUG(0,("open_file_shared: FAILED when breaking oplock (%x) on file %s, \
 dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
               errno = EACCES;
               unix_ERR_class = ERRDOS;
@@ -1721,7 +1772,7 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
         if(broke_oplock)
         {
           free((char *)old_shares);
-          num_shares = get_share_modes(cnum, token, dev, inode, &old_shares);
+          num_share_modes = get_share_modes(cnum, token, dev, inode, &old_shares);
         }
       } while(broke_oplock);
     }
@@ -1782,7 +1833,27 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
        file (which expects the share_mode_entry to be there).
      */
     if (lp_share_modes(SNUM(cnum)))
-      set_share_mode(token, fnum, 0, 0);
+    {
+      uint16 port = 0;
+#ifdef USE_OPLOCKS
+      /* JRA. Currently this only services Exlcusive and batch
+         oplocks (no other opens on this file). This needs to
+         be extended to level II oplocks (multiple reader
+         oplocks). */
+
+      if(oplock_request && (num_share_modes == 0))
+      {
+        fs_p->granted_oplock = True;
+        global_oplocks_open++;
+        port = oplock_port;
+
+        DEBUG(5,("open_file_shared: granted oplock (%x) on file %s, \
+dev = %x, inode = %x\n", oplock_request, fname, dev, inode));
+      }
+
+#endif /* USE_OPLOCKS */
+      set_share_mode(token, fnum, port, oplock_request);
+    }
 
     if ((flags2&O_TRUNC) && file_existed)
       truncate_unless_locked(fnum,cnum,token,&share_locked);
@@ -2444,7 +2515,7 @@ should be %d).\n", msg_len, OPLOCK_BREAK_MSG_LEN));
         struct sockaddr_in toaddr;
 
         DEBUG(5,("process_local_message: oplock break request from \
-pid %d, dev %d, inode %d\n", remotepid, dev, inode));
+pid %d, port %d, dev = %x, inode = %x\n", remotepid, from_port, dev, inode));
 
         /*
          * If we have no record of any currently open oplocks,
@@ -2483,6 +2554,11 @@ oplocks. Returning success.\n"));
                     remotepid, strerror(errno)));
           return False;
         }
+
+        DEBUG(5,("process_local_message: oplock break reply sent to \
+pid %d, port %d, for file dev = %x, inode = %x\n", remotepid, 
+                from_port, dev, inode));
+
       }
       break;
     default:
@@ -2503,6 +2579,9 @@ BOOL oplock_break(uint32 dev, uint32 inode)
   static char *outbuf = NULL;
   files_struct *fsp = NULL;
   int fnum;
+  share_lock_token token;
+  time_t start_time;
+  BOOL shutdown_server = False;
 
   if(inbuf == NULL)
   {
@@ -2579,24 +2658,90 @@ allowing break to succeed.\n", dev, inode, fnum));
   global_oplock_break = True;
  
   /* Process incoming messages. */
-  while(global_oplock_break && OPEN_FNUM(fnum))
+
+  /* JRA - If we don't get a break from the client in OPLOCK_BREAK_TIMEOUT
+     seconds we should just die.... */
+
+  start_time = time(NULL);
+
+  while(OPEN_FNUM(fnum) && fsp->granted_oplock)
   {
     if(receive_smb(Client,inbuf,OPLOCK_BREAK_TIMEOUT * 1000) == False)
     {
+      /*
+       * Die if we got an error.
+       */
+
       if (smb_read_error == READ_EOF)
-      {
-        DEBUG(3,("oplock_break: end of file from client\n"));
-        return False;
-      }
+        DEBUG(0,("oplock_break: end of file from client\n"));
  
       if (smb_read_error == READ_ERROR)
-      {
-        DEBUG(3,("oplock_break: receive_smb error (%s)\n",
+        DEBUG(0,("oplock_break: receive_smb error (%s)\n",
                   strerror(errno)));
-        return False;
-      }
+
+      if (smb_read_error == READ_TIMEOUT)
+        DEBUG(0,("oplock_break: receive_smb timed out after %d seconds.\n",
+                  OPLOCK_BREAK_TIMEOUT));
+
+      DEBUG(0,("oplock_break failed for file %s (fnum = %d, dev = %x, \
+inode = %x).\n", fsp->name, fnum, dev, inode));
+      shutdown_server = True;
+      break;
     }
     process_smb(inbuf, outbuf);
+
+    /* We only need this in case a readraw crossed on the wire. */
+    global_oplock_break = False;
+
+    /*
+     * Die if we go over the time limit.
+     */
+
+    if((time(NULL) - start_time) > OPLOCK_BREAK_TIMEOUT)
+    {
+      DEBUG(0,("oplock_break: no break received from client within \
+%d seconds.\n", OPLOCK_BREAK_TIMEOUT));
+      DEBUG(0,("oplock_break failed for file %s (fnum = %d, dev = %x, \
+inode = %x).\n", fsp->name, fnum, dev, inode));
+      shutdown_server = True;
+      break;
+    }
+  }
+
+  /*
+   * If the client did not respond we must die.
+   */
+
+  if(shutdown_server)
+  {
+    DEBUG(0,("oplock_break: client failure in break - shutting down this smbd.\n"));
+    close_sockets();
+    close(oplock_sock);
+    exit_server("oplock break failure");
+  }
+
+  if(OPEN_FNUM(fnum))
+  {
+    /* Remove the oplock flag from the sharemode. */
+    lock_share_entry(fsp->cnum, dev, inode, &token);
+    if(remove_share_oplock( fnum, token)==False)
+    {
+      DEBUG(0,("oplock_break: failed to remove share oplock for fnum %d, \
+dev = %x, inode = %x\n", fnum, dev, inode));
+      unlock_share_entry(fsp->cnum, dev, inode, token);
+      return False;
+    }
+    unlock_share_entry(fsp->cnum, dev, inode, token);
+  }
+
+  global_oplocks_open--;
+
+  /* Santity check - remove this later. JRA */
+  if(global_oplocks_open < 0)
+  {
+    DEBUG(0,("oplock_break: global_oplocks_open < 0 (%d). PANIC ERROR\n",
+              global_oplocks_open));
+    abort();
   }
 
   return True;

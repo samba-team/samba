@@ -1254,10 +1254,13 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
     smb_action |= EXTENDED_OPLOCK_GRANTED;
+    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
-  if(fsp->granted_oplock)
+  if(fsp->granted_oplock) {
     smb_action |= EXTENDED_OPLOCK_GRANTED;
+    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
+  }
 
   set_message(outbuf,15,0,True);
   SSVAL(outbuf,smb_vwv2,fnum);
@@ -1608,6 +1611,22 @@ int reply_readbraw(char *inbuf, char *outbuf)
   int ret=0;
   int fd;
   char *fname;
+
+#ifdef USE_OPLOCKS
+  /*
+   * Special check if an oplock break has been issued
+   * and the readraw request croses on the wire, we must
+   * return a zero length response here.
+   */
+
+  if(global_oplock_break)
+  {
+    _smb_setlen(header,0);
+    transfer_file(0,Client,0,header,4,0);
+    DEBUG(5,("readbraw - oplock break finished\n"));
+    return -1;
+  }
+#endif
 
   cnum = SVAL(inbuf,smb_tid);
   fnum = GETFNUM(inbuf,smb_vwv0);
@@ -3342,7 +3361,10 @@ int reply_setdir(char *inbuf,char *outbuf)
 int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
 {
   int fnum = GETFNUM(inbuf,smb_vwv2);
-  uint16 locktype = SVAL(inbuf,smb_vwv3);
+  unsigned char locktype = CVAL(inbuf,smb_vwv3);
+#if 0
+  unsigned char oplocklevel = CVAL(inbuf,smb_vwv3+1);
+#endif /* USE_OPLOCKS */
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   uint32 count, offset;
@@ -3359,6 +3381,35 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
   CHECK_ERROR(fnum);
 
   data = smb_buf(inbuf);
+
+#ifdef USE_OPLOCKS
+  /* Check if this is an oplock break on a file
+     we have granted an oplock on.
+   */
+  if((locktype == LOCKING_ANDX_OPLOCK_RELEASE) && 
+     (num_ulocks == 0) && (num_locks == 0) &&
+     (CVAL(inbuf,smb_vwv0) == 0xFF))
+  {
+    DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
+              fnum));
+    /*
+     * Make sure we have granted an oplock on this file.
+     */
+    if(!Files[fnum].granted_oplock)
+    {
+      DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
+oplock granted on this file.\n", fnum));
+      return ERROR(ERRDOS,ERRlock);
+    }
+
+    /* Just clear the granted flag and return. oplock_break()
+       will handle changing the share_mode_entry. */
+
+    Files[fnum].granted_oplock = 0;
+    return -1;
+  }
+#endif /* USE_OPLOCKS */
+
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */
   for(i = 0; i < (int)num_ulocks; i++) {
@@ -3393,7 +3444,7 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
   set_message(outbuf,2,0,True);
   
   DEBUG(3,("%s lockingX fnum=%d cnum=%d type=%d num_locks=%d num_ulocks=%d\n",
-	timestring(),fnum,cnum,locktype,num_locks,num_ulocks));
+	timestring(),fnum,cnum,(unsigned int)locktype,num_locks,num_ulocks));
 
   chain_fnum = fnum;
 

@@ -515,9 +515,9 @@ struct connect_record
 #define SMF_HEADER_LENGTH 10
 
 #ifdef USE_OPLOCKS
-#define SMF_ENTRY_LENGTH 16
-#else /* USE_OPLOCKS */
 #define SMF_ENTRY_LENGTH 20
+#else /* USE_OPLOCKS */
+#define SMF_ENTRY_LENGTH 16
 #endif /* USE_OPLOCKS */
 
 /*
