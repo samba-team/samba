@@ -56,7 +56,7 @@ char STRING[] = "****************";
 #define X_INCR 3
 #define Y_INCR 2
 #define CTRL 1
-#define NOCTRL 1
+#define NOCTRL 0
 
 XtAppContext	app;
 Display        *dpy;
@@ -467,6 +467,18 @@ post_prompt_box(Window window)
 }
 
 static void
+RaiseWindow(Widget w, XEvent *ev, String *s, Cardinal *n)
+{
+  Widget x;
+  if(!XtIsRealized(w))
+    return;
+  x = XtParent(w);
+  fprintf(stderr, "%s\n", XtName(x));
+  XRaiseWindow(dpy, XtWindow(x));
+}
+
+
+static void
 ClearWindow(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 {
     XExposeEvent *event = (XExposeEvent *)_event;
@@ -487,12 +499,6 @@ ClearWindow(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	XGrabPointer(dpy, XtWindow(w), TRUE, 0, GrabModeAsync,
 	     GrabModeAsync, XtWindow(w), None, CurrentTime);
     }
-}
-
-static void
-Visibility(Widget w, XtPointer client_data, XEvent *event, Boolean *_b)
-{
-    XRaiseWindow(dpy, XtWindow(w));
 }
 
 static void
@@ -636,7 +642,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
     if (keysym == XK_BackSpace || keysym == XK_Delete || keysym == XK_Left) {
 	if (cnt)
 	    passwd[cnt--] = ' ';
-    } else if (keysym == XK_u && is_ctrl == 1) {
+    } else if (keysym == XK_u && is_ctrl == CTRL) {
       while (cnt) {
 	passwd[cnt--] = ' ';
 	XDrawImageString(dpy, XtWindow(w), gc,
@@ -901,11 +907,13 @@ main (int argc, char **argv)
     Width = DisplayWidth(dpy, DefaultScreen(dpy)) + 2;
     Height = DisplayHeight(dpy, DefaultScreen(dpy)) + 2;
     override = XtVaAppCreateShell("xnlock", "XNlock",
-	overrideShellWidgetClass, dpy, XtNx, -1, XtNy, -1, NULL);
+				  overrideShellWidgetClass, dpy, 
+				  XtNx, -1, 
+				  XtNy, -1, 
+				  NULL);
+
     XtGetApplicationResources(override, &Resrcs,
 	resources, XtNumber(resources), NULL, 0);
-
-    XtAddEventHandler(override, VisibilityChangeMask, FALSE, Visibility, NULL);
 
     widget = XtVaCreateManagedWidget("_foo", widgetClass, override,
 	XtNwidth,	Width,
@@ -950,13 +958,16 @@ main (int argc, char **argv)
 	static XtActionsRec actions[] = {
 	    { "ClearWindow",	ClearWindow  },
 	    { "GetPasswd",	GetPasswd    },
+	    { "RaiseWindow", 	RaiseWindow  },
 	};
 	XtAppAddActions(app, actions, XtNumber(actions));
 	XtOverrideTranslations(widget,
-	    XtParseTranslationTable(
-		"<Expose>:	ClearWindow()	\n\
-		 <BtnDown>:	GetPasswd()	\n\
-		 <KeyPress>:	GetPasswd()"));
+	       XtParseTranslationTable(
+				       "<Expose>:	ClearWindow()	\n"
+				       "<BtnDown>:	GetPasswd()	\n"
+				       "<Visible>: RaiseWindow() \n"
+				       "<KeyRelease>:  GetPasswd()     \n"
+				       "<KeyPress>:	GetPasswd()"));
     }
 
     XtRealizeWidget(override);
