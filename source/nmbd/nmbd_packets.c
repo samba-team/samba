@@ -1269,7 +1269,7 @@ an error packet of type %x\n",
     return;
 
   if (buf2 + len > buf + sizeof(dgram->data)) {
-    DEBUG(2,("process_dgram: datagram from %s to %s IP %s for %s %d len=%d too long.\n",
+    DEBUG(2,("process_dgram: datagram from %s to %s IP %s for %s len=%d too long.\n",
 		nmb_namestr(&dgram->source_name),nmb_namestr(&dgram->dest_name),
 		inet_ntoa(p->ip), smb_buf(buf),len));
 	len = (buf + sizeof(dgram->data)) - buf;
