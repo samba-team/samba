@@ -150,7 +150,7 @@ NUMCPU=`grep processor /proc/cpuinfo | wc -l`
 CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--prefix=%{prefix} \
 	--localstatedir=/var \
-	--with-configdir=/etc \
+	--with-configdir=/etc/samba \
 	--with-codepagedir=/etc/codepages \
 	--with-fhs \
 	--with-quotas \
@@ -170,6 +170,7 @@ make -j${NUMCPU} bin/smbspool
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/sbin
+mkdir -p $RPM_BUILD_ROOT/etc/samba
 mkdir -p $RPM_BUILD_ROOT/etc/codepages/src
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
@@ -207,7 +208,7 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 # This allows us to get away without duplicating code that 
 #  sombody else can maintain for us.  
 cd source
-make LIBDIR=$RPM_BUILD_ROOT%{prefix}/etc \
+make LIBDIR=$RPM_BUILD_ROOT%{prefix}/etc/samba \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
 	CODEPAGEDIR=$RPM_BUILD_ROOT%{prefix}/etc/codepages \
@@ -237,14 +238,32 @@ done
 
 # Install the miscellany
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
-install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
-install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/smbusers
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/findsmb $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
-echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
+if [ -f /etc/smb.conf ]; then
+	mv /etc/smb.conf /etc/samba/smb.conf
+else
+	install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
+fi
+
+if [ -f /etc/smbusers ]; then
+	mv /etc/smbusers /etc/samba/smbusers
+else
+	install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
+fi
+
+if [ -f /etc/lmhosts ]; then
+	mv /etc/lmhosts /etc/samba/lmhosts
+else
+	echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
+fi
+
+if [ -f /etc/MACHINE.SID ]; then
+	mv /etc/MACHINE.SID /etc/samba/MACHINE.SID
+fi
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -272,9 +291,9 @@ fi
 
 # Install the correct version of the samba pam file, depending on pam version.
 if [ -f /lib/security/pam_stack.so ]; then
-	install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
-else
 	install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/pam.d/samba
+else
+	install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 fi
 
 %preun
