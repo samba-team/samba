@@ -302,6 +302,8 @@ struct tm *LocalTime(time_t *t)
  Interpret an 8 byte "filetime" structure to a time_t
  It's originally in "100ns units since jan 1st 1601"
 
+ An 8 byte value of 0xffffffffffffffff will be returned as (time_t)0.
+
  It appears to be kludge-GMT (at least for file listings). This means
  its the GMT you get by taking a localtime and adding the
  serverzone. This is NOT the same as GMT in some cases. This routine
@@ -385,6 +387,8 @@ time_t nt_time_to_unix_abs(NTTIME *nt)
 
 /****************************************************************************
  Interprets an nt time into a unix time_t.
+ Differs from nt_time_to_unix in that an 8 byte value of 0xffffffffffffffff
+ will be returned as (time_t)-1, whereas nt_time_to_unix returns 0 in this case.
 ****************************************************************************/
 
 time_t interpret_long_date(char *p)
@@ -392,6 +396,9 @@ time_t interpret_long_date(char *p)
 	NTTIME nt;
 	nt.low = IVAL(p,0);
 	nt.high = IVAL(p,4);
+	if (nt.low == 0xFFFFFFFF && nt.high == 0xFFFFFFFF) {
+		return (time_t)-1;
+	}
 	return nt_time_to_unix(&nt);
 }
 
