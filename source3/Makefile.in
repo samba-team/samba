@@ -294,6 +294,7 @@ GROUPDB_OBJ = groupdb/mapping.o
 
 PROFILE_OBJ = profile/profile.o
 PROFILES_OBJ = utils/profiles.o
+EDITREG_OBJ = utils/editreg.o
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
@@ -755,7 +756,7 @@ bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/editreg@EXEEXT@: $(EDITREG_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ utils/editreg.o $(LDFLAGS) $(LIBS) @POPTLIBS@
+	@$(CC) $(FLAGS) -o $@ $(EDITREG_OBJ) $(LDFLAGS) $(LIBS) @POPTLIBS@
 
 bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
@@ -1123,7 +1124,7 @@ installdat: installdirs
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
-installclientlib:
+installclientlib: bin/libsmbclient.@SHLIBEXT@
 	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)${prefix}/lib
 	-$(INSTALLCLIENTCMD_A) bin/libsmbclient.a $(DESTDIR)${prefix}/lib
 	-$(INSTALLCMD) -d $(DESTDIR)${prefix}/include
