@@ -406,7 +406,7 @@ get_new_tickets(krb5_context context,
 		krb5_deltat ticket_life)
 {
     krb5_error_code ret;
-    krb5_get_init_creds_opt opt;
+    krb5_get_init_creds_opt *opt;
     krb5_addresses no_addrs;
     krb5_creds cred;
     char passwd[256];
@@ -415,23 +415,25 @@ get_new_tickets(krb5_context context,
 
     memset(&cred, 0, sizeof(cred));
 
-    krb5_get_init_creds_opt_init (&opt);
+    ret = krb5_get_init_creds_opt_alloc (&opt);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
     
     krb5_get_init_creds_opt_set_default_flags(context, "kinit", 
-					      /* XXX */principal->realm, &opt);
+					      /* XXX */principal->realm, opt);
 
     if(forwardable_flag != -1)
-	krb5_get_init_creds_opt_set_forwardable (&opt, forwardable_flag);
+	krb5_get_init_creds_opt_set_forwardable (opt, forwardable_flag);
     if(proxiable_flag != -1)
-	krb5_get_init_creds_opt_set_proxiable (&opt, proxiable_flag);
+	krb5_get_init_creds_opt_set_proxiable (opt, proxiable_flag);
     if(anonymous_flag != -1)
-	krb5_get_init_creds_opt_set_anonymous (&opt, anonymous_flag);
+	krb5_get_init_creds_opt_set_anonymous (opt, anonymous_flag);
 
     if (!addrs_flag) {
 	no_addrs.len = 0;
 	no_addrs.val = NULL;
 
-	krb5_get_init_creds_opt_set_address_list (&opt, &no_addrs);
+	krb5_get_init_creds_opt_set_address_list (opt, &no_addrs);
     }
 
     if(renew_life) {
@@ -439,13 +441,13 @@ get_new_tickets(krb5_context context,
 	if (renew < 0)
 	    errx (1, "unparsable time: %s", renew_life);
 
-	krb5_get_init_creds_opt_set_renew_life (&opt, renew);
+	krb5_get_init_creds_opt_set_renew_life (opt, renew);
     } else if (renewable_flag == 1)
-	krb5_get_init_creds_opt_set_renew_life (&opt, 1 << 30);
+	krb5_get_init_creds_opt_set_renew_life (opt, 1 << 30);
 
 
     if(ticket_life != 0)
-	krb5_get_init_creds_opt_set_tkt_life (&opt, ticket_life);
+	krb5_get_init_creds_opt_set_tkt_life (opt, ticket_life);
 
     if(start_str) {
 	int tmp = parse_time (start_str, "s");
@@ -468,7 +470,7 @@ get_new_tickets(krb5_context context,
 	    if(ret)
 		errx(1, "unrecognized enctype: %s", etype_str.strings[i]);
 	}
-	krb5_get_init_creds_opt_set_etype_list(&opt, enctype, 
+	krb5_get_init_creds_opt_set_etype_list(opt, enctype, 
 					       etype_str.num_strings);
     }
 
@@ -486,7 +488,7 @@ get_new_tickets(krb5_context context,
 					  kt,
 					  start_time,
 					  server,
-					  &opt);
+					  opt);
 	krb5_kt_close(context, kt);
     } else {
 	char *p, *prompt;
@@ -510,8 +512,9 @@ get_new_tickets(krb5_context context,
 					    NULL,
 					    start_time,
 					    server,
-					    &opt);
+					    opt);
     }
+    krb5_get_init_creds_opt_free(opt);
 #ifdef KRB4
     if (ret == KRB5KRB_AP_ERR_V4_REPLY || ret == KRB5_KDC_UNREACH) {
 	int exit_val;
