@@ -1130,7 +1130,7 @@ if test "$enable_shared" = "yes"; then
   case "$host_os" in
 		*linux*)   AC_DEFINE(LINUX,1,[Whether the host os is linux])
 			BLDSHARED="true"
-			LDSHFLAGS="-shared" 
+			LDSHFLAGS="-shared -Bsymbolic" 
 			DYNEXP="-Wl,--export-dynamic"
 			PICFLAGS="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
