@@ -1057,6 +1057,33 @@ static BOOL api_spoolss_addform(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+static BOOL api_spoolss_deleteform(pipes_struct *p)
+{
+	SPOOL_Q_DELETEFORM q_u;
+	SPOOL_R_DELETEFORM r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+	
+	if(!spoolss_io_q_deleteform("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_deleteform: unable to unmarshall SPOOL_Q_DELETEFORM.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_deleteform(&q_u.handle, &q_u.name);
+	
+	if(!spoolss_io_r_deleteform("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_deleteform: unable to marshall SPOOL_R_DELETEFORM.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
 static BOOL api_spoolss_setform(pipes_struct *p)
 {
 	SPOOL_Q_SETFORM q_u;
@@ -1265,6 +1292,7 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_ENUMPRINTERDATA",           SPOOLSS_ENUMPRINTERDATA,           api_spoolss_enumprinterdata           },
  {"SPOOLSS_SETPRINTERDATA",            SPOOLSS_SETPRINTERDATA,            api_spoolss_setprinterdata            },
  {"SPOOLSS_ADDFORM",                   SPOOLSS_ADDFORM,                   api_spoolss_addform                   },
+ {"SPOOLSS_DELETEFORM",                SPOOLSS_DELETEFORM,                api_spoolss_deleteform                },
  {"SPOOLSS_SETFORM",                   SPOOLSS_SETFORM,                   api_spoolss_setform                   },
  {"SPOOLSS_ENUMPRINTPROCESSORS",       SPOOLSS_ENUMPRINTPROCESSORS,       api_spoolss_enumprintprocessors       },
  {"SPOOLSS_ENUMMONITORS",              SPOOLSS_ENUMMONITORS,              api_spoolss_enumprintmonitors         },

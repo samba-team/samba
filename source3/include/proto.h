@@ -1682,6 +1682,7 @@ BOOL nt_printing_init(void);
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
 BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
+BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32 *ret);
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture, uint32 version);
 BOOL get_short_archi(char *short_archi, char *long_archi);
@@ -2886,6 +2887,8 @@ void free_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u);
 BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
 BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
 				uint32 type, const uint8 *data, uint32 len);
+BOOL spoolss_io_q_deleteform(char *desc, SPOOL_Q_DELETEFORM *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_deleteform(char *desc, SPOOL_R_DELETEFORM *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth);
@@ -3180,6 +3183,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 uint32 _spoolss_addform( POLICY_HND *handle,
 				uint32 level,
 				const FORM *form);
+uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name);
 uint32 _spoolss_setform( POLICY_HND *handle,
 				const UNISTR2 *uni_name,
 				uint32 level,

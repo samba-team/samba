@@ -4615,6 +4615,31 @@ uint32 _spoolss_addform( POLICY_HND *handle,
 
 /****************************************************************************
 ****************************************************************************/
+uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name)
+{
+	int count=0;
+	uint32 ret = 0;
+	nt_forms_struct *list=NULL;
+	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+
+	DEBUG(5,("spoolss_deleteform\n"));
+
+	if (!OPEN_HANDLE(Printer)) {
+		DEBUG(0,("_spoolss_deleteform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		return ERROR_INVALID_HANDLE;
+	}
+
+	count = get_ntforms(&list);
+	if(!delete_a_form(&list, form_name, &count, &ret))
+		return ERROR_INVALID_PARAMETER;
+
+	safe_free(list);
+
+	return ret;
+}
+
+/****************************************************************************
+****************************************************************************/
 uint32 _spoolss_setform( POLICY_HND *handle,
 				const UNISTR2 *uni_name,
 				uint32 level,
