@@ -16,6 +16,12 @@ krb5_mk_req(krb5_context context,
   krb5_creds this_cred, *cred;
   char **realms;
   krb5_data realm_data;
+  char **p;
+
+  r = krb5_cc_get_principal(context, ccache, &this_cred.client);
+  
+  if(r)
+      return r;
 
   r = krb5_get_host_realm(context, hostname, &realms);
   if (r)
@@ -23,17 +29,16 @@ krb5_mk_req(krb5_context context,
   realm_data.length = strlen(*realms);
   realm_data.data   = *realms;
 
-  r = krb5_cc_get_principal(context, ccache, &this_cred.client);
-  
-  if(r)
-      return r;
-
   r = krb5_build_principal (context, &this_cred.server,
 			    strlen(*realms),
 			    *realms,
 			    service,
 			    hostname,
 			    NULL);
+  for (p = realms; *p; ++p)
+      free (*p);
+  free (realms);
+
   if (r)
     return r;
   this_cred.times.endtime = 0;
