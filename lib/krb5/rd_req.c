@@ -115,8 +115,6 @@ krb5_rd_req_with_keyblock(krb5_context context,
     if (ret)
 	return ret;
 
-    memset((*auth_context)->authenticator, 0, 
-	   sizeof((*auth_context)->authenticator));
     copy_Authenticator(&authenticator, (*auth_context)->authenticator);
     {
 	krb5_principal p1, p2;
@@ -147,6 +145,8 @@ krb5_rd_req_with_keyblock(krb5_context context,
     if (authenticator.seq_number)
       (*auth_context)->remote_seqnumber = *(authenticator.seq_number);
 
+    free_Authenticator(&authenticator);
+
     /* XXX - Xor sequence numbers */
 
     /* XXX - subkeys? */
@@ -168,6 +168,13 @@ krb5_rd_req_with_keyblock(krb5_context context,
     if (now.tv_sec - t->tkt.endtime > 600)
       return KRB5KRB_AP_ERR_TKT_EXPIRED;
 
+    if(ticket)
+	*ticket = t;
+    else{
+	free_EncTicketPart(&t->tkt);
+	free(t);
+    }
+    free_AP_REQ(&ap_req);
     return 0;
   }
 }
