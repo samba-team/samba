@@ -63,7 +63,7 @@ static struct getargs args[] = {
     {	"debug",	'd',	arg_flag,   &debug_flag, 
 	"enable debugging" 
     },
-    {	"ports",	'p',	arg_integer,&port_str, 
+    {	"ports",	'p',	arg_string, &port_str, 
 	"ports to listen to", "port" },
     {	"help",		'h',	arg_flag,   &help_flag },
     {	"version",	'v',	arg_flag,   &version_flag }
