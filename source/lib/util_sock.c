@@ -815,7 +815,7 @@ int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL reb
 		if( setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1 ) {
 			if( DEBUGLVL( dlevel ) ) {
 				dbgtext( "open_socket_in(): setsockopt: ");
-				dbgtext( "SO_REUSEPORT = %d ", val?"True":"False" );
+				dbgtext( "SO_REUSEPORT = %s ", val?"True":"False" );
 				dbgtext( "on port %d failed ", port );
 				dbgtext( "with error = %s\n", strerror(errno) );
 			}

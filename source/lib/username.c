@@ -126,13 +126,13 @@ BOOL map_username(char *user)
 
 		*dosname++ = 0;
 
-		while (isspace(*unixname))
+		while (isspace((int)*unixname))
 			unixname++;
 		if ('!' == *unixname) {
 			return_if_mapped = True;
 			unixname++;
 
-			while (*unixname && isspace(*unixname))
+			while (*unixname && isspace((int)*unixname))
 				unixname++;
 		}
     
@@ -141,7 +141,7 @@ BOOL map_username(char *user)
 
 		{
 			int l = strlen(unixname);
-			while (l && isspace(unixname[l-1])) {
+			while (l && isspace((int)unixname[l-1])) {
 				unixname[l-1] = 0;
 				l--;
 			}
@@ -542,7 +542,7 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
 
 	for (i=offset;i<(len-(N-1));i++) {
 		char c = s[i];
-		if (!islower(c))
+		if (!islower((int)c))
 			continue;
 		s[i] = toupper(c);
 		ret = uname_string_combinations2(s,i+1,fn,N-1);
