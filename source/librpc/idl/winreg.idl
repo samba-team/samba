@@ -75,10 +75,9 @@
 		[in,out,ref] policy_handle *handle,
 		[in] winreg_String key,
 		[in] winreg_String class,
-		[in] uint32 reserved,
-		[out] uint32 *unknown,
+		[in] uint32 options,
 		[in] uint32 access_mask,
-		[in,ref] uint32 *sec_info,
+		[in,out,ref] uint32 *action_taken,
 		[in] sec_desc_buf *sec_desc
 	);
 

@@ -259,7 +259,32 @@ static WERROR rpc_get_subkey_by_index(TALLOC_CTX *mem_ctx, struct registry_key *
 
 static WERROR rpc_add_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, uint32_t access_mask, SEC_DESC *sec, struct registry_key **key)
 {
-	return WERR_NOT_SUPPORTED;
+	NTSTATUS status;
+	struct winreg_CreateKey r;
+
+	init_winreg_String(&r.in.key, name);
+	init_winreg_String(&r.in.class, NULL);
+
+	r.in.handle = parent->backend_data;
+	r.out.handle = talloc_p(mem_ctx, struct policy_handle);	
+	r.in.options = 0;
+	r.in.access_mask = access_mask;
+	r.in.sec_desc = NULL;
+
+	status = dcerpc_winreg_CreateKey((struct dcerpc_pipe *)(parent->hive->backend_data), mem_ctx, &r);
+
+    if (!NT_STATUS_IS_OK(status)) {
+        DEBUG(1, ("CreateKey failed - %s\n", nt_errstr(status)));
+        return ntstatus_to_werror(status);
+    }
+
+	if (W_ERROR_IS_OK(r.out.result)) {
+		*key = talloc_p(mem_ctx, struct registry_key);
+		(*key)->name = talloc_strdup(*key, name);
+		(*key)->backend_data = r.out.handle;
+	}
+
+	return r.out.result;
 }
 
 static WERROR rpc_query_key(struct registry_key *k)

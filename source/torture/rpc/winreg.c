@@ -67,7 +67,7 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct winreg_CreateKey r;
 	struct policy_handle newhandle;
 	NTSTATUS status;
-	uint32_t sec_info = 0;
+	uint32_t action_taken = 0;
 
 	printf("\ntesting CreateKey\n");
 
@@ -75,9 +75,9 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.handle = &newhandle;
 	init_winreg_String(&r.in.key, name);	
 	init_winreg_String(&r.in.class, class);
-	r.in.reserved = 0x0;
+	r.in.options = 0x0;
 	r.in.access_mask = 0x02000000;
-	r.in.sec_info = &sec_info;
+	r.in.action_taken = r.out.action_taken = &action_taken;
 	r.in.sec_desc = NULL;
 
 	status = dcerpc_winreg_CreateKey(p, mem_ctx, &r);
@@ -710,7 +710,7 @@ BOOL torture_rpc_winreg(void)
 
     if (lp_parm_int(-1, "torture", "dangerous") != 1) {
 		printf("winreg_InitiateShutdown disabled - enable dangerous tests to use\n");
-	
+	} else {
 		ret &= test_InitiateSystemShutdown(p, mem_ctx, "spottyfood", 30);
 		ret &= test_AbortSystemShutdown(p, mem_ctx);
 	}
