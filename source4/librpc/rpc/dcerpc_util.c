@@ -247,8 +247,8 @@ static const struct {
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_IP, EPM_PROTOCOL_TCP } }, 
 	{ "ncadg_ip_udp", NCACN_IP_UDP, 3, 
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_IP, EPM_PROTOCOL_UDP } },
-	{ "ncalrpc", NCALRPC, 1, 
-		{ EPM_PROTOCOL_NCALRPC } },
+	{ "ncalrpc", NCALRPC, 2, 
+		{ EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_PIPE } },
 	{ "ncacn_unix_stream", NCACN_UNIX_STREAM, 2, 
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_UNIX_DS } },
 	{ "ncadg_unix_dgram", NCADG_UNIX_DGRAM, 2, 
@@ -276,6 +276,8 @@ static const struct {
 	{"bigendian", DCERPC_PUSH_BIGENDIAN}
 };
 
+
+
 /*
   form a binding string from a binding structure
 */
@@ -298,26 +300,31 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 		s = talloc_asprintf(mem_ctx, "%s@", GUID_string(mem_ctx, b->object));
 	}
 
-	s = talloc_asprintf_append(s, "%s:%s[", t_name, b->host);
+	s = talloc_asprintf_append(s, "%s:%s", t_name, b->host);
 	if (!s) return NULL;
+
+	if ((!b->options || !b->options[0]) && !b->flags) {
+		return s;
+	}
+
+	s = talloc_asprintf_append(s, "[");
 
 	/* this is a *really* inefficent way of dealing with strings,
 	   but this is rarely called and the strings are always short,
 	   so I don't care */
 	for (i=0;b->options && b->options[i];i++) {
-		s = talloc_asprintf(mem_ctx, "%s%s,", s, b->options[i]);
+		s = talloc_asprintf_append(s, "%s,", b->options[i]);
 		if (!s) return NULL;
 	}
 	for (i=0;i<ARRAY_SIZE(ncacn_options);i++) {
 		if (b->flags & ncacn_options[i].flag) {
-			s = talloc_asprintf(mem_ctx, "%s%s,", s, ncacn_options[i].name);
+			s = talloc_asprintf_append(s, "%s,", ncacn_options[i].name);
 			if (!s) return NULL;
 		}
 	}
-	if (s[strlen(s)-1] == ',') {
-		s[strlen(s)-1] = 0;
-	}
-	s = talloc_asprintf(mem_ctx, "%s]", s);
+
+	s[strlen(s)-1] = 0;
+	s = talloc_asprintf_append(s, "]");
 
 	return s;
 }
@@ -428,6 +435,173 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 		}
 	}
 	
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor,  const char *data)
+{
+	switch (floor->lhs.protocol) {
+	case EPM_PROTOCOL_TCP:
+		floor->rhs.tcp.port = atoi(data);
+		return NT_STATUS_OK;
+		
+	case EPM_PROTOCOL_UDP:
+		floor->rhs.udp.port = atoi(data);
+		return NT_STATUS_OK;
+
+	case EPM_PROTOCOL_HTTP:
+		floor->rhs.http.port = atoi(data);
+		return NT_STATUS_OK;
+
+	case EPM_PROTOCOL_IP:
+		floor->rhs.ip.address = 0;
+
+		/* Only try to put in a IPv4 address. Windows 2003 just returns 
+		 * 0.0.0.0 for IPv6 addresses */
+		if (strlen(data) > 0) {
+		    struct addrinfo hints, *res;
+
+ 		  	memset(&hints, 0, sizeof(struct addrinfo));
+
+			hints.ai_family = AF_INET;
+
+			if (getaddrinfo(data, NULL, &hints, &res) < 0) {
+				return NT_STATUS_BAD_NETWORK_NAME;
+			}
+
+			floor->rhs.ip.address = ntohl(((struct in_addr *)res->ai_addr)->s_addr);
+
+			freeaddrinfo(res);
+		}
+		return NT_STATUS_OK;
+
+	case EPM_PROTOCOL_NCACN:
+		floor->rhs.ncacn.minor_version = 0;
+		return NT_STATUS_OK;
+
+	case EPM_PROTOCOL_NCADG:
+		floor->rhs.ncadg.minor_version = 0;
+		return NT_STATUS_OK;
+
+	case EPM_PROTOCOL_SMB:
+		floor->rhs.smb.unc = talloc_strdup(mem_ctx, data);
+		if (!floor->rhs.smb.unc) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		return NT_STATUS_OK;
+
+	case EPM_PROTOCOL_PIPE:
+		floor->rhs.pipe.path = talloc_strdup(mem_ctx, data);
+		if (!floor->rhs.pipe.path) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		return NT_STATUS_OK;
+
+	case EPM_PROTOCOL_NETBIOS:
+		floor->rhs.netbios.name = talloc_strdup(mem_ctx, data);
+		if (!floor->rhs.netbios.name) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		return NT_STATUS_OK;
+
+	case EPM_PROTOCOL_NCALRPC:
+		return NT_STATUS_OK;
+		
+	case EPM_PROTOCOL_VINES_SPP:
+		floor->rhs.vines_spp.port = atoi(data);
+		return NT_STATUS_OK;
+		
+	case EPM_PROTOCOL_VINES_IPC:
+		floor->rhs.vines_ipc.port = atoi(data);
+		return NT_STATUS_OK;
+		
+	case EPM_PROTOCOL_STREETTALK:
+		floor->rhs.streettalk.streettalk = talloc_strdup(mem_ctx, data);
+		if (!floor->rhs.streettalk.streettalk) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		return NT_STATUS_OK;
+		
+	case EPM_PROTOCOL_UNIX_DS:
+		floor->rhs.unix_ds.path = talloc_strdup(mem_ctx, data);
+		if (!floor->rhs.unix_ds.path) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		return NT_STATUS_OK;
+		
+	case EPM_PROTOCOL_NULL:
+		return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+
+NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower **tower)
+{
+	const enum epm_protocols *protseq;
+	int num_protocols = -1, i;
+	NTSTATUS status;
+	
+	*tower = talloc_p(mem_ctx, struct epm_tower);
+
+	if (!(*tower)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Find transport */
+	for (i=0;i<ARRAY_SIZE(transports);i++) {
+		if (transports[i].transport == binding->transport) {
+			protseq = transports[i].protseq;
+			num_protocols = transports[i].num_protocols;
+			break;
+		}
+	}
+
+	if (num_protocols == -1) {
+		DEBUG(0, ("Unable to find transport with id '%d'\n", binding->transport));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	(*tower)->num_floors = 2 + num_protocols;
+	(*tower)->floors = talloc_array_p(mem_ctx, struct epm_floor, (*tower)->num_floors);
+
+	/* Floor 0 */
+	(*tower)->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
+	if (binding->object) {
+		(*tower)->floors[0].lhs.info.uuid.uuid = *binding->object;
+	}
+	(*tower)->floors[0].lhs.info.uuid.version = 0;
+	
+	/* Floor 1 */
+	(*tower)->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
+	(*tower)->floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
+	status = GUID_from_string(NDR_GUID, &(*tower)->floors[1].lhs.info.uuid.uuid);
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	/* Floor 2 to num_protocols */
+	for (i = 0; i < num_protocols; i++) {
+		(*tower)->floors[2 + i].lhs.protocol = protseq[i];
+	}
+
+	/* The top floor contains the endpoint */
+	if (num_protocols >= 1 && binding->options && binding->options[0]) {
+		status = floor_set_rhs_data(mem_ctx, &(*tower)->floors[2 + num_protocols - 1], binding->options[0]);
+		if (NT_STATUS_IS_ERR(status)) {
+			return status;
+		}
+	}
+
+	/* The second-to-top floor contains the network address */
+	if (num_protocols >= 2 && binding->host) {
+		status = floor_set_rhs_data(mem_ctx, &(*tower)->floors[2 + num_protocols - 2], binding->host);
+		if (NT_STATUS_IS_ERR(status)) {
+			return status;
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -722,7 +896,7 @@ NTSTATUS dcerpc_generic_session_key(struct dcerpc_pipe *p,
 				    DATA_BLOB *session_key)
 {
 	/* this took quite a few CPU cycles to find ... */
-	session_key->data = discard_const_p(char, "SystemLibraryDTC");
+	session_key->data = discard_const_p(unsigned char, "SystemLibraryDTC");
 	session_key->length = 16;
 	return NT_STATUS_OK;
 }
