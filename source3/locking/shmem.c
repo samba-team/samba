@@ -87,7 +87,7 @@ static BOOL smb_shm_global_lock(void)
    
    if(smb_shm_times_locked > 1)
    {
-      DEBUG(2,("smb_shm_global_lock : locked %d times\n",smb_shm_times_locked));
+      DEBUG(5,("smb_shm_global_lock : locked %d times\n",smb_shm_times_locked));
       return True;
    }
    
@@ -121,7 +121,7 @@ static BOOL smb_shm_global_unlock(void)
    
    if(smb_shm_times_locked > 0)
    {
-      DEBUG(2,("smb_shm_global_unlock : still locked %d times\n",smb_shm_times_locked));
+      DEBUG(5,("smb_shm_global_unlock : still locked %d times\n",smb_shm_times_locked));
       return True;
    }
    
@@ -193,7 +193,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
 	 else
 	 {
 	    /* erase old pid */
-            DEBUG(2,("smb_shm_register_process : erasing stale record for pid %d (seek_back = %d)\n",
+            DEBUG(5,("smb_shm_register_process : erasing stale record for pid %d (seek_back = %d)\n",
                       other_pid, seek_back));
 	    other_pid = (pid_t)0;
 	    erased_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
@@ -216,7 +216,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
    if(free_slot < 0)
       free_slot = lseek(smb_shm_processes_fd, 0, SEEK_END);
 
-   DEBUG(2,("smb_shm_register_process : writing record for pid %d at offset %d\n",pid,free_slot));
+   DEBUG(5,("smb_shm_register_process : writing record for pid %d at offset %d\n",pid,free_slot));
    lseek(smb_shm_processes_fd, free_slot, SEEK_SET);
    if(write(smb_shm_processes_fd, &pid, sizeof(pid)) < 0)
    {
@@ -252,11 +252,11 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
    
    while ((nb_read = read(smb_shm_processes_fd, &other_pid, sizeof(other_pid))) > 0)
    {
-      DEBUG(2,("smb_shm_unregister_process : read record for pid %d\n",other_pid));
+      DEBUG(5,("smb_shm_unregister_process : read record for pid %d\n",other_pid));
       if(other_pid == pid)
       {
 	 /* erase pid */
-         DEBUG(2,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %d)\n",
+         DEBUG(5,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %d)\n",
                      other_pid, seek_back));
 	 other_pid = (pid_t)0;
 	 erased_slot = lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
@@ -330,7 +330,7 @@ static BOOL smb_shm_initialize(int size)
 {
    struct SmbShmBlockDesc * first_free_block_p;
    
-   DEBUG(2,("smb_shm_initialize : initializing shmem file of size %d\n",size));
+   DEBUG(5,("smb_shm_initialize : initializing shmem file of size %d\n",size));
    
    if( !smb_shm_header_p )
    {
@@ -388,7 +388,7 @@ BOOL smb_shm_open( char *file_name, int size)
    BOOL other_processes = True;
    int old_umask;
    
-   DEBUG(2,("smb_shm_open : using shmem file %s to be of size %d\n",file_name,size));
+   DEBUG(5,("smb_shm_open : using shmem file %s to be of size %d\n",file_name,size));
 
    old_umask = umask(0);
 #ifndef SECURE_SHARE_MODES
@@ -508,7 +508,7 @@ BOOL smb_shm_close( void )
    if(smb_shm_initialize_called == False)
      return True;
 
-   DEBUG(2,("smb_shm_close\n"));
+   DEBUG(5,("smb_shm_close\n"));
    if(smb_shm_times_locked > 0)
       DEBUG(0,("WARNING smb_shm_close : shmem was still locked %d times\n",smb_shm_times_locked));;
    if ((smb_shm_header_p != NULL) && 
@@ -518,7 +518,7 @@ BOOL smb_shm_close( void )
    }
 
    smb_shm_global_lock();
-   DEBUG(2,("calling smb_shm_unregister_process(%s, %d)\n", smb_shm_processreg_name, getpid()));
+   DEBUG(5,("calling smb_shm_unregister_process(%s, %d)\n", smb_shm_processreg_name, getpid()));
    smb_shm_unregister_process(smb_shm_processreg_name, getpid());
    smb_shm_global_unlock();
    
@@ -629,7 +629,7 @@ smb_shm_offset_t smb_shm_alloc(int size)
    /* end modification of shared mem */
    smb_shm_header_p->consistent = True;
 
-   DEBUG(2,("smb_shm_alloc : request for %d bytes, allocated %d bytes at offset %d\n",size,scanner_p->size*CellSize,result_offset ));
+   DEBUG(6,("smb_shm_alloc : request for %d bytes, allocated %d bytes at offset %d\n",size,scanner_p->size*CellSize,result_offset ));
 
    smb_shm_global_unlock();
    return ( result_offset );
@@ -682,7 +682,7 @@ BOOL smb_shm_free(smb_shm_offset_t offset)
    
    smb_shm_header_p->consistent = False;
    
-   DEBUG(2,("smb_shm_free : freeing %d bytes at offset %d\n",header_p->size*CellSize,offset));
+   DEBUG(6,("smb_shm_free : freeing %d bytes at offset %d\n",header_p->size*CellSize,offset));
 
    if ( scanner_p == prev_p )
    {
