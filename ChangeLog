@@ -1,5 +1,26 @@
+2003-09-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* appl/test/uu_client.c: print authorization data if there are any
+	
+	* lib/asn1/asn1_print.c: decode IA5Stringa and UTF8String
+	
+2003-09-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c: use _krb5_get_init_creds_opt_copy
+	* lib/krb5/init_creds.c: don't export krb5_get_init_creds_opt_copy
+	
+	* lib/hdb/Makefile.am: libhdb might depend on LIB_dlopen
+	
+	* kuser/kinit.c: don't get v4 tickets by default
+	
 2003-09-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kpasswd/kpasswdd.c (process): remove a abort()
+	
+	* doc/win2k.texi: add some text about netdom.exe and trusts
+	
+	* TODO-1.0: gssapi rc4 done
+	
 	* kpasswd/kpasswdd.c: add support for Set password protocol as
 	defined by RFC3244 -- Microsoft Windows 2000 Kerberos Change
 	Password and Set Password Protocols
