@@ -168,7 +168,8 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/talloc.o \
 		lib/ms_fnmatch.o \
 		lib/interfaces.o \
-		tdb/tdb.o tdb/tdbutil.o passdb/secrets.o
+		tdb/tdb.o tdb/tdbutil.o passdb/secrets.o \
+		lib/util_list.o
 
 STUB_UID_OBJ = lib/stub_uid.o
 

@@ -130,6 +130,10 @@ END {
     gotstart = 1;
   }
 
+  if( $0 ~ /^GENERIC_LIST/ ) {
+    gotstart = 1;
+  }
+
   if( $0 ~ /^TALLOC_CTX|^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^smb_ucs1_t/ ) {
     gotstart = 1;
   }

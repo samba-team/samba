@@ -636,11 +636,13 @@ extern int errno;
 #include "talloc.h"
 #include "interfaces.h"
 #include "hash.h"
-
+#include "secrets.h"
+#include "util_list.h"
 
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"
 #endif /* UBI_BINTREE_H */
+
 
 #include "version.h"
 #include "smb.h"
@@ -653,8 +655,6 @@ extern int errno;
 #include "charset.h"
 
 #include "msdfs.h"
-
-#include "secrets.h"
 
 #ifdef WITH_PROFILE
 #include "profile.h"
@@ -903,3 +903,4 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 /* change initialization ... support for IRIX cc */
 #define VUSER_KEY vuser_key key; key.pid=conn->smbd_pid; key.vuid=vuid
 #endif /* _INCLUDES_H */
+

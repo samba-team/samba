@@ -24,7 +24,7 @@
  In order to make use of the GENERIC_LIST data structure, you
  should create wrapper functions around:
  
- 	BOOL 	generic_list_insert()
+ 	BOOL 	generic_list_append()
 	void* 	generic_list_remove()
 	void* 	generic_list_locate()
 	
@@ -46,11 +46,12 @@
 #include "includes.h"
 
 
+#if 0
 /*
  * list variables
  */
 static GENERIC_LIST hnds;
-
+#endif
 
 /****************************************************************
  Initialize the list.  This doesn't do much currently.  Just make
@@ -68,20 +69,47 @@ static void generic_list_init(GENERIC_LIST *l)
 	return;
 }
 
+/****************************************************************
+ Create and return a new GENERIC_LIST
+ ****************************************************************/
+GENERIC_LIST *generic_list_new(void)
+{
+	GENERIC_LIST *l;
+
+	l = g_new(GENERIC_LIST, 1);
+	if (! l)
+	{
+		DEBUG(0, ("generic_list_new: No memory\n"));
+		return l;
+	}
+
+	generic_list_init(l);
+
+	return l;
+}
 
 /*****************************************************************
  Insert some data into the list (appended to the end of the list)
  *****************************************************************/
-static BOOL generic_list_insert(GENERIC_LIST *l, 
-				void *item, uint8 type)
+GENERIC_LIST *generic_list_append(GENERIC_LIST *l, 
+				  void *item, uint8 type)
 {
+	if (! l)
+	{
+		DEBUG(1, ("generic_list_append: NULL list\n"));
+		l = generic_list_new();
+	}
+
+	if (! l)
+		return l;
+
 	/* check for an emtpy list first */
 	if (l->length == 0) 
 	{
 		if ((l->head = malloc(sizeof(struct _list_node))) == NULL)
 		{
 			DEBUG(0, ("ERROR: out of memory!  Cannot allocate a list node!\n"));
-			return False;
+			return l;
 		}
 		l->head->data = item;
 		l->head->type = type;
@@ -96,7 +124,7 @@ static BOOL generic_list_insert(GENERIC_LIST *l,
 		if ((l->tail->next = malloc(sizeof(struct _list_node))) == NULL)
 		{
 			DEBUG(0, ("ERROR: out of memory!  Cannot allocate a list node!\n"));
-			return False;
+			return l;
 		}
 		l->tail = l->tail->next;
 		l->tail->next = NULL;
@@ -106,7 +134,25 @@ static BOOL generic_list_insert(GENERIC_LIST *l,
 	}
 	
 	/* return the list pointer in case this was the first node */
-	return True;
+	return l;
+}
+
+/****************************************************************
+ Return the first element in the list and its type
+ ****************************************************************/
+void *generic_list_first(GENERIC_LIST *l, uint8 *type)
+{
+	struct _list_node *item;
+
+	if (! l)
+		return NULL;
+	if (l->length == 0)
+		return NULL;
+
+	item = l->head;
+	if (type)
+		*type = item->type;
+	return item->data;
 }
 
 /****************************************************************
@@ -116,11 +162,14 @@ static BOOL generic_list_insert(GENERIC_LIST *l,
  We will return the actual pointer to the item in the list.  Not
  a copy of the item.
  ****************************************************************/
-static void* generic_list_locate (GENERIC_LIST *l, void *search,
+void *generic_list_locate (GENERIC_LIST *l, void *search,
 				  BOOL(*cmp)(const void*,const void*))
 {
 	struct _list_node *item;
-	
+
+	if (!l || !cmp)
+		return NULL;
+
 	/* loop through the list in linear order */
 	item = l->head;
 	while (item != NULL)
@@ -144,9 +193,12 @@ static void* generic_list_locate (GENERIC_LIST *l, void *search,
  
  **WARNING** It is the responsibility of the caller to save 
  the pointer and destroy the data.
+
+ If you don't specify the cmp-function, the search-pointerr must
+ be the data-pointer.
  ***************************************************************/
- static void* generic_list_remove(GENERIC_LIST *l, void *search,
-				BOOL(*cmp)(const void*,const void*))
+void *generic_list_remove(GENERIC_LIST *l, void *search,
+			  BOOL(*cmp)(const void*,const void*))
 {
 	struct _list_node 	*item, *tag;
 	void			*data_ptr;
@@ -157,7 +209,9 @@ static void* generic_list_locate (GENERIC_LIST *l, void *search,
 	while (item != NULL)
 	{
 		/* did we find it?  If so remove the node */
-		if (cmp(search, item->data))
+		if (cmp==NULL 
+		    ? (search == item->data)
+		    : cmp(search, item->data))
 		{
 			/* found, so remove the node */
 
@@ -188,10 +242,11 @@ static void* generic_list_locate (GENERIC_LIST *l, void *search,
 	return NULL;
 }
 
+#if 0
 /**************************************************************
  copy a POLICY_HND
  *************************************************************/
-BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src)
+ BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src)
 {
 	int i;
 
@@ -224,7 +279,7 @@ BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src)
 
  No ordering betweeen the two is attempted.
  **************************************************************/
-BOOL compare_rpc_hnd_node(const RPC_HND_NODE *x, 
+ BOOL compare_rpc_hnd_node(const RPC_HND_NODE *x, 
 			  const RPC_HND_NODE *y)
 {
 	/* only compare valid nodes */
@@ -240,7 +295,7 @@ BOOL compare_rpc_hnd_node(const RPC_HND_NODE *x,
 /***************************************************************
  associate a POLICY_HND with a cli_connection
  **************************************************************/
-BOOL RpcHndList_set_connection(const POLICY_HND *hnd, 
+ BOOL RpcHndList_set_connection(const POLICY_HND *hnd, 
 		  	       struct cli_connection *con)
 {
 
@@ -264,13 +319,13 @@ BOOL RpcHndList_set_connection(const POLICY_HND *hnd,
 	/* insert the node into the list: 
  	   	The 3rd parameter is set to 0 since we don't care
 	   	anything about the type field */
-	return (generic_list_insert(&hnds, (void*)node, 0));
+	return (generic_list_append(&hnds, (void*)node, 0));
 }
 
 /************************************************************************
  delete a POLICY_HND (and associated cli_connection) from the list
  ***********************************************************************/
-BOOL RpcHndList_del_connection(const POLICY_HND *hnd)
+ BOOL RpcHndList_del_connection(const POLICY_HND *hnd)
 {
 	RPC_HND_NODE	node, *located;
 
@@ -298,7 +353,7 @@ BOOL RpcHndList_del_connection(const POLICY_HND *hnd)
  search for a POLICY_HND and return a pointer to the associated
  cli_connection struct in the list
  **********************************************************************/
-struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd)
+ struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd)
 {
 	RPC_HND_NODE	node, *located;
 
@@ -318,4 +373,4 @@ struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd)
 	else
 		return located->cli;
 }
-
+#endif
