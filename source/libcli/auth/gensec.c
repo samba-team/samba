@@ -119,8 +119,6 @@ static NTSTATUS gensec_start(struct gensec_security **gensec_security)
 NTSTATUS gensec_subcontext_start(struct gensec_security *parent, 
 				 struct gensec_security **gensec_security)
 {
-	NTSTATUS status;
-	
 	(*gensec_security) = talloc_p(parent->mem_ctx, struct gensec_security);
 	if (!(*gensec_security)) {
 		return NT_STATUS_NO_MEMORY;
@@ -132,7 +130,7 @@ NTSTATUS gensec_subcontext_start(struct gensec_security *parent,
 
 	(*gensec_security)->subcontext = True;
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS gensec_client_start(struct gensec_security **gensec_security)
