@@ -42,6 +42,7 @@ static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *p
 	pkey->cnum = conn?conn->cnum:-1;
 	fstrcpy(pkey->name, name);
 #ifdef DEVELOPER
+	/* valgrind fixer... */
 	{
 		size_t sl = strlen(pkey->name);
 		if (sizeof(fstring)-sl)

@@ -683,6 +683,14 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				mangle_map(mangled_name,True,True,SNUM(conn));
 				mangled_name[12] = 0;
 				len = srvstr_push(outbuf, p+2, mangled_name, 24, STR_UPPER);
+#ifdef DEVELOPER
+				/* valgrind fixer... */
+				{
+					size_t sl = strlen(p+2);
+					if (24-sl)
+						memset(&p[sl+2], '\0', 24-sl);
+				}
+#endif
 				SSVAL(p, 0, len);
 			} else {
 				SSVAL(p,0,0);
