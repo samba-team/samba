@@ -327,3 +327,67 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
   return(s);
 }
 
+
+/****************************************************************************
+load a file into memory and return an array of pointers to lines in the file
+must be freed with file_lines_free()
+****************************************************************************/
+char **file_lines_load(char *fname, int *numlines)
+{
+	int fd, i;
+	SMB_STRUCT_STAT sbuf;
+	char *p, *s, **ret;
+	size_t size;
+	
+	fd = open(fname,O_RDONLY);
+	if (fd == -1) return NULL;
+
+	if (sys_fstat(fd, &sbuf) != 0) return NULL;
+	size = sbuf.st_size;
+
+	if (size == 0) return NULL;
+
+	p = (char *)malloc(size+1);
+	if (!p) return NULL;
+
+	if (read(fd, p, size) != size) {
+		free(p);
+		return NULL;
+	}
+	p[size] = 0;
+
+	close(fd);
+
+	for (s = p, i=0; s < p+size; s++) {
+		if (s[0] == '\n') i++;
+	}
+
+	ret = (char **)malloc(sizeof(ret[0])*(i+1));
+	if (!ret) {
+		free(p);
+		return NULL;
+	}	
+	*numlines = i;
+
+	ret[0] = p;
+	for (s = p, i=0; s < p+size; s++) {
+		if (s[0] == '\n') {
+			s[0] = 0;
+			i++;
+			ret[i] = s+1;
+		}
+		if (s[0] == '\r') s[0] = 0;
+	}
+
+	return ret;
+}
+
+/****************************************************************************
+free lines loaded with file_lines_load
+****************************************************************************/
+void file_lines_free(char **lines)
+{
+	if (!lines) return;
+	free(lines[0]);
+	free(lines);
+}
