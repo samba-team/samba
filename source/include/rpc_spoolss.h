@@ -28,7 +28,6 @@
 #define STRING 2
 
 /* spoolss pipe: this are the calls which are not implemented ...
-#define SPOOLSS_OPENPRINTER				0x01
 #define SPOOLSS_GETPRINTERDRIVER			0x0b
 #define SPOOLSS_READPRINTER				0x16
 #define SPOOLSS_WAITFORPRINTERCHANGE			0x1c
@@ -60,6 +59,7 @@
 
 /* those are implemented */
 #define SPOOLSS_ENUMPRINTERS				0x00
+#define SPOOLSS_OPENPRINTER				0x01
 #define SPOOLSS_SETJOB					0x02
 #define SPOOLSS_GETJOB					0x03
 #define SPOOLSS_ENUMJOBS				0x04
@@ -514,6 +514,23 @@ typedef struct _printer_default
 	uint32 access_required;
 }
 PRINTER_DEFAULT;
+
+/* SPOOL_Q_OPEN_PRINTER request to open a printer */
+typedef struct spool_q_open_printer
+{
+	uint32 printername_ptr;
+	UNISTR2 printername;
+	PRINTER_DEFAULT printer_default;
+}
+SPOOL_Q_OPEN_PRINTER;
+
+/* SPOOL_R_OPEN_PRINTER reply to an open printer */
+typedef struct spool_r_open_printer
+{
+	POLICY_HND handle;	/* handle used along all transactions (20*uint8) */
+	WERROR status;
+}
+SPOOL_R_OPEN_PRINTER;
 
 /* SPOOL_Q_OPEN_PRINTER_EX request to open a printer */
 typedef struct spool_q_open_printer_ex

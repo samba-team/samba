@@ -760,6 +760,129 @@ static BOOL srv_spoolss_sendnotify(char* printer_name, uint32 high, uint32 low, 
 }	
 
 /********************************************************************
+ Copy routines used by convert_to_openprinterex()
+ *******************************************************************/
+
+static DEVICEMODE* dup_devicemode(TALLOC_CTX *ctx, DEVICEMODE *devmode)
+{
+	DEVICEMODE *d;
+	int len;
+
+	if (!devmode)
+		return NULL;
+		
+	DEBUG (8,("dup_devmode\n"));
+	
+	/* bulk copy first */
+	
+	d = talloc_memdup(ctx, devmode, sizeof(DEVICEMODE));
+	if (!d)
+		return NULL;
+		
+	/* dup the pointer members separately */
+	
+	len = unistrlen(devmode->devicename.buffer);
+	if (len != -1) {
+		d->devicename.buffer = talloc(ctx, len*2);
+		if (unistrcpy(d->devicename.buffer, devmode->devicename.buffer) != len)
+			return NULL;
+	}
+		
+
+	len = unistrlen(devmode->formname.buffer);
+	if (len != -1) {
+		d->devicename.buffer = talloc(ctx, len*2);
+		if (unistrcpy(d->formname.buffer, devmode->formname.buffer) != len)
+			return NULL;
+	}
+
+	d->private = talloc_memdup(ctx, devmode->private, devmode->driverextra);
+	
+	return d;
+}
+
+static void copy_devmode_ctr(TALLOC_CTX *ctx, DEVMODE_CTR *new_ctr, DEVMODE_CTR *ctr)
+{
+	if (!new_ctr || !ctr)
+		return;
+		
+	DEBUG(8,("copy_devmode_ctr\n"));
+	
+	new_ctr->size = ctr->size;
+	new_ctr->devmode_ptr = ctr->devmode_ptr;
+	
+	if(ctr->devmode_ptr)
+		new_ctr->devmode = dup_devicemode(ctx, ctr->devmode);
+}
+
+static void copy_printer_default(TALLOC_CTX *ctx, PRINTER_DEFAULT *new_def, PRINTER_DEFAULT *def)
+{
+	if (!new_def || !def)
+		return;
+	
+	DEBUG(8,("copy_printer_defaults\n"));
+	
+	new_def->datatype_ptr = def->datatype_ptr;
+	
+	if (def->datatype_ptr)
+		copy_unistr2(&new_def->datatype, &def->datatype);
+	
+	copy_devmode_ctr(ctx, &new_def->devmode_cont, &def->devmode_cont);
+	
+	new_def->access_required = def->access_required;
+}
+
+/********************************************************************
+ * Convert a SPOOL_Q_OPEN_PRINTER structure to a 
+ * SPOOL_Q_OPEN_PRINTER_EX structure
+ ********************************************************************/
+
+static void convert_to_openprinterex(TALLOC_CTX *ctx, SPOOL_Q_OPEN_PRINTER_EX *q_u_ex, SPOOL_Q_OPEN_PRINTER *q_u)
+{
+	if (!q_u_ex || !q_u)
+		return;
+
+	DEBUG(8,("convert_to_openprinterex\n"));
+				
+	q_u_ex->printername_ptr = q_u->printername_ptr;
+	
+	if (q_u->printername_ptr)
+		copy_unistr2(&q_u_ex->printername, &q_u->printername);
+	
+	copy_printer_default(ctx, &q_u_ex->printer_default, &q_u->printer_default);
+}
+
+/********************************************************************
+ * spoolss_open_printer
+ *
+ * called from the spoolss dispatcher
+ ********************************************************************/
+
+WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R_OPEN_PRINTER *r_u)
+{
+	SPOOL_Q_OPEN_PRINTER_EX q_u_ex;
+	SPOOL_R_OPEN_PRINTER_EX r_u_ex;
+	
+	if (!q_u || !r_u)
+		return WERR_NOMEM;
+	
+	ZERO_STRUCT(q_u_ex);
+	ZERO_STRUCT(r_u_ex);
+	
+	/* convert the OpenPrinter() call to OpenPrinterEx() */
+	
+	convert_to_openprinterex(p->mem_ctx, &q_u_ex, q_u);
+	
+	r_u_ex.status = _spoolss_open_printer_ex(p, &q_u_ex, &r_u_ex);
+	
+	/* convert back to OpenPrinter() */
+	
+	memcpy(r_u, &r_u_ex, sizeof(*r_u));
+	
+	return r_u->status;
+}
+
+/********************************************************************
  * spoolss_open_printer
  *
  * called from the spoolss dispatcher
@@ -767,10 +890,6 @@ static BOOL srv_spoolss_sendnotify(char* printer_name, uint32 high, uint32 low, 
 
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
 {
-#if 0
-	WERROR result = WERR_OK;
-#endif
-
 	UNISTR2 *printername = NULL;
 	PRINTER_DEFAULT *printer_default = &q_u->printer_default;
 /*	uint32 user_switch = q_u->user_switch; - notused */

@@ -1288,7 +1288,8 @@ char *dos_buffer2_to_str(BUFFER2 *str);
 char *dos_buffer2_to_multistr(BUFFER2 *str);
 size_t dos_struni2(char *dst, const char *src, size_t max_len);
 char *dos_unistr(char *buf);
-int unistrcpy(char *dst, char *src);
+int unistrlen(uint16 *s);
+int unistrcpy(uint16 *dst, uint16 *src);
 void default_unicode_map(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
 BOOL load_unicode_map(const char *codepage, smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
 BOOL load_dos_unicode_map(int codepage);
@@ -3495,7 +3496,10 @@ BOOL make_spoolss_q_addprinterex(
 	PRINTER_INFO_CTR *ctr);
 BOOL make_spoolss_printer_info_2(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
 				PRINTER_INFO_2 *info);
+BOOL spoolss_io_q_open_printer(char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_open_printer(char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
+BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_deleteprinterdriver(
 	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_DELETEPRINTERDRIVER *q_u, 
@@ -3503,7 +3507,6 @@ BOOL make_spoolss_q_deleteprinterdriver(
 	const char* arch, 
 	const char* driver 
 );
-BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
                                 const POLICY_HND *handle,
                                 UNISTR2 *valuename, uint32 size);
@@ -4029,6 +4032,7 @@ BOOL api_spoolss_rpc(pipes_struct *p);
 
 /*The following definitions come from  rpc_server/srv_spoolss_nt.c  */
 
+WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R_OPEN_PRINTER *r_u);
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u);
 BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode);

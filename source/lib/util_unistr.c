@@ -506,20 +506,33 @@ char *dos_unistr(char *buf)
 }
 
 /*******************************************************************
+ returns the length in number of wide characters 
+ ******************************************************************/
+int unistrlen(uint16 *s)
+{
+	int len;
+	
+	if (!s)
+		return -1;
+	
+	for (len=0; *s; s++,len++);
+	
+	return len;
+}
+
+/*******************************************************************
  Strcpy for unicode strings.  returns length (in num of wide chars)
 ********************************************************************/
 
-int unistrcpy(char *dst, char *src)
+int unistrcpy(uint16 *dst, uint16 *src)
 {
 	int num_wchars = 0;
-	uint16 *wsrc = (uint16 *)src;
-	uint16 *wdst = (uint16 *)dst;
 
-	while (*wsrc) {
-		*wdst++ = *wsrc++;
+	while (*src) {
+		*dst++ = *src++;
 		num_wchars++;
 	}
-	*wdst = 0;
+	*dst = 0;
 
 	return num_wchars;
 }
