@@ -65,8 +65,20 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 			nwritten = sendfile(tofd, fromfd, &offset, total);
 #endif
 		} while (nwritten == -1 && errno == EINTR);
-		if (nwritten == -1)
+		if (nwritten == -1) {
+			if (errno == ENOSYS) {
+				/* Ok - we're in a world of pain here. We just sent
+				 * the header, but the sendfile failed. We have to
+				 * emulate the sendfile at an upper layer before we
+				 * disable it's use. So we do something really ugly.
+				 * We set the errno to a strange value so we can detect
+				 * this at the upper level and take care of it without
+				 * layer violation. JRA.
+				 */
+				errno = EINTR; /* Normally we can never return this. */
+			}
 			return -1;
+		}
 		if (nwritten == 0)
 			return -1; /* I think we're at EOF here... */
 		total -= nwritten;
@@ -131,8 +143,20 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 		do {
 			nwritten = sendfile(tofd, fromfd, &small_offset, small_total);
 		} while (nwritten == -1 && errno == EINTR);
-		if (nwritten == -1)
+		if (nwritten == -1) {
+			if (errno == ENOSYS) {
+				/* Ok - we're in a world of pain here. We just sent
+				 * the header, but the sendfile failed. We have to
+				 * emulate the sendfile at an upper layer before we
+				 * disable it's use. So we do something really ugly.
+				 * We set the errno to a strange value so we can detect
+				 * this at the upper level and take care of it without
+				 * layer violation. JRA.
+				 */
+				errno = EINTR; /* Normally we can never return this. */
+			}
 			return -1;
+		}
 		if (nwritten == 0)
 			return -1; /* I think we're at EOF here... */
 		small_total -= nwritten;
