@@ -45,8 +45,6 @@
 #include <config.h>
 #endif
 
-#include <sys/cdefs.h>
-
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
