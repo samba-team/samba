@@ -5756,9 +5756,10 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 				POLICY_HND *handle)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	WERROR err;
-	fstring name;
-	int snum;
+	NT_PRINTER_INFO_LEVEL *old_printer = NULL;
+	fstring	name;
+	int	snum;
+	WERROR err = WERR_OK;
 
 	if ((printer = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL))) == NULL) {
 		DEBUG(0,("spoolss_addprinterex_level_2: malloc fail.\n"));
@@ -5769,6 +5770,18 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 
 	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
 	convert_printer_info(info, printer, 2);
+
+
+	/* check to see if the printer already exists */
+	err = get_a_printer(&old_printer, 2, printer->info_2->sharename);
+
+	/* did we find a printer? */
+	if (W_ERROR_IS_OK(err)) {
+		DEBUG(5, ("_spoolss_addprinterex: Attempted to add a printer named [%s] when one already existed!\n", 
+			printer->info_2->sharename));
+		free_a_printer(&old_printer, 2);
+		return WERR_PRINTER_ALREADY_EXISTS;
+	}
 
 	if (*lp_addprinter_cmd() )
 		if ( !add_printer_hook(printer) ) {
