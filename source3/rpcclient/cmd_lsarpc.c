@@ -239,10 +239,16 @@ static NTSTATUS cmd_lsa_enum_privilege(struct cli_state *cli,
 	uint32 *privs_low;
 	int i;
 
-	if (argc > 1) {
-		printf("Usage: %s\n", argv[0]);
+	if (argc > 3) {
+		printf("Usage: %s [enum context] [max length]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
+
+	if (argc>=2)
+		enum_context=atoi(argv[1]);
+
+	if (argc==3)
+		pref_max_length=atoi(argv[2]);
 
 	result = cli_lsa_open_policy(cli, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -258,7 +264,7 @@ static NTSTATUS cmd_lsa_enum_privilege(struct cli_state *cli,
 		goto done;
 
 	/* Print results */
-	printf("found %d priviledges\n\n", count);
+	printf("found %d privileges\n\n", count);
 
 	for (i = 0; i < count; i++) {
 		printf("%s \t\t%d:%d (0x%x:0x%x)\n", privs_name[i] ? privs_name[i] : "*unknown*",
@@ -306,6 +312,60 @@ static NTSTATUS cmd_lsa_get_dispname(struct cli_state *cli,
  done:
 	return result;
 }
+
+/* Enumerate the LSA SIDS */
+
+static NTSTATUS cmd_lsa_enum_sids(struct cli_state *cli, 
+                                     TALLOC_CTX *mem_ctx, int argc, 
+                                     char **argv) 
+{
+	POLICY_HND pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	uint32 enum_context=0;
+	uint32 pref_max_length=0x1000;
+	DOM_SID *sids;
+	uint32 count=0;
+	int i;
+
+	if (argc > 3) {
+		printf("Usage: %s [enum context] [max length]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc>=2)
+		enum_context=atoi(argv[1]);
+
+	if (argc==3)
+		pref_max_length=atoi(argv[2]);
+
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_enum_sids(cli, mem_ctx, &pol, &enum_context, pref_max_length,
+					&count, &sids);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Print results */
+	printf("found %d SIDs\n\n", count);
+
+	for (i = 0; i < count; i++) {
+		fstring sid_str;
+
+		sid_to_string(sid_str, &sids[i]);
+		printf("%s\n", sid_str);
+	}
+
+ done:
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
@@ -318,6 +378,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "enumtrust", 	 cmd_lsa_enum_trust_dom, 	PIPE_LSARPC, "Enumerate trusted domains", "" },
 	{ "enumprivs", 	 cmd_lsa_enum_privilege, 	PIPE_LSARPC, "Enumerate privileges",      "" },
 	{ "getdispname", cmd_lsa_get_dispname,  	PIPE_LSARPC, "Get the privilege name",    "" },
+	{ "lsaenumsid",  cmd_lsa_enum_sids,  		PIPE_LSARPC, "Enumerate the LSA SIDS",    "" },
 
 	{ NULL }
 };

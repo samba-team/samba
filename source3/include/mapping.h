@@ -41,7 +41,7 @@ typedef struct _PRIVS {
 #define SE_PRIV_PRINT_OPERATOR	0x0004
 #define SE_PRIV_ALL		0xffff
 
-#define PRIV_ALL_INDEX		4
+#define PRIV_ALL_INDEX		3
 
 
 #define ENUM_ONLY_MAPPED True
