@@ -257,41 +257,6 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 	return connected_ok;
 }
 
-#if 0
-
-/* Helper function for get_any_dc_name() */
-
-extern struct in_addr ipzero;
-extern pstring global_myname;
-
-static BOOL attempt_connect_dc(struct in_addr *ip, char *domain_name)
-{
-	fstring dc_name;
-	POLICY_HND hnd;
-	BOOL result;
-
-	if (ip_equal(ipzero, *ip)) return False;
-
-	if (!lookup_pdc_name(global_myname, domain_name, ip, dc_name)) {
-		DEBUG(3, ("could not lookup dc name for ip %s",
-			  inet_ntoa(*ip)));
-		return False;
-	}
-
-	result = lsa_open_policy(dc_name, &hnd, False, 
-				 SEC_RIGHTS_MAXIMUM_ALLOWED);
-
-	DEBUG(3, ("connect to DC %s %s\n", dc_name, result ? "OK" : "failed"));
-
-	if (result) {
-		lsa_close(&hnd);
-	}
-
-	return result;
-}
-
-#endif
-
 /* Some routines to fetch the trust account password from a HEAD
    version of Samba.  Yuck.  )-: */
 
@@ -333,8 +298,7 @@ BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd,
 
 extern pstring global_myname;
 
-static BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip,
-			       unsigned char *trust_passwd)
+static BOOL attempt_connect_dc(char *domain, struct in_addr dest_ip)
 {
 	fstring remote_machine;
 	struct cli_state cli;
@@ -456,9 +420,10 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 {
 	extern struct in_addr ipzero;
 	struct in_addr *ip_list = NULL, *dc_ip = NULL;
-	uchar trust_passwd[16];
 	BOOL connected_ok = False;
 	int i, count = 0;
+
+	DEBUG(3, ("looking up dc namer for domain %s\n", domain));
 
 	/* Get list of possible domain controllers */
 
@@ -468,13 +433,6 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
                 return False;
 	}
 
-	/* Fetch trust account password */
-
-	if (!_get_trust_account_password(domain, trust_passwd, NULL)) {
-		DEBUG(3,("connect_to_domain_password_server: unable to get trust account password for domain %s\n", domain));
-		return False;
-	}	
-
 	/* Find a DC on the local network */
 
 	for (i = 0; i < count; i++) {
@@ -483,7 +441,7 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 		/* Try to contact DC */
 
 		if ((connected_ok = 
-		     attempt_connect_dc(domain, ip_list[i], trust_passwd))) {
+		     attempt_connect_dc(domain, ip_list[i]))) {
 			dc_ip = &ip_list[i];
 			break;
 		}
@@ -497,8 +455,7 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 
 		i = sys_random() % count;
 
-		if (!(connected_ok = 
-		      attempt_connect_dc(domain, ip_list[i], trust_passwd))) {
+		if (!(connected_ok = attempt_connect_dc(domain, ip_list[i]))) {
 			ip_list[i] = ipzero;
 		} else {
 			dc_ip = &ip_list[i];
@@ -512,8 +469,7 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 	if (!connected_ok) {
 		for(i = 0; i < count; i++) {
 			if ((connected_ok = 
-			     attempt_connect_dc(domain, ip_list[i], 
-						trust_passwd))) {
+			     attempt_connect_dc(domain, ip_list[i]))) {
 				dc_ip = &ip_list[i];
 				break;
 			}
@@ -524,6 +480,7 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 
 	if (connected_ok) {
 		lookup_pdc_name(global_myname, domain, dc_ip, srv_name);
+		DEBUG(3, ("found dc %s\n", srv_name));
 	}
 
 	safe_free((char *)ip_list);
