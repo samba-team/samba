@@ -287,6 +287,25 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password, BOOL p
 
         DEBUG(4,("PAM: Account Management SetCredentials for User: %s\n", user));
 	pam_error = pam_setcred(pamh, (PAM_ESTABLISH_CRED|PAM_SILENT)); 
+	switch( pam_error ) {
+		case PAM_CRED_UNAVAIL:
+			DEBUG(0, ("PAM: Credentials not found for user:%s", user ));
+			break;
+		case PAM_CRED_EXPIRED:
+			DEBUG(0, ("PAM: Credentials for user: \"%s\" EXPIRED!", user ));
+			break;
+		case PAM_CRED_UNKNOWN:
+			DEBUG(0, ("PAM: User: \"%s\" is NOT known so can not set credentials!", user ));
+			break;
+		case PAM_CRED_UNKNOWN:
+			DEBUG(0, ("PAM: Unknown setcredentials error - unable to set credentials for %s", user ));
+			break;
+	        case PAM_SUCCESS:
+			DEBUG(4, ("PAM: SetCredentials OK for User: %s\n", user));
+		        break;
+		default:
+			DEBUG(0, ("PAM: Error Condition Unknown in pam_setcred function call!"));
+	}
 	if(!pam_error_handler(pamh, pam_error, "Set Credential Failure", 2)) {
 		proc_pam_end(pamh);
 		return False;
