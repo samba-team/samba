@@ -133,7 +133,7 @@ static void parse_error(const char *buf, const char *input_file, const char *msg
  * Create a compiled unicode map file from a unicode map definition file.
  */
 
-static int do_compile(int codepage, const char *input_file, const char *output_file)
+static int do_compile(const char *codepage, const char *input_file, const char *output_file)
 {
   FILE *fp = NULL;
   size_t size = 0;
@@ -253,7 +253,9 @@ static int do_compile(int codepage, const char *input_file, const char *output_f
 
   /* Setup the output file header. */
   SSVAL(output_buf,UNICODE_MAP_VERSION_OFFSET,UNICODE_MAP_FILE_VERSION_ID);
-  SSVAL(output_buf,UNICODE_MAP_CLIENT_CODEPAGE_OFFSET,(uint16)codepage);
+  memset(&output_buf[UNICODE_MAP_CLIENT_CODEPAGE_OFFSET],'\0',UNICODE_MAP_CODEPAGE_ID_SIZE);
+  safe_strcpy(&output_buf[UNICODE_MAP_CLIENT_CODEPAGE_OFFSET], codepage, UNICODE_MAP_CODEPAGE_ID_SIZE - 1);
+  output_buf[UNICODE_MAP_CLIENT_CODEPAGE_OFFSET+UNICODE_MAP_CODEPAGE_ID_SIZE-1] = '\0';
 
   offset = UNICODE_MAP_HEADER_SIZE;
 
@@ -289,7 +291,7 @@ static int do_compile(int codepage, const char *input_file, const char *output_f
 
 int main(int argc, char **argv)
 {
-  int codepage = 0;
+  const char *codepage = NULL;
   char *input_file = NULL;
   char *output_file = NULL;
   BOOL compile = False;
@@ -299,14 +301,9 @@ int main(int argc, char **argv)
   if(argc != 4)
     unicode_map_usage(prog_name);
 
+  codepage = argv[1];
   input_file = argv[2];
   output_file = argv[3];
-
-  /* Convert the second argument into a client codepage value. */
-  if((codepage = atoi(argv[1])) == 0) {
-    fprintf(stderr, "%s: %s is not a valid codepage.\n", prog_name, argv[1]);
-    exit(1);
-  }
 
   return do_compile( codepage, input_file, output_file);
 }

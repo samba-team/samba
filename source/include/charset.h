@@ -80,11 +80,12 @@ extern void charset_initialise(void);
 /* Version id for dynamically loadable unicode map files. */
 #define UNICODE_MAP_FILE_VERSION_ID 0x8001
 /* Version 0x80000001 unicode map file header size. */
-#define UNICODE_MAP_HEADER_SIZE 12
+#define UNICODE_MAP_HEADER_SIZE 30
+#define UNICODE_MAP_CODEPAGE_ID_SIZE 20
 /* Offsets for unicode map file header entries. */
 #define UNICODE_MAP_VERSION_OFFSET 0
 #define UNICODE_MAP_CLIENT_CODEPAGE_OFFSET 2
-#define UNICODE_MAP_CP_TO_UNICODE_LENGTH_OFFSET 4
-#define UNICODE_MAP_UNICODE_TO_CP_LENGTH_OFFSET 8
+#define UNICODE_MAP_CP_TO_UNICODE_LENGTH_OFFSET 22
+#define UNICODE_MAP_UNICODE_TO_CP_LENGTH_OFFSET 26
 
 #endif /* _CHARSET_H */

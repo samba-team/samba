@@ -28,8 +28,11 @@ extern int DEBUGLEVEL;
  * These are dynamically loaded from a unicode translation file.
  */
 
-static smb_ucs2_t *cp_to_ucs2;
-static uint16 *ucs2_to_cp;
+static smb_ucs2_t *doscp_to_ucs2;
+static uint16 *ucs2_to_doscp;
+
+static smb_ucs2_t *unixcp_to_ucs2;
+static uint16 *ucs2_to_unixcp;
 
 #ifndef MAXUNI
 #define MAXUNI 1024
@@ -57,7 +60,7 @@ int PutUniCode(char *dst,char *src, ssize_t len)
 		if (skip == 2)
 			val = ((val << 8) | src[1]);
 
-		SSVAL(dst,ret,cp_to_ucs2[val]);
+		SSVAL(dst,ret,doscp_to_ucs2[val]);
 		ret += 2;
 		len -= 2;
 		if (skip)
@@ -100,7 +103,7 @@ char *unistrn2(uint16 *src, int len)
 
 	for (p = lbuf; (len > 0) && (p-lbuf < MAXUNI-3) && *src; len--, src++) {
 		uint16 ucs2_val = SVAL(src,0);
-		uint16 cp_val = ucs2_to_cp[ucs2_val];
+		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
 		if (cp_val < 256)
 			*p++ = (char)cp_val;
@@ -131,7 +134,7 @@ char *unistr2(uint16 *src)
 
 	for (p = lbuf; *src && (p-lbuf < MAXUNI-3); src++) {
 		uint16 ucs2_val = SVAL(src,0);
-		uint16 cp_val = ucs2_to_cp[ucs2_val];
+		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
 		if (cp_val < 256)
 			*p++ = (char)cp_val;
@@ -160,7 +163,7 @@ char *unistr2_to_str(UNISTR2 *str)
 
 	for (p = lbuf; *src && p-lbuf < max_size; src++) {
 		uint16 ucs2_val = SVAL(src,0);
-		uint16 cp_val = ucs2_to_cp[ucs2_val];
+		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
 		if (cp_val < 256)
 			*p++ = (char)cp_val;
@@ -201,7 +204,7 @@ char *buffer2_to_str(BUFFER2 *str)
 
 	for (p = lbuf; *src && p-lbuf < max_size; src++) {
 		uint16 ucs2_val = SVAL(src,0);
-		uint16 cp_val = ucs2_to_cp[ucs2_val];
+		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
 		if (cp_val < 256)
 			*p++ = (char)cp_val;
@@ -233,7 +236,7 @@ char *buffer2_to_multistr(BUFFER2 *str)
 			*p++ = ' ';
 		} else {
 			uint16 ucs2_val = SVAL(src,0);
-			uint16 cp_val = ucs2_to_cp[ucs2_val];
+			uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
 			if (cp_val < 256)
 				*p++ = (char)cp_val;
@@ -276,7 +279,7 @@ size_t struni2(char *dst, const char *src, size_t max_len)
 			if (skip == 2)
 				val = ((val << 8) | src[1]);
 
-			SSVAL(dst,0,cp_to_ucs2[val]);
+			SSVAL(dst,0,doscp_to_ucs2[val]);
 			if (skip)
 				src += skip;
 			else
@@ -304,7 +307,7 @@ char *unistr(char *buf)
 
 	for (p = lbuf; *src && p-lbuf < MAXUNI-3; src++) {
 		uint16 ucs2_val = SVAL(src,0);
-		uint16 cp_val = ucs2_to_cp[ucs2_val];
+		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
 		if (cp_val < 256)
 			*p++ = (char)cp_val;
@@ -341,39 +344,41 @@ int unistrcpy(char *dst, char *src)
  Build a default (null) codepage to unicode map.
 ********************************************************************/
 
-void default_unicode_map(void)
+void default_unicode_map(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp)
 {
   int i;
 
-  if (cp_to_ucs2) {
-    free(cp_to_ucs2);
-    cp_to_ucs2 = NULL;
+  if (*pp_cp_to_ucs2) {
+    free(*pp_cp_to_ucs2);
+    *pp_cp_to_ucs2 = NULL;
   }
 
-  if (ucs2_to_cp) {
-    free(ucs2_to_cp);
-    ucs2_to_cp = NULL;
+  if (*pp_ucs2_to_cp) {
+    free(*pp_ucs2_to_cp);
+    *pp_ucs2_to_cp = NULL;
   }
 
-  if ((ucs2_to_cp = (uint16 *)malloc(2*65536)) == NULL) {
+  if ((*pp_ucs2_to_cp = (uint16 *)malloc(2*65536)) == NULL) {
     DEBUG(0,("default_unicode_map: malloc fail for ucs2_to_cp size %u.\n", 2*65536));
     abort();
   }
 
-  cp_to_ucs2 = ucs2_to_cp; /* Default map is an identity. */
+  *pp_cp_to_ucs2 = *pp_ucs2_to_cp; /* Default map is an identity. */
   for (i = 0; i < 65536; i++)
-    cp_to_ucs2[i] = i;
+    (*pp_cp_to_ucs2)[i] = i;
 }
 
 /*******************************************************************
- Load a dos codepage to unicode and vica-versa map.
+ Load a codepage to unicode and vica-versa map.
 ********************************************************************/
 
-BOOL load_unicode_map(int codepage)
+BOOL load_unicode_map(const char *codepage, smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp)
 {
   pstring unicode_map_file_name;
   FILE *fp = NULL;
   SMB_STRUCT_STAT st;
+  smb_ucs2_t *cp_to_ucs2 = *pp_cp_to_ucs2;
+  uint16 *ucs2_to_cp = *pp_ucs2_to_cp;
   size_t cp_to_ucs2_size;
   size_t ucs2_to_cp_size;
   size_t i;
@@ -382,22 +387,23 @@ BOOL load_unicode_map(int codepage)
 
   DEBUG(5, ("load_unicode_map: loading unicode map for codepage %d.\n", codepage));
 
-  if(strlen(CODEPAGEDIR) + 17 > sizeof(unicode_map_file_name)) {
+  if (*codepage == '\0')
+    goto clean_and_exit;
+
+  if(strlen(CODEPAGEDIR) + 13 + strlen(codepage) > sizeof(unicode_map_file_name)) {
     DEBUG(0,("load_unicode_map: filename too long to load\n"));
-    return NULL;
+    goto clean_and_exit;
   }
 
   pstrcpy(unicode_map_file_name, CODEPAGEDIR);
   pstrcat(unicode_map_file_name, "/");
   pstrcat(unicode_map_file_name, "unicode_map.");
-  slprintf(&unicode_map_file_name[strlen(unicode_map_file_name)],
-       sizeof(pstring)-(strlen(unicode_map_file_name)+1),
-       "%03d", codepage);
+  pstrcat(unicode_map_file_name, codepage);
 
   if(sys_stat(unicode_map_file_name,&st)!=0) {
     DEBUG(0,("load_unicode_map: filename %s does not exist.\n",
               unicode_map_file_name));
-    return NULL;
+    goto clean_and_exit;
   }
 
   size = st.st_size;
@@ -405,13 +411,13 @@ BOOL load_unicode_map(int codepage)
   if ((size != UNICODE_MAP_HEADER_SIZE + 4*65536) && (size != UNICODE_MAP_HEADER_SIZE +(2*256 + 2*65536))) {
     DEBUG(0,("load_unicode_map: file %s is an incorrect size for a \
 unicode map file (size=%d).\n", unicode_map_file_name, (int)size));
-    return NULL;
+    goto clean_and_exit;
   }
 
   if((fp = sys_fopen( unicode_map_file_name, "r")) == NULL) {
     DEBUG(0,("load_unicode_map: cannot open file %s. Error was %s\n",
               unicode_map_file_name, strerror(errno)));
-    return NULL;
+    goto clean_and_exit;
   }
 
   if(fread( buf, 1, UNICODE_MAP_HEADER_SIZE, fp)!=UNICODE_MAP_HEADER_SIZE) {
@@ -430,9 +436,9 @@ Needed %hu, got %hu.\n",
   }
 
   /* Check the codepage value */
-  if(SVAL(buf,UNICODE_MAP_CLIENT_CODEPAGE_OFFSET) != codepage) {
-    DEBUG(0,("load_unicode_map: codepage %hu in file %s is not the same as that \
-requested (%d).\n", SVAL(buf,UNICODE_MAP_CLIENT_CODEPAGE_OFFSET), unicode_map_file_name, codepage ));
+  if(!strequal(&buf[UNICODE_MAP_CLIENT_CODEPAGE_OFFSET], codepage)) {
+    DEBUG(0,("load_unicode_map: codepage %s in file %s is not the same as that \
+requested (%s).\n", &buf[UNICODE_MAP_CLIENT_CODEPAGE_OFFSET], unicode_map_file_name, codepage ));
     goto clean_and_exit;
   }
 
@@ -496,6 +502,10 @@ requested (%d).\n", SVAL(buf,UNICODE_MAP_CLIENT_CODEPAGE_OFFSET), unicode_map_fi
     ucs2_to_cp[i] = SVAL(ucs2_to_cp,i*2);
 
   fclose(fp);
+
+  *pp_cp_to_ucs2 = cp_to_ucs2;
+  *pp_ucs2_to_cp = ucs2_to_cp;
+
   return True;
 
 clean_and_exit:
@@ -515,5 +525,28 @@ clean_and_exit:
     ucs2_to_cp = NULL;
   }
 
+  default_unicode_map(pp_cp_to_ucs2, pp_ucs2_to_cp);
+
   return False;
+}
+
+/*******************************************************************
+ Load a dos codepage to unicode and vica-versa map.
+********************************************************************/
+
+BOOL load_dos_unicode_map(int codepage)
+{
+  fstring codepage_str;
+
+  slprintf(codepage_str, sizeof(fstring)-1, "%03d", codepage);
+  return load_unicode_map(codepage_str, &doscp_to_ucs2, &ucs2_to_doscp);
+}
+
+/*******************************************************************
+ Load a UNIX codepage to unicode and vica-versa map.
+********************************************************************/
+
+BOOL load_unix_unicode_map(const char *unix_char_set)
+{
+  return load_unicode_map(unix_char_set, &unixcp_to_ucs2, &ucs2_to_unixcp);
 }

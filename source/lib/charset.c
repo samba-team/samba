@@ -372,8 +372,7 @@ for code page %d failed. Using default client codepage 850\n",
   }
 
   /* Try and load the unicode map. */
-  if (!load_unicode_map(client_codepage))
-    default_unicode_map();
+  load_dos_unicode_map(client_codepage);
 }
 
 /*******************************************************************

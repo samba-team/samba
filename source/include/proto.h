@@ -35,7 +35,7 @@ int bitmap_find(struct bitmap *bm, unsigned ofs);
 
 char *unix2dos_format(char *str,BOOL overwrite);
 char *dos2unix_format(char *str, BOOL overwrite);
-void interpret_character_set(char *str);
+void interpret_character_set(char *str, int codepage);
 
 /*The following definitions come from  lib/charset.c  */
 
@@ -406,8 +406,10 @@ char *buffer2_to_multistr(BUFFER2 *str);
 size_t struni2(char *dst, const char *src, size_t max_len);
 char *unistr(char *buf);
 int unistrcpy(char *dst, char *src);
-void default_unicode_map(void);
-BOOL load_unicode_map(int codepage);
+void default_unicode_map(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
+BOOL load_unicode_map(const char *codepage, smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp);
+BOOL load_dos_unicode_map(int codepage);
+BOOL load_unix_unicode_map(const char *unix_char_set);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 

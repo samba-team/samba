@@ -39,7 +39,7 @@ static void initmaps(void) {
     mapsinited = True;
 }
 
-static void update_map(char * str) {
+static void update_map(char *str) {
     char *p;
 
     for (p = str; *p; p++) {
@@ -51,7 +51,7 @@ static void update_map(char * str) {
     }
 }
 
-static void init_iso8859_1(void) {
+static void init_iso8859_1(int codepage) {
 
     int i;
     if (!mapsinited) initmaps();
@@ -63,20 +63,31 @@ static void init_iso8859_1(void) {
        dos2unix[i] = CTRLZ;
     }
 
-/* MSDOS Code Page 850 -> ISO-8859 */
-update_map("\240\377\241\255\242\275\243\234\244\317\245\276\246\335\247\365");
-update_map("\250\371\251\270\252\246\253\256\254\252\255\360\256\251\257\356");
-update_map("\260\370\261\361\262\375\263\374\264\357\265\346\266\364\267\372");
-update_map("\270\367\271\373\272\247\273\257\274\254\275\253\276\363\277\250");
-update_map("\300\267\301\265\302\266\303\307\304\216\305\217\306\222\307\200");
-update_map("\310\324\311\220\312\322\313\323\314\336\315\326\316\327\317\330");
-update_map("\320\321\321\245\322\343\323\340\324\342\325\345\326\231\327\236");
-update_map("\330\235\331\353\332\351\333\352\334\232\335\355\336\350\337\341");
-update_map("\340\205\341\240\342\203\343\306\344\204\345\206\346\221\347\207");
-update_map("\350\212\351\202\352\210\353\211\354\215\355\241\356\214\357\213");
-update_map("\360\320\361\244\362\225\363\242\364\223\365\344\366\224\367\366");
-update_map("\370\233\371\227\372\243\373\226\374\201\375\354\376\347\377\230");
-
+    if (codepage == 437) {
+        /* MSDOS Code Page 437 -> ISO-8859-1 */
+        update_map("\xA1\xAD\xA2\x98\xA3\x9C\xA4\xED\xA5\x9D\xA6\xB3\xA7\xEE");
+        update_map("\xAA\xA6\xAB\xAE\xAC\xAA\xAE\xE9\xAF\xC4");
+        update_map("\xB0\xF8\xB1\xF1\xB2\xFD\xB5\xE6\xB7\xFA\xBA\xA7\xBC\xAC\xBD\xAB\xBF\xA8");
+        update_map("\xC0\x85\xC1\xA0\xC2\x83\xC4\x8E\xC5\x8F\xC6\x92\xC7\x80\xC8\x8A");
+        update_map("\xC9\x90\xCA\x88\xCB\x89\xCC\x8D\xCD\xA1\xCE\x8C\xCF\x8B");
+        update_map("\xD1\xA5\xD2\x96\xD3\xA2\xD4\x93\xD6\x99\xD9\x97\xDA\xA3\xDB\x96\xDC\x9A\xDF\xE1");
+        update_map("\xE0\x85\xE1\xA0\xE2\x83\xE4\x84\xE5\x86\xE6\x91\xE7\x87\xE8\x8A\xE9\x82\xEA\x88\xEB\x89\xEC\x8D\xED\xA1\xEE\x8C\xEF\x8B");
+        update_map("\xF0\xEB\xF1\xA4\xF2\x95\xF3\xA2\xF4\x93\xF6\x94\xF7\xF6\xF8\xED\xF9\x97\xFA\xA3\xFB\x96\xFC\x81\xFF\x98");
+    } else {
+        /* MSDOS Code Page 850 -> ISO-8859-1 */
+        update_map("\240\377\241\255\242\275\243\234\244\317\245\276\246\335\247\365");
+        update_map("\250\371\251\270\252\246\253\256\254\252\255\360\256\251\257\356");
+        update_map("\260\370\261\361\262\375\263\374\264\357\265\346\266\364\267\372");
+        update_map("\270\367\271\373\272\247\273\257\274\254\275\253\276\363\277\250");
+        update_map("\300\267\301\265\302\266\303\307\304\216\305\217\306\222\307\200");
+        update_map("\310\324\311\220\312\322\313\323\314\336\315\326\316\327\317\330");
+        update_map("\320\321\321\245\322\343\323\340\324\342\325\345\326\231\327\236");
+        update_map("\330\235\331\353\332\351\333\352\334\232\335\355\336\350\337\341");
+        update_map("\340\205\341\240\342\203\343\306\344\204\345\206\346\221\347\207");
+        update_map("\350\212\351\202\352\210\353\211\354\215\355\241\356\214\357\213");
+        update_map("\360\320\361\244\362\225\363\242\364\223\365\344\366\224\367\366");
+        update_map("\370\233\371\227\372\243\373\226\374\201\375\354\376\347\377\230");
+    }
 }
 
 /* Init for eastern european languages. */
@@ -250,10 +261,10 @@ char *dos2unix_format(char *str, BOOL overwrite)
 /*
  * Interpret character set.
  */
-void interpret_character_set(char *str)
+void interpret_character_set(char *str, int codepage)
 {
     if (strequal (str, "iso8859-1")) {
-        init_iso8859_1();
+        init_iso8859_1(codepage);
     } else if (strequal (str, "iso8859-2")) {
         init_iso8859_2();
     } else if (strequal (str, "iso8859-5")) {
@@ -265,4 +276,6 @@ void interpret_character_set(char *str)
     } else {
         DEBUG(0,("unrecognized character set %s\n", str));
     }
+
+    load_unix_unicode_map(str);
 }

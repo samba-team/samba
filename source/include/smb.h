@@ -882,6 +882,7 @@ struct bitmap {
 #define FLAG_GLOBAL 	0x08 /* local options that should be globally settable in SWAT */
 #define FLAG_DEPRECATED 0x10 /* options that should no longer be used */
 #define FLAG_HIDE  	0x20 /* options that should be hidden in SWAT */
+#define FLAG_DOS_STRING 0x40 /* convert from UNIX to DOS codepage when reading this string. */
 
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
