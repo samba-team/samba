@@ -1,16 +1,16 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4) -DBINDIR=\"$(bindir)\"
+INCLUDES += $(INCLUDE_krb4) -DBINDIR=\"$(bindir)\"
 
 bin_PROGRAMS = rsh
 
 libexec_PROGRAMS = rshd
 
-rsh_SOURCES  = rsh.c common.c
+rsh_SOURCES  = rsh.c common.c rsh_locl.h
 
-rshd_SOURCES = rshd.c common.c
+rshd_SOURCES = rshd.c common.c rsh_locl.h
 
 LDADD = $(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_krb4) \

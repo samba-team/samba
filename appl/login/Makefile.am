@@ -1,11 +1,13 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4)
+INCLUDES += $(INCLUDE_krb4)
 
 bin_PROGRAMS = login
-login_SOURCES = login.c read_string.c utmp_login.c utmpx_login.c tty.c stty_default.c
+login_SOURCES = login.c read_string.c utmp_login.c utmpx_login.c \
+	tty.c stty_default.c login_locl.h
+
 
 LDADD = $(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_krb4) \

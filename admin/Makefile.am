@@ -1,18 +1,14 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-CFLAGS = @CFLAGS@ $(WFLAGS)
-
-INCLUDES = -I$(top_builddir)/include $(INCLUDE_readline)
+INCLUDES += $(INCLUDE_readline)
 
 man_MANS = ktutil.8
 
 sbin_PROGRAMS = ktutil
 
 ktutil_SOURCES = ktutil.c srvconvert.c
-
-LIB_tgetent = @LIB_tgetent@
 
 LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5clnt.la \
