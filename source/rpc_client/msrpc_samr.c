@@ -1605,9 +1605,8 @@ BOOL get_samr_query_aliasmem(
 	if (pol_open_domain == NULL || num_mem == NULL || sid == NULL) return False;
 
 	/* send open domain (on alias sid) */
-	if (!samr_open_alias( pol_open_domain,
-				0x02000000, alias_rid,
-				&pol_open_alias))
+	if (!samr_open_alias(pol_open_domain, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+                             alias_rid, &pol_open_alias))
 	{
 		return False;
 	}
