@@ -22,6 +22,7 @@
 
 #include "include/includes.h"
 #include "vfs_posix.h"
+#include "system/time.h"
 
 /*
   create file handles with convenient numbers for sniffers

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
 
 
 /* basic testing of all RAW_CLOSE_* calls 

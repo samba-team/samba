@@ -28,6 +28,10 @@
 #include <sys/shm.h>
 #endif /* HAVE_SYS_SHM_H */
 
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
 /* NetBSD doesn't have these */
 #ifndef SHM_R
 #define SHM_R 0400
@@ -36,4 +40,5 @@
 #ifndef SHM_W
 #define SHM_W 0200
 #endif
+
 

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/network.h"
+#include "system/time.h"
 
 /* A netbios node status array element. */
 struct node_status {

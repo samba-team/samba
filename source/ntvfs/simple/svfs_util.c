@@ -25,6 +25,8 @@
 
 #include "includes.h"
 #include "svfs.h"
+#include "system/time.h"
+#include "system/dir.h"
 
 /*
   convert a windows path to a unix path - don't do any manging or case sensitive handling

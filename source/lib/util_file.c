@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "system/shmem.h"
 
 /*************************************************************************
  gets a line out of a file.

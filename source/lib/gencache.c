@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
 
 #define ATTR_BLOB_CONST(val) data_blob_talloc(mem_ctx, val, sizeof(val)-1)
 #define ATTR_SINGLE_NOVAL(ctx, attr, blob, num, nam) do { \

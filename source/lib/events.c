@@ -65,6 +65,8 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
+#include "system/select.h"
 
 /*
   create a event_context structure. This must be the first events

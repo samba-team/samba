@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
+#include "system/dir.h"
 
 struct pvfs_dir {
 	struct pvfs_state *pvfs;

@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/wait.h"
+#include "system/time.h"
 
  void replace_dummy(void);
  void replace_dummy(void) {}

@@ -24,6 +24,8 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "libcli/raw/libcliraw.h"
+#include "system/time.h"
+#include "system/dir.h"
 
 #ifndef REGISTER
 #define REGISTER 0

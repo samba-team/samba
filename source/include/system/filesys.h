@@ -1,6 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
 
+   filesystem system include wrappers
+
    Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
@@ -18,37 +20,35 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/*
-  this file contains pre-declarations of private structures to avoid the
-  "scope is only this definition or declaration" warning
-*/
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
 
-union spoolss_PrinterInfo;
-union spoolss_FormInfo;
-union spoolss_JobInfo;
-union spoolss_DriverInfo;
-union spoolss_PortInfo;
+#ifdef HAVE_SYS_VFS_H
+#include <sys/vfs.h>
+#endif
 
-struct MULTI_QI;
-struct COSERVERINFO;
+#ifdef HAVE_SYS_ACL_H
+#include <sys/acl.h>
+#endif
 
+#ifdef HAVE_SYS_FS_S5PARAM_H 
+#include <sys/fs/s5param.h>
+#endif
 
-struct epm_floor;
-struct epm_tower;
+#if defined (HAVE_SYS_FILSYS_H) && !defined (_CRAY)
+#include <sys/filsys.h> 
+#endif
 
-struct drsuapi_DsCrackNames;
+#ifdef HAVE_SYS_STATFS_H
+# include <sys/statfs.h>
+#endif
 
-struct samr_ChangePasswordUser;
-struct samr_OemChangePasswordUser2;
-struct samr_ChangePasswordUser3;
-struct samr_ChangePasswordUser2;
-struct samr_CryptPassword;
-struct samr_CryptPasswordEx;
+#ifdef HAVE_DUSTAT_H              
+#include <sys/dustat.h>
+#endif
 
-struct netr_SamInfo3;
-struct netr_Authenticator;
+#ifdef HAVE_SYS_STATVFS_H          
+#include <sys/statvfs.h>
+#endif
 
-struct iface_struct;
-
-struct tm;
-struct utimbuf;

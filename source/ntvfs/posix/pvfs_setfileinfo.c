@@ -22,6 +22,7 @@
 
 #include "include/includes.h"
 #include "vfs_posix.h"
+#include "system/time.h"
 
 /*
   set info on a open file

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1

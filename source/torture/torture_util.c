@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/shmem.h"
+#include "system/time.h"
 
 
 static struct timeval tp1,tp2;

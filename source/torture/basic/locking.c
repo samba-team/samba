@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "system/time.h"
 
 /*
   This test checks for two things:

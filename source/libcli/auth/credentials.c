@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "system/time.h"
 
 /*
   initialise the credentials state for old-style 64 bit session keys
