@@ -192,45 +192,27 @@ vsnprintf (char *str, size_t sz, const char *format, va_list args)
 #endif
 
 static int
-sn_append_char (struct state *state, char c)
-{
-  if(state->s < state->theend) {
-    *state->s++ = c;
-    return 0;
-  } else {
-    *state->s++ = '\0';
-    return 1;
-  }
-}
-
-static int
 sn_reserve (struct state *state, size_t n)
 {
-  return state->s + n >= state->theend;
+  return state->s + n > state->theend;
 }
 
 static int
-as_append_char (struct state *state, char c)
+sn_append_char (struct state *state, char c)
 {
-  if (state->s >= state->theend) {
-    int off = state->s - state->str;
-
-    state->sz *= 2;
-    state->str = realloc (state->str, state->sz);
-    if (state->str == NULL) {
-      return 1;
-    }
-    state->s = state->str + off;
-    state->theend = state->str + state->sz - 1;
+  if (sn_reserve (state, 1)) {
+    *state->s++ = '\0';
+    return 1;
+  } else {
+    *state->s++ = c;
+    return 0;
   }
-  *state->s++ = c;
-  return 0;
 }
 
 static int
 as_reserve (struct state *state, size_t n)
 {
-  while (state->s + n >= state->theend) {
+  while (state->s + n > state->theend) {
     int off = state->s - state->str;
 
     state->sz *= 2;
@@ -243,19 +225,16 @@ as_reserve (struct state *state, size_t n)
   return 0;
 }
 
-#if 0 /* old code */
 static int
-append_char (char **s, char *theend, char c)
+as_append_char (struct state *state, char c)
 {
-  if (*s < theend) {
-    *(*s)++ = c;
-    return 0;
-  } else {
-    *(*s)++ = '\0';
+  if(as_reserve (state, 1))
     return 1;
+  else {
+    *state->s++ = c;
+    return 0;
   }
 }
-#endif
 
 static int
 append_number (struct state *state,
@@ -291,38 +270,15 @@ append_number (struct state *state,
     state->s[-len+i] = c;
   }
 
-
-
-#if 0 /* old */
-  for (i = 0; i < len / 2; ++i) {
-    char c;
-
-    c = beg[i];
-    beg[i] = beg[len-i-1];
-    beg[len-i-1] = c;
-  }
-#endif
-
   if (width > len) {
     if ((*state->reserve) (state, width - len))
       return 1;
 
-#if 0
-    if (*s + width - len >= theend) {
-      *(*s)++ = '\0';
-      return 1;
-    }
-#endif
     memmove (state->s + width - 2 * len, state->s - len, len);
     for (i = 0; i < width - len; ++i)
       state->s[-len+i] = (zerop ? '0' : ' ');
     state->s += width - len;
 
-#if 0
-    memmove (beg + width - len, beg, len);
-    for (i = 0; i < width - len; ++i)
-      beg[i] = (zerop ? '0' : ' ');
-#endif
   }
   return 0;
 }
