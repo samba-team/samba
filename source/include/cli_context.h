@@ -180,7 +180,7 @@ struct cli_session {
 	uint16 vuid;
 
 	/* default pid for this session */
-	uint16 pid;
+	uint32 pid;
 };
 
 /* 

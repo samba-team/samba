@@ -176,7 +176,8 @@ struct cli_request *cli_request_setup_session(struct cli_session *session,
 	}
 
 	SSVAL(req->out.hdr, HDR_FLG2, flags2);
-	SSVAL(req->out.hdr, HDR_PID, session->pid);
+	SSVAL(req->out.hdr, HDR_PID, session->pid & 0xFFFF);
+	SSVAL(req->out.hdr, HDR_PIDHIGH, session->pid >> 16);
 	SSVAL(req->out.hdr, HDR_UID, session->vuid);
 	
 	return req;
