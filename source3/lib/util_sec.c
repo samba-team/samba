@@ -414,7 +414,7 @@ main()
 #endif
 
 /****************************************************************************
-Check if we are setuid root.  Used in libsmb and smbpasswd parinoia checks.
+Check if we are setuid root.  Used in libsmb and smbpasswd paranoia checks.
 ****************************************************************************/
 BOOL is_setuid_root(void) 
 {
