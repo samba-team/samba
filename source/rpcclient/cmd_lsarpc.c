@@ -170,7 +170,7 @@ void cmd_lsa_lookup_names(struct client_info *info)
 	res = res ? lsa_lookup_names(smb_cli, nt_pipe_fnum, 
 	                               &info->dom.lsa_info_pol,
 	                               num_names, names,
-	                               &sids, &num_sids) : False;
+	                               &sids, NULL, &num_sids) : False;
 
 	res = res ? lsa_close(smb_cli, nt_pipe_fnum, &info->dom.lsa_info_pol) : False;
 
@@ -278,7 +278,7 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 	res = res ? lsa_lookup_sids(smb_cli, nt_pipe_fnum, 
 	                               &info->dom.lsa_info_pol,
 	                               num_sids, sids,
-	                               &names, &num_names) : False;
+	                               &names, NULL, &num_names) : False;
 
 	res = res ? lsa_close(smb_cli, nt_pipe_fnum, &info->dom.lsa_info_pol) : False;
 

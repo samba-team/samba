@@ -224,7 +224,7 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 		{
 			sid_name_use = SID_NAME_DOMAIN;
 			dom_idx = make_dom_ref(ref, dom_name, &find_sid);
-	}
+		}
 
 		if (lookup_name(find_name, &sid, &sid_name_use) == 0x0 &&
 		    sid_split_rid(&sid, &rid))

@@ -432,7 +432,7 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	res4 = res3 ? lsa_lookup_names(smb_cli, fnum_lsa, 
 				       &info->dom.lsa_info_pol,
 				       num_names, names, 
-				       &sids, &num_sids) : False;
+				       &sids, NULL, &num_sids) : False;
 
 	res3 = res3 ? lsa_close(smb_cli, fnum_lsa, &info->dom.lsa_info_pol) : False;
 
@@ -1565,7 +1565,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 				res4 = res3 ? lsa_lookup_sids(smb_cli, fnum_lsa, 
 							       &info->dom.lsa_info_pol,
 				                               num_aliases, sids, 
-				                               &names, &num_names) : False;
+				                               &names, NULL, &num_names) : False;
 
 				res3 = res3 ? lsa_close(smb_cli, fnum_lsa, &info->dom.lsa_info_pol) : False;
 

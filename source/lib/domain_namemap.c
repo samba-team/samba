@@ -926,9 +926,16 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP *gmep)
 		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 		{
 #if 0
-			do_lsa_lookup_names(global_myworkgroup, gmep->nt_name, &gmep->sid...);
+			lsa_lookup_names(global_myworkgroup, gmep->nt_name, &gmep->sid...);
 #endif
 		}
+
+		/*
+		 * ok, it's one of ours.  we therefore "create" an nt user named
+		 * after the unix user.  this is the point where "appliance mode"
+		 * should get its teeth in, as unix users won't really exist,
+		 * they will only be numbers...
+		 */
 
 		gmep->type = SID_NAME_USER;
 		fstrcpy(gmep->nt_name, uidtoname(uid));
@@ -976,9 +983,16 @@ BOOL lookupsmbpwntnam(char *fullntname, DOM_NAME_MAP *gmep)
 		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 		{
 #if 0
-			do_lsa_lookup_names(global_myworkgroup, gmep->nt_name, gmep->nt_domain, &gmep->sid...);
+			lsa_lookup_names(global_myworkgroup, gmep->nt_name, gmep->nt_domain, &gmep->sid...);
 #endif
 		}
+
+		/*
+		 * ok, it's one of ours.  we therefore "create" an nt user named
+		 * after the unix user.  this is the point where "appliance mode"
+		 * should get its teeth in, as unix users won't really exist,
+		 * they will only be numbers...
+		 */
 
 		gmep->type = SID_NAME_USER;
 		fstrcpy(gmep->unix_name, gmep->nt_name);
@@ -1028,9 +1042,16 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 		{
 #if 0
-			do_lsa_lookup_sids(global_myworkgroup, gmep->sid, gmep->nt_name, gmep->nt_domain...);
+			lsa_lookup_sids(global_myworkgroup, gmep->sid, gmep->nt_name, gmep->nt_domain...);
 #endif
 		}
+
+		/*
+		 * ok, it's one of ours.  we therefore "create" an nt user named
+		 * after the unix user.  this is the point where "appliance mode"
+		 * should get its teeth in, as unix users won't really exist,
+		 * they will only be numbers...
+		 */
 
 		gmep->type = SID_NAME_USER;
 		sid_copy(&gmep->sid, sid);
@@ -1099,9 +1120,16 @@ BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP *gmep)
 		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 		{
 #if 0
-			do_lsa_lookup_sids(global_myworkgroup, gmep->sid, gmep->nt_name, gmep->nt_domain...);
+			lsa_lookup_sids(global_myworkgroup, gmep->sid, gmep->nt_name, gmep->nt_domain...);
 #endif
 		}
+
+		/*
+		 * ok, it's one of ours.  we therefore "create" an nt group or
+		 * alias name named after the unix group.  this is the point
+		 * where "appliance mode" should get its teeth in, as unix
+		 * groups won't really exist, they will only be numbers...
+		 */
 
 		/* name is not explicitly mapped
 		 * with map files or the PDC
@@ -1165,12 +1193,19 @@ BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP *gmep)
 		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 		{
 #if 0
-			do_lsa_lookup_names(global_myworkgroup, gmep->nt_name, &gmep->sid...);
+			if (lsa_lookup_names(global_myworkgroup, gmep->nt_name, &gmep->sid...);
 			{
 				return True;
 			}
 #endif
 		}
+
+		/*
+		 * ok, it's one of ours.  we therefore "create" an nt group or
+		 * alias name named after the unix group.  this is the point
+		 * where "appliance mode" should get its teeth in, as unix
+		 * groups won't really exist, they will only be numbers...
+		 */
 
 		/* name is not explicitly mapped
 		 * with map files or the PDC
