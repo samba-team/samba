@@ -77,6 +77,30 @@ static BOOL api_svcctl_open_scmanager(pipes_struct *p)
 /*******************************************************************
  ********************************************************************/
 
+static BOOL api_svcctl_open_service(pipes_struct *p)
+{
+	SVCCTL_Q_OPEN_SERVICE q_u;
+	SVCCTL_R_OPEN_SERVICE r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!svcctl_io_q_open_service("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _svcctl_open_service(p, &q_u, &r_u);
+
+	if(!svcctl_io_r_open_service("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
 static BOOL api_svcctl_get_display_name(pipes_struct *p)
 {
 	SVCCTL_Q_GET_DISPLAY_NAME q_u;
@@ -107,6 +131,7 @@ static struct api_struct api_svcctl_cmds[] =
 {
       { "SVCCTL_CLOSE_SERVICE"      , SVCCTL_CLOSE_SERVICE       , api_svcctl_close_service },
       { "SVCCTL_OPEN_SCMANAGER"     , SVCCTL_OPEN_SCMANAGER      , api_svcctl_open_scmanager },
+      { "SVCCTL_OPEN_SERVICE"       , SVCCTL_OPEN_SERVICE        , api_svcctl_open_service },
       { "SVCCTL_GET_DISPLAY_NAME"   , SVCCTL_GET_DISPLAY_NAME    , api_svcctl_get_display_name }
 };
 

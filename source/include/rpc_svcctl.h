@@ -27,6 +27,7 @@
 
 #define SVCCTL_CLOSE_SERVICE		0x00
 #define SVCCTL_OPEN_SCMANAGER		0x0f
+#define SVCCTL_OPEN_SERVICE		0x10
 #define SVCCTL_START_SERVICE		0x13
 #define SVCCTL_GET_DISPLAY_NAME		0x14
 
@@ -65,6 +66,17 @@ typedef struct _svcctl_r_get_display_name {
 	uint32 display_name_len;
 	NTSTATUS status;
 } SVCCTL_R_GET_DISPLAY_NAME;
+
+typedef struct _svcctl_q_open_service {
+	POLICY_HND handle;
+	UNISTR2 servicename;
+	uint32 access_mask;
+} SVCCTL_Q_OPEN_SERVICE;
+
+typedef struct _svcctl_r_open_service {
+	POLICY_HND handle;
+	NTSTATUS status;
+} SVCCTL_R_OPEN_SERVICE;
 
 
 #endif /* _RPC_SVCCTL_H */

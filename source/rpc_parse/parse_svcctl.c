@@ -157,6 +157,17 @@ BOOL svcctl_io_q_get_display_name(const char *desc, SVCCTL_Q_GET_DISPLAY_NAME *q
 /*******************************************************************
 ********************************************************************/
 
+BOOL init_svcctl_r_get_display_name( SVCCTL_R_GET_DISPLAY_NAME *r_u, const char *displayname )
+{
+	r_u->display_name_len = strlen(displayname);
+	init_unistr2( &r_u->displayname, displayname, UNI_STR_TERMINATE );
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
 BOOL svcctl_io_r_get_display_name(const char *desc, SVCCTL_R_GET_DISPLAY_NAME *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
@@ -176,6 +187,60 @@ BOOL svcctl_io_r_get_display_name(const char *desc, SVCCTL_R_GET_DISPLAY_NAME *r
 		return False;
 
 	if(!prs_uint32("display_name_len", ps, depth, &r_u->display_name_len))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_q_open_service(const char *desc, SVCCTL_Q_OPEN_SERVICE *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_q_open_service");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("scm_pol", &q_u->handle, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("", &q_u->servicename, 1, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
+		return False;
+	
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/
+
+BOOL svcctl_io_r_open_service(const char *desc, SVCCTL_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_open_service");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	
+	if(!smb_io_pol_hnd("service_pol", &r_u->handle, ps, depth))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
