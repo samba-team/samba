@@ -4,8 +4,8 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000,
- *  Copyright (C) Jeremy Allison		    2001,
- *  Copyright (C) Gerald Carter		       2000-2001,
+ *  Copyright (C) Jeremy Allison               2001-2002,
+ *  Copyright (C) Gerald Carter		       2000-2003,
  *  Copyright (C) Tim Potter                   2001-2002.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -499,13 +499,19 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 
 	ZERO_STRUCTP(new_printer);
 	
-	new_printer->notify.option=NULL;
+	if (!create_policy_hnd(p, hnd, free_printer_entry, new_printer)) {
+		SAFE_FREE(new_printer);
+		return False;
+	}
 				
 	/* Add to the internal list. */
 	DLIST_ADD(printers_list, new_printer);
 
-	if (!create_policy_hnd(p, hnd, free_printer_entry, new_printer)) {
-		SAFE_FREE(new_printer);
+	new_printer->notify.option=NULL;
+	
+	if ( !(new_printer->ctx = talloc_init_named("Printer Entry [0x%x]", (uint32)hnd)) ) {
+		DEBUG(0,("open_printer_hnd: talloc_init() failed!\n"));
+		close_printer_handle(p, hnd);
 		return False;
 	}
 
