@@ -38,7 +38,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       40
+    EUROPE                                       41
     MIDDLE EAST                                   1
 
 AFRICA
@@ -1769,6 +1769,33 @@ Contact: Dario Centofanti <dario@pantheon.it>
 
 Pantheon provide support for SaMBa and other TCP/IP applications running
 under Linux. We are also an internet provider.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ITALY
+
+Sedac S.a.S.
+
+Piazza XX Settembre, 68
+62012 Civitanova Marche (MC)
+Italy
+
+Tel.   : +39 (733) 810257-817064
+Fax    : +39 (733) 819008
+PPP    : +39 (733) 819009
+E-mail : sedac@cognigni.com
+WWW    : http://www.cognigni.com/sedac
+
+La Sedac S.a.S. e' specializzata nell'implementazione ed amministrazione di
+reti eterogenee LAN/WAN basate sui sistemi operativi SCO Open Server, SCO
+Unix, Windows NT e Windows 95.
+Su tali piattaforme installiamo, configuriamo e supportiamo pienamente il
+Samba.
+
+Sedac S.a.S. is specialized in the implementation and administration of
+heterogeneous LAN/WAN networks based on SCO Open Server, SCO Unix, Windows
+NT and Windows 95 operating systems.
+On these platforms we fully install, configure and support Samba.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
