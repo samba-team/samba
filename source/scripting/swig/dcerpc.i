@@ -169,10 +169,49 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 
 const char *dcerpc_server_name(struct dcerpc_pipe *p);
 
+/* Some typemaps for easier access to resume handles.  Really this can
+   also be done using the uint32 carray functions, but it's a bit of a
+   hassle.  TODO: Fix memory leak here. */
+
+%typemap(in) uint32_t *resume_handle {
+	$1 = malloc(sizeof(*$1));
+	*$1 = PyLong_AsLong($input);
+}
+
+%typemap(out) uint32_t *resume_handle {
+	$result = PyLong_FromLong(*$1);
+}
+
+/* When returning a policy handle to Python we need to make a copy of
+   as the talloc context it is created under is destroyed after the
+   wrapper function returns.  TODO: Fix memory leak created here. */
+
+%typemap(out) struct policy_handle * {
+	struct policy_handle *temp = (struct policy_handle *)malloc(sizeof(struct policy_handle));
+	memcpy(temp, $1, sizeof(struct policy_handle));
+	$result = SWIG_NewPointerObj(temp, SWIGTYPE_p_policy_handle, 0);
+}
+
 %{
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 %}
 
+%include "carrays.i"
+
+/* Some functions for accessing arrays of fixed-width integers. */
+
+%array_functions(uint8_t, uint8_array);
+%array_functions(uint16_t, uint16_array);
+%array_functions(uint32_t, uint32_array);
+
+/* Functions for handling arrays of structures.  It would be nice for 
+   pidl to automatically generating these instead of having to find
+   them all by hand. */
+
+%array_functions(struct samr_SamEntry, samr_SamEntry_array);
+
 %include "librpc/gen_ndr/misc.i"
+%include "librpc/gen_ndr/security.i"
 %include "librpc/gen_ndr/samr.i"
