@@ -1393,6 +1393,7 @@ rmut(void)
     if (utxp) {
 	strcpy(utxp->ut_user, "");
 	utxp->ut_type = DEAD_PROCESS;
+#ifdef HAVE_UT_EXIT
 #ifdef _STRUCT___EXIT_STATUS
 	utxp->ut_exit.__e_termination = 0;
 	utxp->ut_exit.__e_exit = 0;
@@ -1402,6 +1403,7 @@ rmut(void)
 #else	
 	utxp->ut_exit.e_termination = 0;
 	utxp->ut_exit.e_exit = 0;
+#endif
 #endif
 	gettimeofday(&utxp->ut_tv, NULL);
 	pututxline(utxp);
