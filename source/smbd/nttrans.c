@@ -48,6 +48,15 @@ static char *known_nt_pipes[] = {
   NULL
 };
 
+/* Map generic permissions to file object specific permissions */
+
+struct generic_mapping file_generic_mapping = {
+	FILE_GENERIC_READ,
+	FILE_GENERIC_WRITE,
+	FILE_GENERIC_EXECUTE,
+	FILE_GENERIC_ALL
+};
+
 /****************************************************************************
  Send the required number of replies back.
  We assume all fields other than the data fields are
@@ -88,7 +97,8 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
    */
 
   if(params_to_send == 0 && data_to_send == 0) {
-    send_smb(smbd_server_fd(),outbuf);
+    if (!send_smb(smbd_server_fd(),outbuf))
+      exit_server("send_nt_replies: send_smb failed.");
     return 0;
   }
 
@@ -217,7 +227,8 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
           params_to_send, data_to_send, paramsize, datasize));
     
     /* Send the packet */
-    send_smb(smbd_server_fd(),outbuf);
+    if (!send_smb(smbd_server_fd(),outbuf))
+      exit_server("send_nt_replies: send_smb failed.");
     
     pp += params_sent_thistime;
     pd += data_sent_thistime;
@@ -246,29 +257,29 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
 
 static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
-  /*
-   * We need various heuristics here to detect a unicode string... JRA.
-   */
+	/*
+	 * We need various heuristics here to detect a unicode string... JRA.
+	 */
 
-  DEBUG(10,("get_filename: data_offset = %d, data_len = %d, fname_len = %d\n",
-           data_offset, data_len, fname_len ));
+	DEBUG(10,("get_filename: data_offset = %d, data_len = %d, fname_len = %d\n",
+			data_offset, data_len, fname_len ));
 
-  if(data_len - fname_len > 1) {
-    /*
-     * NT 5.0 Beta 2 has kindly sent us a UNICODE string
-     * without bothering to set the unicode bit. How kind.
-     *
-     * Firstly - ensure that the data offset is aligned
-     * on a 2 byte boundary - add one if not.
-     */
-    fname_len = fname_len/2;
-    if(data_offset & 1)
-      data_offset++;
-    pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
-  } else {
-    StrnCpy(fname,inbuf+data_offset,fname_len);
-    fname[fname_len] = '\0';
-  }
+	if(data_len - fname_len > 1) {
+		/*
+		 * NT 5.0 Beta 2 has kindly sent us a UNICODE string
+		 * without bothering to set the unicode bit. How kind.
+		 *
+		 * Firstly - ensure that the data offset is aligned
+		 * on a 2 byte boundary - add one if not.
+		 */
+		fname_len = fname_len/2;
+		if(data_offset & 1)
+			data_offset++;
+		pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
+	} else {
+		StrnCpy(fname,inbuf+data_offset,fname_len);
+		fname[fname_len] = '\0';
+	}
 }
 
 /****************************************************************************
@@ -278,32 +289,38 @@ static void get_filename( char *fname, char *inbuf, int data_offset, int data_le
 
 static void get_filename_transact( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
-  /*
-   * We need various heuristics here to detect a unicode string... JRA.
-   */
+	DEBUG(10,("get_filename_transact: data_offset = %d, data_len = %d, fname_len = %d\n",
+			data_offset, data_len, fname_len ));
 
-  DEBUG(10,("get_filename_transact: data_offset = %d, data_len = %d, fname_len = %d\n",
-           data_offset, data_len, fname_len ));
+	/*
+	 * Win2K sends a unicode filename plus one extra alingment byte.
+	 * WinNT4.x send an ascii string with multiple garbage bytes on
+	 * the end here.
+	 */
 
-  /*
-   * Win2K sends a unicode filename plus one extra alingment byte.
-   * WinNT4.x send an ascii string with multiple garbage bytes on
-   * the end here.
-   */
+	/*
+	 * We need various heuristics here to detect a unicode string... JRA.
+	 */
 
-  if((data_len - fname_len == 1) || (inbuf[data_offset] == '\0')) {
-    /*
-     * Ensure that the data offset is aligned
-     * on a 2 byte boundary - add one if not.
-     */
-    fname_len = fname_len/2;
-    if(data_offset & 1)
-      data_offset++;
-    pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
-  } else {
-    StrnCpy(fname,inbuf+data_offset,fname_len);
-    fname[fname_len] = '\0';
-  }
+	if( ((fname_len % 2) == 0) &&
+		(
+			(data_len == 1) ||
+			(inbuf[data_offset] == '\0') ||
+			((fname_len > 1) && (inbuf[data_offset+1] == '\\') && (inbuf[data_offset+2] == '\0'))
+		)) {
+
+		/*
+		 * Ensure that the data offset is aligned
+		 * on a 2 byte boundary - add one if not.
+		 */
+		fname_len = fname_len/2;
+		if(data_offset & 1)
+			data_offset++;
+		pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
+	} else {
+		StrnCpy(fname,inbuf+data_offset,fname_len);
+		fname[fname_len] = '\0';
+	}
 }
 
 /****************************************************************************
@@ -393,12 +410,18 @@ static int map_create_disposition( uint32 create_disposition)
  Utility function to map share modes.
 ****************************************************************************/
 
-static int map_share_mode( BOOL *pstat_open_only, char *fname,
+static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_options,
 							uint32 desired_access, uint32 share_access, uint32 file_attributes)
 {
   int smb_open_mode = -1;
 
   *pstat_open_only = False;
+
+  /*
+   * Convert GENERIC bits to specific bits.
+   */
+
+  se_map_generic(&desired_access, &file_generic_mapping);
 
   switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
   case FILE_READ_DATA:
@@ -451,7 +474,7 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname,
 		smb_open_mode = DOS_OPEN_RDONLY;
 
 	} else {
-      DEBUG(0,("map_share_mode: Incorrect value %lx for desired_access to file %s\n",
+      DEBUG(0,("map_share_mode: Incorrect value 0x%lx for desired_access to file %s\n",
              (unsigned long)desired_access, fname));
       return -1;
     }
@@ -463,8 +486,29 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname,
    * JRA.
    */
 
-  if(share_access & FILE_SHARE_DELETE)
+  if(share_access & FILE_SHARE_DELETE) {
     smb_open_mode |= ALLOW_SHARE_DELETE;
+    DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = 0x%x\n", smb_open_mode));
+  }
+
+  /*
+   * We need to store the intent to open for Delete. This
+   * is what determines if a delete on close flag can be set.
+   * This is the wrong way (and place) to store this, but for 2.2 this
+   * is the only practical way. JRA.
+   */
+
+  if(desired_access & DELETE_ACCESS) {
+    smb_open_mode |= DELETE_ACCESS_REQUESTED;
+    DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
+  }
+
+  if (create_options & FILE_DELETE_ON_CLOSE) {
+    /* Implicit delete access requested... */
+    smb_open_mode |= DELETE_ACCESS_REQUESTED;
+	smb_open_mode |= DELETE_ON_CLOSE_FLAG;
+    DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = 0x%x\n", smb_open_mode));
+  }
 
   /* Add in the requested share mode. */
   switch( share_access & (FILE_SHARE_READ|FILE_SHARE_WRITE)) {
@@ -489,8 +533,8 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname,
   if(file_attributes & FILE_FLAG_WRITE_THROUGH)
     smb_open_mode |= FILE_SYNC_OPENMODE;
 
-  DEBUG(10,("map_share_mode: Mapped desired access %lx, share access %lx, file attributes %lx \
-to open_mode %x\n", (unsigned long)desired_access, (unsigned long)share_access,
+  DEBUG(10,("map_share_mode: Mapped desired access 0x%lx, share access 0x%lx, file attributes 0x%lx \
+to open_mode 0x%x\n", (unsigned long)desired_access, (unsigned long)share_access,
                     (unsigned long)file_attributes, smb_open_mode ));
  
   return smb_open_mode;
@@ -775,7 +819,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 */
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	if((smb_open_mode = map_share_mode(&stat_open_only, fname, desired_access, 
+	if((smb_open_mode = map_share_mode(&stat_open_only, fname, create_options, desired_access, 
 					   share_access, 
 					   file_attributes)) == -1) {
 		END_PROFILE(SMBntcreateX);
@@ -806,7 +850,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
-		fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
+		fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
 			
 		restore_case_semantics(file_attributes);
 
@@ -873,7 +917,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
+				fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
@@ -1202,7 +1246,7 @@ static int call_nt_transact_create(connection_struct *conn,
    * and the share access.
    */
 
-  if((smb_open_mode = map_share_mode( &stat_open_only, fname, desired_access,
+  if((smb_open_mode = map_share_mode( &stat_open_only, fname, create_options, desired_access,
                                       share_access, file_attributes)) == -1)
     return(ERROR(ERRDOS,ERRbadaccess));
 
@@ -1235,7 +1279,7 @@ static int call_nt_transact_create(connection_struct *conn,
      * CreateDirectory() call.
      */
 
-    fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
+    fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
 
     if(!fsp) {
       restore_case_semantics(file_attributes);
@@ -1270,7 +1314,7 @@ static int call_nt_transact_create(connection_struct *conn,
 			}
 	
 			oplock_request = 0;
-			fsp = open_directory(conn, fname, &sbuf, smb_ofun, unixmode, &smb_action);
+			fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
 				
 			if(!fsp) {
 				restore_case_semantics(file_attributes);

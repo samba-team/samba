@@ -972,7 +972,7 @@ BOOL lock_share_entry_fsp(files_struct *fsp);
 void unlock_share_entry_fsp(files_struct *fsp);
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
-		    share_mode_entry **shares);
+		    share_mode_entry **pp_shares);
 BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2);
 ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 			share_mode_entry *entry, share_mode_entry **ppse);
@@ -3745,7 +3745,7 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf);
 int close_file_fchmod(files_struct *fsp);
 files_struct *open_directory(connection_struct *conn, char *fname,
-							SMB_STRUCT_STAT *psbuf, int smb_ofun, mode_t unixmode, int *action);
+		SMB_STRUCT_STAT *psbuf, int share_mode, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 #endif
 
@@ -3968,6 +3968,7 @@ BOOL reset_stat_cache( void );
 /*The following definitions come from  smbd/trans2.c  */
 
 #if OLD_NTDOMAIN
+BOOL set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close);
 int reply_findclose(connection_struct *conn,
 		    char *inbuf,char *outbuf,int length,int bufsize);
 int reply_findnclose(connection_struct *conn, 

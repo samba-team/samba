@@ -1572,6 +1572,99 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 }
 
 /****************************************************************************
+ Deal with the internal needs of setting the delete on close flag. Note that
+ as the tdb locking is recursive, it is safe to call this from within 
+ open_file_shared. JRA.
+****************************************************************************/
+
+BOOL set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
+{
+	/*
+	 * Only allow delete on close for writable shares.
+	 */
+
+	if (delete_on_close && !CAN_WRITE(fsp->conn)) {
+		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but write access denied on share.\n",
+				fsp->fsp_name ));
+		return False;
+	}
+	/*
+	 * Only allow delete on close for files/directories opened with delete intent.
+	 */
+
+	if (delete_on_close && !GET_DELETE_ACCESS_REQUESTED(fsp->share_mode)) {
+		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
+				fsp->fsp_name ));
+		return False;
+	}
+
+	if(fsp->is_directory) {
+		fsp->directory_delete_on_close = delete_on_close;
+		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, directory %s\n",
+			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
+	} else if(fsp->stat_open) {
+
+		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, stat open %s\n",
+			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
+
+	} else {
+
+		files_struct *iterate_fsp;
+
+		/*
+		 * Modify the share mode entry for all files open
+		 * on this device and inode to tell other smbds we have 
+		 * changed the delete on close flag. This will be noticed
+		 * in the close code, the last closer will delete the file
+		 * if flag is set.
+		 */
+
+		DEBUG(10,("set_delete_on_close_internal: %s delete on close flag for fnum = %d, file %s\n",
+					delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
+
+		if (lock_share_entry_fsp(fsp) == False)
+			return False;
+
+		if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
+			DEBUG(0,("set_delete_on_close_internal: failed to change delete on close flag for file %s\n",
+					fsp->fsp_name ));
+			unlock_share_entry_fsp(fsp);
+			return False;
+		}
+
+		/*
+		 * Release the lock.
+		 */
+
+		unlock_share_entry_fsp(fsp);
+
+		/*
+		 * Go through all files we have open on the same device and
+		 * inode (hanging off the same hash bucket) and set the DELETE_ON_CLOSE_FLAG.
+		 * Other smbd's that have this file open will look in the share_mode on close.
+		 * take care of this (rare) case in close_file(). See the comment there.
+		 * NB. JRA. We don't really need to do this anymore - all should be taken
+		 * care of in the share_mode changes in the tdb.
+		 */
+
+		for(iterate_fsp = file_find_di_first(fsp->dev, fsp->inode);
+				iterate_fsp; iterate_fsp = file_find_di_next(iterate_fsp))
+						fsp->delete_on_close = delete_on_close;
+
+		/*
+		 * Set the delete on close flag in the fsp.
+		 */
+		fsp->delete_on_close = delete_on_close;
+
+		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, file %s\n",
+			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
+
+	}
+
+	return True;
+}
+
+/****************************************************************************
   reply to a TRANS2_SETFILEINFO (set file info by fileid)
 ****************************************************************************/
 static int call_trans2setfilepathinfo(connection_struct *conn,
@@ -1618,7 +1711,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
         /*
          * Doing a DELETE_ON_CLOSE should cancel a print job.
          */
-        if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
+        if (((info_level == SMB_SET_FILE_DISPOSITION_INFO)||(info_level == SMB_FILE_DISPOSITION_INFORMATION)) &&
+             CVAL(pdata,0)) {
           fsp->share_mode = FILE_DELETE_ON_CLOSE;
 
           DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n",
@@ -1803,86 +1897,16 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     {
         BOOL delete_on_close = (CVAL(pdata,0) ? True : False);
 
-		if (tran_call != TRANSACT2_SETFILEINFO)
-			return(ERROR(ERRDOS,ERRunknownlevel));
+	if (tran_call != TRANSACT2_SETFILEINFO)
+		return(ERROR(ERRDOS,ERRunknownlevel));
 
-		if (fsp == NULL)
-			return(UNIXERROR(ERRDOS,ERRbadfid));
+	if (fsp == NULL)
+		return(UNIXERROR(ERRDOS,ERRbadfid));
 
-		/*
-		 * Only allow delete on close for files/directories opened with delete intent.
-		 */
-
-		if (delete_on_close && !GET_DELETE_ACCESS_REQUESTED(fsp->share_mode)) {
-			DEBUG(10,("call_trans2setfilepathinfo: file %s delete on close flag set but delete access denied.\n",
-					fsp->fsp_name ));
-				return(ERROR(ERRDOS,ERRnoaccess));
-		}
-
-		if(fsp->is_directory) {
-          fsp->directory_delete_on_close = delete_on_close;
-          DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, directory %s\n",
-                delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-		} else if(fsp->stat_open) {
-
-          DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, stat open %s\n",
-                delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-
-		} else {
-
-			files_struct *iterate_fsp;
-
-          /*
-			 * Modify the share mode entry for all files open
-           * on this device and inode to tell other smbds we have 
-			 * changed the delete on close flag. This will be noticed
-			 * in the close code, the last closer will delete the file
-			 * if flag is set.
-           */
-
-			DEBUG(10,("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
-						delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
-
-            if (lock_share_entry_fsp(fsp) == False)
-              return(ERROR(ERRDOS,ERRnoaccess));
-
-			if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
-				DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close flag for file %s\n",
-						fsp->fsp_name ));
-                unlock_share_entry_fsp(fsp);
+        if (!set_delete_on_close_internal(fsp, delete_on_close))
                 return(ERROR(ERRDOS,ERRnoaccess));
-              }
 
-            /*
-			 * Release the lock.
-             */
-
-			unlock_share_entry_fsp(fsp);
-
-            /*
-             * Go through all files we have open on the same device and
-             * inode (hanging off the same hash bucket) and set the DELETE_ON_CLOSE_FLAG.
-			 * Other smbd's that have this file open will look in the share_mode on close.
-             * take care of this (rare) case in close_file(). See the comment there.
-			 * NB. JRA. We don't really need to do this anymore - all should be taken
-			 * care of in the share_mode changes in the tdb.
-             */
-
-			for(iterate_fsp = file_find_di_first(fsp->dev, fsp->inode);
-					iterate_fsp; iterate_fsp = file_find_di_next(iterate_fsp))
-							fsp->delete_on_close = delete_on_close;
-
-            /*
-			 * Set the delete on close flag in the fsp.
-             */
-           fsp->delete_on_close = delete_on_close;
-
-           DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
-                 delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-
-		}
-
-      break;
+        break;
     }
 
     default:

@@ -1166,7 +1166,7 @@ struct bitmap {
 #define FILE_READ_ATTRIBUTES  0x080
 #define FILE_WRITE_ATTRIBUTES 0x100
 
-#define FILE_ALL_ATTRIBUTES   0x1FF
+#define  FILE_ALL_ACCESS   0x1FF
 
 /* the desired access to use when opening a pipe */
 #define DESIRED_ACCESS_PIPE 0x2019f
@@ -1194,7 +1194,30 @@ struct bitmap {
 #define GENERIC_WRITE_ACCESS   (1<<30)
 #define GENERIC_READ_ACCESS   (((unsigned)1)<<31)
 
+/* Mapping of generic access rights for files to specific rights. */
+
+#define FILE_GENERIC_ALL (STANDARD_RIGHTS_REQUIRED_ACCESS| SYNCHRONIZE_ACCESS|FILE_ALL_ACCESS)
+
+#define FILE_GENERIC_READ (STANDARD_RIGHTS_READ_ACCESS|FILE_READ_DATA|FILE_READ_ATTRIBUTES|\
+                                                        FILE_READ_EA|SYNCHRONIZE_ACCESS)
+
+#define FILE_GENERIC_WRITE (STANDARD_RIGHTS_WRITE_ACCESS|FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|\
+                                                        FILE_WRITE_EA|FILE_APPEND_DATA|SYNCHRONIZE_ACCESS)
+
+#define FILE_GENERIC_EXECUTE (STANDARD_RIGHTS_EXECUTE_ACCESS|FILE_READ_ATTRIBUTES|\
+                                                                FILE_EXECUTE|SYNCHRONIZE_ACCESS)
+
 /* Mapping of access rights to UNIX perms. */
+#define UNIX_ACCESS_RWX         FILE_GENERIC_ALL
+#define UNIX_ACCESS_R           FILE_GENERIC_READ
+#define UNIX_ACCESS_W           FILE_GENERIC_WRITE
+#define UNIX_ACCESS_X           FILE_GENERIC_EXECUTE
+
+#if 0
+/*
+ * This is the old mapping we used to use. To get W2KSP2 profiles
+ * working we need to map to the canonical file perms.
+ */
 #define UNIX_ACCESS_RWX (UNIX_ACCESS_R|UNIX_ACCESS_W|UNIX_ACCESS_X)
 #define UNIX_ACCESS_R (READ_CONTROL_ACCESS|SYNCHRONIZE_ACCESS|\
 			FILE_READ_ATTRIBUTES|FILE_READ_EA|FILE_READ_DATA)
@@ -1203,6 +1226,7 @@ struct bitmap {
 			FILE_APPEND_DATA|FILE_WRITE_DATA)
 #define UNIX_ACCESS_X (READ_CONTROL_ACCESS|SYNCHRONIZE_ACCESS|\
 			FILE_EXECUTE|FILE_READ_ATTRIBUTES)
+#endif
 
 #define UNIX_ACCESS_NONE (WRITE_OWNER_ACCESS)
 

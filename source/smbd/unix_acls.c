@@ -266,7 +266,7 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
      */
 
     psa->info.mask &= (GENERIC_ALL_ACCESS|GENERIC_EXECUTE_ACCESS|GENERIC_WRITE_ACCESS|
-                     GENERIC_READ_ACCESS|UNIX_ACCESS_NONE|FILE_ALL_ATTRIBUTES);
+                     GENERIC_READ_ACCESS|UNIX_ACCESS_NONE|FILE_ALL_ACCESS);
 
     if(psa->info.mask != UNIX_ACCESS_NONE)
       psa->info.mask &= ~UNIX_ACCESS_NONE;
