@@ -293,7 +293,9 @@ pytdbpack_calc_reqd_len(char *format_str,
 	int val_i;
 	int val_len;
 
-	val_len = PySequence_Fast_GET_SIZE(val_seq);
+	val_len = PySequence_Length(val_seq);
+	if (val_len == -1)
+		return -1;
 
 	for (p = format_str, val_i = 0; *p; p++, val_i++) {
 		char ch = *p;
@@ -307,7 +309,7 @@ pytdbpack_calc_reqd_len(char *format_str,
 		}
 
 		/* borrow a reference to the item */
-		val_obj = PySequence_Fast_GET_ITEM(val_seq, val_i);
+		val_obj = PySequence_GetItem(val_seq, val_i);
 		if (!val_obj)
 			return -1;
 
@@ -371,6 +373,7 @@ pytdbpack_calc_item_len(char ch,
 		/* nul-terminated 8-bit string */
 		if (!PyString_Check(val_obj)) {
 			pytdbpack_bad_type(ch, "String", val_obj);
+			return -1;
 		}
 		
 		if (ch == 'B') {
