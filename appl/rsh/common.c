@@ -58,6 +58,8 @@ do_read (int fd,
 	    krb5_data data;
 
 	    ret = krb5_net_read (context, &fd, &len, 4);
+	    if (ret == 0)
+		return 0;
 	    if (ret != 4)
 		return -1;
 	    len = ntohl(len);
