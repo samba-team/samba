@@ -26,7 +26,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Johan Ihrén
 @email{johani@@pdc.kth.se}
 @item Love Hörnquist-Åstrand
-@email{e96_lho@@e.kth.se}
+@email{lha@@stacken.kth.se}
 @item Magnus Ahltorp
 @email{map@@stacken.kth.se}
 @item Mark Eichin
