@@ -95,7 +95,7 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 		printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
 		ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
 				     use_bcast?True:recursion_desired,
-				     bcast_addr,&count,NULL);
+				     bcast_addr,&count);
 	} else {
 		struct in_addr *bcast;
 		for (j=iface_count() - 1;
@@ -107,7 +107,7 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 			ip_list = name_query(ServerFD,lookup,lookup_type,
 					     use_bcast,
 					     use_bcast?True:recursion_desired,
-					     *bcast,&count,NULL);
+					     *bcast,&count);
 		}
 	}
 
@@ -128,7 +128,7 @@ static BOOL query_one(char *lookup, unsigned int lookup_type)
 	*/
 	if (find_status) {
 		printf("Looking up status of %s\n",inet_ntoa(ip_list[0]));
-		name_status(ServerFD,lookup,lookup_type,True,ip_list[0],NULL,NULL,NULL);
+		name_status(ServerFD,lookup,lookup_type,True,ip_list[0],NULL,NULL);
 		printf("\n");
 	}
 
@@ -243,7 +243,7 @@ int main(int argc,char *argv[])
         fstrcpy(lookup,"*");
         ip = *interpret_addr2(argv[i]);
         printf("Looking up status of %s\n",inet_ntoa(ip));
-        name_status(ServerFD,lookup,lookup_type,True,ip,NULL,NULL,NULL);
+        name_status(ServerFD,lookup,lookup_type,True,ip,NULL,NULL);
         printf("\n");
         continue;
       }

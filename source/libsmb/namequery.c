@@ -29,6 +29,23 @@ extern int DEBUGLEVEL;
 BOOL global_in_nmbd = False;
 
 /****************************************************************************
+generate a random trn_id
+****************************************************************************/
+static int generate_trn_id(void)
+{
+	static int trn_id;
+
+	if (trn_id == 0) {
+		srandom(getpid());
+	}
+
+	trn_id = random();
+
+	return trn_id % (unsigned)0x7FFF;
+}
+
+
+/****************************************************************************
  Interpret a node status response.
 ****************************************************************************/
 
@@ -85,11 +102,10 @@ static void _interpret_node_status(char *p, char *master,char *rname)
 /****************************************************************************
  Internal function handling a netbios name status query on a host.
 **************************************************************************/
-
 static BOOL internal_name_status(int fd,char *name,int name_type,BOOL recurse,
-		 struct in_addr to_ip,char *master,char *rname, BOOL verbose,
-         void (*fn_interpret_node_status)(char *, char *,char *),
-		 void (*fn)(struct packet_struct *))
+				 struct in_addr to_ip,char *master,
+				 char *rname, BOOL verbose,
+				 void (*fn_interpret_node_status)(char *, char *,char *))
 {
   BOOL found=False;
   int retries = 2;
@@ -98,15 +114,10 @@ static BOOL internal_name_status(int fd,char *name,int name_type,BOOL recurse,
   struct packet_struct p;
   struct packet_struct *p2;
   struct nmb_packet *nmb = &p.packet.nmb;
-  static int name_trn_id = 0;
 
   memset((char *)&p,'\0',sizeof(p));
 
-  if (!name_trn_id) name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + 
-    ((unsigned)getpid()%(unsigned)100);
-  name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
-
-  nmb->header.name_trn_id = name_trn_id;
+  nmb->header.name_trn_id = generate_trn_id();
   nmb->header.opcode = 0;
   nmb->header.response = False;
   nmb->header.nm_flags.bcast = False;
@@ -139,51 +150,42 @@ static BOOL internal_name_status(int fd,char *name,int name_type,BOOL recurse,
   retries--;
 
   while (1) {
-    struct timeval tval2;
-    GetTimeOfDay(&tval2);
-    if (TvalDiff(&tval,&tval2) > retry_time) {
-      if (!retries)
-        break;
-      if (!found && !send_packet(&p))
-        return False;
-      GetTimeOfDay(&tval);
-      retries--;
-    }
-
-    if ((p2=receive_packet(fd,NMB_PACKET,90))) {     
-      struct nmb_packet *nmb2 = &p2->packet.nmb;
-      debug_nmb_packet(p2);
-
-      if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
-             !nmb2->header.response) {
-        /* its not for us - maybe deal with it later */
-        if (fn) 
-          fn(p2);
-        else
-          free_packet(p2);
-        continue;
-      }
-	  
-	  if (nmb2->header.opcode != 0 ||
-	      nmb2->header.nm_flags.bcast ||
-	      nmb2->header.rcode ||
-	      !nmb2->header.ancount ||
-	      nmb2->answers->rr_type != 0x21) {
-	    /* XXXX what do we do with this? could be a redirect, but
-	       we'll discard it for the moment */
-	    free_packet(p2);
-	    continue;
+	  struct timeval tval2;
+	  GetTimeOfDay(&tval2);
+	  if (TvalDiff(&tval,&tval2) > retry_time) {
+		  if (!retries)
+			  break;
+		  if (!found && !send_packet(&p))
+			  return False;
+		  GetTimeOfDay(&tval);
+		  retries--;
 	  }
 
-      if(fn_interpret_node_status)
-	    (*fn_interpret_node_status)(&nmb2->answers->rdata[0],master,rname);
-	  free_packet(p2);
-	  return(True);
-	}
+	  if ((p2=receive_reply_packet(fd,90,nmb->header.name_trn_id))) {     
+		  struct nmb_packet *nmb2 = &p2->packet.nmb;
+		  debug_nmb_packet(p2);
+
+		  if (nmb2->header.opcode != 0 ||
+		      nmb2->header.nm_flags.bcast ||
+		      nmb2->header.rcode ||
+		      !nmb2->header.ancount ||
+		      nmb2->answers->rr_type != 0x21) {
+			  /* XXXX what do we do with this? could be a
+			     redirect, but we'll discard it for the
+			     moment */
+			  free_packet(p2);
+			  continue;
+		  }
+
+		  if(fn_interpret_node_status)
+			  (*fn_interpret_node_status)(&nmb2->answers->rdata[0],master,rname);
+		  free_packet(p2);
+		  return(True);
+	  }
   }
 
   if(verbose)
-    DEBUG(0,("No status response (this is not unusual)\n"));
+	  DEBUG(0,("No status response (this is not unusual)\n"));
 
   return(False);
 }
@@ -192,14 +194,12 @@ static BOOL internal_name_status(int fd,char *name,int name_type,BOOL recurse,
  Do a netbios name status query on a host.
  The "master" parameter is a hack used for finding workgroups.
 **************************************************************************/
-
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
-		 struct in_addr to_ip,char *master,char *rname,
-		 void (*fn)(struct packet_struct *))
+		 struct in_addr to_ip,char *master,char *rname)
 {
-  return internal_name_status(fd,name,name_type,recurse,
-		 to_ip,master,rname,True,
-         _interpret_node_status, fn);
+	return internal_name_status(fd,name,name_type,recurse,
+				    to_ip,master,rname,True,
+				    _interpret_node_status);
 }
 
 /****************************************************************************
@@ -208,8 +208,9 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
  *count will be set to the number of addresses returned.
 ****************************************************************************/
 
-struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOOL recurse,
-         struct in_addr to_ip, int *count, void (*fn)(struct packet_struct *))
+struct in_addr *name_query(int fd,const char *name,int name_type, 
+			   BOOL bcast,BOOL recurse,
+			   struct in_addr to_ip, int *count)
 {
   BOOL found=False;
   int i, retries = 3;
@@ -218,17 +219,12 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
   struct packet_struct p;
   struct packet_struct *p2;
   struct nmb_packet *nmb = &p.packet.nmb;
-  static int name_trn_id = 0;
   struct in_addr *ip_list = NULL;
 
   memset((char *)&p,'\0',sizeof(p));
   (*count) = 0;
 
-  if (!name_trn_id) name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + 
-    ((unsigned)getpid()%(unsigned)100);
-  name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
-
-  nmb->header.name_trn_id = name_trn_id;
+  nmb->header.name_trn_id = generate_trn_id();
   nmb->header.opcode = 0;
   nmb->header.response = False;
   nmb->header.nm_flags.bcast = bcast;
@@ -262,79 +258,57 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
 
   while (1)
   {
-    struct timeval tval2;
-    GetTimeOfDay(&tval2);
-    if (TvalDiff(&tval,&tval2) > retry_time) 
-    {
-      if (!retries)
-        break;
-      if (!found && !send_packet(&p))
-        return NULL;
-      GetTimeOfDay(&tval);
-      retries--;
-    }
-
-    if ((p2=receive_packet(fd,NMB_PACKET,90)))
-    {     
-      struct nmb_packet *nmb2 = &p2->packet.nmb;
-      debug_nmb_packet(p2);
-
-      if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
-          !nmb2->header.response)
-      {
-        /* 
-         * Its not for us - maybe deal with it later 
-         * (put it on the queue?).
-         */
-        if (fn) 
-          fn(p2);
-        else
-          free_packet(p2);
-        continue;
-      }
+	  struct timeval tval2;
+	  GetTimeOfDay(&tval2);
+	  if (TvalDiff(&tval,&tval2) > retry_time) {
+		  if (!retries)
+			  break;
+		  if (!found && !send_packet(&p))
+			  return NULL;
+		  GetTimeOfDay(&tval);
+		  retries--;
+	  }
 	  
-      if (nmb2->header.opcode != 0 ||
-          nmb2->header.nm_flags.bcast ||
-          nmb2->header.rcode ||
-          !nmb2->header.ancount)
-      {
-	    /* 
-         * XXXX what do we do with this? Could be a redirect, but
-         * we'll discard it for the moment.
-         */
-        free_packet(p2);
-        continue;
-      }
+	  if ((p2=receive_reply_packet(fd,90,nmb->header.name_trn_id))) {     
+		  struct nmb_packet *nmb2 = &p2->packet.nmb;
+		  debug_nmb_packet(p2);
+		  
+		  if (nmb2->header.opcode != 0 ||
+		      nmb2->header.nm_flags.bcast ||
+		      nmb2->header.rcode ||
+		      !nmb2->header.ancount) {
+			  /* 
+			   * XXXX what do we do with this? Could be a
+			   * redirect, but we'll discard it for the
+			   * moment.  */
+			  free_packet(p2);
+			  continue;
+		  }
 
-      ip_list = (struct in_addr *)Realloc(ip_list, sizeof(ip_list[0]) * 
-                                          ((*count)+nmb2->answers->rdlength/6));
-      if (ip_list)
-      {
-        DEBUG(fn?3:2,("Got a positive name query response from %s ( ",
-              inet_ntoa(p2->ip)));
-        for (i=0;i<nmb2->answers->rdlength/6;i++)
-        {
-          putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
-          DEBUG(fn?3:2,("%s ",inet_ntoa(ip_list[(*count)])));
-          (*count)++;
-        }
-        DEBUG(fn?3:2,(")\n"));
-      }
+		  ip_list = (struct in_addr *)Realloc(ip_list, sizeof(ip_list[0]) * 
+						      ((*count)+nmb2->answers->rdlength/6));
+		  if (ip_list) {
+			  DEBUG(2,("Got a positive name query response from %s ( ",
+				   inet_ntoa(p2->ip)));
+			  for (i=0;i<nmb2->answers->rdlength/6;i++) {
+				  putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
+				  DEBUG(2,("%s ",inet_ntoa(ip_list[(*count)])));
+				  (*count)++;
+			  }
+			  DEBUG(2,(")\n"));
+		  }
 
-      found=True;
-      retries=0;
-      free_packet(p2);
-      if (fn)
-        break;
-
-      /*
-       * If we're doing a unicast lookup we only
-       * expect one reply. Don't wait the full 2
-       * seconds if we got one. JRA.
-       */
-      if(!bcast && found)
-        break;
-    }
+		  found=True;
+		  retries=0;
+		  free_packet(p2);
+		  /*
+		   * If we're doing a unicast lookup we only
+		   * expect one reply. Don't wait the full 2
+		   * seconds if we got one. JRA.
+		   */
+		  if(!bcast && found)
+			  break;
+	  }
   }
 
   return ip_list;
@@ -483,7 +457,7 @@ static BOOL resolve_bcast(const char *name, int name_type,
 		/* Done this way to fix compiler error on IRIX 5.x */
 		sendto_ip = *iface_bcast(*iface_n_ip(i));
 		*return_ip_list = name_query(sock, name, name_type, True, 
-				    True, sendto_ip, return_count, NULL);
+				    True, sendto_ip, return_count);
 		if(*return_ip_list != NULL) {
 			close(sock);
 			return True;
@@ -532,7 +506,7 @@ static BOOL resolve_wins(const char *name, int name_type,
 	      
 		if (sock != -1) {
 			*return_iplist = name_query(sock, name, name_type, False, 
-								True, wins_ip, return_count, NULL);
+								True, wins_ip, return_count);
 			if(*return_iplist != NULL) {
 				close(sock);
 				return True;
@@ -784,8 +758,8 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
   *pdc_name = '\0';
 
   ret = internal_name_status(sock,"*SMBSERVER",0x20,True,
-		 *pdc_ip,NULL,pdc_name,False,
-         _lookup_pdc_name,NULL);
+			     *pdc_ip,NULL,pdc_name,False,
+			     _lookup_pdc_name);
 
   close(sock);
 
@@ -815,7 +789,6 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
   struct sockaddr_in sock_name;
   int sock_len = sizeof(sock_name);
   const char *mailslot = "\\MAILSLOT\\NET\\NETLOGON";
-  static int name_trn_id = 0;
   char buffer[1024];
   char *bufp;
   int sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True );
@@ -852,10 +825,6 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
   bufp += 8;
   len = PTR_DIFF(bufp,buffer);
 
-  if (!name_trn_id)
-    name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + ((unsigned)getpid()%(unsigned)100);
-  name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
-
   memset((char *)&p,'\0',sizeof(p));
 
   /* DIRECT GROUP or UNIQUE datagram. */
@@ -863,7 +832,7 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
   dgram->header.flags.node_type = M_NODE;
   dgram->header.flags.first = True;
   dgram->header.flags.more = False;
-  dgram->header.dgm_id = name_trn_id;
+  dgram->header.dgm_id = generate_trn_id();
   dgram->header.source_ip = sock_name.sin_addr;
   dgram->header.source_port = ntohs(sock_name.sin_port);
   dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */

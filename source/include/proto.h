@@ -600,10 +600,10 @@ BOOL deal_with_creds(uchar sess_key[8],
 /*The following definitions come from  libsmb/namequery.c  */
 
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
-		 struct in_addr to_ip,char *master,char *rname,
-		 void (*fn)(struct packet_struct *));
-struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOOL recurse,
-         struct in_addr to_ip, int *count, void (*fn)(struct packet_struct *));
+		 struct in_addr to_ip,char *master,char *rname);
+struct in_addr *name_query(int fd,const char *name,int name_type, 
+			   BOOL bcast,BOOL recurse,
+			   struct in_addr to_ip, int *count);
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
@@ -618,11 +618,15 @@ void debug_nmb_packet(struct packet_struct *p);
 char *nmb_namestr(struct nmb_name *n);
 struct packet_struct *copy_packet(struct packet_struct *packet);
 void free_packet(struct packet_struct *packet);
+struct packet_struct *parse_packet(char *buf,int length,
+				   enum packet_type packet_type);
 struct packet_struct *read_packet(int fd,enum packet_type packet_type);
 void make_nmb_name( struct nmb_name *n, const char *name, int type, const char *this_scope );
 BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
+int build_packet(char *buf, struct packet_struct *p);
 BOOL send_packet(struct packet_struct *p);
 struct packet_struct *receive_packet(int fd,enum packet_type type,int t);
+struct packet_struct *receive_reply_packet(int fd, int t, int trn_id);
 void sort_query_replies(char *data, int n, struct in_addr ip);
 
 /*The following definitions come from  libsmb/nterr.c  */
@@ -674,6 +678,12 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 
 char *smb_errstr(char *inbuf);
 
+/*The following definitions come from  libsmb/unexpected.c  */
+
+void unexpected_packet(struct packet_struct *p);
+void clear_unexpected(time_t t);
+struct packet_struct *receive_unexpected_137(int trn_id);
+
 /*The following definitions come from  locking/locking.c  */
 
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
@@ -697,7 +707,6 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type);
 BOOL remove_share_oplock(files_struct *fsp);
 BOOL downgrade_share_oplock(files_struct *fsp);
 BOOL modify_share_mode(files_struct *fsp, int new_mode, uint16 new_oplock);
-int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf);
 int share_mode_forall(void (*fn)(share_mode_entry *, char *));
 
 /*The following definitions come from  nmbd/asyncdns.c  */

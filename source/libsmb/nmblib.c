@@ -678,55 +678,69 @@ void free_packet(struct packet_struct *packet)
 }
 
 /*******************************************************************
+parse a packet buffer into a packet structure
+  ******************************************************************/
+struct packet_struct *parse_packet(char *buf,int length,
+				   enum packet_type packet_type)
+{
+	extern struct in_addr lastip;
+	extern int lastport;
+	struct packet_struct *p;
+	BOOL ok=False;
+
+	p = (struct packet_struct *)malloc(sizeof(*p));
+	if (!p) return(NULL);
+
+	p->next = NULL;
+	p->prev = NULL;
+	p->ip = lastip;
+	p->port = lastport;
+	p->locked = False;
+	p->timestamp = time(NULL);
+	p->packet_type = packet_type;
+
+	switch (packet_type) {
+	case NMB_PACKET:
+		ok = parse_nmb(buf,length,&p->packet.nmb);
+		break;
+		
+	case DGRAM_PACKET:
+		ok = parse_dgram(buf,length,&p->packet.dgram);
+		break;
+	}
+
+	if (!ok) {
+		free_packet(p);
+		return NULL;
+	}
+
+	return p;
+}
+
+/*******************************************************************
   read a packet from a socket and parse it, returning a packet ready
   to be used or put on the queue. This assumes a UDP socket
   ******************************************************************/
 struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 {
-  extern struct in_addr lastip;
-  extern int lastport;
-  struct packet_struct *packet;
-  char buf[MAX_DGRAM_SIZE];
-  int length;
-  BOOL ok=False;
-  
-  length = read_udp_socket(fd,buf,sizeof(buf));
-  if (length < MIN_DGRAM_SIZE) return(NULL);
+	struct packet_struct *packet;
+	char buf[MAX_DGRAM_SIZE];
+	int length;
+	
+	length = read_udp_socket(fd,buf,sizeof(buf));
+	if (length < MIN_DGRAM_SIZE) return(NULL);
+	
+	packet = parse_packet(buf, length, packet_type);
+	if (!packet) return NULL;
 
-  packet = (struct packet_struct *)malloc(sizeof(*packet));
-  if (!packet) return(NULL);
-
-  packet->next = NULL;
-  packet->prev = NULL;
-  packet->ip = lastip;
-  packet->port = lastport;
-  packet->fd = fd;
-  packet->locked = False;
-  packet->timestamp = time(NULL);
-  packet->packet_type = packet_type;
-  switch (packet_type) 
-    {
-    case NMB_PACKET:
-      ok = parse_nmb(buf,length,&packet->packet.nmb);
-      break;
-
-    case DGRAM_PACKET:
-      ok = parse_dgram(buf,length,&packet->packet.dgram);
-      break;
-    }
-  if (!ok) {
-    DEBUG(10,("read_packet: discarding packet id = %d\n", 
-                 packet->packet.nmb.header.name_trn_id));
-    free_packet(packet);
-    return(NULL);
-  }
-
-  num_good_receives++;
-
-  DEBUG(5,("Received a packet of len %d from (%s) port %d\n",
-	    length, inet_ntoa(packet->ip), packet->port ) );
-
-  return(packet);
+	packet->fd = fd;
+	
+	num_good_receives++;
+	
+	DEBUG(5,("Received a packet of len %d from (%s) port %d\n",
+		 length, inet_ntoa(packet->ip), packet->port ) );
+	
+	return(packet);
 }
 					 
 
@@ -901,6 +915,26 @@ static int build_nmb(char *buf,struct packet_struct *p)
 
 
 /*******************************************************************
+linearise a packet
+  ******************************************************************/
+int build_packet(char *buf, struct packet_struct *p)
+{
+	int len = 0;
+
+	switch (p->packet_type) {
+	case NMB_PACKET:
+		len = build_nmb(buf,p);
+		break;
+
+	case DGRAM_PACKET:
+		len = build_dgram(buf,p);
+		break;
+	}
+
+	return len;
+}
+
+/*******************************************************************
   send a packet_struct
   ******************************************************************/
 BOOL send_packet(struct packet_struct *p)
@@ -910,17 +944,7 @@ BOOL send_packet(struct packet_struct *p)
 
   memset(buf,'\0',sizeof(buf));
 
-  switch (p->packet_type) 
-    {
-    case NMB_PACKET:
-      len = build_nmb(buf,p);
-      debug_nmb_packet(p);
-      break;
-
-    case DGRAM_PACKET:
-      len = build_dgram(buf,p);
-      break;
-    }
+  len = build_packet(buf, p);
 
   if (!len) return(False);
 
@@ -933,20 +957,42 @@ BOOL send_packet(struct packet_struct *p)
   ***************************************************************************/
 struct packet_struct *receive_packet(int fd,enum packet_type type,int t)
 {
-  fd_set fds;
-  struct timeval timeout;
+	fd_set fds;
+	struct timeval timeout;
 
-  FD_ZERO(&fds);
-  FD_SET(fd,&fds);
-  timeout.tv_sec = t/1000;
-  timeout.tv_usec = 1000*(t%1000);
+	FD_ZERO(&fds);
+	FD_SET(fd,&fds);
+	timeout.tv_sec = t/1000;
+	timeout.tv_usec = 1000*(t%1000);
 
-  sys_select(fd+1,&fds,&timeout);
+	sys_select(fd+1,&fds,&timeout);
 
-  if (FD_ISSET(fd,&fds)) 
-    return(read_packet(fd,type));
+	if (FD_ISSET(fd,&fds)) 
+		return(read_packet(fd,type));
+	
+	return(NULL);
+}
 
-  return(NULL);
+
+/****************************************************************************
+  receive a UDP/137 packet either via UDP or from the unexpected packet
+  queue. The packet must be a reply packet and have the specified trn_id
+  The timeout is in milliseconds
+  ***************************************************************************/
+struct packet_struct *receive_reply_packet(int fd, int t, int trn_id)
+{
+	struct packet_struct *p;
+
+	p = receive_packet(fd, NMB_PACKET, t);
+
+	if (p && p->packet.nmb.header.response &&
+	    p->packet.nmb.header.name_trn_id == trn_id) {
+		return p;
+	}
+	if (p) free_packet(p);
+
+	/* try the unexpected packet queue */
+	return receive_unexpected_137(trn_id);
 }
 
 

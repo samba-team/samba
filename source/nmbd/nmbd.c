@@ -458,6 +458,11 @@ static void process(void)
     sync_all_dmbs(t);
 
     /*
+     * clear the unexpected packet queue 
+     */
+    clear_unexpected(t);
+
+    /*
      * Reload the services file if we got a sighup.
      */
 
