@@ -57,9 +57,11 @@ int net_run_function(struct net_context *ctx,
 {
 	int i;
 
-	if (argc < 1) {
-		d_printf("Usage: \n");
+	if (argc == 0) {
 		return usage_fn(ctx, argc, argv);
+
+	} else if (argc == 1 && strequal(argv[0], "help")) {
+		return net_help(ctx, functable);
 	}
 
 	for (i=0; functable[i].name; i++) {
@@ -79,12 +81,12 @@ int net_run_usage(struct net_context *ctx,
 			const struct net_functable *functable)
 {
 	int i;
-
+/*
 	if (argc < 1) {
 		d_printf("net_run_usage: TODO (argc < 1)\n");
 		return 1;
 	}
-
+*/
 	for (i=0; functable[i].name; i++) {
 		if (StrCaseCmp(argv[0], functable[i].name) == 0)
 			if (functable[i].usage) {
@@ -92,62 +94,42 @@ int net_run_usage(struct net_context *ctx,
 			}
 	}
 
-	d_printf("No usage for command: %s\n", argv[0]);
+	d_printf("No usage information for command: %s\n", argv[0]);
 
 	return 1;
 }
 
-/*
-  run a usage function from a function table. If not found then fail
-*/
-int net_run_help(struct net_context *ctx,
-			int argc, const char **argv,
-			const struct net_functable *functable)
-{
-	int i;
-
-	if (argc < 1) {
-		d_printf("net_run_help: TODO (argc < 1)\n");
-		return 1;
-	}
-
-	for (i=0; functable[i].name; i++) {
-		if (StrCaseCmp(argv[0], functable[i].name) == 0)
-			if (functable[i].help) {
-				return functable[i].help(ctx, argc-1, argv+1);
-			}
-	}
-
-	d_printf("No help for command: %s\n", argv[0]);
-
-	return 1;
-}
-
-static int net_help(struct net_context *ctx, int argc, const char **argv)
-{
-	d_printf("net_help: TODO\n");
-	return 0;
-}
-
-static int net_help_usage(struct net_context *ctx, int argc, const char **argv)
-{
-	d_printf("net_help_usage: TODO\n");
-	return 0;	
-}
 
 /* main function table */
 static const struct net_functable net_functable[] = {
-	{"password", net_password, net_password_usage, net_password_help},
-	{"time", net_time, net_time_usage, net_time_help},
-	{"join", net_join, net_join_usage, net_join_help},
-	{"user", net_user, net_user_usage, net_user_help},
-	{"help", net_help, net_help_usage, net_help},
-	{NULL, NULL}
+	{"password", "change password\n", net_password, net_password_usage},
+	{"time", "get remote server's time\n", net_time, net_time_usage},
+	{"join", "join a domain\n", net_join, net_join_usage},
+	{"user", "manage user accounts\n", net_user, net_user_usage},
+	{NULL, NULL, NULL, NULL}
 };
+
+int net_help(struct net_context *ctx, const struct net_functable *ftable)
+{
+	int i = 0;
+	const char *name = ftable[i].name;
+	const char *desc = ftable[i].desc;
+
+	d_printf("Available commands:\n");
+	while (name && desc) {
+		d_printf("\t%s\t\t%s", name, desc);
+		name = ftable[++i].name;
+		desc = ftable[i].desc;
+	}
+
+	return 0;
+}
 
 static int net_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	return net_run_usage(ctx, argc, argv, net_functable);
+	d_printf("Usage:\n");
+	d_printf("net <command> [options]\n");
+	return 0;
 }
 
 /****************************************************************************
@@ -185,7 +167,7 @@ static int binary_net(int argc, const char **argv)
 		default:
 			d_printf("Invalid option %s: %s\n", 
 				 poptBadOption(pc, 0), poptStrerror(opt));
-			net_help(ctx, argc, argv);
+			net_usage(ctx, argc, argv);
 			exit(1);
 		}
 	}
@@ -204,8 +186,7 @@ static int binary_net(int argc, const char **argv)
 	}
 
 	if (argc_new < 2) {
-		d_printf("Usage: TODO\n");
-		return 1;
+		return net_usage(ctx, argc, argv);
 	}
 
 	net_init_subsystems;
