@@ -140,7 +140,7 @@ PyObject *spoolss_hnd_setform(PyObject *self, PyObject *args, PyObject *kw)
 	/* Parse parameters */
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "O!|i", kwlist, &PyDict_Type, &info))
+		    args, kw, "O!", kwlist, &PyDict_Type, &info))
 		return NULL;
 
 	if (!get_level_value(info, &level)) {
