@@ -2152,17 +2152,11 @@ uint32 _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_
 	unsigned char sess_key[16];
 	POLICY_HND *pol = &q_u->pol;
 	uint16 switch_value = q_u->switch_value;
-	SAM_USERINFO_CTR *ctr = NULL;
+	SAM_USERINFO_CTR *ctr = q_u->ctr;
 
 	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
 
 	r_u->status = NT_STATUS_NOPROBLEMO;
-
-	ctr = (SAM_USERINFO_CTR *)talloc(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
-	if (!ctr)
-	  return NT_STATUS_NO_MEMORY;
-
-	q_u->ctr = ctr;
 
 	if (p->ntlmssp_auth_validated) 	{
 		memcpy(&user, &p->pipe_user, sizeof(user));

@@ -406,6 +406,9 @@ static BOOL api_samr_query_userinfo(pipes_struct *p)
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
 	/* grab the samr unknown 24 */
 	if(!samr_io_q_query_userinfo("", &q_u, data, 0))
 		return False;
@@ -429,6 +432,9 @@ static BOOL api_samr_query_usergroups(pipes_struct *p)
 	SAMR_R_QUERY_USERGROUPS r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 
 	/* grab the samr unknown 32 */
 	if(!samr_io_q_query_usergroups("", &q_u, data, 0))
