@@ -4,6 +4,10 @@ Changes in release 0.3c
 
  * appl/login: set PATH to some sane default
 
+ * kadmind: handle several realms
+
+ * bug fixes
+
 Changes in release 0.3b
 
  * kdc: prefer default-salted keys on v5 requests
