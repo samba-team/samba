@@ -18,8 +18,8 @@ CFLAGS=@CFLAGS@
 CPPFLAGS=@CPPFLAGS@
 EXEEXT=@EXEEXT@
 LDFLAGS=@LDFLAGS@
-LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
-WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
+LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@
+WINBIND_NSS_LDSHFLAGS=@WINBIND_NSS_LDSHFLAGS@ @LDFLAGS@
 AWK=@AWK@
 DYNEXP=@DYNEXP@
 PYTHON=@PYTHON@
@@ -626,7 +626,12 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(POPT_LIB_O
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
+all: 
+	@echo The Samba HEAD branch is deprecated pending the release of Samba 3.0
+	@echo Please use the SAMBA_3_0 branch
+	@exit 1
+
+all_real : SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
 	$(MODULES) @EXTRA_ALL_TARGETS@
 
 pam_smbpass : SHOWFLAGS bin/pam_smbpass.@SHLIBEXT@

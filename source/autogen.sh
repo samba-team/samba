@@ -1,5 +1,11 @@
 #!/bin/sh
 
+echo The Samba HEAD branch is deprecated pending the release of Samba 3.0
+echo Please use the SAMBA_3_0 branch
+echo to update to SAMBA_3_0 use this command:
+echo "   cvs -z3 update -r SAMBA_3_0 -dP"
+exit 1
+
 # Run this script to build samba from CVS.
 
 ## insert all possible names (only works with 
