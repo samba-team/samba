@@ -589,10 +589,14 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 
 	get_single_attribute(ldap_struct, entry, "rid", temp);
 	user_rid = (uint32)atol(temp);
+
+	pdb_set_user_sid_from_rid(sampass, user_rid);
+
 	if (!get_single_attribute(ldap_struct, entry, "primaryGroupID", temp)) {
 		group_rid = 0;
 	} else {
 		group_rid = (uint32)atol(temp);
+		pdb_set_group_sid_from_rid(sampass, group_rid);
 	}
 
 	if ((ldap_state->permit_non_unix_accounts) 
@@ -624,11 +628,10 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			GROUP_MAP map;
 			/* call the mapping code here */
 			if(get_group_map_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
-				if (!sid_peek_check_rid(get_global_sam_sid(), &map.sid, &group_rid))
-					return False;
+				pdb_set_group_sid(sampass, &map.sid);
 			} 
 			else {
-				group_rid=pdb_gid_to_group_rid(gid);
+				pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid));
 			}
 		}
 	}
@@ -780,9 +783,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 
 	pdb_set_hours_len(sampass, hours_len);
 	pdb_set_logon_divs(sampass, logon_divs);
-
-	pdb_set_user_sid_from_rid(sampass, user_rid);
-	pdb_set_group_sid_from_rid(sampass, group_rid);
 
 	pdb_set_username(sampass, username);
 
