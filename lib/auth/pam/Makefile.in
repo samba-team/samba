@@ -33,7 +33,7 @@ LIB_dn_expand = @LIB_dn_expand@
  
 @lib_deps_yes@LIB_DEPS = -L../../kafs -L../../krb -L../../des \
 @lib_deps_yes@	   -lkafs -lkrb -ldes \
-@lib_deps_yes@     $(LIB_res_search) $(LIB_dn_expand) -lc
+@lib_deps_yes@     $(LIB_res_search) $(LIB_dn_expand) -lpam -lc
 @lib_deps_no@LIB_DEPS =
 
 LIB = pam_krb4.$(SHLIBEXT)
