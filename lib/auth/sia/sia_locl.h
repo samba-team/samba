@@ -69,9 +69,6 @@
 
 #include <roken.h>
 
-#ifdef SIAD_GET_GROUPS /* >= 4.0 */
-#define POSIX_GETPWNAM_R
-#endif
 #ifndef POSIX_GETPWNAM_R
 
 #define getpwnam_r posix_getpwnam_r
