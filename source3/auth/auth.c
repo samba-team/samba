@@ -124,7 +124,7 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 	if (!challenge_set_by) {
 		uchar chal[8];
 		
-		generate_random_buffer(chal, sizeof(chal), False);
+		generate_random_buffer(chal, sizeof(chal));
 		auth_context->challenge = data_blob_talloc(auth_context->mem_ctx, 
 							   chal, sizeof(chal));
 		

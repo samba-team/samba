@@ -409,11 +409,12 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				   in smbstatus for port 445 connects */
 				set_remote_machine_name(get_peer_addr(smbd_server_fd()), False);
 				
-				/* Reset global variables in util.c so
-				   that client substitutions will be
-				   done correctly in the process.  */
-				reset_globals_after_fork();
+				/* Reset the state of the random
+				 * number generation system, so
+				 * children do not get the same random
+				 * numbers as each other */
 
+				set_need_random_reseed();
 				/* tdb needs special fork handling - remove CLEAR_IF_FIRST flags */
 				if (tdb_reopen_all() == -1) {
 					DEBUG(0,("tdb_reopen_all failed.\n"));
@@ -717,7 +718,7 @@ void build_options(BOOL screen);
 
 	/* we want to re-seed early to prevent time delays causing
            client problems at a later date. (tridge) */
-	generate_random_buffer(NULL, 0, False);
+	generate_random_buffer(NULL, 0);
 
 	/* make absolutely sure we run as root - to handle cases where people
 	   are crazy enough to have it setuid */

@@ -116,7 +116,7 @@ static BOOL afs_createtoken(const char *username, const char *cell,
 	p += 4;
 
 	/* We need to create a session key */
-	generate_random_buffer(p, 8, False);
+	generate_random_buffer(p, 8);
 
 	/* Our client code needs the the key in the clear, it does not
            know the server-key ... */

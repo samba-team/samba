@@ -181,7 +181,7 @@ DATA_BLOB get_challenge(void)
 	
 	chal = data_blob(NULL, 8);
 
-	generate_random_buffer(chal.data, chal.length, False);
+	generate_random_buffer(chal.data, chal.length);
 	return chal;
 }
 
