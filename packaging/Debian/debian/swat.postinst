@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# $Id: swat.postinst,v 1.2.2.2 2002/05/02 20:20:28 jerry Exp $
+#
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
@@ -18,6 +21,4 @@ esac
 update-inetd --group OTHER --add \
  '#<off># swat\t\tstream\ttcp\tnowait.400\troot\t/usr/sbin/tcpd\t/usr/sbin/swat'
 
-if [ -d /usr/doc -a ! -e /usr/doc/swat -a -d /usr/share/doc/swat ]; then
-	ln -sf ../share/doc/swat /usr/doc/swat
-fi
+#DEBHELPER#

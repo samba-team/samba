@@ -3,12 +3,12 @@ Section: net
 Priority: optional
 Maintainer: Eloy A. Paris <peloy@debian.org>
 Uploaders: Steve Langasek <vorlon@debian.org>
-Build-Depends: debhelper (>=2.0.103), libpam0g-dev, libreadline4-dev, libcupsys2-dev
+Build-Depends: debhelper (>=2.0.103), libpam0g-dev, libreadline4-dev, libcupsys2-dev, autoconf
 Standards-Version: 3.1.1
 
 Package: samba
 Architecture: any
-Depends: samba-common (= ${Source-Version}), netbase, logrotate, ${shlibs:Depends}
+Depends: debconf, samba-common (= ${Source-Version}), netbase, logrotate, ${shlibs:Depends}
 Replaces: samba-common (<= 2.0.5a-2)
 Suggests: samba-doc
 Description: A LanManager like file and printer server for Unix.
@@ -20,7 +20,7 @@ Description: A LanManager like file and printer server for Unix.
  This package contains all the components necessary to turn your
  Debian GNU/Linux box into a powerful file and printer server.
  .
- As of Samba 2.2.1a-3, the Samba Debian packages consist of the following:
+ Currently, the Samba Debian packages consist of the following:
  .
   samba - A LanManager like file and printer server for Unix.
   samba-common - Samba common files used by both the server and the client.
@@ -31,10 +31,15 @@ Description: A LanManager like file and printer server for Unix.
   libpam-smbpass - pluggable authentication module for SMB password database
   libsmbclient - Shared library that allows applications to talk to SMB servers
   libsmbclient-dev - libsmbclient shared libraries
+  winbind: Service to resolve user and group information from Windows NT servers
+ .
+ It is possible to install a subset of these packages depending on
+ your particular needs. For example, to access other SMB servers you
+ should only need the smbclient and samba-common packages.
 
 Package: samba-common
 Architecture: any
-Depends: libpam-modules, ${shlibs:Depends}
+Depends: debconf, libpam-modules, ${shlibs:Depends}
 Replaces: samba (<= 2.0.5a-2)
 Description: Samba common files used by both the server and the client.
  The Samba software suite is a collection of programs that
@@ -75,6 +80,9 @@ Description: Samba Web Administration Tool
  .
  This package contains the components of the Samba suite that are needed
  for Web administration of the Samba server.
+ .
+ Note: if you want to use the on-line documentation that is accesible
+ through the Swat front-end you must install the samba-doc package.
 
 Package: samba-doc
 Section: doc
@@ -108,9 +116,9 @@ Description: mount and umount commands for the smbfs (for kernels >= than 2.2.x)
  .
  Starting with the Debian Samba packages version 2.2.0-1, the old smbfs
  utilities for 2.0.x have been removed. There are no wrapper scripts
- that call a specific smbmount/smbmount depending on the kernel version.
- If you are using a 2.0.x kernel please upgrade or use the latest Samba
- 2.0.7 Debian package.
+ that call a specific smbmount/smbumount depending on the kernel
+ version.  If you are using a 2.0.x kernel please upgrade or use the
+ latest Samba 2.0.7 Debian package.
 
 Package: libpam-smbpass
 Section: admin
@@ -141,7 +149,7 @@ Package: libsmbclient-dev
 Section: devel
 Priority: extra
 Architecture: any
-Depends: libsmbclient (= ${Source-Version}), ${shlibs:Depends}
+Depends: libsmbclient (= ${Source-Version})
 Description: libsmbclient static libraries and headers
  libsmbclient allows to write applications that use the SMB protocol.
  This gives applications the ability to talk to Microsoft Windows servers
@@ -149,3 +157,19 @@ Description: libsmbclient static libraries and headers
  .
  This package contains the libsmbclient static libraries and headers
  needed to build applications that use SMB services.
+
+Package: winbind
+Section: net
+Priority: optional
+Architecture: any
+Depends: ${shlibs:Depends}
+Replaces: samba (<= 2.2.3-2)
+Description: Service to resolve user and group information from Windows NT servers
+ This package provides the winbindd daemon, which provides a
+ service for the Name Service Switch capability that is present
+ in most modern C libraries (like the GNU C Library - glibc.)
+ .
+ The service provided by winbindd is called `winbind' and
+ can be used to resolve user and group information from a
+ Windows NT server. The service can also provide authentication
+ services via an associated PAM module.

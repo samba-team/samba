@@ -2,8 +2,9 @@ sbin
 usr/bin
 usr/sbin
 var/log/samba
-var/state/samba
-etc/samba
+var/lib/samba
+var/run/samba
+var/cache/samba
 etc/pam.d
 usr/share
 usr/share/samba

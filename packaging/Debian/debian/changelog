@@ -1,10 +1,241 @@
-samba (2.2.2.cvs20020201-1) unstable; urgency=low
+samba (2.2.4-0.1debian) unstable; urgency=low
 
-  * Getting ready for Samba 2.2.3.
-  * Using a poor's man build system to keep our patches to upstream
-    under the debian/ directory.
+  * This is a locally-built version of Samba for Debian. Do not pester
+    the Samba Team with questions about Debian packaging. Contact the
+    Debian Samba maintainers <samba@packages.debian.org> instead.
 
- -- Eloy A. Paris <peloy@debian.org>  Fri,  1 Feb 2002 16:10:58 -0500
+ -- Debian User <somebody@somewhere.com>  Thu,  2 May 2002 01:36:33 -0400
+
+samba (2.2.3a-7) unstable; urgency=medium
+
+  * More README.debian updates.
+  * Neutralize the smb.conf 'lock dir' directive, which doesn't mean
+    what the FHS says it should, and causes us no end of grief.
+    (Closes: #122299)
+  * LPRng-handling patch so that jobs printed to recent versions of
+    LPRng show up properly as 'done' instead of 'paused' in the Windows
+    print queue.  Thanks to Jaroslav Serdula <serdula_jaroslav@vse.sk>
+    for this patch. (Closes: #139458)
+  * Applied patch from Urban Widmark <urban@teststation.com>
+    (smbfs upstream maintainer) to add a '-n' option to smbmount
+    that does the same as mount's '-n'. (Closes: #139590)
+  * Minor tweak to unpatch-source so we unpatch sources in the
+    reverse order we patched them.
+  * Don't depend on grep in samba.prerm to determine if Samba was
+    running before the upgrade starts.
+  * Tweak the wording of debconf templates.
+  * Incorporate debconf translations for French, Spanish and Portuguese;
+    thanks to Carlos Valdivia Yagüe <valyag@hotpop.com> (es),
+    Andre Luis Lopes <andrelop@ig.com.br> (pt_BR), and Philippe
+    Batailler and Denis Barbier <barbier@debian.org> (fr).
+    (closes: #142657, #142659, #141551, #141699, #141682)
+  * Fixed symlinks in the swat package so the point to /usr/share/doc/
+    instead of /usr/doc/. Added note to the description of the
+    swat packages that says that samba-doc must be installed for
+    the on-line documentation to work. Thanks to Torne Wuff
+    <torne@wolfpuppy.org.uk>. (Closes: #95437)
+  * 'dh_installinit -n' gives us no initscript handling -- we need to
+    handle all starting and stopping of daemons ourselves, which wasn't
+    happening in the {pre,post}rm scripts.
+  * Vary the priority of the debconf question "Do you want to generate
+    /etc/samba/smbpassd?" depending on whether the file already exists.
+    File exists -> priority 'medium', file does not exist -> priority
+    'low'. Changed priorities of all other questions from 'high' to 'medium'.
+
+ -- Steve Langasek <vorlon@debian.org>  Sat, 20 Apr 2002 17:48:27 -0400
+
+samba (2.2.3a-6) unstable; urgency=low
+
+  * Call db_stop as soon as we're done with debconf in the postinst, to
+    avoid hanging bugs (closes: #137813)
+  * Ony call 'update-inetd --add' on first installation, just as we only
+    call 'update-inetd --remove' on package purge.
+  * Bring our shipped smb.conf closer in line with the upstream
+    defaults: don't twiddle the send/recv buffer sizes, since the Linux
+    kernel already provides a much better default setting
+    (closes: #80966, #80934, #137415, #133477)
+  * Added libnss_wins.so to the winbind package (closes: #137201)
+  * Updates to README.debian.
+
+ -- Eloy A. Paris <peloy@debian.org>  Tue, 12 Mar 2002 10:57:40 -0500
+
+samba (2.2.3a-5) unstable; urgency=low
+
+  * Having multiple workgroup lines in your smb.conf, though wacky, is 
+    perfectly valid.  Account for this in samba-common.config.
+    (closes: #137157)
+
+ -- Steve Langasek <vorlon@debian.org>  Sun, 10 Mar 2002 21:52:51 -0600
+
+samba (2.2.3a-4) unstable; urgency=low
+
+  * Fixed typo in samba.postinst. Cosmetic fixes there as well.
+  * Fix to improper usage of /usr/bin/tr in samba-common config script
+    (closes: #137744)
+
+ -- Steve Langasek <vorlon@debian.org>  Sat,  9 Mar 2002 14:14:02 -0500
+
+samba (2.2.3a-3) unstable; urgency=medium
+
+  * Make sure /etc/init.d/samba is executable before calling it
+    in the postinst. Quickly checked all other maintainer scripts
+    to make sure we are not calling an init script if it is not
+    executable. (closes: #137321)
+  * Fix up maintainer scripts to detect if samba was not running before 
+    an upgrade. (closes: #33520, #130534)
+  * Make sure /etc/samba/ is included in the samba-common package.
+    Closes: #137157
+
+ -- Steve Langasek <vorlon@debian.org>  Fri,  8 Mar 2002 11:13:21 -0500
+
+samba (2.2.3a-2) unstable; urgency=low
+
+  * merge in debconf support:
+    - Moved all smb.conf-related questions to samba-common (smb.conf
+      is part of the samba-common package, not the samba package.)
+    - smb.conf is not a samba-common conffile anymore since it is
+      being managed by debconf. It is ABSOLUTELY necessary to make
+      sure /etc/samba/smb.conf _NEVER_ gets overwritten by changes
+      made via debconf. In other words, any changes made by the user
+      should be honored by the debconf interface.
+    - samba.postinst now moves old log files from /var/log/ to
+      /var/log/samba/. There's a Debconf note that informs the user
+      the log files are stored now in a new location.
+    - debian/control:
+      + Make samba depend on debconf.
+    - New file debian/samba.templates.
+    - New file debian/samba.config.
+    - Re-worked debian/samba.postinst.
+      + Got rid of all /etc/samba/debian_config sillyness.
+    - remove /usr/sbin/sambaconfig; "dpkg-reconfigure samba" replaces 
+      it.
+    - Removed debian/samba.prerm.
+    - Cleaned up /etc/init.d/samba.
+      + Added infrastructure for debconf.
+      + Got rid of all /etc/samba/debian_config sillyness.
+      + Got rid of /etc/samba/smbpasswd conversion stuff for
+        compatibility with versions of Samba < 2.0.0final-2.
+    (closes: #127959, #34408, #113594)
+  * make samba.postinst ignore the absence of /var/log/{s,n}mb*;
+    makes for a clean upgrade path.
+  * Building with MSDFS support (closes: #116793)
+
+ -- Steve Langasek <vorlon@debian.org>  Tue,  5 Mar 2002 14:14:33 -0600
+
+samba (2.2.3a-1) unstable; urgency=low
+
+  * New upstream version (closes: #135001)
+  * Potato builds were failing because debian/rules was not creating
+    debian/winbind/etc/logrotate.d/. A user having problems creating
+    Potato packages brought this to my attention. dh_installlogrotate
+    takes care of creating the directory for us, that's why we didn't
+    notice.
+  * Removed code that converts /etc/samba/smbpasswd from an ancient
+    format to the new format of Samba 2.0.0 and later.
+    Closes: #134375 - samba: postinst failed due to missing
+            /usr/bin/convert_smbpasswd.
+  * Re-organized FHS migration code in samba.postinst. Make sure we
+    don't fail when we move files that don't exist.
+    Closes: #133813 - samba: Install failed.
+  * Adding docs. to the libpam-smbpass package.
+  * Remove man pages for findsmb because we are not providing this
+    script.
+    Closes: #134181 - findsmb referenced, but not included.
+  * Removed replace.patch because it is now present upstream.
+  * Added patch from Jerry Carter to fix a problem when saving
+    document preferences for printing from NT clients.
+  * The real winbindd daemon is a forked process so we can't use
+    --make-pidfile when calling start-stop-daemon. Fixed 
+    /etc/init.d/winbind to work around the issue. Thanks to 
+    Lin Li <linl@xandros.com> for the patience and for reporting 
+    the problems. Hopefully I got it right this time.
+
+ -- Eloy A. Paris <peloy@debian.org>  Wed, 20 Feb 2002 18:39:03 -0500
+
+samba (2.2.3-6) unstable; urgency=low
+
+  * Make sure there are actual files in /var/state/samba before trying 
+    to move them (Closes: #133534, #133510).
+  * Fix up the 2.2.3 makefile so that pam_smbpass builds correctly 
+    again.
+
+ -- Steve Langasek <vorlon@debian.org>  Tue, 12 Feb 2002 09:19:29 -0600
+
+samba (2.2.3-5) unstable; urgency=low
+
+  * Whoops, missed a spot on the samba.postinst -- will fail badly if
+    /var/state/samba/ no longer exists.  Better get this fix into the
+    next upload. ;) (Closes: #133088)
+  * Regenerate configure only if it is older than configure.in.
+  * Fix smbd handling of network neighborhood lists, which was missed
+    in the FHS conversion (Closes: #133091)
+
+ -- Eloy A. Paris <peloy@debian.org>  Sat,  9 Feb 2002 16:37:57 -0500
+
+samba (2.2.3-4) unstable; urgency=low
+
+  * FHS cleanup; files in /var are now properly sorted according to
+    their nature. (Closes: #102101)
+  * Remove patches to source/configure, since we now call autoconf to
+    regenerate this file cleanly.
+  * lintian fixes:
+      - Create winbind.conffiles and add /etc/logrotate.d/winbind and
+        /etc/init.d/winbind to it.
+      - Use a relative symlink for /usr/lib/cups/backend/smb.
+      - Removal of a .cvsignore file in the samba-doc package.
+  * winbind.init fixes:
+      - Corrected name of the pid file (Steve)
+      - Make start-stop-daemon create a pid file for winbindd since it
+        does not create one on his own.
+  * #DEBHELPER# is not needed in samba.postinst because we are adding
+    manually everything that debhelper adds automatically. In fact,
+    since we are calling update-rc.d without standard paramaters I
+    think we can't use #DEBHELPER#.
+  * Fix fatal syntax error in samba.prerm.
+
+ -- Steve Langasek <vorlon@debian.org>  Thu,  7 Feb 2002 13:12:08 -0500
+
+samba (2.2.3-3) unstable; urgency=low
+
+  * work on lintian-cleanness in the package (wrong permissions,
+    maintainer scripts in need of debhelpering)
+  * /lib/security/pam_smbpass.so is now being included in the
+    libpam-smbpass package only, and not in both the libpam-smbpass and
+    samba packages (which was the case prior to 2.2.3-3.)
+  * Instead of making our patch scripts executable in the rules file
+    we run them through /bin/sh.
+  * New 'winbind' package that has all the winbind stuff that was in the 
+    samba package in 2.2.3-2 and before.
+  * Added replace.patch: patch from Jeremy Allison to fix problems when
+    replacing or overwriting files in a Samba share. Patch was sent to
+    the samba mailing list.
+
+ -- Eloy A. Paris <peloy@debian.org>  Tue,  5 Feb 2002 21:12:48 -0500
+
+samba (2.2.3-2) unstable; urgency=low
+
+  * add support to debian/scripts/{patch-source,unpatch-source} for
+    automatic updating and cleaning of <version.h>. This was a request
+    from the Samba Team: they wanted us to clearly mark our packages
+    so it is always known a user is running Samba with (possibly)
+    Debian-specific patches.
+  * Change init.d killscript link to K19samba, so we stop before autofs 
+    (closes: 117327)
+  * Make our patch scripts executable in the rules file -- dpkg won't do 
+    this for us (closes: #132415).
+
+ -- Steve Langasek <vorlon@debian.org>  Mon,  4 Feb 2002 09:51:00 -0600
+
+samba (2.2.3-1) unstable; urgency=low
+
+  * New upstream release (closes: #131228).
+  * Restructured build system that provides DBS-like separation of 
+    patches
+  * Fix typo in smbfs description (closes: #116209).
+  * Use killall -q in logrotate.d script, to avoid spurious cron 
+    emails (closes: #130100).
+
+ -- Steve Langasek <vorlon@debian.org>  Sat,  2 Feb 2002 19:56:18 -0500
 
 samba (2.2.2-12) unstable; urgency=high
 

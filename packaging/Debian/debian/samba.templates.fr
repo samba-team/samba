@@ -1,0 +1,57 @@
+Template: samba/run_mode
+Type: select
+Choices: daemons, inetd
+Choices-fr: démons, inetd
+Default: daemons
+Description: How do you want to run Samba?
+ The Samba services (nmbd and smbd) can run as normal daemons or from
+ inetd. Running as daemons is the recommended approach.
+Description-fr: Comment voulez-vous lancer Samba ?
+ Les services de Samba (nmbd et smbd) peuvent s'exécuter en tant que démons
+ classiques ou bien être lancés par inetd. L'approche recommandée est qu'ils
+ s'exécutent en tant que démons.
+
+Template: samba/generate_smbpasswd
+Type: boolean 
+Default: false
+Description: Create samba password file, /etc/samba/smbpasswd?
+ To be compatible with the defaults in most versions of Windows,
+ Samba must be configured to use encrypted passwords.  This requires
+ user passwords to be stored in a file separate from /etc/passwd.
+ This file can be created automatically, but the passwords must
+ be added manually (by you or the user) by running smbpasswd,
+ and you must arrange to keep it up-to-date in the future.  If
+ you do not create it, you will have to reconfigure samba
+ (and probably your client machines) to use plaintext passwords.
+ See /usr/share/doc/samba-doc/htmldocs/ENCRYPTION.html from the
+ samba-doc package for more details.
+Description-fr: Faut-il créer un fichier /etc/samba/smbpasswd ?
+ Pour préserver la compatibilité avec le comportement par défaut de la
+ plupart des systèmes Windows, Samba doit utiliser
+ les mots de passe chiffrés. Cela exige la création d'un fichier,
+ distinct du fichier /etc/passwd, pour mettre les mots de passe des
+ utilisateurs. Ce fichier peut être créé automatiquement, mais
+ quelqu'un (vous ou l'utilisateur) devra ajouter les mots de
+ passe manuellement en utilisant la commande smbpasswd ; et vous devrez
+ maintenir à jour ce fichier. Si vous ne voulez pas créer le fichier
+ maintenant, Samba (et peut-être les ordinateurs Windows)
+ devra utiliser des mots de passe non chiffrés.
+ Voyez /usr/share/doc/samba-doc/htmldocs/ENCRYPTION.html dans le
+ paquet samba-doc pour plus de détails.
+
+Template: samba/log_files_moved
+Type: note
+Description: Samba's log files have moved.
+ Starting with the first packages of Samba 2.2 for Debian the log files for
+ both Samba daemons (nmbd and smbd) are now stored in /var/log/samba/. The
+ names of the files are log.nmbd and log.smbd, for nmbd and smbd
+ respectively.
+ .
+ The old log files that were in /var/log/ will be moved to the new location
+ for you.
+Description-fr: Les fichiers-journaux de Samba ont changé de place.
+ À partir des premiers paquets de Samba 2.2 pour Debian, les fichiers-journaux
+ des démons nmbd et smbd se trouvent dans /var/log/samba/. Les noms de ces
+ fichiers sont log.nmbd et log.smbd pour, respectivement, nmbd et smbd.
+ .
+ Les anciens fichiers-journaux dans /var/log/ seront mis au bon endroit.

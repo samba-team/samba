@@ -1,7 +1,9 @@
 #!/bin/sh
+#
+# $Id: samba.postrm,v 1.2.2.2 2002/05/02 20:20:28 jerry Exp $
+#
 
 if [ "$1" = purge ]; then
-	update-rc.d samba remove >/dev/null
 
 	# Remove WINS.DAT, BROWSE.DAT and lock information file
 	rm -Rf /var/samba/
@@ -10,17 +12,24 @@ if [ "$1" = purge ]; then
 	rm -Rf /var/lock/samba/
 
 	# Remove files left in /etc/samba/
-	rm -Rf /etc/samba/debian_config
 	rm -Rf /etc/samba/MACHINE.SID
 
 	# Remove log files
-	rm -f /var/log/[ns]mb*
+	rm -Rf /var/log/samba/
+
+	# Remove init.d configuration file
+	echo  Removing configuration file /etc/default/samba...  >&2
+	rm -f /etc/default/samba
 
 	# Remove NetBIOS entries from /etc/inetd.conf
 	update-inetd --remove netbios-ssn
 	update-inetd --remove netbios-ns
+
+	update-rc.d samba remove >/dev/null
 else
 	# Not purging, do not remove NetBIOS entries from /etc/inetd.conf
 	update-inetd --disable netbios-ssn
 	update-inetd --disable netbios-ns
 fi
+
+#DEBHELPER#

@@ -1,30 +1,45 @@
 Samba for Debian
 ----------------
 
-This package was built by Eloy Paris <peloy@debian.org> and Steve
-Langasek <vorlon@debian.org>, current maintainers of the Samba packages
-for Debian, based on work from Bruce Perens <Bruce@Pixar.com>, Andrew
+This package was built by Eloy Paris <peloy@debian.org> and Steve Langasek
+<vorlon@debian.org>, current maintainers of the Samba packages for Debian,
+based on previous work from Bruce Perens <Bruce@Pixar.com>, Andrew
 Howell <andrew@it.com.au>, Klee Dienes <klee@debian.org> and Michael
 Meskes <meskes@topsystem.de>, all previous maintainers of the packages
-samba and sambades (now merged together - see below).
+samba and sambades (merged together for longer than we can remember.)
 
-As of Samba 2.0.6-1, the Debian version of Samba is compiled with
-Pluggable Authentication Modules (PAM) support. PAM support was 
-discontinued during the libc5 -> libc6 migration process and I never
-brought it back until 2.0.6-1.
+Contents of this README file:
 
-The smbfs package does not support the 2.0.x Linux kernels anymore.
-This has been the case since the very first packages of the CVS sources
-that eventually became Samba 2.2. To use the smbfs package you need to
-run a 2.2.x kernel or later.
+1. Notes
+2. Packages Generated from the Samba Sources
+3. Support for NT Domains
+4. Samba and LDAP
+5. Reporting bugs
 
-Starting with the Debian packages for Samba 2.2, the Samba log files (for
-nmbd and smbd) have been moved to a new location: /var/log/samba/. The
-files also have new names: log.nmbd and log.smbd. The old files
-(/var/log/{nmb,smb} were moved to the new location.
 
-As of Samba 2.2.2-11, the Samba sources produce the following binary
-packages:
+1. Notes
+--------
+
+- As of Samba 2.0.6-1, the Debian version of Samba is compiled with
+  Pluggable Authentication Modules (PAM) support. PAM support was 
+  discontinued during the libc5 -> libc6 migration process and I never
+  brought it back until 2.0.6-1.
+
+- The smbfs package does not support the 2.0.x Linux kernels anymore.
+  This has been the case since the very first packages of the CVS sources
+  that eventually became Samba 2.2. To use the smbfs package you need to
+  run a 2.2.x kernel or later.
+
+- Starting with the Debian packages for Samba 2.2, the Samba log files (for
+  nmbd and smbd) have been moved to a new location: /var/log/samba/. The
+  files also have new names: log.nmbd and log.smbd. The old files
+  (/var/log/{nmb,smb} were moved to the new location.
+
+
+2. Packages Generated from the Samba Sources
+--------------------------------------------
+
+Currently, the Samba sources produce the following binary packages:
 
 samba: A LanManager like file and printer server for Unix.
 samba-common: Samba common files used by both the server and the client.
@@ -37,7 +52,8 @@ libpam-smbpass: pluggable authentication module for SMB password
 	database.
 libsmbclient: Shared library that allows applications to talk to SMB servers.
 libsmbclient-dev: libsmbclient shared libraries.
-
+winbind: Service to resolve user and group information from a Windows NT 
+	server.
 
 Please note that the package smbwrapper (a shared library that provides
 SMB client services that existed between Samba 2.0.0-1 and Samba-2.0.5a-4
@@ -47,8 +63,9 @@ recommended to disable the compilation of smbwrapper until some issues
 with glibc2.1 get cleared out (the problem is with glibc, not with Samba
 itself).
 
-Support for NT Domains
-----------------------
+
+3. Support for NT Domains
+-------------------------
 
 Samba 2.2 includes preliminary support for NT domains. A Samba server
 can now be part of a Windows NT domain whose Primary Domain Controller
@@ -66,6 +83,58 @@ section).
 Please note that NT domain PDC support is far from complete and is still 
 experimental.
 
+
+4. Samba and LDAP
+-----------------
+
+Samba 2.2 has experimental LDAP code. However, the official Debian
+packages have not been compiled with LDAP support for a good reason: if
+LDAP support is compiled in then the other authentication methods (PAM,
+smbpasswd, etc.) cannot be used, only LDAP will work. So, until LDAP
+cannot coexist peacefully with the other methods we will not provided
+LDAP-enabled packages. The workaround is, of course, to build your own
+packages. We can help with this if you don't know how to build packages.
+
+We follow Samba development, so please do not file bug reports asking
+for LDAP, we will add support for it when it doesn't break other
+things.
+
+
+5. Reporting Bugs
+-----------------
+
+If you believe you have found a bug please make sure the possible bug
+also exists in the latest version of Samba that is available for the
+unstable Debian distribution. If you are running Debian stable this
+means that you will probably have to build your own packages. And if the
+problem does not exist in the latest version of Samba we have packaged it
+means that you will have to run the version of Samba you built yourself
+since it is not easy to upload new packages to the stable distribution,
+unless they fix critical security problems.
+
+If you can reproduce the problem in the latest version of Samba then
+it is likely to be a real bug. Your best shot is to search the Samba
+mailing lists to see if it is something that has already been reported
+and fixed - if it is a simple fix we can add the patch to our packages
+without waiting for a new Samba release.
+
+If you decide that your problem deserves to be submitted to the Debian
+Bug Tracking System (BTS) we expect you to be responsive if we request
+more information. If we request more information and do not receive
+any in a reasonable time frame expect to see your bug closed without
+explanation - we can't fix bugs we can't reproduce, and most of the
+time we need more information to be able to reproduce them.
+
+When submitting a bug to the Debian BTS please include the version of
+the Debian package you are using as well as the Debian distribution you
+are using. Think _twice_ about the severity you assign to the bug: we
+are _very_ sensitive about bug severities; the fact that it doesn't
+work for you doesn't mean that the severity must be such that it holds
+a major Debian release. In fact, that it doesn't work for you it
+doesn't mean that it doesn't work for others. So again: think _twice_.
+
+
 Eloy A. Paris <peloy@debian.org>
 Steve Langasek <vorlon@debian.org>
-January 14, 2002
+
+$Id: README.debian,v 1.2.2.2 2002/05/02 20:20:28 jerry Exp $

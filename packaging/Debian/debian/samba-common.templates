@@ -1,0 +1,28 @@
+Template: samba-common/do_debconf
+Type: boolean
+Default: true
+Description: Configure smb.conf through debconf?
+ The rest of the configuration of Samba deals with questions that
+ affect parameters in /etc/samba/smb.conf, which is the file used
+ to configure the Samba programs (nmbd and smbd.) If you want to be
+ asked just a few questions then select "Yes" and continue with the
+ configuration. If you want to have full control, select "No" and
+ configure your smb.conf manually or through SWAT.
+
+Template: samba-common/workgroup
+Type: string
+Description: Workgroup/Domain Name?
+ This controls what workgroup your server will appear to be in when
+ queried by clients. Note that this parameter also controls the Domain
+ name used with the security=domain setting.
+
+Template: samba-common/encrypt_passwords
+Type: boolean
+Default: true
+Description: Use password encryption?
+ Recent Windows clients communicate with SMB servers using encrypted
+ passwords. If you want to use clear text passwords you will need to
+ change a parameter in your Windows registry. It is recommended that
+ you use encrypted passwords. If you do, make sure you have a valid
+ /etc/samba/smbpasswd file and that you set passwords in there for
+ each user using the smbpasswd command.

@@ -1,6 +1,6 @@
---- samba-2.2.2.cvs20020120.orig/source/client/smbmount.c
-+++ samba-2.2.2.cvs20020120/source/client/smbmount.c
-@@ -719,7 +719,7 @@
+--- samba-2.2.4/source/client/smbmount.c.orig	Wed May  1 23:13:57 2002
++++ samba-2.2.4/source/client/smbmount.c	Thu May  2 00:20:44 2002
+@@ -716,7 +716,7 @@
  					*lp = 0;
  					pstrcpy(password,lp+1);
  					got_pass = True;
@@ -9,7 +9,7 @@
  				}
  				if ((lp=strchr(username,'/'))) {
  					*lp = 0;
-@@ -729,7 +729,7 @@
+@@ -726,7 +726,7 @@
  				  !strcmp(opts, "password")) {
  				pstrcpy(password,opteq+1);
  				got_pass = True;
@@ -18,7 +18,7 @@
  			} else if(!strcmp(opts, "credentials")) {
  				pstrcpy(credentials,opteq+1);
  			} else if(!strcmp(opts, "netbiosname")) {
-@@ -822,7 +822,7 @@
+@@ -819,7 +819,7 @@
  			*p = 0;
  			pstrcpy(password,p+1);
  			got_pass = True;
@@ -27,6 +27,20 @@
  		}
  		strupper(username);
  	}
+--- samba-2.2.4/source/pam_smbpass/pam_smb_passwd.c.orig	Wed May  1 23:14:47 2002
++++ samba-2.2.4/source/pam_smbpass/pam_smb_passwd.c	Thu May  2 00:20:44 2002
+@@ -190,6 +190,11 @@
+ 
+     } else if (flags & PAM_UPDATE_AUTHTOK) {
+ 
++/*
++	The following has been commented out per Steve Langasek
++	<vorlon@debian.org> instructions. It's about Debian bug
++	#113763.
++*/
+ #if 0
+         /* We used to return when this flag was set, but that breaks
+            password synchronization when /other/ tokens are expired.  For
 --- samba-2.2.2.cvs20020120.orig/source/script/installbin.sh
 +++ samba-2.2.2.cvs20020120/source/script/installbin.sh
 @@ -11,7 +11,7 @@
@@ -61,7 +75,7 @@
        echo $FNAME
 -      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
 -      chmod 0644 $FNAME
-+      ln -s ../../../../doc/samba-doc/htmldocs/`basename $f` $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
++      ln -s ../../../doc/samba-doc/htmldocs/`basename $f` $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
 +#      chmod 0644 $FNAME
  done
  
@@ -78,6 +92,17 @@
  
      # Create directories
  
+--- samba-2.2.2.cvs20020120.orig/source/smbwrapper/smbsh.c
++++ samba-2.2.2.cvs20020120/source/smbwrapper/smbsh.c
+@@ -39,7 +39,7 @@
+ int main(int argc, char *argv[])
+ {
+ 	char *p, *u;
+-	char *libd = BINDIR;	
++	char *libd = "/usr/share/samba";	
+ 	pstring line, wd;
+ 	int opt;
+ 	extern char *optarg;
 --- samba-2.2.2.cvs20020120.orig/source/web/diagnose.c
 +++ samba-2.2.2.cvs20020120/source/web/diagnose.c
 @@ -54,6 +54,7 @@
@@ -108,92 +133,20 @@
  	
  	become_daemon();
  
---- samba-2.2.2.cvs20020120.orig/source/web/swat.c
-+++ samba-2.2.2.cvs20020120/source/web/swat.c
-@@ -49,6 +49,19 @@
- #define ENABLE_USER_FLAG "enable_user_flag"
- #define RHOST "remote_host"
+--- samba-2.2.4/source/smbd/service.c.orig	Wed May  1 23:15:10 2002
++++ samba-2.2.4/source/smbd/service.c	Thu May  2 00:20:44 2002
+@@ -713,6 +713,14 @@
+ 		smbrun(cmd,NULL);
+ 	}
  
-+typedef struct html_conversion {
-+	char src;
-+	char *dest;
-+} html_conversion;
++	/* If our root postexec command includes a call to 'unmount', we want
++	   to make sure we aren't blocking the mount point. */
++	/* I think this patch should go here, but I am not sure since
++	   the code looks very different than in Samba 2.2.2. Will come
++	   back later; should check what change_to_root_user() does. Eloy.-
++	vfs_ChDir(conn,"/");
++	/*
 +
-+static const html_conversion entities[] = {
-+	{ '"', "&quot;"	},
-+	{ '&', "&amp;"	},
-+	{ '<', "&lt;"	},
-+	{ '>', "&gt;"	},
-+	{ '\0', NULL },
-+};
-+
- /* we need these because we link to locking*.o */
-  void become_root(void) {}
-  void unbecome_root(void) {}
-@@ -77,6 +90,51 @@
- 	return newstring;
- }
- 
-+static char *htmlentities(char *str)
-+{
-+	int i,j, destlen = 0;
-+	int length = strlen(str);
-+	/* Feel free to use a pstring if appropriate -- I haven't 
-+	   checked if it's guaranteed to be long enough, and suspect it 
-+	   isn't. -SRL */
-+	char *dststr = NULL;
-+	char *p;
-+
-+	for (i = 0; i < length; i++) {
-+		for (j = 0; entities[j].src; j++) {
-+			if (str[i] == entities[j].src) {
-+				destlen += strlen(entities[j].dest);
-+				break;
-+			}
-+		}
-+		if (!entities[j].src) {
-+			destlen++;
-+		}
-+	}
-+	if (length == destlen) {
-+		return(strdup(str));
-+	}
-+	p = dststr = malloc(destlen + 1);
-+	if (!dststr) {
-+		return(NULL);
-+	}
-+	dststr[destlen] = '\0';
-+	for (i = 0; i < length; i++) {
-+		for (j = 0; entities[j].src; j++) {
-+			if (str[i] == entities[j].src) {
-+				strncpy(p, entities[j].dest,
-+				        strlen(entities[j].dest));
-+				p += strlen(entities[j].dest);
-+				break;
-+			}
-+		}
-+		if (!entities[j].src) {
-+			*p++ = str[i];
-+		}
-+	}
-+	return(dststr);
-+}
-+
- static char *stripspace(char *str)
- {
- static char newstring[1024];
-@@ -182,8 +240,12 @@
- 
- 	case P_STRING:
- 	case P_USTRING:
--		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
--		       make_parm_name(parm->label), *(char **)ptr);
-+		str = htmlentities(*(char **)ptr);
-+		printf("<input type=\"text\" size=\"40\" name=\"parm_%s\" value=\"%s\">",
-+		       make_parm_name(parm->label), str);
-+		if (str != NULL) {
-+			free(str);
-+		}
- 		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
- 			make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
- 		break;
+ 	change_to_root_user();
+ 	/* execute any "root postexec = " line */
+ 	if (*lp_rootpostexec(SNUM(conn)))  {
