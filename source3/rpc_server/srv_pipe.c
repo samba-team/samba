@@ -731,9 +731,9 @@ BOOL check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 	{
 		if ( strequal(pipe_names[i].client_pipe, pname)
 			&& (abstract->version == pipe_names[i].abstr_syntax.version) 
-			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(RPC_UUID)) == 0)
+			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(struct uuid)) == 0)
 			&& (transfer->version == pipe_names[i].trans_syntax.version)
-			&& (memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid, sizeof(RPC_UUID)) == 0) )
+			&& (memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid, sizeof(struct uuid)) == 0) )
 		{
 			struct api_struct 	*fns = NULL;
 			int 			n_fns = 0;

@@ -1091,20 +1091,14 @@ static void dump_binary(const char *field, struct berval **values)
 	}
 }
 
-struct uuid {
-        uint32   i1;
-        uint16   i2;
-        uint16   i3;
-        uint8    s[8];
-};
-
 static void dump_guid(const char *field, struct berval **values)
 {
 	int i;
-	GUID guid;
+	UUID_FLAT guid;
 	for (i=0; values[i]; i++) {
 		memcpy(guid.info, values[i]->bv_val, sizeof(guid.info));
-		printf("%s: %s\n", field, smb_uuid_string_static(guid));
+		printf("%s: %s\n", field, 
+		       smb_uuid_string_static(smb_uuid_unpack_static(guid)));
 	}
 }
 

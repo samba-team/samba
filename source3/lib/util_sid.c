@@ -617,23 +617,6 @@ char *sid_binstring(const DOM_SID *sid)
 	return s;
 }
 
-
-/*****************************************************************
- Print a GUID structure for debugging.
-*****************************************************************/
-
-void print_guid(GUID *guid)
-{
-	int i;
-
-	d_printf("%08x-%04x-%04x", 
-		 IVAL(guid->info, 0), SVAL(guid->info, 4), SVAL(guid->info, 6));
-	d_printf("-%02x%02x-", guid->info[8], guid->info[9]);
-	for (i=10;i<GUID_SIZE;i++)
-		d_printf("%02x", guid->info[i]);
-	d_printf("\n");
-}
-
 /*******************************************************************
  Tallocs a duplicate SID. 
 ********************************************************************/ 
