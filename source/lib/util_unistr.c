@@ -80,6 +80,16 @@ int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
     return(ret);
 }
 
+/* from TNG - should be fixed */
+char *skip_unibuf(char *src, int len)
+{
+    char *srcend = src + len;
+
+    while (src < srcend && SVAL(src,0)) src += 2;
+
+    return src;
+}
+
 /*******************************************************************
  Skip past some unicode strings in a buffer.
 ********************************************************************/

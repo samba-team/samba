@@ -2832,11 +2832,24 @@ align a pointer to a multiple of 2 bytes
 ********************************************************************/
 char *align2(char *q, char *base)
 {
-	if ((q - base) & 1)
-	{
-		q++;
-	}
-	return q;
+    if (PTR_DIFF(q, base) & 1)
+    {
+        q++;
+    }
+    return q;
+}
+
+/*******************************************************************
+ align a pointer to a multiple of 4 bytes.
+ ********************************************************************/
+char *align4(char *q, char *base)
+{
+    int mod = PTR_DIFF(q, base) & 3;
+    if (mod != 0)
+    {
+        q += 4-mod;
+    }
+    return q;
 }
 
 void out_ascii(FILE *f, unsigned char *buf,int len)

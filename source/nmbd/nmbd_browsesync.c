@@ -323,8 +323,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
     putip((char *)&work->dmb_addr, &ipzero);
 
   /* Now initiate the node status request. */
-  memset((char *)&nmbname, '\0',sizeof(nmbname));
-  nmbname.name[0] = '*';
+  make_nmb_name(&nmbname,"*",0x0);
 
   /* Put the workgroup name into the userdata so we know
      what workgroup we're talking to when the reply comes
@@ -548,8 +547,7 @@ static void find_all_domain_master_names_query_success(struct subnet_record *sub
   for(i = 0; i < rrec->rdlength / 6; i++)
   {
     /* Initiate the node status requests. */
-    memset((char *)&nmbname, '\0', sizeof(nmbname));
-    nmbname.name[0] = '*';
+    make_nmb_name(&nmbname, "*", 0);
 
     putip((char *)&send_ip, (char *)&rrec->rdata[(i*6) + 2]);
 

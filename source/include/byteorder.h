@@ -268,7 +268,7 @@ it also defines lots of intermediate macros, just ignore those :-)
              tab_depth(depth), base, string, outbuf)); }
 
 /* Alignment macros. */
-#define ALIGN4(p,base) ((4 - (PTR_DIFF((q), (base)) % 4)) & ~3)
-#define ALIGN2(p,base) ((2 - (PTR_DIFF((q), (base)) % 2)) & ~1)
+#define ALIGN4(p,base) ((p) + ((4 - (PTR_DIFF((p), (base)) % 4)) & ~3))
+#define ALIGN2(p,base) ((p) + ((2 - (PTR_DIFF((p), (base)) % 2)) & ~1))
 
 #endif /* _BYTEORDER_H */

@@ -292,6 +292,7 @@ BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
 char *align2(char *q, char *base);
+char *align4(char *q, char *base);
 void out_ascii(FILE *f, unsigned char *buf,int len);
 void out_data(FILE *f,char *buf1,int len, int per_line);
 void print_asc(int level, unsigned char *buf,int len);
@@ -413,6 +414,7 @@ char *string_truncate(char *s, int length);
 /*The following definitions come from  lib/util_unistr.c  */
 
 int dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate);
+char *skip_unibuf(char *src, int len);
 char *skip_unicode_string(char *buf,int n);
 char *dos_unistrn2(uint16 *src, int len);
 char *dos_unistr2(uint16 *src);
