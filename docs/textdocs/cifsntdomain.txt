@@ -1,5 +1,5 @@
 !==
-!== cifsntdomain.txt for Samba release 1.9.18p3 19 Feb 1998
+!== cifsntdomain.txt for Samba release 1.9.18p4 28 Mar 1998
 !==
 NT Domain Authentication
 ------------------------

@@ -20,9 +20,9 @@ Changing passwords now supported
 --------------------------------
 
 Samba now supports changing the SMB password from a Windows 95 client,
-using the standard Windows 95 password changing dialog. Note that this
-changes the SMB password, not the UNIX password (Samba must be set up
-with encrypted passwords in order to support this).
+using the standard Windows 95 password changing dialog. Note that by
+default this changes the SMB password, not the UNIX password (Samba
+must be set up with encrypted passwords in order to support this).
 
 The smbpasswd program has been re-written to take advantage of this
 feature, and now has no need to be a setuid root program, thus eliminating
@@ -117,10 +117,10 @@ It does a broadcast name release for WORKGROUP<0> and WORKGROUP<1e>
 names and don't set the group bit.
 4). Ensure all the NetBIOS aliases are added to all the known 
 interfaces on nmbd initialization.
-5). Fix bug in multiple query name responces print code.
+5). Fix bug in multiple query name responses print code.
 6). Fix to send out mailslot reply on correct interface.
 7). Fix retranmission queue to scan WINS server subnet so
-nmbd retransmitts queries needed when acting as a WINS server.
+nmbd retransmits queries needed when acting as a WINS server.
 Thanks to Andrey Alekseyev <fetch@muffin.arcadia.spb.ru> for
 spotting this one.
 8). Send host announcement to correct 0x1d name rather than

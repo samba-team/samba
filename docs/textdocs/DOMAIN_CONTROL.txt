@@ -1,5 +1,5 @@
 !==
-!== DOMAIN_CONTROL.txt for Samba release 1.9.18p3 19 Feb 1998
+!== DOMAIN_CONTROL.txt for Samba release 1.9.18p4 28 Mar 1998
 !==
 Initial Release:	August 22, 1996
 Contributor:		John H Terpstra <samba-bugs@samba.anu.edu.au>

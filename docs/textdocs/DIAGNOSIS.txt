@@ -1,5 +1,5 @@
 !==
-!== DIAGNOSIS.txt for Samba release 1.9.18p3 19 Feb 1998
+!== DIAGNOSIS.txt for Samba release 1.9.18p4 28 Mar 1998
 !==
 Contributor:	Andrew Tridgell
 Updated:	October 14, 1997
