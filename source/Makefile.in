@@ -91,7 +91,7 @@ FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 WINBIND_PROGS = @WINBIND_TARGETS@
 WINBIND_SPROGS = @WINBIND_STARGETS@
 WINBIND_PAM_PROGS = @WINBIND_PAM_TARGETS@
-WINBIND_LPROGS = @WINBIND_LTARGETS@
+WINBIND_LPROGS = nsswitch/@WINBIND_LTARGETS@
 
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/tdbbackup bin/make_printerdef @RUNPROG@ 
@@ -628,46 +628,63 @@ bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbwrapper.@SHLIBEXT@: smbwrapper.@SHLIBEXT@
+bin/smbwrapper.@SHLIBEXT@: $(PICOBJS) bin/.dummy
+	$(MAKE) smbwrapper.@SHLIBEXT@
 
-bin/smbwrapper.32.@SHLIBEXT@: smbwrapper.32.@SHLIBEXT@
-
-smbwrapper.@SHLIBEXT@: $(PICOBJS)
+smbwrapper.@SHLIBEXT@: $(PICOBJS) bin/.dummy
 	@echo Linking shared library bin/$@
 	@$(SHLD) @LDSHFLAGS@ -o bin/$@ $(PICOBJS) $(LIBS)
 
-smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
+bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32) bin/.dummy
+	$(MAKE) smbwrapper.32.@SHLIBEXT@
+
+smbwrapper.32.@SHLIBEXT@: $(PICOBJS32) bin/.dummy
 	@echo Linking shared library bin/$@
 	@$(SHLD) -32 @LDSHFLAGS@ -o bin/$@ $(PICOBJS32) $(LIBS)
 
-libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
+bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS) bin/.dummy
+	$(MAKE) libsmbclient.@SHLIBEXT@
+
+libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS) bin/.dummy
 	@echo Linking libsmbclient shared library bin/$@
 	@$(SHLD) @LDSHFLAGS@ -o bin/$@ $(LIBSMBCLIENT_PICOBJS) $(LIBS) \
 		@SONAMEFLAG@libsmbclient.so.$(LIBSMBCLIENT_MAJOR)
 
-libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
-	@echo Linking libsmbclient non-shared library bin/$@
-	@-$(AR) -rc bin/$@ $(LIBSMBCLIENT_PICOBJS)
+bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS) bin/.dummy
+	@echo Linking libsmbclient non-shared library $@
+	@-$(AR) -rc $@ $(LIBSMBCLIENT_PICOBJS)
 
-bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ)
-	@echo Linking shared library $@
-	$(SHLD) @LDSHFLAGS@ -symbolic -o $@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) -lc
+bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ) bin/.dummy
+	$(MAKE) pam_smbpass.@SHLIBEXT@
+
+pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_OBJ) bin/.dummy
+	@echo Linking shared library bin/$@
+	$(SHLD) @LDSHFLAGS@ -symbolic -o bin/$@ $(PAM_SMBPASS_OBJ) $(LDFLAGS) -lpam $(DYNEXP) $(LIBS) -lc
 
 nsswitch/libnss_wins.so: $(NSS_OBJ)
-	@echo "Linking $@"
-	@$(SHLD) @LDSHFLAGS@ -o $@ $(NSS_OBJ) -lc
+	$(MAKE) libnss_wins.so
+
+libnss_wins.so: $(NSS_OBJ)
+	@echo "Linking nsswitch/$@"
+	@$(SHLD) @LDSHFLAGS@ -o nsswitch/$@ $(NSS_OBJ) -lc
 
 bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) 
 
+nsswitch/@WINBIND_LTARGETS@: $(WINBIND_NSS_PICOBJS)
+	$(MAKE) @WINBIND_LTARGETS@
+
 @WINBIND_LTARGETS@: $(WINBIND_NSS_PICOBJS)
-	@echo "Linking $@"
+	@echo "Linking nsswitch/$@"
 	@$(SHLD) @LDSHFLAGS@ -o nsswitch/$@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@
 
-nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
-	@echo Linking $@
-	@$(SHLD) @LDSHFLAGS@ -o $@ $(PAM_WINBIND_OBJ)
+nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ)
+	$(MAKE) pam_winbind.so
+
+pam_winbind.so: $(PAM_WINBIND_OBJ)
+	@echo Linking nsswitch/$@
+	@$(SHLD) @LDSHFLAGS@ -o nsswitch/$@ $(PAM_WINBIND_OBJ)
 
 bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) \
 			$(UBIQX_OBJ) @BUILD_POPT@ bin/.dummy
