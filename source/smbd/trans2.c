@@ -79,8 +79,8 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
     {
       /* Calculate whether we will totally or partially fill this packet */
       total_sent_thistime = params_to_send + data_to_send + alignment_offset;
-      /* We can never send more than maxxmit */
-      total_sent_thistime = MIN(total_sent_thistime, maxxmit);
+      /* We can never send more than useable_space */
+      total_sent_thistime = MIN(total_sent_thistime, useable_space);
 
       set_message(outbuf, 10, total_sent_thistime, True);
 
