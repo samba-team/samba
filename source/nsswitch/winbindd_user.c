@@ -103,6 +103,9 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 	TALLOC_CTX *mem_ctx;
 	
+	/* Ensure null termination */
+	state->request.data.username[sizeof(state->request.data.username)-1]='\0';
+
 	DEBUG(3, ("[%5d]: getpwnam %s\n", state->pid,
 		  state->request.data.username));
 	

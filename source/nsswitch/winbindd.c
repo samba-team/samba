@@ -375,6 +375,9 @@ void winbind_process_packet(struct winbindd_cli_state *state)
 {
 	/* Process request */
 	
+	/* Ensure null termination of entire request */
+	state->request.domain[sizeof(state->request.domain)-1]='\0';
+
 	state->pid = state->request.pid;
 	
 	process_request(state);

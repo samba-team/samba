@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 4
+#define WINBIND_INTERFACE_VERSION 5
 
 /* Socket commands */
 
@@ -107,6 +107,12 @@ enum winbindd_cmd {
 	WINBINDD_NUM_CMDS
 };
 
+#define WINBIND_PAM_INFO3_NDR  0x0001
+#define WINBIND_PAM_INFO3_TEXT 0x0002
+#define WINBIND_PAM_NTKEY      0x0004
+#define WINBIND_PAM_LMKEY      0x0008
+#define WINBIND_PAM_CONTACT_TRUSTDOM 0x0010
+
 /* Winbind request structure */
 
 struct winbindd_request {
@@ -132,6 +138,8 @@ struct winbindd_request {
                         uint16 lm_resp_len;
                         fstring nt_resp;
                         uint16 nt_resp_len;
+			fstring workstation;
+			uint32 flags;
                 } auth_crap;
                 struct {
                     fstring user;
@@ -216,6 +224,8 @@ struct winbindd_response {
 			fstring nt_status_string;
 			fstring error_string;
 			int pam_error;
+			char nt_session_key[16];
+			char first_8_lm_hash[8];
 		} auth;
 	} data;
 
