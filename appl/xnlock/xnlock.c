@@ -979,7 +979,7 @@ main (int argc, char **argv)
 #if defined(HAVE_SRANDOMDEV)
     srandomdev();
 #elif defined(HAVE_RANDOM)
-    srandom(time(NULL);
+    srandom(time(NULL));
 #else
     srand (time(NULL));
 #endif
