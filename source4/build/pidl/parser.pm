@@ -1316,10 +1316,6 @@ sub ParseFunctionPush($)
 
 	pidl "\n\tif (!(flags & NDR_IN)) goto ndr_out;\n\n";
 
-	if (util::has_property($fn, "object")) {
-		# FIXME: Set COM version and possibly causality ID 
-	}
-	
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "in")) {
 			ParseFunctionElementPush($e, "in");
