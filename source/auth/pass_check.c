@@ -542,6 +542,8 @@ static BOOL krb5_auth(char *user,char *password)
 #endif /* KRB5_AUTH */
 
 #ifdef KRB4_AUTH
+#include <krb.h>
+
 /*******************************************************************
 check on Kerberos authentication
 ********************************************************************/
@@ -555,7 +557,7 @@ static BOOL krb4_auth(char *user,char *password)
 	}
 
 	(void) slprintf(tkfile, sizeof(tkfile) - 1, "/tmp/samba_tkt_%d", 
-			getpid());
+			(int)getpid());
   
 	krb_set_tkt_string(tkfile);
 	if (krb_verify_user(user, "", realm,

@@ -124,6 +124,7 @@
 #undef HAVE_LIBREADLINE
 #undef HAVE_KERNEL_OPLOCKS
 #undef HAVE_IRIX_SPECIFIC_CAPABILITIES
+#undef KRB4_AUTH
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -505,6 +506,9 @@
 
 /* Define if you have the readline library (-lreadline).  */
 #undef HAVE_LIBREADLINE
+
+/* Define if you have the resolv library (-lresolv).  */
+#undef HAVE_LIBRESOLV
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET

@@ -12,6 +12,7 @@ INSTALL_MAN=$(prefix)/man
 LIBS=@LIBS@
 CC=@CC@
 CFLAGS=@CFLAGS@
+LDFLAGS=@LDFLAGS@
 AWK=@AWK@
 
 INSTALLCMD=@INSTALL@
@@ -221,59 +222,59 @@ CHECK:
 
 bin/smbd: $(SMBD_OBJ) 
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LIBS) 
 
 bin/nmbd: $(NMBD_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/swat: $(SWAT_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(LIBS) 
 
 bin/smbrun: $(SMBRUN_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBRUN_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBRUN_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/rpcclient: $(RPCCLIENT_OBJ) 
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbclient: $(CLIENT_OBJ) 
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/testparm: $(TESTPARM_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/testprns: $(TESTPRNS_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbstatus: $(STATUS_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbpasswd: $(SMBPASSWD_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) 
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/nmblookup: $(NMBLOOKUP_OBJ)
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ) 
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MAKE_PRINTERDEF_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(MAKE_PRINTERDEF_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbtorture: $(SMBTORTURE_OBJ) 
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
 
 
 install: installbin installman installscripts installcp installswat
