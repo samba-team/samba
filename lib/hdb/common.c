@@ -83,6 +83,7 @@ hdb_entry2value(krb5_context context, hdb_entry *ent, krb5_data *value)
     unsigned char *buf;
     size_t len;
     int ret;
+
     len = length_hdb_entry(ent);
     buf = malloc(len);
     if(buf == NULL)
@@ -116,6 +117,8 @@ _hdb_fetch(krb5_context context, HDB *db, hdb_entry *entry)
     if(code)
 	return code;
     hdb_value2entry(context, &value, entry);
+    if (db->master_key_set)
+	hdb_unseal_keys (entry, db->master_key);
     krb5_data_free(&value);
     return 0;
 }
@@ -127,6 +130,8 @@ _hdb_store(krb5_context context, HDB *db, int replace, hdb_entry *entry)
     int code;
 
     hdb_principal2key(context, entry->principal, &key);
+    if (db->master_key_set)
+	hdb_seal_keys(entry, db->master_key);
     hdb_entry2value(context, entry, &value);
     code = db->_put(context, db, replace, key, value);
     krb5_data_free(&value);
