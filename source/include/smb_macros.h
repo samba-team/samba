@@ -97,9 +97,6 @@
 #define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
 				return(ERROR_DOS(ERRDOS,ERRbadaccess))
 
-#define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
-				return(CACHED_ERROR(fsp))
-
 #define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
 				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )
 
@@ -158,25 +155,23 @@
 #define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
 
-/* Macro to cache an error in a write_bmpx_struct */
-#define CACHE_ERROR(w,c,e) ((w)->wr_errclass = (c), (w)->wr_error = (e), \
-                w->wr_discard = True, -1)
 /* Macro to test if an error has been cached for this fnum */
 #define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
                 (fsp)->wbmpx_ptr->wr_discard)
 /* Macro to turn the cached error into an error packet */
 #define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
 
-/* these are the datagram types */
-#define DGRAM_DIRECT_UNIQUE 0x10
-
-#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,False,__LINE__,__FILE__)
-#define ERROR_FORCE_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,True,__LINE__,__FILE__)
-#define ERROR_NT(status) error_packet(outbuf,status,0,0,False,__LINE__,__FILE__)
-#define ERROR_BOTH(status,class,code) error_packet(outbuf,status,class,code,False,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
+#define ERROR_FORCE_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_INVALID,__LINE__,__FILE__)
+#define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
+#define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
+#define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
 
 /* this is how errors are generated */
-#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
+#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
+
+/* these are the datagram types */
+#define DGRAM_DIRECT_UNIQUE 0x10
 
 #define SMB_ROUNDUP(x,r) ( ((x)%(r)) ? ( (((x)+(r))/(r))*(r) ) : (x))
 

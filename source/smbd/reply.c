@@ -1206,7 +1206,6 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		END_PROFILE(SMBopen);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
-			clear_cached_errors();
 			return -1;
 		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
@@ -1304,7 +1303,6 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		END_PROFILE(SMBopenX);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
-			clear_cached_errors();
 			return -1;
 		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
@@ -1453,7 +1451,6 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		END_PROFILE(SMBcreate);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
-			clear_cached_errors();
 			return -1;
 		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
@@ -1537,7 +1534,6 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		END_PROFILE(SMBctemp);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
-			clear_cached_errors();
 			return -1;
 		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
@@ -1599,20 +1595,19 @@ static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype,
 		return NT_STATUS_OK;
 
 	/* We need a better way to return NT status codes from open... */
-	unix_ERR_class = 0;
-	unix_ERR_code = 0;
+	set_saved_error_triple(0, 0, NT_STATUS_OK);
 
 	fsp = open_file_shared1(conn, fname, pst, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
 		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
 
 	if (!fsp) {
-		NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
-		if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
-			ret = NT_STATUS_SHARING_VIOLATION;
-		unix_ERR_class = 0;
-		unix_ERR_code = 0;
-		unix_ERR_ntstatus = NT_STATUS_OK;
-		return ret;
+		NTSTATUS ret;
+		if (get_saved_error_triple(NULL, NULL, &ret)) {
+			set_saved_error_triple(0, 0, NT_STATUS_OK);
+			return ret;
+		}
+		set_saved_error_triple(0, 0, NT_STATUS_OK);
+		return NT_STATUS_ACCESS_DENIED;
 	}
 	close_file(fsp,False);
 	return NT_STATUS_OK;
@@ -1672,22 +1667,19 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, int dirtype, BOOL bad_
 		   don't do it here as we'll get it wrong. */
 
 		/* We need a better way to return NT status codes from open... */
-		unix_ERR_class = 0;
-		unix_ERR_code = 0;
+		set_saved_error_triple(0, 0, NT_STATUS_OK);
 
 		fsp = open_file_shared1(conn, fname, &sbuf, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
 			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
 
 		if (!fsp) {
-			NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
-			if (!NT_STATUS_IS_OK(unix_ERR_ntstatus))
-				ret = unix_ERR_ntstatus;
-			else if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
-				ret = NT_STATUS_SHARING_VIOLATION;
-			unix_ERR_class = 0;
-			unix_ERR_code = 0;
-			unix_ERR_ntstatus = NT_STATUS_OK;
-			return ret;
+			NTSTATUS ret;
+			if (get_saved_error_triple(NULL, NULL, &ret)) {
+				set_saved_error_triple(0, 0, NT_STATUS_OK);
+				return ret;
+			}
+			set_saved_error_triple(0, 0, NT_STATUS_OK);
+			return NT_STATUS_ACCESS_DENIED;
 		}
 		close_file(fsp,False);
 	}
@@ -1856,7 +1848,6 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
-			clear_cached_errors();
 			return -1;
 		}
 		return ERROR_NT(status);
@@ -3456,21 +3447,6 @@ NTSTATUS mkdir_internal(connection_struct *conn, const pstring directory, BOOL b
 		return map_nt_error_from_unix(errno);
 	}
 
-	/* The following 2 clauses set explicit DOS error codes. JRA. */
-	if (ms_has_wild(directory)) {
-		DEBUG(5,("mkdir_internal: failing create on filename %s with wildcards\n", directory));
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRinvalidname;
-		return NT_STATUS_OBJECT_NAME_INVALID;
-	}
-
-	if( strchr_m(directory, ':')) {
-		DEBUG(5,("mkdir_internal: failing create on filename %s with colon in name\n", directory));
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRinvalidname;
-		return NT_STATUS_NOT_A_DIRECTORY;
-	}
-
 	if (bad_path) {
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
@@ -3521,6 +3497,12 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
 
+	if( strchr_m(directory, ':')) {
+		DEBUG(5,("reply_mkdir: failing create on filename %s with colon in name\n", directory));
+		END_PROFILE(SMBmkdir);
+		return ERROR_FORCE_DOS(ERRDOS, ERRinvalidname);
+	}
+
 	status = mkdir_internal(conn, directory,bad_path);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBmkdir);
@@ -3530,7 +3512,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	if (lp_inherit_owner(SNUM(conn))) {
 		/* Ensure we're checking for a symlink here.... */
 		/* We don't want to get caught by a symlink racer. */
-                                                                                                                                                   
+
 		if(SMB_VFS_LSTAT(conn,directory, &sbuf) != 0) {
 			END_PROFILE(SMBmkdir);
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -4328,7 +4310,6 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		END_PROFILE(SMBmv);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
-			clear_cached_errors();
 			return -1;
 		}
 		return ERROR_NT(status);
@@ -4592,8 +4573,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 			return ERROR_DOS(ERRDOS,error);
 		} else {
 			if((errno == ENOENT) && (bad_path1 || bad_path2)) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadpath;
+				set_saved_error_triple(ERRDOS, ERRbadpath, NT_STATUS_OK);
 			}
 			END_PROFILE(SMBcopy);
 			return(UNIXERROR(ERRDOS,error));
@@ -5149,7 +5129,9 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 
 	CHECK_FSP(fsp,conn);
 	CHECK_WRITE(fsp);
-	CHECK_ERROR(fsp);
+	if (HAS_CACHED_ERROR(fsp)) {
+		return(CACHED_ERROR(fsp));
+	}
 
 	tcount = SVAL(inbuf,smb_vwv1);
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv3);
@@ -5292,8 +5274,12 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 			END_PROFILE(SMBwriteBs);
 			return(ERROR_DOS(ERRHRD,ERRdiskfull));
 		}
+		wbms->wr_errclass = ERRHRD;
+		wbms->wr_error = ERRdiskfull;
+		wbms->wr_status = NT_STATUS_DISK_FULL;
+		wbms->wr_discard = True;
 		END_PROFILE(SMBwriteBs);
-		return(CACHE_ERROR(wbms,ERRHRD,ERRdiskfull));
+		return -1;
 	}
 
 	/* Increment the total written, if this matches tcount

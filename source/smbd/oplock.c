@@ -934,6 +934,9 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 		abort();
 	}
 
+	/* We know we have no saved errors here. */
+	set_saved_error_triple(0, 0, NT_STATUS_OK);
+
 	if( DEBUGLVL( 3 ) ) {
 		dbgtext( "oplock_break: returning success for " );
 		dbgtext( "dev = %x, inode = %.0f, file_id = %lu\n", (unsigned int)dev, (double)inode, file_id );

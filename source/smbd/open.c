@@ -76,9 +76,7 @@ static void check_for_pipe(const char *fname)
 	strlower_m(s);
 	if (strstr(s,"pipe/")) {
 		DEBUG(3,("Rejecting named pipe open for %s\n",fname));
-		unix_ERR_class = ERRSRV;
-		unix_ERR_code = ERRaccess;
-		unix_ERR_ntstatus = NT_STATUS_ACCESS_DENIED;
+		set_saved_error_triple(ERRSRV, ERRaccess, NT_STATUS_ACCESS_DENIED);
 	}
 }
 
@@ -250,9 +248,7 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 
 		/* Don't create files with Microsoft wildcard characters. */
 		if ((local_flags & O_CREAT) && !VALID_STAT(*psbuf) && ms_has_wild(fname))  {
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRinvalidname;
-			unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_INVALID;
+			set_saved_error_triple(ERRDOS, ERRinvalidname, NT_STATUS_OBJECT_NAME_INVALID);
 			return False;
 		}
 
@@ -487,9 +483,7 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 		DEBUG(5,("check_share_mode: Failing open on file %s as delete on close flag is set.\n",
 			fname ));
 		/* Use errno to map to correct error. */
-		unix_ERR_class = SMB_SUCCESS;
-		unix_ERR_code = 0;
-		unix_ERR_ntstatus = NT_STATUS_OK;
+		set_saved_error_triple(SMB_SUCCESS, 0, NT_STATUS_OK);
 		return False;
 	}
 
@@ -529,10 +523,7 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 				(!GET_ALLOW_SHARE_DELETE(share->share_mode) || !GET_ALLOW_SHARE_DELETE(share_mode))) {
 			DEBUG(5,("check_share_mode: Failing open on file %s as delete access requests conflict.\n",
 				fname ));
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadshare;
-			unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
-
+			set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 			return False;
 		}
 
@@ -557,10 +548,7 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 	if ((desired_access & DELETE_ACCESS) && !GET_ALLOW_SHARE_DELETE(share->share_mode)) {
 		DEBUG(5,("check_share_mode: Failing open on file %s as delete access requested and allow share delete not set.\n",
 			fname ));
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRbadshare;
-		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
-
+		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 		return False;
 	}
 
@@ -573,18 +561,14 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 	if ((share->desired_access & DELETE_ACCESS) && !GET_ALLOW_SHARE_DELETE(share_mode)) {
 		DEBUG(5,("check_share_mode: Failing open on file %s as delete access granted and allow share delete not requested.\n",
 			fname ));
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRbadshare;
-		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 		return False;
 	}
 
 #if 0
 	/* Bluarc test may need this ... needs further investigation. */
 	if (deny_mode == DENY_ALL || old_deny_mode == DENY_ALL) {
-		unix_ERR_class = ERRDOS;
-		unix_ERR_code = ERRbadshare;
-		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+		set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 		return False;
 	}
 #endif
@@ -614,10 +598,7 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 				deny_mode,old_deny_mode,old_open_mode,
 				(int)share->pid,fname, fcbopen, *flags, access_allowed));
 
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadshare;
-			unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
-
+			set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 			return False;
 		}
 
@@ -768,10 +749,7 @@ dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsi
 					DEBUG(0,("open_mode_check: FAILED when breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
 					SAFE_FREE(old_shares);
-					errno = EACCES;
-					unix_ERR_class = ERRDOS;
-					unix_ERR_code = ERRbadshare;
-					unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+					set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 					return -1;
 				}
 				
@@ -835,9 +813,7 @@ after break ! For file %s, dev = %x, inode = %.0f. Deleting it to continue...\n"
 					if (del_share_entry(dev, inode, &broken_entry->entry, NULL) == -1) {
 						free_broken_entry_list(broken_entry_list);
 						errno = EACCES;
-						unix_ERR_class = ERRDOS;
-						unix_ERR_code = ERRbadshare;
-						unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+						set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 						return -1;
 					}
 					
@@ -1104,9 +1080,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 			delete_defered_open_entry_record(conn, dib.dev, dib.inode);
 			unlock_share_entry(conn, dib.dev, dib.inode);
 
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadshare;
-			unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+			set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 			return NULL;
 		}
 		/* Ensure we don't reprocess this message. */
@@ -1136,11 +1110,8 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 				ofun = FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST;
 				break;
 			}
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRinvalidparam;
-			unix_ERR_ntstatus = NT_STATUS_INVALID_LOCK_SEQUENCE;
-			/* need to reset errno or DEVELOPER will cause us to coredump */
-			errno = 0;
+			/* Cause caller to force dos errors. */
+			set_saved_error_triple(ERRDOS, ERRbadaccess, NT_STATUS_INVALID);
 			return NULL;
 	}
 
@@ -1163,13 +1134,9 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 
 	/* this is for OS/2 long file names - say we don't support them */
 	if (strstr(fname,".+,;=[].")) {
-		unix_ERR_class = ERRDOS;
 		/* OS/2 Workplace shell fix may be main code stream in a later release. */ 
-		unix_ERR_code = ERRcannotopen;
-		unix_ERR_ntstatus = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		set_saved_error_triple(ERRDOS, ERRcannotopen, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		DEBUG(5,("open_file_shared: OS/2 long filenames are not supported.\n"));
-		/* need to reset errno or DEVELOPER will cause us to coredump */
-		errno = 0;
 		return NULL;
 	}
 
@@ -1232,11 +1199,8 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 				desired_access = FILE_READ_DATA|FILE_WRITE_DATA;
 			break;
 		default:
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRinvalidparam;
-			unix_ERR_ntstatus = NT_STATUS_INVALID_LOCK_SEQUENCE;
-			/* need to reset errno or DEVELOPER will cause us to coredump */
-			errno = 0;
+			/* Force DOS error. */
+			set_saved_error_triple(ERRDOS, ERRinvalidparam, NT_STATUS_INVALID);
 			return NULL;
 	}
 
@@ -1311,9 +1275,8 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 				flags,(flags2&~(O_TRUNC|O_CREAT)),(int)mode,(int)fsp_open ));
 
 			if (!fsp_open && errno) {
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRnoaccess;
-				unix_ERR_ntstatus = NT_STATUS_ACCESS_DENIED;
+				/* Default error. */
+				set_saved_error_triple(ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED);
 			}
 
 			/* 
@@ -1321,9 +1284,13 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			 * the braindead 1 second delay.
 			 */
 
-			if (!internal_only_open && NT_STATUS_EQUAL(unix_ERR_ntstatus,NT_STATUS_SHARING_VIOLATION)) {
-				/* The fsp->open_time here represents the current time of day. */
-				defer_open_sharing_error(conn, &fsp->open_time, fname, dev, inode);
+			if (!internal_only_open) {
+				NTSTATUS status;
+				get_saved_error_triple(NULL, NULL, &status);
+				if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
+					/* The fsp->open_time here represents the current time of day. */
+					defer_open_sharing_error(conn, &fsp->open_time, fname, dev, inode);
+				}
 			}
 
 			unlock_share_entry(conn, dev, inode);
@@ -1333,9 +1300,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 				 * We have detected a sharing violation here
 				 * so return the correct error code
 				 */
-				unix_ERR_class = ERRDOS;
-				unix_ERR_code = ERRbadshare;
-				unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+				set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 			}
 			file_free(fsp);
 			return NULL;
@@ -1407,7 +1372,9 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			 * the braindead 1 second delay.
 			 */
 
-			if (!internal_only_open && NT_STATUS_EQUAL(unix_ERR_ntstatus,NT_STATUS_SHARING_VIOLATION)) {
+			NTSTATUS status;
+			get_saved_error_triple(NULL, NULL, &status);
+			if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION)) {
 				/* The fsp->open_time here represents the current time of day. */
 				defer_open_sharing_error(conn, &fsp->open_time, fname, dev, inode);
 			}
@@ -1419,9 +1386,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			 * We have detected a sharing violation here, so
 			 * return the correct code.
 			 */
-                        unix_ERR_class = ERRDOS;
-                        unix_ERR_code = ERRbadshare;
-                        unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+			set_saved_error_triple(ERRDOS, ERRbadshare, NT_STATUS_SHARING_VIOLATION);
 			return NULL;
 		}
 
@@ -1549,9 +1514,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 			fd_close(conn,fsp);
 			file_free(fsp);
 			ntstatus_to_dos(result, &u_e_c, &u_e_code);
-                        unix_ERR_ntstatus = result;
-                        unix_ERR_class = u_e_c;
-                        unix_ERR_code = u_e_code;
+			set_saved_error_triple(u_e_c, u_e_code, result);
 			return NULL;
 		}
 	}
@@ -1704,7 +1667,7 @@ files_struct *open_directory(connection_struct *conn, const char *fname, SMB_STR
 					 fname, strerror(errno) ));
 				file_free(fsp);
 				/* Ensure we return the correct NT status to the client. */
-				unix_ERR_ntstatus = status;
+				set_saved_error_triple(0, 0, status);
 				return NULL;
 			}
 
