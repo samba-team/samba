@@ -301,6 +301,8 @@ do_request(void *buf, size_t len,
 	sendto(socket, reply.data, reply.length, 0, from, from_len);
 	krb5_data_free(&reply);
     }
+    if(ret)
+	kdc_log(0, "Failed processing %d byte request from %s", len, addr);
 }
 
 static void
