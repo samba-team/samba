@@ -73,7 +73,7 @@ BOOL smbd_running(void)
 	if (!cli_initialise(&cli))
 		return False;
 
-	if (!cli_connect(&cli, "localhost", &loopback_ip)) {
+	if (!cli_connect(&cli, global_myname(), &loopback_ip)) {
 		cli_shutdown(&cli);
 		return False;
 	}
