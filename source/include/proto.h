@@ -1330,6 +1330,7 @@ void lp_talloc_free(void);
 char *lp_logfile(void);
 char *lp_smbrun(void);
 char *lp_configfile(void);
+char *lp_tdb_passwd_file(void);
 char *lp_smb_passwd_file(void);
 char *lp_serverstring(void);
 char *lp_printcapname(void);
@@ -1699,6 +1700,10 @@ BOOL local_password_change(char *user_name, int local_flags,
 BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL pw_file_unlock(int fd, int *plock_depth);
 BOOL trust_password_delete(char *domain);
+
+/*The following definitions come from  passdb/tdbpass.c  */
+
+struct passdb_ops *tdb_initialize_password_db(void);
 
 /*The following definitions come from  printing/load.c  */
 
