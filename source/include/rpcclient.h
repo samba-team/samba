@@ -121,7 +121,7 @@ struct nt_client_info
     struct nt_client_info dom;
 }; */
 
-struct client_info
+typedef struct client_info
 {
     struct in_addr dest_ip;
     fstring dest_host;
@@ -133,7 +133,7 @@ struct client_info
 
     BOOL reuse;
     BOOL show_prompt;
-};
+} CLIENT_INFO;
 
 
 enum action_type {ACTION_HEADER, ACTION_ENUMERATE, ACTION_FOOTER};

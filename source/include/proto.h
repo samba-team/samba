@@ -46,8 +46,7 @@ void add_char_string(char *s);
 /*The following definitions come from  lib/cmd_interp.c  */
 
 void free_cmd_set_array(uint32 num_entries, struct command_set **entries);
-struct command_set *add_cmd_set_to_array(uint32 *len,
-					 struct command_set ***array,
+struct command_set *add_cmd_set_to_array(uint32 *len, struct command_set ***array,
 					 const struct command_set *cmd);
 void add_command_set(const struct command_set *cmds);
 void cmd_set_no_autoconnect(void);
