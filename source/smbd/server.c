@@ -852,11 +852,6 @@ static void usage(char *pname)
 		exit(1);
 	}
 
-	if (!init_group_mapping()) {
-		DEBUG(0,("Could not open tdb mapping file.\n"));
-		return 0;
-	}
-
 	if (!init_account_policy()) {
 		DEBUG(0,("Could not open account policy tdb.\n"));
 		exit(1);
