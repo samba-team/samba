@@ -1648,7 +1648,7 @@ static int cmd_allinfo(const char **cmd_ptr)
 	}
 	pstrcat(fname,buf);
 
-	mem_ctx = talloc_init(fname);
+	mem_ctx = talloc_init("%s", fname);
 
 	/* first a ALL_INFO QPATHINFO */
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
@@ -1763,7 +1763,7 @@ static int cmd_acl(const char **cmd_ptr)
 		return -1;
 	}
 
-	mem_ctx = talloc_init(fname);
+	mem_ctx = talloc_init("%s", fname);
 
 	query.in.fnum = fnum;
 	query.in.secinfo_flags = 0x7;
