@@ -124,7 +124,7 @@ typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *)
 struct ldb_backend_ops {
 	int (*close)(struct ldb_context *);
 	int (*search)(struct ldb_context *, const char *, enum ldb_scope,
-		      const char *, char * const [], struct ldb_message ***);
+		      const char *, const char * const [], struct ldb_message ***);
 	int (*search_free)(struct ldb_context *, struct ldb_message **);
 	int (*add_record)(struct ldb_context *, const struct ldb_message *);
 	int (*modify_record)(struct ldb_context *, const struct ldb_message *);
@@ -174,7 +174,7 @@ int ldb_search(struct ldb_context *ldb,
 	       const char *base,
 	       enum ldb_scope scope,
 	       const char *expression,
-	       char * const attrs[], struct ldb_message ***res);
+	       const char * const *attrs, struct ldb_message ***res);
 
 /* 
    free a set of messages returned by ldb_search

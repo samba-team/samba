@@ -41,81 +41,23 @@ static void usage(void)
 	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
 	printf("  -s base|sub|one  choose search scope\n");
 	printf("  -b basedn        choose baseDN\n");
+	printf("  -i               read search expressions from stdin\n");
 	exit(1);
 }
 
- int main(int argc, char * const argv[])
+static void do_search(struct ldb_context *ldb,
+		      const char *basedn,
+		      int scope,
+		      const char *expression,
+		      const char * const *attrs)
 {
-	struct ldb_context *ldb;
-	struct ldb_message **msgs;
 	int ret, i;
-	const char *expression;
-	char * const *attrs = NULL;
-	const char *ldb_url;
-	const char *basedn = NULL;
-	int opt;
-	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
-
-	ldb_url = getenv("LDB_URL");
-
-	while ((opt = getopt(argc, argv, "b:H:s:h")) != EOF) {
-		switch (opt) {
-		case 'b':
-			basedn = optarg;
-			break;
-
-		case 'H':
-			ldb_url = optarg;
-			break;
-
-		case 's':
-			if (strcmp(optarg, "base") == 0) {
-				scope = LDB_SCOPE_BASE;
-			} else if (strcmp(optarg, "sub") == 0) {
-				scope = LDB_SCOPE_SUBTREE;
-			} else if (strcmp(optarg, "one") == 0) {
-				scope = LDB_SCOPE_ONELEVEL;
-			}
-			break;
-
-		case 'h':
-		default:
-			usage();
-			break;
-		}
-	}
-
-	if (!ldb_url) {
-		fprintf(stderr, "You must specify a ldb URL\n\n");
-		usage();
-	}
-
-	argc -= optind;
-	argv += optind;
-
-	if (argc < 1) {
-		usage();
-		exit(1);
-	}
-
-	if (argc > 1) {
-		attrs = argv+1;
-	}
-
-	expression = argv[0];
-
-	ldb = ldb_connect(ldb_url, 0, NULL);
-
-	if (!ldb) {
-		perror("ldb_connect");
-		exit(1);
-	}
+	struct ldb_message **msgs;
 
 	ret = ldb_search(ldb, basedn, scope, expression, attrs, &msgs);
-
 	if (ret == -1) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
-		exit(1);
+		return;
 	}
 
 	printf("# returned %d records\n", ret);
@@ -136,6 +78,82 @@ static void usage(void)
 			fprintf(stderr, "search_free failed\n");
 			exit(1);
 		}
+	}
+}
+
+ int main(int argc, char * const argv[])
+{
+	struct ldb_context *ldb;
+	const char * const * attrs = NULL;
+	const char *ldb_url;
+	const char *basedn = NULL;
+	int opt;
+	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
+	int interactive = 0;
+
+	ldb_url = getenv("LDB_URL");
+
+	while ((opt = getopt(argc, argv, "b:H:s:hi")) != EOF) {
+		switch (opt) {
+		case 'b':
+			basedn = optarg;
+			break;
+
+		case 'H':
+			ldb_url = optarg;
+			break;
+
+		case 's':
+			if (strcmp(optarg, "base") == 0) {
+				scope = LDB_SCOPE_BASE;
+			} else if (strcmp(optarg, "sub") == 0) {
+				scope = LDB_SCOPE_SUBTREE;
+			} else if (strcmp(optarg, "one") == 0) {
+				scope = LDB_SCOPE_ONELEVEL;
+			}
+			break;
+
+		case 'i':
+			interactive = 1;
+			break;
+
+		case 'h':
+		default:
+			usage();
+			break;
+		}
+	}
+
+	if (!ldb_url) {
+		fprintf(stderr, "You must specify a ldb URL\n\n");
+		usage();
+	}
+
+	argc -= optind;
+	argv += optind;
+
+	if (argc < 1 && !interactive) {
+		usage();
+		exit(1);
+	}
+
+	if (argc > 1) {
+		attrs = argv+1;
+	}
+
+	ldb = ldb_connect(ldb_url, 0, NULL);
+	if (!ldb) {
+		perror("ldb_connect");
+		exit(1);
+	}
+
+	if (interactive) {
+		char line[1024];
+		while (fgets(line, sizeof(line), stdin)) {
+			do_search(ldb, basedn, scope, line, attrs);
+		}
+	} else {
+		do_search(ldb, basedn, scope, argv[0], attrs);
 	}
 
 	ldb_close(ldb);
