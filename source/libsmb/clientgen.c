@@ -2634,8 +2634,14 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				char *service, char *service_type,
 				BOOL do_shutdown, BOOL do_tcon)
 {
+	fstring callingstr;
+	fstring calledstr;
+
+	nmb_safe_namestr(calling, callingstr, sizeof(callingstr));
+	nmb_safe_namestr(called , calledstr , sizeof(calledstr ));
+
 	DEBUG(5,("cli_establish_connection: %s connecting to %s (%s) - %s [%s]\n",
-		          nmb_namestr(calling), nmb_namestr(called), inet_ntoa(*dest_ip),
+		          callingstr, calledstr, inet_ntoa(*dest_ip),
 	              cli->user_name, cli->domain));
 
 	/* establish connection */
@@ -2650,7 +2656,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		if (!cli_connect(cli, dest_host, dest_ip))
 		{
 			DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
-					  nmb_namestr(calling), inet_ntoa(*dest_ip)));
+					  callingstr, inet_ntoa(*dest_ip)));
 			return False;
 		}
 	}
@@ -2762,7 +2768,6 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
 	return True;
 }
-
 
 /****************************************************************************
  connect to one of multiple servers: don't care which
