@@ -974,18 +974,17 @@ checking for a logon as it doesn't export the password
 hashes to anyone who has compromised the secure channel. JRA.
 ********************************************************************/
 
-void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
+void init_id_info2(NET_ID_INFO_2 * id, const char *dos_domain_name,
 		   uint32 param_ctrl,
 		   uint32 log_id_low, uint32 log_id_high,
-		   const char *user_name, const char *wksta_name,
+		   const char *dos_user_name, const char *dos_wksta_name,
 		   const uchar lm_challenge[8],
 		   const uchar * lm_chal_resp, int lm_chal_resp_len,
 		   const uchar * nt_chal_resp, int nt_chal_resp_len)
 {
-	fstring dos_wksta_name, dos_user_name, dos_domain_name;
-	int len_domain_name = strlen(domain_name);
-	int len_user_name   = strlen(user_name  );
-	int len_wksta_name  = strlen(wksta_name );
+	int len_domain_name = strlen(dos_domain_name);
+	int len_user_name   = strlen(dos_user_name  );
+	int len_wksta_name  = strlen(dos_wksta_name );
 	unsigned char lm_owf[24];
 	unsigned char nt_owf[128];
 
@@ -1015,15 +1014,6 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 	memcpy(id->lm_chal, lm_challenge, sizeof(id->lm_chal));
 	init_str_hdr(&id->hdr_nt_chal_resp, nt_chal_resp_len, nt_chal_resp_len, (nt_chal_resp != NULL) ? 1 : 0);
 	init_str_hdr(&id->hdr_lm_chal_resp, lm_chal_resp_len, lm_chal_resp_len, (lm_chal_resp != NULL) ? 1 : 0);
-
-	fstrcpy(dos_wksta_name, wksta_name);
-	unix_to_dos(dos_wksta_name);
-
-	fstrcpy(dos_user_name, user_name);
-	unix_to_dos(dos_user_name);
-
-	fstrcpy(dos_domain_name, domain_name);
-	unix_to_dos(dos_domain_name);
 
 	init_unistr2(&id->uni_domain_name, dos_domain_name, len_domain_name);
 	init_unistr2(&id->uni_user_name, dos_user_name, len_user_name);
@@ -1204,7 +1194,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 			 uint16 logon_count, uint16 bad_pw_count,
  		 	 uint32 num_groups, DOM_GID *gids,
 			 uint32 user_flgs, uchar *sess_key,
- 			 char *logon_srv, char *logon_dom,
+ 			 char *dos_logon_srv, char *dos_logon_dom,
 			 DOM_SID *dom_sid, char *other_sids)
 {
 	/* only cope with one "other" sid, right now. */
@@ -1226,8 +1216,8 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	const char*		logon_script = pdb_get_logon_script(sampw);
 	const char*		profile_path = pdb_get_profile_path(sampw);
 
-	int len_logon_srv    = strlen(logon_srv);
-	int len_logon_dom    = strlen(logon_dom);
+	int len_logon_srv    = strlen(dos_logon_srv);
+	int len_logon_dom    = strlen(dos_logon_dom);
 
 	len_user_name    = strlen(user_name   );
 	len_full_name    = strlen(full_name   );
@@ -1313,8 +1303,8 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	for (i = 0; i < num_groups; i++) 
 		usr->gids[i+1] = gids[i];	
 		
-	init_unistr2(&usr->uni_logon_srv, logon_srv, len_logon_srv);
-	init_unistr2(&usr->uni_logon_dom, logon_dom, len_logon_dom);
+	init_unistr2(&usr->uni_logon_srv, dos_logon_srv, len_logon_srv);
+	init_unistr2(&usr->uni_logon_dom, dos_logon_dom, len_logon_dom);
 
 	init_dom_sid2(&usr->dom_sid, dom_sid);
 	/* "other" sids are set up above */

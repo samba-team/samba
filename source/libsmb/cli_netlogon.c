@@ -401,7 +401,7 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Logon domain user */
 
 NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                char *username, char *password,
+                                const char *unix_username, const char *unix_password,
                                 int logon_type)
 {
 	prs_struct qbuf, rbuf;
@@ -413,6 +413,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         NET_ID_INFO_CTR ctr;
         NET_USER_INFO_3 user;
         int validation_level = 3;
+	fstring dos_username, dos_password;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -421,6 +422,11 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	fstrcpy(dos_username, unix_username);
+	unix_to_dos(dos_username);
+	fstrcpy(dos_password, unix_password);
+	unix_to_dos(dos_password);
 
         /* Initialise input parameters */
 
@@ -437,12 +443,12 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         case INTERACTIVE_LOGON_TYPE: {
                 unsigned char lm_owf_user_pwd[16], nt_owf_user_pwd[16];
 
-                nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
+                nt_lm_owf_gen(dos_password, nt_owf_user_pwd, lm_owf_user_pwd);
 
                 init_id_info1(&ctr.auth.id1, lp_workgroup(), 
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
-                              username, cli->clnt_name_slash,
+                              dos_username, cli->clnt_name_slash,
                               (char *)cli->sess_key, lm_owf_user_pwd,
                               nt_owf_user_pwd);
 
@@ -455,13 +461,13 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
                 generate_random_buffer(chal, 8, False);
 
-                SMBencrypt((const uchar *)password, chal, local_lm_response);
-                SMBNTencrypt((const uchar *)password, chal, local_nt_response);
+                SMBencrypt((const uchar *)dos_password, chal, local_lm_response);
+                SMBNTencrypt((const uchar *)dos_password, chal, local_nt_response);
 
                 init_id_info2(&ctr.auth.id2, lp_workgroup(), 
                               0, /* param_ctrl */
                               0xdead, 0xbeef, /* LUID? */
-                              username, cli->clnt_name_slash, chal,
+                              dos_username, cli->clnt_name_slash, chal,
                               local_lm_response, 24, local_nt_response, 24);
                 break;
         }
@@ -508,7 +514,7 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  **/
 
 NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-					const char *username, const char *domain, const char *workstation, 
+					const char *unix_username, const char *unix_domain, const char *workstation, 
 					const uint8 chal[8],
 					DATA_BLOB lm_response, DATA_BLOB nt_response,
 					NET_USER_INFO_3 *info3)
@@ -523,9 +529,15 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	extern pstring global_myname;
 	int validation_level = 3;
 	char *workstation_name_slash;
+	fstring dos_username, dos_domain;
 	
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
+
+	fstrcpy(dos_username, unix_username);
+	unix_to_dos(dos_username);
+	fstrcpy(dos_domain, unix_domain);
+	unix_to_dos(dos_domain);
 
 	workstation_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", workstation);
 	
@@ -550,10 +562,10 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 
         ctr.switch_value = NET_LOGON_TYPE;
 
-	init_id_info2(&ctr.auth.id2, domain,
+	init_id_info2(&ctr.auth.id2, dos_domain,
 		      0, /* param_ctrl */
 		      0xdead, 0xbeef, /* LUID? */
-		      username, workstation_name_slash, (const uchar*)chal,
+		      dos_username, workstation_name_slash, (const uchar*)chal,
 		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
  
         init_sam_info(&q.sam_id, cli->srv_name_slash, global_myname,
