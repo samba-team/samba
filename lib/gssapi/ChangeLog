@@ -1,3 +1,7 @@
+2003-02-21  Love Hörquist Åstrand <lha@it.su.se>
+
+	* (init_auth): only generate one subkey
+
 2003-01-27  Love Hörquist Åstrand <lha@it.su.se>
 
 	* verify_mic.c (verify_mic_des3): fix 3des verify_mic to conform
