@@ -58,7 +58,7 @@ void cmd_srv_query_info(struct client_info *info)
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
-		info_level = strtoul(tmp, (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_srv_query_info: server:%s info level: %d\n",
@@ -116,7 +116,7 @@ void cmd_srv_enum_conn(struct client_info *info)
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
-		info_level = strtoul(tmp, (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_srv_enum_conn: server:%s info level: %d\n",
@@ -176,7 +176,7 @@ void cmd_srv_enum_shares(struct client_info *info)
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
-		info_level = strtoul(tmp, (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_srv_enum_shares: server:%s info level: %d\n",
@@ -236,7 +236,7 @@ void cmd_srv_enum_sess(struct client_info *info)
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
-		info_level = strtoul(tmp, (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_srv_enum_sess: server:%s info level: %d\n",
@@ -288,7 +288,7 @@ void cmd_srv_enum_files(struct client_info *info)
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)-1))
 	{
-		info_level = strtoul(tmp, (char**)NULL, 10);
+		info_level = (uint32)strtol(tmp, (char**)NULL, 10);
 	}
 
 	DEBUG(4,("cmd_srv_enum_files: server:%s info level: %d\n",
