@@ -335,6 +335,16 @@ CFLAGS="$RPM_OPT_FLAGS"
 #make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE" all
 make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE" all smbfilter smbwrapper smbcacls pam_smbpass nsswitch nsswitch/libnss_wins.so debug2html
 
+cd ../example/VFS
+%configure      --prefix=%{prefix} \
+                --with-fhs \
+                --libdir=/etc/samba \
+                --sysconfdir=/etc/samba \
+                --localstatedir=/var
+make
+cd block
+make
+
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
@@ -353,7 +363,7 @@ mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba/{netlogon,profiles,printers}
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba/printers/{W32X86,WIN40,W32ALPHA,W32MIPS,W32PPC}
 mkdir -p $RPM_BUILD_ROOT/var/lib/samba/codepages/src
-mkdir -p $RPM_BUILD_ROOT/lib/security
+mkdir -p $RPM_BUILD_ROOT/lib/{security,samba}
 mkdir -p $RPM_BUILD_ROOT%prefix/lib
 
 # Install standard binary files
@@ -464,6 +474,13 @@ done
 	install -m644 packaging/Mandrake/system-auth-winbind.pamd $RPM_BUILD_ROOT/etc/pam.d/system-auth-winbind
 #
         install -m644 $RPM_SOURCE_DIR/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
+
+# Install VFS Modules
+	install -m755 example/VFS/audit.so $RPM_BUILD_ROOT/lib/samba/
+	install -m755 example/VFS/recycle.so $RPM_BUILD_ROOT/lib/samba/
+	install -m755 example/VFS/block/block.so $RPM_BUILD_ROOT/lib/samba/
+	install -m644 example/VFS/block/smb-block.conf $RPM_BUILD_ROOT/etc/samba/
+	install -m644 example/VFS/block/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf.example-with-block
 
 # Link smbmount to /sbin/mount.smb and /sbin/mount.smbfs
 
@@ -696,6 +713,8 @@ fi
 %{prefix}/bin/smbstatus
 %{prefix}/bin/convert_smbpasswd
 %attr(755,root,root) /lib/security/pam_smbpass*
+# Samba VFS modules
+%{prefix}/lib/samba/*
 #/usr/share/swat
 %attr(-,root,root) %config(noreplace) /etc/samba/smbusers
 %attr(-,root,root) %config /etc/rc.d/init.d/smb
@@ -811,6 +830,9 @@ fi
 %endif
 
 %changelog
+* Sun Jun 02 2002 John H Terpstra <jht@samba.org>
+- Added VFS modules
+
 * Fri Apr 26 2002 Buchan Milne <bgmilne@cae.co.za> 2.2.3a-12mdk
 - Final changes for 2.2.4 release
 - Removed patches 4(nsl),11(smbspool-guest)
