@@ -1433,6 +1433,7 @@ int write_data(int fd,char *buffer,int N);
 int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align);
 int read_smb_length(int fd,char *inbuf,int timeout);
 BOOL receive_smb(int fd,char *buffer, int timeout);
+BOOL client_receive_smb(int fd,char *buffer, int timeout);
 BOOL receive_local_message(int fd, char *buffer, int buffer_len, int timeout);
 BOOL push_local_message(char *buf, int msg_len);
 BOOL receive_message_or_smb(int smbfd, int oplock_fd, 

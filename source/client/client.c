@@ -152,7 +152,7 @@ void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num)
   SIVALS(outbuf,smb_vwv1, -1);
   
   send_smb(clnt_fd, outbuf);
-  receive_smb(clnt_fd,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(clnt_fd,inbuf,CLIENT_TIMEOUT);
 }
 
 /****************************************************************************
@@ -271,7 +271,7 @@ static BOOL chkpath(char *path,BOOL report)
 #endif
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
   if (report && CVAL(inbuf,smb_rcls) != 0)
     DEBUG(2,("chkpath: %s\n",smb_errstr(inbuf)));
@@ -309,7 +309,7 @@ static void send_message(char *inbuf,char *outbuf)
   send_smb(Client,outbuf);
   
 
-  if (!receive_smb(Client,inbuf,SHORT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0)
+  if (!client_receive_smb(Client,inbuf,SHORT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0)
     {
       printf("SMBsendstrt failed. (%s)\n",smb_errstr(inbuf));
       return;
@@ -349,7 +349,7 @@ static void send_message(char *inbuf,char *outbuf)
       send_smb(Client,outbuf);
       
 
-      if (!receive_smb(Client,inbuf,SHORT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0)
+      if (!client_receive_smb(Client,inbuf,SHORT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0)
 	{
 	  printf("SMBsendtxt failed (%s)\n",smb_errstr(inbuf));
 	  return;
@@ -372,7 +372,7 @@ static void send_message(char *inbuf,char *outbuf)
   send_smb(Client,outbuf);
   
 
-  if (!receive_smb(Client,inbuf,SHORT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0)
+  if (!client_receive_smb(Client,inbuf,SHORT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0)
     {
       printf("SMBsendend failed (%s)\n",smb_errstr(inbuf));
       return;
@@ -395,7 +395,7 @@ static void do_dskattr(void)
   cli_setup_pkt(outbuf);
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
   if (CVAL(inbuf,smb_rcls) != 0) 
     DEBUG(0,("Error in dskattr: %s\n",smb_errstr(inbuf)));      
@@ -714,7 +714,7 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
 	}
 
       send_smb(Client,outbuf);
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+      client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
       received = SVAL(inbuf,smb_vwv0);
 
@@ -764,7 +764,7 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
       memcpy(p,status,21);
 
       send_smb(Client,outbuf);
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+      client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
       if (CVAL(inbuf,smb_rcls) != 0) 
 	DEBUG(0,("Error closing search: %s\n",smb_errstr(inbuf)));      
@@ -1140,7 +1140,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
     }
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -1267,7 +1267,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
 	    }
 	  
 	  send_smb(Client,outbuf);
-	  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+	  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 	  
 	  if (CVAL(inbuf,smb_rcls) != 0)
 	    {
@@ -1360,7 +1360,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
 	  SSVAL(outbuf,smb_vwv4,finfo.size - nread);
 
 	  send_smb(Client,outbuf);
-	  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+	  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
 	  if (CVAL(inbuf,smb_rcls) != 0)
 	    {
@@ -1424,7 +1424,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
     *p++ = 4;
     *p = 0;
     send_smb(Client,outbuf);
-    receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+    client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   }
 
   {
@@ -1657,7 +1657,7 @@ static BOOL do_mkdir(char *name)
   strcpy(p,name);
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -1740,7 +1740,7 @@ static int smb_writeraw(char *outbuf,int fnum,int pos,char *buf,int n)
 
   send_smb(Client,outbuf);
   
-  if (!receive_smb(Client,inbuf,CLIENT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0)
+  if (!client_receive_smb(Client,inbuf,CLIENT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0)
     return(0);
 
   _smb_setlen(buf-4,n);		/* HACK! XXXX */
@@ -1748,7 +1748,7 @@ static int smb_writeraw(char *outbuf,int fnum,int pos,char *buf,int n)
   if (write_socket(Client,buf-4,n+4) != n+4)
     return(0);
 
-  if (!receive_smb(Client,inbuf,CLIENT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0) {
+  if (!client_receive_smb(Client,inbuf,CLIENT_TIMEOUT) || CVAL(inbuf,smb_rcls) != 0) {
     DEBUG(0,("Error writing remote file (2)\n"));
     return(0);
   }
@@ -1785,7 +1785,7 @@ static int smb_writefile(char *outbuf,int fnum,int pos,char *buf,int n)
   memcpy(smb_buf(outbuf)+3,buf,n);
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
   if (CVAL(inbuf,smb_rcls) != 0) {
     DEBUG(0,("%s writing remote file\n",smb_errstr(inbuf)));
@@ -1840,7 +1840,7 @@ static void do_put(char *rname,char *lname,file_info *finfo)
   strcpy(p,rname);
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -1912,7 +1912,7 @@ static void do_put(char *rname,char *lname,file_info *finfo)
   put_dos_date3(outbuf,smb_vwv1,close_time);
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -2241,7 +2241,7 @@ static void cmd_print(char *inbuf,char *outbuf )
   strcpy(p,rname);
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -2295,7 +2295,7 @@ static void cmd_print(char *inbuf,char *outbuf )
       SSVAL(smb_buf(outbuf),1,n);
 
       send_smb(Client,outbuf);
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+      client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
       if (CVAL(inbuf,smb_rcls) != 0)
 	{
@@ -2317,7 +2317,7 @@ static void cmd_print(char *inbuf,char *outbuf )
   SSVAL(outbuf,smb_vwv0,fnum);
 
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -2351,7 +2351,7 @@ static void cmd_queue(char *inbuf,char *outbuf )
   SSVAL(outbuf,smb_vwv1,0); /* the index into the queue */
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -2648,7 +2648,7 @@ static void do_del(file_info *finfo)
   strcpy(p,mask);
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     DEBUG(0,("%s deleting remote file %s\n",smb_errstr(inbuf),CNV_LANG(mask)));
@@ -2713,7 +2713,7 @@ static void cmd_rmdir(char *inbuf,char *outbuf )
   strcpy(p,mask);
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -2759,7 +2759,7 @@ static void cmd_rename(char *inbuf,char *outbuf )
   strcpy(p,dest);
   
   send_smb(Client,outbuf);
-  receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+  client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
   
   if (CVAL(inbuf,smb_rcls) != 0)
     {
@@ -3348,6 +3348,11 @@ static void wait_keyboard(char *buffer)
 	  }
       }
 #endif
+
+      /* We deliberately use receive_smb instead of
+         client_receive_smb as we want to receive
+         session keepalives and then drop them here.
+       */
       if (FD_ISSET(Client,&fds))
   	receive_smb(Client,buffer,0);
       

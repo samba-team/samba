@@ -2240,32 +2240,27 @@ int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align)
 
 /****************************************************************************
 read 4 bytes of a smb packet and return the smb length of the packet
-possibly store the result in the buffer
+store the result in the buffer
+This version of the function will return a length of zero on receiving
+a keepalive packet.
 ****************************************************************************/
-int read_smb_length(int fd,char *inbuf,int timeout)
+static int read_smb_length_return_keepalive(int fd,char *inbuf,int timeout)
 {
-  char *buffer;
-  char buf[4];
   int len=0, msg_type;
   BOOL ok=False;
-
-  if (inbuf)
-    buffer = inbuf;
-  else
-    buffer = buf;
 
   while (!ok)
     {
       if (timeout > 0)
-	ok = (read_with_timeout(fd,buffer,4,4,timeout) == 4);
+	ok = (read_with_timeout(fd,inbuf,4,4,timeout) == 4);
       else 
-	ok = (read_data(fd,buffer,4) == 4);
+	ok = (read_data(fd,inbuf,4) == 4);
 
       if (!ok)
 	return(-1);
 
-      len = smb_len(buffer);
-      msg_type = CVAL(buffer,0);
+      len = smb_len(inbuf);
+      msg_type = CVAL(inbuf,0);
 
       if (msg_type == 0x85) 
         DEBUG(5,("Got keepalive packet\n"));
@@ -2276,12 +2271,37 @@ int read_smb_length(int fd,char *inbuf,int timeout)
   return(len);
 }
 
+/****************************************************************************
+read 4 bytes of a smb packet and return the smb length of the packet
+store the result in the buffer. This version of the function will
+never return a session keepalive (length of zero).
+****************************************************************************/
+int read_smb_length(int fd,char *inbuf,int timeout)
+{
+  int len;
 
+  for(;;)
+  {
+    len = read_smb_length(fd, inbuf, timeout);
+
+    if(len < 0)
+      return len;
+
+    /* Ignore session keepalives. */
+    if(CVAL(inbuf,0) != 0x85)
+      break;
+  }
+
+  return len;
+}
 
 /****************************************************************************
   read an smb from a fd. Note that the buffer *MUST* be of size
   BUFFER_SIZE+SAFETY_MARGIN.
-The timeout is in milli seconds
+  The timeout is in milli seconds. 
+
+  This function will return on a
+  receipt of a session keepalive packet.
 ****************************************************************************/
 BOOL receive_smb(int fd,char *buffer, int timeout)
 {
@@ -2291,7 +2311,7 @@ BOOL receive_smb(int fd,char *buffer, int timeout)
 
   bzero(buffer,smb_size + 100);
 
-  len = read_smb_length(fd,buffer,timeout);
+  len = read_smb_length_return_keepalive(fd,buffer,timeout);
   if (len < 0)
     return(False);
 
@@ -2309,6 +2329,35 @@ BOOL receive_smb(int fd,char *buffer, int timeout)
     }
   }
   return(True);
+}
+
+/****************************************************************************
+  read an smb from a fd ignoring all keepalive packets. Note that the buffer 
+  *MUST* be of size BUFFER_SIZE+SAFETY_MARGIN.
+  The timeout is in milli seconds
+
+  This is exactly the same as receive_smb except that it never returns
+  a session keepalive packet (just as receive_smb used to do).
+  receive_smb was changed to return keepalives as the oplock processing means this call
+  should never go into a blocking read.
+****************************************************************************/
+
+BOOL client_receive_smb(int fd,char *buffer, int timeout)
+{
+  BOOL ret;
+
+  for(;;)
+  {
+    ret = receive_smb(fd, buffer, timeout);
+
+    if(ret == False)
+      return ret;
+
+    /* Ignore session keepalive packets. */
+    if(CVAL(buffer,0) != 0x85)
+      break;
+  }
+  return ret;
 }
 
 /****************************************************************************
