@@ -195,7 +195,7 @@ get_null (const struct addrinfo *hints,
 	v6_addr        = in6addr_any;
 #endif
     } else {
-	v4_addr.s_addr = INADDR_LOOPBACK;
+	v4_addr.s_addr = htonl(INADDR_LOOPBACK);
 #ifdef HAVE_IPV6
 	v6_addr        = in6addr_loopback;
 #endif
