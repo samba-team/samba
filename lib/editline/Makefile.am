@@ -13,7 +13,7 @@ endif
 
 noinst_PROGRAMS = testit
 
-check_LOCAL =
+CHECK_LOCAL =
 
 testit_LDADD = \
 	libeditline.a \
