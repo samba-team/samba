@@ -6,6 +6,9 @@
 
 /* The following definitions come from nsswitch/winbindd.c  */
 
+void winbind_process_packet(struct winbindd_cli_state *state);
+void winbind_client_read(struct winbindd_cli_state *state);
+int winbind_setup_common(void);
 int main(int argc, char **argv);
 
 /* The following definitions come from nsswitch/winbindd_ads.c  */
@@ -38,6 +41,13 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 NTSTATUS cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd,
 			     struct cli_state **cli);
 void winbindd_cm_status(void);
+
+/* The following definitions come from nsswitch/winbindd_dual.c  */
+
+int dual_select_setup(fd_set *fds, int maxfd);
+void dual_select(fd_set *fds);
+void dual_send_request(struct winbindd_cli_state *state);
+void do_dual_daemon(void);
 
 /* The following definitions come from nsswitch/winbindd_group.c  */
 

@@ -442,7 +442,8 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_cm.o \
 		nsswitch/winbindd_wins.o \
 		nsswitch/winbindd_rpc.o \
-		nsswitch/winbindd_ads.o
+		nsswitch/winbindd_ads.o \
+		nsswitch/winbindd_dual.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(NOPROTO_OBJ) $(PASSDB_OBJ) \

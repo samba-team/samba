@@ -51,7 +51,7 @@ void wcache_flush_cache(void)
 	if (opt_nocache) return;
 
 	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
-				   TDB_DEFAULT, O_RDWR | O_CREAT | O_TRUNC, 0600);
+				   TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0600);
 
 	if (!wcache->tdb) {
 		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
@@ -205,11 +205,17 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 {
 	NTSTATUS status;
 	unsigned time_diff;
+	unsigned cache_time = lp_winbind_cache_time();
+
+	/* trying to reconnect is expensive, don't do it too often */
+	if (domain->sequence_number == DOM_SEQUENCE_NONE) {
+		cache_time *= 8;
+	}
 
 	time_diff = time(NULL) - domain->last_seq_check;
 
 	/* see if we have to refetch the domain sequence number */
-	if (!force && (time_diff < lp_winbind_cache_time())) {
+	if (!force && (time_diff < cache_time)) {
 		return;
 	}
 
@@ -289,8 +295,14 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	centry->sequence_number = centry_uint32(centry);
 
 	if (centry_expired(domain, centry)) {
+		extern BOOL opt_dual_daemon;
+		if (opt_dual_daemon) {
+			extern BOOL backgroud_process;
+			backgroud_process = True;
+		} else {
 		centry_free(centry);
 		return NULL;
+	}
 	}
 
 	return centry;
