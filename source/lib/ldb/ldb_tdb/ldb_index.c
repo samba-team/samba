@@ -177,6 +177,9 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 	return 1;
 }
 
+
+static int list_union(struct ldb_context *, struct dn_list *, const struct dn_list *);
+
 /*
   return a list of dn's that might match a simple indexed search on
   the special objectclass attribute
@@ -190,8 +193,6 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 	unsigned int i;
 	int ret;
 	const char *target = tree->u.simple.value.data;
-	static int list_union(struct ldb_context *, 
-			      struct dn_list *, const struct dn_list *);
 
 	list->count = 0;
 	list->dn = NULL;
