@@ -889,7 +889,6 @@ NTSTATUS ntvfs_simple_init(void)
 	ZERO_STRUCT(ops);
 
 	/* fill in the name and type */
-	ops.name = "simple";
 	ops.type = NTVFS_DISK;
 
 	/* fill in all the operations */
@@ -921,12 +920,23 @@ NTSTATUS ntvfs_simple_init(void)
 	ops.search_close = svfs_search_close;
 	ops.trans = svfs_trans;
 
-	/* register ourselves with the NTVFS subsystem. We register under the name 'default'
-	   as we wish to be the default backend */
+	/* register ourselves with the NTVFS subsystem. We register
+	   under two names 'simple' and 'default' 
+	*/
+	ops.name = "simple";
 	ret = register_backend("ntvfs", &ops);
 
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,("Failed to register POSIX backend!\n"));
+		DEBUG(0,("Failed to register simple backend with name: %s!\n",
+			 ops.name));
+	}
+
+	/* also register as "default" */
+	ops.name = "default";
+	ret = register_backend("ntvfs", &ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register simple backend with name: %s!\n",
+			 ops.name));
 	}
 
 	return ret;
