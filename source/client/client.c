@@ -2587,18 +2587,6 @@ static void remember_query_host(const char *arg,
 	poptContext pc;
 	char *p;
 	int rc = 0;
-
-#ifdef KANJI
-	pstrcpy(term_code, KANJI);
-#else /* KANJI */
-	*term_code = 0;
-#endif /* KANJI */
-
-	*query_host = 0;
-	*base_directory = 0;
-
-	setup_logging(argv[0],True);
-
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		POPT_COMMON_SAMBA
@@ -2625,6 +2613,18 @@ static void remember_query_host(const char *arg,
 		{ 0, 0, 0, 0 }
 	};
 	
+
+#ifdef KANJI
+	pstrcpy(term_code, KANJI);
+#else /* KANJI */
+	*term_code = 0;
+#endif /* KANJI */
+
+	*query_host = 0;
+	*base_directory = 0;
+
+	setup_logging(argv[0],True);
+
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 
 				POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "service <password>");
