@@ -483,6 +483,7 @@ add_cred(krb5_context context, krb5_creds ***tgts, krb5_creds *tkt)
 	return ENOMEM;
     *tgts = tmp;
     ret = krb5_copy_creds(context, tkt, &tmp[i]);
+    tmp[i+1] = NULL;
     return ret;
 }
 
