@@ -191,6 +191,9 @@ AC_PROG_LD_GNU
 dnl needed before AC_TRY_COMPILE
 AC_ISC_POSIX
 
+dnl look for executable suffix
+AC_EXEEXT
+
 dnl Check if C compiler understands -c and -o at the same time
 AC_PROG_CC_C_O
 if eval "test \"`echo '$ac_cv_prog_cc_'${ac_cc}_c_o`\" = no"; then
@@ -736,7 +739,7 @@ fi
 # Check if we have execl, if not we need to compile smbrun.
 AC_CHECK_FUNCS(execl)
 if test x"$ac_cv_func_execl" = x"no"; then
-    EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/smbrun"
+    EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/smbrun$(EXEEXT)"
 fi
 
 AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strerror chown fchown chmod fchmod chroot link mknod mknod64)
@@ -749,8 +752,8 @@ AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
 AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl symlink readlink)
 AC_CHECK_FUNCS(syslog vsyslog getgrouplist timegm)
-# setbuffer is needed for smbtorture
-AC_CHECK_FUNCS(setbuffer)
+# setbuffer, shmget, shm_open are needed for smbtorture
+AC_CHECK_FUNCS(setbuffer shmget shm_open)
 
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
@@ -1883,7 +1886,7 @@ AC_ARG_WITH(smbwrapper,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_SMBWRAPPER,1,[Whether to include smbwrapper support])
-	WRAPPROG="bin/smbsh"
+	WRAPPROG="bin/smbsh$(EXEEXT)"
 	WRAP="bin/smbwrapper.$SHLIBEXT"
 
 	if test x$ATTEMPT_WRAP32_BUILD = x; then
@@ -3035,8 +3038,8 @@ if test x"$HAVE_WINBIND" = x"yes"; then
         AC_MSG_RESULT(yes)
 	AC_DEFINE(WITH_WINBIND,1,[Whether to build winbind])
 
-	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo"
-	EXTRA_SBIN_PROGS="$EXTRA_SBIN_PROGS bin/winbindd"
+	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo$(EXEEXT)"
+	EXTRA_SBIN_PROGS="$EXTRA_SBIN_PROGS bin/winbindd$(EXEEXT)"
         if test x"$BLDSHARED" = x"true"; then
 		SHLIB_PROGS="$SHLIB_PROGS nsswitch/libnss_winbind.so"
 		if test x"$with_pam" = x"yes"; then
