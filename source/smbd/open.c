@@ -1124,15 +1124,30 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		return print_fsp_open(conn, fname);
 	}
 
-	fsp = file_new(conn);
-	if(!fsp)
-		return NULL;
+	switch(ofun) {
+		case FILE_EXISTS_OPEN:
+		case FILE_EXISTS_TRUNCATE:
+		case FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST:
+		case FILE_EXISTS_OPEN | FILE_CREATE_IF_NOT_EXIST:
+		case FILE_EXISTS_TRUNCATE | FILE_CREATE_IF_NOT_EXIST:
+			break; /* These are ok. */
+		default:
+			if (GET_OPEN_MODE(share_mode) == DOS_OPEN_EXEC) {
+				ofun = FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST;
+				break;
+			}
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRinvalidparam;
+			unix_ERR_ntstatus = NT_STATUS_INVALID_LOCK_SEQUENCE;
+			/* need to reset errno or DEVELOPER will cause us to coredump */
+			errno = 0;
+			return NULL;
+	}
 
 	DEBUG(10,("open_file_shared: fname = %s, dos_attrs = %x, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
 		fname, new_dos_mode, share_mode, ofun, (int)mode,  oplock_request ));
 
 	if (!check_name(fname,conn)) {
-		file_free(fsp);
 		return NULL;
 	} 
 
@@ -1155,14 +1170,12 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		DEBUG(5,("open_file_shared: OS/2 long filenames are not supported.\n"));
 		/* need to reset errno or DEVELOPER will cause us to coredump */
 		errno = 0;
-		file_free(fsp);
 		return NULL;
 	}
 
 	if ((GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_FAIL) && file_existed)  {
 		DEBUG(5,("open_file_shared: create new requested for file %s and file already exists.\n",
 			fname ));
-		file_free(fsp);
 		if (S_ISDIR(psbuf->st_mode)) {
 			errno = EISDIR;
 		} else {
@@ -1184,7 +1197,6 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 			DEBUG(5,("open_file_shared: attributes missmatch for file %s (%x %x) (0%o, 0%o)\n",
 						fname, existing_dos_mode, new_dos_mode,
 						(int)psbuf->st_mode, (int)mode ));
-			file_free(fsp);
 			errno = EACCES;
 			return NULL;
 		}
@@ -1197,6 +1209,11 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		append does not mean the same thing under dos and unix */
 
 	switch (GET_OPEN_MODE(share_mode)) {
+		case DOS_OPEN_RDONLY:
+			flags = O_RDONLY;
+			if (desired_access == 0)
+				desired_access = FILE_READ_DATA;
+			break;
 		case DOS_OPEN_WRONLY: 
 			flags = O_WRONLY; 
 			if (desired_access == 0)
@@ -1209,15 +1226,18 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 				desired_access = FILE_READ_DATA|FILE_WRITE_DATA;
 			break;
 		case DOS_OPEN_RDWR: 
+		case DOS_OPEN_EXEC:
 			flags = O_RDWR; 
 			if (desired_access == 0)
 				desired_access = FILE_READ_DATA|FILE_WRITE_DATA;
 			break;
 		default:
-			flags = O_RDONLY;
-			if (desired_access == 0)
-				desired_access = FILE_READ_DATA;
-			break;
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRinvalidparam;
+			unix_ERR_ntstatus = NT_STATUS_INVALID_LOCK_SEQUENCE;
+			/* need to reset errno or DEVELOPER will cause us to coredump */
+			errno = 0;
+			return NULL;
 	}
 
 #if defined(O_SYNC)
@@ -1231,7 +1251,6 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		if (!fcbopen) {
 			DEBUG(5,("open_file_shared: read/write access requested for file %s on read only %s\n",
 				fname, !CAN_WRITE(conn) ? "share" : "file" ));
-			file_free(fsp);
 			errno = EACCES;
 			return NULL;
 		}
@@ -1240,7 +1259,6 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 
 	if (deny_mode > DENY_NONE && deny_mode!=DENY_FCB) {
 		DEBUG(2,("Invalid deny mode %d on file %s\n",deny_mode,fname));
-		file_free(fsp);
 		errno = EINVAL;
 		return NULL;
 	}
@@ -1255,6 +1273,10 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 			flags2 &= ~O_CREAT;
 		}
 	}
+
+	fsp = file_new(conn);
+	if(!fsp)
+		return NULL;
 
 	if (file_existed) {
 
