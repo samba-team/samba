@@ -37,14 +37,6 @@
 
 extern BOOL AllowDebugChange;
 
-struct session_record{
-  pid_t pid;
-  uid_t uid;
-  char machine[31];
-  time_t start;
-  struct session_record *next;
-} *srecs;
-
 static pstring Ucrit_username = "";                   /* added by OH */
 static pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
 static int            Ucrit_MaxPid=0;                        /* added by OH */

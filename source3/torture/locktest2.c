@@ -149,15 +149,14 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *connect_one(char *share)
+static struct cli_state *connect_one(char *share)
 {
 	struct cli_state *c;
-	struct nmb_name called, calling;
 	char *server_n;
 	fstring server;
-	struct in_addr ip;
 	fstring myname;
 	static int count;
+	NTSTATUS nt_status;
 
 	fstrcpy(server,share+2);
 	share = strchr_m(server,'\\');
@@ -167,40 +166,6 @@ struct cli_state *connect_one(char *share)
 
 	server_n = server;
 	
-        zero_ip(&ip);
-
-	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), count++);
-
-	make_nmb_name(&calling, myname, 0x0);
-	make_nmb_name(&called , server, 0x20);
-
- again:
-        zero_ip(&ip);
-
-	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || !cli_connect(c, server_n, &ip)) {
-		DEBUG(0,("Connection to %s failed\n", server_n));
-		return NULL;
-	}
-
-	if (!cli_session_request(c, &calling, &called)) {
-		DEBUG(0,("session request to %s failed\n", called.name));
-		cli_shutdown(c);
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
-
-	DEBUG(4,(" session request ok\n"));
-
-	if (!cli_negprot(c)) {
-		DEBUG(0,("protocol negotiation failed\n"));
-		cli_shutdown(c);
-		return NULL;
-	}
-
 	if (!got_pass) {
 		char *pass = getpass("Password: ");
 		if (pass) {
@@ -208,36 +173,15 @@ struct cli_state *connect_one(char *share)
 		}
 	}
 
-	if (!cli_session_setup(c, username, 
-			       password, strlen(password),
-			       password, strlen(password),
-			       lp_workgroup())) {
-		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
+	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), count++);
+
+	nt_status = cli_full_connection(&c, myname, server_n, NULL, 0, share, "?????", 
+					username, lp_workgroup(), password, 0);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("cli_full_connection failed with error %s\n", nt_errstr(nt_status)));
 		return NULL;
 	}
-
-	/*
-	 * These next two lines are needed to emulate
-	 * old client behaviour for people who have
-	 * scripts based on client output.
-	 * QUESTION ? Do we want to have a 'client compatibility
-	 * mode to turn these on/off ? JRA.
-	 */
-
-	if (*c->server_domain || *c->server_os || *c->server_type)
-		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			c->server_domain,c->server_os,c->server_type));
-	
-	DEBUG(4,(" session setup ok\n"));
-
-	if (!cli_send_tconX(c, share, "?????",
-			    password, strlen(password)+1)) {
-		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
-		cli_shutdown(c);
-		return NULL;
-	}
-
-	DEBUG(4,(" tconx ok\n"));
 
 	c->use_oplocks = use_oplocks;
 
