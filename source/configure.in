@@ -1692,31 +1692,37 @@ AC_ARG_WITH(libiconv,
   fi
 ])
 
-ICONV_FOUND="no"
-libext=""
 for i in $LOOK_DIRS ; do
     save_LIBS=$LIBS
     save_LDFLAGS=$LDFLAGS
     save_CPPFLAGS=$CPPFLAGS
+    ICONV_FOUND="no"
+    unset libext
     CPPFLAGS="$CPPFLAGS -I$i/include"
 dnl This is here to handle -withval stuff for --with-libiconv
 dnl Perhaps we should always add a -L
 
 dnl Check lib and lib32 library variants to cater for IRIX ABI-specific
-dnl installation paths.
-    for l in "lib" "lib32" ; do
-        LDFLAGS="$LDFLAGS -L$i/$l"
-        LIBS=
-        export LDFLAGS LIBS CPPFLAGS
+dnl installation paths. This gets a little tricky since we might have iconv
+dnl in both libiconv and in libc. In this case the jm_ICONV test will always
+dnl succeed when the header is found. To counter this, make sure the 
+dnl library directory is there and check the ABI directory first (which
+dnl should be harmless on other systems.
+    for l in "lib32" "lib" ; do
+        if test -d "$i/$l" ; then
+                LDFLAGS="$save_LDFLAGS -L$i/$l"
+                LIBS=
+                export LDFLAGS LIBS CPPFLAGS
 dnl Try to find iconv(3)
-        jm_ICONV($i)
-        if test "$ICONV_FOUND" = yes; then
-            libext="$l"
-            break;
+                jm_ICONV($i/$l)
+                if test x"$ICONV_FOUND" = "xyes" ; then
+                    libext="$l"
+                    break;
+                fi
         fi
     done
 
-    if test "$ICONV_FOUND" = yes; then
+    if test x"$ICONV_FOUND" = "xyes" ; then
 	LDFLAGS=$save_LDFLAGS
         LIB_ADD_DIR(LDFLAGS, "$i/$libext")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
@@ -1730,7 +1736,7 @@ dnl there might be a working iconv further down the list of LOOK_DIRS
         # check for iconv in libc
         ic_save_LIBS="$LIBS"
         if test x"$ICONV_PATH_SPEC" = "xyes" ; then
-           LIBS="$LIBS -L$ICONV_LOCATION/lib"
+           LIBS="$LIBS -L$ICONV_LOCATION/$libext"
         fi
         if test x"$jm_cv_lib_iconv" != x; then
            LIBS="$LIBS -l$jm_cv_lib_iconv"
