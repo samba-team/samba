@@ -20,22 +20,17 @@
 
 #include "includes.h"
 
-int srvstr_push(void *base_ptr, void *dest, const char *src, int dest_len, int flags)
-{
-	return push_string(base_ptr, dest, src, dest_len, flags);
-}
+#define srvstr_push(base_ptr, dest, src, dest_len, flags) \
+    push_string(base_ptr, dest, src, dest_len, flags)
 
-int srvstr_pull(void *base_ptr, char *dest, const void *src, int dest_len, int src_len, 
-		int flags)
-{
-	return pull_string(base_ptr, dest, src, dest_len, src_len, flags);
-}
+#define srvstr_pull(base_ptr, dest, src, dest_len, src_len, flags) \
+    pull_string(base_ptr, dest, src, dest_len, src_len, flags)
 
 /* pull a string from the smb_buf part of a packet. In this case the
    string can either be null terminated or it can be terminated by the
    end of the smbbuf area 
 */
-int srvstr_pull_buf(void *inbuf, char *dest, const void *src, int dest_len, int flags)
-{
-	return pull_string(inbuf, dest, src, dest_len, smb_bufrem(inbuf, src), flags);
-}
+
+#define srvstr_pull_buf(inbuf, dest, src, dest_len, flags) \
+    pull_string(inbuf, dest, src, dest_len, smb_bufrem(inbuf, src), flags)
+

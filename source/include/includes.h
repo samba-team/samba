@@ -855,6 +855,7 @@ struct printjob;
 
 /* String routines */
 
+#include "srvstr.h"
 #include "safe_string.h"
 
 #ifdef __COMPAR_FN_T
