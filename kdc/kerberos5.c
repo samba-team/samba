@@ -147,7 +147,19 @@ as_rep(KDC_REQ *req,
 	goto out;
     }
 
-    if (client->pw_end && *client->pw_end < kdc_time
+     if (client->flags.invalid) {
+	ret = KRB5KDC_ERR_POLICY;
+	kdc_log(0, "Client (%s) has invalid bit set", client_name);
+	goto out;
+    }
+
+    if (server->flags.invalid) {
+	ret = KRB5KDC_ERR_POLICY;
+	kdc_log(0, "Server (%s) has invalid bit set", server_name);
+	goto out;
+    }
+
+   if (client->pw_end && *client->pw_end < kdc_time
 	&& !server->flags.change_pw) {
 	ret = KRB5KDC_ERR_KEY_EXPIRED;
 	kdc_log(0, "Client (%s)'s key has expired", client_name);
