@@ -74,17 +74,45 @@ must be defined in the <smbconfsection>global</smbconfsection> section of the &s
 </para>
 
 <para>
-Currently, the following rights are supported in Samba 3:
-<screen>
-SeAddUsersPrivilege        Add users and groups to the domain
-SeDiskOperatorPrivilege    Manage disk shares
-SeMachineAccountPrivilege  Add machines to domain
-SePrintOperatorPrivilege   Manage printers
-SeRemoteShutdownPrivilege  Force shutdown from a remote system
-</screen>
-The remainder of this chapter explains how to manage and use
-these privileges on Samba servers.
+Currently, the rights supported in Samba 3 are listed in <link linkend="rp-privs"/>.
+The remainder of this chapter explains how to manage and use these privileges on Samba servers.
 </para>
+
+<table id="rp-privs">
+        <title>Current Privilege Capabilities</title>
+        <tgroup cols="2">
+                <colspec align="right"/>
+                <colspec align="left"/>
+                <thead>
+                        <row>
+                                <entry align="center">Privilege</entry>
+                                <entry align="center">Description</entry>
+                        </row>
+                </thead>
+                <tbody>
+                        <row>
+                                <entry><para>SeMachineAccountPrivilege</para></entry>
+                                <entry><para>Add machines to domain</para></entry>
+                        </row>
+                        <row>
+                                <entry><para>SePrintOperatorPrivilege</para></entry>
+                                <entry><para>Manage printers</para></entry>
+                        </row>
+                        <row>
+                                <entry><para>SeAddUsersPrivilege</para></entry>
+                                <entry><para>Add users and groups to the domain</para></entry>
+                        </row>
+                        <row>
+                                <entry><para>SeRemoteShutdownPrivilege</para></entry>
+                                <entry><para>Force shutdown from a remote system</para></entry>
+                        </row>
+                        <row>
+                                <entry><para>SeDiskOperatorPrivilege</para></entry>
+                                <entry><para>Manage disk share</para></entry>
+                        </row>
+                </tbody>
+        </tgroup>
+</table>
 
 <sect2>
 <title>Using the <quote>net rpc rights</quote> Utility</title>
