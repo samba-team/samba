@@ -10,6 +10,7 @@ RCSID("$Id$");
 #endif
 
 #include <sys/types.h>
+#include <signal.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -92,16 +93,15 @@ des_new_random_key(des_cblock *key)
     if (!initialized)
 	do_initialize();
 
-  try_again:
-    des_ecb_encrypt((des_cblock *) sequence_index,
-		    key,
-		    sequence_seed,
-		    DES_ENCRYPT);
-    incr_long_long(sequence_index);
-    /* random key must have odd parity and not be weak */
-    des_set_odd_parity(key);
-    if (des_is_weak_key(key))
-	goto try_again;
+    do {
+	des_ecb_encrypt((des_cblock *) sequence_index,
+			key,
+			sequence_seed,
+			DES_ENCRYPT);
+	incr_long_long(sequence_index);
+	/* random key must have odd parity and not be weak */
+	des_set_odd_parity(key);
+    } while (des_is_weak_key(key));
     return(0);
 }
 
@@ -152,9 +152,109 @@ des_init_random_number_generator(des_cblock *seed)
     des_set_random_generator_seed(&new_key);
 }
 
+/*
+ * Generate 8 bytes of "random" data by checksumming the first 2
+ * megabytes of /dev/mem.
+ */
+void
+des_mem_rand8(unsigned char *data)
+{
+}
+
+/*
+ * These guys are for clocked "non crypto" randomness.
+ *
+ * The method used is described on page 424 in
+ * Applied Cryptography 2 ed. by Bruce Schneier.
+ */
+static volatile int counter;
+static volatile unsigned char *gdata; /* Global data */
+static volatile int igdata;	/* Index into global data */
+
+static
+RETSIGTYPE
+sigALRM(int sig)
+{
+    if (igdata < sizeof(des_cblock))
+	gdata[igdata++] ^= counter & 0xff;
+
+#ifdef VOID_RETSIGTYPE
+    return;
+#else
+    return (RETSIGTYPE)0;
+#endif
+}
+
+/*
+ * Generate size bytes of "random" data using timed interrupts.
+ * This is a slooow routine but it's meant to be slow.
+ * It's not neccessary to be root to run it.
+ */
+void
+des_clock_rand(unsigned char *data, int size)
+{
+    struct itimerval tv, otv;
+    struct sigaction sa, osa;
+    int i;
+  
+    gdata = data;
+    igdata = 0;
+    counter = 0;
+
+    /* Setup signal handler */
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sigALRM;
+    sigaction(SIGALRM, &sa, &osa);
+  
+    /* Start timer */
+    tv.it_value.tv_sec = 0;
+    tv.it_value.tv_usec = 50 * 1000; /* 50 ms */
+    tv.it_interval = tv.it_value;
+    setitimer(ITIMER_REAL, &tv, &otv);
+
+    for(i = 0; i < 4; i++)
+	{
+	    for (igdata = 0; igdata < size;)
+		counter++;
+	    for (igdata = 0; igdata < size; igdata++)
+		gdata[igdata] = (gdata[igdata]>>2) | (gdata[igdata]<<6);
+	}
+    setitimer(ITIMER_REAL, &otv, 0);
+    sigaction(SIGALRM, &osa, 0);
+}
+
+/*
+ * Generate a "random" DES key.
+ */
+void
+des_clock_rand_key(des_cblock *key)
+{
+    do {
+	des_clock_rand((unsigned char*)key, sizeof(des_cblock));
+	des_set_odd_parity(key);
+    } while(des_is_weak_key(key));
+}
+
 /* This is for backwards compatibility. */
 int
 des_random_key(unsigned char *ret)
 {
     return des_new_random_key((des_cblock *) ret);
 }
+
+#ifdef TESTRUN
+int
+main()
+{
+    unsigned char data[8];
+    int i;
+
+    while (1)
+        {
+            des_clock_rand(data, 8);
+            for (i = 0; i < 8; i++)
+                printf("%02x", data[i]);
+            printf("\n");
+        }
+}
+#endif
