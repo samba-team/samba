@@ -65,14 +65,14 @@ static void add_cached_names(const char *name, uint32 stype,
 	struct name_list **name_list = (struct name_list **)state;
 	struct name_list *new_name;
 
-	new_name = (struct name_list *)malloc(sizeof(struct name_list));
+	new_name = SMB_MALLOC_P(struct name_list);
 	if (!new_name) return;
 
 	ZERO_STRUCTP(new_name);
 
-	new_name->name = strdup(name);
+	new_name->name = SMB_STRDUP(name);
 	new_name->stype = stype;
-	new_name->comment = strdup(comment);
+	new_name->comment = SMB_STRDUP(comment);
 
 	DLIST_ADD(*name_list, new_name);
 }
@@ -117,8 +117,7 @@ BOOL smbw_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		/* No names cached for this workgroup */
 
 		if (names == NULL) {
-			new_names = (struct cached_names *)
-				malloc(sizeof(struct cached_names));
+			new_names = SMB_MALLOC_P(struct cached_names);
 
 			ZERO_STRUCTP(new_names);
 			DLIST_ADD(cached_names, new_names);
@@ -139,7 +138,7 @@ BOOL smbw_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 					   
 		new_names->cache_timeout = now;
 		new_names->result = result;
-		new_names->key = strdup(key);
+		new_names->key = SMB_STRDUP(key);
 
 		names = new_names;
 	}
@@ -173,8 +172,7 @@ int smbw_RNetShareEnum(struct cli_state *cli,
 		/* No names cached for this server */
 
 		if (names == NULL) {
-			new_names = (struct cached_names *)
-				malloc(sizeof(struct cached_names));
+			new_names = SMB_MALLOC_P(struct cached_names);
 
 			ZERO_STRUCTP(new_names);
 			DLIST_ADD(cached_names, new_names);
@@ -193,7 +191,7 @@ int smbw_RNetShareEnum(struct cli_state *cli,
 						      &new_names->name_list);
 		
 		new_names->cache_timeout = now;
-		new_names->key = strdup(key);
+		new_names->key = SMB_STRDUP(key);
 
 		names = new_names;
 	}
