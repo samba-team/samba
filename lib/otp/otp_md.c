@@ -38,9 +38,21 @@ RCSID("$Id$");
 #include "otp_locl.h"
 
 #include "otp_md.h"
+#ifdef HAVE_OPENSSL_MD4_H
+#include <openssl/md4.h>
+#else
 #include <md4.h>
+#endif
+#ifdef HAVE_OPENSSL_MD5_H
+#include <openssl/md5.h>
+#else
 #include <md5.h>
+#endif
+#ifdef HAVE_OPENSSL_SHA_H
+#include <openssl/sha.h>
+#else
 #include <sha.h>
+#endif
 
 /*
  * Compress len bytes from md into key
@@ -212,7 +224,7 @@ otp_md5_next (OtpKey key)
  */
 
 static void
-SHA1_Final_little_endian (void *res, struct sha1 *m)
+SHA1_Final_little_endian (void *res, SHA_CTX *m)
 {
   unsigned char tmp[20];
   unsigned char *p = res;
