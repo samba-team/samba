@@ -1407,17 +1407,34 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 	switch (info_level) {
 		case SMB_INFO_ALLOCATION:
 		{
-			SMB_BIG_UINT dfree,dsize,bsize;
+			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 18;
 			SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);	
+			block_size = lp_block_size(snum);
+			if (bsize < block_size) {
+				SMB_BIG_UINT factor = block_size/bsize;
+				bsize = block_size;
+				dsize /= factor;
+				dfree /= factor;
+			}
+			if (bsize > block_size) {
+				SMB_BIG_UINT factor = bsize/block_size;
+				bsize = block_size;
+				dsize *= factor;
+				dfree *= factor;
+			}
+			bytes_per_sector = 512;
+			sectors_per_unit = bsize/bytes_per_sector;
+
+			DEBUG(5,("call_trans2qfsinfo : SMB_INFO_ALLOCATION id=%x, bsize=%u, cSectorUnit=%u, \
+cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsigned int)bsize, (unsigned int)sectors_per_unit,
+				(unsigned int)bytes_per_sector, (unsigned int)dsize, (unsigned int)dfree));
+
 			SIVAL(pdata,l1_idFileSystem,st.st_dev);
-			SIVAL(pdata,l1_cSectorUnit,bsize/512);
+			SIVAL(pdata,l1_cSectorUnit,sectors_per_unit);
 			SIVAL(pdata,l1_cUnit,dsize);
 			SIVAL(pdata,l1_cUnitAvail,dfree);
-			SSVAL(pdata,l1_cbSector,512);
-			DEBUG(5,("call_trans2qfsinfo : bsize=%u, id=%x, cSectorUnit=%u, cUnit=%u, cUnitAvail=%u, cbSector=%d\n",
-				(unsigned int)bsize, (unsigned int)st.st_dev, ((unsigned int)bsize)/512, (unsigned int)dsize,
-				(unsigned int)dfree, 512));
+			SSVAL(pdata,l1_cbSector,bytes_per_sector);
 			break;
 		}
 
