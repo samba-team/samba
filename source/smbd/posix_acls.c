@@ -699,11 +699,11 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->unix_ug.world = -1;
 		pace->trustee = global_sid_World;
 		pace->attr = ALLOW_ACE;
-		if (setting_acl)
+		if (setting_acl) {
 			pace->perms = 0;
-		else
+			apply_default_perms(fsp, pace, S_IROTH);
+		} else
 			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
-		apply_default_perms(fsp, pace, S_IROTH);
 
 		DLIST_ADD(*pp_ace, pace);
 	}
