@@ -64,12 +64,6 @@ void check_log_size( void );
 void dbgflush( void );
 BOOL dbghdr( int level, char *file, char *func, int line );
 
-/*The following definitions come from  lib/doscalls.c  */
-
-int dos_open(char *fname,int flags,mode_t mode);
-int dos_stat(char *fname,SMB_STRUCT_STAT *sbuf);
-int copy_reg(char *source, const char *dest);
-
 /*The following definitions come from  lib/error.c  */
 
 uint32 map_nt_error_from_unix(int unix_error);
@@ -943,7 +937,6 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups);
 char *Atoic(char *p, int *n, char *c);
 char *get_numlist(char *p, uint32 **num, int *count);
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf);
-int file_rename(char *from, char *to);
 time_t file_modtime(char *fname);
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st);
 SMB_OFF_T get_file_size(char *file_name);
@@ -4444,7 +4437,7 @@ int vfswrap_close(files_struct *fsp, int fd);
 ssize_t vfswrap_read(files_struct *fsp, int fd, void *data, size_t n);
 ssize_t vfswrap_write(files_struct *fsp, int fd, const void *data, size_t n);
 SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
-int vfswrap_rename(connection_struct *conn, char *old, char *new);
+int vfswrap_rename(connection_struct *conn, char *oldname, char *newname);
 int vfswrap_fsync(files_struct *fsp, int fd);
 int vfswrap_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *sbuf);
 int vfswrap_fstat(files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf);

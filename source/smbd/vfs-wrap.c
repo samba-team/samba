@@ -235,21 +235,104 @@ SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int wh
     return result;
 }
 
-int vfswrap_rename(connection_struct *conn, char *old, char *new)
-{
-    int result;
+/*********************************************************
+ For rename across filesystems Patch from Warren Birnbaum 
+ <warrenb@hpcvscdp.cv.hp.com>
+**********************************************************/
 
-    START_PROFILE(syscall_rename);
+static int copy_reg(char *source, const char *dest)
+{
+	SMB_STRUCT_STAT source_stats;
+	int ifd;
+	int ofd;
+
+	if (sys_lstat (source, &source_stats) == -1)
+		return -1;
+
+	if (!S_ISREG (source_stats.st_mode))
+		return -1;
+
+	if (unlink (dest) && errno != ENOENT)
+		return -1;
+
+	if((ifd = sys_open (source, O_RDONLY, 0)) < 0)
+		return -1;
+
+	if((ofd = sys_open (dest, O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0 ) {
+		int saved_errno = errno;
+		close (ifd);
+		errno = saved_errno;
+		return -1;
+	}
+
+	if (transfer_file(ifd, ofd, (size_t)-1) == -1) {
+		int saved_errno = errno;
+		close (ifd);
+		close (ofd);
+		unlink (dest);
+		errno = saved_errno;
+		return -1;
+	}
+
+	if (close (ifd) == -1) {
+		int saved_errno = errno;
+		close (ofd);
+		errno = saved_errno;
+		return -1;
+	}
+	if (close (ofd) == -1) 
+		return -1;
+
+	/*
+	 * chown turns off set[ug]id bits for non-root,
+	 * so do the chmod last.
+	 */
+
+	/* Try to copy the old file's modtime and access time.  */
+	{
+		struct utimbuf tv;
+
+		tv.actime = source_stats.st_atime;
+		tv.modtime = source_stats.st_mtime;
+		utime (dest, &tv);
+	}
+
+	/*
+	 * Try to preserve ownership.  For non-root it might fail, but that's ok.
+	 * But root probably wants to know, e.g. if NFS disallows it.
+	 */
+
+	if ((chown(dest, source_stats.st_uid, source_stats.st_gid) == -1) && (errno != EPERM))
+		return -1;
+
+	if (chmod (dest, source_stats.st_mode & 07777))
+		return -1;
+
+	if (unlink (source) == -1)
+		return -1;
+
+	return 0;
+}
+
+int vfswrap_rename(connection_struct *conn, char *oldname, char *newname)
+{
+	int result;
+
+	START_PROFILE(syscall_rename);
 
 #ifdef VFS_CHECK_NULL
-    if ((old == NULL) || (new == NULL)) {
-	smb_panic("NULL pointer passed to vfswrap_rename()\n");
-    }
+	if ((oldname == NULL) || (newname == NULL)) {
+		smb_panic("NULL pointer passed to vfswrap_rename()\n");
+	}
 #endif
 
-    result = rename(old, new);
-    END_PROFILE(syscall_rename);
-    return result;
+	result = rename(oldname, newname);
+	if (errno == EXDEV) {
+		/* Rename across filesystems needed. */
+		result = copy_reg(oldname, newname);
+	}
+	END_PROFILE(syscall_rename);
+	return result;
 }
 
 int vfswrap_fsync(files_struct *fsp, int fd)
