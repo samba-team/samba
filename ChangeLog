@@ -1,3 +1,7 @@
+1999-09-01  Johan Danielsson  <joda@pdc.kth.se>
+
+	* configure.in: check for sgi capabilities
+
 1999-08-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/get_addrs.c: krb5_get_all_server_addrs shouldn't return

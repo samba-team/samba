@@ -1,3 +1,7 @@
+1999-09-01  Johan Danielsson  <joda@pdc.kth.se>
+
+	* capabilities.m4: sgi capabilities
+
 1999-07-29  Assar Westerlund  <assar@sics.se>
 
 	* have-struct-field.m4: quote macros when undefining
