@@ -2112,6 +2112,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, int len_outbuf,
 		files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt)
 {
+	int outsize = 0;
 	ssize_t nread = -1;
 	char *data = smb_buf(outbuf);
 
@@ -2197,7 +2198,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
-	set_message(outbuf,12,nread,False);
+	outsize = set_message(outbuf,12,nread,False);
 	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 	SSVAL(outbuf,smb_vwv5,nread);
 	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
@@ -2207,7 +2208,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 		fsp->fnum, (int)smb_maxcnt, (int)nread ) );
 
-	return nread;
+	return outsize;
 }
 
 /****************************************************************************
