@@ -288,22 +288,23 @@ static const uint16 to_ucs2[256] = {
 };
 
 static const struct gap from_idx[] = {
-  { start: 0x0000, end: 0x007f, idx:     0 },
-  { start: 0x00a0, end: 0x00ff, idx:   -32 },
-  { start: 0x0131, end: 0x0131, idx:   -81 },
-  { start: 0x0192, end: 0x0192, idx:  -177 },
-  { start: 0x2017, end: 0x2017, idx: -7989 },
-  { start: 0x2500, end: 0x2502, idx: -9245 },
-  { start: 0x250c, end: 0x251c, idx: -9254 },
-  { start: 0x2524, end: 0x2524, idx: -9261 },
-  { start: 0x252c, end: 0x252c, idx: -9268 },
-  { start: 0x2534, end: 0x2534, idx: -9275 },
-  { start: 0x253c, end: 0x253c, idx: -9282 },
-  { start: 0x2550, end: 0x256c, idx: -9301 },
-  { start: 0x2580, end: 0x2588, idx: -9320 },
-  { start: 0x2591, end: 0x2593, idx: -9328 },
-  { start: 0x25a0, end: 0x25a0, idx: -9340 },
-  { start: 0xffff, end: 0xffff, idx:     0 }
+    /* start, end, idx */
+  { 0x0000, 0x007f, 0 },
+  { 0x00a0, 0x00ff, -32 },
+  { 0x0131, 0x0131, -81 },
+  { 0x0192, 0x0192, -177 },
+  { 0x2017, 0x2017, -7989 },
+  { 0x2500, 0x2502, -9245 },
+  { 0x250c, 0x251c, -9254 },
+  { 0x2524, 0x2524, -9261 },
+  { 0x252c, 0x252c, -9268 },
+  { 0x2534, 0x2534, -9275 },
+  { 0x253c, 0x253c, -9282 },
+  { 0x2550, 0x256c, -9301 },
+  { 0x2580, 0x2588, -9320 },
+  { 0x2591, 0x2593, -9328 },
+  { 0x25a0, 0x25a0, -9340 },
+  { 0xffff, 0xffff, 0 }
 };
 static const unsigned char from_ucs2[] = {
 
