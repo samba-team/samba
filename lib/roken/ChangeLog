@@ -1,5 +1,7 @@
 1999-12-30  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.am (strpftime_test_SOURCES): correct source file name
+
 	* roken.h.in (sockaddr_storage): change padding so that we have
  	one char[] of pad and then an unsigned long[] (for alignment and
  	padding).  this works much better in practice.
