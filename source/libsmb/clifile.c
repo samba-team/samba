@@ -163,8 +163,6 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 	return True;
 }
 
-
-
 /****************************************************************************
 open a file
 ****************************************************************************/
@@ -199,6 +197,55 @@ int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 	pstrcpy(p,fname);
 	unix_to_dos(p,True);
 	p = skip_string(p,1);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return -1;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return -1;
+	}
+
+	return SVAL(cli->inbuf,smb_vwv2 + 1);
+}
+
+/****************************************************************************
+open a file
+****************************************************************************/
+int cli_nt_create_uni(struct cli_state *cli, char *fname, uint32 DesiredAccess)
+{
+	pstring uni;
+	char *p;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,24,(strlen(fname) + 1) * 2 + 1,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBntcreateX;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,0xFF);
+	if (cli->use_oplocks)
+		SIVAL(cli->outbuf,smb_ntcreate_Flags, REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
+	else 
+		SIVAL(cli->outbuf,smb_ntcreate_Flags, 0);
+	SIVAL(cli->outbuf,smb_ntcreate_RootDirectoryFid, 0x0);
+	SIVAL(cli->outbuf,smb_ntcreate_DesiredAccess, DesiredAccess);
+	SIVAL(cli->outbuf,smb_ntcreate_FileAttributes, 0x0);
+	SIVAL(cli->outbuf,smb_ntcreate_ShareAccess, 0x03);
+	SIVAL(cli->outbuf,smb_ntcreate_CreateDisposition, 0x01);
+	SIVAL(cli->outbuf,smb_ntcreate_CreateOptions, 0x0);
+	SIVAL(cli->outbuf,smb_ntcreate_ImpersonationLevel, 0x02);
+	SSVAL(cli->outbuf,smb_ntcreate_NameLength, strlen(fname) * 2);
+
+	p = smb_buf(cli->outbuf);
+	p++; /* Alignment */
+	pstrcpy(uni, fname);
+	unix_to_dos(uni, True);
+	dos_struni2(p, uni, (strlen(fname) + 1) * 2);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
