@@ -10355,7 +10355,7 @@ fi
 
 #################################################
 # check for experimental disk-quotas support
-QUOTAOBJS=noquotas.o
+QUOTAOBJS=smbd/noquotas.o
 
 echo $ac_n "checking whether to support disk-quotas""... $ac_c" 1>&6
 echo "configure:10362: checking whether to support disk-quotas" >&5
@@ -10365,7 +10365,7 @@ if test "${with_quotas+set}" = set; then
    case "$withval" in
   yes)
     echo "$ac_t""yes" 1>&6
-    QUOTAOBJS=quotas.o
+    QUOTAOBJS=smbd/quotas.o
     ;;
   *)
     echo "$ac_t""no" 1>&6
