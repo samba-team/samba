@@ -115,16 +115,24 @@ int net_groupmap_list(int argc, const char **argv)
 	BOOL long_list = False;
 	int i;
 	fstring ntgroup = "";
+	fstring sid_string = "";
 	
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
 		if ( !StrCaseCmp(argv[i], "verbose")) {
 			long_list = True;
 		}
-		else if ( !StrnCaseCmp(argv[i], "name", strlen("name")) ) {
+		else if ( !StrnCaseCmp(argv[i], "ntgroup", strlen("ntgroup")) ) {
 			fstrcpy( ntgroup, get_string_param( argv[i] ) );
 			if ( !ntgroup[0] ) {
 				d_printf("must supply a name\n");
+				return -1;
+			}		
+		}
+		else if ( !StrnCaseCmp(argv[i], "sid", strlen("sid")) ) {
+			fstrcpy( sid_string, get_string_param( argv[i] ) );
+			if ( !sid_string[0] ) {
+				d_printf("must supply a SID\n");
 				return -1;
 			}		
 		}
@@ -135,9 +143,12 @@ int net_groupmap_list(int argc, const char **argv)
 	}
 
 	/* list a single group is given a name */
-	if ( ntgroup[0] ) {
+	if ( ntgroup[0] || sid_string[0] ) {
 		DOM_SID sid;
 		GROUP_MAP map;
+		
+		if ( sid_string[0] )
+			fstrcpy( ntgroup, sid_string);
 			
 		if (!get_sid_from_input(&sid, ntgroup)) {
 			return -1;
