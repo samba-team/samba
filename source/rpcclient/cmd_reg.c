@@ -37,15 +37,16 @@ extern FILE* out_hnd;
  * keys.  of the form:
  * ----
  *
- * [HKLM]|[HKU]\[parent_keyname_components]\[subkey]|[value]
+ * [HKLM]|[HKU]|[HKCR]\[parent_keyname]\[subkey]|[value]
  *
  * reg_getsubkey() splits this down into:
- * [HKLM]|[HKU]\[parent_keyname_components] and [subkey]|[value]
+ * [HKLM]|[HKU]|[HKCR]\[parent_keyname_components] and [subkey]|[value]
  *
  * reg_connect() splits the left side down further into:
- * [HKLM]|[HKU] and [parent_keyname_components].
+ * [HKLM]|[HKU]|[HKCR] and [parent_keyname_components].
  *
  * HKLM is short for HKEY_LOCAL_MACHINE
+ * HKCR is short for HKEY_CLASSES_ROOT
  * HKU  is short for HKEY_USERS
  *
  * oh, and HKEY stands for "Hive Key".
@@ -94,6 +95,25 @@ static void reg_display_key(int val, const char *full_keyname, int num)
 	}
 }
 
+void split_server_keyname(char *srv_name, char *key, const char* arg)
+{
+	pstrcpy(key, arg);
+
+	if (strnequal("\\\\", key, 2))
+	{
+		char *p = strchr(&key[2], '\\');
+		if (p == NULL)
+		{
+			key[0] = 0;
+			return;
+		}
+
+		*p = 0;
+
+		fstrcpy(srv_name, key);
+		pstrcpy(key, &arg[strlen(srv_name)+1]);
+	}
+}
 
 /****************************************************************************
 nt registry enum
@@ -150,8 +170,7 @@ BOOL msrpc_reg_enum_key(const char* srv_name, const char* full_keyname,
 		memcpy(&key_pol, &pol_con, sizeof(key_pol));
 	}
 
-	res1 = res1 ? reg_query_key(
-				&key_pol,
+	res1 = res1 ? reg_query_key(&key_pol,
 				key_class, &max_class_len,
 	                        &num_subkeys, &max_subkeylen, &max_subkeysize,
 				&num_values, &max_valnamelen, &max_valbufsize,
@@ -278,7 +297,7 @@ nt registry enum
 ****************************************************************************/
 void cmd_reg_enum(struct client_info *info, int argc, char *argv[])
 {
-	char *full_keyname;
+	pstring full_keyname;
 
 	fstring srv_name;
 
@@ -292,7 +311,7 @@ void cmd_reg_enum(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	full_keyname = argv[1];
+	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	(void)(msrpc_reg_enum_key(srv_name, full_keyname,
 				reg_display_key,
@@ -310,7 +329,7 @@ void cmd_reg_query_info(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
-	char *full_keyname;
+	pstring full_keyname;
 	fstring key_name;
 	fstring keyname;
 	fstring val_name;
@@ -334,7 +353,7 @@ void cmd_reg_query_info(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	full_keyname = argv[1];
+	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	reg_get_subkey(full_keyname, keyname, val_name);
 
@@ -395,7 +414,7 @@ void cmd_reg_query_key(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
-	char *full_keyname;
+	pstring full_keyname;
 	fstring key_name;
 
 	/*
@@ -425,7 +444,7 @@ void cmd_reg_query_key(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	full_keyname = argv[1];
+	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	/* open registry receive a policy handle */
 	res = res ? reg_connect(srv_name, full_keyname, key_name,
@@ -442,8 +461,7 @@ void cmd_reg_query_key(struct client_info *info, int argc, char *argv[])
 		memcpy(&key_pol, &pol_con, sizeof(key_pol));
 	}
 
-	res1 = res1 ? reg_query_key(
-				&key_pol,
+	res1 = res1 ? reg_query_key(&key_pol,
 				key_class, &key_class_len,
 	                        &num_subkeys, &max_subkeylen, &max_subkeysize,
 				&num_values, &max_valnamelen, &max_valbufsize,
@@ -451,8 +469,7 @@ void cmd_reg_query_key(struct client_info *info, int argc, char *argv[])
 
 	if (res1 && key_class_len != 0)
 	{
-		res1 = res1 ? reg_query_key(
-				&key_pol,
+		res1 = res1 ? reg_query_key(&key_pol,
 				key_class, &key_class_len,
 	                        &num_subkeys, &max_subkeylen, &max_subkeysize,
 				&num_values, &max_valnamelen, &max_valbufsize,
@@ -497,7 +514,7 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND parent_pol;
 	POLICY_HND pol_con;
-	char *full_keyname;
+	pstring full_keyname;
 	fstring keyname;
 	fstring parent_name;
 	fstring val_name;
@@ -525,12 +542,12 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	argc--;
-	argv++;
-
-	full_keyname = argv[0];
+	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	reg_get_subkey(full_keyname, keyname, val_name);
+
+	argc--;
+	argv++;
 
 	if (keyname[0] == 0 || val_name[0] == 0)
 	{
@@ -637,7 +654,7 @@ void cmd_reg_delete_val(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND parent_pol;
 	POLICY_HND pol_con;
-	char *full_keyname;
+	pstring full_keyname;
 	fstring keyname;
 	fstring parent_name;
 	fstring val_name;
@@ -654,7 +671,7 @@ void cmd_reg_delete_val(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	full_keyname = argv[1];
+	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	reg_get_subkey(full_keyname, keyname, val_name);
 
@@ -713,7 +730,7 @@ void cmd_reg_delete_key(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND parent_pol;
 	POLICY_HND pol_con;
-	char *full_keyname;
+	pstring full_keyname;
 	fstring parent_name;
 	fstring key_name;
 	fstring subkey_name;
@@ -730,7 +747,7 @@ void cmd_reg_delete_key(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	full_keyname = argv[1];
+	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	reg_get_subkey(full_keyname, parent_name, subkey_name);
 
@@ -793,7 +810,7 @@ void cmd_reg_create_key(struct client_info *info, int argc, char *argv[])
 	POLICY_HND parent_pol;
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
-	char *full_keyname;
+	pstring full_keyname;
 	fstring parent_key;
 	fstring parent_name;
 	fstring key_name;
@@ -812,7 +829,7 @@ void cmd_reg_create_key(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	full_keyname = argv[1];
+	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	reg_get_subkey(full_keyname, parent_key, key_name);
 
@@ -890,7 +907,7 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
-	char *full_keyname;
+	pstring full_keyname;
 	fstring key_name;
 
 	/*
@@ -913,7 +930,7 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	full_keyname = argv[1];
+	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	/* open registry receive a policy handle */
 	res = res ? reg_connect(srv_name, full_keyname, key_name,
@@ -994,7 +1011,7 @@ void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[])
 
 	POLICY_HND key_pol;
 	POLICY_HND pol_con;
-	char *full_keyname;
+	pstring full_keyname;
 	fstring key_name;
 
 	/*
@@ -1017,7 +1034,7 @@ void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	full_keyname = argv[1];
+	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	/* open registry receive a policy handle */
 	res = res ? reg_connect(srv_name, full_keyname, key_name,
