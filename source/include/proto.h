@@ -1580,6 +1580,10 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
+BOOL create_samr_domain_group(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				const char *acct_name, const char *acct_desc,
+				uint32 *rid);
 BOOL get_samr_query_usergroups(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain, uint32 user_rid,
 				uint32 *num_groups, DOM_GID *gid);
@@ -1587,40 +1591,48 @@ BOOL get_samr_query_userinfo(struct cli_state *cli,
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, SAM_USER_INFO_21 *usr);
-BOOL do_samr_chgpasswd_user(struct cli_state *cli,
+BOOL samr_chgpasswd_user(struct cli_state *cli,
 		char *srv_name, char *user_name,
 		char nt_newpass[516], uchar nt_oldhash[16],
 		char lm_newpass[516], uchar lm_oldhash[16]);
-BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name);
-BOOL do_samr_query_dom_info(struct cli_state *cli, 
+BOOL samr_unknown_38(struct cli_state *cli, char *srv_name);
+BOOL samr_query_dom_info(struct cli_state *cli, 
 				POLICY_HND *domain_pol, uint16 switch_value);
-BOOL do_samr_enum_dom_users(struct cli_state *cli, 
+BOOL samr_enum_dom_users(struct cli_state *cli, 
 				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				struct acct_info **sam,
 				int *num_sam_users);
-BOOL do_samr_connect(struct cli_state *cli, 
+BOOL samr_connect(struct cli_state *cli, 
 				char *srv_name, uint32 unknown_0,
 				POLICY_HND *connect_pol);
-BOOL do_samr_open_user(struct cli_state *cli, 
+BOOL samr_open_user(struct cli_state *cli, 
 				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
 				POLICY_HND *user_pol);
-BOOL do_samr_open_domain(struct cli_state *cli, 
+BOOL samr_open_group(struct cli_state *cli, 
+				POLICY_HND *domain_pol, uint32 rid,
+				POLICY_HND *group_pol);
+BOOL samr_create_dom_group(struct cli_state *cli, 
+				POLICY_HND *domain_pol, const char *acct_name,
+				POLICY_HND *group_pol, uint32 *rid);
+BOOL samr_set_groupinfo(struct cli_state *cli, 
+				POLICY_HND *group_pol, GROUP_INFO_CTR *ctr);
+BOOL samr_open_domain(struct cli_state *cli, 
 				POLICY_HND *connect_pol, uint32 rid, DOM_SID *sid,
 				POLICY_HND *domain_pol);
-BOOL do_samr_query_unknown_12(struct cli_state *cli, 
+BOOL samr_query_unknown_12(struct cli_state *cli, 
 				POLICY_HND *pol, uint32 rid, uint32 num_gids, uint32 *gids,
 				uint32 *num_names,
 				fstring names[MAX_LOOKUP_SIDS],
 				uint32  type [MAX_LOOKUP_SIDS]);
-BOOL do_samr_query_useraliases(struct cli_state *cli, 
+BOOL samr_query_useraliases(struct cli_state *cli, 
 				POLICY_HND *pol, DOM_SID *sid,
 				uint32 *num_aliases, uint32 *rid);
-BOOL do_samr_query_usergroups(struct cli_state *cli, 
+BOOL samr_query_usergroups(struct cli_state *cli, 
 				POLICY_HND *pol, uint32 *num_groups, DOM_GID *gid);
-BOOL do_samr_query_userinfo(struct cli_state *cli, 
+BOOL samr_query_userinfo(struct cli_state *cli, 
 				POLICY_HND *pol, uint16 switch_value, void* usr);
-BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
+BOOL samr_close(struct cli_state *cli, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
@@ -2051,12 +2063,12 @@ void samr_io_r_open_group(char *desc,  SAMR_R_OPEN_GROUP *r_u, prs_struct *ps, i
 void make_samr_group_info1(GROUP_INFO1 *gr1,
 				char *acct_name, char *acct_desc);
 void samr_io_group_info1(char *desc,  GROUP_INFO1 *gr1, prs_struct *ps, int depth);
-void make_samr_group_info4(GROUP_INFO4 *gr4, char *acct_desc);
+void make_samr_group_info4(GROUP_INFO4 *gr4, const char *acct_desc);
 void samr_io_group_info4(char *desc,  GROUP_INFO4 *gr4, prs_struct *ps, int depth);
 void samr_group_info_ctr(char *desc,  GROUP_INFO_CTR *ctr, prs_struct *ps, int depth);
 void make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_e,
 				POLICY_HND *pol,
-				char *acct_desc);
+				const char *acct_desc);
 void samr_io_q_create_dom_group(char *desc,  SAMR_Q_CREATE_DOM_GROUP *q_e, prs_struct *ps, int depth);
 void make_samr_r_create_dom_group(SAMR_R_CREATE_DOM_GROUP *r_u, POLICY_HND *pol,
 		uint32 rid, uint32 status);
@@ -2451,6 +2463,7 @@ void cmd_reg_get_key_sec(struct client_info *info);
 
 void cmd_sam_ntchange_pwd(struct client_info *info);
 void cmd_sam_test(struct client_info *info);
+void cmd_sam_create_dom_group(struct client_info *info);
 void cmd_sam_enum_users(struct client_info *info);
 void cmd_sam_query_user(struct client_info *info);
 void cmd_sam_query_groups(struct client_info *info);
