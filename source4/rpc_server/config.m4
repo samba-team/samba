@@ -4,7 +4,7 @@ SMB_SUBSYSTEM(DCERPC_COMMON,[],
 		[rpc_server/common/server_info.o
 		rpc_server/common/share_info.o])
 
-SMB_SUBSYSTEM(SAMDB,[rpc_server/samr/samdb.o rpc_server/samr/samr_utils.o],[],[],[LIBLDB])
+SMB_SUBSYSTEM(SAMDB,[rpc_server/samr/samdb.o],[rpc_server/samr/samr_utils.o],[],[LIBLDB])
 
 SMB_MODULE(dcerpc_rpcecho,DCERPC,STATIC,[rpc_server/echo/rpc_echo.o])
 SMB_MODULE(dcerpc_epmapper,DCERPC,STATIC,[rpc_server/epmapper/rpc_epmapper.o])
