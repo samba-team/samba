@@ -490,6 +490,7 @@ int main(int argc, char **argv)
 
 	TimeInit();
 
+	codepage_initialise(lp_client_code_page());
 	charset_initialise();
 
 	if (!lp_load(CONFIGFILE, True, False, False)) {
