@@ -101,6 +101,10 @@ static BOOL pw_file_unlock(int fd, int *plock_depth)
 {
   BOOL ret=True;
 
+  if (fd == 0 || *plock_depth == 0) {
+	  return True;
+  }
+
   if(*plock_depth == 1)
     ret = do_file_lock(fd, 5, F_UNLCK);
 
@@ -264,10 +268,13 @@ Error was %s\n.", pfile, strerror(errno) ));
 ****************************************************************/
 static void endsmbfilepwent(FILE *fp, int *lock_depth)
 {
+	if (!fp) {
+		return;
+	}
 
-  pw_file_unlock(fileno(fp), lock_depth);
-  fclose(fp);
-  DEBUG(7, ("endsmbfilepwent_internal: closed password file.\n"));
+	pw_file_unlock(fileno(fp), lock_depth);
+	fclose(fp);
+	DEBUG(7, ("endsmbfilepwent_internal: closed password file.\n"));
 }
 
 /*************************************************************************
