@@ -1298,6 +1298,13 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
         if(BATCH_OPLOCK_TYPE(share_entry->op_type))
         {
 
+#if 0
+
+/* JRA. Try removing this code to see if the new oplock changes
+   fix the problem. I'm dubious, but Andrew is recommending we
+   try this....
+*/
+
           /*
            * It appears that the NT redirector may have a bug, in that
            * it tries to do an SMBmv on a file that it has open with a
@@ -1327,7 +1334,9 @@ batch oplocked file %s, dev = %x, inode = %.0f\n", fname, (unsigned int)dev, (do
             continue;
           }
           else
+#endif /* 0 */
           {
+
 
             DEBUG(5,("check_file_sharing: breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (double)inode));
