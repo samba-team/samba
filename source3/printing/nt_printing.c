@@ -2180,6 +2180,16 @@ BOOL print_access_check(struct current_user *user, int snum,
 	   performing the access check.  I'm sure there is a better way to
 	   do this! */
 
+	/* You forgot to also change the *required access* from PRINTER_ACE_FULL_CONTROL
+		to PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT before doing the check.
+		This took me 3 hours to find !!!!! JRA.
+	*/
+
+	if (required_access & PRINTER_ACE_FULL_CONTROL) {
+		required_access |= (PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT);
+		required_access &= ~PRINTER_ACE_FULL_CONTROL;
+	}
+
 	if (secdesc && secdesc->sec && secdesc->sec->dacl &&
 	    secdesc->sec->dacl->ace) {
 		for(i = 0; i < secdesc->sec->dacl->num_aces; i++) {
