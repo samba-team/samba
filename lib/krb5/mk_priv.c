@@ -50,7 +50,7 @@ krb5_mk_priv(krb5_context context,
   krb5_error_code r;
   KRB_PRIV s;
   EncKrbPrivPart part;
-  u_char buf[1024];
+  u_char buf[10240];
   size_t len;
   unsigned tmp_seq;
   krb5_keyblock *key;
