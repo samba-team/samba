@@ -526,9 +526,9 @@ struct name_record *dns_name_search(struct nmb_name *question, int Time)
 	DEBUG(3,("Search for %s - ", namestr(question)));
 
 	/* only do DNS lookups if the query is for type 0x20 or type 0x0 */
-	if (!dns_type && name_type != 0x1b)
+	if (!dns_type)
 	{
-		DEBUG(3,("types 0x20 0x1b 0x0 only: name not found\n"));
+		DEBUG(3,("types 0x20 0x0 only: name not found\n"));
 		return NULL;
 	}
 
