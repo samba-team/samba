@@ -3,6 +3,10 @@
 	* make-aclocal: removed.  Not used anymore, being replaced by
 	aclocal from automake.
 
+Thu Apr 15 14:17:26 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* make-proto.pl: handle __attribute__
+
 Fri Apr  9 20:37:18 1999  Assar Westerlund  <assar@sics.se>
 
 	* shared-libs.m4: quote $@
