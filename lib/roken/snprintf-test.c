@@ -36,6 +36,8 @@
 #include "roken.h"
 #include <limits.h>
 
+#include "snprintf-test.h"
+
 RCSID("$Id$");
 
 static int

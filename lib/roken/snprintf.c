@@ -64,6 +64,10 @@ struct state {
   /* XXX - methods */
 };
 
+#if TEST_SNPRINTF
+#include "snprintf-test.h"
+#endif /* TEST_SNPRINTF */
+
 #if !defined(HAVE_VSNPRINTF) || defined(TEST_SNPRINTF)
 static int
 sn_reserve (struct state *state, size_t n)
