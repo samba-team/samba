@@ -695,9 +695,11 @@ char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n)
 	clobber_region(fn, line, dest, n+1);
 #endif
 
-	if (!dest)
-		return(NULL);
-	
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in StrnCpy\n"));
+		return NULL;
+	}
+
 	if (!src) {
 		*dest = 0;
 		return(dest);
