@@ -111,7 +111,10 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
 	char passwd[130];
 
 	memset(passwd,'\0',130);
-	safe_strcpy( passwd, pwd, sizeof(passwd)-1);
+	if (pwd != NULL)
+	{
+		safe_strcpy( passwd, pwd, sizeof(passwd)-1);
+	}
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	memset(nt_p16, '\0', 16);
