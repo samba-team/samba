@@ -248,8 +248,7 @@ SMB_BINARY(smbd, [ALL], [SBIN],
 
 SMB_BINARY(smbclient, [ALL], [BIN], 
 	[client/client.o
-	client/clitar.o
-	libcli/raw/clirewrite.o],
+	client/clitar.o],
 	[],
 	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
@@ -260,20 +259,17 @@ SMB_BINARY(ndrdump, [ALL], [BIN],
 
 SMB_BINARY(gentest, [ALL], [BIN],
 	[torture/gentest.o
-	torture/torture_util.o
-	libcli/raw/clirewrite.o],
+	torture/torture_util.o],
 	[],
 	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
 SMB_BINARY(masktest, [ALL], [BIN], 
-	[torture/masktest.o
-	libcli/raw/clirewrite.o],
+	[torture/masktest.o],
 	[],
 	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
 SMB_BINARY(locktest, [ALL], [BIN],
-	[torture/locktest.o
-	libcli/raw/clirewrite.o],
+	[torture/locktest.o],
 	[],
 	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
