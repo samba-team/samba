@@ -161,6 +161,10 @@ check_user_console ()
      return 0;
 }
 
+#ifndef HAVE_XAUWRITEAUTH
+#include "writeauth.c" /* XXX */
+#endif
+
 #ifndef INADDR_LOOPBACK
 #define INADDR_LOOPBACK 0x7f000001
 #endif
