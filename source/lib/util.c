@@ -3621,8 +3621,8 @@ char *automount_server(char *user_name)
 	char *nis_map = (char *)lp_nis_home_map_name();
 	int home_server_len;
 
-	/* set to default of no string */
-	server_name[0] = 0;
+	/* set to default of local machine */
+	pstrcpy(server_name, local_machine);
 
 	if ((nis_error = yp_get_default_domain(&nis_domain)) != 0)
 	{
