@@ -18,6 +18,7 @@
 <!ENTITY modules SYSTEM "modules.xml">
 <!ENTITY packagers SYSTEM "packagers.xml">
 <!ENTITY contributing SYSTEM "contributing.xml">
+<!ENTITY vfs SYSTEM "vfs.xml">
 ]>
 
 <book id="Samba-Developers-Guide">
@@ -77,6 +78,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &encryption;
 &modules;
 &rpc-plugin;
+&vfs;
 &packagers;
 &contributing;
 
