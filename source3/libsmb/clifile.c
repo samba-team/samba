@@ -409,6 +409,102 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 }
 
 
+/****************************************************************************
+  lock a file with 64 bit offsets
+****************************************************************************/
+BOOL cli_lock64(struct cli_state *cli, int fnum, 
+		SMB_BIG_UINT offset, SMB_BIG_UINT len, int timeout, enum brl_type lock_type)
+{
+	char *p;
+        int saved_timeout = cli->timeout;
+	int ltype;
+
+	ltype = (lock_type == READ_LOCK? 1 : 0);
+	ltype |= LOCKING_ANDX_LARGE_FILES;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0', smb_size);
+
+	set_message(cli->outbuf,8,20,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBlockingX;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,fnum);
+	CVAL(cli->outbuf,smb_vwv3) = ltype;
+	SIVALS(cli->outbuf, smb_vwv4, timeout);
+	SSVAL(cli->outbuf,smb_vwv6,0);
+	SSVAL(cli->outbuf,smb_vwv7,1);
+
+	p = smb_buf(cli->outbuf);
+	SIVAL(p, 0, cli->pid);
+	SIVAL(p, 4, (offset>>32));
+	SIVAL(p, 8, (offset&0xffffffff));
+	SIVAL(p, 12, (len>>32));
+	SIVAL(p, 16, (len&0xffffffff));
+	cli_send_smb(cli);
+
+        cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
+
+	if (!cli_receive_smb(cli)) {
+                cli->timeout = saved_timeout;
+		return False;
+	}
+
+	cli->timeout = saved_timeout;
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+  unlock a file with 64 bit offsets
+****************************************************************************/
+BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_UINT len)
+{
+	char *p;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,8,20,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBlockingX;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,fnum);
+	CVAL(cli->outbuf,smb_vwv3) = LOCKING_ANDX_LARGE_FILES;
+	SIVALS(cli->outbuf, smb_vwv4, 0);
+	SSVAL(cli->outbuf,smb_vwv6,1);
+	SSVAL(cli->outbuf,smb_vwv7,0);
+
+	p = smb_buf(cli->outbuf);
+	SIVAL(p, 0, cli->pid);
+	SIVAL(p, 4, (offset>>32));
+	SIVAL(p, 8, (offset&0xffffffff));
+	SIVAL(p, 12, (len>>32));
+	SIVAL(p, 16, (len&0xffffffff));
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return False;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
+
 
 
 
