@@ -202,10 +202,17 @@ void save_re_uid(void)
 ****************************************************************************/
 void restore_re_uid(void)
 {
-#ifdef USE_SETRESUID
-	setresuid(saved_ruid, saved_euid, -1);
-#else
 	set_effective_uid(0);
+
+#if USE_SETRESUID
+	setresuid(saved_ruid, saved_euid, -1);
+#elif USE_SETREUID
+	setreuid(-1, saved_ruid);
+	setreuid(saved_euid, -1);
+#elif USE_SETUIDX
+	setuidx(ID_REAL, saved_ruid);
+	setuidx(ID_EFFECTIVE, saved_euid);
+#else
 	set_effective_uid(saved_euid);
 	if (getuid() != saved_ruid) setuid(saved_ruid);
 	set_effective_uid(saved_euid);
@@ -346,6 +353,8 @@ main()
 	gain_root_group_privilege();
 	set_effective_gid(1);
 	set_effective_uid(1);
+	save_re_uid();
+	restore_re_uid();
 	gain_root_privilege();
 	gain_root_group_privilege();
 	become_user_permanently(1, 1);
