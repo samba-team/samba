@@ -228,6 +228,7 @@ while (@catman) {
   }
   print IDB "f 0664 root sys usr/share/catman/u_man/cat$dirnum/$file $nextfile samba.man.manpages\n";
 }
+print IDB "d 01777 nobody nobody var/spool/samba packaging/SGI samba.sw.base\n";
 
 close IDB;
 print "\n\nsamba.idb file has been created\n";
