@@ -1,3 +1,9 @@
+2005-02-19  Luke Howard  <lukeh@padl.com>
+
+	* lib/krb5/krbhst.c: set KD_CONFIG after calling
+	  config_get_hosts() in kpasswd_get_next()
+	  From: Wynn Wilkes <wynnw@vintela.com>
+
 2005-02-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/db3.c (DB_open): correct the check for O_RDONLY
