@@ -1244,6 +1244,7 @@ installswat: installdirs installmsg
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
 installclientlib: installdirs libsmbclient
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)${prefix}/lib
 	-$(INSTALLCLIENTCMD_SH) bin/libsmbclient.@SHLIBEXT@ $(DESTDIR)${prefix}/lib
 	-$(INSTALLCLIENTCMD_A) bin/libsmbclient.a $(DESTDIR)${prefix}/lib
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)${prefix}/include
