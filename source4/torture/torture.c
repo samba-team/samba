@@ -4300,6 +4300,46 @@ static void parse_user(const char *user)
 	}
 }
 
+static void parse_dns(const char *dns)
+{
+	char *userdn, *basedn, *secret;
+	char *p, *d;
+
+	/* retrievieng the userdn */
+	p = strchr_m(dns, '#');
+	if (!p) {
+		lp_set_cmdline("torture:ldap_userdn", "");
+		lp_set_cmdline("torture:ldap_basedn", "");
+		lp_set_cmdline("torture:ldap_secret", "");
+		return;
+	}
+	userdn = strndup(dns, p - dns);
+	lp_set_cmdline("torture:ldap_userdn", userdn);
+
+	/* retrieve the basedn */
+	d = p + 1;
+	p = strchr_m(d, '#');
+	if (!p) {
+		lp_set_cmdline("torture:ldap_basedn", "");
+		lp_set_cmdline("torture:ldap_secret", "");
+		return;
+	}
+	basedn = strndup(d, p - d);
+	lp_set_cmdline("torture:ldap_basedn", basedn);
+
+	/* retrieve the secret */
+	p = p + 1;
+	if (!p) {
+		lp_set_cmdline("torture:ldap_secret", "");
+		return;
+	}
+	secret = strdup(p);
+	lp_set_cmdline("torture:ldap_secret", secret);
+
+	printf ("%s - %s - %s\n", userdn, basedn, secret);
+
+}
+
 static void usage(void)
 {
 	int i;
@@ -4393,7 +4433,7 @@ static void usage(void)
 
 	srandom(time(NULL));
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:e:m:Ld:Ac:ks:f:s:t:C:X")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:D:U:n:N:O:o:e:m:Ld:Ac:ks:f:s:t:C:X")) != EOF) {
 		switch (opt) {
 		case 'p':
 			lp_set_cmdline("smb ports", optarg);
@@ -4451,6 +4491,9 @@ static void usage(void)
 			break;
 		case 'U':
 			parse_user(optarg);
+			break;
+		case 'D':
+			parse_dns(optarg);
 			break;
 		case 'f':
 			torture_failures = atoi(optarg);
