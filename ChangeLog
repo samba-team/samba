@@ -1,3 +1,11 @@
+1999-07-23  Assar Westerlund  <assar@sics.se>
+
+	* appl/kf/kfd.c: clean-up and more paranoia
+
+	* etc/services.append: add kf
+
+	* appl/kf/kf.c: rename tk_file to ccache for consistency.  clean-up
+
 1999-07-22  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/n-fold-test.c (main): print the correct data

@@ -1,3 +1,8 @@
+1999-07-24  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c, rshd.c: improve forwarding and implement unique ccache on
+ 	server.  From Miroslav Ruda <ruda@ics.muni.cz>
+
 1999-07-03  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c (construct_command): handle argc == 0 for generality

@@ -1,3 +1,8 @@
+1999-07-24  Assar Westerlund  <assar@sics.se>
+
+	* ent_setup.c (_kadm5_setup_entry): make princ_expire_time == 0
+ 	and pw_expiration == 0 mean never
+
 1999-07-22  Assar Westerlund  <assar@sics.se>
 
 	* log.c (kadm5_log_flush): extra cast
