@@ -342,7 +342,13 @@ static BOOL test_LookupSids3(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_LookupSids3(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
-		printf("LookupSids3 failed - %s\n", nt_errstr(status));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+			printf("not considering %s to be an error\n", nt_errstr(status));
+			return True;
+		}
+		printf("LookupSids3 failed - %s - not considered an error\n", 
+		       nt_errstr(status));
 		return False;
 	}
 
@@ -596,6 +602,33 @@ static BOOL test_CreateAccount(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_DeleteTrustedDomain(struct dcerpc_pipe *p, 
+				     TALLOC_CTX *mem_ctx, 
+				     struct policy_handle *handle,
+				     struct lsa_String name)
+{
+	NTSTATUS status;
+	struct lsa_OpenTrustedDomainByName r;
+	struct policy_handle trustdom_handle;
+
+	r.in.handle = handle;
+	r.in.name = name;
+	r.in.access_mask = SEC_STD_DELETE;
+	r.out.trustdom_handle = &trustdom_handle;
+
+	status = dcerpc_lsa_OpenTrustedDomainByName(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("lsa_OpenTrustedDomainByName failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!test_Delete(p, mem_ctx, &trustdom_handle)) {
+		return False;
+	}
+
+	return True;
+}
+
 
 static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p, 
 				     TALLOC_CTX *mem_ctx, 
@@ -620,6 +653,10 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	r.out.dom_handle = &dom_handle;
 
 	status = dcerpc_lsa_CreateTrustedDomain(p, mem_ctx, &r);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		test_DeleteTrustedDomain(p, mem_ctx, handle, trustinfo.name);
+		status = dcerpc_lsa_CreateTrustedDomain(p, mem_ctx, &r);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateTrustedDomain failed - %s\n", nt_errstr(status));
 		return False;
