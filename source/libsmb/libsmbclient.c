@@ -479,8 +479,6 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 
 	home = getenv("HOME");
 
-	printf("Home = %s\n", home);
-
 	slprintf(conf, sizeof(conf), "%s/.smb/smb.conf", home);
 
 	load_interfaces();  /* Load the list of interfaces ... */
@@ -501,8 +499,6 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug)
 		return -1;
 
 	}
-
-	printf("Some parameters:\nWorkgroup: %s\n", lp_workgroup());
 
 	codepage_initialise(lp_client_code_page()); /* Get a codepage */
 
