@@ -99,8 +99,8 @@ usr2handler (int sig)
  */
 
 static int
-connect_host (char *host, des_cblock *key, des_key_schedule schedule,
-	      int passivep)
+connect_host (char *host, char *user, des_cblock *key,
+	      des_key_schedule schedule, int passivep)
 {
      CREDENTIALS cred;
      KTEXT_ST text;
@@ -112,10 +112,13 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
      int s;
      u_char b;
      char **p;
+     char name[ANAME_SZ+1];
 
      hostent = gethostbyname (host);
      if (hostent == NULL) {
-	  fprintf (stderr, "%s: gethostbyname '%s' failed: ", prog, host);
+	  fprintf (stderr,
+		   "%s: gethostbyname '%s' failed: %s", prog, host,
+		   hstrerror(h_errno));
 	  return -1;
      }
 
@@ -167,6 +170,12 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
 		   krb_get_err_text(status));
 	  return -1;
      }
+     strncpy (name, user, sizeof(name));
+     name[sizeof(name) - 1] = '\0';
+     if (krb_net_write (s, name, sizeof(name)) != sizeof(name)) {
+	  fprintf (stderr, "%s: write: %s\n", prog, strerror(errno));
+	  return -1;
+     }
      if (krb_net_read (s, &b, sizeof(b)) != sizeof(b)) {
 	  fprintf (stderr, "%s: read: %s\n", prog,
 		   strerror(errno));
@@ -203,12 +212,13 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
 }
 
 static int
-active (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
+active (int fd, char *host, char *user,
+	des_cblock *iv, des_key_schedule schedule)
 {
      int kxd;
      u_char zero = 0;
 
-     kxd = connect_host (host, iv, schedule, 0); /* XXX */
+     kxd = connect_host (host, user, iv, schedule, 0); /* XXX */
      if (kxd < 0)
 	  return 1;
      if (krb_net_write (kxd, &zero, sizeof(zero)) != sizeof(zero)) {
@@ -298,7 +308,8 @@ start_session(int xserver, int fd, des_cblock *iv,
 }
 
 static int
-passive (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
+passive (int fd, char *host, char *user, des_cblock *iv,
+	 des_key_schedule schedule)
 {
      int xserver;
 
@@ -316,12 +327,12 @@ passive (int fd, char *host, des_cblock *iv, des_key_schedule schedule)
  */
 
 static int
-doit (char *host, int passivep, int debugp, int tcpp)
+doit (char *host, char *user, int passivep, int debugp, int tcpp)
 {
      des_key_schedule schedule;
      des_cblock key;
      int rendez_vous1 = 0, rendez_vous2 = 0;
-     int (*fn)(int fd, char *host, des_cblock *iv,
+     int (*fn)(int fd, char *host, char *user, des_cblock *iv,
 	       des_key_schedule schedule);
      pid_t pid;
 
@@ -330,7 +341,7 @@ doit (char *host, int passivep, int debugp, int tcpp)
 	  int addrlen;
 	  int otherside;
 
-	  otherside = connect_host (host, &key, schedule, passivep);
+	  otherside = connect_host (host, user, &key, schedule, passivep);
 	  if (otherside < 0)
 	       return 1;
 
@@ -438,7 +449,7 @@ doit (char *host, int passivep, int debugp, int tcpp)
 		   close (rendez_vous1);
 	       if (rendez_vous2)
 		   close (rendez_vous2);
-	       return (*fn)(fd, host, &key, schedule);
+	       return (*fn)(fd, host, user, &key, schedule);
 	  } else {
 	       close (fd);
 	  }
@@ -448,7 +459,7 @@ doit (char *host, int passivep, int debugp, int tcpp)
 static void
 usage(void)
 {
-    fprintf (stderr, "Usage: %s [-d] [-t] host\n", prog);
+    fprintf (stderr, "Usage: %s [-d] [-t] [-l remoteuser] host\n", prog);
     exit (1);
 }
 
@@ -462,18 +473,21 @@ int
 main(int argc, char **argv)
 {
      int passivep;
-     char *disp;
+     char *disp, *user = NULL;
      int debugp = 0, tcpp = 0;
      int c;
 
      prog = argv[0];
-     while((c = getopt(argc, argv, "td")) != EOF) {
+     while((c = getopt(argc, argv, "tdl:")) != EOF) {
 	 switch(c) {
 	 case 'd' :
 	     debugp = 1;
 	     break;
 	 case 't' :
 	     tcpp = 1;
+	     break;
+	 case 'l' :
+	     user = optarg;
 	     break;
 	 case '?':
 	 default:
@@ -486,11 +500,19 @@ main(int argc, char **argv)
 
      if (argc != 1)
 	  usage ();
+     if (user == NULL) {
+	  struct passwd *p = k_getpwuid (getuid ());
+	  if (p == NULL) {
+	       fprintf (stderr, "%s: Who are you?\n", prog);
+	       return 1;
+	  }
+	  user = strdup (p->pw_name);
+     }
      disp = getenv("DISPLAY");
      passivep = disp != NULL && 
        (*disp == ':' || strncmp(disp, "unix", 4) == 0);
      signal (SIGCHLD, childhandler);
      signal (SIGUSR1, usr1handler);
      signal (SIGUSR2, usr2handler);
-     return doit (argv[0], passivep, debugp, tcpp);
+     return doit (argv[0], user, passivep, debugp, tcpp);
 }
