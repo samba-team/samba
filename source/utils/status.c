@@ -66,6 +66,40 @@ files_struct Files[MAX_OPEN_FILES];
 struct current_user current_user;
 
 
+/* added by OH */
+static void Ucrit_addUsername(char *username)
+{
+	pstrcpy(Ucrit_username, username);
+	if(strlen(Ucrit_username) > 0)
+		Ucrit_IsActive = 1;
+}
+
+static unsigned int Ucrit_checkUsername(char *username)
+{
+	if ( !Ucrit_IsActive) return 1;
+	if (strcmp(Ucrit_username,username) ==0) return 1;
+	return 0;
+}
+
+static void Ucrit_addPid(int pid)
+{
+	int i;
+	if ( !Ucrit_IsActive) return;
+	for (i=0;i<Ucrit_MaxPid;i++)
+		if( pid == Ucrit_pid[i] ) return;
+	Ucrit_pid[Ucrit_MaxPid++] = pid;
+}
+
+static unsigned int Ucrit_checkPid(int pid)
+{
+	int i;
+	if ( !Ucrit_IsActive) return 1;
+	for (i=0;i<Ucrit_MaxPid;i++)
+		if( pid == Ucrit_pid[i] ) return 1;
+	return 0;
+}
+
+
 static void print_share_mode(share_mode_entry *e, char *fname)
 {
 	static int count;
@@ -294,38 +328,5 @@ static void print_share_mode(share_mode_entry *e, char *fname)
   }
 
   return (0);
-}
-
-/* added by OH */
-void Ucrit_addUsername(pstring username)
-{
-  pstrcpy(Ucrit_username, username);
-  if(strlen(Ucrit_username) > 0)
-    Ucrit_IsActive = 1;
-}
-
-unsigned int Ucrit_checkUsername(pstring username)
-{
-  if ( !Ucrit_IsActive) return 1;
-  if (strcmp(Ucrit_username,username) ==0) return 1;
-  return 0;
-}
-
-void Ucrit_addPid(int pid)
-{
-  int i;
-  if ( !Ucrit_IsActive) return;
-  for (i=0;i<Ucrit_MaxPid;i++)
-    if( pid == Ucrit_pid[i] ) return;
-  Ucrit_pid[Ucrit_MaxPid++] = pid;
-}
-
-unsigned int   Ucrit_checkPid(int pid)
-{
-  int i;
-  if ( !Ucrit_IsActive) return 1;
-  for (i=0;i<Ucrit_MaxPid;i++)
-    if( pid == Ucrit_pid[i] ) return 1;
-  return 0;
 }
 
