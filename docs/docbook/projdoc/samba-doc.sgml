@@ -18,9 +18,9 @@
 <!ENTITY SECURITY-LEVEL SYSTEM "security_level.sgml">
 <!ENTITY SPEED SYSTEM "Speed.sgml">
 <!ENTITY BROWSING SYSTEM "Browsing.sgml">
-<!ENTITY GROUP-MAPPING-HOWTO "GROUP-MAPPING-HOWTO.sgml">
-<!ENTITY Portability "Portability.sgml">
-<!ENTITY Other-Clients "Other-Clients.sgml">
+<!ENTITY GROUP-MAPPING-HOWTO SYSTEM "GROUP-MAPPING-HOWTO.sgml">
+<!ENTITY Portability SYSTEM "Portability.sgml">
+<!ENTITY Other-Clients SYSTEM "Other-Clients.sgml">
 ]>
 
 <book id="Samba-Project-Documentation">
