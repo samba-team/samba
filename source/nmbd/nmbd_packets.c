@@ -59,6 +59,21 @@ static int find_subnet_fd_for_address( struct in_addr local_ip )
 }
 
 /***************************************************************************
+Utility function to find the specific fd to send a mailslot packet out on.
+**************************************************************************/
+
+static int find_subnet_mailslot_fd_for_address( struct in_addr local_ip )
+{
+  struct subnet_record *subrec;
+
+  for( subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
+    if(ip_equal(local_ip, subrec->myip))
+      return subrec->dgram_sock;
+
+  return ClientDGRAM;
+}
+
+/***************************************************************************
 Get/Set problematic nb_flags as network byte order 16 bit int.
 **************************************************************************/
 
@@ -1828,7 +1843,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
 
   p.ip = dest_ip;
   p.port = DGRAM_PORT;
-  p.fd = ClientDGRAM;
+  p.fd = find_subnet_mailslot_fd_for_address( src_ip );
   p.timestamp = time(NULL);
   p.packet_type = DGRAM_PACKET;
 
