@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -62,7 +62,8 @@ build_request(KTEXT req, char *name, char *inst, char *realm,
 }
 
 int
-krb_mk_req(KTEXT authent, char *service, char *instance, char *realm, 
+krb_mk_req(KTEXT authent,
+	   const char *service, const char *instance, const char *realm, 
 	   int32_t checksum)
 {
     CREDENTIALS cr;
