@@ -102,6 +102,8 @@ char	wtmpf[]	= "/etc/wtmp";
 
 #endif /* STREAMSPTY */
 
+#undef NOERROR
+
 #ifdef	HAVE_SYS_STREAM_H
 #ifdef  HAVE_SYS_UIO_H
 #include <sys/uio.h>

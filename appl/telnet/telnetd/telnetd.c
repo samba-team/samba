@@ -63,6 +63,9 @@ int	registerd_host_only = 0;
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
 #endif
+
+#undef NOERROR
+
 #ifdef _AIX
 #include <sys/termio.h>
 #endif
