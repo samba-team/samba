@@ -212,11 +212,12 @@ AUTH_OBJ = auth/auth.o auth/auth_sam.o auth/auth_server.o auth/auth_domain.o \
 	   auth/auth_rhosts.o auth/auth_unix.o auth/auth_util.o	auth/auth_winbind.o \
 	   auth/auth_builtin.o auth/auth_compat.o $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
 
+MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o
 
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/utmp.o smbd/session.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
-            smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
+            smbd/ipc.o smbd/lanman.o smbd/negprot.o \
             smbd/message.o smbd/nttrans.o smbd/pipes.o \
             smbd/reply.o smbd/sesssetup.o smbd/trans2.o smbd/uid.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
@@ -227,13 +228,14 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    printing/printfsp.o lib/util_seaccess.o smbd/srvstr.o \
             smbd/build_options.o \
 	    smbd/change_trust_pw.o \
-	    rpc_client/cli_spoolss_notify.o
+	    rpc_client/cli_spoolss_notify.o \
+	    $(MANGLE_OBJ)
 
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
 				printing/print_cups.o printing/print_generic.o \
 				printing/lpq_parse.o printing/load.o
- 
+
 PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o
 
 MSDFS_OBJ = msdfs/msdfs.o 

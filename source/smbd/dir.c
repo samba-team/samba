@@ -603,14 +603,14 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
     */
     if ((strcmp(mask,"*.*") == 0) ||
 	mask_match(filename,mask,False) ||
-        (name_map_mangle(filename,True,False,SNUM(conn)) &&
+        (mangle_map(filename,True,False,SNUM(conn)) &&
          mask_match(filename,mask,False)))
     {
       if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
         continue;
 
-      if (!is_8_3(filename, False)) {
-	      name_map_mangle(filename,True,False,SNUM(conn));
+      if (!mangle_is_8_3(filename, False)) {
+	      mangle_map(filename,True,False,SNUM(conn));
       }
 
       pstrcpy(fname,filename);

@@ -831,7 +831,9 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 			OPEN_FSP(fsp) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(0,("oplock_break: client failure in oplock break in file %s\n", fsp->fsp_name));
 		remove_oplock(fsp,True);
+#if FASCIST_OPLOCK_BACKOFF
 		global_client_failed_oplock_break = True; /* Never grant this client an oplock again. */
+#endif
 	}
 
 	/*

@@ -73,32 +73,16 @@ static BOOL fname_equal(char *name1, char *name2)
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
 ****************************************************************************/
-static BOOL mangled_equal(char *name1, char *name2)
+static BOOL mangled_equal(char *name1, char *name2, int snum)
 {
-#if 1
 	pstring tmpname;
-	if (is_8_3(name2, True)) {
+	if (mangle_is_8_3(name2, True)) {
 		return False;
 	}
 	
 	pstrcpy(tmpname, name2);
-	mangle_name_83(tmpname);
-
-	return strequal(name1, tmpname);
-#else	
-	char *tmpname;
-	BOOL ret = False;
-
-	if (is_8_3(name2, True))
-	{
-		tmpname = dos_mangle(name2);
-		if(tmpname)
-			ret = strequal(name1,tmpname);
-		SAFE_FREE(tmpname);
-	}
-	return ret;
-#endif
-	
+	return mangle_map(tmpname, True, False, snum) && 
+		strequal(name1, tmpname);
 }
 
 
@@ -193,7 +177,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
   }
 
   if (!case_sensitive && 
-      (!case_preserve || (is_8_3(name, False) && !short_case_preserve)))
+      (!case_preserve || (mangle_is_8_3(name, False) && !short_case_preserve)))
     strnorm(name);
 
   /*
@@ -220,7 +204,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
    * stat the name - if it exists then we are all done!
    */
 
-  if (vfs_stat(conn,name,&st) == 0) {
+/* ZZZ: stat1 */  if (vfs_stat(conn,name,&st) == 0) {
     stat_cache_add(orig_path, name);
     DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
     *pst = st;
@@ -235,7 +219,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
    * sensitive then searching won't help.
    */
 
-  if (case_sensitive && !is_mangled(name) && 
+  if (case_sensitive && !mangle_is_mangled(name) && 
       !lp_strip_dot() && !use_mangled_map)
     return(False);
 
@@ -246,7 +230,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
    * just a component. JRA.
    */
 
-  if(is_mangled(start))
+  if (mangle_is_mangled(start))
     component_was_mangled = True;
 
   /* 
@@ -346,8 +330,8 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
            * base of the filename.
            */
 
-          if (is_mangled(start)) {
-            check_mangled_cache( start );
+          if (mangle_is_mangled(start)) {
+		  mangle_check_cache( start );
           }
 
           DEBUG(5,("New file %s\n",start));
@@ -468,7 +452,7 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
   BOOL mangled;
   pstring name2;
 
-  mangled = is_mangled(name);
+  mangled = mangle_is_mangled(name);
 
   /* handle null paths */
   if (*path == 0)
@@ -482,12 +466,12 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
   /*
    * The incoming name can be mangled, and if we de-mangle it
    * here it will not compare correctly against the filename (name2)
-   * read from the directory and then mangled by the name_map_mangle()
+   * read from the directory and then mangled by the mangle_map()
    * call. We need to mangle both names or neither.
    * (JRA).
    */
   if (mangled)
-    mangled = !check_mangled_cache( name );
+    mangled = !mangle_check_cache( name );
 
   /* open the directory */
   if (!(cur_dir = OpenDir(conn, path, True))) {
@@ -501,10 +485,10 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
         continue;
 
       pstrcpy(name2,dname);
-      if (!name_map_mangle(name2,False,True,SNUM(conn)))
+      if (!mangle_map(name2,False,True,SNUM(conn)))
         continue;
 
-      if ((mangled && mangled_equal(name,name2)) || fname_equal(name, dname)) {
+      if ((mangled && mangled_equal(name,name2,SNUM(conn))) || fname_equal(name, dname)) {
         /* we've found the file, change it's name and return */
         if (docache)
           DirCacheAdd(path,name,dname,SNUM(conn));
