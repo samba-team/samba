@@ -3,7 +3,7 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
-AM_INIT_AUTOMAKE(heimdal,0.2i)
+AM_INIT_AUTOMAKE(heimdal,0.2j)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
@@ -729,6 +729,8 @@ timezone)
 AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
 
 AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
+
+AC_HAVE_TYPE([struct sockaddr], [#include <sys/socket.h>])
 
 AC_HAVE_TYPE([struct sockaddr_storage], [#include <sys/socket.h>])
 
