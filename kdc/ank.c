@@ -50,6 +50,7 @@ int main(int argc, char **argv)
 	des_read_pw_string(buf, sizeof(buf), "Password:", 1);
 	{
 	    krb5_data salt;
+	    memset(&salt, 0, sizeof(salt));
 	    krb5_get_salt(ent.principal, &salt);
 	    krb5_string_to_key(buf, &salt, &ent.keyblock);
 	}
