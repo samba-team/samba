@@ -1279,10 +1279,10 @@ AUTOHEADER=@AUTOHEADER@
 
 # when configure.in is updated, reconfigure
 $(srcdir)/configure: @MAINT@ $(srcdir)/configure.in $(srcdir)/aclocal.m4
-	echo "WARNING: you need to rerun configure"
+	@echo "WARNING: you need to run autoconf"
 
 config.status: $(srcdir)/configure
-	echo "WARNING: you need to run ./config.status --recheck"
+	@echo "WARNING: you need to run ./config.status --recheck"
 
 Makefile: $(srcdir)/Makefile.in config.status \
 	  include/stamp-h # just to ensure that config.h is up-to-date
