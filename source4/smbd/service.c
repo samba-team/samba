@@ -27,7 +27,6 @@ struct server_context *server_service_startup(const char *model)
 {
 	int i;
 	const char **server_services = lp_server_services();
-	TALLOC_CTX *mem_ctx;
 	struct server_context *srv_ctx;
 	const struct model_ops *model_ops;
 
@@ -42,20 +41,12 @@ struct server_context *server_service_startup(const char *model)
 		return NULL;
 	}
 
-	mem_ctx = talloc_init("server_context");
-	if (!mem_ctx) {
-		DEBUG(0,("talloc_init(server_context) failed\n"));
-		return NULL;
-	}
-
-	srv_ctx = talloc_p(mem_ctx, struct server_context);
+	srv_ctx = talloc_p(NULL, struct server_context);
 	if (!srv_ctx) {
-		DEBUG(0,("talloc_p(mem_ctx, struct server_context) failed\n"));
 		return NULL;	
 	}
 
 	ZERO_STRUCTP(srv_ctx);
-	srv_ctx->mem_ctx = mem_ctx;
 
 	srv_ctx->events = event_context_init();
 	if (!srv_ctx->events) {
@@ -65,7 +56,6 @@ struct server_context *server_service_startup(const char *model)
 
 
 	for (i=0;server_services[i];i++) {
-		TALLOC_CTX *mem_ctx2;
 		const struct server_service_ops *service_ops;
 		struct server_service *service;
 
@@ -75,16 +65,12 @@ struct server_context *server_service_startup(const char *model)
 			return NULL;
 		}
 
-		mem_ctx2 = talloc_init("server_service");
-
-		service = talloc_p(mem_ctx2, struct server_service);
+		service = talloc_p(srv_ctx, struct server_service);
 		if (!service) {
-			DEBUG(0,("talloc_p(mem_ctx, struct server_service) failed\n"));
 			return NULL;
 		}
 
 		ZERO_STRUCTP(service);
-		service->mem_ctx	= mem_ctx2;
 		service->ops		= service_ops;
 		service->model_ops	= model_ops;
 		service->srv_ctx	= srv_ctx;
@@ -129,6 +115,8 @@ struct server_socket *service_setup_socket(struct server_service *service,
 		return NULL;
 	}
 
+	talloc_steal(service, socket_ctx);
+
 	/* ready to listen */
 	status = socket_set_option(socket_ctx, "SO_KEEPALIVE SO_REUSEADDR=1", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -169,7 +157,6 @@ struct server_socket *service_setup_socket(struct server_service *service,
 	fde.handler     = model_ops->accept_connection;
 
 	ZERO_STRUCTP(srv_sock);
-	srv_sock->mem_ctx       = srv_sock;
 	srv_sock->service       = service;
 	srv_sock->socket        = socket_ctx;
 	srv_sock->event.ctx     = service->srv_ctx->events;
@@ -201,7 +188,6 @@ struct server_connection *server_setup_connection(struct event_context *ev,
 	}
 
 	ZERO_STRUCTP(srv_conn);
-	srv_conn->mem_ctx = srv_conn;
 
 	fde.private 	= srv_conn;
 	fde.fd		= socket_get_fd(sock);
@@ -255,7 +241,7 @@ void server_destroy_connection(struct server_connection *srv_conn)
 	event_remove_timed(srv_conn->event.ctx, srv_conn->event.idle);
 	srv_conn->event.idle = NULL;
 
-	talloc_destroy(srv_conn->mem_ctx);
+	talloc_free(srv_conn);
 }
 
 void server_io_handler(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)

@@ -137,7 +137,7 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 /****************************************************************************
 check if it's a null mtime
 ****************************************************************************/
-BOOL null_mtime(time_t mtime)
+static BOOL null_mtime(time_t mtime)
 {
 	return mtime == 0 || 
 		mtime == (time_t)0xFFFFFFFF || 

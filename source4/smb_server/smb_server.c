@@ -688,7 +688,7 @@ static void add_socket(struct server_service *service,
 {
 	const char **ports = lp_smb_ports();
 	int i;
-	char *ip_str = talloc_strdup(service->mem_ctx, inet_ntoa(*ifip));
+	char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
 
 	for (i=0;ports[i];i++) {
 		uint16_t port = atoi(ports[i]);
