@@ -227,7 +227,21 @@ define_type (int level, char *name, Type *t, int typedefp)
 	break;
     case TInteger:
 	space(level);
-	fprintf (headerfile, "int %s;\n", name);
+        if(t->members == NULL) {
+            fprintf (headerfile, "int %s;\n", name);
+        } else {
+            Member *m;
+            int tag = -1;
+            fprintf (headerfile, "enum %s {\n", typedefp ? name : "");
+	    for (m = t->members; m && m->val != tag; m = m->next) {
+                if(tag == -1)
+                    tag = m->val;
+                space (level + 1);
+                fprintf(headerfile, "%s = %d%s\n", m->gen_name, m->val, 
+                        m->next->val == tag ? "" : ",");
+            }
+            fprintf (headerfile, "} %s;\n", name);
+        }
 	break;
     case TUInteger:
 	space(level);
