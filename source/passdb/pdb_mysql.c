@@ -351,13 +351,14 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 							   CONFIG_UNKNOWN_6_DEFAULT),
 			 config_value(data, "table", CONFIG_TABLE_DEFAULT)
 				 );
+	DEBUG(5, ("Executing query %s\n", query));
 	
 	ret = mysql_query(data->handle, query);
 	SAFE_FREE(query);
 
 	if (ret) {
 		DEBUG(0,
-			   ("Error executing MySQL query %s: %s\n", query, mysql_error(data->handle)));
+			   ("Error executing MySQL query %s\n", mysql_error(data->handle)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -518,6 +519,8 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 			 esc_sname);
 	
 	SAFE_FREE(esc_sname);
+
+	DEBUG(5, ("Executing query %s\n", query));
 	
 	mysql_ret = mysql_query(data->handle, query);
 	
@@ -525,7 +528,7 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 	
 	if (mysql_ret) {
 		DEBUG(0,
-			("Error while executing MySQL query %s: %s\n", query,
+			("Error while executing MySQL query %s\n", 
 				mysql_error(data->handle)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
