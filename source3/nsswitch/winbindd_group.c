@@ -48,7 +48,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 			   int *num_gr_mem, char **gr_mem, int *gr_mem_len)
 {
 	uint32 *rid_mem = NULL, num_names = 0;
-	enum SID_NAME_USE *name_types = NULL;
+	uint32 *name_types = NULL;
 	int buf_len, buf_ndx, i;
 	char **names = NULL, *buf;
 	BOOL result = False;

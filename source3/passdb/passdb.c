@@ -49,7 +49,8 @@ BOOL initialize_password_db(BOOL reload)
 	   ignore the details and always return True.  It is here 
 	   only as a placeholder --jerry */
 	return True;
-	
+
+#if _NOT_YET_	
 	/* load another module? */
 	if (reload && pdb_handle)
 	{
@@ -85,6 +86,7 @@ BOOL initialize_password_db(BOOL reload)
 					
 
 	return (pdb_handle != NULL);
+#endif
 }
 
 /*************************************************************

@@ -182,8 +182,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
         memcpy(user_info.chal, state->request.data.auth_crap.chal, 8);
 
-        user_info.lm_resp.buffer = state->request.data.auth_crap.lm_resp;
-        user_info.nt_resp.buffer = state->request.data.auth_crap.nt_resp;
+        user_info.lm_resp.buffer = (uchar *)state->request.data.auth_crap.lm_resp;
+        user_info.nt_resp.buffer = (uchar *)state->request.data.auth_crap.nt_resp;
         
         user_info.lm_resp.len = 24;
         user_info.nt_resp.len = 24;

@@ -131,7 +131,7 @@ BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
 BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
                               uint32 group_rid, uint32 *num_names, 
                               uint32 **rid_mem, char ***names, 
-                              enum SID_NAME_USE **name_types);
+                              uint32 **name_types);
 struct winbindd_domain *find_domain_from_name(char *domain_name);
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 void free_getent_state(struct getent_state *state);

@@ -55,6 +55,10 @@
 #include <grp.h>
 #endif
 
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
