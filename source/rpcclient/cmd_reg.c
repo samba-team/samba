@@ -898,6 +898,8 @@ nt registry shutdown
 static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                  int argc, char **argv)
 {
+	extern char *optarg;
+	extern int optind;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring msg;
 	uint32 timeout = 20;

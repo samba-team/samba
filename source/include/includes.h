@@ -208,7 +208,9 @@
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #endif
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
 
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>

@@ -344,6 +344,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 {
 	int opt;
 	char temp[255];
+	extern char *optarg;
 	extern int optind;
 	pstring servicesf = CONFIGFILE;
 	BOOL interactive = False;

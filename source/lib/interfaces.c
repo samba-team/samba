@@ -45,7 +45,9 @@
 #include <net/if.h>
 
 #ifndef SIOCGIFCONF
+#ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
+#endif
 #endif
 
 #ifdef AUTOCONF_TEST

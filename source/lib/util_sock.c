@@ -931,7 +931,7 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 	
 	/* Look up the host address in the address list we just got. */
 	for (i = 0; hp->h_addr_list[i]; i++) {
-		if (memcmp(hp->h_addr_list[i], (caddr_t) & addr, sizeof(addr)) == 0)
+		if (memcmp(hp->h_addr_list[i], (void *) & addr, sizeof(addr)) == 0)
 			return True;
 	}
 	

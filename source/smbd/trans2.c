@@ -399,7 +399,7 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 	ret |= ((perms & UNIX_SET_GID ) ? S_ISGID : 0);
 #endif
 #ifdef S_ISUID
-	ret |= ((perms & UNIX_SET_UID ) ? S_ISVTX : 0);
+	ret |= ((perms & UNIX_SET_UID ) ? S_ISUID : 0);
 #endif
 
 	if (VALID_STAT(*pst) && S_ISDIR(pst->st_mode)) {
