@@ -65,8 +65,6 @@ extern int dcelogin_atmost_once;
  */
 extern DOM_SID global_machine_sid;
 
-static connection_struct Connections[MAX_CONNECTIONS];
-
 extern int Protocol;
 
 /* 
@@ -80,9 +78,6 @@ int max_send = BUFFER_SIZE;
  * Can be modified by the max xmit parameter.
  */
 int max_recv = BUFFER_SIZE;
-
-/* number of open connections */
-static int num_connections_open = 0;
 
 /* Oplock ipc UDP socket. */
 int oplock_sock = -1;
@@ -2094,7 +2089,7 @@ BOOL become_service(connection_struct *conn,BOOL do_chdir)
 	static connection_struct *last_conn;
 	int snum;
 
-	if (!conn || !conn->open)  {
+	if (!conn)  {
 		last_conn = NULL;
 		return(False);
 	}
@@ -3250,20 +3245,6 @@ BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int tim
 }
 
 /****************************************************************************
-check if a snum is in use
-****************************************************************************/
-BOOL snum_used(int snum)
-{
-	int i;
-	for (i=0;i<MAX_CONNECTIONS;i++) {
-		if (Connections[i].open && (Connections[i].service == snum)) {
-			return(True);
-		}
-	}
-	return(False);
-}
-
-/****************************************************************************
   reload the services file
   **************************************************************************/
 BOOL reload_services(BOOL test)
@@ -3284,7 +3265,7 @@ BOOL reload_services(BOOL test)
 	if (test && !lp_file_list_changed())
 		return(True);
 
-	lp_killunused(snum_used);
+	lp_killunused(conn_snum_used);
 
 	ret = lp_load(servicesf,False,False,True);
 
@@ -3334,42 +3315,6 @@ static void sig_hup(int sig)
 
   reload_after_sighup = True;
   BlockSignals(False,SIGHUP);
-}
-
-/****************************************************************************
-  find first available connection slot, starting from a random position.
-The randomisation stops problems with the server dieing and clients
-thinking the server is still available.
-****************************************************************************/
-static connection_struct *find_free_connection(int hash)
-{
-	int i;
-	BOOL used=False;
-	hash = (hash % (MAX_CONNECTIONS-2))+1;
-
- again:
-
-	for (i=hash+1;i!=hash;) {
-		if (!Connections[i].open && Connections[i].used == used) {
-			DEBUG(3,("found free connection number %d\n",i));
-			memset(&Connections[i], 0, sizeof(&Connections[i]));
-			Connections[i].cnum = i;
-			return &Connections[i];
-		}
-		i++;
-		if (i == MAX_CONNECTIONS) {
-			i = 1;
-		}
-	}
-
-	if (!used) {
-		used = !used;
-		goto again;
-	}
-
-	DEBUG(1,("ERROR! Out of connection structures\n"));
-
-	return NULL;
 }
 
 
@@ -3462,10 +3407,11 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
   
-	conn = find_free_connection(str_checksum(service) + str_checksum(user));
+	conn = conn_new();
 	if (!conn) {
 		DEBUG(0,("Couldn't find free connection.\n"));
 		*ecode = ERRnoresource;
+		conn_free(conn);
 		return NULL;
 	}
 
@@ -3475,6 +3421,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (pass == NULL) {
 		DEBUG(0,( "Couldn't find account %s\n",user));
 		*ecode = ERRbaduid;
+		conn_free(conn);
 		return NULL;
 	}
 
@@ -3589,6 +3536,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				      False)) {
 			DEBUG(1,("too many connections - rejected\n"));
 			*ecode = ERRnoresource;
+			conn_free(conn);
 			return NULL;
 		}  
 		
@@ -3596,8 +3544,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			claim_connection(conn,"STATUS.",
 					 MAXSTATUS,False);
 	} /* IS_IPC */
-	
-	conn->open = True;
 	
 	/* execute any "root preexec = " line */
 	if (*lp_rootpreexec(SNUM(conn))) {
@@ -3610,7 +3556,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("Can't become connected user!\n"));
-		conn->open = False;
 		if (!IS_IPC(conn)) {
 			yield_connection(conn,
 					 lp_servicename(SNUM(conn)),
@@ -3619,6 +3564,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				yield_connection(conn,"STATUS.",MAXSTATUS);
 			}
 		}
+		conn_free(conn);
 		*ecode = ERRbadpw;
 		return NULL;
 	}
@@ -3626,7 +3572,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (ChDir(conn->connectpath) != 0) {
 		DEBUG(0,("Can't change directory to %s (%s)\n",
 			 conn->connectpath,strerror(errno)));
-		conn->open = False;
 		unbecome_user();
 		if (!IS_IPC(conn)) {
 			yield_connection(conn,
@@ -3635,6 +3580,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			if (lp_status(SNUM(conn))) 
 				yield_connection(conn,"STATUS.",MAXSTATUS);
 		}
+		conn_free(conn);
 		*ecode = ERRinvnetname;
 		return NULL;
 	}
@@ -3652,7 +3598,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 #endif
 	
-	num_connections_open++;
 	add_session_user(user);
 		
 	/* execute any "preexec = " line */
@@ -4108,11 +4053,6 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 
 	unbecome_user();
 
-	if (!conn->open) {
-		DEBUG(0,("cnum not open\n"));
-		return;
-	}
-
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
 				 remote_machine,client_addr(Client),
 				 lp_servicename(SNUM(conn))));
@@ -4146,21 +4086,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		smbrun(cmd,NULL,False);
 	}
 	
-	conn->open = False;
-	num_connections_open--;
-	if (conn->ngroups && conn->groups) {
-		free(conn->groups);
-		conn->groups = NULL;
-		conn->ngroups = 0;
-	}
-
-	free_namearray(conn->veto_list);
-	free_namearray(conn->hide_list);
-	free_namearray(conn->veto_oplock_list);
-	
-	string_set(&conn->user,"");
-	string_set(&conn->dirpath,"");
-	string_set(&conn->connectpath,"");
+	conn_free(conn);
 }
 
 
@@ -4208,16 +4134,15 @@ exit the server
 void exit_server(char *reason)
 {
   static int firsttime=1;
-  int i;
 
   if (!firsttime) exit(0);
   firsttime = 0;
 
   unbecome_user();
   DEBUG(2,("Closing connections\n"));
-  for (i=0;i<MAX_CONNECTIONS;i++)
-    if (Connections[i].open)
-      close_cnum(&Connections[i],(uint16)-1);
+
+  conn_close_all();
+
 #ifdef WITH_DFS
   if (dcelogin_atmost_once) {
     dfs_unlogin();
@@ -4457,16 +4382,12 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
     if (smb_messages[match].fn)
     {
-      int cnum = SVAL(inbuf,smb_tid);
       int flags = smb_messages[match].flags;
       static uint16 last_session_tag = UID_FIELD_INVALID;
       /* In share mode security we must ignore the vuid. */
       uint16 session_tag = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(inbuf,smb_uid);
-      connection_struct *conn = NULL;
+      connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
 
-      if (VALID_CNUM(cnum) && Connections[cnum].open) {
-	      conn = &Connections[cnum];
-      }
 
       /* Ensure this value is replaced in the incoming packet. */
       SSVAL(inbuf,smb_uid,session_tag);
@@ -4517,7 +4438,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       }
 
       /* load service specific parameters */
-      if (OPEN_CONN(conn) && 
+      if (conn && 
 	  !become_service(conn,(flags & AS_USER)?True:False)) {
         return(ERROR(ERRSRV,ERRaccess));
       }
@@ -4765,7 +4686,6 @@ static void process(void)
                       InBuffer,BUFFER_SIZE,SMBD_SELECT_LOOP*1000,&got_smb); 
           counter += SMBD_SELECT_LOOP)
     {
-      int i;
       time_t t;
       BOOL allidle = True;
       extern int keepalive;
@@ -4816,7 +4736,7 @@ static void process(void)
       }
 
       /* automatic timeout if all connections are closed */      
-      if (num_connections_open==0 && counter >= IDLE_CLOSED_TIMEOUT) 
+      if (conn_num_open()==0 && counter >= IDLE_CLOSED_TIMEOUT) 
       {
         DEBUG( 2, ( "Closing idle connection\n" ) );
         return;
@@ -4837,19 +4757,9 @@ static void process(void)
       }
 
       /* check for connection timeouts */
-      for (i=0;i<MAX_CONNECTIONS;i++) {
-	      if (Connections[i].open) {
-		      /* close dirptrs on connections that are idle */
-		      if ((t-Connections[i].lastused)>DPTR_IDLE_TIMEOUT)
-			      dptr_idlecnum(&Connections[i]);
+      allidle = conn_idle_all(t, deadtime);
 
-		      if (Connections[i].num_files_open > 0 ||
-			  (t-Connections[i].lastused)<deadtime)
-			      allidle = False;
-	      }
-      }
-
-      if (allidle && num_connections_open>0) {
+      if (allidle && conn_num_open()>0) {
 	      DEBUG(2,("Closing idle connection 2.\n"));
 	      return;
       }
@@ -4920,7 +4830,6 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 ****************************************************************************/
 static void init_structs(void )
 {
-  int i;
   get_myname(myhostname,NULL);
 
   /*
@@ -4938,17 +4847,7 @@ static void init_structs(void )
   }
   strupper( global_myname );
 
-  for (i=0;i<MAX_CONNECTIONS;i++)
-    {
-      Connections[i].open = False;
-      Connections[i].num_files_open=0;
-      Connections[i].lastused=0;
-      Connections[i].used=False;
-      string_init(&Connections[i].user,"");
-      string_init(&Connections[i].dirpath,"");
-      string_init(&Connections[i].connectpath,"");
-      string_init(&Connections[i].origpath,"");
-    }
+  conn_init();
 
   file_init();
 

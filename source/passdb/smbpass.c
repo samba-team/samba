@@ -26,7 +26,7 @@ extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 
-static char s_readbuf[16 * 1024];
+static char s_readbuf[1024];
 
 /***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer
@@ -51,7 +51,7 @@ static void *startsmbfilepwent(BOOL update)
     return NULL;
   }
 
-  /* Set a 16k buffer to do more efficient reads */
+  /* Set a buffer to do more efficient reads */
   setvbuf(fp, s_readbuf, _IOFBF, sizeof(s_readbuf));
 
   if (!pw_file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 5, &pw_file_lock_depth))
@@ -560,7 +560,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   static pstring  user_name;
 
   char            linebuf[256];
-  char            readbuf[16 * 1024];
+  char            readbuf[1024];
   unsigned char   c;
   fstring         ascii_p16;
   fstring         encode_bits;
@@ -590,7 +590,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
     DEBUG(0, ("mod_smbfilepwd_entry: unable to open file %s\n", pfile));
     return False;
   }
-  /* Set a 16k buffer to do more efficient reads */
+  /* Set a buffer to do more efficient reads */
   setvbuf(fp, readbuf, _IOFBF, sizeof(readbuf));
 
   lockfd = fileno(fp);

@@ -54,7 +54,7 @@ files_struct *file_new(void )
 {
 	int i;
 	static int first_file;
-	files_struct *fsp;
+	files_struct *fsp, *next;
 
 	/* we want to give out file handles differently on each new
 	   connection because of a common bug in MS clients where they try to
@@ -76,7 +76,8 @@ files_struct *file_new(void )
 		 * files batch oplocked for quite a long time
 		 * after they have finished with them.
 		 */
-		for (fsp=Files;fsp;fsp=fsp->next) {
+		for (fsp=Files;fsp;fsp=next) {
+			next=fsp->next;
 			if (attempt_close_oplocked_file(fsp)) {
 				return file_new();
 			}
@@ -200,9 +201,10 @@ close all open files for a connection
 ****************************************************************************/
 void file_close_conn(connection_struct *conn)
 {
-	files_struct *fsp;
+	files_struct *fsp, *next;
 	
-	for (fsp=Files;fsp;fsp=fsp->next) {
+	for (fsp=Files;fsp;fsp=next) {
+		next = fsp->next;
 		if (fsp->conn == conn && fsp->open) {
 			if (fsp->is_directory)
 				close_directory(fsp); 
@@ -248,9 +250,10 @@ close files open by a specified vuid
 ****************************************************************************/
 void file_close_user(int vuid)
 {
-	files_struct *fsp;
+	files_struct *fsp, *next;
 
-	for (fsp=Files;fsp;fsp=fsp->next) {
+	for (fsp=Files;fsp;fsp=next) {
+		next=fsp->next;
 		if ((fsp->vuid == vuid) && fsp->open) {
 			if(!fsp->is_directory)
 				close_file(fsp,False);
@@ -301,9 +304,10 @@ sync open files on a connection
 ****************************************************************************/
 void file_sync_all(connection_struct *conn)
 {
-	files_struct *fsp;
+	files_struct *fsp, *next;
 
-	for (fsp=Files;fsp;fsp=fsp->next) {
+	for (fsp=Files;fsp;fsp=next) {
+		next=fsp->next;
 		if (fsp->open && conn == fsp->conn) {
 			sync_file(conn,fsp);
 		}

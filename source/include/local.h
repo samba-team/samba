@@ -39,12 +39,6 @@
 #define SYSLOG_FACILITY LOG_DAEMON
 #endif
 
-/* set these to define the limits of the server. NOTE These are on a
-   per-client basis. Thus any one machine can't connect to more than
-   MAX_CONNECTIONS services, but any number of machines may connect at
-   one time. */
-#define MAX_CONNECTIONS 127
-
 /* Default size of shared memory used for share mode locking */
 #ifndef SHMEM_SIZE
 #define SHMEM_SIZE (1024*1024)

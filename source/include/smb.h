@@ -531,14 +531,14 @@ typedef struct
   BOOL is_wild;
 } name_compare_entry;
 
-typedef struct
+typedef struct connection_struct
 {
+	struct connection_struct *next, *prev;
 	unsigned cnum; /* an index passed over the wire */
 	int service;
 	BOOL force_user;
 	struct uid_cache uid_cache;
 	void *dirptr;
-	BOOL open;
 	BOOL printer;
 	BOOL ipc;
 	BOOL read_only;
@@ -865,7 +865,6 @@ struct bitmap {
 
 /* these are useful macros for checking validity of handles */
 #define OPEN_FSP(fsp)    ((fsp) && (fsp)->open && !(fsp)->is_directory)
-#define VALID_CNUM(cnum)   (((cnum) >= 0) && ((cnum) < MAX_CONNECTIONS))
 #define OPEN_CONN(conn)    ((conn) && (conn)->open)
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
@@ -888,7 +887,7 @@ struct bitmap {
 #define PRINTCAP           (lp_printcapname())
 #define PRINTCOMMAND(snum) (lp_printcommand(snum))
 #define PRINTERNAME(snum)  (lp_printername(snum))
-#define CAN_WRITE(conn)    (OPEN_CONN(conn) && !conn->read_only)
+#define CAN_WRITE(conn)    (!conn->read_only)
 #define VALID_SNUM(snum)   (lp_snum_ok(snum))
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))
 #define GUEST_ONLY(snum)   (VALID_SNUM(snum) && lp_guest_only(snum))

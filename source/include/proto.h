@@ -1912,6 +1912,17 @@ BOOL check_oem_password(char *user, unsigned char *data,
                         int new_passwd_size);
 BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override);
 
+/*The following definitions come from  smbd/conn.c  */
+
+void conn_init(void);
+int conn_num_open(void);
+BOOL conn_snum_used(int snum);
+connection_struct *conn_find(int cnum);
+connection_struct *conn_new(void);
+void conn_close_all(void);
+BOOL conn_idle_all(time_t t, int deadtime);
+void conn_free(connection_struct *conn);
+
 /*The following definitions come from  smbd/connection.c  */
 
 BOOL yield_connection(connection_struct *conn,char *name,int max_connections);
@@ -2160,7 +2171,6 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval);
 BOOL request_oplock_break(share_mode_entry *share_entry, 
                           uint32 dev, uint32 inode);
 BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout);
-BOOL snum_used(int snum);
 BOOL reload_services(BOOL test);
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
