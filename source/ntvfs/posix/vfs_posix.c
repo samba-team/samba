@@ -42,7 +42,7 @@ static NTSTATUS pvfs_connect(struct smbsrv_request *req, const char *sharename)
 	DEBUGADD(0,("         all file acess is done as user 'root'\n"));
 	DEBUGADD(0,("         Please don't use this a sensitive data!!!\n"));
 
-	return NT_STATUS_ACCESS_DENIED;
+	return NT_STATUS_DEVICE_CONFIGURATION_ERROR;
 }
 
 /*
