@@ -570,6 +570,127 @@ uint16 pdb_decode_acct_ctrl(char *p)
 	return acct_ctrl;
 }
 
+/*******************************************************************
+ gets password-database-format time from a string.
+ ********************************************************************/
+
+static time_t get_time_from_string(char *p)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+	{
+		if (p[i] == '\0' || !isxdigit(p[i]))
+		break;
+	}
+	if (i == 8)
+	{
+		/*
+		 * p points at 8 characters of hex digits - 
+		 * read into a time_t as the seconds since
+		 * 1970 that the password was last changed.
+		 */
+		return (time_t)strtol((char *)p, NULL, 16);
+	}
+	return (time_t)-1;
+}
+
+/*******************************************************************
+ gets password last set time
+ ********************************************************************/
+
+time_t pdb_get_last_set_time(char *p)
+{
+	if (*p && StrnCaseCmp((char *)p, "LCT-", 4))
+	{
+		return get_time_from_string(p + 4);
+	}
+	return (time_t)-1;
+}
+
+
+/*******************************************************************
+ sets password-database-format time in a string.
+ ********************************************************************/
+static void set_time_in_string(char *p, int max_len, char *type, time_t t)
+{
+	slprintf(p, max_len, ":%s-%08X:", type, (uint32)t);
+}
+
+/*******************************************************************
+ sets logon time
+ ********************************************************************/
+void pdb_set_logon_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "LNT", t);
+}
+
+/*******************************************************************
+ sets logoff time
+ ********************************************************************/
+void pdb_set_logoff_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "LOT", t);
+}
+
+/*******************************************************************
+ sets kickoff time
+ ********************************************************************/
+void pdb_set_kickoff_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "KOT", t);
+}
+
+/*******************************************************************
+ sets password can change time
+ ********************************************************************/
+void pdb_set_can_change_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "CCT", t);
+}
+
+/*******************************************************************
+ sets password last set time
+ ********************************************************************/
+void pdb_set_must_change_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "MCT", t);
+}
+
+/*******************************************************************
+ sets password last set time
+ ********************************************************************/
+void pdb_set_last_set_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "LCT", t);
+}
+
+
+/*************************************************************
+ Routine to set 32 hex password characters from a 16 byte array.
+**************************************************************/
+void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl)
+{
+	if (pwd != NULL)
+	{
+		int i;
+		for (i = 0; i < 16; i++)
+		{
+			slprintf(&p[i*2], 33, "%02X", pwd[i]);
+		}
+	}
+	else
+	{
+		if (IS_BITS_SET_ALL(acct_ctrl, ACB_PWNOTREQ))
+		{
+			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
+		}
+		else
+		{
+			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
+		}
+	}
+}
 /*************************************************************
  Routine to get the 32 hex characters and turn them
  into a 16 byte array.

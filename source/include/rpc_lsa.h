@@ -168,17 +168,18 @@ typedef struct lsa_r_close_info
 /* DOM_R_REF */
 typedef struct dom_ref_info
 {
-    uint32 undoc_buffer; /* undocumented buffer pointer. */
-    uint32 num_ref_doms_1; /* num referenced domains? */
-    uint32 buffer_dom_name; /* undocumented domain name buffer pointer. */
-    uint32 max_entries; /* 32 - max number of entries */
-    uint32 num_ref_doms_2; /* 4 - num referenced domains? */
+	uint32 undoc_buffer; /* undocumented buffer pointer. */
+	uint32 num_ref_doms_1; /* num referenced domains */
+	uint32 buffer_dom_name; /* undocumented domain name buffer pointer. */
+	uint32 max_entries; /* 32 - max number of entries */
+	uint32 num_ref_doms_2; /* num referenced domains */
 
-    UNIHDR2 hdr_dom_name; /* domain name unicode string header */
-    UNIHDR2 hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domain unicode string headers */
 
-    UNISTR uni_dom_name; /* domain name unicode string */
-    DOM_SID2 ref_dom[MAX_REF_DOMAINS]; /* referenced domain SIDs */
+	UNIHDR2 hdr_dom_name; /* domain name unicode string header */
+	UNIHDR2 hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domain unicode string headers */
+
+	UNISTR uni_dom_name; /* domain name unicode string */
+	DOM_SID2 ref_dom[MAX_REF_DOMAINS]; /* referenced domain SIDs */
 
 } DOM_R_REF;
 
@@ -223,7 +224,7 @@ typedef struct lsa_sid_enum_info
 /* LSA_Q_LOOKUP_SIDS - LSA Lookup SIDs */
 typedef struct lsa_q_lookup_sids
 {
-    POLICY_HND          pol_hnd; /* policy handle */
+	POLICY_HND          pol_hnd; /* policy handle */
 	LSA_SID_ENUM        sids;
 	LSA_TRANS_NAME_ENUM names;
 	LOOKUP_LEVEL        level;
@@ -234,7 +235,7 @@ typedef struct lsa_q_lookup_sids
 /* LSA_R_LOOKUP_SIDS - response to LSA Lookup SIDs */
 typedef struct lsa_r_lookup_sids
 {
-    DOM_R_REF           *dom_ref; /* domain reference info */
+	DOM_R_REF           *dom_ref; /* domain reference info */
 	LSA_TRANS_NAME_ENUM *names;
 	uint32              mapped_count;
 
