@@ -194,10 +194,6 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			break;
 		}
 
-		param_len = 12+clistr_push_size(cli, NULL, mask, -1, 
-						STR_TERMINATE |
-						STR_CONVERT);
-
 		if (First) {
 			setup = TRANSACT2_FINDFIRST;
 			SSVAL(param,0,attribute); /* attribute */
@@ -205,8 +201,9 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,4,4+2);	/* resume required + close on end */
 			SSVAL(param,6,info_level); 
 			SIVAL(param,8,0);
-			clistr_push(cli, param+12, mask, -1, 
-				    STR_TERMINATE | STR_CONVERT);
+			p = param+12;
+			p += clistr_push(cli, param+12, mask, -1, 
+					 STR_TERMINATE | STR_CONVERT);
 		} else {
 			setup = TRANSACT2_FINDNEXT;
 			SSVAL(param,0,ff_dir_handle);
@@ -214,9 +211,12 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,4,info_level); 
 			SIVAL(param,6,0); /* ff_resume_key */
 			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
-			clistr_push(cli, param+12, mask, -1, 
-				    STR_TERMINATE | STR_CONVERT);
+			p = param+12;
+			p += clistr_push(cli, param+12, mask, -1, 
+					 STR_TERMINATE | STR_CONVERT);
 		}
+
+		param_len = PTR_DIFF(p, param);
 
 		if (!cli_send_trans(cli, SMBtrans2, 
 				    NULL,                   /* Name */
