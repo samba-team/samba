@@ -351,7 +351,7 @@ typedef struct _form
 
 #define SPOOLSS_NOTIFY_MSG_UNIX_JOBID 0x0001    /* Job id is unix  */
 
-struct spoolss_notify_msg {
+typedef struct spoolss_notify_msg {
 	fstring printer;	/* Name of printer notified */
 	uint32 type;		/* Printer or job notify */
 	uint32 field;		/* Notify field changed */
@@ -362,6 +362,18 @@ struct spoolss_notify_msg {
 		uint32 value[2];
 		char *data;
 	} notify;
-};
+} SPOOLSS_NOTIFY_MSG;
+
+typedef struct {
+	fstring 		printername;
+	uint32			num_msgs;
+	SPOOLSS_NOTIFY_MSG	*msgs;
+} SPOOLSS_NOTIFY_MSG_GROUP;
+
+typedef struct {
+	TALLOC_CTX 			*ctx;
+	uint32				num_groups;
+	SPOOLSS_NOTIFY_MSG_GROUP	*msg_groups;
+} SPOOLSS_NOTIFY_MSG_CTR;
 
 #endif /* NT_PRINTING_H_ */
