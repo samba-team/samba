@@ -826,6 +826,8 @@ it() link(bf(map hidden))(maphidden)
 
 it() link(bf(map system))(mapsystem)
 
+it() link(bf(map to guest))(maptoguest)
+
 it() link(bf(max connections))(maxconnections)
 
 it() link(bf(min print space))(minprintspace)
@@ -935,10 +937,10 @@ will be able to do anything they like on the share, irrespective of
 file permissions.
 
   bf(Default:) nl()
-	no admin users
+tt(	no admin users)
 
   bf(Example:) nl()
-	admin users = jason
+tt(	admin users = jason)
 
 label(allow hosts)
 dit(bf(allow hosts (S)))
@@ -996,10 +998,10 @@ See url(bf(testparm (1)))(testparm.1.html) for a way of testing your
 host access to see if it does what you expect.
 
   bf(Default:)
-	none (i.e., all hosts permitted access)
+tt(	none (i.e., all hosts permitted access))
 
   bf(Example:)
-	allow hosts = 150.203.5. localhost myhost.mynet.edu.au
+tt(	allow hosts = 150.203.5. localhost myhost.mynet.edu.au)
 
 label(alternatepermissions)
 dit(bf(alternate permissions (S)))
@@ -1022,10 +1024,10 @@ need to stop Samba appearing as an NT server as this may prevent Samba
 servers from participating as browser servers correctly.
 
   bf(Default:)
-	announce as = NT
+tt(	announce as = NT)
 
   bf(Example)
-	announce as = Win95
+tt(	announce as = Win95)
 
 label(announceversion)
 dit(bf(announce version (G)))
@@ -1036,10 +1038,10 @@ this parameter unless you have a specific need to set a Samba server
 to be a downlevel server.
 
   bf(Default:)
-	announce version = 4.2
+tt(	announce version = 4.2)
 
   bf(Example:)
-	announce version = 2.0
+tt(	announce version = 2.0)
 
 
 label(autoservices)
@@ -1053,10 +1055,10 @@ Note that if you just want all printers in your printcap file loaded
 then the link(bf("load printers"))(loadprinters) option is easier.
 
   bf(Default:)
-	no auto services
+tt(	no auto services)
 
   bf(Example:)
-	auto services = fred lp colorlp
+tt(	auto services = fred lp colorlp)
 
 label(available)
 dit(bf(available (S)))
@@ -1066,10 +1068,10 @@ then em(ALL) attempts to connect to the service will fail. Such failures
 are logged.
 
   bf(Default:)
-	available = yes
+tt(	available = yes)
 
   bf(Example:)
-	available = no
+tt(	available = no)
 
 label(bindinterfacesonly)
 dit(bf(bind interfaces only (G)))
@@ -1116,10 +1118,10 @@ bf("remote machine") set to the IP name of the primary interface
 of the local host.
 
   bf(Default:)
-	bind interfaces only = False
+tt(	bind interfaces only = False)
 
   bf(Example:)
-	bind interfaces only = True
+tt(	bind interfaces only = True)
 
 label(blockinglocks)
 dit(bf(blocking locks (S)))
@@ -1140,10 +1142,10 @@ request immediately if the lock range cannot be obtained.
 This parameter can be set per share.
 
   bf(Default:)
-	blocking locks = True
+tt(	blocking locks = True)
 
   bf(Example:)
-	blocking locks = False
+tt(	blocking locks = False)
 
 label(browsable)
 dit(bf(broweable (S)))
@@ -1152,10 +1154,10 @@ This controls whether this share is seen in the list of available
 shares in a net view and in the browse list.
 
   bf(Default:)
-	browsable = Yes
+tt(	browsable = Yes)
 
   bf(Example:)
-	browsable = No
+tt(	browsable = No)
 
 label(browselist)
 dit(bf(browse list(G)))
@@ -1165,7 +1167,7 @@ list to a client doing a NetServerEnum call. Normally set to true. You
 should never need to change this.
 
   bf(Default:)
-	browse list = Yes
+tt(	browse list = Yes)
 
 label(browseable)
 dit(bf(browseable))
@@ -1196,10 +1198,10 @@ requested directory once every bf(change notify timeout) seconds.
 bf(change notify timeout) is specified in units of seconds.
 
   bf(Default:)
-	change notify timeout = 60
+tt(	change notify timeout = 60)
 
   bf(Example:)
-	change notify timeout = 300
+tt(	change notify timeout = 300)
 
 Would change the scan time to every 5 minutes.
 
@@ -1245,10 +1247,10 @@ See also link(bf(client code page))(clientcodepage).  Normally this
 parameter is not set, meaning no filename translation is done.
 
   bf(Default:)
-	character set =
+tt(	character set = <empty string>)
 
   bf(Example:)
-	character set = ISO8859-1
+tt(	character set = ISO8859-1)
 
 label(clientcodepage)
 dit(bf(client code page (G)))
@@ -1314,10 +1316,10 @@ If not set, bf("client code page") defaults to 850.
 See also : link(bf("valid chars"))(validchars)
 
   bf(Default:)
-	client code page = 850
+tt(	client code page = 850)
 
   bf(Example:)
-	client code page = 936
+tt(	client code page = 936)
 
 label(codingsystem)
 dit(bf(codingsystem (G)))
@@ -1367,10 +1369,10 @@ If you want to set the string that is displayed next to the machine
 name then see the server string command.
 
   bf(Default:)
-	No comment string
+tt(	No comment string)
 
   bf(Example:)
-	comment = Fred's Files
+tt(	comment = Fred's Files)
 
 label(configfile)
 dit(bf(config file (G)))
@@ -1404,10 +1406,10 @@ services easily. Note that the service being copied must occur earlier
 in the configuration file than the service doing the copying.
 
   bf(Default:)
-	none
+tt(	none)
 
   bf(Example:)
-	copy = otherservice
+tt(	copy = otherservice)
 
 label(createmode)
 dit(bf(create mask (S)))
@@ -1437,10 +1439,10 @@ the link(bf("directory mode"))(directorymode) parameter for masking
 mode bits on created directories.
 
   bf(Default:)
-	create mask = 0744
+tt(	create mask = 0744)
 
   bf(Example:)
-	create mask = 0775
+tt(	create mask = 0775)
 
 label(createmode)
 dit(bf(create mode (S)))
@@ -1468,10 +1470,10 @@ A deadtime of zero indicates that no auto-disconnection should be
 performed.
 
   bf(Default:)
-	deadtime = 0
+tt(	deadtime = 0)
 
   bf(Example:)
-	deadtime = 15
+tt(	deadtime = 15)
 
 label(debug timestamp (G))
 
@@ -1481,10 +1483,10 @@ can be distracting. This boolean parameter allows them to be turned
 off.
 
   bf(Default:)
-	debug timestamp = Yes
+tt(	debug timestamp = Yes)
 
   bf(Example:)
-	debug timestamp = No
+tt(	debug timestamp = No)
 
 label(debuglevel)
 dit(bf(debug level (G)))
@@ -1497,7 +1499,7 @@ The default will be the debug level specified on the command line
 or level zero if none was specified.
 
   bf(Example:)
-	debug level = 3
+tt(	debug level = 3)
 
 label(default)
 dit(bf(default (G)))
@@ -1553,10 +1555,10 @@ UNIX file ownership prevents changing file permissions, and DOS
 semantics prevent deletion of a read only file.
 
   bf(Default:)
-	delete readonly = No
+tt(	delete readonly = No)
 
   bf(Example:)
-	delete readonly = Yes
+tt(	delete readonly = Yes)
 
 label(deletevetofiles)
 dit(bf(delete veto files (S)))
@@ -1581,10 +1583,10 @@ as the user has permissions to do so).
 See also the link(bf(veto files))(vetofiles) parameter.
 
   bf(Default:)
-	delete veto files = False
+tt(	delete veto files = False)
 
   bf(Example:)
-	delete veto files = True
+tt(	delete veto files = True)
 
 label(denyhosts)
 dit(bf(deny hosts (S)))
@@ -1595,10 +1597,10 @@ services have their own lists to override this one. Where the lists
 conflict, the link(bf('allow'))(allowhosts) list takes precedence.
 
   bf(Default:)
-	none (i.e., no hosts specifically excluded)
+tt(	none (i.e., no hosts specifically excluded))
 
   bf(Example:)
-	deny hosts = 150.203.4. badhost.mynet.edu.au
+tt(	deny hosts = 150.203.4. badhost.mynet.edu.au)
 
 label(dfreecommand)
 dit(bf(dfree command (G)))
@@ -1626,11 +1628,11 @@ Note: Your script should em(NOT) be setuid or setgid and should be
 owned by (and writable only by) root!
 
   bf(Default:)
-	By default internal routines for determining the disk capacity
-and remaining space will be used.
+tt(	By default internal routines for determining the disk capacity
+and remaining space will be used.)
 
   bf(Example:)
-	dfree command = /usr/local/samba/bin/dfree
+tt(	dfree command = /usr/local/samba/bin/dfree)
 
 Where the script dfree (which must be made executable) could be:
 
@@ -1683,10 +1685,10 @@ See also the link(bf("create mode"))(createmode) parameter for masking
 mode bits on created files.
 
   bf(Default:)
-	directory mask = 0755
+tt(	directory mask = 0755)
 
   bf(Example:)
-	directory mask = 0775
+tt(	directory mask = 0775)
 
 label(directorymode)
 dit(bf(directory mode (S)))
@@ -1712,7 +1714,7 @@ DNS name lookup requests, as doing a name lookup is a blocking action.
 See also the parameter link(bf(wins support))(winssupport).
 
   bf(Default:)
-	dns proxy = yes
+tt(	dns proxy = yes)
 
 label(domainadmingroup)
 bf(domain admin group (G))
@@ -1786,7 +1788,7 @@ will be able to provide this functionality for Windows NT clients
 also.
 
   bf(Default:)
-	domain logons = no
+tt(	domain logons = no)
 
 label(domainmaster)
 dit(bf(domain master (G)))
@@ -1814,7 +1816,7 @@ PDC is able to do so then cross subnet browsing will behave strangely
 and may fail.
 
   bf(Default:)
-	domain master = no
+tt(	domain master = no)
 
 label(dont descend)
 dit(bf(dont descend (S)))
@@ -1830,10 +1832,10 @@ descend" entries. For example you may need tt("./proc") instead of
 just tt("/proc"). Experimentation is the best policy :-)
 
   bf(Default:)
-	none (i.e., all directories are OK to descend)
+tt(	none (i.e., all directories are OK to descend))
 
   bf(Example:)
-	dont descend = /proc,/dev
+tt(	dont descend = /proc,/dev)
 
 label(dosfiletimeresolution)
 dit(bf(dos filetime resolution (S)))
@@ -1856,10 +1858,10 @@ this option causes the two timestamps to match, and Visual C++ is
 happy.
 
   bf(Default:)
-	dos filetime resolution = False
+tt(	dos filetime resolution = False)
 
   bf(Example:)
-	dos filetime resolution = True
+tt(	dos filetime resolution = True)
 
 label(dos filetimes)
 dit(bf(dos filetimes (S)))
@@ -1873,10 +1875,10 @@ to True allows DOS semantics and smbd will change the file timstamp as
 DOS requires.
 
   bf(Default:)
-	dos filetimes = False
+tt(	dos filetimes = False)
 
   bf(Example:)
-	dos filetimes = True
+tt(	dos filetimes = True)
 
 label(encryptpasswords)
 dit(bf(encrypt passwords (G)))
@@ -1901,7 +1903,6 @@ label(exec)
 dit(bf(exec (S)))
 
 This is a synonym for link(bf(preexec))(preexec).
-
 
 label(fake directory create times)
 dit(bf(fake directory create times (S)))
@@ -1931,10 +1932,10 @@ always predate their contents and an NMAKE build will proceed as
 expected.
 
   bf(Default:)
-	fake directory create times = False
+tt(	fake directory create times = False)
 
   bf(Example:)
-	fake directory create times = True
+tt(	fake directory create times = True)
 
 label(fakeoplocks)
 dit(bf(fake oplocks (S)))
@@ -1990,10 +1991,10 @@ See also the parameter link(bf("create mask"))(createmask) for details
 on masking mode bits on created files.
 
   bf(Default:)
-	force create mode = 000
+tt(	force create mode = 000)
 
   bf(Example:)
-	force create mode = 0755
+tt(	force create mode = 0755)
 
 would force all created files to have read and execute permissions set
 for 'group' and 'other' as well as the read/write/execute bits set for
@@ -2014,10 +2015,10 @@ See also the parameter link(bf("directory mask"))(directorymask) for
 details on masking mode bits on created directories.
 
   bf(Default:)
-	force directory mode = 000
+tt(	force directory mode = 000)
 
   bf(Example:)
-	force directory mode = 0755
+tt(	force directory mode = 0755)
 
 would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
@@ -2035,10 +2036,10 @@ service the Samba administrator can restrict or allow sharing of these
 files.
 
   bf(Default:)
-	no forced group
+tt(	no forced group)
 
   bf(Example:)
-	force group = agroup
+tt(	force group = agroup)
 
 label(forceuser)
 dit(bf(force user (S)))
@@ -2056,10 +2057,10 @@ tt("forced user"), no matter what username the client connected as.
 This can be very useful.
 
   bf(Default:)
-	no forced user
+tt(	no forced user)
 
   bf(Example:)
-	force user = auser
+tt(	force user = auser)
 
 label(fstype)
 dit(bf(fstype (S)))
@@ -2072,10 +2073,10 @@ Windows NT but this can be changed to other strings such as "Samba" or
 "FAT" if required.
 
   bf(Default:)
-	fstype = NTFS
+tt(	fstype = NTFS)
 
   bf(Example:)
-	fstype = Samba
+tt(	fstype = Samba)
 
 label(getwdcache)
 dit(bf(getwd cache (G)))
@@ -2086,10 +2087,10 @@ a significant impact on performance, especially when the
 link(bf(widelinks))(widelinks) parameter is set to False.
 
   bf(Default:)
-	getwd cache = No
+tt(	getwd cache = No)
 
   bf(Example:)
-	getwd cache = Yes
+tt(	getwd cache = Yes
 
 label(group)
 dit(bf(group (S)))
@@ -2114,10 +2115,10 @@ command) and trying to print using the system print command such as
 bf(lpr (1)) or bf(lp (1)).
 
   bf(Default:)
-	specified at compile time, usually "nobody"
+tt(	specified at compile time, usually "nobody")
 
   bf(Example:)
-	guest account = ftp
+tt(	guest account = ftp)
 
 label(guestok)
 dit(bf(guest ok (S)))
@@ -2130,10 +2131,10 @@ See the section below on link(bf(security))(security) for more
 information about this option.
 
   bf(Default:)
-	guest ok = no
+tt(	guest ok = no)
 
   bf(Example:)
-	guest ok = yes
+tt(	guest ok = yes)
 
 label(guestonly)
 dit(bf(guest only (S)))
@@ -2147,10 +2148,10 @@ See the section below on link(bf(security))(security) for more
 information about this option.
 
   bf(Default:)
-	guest only = no
+tt(	guest only = no)
 
   bf(Example:)
-	guest only = yes
+tt(	guest only = yes)
 
 label(hidedotfiles)
 dit(bf(hide dot files (S)))
@@ -2159,10 +2160,10 @@ This is a boolean parameter that controls whether files starting with
 a dot appear as hidden files.
 
   bf(Default:)
-	hide dot files = yes
+tt(	hide dot files = yes)
 
   bf(Example:)
-	hide dot files = no
+tt(	hide dot files = no)
 
 
 label(hidefiles)
@@ -2189,8 +2190,10 @@ See also link(bf("hide dot files"))(hidedotfiles), link(bf("veto
 files"))(vetofiles) and link(bf("case sensitive"))(casesensitive).
 
   bf(Default)
+verb(
 	No files or directories are hidden by this option (dot files are
 	hidden by default because of the "hide dot files" option).
+)
 
   bf(Example)
 tt(	hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/)
@@ -2221,10 +2224,10 @@ See also link(bf("nis homedir"))(nishomedir), link(bf(domain
 logons))(domainlogons).
 
   bf(Default:)
-	homedir map = auto.home
+tt(	homedir map = auto.home)
 
   bf(Example:)
-	homedir map = amd.homedir
+tt(	homedir map = amd.homedir)
 
 label(hostsallow)
 dit(bf(hosts allow (S)))
@@ -2256,10 +2259,10 @@ doing, or perhaps on a home network where you trust your spouse and
 kids. And only if you em(really) trust them :-).
 
   bf(Default)
-	No host equivalences
+tt(	No host equivalences)
 
   bf(Example)
-	hosts equiv = /etc/hosts.equiv
+tt(	hosts equiv = /etc/hosts.equiv)
 
 label(include)
 dit(bf(include (G)))
@@ -2326,7 +2329,7 @@ section.
 See also link(bf("valid users"))(validusers).
 
   bf(Default:)
-	No invalid users
+tt(	No invalid users)
 
   bf(Example:)
 tt(	invalid users = root fred admin @wheel)
@@ -2345,10 +2348,10 @@ options"))(socketoptions)). Basically you should only use this option
 if you strike difficulties.
 
   bf(Default:)
-	keep alive = 0
+tt(	keep alive = 0)
 
   bf(Example:)
-	keep alive = 60
+tt(	keep alive = 60)
 
 label(kerneloplocks)
 dit(bf(kernel oplocks (G)))
@@ -2381,7 +2384,7 @@ link(bf(%u))(percentU) which will be replaced with the user being
 searched for.
 
   bf(Default:)
-	empty string.
+tt(	empty string.)
 
 label(ldapport)
 dit(bf(ldap port (G)))
@@ -2395,7 +2398,7 @@ This parameter specifies the TCP port number to use to contact
 the LDAP server on.
 
   bf(Default:)
-	ldap port = 389.
+tt(	ldap port = 389.)
 
 label(ldaproot)
 dit(bf(ldap root (G)))
@@ -2412,7 +2415,7 @@ queries and modifications on the LDAP database.
 See also link(bf(ldap root passwd))(ldaprootpasswd).
 
   bf(Default:)
-	empty string (no user defined)
+tt(	empty string (no user defined))
 
 label(ldaprootpasswd)
 dit(bf(ldap root passwd (G)))
@@ -2433,7 +2436,7 @@ storage place is found.
 See also link(bf(ldap root))(ldaproot).
 
   bf(Default:)
-	empty string.
+tt(	empty string.)
 
 label(ldapserver)
 dit(bf(ldap server (G)))
@@ -2447,7 +2450,7 @@ This parameter specifies the DNS name of the LDAP server to use
 for SMB/CIFS authentication purposes.
 
   bf(Default:)
-	ldap server = localhost
+tt(	ldap server = localhost)
 
 label(ldapsuffix)
 dit(bf(ldap suffix (G)))
@@ -2462,7 +2465,7 @@ that tells url(bf(smbd))(smbd.8.html) to start from when searching
 for an entry in the LDAP password database.
 
   bf(Default:)
-	empty string.
+tt(	empty string.)
 
 label(lmannounce)
 dit(bf(lm announce (G)))
@@ -2482,10 +2485,10 @@ frequency set by the parameter link(bf("lm interval"))(lminterval).
 See also link(bf("lm interval"))(lminterval).
 
   bf(Default:)
-	lm announce = auto
+tt(	lm announce = auto)
 
   bf(Example:)
-	lm announce = true
+tt(	lm announce = true)
 
 label(lminterval)
 dit(bf(lm interval (G)))
@@ -2500,10 +2503,10 @@ announce"))(lmannounce) parameter.
 See also link(bf("lm announce"))(lmannounce).
 
   bf(Default:)
-	lm interval = 60
+tt(	lm interval = 60)
 
   bf(Example:)
-	lm interval = 120
+tt(	lm interval = 120)
 
 label(loadprinters)
 dit(bf(load printers (G)))
@@ -2513,10 +2516,10 @@ will be loaded for browsing by default. See the
 link(bf("printers"))(printers) section for more details.
 
   bf(Default:)
-	load printers = yes
+tt(	load printers = yes)
 
   bg(Example:)
-	load printers = no
+tt(	load printers = no)
 
 label(localmaster)
 dit(bf(local master (G)))
@@ -2534,7 +2537,7 @@ Setting this value to False will cause url(bf(nmbd))(nmbd.8.html)
 em(never) to become a local master browser.
 
   bf(Default:)
-	local master = yes
+tt(	local master = yes)
 
 label(lockdirectory)
 dit(bf(lock directory (G)))
@@ -2544,10 +2547,10 @@ The lock files are used to implement the link(bf("max
 connections"))(maxconnections) option.
 
   bf(Default:)
-	lock directory = /tmp/samba
+tt(	lock directory = /tmp/samba)
 
   bf(Example:)
-	lock directory = /usr/local/samba/var/locks
+tt(	lock directory = /usr/local/samba/var/locks)
 
 label(locking)
 dit(bf(locking (S)))
@@ -2570,10 +2573,10 @@ service, as lack of locking may result in data corruption. You should
 never need to set this parameter.
 
   bf(Default:)
- 	locking = yes
+tt( 	locking = yes)
 
   bf(Example:)
- 	locking = no
+tt( 	locking = no)
 
 label(logfile)
 dit(bf(log file (G)))
@@ -2603,7 +2606,7 @@ Note that this option is only useful if Samba is set up as a
 link(bf(logon server))(domainlogons).
 
   bf(Example:)
-	logon drive = h:
+tt(	logon drive = h:)
 
 label(logonhome)
 dit(bf(logon home (G)))
@@ -2764,10 +2767,10 @@ A value of 0 will disable cacheing completely.
 See also the link(bf("printing"))(printing) parameter.
 
   bf(Default:)
-	lpq cache time = 10
+tt(	lpq cache time = 10)
 
   bf(Example:)
-	lpq cache time = 30
+tt(	lpq cache time = 30)
 
 label(lpqcommand)
 dit(bf(lpq command (S)))
@@ -2798,7 +2801,7 @@ command) as the PATH may not be available to the server.
 See also the link(bf("printing"))(printing) parameter.
 
   bf(Default:)
-        depends on the setting of link(bf("printing ="))(printing)
+tt(        depends on the setting of printing =)
 
   bf(Example:)
 tt( 	lpq command = /usr/bin/lpq %p)
@@ -2855,8 +2858,8 @@ bf(lprm command) as the PATH may not be available to the server.
 
 See also the link(bf("printing"))(printing) parameter.
 
-.B Default:
-        depends on the setting of "printing ="
+  bf(Default:)
+tt(	depends on the setting of "printing =")
 
   bf(Example 1:)
 tt( 	lprm command = /usr/bin/lprm -P%p %j)
@@ -2883,7 +2886,7 @@ See also url(bf(smbpasswd (8)))(smbpasswd.8.html), and the
 link(bf("security=domain"))(security)) parameter.
 
   bf(Default:)
-	machine password timeout = 604800
+tt(	machine password timeout = 604800)
 
 label(magicoutput)
 dit(bf(magic output (S)))
@@ -2897,10 +2900,10 @@ script"))(magicscript) in the same directory the output file content
 is undefined.
 
   bf(Default:)
- 	magic output = <magic script name>.out
+tt( 	magic output = <magic script name>.out)
 
   bf(Example:)
- 	magic output = myfile.txt
+tt( 	magic output = myfile.txt)
 
 label(magicscript)
 dit(bf(magic script (S)))
@@ -2926,10 +2929,10 @@ end.
 Magic scripts are em(EXPERIMENTAL) and should em(NOT) be relied upon.
 
   bf(Default:)
-	None. Magic scripts disabled.
+tt(	None. Magic scripts disabled.)
 
   bf(Example:)
- 	magic script = user.csh
+tt( 	magic script = user.csh)
 
 label(manglecase)
 dit(bf(mangle case (S)))
@@ -2955,7 +2958,7 @@ of filenames on some CDROMS (only visible under some UNIXes). To do
 this use a map of (*;1 *).
 
   bf(default:)
-	no mangled map
+tt(	no mangled map)
 
   bf(Example:)
 tt(	mangled map = (*;1 *))
@@ -3017,10 +3020,10 @@ Windows/DOS and will retain the same basename. Mangled names do not
 change between sessions.
 
   bf(Default:)
- 	mangled names = yes
+tt( 	mangled names = yes)
 
   bf(Example:)
- 	mangled names = no
+tt( 	mangled names = no)
 
 label(manglingchar)
 dit(bf(mangling char (S)))
@@ -3031,10 +3034,10 @@ this may interfere with some software. Use this option to set it to
 whatever you prefer.
 
   bf(Default:)
- 	mangling char = ~
+tt( 	mangling char = ~)
 
   bf(Example:)
- 	mangling char = ^
+tt( 	mangling char = ^)
 
 label(mangledstack)
 dit(bf(mangled stack (G)))
@@ -3055,10 +3058,10 @@ It is not possible to absolutely guarantee correct long file names, so
 be prepared for some surprises!
 
   bf(Default:)
- 	mangled stack = 50
+tt( 	mangled stack = 50)
 
   bf(Example:)
- 	mangled stack = 100
+tt( 	mangled stack = 100)
 
 label(maparchive)
 dit(bf(map archive (S)))
@@ -3076,10 +3079,10 @@ parameter to be set such that owner execute bit is not masked out
 mask"))(createmask) for details.
 
   bf(Default:)
-      map archive = yes
+tt(      map archive = yes)
 
   bf(Example:)
-      map archive = no
+tt(      map archive = no)
 
 label(maphidden)
 dit(bf(map hidden (S)))
@@ -3093,10 +3096,10 @@ include 001). See the parameter link(bf("create mask"))(createmask)
 for details.
 
   bf(Default:)
- 	map hidden = no
+tt( 	map hidden = no)
 
   bf(Example:)
- 	map hidden = yes
+tt( 	map hidden = yes)
 
 label(mapsystem)
 dit(bf(map system (S)))
@@ -3110,10 +3113,63 @@ include 010). See the parameter link(bf("create mask"))(createmask)
 for details.
 
   bf(Default:)
- 	map system = no
+tt( 	map system = no)
 
   bf(Example:)
- 	map system = yes
+tt( 	map system = yes)
+
+label(maptoguest)
+dit(bf(map to guest (G)))
+
+This parameter is only useful in link(bf(security))(security) modes
+other than link(bf("security=share"))(security) - ie. user, server,
+and domain.
+
+This parameter can take three different values, which tell
+url(bf(smbd))(smbd.8.html) what to do with user login requests that
+don't match a valid UNIX user in some way.
+
+The three settings are :
+
+startit()
+
+it() bf("Never") - Means user login requests with an invalid password
+are rejected. This is the default.
+
+it() bf("Bad User") - Means user logins with an invalid password are
+rejected, unless the username does not exist, in which case it is
+treated as a guest login and mapped into the link(bf("guest
+account"))(guestaccount).
+
+it() bf("Bad Password") - Means user logins with an invalid
+password are treated as a guest login and mapped into the
+link(bf("guest account"))(guestaccount). Note that this can
+cause problems as it means that any user mistyping their
+password will be silently logged on a bf("guest") - and 
+will not know the reason they cannot access files they think
+they should - there will have been no message given to them
+that they got their password wrong. Helpdesk services will
+em(*hate*) you if you set the bf("map to guest") parameter
+this way :-).
+
+endit()
+
+Note that this parameter is needed to set up bf("Guest") share
+services when using link(bf(security))(security) modes other than
+share. This is because in these modes the name of the resource being
+requested is em(*not*) sent to the server until after the server has
+successfully authenticated the client so the server cannot make
+authentication decisions at the correct time (connection to the
+share) for bf("Guest") shares.
+
+For people familiar with the older Samba releases, this parameter
+maps to the old compile-time setting of the GUEST_SESSSETUP value
+in local.h.
+
+  bf(Default:)
+tt(	map to guest = Never)
+  bf(Example):
+tt(	map to guest = Bad User)
 
 label(maxconnections)
 dit(bf(max connections (S)))
@@ -3129,10 +3185,10 @@ will be stored in the directory specified by the link(bf("lock
 directory"))(lockdirectory) option.
 
   bf(Default:)
-	max connections = 0
+tt(	max connections = 0)
 
   bf(Example:)
-	max connections = 10
+tt(	max connections = 10)
 
 label(maxdisksize)
 dit(bf(max disk size (G)))
@@ -3154,10 +3210,10 @@ software that can't handle very large disks, particularly disks over
 A bf("max disk size") of 0 means no limit.
 
   bf(Default:)
-	max disk size = 0
+tt(	max disk size = 0)
 
   bf(Example:)
-	max disk size = 1000
+tt(	max disk size = 1000)
 
 label(maxlogsize)
 dit(bf(max log size (G)))
@@ -3169,10 +3225,10 @@ exceeded it will rename the file, adding a tt(".old") extension.
 A size of 0 means no limit.
 
   bf(Default:)
-	max log size = 5000
+tt(	max log size = 5000)
 
   bf(Example:)
- 	max log size = 1000
+tt( 	max log size = 1000)
 
 label(maxmux)
 dit(bf(max mux (G)))
@@ -3182,7 +3238,7 @@ SMB operations that samba tells the client it will allow. You should
 never need to set this parameter.
 
   bf(Default:)
-	max mux = 50
+tt(	max mux = 50)
 
 label(maxopenfiles)
 dit(bf(maxopenfiles (G)))
@@ -3197,7 +3253,7 @@ UNIX per-process file descriptor limit rather than this parameter
 so you should never need to touch this parameter.
 
   bf(Default:)
-	max open files = 10000
+tt(	max open files = 10000)
 
 label(maxpacket)
 dit(bf(max packet (G)))
@@ -3214,7 +3270,7 @@ broadcast packet or from a WINS server. You should never need to
 change this parameter. The default is 3 days.
 
   bf(Default:)
-	max ttl = 259200
+tt(	max ttl = 259200)
 
 label(maxwinsttl)
 dit(bf(max wins ttl (G)))
@@ -3228,7 +3284,7 @@ parameter.  The default is 6 days (518400 seconds).
 See also the link(bf("min wins ttl"))(minwinsttl) parameter.
 
   bf(Default:)
-        max wins ttl = 518400
+tt(        max wins ttl = 518400)
 
 label(maxxmit)
 dit(bf(max xmit (G)))
@@ -3239,10 +3295,10 @@ you may find you get better performance with a smaller value. A value
 below 2048 is likely to cause problems.
 
   bf(Default:)
-	max xmit = 65535
+tt(	max xmit = 65535)
 
   bf(Example:)
- 	max xmit = 8192
+tt( 	max xmit = 8192)
 
 label(messagecommand)
 dit(bf(message command (G)))
@@ -3253,7 +3309,7 @@ style message.
 This would normally be a command that would deliver the message
 somehow. How this is to be done is up to your imagination.
 
-What I use is:
+An example is:
 
 tt(   message command = csh -c 'xedit %s;rm %s' &)
 
@@ -3272,12 +3328,12 @@ particular:
 
 startit()
 
-it() %s = the filename containing the message
+it() tt("%s") = the filename containing the message.
 
-it() %t = the destination that the message was sent to (probably the server
-name)
+it() tt("%t") = the destination that the message was sent to (probably the server
+name).
 
-it() %f = who the message is from
+it() tt("%f") = who the message is from.
 
 endit()
 
@@ -3295,7 +3351,7 @@ on regardless, saying that the message was delivered.
 
 If you want to silently delete it then try:
 
- tt("message command = rm %s").
+tt("message command = rm %s").
 
 For the really adventurous, try something like this:
 
@@ -3307,7 +3363,7 @@ loop if you send a message from the server using smbclient! You better
 wrap the above in a script that checks for this :-)
 
   bf(Default:)
-	no message command
+tt(	no message command)
 
   bf(Example:)
 tt(        message command = csh -c 'xedit %s;rm %s' &)
@@ -3323,10 +3379,10 @@ job.
 See also the link(bf(printing))(printing) parameter.
 
   bf(Default:)
-	min print space = 0
+tt(	min print space = 0)
 
   bf(Example:)
-	min print space = 2000
+tt(	min print space = 2000)
 
 label(minwinsttl)
 dit(bf(min wins ttl (G)))
@@ -3338,7 +3394,7 @@ grant will be (in seconds). You should never need to change this
 parameter.  The default is 6 hours (21600 seconds).
 
   bf(Default:)
-	min wins ttl = 21600
+tt(	min wins ttl = 21600)
 
 
 label(nameresolveorder)
@@ -3373,10 +3429,10 @@ target host being on a locally connected subnet.
 endit()
 
   bf(Default:)
-	name resolve order = lmhosts host wins bcast
+tt(	name resolve order = lmhosts host wins bcast)
 
   bf(Example:)
-	name resolve order = lmhosts bcast host
+tt(	name resolve order = lmhosts bcast host)
 
 This will cause the local lmhosts file to be examined first, followed
 by a broadcast attempt, followed by a normal system hostname lookup.
@@ -3395,10 +3451,10 @@ name of the machine will be advertised with these capabilities.
 See also link(bf("netbios name"))(netbiosname).
 
   bf(Default:)
-	empty string (no additional names)
+tt(	empty string (no additional names))
 
   bf(Example:)
-	netbios aliases = TEST TEST1 TEST2
+tt(	netbios aliases = TEST TEST1 TEST2)
 
 label(netbiosname)
 dit(bf(netbios name (G)))
@@ -3413,10 +3469,10 @@ advertised under.
 See also link(bf("netbios aliases"))(netbiosaliases).
 
   bf(Default:)
-	Machine DNS name.
+tt(	Machine DNS name.)
 
   bf(Example:)
-	netbios name = MYNAME
+tt(	netbios name = MYNAME)
 
 label(nishomedir)
 dit(bf(nis homedir (G)))
@@ -3445,10 +3501,10 @@ system and the Samba server with this option must also be a
 link(bf(logon server))(domainlogons).
 
   bf(Default:)
-	nis homedir = false
+tt(	nis homedir = false)
 
   bf(Example:)
-	nis homedir = true
+tt(	nis homedir = true)
 
 label(ntpipesupport)
 dit(bf(nt pipe support (G)))
@@ -3459,7 +3515,7 @@ tt(IPC$) pipes. This is a developer debugging option and can be left
 alone.
 
   bf(Default:)
-	nt pipe support = yes
+tt(	nt pipe support = yes)
 
 label(ntsmbsupport)
 dit(bf(nt smb support (G)))
@@ -3475,7 +3531,7 @@ offered. This information may be of use if any users are having
 problems with NT SMB support.
 
   bf(Default:)
-	nt support = yes
+tt(	nt support = yes)
 
 label(nullpasswords)
 dit(bf(null passwords (G)))
@@ -3485,10 +3541,10 @@ Allow or disallow client access to accounts that have null passwords.
 See also url(bf(smbpasswd (5)))(smbpasswd.5.html).
 
   bf(Default:)
-	null passwords = no
+tt(	null passwords = no)
 
   bf(Example:)
-	null passwords = yes
+tt(	null passwords = yes)
 
 label(olelockingcompatibility)
 dit(bf(ole locking compatibility (G)))
@@ -3503,10 +3559,10 @@ to tt("no") means you trust your UNIX lock manager to handle such cases
 correctly.
 
   bf(Default:)
-	ole locking compatibility = yes
+tt(	ole locking compatibility = yes)
 
   bf(Example:)
-	ole locking compatibility = no
+tt(	ole locking compatibility = no)
 
 label(onlyguest)
 dit(bf(only guest (S)))
@@ -3531,10 +3587,10 @@ of the user.
 See also the link(bf(user))(user) parameter.
 
   bf(Default:)
-	only user = False
+tt(	only user = False)
 
   bf(Example:)
-	only user = True
+tt(	only user = True)
 
 label(oplocks)
 dit(bf(oplocks (S)))
@@ -3555,10 +3611,10 @@ UNIX process. See the link(bf(kernel oplocks))(kerneloplocks) parameter
 for details.
 
   bf(Default:)
-	oplocks = True
+tt(	oplocks = True)
 
   bf(Example:)
-	oplocks = False
+tt(	oplocks = False)
 
 label(oslevel)
 dit(bf(os level (G)))
@@ -3572,7 +3628,7 @@ lose elections to Windows machines. See BROWSING.txt in the Samba
 docs/ directory for details.
 
   bf(Default:)
-	os level = 0
+tt(	os level = 0)
 
   bf(Example:)
 tt(	os level = 65    ; This will win against any NT Server)
@@ -3593,7 +3649,7 @@ url(bf(nmbd))(nmbd.8.html) crashes. This is usually used to draw
 attention to the fact that a problem occured.
 
   bf(Default:)
-	panic action = <empty string>
+tt(	panic action = <empty string>)
 
 label(passwdchat)
 dit(bf(passwd chat (G)))
@@ -3659,10 +3715,10 @@ See also link(bf("passwd chat"))(passwdchat"), link(bf("passwd
 program"))(passwdprogram).
 
   bf(Example:)
-     passwd chat debug = True
+tt(     passwd chat debug = True)
 
   bf(Default:)
-     passwd chat debug = False
+tt(     passwd chat debug = False)
 
 label(passwdprogram)
 dit(bf(passwd program (G)))
@@ -3733,10 +3789,10 @@ A value of zero will cause only two attempts to be made - the password
 as is and the password in all-lower case.
 
   bf(Default:)
-	password level = 0
+tt(	password level = 0)
 
   bf(Example:)
- 	password level = 4
+tt( 	password level = 4)
 
 label(passwordserver)
 dit(bf(password server (G)))
@@ -3808,10 +3864,10 @@ endit()
 See also the link(bf("security") parameter.
 
   bf(Default:)
-	password server = <empty string>
+tt(	password server = <empty string>)
 
   bf(Example:)
-	password server = NT-PDC, NT-BDC1, NT-BDC2
+tt(	password server = NT-PDC, NT-BDC1, NT-BDC2)
 
 label(path)
 dit(bf(path (S)))
@@ -3837,10 +3893,10 @@ Note that this path will be based on link(bf("root dir"))(rootdir) if
 one was specified.
 
   bf(Default:)
-	none
+tt(	none)
 
   bf(Example:)
-	path = /home/fred
+tt(	path = /home/fred)
 
 label(postexec)
 dit(bf(postexec (S)))
@@ -3856,7 +3912,7 @@ tt(postexec = /etc/umount /cdrom)
 See also link(bf(preexec))(preexec).
 
   bf(Default:)
-      none (no command executed)
+tt(      none (no command executed))
 
   bf(Example:)
 tt(      postexec = echo "%u disconnected from %S from %m (%I)" >> /tmp/log)
@@ -3872,10 +3928,10 @@ a control-D at the start of print jobs, which then confuses your
 printer.
 
   bf(Default:)
-	postscript = False
+tt(	postscript = False)
 
   bf(Example:)
-	postscript = True
+tt(	postscript = True)
 
 label(preexec)
 dit(bf(preexec (S)))
@@ -3896,7 +3952,7 @@ Of course, this could get annoying after a while :-)
 See also link(bf(postexec))(postexec).
 
   bf(Default:)
-	none (no command executed)
+tt(	none (no command executed))
 
   bf(Example:)
 tt(        preexec = echo \"%u connected to %S from %m (%I)\" >> /tmp/log)
@@ -3924,7 +3980,10 @@ capabilities.
 See also link(bf(os level))(oslevel).
 
   bf(Default:)
- 	preferred master = no
+tt( 	preferred master = no)
+
+  bf(Example:)
+tt( 	preferred master = yes)
 
 label(preferedmaster)
 dit(bf(prefered master (G)))
@@ -3943,7 +4002,7 @@ This controls if new filenames are created with the case that the
 client passes, or if they are forced to be the tt("default") case.
 
   bf(Default:)
-       preserve case = yes
+tt(       preserve case = yes)
 
 See the section on link(bf("NAME MANGLING"))(NAMEMANGLING) for a
 fuller discussion.
@@ -4031,10 +4090,10 @@ link(bf("read only"))(readonly) parameter controls only non-printing
 access to the resource.
 
   bf(Default:)
- 	printable = no
+tt( 	printable = no)
 
   bf(Example:)
- 	printable = yes
+tt( 	printable = yes)
 
 label(printcap)
 dit(bf(printcap (G)))
@@ -4132,7 +4191,7 @@ of printer drivers to Windows 95 clients, see the documentation file
 in the docs/ directory, PRINTER_DRIVER.txt.
 
   bf(Default:)
-	None (set in compile).
+tt(	None (set in compile).)
 
   bf(Example:)
 tt(	printer driver file = /usr/local/samba/printers/drivers.def)
@@ -4155,7 +4214,7 @@ details on setting this up see the documentation file in the docs/
 directory, PRINTER_DRIVER.txt.
 
   bf(Default:)
-	None
+tt(	None)
 
   bf(Example:)
 tt(	printer driver location = \\MACHINE\PRINTER$)
@@ -4219,10 +4278,10 @@ phase in the SMB protocol takes care of choosing the appropriate
 protocol.
 
   bf(Default:)
-	protocol = NT1
+tt(	protocol = NT1)
 
   bf(Example:)
-	protocol = LANMAN1
+tt(	protocol = LANMAN1)
 
 label(public)
 dit(bf(public (S)))
@@ -4249,7 +4308,7 @@ Note that it is good practice to include the absolute path in the
 command as the PATH may not be available to the server.
 
   bf(Default:)
-        depends on the setting of "printing ="
+tt(        depends on the setting of "printing =")
 
   bf(Example:)
 tt(      queuepause command = disable %p)
@@ -4276,7 +4335,7 @@ Note that it is good practice to include the absolute path in the
 command as the PATH may not be available to the server.
 
   bf(Default:)
-        depends on the setting of "printing ="
+tt(        depends on the setting of "printing =")
 
   bf(Example:)
 tt(      queuepause command = enable %p)
@@ -4331,7 +4390,7 @@ pre-read data from the last accessed file that was opened read-only
 while waiting for packets.
 
   bf(Default:)
-	read prediction = False
+tt(	read prediction = False)
 
 label(readraw)
 dit(bf(read raw (G)))
@@ -4350,7 +4409,7 @@ In general this parameter should be viewed as a system tuning tool and left
 severely alone. See also link(bf("write raw"))(writeraw).
 
   bf(Default:)
- 	read raw = yes
+tt( 	read raw = yes)
 
 label(readsize)
 dit(bf(read size (G)))
@@ -4374,10 +4433,10 @@ best value will vary greatly between systems anyway. A value over
 unnecessarily.
 
   bf(Default:)
-	read size = 2048
+tt(	read size = 2048)
 
   bf(Example:)
-	read size = 8192
+tt(	read size = 8192)
 
 label(remoteannounce)
 dit(bf(remote announce (G)))
@@ -4407,7 +4466,7 @@ browse masters if your network config is that stable.
 See the documentation file BROWSING.txt in the docs/ directory.
 
   bf(Default:)
-	remote announce = <empty string>
+tt(	remote announce = <empty string>)
 
   bf(Example:)
 tt(	remote announce = 192.168.2.255/SERVERS 192.168.4.255/STAFF)
@@ -4443,7 +4502,7 @@ machine is available, is listening, nor that it is in fact the browse
 master on it's segment.
 
   bf(Default:)
-	remote browse sync = <empty string>
+tt(	remote browse sync = <empty string>)
 
   bf(Example:)
 tt(	remote browse sync = 192.168.2.255 192.168.4.255)
@@ -4465,10 +4524,10 @@ If bf("revalidate") is tt("True") then the client will be denied
 automatic access as the same username.
 
   bf(Default:)
-	revalidate = False
+tt(	revalidate = False)
 
   bf(Example:)
-	revalidate = True
+tt(	revalidate = True)
 
 label(root)
 dit(bf(root (G)))
@@ -4538,7 +4597,7 @@ security on or off. Clients decide based on this bit whether (and how)
 to transfer user and password information to the server.
 
 The default is bf("security=user"), as this is the most common setting
-needed when talking to Windows 98 and Windows NT4.0 SP3.
+needed when talking to Windows 98 and Windows NT.
 
 The alternatives are bf("security = share") or bf("security = server") or
 bf("security=domain").
@@ -4560,6 +4619,18 @@ UNIX machine then you will want to use bf("security = user"). If you
 mostly use usernames that don't exist on the UNIX box then use
 bf("security = share").
 
+You should also use bf(security=share) if you want to be able to
+access any shares without a password (guest shares). This is commonly
+used for a shared printer server. It is more difficult to setup guest
+shares with bf(security=user), see the link(bf("map to
+guest"))(maptoguest)parameter for details.
+
+It is possible to use url(bf(smbd))(smbd.8.html) in a em("hybred
+mode") where it is offers both user and share level security under
+different link(bf(NetBIOS aliases))(netbiosaliases). See the
+link(bf(NetBIOS aliases))(netbiosaliases) and the
+link(bf(include))(include) parameters for more information.
+
 The different settings will now be explained.
 
 startdit()
@@ -4567,43 +4638,60 @@ startdit()
 dit(bf("security=share")) When clients connect to a share level
 security server then need not log onto the server with a valid
 username and password before attempting to connect to a shared
-resource. Instead, the clients send authentication information on a
-per-share basis, at the time they attempt to connect to that
-share.
+resource (although modern clients such as Windows 95/98 and Windows NT
+will send a logon request with a username but no password when talking
+to a bf(security=share) server). Instead, the clients send
+authentication information (passwords) on a per-share basis, at the
+time they attempt to connect to that share.
 
 Note that url(bf(smbd))(smbd.8.html) em(*ALWAYS*) uses a valid UNIX
 user to act on behalf of the client, even in bf("security=share")
-level security. There are no tt("anonymous") users.
+level security.
 
 As clients are not required to send a username to the server
 in share level security, url(bf(smbd))(smbd.8.html) uses several
 techniques to determine the correct UNIX user to use on behalf
-of the client. 
+of the client.
+
+A list of possible UNIX usernames to match with the given
+client password is constructed using the following methods :
 
 startit()
 
-it() Parameters such as link(bf("user"))(user) and link(bf("guest
-only"))(guestonly), if set, will determine the UNIX user to use.
+it() If the link(bf("guest only"))(guestonly) parameter is set, then
+all the other stages are missed and only the link(bf("guest
+account"))(guestaccount) username is checked.
 
 it() Is a username is sent with the share connection request, then
-this is used as the UNIX username (see also link(bf("username
-map"))(usernamemap).
+this username (after mapping - see link(bf("username
+map"))(usernamemap)), is added as a potential username.
 
-it() If a username is not sent to the server, then
-url(bf(smbd))(smbd.8.html) will try the NetBIOS name of the client as
-a potential UNIX username.
+it() If the client did a previous em("logon") request (the
+SessionSetup SMB call) then the username sent in this SMB
+will be added as a potential username.
 
-it() If no username can be determined then if the share is marked as
-available to the link(bf("guest account"))(guestaccount), then this
-guest user will be used.
+it() The name of the service the client requested is added
+as a potential username.
+
+it() The NetBIOS name of the client is added to the list as a
+potential username.
+
+it() Ant users on the link(bf("user"))(user) list are added
+as potential usernames.
 
 endit()
 
-Note that it can be confusing in share-level security as to which UNIX
-username will eventually be used in granting access.
+If the link(bf("guest only"))(guestonly) parameter is not set, then
+this list is then tried with the supplied password. The first user for
+whom the password matches will be used as the UNIX user.
 
-Note also that share-level security cannot support link(bf("encrypted
-passwords"))(encryptpasswords).
+If the link(bf("guest only"))(guestonly) parameter is set, or no
+username can be determined then if the share is marked as available to
+the link(bf("guest account"))(guestaccount), then this guest user will
+be used, otherwise access is denied.
+
+Note that it can be em(*very*) confusing in share-level security as to
+which UNIX username will eventually be used in granting access.
 
 dit(bf("security=user"))
 
@@ -4618,6 +4706,14 @@ are then applied and may change the UNIX user to use on this
 connection, but only after the user has been successfully
 authenticated.
 
+em(Note) that the the name of the resource being requested is
+em(*not*) sent to the server until after the server has successfully
+authenticated the client. This is why guest shares don't work in user
+level security without allowing the server to automatically map unknown
+users into the link(bf("guest account"))(guestaccount). See the
+link(bf("map to guest"))(maptoguest) parameter for details on
+doing this.
+
 dit(bf("security=server"))
 
 In this mode Samba will try to validate the username/password by
@@ -4627,6 +4723,19 @@ passwords have been negotiated then Samba cannot revert back to
 checking the UNIX password file, it must have a valid smbpasswd file
 to check users against. See the documentation file in the docs/
 directory ENCRYPTION.txt for details on how to set this up.
+
+em(Note) that from the clients point of view bf("security=server")
+is the same as bf("security=user"). It only affects how the server
+deals with the authentication, it does not in any way affect what the
+client sees.
+
+em(Note) that the the name of the resource being requested is
+em(*not*) sent to the server until after the server has successfully
+authenticated the client. This is why guest shares don't work in server
+level security without allowing the server to automatically map unknown
+users into the link(bf("guest account"))(guestaccount). See the
+link(bf("map to guest"))(maptoguest) parameter for details on
+doing this.
 
 See also the link(bf("password server"))(passwordserver) parameter.
 and the link(bf("encrypted passwords"))(encryptpasswords) parameter.
@@ -4645,16 +4754,37 @@ em(Note) that a valid UNIX user must still exist as well as the
 account on the Domain Controller to allow Samba to have a valid
 UNIX account to map file access to.
 
+em(Note) that from the clients point of view bf("security=domain")
+is the same as bf("security=user"). It only affects how the server
+deals with the authentication, it does not in any way affect what the
+client sees.
+
+em(Note) that the the name of the resource being requested is
+em(*not*) sent to the server until after the server has successfully
+authenticated the client. This is why guest shares don't work in domain
+level security without allowing the server to automatically map unknown
+users into the link(bf("guest account"))(guestaccount). See the
+link(bf("map to guest"))(maptoguest) parameter for details on
+doing this.
+
+e,(BUG:) There is currently a bug in the implementation of
+bf("security=domain) with respect to multi-byte character
+set usernames. The communication with a Domain Controller
+must be done in UNICODE and Samba currently does not widen
+multi-byte user names to UNICODE correctly, thus a multi-byte
+username will not be recognised correctly at the Domain Controller.
+This issue will be addressed in a future release.
+
 See also the link(bf("password server"))(passwordserver) parameter.
 and the link(bf("encrypted passwords"))(encryptpasswords) parameter.
 
 enddit()
 
   bf(Default:)
- 	security = USER
+tt( 	security = USER)
 
   bf(Example:)
- 	security = DOMAIN
+tt( 	security = DOMAIN)
 
 label(serverstring)
 dit(bf(server string (G)))
@@ -4686,10 +4816,10 @@ The setdir command is only implemented in the Digital Pathworks
 client. See the Pathworks documentation for details.
 
   bf(Default:)
- 	set directory = no
+tt( 	set directory = no)
 
   bf(Example:)
- 	set directory = yes
+tt( 	set directory = yes)
 
 label(sharemodes)
 dit(bf(share modes (S)))
@@ -4711,7 +4841,7 @@ You should em(*NEVER*) turn this parameter off as many Windows
 applications will break if you do so.
 
   bf(Default:)
-	share modes = yes
+tt(	share modes = yes)
 
 label(sharedmemsize)
 dit(bf(shared mem size (G)))
@@ -4744,7 +4874,7 @@ case, while short names are lowered. Default em(Yes).
 See the section on link(bf(NAME MANGLING))(NAMEMANGLING).
 
   bf(Default:)
-	short preserve case = yes
+tt(	short preserve case = yes)
 
 label(smbpasswdfile)
 dit(bf(smb passwd file (G)))
@@ -4753,10 +4883,10 @@ This option sets the path to the encrypted smbpasswd file.  By default
 the path to the smbpasswd file is compiled into Samba.
 
   bf(Default:)
-	smb passwd file= <compiled default>
+tt(	smb passwd file= <compiled default>)
 
   bf(Example:)
-	smb passwd file = /usr/samba/private/smbpasswd
+tt(	smb passwd file = /usr/samba/private/smbpasswd)
 
 label(smbrun)
 dit(bf(smbrun (G)))
@@ -4770,10 +4900,10 @@ You should not need to change this parameter so long as Samba
 is installed correctly.
 
   bf(Default:)
-	smbrun=<compiled default>
+tt(	smbrun=<compiled default>)
 
   bf(Example:)
-	smbrun = /usr/local/samba/bin/smbrun
+tt(	smbrun = /usr/local/samba/bin/smbrun)
 
 label(socketaddress)
 dit(bf(socket address (G)))
@@ -4785,7 +4915,7 @@ the one server, each with a different configuration.
 By default samba will accept connections on any address.
 
   bf(Example:)
-	socket address = 192.168.2.20
+tt(	socket address = 192.168.2.20)
 
 label(socketoptions)
 dit(bf(socket options (G)))
@@ -4844,16 +4974,16 @@ optionally take a 1 or 0 argument to enable or disable the option, by
 default they will be enabled if you don't specify 1 or 0.
 
 To specify an argument use the syntax SOME_OPTION=VALUE for example
-SO_SNDBUF=8192. Note that you must not have any spaces before or after
+tt(SO_SNDBUF=8192). Note that you must not have any spaces before or after
 the = sign.
 
 If you are on a local network then a sensible option might be
 
-socket options = IPTOS_LOWDELAY
+tt(socket options = IPTOS_LOWDELAY)
 
 If you have a local network then you could try:
 
-socket options = IPTOS_LOWDELAY TCP_NODELAY
+tt(socket options = IPTOS_LOWDELAY TCP_NODELAY)
 
 If you are on a wide area network then perhaps try setting
 IPTOS_THROUGHPUT. 
@@ -4862,13 +4992,275 @@ Note that several of the options may cause your Samba server to fail
 completely. Use these options with caution!
 
   bf(Default:)
-	socket options = TCP_NODELAY
+tt(	socket options = TCP_NODELAY)
 
   bf(Example:)
-	socket options = IPTOS_LOWDELAY	
+tt(	socket options = IPTOS_LOWDELAY)
 
+label(ssl)
+dit(bf(ssl (G))
 
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
 
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+This variable enables or disables the entire SSL mode. If it is set to
+"no", the SSL enabled samba behaves exactly like the non-SSL samba. If
+set to "yes", it depends on the variables link(bf("ssl
+hosts"))(sslhosts) and link(bf("ssl hosts resign"))(sslhostsresign)
+whether an SSL connection will be required.
+
+  bf(Default:)
+tt(	ssl=no)
+  bf(Example:)
+tt(	ssl=yes)
+
+label(sslCAcertDir)
+dit(bf(ssl CA certDir (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+This variable defines where to look up the Certification
+Autorities. The given directory should contain one file for each CA
+that samba will trust.  The file name must be the hash value over the
+"Distinguished Name" of the CA. How this directory is set up is
+explained later in this document. All files within the directory that
+don't fit into this naming scheme are ignored. You don't need this
+variable if you don't verify client certificates.
+
+  bf(Default:)
+tt(	ssl CA certDir = /usr/local/ssl/certs)
+
+label(CA certFile)
+dit(bf(ssl CA certFile (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+This variable is a second way to define the trusted CAs. The
+certificates of the trusted CAs are collected in one big file and this
+variable points to the file. You will probably only use one of the two
+ways to define your CAs. The first choice is preferable if you have
+many CAs or want to be flexible, the second is perferable if you only
+have one CA and want to keep things simple (you won't need to create
+the hashed file names). You don't need this variable if you don't
+verify client certificates.
+
+  bf(Default:)
+tt(	ssl CA certFile = /usr/local/ssl/certs/trustedCAs.pem)
+
+label(sslciphers)
+dit(bf(ssl ciphers (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+This variable defines the ciphers that should be offered during SSL
+negotiation. You should not set this variable unless you know what you
+are doing.
+
+label(sslclientcert)
+dit(bf(ssl client cert (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+The certificate in this file is used by
+url(bf(smbclient))(smbclient.1.html) if it exists. It's needed if the
+server requires a client certificate.
+
+  bf(Default:)
+tt(	ssl client cert = /usr/local/ssl/certs/smbclient.pem)
+
+label(sslclientkey)
+dit(bf(ssl client key (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+This is the private key for url(bf(smbclient))(smbclient.1.html). It's
+only needed if the client should have a certificate.
+
+  bf(Default:)
+tt(	ssl client key = /usr/local/ssl/private/smbclient.pem)
+
+label(sslcompatibility)
+dit(bf(ssl compatibility (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+This variable defines whether SSLeay should be configured for bug
+compatibility with other SSL implementations. This is probably not
+desirable because currently no clients with SSL implementations other
+than SSLeay exist.
+
+  bf(Default:)
+tt(	ssl compatibility = no)
+
+label(sslhosts)
+dit(bf(ssl hosts (G)))
+
+See link(bf("ssl hosts resign"))(sslhostsresign).
+
+label(sslhostsresign)
+dit(bf(ssl hosts resign (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+These two variables define whether samba will go into SSL mode or
+not. If none of them is defined, samba will allow only SSL
+connections. If the link(bf("ssl hosts"))(sslhosts) variable lists
+hosts (by IP-address, IP-address range, net group or name), only these
+hosts will be forced into SSL mode. If the bf("ssl hosts resign")
+variable lists hosts, only these hosts will NOT be forced into SSL
+mode. The syntax for these two variables is the same as for the
+link(bf("hosts allow"))(hostsallow) and link(bf("hosts
+deny"))(hostsdeny) pair of variables, only that the subject of the
+decision is different: It's not the access right but whether SSL is
+used or not. See the link(bf("allow hosts"))(allowhosts) parameter for
+details. The example below requires SSL connections from all hosts
+outside the local net (which is 192.168.*.*).
+
+  bf(Default:)
+tt(	ssl hosts = <empty string>)
+tt(	ssl hosts resign = <empty string>)
+
+  bf(Example:)
+tt(	ssl hosts resign = 192.168.)
+
+label(sslrequireclientcert)
+dit(bf(ssl require clientcert (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+If this variable is set to tt("yes"), the server will not tolerate
+connections from clients that don't have a valid certificate. The
+directory/file given in link(bf("ssl CA certDir"))(sslCAcertDir) and
+link(bf("ssl CA certFile"))(sslCAcertFile) will be used to look up the
+CAs that issued the client's certificate. If the certificate can't be
+verified positively, the connection will be terminated.  If this
+variable is set to tt("no"), clients don't need certificates. Contrary
+to web applications you really em(*should*) require client
+certificates. In the web environment the client's data is sensitive
+(credit card numbers) and the server must prove to be trustworthy. In
+a file server environment the server's data will be sensitive and the
+clients must prove to be trustworthy.
+
+  bf(Default:)
+tt(	ssl require clientcert = no)
+
+label(sslrequireservercert)
+dit(bf(ssl require servercert (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+If this variable is set to tt("yes"), the
+url(bf(smbclient))(smbclient.1.html) will request a certificate from
+the server. Same as link(bf("ssl require
+clientcert"))(sslrequireclientcert) for the server.
+
+  bf(Default:)
+tt(	ssl require servercert = no)
+
+label(sslservercert)
+dit(bf(ssl server cert (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+This is the file containing the server's certificate. The server _must_
+have a certificate. The file may also contain the server's private key.
+See later for how certificates and private keys are created.
+
+  bf(Default:)
+tt(	ssl server cert = <empty string>)
+
+ssl server key  G
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+This file contains the private key of the server. If this variable is
+not defined, the key is looked up in the certificate file (it may be
+appended to the certificate). The server em(*must*) have a private key
+and the certificate em(*must*) match this private key.
+
+  bf(Default:)
+tt(	ssl server key = <empty string>)
+
+label(sslversion)
+dit(bf(ssl version (G)))
+
+This variable is part of SSL-enabled Samba. This is only available if
+the SSL libraries have been compiled on your system and the configure
+option tt("--with-ssl") was given at configure time.
+
+em(Note) that for export control reasons this code is em(**NOT**)
+enabled by default in any current binary version of Samba.
+
+This enumeration variable defines the versions of the SSL protocol
+that will be used. tt("ssl2or3") allows dynamic negotiation of SSL v2
+or v3, tt("ssl2") results in SSL v2, tt("ssl3") results in SSL v3 and
+"tls1" results in TLS v1. TLS (Transport Layer Security) is the
+(proposed?) new standard for SSL.
+
+  bf(Default:)
+tt(	ssl version = "ssl2or3")
+
+stat cache  G
+stat cache size  G
 
 .SS status (G)
 This enables or disables logging of connections to a status file that
