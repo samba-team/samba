@@ -36,6 +36,8 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn krb5_warnx "krb5_context context" "const char *format" "..."
 .Ft krb5_error_code
 .Fn krb5_set_warn_dest "krb5_context context" "krb5_log_facility *facility"
+.Ft "char *"
+.Fn krb5_get_err_text "krb5_context context" "krb5_error_code code"
 .Sh DESCRIPTION
 These functions prints a warning message to some destination.
 .Fa format
@@ -59,5 +61,8 @@ Messages logged with the
 functions have a log level of 1, while the
 .Dq err
 functions logs with level 0.
+.Pp
+.Fn krb5_get_err_text
+fetches the human readable strings describing the error-code.
 .Sh SEE ALSO
 .Xr krb5_openlog 3
