@@ -71,9 +71,18 @@ typedef struct ntlmssp_state
 {
 	TALLOC_CTX *mem_ctx;
 	enum NTLMSSP_ROLE role;
-	struct auth_context *auth_context;
-	struct auth_serversupplied_info *server_info;
 	BOOL unicode;
-	char *orig_user;
-	char *orig_domain;
+	char *user;
+	char *domain;
+	char *workstation;
+ 	DATA_BLOB lm_resp;
+	DATA_BLOB nt_resp;
+	DATA_BLOB chal;
+	void *auth_context;
+	const uint8 *(*get_challenge)(void *auth_context);
+	NTSTATUS (*check_password)(void *auth_context);
+
+	const char *(*get_global_myname)(void);
+	const char *(*get_domain)(void);
 } NTLMSSP_STATE;
+

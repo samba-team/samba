@@ -24,7 +24,7 @@
 
 uint32 global_client_caps = 0;
 
-static struct ntlmssp_state *global_ntlmssp_state;
+static struct auth_ntlmssp_state *global_ntlmssp_state;
 
 /*
   on a logon error possibly map the error to success if "map to guest"
@@ -236,6 +236,9 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 	return send_smb(smbd_server_fd(),outbuf);
 }
 
+/****************************************************************************
+send an NTLMSSP blob via a session setup reply, wrapped in SPNEGO
+****************************************************************************/
 static BOOL reply_spnego_ntlmssp_blob(connection_struct *conn, char *outbuf,
 					 DATA_BLOB *ntlmssp_blob, NTSTATUS errcode) 
 {
@@ -246,13 +249,18 @@ static BOOL reply_spnego_ntlmssp_blob(connection_struct *conn, char *outbuf,
 	return True;
 }
 
+/****************************************************************************
+ send an OK via a session setup reply, wrapped in SPNEGO.
+ get vuid and check first.
+****************************************************************************/
 static BOOL reply_spnego_ntlmssp_ok(connection_struct *conn, char *outbuf,
-				      NTLMSSP_STATE *ntlmssp_state) 
+				    AUTH_NTLMSSP_STATE *auth_ntlmssp_state) 
 {
 	int sess_vuid;
+	pstring user;
 	DATA_BLOB null_blob = data_blob(NULL, 0);
 
-	sess_vuid = register_vuid(ntlmssp_state->server_info, ntlmssp_state->orig_user /* check this for weird */);
+	sess_vuid = register_vuid(auth_ntlmssp_state->server_info, auth_ntlmssp_state->ntlmssp_state->user /* check this for weird */);
 
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
@@ -261,7 +269,7 @@ static BOOL reply_spnego_ntlmssp_ok(connection_struct *conn, char *outbuf,
 	set_message(outbuf,4,0,True);
 	SSVAL(outbuf, smb_vwv3, 0);
 
-	if (ntlmssp_state->server_info->guest) {
+	if (auth_ntlmssp_state->server_info->guest) {
 		SSVAL(outbuf,smb_vwv2,1);
 	}
 
@@ -313,24 +321,24 @@ static int reply_spnego_negotiate(connection_struct *conn,
 #endif
 
 	if (global_ntlmssp_state) {
-		ntlmssp_server_end(&global_ntlmssp_state);
+		auth_ntlmssp_end(&global_ntlmssp_state);
 	}
 
-	nt_status = ntlmssp_server_start(&global_ntlmssp_state);
+	nt_status = auth_ntlmssp_start(&global_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return ERROR_NT(nt_status);
 	}
 
-	nt_status = ntlmssp_server_update(global_ntlmssp_state, 
-					  secblob, &chal);
+	nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
+					secblob, &chal);
 
 	data_blob_free(&secblob);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		nt_status = do_map_to_guest(nt_status, 
 					    &global_ntlmssp_state->server_info, 
-					    global_ntlmssp_state->orig_user, 
-					    global_ntlmssp_state->orig_domain);
+					    global_ntlmssp_state->ntlmssp_state->user, 
+					    global_ntlmssp_state->ntlmssp_state->domain);
 	}
 	
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -352,12 +360,15 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		reply_spnego_ntlmssp_ok(conn, outbuf, 
 						 global_ntlmssp_state);
-		ntlmssp_server_end(&global_ntlmssp_state);
-
+		auth_ntlmssp_end(&global_ntlmssp_state);
 		data_blob_free(&chal);
+
 		/* and tell smbd that we have already replied to this packet */
 		return -1;
 	} 
+
+	auth_ntlmssp_end(&global_ntlmssp_state);
+	data_blob_free(&chal);
 
 	return ERROR_NT(nt_status_squash(nt_status));
 }
@@ -380,7 +391,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	nt_status = ntlmssp_server_update(global_ntlmssp_state, 
+	nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
 					  auth, &auth_reply);
 
 	data_blob_free(&auth);
@@ -389,9 +400,10 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	if (NT_STATUS_IS_OK(nt_status)) {
 		reply_spnego_ntlmssp_ok(conn, outbuf, 
 					global_ntlmssp_state);
-		ntlmssp_server_end(&global_ntlmssp_state);
+		auth_ntlmssp_end(&global_ntlmssp_state);
 
 	} else { /* !NT_STATUS_IS_OK(nt_status) */
+		auth_ntlmssp_end(&global_ntlmssp_state);
 		return ERROR_NT(nt_status_squash(nt_status));
 	}
 

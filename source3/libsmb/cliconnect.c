@@ -465,7 +465,8 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 
 	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
 		NTLMSSP_NEGOTIATE_128 | 
-		NTLMSSP_NEGOTIATE_NTLM;
+		NTLMSSP_NEGOTIATE_NTLM |
+		NTLMSSP_REQUEST_TARGET;
 
 	memset(sess_key, 0, 16);
 
