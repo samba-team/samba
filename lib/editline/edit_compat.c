@@ -61,21 +61,34 @@ static const char* ret_prompt(EditLine *e)
 
 static History *h;
 
+#ifdef H_SETSIZE
+#define EL_INIT_FOUR 1
+#else
+#ifdef H_SETMAXSIZE
+/* backwards compatibility */
+#define H_SETSIZE H_SETMAXSIZE
+#endif
+#endif
+
 char *
 readline(const char* prompt)
 {
     static EditLine *e;
-#ifdef H_SETMAXSIZE
+#ifdef H_SETSIZE
     HistEvent ev;
 #endif
     int count;
     char *ret;
     if(e == NULL){
+#ifdef EL_INIT_FOUR
+	e = el_init("", stdin, stdout, stderr);
+#else
 	e = el_init("", stdin, stdout);
+#endif
 	el_set(e, EL_PROMPT, ret_prompt);
 	h = history_init();
-#ifdef H_SETMAXSIZE
-	history(h, &ev, H_SETMAXSIZE, 25);
+#ifdef H_SETSIZE
+	history(h, &ev, H_SETSIZE, 25);
 #else
 	history(h, H_EVENT, 25);
 #endif
@@ -95,7 +108,7 @@ readline(const char* prompt)
 void
 add_history(char *p)
 {
-#ifdef H_SETMAXSIZE
+#ifdef H_SETSIZE
     HistEvent ev;
     history(h, &ev, H_ENTER, p);
 #else
