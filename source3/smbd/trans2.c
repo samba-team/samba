@@ -95,7 +95,14 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
     total_sent_thistime = params_to_send + data_to_send + 
                             alignment_offset + data_alignment_offset;
     /* We can never send more than useable_space */
-    total_sent_thistime = MIN(total_sent_thistime, useable_space);
+    /*
+     * Note that 'useable_space' does not include the alignment offsets,
+     * but we must include the alignment offsets in the calculation of
+     * the length of the data we send over the wire, as the alignment offsets
+     * are sent here. Fix from Marc_Jacobsen@hp.com.
+     */
+    total_sent_thistime = MIN(total_sent_thistime, useable_space +
+                                alignment_offset + data_alignment_offset);
 
     set_message(outbuf, 10, total_sent_thistime, True);
 
