@@ -174,6 +174,16 @@ BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 	return !data->has_error;
 }
 
+/* write a BOOLEAN - hmm, I suspect this one is the correct one, and the 
+   above boolean is bogus. Need to check */
+BOOL asn1_write_BOOLEAN2(ASN1_DATA *data, BOOL v)
+{
+	asn1_push_tag(data, ASN1_BOOLEAN);
+	asn1_write_uint8(data, v);
+	asn1_pop_tag(data);
+	return !data->has_error;
+}
+
 /* check a BOOLEAN */
 BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
 {
