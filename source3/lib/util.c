@@ -779,12 +779,24 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
 
 void smb_msleep(unsigned int t)
 {
+#if defined(HAVE_NANOSLEEP)
+	struct timespec tval;
+	int ret;
+
+	tval.tv_sec = t/1000;
+	tval.tv_nsec = 1000000*(t%1000);
+
+	do {
+		errno = 0;
+		ret = nanosleep(&tval, &tval);
+	} while (ret < 0 && errno == EINTR && (tval.tv_sec > 0 || tval.tv_nsec > 0));
+#else
 	unsigned int tdiff=0;
 	struct timeval tval,t1,t2;  
 	fd_set fds;
 
 	GetTimeOfDay(&t1);
-	GetTimeOfDay(&t2);
+	t2 = t1;
   
 	while (tdiff < t) {
 		tval.tv_sec = (t-tdiff)/1000;
@@ -808,6 +820,7 @@ void smb_msleep(unsigned int t)
 
 		tdiff = TvalDiff(&t1,&t2);
 	}
+#endif
 }
 
 /****************************************************************************
