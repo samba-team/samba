@@ -20,6 +20,64 @@
 
 #include "includes.h"
 
+/****************************************************************************
+ Get UNIX extensions version info.
+****************************************************************************/
+                                                                                                                   
+BOOL cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor, uint16 *pminor,
+                                        uint32 *pcaplow, uint32 *pcaphigh)
+{
+	BOOL ret = False;
+	uint16 setup;
+	char param[2];
+	char *rparam=NULL, *rdata=NULL;
+	unsigned int rparam_count=0, rdata_count=0;
+
+	setup = TRANSACT2_QFSINFO;
+	
+	SSVAL(param,0,SMB_QUERY_CIFS_UNIX_INFO);
+
+	if (!cli_send_trans(cli, SMBtrans2, 
+		    NULL, 
+		    0, 0,
+		    &setup, 1, 0,
+		    param, 2, 0,
+		    NULL, 0, 560)) {
+		goto cleanup;
+	}
+	
+	if (!cli_receive_trans(cli, SMBtrans2,
+                              &rparam, &rparam_count,
+                              &rdata, &rdata_count)) {
+		goto cleanup;
+	}
+
+	if (cli_is_error(cli)) {
+		ret = False;
+		goto cleanup;
+	} else {
+		ret = True;
+	}
+
+	if (rdata_count < 12) {
+		goto cleanup;
+	}
+
+	*pmajor = SVAL(rdata,0);
+	*pminor = SVAL(rdata,2);
+	*pcaplow = IVAL(rdata,4);
+	*pcaphigh = IVAL(rdata,8);
+
+	/* todo: but not yet needed 
+	 *       return the other stuff
+	 */
+
+cleanup:
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
+
+	return ret;	
+}
 
 BOOL cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr)
 {

@@ -459,4 +459,75 @@ Offset Size         Name
 
 /* ... more as we think of them :-). */
 
+/* SMB POSIX ACL definitions. */
+/* Wire format is (all little endian) :
+
+[2 bytes]              -     Version number.
+[2 bytes]              -     Number of ACE entries to follow.
+[2 bytes]              -     Number of default ACE entries to follow.
+-------------------------------------
+^
+|
+ACE entries
+|
+v
+-------------------------------------
+^
+|
+Default ACE entries
+|
+v
+-------------------------------------
+
+Where an ACE entry looks like :
+
+[1 byte]           - Entry type.
+
+Entry types are :
+
+ACL_USER_OBJ            0x01
+ACL_USER                0x02
+ACL_GROUP_OBJ           0x04
+ACL_GROUP               0x08
+ACL_MASK                0x10
+ACL_OTHER               0x20
+
+[1 byte]          - permissions (perm_t)
+
+perm_t types are :
+
+ACL_READ                0x04
+ACL_WRITE               0x02
+ACL_EXECUTE             0x01
+
+[8 bytes]         - uid/gid to apply this permission to.
+
+In the same format as the uid/gid fields in the other
+UNIX extensions definitions. Use 0xFFFFFFFFFFFFFFFF for
+the MASK and OTHER entry types.
+
+*/
+
+/* The query/set info levels for POSIX ACLs. */
+#define SMB_QUERY_POSIX_ACL  0x204
+#define SMB_SET_POSIX_ACL  0x204
+
+/* Current on the wire ACL version. */
+#define SMB_POSIX_ACL_VERSION 1
+
+/* ACE entry type. */
+#define SMB_POSIX_ACL_USER_OBJ            0x01
+#define SMB_POSIX_ACL_USER                0x02
+#define SMB_POSIX_ACL_GROUP_OBJ           0x04
+#define SMB_POSIX_ACL_GROUP               0x08
+#define SMB_POSIX_ACL_MASK                0x10
+#define SMB_POSIX_ACL_OTHER               0x20
+
+/* perm_t types. */
+#define SMB_POSIX_ACL_READ                0x04
+#define SMB_POSIX_ACL_WRITE               0x02
+#define SMB_POSIX_ACL_EXECUTE             0x01
+
+#define SMB_POSIX_ACL_HEADER_SIZE         6
+#define SMB_POSIX_ACL_ENTRY_SIZE         10
 #endif

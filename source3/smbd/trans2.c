@@ -2086,7 +2086,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			data_len = 12;
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
 			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
-			SBIG_UINT(pdata,4,((SMB_BIG_UINT)0)); /* No capabilities for now... */
+			SBIG_UINT(pdata,4,((SMB_BIG_UINT)CIFS_UNIX_POSIX_ACLS_CAP)); /* We have POSIX ACLs. */
 			break;
 
 		case SMB_MAC_QUERY_FS_INFO:
@@ -2227,8 +2227,8 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
 #endif /* HAVE_SYS_QUOTAS */
 
 /****************************************************************************
- *  Utility function to set bad path error.
- ****************************************************************************/
+ Utility function to set bad path error.
+****************************************************************************/
 
 int set_bad_path_error(int err, BOOL bad_path, char *outbuf, int def_class, uint32 def_code)
 {
@@ -2243,6 +2243,120 @@ int set_bad_path_error(int err, BOOL bad_path, char *outbuf, int def_class, uint
 		}
 	}
 	return UNIXERROR(def_class,def_code);
+}
+
+/****************************************************************************
+ Utility function to count the number of entries in a POSIX acl.
+****************************************************************************/
+
+static unsigned int count_acl_entries(connection_struct *conn, SMB_ACL_T posix_acl)
+{
+	unsigned int ace_count = 0;
+	int entry_id = SMB_ACL_FIRST_ENTRY;
+	SMB_ACL_ENTRY_T entry;
+
+	while ( posix_acl && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1)) {
+		/* get_next... */
+		if (entry_id == SMB_ACL_FIRST_ENTRY) {
+			entry_id = SMB_ACL_NEXT_ENTRY;
+		}
+		ace_count++;
+	}
+	return ace_count;
+}
+
+/****************************************************************************
+ Utility function to marshall a POSIX acl into wire format.
+****************************************************************************/
+
+static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_STAT *pst, SMB_ACL_T posix_acl)
+{
+	int entry_id = SMB_ACL_FIRST_ENTRY;
+	SMB_ACL_ENTRY_T entry;
+
+	while ( posix_acl && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1)) {
+		SMB_ACL_TAG_T tagtype;
+		SMB_ACL_PERMSET_T permset;
+		unsigned char perms = 0;
+		unsigned int own_grp;
+
+		/* get_next... */
+		if (entry_id == SMB_ACL_FIRST_ENTRY) {
+			entry_id = SMB_ACL_NEXT_ENTRY;
+		}
+
+		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1) {
+			DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_TAG_TYPE failed.\n"));
+			return False;
+		}
+
+		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1) {
+			DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_PERMSET failed.\n"));
+			return False;
+		}
+
+		perms |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_READ) ? SMB_POSIX_ACL_READ : 0);
+		perms |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE) ? SMB_POSIX_ACL_WRITE : 0);
+		perms |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_EXECUTE) ? SMB_POSIX_ACL_EXECUTE : 0);
+
+		SCVAL(pdata,1,perms);
+
+		switch (tagtype) {
+			case SMB_ACL_USER_OBJ:
+				SCVAL(pdata,0,SMB_POSIX_ACL_USER_OBJ);
+				own_grp = (unsigned int)pst->st_uid;
+				SIVAL(pdata,2,own_grp);
+				SIVAL(pdata,6,0);
+				break;
+			case SMB_ACL_USER:
+				{
+					uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
+					if (!puid) {
+						DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_QUALIFIER failed.\n"));
+					}
+					own_grp = (unsigned int)*puid;
+					SMB_VFS_SYS_ACL_FREE_QUALIFIER(conn, (void *)puid,tagtype);
+					SCVAL(pdata,0,SMB_POSIX_ACL_USER);
+					SIVAL(pdata,2,own_grp);
+					SIVAL(pdata,6,0);
+					break;
+				}
+			case SMB_ACL_GROUP_OBJ:
+				SCVAL(pdata,0,SMB_POSIX_ACL_GROUP_OBJ);
+				own_grp = (unsigned int)pst->st_gid;
+				SIVAL(pdata,2,own_grp);
+				SIVAL(pdata,6,0);
+				break;
+			case SMB_ACL_GROUP:
+				{
+					gid_t *pgid= (gid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
+					if (!pgid) {
+						DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_QUALIFIER failed.\n"));
+					}
+					own_grp = (unsigned int)*pgid;
+					SMB_VFS_SYS_ACL_FREE_QUALIFIER(conn, (void *)pgid,tagtype);
+					SCVAL(pdata,0,SMB_POSIX_ACL_GROUP);
+					SIVAL(pdata,2,own_grp);
+					SIVAL(pdata,6,0);
+					break;
+				}
+			case SMB_ACL_MASK:
+				SCVAL(pdata,0,SMB_POSIX_ACL_MASK);
+				SIVAL(pdata,2,0xFFFFFFFF);
+				SIVAL(pdata,6,0xFFFFFFFF);
+				break;
+			case SMB_ACL_OTHER:
+				SCVAL(pdata,0,SMB_POSIX_ACL_OTHER);
+				SIVAL(pdata,2,0xFFFFFFFF);
+				SIVAL(pdata,6,0xFFFFFFFF);
+				break;
+			default:
+				DEBUG(0,("marshall_posix_acl: unknown tagtype.\n"));
+				return False;
+		}
+	}
+
+	return True;
 }
 
 /****************************************************************************
@@ -2797,6 +2911,83 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				pdata += len;
 				data_size = PTR_DIFF(pdata,(*ppdata));
 
+				break;
+			}
+
+		case SMB_QUERY_POSIX_ACL:
+			{
+				SMB_ACL_T file_acl = NULL;
+				SMB_ACL_T dir_acl = NULL;
+				uint16 num_file_acls = 0;
+				uint16 num_dir_acls = 0;
+
+				if (fsp && !fsp->is_directory && (fsp->fd != -1)) {
+					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fd);
+				} else {
+					file_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS);
+				}
+
+				if (file_acl == NULL && no_acl_syscall_error(errno)) {
+					DEBUG(5,("call_trans2qfilepathinfo: ACLs not implemented on filesystem containing %s\n",
+						fname ));
+					return ERROR_NT(NT_STATUS_NOT_IMPLEMENTED);
+				}
+
+				if (S_ISDIR(sbuf.st_mode)) {
+					if (fsp && fsp->is_directory) {
+						dir_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fsp->fsp_name, SMB_ACL_TYPE_DEFAULT);
+					} else {
+						dir_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_DEFAULT);
+					}
+					dir_acl = free_empty_sys_acl(conn, dir_acl);
+				}
+
+				num_file_acls = count_acl_entries(conn, file_acl);
+				num_dir_acls = count_acl_entries(conn, dir_acl);
+
+				if ( data_size < (num_file_acls + num_dir_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE) {
+					DEBUG(5,("call_trans2qfilepathinfo: data_size too small (%u) need %u\n",
+						data_size,
+						(unsigned int)((num_file_acls + num_dir_acls)*SMB_POSIX_ACL_ENTRY_SIZE +
+							SMB_POSIX_ACL_HEADER_SIZE) ));
+					if (file_acl) {
+						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+					}
+					if (dir_acl) {
+						SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+					}
+					return ERROR_NT(NT_STATUS_BUFFER_TOO_SMALL);
+				}
+
+				SSVAL(pdata,0,SMB_POSIX_ACL_VERSION);
+				SSVAL(pdata,2,num_file_acls);
+				SSVAL(pdata,4,num_dir_acls);
+				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE, &sbuf, file_acl)) {
+					if (file_acl) {
+						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+					}
+					if (dir_acl) {
+						SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+					}
+					return ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+				}
+				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE + (num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE), &sbuf, dir_acl)) {
+					if (file_acl) {
+						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+					}
+					if (dir_acl) {
+						SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+					}
+					return ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+				}
+
+				if (file_acl) {
+					SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+				}
+				if (dir_acl) {
+					SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
+				}
+				data_size = (num_file_acls + num_dir_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE;
 				break;
 			}
 
