@@ -890,13 +890,14 @@ int print_queue_snum(char *qname)
 /****************************************************************************
  pause a queue
 ****************************************************************************/
-BOOL print_queue_pause(struct current_user *user, int snum)
+BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 {
 	int ret;
 	
 	if (!user) return False;
 	
 	if (!print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+		*errcode = ERROR_ACCESS_DENIED;
 		return False;
 	}
 
@@ -912,11 +913,12 @@ BOOL print_queue_pause(struct current_user *user, int snum)
 /****************************************************************************
  resume a queue
 ****************************************************************************/
-BOOL print_queue_resume(struct current_user *user, int snum)
+BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 {
 	int ret;
 
 	if (!print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+		*errcode = ERROR_ACCESS_DENIED;
 		return False;
 	}
 
@@ -932,13 +934,14 @@ BOOL print_queue_resume(struct current_user *user, int snum)
 /****************************************************************************
  purge a queue - implemented by deleting all jobs that we can delete
 ****************************************************************************/
-BOOL print_queue_purge(struct current_user *user, int snum)
+BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 {
 	print_queue_struct *queue;
 	print_status_struct status;
 	int njobs, i;
 
 	if (!print_access_check(user, snum, PRINTER_ACE_MANAGE_DOCUMENTS)) {
+		*errcode = ERROR_ACCESS_DENIED;
 		return False;
 	}
 

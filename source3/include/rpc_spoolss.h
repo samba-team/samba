@@ -33,7 +33,6 @@
 #define SPOOLSS_DELETEPRINTERDRIVER			0x0d
 #define SPOOLSS_ADDPRINTPROCESSOR			0x0e
 #define SPOOLSS_GETPRINTPROCESSORDIRECTORY		0x10
-#define SPOOLSS_ABORTPRINTER				0x15
 #define SPOOLSS_READPRINTER				0x16
 #define SPOOLSS_WAITFORPRINTERCHANGE			0x1c
 #define SPOOLSS_DELETEFORM				0x1f
@@ -84,6 +83,7 @@
 #define SPOOLSS_STARTPAGEPRINTER			0x12
 #define SPOOLSS_WRITEPRINTER				0x13
 #define SPOOLSS_ENDPAGEPRINTER				0x14
+#define SPOOLSS_ABORTPRINTER				0x15
 #define SPOOLSS_ENDDOCPRINTER				0x17
 #define SPOOLSS_ADDJOB					0x18
 #define SPOOLSS_SCHEDULEJOB				0x19
@@ -1424,6 +1424,18 @@ typedef struct spool_r_deleteprinter
 	uint32 status;
 }
 SPOOL_R_DELETEPRINTER;
+
+typedef struct spool_q_abortprinter
+{
+	POLICY_HND handle;
+}
+SPOOL_Q_ABORTPRINTER;
+
+typedef struct spool_r_abortprinter
+{
+	uint32 status;
+}
+SPOOL_R_ABORTPRINTER;
 
 
 typedef struct spool_q_addprinterex

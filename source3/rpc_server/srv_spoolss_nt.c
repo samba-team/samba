@@ -2999,6 +2999,7 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 {
 	struct current_user user;
 	int snum;
+	int errcode = 0;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	if (p->ntlmssp_auth_validated) {
@@ -3018,24 +3019,36 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 
 	switch (command) {
 	case PRINTER_CONTROL_PAUSE:
-		if (print_queue_pause(&user, snum)) {
+		if (print_queue_pause(&user, snum, &errcode)) {
 			return 0;
 		}
 		break;
 	case PRINTER_CONTROL_RESUME:
 	case PRINTER_CONTROL_UNPAUSE:
-		if (print_queue_resume(&user, snum)) {
+		if (print_queue_resume(&user, snum, &errcode)) {
 			return 0;
 		}
 		break;
 	case PRINTER_CONTROL_PURGE:
-		if (print_queue_purge(&user, snum)) {
+		if (print_queue_purge(&user, snum, &errcode)) {
 			return 0;
 		}
 		break;
 	}
 
+	if (errcode)
+		return (uint32)errcode;
+
 	return ERROR_INVALID_FUNCTION;
+}
+
+/********************************************************************
+ * api_spoolss_abortprinter
+ ********************************************************************/
+
+uint32 _spoolss_abortprinter(POLICY_HND *handle, pipes_struct *p)
+{
+	return control_printer(handle, PRINTER_CONTROL_PURGE, p);
 }
 
 /********************************************************************

@@ -214,6 +214,8 @@ static uint32 cmd_quit(struct client_info *info, int argc, char *argv[])
 
 	free_connections();
 	exit(0);
+	/* NOTREACHED */
+	return 0;
 }
 
 /****************************************************************************
