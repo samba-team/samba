@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -1036,6 +1036,9 @@
 
 /* Define if you have the nsl_s library (-lnsl_s).  */
 #undef HAVE_LIBNSL_S
+
+/* Define if you have the popt library (-lpopt).  */
+#undef HAVE_LIBPOPT
 
 /* Define if you have the resolv library (-lresolv).  */
 #undef HAVE_LIBRESOLV
