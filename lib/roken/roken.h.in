@@ -250,6 +250,11 @@ const char *
 inet_ntop(int af, const void *src, char *dst, size_t size);
 #endif
 
+#ifndef HAVE_INET_PTON
+int
+inet_pton(int af, const char *src, void *dst);
+#endif
+
 #if !defined(HAVE_GETCWD)
 char* getcwd(char *path, size_t size);
 #endif
