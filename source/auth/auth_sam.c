@@ -132,7 +132,8 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
-static NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, 
+static NTSTATUS sam_password_ok(TALLOC_CTX *mem_ctx,
+				SAM_ACCOUNT *sampass, 
 				const auth_usersupplied_info *user_info, 
 				const auth_authsupplied_info *auth_info,
 				uint8 user_sess_key[16])
@@ -243,7 +244,9 @@ static NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass,
  Do a specific test for a SAM_ACCOUNT being vaild for this connection 
  (ie not disabled, expired and the like).
 ****************************************************************************/
-static NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info)
+static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
+			       SAM_ACCOUNT *sampass, 
+			       const auth_usersupplied_info *user_info)
 {
 	uint16	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	char *workstation_list;
@@ -286,7 +289,7 @@ static NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_inf
 
 	/* Test workstation. Workstation list is comma separated. */
 
-	workstation_list = strdup(pdb_get_workstations(sampass));
+	workstation_list = talloc_strdup(mem_ctx, pdb_get_workstations(sampass));
 
 	if (!workstation_list) return NT_STATUS_NO_MEMORY;
 
@@ -305,11 +308,8 @@ static NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_inf
 			}
 		}
 		
-		SAFE_FREE(workstation_list);		
 		if (invalid_ws) 
 			return NT_STATUS_INVALID_WORKSTATION;
-	} else {
-		SAFE_FREE(workstation_list);
 	}
 
 	if (acct_ctrl & ACB_DOMTRUST) {
@@ -338,9 +338,10 @@ return an NT_STATUS constant.
 ****************************************************************************/
 
 static NTSTATUS check_sam_security(void *my_private_data,
-			    const auth_usersupplied_info *user_info, 
-			    const auth_authsupplied_info *auth_info,
-			    auth_serversupplied_info **server_info)
+				   TALLOC_CTX *mem_ctx,
+				   const auth_usersupplied_info *user_info, 
+				   const auth_authsupplied_info *auth_info,
+				   auth_serversupplied_info **server_info)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
@@ -369,14 +370,14 @@ static NTSTATUS check_sam_security(void *my_private_data,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	nt_status = sam_password_ok(sampass, user_info, auth_info, user_sess_key);
+	nt_status = sam_password_ok(mem_ctx, sampass, user_info, auth_info, user_sess_key);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		pdb_free_sam(&sampass);
 		return nt_status;
 	}
 
-	nt_status = sam_account_ok(sampass, user_info);
+	nt_status = sam_account_ok(mem_ctx, sampass, user_info);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		pdb_free_sam(&sampass);
@@ -415,9 +416,10 @@ return an NT_STATUS constant.
 ****************************************************************************/
 
 static NTSTATUS check_samstrict_security(void *my_private_data,
-				  const auth_usersupplied_info *user_info, 
-				  const auth_authsupplied_info *auth_info,
-				  auth_serversupplied_info **server_info)
+					 TALLOC_CTX *mem_ctx,
+					 const auth_usersupplied_info *user_info, 
+					 const auth_authsupplied_info *auth_info,
+					 auth_serversupplied_info **server_info)
 {
 
 	if (!user_info || !auth_info) {
@@ -432,7 +434,7 @@ static NTSTATUS check_samstrict_security(void *my_private_data,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 	
-	return check_sam_security(my_private_data, user_info, auth_info, server_info);
+	return check_sam_security(my_private_data, mem_ctx, user_info, auth_info, server_info);
 }
 
 BOOL auth_init_samstrict(auth_methods **auth_method) 

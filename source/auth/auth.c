@@ -82,13 +82,14 @@ static BOOL check_domain_match(const char *user, const char *domain)
  **/
 
 NTSTATUS check_password(const auth_usersupplied_info *user_info, 
-			     const auth_authsupplied_info *auth_info,
-			     auth_serversupplied_info **server_info)
+			const auth_authsupplied_info *auth_info,
+			auth_serversupplied_info **server_info)
 {
 	
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	const char *pdb_username;
 	auth_methods *auth_method;
+	TALLOC_CTX *mem_ctx;
 
 	if (!user_info || !auth_info || !server_info) {
 		return NT_STATUS_LOGON_FAILURE;
@@ -121,7 +122,10 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 
 	for (auth_method = auth_info->auth_method_list;auth_method; auth_method = auth_method->next)
 	{
-		nt_status = auth_method->auth(auth_method->private_data, user_info, auth_info, server_info);
+		mem_ctx = talloc_init_named("%s authentication for user %s\\%s", auth_method->name, 
+					    user_info->domain.str, user_info->smb_name.str);
+
+		nt_status = auth_method->auth(auth_method->private_data, mem_ctx, user_info, auth_info, server_info);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3, ("check_password: %s authentication for user [%s] suceeded\n", 
 				  auth_method->name, user_info->smb_name.str));
@@ -129,7 +133,9 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 			DEBUG(5, ("check_password: %s authentication for user [%s] FAILED with error %s\n", 
 				  auth_method->name, user_info->smb_name.str, get_nt_error_msg(nt_status)));
 		}
-		
+
+		talloc_destroy(mem_ctx);
+
 		if (NT_STATUS_IS_OK(nt_status)) {
 			break;
 		}

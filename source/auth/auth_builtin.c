@@ -30,9 +30,10 @@
  **/
 
 static NTSTATUS check_guest_security(void *my_private_data, 
-			      const auth_usersupplied_info *user_info, 
-			      const auth_authsupplied_info *auth_info,
-			      auth_serversupplied_info **server_info)
+				     TALLOC_CTX *mem_ctx,
+				     const auth_usersupplied_info *user_info, 
+				     const auth_authsupplied_info *auth_info,
+				     auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 
@@ -73,6 +74,7 @@ BOOL auth_init_guest(auth_methods **auth_method)
  **/
 
 static NTSTATUS check_name_to_ntstatus_security(void *my_private_data,
+						TALLOC_CTX *mem_ctx,
 						const auth_usersupplied_info *user_info, 
 						const auth_authsupplied_info *auth_info,
 						auth_serversupplied_info **server_info)

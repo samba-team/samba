@@ -253,6 +253,7 @@ DATA_BLOB auth_get_challenge(auth_authsupplied_info *auth_info)
 	DATA_BLOB challenge = data_blob(NULL, 0);
 	char *challenge_set_by = NULL;
 	auth_methods *auth_method;
+	TALLOC_CTX *mem_ctx;
 
 	if (auth_info->challenge.length) {
 		DEBUG(5, ("auth_get_challenge: returning previous challenge (normal)\n"));
@@ -267,7 +268,12 @@ DATA_BLOB auth_get_challenge(auth_authsupplied_info *auth_info)
 				DEBUG(1, ("auth_get_challenge: CONFIGURATION ERROR: authenticaion method %s has already specified a challenge.  Challenge by %s ignored.\n", 
 					  challenge_set_by, auth_method->name));
 			} else {
-				challenge = auth_method->get_chal(&auth_method->private_data, auth_info);
+				mem_ctx = talloc_init_named("auth_get_challange for module %s", auth_method->name);
+				if (!mem_ctx) {
+					smb_panic("talloc_init_named() failed!");
+				}
+				
+				challenge = auth_method->get_chal(&auth_method->private_data, mem_ctx, auth_info);
 				if (challenge.length) {
 					DEBUG(5, ("auth_get_challenge: sucessfully got challenge from module %s\n", auth_method->name));
 					auth_info->challenge = challenge;
@@ -277,6 +283,7 @@ DATA_BLOB auth_get_challenge(auth_authsupplied_info *auth_info)
 					DEBUG(3, ("auth_get_challenge: getting challenge from authenticaion method %s FAILED.\n", 
 						  auth_method->name));
 				}
+				talloc_destroy(mem_ctx);
 			}
 		} else {
 			DEBUG(5, ("auth_get_challenge: module %s did not want to specify a challenge\n", auth_method->name));

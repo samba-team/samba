@@ -156,6 +156,7 @@ static BOOL check_hosts_equiv(struct passwd *pass)
 ****************************************************************************/
 
 static NTSTATUS check_hostsequiv_security(void *my_private_data, 
+					  TALLOC_CTX *mem_ctx,
 					  const auth_usersupplied_info *user_info, 
 					  const auth_authsupplied_info *auth_info,
 					  auth_serversupplied_info **server_info)
@@ -181,6 +182,7 @@ static NTSTATUS check_hostsequiv_security(void *my_private_data,
 ****************************************************************************/
 
 static NTSTATUS check_rhosts_security(void *my_private_data, 
+				      TALLOC_CTX *mem_ctx,
 				      const auth_usersupplied_info *user_info, 
 				      const auth_authsupplied_info *auth_info,
 				      auth_serversupplied_info **server_info)
