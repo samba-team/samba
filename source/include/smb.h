@@ -745,6 +745,7 @@ struct smb_passdb_ops
 	/*
 	 * Password database operations.
 	 */
+	uint32 (*getsamseqnum) (void);
 	void *(*startsmbpwent) (BOOL);
 	void (*endsmbpwent) (void *);
 	  SMB_BIG_UINT(*getsmbpwpos) (void *);

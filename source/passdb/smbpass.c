@@ -27,6 +27,20 @@ extern int DEBUGLEVEL;
 static char s_readbuf[1024];
 
 /***************************************************************
+ * sequence number 
+****************************************************************/
+
+static uint32 getsmbfileseqnum(void)
+{
+	time_t mod_time;
+	if (file_modified_date(lp_smb_passwd_file(), &mod_time))
+	{
+		return (uint32)mod_time;
+	}
+	return 0;
+}
+
+/***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer
  to ensure no modification outside this module.
 ****************************************************************/
@@ -935,6 +949,7 @@ Error was %s\n", pwd->unix_name, pfile2, strerror(errno)));
 
 
 static struct smb_passdb_ops file_ops = {
+  getsmbfileseqnum,
   startsmbfilepwent,
   endsmbfilepwent,
   getsmbfilepwpos,

@@ -110,9 +110,9 @@ BOOL file_unlock(int fd, int *plock_depth)
 
 
 /****************************************************************************
-checks if a file has changed since last read
+obtains file modified date.
 ****************************************************************************/
-BOOL file_modified(const char *filename, time_t *lastmodified)
+BOOL file_modified_date(const char *filename, time_t *lastmodified)
 {
 	SMB_STRUCT_STAT st;
 
@@ -123,14 +123,30 @@ BOOL file_modified(const char *filename, time_t *lastmodified)
 		return False;
 	}
 
-	if(st.st_mtime <= *lastmodified)
+	*lastmodified = st.st_mtime;
+	return True;
+}
+
+/****************************************************************************
+checks if a file has changed since last read
+****************************************************************************/
+BOOL file_modified(const char *filename, time_t *lastmodified)
+{
+	time_t mtime;
+
+	if (!file_modified_date(filename, &mtime))
+	{
+		return False;
+	}
+
+	if (mtime <= *lastmodified)
 	{
 		DEBUG(20, ("file_modified: %s not modified\n", filename));
 		return False;
 	}
 
 	DEBUG(20, ("file_modified: %s modified\n", filename));
-	*lastmodified = st.st_mtime;
+	*lastmodified = mtime;
 	return True;
 }
 

@@ -646,6 +646,7 @@ DOM_SID* add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
 BOOL do_file_lock(int fd, int waitsecs, int type);
 BOOL file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL file_unlock(int fd, int *plock_depth);
+BOOL file_modified_date(const char *filename, time_t *lastmodified);
 BOOL file_modified(const char *filename, time_t *lastmodified);
 void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified);
 SMB_OFF_T get_file_size(char *file_name);
@@ -2177,6 +2178,7 @@ BOOL pass_check(const char *_user, const char *_password,
 BOOL initialise_password_db(void);
 struct smb_passwd *iterate_getsmbpwuid(uid_t unix_uid);
 struct smb_passwd *iterate_getsmbpwnam(const char *name);
+uint32 getsamseqnum(void);
 void *startsmbpwent(BOOL update);
 void endsmbpwent(void *vp);
 SMB_BIG_UINT getsmbpwpos(void *vp);

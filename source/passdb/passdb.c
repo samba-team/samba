@@ -155,6 +155,15 @@ struct smb_passwd *iterate_getsmbpwnam(const char *name)
 }
 
 /***************************************************************
+ obtain sequence number for sam database
+****************************************************************/
+
+uint32 getsamseqnum(void)
+{
+  return pwdb_ops->getsamseqnum();
+}
+
+/***************************************************************
  Start to enumerate the smb or sam passwd list. Returns a void pointer
  to ensure no modification outside this module.
 

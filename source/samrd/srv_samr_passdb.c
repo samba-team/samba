@@ -2443,7 +2443,8 @@ uint32 _samr_query_dom_info(const POLICY_HND * domain_pol,
 			extern fstring global_sam_name;
 			extern pstring global_myname;
 			make_unk_info2(&(ctr->info.inf2), global_sam_name,
-				       global_myname);
+				       global_myname,
+				       getsamseqnum());
 			break;
 		}
 		case 0x01:

@@ -370,7 +370,9 @@ BOOL make_unk_info3(SAM_UNK_INFO_3 * u_3);
 BOOL make_unk_info6(SAM_UNK_INFO_6 * u_6);
 BOOL make_unk_info7(SAM_UNK_INFO_7 * u_7);
 BOOL make_unk_info12(SAM_UNK_INFO_12 * u_12);
-BOOL make_unk_info2(SAM_UNK_INFO_2 * u_2, char *domain, char *server);
+BOOL make_unk_info2(SAM_UNK_INFO_2 * u_2,
+			const char *domain, const char *server,
+			uint32 seq_num);
 BOOL make_unk_info1(SAM_UNK_INFO_1 * u_1);
 BOOL make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO * r_u,
 				uint16 switch_value, SAM_UNK_CTR * ctr,

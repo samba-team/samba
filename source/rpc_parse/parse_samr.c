@@ -581,7 +581,9 @@ static BOOL sam_io_unk_info12(char *desc, SAM_UNK_INFO_12 * u_12,
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-BOOL make_unk_info2(SAM_UNK_INFO_2 * u_2, char *domain, char *server)
+BOOL make_unk_info2(SAM_UNK_INFO_2 * u_2,
+			const char *domain, const char *server,
+			uint32 seq_num)
 {
 	int len_domain = strlen(domain);
 	int len_server = strlen(server);
@@ -597,7 +599,7 @@ BOOL make_unk_info2(SAM_UNK_INFO_2 * u_2, char *domain, char *server)
 	make_uni_hdr(&(u_2->hdr_domain), len_domain);
 	make_uni_hdr(&(u_2->hdr_server), len_server);
 
-	u_2->seq_num = 0x10000000;
+	u_2->seq_num = seq_num;
 	u_2->unknown_3 = 0x00000000;
 
 	u_2->unknown_4 = 0x00000001;
