@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "smb.h"
 
 /* This is our local master browser list database. */
 extern ubi_dlList lmb_browserlist[];
