@@ -1294,13 +1294,13 @@ BOOL net_io_user_info3(char *desc,  NET_USER_INFO_3 *usr, prs_struct *ps, int de
 	smb_io_unistr2("unistr2", &( usr->uni_logon_srv), usr->hdr_logon_srv.buffer, ps, depth); /* logon server unicode string */
 	smb_io_unistr2("unistr2", &( usr->uni_logon_dom), usr->hdr_logon_srv.buffer, ps, depth); /* logon domain unicode string */
 
-	smb_io_dom_sid2("", &(usr->dom_sid), ps, depth);           /* domain SID */
+	smb_io_dom_sid2("sid", &(usr->dom_sid), ps, depth);           /* domain SID */
 
 	SMB_ASSERT_ARRAY(usr->other_sids, usr->num_other_sids);
 
 	for (i = 0; i < usr->num_other_sids; i++)
 	{
-		smb_io_dom_sid2("", &(usr->other_sids[i]), ps, depth); /* other domain SIDs */
+		smb_io_dom_sid2("sids", &(usr->other_sids[i]), ps, depth); /* other domain SIDs */
 	}
 
 	prs_uint32("auth_resp   ", ps, depth, &usr->auth_resp); /* 1 - Authoritative response; 0 - Non-Auth? */

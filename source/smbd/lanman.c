@@ -2284,14 +2284,19 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	char *p = skip_string(UserName,1);
 	int uLevel = SVAL(p,0);
 	char *p2;
+
+	fstring nt_name;
+	fstring logon_path;
+	fstring full_name;
+	fstring home_dir;
+	fstring logon_srv;
+
 	vuser_key key = { conn->smbd_pid, vuid };
 
     /* get NIS home of a previously validated user - simeon */
     /* With share level security vuid will always be zero.
        Don't depend on vuser being non-null !!. JRA */
-    user_struct *vuser = get_valid_user_struct(&key);
-    if (vuser != NULL)
-      DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, vuser->name));
+    user_struct *vuser = NULL;
 
     *rparam_len = 6;
     *rparam = REALLOC(*rparam,*rparam_len);
@@ -2316,9 +2321,25 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 
 	if (strcmp(p2,str2) != 0)
 	{
-		vuid_free_user_struct(vuser);
 		return False;
 	}
+
+    vuser = get_valid_user_struct(&key);
+    if (vuser != NULL)
+    {
+      DEBUG(3,("  Username of UID %d is %s\n", (int)vuser->uid, vuser->name));
+    }
+    else
+    {
+    	return False;
+    }
+
+	unistr2_to_ascii(full_name, &vuser->usr.uni_full_name, sizeof(full_name)-1);
+	unistr2_to_ascii(home_dir, &vuser->usr.uni_home_dir, sizeof(home_dir)-1);
+	unistr2_to_ascii(nt_name, &vuser->usr.uni_user_name, sizeof(nt_name)-1);
+	unistr2_to_ascii(logon_path, &vuser->usr.uni_logon_script, sizeof(logon_path)-1);
+	fstrcpy(logon_srv, "\\\\");
+	unistr2_to_ascii(&logon_srv[2], &vuser->usr.uni_logon_srv, sizeof(logon_srv)-3);
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = REALLOC(*rdata,*rdata_len);
@@ -2330,7 +2351,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	p2 = p + usri11_end;
 
 	memset(p,0,21); 
-	fstrcpy(p+usri11_name,UserName); /* 21 bytes - user name */
+	fstrcpy(p+usri11_name,nt_name); /* 21 bytes - user name */
 
 	if (uLevel > 0)
 	{
@@ -2340,16 +2361,16 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 	if (uLevel >= 10)
 	{
 		SIVAL(p,usri11_comment,PTR_DIFF(p2,p)); /* comment */
-		pstrcpy(p2,"Comment");
+		pstrcpy(p2, "");
 		p2 = skip_string(p2,1);
 
 		SIVAL(p,usri11_usr_comment,PTR_DIFF(p2,p)); /* user_comment */
-		pstrcpy(p2,"UserComment");
+		pstrcpy(p2, "");
 		p2 = skip_string(p2,1);
 
 		/* EEK! the cifsrap.txt doesn't have this in!!!! */
 		SIVAL(p,usri11_full_name,PTR_DIFF(p2,p)); /* full name */
-		pstrcpy(p2,((vuser != NULL) ? vuser->real_name : UserName));
+		pstrcpy(p2, full_name);
 		p2 = skip_string(p2,1);
 	}
 
@@ -2359,22 +2380,22 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SIVAL(p,usri11_auth_flags,AF_OP_PRINT);		/* auth flags */
 		SIVALS(p,usri11_password_age,-1);		/* password age */
 		SIVAL(p,usri11_homedir,PTR_DIFF(p2,p)); /* home dir */
-		pstrcpy(p2, lp_logon_path(vuser));
+		pstrcpy(p2, home_dir);
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_parms,PTR_DIFF(p2,p)); /* parms */
 		pstrcpy(p2,"");
 		p2 = skip_string(p2,1);
 		SIVAL(p,usri11_last_logon,0);		/* last logon */
 		SIVAL(p,usri11_last_logoff,0);		/* last logoff */
-		SSVALS(p,usri11_bad_pw_count,-1);	/* bad pw counts */
-		SSVALS(p,usri11_num_logons,-1);		/* num logons */
+		SSVALS(p,usri11_bad_pw_count,vuser->usr.bad_pw_count);	/* bad pw counts */
+		SSVALS(p,usri11_num_logons,vuser->usr.logon_count);		/* num logons */
 		SIVAL(p,usri11_logon_server,PTR_DIFF(p2,p)); /* logon server */
-		pstrcpy(p2,"\\\\*");
+		pstrcpy(p2,logon_srv);
 		p2 = skip_string(p2,1);
 		SSVAL(p,usri11_country_code,0);		/* country code */
 
 		SIVAL(p,usri11_workstations,PTR_DIFF(p2,p)); /* workstations */
-		pstrcpy(p2,"");
+		pstrcpy(p2, "");
 		p2 = skip_string(p2,1);
 
 		SIVALS(p,usri11_max_storage,-1);		/* max storage */
@@ -2395,7 +2416,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		SSVAL(p,42,
 		conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
 		SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
-		pstrcpy(p2,lp_logon_path(vuser));
+		pstrcpy(p2,logon_path);
 		p2 = skip_string(p2,1);
 		SIVAL(p,48,PTR_DIFF(p2,*rdata)); /* comment */
 		*p2++ = 0;
@@ -2405,7 +2426,7 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 		{
 			SIVAL(p,60,0);		/* auth_flags */
 			SIVAL(p,64,PTR_DIFF(p2,*rdata)); /* full_name */
-   			pstrcpy(p2,((vuser != NULL) ? vuser->real_name : UserName));
+   			pstrcpy(p2, nt_name);
 			p2 = skip_string(p2,1);
 			SIVAL(p,68,0);		/* urs_comment */
 			SIVAL(p,72,PTR_DIFF(p2,*rdata)); /* parms */
@@ -2420,11 +2441,10 @@ static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param
 			SIVAL(p,98,PTR_DIFF(p2,*rdata)); /* logon_hours */
 			memset(p2,-1,21);
 			p2 += 21;
-			SSVALS(p,102,-1);	/* bad_pw_count */
-			SSVALS(p,104,-1);	/* num_logons */
+			SSVALS(p,102,vuser->usr.bad_pw_count);	/* bad_pw_count */
+			SSVALS(p,104,vuser->usr.logon_count);	/* num_logons */
 			SIVAL(p,106,PTR_DIFF(p2,*rdata)); /* logon_server */
-			pstrcpy(p2,"\\\\%L");
-			standard_sub_basic(p2);
+			pstrcpy(p2,logon_srv);
 			p2 = skip_string(p2,1);
 			SSVAL(p,110,49);	/* country_code */
 			SSVAL(p,112,860);	/* code page */
@@ -2501,8 +2521,13 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   int uLevel;
   struct pack_desc desc;
   char* name;
-  char* logon_script;
   vuser_key key = { conn->smbd_pid, vuid };
+    user_struct *vuser = get_valid_user_struct(&key);
+
+	if (vuser == NULL)
+	{
+		return False;
+	}
 
   uLevel = SVAL(p,0);
   name = p + 2;
@@ -2522,9 +2547,19 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   
   if (init_package(&desc,1,0))
   {
-    user_struct *vuser = get_valid_user_struct(&key);
+    fstring nt_name;
+    fstring logon_script;
+    fstring logon_srv;
+    fstring logon_dom;
+
+	unistr2_to_ascii(nt_name, &vuser->usr.uni_user_name, sizeof(nt_name)-1);
+	unistr2_to_ascii(logon_script, &vuser->usr.uni_logon_script, sizeof(logon_script)-1);
+	unistr2_to_ascii(logon_dom, &vuser->usr.uni_logon_dom, sizeof(logon_dom)-1);
+	fstrcpy(logon_srv, "\\\\");
+	unistr2_to_ascii(&logon_srv[2], &vuser->usr.uni_logon_srv, sizeof(logon_srv)-3);
+
     PACKI(&desc,"W",0);		/* code */
-    PACKS(&desc,"B21",name);	/* eff. name */
+    PACKS(&desc,"B21",nt_name);	/* eff. name */
     PACKS(&desc,"B","");		/* pad */
     PACKI(&desc,"W",
 	  conn->admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
@@ -2539,21 +2574,10 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
     PACKI(&desc,"D",0);		/* password can change */
     PACKI(&desc,"D",-1);		/* password must change */
     {
-      fstring mypath;
-      fstrcpy(mypath,"\\\\");
-      fstrcat(mypath,local_machine);
-      strupper(mypath);
-      PACKS(&desc,"z",mypath); /* computer */
+      PACKS(&desc,"z",logon_srv); /* computer */
     }
-    PACKS(&desc,"z",global_myworkgroup);/* domain */
-
-/* JHT - By calling lp_logon_script() and standard_sub() we have */
-/* made sure all macros are fully substituted and available */
-    logon_script = lp_logon_script(vuser);
-    standard_sub( conn, vuser, logon_script );
-	vuid_free_user_struct(vuser);
+    PACKS(&desc,"z",logon_dom);/* domain */
     PACKS(&desc,"z", logon_script);		/* script path */
-/* End of JHT mods */
 
     PACKI(&desc,"D",0x00000000);		/* reserved */
   }
@@ -2566,6 +2590,8 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   SSVAL(*rparam,4,desc.neededlen);
 
   DEBUG(4,("WWkstaUserLogon: errorcode %d\n",desc.errcode));
+  vuid_free_user_struct(vuser);
+
   return(True);
 }
 
