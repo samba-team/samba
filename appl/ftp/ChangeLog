@@ -1,3 +1,7 @@
+2002-08-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftp/ftp.c (command): clean up va_{start,end}ing (from NetBSD)
+
 2002-08-23  Assar Westerlund  <assar@kth.se>
 
 	* ftp/main.c: start using getarg
