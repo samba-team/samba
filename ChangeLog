@@ -1,3 +1,54 @@
+2002-04-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c (get_pa_etype_info): sort ETYPE-INFOs by
+	requested KDC-REQ etypes
+
+	* kdc/hpropd.c: constify
+
+	* kdc/hprop.c: constify
+
+	* kdc/string2key.c: constify
+
+	* kdc/kdc_locl.h: make port_str const
+
+	* kdc/config.c: constify
+
+	* lib/krb5/config_file.c: constify
+
+	* kdc/kstash.c: constify
+
+	* lib/krb5/verify_user.c: remove unnecessary cast
+
+	* lib/krb5/recvauth.c: constify
+
+	* lib/krb5/principal.c (krb5_parse_name): const qualify
+
+	* lib/krb5/mcache.c (mcc_get_name): constify return type
+
+	* lib/krb5/context.c (krb5_free_context): don't try to free the
+	ccache prefix
+
+	* lib/krb5/cache.c (krb5_cc_register): don't make a copy of the
+	prefix
+
+	* lib/krb5/krb5.h: constify some struct members
+
+	* lib/krb5/log.c: constify
+
+	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password): const
+	qualify
+
+	* lib/krb5/get_in_tkt.c (krb5_init_etype): constify
+
+	* lib/krb5/crypto.c: constify some
+
+	* lib/krb5/config_file.c: constify
+
+	* lib/krb5/aname_to_localname.c (krb5_aname_to_localname):
+	constify local variable
+
+	* lib/krb5/addr_families.c (ipv4_sockaddr2port): constify
+
 2002-04-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/crypto.c (krb5_crypto_init): check that the key size
