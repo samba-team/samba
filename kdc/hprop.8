@@ -34,13 +34,11 @@ propagate the KDC database
 .Op Fl D | Fl -decrypt
 .Op Fl E | Fl -encrypt
 .Op Fl n | Fl -stdout
-.Oo Fl p Ar integer \*(Ba Xo
-.Fl -port= Ns Ar integer Oc
-.Xc
 .Op Fl v | Fl -verbose
 .Op Fl -version
 .Op Fl h | Fl -help
-.Ar host ...
+.Ar host Ns Op :port
+...
 .Sh DESCRIPTION
 .Nm
 takes a principal database in a specified format and converts it into
