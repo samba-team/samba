@@ -1653,9 +1653,6 @@ FN_LOCAL_STRING(lp_lpresumecommand, szLpresumecommand)
 FN_LOCAL_STRING(lp_queuepausecommand, szQueuepausecommand)
 FN_LOCAL_STRING(lp_queueresumecommand, szQueueresumecommand)
 FN_LOCAL_STRING(lp_printername, szPrintername)
-#if 0
-FN_LOCAL_STRING(lp_driverfile, szDriverFile)
-#endif
 FN_LOCAL_STRING(lp_printerdriver, szPrinterDriver)
 FN_LOCAL_STRING(lp_hostsallow, szHostsallow)
 FN_LOCAL_STRING(lp_hostsdeny, szHostsdeny)
