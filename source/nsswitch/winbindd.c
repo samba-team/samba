@@ -6,6 +6,7 @@
    Copyright (C) by Tim Potter 2000-2002
    Copyright (C) Andrew Tridgell 2002
    Copyright (C) Jelmer Vernooij 2003
+   Copyright (C) Volker Lendecke 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -191,13 +192,34 @@ static void sighup_handler(int signum)
 	sys_select_signal();
 }
 
+static void child_died(pid_t pid)
+{
+	struct winbindd_cli_state *state;
+
+	for (state = winbindd_client_list(); state; state = state->next) {
+		if ((state->child != NULL) && (state->child->pid == pid)) {
+			state->child->pid = 0;
+			return;
+		}
+	}
+
+	idle_child_died(pid);
+}
+
+static int childpid_pipe[2];
+
 static void sigchld_handler(int signum)
 {
 	pid_t pid;
 	int status;
 
-	while ((pid = wait(&status)) != -1 || errno == EINTR) {
-		continue; /* Reap children */
+	DEBUG(10, ("Got SIGCHLD\n"));
+
+	while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+		/* During the pipe initialization we checked that PIPE_BUF
+		 * holds WINBINDD_MAX_SIMULANEOUS_CLIENTS*sizeof(pid_t). So we
+		 * can't block here. */
+		write(childpid_pipe[1], &pid, sizeof(pid));
 	}
 	sys_select_signal();
 }
@@ -216,10 +238,154 @@ static void msg_shutdown(int msg_type, pid_t src, void *buf, size_t len)
 	terminate();
 }
 
+static void dual_send(struct winbindd_cli_state *state)
+{
+	static int msgid;
+	BOOL need_netlogon_child;
+
+	msgid += 1;
+
+	state->msgid = msgid;
+	state->request.msgid = msgid;
+
+	switch(state->request.cmd) {
+	case WINBINDD_PAM_AUTH:
+	case WINBINDD_PAM_AUTH_CRAP:
+	case WINBINDD_CHECK_MACHACC:
+		need_netlogon_child = True;
+		break;
+	default:
+		need_netlogon_child = False;
+	}
+
+	if (state->child == NULL)
+		state->child = claim_child(need_netlogon_child);
+
+	if (state->child == NULL)
+		return;
+
+	state->child->to_write = sizeof(struct winbindd_request);
+}
+
+/* Dual daemon finished a request */
+static void msg_finished(int msg_type, pid_t src, void *buf, size_t len)
+{
+	struct winbindd_cli_state *state;
+	int *msgid;
+
+	DEBUG(5, ("Got finished message\n"));
+
+	if (len != sizeof(*msgid)) {
+		DEBUG(0, ("Wrong buffer size in message: %d\n", len));
+		return;
+	}
+
+	msgid = (int *)buf;
+
+	DEBUGADD(10, ("got msgid %d\n", *msgid));
+
+	for (state = winbindd_client_list(); state; state = state->next) {
+		if (state->msgid == *msgid)
+			break;
+	}
+
+	if (state == NULL) {
+		DEBUG(10, ("Discarding msgid %d\n", *msgid));
+		return;
+	}
+
+	if (!cache_retrieve_response(src, &state->response)) {
+		ZERO_STRUCT(state->response);
+		state->response.result = WINBINDD_ERROR;
+		goto done;
+	}
+
+	if (state->continuation != NULL)
+		state->response.result = state->continuation(state);
+
+	if ((state->child != NULL) &&
+	    (!state->outstanding_getpwent) &&
+	    (!state->outstanding_getgrent)) {
+		release_child(state->child);
+		state->child = NULL;
+	}
+
+ done:
+
+	state->read_buf_len = 0;
+	state->write_buf_len = sizeof(struct winbindd_response);
+}
+
 struct dispatch_table {
 	enum winbindd_cmd cmd;
 	enum winbindd_result (*fn)(struct winbindd_cli_state *state);
 	const char *winbindd_cmd_name;
+};
+
+static enum winbindd_result parent_setpwent(struct winbindd_cli_state *state)
+{
+	state->outstanding_getpwent = True;
+	return WINBINDD_DUAL;
+}
+
+static enum winbindd_result parent_getpwent(struct winbindd_cli_state *state)
+{
+	state->outstanding_getpwent = True;
+	return WINBINDD_DUAL;
+}
+
+static enum winbindd_result endpwent_cont(struct winbindd_cli_state *state)
+{
+	state->outstanding_getpwent = False;
+	return WINBINDD_OK;
+}
+
+static enum winbindd_result parent_endpwent(struct winbindd_cli_state *state)
+{
+	state->continuation = endpwent_cont;
+	return WINBINDD_DUAL;
+}
+
+static enum winbindd_result parent_setgrent(struct winbindd_cli_state *state)
+{
+	state->outstanding_getgrent = True;
+	return WINBINDD_DUAL;
+}
+
+static enum winbindd_result parent_getgrent(struct winbindd_cli_state *state)
+{
+	state->outstanding_getgrent = True;
+	return WINBINDD_DUAL;
+}
+
+static enum winbindd_result endgrent_cont(struct winbindd_cli_state *state)
+{
+	state->outstanding_getgrent = False;
+	return WINBINDD_OK;
+}
+
+static enum winbindd_result parent_endgrent(struct winbindd_cli_state *state)
+{
+	state->continuation = endgrent_cont;
+	return WINBINDD_DUAL;
+}
+
+static struct dispatch_table parent_dispatch_table[] = {
+	{ WINBINDD_PING, winbindd_ping, "PING" },
+	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version,
+	  "INTERFACE_VERSION" },
+	{ WINBINDD_SETPWENT, parent_setpwent, "SETPWENT" },
+	{ WINBINDD_ENDPWENT, parent_endpwent, "ENDPWENT" },
+	{ WINBINDD_GETPWENT, parent_getpwent, "GETPWENT" },
+	{ WINBINDD_SETGRENT, parent_setgrent, "SETGRENT" },
+	{ WINBINDD_ENDGRENT, parent_endgrent, "ENDGRENT" },
+	{ WINBINDD_GETGRENT, parent_getgrent, "GETGRENT" },
+	{ WINBINDD_DOMAIN_NAME, winbindd_domain_name, "DOMAIN_NAME" },
+	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
+	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },
+	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir,
+	  "WINBINDD_PRIV_PIPE_DIR" },
+	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
 };
 
 static struct dispatch_table dispatch_table[] = {
@@ -301,39 +467,6 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
 };
 
-static void process_request(struct winbindd_cli_state *state)
-{
-	struct dispatch_table *table = dispatch_table;
-
-	/* Free response data - we may be interrupted and receive another
-	   command before being able to send this data off. */
-
-	SAFE_FREE(state->response.extra_data);  
-
-	ZERO_STRUCT(state->response);
-
-	state->response.result = WINBINDD_ERROR;
-	state->response.length = sizeof(struct winbindd_response);
-
-	/* Process command */
-
-	for (table = dispatch_table; table->fn; table++) {
-		if (state->request.cmd == table->cmd) {
-			DEBUG(10,("process_request: request fn %s\n", table->winbindd_cmd_name ));
-			state->response.result = table->fn(state);
-			break;
-		}
-	}
-
-	if (!table->fn)
-		DEBUG(10,("process_request: unknown request fn number %d\n", (int)state->request.cmd ));
-
-	/* In case extra data pointer is NULL */
-
-	if (!state->response.extra_data)
-		state->response.length = sizeof(struct winbindd_response);
-}
-
 /* Process a new connection by adding it to the client connection list */
 
 static void new_connection(int listen_sock, BOOL privileged)
@@ -378,29 +511,36 @@ static void new_connection(int listen_sock, BOOL privileged)
 
 static void remove_client(struct winbindd_cli_state *state)
 {
-	/* It's a dead client - hold a funeral */
-	
-	if (state != NULL) {
-		
-		/* Close socket */
-		
-		close(state->sock);
-		
-		/* Free any getent state */
-		
-		free_getent_state(state->getpwent_state);
-		free_getent_state(state->getgrent_state);
-		
-		/* We may have some extra data that was not freed if the
-		   client was killed unexpectedly */
+	if (state == NULL)
+		return;
 
-		SAFE_FREE(state->response.extra_data);
+	/* It's a dead client - hold a funeral */
+
+	/* Close socket */
 		
-		/* Remove from list and free */
+	close(state->sock);
 		
-		winbindd_remove_client(state);
-		SAFE_FREE(state);
+	/* Free any getent state */
+		
+	free_getent_state(state->getpwent_state);
+	free_getent_state(state->getgrent_state);
+		
+	/* We may have some extra data that was not freed if the
+	   client was killed unexpectedly */
+
+	SAFE_FREE(state->response.extra_data);
+
+	if (state->child != NULL) {
+		message_send_pid(state->child->pid, MSG_WINBIND_FORGET_STATE,
+				 NULL, 0, False);
+		release_child(state->child);
+		state->child = NULL;
 	}
+		
+	/* Remove from list and free */
+		
+	winbindd_remove_client(state);
+	SAFE_FREE(state);
 }
 
 
@@ -437,6 +577,8 @@ static BOOL remove_idle_client(void)
 
 void winbind_process_packet(struct winbindd_cli_state *state)
 {
+	struct dispatch_table *table = dispatch_table;
+
 	/* Process request */
 	
 	/* Ensure null termination of entire request */
@@ -444,17 +586,66 @@ void winbind_process_packet(struct winbindd_cli_state *state)
 
 	state->pid = state->request.pid;
 	
-	process_request(state);
+	/* Free response data - we may be interrupted and receive another
+	   command before being able to send this data off. */
+
+	SAFE_FREE(state->response.extra_data);  
+	ZERO_STRUCT(state->response);
+
+	state->response.length = sizeof(struct winbindd_response);
+
+	/* Process command */
+
+	if (opt_dual_daemon) {
+
+		/* In the parent see if we can find non-blocking versions of
+		 * the request */
+
+		state->response.result = WINBINDD_DUAL;
+
+		for (table = parent_dispatch_table; table->fn != NULL;
+		     table++)
+		{
+			if (state->request.cmd == table->cmd) {
+				state->response.result = table->fn(state);
+				break;
+			}
+		}
+
+		if (state->response.result == WINBINDD_DUAL) {
+			dual_send(state);
+			return;
+		}
+
+		goto done;
+	} 
+
+	state->response.result = WINBINDD_ERROR;
+
+	for (table = dispatch_table; table->fn; table++) {
+		if (state->request.cmd == table->cmd) {
+			DEBUG(10,("process_request: request fn %s\n",
+				  table->winbindd_cmd_name ));
+			state->response.result = table->fn(state);
+			break;
+		}
+	}
+
+	if (!table->fn)
+		DEBUG(10,("process_request: unknown request fn number %d\n",
+			  (int)state->request.cmd ));
+
+	/* In case extra data pointer is NULL */
+
+ done:
+
+	if (!state->response.extra_data)
+		state->response.length = sizeof(struct winbindd_response);
 
 	/* Update client state */
 	
 	state->read_buf_len = 0;
 	state->write_buf_len = sizeof(struct winbindd_response);
-
-	/* we might need to send it to the dual daemon */
-	if (opt_dual_daemon) {
-		dual_send_request(state);
-	}
 }
 
 /* Read some data from a client connection */
@@ -621,12 +812,11 @@ static void process_loop(void)
 		FD_SET(listen_sock, &r_fds);
 		FD_SET(listen_priv_sock, &r_fds);
 
+		FD_SET(childpid_pipe[0], &r_fds);
+		maxfd = MAX(childpid_pipe[0], maxfd);
+
 		timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 		timeout.tv_usec = 0;
-
-		if (opt_dual_daemon) {
-			maxfd = dual_select_setup(&w_fds, maxfd);
-		}
 
 		/* Set up client readers and writers */
 
@@ -647,18 +837,33 @@ static void process_loop(void)
 
 			/* Select requires we know the highest fd used */
 
-			if (state->sock > maxfd)
-				maxfd = state->sock;
-
 			/* Add fd for reading */
 
-			if (state->read_buf_len != sizeof(state->request))
+			if (state->read_buf_len != sizeof(state->request)) {
 				FD_SET(state->sock, &r_fds);
+				maxfd = MAX(state->sock, maxfd);
+			}
 
 			/* Add fd for writing */
 
-			if (state->write_buf_len)
+			if (state->write_buf_len) {
 				FD_SET(state->sock, &w_fds);
+				maxfd = MAX(state->sock, maxfd);
+			}
+
+			/* Find a child for a pending request */
+
+			if ((state->response.result == WINBINDD_DUAL) &&
+			    (state->child == NULL))
+				dual_send(state);
+
+			/* Add child fd for writing */
+
+			if ((state->child != NULL) &&
+			    (state->child->to_write > 0)) {
+				FD_SET(state->child->fd, &w_fds);
+				maxfd = MAX(state->child->fd, maxfd);
+			}
 
 			state = state->next;
 		}
@@ -681,10 +886,6 @@ static void process_loop(void)
 		/* Create a new connection if listen_sock readable */
 
 		if (selret > 0) {
-
-			if (opt_dual_daemon) {
-				dual_select(&w_fds);
-			}
 
 			if (FD_ISSET(listen_sock, &r_fds)) {
 				while (winbindd_num_clients() > WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
@@ -713,6 +914,18 @@ static void process_loop(void)
 				/* new, privileged connection */
 				new_connection(listen_priv_sock, True);
 			}
+
+			if (FD_ISSET(childpid_pipe[0], &r_fds)) {
+				/* A child died, get the pid the signal
+				 * handler wrote into the pipe */
+				pid_t child;
+				if (read(childpid_pipe[0], &child, sizeof(child)) !=
+				    sizeof(child)) {
+					smb_panic("Could not read pid of dead child\n");
+				}
+
+				child_died(child);
+			}
             
 			/* Process activity on client connections */
             
@@ -723,6 +936,10 @@ static void process_loop(void)
                 
 				if (FD_ISSET(state->sock, &w_fds))
 					client_write(state);
+
+				if ((state->child != NULL) &&
+				    FD_ISSET(state->child->fd, &w_fds))
+					child_write(state);
 			}
                 
 			for (state = winbindd_client_list(); state; 
@@ -759,6 +976,8 @@ static void process_loop(void)
                     
 					if (state->read_buf_len == 
 					    sizeof(state->request)) {
+						state->request.flags &= ~WBFLAG_IS_PRIVILEGED;
+
 						winbind_process_packet(state);
 						winbindd_demote_client(state);
 						goto again;
@@ -940,8 +1159,24 @@ int main(int argc, char **argv)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
+	SMB_ASSERT(PIPE_BUF >=
+		   (WINBINDD_MAX_SIMULTANEOUS_CLIENTS * sizeof(pid_t)));
+
+	if (pipe(childpid_pipe) < 0)
+		smb_panic("Could not create childpid_pipe\n");
+
+	/* See lib/select.c for an explanatory comment on the following */
+
+	if(set_blocking(childpid_pipe[0],0)==-1)
+		smb_panic("childpid_pipe[0]: O_NONBLOCK failed.\n");
+	if(set_blocking(childpid_pipe[1],0)==-1)
+		smb_panic("childpid_pipe[1]: O_NONBLOCK failed.\n");
+
 	if (opt_dual_daemon) {
-		do_dual_daemon();
+		if (!init_children()) {
+			DEBUG(0,("Could not init children\n"));
+			exit(1);
+		}
 	}
 
 	if (opt_ldap_proxy) {
@@ -959,6 +1194,7 @@ int main(int argc, char **argv)
 	   as to SIGHUP signal */
 	message_register(MSG_SMB_CONF_UPDATED, msg_reload_services);
 	message_register(MSG_SHUTDOWN, msg_shutdown);
+	message_register(MSG_WINBIND_FINISHED, msg_finished);
 	
 	poptFreeContext(pc);
 

@@ -160,6 +160,9 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_AFS_TOKEN            0x0100
 #define WBFLAG_PAM_NT_STATUS_SQUASH     0x0200
 
+/* This is a flag that can only be sent from parent to child */
+#define WBFLAG_IS_PRIVILEGED            0x0400
+
 /* Winbind request structure */
 
 struct winbindd_request {
@@ -168,6 +171,7 @@ struct winbindd_request {
 	pid_t pid;               /* pid of calling process */
 	uint32 flags;            /* flags relavant to a given request */
 	fstring domain_name;	/* name of domain for which the request applies */
+	int msgid;
 
 	union {
 		fstring winsreq;     /* WINS request */
@@ -217,6 +221,7 @@ struct winbindd_request {
 
 enum winbindd_result {
 	WINBINDD_ERROR,
+	WINBINDD_DUAL,
 	WINBINDD_OK
 };
 

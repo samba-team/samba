@@ -34,6 +34,13 @@
 
 /* Client state structure */
 
+struct winbindd_child {
+	struct winbindd_child *next, *prev;
+	int fd;
+	pid_t pid;
+	int to_write;
+};
+
 struct winbindd_cli_state {
 	struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
 	int sock;                                 /* Open socket from client */
@@ -43,6 +50,15 @@ struct winbindd_cli_state {
 	BOOL write_extra_data;                    /* Write extra_data field */
 	time_t last_access;                       /* Time of last access (read or write) */
 	BOOL privileged;                           /* Is the client 'privileged' */
+
+	struct winbindd_child *child; /* Child process handling our stateful
+				       * requests */
+
+	BOOL outstanding_getpwent, outstanding_getgrent;
+
+	int msgid;		/* Expecting this msgid */
+	enum winbindd_result (*continuation)(struct winbindd_cli_state *state);
+	void *continuation_private;
 
 	struct winbindd_request request;          /* Request from client */
 	struct winbindd_response response;        /* Respose to client */

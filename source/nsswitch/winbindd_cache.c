@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Gerald Carter   2003
+   Copyright (C) Volker Lendecke 2004
    
    
    This program is free software; you can redistribute it and/or modify
@@ -1393,3 +1394,112 @@ struct winbindd_methods cache_methods = {
 	domain_sid,
 	alternate_name
 };
+
+static BOOL init_wcache(void)
+{
+	if (wcache == NULL) {
+		wcache = smb_xmalloc(sizeof(*wcache));
+		ZERO_STRUCTP(wcache);
+	}
+
+	if (wcache->tdb != NULL)
+		return True;
+
+	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
+				   TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0600);
+
+	if (wcache->tdb == NULL) {
+		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
+		return False;
+	}
+
+	return True;
+}
+
+void cache_store_response(pid_t pid, struct winbindd_response *response)
+{
+	TDB_DATA key, data;
+	fstring key_str;
+
+	if (!init_wcache())
+		return;
+
+	fstr_sprintf(key_str, "DR/%d", pid);
+	key.dptr = key_str;
+	key.dsize = strlen(key_str);
+	data.dptr = (void *)response;
+	data.dsize = sizeof(*response);
+	if (tdb_store(wcache->tdb, key, data, TDB_REPLACE) == -1)
+		return;
+
+	if (response->length == sizeof(*response))
+		return;
+
+	/* There's extra data */
+
+	fstr_sprintf(key_str, "DE/%d", pid);
+	key.dptr = key_str;
+	key.dsize = strlen(key_str);
+	data.dptr = response->extra_data;
+	data.dsize = response->length - sizeof(*response);
+	if (tdb_store(wcache->tdb, key, data, TDB_REPLACE) == 0)
+		return;
+
+	/* We could not store the extra data, make sure the tdb does not
+	 * contain a main record with wrong dangling extra data */
+
+	fstr_sprintf(key_str, "DR/%d", pid);
+	key.dptr = key_str;
+	key.dsize = strlen(key_str);
+	tdb_delete(wcache->tdb, key);
+
+	return;
+}
+
+BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
+{
+	TDB_DATA key, data;
+	fstring key_str;
+
+	if (!init_wcache())
+		return False;
+
+	fstr_sprintf(key_str, "DR/%d", pid);
+	key.dptr = key_str;
+	key.dsize = strlen(key_str);
+
+	data = tdb_fetch(wcache->tdb, key);
+
+	if (data.dptr == NULL)
+		return False;
+
+	if (data.dsize != sizeof(*response))
+		return False;
+
+	memcpy(response, data.dptr, data.dsize);
+	SAFE_FREE(data.dptr);
+
+	if (response->length == sizeof(*response)) {
+		response->extra_data = NULL;
+		return True;
+	}
+
+	/* There's extra data */
+
+	fstr_sprintf(key_str, "DE/%d", pid);
+	key.dptr = key_str;
+	key.dsize = strlen(key_str);
+
+	data = tdb_fetch(wcache->tdb, key);
+
+	if (data.dptr == NULL)
+		return False;
+
+	if (data.dsize != (response->length - sizeof(*response))) {
+		SAFE_FREE(data.dptr);
+		return False;
+	}
+
+	response->extra_data = data.dptr;
+	return True;
+}

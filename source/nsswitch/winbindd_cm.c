@@ -166,6 +166,11 @@ static BOOL get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	fstring tmp;
 	char *p;
 
+	/* Hmmmm. We can only open one connection to the NETLOGON pipe at the
+	 * moment.... */
+
+	return False;
+
 	if (IS_DC)
 		return False;
 
