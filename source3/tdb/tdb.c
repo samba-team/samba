@@ -1048,6 +1048,12 @@ static int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 }
 
 /* find an entry in the database given a key */
+/* If an entry doesn't exist tdb_err will be set to
+ * TDB_ERR_NOEXIST. If a key has no data attached
+ * tdb_err will not be set. Both will return a
+ * zero pptr and zero dsize.
+ */
+
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 {
 	tdb_off rec_ptr;
@@ -1058,8 +1064,11 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 	if (!(rec_ptr = tdb_find_lock(tdb,key,F_RDLCK,&rec)))
 		return tdb_null;
 
-	ret.dptr = tdb_alloc_read(tdb, rec_ptr + sizeof(rec) + rec.key_len,
-				  rec.data_len);
+	if (rec.data_len)
+		ret.dptr = tdb_alloc_read(tdb, rec_ptr + sizeof(rec) + rec.key_len,
+					  rec.data_len);
+	else
+		ret.dptr = NULL;
 	ret.dsize = rec.data_len;
 	tdb_unlock(tdb, BUCKET(rec.full_hash), F_RDLCK);
 	return ret;
