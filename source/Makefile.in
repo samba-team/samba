@@ -21,9 +21,6 @@ VPATH=@srcdir@
 srcdir=@srcdir@
 SHELL=/bin/sh
 
-.SUFFIXES:
-.SUFFIXES: .c .o
-
 BASEDIR=$(prefix)/samba
 BINDIR = $(BASEDIR)/bin
 SBINDIR = $(BASEDIR)/bin
@@ -190,6 +187,14 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
 #             rpcclient/cmd_netlogon.o \
 #             rpcclient/cmd_srvsvc.o
 
+SMBWRAPPER_OBJ = smbwrapper/open.o smbwrapper/stat.o \
+		smbwrapper/smbw.o smbwrapper/fstat.o smbwrapper/read.o \
+		smbwrapper/lstat.o smbwrapper/close.o smbwrapper/getdents.o \
+		smbwrapper/fcntl.o smbwrapper/access.o smbwrapper/chdir.o \
+		smbwrapper/write.o \
+		$(LIBSMB_OBJ) $(PARAM_OBJ) \
+                $(UBIQX_OBJ) $(LIB_OBJ)
+
 CLIENT_OBJ = client/client.o client/clientutil.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -210,6 +215,8 @@ SMBTORTURE_OBJ = utils/torture.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) $(RPCCLIENT_OBJ)
 
+PICOBJS = $(SMBWRAPPER_OBJ:%.o=%.p)
+
 ######################################################################
 # now the rules...
 ######################################################################
@@ -217,7 +224,7 @@ PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) $(RPCCLIENT_OBJ)
 all : CHECK $(SPROGS) $(PROGS) 
 
 .SUFFIXES:
-.SUFFIXES: .c .o .h
+.SUFFIXES: .c .o .h .p
 
 CHECK:
 	@echo "Using FLAGS = $(FLAGS)"
@@ -240,6 +247,16 @@ CHECK:
 	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
 # the line above is for atomatic dependency tracking
 # it will only work with GNU make, gcc and --enable-maintainer-mode
+
+
+.c.p: @MAINT@ .deps/.dummy obj-dirs
+	@echo Compiling $*.c with -fpic
+	@dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` && \
+	   if test ! -d "$$dir"; then \
+	     echo mkdir "$$dir" && mkdir "$$dir" || true; \
+	   else true; fi
+	@$(CC) -I. -I$(srcdir) $(FLAGS) -fpic -c $< -o $@ \
+	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
 
 MKDIR_BIN = if test ! -d bin; then echo mkdir bin && mkdir bin || true; else true; fi
 
@@ -328,6 +345,9 @@ bin/smbtorture: $(SMBTORTURE_OBJ)
 	@$(MKDIR_BIN)
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
 
+smbwrapper/smbwrapper.so: $(PICOBJS)
+	@echo Linking $@
+	@$(LD) -shared -o $@ $(PICOBJS)
 
 install: installbin installman installscripts installcp installswat
 
