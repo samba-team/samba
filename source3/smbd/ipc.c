@@ -51,7 +51,6 @@ extern fstring global_myworkgroup;
 #define NERR_JobNotFound (NERR_BASE+51)
 #define NERR_DestNotFound (NERR_BASE+52)
 #define ERROR_INVALID_LEVEL 124
-#define ERROR_MORE_DATA 234
 
 #define ACCESS_READ 0x01
 #define ACCESS_WRITE 0x02
@@ -332,7 +331,7 @@ static BOOL init_package(struct pack_desc* p, int count, int subcount)
   if (i > n) {
     p->neededlen = i;
     i = n = 0;
-    p->errcode = ERROR_MORE_DATA;
+    p->errcode = ERRmoredata;
   }
   else
     p->errcode = NERR_Success;
@@ -435,7 +434,7 @@ va_dcl
       stringused = stringneeded;
       if (stringused > p->stringlen) {
 	stringused = (is_string ? p->stringlen : 0);
-	if (p->errcode == NERR_Success) p->errcode = ERROR_MORE_DATA;
+	if (p->errcode == NERR_Success) p->errcode = ERRmoredata;
       }
       if (!stringused)
 	SIVAL(p->structbuf,0,0);
@@ -457,7 +456,7 @@ va_dcl
     p->usedlen += needed;
   }
   else {
-    if (p->errcode == NERR_Success) p->errcode = ERROR_MORE_DATA;
+    if (p->errcode == NERR_Success) p->errcode = ERRmoredata;
   }
   return 1;
 }
@@ -1291,7 +1290,7 @@ static BOOL api_RNetServerEnum(int cnum, uint16 vuid, char *param, char *data,
   
   *rparam_len = 8;
   *rparam = REALLOC(*rparam,*rparam_len);
-  SSVAL(*rparam,0,(missed == 0 ? NERR_Success : ERROR_MORE_DATA));
+  SSVAL(*rparam,0,(missed == 0 ? NERR_Success : ERRmoredata));
   SSVAL(*rparam,2,0);
   SSVAL(*rparam,4,counted);
   SSVAL(*rparam,6,counted+missed);
@@ -1542,7 +1541,7 @@ static BOOL api_RNetShareEnum(int cnum,uint16 vuid, char *param,char *data,
   
   *rparam_len = 8;
   *rparam = REALLOC(*rparam,*rparam_len);
-  SSVAL(*rparam,0,missed ? ERROR_MORE_DATA : NERR_Success);
+  SSVAL(*rparam,0,missed ? ERRmoredata : NERR_Success);
   SSVAL(*rparam,2,0);
   SSVAL(*rparam,4,counted);
   SSVAL(*rparam,6,total);

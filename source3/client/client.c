@@ -2948,64 +2948,67 @@ static BOOL browse_host(BOOL sort)
 
   if (cli_call_api(PIPE_LANMAN, 0,PTR_DIFF(p,param),0, 0,
              1024, BUFFER_SIZE,
-               &rprcnt,&rdrcnt,
-	       param,NULL, NULL,
-	       &rparam,&rdata))
-    {
-      int res = SVAL(rparam,0);
-      int converter=SVAL(rparam,2);
-      int i;
-      BOOL long_share_name=False;
+             &rprcnt,&rdrcnt,
+             param,NULL, NULL,
+             &rparam,&rdata))
+  {
+    int res = SVAL(rparam,0);
+    int converter=SVAL(rparam,2);
+    int i;
+    BOOL long_share_name=False;
       
-      if (res == 0)
-	{
-	  count=SVAL(rparam,4);
-	  p = rdata;
+    if (res == 0 || res == ERRmoredata)
+    {
+      count=SVAL(rparam,4);
+      p = rdata;
 
-	  if (count > 0)
-	    {
-	      printf("\n\tSharename      Type      Comment\n");
-	      printf("\t---------      ----      -------\n");
-	    }
+      if (count > 0)
+      {
+        printf("\n\tSharename      Type      Comment\n");
+        printf("\t---------      ----      -------\n");
+      }
 
-	  if (sort)
-	    qsort(p,count,20,QSORT_CAST StrCaseCmp);
+      if (sort)
+        qsort(p,count,20,QSORT_CAST StrCaseCmp);
 
-	  for (i=0;i<count;i++)
-	    {
-	      char *sname = p;
-	      int type = SVAL(p,14);
-	      int comment_offset = IVAL(p,16) & 0xFFFF;
-	      fstring typestr;
-	      *typestr=0;
+      for (i=0;i<count;i++)
+      {
+        char *sname = p;
+        int type = SVAL(p,14);
+        int comment_offset = IVAL(p,16) & 0xFFFF;
+        fstring typestr;
+        *typestr=0;
 
-	      switch (type)
-		{
-		case STYPE_DISKTREE:
-		  fstrcpy(typestr,"Disk"); break;
-		case STYPE_PRINTQ:
-		  fstrcpy(typestr,"Printer"); break;	      
-		case STYPE_DEVICE:
-		  fstrcpy(typestr,"Device"); break;
-		case STYPE_IPC:
-		  fstrcpy(typestr,"IPC"); break;      
-		}
+        switch (type)
+        {
+          case STYPE_DISKTREE:
+            fstrcpy(typestr,"Disk"); break;
+          case STYPE_PRINTQ:
+            fstrcpy(typestr,"Printer"); break;	      
+          case STYPE_DEVICE:
+            fstrcpy(typestr,"Device"); break;
+          case STYPE_IPC:
+            fstrcpy(typestr,"IPC"); break;      
+        }
 
-	      printf("\t%-15.15s%-10.10s%s\n",
-		     sname,
-		     typestr,
-		     comment_offset?rdata+comment_offset-converter:"");
+        printf("\t%-15.15s%-10.10s%s\n",
+               sname, typestr,
+               comment_offset?rdata+comment_offset-converter:"");
 	  
-	      if (strlen(sname)>8) long_share_name=True;
+        if (strlen(sname)>8) long_share_name=True;
 	  
-	      p += 20;
-	    }
+        p += 20;
+      }
 
-	  if (long_share_name) {
-	    printf("\nNOTE: There were share names longer than 8 chars.\nOn older clients these may not be accessible or may give browsing errors\n");
-	  }
-	}
+      if (long_share_name) {
+        printf("\nNOTE: There were share names longer than 8 chars.\n\
+On older clients these may not be accessible or may give browsing errors\n");
+      }
+
+      if(res == ERRmoredata)
+        printf("\nNOTE: More data was available, the list was truncated.\n");
     }
+  }
   
   if (rparam) free(rparam);
   if (rdata) free(rdata);
@@ -3115,36 +3118,38 @@ static BOOL list_servers(char *wk_grp)
 
   if (cli_call_api(PIPE_LANMAN, 0,PTR_DIFF(p+4,param),0, 0,
            8, BUFFER_SIZE - SAFETY_MARGIN,
-	       &rprcnt,&rdrcnt,
-	       param,NULL, NULL,
-	       &rparam,&rdata))
-    {
-      int res = SVAL(rparam,0);
-      int converter=SVAL(rparam,2);
-      int i;
+           &rprcnt,&rdrcnt,
+           param,NULL, NULL,
+           &rparam,&rdata))
+  {
+    int res = SVAL(rparam,0);
+    int converter=SVAL(rparam,2);
+    int i;
 
-      if (res == 0) {	
-	char *p2 = rdata;
-	count=SVAL(rparam,4);
+    if (res == 0 || res == ERRmoredata) {	
+      char *p2 = rdata;
+      count=SVAL(rparam,4);
 
-	if (count > 0) {
-	  printf("\n\nThis machine has a browse list:\n");
-	  printf("\n\tServer               Comment\n");
-	  printf("\t---------            -------\n");
-	}
-	
-	for (i=0;i<count;i++) {
-	  char *sname = p2;
-	  int comment_offset = IVAL(p2,22) & 0xFFFF;
-	  printf("\t%-16.16s     %s\n",
-		 sname,
-		 comment_offset?rdata+comment_offset-converter:"");
-
-	  ok=True;
-	  p2 += 26;
-	}
+      if (count > 0) {
+        printf("\n\nThis machine has a browse list:\n");
+        printf("\n\tServer               Comment\n");
+        printf("\t---------            -------\n");
       }
+	
+      for (i=0;i<count;i++) {
+        char *sname = p2;
+        int comment_offset = IVAL(p2,22) & 0xFFFF;
+        printf("\t%-16.16s     %s\n", sname,
+               comment_offset?rdata+comment_offset-converter:"");
+
+        ok=True;
+        p2 += 26;
+      }
+
+      if(res == ERRmoredata)
+        printf("\nNOTE: More data was available, the list was truncated.\n");
     }
+  }
 
   if (rparam) {free(rparam); rparam = NULL;}
   if (rdata) {free(rdata); rdata = NULL;}
@@ -3154,36 +3159,38 @@ static BOOL list_servers(char *wk_grp)
 
   if (cli_call_api(PIPE_LANMAN, 0,PTR_DIFF(p+4,param),0, 0,
            8, BUFFER_SIZE - SAFETY_MARGIN,
-	       &rprcnt,&rdrcnt,
-	       param,NULL, NULL,
-	       &rparam,&rdata))
-    {
-      int res = SVAL(rparam,0);
-      int converter=SVAL(rparam,2);
-      int i;
+           &rprcnt,&rdrcnt,
+           param,NULL, NULL,
+           &rparam,&rdata))
+  {
+    int res = SVAL(rparam,0);
+    int converter=SVAL(rparam,2);
+    int i;
 
-      if (res == 0) {
-	char *p2 = rdata;
-	count=SVAL(rparam,4);
+    if (res == 0 || res == ERRmoredata) {
+      char *p2 = rdata;
+      count=SVAL(rparam,4);
 
-	if (count > 0) {
-	  printf("\n\nThis machine has a workgroup list:\n");
-	  printf("\n\tWorkgroup            Master\n");
-	  printf("\t---------            -------\n");
-	}
-	
-	for (i=0;i<count;i++) {
-	  char *sname = p2;
-	  int comment_offset = IVAL(p2,22) & 0xFFFF;
-	  printf("\t%-16.16s     %s\n",
-		 sname,
-		 comment_offset?rdata+comment_offset-converter:"");
-	  
-	  ok=True;
-	  p2 += 26;
-	}
+      if (count > 0) {
+        printf("\n\nThis machine has a workgroup list:\n");
+        printf("\n\tWorkgroup            Master\n");
+        printf("\t---------            -------\n");
       }
+	
+      for (i=0;i<count;i++) {
+        char *sname = p2;
+        int comment_offset = IVAL(p2,22) & 0xFFFF;
+        printf("\t%-16.16s     %s\n", sname,
+               comment_offset?rdata+comment_offset-converter:"");
+	  
+        ok=True;
+        p2 += 26;
+      }
+
+      if(res == ERRmoredata)
+        printf("\nNOTE: More data was available, the list was truncated.\n");
     }
+  }
 
   if (rparam) free(rparam);
   if (rdata) free(rdata);
