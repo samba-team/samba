@@ -98,6 +98,20 @@ static smb_iconv_t get_conv_handle(charset_t from, charset_t to)
 	n2 = charset_name(to);
 
 	conv_handles[from][to] = smb_iconv_open(n2,n1);
+	
+	if (conv_handles[from][to] == (smb_iconv_t)-1) {
+		if ((from == CH_DOS || to == CH_DOS) &&
+		    strcasecmp(charset_name(CH_DOS), "ASCII") != 0) {
+			DEBUG(0,("dos charset '%s' unavailable - using ASCII\n",
+				 charset_name(CH_DOS)));
+			lp_set_cmdline("dos charset", "ASCII");
+
+			n1 = charset_name(from);
+			n2 = charset_name(to);
+			
+			conv_handles[from][to] = smb_iconv_open(n2,n1);
+		}
+	}
 
 	return conv_handles[from][to];
 }
