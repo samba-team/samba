@@ -763,7 +763,8 @@ static BOOL user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 		return True;
 	else
 		fsp = open_file_shared1(conn, name, pst, FILE_WRITE_ATTRIBUTES, SET_DENY_MODE(DENY_NONE),
-			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
+			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, INTERNAL_OPEN_ONLY,
+			&access_mode, &smb_action);
 
 	if (!fsp)
 		return False;

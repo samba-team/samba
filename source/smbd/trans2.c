@@ -627,6 +627,10 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		oplock_request, &rmode,&smb_action);
       
 	if (!fsp) {
+		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
+			/* We have re-scheduled this call. */
+			return -1;
+		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 	}
 
@@ -3205,7 +3209,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 									SET_OPEN_MODE(DOS_OPEN_RDWR),
 									(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 									FILE_ATTRIBUTE_NORMAL,
-									0, &access_mode, &action);
+									INTERNAL_OPEN_ONLY, &access_mode, &action);
  
 					if (new_fsp == NULL)
 						return(UNIXERROR(ERRDOS,ERRbadpath));
@@ -3655,7 +3659,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 						SET_OPEN_MODE(DOS_OPEN_RDWR),
 						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 						FILE_ATTRIBUTE_NORMAL,
-						0, &access_mode, &action);
+						INTERNAL_OPEN_ONLY, &access_mode, &action);
 	
 			if (new_fsp == NULL)
 				return(UNIXERROR(ERRDOS,ERRbadpath));

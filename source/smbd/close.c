@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    file closing
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 1992-2004.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -105,6 +106,32 @@ static int close_filestruct(files_struct *fsp)
 }    
 
 /****************************************************************************
+ If any deferred opens are waiting on this close, notify them.
+****************************************************************************/
+
+static void notify_deferred_opens(files_struct *fsp)
+{
+	deferred_open_entry *de_array = NULL;
+	int num_de_entries, i;
+	pid_t mypid = sys_getpid();
+
+	num_de_entries = get_deferred_opens(fsp->conn, fsp->dev, fsp->inode, &de_array);
+	for (i = 0; i < num_de_entries; i++) {
+		deferred_open_entry *entry = &de_array[i];
+		if (entry->pid == mypid) {
+			/*
+			 * We need to notify ourself to retry the open.
+			 * Do this by finding the queued SMB record, moving it
+			 * to the head of the queue and changing the wait time to zero.
+			 */
+			schedule_sharing_violation_open_smb_message(entry->mid);
+		} else {
+			send_deferred_open_retry_message(entry);
+		}
+	}
+}
+
+/****************************************************************************
  Close a file.
 
  If normal_close is 1 then this came from a normal SMBclose (or equivalent)
@@ -176,6 +203,9 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		delete_on_close = True;
 
 	SAFE_FREE(share_entry);
+
+	/* Notify any deferred opens waiting on this close. */
+	notify_deferred_opens(fsp);
 
 	/*
 	 * NT can set delete_on_close of the last open

@@ -61,20 +61,28 @@ uint16 get_current_mid(void)
  for processing.
 ****************************************************************************/
 
-struct pending_message_list {
-	struct pending_message_list *next, *prev;
-	char *msg_buf;
-	int msg_len;
-};
-
 static struct pending_message_list *smb_oplock_queue;
+static struct pending_message_list *smb_sharing_violation_queue;
+
+enum q_type { OPLOCK_QUEUE, SHARE_VIOLATION_QUEUE };
+
+/****************************************************************************
+ Free up a message.
+****************************************************************************/
+
+static void free_queued_message(struct pending_message_list *msg)
+{
+	data_blob_free(&msg->buf);
+	data_blob_free(&msg->private_data);
+	SAFE_FREE(msg);
+}
 
 /****************************************************************************
  Function to push a message onto the tail of a linked list of smb messages ready
  for processing.
 ****************************************************************************/
 
-static BOOL push_message(char *buf, int msg_len)
+static BOOL push_queued_message(enum q_type qt, char *buf, int msg_len, struct timeval *ptv, char *private, size_t private_len)
 {
 	struct pending_message_list *tmp_msg;
 	struct pending_message_list *msg = (struct pending_message_list *)
@@ -85,32 +93,159 @@ static BOOL push_message(char *buf, int msg_len)
 		return False;
 	}
 
-	msg->msg_buf = (char *)malloc(msg_len);
-	if(msg->msg_buf == NULL) {
+	memset(msg,'\0',sizeof(*msg));
+
+	msg->buf = data_blob(buf, msg_len);
+	if(msg->buf.data == NULL) {
 		DEBUG(0,("push_message: malloc fail (2)\n"));
 		SAFE_FREE(msg);
 		return False;
 	}
 
-	memcpy(msg->msg_buf, buf, msg_len);
-	msg->msg_len = msg_len;
+	if (ptv) {
+		msg->msg_time = *ptv;
+	}
 
-	DLIST_ADD_END(smb_oplock_queue, msg, tmp_msg);
+	if (private) {
+		msg->private_data = data_blob(private, private_len);
+		if (msg->private_data.data == NULL) {
+			DEBUG(0,("push_message: malloc fail (3)\n"));
+			data_blob_free(&msg->buf);
+			SAFE_FREE(msg);
+		}
+	}
+
+	if (qt == OPLOCK_QUEUE) {
+		DLIST_ADD_END(smb_oplock_queue, msg, tmp_msg);
+	} else {
+		DLIST_ADD_END(smb_sharing_violation_queue, msg, tmp_msg);
+	}
 
 	/* Push the MID of this packet on the signing queue. */
 	srv_defer_sign_response(SVAL(buf,smb_mid));
+
+	DEBUG(10,("push_message: pushed message length %u on queue %s\n",
+		(unsigned int)msg_len,
+		qt == OPLOCK_QUEUE ? "smb_oplock_queue" : "smb_sharing_violation_queue" ));
 
 	return True;
 }
 
 /****************************************************************************
- Function to push a smb message onto a linked list of local smb messages ready
+ Function to push an oplock smb message onto a linked list of local smb messages ready
  for processing.
 ****************************************************************************/
 
 BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
 {
-	return push_message(buf, msg_len);
+	return push_queued_message(OPLOCK_QUEUE, buf, msg_len, NULL, NULL, 0);
+}
+
+/****************************************************************************
+ Function to delete a sharing violation open message by mid.
+****************************************************************************/
+
+void remove_sharing_violation_open_smb_message(uint16 mid)
+{
+	struct pending_message_list *pml;
+
+	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
+		if (mid == SVAL(pml->buf.data,smb_mid)) {
+			DEBUG(10,("remove_sharing_violation_open_smb_message: deleting mid %u len %u\n",
+				(unsigned int)mid, (unsigned int)pml->buf.length ));
+			DLIST_REMOVE(smb_sharing_violation_queue, pml);
+			free_queued_message(pml);
+			return;
+		}
+	}
+}
+
+/****************************************************************************
+ Move a sharing violation open retry message to the front of the list and
+ schedule it for immediate processing.
+****************************************************************************/
+
+void schedule_sharing_violation_open_smb_message(uint16 mid)
+{
+	struct pending_message_list *pml;
+	int i = 0;
+
+	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
+		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);
+		DEBUG(10,("schedule_sharing_violation_open_smb_message: [%d] msg_mid = %u\n", i++,
+			(unsigned int)msg_mid ));
+		if (mid == msg_mid) {
+			DEBUG(10,("schedule_sharing_violation_open_smb_message: scheduling mid %u\n",
+				mid ));
+			pml->msg_time.tv_sec = 0;
+			pml->msg_time.tv_usec = 0;
+			DLIST_PROMOTE(smb_sharing_violation_queue, pml);
+			return;
+		}
+	}
+
+	DEBUG(10,("schedule_sharing_violation_open_smb_message: failed to find message mid %u\n",
+		mid ));
+}
+
+/****************************************************************************
+ Return true if this mid is on the deferred queue.
+****************************************************************************/
+
+BOOL open_was_deferred(uint16 mid)
+{
+	struct pending_message_list *pml;
+	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
+		if (SVAL(pml->buf.data,smb_mid) == mid) {
+			return True;
+		}
+	}
+	return False;
+}
+
+/****************************************************************************
+ Return the message queued by this mid.
+****************************************************************************/
+
+struct pending_message_list *get_open_deferred_message(uint16 mid)
+{
+	struct pending_message_list *pml;
+	for (pml = smb_sharing_violation_queue; pml; pml = pml->next) {
+		if (SVAL(pml->buf.data,smb_mid) == mid) {
+			return pml;
+		}
+	}
+	return NULL;
+}
+
+/****************************************************************************
+ Function to push a sharing violation open smb message onto a linked list of local smb messages ready
+ for processing.
+****************************************************************************/
+
+BOOL push_sharing_violation_open_smb_message(struct timeval *ptv, char *private, size_t priv_len)
+{
+	uint16 mid = SVAL(InBuffer,smb_mid);
+	struct timeval tv;
+	SMB_BIG_INT tdif;
+
+	tv = *ptv;
+	tdif = tv.tv_sec;
+	tdif *= 1000000;
+	tdif += tv.tv_usec;
+
+	/* Add on the timeout. */
+	tdif += SHARING_VIOLATION_USEC_WAIT;
+	
+	tv.tv_sec = tdif / 1000000;
+	tv.tv_usec = tdif % 1000000;
+	
+	DEBUG(10,("push_sharing_violation_open_smb_message: pushing message len %u mid %u\
+ timeout time [%u.%06u]\n", (unsigned int) smb_len(InBuffer)+4, (unsigned int)mid,
+		(unsigned int)tv.tv_sec, (unsigned int)tv.tv_usec));
+
+	return push_queued_message(SHARE_VIOLATION_QUEUE, InBuffer,
+			smb_len(InBuffer)+4, &tv, private, priv_len);
 }
 
 /****************************************************************************
@@ -169,11 +304,16 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	fd_set fds;
 	int selrtn;
 	struct timeval to;
+	struct timeval *pto;
 	int maxfd;
 
 	smb_read_error = 0;
 
  again:
+
+	to.tv_sec = timeout / 1000;
+	to.tv_usec = (timeout % 1000) * 1000;
+	pto = timeout > 0 ? &to : NULL;
 
 	/*
 	 * Note that this call must be before processing any SMB
@@ -188,17 +328,55 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 */
   	if(smb_oplock_queue != NULL) {
 		struct pending_message_list *msg = smb_oplock_queue;
-		memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
+		memcpy(buffer, msg->buf.data, MIN(buffer_len, msg->buf.length));
   
 		/* Free the message we just copied. */
 		DLIST_REMOVE(smb_oplock_queue, msg);
-		SAFE_FREE(msg->msg_buf);
-		SAFE_FREE(msg);
+		free_queued_message(msg);
 		
 		DEBUG(5,("receive_message_or_smb: returning queued smb message.\n"));
 		return True;
 	}
 
+	/*
+	 * Check to see if we already have a message on the deferred open queue
+	 * and it's time to schedule.
+	 */
+  	if(smb_sharing_violation_queue != NULL) {
+		BOOL pop_message = False;
+		struct pending_message_list *msg = smb_sharing_violation_queue;
+
+		if (msg->msg_time.tv_sec == 0 && msg->msg_time.tv_usec == 0) {
+			pop_message = True;
+		} else {
+			struct timeval tv;
+			SMB_BIG_INT tdif;
+
+			GetTimeOfDay(&tv);
+			tdif = usec_time_diff(&msg->msg_time, &tv);
+			if (tdif <= 0) {
+				/* Timed out. Schedule...*/
+				pop_message = True;
+				DEBUG(10,("receive_message_or_smb: queued message timed out.\n"));
+			} else {
+				/* Make a more accurate select timeout. */
+				to.tv_sec = tdif / 1000000;
+				to.tv_usec = tdif % 1000000;
+				pto = &to;
+				DEBUG(10,("receive_message_or_smb: select with timeout of [%u.%06u]\n",
+					(unsigned int)pto->tv_sec, (unsigned int)pto->tv_usec ));
+			}
+		}
+
+		if (pop_message) {
+			memcpy(buffer, msg->buf.data, MIN(buffer_len, msg->buf.length));
+  
+			/* We leave this message on the queue so the open code can
+			   know this is a retry. */
+			DEBUG(5,("receive_message_or_smb: returning deferred open smb message.\n"));
+			return True;
+		}
+	}
 
 	/*
 	 * Setup the select read fd set.
@@ -229,10 +407,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	FD_SET(smbd_server_fd(),&fds);
 	maxfd = setup_oplock_select_set(&fds);
 
-	to.tv_sec = timeout / 1000;
-	to.tv_usec = (timeout % 1000) * 1000;
-
-	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,NULL,NULL,timeout>0?&to:NULL);
+	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,NULL,NULL,pto);
 
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but
