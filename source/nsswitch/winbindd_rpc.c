@@ -509,6 +509,52 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 }
 
 /* find the sequence number for a domain */
+
+#ifdef HORRIBLE_LDAP_NATIVE_MODE_HACK
+#include <ldap.h>
+
+int get_ldap_seq(const char *server, uint32 *seq)
+{
+	int err;
+	int ret = -1;
+	char *attrs[] = {"highestCommittedUSN", NULL};
+	LDAPMessage *res = NULL;
+	char **values = NULL;
+	LDAP *ldp = NULL;
+
+	*seq = DOM_SEQUENCE_NONE;
+
+	if ((ldp = ldap_open(server, LDAP_PORT)) == NULL)
+		return -1;
+
+	if ((err = ldap_simple_bind_s(ldp, NULL, NULL)) != 0)
+		goto done;
+
+	if (ldap_search_s(ldp, "", LDAP_SCOPE_BASE, "(objectclass=*)", &attrs[0], 0, &res))
+		goto done;
+
+	if (ldap_count_entries(ldp, res) != 1)
+		goto done;
+
+	values = ldap_get_values(ldp, res, "highestCommittedUSN");
+	if (!values || !values[0])
+		goto done;
+
+	*seq = atoi(values[0]);
+	ret = 0;
+
+  done:
+
+	if (values)
+		ldap_value_free(values);
+	if (res)
+		ldap_msgfree(res);
+	if (ldp)
+		ldap_unbind(ldp);
+	return ret;
+}
+#endif /* HORRIBLE_LDAP_NATIVE_MODE_HACK */
+
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
 	TALLOC_CTX *mem_ctx;
@@ -531,6 +577,15 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
 		goto done;
 
+#ifdef HORRIBLE_LDAP_NATIVE_MODE_HACK
+	{
+		if (get_ldap_seq( inet_ntoa(hnd->cli->dest_ip), seq) == 0) {
+			result = NT_STATUS_OK;
+			goto done;
+		}
+	}
+#endif /* HORRIBLE_LDAP_NATIVE_MODE_HACK */
+
 	/* Get domain handle */
 
 	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol, 
@@ -548,6 +603,9 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	if (NT_STATUS_IS_OK(result)) {
 		seqnum = ctr.info.inf2.seq_num;
+		seqnum += ctr.info.inf2.num_domain_usrs;
+		seqnum += ctr.info.inf2.num_domain_grps;
+		seqnum += ctr.info.inf2.num_local_grps;
 		DEBUG(10,("domain_sequence_number: for domain %s is %u\n", domain->name, (unsigned)seqnum ));
 	} else {
 		DEBUG(10,("domain_sequence_number: failed to get sequence number (%u) for domain %s\n",
