@@ -367,6 +367,11 @@ BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                   char *data, uint32 data_count, uint32 max_data_count,
                   char **rparam, uint32 *rparam_count,
                   char **rdata, uint32 *rdata_count);
+BOOL cli_api(struct cli_state *cli,
+	     char *param, int prcnt, int mprcnt,
+	     char *data, int drcnt, int mdrcnt,
+	     char **rparam, int *rprcnt,
+	     char **rdata, int *rdrcnt);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
 BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(char *, uint32, char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
@@ -1024,7 +1029,6 @@ char *lp_veto_files(int );
 char *lp_hide_files(int );
 char *lp_veto_oplocks(int );
 char *lp_driverlocation(int );
-BOOL lp_alternate_permissions(int );
 BOOL lp_revalidate(int );
 BOOL lp_casesensitive(int );
 BOOL lp_preservecase(int );
