@@ -41,7 +41,7 @@ struct bitmap *bitmap_allocate(int n)
 		return NULL;
 	}
 
-	memset(bm->b, 0, sizeof(bm->b[0])*(n+31)/32);
+	memset(bm->b, 0, sizeof(uint32)*((n+31)/32));
 
 	return bm;
 }
@@ -78,7 +78,7 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
 		return NULL;
 	}
 
-	memset(bm->b, 0, sizeof(bm->b[0])*(n+31)/32);
+	memset(bm->b, 0, sizeof(uint32)*((n+31)/32));
 
 	return bm;
 }
@@ -92,7 +92,7 @@ int bitmap_copy(struct bitmap * const dst, const struct bitmap * const src)
         int count = MIN(dst->n, src->n);
 
         SMB_ASSERT(dst->b != src->b);
-	memcpy(dst->b, src->b, sizeof(dst->b[0])*(count+31)/32);
+	memcpy(dst->b, src->b, sizeof(uint32)*((count+31)/32));
 
         return count;
 }
