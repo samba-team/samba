@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -191,12 +191,17 @@ print_tickets (krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_unparse_name");
 
-    printf ("Credentials cache: %s:%s\n", 
+    printf ("%17s: %s:%s\n", 
+	    "Credentials cache",
 	    krb5_cc_get_type(context, ccache),
 	    krb5_cc_get_name(context, ccache));
-    printf ("\tPrincipal: %s\n\n", str);
+    printf ("%17s: %s\n", "Principal", str);
     free (str);
-
+    
+    if(do_verbose)
+	printf ("%17s: %d\n", "Cache version",
+		krb5_cc_get_version(context, ccache));
+    
     if (do_verbose && context->kdc_sec_offset) {
 	char buf[BUFSIZ];
 	int val;
@@ -211,9 +216,11 @@ print_tickets (krb5_context context,
 
 	unparse_time (val, buf, sizeof(buf));
 
-	printf ("\tKDC time offset: %s%s\n",
+	printf ("%17s: %s%s\n", "KDC time offset",
 		sig == -1 ? "-" : "", buf);
     }
+
+    printf("\n");
 
     ret = krb5_cc_start_seq_get (context, ccache, &cursor);
     if (ret)
