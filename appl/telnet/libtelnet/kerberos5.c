@@ -212,7 +212,7 @@ kerberos5_send(char *name, Authenticator *ap)
 		      &cksum_data, ccache, &auth);
 
     if (ret) {
-	if (auth_debug_mode) {
+	if (1 || auth_debug_mode) {
 	    printf("Kerberos V5: mk_req failed (%s)\r\n",
 		   krb5_get_err_text(context, ret));
 	}
