@@ -485,10 +485,10 @@ proto:
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > include/proto.h
 
 etags:
-	etags `find . -name "*.[ch]"`
+	etags `find . -name "*.[ch]" | grep -v /CVS/`
 
 ctags:
-	ctags `find . -name "*.[ch]"`
+	ctags `find . -name "*.[ch]" | grep -v /CVS/`
 
 realclean: clean
 	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy
