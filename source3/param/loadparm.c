@@ -1371,7 +1371,7 @@ static void init_globals(void)
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
 	Globals.max_mux = 50;	/* This is *needed* for profile support. */
-	Globals.lpqcachetime = 10;
+	Globals.lpqcachetime = 30;	/* changed to handle large print servers better -- jerry */
 	Globals.bDisableSpoolss = False;
 	Globals.iMaxSmbdProcesses = 0;/* no limit specified */
 	Globals.pwordlevel = 0;
