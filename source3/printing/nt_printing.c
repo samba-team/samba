@@ -42,7 +42,9 @@ static BOOL parse_form_entry(char *line, nt_forms_struct *buf)
 	char *tok[MAXTOK];
 	int count = 0;
 
-	tok[count] = strtok(line,":");
+	tok[0] = strtok(line,":");
+
+	if (!tok[0]) return False;
 	
 	/* strip the comment lines */
 	if (tok[0][0]=='#') return (False);	
@@ -53,7 +55,7 @@ static BOOL parse_form_entry(char *line, nt_forms_struct *buf)
 		count++;
 	}
 
-	DEBUG(106,("Found [%d] tokens\n", count));
+	if (count < MAXTOK-1) return False;
 
 	StrnCpy(buf->name,tok[NAMETOK],sizeof(buf->name)-1);
 	buf->flag=atoi(tok[FLAGTOK]);
@@ -83,11 +85,11 @@ int get_ntforms(nt_forms_struct **list)
 		return(0);
 	}
 
+	*list = NULL;
+
 	for (i=0; lines[i]; i++) {
 		char *line = lines[i];
 
-		DEBUG(105,("%s\n",line));
-		
 		*list = Realloc(*list, sizeof(nt_forms_struct)*(total+1));
 		if (! *list)
 		{
@@ -103,8 +105,6 @@ int get_ntforms(nt_forms_struct **list)
 	}    
 
 	file_lines_free(lines);
-
-	DEBUG(104,("%d info lines on %d\n",total, grandtotal));
 
 	return(total);
 }
