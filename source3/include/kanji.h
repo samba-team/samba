@@ -125,8 +125,6 @@ extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
 #define CAP_CODE (6)
 #define DOSV_CODE SJIS_CODE
 
-int interpret_coding_system (char *str, int def);
-
 #define unix_to_dos(x,y) unix2dos_format(x,y)
 #define dos_to_unix(x,y) dos2unix_format(x,y)
 

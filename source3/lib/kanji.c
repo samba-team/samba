@@ -27,13 +27,10 @@
 #define _KANJI_C_
 #include "includes.h"
 
-/* coding system keep in */
-int coding_system = SJIS_CODE;
-
 /* jis si/so sequence */
-char jis_kso = JIS_KSO;
-char jis_ksi = JIS_KSI;
-char hex_tag = HEXTAG;
+static char jis_kso = JIS_KSO;
+static char jis_ksi = JIS_KSI;
+static char hex_tag = HEXTAG;
 
 /*******************************************************************
   SHIFT JIS functions
@@ -774,9 +771,9 @@ static int setup_string_function(int codes)
 /*
  * Interpret coding system.
  */
-int interpret_coding_system(char *str, int def)
+int interpret_coding_system(char *str)
 {
-    int codes = def;
+    int codes = UNKNOWN_CODE;
     
     if (strequal (str, "sjis")) {
 	codes = SJIS_CODE;
