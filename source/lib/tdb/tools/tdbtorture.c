@@ -1,3 +1,8 @@
+/* this tests tdb by doing lots of ops from several simultaneous
+   writers - that stresses the locking code. Build with TDB_DEBUG=1
+   for best effect */
+
+#ifdef STANDALONE
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
@@ -13,11 +18,11 @@
 #include <sys/wait.h>
 #include "tdb.h"
 
-/* this tests tdb by doing lots of ops from several simultaneous
-   writers - that stresses the locking code. Build with TDB_DEBUG=1
-   for best effect */
+#else
 
+#include "includes.h"
 
+#endif
 
 #define REOPEN_PROB 30
 #define DELETE_PROB 8
@@ -32,6 +37,9 @@
 
 static TDB_CONTEXT *db;
 
+#ifdef PRINTF_ATTRIBUTE
+static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+#endif
 static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 {
 	va_list ap;
@@ -50,7 +58,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 #endif	
 }
 
-static void fatal(char *why)
+static void fatal(const char *why)
 {
 	perror(why);
 	exit(1);

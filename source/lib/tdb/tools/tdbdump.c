@@ -18,6 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifdef STANDALONE
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,9 +34,15 @@
 #include <signal.h>
 #include "tdb.h"
 
+#else
+
+#include "includes.h"
+
+#endif
+
 static void print_data(TDB_DATA d)
 {
-	uint8_t *p = d.dptr;
+	unsigned char *p = d.dptr;
 	int len = d.dsize;
 	while (len--) {
 		if (isprint(*p) && !strchr("\"\\", *p)) {
