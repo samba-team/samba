@@ -750,6 +750,8 @@ static int do_delete(TDB_CONTEXT *tdb, tdb_off rec_ptr, struct list_struct*rec)
 	tdb_off last_ptr, i;
 	struct list_struct lastrec;
 
+	if (tdb->read_only) return -1;
+
 	if (write_lock_record(tdb, rec_ptr) == -1) {
 		/* Someone traversing here: mark it as dead */
 		rec->magic = TDB_DEAD_MAGIC;
