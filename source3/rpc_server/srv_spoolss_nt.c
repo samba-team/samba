@@ -3549,10 +3549,10 @@ static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
 		return False;
 	}
 
-	/* Not sure what to do about these fields */
-#if 0
-	uint8 	*private;
-#endif
+	/* compare the private data if it exists */
+	if (!d1->driverextra && !d2->driverextra) return True;
+	if ( d1->driverextra !=  d2->driverextra) return False;
+	if (memcmp(d1->private, d2->private, d1->driverextra)) return False;
 
 	return True;
 }
