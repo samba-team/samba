@@ -1,3 +1,8 @@
+2002-09-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/keytab_file.c (fkt_remove_entry): check return value
+	from start_seq_get (from Wynn Wilkes)
+
 2002-09-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/context.c (krb5_set_config_files): return ENXIO instead
