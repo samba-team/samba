@@ -83,10 +83,10 @@ static BOOL smb_pam_nt_status_error_handler(pam_handle_t *pamh, int pam_error,
 							char *msg, int dbglvl, 
 					    NTSTATUS *nt_status)
 {
+	*nt_status = pam_to_nt_status(pam_error);
+
 	if (smb_pam_error_handler(pamh, pam_error, msg, dbglvl))
 		return True;
-
-	*nt_status = pam_to_nt_status(pam_error);
 
 	if (NT_STATUS_IS_OK(*nt_status)) {
 		/* Complain LOUDLY */
