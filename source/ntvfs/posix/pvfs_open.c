@@ -202,6 +202,9 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		if (mkdir(name->full_name, mode) == -1) {
 			return pvfs_map_errno(pvfs,errno);
 		}
+
+		pvfs_xattr_unlink_hook(pvfs, name->full_name);
+
 		status = pvfs_resolve_name(pvfs, req, io->ntcreatex.in.fname, 0, &name);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -435,6 +438,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		idr_remove(pvfs->idtree_fnum, fnum);
 		return pvfs_map_errno(pvfs, errno);
 	}
+
+	pvfs_xattr_unlink_hook(pvfs, name->full_name);
 
 	/* if this was a stream create then create the stream as well */
 	if (name->stream_name) {
