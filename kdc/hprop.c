@@ -542,7 +542,7 @@ propagate_database (krb5_context context, int v4_db, int ka_db,
 	}
 
 	pd.context      = context;
-	pd.auth_context = NULL;
+	pd.auth_context = auth_context;
 	pd.sock         = fd;
 
 	iterate (context, database, afs_cell, db,
