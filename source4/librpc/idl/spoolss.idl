@@ -126,7 +126,7 @@
 		[in,out]     DATA_BLOB *buffer,
 		[in,out,ref] uint32 *buf_size,
 		[out]	     uint32 count
-		);
+	);
 
 	/******************/
 	/* Function: 0x01 */
@@ -136,21 +136,21 @@
 		[in]        DATA_BLOB *buffer,
 		[in]        uint32 access_mask,
 		[out,ref]   policy_handle *handle
-		);
+	);
 
 	/******************/
 	/* Function: 0x02 */
-	NTSTATUS spoolss_02(
-		);
+	WERROR spoolss_02(
+	);
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS spoolss_03(
-		);
+	WERROR spoolss_03(
+	);
 
 	/******************/
 	/* Function: 0x04 */
-	NTSTATUS spoolss_EnumJobs(
+	WERROR spoolss_EnumJobs(
 		[in,ref] policy_handle *handle,
 		[in]	 uint32 firstjob,
 		[in]	 uint32 numjobs,
@@ -158,22 +158,22 @@
 		[in,out]     DATA_BLOB *buffer,
 		[in,out,ref] uint32 *buf_size,
 		[out]	 uint32 numjobs
-		);
+	);
 
 	/******************/
 	/* Function: 0x05 */
-	NTSTATUS spoolss_05(
-		);
+	WERROR spoolss_05(
+	);
 
 	/******************/
 	/* Function: 0x06 */
-	NTSTATUS spoolss_06(
-		);
+	WERROR spoolss_06(
+	);
 
 	/******************/
 	/* Function: 0x07 */
-	NTSTATUS spoolss_07(
-		);
+	WERROR spoolss_07(
+	);
 
 	/******************/
 	/* Function: 0x08 */
@@ -183,310 +183,320 @@
 		[in]         DATA_BLOB *buffer,
 		[out,subcontext(4),switch_is(level)] spoolss_PrinterInfo *info,
 		[in,out,ref] uint32 *buf_size
-		);
+	);
 
 	/******************/
 	/* Function: 0x09 */
-	NTSTATUS spoolss_09(
-		);
+	WERROR spoolss_09(
+	);
 
 	/******************/
 	/* Function: 0x0a */
-	NTSTATUS spoolss_0a(
-		);
+	WERROR spoolss_0a(
+	);
 
 	/******************/
 	/* Function: 0x0b */
-	NTSTATUS spoolss_0b(
-		);
+	WERROR spoolss_0b(
+	);
 
 	/******************/
 	/* Function: 0x0c */
-	NTSTATUS spoolss_0c(
-		);
+	WERROR spoolss_0c(
+	);
 
 	/******************/
 	/* Function: 0x0d */
-	NTSTATUS spoolss_0d(
-		);
+	WERROR spoolss_0d(
+	);
 
 	/******************/
 	/* Function: 0x0e */
-	NTSTATUS spoolss_0e(
-		);
+	WERROR spoolss_0e(
+	);
 
 	/******************/
 	/* Function: 0x0f */
-	NTSTATUS spoolss_0f(
-		);
+	WERROR spoolss_0f(
+	);
 
 	/******************/
 	/* Function: 0x10 */
-	NTSTATUS spoolss_10(
-		);
+	WERROR spoolss_10(
+	);
 
 	/******************/
 	/* Function: 0x11 */
-	NTSTATUS spoolss_11(
-		);
+	WERROR spoolss_11(
+	);
 
 	/******************/
 	/* Function: 0x12 */
-	NTSTATUS spoolss_StartPagePrinter(
+	WERROR spoolss_StartPagePrinter(
 		[in,ref] policy_handle *handle		
-		);
+	);
 
 	/******************/
 	/* Function: 0x13 */
-	NTSTATUS spoolss_13(
-		);
+	WERROR spoolss_13(
+	);
 
 	/******************/
 	/* Function: 0x14 */
-	NTSTATUS spoolss_EndPagePrinter(
+	WERROR spoolss_EndPagePrinter(
 		[in,ref] policy_handle *handle		
-		);
+	);
 
 	/******************/
 	/* Function: 0x15 */
-	NTSTATUS spoolss_15(
-		);
+	WERROR spoolss_15(
+	);
 
 	/******************/
 	/* Function: 0x16 */
-	NTSTATUS spoolss_16(
-		);
+	WERROR spoolss_16(
+	);
 
 	/******************/
 	/* Function: 0x17 */
-	NTSTATUS spoolss_EndDocPrinter(
-		);
+	WERROR spoolss_EndDocPrinter(
+	);
 
 	/******************/
 	/* Function: 0x18 */
-	NTSTATUS spoolss_18(
-		);
+	WERROR spoolss_18(
+	);
 
 	/******************/
 	/* Function: 0x19 */
-	NTSTATUS spoolss_19(
-		);
+	WERROR spoolss_19(
+	);
 
 	/******************/
 	/* Function: 0x1a */
-	NTSTATUS spoolss_1a(
-		);
+	WERROR spoolss_1a(
+	);
 
 	/******************/
 	/* Function: 0x1b */
-	NTSTATUS spoolss_1b(
-		);
+	WERROR spoolss_1b(
+	);
 
 	/******************/
 	/* Function: 0x1c */
-	NTSTATUS spoolss_1c(
-		);
+	WERROR spoolss_1c(
+	);
 
 	/******************/
 	/* Function: 0x1d */
 	WERROR spoolss_ClosePrinter(
 		[in,out,ref]     policy_handle *handle
-		);
+	);
 
 	/******************/
 	/* Function: 0x1e */
-	NTSTATUS spoolss_1e(
-		);
+	WERROR spoolss_1e(
+	);
 
 	/******************/
 	/* Function: 0x1f */
-	NTSTATUS spoolss_1f(
-		);
+	WERROR spoolss_1f(
+	);
 
 	/******************/
 	/* Function: 0x20 */
-	NTSTATUS spoolss_20(
-		);
+	WERROR spoolss_GetForm(
+		[in,ref] policy_handle *handle,
+		[in] unistr formname,
+		[in] uint32 level,
+		[out,subcontext(4),switch_is(level)] spoolss_PrinterInfo *info,
+		[in,out,ref] uint32 *buf_size
+	);
 
 	/******************/
 	/* Function: 0x21 */
-	NTSTATUS spoolss_21(
-		);
+	WERROR spoolss_21(
+	);
 
 	/******************/
 	/* Function: 0x22 */
-	NTSTATUS spoolss_22(
-		);
+	WERROR spoolss_EnumForms(
+		[in,ref] policy_handle *handle,
+		[in] uint32 level,
+		[in]         DATA_BLOB *buffer,
+		[out,subcontext(4),switch_is(level)] spoolss_PrinterInfo *info,
+		[in,out,ref] uint32 *buf_size
+	);
 
 	/******************/
 	/* Function: 0x23 */
-	NTSTATUS spoolss_23(
-		);
+	WERROR spoolss_23(
+	);
 
 	/******************/
 	/* Function: 0x24 */
-	NTSTATUS spoolss_24(
-		);
+	WERROR spoolss_24(
+	);
 
 	/******************/
 	/* Function: 0x25 */
-	NTSTATUS spoolss_25(
-		);
+	WERROR spoolss_25(
+	);
 
 	/******************/
 	/* Function: 0x26 */
-	NTSTATUS spoolss_26(
-		);
+	WERROR spoolss_26(
+	);
 
 	/******************/
 	/* Function: 0x27 */
-	NTSTATUS spoolss_27(
-		);
+	WERROR spoolss_27(
+	);
 
 	/******************/
 	/* Function: 0x28 */
-	NTSTATUS spoolss_28(
-		);
+	WERROR spoolss_28(
+	);
 
 	/******************/
 	/* Function: 0x29 */
-	NTSTATUS spoolss_29(
-		);
+	WERROR spoolss_29(
+	);
 
 	/******************/
 	/* Function: 0x2a */
-	NTSTATUS spoolss_2a(
-		);
+	WERROR spoolss_2a(
+	);
 
 	/******************/
 	/* Function: 0x2b */
-	NTSTATUS spoolss_2b(
-		);
+	WERROR spoolss_2b(
+	);
 
 	/******************/
 	/* Function: 0x2c */
-	NTSTATUS spoolss_2c(
-		);
+	WERROR spoolss_2c(
+	);
 
 	/******************/
 	/* Function: 0x2d */
-	NTSTATUS spoolss_2d(
-		);
+	WERROR spoolss_2d(
+	);
 
 	/******************/
 	/* Function: 0x2e */
-	NTSTATUS spoolss_2e(
-		);
+	WERROR spoolss_2e(
+	);
 
 	/******************/
 	/* Function: 0x2f */
-	NTSTATUS spoolss_2f(
-		);
+	WERROR spoolss_2f(
+	);
 
 	/******************/
 	/* Function: 0x30 */
-	NTSTATUS spoolss_30(
-		);
+	WERROR spoolss_30(
+	);
 
 	/******************/
 	/* Function: 0x31 */
-	NTSTATUS spoolss_31(
-		);
+	WERROR spoolss_31(
+	);
 
 	/******************/
 	/* Function: 0x32 */
-	NTSTATUS spoolss_32(
-		);
+	WERROR spoolss_32(
+	);
 
 	/******************/
 	/* Function: 0x33 */
-	NTSTATUS spoolss_33(
-		);
+	WERROR spoolss_33(
+	);
 
 	/******************/
 	/* Function: 0x34 */
-	NTSTATUS spoolss_34(
-		);
+	WERROR spoolss_34(
+	);
 
 	/******************/
 	/* Function: 0x35 */
-	NTSTATUS spoolss_35(
-		);
+	WERROR spoolss_35(
+	);
 
 	/******************/
 	/* Function: 0x36 */
-	NTSTATUS spoolss_36(
-		);
+	WERROR spoolss_36(
+	);
 
 	/******************/
 	/* Function: 0x37 */
-	NTSTATUS spoolss_37(
-		);
+	WERROR spoolss_37(
+	);
 
 	/******************/
 	/* Function: 0x38 */
-	NTSTATUS spoolss_38(
-		);
+	WERROR spoolss_38(
+	);
 
 	/******************/
 	/* Function: 0x39 */
-	NTSTATUS spoolss_39(
-		);
+	WERROR spoolss_39(
+	);
 
 	/******************/
 	/* Function: 0x3a */
-	NTSTATUS spoolss_3a(
-		);
+	WERROR spoolss_3a(
+	);
 
 	/******************/
 	/* Function: 0x3b */
-	NTSTATUS spoolss_3b(
-		);
+	WERROR spoolss_3b(
+	);
 
 	/******************/
 	/* Function: 0x3c */
-	NTSTATUS spoolss_3c(
-		);
+	WERROR spoolss_3c(
+	);
 
 	/******************/
 	/* Function: 0x3d */
-	NTSTATUS spoolss_3d(
-		);
+	WERROR spoolss_3d(
+	);
 
 	/******************/
 	/* Function: 0x3e */
-	NTSTATUS spoolss_3e(
-		);
+	WERROR spoolss_3e(
+	);
 
 	/******************/
 	/* Function: 0x3f */
-	NTSTATUS spoolss_3f(
-		);
+	WERROR spoolss_3f(
+	);
 
 	/******************/
 	/* Function: 0x40 */
-	NTSTATUS spoolss_40(
-		);
+	WERROR spoolss_40(
+	);
 
 	/******************/
 	/* Function: 0x41 */
-	NTSTATUS spoolss_41(
-		);
+	WERROR spoolss_41(
+	);
 
 	/******************/
 	/* Function: 0x42 */
-	NTSTATUS spoolss_42(
-		);
+	WERROR spoolss_42(
+	);
 
 	/******************/
 	/* Function: 0x43 */
-	NTSTATUS spoolss_43(
-		);
+	WERROR spoolss_43(
+	);
 
 	/******************/
 	/* Function: 0x44 */
-	NTSTATUS spoolss_44(
-		);
+	WERROR spoolss_44(
+	);
 
 	typedef struct {
 		uint32 foo;
@@ -521,17 +531,17 @@
 		[in]	              uint32 level,
 		[in,switch_is(level)] spoolss_UserLevel userlevel,
 		[out,ref]	      policy_handle *handle
-		);
+	);
 
 	/******************/
 	/* Function: 0x46 */
-	NTSTATUS spoolss_46(
-		);
+	WERROR spoolss_46(
+	);
 
 	/******************/
 	/* Function: 0x47 */
-	NTSTATUS spoolss_47(
-		);
+	WERROR spoolss_47(
+	);
 
 	/******************/
 	/* Function: 0x48 */
@@ -544,121 +554,120 @@
 		[out]    uint32 printerdata_type,
 		[out]    DATA_BLOB data,
 		[in,out,ref] uint32 *data_size
-		);
+	);
 
 	/******************/
 	/* Function: 0x49 */
-	NTSTATUS spoolss_49(
-		);
+	WERROR spoolss_49(
+	);
 
 	/******************/
 	/* Function: 0x4a */
-	NTSTATUS spoolss_4a(
-		);
+	WERROR spoolss_4a(
+	);
 
 	/******************/
 	/* Function: 0x4b */
-	NTSTATUS spoolss_4b(
-		);
+	WERROR spoolss_4b(
+	);
 
 	/******************/
 	/* Function: 0x4c */
-	NTSTATUS spoolss_4c(
-		);
+	WERROR spoolss_4c(
+	);
 
 	/******************/
 	/* Function: 0x4d */
-	NTSTATUS spoolss_4d(
-		);
+	WERROR spoolss_4d(
+	);
 
 	/******************/
 	/* Function: 0x4e */
-	NTSTATUS spoolss_4e(
-		);
+	WERROR spoolss_4e(
+	);
 
 	/******************/
 	/* Function: 0x4f */
-	NTSTATUS spoolss_4f(
-		);
+	WERROR spoolss_4f(
+	);
 
 	/******************/
 	/* Function: 0x50 */
-	NTSTATUS spoolss_50(
-		);
+	WERROR spoolss_50(
+	);
 
 	/******************/
 	/* Function: 0x51 */
-	NTSTATUS spoolss_51(
-		);
+	WERROR spoolss_51(
+	);
 
 	/******************/
 	/* Function: 0x52 */
-	NTSTATUS spoolss_52(
-		);
+	WERROR spoolss_52(
+	);
 
 	/******************/
 	/* Function: 0x53 */
-	NTSTATUS spoolss_53(
-		);
+	WERROR spoolss_53(
+	);
 
 	/******************/
 	/* Function: 0x54 */
-	NTSTATUS spoolss_54(
-		);
+	WERROR spoolss_54(
+	);
 
 	/******************/
 	/* Function: 0x55 */
-	NTSTATUS spoolss_55(
-		);
+	WERROR spoolss_55(
+	);
 
 	/******************/
 	/* Function: 0x56 */
-	NTSTATUS spoolss_56(
-		);
+	WERROR spoolss_56(
+	);
 
 	/******************/
 	/* Function: 0x57 */
-	NTSTATUS spoolss_57(
-		);
+	WERROR spoolss_57(
+	);
 
 	/******************/
 	/* Function: 0x58 */
-	NTSTATUS spoolss_58(
-		);
+	WERROR spoolss_58(
+	);
 
 	/******************/
 	/* Function: 0x59 */
-	NTSTATUS spoolss_59(
-		);
+	WERROR spoolss_59(
+	);
 
 	/******************/
 	/* Function: 0x5a */
-	NTSTATUS spoolss_5a(
-		);
+	WERROR spoolss_5a(
+	);
 
 	/******************/
 	/* Function: 0x5b */
-	NTSTATUS spoolss_5b(
-		);
+	WERROR spoolss_5b(
+	);
 
 	/******************/
 	/* Function: 0x5c */
-	NTSTATUS spoolss_5c(
-		);
+	WERROR spoolss_5c(
+	);
 
 	/******************/
 	/* Function: 0x5d */
-	NTSTATUS spoolss_5d(
-		);
+	WERROR spoolss_5d(
+	);
 
 	/******************/
 	/* Function: 0x5e */
-	NTSTATUS spoolss_5e(
-		);
+	WERROR spoolss_5e(
+	);
 
 	/******************/
 	/* Function: 0x5f */
-	NTSTATUS spoolss_5f(
-		);
-
+	WERROR spoolss_5f(
+	);
 }
