@@ -1,4 +1,4 @@
-          WHATS NEW IN Samba 2.0.0 beta3
+          WHATS NEW IN Samba 2.0.0 beta4
           ==============================
 
 This is a MAJOR new release of Samba, the UNIX based SMB/CIFS file 
@@ -106,6 +106,10 @@ did with previous versions of Samba.
 In addition, Samba now defaults to case sensitivity options that
 match a Windows NT server precisely, that is, case insensitive 
 but case preserving.
+
+The default format of the smbpasswd file has also been
+changed for this release, although the new tools will read
+and write the old format, for backwards compatibility.
 
 =====================================================================
 
