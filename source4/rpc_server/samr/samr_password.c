@@ -695,6 +695,11 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	uint32_t new_pass_len;
 	DATA_BLOB session_key = dce_call->conn->session_key;
 
+	if (session_key.length == 0) {
+		DEBUG(3,("Bad session key in samr_set_password\n"));
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
 	arcfour_crypt_blob(pwbuf->data, 516, &session_key);
 
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
