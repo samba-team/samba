@@ -1052,6 +1052,18 @@ is one of our (WINS server) names. Denying registration.\n", namestr(question) )
   }
 
   /*
+   * If the name exists check if the IP address is already registered
+   * to that name. If so then update the ttl and reply success.
+   */
+
+  if((namerec != NULL) && find_ip_in_name_record(namerec, from_ip))
+  {
+    update_name_ttl(namerec, ttl);
+    send_wins_name_registration_response(0, ttl, p);
+    return;
+  }
+
+  /*
    * If the name exists do a query to the owner
    * to see if they still want the name.
    */
@@ -1548,7 +1560,7 @@ void wins_write_database(void)
 
     if (namerec->source == REGISTER_NAME)
     {
-      fprintf(fp, "%s#%02x %d ",
+      fprintf(fp, "\"%s#%02x\" %d ",
 	      namerec->name.name,namerec->name.name_type, /* Ignore scope. */
 	      (int)namerec->death_time);
 

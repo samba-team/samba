@@ -187,6 +187,9 @@ void run_dns_queue(void)
 	if (fd_in == -1)
 		return;
 
+        /* Allow SIGTERM to kill us. */
+        BlockSignals(False, SIGTERM);
+
 	if (!process_exists(child_pid)) {
 		close(fd_in);
 		start_async_dns();
@@ -197,8 +200,11 @@ void run_dns_queue(void)
 			DEBUG(0,("Incomplete DNS answer from child!\n"));
 			fd_in = -1;
 		}
+                BlockSignals(True, SIGTERM);
 		return;
 	}
+
+        BlockSignals(True, SIGTERM);
 
 	namerec = add_dns_result(&r.name, r.result);
 
@@ -305,7 +311,13 @@ BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 
 	DEBUG(3,("DNS search for %s - ", namestr(question)));
 
+        /* Unblock TERM signal so we can be killed in DNS lookup. */
+        BlockSignals(False, SIGTERM);
+
 	dns_ip.s_addr = interpret_addr(qname);
+
+        /* Re-block TERM signal. */
+        BlockSignals(True, SIGTERM);
 
 	*n = add_dns_result(question, dns_ip);
         if(*n == NULL)
