@@ -27,7 +27,7 @@
  CONFIGFILE = $(LIBDIR)/smb.conf
  LMHOSTSFILE = $(LIBDIR)/lmhosts
  DRIVERFILE = $(LIBDIR)/printers.def
- SMB_PASSWD = $(BINDIR)/smbpasswd
+ PASSWD_PROGRAM = /bin/passwd
 -SMB_PASSWD_FILE = $(BASEDIR)/private/smbpasswd
 +SMB_PASSWD_FILE = $(LIBDIR)/smbpasswd
  
