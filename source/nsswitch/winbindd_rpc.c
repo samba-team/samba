@@ -851,12 +851,12 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 
 	DEBUG(3,("rpc: domain_sid\n"));
 
+	if (!(mem_ctx = talloc_init("domain_sid[rpc]")))
+		return NT_STATUS_NO_MEMORY;
+
 	result = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
-
-	if (!(mem_ctx = talloc_init("domain_sid[rpc]")))
-		return NT_STATUS_NO_MEMORY;
 
 	result = rpccli_lsa_query_info_policy(cli, mem_ctx, &lsa_policy, 0x05,
 					      &level5_dom, &alloc_sid);
