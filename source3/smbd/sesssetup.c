@@ -609,8 +609,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	DATA_BLOB plaintext_password;
-	pstring user;
-	pstring sub_user; /* Sainitised username for substituion */
+	fstring user;
+	fstring sub_user; /* Sainitised username for substituion */
 	fstring domain;
 	fstring native_os;
 	fstring native_lanman;
@@ -756,15 +756,15 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
 			return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 		}
-		pstrcpy(sub_user, user);
+		fstrcpy(sub_user, user);
 
 		/* setup the string used by %U */
 		sub_set_smb_name(user);
 	} else {
-		pstrcpy(sub_user, lp_guestaccount());
+		fstrcpy(sub_user, lp_guestaccount());
 	}
 
-	pstrcpy(current_user_info.smb_name,sub_user);
+	fstrcpy(current_user_info.smb_name,sub_user);
 
 	reload_services(True);
 	
