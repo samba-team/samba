@@ -7433,7 +7433,7 @@ done:
 		free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
-	return WERR_OK;
+	return status;
 }
 
 /****************************************************************************
