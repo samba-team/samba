@@ -1118,8 +1118,7 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs, struct pvfs_filename *name)
 
 	status = odb_can_open(pvfs->odb_context, &key, 
 			      NTCREATEX_SHARE_ACCESS_READ |
-			      NTCREATEX_SHARE_ACCESS_WRITE | 
-			      NTCREATEX_SHARE_ACCESS_DELETE, 
+			      NTCREATEX_SHARE_ACCESS_WRITE,
 			      0,
 			      STD_RIGHT_DELETE_ACCESS);
 

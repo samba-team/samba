@@ -79,3 +79,84 @@ uint32_t pvfs_attrib_normalise(uint32_t attrib)
 	return attrib;
 }
 
+
+/*
+  copy a file. Caller is supposed to have already ensured that the
+  operation is allowed. The destination file must not exist.
+*/
+NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
+			struct pvfs_filename *name1, 
+			struct pvfs_filename *name2)
+{
+	int fd1, fd2;
+	mode_t mode;
+	NTSTATUS status;
+	size_t buf_size = 0x10000;
+	char *buf = talloc(name2, buf_size);
+
+	if (buf == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fd1 = open(name1->full_name, O_RDONLY);
+	if (fd1 == -1) {
+		talloc_free(buf);
+		return pvfs_map_errno(pvfs, errno);
+	}
+
+	fd2 = open(name2->full_name, O_CREAT|O_EXCL|O_WRONLY, 0);
+	if (fd2 == -1) {
+		close(fd1);
+		talloc_free(buf);
+		return pvfs_map_errno(pvfs, errno);
+	}
+
+	while (1) {
+		ssize_t ret2, ret = read(fd1, buf, buf_size);
+		if (ret == -1 && 
+		    (errno == EINTR || errno == EAGAIN)) {
+			continue;
+		}
+		if (ret <= 0) break;
+
+		ret2 = write(fd2, buf, ret);
+		if (ret2 == -1 &&
+		    (errno == EINTR || errno == EAGAIN)) {
+			continue;
+		}
+		
+		if (ret2 != ret) {
+			close(fd1);
+			close(fd2);
+			talloc_free(buf);
+			unlink(name2->full_name);
+			if (ret2 == -1) {
+				return pvfs_map_errno(pvfs, errno);
+			}
+			return NT_STATUS_DISK_FULL;
+		}
+	}
+
+	close(fd1);
+
+	mode = pvfs_fileperms(pvfs, name1->dos.attrib);
+	if (fchmod(fd2, mode) == -1) {
+		status = pvfs_map_errno(pvfs, errno);
+		close(fd2);
+		unlink(name2->full_name);
+		return status;
+	}
+	
+	name2->dos = name1->dos;
+
+	status = pvfs_dosattrib_save(pvfs, name2, fd2);
+	if (!NT_STATUS_IS_OK(status)) {
+		close(fd2);
+		unlink(name2->full_name);
+		return status;
+	}
+
+	close(fd2);
+
+	return NT_STATUS_OK;
+}
