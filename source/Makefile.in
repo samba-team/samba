@@ -86,7 +86,7 @@ FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol @RUNPROG@
-PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/make_unicodemap bin/rpcclient bin/smbcacls @WRAP@ @WRAP32@
+PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/make_unicodemap bin/rpcclient bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef bin/pdbedit
 
@@ -354,6 +354,21 @@ PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 PICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
 LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.0=.po)
 
+PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
+               pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
+               lib/debug.o lib/util_sid.o lib/messages.o lib/util_str.o \
+               lib/wins_srv.o lib/substitute.o lib/select.o lib/util.o \
+               lib/slprintf.o nsswitch/wb_client.o nsswitch/wb_common.o \
+               lib/system.o lib/charset.o lib/util_file.o lib/kanji.o \
+               lib/genrand.o lib/username.o lib/charcnv.o lib/time.o \
+               lib/md4.o lib/util_unistr.o lib/signal.o lib/talloc.o \
+               lib/ms_fnmatch.o lib/util_sock.o lib/doscalls.o lib/smbrun.o \
+               lib/util_sec.o \
+               ubiqx/ubi_sLinkList.o libsmb/smbencrypt.o libsmb/smbdes.o \
+               $(PARAM_OBJ) $(TDB_OBJ) $(PASSDB_OBJ)
+
+PAM_SMBPASS_PICOOBJ = $(PAM_SMBPASS_OBJ_0:.o=.po)
+
 WINBINDD_OBJ1 = \
 		nsswitch/winbindd.o       \
 		nsswitch/winbindd_user.o  \
@@ -384,6 +399,8 @@ NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 ######################################################################
 
 all : CHECK $(SPROGS) $(PROGS) 
+
+pam_smbpass : CHECK bin/pam_smbpass.@SHLIBEXT@
 
 smbwrapper : CHECK bin/smbsh bin/smbwrapper.@SHLIBEXT@ @WRAP32@
 
@@ -630,6 +647,10 @@ bin/wbinfo: $(WBINFO_OBJ) $(PARAM_OBJ) $(LIB_OBJ) $(NOPROTO_OBJ) $(UBIQX_OBJ) bi
 
 nsswitch: nsswitch/libnss_wins.so nsswitch/pam_winbind.so \
 	nsswitch/libnss_winbind.so bin/wbinfo
+
+bin/pam_smbpass.@SHLIBEXT@: $(PAM_SMBPASS_PICOOBJ)
+	@echo "Linking shared library $@"
+	$(LD) @LDSHFLAGS@ -symbolic -o $@ $(PAM_SMBPASS_PICOOBJ) -lpam $(LIBS) -lc
 
 install: installbin installman installscripts installcp installswat
 
