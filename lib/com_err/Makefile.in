@@ -105,7 +105,7 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-$(LIBNAME).$(LIBEXT): $(OBJECTS)
+$(LIBNAME).a: $(OBJECTS)
 	rm -f $@
 	$(AR) cr $@ $(OBJECTS)
 	-$(RANLIB) $@
