@@ -78,30 +78,6 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	f = talloc_p(req, struct pvfs_file);
-	if (f == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
-	if (fnum == -1) {
-		talloc_free(f);
-		return NT_STATUS_TOO_MANY_OPENED_FILES;
-	}
-
-	f->fnum = fnum;
-	f->fd = -1;
-	f->name = talloc_steal(f, name);
-	f->session = req->session;
-	f->smbpid = req->smbpid;
-	f->pvfs = pvfs;
-	f->pending_list = NULL;
-	f->lock_count = 0;
-	f->locking_key = data_blob(NULL, 0);
-
-	/* setup a destructor to avoid leaks on abnormal termination */
-	talloc_set_destructor(f, pvfs_dir_fd_destructor);
-
 	switch (io->generic.in.open_disposition) {
 	case NTCREATEX_DISP_OPEN_IF:
 		break;
@@ -125,6 +101,38 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	f = talloc_p(req, struct pvfs_file);
+	if (f == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	f->fnum = fnum;
+	f->fd = -1;
+	f->name = talloc_steal(f, name);
+	f->session = req->session;
+	f->smbpid = req->smbpid;
+	f->pvfs = pvfs;
+	f->pending_list = NULL;
+	f->lock_count = 0;
+	f->locking_key = data_blob(NULL, 0);
+	f->create_options = io->generic.in.create_options;
+	f->share_access = io->generic.in.share_access;
+
+	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
+	if (fnum == -1) {
+		talloc_free(f);
+		return NT_STATUS_TOO_MANY_OPENED_FILES;
+	}
+
+	DLIST_ADD(pvfs->open_files, f);
+
+	/* TODO: should we check in the opendb? Do directory opens 
+	   follow the share_access rules? */
+
+
+	/* setup a destructor to avoid leaks on abnormal termination */
+	talloc_set_destructor(f, pvfs_dir_fd_destructor);
+
 	if (!name->exists) {
 		if (mkdir(name->full_name, 0755) == -1) {
 			return pvfs_map_errno(pvfs,errno);
@@ -142,8 +150,6 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	if (!name->exists) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-
-	DLIST_ADD(pvfs->open_files, f);
 
 	/* the open succeeded, keep this handle permanently */
 	talloc_steal(pvfs, f);
@@ -174,6 +180,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 static int pvfs_fd_destructor(void *p)
 {
 	struct pvfs_file *f = p;
+	struct odb_lock *lck;
+	NTSTATUS status;
 
 	DLIST_REMOVE(f->pvfs->open_files, f);
 
@@ -185,6 +193,18 @@ static int pvfs_fd_destructor(void *p)
 	}
 
 	idr_remove(f->pvfs->idtree_fnum, f->fnum);
+
+	lck = odb_lock(f, f->pvfs->odb_context, &f->locking_key);
+	if (lck == NULL) {
+		DEBUG(0,("Unabled to lock opendb for close\n"));
+		return 0;
+	}
+
+	status = odb_close_file(lck, f->fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Unabled to remove opendb entry for '%s' - %s\n", 
+			 f->name->full_name, nt_errstr(status)));
+	}
 
 	return 0;
 }
@@ -228,7 +248,10 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	int flags, fnum, fd;
 	struct odb_lock *lck;
-
+	uint32_t create_options = io->generic.in.create_options;
+	uint32_t share_access = io->generic.in.share_access;
+	uint32_t access_mask = io->generic.in.access_mask;
+	
 	flags = O_RDWR;
 
 	f = talloc_p(req, struct pvfs_file);
@@ -252,6 +275,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	status = pvfs_resolve_name_fd(pvfs, fd, name);
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(pvfs->idtree_fnum, fnum);
+		close(fd);
 		return status;
 	}
 
@@ -260,6 +284,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	status = pvfs_locking_key(name, f, &f->locking_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(pvfs->idtree_fnum, fnum);
+		close(fd);
 		return status;
 	}
 
@@ -271,7 +296,16 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		/* we were supposed to do a blocking lock, so something
 		   is badly wrong! */
 		idr_remove(pvfs->idtree_fnum, fnum);
+		close(fd);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	status = odb_open_file(lck, fnum, share_access, create_options, access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* bad news, we must have hit a race */
+		idr_remove(pvfs->idtree_fnum, fnum);
+		close(fd);
+		return status;
 	}
 
 	f->fnum = fnum;
@@ -282,6 +316,9 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->pvfs = pvfs;
 	f->pending_list = NULL;
 	f->lock_count = 0;
+	f->create_options = io->generic.in.create_options;
+	f->share_access = io->generic.in.share_access;
+	f->access_mask = io->generic.in.access_mask;
 
 	DLIST_ADD(pvfs->open_files, f);
 
@@ -306,10 +343,6 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	/* success - keep the file handle */
 	talloc_steal(pvfs, f);
 
-	/* release the opendb lock (in case a chained request
-	   blocks) */
-	talloc_free(lck);
-
 	return NT_STATUS_OK;
 }
 
@@ -327,6 +360,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 	int fnum;
 	struct odb_lock *lck;
+	uint32_t create_options;
+	uint32_t share_access;
+	uint32_t access_mask;
 
 	/* use the generic mapping code to avoid implementing all the
 	   different open calls. This won't allow openx to work
@@ -420,10 +456,17 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* allocate a fnum */
+	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
+	if (fnum == -1) {
+		return NT_STATUS_TOO_MANY_OPENED_FILES;
+	}
+
 	/* form the lock context used for byte range locking and
 	   opendb locking */
 	status = pvfs_locking_key(name, f, &f->locking_key);
 	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(pvfs->idtree_fnum, fnum);
 		return status;
 	}
 
@@ -434,7 +477,19 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 			 name->full_name));
 		/* we were supposed to do a blocking lock, so something
 		   is badly wrong! */
+		idr_remove(pvfs->idtree_fnum, fnum);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	create_options = io->generic.in.create_options;
+	share_access   = io->generic.in.share_access;
+	access_mask    = io->generic.in.access_mask;
+
+	/* see if we are allowed to open at the same time as existing opens */
+	status = odb_open_file(lck, fnum, share_access, create_options, access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(pvfs->idtree_fnum, fnum);
+		return status;
 	}
 
 	/* do the actual open */
@@ -446,13 +501,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	/* re-resolve the open fd */
 	status = pvfs_resolve_name_fd(pvfs, fd, name);
 	if (!NT_STATUS_IS_OK(status)) {
+		close(fd);
+		idr_remove(pvfs->idtree_fnum, fnum);
 		return status;
-	}
-
-	/* allocate a fnum */
-	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
-	if (fnum == -1) {
-		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
 	f->fnum = fnum;
@@ -463,6 +514,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->pvfs = pvfs;
 	f->pending_list = NULL;
 	f->lock_count = 0;
+	f->create_options = io->generic.in.create_options;
+	f->share_access = io->generic.in.share_access;
+	f->access_mask = io->generic.in.access_mask;
 
 	DLIST_ADD(pvfs->open_files, f);
 
@@ -486,9 +540,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* success - keep the file handle */
 	talloc_steal(pvfs, f);
-
-	/* unlock the locking database */
-	talloc_free(lck);
 
 	return NT_STATUS_OK;
 }
