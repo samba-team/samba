@@ -32,10 +32,18 @@
 static pstring servicesf = CONFIGFILE;
 
 
+/* we need these because we link to locking*.o */
+ void become_root(BOOL save_dir) {}
+ void unbecome_root(BOOL restore_dir) {}
+connection_struct Connections[MAX_CONNECTIONS];
+files_struct Files[MAX_OPEN_FILES];
+struct current_user current_user;
+
+
 /* start the page with standard stuff */
 static void print_header(void)
 {
-	printf("Expires: %s\r\n", http_timestring(time(NULL)));
+	printf("Expires: 0\r\n");
 	printf("Content-type: text/html\r\n\r\n");
 	printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n");
 	printf("<HTML>\n<HEAD>\n<TITLE>Samba Web Administration Tool</TITLE>\n</HEAD>\n<BODY>\n\n");
@@ -70,7 +78,7 @@ static void include_html(char *fname)
 }
 
 
-/* display one editable parameter */
+/* display one editable parameter in a form */
 static void show_parameter(int snum, struct parm_struct *parm)
 {
 	int i;
@@ -151,6 +159,7 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 }
 
 
+/* save and reoad the smb.conf config file */
 static int save_reload(void)
 {
 	FILE *f;
@@ -223,6 +232,7 @@ static void show_main_buttons(void)
 	image_link("Globals", "globals", "images/globals.gif", 50, 50);
 	image_link("Shares", "shares", "images/shares.gif", 50, 50);
 	image_link("Printers", "printers", "images/printers.gif", 50, 50);
+	image_link("Status", "status", "images/status.gif", 50, 50);
 
 	printf("<HR>\n");
 }
@@ -427,6 +437,101 @@ static void printers_page(void)
 }
 
 
+static void print_share_mode(share_mode_entry *e, char *fname)
+{
+	printf("<tr><td>%d</td>",e->pid);
+	printf("<td>");
+	switch ((e->share_mode>>4)&0xF) {
+	case DENY_NONE: printf("DENY_NONE"); break;
+	case DENY_ALL:  printf("DENY_ALL   "); break;
+	case DENY_DOS:  printf("DENY_DOS   "); break;
+	case DENY_READ: printf("DENY_READ  "); break;
+	case DENY_WRITE:printf("DENY_WRITE "); break;
+	}
+	printf("</td>");
+
+	printf("<td>");
+	switch (e->share_mode&0xF) {
+	case 0: printf("RDONLY     "); break;
+	case 1: printf("WRONLY     "); break;
+	case 2: printf("RDWR       "); break;
+	}
+	printf("</td>");
+
+	printf("<td>");
+	if((e->op_type & 
+	    (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == 
+	   (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
+		printf("EXCLUSIVE+BATCH ");
+	else if (e->op_type & EXCLUSIVE_OPLOCK)
+		printf("EXCLUSIVE       ");
+	else if (e->op_type & BATCH_OPLOCK)
+		printf("BATCH           ");
+	else
+		printf("NONE            ");
+	printf("</td>");
+
+	printf("<td>%s</td><td>%s</td></tr>\n",
+	       fname,asctime(LocalTime((time_t *)&e->time.tv_sec)));
+}
+
+
+/* show the current server status */
+static void status_page(void)
+{
+	struct connect_record crec;
+	pstring fname;
+	FILE *f;
+
+	printf("<H2>Server Status</H2>\n");
+
+	pstrcpy(fname,lp_lockdir());
+	standard_sub_basic(fname);
+	trim_string(fname,"","/");
+	strcat(fname,"/STATUS..LCK");
+
+	f = fopen(fname,"r");
+	if (!f) {
+		printf("Couldn't open status file %s\n",fname);
+		if (!lp_status(-1))
+			printf("You need to have status=yes in your smb config file\n");
+		return;
+	}
+
+
+	printf("\nSamba version %s\n<p>",VERSION);
+
+	printf("<h3>Active Connections</h3>\n");
+	printf("<table border=1>\n");
+	printf("<tr><th>Share</th><th>User</th><th>Group</th><th>PID</th><th>Client</th><th>Date</th></tr>\n\n");
+
+	while (!feof(f)) {
+		if (fread(&crec,sizeof(crec),1,f) != 1)
+			break;
+		if (crec.magic == 0x280267 && process_exists(crec.pid)) {
+			printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s (%s)</td><td>%s</td></tr>\n",
+			       crec.name,uidtoname(crec.uid),
+			       gidtoname(crec.gid),crec.pid,
+			       crec.machine,crec.addr,
+			       asctime(LocalTime(&crec.start)));
+		}
+	}
+
+	printf("</table><p>\n");
+
+	printf("<h3>Open Files</h3>\n");
+	printf("<table border=1>\n");
+	printf("<tr><th>PID</th><th>Sharing</th><th>R/W</th><th>Oplock</th><th>File</th><th>Date</th></tr>\n");
+
+	locking_init(1);
+	share_mode_forall(print_share_mode);
+	locking_end();
+	printf("</table>\n");
+
+	fclose(f);
+}
+
+
 int main(int argc, char *argv[])
 {
 	extern char *optarg;
@@ -477,6 +582,8 @@ int main(int argc, char *argv[])
 		shares_page();
 	} else if (strcmp(page,"printers")==0) {
 		printers_page();
+	} else if (strcmp(page,"status")==0) {
+		status_page();
 	} else {
 		welcome_page();
 	}
