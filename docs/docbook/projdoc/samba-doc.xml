@@ -7,6 +7,7 @@
 <title>SAMBA Project Documentation</title>
 
 <bookinfo>
+	<authorgroup>
 	<author>
 		<othername>SAMBA Team</othername>
 		<affiliation><address><email>samba@samba.org</email></address></affiliation>
@@ -14,7 +15,7 @@
 	<editor>&person.jelmer;</editor>
 	<editor>&person.jht;</editor>
 	<editor>&person.jerry;</editor>
-
+	</authorgroup>
 	<pubdate>Monday April 21, 2003</pubdate>
 
 <abstract>
@@ -25,7 +26,7 @@ documentation represents a major revision or layout as well as contents.
 The most recent version of this document can be found at
 <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
 on the "Documentation" page.  Please send updates to
-<ulink url="mailto:jelmer@samba.org">Jelmer Venrooij</ulink>,
+<ulink url="mailto:jelmer@samba.org">Jelmer Vernooij</ulink>,
 <ulink url="mailto:jht@samba.org">John Terpstra</ulink> or
 <ulink url="mailto:jerry@samba.org">Gerald (Jerry) Carter</ulink>.
 </para>
@@ -128,6 +129,7 @@ Samba has several features that you might want or might not want to use. The cha
 &Other-Clients;
 &SWAT;
 &SPEED;
+&Further-Resources;
 </part>
 
 </book>

@@ -1,0 +1,79 @@
+<chapter id="Further-Resources">
+<chapterinfo>
+	&author.jelmer;
+	&author.dlechnyr;
+	<pubdate>May 1, 2003</pubdate>
+</chapterinfo>
+
+<title>Further Resources</title>
+
+<itemizedlist>
+
+	<listitem><para>
+	<ulink url="http://hr.uoregon.edu/davidrl/cifs.txt">
+	<emphasis>CIFS: Common Insecurities Fail Scrutiny</emphasis> by "Hobbit"</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://afr.com/it/2002/10/01/FFXDF43AP6D.html">
+	<emphasis>Doing the Samba on Windows</emphasis> by Financial Review
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://ubiqx.org/cifs/">
+	<emphasis>Implementing CIFS</emphasis> by Christopher R. Hertel
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://samba.anu.edu.au/cifs/docs/what-is-smb.html">
+	<emphasis>Just What Is SMB?</emphasis> by Richard Sharpe
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://www.linux-mag.com/1999-05/samba_01.html">
+	<emphasis>Opening Windows Everywhere</emphasis> by Mike Warfield
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://www.tldp.org/HOWTO/SMB-HOWTO.html">
+	<emphasis>SMB HOWTO</emphasis> by David Wood
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://www.phrack.org/phrack/60/p60-0x0b.txt">
+	<emphasis>SMB/CIFS by The Root</emphasis> by "ledin"
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://www.linux-mag.com/1999-09/samba_01.html">
+	<emphasis>The Story of Samba</emphasis> by Christopher R. Hertel
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://hr.uoregon.edu/davidrl/samba/">
+	<emphasis>The Unofficial Samba HOWTO</emphasis> by David Lechnyr
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://www.linux-mag.com/2001-05/smb_01.html">
+	<emphasis>Understanding the Network Neighborhood</emphasis> by Christopher R. Hertel
+	</ulink>
+	</para></listitem>
+
+	<listitem><para>
+	<ulink url="http://www.linux-mag.com/2002-02/samba_01.html">
+	<emphasis>Using Samba as a PDC</emphasis> by Andrew Bartlett
+	</ulink>
+	</para></listitem>
+
+</itemizedlist>
+
+</chapter>
