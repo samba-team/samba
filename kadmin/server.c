@@ -422,11 +422,15 @@ v5_loop (krb5_context context,
     krb5_data in, out;
 
     for (;;) {
+	doing_useful_work = 0;
+	if(term_flag)
+	    exit(0);
 	ret = krb5_read_priv_message(context, ac, &fd, &in);
 	if(ret == HEIM_ERR_EOF)
 	    exit(0);
 	if(ret)
 	    krb5_err(context, 1, ret, "krb5_read_priv_message");
+	doing_useful_work = 1;
 	kadmind_dispatch(kadm_handle, initial, &in, &out);
 	krb5_data_free(&in);
 	ret = krb5_write_priv_message(context, ac, &fd, &out);
