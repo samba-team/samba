@@ -46,7 +46,7 @@ RCSID("$Id$");
 static SL_cmd *
 sl_match (SL_cmd *cmds, char *cmd, int exactp)
 {
-    SL_cmd *c, *current = NULL, *partial_cmd;
+    SL_cmd *c, *current = NULL, *partial_cmd = NULL;
     int partial_match = 0;
 
     for (c = cmds; c->name; ++c) {
