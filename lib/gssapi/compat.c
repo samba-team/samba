@@ -40,7 +40,7 @@ static krb5_error_code
 check_compat(OM_uint32 *minor_status, gss_name_t name, 
 	     const char *option, krb5_boolean *compat)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     char **p, **q;
     krb5_principal match;
 
