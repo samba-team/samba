@@ -64,7 +64,8 @@
 
 #include "includes.h"
 
-TDB_CONTEXT *tdb;
+static TDB_CONTEXT *tdb;
+static fstring tdb_filename;
 
 #if 0				/* Unused */
 
@@ -164,7 +165,7 @@ int psec_getsec(char *printer)
 {
 	SEC_DESC_BUF *secdesc_ctr = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
-	fstring keystr, sidstr, tdb_path;
+	fstring keystr, sidstr;
 	prs_struct ps;
 	int result = 0, i;
 
@@ -172,11 +173,17 @@ int psec_getsec(char *printer)
 
 	/* Open tdb for reading */
 
-	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntprinters.tdb", LOCKDIR);
-	tdb = tdb_open(tdb_path, 0, 0, O_RDONLY, 0600);
+	if (!tdb_filename[0]) {
+		fstring p;
+
+		slprintf(p, sizeof(p) - 1, "%s/ntprinters.tdb", LOCKDIR);
+		fstrcpy(tdb_filename, p);
+	}
+
+	tdb = tdb_open(tdb_filename, 0, 0, O_RDONLY, 0600);
 
 	if (!tdb) {
-		printf("psec: failed to open nt printers database: %s\n",
+		printf("psec: failed to open %s: %s\n", tdb_filename,
 		       sys_errlist[errno]);
 		return 1;
 	}
@@ -260,7 +267,7 @@ int psec_setsec(char *printer)
 	SEC_DESC *sd;
 	SEC_DESC_BUF *sdb = NULL;
 	int result = 0, num_aces = 0;
-	fstring line, keystr, tdb_path;
+	fstring line, keystr;
 	size_t size;
 	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -278,11 +285,17 @@ int psec_setsec(char *printer)
 
 	/* Open tdb for reading */
 
-	slprintf(tdb_path, sizeof(tdb_path) - 1, "%s/ntprinters.tdb", LOCKDIR);
-	tdb = tdb_open(tdb_path, 0, 0, O_RDWR, 0600);
+	if (!tdb_filename[0]) {
+		fstring p;
+
+		slprintf(p, sizeof(p) - 1, "%s/ntprinters.tdb", LOCKDIR);
+		fstrcpy(tdb_filename, p);
+	}
+
+	tdb = tdb_open(tdb_filename, 0, 0, O_RDWR, 0600);
 
 	if (!tdb) {
-		printf("psec: failed to open nt printers database: %s\n",
+		printf("psec: failed to open %s: %s\n", tdb_filename,
 		       sys_errlist[errno]);
 		result = 1;
 		goto done;
@@ -371,7 +384,7 @@ int psec_setsec(char *printer)
 
 void usage(void)
 {
-	printf("Usage: psec getsec|setsec printername\n");
+	printf("Usage: psec [-f filename] getsec|setsec printername\n");
 }
 
 /* Main function */
@@ -383,6 +396,20 @@ int main(int argc, char **argv)
 	if (argc == 1) {
 		usage();
 		return 1;
+	}
+
+	/* Check for optional filename argument */
+
+	if (strcmp(argv[1], "-f") == 0) {
+		if (argc != 5) {
+			usage();
+			return 1;
+		}
+
+		fstrcpy(tdb_filename, argv[2]);
+
+		argc -= 2;
+		argv += 2;
 	}
 
 	/* Do commands */
