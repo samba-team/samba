@@ -27,12 +27,12 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                22
+    AMERICA - USA                                24
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        6
     EUROPE                                       28
-
+    MIDDLE EAST                                   1
 
 AFRICA
 ======
@@ -308,6 +308,24 @@ Related Products and Services:
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+FLORIDA - USA
+
+The PC Doctor
+3009 West Tharpe Street Unit-C
+Tallahassee, Florida 32303
+ph 904.531.0364
+fx 904.531.0128
+
+Contacts: Andy McRory    pcdr@pcdr.com
+          David Blodgett david@pcdr.com
+
+The PC Doctor specializes in Linux Internet/Workgroup servers and network
+intergration. We have experience in setup and configuration of SAMBA under
+Caldera/RedHat/Slackware Linux as well as SCO and AIX. We offer workgroup
+Internet gateway servers for Windows client based networks.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
 GEORGIA - USA
 
 Hoppe Computer Services
@@ -321,7 +339,7 @@ In the computer field for 22 years.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-OWA - USA
+IOWA - USA
 
 Afan Ottenheimer
 JEONET
@@ -338,7 +356,7 @@ Linux<->NT<->Windows 3.11<->Windows 95 interaction using SAMBA.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-ILLONOIS - USA
+ILLINOIS - USA
 
 Information One, Inc.
 736 Hinman Ave, Suite 2W
@@ -347,6 +365,33 @@ Evanston, IL 60202
 info@info1.com
 
 Providing custom Internet and networking solutions.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ILLINOIS - USA
+
+Honesty Communications Inc.
+1001 W 75th St Suite 179A-200
+Woodridge, IL  60517
+
+http://www.honesty.com
+support@honesty.com
+
+(630) 964-8441
+(708) 399-8158  Emergency Pager
+
+Serving as 'Technical Support for Technical Support' to numerous
+companies across the country Honesty Communications provides
+solutions for all situations with 
+
+We can provide Samba installation, configuration, and security analysis
+as well as on-going support, training and upgrades.  We also provide
+custom programming and a slew of other services.
+
+Expertise includes:
+
+        UNIX, Windows 95, Windows NT, Windows 3.x, OS/2, Programming (C/C++,
+        Java, Visual Basic, Visual C, etc.), Support, Training
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -1386,3 +1431,26 @@ support for Samba.
 
 
 
+MIDDLE EAST
+===========
+
+------------------------------------------------------------------------------
+ISRAEL
+
+Sela Systems
+10 Ha'Kishon St.
+Bnei-Brak
+Israel 51203
+Phone: +972-3-6190999
+Fax: +972-3-6190992
+Email: info@sela.co.il
+
+We have been involved in Samba projects since 1995.
+We have several large-scale clients using Samba in their network
+and getting support from us. We also provide Unix/NT/Novell/Win95
+system and network services and solutions. Our company also provides
+courses and training in many aspects of systems and networking, 
+including TCP/IP and Samba.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
