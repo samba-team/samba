@@ -98,5 +98,6 @@ void event2string(Event *ev, char **str);
 int flags2int(HDBFlags *f);
 
 time_t gettime(const char *prompt, const char *def);
+size_t puttime(time_t t, char *s, size_t len);
 
 #endif /* __ADMIN_LOCL_H__ */

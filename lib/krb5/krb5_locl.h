@@ -103,17 +103,25 @@
 #include <hdb_err.h>
 #include <error.h>
 
+/* data.c */
+
 krb5_error_code krb5_data_alloc(krb5_data *, int);
 krb5_error_code krb5_data_realloc(krb5_data *, int);
 krb5_error_code krb5_data_copy(krb5_data *, void *, size_t);
+
+/* set_default_realm.c */
 
 krb5_error_code
 krb5_set_default_realm(krb5_context context,
 		       char *realm);
 
+/* get_default_realm.c */
+
 krb5_error_code
 krb5_get_default_realm(krb5_context context,
 		       char **realm);
+
+/* config_file.c */
 
 krb5_error_code krb5_config_parse_file (const char *fname,
 					krb5_config_section **res);
@@ -125,6 +133,15 @@ const void *krb5_config_vget_next (krb5_config_section *c,
 				   krb5_config_binding **pointer,
 				   int type,
 				   va_list args);
+
+const void *krb5_config_get (krb5_config_section *c,
+			     int type,
+			     ...);
+
+const void *krb5_config_vget (krb5_config_section *c,
+			      int type,
+			      va_list args);
+
 const char *krb5_config_get_string (krb5_config_section *c,
 				    ...);
 const char *krb5_config_vget_string (krb5_config_section *c,

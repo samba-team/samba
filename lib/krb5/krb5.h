@@ -168,7 +168,10 @@ typedef struct krb5_ccache_data{
 }krb5_ccache_data;
 
 typedef struct krb5_cc_cursor{
-  int fd;
+    union {
+	int fd;
+	void *v;
+    } u;
 }krb5_cc_cursor;
 
 typedef struct krb5_ccache_data *krb5_ccache;
@@ -279,10 +282,6 @@ typedef krb5_authenticator_data *krb5_authenticator;
 typedef struct krb5_rcache{
     int dummy;
 }krb5_rcache;
-
-typedef struct krb5_fcache{
-    char *filename;
-}krb5_fcache;
 
 typedef struct krb5_keytab_data {
   char *filename;
@@ -448,6 +447,16 @@ krb5_auth_con_getremotesubkey(krb5_context context,
 void
 krb5_free_keyblock(krb5_context context,
 		   krb5_keyblock *keyblock);
+
+krb5_error_code
+krb5_copy_keyblock (krb5_context context,
+		    const krb5_keyblock *inblock,
+		    krb5_keyblock **to);
+
+krb5_error_code
+krb5_copy_keyblock_contents (krb5_context context,
+			     const krb5_keyblock *inblock,
+			     krb5_keyblock *to);
 
 krb5_error_code
 krb5_auth_setcksumtype(krb5_context context,
@@ -690,8 +699,22 @@ krb5_verify_ap_req(krb5_context context,
 		   krb5_ticket **ticket);
 
 krb5_error_code
+krb5_free_creds_contents (krb5_context context,
+			  krb5_creds *creds);
+
+krb5_error_code
 krb5_free_creds (krb5_context context,
 		 krb5_creds *creds);
+
+krb5_error_code
+krb5_copy_creds (krb5_context context,
+		 const krb5_creds *incred,
+		 krb5_creds **outcred);
+
+krb5_error_code
+krb5_copy_creds_contents (krb5_context context,
+			  const krb5_creds *incred,
+			  krb5_creds *c);
 
 typedef EncAPRepPart krb5_ap_rep_enc_part;
 
