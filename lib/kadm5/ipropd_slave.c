@@ -35,6 +35,8 @@
 
 RCSID("$Id$");
 
+static krb5_log_facility *log_facility;
+
 static int
 connect_to_master (krb5_context context, const char *master)
 {
@@ -338,6 +340,9 @@ main(int argc, char **argv)
 	usage (1, args, num_args);
 
     master = argv[0];
+
+    krb5_openlog (context, "ipropd-master", &log_facility);
+    krb5_set_warn_dest(context, log_facility);
 
     ret = krb5_kt_register(context, &hdb_kt_ops);
     if(ret)
