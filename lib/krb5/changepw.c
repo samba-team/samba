@@ -273,9 +273,10 @@ process_reply (krb5_context context,
     len = ret;
 
     if (len < 6) {
-	str2data (result_string, "server %s sent to short message "
+	str2data (result_string, "server %s sent to too short message "
 		  "(%d bytes)", host, len);
-	return KRB5_KPASSWD_MALFORMED;
+	*result_code = KRB5_KPASSWD_MALFORMED;
+	return 0;
     }
 
     pkt_len = (reply[0] << 8) | (reply[1]);
@@ -293,10 +294,11 @@ process_reply (krb5_context context,
 	    return ret;
 
 	if (error.e_data->length < 2) {
-	    krb5_set_error_string(context, "server %s sent too short "
-				  "e_data to print anything usable", host);
+	    str2data(result_string, "server %s sent too short "
+		     "e_data to print anything usable", host);
 	    free_KRB_ERROR(&error);
-	    return KRB5_KPASSWD_MALFORMED;
+	    *result_code = KRB5_KPASSWD_MALFORMED;
+	    return 0;
 	}
 
 	p = error.e_data->data;
