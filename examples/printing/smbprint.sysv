@@ -47,6 +47,6 @@ password=""
        echo translate
 	echo "print -"
 	cat $*
-) | /opt/samba/smbclient "\\\\$server\\$service" $password -N -P  > /dev/null
+) | /opt/samba/smbclient "\\\\$server\\$service" $password -N > /dev/null
 exit $?
 
