@@ -115,9 +115,9 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 
 		do {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(SENDFILE64)
-			nwritten = sendfile64(outfd, infd, &offset, total, &hdtrl, 0);
+			nwritten = sendfile64(outfd, infd, offset, total, &hdtrl[0], 0);
 #else
-			nwritten = sendfile(outfd, infd, &offset, total, &hdtrl, 0);
+			nwritten = sendfile(outfd, infd, offset, total, &hdtrl[0], 0);
 #endif
 		} while (nwritten == -1 && errno == EINTR);
 		if (nwritten == -1)
