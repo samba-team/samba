@@ -257,3 +257,38 @@ krb5_decrypt (krb5_context context,
 	return krb5_do_decrypt(context, ptr, len, e, keyblock, result);
     return KRB5_PROG_ETYPE_NOSUPP;
 }
+
+krb5_error_code
+krb5_key_to_string(krb5_context context,
+		   krb5_keyblock key,
+		   krb5_boolean include_keydata,
+		   char **string)
+{
+    char *s;
+    char tmp[32]; /* enough to hold name of key type */
+    switch(key.keytype){
+    case KEYTYPE_DES:
+	snprintf(tmp, sizeof(tmp), "DES");
+	break;
+    default:
+	if(include_keydata)
+	    snprintf(tmp, sizeof(tmp), "<keytype %u>", key.keytype);
+	else
+	    snprintf(tmp, sizeof(tmp), "<keytype %u, length %u>", 
+		     key.keytype, key.keyvalue.length);
+	break;
+    }
+    if(include_keydata){
+	int i;
+	char *k = malloc(2 * key.keyvalue.length + 1);
+	*k = 0;
+	for(i = 0; i < key.keyvalue.length; i++){
+	    unsigned char c = ((unsigned char*)key.keyvalue.data)[i];
+	    sprintf(k + strlen(k), "%02x", c);
+	}
+	asprintf(string, "%s (key = %s)", tmp, k);
+	free(k);
+    }else
+	*string = strdup(tmp);
+    return 0;
+}
