@@ -312,7 +312,7 @@ krb5_ret_times(krb5_storage *sp, krb5_times *times)
     ret = krb5_ret_int32(sp, &tmp);
     times->authtime = tmp;
     if(ret) return ret;
-    ret = krb5_ret_int32(sd, &tmp);
+    ret = krb5_ret_int32(sp, &tmp);
     times->starttime = tmp;
     if(ret) return ret;
     ret = krb5_ret_int32(sp, &tmp);
