@@ -18,6 +18,11 @@ support has changed in samba 3.0. Read the chapter
 </sect1>
 
 <sect1>
+<title>add machine script</title>
+
+</sect1>
+
+<sect1>
 <title>Obsolete configuration options</title>
 
 <para>
