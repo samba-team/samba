@@ -260,3 +260,22 @@ set errcode_tests [list \
 foreach { test } $errcode_tests {
     check_errcode [lindex $test 0] [lindex $test 1] [lindex $test 2]
 }
+
+# Test enumerate trusted domains
+
+set test_desc "enumerate trusted domains"
+set output [util_start "bin/wbinfo" "-m"]
+
+foreach { the_domain } $output {
+    if { $the_domain == $domain} {
+	fail "own domain appears in trusted list"
+    }
+    note "Found extra trusted domain $the_domain"
+}
+
+if {[regexp "Usage" $output] || [regexp "Could not" $output]} {
+    fail $test_desc
+    puts $output
+} else {
+    pass $test_desc
+}
