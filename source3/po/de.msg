@@ -436,15 +436,15 @@ msgstr ""
 
 #: ../web/statuspage.c:368
 msgid "Stop winbindd"
-msgstr "Stopp nmbd"
+msgstr "Stopp winbindd"
 
 #: ../web/statuspage.c:370
 msgid "Start winbindd"
-msgstr "Start nmbd"
+msgstr "Start winbindd"
 
 #: ../web/statuspage.c:372
 msgid "Restart winbindd"
-msgstr "Neustart nmbd"
+msgstr "Neustart winbindd"
 
 #. stop, restart all
 #: ../web/statuspage.c:381
@@ -453,12 +453,12 @@ msgstr ""
 
 #: ../web/statuspage.c:382
 msgid "Restart All"
-msgstr "Neustart nmbd"
+msgstr "Neustart Alle"
 
 #. start all
 #: ../web/statuspage.c:386
 msgid "Start All"
-msgstr "Start nmbd"
+msgstr "Start Alle"
 
 #: ../web/statuspage.c:393
 msgid "Active Connections"
