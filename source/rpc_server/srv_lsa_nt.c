@@ -398,7 +398,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 				name = dos_domain;
 				/* We need to return the Domain SID here. */
 				if (secrets_fetch_domain_sid(
-					    lp_workgroup_dos(), &domain_sid))
+					    lp_workgroup_unix(), &domain_sid))
 					sid = &domain_sid;
 				else
 					return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

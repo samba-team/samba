@@ -2066,7 +2066,7 @@ NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_
 	if (!find_policy_by_hnd(p, &q_u->connect_pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	fstrcpy(domain_name, dos_unistrn2( q_u->uni_domain.buffer, q_u->uni_domain.uni_str_len));
+	fstrcpy(domain_name, dos_to_unix_static(dos_unistrn2( q_u->uni_domain.buffer, q_u->uni_domain.uni_str_len)));
 
 	ZERO_STRUCT(sid);
 

@@ -189,8 +189,8 @@ account password for domain %s.\n", domain));
   while(remote_machine_list && 
 	next_token(&remote_machine_list, remote_machine, 
 		   LIST_SEP, sizeof(remote_machine))) {
-    strupper(remote_machine);
-    if(strequal(remote_machine, "*")) {
+    strupper_unix(remote_machine);
+    if(strequal_unix(remote_machine, "*")) {
 
       /*
        * We have been asked to dynamcially determine the IP addresses of the PDC.

@@ -92,18 +92,18 @@ BOOL pdb_generate_sam_sid(void)
 		break;
 	}
 
-	if (secrets_fetch_domain_sid(global_myname_dos(), &global_sam_sid)) {
+	if (secrets_fetch_domain_sid(global_myname_unix(), &global_sam_sid)) {
 		DOM_SID domain_sid;
 
 		/* We got our sid. If not a pdc/bdc, we're done. */
 		if (!is_dc)
 			return True;
 
-		if (!secrets_fetch_domain_sid(lp_workgroup_dos(), &domain_sid)) {
+		if (!secrets_fetch_domain_sid(lp_workgroup_unix(), &domain_sid)) {
 
 			/* No domain sid and we're a pdc/bdc. Store it */
 
-			if (!secrets_store_domain_sid(lp_workgroup_dos(), &global_sam_sid)) {
+			if (!secrets_store_domain_sid(lp_workgroup_unix(), &global_sam_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Can't store domain SID as a pdc/bdc.\n"));
 				return False;
 			}
@@ -115,7 +115,7 @@ BOOL pdb_generate_sam_sid(void)
 			/* Domain name sid doesn't match global sam sid. Re-store global sam sid as domain sid. */
 
 			DEBUG(0,("pdb_generate_sam_sid: Mismatched SIDs as a pdc/bdc.\n"));
-			if (!secrets_store_domain_sid(lp_workgroup_dos(), &global_sam_sid)) {
+			if (!secrets_store_domain_sid(lp_workgroup_unix(), &global_sam_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Can't re-store domain SID as a pdc/bdc.\n"));
 				return False;
 			}
@@ -131,14 +131,14 @@ BOOL pdb_generate_sam_sid(void)
 
 	if (read_sid_from_file(fname, &global_sam_sid)) {
 		/* remember it for future reference and unlink the old MACHINE.SID */
-		if (!secrets_store_domain_sid(global_myname_dos(), &global_sam_sid)) {
+		if (!secrets_store_domain_sid(global_myname_unix(), &global_sam_sid)) {
 			DEBUG(0,("pdb_generate_sam_sid: Failed to store SID from file.\n"));
 			SAFE_FREE(fname);
 			return False;
 		}
 		unlink(fname);
 		if (is_dc) {
-			if (!secrets_store_domain_sid(lp_workgroup_dos(), &global_sam_sid)) {
+			if (!secrets_store_domain_sid(lp_workgroup_unix(), &global_sam_sid)) {
 				DEBUG(0,("pdb_generate_sam_sid: Failed to store domain SID from file.\n"));
 				SAFE_FREE(fname);
 				return False;
@@ -157,12 +157,12 @@ BOOL pdb_generate_sam_sid(void)
 		generate one and save it */
 	generate_random_sid(&global_sam_sid);
 
-	if (!secrets_store_domain_sid(global_myname_dos(), &global_sam_sid)) {
+	if (!secrets_store_domain_sid(global_myname_unix(), &global_sam_sid)) {
 		DEBUG(0,("pdb_generate_sam_sid: Failed to store generated machine SID.\n"));
 		return False;
 	}
 	if (is_dc) {
-		if (!secrets_store_domain_sid(lp_workgroup_dos(), &global_sam_sid)) {
+		if (!secrets_store_domain_sid(lp_workgroup_unix(), &global_sam_sid)) {
 			DEBUG(0,("pdb_generate_sam_sid: Failed to store generated domain SID.\n"));
 			return False;
 		}

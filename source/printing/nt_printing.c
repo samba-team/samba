@@ -4295,7 +4295,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	/* Make the security descriptor owned by the Administrators group
 	   on the PDC of the domain. */
 
-	if (secrets_fetch_domain_sid(lp_workgroup_dos(), &owner_sid)) {
+	if (secrets_fetch_domain_sid(lp_workgroup_unix(), &owner_sid)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
 
