@@ -180,7 +180,6 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 	int i, n, v;
 	int mtype;
 	BOOL retval=False;
-	int debuglevel_class[DBGC_LAST];
 
 	mtype = parse_type(msg_name);
 	if (mtype == -1) {
@@ -189,19 +188,22 @@ static BOOL do_command(char *dest, char *msg_name, char **params)
 	}
 
 	switch (mtype) {
-	case MSG_DEBUG:
+	case MSG_DEBUG: {
+		struct debuglevel_message dm;
+
 		if (!params || !params[0]) {
 			fprintf(stderr,"MSG_DEBUG needs a parameter\n");
 			return(False);
 		}
 
-		ZERO_ARRAY(debuglevel_class);
-		if (!debug_parse_params(params, debuglevel_class)) {
+		ZERO_STRUCT(dm);
+		if (!debug_parse_params(params, dm.debuglevel_class, dm.debuglevel_class_isset)) {
 			fprintf(stderr, "MSG_DEBUG error. Expected <class name>:level\n");
 			return(False);
 		} else
-			send_message(dest, MSG_DEBUG, debuglevel_class, sizeof(debuglevel_class), False);
+			send_message(dest, MSG_DEBUG, &dm, sizeof(dm), False);
 		break;
+	}
 
 	case MSG_PROFILE:
 		if (!params[0]) {
