@@ -2795,9 +2795,9 @@ global_oplocks_open = %d\n", timestring(), dev, inode, global_oplocks_open));
   {
     if(OPEN_FNUM(fnum))
     {
-      if((fsp->fd_ptr->dev == dev) && (fsp->fd_ptr->inode == inode) &&
-         (fsp->open_time.tv_sec == tval->tv_sec) && 
-         (fsp->open_time.tv_usec == tval->tv_usec)) {
+      if((Files[fnum].fd_ptr->dev == dev) && (Files[fnum].fd_ptr->inode == inode) &&
+         (Files[fnum].open_time.tv_sec == tval->tv_sec) && 
+         (Files[fnum].open_time.tv_usec == tval->tv_usec)) {
 	      fsp = &Files[fnum];
 	      break;
       }
