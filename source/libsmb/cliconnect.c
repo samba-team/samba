@@ -53,6 +53,13 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user,
 	if (passlen > sizeof(pword)-1)
 		return False;
 
+	/* LANMAN servers predate NT status codes and Unicode and ignore those 
+	   smb flags so we must disable the corresponding default capabilities  
+	   that would otherwise cause the Unicode and NT Status flags to be
+	   set (and even returned by the server) */
+
+	cli->capabilities &= ~(CAP_UNICODE | CAP_STATUS32);
+
 	/* if in share level security then don't send a password now */
 	if (!(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL))
 		passlen = 0;
