@@ -272,7 +272,7 @@ void clean_share_modes(void);
 /*The following definitions come from  mangle.c  */
 
 int str_checksum(char *s);
-BOOL is_8_3(char *fname);
+BOOL is_8_3(char *fname, BOOL check_case);
 void create_mangled_stack(int size);
 BOOL check_mangled_stack(char *s);
 BOOL is_mangled(char *s);

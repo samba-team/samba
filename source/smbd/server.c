@@ -300,7 +300,7 @@ static BOOL mangled_equal(char *name1, char *name2)
 {
   pstring tmpname;
 
-  if (is_8_3(name2))
+  if (is_8_3(name2, True))
     return(False);
 
   strcpy(tmpname,name2);
@@ -398,29 +398,9 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component)
   unix_format(name);
   unix_clean_name(name);
 
-  if (!case_sensitive && 
-      (!case_preserve || (is_8_3(name) && !short_case_preserve)))
-    strnorm(name);
-
   /* names must be relative to the root of the service - trim any leading /.
    also trim trailing /'s */
   trim_string(name,"/","/");
-
-  /* check if it's a printer file */
-  if (Connections[cnum].printer)
-    {
-      if ((! *name) || strchr(name,'/') || !is_8_3(name))
-	{
-	  char *s;
-	  fstring name2;
-	  sprintf(name2,"%.6s.XXXXXX",remote_machine);
-	  /* sanitise the name */
-	  for (s=name2 ; *s ; s++)
-	    if (!issafe(*s)) *s = '_';
-	  strcpy(name,(char *)mktemp(name2));	  
-	}      
-      return(True);
-    }
 
   /*
    * Ensure saved_last_component is valid even if file exists.
@@ -432,6 +412,26 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component)
     else
       strcpy(saved_last_component, name);
   }
+
+  if (!case_sensitive && 
+      (!case_preserve || (is_8_3(name, False) && !short_case_preserve)))
+    strnorm(name);
+
+  /* check if it's a printer file */
+  if (Connections[cnum].printer)
+    {
+      if ((! *name) || strchr(name,'/') || !is_8_3(name, True))
+	{
+	  char *s;
+	  fstring name2;
+	  sprintf(name2,"%.6s.XXXXXX",remote_machine);
+	  /* sanitise the name */
+	  for (s=name2 ; *s ; s++)
+	    if (!issafe(*s)) *s = '_';
+	  strcpy(name,(char *)mktemp(name2));	  
+	}      
+      return(True);
+    }
 
   /* stat the name - if it exists then we are all done! */
   if (sys_stat(name,&st) == 0)

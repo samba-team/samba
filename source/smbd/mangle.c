@@ -79,7 +79,7 @@ static BOOL is_reserved_msdos(char *fname)
 /****************************************************************************
 return True if a name is in 8.3 dos format
 ****************************************************************************/
-BOOL is_8_3(char *fname)
+BOOL is_8_3(char *fname, BOOL check_case)
 {
   int len;
   char *dot_pos;
@@ -91,8 +91,7 @@ BOOL is_8_3(char *fname)
 
   DEBUG(5,("checking %s for 8.3\n",fname));
 
-  if (case_mangle)
-#ifndef YOSTW
+  if (check_case && case_mangle)
     switch (case_default)
       {
       case CASE_LOWER:
@@ -102,10 +101,6 @@ BOOL is_8_3(char *fname)
 	if (strhaslower(fname)) return(False);
 	break;
       }
-#endif
-#ifdef YOSTW
-	if (strhasupper(fname) && strhaslower(fname)) return(False);
-#endif
 
   /* can't be longer than 12 chars */
   if (len == 0 || len > 12)
@@ -652,7 +647,7 @@ BOOL name_map_mangle(char *OutName,BOOL need83,int snum)
   }
 
   /* check if it's already in 8.3 format */
-  if (need83 && !is_8_3(OutName)) {
+  if (need83 && !is_8_3(OutName, True)) {
     if (!lp_manglednames(snum)) return(False);
 
     /* mangle it into 8.3 */
