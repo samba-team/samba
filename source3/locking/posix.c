@@ -705,10 +705,10 @@ static BOOL posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 
 	ret = conn->vfs_ops.lock(fsp,fsp->fd,op,offset,count,type);
 
-	if (!ret && (errno == EFBIG)) {
+	if (!ret && ((errno == EFBIG) || (errno == ENOLCK))) {
 		if( DEBUGLVL( 0 )) {
 			dbgtext("posix_fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n", (double)offset,(double)count);
-			dbgtext("a 'file too large' error. This can happen when using 64 bit lock offsets\n");
+			dbgtext("an %s error. This can happen when using 64 bit lock offsets\n", strerror(errno));
 			dbgtext("on 32 bit NFS mounted file systems. Retrying with 32 bit truncated length.\n");
 		}
 		/* 32 bit NFS file system, retry with smaller offset */
