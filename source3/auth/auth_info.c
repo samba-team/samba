@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+/** List of various built-in authenticaion modules */
+
 const struct auth_init_function builtin_auth_init_functions[] = {
 	{ "guest", auth_init_guest },
 	{ "rhosts", auth_init_rhosts },
@@ -36,6 +38,25 @@ const struct auth_init_function builtin_auth_init_functions[] = {
 #endif
 	{ NULL, NULL}
 };
+
+/***************************************************************************
+ Free a linked list of auth methods
+***************************************************************************/
+
+static void free_auth_methods_list(auth_methods **list)
+{
+	if (list != NULL) {
+		while (*list) {
+			auth_methods *old_head = *list;
+			if ((*list)->free_private_data) {
+				(*list)->free_private_data(&((*list)->private_data));
+			}
+			DLIST_REMOVE(*list, *list);			
+			SAFE_FREE(old_head);
+		}
+		
+	}
+}
 
 /***************************************************************************
  Make a auth_info struct
@@ -104,7 +125,10 @@ static BOOL make_auth_info_text_list(auth_authsupplied_info **auth_info, char **
 		}
 	}
 	
-	make_auth_info_list(auth_info, list);
+	if (!make_auth_info_list(auth_info, list)) {
+		free_auth_methods_list(&list);
+		return False;
+	}
 	
 	return True;
 }
@@ -210,17 +234,8 @@ BOOL make_auth_info_fixed(auth_authsupplied_info **auth_info, uchar chal[8])
 
 void free_auth_info(auth_authsupplied_info **auth_info)
 {
-	auth_methods *list;
 	if (*auth_info != NULL) {
-		list = (*auth_info)->auth_method_list;	
-		while (list) {
-			auth_methods *old_head = list;
-			if (list->free_private_data) {
-				list->free_private_data(&(list->private_data));
-			}
-			DLIST_REMOVE(list, list);			
-			SAFE_FREE(old_head);
-		}
+		free_auth_methods_list(&(*auth_info)->auth_method_list);
 		
 		data_blob_free(&(*auth_info)->challenge);
 		ZERO_STRUCT(**auth_info);

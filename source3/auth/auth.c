@@ -23,11 +23,18 @@
 
 #include "includes.h"
 
-/****************************************************************************
- Check user is in correct domain if required
-****************************************************************************/
+/**
+ * Check user is in correct domain (if required)
+ *
+ * @param user Only used to fill in the debug message
+ * 
+ * @param domain The domain to be verified
+ *
+ * @return True if the user can connect with that domain, 
+ *         False otherwise.
+**/
 
-static BOOL check_domain_match(char *user, char *domain) 
+static BOOL check_domain_match(const char *user, const char *domain) 
 {
 	/*
 	 * If we aren't serving to trusted domains, we must make sure that
@@ -46,22 +53,37 @@ static BOOL check_domain_match(char *user, char *domain)
 	}
 }
 
-/****************************************************************************
- Check a users password, as given in the user-info struct and return various
- interesting details in the server_info struct.
-
- This functions does NOT need to be in a become_root()/unbecome_root() pair
- as it makes the calls itself when needed.
-
- The return value takes precedence over the contents of the server_info 
- struct.  When the return is other than NT_STATUS_NOPROBLEMO the contents 
- of that structure is undefined.
-
-****************************************************************************/
+/**
+ * Check a user's Plaintext, LM or NTLM password.
+ *
+ * Check a user's password, as given in the user_info struct and return various
+ * interesting details in the server_info struct.
+ *
+ * This function does NOT need to be in a become_root()/unbecome_root() pair
+ * as it makes the calls itself when needed.
+ *
+ * The return value takes precedence over the contents of the server_info 
+ * struct.  When the return is other than NT_STATUS_OK the contents 
+ * of that structure is undefined.
+ *
+ * @param user_info Contains the user supplied components, including the passwords.
+ *                  Must be created with make_user_info() or one of its wrappers.
+ *
+ * @param auth_info Supplies the challanges and some other data. 
+ *                  Must be created with make_auth_info(), and the challanges should be 
+ *                  filled in, either at creation or by calling the challange geneation 
+ *                  function auth_get_challange().  
+ *
+ * @param server_info If successful, contains information about the authenticaion, 
+ *                    including a SAM_ACCOUNT struct describing the user.
+ *
+ * @return An NTSTATUS with NT_STATUS_OK or an appropriate error.
+ *
+ **/
 
 NTSTATUS check_password(const auth_usersupplied_info *user_info, 
-			const auth_authsupplied_info *auth_info,
-			auth_serversupplied_info **server_info)
+			     const auth_authsupplied_info *auth_info,
+			     auth_serversupplied_info **server_info)
 {
 	
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
@@ -92,6 +114,11 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 	dump_data(100, user_info->nt_resp.data, user_info->nt_resp.length);
 #endif
 
+	/* This needs to be sorted:  If it doesn't match, what should we do? */
+  	if (!check_domain_match(user_info->smb_name.str, user_info->domain.str)) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
 	for (auth_method = auth_info->auth_method_list;auth_method; auth_method = auth_method->next)
 	{
 		nt_status = auth_method->auth(auth_method->private_data, user_info, auth_info, server_info);
@@ -107,12 +134,6 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 			break;
 		}
 	}
-
-	/* This needs to be sorted:  If it doesn't match, what should we do? */
-  	if (!check_domain_match(user_info->smb_name.str, user_info->domain.str)) {
-		return NT_STATUS_LOGON_FAILURE;
-	}
-
 
 	/* This is one of the few places the *relies* (rather than just sets defaults
 	   on the value of lp_security().  This needs to change.  A new paramater 
@@ -158,10 +179,16 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 
 }
 
-/****************************************************************************
- Squash an NT_STATUS return in line with requirements for unauthenticated 
- connections.  (session setups in particular)
-****************************************************************************/
+/**
+ * Squash an NT_STATUS in line with security requirements.
+ * In an attempt to avoid giving the whole game away when users
+ * are authenticating, NT replaces both NT_STATUS_NO_SUCH_USER and 
+ * NT_STATUS_WRONG_PASSWORD with NT_STATUS_LOGON_FAILURE in certain situations 
+ * (session setups in particular).
+ *
+ * @param nt_status NTSTATUS input for squashing.
+ * @return the 'squashed' nt_status
+ **/
 
 NTSTATUS nt_status_squash(NTSTATUS nt_status) 
 {
