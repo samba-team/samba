@@ -1,3 +1,11 @@
+2004-06-02  Love  <lha@stacken.kth.se>
+
+	* kpasswd/kpasswd.c: use krb5_set_password_using_ccache
+	
+	* lib/krb5/krb5_set_password.3: add krb5_set_password_using_ccache
+	
+	* lib/krb5/changepw.c: implement krb5_set_password_using_ccache
+	
 2004-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/hdb-ldap.c: Allow the objectClass to be
