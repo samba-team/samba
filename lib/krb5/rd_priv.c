@@ -52,6 +52,7 @@ krb5_rd_priv(krb5_context context,
   EncKrbPrivPart part;
   size_t len;
   krb5_data plain;
+  krb5_keyblock *key;
 
   r = decode_KRB_PRIV (inbuf->data, inbuf->length, &priv, &len);
   if (r) 
@@ -65,11 +66,20 @@ krb5_rd_priv(krb5_context context,
       goto failure;
   }
 
+  /* XXX - Is this right? */
+
+  if (auth_context->local_subkey.keytype)
+      key = &auth_context->local_subkey;
+  else if (auth_context->remote_subkey.keytype)
+      key = &auth_context->remote_subkey;
+  else
+      key = &auth_context->key;
+
   r = krb5_decrypt (context,
 		    priv.enc_part.cipher.data,
 		    priv.enc_part.cipher.length,
 		    priv.enc_part.etype,
-		    &auth_context->key,
+		    key,
 		    &plain);
   if (r) 
       goto failure;
