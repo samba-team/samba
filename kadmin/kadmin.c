@@ -239,7 +239,7 @@ main(int argc, char **argv)
     if(local_flag){
 	ret = kadm5_s_init_with_password_ctx(context, 
 					     KADM5_ADMIN_SERVICE,
-					     "password",
+					     NULL,
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
 					     &kadm_handle);
@@ -247,7 +247,7 @@ main(int argc, char **argv)
     } else {
 	ret = kadm5_c_init_with_password_ctx(context, 
 					     client_name,
-					     "password", 
+					     NULL,
 					     KADM5_ADMIN_SERVICE,
 					     &conf, 0, 0, 
 					     &kadm_handle);
