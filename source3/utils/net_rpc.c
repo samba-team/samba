@@ -1605,8 +1605,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	asprintf(&acct_name, "%s$", lp_workgroup());
 	strupper(acct_name);
 	
-	opt_user_name = (char*)malloc(strlen(acct_name) + 1);
-	safe_strcpy(opt_user_name, acct_name, strlen(acct_name) + 1);
+	opt_user_name = acct_name;
 
 	/* find the domain controller */
 	if (!net_find_dc(&server_ip, pdc_name, domain_name)) {
@@ -1706,6 +1705,8 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 			nt_errstr(nt_status)));
 		return -1;
 	}
+
+
 
 
 	/* There should be actually query info level 3 (following nt serv behaviour),
