@@ -871,7 +871,7 @@ process_rings(int netin,
 		if ((c == -1) && (errno == EINVAL)) {
 		    c = recv(net, netiring.supply, canread, 0);
 		    if (clocks.didnetreceive < clocks.gotDM) {
-			SYNCHing = stilloob(net);
+			SYNCHing = stilloob();
 		    }
 		} else if (first && c > 0) {
 		    /*
