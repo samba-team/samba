@@ -5,7 +5,7 @@ Contributor:	Jeremy Allison <samba-bugs@samba.org>
 Updated:	April 19, 1999
 Note:		Please refer to WinNT.txt also
 
-Subject:	LanManager / Samba Password Encryption.
+Subject:	LanManager / Samba Password Encryption
 ============================================================================
 
 With the development of LanManager and Windows NT compatible password 
@@ -23,8 +23,8 @@ How does it work ?
 LanManager encryption is somewhat similar to UNIX password
 encryption. The server uses a file containing a hashed value of a
 user's password.  This is created by taking the user's plaintext
-password, capitalising it, and either truncating to 14 bytes (or
-padding to 14 bytes with null bytes). This 14 byte value is used as
+password, capitalising it, and either truncating to 14 bytes or
+padding to 14 bytes with null bytes. This 14 byte value is used as
 two 56 bit DES keys to encrypt a 'magic' eight byte value, forming a
 16 byte value which is stored by the server and client. Let this value
 be known as the *hashed password*.
@@ -98,6 +98,7 @@ PROS AND CONS
 
 There are advantages and disadvantages to both schemes. 
 
+
 Advantages of SMB Encryption:
 -----------------------------
 
@@ -119,7 +120,7 @@ Advantages of non-encrypted passwords:
 ftp
 
 - you are probably already using other services (such as telnet and
-ftp) which send plain text passwords over the net, so not sending them
+ftp) which send plain text passwords over the net, so sending them
 for SMB isn't such a big deal.
 
 Note that Windows NT 4.0 Service pack 3 changed the default for
@@ -136,7 +137,7 @@ In order for Samba to participate in the above protocol it must
 be able to look up the 16 byte hashed values given a user name.
 Unfortunately, as the UNIX password value is also a one way hash
 function (ie. it is impossible to retrieve the cleartext of the user's
-password given the UNIX hash of it) then a separate password file
+password given the UNIX hash of it), a separate password file
 containing this 16 byte value must be kept. To minimise problems with
 these two password files, getting out of sync, the UNIX /etc/passwd and
 the smbpasswd file, a utility, mksmbpasswd.sh, is provided to generate
