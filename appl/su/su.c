@@ -207,8 +207,25 @@ krb5_start_session(void)
     asprintf(&cc_name, "%s:%s", krb5_cc_get_type(context, ccache2),
 	     krb5_cc_get_name(context, ccache2));
     setenv("KRB5CCNAME", cc_name, 1);
+
+    /* we want to export this even if we don't directly support KRB4 */
+    {
+#ifndef TKT_ROOT
+#define TKT_ROOT "/tmp/tkt"
+#endif
+	int fd;
+	char tkfile[256];
+	strlcpy(tkfile, TKT_ROOT, sizeof(tkfile));
+	strlcat(tkfile, "_XXXXXX", sizeof(tkfile));
+	fd = mkstemp(tkfile);
+	if(fd >= 0) {
+	    close(fd);
+	    setenv("KRBTKFILE", tkfile, 1);
+	}
+    }
             
 #ifdef KRB4
+    /* convert creds? */
     if(k_hasafs()) {
 	if (k_setpag() == 0)
 	    krb5_afslog(context, ccache2, NULL, NULL);
