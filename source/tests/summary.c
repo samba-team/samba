@@ -7,10 +7,6 @@ main()
 	exit(1);
 #endif
 
-#if !(defined(HAVE_SYSV_IPC) || defined(HAVE_SHARED_MMAP))
-	printf("WARNING: no shared memory. Running with slow locking code\n");
-#endif
-
 #if !(defined(HAVE_IFACE_IFCONF) || defined(HAVE_IFACE_IFREQ) || defined(HAVE_IFACE_AIX))
 	printf("WARNING: No automated network interface determination\n");
 #endif
