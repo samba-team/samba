@@ -84,6 +84,12 @@ static char *scan(char *chaine,char **entry)
  
   *entry=(char *)malloc(sizeof(pstring));
   value=(char *)malloc(sizeof(pstring));
+
+  if(*entry == NULL || value == NULL) {
+    fprintf(stderr,"scan: malloc fail !\n");
+    exit(1);
+  }
+
   pstrcpy(*entry,chaine);
   temp=chaine;
   while( temp[i]!='=' && temp[i]!='\0') {
@@ -134,6 +140,11 @@ static void lookup_strings(FILE *fichier)
   temp=(char *)malloc(sizeof(pstring));
   temp2=(char *)malloc(sizeof(pstring));
   
+  if(temp == NULL || temp2 == NULL) {
+    fprintf(stderr,"lookup_strings: malloc fail !\n");
+    exit(1);
+  }
+
   *sbuffer[0]='\0';
   
   pstrcpy(temp2,"[Strings]");
@@ -184,6 +195,11 @@ static void lookup_entry(FILE *fichier,char *chaine)
   temp=(char *)malloc(sizeof(pstring));
   temp2=(char *)malloc(sizeof(pstring));
   
+  if(temp == NULL || temp2 == NULL) {
+    fprintf(stderr,"lookup_entry: malloc fail !\n");
+    exit(1);
+  }
+
   *buffer[0]='\0';
   
   pstrcpy(temp2,"[");
@@ -236,7 +252,7 @@ static char *find_desc(FILE *fichier,char *text)
   long_desc=(char *)malloc(sizeof(pstring));
   short_desc=(char *)malloc(sizeof(pstring));
   if (!chaine || !long_desc || !short_desc) {
-    fprintf(stderr,"Unable to malloc memory\n");
+    fprintf(stderr,"find_desc: Unable to malloc memory\n");
     exit(1);
   }
 
@@ -363,7 +379,10 @@ static void scan_short_desc(FILE *fichier, char *short_desc)
   helpfile=0;
   languagemonitor=0;
   datatype="RAW";
-  temp=(char *)malloc(sizeof(pstring));
+  if((temp=(char *)malloc(sizeof(pstring))) == NULL) {
+    fprintf(stderr, "scan_short_desc: malloc fail !\n");
+    exit(1);
+  }
   
   driverfile=short_desc;
   datafile=short_desc;
@@ -472,7 +491,10 @@ int main(int argc, char *argv[])
   lookup_entry(inf_file,"DestinationDirs");
   build_subdir();
 
-  files_to_copy=(char *)malloc(2048*sizeof(char));
+  if((files_to_copy=(char *)malloc(2048*sizeof(char))) == NULL) {
+    fprintf(stderr, "%s: malloc fail.\n", argv[0] );
+    exit(1);
+  }
   *files_to_copy='\0';
   scan_short_desc(inf_file,short_desc);
   fprintf(stdout,"%s:%s:%s:",

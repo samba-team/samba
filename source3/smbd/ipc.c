@@ -642,7 +642,13 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
       return;
     }
 
-    p=(char *)malloc(8192*sizeof(char));
+    if((p=(char *)malloc(8192*sizeof(char))) == NULL) {
+      DEBUG(0,("fill_printq_info: malloc fail !\n"));
+      desc->errcode=NERR_notsupported;
+      fclose(f);
+      return;
+    }
+
     bzero(p, 8192*sizeof(char));
     q=p;
 
@@ -741,7 +747,12 @@ static int get_printerdrivernumber(int snum)
     return(0);
   }
 
-  p=(char *)malloc(8192*sizeof(char));
+  if((p=(char *)malloc(8192*sizeof(char))) == NULL) {
+    DEBUG(3,("get_printerdrivernumber: malloc fail !\n"));
+    fclose(f);
+    return 0;
+  }
+
   q=p; /* need it to free memory because p change ! */
 
   /* lookup the long printer driver name in the file description */
@@ -882,11 +893,20 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
     if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i))
       queuecnt++;
   if (uLevel > 0) {
-    queue = (print_queue_struct**)malloc(queuecnt*sizeof(print_queue_struct*));
+    if((queue = (print_queue_struct**)malloc(queuecnt*sizeof(print_queue_struct*))) == NULL) {
+      DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
+      return False;
+    }
     memset(queue,0,queuecnt*sizeof(print_queue_struct*));
-    status = (print_status_struct*)malloc(queuecnt*sizeof(print_status_struct));
+    if((status = (print_status_struct*)malloc(queuecnt*sizeof(print_status_struct))) == NULL) {
+      DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
+      return False;
+    }
     memset(status,0,queuecnt*sizeof(print_status_struct));
-    subcntarr = (int*)malloc(queuecnt*sizeof(int));
+    if((subcntarr = (int*)malloc(queuecnt*sizeof(int))) == NULL) {
+      DEBUG(0,("api_DosPrintQEnum: malloc fail !\n"));
+      return False;
+    }
     subcnt = 0;
     n = 0;
     for (i = 0; i < services; i++)
@@ -3525,12 +3545,17 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
   for (i=0;api_commands[i].name;i++)
     if (api_commands[i].id == api_command && api_commands[i].fn)
       {
-	DEBUG(3,("Doing %s\n",api_commands[i].name));
-	break;
+        DEBUG(3,("Doing %s\n",api_commands[i].name));
+        break;
       }
 
   rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
+
+  if(!rdata || !rparam) {
+    DEBUG(0,("api_reply: malloc fail !\n"));
+    return -1;
+  }
 
   reply = api_commands[i].fn(conn,vuid,params,data,mdrcnt,mprcnt,
 			     &rdata,&rparam,&rdata_len,&rparam_len);
@@ -3629,18 +3654,27 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
   
 	if (tdscnt)  {
-		data = (char *)malloc(tdscnt);
+		if((data = (char *)malloc(tdscnt)) == NULL) {
+          DEBUG(0,("reply_trans: data malloc fail for %d bytes !\n", tdscnt));
+		  return(ERROR(ERRDOS,ERRnomem));
+        } 
 		memcpy(data,smb_base(inbuf)+dsoff,dscnt);
 	}
 
 	if (tpscnt) {
-		params = (char *)malloc(tpscnt);
+		if((params = (char *)malloc(tpscnt)) == NULL) {
+          DEBUG(0,("reply_trans: param malloc fail for %d bytes !\n", tpscnt));
+		  return(ERROR(ERRDOS,ERRnomem));
+        } 
 		memcpy(params,smb_base(inbuf)+psoff,pscnt);
 	}
 
 	if (suwcnt) {
 		int i;
-		setup = (uint16 *)malloc(suwcnt*sizeof(setup[0]));
+		if((setup = (uint16 *)malloc(suwcnt*sizeof(uint16))) == NULL) {
+          DEBUG(0,("reply_trans: setup malloc fail for %d bytes !\n", suwcnt * sizeof(uint16)));
+		  return(ERROR(ERRDOS,ERRnomem));
+        } 
 		for (i=0;i<suwcnt;i++)
 			setup[i] = SVAL(inbuf,smb_vwv14+i*SIZEOFWORD);
 	}

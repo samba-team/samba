@@ -105,6 +105,11 @@ BOOL cli_call_api(char *pipe_name, int pipe_name_len,
   if (!inbuf) inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   if (!outbuf) outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
 
+  if(!inbuf || !outbuf) {
+    DEBUG(0,("cli_call_api: malloc fail.\n"));
+    return False;
+  }
+
   if (pipe_name_len == 0) pipe_name_len = strlen(pipe_name);
 
   cli_send_trans_request(outbuf,SMBtrans,pipe_name, pipe_name_len, 0,0,
@@ -151,6 +156,11 @@ BOOL cli_receive_trans_response(char *inbuf,int trans,
   /* allocate it */
   *data = Realloc(*data,total_data);
   *param = Realloc(*param,total_param);
+
+  if((total_data && !data) || (total_param && !param)) {
+    DEBUG(0,("cli_receive_trans_response: Realloc fail !\n"));
+    return(False);
+  }
 
   while (1)
     {
@@ -458,10 +468,15 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
   bzero(&opt, sizeof(opt));
 
   if (was_null)
-    {
-      inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-      outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+  {
+    inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+    outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+
+    if(!inbuf || !outbuf) {
+      DEBUG(0,("cli_send_login: malloc fail !\n"));
+      return False;
     }
+  }
 
   if (strstr(service,"IPC$")) connect_as_ipc = True;
 
