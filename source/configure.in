@@ -113,7 +113,7 @@ AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf putprpwnam)
 AC_CHECK_FUNCS(setresuid setuidx setgroups mktime rename ftruncate)
 AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2)
-AC_CHECK_FUNCS(bigcrypt getprpwnam setluid yp_get_default_domain)
+AC_CHECK_FUNCS(bigcrypt getprpwnam setluid yp_get_default_domain getpwanam)
 
 echo $ac_n "checking for long long ... $ac_c"
 AC_TRY_RUN([#include <stdio.h>
