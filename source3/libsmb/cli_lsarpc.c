@@ -689,4 +689,57 @@ NTSTATUS cli_lsa_enum_privilege(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/** Get privilege name */
+
+NTSTATUS cli_lsa_get_dispname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, char *name, uint16 lang_id, uint16 lang_id_sys,
+			      fstring description, uint16 *lang_id_desc)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_PRIV_GET_DISPNAME q;
+	LSA_R_PRIV_GET_DISPNAME r;
+	NTSTATUS result;
+	int i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_lsa_priv_get_dispname(&q, pol, name, lang_id, lang_id_sys);
+
+	if (!lsa_io_q_priv_get_dispname("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_PRIV_GET_DISPNAME, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_priv_get_dispname("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+	
+	rpcstr_pull_unistr2_fstring(description , &r.desc);
+	*lang_id_desc = r.lang_id;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /** @} **/

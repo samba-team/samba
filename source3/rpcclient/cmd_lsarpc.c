@@ -269,6 +269,43 @@ static NTSTATUS cmd_lsa_enum_privilege(struct cli_state *cli,
 	return result;
 }
 
+/* Get privilege name */
+
+static NTSTATUS cmd_lsa_get_dispname(struct cli_state *cli, 
+                                     TALLOC_CTX *mem_ctx, int argc, 
+                                     char **argv) 
+{
+	POLICY_HND pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	uint16 lang_id=0;
+	uint16 lang_id_sys=0;
+	uint16 lang_id_desc;
+	fstring description;
+
+	if (argc != 2) {
+		printf("Usage: %s privilege name\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_lsa_get_dispname(cli, mem_ctx, &pol, argv[1], lang_id, lang_id_sys, description, &lang_id_desc);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Print results */
+	printf("%s -> %s (language: 0x%x)\n", argv[1], description, lang_id_desc);
+
+ done:
+	return result;
+}
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
@@ -280,6 +317,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lookupnames", cmd_lsa_lookup_names, 		PIPE_LSARPC, "Convert names to SIDs",     "" },
 	{ "enumtrust", 	 cmd_lsa_enum_trust_dom, 	PIPE_LSARPC, "Enumerate trusted domains", "" },
 	{ "enumprivs", 	 cmd_lsa_enum_privilege, 	PIPE_LSARPC, "Enumerate privileges",      "" },
+	{ "getdispname", cmd_lsa_get_dispname,  	PIPE_LSARPC, "Get the privilege name",    "" },
 
 	{ NULL }
 };

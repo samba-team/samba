@@ -1416,6 +1416,21 @@ BOOL lsa_io_r_enum_privs(char *desc, LSA_R_ENUM_PRIVS *r_q, prs_struct *ps, int 
 	return True;
 }
 
+void init_lsa_priv_get_dispname(LSA_Q_PRIV_GET_DISPNAME *trn, POLICY_HND *hnd, char *name, uint16 lang_id, uint16 lang_id_sys)
+{
+	int len_name = strlen(name);
+
+	if(len_name == 0)
+		len_name = 1;
+
+	memcpy(&trn->pol, hnd, sizeof(trn->pol));
+
+	init_uni_hdr(&trn->hdr_name, len_name);
+	init_unistr2(&trn->name, name, len_name);
+	trn->lang_id = lang_id;
+	trn->lang_id_sys = lang_id_sys;
+}
+
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
