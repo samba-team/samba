@@ -22,7 +22,6 @@
 */
 
 #include "includes.h"
-#include "loadparm.h"
 #include "trans2.h"
 
 extern int DEBUGLEVEL;

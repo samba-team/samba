@@ -234,6 +234,15 @@ typedef char fstring[128];
 typedef fstring string;
 
 
+struct smb_passwd {
+	int smb_userid;
+	char *smb_name;
+	unsigned char *smb_passwd; /* Null if no password */
+	unsigned char *smb_nt_passwd; /* Null if no password */
+	/* Other fields / flags may be added later */
+};
+
+
 struct current_user {
   int cnum, id;
   int uid, gid;

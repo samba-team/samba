@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "loadparm.h"
 extern int DEBUGLEVEL;
 extern connection_struct Connections[];
 extern files_struct Files[];

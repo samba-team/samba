@@ -27,7 +27,6 @@
 
 #include "includes.h"
 #include "smb.h"
-#include "loadparm.h"
 
 extern int ClientNMB;
 extern int ClientDGRAM;
