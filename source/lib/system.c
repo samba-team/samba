@@ -668,7 +668,6 @@ struct passwd *sys_getpwnam(const char *name)
 
 	/* check for a cache hit first */
 	if (num_lookups && pw_cache.pass.pw_name && !strcmp(name, pw_cache.pass.pw_name)) {
-		DEBUG(2,("getpwnam(%s) avoided - using cached results\n",name));
 		return setup_pwret(&pw_cache.pass);
 	}
 
@@ -682,12 +681,9 @@ struct passwd *sys_getpwnam(const char *name)
 struct passwd *sys_getpwuid(uid_t uid)
 {
 	if (num_lookups && pw_cache.pass.pw_name && (uid == pw_cache.pass.pw_uid)) {
-		DEBUG(2,("getpwuid(%d) avoided - using cached results\n",uid));
 		return setup_pwret(&pw_cache.pass);
 	}
 	
-	DEBUG(2,("getpwuid(%d) called\n",uid));
-
   	return setup_pwret(getpwuid(uid));
 }
 
