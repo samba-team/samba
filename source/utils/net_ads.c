@@ -94,7 +94,12 @@ static int net_ads_info(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 
-	ads = ads_init(NULL, opt_target_workgroup, opt_host);
+	/* if netbios is disabled we have to default to the realm from smb.conf */
+
+	if ( lp_disable_netbios() && *lp_realm() )
+		ads = ads_init(lp_realm(), opt_target_workgroup, opt_host);
+	else
+		ads = ads_init(NULL, opt_target_workgroup, opt_host);
 
 	if (ads) {
 		ads->auth.flags |= ADS_AUTH_NO_BIND;

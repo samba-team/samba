@@ -29,7 +29,7 @@
  by NT and 2 is used by OS/2
 ****************************************************************************/
 
-static int interpret_long_filename(struct cli_state *cli,
+static size_t interpret_long_filename(struct cli_state *cli,
 				   int level,char *p,file_info *finfo)
 {
 	extern file_info def_finfo;
@@ -130,12 +130,12 @@ static int interpret_long_filename(struct cli_state *cli,
 			clistr_pull(cli, finfo->name, p,
 				    sizeof(finfo->name),
 				    namelen, 0);
-			return SVAL(base, 0);
+			return (size_t)IVAL(base, 0);
 		}
 	}
 	
 	DEBUG(1,("Unknown long filename format %d\n",level));
-	return(SVAL(p,0));
+	return (size_t)IVAL(base,0);
 }
 
 /****************************************************************************
@@ -168,6 +168,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	unsigned int param_len, data_len;	
 	uint16 setup;
 	pstring param;
+	const char *mnt;
 
 	/* NT uses 260, OS/2 uses 2. Both accept 1. */
 	info_level = (cli->capabilities&CAP_NT_SMBS)?260:1;
@@ -205,7 +206,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SIVAL(param,6,0); /* ff_resume_key */
 			/* NB. *DON'T* use continue here. If you do it seems that W2K and bretheren
 			   can miss filenames. Use last filename continue instead. JRA */
-			SSVAL(param,4,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
+			SSVAL(param,10,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
 			p = param+12;
 			p += clistr_push(cli, param+12, mask, sizeof(param)-12, 
 					 STR_TERMINATE);
@@ -270,7 +271,21 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = rdata;
 
 		/* we might need the lastname for continuations */
- 
+		for (p2=p,i=0;i<ff_searchcount;i++) {
+			if ((info_level == 260) && (i == ff_searchcount-1)) {
+				/* Last entry - fixup the last offset length. */
+				SIVAL(p2,0,PTR_DIFF((rdata + data_len),p2));
+			}
+			p2 += interpret_long_filename(cli,info_level,p2,&finfo);
+		}
+
+		if (ff_lastname > 0) {
+			pstrcpy(mask, finfo.name);
+		} else {
+			pstrcpy(mask,"");
+		}
+
+		/* grab the data for later use */
 		/* and add them to the dirlist pool */
 		tdl = SMB_REALLOC(dirlist,dirlist_len + data_len);
 
@@ -281,21 +296,6 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			dirlist = tdl;
 		}
 
-		/* put in a length for the last entry, to ensure we can chain entries 
-		   into the next packet */
-		for (p2=p,i=0;i<(ff_searchcount-1);i++) {
-			p2 += interpret_long_filename(cli,info_level,p2,&finfo);
-		}
-		SSVAL(p2,0,data_len - PTR_DIFF(p2,p));
-
-		/* we might need the lastname for continuations */
-		if (ff_lastname > 0) {
-			pstrcpy(mask, finfo.name);
-		} else {
-			pstrcpy(mask,"");
-		}
-
-		/* grab the data for later use */
 		memcpy(dirlist+dirlist_len,p,data_len);
 		dirlist_len += data_len;
 
@@ -313,11 +313,10 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		First = False;
 	}
 
+	mnt = cli_cm_get_mntpoint( cli );
+
 	for (p=dirlist,i=0;i<total_received;i++) {
-		const char *mnt = cli_cm_get_mntpoint( cli );
-		
 		p += interpret_long_filename(cli,info_level,p,&finfo);
-		
 		fn( mnt,&finfo, Mask, state );
 	}
 

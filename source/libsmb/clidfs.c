@@ -595,7 +595,7 @@ BOOL cli_resolve_path( const char *mountpt, struct cli_state *rootcli, const cha
 
 	/* we got an error, check for DFS referral */
 			
-	if ( !cli_dfs_check_error(rootcli) )
+	if ( !cli_dfs_check_error(rootcli) ) 
 		return False;
 
 	/* check for the referral */
