@@ -754,7 +754,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	ZERO_STRUCT(old_mtime);
 
 	/* fetch the secret back again */
-	q.in.handle = &sec_handle;
+	q.in.sec_handle = &sec_handle;
 	q.in.new_val = &bufp1;
 	q.in.new_mtime = &new_mtime;
 	q.in.old_val = &bufp2;
