@@ -469,7 +469,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 	got_pwds = get_smbpwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
 
 	unbecome_root(True);
-#endif
+#endif /* USE_LDAP */
 
 	switch (q_u->switch_level)
 	{
@@ -485,7 +485,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 			                            MAX_SAM_ENTRIES, 
 			                            0, 
 			                            switch_level);
-#endif		      
+#endif /* USE_DLAP */
 			make_sam_info_1(&info1, ACB_NORMAL,
 		                q_u->start_idx, num_entries, pass);
 
@@ -504,7 +504,7 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 			                            MAX_SAM_ENTRIES, 
 					            0, 
 					            switch_level);
-#endif		      
+#endif /* USE_LDAP */
 			make_sam_info_2(&info2, ACB_WSTRUST,
 		                q_u->start_idx, num_entries, pass);
 
@@ -1046,9 +1046,9 @@ static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				info = (void*)&id21;
 #ifdef USE_LDAP
 				status = ldap_get_user_info_21(&id21, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
-#else				
+#else /* USE_LDAP */
 				status = get_user_info_21(&id21, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
-#endif
+#endif /* USE_LDAP */
 				break;
 			}
 

@@ -556,7 +556,7 @@ struct smb_passwd *getsmbpwnam(char *name)
 {
 #ifdef USE_LDAP
   return ldap_get_smbpwd_entry(name, 0);
-#else
+#else /* USE_LDAP */
   return get_smbpwd_entry(name, 0);
 #endif /* USE_LDAP */
 }
@@ -569,7 +569,7 @@ struct smb_passwd *getsmbpwuid(unsigned int uid)
 {
 #ifdef USE_LDAP
   return ldap_get_smbpwd_entry(NULL, uid);
-#else
+#else /* USE_DLAP */
   return get_smbpwd_entry(NULL, uid);
 #endif /* USE_LDAP */
 }
@@ -1141,14 +1141,15 @@ void *machine_password_lock( char *domain, char *name, BOOL update)
     }
 
     chmod(mac_file, 0600);
-  }
 
-  if(!pw_file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 
+    if(!pw_file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 
                                       60, &mach_passwd_lock_depth))
-  {
-    DEBUG(0,("machine_password_lock: cannot lock file %s\n", mac_file));
-    fclose(fp);
-    return NULL;
+    {
+      DEBUG(0,("machine_password_lock: cannot lock file %s\n", mac_file));
+      fclose(fp);
+      return NULL;
+    }
+
   }
 
   return (void *)fp;

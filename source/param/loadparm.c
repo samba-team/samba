@@ -172,7 +172,9 @@ typedef struct
   int shmem_size;
   int client_code_page;
   int announce_as;   /* This is initialised in init_globals */
+#ifdef USE_LDAP
   int ldap_port;
+#endif /* USE_LDAP */
   BOOL bDNSproxy;
   BOOL bWINSsupport;
   BOOL bWINSproxy;
@@ -622,6 +624,7 @@ static struct parm_struct parm_table[] =
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_GLOBAL},
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  0},
 
+#ifdef USE_LDAP
   {"Ldap Options", P_SEP, P_SEPARATOR},
   {"ldap server",      P_STRING,  P_GLOBAL, &Globals.szLdapServer,      NULL,   NULL,  0},
   {"ldap port",        P_INTEGER, P_GLOBAL, &Globals.ldap_port,         NULL,   NULL,  0},
@@ -629,7 +632,7 @@ static struct parm_struct parm_table[] =
   {"ldap filter",      P_STRING,  P_GLOBAL, &Globals.szLdapFilter,      NULL,   NULL,  0},
   {"ldap root",        P_STRING,  P_GLOBAL, &Globals.szLdapRoot,        NULL,   NULL,  0},
   {"ldap root passwd", P_STRING,  P_GLOBAL, &Globals.szLdapRootPassword,NULL,   NULL,  0},
-
+#endif /* USE_LDAP */
 
 
   {"Miscellaneous Options", P_SEP, P_SEPARATOR},
@@ -776,10 +779,11 @@ static void init_globals(void)
   Globals.bUnixPasswdSync = False;
   Globals.bPasswdChatDebug = False;
 
+#ifdef USE_LDAP
   /* default values for ldap */
   string_set(&Globals.szLdapServer, "localhost");
   Globals.ldap_port=389;
-
+#endif /* USE_LDAP */
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -983,11 +987,13 @@ FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)
 FN_GLOBAL_STRING(lp_domain_hostsallow,&Globals.szDomainHostsallow)
 FN_GLOBAL_STRING(lp_domain_hostsdeny,&Globals.szDomainHostsdeny)
 
+#ifdef USE_LDAP
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
 FN_GLOBAL_STRING(lp_ldap_suffix,&Globals.szLdapSuffix);
 FN_GLOBAL_STRING(lp_ldap_filter,&Globals.szLdapFilter);
 FN_GLOBAL_STRING(lp_ldap_root,&Globals.szLdapRoot);
 FN_GLOBAL_STRING(lp_ldap_rootpasswd,&Globals.szLdapRootPassword);
+#endif /* USE_LDAP */
 
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
@@ -1044,7 +1050,9 @@ FN_GLOBAL_INTEGER(lp_announce_as,&Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce,&Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval,&Globals.lm_interval)
 
+#ifdef USE_LDAP
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)
+#endif /* USE_LDAP */
 
 FN_LOCAL_STRING(lp_preexec,szPreExec)
 FN_LOCAL_STRING(lp_postexec,szPostExec)
