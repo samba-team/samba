@@ -540,7 +540,7 @@ typedef struct sam_unknown_info_6_info
 
 typedef struct sam_unknown_info_7_info
 {
-	uint16 unknown_0; /* 0x0003 */
+	uint16 server_role;
 
 } SAM_UNK_INFO_7;
 
@@ -580,7 +580,7 @@ typedef struct sam_unknown_info_2_inf
 	UINT64_S seq_num;
 	
 	uint32 unknown_4; /* 0x0000 0001 */
-	uint32 unknown_5; /* 0x0000 0003 */
+	uint32 server_role;
 	uint32 unknown_6; /* 0x0000 0001 */
 	uint32 num_domain_usrs; /* number of users in domain */
 	uint32 num_domain_grps; /* number of domain groups in domain */
