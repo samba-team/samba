@@ -921,24 +921,40 @@ void cmd_reg_shutdown(struct client_info *info)
 	fstring msg;
 	fstring tmp;
 	uint32 timeout = 20;
+	uint16 flgs = 0;
 
 	DEBUG(5, ("cmd_reg_shutdown: smb_cli->fd:%d\n", smb_cli->fd));
 
-	if (!next_token(NULL, msg, NULL, sizeof(msg)))
+	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		msg[0] = 0;
+		if (strequal(tmp, "-m"))
+		{
+			if (next_token(NULL, msg, NULL, sizeof(msg)))
+			{
+				continue;
+			}
+		}
+		else if (strequal(tmp, "-t"))
+		{
+			if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+			{
+				timeout = atoi(tmp);
+				continue;
+			}
+		}
+		else if (strequal(tmp, "-r") || strequal(tmp, "--reboot"))
+		{
+			flgs = 0x100;
+			continue;
+		}
+		fprintf(out_hnd,"shutdown [-m msg] [-t timeout] [-r or --reboot]\n");
 	}
-	else if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		timeout = atoi(tmp);
-	}
-
 
 	/* open WINREG session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG, &fnum) : False;
 
 	/* create an entry */
-	res = res ? do_reg_shutdown(smb_cli, fnum, msg, timeout, 1) : False;
+	res = res ? do_reg_shutdown(smb_cli, fnum, msg, timeout, flgs) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
