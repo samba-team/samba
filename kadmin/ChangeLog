@@ -1,3 +1,9 @@
+2001-09-20  Assar Westerlund  <assar@sics.se>
+
+	* add-random-users.c: allocate several buffers for the list of
+	words, instead of one strdup per word (running under efence does
+	not work very well otherwise)
+
 2001-09-13  Assar Westerlund  <assar@sics.se>
 
 	* add-random-users.c: allow specifying the number of users to
