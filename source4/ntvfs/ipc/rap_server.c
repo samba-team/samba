@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "rap.h"
 
 /* At this moment these are just dummy functions, but you might get the
  * idea. */

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "registry.h"
 
 static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *add)
 {

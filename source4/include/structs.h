@@ -68,3 +68,12 @@ typedef NTSTATUS (*gensec_password_callback)(struct gensec_security *gensec_secu
 
 struct asn1_data;
 
+struct ldapsrv_call;
+struct ldapsrv_connection;
+struct rw_buffer;
+struct registry_context;
+struct registry_key;
+struct registry_value;
+
+struct rap_NetShareEnum;
+struct rap_NetServerEnum2;

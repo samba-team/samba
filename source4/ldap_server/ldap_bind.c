@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "ldap_server/ldap_server.h"
 
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
