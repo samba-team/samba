@@ -197,8 +197,8 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 
 	/* Try as given, if username wasn't originally lowercase */
 	if(strcmp(user,user2) != 0) {
-		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n",user2));
-		ret = _Get_Pwnam(user2);
+		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n",user));
+		ret = _Get_Pwnam(user);
 		if(ret)
 			goto done;
 	}	
