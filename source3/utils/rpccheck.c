@@ -38,7 +38,7 @@ main()
 	setup_logging("", True);
 	DEBUGLEVEL=10;
 
-	ctx=talloc_init();
+	ctx=talloc_init("main");
 	if (!ctx) exit(1);
 
 	prs_init(&ps, 1600, 4, ctx, MARSHALL);

@@ -84,7 +84,7 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("lsa_open_policy"))) {
 		PyErr_SetString(lsa_error, "unable to init talloc context\n");
 		goto done;
 	}

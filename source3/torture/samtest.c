@@ -249,7 +249,7 @@ static NTSTATUS do_cmd(struct samtest_state *st, struct cmd_set *cmd_entry, char
 
 		if (mem_ctx == NULL) {
 			/* Create mem_ctx */
-			if (!(mem_ctx = talloc_init())) {
+			if (!(mem_ctx = talloc_init("do_cmd"))) {
 		       		DEBUG(0, ("talloc_init() failed\n"));
 				goto done;
 			}

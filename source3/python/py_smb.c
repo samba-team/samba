@@ -232,7 +232,7 @@ static PyObject *py_smb_query_secdesc(PyObject *self, PyObject *args,
 		    args, kw, "i", kwlist, &fnum))
 		return NULL;
 
-	mem_ctx = talloc_init();
+	mem_ctx = talloc_init("py_smb_query_secdesc");
 
 	secdesc = cli_query_secdesc(cli->cli, fnum, mem_ctx);
 
@@ -269,7 +269,7 @@ static PyObject *py_smb_set_secdesc(PyObject *self, PyObject *args,
 	static char *kwlist[] = { "fnum", "security_descriptor", NULL };
 	PyObject *py_secdesc;
 	SEC_DESC *secdesc;
-	TALLOC_CTX *mem_ctx = talloc_init();
+	TALLOC_CTX *mem_ctx = talloc_init("py_smb_set_secdesc");
 	int fnum;
 	BOOL result;
 

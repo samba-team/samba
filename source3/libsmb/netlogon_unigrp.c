@@ -47,7 +47,7 @@ BOOL uni_group_cache_init(void)
 	return (netlogon_unigrp_tdb != NULL);
 }
 
-void uni_group_cache_store_netlogon(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
+BOOL  uni_group_cache_store_netlogon(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
 {
 	TDB_DATA key,data;
         fstring keystr;
@@ -55,7 +55,7 @@ void uni_group_cache_store_netlogon(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
 
 	if (!uni_group_cache_init()) {
 		DEBUG(0,("uni_group_cache_store_netlogon: cannot open netlogon_unigrp.tdb for write!\n"));
-		return;
+		return False;
 	}
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
@@ -70,7 +70,7 @@ void uni_group_cache_store_netlogon(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
 	if(!data.dptr) {
 		DEBUG(0,("uni_group_cache_store_netlogon: cannot allocate memory!\n"));
 		talloc_destroy(mem_ctx);
-		return;
+		return False;
 	}
 	
 	/* Store data in byteorder-independent format */
@@ -78,7 +78,9 @@ void uni_group_cache_store_netlogon(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
 	for(i=1; i<=user->num_groups2; i++) {
 		SIVAL(&((uint32*)data.dptr)[i],0,user->gids[i-1].g_rid);
 	}
-	tdb_store(netlogon_unigrp_tdb, key, data, TDB_REPLACE);	
+	if (tdb_store(netlogon_unigrp_tdb, key, data, TDB_REPLACE) == -1)
+		return False;
+	return True;
 }
 
 /*
@@ -149,10 +151,9 @@ uint32* uni_group_cache_fetch(DOM_SID *domain, uint32 user_rid,
 }
 
 /* Shutdown netlogon_unigrp database */
-void uni_group_cache_shutdown(void)
+BOOL uni_group_cache_shutdown(void)
 {
-	if(netlogon_unigrp_tdb) {
-		tdb_close(netlogon_unigrp_tdb);
-	}
+	if(netlogon_unigrp_tdb)
+		return (tdb_close(netlogon_unigrp_tdb) == 0);
+	return True;
 }
-

@@ -63,7 +63,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 		goto done;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("spoolss_enumprinterdrivers"))) {
 		PyErr_SetString(
 			spoolss_error, "unable to init talloc context\n");
 		goto done;
@@ -267,7 +267,7 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 		goto done;
 	}
 	
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("spoolss_getprinterdriverdir"))) {
 		PyErr_SetString(
 			spoolss_error, "unable to init talloc context\n");
 		goto done;
@@ -335,7 +335,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("spoolss_addprinterdriver"))) {
 		PyErr_SetString(
 			spoolss_error, "unable to init talloc context\n");
 		return NULL;

@@ -676,7 +676,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 	/* I know this is somewhat overkill but only the talloc 
 	 * functions have asprint_append and the 'normal' asprintf 
 	 * is a GNU extension */
-	query.mem_ctx = talloc_init();
+	query.mem_ctx = talloc_init("mysqlsam_replace_sam_account");
 	query.part2 = talloc_asprintf(query.mem_ctx, "%s", "");
 	if (query.update) {
 		query.part1 =
