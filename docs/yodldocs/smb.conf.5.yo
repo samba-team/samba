@@ -3143,6 +3143,22 @@ from a command prompt, for example.
 This option takes the standard substitutions, allowing you to have
 separate logon scripts for each user or machine.
 
+This parameter can be used with Win9X workstations to ensure that
+roaming profiles are stored in a subdirectory of the user's home
+directory.  This is done in the following way:
+
+tt("     logon home = \\%L\%U\profile")
+
+This tells Samba to return the above string, with substitutions made
+when a client requests the info, generally in a NetUserGetInfo request.
+Win9X clients truncate the info to \\server\share when a user does tt("net use /home"),
+but use the whole string when dealing with profiles.
+
+Note that in prior versions of Samba, the tt("logon path") was returned rather than
+tt("logon home").  This broke tt("net use /home") but allowed profiles outside the 
+home directory.  The current implementation is correct, and can be used for profiles
+if you use the above trick.
+
 Note that this option is only useful if Samba is set up as a
 link(bf(logon server))(domainlogons).
 
