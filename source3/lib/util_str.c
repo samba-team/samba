@@ -308,8 +308,22 @@ char *skip_string(char *buf,size_t n)
 
 size_t str_charnum(const char *s)
 {
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	return strlen_w(tmpbuf);
+	uint16 tmpbuf2[sizeof(pstring)];
+	push_ucs2(NULL, tmpbuf2,s, sizeof(tmpbuf2), STR_TERMINATE);
+	return strlen_w(tmpbuf2);
+}
+
+/*******************************************************************
+ Count the number of characters in a string. Normally this will
+ be the same as the number of bytes in a string for single byte strings,
+ but will be different for multibyte.
+********************************************************************/
+
+size_t str_ascii_charnum(const char *s)
+{
+	pstring tmpbuf2;
+	push_ascii(tmpbuf2, s, sizeof(tmpbuf2), STR_TERMINATE);
+	return strlen(tmpbuf2);
 }
 
 /*******************************************************************
