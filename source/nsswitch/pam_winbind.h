@@ -25,7 +25,7 @@
 #define PAM_SM_ACCOUNT
 #define PAM_SM_PASSWORD
 
-#if defined(SUNOS5) || defined(SUNOS4)
+#if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX)
 
 /* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern

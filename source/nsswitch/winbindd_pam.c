@@ -189,7 +189,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
         result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
+                DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n", nt_errstr(result)));
                 goto done;
         }
 

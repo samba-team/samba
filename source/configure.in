@@ -763,8 +763,9 @@ case "$host_os" in
 			SHLIBEXT="sl"
 			# Use special PIC flags for the native HP-UX compiler.
 			if test $ac_cv_prog_cc_Ae = yes; then
-				#BLDSHARED="true"
-				LDSHFLAGS="-b -z +h \$@"
+				SHLD="/usr/bin/ld"
+				BLDSHARED="true"
+				LDSHFLAGS="-B symbolic -b -z +h \$@"
 				PICFLAG="+z"
 			fi
 			DYNEXP="-Wl,-E"
@@ -823,7 +824,7 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    ac_cv_shlib_works=no
    # try building a trivial shared library
    $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
-     $CC $CPPFLAGS $CFLAGS $LDSHFLAGS -o shlib.so shlib.po &&
+     $SHLD $CPPFLAGS $CFLAGS $LDSHFLAGS -o shlib.so shlib.po &&
      ac_cv_shlib_works=yes
    rm -f shlib.so shlib.po
 ])
