@@ -27,7 +27,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 normalise for DOS usage 
 ****************************************************************************/
-static void disk_norm(BOOL max_four_gigs, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+static void disk_norm(BOOL small_query, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	/* check if the disk is beyond the max disk size */
 	SMB_BIG_UINT maxdisksize = lp_maxdisksize();
@@ -44,12 +44,12 @@ static void disk_norm(BOOL max_four_gigs, SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfre
 		*dfree /= 2;
 		*dsize /= 2;
 		*bsize *= 2;
-		if(max_four_gigs) {	
+		if(small_query) {	
 			/*
-			 * Force max to be 4GB only.
+			 * Force max to fit in 16 bit fields.
 			 */
-			if (*bsize > WORDMAX) {
-				*bsize = WORDMAX;
+			if (*bsize > (WORDMAX*512)) {
+				*bsize = (WORDMAX*512);
 				if (*dsize > WORDMAX)
 					*dsize = WORDMAX;
 				if (*dfree >  WORDMAX)
@@ -191,7 +191,7 @@ static int fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
   return number of 1K blocks available on a path and total number 
 ****************************************************************************/
 
-static SMB_BIG_UINT disk_free(char *path, BOOL max_four_gigs, 
+static SMB_BIG_UINT disk_free(char *path, BOOL small_query, 
                               SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
 	int dfree_retval;
@@ -226,7 +226,7 @@ static SMB_BIG_UINT disk_free(char *path, BOOL max_four_gigs,
 		*dfree = MAX(1,*dfree);
 	}
 
-	disk_norm(max_four_gigs, bsize,dfree,dsize);
+	disk_norm(small_query,bsize,dfree,dsize);
 
 	if ((*bsize) < 1024) {
 		dfree_retval = (*dfree)/(1024/(*bsize));
@@ -241,8 +241,8 @@ static SMB_BIG_UINT disk_free(char *path, BOOL max_four_gigs,
 /****************************************************************************
 wrap it to get filenames right
 ****************************************************************************/
-SMB_BIG_UINT sys_disk_free(char *path, BOOL max_four_gigs, 
+SMB_BIG_UINT sys_disk_free(char *path, BOOL small_query, 
                            SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
-	return(disk_free(dos_to_unix(path,False),max_four_gigs, bsize,dfree,dsize));
+	return(disk_free(dos_to_unix(path,False),small_query, bsize,dfree,dsize));
 }
