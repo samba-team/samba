@@ -7,3 +7,4 @@ tdbtorture
 test.db
 test.gdbm
 test.tdb
+torture.tdb
