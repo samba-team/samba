@@ -114,15 +114,28 @@ mandoc_template(struct getargs *args,
     printf(".Sh SYNOPSIS\n");
     printf(".Nm\n");
     for(i = 0; i < num_args; i++){
-	if(args[i].short_name){
-	    printf(".Op Fl %c", args[i].short_name);
+	/* we seem to hit a limit on number of arguments if doing
+           short and long flags with arguments -- split on two lines */
+	if(ISFLAG(args[i]) || 
+	   args[i].short_name == 0 || args[i].long_name == NULL) {
+	    printf(".Op ");
+
+	    if(args[i].short_name) {
+		print_arg(buf, sizeof(buf), 1, 0, args + i);
+		printf("Fl %c%s", args[i].short_name, buf);
+		if(args[i].long_name)
+		    printf(" | ");
+	    }
+	    if(args[i].long_name) {
+		print_arg(buf, sizeof(buf), 1, 1, args + i);
+		printf("Fl -%s%s", args[i].long_name, buf);
+	    }
+	    printf("\n");
+	} else {
 	    print_arg(buf, sizeof(buf), 1, 0, args + i);
-	    printf("%s\n", buf);
-	}
-	if(args[i].long_name){
-	    printf(".Op Fl -%s", args[i].long_name);
+	    printf(".Oo Fl %c%s \\*(Ba Xo\n", args[i].short_name, buf);
 	    print_arg(buf, sizeof(buf), 1, 1, args + i);
-	    printf("%s\n", buf);
+	    printf(".Fl -%s%s Oc\n.Xc\n", args[i].long_name, buf);
 	}
     /*
 	    if(args[i].type == arg_strings)
