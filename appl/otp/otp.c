@@ -46,7 +46,7 @@ static void
 usage (void)
 {
   fprintf(stderr,
-	  "Usage: %s [-e] [-h] [-r] [-s] [-n count] [-f alg] num seed\n",
+	  "Usage: %s [-r] [-s] [-n count] [-f alg] num seed\n",
 	  prog);
   exit (1);
 }
@@ -61,7 +61,7 @@ strlwr (char *s)
 }
 
 static int
-renew (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
+renew (int argc, char **argv, int count, OtpAlgorithm *alg)
 {
   struct passwd *pwd;
   OtpContext oldctx, newctx, *ctx;
@@ -115,7 +115,7 @@ renew (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
 }
 
 static int
-set (int argc, char **argv, int count, OtpAlgorithm *alg, int hexp)
+set (int argc, char **argv, int count, OtpAlgorithm *alg)
 {
   void *db;
   OtpContext ctx;
@@ -167,9 +167,7 @@ main (int argc, char **argv)
   int c;
   int count = 10;
   int setp = 0;
-  int hexp = 0;
   int renewp = 0;
-  int extendedp = 0;
   OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
 
   prog = argv[0];
@@ -179,14 +177,8 @@ main (int argc, char **argv)
     case 'r' :
       renewp = 1;
       break;
-    case 'e' :
-      extendedp = 1;
-      break;
     case 'n' :
       count = atoi (optarg);
-      break;
-    case 'h' :
-      hexp = 1;
       break;
     case 's' :
       setp = 1;
@@ -211,9 +203,9 @@ main (int argc, char **argv)
   argv += optind;
 
   if (setp)
-    return set (argc, argv, count, alg, hexp);
+    return set (argc, argv, count, alg);
   else if (renewp)
-    return renew (argc, argv, count, alg, hexp);
+    return renew (argc, argv, count, alg);
   else {
     fprintf (stderr, "%s: Nothing to do\n", prog);
     return 1;

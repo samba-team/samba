@@ -106,7 +106,7 @@ main (int argc, char **argv)
 
   prog = argv[0];
 
-  while ((c = getopt (argc, argv, "rshn:f:")) != EOF)
+  while ((c = getopt (argc, argv, "ehn:f:")) != EOF)
     switch (c) {
     case 'e' :
       extendedp = 1;
