@@ -48,7 +48,7 @@ extern BOOL case_preserve;
 extern BOOL use_mangled_map;
 extern BOOL short_case_preserve;
 extern BOOL case_mangle;
-extern time_t smb_last_time;
+time_t smb_last_time=(time_t)0;
 
 extern int smb_read_error;
 
@@ -1420,7 +1420,10 @@ void close_file(int fnum, int normal_close)
   uint32 inode = fs_p->fd_ptr->inode;
   share_lock_token token;
 
+#if USE_READ_PREDICTION
   invalidate_read_prediction(fs_p->fd_ptr->fd);
+#endif
+
   fs_p->open = False;
   Connections[cnum].num_files_open--;
   if(fs_p->wbmpx_ptr) 
@@ -1825,6 +1828,7 @@ int read_file(int fnum,char *data,uint32 pos,int n)
 {
   int ret=0,readret;
 
+#if USE_READ_PREDICTION
   if (!Files[fnum].can_write)
     {
       ret = read_predict(Files[fnum].fd_ptr->fd,pos,data,NULL,n);
@@ -1833,6 +1837,7 @@ int read_file(int fnum,char *data,uint32 pos,int n)
       n -= ret;
       pos += ret;
     }
+#endif
 
 #if USE_MMAP
   if (Files[fnum].mmap_ptr)
@@ -4064,8 +4069,10 @@ static void process(void)
       if (deadtime <= 0)
 	deadtime = DEFAULT_SMBD_TIMEOUT;
 
+#if USE_READ_PREDICTION
       if (lp_readprediction())
 	do_read_prediction();
+#endif
 
       errno = 0;      
 

@@ -1640,8 +1640,10 @@ int reply_readbraw(char *inbuf, char *outbuf)
     int predict=0;
     _smb_setlen(header,nread);
 
+#if USE_READ_PREDICTION
     if (!Files[fnum].can_write)
       predict = read_predict(fd,startpos,header+4,NULL,nread);
+#endif
 
     if ((nread-predict) > 0)
       seek_file(fnum,startpos + predict);
