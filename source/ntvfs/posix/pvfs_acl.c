@@ -306,6 +306,8 @@ NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	*access_mask |= SEC_FILE_READ_ATTRIBUTE;
+
 	return NT_STATUS_OK;
 }
 
