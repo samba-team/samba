@@ -292,6 +292,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 	uint32 group_entries = 0;
 	uint32 i;
 	TALLOC_CTX *mem_ctx = info->mem_ctx;
+	BOOL ret;
 
 	DEBUG(10,("load_group_domain_entries\n"));
 
@@ -303,13 +304,14 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 	
 
 	become_root();
-
-	if (!pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED)) {
+	ret = pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED); 
+	unbecome_root();
+	
+	if ( !ret ) {
 		DEBUG(1, ("load_group_domain_entries: pdb_enum_group_mapping() failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	unbecome_root();
 
 	info->disp_info.num_group_account=group_entries;
 
