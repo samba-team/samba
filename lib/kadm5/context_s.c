@@ -42,13 +42,15 @@ RCSID("$Id$");
 
 kadm5_ret_t
 _kadm5_s_init_context(kadm5_server_context **ctx, 
-		      kadm5_config_params *params)
+		      kadm5_config_params *params,
+		      krb5_context context)
 {
     *ctx = malloc(sizeof(**ctx));
     if(*ctx == NULL)
 	return ENOMEM;
     memset(*ctx, 0, sizeof(**ctx));
-    krb5_init_context(&(*ctx)->context);
+    (*ctx)->context = context;
+    initialize_kadm5_error_table(&context->et_list);
 #if 0
 #define is_set(M) (params->mask & KADM5_CONFIG_ ## M)
     if(is_set(REALM))
