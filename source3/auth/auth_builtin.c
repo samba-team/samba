@@ -83,6 +83,12 @@ static NTSTATUS check_name_to_ntstatus_security(void *my_private_data,
 	fstring user;
 	long error_num;
 	fstrcpy(user, user_info->smb_name.str);
+	
+	if (strncasecmp("NT_STATUS", user, strlen("NT_STATUS")) == 0) {
+		strupper(user);
+		return nt_status_string_to_code(user);
+	}
+
 	strlower(user);
 	error_num = strtoul(user, NULL, 16);
 	
