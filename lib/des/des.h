@@ -65,6 +65,15 @@ extern "C" {
 
 #include <stdio.h>
 
+#ifndef DES_LIB_FUNCTION
+#if defined(__BORLANDC__)
+#define DES_LIB_FUNCTION /* not-ready-definition-yet */
+#elif defined(_MSC_VER)
+#define DES_LIB_FUNCTION /* not-ready-definition-yet2 */
+#else
+#define DES_LIB_FUNCTION
+#endif
+
 /* If this is set to 'unsigned int' on a DEC Alpha, this gives about a
  * %20 speed up (longs are 8 bytes, int's are 4). */
 #ifndef DES_LONG
@@ -148,92 +157,92 @@ extern "C" {
 #undef NOPROTO
 #endif
 #ifndef NOPROTO
-char *des_options(void);
-void des_ecb3_encrypt(des_cblock *input,des_cblock *output,
+char *DES_LIB_FUNCTION des_options(void);
+void DES_LIB_FUNCTION des_ecb3_encrypt(des_cblock *input,des_cblock *output,
 	des_key_schedule ks1,des_key_schedule ks2,
 	des_key_schedule ks3, int enc);
-DES_LONG des_cbc_cksum(des_cblock *input,des_cblock *output,
+DES_LONG DES_LIB_FUNCTION des_cbc_cksum(des_cblock *input,des_cblock *output,
 	long length,des_key_schedule schedule,des_cblock *ivec);
-void des_cbc_encrypt(des_cblock *input,des_cblock *output,long length,
+void DES_LIB_FUNCTION des_cbc_encrypt(des_cblock *input,des_cblock *output,long length,
 	des_key_schedule schedule,des_cblock *ivec,int enc);
-void des_ncbc_encrypt(des_cblock *input,des_cblock *output,long length,
+void DES_LIB_FUNCTION des_ncbc_encrypt(des_cblock *input,des_cblock *output,long length,
 	des_key_schedule schedule,des_cblock *ivec,int enc);
-void des_xcbc_encrypt(des_cblock *input,des_cblock *output,long length,
+void DES_LIB_FUNCTION des_xcbc_encrypt(des_cblock *input,des_cblock *output,long length,
 	des_key_schedule schedule,des_cblock *ivec,
 	des_cblock *inw,des_cblock *outw,int enc);
-void des_3cbc_encrypt(des_cblock *input,des_cblock *output,long length,
+void DES_LIB_FUNCTION des_3cbc_encrypt(des_cblock *input,des_cblock *output,long length,
 	des_key_schedule sk1,des_key_schedule sk2,
 	des_cblock *ivec1,des_cblock *ivec2,int enc);
-void des_cfb_encrypt(unsigned char *in,unsigned char *out,int numbits,
+void DES_LIB_FUNCTION des_cfb_encrypt(unsigned char *in,unsigned char *out,int numbits,
 	long length,des_key_schedule schedule,des_cblock *ivec,int enc);
-void des_ecb_encrypt(des_cblock *input,des_cblock *output,
+void DES_LIB_FUNCTION des_ecb_encrypt(des_cblock *input,des_cblock *output,
 	des_key_schedule ks,int enc);
-void des_encrypt(DES_LONG *data,des_key_schedule ks, int enc);
-void des_encrypt2(DES_LONG *data,des_key_schedule ks, int enc);
-void des_encrypt3(DES_LONG *data, des_key_schedule ks1,
+void DES_LIB_FUNCTION des_encrypt(DES_LONG *data,des_key_schedule ks, int enc);
+void DES_LIB_FUNCTION des_encrypt2(DES_LONG *data,des_key_schedule ks, int enc);
+void DES_LIB_FUNCTION des_encrypt3(DES_LONG *data, des_key_schedule ks1,
 	des_key_schedule ks2, des_key_schedule ks3);
-void des_decrypt3(DES_LONG *data, des_key_schedule ks1,
+void DES_LIB_FUNCTION des_decrypt3(DES_LONG *data, des_key_schedule ks1,
 	des_key_schedule ks2, des_key_schedule ks3);
-void des_ede3_cbc_encrypt(des_cblock *input, des_cblock *output, 
+void DES_LIB_FUNCTION des_ede3_cbc_encrypt(des_cblock *input, des_cblock *output, 
 	long length, des_key_schedule ks1, des_key_schedule ks2, 
 	des_key_schedule ks3, des_cblock *ivec, int enc);
-void des_ede3_cfb64_encrypt(unsigned char *in, unsigned char *out,
+void DES_LIB_FUNCTION des_ede3_cfb64_encrypt(unsigned char *in, unsigned char *out,
 	long length, des_key_schedule ks1, des_key_schedule ks2,
 	des_key_schedule ks3, des_cblock *ivec, int *num, int encrypt);
-void des_ede3_ofb64_encrypt(unsigned char *in, unsigned char *out,
+void DES_LIB_FUNCTION des_ede3_ofb64_encrypt(unsigned char *in, unsigned char *out,
 	long length, des_key_schedule ks1, des_key_schedule ks2,
 	des_key_schedule ks3, des_cblock *ivec, int *num);
 
-int des_enc_read(int fd,char *buf,int len,des_key_schedule sched,
+int DES_LIB_FUNCTION des_enc_read(int fd,char *buf,int len,des_key_schedule sched,
 	des_cblock *iv);
-int des_enc_write(int fd,char *buf,int len,des_key_schedule sched,
+int DES_LIB_FUNCTION des_enc_write(int fd,char *buf,int len,des_key_schedule sched,
 	des_cblock *iv);
-char *des_fcrypt(const char *buf,const char *salt, char *ret);
+char *DES_LIB_FUNCTION des_fcrypt(const char *buf,const char *salt, char *ret);
 #ifdef PERL5
 char *des_crypt(const char *buf,const char *salt);
 #else
 /* some stupid compilers complain because I have declared char instead
  * of const char */
 #ifdef HEADER_DES_LOCL_H
-char *crypt(const char *buf,const char *salt);
+char *DES_LIB_FUNCTION crypt(const char *buf,const char *salt);
 #else
 char *crypt();
 #endif
 #endif
-void des_ofb_encrypt(unsigned char *in,unsigned char *out,
+void DES_LIB_FUNCTION des_ofb_encrypt(unsigned char *in,unsigned char *out,
 	int numbits,long length,des_key_schedule schedule,des_cblock *ivec);
-void des_pcbc_encrypt(des_cblock *input,des_cblock *output,long length,
+void DES_LIB_FUNCTION des_pcbc_encrypt(des_cblock *input,des_cblock *output,long length,
 	des_key_schedule schedule,des_cblock *ivec,int enc);
-DES_LONG des_quad_cksum(des_cblock *input,des_cblock *output,
+DES_LONG DES_LIB_FUNCTION des_quad_cksum(des_cblock *input,des_cblock *output,
 	long length,int out_count,des_cblock *seed);
-void des_random_seed(des_cblock key);
-void des_random_key(des_cblock ret);
-int des_read_password(des_cblock *key,char *prompt,int verify);
-int des_read_2passwords(des_cblock *key1,des_cblock *key2,
+void DES_LIB_FUNCTION des_random_seed(des_cblock key);
+void DES_LIB_FUNCTION des_random_key(des_cblock ret);
+int DES_LIB_FUNCTION des_read_password(des_cblock *key,char *prompt,int verify);
+int DES_LIB_FUNCTION des_read_2passwords(des_cblock *key1,des_cblock *key2,
 	char *prompt,int verify);
-int des_read_pw_string(char *buf,int length,char *prompt,int verify);
-void des_set_odd_parity(des_cblock *key);
-int des_is_weak_key(des_cblock *key);
-int des_set_key(des_cblock *key,des_key_schedule schedule);
-int des_key_sched(des_cblock *key,des_key_schedule schedule);
-void des_string_to_key(char *str,des_cblock *key);
-void des_string_to_2keys(char *str,des_cblock *key1,des_cblock *key2);
-void des_cfb64_encrypt(unsigned char *in, unsigned char *out, long length,
+int DES_LIB_FUNCTION des_read_pw_string(char *buf,int length,char *prompt,int verify);
+void DES_LIB_FUNCTION des_set_odd_parity(des_cblock *key);
+int DES_LIB_FUNCTION des_is_weak_key(des_cblock *key);
+int DES_LIB_FUNCTION des_set_key(des_cblock *key,des_key_schedule schedule);
+int DES_LIB_FUNCTION des_key_sched(des_cblock *key,des_key_schedule schedule);
+void DES_LIB_FUNCTION des_string_to_key(char *str,des_cblock *key);
+void DES_LIB_FUNCTION des_string_to_2keys(char *str,des_cblock *key1,des_cblock *key2);
+void DES_LIB_FUNCTION des_cfb64_encrypt(unsigned char *in, unsigned char *out, long length,
 	des_key_schedule schedule, des_cblock *ivec, int *num, int enc);
-void des_ofb64_encrypt(unsigned char *in, unsigned char *out, long length,
+void DES_LIB_FUNCTION des_ofb64_encrypt(unsigned char *in, unsigned char *out, long length,
 	des_key_schedule schedule, des_cblock *ivec, int *num);
 
 /* Extra functions from Mark Murray <mark@grondar.za> */
-void des_cblock_print_file(des_cblock *cb, FILE *fp);
+void DES_LIB_FUNCTION des_cblock_print_file(des_cblock *cb, FILE *fp);
 /* The following functions are not in the normal unix build or the
  * SSLeay build.  When using the SSLeay build, use RAND_seed()
  * and RAND_bytes() instead. */
-int des_new_random_key(des_cblock *key);
-void des_init_random_number_generator(des_cblock *key);
-void des_set_random_generator_seed(des_cblock *key);
-void des_set_sequence_number(des_cblock new_sequence_number);
-void des_generate_random_block(des_cblock *block);
-void des_rand_data(unsigned char *data, int size);
+int DES_LIB_FUNCTION des_new_random_key(des_cblock *key);
+void DES_LIB_FUNCTION des_init_random_number_generator(des_cblock *key);
+void DES_LIB_FUNCTION des_set_random_generator_seed(des_cblock *key);
+void DES_LIB_FUNCTION des_set_sequence_number(des_cblock new_sequence_number);
+void DES_LIB_FUNCTION des_generate_random_block(des_cblock *block);
+void DES_LIB_FUNCTION des_rand_data(unsigned char *data, int size);
 
 #else
 
