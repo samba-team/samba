@@ -77,6 +77,18 @@ If you use a realm name equal to your domain name, you can omit the
 The database library will look for the database in @file{/var/heimdal},
 so you should probably create that directory.
 
+The keys of all the principals are stored in the database.  If you
+choose to, these can be encrypted with a master key.  You do not have to
+remember this key (or password), but just to enter it once and it will
+be stored in a file (@file{/var/heimdal/m-key}).  If you want to have a
+master key, run @samp{kstash} to create this master key:
+
+@example
+# kstash
+Master key: 
+Verifying password - Master key: 
+@end example
+
 To initialise the database use the @code{kdb_edit} program. First issue
 a @kbd{init MY.REALM} command. This will create the database and insert
 default principals for that realm. You can have more than one realm in
@@ -92,6 +104,7 @@ a default realm, you will need to explicitly include the realm.
 
 @example
 # kdb_edit
+kdb_edit: Database is encrypted
 kdb_edit> init MY.REALM
 Realm max ticket life: [infinite] 
 Realm max renewable ticket life: [infinite] 
@@ -119,11 +132,29 @@ Credentials cache: /tmp/krb5cc_3008
 Aug 25 07:25:55  Aug 25 17:25:55  krbtgt/MY.REALM@@MY.REALM
 @end example
 
+To verify that the contents of the database you can use the @samp{dump}
+command to list all the entries.  It should look something similar to
+the following example (note that the entries here are divided into two
+lines for typographically reasons):
+
+@smallexample
+kdb_edit> dump
+krbtgt/MY.REALM@@MY.REALM 1:0:1:0001010000010000:- \
+19970908002104:kadmin@@MY.REALM - - - - - - 62
+default@@MY.REALM 0 \
+19970908002104:kadmin@@MY.REALM - - - - 86400 604800 128
+kadmin/changepw@@MY.REALM 1:0:1:2213b905229d3990:- \
+19970908002104:kadmin@@MY.REALM - - - - 86400 604800 545
+me@@MY.REALM 1:0:1:908f1cf6110487cc:- \
+19970908002112:kadmin@@MY.REALM - - - - 86400 604800 126
+@end smallexample
+
 @section keytabs
 
 To extract a service ticket from the database and put it in a keytab you
 need to first create the principal in the database with @samp{ank}
-(entering @kbd{random} and then extract it with @samp{ext_keytab}.
+(entering @kbd{random} for password) and then extract it with
+@samp{ext_keytab}.
 
 @example
 # kdb_edit
@@ -136,7 +167,7 @@ Verifying password - Password:
 kdb_edit> ext host/my.host.name
 # ktutil list
 Version  Type  Principal
-     0     1   host/my.host.name@@MY.REALM
+     1     1   host/my.host.name@@MY.REALM
 @end example
 
 @section Testing clients and servers
