@@ -12,7 +12,7 @@ compiler=$3
 	    if [ ! $LOGNAME = "" ]; then
 		whoami=$LOGNAME
 	    else
-		whoami=`whoai || id -un`
+		whoami=`whoami || id -un`
 	    fi
 	fi
 
