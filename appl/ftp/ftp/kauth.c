@@ -37,6 +37,7 @@
  */
 
 #include "ftp_locl.h"
+#include <krb.h>
 RCSID("$Id$");
 
 void
