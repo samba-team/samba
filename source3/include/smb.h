@@ -100,10 +100,12 @@ typedef unsigned int uint32;
 /* debugging code */
 #ifndef SYSLOG
 #define DEBUG(level,body) ((DEBUGLEVEL>=(level))?(Debug1 body):0)
+#define DEBUGLVL(level) (DEBUGLEVEL>=(level))
 #else
 extern int syslog_level;
 
 #define DEBUG(level,body) ((DEBUGLEVEL>=(level))? (syslog_level = (level), Debug1 body):0)
+#define DEBUGLVL(level) ( DEBUGLEVEL >= (syslog_level=(level)) )
 #endif
 
 /* this defines the error codes that receive_smb can put in smb_read_error */
