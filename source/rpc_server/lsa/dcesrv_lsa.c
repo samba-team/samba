@@ -26,6 +26,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "lib/ldb/include/ldb.h"
+#include "auth/auth.h"
 
 /*
   this type allows us to distinguish handle types
@@ -187,20 +188,13 @@ static NTSTATUS lsa_ChangePassword(struct dcesrv_call_state *dce_call, TALLOC_CT
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-
-/* 
-  lsa_OpenPolicy2
-*/
-static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-			       struct lsa_OpenPolicy2 *r)
+static NTSTATUS lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				     struct lsa_policy_state **_state)
 {
 	struct lsa_policy_state *state;
-	struct dcesrv_handle *handle;
 	const char *sid_str;
 
-	ZERO_STRUCTP(r->out.handle);
-
-	state = talloc_p(dce_call->conn, struct lsa_policy_state);
+	state = talloc_p(mem_ctx, struct lsa_policy_state);
 	if (!state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -261,15 +255,35 @@ static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
-	
+
+	*_state = state;
+
+	return NT_STATUS_OK;
+}
+
+/* 
+  lsa_OpenPolicy2
+*/
+static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+			       struct lsa_OpenPolicy2 *r)
+{
+	NTSTATUS status;
+	struct lsa_policy_state *state;
+	struct dcesrv_handle *handle;
+
+	ZERO_STRUCTP(r->out.handle);
+
+	status = lsa_get_policy_state(dce_call, mem_ctx, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	handle = dcesrv_handle_new(dce_call->conn, LSA_HANDLE_POLICY);
 	if (!handle) {
-		talloc_free(state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	handle->data = state;
+	handle->data = talloc_reference(handle, state);
 	handle->destroy = lsa_Policy_destroy;
 
 	state->access_mask = r->in.access_mask;
@@ -599,17 +613,21 @@ static NTSTATUS lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX *mem_c
 {
 	int ret;
 	struct ldb_message **res;
-	const char * const attrs[] = { "sAMAccountName", "sAMAccountType", NULL};
+	const char * const attrs[] = { "sAMAccountName", "sAMAccountType", "name", NULL};
 	NTSTATUS status;
 
 	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, 
 			   "objectSid=%s", sid_str);
 	if (ret == 1) {
 		*name = ldb_msg_find_string(res[0], "sAMAccountName", NULL);
-		if (*name == NULL) {
-			return NT_STATUS_NO_MEMORY;
+		if (!*name) {
+			*name = ldb_msg_find_string(res[0], "name", NULL);
+			if (!*name) {
+				*name = talloc_strdup(mem_ctx, sid_str);
+				NTSTATUS_TALLOC_CHECK(*name);
+			}
 		}
-	
+
 		*atype = samdb_result_uint(res[0], "sAMAccountType", 0);
 
 		return NT_STATUS_OK;
@@ -1482,7 +1500,77 @@ static NTSTATUS lsa_RetrievePrivateData(struct dcesrv_call_state *dce_call, TALL
 static NTSTATUS lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct lsa_GetUserName *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	NTSTATUS status = NT_STATUS_OK;
+	struct lsa_policy_state *state;
+	uint32_t atype;
+	struct dom_sid *account_sid;
+	struct dom_sid *authority_sid;
+	const char *account_sid_str;
+	const char *account_name;
+	const char *authority_name;
+	struct lsa_String *_account_name;
+	struct lsa_StringPointer *_authority_name = NULL;
+
+	/* this is what w2k3 does */
+	r->out.account_name = r->in.account_name;
+	r->out.authority_name = r->in.authority_name;
+
+	if (r->in.account_name && r->in.account_name->string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (r->in.authority_name &&
+	    r->in.authority_name->string &&
+	    r->in.authority_name->string->string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* TODO: this check should go and we should rely on the calling code that this is valid */
+	if (!dce_call->conn->auth_state.session_info ||
+	    !dce_call->conn->auth_state.session_info->security_token ||
+	    !dce_call->conn->auth_state.session_info->security_token->user_sid) {
+	    	return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	account_sid = dce_call->conn->auth_state.session_info->security_token->user_sid;
+
+	account_sid_str = dom_sid_string(mem_ctx, account_sid);
+	NTSTATUS_TALLOC_CHECK(account_sid_str);
+
+	status = lsa_get_policy_state(dce_call, mem_ctx, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = lsa_lookup_sid(state, mem_ctx,
+			        account_sid, account_sid_str,
+			        &account_name, &atype);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	_account_name = talloc_p(mem_ctx, struct lsa_String);
+	NTSTATUS_TALLOC_CHECK(_account_name);
+	_account_name->string = account_name;
+
+	if (r->in.authority_name) {
+		status = lsa_authority_name(state, mem_ctx, account_sid,
+					    &authority_name, &authority_sid);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		_authority_name = talloc_p(mem_ctx, struct lsa_StringPointer);
+		NTSTATUS_TALLOC_CHECK(_authority_name);
+		_authority_name->string = talloc_p(mem_ctx, struct lsa_String);
+		NTSTATUS_TALLOC_CHECK(_authority_name->string);
+		_authority_name->string->string = authority_name;
+	}
+
+	r->out.account_name = _account_name;
+	r->out.authority_name = _authority_name;
+
+	return status;
 }
 
 /*
