@@ -262,40 +262,42 @@ static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			   struct policy_handle *handle)
+			   struct policy_handle *handle, int max_valnamelen, int max_valbufsize)
 {
 	struct winreg_EnumValue r;
-	struct winreg_Uint8buf value;
-	struct winreg_String name;
-	uint32 type, requested_len, returned_len;
+    struct winreg_Uint8buf vb;
+    struct winreg_EnumValueName vn;
+	uint32 type = 0, requested_len = 0, returned_len = 0;
 	NTSTATUS status;
 
-	r.in.handle = handle;
-	r.in.enum_index = 0;
-
-	init_winreg_String(&name, NULL);
-	r.in.name = r.out.name = &name;
-	
-	type = 0;
-	r.in.type = &type;
-
-	value.max_len = 0xffff;
-	value.offset = 0;
-	value.len = 0;
-	value.buffer = NULL;
-
-	r.in.value = &value;
-
-	requested_len = value.max_len;
-	r.in.requested_len = &requested_len;
-	returned_len = 0;
-	r.in.returned_len = &returned_len;
+    r.in.handle = handle;
+    r.in.enum_index = 0;
+    r.in.type = &type;
+    r.in.requested_len = &requested_len;
+    r.in.returned_len = &returned_len;
+    vn.max_len = max_valnamelen;
+    vn.len = 0;
+    vn.buf = NULL;
+    r.in.name = r.out.name = &vn;
+    vb.max_len = max_valbufsize;
+    vb.offset = 0x0;
+    vb.len = 0x0;
+    vb.buffer = NULL;
+    r.in.value = &vb;
 
 	do {
-
 		status = dcerpc_winreg_EnumValue(p, mem_ctx, &r);
+		if(NT_STATUS_IS_ERR(status)) {
+			printf("EnumValue failed - %s\n", nt_errstr(status));
+			return False;
+		}
 		r.in.enum_index++;
 	} while (W_ERROR_IS_OK(r.out.result));
+
+	if(!W_ERROR_EQUAL(r.out.result, WERR_NO_MORE_ITEMS)) {
+		printf("EnumValue failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
 			
 	return True;
 }
@@ -466,7 +468,7 @@ static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!test_EnumKey(p, mem_ctx, handle, depth)) {
 	}
 
-	if (!test_EnumValue(p, mem_ctx, handle)) {
+	if (!test_EnumValue(p, mem_ctx, handle, 200, 200)) {
 	}
 
 	/* Enumerate values */
