@@ -1864,6 +1864,14 @@ void cmd_sam_query_user(struct client_info *info);
 void cmd_sam_query_groups(struct client_info *info);
 void cmd_sam_enum_aliases(struct client_info *info);
 
+/*The following definitions come from  rpcclient/cmd_srvsvc.c  */
+
+void cmd_srv_query_info(struct client_info *info);
+void cmd_srv_enum_conn(struct client_info *info);
+void cmd_srv_enum_shares(struct client_info *info);
+void cmd_srv_enum_sess(struct client_info *info);
+void cmd_srv_enum_files(struct client_info *info);
+
 /*The following definitions come from  rpcclient/cmd_wkssvc.c  */
 
 void cmd_wks_query_info(struct client_info *info);

@@ -334,13 +334,13 @@ typedef struct sam_unkown_info_2_info
 	   pointer is referring to
 	 */
 
-	uint32 unknown_4; /* 0x0000 0099, 0x0000 0045 */
+	uint32 unknown_4; /* 0x0000 0099 */
 	uint32 unknown_5; /* 0x0000 0000 */
 	
 	uint32 unknown_6 ; /* 0x0000 0001 */
 	uint32 unknown_7 ; /* 0x0000 0003 */
 	uint32 unknown_8 ; /* 0x0000 0001 */
-	uint32 unknown_9 ; /* 0x0000 0008, 0x0000 0006 */
+	uint32 unknown_9 ; /* 0x0000 0008 */
 	uint32 unknown_10; /* 0x0000 0003 */
 
 	uint8 padding[16]; /* 16 bytes zeros */
@@ -385,7 +385,7 @@ SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
 /* SAMR_Q_OPEN_DOMAIN */
 typedef struct q_samr_open_domain_info
 {
-    POLICY_HND connect_pol;   /* policy handle */
+	POLICY_HND connect_pol;   /* policy handle */
 	uint32 rid;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - a RID? */
 	DOM_SID2 dom_sid;         /* domain SID */
 
@@ -395,7 +395,7 @@ typedef struct q_samr_open_domain_info
 /* SAMR_R_OPEN_DOMAIN - probably an open */
 typedef struct r_samr_open_domain_info
 {
-    POLICY_HND domain_pol; /* policy handle associated with the SID */
+	POLICY_HND domain_pol; /* policy handle associated with the SID */
 	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_DOMAIN;
@@ -668,10 +668,10 @@ typedef struct r_samr_query_aliasinfo_info
 	/* uint8[2] padding */
 
 	union
-    {
+ 	{
 		ALIAS_INFO3 info3;
 
-    } alias;
+	} alias;
 
 	uint32 status;
 
@@ -681,7 +681,7 @@ typedef struct r_samr_query_aliasinfo_info
 /* SAMR_Q_QUERY_USERGROUPS - */
 typedef struct q_samr_query_usergroup_info
 {
-    POLICY_HND pol;          /* policy handle associated with unknown id */
+	POLICY_HND pol;          /* policy handle associated with unknown id */
 
 } SAMR_Q_QUERY_USERGROUPS;
 
@@ -703,7 +703,7 @@ typedef struct r_samr_query_usergroup_info
 /* SAMR_Q_QUERY_USERINFO - probably a get sam info */
 typedef struct q_samr_query_user_info
 {
-    POLICY_HND pol;          /* policy handle associated with unknown id */
+	POLICY_HND pol;          /* policy handle associated with unknown id */
 	uint16 switch_value;         /* 0x0015, 0x0011 or 0x0010 - 16 bit unknown */
 
 } SAMR_Q_QUERY_USERINFO;
