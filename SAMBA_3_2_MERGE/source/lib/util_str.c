@@ -356,6 +356,20 @@ BOOL strisnormal(const char *s, int case_default)
 
 
 /**
+ Convert a string to upper case, but don't modify it.
+**/
+
+char *strupper_talloc(TALLOC_CTX *mem_ctx, const char *s)
+{
+	char *str;
+
+	str = talloc_strdup(mem_ctx, s);
+	strupper(str);
+
+	return str;
+}
+
+/**
  String replace.
  NOTE: oldc and newc must be 7 bit characters
 **/

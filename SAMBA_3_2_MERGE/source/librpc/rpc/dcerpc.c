@@ -41,8 +41,10 @@ struct dcerpc_pipe *dcerpc_pipe_init(void)
 	p->reference_count = 0;
 	p->mem_ctx = mem_ctx;
 	p->call_id = 1;
-	p->auth_info = NULL;
-	p->security_state = NULL;
+	p->security_state.auth_info = NULL;
+	ZERO_STRUCT(p->security_state.user);
+	p->security_state.private_data = NULL;
+	p->security_state.ops = NULL;
 	p->flags = 0;
 	p->srv_max_xmit_frag = 0;
 	p->srv_max_recv_frag = 0;
@@ -56,8 +58,8 @@ void dcerpc_pipe_close(struct dcerpc_pipe *p)
 	if (!p) return;
 	p->reference_count--;
 	if (p->reference_count <= 0) {
-		if (p->security_state) {
-			p->security_state->security_end(p->security_state);
+		if (p->security_state.ops) {
+			p->security_state.ops->end(&p->security_state);
 		}
 		p->transport.shutdown_pipe(p);
 		talloc_destroy(p->mem_ctx);
@@ -128,7 +130,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	DATA_BLOB auth_blob;
 
 	/* non-signed packets are simpler */
-	if (!p->auth_info || !p->security_state) {
+	if (!p->security_state.auth_info || !p->security_state.ops) {
 		return dcerpc_pull(blob, mem_ctx, pkt);
 	}
 
@@ -180,9 +182,9 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 
 
 	/* check signature or unseal the packet */
-	switch (p->auth_info->auth_level) {
+	switch (p->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = p->security_state->unseal_packet(p->security_state, 
+		status = p->security_state.ops->unseal(&p->security_state, 
 							  mem_ctx, 
 							  pkt->u.response.stub_and_verifier.data, 
 							  pkt->u.response.stub_and_verifier.length, 
@@ -190,7 +192,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = p->security_state->check_packet(p->security_state, 
+		status = p->security_state.ops->check_sig(&p->security_state, 
 							 mem_ctx, 
 							 pkt->u.response.stub_and_verifier.data, 
 							 pkt->u.response.stub_and_verifier.length, 
@@ -226,8 +228,8 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	struct ndr_push *ndr;
 
 	/* non-signed packets are simpler */
-	if (!p->auth_info || !p->security_state) {
-		return dcerpc_push_auth(blob, mem_ctx, pkt, p->auth_info);
+	if (!p->security_state.auth_info || !p->security_state.ops) {
+		return dcerpc_push_auth(blob, mem_ctx, pkt, p->security_state.auth_info);
 	}
 
 	ndr = ndr_push_init_ctx(mem_ctx);
@@ -245,29 +247,29 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	}
 
 	/* pad to 8 byte multiple */
-	p->auth_info->auth_pad_length = NDR_ALIGN(ndr, 8);
-	ndr_push_zero(ndr, p->auth_info->auth_pad_length);
+	p->security_state.auth_info->auth_pad_length = NDR_ALIGN(ndr, 8);
+	ndr_push_zero(ndr, p->security_state.auth_info->auth_pad_length);
 
 	/* sign or seal the packet */
-	switch (p->auth_info->auth_level) {
+	switch (p->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = p->security_state->seal_packet(p->security_state, 
+		status = p->security_state.ops->seal(&p->security_state, 
 							mem_ctx, 
 							ndr->data + DCERPC_REQUEST_LENGTH, 
 							ndr->offset - DCERPC_REQUEST_LENGTH,
-							&p->auth_info->credentials);
+							&p->security_state.auth_info->credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = p->security_state->sign_packet(p->security_state, 
+		status = p->security_state.ops->sign(&p->security_state, 
 							mem_ctx, 
 							ndr->data + DCERPC_REQUEST_LENGTH, 
 							ndr->offset - DCERPC_REQUEST_LENGTH,
-							&p->auth_info->credentials);
+							&p->security_state.auth_info->credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_NONE:
-		p->auth_info->credentials = data_blob(NULL, 0);
+		p->security_state.auth_info->credentials = data_blob(NULL, 0);
 		break;
 
 	default:
@@ -280,7 +282,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	}	
 
 	/* add the auth verifier */
-	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, p->auth_info);
+	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, p->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -292,9 +294,9 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	   in these earlier as we don't know the signature length (it
 	   could be variable length) */
 	dcerpc_set_frag_length(blob, blob->length);
-	dcerpc_set_auth_length(blob, p->auth_info->credentials.length);
+	dcerpc_set_auth_length(blob, p->security_state.auth_info->credentials.length);
 
-	data_blob_free(&p->auth_info->credentials);
+	data_blob_free(&p->security_state.auth_info->credentials);
 
 	return NT_STATUS_OK;
 }
@@ -357,7 +359,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->auth_info);
+	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -386,10 +388,10 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	}
 
 	/* the bind_ack might contain a reply set of credentials */
-	if (p->auth_info && pkt.u.bind_ack.auth_info.length) {
+	if (p->security_state.auth_info && pkt.u.bind_ack.auth_info.length) {
 		status = ndr_pull_struct_blob(&pkt.u.bind_ack.auth_info,
 					      mem_ctx,
-					      p->auth_info,
+					      p->security_state.auth_info,
 					      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	}
 
@@ -416,7 +418,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	pkt.u.auth.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->auth_info);
+	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

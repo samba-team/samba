@@ -813,7 +813,7 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
 	push_ascii(n->name, name, 16, STR_TERMINATE|STR_UPPER);
 	n->name_type = (uint_t)type & 0xFF;
-	StrnCpy( n->scope, lp_netbios_scope(), 63 );
+	StrnCpy( n->scope, global_scope(), 63 );
 	strupper( n->scope );
 }
 
@@ -1166,7 +1166,7 @@ name_mangle()
 ****************************************************************************/
 uint_t nbt_mangled_name_len(void)
 {
-	const char *scope = lp_netbios_scope();
+	const char *scope = global_scope();
 	uint_t ret = 34;
 	if (scope && *scope) {
 		ret += strlen(scope) + 1;
@@ -1186,7 +1186,7 @@ int name_mangle(char *In, char *Out, char name_type)
 	int   len;
 	char  buf[20];
 	char *p = Out;
-	const char *scope = lp_netbios_scope();
+	const char *scope = global_scope();
 
 	/* Safely copy the input string, In, into buf[]. */
 	memset( buf, 0, 20 );

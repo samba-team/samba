@@ -90,6 +90,22 @@ static int tm_diff(struct tm *a, struct tm *b)
 /*******************************************************************
   return the UTC offset in seconds west of UTC, or 0 if it cannot be determined
   ******************************************************************/
+int get_time_zone(time_t t)
+{
+	struct tm *tm = gmtime(&t);
+	struct tm tm_utc;
+	if (!tm)
+		return 0;
+	tm_utc = *tm;
+	tm = localtime(&t);
+	if (!tm)
+		return 0;
+	return tm_diff(&tm_utc,tm);
+}
+
+/*******************************************************************
+  return the UTC offset in seconds west of UTC, or 0 if it cannot be determined
+  ******************************************************************/
 static int TimeZone(time_t t)
 {
   struct tm *tm = gmtime(&t);
@@ -366,86 +382,6 @@ time_t interpret_long_date(char *p)
 }
 
 /****************************************************************************
-put a 8 byte filetime from a time_t
-This takes real GMT as input and converts to kludge-GMT
-****************************************************************************/
-void unix_to_nt_time(NTTIME *nt, time_t t)
-{
-	double d;
-
-	if (t==0)
-	{
-		nt->low = 0;
-		nt->high = 0;
-		return;
-	}
-	if (t == TIME_T_MAX)
-	{
-		nt->low = 0xffffffff;
-		nt->high = 0x7fffffff;
-		return;
-	}		
-	if (t == -1)
-	{
-		nt->low = 0xffffffff;
-		nt->high = 0xffffffff;
-		return;
-	}		
-
-	/* this converts GMT to kludge-GMT */
-	t -= TimeDiff(t) - get_serverzone(); 
-
-	d = (double)(t);
-	d += TIME_FIXUP_CONSTANT;
-	d *= 1.0e7;
-
-	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
-	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
-}
-
-/****************************************************************************
- Convert a time_t to a NTTIME structure
-
- This is an absolute version of the one above.
- By absolute I mean, it doesn't adjust from 1/1/1970 to 1/1/1601
- If the nttime_t was 5 seconds, the NTTIME is 5 seconds. JFM
-****************************************************************************/
-
-void unix_to_nt_time_abs(NTTIME *nt, time_t t)
-{
-	double d;
-
-	if (t==0) {
-		nt->low = 0;
-		nt->high = 0;
-		return;
-	}
-
-	if (t == TIME_T_MAX) {
-		nt->low = 0xffffffff;
-		nt->high = 0x7fffffff;
-		return;
-	}
-		
-	if (t == -1) {
-		/* that's what NT uses for infinite */
-		nt->low = 0x0;
-		nt->high = 0x80000000;
-		return;
-	}		
-
-	d = (double)(t);
-	d *= 1.0e7;
-
-	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
-	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
-
-	/* convert to a negative value */
-	nt->high=~nt->high;
-	nt->low=~nt->low;
-}
-
-/****************************************************************************
 take a Unix time and convert to an NTTIME structure and place in buffer 
 pointed to by p.
 ****************************************************************************/
@@ -609,26 +545,264 @@ time_t make_unix_date3(void *date_ptr)
   return(t);
 }
 
+#define TIME_FIXUP_CONSTANT 11644473600LL
+
+/****************************************************************************
+interpret an 8 byte "filetime" structure to a time_t
+It's originally in "100ns units since jan 1st 1601"
+****************************************************************************/
+time_t nt_time_to_unix(NTTIME nt)
+{
+	if (nt == 0) {
+		return 0;
+	}
+	if (nt == -1LL) {
+		return (time_t)-1;
+	}
+	nt += 1000*1000*10/2;
+	nt /= 1000*1000*10;
+	nt -= TIME_FIXUP_CONSTANT;
+
+	if (TIME_T_MIN >= nt || nt >= TIME_T_MAX) {
+		return 0;
+	}
+
+	return (time_t)nt;
+}
+
+
+/****************************************************************************
+put a 8 byte filetime from a time_t
+This takes GMT as input
+****************************************************************************/
+void unix_to_nt_time(NTTIME *nt, time_t t)
+{
+	uint64_t t2; 
+
+	if (t == (time_t)-1) {
+		*nt = (NTTIME)-1LL;
+		return;
+	}		
+	if (t == 0) {
+		*nt = 0;
+		return;
+	}		
+
+	t2 = t;
+	t2 += TIME_FIXUP_CONSTANT;
+	t2 *= 1000*1000*10;
+
+	*nt = t2;
+}
+
+
+/****************************************************************************
+check if it's a null mtime
+****************************************************************************/
+BOOL null_mtime(time_t mtime)
+{
+	return mtime == 0 || 
+		mtime == (time_t)0xFFFFFFFF || 
+		mtime == (time_t)-1;
+}
+
+/*******************************************************************
+  create a 16 bit dos packed date
+********************************************************************/
+static uint16_t make_dos_date1(struct tm *t)
+{
+	uint16_t ret=0;
+	ret = (((uint_t)(t->tm_mon+1)) >> 3) | ((t->tm_year-80) << 1);
+	ret = ((ret&0xFF)<<8) | (t->tm_mday | (((t->tm_mon+1) & 0x7) << 5));
+	return ret;
+}
+
+/*******************************************************************
+  create a 16 bit dos packed time
+********************************************************************/
+static uint16_t make_dos_time1(struct tm *t)
+{
+	uint16_t ret=0;
+	ret = ((((uint_t)t->tm_min >> 3)&0x7) | (((uint_t)t->tm_hour) << 3));
+	ret = ((ret&0xFF)<<8) | ((t->tm_sec/2) | ((t->tm_min & 0x7) << 5));
+	return ret;
+}
+
+/*******************************************************************
+  create a 32 bit dos packed date/time from some parameters
+  This takes a GMT time and returns a packed localtime structure
+********************************************************************/
+static uint32_t make_dos_date(time_t unixdate, int zone_offset)
+{
+	struct tm *t;
+	uint32_t ret=0;
+
+	if (unixdate == 0) {
+		return 0;
+	}
+
+	unixdate -= zone_offset;
+
+	t = gmtime(&unixdate);
+	if (!t) {
+		return 0xFFFFFFFF;
+	}
+
+	ret = make_dos_date1(t);
+	ret = ((ret&0xFFFF)<<16) | make_dos_time1(t);
+
+	return ret;
+}
+
+/*******************************************************************
+put a dos date into a buffer (time/date format)
+This takes GMT time and puts local time in the buffer
+********************************************************************/
+void push_dos_date(char *buf, int offset, time_t unixdate, int zone_offset)
+{
+	uint32_t x = make_dos_date(unixdate, zone_offset);
+	SIVAL(buf,offset,x);
+}
+
+/*******************************************************************
+put a dos date into a buffer (date/time format)
+This takes GMT time and puts local time in the buffer
+********************************************************************/
+void push_dos_date2(char *buf,int offset,time_t unixdate, int zone_offset)
+{
+	uint32_t x;
+	x = make_dos_date(unixdate, zone_offset);
+	x = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
+	SIVAL(buf,offset,x);
+}
+
+/*******************************************************************
+put a dos 32 bit "unix like" date into a buffer. This routine takes
+GMT and converts it to LOCAL time before putting it (most SMBs assume
+localtime for this sort of date)
+********************************************************************/
+void push_dos_date3(char *buf,int offset,time_t unixdate, int zone_offset)
+{
+	if (!null_mtime(unixdate)) {
+		unixdate -= zone_offset;
+	}
+	SIVAL(buf,offset,unixdate);
+}
+
+/*******************************************************************
+  interpret a 32 bit dos packed date/time to some parameters
+********************************************************************/
+static void interpret_dos_date(uint32_t date,int *year,int *month,int *day,int *hour,int *minute,int *second)
+{
+	uint32_t p0,p1,p2,p3;
+
+	p0=date&0xFF; p1=((date&0xFF00)>>8)&0xFF; 
+	p2=((date&0xFF0000)>>16)&0xFF; p3=((date&0xFF000000)>>24)&0xFF;
+
+	*second = 2*(p0 & 0x1F);
+	*minute = ((p0>>5)&0xFF) + ((p1&0x7)<<3);
+	*hour = (p1>>3)&0xFF;
+	*day = (p2&0x1F);
+	*month = ((p2>>5)&0xFF) + ((p3&0x1)<<3) - 1;
+	*year = ((p3>>1)&0xFF) + 80;
+}
+
+/*******************************************************************
+  create a unix date (int GMT) from a dos date (which is actually in
+  localtime)
+********************************************************************/
+time_t pull_dos_date(const uint8_t *date_ptr, int zone_offset)
+{
+	uint32_t dos_date=0;
+	struct tm t;
+	time_t ret;
+
+	dos_date = IVAL(date_ptr,0);
+
+	if (dos_date == 0) return (time_t)0;
+  
+	interpret_dos_date(dos_date,&t.tm_year,&t.tm_mon,
+			   &t.tm_mday,&t.tm_hour,&t.tm_min,&t.tm_sec);
+	t.tm_isdst = -1;
+  
+	ret = timegm(&t);
+
+	ret += zone_offset;
+
+	return ret;
+}
+
+/*******************************************************************
+like make_unix_date() but the words are reversed
+********************************************************************/
+time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset)
+{
+	uint32_t x,x2;
+
+	x = IVAL(date_ptr,0);
+	x2 = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
+	SIVAL(&x,0,x2);
+
+	return pull_dos_date((void *)&x, zone_offset);
+}
+
+/*******************************************************************
+  create a unix GMT date from a dos date in 32 bit "unix like" format
+  these generally arrive as localtimes, with corresponding DST
+  ******************************************************************/
+time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset)
+{
+	time_t t = (time_t)IVAL(date_ptr,0);
+	if (!null_mtime(t)) {
+		t += zone_offset;
+	}
+	return t;
+}
+
 
 /***************************************************************************
 return a HTTP/1.0 time string
   ***************************************************************************/
-char *http_timestring(time_t t)
+char *http_timestring(TALLOC_CTX *mem_ctx, time_t t)
 {
-  static fstring buf;
-  struct tm *tm = LocalTime(&t);
+	char *buf;
+	char tempTime[60];
+	struct tm *tm = localtime(&t);
 
-  if (!tm)
-    slprintf(buf,sizeof(buf)-1,"%ld seconds since the Epoch",(long)t);
-  else
+	if (!tm) {
+		return talloc_asprintf(mem_ctx,"%ld seconds since the Epoch",(long)t);
+	}
+
 #ifndef HAVE_STRFTIME
-  fstrcpy(buf, asctime(tm));
-  if(buf[strlen(buf)-1] == '\n')
-    buf[strlen(buf)-1] = 0;
-#else /* !HAVE_STRFTIME */
-  strftime(buf, sizeof(buf)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
+	buf = talloc_strdup(mem_ctx, asctime(tm));
+	if (buf[strlen(buf)-1] == '\n') {
+		buf[strlen(buf)-1] = 0;
+	}
+#else
+	strftime(tempTime, sizeof(tempTime)-1, "%a, %d %b %Y %H:%M:%S %Z", tm);
+	buf = talloc_strdup(mem_ctx, tempTime);
 #endif /* !HAVE_STRFTIME */
-  return buf;
+
+	return buf;
+}
+
+/***************************************************************************
+return a LDAP time string
+  ***************************************************************************/
+char *ldap_timestring(TALLOC_CTX *mem_ctx, time_t t)
+{
+	struct tm *tm = gmtime(&t);
+
+	if (!tm) {
+		return NULL;
+	}
+
+	/* formatted like: 20040408072012.0Z */
+	return talloc_asprintf(mem_ctx, 
+			       "%04u%02u%02u%02u%02u%02u.0Z",
+			       tm->tm_year+1900, tm->tm_mon+1,
+			       tm->tm_mday, tm->tm_hour, tm->tm_min,
+			       tm->tm_sec);
 }
 
 
@@ -636,59 +810,69 @@ char *http_timestring(time_t t)
 /****************************************************************************
  Return the date and time as a string
 ****************************************************************************/
-
-char *timestring(BOOL hires)
+char *timestring(TALLOC_CTX *mem_ctx, time_t t)
 {
-	static fstring TimeBuf;
-	struct timeval tp;
-	time_t t;
+	char *TimeBuf;
+	char tempTime[80];
 	struct tm *tm;
 
-	if (hires) {
-		GetTimeOfDay(&tp);
-		t = (time_t)tp.tv_sec;
-	} else {
-		t = time(NULL);
-	}
-	tm = LocalTime(&t);
+	tm = localtime(&t);
 	if (!tm) {
-		if (hires) {
-			slprintf(TimeBuf,
-				 sizeof(TimeBuf)-1,
-				 "%ld.%06ld seconds since the Epoch",
-				 (long)tp.tv_sec, 
-				 (long)tp.tv_usec);
-		} else {
-			slprintf(TimeBuf,
-				 sizeof(TimeBuf)-1,
-				 "%ld seconds since the Epoch",
-				 (long)t);
-		}
-	} else {
-#ifdef HAVE_STRFTIME
-		if (hires) {
-			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
-			slprintf(TimeBuf+strlen(TimeBuf),
-				 sizeof(TimeBuf)-1 - strlen(TimeBuf), 
-				 ".%06ld", 
-				 (long)tp.tv_usec);
-		} else {
-			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
-		}
-#else
-		if (hires) {
-			slprintf(TimeBuf, 
-				 sizeof(TimeBuf)-1, 
-				 "%s.%06ld", 
-				 asctime(tm), 
-				 (long)tp.tv_usec);
-		} else {
-			fstrcpy(TimeBuf, asctime(tm));
-		}
-#endif
+		return talloc_asprintf(mem_ctx,
+				       "%ld seconds since the Epoch",
+				       (long)t);
 	}
-	return(TimeBuf);
+
+#ifdef HAVE_STRFTIME
+	/* some versions of gcc complain about using %c. This is a bug
+	   in the gcc warning, not a bug in this code. See a recent
+	   strftime() manual page for details.
+	 */
+	strftime(tempTime,sizeof(tempTime)-1,"%c %Z",tm);
+	TimeBuf = talloc_strdup(mem_ctx, tempTime);
+#else
+	TimeBuf = talloc_strdup(mem_ctx, asctime(tm));
+#endif
+
+	return TimeBuf;
 }
+
+/*
+  return a talloced string representing a NTTIME for human consumption
+*/
+const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
+{
+	time_t t = nt_time_to_unix(nt);
+	return talloc_strdup(mem_ctx, timestring(mem_ctx, t));
+}
+
+
+/*
+  put a NTTIME into a packet
+*/
+void push_nttime(void *base, uint16_t offset, NTTIME t)
+{
+	SBVAL(base, offset,   t);
+}
+
+/*
+  pull a NTTIME from a packet
+*/
+NTTIME pull_nttime(void *base, uint16_t offset)
+{
+	NTTIME ret = BVAL(base, offset);
+	return ret;
+}
+
+/*
+  parse a nttime as a large integer in a string and return a NTTIME
+*/
+NTTIME nttime_from_string(const char *s)
+{
+	return strtoull(s, NULL, 0);
+}
+
+
 
 /****************************************************************************
   return the best approximation to a 'create time' under UNIX from a stat

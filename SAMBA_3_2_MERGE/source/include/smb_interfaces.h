@@ -934,9 +934,7 @@ union smb_fsinfo {
 			uint64_t quota_soft;
 			uint64_t quota_hard;
 			uint64_t quota_flags;
-#ifdef INCLUDE_LIBRPC
 			struct GUID guid;
-#endif
 			char *volume_name;
 			char *fs_type;
 		} out;
@@ -1064,9 +1062,7 @@ union smb_fsinfo {
 		enum fsinfo_level level;
 
 		struct {
-#ifdef INCLUDE_LIBRPC
 			struct GUID  guid;
-#endif
 			uint64_t unknown[6];
 		} out;
 	} objectid_information;	

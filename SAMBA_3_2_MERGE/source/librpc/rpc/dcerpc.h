@@ -25,24 +25,39 @@ enum dcerpc_transport_t {NCACN_NP, NCACN_IP_TCP};
 /*
   this defines a generic security context for signed/sealed dcerpc pipes.
 */
-struct dcerpc_security {
-	void *private;
-	NTSTATUS (*unseal_packet)(struct dcerpc_security *, 
-				  TALLOC_CTX *mem_ctx, 
-				  uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*check_packet)(struct dcerpc_security *, 
-				 TALLOC_CTX *mem_ctx, 
-				 const uint8_t *data, size_t length, const DATA_BLOB *sig);
-	NTSTATUS (*seal_packet)(struct dcerpc_security *, 
-				TALLOC_CTX *mem_ctx, 
-				uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*sign_packet)(struct dcerpc_security *, 
-				TALLOC_CTX *mem_ctx, 
-				const uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*session_key)(struct dcerpc_security *, DATA_BLOB *session_key);
-	void (*security_end)(struct dcerpc_security *);
+struct dcerpc_security;
+struct dcerpc_pipe;
+
+struct dcerpc_user {
+	const char *domain;
+	const char *name;
+	const char *password;
 };
 
+struct dcesrv_security_ops {
+	const char *name;
+	uint8 auth_type;
+	NTSTATUS (*start)(struct dcerpc_pipe *dce_pipe, struct dcerpc_security *dce_sec);
+	NTSTATUS (*update)(struct dcerpc_security *dce_sec, TALLOC_CTX *out_mem_ctx,
+				const DATA_BLOB in, DATA_BLOB *out);
+	NTSTATUS (*seal)(struct dcerpc_security *dce_sec, TALLOC_CTX *sig_mem_ctx,
+				uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*sign)(struct dcerpc_security *dce_sec, TALLOC_CTX *sig_mem_ctx,
+				const uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*check_sig)(struct dcerpc_security *dce_sec, TALLOC_CTX *sig_mem_ctx, 
+				const uint8_t *data, size_t length, const DATA_BLOB *sig);
+	NTSTATUS (*unseal)(struct dcerpc_security *dce_sec, TALLOC_CTX *sig_mem_ctx,
+				uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*session_key)(struct dcerpc_security *, DATA_BLOB *session_key);
+	void (*end)(struct dcerpc_security *dce_sec);
+};
+	
+struct dcerpc_security {
+	struct dcerpc_auth *auth_info;
+	struct dcerpc_user user;
+	void *private_data;
+	const struct dcesrv_security_ops *ops;
+};
 
 struct dcerpc_pipe {
 	TALLOC_CTX *mem_ctx;
@@ -51,8 +66,7 @@ struct dcerpc_pipe {
 	uint32_t srv_max_xmit_frag;
 	uint32_t srv_max_recv_frag;
 	uint_t flags;
-	struct dcerpc_security *security_state;
-	struct dcerpc_auth *auth_info;
+	struct dcerpc_security security_state;
 	const char *binding_string;
 	
 	struct dcerpc_transport {
@@ -71,21 +85,30 @@ struct dcerpc_pipe {
 };
 
 /* dcerpc pipe flags */
-#define DCERPC_DEBUG_PRINT_IN  (1<<0)
-#define DCERPC_DEBUG_PRINT_OUT (1<<1)
+#define DCERPC_DEBUG_PRINT_IN          (1<<0)
+#define DCERPC_DEBUG_PRINT_OUT         (1<<1)
 #define DCERPC_DEBUG_PRINT_BOTH (DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT)
 
-#define DCERPC_DEBUG_VALIDATE_IN  4
-#define DCERPC_DEBUG_VALIDATE_OUT 8
+#define DCERPC_DEBUG_VALIDATE_IN       (1<<2)
+#define DCERPC_DEBUG_VALIDATE_OUT      (1<<3)
 #define DCERPC_DEBUG_VALIDATE_BOTH (DCERPC_DEBUG_VALIDATE_IN | DCERPC_DEBUG_VALIDATE_OUT)
 
-#define DCERPC_SIGN            16
-#define DCERPC_SEAL            32
+#define DCERPC_SIGN                    (1<<4)
+#define DCERPC_SEAL                    (1<<5)
 
-#define DCERPC_PUSH_BIGENDIAN   64
-#define DCERPC_PULL_BIGENDIAN  128
+#define DCERPC_PUSH_BIGENDIAN          (1<<6)
+#define DCERPC_PULL_BIGENDIAN          (1<<7)
 
-#define DCERPC_SCHANNEL        256
+#define DCERPC_SCHANNEL_BDC            (1<<8)
+#define DCERPC_SCHANNEL_WORKSTATION    (1<<9)
+#define DCERPC_SCHANNEL_DOMAIN         (1<<10)
+#define DCERPC_SCHANNEL_ANY            (DCERPC_SCHANNEL_BDC| \
+					DCERPC_SCHANNEL_DOMAIN| \
+					DCERPC_SCHANNEL_WORKSTATION)
+/* use a 128 bit session key */
+#define DCERPC_SCHANNEL_128            (1<<11)
+
+#define DCERPC_AUTH_OPTIONS    (DCERPC_SEAL|DCERPC_SIGN|DCERPC_SCHANNEL_ANY)
 
 /*
   this is used to find pointers to calls

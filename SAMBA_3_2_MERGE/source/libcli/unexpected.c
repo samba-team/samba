@@ -49,7 +49,7 @@ void unexpected_packet(struct packet_struct *p)
 	if (!tdbd) {
 		mem_ctx = talloc_init("receive_unexpected");
 		if (!mem_ctx) return;
-		tdbd = tdb_open_log(lock_path(mem_ctx, "unexpected.tdb"), 0, 
+		tdbd = tdb_open_log(lock_path("unexpected.tdb"), 0, 
 			       TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
 			       O_RDWR | O_CREAT, 0644);
 		talloc_destroy(mem_ctx);
@@ -155,7 +155,7 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 
 	mem_ctx = talloc_init("receive_unexpected");
 	if (!mem_ctx) return NULL;
-	tdb2 = tdb_open_log(lock_path(mem_ctx, "unexpected.tdb"), 0, 0, O_RDONLY, 0);
+	tdb2 = tdb_open_log(lock_path("unexpected.tdb"), 0, 0, O_RDONLY, 0);
 	talloc_destroy(mem_ctx);
 	if (!tdb2) return NULL;
 

@@ -192,7 +192,7 @@ void set_socket_options(int fd, const char *options)
  Read from a socket.
 ****************************************************************************/
 
-ssize_t read_udp_socket(int fd,char *buf,size_t len)
+ssize_t read_udp_socket_x(int fd,char *buf,size_t len)
 {
 	ssize_t ret;
 	struct sockaddr_in sock;
@@ -214,6 +214,34 @@ ssize_t read_udp_socket(int fd,char *buf,size_t len)
 
 	return(ret);
 }
+
+/****************************************************************************
+ Read from a socket.
+****************************************************************************/
+
+ssize_t read_udp_socket(int fd, char *buf, size_t len, 
+			struct in_addr *from_addr, int *from_port)
+{
+	ssize_t ret;
+	struct sockaddr_in sock;
+	socklen_t socklen = sizeof(sock);
+
+	ret = (ssize_t)sys_recvfrom(fd,buf,len, 0, (struct sockaddr *)&sock, &socklen);
+	if (ret <= 0) {
+		DEBUG(2,("read socket failed. ERRNO=%s\n",strerror(errno)));
+		return 0;
+	}
+
+	if (from_addr) {
+		*from_addr = sock.sin_addr;
+	}
+	if (from_port) {
+		*from_port = ntohs(sock.sin_port);
+	}
+
+	return ret;
+}
+
 
 /****************************************************************************
  Read data from a socket with a timout in msec.

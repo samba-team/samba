@@ -1093,12 +1093,27 @@ uint32 interpret_addr(const char *str)
  A convenient addition to interpret_addr().
 ******************************************************************/
 
-struct in_addr *interpret_addr2(const char *str)
+struct in_addr *interpret_addr2_x(const char *str)
 {
 	static struct in_addr ret;
 	uint32 a = interpret_addr(str);
 	ret.s_addr = a;
 	return(&ret);
+}
+
+/*******************************************************************
+ A convenient addition to interpret_addr().
+******************************************************************/
+
+struct in_addr *interpret_addr2(TALLOC_CTX *mem_ctx, const char *str)
+{
+	struct in_addr *ret;
+	uint32_t a = interpret_addr(str);
+	
+	ret = talloc(mem_ctx, sizeof(struct in_addr));
+	if (!ret) return NULL;
+	ret->s_addr = a;
+	return(ret);
 }
 
 /*******************************************************************
