@@ -420,7 +420,7 @@ doit(int s,
 			    state = QUIT;
 			    net_write (s, "QUIT\r\n", 6);
 			    if (verbose > 1)
-				fprintf (stderr, "QUIT\r\n", 6);
+				fprintf (stderr, "QUIT\r\n");
 			    break;
 			}
 		    } else if (++state == STAT) {
