@@ -147,7 +147,9 @@ DATA_BLOB krb5_get_ticket(char *principal, time_t time_offset)
 	return ret;
 
 failed:
-	krb5_free_context(context);
+	if ( context )
+		krb5_free_context(context);
+		
 	return data_blob(NULL, 0);
 }
 
