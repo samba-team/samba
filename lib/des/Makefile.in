@@ -21,13 +21,13 @@ LIB = libdes.a
 
 SOURCES = cbc_cksm.c cbc_enc.c ecb_enc.c pcbc_enc.c \
         qud_cksm.c rand_key.c read_pwd.c set_key.c str2key.c \
-        enc_read.c cfb_enc.c \
+        cfb_enc.c \
 	3ecb_enc.c ofb_enc.c 3cbc_enc.c rnd_keys.c key_par.c \
 	enc_read.c enc_writ.c
 
 OBJECTS = cbc_cksm.o cbc_enc.o ecb_enc.o pcbc_enc.o \
         qud_cksm.o rand_key.o read_pwd.o set_key.o str2key.o \
-        enc_read.o cfb_enc.o \
+        cfb_enc.o \
 	3ecb_enc.o ofb_enc.o 3cbc_enc.o rnd_keys.o key_par.o \
 	enc_read.o enc_writ.o
 
