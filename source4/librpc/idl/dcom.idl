@@ -365,11 +365,19 @@ interface IRemUnknown : IUnknown
 	object
 ] interface IClassActivator : IUnknown
 {
-	void RemoteGetClassObject([in] GUID clsid, 
-											  [in] uint32 context,
-											  [in] LCID locale,
-											  [in] GUID iid,
-											  [out, iid_is(iid)] MInterfacePointer data);
+	void GetClassObject([in] GUID clsid, 
+		                [in] uint32 context,
+						[in] LCID locale,
+						[in] GUID iid,
+						[out, iid_is(iid)] MInterfacePointer data);
+}
+
+[
+	uuid("00000136-0000-0000-c000-000000000046"),
+	object
+] interface ISCMLocalActivator : IClassActivator
+{
+	WERROR ISCMLocalActivator_CreateInstance( );
 }
 
 /* Looks like this is the equivalent of .NET's 
@@ -380,7 +388,7 @@ interface IRemUnknown : IUnknown
 ]
 	interface ISystemActivator : IClassActivator
 {
-	WERROR ISystemActivatorRemoteCreateInstance([in] HYPER_T unknown1,  /* IPID ? */
+	WERROR ISystemActivatorRemoteCreateInstance([in] HYPER_T unknown1,  /* OXID ? */
 											  [in] MInterfacePointer iface,
 											  [in] HYPER_T unknown2,
 											  [out] uint32 unknown3, 
@@ -411,9 +419,8 @@ interface IRemUnknown2 : IRemUnknown
 [
 object,
 	uuid("00000136-0000-0000-C000-000000000046")
-	] interface ISCMActivator : IUnknown
+	] interface ISCMActivator : IClassActivator
 {
-	WERROR SCMActivator_GetClassObject();
 	WERROR SCMActivator_CreateInstance();
 }
 
@@ -428,11 +435,6 @@ object,
 			[out] uint16 *pctinfo);
 
 	typedef struct {
-		uint8 FIXME;
-	} ITypeInfo;
-
-	typedef struct {
-		ITypeInfo *pTInfo;
 	} REF_ITypeInfo;
 
 	/*****************/
@@ -480,13 +482,13 @@ object,
 
 [
 	object,
+	local,
 	uuid("00000003-0000-0000-C000-000000000046")
 ] interface IMarshal : IUnknown
 {
 	WERROR MarshalInterface();
 	WERROR UnMarshalInterface();
 }
-
 
 [
 uuid(DB7C21F8-FE33-4C11-AEA5-CEB56F076FBB),
