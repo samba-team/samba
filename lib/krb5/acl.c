@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -129,7 +129,7 @@ acl_match_acl(krb5_context context,
 
 krb5_error_code
 krb5_acl_match_string(krb5_context context,
-		      const char *acl_string,
+		      const char *string,
 		      const char *format,
 		      ...)
 {
@@ -144,7 +144,7 @@ krb5_acl_match_string(krb5_context context,
     if(ret)
 	return ret;
 
-    found = acl_match_acl(context, acl, acl_string);
+    found = acl_match_acl(context, acl, string);
     acl_free_list(acl);
     if (found) {
 	return 0;
