@@ -690,7 +690,17 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 	pass = getpwnam(unix_name);
 	if (pass != NULL)
 	{
+		char *p;
 		pstrcpy(unix_gecos, pass->pw_gecos);
+		p = strchr(unix_gecos, ',');
+		if (p)
+		{
+			*p = 0;
+			p++;
+			while (*p && (*p==' '))
+				p++;
+			pstrcpy(acct_desc, p);
+		}
 		pw_buf.full_name=unix_gecos;
 	}
 
