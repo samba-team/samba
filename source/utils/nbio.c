@@ -37,7 +37,7 @@ static struct {
 
 static struct cli_state *c;
 
-static int sigsegv(int sig)
+static void sigsegv(int sig)
 {
 	char line[200];
 	printf("segv at line %d\n", line_count);
