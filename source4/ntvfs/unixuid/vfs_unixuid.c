@@ -26,162 +26,12 @@
 #include "smb_server/smb_server.h"
 
 struct unixuid_private {
-	void *samctx;
+	struct sidmap_context *sidmap;
 	struct unix_sec_ctx *last_sec_ctx;
 	struct nt_user_token *last_token;
 };
 
 
-/*
-  map a sid to a unix uid
-*/
-static NTSTATUS sid_to_unixuid(struct ntvfs_module_context *ntvfs,
-			       struct smbsrv_request *req, struct dom_sid *sid, uid_t *uid)
-{
-	struct unixuid_private *private = ntvfs->private_data;
-	const char *attrs[] = { "sAMAccountName", "unixID", "unixName", "sAMAccountType", NULL };
-	int ret;
-	const char *s;
-	void *ctx;
-	struct ldb_message **res;
-	const char *sidstr;
-	uint_t atype;
-
-	ctx = talloc(req, 0);
-	sidstr = dom_sid_string(ctx, sid);
-
-	ret = samdb_search(private->samctx, ctx, NULL, &res, attrs, "objectSid=%s", sidstr);
-	if (ret != 1) {
-		DEBUG(0,("sid_to_unixuid: unable to find sam record for sid %s\n", sidstr));
-		talloc_free(ctx);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/* make sure its a user, not a group */
-	atype = samdb_result_uint(res[0], "sAMAccountType", 0);
-	if (atype && (!(atype & ATYPE_ACCOUNT))) {
-		DEBUG(0,("sid_to_unixuid: sid %s is not an account!\n", sidstr));
-		talloc_free(ctx);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/* first try to get the uid directly */
-	s = samdb_result_string(res[0], "unixID", NULL);
-	if (s != NULL) {
-		*uid = strtoul(s, NULL, 0);
-		talloc_free(ctx);
-		return NT_STATUS_OK;
-	}
-
-	/* next try via the UnixName attribute */
-	s = samdb_result_string(res[0], "unixName", NULL);
-	if (s != NULL) {
-		struct passwd *pwd = getpwnam(s);
-		if (!pwd) {
-			DEBUG(0,("unixName %s for sid %s does not exist as a local user\n", s, sidstr));
-			talloc_free(ctx);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		*uid = pwd->pw_uid;
-		talloc_free(ctx);
-		return NT_STATUS_OK;
-	}
-
-	/* finally try via the sAMAccountName attribute */
-	s = samdb_result_string(res[0], "sAMAccountName", NULL);
-	if (s != NULL) {
-		struct passwd *pwd = getpwnam(s);
-		if (!pwd) {
-			DEBUG(0,("sAMAccountName '%s' for sid %s does not exist as a local user\n", s, sidstr));
-			talloc_free(ctx);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		*uid = pwd->pw_uid;
-		talloc_free(ctx);
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(0,("sid_to_unixuid: no unixID, unixName or sAMAccountName for sid %s\n", sidstr));
-
-	talloc_free(ctx);
-	return NT_STATUS_ACCESS_DENIED;
-}
-
-
-/*
-  map a sid to a unix gid
-*/
-static NTSTATUS sid_to_unixgid(struct ntvfs_module_context *ntvfs,
-			       struct smbsrv_request *req, struct dom_sid *sid, gid_t *gid)
-{
-	struct unixuid_private *private = ntvfs->private_data;
-	const char *attrs[] = { "sAMAccountName", "unixID", "unixName", "sAMAccountType", NULL };
-	int ret;
-	const char *s;
-	void *ctx;
-	struct ldb_message **res;
-	const char *sidstr;
-	uint_t atype;
-
-	ctx = talloc(req, 0);
-	sidstr = dom_sid_string(ctx, sid);
-
-	ret = samdb_search(private->samctx, ctx, NULL, &res, attrs, "objectSid=%s", sidstr);
-	if (ret != 1) {
-		DEBUG(0,("sid_to_unixgid: unable to find sam record for sid %s\n", sidstr));
-		talloc_free(ctx);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/* make sure its not a user */
-	atype = samdb_result_uint(res[0], "sAMAccountType", 0);
-	if (atype && atype == ATYPE_NORMAL_ACCOUNT) {
-		DEBUG(0,("sid_to_unixgid: sid %s is a ATYPE_NORMAL_ACCOUNT\n", sidstr));
-		talloc_free(ctx);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/* first try to get the gid directly */
-	s = samdb_result_string(res[0], "unixID", NULL);
-	if (s != NULL) {
-		*gid = strtoul(s, NULL, 0);
-		talloc_free(ctx);
-		return NT_STATUS_OK;
-	}
-
-	/* next try via the UnixName attribute */
-	s = samdb_result_string(res[0], "unixName", NULL);
-	if (s != NULL) {
-		struct group *grp = getgrnam(s);
-		if (!grp) {
-			DEBUG(0,("unixName '%s' for sid %s does not exist as a local group\n", s, sidstr));
-			talloc_free(ctx);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		*gid = grp->gr_gid;
-		talloc_free(ctx);
-		return NT_STATUS_OK;
-	}
-
-	/* finally try via the sAMAccountName attribute */
-	s = samdb_result_string(res[0], "sAMAccountName", NULL);
-	if (s != NULL) {
-		struct group *grp = getgrnam(s);
-		if (!grp) {
-			DEBUG(0,("sAMAccountName '%s' for sid %s does not exist as a local group\n", s, sidstr));
-			talloc_free(ctx);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		*gid = grp->gr_gid;
-		talloc_free(ctx);
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(0,("sid_to_unixgid: no unixID, unixName or sAMAccountName for sid %s\n", sidstr));
-
-	talloc_free(ctx);
-	return NT_STATUS_ACCESS_DENIED;
-}
 
 struct unix_sec_ctx {
 	uid_t uid;
@@ -247,6 +97,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 					  struct nt_user_token *token,
 					  struct unix_sec_ctx **sec)
 {
+	struct unixuid_private *private = ntvfs->private_data;
 	int i;
 	NTSTATUS status;
 	*sec = talloc_p(req, struct unix_sec_ctx);
@@ -256,12 +107,14 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = sid_to_unixuid(ntvfs, req, token->user_sids[0], &(*sec)->uid);
+	status = sidmap_sid_to_unixuid(private->sidmap, 
+				       token->user_sids[0], &(*sec)->uid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = sid_to_unixgid(ntvfs, req, token->user_sids[1], &(*sec)->gid);
+	status = sidmap_sid_to_unixgid(private->sidmap, 
+				       token->user_sids[1], &(*sec)->gid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -273,7 +126,8 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 	}
 
 	for (i=0;i<(*sec)->ngroups;i++) {
-		status = sid_to_unixgid(ntvfs, req, token->user_sids[i+2], &(*sec)->groups[i]);
+		status = sidmap_sid_to_unixgid(private->sidmap, 
+					       token->user_sids[i+2], &(*sec)->groups[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -358,8 +212,8 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	private->samctx = samdb_connect(private);
-	if (private->samctx == NULL) {
+	private->sidmap = sidmap_open(private);
+	if (private->sidmap == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
