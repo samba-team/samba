@@ -168,17 +168,19 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/passchange.o libsmb/unexpected.o libsmb/doserr.o \
 	     $(RPC_PARSE_OBJ1)
 
-LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
+LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o \
 	       libsmb/cli_netlogon.o libsmb/cli_srvsvc.o libsmb/cli_wkssvc.o \
-	       libsmb/cli_dfs.o libsmb/cli_reg.o libsmb/trust_passwd.o\
-		rpc_client/cli_pipe.o libsmb/cli_spoolss_notify.o
+	       libsmb/cli_dfs.o libsmb/cli_reg.o \
+	       rpc_client/cli_pipe.o libsmb/cli_spoolss.o libsmb/cli_spoolss_notify.o 
+
+LIBMSRPC_SERVER_OBJ = libsmb/trust_passwd.o
 
 LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
                  rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o rpc_server/srv_reg_nt.o \
-                 rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
+                 rpc_server/srv_samr.o rpc_server/srv_samr_nt.o rpc_server/srv_samr_util.o \
 		 rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o \
@@ -205,7 +207,8 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/pdb_smbpasswd.o \
 		passdb/pdb_tdb.o passdb/pdb_ldap.o passdb/pdb_plugin.o \
-		passdb/pdb_nisplus.o passdb/pdb_unix.o passdb/util_sam_sid.o 
+		passdb/pdb_nisplus.o passdb/pdb_unix.o passdb/util_sam_sid.o \
+		passdb/pdb_compat.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -256,7 +259,8 @@ SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) $(SECRETS_OBJ) \
            $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) \
 	   $(LIB_OBJ) $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) \
-	   $(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) $(LIBMSRPC_OBJ) \
+	   $(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) \
+	   $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
 	   $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
 
 
@@ -364,11 +368,11 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o
 
-NET_OBJ = $(NET_OBJ1) $(SECRETS_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	  $(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
+NET_OBJ = $(NET_OBJ1) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
+	  $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
 	  $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+	  $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
-
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) 
 
@@ -406,8 +410,8 @@ LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
-                 $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
-		 $(LIBMSRPC_OBJ) $(GROUPDB_OBJ) $(SECRETS_OBJ)
+                 $(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
+		 $(LIBMSRPC_OBJ) 
 
 TALLOCTORT_OBJ = lib/talloctort.o  $(LIB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ)
 
@@ -428,13 +432,16 @@ SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 
 PROTO_OBJ = $(SMBD_OBJ1) $(NMBD_OBJ1) $(SWAT_OBJ1) $(LIB_OBJ) $(LIBSMB_OBJ) \
 	    $(SMBWRAPPER_OBJ1) $(SMBTORTURE_OBJ1) $(RPCCLIENT_OBJ1) \
-	    $(LIBMSRPC_OBJ) $(RPC_CLIENT_OBJ) $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) \
+	    $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) \
+	    $(RPC_SERVER_OBJ) $(RPC_PARSE_OBJ) \
 	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
 	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
-	    $(QUOTAOBJS) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(MSDFS_OBJ) $(READLINE_OBJ) \
-	    $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
+	    $(QUOTAOBJS) $(PASSDB_OBJ) $(GROUPDB_OBJ) $(MSDFS_OBJ) \
+	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
 
-NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
+NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) \
+	    $(LIB_OBJ) $(NSSWINS_OBJ)
+
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
@@ -473,7 +480,7 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_dual.o
 
 WINBINDD_OBJ = \
-		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
+		$(WINBINDD_OBJ1) $(PASSDB_GET_SET_OBJ) \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
