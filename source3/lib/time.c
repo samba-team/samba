@@ -136,7 +136,8 @@ void TimeInit(void)
 	done_serverzone_init = False;
 	get_serverzone();
 	/* Save the start time of this process. */
-	GetTimeOfDay(&start_time_hires);
+	if (start_time_hires.tv_sec == 0 && start_time_hires.tv_usec == 0)
+		GetTimeOfDay(&start_time_hires);
 }
 
 /**********************************************************************
