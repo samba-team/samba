@@ -779,6 +779,14 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		}
 
 		/*
+		 * If there are any share modes set then the file *did*
+		 * exist. Ensure we return the correct value for action.
+		 */
+
+		if (num_share_modes > 0)
+			file_existed = True;
+
+		/*
 		 * We exit this block with the share entry *locked*.....
 		 */
 	}
