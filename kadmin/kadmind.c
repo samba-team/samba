@@ -77,7 +77,6 @@ static struct getargs args[] = {
 static int num_args = sizeof(args) / sizeof(args[0]);
 
 krb5_context context;
-void *kadm_handle;
 
 static void
 usage(int ret)
@@ -156,24 +155,6 @@ main(int argc, char **argv)
 	    krb5_err(context, 1, ret, "krb5_recvauth");
 	krb5_unparse_name(context, ticket->client, &client);
 	
-	ret = kadm5_init_with_password_ctx(context, 
-					   client, 
-					   "password", 
-					   "service",
-					   NULL, 0, 0, 
-					   &kadm_handle);
-	
-	while(1){
-	    unsigned char buf[1024];
-	    krb5_storage *sp;
-
-	    sp = krb5_storage_from_mem(buf, sizeof(buf));
-	    ret = kadm5_server_recv_sp(context, ac, sp, fd);
-	    if(ret)
-		krb5_err(context, 1, ret, "kadm5_server_recv");
-	    kadmind_dispatch(kadm_handle, sp);
-	    ret = kadm5_server_send_sp(context, ac, sp, fd);
-	    krb5_storage_free(sp);
-	}
+	kadmind_loop(context, ac, client, fd);
     }
 }
