@@ -184,7 +184,7 @@
  void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt)
 {
 #if defined(HAVE_KRB5_TKT_ENC_PART2)
-	if (tkt->enc_part2)
+	if (tkt->enc_part2 && tkt->enc_part2->authorization_data && tkt->enc_part2->authorization_data[0] && tkt->enc_part2->authorization_data[0]->length)
 		*auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
 			tkt->enc_part2->authorization_data[0]->length);
 #else
