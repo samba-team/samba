@@ -47,9 +47,11 @@ RCSID("$Id$");
  * data from the network, and pass it through the telnet state
  * machine.  We also flush the pty input buffer (by dropping its data)
  * if it becomes too full.
+ *
+ * return 0 if OK or 1 if interrupted by a signal.
  */
 
-void
+int
 ttloop(void)
 {
     void netflush(void);
@@ -61,6 +63,8 @@ ttloop(void)
 	netflush();
     ncc = read(net, netibuf, sizeof netibuf);
     if (ncc < 0) {
+	if (errno == EINTR)
+	    return 1;
 	syslog(LOG_INFO, "ttloop:  read: %m\n");
 	exit(1);
     } else if (ncc == 0) {
@@ -76,6 +80,7 @@ ttloop(void)
 	pfrontp = pbackp = ptyobuf;
 	telrcv();
     }
+    return 0;
 }  /* end of ttloop */
 
 /*
