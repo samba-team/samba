@@ -753,15 +753,22 @@ void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf)
 
 void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
 {
+
 	/* set up string lengths. add one if string is not null-terminated */
 	str->uni_max_len = from->uni_max_len;
 	str->undoc       = from->undoc;
 	str->uni_str_len = from->uni_str_len;
 
+	if (from->buffer == NULL)
+		return;
+		
+	/* the string buffer is allocated to the maximum size
+	   (the the length of the source string) to prevent
+	   reallocation of memory. */
 	if (str->buffer == NULL) {
-		size_t len = from->uni_max_len * 2;
+		size_t len = from->uni_max_len * sizeof(uint16);
 
-    	if (!parse_misc_talloc)
+		if (!parse_misc_talloc)
 			parse_misc_talloc = talloc_init();
 
 		if (len < MAX_UNISTRLEN)
@@ -769,12 +776,15 @@ void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
 		len *= sizeof(uint16);
 
    		str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
-		if (str->buffer == NULL)
+		if ((str->buffer == NULL) && (len > 0 ))
+		{
 			smb_panic("copy_unistr2: malloc fail\n");
+			return;
+		}
 	}
 
 	/* copy the string */
-	memcpy(str->buffer, from->buffer, sizeof(from->buffer));
+	memcpy(str->buffer, from->buffer, from->uni_max_len*sizeof(uint16));
 }
 
 /*******************************************************************
@@ -868,8 +878,11 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 	len *= sizeof(uint16);
 
 	str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
-	if (str->buffer == NULL)
+	if ((str->buffer == NULL) && (len > 0))
+	{
 		smb_panic("init_unistr2: malloc fail\n");
+		return;
+	}
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
 	dos_struni2((char *)str->buffer, buf, len);
@@ -896,12 +909,13 @@ void init_unistr2_from_unistr (UNISTR2 *to, UNISTR *from)
 	i = 0;
 	while ((from->buffer)[i]!='\0')
 		i++;
+	i++;	/* one more to catch the terminating NULL */
 
 	/* set up string lengths; uni_max_len is set to i+1
            because we need to account for the final NULL termination */
-	to->uni_max_len = i+1;
+	to->uni_max_len = i;
 	to->undoc       = 0;
-	to->uni_str_len = i+1;
+	to->uni_str_len = i;
 
 	if (!parse_misc_talloc)
 		parse_misc_talloc = talloc_init();
