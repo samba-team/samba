@@ -1043,9 +1043,13 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 			DEBUG(7, ("bad password count is reset, deleting login cache entry for %s\n", pdb_get_nt_username(sampass)));
 			login_cache_delentry(sampass);
 		} else {
-			LOGIN_CACHE cache_entry ={time(NULL),
-						  pdb_get_acct_ctrl(sampass),
-						  badcount, badtime};
+			LOGIN_CACHE cache_entry;
+
+			cache_entry.entry_timestamp = time(NULL);
+			cache_entry.acct_ctrl = pdb_get_acct_ctrl(sampass);
+			cache_entry.bad_password_count = badcount;
+			cache_entry.bad_password_time = badtime;
+
 			DEBUG(7, ("Updating bad password count and time in login cache\n"));
 			login_cache_write(sampass, cache_entry);
 		}
