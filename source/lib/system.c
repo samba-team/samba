@@ -802,10 +802,11 @@ SMB_STRUCT_WDIRENT *wsys_readdir(DIR *dirp)
 	if(!dirval)
 		return NULL;
 
-	retval.d_ino = (SMB_INO_T)dirval->d_ino;
-	retval.d_off = (SMB_OFF_T)dirval->d_off;
+	/*
+	 * The only POSIX defined member of this struct is d_name.
+	 */
+
 	unix_to_unicode(retval.d_name,dirval->d_name,sizeof(retval.d_name));
-	retval.d_reclen = wstrlen(retval.d_name);
 
 	return &retval;
 }
