@@ -237,14 +237,7 @@ SMB_EXT_LIB(ALLLIBS,
 		[${ALLLIBS_CPPFLAGS}],
 		[${ALLLIBS_LDFLAGS}])
 
-SMB_BINARY(smbd, [ALL], [SBIN],
-	[smbd/server.o
-	smbd/process.o
-	lib/server_mutex.o
-	smbd/build_options.o
-	smbd/rewrite.o],
-	[],
-	[PROCESS_MODEL SMB AUTH NTVFS DCERPC LIBBASIC CONFIG LIBCMDLINE LIBSMB REGISTRY])
+SMB_INCLUDE_M4(smbd/config.m4)
 
 SMB_BINARY(smbclient, [ALL], [BIN], 
 	[client/client.o
