@@ -67,6 +67,7 @@ struct count_stat {
 	pid_t mypid;
 	int curr_connections;
 	char *name;
+	BOOL Clear;
 };
 
 /****************************************************************************
@@ -86,15 +87,16 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
     if (crec.cnum == -1)
 		return 0;
 
-	/* if the pid was not found delete the entry from connections.tdb */
-	if (!process_exists(crec.pid) && (errno == ESRCH)) {
+	/* If the pid was not found delete the entry from connections.tdb */
+
+	if (cs->Clear && !process_exists(crec.pid) && (errno == ESRCH)) {
 		DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
 			(unsigned int)crec.pid, crec.cnum, crec.name));
 		tdb_delete(the_tdb, kbuf);
 		return 0;
 	}
 
-	if (cs && strequal(crec.name, cs->name))
+	if (strequal(crec.name, cs->name))
 		cs->curr_connections++;
 
 	return 0;
@@ -129,6 +131,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		cs.mypid = sys_getpid();
 		cs.curr_connections = 0;
 		cs.name = lp_servicename(SNUM(conn));
+		cs.Clear = Clear;
 
 		/*
 		 * Go through and count the connections with the db locked. This is
@@ -194,15 +197,3 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 
 	return ret;
 }
-
-#if 0
-/****************************************************************************
- Use the count function to clean any dead records. Shouldn't be needed...
-****************************************************************************/
-
-void clean_connection_db(void)
-{
-	if (tdb_traverse(tdb, count_fn, NULL) == -1)
-		DEBUG(0,("clean_connection_db: traverse of connections.tdb failed.\n"));
-}
-#endif
