@@ -212,6 +212,9 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	*status = NT_STATUS_NOPROBLEMO;
 	*acc_granted = 0;
 
+	DEBUG(10,("se_access_check: requested access %x, for uid %u\n", 
+				(unsigned int)acc_desired, (unsigned int)user->uid ));
+
 	/*
 	 * No security descriptor or security descriptor with no DACL
 	 * present allows all access.
@@ -222,7 +225,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	if (!sd || (sd && (!(sd->type & SEC_DESC_DACL_PRESENT) || sd->dacl == NULL))) {
 		*status = NT_STATUS_NOPROBLEMO;
 		*acc_granted = acc_desired;
-		DEBUG(3, ("se_access_check: no sd or blank DACL, access allowed\n"));
+		DEBUG(5, ("se_access_check: no sd or blank DACL, access allowed\n"));
 		return True;
 	}
 
@@ -233,6 +236,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		DEBUG(1, ("no owner for security descriptor\n"));
 		*acc_granted = 0;
 		*status = NT_STATUS_ACCESS_DENIED;
+		DEBUG(5, ("se_access_check: no owner sid, access denied\n"));
 		return False;
 	}
 
@@ -260,9 +264,16 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	}
 
 	for ( i = 0 ; i < acl->num_aces && tmp_acc_desired != 0; i++) {
-		tmp_acc_desired = check_ace( &acl->ace[i], token, tmp_acc_desired, status);
+		SEC_ACE *ace = &acl->ace[i];
+
+		DEBUG(10,("se_access_check: ACE %u: SID = %s mask = %x, current desired = %x\n",
+				(unsigned int)i, sid_to_string(sid_str, &ace->sid),
+				(unsigned int) ace->info.mask, (unsigned int)tmp_acc_desired ));
+
+		tmp_acc_desired = check_ace( ace, token, tmp_acc_desired, status);
 		if (*status != NT_STATUS_NOPROBLEMO) {
 			*acc_granted = 0;
+			DEBUG(5,("se_access_check: ACE %u denied with status %x.\n", (unsigned int)i, (unsigned int)*status ));
 			return False;
 		}
 	}
@@ -275,10 +286,12 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 	if (tmp_acc_desired == 0) {
 		*acc_granted = acc_desired;
 		*status = NT_STATUS_NOPROBLEMO;
+		DEBUG(5,("se_access_check: access (%x) granted.\n", (unsigned int)acc_desired ));
 		return True;
 	}
 		
 	*acc_granted = 0;
 	*status = NT_STATUS_ACCESS_DENIED;
+	DEBUG(5,("se_access_check: access (%x) denied.\n", (unsigned int)acc_desired ));
 	return False;
 }
