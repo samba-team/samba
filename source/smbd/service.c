@@ -155,7 +155,7 @@ int find_service(fstring service)
          char *pszTemp;
 
          DEBUG(3,("checking whether %s is a valid printer name...\n", service));
-         pszTemp = PRINTCAP;
+         pszTemp = lp_printcapname();
          if ((pszTemp != NULL) && pcap_printername_ok(service, pszTemp))
          {
             DEBUG(3,("%s is a valid printer name\n", service));
@@ -751,7 +751,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 {
 	uid_t euid;
 	user_struct *vuser = NULL;
-	pstring service;
+	fstring service;
 	int snum = -1;
 
 	/* This must ONLY BE CALLED AS ROOT. As it exits this function as root. */
@@ -814,7 +814,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 					    dev, status);
 	}
 	
-	pstrcpy(service, service_in);
+	fstrcpy(service, service_in);
 
 	strlower(service);
 
