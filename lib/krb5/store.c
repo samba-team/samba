@@ -672,6 +672,20 @@ krb5_ret_creds(krb5_storage *sp, krb5_creds *creds)
     if(ret) goto cleanup;
     ret = krb5_ret_int32 (sp,  &dummy32);
     if(ret) goto cleanup;
+    /*
+     * If the higher hits are set, its either a new ticket flag (and
+     * this code need to be removed), or its a MIT cache (or new
+     * Heimdal cache), lets change it to our current format.
+     */
+    if (dummy32 & 0xffff0000) {
+	int32_t rdummy32 = 0;
+	int i;
+	for (i = 0; i < 32; i++) {
+	    rdummy32 = rdummy32 << 1 | (dummy32 & 1);
+	    dummy32 = dummy32 >> 1;
+	}
+	dummy32 = rdummy32;
+    }
     creds->flags.i = dummy32;
     ret = krb5_ret_addrs (sp,  &creds->addresses);
     if(ret) goto cleanup;
