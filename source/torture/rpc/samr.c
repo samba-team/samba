@@ -338,6 +338,7 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	int i;
 	BOOL ret = True;
 	struct samr_LookupNames n;
+	struct samr_LookupRids  lr ;
 
 	printf("Testing EnumDomainUsers\n");
 
@@ -377,7 +378,21 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("LookupNames failed - %s\n", nt_errstr(status));
-		return False;
+		ret = False;
+	}
+
+
+	printf("Testing LookupRids\n");
+	lr.in.handle = handle;
+	lr.in.num_rids = r.out.sam->count;
+	lr.in.rids = talloc(mem_ctx, r.out.sam->count * sizeof(uint32));
+	for (i=0;i<r.out.sam->count;i++) {
+		lr.in.rids[i] = r.out.sam->entries[i].idx;
+	}
+	status = dcerpc_samr_LookupRids(p, mem_ctx, &lr);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LookupRids failed - %s\n", nt_errstr(status));
+		ret = False;
 	}
 
 	return ret;	
