@@ -993,7 +993,7 @@ REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create);
 REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
 {
   int i;
-  REG_KEY *ret;
+  REG_KEY *ret = NULL, *tmp = NULL;
   KEY_LIST *list;
   char *lname, *c1, *c2;
 
@@ -1003,7 +1003,8 @@ REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
   if (!list) { /* Create an empty list */
 
     list = (KEY_LIST *)malloc(sizeof(KEY_LIST) + (REG_KEY_LIST_SIZE - 1) * sizeof(REG_KEY *));
-    list->key_count = list->max_keys = 0;
+    list->key_count = 0;
+    list->max_keys = REG_KEY_LIST_SIZE;
 
   }
 
@@ -1040,7 +1041,26 @@ REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
     list->key_count++;
   }
 
-  return NULL;
+  /*
+   * add the new key at the new slot 
+   * FIXME: Sort the list someday
+   */
+
+  /*
+   * We want to create the key, and then do the rest
+   */
+
+  tmp = (REG_KEY *)malloc(sizeof(REG_KEY)); 
+
+  bzero(tmp, sizeof(REG_KEY));
+
+  list->keys[list->key_count - 1] = tmp;
+
+  if (c2) {
+    ret = nt_add_reg_key(key, name, True);
+  }
+
+  return ret;
  error:
   if (lname) free(lname);
   return NULL;
