@@ -12,6 +12,49 @@
 ] interface spoolss
 {
 	typedef struct {
+		uint16 year;
+		uint16 month;
+		uint16 day_of_week;
+		uint16 day;
+		uint16 hour;
+		uint16 minute;
+		uint16 second;
+		uint16 millisecond;
+	} spoolss_Time;
+
+	typedef struct {
+		[relative] nstring *printername;
+		[relative] nstring *servername;
+		uint32 cjobs;
+		uint32 total_jobs;
+		uint32 total_bytes;
+		spoolss_Time time;		
+		uint32 global_counter;
+		uint32 total_pages;
+		uint32 version;
+		uint32 unknown10;
+		uint32 unknown11;
+		uint32 unknown12;
+		uint32 session_counter;
+		uint32 unknown14;
+		uint32 printer_errors;
+		uint32 unknown16;
+		uint32 unknown17;
+		uint32 unknown18;
+		uint32 unknown19;
+		uint32 change_id;
+		uint32 unknown21;
+		uint32 status;
+		uint32 unknown23;
+		uint32 c_setprinter;
+		uint16 unknown25;
+		uint16 unknown26;
+		uint32 unknown27;
+		uint32 unknown28;
+		uint32 unknown29;
+	} spoolss_PrinterInfo0;
+
+	typedef struct {
 		nstring devicename;
 		uint16 specversion;
 		uint16 driverversion;
@@ -120,6 +163,7 @@
 	} spoolss_PrinterInfo7;
 
 	typedef [nodiscriminant,public] union {
+		[case(0)] spoolss_PrinterInfo0 info0;
 		[case(1)] spoolss_PrinterInfo1 info1;
 		[case(2)] spoolss_PrinterInfo2 info2;
 		[case(3)] spoolss_PrinterInfo3 info3;
@@ -178,17 +222,6 @@
 		[out,subcontext(4),switch_is(level)] spoolss_JobInfo *info,
 		[in,out,ref] uint32 *buf_size
 	);
-
-	typedef struct {
-		uint16 year;
-		uint16 month;
-		uint16 day_of_week;
-		uint16 day;
-		uint16 hour;
-		uint16 minute;
-		uint16 second;
-		uint16 millisecond;
-	} spoolss_Time;
 
 	typedef struct {
 		uint32 job_id;
