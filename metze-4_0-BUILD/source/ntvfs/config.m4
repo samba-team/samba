@@ -233,8 +233,8 @@ samba_cv_HAVE_SENDFILEV=yes,samba_cv_HAVE_SENDFILEV=no)])
 SMB_MODULE(ntvfs_cifs, NTVFS, STATIC, [ntvfs/cifs/vfs_cifs.o])
 
 SMB_MODULE(ntvfs_simple, NTVFS, STATIC, 
-		[ntvfs/simple/vfs_simple.o
-		ntvfs/simple/svfs_util.o])
+		[ntvfs/simple/vfs_simple.o],
+		[ntvfs/simple/svfs_util.o])
 
 SMB_MODULE(ntvfs_print, NTVFS, STATIC, [ntvfs/print/vfs_print.o])
 

@@ -66,5 +66,4 @@ _SMB_ACEOF
 
 $PERL config.smb_build.pl || exit $?
 
-rm -f config.smb_build.pl
 ])

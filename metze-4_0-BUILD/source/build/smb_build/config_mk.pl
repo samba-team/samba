@@ -70,11 +70,6 @@ sub _parse_config_mk($)
 				$waiting = 0;
 			}
 
-			#
-			# trim whitespaces and tabs to just one whiespace
-			#
-			$val =~ s/([\t ]+)/ /g;
-
 			$result->{$key}{KEY} = $key;
 			$result->{$key}{VAL} = $val;
 			next;
@@ -97,11 +92,6 @@ sub _parse_config_mk($)
 			} else {
 				$waiting = 0;
 			}
-
-			#
-			# trim whitespaces and tabs to just one whiespace
-			#
-			$val =~ s/([\t ]+)/ /g;
 
 			$result->{$key}{VAL} .= " ";
 			$result->{$key}{VAL} .= $val;
@@ -164,7 +154,7 @@ sub _get_parse_results($)
 # The fetching function to fetch the value of a variable 
 # out of the file
 #
-# $value = _fetch_key_from_config_mk($filename,$variable)
+# $value = _fetch_var_from_config_mk($filename,$variable)
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
@@ -172,7 +162,7 @@ sub _get_parse_results($)
 # $variable -	the variable name of which we want the value
 #
 # $value -	the value of the variable
-sub _fetch_key_from_config_mk($$)
+sub _fetch_var_from_config_mk($$)
 {
 	my $filename = shift;
 	my $key = shift;
@@ -193,10 +183,42 @@ sub _fetch_key_from_config_mk($$)
 }
 
 ###########################################################
+# The fetching function to fetch the array of values of a variable 
+# out of the file
+#
+# $array = _fetch_array_from_config_mk($filename,$variable)
+#
+# $filename -	the path of the config.mk file
+#		which should be parsed
+#
+# $variable -	the variable name of which we want the value
+#
+# $array -	the array of values of the variable
+sub _fetch_array_from_config_mk($$)
+{
+	my $filename = shift;
+	my $key = shift;
+	my @val = ();
+	my $result;
+
+	$result = _get_parse_results($filename);
+
+	if ($result->{ERROR_CODE} != 0) {
+		die ($result->{ERROR_STR});
+	}
+
+	if (defined($result->{$key})) {
+		@val = str2array($result->{$key}{VAL});
+	}
+
+	return @val;
+}
+
+###########################################################
 # A function for fetching MODULE_<module>_<parameter>
 # variables out of a config.mk file
 #
-# $value = module_get($filename,$module,$parameter)
+# $value = module_get_var($filename,$module,$parameter)
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
@@ -206,7 +228,7 @@ sub _fetch_key_from_config_mk($$)
 # $parameter -	the last part of the variable name of which we want the value
 #
 # $value -	the value of the variable
-sub module_get($$$)
+sub module_get_var($$$)
 {
 	my $filename = shift;
 	my $module = shift;
@@ -214,14 +236,39 @@ sub module_get($$$)
 
 	my $var = "MODULE_".$module."_".$_var;
 
-	return _fetch_key_from_config_mk($filename,$var);
+	return _fetch_var_from_config_mk($filename,$var);
+}
+
+###########################################################
+# A function for fetching MODULE_<module>_<parameter>
+# variables out of a config.mk file
+#
+# $array = module_get_array($filename,$module,$parameter)
+#
+# $filename -	the path of the config.mk file
+#		which should be parsed
+#
+# $module -	the middle part of the variable name of which we want the value
+#
+# $parameter -	the last part of the variable name of which we want the value
+#
+# $array -	the array of values of the variable
+sub module_get_array($$$)
+{
+	my $filename = shift;
+	my $module = shift;
+	my $_var = shift;
+
+	my $var = "MODULE_".$module."_".$_var;
+
+	return _fetch_array_from_config_mk($filename,$var);
 }
 
 ###########################################################
 # A function for fetching SUBSYSTEM_<subsystem>_<parameter>
 # variables out of a config.mk file
 #
-# $value = module_get($filename,$subsystem,$parameter)
+# $value = subsystem_get_var($filename,$subsystem,$parameter)
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
@@ -231,7 +278,7 @@ sub module_get($$$)
 # $parameter -	the last part of the variable name of which we want the value
 #
 # $value -	the value of the variable
-sub subsystem_get($$$)
+sub subsystem_get_var($$$)
 {
 	my $filename = shift;
 	my $subsystem = shift;
@@ -239,14 +286,39 @@ sub subsystem_get($$$)
 
 	my $var = "SUBSYSTEM_".$subsystem."_".$_var;
 
-	return _fetch_key_from_config_mk($filename,$var);
+	return _fetch_var_from_config_mk($filename,$var);
+}
+
+###########################################################
+# A function for fetching SUBSYSTEM_<subsystem>_<parameter>
+# variables out of a config.mk file
+#
+# $array = subsystem_get_array($filename,$subsystem,$parameter)
+#
+# $filename -	the path of the config.mk file
+#		which should be parsed
+#
+# $subsystem -	the middle part of the variable name of which we want the value
+#
+# $parameter -	the last part of the variable name of which we want the value
+#
+# $array -	the array of values of the variable
+sub subsystem_get_array($$$)
+{
+	my $filename = shift;
+	my $subsystem = shift;
+	my $_var = shift;
+
+	my $var = "SUBSYSTEM_".$subsystem."_".$_var;
+
+	return _fetch_array_from_config_mk($filename,$var);
 }
 
 ###########################################################
 # A function for fetching LIBRARY_<library>_<parameter>
 # variables out of a config.mk file
 #
-# $value = module_get($filename,$library,$parameter)
+# $value = library_get_var($filename,$library,$parameter)
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
@@ -256,7 +328,7 @@ sub subsystem_get($$$)
 # $parameter -	the last part of the variable name of which we want the value
 #
 # $value -	the value of the variable
-sub library_get($$$)
+sub library_get_var($$$)
 {
 	my $filename = shift;
 	my $library = shift;
@@ -264,14 +336,39 @@ sub library_get($$$)
 
 	my $var = "LIBRARY_".$library."_".$_var;
 
-	return _fetch_key_from_config_mk($filename,$var);
+	return _fetch_var_from_config_mk($filename,$var);
+}
+
+###########################################################
+# A function for fetching LIBRARY_<library>_<parameter>
+# variables out of a config.mk file
+#
+# $array = library_get_array($filename,$library,$parameter)
+#
+# $filename -	the path of the config.mk file
+#		which should be parsed
+#
+# $library -	the middle part of the variable name of which we want the value
+#
+# $parameter -	the last part of the variable name of which we want the value
+#
+# $array -	the array of values of the variable
+sub library_get_array($$$)
+{
+	my $filename = shift;
+	my $library = shift;
+	my $_var = shift;
+
+	my $var = "LIBRARY_".$library."_".$_var;
+
+	return _fetch_array_from_config_mk($filename,$var);
 }
 
 ###########################################################
 # A function for fetching BINARY_<binary>_<parameter>
 # variables out of a config.mk file
 #
-# $value = module_get($filename,$binary,$parameter)
+# $value = binary_get_var($filename,$binary,$parameter)
 #
 # $filename -	the path of the config.mk file
 #		which should be parsed
@@ -281,7 +378,7 @@ sub library_get($$$)
 # $parameter -	the last part of the variable name of which we want the value
 #
 # $value -	the value of the variable
-sub binary_get($$$)
+sub binary_get_var($$$)
 {
 	my $filename = shift;
 	my $binary = shift;
@@ -289,5 +386,30 @@ sub binary_get($$$)
 
 	my $var = "BINARY_".$binary."_".$_var;
 
-	return _fetch_key_from_config_mk($filename,$var);
+	return _fetch_var_from_config_mk($filename,$var);
+}
+
+###########################################################
+# A function for fetching BINARY_<binary>_<parameter>
+# variables out of a config.mk file
+#
+# $array = binary_get_array($filename,$binary,$parameter)
+#
+# $filename -	the path of the config.mk file
+#		which should be parsed
+#
+# $binary -	the middle part of the variable name of which we want the value
+#
+# $parameter -	the last part of the variable name of which we want the value
+#
+# $array -	the array of values of the variable
+sub binary_get_array($$$)
+{
+	my $filename = shift;
+	my $binary = shift;
+	my $_var = shift;
+
+	my $var = "BINARY_".$binary."_".$_var;
+
+	return _fetch_array_from_config_mk($filename,$var);
 }

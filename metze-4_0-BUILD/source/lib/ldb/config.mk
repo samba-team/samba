@@ -1,13 +1,13 @@
 ################################################
 # Start MODULE libldb_ldap
-MODULE_libldb_ldap_INIT_OBJ_FILE = \
+MODULE_libldb_ldap_INIT_OBJ_FILES = \
 		lib/ldb/ldb_ldap/ldb_ldap.o
 # End MODULE libldb_tdb
 ################################################
 
 ################################################
 # Start MODULE libldb_tdb
-MODULE_libldb_tdb_INIT_OBJ_FILE = \
+MODULE_libldb_tdb_INIT_OBJ_FILES = \
 		lib/ldb/ldb_tdb/ldb_tdb.o
 MODULE_libldb_tdb_ADD_OBJ_FILES = \
 		lib/ldb/ldb_tdb/ldb_search.o \
@@ -19,7 +19,7 @@ MODULE_libldb_tdb_ADD_OBJ_FILES = \
 
 ################################################
 # Start SUBSYSTEM LIBLDB
-SUBSYSTEM_LIBLDB_INIT_OBJ_FILE = \
+SUBSYSTEM_LIBLDB_INIT_OBJ_FILES = \
 		lib/ldb/common/ldb.o
 SUBSYSTEM_LIBLDB_ADD_OBJ_FILES = \
 		lib/ldb/common/ldb_ldif.o \
