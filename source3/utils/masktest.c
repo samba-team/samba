@@ -40,11 +40,12 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 	char *p = pattern, *n = string;
 	char c;
 
+	if (strcmp(p,"?")==0 && strcmp(n,".")==0) return 0;
+
 	while ((c = *p++)) {
 		switch (c) {
 		case '?':
-			//if (! *n) return -1;
-			if (! *n) return ms_fnmatch_lanman_core(p, n);
+			if (*n == '.' || ! *n) return ms_fnmatch_lanman_core(p, n);
 			n++;
 			break;
 
@@ -101,7 +102,19 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 
 int ms_fnmatch_lanman(char *pattern, char *string)
 {
-	return ms_fnmatch_lanman_core(pattern, string);
+	int ret;
+	pattern = strdup(pattern);
+
+	/* it appears that '.' at the end of a pattern is stripped if the 
+	   pattern contains any wildcard characters. Bizarre */
+	if (strpbrk(pattern, "?*<>\"")) {
+		int len = strlen(pattern);
+		if (len > 0 && pattern[len-1] == '.') pattern[len-1] = 0;
+	}
+
+	ret = ms_fnmatch_lanman_core(pattern, string);
+	free(pattern);
+	return ret;
 }
 
 static BOOL reg_match_one(char *pattern, char *file)
@@ -293,7 +306,7 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 
 	res2 = reg_test(mask, long_name, short_name);
 
-	if (showall || strcmp(res1, res2)) {
+	if (showall || strcmp(res1+2, res2+2)) {
 		DEBUG(0,("%s %s %d mask=[%s] file=[%s] rfile=[%s/%s]\n",
 			 res1, res2, count, mask, file, long_name, short_name));
 	}
