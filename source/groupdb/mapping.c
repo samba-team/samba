@@ -1048,34 +1048,42 @@ Returns a GROUP_MAP struct based on the gid.
 BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 {
 	struct group *grp;
+	fstring name;
+	DOM_SID sid;
+	fstring string_sid;
+	PRIVILEGE_SET priv_set;
 
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping"));
 		return(False);
 	}
 
-	if ( (grp=getgrgid(gid)) == NULL)
+	if (get_group_map_from_gid(gid, map, with_priv))
+		return True;
+
+	/* There is no mapping, create one on the fly. This is just
+	   interim, we need a RID allocator in the passdb backend. */
+
+        if ((grp=getgrgid(gid)) != NULL) {
+                slprintf(name, sizeof(name), "Group %s", grp->gr_name);
+        } else {
+                slprintf(name, sizeof(name), "Group %d", gid);
+        }
+
+	/* interim solution until we have a last RID allocated */
+
+	sid_copy(&sid, get_global_sam_sid());
+	sid_append_rid(&sid, pdb_gid_to_group_rid(gid));
+	sid_to_string(string_sid, &sid);
+	init_privilege(&priv_set);
+
+	if (!add_initial_entry(gid, string_sid, SID_NAME_DOM_GRP,
+			       name, "Local Unix Group",
+			       priv_set, PR_ACCESS_FROM_NETWORK)) {
 		return False;
-
-	/*
-	 * make a group map from scratch if doesn't exist.
-	 */
-	if (!get_group_map_from_gid(gid, map, with_priv)) {
-		map->gid=gid;
-		map->sid_name_use=SID_NAME_ALIAS;
-		map->systemaccount=PR_ACCESS_FROM_NETWORK;
-		init_privilege(&map->priv_set);
-
-		/* interim solution until we have a last RID allocated */
-
-		sid_copy(&map->sid, get_global_sam_sid());
-		sid_append_rid(&map->sid, pdb_gid_to_group_rid(gid));
-
-		fstrcpy(map->nt_name, grp->gr_name);
-		fstrcpy(map->comment, "Local Unix Group");
 	}
 	
-	return True;
+	return get_group_map_from_gid(gid, map, with_priv);
 }
 
 
