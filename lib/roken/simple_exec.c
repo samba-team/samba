@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,6 +53,8 @@ RCSID("$Id$");
 #include <unistd.h>
 #endif
 #include <errno.h>
+
+#include <roken.h>
 
 #define EX_NOEXEC	126
 #define EX_NOTFOUND	127
