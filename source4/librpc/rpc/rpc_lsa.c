@@ -241,12 +241,12 @@ NTSTATUS dcerpc_CREATESECRET(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct 
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_OPENACCOUNT(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct OPENACCOUNT *r)
+NTSTATUS dcerpc_lsa_OpenAccount(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct lsa_OpenAccount *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_OPENACCOUNT, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_OPENACCOUNT,
-				    (ndr_pull_fn_t) ndr_pull_OPENACCOUNT,
+	status = dcerpc_ndr_request(p, DCERPC_LSA_OPENACCOUNT, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_lsa_OpenAccount,
+				    (ndr_pull_fn_t) ndr_pull_lsa_OpenAccount,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

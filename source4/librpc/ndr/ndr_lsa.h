@@ -6,6 +6,7 @@ struct lsa_Close {
 	} in;
 
 	struct {
+		struct policy_handle *handle;
 		NTSTATUS result;
 	} out;
 
@@ -186,15 +187,14 @@ struct lsa_CreateTrustDom {
 
 };
 
-struct lsa_TrustInformation {
+struct lsa_DomainInformation {
 	struct lsa_Name name;
 	struct dom_sid2 *sid;
 };
 
-struct lsa_RefDomainList {
+struct lsa_DomainList {
 	uint32 count;
-	struct lsa_TrustInformation *domains;
-	uint32 max_count;
+	struct lsa_DomainInformation *domains;
 };
 
 struct lsa_EnumTrustDom {
@@ -206,7 +206,7 @@ struct lsa_EnumTrustDom {
 
 	struct {
 		uint32 *resume_handle;
-		struct lsa_RefDomainList *domains;
+		struct lsa_DomainList *domains;
 		NTSTATUS result;
 	} out;
 
@@ -221,6 +221,17 @@ struct lsa_TranslatedSid {
 struct lsa_TransSidArray {
 	uint32 count;
 	struct lsa_TranslatedSid *sids;
+};
+
+struct lsa_TrustInformation {
+	struct lsa_Name name;
+	struct dom_sid2 *sid;
+};
+
+struct lsa_RefDomainList {
+	uint32 count;
+	struct lsa_TrustInformation *domains;
+	uint32 max_count;
 };
 
 struct lsa_LookupNames {
@@ -281,11 +292,15 @@ struct CREATESECRET {
 
 };
 
-struct OPENACCOUNT {
+struct lsa_OpenAccount {
 	struct {
+		struct policy_handle *handle;
+		struct dom_sid2 *sid;
+		uint32 desired_access;
 	} in;
 
 	struct {
+		struct policy_handle *acct_handle;
 		NTSTATUS result;
 	} out;
 
@@ -602,7 +617,7 @@ struct QUERYINFO2 {
 #define DCERPC_LSA_LOOKUPNAMES 14
 #define DCERPC_LSA_LOOKUPSIDS 15
 #define DCERPC_CREATESECRET 16
-#define DCERPC_OPENACCOUNT 17
+#define DCERPC_LSA_OPENACCOUNT 17
 #define DCERPC_ENUMPRIVSACCOUNT 18
 #define DCERPC_ADDPRIVS 19
 #define DCERPC_REMOVEPRIVS 20

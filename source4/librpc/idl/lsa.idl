@@ -10,7 +10,7 @@
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS lsa_Close (
-		[in,ref]     policy_handle *handle
+		[in,out,ref]     policy_handle *handle
 		);
 	
 
@@ -136,19 +136,18 @@
 	typedef struct {
 		lsa_Name name;
 		dom_sid2 *sid;
-	} lsa_TrustInformation;
+	} lsa_DomainInformation;
 
 	typedef struct {
 		uint32 count;
-		[size_is(count)] lsa_TrustInformation *domains;
-		uint32 max_count;
-	} lsa_RefDomainList;
+		[size_is(count)] lsa_DomainInformation *domains;
+	} lsa_DomainList;
 
 	NTSTATUS lsa_EnumTrustDom (
 		[in,ref]     policy_handle *handle,
 		[in,out,ref] uint32 *resume_handle,
 		[in]         uint32 num_entries,
-		[out]        lsa_RefDomainList *domains
+		[out,ref]    lsa_DomainList *domains
 		);
 
 
@@ -165,6 +164,17 @@
 		uint32 count;
 		[size_is(count)] lsa_TranslatedSid *sids;
 	} lsa_TransSidArray;
+
+	typedef struct {
+		lsa_Name name;
+		dom_sid2 *sid;
+	} lsa_TrustInformation;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_TrustInformation *domains;
+		uint32 max_count;
+	} lsa_RefDomainList;
 
 	NTSTATUS lsa_LookupNames (
 		[in,ref]     policy_handle *handle,
@@ -203,8 +213,18 @@
 
 	/* Function:        0x10 */
 	NTSTATUS CREATESECRET ();
-	/* Function:     0x11 */
-	NTSTATUS OPENACCOUNT ();
+
+
+	/*****************************************/
+	/* Function:     0x11                    */
+	NTSTATUS lsa_OpenAccount (
+		[in,ref]     policy_handle *handle,
+		[in,ref]     dom_sid2 *sid,
+		[in]         uint32 desired_access,
+		[out,ref]    policy_handle *acct_handle
+		);
+
+
 	/* Function:    0x12 */
 	NTSTATUS ENUMPRIVSACCOUNT ();
 	/* Function:            0x13 */
