@@ -351,6 +351,10 @@ encrypt passwords
 
 getwd cache
 
+hide files
+
+hide dot files
+
 homedir map
 
 hosts equiv
@@ -1305,6 +1309,36 @@ a dot appear as hidden files.
 
 .B Example:
 	hide dot files = no
+
+
+.SS hide files(S)
+This is a list of files and directories that are not visible but are
+accessible.  The DOS 'hidden' attribute is applied to any files or
+directories that match.
+
+Each entry in the list must be separated by a "\\", which allows spaces
+to be included in the entry.  '*' and '?' can be used to specify multiple
+files or directories.  The default, for example, is used to hide all files
+beginning with a dot.
+
+Each entry must be a unix path, not a DOS path.  Therefore, the pathname
+specified between separators "\\", if it incudes directories, must use the
+unix directory specifier "/", not the DOS directory specifier "\\".
+
+Note that the case sensitivity option is applicable in hiding files.
+
+See also "veto files" and "case sensitive"
+
+.B Default
+	hide files = */.*
+
+.B Example
+	hide files = */.*\\DesktopFolderDB\\TrashFor%m\\resource.frk
+
+The above example is based on files that the Macintosh client (DAVE)
+creates for internal use, and also still hides all files beginning with
+a dot.
+
 .SS homedir map (G)
 If "nis homedir" is true, this parameter specifies the NIS (or YP) map
 from which the server for the user's home directory should be extracted.
@@ -3162,18 +3196,23 @@ See also "invalid users"
 
 .SS veto files(S)
 This is a list of files and directories that are neither visible nor
-accessible.  Each entry in the list must be separate by a "/", which
-allows spaces to be included in the entry.  Note that '*' and '?' at
-present cannot be used to specify multiple files or directories.
+accessible.  Each entry in the list must be separate by a "\\", which
+allows spaces to be included in the entry.  '*' and '?' can be used to
+specify multiple files or directories.
+
+Each entry must be a unix path, not a DOS path.  Therefore, the pathname
+specified between separators "\\", if it incudes directories, must use the
+unix directory specifier "/", not the DOS directory specifier "\\".
+
+Note that the case sensitivity option is applicable in vetoing files.
+
+See also "hide files" and "case sensitive"
 
 .B Default
 	No files or directories are vetoed.
 
 .B Example
-	veto files = DesktopFolderDB/TrashFor%m/resource.frk
-
-The above example is based on files that the Macintosh client (DAVE)
-creates for internal use.
+	veto files = *Security*\\*.tmp\\*/root/*
 
 .SS volume (S)
 This allows you to override the volume label returned for a
