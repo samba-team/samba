@@ -33,7 +33,7 @@
  *		-i,--scope
  */
 
-struct cmdline_auth_info cmdline_auth_info;
+static struct cmdline_auth_info cmdline_auth_info;
 
 static void popt_common_callback(poptContext con, 
 			   enum poptCallbackReason reason,
@@ -396,3 +396,38 @@ struct poptOption popt_common_credentials[] = {
 	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password" },
 	POPT_TABLEEND
 };
+
+const char *cmdline_get_username(void)
+{
+	return cmdline_auth_info.username;
+}
+
+const char *cmdline_get_userdomain(void)
+{
+	if (cmdline_auth_info.domain[0]) {
+		return cmdline_auth_info.domain;
+	}
+
+	/* I think this should be lp_netbios_name() 
+	 * instead of lp_workgroup(), because if you're logged in 
+	 * as domain user the getenv("USER") contains the domain
+	 * and this code path isn't used
+	 * --metze
+	 */
+	return lp_netbios_name();
+}
+
+const char *cmdline_get_userpassword(void)
+{
+	pstring prompt;
+
+	if (cmdline_auth_info.got_pass) {
+		return cmdline_auth_info.password;
+	}
+
+	pstr_sprintf(prompt, "Password for [%s\\%s]:", 
+			cmdline_get_userdomain(),
+			cmdline_get_username());
+
+	return getpass(prompt);
+}
