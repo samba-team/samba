@@ -264,6 +264,10 @@ BOOL asn1_peek_tag(ASN1_DATA *data, uint8_t tag)
 {
 	uint8_t b;
 
+	if (asn1_tag_remaining(data) <= 0) {
+		return False;
+	}
+
 	if (!asn1_peek(data, &b, sizeof(b)))
 		return False;
 
