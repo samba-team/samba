@@ -107,7 +107,10 @@ typedef struct krb5_addresses {
 } krb5_addresses;
 #endif
 
-typedef enum krb5_keytype { KEYTYPE_DES = 1 } krb5_keytype;
+typedef enum krb5_keytype { 
+    KEYTYPE_NULL = 0,
+    KEYTYPE_DES = 1 
+} krb5_keytype;
 
 typedef EncryptionKey krb5_keyblock;
 
@@ -127,7 +130,7 @@ typedef struct krb5_ccache_data *krb5_ccache;
 
 typedef struct krb5_context_data *krb5_context;
 
-/* #define USE_ASN1_PRINCIPAL */
+#define USE_ASN1_PRINCIPAL
 #ifdef USE_ASN1_PRINCIPAL
 typedef Realm krb5_realm;
 typedef Principal krb5_principal_data;
@@ -790,12 +793,26 @@ krb5_encrypt (krb5_context context,
 	      krb5_data *result);
 
 krb5_error_code
+krb5_encrypt_EncryptedData(krb5_context, void*, size_t, int,
+			   const krb5_keyblock*, EncryptedData*);
+
+krb5_error_code
 krb5_decrypt (krb5_context context,
 	      void *ptr,
 	      size_t len,
 	      int etype,
 	      const krb5_keyblock *keyblock,
 	      krb5_data *result);
+
+krb5_error_code
+krb5_generate_random_keyblock(krb5_context,
+			      int,
+			      krb5_keyblock*);
+
+krb5_error_code
+krb5_etype2keytype(krb5_context,
+		   krb5_enctype,
+		   krb5_keytype*);
 
 krb5_error_code
 krb5_create_checksum (krb5_context context,
@@ -809,6 +826,12 @@ krb5_verify_checksum (krb5_context context,
 		      void *ptr,
 		      size_t len,
 		      Checksum *sum);
+
+krb5_error_code
+krb5_cksumsize(krb5_context,
+	       krb5_cksumtype,
+	       size_t*);
+
 
 #include "cache.h"
 
