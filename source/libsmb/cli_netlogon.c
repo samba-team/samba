@@ -288,7 +288,7 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NET_R_SAM_SYNC r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         DOM_CRED clnt_creds;
-        char sess_key[16];
+        uchar sess_key[16];
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -347,7 +347,7 @@ NTSTATUS cli_netlogon_sam_deltas(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NET_R_SAM_DELTAS r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         DOM_CRED clnt_creds;
-        char sess_key[16];
+        uchar sess_key[16];
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);

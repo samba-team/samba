@@ -621,7 +621,7 @@ BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
 BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
                               uint32 group_rid, uint32 *num_names, 
                               uint32 **rid_mem, char ***names, 
-                              enum SID_NAME_USE **name_types)
+                              uint32 **name_types)
 {
 	return wb_sam_query_groupmem(&domain->sam_dom_handle, group_rid, 
 				     num_names, rid_mem, names, name_types);
@@ -834,7 +834,7 @@ char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
 	}
 
 	return result;
-};
+}
 
 /* find the sequence number for a domain */
 
