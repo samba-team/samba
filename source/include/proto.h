@@ -84,6 +84,9 @@ char *dos_GetWd(char *path);
 
 void fault_setup(void (*fn)(void *));
 
+/*The following definitions come from  lib/fnmatch.c  */
+
+
 /*The following definitions come from  lib/genrand.c  */
 
 void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
@@ -1141,6 +1144,8 @@ char *lp_veto_files(int );
 char *lp_hide_files(int );
 char *lp_veto_oplocks(int );
 char *lp_driverlocation(int );
+BOOL lp_preexec_close(int );
+BOOL lp_rootpreexec_close(int );
 BOOL lp_revalidate(int );
 BOOL lp_casesensitive(int );
 BOOL lp_preservecase(int );
@@ -2574,6 +2579,7 @@ void process_smb(char *inbuf, char *outbuf);
 char *smb_fn_name(int type);
 void construct_reply_common(char *inbuf,char *outbuf);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
+void check_reload(int time);
 void smbd_process(void);
 
 /*The following definitions come from  smbd/reply.c  */

@@ -418,11 +418,19 @@ static void image_link(char *name,char *hlink, char *src)
 ****************************************************************************/
 static void show_main_buttons(void)
 {
+	char *p;
+	
+	if ((p = cgi_user_name()) && strcmp(p, "root")) {
+		printf("Logged in as <b>%s</b><p>\n", p);
+	}
+
 	image_link("Home", "", "images/home.gif");
-	if (have_read_access) {
+	if (have_write_access) {
 		image_link("Globals", "globals", "images/globals.gif");
 		image_link("Shares", "shares", "images/shares.gif");
 		image_link("Printers", "printers", "images/printers.gif");
+	}
+	if (have_read_access) {
 		image_link("Status", "status", "images/status.gif");
 		image_link("View Config", "viewconfig","images/viewconfig.gif");
 	}
@@ -994,7 +1002,6 @@ static void printers_page(void)
 		   don't let them view it */
 		have_read_access = (access(servicesf,R_OK) == 0);
 	}
-
 
 
 	show_main_buttons();

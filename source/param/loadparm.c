@@ -309,6 +309,8 @@ typedef struct
   int  iPrinting;
   int  iOplockContentionLimit;
   BOOL bAlternatePerm;
+  BOOL bPreexecClose;
+  BOOL bRootpreexecClose;
   BOOL bRevalidate;
   BOOL bCaseSensitive;
   BOOL bCasePreserve;
@@ -408,6 +410,8 @@ static service sDefault =
   DEFAULT_PRINTING, /* iPrinting */
   2,       /* iOplockContentionLimit */
   False,   /* bAlternatePerm */
+  False,   /* bPreexecClose */
+  False,   /* bRootpreexecClose */
   False,   /* revalidate */
   False,   /* case sensitive */
   True,   /* case preserve */
@@ -807,8 +811,10 @@ static struct parm_struct parm_table[] =
   {"include",          P_STRING,  P_LOCAL,  &sDefault.szInclude,        handle_include, NULL,  FLAG_HIDE},
   {"exec",             P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
   {"preexec",          P_STRING,  P_LOCAL,  &sDefault.szPreExec,        NULL,   NULL,  0},
+  {"preexec close",    P_BOOL,    P_LOCAL,  &sDefault.bPreexecClose,    NULL,   NULL,  0},
   {"postexec",         P_STRING,  P_LOCAL,  &sDefault.szPostExec,       NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
   {"root preexec",     P_STRING,  P_LOCAL,  &sDefault.szRootPreExec,    NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
+  {"root preexec close", P_BOOL,  P_LOCAL,  &sDefault.bRootpreexecClose,NULL,   NULL,  0},
   {"root postexec",    P_STRING,  P_LOCAL,  &sDefault.szRootPostExec,   NULL,   NULL,  FLAG_SHARE|FLAG_PRINT},
   {"available",        P_BOOL,    P_LOCAL,  &sDefault.bAvailable,       NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
   {"volume",           P_STRING,  P_LOCAL,  &sDefault.volume,           NULL,   NULL,  FLAG_SHARE},
@@ -1328,6 +1334,8 @@ FN_LOCAL_STRING(lp_hide_files,szHideFiles)
 FN_LOCAL_STRING(lp_veto_oplocks,szVetoOplockFiles)
 FN_LOCAL_STRING(lp_driverlocation,szPrinterDriverLocation)
 
+FN_LOCAL_BOOL(lp_preexec_close,bPreexecClose)
+FN_LOCAL_BOOL(lp_rootpreexec_close,bRootpreexecClose)
 FN_LOCAL_BOOL(lp_revalidate,bRevalidate)
 FN_LOCAL_BOOL(lp_casesensitive,bCaseSensitive)
 FN_LOCAL_BOOL(lp_preservecase,bCasePreserve)

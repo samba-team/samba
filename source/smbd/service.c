@@ -192,6 +192,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	BOOL force = False;
 	extern int Client;
 	connection_struct *conn;
+	int ret;
 
 	strlower(service);
 
@@ -456,7 +457,13 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		pstrcpy(cmd,lp_rootpreexec(SNUM(conn)));
 		standard_sub(conn,cmd);
 		DEBUG(5,("cmd=%s\n",cmd));
-		smbrun(cmd,NULL,False);
+		ret = smbrun(cmd,NULL,False);
+		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
+			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			conn_free(conn);
+			*ecode = ERRsrverror;
+			return NULL;
+		}
 	}
 	
 	if (!become_user(conn, conn->vuid)) {
@@ -510,7 +517,13 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		pstring cmd;
 		pstrcpy(cmd,lp_preexec(SNUM(conn)));
 		standard_sub(conn,cmd);
-		smbrun(cmd,NULL,False);
+		ret = smbrun(cmd,NULL,False);
+		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
+			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			conn_free(conn);
+			*ecode = ERRsrverror;
+			return NULL;
+		}
 	}
 
 	/*
