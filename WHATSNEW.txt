@@ -1,9 +1,21 @@
-              WHATS NEW IN Samba 2.0.1
+              WHATS NEW IN Samba 2.0.2
               ========================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
+
+Note that due to a critical signal handling bug in 2.0.1,
+this release has been removed and replaced immediately with 
+2.0.2. The Samba Team would like to apologise for any problem
+this may have caused.
+
+Bugfixes added since 2.0.1
+--------------------------
+
+1). Fixed smbd looping on SIGCLD problem. This was
+    caused by a missing break statement in a critical
+    piece of code.
 
 Bugfixes added since 2.0.0
 --------------------------

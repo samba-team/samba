@@ -1,5 +1,5 @@
 !==
-!== GOTCHAS.txt for Samba release 2.0.1 06 Feb 1999
+!== GOTCHAS.txt for Samba release 2.0.1 07 Feb 1999
 !==
 This file lists Gotchas to watch out for:
 =========================================================================
