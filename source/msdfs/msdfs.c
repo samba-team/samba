@@ -18,7 +18,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-   $Id: msdfs.c,v 1.10.4.3.2.2 2001/10/11 09:33:10 jra Exp $
 */
 
 #include "includes.h"

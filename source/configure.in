@@ -8,7 +8,8 @@ AC_CONFIG_HEADER(include/config.h)
 # ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
-AC_ARG_WITH(fhs, [  --with-fhs            use FHS-compliant paths [default=no]],
+AC_ARG_WITH(fhs, 
+[  --with-fhs              Use FHS-compliant paths (default=no)],
     codepagedir="\$(DATADIR)/samba/codepages"
     configdir="${sysconfdir}/samba"
     lockdir="\${VARDIR}/cache/samba"
@@ -25,7 +26,7 @@ AC_ARG_WITH(fhs, [  --with-fhs            use FHS-compliant paths [default=no]],
 #################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
-[  --with-privatedir=DIR     Where to put smbpasswd ($ac_default_prefix/private)],
+[  --with-privatedir=DIR   Where to put smbpasswd ($ac_default_prefix/private)],
 [ case "$withval" in
   yes|no)
   #
@@ -41,7 +42,7 @@ AC_ARG_WITH(privatedir,
 #################################################
 # set lock directory location
 AC_ARG_WITH(lockdir,
-[  --with-lockdir=DIR     Where to put lock files ($ac_default_prefix/var/locks)],
+[  --with-lockdir=DIR      Where to put lock files ($ac_default_prefix/var/locks)],
 [ case "$withval" in
   yes|no)
   #
@@ -57,7 +58,7 @@ AC_ARG_WITH(lockdir,
 #################################################
 # set SWAT directory location
 AC_ARG_WITH(swatdir,
-[  --with-swatdir=DIR     Where to put SWAT files ($ac_default_prefix/swat)],
+[  --with-swatdir=DIR      Where to put SWAT files ($ac_default_prefix/swat)],
 [ case "$withval" in
   yes|no)
   #
@@ -73,7 +74,7 @@ AC_ARG_WITH(swatdir,
 #################################################
 # set configuration directory location
 AC_ARG_WITH(configdir,
-[  --with-configdir=DIR     Where to put configuration files (\$libdir)],
+[  --with-configdir=DIR    Where to put configuration files (\$libdir)],
 [ case "$withval" in
   yes|no)
   #
@@ -89,7 +90,7 @@ AC_ARG_WITH(configdir,
 #################################################
 # set codepage directory location
 AC_ARG_WITH(codepagedir,
-[  --with-codepagedir=DIR     Where to put codepage files (\$libdir/codepages)],
+[  --with-codepagedir=DIR  Where to put codepage files (\$libdir/codepages)],
 [ case "$withval" in
   yes|no)
   #
@@ -117,17 +118,24 @@ AC_SUBST(SHELL)
 AC_SUBST(RUNPROG)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
+AC_SUBST(SHLD) 
 AC_SUBST(HOST_OS)
 AC_SUBST(PAM_MOD)
+AC_SUBST(PDBEDIT)
 AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
+AC_SUBST(PICSUFFIX)
 AC_SUBST(SHLIBEXT)
+AC_SUBST(BLDSHARED)
+AC_SUBST(LIBSMBCLIENT_SHARED)
+AC_SUBST(LIBSMBCLIENT)
 
 # compile with optimization and without debugging by default
 CFLAGS="-O ${CFLAGS}"
 
-AC_ARG_ENABLE(debug, [  --enable-debug        turn on debugging [default=no]],
+AC_ARG_ENABLE(debug, 
+[  --enable-debug          Turn on compiler debugging information (default=no)],
     [if eval "test x$enable_debug = xyes"; then
 	CFLAGS="${CFLAGS} -g"
     fi])
@@ -176,6 +184,8 @@ case "$host_os" in
 # Try to work out if this is the native HPUX compiler that uses the -Ae flag.
     *hpux*)
       AC_PROG_CC_FLAG(Ae)
+      # mmap on HPUX is completely broken...
+      AC_DEFINE(MMAP_BLACKLIST)
       if test $ac_cv_prog_cc_Ae = yes; then
         CPPFLAGS="$CPPFLAGS -Ae"
       fi
@@ -213,7 +223,10 @@ case "$host_os" in
 #
 	*solaris*)
 		case `uname -r` in
-			5.6*|5.7*)
+			5.0*|5.1*|5.2*|5.3*|5.5*)
+	  			AC_MSG_RESULT([no large file support])
+				;;
+			5.*)
 			AC_MSG_RESULT([enabling large file support])
 			if test "$ac_cv_prog_gcc" = yes; then
 				${CC-cc} -v >conftest.c 2>&1
@@ -339,7 +352,7 @@ AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(arpa/inet.h sys/fcntl.h sys/select.h fcntl.h sys/time.h sys/unistd.h)
 AC_CHECK_HEADERS(unistd.h utime.h grp.h sys/id.h limits.h memory.h net/if.h)
 AC_CHECK_HEADERS(compat.h rpc/rpc.h rpcsvc/nis.h rpcsvc/yp_prot.h rpcsvc/ypclnt.h)
-AC_CHECK_HEADERS(sys/param.h ctype.h sys/un.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
+AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/ipc.h sys/mode.h)
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
@@ -393,12 +406,44 @@ AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
 
-# we need libcups for CUPS support...
+############################################
+# for cups support we need libcups, and a handful of header files
+
 AC_CHECK_LIB(cups,httpConnect)
 
+# I wonder if there is a nicer way of doing this?
+
+if test x"$ac_cv_lib_cups_httpConnect" = x"yes"; then
+        AC_CHECK_HEADERS(cups/cups.h cups/language.h)
+        if test x"$ac_cv_header_cups_cups_h" = x"yes"; then
+                if test x"$ac_cv_header_cups_language_h" = x"yes"; then
+                        AC_DEFINE(HAVE_CUPS)
+                fi
+        fi
+fi
+
+############################################
 # we need libdl for PAM and the new VFS code
 AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
 	AC_DEFINE(HAVE_LIBDL)])
+
+############################################
+# check for unix domain sockets
+AC_CACHE_CHECK([for unix domain sockets],samba_cv_unixsocket, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <sys/un.h>],
+[
+  struct sockaddr_un sunaddr; 
+  sunaddr.sun_family = AF_UNIX;
+],
+	samba_cv_unixsocket=yes,samba_cv_unixsocket=no)])
+if test x"$samba_cv_unixsocket" = x"yes"; then
+   AC_DEFINE(HAVE_UNIXSOCKET)
+fi
 
 AC_CACHE_CHECK([for socklen_t type],samba_cv_socklen_t, [
     AC_TRY_COMPILE([
@@ -465,8 +510,7 @@ test "${with_readline+set}" != "set" && with_readline=yes
 # test for where we get readline() from
 AC_MSG_CHECKING(whether to use readline)
 AC_ARG_WITH(readline,
-[  --with-readline[=DIR]   Look for readline include/libs in DIR
-  --without-readline      Don't include readline support],
+[  --with-readline[=DIR]   Look for readline include/libs in DIR (default=auto)],
 [  case "$with_readline" in
   yes)
     AC_MSG_RESULT(yes)
@@ -574,7 +618,7 @@ fi
 AC_CHECK_FUNCS(waitpid getcwd strdup strtoul strerror chown fchown chmod fchmod chroot)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
-AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
+AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate stat64 fstat64)
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64 readdir64)
@@ -687,17 +731,23 @@ AC_LIBTESTFUNC(sec, getprpwnam)
 # these are the defaults, good for lots of systems
 HOST_OS="$host_os"
 LDSHFLAGS="-shared"
+SHLD="\${CC}" 
 PICFLAG=""
+PICSUFFIX="po.o"
 SHLIBEXT="so"
+# Assume non-shared by default and override below
+BLDSHARED="false" 
 
 # and these are for particular systems
 case "$host_os" in
-		*linux*)   AC_DEFINE(LINUX);;
-		*solaris*) AC_DEFINE(SUNOS5)
-					LDSHFLAGS="-G"
+		*linux*)   AC_DEFINE(LINUX)
+			BLDSHARED="true"
+			LDSHFLAGS="-shared"
+			PICFLAG="-fPIC"
 		;;
+		*solaris*) AC_DEFINE(SUNOS5)
+				;;
 		*sunos*) AC_DEFINE(SUNOS4)
-					LDSHFLAGS=""
 		;;
 		*bsd*) LDSHFLAGS="-shared -Bshareable"
 		;;
@@ -708,7 +758,9 @@ case "$host_os" in
 			esac
 			ATTEMPT_WRAP32_BUILD=yes
 		;;
-		*aix*) AC_DEFINE(AIX);;
+		*aix*) AC_DEFINE(AIX)
+			# AIX is too ugly for now
+		;;
 		*hpux*) AC_DEFINE(HPUX)
 			SHLIBEXT="sl"
 			# Use special PIC flags for the native HP-UX compiler.
@@ -1457,13 +1509,6 @@ exit(1);
   fi
 fi
 
-AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
-           samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)])
-if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
-    AC_DEFINE(HAVE_TRUNCATED_SALT)
-fi
-
 AC_CACHE_CHECK([for broken nisplus include files],samba_cv_BROKEN_NISPLUS_INCLUDE_FILES,[
 AC_TRY_COMPILE([#include <sys/acl.h>
 #if defined(HAVE_RPCSVC_NIS_H)
@@ -1480,8 +1525,7 @@ fi
 # check for smbwrapper support
 AC_MSG_CHECKING(whether to use smbwrapper)
 AC_ARG_WITH(smbwrapper,
-[  --with-smbwrapper     Include SMB wrapper support
-  --without-smbwrapper  Don't include SMB wrapper support (default)],
+[  --with-smbwrapper       Include SMB wrapper support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1517,8 +1561,7 @@ AC_ARG_WITH(smbwrapper,
 # check for the AFS filesystem
 AC_MSG_CHECKING(whether to use AFS)
 AC_ARG_WITH(afs,
-[  --with-afs     Include AFS support
-  --without-afs  Don't include AFS support (default)],
+[  --with-afs              Include AFS support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1534,10 +1577,9 @@ AC_ARG_WITH(afs,
 
 #################################################
 # check for the DFS auth system
-AC_MSG_CHECKING(whether to use DFS auth)
+AC_MSG_CHECKING(whether to use DCE/DFS auth)
 AC_ARG_WITH(dfs,
-[  --with-dfs     Include DFS support
-  --without-dfs  Don't include DFS support (default)],
+[  --with-dce-dfs          Include DCE/DFS support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1554,14 +1596,20 @@ AC_ARG_WITH(dfs,
 # check for Kerberos IV auth system
 AC_MSG_CHECKING(whether to use Kerberos IV)
 AC_ARG_WITH(krb4,
-[  --with-krb4=base-dir     Include Kerberos IV support
-  --without-krb4          Don't include Kerberos IV support (default)],
-[   AC_MSG_RESULT(yes)
+[  --with-krb4=base-dir    Include Kerberos IV support (default=no)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
     AC_DEFINE(KRB4_AUTH)
     AC_CHECK_LIB(resolv, dn_expand)
     LIBS="$LIBS -lkrb -ldes"
     CFLAGS="$CFLAGS -I$withval/include"
-    LDFLAGS="$LDFLAGS -L$withval/lib"],
+    LDFLAGS="$LDFLAGS -L$withval/lib"
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
   AC_MSG_RESULT(no)
 )
 
@@ -1569,13 +1617,19 @@ AC_ARG_WITH(krb4,
 # check for Kerberos 5 auth system
 AC_MSG_CHECKING(whether to use Kerberos 5)
 AC_ARG_WITH(krb5,
-[  --with-krb5=base-dir     Include Kerberos 5 support
-  --without-krb5          Don't include Kerberos 5 support (default)],
-[   AC_MSG_RESULT(yes)
+[  --with-krb5=base-dir    Include Kerberos 5 support (default=no)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
     AC_DEFINE(KRB5_AUTH)
     LIBS="$LIBS -ldes425 -lkrb5 -lcrypto -lcom_err"
     CFLAGS="$CFLAGS -I$withval/include"
-    LDFLAGS="$LDFLAGS -L$withval/lib"],
+    LDFLAGS="$LDFLAGS -L$withval/lib"
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
   AC_MSG_RESULT(no)
 )
 
@@ -1583,8 +1637,7 @@ AC_ARG_WITH(krb5,
 # check for automount support
 AC_MSG_CHECKING(whether to use AUTOMOUNT)
 AC_ARG_WITH(automount,
-[  --with-automount     Include AUTOMOUNT support
-  --without-automount  Don't include AUTOMOUNT support (default)],
+[  --with-automount        Include AUTOMOUNT support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1601,13 +1654,19 @@ AC_ARG_WITH(automount,
 # check for smbmount support
 AC_MSG_CHECKING(whether to use SMBMOUNT)
 AC_ARG_WITH(smbmount,
-[  --with-smbmount     Include SMBMOUNT (Linux only) support
-  --without-smbmount  Don't include SMBMOUNT support (default)],
+[  --with-smbmount         Include SMBMOUNT (Linux only) support (default=no)],
 [ case "$withval" in
   yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_SMBMOUNT)
-    MPROGS="bin/smbmount bin/smbmnt bin/smbumount"
+	case "$host_os" in
+	*linux*)
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(WITH_SMBMOUNT)
+		MPROGS="bin/smbmount bin/smbmnt bin/smbumount"
+		;;
+	*)
+		AC_MSG_ERROR(not on a linux system!)
+		;;
+	esac
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1624,8 +1683,7 @@ AC_ARG_WITH(smbmount,
 with_pam_for_crypt=no
 AC_MSG_CHECKING(whether to use PAM password database)
 AC_ARG_WITH(pam,
-[  --with-pam     Include PAM password database support
-  --without-pam  Don't include PAM password database support (default)],
+[  --with-pam              Include PAM password database support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1647,8 +1705,7 @@ AC_CHECK_LIB(pam, pam_get_data, [AC_DEFINE(HAVE_LIBPAM)])
 # check for pam_smbpass support
 AC_MSG_CHECKING(whether to use pam_smbpass)
 AC_ARG_WITH(pam_smbpass,
-[  --with-pam_smbpass     Include the smbpass PAM module
-  --without-pam_smbpass  Don't include the smbpass PAM module (default)],
+[  --with-pam_smbpass      Include the smbpass PAM module (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1685,60 +1742,43 @@ if test x"$ac_cv_func_crypt" = x"no"; then
 fi
 fi
 
+##
+## moved after the check for -lcrypt in order to
+## ensure that the necessary libraries are included
+## check checking for truncated salt.  Wrapped by the
+## $with_pam_for_crypt variable as above   --jerry
+##
+if test $with_pam_for_crypt = no; then
+AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
+	samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)])
+if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
+	AC_DEFINE(HAVE_TRUNCATED_SALT)
+fi
+fi
+
+
+########################################################################################
+##
+## TESTS FOR SAM BACKENDS.  KEEP THESE GROUPED TOGETHER
+##
+########################################################################################
+
+## set the with_smbpasswd_sam as the default
+with_smbpasswd_sam=yes
+
+
 
 #################################################
-# removed until we get the code actually working
-# --jeremy
 # check for a TDB password database
-# AC_MSG_CHECKING(whether to use TDB password database)
-#AC_ARG_WITH(tdbpwd,
-#[  --with-tdbpwd   Include TDB password database
-#  --without-tdbpwd  Don't include TDB password database (default)],
-#[ case "$withval" in
-#  yes)
-#    AC_MSG_RESULT(yes)
-#    AC_DEFINE(WITH_TDBPWD)
-#    AC_MSG_ERROR([TDB password database not supported in this version.])
-#    ;;
-#  *)
-#    AC_MSG_RESULT(no)
-#    ;;
-#  esac ],
-#  AC_MSG_RESULT(no)
-#)
-
-#################################################
-# removed until we get the code actually working
-# --jerry
-#
-# check for a LDAP password database
-#AC_MSG_CHECKING(whether to use LDAP password database)
-#AC_ARG_WITH(ldap,
-#[  --with-ldap     Include LDAP support
-#  --without-ldap  Don't include LDAP support (default)],
-#[ case "$withval" in
-#  yes)
-#    AC_MSG_RESULT(yes)
-#    AC_DEFINE(WITH_LDAP)
-#    AC_MSG_ERROR([LDAP password database not supported in this version.])
-#    ;;
-#  *)
-#    AC_MSG_RESULT(no)
-#    ;;
-#  esac ],
-#  AC_MSG_RESULT(no)
-#)
-
-#################################################
-# check for a NISPLUS password database
-AC_MSG_CHECKING(whether to use NISPLUS password database)
-AC_ARG_WITH(nisplus,
-[  --with-nisplus     Include NISPLUS password database support
-  --without-nisplus  Don't include NISPLUS password database support (default)],
+AC_MSG_CHECKING(whether to use TDB SAM database)
+AC_ARG_WITH(tdbsam,
+[  --with-tdbsam           Include experimental TDB SAM support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_NISPLUS)
+    AC_DEFINE(WITH_TDB_SAM)
+    with_smbpasswd_sam=no
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1748,11 +1788,67 @@ AC_ARG_WITH(nisplus,
 )
 
 #################################################
+# check for a LDAP password database
+AC_MSG_CHECKING(whether to use LDAP SAM database)
+AC_ARG_WITH(ldapsam,
+[  --with-ldapsam          Include experimental LDAP SAM support (default=no)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LDAP_SAM)
+    LIBS="-lldap -llber -lresolv $LIBS"
+    with_smbpasswd_sam=no
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# check for a NISPLUS password database
+AC_MSG_CHECKING(whether to use NISPLUS SAM database)
+AC_ARG_WITH(nisplussam,
+[  --with-nisplussam       Include NISPLUS SAM support (default=no)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_NISPLUS_SAM)
+    with_smbpasswd_sam=no
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+################################################
+# This test should come last because the
+# smbpasswd SAM is only used if another format
+# has not been defined
+AC_MSG_CHECKING(whether to use traditional smbpasswd file)
+if test $with_smbpasswd_sam = yes; then
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(WITH_SMBPASSWD_SAM)
+	PDBEDIT=""
+else
+	AC_MSG_RESULT(no)
+	PDBEDIT=bin/pdbedit
+fi
+
+########################################################################################
+##
+## END OF TESTS FOR SAM BACKENDS.  
+##
+########################################################################################
+
+#################################################
 # check for a NISPLUS_HOME support 
 AC_MSG_CHECKING(whether to use NISPLUS_HOME)
 AC_ARG_WITH(nisplus-home,
-[  --with-nisplus-home     Include NISPLUS_HOME support
-  --without-nisplus-home  Don't include NISPLUS_HOME support (default)],
+[  --with-nisplus-home     Include NISPLUS_HOME support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1769,9 +1865,9 @@ AC_ARG_WITH(nisplus-home,
 # check for the secure socket layer
 AC_MSG_CHECKING(whether to use SSL)
 AC_ARG_WITH(ssl,
-[  --with-ssl     Include SSL support
-  --without-ssl  Don't include SSL support (default)
-  --with-sslinc=DIR Where the SSL includes are (defaults to /usr/local/ssl)],
+[  --with-ssl              Include SSL support (default=no)
+  --with-sslinc=DIR          Where the SSL includes are (defaults to /usr/local/ssl/include)
+  --with-ssllib=DIR          Where the SSL libraries are (defaults to /usr/local/ssl/lib)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1785,28 +1881,43 @@ AC_ARG_WITH(ssl,
 	yes|no)
 	  echo "configure: warning: --with-sslinc called without argument - will use default" 1>&w
 	  CFLAGS="-I/usr/local/ssl/include $CFLAGS"
-	  LIBS="-lssl -lcrypto $LIBS"
-	  LDFLAGS="=L/usr/local/ssl/lib $LDFLAGS"
 	;;
         * )
           CFLAGS="-I${withval} $CFLAGS"
-	  LIBS="-lssl -lcrypto $LIBS"
-  	  LDFLAGS="-L${withval}/lib $LDFLAGS"
 	;;
 	esac
 
     else
 
 	CFLAGS="-I/usr/local/ssl/include $CFLAGS"   
-	LIBS="-lssl -lcrypto $LIBS"
+
+    fi
+
+    if test "${with_ssllib+set}" = set; then
+
+	withval="$with_ssllib"
+	case "$withval" in
+	yes|no)
+	  echo "configure: warning: --with-ssllib called without argument - will use default" 1>&w
+	  LDFLAGS="-L/usr/local/ssl/lib $LDFLAGS"
+	;;
+        * )
+  	  LDFLAGS="-L${withval}/lib $LDFLAGS"
+	;;
+	esac
+
+    else
+
 	LDFLAGS="-L/usr/local/ssl/lib $LDFLAGS"
 
     fi
 
-    if test ! -d ${withval}; then
-      echo "configure: error: called with --with-ssl, but ssl base directory ${withval} does not exist or is not a directory. Aborting config" 1>&2
-      exit 1
-    fi 
+    LIBS="-lssl -lcrypto $LIBS"
+
+#    if test ! -d ${withval}; then
+#      echo "configure: error: called with --with-ssl, but ssl base directory ${withval} does not exist or is not a directory. Aborting config" 1>&2
+#      exit 1
+#    fi 
 
     CFLAGS="-DHAVE_CRYPT_DECL $CFLAGS"  # Damn, SSLeay defines its own
 
@@ -1822,8 +1933,7 @@ AC_ARG_WITH(ssl,
 # check for syslog logging
 AC_MSG_CHECKING(whether to use syslog logging)
 AC_ARG_WITH(syslog,
-[  --with-syslog     Include experimental SYSLOG support
-  --without-syslog  Don't include SYSLOG support (default)],
+[  --with-syslog           Include experimental SYSLOG support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1839,9 +1949,8 @@ AC_ARG_WITH(syslog,
 #################################################
 # check for a shared memory profiling support
 AC_MSG_CHECKING(whether to use profiling)
-AC_ARG_WITH(profile,
-[  --with-profile     Include profile support
-  --without-profile  Don't include profile support (default)],
+AC_ARG_WITH(profiling-data,
+[  --with-profiling-data   Include gathering source code profile information (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1856,35 +1965,36 @@ AC_ARG_WITH(profile,
 
 
 #################################################
-# check for experimental netatalk resource fork support
-AC_MSG_CHECKING(whether to support netatalk)
-AC_ARG_WITH(netatalk,
-[  --with-netatalk     Include experimental Netatalk support
-  --without-netatalk  Don't include experimental Netatalk support (default)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_NETATALK)
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-#################################################
 # check for experimental disk-quotas support
 QUOTAOBJS=smbd/noquotas.o
 
 AC_MSG_CHECKING(whether to support disk-quotas)
 AC_ARG_WITH(quotas,
-[  --with-quotas     Include experimental disk-quota support
-  --without-quotas  Don't include experimental disk-quota support (default)],
+[  --with-quotas           Include experimental disk-quota support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
     QUOTAOBJS=smbd/quotas.o
+    case "$host_os" in
+      *linux*)
+        # Check for kernel 2.4.x quota braindamage...
+	AC_CACHE_CHECK([for linux 2.4.x quota braindamage..],samba_cv_linux_2_4_quota_braindamage, [
+        AC_TRY_COMPILE([#include <stdio.h>
+#include <sys/types.h>
+#include <asm/types.h>
+#include <linux/quota.h>
+#include <mntent.h>
+#include <linux/unistd.h>],[struct mem_dqblk D;],
+	samba_cv_linux_2_4_quota_braindamage=yes,samba_cv_linux_2_4_quota_braindamage=no)])
+if test x"$samba_cv_linux_2_4_quota_braindamage" = x"yes"; then
+        AC_DEFINE(LINUX_QUOTAS_2)
+else
+        AC_DEFINE(LINUX_QUOTAS_1)
+fi
+        ;;
+      *)
+        ;;
+    esac
     ;;
   *)
     AC_MSG_RESULT(no)
@@ -1899,8 +2009,7 @@ AC_SUBST(QUOTAOBJS)
 
 AC_MSG_CHECKING(whether to support utmp accounting)
 AC_ARG_WITH(utmp,
-[  --with-utmp     Include experimental utmp accounting
-  --without-utmp  Don't include experimental utmp accounting (default)],
+[  --with-utmp             Include experimental utmp accounting (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1918,8 +2027,7 @@ AC_ARG_WITH(utmp,
 
 AC_MSG_CHECKING(whether to support Microsoft Dfs)
 AC_ARG_WITH(msdfs,
-[  --with-msdfs		Include MS Dfs support
-  --without-msdfs	Don't include MS Dfs support (default)],
+[  --with-msdfs            Include MS Dfs support (default=no)],
 [ case "$withval" in
   yes)
      AC_MSG_RESULT(yes)
@@ -1937,12 +2045,37 @@ AC_ARG_WITH(msdfs,
 
 AC_MSG_CHECKING(whether to support the experimantal Samba vfs)
 AC_ARG_WITH(vfs,
-[  --with-vfs		Include Samba vfs support
-  --without-vfs	Don't include Samba vfs support (default)],
+[  --with-vfs              Include Samba vfs support (default=no)],
 [ case "$withval" in
   yes)
      AC_MSG_RESULT(yes)
      AC_DEFINE(WITH_VFS)
+     ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+
+#################################################
+# should we build libsmbclient?
+
+LIBSMBCLIENT_SHARED=
+LIBSMBCLIENT=
+AC_MSG_CHECKING(whether to build the libsmbclient shared library)
+AC_ARG_WITH(libsmbclient,
+[  --with-libsmbclient     Build the libsmbclient shared library (default=no)],
+[ case "$withval" in
+  yes)
+     if test $BLDSHARED = true; then
+        LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
+	LIBSMBCLIENT=libsmbclient
+        AC_MSG_RESULT(yes)
+     else
+        AC_MSG_RESULT(no shared library support)
+     fi
      ;;
   *)
     AC_MSG_RESULT(no)
@@ -2160,7 +2293,8 @@ else
     AC_MSG_RESULT(no)
 fi
 
-AC_ARG_WITH(spinlocks, [  --with-spinlocks        use spin locks instead of fcntl locks ])
+AC_ARG_WITH(spinlocks, 
+[  --with-spinlocks        Use spin locks instead of fcntl locks (default=no)])
 if test "x$with_spinlocks" = "xyes"; then
     AC_DEFINE(USE_SPINLOCKS)
 
@@ -2188,8 +2322,7 @@ fi
 
 AC_MSG_CHECKING(whether to support ACLs)
 AC_ARG_WITH(acl-support,
-[  --with-acl-support        Include ACL support
-  --without-acl-support  Don't include ACL support (default)],
+[  --with-acl-support      Include ACL support (default=no)],
 [ case "$withval" in
   yes)
 
@@ -2209,6 +2342,11 @@ AC_ARG_WITH(acl-support,
 		*aix*)
 			AC_MSG_RESULT(Using AIX ACLs)
 			AC_DEFINE(HAVE_AIX_ACLS)
+			;;
+		*osf*)
+			AC_MSG_RESULT(Using Tru64 ACLs)
+			AC_DEFINE(HAVE_TRU64_ACLS)
+			LIBS="$LIBS -lpacl"
 			;;
 		*)
 		    AC_CHECK_LIB(acl,acl_get_file)
@@ -2249,6 +2387,83 @@ if test "x$prefix" = xNONE -a "$sbindir" = "\${exec_prefix}/sbin"; then
 	sbindir="$bindir"
 fi
 
+#################################################
+# Check whether winbind is supported on this platform.  If so we need to
+# build and install client programs (WINBIND_TARGETS), sbin programs
+# (WINBIND_STARGETS) and shared libraries (WINBIND_LTARGETS).
+
+AC_MSG_CHECKING(whether to build winbind)
+
+# Initially, the value of $host_os decides whether winbind is supported
+
+case "$host_os" in 
+        *linux*|*solaris*)
+		HAVE_WINBIND=yes
+                ;;
+        *)
+		HAVE_WINBIND=no
+                winbind_no_reason=", unsupported on $host_os"
+                ;;
+esac
+
+# Check the setting of --with-winbindd
+
+AC_ARG_WITH(winbind,
+[  --with-winbind          Build winbind (default, if supported by OS)],
+[ 
+  case "$withval" in
+	yes)
+		HAVE_WINBIND=yes
+		;;
+        no)
+		HAVE_WINBIND=no
+                winbind_reason=""
+                ;;
+  esac ],
+)
+
+# We need unix domain sockets for winbind
+
+if test x"$HAVE_WINBIND" = x"yes"; then
+	if test x"$samba_cv_unixsocket" = x"no"; then
+		winbind_no_reason=", no unix domain socket support on $host_os"
+		HAVE_WINBIND=no
+	fi
+fi
+
+# Display test results
+
+if test x"$HAVE_WINBIND" = x"yes"; then
+
+        AC_MSG_RESULT(yes)
+
+	WINBIND_TARGETS="bin/wbinfo"
+	WINBIND_STARGETS="bin/winbindd"
+	WINBIND_LTARGETS="nsswitch/libnss_winbind.so"
+
+	case "$with_pam" in
+		yes)
+			WINBIND_PAM_TARGETS="nsswitch/pam_winbind.so"
+		;;
+	esac
+else
+        AC_MSG_RESULT(no$winbind_no_reason)
+
+	WINBIND_TARGETS=""
+	WINBIND_STARGETS=""
+	WINBIND_LTARGETS=""
+	WINBIND_PAM_TARGETS=""
+fi
+
+# Substitution time!
+
+AC_SUBST(WINBIND_TARGETS)
+AC_SUBST(WINBIND_STARGETS)
+AC_SUBST(WINBIND_LTARGETS)
+AC_SUBST(WINBIND_PAM_TARGETS)
+
+#################################################
+# final configure stuff
 echo "checking configure summary"
 AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            echo "configure OK";,
