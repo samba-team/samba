@@ -3710,7 +3710,7 @@ BOOL lp_list_substitute(char **list, const char *pattern, const char *insert)
 	char *p, *s, *t;
 	ssize_t ls, lp, li, ld, i, d;
 
-	if (!list || !*list) return False;
+	if (!list) return False;
 	if (!pattern) return False;
 	if (!insert) return False;
 
