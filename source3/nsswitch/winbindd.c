@@ -1,6 +1,6 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 2.0
+   Version 3.0
 
    Winbind daemon for ntdom nss module
 
@@ -234,17 +234,19 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_ENDPWENT, winbindd_endpwent },
 	{ WINBINDD_GETPWENT, winbindd_getpwent },
 
-#if 0
-
 	{ WINBINDD_GETGROUPS, winbindd_getgroups },
 
 	/* Group functions */
 
+#if 0
 	{ WINBINDD_GETGRNAM_FROM_GROUP, winbindd_getgrnam_from_group },
 	{ WINBINDD_GETGRNAM_FROM_GID, winbindd_getgrnam_from_gid },
+#endif
 	{ WINBINDD_SETGRENT, winbindd_setgrent },
 	{ WINBINDD_ENDGRENT, winbindd_endgrent },
 	{ WINBINDD_GETGRENT, winbindd_getgrent },
+
+#if 0
 
 	/* PAM auth functions */
 
@@ -254,10 +256,13 @@ static struct dispatch_table dispatch_table[] = {
 
 	/* Enumeration functions */
 
+#endif
+
         { WINBINDD_LIST_USERS, winbindd_list_users },
         { WINBINDD_LIST_GROUPS, winbindd_list_groups },
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains },
 
+#if 0
 	/* SID related functions */
 
 	{ WINBINDD_LOOKUPSID, winbindd_lookupsid },

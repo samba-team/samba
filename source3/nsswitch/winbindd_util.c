@@ -531,18 +531,14 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 
 /* Lookup user information from a rid */
 
-BOOL winbindd_lookup_userinfo(char *domain_name, uint32 user_rid, 
+BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain, uint32 user_rid, 
                               SAM_USERINFO_CTR **user_info)
 {
         CLI_POLICY_HND *hnd;
         uint16 info_level = 0x15;
         NTSTATUS result;
-        struct winbindd_domain *domain;
 
-        if (!(domain = find_domain_from_name(domain_name)))
-                return False;
-
-        if (!(hnd = cm_get_sam_user_handle(domain_name, &domain->sid, 
+        if (!(hnd = cm_get_sam_user_handle(domain->name, &domain->sid, 
                                            user_rid)))
                 return False;
 
@@ -552,51 +548,99 @@ BOOL winbindd_lookup_userinfo(char *domain_name, uint32 user_rid,
         return NT_STATUS_IS_OK(result);
 }                                   
 
-#if 0
-
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
 
 BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 				uint32 user_rid, uint32 *num_groups,
 				DOM_GID **user_groups)
 {
-	POLICY_HND user_pol;
-	BOOL result;
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result;
 
-        if (!wb_samr_open_user(&domain->sam_dom_handle, 
-			       SEC_RIGHTS_MAXIMUM_ALLOWED,
-			       user_rid, &user_pol)) {
-		return False;
-	}
+        if (!(hnd = cm_get_sam_user_handle(domain->name, &domain->sid,
+                                           user_rid)))
+                return False;
 
-	if (!NT_STATUS_IS_OK(cli_samr_query_usergroups(domain->sam_dom_handle.cli,
-						       domain->sam_dom_handle.mem_ctx,
-						       &user_pol, num_groups, user_groups))) {
-		result = False;
-		goto done;
-	}
+        result = cli_samr_query_usergroups(hnd->cli, hnd->cli->mem_ctx,
+                                           &hnd->pol, num_groups,
+                                           user_groups);
 
-	result = True;
-
-done:
-	cli_samr_close(domain->sam_dom_handle.cli,
-		       domain->sam_dom_handle.mem_ctx, &user_pol);
-
-	return True;
+        return NT_STATUS_IS_OK(result);
 }
 
-/* Lookup group membership given a rid */
+/* Lookup group membership given a rid.   */
 
 BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
                               uint32 group_rid, uint32 *num_names, 
                               uint32 **rid_mem, char ***names, 
                               uint32 **name_types)
 {
-	return wb_sam_query_groupmem(&domain->sam_dom_handle, group_rid, 
-				     num_names, rid_mem, names, name_types);
-}
+        CLI_POLICY_HND *group_hnd, *dom_hnd;
+        NTSTATUS result;
+        uint32 i, total_names = 0;
 
-#endif
+        if (!(group_hnd = cm_get_sam_group_handle(domain->name, &domain->sid,
+                                                  group_rid)))
+                return False;
+
+        /* Get group membership.  This is a list of rids. */
+
+        result = cli_samr_query_groupmem(group_hnd->cli, 
+                                         group_hnd->cli->mem_ctx,
+                                         &group_hnd->pol, num_names, rid_mem,
+                                         name_types);
+
+        if (!NT_STATUS_IS_OK(result))
+                return NT_STATUS_IS_OK(result);
+
+        /* Convert list of rids into list of names.  Do this in bunches of
+           ~1000 to avoid crashing NT4.  It looks like there is a buffer
+           overflow or something like that lurking around somewhere. */
+
+        if (!(dom_hnd = cm_get_sam_dom_handle(domain->name, &domain->sid)))
+                return False;
+
+#define MAX_LOOKUP_RIDS 900
+
+        *names = talloc(dom_hnd->cli->mem_ctx, *num_names * sizeof(char *));
+        *name_types = talloc(dom_hnd->cli->mem_ctx, *num_names * 
+                             sizeof(uint32));
+
+        for (i = 0; i < *num_names; i += MAX_LOOKUP_RIDS) {
+                int num_lookup_rids = MIN(*num_names - i, MAX_LOOKUP_RIDS);
+                uint32 tmp_num_names = 0;
+                char **tmp_names = NULL;
+                uint32 *tmp_types = NULL;
+
+                /* Lookup a chunk of rids */
+
+                result = cli_samr_lookup_rids(dom_hnd->cli, 
+                                              dom_hnd->cli->mem_ctx,
+                                              &dom_hnd->pol, 1000, /* flags */
+                                              num_lookup_rids,
+                                              &(*rid_mem)[i],
+                                              &tmp_num_names,
+                                              &tmp_names, &tmp_types);
+
+                if (!NT_STATUS_IS_OK(result))
+                        return False;
+
+                /* Copy result into array.  The talloc system will take
+                   care of freeing the temporary arrays later on. */
+
+                memcpy(&(*names)[i], tmp_names, sizeof(char *) * 
+                       tmp_num_names);
+
+                memcpy(&(*name_types)[i], tmp_types, sizeof(uint32) *
+                       tmp_num_names);
+
+                total_names += tmp_num_names;
+        }
+
+        *num_names = total_names;
+
+        return NT_STATUS_IS_OK(result);
+}
 
 /* Globals for domain list stuff */
 

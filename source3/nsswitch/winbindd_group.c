@@ -23,8 +23,6 @@
 
 #include "winbindd.h"
 
-#if 0
-
 /* Fill a grent structure from various other information */
 
 static BOOL fill_grent(struct winbindd_gr *gr, char *gr_name,
@@ -184,6 +182,8 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 
 	return result;
 }
+
+#if 0
 
 /* Return a group structure from a group name */
 
@@ -385,6 +385,8 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 	return WINBINDD_OK;
 }
 
+#endif
+
 /*
  * set/get/endgrent functions
  */
@@ -397,13 +399,10 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: setgrent\n", state->pid));
 
-	if (state == NULL) return WINBINDD_ERROR;
-	
 	/* Check user has enabled this */
 
-	if (!lp_winbind_enum_groups()) {
+	if (!lp_winbind_enum_groups())
 		return WINBINDD_ERROR;
-	}
 
 	/* Free old static data if it exists */
 	
@@ -421,17 +420,14 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		   variable */
 		
 		if ((strcmp(state->request.domain, "") != 0) &&
-		    !check_domain_env(state->request.domain, tmp->name)) {
+		    !check_domain_env(state->request.domain, tmp->name))
 			continue;
-		}
 		
 		/* Create a state record for this domain */
 		
 		if ((domain_state = (struct getent_state *)
-		     malloc(sizeof(struct getent_state))) == NULL) {
-			
+		     malloc(sizeof(struct getent_state))) == NULL)
 			return WINBINDD_ERROR;
-		}
 		
 		ZERO_STRUCTP(domain_state);
 		
@@ -471,24 +467,16 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	uint32 num_entries;
 	struct acct_info *name_list = NULL, *tnl;
         
-	if (ent->got_all_sam_entries) {
+	if (ent->got_all_sam_entries)
 		return False;
-	}
 
 #if 0
 	if (winbindd_fetch_group_cache(ent->domain->name, 
 				       &ent->sam_entries,
-				       &ent->num_sam_entries)) {
+				       &ent->num_sam_entries))
 		return True;
-	}
 #endif
 		
-	/* Fetch group entries */
-		
-	if (!domain_handles_open(ent->domain)) {
-		return False;
-	}
-
 	/* Free any existing group info */
 
 	SAFE_FREE(ent->sam_entries);
@@ -502,11 +490,12 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 
 		num_entries = 0;
 
-                if (!(hnd = cm_get_sam_dom_handle(ent->domain->name)))
+                if (!(hnd = cm_get_sam_dom_handle(ent->domain->name,
+                                                  &ent->domain->sid)))
                         break;
 
                 status = cli_samr_enum_dom_groups(
-                        hnd->cli, hnd->cli->mem_ctx, hnd->pol,
+                        hnd->cli, hnd->cli->mem_ctx, &hnd->pol,
                         &ent->grp_query_start_ndx,
                         0x8000, /* buffer size? */
                         (struct acct_info **) &sam_grp_entries, &num_entries);
@@ -519,13 +508,15 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 				    sizeof(struct acct_info) *
 				    (ent->num_sam_entries +
 				     num_entries));
-			if(tnl == NULL)
-			{
-				DEBUG(0,("get_sam_group_entries: unable ro realloc a structure!\n"));
+
+			if (tnl == NULL) {
+				DEBUG(0,("get_sam_group_entries: unable to "
+                                         "realloc a structure!\n"));
 				SAFE_FREE(name_list);
-				return False;
-			}
-			else name_list = tnl;
+
+				return False; 
+                        } else 
+                                name_list = tnl;
 
 			memcpy(&name_list[ent->num_sam_entries],
 			       sam_grp_entries, 
@@ -552,7 +543,8 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
-	ent->got_all_sam_entries = (NT_STATUS_V(status) != NT_STATUS_V(STATUS_MORE_ENTRIES));
+	ent->got_all_sam_entries = (NT_STATUS_V(status) != 
+                                    NT_STATUS_V(STATUS_MORE_ENTRIES));
 
 	return ent->num_sam_entries > 0;
 }
@@ -570,29 +562,24 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: getgrent\n", state->pid));
 
-	if (state == NULL) return WINBINDD_ERROR;
-
 	/* Check user has enabled this */
 
-	if (!lp_winbind_enum_groups()) {
+	if (!lp_winbind_enum_groups())
 		return WINBINDD_ERROR;
-	}
 
 	num_groups = MIN(MAX_GETGRENT_GROUPS, state->request.data.num_entries);
 
 	if ((state->response.extra_data = 
-	     malloc(num_groups * sizeof(struct winbindd_gr))) == NULL) {
+	     malloc(num_groups * sizeof(struct winbindd_gr))) == NULL)
 		return WINBINDD_ERROR;
-	}
 
 	state->response.data.num_entries = 0;
 
 	group_list = (struct winbindd_gr *)state->response.extra_data;
 	sep = lp_winbind_separator();
 
-	if (!(ent = state->getgrent_state)) {
+	if (!(ent = state->getgrent_state))
 		return WINBINDD_ERROR;
-	}
 
 	/* Start sending back groups */
 
@@ -631,7 +618,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 			/* No more domains */
 
-			if (!ent) break;
+			if (!ent) 
+                                break;
 		}
 		
 		name_list = ent->sam_entries;
@@ -729,9 +717,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 	/* Copy the list of group memberships to the end of the extra data */
 
-	if (group_list_ndx == 0) {
+	if (group_list_ndx == 0)
 		goto done;
-	}
 
 	new_extra_data = Realloc(
 		state->response.extra_data,
@@ -781,16 +768,17 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5d]: list groups\n", state->pid));
 
         /* Enumerate over trusted domains */
+
 	ZERO_STRUCT(groups);
+
         for (domain = domain_list; domain; domain = domain->next) {
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
 		   variable */ 
 
 		if ((strcmp(state->request.domain, "") != 0) &&
-		    !check_domain_env(state->request.domain, domain->name)) {
+		    !check_domain_env(state->request.domain, domain->name))
 			continue;
-		}
 
 		/* Get list of sam groups */
 
@@ -799,13 +787,13 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 		/* 
 		 * iterate through all groups 
-		 * total_entries          :  maintains a total count over **all domains**
-		 * num_domain_entries :  is the running count for this domain
+		 * total_entries:  maintains a total count over **all domains**
+		 * num_domain_entries:  is the running count for this domain
 		 */
 		 
 		num_domain_entries = 0;
-		while (get_sam_group_entries(&groups))
-		{
+
+		while (get_sam_group_entries(&groups)) {
 			int new_size;
 			int offset;
 			
@@ -818,8 +806,10 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 				return WINBINDD_ERROR;
 			
 			num_domain_entries += groups.num_sam_entries;
-			memcpy (((char *)sam_entries)+offset, groups.sam_entries, 
-				sizeof(struct acct_info) * groups.num_sam_entries);
+			memcpy (((char *)sam_entries)+offset, 
+                                groups.sam_entries, 
+				sizeof(struct acct_info) * 
+                                groups.num_sam_entries);
 			
 			groups.sam_entries = NULL;
 			groups.num_sam_entries = 0;
@@ -847,7 +837,8 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
                 ted = Realloc(extra_data, sizeof(fstring) * total_entries);
  
 		if (!ted) {
-			DEBUG(0,("winbindd_list_groups: failed to enlarge buffer!\n"));
+			DEBUG(0,("winbindd_list_groups: failed to enlarge "
+                                 "buffer!\n"));
 			SAFE_FREE(extra_data);
 			return WINBINDD_ERROR;
 		} else
@@ -867,7 +858,9 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 			/* Append to extra data */
 			
-			memcpy(&extra_data[extra_data_len], name, strlen(name));
+			memcpy(&extra_data[extra_data_len], name, 
+                               strlen(name));
+
 			extra_data_len += strlen(name);
 
 			extra_data[extra_data_len++] = ',';
@@ -906,8 +899,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5d]: getgroups %s\n", state->pid,
 		  state->request.data.username));
 
-	if (state == NULL) return WINBINDD_ERROR;
-
 	/* Parse domain and username */
 
 	parse_domain_user(state->request.data.username, name_domain, 
@@ -916,19 +907,14 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	/* Reject names that don't have a domain - i.e name_domain contains 
 	   the entire name. */
  
-	if (strequal(name_domain, "")) {
+	if (strequal(name_domain, ""))
 		return WINBINDD_ERROR;
-	}
 
 	/* Get info for the domain */
 	
 	if ((domain = find_domain_from_name(name_domain)) == NULL) {
 		DEBUG(0, ("could not find domain entry for domain %s\n", 
 			  name_domain));
-		return WINBINDD_ERROR;
-	}
-
-	if (!domain_handles_open(domain)) {
 		return WINBINDD_ERROR;
 	}
 
@@ -950,9 +936,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	sid_split_rid(&user_sid, &user_rid);
 
 	if (!winbindd_lookup_usergroups(domain, user_rid, &num_groups,
-					&user_groups)) {
+					&user_groups))
 		return WINBINDD_ERROR;
-	}
 
 	/* Copy data back to client */
 
@@ -988,5 +973,3 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	return result;
 }
-
-#endif
