@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -36,7 +36,10 @@
 RCSID("$Id$");
 #endif
 #include <ctype.h>
+#ifdef KRB5
 #include <krb5.h>
+#endif
+#include <krb.h>
 #include <kafs.h>
 #include <roken.h>
 #include <getarg.h>
@@ -67,6 +70,11 @@ struct getargs args[] = {
 };
 
 static int num_args = sizeof(args) / sizeof(args[0]);
+
+#ifdef KRB5
+krb5_context context;
+krb5_ccache id;
+#endif
 
 static const char *
 expand_cell_name(const char *cell)
@@ -138,46 +146,85 @@ usage(int ecode)
     exit(ecode);
 }
 
+struct cell_list {
+    char *cell;
+    struct cell_list *next;
+} *cell_list;
+
 static int
-afslog_cell(krb5_context context, krb5_ccache id,
-	    const char *cell, int expand)
+afslog_cell(const char *cell, int expand)
 {
+    struct cell_list *p, **q;
     const char *c = cell;
     if(expand){
 	c = expand_cell_name(cell);
 	if(c == NULL){
-	    krb5_warnx(context, "No cell matching \"%s\" found.", cell);
+	    warnx("No cell matching \"%s\" found.", cell);
 	    return -1;
 	}
-	if(verbose)
-	    krb5_warnx(context, "Cell \"%s\" expanded to \"%s\"", cell, c);
+	if(verbose && strcmp(c, cell) != 0)
+	    warnx("Cell \"%s\" expanded to \"%s\"", cell, c);
     }
-    return krb5_afslog(context, id, c, realm);
+    /* add to list of cells to get tokens for, and also remove
+       duplicates; the actual afslog takes place later */
+    for(p = cell_list, q = &cell_list; p; q = &p->next, p = p->next)
+	if(strcmp(p->cell, c) == 0)
+	    return 0;
+    p = malloc(sizeof(*p));
+    if(p == NULL)
+	return -1;
+    p->cell = strdup(c);
+    if(p->cell == NULL) {
+	free(p);
+	return -1;
+    }
+    p->next = NULL;
+    *q = p;
+    return 0;
 }
 
 static int
-afslog_file(krb5_context context, krb5_ccache id,
-	    const char *path)
+afslog_file(const char *path)
 {
     char cell[64];
     if(k_afs_cell_of_file(path, cell, sizeof(cell))){
-	krb5_warnx(context, "No cell found for file \"%s\".", path);
+	warnx("No cell found for file \"%s\".", path);
 	return -1;
     }
     if(verbose)
-	krb5_warnx(context, "File \"%s\" lives in cell \"%s\"", path, cell);
-    return afslog_cell(context, id, cell, 0);
+	warnx("File \"%s\" lives in cell \"%s\"", path, cell);
+    return afslog_cell(cell, 0);
+}
+
+static int
+do_afslog(const char *cell)
+{
+    int ret;
+#ifdef KRB5
+    if(context != NULL && id != NULL) {
+	ret = krb5_afslog(context, id, cell, NULL);
+	if(ret == 0)
+	    return 0;
+    if(verbose)
+	    warnx("krb5_afslog(%s): %s", cell, 
+		  krb5_get_err_text(context, ret));
+    }
+#endif
+    ret = krb_afslog(cell, NULL);
+    if(ret)
+	warnx("krb_afslog(%s): %s", cell, krb_get_err_text(ret));
+    return ret;
 }
 
 int
 main(int argc, char **argv)
 {
     int optind = 0;
-    krb5_context context;
-    krb5_ccache id;
     int i;
     int num;
     int ret = 0;
+    int failed = 0;
+    struct cell_list *p;
     
     setprogname(argv[0]);
 
@@ -190,42 +237,52 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-    ret = krb5_init_context(&context);
-    if (ret)
-	errx (1, "krb5_init_context failed: %d", ret);
     if(!k_hasafs())
-	krb5_errx(context, 1, 
-		  "AFS doesn't seem to be present on this machine");
+	errx(1, "AFS does not seem to be present on this machine");
 
     if(unlog_flag){
 	k_unlog();
 	exit(0);
     }
-    krb5_cc_default(context, &id);
+#ifdef KRB5
+    ret = krb5_init_context(&context);
+    if (ret)
+	context = NULL;
+    else
+	if(krb5_cc_default(context, &id) != 0)
+	    id = NULL;
+#endif
     num = 0;
     for(i = 0; i < files.num_strings; i++){
-	afslog_file(context, id, files.strings[i]);
+	afslog_file(files.strings[i]);
 	num++;
-	free_getarg_strings (&files);
     }
+    free_getarg_strings (&files);
     for(i = 0; i < cells.num_strings; i++){
-	afslog_cell(context, id, cells.strings[i], 1);
+	afslog_cell(cells.strings[i], 1);
 	num++;
-	free_getarg_strings (&cells);
     }
+    free_getarg_strings (&cells);
     for(i = optind; i < argc; i++){
 	num++;
 	if(strcmp(argv[i], ".") == 0 ||
 	   strcmp(argv[i], "..") == 0 ||
 	   strchr(argv[i], '/') ||
 	   access(argv[i], F_OK) == 0)
-	    afslog_file(context, id, argv[i]);
+	    afslog_file(argv[i]);
 	else
-	    afslog_cell(context, id, argv[i], 1);
+	    afslog_cell(argv[i], 1);
     }    
     if(num == 0) {
-	krb5_afslog(context, id, NULL, NULL);
+	if(do_afslog(NULL))
+	    failed++;
+    } else
+	for(p = cell_list; p; p = p->next) {
+	    if(verbose)
+		warnx("Getting tokens for cell \"%s\"", p->cell);
+	    if(do_afslog(p->cell))
+		failed++;
     }
 
-    return ret;
+    return failed;
 }
