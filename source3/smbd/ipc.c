@@ -531,6 +531,16 @@ static int check_printq_info(struct pack_desc* desc,
   return True;
 }
 
+
+#define JOB_STATUS_QUEUED 0
+#define JOB_STATUS_PAUSED 1
+#define JOB_STATUS_SPOOLING 2
+#define JOB_STATUS_PRINTING 3
+#define JOB_STATUS_PRINTED 4
+
+#define QUEUE_STATUS_PAUSED 1
+#define QUEUE_STATUS_ERROR 2
+
 /* turn a print job status into a on the wire status 
    right now these are complete guesses - need to fill them in (tridge)
 */
@@ -538,15 +548,15 @@ static int printj_status(int v)
 {
 	switch (v) {
 	case LPQ_QUEUED:
-		return 0;
+		return JOB_STATUS_QUEUED;
 	case LPQ_PAUSED:
-		return 1;
+		return JOB_STATUS_PAUSED;
 	case LPQ_SPOOLING:
-		return 2;
+		return JOB_STATUS_SPOOLING;
 	case LPQ_PRINTING:
-		return 3;
+		return JOB_STATUS_PRINTING;
 	}
-	return 4;
+	return 0;
 }
 
 /* turn a print queue status into a on the wire status 
@@ -558,13 +568,9 @@ static int printq_status(int v)
 	case LPQ_QUEUED:
 		return 0;
 	case LPQ_PAUSED:
-		return 1;
-	case LPQ_SPOOLING:
-		return 2;
-	case LPQ_PRINTING:
-		return 3;
+		return QUEUE_STATUS_PAUSED;
 	}
-	return 4;
+	return QUEUE_STATUS_ERROR;
 }
 
 static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
