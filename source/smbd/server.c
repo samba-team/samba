@@ -3,6 +3,7 @@
    Main SMB server routines
    Copyright (C) Andrew Tridgell		1992-1998
    Copyright (C) Martin Pool			2002
+   Copyright (C) Jelmer Vernooij		2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -612,43 +613,16 @@ static void init_structs(void )
 }
 
 /****************************************************************************
- Usage on the program.
-****************************************************************************/
-
-static void usage(char *pname)
-{
-
-	d_printf("Usage: %s [-DaioPh?Vb] [-d debuglevel] [-l log basename] [-p port]\n", pname);
-	d_printf("       [-O socket options] [-s services file]\n");
-	d_printf("\t-D                    Become a daemon (default)\n");
-	d_printf("\t-i                    Run interactive (not a daemon)\n" );
-	d_printf("\t-h                    Print usage\n");
-	d_printf("\t-?                    Print usage\n");
-	d_printf("\t-V                    Print version\n");
-	d_printf("\t-b                    Print build options\n");
-	d_printf("\t-d debuglevel         Set the debuglevel\n");
-	d_printf("\t-l log basename.      Basename for log/debug files\n");
-	d_printf("\t-p port               Listen on the specified port\n");
-	d_printf("\t-O socket options     Socket options\n");
-	d_printf("\t-s services file.     Filename of services file\n");
-	d_printf("\n");
-}
-
-/****************************************************************************
  main program.
 ****************************************************************************/
 
  int main(int argc,const char *argv[])
 {
-	extern BOOL AllowDebugChange;
-	extern char *optarg;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
 	BOOL interactive = False;
-	BOOL specified_logfile = False;
 	char *ports = NULL;
 	int opt;
-	pstring logfile;
 	poptContext pc;
 
 	struct poptOption long_options[] = {
