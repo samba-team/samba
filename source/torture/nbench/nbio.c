@@ -618,6 +618,12 @@ void nb_flush(int fnum, NTSTATUS status)
 	check_status("Flush", status, ret);
 }
 
+void nb_sleep(int usec, NTSTATUS status)
+{
+	(void)status;
+	sys_usleep(usec);
+}
+
 void nb_deltree(const char *dname)
 {
 	int total_deleted;
