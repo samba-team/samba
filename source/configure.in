@@ -2,8 +2,151 @@ dnl -*- mode: m4-mode -*-
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
-# we want to be compatible with older versions of Samba
+
+#################################################
+# Directory handling stuff to support both the
+# legacy SAMBA directories and FHS compliant
+# ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
+
+AC_ARG_WITH(fhs, 
+[  --with-fhs              Use FHS-compliant paths (default=no)],
+    codepagedir="\$(DATADIR)/samba/codepages"
+    configdir="${sysconfdir}/samba"
+    lockdir="\${VARDIR}/cache/samba"
+    piddir="\$(VARDIR)/run/samba"
+    logfilebase="\${VARDIR}/log/samba"
+    privatedir="\${CONFIGDIR}/private"
+    swatdir="\${DATADIR}/samba/swat",
+    codepagedir="\$(LIBDIR)/codepages"
+    configdir="\$(LIBDIR)"
+    logfilebase="\$(VARDIR)"
+    lockdir="\${VARDIR}/locks"
+    piddir="\$(VARDIR)/locks"
+    privatedir="\${prefix}/private"
+    swatdir="\${prefix}/swat")
+
+#################################################
+# set private directory location
+AC_ARG_WITH(privatedir,
+[  --with-privatedir=DIR   Where to put smbpasswd ($ac_default_prefix/private)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-privatedir called without argument - will use default])
+  ;;
+  * )
+    privatedir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set lock directory location
+AC_ARG_WITH(lockdir,
+[  --with-lockdir=DIR      Where to put lock files ($ac_default_prefix/var/locks)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-lockdir called without argument - will use default])
+  ;;
+  * )
+    lockdir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set pid directory location
+AC_ARG_WITH(piddir,
+[  --with-piddir=DIR       Where to put pid files ($ac_default_prefix/var/locks)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-piddir called without argument - will use default])
+  ;;
+  * )
+    piddir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set SWAT directory location
+AC_ARG_WITH(swatdir,
+[  --with-swatdir=DIR      Where to put SWAT files ($ac_default_prefix/swat)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-swatdir called without argument - will use default])
+  ;;
+  * )
+    swatdir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set configuration directory location
+AC_ARG_WITH(configdir,
+[  --with-configdir=DIR    Where to put configuration files (\$libdir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-configdir called without argument - will use default])
+  ;;
+  * )
+    configdir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set codepage directory location
+AC_ARG_WITH(codepagedir,
+[  --with-codepagedir=DIR  Where to put codepage files (\$libdir/codepages)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-codepagedir called without argument - will use default])
+  ;;
+  * )
+    codepagedir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set log directory location
+AC_ARG_WITH(logfilebase,
+[  --with-logfilebase=DIR  Where to put log files (\$(VARDIR))],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-logfilebase called without argument - will use default])
+  ;;
+  * )
+    logfilebase="$withval"
+    ;;
+  esac])
+
+AC_SUBST(codepagedir)
+AC_SUBST(configdir)
+AC_SUBST(lockdir)
+AC_SUBST(piddir)
+AC_SUBST(logfilebase)
+AC_SUBST(privatedir)
+AC_SUBST(swatdir)
+AC_SUBST(bindir)
+AC_SUBST(sbindir)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SHELL)
@@ -24,7 +167,8 @@ AC_SUBST(LIBSMBCLIENT_SHARED)
 # compile with optimisation and without debugging by default
 CFLAGS="-O ${CFLAGS}"
 
-AC_ARG_ENABLE(debug, [  --enable-debug          turn on debugging [default=no]],
+AC_ARG_ENABLE(debug, 
+[  --enable-debug          Turn on compiler debugging information (default=no)],
     [if eval "test x$enable_debug = xyes"; then
 	CFLAGS="${CFLAGS} -g"
     fi])

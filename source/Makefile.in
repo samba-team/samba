@@ -67,6 +67,8 @@ SWATDIR = @swatdir@
 # the directory where lock files go
 LOCKDIR = @lockdir@
 
+# the directorty where pid files go
+PIDDIR = @piddir@
 # man pages language(s)
 man_langs = "@manlangs@"
 
@@ -82,7 +84,7 @@ PASSWD_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" -DPRIVATE_DIR=\"$(PRIVAT
 PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
 PATH_FLAGS2 = $(PATH_FLAGS1) -DBINDIR=\"$(BINDIR)\" -DDRIVERFILE=\"$(DRIVERFILE)\" 
 PATH_FLAGS3 = $(PATH_FLAGS2) -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
-PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\"
+PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
 PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" -DLOGFILEBASE=\"$(LOGFILEBASE)\"
 PATH_FLAGS = $(PATH_FLAGS5) $(PASSWD_FLAGS)
 
@@ -100,9 +102,11 @@ LPROGS = $(WINBIND_PAM_PROGS) $(WINBIND_LPROGS)
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/pdbedit bin/smbgroupedit
 TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest \
 	bin/locktest2 bin/nsstest
-SHLIBS = libsmbclient
+#SHLIBS = libsmbclient
+SHLIBS = 
 
-SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd
+SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd \
+	  $(srcdir)/script/findsmb
 
 QUOTAOBJS=@QUOTAOBJS@
 
