@@ -899,6 +899,31 @@ passdb backend = ldapsam:ldap://master.abmas.biz \
 		matches the content of <link linkend="ch7-LDAP-master"/>.
 		</para></step>
 
+	<step><para>
+		Create a file called <filename>admin-accts.ldif</filename> with the following contents:
+<screen>
+dn: cn=updateuser,dc=abmas,dc=biz
+objectClass: person
+cn: updateuser
+sn: updateuser
+userpaddword: not24get
+
+dn: cn=sambaadmin,dc=abmas,dc=biz
+objectClass: person
+cn: sambaadmin
+sn: sambaadmin
+userpaddword: buttercup
+</screen>
+	</para></step>
+
+	<step><para>
+		Add an account called <quote>updateuser</quote> to the master LDAP server
+		as shown here:
+<screen>
+&rootprompt; slapadd -v -l admin-accts.ldif
+</screen>
+	<para></step>
+
 	<step><para><indexterm>
 	      <primary>LDIF</primary>
 	    </indexterm><indexterm>
@@ -1112,7 +1137,6 @@ access to *
 
 updatedn    cn=updateuser,dc=abmas,dc=biz
 updateref   ldap://massive.abmas.biz
-replogfile  /var/lib/ldap/replogfile
 
 directory   /var/lib/ldap
 

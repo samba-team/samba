@@ -477,8 +477,14 @@ Domain Guests (S-1-5-21-2547222302-1596225915-2414751004-514) -> domguest
 	<title>Sample &smb.conf; Add Group Script</title>
 
 		<para>
+		<indexterm><primary>smbgrpadd.sh</primary></indexterm>
+		<indexterm><primary>groupadd limitations</primary></indexterm>
 		A script to create complying group names for use by the Samba group interfaces
-		is provided in <link linkend="smbgrpadd.sh">smbgrpadd.sh</link>.
+		is provided in <link linkend="smbgrpadd.sh">smbgrpadd.sh</link>. This script will
+		add a temporary entry in the <filename>/etc/group</filename> file and then rename
+		it to to the desired name. This is an example of a method to get around operating
+		system maintenance tool limititations such as that present in some version of the
+		<command>groupadd</command> tool.
 		</para>
 
 <indexterm><primary>smbgrpadd.sh</primary></indexterm>
