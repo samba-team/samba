@@ -63,7 +63,7 @@ dump(int argc, char **argv)
     else
 	f = fopen(argv[0], "w");
     
-    ret = db->open(context, db, O_RDONLY, 0600);
+    ret = db->hdb_open(context, db, O_RDONLY, 0600);
     if(ret){
 	krb5_warn(context, ret, "hdb_open");
 	if(f != stdout)
@@ -75,6 +75,6 @@ dump(int argc, char **argv)
 
     if(f != stdout)
 	fclose(f);
-    db->close(context, db);
+    db->hdb_close(context, db);
     return 0;
 }

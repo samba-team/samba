@@ -845,9 +845,9 @@ main(int argc, char **argv)
 	ret = hdb_create (context, &db, database);
 	if(ret)
 	    krb5_err(context, 1, ret, "hdb_create: %s", database);
-	ret = db->open(context, db, O_RDONLY, 0);
+	ret = db->hdb_open(context, db, O_RDONLY, 0);
 	if(ret)
-	    krb5_err(context, 1, ret, "db->open");
+	    krb5_err(context, 1, ret, "db->hdb_open");
 	break;
     default:
 	krb5_errx(context, 1, "unknown dump type `%d'", type);
@@ -864,7 +864,7 @@ main(int argc, char **argv)
 	krb5_cc_destroy(context, ccache);
 	
     if(db != NULL)
-	(*db->destroy)(context, db);
+	(*db->hdb_destroy)(context, db);
 
     krb5_free_context(context);
     return 0;

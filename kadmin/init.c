@@ -142,12 +142,12 @@ init(int argc, char **argv)
 
     db = _kadm5_s_get_db(kadm_handle);
 
-    ret = db->open(context, db, O_RDWR | O_CREAT, 0600);
+    ret = db->hdb_open(context, db, O_RDWR | O_CREAT, 0600);
     if(ret){
 	krb5_warn(context, ret, "hdb_open");
 	return 0;
     }
-    db->close(context, db);
+    db->hdb_close(context, db);
     for(i = optind; i < argc; i++){
 	krb5_principal princ;
 	const char *realm = argv[i];

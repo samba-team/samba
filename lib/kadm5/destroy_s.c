@@ -70,7 +70,7 @@ kadm5_s_destroy(void *server_handle)
     kadm5_server_context *context = server_handle;
     krb5_context kcontext = context->context;
 
-    ret = context->db->destroy(kcontext, context->db);
+    ret = context->db->hdb_destroy(kcontext, context->db);
     destroy_kadm5_log_context (&context->log_context);
     destroy_config (&context->config);
     krb5_free_principal (kcontext, context->caller);

@@ -423,9 +423,9 @@ hdb_unseal_keys_mkey(krb5_context context, hdb_entry *ent, hdb_master_key mkey)
 krb5_error_code
 hdb_unseal_keys(krb5_context context, HDB *db, hdb_entry *ent)
 {
-    if (db->master_key_set == 0)
+    if (db->hdb_master_key_set == 0)
 	return 0;
-    return hdb_unseal_keys_mkey(context, ent, db->master_key);
+    return hdb_unseal_keys_mkey(context, ent, db->hdb_master_key);
 }
 
 krb5_error_code
@@ -468,10 +468,10 @@ hdb_seal_keys_mkey(krb5_context context, hdb_entry *ent, hdb_master_key mkey)
 krb5_error_code
 hdb_seal_keys(krb5_context context, HDB *db, hdb_entry *ent)
 {
-    if (db->master_key_set == 0)
+    if (db->hdb_master_key_set == 0)
 	return 0;
     
-    return hdb_seal_keys_mkey(context, ent, db->master_key);
+    return hdb_seal_keys_mkey(context, ent, db->hdb_master_key);
 }
 
 krb5_error_code
@@ -485,11 +485,11 @@ hdb_set_master_key (krb5_context context,
     ret = hdb_process_master_key(context, 0, key, 0, &mkey);
     if (ret)
 	return ret;
-    db->master_key = mkey;
+    db->hdb_master_key = mkey;
 #if 0 /* XXX - why? */
     des_set_random_generator_seed(key.keyvalue.data);
 #endif
-    db->master_key_set = 1;
+    db->hdb_master_key_set = 1;
     return 0;
 }
 
@@ -508,8 +508,8 @@ hdb_set_master_keyfile (krb5_context context,
 	krb5_clear_error_string(context);
 	return 0;
     }
-    db->master_key = key;
-    db->master_key_set = 1;
+    db->hdb_master_key = key;
+    db->hdb_master_key_set = 1;
     return ret;
 }
 
@@ -517,9 +517,9 @@ krb5_error_code
 hdb_clear_master_key (krb5_context context,
 		      HDB *db)
 {
-    if (db->master_key_set) {
-	hdb_free_master_key(context, db->master_key);
-	db->master_key_set = 0;
+    if (db->hdb_master_key_set) {
+	hdb_free_master_key(context, db->hdb_master_key);
+	db->hdb_master_key_set = 0;
     }
     return 0;
 }

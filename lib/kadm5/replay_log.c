@@ -106,9 +106,9 @@ main(int argc, char **argv)
 
     server_context = (kadm5_server_context *)kadm_handle;
 
-    ret = server_context->db->open(context,
-				   server_context->db,
-				   O_RDWR | O_CREAT, 0);
+    ret = server_context->db->hdb_open(context,
+				       server_context->db,
+				       O_RDWR | O_CREAT, 0);
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
 
@@ -122,7 +122,7 @@ main(int argc, char **argv)
     ret = kadm5_log_end (server_context);
     if (ret)
 	krb5_warn(context, ret, "kadm5_log_end");
-    ret = server_context->db->close (context, server_context->db);
+    ret = server_context->db->hdb_close (context, server_context->db);
     if (ret)
 	krb5_err (context, 1, ret, "db->close");
     return 0;

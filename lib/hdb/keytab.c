@@ -209,19 +209,19 @@ hdb_get_entry(krb5_context context,
 	return ret;
     ret = hdb_set_master_keyfile (context, db, mkey);
     if (ret) {
-	(*db->destroy)(context, db);
+	(*db->hdb_destroy)(context, db);
 	return ret;
     }
 	
-    ret = (*db->open)(context, db, O_RDONLY, 0);
+    ret = (*db->hdb_open)(context, db, O_RDONLY, 0);
     if (ret) {
-	(*db->destroy)(context, db);
+	(*db->hdb_destroy)(context, db);
 	return ret;
     }
     ent.principal = (krb5_principal)principal;
-    ret = (*db->fetch)(context, db, HDB_F_DECRYPT, &ent);
-    (*db->close)(context, db);
-    (*db->destroy)(context, db);
+    ret = (*db->hdb_fetch)(context, db, HDB_F_DECRYPT, &ent);
+    (*db->hdb_close)(context, db);
+    (*db->hdb_destroy)(context, db);
 
     if(ret == HDB_ERR_NOENTRY)
 	return KRB5_KT_NOTFOUND;

@@ -81,7 +81,7 @@ update_keytypes(krb5_context context, HDB *db, hdb_entry *entry, void *data)
     save_val = entry->keys.val;
     entry->keys.len = n;
     entry->keys.val = k;
-    ret = new->store(context, new, HDB_F_REPLACE, entry);
+    ret = new->hdb_store(context, new, HDB_F_REPLACE, entry);
     entry->keys.len = save_len;
     entry->keys.val = save_val;
     for(i = 0; i < n; i++) 
@@ -94,14 +94,14 @@ static krb5_error_code
 update_version2(krb5_context context, HDB *db, hdb_entry *entry, void *data)
 {
     HDB *new = data;
-    if(!db->master_key_set) {
+    if(!db->hdb_master_key_set) {
 	int i;
 	for(i = 0; i < entry->keys.len; i++) {
 	    free(entry->keys.val[i].mkvno);
 	    entry->keys.val[i].mkvno = NULL;
 	}
     }
-    new->store(context, new, HDB_F_REPLACE, entry);
+    new->hdb_store(context, new, HDB_F_REPLACE, entry);
     return 0;
 }
 
@@ -169,7 +169,7 @@ main(int argc, char **argv)
 	if (ret)
 	    krb5_err(context, 1, ret, "hdb_set_master_keyfile");
     }
-    ret = db->open(context, db, O_RDONLY, 0);
+    ret = db->hdb_open(context, db, O_RDONLY, 0);
     if(ret == HDB_ERR_BADVERSION) {
 	krb5_data tag;
 	krb5_data version;
@@ -177,7 +177,7 @@ main(int argc, char **argv)
 	unsigned ver;
 	tag.data = HDB_DB_FORMAT_ENTRY;
 	tag.length = strlen(tag.data);
-	ret = (*db->_get)(context, db, tag, &version);
+	ret = (*db->hdb__get)(context, db, tag, &version);
 	if(ret)
 	    krb5_errx(context, 1, "database is wrong version, "
 		      "but couldn't find version key (%s)", 
@@ -197,7 +197,7 @@ main(int argc, char **argv)
 		      ver, HDB_DB_FORMAT);
     } else if(ret)
 	krb5_err(context, 1, ret, "%s", old_database);
-    ret = new->open(context, new, O_CREAT|O_EXCL|O_RDWR, 0600);
+    ret = new->hdb_open(context, new, O_CREAT|O_EXCL|O_RDWR, 0600);
     if(ret)
 	krb5_err(context, 1, ret, "%s", new_database);
     if(update_version)
@@ -206,8 +206,8 @@ main(int argc, char **argv)
 	ret = hdb_foreach(context, db, 0, update_keytypes, new);
     if(ret != 0)
 	krb5_err(context, 1, ret, "hdb_foreach");
-    db->close(context, db);
-    new->close(context, new);
+    db->hdb_close(context, db);
+    new->hdb_close(context, new);
     krb5_warnx(context, "wrote converted database to `%s'", new_database);
     return 0;
 }

@@ -209,15 +209,15 @@ receive (krb5_context context,
 {
     int ret;
 
-    ret = server_context->db->open(context,
-				   server_context->db,
-				   O_RDWR | O_CREAT, 0600);
+    ret = server_context->db->hdb_open(context,
+				       server_context->db,
+				       O_RDWR | O_CREAT, 0600);
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
 
     receive_loop (context, sp, server_context);
 
-    ret = server_context->db->close (context, server_context->db);
+    ret = server_context->db->hdb_close (context, server_context->db);
     if (ret)
 	krb5_err (context, 1, ret, "db->close");
 }
@@ -256,7 +256,7 @@ receive_everything (krb5_context context, int fd,
     char *dbname;
     HDB *mydb;
   
-    asprintf(&dbname, "%s-NEW", server_context->db->name);
+    asprintf(&dbname, "%s-NEW", server_context->db->hdb_name);
     ret = hdb_create(context, &mydb, dbname);
     if(ret)
 	krb5_err(context,1, ret, "hdb_create");
@@ -269,7 +269,7 @@ receive_everything (krb5_context context, int fd,
  
     /* I really want to use O_EXCL here, but given that I can't easily clean
        up on error, I won't */
-    ret = mydb->open(context, mydb, O_RDWR | O_CREAT | O_TRUNC, 0600);
+    ret = mydb->hdb_open(context, mydb, O_RDWR | O_CREAT | O_TRUNC, 0600);
 
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
@@ -294,9 +294,9 @@ receive_everything (krb5_context context, int fd,
 	    ret = hdb_value2entry (context, &fake_data, &entry);
 	    if (ret)
 		krb5_err (context, 1, ret, "hdb_value2entry");
-	    ret = mydb->store(server_context->context,
-			      mydb,
-			      0, &entry);
+	    ret = mydb->hdb_store(server_context->context,
+				  mydb,
+				  0, &entry);
 	    if (ret)
 		krb5_err (context, 1, ret, "hdb_store");
 
@@ -325,15 +325,15 @@ receive_everything (krb5_context context, int fd,
 
     krb5_data_free (&data);
 
-    ret = mydb->rename (context, mydb, server_context->db->name);
+    ret = mydb->hdb_rename (context, mydb, server_context->db->hdb_name);
     if (ret)
 	krb5_err (context, 1, ret, "db->rename");
 
-    ret = mydb->close (context, mydb);
+    ret = mydb->hdb_close (context, mydb);
     if (ret)
 	krb5_err (context, 1, ret, "db->close");
 
-    ret = mydb->destroy (context, mydb);
+    ret = mydb->hdb_destroy (context, mydb);
     if (ret)
 	krb5_err (context, 1, ret, "db->destroy");
 }

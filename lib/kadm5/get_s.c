@@ -46,12 +46,12 @@ kadm5_s_get_principal(void *server_handle,
     hdb_entry ent;
     
     ent.principal = princ;
-    ret = context->db->open(context->context, context->db, O_RDONLY, 0);
+    ret = context->db->hdb_open(context->context, context->db, O_RDONLY, 0);
     if(ret)
 	return ret;
-    ret = context->db->fetch(context->context, context->db, 
-			     HDB_F_DECRYPT, &ent);
-    context->db->close(context->context, context->db);
+    ret = context->db->hdb_fetch(context->context, context->db, 
+				 HDB_F_DECRYPT, &ent);
+    context->db->hdb_close(context->context, context->db);
     if(ret)
 	return _kadm5_error_code(ret);
 

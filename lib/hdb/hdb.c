@@ -153,12 +153,12 @@ hdb_foreach(krb5_context context,
 {
     krb5_error_code ret;
     hdb_entry entry;
-    ret = db->firstkey(context, db, flags, &entry);
+    ret = db->hdb_firstkey(context, db, flags, &entry);
     while(ret == 0){
 	ret = (*func)(context, db, &entry, data);
 	hdb_free_entry(context, &entry);
 	if(ret == 0)
-	    ret = db->nextkey(context, db, flags, &entry);
+	    ret = db->hdb_nextkey(context, db, flags, &entry);
     }
     if(ret == HDB_ERR_NOENTRY)
 	ret = 0;
@@ -176,7 +176,7 @@ hdb_check_db_format(krb5_context context, HDB *db)
 
     tag.data = HDB_DB_FORMAT_ENTRY;
     tag.length = strlen(tag.data);
-    ret = (*db->_get)(context, db, tag, &version);
+    ret = (*db->hdb__get)(context, db, tag, &version);
     if(ret)
 	return ret;
     foo = sscanf(version.data, "%u", &ver);
@@ -205,7 +205,7 @@ hdb_init_db(krb5_context context, HDB *db)
     snprintf(ver, sizeof(ver), "%u", HDB_DB_FORMAT);
     version.data = ver;
     version.length = strlen(version.data) + 1; /* zero terminated */
-    ret = (*db->_put)(context, db, 0, tag, version);
+    ret = (*db->hdb__put)(context, db, 0, tag, version);
     return ret;
 }
 

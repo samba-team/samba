@@ -85,7 +85,7 @@ kadm5_s_get_principals(void *server_handle,
     struct foreach_data d;
     kadm5_server_context *context = server_handle;
     kadm5_ret_t ret;
-    ret = context->db->open(context->context, context->db, O_RDWR, 0);
+    ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
     if(ret) {
 	krb5_warn(context->context, ret, "opening database");
 	return ret;
@@ -100,7 +100,7 @@ kadm5_s_get_principals(void *server_handle,
     d.princs = NULL;
     d.count = 0;
     ret = hdb_foreach(context->context, context->db, 0, foreach, &d);
-    context->db->close(context->context, context->db);
+    context->db->hdb_close(context->context, context->db);
     if(ret == 0)
 	ret = add_princ(&d, NULL);
     if(ret == 0){

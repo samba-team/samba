@@ -216,7 +216,7 @@ LDAP_get_string_value(HDB * db, LDAPMessage * entry,
     char **vals;
     int ret;
 
-    vals = ldap_get_values((LDAP *) db->db, entry, (char *) attribute);
+    vals = ldap_get_values((LDAP *) db->hdb_db, entry, (char *) attribute);
     if (vals == NULL) {
 	return HDB_ERR_NOENTRY;
     }
@@ -238,7 +238,7 @@ LDAP_get_integer_value(HDB * db, LDAPMessage * entry,
 {
     char **vals;
 
-    vals = ldap_get_values((LDAP *) db->db, entry, (char *) attribute);
+    vals = ldap_get_values((LDAP *) db->hdb_db, entry, (char *) attribute);
     if (vals == NULL) {
 	return HDB_ERR_NOENTRY;
     }
@@ -520,14 +520,14 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
     char **values;
     LDAPMessage *res = NULL, *e;
 
-    rc = ldap_set_option((LDAP *) db->db, LDAP_OPT_SIZELIMIT, (const void *)&limit);
+    rc = ldap_set_option((LDAP *) db->hdb_db, LDAP_OPT_SIZELIMIT, (const void *)&limit);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_set_option: %s", ldap_err2string(rc));
 	ret = HDB_ERR_BADVERSION;
 	goto out;
      }
 
-    rc = ldap_search_s((LDAP *) db->db, dn, LDAP_SCOPE_BASE,
+    rc = ldap_search_s((LDAP *) db->hdb_db, dn, LDAP_SCOPE_BASE,
 		       "(objectclass=krb5Principal)", krb5principal_attrs,
 		       0, &res);
     if (rc != LDAP_SUCCESS) {
@@ -536,13 +536,13 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
 	goto out;
     }
 
-    e = ldap_first_entry((LDAP *) db->db, res);
+    e = ldap_first_entry((LDAP *) db->hdb_db, res);
     if (e == NULL) {
 	ret = HDB_ERR_NOENTRY;
 	goto out;
     }
 
-    values = ldap_get_values((LDAP *) db->db, e, "krb5PrincipalName");
+    values = ldap_get_values((LDAP *) db->hdb_db, e, "krb5PrincipalName");
     if (values == NULL) {
 	ret = HDB_ERR_NOENTRY;
 	goto out;
@@ -578,14 +578,14 @@ LDAP__lookup_princ(krb5_context context, HDB * db, const char *princname,
 	goto out;
     }
 
-    rc = ldap_set_option((LDAP *) db->db, LDAP_OPT_SIZELIMIT, (const void *)&limit);
+    rc = ldap_set_option((LDAP *) db->hdb_db, LDAP_OPT_SIZELIMIT, (const void *)&limit);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_set_option: %s", ldap_err2string(rc));
 	ret = HDB_ERR_BADVERSION;
 	goto out;
     }
 
-    rc = ldap_search_s((LDAP *) db->db, db->name, LDAP_SCOPE_ONELEVEL, filter, 
+    rc = ldap_search_s((LDAP *) db->hdb_db, db->hdb_name, LDAP_SCOPE_ONELEVEL, filter, 
 		       krb5kdcentry_attrs, 0, msg);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_search_s: %s", ldap_err2string(rc));
@@ -655,7 +655,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	ent->kvno = 0;
     }
 
-    keys = ldap_get_values_len((LDAP *) db->db, msg, "krb5Key");
+    keys = ldap_get_values_len((LDAP *) db->hdb_db, msg, "krb5Key");
     if (keys != NULL) {
 	int i;
 	size_t l;
@@ -795,7 +795,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	ent->max_renew = NULL;
     }
 
-    values = ldap_get_values((LDAP *) db->db, msg, "krb5KDCFlags");
+    values = ldap_get_values((LDAP *) db->hdb_db, msg, "krb5KDCFlags");
     if (values != NULL) {
 	tmp = strtoul(values[0], (char **) NULL, 10);
 	if (tmp == ULONG_MAX && errno == ERANGE) {
@@ -808,7 +808,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
     }
     ent->flags = int2HDBFlags(tmp);
 
-    values = ldap_get_values((LDAP *) db->db, msg, "krb5EncryptionType");
+    values = ldap_get_values((LDAP *) db->hdb_db, msg, "krb5EncryptionType");
     if (values != NULL) {
 	int i;
 
@@ -843,8 +843,8 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 
 static krb5_error_code LDAP_close(krb5_context context, HDB * db)
 {
-    ldap_unbind_ext((LDAP *) db->db, NULL, NULL);
-    db->db = NULL;
+    ldap_unbind_ext((LDAP *) db->hdb_db, NULL, NULL);
+    db->hdb_db = NULL;
 
     return 0;
 }
@@ -867,13 +867,13 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry * entry)
     krb5_error_code ret;
     LDAPMessage *e;
 
-    msgid = db->openp;		/* BOGUS OVERLOADING */
+    msgid = db->hdb_openp;		/* BOGUS OVERLOADING */
     if (msgid < 0) {
 	return HDB_ERR_NOENTRY;
     }
 
     do {
-	rc = ldap_result((LDAP *) db->db, msgid, LDAP_MSG_ONE, NULL, &e);
+	rc = ldap_result((LDAP *) db->hdb_db, msgid, LDAP_MSG_ONE, NULL, &e);
 	switch (rc) {
 	case LDAP_RES_SEARCH_ENTRY:
 	    /* We have an entry. Parse it. */
@@ -883,30 +883,30 @@ LDAP_seq(krb5_context context, HDB * db, unsigned flags, hdb_entry * entry)
 	case LDAP_RES_SEARCH_RESULT:
 	    /* We're probably at the end of the results. If not, abandon. */
 	    parserc =
-		ldap_parse_result((LDAP *) db->db, e, NULL, NULL, NULL,
+		ldap_parse_result((LDAP *) db->hdb_db, e, NULL, NULL, NULL,
 				  NULL, NULL, 1);
 	    if (parserc != LDAP_SUCCESS
 		&& parserc != LDAP_MORE_RESULTS_TO_RETURN) {
 	        krb5_set_error_string(context, "ldap_parse_result: %s", ldap_err2string(parserc));
-		ldap_abandon((LDAP *) db->db, msgid);
+		ldap_abandon((LDAP *) db->hdb_db, msgid);
 	    }
 	    ret = HDB_ERR_NOENTRY;
-	    db->openp = -1;
+	    db->hdb_openp = -1;
 	    break;
 	case 0:
 	case -1:
 	default:
 	    /* Some unspecified error (timeout?). Abandon. */
 	    ldap_msgfree(e);
-	    ldap_abandon((LDAP *) db->db, msgid);
+	    ldap_abandon((LDAP *) db->hdb_db, msgid);
 	    ret = HDB_ERR_NOENTRY;
-	    db->openp = -1;
+	    db->hdb_openp = -1;
 	    break;
 	}
     } while (rc == LDAP_RES_SEARCH_REFERENCE);
 
     if (ret == 0) {
-	if (db->master_key_set && (flags & HDB_F_DECRYPT)) {
+	if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {
 	    ret = hdb_unseal_keys(context, db, entry);
 	    if (ret)
 		hdb_free_entry(context,entry);
@@ -924,20 +924,20 @@ LDAP_firstkey(krb5_context context, HDB * db, unsigned flags,
 
     (void) LDAP__connect(context, db);
 
-    rc = ldap_set_option((LDAP *) db->db, LDAP_OPT_SIZELIMIT, (const void *)&limit);
+    rc = ldap_set_option((LDAP *) db->hdb_db, LDAP_OPT_SIZELIMIT, (const void *)&limit);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_set_option: %s", ldap_err2string(rc));
 	return HDB_ERR_BADVERSION;
     }
 
-    msgid = ldap_search((LDAP *) db->db, db->name,
+    msgid = ldap_search((LDAP *) db->hdb_db, db->hdb_name,
 			LDAP_SCOPE_ONELEVEL, "(objectclass=krb5KDCEntry)",
 			krb5kdcentry_attrs, 0);
     if (msgid < 0) {
 	return HDB_ERR_NOENTRY;
     }
 
-    db->openp = msgid;
+    db->hdb_openp = msgid;
 
     return LDAP_seq(context, db, flags, entry);
 }
@@ -966,43 +966,43 @@ static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
      */
     struct berval bv = { 0, "" };
 
-    if (db->db != NULL) {
+    if (db->hdb_db != NULL) {
 	/* connection has been opened. ping server. */
 	struct sockaddr_un addr;
 	socklen_t len;
 	int sd;
 
-	if (ldap_get_option((LDAP *) db->db, LDAP_OPT_DESC, &sd) == 0 &&
+	if (ldap_get_option((LDAP *) db->hdb_db, LDAP_OPT_DESC, &sd) == 0 &&
 	    getpeername(sd, (struct sockaddr *) &addr, &len) < 0) {
 	    /* the other end has died. reopen. */
 	    LDAP_close(context, db);
 	}
     }
 
-    if (db->db != NULL) {
+    if (db->hdb_db != NULL) {
 	/* server is UP */
 	return 0;
     }
 
-    rc = ldap_initialize((LDAP **) & db->db, "ldapi:///");
+    rc = ldap_initialize((LDAP **) & db->hdb_db, "ldapi:///");
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_initialize: %s", ldap_err2string(rc));
 	return HDB_ERR_NOENTRY;
     }
 
-    rc = ldap_set_option((LDAP *) db->db, LDAP_OPT_PROTOCOL_VERSION, (const void *)&version);
+    rc = ldap_set_option((LDAP *) db->hdb_db, LDAP_OPT_PROTOCOL_VERSION, (const void *)&version);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_set_option: %s", ldap_err2string(rc));
-	ldap_unbind_ext((LDAP *) db->db, NULL, NULL);
-	db->db = NULL;
+	ldap_unbind_ext((LDAP *) db->hdb_db, NULL, NULL);
+	db->hdb_db = NULL;
 	return HDB_ERR_BADVERSION;
     }
 
-    rc = ldap_sasl_bind_s((LDAP *) db->db, NULL, "EXTERNAL", &bv, NULL, NULL, NULL);
+    rc = ldap_sasl_bind_s((LDAP *) db->hdb_db, NULL, "EXTERNAL", &bv, NULL, NULL, NULL);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_sasl_bind_s: %s", ldap_err2string(rc));
-	ldap_unbind_ext((LDAP *) db->db, NULL, NULL);
-	db->db = NULL;
+	ldap_unbind_ext((LDAP *) db->hdb_db, NULL, NULL);
+	db->hdb_db = NULL;
 	return HDB_ERR_BADVERSION;
     }
 
@@ -1040,7 +1040,7 @@ LDAP_fetch(krb5_context context, HDB * db, unsigned flags,
 	return ret;
     }
 
-    e = ldap_first_entry((LDAP *) db->db, msg);
+    e = ldap_first_entry((LDAP *) db->hdb_db, msg);
     if (e == NULL) {
 	ret = HDB_ERR_NOENTRY;
 	goto out;
@@ -1048,7 +1048,7 @@ LDAP_fetch(krb5_context context, HDB * db, unsigned flags,
 
     ret = LDAP_message2entry(context, db, e, entry);
     if (ret == 0) {
-	if (db->master_key_set && (flags & HDB_F_DECRYPT)) {
+	if (db->hdb_master_key_set && (flags & HDB_F_DECRYPT)) {
 	    ret = hdb_unseal_keys(context, db, entry);
 	    if (ret)
 		hdb_free_entry(context,entry);
@@ -1079,7 +1079,7 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
 
     ret = LDAP__lookup_princ(context, db, name, &msg);
     if (ret == 0) {
-	e = ldap_first_entry((LDAP *) db->db, msg);
+	e = ldap_first_entry((LDAP *) db->hdb_db, msg);
     }
 
     ret = hdb_seal_keys(context, db, entry);
@@ -1120,8 +1120,8 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
 	    goto out;
 	}
 
-	if (db->name != NULL) {
-	    ret = asprintf(&dn, "cn=%s,%s", name, db->name);
+	if (db->hdb_name != NULL) {
+	    ret = asprintf(&dn, "cn=%s,%s", name, db->hdb_name);
 	} else {
 	    /* A bit bogus, but we don't have a search base */
 	    ret = asprintf(&dn, "cn=%s", name);
@@ -1133,7 +1133,7 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
 	}
     } else if (flags & HDB_F_REPLACE) {
 	/* Entry exists, and we're allowed to replace it. */
-	dn = ldap_get_dn((LDAP *) db->db, e);
+	dn = ldap_get_dn((LDAP *) db->hdb_db, e);
     } else {
 	/* Entry exists, but we're not allowed to replace it. Bail. */
 	ret = HDB_ERR_EXISTS;
@@ -1143,11 +1143,11 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
     /* write entry into directory */
     if (e == NULL) {
 	/* didn't exist before */
-	rc = ldap_add_s((LDAP *) db->db, dn, mods);
+	rc = ldap_add_s((LDAP *) db->hdb_db, dn, mods);
 	errfn = "ldap_add_s";
     } else {
 	/* already existed, send deltas only */
-	rc = ldap_modify_s((LDAP *) db->db, dn, mods);
+	rc = ldap_modify_s((LDAP *) db->hdb_db, dn, mods);
 	errfn = "ldap_modify_s";
     }
 
@@ -1193,26 +1193,26 @@ LDAP_remove(krb5_context context, HDB * db, hdb_entry * entry)
 	goto out;
     }
 
-    e = ldap_first_entry((LDAP *) db->db, msg);
+    e = ldap_first_entry((LDAP *) db->hdb_db, msg);
     if (e == NULL) {
 	ret = HDB_ERR_NOENTRY;
 	goto out;
     }
 
-    dn = ldap_get_dn((LDAP *) db->db, e);
+    dn = ldap_get_dn((LDAP *) db->hdb_db, e);
     if (dn == NULL) {
 	ret = HDB_ERR_NOENTRY;
 	goto out;
     }
 
-    rc = ldap_set_option((LDAP *) db->db, LDAP_OPT_SIZELIMIT, (const void *)&limit);
+    rc = ldap_set_option((LDAP *) db->hdb_db, LDAP_OPT_SIZELIMIT, (const void *)&limit);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_set_option: %s", ldap_err2string(rc));
 	ret = HDB_ERR_BADVERSION;
 	goto out;
     }
 
-    rc = ldap_delete_s((LDAP *) db->db, dn);
+    rc = ldap_delete_s((LDAP *) db->hdb_db, dn);
     if (rc == LDAP_SUCCESS) {
 	ret = 0;
     } else {
@@ -1232,38 +1232,13 @@ LDAP_remove(krb5_context context, HDB * db, hdb_entry * entry)
     return ret;
 }
 
-static krb5_error_code
-LDAP__get(krb5_context context, HDB * db, krb5_data key, krb5_data * reply)
-{
-    fprintf(stderr, "LDAP__get not implemented\n");
-    abort();
-    return 0;
-}
-
-static krb5_error_code
-LDAP__put(krb5_context context, HDB * db, int replace,
-	  krb5_data key, krb5_data value)
-{
-    fprintf(stderr, "LDAP__put not implemented\n");
-    abort();
-    return 0;
-}
-
-static krb5_error_code
-LDAP__del(krb5_context context, HDB * db, krb5_data key)
-{
-    fprintf(stderr, "LDAP__del not implemented\n");
-    abort();
-    return 0;
-}
-
 static krb5_error_code LDAP_destroy(krb5_context context, HDB * db)
 {
     krb5_error_code ret;
 
     ret = hdb_clear_master_key(context, db);
-    if (db->name != NULL) {
-	free(db->name);
+    if (db->hdb_name != NULL) {
+	free(db->hdb_name);
     }
     free(db);
 
@@ -1278,8 +1253,9 @@ hdb_ldap_create(krb5_context context, HDB ** db, const char *arg)
 	krb5_set_error_string(context, "malloc: out of memory");
 	return ENOMEM;
     }
+    memset(*db, 0, sizeof(**db));
 
-    (*db)->db = NULL;
+    (*db)->hdb_db = NULL;
 
     if (arg == NULL || arg[0] == '\0') {
 	/*
@@ -1289,10 +1265,10 @@ hdb_ldap_create(krb5_context context, HDB ** db, const char *arg)
 	 * writing entries because we don't know where to
 	 * put new principals.
 	 */
-	(*db)->name = NULL;
+	(*db)->hdb_name = NULL;
     } else {
-	(*db)->name = strdup(arg); 
-	if ((*db)->name == NULL) {
+	(*db)->hdb_name = strdup(arg); 
+	if ((*db)->hdb_name == NULL) {
 	    krb5_set_error_string(context, "strdup: out of memory");
 	    free(*db);
 	    *db = NULL;
@@ -1300,23 +1276,22 @@ hdb_ldap_create(krb5_context context, HDB ** db, const char *arg)
 	}
     }
 
-    (*db)->master_key_set = 0;
-    (*db)->openp = 0;
-    (*db)->open = LDAP_open;
-    (*db)->close = LDAP_close;
-    (*db)->fetch = LDAP_fetch;
-    (*db)->store = LDAP_store;
-    (*db)->remove = LDAP_remove;
-    (*db)->firstkey = LDAP_firstkey;
-    (*db)->nextkey = LDAP_nextkey;
-    (*db)->lock = LDAP_lock;
-    (*db)->unlock = LDAP_unlock;
-    (*db)->rename = LDAP_rename;
-    /* can we ditch these? */
-    (*db)->_get = LDAP__get;
-    (*db)->_put = LDAP__put;
-    (*db)->_del = LDAP__del;
-    (*db)->destroy = LDAP_destroy;
+    (*db)->hdb_master_key_set = 0;
+    (*db)->hdb_openp = 0;
+    (*db)->hdb_open = LDAP_open;
+    (*db)->hdb_close = LDAP_close;
+    (*db)->hdb_fetch = LDAP_fetch;
+    (*db)->hdb_store = LDAP_store;
+    (*db)->hdb_remove = LDAP_remove;
+    (*db)->hdb_firstkey = LDAP_firstkey;
+    (*db)->hdb_nextkey = LDAP_nextkey;
+    (*db)->hdb_lock = LDAP_lock;
+    (*db)->hdb_unlock = LDAP_unlock;
+    (*db)->hdb_rename = LDAP_rename;
+    (*db)->hdb__get = NULL;
+    (*db)->hdb__put = NULL;
+    (*db)->hdb__del = NULL;
+    (*db)->hdb_destroy = LDAP_destroy;
 
     return 0;
 }

@@ -295,7 +295,7 @@ send_complete (krb5_context context, slave *s,
     ret = hdb_create (context, &db, database);
     if (ret)
 	krb5_err (context, 1, ret, "hdb_create: %s", database);
-    ret = db->open (context, db, O_RDONLY, 0);
+    ret = db->hdb_open (context, db, O_RDONLY, 0);
     if (ret)
 	krb5_err (context, 1, ret, "db->open");
 
@@ -318,6 +318,9 @@ send_complete (krb5_context context, slave *s,
 	slave_dead(s);
 	return ret;
     }
+
+    (*db->hdb_close)(context, db);
+    (*db->hdb_destroy)(context, db);
 
     _krb5_put_int (buf, NOW_YOU_HAVE, 4);
     _krb5_put_int (buf + 4, current_version, 4);

@@ -341,7 +341,7 @@ doit(const char *filename, int merge)
 
     if(!merge)
 	flags |= O_CREAT | O_TRUNC;
-    ret = db->open(context, db, flags, 0600);
+    ret = db->hdb_open(context, db, flags, 0600);
     if(ret){
 	krb5_warn(context, ret, "hdb_open");
 	fclose(f);
@@ -470,14 +470,14 @@ doit(const char *filename, int merge)
 	    continue;
 	}
 
-	ret = db->store(context, db, HDB_F_REPLACE, &ent);
+	ret = db->hdb_store(context, db, HDB_F_REPLACE, &ent);
 	hdb_free_entry (context, &ent);
 	if (ret) {
 	    krb5_warn(context, ret, "db_store");
 	    break;
 	}
     }
-    db->close(context, db);
+    db->hdb_close(context, db);
     fclose(f);
     return ret != 0;
 }
