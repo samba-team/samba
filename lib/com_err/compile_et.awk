@@ -54,10 +54,13 @@ $1 == "error_table" || $1 == "et" {
 	print "" > h_file
 	print "void initialize_" name "_error_table_r(struct error_table**);" > h_file
 	print "" > h_file
-	print "void initialize_" name "_error_table(void);" > h_file
+	n = "initialize_" name "_error_table"
+	print "void " n "(void);" > h_file
 	print "" > h_file
+	print "#define init_" name "_err_tbl " n > h_file
 	print "typedef enum " name "_error_number{" > h_file
 	print "\tERROR_TABLE_BASE_" name " = " base "," > h_file
+	print "\t" name "_err_base = " base "," > h_file
 	next
 }
 
