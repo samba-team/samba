@@ -1,3 +1,5 @@
+#ifndef _SIGNING_H
+#define _SIGNING_H
 /*
    Unix SMB/CIFS implementation.
    SMB Signing
@@ -35,3 +37,4 @@ struct smb_signing_context {
 	BOOL seen_valid; /* Have I ever seen a validly signed packet? */
 };
 
+#endif

@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "system/dir.h"
 #include "dlinklist.h"
+#include "process_model.h"
 
 struct server_context *server_service_startup(const char *model)
 {

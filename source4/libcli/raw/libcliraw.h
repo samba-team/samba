@@ -21,6 +21,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "request.h"
+
 struct smbcli_tree;  /* forward declare */
 struct smbcli_request;  /* forward declare */
 struct smbcli_session;  /* forward declare */

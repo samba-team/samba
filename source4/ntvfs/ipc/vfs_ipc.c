@@ -28,6 +28,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "dlinklist.h"
+#include "smb_server/smb_server.h"
 
 /* this is the private structure used to keep the state of an open
    ipc$ connection. It needs to keep information about all open

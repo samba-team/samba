@@ -30,7 +30,7 @@ struct smbcli_state {
 	struct smbcli_transport *transport;
 	struct smbcli_session *session;
 	struct smbcli_tree *tree;
-	struct substitute_context substitute;
+	struct substitute_context *substitute;
 };
 
 #endif /* _SMBCLI_CONTEXT_H */
