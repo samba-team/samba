@@ -188,21 +188,21 @@ sub HeaderTypedefProto($)
     }
 
     if ($d->{DATA}{TYPE} eq "STRUCT") {
-	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *, int , struct $d->{NAME} *);\n";
-	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *, int , struct $d->{NAME} *);\n";
+	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $d->{NAME} *r);\n";
+	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $d->{NAME} *r);\n";
 	    if (!util::has_property($d->{DATA}, "noprint")) {
-		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *, const char *, struct $d->{NAME} *);\n";
+		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, struct $d->{NAME} *r);\n";
 	    }
 
 	if (needed::is_needed("ndr_size_$d->{NAME}")) {
-		$res .= "size_t ndr_size_$d->{NAME}(int , const struct $d->{NAME} *, int );\n";
+		$res .= "size_t ndr_size_$d->{NAME}(int ret, const struct $d->{NAME} *r, int flags);\n";
 	}
     }
     if ($d->{DATA}{TYPE} eq "UNION") {
-	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *, int, int, union $d->{NAME} *);\n";
-	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *, int, int, union $d->{NAME} *);\n";
+	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
+	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
 	    if (!util::has_property($d->{DATA}, "noprint")) {
-		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *, const char *, int, union $d->{NAME} *);\n";
+		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, int level, union $d->{NAME} *r);\n";
 	    }
     }
 }
@@ -308,13 +308,13 @@ sub HeaderFnProto($$)
     my $fn = shift;
     my $name = $fn->{NAME};
 	
-    $res .= "void ndr_print_$name(struct ndr_print *, const char *, int, struct $name *);\n";
+    $res .= "void ndr_print_$name(struct ndr_print *ndr, const char *name, int flags, struct $name *r);\n";
 
 	if (util::has_property($interface, "object")) {
-		$res .= "NTSTATUS dcom_$interface->{NAME}_$name (struct dcom_interface_p *, TALLOC_CTX *mem_ctx, struct $name *);\n";
+		$res .= "NTSTATUS dcom_$interface->{NAME}_$name (struct dcom_interface_p *d, TALLOC_CTX *mem_ctx, struct $name *r);\n";
 	} else {
-	    $res .= "NTSTATUS dcerpc_$name(struct dcerpc_pipe *, TALLOC_CTX *, struct $name *);\n";
-    	$res .= "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *, TALLOC_CTX *, struct $name *);\n";
+	    $res .= "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
+    	$res .= "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
 	}
     $res .= "\n";
 }
@@ -332,7 +332,7 @@ sub HeaderVTable($)
 
 	my $data = $interface->{DATA};
 	foreach my $d (@{$data}) {
-		$res .= "\tNTSTATUS (*$d->{NAME}) (struct dcom_interface_p *, TALLOC_CTX *mem_ctx, struct $d->{NAME} *);\n" if ($d->{TYPE} eq "FUNCTION");
+		$res .= "\tNTSTATUS (*$d->{NAME}) (struct dcom_interface_p *d, TALLOC_CTX *mem_ctx, struct $d->{NAME} *r);\n" if ($d->{TYPE} eq "FUNCTION");
 	}
 	$res .= "};\n\n";
 }
