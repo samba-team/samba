@@ -547,13 +547,11 @@ it() link(bf(keepalive))(keepalive)
 
 it() link(bf(kernel oplocks))(kerneloplocks)
 
-it() link(bf(ldap filter))(ldapfilter)
+it() link(bf(ldap bind as))(ldapbindas)
+
+it() link(bf(ldap passwd file))(ldappasswdfile)
 
 it() link(bf(ldap port))(ldapport)
-
-it() link(bf(ldap root))(ldaproot)
-
-it() link(bf(ldap root passwd))(ldaprootpasswd)
 
 it() link(bf(ldap server))(ldapserver)
 
@@ -2595,73 +2593,55 @@ This parameter defaults to em("On") on systems that have the support,
 and em("off") on systems that don't. You should never need to touch
 this parameter.
 
-label(ldapfilter)
-dit(bf(ldap filter (G)))
+label(ldapbindas)
+dit(bf(ldap bind as (G)))
 
 This parameter is part of the em(EXPERIMENTAL) Samba support for a
-password database stored on an LDAP server back-end. These options
-are only available if your version of Samba was configured with
-the bf(--with-ldap) option.
+password database stored on an LDAP server. These options are only
+available if your version of Samba was configured with the bf(--with-ldap)
+option.
 
-This parameter specifies an LDAP search filter used to search for a
-user name in the LDAP database. It must contain the string
-link(bf(%u))(percentU) which will be replaced with the user being
-searched for.
+This parameter specifies the entity to bind to an LDAP directory as.
+Usually it should be safe to use the LDAP root account; for larger
+installations it may be preferable to restrict Samba's access. See also
+link(bf(ldap passwd file))(ldappasswdfile).
 
   bf(Default:)
-tt(	empty string.)
+tt(	none (bind anonymously))
+
+  bf(Example:)
+tt(	ldap bind as = "uid=root, dc=mydomain, dc=org")
+
+label(ldappasswdfile)
+dit(bf(ldap passwd file (G)))
+
+This parameter is part of the em(EXPERIMENTAL) Samba support for a
+password database stored on an LDAP server. These options are only
+available if your version of Samba was configured with the bf(--with-ldap)
+option.
+
+This parameter specifies a file containing the password with which
+Samba should bind to an LDAP server. For obvious security reasons
+this file must be set to mode 700 or less.
+
+  bf(Default:)
+tt(	none (bind anonymously))
+
+  bf(Example:)
+tt(	ldap passwd file = /usr/local/samba/private/ldappasswd)
 
 label(ldapport)
 dit(bf(ldap port (G)))
 
 This parameter is part of the em(EXPERIMENTAL) Samba support for a
-password database stored on an LDAP server back-end. These options
-are only available if your version of Samba was configured with
-the bf(--with-ldap) option.
+password database stored on an LDAP server. These options are only
+available if your version of Samba was configured with the bf(--with-ldap)
+option.
 
-This parameter specifies the TCP port number to use to contact
-the LDAP server on.
+This parameter specifies the TCP port number of the LDAP server.
 
   bf(Default:)
 tt(	ldap port = 389.)
-
-label(ldaproot)
-dit(bf(ldap root (G)))
-
-This parameter is part of the em(EXPERIMENTAL) Samba support for a
-password database stored on an LDAP server back-end. These options
-are only available if your version of Samba was configured with
-the bf(--with-ldap) option.
-
-This parameter specifies the entity to bind to the LDAP server
-as (essentially the LDAP username) in order to be able to perform
-queries and modifications on the LDAP database.
-
-See also link(bf(ldap root passwd))(ldaprootpasswd).
-
-  bf(Default:)
-tt(	empty string (no user defined))
-
-label(ldaprootpasswd)
-dit(bf(ldap root passwd (G)))
-
-This parameter is part of the em(EXPERIMENTAL) Samba support for a
-password database stored on an LDAP server back-end. These options
-are only available if your version of Samba was configured with
-the bf(--with-ldap) option.
-
-This parameter specifies the password for the entity to bind to the
-LDAP server as (the password for this LDAP username) in order to be
-able to perform queries and modifications on the LDAP database.
-
-em(BUGS:) This parameter should em(NOT) be a readable parameter
-in the bf(smb.conf) file and will be removed once a correct
-storage place is found.
-
-See also link(bf(ldap root))(ldaproot).
-
-  bf(Default:)
-tt(	empty string.)
 
 label(ldapserver)
 dit(bf(ldap server (G)))
@@ -2672,7 +2652,8 @@ are only available if your version of Samba was configured with
 the bf(--with-ldap) option.
 
 This parameter specifies the DNS name of the LDAP server to use
-for SMB/CIFS authentication purposes.
+when storing and retrieving information about Samba users and
+groups.
 
   bf(Default:)
 tt(	ldap server = localhost)
@@ -2685,12 +2666,15 @@ password database stored on an LDAP server back-end. These options
 are only available if your version of Samba was configured with
 the bf(--with-ldap) option.
 
-This parameter specifies the tt("dn") or LDAP em("distinguished name")
-that tells url(bf(smbd))(smbd.8.html) to start from when searching
-for an entry in the LDAP password database.
+This parameter specifies the node of the LDAP tree beneath which
+Samba should store its information. This parameter MUST be provided
+when using LDAP with Samba.
 
   bf(Default:)
-tt(	empty string.)
+tt(	none)
+
+  bf(Example:)
+tt(	ldap suffix = "dc=mydomain, dc=org")
 
 label(lmannounce)
 dit(bf(lm announce (G)))
