@@ -459,7 +459,8 @@ recv_krb5_auth (int s, u_char *buf,
 static void
 loop (int from0, int to0,
       int to1,   int from1,
-      int to2,   int from2)
+      int to2,   int from2,
+      int have_errsock)
 {
     fd_set real_readset;
     int max_fd;
@@ -470,7 +471,7 @@ loop (int from0, int to0,
 
 #ifdef KRB5
     if(auth_method == AUTH_KRB5 && protocol_version == 2)
-	init_ivecs(0);
+	init_ivecs(0, have_errsock);
 #endif
 
     FD_ZERO(&real_readset);
@@ -551,7 +552,7 @@ pipe_a_like (int fd[2])
  * Start a child process and leave the parent copying data to and from it.  */
 
 static void
-setup_copier (void)
+setup_copier (int have_errsock)
 {
     int p0[2], p1[2], p2[2];
     pid_t pid;
@@ -582,7 +583,8 @@ setup_copier (void)
 
 	loop (STDIN_FILENO, p0[1],
 	      STDOUT_FILENO, p1[0],
-	      STDERR_FILENO, p2[0]);
+	      STDERR_FILENO, p2[0],
+	      have_errsock);
     }
 }
 
@@ -864,7 +866,7 @@ doit (void)
     setup_environment (&env, pwd);
 
     if (do_encrypt) {
-	setup_copier ();
+	setup_copier (errsock >= 0);
     } else {
 	if (net_write (s, "", 1) != 1)
 	    fatal (s, "net_write", "write failed");
