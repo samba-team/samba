@@ -1788,7 +1788,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
       if(lp_unix_password_sync() && !chgpasswd(user,pass1,saved_pass2,False))
         SSVAL(*rparam,0,NERR_badpass);
     }
- 	pdb_clear_sam(sampass);
+ 	pdb_free_sam(sampass);
  }
   
 
@@ -1825,7 +1825,7 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
     {
       SSVAL(*rparam,0,NERR_Success);
     }
-	pdb_clear_sam(hnd);
+	pdb_free_sam(hnd);
   }
 
 

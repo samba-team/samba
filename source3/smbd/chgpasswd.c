@@ -565,7 +565,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 
 	if (ret == False) {
 		DEBUG(0,("check_lanman_password: getsampwnam returned NULL\n"));
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return False;
 	}
 	
@@ -574,7 +574,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 
 	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return False;
 	}
 
@@ -586,7 +586,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	}
 	else if (lanman_pw == NULL) {
 		DEBUG(0, ("check_lanman_password: no lanman password !\n"));
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return False;
 	}
 
@@ -599,7 +599,7 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 	/* Check that the two old passwords match. */
 	if (memcmp(lanman_pw, unenc_old_pw, 16)) {
 		DEBUG(0,("check_lanman_password: old password doesn't match.\n"));
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return False;
 	}
 
@@ -692,7 +692,7 @@ BOOL pass_oem_change(char *user,
 
 	memset(new_passwd, 0, sizeof(new_passwd));
 
-	pdb_clear_sam(sampass);
+	pdb_free_sam(sampass);
 
 	return ret;
 }

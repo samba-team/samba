@@ -79,6 +79,7 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf,
 			*nt_pw_ptr;
 	uint32		len = 0;
 	uint32		lmpwlen, ntpwlen, hourslen;
+
 									
 	/* unpack the buffer into variables */
 	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING,
@@ -148,6 +149,7 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf,
 	pdb_set_logons_divs(sampass, logon_divs);
 	pdb_set_hours(sampass, hours);
 
+	/* TODO: free TDB alloced memory !!!!! */
 		
 	return True;
 }
@@ -491,7 +493,6 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 	}
   
   	/* unpack the buffer */
-	/*pdb_clear_sam (&global_sam_pass);*/
 	if (!init_sam_from_buffer (user, data.dptr, data.dsize))
 	{
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
@@ -543,7 +544,7 @@ BOOL pdb_getsampwuid (SAM_ACCOUNT* user, uid_t uid)
 	if (pw == NULL)
 	{
 		DEBUG(0,("pdb_getsampwuid: getpwuid(%d) return NULL. User does not exist!\n", uid));
-		return NULL;
+		return False;
 	}
 	fstrcpy (name, pw->pw_name);
 
@@ -606,6 +607,7 @@ BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid)
 BOOL pdb_delete_sam_account(char *sname)
 {
 	struct passwd  *pwd = NULL;
+	SAM_ACCOUNT	*sam_pass = NULL;
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	key, data;
 	fstring 	keystr;
@@ -642,14 +644,22 @@ BOOL pdb_delete_sam_account(char *sname)
 	}
   
   	/* unpack the buffer */
-	pdb_clear_sam (&global_sam_pass);
-	if (!init_sam_from_buffer (&global_sam_pass, data.dptr, data.dsize))
+	if (!pdb_init_sam (&sam_pass))
+	{
+		tdb_close (pwd_tdb);
+		return False;
+	}
+	
+	if (!init_sam_from_buffer (sam_pass, data.dptr, data.dsize))
 	{
 		DEBUG(0,("pdb_getsampwent: Bad SAM_ACCOUNT entry returned from TDB!\n"));
+		tdb_close (pwd_tdb);
 		return False;
 	}
 
-	pwd = sys_getpwnam(global_sam_pass.username);
+	pwd = sys_getpwnam(sam_pass->username);
+	
+	pdb_free_sam (sam_pass);
 	
 	rid = pdb_uid_to_user_rid (pwd->pw_uid);
 

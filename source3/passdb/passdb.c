@@ -139,12 +139,12 @@ BOOL pdb_init_sam(SAM_ACCOUNT **user)
 /************************************************************
  free the SAM_ACCOUNT and the NT/LM hashes.
  ***********************************************************/
-BOOL pdb_clear_sam(SAM_ACCOUNT *user)
+BOOL pdb_free_sam(SAM_ACCOUNT *user)
 {
 	if (user == NULL) {
-		DEBUG(0,("pdb_clear_sam: SAM_ACCOUNT was NULL\n"));
+		DEBUG(0,("pdb_free_sam: SAM_ACCOUNT was NULL\n"));
 #if 0
-		smb_panic("NULL pointer passed to pdb_clear_sam\n");
+		smb_panic("NULL pointer passed to pdb_free_sam\n");
 #endif
 		return False;
 	}
@@ -156,10 +156,32 @@ BOOL pdb_clear_sam(SAM_ACCOUNT *user)
 		free(user->lm_pw);
 
 	free(user);
+	user = NULL;
 	
 	return True;	
 }
 
+/************************************************************
+ reset the SAM_ACCOUNT and the NT/LM hashes.
+ ***********************************************************/
+
+BOOL pdb_reset_sam(SAM_ACCOUNT *user)
+{
+	if (user == NULL) {
+		DEBUG(0,("pdb_reset_sam: SAM_ACCOUNT was NULL\n"));
+		return False;
+	}
+	
+	if (user->nt_pw)
+		free(user->nt_pw);
+	
+	if (user->lm_pw)
+		free(user->lm_pw);
+		
+	ZERO_STRUCTP(user);
+
+	return True;
+}
 
 /*************************************************************************
  Routine to return the next entry in the sam passwd list.
@@ -854,15 +876,12 @@ account without a valid local system user.\n", user_name);
 
 	/* Get the smb passwd entry for this user */
 	pdb_init_sam(&sam_pass);
-	if(!pdb_getsampwnam(sam_pass, user_name)) {
-		pdb_clear_sam(sam_pass);
-		return False;
-	}
-	
-	if (sam_pass == NULL) {
+	if(!pdb_getsampwnam(sam_pass, user_name))
+	{
+		pdb_free_sam(sam_pass);
+		
 		if(!(local_flags & LOCAL_ADD_USER)) {
 			slprintf(err_str, err_str_len-1,"Failed to find entry for user %s.\n", user_name);
-			pdb_clear_sam(sam_pass);
 			return False;
 		}
 
@@ -895,15 +914,13 @@ account without a valid local system user.\n", user_name);
 			pdb_set_nt_passwd     (new_sam_acct, new_nt_p16);
 		}
 
-		pdb_clear_sam(sam_pass);
-
 		if (pdb_add_sam_account(new_sam_acct)) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
-			pdb_clear_sam(new_sam_acct);
+			pdb_free_sam(new_sam_acct);
 			return True;
 		} else {
 			slprintf(err_str, err_str_len-1, "Failed to add entry for user %s.\n", user_name);
-			pdb_clear_sam(new_sam_acct);
+			pdb_free_sam(new_sam_acct);
 			return False;
 		}
 	} else {
@@ -925,13 +942,14 @@ account without a valid local system user.\n", user_name);
 			pdb_set_nt_passwd     (sam_pass, new_nt_p16);
 		}
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
-	} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
+	}
+	else if (local_flags & LOCAL_SET_NO_PASSWORD) {
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ);
 		
 		/* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
 		pdb_set_lanman_passwd (sam_pass, NULL);
 		pdb_set_nt_passwd     (sam_pass, NULL);
-		} 
+	} 
 	else 
 	{
 		/*
@@ -953,7 +971,7 @@ account without a valid local system user.\n", user_name);
 	if(local_flags & LOCAL_DELETE_USER) {
 		if (!pdb_delete_sam_account(user_name)) {
 			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
-			pdb_clear_sam(sam_pass);
+			pdb_free_sam(sam_pass);
 			return False;
 		}
 		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
@@ -962,7 +980,7 @@ account without a valid local system user.\n", user_name);
 	{
 		if(!pdb_update_sam_account(sam_pass, True)) {
 			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
-			pdb_clear_sam(sam_pass);
+			pdb_free_sam(sam_pass);
 			return False;
 		}
 		if(local_flags & LOCAL_DISABLE_USER)
@@ -973,7 +991,7 @@ account without a valid local system user.\n", user_name);
 			slprintf(msg_str, msg_str_len-1, "User %s password set to none.\n", user_name);
 	}
 
-	pdb_clear_sam(sam_pass);
+	pdb_free_sam(sam_pass);
 	return True;
 }
 
@@ -1569,3 +1587,4 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours)
 
 	return True;
 }
+

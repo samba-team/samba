@@ -122,12 +122,12 @@ static int print_user_info (char *username, BOOL verbosity, BOOL smbpwdstyle)
 
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
-		pdb_clear_sam(sam_pwent);
+		pdb_free_sam(sam_pwent);
 		return -1;
 	}
 	
 	ret=print_sam_info (sam_pwent, verbosity, smbpwdstyle);
-	pdb_clear_sam(sam_pwent);
+	pdb_free_sam(sam_pwent);
 	
 	return ret;
 }
@@ -145,7 +145,7 @@ static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 	ret = pdb_setsampwent(False);
 	if (ret && errno == ENOENT) {
 		fprintf (stderr,"Password database not found!\n");
-		pdb_clear_sam(sam_pwent);
+		pdb_free_sam(sam_pwent);
 		exit(1);
 	}
 
@@ -153,10 +153,11 @@ static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 	{
 		if (verbosity) printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
+		pdb_reset_sam(sam_pwent);
 	}
 	
 	pdb_endsampwent ();
-	pdb_clear_sam(sam_pwent);
+	pdb_free_sam(sam_pwent);
 	return 0;
 }
 
@@ -174,7 +175,7 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 	if (ret==False)
 	{
 		fprintf (stderr, "Username not found!\n");
-		pdb_clear_sam(sam_pwent);
+		pdb_free_sam(sam_pwent);
 		return -1;
 	}
 	
@@ -188,10 +189,10 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 	else
 	{
 		fprintf (stderr, "Unable to modify entry!\n");
-		pdb_clear_sam(sam_pwent);
+		pdb_free_sam(sam_pwent);
 		return -1;
 	}
-	pdb_clear_sam(sam_pwent);
+	pdb_free_sam(sam_pwent);
 	return 0;
 }
 

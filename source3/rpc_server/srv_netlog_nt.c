@@ -149,19 +149,19 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
  
  	if (ret==False) {
  		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return False;
 	}
 
 	if (!(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) && ((pass=pdb_get_nt_passwd(sampass)) != NULL)) {
 		memcpy(md4pw, pass, 16);
 		dump_data(5, md4pw, 16);
- 		pdb_clear_sam(sampass);
+ 		pdb_free_sam(sampass);
 		return True;
 	}
  	
 	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
-	pdb_clear_sam(sampass);
+	pdb_free_sam(sampass);
 	return False;
 
 }
@@ -347,7 +347,7 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	/* Ensure the account exists and is a machine account. */
 
 	if (ret==False || !(pdb_get_acct_ctrl(sampass) & ACB_WSTRUST)) {
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -358,7 +358,7 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	 */
 
 	if (!strequal(mach_acct, p->dc.mach_acct)) {
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -385,7 +385,7 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	/* set up the LSA Server Password Set response */
 	init_net_r_srv_pwset(r_u, &srv_cred, status);
 
-	pdb_clear_sam(sampass);
+	pdb_free_sam(sampass);
 	return r_u->status;
 }
 
@@ -586,14 +586,14 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	unbecome_root();
 
 	if (ret == False){
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 
 	if (acct_ctrl & ACB_DISABLED) {
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
     
@@ -613,7 +613,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	}
     
 	if (status != NT_STATUS_NOPROBLEMO) {
-		pdb_clear_sam(sampass);
+		pdb_free_sam(sampass);
 		return status;
 	}
 
@@ -671,6 +671,6 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
                             &global_sam_sid,     /* DOM_SID *dom_sid */
                             NULL); /* char *other_sids */
 	}
-	pdb_clear_sam(sampass);
+	pdb_free_sam(sampass);
 	return status;
 }
