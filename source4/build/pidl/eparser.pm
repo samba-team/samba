@@ -24,6 +24,25 @@ sub is_scalar_type($)
     return 0;
 }
 
+sub has_property($$)
+{
+    my($props) = shift;
+    my($p) = shift;
+
+    foreach my $d (@{$props}) {
+	if (ref($d) ne "HASH") {
+	    return 1, if ($d eq $p);
+	    return 1, if ($d eq "in,out" && ($p eq "in" || $p eq "out"));
+	} else {
+	    foreach my $k (keys %{$d}) {
+		$res .= "[$k($d->{$k})] ";
+	    }
+	}
+    }
+
+    return 0;
+}
+
 #####################################################################
 # parse a properties list
 sub ParseProperties($)
@@ -63,11 +82,9 @@ sub ParseElement($$)
 
     # Arg is a policy handle
 	    
-    foreach my $prop (@{$elt->{PROPERTIES}}) {
-	if ($prop =~ /context_handle/) {
-	    $res .= "\toffset = prs_policy_hnd(tvb, offset, pinfo, tree);\n";
-	    return;
-	}
+    if (has_property($elt->{PROPERTIES}, "context_handle")) {
+	$res .= "\toffset = prs_policy_hnd(tvb, offset, pinfo, tree);\n";
+	return;
     }
 
     # Parse type
@@ -89,9 +106,9 @@ sub ParseElement($$)
 
     } else {
 
-	# Scalars are not buffers
+	# Scalars are not buffers, except if they are pointed to
 
-	if (!is_scalar_type($elt->{TYPE})) {
+	if (!is_scalar_type($elt->{TYPE}) || $elt->{POINTERS}) {
 
 	    # If we have a pointer, check it
 
@@ -234,10 +251,8 @@ sub ParseFunctionArg($$)
     my($arg) = shift;
     my($io) = shift;		# "in" or "out"
 
-    if (@{$arg->{PROPERTIES}}[0] =~ /$io/) {
-	my $is_pol = 0;
-	    
-	ParseElement($arg, "scalars");
+    if (has_property($arg->{PROPERTIES}, $io)) {
+	ParseElement($arg, "scalars|buffers");
     }
 }
     
