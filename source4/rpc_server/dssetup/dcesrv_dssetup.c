@@ -56,7 +56,7 @@ static WERROR ds_RolerGetPrimaryDomainInformation(struct dcesrv_call_state *dce_
 		if (r->out.info == NULL) {
 			return WERR_NOMEM;
 		}
-		r->out.info->basic.role = 5;
+		r->out.info->basic.role = lp_server_role();
 		r->out.info->basic.flags = 0x01000003;
 		r->out.info->basic.domain = samdb_result_string(res[0], "name", NULL);
 		r->out.info->basic.dns_domain = samdb_result_string(res[0], "dnsDomain", NULL);
