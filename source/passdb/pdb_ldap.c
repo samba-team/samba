@@ -702,7 +702,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	if (!get_single_attribute(ldap_struct, entry, "smbHome", homedir)) {
-		pdb_set_dir_drive(sampass, standard_sub_specified(sampass->mem_ctx, 
+		pdb_set_homedir(sampass, standard_sub_specified(sampass->mem_ctx, 
 								  lp_logon_home(),
 								  username, domain, 
 								  uid, gid), 
