@@ -11,10 +11,15 @@ use needed;
 my($res);
 my($tab_depth);
 
+sub pidl ($)
+{
+	$res .= shift;
+}
+
 sub tabs()
 {
 	for (my($i)=0; $i < $tab_depth; $i++) {
-		$res .= "\t";
+		pidl "\t";
 	}
 }
 
@@ -28,10 +33,10 @@ sub HeaderProperties($)
 
     foreach my $d (@{$props}) {
 	if (ref($d) ne "HASH") {
-	    $res .= "/* [$d] */ ";
+	    pidl "/* [$d] */ ";
 	} else {
 	    foreach my $k (keys %{$d}) {
-		$res .= "/* [$k($d->{$k})] */ ";
+		pidl "/* [$k($d->{$k})] */ ";
 	    }
 	}
     }
@@ -44,14 +49,14 @@ sub HeaderElement($)
     my($element) = shift;
 
     (defined $element->{PROPERTIES}) && HeaderProperties($element->{PROPERTIES});
-    $res .= tabs();
+    pidl tabs();
     HeaderType($element, $element->{TYPE}, "");
-    $res .= " ";
+    pidl " ";
     if ($element->{POINTERS} && 
 	$element->{TYPE} ne "string") {
 	    my($n) = $element->{POINTERS};
 	    for (my($i)=$n; $i > 0; $i--) {
-		    $res .= "*";
+		    pidl "*";
 	    }
     }
     if (defined $element->{ARRAY_LEN} && 
@@ -59,13 +64,13 @@ sub HeaderElement($)
 	!$element->{POINTERS}) {
 	    # conformant arrays are ugly! I choose to implement them with
 	    # pointers instead of the [1] method
-	    $res .= "*";
+	    pidl "*";
     }
-    $res .= "$element->{NAME}";
+    pidl "$element->{NAME}";
     if (defined $element->{ARRAY_LEN} && util::is_constant($element->{ARRAY_LEN})) {
-	    $res .= "[$element->{ARRAY_LEN}]";
+	    pidl "[$element->{ARRAY_LEN}]";
     }
-    $res .= ";\n";
+    pidl ";\n";
 }
 
 #####################################################################
@@ -74,7 +79,7 @@ sub HeaderStruct($$)
 {
     my($struct) = shift;
     my($name) = shift;
-    $res .= "\nstruct $name {\n";
+    pidl "\nstruct $name {\n";
     $tab_depth++;
     my $el_count=0;
     if (defined $struct->{ELEMENTS}) {
@@ -85,10 +90,10 @@ sub HeaderStruct($$)
     }
     if ($el_count == 0) {
 	    # some compilers can't handle empty structures
-	    $res .= "\tchar _empty_;\n";
+	    pidl "\tchar _empty_;\n";
     }
     $tab_depth--;
-    $res .= "}";
+    pidl "}";
 }
 
 #####################################################################
@@ -100,14 +105,14 @@ sub HeaderEnum($$)
 
     util::register_enum($enum, $name);
 
-    $res .= "\nenum $name {\n";
+    pidl "\nenum $name {\n";
     $tab_depth++;
     my $els = \@{$enum->{ELEMENTS}};
     foreach my $i (0 .. $#{$els}-1) {
 	    my $e = ${$els}[$i];
 	    tabs();
 	    chomp $e;
-	    $res .= "$e,\n";
+	    pidl "$e,\n";
     }
 
     my $e = ${$els}[$#{$els}];
@@ -116,9 +121,9 @@ sub HeaderEnum($$)
     if ($e !~ /^(.*?)\s*$/) {
 	    die "Bad enum $name\n";
     }
-    $res .= "$1\n";
+    pidl "$1\n";
     $tab_depth--;
-    $res .= "}";
+    pidl "}";
 }
 
 #####################################################################
@@ -130,16 +135,16 @@ sub HeaderBitmap($$)
 
     util::register_bitmap($bitmap, $name);
 
-    $res .= "\n/* bitmap $name */\n";
+    pidl "\n/* bitmap $name */\n";
 
     my $els = \@{$bitmap->{ELEMENTS}};
     foreach my $i (0 .. $#{$els}) {
 	    my $e = ${$els}[$i];
 	    chomp $e;
-	    $res .= "#define $e\n";
+	    pidl "#define $e\n";
     }
 
-    $res .= "\n";
+    pidl "\n";
 }
 
 #####################################################################
@@ -151,7 +156,7 @@ sub HeaderUnion($$)
 	my %done = ();
 
 	(defined $union->{PROPERTIES}) && HeaderProperties($union->{PROPERTIES});
-	$res .= "\nunion $name {\n";
+	pidl "\nunion $name {\n";
 	$tab_depth++;
 	foreach my $e (@{$union->{ELEMENTS}}) {
 		if ($e->{TYPE} ne "EMPTY") {
@@ -162,7 +167,7 @@ sub HeaderUnion($$)
 		}
 	}
 	$tab_depth--;
-	$res .= "}";
+	pidl "}";
 }
 
 #####################################################################
@@ -184,18 +189,18 @@ sub HeaderType($$$)
 		return;
 	}
 	if ($data =~ "string") {
-		$res .= "const char *";
+		pidl "const char *";
 	} elsif (util::is_enum($e->{TYPE})) {
-		$res .= "enum $data";
+		pidl "enum $data";
 	} elsif (util::is_bitmap($e->{TYPE})) {
 		my $bitmap = util::get_bitmap($e->{TYPE});
-		$res .= util::bitmap_type_decl($bitmap);
+		pidl util::bitmap_type_decl($bitmap);
 	} elsif (NdrParser::is_scalar_type($data)) {
-		$res .= util::map_type($data);
+		pidl util::map_type($data);
 	} elsif (util::has_property($e, "switch_is")) {
-		$res .= "union $data";
+		pidl "union $data";
 	} else {
-		$res .= "struct $data";
+		pidl "struct $data";
 	}
 }
 
@@ -218,7 +223,7 @@ sub HeaderTypedef($)
 {
     my($typedef) = shift;
     HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
-    $res .= ";\n" unless ($typedef->{DATA}->{TYPE} eq "BITMAP");
+    pidl ";\n" unless ($typedef->{DATA}->{TYPE} eq "BITMAP");
 }
 
 #####################################################################
@@ -229,10 +234,10 @@ sub HeaderTypedefProto($)
 
     if (needed::is_needed("ndr_size_$d->{NAME}")) {
 	    if ($d->{DATA}{TYPE} eq "STRUCT") {
-		    $res .= "size_t ndr_size_$d->{NAME}(const struct $d->{NAME} *r, int flags);\n";
+		    pidl "size_t ndr_size_$d->{NAME}(const struct $d->{NAME} *r, int flags);\n";
 	    }
 	    if ($d->{DATA}{TYPE} eq "UNION") {
-		    $res .= "size_t ndr_size_$d->{NAME}(const union $d->{NAME} *r, uint32_t level, int flags);\n";
+		    pidl "size_t ndr_size_$d->{NAME}(const union $d->{NAME} *r, uint32_t level, int flags);\n";
 	    }
     }
 
@@ -241,35 +246,35 @@ sub HeaderTypedefProto($)
     }
 
     if ($d->{DATA}{TYPE} eq "STRUCT") {
-	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $d->{NAME} *r);\n";
-	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $d->{NAME} *r);\n";
+	    pidl "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $d->{NAME} *r);\n";
+	    pidl "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $d->{NAME} *r);\n";
 	    if (!util::has_property($d, "noprint")) {
-		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, struct $d->{NAME} *r);\n";
+		    pidl "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, struct $d->{NAME} *r);\n";
 	    }
 
     }
     if ($d->{DATA}{TYPE} eq "UNION") {
-	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
-	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
+	    pidl "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
+	    pidl "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
 	    if (!util::has_property($d, "noprint")) {
-		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, int level, union $d->{NAME} *r);\n";
+		    pidl "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, int level, union $d->{NAME} *r);\n";
 	    }
     }
 
     if ($d->{DATA}{TYPE} eq "ENUM") {
-	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, enum $d->{NAME} r);\n";
-	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, enum $d->{NAME} *r);\n";
+	    pidl "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, enum $d->{NAME} r);\n";
+	    pidl "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, enum $d->{NAME} *r);\n";
 	    if (!util::has_property($d, "noprint")) {
-		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, enum $d->{NAME} r);\n";
+		    pidl "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, enum $d->{NAME} r);\n";
 	    }
     }
 
     if ($d->{DATA}{TYPE} eq "BITMAP") {
     	    my $type_decl = util::bitmap_type_decl($d->{DATA});
-	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, $type_decl r);\n";
-	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, $type_decl *r);\n";
+	    pidl "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, $type_decl r);\n";
+	    pidl "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, $type_decl *r);\n";
 	    if (!util::has_property($d, "noprint")) {
-		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, $type_decl r);\n";
+		    pidl "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, $type_decl r);\n";
 	    }
     }
 }
@@ -280,9 +285,9 @@ sub HeaderConst($)
 {
     my($const) = shift;
     if (!defined($const->{ARRAY_LEN})) {
-    	$res .= "#define $const->{NAME}\t( $const->{VALUE} )\n";
+    	pidl "#define $const->{NAME}\t( $const->{VALUE} )\n";
     } else {
-    	$res .= "#define $const->{NAME}\t $const->{VALUE}\n";
+    	pidl "#define $const->{NAME}\t $const->{VALUE}\n";
     }
 }
 
@@ -327,44 +332,44 @@ sub HeaderFunction($)
 {
     my($fn) = shift;
 
-    $res .= "\nstruct $fn->{NAME} {\n";
+    pidl "\nstruct $fn->{NAME} {\n";
     $tab_depth++;
     my $needed = 0;
 
     if (HeaderFunctionInOut_needed($fn, "in")) {
 	    tabs();
-	    $res .= "struct {\n";
+	    pidl "struct {\n";
 	    $tab_depth++;
 	    HeaderFunctionInOut($fn, "in");
 	    $tab_depth--;
 	    tabs();
-	    $res .= "} in;\n\n";
+	    pidl "} in;\n\n";
 	    $needed++;
     }
 
     if (HeaderFunctionInOut_needed($fn, "out")) {
 	    tabs();
-	    $res .= "struct {\n";
+	    pidl "struct {\n";
 	    $tab_depth++;
 	    HeaderFunctionInOut($fn, "out");
 	    if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
 		    tabs();
-		    $res .= util::map_type($fn->{RETURN_TYPE}) . " result;\n";
+		    pidl util::map_type($fn->{RETURN_TYPE}) . " result;\n";
 	    }
 	    $tab_depth--;
 	    tabs();
-	    $res .= "} out;\n\n";
+	    pidl "} out;\n\n";
 	    $needed++;
     }
 
     if (! $needed) {
 	    # sigh - some compilers don't like empty structures
 	    tabs();
-	    $res .= "int _dummy_element;\n";
+	    pidl "int _dummy_element;\n";
     }
 
     $tab_depth--;
-    $res .= "};\n\n";
+    pidl "};\n\n";
 }
 
 #####################################################################
@@ -375,15 +380,15 @@ sub HeaderFnProto($$)
     my $fn = shift;
     my $name = $fn->{NAME};
 	
-    $res .= "void ndr_print_$name(struct ndr_print *ndr, const char *name, int flags, struct $name *r);\n";
+    pidl "void ndr_print_$name(struct ndr_print *ndr, const char *name, int flags, struct $name *r);\n";
 
 	if (util::has_property($interface, "object")) {
-		$res .= "NTSTATUS dcom_$interface->{NAME}_$name (struct dcom_interface_p *d, TALLOC_CTX *mem_ctx, struct $name *r);\n";
+		pidl "NTSTATUS dcom_$interface->{NAME}_$name (struct dcom_interface_p *d, TALLOC_CTX *mem_ctx, struct $name *r);\n";
 	} else {
-	    $res .= "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
-    	$res .= "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
+	    pidl "NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
+    	pidl "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r);\n";
 	}
-    $res .= "\n";
+    pidl "\n";
 }
 
 
@@ -392,16 +397,16 @@ sub HeaderFnProto($$)
 sub HeaderVTable($)
 {
 	my $interface = shift;
-	$res .= "struct dcom_$interface->{NAME}_vtable {\n";
+	pidl "struct dcom_$interface->{NAME}_vtable {\n";
  	if (defined($interface->{BASE})) {
-		$res .= "\tstruct dcom_$interface->{BASE}\_vtable base;\n";
+		pidl "\tstruct dcom_$interface->{BASE}\_vtable base;\n";
 	}
 
 	my $data = $interface->{DATA};
 	foreach my $d (@{$data}) {
-		$res .= "\tNTSTATUS (*$d->{NAME}) (struct dcom_interface_p *d, TALLOC_CTX *mem_ctx, struct $d->{NAME} *r);\n" if ($d->{TYPE} eq "FUNCTION");
+		pidl "\tNTSTATUS (*$d->{NAME}) (struct dcom_interface_p *d, TALLOC_CTX *mem_ctx, struct $d->{NAME} *r);\n" if ($d->{TYPE} eq "FUNCTION");
 	}
-	$res .= "};\n\n";
+	pidl "};\n\n";
 }
 
 
@@ -414,54 +419,54 @@ sub HeaderInterface($)
 
     my $count = 0;
 
-    $res .= "#ifndef _HEADER_NDR_$interface->{NAME}\n";
-    $res .= "#define _HEADER_NDR_$interface->{NAME}\n\n";
+    pidl "#ifndef _HEADER_NDR_$interface->{NAME}\n";
+    pidl "#define _HEADER_NDR_$interface->{NAME}\n\n";
 
     if (defined $interface->{PROPERTIES}->{depends}) {
 	    my @d = split / /, $interface->{PROPERTIES}->{depends};
 	    foreach my $i (@d) {
-		    $res .= "#include \"librpc/gen_ndr/ndr_$i\.h\"\n";
+		    pidl "#include \"librpc/gen_ndr/ndr_$i\.h\"\n";
 	    }
     }
 
     if (defined $interface->{PROPERTIES}->{uuid}) {
 	    my $name = uc $interface->{NAME};
-	    $res .= "#define DCERPC_$name\_UUID " . 
+	    pidl "#define DCERPC_$name\_UUID " . 
 		util::make_str($interface->{PROPERTIES}->{uuid}) . "\n";
 
 		if(!defined $interface->{PROPERTIES}->{version}) { $interface->{PROPERTIES}->{version} = "0.0"; }
-	    $res .= "#define DCERPC_$name\_VERSION $interface->{PROPERTIES}->{version}\n";
+	    pidl "#define DCERPC_$name\_VERSION $interface->{PROPERTIES}->{version}\n";
 
-	    $res .= "#define DCERPC_$name\_NAME \"$interface->{NAME}\"\n";
+	    pidl "#define DCERPC_$name\_NAME \"$interface->{NAME}\"\n";
 
 		if(!defined $interface->{PROPERTIES}->{helpstring}) { $interface->{PROPERTIES}->{helpstring} = "NULL"; }
-		$res .= "#define DCERPC_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}\n";
+		pidl "#define DCERPC_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}\n";
 
-	    $res .= "\nextern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n";
-	    $res .= "NTSTATUS dcerpc_server_$interface->{NAME}_init(void);\n\n";
+	    pidl "\nextern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n";
+	    pidl "NTSTATUS dcerpc_server_$interface->{NAME}_init(void);\n\n";
     }
 
     foreach my $d (@{$data}) {
 	    if ($d->{TYPE} eq "FUNCTION") {
 		    my $u_name = uc $d->{NAME};
-			$res .= "#define DCERPC_$u_name (";
+			pidl "#define DCERPC_$u_name (";
 		
 			if (defined($interface->{BASE})) {
-				$res .= "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
+				pidl "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
 			}
 			
-		    $res .= sprintf("0x%02x", $count) . ")\n";
+		    pidl sprintf("0x%02x", $count) . ")\n";
 		    $count++;
 	    }
     }
 
-	$res .= "\n#define DCERPC_" . uc $interface->{NAME} . "_CALL_COUNT (";
+	pidl "\n#define DCERPC_" . uc $interface->{NAME} . "_CALL_COUNT (";
 	
 	if (defined($interface->{BASE})) {
-		$res .= "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
+		pidl "DCERPC_" . uc $interface->{BASE} . "_CALL_COUNT + ";
 	}
 	
-	$res .= "$count)\n\n";
+	pidl "$count)\n\n";
 
     foreach my $d (@{$data}) {
 	($d->{TYPE} eq "CONST") &&
@@ -481,7 +486,7 @@ sub HeaderInterface($)
 	(util::has_property($interface, "object")) &&
 		HeaderVTable($interface);
 
-    $res .= "#endif /* _HEADER_NDR_$interface->{NAME} */\n";
+    pidl "#endif /* _HEADER_NDR_$interface->{NAME} */\n";
 }
 
 #####################################################################
@@ -491,7 +496,8 @@ sub Parse($)
     my($idl) = shift;
     $tab_depth = 0;
 
-    $res = "/* header auto-generated by pidl */\n\n";
+	$res = "";
+    pidl "/* header auto-generated by pidl */\n\n";
     foreach my $x (@{$idl}) {
 	    if ($x->{TYPE} eq "INTERFACE") {
 		    needed::BuildNeeded($x);
