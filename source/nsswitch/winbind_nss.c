@@ -35,22 +35,39 @@
 #undef strcat
 #endif
 
+/* Global variables.  These are effectively the client state information */
+
+static int established_socket = -1;           /* fd for winbindd socket */
+static int pwent_ndx, grent_ndx;              /* get{pw,gr}ent() state */
+
 /*
  * Utility and helper functions
  */
+
+/* Close established socket */
+
+void close_sock(void)
+{
+    if (established_socket != -1) {
+        close(established_socket);
+        established_socket = -1;
+    }
+}
 
 /* Connect to winbindd socket */
 
 static int open_root_pipe_sock(void)
 {
-    static int established_socket = -1;
     struct sockaddr_un sunaddr;
     static pid_t our_pid;
     struct stat st;
-    fstring path;
+    pstring path;
+    int retries;
 
     if (our_pid != getpid()) {
-        if (established_socket != -1) close(established_socket);
+        if (established_socket != -1) {
+            close(established_socket);
+        }
         established_socket = -1;
         our_pid = getpid();
     }
@@ -90,11 +107,40 @@ static int open_root_pipe_sock(void)
     sunaddr.sun_family = AF_UNIX;
     strncpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path) - 1);
 
-    if (connect(established_socket, (struct sockaddr *)&sunaddr, 
-                sizeof(sunaddr)) == -1) {
-        close(established_socket);
-        established_socket = -1;
-        return -1;
+#define WINBINDD_MAX_RETRIES    10
+#define WINBINDD_RETRY_TIMEOUT  2
+
+    retries = 0;
+    
+    while (1) {
+        if (connect(established_socket, (struct sockaddr *)&sunaddr, 
+                    sizeof(sunaddr)) == -1) {
+
+            /* A real socket error occured */
+
+            if (errno != ECONNREFUSED)  {
+                close_sock();
+                return -1;
+            }
+
+            /* If we got a connection refused, wait around a bit before
+               declaring we can't get things going. */
+
+            retries++;
+
+            if (retries > WINBINDD_MAX_RETRIES) {
+                close_sock();
+                return -1;
+            }
+
+            sleep(WINBINDD_RETRY_TIMEOUT);
+
+        } else {
+
+            /* Connection OK */
+
+            break;
+        }
     }
 
     return established_socket;
@@ -102,26 +148,66 @@ static int open_root_pipe_sock(void)
 
 /* Write data to winbindd socket with timeout */
 
-int write_sock(int sock, void *buffer, int count)
+int write_sock(void *buffer, int count)
 {
     int result, nwritten;
+
+    /* Open connection to winbind daemon */
+
+ restart:
+
+    if (open_root_pipe_sock() == -1) {
+        return -1;
+    }
 
     /* Write data to socket */
 
     nwritten = 0;
 
     while(nwritten < count) {
+        struct timeval tv;
+        fd_set r_fds;
+        int selret;
 
-        result = write(sock, (char *)buffer + nwritten, count - nwritten);
-        
-        if ((result == -1) || (result == 0)) {
+        /* Catch pipe close on other end by checking if a read() call would 
+           not block by calling select(). */
 
-            /* Write failed */
-            
-            return result;
+        FD_ZERO(&r_fds);
+        FD_SET(established_socket, &r_fds);
+        ZERO_STRUCT(tv);
+
+        if ((selret = select(established_socket + 1, &r_fds, NULL, NULL, 
+                             &tv)) == -1) {
+            close_sock();
+            return -1;                         /* Select error */
         }
 
-        nwritten += result;
+        /* Write should be OK if fd not available for reading */
+
+        if (!FD_ISSET(established_socket, &r_fds)) {
+
+            /* Do the write */
+
+            result = write(established_socket, (char *)buffer + nwritten, 
+                           count - nwritten);
+
+            if ((result == -1) || (result == 0)) {
+
+                /* Write failed */
+            
+                close_sock();
+                return -1;
+            }
+
+            nwritten += result;
+
+        } else {
+
+            /* Pipe has closed on remote end */
+
+            close_sock();
+            goto restart;
+        }
     }
     
     return nwritten;
@@ -129,23 +215,27 @@ int write_sock(int sock, void *buffer, int count)
 
 /* Read data from winbindd socket with timeout */
 
-int read_sock(int sock, void *buffer, int count)
+int read_sock(void *buffer, int count)
 {
     int result, nread;
 
-    /* Read data from socket */
+   /* Read data from socket */
 
     nread = 0;
 
     while(nread < count) {
 
-        result = read(sock, (char *)buffer + nread, count - nread);
+        result = read(established_socket, (char *)buffer + nread, 
+                      count - nread);
         
         if ((result == -1) || (result == 0)) {
 
-            /* Read failed */
+            /* Read failed.  I think the only useful thing we can do here 
+               is just return -1 and fail since the transaction has failed
+               half way through. */
             
-            return result;
+            close_sock();
+            return -1;
         }
         
         nread += result;
@@ -422,34 +512,29 @@ _nss_ntdom_setpwent(void)
 {
     struct winbindd_request request;
     struct winbindd_response response;
-    int sock, result;
     
-    if ((sock = open_root_pipe_sock()) == -1) {
-        return NSS_STATUS_UNAVAIL;
-    }
-
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_SETPWENT;
     request.pid = getpid();
 
-    if ((result = write_sock(sock, &request, sizeof(request))) == -1) {
-        close(sock);
+    if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) == -1) {
-        close(sock);
+    if (read_sock(&response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Copy reply data from socket */
 
     if (response.result != WINBINDD_OK) {
-        return NSS_STATUS_UNAVAIL;
+        return NSS_STATUS_NOTFOUND;
     }
+
+    pwent_ndx = 0;
 
     return NSS_STATUS_SUCCESS;
 }
@@ -461,35 +546,29 @@ _nss_ntdom_endpwent(void)
 {
     struct winbindd_request request;
     struct winbindd_response response;
-    int sock;
     
-    /* Connect to agent socket */
-  
-    if ((sock = open_root_pipe_sock()) == -1) {
-        return NSS_STATUS_UNAVAIL;
-    }
-
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_ENDPWENT;
     request.pid = getpid();
 
-    if (write_sock(sock, &request, sizeof(request)) == -1) {
+    if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) == -1) {
-        close(sock);
+    if (read_sock(&response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Copy reply data from socket */
 
     if (response.result != WINBINDD_OK) {
-        return NSS_STATUS_UNAVAIL;
+        return NSS_STATUS_NOTFOUND;
     }
+
+    pwent_ndx = 0;
 
     return NSS_STATUS_SUCCESS;
 }
@@ -502,36 +581,30 @@ _nss_ntdom_getpwent_r(struct passwd *result, char *buffer,
 {
     struct winbindd_request request;
     struct winbindd_response response;
-    int sock;
-
-    /* Connect to agent socket */
-  
-    if ((sock = open_root_pipe_sock()) == -1) {
-        return NSS_STATUS_UNAVAIL;
-    }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETPWENT;
     request.pid = getpid();
+    request.data.pwent_ndx = pwent_ndx;
 
-    if (write_sock(sock, &request, sizeof(request)) == -1) {
-        close(sock);
+    if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) == -1) {
-        close(sock);
+    if (read_sock(&response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Copy reply data from socket */
 
     if (response.result != WINBINDD_OK) {
-        return NSS_STATUS_UNAVAIL;
+        return NSS_STATUS_NOTFOUND;
     }
+
+    pwent_ndx = response.data.pw.pwent_ndx;
 
     return fill_pwent(result, &response, &buffer, &buflen, errnop);
 }
@@ -544,14 +617,6 @@ _nss_ntdom_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
 {
     struct winbindd_request request;
     struct winbindd_response response;
-    int sock;
-    enum nss_status retval;
-
-    /* Connect to agent socket */
-  
-    if ((sock = open_root_pipe_sock()) == -1) {
-        return NSS_STATUS_UNAVAIL;
-    }
 
     /* Fill in request and send down pipe */
 
@@ -559,26 +624,23 @@ _nss_ntdom_getpwuid_r(uid_t uid, struct passwd *result, char *buffer,
     request.data.uid = uid;
     request.pid = getpid();
 
-    if (write_sock(sock, &request, sizeof(request)) == -1) {
+    if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) == -1) {
-        close(sock);
+    if (read_sock(&response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Copy reply data from socket */
 
     if (response.result != WINBINDD_OK) {
-        return NSS_STATUS_UNAVAIL;
+        return NSS_STATUS_NOTFOUND;
     }
 
-    retval = fill_pwent(result, &response, &buffer, &buflen, errnop);
-
-    return retval;
+    return fill_pwent(result, &response, &buffer, &buflen, errnop);
 }
 
 /* Return passwd struct from username */
@@ -589,15 +651,7 @@ _nss_ntdom_getpwnam_r(const char *name, struct passwd *result, char *buffer,
 {
     struct winbindd_request request;
     struct winbindd_response response;
-    int sock;
-    enum nss_status retval;
     
-    /* Connect to agent socket */
-  
-    if ((sock = open_root_pipe_sock()) == -1) {
-        return NSS_STATUS_UNAVAIL;
-    }
-
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETPWNAM_FROM_USER;
@@ -606,25 +660,23 @@ _nss_ntdom_getpwnam_r(const char *name, struct passwd *result, char *buffer,
     strncpy(request.data.username, name, sizeof(request.data.username) - 1);
     request.data.username[sizeof(request.data.username) - 1] = '\0';
 
-    if (write_sock(sock, &request, sizeof(request)) == -1) {
+    if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) == -1) {
+    if (read_sock(&response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Copy reply data from socket */
 
     if (response.result != WINBINDD_OK) {
-        return NSS_STATUS_UNAVAIL;
+        return NSS_STATUS_NOTFOUND;
     }
 
-    retval = fill_pwent(result, &response, &buffer, &buflen, errnop);
-
-    return retval;
+    return fill_pwent(result, &response, &buffer, &buflen, errnop);
 }
 
 /*
@@ -638,35 +690,29 @@ _nss_ntdom_setgrent(void)
 {
     struct winbindd_request request;
     struct winbindd_response response;
-    int sock, result;
-    
-    /* Connect to agent socket */
-  
-    if ((sock = open_root_pipe_sock()) == -1) {
-        return NSS_STATUS_UNAVAIL;
-    }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_SETGRENT;
     request.pid = getpid();
 
-    if ((result = write_sock(sock, &request, sizeof(request))) == -1) {
+    if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) == -1) {
-        close(sock);
+    if (read_sock(&response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Copy reply data from socket */
 
     if (response.result != WINBINDD_OK) {
-        return NSS_STATUS_UNAVAIL;
+        return NSS_STATUS_NOTFOUND;
     }
+
+    grent_ndx = 0;
 
     return NSS_STATUS_SUCCESS;
 }
@@ -678,35 +724,29 @@ _nss_ntdom_endgrent(void)
 {
     struct winbindd_request request;
     struct winbindd_response response;
-    int sock;
-    
-    /* Connect to agent socket */
-  
-    if ((sock = open_root_pipe_sock()) == -1) {
-        return NSS_STATUS_UNAVAIL;
-    }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_ENDGRENT;
     request.pid = getpid();
 
-    if (write_sock(sock, &request, sizeof(request)) == -1) {
+    if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) == -1) {
-        close(sock);
+    if (read_sock(&response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Copy reply data from socket */
 
     if (response.result != WINBINDD_OK) {
-        return NSS_STATUS_UNAVAIL;
+        return NSS_STATUS_NOTFOUND;
     }
+
+    grent_ndx = 0;
 
     return NSS_STATUS_SUCCESS;
 }
@@ -719,37 +759,32 @@ _nss_ntdom_getgrent_r(struct group *result,
 {
     struct winbindd_request request;
     struct winbindd_response response;
-    int sock;
-
-    /* Connect to agent socket */
-  
-    if ((sock = open_root_pipe_sock()) == -1) {
-        return NSS_STATUS_UNAVAIL;
-    }
 
     /* Fill in request and send down pipe */
 
     request.cmd = WINBINDD_GETGRENT;
     request.pid = getpid();
+    request.data.grent_ndx = grent_ndx;
 
-    if (write_sock(sock, &request, sizeof(request)) == -1) {
+    if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) == -1) {
-        close(sock);
+    if (read_sock(&response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Copy reply data from socket */
 
-    if (response.result == WINBINDD_OK) {
-        return fill_grent(result, &response, &buffer, &buflen, errnop);
+    if (response.result != WINBINDD_OK) {
+        return NSS_STATUS_UNAVAIL;
     }
 
-    return NSS_STATUS_UNAVAIL;
+    grent_ndx = response.data.gr.grent_ndx;
+
+    return fill_grent(result, &response, &buffer, &buflen, errnop);
 }
 
 /* Return group struct from group name */
@@ -761,13 +796,6 @@ _nss_ntdom_getgrnam_r(const char *name,
 {
     struct winbindd_request request;
     struct winbindd_response response;
-    int sock;
-
-    /* Connect to agent socket */
-  
-    if ((sock = open_root_pipe_sock()) == -1) {
-        return NSS_STATUS_UNAVAIL;
-    }
 
     /* Fill in request and send down pipe */
 
@@ -777,21 +805,20 @@ _nss_ntdom_getgrnam_r(const char *name,
     strncpy(request.data.groupname, name, sizeof(request.data.groupname));
     request.data.groupname[sizeof(request.data.groupname) - 1] = '\0';
 
-    if (write_sock(sock, &request, sizeof(request)) == -1) {
+    if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) == -1) {
-        close(sock);
+    if (read_sock(&response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Copy reply data from socket */
 
     if (response.result != WINBINDD_OK) {
-        return NSS_STATUS_UNAVAIL;
+        return NSS_STATUS_NOTFOUND;
     }
 
     return fill_grent(result, &response, &buffer, &buflen, errnop);
@@ -806,13 +833,6 @@ _nss_ntdom_getgrgid_r(gid_t gid,
 {
     struct winbindd_request request;
     struct winbindd_response response;
-    int sock;
-
-    /* Connect to agent socket */
-  
-    if ((sock = open_root_pipe_sock()) == -1) {
-        return NSS_STATUS_UNAVAIL;
-    }
 
     /* Fill in request and send down pipe */
 
@@ -820,21 +840,20 @@ _nss_ntdom_getgrgid_r(gid_t gid,
     request.data.gid = gid;
     request.pid = getpid();
 
-    if (write_sock(sock, &request, sizeof(request)) == -1) {
+    if (write_sock(&request, sizeof(request)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Wait for reply */
 
-    if (read_sock(sock, &response, sizeof(response)) == -1) {
-        close(sock);
+    if (read_sock(&response, sizeof(response)) == -1) {
         return NSS_STATUS_UNAVAIL;
     }
 
     /* Copy reply data from socket */
 
     if (response.result != WINBINDD_OK) {
-        return NSS_STATUS_UNAVAIL;
+        return NSS_STATUS_NOTFOUND;
     }
 
     return fill_grent(result, &response, &buffer, &buflen, errnop);
