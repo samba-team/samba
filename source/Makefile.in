@@ -886,6 +886,11 @@ python_ext: $(PYTHON_OBJS)
 	LIBS="$(LIBS)" \
 		$(PYTHON) python/setup.py build
 
+python_install: $(PYTHON_OBJS)
+	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
+	LIBS="$(LIBS)" \
+		$(PYTHON) python/setup.py install
+
 # revert to the previously installed version
 revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(SBINDIR) $(SPROGS) 
