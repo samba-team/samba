@@ -425,7 +425,11 @@ krb5_425_conv_principal(krb5_context context,
     if(!strcmp(name, "rcmd"))
 	name = "host";
     return krb5_build_principal(context, princ, 
-				strlen(realm), realm, name, instance, 0);
+				strlen(realm), 
+				realm, 
+				name, 
+				(instance && instance[0]) ? instance : NULL, 
+				0);
 }
 
 krb5_error_code
