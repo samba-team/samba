@@ -318,8 +318,11 @@ time_t nt_time_to_unix(NTTIME *nt)
   /* now adjust by 369 years to make the secs since 1970 */
   d -= TIME_FIXUP_CONSTANT;
 
-  if (!(l_time_min <= d && d <= l_time_max))
-    return(0);
+  if (d <= l_time_min)
+	  return (l_time_min);
+
+  if (d >= l_time_max)
+	  return (l_time_max);
 
   ret = (time_t)(d+0.5);
 
