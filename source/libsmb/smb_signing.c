@@ -216,8 +216,8 @@ static BOOL signing_good(char *inbuf, struct smb_sign_info *si, BOOL good, uint3
 				return True;
 			}
 			/* Non-mandatory signing - just turn off if this is the first bad packet.. */
-			DEBUG(5, ("srv_check_incoming_message: signing negotiated but not required and client \
-isn't sending correct signatures. Turning off.\n"));
+			DEBUG(5, ("srv_check_incoming_message: signing negotiated but not required and peer\n"
+				  "isn't sending correct signatures. Turning off.\n"));
 			si->negotiated_smb_signing = False;
 			si->allow_smb_signing = False;
 			si->doing_signing = False;
