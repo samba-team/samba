@@ -1912,7 +1912,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   dgram->header.flags.node_type = M_NODE;
   dgram->header.flags.first = True;
   dgram->header.flags.more = False;
-  dgram->header.dgm_id = name_trn_id;
+  dgram->header.dgm_id = generate_name_trn_id();
   dgram->header.source_ip = src_ip;
   dgram->header.source_port = DGRAM_PORT;
   dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
