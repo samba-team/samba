@@ -262,6 +262,41 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 #endif
 
+
+/*
+  test enum handling
+*/
+static BOOL test_enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct echo_TestEnum r;
+	BOOL ret = True;
+	enum echo_Enum1 v = ECHO_ENUM1;
+	struct echo_Enum2 e2;
+	union echo_Enum3 e3;
+
+	r.in.foo1 = &v;
+	r.in.foo2 = &e2;
+	r.in.foo3 = &e3;
+	r.out.foo1 = &v;
+	r.out.foo2 = &e2;
+	r.out.foo3 = &e3;
+
+	e2.e1 = 76;
+	e2.e2 = ECHO_ENUM1_32;
+	e3.e1 = ECHO_ENUM2;
+
+	printf("\nTesting TestEnum\n");
+	status = dcerpc_echo_TestEnum(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("TestEnum failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
+
 BOOL torture_rpc_echo(void)
 {
         NTSTATUS status;
@@ -300,6 +335,10 @@ BOOL torture_rpc_echo(void)
 	}
 
 	if (!test_testcall2(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_enum(p, mem_ctx)) {
 		ret = False;
 	}
 

@@ -107,6 +107,12 @@ static NTSTATUS echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS echo_TestEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestEnum *r)
+{
+	r->out.foo2->e1 = ECHO_ENUM2;
+	return NT_STATUS_OK;
+}
+
 static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
 {
 	sleep(r->in.seconds);

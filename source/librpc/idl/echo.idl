@@ -92,4 +92,30 @@ interface rpcecho
 	uint32 echo_TestSleep(
 		[in] uint32 seconds
 		);
+
+	typedef enum {
+		ECHO_ENUM1 = 1,
+		ECHO_ENUM2 = 2
+	} echo_Enum1;
+
+	typedef [v1_enum] enum {
+		ECHO_ENUM1_32 = 1,
+		ECHO_ENUM2_32 = 2
+	} echo_Enum1_32;
+
+	typedef struct {
+		echo_Enum1 e1;
+		echo_Enum1_32 e2;
+	} echo_Enum2;
+
+	typedef union {
+		[case(ECHO_ENUM1)] echo_Enum1 e1;
+		[case(ECHO_ENUM2)] echo_Enum2 e2;
+	} echo_Enum3;
+
+	void echo_TestEnum(
+		[in,out,ref] echo_Enum1 *foo1,
+		[in,out,ref] echo_Enum2 *foo2,
+		[in,out,ref,switch_is(*foo1)] echo_Enum3 *foo3
+		);
 }
