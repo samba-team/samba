@@ -1,3 +1,8 @@
+2000-09-19  Assar Westerlund  <assar@sics.se>
+
+	* get.c (print_entry_long): actually print the actual saltvalue
+	used if it's not the default
+
 2000-09-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kadmin.c: add option parsing, and add `privs' as an alias for
