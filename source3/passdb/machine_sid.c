@@ -163,7 +163,6 @@ static DOM_SID *pdb_generate_sam_sid(void)
 
 		/* Stored the old sid from MACHINE.SID successfully.*/
 		SAFE_FREE(fname);
-		SAFE_FREE(sam_sid);
 		return sam_sid;
 	}
 
