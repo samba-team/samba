@@ -1520,29 +1520,34 @@ NTSTATUS can_delete(connection_struct *conn, char *fname, int dirtype, BOOL bad_
 	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
 		return NT_STATUS_NO_SUCH_FILE;
 
-	if (check_is_at_open && !can_delete_file_in_directory(conn, fname)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
+	if (check_is_at_open) {
+		if (!can_delete_file_in_directory(conn, fname)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	} else {
+		/* On open checks the open itself will check the share mode, so
+		   don't do it here as we'll get it wrong. */
 
-	/* We need a better way to return NT status codes from open... */
-	unix_ERR_class = 0;
-	unix_ERR_code = 0;
-
-	fsp = open_file_shared1(conn, fname, &sbuf, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
-		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
-
-	if (!fsp) {
-		NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
-		if (!NT_STATUS_IS_OK(unix_ERR_ntstatus))
-			ret = unix_ERR_ntstatus;
-		else if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
-			ret = NT_STATUS_SHARING_VIOLATION;
+		/* We need a better way to return NT status codes from open... */
 		unix_ERR_class = 0;
 		unix_ERR_code = 0;
-		unix_ERR_ntstatus = NT_STATUS_OK;
-		return ret;
+
+		fsp = open_file_shared1(conn, fname, &sbuf, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
+			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
+
+		if (!fsp) {
+			NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
+			if (!NT_STATUS_IS_OK(unix_ERR_ntstatus))
+				ret = unix_ERR_ntstatus;
+			else if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
+				ret = NT_STATUS_SHARING_VIOLATION;
+			unix_ERR_class = 0;
+			unix_ERR_code = 0;
+			unix_ERR_ntstatus = NT_STATUS_OK;
+			return ret;
+		}
+		close_file(fsp,False);
 	}
-	close_file(fsp,False);
 	return NT_STATUS_OK;
 }
 
