@@ -184,6 +184,10 @@
 
 #define OPLOCK_BREAK_TIMEOUT 30
 
+/* how many times do we try to resend the oplock break request - useful
+   for buggy MS clients */
+#define OPLOCK_BREAK_RESENDS 3
+
 /* Timout (in seconds) to add to the oplock break timeout
    to wait for the smbd to smbd message to return. */
 
