@@ -130,7 +130,8 @@ HDB *_kadm5_s_get_db (void *);
 kadm5_ret_t
 _kadm5_acl_check_permission __P((
 	kadm5_server_context *context,
-	unsigned op));
+	unsigned op,
+	krb5_const_principal princ));
 
 kadm5_ret_t
 _kadm5_acl_init __P((kadm5_server_context *context));
