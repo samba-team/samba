@@ -369,7 +369,7 @@ cleanup_princ:
 	krb5_free_principal(context, server);
 
 	if (mem_ctx) {
-		talloc_destory(mem_ctx);
+		talloc_destroy(mem_ctx);
 	}
 	return retval;
 }
