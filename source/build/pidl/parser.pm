@@ -406,7 +406,12 @@ sub ParseElementPullSwitch($$$$)
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
 		pidl "\t\t $e2->{TYPE} _level;\n";
 		pidl "\t\tNDR_CHECK(ndr_pull_$e2->{TYPE}(ndr, &_level));\n";
-		pidl "\t\tif (_level != $switch_var) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\n";
+		if ($switch_var =~ /r->in/) {
+			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {\n";
+		} else {
+			pidl "\t\tif (_level != $switch_var) {\n";
+		}
+		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\t\t} else { $switch_var = _level; }\n";
 		pidl "\t}\n";
 	}
 
@@ -1211,6 +1216,37 @@ sub ParseFunctionPull($)
 }
 
 #####################################################################
+# produce a function call table
+sub FunctionTable($)
+{
+	my($interface) = shift;
+	my($data) = $interface->{DATA};
+	my $count = 0;
+
+	foreach my $d (@{$data}) {
+		if ($d->{TYPE} eq "FUNCTION") { $count++; }
+	}
+
+
+	pidl "static const struct dcerpc_interface_call calls[] = {\n";
+	foreach my $d (@{$data}) {
+		if ($d->{TYPE} eq "FUNCTION") {
+			pidl "\t{\n";
+			pidl "\t\t\"$d->{NAME}\",\n";
+			pidl "\t\tsizeof(struct $d->{NAME}),\n";
+			pidl "\t\t(ndr_push_flags_fn_t) ndr_push_$d->{NAME},\n";
+			pidl "\t\t(ndr_pull_flags_fn_t) ndr_pull_$d->{NAME},\n";
+			pidl "\t\t(ndr_print_function_t) ndr_print_$d->{NAME}\n";
+			pidl "\t},\n";
+		}
+	}
+	pidl "\t{ NULL, 0, NULL, NULL }\n};\n\n";
+
+	pidl "\nstruct dcerpc_interface_table dcerpc_table_$interface->{NAME} = {\"$interface->{NAME}\", $count,calls};\n\n";
+}
+
+
+#####################################################################
 # parse the interface definitions
 sub ParseInterface($)
 {
@@ -1247,6 +1283,9 @@ sub ParseInterface($)
 			ParseFunctionPrint($d);
 		}
 	}
+
+	FunctionTable($interface);
+
 }
 
 sub NeededFunction($)
@@ -1309,7 +1348,6 @@ sub BuildNeeded($)
 		    NeededTypedef($d);
 	}
 }
-
 
 #####################################################################
 # parse a parsed IDL structure back into an IDL file

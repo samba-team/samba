@@ -48,3 +48,20 @@ struct dcerpc_pipe {
 #define DCERPC_DEBUG_VALIDATE_IN  4
 #define DCERPC_DEBUG_VALIDATE_OUT 8
 #define DCERPC_DEBUG_VALIDATE_BOTH (DCERPC_DEBUG_VALIDATE_IN | DCERPC_DEBUG_VALIDATE_OUT)
+
+/*
+  this is used to find pointers to calls
+*/
+struct dcerpc_interface_call {
+	const char *name;
+	size_t struct_size;
+	NTSTATUS (*ndr_push)(struct ndr_push *, int , void *);
+	NTSTATUS (*ndr_pull)(struct ndr_pull *, int , void *);
+	void (*ndr_print)(struct ndr_print *, const char *, int, void *);	
+};
+
+struct dcerpc_interface_table {
+	const char *name;
+	uint32 num_calls;
+	const struct dcerpc_interface_call *calls;
+};
