@@ -14,7 +14,11 @@
 #define sgttyb termio
 #define sg_flags c_lflag
 #else /* !CRAY */
+#ifndef USE_TERMIO
 #include <sgtty.h>
+#else
+#include <termio.h>
+#endif
 #endif
 #include <sys/ioctl.h>
 #else /* _IRIX */
@@ -125,7 +129,11 @@ read_pw(char *buf, char *buff, int size, char *prompt, int verify)
 {
 #ifndef VMS
 #ifndef MSDOS
+#ifndef USE_TERMIO
   struct sgttyb tty_orig,tty_new;
+#else
+  struct termios tty_orig, tty_new;
+#endif
 #endif /* !MSDOS */
 #else
   struct IOSB iosb;
@@ -175,7 +183,11 @@ read_pw(char *buf, char *buff, int size, char *prompt, int verify)
   ps=1;
 #ifndef VMS
 #ifndef MSDOS
+#ifndef USE_TERMIO
   tty_new.sg_flags &= ~ECHO;
+#else
+  tty_new.c_lflag &= ~ECHO;
+#endif
 #endif /* !MSDOS */
 #ifdef TIOCSETP
 #ifdef USE_TERMIO
