@@ -101,7 +101,7 @@ static TDB_DATA namecache_value(struct in_addr *ip_list, int num_names,
 	value->expiry = expiry;
 	value->count = num_names;
 
-	memcpy(value->ip_list, ip_list, size);
+	memcpy(value->ip_list, ip_list, sizeof(*ip_list));
 
 	retval.dptr = (char *)value;
 	retval.dsize = size;
