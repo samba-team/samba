@@ -94,6 +94,10 @@ it also defines lots of intermediate macros, just ignore those :-)
                 if (read) { PCVAL (inbuf,0,outbuf,len) } \
                 else      { PSCVAL(inbuf,0,outbuf,len) }
 
+#define RW_PIVAL(read,inbuf,outbuf,len) \
+                if (read) { PIVAL (inbuf,0,outbuf,len) } \
+                else      { PSIVAL(inbuf,0,outbuf,len) }
+
 #define RW_PSVAL(read,inbuf,outbuf,len) \
                 if (read) { PSVAL (inbuf,0,outbuf,len) } \
                 else      { PSSVAL(inbuf,0,outbuf,len) }
@@ -202,14 +206,21 @@ it also defines lots of intermediate macros, just ignore those :-)
 	RW_PCVAL(read,inbuf,outbuf,len) \
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%x ", (outbuf)[idx])); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_PSVAL(string,depth,base,read,inbuf,outbuf,len) \
 	RW_PSVAL(read,inbuf,outbuf,len) \
 	DEBUG(5,("%s%04x %s: ", \
              tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
-	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%02x ", (outbuf)[idx])); } } \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%04x ", (outbuf)[idx])); } } \
+	DEBUG(5,("\n"));
+
+#define DBG_RW_PIVAL(string,depth,base,read,inbuf,outbuf,len) \
+	RW_PIVAL(read,inbuf,outbuf,len) \
+	DEBUG(5,("%s%04x %s: ", \
+             tab_depth(depth), PTR_DIFF(inbuf,base),string)); \
+	{ int idx; for (idx = 0; idx < len; idx++) { DEBUG(5,("%08x ", (outbuf)[idx])); } } \
 	DEBUG(5,("\n"));
 
 #define DBG_RW_CVAL(string,depth,base,read,inbuf,outbuf) \

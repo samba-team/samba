@@ -61,8 +61,8 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
 	d_q->uni_dom_max_len = domlen * 2;
 	d_q->uni_dom_str_len = domlen * 2;
 
-	d_q->buffer_dom_name = 1; /* domain buffer pointer */
-	d_q->buffer_dom_sid  = 1; /* domain sid pointer */
+	d_q->buffer_dom_name = 4; /* domain buffer pointer */
+	d_q->buffer_dom_sid  = 2; /* domain sid pointer */
 
 	/* this string is supposed to be character short */
 	make_unistr2(&(d_q->uni_domain_name), dom_name, domlen);
@@ -77,7 +77,7 @@ static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 
 	/* set up the LSA QUERY INFO response */
 
-	r_q.undoc_buffer = 1; /* not null */
+	r_q.undoc_buffer = 0x22000000; /* bizarre */
 	r_q.info_class = q_q->info_class;
 
 	make_dom_query(&r_q.dom.id5, dom_name, dom_sid);
