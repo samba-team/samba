@@ -50,16 +50,21 @@ RCSID("$Id$");
  * protocol string (with terminating zero)
  *
  * server -> client
- * 4 bytes - length (0 = OK, else length of error)
- * (error)
+ * 1 byte - (0 = OK, else some kind of error)
  *
  * client -> server
  * 4 bytes - length
  * AP-REQ
  *
  * server -> client
+ * 4 bytes - length (0 = OK, else length of error)
+ * (error)
+ *
+ * if(mutual) {
+ * server -> client
  * 4 bytes - length
  * AP-REP
+ * }
  */
 
 krb5_error_code
@@ -82,7 +87,7 @@ krb5_sendauth(krb5_context context,
   u_int32_t len, net_len;
   const char *version = KRB5_SENDAUTH_VERSION;
   u_char repl;
-  krb5_data ap_req;
+  krb5_data ap_req, error_data;
   krb5_creds this_cred;
   krb5_creds *creds;
 
@@ -144,11 +149,21 @@ krb5_sendauth(krb5_context context,
 
   krb5_data_free (&ap_req);
 
-  if (krb5_net_read (context, fd, &len, 4) != 4)
-    return errno;
+  ret = krb5_read_message (context, p_fd, &error_data);
+  if (ret)
+      return ret;
 
-  if (len != 0)
-    return KRB5_SENDAUTH_REJECTED;
+  if (error_data.length != 0) {
+      KRB_ERROR error;
+
+      ret = krb5_rd_error (context, &error_data, &error);
+      krb5_data_free (&error_data);
+      if (ret == 0) {
+	  free_KRB_ERROR(&error);
+	  return error.error_code;
+      } else
+	  return ret;
+  }
 
   if (ap_req_options & AP_OPTS_MUTUAL_REQUIRED) {
     krb5_data ap_rep;
