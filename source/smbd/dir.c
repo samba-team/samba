@@ -558,6 +558,12 @@ BOOL dir_check_ftype(connection_struct *conn,int mode,SMB_STRUCT_STAT *st,int di
   return True;
 }
 
+static BOOL mangle_mask_match(connection_struct *conn, char *filename, char *mask)
+{
+	mangle_map(filename,True,False,SNUM(conn));
+	return mask_match(filename,mask,False);
+}
+
 /****************************************************************************
  Get an 8.3 directory entry.
 ****************************************************************************/
@@ -603,8 +609,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
     */
     if ((strcmp(mask,"*.*") == 0) ||
 	mask_match(filename,mask,False) ||
-        (mangle_map(filename,True,False,SNUM(conn)) &&
-         mask_match(filename,mask,False)))
+        mangle_mask_match(conn,filename,mask))
     {
       if (isrootdir && (strequal(filename,"..") || strequal(filename,".")))
         continue;

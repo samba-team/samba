@@ -41,11 +41,12 @@ static void mangle_init(void)
 	int i;
 	char *method;
 
-	if (mangle_fns) return;
+	if (mangle_fns)
+		return;
 
 	method = lp_mangling_method();
 
-	/* find the first mangling method that manages to initialise and 
+	/* find the first mangling method that manages to initialise and
 	   matches the "mangling method" parameter */
 	for (i=0; mangle_backends[i].name && !mangle_fns; i++) {
 		if (!method || !*method || strcmp(method, mangle_backends[i].name) == 0) {
@@ -83,7 +84,12 @@ BOOL mangle_is_mangled(const char *s)
 */
 BOOL mangle_is_8_3(const char *fname, BOOL check_case)
 {
-	return mangle_fns->is_8_3(fname, check_case);
+	return mangle_fns->is_8_3(fname, check_case, False);
+}
+
+BOOL mangle_is_8_3_wildcards(const char *fname, BOOL check_case)
+{
+	return mangle_fns->is_8_3(fname, check_case, True);
 }
 
 /*
@@ -100,7 +106,8 @@ BOOL mangle_check_cache(char *s)
 /* 
    map a long filename to a 8.3 name. 
  */
-BOOL mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum)
+
+void mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum)
 {
 	/* name mangling can be disabled for speed, in which case
 	   we just truncate the string */
@@ -108,11 +115,10 @@ BOOL mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum)
 		if (need83) {
 			string_truncate(OutName, 12);
 		}
-		return True;
+		return;
 	}
 
 	/* invoke the inane "mangled map" code */
 	mangle_map_filename(OutName, snum);
-
-	return mangle_fns->name_map(OutName, need83, cache83);
+	mangle_fns->name_map(OutName, need83, cache83);
 }

@@ -52,16 +52,14 @@ static BOOL fname_equal(char *name1, char *name2)
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
 ****************************************************************************/
-static BOOL mangled_equal(char *name1, char *name2, int snum)
+
+static BOOL mangled_equal(char *name1, const char *name2, int snum)
 {
 	pstring tmpname;
-	if (mangle_is_8_3(name2, True)) {
-		return False;
-	}
 	
 	pstrcpy(tmpname, name2);
-	return mangle_map(tmpname, True, False, snum) && 
-		strequal(name1, tmpname);
+	mangle_map(tmpname, True, False, snum);
+	return strequal(name1, tmpname);
 }
 
 
@@ -375,107 +373,111 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
   return(True);
 }
 
-
 /****************************************************************************
-check a filename - possibly caling reducename
-
-This is called by every routine before it allows an operation on a filename.
-It does any final confirmation necessary to ensure that the filename is
-a valid one for the user to access.
+ Check a filename - possibly caling reducename.
+ This is called by every routine before it allows an operation on a filename.
+ It does any final confirmation necessary to ensure that the filename is
+ a valid one for the user to access.
 ****************************************************************************/
+
 BOOL check_name(char *name,connection_struct *conn)
 {
-  BOOL ret;
+	BOOL ret;
 
-  errno = 0;
+	errno = 0;
 
-  if (IS_VETO_PATH(conn, name))  {
-	  DEBUG(5,("file path name %s vetoed\n",name));
-	  return(0);
-  }
+	if (IS_VETO_PATH(conn, name))  {
+		DEBUG(5,("file path name %s vetoed\n",name));
+		return(0);
+	}
 
-  ret = reduce_name(conn,name,conn->connectpath,lp_widelinks(SNUM(conn)));
+	ret = reduce_name(conn,name,conn->connectpath,lp_widelinks(SNUM(conn)));
 
-  /* Check if we are allowing users to follow symlinks */
-  /* Patch from David Clerc <David.Clerc@cui.unige.ch>
-     University of Geneva */
+	/* Check if we are allowing users to follow symlinks */
+	/* Patch from David Clerc <David.Clerc@cui.unige.ch>
+		University of Geneva */
 
 #ifdef S_ISLNK
-  if (!lp_symlinks(SNUM(conn))) {
-      SMB_STRUCT_STAT statbuf;
-      if ( (conn->vfs_ops.lstat(conn,name,&statbuf) != -1) &&
-                (S_ISLNK(statbuf.st_mode)) ) {
-          DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));
-          ret=0; 
-      }
-    }
+	if (!lp_symlinks(SNUM(conn))) {
+		SMB_STRUCT_STAT statbuf;
+		if ( (conn->vfs_ops.lstat(conn,name,&statbuf) != -1) &&
+				(S_ISLNK(statbuf.st_mode)) ) {
+			DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));
+			ret=0; 
+		}
+	}
 #endif
 
-  if (!ret)
-    DEBUG(5,("check_name on %s failed\n",name));
+	if (!ret)
+		DEBUG(5,("check_name on %s failed\n",name));
 
-  return(ret);
+	return(ret);
 }
 
-
 /****************************************************************************
-scan a directory to find a filename, matching without case sensitivity
-
-If the name looks like a mangled name then try via the mangling functions
+ Scan a directory to find a filename, matching without case sensitivity.
+ If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
+
 static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache)
 {
-  void *cur_dir;
-  char *dname;
-  BOOL mangled;
-  pstring name2;
+	void *cur_dir;
+	char *dname;
+	BOOL mangled;
 
-  mangled = mangle_is_mangled(name);
+	mangled = mangle_is_mangled(name);
 
-  /* handle null paths */
-  if (*path == 0)
-    path = ".";
+	/* handle null paths */
+	if (*path == 0)
+		path = ".";
 
-  if (docache && (dname = DirCacheCheck(path,name,SNUM(conn)))) {
-    pstrcpy(name, dname);	
-    return(True);
-  }      
+	if (docache && (dname = DirCacheCheck(path,name,SNUM(conn)))) {
+		pstrcpy(name, dname);	
+		return(True);
+	}      
 
-  /*
-   * The incoming name can be mangled, and if we de-mangle it
-   * here it will not compare correctly against the filename (name2)
-   * read from the directory and then mangled by the mangle_map()
-   * call. We need to mangle both names or neither.
-   * (JRA).
-   */
-  if (mangled)
-    mangled = !mangle_check_cache( name );
+	/*
+	 * The incoming name can be mangled, and if we de-mangle it
+	 * here it will not compare correctly against the filename (name2)
+	 * read from the directory and then mangled by the mangle_map()
+	 * call. We need to mangle both names or neither.
+	 * (JRA).
+	 */
+	if (mangled)
+		mangled = !mangle_check_cache( name );
 
-  /* open the directory */
-  if (!(cur_dir = OpenDir(conn, path, True))) {
-      DEBUG(3,("scan dir didn't open dir [%s]\n",path));
-      return(False);
-  }
+	/* open the directory */
+	if (!(cur_dir = OpenDir(conn, path, True))) {
+		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
+		return(False);
+	}
 
-  /* now scan for matching names */
-  while ((dname = ReadDirName(cur_dir))) {
-      if (*dname == '.' && (strequal(dname,".") || strequal(dname,"..")))
-        continue;
+	/* now scan for matching names */
+	while ((dname = ReadDirName(cur_dir))) {
+		if (*dname == '.' && (strequal(dname,".") || strequal(dname,"..")))
+			continue;
 
-      pstrcpy(name2,dname);
-      if (!mangle_map(name2,False,True,SNUM(conn)))
-        continue;
+		/*
+		 * At this point dname is the unmangled name.
+		 * name is either mangled or not, depending on the state of the "mangled"
+		 * variable. JRA.
+		 */
 
-      if ((mangled && mangled_equal(name,name2,SNUM(conn))) || fname_equal(name, dname)) {
-        /* we've found the file, change it's name and return */
-        if (docache)
-          DirCacheAdd(path,name,dname,SNUM(conn));
-        pstrcpy(name, dname);
-        CloseDir(cur_dir);
-        return(True);
-    }
-  }
+		/*
+		 * Check mangled name against mangled name, or unmangled name
+		 * against unmangled name.
+		 */
 
-  CloseDir(cur_dir);
-  return(False);
+		if ((mangled && mangled_equal(name,dname,SNUM(conn))) || fname_equal(name, dname)) {
+			/* we've found the file, change it's name and return */
+			if (docache)
+				DirCacheAdd(path,name,dname,SNUM(conn));
+			pstrcpy(name, dname);
+			CloseDir(cur_dir);
+			return(True);
+		}
+	}
+
+	CloseDir(cur_dir);
+	return(False);
 }

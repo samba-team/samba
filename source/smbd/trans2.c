@@ -1666,8 +1666,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			pstrcpy(short_name,base_name);
 			/* Mangle if not already 8.3 */
 			if(!mangle_is_8_3(short_name, True)) {
-				if(!mangle_map(short_name,True,True,SNUM(conn)))
-					*short_name = '\0';
+				mangle_map(short_name,True,True,SNUM(conn));
 			}
 			len = srvstr_push(outbuf, pdata+4, short_name, -1, STR_TERMINATE|STR_UPPER);
 			data_size = 4 + len;
