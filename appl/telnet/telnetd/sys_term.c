@@ -1299,9 +1299,13 @@ start_login(char *host, int autologin, char *name)
 	user = getenv("USER");
 #ifdef AUTHENTICATION
     if (auth_level < 0 || autologin != AUTH_VALID) {
-	if(!no_warn)
-	    printf("User not authenticated. "
-		   "Using plaintext username and password\r\n");
+	if(!no_warn) {
+	    printf("User not authenticated. ");
+	    if (require_otp)
+		printf("Using one-time password\r\n");
+	    else
+		printf("Using plaintext username and password\r\n");
+	}
 	if (require_otp) {
 	    addarg(&argv, "-a");
 	    addarg(&argv, "otp");
