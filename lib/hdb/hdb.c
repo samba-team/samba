@@ -77,6 +77,15 @@ hdb_next_etype2key(krb5_context context,
 {
     krb5_keytype keytype;
     krb5_error_code ret;
+    if(e->etypes) {
+	/* check if the etype is listed as `supported' by this principal */
+	int i;
+	for(i = 0; i < e->etypes->len; i++)
+	    if(etype == e->etypes->val[i])
+		break;
+	if(i == e->etypes->len)
+	    return KRB5_PROG_ETYPE_NOSUPP;
+    }
     ret = krb5_etype_to_keytype(context, etype, &keytype);
     if(ret)
 	return ret;
