@@ -951,8 +951,11 @@ static void printers_page(void)
 	alarm(300);
 
 	dbf = sys_fopen("/dev/null", "w");
-
 	if (!dbf) dbf = stderr;
+
+	/* we don't want stderr screwing us up */
+	close(2);
+	open("/dev/null", O_WRONLY);
 
 	while ((opt = getopt(argc, argv,"s:a")) != EOF) {
 		switch (opt) {
