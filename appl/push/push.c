@@ -54,6 +54,8 @@ static int do_fork;
 static int do_leave;
 static int do_version;
 static int do_help;
+static int do_from;
+static char *header_str;
 
 struct getargs args[] = {
 #ifdef KRB4
@@ -72,6 +74,9 @@ struct getargs args[] = {
       NULL },
     { "port",	'p', arg_string,	&port_str,	"Use this port",
       "number-or-service" },
+    { "from",	 0,  arg_flag,		&do_from,	"Behave like from",
+      NULL },
+    { "header",	 0,  arg_string,	&header_str,	"Header string to print", NULL },
     { "version", 0,  arg_flag,		&do_version,	"Print version",
       NULL },
     { "help",	 0,  arg_flag,		&do_help,	NULL,
@@ -128,7 +133,8 @@ do_connect (char *host, int port, int nodelay)
     }
 }
 
-typedef enum { INIT = 0, GREAT, USER, PASS, STAT, RETR, DELE, QUIT } pop_state;
+typedef enum { INIT = 0, GREAT, USER, PASS, STAT, RETR, TOP, 
+	       DELE, QUIT } pop_state;
 
 #define PUSH_BUFSIZ 65536
 
@@ -198,6 +204,7 @@ doit(int s,
      char *host,
      char *user,
      char *outfilename,
+     char *header_str,
      int leavep,
      int verbose,
      int forkp)
@@ -205,7 +212,6 @@ doit(int s,
     int ret;
     char out_buf[PUSH_BUFSIZ];
     size_t out_len = 0;
-    char *out_ptr = out_buf;
     char in_buf[PUSH_BUFSIZ + 1];	/* sentinel */
     size_t in_len = 0;
     char *in_ptr = in_buf;
@@ -218,12 +224,17 @@ doit(int s,
     time_t now;
     struct write_state write_state;
 
-    out_fd = open(outfilename, O_WRONLY | O_APPEND | O_CREAT, 0666);
-    if (out_fd < 0)
-	err (1, "open %s", outfilename);
-
-    if (verbose)
-	fprintf (stderr, "%s@%s -> %s\n", user, host, outfilename);
+    if (do_from) {
+	out_fd = -1;
+	if (verbose)
+	    fprintf (stderr, "%s@%s\n", user, host);
+    } else {
+	out_fd = open(outfilename, O_WRONLY | O_APPEND | O_CREAT, 0666);
+	if (out_fd < 0)
+	    err (1, "open %s", outfilename);
+	if (verbose)
+	    fprintf (stderr, "%s@%s -> %s\n", user, host, outfilename);
+    }
 
     now = time(NULL);
     from_line_length = snprintf (from_line, sizeof(from_line),
@@ -237,7 +248,8 @@ doit(int s,
     if (verbose > 1)
 	write (STDERR_FILENO, out_buf, out_len);
 
-    write_state_init (&write_state, out_fd);
+    if (!do_from)
+	write_state_init (&write_state, out_fd);
 
     while(state != QUIT) {
 	fd_set readset, writeset;
@@ -245,15 +257,17 @@ doit(int s,
 	FD_ZERO(&readset);
 	FD_ZERO(&writeset);
 	FD_SET(s,&readset);
-	if ((state == STAT || state == RETR)  && asked_for < count
+	if (((state == STAT || state == RETR || state == TOP)
+	     && asked_for < count)
 	    || (state == DELE && asked_deleted < count))
 	    FD_SET(s,&writeset);
 	ret = select (s + 1, &readset, &writeset, NULL, NULL);
-	if (ret < 0)
+	if (ret < 0) {
 	    if (errno == EAGAIN)
 		continue;
 	    else
 		err (1, "select");
+	}
 
 	if (FD_ISSET(s, &readset)) {
 	    char *beg, *p;
@@ -274,9 +288,27 @@ doit(int s,
 	    rem = in_len;
 	    while(rem > 1
 		  && (p = strstr(beg, "\r\n")) != NULL) {
-		if (state == RETR) {
+		if (state == TOP) {
 		    char *copy = beg;
 
+		    if (strncmp(copy,
+				header_str,
+				min(p - copy + 1, strlen(header_str))) == 0) {
+			fprintf (stdout, "%.*s\n", p - copy, copy);
+		    }
+		    if (beg[0] == '.' && beg[1] == '\r' && beg[2] == '\n') {
+			state = STAT;
+			if (++retrieved == count) {
+			    state = QUIT;
+			    net_write (s, "QUIT\r\n", 6);
+			    if (verbose > 1)
+				net_write (STDERR_FILENO, "QUIT\r\n", 6);
+			}
+		    }
+		    rem -= p - beg + 2;
+		    beg = p + 2;
+		} else if (state == RETR) {
+		    char *copy = beg;
 		    if (beg[0] == '.') {
 			if (beg[1] == '\r' && beg[2] == '\n') {
 			    if(!blank_line)
@@ -328,10 +360,14 @@ doit(int s,
 		    beg = p + 2;
 		} else if (rem >= 3 && strncmp (beg, "+OK", 3) == 0) {
 		    if (state == STAT) {
-			write_state_add(&write_state,
-					from_line, from_line_length);
+			if (!do_from)
+			    write_state_add(&write_state,
+					    from_line, from_line_length);
 			blank_line = 0;
-			state = RETR;
+			if (do_from) 
+			    state = TOP;
+			else
+			    state = RETR;
 		    } else if (state == DELE) {
 			if (++deleted == count) {
 			    state = QUIT;
@@ -361,16 +397,20 @@ doit(int s,
 		} else
 		    errx (1, "Bad response: %.*s", p - beg, beg);
 	    }
-	    write_state_flush (&write_state);
+	    if (!do_from)
+		write_state_flush (&write_state);
 
 	    memmove (in_buf, beg, rem);
 	    in_len = rem;
 	    in_ptr = in_buf + rem;
 	}
 	if (FD_ISSET(s, &writeset)) {
-	    if (state == STAT || state == RETR)
+	    if ((state == STAT && !do_from) || state == RETR)
 		out_len = snprintf (out_buf, sizeof(out_buf),
 				    "RETR %u\r\n", ++asked_for);
+	    else if ((state == STAT && do_from) || state == TOP)
+		out_len = snprintf (out_buf, sizeof(out_buf),
+				    "TOP %u 0\r\n", ++asked_for);
 	    else if(state == DELE)
 		out_len = snprintf (out_buf, sizeof(out_buf),
 				    "DELE %u\r\n", ++asked_deleted);
@@ -382,7 +422,8 @@ doit(int s,
     }
     if (verbose)
 	fprintf (stderr, "Done\n");
-    write_state_destroy (&write_state);
+    if (!do_from)
+	write_state_destroy (&write_state);
     return 0;
 }
 
@@ -392,6 +433,7 @@ do_v5 (char *host,
        int port,
        char *user,
        char *filename,
+       char *header_str,
        int leavep,
        int verbose,
        int forkp)
@@ -442,7 +484,7 @@ do_v5 (char *host,
 	       krb5_get_err_text (context, ret));
 	return 1;
     }
-    return doit (s, host, user, filename, leavep, verbose, forkp);
+    return doit (s, host, user, filename, header_str, leavep, verbose, forkp);
 }
 #endif
 
@@ -452,6 +494,7 @@ do_v4 (char *host,
        int port,
        char *user,
        char *filename,
+       char *header_str,
        int leavep,
        int verbose,
        int forkp)
@@ -483,7 +526,7 @@ do_v4 (char *host,
 	warnx("krb_sendauth: %s", krb_get_err_text(ret));
 	return 1;
     }
-    return doit (s, host, user, filename, leavep, verbose, forkp);
+    return doit (s, host, user, filename, header_str, leavep, verbose, forkp);
 }
 #endif /* KRB4 */
 
@@ -509,7 +552,7 @@ parse_pobox (char *a0, char *a1,
 	*u++ = '\0';
     else
 	u = a0;
-    if(h == u)
+    if(h == u) {
 	/* some inconsistent compatibility with various mailers */
 	if(po) {
 	    h = getenv("MAILHOST");
@@ -521,6 +564,7 @@ parse_pobox (char *a0, char *a1,
 		errx (1, "Who are you?");
 	    u = strdup(pwd->pw_name);
 	}
+    }
     *host = h;
     *user = u;
     *filename = f;
@@ -566,8 +610,13 @@ main(int argc, char **argv)
 	return 0;
     }
 	
-    if (argc != 2)
+    if (argc != 2 && (do_from && argc != 1))
 	usage (1);
+
+    if (do_from && header_str == NULL)
+	header_str = "From:";
+    else if (header_str != NULL)
+	do_from = 1;
 
     if (port_str) {
 	struct servent *s = roken_getservbyname (port_str, "tcp");
@@ -597,14 +646,14 @@ main(int argc, char **argv)
 
 #ifdef KRB5
     if (ret && use_v5) {
-	ret = do_v5 (host, port, user, filename,
+	ret = do_v5 (host, port, user, filename, header_str,
 		     do_leave, do_verbose, do_fork);
     }
 #endif
 
 #ifdef KRB4
     if (ret && use_v4) {
-	ret = do_v4 (host, port, user, filename,
+	ret = do_v4 (host, port, user, filename, header_str,
 		     do_leave, do_verbose, do_fork);
     }
 #endif /* KRB4 */
