@@ -313,9 +313,9 @@ WINBINDD_OBJ = \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
 
-NTDOM_OBJ = nsswitch/ntdom.o nsswitch/common.o
+WINBIND_NSS_OBJ = nsswitch/winbind.o nsswitch/common.o
 
-NTDOM_PICOBJS = $(NTDOM_OBJ:.o=.po)
+WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 
 
 ######################################################################
@@ -538,15 +538,15 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(LIBS)
 
-nsswitch/libnss_ntdom.so: $(NTDOM_PICOBJS)
+nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
-	@$(LINK) -shared -o $@ $(NTDOM_PICOBJS)
+	@$(LINK) -shared -o $@ $(WINBIND_NSS_PICOBJS)
 
 nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -shared -o $@ $(PAM_WINBIND_OBJ)
 
-nsswitch: nsswitch/libnss_wins.so nsswitch/pam_winbind.so nsswitch/libnss_ntdom.so
+nsswitch: nsswitch/libnss_wins.so nsswitch/pam_winbind.so nsswitch/libnss_winbind.so
 
 install: installbin installman installscripts installcp installswat
 

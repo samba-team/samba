@@ -26,8 +26,8 @@
 #define PAM_USE_AUTHTOK_ARG (1<<1)
 #define PAM_UNKNOWN_OK_ARG (1<<2)
 
-#include "ntdom_config.h"
-#include "winbindd_ntdom.h"
+#include "winbind_nss_config.h"
+#include "winbindd_nss.h"
 
 /* prototypes from common.c */
 void init_request(struct winbindd_request *req,int rq_type);
