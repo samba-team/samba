@@ -45,11 +45,12 @@
 
 mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname)
 {
-	mode_t result = (S_IRUSR | S_IRGRP | S_IROTH);
+	mode_t result = (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
 	mode_t dir_mode = 0; /* Mode of the parent directory if inheriting. */
 
-	if ( !IS_DOS_READONLY(dosmode) )
-		result |= (S_IWUSR | S_IWGRP | S_IWOTH);
+	if (!lp_store_dos_attributes(SNUM(conn)) && IS_DOS_READONLY(dosmode)) {
+		result &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
+	}
 
 	if (fname && lp_inherit_perms(SNUM(conn))) {
 		char *dname;
@@ -160,21 +161,129 @@ uint32 dos_mode_from_sbuf(connection_struct *conn, SMB_STRUCT_STAT *sbuf)
 }
 
 /****************************************************************************
+ Get DOS attributes from an EA.
+****************************************************************************/
+
+static BOOL get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf, uint32 *pattr)
+{
+	ssize_t sizeret;
+	fstring attrstr;
+	unsigned int dosattr;
+
+	if (!lp_store_dos_attributes(SNUM(conn))) {
+		return False;
+	}
+
+	*pattr = 0;
+
+	sizeret = SMB_VFS_GETXATTR(conn, path, SAMBA_XATTR_DOS_ATTRIB, attrstr, sizeof(attrstr));
+	if (sizeret == -1) {
+#if defined(ENOTSUP) && defined(ENOATTR)
+		if ((errno != ENOTSUP) && (errno != ENOATTR) && (errno != EACCES)) {
+			DEBUG(1,("get_ea_dos_attributes: Cannot get attribute from EA on file %s: Error = %s\n",
+				path, strerror(errno) ));
+		}
+#endif
+		return False;
+	}
+	/* Null terminate string. */
+	attrstr[sizeret] = 0;
+	DEBUG(10,("get_ea_dos_attribute: %s attrstr = %s\n", path, attrstr));
+
+	if (sizeret < 2 || attrstr[0] != '0' || attrstr[1] != 'x' ||
+			sscanf(attrstr, "%x", &dosattr) != 1) {
+		DEBUG(1,("get_ea_dos_attributes: Badly formed DOSATTRIB on file %s - %s\n", path, attrstr));
+                return False;
+        }
+
+	if (S_ISDIR(sbuf->st_mode)) {
+		dosattr |= aDIR;
+	}
+	*pattr = (uint32)(dosattr & SAMBA_ATTRIBUTES_MASK);
+
+	DEBUG(8,("get_ea_dos_attribute returning (0x%x)", dosattr));
+
+	if (dosattr & aHIDDEN) DEBUG(8, ("h"));
+	if (dosattr & aRONLY ) DEBUG(8, ("r"));
+	if (dosattr & aSYSTEM) DEBUG(8, ("s"));
+	if (dosattr & aDIR   ) DEBUG(8, ("d"));
+	if (dosattr & aARCH  ) DEBUG(8, ("a"));
+	
+	DEBUG(8,("\n"));
+
+	return True;
+}
+
+/****************************************************************************
+ Set DOS attributes in an EA.
+****************************************************************************/
+
+static BOOL set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf, uint32 dosmode)
+{
+	fstring attrstr;
+	files_struct *fsp = NULL;
+	BOOL ret = False;
+
+	snprintf(attrstr, sizeof(attrstr)-1, "0x%x", dosmode & SAMBA_ATTRIBUTES_MASK);
+	if (SMB_VFS_SETXATTR(conn, path, SAMBA_XATTR_DOS_ATTRIB, attrstr, strlen(attrstr), 0) == -1) {
+		if((errno != EPERM) && (errno != EACCES)) {
+			return False;
+		}
+
+		/* We want DOS semantics, ie allow non owner with write permission to change the
+			bits on a file. Just like file_utime below.
+		*/
+
+		/* Check if we have write access. */
+		if(!CAN_WRITE(conn) || !lp_dos_filemode(SNUM(conn)))
+			return False;
+
+		/*
+		 * We need to open the file with write access whilst
+		 * still in our current user context. This ensures we
+		 * are not violating security in doing the setxattr.
+		 */
+
+		fsp = open_file_fchmod(conn,path,sbuf);
+		if (!fsp)
+			return ret;
+		become_root();
+		if (SMB_VFS_SETXATTR(conn, path, SAMBA_XATTR_DOS_ATTRIB, attrstr, strlen(attrstr), 0) == 0) {
+			ret = True;
+		}
+		unbecome_root();
+		close_file_fchmod(fsp);
+		return ret;
+	}
+	DEBUG(10,("set_ea_dos_attribute: set EA %s on file %s\n", attrstr, path));
+	return True;
+}
+
+/****************************************************************************
  Change a unix mode to a dos mode.
 ****************************************************************************/
 
-uint32 dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
+uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 {
-	int result = 0;
+	uint32 result = 0;
 
 	DEBUG(8,("dos_mode: %s\n", path));
+
+	if (!VALID_STAT(*sbuf)) {
+		return 0;
+	}
+
+	/* Get the DOS attributes from an EA by preference. */
+	if (get_ea_dos_attribute(conn, path, sbuf, &result)) {
+		return result;
+	}
 
 	result = dos_mode_from_sbuf(conn, sbuf);
 
 	/* Now do any modifications that depend on the path name. */
 	/* hide files with a name starting with a . */
 	if (lp_hide_dot_files(SNUM(conn))) {
-		char *p = strrchr_m(path,'/');
+		const char *p = strrchr_m(path,'/');
 		if (p)
 			p++;
 		else
@@ -207,7 +316,7 @@ uint32 dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
  chmod a file - but preserve some bits.
 ********************************************************************/
 
-int file_chmod(connection_struct *conn,char *fname, uint32 dosmode,SMB_STRUCT_STAT *st)
+int file_set_dosmode(connection_struct *conn, const char *fname, uint32 dosmode, SMB_STRUCT_STAT *st)
 {
 	SMB_STRUCT_STAT st1;
 	int mask=0;
@@ -215,6 +324,7 @@ int file_chmod(connection_struct *conn,char *fname, uint32 dosmode,SMB_STRUCT_ST
 	mode_t unixmode;
 	int ret = -1;
 
+	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n", dosmode, fname));
 	if (!st) {
 		st = &st1;
 		if (SMB_VFS_STAT(conn,fname,st))
@@ -230,6 +340,11 @@ int file_chmod(connection_struct *conn,char *fname, uint32 dosmode,SMB_STRUCT_ST
 
 	if (dos_mode(conn,fname,st) == dosmode)
 		return(0);
+
+	/* Store the DOS attributes in an EA by preference. */
+	if (set_ea_dos_attribute(conn, fname, st, dosmode)) {
+		return 0;
+	}
 
 	unixmode = unix_mode(conn,dosmode,fname);
 

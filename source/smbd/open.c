@@ -741,21 +741,10 @@ static void kernel_flock(files_struct *fsp, int deny_mode)
 }
 
 
-static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t existing_mode,
-		mode_t new_mode, mode_t *returned_mode)
+static BOOL open_match_attributes(connection_struct *conn, const char *path, uint32 old_dos_mode, uint32 new_dos_mode,
+		mode_t existing_mode, mode_t new_mode, mode_t *returned_mode)
 {
-	uint32 old_dos_mode, new_dos_mode;
 	uint32 noarch_old_dos_mode, noarch_new_dos_mode;
-	SMB_STRUCT_STAT sbuf;
-
-	ZERO_STRUCT(sbuf);
-
-	sbuf.st_mode = existing_mode;
-	old_dos_mode = dos_mode(conn, path, &sbuf);
-
-	sbuf.st_mode = new_mode;
-	/* The new mode conversion shouldn't look at pathname. */
-	new_dos_mode = dos_mode_from_sbuf(conn, &sbuf);
 
 	noarch_old_dos_mode = (old_dos_mode & ~FILE_ATTRIBUTE_ARCHIVE);
 	noarch_new_dos_mode = (new_dos_mode & ~FILE_ATTRIBUTE_ARCHIVE);
@@ -771,11 +760,11 @@ static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t ex
 		old_dos_mode, (unsigned int)existing_mode, new_dos_mode, (unsigned int)*returned_mode ));
 
 	/* If we're mapping SYSTEM and HIDDEN ensure they match. */
-	if (lp_map_system(SNUM(conn))) {
+	if (lp_map_system(SNUM(conn)) || lp_store_dos_attributes(SNUM(conn))) {
 		if ((old_dos_mode & FILE_ATTRIBUTE_SYSTEM) && !(new_dos_mode & FILE_ATTRIBUTE_SYSTEM))
 			return False;
 	}
-	if (lp_map_hidden(SNUM(conn))) {
+	if (lp_map_hidden(SNUM(conn)) || lp_store_dos_attributes(SNUM(conn))) {
 		if ((old_dos_mode & FILE_ATTRIBUTE_HIDDEN) && !(new_dos_mode & FILE_ATTRIBUTE_HIDDEN))
 			return False;
 	}
@@ -787,10 +776,10 @@ static BOOL open_match_attributes(connection_struct *conn, char *path, mode_t ex
 ****************************************************************************/
 
 files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
-			       int share_mode,int ofun, mode_t mode,int oplock_request, 
+			       int share_mode,int ofun, uint32 new_dos_mode, int oplock_request, 
 			       int *Access,int *action)
 {
-	return open_file_shared1(conn, fname, psbuf, 0, share_mode, ofun, mode, 
+	return open_file_shared1(conn, fname, psbuf, 0, share_mode, ofun, new_dos_mode,
 				 oplock_request, Access, action);
 }
 
@@ -800,8 +789,9 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 
 files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
 				uint32 desired_access, 
-				int share_mode,int ofun, mode_t mode,int oplock_request, 
-				int *Access,int *action)
+				int share_mode,int ofun, uint32 new_dos_mode,
+				int oplock_request, 
+				int *Access,int *paction)
 {
 	int flags=0;
 	int flags2=0;
@@ -820,6 +810,10 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	int open_mode=0;
 	uint16 port = 0;
 	mode_t new_mode = (mode_t)0;
+	int action;
+	uint32 existing_dos_mode = 0;
+	/* We add aARCH to this as this mode is only used if the file is created new. */
+	mode_t mode = unix_mode(conn,new_dos_mode | aARCH,fname);
 
 	if (conn->printer) {
 		/* printers are handled completely differently. Most of the passed parameters are
@@ -827,7 +821,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		if (Access)
 			*Access = DOS_OPEN_WRONLY;
 		if (action)
-			*action = FILE_WAS_CREATED;
+			*paction = FILE_WAS_CREATED;
 		return print_fsp_open(conn, fname);
 	}
 
@@ -835,13 +829,18 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 	if(!fsp)
 		return NULL;
 
-	DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
-		fname, share_mode, ofun, (int)mode,  oplock_request ));
+	DEBUG(10,("open_file_shared: fname = %s, dos_attrs = %x, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
+		fname, new_dos_mode, share_mode, ofun, (int)mode,  oplock_request ));
 
 	if (!check_name(fname,conn)) {
 		file_free(fsp);
 		return NULL;
 	} 
+
+	new_dos_mode &= SAMBA_ATTRIBUTES_MASK;
+	if (file_existed) {
+		existing_dos_mode = dos_mode(conn, fname, psbuf);
+	}
 
 	/* ignore any oplock requests if oplocks are disabled */
 	if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break) {
@@ -883,9 +882,11 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 
 	/* We only care about matching attributes on file exists and truncate. */
 	if (file_existed && (GET_FILE_OPEN_DISPOSITION(ofun) == FILE_EXISTS_TRUNCATE)) {
-		if (!open_match_attributes(conn, fname, psbuf->st_mode, mode, &new_mode)) {
-			DEBUG(5,("open_file_shared: attributes missmatch for file %s (0%o, 0%o)\n",
-						fname, (int)psbuf->st_mode, (int)mode ));
+		if (!open_match_attributes(conn, fname, existing_dos_mode, new_dos_mode,
+					psbuf->st_mode, mode, &new_mode)) {
+			DEBUG(5,("open_file_shared: attributes missmatch for file %s (%x %x) (0%o, 0%o)\n",
+						fname, existing_dos_mode, new_dos_mode,
+						(int)psbuf->st_mode, (int)mode ));
 			file_free(fsp);
 			errno = EACCES;
 			return NULL;
@@ -929,7 +930,7 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 #endif /* O_SYNC */
   
 	if (flags != O_RDONLY && file_existed && 
-			(!CAN_WRITE(conn) || IS_DOS_READONLY(dos_mode(conn,fname,psbuf)))) {
+			(!CAN_WRITE(conn) || IS_DOS_READONLY(existing_dos_mode))) {
 		if (!fcbopen) {
 			DEBUG(5,("open_file_shared: read/write access requested for file %s on read only %s\n",
 				fname, !CAN_WRITE(conn) ? "share" : "file" ));
@@ -1120,16 +1121,19 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 	DEBUG(10,("open_file_shared : share_mode = %x\n", fsp->share_mode ));
 
-	if (Access)
+	if (Access) {
 		(*Access) = open_mode;
+	}
 
-	if (action) {
-		if (file_existed && !(flags2 & O_TRUNC))
-			*action = FILE_WAS_OPENED;
-		if (!file_existed)
-			*action = FILE_WAS_CREATED;
-		if (file_existed && (flags2 & O_TRUNC))
-			*action = FILE_WAS_OVERWRITTEN;
+	if (file_existed && !(flags2 & O_TRUNC))
+		action = FILE_WAS_OPENED;
+	if (file_existed && (flags2 & O_TRUNC))
+		action = FILE_WAS_OVERWRITTEN;
+	if (!file_existed) 
+		action = FILE_WAS_CREATED;
+
+	if (paction) {
+		*paction = action;
 	}
 
 	/* 
@@ -1164,6 +1168,13 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		}
 	}
 	
+	if (action == FILE_WAS_OVERWRITTEN || action == FILE_WAS_CREATED) {
+		/* Files should be initially set as archive */
+		if (lp_map_archive(SNUM(conn)) || lp_store_dos_attributes(SNUM(conn))) {
+			file_set_dosmode(conn, fname, new_dos_mode | aARCH, NULL);
+		}
+	}
+
 	/*
 	 * Take care of inherited ACLs on created files - if default ACL not
 	 * selected.
@@ -1257,7 +1268,7 @@ int close_file_fchmod(files_struct *fsp)
 ****************************************************************************/
 
 files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf,
-			uint32 desired_access, int share_mode, int smb_ofun, mode_t unixmode, int *action)
+			uint32 desired_access, int share_mode, int smb_ofun, int *action)
 {
 	extern struct current_user current_user;
 	BOOL got_stat = False;
