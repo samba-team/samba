@@ -71,6 +71,10 @@ ruserpass(char *host, char **aname, char **apass, char **aacct)
 	int t, i, c, usedefault = 0;
 	struct stat stb;
 
+	if(k_gethostname(myhostname, MaxHostNameLen) < 0)
+	    strcpy(myhostname, "");
+	if((mydomain = strchr(myhostname, '.')) == NULL)
+	    mydomain = myhostname;
 	hdir = getenv("HOME");
 	if (hdir == NULL)
 		hdir = ".";
@@ -81,10 +85,6 @@ ruserpass(char *host, char **aname, char **apass, char **aacct)
 			warn("%s", buf);
 		return (0);
 	}
-	if(k_gethostname(myhostname, MaxHostNameLen) < 0)
-	    strcpy(myhostname, "");
-	if((mydomain = strchr(myhostname, '.')) == NULL)
-	    mydomain = myhostname;
 
 next:
 	while ((t = token())) switch(t) {
