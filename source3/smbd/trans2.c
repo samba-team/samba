@@ -1069,7 +1069,11 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
     }
     case SMB_QUERY_FS_ATTRIBUTE_INFO:
       data_len = 12 + 2*strlen(FSTYPE_STRING);
+#if 1 /* JRATEST */
+      SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES); /* FS ATTRIBUTES */
+#else /* JRATEST */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
+#endif /* JRATEST */
       SIVAL(pdata,4,128); /* Max filename component length */
       SIVAL(pdata,8,2*strlen(FSTYPE_STRING));
       PutUniCode(pdata+12,FSTYPE_STRING);
