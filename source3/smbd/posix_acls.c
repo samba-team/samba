@@ -2097,17 +2097,17 @@ static struct canon_ace *canon_ace_entry_for(struct canon_ace *list, SMB_ACL_TAG
  
 ****************************************************************************/
 
-SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T acl)
+SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl)
 {
 	SMB_ACL_ENTRY_T entry;
 
-	if (!acl)
+	if (!the_acl)
 		return NULL;
-	if (SMB_VFS_SYS_ACL_GET_ENTRY(conn, acl, SMB_ACL_FIRST_ENTRY, &entry) != 1) {
-		SMB_VFS_SYS_ACL_FREE_ACL(conn, acl);
+	if (SMB_VFS_SYS_ACL_GET_ENTRY(conn, the_acl, SMB_ACL_FIRST_ENTRY, &entry) != 1) {
+		SMB_VFS_SYS_ACL_FREE_ACL(conn, the_acl);
 		return NULL;
 	}
-	return acl;
+	return the_acl;
 }
 
 /****************************************************************************
