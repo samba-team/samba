@@ -231,7 +231,6 @@ typedef struct
 	BOOL bReadPrediction;
 	BOOL bReadbmpx;
 	BOOL bSyslogOnly;
-	BOOL bAdminLog;
 	BOOL bBrowseList;
 	BOOL bNISHomeMap;
 	BOOL bTimeServer;
@@ -335,7 +334,6 @@ typedef struct
 	int iOplockContentionLimit;
 	int iCSCPolicy;
 	int iBlock_size;
-	BOOL bAlternatePerm;
 	BOOL bPreexecClose;
 	BOOL bRootpreexecClose;
 	BOOL bCaseSensitive;
@@ -455,7 +453,6 @@ static service sDefault = {
 	2,			/* iOplockContentionLimit */
 	0,			/* iCSCPolicy */
 	1024,           /* iBlock_size */
-	False,			/* bAlternatePerm */
 	False,			/* bPreexecClose */
 	False,			/* bRootpreexecClose */
 	False,			/* case sensitive */
@@ -693,7 +690,6 @@ static struct parm_struct parm_table[] = {
 	{"encrypt passwords", P_BOOL, P_GLOBAL, &Globals.bEncryptPasswords, NULL, NULL, FLAG_BASIC},
 	{"update encrypted", P_BOOL, P_GLOBAL, &Globals.bUpdateEncrypt, NULL, NULL, FLAG_BASIC},
 	{"allow trusted domains", P_BOOL, P_GLOBAL, &Globals.bAllowTrustedDomains, NULL, NULL, 0},
-	{"alternate permissions", P_BOOL, P_LOCAL, &sDefault.bAlternatePerm, NULL, NULL, FLAG_GLOBAL | FLAG_DEPRECATED},
 	{"hosts equiv", P_STRING, P_GLOBAL, &Globals.szHostsEquiv, NULL, NULL, 0},
 	{"min passwd length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, 0},
 	{"min password length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, 0},
@@ -768,7 +764,6 @@ static struct parm_struct parm_table[] = {
 
 	{"Logging Options", P_SEP, P_SEPARATOR},
 
-	{"admin log", P_BOOL, P_GLOBAL, &Globals.bAdminLog, NULL, NULL, 0},
 	{"log level", P_STRING, P_GLOBAL, &Globals.szLogLevel, handle_debug_list, NULL, 0},
 	{"debuglevel", P_STRING, P_GLOBAL, &Globals.szLogLevel, handle_debug_list, NULL, 0},
 	{"syslog", P_INTEGER, P_GLOBAL, &Globals.syslog, NULL, NULL, 0},
@@ -1279,7 +1274,6 @@ static void init_globals(void)
 	Globals.bStripDot = False;
 	Globals.syslog = 1;
 	Globals.bSyslogOnly = False;
-	Globals.bAdminLog = False;
 	Globals.bTimestampLogs = True;
 	string_set(&Globals.szLogLevel, "0");
 	Globals.bDebugHiresTimestamp = False;
@@ -1574,7 +1568,6 @@ FN_GLOBAL_BOOL(lp_strip_dot, &Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords, &Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_update_encrypted, &Globals.bUpdateEncrypt)
 FN_GLOBAL_BOOL(lp_syslog_only, &Globals.bSyslogOnly)
-FN_GLOBAL_BOOL(lp_admin_log, &Globals.bAdminLog)
 FN_GLOBAL_BOOL(lp_timestamp_logs, &Globals.bTimestampLogs)
 FN_GLOBAL_BOOL(lp_debug_hires_timestamp, &Globals.bDebugHiresTimestamp)
 FN_GLOBAL_BOOL(lp_debug_pid, &Globals.bDebugPid)
