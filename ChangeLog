@@ -1,3 +1,7 @@
+1999-09-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* admin/ktutil.c (kt_get): add `--help'
+
 1999-09-21  Assar Westerlund  <assar@sics.se>
 
 	* kuser/Makefile.am: add kdecode_ticket
