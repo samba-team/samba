@@ -1201,6 +1201,9 @@ static void init_globals(void)
 	/* using UTF8 by default allows us to support all chars */
 	string_set(&Globals.unix_charset, "UTF8");
 
+	/* Use codepage 850 as a default for the dos character set */
+	string_set(&Globals.dos_charset, "CP850");
+
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
