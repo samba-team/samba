@@ -132,7 +132,7 @@
 	typedef struct {
 		uint16 len;
 		uint16 max_len;
-		winreg_Uint16buf *buf;
+		unistr *buf;
 	} winreg_EnumValueName;
 
 	typedef struct {
