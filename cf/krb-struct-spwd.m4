@@ -17,6 +17,6 @@ ac_cv_struct_spwd=no)
 AC_MSG_RESULT($ac_cv_struct_spwd)
 
 if test "$ac_cv_struct_spwd" = "yes"; then
-  AC_DEFINE(HAVE_STRUCT_SPWD)
+  AC_DEFINE(HAVE_STRUCT_SPWD, 1, [define if you have struct spwd])
 fi
 ])

@@ -14,12 +14,9 @@ changequote([,])dnl
 	snprintf(foo, 2, "12");
 	return strcmp(foo, "1");
 }],:,ac_cv_func_snprintf_working=no,:))
-: << END
-@@@funcs="$funcs snprintf"@@@
-END
+
 if test "$ac_cv_func_snprintf_working" = yes; then
-	foo=HAVE_SNPRINTF
-	AC_DEFINE_UNQUOTED($foo)
+	AC_DEFINE_UNQUOTED(HAVE_SNPRINTF, 1, [define if you have a working snprintf])
 fi
 if test "$ac_cv_func_snprintf_working" = yes; then
 AC_NEED_PROTO([#include <stdio.h>],snprintf)
@@ -51,12 +48,9 @@ int main()
 {
 	return foo(0, "12");
 }],:,ac_cv_func_vsnprintf_working=no,:))
-: << END
-@@@funcs="$funcs vsnprintf"@@@
-END
+
 if test "$ac_cv_func_vsnprintf_working" = yes; then
-	foo=HAVE_VSNPRINTF
-	AC_DEFINE_UNQUOTED($foo)
+	AC_DEFINE_UNQUOTED(HAVE_VSNPRINTF, 1, [define if you have a working vsnprintf])
 fi
 if test "$ac_cv_func_vsnprintf_working" = yes; then
 AC_NEED_PROTO([#include <stdio.h>],vsnprintf)

@@ -57,7 +57,6 @@ fi
 AC_TEST_PACKAGE(krb4,krb.h,libkrb.a,-lkrb,/usr/athena)
 
 if test "$with_krb4"; then
-	AC_DEFINE(KRB4, 1)
 	LIB_krb4="$KRB4LIB -ldes"
 	INCLUDE_krb4="$KRB4INCLUDE"
 	EXTRA_LIB45=lib45.a
@@ -254,12 +253,11 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
-AC_CHECK_TYPE_EXTRA(ssize_t, int, [#include <unistd.h>
-foo])
+AC_CHECK_TYPE_EXTRA(ssize_t, int, [#include <unistd.h>])
 AC_TYPE_PID_T
 AC_TYPE_UID_T
-AC_TYPE_MODE_T
-AC_TYPE_SIG_ATOMIC_T
+AC_CHECK_TYPE_EXTRA(mode_t, unsigned short, [])
+AC_CHECK_TYPE_EXTRA(sig_atomic_t, int, [#include <signal.h>])
 AC_HEADER_TIME
 AC_STRUCT_TM
 
@@ -432,24 +430,12 @@ AC_BROKEN(strcasecmp strncasecmp strdup strerror strftime strlwr strnlen)
 AC_BROKEN(strsep strtok_r strupr swab unsetenv verr verrx vsyslog)
 AC_BROKEN(vwarn vwarnx warn warnx writev)
 
-if test "$ac_cv_func_gethostname" = "yes"; then
-AC_NEED_PROTO([
-#include <unistd.h>],
-gethostname)
-fi
+AC_NEED_PROTO([#include <stdlib.h>], setenv)
+AC_NEED_PROTO([#include <stdlib.h>], unsetenv)
+AC_NEED_PROTO([#include <unistd.h>], gethostname)
+AC_NEED_PROTO([#include <unistd.h>], mkstemp)
+AC_NEED_PROTO([#include <unistd.h>],getusershell)
 
-if test "$ac_cv_func_mkstemp" = "yes"; then
-AC_NEED_PROTO([
-#include <unistd.h>],
-mkstemp)
-fi
-
-AC_NEED_PROTO([
-#include <unistd.h>
-],
-getusershell)
-
-if test "$ac_cv_func_inet_aton" = "yes"; then
 AC_NEED_PROTO([
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -464,7 +450,6 @@ AC_NEED_PROTO([
 #include <arpa/inet.h>
 #endif],
 inet_aton)
-fi
 
 AC_FIND_FUNC_NO_LIBS(crypt, crypt)dnl
 
@@ -601,14 +586,15 @@ AC_CHECK_DECLARATION([#include <stdlib.h>], environ)
 dnl
 dnl Check for fields in struct utmp
 dnl
-AC_EGREP_HEADER(ut_user, utmp.h, AC_DEFINE(HAVE_UT_USER))
-AC_EGREP_HEADER(ut_host, utmp.h, AC_DEFINE(HAVE_UT_HOST))
-AC_EGREP_HEADER(ut_addr, utmp.h, AC_DEFINE(HAVE_UT_ADDR))
-AC_EGREP_HEADER(ut_type, utmp.h, AC_DEFINE(HAVE_UT_TYPE))
-AC_EGREP_HEADER(ut_pid, utmp.h, AC_DEFINE(HAVE_UT_PID))
-AC_EGREP_HEADER(ut_id, utmp.h, AC_DEFINE(HAVE_UT_ID))
-AC_EGREP_HEADER(ut_syslen, utmpx.h, AC_DEFINE(HAVE_UT_SYSLEN))
-AC_EGREP_HEADER(ut_exit, utmpx.h, AC_DEFINE(HAVE_UT_EXIT))
+
+AC_HAVE_STRUCT_FIELD(utmp, ut_addr, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(utmp, ut_host, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(utmp, ut_id, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(utmp, ut_pid, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(utmp, ut_type, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(utmp, ut_user, [#include <utmp.h>])
+AC_HAVE_STRUCT_FIELD(utmpx, ut_exit, [#include <utmpx.h>])
+AC_HAVE_STRUCT_FIELD(utmpx, ut_syslen, [#include <utmpx.h>])
 
 AC_KRB_IPV6
 
@@ -628,7 +614,8 @@ dnl
 dnl Check for sa_len in struct sockaddr
 dnl
 
-AC_KRB_STRUCT_SOCKADDR_SA_LEN
+AC_HAVE_STRUCT_FIELD(struct sockaddr, sa_len, [#include <sys/types.h>
+#include <sys/socket.h>])
 
 
 AC_GROK_TYPES(int8_t int16_t int32_t int64_t)
@@ -647,7 +634,7 @@ if test "$ac_cv_func_el_init" = yes ; then
 			ac_cv_func_el_init_four=yes,
 			ac_cv_func_el_init_four=no)])
 	if test "$ac_cv_func_el_init_four" = yes; then
-		AC_DEFINE(HAVE_FOUR_VALUED_EL_INIT, 1)
+		AC_DEFINE(HAVE_FOUR_VALUED_EL_INIT, 1, [Define if el_init takes four arguments.])
 	fi
 fi
 AC_FIND_FUNC_NO_LIBS(readline, edit readline)

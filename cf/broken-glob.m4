@@ -10,12 +10,10 @@ AC_TRY_LINK([
 #include <glob.h>],[
 glob(NULL, GLOB_BRACE|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE, NULL, NULL);
 ],:,ac_cv_func_glob_working=no,:))
-: << END
-@@@funcs="$funcs glob"@@@
-END
+
 if test "$ac_cv_func_glob_working" = yes; then
-	foo=HAVE_GLOB
-	AC_DEFINE_UNQUOTED($foo)
+	AC_DEFINE(HAVE_GLOB, 1, [define if you have a glob() that groks 
+	GLOB_BRACE, GLOB_NOCHECK, GLOB_QUOTE, and GLOB_TILDE])
 fi
 if test "$ac_cv_func_glob_working" = yes; then
 AC_NEED_PROTO([#include <stdio.h>

@@ -1,30 +1,18 @@
 dnl $Id$
 dnl
+dnl check for fields in a structure
 dnl
-dnl Check if a particular struct has a particular field
-dnl
+dnl AC_HAVE_STRUCT_FIELD(struct, field, headers)
 
-dnl AC_HAVE_STRUCT_FIELD(includes, struct, type, field)
 AC_DEFUN(AC_HAVE_STRUCT_FIELD, [
-AC_MSG_CHECKING([if $2 has a field $4])
-AC_CACHE_VAL(ac_cv_struct_$2_$4, [
-AC_TRY_COMPILE([$1],
-[struct $2 foo; $3 bar = foo.$4; ],
-eval "ac_cv_struct_$2_$4=yes",
-eval "ac_cv_struct_$2_$4=no")
-])
-changequote(, )dnl
-eval "ac_tr_var=HAVE_STRUCT_[]upcase($2)_[]upcase($4)"
-changequote([, ])dnl
-
-define([foo], [[HAVE_STRUCT_]translit($2, [a-z], [A-Z])[_]translit($4, [a-z], [A-Z])])
-: << END
-@@@syms="$syms foo"@@@
-END
-undefine([foo])
-
-AC_MSG_RESULT($ac_cv_struct_$2_$4)
-if eval "test \"\$ac_cv_struct_$2_$4\" = yes"; then
-	AC_DEFINE_UNQUOTED($ac_tr_var)
+AC_CACHE_CHECK([for $2 in $1], ac_cv_type_$1_$2,[
+AC_TRY_COMPILE([$3],[$1 x; x.$2;],
+ac_cv_type_$1_$2=yes,
+ac_cv_type_$1_$2=no)])
+if test "$ac_cv_type_$1_$2" = yes; then
+	define(foo, [HAVE_STRUCT_]translit($1_$2, [a-z ], [A-Z_]))
+	AC_DEFINE(foo, 1, [Define if $1 has field $2.])
+	undefine(foo)
 fi
+AC_MSG_RESULT($ac_cv_type_$1_$2)
 ])

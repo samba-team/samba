@@ -28,10 +28,6 @@ fi]
 )
 
 define([foo], translit($1, [a-z], [A-Z]))
-: << END
-@@@syms="$syms foo"@@@
-END
-
 if test -n "$with_$1" -o -n "$5"; then
 dnl  AC_DEFINE([foo])
   if test -n "$with_$1" -a "$with_$1" != "yes"; then
@@ -94,7 +90,7 @@ dnl Try to find lib
   fi
   if test -n "$$1_include" -o -n "$$1_lib"; then
     AC_MSG_RESULT([headers $$1_include, libraries $$1_lib])
-    AC_DEFINE_UNQUOTED(foo)
+    AC_DEFINE_UNQUOTED(foo, 1, [Define if you have the $1 package])
     if test "$with_$1" = "" -a "$5"; then
       with_$1="$5"
     fi

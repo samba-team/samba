@@ -18,6 +18,6 @@ changequote([,]), [#include <sys/types.h>
 $3], ac_cv_type_$1=yes, ac_cv_type_$1=no)])dnl
 AC_MSG_RESULT($ac_cv_type_$1)
 if test $ac_cv_type_$1 = no; then
-  AC_DEFINE($1, $2)
+  AC_DEFINE($1, $2, [Define this to what the type $1 should be.])
 fi
 ])

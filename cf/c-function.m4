@@ -26,7 +26,7 @@ ac_cv___function__=yes,
 ac_cv___function__=no,
 ac_cv___function__=no)])
 if test "$ac_cv___function__" = "yes"; then
-  AC_DEFINE(HAVE___FUNCTION__)
+  AC_DEFINE(HAVE___FUNCTION__, 1, [define if your compiler has __FUNCTION__])
 fi
 AC_MSG_RESULT($ac_cv___function__)
 ])

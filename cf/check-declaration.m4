@@ -15,16 +15,11 @@ eval "ac_cv_var_$2_declaration=no",
 eval "ac_cv_var_$2_declaration=yes")
 ])
 
-ac_tr_var=[HAVE_]translit($2, [a-z], [A-Z])[_DECLARATION]
-
-define([foo], [HAVE_]translit($2, [a-z], [A-Z])[_DECLARATION])
-: << END
-@@@syms="$syms foo"@@@
-END
-undefine([foo])
+define(foo, [HAVE_]translit($2, [a-z], [A-Z])[_DECLARATION])
 
 AC_MSG_RESULT($ac_cv_var_$2_declaration)
 if eval "test \"\$ac_cv_var_$2_declaration\" = yes"; then
-	AC_DEFINE_UNQUOTED($ac_tr_var)
+	AC_DEFINE(foo, 1, [define if your system declares $2])
 fi
+undef(foo)
 ])
