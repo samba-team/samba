@@ -202,17 +202,17 @@ parse_section(char *p, krb5_config_section **s, krb5_config_section **parent)
     tmp = malloc(sizeof(*tmp));
     if (tmp == NULL)
 	return -1;
-    if (*s)
-	(*s)->next = tmp;
-    else
-	*parent = tmp;
-    *s = tmp;
     tmp->name = strdup(p+1);
     if (tmp->name == NULL)
 	return -1;
     tmp->type = krb5_config_list;
     tmp->u.list = NULL;
     tmp->next = NULL;
+    if (*s)
+	(*s)->next = tmp;
+    else
+	*parent = tmp;
+    *s = tmp;
     return 0;
 }
 
@@ -250,7 +250,7 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
 {
     krb5_config_binding *tmp;
     char *p1;
-    int ret;
+    int ret = 0;
 
     p1 = p;
     while (*p && !isspace(*p))
@@ -261,11 +261,6 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
     tmp = malloc(sizeof(*tmp));
     if (tmp == NULL)
 	return -1;
-    if (*b)
-	(*b)->next = tmp;
-    else
-	*parent = tmp;
-    *b = tmp;
     tmp->name = strdup(p1);
     tmp->next = NULL;
     ++p;
@@ -280,13 +275,16 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
 	tmp->type = krb5_config_list;
 	tmp->u.list = NULL;
 	ret = parse_list (f, lineno, &tmp->u.list);
-	if (ret)
-	    return ret;
     } else {
 	tmp->type = krb5_config_string;
 	tmp->u.string = strdup(p);
     }
-    return 0;
+    if (*b)
+	(*b)->next = tmp;
+    else
+	*parent = tmp;
+    *b = tmp;
+    return ret;
 }
 
 krb5_error_code
