@@ -562,7 +562,8 @@ int pull_ucs2(const void *base_ptr, char *dest, const void *src, int dest_len, i
 	}
 
 	/* ucs2 is always a multiple of 2 bytes */
-	src_len &= ~1;
+	if (src_len != -1)
+		src_len &= ~1;
 	
 	ret = convert_string(CH_UCS2, CH_UNIX, src, src_len, dest, dest_len);
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
