@@ -875,6 +875,7 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 
+		sam_pass = NULL;
 		if (!pdb_init_sam_pw(&sam_pass, pwd)) {
 			return False;
 		}
