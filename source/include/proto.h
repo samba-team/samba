@@ -164,6 +164,12 @@ int ms_fnmatch(char *pattern, char *string);
 pid_t pidfile_pid(char *name);
 void pidfile_create(char *name);
 
+/*The following definitions come from  lib/readline.c  */
+
+char *smb_readline(char *prompt, void (*callback)(void), 
+		   char **(completion_fn)(char *text, int start, int end));
+void cmd_history(void);
+
 /*The following definitions come from  lib/replace.c  */
 
 char *rep_inet_ntoa(struct in_addr ip);

@@ -30,8 +30,72 @@ extern struct cmd_set lsarpc_commands[];
 extern struct cmd_set samr_commands[];
 extern struct cmd_set spoolss_commands[];
 
+/* List to hold groups of commands */
+static struct cmd_list {
+	struct cmd_list *prev, *next;
+	struct cmd_set *cmd_set;
+} *cmd_list;
+
 
 DOM_SID domain_sid;
+
+/****************************************************************************
+handle completion of commands for readline
+****************************************************************************/
+static char **completion_fn(char *text, int start, int end)
+{
+#define MAX_COMPLETIONS 100
+	char **matches;
+	int i, count=0;
+	struct cmd_list *commands = cmd_list;
+
+#if 0	/* JERRY */
+	/* FIXME!!!  -- what to do when completing argument? */
+	/* for words not at the start of the line fallback 
+	   to filename completion */
+	if (start) 
+		return NULL;
+#endif
+
+	/* make sure we have a list of valid commands */
+	if (!commands) 
+		return NULL;
+
+	matches = (char **)malloc(sizeof(matches[0])*MAX_COMPLETIONS);
+	if (!matches) return NULL;
+
+	matches[count++] = strdup(text);
+	if (!matches[0]) return NULL;
+
+	while (commands && count < MAX_COMPLETIONS-1) 
+	{
+		if (!commands->cmd_set)
+			break;
+		
+		for (i=0; commands->cmd_set[i].name; i++)
+		{
+			if ((strncmp(text, commands->cmd_set[i].name, strlen(text)) == 0) &&
+				commands->cmd_set[i].fn) 
+			{
+				matches[count] = strdup(commands->cmd_set[i].name);
+				if (!matches[count]) 
+					return NULL;
+				count++;
+			}
+		}
+		
+		commands = commands->next;
+		
+	}
+
+	if (count == 2) {
+		free(matches[0]);
+		matches[0] = strdup(matches[1]);
+	}
+	matches[count] = NULL;
+	return matches;
+}
+
 /***********************************************************************
  * read in username/password credentials from a file
  */
@@ -192,12 +256,6 @@ void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
 	fstrcpy(creds->domain, domain);
 }
 
-/* List to hold groups of commands */
-
-static struct cmd_list {
-	struct cmd_list *prev, *next;
-	struct cmd_set *cmd_set;
-} *cmd_list;
 
 static uint32 cmd_help(struct cli_state *cli, int argc, char **argv)
 {
@@ -454,11 +512,6 @@ static void usage(char *pname)
 	charset_initialise();
 	setlinebuf(stdout);
 
-#ifdef HAVE_LIBREADLINE
-	/* Allow conditional parsing of the ~/.inputrc file. */
-	rl_readline_name = "rpcclient";
-#endif    
-	
 	DEBUGLEVEL = 1;
 
 	/* Parse options */
@@ -603,23 +656,16 @@ static void usage(char *pname)
 	/* Loop around accepting commands */
 	while(1) {
 		pstring prompt, cmd;
+		char *line;
+		uint32 result;
 
 		ZERO_STRUCT(cmd);
 		
 		slprintf(prompt, sizeof(prompt) - 1, "rpcclient $> ");
 
-#if HAVE_READLINE
-		cmd = readline(prompt);
-#else
-		printf("%s", prompt);
+		line = smb_readline(prompt, NULL, completion_fn);
 
-		if (!fgets(cmd, sizeof(cmd) - 1, stdin)) {
-			break;
-		}
-
-		cmd[strlen(cmd) - 1] = '\0';
-#endif
-		process_cmd(&cli, cmd);
+		result = process_cmd(&cli, line);
 	}
 	
 	return 0;
