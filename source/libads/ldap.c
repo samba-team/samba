@@ -386,45 +386,6 @@ NTSTATUS ads_set_machine_password(ADS_STRUCT *ads,
 	return ret;
 }
 
-
-/*
-  return a RFC2254 binary string representation of a buffer
-  used in filters
-  caller must free
-*/
-char *ads_binary_string(char *buf, int len)
-{
-	char *s;
-	int i, j;
-	const char *hex = "0123456789ABCDEF";
-	s = malloc(len * 3 + 1);
-	if (!s) return NULL;
-	for (j=i=0;i<len;i++) {
-		s[j] = '\\';
-		s[j+1] = hex[((unsigned char)buf[i]) >> 4];
-		s[j+2] = hex[((unsigned char)buf[i]) & 0xF];
-		j += 3;
-	}
-	s[j] = 0;
-	return s;
-}
-
-/*
-  return the binary string representation of a DOM_SID
-  caller must free
-*/
-char *ads_sid_binstring(DOM_SID *sid)
-{
-	char *buf, *s;
-	int len = sid_size(sid);
-	buf = malloc(len);
-	if (!buf) return NULL;
-	sid_linearize(buf, len, sid);
-	s = ads_binary_string(buf, len);
-	free(buf);
-	return s;
-}
-
 /*
   pull the first entry from a ADS result
 */

@@ -914,3 +914,26 @@ void strupper_m(char *s)
 	 * as source string even in multibyte encoding. (VIV) */
 	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
 }
+
+/*
+  return a RFC2254 binary string representation of a buffer
+  used in LDAP filters
+  caller must free
+*/
+char *binary_string(char *buf, int len)
+{
+	char *s;
+	int i, j;
+	const char *hex = "0123456789ABCDEF";
+	s = malloc(len * 3 + 1);
+	if (!s) return NULL;
+	for (j=i=0;i<len;i++) {
+		s[j] = '\\';
+		s[j+1] = hex[((unsigned char)buf[i]) >> 4];
+		s[j+2] = hex[((unsigned char)buf[i]) & 0xF];
+		j += 3;
+	}
+	s[j] = 0;
+	return s;
+}
+

@@ -400,7 +400,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	sidstr = ads_sid_binstring(sid);
+	sidstr = sid_binstring(sid);
 	asprintf(&exp, "(objectSid=%s)", sidstr);
 	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
@@ -452,7 +452,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	sidstr = ads_sid_binstring(&sid);
+	sidstr = sid_binstring(&sid);
 	asprintf(&exp, "(objectSid=%s)", sidstr);
 	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
@@ -523,7 +523,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	sidstr = ads_sid_binstring(&sid);
+	sidstr = sid_binstring(&sid);
 	asprintf(&exp, "(objectSid=%s)", sidstr);
 	rc = ads_search_retry(ads, &msg, exp, attrs);
 	free(exp);
@@ -589,7 +589,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (!ads) goto done;
 
 	sid_from_rid(domain, group_rid, &group_sid);
-	sidstr = ads_sid_binstring(&group_sid);
+	sidstr = sid_binstring(&group_sid);
 	/* search for all users who have that group sid as primary group or as member */
 	asprintf(&exp, "(&(objectclass=user)(|(primaryGroupID=%d)(memberOf=%s)))",
 		 group_rid, sidstr);
