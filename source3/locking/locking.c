@@ -37,6 +37,7 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
+int global_smbpid;
 
 /* the locking database handle */
 static TDB_CONTEXT *tdb;
@@ -567,7 +568,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 		return(False);
 
 	ret = !brl_locktest(fsp->dev, fsp->inode, 
-			     fsp->smbpid, getpid(), conn->cnum, 
+			     global_smbpid, getpid(), conn->cnum, 
 			     offset, count, lock_type);
 
 	/*
@@ -605,7 +606,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
 		ok = brl_lock(fsp->dev, fsp->inode, fsp->fnum,
-			      fsp->smbpid, getpid(), conn->cnum, 
+			      global_smbpid, getpid(), conn->cnum, 
 			      offset, count, 
 			      lock_type);
 
@@ -625,7 +626,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 				 * lock entry.
 				 */
 				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-								fsp->smbpid, getpid(), conn->cnum, 
+								global_smbpid, getpid(), conn->cnum, 
 								offset, count);
 			}
 		}
@@ -674,7 +675,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	pid = getpid();
 
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			fsp->smbpid, pid, conn->cnum, offset, count);
+			global_smbpid, pid, conn->cnum, offset, count);
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
@@ -705,6 +706,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	ZERO_STRUCTP(ul);
 	ul->start = offset;
 	ul->size = count;
+	ul->smbpid = global_smbpid;
 
 	DLIST_ADD(ulist, ul);
 
@@ -770,12 +772,16 @@ void locking_close_file(files_struct *fsp)
 
 		/*
 		 * Now unlock all of them. This will remove the brl entry also
-		 * for each lock.
+		 * for each lock. Note we need to make sure the global_smbpid matches
+		 * the one associated with each lock in case the client plays games
+		 * with smbpids (like smbtorture does :-).
 		 */
 
-		for(; ul; ul = ul->next)
+		for(; ul; ul = ul->next) {
+			global_smbpid = ul->smbpid;
 			do_unlock(fsp,fsp->conn,ul->size,ul->start,&eclass,&ecode);
-		
+		}
+	
 		talloc_destroy(ul_ctx);
 
 	} else {

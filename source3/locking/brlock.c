@@ -367,6 +367,7 @@ BECOMES.....
 				ZERO_STRUCTP(ul_new);
 				ul_new->start = lock->start + lock->size;
 				ul_new->size = ul_curr->start + ul_curr->size - ul_new->start;
+				ul_new->smbpid = ul_curr->smbpid;
 
 				/* Add into the dlink list after the ul_curr point - NOT at ulhead. */
 				DLIST_ADD(ul_curr, ul_new);
@@ -638,6 +639,7 @@ struct unlock_list *brl_getlocklist( TALLOC_CTX *ctx, SMB_DEV_T dev, SMB_INO_T i
 				ZERO_STRUCTP(ul_new);
 				ul_new->start = lock->start;
 				ul_new->size = lock->size;
+				ul_new->smbpid = lock->context.smbpid;
 
 				DLIST_ADD(ulist, ul_new);
 		}
