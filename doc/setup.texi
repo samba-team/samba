@@ -274,7 +274,7 @@ Every slave needs a keytab with a principal,
 @code{propd}, as follows:
 
 @example
-slave# ktutil get -p foo/admin host/slave
+slave# ktutil get -p foo/admin host/`hostname`
 slave# hpropd
 @end example
 
@@ -290,3 +290,13 @@ Then run
 @example
 master# hprop slave
 @end example
+
+This was just an on-hands example to make sure that everything was
+working properly.  Doing it manually is of course the wrong way and to
+automate this you will want to start
+@pindex hpropd
+@code{hpropd} from @code{inetd} on the slave(s) and regularly run
+@pindex hprop
+@code{hprop} on the master to regularly propagate the database.
+Starting the propagation once an hour from @code{cron} is probably a
+good idea.
