@@ -80,7 +80,8 @@ static void  killkids(void)
   process a sam sync message - not sure whether to do this here or
   somewhere else
 ****************************************************************************/
-static void msg_sam_sync(int msg_type, pid_t pid, void *buf, size_t len)
+static void msg_sam_sync(int UNUSED(msg_type), pid_t UNUSED(pid),
+			 void *UNUSED(buf), size_t UNUSED(len))
 {
         DEBUG(10, ("** sam sync message received, ignoring\n"));
 }
