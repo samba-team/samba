@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >winbindd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="WINBINDD"
-></A
->winbindd</H1
+NAME="WINBINDD">winbindd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -30,20 +29,18 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >winbindd</B
->  [-i] [-B] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-n]</P
+> [-F] [-S] [-i] [-B] [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] [-n]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN16"
+NAME="AEN18"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -171,11 +168,20 @@ CLASS="FILENAME"
 > and then from the 
 	Windows NT server. </P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >passwd:         files winbind
 group:          files winbind
 	</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >The following simple configuration in the
@@ -192,7 +198,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN59"
+NAME="AEN61"
 ></A
 ><H2
 >OPTIONS</H2
@@ -201,6 +207,48 @@ NAME="AEN59"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
+><DT
+>-F</DT
+><DD
+><P
+>If specified, this parameter causes
+		the main <B
+CLASS="COMMAND"
+>winbindd</B
+> process to not daemonize,
+		i.e. double-fork and disassociate with the terminal.
+		Child processes are still created as normal to service
+		each connection request, but the main process does not
+		exit. This operation mode is suitable for running
+		<B
+CLASS="COMMAND"
+>winbindd</B
+> under process supervisors such
+		as <B
+CLASS="COMMAND"
+>supervise</B
+> and <B
+CLASS="COMMAND"
+>svscan</B
+>
+		from Daniel J. Bernstein's <B
+CLASS="COMMAND"
+>daemontools</B
+>
+		package, or the AIX process monitor.
+		</P
+></DD
+><DT
+>-S</DT
+><DD
+><P
+>If specified, this parameter causes
+		<B
+CLASS="COMMAND"
+>winbindd</B
+> to log to standard output rather
+		than a file.</P
+></DD
 ><DT
 >-d debuglevel</DT
 ><DD
@@ -223,7 +271,16 @@ CLASS="COMMAND"
 		of <B
 CLASS="COMMAND"
 >winbindd</B
-> is required. </P
+> is required.
+		<B
+CLASS="COMMAND"
+>winbindd</B
+> also logs to standard output,
+		as if the <B
+CLASS="COMMAND"
+>-S</B
+> parameter had been given.
+		</P
 ></DD
 ><DT
 >-n</DT
@@ -264,7 +321,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN85"
+NAME="AEN103"
 ></A
 ><H2
 >NAME AND ID RESOLUTION</H2
@@ -295,7 +352,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN91"
+NAME="AEN109"
 ></A
 ><H2
 >CONFIGURATION</H2
@@ -435,7 +492,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN133"
+NAME="AEN151"
 ></A
 ><H2
 >EXAMPLE SETUP</H2
@@ -450,11 +507,20 @@ CLASS="FILENAME"
 > put the 
 	following:</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >passwd:     files winbind
 group:      files winbind
 	</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >In <TT
@@ -468,6 +534,12 @@ CLASS="PARAMETER"
 ></TT
 > lines with something like this: </P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >auth       required	/lib/security/pam_securetty.so
@@ -475,6 +547,9 @@ auth       required	/lib/security/pam_nologin.so
 auth       sufficient	/lib/security/pam_winbind.so
 auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Note in particular the use of the <TT
@@ -555,6 +630,12 @@ CLASS="FILENAME"
 > containing directives like the 
 	following:  </P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >[global]
@@ -568,6 +649,9 @@ CLASS="PROGRAMLISTING"
         security = domain
         password server = *
 	</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Now start winbindd and you should find that your user and 
@@ -586,7 +670,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN172"
+NAME="AEN190"
 ></A
 ><H2
 >NOTES</H2
@@ -644,7 +728,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN188"
+NAME="AEN206"
 ></A
 ><H2
 >SIGNALS</H2
@@ -695,7 +779,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN205"
+NAME="AEN223"
 ></A
 ><H2
 >FILES</H2
@@ -771,7 +855,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN234"
+NAME="AEN252"
 ></A
 ><H2
 >VERSION</H2
@@ -782,7 +866,7 @@ NAME="AEN234"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN237"
+NAME="AEN255"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -810,7 +894,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN244"
+NAME="AEN262"
 ></A
 ><H2
 >AUTHOR</H2
