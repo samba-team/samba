@@ -346,6 +346,21 @@ BOOL create_user_creds( prs_struct *ps,
 
 /*The following definitions come from  rpc_parse/parse_net.c  */
 
+BOOL make_log_info(DOM_LOG_INFO *log,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name);
+BOOL smb_io_log_info(char *desc,  DOM_LOG_INFO *log, prs_struct *ps, int depth);
+BOOL make_clnt_info2(DOM_CLNT_INFO2 *clnt,
+				const char *logon_srv, const char *comp_name,
+				DOM_CRED *clnt_cred);
+BOOL smb_io_clnt_info2(char *desc,  DOM_CLNT_INFO2 *clnt, prs_struct *ps, int depth);
+BOOL make_clnt_info(DOM_CLNT_INFO *clnt,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name,
+				DOM_CRED *cred);
+BOOL smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth);
+BOOL make_owf_info(OWF_INFO *hash, const uint8 data[16]);
+BOOL smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
 BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 * q_l,
 			const char *srv_name,
 			uint32 function_code,

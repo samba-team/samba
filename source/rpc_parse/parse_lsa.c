@@ -1081,13 +1081,13 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q, prs_struct * ps,
 		{
 			case 3:
 			{
-				smb_io_dom_query_3("", &(r_q->dom.id3), ps,
+				lsa_io_dom_query_3("", &(r_q->dom.id3), ps,
 						   depth);
 				break;
 			}
 			case 5:
 			{
-				smb_io_dom_query_5("", &(r_q->dom.id3), ps,
+				lsa_io_dom_query_5("", &(r_q->dom.id3), ps,
 						   depth);
 				break;
 			}
@@ -1476,6 +1476,92 @@ BOOL lsa_io_r_close(char *desc, LSA_R_CLOSE * r_c, prs_struct * ps, int depth)
 	smb_io_pol_hnd("", &(r_c->pol), ps, depth);
 
 	prs_uint32("status", ps, depth, &(r_c->status));
+
+	return True;
+}
+
+/*******************************************************************
+creates a DOM_RID2 structure.
+********************************************************************/
+BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint16 type, uint32 idx)
+{
+	rid2->type    = type;
+	rid2->rid     = rid;
+	rid2->rid_idx = idx;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a DOM_RID2 structure.
+********************************************************************/
+BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth)
+{
+	if (rid2 == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_dom_rid2");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint16("type   ", ps, depth, &(rid2->type));
+	prs_align(ps);
+	prs_uint32("rid    ", ps, depth, &(rid2->rid     ));
+	prs_uint32("rid_idx", ps, depth, &(rid2->rid_idx ));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+static BOOL lsa_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int depth)
+{
+	if (d_q == NULL) return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint16("uni_dom_max_len", ps, depth, &(d_q->uni_dom_max_len)); /* domain name string length * 2 */
+	prs_uint16("uni_dom_str_len", ps, depth, &(d_q->uni_dom_str_len)); /* domain name string length * 2 */
+
+	prs_uint32("buffer_dom_name", ps, depth, &(d_q->buffer_dom_name)); /* undocumented domain name string buffer pointer */
+	prs_uint32("buffer_dom_sid ", ps, depth, &(d_q->buffer_dom_sid )); /* undocumented domain SID string buffer pointer */
+
+	smb_io_unistr2("unistr2", &(d_q->uni_domain_name), d_q->buffer_dom_name, ps, depth); /* domain name (unicode string) */
+
+	prs_align(ps);
+
+	if (d_q->buffer_dom_sid != 0)
+	{
+		smb_io_dom_sid2("", &(d_q->dom_sid), ps, depth); /* domain SID */
+	}
+	else
+	{
+		bzero(&(d_q->dom_sid), sizeof(d_q->dom_sid));
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+BOOL lsa_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+{
+	lsa_io_dom_query("", d_q, ps, depth);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+BOOL lsa_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+{
+	lsa_io_dom_query("", d_q, ps, depth);
 
 	return True;
 }

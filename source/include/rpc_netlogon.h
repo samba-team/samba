@@ -43,6 +43,64 @@
 #define SEC_CHAN_DOMAIN  4
 #define SEC_CHAN_BDC     6
 
+/* DOM_CLNT_SRV - client / server names */
+typedef struct clnt_srv_info
+{
+	uint32 undoc_buffer;	/* undocumented 32 bit buffer pointer */
+	UNISTR2 uni_logon_srv;	/* logon server name */
+	uint32 undoc_buffer2;	/* undocumented 32 bit buffer pointer */
+	UNISTR2 uni_comp_name;	/* client machine name */
+
+}
+DOM_CLNT_SRV;
+
+/* DOM_LOG_INFO - login info */
+typedef struct log_info
+{
+	uint32 undoc_buffer;	/* undocumented 32 bit buffer pointer */
+	UNISTR2 uni_logon_srv;	/* logon server name */
+	UNISTR2 uni_acct_name;	/* account name */
+	uint16 sec_chan;	/* secure channel type */
+	UNISTR2 uni_comp_name;	/* client machine name */
+
+}
+DOM_LOG_INFO;
+
+/* DOM_CLNT_INFO - client info */
+typedef struct clnt_info
+{
+	DOM_LOG_INFO login;
+	DOM_CRED cred;
+
+}
+DOM_CLNT_INFO;
+
+/* DOM_CLNT_INFO2 - client info */
+typedef struct clnt_info2
+{
+	DOM_CLNT_SRV login;
+	uint32 ptr_cred;
+	DOM_CRED cred;
+
+}
+DOM_CLNT_INFO2;
+
+/* DOM_LOGON_ID - logon id */
+typedef struct logon_info
+{
+	uint32 low;
+	uint32 high;
+
+}
+DOM_LOGON_ID;
+
+/* OWF INFO */
+typedef struct owf_info
+{
+	uint8 data[16];
+
+}
+OWF_INFO;
 	
 /* NET_USER_INFO_2 */
 typedef struct net_user_info_2

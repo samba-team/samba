@@ -3285,16 +3285,18 @@ BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
 BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-BOOL make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint16 type, uint32 idx);
-BOOL smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
-BOOL make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
-BOOL smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth);
+BOOL smb_io_chal(char *desc,  DOM_CHAL *chal, prs_struct *ps, int depth);
+BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
+BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
+BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
+BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
+
+/*The following definitions come from  rpc_parse/parse_net.c  */
+
 BOOL make_log_info(DOM_LOG_INFO *log,
 		const char *logon_srv, const char *acct_name,
 		uint16 sec_chan, const char *comp_name);
 BOOL smb_io_log_info(char *desc,  DOM_LOG_INFO *log, prs_struct *ps, int depth);
-BOOL smb_io_chal(char *desc,  DOM_CHAL *chal, prs_struct *ps, int depth);
-BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
 BOOL make_clnt_info2(DOM_CLNT_INFO2 *clnt,
 				const char *logon_srv, const char *comp_name,
 				DOM_CRED *clnt_cred);
@@ -3306,14 +3308,6 @@ BOOL make_clnt_info(DOM_CLNT_INFO *clnt,
 BOOL smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth);
 BOOL make_owf_info(OWF_INFO *hash, const uint8 data[16]);
 BOOL smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
-BOOL smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
-BOOL smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
-BOOL smb_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
-BOOL smb_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
-BOOL smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
-
-/*The following definitions come from  rpc_parse/parse_net.c  */
-
 BOOL make_q_logon_ctrl2(NET_Q_LOGON_CTRL2 * q_l,
 			const char *srv_name,
 			uint32 function_code,

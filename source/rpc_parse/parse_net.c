@@ -2,9 +2,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Paul Ashton                  1997-2000,
  *  Copyright (C) Sander Striker                    2000
  *  
  *  This program is free software; you can redistribute it and/or modify
@@ -27,6 +27,239 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
+
+
+/*******************************************************************
+makes a DOM_CLNT_SRV structure.
+********************************************************************/
+static BOOL make_clnt_srv(DOM_CLNT_SRV *log,
+				const char *logon_srv, 
+				const char *comp_name)
+{
+	if (log == NULL) return False;
+
+	DEBUG(5,("make_clnt_srv: %d\n", __LINE__));
+
+	if (logon_srv != NULL)
+	{
+		log->undoc_buffer = 1;
+		make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv)+1);
+	}
+	else
+	{
+		log->undoc_buffer = 0;
+	}
+
+	if (comp_name != NULL)
+	{
+		log->undoc_buffer2 = 1;
+		make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name)+1);
+	}
+	else
+	{
+		log->undoc_buffer2 = 0;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a DOM_CLNT_SRV structure.
+********************************************************************/
+static BOOL smb_io_clnt_srv(char *desc,  DOM_CLNT_SRV *log, prs_struct *ps, int depth)
+{
+	if (log == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_clnt_srv");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("undoc_buffer ", ps, depth, &(log->undoc_buffer ));
+	if (log->undoc_buffer != 0)
+	{
+		smb_io_unistr2("unistr2", &(log->uni_logon_srv), log->undoc_buffer, ps, depth);
+	}
+
+	prs_align(ps);
+
+	prs_uint32("undoc_buffer2", ps, depth, &(log->undoc_buffer2));
+	if (log->undoc_buffer2 != 0)
+	{
+		smb_io_unistr2("unistr2", &(log->uni_comp_name), log->undoc_buffer2, ps, depth);
+	}
+
+	return True;
+}
+
+/*******************************************************************
+makes a DOM_LOG_INFO structure.
+********************************************************************/
+BOOL make_log_info(DOM_LOG_INFO *log,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name)
+{
+	if (log == NULL) return False;
+
+	DEBUG(5,("make_log_info %d\n", __LINE__));
+
+	log->undoc_buffer = 1;
+
+	make_unistr2(&(log->uni_logon_srv), logon_srv, strlen(logon_srv)+1);
+	make_unistr2(&(log->uni_acct_name), acct_name, strlen(acct_name)+1);
+
+	log->sec_chan = sec_chan;
+
+	make_unistr2(&(log->uni_comp_name), comp_name, strlen(comp_name)+1);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a DOM_LOG_INFO structure.
+********************************************************************/
+BOOL smb_io_log_info(char *desc,  DOM_LOG_INFO *log, prs_struct *ps, int depth)
+{
+	if (log == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_log_info");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("undoc_buffer", ps, depth, &(log->undoc_buffer));
+
+	smb_io_unistr2("unistr2", &(log->uni_logon_srv), True, ps, depth);
+	smb_io_unistr2("unistr2", &(log->uni_acct_name), True, ps, depth);
+
+	prs_uint16("sec_chan", ps, depth, &(log->sec_chan));
+
+	smb_io_unistr2("unistr2", &(log->uni_comp_name), True, ps, depth);
+
+	return True;
+}
+
+/*******************************************************************
+makes a DOM_CLNT_INFO2 structure.
+********************************************************************/
+BOOL make_clnt_info2(DOM_CLNT_INFO2 *clnt,
+				const char *logon_srv, const char *comp_name,
+				DOM_CRED *clnt_cred)
+{
+	if (clnt == NULL) return False;
+
+	DEBUG(5,("make_clnt_info: %d\n", __LINE__));
+
+	make_clnt_srv(&(clnt->login), logon_srv, comp_name);
+
+	if (clnt_cred != NULL)
+	{
+		clnt->ptr_cred = 1;
+		memcpy(&(clnt->cred), clnt_cred, sizeof(clnt->cred));
+	}
+	else
+	{
+		clnt->ptr_cred = 0;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a DOM_CLNT_INFO2 structure.
+********************************************************************/
+BOOL smb_io_clnt_info2(char *desc,  DOM_CLNT_INFO2 *clnt, prs_struct *ps, int depth)
+{
+	if (clnt == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_clnt_info2");
+	depth++;
+
+	prs_align(ps);
+	
+	smb_io_clnt_srv("", &(clnt->login), ps, depth);
+
+	prs_align(ps);
+	
+	prs_uint32("ptr_cred", ps, depth, &(clnt->ptr_cred));
+	smb_io_cred    ("", &(clnt->cred ), ps, depth);
+
+	return True;
+}
+
+/*******************************************************************
+makes a DOM_CLNT_INFO structure.
+********************************************************************/
+BOOL make_clnt_info(DOM_CLNT_INFO *clnt,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name,
+				DOM_CRED *cred)
+{
+	if (clnt == NULL || cred == NULL) return False;
+
+	DEBUG(5,("make_clnt_info\n"));
+
+	make_log_info(&(clnt->login), logon_srv, acct_name, sec_chan, comp_name);
+	memcpy(&(clnt->cred), cred, sizeof(clnt->cred));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a DOM_CLNT_INFO structure.
+********************************************************************/
+BOOL smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth)
+{
+	if (clnt == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_clnt_info");
+	depth++;
+
+	prs_align(ps);
+	
+	smb_io_log_info("", &(clnt->login), ps, depth);
+	smb_io_cred    ("", &(clnt->cred ), ps, depth);
+
+	return True;
+}
+
+/*******************************************************************
+makes an OWF_INFO structure.
+********************************************************************/
+BOOL make_owf_info(OWF_INFO *hash, const uint8 data[16])
+{
+	if (hash == NULL) return False;
+
+	DEBUG(5,("make_owf_info: %d\n", __LINE__));
+	
+	if (data != NULL)
+	{
+		memcpy(hash->data, data, sizeof(hash->data));
+	}
+	else
+	{
+		bzero(hash->data, sizeof(hash->data));
+	}
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes an OWF_INFO structure.
+********************************************************************/
+BOOL smb_io_owf_info(char *desc, OWF_INFO *hash, prs_struct *ps, int depth)
+{
+	if (hash == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_owf_info");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint8s (False, "data", ps, depth, hash->data, 16);
+
+	return True;
+}
 
 /*******************************************************************
 reads or writes a structure.
