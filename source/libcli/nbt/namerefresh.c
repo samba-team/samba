@@ -64,7 +64,8 @@ struct nbt_name_request *nbt_name_refresh_send(struct nbt_name_socket *nbtsock,
 								     struct nbt_rdata_address, 1);
 	if (packet->additional[0].rdata.netbios.addresses == NULL) goto failed;
 	packet->additional[0].rdata.netbios.addresses[0].nb_flags = io->in.nb_flags;
-	packet->additional[0].rdata.netbios.addresses[0].ipaddr.addr   = htonl(inet_addr(io->in.address));
+	packet->additional[0].rdata.netbios.addresses[0].ipaddr = 
+		talloc_strdup(packet->additional, io->in.address);
 	
 	req = nbt_name_request_send(nbtsock, io->in.dest_addr, lp_nbt_port(), packet,
 				    timeval_current_ofs(io->in.timeout, 0), False);
@@ -86,8 +87,6 @@ NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req,
 {
 	NTSTATUS status;
 	struct nbt_name_packet *packet;
-	const char *addr;
-	struct in_addr in;
 
 	status = nbt_name_request_recv(req);
 	if (!NT_STATUS_IS_OK(status) ||
@@ -112,13 +111,8 @@ NTSTATUS nbt_name_refresh_recv(struct nbt_name_request *req,
 		talloc_free(req);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
-	in.s_addr = htonl(packet->answers[0].rdata.netbios.addresses[0].ipaddr.addr);
-	addr = inet_ntoa(in);
-	if (addr == NULL) {
-		talloc_free(req);
-		return NT_STATUS_NO_MEMORY;
-	}
-	io->out.reply_addr = talloc_strdup(mem_ctx, addr);
+	io->out.reply_addr = talloc_steal(mem_ctx, 
+					  packet->answers[0].rdata.netbios.addresses[0].ipaddr);
 	talloc_steal(mem_ctx, io->out.name.name);
 	talloc_steal(mem_ctx, io->out.name.scope);
 	    

@@ -60,7 +60,9 @@ static void nbt_name_query_reply(struct nbt_name_socket *nbtsock,
 							    struct nbt_rdata_address, 1);
 	if (packet->answers[0].rdata.netbios.addresses == NULL) goto failed;
 	packet->answers[0].rdata.netbios.addresses[0].nb_flags = nb_flags;
-	packet->answers[0].rdata.netbios.addresses[0].ipaddr.addr = htonl(inet_addr(address));
+	packet->answers[0].rdata.netbios.addresses[0].ipaddr = 
+		talloc_strdup(packet->answers, address);
+	if (packet->answers[0].rdata.netbios.addresses[0].ipaddr == NULL) goto failed;
 
 	DEBUG(7,("Sending name query reply for %s<%02x> at %s to %s:%d\n", 
 		 name->name, name->type, src_address, address, src_port));

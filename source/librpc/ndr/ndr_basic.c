@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 
 #define NDR_BE(ndr) (((ndr)->flags & (LIBNDR_FLAG_BIGENDIAN|LIBNDR_FLAG_LITTLE_ENDIAN)) == LIBNDR_FLAG_BIGENDIAN)
 #define NDR_SVAL(ndr, ofs) (NDR_BE(ndr)?RSVAL(ndr->data,ofs):SVAL(ndr->data,ofs))
@@ -1014,6 +1015,39 @@ NTSTATUS ndr_pull_time_t(struct ndr_pull *ndr, time_t *t)
 	NDR_CHECK(ndr_pull_uint32(ndr, &tt));
 	*t = tt;
 	return NT_STATUS_OK;
+}
+
+
+/*
+  pull a ipv4address
+*/
+NTSTATUS ndr_pull_ipv4address(struct ndr_pull *ndr, const char **address)
+{
+	struct ipv4_addr in;
+	NDR_CHECK(ndr_pull_uint32(ndr, &in.addr));
+	in.addr = htonl(in.addr);
+	*address = talloc_strdup(ndr, sys_inet_ntoa(in));
+	NT_STATUS_HAVE_NO_MEMORY(*address);
+	return NT_STATUS_OK;
+}
+
+/*
+  push a ipv4address
+*/
+NTSTATUS ndr_push_ipv4address(struct ndr_push *ndr, const char *address)
+{
+	uint32_t addr = interpret_addr(address);
+	NDR_CHECK(ndr_push_uint32(ndr, htonl(addr)));
+	return NT_STATUS_OK;
+}
+
+/*
+  print a ipv4address
+*/
+void ndr_print_ipv4address(struct ndr_print *ndr, const char *name, 
+			   const char *address)
+{
+	ndr->print(ndr, "%-25s: %s", name, address);
 }
 
 
