@@ -17,7 +17,7 @@ main(int argc, char **argv)
 	hints.ai_flags = AI_PASSIVE;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_family = PF_UNSPEC;
-	if(getaddrinfo(NULL, "17", &hints, &ai) == EAI_SERVICE)
+	if(getaddrinfo(NULL, "17", &hints, &ai) != 0)
 		return 1;
 	return 0;
 }
