@@ -183,6 +183,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	switch (p->auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = p->security_state->unseal_packet(p->security_state, 
+							  mem_ctx, 
 							  pkt->u.response.stub_and_verifier.data, 
 							  pkt->u.response.stub_and_verifier.length, 
 							  &auth.credentials);
@@ -190,6 +191,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		status = p->security_state->check_packet(p->security_state, 
+							 mem_ctx, 
 							 pkt->u.response.stub_and_verifier.data, 
 							 pkt->u.response.stub_and_verifier.length, 
 							 &auth.credentials);
@@ -250,6 +252,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	switch (p->auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = p->security_state->seal_packet(p->security_state, 
+							mem_ctx, 
 							ndr->data + DCERPC_REQUEST_LENGTH, 
 							ndr->offset - DCERPC_REQUEST_LENGTH,
 							&p->auth_info->credentials);
@@ -257,6 +260,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		status = p->security_state->sign_packet(p->security_state, 
+							mem_ctx, 
 							ndr->data + DCERPC_REQUEST_LENGTH, 
 							ndr->offset - DCERPC_REQUEST_LENGTH,
 							&p->auth_info->credentials);

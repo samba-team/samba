@@ -162,7 +162,7 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 	(*auth_ntlmssp_state)->ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	(*auth_ntlmssp_state)->ntlmssp_state->check_password = auth_ntlmssp_check_password;
 	(*auth_ntlmssp_state)->ntlmssp_state->server_role = lp_server_role();
-
+	
 	return NT_STATUS_OK;
 }
 
@@ -183,8 +183,23 @@ void auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 	*auth_ntlmssp_state = NULL;
 }
 
+
+/**
+ * Next state function for the wrapped NTLMSSP state machine
+ * 
+ * @param auth_ntlmssp_state NTLMSSP State
+ * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
+ * @param in The request, as a DATA_BLOB
+ * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
+ * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent, 
+ *                or NT_STATUS_OK if the user is authenticated. 
+ */
+
 NTSTATUS auth_ntlmssp_update(AUTH_NTLMSSP_STATE *auth_ntlmssp_state, 
-			     const DATA_BLOB request, DATA_BLOB *reply) 
+			     TALLOC_CTX *out_mem_ctx,
+			     const DATA_BLOB in, DATA_BLOB *out) 
 {
-	return ntlmssp_update(auth_ntlmssp_state->ntlmssp_state, request, reply);
+	return ntlmssp_update(auth_ntlmssp_state->ntlmssp_state, 
+			      out_mem_ctx, 
+			      in, out);
 }

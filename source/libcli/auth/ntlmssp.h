@@ -34,7 +34,8 @@ enum NTLM_MESSAGE_TYPE
 	NTLMSSP_NEGOTIATE = 1,
 	NTLMSSP_CHALLENGE = 2,
 	NTLMSSP_AUTH      = 3,
-	NTLMSSP_UNKNOWN   = 4
+	NTLMSSP_UNKNOWN   = 4,
+	NTLMSSP_DONE   = 5 /* samba final state */
 };
 
 /* NTLMSSP negotiation flags */
@@ -80,9 +81,15 @@ typedef struct ntlmssp_state
 
 	BOOL unicode;
 	BOOL use_ntlmv2;
-	BOOL use_nt_response;  /* Set to 'NO' to debug what happens when the NT response is omited */
+	BOOL use_nt_response;  /* Set to 'False' to debug what happens when the NT response is omited */
 	BOOL allow_lm_key;     /* The LM_KEY code is not functional at this point, and it's not 
 				  very secure anyway */
+
+	BOOL server_use_session_keys; /* Set to 'False' for authentication only, 
+					 that will never return a session key */
+	BOOL server_multiple_authentications;  /* Set to 'True' to allow squid 2.5 
+						  style 'challenge caching' */
+
 	char *user;
 	char *domain;
 	char *workstation;
@@ -159,10 +166,10 @@ typedef struct ntlmssp_state
 	uint32 ntlmssp_seq_num;
 
 	/* ntlmv2 */
-	char send_sign_const[16];
-	char send_seal_const[16];
-	char recv_sign_const[16];
-	char recv_seal_const[16];
+	char send_sign_key[16];
+	char send_seal_key[16];
+	char recv_sign_key[16];
+	char recv_seal_key[16];
 
 	unsigned char send_sign_hash[258];
 	unsigned char send_seal_hash[258];

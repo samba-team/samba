@@ -1196,6 +1196,62 @@ void ipstr_list_free(char* ipstr_list)
 	SAFE_FREE(ipstr_list);
 }
 
+/**
+ Routine to get hex characters and turn them into a 16 byte array.
+ the array can be variable length, and any non-hex-numeric
+ characters are skipped.  "0xnn" or "0Xnn" is specially catered
+ for.
+
+ valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
+
+**/
+
+size_t strhex_to_str(char *p, size_t len, const char *strhex)
+{
+	size_t i;
+	size_t num_chars = 0;
+	unsigned char   lonybble, hinybble;
+	const char     *hexchars = "0123456789ABCDEF";
+	char           *p1 = NULL, *p2 = NULL;
+
+	for (i = 0; i < len && strhex[i] != 0; i++) {
+		if (strnequal(hexchars, "0x", 2)) {
+			i++; /* skip two chars */
+			continue;
+		}
+
+		if (!(p1 = strchr_m(hexchars, toupper(strhex[i]))))
+			break;
+
+		i++; /* next hex digit */
+
+		if (!(p2 = strchr_m(hexchars, toupper(strhex[i]))))
+			break;
+
+		/* get the two nybbles */
+		hinybble = PTR_DIFF(p1, hexchars);
+		lonybble = PTR_DIFF(p2, hexchars);
+
+		p[num_chars] = (hinybble << 4) | lonybble;
+		num_chars++;
+
+		p1 = NULL;
+		p2 = NULL;
+	}
+	return num_chars;
+}
+
+DATA_BLOB strhex_to_data_blob(const char *strhex) 
+{
+	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
+
+	ret_blob.length = strhex_to_str(ret_blob.data, 	
+					strlen(strhex), 
+					strhex);
+
+	return ret_blob;
+}
+
 
 /**
  Unescape a URL encoded string, in place.
