@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2001, 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -129,11 +129,12 @@ v5_convert(krb5_context context, krb5_ccache id,
 			    "afs-use-524", "yes", &val);
     free(c);
 
-    if (strcmp("no", val) == 0) {
-	ret = v5_to_kt(cred, uid, kt, 0);
-    } else if (strcmp("local", val) == 0 || strcmp("2b", val) == 0) {
+    if (strcasecmp(val, "local") == 0 || 
+	strcasecmp(val, "2b") == 0)
 	ret = v5_to_kt(cred, uid, kt, 1);
-    } else { /* "yes" */
+    else if(strcasecmp(val, "yes") == 0 ||
+	    strcasecmp(val, "true") == 0 ||
+	    atoi(val)) {
 	struct credentials c;
 	
 	if (id == NULL)
@@ -141,11 +142,14 @@ v5_convert(krb5_context context, krb5_ccache id,
 	else
 	    ret = krb524_convert_creds_kdc_ccache(context, id, cred, &c);
 	if (ret)
-	    return ret;
+	    goto out;
 
 	ret = _kafs_v4_to_kt(&c, uid, kt);
-    }
+    } else 
+	ret = v5_to_kt(cred, uid, kt, 0);
 
+ out:
+    free(val);
     return ret;
 }
 
