@@ -587,7 +587,7 @@ static void init_globals(void)
   Globals.bUseRhosts = False;
   Globals.max_packet = 65535;
   Globals.mangled_stack = 50;
-  Globals.max_xmit = Globals.max_packet;
+  Globals.max_xmit = 65535;
   Globals.max_mux = 2;
   Globals.lpqcachetime = 10;
   Globals.pwordlevel = 0;
