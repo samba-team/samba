@@ -1285,51 +1285,8 @@ extern int errno;
 #define strcpy(dest,src) StrCpy(dest,src)
 #endif
 
-
-/* possibly wrap the malloc calls */
-#if WRAP_MALLOC
-
-/* undo the old malloc def if necessary */
-#ifdef malloc
-#define xx_old_malloc malloc
-#undef malloc
-#endif
-
-#define malloc(size) malloc_wrapped(size,__FILE__,__LINE__)
-
-/* undo the old realloc def if necessary */
-#ifdef realloc
-#define xx_old_realloc realloc
-#undef realloc
-#endif
-
-#define realloc(ptr,size) realloc_wrapped(ptr,size,__FILE__,__LINE__)
-
-/* undo the old free def if necessary */
-#ifdef free
-#define xx_old_free free
-#undef free
-#endif
-
-#define free(ptr) free_wrapped(ptr,__FILE__,__LINE__)
-
-/* and the malloc prototypes */
-void *malloc_wrapped(int,char *,int);
-void *realloc_wrapped(void *,int,char *,int);
-void free_wrapped(void *,char *,int);
-
-#endif
-
-
-#if WRAP_MEMCPY
-/* undo the old memcpy def if necessary */
-#ifdef memcpy
-#define xx_old_memcpy memcpy
-#undef memcpy
-#endif
-
-#define memcpy(d,s,l) memcpy_wrapped(d,s,l,__FILE__,__LINE__)
-void *memcpy_wrapped(void *d,void *s,int l,char *fname,int line);
+#if MEM_MAN
+#include "mem_man/mem_man.h"
 #endif
 
 #endif
