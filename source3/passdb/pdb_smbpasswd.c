@@ -261,7 +261,11 @@ static FILE *startsmbfilepwent(const char *pfile, enum pwf_access_type type, int
   setvbuf(fp, (char *)NULL, _IOFBF, 1024);
 
   /* Make sure it is only rw by the owner */
+#ifdef HAVE_FCHMOD
   if(fchmod(fileno(fp), S_IRUSR|S_IWUSR) == -1) {
+#else
+  if(chmod(pfile, S_IRUSR|S_IWUSR) == -1) {
+#endif
     DEBUG(0, ("startsmbfilepwent_internal: failed to set 0600 permissions on password file %s. \
 Error was %s\n.", pfile, strerror(errno) ));
     pw_file_unlock(fileno(fp), lock_depth);
