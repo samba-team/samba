@@ -7,6 +7,7 @@ INCLUDES += $(INCLUDE_krb4) $(INCLUDE_des)
 bin_PROGRAMS = su
 bin_SUIDS = su
 su_SOURCES = su.c
+man_MANS = su.1
 
 LDADD = $(LIB_kafs) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
