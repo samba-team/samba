@@ -21,6 +21,9 @@ if test "$ac_cv_func_snprintf_working" = yes; then
 	foo=HAVE_SNPRINTF
 	AC_DEFINE_UNQUOTED($foo)
 fi
+if test "$ac_cv_func_snprintf_working" = yes; then
+AC_NEED_PROTO([#include <stdio.h>],snprintf)
+fi
 ])
 
 AC_DEFUN(AC_BROKEN_VSNPRINTF,[
@@ -54,5 +57,8 @@ END
 if test "$ac_cv_func_vsnprintf_working" = yes; then
 	foo=HAVE_VSNPRINTF
 	AC_DEFINE_UNQUOTED($foo)
+fi
+if test "$ac_cv_func_vsnprintf_working" = yes; then
+AC_NEED_PROTO([#include <stdio.h>],vsnprintf)
 fi
 ])
