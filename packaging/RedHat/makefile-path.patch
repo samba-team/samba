@@ -1,15 +1,20 @@
---- samba-2.0.0/source/Makefile.in.orig	Thu Nov 19 00:02:53 1998
-+++ samba-2.0.0/source/Makefile.in	Thu Nov 19 00:04:08 1998
-@@ -24,7 +24,7 @@
+--- samba-2.0.0/source/Makefile.in.old	Fri Nov 20 17:34:32 1998
++++ samba-2.0.0/source/Makefile.in	Fri Nov 20 17:35:02 1998
+@@ -23,11 +23,9 @@
+ 
+ BASEDIR= @prefix@
  BINDIR = @bindir@
- SBINDIR = @sbindir@
+-# we don't use sbindir because we want full compatibility with
+-# the previous releases of Samba
+-SBINDIR = @bindir@
++SBINDIR = @sbindir@
  LIBDIR = @libdir@
 -VARDIR = $(BASEDIR)/var
 +VARDIR = /var
  MANDIR = @mandir@
  
  # The permissions to give the executables
-@@ -33,20 +33,20 @@
+@@ -36,20 +34,20 @@
  # set these to where to find various files
  # These can be overridden by command line switches (see smbd(8))
  # or in smb.conf (see smb.conf(5))
