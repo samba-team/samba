@@ -27,6 +27,8 @@ AC_SUBST(CFLAGS) dnl
 AC_SUBST(LDFLAGS) dnl
 AC_SUBST(LD_FLAGS) dnl
 
+AC_TEST_SKEY
+
 AC_CHECK_HEADERS(sys/select.h paths.h bsd/bsd.h sys/mman.h)
 
 AC_FIND_FUNC(socket, socket)
