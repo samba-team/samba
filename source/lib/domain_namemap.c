@@ -105,98 +105,69 @@ static void delete_map_list(ubi_slList * map_list)
 	}
 }
 
-
-/**************************************************************************
- makes a group sid out of a domain sid and a _unix_ gid.
-***************************************************************************/
-static BOOL make_mydomain_sid(DOM_NAME_MAP * grp, DOM_MAP_TYPE type)
+static void map_posix_to_nt_type( DOM_NAME_MAP * gmep, int type)
 {
-	int ret = False;
-	fstring sid_str;
-
-	if (!map_domain_name_to_sid(&grp->sid, &(grp->nt_domain)))
+	if (type == SURS_POSIX_UID)
 	{
-		DEBUG(0, ("make_mydomain_sid: unknown domain %s\n",
-			  grp->nt_domain));
-		return False;
-	}
-
-	if (sid_equal(&grp->sid, global_sid_builtin))
-	{
-		/*
-		 * only builtin aliases are recognised in S-1-5-20
-		 */
-		DEBUG(10, ("make_mydomain_sid: group %s in builtin domain\n",
-			   grp->nt_name));
-
-		if (lookup_builtin_alias_name
-		    (grp->nt_name, "BUILTIN", &grp->sid, &grp->type) != 0x0)
-		{
-			DEBUG(0,
-			      ("unix group %s mapped to an unrecognised BUILTIN domain name %s\n",
-			       grp->unix_name, grp->nt_name));
-			return False;
-		}
-		ret = True;
-	}
-	else if (lookup_wk_user_name
-		 (grp->nt_name, grp->nt_domain, &grp->sid, &grp->type) == 0x0)
-	{
-		if (type != DOM_MAP_USER)
-		{
-			DEBUG(0,
-			      ("well-known NT user %s\\%s listed in wrong map file\n",
-			       grp->nt_domain, grp->nt_name));
-			return False;
-		}
-		ret = True;
-	}
-	else if (lookup_wk_group_name
-		 (grp->nt_name, grp->nt_domain, &grp->sid, &grp->type) == 0x0)
-	{
-		if (type != DOM_MAP_DOMAIN)
-		{
-			DEBUG(0,
-			      ("well-known NT group %s\\%s listed in wrong map file\n",
-			       grp->nt_domain, grp->nt_name));
-			return False;
-		}
-		ret = True;
+		gmep->type = SID_NAME_USER;
 	}
 	else
 	{
-		POSIX_ID id;
-
-		switch (type)
+		if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 		{
-			case DOM_MAP_USER:
-			{
-				grp->type = SID_NAME_USER;
-				id.type = SURS_POSIX_UID_AS_USR;
-				break;
-			}
-			case DOM_MAP_DOMAIN:
-			{
-				grp->type = SID_NAME_DOM_GRP;
-				id.type = SURS_POSIX_GID_AS_GRP;
-				break;
-			}
-			case DOM_MAP_LOCAL:
-			{
-				grp->type = SID_NAME_ALIAS;
-				id.type = SURS_POSIX_GID_AS_ALS;
-				break;
-			}
+			/* ... as a LOCAL group. */
+			gmep->type = SID_NAME_ALIAS;
 		}
+		else
+		{
+			/* ... as a DOMAIN group. */
+			gmep->type = SID_NAME_DOM_GRP;
+		}
+	}
+}
 
-		id.id = grp->unix_id;
-		ret = surs_unixid_to_sam_sid(&id, &grp->sid, False);
+/************************************************************************
+ Routine to look up a remote nt name
+*************************************************************************/
+static BOOL get_sid( DOM_NAME_MAP * gmep, int type)
+{
+	SURS_POSIX_ID id;
+
+	id.id = gmep->unix_id;
+	id.type = type;
+	if (!surs_unixid_to_sam_sid(&id, &gmep->sid, False))
+	{
+		return False;
 	}
 
-	sid_to_string(sid_str, &grp->sid);
-	DEBUG(10, ("nt name %s\\%s gid %d mapped to %s\n",
-		   grp->nt_domain, grp->nt_name, grp->unix_id, sid_str));
-	return ret;
+	map_posix_to_nt_type(gmep, type);
+
+	return True;
+}
+
+/************************************************************************
+ 
+*************************************************************************/
+static BOOL get_uid( DOM_NAME_MAP * gmep, int type)
+{
+	SURS_POSIX_ID id;
+
+	id.type = type;
+	if (!surs_sam_sid_to_unixid(&gmep->sid, &id, False))
+	{
+		return False;
+	}
+
+	if (id.type != type)
+	{
+		return False;
+	}
+
+	gmep->unix_id = id.id;
+
+	map_posix_to_nt_type(gmep, type);
+
+	return True;
 }
 
 /**************************************************************************
@@ -204,6 +175,10 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP * grp, DOM_MAP_TYPE type)
 ***************************************************************************/
 static BOOL unix_name_to_nt_name_info(DOM_NAME_MAP * map, DOM_MAP_TYPE type)
 {
+	DOM_SID dom_sid;
+	uint32 rid;
+	int surs_type;
+
 	/*
 	 * Attempt to get the unix gid_t for this name.
 	 */
@@ -214,6 +189,7 @@ static BOOL unix_name_to_nt_name_info(DOM_NAME_MAP * map, DOM_MAP_TYPE type)
 	if (type == DOM_MAP_USER)
 	{
 		const struct passwd *pwptr = Get_Pwnam(map->unix_name, False);
+		surs_type = SURS_POSIX_UID;
 		if (pwptr == NULL)
 		{
 			DEBUG(0,
@@ -228,6 +204,7 @@ failed. Error was %s.\n",
 	else
 	{
 		struct group *gptr = getgrnam(map->unix_name);
+		surs_type = SURS_POSIX_GID;
 		if (gptr == NULL)
 		{
 			DEBUG(0,
@@ -246,33 +223,32 @@ failed. Error was %s.\n",
 	 * Now map the name to an NT SID+RID.
 	 */
 
-	if (map->nt_domain != NULL
-	    && !strequal(map->nt_domain, global_sam_name))
+	if (!get_sid(map, surs_type))
 	{
-		/* Must add client-call lookup code here, to 
-		 * resolve remote domain's sid and the group's rid,
-		 * in that domain.
-		 *
-		 * NOTE: it is _incorrect_ to put code here that assumes
-		 * we are responsible for lookups for foriegn domains' RIDs.
-		 *
-		 * for foriegn domains for which we are *NOT* the PDC, all
-		 * we can be responsible for is the unix gid_t to which
-		 * the foriegn SID+rid maps to, on this _local_ machine.  
-		 * we *CANNOT* make any short-cuts or assumptions about
-		 * RIDs in a foriegn domain.
-		 */
-
-		if (!map_domain_name_to_sid(&map->sid, &(map->nt_domain)))
-		{
-			DEBUG(0,
-			      ("unix_name_to_nt_name_info: no known sid for %s\n",
-			       map->nt_domain));
-			return False;
-		}
+		DEBUG(0, ("get_sid: unknown unix id %x\n", map->unix_id));
+		return False;
 	}
 
-	return make_mydomain_sid(map, type);
+	sid_copy(&dom_sid, &map->sid);
+	sid_split_rid(&dom_sid, &rid);
+
+	if (!map_domain_sid_to_name(&dom_sid, map->nt_domain))
+	{
+		fstring sid_str;
+		sid_to_string(sid_str, &dom_sid);
+		DEBUG(1, ("map_domain_sid_to_name: unknown SID %s\n",
+			  sid_str));
+		return False;
+	}
+
+	{
+		fstring sid_str;
+		sid_to_string(sid_str, &map->sid);
+		DEBUG(10, ("nt name %s\\%s gid %d mapped to %s\n",
+			   map->nt_domain, map->nt_name, map->unix_id,
+			   sid_str));
+	}
+	return True;
 }
 
 static BOOL make_name_entry(name_map_entry ** new_ep,
@@ -723,43 +699,6 @@ static BOOL map_group_gid(gid_t gid, DOM_NAME_MAP * grp_info)
 
 
 /************************************************************************
- Routine to look up a remote nt name
-*************************************************************************/
-static BOOL get_sid_and_type(const char *ntdomain,
-			     const char *ntname,
-			     DOM_NAME_MAP * gmep)
-{
-	POSIX_ID id;
-
-	switch (gmep->type)
-	{
-		case SID_NAME_USER:
-		{
-			id.type = SURS_POSIX_UID_AS_USR;
-			break;
-		}
-		case SID_NAME_DOM_GRP:
-		{
-			id.type = SURS_POSIX_GID_AS_GRP;
-			break;
-		}
-		case SID_NAME_ALIAS:
-		{
-			id.type = SURS_POSIX_GID_AS_ALS;
-			break;
-		}
-	}
-
-	id.id = gmep->unix_id;
-
-	if (!surs_unixid_to_sam_sid(&id, &gmep->sid, False))
-	{
-		return False;
-	}
-
-	return True;
-}
-/************************************************************************
  Routine to look up User details by UNIX name
 *************************************************************************/
 BOOL lookupsmbpwnam(const char *unix_usr_name, DOM_NAME_MAP * grp)
@@ -781,7 +720,6 @@ BOOL lookupsmbpwnam(const char *unix_usr_name, DOM_NAME_MAP * grp)
 *************************************************************************/
 BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP * gmep)
 {
-	POSIX_ID id;
 	static fstring nt_name;
 	static fstring unix_name;
 	static fstring nt_domain;
@@ -809,30 +747,7 @@ BOOL lookupsmbpwuid(uid_t uid, DOM_NAME_MAP * gmep)
 
 	gmep->nt_domain = global_sam_name;
 
-	switch (gmep->type)
-	{
-		case SID_NAME_USER:
-		{
-			id.type = SURS_POSIX_UID_AS_USR;
-			break;
-		}
-		case SID_NAME_DOM_GRP:
-		{
-			id.type = SURS_POSIX_GID_AS_GRP;
-			break;
-		}
-		case SID_NAME_ALIAS:
-		{
-			id.type = SURS_POSIX_GID_AS_ALS;
-			break;
-		}
-	}
-
-	id.id = gmep->unix_id;
-
-	surs_unixid_to_sam_sid(&id, &gmep->sid, False);
-
-	return True;
+	return get_sid(gmep, SURS_POSIX_UID);
 }
 
 /*************************************************************************
@@ -876,7 +791,7 @@ BOOL lookupsmbpwntnam(const char *fullntname, DOM_NAME_MAP * gmep)
 	}
 	gmep->unix_id = (uint32)uid;
 
-	return get_sid_and_type(nt_domain, nt_name, gmep);
+	return get_sid(gmep, SURS_POSIX_UID);
 }
 
 /*************************************************************************
@@ -884,7 +799,6 @@ BOOL lookupsmbpwntnam(const char *fullntname, DOM_NAME_MAP * gmep)
 *************************************************************************/
 BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP * gmep)
 {
-	POSIX_ID id;
 	static fstring nt_name;
 	static fstring unix_name;
 	static fstring nt_domain;
@@ -908,31 +822,10 @@ BOOL lookupsmbpwsid(DOM_SID *sid, DOM_NAME_MAP * gmep)
 	 * they will only be numbers...
 	 */
 
-	gmep->type = SID_NAME_USER;
 	sid_copy(&gmep->sid, sid);
-	if (!surs_sam_sid_to_unixid(&gmep->sid, &id, False))
+	if (!get_uid(gmep, SURS_POSIX_UID))
 	{
 		return False;
-	}
-
-	gmep->unix_id = id.id;
-	switch (id.type)
-	{
-		case SURS_POSIX_UID_AS_USR:
-		{
-			gmep->type = SID_NAME_USER;
-			break;
-		}
-		case SURS_POSIX_GID_AS_GRP:
-		{
-			gmep->type = SID_NAME_DOM_GRP;
-			break;
-		}
-		case SURS_POSIX_GID_AS_ALS:
-		{
-			gmep->type = SID_NAME_ALIAS;
-			break;
-		}
 	}
 
 	fstrcpy(gmep->nt_name, uidtoname((uid_t) gmep->unix_id));
@@ -964,7 +857,6 @@ BOOL lookupsmbgrpnam(const char *unix_grp_name, DOM_NAME_MAP * grp)
 *************************************************************************/
 BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP * gmep)
 {
-	POSIX_ID id;
 	static fstring nt_name;
 	static fstring unix_name;
 	static fstring nt_domain;
@@ -991,46 +883,10 @@ BOOL lookupsmbgrpsid(DOM_SID *sid, DOM_NAME_MAP * gmep)
 	 * groups won't really exist, they will only be numbers...
 	 */
 
-	/* name is not explicitly mapped
-	 * with map files or the PDC
-	 * so we are responsible for it...
-	 */
-
-	if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-	{
-		/* ... as a LOCAL group. */
-		gmep->type = SID_NAME_ALIAS;
-	}
-	else
-	{
-		/* ... as a DOMAIN group. */
-		gmep->type = SID_NAME_DOM_GRP;
-	}
-
 	sid_copy(&gmep->sid, sid);
-	if (!surs_sam_sid_to_unixid(&gmep->sid, &id, False))
+	if (!get_uid(gmep, SURS_POSIX_GID))
 	{
 		return False;
-	}
-
-	gmep->unix_id = id.id;
-	switch (id.type)
-	{
-		case SURS_POSIX_UID_AS_USR:
-		{
-			gmep->type = SID_NAME_USER;
-			break;
-		}
-		case SURS_POSIX_GID_AS_GRP:
-		{
-			gmep->type = SID_NAME_DOM_GRP;
-			break;
-		}
-		case SURS_POSIX_GID_AS_ALS:
-		{
-			gmep->type = SID_NAME_ALIAS;
-			break;
-		}
 	}
 
 	fstrcpy(gmep->nt_name, gidtoname((gid_t) gmep->unix_id));
@@ -1074,22 +930,10 @@ BOOL lookupsmbgrpgid(gid_t gid, DOM_NAME_MAP * gmep)
 	 * so we are responsible for it...
 	 */
 
-	if (lp_server_role() == ROLE_DOMAIN_MEMBER)
-	{
-		/* ... as a LOCAL group. */
-		gmep->type = SID_NAME_ALIAS;
-	}
-	else
-	{
-		/* ... as a DOMAIN group. */
-		gmep->type = SID_NAME_DOM_GRP;
-	}
-
 	fstrcpy(gmep->nt_domain, global_sam_name);
 	fstrcpy(gmep->nt_name, gidtoname(gid));
 	fstrcpy(gmep->unix_name, gmep->nt_name);
-	return get_sid_and_type(gmep->nt_domain,
-				gmep->nt_name, gmep);
+	return get_sid(gmep, SURS_POSIX_GID);
 }
 
 
