@@ -81,6 +81,10 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state);
 
 enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_user.c  */
 
@@ -115,6 +119,7 @@ int winbindd_lookup_aliasmem(struct winbindd_domain *domain,
                              DOM_SID ***sids, char ***names, 
                              enum SID_NAME_USE **name_types);
 struct winbindd_domain *find_domain_from_name(char *domain_name);
+struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 char *winbindd_cmd_to_string(enum winbindd_cmd cmd);
