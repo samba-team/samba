@@ -173,7 +173,9 @@ struct stream_server_ops;
 
 struct nbtd_server;
 struct nbtd_interface;
+struct wins_server;
 
 struct mutex_ops;
 
 struct ads_struct;
+
