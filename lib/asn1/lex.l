@@ -1,6 +1,6 @@
 %{
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -79,6 +79,7 @@ EXTERNAL		{ return EXTERNAL; }
 [A-Za-z][-A-Za-z0-9_]*	{ yylval.name =  strdup (yytext); return IDENTIFIER; }
 [ \t]			;
 \n			{ lineno++; }
+\.\.			{ return DOTDOT; }
 .			{ error_message("Ignoring char(%c)\n", *yytext); }
 %%
 
