@@ -208,7 +208,7 @@ sl_loop (SL_cmd *cmds, char *prompt)
 	count = 0;
 	ret = sl_make_argv(buf, &count, &ptr);
 	if(ret) {
-	    warnx ("sl_loop: %s", strerror(ret));
+	    fprintf(stderr, "sl_loop: out of memory\n");
 	    return -1;
 	}
 	if (count > 0) {
