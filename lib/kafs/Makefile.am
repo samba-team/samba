@@ -61,6 +61,7 @@ EXTRA_libkafs_la_SOURCES = afskrb5.c dlfcn.c afslib.c dlfcn.h
 
 EXTRA_DIST = README.dlfcn afsl.exp afslib.exp
 
+man_MANS = kafs.3
 
 # AIX: this almost works with gcc, but somehow it fails to use the
 # correct ld, use ld instead
