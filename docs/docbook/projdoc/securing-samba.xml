@@ -52,6 +52,25 @@ as the client sends its first packet. The refusal will be marked as a
 </sect1>
 
 <sect1>
+<title>User based protection</title>
+
+<para>
+If you want to restrict access to your server to valid users only then the following
+method may be of use. In the smb.conf [globals] section put:
+</para>
+
+<para><programlisting>
+	valid users = @smbusers, jacko
+</programlisting></para>
+
+<para>
+What this does is, it restricts all server access to either the user <emphasis>jacko</emphasis>
+or to members of the system group <emphasis>smbusers</emphasis>.
+</para>
+
+</sect1>
+
+<sect1>
 
 <title>Using interface protection</title>
 

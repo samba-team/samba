@@ -1,0 +1,47 @@
+<chapter id="StandAloneServer">
+<chapterinfo>
+	&author.jht;
+</chapterinfo>
+<title>Stand-Alone Servers</title>
+
+<sect1>
+<title>Stand Alone Server</title>
+
+<para>
+The term <emphasis>stand alone server</emphasis> means that the server
+will provide local authentication and access control for all resources
+that are available from it. In general this means that there will be a
+local user database. In more technical terms, it means that resources
+on the machine will either be made available in either SHARE mode or in
+USER mode. SHARE mode and USER mode security are documented under
+discussions regarding "security mode". The smb.conf configuration parameters
+that control security mode are: "security = user" and "security = share".
+</para>
+
+<para>
+No special action is needed other than to create user accounts. Stand-alone
+servers do NOT provide network logon services, meaning that machines that
+use this server do NOT perform a domain logon but instead make use only of
+the MS Windows logon which is local to the MS Windows workstation/server.
+</para>
+
+<para>
+Samba tends to blur the distinction a little in respect of what is
+a stand alone server. This is because the authentication database may be
+local or on a remote server, even if from the samba protocol perspective
+the samba server is NOT a member of a domain security context.
+</para>
+
+<para>
+Through the use of PAM (Pluggable Authentication Modules) and nsswitch
+(the name service switcher) the source of authentication may reside on 
+another server. We would be inclined to call this the authentication server.
+This means that the samba server may use the local Unix/Linux system
+password database (/etc/passwd or /etc/shadow), may use a local smbpasswd
+file (/etc/samba/smbpasswd or /usr/local/samba/lib/private/smbpasswd), or
+may use an LDAP back end, or even via PAM and Winbind another CIFS/SMB
+server for authentication.
+</para>
+
+</sect1>
+</chapter>
