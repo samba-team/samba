@@ -43,7 +43,7 @@ NTSTATUS cli_epm_map(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_epm_q_map(mem_ctx, &q, *tower, *num_towers);
 
 	if (!epm_io_q_map("map_query", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, EPM_MAP_PIPE_NAME, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_EPM, EPM_MAP_PIPE_NAME, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
