@@ -760,7 +760,6 @@ extern int errno;
 #include "nt_status.h"
 #include "ads.h"
 #include "interfaces.h"
-#include "hash.h"
 #include "trans2.h"
 #include "nterr.h"
 #include "ntioctl.h"
