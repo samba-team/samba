@@ -591,7 +591,7 @@ BOOL trim_string(char *s,const char *front,const char *back)
      * Kenichi Okuyama.
      */
 
-    if ( back && back_len > 1 && s_len > back_len) {
+    if ( back && back_len > 1 && s_len >= back_len) {
         char	*bP	= sP + s_len - back_len;
         long	b_len	= s_len;
 
