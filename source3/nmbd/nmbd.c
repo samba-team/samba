@@ -103,17 +103,6 @@ static void sig_hup(int sig)
 
 } /* sig_hup */
 
-/**************************************************************************** **
- catch a sigpipe
- **************************************************************************** */
-static void sig_pipe(int sig)
-{
-  BlockSignals( True, SIGPIPE );
-
-  DEBUG( 0, ("Got SIGPIPE\n") );
-
-  BlockSignals( False, SIGPIPE );
-} /* sig_pipe */
 
 #if DUMP_CORE
 /**************************************************************************** **
@@ -432,7 +421,8 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   if ( ClientNMB == -1 )
     return( False );
 
-  CatchSignal( SIGPIPE, SIGNAL_CAST sig_pipe );
+  /* we are never interested in SIGPIPE */
+  BlockSignals(True,SIGPIPE);
 
   set_socket_options( ClientNMB,   "SO_BROADCAST" );
   set_socket_options( ClientDGRAM, "SO_BROADCAST" );
