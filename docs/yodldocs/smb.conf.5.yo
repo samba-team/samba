@@ -927,6 +927,8 @@ it() link(bf(postscript))(postscript)
 
 it() link(bf(preexec))(preexec)
 
+it() link(bf(preexec close))(preexecclose)
+
 it() link(bf(preserve case))(preservecase)
 
 it() link(bf(print command))(printcommand)
@@ -962,6 +964,8 @@ it() link(bf(root postexec))(rootpostexec)
 it() link(bf(root preexec))(rootpreexec)
 
 it() link(bf(security mask))(securitymask)
+
+it() link(bf(root preexec close))(rootpreexecclose)
 
 it() link(bf(set directory))(setdirectory)
 
@@ -4492,13 +4496,25 @@ verb(
 
 Of course, this could get annoying after a while :-)
 
-See also link(bf(postexec))(postexec).
+See also link(bf(preexec close))(preexecclose) and link(bf(postexec))(postexec).
 
   bf(Default:)
 tt(	none (no command executed))
 
   bf(Example:)
 tt(        preexec = echo \"%u connected to %S from %m (%I)\" >> /tmp/log)
+
+label(preexecclose)
+dit(bf(preexec close (S)))
+
+This boolean option controls whether a non-zero return code from
+link(bf("preexec"))(preexec) should close the service being connected to.
+
+  bf(Default:)
+tt( 	preexec close = no)
+
+  bf(Example:)
+tt( 	preexec close = yes)
 
 label(preferredmaster)
 dit(bf(preferred master (G)))
@@ -5159,7 +5175,16 @@ This is the same as the link(bf("preexec"))(preexec) parameter except
 that the command is run as root. This is useful for mounting
 filesystems (such as cdroms) before a connection is finalized.
 
-See also link(bf("preexec"))(preexec).
+See also link(bf("preexec"))(preexec)
+and link(bf("root preexec close"))(rootpreexecclose).
+
+label(rootpreexecclose)
+dit(bf(root preexec close (S)))
+
+This is the same as the link(bf("preexec close"))(preexecclose) parameter
+except that the command is run as root.
+
+See also link(bf("preexec"))(preexec), link(bf("preexec close"))(preexecclose).
 
 label(security)
 dit(bf(security (G)))
