@@ -258,12 +258,33 @@ static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT * tdb,
 	return True;
 }
 
+static UNISTR2 *choose_unistr2(const UNISTR2 *str1, const UNISTR2 *str2)
+{
+	if (str1->uni_max_len != 0)
+	{
+		return unistr2_dup(str1);
+	}
+	return unistr2_dup(str2);
+}
+
 static BOOL tdb_set_userinfo_23(TDB_CONTEXT * tdb,
 				const SAM_USER_INFO_23 * usr23,
 				const uchar lm_pwd[16],
 				const uchar nt_pwd[16])
 {
 	SAM_USER_INFO_21 usr;
+	BOOL ret;
+	
+	UNISTR2 *uni_user_name;
+	UNISTR2 *uni_full_name;
+	UNISTR2 *uni_home_dir;
+	UNISTR2 *uni_dir_drive;
+	UNISTR2 *uni_logon_script;
+	UNISTR2 *uni_profile_path;
+	UNISTR2 *uni_acct_desc;
+	UNISTR2 *uni_workstations;
+	UNISTR2 *uni_unknown_str;
+	UNISTR2 *uni_munged_dial;
 
 	if (tdb_writelock(tdb) != 0)
 	{
@@ -276,23 +297,34 @@ static BOOL tdb_set_userinfo_23(TDB_CONTEXT * tdb,
 		return False;
 	}
 
-	if (!make_sam_user_info21W(&usr,
+	uni_user_name = choose_unistr2( &usr23->uni_user_name, &usr.uni_user_name);
+	uni_full_name = choose_unistr2( &usr23->uni_full_name, &usr.uni_full_name);
+	uni_home_dir = choose_unistr2( &usr23->uni_home_dir, &usr.uni_home_dir);
+	uni_dir_drive = choose_unistr2( &usr23->uni_dir_drive, &usr.uni_dir_drive);
+	uni_logon_script = choose_unistr2( &usr23->uni_logon_script, &usr.uni_logon_script);
+	uni_profile_path = choose_unistr2( &usr23->uni_profile_path, &usr.uni_profile_path);
+	uni_acct_desc = choose_unistr2( &usr23->uni_acct_desc, &usr.uni_acct_desc);
+	uni_workstations = choose_unistr2( &usr23->uni_workstations, &usr.uni_workstations);
+	uni_unknown_str = choose_unistr2( &usr23->uni_unknown_str, &usr.uni_unknown_str);
+	uni_munged_dial = choose_unistr2( &usr23->uni_munged_dial, &usr.uni_munged_dial);
+
+	ret = make_sam_user_info21W(&usr,
 				   &usr23->logon_time,
 				   &usr23->logoff_time,
 				   &usr23->kickoff_time,
 				   &usr23->pass_last_set_time,
 				   &usr23->pass_can_change_time,
 				   &usr23->pass_must_change_time,
-				   &usr23->uni_user_name,
-				   &usr23->uni_full_name,
-				   &usr23->uni_home_dir,
-				   &usr23->uni_dir_drive,
-				   &usr23->uni_logon_script,
-				   &usr23->uni_profile_path,
-				   &usr23->uni_acct_desc,
-				   &usr23->uni_workstations,
-				   &usr23->uni_unknown_str,
-				   &usr23->uni_munged_dial,
+				   uni_user_name,
+				   uni_full_name,
+				   uni_home_dir,
+				   uni_dir_drive,
+				   uni_logon_script,
+				   uni_profile_path,
+				   uni_acct_desc,
+				   uni_workstations,
+				   uni_unknown_str,
+				   uni_munged_dial,
 				   lm_pwd, nt_pwd,
 				   usr.user_rid,
 				   usr23->group_rid,
@@ -300,7 +332,20 @@ static BOOL tdb_set_userinfo_23(TDB_CONTEXT * tdb,
 				   usr.unknown_3,
 				   usr23->logon_divs,
 				   &usr23->logon_hrs,
-				   usr23->unknown_5, usr.unknown_6))
+				   usr23->unknown_5, usr23->unknown_6);
+
+	unistr2_free(uni_user_name);
+	unistr2_free(uni_full_name);
+	unistr2_free(uni_home_dir);
+	unistr2_free(uni_dir_drive);
+	unistr2_free(uni_logon_script);
+	unistr2_free(uni_profile_path);
+	unistr2_free(uni_acct_desc);
+	unistr2_free(uni_workstations);
+	unistr2_free(uni_unknown_str);
+	unistr2_free(uni_munged_dial);
+
+	if (!ret)
 	{
 		tdb_writeunlock(tdb);
 		return False;

@@ -452,6 +452,7 @@ BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 
 		/* copy the string */
 		memcpy(str->buffer, from->buffer, str->uni_str_len * 2);
+		DEBUG(10,("copy_unistr2: string len %d\n", str->uni_str_len));
 	}
 	else
 	{
@@ -479,7 +480,7 @@ frees a UNISTR2 structure.
 ********************************************************************/
 void unistr2_free(UNISTR2 *name)
 {
-	free(name);
+	safe_free(name);
 }
 
 /*******************************************************************

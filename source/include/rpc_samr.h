@@ -2,9 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1998
-   Copyright (C) Paul Ashton 1997-1998
+   Copyright (C) Andrew Tridgell              1992-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
+   Copyright (C) Paul Ashton                  1997-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -148,7 +148,7 @@ SamrTestPrivateFunctionsUser
 
 typedef struct logon_hours_info
 {
-	uint32 len; /* normally 21 bytes */
+	uint16 len; /* normally 21 bytes */
 	uint8 hours[32];
 
 } LOGON_HRS;
@@ -207,10 +207,8 @@ typedef struct sam_user_info_23
 	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
 
-#if 0
 	uint32 unknown_6; /* 0x0000 04ec */
 	uint32 padding4;
-#endif
 
 	LOGON_HRS logon_hrs;
 

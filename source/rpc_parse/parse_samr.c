@@ -4607,7 +4607,8 @@ static BOOL sam_io_logon_hrs(char *desc,  LOGON_HRS *hrs, prs_struct *ps, int de
 
 	prs_align(ps);
 	
-	prs_uint32 (       "len  ", ps, depth, &(hrs->len ));
+	prs_uint16 (       "len  ", ps, depth, &hrs->len);
+	prs_align(ps);
 
 	if (hrs->len > 64)
 	{
@@ -4888,11 +4889,8 @@ BOOL make_sam_user_info23W(SAM_USER_INFO_23 *usr,
 	uint16 logon_divs,
 	LOGON_HRS *hrs,
 	uint32 unknown_5,
-	char newpass[516]
-#if 0
-	, uint32 unknown_6
-#endif
-			)
+	char newpass[516],
+	uint32 unknown_6)
 {
 	int len_user_name    = user_name != NULL ? user_name->uni_str_len : 0;
 	int len_full_name    = full_name != NULL ? full_name->uni_str_len : 0;
@@ -4951,10 +4949,8 @@ BOOL make_sam_user_info23W(SAM_USER_INFO_23 *usr,
 	copy_unistr2(&(usr->uni_unknown_str ), unk_str  );
 	copy_unistr2(&(usr->uni_munged_dial ), mung_dial);
 
-#if 0
 	usr->unknown_6 = unknown_6; /* 0x0000 04ec */
 	usr->padding4 = 0;
-#endif
 
 	if (hrs)
 	{
@@ -5004,11 +5000,8 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 *usr,
 	uint16 logon_divs,
 	LOGON_HRS *hrs,
 	uint32 unknown_5,
-	char newpass[516]
-#if 0
-	, uint32 unknown_6
-#endif
-			)
+	char newpass[516],
+	uint32 unknown_6)
 {
 	int len_user_name    = user_name != NULL ? strlen(user_name) : 0;
 	int len_full_name    = full_name != NULL ? strlen(full_name) : 0;
@@ -5067,10 +5060,8 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 *usr,
 	make_unistr2(&(usr->uni_unknown_str ), unk_str , len_unknown_str );
 	make_unistr2(&(usr->uni_munged_dial ), mung_dial , len_munged_dial );
 
-#if 0
 	usr->unknown_6 = unknown_6; /* 0x0000 04ec */
 	usr->padding4 = 0;
-#endif
 
 	if (hrs)
 	{
@@ -5154,10 +5145,8 @@ static BOOL sam_io_user_info23(char *desc,  SAM_USER_INFO_23 *usr, prs_struct *p
 	smb_io_unistr2("uni_munged_dial ", &(usr->uni_munged_dial ), usr->hdr_munged_dial .buffer, ps, depth); /* worksations user can log on from */
 	prs_align(ps);
 
-#if 0
 	prs_uint32("unknown_6     ", ps, depth, &(usr->unknown_6  ));
 	prs_uint32("padding4      ", ps, depth, &(usr->padding4   ));
-#endif
 
 	if (usr->ptr_logon_hrs)
 	{
@@ -5267,7 +5256,10 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 *usr,
 
 	bzero(usr->padding1, sizeof(usr->padding1));
 
+	dump_data_pw("user_name:", user_name, sizeof(*user_name));
+
 	copy_unistr2(&(usr->uni_user_name   ), user_name);
+	dump_data_pw("user_name:", &usr->uni_user_name, sizeof(*user_name));
 	copy_unistr2(&(usr->uni_full_name   ), full_name);
 	copy_unistr2(&(usr->uni_home_dir    ), home_dir );
 	copy_unistr2(&(usr->uni_dir_drive   ), dir_drive);
