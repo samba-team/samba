@@ -21,8 +21,13 @@ list=""
 for f in librpc/idl/*.idl; do
     basename=`basename $f .idl`
     ndr="librpc/gen_ndr/ndr_$basename.c"
-    if [ "$f" -nt $ndr -o ! -f $ndr ]; then
-	list="$list $f"
+    # blergh - most shells don't have the -nt function
+    if [ -f $ndr ]; then
+	if [ x`find $f -newer $ndr -print` = x$f ]; then
+	    list="$list $f"
+	fi
+    else 
+        list="$list $f"
     fi
 done
 
