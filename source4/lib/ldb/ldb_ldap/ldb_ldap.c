@@ -92,6 +92,41 @@ static int lldb_close(struct ldb_context *ldb)
 }
 
 /*
+  rename a record
+*/
+static int lldb_rename(struct ldb_context *ldb, const char *olddn, const char *newdn)
+{
+	struct lldb_private *lldb = ldb->private_data;
+	int ret = 0;
+	char *newrdn, *p;
+	const char *parentdn = "";
+
+	/* ignore ltdb specials */
+	if (olddn[0] == '@' ||newdn[0] == '@') {
+		return 0;
+	}
+
+	newrdn = ldb_strdup(ldb, newdn);
+	if (!newrdn) {
+		return -1;
+	}
+
+	p = strchr(newrdn, ',');
+	if (p) {
+		*p++ = '\0';
+		parentdn = p;
+	}
+
+	lldb->last_rc = ldap_rename_s(lldb->ldap, olddn, newrdn, parentdn, 1, NULL, NULL);
+	ldb_free(ldb, newrdn);
+	if (lldb->last_rc != LDAP_SUCCESS) {
+		ret = -1;
+	}
+
+	return ret;
+}
+
+/*
   delete a record
 */
 static int lldb_delete(struct ldb_context *ldb, const char *dn)
@@ -465,6 +500,7 @@ static const struct ldb_backend_ops lldb_ops = {
 	lldb_add,
 	lldb_modify,
 	lldb_delete,
+	lldb_rename,
 	lldb_errstring
 };
 
@@ -478,7 +514,7 @@ struct ldb_context *lldb_connect(const char *url,
 {
 	struct ldb_context *ldb = NULL;
 	struct lldb_private *lldb = NULL;
-	int i;
+	int i, version = 3;
 
 	ldb = calloc(1, sizeof(struct ldb_context));
 	if (!ldb) {
@@ -497,6 +533,11 @@ struct ldb_context *lldb_connect(const char *url,
 	lldb->options = NULL;
 
 	lldb->last_rc = ldap_initialize(&lldb->ldap, url);
+	if (lldb->last_rc != LDAP_SUCCESS) {
+		goto failed;
+	}
+
+	lldb->last_rc = ldap_set_option(lldb->ldap, LDAP_OPT_PROTOCOL_VERSION, &version);
 	if (lldb->last_rc != LDAP_SUCCESS) {
 		goto failed;
 	}

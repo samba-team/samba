@@ -23,3 +23,7 @@ SMB_BINARY_MK(ldbmodify,lib/ldb/config.mk)
 SMB_BINARY_MK(ldbsearch,lib/ldb/config.mk)
 
 SMB_BINARY_MK(ldbedit,lib/ldb/config.mk)
+
+SMB_BINARY_MK(ldbrename,lib/ldb/config.mk)
+
+SMB_BINARY_MK(ldbtest,lib/ldb/config.mk)

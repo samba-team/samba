@@ -29,7 +29,7 @@ OBJS =  $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(LDB_LDAP_OBJ)
 
 LDB_LIB = lib/libldb.a
 
-BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbtest
+BINS = bin/ldbadd bin/ldbsearch bin/ldbdel bin/ldbmodify bin/ldbedit bin/ldbrename bin/ldbtest
 
 LIBS = $(LDB_LIB)($(OBJS))
 
@@ -59,6 +59,9 @@ bin/ldbmodify: tools/ldbmodify.o $(LIBS)
 
 bin/ldbedit: tools/ldbedit.o $(LIBS)
 	$(CC) -o bin/ldbedit tools/ldbedit.o $(LIB_FLAGS)
+
+bin/ldbrename: tools/ldbrename.o $(LIBS)
+	$(CC) -o bin/ldbrename tools/ldbrename.o $(LIB_FLAGS)
 
 bin/ldbtest: tools/ldbtest.o $(LIBS)
 	$(CC) -o bin/ldbtest tools/ldbtest.o $(LIB_FLAGS)
