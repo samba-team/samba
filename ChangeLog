@@ -1,3 +1,7 @@
+2001-06-24  Assar Westerlund  <assar@sics.se>
+
+	* update to libtool 1.4 and autoconf 2.50
+
 2001-06-21  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/hdb/Makefile.am: add generation number
@@ -6,6 +10,15 @@
 	* lib/hdb/print.c: use krb5_storage to make it more dynamic
 
 2001-06-21  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.conf.5: update to changed names used by
+	krb5_get_init_creds_opt_set_default_flags
+	* lib/krb5/init_creds.c
+	(krb5_get_init_creds_opt_set_default_flags): make the appdefault
+	keywords have the same names
+
+	* configure.in: only add -L and -R to the krb4 libdir if we are
+	actually using it
 
 	* lib/krb5/krbhst.c (fallback_get_hosts): do not copy trailing
 	dot of hostname add some comments
