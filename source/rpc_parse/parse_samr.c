@@ -4146,7 +4146,7 @@ void sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int 
  unknown_6 = 0x0000 04ec 
 
  *************************************************************************/
-void make_sam_user_info_24(SAM_USER_INFO_24 *usr,
+void make_sam_user_info24(SAM_USER_INFO_24 *usr,
 	char newpass[516])
 {
 	memcpy(usr->pass, newpass, sizeof(usr->pass));
@@ -4155,7 +4155,7 @@ void make_sam_user_info_24(SAM_USER_INFO_24 *usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static void sam_io_user_info_24(char *desc,  SAM_USER_INFO_24 *usr, prs_struct *ps, int depth)
+static void sam_io_user_info24(char *desc,  SAM_USER_INFO_24 *usr, prs_struct *ps, int depth)
 {
 	if (usr == NULL) return;
 
@@ -4569,6 +4569,22 @@ void make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
 				break;
 			}
 
+			case 23:
+			{
+				r_u->ptr = 1;
+				r_u->info.id23 = (SAM_USER_INFO_23*)info;
+
+				break;
+			}
+
+			case 24:
+			{
+				r_u->ptr = 1;
+				r_u->info.id24 = (SAM_USER_INFO_24*)info;
+
+				break;
+			}
+
 			default:
 			{
 				DEBUG(4,("make_samr_r_query_userinfo: unsupported switch level\n"));
@@ -4596,7 +4612,7 @@ void samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struc
 	prs_uint16("switch_value", ps, depth, &(r_u->switch_value));
 	prs_align(ps);
 
-	if (r_u->ptr != 0 && r_u->switch_value != 0)
+	if (r_u->ptr != 0 && r_u->switch_value != 0 && r_u->info.id != NULL)
 	{
 		switch (r_u->switch_value)
 		{
@@ -4633,6 +4649,32 @@ void samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struc
 				if (r_u->info.id21 != NULL)
 				{
 					sam_io_user_info21("", r_u->info.id21, ps, depth);
+				}
+				else
+				{
+					DEBUG(2,("samr_io_r_query_userinfo: info pointer not initialised\n"));
+					return;
+				}
+				break;
+			}
+			case 23:
+			{
+				if (r_u->info.id23 != NULL)
+				{
+					sam_io_user_info23("", r_u->info.id23, ps, depth);
+				}
+				else
+				{
+					DEBUG(2,("samr_io_r_query_userinfo: info pointer not initialised\n"));
+					return;
+				}
+				break;
+			}
+			case 24:
+			{
+				if (r_u->info.id24 != NULL)
+				{
+					sam_io_user_info24("", r_u->info.id24, ps, depth);
 				}
 				else
 				{
@@ -4727,7 +4769,7 @@ void samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 				DEBUG(2,("samr_io_q_query_userinfo: info pointer not initialised\n"));
 				return;
 			}
-			sam_io_user_info_24("", q_u->info.id24, ps, depth);
+			sam_io_user_info24("", q_u->info.id24, ps, depth);
 			break;
 		}
 		case 23:

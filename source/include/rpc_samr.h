@@ -1166,6 +1166,8 @@ typedef struct r_samr_query_user_info
 		SAM_USER_INFO_10 *id10; /* auth-level 0x10 */
 		SAM_USER_INFO_11 *id11; /* auth-level 0x11 */
 		SAM_USER_INFO_21 *id21; /* auth-level 21 */
+		SAM_USER_INFO_23 *id23; /* auth-level 0x17 */
+		SAM_USER_INFO_24 *id24; /* auth-level 0x18 */
 		void* id; /* to make typecasting easy */
 
 	} info;
