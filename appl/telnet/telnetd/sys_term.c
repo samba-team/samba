@@ -1417,7 +1417,7 @@ startslave(host, autologin, autoname)
 	  "\r\n*** Connection not encrypted! "
 	  "Communication may be eavesdropped.***\r\n";
 #ifdef ENCRYPTION
-	if(!decrypt_input)
+	if (encrypt_output == 0 || decrypt_input == 0)
 #endif
 	  writenet(tbuf, strlen(tbuf));
       }
