@@ -128,7 +128,7 @@ static void destroy_pdb_talloc(SAM_ACCOUNT **user)
 
 
 /**********************************************************************
- Alloc memory and initialises a struct sam_passwd on supplied mem_ctx.
+ Allocates memory and initialises a struct sam_passwd on supplied mem_ctx.
 ***********************************************************************/
 
 NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
