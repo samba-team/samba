@@ -36,10 +36,11 @@ static void add_socket(struct server_service *service,
 		       const struct model_ops *model_ops, 
 		       struct in_addr *ifip)
 {
+	struct server_socket *srv_sock;
 	uint16_t port = 389;
 	char *ip_str = talloc_strdup(service->mem_ctx, inet_ntoa(*ifip));
 
-	service_setup_socket(service, model_ops, ip_str, &port);
+	srv_sock = service_setup_socket(service, model_ops, ip_str, &port);
 
 	talloc_free(ip_str);
 }
@@ -92,6 +93,13 @@ static void ldapsrv_init(struct server_service *service,
    that a read(2) holds a complete request that is then thrown away
    completely. */
 
+static void consumed_from_buf(struct rw_buffer *buf,
+				   size_t length)
+{
+	memcpy(buf->data, buf->data+length, buf->length-length);
+	buf->length -= length;
+}
+
 static BOOL append_to_buf(struct rw_buffer *buf, uint8_t *data, size_t length)
 {
 	buf->data = realloc(buf->data, buf->length+length);
@@ -135,12 +143,11 @@ static BOOL write_from_buf(struct socket_context *sock, struct rw_buffer *buf)
 
 	status = socket_send(sock, sock, &tmp_blob, &sendlen, 0);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("socket_send() %s\n",nt_errstr(status)));
 		return False;
 	}
 
-	if (buf->length != sendlen) {
-		return False;
-	}
+	consumed_from_buf(buf, sendlen);
 
 	return True;
 }
@@ -150,13 +157,6 @@ static void peek_into_read_buf(struct rw_buffer *buf, uint8_t **out,
 {
 	*out = buf->data;
 	*out_length = buf->length;
-}
-
-static void consumed_from_read_buf(struct rw_buffer *buf,
-				   size_t length)
-{
-	memcpy(buf->data, buf->data+length, buf->length-length);
-	buf->length -= length;
 }
 
 static BOOL ldap_append_to_buf(struct ldap_message *msg, struct rw_buffer *buf)
@@ -173,23 +173,38 @@ static BOOL ldap_append_to_buf(struct ldap_message *msg, struct rw_buffer *buf)
 	return res;
 }
 
-static void reply_unwilling(struct ldapsrv_connection *ldap_conn, int error)
+static struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, enum ldap_request_tag type)
 {
-	struct ldap_message *msg;
+	struct ldapsrv_reply *reply;
+
+	reply = talloc_p(call, struct ldapsrv_reply);
+	if (!reply) {
+		return NULL;
+	}
+
+	reply->prev = reply->next = NULL;
+	reply->state = LDAPSRV_REPLY_STATE_NEW;
+	reply->msg.messageid = call->request.messageid;
+	reply->msg.type = type;
+	reply->msg.mem_ctx = reply;
+
+	return reply;
+}
+
+static void ldapsrv_unwilling(struct ldapsrv_call *call, int error)
+{
+	struct ldapsrv_reply *reply;
 	struct ldap_ExtendedResponse *r;
 
-	msg = new_ldap_message();
+	DEBUG(0,("Unwilling type[%d] id[%d]\n", call->request.type, call->request.messageid));
 
-	if (msg == NULL) {
-		ldapsrv_terminate_connection(ldap_conn, "new_ldap_message() failed");
+	reply = ldapsrv_init_reply(call, LDAP_TAG_ExtendedResponse);
+	if (!reply) {
+		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
 		return;
 	}
 
-	msg->messageid = 0;
-	r = &msg->r.ExtendedResponse;	
-
-	/* When completely freaking out, OpenLDAP responds with an ExtResp */
-	msg->type = LDAP_TAG_ExtendedResponse;
+	r = &reply->msg.r.ExtendedResponse;
 	r->response.resultcode = error;
 	r->response.dn = NULL;
 	r->response.errormessage = NULL;
@@ -198,303 +213,243 @@ static void reply_unwilling(struct ldapsrv_connection *ldap_conn, int error)
 	r->value.data = NULL;
 	r->value.length = 0;
 
-	ldap_append_to_buf(msg, &ldap_conn->out_buffer);
-
-	talloc_destroy(msg->mem_ctx);
+	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
 }
 
-static void ldap_reply_BindRequest(struct ldapsrv_connection *conn, 
-				   struct ldap_message *request)
+static void ldapsrv_BindRequest(struct ldapsrv_call *call)
 {
-	struct ldap_BindRequest *req = &request->r.BindRequest;
-
-	struct ldap_message *msg;
+	struct ldap_BindRequest *req = &call->request.r.BindRequest;
+	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 
 	DEBUG(5, ("Binding as %s with pw %s\n",
 		  req->dn, req->creds.password));
 
-	msg = new_ldap_message();
-
-	if (msg == NULL) {
-		ldapsrv_terminate_connection(conn, "new_ldap_message() failed");
+	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
+	if (!reply) {
+		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
 		return;
 	}
 
-	resp = &msg->r.BindResponse;
-
-	msg->messageid = request->messageid;
-	msg->type = LDAP_TAG_BindResponse;
+	resp = &reply->msg.r.BindResponse;
 	resp->response.resultcode = 0;
 	resp->response.dn = NULL;
 	resp->response.errormessage = NULL;
 	resp->response.referral = NULL;
 	resp->SASL.secblob = data_blob(NULL, 0);
 
-	ldap_append_to_buf(msg, &conn->out_buffer);
-	talloc_destroy(msg->mem_ctx);
+	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
 }
 
-static void ldap_reply_SearchRequest(struct ldapsrv_connection *conn,
-				     struct ldap_message *request)
+static void ldapsrv_UnbindRequest(struct ldapsrv_call *call)
 {
-	struct ldap_SearchRequest *req = &request->r.SearchRequest;
+//	struct ldap_UnbindRequest *req = &call->request->r.UnbindRequest;
+	DEBUG(10, ("Unbind\n"));
+}
 
-	struct ldap_message *msg;
+static void ldapsrv_SearchRequest(struct ldapsrv_call *call)
+{
+	struct ldap_SearchRequest *req = &call->request.r.SearchRequest;
+	struct ldapsrv_reply *reply;
 	struct ldap_Result *resp;
 
 	DEBUG(10, ("Search filter: %s\n", req->filter));
-
-	msg = new_ldap_message();
-
-	if (msg == NULL) {
-		ldapsrv_terminate_connection(conn, "new_ldap_message() failed");
-		return;
-	}
-
-	msg->messageid = request->messageid;
-	resp = &msg->r.SearchResultDone;
 
 	/* Is this a rootdse request? */
 	if ((strlen(req->basedn) == 0) &&
 	    (req->scope == LDAP_SEARCH_SCOPE_BASE) &&
 	    strequal(req->filter, "(objectclass=*)")) {
 
-#define ATTR_BLOB_CONST(val) data_blob(val, sizeof(val)-1)
-#define ATTR_CONST_SINGLE(attr, blob, nam, val) do { \
-	attr.name = nam; \
-	attr.num_values = ARRAY_SIZE(blob); \
-	attr.values = blob; \
-	blob[0] = ATTR_BLOB_CONST(val); \
-} while(0)
-#define ATTR_CONST_SINGLE_NOVAL(attr, blob, nam) do { \
-	attr.name = nam;\
-	attr.num_values = ARRAY_SIZE(blob); \
-	attr.values = blob;\
-} while(0)
-		TALLOC_CTX *mem_ctx;
-		struct ldap_attribute attrs[3];
-		DATA_BLOB currentTime[1];
-		DATA_BLOB supportedLDAPVersion[2];
-		DATA_BLOB dnsHostName[1];
-
-		mem_ctx = talloc_init("rootDSE");
-		if (!mem_ctx) {
-			ldapsrv_terminate_connection(conn, "no memory");
-			return;
-		}
-
-		/* 
-		 * currentTime
-		 * 20040918090350.0Z
-		 */
-		ATTR_CONST_SINGLE_NOVAL(attrs[0], currentTime, "currentTime");
-		{
-			char *str = ldap_timestring(mem_ctx, time(NULL));
-			if (!str) {
-				ldapsrv_terminate_connection(conn, "no memory");
-				return;
-			}
-			currentTime[0] = data_blob(str, strlen(str));
-			talloc_free(str);
-		}
-
-		/* 
-		 * subschemaSubentry 
-		 * CN=Aggregate,CN=Schema,CN=Configuration,DC=DOM,DC=TLD
-		 */
-
-		/* 
-		 * dsServiceName
-		 * CN=NTDS Settings,CN=NETBIOSNAME,CN=Servers,CN=Default-First-Site,CN=Sites,CN=Configuration,DC=DOM,DC=TLD
-		 */
-
-		/* 
-		 * namingContexts
-		 * DC=DOM,DC=TLD
-		 * CN=Configuration,DC=DOM,DC=TLD
-		 * CN=Schema,CN=Configuration,DC=DOM,DC=TLD
-		 * DC=DomainDnsZones,DC=DOM,DC=TLD
-		 * DC=ForestDnsZones,DC=DOM,DC=TLD
-		 */
-
-		/* 
-		 * defaultNamingContext
-		 * DC=DOM,DC=TLD
-		 */
-
-		/* 
-		 * schemaNamingContext
-		 * CN=Schema,CN=Configuration,DC=DOM,DC=TLD
-		 */
-
-		/* 
-		 * configurationNamingContext
-		 * CN=Configuration,DC=DOM,DC=TLD
-		 */
-
-		/* 
-		 * rootDomainNamingContext
-		 * DC=DOM,DC=TLD
-		 */
-
-		/* 
-		 * supportedControl
-		 * 1.2.840.113556.1.4.319
-		 * 1.2.840.113556.1.4.801
-		 * 1.2.840.113556.1.4.473
-		 * 1.2.840.113556.1.4.528
-		 * 1.2.840.113556.1.4.417
-		 * 1.2.840.113556.1.4.619
-		 * 1.2.840.113556.1.4.841
-		 * 1.2.840.113556.1.4.529
-		 * 1.2.840.113556.1.4.805
-		 * 1.2.840.113556.1.4.521
-		 * 1.2.840.113556.1.4.970
-		 * 1.2.840.113556.1.4.1338
-		 * 1.2.840.113556.1.4.474
-		 * 1.2.840.113556.1.4.1339
-		 * 1.2.840.113556.1.4.1340
-		 * 1.2.840.113556.1.4.1413
-		 * 2.16.840.1.113730.3.4.9
-		 * 2.16.840.1.113730.3.4.10
-		 * 1.2.840.113556.1.4.1504
-		 * 1.2.840.113556.1.4.1852
-		 * 1.2.840.113556.1.4.802
-		 */
-
-		/* 
-		 * supportedLDAPVersion 
-		 * 3
-		 * 2
-		 */
-		ATTR_CONST_SINGLE_NOVAL(attrs[1], supportedLDAPVersion, "supportedLDAPVersion");
-		supportedLDAPVersion[0] = ATTR_BLOB_CONST("3");
-		supportedLDAPVersion[1] = ATTR_BLOB_CONST("2");
-
-		/* 
-		 * supportedLDAPPolicies
-		 * MaxPoolThreads
-		 * MaxDatagramRecv
-		 * MaxReceiveBuffer
-		 * InitRecvTimeout
-		 * MaxConnections
-		 * MaxConnIdleTime
-		 * MaxPageSize
-		 * MaxQueryDuration
-		 * MaxTempTableSize
-		 * MaxResultSetSize
-		 * MaxNotificationPerConn
-		 * MaxValRange
-		 */
-
-		/* 
-		 * highestCommittedUSN 
-		 * 4555
-		 */
-
-		/* 
-		 * supportedSASLMechanisms
-		 * GSSAPI
-		 * GSS-SPNEGO
-		 * EXTERNAL
-		 * DIGEST-MD5
-		 */
-
-		/* 
-		 * dnsHostName
-		 * netbiosname.dom.tld
-		 */
-		ATTR_CONST_SINGLE_NOVAL(attrs[2], dnsHostName, "dnsHostName");
-		dnsHostName[0] = data_blob(lp_netbios_name(),strlen(lp_netbios_name()));
-
-		/* 
-		 * ldapServiceName
-		 * dom.tld:netbiosname$@DOM.TLD
-		 */
-
-		/* 
-		 * serverName:
-		 * CN=NETBIOSNAME,CN=Servers,CN=Default-First-Site,CN=Sites,CN=Configuration,DC=DOM,DC=TLD
-		 */
-
-		/* 
-		 * supportedCapabilities
-		 * 1.2.840.113556.1.4.800
-		 * 1.2.840.113556.1.4.1670
-		 * 1.2.840.113556.1.4.1791
-		 */
-
-		/* 
-		 * isSynchronized:
-		 * TRUE/FALSE
-		 */
-
-		/* 
-		 * isGlobalCatalogReady
-		 * TRUE/FALSE
-		 */
-
-		/* 
-		 * domainFunctionality
-		 * 0
-		 */
-
-		/* 
-		 * forestFunctionality
-		 * 0
-		 */
-
-		/* 
-		 * domainControllerFunctionality
-		 * 2
-		 */
-
-		msg->type = LDAP_TAG_SearchResultEntry;
-		msg->r.SearchResultEntry.dn = "";
-		msg->r.SearchResultEntry.num_attributes = ARRAY_SIZE(attrs);
-		msg->r.SearchResultEntry.attributes = attrs;
-
-		ldap_append_to_buf(msg, &conn->out_buffer);
-		talloc_free(mem_ctx);
 	}
 
-	msg->type = LDAP_TAG_SearchResultDone;
+	reply = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
+	if (!reply) {
+		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+		return;
+	}
+
+	resp = &reply->msg.r.SearchResultDone;
 	resp->resultcode = 0;
 	resp->dn = NULL;
 	resp->errormessage = NULL;
 	resp->referral = NULL;
 
-	ldap_append_to_buf(msg, &conn->out_buffer);
-	talloc_destroy(msg->mem_ctx);
+	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
 }
 
-static void switch_ldap_message(struct ldapsrv_connection *conn,
-			 struct ldap_message *msg)
+static void ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 {
-	switch(msg->type) {
+//	struct ldap_ModifyRequest *req = &call->request.r.ModifyRequest;
+	struct ldapsrv_reply *reply;
+
+	DEBUG(10, ("Modify\n"));
+
+	reply = ldapsrv_init_reply(call, LDAP_TAG_ModifyResponse);
+	if (!reply) {
+		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+		return;
+	}
+
+	ZERO_STRUCT(reply->msg.r);
+
+	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+}
+
+static void ldapsrv_AddRequest(struct ldapsrv_call *call)
+{
+//	struct ldap_AddRequest *req = &call->request.r.AddRequest;
+	struct ldapsrv_reply *reply;
+
+	DEBUG(10, ("Add\n"));
+
+	reply = ldapsrv_init_reply(call, LDAP_TAG_AddResponse);
+	if (!reply) {
+		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+		return;
+	}
+
+	ZERO_STRUCT(reply->msg.r);
+
+	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+}
+
+static void ldapsrv_DelRequest(struct ldapsrv_call *call)
+{
+//	struct ldap_DelRequest *req = &call->request.r.DelRequest;
+	struct ldapsrv_reply *reply;
+
+	DEBUG(10, ("Del\n"));
+
+	reply = ldapsrv_init_reply(call, LDAP_TAG_DelResponse);
+	if (!reply) {
+		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+		return;
+	}
+
+	ZERO_STRUCT(reply->msg.r);
+
+	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+}
+
+static void ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
+{
+//	struct ldap_ModifyDNRequest *req = &call->request.r.ModifyDNRequest;
+	struct ldapsrv_reply *reply;
+
+	DEBUG(10, ("Modify\n"));
+
+	reply = ldapsrv_init_reply(call, LDAP_TAG_ModifyResponse);
+	if (!reply) {
+		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+		return;
+	}
+
+	ZERO_STRUCT(reply->msg.r);
+
+	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+}
+
+static void ldapsrv_CompareRequest(struct ldapsrv_call *call)
+{
+//	struct ldap_CompareRequest *req = &call->request.r.CompareRequest;
+	struct ldapsrv_reply *reply;
+
+	DEBUG(10, ("Compare\n"));
+
+	reply = ldapsrv_init_reply(call, LDAP_TAG_CompareResponse);
+	if (!reply) {
+		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+		return;
+	}
+
+	ZERO_STRUCT(reply->msg.r);
+
+	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+}
+
+static void ldapsrv_AbandonRequest(struct ldapsrv_call *call)
+{
+//	struct ldap_AbandonRequest *req = &call->request.r.AbandonRequest;
+	DEBUG(10, ("Abandon\n"));
+}
+
+static void ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
+{
+//	struct ldap_ExtendedRequest *req = &call->request.r.ExtendedRequest;
+	struct ldapsrv_reply *reply;
+
+	DEBUG(10, ("Extended\n"));
+
+	reply = ldapsrv_init_reply(call, LDAP_TAG_ExtendedResponse);
+	if (!reply) {
+		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
+		return;
+	}
+
+	ZERO_STRUCT(reply->msg.r);
+
+	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+}
+
+static void ldapsrv_do_call(struct ldapsrv_call *call)
+{
+	switch(call->request.type) {
 	case LDAP_TAG_BindRequest:
-		ldap_reply_BindRequest(conn, msg);
+		ldapsrv_BindRequest(call);
+		break;
+	case LDAP_TAG_UnbindRequest:
+		ldapsrv_UnbindRequest(call);
 		break;
 	case LDAP_TAG_SearchRequest:
-		ldap_reply_SearchRequest(conn, msg);
+		ldapsrv_SearchRequest(call);
+		break;
+	case LDAP_TAG_ModifyRequest:
+		ldapsrv_ModifyRequest(call);
+		break;
+	case LDAP_TAG_AddRequest:
+		ldapsrv_AddRequest(call);
+		break;
+	case LDAP_TAG_DelRequest:
+		ldapsrv_DelRequest(call);
+		break;
+	case LDAP_TAG_ModifyDNRequest:
+		ldapsrv_ModifyDNRequest(call);
+		break;
+	case LDAP_TAG_CompareRequest:
+		ldapsrv_CompareRequest(call);
+		break;
+	case LDAP_TAG_AbandonRequest:
+		ldapsrv_AbandonRequest(call);
+		break;
+	case LDAP_TAG_ExtendedRequest:
+		ldapsrv_ExtendedRequest(call);
 		break;
 	default:
-		reply_unwilling(conn, 2);
+		ldapsrv_unwilling(call, 2);
 		break;
 	}
 }
 
-static void ldap_queue_run(struct server_connection *conn)
+static void ldapsrv_do_responses(struct ldapsrv_connection *conn)
 {
-	struct ldapsrv_connection *ldap_conn = conn->private_data;
-	
-	while (ldap_conn->in_queue) {
-		struct ldap_message_queue *req = ldap_conn->in_queue;
-		DLIST_REMOVE(ldap_conn->in_queue, req);
+	struct ldapsrv_call *call, *next_call = NULL;
+	struct ldapsrv_reply *reply, *next_reply = NULL;
 
-		switch_ldap_message(ldap_conn, req->msg);
-		talloc_destroy(req->msg->mem_ctx);
+	for (call=conn->calls; call; call=next_call) {
+		for (reply=call->replies; reply; reply=next_reply) {
+			if (!ldap_append_to_buf(&reply->msg, &conn->out_buffer)) {
+				ldapsrv_terminate_connection(conn, "append_to_buf() failed");
+				return;
+			}
+			next_reply = reply->next;
+			DLIST_REMOVE(call->replies, reply);
+			reply->state = LDAPSRV_REPLY_STATE_SEND;
+			talloc_free(reply);
+		}
+		next_call = call->next;
+		DLIST_REMOVE(conn->calls, call);
+		call->state = LDAPSRV_CALL_STATE_COMPLETE;
+		talloc_free(call);
 	}
 }
 
@@ -509,8 +464,7 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 	int buf_length, msg_length;
 	DATA_BLOB blob;
 	ASN1_DATA data;
-	struct ldap_message *msg;
-	struct ldap_message_queue *queue_entry;
+	struct ldapsrv_call *call;
 
 	DEBUG(10,("ldapsrv_recv\n"));
 
@@ -523,6 +477,7 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 
 	while (buf_length > 0) {
 
+		peek_into_read_buf(&ldap_conn->in_buffer, &buf, &buf_length);
 		/* LDAP Messages are always SEQUENCES */
 
 		if (!asn1_object_length(buf, buf_length, ASN1_SEQUENCE(0),
@@ -548,33 +503,38 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 			return;
 		}
 
-		msg = new_ldap_message();
+		call = talloc_p(ldap_conn, struct ldapsrv_call);
+		if (!call) {
+			ldapsrv_terminate_connection(ldap_conn, "no memory");
+			return;		
+		}
 
-		if ((msg == NULL) || !ldap_decode(&data, msg)) {
+		ZERO_STRUCTP(call);
+		call->state = LDAPSRV_CALL_STATE_NEW;
+		call->conn = ldap_conn;
+		call->request.mem_ctx = call;
+
+		if (!ldap_decode(&data, &call->request)) {
+			dump_data(0,buf, msg_length);
 			ldapsrv_terminate_connection(ldap_conn, "ldap_decode() failed");
 			return;
 		}
 
-		queue_entry = talloc_p(msg->mem_ctx, struct ldap_message_queue);
+		DLIST_ADD_END(ldap_conn->calls, call,
+			      struct ldapsrv_call *);
 
-		if (queue_entry == NULL) {
-			ldapsrv_terminate_connection(ldap_conn, "alloc_p(msg->mem_ctx, struct ldap_message_queue) failed");
-			return;
-		}
+		consumed_from_buf(&ldap_conn->in_buffer, msg_length);
 
-		queue_entry->msg = msg;
-
-		DLIST_ADD_END(ldap_conn->in_queue, queue_entry,
-			      struct ldap_message_queue *);
-
-		consumed_from_read_buf(&ldap_conn->in_buffer, msg_length);
+		ldapsrv_do_call(call);
 
 		peek_into_read_buf(&ldap_conn->in_buffer, &buf, &buf_length);
 	}
 
-	ldap_queue_run(conn);
+	ldapsrv_do_responses(ldap_conn);
 
-	conn->event.fde->flags |= EVENT_FD_WRITE;
+	if (ldap_conn->out_buffer.length > 0) {
+		conn->event.fde->flags |= EVENT_FD_WRITE;
+	}
 
 	return;
 }
@@ -594,7 +554,9 @@ static void ldapsrv_send(struct server_connection *conn, time_t t,
 		return;
 	}
 
-	conn->event.fde->flags &= ~EVENT_FD_WRITE;
+	if (ldap_conn->out_buffer.length == 0) {
+		conn->event.fde->flags &= ~EVENT_FD_WRITE;
+	}
 
 	return;
 }
