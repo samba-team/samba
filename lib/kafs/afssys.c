@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -284,8 +284,10 @@ try_two (int syscall_pioctl, int syscall_setpag)
 int
 k_hasafs(void)
 {
-    int saved_errno;
+#if !defined(NO_AFS) && defined(SIGSYS)
     RETSIGTYPE (*saved_func)();
+#endif
+    int saved_errno;
     char *env = getenv ("AFS_SYSCALL");
   
     /*
