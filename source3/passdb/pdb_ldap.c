@@ -607,7 +607,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	
 		pw = getpwnam_alloc(username);
 		if (pw == NULL) {
-			DEBUG (2,("init_sam_from_ldap: User [%s] does not ave a uid!\n", username));
+			DEBUG (2,("init_sam_from_ldap: User [%s] does not exist via system getpwnam!\n", username));
 			return False;
 		}
 		uid = pw->pw_uid;
