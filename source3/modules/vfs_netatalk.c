@@ -161,27 +161,26 @@ static void atalk_add_to_list(name_compare_entry **list)
 
 static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 {
-	int n;
 	char *dpath;
-	struct dirent **namelist;
+	struct dirent *dent = 0;
+	DIR *dir;
 
 	if (!path) return;
 
-	n = scandir(path, &namelist, 0, alphasort);
-	if (n < 0) {
-		return;
-	} else {
-		while (n --) {
-			if (strcmp(namelist[n]->d_name, ".") == 0 ||
-			  strcmp(namelist[n]->d_name, "..") == 0)
-				continue;
-			if (!(dpath = talloc_asprintf(ctx, "%s/%s", 
-			  path, namelist[n]->d_name)))
-				continue;
-			atalk_unlink_file(dpath);
-			free(namelist[n]);
-		}
+	dir = opendir(path);
+	if (!dir) return;
+
+	while (NULL != (dent = readdir(dir))) {
+		if (strcmp(dent->d_name, ".") == 0 ||
+		    strcmp(dent->d_name, "..") == 0)
+			continue;
+		if (!(dpath = talloc_asprintf(ctx, "%s/%s", 
+					      path, dent->d_name)))
+			continue;
+		atalk_unlink_file(dpath);
 	}
+
+	closedir(dir);
 }
 
 /* Disk operations */
