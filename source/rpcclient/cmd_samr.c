@@ -1000,11 +1000,6 @@ uint32 msrpc_sam_enum_aliases(struct client_info *info,
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
 
-	if (sam != NULL)
-	{
-		free(sam);
-	}
-
 	if (res)
 	{
 		DEBUG(5,("msrpc_sam_enum_aliases: succeeded\n"));

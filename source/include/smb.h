@@ -259,6 +259,7 @@ typedef char fstring[FSTRING_LEN];
 #define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
 #define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
+#define PIPE_EPMAPPER "\\PIPE\\epmapper"
 #define PIPE_ATSVC    "\\PIPE\\atsvc"
 #define PIPE_SPOOLSS  "\\pipe\\spoolss"
 #define PIPE_EVENTLOG "\\PIPE\\EVENTLOG"
