@@ -676,7 +676,7 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 	
 	/* Sanity check - we only have uint32's left tp parse */
 	
-	if ( available_space && ((available_space % 4) != 0) ) {
+	if ( available_space && ((available_space % sizeof(uint32)) != 0) ) {
 		DEBUG(0,("spoolss_io_devmode: available_space [%d] no in multiple of 4 bytes (size = %d)!\n",
 			available_space, devmode->size));
 		DEBUG(0,("spoolss_io_devmode: please report to samba-technical@samba.org!\n"));
@@ -688,8 +688,9 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 	 * zero'd by the caller. 
 	 */
 
-	while (available_space && (i<DM_NUM_OPTIONAL_FIELDS))
+	while ((available_space > 0) && (i < DM_NUM_OPTIONAL_FIELDS))
 	{
+		DEBUG(10, ("spoolss_io_devmode: [%d] bytes left to parse in devmode\n", available_space));
 		if (!prs_uint32(opt_fields[i].name, ps, depth, opt_fields[i].field))
 			return False;
 		available_space -= sizeof(uint32);
@@ -708,7 +709,6 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 	}
 	
 
-parse_driverextra:
 	if (devmode->driverextra!=0) {
 		if (UNMARSHALLING(ps)) {
 			devmode->private=(uint8 *)prs_alloc_mem(ps, devmode->driverextra*sizeof(uint8));
