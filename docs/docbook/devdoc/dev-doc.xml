@@ -20,6 +20,7 @@
 <!ENTITY contributing SYSTEM "contributing.xml">
 <!ENTITY vfs SYSTEM "vfs.xml">
 <!ENTITY windows-deb SYSTEM "windows-debug.xml">
+<!ENTITY registry SYSTEM "registry.xml">
 ]>
 
 <book id="Samba-Developers-Guide">
@@ -82,6 +83,7 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &rpc-plugin;
 &vfs;
 &packagers;
+&registry;
 &contributing;
 
 </book>
