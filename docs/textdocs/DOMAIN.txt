@@ -4,12 +4,41 @@ Updated:	June 27, 1997
 Subject:	Network Logons and Roving Profiles
 ===========================================================================
 
-Samba supports domain logons, network logon scripts and user profiles.
-The support is still experimental, but it seems to work.
+A domain and a workgroup are exactly the same thing in terms of network
+functionality. The difference is topological and is determined by where
+the authentication database is stored. Every workgroup server has its
+own database of usernames and passwords, whereas a domain has a single
+logon facility made possible by a distributed password database.
 
-The support is also not complete. Samba does not yet support the
-sharing of the SAM database with other systems, or remote administration.
-Support for these kind of things should be added sometime in the future.
+The SMB client logging on to a domain has an expectation that every other
+server in the domain should accept the same authentication information.
+However the network functionality of domains and workgroups is identical
+and is explained in BROWSING.txt.
+
+Issues related to the single-logon network model are discussed in this
+document. Samba supports domain logons, network logon scripts and user
+profiles.  The support is still experimental, but it seems to work.
+
+The support is also not complete. Samba does not yet support the sharing
+of the Windows NT-style SAM database with other systems. However this is
+only one way of having a shared user database: exactly the same effect can
+be achieved by having all servers in a domain share a distributed NIS or
+Kerberos authentication database.
+
+When an SMB client in a domain wishes to logon it broadcast requests for a
+logon server.  The first one to reply gets the job, and validates its
+password using whatever mechanism the Samba administrator has installed.
+It is possible (but very stupid) to create a domain where the user
+database is not shared between servers, ie they are effectively workgroup
+servers advertising themselves as participating in a domain. This
+demonstrates how authentication is quite different from but closely
+involved with domains.
+
+Another thing commonly associated with single-logon domains is remote
+administration over the SMB protocol. Again, there is no reason why this
+cannot be implemented with an underlying username database which is
+different from the Windows NT SAM. Support for the Remote Administration
+Protocol is planned for a future release of Samba.
 
 The domain support works for WfWg, and Win95 clients. Support for Windows
 NT and OS/2 clients is still being worked on and is still experimental.
