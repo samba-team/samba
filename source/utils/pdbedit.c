@@ -495,7 +495,14 @@ int main (int argc, char **argv)
 	poptGetArg(pc); /* Drop argv[0], the program name */
 
 	if (user_name == NULL) {
-		user_name = strdup(poptGetArg(pc));
+		if (poptPeekArg(pc) == NULL) {
+			fprintf(stderr, "Can't use pdbedit without a username\n");
+			poptPrintHelp(pc, stderr, 0);
+			exit(1);
+		} else {
+			/*Don't try to duplicate a null string */
+			user_name = strdup(poptGetArg(pc));
+		}
 	}
 
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
