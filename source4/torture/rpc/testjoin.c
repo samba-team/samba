@@ -121,7 +121,8 @@ struct test_join *torture_create_testuser(const char *username,
 
 	printf("Connecting to SAMR\n");
 
-	status = torture_rpc_connection(&join->p, 
+	status = torture_rpc_connection(join, 
+					&join->p, 
 					DCERPC_SAMR_NAME,
 					DCERPC_SAMR_UUID,
 					DCERPC_SAMR_VERSION);
@@ -303,10 +304,6 @@ void torture_leave_domain(struct test_join *join)
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("Delete of machine account failed\n");
 		}
-	}
-
-	if (join->p) {
-		torture_rpc_close(join->p);
 	}
 
 	talloc_free(join);

@@ -28,7 +28,6 @@
 
 static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 {
-	struct dcerpc_pipe *p = NULL;
 	BOOL ret = True;
 	struct GUID IID[2];
 	struct GUID clsid;
@@ -48,9 +47,9 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 
 	if (host) {
 		error = dcom_create_object(ctx, &clsid, 
-							  host, 2, IID,
-							  &interfaces, 
-							  results);
+					   host, 2, IID,
+					   &interfaces, 
+					   results);
 	} else {
 		error = com_create_object(ctx, &clsid, 2, IID, interfaces, results);
 	}
@@ -77,8 +76,6 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 	}
 
 	IUnknown_Release((struct IUnknown *)interfaces[1], mem_ctx);
-
-	torture_rpc_close(p);
 
 	return True;
 }

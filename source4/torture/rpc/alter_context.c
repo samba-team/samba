@@ -38,11 +38,12 @@ BOOL torture_rpc_alter_context(void)
 	mem_ctx = talloc_init("torture_rpc_alter_context");
 
 	printf("opening LSA connection\n");
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, &p, 
 					DCERPC_LSARPC_NAME, 
 					DCERPC_LSARPC_UUID, 
 					DCERPC_LSARPC_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -53,6 +54,7 @@ BOOL torture_rpc_alter_context(void)
 	printf("Opening secondary DSSETUP context\n");
 	status = dcerpc_secondary_context(p, &p2, DCERPC_DSSETUP_UUID, DCERPC_DSSETUP_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		printf("dcerpc_alter_context failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -60,6 +62,7 @@ BOOL torture_rpc_alter_context(void)
 	printf("Opening bad secondary connection\n");
 	status = dcerpc_secondary_context(p, &p2, DCERPC_DSSETUP_UUID, DCERPC_DSSETUP_VERSION+100);
 	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		printf("dcerpc_alter_context with wrong version should fail\n");
 		return False;
 	}
@@ -77,6 +80,7 @@ BOOL torture_rpc_alter_context(void)
 	printf("Testing change of primary context\n");
 	status = dcerpc_alter_context(p, mem_ctx, &p2->syntax, &p2->transfer_syntax);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		printf("dcerpc_alter_context failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -98,8 +102,6 @@ BOOL torture_rpc_alter_context(void)
 	ret &= test_DsRoleGetPrimaryDomainInformation(p2, mem_ctx);
 
 	talloc_free(mem_ctx);
-
-        torture_rpc_close(p);
 
 	return ret;
 }

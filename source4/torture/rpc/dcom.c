@@ -32,18 +32,16 @@ BOOL torture_rpc_dcom(void)
 
 	mem_ctx = talloc_init("torture_rpc_dcom");
 
-	status = torture_rpc_connection(&p, 
-									DCERPC_IOXIDRESOLVER_NAME,
-									DCERPC_IOXIDRESOLVER_UUID,
-									DCERPC_IOXIDRESOLVER_VERSION);
+	status = torture_rpc_connection(mem_ctx, &p, 
+					DCERPC_IOXIDRESOLVER_NAME,
+					DCERPC_IOXIDRESOLVER_UUID,
+					DCERPC_IOXIDRESOLVER_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		ret = False;
 	}
 
 	printf("\n");
 
 	talloc_free(mem_ctx);
-
-	torture_rpc_close(p);
 	return ret;
 }

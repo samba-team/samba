@@ -142,25 +142,27 @@ BOOL torture_rpc_atsvc(void)
 
 	mem_ctx = talloc_init("torture_rpc_atsvc");
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
 					DCERPC_ATSVC_NAME, 
 					DCERPC_ATSVC_UUID, 
 					DCERPC_ATSVC_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
 	if (!test_JobEnum(p, mem_ctx)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
 	if (!test_JobAdd(p, mem_ctx)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
 	talloc_free(mem_ctx);
-
-        torture_rpc_close(p);
 
 	return ret;
 }

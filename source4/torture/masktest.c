@@ -25,7 +25,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 
-static struct cli_credentials credentials;
+static struct cli_credentials *credentials;
 static BOOL showall = False;
 static BOOL old_list = False;
 static const char *maskchars = "<>\"?*abc.";
@@ -80,7 +80,7 @@ static struct smbcli_state *connect_one(char *share)
 	status = smbcli_full_connection(NULL, &c, "masktest",
 					server, 
 					share, NULL,
-					&credentials);
+					credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -297,8 +297,8 @@ static void usage(void)
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
-	ZERO_STRUCT(credentials);
-	cli_credentials_guess(&credentials);
+	credentials = cli_credentials_init(talloc_autofree_context());
+	cli_credentials_guess(credentials);
 
 	seed = time(NULL);
 
@@ -322,7 +322,7 @@ static void usage(void)
 			lp_set_cmdline("max protocol", optarg);
 			break;
 		case 'U':
-			cli_credentials_parse_string(&credentials, optarg, CRED_SPECIFIED);
+			cli_credentials_parse_string(credentials, optarg, CRED_SPECIFIED);
 			break;
 		case 's':
 			seed = atoi(optarg);

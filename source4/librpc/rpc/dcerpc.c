@@ -130,12 +130,6 @@ static uint32_t next_call_id(struct dcerpc_connection *c)
 	return c->call_id;
 }
 
-/* close down a dcerpc over SMB pipe */
-void dcerpc_pipe_close(struct dcerpc_pipe *p)
-{
-	talloc_free(p);
-}
-
 /* we need to be able to get/set the fragment length without doing a full
    decode */
 void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v)

@@ -122,13 +122,6 @@ static WERROR rpc_get_predefined_key (struct registry_context *ctx, uint32_t hke
 	return known_hives[n].open((struct dcerpc_pipe *)ctx->backend_data, *k, &(mykeydata->pol));
 }
 
-static int rpc_close (void *_h)
-{
-	struct registry_context *h = _h;
-	dcerpc_pipe_close(h->backend_data);
-	return 0;
-}
-
 #if 0
 static WERROR rpc_key_put_rpc_data(TALLOC_CTX *mem_ctx, struct registry_key *k)
 {
@@ -381,7 +374,8 @@ WERROR reg_open_remote (struct registry_context **ctx, struct cli_credentials *c
 		location = talloc_strdup(ctx, "ncalrpc:");
 	}
 
-	status = dcerpc_pipe_connect(&p, location, 
+	status = dcerpc_pipe_connect(*ctx /* TALLOC_CTX */, 
+				     &p, location, 
 				     DCERPC_WINREG_UUID,
 				     DCERPC_WINREG_VERSION,
 				     credentials);
@@ -389,12 +383,12 @@ WERROR reg_open_remote (struct registry_context **ctx, struct cli_credentials *c
 
 	if(NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, ("Unable to open '%s': %s\n", location, nt_errstr(status)));
+		talloc_free(*ctx);
+		*ctx = NULL;
 		return ntstatus_to_werror(status);
 	}
 
 	(*ctx)->get_predefined_key = rpc_get_predefined_key;
-
-	talloc_set_destructor(*ctx, rpc_close);
 
 	return WERR_OK;
 }
