@@ -488,7 +488,7 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
 				  "(&(name=TemplateGroup)(objectclass=groupTemplate))");
 	if (ret != 0) {
-		DEBUG(1,("Failed to load TemplateUser from samdb\n"));
+		DEBUG(1,("Failed to load TemplateGroup from samdb\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1771,9 +1771,12 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		return status;
 	}
 
-	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE, 
+	   unless they are already marked with some other flag */
 	for (i=0;i<mod.num_elements;i++) {
-		mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
+		if (mod.elements[i].flags == 0) {
+			mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
+		}
 	}
 
 	/* modify the samdb record */

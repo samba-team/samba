@@ -499,7 +499,8 @@ int samdb_copy_template(void *ctx, TALLOC_CTX *mem_ctx,
 		}
 		for (j=0;j<el->num_values;j++) {
 			if (strcasecmp(el->name, "objectClass") == 0 &&
-			    (strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
+			    (strcasecmp((char *)el->values[j].data, "Template") == 0 ||
+			     strcasecmp((char *)el->values[j].data, "userTemplate") == 0 ||
 			     strcasecmp((char *)el->values[j].data, "groupTemplate") == 0)) {
 				continue;
 			}
@@ -624,6 +625,21 @@ int samdb_msg_add_string(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 	}
 	ldb_set_alloc(sam_ctx->ldb, samdb_alloc, mem_ctx);
 	return ldb_msg_add_string(sam_ctx->ldb, msg, a, s);
+}
+
+/*
+  add a delete element operation to a message
+*/
+int samdb_msg_add_delete(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			 const char *attr_name)
+{
+	struct samdb_context *sam_ctx = ctx;
+	char *a = talloc_strdup(mem_ctx, attr_name);
+	if (a == NULL) {
+		return -1;
+	}
+	ldb_set_alloc(sam_ctx->ldb, samdb_alloc, mem_ctx);
+	return ldb_msg_add_empty(sam_ctx->ldb, msg, a, LDB_FLAG_MOD_DELETE);
 }
 
 /*
@@ -815,6 +831,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	NTTIME now_nt;
 	double now_double;
 	int i;
+	BOOL lm_hash_ok;
 
 	/* we need to know the time to compute password age */
 	unix_to_nt_time(&now_nt, now);
@@ -873,14 +890,17 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	}
 
 	/* compute the new nt and lm hashes */
-	E_deshash(new_pass, lmNewHash.hash);
+	lm_hash_ok = E_deshash(new_pass, lmNewHash.hash);
 	E_md4hash(new_pass, ntNewHash.hash);
 
 	/* check the immediately past password */
-	if (pwdHistoryLength > 0 &&
-	    (memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0 ||
-	     memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0)) {
-		return NT_STATUS_PASSWORD_RESTRICTION;
+	if (pwdHistoryLength > 0) {
+		if (lm_hash_ok && memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+		if (memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
 	}
 
 	/* check the password history */
@@ -888,14 +908,18 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	ntPwdHistory_len = MIN(ntPwdHistory_len, pwdHistoryLength);
 
 	if (pwdHistoryLength > 0) {
-		if (strcmp(unicodePwd, new_pass) == 0 ||
-		    memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0 ||
-		    memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0) {
+		if (unicodePwd && strcmp(unicodePwd, new_pass) == 0) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+		if (lm_hash_ok && memcmp(lmNewHash.hash, lmPwdHash.hash, 16) == 0) {
+			return NT_STATUS_PASSWORD_RESTRICTION;
+		}
+		if (memcmp(ntNewHash.hash, ntPwdHash.hash, 16) == 0) {
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
 	}
 
-	for (i=0;i<lmPwdHistory_len;i++) {
+	for (i=0;lm_hash_ok && i<lmPwdHistory_len;i++) {
 		if (memcmp(lmNewHash.hash, lmPwdHistory[i].hash, 16) == 0) {
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
@@ -909,46 +933,57 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 #define CHECK_RET(x) do { if (x != 0) return NT_STATUS_NO_MEMORY; } while(0)
 
 	/* the password is acceptable. Start forming the new fields */
-	CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", lmNewHash));
+	if (lm_hash_ok) {
+		CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "lmPwdHash", lmNewHash));
+	} else {
+		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "lmPwdHash"));
+	}
 	CHECK_RET(samdb_msg_add_hash(ctx, mem_ctx, mod, "ntPwdHash", ntNewHash));
 
 	if ((pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT) &&
 	    (userAccountControl & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
 		CHECK_RET(samdb_msg_add_string(ctx, mem_ctx, mod, 
 					       "unicodePwd", new_pass));
-	}
-
-	if (pwdHistoryLength > 0) {
-		new_lmPwdHistory = talloc_array_p(mem_ctx, struct samr_Hash, 
-						  pwdHistoryLength);
-		if (!new_lmPwdHistory) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		new_ntPwdHistory = talloc_array_p(mem_ctx, struct samr_Hash, 
-						  pwdHistoryLength);
-		if (!new_ntPwdHistory) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		for (i=0;i<MIN(pwdHistoryLength-1, lmPwdHistory_len);i++) {
-			new_lmPwdHistory[i+1] = lmPwdHistory[i];
-		}
-		for (i=0;i<MIN(pwdHistoryLength-1, ntPwdHistory_len);i++) {
-			new_ntPwdHistory[i+1] = ntPwdHistory[i];
-		}
-		new_lmPwdHistory[0] = lmNewHash;
-		new_ntPwdHistory[0] = ntNewHash;
-
-		CHECK_RET(samdb_msg_add_hashes(ctx, mem_ctx, mod, 
-					       "lmPwdHistory", 
-					       new_lmPwdHistory, 
-					       MIN(pwdHistoryLength, lmPwdHistory_len+1)));
-		CHECK_RET(samdb_msg_add_hashes(ctx, mem_ctx, mod, 
-					       "ntPwdHistory", 
-					       new_ntPwdHistory, 
-					       MIN(pwdHistoryLength, ntPwdHistory_len+1)));
+	} else {
+		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "unicodePwd"));
 	}
 
 	CHECK_RET(samdb_msg_add_double(ctx, mem_ctx, mod, "pwdLastSet", now_double));
 	
+	if (pwdHistoryLength == 0) {
+		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "lmPwdHistory"));
+		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "ntPwdHistory"));
+		return NT_STATUS_OK;
+	}
+	
+	/* store the password history */
+	new_lmPwdHistory = talloc_array_p(mem_ctx, struct samr_Hash, 
+					  pwdHistoryLength);
+	if (!new_lmPwdHistory) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	new_ntPwdHistory = talloc_array_p(mem_ctx, struct samr_Hash, 
+					  pwdHistoryLength);
+	if (!new_ntPwdHistory) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<MIN(pwdHistoryLength-1, lmPwdHistory_len);i++) {
+		new_lmPwdHistory[i+1] = lmPwdHistory[i];
+	}
+	for (i=0;i<MIN(pwdHistoryLength-1, ntPwdHistory_len);i++) {
+		new_ntPwdHistory[i+1] = ntPwdHistory[i];
+	}
+	new_lmPwdHistory[0] = lmNewHash;
+	new_ntPwdHistory[0] = ntNewHash;
+	
+	CHECK_RET(samdb_msg_add_hashes(ctx, mem_ctx, mod, 
+				       "lmPwdHistory", 
+				       new_lmPwdHistory, 
+				       MIN(pwdHistoryLength, lmPwdHistory_len+1)));
+	CHECK_RET(samdb_msg_add_hashes(ctx, mem_ctx, mod, 
+				       "ntPwdHistory", 
+				       new_ntPwdHistory, 
+				       MIN(pwdHistoryLength, ntPwdHistory_len+1)));
+
 	return NT_STATUS_OK;
 }
