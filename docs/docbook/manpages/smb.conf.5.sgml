@@ -6374,7 +6374,7 @@
 		<command>security = server</command> or <command>security = domain
 		</command>.</para>
 
-		<para>In versions of Samba prior to 2..0, the default was 
+		<para>In versions of Samba prior to 2.0.0, the default was 
 		<command>security = share</command> mainly because that was
 		the only option at one stage.</para>
 
