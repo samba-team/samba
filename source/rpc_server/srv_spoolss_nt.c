@@ -85,6 +85,10 @@ typedef struct _Printer{
 		fstring machine;
 		fstring user;
 	} client;
+	
+	/* devmode sent in the OpenPrinter() call */
+	NT_DEVICEMODE	*devmode;
+	
 } Printer_entry;
 
 static Printer_entry *printers_list;
@@ -222,6 +226,8 @@ static void free_printer_entry(void *ptr)
 	free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.option=NULL;
 	Printer->notify.client_connected=False;
+	
+	free_nt_devicemode( &Printer->devmode );
 
 	/* Remove from the internal list. */
 	DLIST_REMOVE(printers_list, Printer);
@@ -1445,9 +1451,9 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
 {
-	UNISTR2 *printername = NULL;
-	PRINTER_DEFAULT *printer_default = &q_u->printer_default;
-	POLICY_HND *handle = &r_u->handle;
+	UNISTR2 		*printername = NULL;
+	PRINTER_DEFAULT 	*printer_default = &q_u->printer_default;
+	POLICY_HND 		*handle = &r_u->handle;
 
 	fstring name;
 	int snum;
@@ -1605,6 +1611,18 @@ Can't find printer handle we created for printer %s\n", name ));
 	}
 	
 	Printer->access_granted = printer_default->access_required;
+	
+	/* 
+	 * If the client sent a devmode in the OpenPrinter() call, then
+	 * save it here in case we get a job submission on this handle
+	 */
+	
+	 if ( (Printer->printer_type != PRINTER_HANDLE_IS_PRINTSERVER)
+	 	&& q_u->printer_default.devmode_cont.devmode_ptr )
+	 { 
+	 	convert_devicemode( Printer->dev.handlename, q_u->printer_default.devmode_cont.devmode,
+			&Printer->devmode );
+	 }
 
 	return WERR_OK;
 }
