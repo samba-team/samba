@@ -1701,7 +1701,11 @@ BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int
 void init_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
 			   POLICY_HND *pol, NTSTATUS status)
 {
-	memcpy(&r_r->pol, pol, sizeof(r_r->pol));
+	if (NT_STATUS_IS_OK(status)) {
+		memcpy(&r_r->pol, pol, sizeof(r_r->pol));
+	} else {
+		ZERO_STRUCT(r_r->pol);
+	}
 	r_r->status = status;
 }
 
