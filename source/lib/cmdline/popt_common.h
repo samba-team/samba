@@ -40,8 +40,9 @@ extern struct poptOption popt_common_credentials[];
 
 struct cmdline_auth_info {
 	pstring username;
-	pstring password;
 	pstring domain;
+	BOOL got_domain;
+	pstring password;
 	BOOL got_pass;
 	BOOL use_kerberos;
 };
