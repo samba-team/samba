@@ -97,12 +97,11 @@ doit2(HDB *db, hdb_entry *ent, int mod)
     {
 	time_t t;
 	if(ent->max_life){
-	    char *p;
-	    asprintf(&p, "%d seconds", *ent->max_life);
-	    t = gettime ("Max ticket life", p, 1);
-	    free(p);
+	    char buf[128];
+	    unparse_time (*ent->max_life, buf, sizeof(buf));
+	    t = gettime ("Max ticket life", buf);
 	}else{
-	    t = gettime ("Max ticket life", "unlimited", 1);
+	    t = gettime ("Max ticket life", "unlimited");
 	}
 	if(t){
 	    if(ent->max_life == NULL)
@@ -113,12 +112,11 @@ doit2(HDB *db, hdb_entry *ent, int mod)
 	    ent->max_life = NULL;
 	}
 	if(ent->max_renew){
-	    char *p;
-	    asprintf(&p, "%d seconds", *ent->max_renew);
-	    t = gettime ("Max renewable life", p, 1);
-	    free(p);
+	    char buf[128];
+	    unparse_time (*ent->max_renew, buf, sizeof(buf));
+	    t = gettime ("Max renewable life", buf);
 	}else{
-	    t = gettime ("Max renewable life", "unlimited", 1);
+	    t = gettime ("Max renewable life", "unlimited");
 	}
 	if(t){
 	    if(ent->max_renew == NULL)
@@ -207,7 +205,7 @@ add_new_key(int argc, char **argv)
 {
     if(argc != 2){
 	fprintf(stderr, "Usage: add_new_key principal\n");
-	return;
+	return 0;
     }
 
     doit(argv[1], 0);
@@ -219,7 +217,7 @@ mod_entry(int argc, char **argv)
 {
     if(argc != 2){
 	fprintf(stderr, "Usage: mod_entry principal\n");
-	return;
+	return 0;
     }
 
     doit(argv[1], 1);

@@ -109,11 +109,10 @@ init(int argc, char **argv)
 	    return 0;
 	}
 	
-	max_life = gettime("Realm max ticket life", "infinite", 1);
-	max_renew = gettime("Realm max renewable ticket life", "infinite", 1);
-	default_life = gettime("Default ticket life", "1 day", 1);
-	default_renew = gettime("Default renewable ticket life", "7 days", 1);
-	
+	max_life = gettime("Realm max ticket life", "infinite");
+	max_renew = gettime("Realm max renewable ticket life", "infinite");
+	default_life = gettime("Default ticket life", "1 day");
+	default_renew = gettime("Default renewable ticket life", "7 days");
 	
 	/* Create `krbtgt/REALM' */
 	init_des_key(&ent);
