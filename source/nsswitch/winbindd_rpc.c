@@ -868,8 +868,8 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		/* Get domain handle */
 		result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol, 
 				      des_access, &domain->sid, &dom_pol);
-	} while (!NT_STATUS_IS_OK(result) && (retry++ < 1) &&
-			hnd && hnd->cli && hnd->cli->fd == -1);
+	} while (!NT_STATUS_IS_OK(result) && (retry++ < 1)
+		&& hnd && hnd->cli && hnd->cli->fd == -1);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

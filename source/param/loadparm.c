@@ -1459,7 +1459,7 @@ static void init_globals(void)
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
 	string_set(&Globals.szWinbindSeparator, "\\");
-	Globals.winbind_cache_time = 15;
+	Globals.winbind_cache_time = 120;
 
 	Globals.bWinbindEnumUsers = True;
 	Globals.bWinbindEnumGroups = True;

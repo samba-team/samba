@@ -905,7 +905,7 @@ void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l,
 			POLICY_HND *hnd, int num_sids, DOM_SID *sids,
 			uint16 level)
 {
-	DEBUG(5, ("init_r_enum_trust_dom\n"));
+	DEBUG(5, ("init_q_lookup_sids\n"));
 
 	ZERO_STRUCTP(q_l);
 

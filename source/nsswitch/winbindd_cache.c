@@ -211,8 +211,11 @@ static NTSTATUS refresh_sequence_number(struct winbindd_domain *domain,
 
 	time_diff = time(NULL) - domain->last_seq_check;
 
-	/* see if we have to refetch the domain sequence number */
-	if (!force && (time_diff < lp_winbind_cache_time())) {
+	/* see if we have to refetch the domain sequence number.
+	   Ignore 'force' if we are an AD native mode domain 
+	   since the sequence number changes __a lot__  */
+
+	if ( (!force || domain->native_mode)  && (time_diff < lp_winbind_cache_time())) {
 		return NT_STATUS_OK;
 	}
 
