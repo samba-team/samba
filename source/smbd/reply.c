@@ -204,16 +204,21 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 {
 	fstring service;
 	DATA_BLOB password;
-	pstring devicename;
+
+	/* what the cleint thinks the device is */
+	fstring client_devicetype;
+	/* what the server tells the client the share represents */
+	const char *server_devicetype;
 	NTSTATUS nt_status;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int passlen = SVAL(inbuf,smb_vwv3);
 	pstring path;
 	char *p, *q;
 	extern BOOL global_encrypted_passwords_negotiated;
+	
 	START_PROFILE(SMBtconX);	
 
-	*service = *devicename = 0;
+	*service = *client_devicetype = 0;
 
 	/* we might have to close an old one */
 	if ((SVAL(inbuf,smb_vwv2) & 0x1) && conn) {
@@ -250,11 +255,11 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	else
 		fstrcpy(service,path);
 		
-	p += srvstr_pull(inbuf, devicename, p, sizeof(devicename), 6, STR_ASCII);
+	p += srvstr_pull(inbuf, client_devicetype, p, sizeof(client_devicetype), 6, STR_ASCII);
 
-	DEBUG(4,("Got device type %s\n",devicename));
+	DEBUG(4,("Client requested device type [%s] for share [%s]\n", client_devicetype, service));
 
-	conn = make_connection(service,password,devicename,vuid,&nt_status);
+	conn = make_connection(service,password,client_devicetype,vuid,&nt_status);
 	
 	data_blob_clear_free(&password);
 
@@ -263,29 +268,27 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_NT(nt_status);
 	}
 
+	if ( IS_IPC(conn) )
+		server_devicetype = "IPC";
+	else if ( IS_PRINT(conn) )
+		server_devicetype = "LPT:";
+	else 
+		server_devicetype = "A:";
+
 	if (Protocol < PROTOCOL_NT1) {
 		set_message(outbuf,2,0,True);
 		p = smb_buf(outbuf);
-		p += srvstr_push(outbuf, p, devicename, -1, 
+		p += srvstr_push(outbuf, p, server_devicetype, -1, 
 				 STR_TERMINATE|STR_ASCII);
 		set_message_end(outbuf,p);
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
 		const char *fsname = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
-		const char *devicetype;
 		
-
 		set_message(outbuf,3,0,True);
 
-		if ( IS_IPC(conn) )
-			devicetype = "IPC";
-		else if ( IS_PRINT(conn) )
-			devicetype = "LPT:";
-		else 
-			devicetype = "A:";
-
 		p = smb_buf(outbuf);
-		p += srvstr_push(outbuf, p, IS_IPC(conn) ? "IPC" : devicetype, -1, 
+		p += srvstr_push(outbuf, p, server_devicetype, -1, 
 				 STR_TERMINATE|STR_ASCII);
 		p += srvstr_push(outbuf, p, fsname, -1, 
 				 STR_TERMINATE);
