@@ -611,7 +611,7 @@ static void printers_page(void)
 
 
 
-int main(int argc, char *argv[])
+ int main(int argc, char *argv[])
 {
 	extern char *optarg;
 	extern int optind;

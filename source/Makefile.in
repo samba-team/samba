@@ -307,7 +307,7 @@ clean:
 
 proto:
 	@echo rebuilding include/proto.h
-	@$(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | grep -v "ubiqx/"` > include/proto.h
+	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | grep -v "ubiqx/"` > include/proto.h
 
 etags:
 	etags `find . -name "*.[ch]"`
