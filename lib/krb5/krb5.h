@@ -46,6 +46,11 @@
 
 #include <krb5_asn1.h>
 
+/* name confusion with MIT */
+#ifndef KRB5KDC_ERR_KEY_EXP
+#define KRB5KDC_ERR_KEY_EXP KRB5KDC_ERR_KEY_EXPIRED
+#endif
+
 /* simple constants */
 
 #ifndef TRUE
