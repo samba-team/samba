@@ -129,7 +129,7 @@ static char *automount_path(char *user_name)
  This is Luke's original function with the NIS lookup code
  moved out to a separate function.
 *******************************************************************/
-static char *automount_server(char *user_name)
+static char *automount_server(const char *user_name)
 {
 	static pstring server_name;
 
@@ -166,7 +166,7 @@ static char *automount_server(char *user_name)
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
-void standard_sub_basic(char *smb_name, char *str)
+void standard_sub_basic(const char *smb_name, char *str)
 {
 	char *p, *s;
 	fstring pidstr;
@@ -230,7 +230,7 @@ void standard_sub_basic(char *smb_name, char *str)
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
-void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *smb_name, char *str)
+void standard_sub_advanced(int snum, const char *user, const char *connectpath, gid_t gid, const char *smb_name, char *str)
 {
 	char *p, *s, *home;
 
