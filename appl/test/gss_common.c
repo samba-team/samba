@@ -46,28 +46,37 @@ write_token (int sock, gss_buffer_t buf)
 
     net_len = htonl(len);
 
-    if (write (sock, &net_len, 4) != 4)
+    if (net_write (sock, &net_len, 4) != 4)
 	err (1, "write");
-    if (write (sock, buf->value, len) != len)
+    if (net_write (sock, buf->value, len) != len)
 	err (1, "write");
 
     gss_release_buffer (&min_stat, buf);
+}
+
+static void
+enet_read(int fd, void *buf, size_t len)
+{
+    ssize_t ret;
+
+    ret = net_read (fd, buf, len);
+    if (ret == 0)
+	errx (1, "EOF in read");
+    else if (ret < 0)
+	errx (1, "read");
 }
 
 void
 read_token (int sock, gss_buffer_t buf)
 {
     u_int32_t len, net_len;
+    int ret;
 
-    if (read(sock, &net_len, 4) != 4)
-	err (1, "read");
+    enet_read (sock, &net_len, 4);
     len = ntohl(net_len);
     buf->length = len;
-    buf->value  = malloc(len);
-    if (buf->value == NULL)
-	err (1, "malloc %u", len);
-    if (read (sock, buf->value, len) != len)
-	err (1, "read");
+    buf->value  = emalloc(len);
+    enet_read (sock, buf->value, len);
 }
 
 void
