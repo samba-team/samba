@@ -646,6 +646,17 @@ char **file_lines_pload(char *syscmd, int *numlines);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
 
+/*The following definitions come from  lib/util_list.c  */
+
+GENERIC_LIST *generic_list_new(void);
+GENERIC_LIST *generic_list_append(GENERIC_LIST *l, 
+				  void *item, uint8 type);
+void *generic_list_first(GENERIC_LIST *l, uint8 *type);
+void *generic_list_locate (GENERIC_LIST *l, void *search,
+				  BOOL(*cmp)(const void*,const void*));
+void *generic_list_remove(GENERIC_LIST *l, void *search,
+			  BOOL(*cmp)(const void*,const void*));
+
 /*The following definitions come from  lib/util_pwdb.c  */
 
 uint32 lookup_wk_group_name(const char *group_name, const char *domain,
