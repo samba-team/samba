@@ -907,6 +907,8 @@ case "$host_os" in
 				PICFLAG="-O2"
 			else
 				PICFLAG="-O2 -qmaxmem=6000"
+				## for funky AIX compiler using strncpy()
+				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT"
 			fi
 
 			AC_DEFINE(STAT_ST_BLOCKSIZE,DEV_BSIZE)
