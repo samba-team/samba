@@ -3460,6 +3460,33 @@ link(bf(logon server))(domainlogons).
   bf(Example:)
 	nis homedir = true
 
+label(ntpipesupport)
+dit(bf(nt pipe support (G)))
+
+This boolean parameter controlls whether url(bf(smbd))(smbd.8.html)
+will allow Windows NT clients to connect to the NT SMB specific
+tt(IPC$) pipes. This is a developer debugging option and can be left
+alone.
+
+  bf(Default:)
+	nt pipe support = yes
+
+label(ntsmbsupport)
+dit(bf(nt smb support (G)))
+
+This boolean parameter controlls whether url(bf(smbd))(smbd.8.html)
+will negotiate NT specific SMB support with Windows NT
+clients. Although this is a developer debugging option and should be
+left alone, benchmarking has discovered that Windows NT clients give
+faster performance with this option set to tt("no"). This is still
+being investigated. If this option is set to tt("no") then Samba
+offers exactly the same SMB calls that versions prior to Samba2.0
+offered. This information may be of use if any users are having
+problems with NT SMB support.
+
+  bf(Default:)
+	nt support = yes
+
 label(nullpasswords)
 dit(bf(null passwords (G)))
 
@@ -3473,26 +3500,28 @@ See also url(bf(smbpasswd (5)))(smbpasswd.5.html).
   bf(Example:)
 	null passwords = yes
 
-.SS ole locking compatibility (G)
+label(olelockingcompatibility)
+dit(bf(ole locking compatibility (G)))
 
-This parameter allows an administrator to turn off the byte range
-lock manipulation that is done within Samba to give compatibility
-for OLE applications. Windows OLE applications use byte range locking
-as a form of inter-process communication, by locking ranges of bytes
-around the 2^32 region of a file range. This can cause certain UNIX
-lock managers to crash or otherwise cause problems. Setting this
-parameter to "no" means you trust your UNIX lock manager to handle
-such cases correctly.
+This parameter allows an administrator to turn off the byte range lock
+manipulation that is done within Samba to give compatibility for OLE
+applications. Windows OLE applications use byte range locking as a
+form of inter-process communication, by locking ranges of bytes around
+the 2^32 region of a file range. This can cause certain UNIX lock
+managers to crash or otherwise cause problems. Setting this parameter
+to tt("no") means you trust your UNIX lock manager to handle such cases
+correctly.
 
-.B Default:
-     ole locking compatibility = yes
+  bf(Default:)
+	ole locking compatibility = yes
 
-.B Example:
-     ole locking compatibility = no
+  bf(Example:)
+	ole locking compatibility = no
 
+label(onlyguest)
+dit(bf(only guest (S)))
 
-.SS only guest (S)
-A synonym for this command is 'guest only'.
+A synonym for link(bf("guest only"))(guestonly).
 
 .SS only user (S)
 This is a boolean option that controls whether connections with
