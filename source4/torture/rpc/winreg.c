@@ -59,6 +59,7 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct winreg_CreateKey r;
 	struct policy_handle newhandle;
 	NTSTATUS status;
+	struct sec_desc_buf sec_desc;
 
 	printf("\ntesting CreateKey\n");
 
@@ -71,7 +72,9 @@ static BOOL test_CreateKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.access_mask = 0x02000000;
 	r.out.reserved = 0x0;
 	r.in.sec_info = 0x0;
-	r.in.data = 0;
+	sec_desc.size = 0;
+	sec_desc.sd = NULL;
+	r.in.sec_desc = &sec_desc;
 
 	status = dcerpc_winreg_CreateKey(p, mem_ctx, &r);
 
@@ -130,7 +133,7 @@ static BOOL test_FlushKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			 struct policy_handle *hive_handle,
-			 char *keyname, struct policy_handle *key_handle)
+			 const char *keyname, struct policy_handle *key_handle)
 {
 	NTSTATUS status;
 	struct winreg_OpenKey r;
@@ -154,7 +157,7 @@ static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_DeleteKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			   struct policy_handle *handle, char *key)
+			   struct policy_handle *handle, const char *key)
 {
 	NTSTATUS status;
 	struct winreg_DeleteKey r;
