@@ -1,6 +1,17 @@
               WHATS NEW IN Samba 3.0 alphaX
               =============================
 
+Changes in alpha11
+- fixed fallback to "ads server" option (tridge)
+- fix ACL failure on HP HFS (jra)
+- net ads password and net ads chostpass commands (Remus Koos)
+- fixed valid char array generation (tridge)
+- fixed QFS_INFO for win98 long filenames (tridge)
+- added net lookup command (tridge)
+- fixed map to guest with spnego (tridge)
+- fixed irix warnings (tridge)
+
+
 Changes in alpha10
 - hide unreadable fix using acl fns (jra)
 - lsa_open_policy cleanup (jfm)
