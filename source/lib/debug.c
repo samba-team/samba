@@ -383,6 +383,22 @@ va_dcl
   return( 0 );
   } /* Debug1 */
 
+
+/* ************************************************************************** **
+ * Print the buffer content via Debug1(), then reset the buffer.
+ *
+ *  Input:  none
+ *  Output: none
+ *
+ * ************************************************************************** **
+ */
+static void bufr_print( void )
+  {
+  format_bufr[format_pos] = '\0';
+  (void)Debug1( "%s", format_bufr );
+  format_pos = 0;
+  } /* bufr_print */
+
 /* ************************************************************************** **
  * Format the debug message text.
  *
@@ -420,16 +436,26 @@ static void format_debug_text( char *msg )
 
     /* If a newline is encountered, print & restart. */
     if( '\n' == msg[i] )
-      {
-      format_bufr[format_pos] = '\0';
-      (void)Debug1( "%s", format_bufr );
-      format_pos = 0;
-      }
+      bufr_print();
     }
 
   /* Just to be safe... */
   format_bufr[format_pos] = '\0';
   } /* format_debug_text */
+
+/* ************************************************************************** **
+ * Flush debug output, including the format buffer content.
+ *
+ *  Input:  none
+ *  Output: none
+ *
+ * ************************************************************************** **
+ */
+void dbgflush( void )
+  {
+  bufr_print();
+  (void)fflush( dbf );
+  } /* dbgflush */
 
 /* ************************************************************************** **
  * Print a Debug Header.
