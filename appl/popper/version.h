@@ -14,4 +14,6 @@
  *  Current version of this POP implementation
  */
 
+#if 0
 #define VERSION         krb4_version
+#endif
