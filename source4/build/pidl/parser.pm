@@ -410,10 +410,10 @@ sub ParseStructPush($)
 		$res .= "\tNDR_CHECK(ndr_push_uint32(ndr, $size));\n";
 	}
 
+	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
+
 	my $align = struct_alignment($struct);
 	$res .= "\tNDR_CHECK(ndr_push_align(ndr, $align));\n";
-
-	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		$e->{PARENT} = $struct;
@@ -482,10 +482,11 @@ sub ParseStructPull($)
 		$res .= "\tNDR_CHECK(ndr_pull_uint32(ndr, &$conform_e->{CONFORMANT_SIZE}));\n";
 	}
 
+	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
+
 	my $align = struct_alignment($struct);
 	$res .= "\tNDR_CHECK(ndr_pull_align(ndr, $align));\n";
 
-	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPullScalar($e, "r->", "NDR_SCALARS");
 	}	
