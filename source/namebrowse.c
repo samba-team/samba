@@ -26,7 +26,6 @@
 */
 
 #include "includes.h"
-#include "smb.h"
 
 extern int ClientNMB;
 

@@ -396,14 +396,14 @@ BOOL cli_NetShareEnum(struct cli_state *cli, BOOL sort, BOOL *long_share_name,
 	SSVAL(p,2,BUFFER_SIZE);
 	p += 4;
 
-	cli_send_trans(cli,SMBtrans2,NULL,0,FID_UNUSED,0,
-	         NULL,param,NULL,
-	         0,PTR_DIFF(p,param),0,
-	         BUFFER_SIZE,10,0);
-
-	if (cli_receive_trans(cli, SMBtrans2,
-	                       &resp_data_len, &resp_param_len,
-	                       &resp_data,     &resp_param))
+	if (cli_api(cli, 
+		    PTR_DIFF(p,param), /* param count */
+		    0, /*data count */
+		    10, /* mprcount */
+		    BUFFER_SIZE, /* mdrcount */
+	        &resp_data_len, &resp_param_len,
+		    param, NULL, 
+	        &resp_data,     &resp_param))
 	{
 		int res = SVAL(resp_param,0);
 		int converter=SVAL(resp_param,2);
@@ -530,8 +530,8 @@ prots[] =
       {PROTOCOL_LANMAN1,"LANMAN1.0"},
       {PROTOCOL_LANMAN2,"LM1.2X002"},
       {PROTOCOL_LANMAN2,"Samba"},
-      {PROTOCOL_NT1,"NT LM 0.12"},
       {PROTOCOL_NT1,"NT LANMAN 1.0"},
+      {PROTOCOL_NT1,"NT LM 0.12"},
       {-1,NULL}
     };
 
@@ -564,10 +564,16 @@ BOOL cli_session_setup(struct cli_state *cli,
 	          cli->protocol, cli->sec_mode, passlen));
 
 #ifdef DEBUG_PASSWORD
-	DEBUG(100, ("password   : "));
-	dump_data(100, pass, passlen);
-	DEBUG(100, ("nt-password: "));
-	dump_data(100, ntpass, ntpasslen);
+	if (pass)
+	{
+		DEBUG(100, ("password   : "));
+		dump_data(100, pass, passlen);
+	}
+	if (ntpass)
+	{
+		DEBUG(100, ("nt-password: "));
+		dump_data(100, ntpass, ntpasslen);
+	}
 #endif
 
 	if (cli->protocol < PROTOCOL_LANMAN1)
@@ -606,18 +612,21 @@ BOOL cli_session_setup(struct cli_state *cli,
 			}
 			else
 			{
-				memcpy(pword, pass, sizeof(pword));
+				memcpy(pword, pass, passlen);
 			}
 
-			if (*ntpass && ntpasslen != 24)
+			if (ntpass)
 			{
-				ntpasslen = 24;
-				SMBNTencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
-			}
-			else
-			{
-				/* an already-OWF'd challenge has been handed to us */
-				memcpy(ntpword, ntpass, sizeof(ntpword));
+				if (*ntpass && ntpasslen != 24)
+				{
+					ntpasslen = 24;
+					SMBNTencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
+				}
+				else
+				{
+					/* an already-OWF'd challenge has been handed to us */
+					memcpy(ntpword, ntpass, ntpasslen);
+				}
 			}
 		}
 		else
@@ -3205,10 +3214,6 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				BOOL do_shutdown, BOOL do_tcon, BOOL encrypted)
 {
 	fstring passwd;
-	uchar lm_owf_passwd[16];
-	uchar nt_owf_passwd[16];
-	uchar lm_sess_pwd[24];
-	uchar nt_sess_pwd[24];
 	int pass_len = 0;
 
 	if (passwd_report != NULL && (user_pass == NULL || user_pass[0] == 0))
@@ -3227,8 +3232,6 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		passwd[0] = 0;
 		pass_len = 1;
 	}
-
-	nt_lm_owf_gen(passwd, nt_owf_passwd, lm_owf_passwd);
 
 	/* establish connection */
 
@@ -3258,32 +3261,38 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		return False;
 	}
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("client cryptkey: "));
-	dump_data(100, cli->cryptkey, sizeof(cli->cryptkey));
-#endif
-
-	SMBOWFencrypt(nt_owf_passwd, cli->cryptkey, nt_sess_pwd);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("nt_owf_passwd: "));
-	dump_data(100, nt_owf_passwd, sizeof(lm_owf_passwd));
-	DEBUG(100,("nt_sess_pwd: "));
-	dump_data(100, nt_sess_pwd, sizeof(nt_sess_pwd));
-#endif
-
-	SMBOWFencrypt(lm_owf_passwd, cli->cryptkey, lm_sess_pwd);
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("lm_owf_passwd: "));
-	dump_data(100, lm_owf_passwd, sizeof(lm_owf_passwd));
-	DEBUG(100,("lm_sess_pwd: "));
-	dump_data(100, lm_sess_pwd, sizeof(lm_sess_pwd));
-#endif
-
 	/* attempt encrypted session; attempt clear-text session */
-	if (encrypted)
+	if (encrypted && user_pass)
 	{
+		uchar lm_owf_passwd[16];
+		uchar nt_owf_passwd[16];
+		uchar lm_sess_pwd[24];
+		uchar nt_sess_pwd[24];
+
+		nt_lm_owf_gen(passwd, nt_owf_passwd, lm_owf_passwd);
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("client cryptkey: "));
+		dump_data(100, cli->cryptkey, sizeof(cli->cryptkey));
+#endif
+
+		SMBOWFencrypt(nt_owf_passwd, cli->cryptkey, nt_sess_pwd);
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("nt_owf_passwd: "));
+		dump_data(100, nt_owf_passwd, sizeof(lm_owf_passwd));
+		DEBUG(100,("nt_sess_pwd: "));
+		dump_data(100, nt_sess_pwd, sizeof(nt_sess_pwd));
+#endif
+
+		SMBOWFencrypt(lm_owf_passwd, cli->cryptkey, lm_sess_pwd);
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("lm_owf_passwd: "));
+		dump_data(100, lm_owf_passwd, sizeof(lm_owf_passwd));
+		DEBUG(100,("lm_sess_pwd: "));
+		dump_data(100, lm_sess_pwd, sizeof(lm_sess_pwd));
+#endif
 		/* attempt encrypted session */
 		if (!cli_session_setup(cli, username,
 	                       lm_owf_passwd, sizeof(lm_owf_passwd),

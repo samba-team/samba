@@ -112,6 +112,13 @@ enum RPC_PKT_TYPE
 #define DOMAIN_ALIAS_RID_REPLICATOR    (0x00000228L)
 
 
+/* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
+typedef struct time_info
+{
+  uint32 time;
+
+} UTIME;
+
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
@@ -121,6 +128,19 @@ typedef struct nttime_info
 
 } NTTIME;
  
+/* DOM_CHAL - challenge info */
+typedef struct chal_info
+{
+  uchar data[8]; /* credentials */
+} DOM_CHAL;
+
+/* DOM_CREDs - timestamped client or server credentials */
+typedef struct cred_info
+{
+  DOM_CHAL challenge; /* credentials */
+  UTIME timestamp;    /* credential time-stamp */
+
+} DOM_CRED;
 
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
 
@@ -308,6 +328,23 @@ typedef struct gid_info
   uint32 attr;
 
 } DOM_GID;
+
+/* RPC_IFACE */
+typedef struct rpc_iface_info
+{
+  uint8 data[16];    /* 16 bytes of rpc interface identification */
+  uint32 version;    /* the interface version number */
+
+} RPC_IFACE;
+
+struct pipe_id_info
+{
+	char *client_pipe;
+	RPC_IFACE abstr_syntax; /* this one is the abstract syntax id */
+
+	char *server_pipe;  /* this one is the secondary syntax name */
+	RPC_IFACE trans_syntax; /* this one is the primary syntax id */
+};
 
 /* RPC_HDR - ms rpc header */
 typedef struct rpc_hdr_info

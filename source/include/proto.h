@@ -36,7 +36,7 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass);
 
 /*The following definitions come from  client.c  */
 
-void cmd_help(void);
+void cmd_help(struct cli_state *cli, struct client_info *info);
 
 /*The following definitions come from  clientgen.c  */
 
@@ -148,6 +148,38 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				char *username, char *user_pass, char *workgroup,
 				char *service, char *service_type,
 				BOOL do_shutdown, BOOL do_tcon, BOOL encrypted);
+
+/*The following definitions come from  clientsmb.c  */
+
+void cmd_pwd(struct cli_state *cli, struct client_info *info);
+void do_cd(struct cli_state *cli, struct client_info *info, char *newdir);
+void cmd_cd(struct cli_state *cli, struct client_info *info);
+void cmd_dir(struct cli_state *cli, struct client_info *info);
+void cmd_get(struct cli_state *cli, struct client_info *info);
+void cmd_more(struct cli_state *cli, struct client_info *info);
+void cmd_mget(struct cli_state *cli, struct client_info *info);
+void cmd_mkdir(struct cli_state *cli, struct client_info *info);
+void cmd_put(struct cli_state *cli, struct client_info *info);
+void cmd_select(struct cli_state *cli, struct client_info *info);
+void cmd_mput(struct cli_state *cli, struct client_info *info);
+void cmd_cancel(struct cli_state *cli, struct client_info *info);
+void cmd_stat(struct cli_state *cli, struct client_info *info);
+void cmd_print(struct cli_state *cli, struct client_info *info);
+void cmd_queue(struct cli_state *cli, struct client_info *info);
+void cmd_p_queue_2(struct cli_state *cli, struct client_info *info);
+void cmd_qinfo(struct cli_state *cli, struct client_info *info);
+void cmd_del(struct cli_state *cli, struct client_info *info);
+void cmd_rmdir(struct cli_state *cli, struct client_info *info);
+void cmd_rename(struct cli_state *cli, struct client_info *info);
+void cmd_prompt(struct cli_state *cli, struct client_info *info);
+void cmd_newer(struct cli_state *cli, struct client_info *info);
+void cmd_archive(struct cli_state *cli, struct client_info *info);
+void cmd_lowercase(struct cli_state *cli, struct client_info *info);
+void cmd_recurse(struct cli_state *cli, struct client_info *info);
+void cmd_translate(struct cli_state *cli, struct client_info *info);
+void cmd_printmode(struct cli_state *cli, struct client_info *info);
+void cmd_lcd(struct cli_state *cli, struct client_info *info);
+void cmd_quit(struct cli_state *cli, struct client_info *info);
 
 /*The following definitions come from  clitar.c  */
 
@@ -684,9 +716,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 
 /*The following definitions come from  ntclient.c  */
 
-BOOL do_nt_login_test(struct in_addr dest_ip, char *dest_host, char *myhostname,
-				char *username, char *workgroup,
-				char *mach_acct);
+void cmd_nt_login_test(struct cli_state *cli, struct client_info *info);
 
 /*The following definitions come from  nterr.c  */
 
@@ -907,7 +937,7 @@ char* lsa_io_r_sam_logoff(BOOL io, LSA_R_SAM_LOGOFF *r_l, char *q, char *base, i
 /*The following definitions come from  rpc_pipes/ntclientlogin.c  */
 
 BOOL do_nt_session_open(struct cli_state *cli, uint16 *fnum,
-				struct in_addr dest_ip, char *dest_host, char *myhostname,
+				char *dest_host, char *myhostname,
 				char *mach_acct,
 				char *username, char *workgroup,
 				uchar sess_key[8], DOM_CRED *clnt_cred);

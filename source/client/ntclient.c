@@ -37,23 +37,11 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 experimental nt login.
 ****************************************************************************/
-BOOL do_nt_login_test(struct in_addr dest_ip, char *dest_host, char *myhostname,
-				char *username, char *workgroup,
-				char *mach_acct)
+void cmd_nt_login_test(struct cli_state *cli, struct client_info *info)
 {
-	/* client connection state */
-	struct cli_state cli;
-
 	uint16 fnum = 0xffff;
 
-	/* session-chasing junk */
-	uchar sess_key[8];
-	DOM_CRED clnt_cred;
-	DOM_CRED rtn_cred;
-
-	/* user-identification info, for logins */
-	DOM_ID_INFO_1 id1;
-	LSA_USER_INFO user_info1;
+	fstring username;
 
 	BOOL res = True;
 
@@ -62,52 +50,67 @@ BOOL do_nt_login_test(struct in_addr dest_ip, char *dest_host, char *myhostname,
 
 	/* initialisation */
 	new_mach_pwd[0] = 0;
-	bzero(&cli, sizeof(cli));
+
+	if (!next_token(NULL, username,NULL))
+	{
+		DEBUG(0,("cmd_nt_login: <username>\n"));
+		return;
+	}
 
 	DEBUG(5,("do_nt_login_test: %d\n", __LINE__));
 
+#if 0
 	/* check whether the user wants to change their machine password */
-	res = res ? trust_account_check(dest_ip, dest_host, myhostname, workgroup,
-	                                mach_acct, new_mach_pwd) : False;
-
+	res = res ? trust_account_check(dest_ip, info->dest_host, info->myhostname, info->workgroup,
+	                                info->mach_acct, new_mach_pwd) : False;
+#endif 
 	/* open NETLOGON session.  negotiate credentials */
-	res = res ? do_nt_session_open(&cli, &fnum,
-	                          dest_ip, dest_host, myhostname,
-	                          mach_acct,
-	                          username, workgroup,
-	                          sess_key, &clnt_cred) : False;
+	res = res ? do_nt_session_open(cli, &fnum,
+	                          info->dest_host, info->myhostname,
+	                          info->mach_acct,
+	                          username, info->workgroup,
+	                          info->dom.sess_key, &info->dom.clnt_cred) : False;
 
 	/* change the machine password? */
 	if (new_mach_pwd != NULL && new_mach_pwd[0] != 0)
 	{
-		res = res ? do_nt_srv_pwset(&cli, fnum,
-		                   sess_key, &clnt_cred, &rtn_cred,
+		res = res ? do_nt_srv_pwset(cli, fnum,
+		                   info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
 		                   new_mach_pwd,
-		                   dest_host, mach_acct, myhostname) : False;
+		                   info->dest_host, info->mach_acct, info->myhostname) : False;
 	}
 
 	/* create the user-identification info */
-	make_nt_login_info(&id1,
-	                 sess_key,
-	                 workgroup, myhostname,
+	make_nt_login_info(&info->dom.id1,
+	                 info->dom.sess_key,
+	                 info->workgroup, info->myhostname,
 	                 getuid(), username);
 
 	/* do an NT login */
-	res = res ? do_nt_login(&cli, fnum,
-	                        sess_key, &clnt_cred, &rtn_cred,
-	                        &id1, dest_host, myhostname, &user_info1) : False;
+	res = res ? do_nt_login(cli, fnum,
+	                        info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
+	                        &info->dom.id1, info->dest_host, info->myhostname, &info->dom.user_info1) : False;
 
 	/* ok!  you're logged in!  do anything you like, then... */
 	   
 	/* do an NT logout */
-	res = res ? do_nt_logoff(&cli, fnum,
-	                         sess_key, &clnt_cred, &rtn_cred,
-	                         &id1, dest_host, myhostname) : False;
+	res = res ? do_nt_logoff(cli, fnum,
+	                         info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
+	                         &info->dom.id1, info->dest_host, info->myhostname) : False;
 
+#if 0
 	/* close the session */
-	do_nt_session_close(&cli, fnum);
+	do_nt_session_close(cli, fnum);
+#endif
 
-	return res;
+	if (res)
+	{
+		DEBUG(5,("cmd_nt_login_test: login test failed\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_nt_login_test: login test succeeded\n"));
+	}
 }
 
 #endif /* NTDOMAIN */

@@ -103,6 +103,12 @@ typedef unsigned int uint32;
 #define uint32 unsigned int
 #endif
 
+typedef char pstring[1024];
+typedef char fstring[128];
+typedef fstring string;
+
+#include "ntdomain.h"
+
 #define SIZEOFWORD 2
 
 #ifndef DEF_CREATE_MASK
@@ -250,11 +256,6 @@ implemented */
 #define ERRdiskfull 39
 
 
-typedef char pstring[1024];
-typedef char fstring[128];
-typedef fstring string;
-
-
 /* pipe strings */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
@@ -265,23 +266,6 @@ typedef fstring string;
 #define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
 #define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
-
-/* RPC_IFACE */
-typedef struct rpc_iface_info
-{
-  uint8 data[16];    /* 16 bytes of rpc interface identification */
-  uint32 version;    /* the interface version number */
-
-} RPC_IFACE;
-
-struct pipe_id_info
-{
-	char *client_pipe;
-	RPC_IFACE abstr_syntax; /* this one is the abstract syntax id */
-
-	char *server_pipe;  /* this one is the secondary syntax name */
-	RPC_IFACE trans_syntax; /* this one is the primary syntax id */
-};
 
 /* NETLOGON opcodes and data structures */
 
@@ -360,6 +344,32 @@ typedef struct
 } file_info;
 
 
+/* Domain controller authentication protocol info */
+struct dcinfo
+{
+  DOM_CHAL clnt_chal; /* Initial challenge received from client */
+  DOM_CHAL srv_chal;  /* Initial server challenge */
+  DOM_CRED clnt_cred; /* Last client credential */
+  DOM_CRED srv_cred;  /* Last server credential */
+
+  uchar  sess_key[8]; /* Session key */
+  uchar  md4pw[16];   /* md4(machine password) */
+};
+
+struct nt_client_info
+{
+	fstring mach_acct;
+
+	char sess_key[8];
+	DOM_CRED clnt_cred;
+	DOM_CRED rtn_cred;
+
+	DOM_ID_INFO_1 id1;
+	LSA_USER_INFO user_info1;
+
+	uint16 netlogon_fnum;
+};
+
 struct tar_client_info
 {
 	int blocksize;
@@ -382,6 +392,15 @@ struct tar_client_info
 
 struct client_info 
 {
+	struct in_addr dest_ip;
+	fstring dest_host;
+	fstring query_host;
+
+	fstring myhostname;
+	fstring username;
+	fstring workgroup;
+	fstring mach_acct;
+
 	pstring cur_dir;
 	pstring base_dir;
 	pstring file_sel;
@@ -400,6 +419,7 @@ struct client_info
 	BOOL abort_mget;
 
 	struct tar_client_info tar;
+	struct nt_client_info dom;
 };
 
 /* Structure used when SMBwritebmpx is active */
@@ -500,39 +520,6 @@ typedef struct
   name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 
 } connection_struct;
-
-/* DOM_CHAL - challenge info */
-typedef struct chal_info
-{
-  uchar data[8]; /* credentials */
-} DOM_CHAL;
-
-/* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
-typedef struct time_info
-{
-  uint32 time;
-
-} UTIME;
-
-/* DOM_CREDs - timestamped client or server credentials */
-typedef struct cred_info
-{
-  DOM_CHAL challenge; /* credentials */
-  UTIME timestamp;    /* credential time-stamp */
-
-} DOM_CRED;
-
-/* Domain controller authentication protocol info */
-struct dcinfo
-{
-  DOM_CHAL clnt_chal; /* Initial challenge received from client */
-  DOM_CHAL srv_chal;  /* Initial server challenge */
-  DOM_CRED clnt_cred; /* Last client credential */
-  DOM_CRED srv_cred;  /* Last server credential */
-
-  uchar  sess_key[8]; /* Session key */
-  uchar  md4pw[16];   /* md4(machine password) */
-};
 
 typedef struct
 {
