@@ -483,8 +483,10 @@ nsswitch : SHOWFLAGS $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 SHOWFLAGS:
 	@echo "Using FLAGS = $(FLAGS)"
-	@echo "Using FLAGS32 = $(FLAGS32)"
-	@echo "Using LIBS = $(LIBS)"
+	@echo "      FLAGS32 = $(FLAGS32)"
+	@echo "      LIBS = $(LIBS)"
+	@echo "      LDSHFLAGS = $(LDSHFLAGS)"
+	@echo "      LDFLAGS = $(LDFLAGS)"
 
 MAKEDIR = || exec false; \
 	  if test -d "$$dir"; then :; else \
