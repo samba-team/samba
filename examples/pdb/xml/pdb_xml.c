@@ -120,30 +120,30 @@ BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 			pdb_set_logon_script(u,
 								 xmlNodeListGetString(doc,
 													  cur->xmlChildrenNode,
-													  1), True);
+													  1), PDB_SET);
 
 		else if (!strcmp(cur->name, "profile_path") && cur->ns == ns)
 			pdb_set_profile_path(u,
 								 xmlNodeListGetString(doc,
 													  cur->xmlChildrenNode,
-													  1), True);
+													  1), PDB_SET);
 
 		else if (!strcmp(cur->name, "logon_time") && cur->ns == ns)
 			pdb_set_logon_time(u,
 							   atol(xmlNodeListGetString
-									(doc, cur->xmlChildrenNode, 1)), True);
+									(doc, cur->xmlChildrenNode, 1)), PDB_SET);
 
 		else if (!strcmp(cur->name, "logoff_time") && cur->ns == ns)
 			pdb_set_logoff_time(u,
 								atol(xmlNodeListGetString
 									 (doc, cur->xmlChildrenNode, 1)),
-								True);
+								PDB_SET);
 
 		else if (!strcmp(cur->name, "kickoff_time") && cur->ns == ns)
 			pdb_set_kickoff_time(u,
 								 atol(xmlNodeListGetString
 									  (doc, cur->xmlChildrenNode, 1)),
-								 True);
+								 PDB_SET);
 
 		else if (!strcmp(cur->name, "logon_divs") && cur->ns == ns)
 			pdb_set_logon_divs(u,
@@ -173,7 +173,7 @@ BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 		else if (!strcmp(cur->name, "homedir") && cur->ns == ns)
 			pdb_set_homedir(u,
 							xmlNodeListGetString(doc, cur->xmlChildrenNode,
-												 1), True);
+												 1), PDB_SET);
 
 		else if (!strcmp(cur->name, "unknown_str") && cur->ns == ns)
 			pdb_set_unknown_str(u,
@@ -185,7 +185,7 @@ BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 			pdb_set_dir_drive(u,
 							  xmlNodeListGetString(doc,
 												   cur->xmlChildrenNode,
-												   1), True);
+												   1), PDB_SET);
 
 		else if (!strcmp(cur->name, "munged_dial") && cur->ns == ns)
 			pdb_set_munged_dial(u,
@@ -216,10 +216,10 @@ BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 				pdb_set_pass_last_set_time(u, atol(tmp), PDB_SET);
 			tmp = xmlGetProp(cur, "must_change");
 			if (tmp)
-				pdb_set_pass_must_change_time(u, atol(tmp), True);
+				pdb_set_pass_must_change_time(u, atol(tmp), PDB_SET);
 			tmp = xmlGetProp(cur, "can_change");
 			if (tmp)
-				pdb_set_pass_can_change_time(u, atol(tmp), True);
+				pdb_set_pass_can_change_time(u, atol(tmp), PDB_SET);
 			parsePass(doc, ns, cur, u);
 		}
 
