@@ -1,5 +1,7 @@
 Wed Jul  9 06:06:06 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/hdb/hdb.c: Add hdb_etype2key.
+
 	* kdc/kerberos5.c: Check authenticator. Use more general etype
  	functions.
 	
