@@ -199,8 +199,11 @@ BOOL svc_enum_svcs(struct cli_state *cli, uint16 fnum,
 
 		if (p && r_o.dos_status != 0)
 		{
+			fstring errmsg;
+			smb_safe_err_msg(ERRDOS, r_o.dos_status,
+				errmsg, sizeof(errmsg));
 			/* report error code */
-			DEBUG(0,("SVC_ENUM_SVCS_STATUS: %s\n", smb_err_msg(ERRDOS, r_o.dos_status)));
+			DEBUG(0,("SVC_ENUM_SVCS_STATUS: %s\n", errmsg));
 			p = r_o.dos_status == ERRmoredata;
 		}
 

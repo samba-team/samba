@@ -571,8 +571,10 @@ to ourselves.\n", remote_machine));
   }
 
   if (!cli_connect(&cli, remote_machine, &cli.dest_ip)) {
+	fstring errstr;
+    cli_safe_errstr(&cli, errstr, sizeof(errstr));
     DEBUG(0,("modify_trust_password: unable to connect to SMB server on \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+machine %s. Error was : %s.\n", remote_machine, errstr  ));
     return False;
   }
     
@@ -582,8 +584,10 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 
 	if (!cli_session_request(&cli, &calling, &called))
 	{
+	fstring errstr;
+    cli_safe_errstr(&cli, errstr, sizeof(errstr));
     DEBUG(0,("modify_trust_password: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+Error was : %s.\n", remote_machine, errstr ));
     cli_shutdown(&cli);
     return False;
   }
@@ -591,8 +595,10 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
   cli.protocol = PROTOCOL_NT1;
     
   if (!cli_negprot(&cli)) {
+	fstring errstr;
+    cli_safe_errstr(&cli, errstr, sizeof(errstr));
     DEBUG(0,("modify_trust_password: machine %s rejected the negotiate protocol. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+Error was : %s.\n", remote_machine, errstr ));
     cli_shutdown(&cli);
     return False;
   }
@@ -608,8 +614,10 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
    */
     
   if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
+	fstring errstr;
+    cli_safe_errstr(&cli, errstr, sizeof(errstr));
     DEBUG(0,("modify_trust_password: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+Error was : %s.\n", remote_machine, errstr  ));
     cli_shutdown(&cli);
     return False;
   }
@@ -622,8 +630,10 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
   }
     
   if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+	fstring errstr;
+    cli_safe_errstr(&cli, errstr, sizeof(errstr));
     DEBUG(0,("modify_trust_password: machine %s rejected the tconX on the IPC$ share. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+Error was : %s.\n", remote_machine, errstr ));
     cli_shutdown(&cli);
     return False;
   }
@@ -634,8 +644,10 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
    */
     
   if(cli_nt_session_open(&cli, PIPE_NETLOGON, &nt_pipe_fnum) == False) {
+	fstring errstr;
+    cli_safe_errstr(&cli, errstr, sizeof(errstr));
     DEBUG(0,("modify_trust_password: unable to open the domain client session to \
-machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+machine %s. Error was : %s.\n", remote_machine, errstr ));
     cli_nt_session_close(&cli, nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
@@ -644,8 +656,10 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
   
   if(cli_nt_setup_creds(&cli, nt_pipe_fnum,
      cli.mach_acct, orig_trust_passwd_hash, sec_chan) == False) {
+	fstring errstr;
+    cli_safe_errstr(&cli, errstr, sizeof(errstr));
     DEBUG(0,("modify_trust_password: unable to setup the PDC credentials to machine \
-%s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+%s. Error was : %s.\n", remote_machine, errstr ));
     cli_nt_session_close(&cli, nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
@@ -653,9 +667,11 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
   } 
 
   if( cli_nt_srv_pwset( &cli, nt_pipe_fnum, new_trust_passwd_hash, sec_chan ) == False) {
+	fstring errstr;
+    cli_safe_errstr(&cli, errstr, sizeof(errstr));
     DEBUG(0,("modify_trust_password: unable to change password for machine %s in domain \
 %s to Domain controller %s. Error was %s.\n", global_myname, domain, remote_machine, 
-                            cli_errstr(&cli)));
+                            errstr ));
     cli_nt_session_close(&cli, nt_pipe_fnum);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);

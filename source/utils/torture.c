@@ -1223,9 +1223,9 @@ static void create_procs(int nprocs, int numops, void (*fn)(int ))
 
 	create_procs(nprocs, numops, run_randomipc_nowait);
 /*
+	create_procs(nprocs, numops, run_randomipc);
 
 	create_procs(nprocs, numops, run_connection);
-	create_procs(nprocs, numops, run_randomipc);
 
 	run_fdpasstest();
 	run_locktest1();

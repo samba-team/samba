@@ -143,13 +143,19 @@ struct
   {0xFF,"ERRCMD",NULL},
   {-1,NULL,NULL}};
 
+char *smb_err_msg(uint8 class, uint32 num)
+{
+	static pstring ret;
+	smb_safe_err_msg(class, num, ret, sizeof(ret));
+	return ret;
+}
+	
 
 /****************************************************************************
 return a SMB error string from a SMB buffer
 ****************************************************************************/
-char *smb_err_msg(uint8 class, uint32 num)
+BOOL smb_safe_err_msg(uint8 class, uint32 num, char *ret, size_t len)
 {
-	static pstring ret;
 	int i,j;
 
 	for (i=0;err_classes[i].class;i++)
@@ -165,29 +171,42 @@ char *smb_err_msg(uint8 class, uint32 num)
 					{
 						if (DEBUGLEVEL > 0)
 						{
-							slprintf(ret, sizeof(ret) - 1, "%s - %s (%s)",err_classes[i].class,
+							slprintf(ret, len - 1, "%s - %s (%s)",err_classes[i].class,
 							err[j].name,err[j].message);
 						}
 						else
 						{
-							slprintf(ret, sizeof(ret) - 1, "%s - %s",err_classes[i].class,err[j].name);
+							slprintf(ret, len - 1, "%s - %s",err_classes[i].class,err[j].name);
 						}
-						return ret;
+						return True;
 					}
 				}
 			}
-			slprintf(ret, sizeof(ret) - 1, "%s - %d",err_classes[i].class, num);
-			return ret;
+			slprintf(ret, len - 1, "%s - %d",err_classes[i].class, num);
+			return True;
 		}
 
 	}
-	slprintf(ret, sizeof(ret) - 1, "Error: Unknown error (%d,%d)",class,num);
-	return(ret);
+
+	slprintf(ret, len - 1, "Error: Unknown error (%d,%d)",class,num);
+	return False;
 }
+
+/****************************************************************************
+return a SMB error string from a SMB buffer
+****************************************************************************/
+BOOL smb_safe_errstr(char *inbuf, char *msg, size_t len)
+{
+	return smb_safe_err_msg(CVAL(inbuf,smb_rcls), SVAL(inbuf,smb_err),
+				msg, len);
+}
+
 /****************************************************************************
 return a SMB error string from a SMB buffer
 ****************************************************************************/
 char *smb_errstr(char *inbuf)
 {
-	return smb_err_msg(CVAL(inbuf,smb_rcls), SVAL(inbuf,smb_err));
+	static fstring errmsg;
+	(void)smb_safe_errstr(inbuf, errmsg, sizeof(errmsg));
+	return errmsg;
 }

@@ -597,6 +597,9 @@ void buffer2_to_multistr(char *dest, const BUFFER2 *str, int maxlen);
 
 int cli_set_port(struct cli_state *cli, int port);
 char *cli_errstr(struct cli_state *cli);
+void cli_safe_smb_errstr(struct cli_state *cli, char *msg, size_t len);
+BOOL get_safe_rap_errstr(int rap_error, char *err_msg, size_t msglen);
+void cli_safe_errstr(struct cli_state *cli, char *err_msg, size_t msglen);
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
                            char *name, int pipe_name_len, 
                            int fid, int flags,
@@ -730,6 +733,7 @@ void sort_query_replies(char *data, int n, struct in_addr ip);
 
 /*The following definitions come from  libsmb/nterr.c  */
 
+void get_safe_nt_error_msg(uint32 nt_code, char *msg, size_t len);
 char *get_nt_error_msg(uint32 nt_code);
 
 /*The following definitions come from  libsmb/passchange.c  */
@@ -778,6 +782,8 @@ BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, char nt_hash[16]);
 /*The following definitions come from  libsmb/smberr.c  */
 
 char *smb_err_msg(uint8 class, uint32 num);
+BOOL smb_safe_err_msg(uint8 class, uint32 num, char *ret, size_t len);
+BOOL smb_safe_errstr(char *inbuf, char *msg, size_t len);
 char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  locking/locking.c  */
