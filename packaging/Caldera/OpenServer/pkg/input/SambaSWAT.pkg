@@ -293,14 +293,6 @@ flags =
 exportPath = /usr/lib/samba/swat/help/smbpasswd.8.html
 exportPath = /usr/share/doc/samba/help/smbpasswd.8.html
 
-FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbsh.1.html:
-mode  = 0644
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/swat/help/smbsh.1.html
-exportPath = /usr/share/doc/samba/help/smbsh.1.html
-
 FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbspool.8.html:
 mode  = 0644
 owner = root

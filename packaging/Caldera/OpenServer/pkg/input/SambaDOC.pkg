@@ -119,13 +119,6 @@ group = sys
 flags = 
 exportPath = /usr/man/man.1/smbcontrol.1
 
-FILE:SambaDOC:SHARED:usr/lib/samba/man/man.1/smbsh.1:
-mode  = 0644
-owner = root
-group = sys
-flags = 
-exportPath = /usr/man/man.1/smbsh.1
-
 FILE:SambaDOC:SHARED:usr/lib/samba/man/man.1/smbstatus.1:
 mode  = 0644
 owner = root

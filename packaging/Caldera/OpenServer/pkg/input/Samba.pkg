@@ -211,13 +211,6 @@ group = sys
 flags = 
 exportPath = /usr/lib/samba/bin/smbspool
 
-FILE:Samba:SHARED:usr/lib/samba/bin/smbsh:
-mode  = 0755
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/bin/smbsh
-
 FILE:Samba:SHARED:usr/lib/samba/bin/mksmbpasswd.sh:
 mode  = 0755
 owner = root
@@ -280,33 +273,12 @@ group = sys
 flags = 
 exportPath = /usr/lib/samba/sbin/debug2html
 
-FILE:Samba:SHARED:usr/lib/samba/sbin/smbtorture:
-mode  = 0755
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/sbin/smbtorture
-
 FILE:Samba:SHARED:usr/lib/samba/sbin/smbfilter:
 mode  = 0755
 owner = root
 group = sys
 flags = 
 exportPath = /usr/lib/samba/sbin/smbfilter
-
-FILE:Samba:SHARED:usr/lib/samba/sbin/locktest2:
-mode  = 0755
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/sbin/locktest2
-
-FILE:Samba:SHARED:usr/lib/samba/sbin/masktest:
-mode  = 0755
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/sbin/masktest
 
 DIR:Samba:SHARED:usr/lib/samba/lib:
 mode  = 0755

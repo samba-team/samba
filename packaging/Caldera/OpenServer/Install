@@ -52,8 +52,7 @@ cd ../../..
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-      make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool \
-      smbsh
+      make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool
 do
 $V    install -m755 -s source/bin/$i ${BLDFIX}/bin
 done
@@ -63,7 +62,7 @@ $V    install -m755 source/script/$i ${BLDFIX}/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat debug2html smbtorture smbfilter locktest2 masktest
+for i in smbd nmbd swat debug2html smbfilter
 do
 $V    install -m755 -s source/bin/$i ${BLDFIX}/sbin
 done
