@@ -71,6 +71,7 @@ extern int enable_v4_cross_realm;
 
 #ifdef PKINIT
 extern int enable_pkinit;
+extern int enable_pkinit_princ_in_cert;
 #endif
 
 #ifdef KRB4
