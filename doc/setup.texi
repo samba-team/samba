@@ -83,7 +83,8 @@ with contents similar to the following.
         default_realm = MY.REALM
 [realms]
         MY.REALM = @{
-                kdc = my.kdc
+                kdc = my.kdc my.slave.kdc
+                kdc = my.third.kdc
         @}
 [domain_realm]
         .my.domain = MY.REALM
