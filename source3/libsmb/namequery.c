@@ -954,6 +954,11 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	struct in_addr *ip_list = NULL;
 	int count = 0;
 
+	if (is_ipaddress(name)) {
+		*return_ip = *interpret_addr2(name);
+		return True;
+	}
+
 	if (internal_resolve_name(name, name_type, &ip_list, &count)) {
 		int i;
 		/* only return valid addresses for TCP connections */
