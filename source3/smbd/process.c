@@ -1254,7 +1254,7 @@ void smbd_process(void)
 		
 		if ((num_smbs % 200) == 0) {
 			time_t new_check_time = time(NULL);
-			if(last_timeout_processing_time - new_check_time >= (select_timeout/1000)) {
+			if(new_check_time - last_timeout_processing_time >= (select_timeout/1000)) {
 				if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 					return;
 				num_smbs = 0; /* Reset smb counter. */
