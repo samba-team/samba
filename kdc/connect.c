@@ -248,7 +248,7 @@ loop(krb5_context context)
 	    break;
 	default:
 	    for(i = 0; i < ndescr; i++)
-		if(FD_ISSET(d[i].s, &fds))
+		if(d[i].s >= 0 && FD_ISSET(d[i].s, &fds))
 		    if(d[i].type == SOCK_DGRAM)
 			handle_udp(context, &d[i]);
 		    else if(d[i].type == SOCK_STREAM)
