@@ -1,5 +1,8 @@
 2002-09-03  Assar Westerlund  <assar@kth.se>
 
+	* parse_reply-test.c: make this build and return 77 if there is no
+	mmap
+
 	* Makefile.am (parse_reply-test): add
 	* parse_reply-test.c: add a test case for parse_reply reading past
 	the given buffer
