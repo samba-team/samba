@@ -2101,8 +2101,16 @@ static WERROR get_printer_dataex( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL *printe
 	
 	if ( in_size ) {
 		data_len = (size > in_size) ? in_size : size*sizeof(uint8);
-		if ( (*data  = (uint8 *)talloc_memdup(ctx, regval_data_p(val), data_len)) == NULL )
-			return WERR_NOMEM;
+		
+		/* special case for 0 length values */
+		if ( data_len ) {
+			if ( (*data  = (uint8 *)talloc_memdup(ctx, regval_data_p(val), data_len)) == NULL )
+				return WERR_NOMEM;
+		}
+		else {
+			if ( (*data  = (uint8 *)talloc_zero(ctx, in_size)) == NULL )
+				return WERR_NOMEM;
+		}
 	}
 	else
 		*data = NULL;
