@@ -458,7 +458,7 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
 		num_names++;
-		names = Realloc(names, num_names * sizeof(char*));
+		names = (char**)Realloc(names, num_names * sizeof(char*));
 		if (names == NULL)
 		{
 			DEBUG(0,("Realloc returned NULL\n"));
@@ -960,7 +960,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	uint32 type[MAX_LOOKUP_SIDS];
 	uint32 num_rids;
 	uint32 num_group_rids;
-	int i;
+	uint32 i;
 	DOM_SID sid_1_5_20;
 	string_to_sid(&sid_1_5_20, "S-1-5-32");
 
@@ -984,7 +984,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	while (res && next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
 		num_names++;
-		names = Realloc(names, num_names * sizeof(char*));
+		names = (char**)Realloc(names, num_names * sizeof(char*));
 		if (names == NULL)
 		{
 			DEBUG(0,("Realloc returned NULL\n"));
@@ -1227,13 +1227,13 @@ static void req_group_info(struct client_info *info, uint16 fnum,
 				      user_rid, &num_groups, &gid) &&
 	    gid != NULL)
 	{
-		int i;
+		uint32 i;
 		uint32 num_names;
 		uint32  *rid_mem = NULL;
 		char    **name   = NULL;
 		uint32  *type    = NULL;
 
-		rid_mem = malloc(num_groups * sizeof(rid_mem[0]));
+		rid_mem = (uint32*)malloc(num_groups * sizeof(rid_mem[0]));
 
 		if (rid_mem == NULL)
 		{
@@ -1277,8 +1277,8 @@ static void req_alias_info(struct client_info *info, uint16 fnum,
 	uint32 *ptr_sid;
 	DOM_SID2 *als_sid;
 
-	ptr_sid = malloc(sizeof(ptr_sid[0]) * 1);
-	als_sid = malloc(sizeof(als_sid[0]) * 1);
+	ptr_sid = (uint32*)  malloc(sizeof(ptr_sid[0]) * 1);
+	als_sid = (DOM_SID2*)malloc(sizeof(als_sid[0]) * 1);
 
 	make_dom_sid2(&als_sid[0], sid1);
 	sid_append_rid(&als_sid[0].sid, user_rid);
@@ -1362,7 +1362,7 @@ int msrpc_sam_enum_users(struct client_info *info,
 	fstring sid;
 	DOM_SID sid1;
 	DOM_SID sid_1_5_20;
-	int user_idx;
+	uint32 user_idx;
 	BOOL res = True;
 	BOOL res1 = True;
 	uint32 start_idx = 0x0;
@@ -1907,11 +1907,11 @@ void cmd_sam_enum_aliases(struct client_info *info)
 				char **names = NULL;
 				int num_names = 0;
 				DOM_SID **sids = NULL;
-				int i;
+				uint32 i;
 
 				if (num_aliases != 0)
 				{
-					sids = malloc(num_aliases * sizeof(DOM_SID*));
+					sids = (DOM_SID**)malloc(num_aliases * sizeof(DOM_SID*));
 				}
 
 				res3 = sids != NULL;
@@ -1994,7 +1994,7 @@ static void req_groupmem_info(struct client_info *info, uint16 fnum,
 		group_rid, &num_mem, &rid_mem, &attr_mem))
 	{
 		BOOL res3 = True;
-		int num_names = 0;
+		uint32 num_names = 0;
 		char **name = NULL;
 		uint32 *type = NULL;
 

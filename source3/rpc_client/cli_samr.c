@@ -550,7 +550,7 @@ BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol,
 				uint32 start_idx, uint32 size,
 				struct acct_info **sam,
-				int *num_sam_groups)
+				uint32 *num_sam_groups)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -591,7 +591,7 @@ BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 
 		if (p)
 		{
-			int i;
+			uint32 i;
 			int name_idx = 0;
 
 			*num_sam_groups = r_e.num_entries2;
@@ -639,7 +639,7 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol,
 				uint32 start_idx, uint32 size,
 				struct acct_info **sam,
-				int *num_sam_aliases)
+				uint32 *num_sam_aliases)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -680,7 +680,7 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 
 		if (p)
 		{
-			int i;
+			uint32 i;
 			int name_idx = 0;
 
 			*num_sam_aliases = r_e.num_entries2;
@@ -728,7 +728,7 @@ uint32 samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol, uint32 *start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				struct acct_info **sam,
-				int *num_sam_users)
+				uint32 *num_sam_users)
 {
 	uint32 status = 0x0;
 	prs_struct data;
@@ -776,9 +776,9 @@ uint32 samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 
 		if (p)
 		{
-			int i = (*num_sam_users);
-			int j = 0;
-			int name_idx = 0;
+			uint32 i = (*num_sam_users);
+			uint32 j = 0;
+			uint32 name_idx = 0;
 
 			(*num_sam_users) += r_e.num_entries2;
 			(*sam) = (struct acct_info*) Realloc((*sam),
@@ -1908,7 +1908,7 @@ BOOL samr_query_lookup_names(struct cli_state *cli, uint16 fnum,
 			if (r_o.ptr_rids != 0 && r_o.ptr_types != 0 &&
 			    r_o.num_types1 == r_o.num_rids1)
 			{
-				int i;
+				uint32 i;
 
 				valid_query = True;
 				*num_rids = r_o.num_rids1;
@@ -1994,12 +1994,12 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 			if (r_o.ptr_names != 0 && r_o.ptr_types != 0 &&
 			    r_o.num_types1 == r_o.num_names1)
 			{
-				int i;
+				uint32 i;
 
 				valid_query = True;
 				*num_names = r_o.num_names1;
 
-				(*names) = malloc((*num_names) * sizeof(**names));
+				(*names) = (char**)malloc((*num_names) * sizeof(**names));
 				for (i = 0; (*names) != NULL && i < r_o.num_names1; i++)
 				{
 					fstring tmp;
@@ -2007,7 +2007,7 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 					(*names)[i] = strdup(tmp);
 				}
 
-				(*type) = malloc((*num_names) * sizeof(**type));
+				(*type) = (uint32*)malloc((*num_names) * sizeof(**type));
 				for (i = 0; (*type) != NULL && i < r_o.num_types1; i++)
 				{
 					(*type)[i] = r_o.type[i];
@@ -2459,7 +2459,7 @@ BOOL samr_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 		if (p)
 		{
 			/* check that the returned policy handle is all zeros */
-			int i;
+			uint32 i;
 			valid_close = True;
 
 			for (i = 0; i < sizeof(r_c.pol.data); i++)
