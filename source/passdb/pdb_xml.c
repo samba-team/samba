@@ -40,6 +40,27 @@ static int xmlsam_debug_level = DBGC_ALL;
 #undef DBGC_CLASS
 #define DBGC_CLASS xmlsam_debug_level
 
+
+/* Helper utilities for charset conversion */
+static xmlNodePtr smbXmlNewChild(xmlNodePtr prnt, xmlNsPtr ns, const xmlChar *name, const char *content)
+{
+	char *string_utf8;
+	xmlNodePtr ret;
+
+	if(!content) return xmlNewChild(prnt, ns, name, NULL);
+
+	
+	if(push_utf8_allocate(&string_utf8,content) == (size_t)-1)
+       return NULL;
+
+	ret = xmlNewTextChild(prnt, ns, name, string_utf8);
+
+	SAFE_FREE(string_utf8);
+
+	return ret;
+}
+
+
 static char * iota(int a) {
 	static char tmp[10];
 
@@ -394,72 +415,72 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 		root = xmlNewDocNode(data->doc, NULL, "samba", NULL);
 		cur = xmlDocSetRootElement(data->doc, root);
 		data->ns = xmlNewNs(root, XML_URL, "samba");
-		data->users = xmlNewChild(root, data->ns, "users", NULL);
+		data->users = smbXmlNewChild(root, data->ns, "users", NULL);
 	}
 
-	user = xmlNewChild(data->users, data->ns, "user", NULL);
+	user = smbXmlNewChild(data->users, data->ns, "user", NULL);
 	xmlNewProp(user, "sid",
 			   sid_to_string(sid_str, pdb_get_user_sid(u)));
 
 	if (pdb_get_username(u) && strcmp(pdb_get_username(u), ""))
 		xmlNewProp(user, "name", pdb_get_username(u));
 
-	cur = xmlNewChild(user, data->ns, "group", NULL);
+	cur = smbXmlNewChild(user, data->ns, "group", NULL);
 	
 	xmlNewProp(cur, "sid",
 			   sid_to_string(sid_str, pdb_get_group_sid(u)));
 
 	if (pdb_get_init_flags(u, PDB_LOGONTIME) != PDB_DEFAULT)
-		xmlNewChild(user, data->ns, "logon_time",
+		smbXmlNewChild(user, data->ns, "logon_time",
 					iota(pdb_get_logon_time(u)));
 
 	if (pdb_get_init_flags(u, PDB_LOGOFFTIME) != PDB_DEFAULT)
-		xmlNewChild(user, data->ns, "logoff_time",
+		smbXmlNewChild(user, data->ns, "logoff_time",
 					iota(pdb_get_logoff_time(u)));
 
 	if (pdb_get_init_flags(u, PDB_KICKOFFTIME) != PDB_DEFAULT)
-		xmlNewChild(user, data->ns, "kickoff_time",
+		smbXmlNewChild(user, data->ns, "kickoff_time",
 					iota(pdb_get_kickoff_time(u)));
 
 	if (pdb_get_domain(u) && strcmp(pdb_get_domain(u), ""))
-		xmlNewChild(user, data->ns, "domain", pdb_get_domain(u));
+		smbXmlNewChild(user, data->ns, "domain", pdb_get_domain(u));
 
 	if (pdb_get_nt_username(u) && strcmp(pdb_get_nt_username(u), ""))
-		xmlNewChild(user, data->ns, "nt_username", pdb_get_nt_username(u));
+		smbXmlNewChild(user, data->ns, "nt_username", pdb_get_nt_username(u));
 
 	if (pdb_get_fullname(u) && strcmp(pdb_get_fullname(u), ""))
-		xmlNewChild(user, data->ns, "fullname", pdb_get_fullname(u));
+		smbXmlNewChild(user, data->ns, "fullname", pdb_get_fullname(u));
 
 	if (pdb_get_homedir(u) && strcmp(pdb_get_homedir(u), ""))
-		xmlNewChild(user, data->ns, "homedir", pdb_get_homedir(u));
+		smbXmlNewChild(user, data->ns, "homedir", pdb_get_homedir(u));
 
 	if (pdb_get_dir_drive(u) && strcmp(pdb_get_dir_drive(u), ""))
-		xmlNewChild(user, data->ns, "dir_drive", pdb_get_dir_drive(u));
+		smbXmlNewChild(user, data->ns, "dir_drive", pdb_get_dir_drive(u));
 
 	if (pdb_get_logon_script(u) && strcmp(pdb_get_logon_script(u), ""))
-		xmlNewChild(user, data->ns, "logon_script",
+		smbXmlNewChild(user, data->ns, "logon_script",
 					pdb_get_logon_script(u));
 
 	if (pdb_get_profile_path(u) && strcmp(pdb_get_profile_path(u), ""))
-		xmlNewChild(user, data->ns, "profile_path",
+		smbXmlNewChild(user, data->ns, "profile_path",
 					pdb_get_profile_path(u));
 
 	if (pdb_get_acct_desc(u) && strcmp(pdb_get_acct_desc(u), ""))
-		xmlNewChild(user, data->ns, "acct_desc", pdb_get_acct_desc(u));
+		smbXmlNewChild(user, data->ns, "acct_desc", pdb_get_acct_desc(u));
 
 	if (pdb_get_workstations(u) && strcmp(pdb_get_workstations(u), ""))
-		xmlNewChild(user, data->ns, "workstations",
+		smbXmlNewChild(user, data->ns, "workstations",
 					pdb_get_workstations(u));
 
 	if (pdb_get_unknown_str(u) && strcmp(pdb_get_unknown_str(u), ""))
-		xmlNewChild(user, data->ns, "unknown_str", pdb_get_unknown_str(u));
+		smbXmlNewChild(user, data->ns, "unknown_str", pdb_get_unknown_str(u));
 
 	if (pdb_get_munged_dial(u) && strcmp(pdb_get_munged_dial(u), ""))
-		xmlNewChild(user, data->ns, "munged_dial", pdb_get_munged_dial(u));
+		smbXmlNewChild(user, data->ns, "munged_dial", pdb_get_munged_dial(u));
 
 
 	/* Password stuff */
-	pass = xmlNewChild(user, data->ns, "password", NULL);
+	pass = smbXmlNewChild(user, data->ns, "password", NULL);
 	if (pdb_get_pass_last_set_time(u))
 		xmlNewProp(pass, "last_set", iota(pdb_get_pass_last_set_time(u)));
 	if (pdb_get_init_flags(u, PDB_CANCHANGETIME) != PDB_DEFAULT)
@@ -474,29 +495,29 @@ static NTSTATUS xmlsam_add_sam_account(struct pdb_methods *methods, SAM_ACCOUNT 
 	if (pdb_get_lanman_passwd(u)) {
 		pdb_sethexpwd(temp, pdb_get_lanman_passwd(u),
 					  pdb_get_acct_ctrl(u));
-		cur = xmlNewChild(pass, data->ns, "crypt", temp);
+		cur = smbXmlNewChild(pass, data->ns, "crypt", temp);
 		xmlNewProp(cur, "type", "lanman");
 	}
 
 	if (pdb_get_nt_passwd(u)) {
 		pdb_sethexpwd(temp, pdb_get_nt_passwd(u), pdb_get_acct_ctrl(u));
-		cur = xmlNewChild(pass, data->ns, "crypt", temp);
+		cur = smbXmlNewChild(pass, data->ns, "crypt", temp);
 		xmlNewProp(cur, "type", "nt");
 	}
 
-	xmlNewChild(user, data->ns, "acct_ctrl", iota(pdb_get_acct_ctrl(u)));
+	smbXmlNewChild(user, data->ns, "acct_ctrl", iota(pdb_get_acct_ctrl(u)));
 
 	if (pdb_get_logon_divs(u))
-		xmlNewChild(user, data->ns, "logon_divs",
+		smbXmlNewChild(user, data->ns, "logon_divs",
 					iota(pdb_get_logon_divs(u)));
 
 	if (pdb_get_hours_len(u))
-		xmlNewChild(user, data->ns, "hours_len",
+		smbXmlNewChild(user, data->ns, "hours_len",
 					iota(pdb_get_hours_len(u)));
 
-	xmlNewChild(user, data->ns, "bad_password_count", iota(pdb_get_bad_password_count(u)));
-	xmlNewChild(user, data->ns, "logon_count", iota(pdb_get_logon_count(u)));
-	xmlNewChild(user, data->ns, "unknown_6", iota(pdb_get_unknown_6(u)));
+	smbXmlNewChild(user, data->ns, "bad_password_count", iota(pdb_get_bad_password_count(u)));
+	smbXmlNewChild(user, data->ns, "logon_count", iota(pdb_get_logon_count(u)));
+	smbXmlNewChild(user, data->ns, "unknown_6", iota(pdb_get_unknown_6(u)));
 	xmlSaveFile(data->location, data->doc);
 
 	return NT_STATUS_OK;
