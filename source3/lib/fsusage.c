@@ -26,12 +26,17 @@
 */
 static SMB_BIG_UINT adjust_blocks(SMB_BIG_UINT blocks, SMB_BIG_UINT fromsize, SMB_BIG_UINT tosize)
 {
-	if (fromsize == tosize)	/* e.g., from 512 to 512 */
+	if (fromsize == tosize)	{ /* e.g., from 512 to 512 */
 		return blocks;
-	else if (fromsize > tosize)	/* e.g., from 2048 to 512 */
+	} else if (fromsize > tosize) { /* e.g., from 2048 to 512 */
 		return blocks * (fromsize / tosize);
-	else				/* e.g., from 256 to 512 */
+	} else { /* e.g., from 256 to 512 */
+		/* Protect against broken filesystems... */
+		if (fromsize == 0) {
+			fromsize = tosize;
+		}
 		return (blocks + 1) / (tosize / fromsize);
+	}
 }
 
 /* this does all of the system specific guff to get the free disk space.
