@@ -156,8 +156,8 @@ BOOL clnt_deal_with_creds(uchar sess_key[8],
 	new_clnt_time.time = sto_clnt_cred->timestamp.time + 1;
 
 	/* check that the received server credentials are valid */
-	if (!cred_assert(&(rcv_srv_cred->challenge), sess_key,
-			 &(sto_clnt_cred->challenge), new_clnt_time))
+	if (!cred_assert(&rcv_srv_cred->challenge, sess_key,
+			 &sto_clnt_cred->challenge, new_clnt_time))
 	{
 		return False;
 	}
@@ -187,8 +187,8 @@ BOOL deal_with_creds(uchar sess_key[8],
 	DEBUG(5,("deal_with_creds: %d\n", __LINE__));
 
 	/* check that the received client credentials are valid */
-	if (!cred_assert(&(rcv_clnt_cred->challenge), sess_key,
-                    &(sto_clnt_cred->challenge), rcv_clnt_cred->timestamp))
+	if (!cred_assert(&rcv_clnt_cred->challenge, sess_key,
+                    &sto_clnt_cred->challenge, rcv_clnt_cred->timestamp))
 	{
 		return False;
 	}
@@ -208,8 +208,8 @@ BOOL deal_with_creds(uchar sess_key[8],
 	DEBUG(5,("deal_with_creds: new_clnt_time=%x\n", new_clnt_time.time));
 
 	/* create return credentials for inclusion in the reply */
-	cred_create(sess_key, &(sto_clnt_cred->challenge), new_clnt_time,
-	            &(rtn_srv_cred->challenge));
+	cred_create(sess_key, &sto_clnt_cred->challenge, new_clnt_time,
+	            &rtn_srv_cred->challenge);
 	
 	DEBUG(5,("deal_with_creds: clnt_cred=%s\n", credstr(sto_clnt_cred->challenge.data)));
 
@@ -218,5 +218,3 @@ BOOL deal_with_creds(uchar sess_key[8],
 
 	return True;
 }
-
-
