@@ -3485,7 +3485,7 @@ BOOL api_ntlsa_rpc(pipes_struct *p);
 
 /*The following definitions come from  rpc_server/srv_lsa_hnd.c  */
 
-void init_pipe_handles(pipes_struct *p);
+BOOL init_pipe_handles(pipes_struct *p, char *pipe_name);
 BOOL create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *), void *data_ptr);
 BOOL find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p);
 BOOL close_policy_hnd(pipes_struct *p, POLICY_HND *hnd);
