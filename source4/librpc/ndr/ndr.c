@@ -351,6 +351,7 @@ void ndr_print_function_debug(void (*fn)(struct ndr_print *, const char *, int ,
 	if (!ndr.mem_ctx) return;
 	ndr.print = ndr_print_debug_helper;
 	ndr.depth = 1;
+	ndr.flags = 0;
 	fn(&ndr, name, flags, ptr);
 	talloc_destroy(ndr.mem_ctx);
 }
