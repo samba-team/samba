@@ -626,10 +626,8 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 				     dest_host, &cli->dest_ip,
 				     &calling, &called,
 				     share, dev, False, do_tcon)) {
-		if (cli->fd != oldfd) {
-			if (dup2(cli->fd, oldfd) == oldfd) {
-				close(cli->fd);
-			}
+		if ((cli->fd != oldfd) && (oldfd != -1)) {
+			close( oldfd );
 		}
 		return True;
 	}
