@@ -77,7 +77,7 @@ static char *cli_put_string(struct cli_state *cli, char *p, const char *str,
 copy a string (unicode or otherwise) into an SMB buffer.  skips a string
 plus points to next
 ****************************************************************************/
-static const char *cli_get_string(struct cli_state *cli, const char *p,
+static const char *cli_get_string(struct cli_state *cli, char *p,
 				char *str, size_t str_len)
 {
 	uint16 flgs2 = SVAL(cli->inbuf,smb_flg2);
