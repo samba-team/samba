@@ -1,13 +1,121 @@
                  =============================
-                 Release Notes for Samba 3.0.3
+                 Release Notes for Samba 3.0.4
                         April 29, 2004
                  =============================
 
 This is the latest stable release of Samba. This is the version 
 that production Samba servers should be running for all 
 current bug-fixes.  There have been several issues fixes since 
-the 3.0.2a release and new features have been added as well.  
+the 3.0.3 release and new features have been added as well.  
 See the "Changes" section for details on exact updates.
+
+Common bugs fixed in Samba 3.0.4 include:
+
+  o Password changing after applying the patch described in 
+    the Microsoft KB828741 article to Windows clients.
+  o Crashes in smbd.
+  o Managing print jobs via Windows on Big-Endian servers.
+  o Several memory leaks in winbindd and smbd.
+  o Compile issues on AIX and *BSD.
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.3
+--------------------
+
+commits
+-------
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix path processing for DeletePrinterDriverEx().
+    * BUG 1303: Fix for Microsoft hotfix MS04-011 password change 
+      breakage.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Fix alignment bug in GetDomPwInfo().
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * Fix utime[s]() issues in smbwrapper on systems 
+      that can boot both the 2.4 and 2.6 Linux kernels.
+
+
+o   Gerald Carter <jerry@samba.org>
+    * Fedora packaging fixes.
+    * BUG 1302: Fix seg fault by not trying to optimize a list of 
+      invalid gids using the wrong array size.
+    * BUG 1309: fix seg fault caused by trying to strdup(NULL)
+      seen when 'security = share'
+    * Fix problems when using IBM's compiler on AIX.
+    * Link Developer's Guide, Example Guide, and multi-page HOWTO
+      into SWAT's welcome page.
+    * BUG 1293: fix double free in printer publishing code.
+
+    
+o   Wim Delvaux <wim.delvaux@adaptiveplanet.com>
+    * Fix for handling timeouts in socket connections.
+
+
+o   Michel Gravey <michel.gravey@optogone.com>
+    * BUG 483: patch from  to fix password hash creation in SWAT.
+    
+
+o   Volker Lendecke <vl@samba.org>
+    * Close the open NT pipes before the tdis.
+    * Fix AFS related build issues.
+    * Handle error conditions when base64 encoding a blob of 0 bytes.
+
+    
+o   Herb Lewis <herb@samba.org>
+    * Added 'acls' debug class.
+
+o   kawasa_r@itg.hitachi.co.jp
+    * Multiple variable initialization and memory leak fixes.
+    
+    
+o   Stephan Kulow <coolo@suse.de>
+    * Fix string length bug in libsmbclient that caused KDE's 
+      Konqueror to crash.
+    * More libsmbclient fixes.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 1007, 1279: Store the print job using a little-endian key.
+
+
+o   Eric Mertens
+    o Compile fix for OpenBSD (ENOTSUP not supported).
+
+    
+o   Stefan Metzmacher <metze@samba.org>
+    * Correct bug in disks quota views from explorer.
+
+    
+o   Tim Potter <tpot@samba.org>
+    BUG 1305: Correct debug output.
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+    * Fix incorrect error code mapping.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Add additional NT_STATUS errorm mappings.
+    
+
+Changes for older versions follow below:
+
+    --------------------------------------------------
+
+                 =============================
+                 Release Notes for Samba 3.0.3
+                        April 29, 2004
+                 =============================
+
 
 Common bugs fixed in Samba 3.0.3 include:
 
@@ -39,55 +147,6 @@ Please be aware that the Samba source code repository was
 migrated from CVS to Subversion on April 4, 2004.  Details on 
 accessing the Samba source tree via anonymous svn can be found 
 at http://svn.samba.org/samba/subversion.html.
-
-
-######################################################################
-Changes
-#######
-
-Changes since 3.0.3rc1
-----------------------
-
-commits
--------
-
-o   Timur Bakeyev <timur@com.bat.ru>
-    * BUG 1141: Fix nss*.so names on FreeBSD 5.x.
-
-
-o   Gerald Carter <jerry@samba.org>
-    * BUG 1288: resolve any machine netbios name (0x00) and not just 
-      servers (0x20).
-    * BUG 1199: Fix potential symlink issue in 
-      examples/printing/smbprint.
-
-
-o   Landon Fuller <landonf@opendarwin.org>
-    * BUG 1232: patch from landonf@opendarwin.org (Landon Fuller) 
-      to fix user/group enumeration on systems whose libc does not 
-      call setgrent() before trying to enumerate users (i.e. 
-      FreeBSD 5.2).
-
-
-o   Volker Lendecke <vl@samba.org>
-    * Correct case where adding a domain user to a XP local group 
-      did a lsalookupname on the user without domain prefix, and 
-      failed.
-    * Fix segfault in winbindd caused by 'wbinfo -a'.
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * Add shadow_copy vfs module.
-    * Fix segault in login_cache support.
-
-
-o   Tim Potter <tpot@samba.org>
-    * Relicense tdb python module as LGPL.
-
-
-o   Jelmer Vernooij <jelmer@samba.org>
-    * Fix syntax error in example mysql table
-
 
 
 Changes since 3.0.2a
@@ -171,6 +230,7 @@ o   Timur Bakeyev <timur@com.bat.ru>
     * BUG 1144: only set --with-fhs when the argument is 'yes'
     * BUG 1152: Allow python modules to build despite libraries added 
       to LDFLAGS instead of LDPATH.
+    * BUG 1141: Fix nss*.so names on FreeBSD 5.x.
 
 
 o   Craig Barratt <cbarratt@users.sourceforge.net>
@@ -178,7 +238,7 @@ o   Craig Barratt <cbarratt@users.sourceforge.net>
       tar -Xr options (better support for Amanda backup client).
 
 
-o   Andrew Bartlet <abartlet@samba.org>
+o   Andrew Bartlett <abartlet@samba.org>
     * Include support for linking with cracklib for enforcing strong 
       password changes.
     * Add support for >14 character password changes from Windows 
@@ -270,6 +330,10 @@ o   Gerald Carter <jerry@samba.org>
     * BUG 1081, 1183: Added remove_duplicate_gids() to smbd and 
       winbindd.
     * BUG 1246: Fix typo in Fedora /etc/init.d/winbind.
+    * BUG 1288: resolve any machine netbios name (0x00) and not just 
+      servers (0x20).
+    * BUG 1199: Fix potential symlink issue in 
+      examples/printing/smbprint.
 
 
 o   Robert Dahlem <Robert.Dahlem@gmx.net>
@@ -285,6 +349,13 @@ o   Guenther Deschner <gd@suse.com>
 o   Bostjan Golob <golob@gimb.org>
     * BUG 1046: Fix  getpwent_list() so that the username is not 
       overwritten by other fields.
+
+
+o   Landon Fuller <landonf@opendarwin.org>
+    * BUG 1232: patch from landonf@opendarwin.org (Landon Fuller) 
+      to fix user/group enumeration on systems whose libc does not 
+      call setgrent() before trying to enumerate users (i.e. 
+      FreeBSD 5.2).
 
 
 o   Steve French <sfrench@us.ibm.com>
@@ -374,6 +445,10 @@ o   Volker Lendecke <vl@samba.org>
       DC.
     * Fix Netscape DS schema based on comments from 
       <thomas.mueller@christ-wasser.de>.
+    * Correct case where adding a domain user to a XP local group 
+      did a lsalookupname on the user without domain prefix, and 
+      failed.
+    * Fix segfault in winbindd caused by 'wbinfo -a'.
     
 
 o   Herb Lewis <herb@samba.org>
@@ -424,6 +499,8 @@ o   Jim McDonough <jmcd@us.ibm.com>
 o   Stefan Metzmacher <metze@samba.org>
     * Implement new VERSION schema based on subversion revision 
       numbers.
+    * Add shadow_copy vfs module.
+    * Fix segault in login_cache support.
 
 
 o    Heinrich Mislik <Heinrich.Mislik@univie.ac.at>
@@ -458,6 +535,7 @@ o   Tim Potter <tpot@samba.org>
     * BUG 1112: Fix for writable printerdata problem in python bindings.
     * BUG 1154: Remove reference to <sys/mman.h> in tdbdump.c.
     * BUG 1155: enclose use of fchown() with guards.
+    * Relicense tdb python module as LGPL.
 
 
 o   Richard Sharpe <rsharpe@samba.org>
@@ -484,6 +562,7 @@ o   Jelmer Vernooij <jelmer@samba.org>
    * Fix ETA Calculation when resuming downloads in smbget.
    * Add -O (for writing downloaded files to standard out) 
      based on patch by Bas van Sisseren <bas@dnd.utwente.nl>.
+    * Fix syntax error in example mysql table
 
            
 o   TAKEDA yasuma <yasuma@miraclelinux.com>
@@ -495,8 +574,6 @@ o    Shiro Yamada <shiro@miraclelinux.com>
      * BUG 1129: install image files for SWAT.
 
       
-Changes for older versions follow below:
-
     --------------------------------------------------
 
                   ==============================
@@ -539,7 +616,7 @@ o   Jeremy Allison <jra@samba.org>
     * Added paranoia checks in parsing code.
     
 
-o   Andrew Bartlet <abartlet@samba.org>
+o   Andrew Bartlett <abartlet@samba.org>
     * Ensure that changes to uninitialized passwords in ldapsam 
       are written to the DIT.
 
@@ -655,7 +732,7 @@ o   Petri Asikainen <paca@sci.fi>
       working with Novell NDS.
 
 
-o   Andrew Bartlet <abartlet@samba.org>
+o   Andrew Bartlett <abartlet@samba.org>
     * Correctly handle per-pipe NTLMSSP inside a NULL session.
     * Fix segfault in gencache 
     * Fix early free() of encrypted_session_key.
