@@ -32,6 +32,7 @@ static int nprocs=1, numops=100;
 static int procnum; /* records process count number when forking */
 static struct cli_state current_cli;
 static fstring randomfname;
+static BOOL use_oplocks;
 
 static double create_procs(void (*fn)(int));
 
@@ -107,6 +108,7 @@ static BOOL open_connection(struct cli_state *c)
 	}
 
 	c->timeout = 120000; /* set a really long timeout (2 minutes) */
+	if (use_oplocks) c->use_oplocks = True;
 
 	if (!cli_session_request(c, &calling, &called)) {
 		printf("%s rejected the session\n",host);
@@ -1565,7 +1567,6 @@ static void run_maxfidtest(int dummy)
 	fstring fname;
 	int fnum;
 	int retries=4;
-	int n = numops;
 
 	cli = current_cli;
 
@@ -2109,6 +2110,7 @@ static void usage(void)
 	printf("\t-o num_operations\n");
 	printf("\t-O socket_options\n");
 	printf("\t-m maximum protocol\n");
+	printf("\t-L use oplocks\n");
 	printf("\n\n");
 
 	printf("tests are:");
@@ -2180,7 +2182,7 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:L")) != EOF) {
 		switch (opt) {
 		case 'W':
 			fstrcpy(workgroup,optarg);
@@ -2196,6 +2198,9 @@ static void usage(void)
 			break;
 		case 'O':
 			sockops = optarg;
+			break;
+		case 'L':
+			use_oplocks = True;
 			break;
 		case 'n':
 			fstrcpy(myname, optarg);
