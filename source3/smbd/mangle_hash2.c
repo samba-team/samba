@@ -48,15 +48,24 @@
 
 #include "includes.h"
 
+#if 0
+#define M_DEBUG(level, x) DEBUG(level, x)
+#else
+#define M_DEBUG(level, x)
+#endif
 
 #define FLAG_BASECHAR 1
 #define FLAG_ASCII 2
 #define FLAG_ILLEGAL 4
-#define FLAG_POSSIBLE1 8
-#define FLAG_POSSIBLE2 16
-#define FLAG_POSSIBLE3 32
+#define FLAG_WILDCARD 8
+#define FLAG_POSSIBLE1 16
+#define FLAG_POSSIBLE2 32
+#define FLAG_POSSIBLE3 64
+#define FLAG_POSSIBLE4 128
 
-#define CACHE_SIZE 8192
+#ifndef MANGLE_CACHE_SIZE
+#define MANGLE_CACHE_SIZE 4096
+#endif
 
 /* these tables are used to provide fast tests for characters */
 static unsigned char char_flags[256];
@@ -68,6 +77,7 @@ static unsigned char char_flags[256];
    hashing the resulting cache entry to match the known hash
 */
 static char **prefix_cache;
+static u32 *prefix_cache_hashes;
 
 /* these are the characters we use in the 8.3 hash. Must be 36 chars long */
 const char *basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -112,10 +122,14 @@ static BOOL cache_init(void)
 {
 	if (prefix_cache) return True;
 
-	prefix_cache = malloc(sizeof(char *) * CACHE_SIZE);
+	prefix_cache = malloc(sizeof(char *) * MANGLE_CACHE_SIZE);
 	if (!prefix_cache) return False;
 
-	memset(prefix_cache, 0, sizeof(char *) * CACHE_SIZE);
+	prefix_cache_hashes = malloc(sizeof(u32) * MANGLE_CACHE_SIZE);
+	if (!prefix_cache_hashes) return False;
+
+	memset(prefix_cache, 0, sizeof(char *) * MANGLE_CACHE_SIZE);
+	memset(prefix_cache_hashes, 0, sizeof(char *) * MANGLE_CACHE_SIZE);
 	return True;
 }
 
@@ -124,13 +138,14 @@ static BOOL cache_init(void)
 */
 static void cache_insert(const char *prefix, int length, u32 hash)
 {
-	int i = hash % CACHE_SIZE;
+	int i = hash % MANGLE_CACHE_SIZE;
 
 	if (prefix_cache[i]) {
 		free(prefix_cache[i]);
 	}
 
 	prefix_cache[i] = strndup(prefix, length);
+	prefix_cache_hashes[i] = hash;
 }
 
 /*
@@ -138,12 +153,9 @@ static void cache_insert(const char *prefix, int length, u32 hash)
 */
 static const char *cache_lookup(u32 hash)
 {
-	int i = hash % CACHE_SIZE;
+	int i = hash % MANGLE_CACHE_SIZE;
 
-	if (!prefix_cache[i]) return NULL;
-
-	/* we have a possible match - compute the hash to confirm */
-	if (hash != mangle_hash(prefix_cache[i], strlen(prefix_cache[i]))) {
+	if (!prefix_cache[i] || hash != prefix_cache_hashes[i]) {
 		return NULL;
 	}
 
@@ -229,7 +241,7 @@ static BOOL is_8_3(const char *name, BOOL check_case)
 
 	/* the length are all OK. Now check to see if the characters themselves are OK */
 	for (i=0; name[i]; i++) {
-		if (!(char_flags[(unsigned)(name[i])] & FLAG_ASCII)) {
+		if (!(char_flags[(unsigned)(name[i])] & (FLAG_ASCII|FLAG_WILDCARD))) {
 			return False;
 		}
 	}
@@ -286,10 +298,13 @@ static BOOL check_cache(char *name)
 	strncpy(extension, name+9, 3);
 
 	if (extension[0]) {
+		M_DEBUG(0,("check_cache: %s -> %s.%s\n", name, prefix, extension));
 		slprintf(name, sizeof(fstring), "%s.%s", prefix, extension);
 	} else {
+		M_DEBUG(0,("check_cache: %s -> %s\n", name, prefix));
 		fstrcpy(name, prefix);
 	}
+
 	return True;
 }
 
@@ -301,7 +316,8 @@ static BOOL is_reserved_name(const char *name)
 {
 	if ((char_flags[(unsigned char)name[0]] & FLAG_POSSIBLE1) &&
 	    (char_flags[(unsigned char)name[1]] & FLAG_POSSIBLE2) &&
-	    (char_flags[(unsigned char)name[2]] & FLAG_POSSIBLE3)) {
+	    (char_flags[(unsigned char)name[2]] & FLAG_POSSIBLE3) &&
+	    (char_flags[(unsigned char)name[3]] & FLAG_POSSIBLE4)) {
 		/* a likely match, scan the lot */
 		int i;
 		for (i=0; reserved_names[i]; i++) {
@@ -379,6 +395,7 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 	if (! (char_flags[(unsigned char)lead_char] & FLAG_ASCII)) {
 		lead_char = '_';
 	}
+	lead_char = toupper(lead_char);
 
 	/* the prefix is anything up to the first dot */
 	if (dot_p) {
@@ -394,7 +411,7 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 		for (i=1; extension_length < 3 && dot_p[i]; i++) {
 			char c = dot_p[i];
 			if (char_flags[(unsigned char)c] & FLAG_ASCII) {
-				extension[extension_length++] = c;
+				extension[extension_length++] = toupper(c);
 			}
 		}
 	}
@@ -424,6 +441,8 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 		/* put it in the cache */
 		cache_insert(name, prefix_len, hash);
 	}
+
+	M_DEBUG(0,("name_map: %s -> %s\n", name, new_name));
 
 	/* and overwrite the old name */
 	fstrcpy(name, new_name);
@@ -459,6 +478,10 @@ static void init_tables(void)
 		if (strchr("*\\/?<>|\":", i)) {
 			char_flags[i] |= FLAG_ILLEGAL;
 		}
+
+		if (strchr("*?\"<>", i)) {
+			char_flags[i] |= FLAG_WILDCARD;
+		}
 	}
 
 	memset(base_reverse, 0, sizeof(base_reverse));
@@ -469,18 +492,23 @@ static void init_tables(void)
 	/* fill in the reserved names flags. These are used as a very
 	   fast filter for finding possible DOS reserved filenames */
 	for (i=0; reserved_names[i]; i++) {
-		unsigned char c1, c2, c3;
+		unsigned char c1, c2, c3, c4;
 
 		c1 = (unsigned char)reserved_names[i][0];
 		c2 = (unsigned char)reserved_names[i][1];
 		c3 = (unsigned char)reserved_names[i][2];
+		c4 = (unsigned char)reserved_names[i][3];
 
 		char_flags[c1] |= FLAG_POSSIBLE1;
 		char_flags[c2] |= FLAG_POSSIBLE2;
 		char_flags[c3] |= FLAG_POSSIBLE3;
+		char_flags[c4] |= FLAG_POSSIBLE4;
 		char_flags[tolower(c1)] |= FLAG_POSSIBLE1;
 		char_flags[tolower(c2)] |= FLAG_POSSIBLE2;
 		char_flags[tolower(c3)] |= FLAG_POSSIBLE3;
+		char_flags[tolower(c4)] |= FLAG_POSSIBLE4;
+
+		char_flags[(unsigned char)'.'] |= FLAG_POSSIBLE4;
 	}
 }
 
