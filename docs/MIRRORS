@@ -1,8 +1,9 @@
 The main Samba site is samba.anu.edu.au in pub/samba/. Contact
-samba-bugs@anu.edu.au for help with this site.
+samba-bugs@samba.anu.edu.au for help with this site.
 
 Mirror sites include:
 
+ftp://nimbus.anu.edu.au/pub/tridge/samba
 ftp://sunsite.auc.dk/pub/unix/networking/samba/
 ftp://src.doc.ic.ac.uk/packages/samba/
 ftp://ftp.warwick.ac.uk/pub/linux/sunsite.unc-mirror/system/Network/samba/
