@@ -376,8 +376,7 @@
 	/* Function:      0x20 */
 	NTSTATUS lsa_LookupPrivName (
 		[in,ref]     policy_handle *handle,
-		[in]         uint32 luid_high,
-		[in]         uint32 luid_low,
+		[in,ref]     lsa_LUID *luid,
 		[out]        lsa_Name *name
 		);
 

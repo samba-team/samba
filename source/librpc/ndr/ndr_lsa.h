@@ -554,8 +554,7 @@ struct LOOKUPPRIVVALUE {
 struct lsa_LookupPrivName {
 	struct {
 		struct policy_handle *handle;
-		uint32 luid_high;
-		uint32 luid_low;
+		struct lsa_LUID *luid;
 	} in;
 
 	struct {

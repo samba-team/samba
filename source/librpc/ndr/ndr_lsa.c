@@ -310,6 +310,18 @@ NTSTATUS ndr_push_lsa_OpenAccount(struct ndr_push *ndr, struct lsa_OpenAccount *
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ndr_push_lsa_LUID(struct ndr_push *ndr, int ndr_flags, struct lsa_LUID *r)
+{
+	NDR_CHECK(ndr_push_align(ndr, 4));
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint32(ndr, r->low));
+	NDR_CHECK(ndr_push_uint32(ndr, r->high));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ndr_push_lsa_EnumPrivsAccount(struct ndr_push *ndr, struct lsa_EnumPrivsAccount *r)
 {
 	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
@@ -398,8 +410,7 @@ NTSTATUS ndr_push_LOOKUPPRIVVALUE(struct ndr_push *ndr, struct LOOKUPPRIVVALUE *
 NTSTATUS ndr_push_lsa_LookupPrivName(struct ndr_push *ndr, struct lsa_LookupPrivName *r)
 {
 	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
-	NDR_CHECK(ndr_push_uint32(ndr, r->in.luid_high));
-	NDR_CHECK(ndr_push_uint32(ndr, r->in.luid_low));
+	NDR_CHECK(ndr_push_lsa_LUID(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.luid));
 
 	return NT_STATUS_OK;
 }
@@ -570,7 +581,7 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->privs, r->count, sizeof(r->privs[0]));
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->privs, sizeof(r->privs[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_PrivEntry));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->privs, sizeof(r->privs[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_PrivEntry));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1006,7 +1017,7 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->sids, r->num_sids, sizeof(r->sids[0]));
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->sids, sizeof(r->sids[0]), r->num_sids, (ndr_pull_flags_fn_t)ndr_pull_lsa_SidPtr));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->sids, sizeof(r->sids[0]), r->num_sids, (ndr_pull_flags_fn_t)ndr_pull_lsa_SidPtr));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1073,7 +1084,7 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->domains, r->count, sizeof(r->domains[0]));
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->domains, sizeof(r->domains[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_DomainInformation));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->domains, sizeof(r->domains[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_DomainInformation));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1124,7 +1135,7 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->sids, r->count, sizeof(r->sids[0]));
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->sids, sizeof(r->sids[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedSid));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->sids, sizeof(r->sids[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedSid));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1176,7 +1187,7 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->domains, r->count, sizeof(r->domains[0]));
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->domains, sizeof(r->domains[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TrustInformation));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->domains, sizeof(r->domains[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TrustInformation));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1238,7 +1249,7 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->names, r->count, sizeof(r->names[0]));
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedName));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedName));
 	}
 done:
 	return NT_STATUS_OK;
@@ -1317,7 +1328,7 @@ buffers:
 		return ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, "Bad conformant size %u should be %u", _conformant_size, r->count);
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->set, _conformant_size, sizeof(r->set[0]));
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->set, sizeof(r->set[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_LUIDAttribute));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->set, sizeof(r->set[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_LUIDAttribute));
 done:
 	return NT_STATUS_OK;
 }
@@ -1491,7 +1502,7 @@ buffers:
 		}
 	}
 		NDR_ALLOC_N_SIZE(ndr, r->names, r->count, sizeof(r->names[0]));
-		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_Name));
+		NDR_CHECK(ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, (void **)r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_Name));
 	}
 done:
 	return NT_STATUS_OK;

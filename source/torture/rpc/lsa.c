@@ -256,8 +256,7 @@ static BOOL test_LookupPrivName(struct dcerpc_pipe *p,
 	struct lsa_LookupPrivName r;
 
 	r.in.handle = handle;
-	r.in.luid_high = luid->high;
-	r.in.luid_low = luid->low;
+	r.in.luid = luid;
 
 	status = dcerpc_lsa_LookupPrivName(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
