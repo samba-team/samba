@@ -43,12 +43,19 @@
 BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	       const char *format, ...)
 {
-	int i, n;
+	int i;
+	ssize_t n;
 	va_list ap;
 	char *s;
 	uint8_t *b;
 	int head_size=0, data_size=0;
 	int head_ofs, data_ofs;
+	int *intargs;
+
+	DATA_BLOB *pointers;
+
+	pointers = talloc_array_p(mem_ctx, DATA_BLOB, strlen(format));
+	intargs = talloc_array_p(pointers, int, strlen(format));
 
 	/* first scan the format to work out the header and body size */
 	va_start(ap, format);
@@ -57,34 +64,60 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 		case 'U':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			data_size += str_charnum(s) * 2;
+			n = push_ucs2_talloc(pointers, (smb_ucs2_t **)&pointers[i].data, s);
+			if (n == -1) {
+				return False;
+			}
+			pointers[i].length = n;
+			pointers[i].length -= 2;
+			data_size += pointers[i].length;
 			break;
 		case 'A':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			data_size += str_ascii_charnum(s);
+			n = push_ascii_talloc(pointers, (char **)&pointers[i].data, s);
+			if (n == -1) {
+				return False;
+			}
+			pointers[i].length = n;
+			pointers[i].length -= 1;
+			data_size += pointers[i].length;
 			break;
 		case 'a':
 			n = va_arg(ap, int);
+			intargs[i] = n;
 			s = va_arg(ap, char *);
-			data_size += (str_charnum(s) * 2) + 4;
+			n = push_ucs2_talloc(pointers, (smb_ucs2_t **)&pointers[i].data, s);
+			if (n == -1) {
+				return False;
+			}
+			pointers[i].length = n;
+			pointers[i].length -= 2;
+			data_size += pointers[i].length + 4;
 			break;
 		case 'B':
 			b = va_arg(ap, uint8_t *);
 			head_size += 8;
-			data_size += va_arg(ap, int);
+			pointers[i].data = b;
+			pointers[i].length = va_arg(ap, int);
+			data_size += pointers[i].length;
 			break;
 		case 'b':
 			b = va_arg(ap, uint8_t *);
-			head_size += va_arg(ap, int);
+			pointers[i].data = b;
+			pointers[i].length = va_arg(ap, int);
+			head_size += pointers[i].length;
 			break;
 		case 'd':
 			n = va_arg(ap, int);
+			intargs[i] = n;
 			head_size += 4;
 			break;
 		case 'C':
 			s = va_arg(ap, char *);
-			head_size += str_charnum(s) + 1;
+			pointers[i].data = s;
+			pointers[i].length = strlen(s)+1;
+			head_size += pointers[i].length;
 			break;
 		}
 	}
@@ -100,64 +133,47 @@ BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
 		case 'U':
-			s = va_arg(ap, char *);
-			n = str_charnum(s);
-			SSVAL(blob->data, head_ofs, n*2); head_ofs += 2;
-			SSVAL(blob->data, head_ofs, n*2); head_ofs += 2;
-			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			push_string(NULL, blob->data+data_ofs, s, n*2, STR_UNICODE|STR_NOALIGN);
-			data_ofs += n*2;
-			break;
 		case 'A':
-			s = va_arg(ap, char *);
-			n = str_ascii_charnum(s);
+		case 'B':
+			n = pointers[i].length;
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
 			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			push_string(NULL, blob->data+data_ofs, s, n, STR_ASCII|STR_NOALIGN);
+			if (pointers[i].data && n) /* don't follow null pointers... */
+				memcpy(blob->data+data_ofs, pointers[i].data, n);
 			data_ofs += n;
 			break;
 		case 'a':
-			n = va_arg(ap, int);
+			n = intargs[i];
 			SSVAL(blob->data, data_ofs, n); data_ofs += 2;
-			s = va_arg(ap, char *);
-			n = str_charnum(s);
-			SSVAL(blob->data, data_ofs, n*2); data_ofs += 2;
-			if (0 < n) {
-				push_string(NULL, blob->data+data_ofs, s, n*2,
-					    STR_UNICODE|STR_NOALIGN);
-			}
-			data_ofs += n*2;
-			break;
 
-		case 'B':
-			b = va_arg(ap, uint8_t *);
-			n = va_arg(ap, int);
-			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
-			SSVAL(blob->data, head_ofs, n); head_ofs += 2;
-			SIVAL(blob->data, head_ofs, data_ofs); head_ofs += 4;
-			if (n && b) /* don't follow null pointers... */
-				memcpy(blob->data+data_ofs, b, n);
+			n = pointers[i].length;
+			SSVAL(blob->data, data_ofs, n); data_ofs += 2;
+			if (n >= 0) {
+				memcpy(blob->data+data_ofs, pointers[i].data, n);
+			}
 			data_ofs += n;
 			break;
 		case 'd':
-			n = va_arg(ap, int);
-			SIVAL(blob->data, head_ofs, n); head_ofs += 4;
+			n = intargs[i];
+			SIVAL(blob->data, head_ofs, n); 
+			head_ofs += 4;
 			break;
 		case 'b':
-			b = va_arg(ap, uint8_t *);
-			n = va_arg(ap, int);
-			memcpy(blob->data + head_ofs, b, n);
+			n = pointers[i].length;
+			memcpy(blob->data + head_ofs, pointers[i].data, n);
 			head_ofs += n;
 			break;
 		case 'C':
-			s = va_arg(ap, char *);
-			head_ofs += push_string(NULL, blob->data+head_ofs, s, -1, 
-						STR_ASCII|STR_TERMINATE);
+			n = pointers[i].length;
+			memcpy(blob->data + head_ofs, pointers[i].data, n);
+			head_ofs += n;
 			break;
 		}
 	}
 	va_end(ap);
+	
+	talloc_free(pointers);
 
 	return True;
 }
