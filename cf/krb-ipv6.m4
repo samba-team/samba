@@ -9,7 +9,7 @@ if test "$withval" = "no"; then
 	ac_cv_lib_ipv6=no
 fi])
 AC_CACHE_CHECK(for IPv6,ac_cv_lib_ipv6,
-AC_TRY_COMPILE([
+AC_TRY_LINK([
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
