@@ -760,8 +760,11 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname)
 	}
 	if (ldap_count_entries(ldap_struct, result) < 1)
 	{
-		DEBUG(0,
-		      ("We don't find this user [%s] count=%d\n", sname,
+		pstring filter;
+
+		pstrcpy(filter, lp_ldap_filter());
+		standard_sub_advanced(-1, sname, "", -1, filter);
+		DEBUG(0,("LDAP search \"%s\" returned %d entries.\n",  filter, 
 		       ldap_count_entries(ldap_struct, result)));
 		ldap_unbind(ldap_struct);
 		return False;
