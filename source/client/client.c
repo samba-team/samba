@@ -1117,26 +1117,49 @@ static void cmd_put(void)
 	do_put(rname,lname);
 }
 
+/*************************************
+  File list structure
+*************************************/
+
+static struct file_list {
+	struct file_list *prev, *next;
+	char *file_path;
+	BOOL isdir;
+} *file_list;
+
+/****************************************************************************
+  Free a file_list structure
+****************************************************************************/
+
+static void free_file_list (struct file_list * list)
+{
+	struct file_list *tmp;
+	
+	while (list)
+	{
+		tmp = list;
+		DLIST_REMOVE(list, list);
+		if (tmp->file_path) free(tmp->file_path);
+		free(tmp);
+	}
+}
 
 /****************************************************************************
   seek in a directory/file list until you get something that doesn't start with
   the specified name
   ****************************************************************************/
-static BOOL seek_list(FILE *f,char *name)
+static BOOL seek_list(struct file_list *list, char *name)
 {
-	pstring s;
-	while (!feof(f)) {
-		if (!fgets(s,sizeof(s),f)) return(False);
-		trim_string(s,"./","\n");
-		if (strncmp(s,name,strlen(name)) != 0) {
-			pstrcpy(name,s);
+	while (list) {
+		trim_string(list->file_path,"./","\n");
+		if (strncmp(list->file_path, name, strlen(name)) != 0) {
 			return(True);
 		}
+		list = list->next;
 	}
       
 	return(False);
 }
-
 
 /****************************************************************************
   set the file selection mask
@@ -1149,88 +1172,151 @@ static void cmd_select(void)
 
 
 /****************************************************************************
+  Recursive file matching function act as find
+  match must be always set to True when calling this function
+****************************************************************************/
+  
+static int file_find(struct file_list **list, const char *directory, 
+		      const char *expression, BOOL match)
+{
+        struct dirent **namelist;
+	struct file_list *entry;
+        struct stat statbuf;
+        int n, ret;
+        char *path;
+	BOOL isdir;
+
+        n = scandir(directory,  &namelist, 0, alphasort);
+	if (n == -1) return -1;
+	
+        while (n--) {
+		int len = NAMLEN(namelist[n]);
+		char *dname = malloc(len+1);
+		if (!dname) continue;
+
+		memcpy(dname, namelist[n]->d_name, len);
+		dname[len] = 0;
+		
+		if (!strcmp("..", dname)) continue;
+		if (!strcmp(".", dname)) continue;
+		
+		if (asprintf(&path, "%s/%s", directory, dname) <= 0) {
+			free(dname);
+			continue;
+		}
+
+		isdir = False;
+		if (!match || !ms_fnmatch(expression, dname)) {
+			if (recurse) {
+				ret = stat(path, &statbuf);
+				if (!ret) {
+					if (S_ISDIR(statbuf.st_mode)) {
+						isdir = True;
+						ret = file_find(list, path, expression, False);
+					}
+				} else {
+					DEBUG(0,("file_find: cannot stat file %s\n", path));
+				}
+				
+				if (ret) {
+					free(path);
+					free(dname);
+					return ret;
+				}
+			}
+			entry = (struct file_list *) malloc(sizeof (struct file_list));
+			if (!entry) {
+				DEBUG(0,("Out of memory in file_find\n"));
+				return -4;
+			}
+			entry->file_path = path;
+			entry->isdir = isdir;
+                        DLIST_ADD(*list, entry);
+		} else {
+			free(path);
+		}
+		free(dname);
+        }
+	return 0;
+}
+
+/****************************************************************************
   mput some files
   ****************************************************************************/
 static void cmd_mput(void)
 {
-	pstring lname;
-	pstring rname;
 	fstring buf;
 	char *p=buf;
 	
 	while (next_token(NULL,p,NULL,sizeof(buf))) {
-		SMB_STRUCT_STAT st;
-		pstring cmd;
-		pstring tmpname;
-		FILE *f;
-		int fd;
+		int ret;
+		struct file_list *temp_list;
+		char *quest, *lname, *rname;
+	
+		file_list = NULL;
 
-		slprintf(tmpname,sizeof(tmpname)-1, "%s/ls.smb.XXXXXX",
-				tmpdir());
-		fd = smb_mkstemp(tmpname);
-
-		if (fd == -1) {
-			DEBUG(0,("Failed to create temporary file %s\n", tmpname));
+		ret = file_find(&file_list, ".", p, True);
+		if (ret) {
+			free_file_list(file_list);
 			continue;
 		}
-
-		if (recurse)
-			slprintf(cmd,sizeof(pstring)-1,
-				"find . -name \"%s\" -print > %s",p,tmpname);
-		else
-			slprintf(cmd,sizeof(pstring)-1,
-				"find . -maxdepth 1 -name \"%s\" -print > %s",p,tmpname);
-		system(cmd);
-		close(fd);
-
-		f = sys_fopen(tmpname,"r");
-		if (!f) continue;
 		
-		while (!feof(f)) {
-			pstring quest;
+		quest = NULL;
+		lname = NULL;
+		rname = NULL;
+				
+		for (temp_list = file_list; temp_list; 
+		     temp_list = temp_list->next) {
 
-			if (!fgets(lname,sizeof(lname),f)) break;
-			trim_string(lname,"./","\n");
-			
-		again1:
+			if (lname) free(lname);
+			if (asprintf(&lname, "%s/", temp_list->file_path) <= 0)
+				continue;
+			trim_string(lname, "./", "/");
 			
 			/* check if it's a directory */
-			if (directory_exist(lname,&st)) {
-				if (!recurse) continue;
-				slprintf(quest,sizeof(pstring)-1,
-					 "Put directory %s? ",lname);
-				if (prompt && !yesno(quest)) {
-					pstrcat(lname,"/");
-					if (!seek_list(f,lname))
-						break;
-					goto again1;		    
-				}
-	      
-				pstrcpy(rname,cur_dir);
-				pstrcat(rname,lname);
-				dos_format(rname);
-				if (!cli_chkpath(cli, rname) && !do_mkdir(rname)) {
-					pstrcat(lname,"/");
-					if (!seek_list(f,lname))
-						break;
-					goto again1;
+			if (temp_list->isdir) {
+				/* if (!recurse) continue; */
+				
+				if (quest) free(quest);
+				asprintf(&quest, "Put directory %s? ", lname);
+				if (prompt && !yesno(quest)) { /* No */
+					/* Skip the directory */
+					lname[strlen(lname)-1] = '/';
+					if (!seek_list(temp_list, lname))
+						break;		    
+				} else { /* Yes */
+	      				if (rname) free(rname);
+					asprintf(&rname, "%s%s", cur_dir, lname);
+					dos_format(rname);
+					if (!cli_chkpath(cli, rname) && 
+					    !do_mkdir(rname)) {
+						DEBUG (0, ("Unable to make dir, skipping..."));
+						/* Skip the directory */
+						lname[strlen(lname)-1] = '/';
+						if (!seek_list(temp_list, lname))
+							break;
+					}
 				}
 				continue;
 			} else {
-				slprintf(quest,sizeof(quest)-1,
-					 "Put file %s? ",lname);
-				if (prompt && !yesno(quest)) continue;
+				if (quest) free(quest);
+				asprintf(&quest,"Put file %s? ", lname);
+				if (prompt && !yesno(quest)) /* No */
+					continue;
 				
-				pstrcpy(rname,cur_dir);
-				pstrcat(rname,lname);
+				/* Yes */
+				if (rname) free(rname);
+				asprintf(&rname, "%s%s", cur_dir, lname);
 			}
 
 			dos_format(rname);
 
-			do_put(rname,lname);
+			do_put(rname, lname);
 		}
-		fclose(f);
-		unlink(tmpname);
+		free_file_list(file_list);
+		if (quest) free(quest);
+		if (lname) free(lname);
+		if (rname) free(rname);
 	}
 }
 
