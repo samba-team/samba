@@ -160,8 +160,8 @@ static BOOL message_notify(pid_t pid)
  Send a message to a particular pid.
 ****************************************************************************/
 
-BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
-		      BOOL duplicates_allowed)
+static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, size_t len,
+		      BOOL duplicates_allowed, unsigned int timeout)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -200,7 +200,17 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
 		/* If duplicates are allowed we can just append the message and return. */
 
 		/* lock the record for the destination */
-		tdb_chainlock(tdb, kbuf);
+		if (timeout) {
+			if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
+				DEBUG(0,("message_send_pid_internal: failed to get chainlock with timeout %ul.\n", timeout));
+				return False;
+			}
+		} else {
+			if (tdb_chainlock(tdb, kbuf) == -1) {
+				DEBUG(0,("message_send_pid_internal: failed to get chainlock.\n"));
+				return False;
+			}
+		}	
 		tdb_append(tdb, kbuf, dbuf);
 		tdb_chainunlock(tdb, kbuf);
 
@@ -210,7 +220,18 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
 	}
 
 	/* lock the record for the destination */
-	tdb_chainlock(tdb, kbuf);
+	if (timeout) {
+		if (tdb_chainlock_with_timeout(tdb, kbuf, timeout) == -1) {
+			DEBUG(0,("message_send_pid_internal: failed to get chainlock with timeout %ul.\n", timeout));
+			return False;
+		}
+	} else {
+		if (tdb_chainlock(tdb, kbuf) == -1) {
+			DEBUG(0,("message_send_pid_internal: failed to get chainlock.\n"));
+			return False;
+		}
+	}	
+
 	old_dbuf = tdb_fetch(tdb, kbuf);
 
 	if (!old_dbuf.dptr) {
@@ -236,7 +257,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
 		if (!memcmp(ptr, &rec, sizeof(rec))) {
 			if (!len || (len && !memcmp( ptr + sizeof(rec), buf, len))) {
 				tdb_chainunlock(tdb, kbuf);
-				DEBUG(10,("message_send_pid: discarding duplicate message.\n"));
+				DEBUG(10,("message_send_pid_internal: discarding duplicate message.\n"));
 				SAFE_FREE(dbuf.dptr);
 				SAFE_FREE(old_dbuf.dptr);
 				return True;
@@ -256,6 +277,25 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
 
 	errno = 0;                    /* paranoia */
 	return message_notify(pid);
+}
+
+/****************************************************************************
+ Send a message to a particular pid - no timeout.
+****************************************************************************/
+
+BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len, BOOL duplicates_allowed)
+{
+	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed, 0);
+}
+
+/****************************************************************************
+ Send a message to a particular pid, with timeout in seconds.
+****************************************************************************/
+
+BOOL message_send_pid_with_timeout(pid_t pid, int msg_type, const void *buf, size_t len,
+		BOOL duplicates_allowed, unsigned int timeout)
+{
+	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed, timeout);
 }
 
 /****************************************************************************
