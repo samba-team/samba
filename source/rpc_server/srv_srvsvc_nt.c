@@ -1747,7 +1747,6 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	}
 
 	close_file(fsp, True);
-	file_free(fsp);
 	close_cnum(conn, user.vuid);
 	return r_u->status;
 
@@ -1755,7 +1754,6 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	if(fsp) {
 		close_file(fsp, True);
-		file_free(fsp);
 	}
 
 	if (conn) 
