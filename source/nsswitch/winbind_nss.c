@@ -25,13 +25,19 @@
 #include "includes.h"
 #include <nss.h>
 
+/* I think I know what I'm doing here (-: */
+
+#ifdef strcpy
+#undef strcpy      
+#endif
+
+#ifdef strcat
+#undef strcat
+#endif
+
 /*
  * Utility and helper functions
  */
-
-#ifdef strcpy
-#undef strcpy      /* I think I know what I'm doing here (-: */
-#endif
 
 /* Connect to winbindd socket */
 
