@@ -34,7 +34,7 @@
  */
 
 
-enum {OPT_OPTION=1};
+enum {OPT_OPTION=1,OPT_LEAK_CHECK=2};
 
 static struct cmdline_auth_info cmdline_auth_info;
 
@@ -116,6 +116,10 @@ static void popt_common_callback(poptContext con,
 			exit(1);
 		}
 		break;
+
+	case OPT_LEAK_CHECK:
+		talloc_enable_leak_check();
+		break;
 	}
 }
 
@@ -132,10 +136,11 @@ struct poptOption popt_common_connection[] = {
 
 struct poptOption popt_common_samba[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_callback },
-	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
-	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file", "CONFIGFILE" },
-	{ "option",       0, POPT_ARG_STRING, NULL, OPT_OPTION, "Set smb.conf option from command line", "name=value" },
+	{ "debuglevel",   'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
+	{ "configfile",   's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file", "CONFIGFILE" },
+	{ "option",         0, POPT_ARG_STRING, NULL, OPT_OPTION, "Set smb.conf option from command line", "name=value" },
 	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files", "LOGFILEBASE" },
+	{ "leak-check",     0, POPT_ARG_NONE, NULL, OPT_LEAK_CHECK, "enable talloc leak checking", NULL },
 	POPT_TABLEEND
 };
 
