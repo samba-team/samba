@@ -160,7 +160,7 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_creds *creds"
 .Fa "krb5_principal client"
 .Fa "krb5_prompter_fct prompter"
-.Fa "void *data"
+.Fa "void *prompter_data"
 .Fa "krb5_deltat start_time"
 .Fa "const char *in_tkt_service"
 .Fa "krb5_get_init_creds_opt *options"
@@ -172,7 +172,7 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_principal client"
 .Fa "const char *password"
 .Fa "krb5_prompter_fct prompter"
-.Fa "void *data"
+.Fa "void *prompter_data"
 .Fa "krb5_deltat start_time"
 .Fa "const char *in_tkt_service"
 .Fa "krb5_get_init_creds_opt *in_options"
@@ -198,6 +198,7 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fc
 .Sh DESCRIPTION
 Getting initial credential ticket for a principal.
+That may include changing an expired password, and doing preauthentication.
 This interface that replaces the deprecated
 .Fa krb5_in_tkt
 and 
@@ -276,6 +277,31 @@ It matches the
 and can be used in the
 .Fa krb5_get_init_creds
 functions.
+.Fn krb5_prompter_posix
+doesn't require
+.Fa prompter_data.
+.Pp
+If the
+.Fa start_time
+is zero, then the requested ticket will be valid
+beginning immediately.
+Otherwise, the
+.Fa start_time
+indicates how far in the future the ticket should be postdated.
+.Pp
+If the
+.Fa in_tkt_service
+name is
+.Dv non-NULL ,
+that principal name will be
+used as the server name for the initial ticket request.
+The realm of the name specified will be ignored and will be set to the
+realm of the client name.
+If no in_tkt_service name is specified,
+krbtgt/CLIENT-REALM@CLIENT-REALM will be used.
+.Pp
+For the rest of arguments, a configuration or library default will be
+used if no value is specified in the options structure.
 .Pp
 .Fn krb5_get_init_creds_opt_set_address_list
 sets the list of
