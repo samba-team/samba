@@ -61,52 +61,145 @@ BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd,
 
 /* Check the machine account password is valid */
 
-enum winbindd_result winbindd_check_machine_acct(
-	struct winbindd_cli_state *state)
+static uint32 check_any(char *trust_account, uchar trust_passwd[16])
 {
-	int result = WINBINDD_ERROR;
-	uchar trust_passwd[16];
-	struct in_addr *ip_list = NULL;
-	int count;
+	struct in_addr *ip_list = NULL, pdc_ip;
 	uint16 validation_level;
-	fstring controller, trust_account;
-
-	DEBUG(3, ("[%5d]: check machine account\n", state->pid));
-
-	/* Get trust account password */
-
-	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) {
-		result = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
-
-	/* Get domain controller */
+	fstring controller;
+	uint32 result;
+	int count, i;
 
 	if (!get_dc_list(True, lp_workgroup(), &ip_list, &count) ||
 	    !lookup_pdc_name(global_myname, lp_workgroup(), &ip_list[0],
 			     controller)) {
 		DEBUG(0, ("could not find domain controller for "
 			  "domain %s\n", lp_workgroup()));		  
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-		goto done;
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
-	DEBUG(3, ("contacting controller %s to check secret\n", controller));
+	pdc_ip = ip_list[0];
 
-	/* Contact domain controller to check secret */
-
-        slprintf(trust_account, sizeof(trust_account) - 1, "%s$",
-                 global_myname);
+	DEBUG(3, ("contacting PDC %s to check secret\n", controller));
 
         result = cli_nt_setup_creds(controller, lp_workgroup(), global_myname,
                                     trust_account, trust_passwd, 
                                     SEC_CHAN_WKSTA, &validation_level);	
+	
+	if (result == NT_STATUS_NOPROBLEMO)
+		return result;
 
-	/* Pass back result code - zero for success, other values for
-	   specific failures. */
+	/* OK, now try other domain controllers */
+	
+	if (!get_dc_list(False, lp_workgroup(), &ip_list, &count)) {
+		DEBUG(0, ("could not find domain controller for "
+			  "domain %s\n", lp_workgroup()));
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
 
-	DEBUG(3, ("secret is %s\n", (result == NT_STATUS_NOPROBLEMO) ?
-		  "good" : "bad"));
+	for (i = 0; i < count; i++) {
+		fstring srv_name;
+
+		if (ip_equal(pdc_ip, ip_list[i]))
+			continue;
+
+		if (!name_status_find(0x20, ip_list[i], srv_name))
+			continue;
+
+		DEBUG(3, ("contacting dc %s to check secret\n", srv_name));
+
+		result = cli_nt_setup_creds(srv_name, lp_workgroup(), 
+					    global_myname, trust_account, 
+					    trust_passwd, SEC_CHAN_WKSTA, 
+					    &validation_level);	
+
+		if (result == NT_STATUS_NOPROBLEMO)
+			break;
+	}
+
+	return result;
+}
+
+static uint32 check_passwordserver(char *trust_account, uchar trust_passwd[16])
+{
+	uint32 result = NT_STATUS_INTERNAL_ERROR;
+	uint16 validation_level;
+	fstring remote_machine;
+	char *pserver;
+
+	pserver = lp_passwordserver();
+
+	while(next_token(&pserver, remote_machine, LIST_SEP, 
+			 sizeof(remote_machine))) {
+		fstring srv_name;
+
+		/* Look up name if ip address */
+		
+		if (is_ipaddress(remote_machine)) {
+			struct in_addr ip;
+
+			inet_aton(remote_machine, &ip);
+
+			if (!name_status_find(0x20, ip, srv_name)) {
+				DEBUG(3, ("invalid server %s\n",
+					  remote_machine));
+				continue;
+			}
+		} else
+			fstrcpy(srv_name, remote_machine);
+
+		/* Contact dc */
+
+		result = cli_nt_setup_creds(srv_name, lp_workgroup(),
+					    global_myname, trust_account,
+					    trust_passwd, SEC_CHAN_WKSTA,
+					    &validation_level);
+
+		if (result == NT_STATUS_NOPROBLEMO)
+			break;
+	}
+
+	return result;
+}
+
+enum winbindd_result winbindd_check_machine_acct(
+	struct winbindd_cli_state *state)
+{
+	uint32 result = NT_STATUS_INTERNAL_ERROR;
+	uchar trust_passwd[16];
+	fstring trust_account;
+	char *p;
+
+	DEBUG(3, ("[%5d]: check machine account\n", state->pid));
+
+	/* Get trust account name and password */
+
+	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) {
+		DEBUG(0, ("unable to get trust accound password for domain %s",
+			  lp_workgroup()));
+		goto done;
+	}
+
+        slprintf(trust_account, sizeof(trust_account) - 1, "%s$",
+                 global_myname);
+
+	/* Check secret */
+
+	p = lp_passwordserver();
+	if (strequal(p, ""))
+		p = "*";
+
+	if (strequal(p, "*")) {
+		result = check_any(trust_account, trust_passwd);
+	} else {
+		result = check_passwordserver(trust_account, trust_passwd);
+	}
+
+	if (result != NT_STATUS_INTERNAL_ERROR) {
+		DEBUG(3, ("secret is %s\n", (result == NT_STATUS_NOPROBLEMO) ?
+			  "good" : "bad"));
+	}
+
+	/* Return result */
 
  done:
 	state->response.data.num_entries = result;
