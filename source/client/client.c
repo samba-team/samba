@@ -2108,7 +2108,7 @@ static struct
   
   /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
-  {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
+  {NULL,NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
 
 
@@ -2328,7 +2328,7 @@ static char **completion_fn(const char *text, int start, int end)
 		if (sp == NULL)
 			return NULL;
 		
-		for (i = 0; commands[i].description; i++)
+		for (i = 0; commands[i].name; i++)
 			if ((strncmp(commands[i].name, text, sp - buf) == 0) && (commands[i].name[sp - buf] == 0))
 				break;
 		if (commands[i].name == NULL)
