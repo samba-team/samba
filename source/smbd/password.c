@@ -203,10 +203,9 @@ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
 int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		  char *domain,BOOL guest)
+		  char *domain,BOOL guest, char* full_name)
 {
 	user_struct *vuser = NULL;
-	struct passwd *pwfile; /* for getting real name from passwd file */
 
 	/* Ensure no vuid gets registered in share level security. */
 	if(lp_security() == SEC_SHARE)
@@ -243,6 +242,8 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	fstrcpy(vuser->user.unix_name,unix_name);
 	fstrcpy(vuser->user.smb_name,requested_name);
 	fstrcpy(vuser->user.domain,domain);
+	fstrcpy(vuser->user.full_name, full_name);
+	DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,vuser->user.full_name));	
 
 	vuser->n_groups = 0;
 	vuser->groups  = NULL;
@@ -259,14 +260,6 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	num_validated_vuids++;
 
 	DLIST_ADD(validated_users, vuser);
-
-	DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
-
-	DEBUG(3, ("Clearing default real name\n"));
-	if ((pwfile=sys_getpwnam(vuser->user.unix_name))!= NULL) {
-		DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,pwfile->pw_gecos));
-		fstrcpy(vuser->user.full_name, pwfile->pw_gecos);
-	}
 
 	if (!session_claim(vuser->vuid)) {
 		DEBUG(1,("Failed to claim session for vuid=%d\n", vuser->vuid));
