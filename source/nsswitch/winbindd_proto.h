@@ -16,6 +16,10 @@ void winbindd_store_user_cache(struct winbindd_domain *domain,
 void winbindd_store_group_cache(struct winbindd_domain *domain,
 				struct acct_info *sam_entries,
 				int num_sam_entries);
+void winbindd_store_name_cache_entry(struct winbindd_domain *domain,
+                                     char *sid, struct winbindd_name *name);
+void winbindd_store_sid_cache_entry(struct winbindd_domain *domain,
+                                     char *name, struct winbindd_sid *sid);
 void winbindd_store_user_cache_entry(struct winbindd_domain *domain, 
                                      char *user_name, struct winbindd_pw *pw);
 void winbindd_store_uid_cache_entry(struct winbindd_domain *domain, uid_t uid, 
@@ -26,6 +30,10 @@ void winbindd_store_group_cache_entry(struct winbindd_domain *domain,
 void winbindd_store_gid_cache_entry(struct winbindd_domain *domain, gid_t gid, 
 				    struct winbindd_gr *gr, void *extra_data,
 				    int extra_data_len);
+BOOL winbindd_fetch_sid_cache_entry(struct winbindd_domain *domain,
+                                     char *name, struct winbindd_sid *sid);
+BOOL winbindd_fetch_name_cache_entry(struct winbindd_domain *domain,
+                                     char *sid, struct winbindd_name *name);
 BOOL winbindd_fetch_user_cache(struct winbindd_domain *domain, 
 			       struct getpwent_user **sam_entries,
                                int *num_entries);
