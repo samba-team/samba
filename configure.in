@@ -72,4 +72,5 @@ AC_OUTPUT(Makefile 		\
 	lib/krb5/Makefile	\
 	lib/krb5/error/Makefile	\
 	lib/krb5/error/compile_et \
-	kuser/Makefile)
+	kuser/Makefile		\
+	kdc/Makefile)
