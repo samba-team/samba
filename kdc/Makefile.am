@@ -23,7 +23,8 @@ hprop_LDADD = ../lib/hdb/libhdb.a \
 	../lib/des/libdes.a \
 	../lib/asn1/libasn1.a \
 	$(LIB_krb4) -lkdb $(LIB_krb4) \
-	../lib/roken/libroken.a 
+	../lib/roken/libroken.a \
+	$(DBLIB) 
 else
 hprop_LDADD = $(LDADD)
 endif
@@ -33,5 +34,6 @@ LDADD = ../lib/hdb/libhdb.a \
 	../lib/des/libdes.a \
 	../lib/asn1/libasn1.a \
 	$(LIB_krb4) \
-	../lib/roken/libroken.a 
+	../lib/roken/libroken.a \
+	$(DBLIB)
 

@@ -66,12 +66,13 @@ ipropd_master_SOURCES = ipropd_master.c
 ipropd_slave_SOURCES = ipropd_slave.c
 
 LDADD = \
-	-L. -lkadm5srv \
-	-L$(top_builddir)/lib/hdb -lhdb \
-	-L$(top_builddir)/lib/krb5 -lkrb5 \
-	-L$(top_builddir)/lib/asn1 -lasn1 \
-	-L$(top_builddir)/lib/des -ldes \
-	-L$(top_builddir)/lib/roken -lroken
+	libkadm5srv.a \
+	$(top_builddir)/lib/hdb/libhdb.a \
+	$(top_builddir)/lib/krb5/libkrb5.a \
+	$(top_builddir)/lib/asn1/libasn1.a \
+	$(top_builddir)/lib/des/libdes.a \
+	$(top_builddir)/lib/roken/libroken.a \
+	$(DBLIB)
 
 CLEANFILES = kadm5_err.c kadm5_err.h
 
