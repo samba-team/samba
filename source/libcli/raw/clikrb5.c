@@ -97,7 +97,9 @@
 		return ret;
 	}
 	krb5_use_enctype(context, &eblock, enctype);
-	return krb5_string_to_key(context, &eblock, key, password, &salt);
+	ret = krb5_string_to_key(context, &eblock, key, password, &salt);
+	SAFE_FREE(salt.data);
+	return ret;
 }
 #elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
  int create_kerberos_key_from_string(krb5_context context,
@@ -235,12 +237,12 @@ krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
-static krb5_error_code krb5_mk_req2(krb5_context context, 
-				    krb5_auth_context *auth_context, 
-				    const krb5_flags ap_req_options,
-				    const char *principal,
-				    krb5_ccache ccache, 
-				    krb5_data *outbuf)
+static krb5_error_code ads_krb5_mk_req(krb5_context context, 
+				       krb5_auth_context *auth_context, 
+				       const krb5_flags ap_req_options,
+				       const char *principal,
+				       krb5_ccache ccache, 
+				       krb5_data *outbuf)
 {
 	krb5_error_code 	  retval;
 	krb5_principal	  server;
@@ -255,7 +257,7 @@ static krb5_error_code krb5_mk_req2(krb5_context context,
 	}
 	
 	/* obtain ticket & session key */
-	memset((char *)&creds, 0, sizeof(creds));
+	ZERO_STRUCT(creds);
 	if ((retval = krb5_copy_principal(context, server, &creds.server))) {
 		DEBUG(1,("krb5_copy_principal failed (%s)\n", 
 			 error_message(retval)));
@@ -305,14 +307,14 @@ cleanup_princ:
 /*
   get a kerberos5 ticket for the given service 
 */
-DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
+int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5)
 {
 	krb5_error_code retval;
 	krb5_data packet;
 	krb5_ccache ccdef;
 	krb5_context context;
 	krb5_auth_context auth_context = NULL;
-	DATA_BLOB ret;
 	krb5_enctype enc_types[] = {
 #ifdef ENCTYPE_ARCFOUR_HMAC
 		ENCTYPE_ARCFOUR_HMAC,
@@ -344,56 +346,76 @@ DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
 		goto failed;
 	}
 
-	if ((retval = krb5_mk_req2(context, 
-				   &auth_context, 
-				   0, 
-				   principal,
-				   ccdef, &packet))) {
+	if ((retval = ads_krb5_mk_req(context, 
+					&auth_context, 
+					AP_OPTS_USE_SUBKEY, 
+					principal,
+					ccdef, &packet))) {
 		goto failed;
 	}
 
-	ret = data_blob(packet.data, packet.length);
+	get_krb5_smb_session_key(context, auth_context, session_key_krb5, False);
+
+	*ticket = data_blob(packet.data, packet.length);
+
 /* Hmm, heimdal dooesn't have this - what's the correct call? */
-/* 	krb5_free_data_contents(context, &packet); */
-	krb5_free_context(context);
-	return ret;
+#ifdef HAVE_KRB5_FREE_DATA_CONTENTS
+ 	krb5_free_data_contents(context, &packet); 
+#endif
 
 failed:
 	if ( context )
 		krb5_free_context(context);
 		
-	return data_blob(NULL, 0);
+	return retval;
 }
 
- BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16])
+ BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, BOOL remote)
  {
-#ifdef ENCTYPE_ARCFOUR_HMAC
 	krb5_keyblock *skey;
-#endif
+	krb5_error_code err;
 	BOOL ret = False;
 
 	memset(session_key, 0, 16);
 
-#ifdef ENCTYPE_ARCFOUR_HMAC
-	if (krb5_auth_con_getremotesubkey(context, auth_context, &skey) == 0 && skey != NULL) {
-		if (KRB5_KEY_TYPE(skey) ==
-		    ENCTYPE_ARCFOUR_HMAC
-		    && KRB5_KEY_LENGTH(skey) == 16) {
-			memcpy(session_key, KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
-			ret = True;
-		}
+	if (remote)
+		err = krb5_auth_con_getremotesubkey(context, auth_context, &skey);
+	else
+		err = krb5_auth_con_getlocalsubkey(context, auth_context, &skey);
+	if (err == 0 && skey != NULL) {
+		DEBUG(10, ("Got KRB5 session key of length %d\n",  KRB5_KEY_LENGTH(skey)));
+		*session_key = data_blob(KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
+		dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
+
+		ret = True;
+
 		krb5_free_keyblock(context, skey);
+	} else {
+		DEBUG(10, ("KRB5 error getting session key %d\n", err));
 	}
-#endif /* ENCTYPE_ARCFOUR_HMAC */
 
 	return ret;
  }
+
+
+#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
+ const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i )
+{
+	static krb5_data kdata;
+
+	kdata.data = krb5_principal_get_comp_string(context, principal, i);
+	kdata.length = strlen(kdata.data);
+	return &kdata;
+}
+#endif
+
 #else /* HAVE_KRB5 */
- /* this saves a few linking headaches */
-DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
- {
+/* this saves a few linking headaches */
+int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5) 
+{
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
-	 return data_blob(NULL, 0);
- }
+	 return 1;
+}
 
 #endif

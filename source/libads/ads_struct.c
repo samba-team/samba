@@ -94,12 +94,11 @@ ADS_STRUCT *ads_init(const char *realm,
 	ads->server.workgroup = workgroup ? strdup(workgroup) : NULL;
 	ads->server.ldap_server = ldap_server? strdup(ldap_server) : NULL;
 
-	/* we need to know if this is a foreign realm to know if we can
-	   use lp_ads_server() */
-	if (realm && *realm && strcasecmp(lp_realm(), realm) != 0) {
+	/* we need to know if this is a foreign realm */
+	if (realm && *realm && !strequal(lp_realm(), realm)) {
 		ads->server.foreign = 1;
 	}
-	if (workgroup && *workgroup && strcasecmp(lp_workgroup(), workgroup) != 0) {
+	if (workgroup && *workgroup && !strequal(lp_workgroup(), workgroup)) {
 		ads->server.foreign = 1;
 	}
 

@@ -143,7 +143,7 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 	else
 		return EINVAL;
 
-	encoded_setpw.data = setpw.data;
+	encoded_setpw.data = (char *)setpw.data;
 	encoded_setpw.length = setpw.length;
 
 	ret = krb5_mk_priv(context, auth_context,
@@ -178,47 +178,39 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 	return 0;
 }
 
-static krb5_error_code krb5_setpw_result_code_string(krb5_context context,
-						     int result_code,
-						     char **code_string)
-{
-   switch (result_code) {
-   case KRB5_KPASSWD_MALFORMED:
-      *code_string = "Malformed request error";
-      break;
-   case KRB5_KPASSWD_HARDERROR:
-      *code_string = "Server error";
-      break;
-   case KRB5_KPASSWD_AUTHERROR:
-      *code_string = "Authentication error";
-      break;
-   case KRB5_KPASSWD_SOFTERROR:
-      *code_string = "Password change rejected";
-      break;
-   case KRB5_KPASSWD_ACCESSDENIED:
-      *code_string = "Client does not have proper authorization";
-      break;
-   case KRB5_KPASSWD_BAD_VERSION:
-      *code_string = "Protocol version not supported";
-      break;
-   case KRB5_KPASSWD_INITIAL_FLAG_NEEDED:
-      *code_string = "Authorization ticket must have initial flag set";
-      break;
-   case KRB5_KPASSWD_POLICY_REJECT:
-      *code_string = "Password rejected due to policy requirements";
-      break;
-   case KRB5_KPASSWD_BAD_PRINCIPAL:
-      *code_string = "Target principal does not exist";
-      break;
-   case KRB5_KPASSWD_ETYPE_NOSUPP:
-      *code_string = "Unsupported encryption type";
-      break;
-   default:
-      *code_string = "Password change failed";
-      break;
-   }
+static const struct kpasswd_errors {
+	int result_code;
+	const char *error_string;
+} kpasswd_errors[] = {
+	{KRB5_KPASSWD_MALFORMED, "Malformed request error"},
+	{KRB5_KPASSWD_HARDERROR, "Server error"},
+	{KRB5_KPASSWD_AUTHERROR, "Authentication error"},
+	{KRB5_KPASSWD_SOFTERROR, "Password change rejected"},
+	{KRB5_KPASSWD_ACCESSDENIED, "Client does not have proper authorization"},
+	{KRB5_KPASSWD_BAD_VERSION, "Protocol version not supported"},
+	{KRB5_KPASSWD_INITIAL_FLAG_NEEDED, "Authorization ticket must have initial flag set"},
+	{KRB5_KPASSWD_POLICY_REJECT, "Password rejected due to policy requirements"},
+	{KRB5_KPASSWD_BAD_PRINCIPAL, "Target principal does not exist"},
+	{KRB5_KPASSWD_ETYPE_NOSUPP, "Unsupported encryption type"},
+	{0, NULL}
+};
 
-   return(0);
+static krb5_error_code setpw_result_code_string(krb5_context context,
+						int result_code,
+						const char **code_string)
+{
+        unsigned int idx = 0;
+
+	while (kpasswd_errors[idx].error_string != NULL) {
+		if (kpasswd_errors[idx].result_code == 
+                    result_code) {
+			*code_string = kpasswd_errors[idx].error_string;
+			return 0;
+		}
+		idx++;
+	}
+	*code_string = "Password change failed";
+        return (0);
 }
 
 static krb5_error_code parse_setpw_reply(krb5_context context, 
@@ -318,8 +310,8 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	if(res_code == KRB5_KPASSWD_SUCCESS)
 			return 0;
 	else {
-		char *errstr;
-		krb5_setpw_result_code_string(context, res_code, &errstr);
+		const char *errstr;
+		setpw_result_code_string(context, res_code, &errstr);
 		DEBUG(1, ("Error changing password: %s\n", errstr));
 
 		switch(res_code) {
@@ -465,8 +457,8 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 	return ADS_SUCCESS;
 }
 
-ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char *newpw, 
-			     int time_offset)
+ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ, 
+				 const char *newpw, int time_offset)
 {
 
 	ADS_STATUS aret;
@@ -546,7 +538,6 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char
 
 	krb5_free_creds(context, credsp);
 	krb5_free_principal(context, creds.client);
-	krb5_free_principal(context, creds.server);
 	krb5_free_principal(context, principal);
 	krb5_free_context(context);
 
@@ -579,11 +570,11 @@ kerb_prompter(krb5_context ctx, void *data,
 	return 0;
 }
 
-ADS_STATUS krb5_chg_password(const char *kdc_host,
-				const char *principal,
-				const char *oldpw, 
-				const char *newpw, 
-				int time_offset)
+static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
+					const char *principal,
+					const char *oldpw, 
+					const char *newpw, 
+					int time_offset)
 {
     ADS_STATUS aret;
     krb5_error_code ret;
@@ -657,11 +648,11 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
     }
 
     if (!strcmp(auth_principal, target_principal))
-	return krb5_chg_password(kpasswd_server, target_principal,
-				    auth_password, new_password, time_offset);
+	return ads_krb5_chg_password(kpasswd_server, target_principal,
+				     auth_password, new_password, time_offset);
     else
-    	return krb5_set_password(kpasswd_server, target_principal,
-				 new_password, time_offset);
+    	return ads_krb5_set_password(kpasswd_server, target_principal,
+				     new_password, time_offset);
 }
 
 
@@ -673,24 +664,22 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
  * @return status of password change
  **/
 ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
-				    const char *hostname, 
+				    const char *machine_account,
 				    const char *password)
 {
 	ADS_STATUS status;
-	char *host = strdup(hostname);
-	char *principal; 
-
-	strlower(host);
+	char *principal = NULL; 
 
 	/*
-	  we need to use the '$' form of the name here, as otherwise the
-	  server might end up setting the password for a user instead
+	  we need to use the '$' form of the name here (the machine account name), 
+	  as otherwise the server might end up setting the password for a user
+	  instead
 	 */
-	asprintf(&principal, "%s$@%s", host, ads->auth.realm);
+	asprintf(&principal, "%s@%s", machine_account, ads->config.realm);
 	
-	status = krb5_set_password(ads->auth.kdc_server, principal, password, ads->auth.time_offset);
+	status = ads_krb5_set_password(ads->auth.kdc_server, principal, 
+				       password, ads->auth.time_offset);
 	
-	free(host);
 	free(principal);
 
 	return status;
