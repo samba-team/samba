@@ -414,7 +414,7 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	}		
 
 	/* this converts GMT to kludge-GMT */
-	t -= LocTimeDiff(t) - get_serverzone(); 
+	t -= TimeDiff(t) - get_serverzone(); 
 
 	d = (double)(t);
 	d += TIME_FIXUP_CONSTANT;
