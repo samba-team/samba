@@ -51,7 +51,9 @@ struct e_ndr_pull *ndr_pull_init(tvbuff_t *tvb, int offset, packet_info *pinfo,
 				 proto_tree *tree, guint8 *drep);
 void ndr_pull_free(struct e_ndr_pull *ndr);
 void ndr_pull_ptr(struct e_ndr_pull *ndr, int hf, guint32 *ptr);
+void ndr_pull_level(struct e_ndr_pull *ndr, int hf, int *ptr);
 void ndr_pull_NTSTATUS(struct e_ndr_pull *ndr, int hf);
+void ndr_pull_uint8(struct e_ndr_pull *ndr, int hf);
 void ndr_pull_uint16(struct e_ndr_pull *ndr, int hf);
 void ndr_pull_uint32(struct e_ndr_pull *ndr, int hf);
 void ndr_pull_policy_handle(struct e_ndr_pull *ndr, int hf);
@@ -59,6 +61,20 @@ void ndr_pull_advance(struct e_ndr_pull *ndr, int offset);
 void ndr_pull_subcontext_flags_fn(struct e_ndr_pull *ndr, size_t sub_size,
 				  void (*fn)(struct e_ndr_pull *, 
 					     int ndr_flags));
+void ndr_pull_subcontext_header(struct e_ndr_pull *ndr, 
+				size_t sub_size,
+				struct e_ndr_pull *ndr2);
 void ndr_pull_struct_start(struct e_ndr_pull *ndr);
 void ndr_pull_struct_end(struct e_ndr_pull *ndr);
 void ndr_pull_align(struct e_ndr_pull *ndr, int size);
+void ndr_pull_NTTIME(struct e_ndr_pull *e_ndr, int hf);
+void ndr_pull_HYPER_T(struct e_ndr_pull *e_ndr, int hf);
+void ndr_pull_int64(struct e_ndr_pull *e_ndr, int hf);
+void ndr_pull_uint64(struct e_ndr_pull *e_ndr, int hf);
+void ndr_pull_string(struct e_ndr_pull *e_ndr, int hf);
+void ndr_pull_dom_sid2(struct e_ndr_pull *e_ndr, int hf);
+void ndr_pull_security_descriptor(struct e_ndr_pull *e_ndr, int hf);
+
+void ndr_pull_lsa_SidArray(struct e_ndr_pull *ndr, int ndr_flags);
+void ndr_pull_samr_LogonHours(struct e_ndr_pull *ndr, int ndr_flags);
+void ndr_pull_samr_Password(struct e_ndr_pull *ndr, int ndr_flags);
