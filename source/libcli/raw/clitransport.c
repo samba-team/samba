@@ -318,7 +318,7 @@ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 	transport->idle.period = period;
 
 	if (transport->socket->event.te != NULL) {
-		event_remove_timed(transport->socket->event.ctx, transport->socket->event.te);
+		talloc_free(transport->socket->event.te);
 	}
 
 	te.next_event = timeval_current_ofs(0, period);

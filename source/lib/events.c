@@ -55,7 +55,7 @@
   'struct event_context' that you use in all subsequent calls.
 
   After that you can add/remove events that you are interested in
-  using event_add_*() and event_remove_*().
+  using event_add_*() and talloc_free()
 
   Finally, you call event_loop_wait() to block waiting for one of the
   events to occor. In normal operation event_loop_wait() will loop
@@ -177,18 +177,6 @@ struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e0,
 
 
 /*
-  remove a fd based event
-  the event to remove is matched by looking at the handler
-  function and the file descriptor
-  return False on failure (event not found)
-*/
-BOOL event_remove_fd(struct event_context *ev, struct fd_event *e1)
-{
-	talloc_free(e1);
-	return True;
-}
-
-/*
   remove all fd based events that match a specified fd
 */
 void event_remove_fd_all(struct event_context *ev, int fd)
@@ -245,16 +233,6 @@ struct timed_event *event_add_timed(struct event_context *ev, struct timed_event
 	return e;
 }
 
-/*
-  remove a timed event
-  return False on failure (event not found)
-*/
-BOOL event_remove_timed(struct event_context *ev, struct timed_event *e) 
-{
-	talloc_free(e);
-	return True;
-}
-
 static int event_loop_destructor(void *ptr)
 {
 	struct loop_event *le = talloc_get_type(ptr, struct loop_event);
@@ -281,18 +259,6 @@ struct loop_event *event_add_loop(struct event_context *ev, struct loop_event *e
 	}
 	return e;
 }
-
-/*
-  remove a loop event
-  the event to remove is matched only on the handler function
-  return False on failure (memory allocation error)
-*/
-BOOL event_remove_loop(struct event_context *ev, struct loop_event *e) 
-{
-	talloc_free(e);
-	return True;
-}
-
 
 /*
   tell the event loop to exit with the specified code
@@ -413,7 +379,7 @@ int event_loop_once(struct event_context *ev)
 			if (timeval_compare(&te->next_event, &t) >= 0) {
 				/* the handler didn't set a time for the 
 				   next event - remove the event */
-				event_remove_timed(ev, te);
+				talloc_free(te);
 			}
 		}
 		te = next;
