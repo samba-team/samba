@@ -18,6 +18,7 @@
 		</affiliation>
 	</author>
 	&author.jelmer;
+	&author.jht;
 	</authorgroup>
 	<pubdate>27 June 2002</pubdate>
 </chapterinfo>
@@ -643,12 +644,12 @@ your PDC.  For example, I get the following response:
 </para>
 
 <para><programlisting>
-CEO+Administrator
-CEO+burdell
-CEO+Guest
-CEO+jt-ad
-CEO+krbtgt
-CEO+TsInternetUser
+	CEO+Administrator
+	CEO+burdell
+	CEO+Guest
+	CEO+jt-ad
+	CEO+krbtgt
+	CEO+TsInternetUser
 </programlisting></para>
 
 <para>
@@ -663,15 +664,15 @@ the PDC:
 
 <para><programlisting>
 <prompt>root#</prompt> <command>/usr/local/samba/bin/wbinfo -g</command>
-CEO+Domain Admins
-CEO+Domain Users
-CEO+Domain Guests
-CEO+Domain Computers
-CEO+Domain Controllers
-CEO+Cert Publishers
-CEO+Schema Admins
-CEO+Enterprise Admins
-CEO+Group Policy Creator Owners
+	CEO+Domain Admins
+	CEO+Domain Users
+	CEO+Domain Guests
+	CEO+Domain Computers
+	CEO+Domain Controllers
+	CEO+Cert Publishers
+	CEO+Schema Admins
+	CEO+Enterprise Admins
+	CEO+Group Policy Creator Owners
 </programlisting></para>
 
 <para>
@@ -710,7 +711,8 @@ The same thing can be done for groups with the command
 <para>
 The <command>winbindd</command> daemon needs to start up after the 
 <command>smbd</command> and <command>nmbd</command> daemons are running.  
-To accomplish this task, you need to modify the startup scripts of your system. They are located at <filename>/etc/init.d/smb</filename> in RedHat and 
+To accomplish this task, you need to modify the startup scripts of your system.
+They are located at <filename>/etc/init.d/smb</filename> in RedHat and 
 <filename>/etc/init.d/samba</filename> in Debian.
 script to add commands to invoke this daemon in the proper sequence.  My 
 startup script starts up <command>smbd</command>, 
@@ -736,8 +738,8 @@ start() {
         daemon /usr/local/samba/bin/winbindd
         RETVAL3=$?
         echo
-        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &amp;&amp; touch /var/lock/subsys/smb || \
-           RETVAL=1
+        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &amp;&amp; \
+		touch /var/lock/subsys/smb || RETVAL=1
         return $RETVAL
 }
 </programlisting></para>
@@ -776,7 +778,8 @@ stop() {
         echo -n $"Shutting down $KIND services: "
         killproc winbindd
         RETVAL3=$?
-        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &amp;&amp; rm -f /var/lock/subsys/smb
+        [ $RETVAL -eq 0 -a $RETVAL2 -eq 0 -a $RETVAL3 -eq 0 ] &amp;&amp; \
+		 rm -f /var/lock/subsys/smb
         echo ""
         return $RETVAL
 }
@@ -796,63 +799,64 @@ the file could contains something like this:
 </para>
 
 <para><programlisting>
-##
-## samba.server
-##
+	##
+	## samba.server
+	##
 
-if [ ! -d /usr/bin ]
-then                    # /usr not mounted
-        exit
-fi
+	if [ ! -d /usr/bin ]
+	then                    # /usr not mounted
+		exit
+	fi
 
-killproc() {            # kill the named process(es)
-        pid=`/usr/bin/ps -e |
-             /usr/bin/grep -w $1 |
-             /usr/bin/sed -e 's/^  *//' -e 's/ .*//'`
-        [ "$pid" != "" ] &amp;&amp; kill $pid
-}
- 
-# Start/stop processes required for samba server
+	killproc() {            # kill the named process(es)
+		pid=`/usr/bin/ps -e |
+		     /usr/bin/grep -w $1 |
+		     /usr/bin/sed -e 's/^  *//' -e 's/ .*//'`
+		[ "$pid" != "" ] &amp;&amp; kill $pid
+	}
+	 
+	# Start/stop processes required for samba server
 
-case "$1" in
+	case "$1" in
 
-'start')
-#
-# Edit these lines to suit your installation (paths, workgroup, host)
-#
-echo Starting SMBD
-   /usr/local/samba/bin/smbd -D -s \
-	/usr/local/samba/smb.conf
+	'start')
+	#
+	# Edit these lines to suit your installation (paths, workgroup, host)
+	#
+	echo Starting SMBD
+	   /usr/local/samba/bin/smbd -D -s \
+		/usr/local/samba/smb.conf
 
-echo Starting NMBD
-   /usr/local/samba/bin/nmbd -D -l \
-	/usr/local/samba/var/log -s /usr/local/samba/smb.conf
+	echo Starting NMBD
+	   /usr/local/samba/bin/nmbd -D -l \
+		/usr/local/samba/var/log -s /usr/local/samba/smb.conf
 
-echo Starting Winbind Daemon
-   /usr/local/samba/bin/winbindd
-   ;;
+	echo Starting Winbind Daemon
+	   /usr/local/samba/bin/winbindd
+	   ;;
 
-'stop')
-   killproc nmbd
-   killproc smbd
-   killproc winbindd
-   ;;
+	'stop')
+	   killproc nmbd
+	   killproc smbd
+	   killproc winbindd
+	   ;;
 
-*)
-   echo "Usage: /etc/init.d/samba.server { start | stop }"
-   ;;
-esac
+	*)
+	   echo "Usage: /etc/init.d/samba.server { start | stop }"
+	   ;;
+	esac
 </programlisting></para>
 
-<para>Again, if you would like to run samba in dual daemon mode, replace 
+<para>
+Again, if you would like to run samba in dual daemon mode, replace 
 <programlisting>
-   /usr/local/samba/bin/winbindd
+	/usr/local/samba/bin/winbindd
 </programlisting>
 
 in the script above with:
 
 <programlisting>
-   /usr/local/samba/bin/winbindd -B
+	/usr/local/samba/bin/winbindd -B
 </programlisting>
 </para>
 
@@ -912,8 +916,8 @@ just left this fileas it was:
 
 
 <para><programlisting>
-auth    required        /lib/security/pam_stack.so service=system-auth
-account required        /lib/security/pam_stack.so service=system-auth
+	auth    required        /lib/security/pam_stack.so service=system-auth
+	account required        /lib/security/pam_stack.so service=system-auth
 </programlisting></para>
 
 <para>
@@ -928,7 +932,7 @@ and <filename>/etc/xinetd.d/wu-ftp</filename> from
 </para>
 
 <para><programlisting>
-enable = no
+	enable = no
 </programlisting></para>
 
 <para>
@@ -936,7 +940,7 @@ to
 </para>
 
 <para><programlisting>
-enable = yes
+	enable = yes
 </programlisting></para>
 
 <para>	
@@ -956,13 +960,14 @@ changed to look like this:
 </para>
 
 <para><programlisting>
-auth       required     /lib/security/pam_listfile.so item=user sense=deny file=/etc/ftpusers onerr=succeed
-auth       sufficient   /lib/security/pam_winbind.so
-auth       required     /lib/security/pam_stack.so service=system-auth
-auth       required     /lib/security/pam_shells.so
-account    sufficient   /lib/security/pam_winbind.so
-account    required     /lib/security/pam_stack.so service=system-auth
-session    required     /lib/security/pam_stack.so service=system-auth
+	auth       required     /lib/security/pam_listfile.so item=user sense=deny \
+		 file=/etc/ftpusers onerr=succeed
+	auth       sufficient   /lib/security/pam_winbind.so
+	auth       required     /lib/security/pam_stack.so service=system-auth
+	auth       required     /lib/security/pam_shells.so
+	account    sufficient   /lib/security/pam_winbind.so
+	account    required     /lib/security/pam_stack.so service=system-auth
+	session    required     /lib/security/pam_stack.so service=system-auth
 </programlisting></para>
 
 <para>
@@ -971,16 +976,16 @@ same way.  It now looks like this:
 </para>
 
 <para><programlisting>
-auth       required     /lib/security/pam_securetty.so
-auth       sufficient   /lib/security/pam_winbind.so
-auth       sufficient   /lib/security/pam_unix.so use_first_pass
-auth       required     /lib/security/pam_stack.so service=system-auth
-auth       required     /lib/security/pam_nologin.so
-account    sufficient   /lib/security/pam_winbind.so
-account    required     /lib/security/pam_stack.so service=system-auth
-password   required     /lib/security/pam_stack.so service=system-auth
-session    required     /lib/security/pam_stack.so service=system-auth
-session    optional     /lib/security/pam_console.so
+	auth       required     /lib/security/pam_securetty.so
+	auth       sufficient   /lib/security/pam_winbind.so
+	auth       sufficient   /lib/security/pam_unix.so use_first_pass
+	auth       required     /lib/security/pam_stack.so service=system-auth
+	auth       required     /lib/security/pam_nologin.so
+	account    sufficient   /lib/security/pam_winbind.so
+	account    required     /lib/security/pam_stack.so service=system-auth
+	password   required     /lib/security/pam_stack.so service=system-auth
+	session    required     /lib/security/pam_stack.so service=system-auth
+	session    optional     /lib/security/pam_console.so
 </programlisting></para>
 
 <para>
@@ -1006,65 +1011,65 @@ nearly impossible to boot.
 </para>
 
 <para><programlisting>
-#
-#ident	"@(#)pam.conf	1.14	99/09/16 SMI"
-#
-# Copyright (c) 1996-1999, Sun Microsystems, Inc.
-# All Rights Reserved.
-#
-# PAM configuration
-#
-# Authentication management
-#
-login   auth required   /usr/lib/security/pam_winbind.so
-login	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass 
-login	auth required 	/usr/lib/security/$ISA/pam_dial_auth.so.1 try_first_pass 
-#
-rlogin  auth sufficient /usr/lib/security/pam_winbind.so
-rlogin  auth sufficient /usr/lib/security/$ISA/pam_rhosts_auth.so.1
-rlogin	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
-#
-dtlogin auth sufficient /usr/lib/security/pam_winbind.so
-dtlogin	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
-#
-rsh	auth required	/usr/lib/security/$ISA/pam_rhosts_auth.so.1
-other   auth sufficient /usr/lib/security/pam_winbind.so
-other	auth required	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
-#
-# Account management
-#
-login   account sufficient      /usr/lib/security/pam_winbind.so
-login	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
-login	account required	/usr/lib/security/$ISA/pam_unix.so.1 
-#
-dtlogin account sufficient      /usr/lib/security/pam_winbind.so
-dtlogin	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
-dtlogin	account required	/usr/lib/security/$ISA/pam_unix.so.1 
-#
-other   account sufficient      /usr/lib/security/pam_winbind.so
-other	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
-other	account required	/usr/lib/security/$ISA/pam_unix.so.1 
-#
-# Session management
-#
-other	session required	/usr/lib/security/$ISA/pam_unix.so.1 
-#
-# Password management
-#
-#other   password sufficient     /usr/lib/security/pam_winbind.so
-other	password required	/usr/lib/security/$ISA/pam_unix.so.1 
-dtsession auth required	/usr/lib/security/$ISA/pam_unix.so.1
-#
-# Support for Kerberos V5 authentication (uncomment to use Kerberos)
-#
-#rlogin	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
-#login	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
-#dtlogin	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
-#other	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
-#dtlogin	account optional /usr/lib/security/$ISA/pam_krb5.so.1
-#other	account optional /usr/lib/security/$ISA/pam_krb5.so.1
-#other	session optional /usr/lib/security/$ISA/pam_krb5.so.1
-#other	password optional /usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+	#
+	#ident	"@(#)pam.conf	1.14	99/09/16 SMI"
+	#
+	# Copyright (c) 1996-1999, Sun Microsystems, Inc.
+	# All Rights Reserved.
+	#
+	# PAM configuration
+	#
+	# Authentication management
+	#
+	login   auth required   /usr/lib/security/pam_winbind.so
+	login	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass 
+	login	auth required 	/usr/lib/security/$ISA/pam_dial_auth.so.1 try_first_pass 
+	#
+	rlogin  auth sufficient /usr/lib/security/pam_winbind.so
+	rlogin  auth sufficient /usr/lib/security/$ISA/pam_rhosts_auth.so.1
+	rlogin	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
+	#
+	dtlogin auth sufficient /usr/lib/security/pam_winbind.so
+	dtlogin	auth required 	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
+	#
+	rsh	auth required	/usr/lib/security/$ISA/pam_rhosts_auth.so.1
+	other   auth sufficient /usr/lib/security/pam_winbind.so
+	other	auth required	/usr/lib/security/$ISA/pam_unix.so.1 try_first_pass
+	#
+	# Account management
+	#
+	login   account sufficient      /usr/lib/security/pam_winbind.so
+	login	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
+	login	account required	/usr/lib/security/$ISA/pam_unix.so.1 
+	#
+	dtlogin account sufficient      /usr/lib/security/pam_winbind.so
+	dtlogin	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
+	dtlogin	account required	/usr/lib/security/$ISA/pam_unix.so.1 
+	#
+	other   account sufficient      /usr/lib/security/pam_winbind.so
+	other	account requisite	/usr/lib/security/$ISA/pam_roles.so.1 
+	other	account required	/usr/lib/security/$ISA/pam_unix.so.1 
+	#
+	# Session management
+	#
+	other	session required	/usr/lib/security/$ISA/pam_unix.so.1 
+	#
+	# Password management
+	#
+	#other   password sufficient     /usr/lib/security/pam_winbind.so
+	other	password required	/usr/lib/security/$ISA/pam_unix.so.1 
+	dtsession auth required	/usr/lib/security/$ISA/pam_unix.so.1
+	#
+	# Support for Kerberos V5 authentication (uncomment to use Kerberos)
+	#
+	#rlogin	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+	#login	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+	#dtlogin	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+	#other	auth optional	/usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
+	#dtlogin	account optional /usr/lib/security/$ISA/pam_krb5.so.1
+	#other	account optional /usr/lib/security/$ISA/pam_krb5.so.1
+	#other	session optional /usr/lib/security/$ISA/pam_krb5.so.1
+	#other	password optional /usr/lib/security/$ISA/pam_krb5.so.1 try_first_pass
 </programlisting></para>
 
 <para>

@@ -310,7 +310,7 @@ Under MS Windows 200x/XP this is done using the Microsoft Managment Console (MMC
 
 <para>
 With a Samba Domain Controller, the new tools for managing of user account and policy information includes:
-<filename>smbpasswd, pdbedit, smbgroupedit, net, rpcclient.</filename>. The administrator should read the
+<filename>smbpasswd, pdbedit, net, rpcclient.</filename>. The administrator should read the
 man pages for these tools and become familiar with their use.
 </para>
 

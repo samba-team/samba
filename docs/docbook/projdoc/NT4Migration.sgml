@@ -79,19 +79,19 @@ What are the features that Samba-3 can NOT provide?
 
 <itemizedlist>
 <listitem>
-	<para>Active Directory Server<para>
+	<para>Active Directory Server</para>
 </listitem>
 <listitem>
-	<para>Group Policy Objects (in Active Direcrtory)<para>
+	<para>Group Policy Objects (in Active Direcrtory)</para>
 </listitem>
 <listitem>
-	<para>Machine Policy objects<para>
+	<para>Machine Policy objects</para>
 </listitem>
 <listitem>
-	<para>Logon Scripts in Active Directorty<para>
+	<para>Logon Scripts in Active Directorty</para>
 </listitem>
 <listitem>
-	<para>Software Application and Access Controls in Active Directory<para>
+	<para>Software Application and Access Controls in Active Directory</para>
 </listitem>
 </itemizedlist>
 
@@ -309,7 +309,7 @@ Samba-3 set up as a DC with netlogon share, profile share, etc.
 
 	<step><para>initGrps.sh DOMNAME</para></step>
 
-	<step><para>smbgroupedit -v</para>
+	<step><para>net groupmap list</para>
 		<substeps><step><para>Now check that all groups are recognised</para></step></substeps>
 	</step>
 
@@ -469,7 +469,7 @@ Logon Scripts (Know how they work)
 
 User and Group mapping to Unix/Linux
 	username map facility may be needed
-	Use smbgroupedit to connect NT4 groups to Unix groups
+	Use 'net groupmap' to connect NT4 groups to Unix groups
 	Use pdbedit to set/change user configuration
 NOTE:
 If migrating to LDAP back end it may be easier to dump initial LDAP database to LDIF, then edit, then reload into LDAP
@@ -489,13 +489,15 @@ Migration Tools
 	Profiles, Policies, Access Controls, Security
 
 Migration Tools
-	Samba: net, rpcclient, smbpasswd, pdbedit, smbgroupedit, profiles
+	Samba: net, rpcclient, smbpasswd, pdbedit, profiles
 	Windows: NT4 Domain User Manager, Server Manager (NEXUS)
 
 Authentication
 	New SAM back end (smbpasswd, tdbsam, ldapsam, mysqlsam)
 </programlisting>
 </para>
+
+</sect2>
 
 </sect1>
 
