@@ -837,11 +837,6 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 			  if (resolve_hosts(name, return_iplist, return_count)) {
 				  result = True;
 				  goto done;
-			  } else {
-
-				  /* Store negative lookup result */
-
-				  namecache_store(name, name_type, 0, NULL);
 			  }
 		  }
 	  } else if(strequal( tok, "lmhosts")) {
@@ -916,7 +911,10 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   }
  
   /* Save in name cache */
-
+  for (i = 0; i < *return_count && DEBUGLEVEL == 100; i++)
+    DEBUG(100, ("Storing name %s of type %d (ip: %s)\n", name,
+                name_type, inet_ntoa(*return_iplist[i])));
+    
   namecache_store(name, name_type, *return_count, *return_iplist);
 
   /* Display some debugging info */

@@ -1367,6 +1367,117 @@ BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
 	return True;
 }
 
+
+#define IPSTR_LIST_SEP	","
+
+/**
+ * Add ip string representation to ipstr list. Used also
+ * as part of @function ipstr_list_make
+ *
+ * @param ipstr_list pointer to string containing ip list;
+ *        MUST BE already allocated and IS reallocated if necessary
+ * @param ipstr_size pointer to current size of ipstr_list (might be changed
+ *        as a result of reallocation)
+ * @param ip IP address which is to be added to list
+ * @return pointer to string appended with new ip and possibly
+ *         reallocated to new length
+ **/
+
+char* ipstr_list_add(char** ipstr_list, const struct in_addr *ip)
+{
+	char* new_ipstr = NULL;
+	
+	/* arguments checking */
+	if (!ipstr_list || !ip) return NULL;
+
+	/* attempt to convert ip to a string and append colon separator to it */
+	if (*ipstr_list) {
+		asprintf(&new_ipstr, "%s%s%s", *ipstr_list, IPSTR_LIST_SEP,inet_ntoa(*ip));
+		SAFE_FREE(*ipstr_list);
+	} else {
+		asprintf(&new_ipstr, "%s", inet_ntoa(*ip));
+	}
+	*ipstr_list = new_ipstr;
+	return *ipstr_list;
+}
+
+
+/**
+ * Allocate and initialise an ipstr list using ip adresses
+ * passed as arguments.
+ *
+ * @param ipstr_list pointer to string meant to be allocated and set
+ * @param ip_list array of ip addresses to place in the list
+ * @param ip_count number of addresses stored in ip_list
+ * @return pointer to allocated ip string
+ **/
+ 
+char* ipstr_list_make(char** ipstr_list, const struct in_addr* ip_list, int ip_count)
+{
+	int i;
+	
+	/* arguments checking */
+	if (!ip_list && !ipstr_list) return 0;
+
+	*ipstr_list = NULL;
+	
+	/* process ip addresses given as arguments */
+	for (i = 0; i < ip_count; i++)
+		*ipstr_list = ipstr_list_add(ipstr_list, &ip_list[i]);
+	
+	return (*ipstr_list);
+}
+
+
+/**
+ * Parse given ip string list into array of ip addresses
+ * (as in_addr structures)
+ *
+ * @param ipstr ip string list to be parsed 
+ * @param ip_list pointer to array of ip addresses which is
+ *        allocated by this function and must be freed by caller
+ * @return number of succesfully parsed addresses
+ **/
+ 
+int ipstr_list_parse(const char* ipstr_list, struct in_addr** ip_list)
+{
+	fstring token_str;
+	int count;
+
+	if (!ipstr_list || !ip_list) return 0;
+	
+	for (*ip_list = NULL, count = 0;
+	     next_token(&ipstr_list, token_str, IPSTR_LIST_SEP, FSTRING_LEN);
+	     count++) {
+	     
+		struct in_addr addr;
+
+		/* convert single token to ip address */
+		if (!inet_aton(token_str, &addr)) break;
+		
+		/* prepare place for another in_addr structure */
+		*ip_list = Realloc(*ip_list, (count + 1) * sizeof(struct in_addr));
+		if (!*ip_list) return -1;
+		
+		(*ip_list)[count] = addr;
+	}
+	
+	return count;
+}
+
+
+/**
+ * Safely free ip string list
+ *
+ * @param ipstr_list ip string list to be freed
+ **/
+
+void ipstr_list_free(char* ipstr_list)
+{
+	SAFE_FREE(ipstr_list);
+}
+
+
 /***********************************************************
  Unescape a URL encoded string, in place.
 ***********************************************************/
