@@ -337,7 +337,7 @@ NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 PICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
-LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.0=.po)
+LIBSMBCLIENT_PICOBJS = $(LIBSMBCLIENT_OBJ:.o=.po)
 
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
                pam_smbpass/pam_smb_acct.o pam_smbpass/support.o \
