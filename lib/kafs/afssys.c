@@ -10,6 +10,7 @@ RCSID("$Id$");
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
+#include <sys/syscall.h>
 
 #include <signal.h>
 #include <setjmp.h>
@@ -328,7 +329,9 @@ k_pioctl(char *a_path,
 #endif
 
   errno = ENOSYS;
+#ifdef SIGSYS
   kill(getpid(), SIGSYS);	/* You loose! */
+#endif
   return -1;
 }
 
@@ -364,11 +367,15 @@ k_setpag(void)
 #endif
 
   errno = ENOSYS;
+#ifdef SIGSYS
   kill(getpid(), SIGSYS);	/* You loose! */
+#endif
   return -1;
 }
 
 static jmp_buf catch_SIGSYS;
+
+#ifdef SIGSYS
 
 static void
 SIGSYS_handler(int sig)
@@ -377,6 +384,8 @@ SIGSYS_handler(int sig)
   signal(SIGSYS, SIGSYS_handler); /* Need to reinstall handler on SYSV */
   longjmp(catch_SIGSYS, 1);
 }
+
+#endif
 
 int
 k_hasafs(void)
@@ -400,7 +409,9 @@ k_hasafs(void)
   memset(&parms, 0, sizeof(parms));
   
   saved_errno = errno;
+#ifdef SIGSYS
   saved_func = signal(SIGSYS, SIGSYS_handler);
+#endif
 
 #ifdef AFS_SYSCALL
   if (setjmp(catch_SIGSYS) == 0)
@@ -454,7 +465,9 @@ k_hasafs(void)
 #endif
 
  done:
+#ifdef SIGSYS
   (void) signal(SIGSYS, saved_func);
+#endif
   errno = saved_errno;
   return afs_entry_point != NO_ENTRY_POINT;
 }
