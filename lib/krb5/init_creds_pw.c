@@ -181,7 +181,7 @@ print_expire (krb5_context context,
 	    time_t tmp = lr->val[i].lr_value;
 	    
 	    asprintf (&p, "Your password will expire at %s", ctime(&tmp));
-	    (*prompter) (context, data, p, 0, NULL);
+	    (*prompter) (context, data, NULL, p, 0, NULL);
 	    free (p);
 	    return;
 	}
@@ -193,7 +193,7 @@ print_expire (krb5_context context,
 	time_t t = *rep->enc_part.key_expiration;
 
 	asprintf (&p, "Your password/account will expire at %s", ctime(&t));
-	(*prompter) (context, data, p, 0, NULL);
+	(*prompter) (context, data, NULL, p, 0, NULL);
 	free (p);
     }
 }
@@ -284,7 +284,7 @@ change_password (krb5_context context,
 		 void *data,
 		 krb5_get_init_creds_opt *old_options)
 {
-    krb5_prompt prompt;
+    krb5_prompt prompts[2];
     krb5_error_code ret;
     krb5_creds cpw_cred;
     char buf1[BUFSIZ], buf2[BUFSIZ];
@@ -325,27 +325,31 @@ change_password (krb5_context context,
 	password_data.data   = buf1;
 	password_data.length = sizeof(buf1);
 
-	prompt.hidden = 1;
-	prompt.prompt = "New password: ";
-	prompt.reply  = &password_data;
-
-	ret = (*prompter) (context, data, "Changing password", 1, &prompt);
-	if (ret)
-	    goto out;
+	prompts[0].hidden = 1;
+	prompts[0].prompt = "New password: ";
+	prompts[0].reply  = &password_data;
+	prompts[0].type   = KRB5_PROMPT_TYPE_NEW_PASSWORD;
 
 	password_data.data   = buf2;
 	password_data.length = sizeof(buf2);
 
-	prompt.hidden = 1;
-	prompt.prompt = "Repeat new password: ";
-	prompt.reply  = &password_data;
+	prompts[1].hidden = 1;
+	prompts[1].prompt = "Repeat new password: ";
+	prompts[1].reply  = &password_data;
+	prompts[1].type   = KRB5_PROMPT_TYPE_NEW_PASSWORD_AGAIN;
 
-	ret = (*prompter) (context, data, "Changing password", 1, &prompt);
-	if (ret)
+	ret = (*prompter) (context, data, NULL, "Changing password",
+			   2, prompts);
+	if (ret) {
+	    memset (buf1, 0, sizeof(buf1));
+	    memset (buf2, 0, sizeof(buf2));
 	    goto out;
+	}
 
 	if (strcmp (buf1, buf2) == 0)
 	    break;
+	memset (buf1, 0, sizeof(buf1));
+	memset (buf2, 0, sizeof(buf2));
     }
     
     ret = krb5_change_password (context,
@@ -361,7 +365,7 @@ change_password (krb5_context context,
 	      (int)result_string.length,
 	      (char*)result_string.data);
 
-    ret = (*prompter) (context, data, p, 0, NULL);
+    ret = (*prompter) (context, data, NULL, p, 0, NULL);
     free (p);
     if (result_code == 0) {
 	strlcpy (newpw, buf1, newpw_sz);
@@ -418,8 +422,9 @@ krb5_get_init_creds_password(krb5_context context,
 	password_data.length = sizeof(buf);
 	prompt.hidden = 1;
 	prompt.reply  = &password_data;
+	prompt.type   = KRB5_PROMPT_TYPE_PASSWORD;
 
-	ret = (*prompter) (context, data, NULL, 1, &prompt);
+	ret = (*prompter) (context, data, NULL, NULL, 1, &prompt);
 	free (prompt.prompt);
 	if (ret) {
 	    memset (buf, 0, sizeof(buf));
