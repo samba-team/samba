@@ -2,6 +2,10 @@
 
 	* Release 0.2r
 
+2000-04-03  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/Makefile.am: set version to 10:0:0
+	
 2000-03-30  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/principal.c (krb5_425_conv_principal_ext): add some

@@ -1,3 +1,7 @@
+2000-04-03  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: set version to 8:0:3
+
 2000-03-11  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in (_SS_PAD1SIZE): try to write an inpenetrable
