@@ -794,7 +794,7 @@ static struct cli_state *connect_one(const char *share)
 	}
 	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);
 	
-	poptSetOtherOptionHelp(pc, "//server1/share1 filename [options]");
+	poptSetOtherOptionHelp(pc, "//server1/share1 filename");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
