@@ -9,10 +9,11 @@ libroken_la_LDFLAGS = -version-info 3:2:0
 
 noinst_PROGRAMS = make-roken make-print-version
 
-check_PROGRAMS = parse_bytes-test
-TESTS = parse_bytes-test
+check_PROGRAMS = parse_bytes-test strpftime-test
+TESTS = $(check_PROGRAMS)
 
 parse_bytes_test_LDADD = libroken.la
+strpftime_test_LDADD = strftime.o strptime.o
 
 if KRB4
 if KRB5
@@ -107,6 +108,7 @@ EXTRA_libroken_la_SOURCES =	\
 	strncasecmp.c		\
 	strndup.c		\
 	strnlen.c		\
+	strptime.c		\
 	strsep.c		\
 	strtok_r.c		\
 	strupr.c		\
