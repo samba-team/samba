@@ -5377,10 +5377,11 @@
 			<listitem><para><command>ldapsam_nua</command> - The LDAP based passdb 
                         backend, with non unix account support.  Takes an LDAP URL as an optional argument (defaults to 
                         <command>ldap://localhost</command>)</para>
-		        <para>Note:  In this module, any account
-                        without a matching POSIX account is regarded
-                        as 'non unix'.
-                        <para>See also <link linkend="NONUNIXACCOUNTRANGE">
+
+		        <para>Note:  In this module, any account without a matching POSIX account is regarded
+                        as 'non unix'.  </para>
+
+			<para>See also <link linkend="NONUNIXACCOUNTRANGE">
                         <parameter>non unix account
                         range</parameter></link></para>
 	                
@@ -5650,6 +5651,12 @@
 		doing a query for the name <constant>WORKGROUP&lt;1C&gt;</constant> 
 		and then contacting each server returned in the list of IP 
 		addresses from the name resolution source. </para>
+
+		<para>If the list of servers contains both names and the '*'
+		character, the list is treated as a list of preferred 
+		domain controllers, but an auto lookup of all remaining DC's
+		will be added to the list as well.  Samba will not attempt to optimize 
+		this list by locating the closest DC.</para>
 		
 		<para>If the <parameter>security</parameter> parameter is 
 		set to <constant>server</constant>, then there are different
@@ -5677,7 +5684,7 @@
 
 		<para>Default: <command>password server = &lt;empty string&gt;</command>
 		</para>
-		<para>Example: <command>password server = NT-PDC, NT-BDC1, NT-BDC2
+		<para>Example: <command>password server = NT-PDC, NT-BDC1, NT-BDC2, *
 		</command></para>
 		<para>Example: <command>password server = *</command></para>
 		</listitem>
@@ -6547,7 +6554,7 @@
 		<listitem><para>This is a integer parameter, and
 		mirrors as much as possible the functinality the
 		<constant>RestrictAnonymous</constant>
-                registry key does on NT/Win2k.  
+                registry key does on NT/Win2k.  </para>
 
 		<para>Default: <command>restrict anonymous = 0</command></para>
 		</listitem>

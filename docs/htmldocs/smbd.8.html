@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >smbd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMBD"
-></A
->smbd</H1
+NAME="SMBD">smbd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -29,20 +28,18 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >smbd</B
->  [-D] [-a] [-i] [-o] [-P] [-h] [-V] [-b] [-d &lt;debug level&gt;] [-l &lt;log directory&gt;] [-p &lt;port number&gt;] [-O &lt;socket option&gt;] [-s &lt;configuration file&gt;]</P
+> [-D] [-i] [-h] [-V] [-b] [-d &#60;debug level&#62;] [-l &#60;log directory&#62;] [-p &#60;port number&#62;] [-O &#60;socket option&#62;] [-s &#60;configuration file&#62;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN24"
+NAME="AEN21"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -107,7 +104,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN38"
+NAME="AEN35"
 ></A
 ><H2
 >OPTIONS</H2
@@ -137,14 +134,6 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->-a</DT
-><DD
-><P
->If this parameter is specified, each new 
-		connection will append log messages to the log file.  
-		This is the default.</P
-></DD
-><DT
 >-i</DT
 ><DD
 ><P
@@ -154,29 +143,6 @@ CLASS="COMMAND"
 		parameter negates the implicit deamon mode when run from the
 		command line.
 		</P
-></DD
-><DT
->-o</DT
-><DD
-><P
->If this parameter is specified, the 
-		log files will be overwritten when opened.  By default, 
-		<B
-CLASS="COMMAND"
->smbd</B
-> will append entries to the log 
-		files.</P
-></DD
-><DT
->-P</DT
-><DD
-><P
->Passive option. Causes <B
-CLASS="COMMAND"
->smbd</B
-> not to 
-		send any network traffic out. Used for debugging by 
-		the developers only.</P
 ></DD
 ><DT
 >-h</DT
@@ -189,7 +155,7 @@ CLASS="COMMAND"
 >.</P
 ></DD
 ><DT
->-v</DT
+>-V</DT
 ><DD
 ><P
 >Prints the version number for 
@@ -206,7 +172,7 @@ CLASS="COMMAND"
 		Samba was built.</P
 ></DD
 ><DT
->-d &lt;debug level&gt;</DT
+>-d &#60;debug level&#62;</DT
 ><DD
 ><P
 ><TT
@@ -247,7 +213,7 @@ CLASS="FILENAME"
 > file.</P
 ></DD
 ><DT
->-l &lt;log directory&gt;</DT
+>-l &#60;log directory&#62;</DT
 ><DD
 ><P
 >If specified,
@@ -273,12 +239,9 @@ TARGET="_top"
 CLASS="FILENAME"
 >		smb.conf(5)</TT
 ></A
-> file. <SPAN
-CLASS="emphasis"
-><I
+> file. <I
 CLASS="EMPHASIS"
 >Beware:</I
-></SPAN
 >
 		If the directory specified does not exist, <B
 CLASS="COMMAND"
@@ -291,7 +254,7 @@ CLASS="COMMAND"
 		compile time.</P
 ></DD
 ><DT
->-O &lt;socket options&gt;</DT
+>-O &#60;socket options&#62;</DT
 ><DD
 ><P
 >See the <A
@@ -310,7 +273,7 @@ CLASS="FILENAME"
 > file for details.</P
 ></DD
 ><DT
->-p &lt;port number&gt;</DT
+>-p &#60;port number&#62;</DT
 ><DD
 ><P
 ><TT
@@ -341,7 +304,7 @@ CLASS="REPLACEABLE"
 		in the above situation.</P
 ></DD
 ><DT
->-s &lt;configuration file&gt;</DT
+>-s &#60;configuration file&#62;</DT
 ><DD
 ><P
 >The file specified contains the 
@@ -366,7 +329,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN122"
+NAME="AEN105"
 ></A
 ><H2
 >FILES</H2
@@ -478,7 +441,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN158"
+NAME="AEN141"
 ></A
 ><H2
 >LIMITATIONS</H2
@@ -497,7 +460,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN162"
+NAME="AEN145"
 ></A
 ><H2
 >ENVIRONMENT VARIABLES</H2
@@ -528,7 +491,7 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN171"
+NAME="AEN154"
 ></A
 ><H2
 >PAM INTERACTION</H2
@@ -549,13 +512,10 @@ TARGET="_top"
 ><UL
 ><LI
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Account Validation</I
-></SPAN
->:  All acccesses to a 
+>:  All accesses to a 
 	samba server are checked 
 	against PAM to see if the account is vaild, not disabled and is permitted to 
 	login at this time.  This also applies to encrypted logins.
@@ -563,12 +523,9 @@ CLASS="EMPHASIS"
 ></LI
 ><LI
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Session Management</I
-></SPAN
 >:  When not using share 
 	level secuirty, users must pass PAM's session checks before access 
 	is granted.  Note however, that this is bypassed in share level secuirty.  
@@ -581,18 +538,18 @@ CLASS="EMPHASIS"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN182"
+NAME="AEN165"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
+>This man page is correct for version 3.0 of 
 	the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN185"
+NAME="AEN168"
 ></A
 ><H2
 >DIAGNOSTICS</H2
@@ -615,7 +572,7 @@ NAME="AEN185"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN190"
+NAME="AEN173"
 ></A
 ><H2
 >SIGNALS</H2
@@ -637,12 +594,9 @@ CLASS="COMMAND"
 	that <B
 CLASS="COMMAND"
 >SIGKILL (-9)</B
-> <SPAN
-CLASS="emphasis"
-><I
+> <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > 
 	be used, except as a last resort, as this may leave the shared
 	memory area in an inconsistent state. The safe way to terminate 
@@ -684,7 +638,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN207"
+NAME="AEN190"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -750,7 +704,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN224"
+NAME="AEN207"
 ></A
 ><H2
 >AUTHOR</H2

@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WINBINDD" "8" "01 October 2002" "" ""
+.TH "WINBINDD" "8" "26 November 2002" "" ""
 .SH NAME
 winbindd \- Name Service Switch daemon for resolving names  from NT servers
 .SH SYNOPSIS
 
-\fBwinbindd\fR [ \fB-i\fR ] [ \fB-d <debug level>\fR ] [ \fB-s <smb config file>\fR ]
+\fBwinbindd\fR [ \fB-i\fR ] [ \fB-B\fR ] [ \fB-d <debug level>\fR ] [ \fB-s <smb config file>\fR ] [ \fB-n\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -85,6 +85,25 @@ Tells \fBwinbindd\fR to not
 become a daemon and detach from the current terminal. This 
 option is used by developers when interactive debugging 
 of \fBwinbindd\fR is required. 
+.TP
+\fB-n\fR
+Disable caching. This means winbindd will 
+always have to wait for a response from the domain controller 
+before it can respond to a client and this thus makes things 
+slower. The results will however be more accurate, since 
+results from the cache might not be up-to-date. This 
+might also temporarily hang winbindd if the DC doesn't respond.
+.TP
+\fB-B\fR
+Dual daemon mode. This means winbindd will run 
+as 2 threads. The first will answer all requests from the cache, 
+thus making responses to clients faster. The other will 
+update the cache for the query that the first has just responded. 
+Advantage of this is that responses are accurate and fast.
+.TP
+\fB-s|--conf=smb.conf\fR
+Specifies the location of the all-important
+\fIsmb.conf\fR file. 
 .SH "NAME AND ID RESOLUTION"
 .PP
 Users and groups on a Windows NT server are assigned 
@@ -291,7 +310,7 @@ This directory is by default \fI/usr/local/samba/var/locks
 Storage for cached user and group information.
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of
+This man page is correct for version 3.0 of
 the Samba suite.
 .SH "SEE ALSO"
 .PP

@@ -3,12 +3,12 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "PDBEDIT" "8" "01 October 2002" "" ""
+.TH "PDBEDIT" "8" "26 November 2002" "" ""
 .SH NAME
 pdbedit \- manage the SAM database
 .SH SYNOPSIS
 
-\fBpdbedit\fR [ \fB-l\fR ] [ \fB-v\fR ] [ \fB-w\fR ] [ \fB-u username\fR ] [ \fB-f fullname\fR ] [ \fB-h homedir\fR ] [ \fB-d drive\fR ] [ \fB-s script\fR ] [ \fB-p profile\fR ] [ \fB-a\fR ] [ \fB-m\fR ] [ \fB-x\fR ] [ \fB-i passdb-backend\fR ] [ \fB-e passdb-backend\fR ] [ \fB-b passdb-backend\fR ] [ \fB-D debuglevel\fR ]
+\fBpdbedit\fR [ \fB-l\fR ] [ \fB-v\fR ] [ \fB-w\fR ] [ \fB-u username\fR ] [ \fB-f fullname\fR ] [ \fB-h homedir\fR ] [ \fB-D drive\fR ] [ \fB-S script\fR ] [ \fB-p profile\fR ] [ \fB-a\fR ] [ \fB-m\fR ] [ \fB-x\fR ] [ \fB-i passdb-backend\fR ] [ \fB-e passdb-backend\fR ] [ \fB-b passdb-backend\fR ] [ \fB-d debuglevel\fR ] [ \fB-s configfile\fR ] [ \fB-P account-policy\fR ] [ \fB-V value\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -108,14 +108,14 @@ directory network path.
 
 Example: \fB-h "\\\\\\\\BERSERKER\\\\sorce"\fR
 .TP
-\fB-d drive\fR
+\fB-D drive\fR
 This option can be used while adding or
 modifing a user account. It will specify the windows drive
 letter to be used to map the home directory.
 
 Example: \fB-d "H:"\fR
 .TP
-\fB-s script\fR
+\fB-S script\fR
 This option can be used while adding or
 modifing a user account. It will specify the user's logon
 script path.
@@ -181,6 +181,35 @@ Example: \fBpdbedit -e smbpasswd:/root/samba-users.backup\fR
 Use a different default passdb backend. 
 
 Example: \fBpdbedit -b xml:/root/pdb-backup.xml -l\fR
+.TP
+\fB-P account-policy\fR
+Display an account policy
+
+Valid policies are: minimum password age, reset count minutes, disconnect time,
+user must logon to change password, password history, lockout duration, min password length,
+maximum password age and bad lockout attempt.
+
+Example: \fBpdbedit -P "bad lockout attempt"\fR
+
+
+.nf
+		account policy value for bad lockout attempt is 0
+		
+.fi
+.TP
+\fB-V account-policy-value\fR
+Sets an account policy to a specified value. 
+This option may only be used in conjunction
+with the \fI-P\fR option.
+
+Example: \fBpdbedit -P "bad lockout attempt" -V 3\fR
+
+
+.nf
+		account policy value for bad lockout attempt was 0
+		account policy value for bad lockout attempt is now 3
+		
+.fi
 .SH "NOTES"
 .PP
 This command may be used only by root.
