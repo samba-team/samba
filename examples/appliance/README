@@ -39,15 +39,14 @@ for appliance printing support also do this:
 PACKAGING
 ---------
 
-- Checkout the Samba CVS head branch into a directory call samba-appliance-0.1/head
+- Checkout the Samba CVS head branch into a directory call 
+  samba-appliance-0.2/head
 
 - Checkout the source subdirectory of the Samba CVS SAMBA_TNG branch
-  into a directory call samba-appliance-0.1/tng
+  into a directory call samba-appliance-0.2/tng
 
-- Copy Makefile to samba-appliance-0.1/
+- Copy Makefile and smb.conf-appliance to samba-appliance-0.2/
 
 - run build.sh
 
-That should build source and binary RPMs in /tmp/RPMS and /tmp/SRPMS
-
-
+That should build source and binary RPMs in /usr/src/redhat/{RPMS,SRPMS}

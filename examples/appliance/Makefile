@@ -1,5 +1,5 @@
 PREFIX=/usr/local/samba
-CONFIGOPTS=--with-pam --prefix=$(PREFIX)
+CONFIGOPTS=--with-pam --prefix=$(PREFIX) --with-smbmount
 
 
 all: headb tngb
