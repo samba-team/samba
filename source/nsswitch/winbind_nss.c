@@ -51,7 +51,6 @@ static int open_root_pipe_sock(void)
     static pid_t our_pid;
     struct stat st;
     pstring path;
-    int retries;
 
     if (our_pid != getpid()) {
         if (established_socket != -1) {
@@ -110,42 +109,12 @@ static int open_root_pipe_sock(void)
         return -1;
     }
 
-#define WINBINDD_MAX_RETRIES    15
-#define WINBINDD_RETRY_TIMEOUT  1
-
-    retries = 0;
-    
-    while (1) {
-        if (connect(established_socket, (struct sockaddr *)&sunaddr, 
-                    sizeof(sunaddr)) == -1) {
-
-            /* A real socket error occured */
-
-            if (errno != ECONNREFUSED)  {
-                close_sock();
-                return -1;
-            }
-
-            /* If we got a connection refused, wait around a bit before
-               declaring we can't get things going. */
-
-            retries++;
-
-            if (retries > WINBINDD_MAX_RETRIES) {
-                close_sock();
-                return -1;
-            }
-
-            sleep(WINBINDD_RETRY_TIMEOUT);
-
-        } else {
-
-            /* Connection OK */
-
-            break;
-        }
+    if (connect(established_socket, (struct sockaddr *)&sunaddr, 
+                sizeof(sunaddr)) == -1) {
+        close_sock();
+        return -1;
     }
-
+        
     return established_socket;
 }
 
