@@ -115,7 +115,7 @@
 		case(5) spoolss_PrinterInfo5 info5;
 		case(6) spoolss_PrinterInfo6 info6;
 		case(7) spoolss_PrinterInfo7 info7;
-	} spoolss_PrinterEnum;
+	} spoolss_PrinterInfo;
 
 	WERROR spoolss_EnumPrinters(
 		[in]	     uint32 flags,
@@ -176,13 +176,11 @@
 
 	/******************/
 	/* Function: 0x08 */
-	NTSTATUS spoolss_GetPrinter(
-		[in,ref] policy_handle *handle,
-		[in]	 uint32 level,
-		[in,out] uint8_buf *buffer,
-		[in]     uint32 offered,
-		[out]	 uint32 needed,
-		[out]	 uint32 returned
+	WERROR spoolss_GetPrinter(
+		[in,ref]     policy_handle *handle,
+		[in]	     uint32 level,
+		[in,out]     DATA_BLOB *buffer,
+		[in,out,ref] uint32 *buf_size
 		);
 
 	/******************/
@@ -289,8 +287,8 @@
 
 	/******************/
 	/* Function: 0x1d */
-	NTSTATUS spoolss_ClosePrinter(
-		[in,out,ref] policy_handle *handle
+	WERROR spoolss_ClosePrinter(
+		[in,out,ref]     policy_handle *handle
 		);
 
 	/******************/
@@ -513,7 +511,7 @@
 
 	/******************/
 	/* Function: 0x45 */
-	NTSTATUS spoolss_OpenPrinterEx(
+	WERROR spoolss_OpenPrinterEx(
 		[in]                  unistr *printername,
 		[in]                  unistr *datatype,
 		[in]	              spoolss_DevmodeContainer devmode_ctr,

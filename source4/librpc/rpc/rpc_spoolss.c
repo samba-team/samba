@@ -105,16 +105,10 @@ NTSTATUS dcerpc_spoolss_07(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct sp
 
 NTSTATUS dcerpc_spoolss_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_GetPrinter *r)
 {
-	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SPOOLSS_GETPRINTER, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_spoolss_GetPrinter,
-				    (ndr_pull_fn_t) ndr_pull_spoolss_GetPrinter,
-				    r);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	
-	return r->out.result;
+	return dcerpc_ndr_request(p, DCERPC_SPOOLSS_GETPRINTER, mem_ctx,
+				  (ndr_push_fn_t) ndr_push_spoolss_GetPrinter,
+				  (ndr_pull_fn_t) ndr_pull_spoolss_GetPrinter,
+				  r);
 }
 
 NTSTATUS dcerpc_spoolss_09(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_09 *r)
@@ -399,16 +393,10 @@ NTSTATUS dcerpc_spoolss_1c(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct sp
 
 NTSTATUS dcerpc_spoolss_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_ClosePrinter *r)
 {
-	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SPOOLSS_CLOSEPRINTER, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_spoolss_ClosePrinter,
-				    (ndr_pull_fn_t) ndr_pull_spoolss_ClosePrinter,
-				    r);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	
-	return r->out.result;
+	return dcerpc_ndr_request(p, DCERPC_SPOOLSS_CLOSEPRINTER, mem_ctx,
+				  (ndr_push_fn_t) ndr_push_spoolss_ClosePrinter,
+				  (ndr_pull_fn_t) ndr_pull_spoolss_ClosePrinter,
+				  r);
 }
 
 NTSTATUS dcerpc_spoolss_1e(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_1e *r)
@@ -959,16 +947,10 @@ NTSTATUS dcerpc_spoolss_44(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct sp
 
 NTSTATUS dcerpc_spoolss_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_OpenPrinterEx *r)
 {
-	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SPOOLSS_OPENPRINTEREX, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_spoolss_OpenPrinterEx,
-				    (ndr_pull_fn_t) ndr_pull_spoolss_OpenPrinterEx,
-				    r);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	
-	return r->out.result;
+	return dcerpc_ndr_request(p, DCERPC_SPOOLSS_OPENPRINTEREX, mem_ctx,
+				  (ndr_push_fn_t) ndr_push_spoolss_OpenPrinterEx,
+				  (ndr_pull_fn_t) ndr_pull_spoolss_OpenPrinterEx,
+				  r);
 }
 
 NTSTATUS dcerpc_spoolss_46(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_46 *r)

@@ -533,3 +533,32 @@ NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p,
 	}
 	return NT_STATUS_OK;
 }
+
+
+/*
+  pull a union from a blob using NDR
+*/
+NTSTATUS ndr_pull_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint16 level, void *p,
+			     NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, uint16 *, void *))
+{
+	struct ndr_pull *ndr;
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return fn(ndr, NDR_SCALARS|NDR_BUFFERS, &level, p);
+}
+
+/*
+  pull a struct from a blob using NDR
+*/
+NTSTATUS ndr_pull_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+			      NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, void *))
+{
+	struct ndr_pull *ndr;
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return fn(ndr, NDR_SCALARS|NDR_BUFFERS, p);
+}
