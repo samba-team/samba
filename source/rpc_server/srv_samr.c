@@ -1997,9 +1997,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 
 	pwdb_init_sam(&new_pwd);
 	copy_sam_passwd(&new_pwd, pwd);
-#if 0
 	copy_id23_to_sam_passwd(&new_pwd, id23);
-#endif
 
 	if (!decode_pw_buffer(id23->pass, new_pw, sizeof(new_pw), True))
 	{
@@ -2453,6 +2451,13 @@ static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 	{
 		switch (q_u->switch_value)
 		{
+			case 0x07:
+			{
+				switch_value = 0x7;
+				make_unk_info7(&ctr.info.inf7);
+
+				break;
+			}
 			case 0x06:
 			{
 				switch_value = 0x6;
@@ -2460,10 +2465,10 @@ static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 
 				break;
 			}
-			case 0x07:
+			case 0x03:
 			{
-				switch_value = 0x7;
-				make_unk_info7(&ctr.info.inf7);
+				switch_value = 0x3;
+				make_unk_info3(&ctr.info.inf3);
 
 				break;
 			}
