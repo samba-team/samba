@@ -355,7 +355,6 @@ static void init_srv_share_info_501(pipes_struct *p, SRV_SHARE_INFO_501 *sh501, 
 	pstring net_name;
 	pstring remark;
 	uint32 type;
-	uint32 csc_policy;
 
 	pstrcpy(net_name, lp_servicename(snum));
 	pstrcpy(remark, lp_comment(snum));

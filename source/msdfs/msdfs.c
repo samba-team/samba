@@ -723,7 +723,7 @@ BOOL create_msdfs_link(struct junction_map* jn, BOOL exists)
 	connection_struct conns;
  	connection_struct *conn = &conns;
 	int i=0;
-	BOOL insert_comma;
+	BOOL insert_comma = False;
 
 	if(!junction_to_local_path(jn, path, sizeof(path), conn))
 		return False;
