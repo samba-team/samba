@@ -378,13 +378,9 @@ fatalperror(f, msg)
 
 char editedhost[32];
 
-	void
-edithost(pat, host)
-	register char *pat;
-	register char *host;
+void edithost(char *pat, char *host)
 {
 	register char *res = editedhost;
-	char *strncpy();
 
 	if (!pat)
 		pat = "";
@@ -444,10 +440,7 @@ putchr(cc)
 static char fmtstr[] = { "%l:%M\
 %P on %A, %d %B %Y" };
 
-	void
-putf(cp, where)
-	register char *cp;
-	char *where;
+void putf(char *cp, char *where)
 {
 #ifdef HAVE_UNAME
         struct utsname name;
@@ -455,11 +448,6 @@ putf(cp, where)
 	char *slash;
 	time_t t;
 	char db[100];
-#ifdef	STREAMSPTY
-	extern char *strchr();
-#else
-	extern char *strrchr();
-#endif
 
 /* if we don't have uname, set these to sensible values */
 	char *sysname = "Unix", 

@@ -854,7 +854,9 @@ void doit(struct sockaddr_in *who)
 	(void) gethostname(host_name, sizeof (host_name));
 	hostname = host_name;
 
+#ifndef abs
 #define abs(x) ((x < 0) ? (-x) : x)
+#endif
 
 #define TRIM_HOSTNAME
 #ifdef  TRIM_HOSTNAME
