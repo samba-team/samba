@@ -14,7 +14,7 @@ END {
 	printf("Producing headers...\n");
 	produce_headers("prs_"module".h");
 	printf("Producing parsers...\n");
-	produce_parsers("prs_"module".c");
+	produce_parsers("prs_"module".c", "mod_"module".c");
 	printf("Producing harness...\n");
 	produce_harness("test.h");
 	printf("Done.\n");

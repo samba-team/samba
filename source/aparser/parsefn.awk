@@ -47,6 +47,9 @@ function parse_array(f, v, elnum, flags,
 function parse_element(f, v, elnum, flags,
 		       LOCAL, type, elem)
 {
+	if (elements[elnum,"nowire"] != "") {
+		return;
+	}
 	type = elements[elnum, "type"];
 	if (substr(type,1,1) == ".") return;
 	elem = elements[elnum, "elem"];
@@ -130,6 +133,40 @@ function parse_pointer(f, v, elnum, flags,
 	print_template(f, "prs_pointer.tpl", v);
 }
 
+function parse_scalar_fn(m, v, elnum,
+			LOCAL, elem, type)
+{
+	elem = elements[elnum, "elem"];
+	type = elements[elnum, "type"]
+	xprintf(m, "%s %s", type, elem_name(v, elem));
+	if (type == "union") {
+	} else if (elements[elnum, "array_len"]!="") {
+	} else {
+	}
+}
+
+function parse_pointer_fn(f, v, elnum, flags,
+		       LOCAL, elem)
+{
+	elem = elements[elnum, "elem"];
+	v["ELEM"] = elem_name(v, elem);
+	v["FLAGS"] = flags;
+	xprintf(m, "%s\n", v["ELEM"]);
+}
+
+function parse_scalars_fn(m, v, elnum, flags)
+{
+	if (elements[elnum, "type"] == ".align2") {
+	}
+	else if (elements[elnum, "type"] == ".align4") {
+	}
+	else if (elements[elnum, "ptr"] == "1") {
+		parse_pointer_fn(m, v, elnum, flags);
+	} else {
+		parse_scalar_fn(m, v, elnum, flags);
+	}
+}
+
 function parse_scalars(f, v, elnum, flags)
 {
 	if (elements[elnum, "type"] == ".align2") {
@@ -163,15 +200,20 @@ function parse_buffers(f, v, elnum, flags,
 	}
 }
 
-function struct_parser(f, v, struct_num,
-		       LOCAL, i, n1) 
+function struct_parser(f, m, v, struct_num,
+		       LOCAL, i, n1, f1, num_elems) 
 {
+	f1 = -1;
+	num_elems = structs[struct_num, "num_elems"];
 	v["STRUCTNAME"] = structs[struct_num, "name"];
 	v["FUNCNAME"] = "io_" v["STRUCTNAME"];
 	print_template(f, "fn_start.tpl", v);
 
-	for (n1=0;n1<structs[struct_num, "num_elems"];n1++) {
-		if (elements[structs[struct_num, n1], "type"] == ".trailer") break;
+	for (n1=0;n1<num_elems;n1++) {
+		if (elements[structs[struct_num, n1], "type"] == ".trailer") {
+			f1 = n1;
+			break;
+		}
 	}
 
         # first all the structure pointers, scalars and arrays
@@ -187,7 +229,7 @@ function struct_parser(f, v, struct_num,
 	}
 
 	# and any trailers
-	for (i=n1;i<structs[struct_num, "num_elems"];i++) {
+	for (i=n1;i<num_elems;i++) {
 		parse_scalars(f, v, structs[struct_num, i], "PARSE_SCALARS");
 		parse_buffers(f, v, structs[struct_num, i], "PARSE_BUFFERS");
 	}
@@ -198,9 +240,23 @@ function struct_parser(f, v, struct_num,
 	else {
 		print_template(f, "fn_end0.tpl", v);
 	}
+
+	if (f1 == -1)
+		return;
+
+	xprintf(m, "void fn_%s(\n", v["STRUCTNAME"]);
+
+	for (i=f1+1;i<num_elems;i++) {
+		parse_scalars_fn(m, v, structs[struct_num, i]);
+		if (i != num_elems-1)
+			xprintf(m, ", \n");
+			
+	}
+
+	xprintf(m, ")\n{\n}\n");
 }
 
-function produce_parsers(f,
+function produce_parsers(f, m,
 			 LOCAL, v, i)
 {
 	v["MODULE"]=module;
@@ -208,7 +264,7 @@ function produce_parsers(f,
 	print_template(f, "module_start.tpl", v);
 
 	for (i=0;i < num_structs;i++) {
-		struct_parser(f, v, i);
+		struct_parser(f, m, v, i);
 	}
 
 	print_template(f, "module_end.tpl", v);

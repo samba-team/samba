@@ -1,11 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include "parser.h"
 #include "test.h"
 
 int main(int argc, char *argv[])
@@ -14,7 +6,7 @@ int main(int argc, char *argv[])
 	char *fname, *test;
 	int fd;	
 	struct stat st;
-	prs_struct ps;
+	io_struct ps;
 
 	if (argc < 3) {
 		printf("usage: vluke <structure> <file>\n");
@@ -31,13 +23,13 @@ int main(int argc, char *argv[])
 	}
 	fstat(fd, &st);
 
-	prs_init(&ps, 0, MARSHALL);
+	io_init(&ps, 0, MARSHALL);
 	ps.is_dynamic=True;
-	prs_read(&ps, fd, st.st_size, 0);
+	io_read(&ps, fd, st.st_size, 0);
 	ps.data_offset = 0;	
 	ps.buffer_size = ps.grow_size;
 	ps.io = UNMARSHALL;
-	ret = run_test(test, &ps);
+	ret = run_test(test, &ps, PARSE_SCALARS|PARSE_BUFFERS);
 	printf("\nret=%s\n", ret?"OK":"Bad");
 	printf("Trailer is %d bytes\n\n", ps.grow_size - ps.data_offset);
 	if (ps.grow_size - ps.data_offset > 0) {

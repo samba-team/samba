@@ -51,6 +51,11 @@ function add_element(type, elem, case,
 	}
 	elem_num=num_elements;
 
+	if (substr(elem, 1, 1) == ".") {
+		elem=substr(elem, 2);
+		elements[elem_num, "nowire"]=1;
+	}
+
 	if (substr(elem, 1, 1) == "*") {
 		elem=substr(elem, 2);
 		elements[elem_num, "ptr"]=1;
@@ -185,7 +190,8 @@ function end_function(LOCAL, i)
       i--;
     }
   }
-  add_function_param("[out]", "STATUS", "status");
+  if (return_result!="void")
+    add_function_param("[out]", return_result, "status");
   end_struct();
 }
 

@@ -27,7 +27,7 @@ typedef unsigned char uint8;
 typedef unsigned short uint16;
 typedef unsigned short wchar;
 typedef unsigned uint32;
-typedef char *string;
+typedef char *SMBSTR;
 
 #ifndef _PSTRING
 
@@ -50,7 +50,7 @@ typedef char fstring[FSTRING_LEN];
 #define MAX_STRINGLEN 256
 #define MAX_BUFFERLEN 512
 
-typedef struct _prs_struct 
+typedef struct _io_struct 
 {
 	BOOL io; /* parsing in or out of data stream */
 	/* 
@@ -61,26 +61,32 @@ typedef struct _prs_struct
 	BOOL is_dynamic; /* Do we own this memory or not ? */
 	uint32 data_offset; /* Current working offset into data. */
 	uint32 buffer_size; /* Current size of the buffer. */
-	uint32 grow_size; /* size requested via prs_grow() calls */
+	uint32 grow_size; /* size requested via io_grow() calls */
 	char *data_p; /* The buffer itself. */
-} prs_struct;
+} io_struct;
 
 
-char *prs_mem_get(prs_struct *ps, uint32 extra_size);
-BOOL prs_init(prs_struct *ps, uint32 size, BOOL io);
-void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
-BOOL prs_align(prs_struct *ps, int align);
-BOOL io_align4(prs_struct *ps, int align);
-BOOL io_align2(prs_struct *ps, int align);
+char *io_mem_get(io_struct *ps, uint32 extra_size);
+BOOL io_init(io_struct *ps, uint32 size, BOOL io);
+void io_debug(io_struct *ps, int depth, char *desc, char *fn_name);
+BOOL io_align(io_struct *ps, int align);
+BOOL io_align4(io_struct *ps, int align);
+BOOL io_align2(io_struct *ps, int align);
 void print_asc(int level, unsigned char *buf,int len);
-BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
+BOOL io_read(io_struct *ps, int fd, size_t len, int timeout);
 void dump_data(int level,char *buf1,int len);
-BOOL io_alloc(char *name, prs_struct *ps, void **ptr, unsigned size);
-BOOL io_uint32(char *name, prs_struct *ps, int depth, uint32 *data32, unsigned flags);
-BOOL io_uint16(char *name, prs_struct *ps, int depth, uint16 *data16, unsigned flags);
-BOOL io_uint8(char *name, prs_struct *ps, int depth, uint8 *data8, unsigned flags);
-BOOL io_pointer(char *desc, prs_struct *ps, int depth, void **p, unsigned flags);
-BOOL io_string(char *name, prs_struct *ps, int depth, char **str, unsigned flags);
-BOOL io_wstring(char *name, prs_struct *ps, int depth, uint16 *data16s, int len, unsigned flags);
-BOOL io_uint8s(char *name, prs_struct *ps, int depth, uint8 **data8s, int len, unsigned flags);
+BOOL io_alloc(char *name, io_struct *ps, void **ptr, unsigned size);
+BOOL io_uint32(char *name, io_struct *ps, int depth, uint32 *data32, unsigned flags);
+BOOL io_uint16(char *name, io_struct *ps, int depth, uint16 *data16, unsigned flags);
+BOOL io_uint8(char *name, io_struct *ps, int depth, uint8 *data8, unsigned flags);
+BOOL io_pointer(char *desc, io_struct *ps, int depth, void **p, unsigned flags);
+BOOL io_SMBSTR(char *name, io_struct *ps, int depth, char **str, unsigned flags);
+BOOL io_io_struct(char *name, io_struct *ps, int depth, io_struct *io, unsigned flags);
+BOOL io_wstring(char *name, io_struct *ps, int depth, uint16 *data16s, int len, unsigned flags);
+BOOL io_uint8s_fixed(char *name, io_struct *ps, int depth, uint8 *data8s, int len, unsigned flags);
+BOOL io_uint8s(char *name, io_struct *ps, int depth, uint8 **data8s, int len, unsigned flags);
 
+char *tab_depth(int depth);
+void *Realloc(void *p,size_t size);
+void print_asc(int level, unsigned char *buf,int len);
+void dump_data(int level,char *buf1,int len);

@@ -29,7 +29,7 @@ typedef struct {
 
 typedef struct {
 	uint8 tag2;
-	string protocol;
+	STRING protocol;
 } BUF2;
 
 typedef struct {
@@ -65,7 +65,7 @@ typedef struct {
 	USHORT  Reserved;             /* MBZ */
 	USHORT  ByteCount;             /* Count of data bytes */
 	UCHAR Challenge[ChallengeLength];            /* The challenge */
-	string PrimaryDomain;       /* The server's primary domain */
+	STRING PrimaryDomain;       /* The server's primary domain */
 
 } R_NEGPROT_12;
 
@@ -99,7 +99,7 @@ typedef struct {
 			      /*  security package if CAP_EXTENDED_SECURITY is */
 			      /*  on in the Capabilities field; else challenge */
 			      /*  for CIFS challenge/response authentication. */
-	string OemDomainName[+]; /*The name of the domain (in OEM chars); not */
+	STRING OemDomainName[+]; /*The name of the domain (in OEM chars); not */
 	                      /*  present  if CAP_EXTENDED_SECURITY is on in the */
 			      /*  Capabilities field */
 } R_NEGPROT_17;
@@ -163,9 +163,9 @@ typedef struct {
 
 	uint16 bcount;
 	uint8 password[pwlen];
-	string domain;
-	string os;
-	string server;
+	STRING domain;
+	STRING os;
+	STRING server;
 
 } Q_SESSION_SETUP_ANDX_10;
 
@@ -183,10 +183,10 @@ typedef struct {
 	uint16 bcount;
 	uint8 password[pwlen];
 	uint8 upassword[upwlen];
-	string user;
-	string domain;
-	string os;
-	string server;
+	STRING user;
+	STRING domain;
+	STRING os;
+	STRING server;
 
 } Q_SESSION_SETUP_ANDX_13;
 
@@ -204,8 +204,8 @@ typedef struct {
 	uint16 passlen;
 	uint16 bcount;
 	uint8 password[passlen];
-	string path;
-	string device;
+	STRING path;
+	STRING device;
 } Q_TCON_ANDX_4;
 
 typedef struct _Q_TCON_ANDX {
@@ -219,7 +219,7 @@ typedef struct {
 	ANDX_INFO andx;
 	uint16 vwv2;
 	uint16 bcount;
-	string share;
+	STRING share;
 } R_TCON_ANDX_3;
 
 typedef struct _R_TCON_ANDX {
@@ -234,9 +234,9 @@ typedef struct {
 	uint16 action;
 
 	uint16 count;
-	string os;
-	string server;
-	string domain;
+	STRING os;
+	STRING server;
+	STRING domain;
 } R_SESSION_SETUP_ANDX_10;
 
 typedef struct _R_SESSION_SETUP_ANDX {
@@ -694,7 +694,7 @@ typedef struct {
 typedef struct {
 	USHORT InformationLevel;   /* Level of information requested */
 	ULONG Reserved;            /* Must be zero */
-	string FileName;           /* File or directory name */
+	STRING FileName;           /* File or directory name */
 } TRANS2_QUERY_PATH_INFO_STRUCT;
 
 typedef struct {
@@ -703,7 +703,7 @@ typedef struct {
 	USHORT Flags;                
 	USHORT InformationLevel;      
 	ULONG SearchStorageType;
-	string FileName;              
+	STRING FileName;              
 } TRANS2_FIND_FIRST2_STRUCT;
 
 typedef struct _Q_TRANS2_15 {
@@ -857,7 +857,7 @@ typedef struct _Q_TRANS_16 {
 	UCHAR Reserved3;                 /* Reserved (pad above to word) */
 	USHORT Setup[SetupCount];        /* Setup words (# = SetupWordCount) */
 	USHORT ByteCount;                /* Count of data bytes */
-	string Name;                    /* Must be NULL */
+	STRING Name;                    /* Must be NULL */
 	.align4 0;
 	UCHAR Parameters[ParameterCount];/* Parameter bytes (# = ParameterCount) */ 
 	.align4 0;

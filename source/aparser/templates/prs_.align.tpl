@@ -1,1 +1,1 @@
-	if(!prs_align(ps)) goto fail;
+	if(!io_align(ps)) goto fail;

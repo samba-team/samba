@@ -1,7 +1,7 @@
 CFLAGS=-Wall -g
 CC=gcc
 
-OBJ = vluke.o parser.o
+OBJ = vluke.o parser.o util.o
 AWKPROGS=dump.awk harness.awk header.awk parsefn.awk main.awk parsetree.awk template.awk util.awk
 
 all: test.h vluke
