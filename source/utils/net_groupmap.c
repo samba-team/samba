@@ -486,12 +486,6 @@ int net_help_groupmap(int argc, const char **argv)
  **********************************************************/
 int net_groupmap(int argc, const char **argv)
 {
-	/* we shouldn't have silly checks like this */
-	if (getuid() != 0) {
-		d_printf("You must be root to edit group mappings.\nExiting...\n");
-		return -1;
-	}
-	
 	struct functable func[] = {
 		{"add", net_groupmap_add},
 		{"modify", net_groupmap_modify},
@@ -501,6 +495,12 @@ int net_groupmap(int argc, const char **argv)
 		{NULL, NULL}
 	};
 
+	/* we shouldn't have silly checks like this */
+	if (getuid() != 0) {
+		d_printf("You must be root to edit group mappings.\nExiting...\n");
+		return -1;
+	}
+	
 	return net_run_function(argc, argv, func, net_help_groupmap);
 	if ( 0 == argc )
 		return net_help_groupmap( argc, argv );
