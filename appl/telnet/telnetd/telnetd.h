@@ -36,6 +36,7 @@
 
 #include "defs.h"
 #include "ext.h"
+#include <protos.h>
 
 #ifdef	DIAGNOSTICS
 #define	DIAG(a,b)	if (diagnostic & (a)) b
