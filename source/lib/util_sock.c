@@ -810,7 +810,7 @@ int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL reb
 		return( -1 ); 
 	}
 
-	DEBUG( 3, ( "bind succeeded on port %d\n", port ) );
+	DEBUG(10, ( "bind succeeded on port %d\n", port ) );
 
 	return( res );
  }
