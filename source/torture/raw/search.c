@@ -1068,6 +1068,110 @@ done:
 	return ret;
 }
 
+
+/* 
+   testing of OS/2 style delete
+*/
+static BOOL test_os2_delete(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	const int num_files = 700;
+	const int delete_count = 4;
+	int total_deleted = 0;
+	int i, fnum;
+	char *fname;
+	BOOL ret = True;
+	NTSTATUS status;
+	union smb_search_first io;
+	union smb_search_next io2;
+	struct multiple_result result;
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
+
+	printf("Testing OS/2 style delete on %d files\n", num_files);
+
+	for (i=0;i<num_files;i++) {
+		asprintf(&fname, BASEDIR "\\file%u.txt", i);
+		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
+		if (fnum == -1) {
+			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
+			ret = False;
+			goto done;
+		}
+		free(fname);
+		smbcli_close(cli->tree, fnum);
+	}
+
+
+	ZERO_STRUCT(result);
+	result.mem_ctx = mem_ctx;
+
+	io.t2ffirst.level = RAW_SEARCH_EA_SIZE;
+	io.t2ffirst.in.search_attrib = 0;
+	io.t2ffirst.in.max_count = 100;
+	io.t2ffirst.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME;
+	io.t2ffirst.in.storage_type = 0;
+	io.t2ffirst.in.pattern = BASEDIR "\\*";
+
+	status = smb_raw_search_first(cli->tree, mem_ctx,
+				      &io, &result, multiple_search_callback);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	for (i=0;i<MIN(result.count, delete_count);i++) {
+		asprintf(&fname, BASEDIR "\\%s", result.list[i].ea_size.name.s);
+		status = smbcli_unlink(cli->tree, fname);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		total_deleted++;
+	}
+
+	io2.t2fnext.level = RAW_SEARCH_EA_SIZE;
+	io2.t2fnext.in.handle = io.t2ffirst.out.handle;
+	io2.t2fnext.in.max_count = 100;
+	io2.t2fnext.in.resume_key = result.list[i-1].ea_size.resume_key;
+	io2.t2fnext.in.flags = FLAG_TRANS2_FIND_REQUIRE_RESUME;
+	io2.t2fnext.in.last_name = result.list[i-1].ea_size.name.s;
+
+	do {
+		ZERO_STRUCT(result);
+		result.mem_ctx = mem_ctx;
+
+		status = smb_raw_search_next(cli->tree, mem_ctx,
+					     &io2, &result, multiple_search_callback);
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+
+		for (i=0;i<MIN(result.count, delete_count);i++) {
+			asprintf(&fname, BASEDIR "\\%s", result.list[i].ea_size.name.s);
+			status = smbcli_unlink(cli->tree, fname);
+			CHECK_STATUS(status, NT_STATUS_OK);
+			total_deleted++;
+		}
+
+		if (i>0) {
+			io2.t2fnext.in.resume_key = 0;
+			io2.t2fnext.in.last_name = result.list[i-1].ea_size.name.s;
+		}
+	} while (NT_STATUS_IS_OK(status) && result.count != 0);
+
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (total_deleted != num_files) {
+		printf("error: deleted %d - expected to delete %d\n", 
+		       total_deleted, num_files);
+		ret = False;
+	}
+
+done:
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
+
+
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
 */
@@ -1088,6 +1192,7 @@ BOOL torture_raw_search(void)
 	ret &= test_sorted(cli, mem_ctx);
 	ret &= test_modify_search(cli, mem_ctx);
 	ret &= test_many_dirs(cli, mem_ctx);
+	ret &= test_os2_delete(cli, mem_ctx);
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
