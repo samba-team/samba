@@ -411,13 +411,40 @@
 		[size_is(size),length_is(length)] uint8 *data;
 	} lsa_DATA_BUF;
 
+	typedef [flag(NDR_PAHEX)] struct {
+		uint32 size;
+		[size_is(size)] uint8 *data;
+	} lsa_DATA_BUF2;
+
+	typedef enum {
+		LSA_TRUSTED_DOMAIN_INFO_NAME=1,
+		LSA_TRUSTED_DOMAIN_INFO_2=2,
+		LSA_TRUSTED_DOMAIN_INFO_FLAGS=3,
+		LSA_TRUSTED_DOMAIN_INFO_PASSWORD=4,
+		LSA_TRUSTED_DOMAIN_INFO_5=5,
+		LSA_TRUSTED_DOMAIN_INFO_INFO_EX=6,
+		LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO=7,
+		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO=8,
+		LSA_TRUSTED_DOMAIN_INFO_INFO_ALL=12
+	} lsa_TrustDomInfoEnum;
+
 	typedef struct {
 		lsa_String     domain_name;
-	} lsa_TrustDomainInfo1;
+	} lsa_TrustDomainInfoName;
 
 	typedef struct {
 		uint32        flags;
-	} lsa_TrustDomainInfo3;
+	} lsa_TrustDomainInfoFlags;
+
+	typedef struct {
+		lsa_DATA_BUF *password;
+		lsa_DATA_BUF *old_password;
+	} lsa_TrustDomainInfoPassword;
+
+	typedef struct {
+		lsa_String     domain_name;
+		dom_sid2    *sid;
+	} lsa_TrustDomainInfo5;
 
 	typedef struct {
 		lsa_String     name;
@@ -426,12 +453,51 @@
 		uint32       unknown1;
 		uint32       unknown2;
 		uint32       unknown3;
-	} lsa_TrustDomainInfo6;
+	} lsa_TrustDomainInfoInfoEx;
+
+	typedef struct {
+		HYPER_T      unknown1;
+		uint32       unknown2;
+		lsa_DATA_BUF2 data;
+	} lsa_TrustDomainInfoBuffer;
+
+	typedef struct {
+		uint32       unknown1;
+		lsa_TrustDomainInfoBuffer *buff1;
+		lsa_TrustDomainInfoBuffer *buff2;
+		uint32       unknown2;
+		lsa_TrustDomainInfoBuffer *buff3;
+		lsa_TrustDomainInfoBuffer *buff4;
+	} lsa_TrustDomainInfoAuthInfo;
+
+	typedef struct {
+		lsa_TrustDomainInfoInfoEx info_ex;
+		lsa_TrustDomainInfoFlags flags;
+		lsa_TrustDomainInfoAuthInfo  auth_info;
+	} lsa_TrustDomainInfoFullInfo;
+
+	typedef struct {
+		lsa_TrustDomainInfoInfoEx info_ex;
+		lsa_DATA_BUF2        data1;
+	} lsa_TrustDomainInfo11;
+
+	typedef struct {
+		lsa_TrustDomainInfoInfoEx info_ex;
+		lsa_DATA_BUF2        data1;
+		lsa_TrustDomainInfoFlags flags;
+		lsa_TrustDomainInfoAuthInfo  auth_info;
+	} lsa_TrustDomainInfoInfoAll;
 
 	typedef union {
-		[case(1)]    lsa_TrustDomainInfo1 info1;
-		[case(3)]    lsa_TrustDomainInfo3 info3;
-		[case(6)]    lsa_TrustDomainInfo6 info6;
+		[case(LSA_TRUSTED_DOMAIN_INFO_NAME)]      lsa_TrustDomainInfoName      name;
+		[case(LSA_TRUSTED_DOMAIN_INFO_FLAGS)]     lsa_TrustDomainInfoFlags     flags;
+		[case(LSA_TRUSTED_DOMAIN_INFO_PASSWORD)]  lsa_TrustDomainInfoPassword  password;
+		[case(LSA_TRUSTED_DOMAIN_INFO_5)]         lsa_TrustDomainInfo5         info5;
+		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX)]   lsa_TrustDomainInfoInfoEx    info_ex;
+		[case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO)] lsa_TrustDomainInfoAuthInfo  auth_info;
+		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)] lsa_TrustDomainInfoFullInfo  full_info;
+		[case(11)]    lsa_TrustDomainInfo11 info11;
+		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_ALL)]  lsa_TrustDomainInfoInfoAll   info_all;
 	} lsa_TrustedDomainInfo;
 
 	/* Function:       0x1a */
