@@ -73,6 +73,7 @@
 #undef WITH_NETATALK
 #undef WITH_UTMP
 #undef WITH_MSDFS
+#undef WITH_VFS
 #undef HAVE_INO64_T
 #undef HAVE_STRUCT_FLOCK64
 #undef SIZEOF_INO_T
