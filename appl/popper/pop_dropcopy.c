@@ -14,14 +14,6 @@ RCSID("$Id$");
 int
 changeuser(POP *p, struct passwd *pwd)
 {
-    if(setuid(pwd->pw_uid) < 0) {
-	pop_log (p, POP_PRIORITY,
-		 "Unable to change to uid %u: %s",
-		 (unsigned)pwd->pw_uid,
-		 strerror(errno));
-	return pop_msg (p, POP_FAILURE,
-			"Unable to change uid");
-    }
     if(setgid(pwd->pw_gid) < 0) {
 	pop_log (p, POP_PRIORITY,
 		 "Unable to change to gid %u: %s",
@@ -29,6 +21,14 @@ changeuser(POP *p, struct passwd *pwd)
 		 strerror(errno));
 	return pop_msg (p, POP_FAILURE,
 			"Unable to change gid");
+    }
+    if(setuid(pwd->pw_uid) < 0) {
+	pop_log (p, POP_PRIORITY,
+		 "Unable to change to uid %u: %s",
+		 (unsigned)pwd->pw_uid,
+		 strerror(errno));
+	return pop_msg (p, POP_FAILURE,
+			"Unable to change uid");
     }
 #ifdef DEBUG
     if(p->debug)
