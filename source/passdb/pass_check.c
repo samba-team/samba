@@ -142,6 +142,10 @@ static BOOL pam_auth(char *user, char *password)
 
 
 #ifdef WITH_AFS
+
+#include <afs/stds.h>
+#include <afs/kautils.h>
+
 /*******************************************************************
 check on AFS authentication
 ********************************************************************/
@@ -163,12 +167,17 @@ static BOOL afs_auth(char *user, char *password)
 	{
 		return (True);
 	}
+	DEBUG(1,
+	      ("AFS authentication for \"%s\" failed (%s)\n", user, reason));
 	return (False);
 }
 #endif
 
 
 #ifdef WITH_DFS
+
+#include <dce/dce_error.h>
+#include <dce/sec_login.h>
 
 /*****************************************************************
  This new version of the DFS_AUTH code was donated by Karsten Muuss
@@ -491,6 +500,9 @@ void dfs_unlogin(void)
 #endif
 
 #ifdef KRB5_AUTH
+
+#include <krb5.h>
+
 /*******************************************************************
 check on Kerberos authentication
 ********************************************************************/
@@ -651,6 +663,7 @@ static char *osf1_bigcrypt(char *password, char *salt1)
 
 	StrnCpy(salt, salt1, 2);
 	StrnCpy(result, salt1, 2);
+	result[2] = '\0';
 
 	for (i = 0; i < parts; i++)
 	{
@@ -728,7 +741,6 @@ core of password checking routine
 ****************************************************************************/
 static BOOL password_check(char *password)
 {
-
 #ifdef WITH_PAM
 	/* This falls through if the password check fails
 	   - if HAVE_CRYPT is not defined this causes an error msg
@@ -740,27 +752,27 @@ static BOOL password_check(char *password)
 	   Hence we make a direct return to avoid a second chance!!!
 	 */
 	return (pam_auth(this_user, password));
-#endif
+#endif /* WITH_PAM */
 
 #ifdef WITH_AFS
 	if (afs_auth(this_user, password))
 		return (True);
-#endif
+#endif /* WITH_AFS */
 
 #ifdef WITH_DFS
 	if (dfs_auth(this_user, password))
 		return (True);
-#endif
+#endif /* WITH_DFS */
 
 #ifdef KRB5_AUTH
 	if (krb5_auth(this_user, password))
 		return (True);
-#endif
+#endif /* KRB5_AUTH */
 
 #ifdef KRB4_AUTH
 	if (krb4_auth(this_user, password))
 		return (True);
-#endif
+#endif /* KRB4_AUTH */
 
 #ifdef OSF1_ENH_SEC
 	{
@@ -781,7 +793,7 @@ static BOOL password_check(char *password)
 		}
 		return ret;
 	}
-#endif
+#endif /* OSF1_ENH_SEC */
 
 #ifdef ULTRIX_AUTH
 	{
@@ -798,7 +810,24 @@ static BOOL password_check(char *password)
 
 #ifdef LINUX_BIGCRYPT
 	return (linux_bigcrypt(password, this_salt, this_crypted));
-#endif
+#endif /* LINUX_BIGCRYPT */
+
+#if defined(HAVE_BIGCRYPT) && defined(HAVE_CRYPT) && defined(USE_BOTH_CRYPT_CALLS)
+
+	/*
+	 * Some systems have bigcrypt in the C library but might not
+	 * actually use it for the password hashes (HPUX 10.20) is
+	 * a noteable example. So we try bigcrypt first, followed
+	 * by crypt.
+	 */
+
+	if (strcmp(bigcrypt(password, this_salt), this_crypted) == 0)
+		return True;
+	else
+		return (strcmp
+			((char *)crypt(password, this_salt),
+			 this_crypted) == 0);
+#else /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 
 #ifdef HAVE_BIGCRYPT
 	{
@@ -824,9 +853,13 @@ static BOOL password_check(char *password)
 			DEBUG(1, ("password_check: crypt returned NULL!\n"));
 			return 0;
 		}
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("password: %s crypt: %s\n", password, p1));
+#endif
 		return (strcmp(p1, this_crypted) == 0);
 	}
-#endif
+#endif /* HAVE_CRYPT */
+#endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
 }
 
 
@@ -851,7 +884,6 @@ BOOL pass_check(const char *_user, const char *_password,
 
 #if DEBUG_PASSWORD
 	DEBUG(100, ("checking user=[%s] pass=", user));
-	dump_data(100, password, strlen(password));
 #endif
 
 	if (!_password)
@@ -862,6 +894,8 @@ BOOL pass_check(const char *_user, const char *_password,
 	pwlen = MIN(sizeof(password) - 1, pwlen);
 	memset(password, 0, sizeof(password));
 	memcpy(password, _password, pwlen);
+
+	dump_data_pw("password:\n", password, strlen(password));
 
 	if (((!*password) || (!pwlen)) && !lp_null_passwords())
 	{
@@ -887,12 +921,88 @@ BOOL pass_check(const char *_user, const char *_password,
 		return (False);
 	}
 
+#ifdef HAVE_GETSPNAM
+	{
+		struct spwd *spass;
+
+		/* many shadow systems require you to be root to get
+		   the password, in most cases this should already be
+		   the case when this function is called, except
+		   perhaps for IPC password changing requests */
+
+		spass = getspnam(pass->pw_name);
+		if (spass && spass->sp_pwdp)
+		{
+			pstrcpy(pass->pw_passwd, spass->sp_pwdp);
+		}
+	}
+#elif defined(IA_UINFO)
+	{
+		/* Need to get password with SVR4.2's ia_ functions
+		   instead of get{sp,pw}ent functions. Required by
+		   UnixWare 2.x, tested on version
+		   2.1. (tangent@cyberport.com) */
+		uinfo_t uinfo;
+		if (ia_openinfo(pass->pw_name, &uinfo) != -1)
+		{
+			ia_get_logpwd(uinfo, &(pass->pw_passwd));
+		}
+	}
+#endif
+
+#ifdef HAVE_GETPRPWNAM
+	{
+		struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
+		if (pr_pw && pr_pw->ufld.fd_encrypt)
+			pstrcpy(pass->pw_passwd, pr_pw->ufld.fd_encrypt);
+	}
+#endif
+
+#ifdef OSF1_ENH_SEC
+	{
+		struct pr_passwd *mypasswd;
+		DEBUG(5, ("Checking password for user %s in OSF1_ENH_SEC\n",
+			  user));
+		mypasswd = getprpwnam(user);
+		if (mypasswd)
+		{
+			fstrcpy(pass->pw_name, mypasswd->ufld.fd_name);
+			fstrcpy(pass->pw_passwd, mypasswd->ufld.fd_encrypt);
+		}
+		else
+		{
+			DEBUG(5,
+			      ("OSF1_ENH_SEC: No entry for user %s in protected database !\n",
+			       user));
+		}
+	}
+#endif
+
+#ifdef ULTRIX_AUTH
+	{
+		AUTHORIZATION *ap = getauthuid(pass->pw_uid);
+		if (ap)
+		{
+			fstrcpy(pass->pw_passwd, ap->a_password);
+			endauthent();
+		}
+	}
+#endif
+
 	/* extract relevant info */
 	fstrcpy(this_user, pass->pw_name);
 	fstrcpy(this_salt, pass->pw_passwd);
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("this_user: %s\n", this_user));
+	DEBUG(100,("this_salt: %s\n", this_salt));
+#endif
+
+#if defined(HAVE_TRUNCATED_SALT)
 	/* crypt on some platforms (HPUX in particular)
 	   won't work with more than 2 salt characters. */
 	this_salt[2] = 0;
+#endif
 
 	fstrcpy(this_crypted, pass->pw_passwd);
 
@@ -918,8 +1028,11 @@ BOOL pass_check(const char *_user, const char *_password,
 	{
 		if (fn)
 			fn(user, password);
+		DEBUG(100,("password ok\n"));
 		return (True);
 	}
+
+	DEBUG(100,("password not ok as-is...\n"));
 
 	/* if the password was given to us with mixed case then we don't
 	   need to proceed as we know it hasn't been case modified by the

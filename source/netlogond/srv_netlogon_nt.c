@@ -321,16 +321,20 @@ static uint32 net_login_general(const NET_ID_INFO_4 * id4,
 {
 	fstring user;
 	fstring domain;
-	const char *general;
+	const char *general = id4->str_general.buffer;
 	int pw_len = id4->str_general.str_str_len;
+
 	unistr2_to_ascii(user, &id4->uni_user_name, sizeof(user) - 1);
 	unistr2_to_ascii(domain, &id4->uni_domain_name, sizeof(domain) - 1);
-	general = id4->str_general.buffer;
+
+	if (pw_len >= sizeof(fstring))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	DEBUG(5, ("net_login_general: user:%s domain:%s", user, domain));
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("password:%s", general));
-#endif
-	DEBUG(5, ("\n"));
+	dump_data_pw("password:\n", general, pw_len);
+
 	DEBUG(0,
 	      ("net_login_general: TODO - \"update encrypted\" disabled\n"));
 	if (pass_check(user, general, pw_len, NULL,
