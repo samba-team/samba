@@ -744,6 +744,8 @@ BOOL unistr2upper(UNISTR2 *str, const UNISTR2 *from);
 BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
 UNISTR2 *unistr2_dup(const UNISTR2 *name);
 void unistr2_free(UNISTR2 *name);
+int StrCaseCmpW(const UNISTR2 *ws, const UNISTR2 *wt);
+BOOL unistr2equal(const UNISTR2 *s1, const UNISTR2 *s2);
 
 /*The following definitions come from  lib/vagent.c  */
 
@@ -4290,11 +4292,12 @@ uint32 _samr_lookup_names(const POLICY_HND *pol,
 			uint32 rid[MAX_SAM_ENTRIES],
 			uint32 *num_types1,
 			uint32 type[MAX_SAM_ENTRIES]);
-uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
-					uint32 num_rids, const uint32 *rids,
-					uint32 *num_names,
-					UNIHDR **hdr_name, UNISTR2** uni_name,
-					uint32 **types);
+uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
+				uint32 num_rids, uint32 flags,
+				const uint32 *rids,
+				uint32 *num_names,
+				UNIHDR **hdr_name, UNISTR2** uni_name,
+				uint32 **types);
 uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
 				uint16 switch_value,
 				SAM_UNK_CTR *ctr);

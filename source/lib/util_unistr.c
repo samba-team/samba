@@ -340,3 +340,40 @@ void unistr2_free(UNISTR2 *name)
 {
 	free(name);
 }
+
+/*******************************************************************
+  case insensitive string compararison
+********************************************************************/
+int StrCaseCmpW(const UNISTR2 *ws, const UNISTR2 *wt)
+{
+	int len = MIN(ws->uni_str_len, wt->uni_str_len);
+	uint16 *s = ws->buffer;
+	uint16 *t = wt->buffer;
+
+    while (len > 0 && *s && *t && toupper(*s) == toupper(*t))
+    {
+      s++;
+      t++;
+	len--;
+    }
+
+    return(toupper(*s) - toupper(*t));
+}
+
+/*******************************************************************
+  compare 2 UNISTR2 strings .  first implementation, unicode string
+  comparison isn't simple, you don't necessarily have a NULL-termination
+  character but it's the same string...
+********************************************************************/
+BOOL unistr2equal(const UNISTR2 *s1, const UNISTR2 *s2)
+{
+  if (s1 == s2) return(True);
+  if (!s1 || !s2) return(False);
+  
+	if (s1->uni_str_len != s1->uni_str_len)
+	{
+		return False;
+	}
+
+  return(StrCaseCmpW(s1,s2)==0);
+}

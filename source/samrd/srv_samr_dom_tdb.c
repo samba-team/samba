@@ -653,94 +653,20 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 	return 0x0;
 }
 
-/*******************************************************************
- samr_reply_lookup_names
- ********************************************************************/
-uint32 _samr_lookup_names(const POLICY_HND *pol,
-				
-			uint32 num_names1,
-			uint32 flags,
-			uint32 ptr,
-			const UNISTR2 *uni_name,
-
-			uint32 *num_rids1,
-			uint32 rid[MAX_SAM_ENTRIES],
-			uint32 *num_types1,
-			uint32 type[MAX_SAM_ENTRIES])
-{
-	TDB_CONTEXT *tdb = NULL;
-	int i;
-	int num_rids = num_names1;
-	DOM_SID pol_sid;
-	fstring tmp;
-	BOOL found_one = False;
-
-	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
-
-	if (!get_tdbsid(get_global_hnd_cache(), pol, &tdb, &pol_sid))
-	{
-		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-	}
-
-	sid_to_string(tmp, &pol_sid);
-	DEBUG(5,("pol_sid: %s\n", tmp));
-
-	if (num_rids > MAX_SAM_ENTRIES)
-	{
-		num_rids = MAX_SAM_ENTRIES;
-		DEBUG(5,("samr_lookup_names: truncating entries to %d\n", num_rids));
-	}
-
-	for (i = 0; i < num_rids; i++)
-	{
-		DOM_SID sid;
-		fstring name;
-		uint32 status1;
-		unistr2_to_ascii(name, &uni_name[i], sizeof(name)-1);
-
-		status1 = lookup_name(name, &sid, &(type[i]));
-		if (status1 == 0x0)
-		{
-			found_one = True;
-			sid_split_rid(&sid, &rid[i]);
-		}
-		if ((status1 != 0x0) || !sid_equal(&pol_sid, &sid))
-		{
-			rid [i] = 0xffffffff;
-			type[i] = SID_NAME_UNKNOWN;
-		}
-
-		sid_to_string(tmp, &sid);
-		DEBUG(10,("name: %s sid: %s rid: %x type: %d\n",
-			name, tmp, rid[i], type[i]));
-	}
-
-	if (!found_one)
-	{
-		return NT_STATUS_NONE_MAPPED;
-	}
-
-	(*num_rids1) = num_rids;
-	(*num_types1) = num_rids;
-
-	return 0x0;
-}
-
 typedef struct tdb_name_info
 {
-	const uint32 *rids;
+	const UNISTR2 *uni_name;
+	uint32 *rids;
 	uint32 *types;
-	UNIHDR *hdr_name;
-	UNISTR2 *uni_name;
-	uint32 num_rids;
+	uint32 num_names;
 	BOOL found_one;
 
 } TDB_NAME_INFO;
 
 /******************************************************************
-makes a SAMR_R_ENUM_USERS structure.
+tdb_userlookup_names
 ********************************************************************/
-static int tdb_userlookup_traverse(TDB_CONTEXT *tdb,
+static int tdb_userlookup_names(TDB_CONTEXT *tdb,
 				TDB_DATA kbuf,
 				TDB_DATA dbuf,
 				void *state)
@@ -751,7 +677,7 @@ static int tdb_userlookup_traverse(TDB_CONTEXT *tdb,
 	uint32 rid;
 	int i;
 
-	DEBUG(5,("tdb_userlookup_traverse\n"));
+	DEBUG(5,("tdb_userlookup_names\n"));
 
 	dump_data_pw("usr:\n", dbuf.dptr, dbuf.dsize);
 	dump_data_pw("rid:\n", kbuf.dptr, kbuf.dsize);
@@ -759,13 +685,135 @@ static int tdb_userlookup_traverse(TDB_CONTEXT *tdb,
 	prs_create(&ps, dbuf.dptr, dbuf.dsize, 4, True);
 	if (!sam_io_user_info21("usr", &usr, &ps, 0))
 	{
-		DEBUG(5,("tdb_userlookup_traverse: user convert failed\n"));
+		DEBUG(5,("tdb_userlookup_names: user convert failed\n"));
 		return 0x0;
 	}
 	prs_create(&ps, kbuf.dptr, kbuf.dsize, 4, True);
 	if (!_prs_uint32("rid", &ps, 0, &rid))
 	{
-		DEBUG(5,("tdb_userlookup_traverse: rid convert failed\n"));
+		DEBUG(5,("tdb_userlookup_names: rid convert failed\n"));
+		return 0x0;
+	}
+
+	for (i = 0; i < data->num_names; i++)
+	{
+		const UNISTR2 *str = &data->uni_name[i];
+		if (unistr2equal(str, &usr.uni_user_name))
+		{
+			DEBUG(10,("found user rid[i]: %d\n", i));
+
+			data->types[i] = SID_NAME_USER;
+			data->rids[i] = rid;
+			data->found_one = True;
+
+			return 0x0;
+		}
+	}
+
+	return 0x0;
+}
+
+/*******************************************************************
+ samr_reply_lookup_names
+ ********************************************************************/
+uint32 _samr_lookup_names(const POLICY_HND *dom_pol,
+				
+			uint32 num_names,
+			uint32 flags,
+			uint32 ptr,
+			const UNISTR2 *uni_name,
+
+			uint32 *num_rids,
+			uint32 rid[MAX_SAM_ENTRIES],
+			uint32 *num_types,
+			uint32 type[MAX_SAM_ENTRIES])
+{
+	TDB_CONTEXT *usr_tdb = NULL;
+	DOM_SID dom_sid;
+	TDB_NAME_INFO state;
+
+	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
+
+	if (!get_tdbdomsid(get_global_hnd_cache(), dom_pol,
+	                   &usr_tdb, NULL, NULL, &dom_sid))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	/* prepare memory, ready for state-based traversion */
+
+	if (num_names > MAX_SAM_ENTRIES)
+	{
+		num_names = MAX_SAM_ENTRIES;
+	}
+
+	state.found_one = False;
+	state.num_names = num_names;
+	state.rids = rid;
+	state.types = type;
+	state.uni_name = uni_name;
+
+	if (state.rids == NULL ||
+	    state.types == NULL ||
+	    state.uni_name == NULL)
+	{
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* lookups */
+	tdb_traverse(usr_tdb, tdb_userlookup_names, (void*)&state);
+
+	if (!state.found_one)
+	{
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	(*num_types) = num_names;
+	(*num_rids) = num_names;
+
+	return 0x0;
+}
+
+typedef struct tdb_rid_info
+{
+	const uint32 *rids;
+	uint32 *types;
+	UNIHDR *hdr_name;
+	UNISTR2 *uni_name;
+	uint32 num_rids;
+	BOOL found_one;
+
+} TDB_RID_INFO;
+
+/******************************************************************
+tdb_userlookup_rids
+********************************************************************/
+static int tdb_userlookup_rids(TDB_CONTEXT *tdb,
+				TDB_DATA kbuf,
+				TDB_DATA dbuf,
+				void *state)
+{
+	prs_struct ps;
+	SAM_USER_INFO_21 usr;
+	TDB_RID_INFO *data = (TDB_RID_INFO*)state;
+	uint32 rid;
+	int i;
+
+	DEBUG(5,("tdb_userlookup_rids\n"));
+
+	dump_data_pw("usr:\n", dbuf.dptr, dbuf.dsize);
+	dump_data_pw("rid:\n", kbuf.dptr, kbuf.dsize);
+
+	prs_create(&ps, dbuf.dptr, dbuf.dsize, 4, True);
+	if (!sam_io_user_info21("usr", &usr, &ps, 0))
+	{
+		DEBUG(5,("tdb_userlookup_rids: user convert failed\n"));
+		return 0x0;
+	}
+	prs_create(&ps, kbuf.dptr, kbuf.dsize, 4, True);
+	if (!_prs_uint32("rid", &ps, 0, &rid))
+	{
+		DEBUG(5,("tdb_userlookup_rids: rid convert failed\n"));
 		return 0x0;
 	}
 
@@ -790,7 +838,6 @@ static int tdb_userlookup_traverse(TDB_CONTEXT *tdb,
 
 	return 0x0;
 }
-
 /*******************************************************************
  samr_reply_lookup_rids
  ********************************************************************/
@@ -803,7 +850,7 @@ uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
 {
 	TDB_CONTEXT *usr_tdb = NULL;
 	DOM_SID dom_sid;
-	TDB_NAME_INFO state;
+	TDB_RID_INFO state;
 
 	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
 
@@ -834,7 +881,7 @@ uint32 _samr_lookup_rids(const POLICY_HND *dom_pol,
 	}
 
 	/* lookups */
-	tdb_traverse(usr_tdb, tdb_userlookup_traverse, (void*)&state);
+	tdb_traverse(usr_tdb, tdb_userlookup_rids, (void*)&state);
 
 	if (!state.found_one)
 	{
