@@ -407,7 +407,7 @@ static time_t ldapsam_get_entry_timestamp(
 
 	strptime(temp, "%Y%m%d%H%M%SZ", &tm);
 	tzset();
-	return (mktime(&tm) - timezone);
+	return timegm(&tm);
 }
 
 /**********************************************************************
