@@ -83,10 +83,7 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval)
 
 	while (pipe_written != pipe_read) {
 		char c;
-		int saved_errno = errno;
-		if (read(select_pipe[0], &c, 1) == 1)
-			pipe_read++;
-		errno = saved_errno;
+		if (read(select_pipe[0], &c, 1) == 1) pipe_read++;
 	}
 
 	errno = saved_errno;
