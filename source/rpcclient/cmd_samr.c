@@ -1037,6 +1037,8 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
+	fstrcpy(name, "");
+
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
