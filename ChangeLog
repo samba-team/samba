@@ -1,5 +1,7 @@
 1999-09-27  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/asn1/der_put.c (encode_generalized_time): encode length
+
 	* lib/krb5/recvauth.c: new function `krb5_recvauth_match_version'
 	that allows more intelligent matching of the application version
 
