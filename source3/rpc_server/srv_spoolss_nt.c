@@ -313,6 +313,19 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		return WERR_BADFID;
 	}
 
+	/* 
+	 * It turns out that Windows allows delete printer on a handle
+	 * opened by an admin user, then used on a pipe handle created
+	 * by an anonymous user..... but they're working on security.... riiight !
+	 * JRA.
+	 */
+
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("delete_printer_handle: denied by handle\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+#if 0
 	/* Check calling user has permission to delete printer.  Note that
 	   since we set the snum parameter to -1 only administrators can
 	   delete the printer.  This stops people with the Full Control
@@ -322,6 +335,7 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		DEBUG(3, ("printer delete denied by security descriptor\n"));
 		return WERR_ACCESS_DENIED;
 	}
+#endif
 
 	if (del_a_printer(Printer->dev.handlename) != 0) {
 		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
