@@ -368,7 +368,7 @@ xyzprintf (struct state *state, const char *format, va_list ap)
 	unsigned long num;
 	int minusp = 0;
 
-	PARSE_INT_FORMAT(arg, ap, );
+	PARSE_INT_FORMAT(arg, ap, signed);
 
 	if (arg < 0) {
 	  minusp = 1;
