@@ -1,3 +1,27 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 3.0
+   Samba database functions
+   Copyright (C) Andrew Tridgell              1999-2000
+   Copyright (C) Paul `Rusty' Russell		   2000
+   Copyright (C) Jeremy Allison			   2000
+   Copyright (C) Andrew Esh                        2001
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -89,6 +113,7 @@ tdbtool:
   store     key  data  : store a record (replace)
   show      key        : show a record by key
   delete    key        : delete a record by key
+  list                 : print the database hash table and freelist
   free                 : print the database freelist
   1 | first            : print the first record
   n | next             : print the next record
@@ -102,9 +127,40 @@ static void terror(char *why)
 	printf("%s\n", why);
 }
 
+static char *get_token(int startover)
+{
+        static char tmp[1024];
+	static char *cont = NULL;
+	char *insert, *start;
+	char *k = strtok(NULL, " ");
+
+	if (!k)
+	  return NULL;
+
+	if (startover)
+	  start = tmp;
+	else
+	  start = cont;
+
+	strcpy(start, k);
+	insert = start + strlen(start) - 1;
+	while (*insert == '\\') {
+	  *insert++ = ' ';
+	  k = strtok(NULL, " ");
+	  if (!k)
+	    break;
+	  strcpy(insert, k);
+	  insert = start + strlen(start) - 1;
+	}
+
+	/* Get ready for next call */
+	cont = start + strlen(start) + 1;
+	return start;
+}
+
 static void create_tdb(void)
 {
-	char *tok = strtok(NULL, " ");
+	char *tok = get_token(1);
 	if (!tok) {
 		help();
 		return;
@@ -119,7 +175,7 @@ static void create_tdb(void)
 
 static void open_tdb(void)
 {
-	char *tok = strtok(NULL, " ");
+	char *tok = get_token(1);
 	if (!tok) {
 		help();
 		return;
@@ -133,8 +189,8 @@ static void open_tdb(void)
 
 static void insert_tdb(void)
 {
-	char *k = strtok(NULL, " ");
-	char *d = strtok(NULL, " ");
+	char *k = get_token(1);
+	char *d = get_token(0);
 	TDB_DATA key, dbuf;
 
 	if (!k || !d) {
@@ -143,9 +199,9 @@ static void insert_tdb(void)
 	}
 
 	key.dptr = k;
-	key.dsize = strlen(k);
+	key.dsize = strlen(k)+1;
 	dbuf.dptr = d;
-	dbuf.dsize = strlen(d);
+	dbuf.dsize = strlen(d)+1;
 
 	if (tdb_store(tdb, key, dbuf, TDB_INSERT) == -1) {
 		terror("insert failed");
@@ -154,8 +210,8 @@ static void insert_tdb(void)
 
 static void store_tdb(void)
 {
-	char *k = strtok(NULL, " ");
-	char *d = strtok(NULL, " ");
+	char *k = get_token(1);
+	char *d = get_token(0);
 	TDB_DATA key, dbuf;
 
 	if (!k || !d) {
@@ -164,9 +220,12 @@ static void store_tdb(void)
 	}
 
 	key.dptr = k;
-	key.dsize = strlen(k);
+	key.dsize = strlen(k)+1;
 	dbuf.dptr = d;
-	dbuf.dsize = strlen(d);
+	dbuf.dsize = strlen(d)+1;
+
+	printf("Storing key:\n");
+	print_rec(tdb, key, dbuf, NULL);
 
 	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) == -1) {
 		terror("store failed");
@@ -175,7 +234,7 @@ static void store_tdb(void)
 
 static void show_tdb(void)
 {
-	char *k = strtok(NULL, " ");
+	char *k = get_token(1);
 	TDB_DATA key, dbuf;
 
 	if (!k) {
@@ -194,7 +253,7 @@ static void show_tdb(void)
 
 static void delete_tdb(void)
 {
-	char *k = strtok(NULL, " ");
+	char *k = get_token(1);
 	TDB_DATA key;
 
 	if (!k) {
@@ -203,7 +262,7 @@ static void delete_tdb(void)
 	}
 
 	key.dptr = k;
-	key.dsize = strlen(k);
+	key.dsize = strlen(k)+1;
 
 	if (tdb_delete(tdb, key) != 0) {
 		terror("delete failed");
@@ -265,7 +324,7 @@ static void info_tdb(void)
 		printf("%d records totalling %d bytes\n", count, total_bytes);
 }
 
-static char *getline(char *prompt)
+static char *tdb_getline(char *prompt)
 {
 	static char line[1024];
 	char *p;
@@ -321,7 +380,7 @@ int main(int argc, char *argv[])
         open_tdb();
     }
 
-    while ((line = getline("tdb> "))) {
+    while ((line = tdb_getline("tdb> "))) {
 
         /* Shell command */
         
@@ -342,7 +401,10 @@ int main(int argc, char *argv[])
         } else if (strcmp(tok,"open") == 0) {
             open_tdb();
             continue;
-        }
+        } else if ((strcmp(tok, "q") == 0) ||
+                   (strcmp(tok, "quit") == 0)) {
+            break;
+	}
             
         /* all the rest require a open database */
         if (!tdb) {
@@ -372,10 +434,10 @@ int main(int argc, char *argv[])
             tdb_traverse(tdb, print_rec, NULL);
         } else if (strcmp(tok,"list") == 0) {
             tdb_dump_all(tdb);
-        } else if (strcmp(tok,"info") == 0) {
-            info_tdb();
         } else if (strcmp(tok, "free") == 0) {
             tdb_printfreelist(tdb);
+        } else if (strcmp(tok,"info") == 0) {
+            info_tdb();
         } else if ( (strcmp(tok, "1") == 0) ||
                     (strcmp(tok, "first") == 0)) {
             bIterate = 1;
@@ -383,9 +445,6 @@ int main(int argc, char *argv[])
         } else if ((strcmp(tok, "n") == 0) ||
                    (strcmp(tok, "next") == 0)) {
             next_record(tdb, &iterate_kbuf);
-        } else if ((strcmp(tok, "q") == 0) ||
-                   (strcmp(tok, "quit") == 0)) {
-            break;
         } else {
             help();
         }
