@@ -1429,7 +1429,11 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 
 	if (!ADS_ERR_OK(ret)) return ret;
 
-	msg   = ads_first_entry(ads, res);
+	if ( !(msg = ads_first_entry(ads, res) )) {
+		ret = ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+		goto ads_set_sd_error;
+	}
+
 	ads_pull_sid(ads, msg, attrs[1], &sid);	
 	if (!(ctx = talloc_init("sec_io_desc"))) {
 		ret =  ADS_ERROR(LDAP_NO_MEMORY);

@@ -94,10 +94,10 @@ ADS_STRUCT *ads_init(const char *realm,
 
 	/* we need to know if this is a foreign realm to know if we can
 	   use lp_ads_server() */
-	if (realm && strcasecmp(lp_realm(), realm) != 0) {
+	if (realm && *realm && strcasecmp(lp_realm(), realm) != 0) {
 		ads->server.foreign = 1;
 	}
-	if (workgroup && strcasecmp(lp_workgroup(), workgroup) != 0) {
+	if (workgroup && *workgroup && strcasecmp(lp_workgroup(), workgroup) != 0) {
 		ads->server.foreign = 1;
 	}
 
