@@ -1,3 +1,7 @@
+2002-09-04  Assar Westerlund  <assar@kth.se>
+
+	* common.c: krb5_crypto_block_size -> krb5_crypto_getblocksize
+
 2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rsh.1: document -P
