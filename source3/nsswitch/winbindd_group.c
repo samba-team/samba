@@ -434,7 +434,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	status = domain->methods->enum_dom_groups(domain, mem_ctx, &num_entries, &sam_grp_entries);
 	
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("get_sam_group_entries: could not enumerate domain groups! Error: %s", nt_errstr(status)));
+		DEBUG(3, ("get_sam_group_entries: could not enumerate domain groups! Error: %s\n", nt_errstr(status)));
 		result = False;
 		goto done;
 	}
