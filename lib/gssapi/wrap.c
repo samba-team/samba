@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -95,7 +95,10 @@ OM_uint32 gss_wrap
   memcpy (p, "\x00\x00", 2);
   p += 2;
   /* SEAL_ALG */
-  memcpy (p, "\x00\x00", 2);
+  if(conf_req_flag)
+      memcpy (p, "\x00\x00", 2);
+  else
+      memcpy (p, "\xff\xff", 2);
   p += 2;
   /* Filler */
   memcpy (p, "\xff\xff", 2);
@@ -118,12 +121,7 @@ OM_uint32 gss_wrap
   md5_finito (&md5, hash);
 
   memset (&zero, 0, sizeof(zero));
-#if 0
-  memcpy (&key, context_handle->auth_context->key.keyvalue.data,
-	  sizeof(key));
-#endif
-  memcpy (&key, context_handle->auth_context->local_subkey->keyvalue.data,
-	  sizeof(key));
+  gss_krb5_getsomekey(context_handle, &key);
   des_set_key (&key, schedule);
   des_cbc_cksum ((des_cblock *)hash,
 		 (des_cblock *)hash, sizeof(hash), schedule, &zero);
@@ -154,25 +152,23 @@ OM_uint32 gss_wrap
   /* encrypt the data */
   p += 16;
 
-  memset (&zero, 0, sizeof(zero));
-#if 0
-  memcpy (&key, context_handle->auth_context->key.keyvalue.data,
-	  sizeof(key));
-#endif
-  memcpy (&key, context_handle->auth_context->local_subkey->keyvalue.data,
-	  sizeof(key));
-  for (i = 0; i < sizeof(key); ++i)
-    key[i] ^= 0xf0;
-  des_set_key (&key, schedule);
-  des_cbc_encrypt ((des_cblock *)p,
-		   (des_cblock *)p,
-		   8 + input_message_buffer->length + padlength,
-		   schedule,
-		   &zero,
-		   DES_ENCRYPT);
-
-  memset (key, 0, sizeof(key));
-  memset (schedule, 0, sizeof(schedule));
-
+  if(conf_req_flag) {
+      gss_krb5_getsomekey(context_handle, &key);
+      for (i = 0; i < sizeof(key); ++i)
+	  key[i] ^= 0xf0;
+      des_set_key (&key, schedule);
+      memset (&zero, 0, sizeof(zero));
+      des_cbc_encrypt ((des_cblock *)p,
+		       (des_cblock *)p,
+		       8 + input_message_buffer->length + padlength,
+		       schedule,
+		       &zero,
+		       DES_ENCRYPT);
+      
+      memset (key, 0, sizeof(key));
+      memset (schedule, 0, sizeof(schedule));
+  }
+  if(conf_state != NULL)
+      *conf_state = conf_req_flag;
   return GSS_S_COMPLETE;
 }
