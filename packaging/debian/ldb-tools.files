@@ -1,0 +1,5 @@
+usr/bin/ldbadd
+usr/bin/ldbdel
+usr/bin/ldbedit
+usr/bin/ldbmodify
+usr/bin/ldbsearch

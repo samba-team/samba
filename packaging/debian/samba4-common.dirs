@@ -1,0 +1,3 @@
+var/cache/samba
+etc/samba4
+usr/lib/samba

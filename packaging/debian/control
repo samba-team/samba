@@ -1,0 +1,59 @@
+Source: samba4
+Section: net
+Priority: optional
+Maintainer: Jelmer Vernooij <jelmer@samba.org>
+Standards-Version: 3.5.8
+Build-Depends: debmake, libgtk2.0-dev, libgconf2-dev, libldap-dev
+
+Package: samba4
+Architecture: any
+Depends: samba4-client, samba4-server
+Description: Samba4
+ Foobar
+
+Package: samba4-common
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Common samba files
+ Files common for all programs in Samba
+
+Package: samba4-client
+Architecture: any
+Depends: ${shlibs:Depends}, 
+
+Package: samba4-testsuite
+Architecture: any
+Depends: ${shlibs:Depends}, samba4-common
+Description: Testsuite from Samba4
+ This package contains programs for testing the reliability and speed 
+ of SMB servers, Samba in particular.
+ 
+Package: samba4-server
+Architecture: any
+Depends: ${shlibs:Depends}, samba4-common
+Description: GPL'ed SMB Server
+ Contains smbd, the Samba server.
+
+Package: gregedit
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Graphical tool for viewing and editing registry files
+ Supports:
+ .
+ * NT4 Registry files
+ * Win9x Registry files 
+ * Remote Registries (thru RPC)
+ * GConf
+ * Using filesystem as a registry file
+
+Package: winregistry-tools
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Tools for viewing and manipulating 
+ FIXME
+
+Package: ldb-tools
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Tools for maintaining LDB database files
+ FIXME
