@@ -1,3 +1,11 @@
+2004-09-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* set_keys.c: Fix memory leak, don't return stack variables From
+	Andrew Bartlett
+	
+	* set_keys.c: make all_etypes const and move outside function to
+	avoid returning data on stack
+	
 2004-08-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* acl.c (fetch_acl): use " \t\n" instead of just "\n" for the
