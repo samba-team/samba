@@ -216,7 +216,7 @@ calc (struct sha *m, u_int32_t *in)
 }
 
 /*
- * From `Performance analysis of SHA' by Joseph D. Touch <touch@isi.edu>
+ * From `Performance analysis of MD5' by Joseph D. Touch <touch@isi.edu>
  */
 
 static inline u_int32_t
