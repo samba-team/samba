@@ -51,6 +51,8 @@ db_fetch(krb5_context context, krb5_principal principal)
 
     ret = hdb_open(context, &db, NULL, O_RDONLY, 0);
     if (ret) {
+	kdc_log(0, "Failed to open database: %s", 
+		krb5_get_err_text(context, ret));
 	return NULL;
     }
     ALLOC(ent);
@@ -58,7 +60,6 @@ db_fetch(krb5_context context, krb5_principal principal)
     ret = db->fetch(context, db, ent);
     db->close(context, db);
     if(ret){
-	krb5_free_principal(context, ent->principal);
 	free(ent);
 	return NULL;
     }
