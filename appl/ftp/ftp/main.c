@@ -340,12 +340,16 @@ makeargv(void)
 	for (margc = 0; ; margc++) {
 		/* Expand array if necessary */
 		if (margc == margvlen) {
+			int i;
+
 			margv = (margvlen == 0)
 				? (char **)malloc(20 * sizeof(char *))
 				: (char **)realloc(margv,
 					(margvlen + 20)*sizeof(char *));
 			if (margv == NULL)
 				errx(1, "cannot realloc argv array");
+			for(i = margvlen; i < margvlen + 20; ++i)
+				margv[i] = NULL;
 			margvlen += 20;
 			argp = margv + margc;
 		}
