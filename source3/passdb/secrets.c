@@ -535,7 +535,6 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 
 		if (size != packed_size) {
 			DEBUG(2, ("Secrets record %s is invalid!\n", secrets_key));
-			SAFE_FREE(pass);
 			if (size) SAFE_FREE(packed_pass);
 
 			return NT_STATUS_UNSUCCESSFUL;
@@ -554,8 +553,6 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned in
 			dom = talloc_zero(ctx, sizeof(*dom));
 			if (!dom) {
 				/* free returned tdb record */
-				SAFE_FREE(pass);
-				
 				return NT_STATUS_NO_MEMORY;
 			}
 			
