@@ -134,13 +134,22 @@ sub ChangeExtension($$)
 }
 
 #####################################################################
+# a dumper wrapper to prevent dependence on the Data::Dumper module
+# unless we actually need it
+sub MyDumper($)
+{
+	require Data::Dumper;
+	my $s = shift;
+	return Data::Dumper::Dumper($s);
+}
+
+#####################################################################
 # save a data structure into a file
 sub SaveStructure($$)
 {
-	require Data::Dumper;
 	my($filename) = shift;
 	my($v) = shift;
-	FileSave($filename, Data::Dumper::Dumper($v));
+	FileSave($filename, MyDumper($v));
 }
 
 #####################################################################
