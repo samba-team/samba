@@ -72,16 +72,13 @@ Unix Systems and TCP/IP Network design, programming, and administration.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-Craftwork Solutions Inc. 
+SolutionS R Us has been in business for 3+ years providing viable 3rd
+party support in system/network administration. With our own Linux
+distribution which we're constantly improving to make it the best and
+using it to provide total solutions for companies which are open to
+using Linux.
 
-Craftwork Solutions Inc. is dedicated to providing the best possible
-services to our customers. The Craftworks team will provide you with a
-total solution package that will work for you both today and tomorrow.
-With our own Linux Distribution which we are constantly improving to make
-it the best and using it to provide total solutions for companies which
-are open to using Linux.
-
-Please contact mary@craftwork.com 
+Mauro DePalma  <mauro@sru.com>
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -148,6 +145,17 @@ Windows, NT and Win95,  Using Samba since September 94.
 CodeSmiths,  22 Darley Road, MANLY 2095  NSW;  977 1979; fax: 977 2116
 philm@esi.com.au   (Australia; New South Wales; SYDNEY; North East)
 -----------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+EDINBUGH - SCOTLAND
+
+Charlie Hussey                            email charlie@edina.demon.co.uk
+Edina Software Limited                    tel   0131 657 1129
+4 James Street                            fax   0131 669 9092
+Edinburgh EH15 2DS
+
+SAMBA experience: SCO UNIX  <=> WfWg
+------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
 LONDON - ENGLAND
