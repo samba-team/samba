@@ -186,9 +186,10 @@ int main(int argc,char *argv[])
 
   for (i=optind;i<argc;i++)
   {
-      int retries = 2;
+      int j, count, retries = 2;
       char *p;
       struct in_addr ip;
+      struct in_addr *ip_list;
 
       fstrcpy(lookup,argv[i]);
 
@@ -219,26 +220,23 @@ int main(int argc,char *argv[])
 	retries = 1;
       }
 
-      if (name_query(ServerFD,lookup,lookup_type,use_bcast,recursion_desired,
-		     bcast_addr,&ip,NULL)) 
-      {
-        printf("%s %s\n",inet_ntoa(ip),lookup);
-
-        /* We can only do find_status if the ip address returned
-           was valid - ie. name_query returned true.
-         */
-	if (find_status) 
-	{
-	      printf("Looking up status of %s\n",inet_ntoa(ip));
-	      name_status(ServerFD,lookup,lookup_type,True,ip,NULL,NULL,NULL);
-	      printf("\n");
-	}
-      }
-      else
-      {
-        printf("name_query failed to find name %s\n", lookup);
+      if ((ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,recursion_desired,
+				bcast_addr,&count,NULL))) {
+	      for (j=0;j<count;j++)
+		      printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
+	      
+	      /* We can only do find_status if the ip address returned
+		 was valid - ie. name_query returned true.
+		 */
+	      if (find_status) {
+		      printf("Looking up status of %s\n",inet_ntoa(ip_list[0]));
+		      name_status(ServerFD,lookup,lookup_type,True,ip_list[0],NULL,NULL,NULL);
+		      printf("\n");
+	      }
+      } else {
+	      printf("name_query failed to find name %s\n", lookup);
       }
   }
-
+  
   return(0);
 }
