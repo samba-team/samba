@@ -321,6 +321,7 @@ void
 krb5_make_context (kx_context *kc)
 {
     krb5_kx_context *c;
+    krb5_error_code ret;
 
     kc->authenticate	= krb5_authenticate;
     kc->userok		= krb5_userok;
@@ -335,7 +336,9 @@ krb5_make_context (kx_context *kc)
 	err (1, "malloc");
     memset (kc->data, 0, sizeof(krb5_kx_context));
     c = (krb5_kx_context *)kc->data;
-    krb5_init_context (&c->context);
+    ret = krb5_init_context (&c->context);
+    if (ret)
+	errx (1, "krb5_init_context failed: %d", ret);
 }
 
 /*
