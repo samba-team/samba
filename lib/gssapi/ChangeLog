@@ -1,6 +1,10 @@
 2003-08-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* decapsulate.c: add _gssapi_decapsulate, from Luke Howard <lukeh@PADL.COM>
+	* cfx.[ch]: Implementation of draft-ietf-krb-wg-gssapi-cfx-00.txt
+	from Luke Howard <lukeh@PADL.COM>
+
+	* decapsulate.c: add _gssapi_decapsulate, from Luke Howard
+	<lukeh@PADL.COM>
 	
 2003-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
