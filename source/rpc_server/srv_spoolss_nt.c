@@ -1972,6 +1972,7 @@ static int get_version_id (char * arch)
 	        {"Windows NT R4000",     "W32MIPS",     2 },	
 	        {"Windows NT Alpha_AXP", "W32ALPHA",    2 },
 	        {"Windows NT PowerPC",   "W32PPC",      2 },
+		{"Windows IA64",         "IA64",        3 },
 	        {NULL,                   "",            -1 }
 	};
  
@@ -6220,6 +6221,7 @@ WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 	DEVMODE_CTR devmode_ctr = q_u->devmode_ctr;
 	SEC_DESC_BUF *secdesc_ctr = q_u->secdesc_ctr;
 	uint32 command = q_u->command;
+	WERROR result;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	
@@ -6233,7 +6235,12 @@ WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 		case 0:
 			return control_printer(handle, command, p);
 		case 2:
-			return update_printer(p, handle, level, info, devmode_ctr.devmode);
+			result = update_printer(p, handle, level, info, devmode_ctr.devmode);
+			if (!W_ERROR_IS_OK(result)) 
+				return result;
+			if (secdesc_ctr)
+				result = update_printer_sec(handle, level, info, p, secdesc_ctr);
+			return result;
 		case 3:
 			return update_printer_sec(handle, level, info, p,
 						  secdesc_ctr);
