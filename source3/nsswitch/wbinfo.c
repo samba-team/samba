@@ -641,8 +641,9 @@ static void usage(void)
 	d_printf("\t-r user\t\t\tget user groups\n");
 	d_printf("\t-a user%%password\tauthenticate user\n");
  	d_printf("\t-A user%%password\tstore user and password used by winbindd (root only)\n");
-	d_printf("\t-p 'ping' winbindd to see if it is alive\n");
+	d_printf("\t-p\t\t\t'ping' winbindd to see if it is alive\n");
 	d_printf("\t--sequence\t\tshow sequence numbers of all domains\n");
+	d_printf("\t--set-auth-user DOMAIN\\user%%password\tset password for restrict anonymous\n");
 }
 
 /* Main program */
