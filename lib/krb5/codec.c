@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,7 +44,7 @@ RCSID("$Id$");
    converts the keytype to/from the on-the-wire enctypes */
 
 #if 1
-#define DECODE(T, K) return decode_ ## T((void*)data, length, t, len)
+#define DECODE(T, K) return decode_ ## T(data, length, t, len)
 #define ENCODE(T, K) return encode_ ## T(data, length, t, len)
 #else
 #define DECODE(T, K)					\
@@ -177,7 +177,7 @@ krb5_decode_EncKrbCredPart (krb5_context context,
 			    size_t *len)
 {
 #if 1
-    return decode_EncKrbCredPart((void*)data, length, t, len);
+    return decode_EncKrbCredPart(data, length, t, len);
 #else
     krb5_error_code ret;
     int i;
@@ -218,7 +218,7 @@ krb5_decode_ETYPE_INFO (krb5_context context,
 			size_t *len)
 {
 #if 1
-    return decode_ETYPE_INFO((void*)data, length, t, len);
+    return decode_ETYPE_INFO(data, length, t, len);
 #else
     krb5_error_code ret;
     int i;

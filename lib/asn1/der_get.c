@@ -51,7 +51,8 @@ RCSID("$Id$");
  */
 
 static int
-der_get_unsigned (unsigned char *p, size_t len, unsigned *ret, size_t *size)
+der_get_unsigned (const unsigned char *p, size_t len,
+		  unsigned *ret, size_t *size)
 {
     unsigned val = 0;
     size_t oldlen = len;
@@ -64,7 +65,8 @@ der_get_unsigned (unsigned char *p, size_t len, unsigned *ret, size_t *size)
 }
 
 int
-der_get_int (unsigned char *p, size_t len, int *ret, size_t *size)
+der_get_int (const unsigned char *p, size_t len,
+	     int *ret, size_t *size)
 {
     int val = 0;
     size_t oldlen = len;
@@ -79,7 +81,8 @@ der_get_int (unsigned char *p, size_t len, int *ret, size_t *size)
 }
 
 int
-der_get_length (unsigned char *p, size_t len, size_t *val, size_t *size)
+der_get_length (const unsigned char *p, size_t len,
+		size_t *val, size_t *size)
 {
     size_t v;
 
@@ -112,7 +115,7 @@ der_get_length (unsigned char *p, size_t len, size_t *val, size_t *size)
 }
 
 int
-der_get_general_string (unsigned char *p, size_t len, 
+der_get_general_string (const unsigned char *p, size_t len, 
 			general_string *str, size_t *size)
 {
     char *s;
@@ -128,7 +131,7 @@ der_get_general_string (unsigned char *p, size_t len,
 }
 
 int
-der_get_octet_string (unsigned char *p, size_t len, 
+der_get_octet_string (const unsigned char *p, size_t len, 
 		      octet_string *data, size_t *size)
 {
     data->length = len;
@@ -141,7 +144,8 @@ der_get_octet_string (unsigned char *p, size_t len,
 }
 
 int
-der_get_tag (unsigned char *p, size_t len, Der_class *class, Der_type *type,
+der_get_tag (const unsigned char *p, size_t len,
+	     Der_class *class, Der_type *type,
 	     int *tag, size_t *size)
 {
     if (len < 1)
@@ -154,7 +158,8 @@ der_get_tag (unsigned char *p, size_t len, Der_class *class, Der_type *type,
 }
 
 int
-der_match_tag (unsigned char *p, size_t len, Der_class class, Der_type type,
+der_match_tag (const unsigned char *p, size_t len,
+	       Der_class class, Der_type type,
 	       int tag, size_t *size)
 {
     size_t l;
@@ -176,7 +181,7 @@ der_match_tag (unsigned char *p, size_t len, Der_class class, Der_type type,
 }
 
 int
-der_match_tag_and_length (unsigned char *p, size_t len,
+der_match_tag_and_length (const unsigned char *p, size_t len,
 			  Der_class class, Der_type type, int tag,
 			  size_t *length_ret, size_t *size)
 {
@@ -198,7 +203,8 @@ der_match_tag_and_length (unsigned char *p, size_t len,
 }
 
 int
-decode_integer (unsigned char *p, size_t len, int *num, size_t *size)
+decode_integer (const unsigned char *p, size_t len,
+		int *num, size_t *size)
 {
     size_t ret = 0;
     size_t l, reallen;
@@ -224,7 +230,7 @@ decode_integer (unsigned char *p, size_t len, int *num, size_t *size)
 }
 
 int
-decode_general_string (unsigned char *p, size_t len, 
+decode_general_string (const unsigned char *p, size_t len, 
 		       general_string *str, size_t *size)
 {
     size_t ret = 0;
@@ -256,7 +262,7 @@ decode_general_string (unsigned char *p, size_t len,
 }
 
 int
-decode_octet_string (unsigned char *p, size_t len, 
+decode_octet_string (const unsigned char *p, size_t len, 
 		     octet_string *k, size_t *size)
 {
     size_t ret = 0;
@@ -288,7 +294,7 @@ decode_octet_string (unsigned char *p, size_t len,
 }
 
 static void
-generalizedtime2time (char *s, time_t *t)
+generalizedtime2time (const char *s, time_t *t)
 {
     struct tm tm;
 
@@ -302,7 +308,8 @@ generalizedtime2time (char *s, time_t *t)
 }
 
 int
-decode_generalized_time (unsigned char *p, size_t len, time_t *t, size_t *size)
+decode_generalized_time (const unsigned char *p, size_t len,
+			 time_t *t, size_t *size)
 {
     octet_string k;
     char *times;

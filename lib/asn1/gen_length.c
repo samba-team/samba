@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,13 +41,15 @@
 RCSID("$Id$");
 
 static void
-length_primitive (char *typename, char *name, char *variable)
+length_primitive (const char *typename,
+		  const char *name,
+		  const char *variable)
 {
     fprintf (codefile, "%s += length_%s(%s);\n", variable, typename, name);
 }
 
 static void
-length_type (char *name, Type *t, char *variable)
+length_type (const char *name, const Type *t, const char *variable)
 {
   switch (t->type) {
   case TType:
@@ -137,15 +139,15 @@ length_type (char *name, Type *t, char *variable)
 }
 
 void
-generate_type_length (Symbol *s)
+generate_type_length (const Symbol *s)
 {
   fprintf (headerfile,
-	   "size_t length_%s(%s *);\n",
+	   "size_t length_%s(const %s *);\n",
 	   s->gen_name, s->gen_name);
 
   fprintf (codefile,
 	   "size_t\n"
-	   "length_%s(%s *data)\n"
+	   "length_%s(const %s *data)\n"
 	   "{\n"
 	   "size_t ret = 0;\n",
 	   s->gen_name, s->gen_name);

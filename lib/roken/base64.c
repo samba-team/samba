@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -60,12 +60,12 @@ int base64_encode(const void *data, int size, char **str)
   char *s, *p;
   int i;
   int c;
-  unsigned char *q;
+  const unsigned char *q;
 
   p = s = (char*)malloc(size*4/3+4);
   if (p == NULL)
       return -1;
-  q = (unsigned char*)data;
+  q = (const unsigned char*)data;
   i=0;
   for(i = 0; i < size;){
     c=q[i++];

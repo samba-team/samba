@@ -82,7 +82,7 @@ length_len (size_t len)
 }
 
 size_t
-length_integer (int *data)
+length_integer (const int *data)
 {
   size_t len = length_int (*data);
 
@@ -90,7 +90,7 @@ length_integer (int *data)
 }
 
 size_t
-length_general_string (general_string *data)
+length_general_string (const general_string *data)
 {
   char *str = *data;
   size_t len = strlen(str);
@@ -98,13 +98,13 @@ length_general_string (general_string *data)
 }
 
 size_t
-length_octet_string (octet_string *k)
+length_octet_string (const octet_string *k)
 {
   return 1 + length_len(k->length) + k->length;
 }
 
 size_t
-length_generalized_time (time_t *t)
+length_generalized_time (const time_t *t)
 {
   octet_string k;
   size_t ret;

@@ -41,7 +41,7 @@
 RCSID("$Id$");
 
 static void
-generate_2int (Symbol *s)
+generate_2int (const Symbol *s)
 {
     Type *t = s->type;
     Member *m;
@@ -69,7 +69,7 @@ generate_2int (Symbol *s)
 }
 
 static void
-generate_int2 (Symbol *s)
+generate_int2 (const Symbol *s)
 {
     Type *t = s->type;
     Member *m;
@@ -101,7 +101,7 @@ generate_int2 (Symbol *s)
  */
 
 static void
-generate_units (Symbol *s)
+generate_units (const Symbol *s)
 {
     Type *t = s->type;
     Member *m;
@@ -130,7 +130,7 @@ generate_units (Symbol *s)
 }
 
 void
-generate_glue (Symbol *s)
+generate_glue (const Symbol *s)
 {
     switch(s->type->type) {
     case TBitString :

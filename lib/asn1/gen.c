@@ -106,7 +106,7 @@ close_generate ()
 }
 
 void
-generate_constant (Symbol *s)
+generate_constant (const Symbol *s)
 {
   fprintf (headerfile, "enum { %s = %d };\n\n",
 	   s->gen_name, s->constant);
@@ -306,7 +306,7 @@ define_type (int level, char *name, Type *t, int typedefp)
 }
 
 static void
-generate_type_header (Symbol *s)
+generate_type_header (const Symbol *s)
 {
     fprintf (headerfile, "/*\n");
     fprintf (headerfile, "%s ::= ", s->name);
@@ -321,9 +321,10 @@ generate_type_header (Symbol *s)
 
 
 void
-generate_type (Symbol *s)
+generate_type (const Symbol *s)
 {
     char *filename;
+
     asprintf (&filename, "%s_%s.x", STEM, s->gen_name);
     codefile = fopen (filename, "w");
     if (codefile == NULL)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,13 +41,13 @@
 RCSID("$Id$");
 
 static void
-free_primitive (char *typename, char *name)
+free_primitive (const char *typename, const char *name)
 {
     fprintf (codefile, "free_%s(%s);\n", typename, name);
 }
 
 static void
-free_type (char *name, Type *t)
+free_type (const char *name, const Type *t)
 {
   switch (t->type) {
   case TType:
@@ -118,7 +118,7 @@ free_type (char *name, Type *t)
 }
 
 void
-generate_type_free (Symbol *s)
+generate_type_free (const Symbol *s)
 {
   fprintf (headerfile,
 	   "void   free_%s  (%s *);\n",

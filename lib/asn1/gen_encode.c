@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,7 +41,7 @@
 RCSID("$Id$");
 
 static void
-encode_primitive (char *typename, char *name)
+encode_primitive (const char *typename, const char *name)
 {
     fprintf (codefile,
 	     "e = encode_%s(p, len, %s, &l);\n"
@@ -51,7 +51,7 @@ encode_primitive (char *typename, char *name)
 }
 
 static void
-encode_type (char *name, Type *t)
+encode_type (const char *name, const Type *t)
 {
   switch (t->type) {
   case TType:
@@ -204,17 +204,19 @@ encode_type (char *name, Type *t)
 }
 
 void
-generate_type_encode (Symbol *s)
+generate_type_encode (const Symbol *s)
 {
   fprintf (headerfile,
-	   "int    encode_%s(unsigned char *, size_t, %s *, size_t *);\n",
+	   "int    "
+	   "encode_%s(unsigned char *, size_t, const %s *, size_t *);\n",
 	   s->gen_name, s->gen_name);
 
   fprintf (codefile, "#define BACK if (e) return e; p -= l; len -= l; ret += l\n\n");
 
 
   fprintf (codefile, "int\n"
-	   "encode_%s(unsigned char *p, size_t len, %s *data, size_t *size)\n"
+	   "encode_%s(unsigned char *p, size_t len,"
+	   " const %s *data, size_t *size)\n"
 	   "{\n",
 	   s->gen_name, s->gen_name);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,14 +41,14 @@
 RCSID("$Id$");
 
 static void
-copy_primitive (char *typename, char *from, char *to)
+copy_primitive (const char *typename, const char *from, const char *to)
 {
     fprintf (codefile, "if(copy_%s(%s, %s)) return ENOMEM;\n", 
 	     typename, from, to);
 }
 
 static void
-copy_type (char *from, char *to, Type *t)
+copy_type (const char *from, const char *to, const Type *t)
 {
   switch (t->type) {
   case TType:
@@ -134,7 +134,7 @@ copy_type (char *from, char *to, Type *t)
 }
 
 void
-generate_type_copy (Symbol *s)
+generate_type_copy (const Symbol *s)
 {
   fprintf (headerfile,
 	   "int    copy_%s  (const %s *, %s *);\n",

@@ -140,7 +140,7 @@ der_put_length (unsigned char *p, size_t len, size_t val, size_t *size)
 
 int
 der_put_general_string (unsigned char *p, size_t len, 
-			general_string *str, size_t *size)
+			const general_string *str, size_t *size)
 {
     size_t slen = strlen(*str);
 
@@ -155,7 +155,7 @@ der_put_general_string (unsigned char *p, size_t len,
 
 int
 der_put_octet_string (unsigned char *p, size_t len, 
-		      octet_string *data, size_t *size)
+		      const octet_string *data, size_t *size)
 {
     if (len < data->length)
 	return ASN1_OVERFLOW;
@@ -202,7 +202,7 @@ der_put_length_and_tag (unsigned char *p, size_t len, size_t len_val,
 }
 
 int
-encode_integer (unsigned char *p, size_t len, int *data, size_t *size)
+encode_integer (unsigned char *p, size_t len, const int *data, size_t *size)
 {
     int num = *data;
     size_t ret = 0;
@@ -227,7 +227,7 @@ encode_integer (unsigned char *p, size_t len, int *data, size_t *size)
 
 int
 encode_general_string (unsigned char *p, size_t len, 
-		       general_string *data, size_t *size)
+		       const general_string *data, size_t *size)
 {
     size_t ret = 0;
     size_t l;
@@ -251,7 +251,7 @@ encode_general_string (unsigned char *p, size_t len,
 
 int
 encode_octet_string (unsigned char *p, size_t len, 
-		     octet_string *k, size_t *size)
+		     const octet_string *k, size_t *size)
 {
     size_t ret = 0;
     size_t l;
@@ -287,7 +287,8 @@ time2generalizedtime (time_t t, octet_string *s)
 }
 
 int
-encode_generalized_time (unsigned char *p, size_t len, time_t *t, size_t *size)
+encode_generalized_time (unsigned char *p, size_t len,
+			 const time_t *t, size_t *size)
 {
     size_t ret = 0;
     size_t l;

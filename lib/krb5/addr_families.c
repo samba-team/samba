@@ -105,7 +105,7 @@ ipv4_h_addr2sockaddr(const char *addr,
     *sa_size = sizeof(*sin);
     sin->sin_family = AF_INET;
     sin->sin_port   = port;
-    sin->sin_addr   = *((struct in_addr *)addr);
+    sin->sin_addr   = *((const struct in_addr *)addr);
 }
 
 static krb5_error_code
@@ -203,7 +203,7 @@ ipv6_sockaddr2addr (const struct sockaddr *sa, krb5_address *a)
 #ifdef IN6_EXTRACT_V4ADDR
 #define IN6_ADDR_V6_TO_V4(x) (&IN6_EXTRACT_V4ADDR(x))
 #else
-#define IN6_ADDR_V6_TO_V4(x) ((struct in_addr *)&(x)->s6_addr[12])
+#define IN6_ADDR_V6_TO_V4(x) ((const struct in_addr *)&(x)->s6_addr[12])
 #endif
 #endif
 	memcpy (buf, IN6_ADDR_V6_TO_V4(&sin6->sin6_addr), 4);
@@ -252,7 +252,7 @@ ipv6_h_addr2sockaddr(const char *addr,
     *sa_size = sizeof(*sin6);
     sin6->sin6_family = AF_INET6;
     sin6->sin6_port   = port;
-    sin6->sin6_addr   = *((struct in6_addr *)addr);
+    sin6->sin6_addr   = *((const struct in6_addr *)addr);
 }
 
 static krb5_error_code

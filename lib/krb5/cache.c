@@ -98,7 +98,7 @@ allocate_ccache (krb5_context context,
     p = malloc(sizeof(*p));
     if(p == NULL)
 	return KRB5_CC_NOMEM;
-    p->ops = (krb5_cc_ops *)ops;
+    p->ops = ops;
     *id = p;
     ret = p->ops->resolve(context, id, residual);
     if(ret)
@@ -150,7 +150,7 @@ krb5_cc_gen_new(krb5_context context,
     p = malloc (sizeof(*p));
     if (p == NULL)
 	return KRB5_CC_NOMEM;
-    p->ops = (krb5_cc_ops *)ops;
+    p->ops = ops;
     *id = p;
     return p->ops->gen_new(context, id);
 }

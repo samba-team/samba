@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -57,16 +57,16 @@
 #include "hash.h"
 #include "symbol.h"
 
-void generate_type (Symbol *);
-void generate_constant (Symbol *);
-void generate_type_encode (Symbol *s);
-void generate_type_decode (Symbol *s);
-void generate_seq_type_decode (Symbol *s);
-void generate_type_free (Symbol *s);
-void generate_type_length (Symbol *s);
-void generate_type_copy (Symbol *s);
-void generate_type_maybe (Symbol *s);
-void generate_glue (Symbol *s);
+void generate_type (const Symbol *);
+void generate_constant (const Symbol *);
+void generate_type_encode (const Symbol *s);
+void generate_type_decode (const Symbol *s);
+void generate_seq_type_decode (const Symbol *s);
+void generate_type_free (const Symbol *s);
+void generate_type_length (const Symbol *s);
+void generate_type_copy (const Symbol *s);
+void generate_type_maybe (const Symbol *s);
+void generate_glue (const Symbol *s);
 
 void init_generate (char *filename, char *basename);
 void close_generate(void);

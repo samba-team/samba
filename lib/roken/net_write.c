@@ -54,7 +54,7 @@ RCSID("$Id$");
 ssize_t
 net_write (int fd, const void *buf, size_t nbytes)
 {
-    const char *cbuf = (char *)buf;
+    const char *cbuf = (const char *)buf;
     ssize_t count;
     size_t rem = nbytes;
 

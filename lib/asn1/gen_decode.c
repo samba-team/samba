@@ -41,7 +41,7 @@
 RCSID("$Id$");
 
 static void
-decode_primitive (char *typename, char *name)
+decode_primitive (const char *typename, const char *name)
 {
     fprintf (codefile,
 	     "e = decode_%s(p, len, %s, &l);\n"
@@ -51,7 +51,7 @@ decode_primitive (char *typename, char *name)
 }
 
 static void
-decode_type (char *name, Type *t)
+decode_type (const char *name, const Type *t)
 {
   switch (t->type) {
   case TType:
@@ -265,10 +265,11 @@ decode_type (char *name, Type *t)
 }
 
 void
-generate_type_decode (Symbol *s)
+generate_type_decode (const Symbol *s)
 {
   fprintf (headerfile,
-	   "int    decode_%s(unsigned char *, size_t, %s *, size_t *);\n",
+	   "int    "
+	   "decode_%s(const unsigned char *, size_t, %s *, size_t *);\n",
 	   s->gen_name, s->gen_name);
 
   fprintf (codefile, "#define FORW "
@@ -279,7 +280,8 @@ generate_type_decode (Symbol *s)
 
 
   fprintf (codefile, "int\n"
-	   "decode_%s(unsigned char *p, size_t len, %s *data, size_t *size)\n"
+	   "decode_%s(const unsigned char *p,"
+	   " size_t len, %s *data, size_t *size)\n"
 	   "{\n",
 	   s->gen_name, s->gen_name);
 
@@ -319,15 +321,15 @@ generate_type_decode (Symbol *s)
 }
 
 void
-generate_seq_type_decode (Symbol *s)
+generate_seq_type_decode (const Symbol *s)
 {
     fprintf (headerfile,
-	     "int decode_seq_%s(unsigned char *, size_t, int, int, "
+	     "int decode_seq_%s(const unsigned char *, size_t, int, int, "
 	     "%s *, size_t *);\n",
 	     s->gen_name, s->gen_name);
 
     fprintf (codefile, "int\n"
-	     "decode_seq_%s(unsigned char *p, size_t len, int tag, "
+	     "decode_seq_%s(const unsigned char *p, size_t len, int tag, "
 	     "int optional, %s *data, size_t *size)\n"
 	     "{\n",
 	     s->gen_name, s->gen_name);
