@@ -37,6 +37,7 @@ void sub_set_context(struct substitute_context *subptr)
 */
 static void setup_string(char **dest, const char *str)
 {
+#define SAFE_NETBIOS_CHARS ". -_"
 	char *s;
 
 	s = strdup(str);

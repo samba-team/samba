@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "dynconfig.h"
 #include "registry.h"
 #include "lib/cmdline/popt_common.h"
 #include "gtk/common/select.h"

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "dynconfig.h"
 
 /* this global variable determines what messages are printed */
 int DEBUGLEVEL;

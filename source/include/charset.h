@@ -42,3 +42,16 @@ struct charset_functions {
 typedef uint32_t codepoint_t;
 
 #define INVALID_CODEPOINT ((codepoint_t)-1)
+
+
+/* generic iconv conversion structure */
+typedef struct {
+	size_t (*direct)(void *cd, const char **inbuf, size_t *inbytesleft,
+			 char **outbuf, size_t *outbytesleft);
+	size_t (*pull)(void *cd, const char **inbuf, size_t *inbytesleft,
+		       char **outbuf, size_t *outbytesleft);
+	size_t (*push)(void *cd, const char **inbuf, size_t *inbytesleft,
+		       char **outbuf, size_t *outbytesleft);
+	void *cd_direct, *cd_pull, *cd_push;
+} *smb_iconv_t;
+

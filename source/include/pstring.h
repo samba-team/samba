@@ -1,6 +1,8 @@
 /* 
    samba -- Unix SMB/CIFS implementation.
-   Safe standardized string types
+
+   ugly string types from Samba3. Will be removed 
+   with glee when we finally don't use them.
    
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) John H Terpstra              1996-2000
@@ -23,8 +25,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _PSTRING
-
 #define PSTRING_LEN 1024
 #define FSTRING_LEN 256
 
@@ -32,5 +32,3 @@ typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
 
 #define _PSTRING
-
-#endif /* ndef _PSTRING */

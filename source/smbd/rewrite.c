@@ -1,4 +1,5 @@
 #include "includes.h"
+#include "dynconfig.h"
 
 /*
 

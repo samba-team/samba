@@ -53,6 +53,7 @@
  */
 
 #include "includes.h"
+#include "dynconfig.h"
 #include "system/time.h"
 #include "system/iconv.h"
 #include "system/network.h"

@@ -127,6 +127,12 @@
 #define uint64 uint64_t
 #endif
 
+#define False (0)
+#define True (1)
+#define Auto (2)
+
+typedef int BOOL;
+
 /*
   we use struct ipv4_addr to avoid having to include all the
   system networking headers everywhere
@@ -152,11 +158,7 @@ extern char *sys_errlist[];
 extern int errno;
 #endif
 
-/* Our own pstrings and fstrings */
-#include "pstring.h"
-
 /* Lists, trees, caching, database... */
-#include "dynconfig.h"
 #include "version.h"
 #include "xfile.h"
 #include "talloc.h"
@@ -169,7 +171,12 @@ extern int errno;
 #include "trans2.h"
 #include "nterr.h"
 #include "charset.h"
-#include "rewrite.h"
+#include "debug.h"
+#include "doserr.h"
+#include "enums.h"
+#include "pstring.h"
+#include "smb_macros.h"
+#include "rpc_secdes.h"
 #include "smb.h"
 #include "ads.h"
 #include "lib/socket/socket.h"

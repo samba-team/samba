@@ -89,8 +89,7 @@ typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
 #endif
 
-#ifndef _BOOL
-#define _BOOL			/* So we don't typedef BOOL again in vfs.h */
+#ifndef Auto
 #define False (0)
 #define True (1)
 #define Auto (2)

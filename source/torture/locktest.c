@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "dynconfig.h"
 #include "system/time.h"
 
 static int numops = 1000;
