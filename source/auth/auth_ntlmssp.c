@@ -58,6 +58,7 @@ NTSTATUS ntlmssp_server_end(NTLMSSP_STATE **ntlmssp_state)
 	}
 
 	talloc_destroy(mem_ctx);
+	*ntlmssp_state = NULL;
 	return NT_STATUS_OK;
 }
 
