@@ -276,6 +276,8 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 	domain->sequence_number = IVAL(data.dptr, 0);
 	domain->last_seq_check  = IVAL(data.dptr, 4);
 	
+	SAFE_FREE(data.dptr);
+
 	/* have we expired? */
 	
 	time_diff = now - domain->last_seq_check;
