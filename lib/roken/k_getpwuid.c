@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -52,7 +52,7 @@ k_getpwuid (uid_t uid)
      struct passwd *p;
 
      p = getpwuid (uid);
-#ifdef HAVE_GETSPUID
+#if defined(HAVE_GETSPUID) && defined(HAVE_STRUCT_SPWD)
      if (p)
      {
 	  struct spwd *spwd;
