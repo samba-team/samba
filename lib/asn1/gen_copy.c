@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -54,6 +54,7 @@ copy_type (const char *from, const char *to, const Type *t)
 	       t->symbol->gen_name, from, to);
       break;
   case TInteger:
+  case TUInteger:
       fprintf(codefile, "*(%s) = *(%s);\n", to, from);
       break;
   case TOctetString:
