@@ -239,13 +239,14 @@ uint32 check_domain_security(const char *orig_user, const char *domain,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (domain == NULL || strequal(domain, ""))
+	if (domain == NULL)
 	{
-		domain = global_myworkgroup;
+		domain = "";
 	}
 
 	if (strequal(domain, global_myworkgroup) ||
-	    strequal(domain, global_myname))
+	    strequal(domain, global_myname) ||
+	    strequal(domain, ""))
 	{
 		/*
 		 * local

@@ -547,9 +547,6 @@ BOOL get_safe_nt_error_msg(uint32 nt_code, char *msg, size_t len)
 const char *get_nt_error_msg(uint32 nt_code)
 {
 	static pstring msg;
-	if (get_safe_nt_error_msg(nt_code, msg, sizeof(msg)))
-	{
-		return msg;
-	}
-	return "unknown error";
+	get_safe_nt_error_msg(nt_code, msg, sizeof(msg));
+	return msg;
 }

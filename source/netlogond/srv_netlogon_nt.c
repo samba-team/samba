@@ -314,7 +314,7 @@ static uint32 net_login_interactive(const NET_ID_INFO_1 * id1,
 }
 
 /*************************************************************************
- net_login_network:
+ net_login_general:
  *************************************************************************/
 static uint32 net_login_general(const NET_ID_INFO_4 * id4,
 				struct dcinfo *dc, char usr_sess_key[16])
@@ -901,12 +901,12 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	NTTIME pass_last_set_time;
 	NTTIME pass_can_change_time;
 	NTTIME pass_must_change_time;
-	UNISTR2 *uni_nt_name;
-	UNISTR2 *uni_full_name;
-	UNISTR2 *uni_logon_script;
-	UNISTR2 *uni_profile_path;
-	UNISTR2 *uni_home_dir;
-	UNISTR2 *uni_dir_drive;
+	UNISTR2 *uni_nt_name = NULL;
+	UNISTR2 *uni_full_name = NULL;
+	UNISTR2 *uni_logon_script = NULL;
+	UNISTR2 *uni_profile_path = NULL;
+	UNISTR2 *uni_home_dir = NULL;
+	UNISTR2 *uni_dir_drive = NULL;
 	uint32 user_rid;
 	uint32 group_rid;
 	int num_gids = 0;
@@ -917,6 +917,13 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	UNISTR2 uni_myname;
 	UNISTR2 uni_sam_name;
 	uint32 status = NT_STATUS_NOPROBLEMO;
+	uint32 lm_pw_len = 0;
+	uint32 nt_pw_len = 0;
+	BOOL anonymouse = False;
+
+	ZERO_STRUCT(ctr);
+	ZERO_STRUCT(lm_pw8);
+	ZERO_STRUCT(usr_sess_key);
 
 	/*
 	 * checks and updates credentials.  creates reply credentials
@@ -950,6 +957,8 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		{
 			uni_samusr = &id_ctr->auth.id1.uni_user_name;
 			uni_domain = &id_ctr->auth.id1.uni_domain_name;
+			nt_pw_len = 16;
+			lm_pw_len = 16;
 			DEBUG(3, ("SAM Logon (Interactive)."));
 			break;
 		}
@@ -957,6 +966,8 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		{
 			uni_samusr = &id_ctr->auth.id2.uni_user_name;
 			uni_domain = &id_ctr->auth.id2.uni_domain_name;
+			nt_pw_len = id_ctr->auth.id2.hdr_nt_chal_resp.str_str_len;
+			lm_pw_len = id_ctr->auth.id2.hdr_lm_chal_resp.str_str_len;
 			DEBUG(3, ("SAM Logon (Network). "));
 			break;
 		}
@@ -964,6 +975,8 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		{
 			uni_samusr = &id_ctr->auth.id4.uni_user_name;
 			uni_domain = &id_ctr->auth.id4.uni_domain_name;
+			lm_pw_len = id_ctr->auth.id4.hdr_general.str_str_len;
+			nt_pw_len = 0;
 			DEBUG(3, ("SAM Logon (General). "));
 			break;
 		}
@@ -984,7 +997,8 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	 */
 
 	if (lp_server_role() == ROLE_STANDALONE &&
-			!strequal(nt_samname, global_myname))
+			(!strequal(nt_samname, global_myname) &&
+			 !strequal(nt_samname, "")))
 	{
 		DEBUG(1,("_net_sam_logon: stand-alone server cannot remote-auth domain users!\n"));
 		return NT_STATUS_ACCESS_DENIED;
@@ -995,6 +1009,7 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	 */
 
 	if (!strequal(nt_samname, global_sam_name) &&
+	    !strequal(nt_samname, "") &&
 	    !strequal(nt_samname, global_myname))
 	{
 		DEBUG(5,("remote-auth: SAM name: %s my name: %s\n",
@@ -1045,6 +1060,19 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	}
 
 	/*
+	 * check anonymous status
+	 */
+
+	if (lm_pw_len <= 1 && nt_pw_len == 0 &&
+	    strlen(nt_username) == 0 && strlen(nt_samname) == 0)
+	{
+		char *guest_acct = lp_guestaccount(-1);
+		anonymouse = guest_acct && guest_acct[0];
+		DEBUG(5,("Anonymous Access allowed: %s\n",
+					BOOLSTR(anonymouse)));
+	}
+
+	/*
 	 * IMPORTANT: do a General Login BEFORE the others,
 	 * because "update encrypted" may be enabled, which
 	 * will result in the smb password entry being added.
@@ -1074,23 +1102,29 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	 * needed for the user profile.
 	 */
 
-	become_root(True);
-	status_pwd = direct_samr_userinfo(uni_samusr, 21, &ctr,
-					  &gids, &num_gids, False);
-	unbecome_root(True);
-
-	if (status_pwd != NT_STATUS_NOPROBLEMO)
+	if (!anonymouse)
 	{
-		free_samr_userinfo_ctr(&ctr);
+		become_root(True);
+		status_pwd = direct_samr_userinfo(uni_samusr, 21, &ctr,
+						  &gids, &num_gids, False);
+		unbecome_root(True);
 
-		return TooMuchInformation(status_pwd);
+		if (status_pwd != NT_STATUS_NOPROBLEMO)
+		{
+			free_samr_userinfo_ctr(&ctr);
+
+			return TooMuchInformation(status_pwd);
+		}
+		acb_info = ctr.info.id21->acb_info;
+	}
+	else
+	{
+		acb_info = ACB_NORMAL | ACB_PWNOTREQ;
 	}
 
 	/*
 	 * check the Account Control Bits
 	 */
-
-	acb_info = ctr.info.id21->acb_info;
 
 	if (IS_BITS_SET_ALL(acb_info, ACB_DISABLED))
 	{
@@ -1116,20 +1150,34 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	 * get some user profile info
 	 */
 
-	logon_time = ctr.info.id21->logon_time;
-	logoff_time = ctr.info.id21->logoff_time;
-	kickoff_time = ctr.info.id21->kickoff_time;
-	pass_last_set_time = ctr.info.id21->pass_last_set_time;
-	pass_can_change_time = ctr.info.id21->pass_can_change_time;
-	pass_must_change_time = ctr.info.id21->pass_must_change_time;
-	uni_nt_name = &ctr.info.id21->uni_user_name;
-	uni_full_name = &ctr.info.id21->uni_full_name;
-	uni_home_dir = &ctr.info.id21->uni_home_dir;
-	uni_dir_drive = &ctr.info.id21->uni_dir_drive;
-	uni_logon_script = &ctr.info.id21->uni_logon_script;
-	uni_profile_path = &ctr.info.id21->uni_profile_path;
-	user_rid = ctr.info.id21->user_rid;
-	group_rid = ctr.info.id21->group_rid;
+	if (!anonymouse)
+	{
+		logon_time = ctr.info.id21->logon_time;
+		logoff_time = ctr.info.id21->logoff_time;
+		kickoff_time = ctr.info.id21->kickoff_time;
+		pass_last_set_time = ctr.info.id21->pass_last_set_time;
+		pass_can_change_time = ctr.info.id21->pass_can_change_time;
+		pass_must_change_time = ctr.info.id21->pass_must_change_time;
+		uni_nt_name = &ctr.info.id21->uni_user_name;
+		uni_full_name = &ctr.info.id21->uni_full_name;
+		uni_home_dir = &ctr.info.id21->uni_home_dir;
+		uni_dir_drive = &ctr.info.id21->uni_dir_drive;
+		uni_logon_script = &ctr.info.id21->uni_logon_script;
+		uni_profile_path = &ctr.info.id21->uni_profile_path;
+		user_rid = ctr.info.id21->user_rid;
+		group_rid = ctr.info.id21->group_rid;
+	}
+	else
+	{
+		init_nt_time(&logon_time);
+		init_nt_time(&logoff_time);
+		init_nt_time(&kickoff_time);
+		init_nt_time(&pass_last_set_time);
+		init_nt_time(&pass_can_change_time);
+		init_nt_time(&pass_must_change_time);
+		user_rid = DOMAIN_USER_RID_GUEST;
+		group_rid = DOMAIN_GROUP_RID_GUESTS;
+	}
 
 	/*
 	 * validate password - if required
@@ -1171,6 +1219,10 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 			free_samr_userinfo_ctr(&ctr);
 			return TooMuchInformation(status);
 		}
+	}
+	else
+	{
+		(*auth_resp) = 1;
 	}
 
 	/* lkclXXXX this is the point at which, if the login was
