@@ -343,14 +343,6 @@ BOOL reopen_logs( void )
 	if (stdout_logging)
 		return True;
 
-	if (DEBUGLEVEL_CLASS[ DBGC_ALL ] <= 0) {
-		if (dbf) {
-			(void)fclose(dbf);
-			dbf = NULL;
-		}
-		return True;
-	}
-
 	oldumask = umask( 022 );
   
 	pstrcpy(fname, debugf );
