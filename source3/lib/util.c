@@ -2079,7 +2079,7 @@ int read_smb_length(int fd,char *inbuf,int timeout)
 
       if (msg_type == 0x85) 
 	{
-	  DEBUG(5,( "Got keepalive packet\n"));
+	  DEBUG(5,("Got keepalive packet\n"));
 	  ok = False;
 	}
     }
@@ -2097,8 +2097,7 @@ The timeout is in milli seconds
 ****************************************************************************/
 BOOL receive_smb(int fd,char *buffer,int timeout)
 {
-  int len;
-  BOOL ok;
+  int len,ret;
 
   bzero(buffer,smb_size + 100);
 
@@ -2107,18 +2106,16 @@ BOOL receive_smb(int fd,char *buffer,int timeout)
     return(False);
 
   if (len > BUFFER_SIZE) {
-    DEBUG(0,("Invalid packet length! (%d bytes)\n",len));
+    DEBUG(0,("Invalid packet length! (%d bytes).\n",len));
     if (len > BUFFER_SIZE + (SAFETY_MARGIN/2))
       exit(1);
   }
 
-  ok = (read_data(fd,buffer+4,len) == len);
-
-  if (!ok)
-    {
-      close_sockets();
-      exit(1);
-    }
+  ret = read_data(fd,buffer+4,len);
+  if (ret != len) {
+    DEBUG(0,("ERROR: Invalid SMB length. Expected %d got %d\n",len,ret));
+    return False;
+  }
 
   return(True);
 }

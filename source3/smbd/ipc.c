@@ -2790,12 +2790,9 @@ int reply_trans(char *inbuf,char *outbuf)
   while (pscnt < tpscnt || dscnt < tdscnt)
     {
       int pcnt,poff,dcnt,doff,pdisp,ddisp;
-
-      receive_smb(Client,inbuf, 0);
-      show_msg(inbuf);
-	  
-      /* Ensure this is still a trans packet (sanity check) */
-      if(CVAL(inbuf, smb_com) != SMBtrans)
+      
+      if (!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT*1000) ||
+	  CVAL(inbuf, smb_com) != SMBtrans)
 	{
 	  DEBUG(2,("Invalid secondary trans2 packet\n"));
 	  if (params) free(params);
@@ -2803,6 +2800,8 @@ int reply_trans(char *inbuf,char *outbuf)
 	  if (setup) free(setup);
 	  return(ERROR(ERRSRV,ERRerror));
 	}
+
+      show_msg(inbuf);
       
       tpscnt = SVAL(inbuf,smb_vwv0);
       tdscnt = SVAL(inbuf,smb_vwv1);

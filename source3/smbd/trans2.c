@@ -1554,10 +1554,8 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
 
       while( num_data_sofar < total_data || num_params_sofar < total_params)
 	{
-	  receive_smb(Client,inbuf, 0);
-	  
-	  /* Ensure this is still a trans2 packet (sanity check) */
-	  if(CVAL(inbuf, smb_com) != SMBtranss2)
+	  if(!receive_smb(Client,inbuf, SMB_SECONDARY_WAIT*1000) ||
+	     CVAL(inbuf, smb_com) != SMBtranss2)
 	    {
 	      outsize = set_message(outbuf,0,0,True);
 	      DEBUG(2,("Invalid secondary trans2 packet\n"));
