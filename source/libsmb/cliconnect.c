@@ -627,7 +627,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	if (getenv("CLI_FORCE_ASCII")) {
 		cli->capabilities &= ~CAP_UNICODE;
 	}
-
+	
 	return True;
 }
 

@@ -289,6 +289,7 @@ struct acct_info
 #include "rpc_wkssvc.h"
 #include "rpc_spoolss.h"
 #include "rpc_dfs.h"
+#include "rpc_ds.h"
 #include "sids.h"
 
 #endif /* _NT_DOMAIN_H */

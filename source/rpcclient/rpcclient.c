@@ -410,10 +410,12 @@ extern struct cmd_set netlogon_commands[];
 extern struct cmd_set srvsvc_commands[];
 extern struct cmd_set dfs_commands[];
 extern struct cmd_set reg_commands[];
+extern struct cmd_set ds_commands[];
 
 static struct cmd_set *rpcclient_command_list[] = {
 	rpcclient_commands,
 	lsarpc_commands,
+	ds_commands,
 	samr_commands,
 	spoolss_commands,
 	netlogon_commands,

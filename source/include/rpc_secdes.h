@@ -76,6 +76,14 @@
 #define ALL_SECURITY_INFORMATION (OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|\
 									DACL_SECURITY_INFORMATION|SACL_SECURITY_INFORMATION)
 
+/* Globally Unique ID */
+#define  GUID_SIZE 16
+typedef struct guid_info
+{
+        uint8 info[GUID_SIZE];
+} GUID;
+
+
 #ifndef _SEC_ACCESS
 /* SEC_ACCESS */
 typedef struct security_info_info

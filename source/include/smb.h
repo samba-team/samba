@@ -194,7 +194,7 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PIPE_NETDFS   "\\PIPE\\netdfs"
 
 #define PI_LSARPC		0
-#define PI_LSARPC_V2		1
+#define PI_LSARPC_DS		1
 #define PI_SAMR			2
 #define PI_NETLOGON		3
 #define PI_SRVSVC		4

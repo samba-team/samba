@@ -598,7 +598,7 @@ static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, uint32 rpc_ca
 	}
 
 	/* create the request RPC_HDR */
-	init_rpc_hdr(&hdr, RPC_BIND, 0x0, rpc_call_id, 
+	init_rpc_hdr(&hdr, RPC_BIND, 0x3, rpc_call_id, 
 		RPC_HEADER_LEN + RPC_HDR_RB_LEN + prs_offset(&auth_info),
 		auth_len);
 
