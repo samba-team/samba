@@ -736,7 +736,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		PACKI(desc,"W",5);		/* pad1 */
 		PACKS(desc,"z","");		/* pszSepFile */
 		PACKS(desc,"z","WinPrint");	/* pszPrProc */
-		PACKS(desc,"z","");		/* pszParms */
+		PACKS(desc,"z",NULL);		/* pszParms */
 		PACKS(desc,"z",NULL);		/* pszComment - don't ask.... JRA */
 		if (!status) {
 			PACKI(desc,"W",LPSTAT_OK); /* fsStatus */

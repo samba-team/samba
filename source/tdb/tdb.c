@@ -302,7 +302,8 @@ static int update_tailer(TDB_CONTEXT *tdb, tdb_off offset,
 #ifdef TDB_DEBUG
 void tdb_printfreelist(TDB_CONTEXT *tdb)
 {
-	tdb_off offset, rec_ptr, last_ptr;
+	long total_free = 0;
+    tdb_off offset, rec_ptr, last_ptr;
 	struct list_struct rec, lastrec, newrec;
 
 	tdb_lock(tdb, -1, F_WRLCK);
@@ -326,11 +327,13 @@ void tdb_printfreelist(TDB_CONTEXT *tdb)
 			return;
 		}
 
-		printf("entry offset=[0x%08x], rec.rec_len = [0x%08x]\n", rec.next, rec.rec_len );
+		printf("entry offset=[0x%08x], rec.rec_len = [0x%08x (%d)]\n", rec.next, rec.rec_len, rec.rec_len );
+		total_free += rec.rec_len;
 
 		/* move to the next record */
 		rec_ptr = rec.next;
 	}
+	printf("total rec_len = [0x%08x (%d)]\n", total_free, total_free );
 
 	tdb_unlock(tdb, -1, F_WRLCK);
 }

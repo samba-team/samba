@@ -425,7 +425,6 @@ BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipad
 void endlmhosts(FILE *fp);
 BOOL name_resolve_bcast(const char *name, int name_type,
 			struct in_addr **return_ip_list, int *return_count);
-BOOL is_ip_address(const char *name);
 BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type);
 BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
                                 struct in_addr *ip);
@@ -1804,6 +1803,7 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr);
 void map_printer_permissions(SEC_DESC *sd);
 BOOL print_access_check(struct current_user *user, int snum, int access_type);
 BOOL print_time_access_check(int snum);
+uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_default);
 #endif
 
 /*The following definitions come from  printing/pcap.c  */
@@ -3316,6 +3316,8 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				 const PRINTER_DEFAULT *printer_default,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
 				 POLICY_HND *handle);
+BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
+				NT_DEVICEMODE **pp_nt_devmode);
 uint32 _spoolss_closeprinter(POLICY_HND *handle);
 uint32 _spoolss_deleteprinter(POLICY_HND *handle);
 uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
