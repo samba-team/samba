@@ -561,6 +561,10 @@ static struct enum_list enum_printing[] = {
 	{PRINT_CUPS, "cups"},
 	{PRINT_LPRNT, "nt"},
 	{PRINT_LPROS2, "os2"},
+#ifdef DEVELOPER
+	{PRINT_TEST, "test"},
+	{PRINT_TEST, "vlp"},
+#endif /* DEVELOPER */
 	{-1, NULL}
 };
 
@@ -1099,6 +1103,18 @@ static void init_printer_values(void)
 			string_set(&sDefault.szLpresumecommand,
 				   "qstat -s -j%j -r");
 			break;
+#ifdef DEVELOPER
+	case PRINT_TEST:
+	case PRINT_VLP:
+		string_set(&sDefault.szPrintcommand, "vlp print %p %s");
+		string_set(&sDefault.szLpqcommand, "vlp lpq %p");
+		string_set(&sDefault.szLprmcommand, "vlp lprm %p %j");
+		string_set(&sDefault.szLppausecommand, "vlp lppause %p %j");
+		string_set(&sDefault.szLpresumecommand, "vlp lpresum %p %j");
+		string_set(&sDefault.szQueuepausecommand, "vlp queuepause %p");
+		string_set(&sDefault.szQueueresumecommand, "vlp queueresume %p");
+		break;
+#endif /* DEVELOPER */
 
 	}
 }
