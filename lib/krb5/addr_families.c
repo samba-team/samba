@@ -321,7 +321,6 @@ ipv6_parse_addr (const char *address, krb5_address *addr)
 {
     int ret;
     struct in6_addr in6;
-    krb5_error_code ret;
 
     ret = inet_pton(AF_INET6, address, &in6.s6_addr);
     if(ret == 1) {
