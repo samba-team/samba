@@ -103,6 +103,9 @@
 /* define if you need a declaration for optopt */
 #undef HAVE_OPTOPT_DECLARATION
 
+/* define if you need a declaration for environ */
+#undef HAVE_ENVIRON_DECLARATION
+
 /* define if you need a declaration for __progname */
 #undef HAVE___PROGNAME_DECLARATION
 
@@ -141,6 +144,9 @@
 
 /* Define this if you have a variable `timezone' */
 #undef HAVE_TIMEZONE
+
+/*  Define this if you have a struct spwd */
+#undef HAVE_STRUCT_SPWD
 
 /*  Define this if struct winsize is declared in sys/termios.h */
 #undef HAVE_STRUCT_WINSIZE
