@@ -184,39 +184,44 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 
 /*
  * This is a really ugly hack to make this interface work in the 2.2.x code. JRA.
+ * Return a malloced map so we can free it.
  */
 
 static int setup_fake_group_map(GROUP_MAP **ret_map)
 {
-	static GROUP_MAP map[2];
+	static GROUP_MAP static_map[2];
 	static BOOL group_map_init;
 	extern DOM_SID global_sam_sid;
 
+	*ret_map = (GROUP_MAP *)malloc(sizeof(GROUP_MAP)*2);
+	if (!ret_map)
+		return 2;
+	
 	if (group_map_init) {
-		*ret_map = &map[0];
-		return sizeof(map)/sizeof(GROUP_MAP);
+		memcpy( *ret_map, &static_map[0], sizeof(GROUP_MAP)*2);
+		return sizeof(static_map)/sizeof(GROUP_MAP);
 	}
 
 	group_map_init = True;
 
-	map[0].gid = (gid_t)-1;
-	sid_copy(&map[0].sid, &global_sam_sid);
-	sid_append_rid(&map[1].sid, DOMAIN_GROUP_RID_ADMINS);
-	map[0].sid_name_use = SID_NAME_DOM_GRP;
-	fstrcpy(map[0].nt_name, "Domain Admins");
-	fstrcpy(map[0].comment, "Administrators for the domain");
-	map[0].privilege = 0;
+	static_map[0].gid = (gid_t)-1;
+	sid_copy(&static_map[0].sid, &global_sam_sid);
+	sid_append_rid(&static_map[1].sid, DOMAIN_GROUP_RID_ADMINS);
+	static_map[0].sid_name_use = SID_NAME_DOM_GRP;
+	fstrcpy(static_map[0].nt_name, "Domain Admins");
+	fstrcpy(static_map[0].comment, "Administrators for the domain");
+	static_map[0].privilege = 0;
 
-	map[1].gid = (gid_t)-1;
-	sid_copy(&map[1].sid, &global_sam_sid);
-	sid_append_rid(&map[1].sid, DOMAIN_GROUP_RID_USERS);
-	map[1].sid_name_use = SID_NAME_DOM_GRP;
-	fstrcpy(map[1].nt_name, "Domain Users");
-	fstrcpy(map[1].comment, "Users in the domain");
-	map[1].privilege = 0;
+	static_map[1].gid = (gid_t)-1;
+	sid_copy(&static_map[1].sid, &global_sam_sid);
+	sid_append_rid(&static_map[1].sid, DOMAIN_GROUP_RID_USERS);
+	static_map[1].sid_name_use = SID_NAME_DOM_GRP;
+	fstrcpy(static_map[1].nt_name, "Domain Users");
+	fstrcpy(static_map[1].comment, "Users in the domain");
+	static_map[1].privilege = 0;
 
-	*ret_map = &map[0];
-	return sizeof(map)/sizeof(GROUP_MAP);
+	memcpy( *ret_map, &static_map[0], sizeof(GROUP_MAP)*2);
+	return sizeof(static_map)/sizeof(GROUP_MAP);
 }
 
 static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
