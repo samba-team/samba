@@ -41,16 +41,17 @@ static void popt_common_callback(poptContext con,
 			   const char *arg, const void *data)
 {
 	pstring logfile;
-	char *pname;
+	const char *pname;
 	
 	/* Find out basename of current program */
 	pname = strrchr_m(poptGetInvocationName(con),'/');
 
-	if(!pname)pname = poptGetInvocationName(con);
-	else pname++;
+	if (!pname)
+		pname = poptGetInvocationName(con);
+	else 
+		pname++;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		pstring logfile;
 		pstr_sprintf(logfile, "%s/log.%s", dyn_LOGFILEBASE, pname);
 		lp_set_logfile(logfile);
 		return;
