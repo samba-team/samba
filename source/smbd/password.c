@@ -531,24 +531,6 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	if (!lm_pwd || !nt_pwd)
 		return(False);
 
-#if 0	/* JERRY */
-	/* FIXME! this code looks to be unnecessary now that the passdb
-	   validates that the username exists and has a valid uid */
-	if (pwd != NULL && user == NULL) {
-		pass = (struct passwd *) pwd;
-		user = pass->pw_name;
-	} else {
-		/* I don't get this call here.  I think it should be moved.
-		   Need to check on it.     --jerry */
-		pass = smb_getpwnam(user,True);
-	}
-
-	if (pass == NULL) {
-		DEBUG(1,("Couldn't find user '%s' in UNIX password database.\n",user));
-		return(False);
-	}
-#endif
-
 	/* get the account information */
 	pdb_init_sam(&sampass);
 	if (!pdb_getsampwnam(sampass, user)) {
