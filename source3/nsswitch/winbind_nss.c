@@ -696,7 +696,7 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 	/* this next value is a pointer to a pointer so let's align it */
 
 	/* Calculate number of extra bytes needed to align on pointer size boundry */
-	if (i = (int)*buffer % sizeof(char*))
+	if ((i = (int)*buffer % sizeof(char*)) != 0)
 		i = sizeof(char*) - i;
 	
 	if ((tst = get_static(buffer, buflen, ((gr->num_gr_mem + 1) * 
