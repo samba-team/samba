@@ -22,16 +22,16 @@
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%d) Incorrect status %s - should be %s\n", \
-		       __LINE__, nt_errstr(status), nt_errstr(correct)); \
+		printf("(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = False; \
 		goto done; \
 	}} while (0)
 
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
-		printf("(%d) Incorrect value %s=%d - should be %d\n", \
-		       __LINE__, #v, v, correct); \
+		printf("(%s) Incorrect value %s=%d - should be %d\n", \
+		       __location__, #v, v, correct); \
 		ret = False; \
 		goto done; \
 	}} while (0)
@@ -454,13 +454,24 @@ static BOOL test_readx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying large read\n");
 	io.readx.in.offset = 0;
-	io.readx.in.mincnt = ~0;
-	io.readx.in.maxcnt = ~0;
+	io.readx.in.mincnt = 0xFFFF;
+	io.readx.in.maxcnt = 0xFFFF;
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
 	CHECK_VALUE(io.readx.out.compaction_mode, 0);
 	CHECK_VALUE(io.readx.out.nread, io.readx.in.maxcnt);
+	CHECK_BUFFER(buf, seed, io.readx.out.nread);
+
+	printf("Trying extra large read\n");
+	io.readx.in.offset = 0;
+	io.readx.in.mincnt = 100;
+	io.readx.in.maxcnt = 80000;
+	status = smb_raw_read(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(io.readx.out.remaining, 0xFFFF);
+	CHECK_VALUE(io.readx.out.compaction_mode, 0);
+	CHECK_VALUE(io.readx.out.nread, 0);
 	CHECK_BUFFER(buf, seed, io.readx.out.nread);
 
 	printf("Trying mincnt > maxcnt\n");
