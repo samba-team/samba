@@ -1,6 +1,5 @@
 #!/bin/sh
 #
-# $Id: samba-common.postinst,v 1.1.4.4 2002/10/15 21:36:46 jerry Exp $
 #
 
 set -e

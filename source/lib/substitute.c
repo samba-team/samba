@@ -29,7 +29,24 @@ pstring samlogon_user="";
 BOOL sam_logon_in_ssb = False;
 fstring remote_proto="UNKNOWN";
 fstring remote_machine="";
+static fstring smb_user_name;
 
+
+/*
+  setup the string used by %U substitution 
+*/
+void sub_set_smb_name(const char *name)
+{
+	fstring tmp;
+
+	/* ignore anonymous settings */
+	if (! *name) return;
+
+	fstrcpy(tmp,name);
+	trim_string(tmp," "," ");
+	strlower(tmp);
+	alpha_strcpy(smb_user_name,tmp,SAFE_NETBIOS_CHARS,sizeof(smb_user_name)-1);
+}
 
 /*******************************************************************
  Given a pointer to a %$(NAME) expand it as an environment variable.
@@ -180,12 +197,12 @@ void standard_sub_basic(char *str, int len)
 		
 		switch (*(p+1)) {
 		case 'U' : 
-			fstrcpy(tmp_str, sam_logon_in_ssb?samlogon_user:current_user_info.smb_name);
+			fstrcpy(tmp_str, sam_logon_in_ssb?samlogon_user:smb_user_name);
 			strlower(tmp_str);
 			string_sub(p,"%U",tmp_str,l);
 			break;
 		case 'G' :
-			fstrcpy(tmp_str, sam_logon_in_ssb?samlogon_user:current_user_info.smb_name);
+			fstrcpy(tmp_str, sam_logon_in_ssb?samlogon_user:smb_user_name);
 			if ((pass = Get_Pwnam(tmp_str, False))!=NULL) {
 				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
 			} else {

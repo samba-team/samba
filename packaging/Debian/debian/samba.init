@@ -2,7 +2,6 @@
 #
 # Start/stops the Samba daemons (nmbd and smbd).
 #
-# $Id: samba.init,v 1.2.2.6 2002/10/15 21:36:46 jerry Exp $
 #
 
 # Defaults

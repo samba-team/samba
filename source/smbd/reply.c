@@ -893,6 +893,9 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     }
   }
 
+  /* setup %U substitution */
+  sub_set_smb_name(user);
+
   /* If no username is sent use the guest account */
   if (!*user) {
     pstrcpy(user,lp_guestaccount(-1));
@@ -900,7 +903,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   }
 
   pstrcpy(current_user_info.smb_name,user);
-
+  
   reload_services(True);
 
   /*
