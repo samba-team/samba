@@ -75,7 +75,7 @@ static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldaps
 
 	/* 
 	 * dsServiceName
-	 * CN=NTDS Settings,CN=NETBIOSNAME,CN=Servers,CN=Default-First-Site,CN=Sites,CN=Configuration,DC=DOM,DC=TLD
+	 * CN=NTDS Settings,CN=NETBIOSNAME,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=DOM,DC=TLD
 	 */
 
 	/* 
