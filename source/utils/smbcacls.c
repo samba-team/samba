@@ -155,7 +155,6 @@ static BOOL StringToSid(DOM_SID *sid, const char *str)
 	}
 
 	sid_copy(sid, &sids[0]);
-
  done:
 
 	return result;
@@ -708,6 +707,7 @@ static struct cli_state *connect_one(char *share)
 {
 	struct cli_state *c;
 	struct in_addr ip;
+	NTSTATUS nt_status;
 	zero_ip(&ip);
 	
 	if (!got_pass) {
@@ -718,13 +718,14 @@ static struct cli_state *connect_one(char *share)
 		}
 	}
 
-	if (NT_STATUS_IS_OK(cli_full_connection(&c, global_myname, server, 
-						&ip, 0,
-						share, "?????",  
-						username, global_myworkgroup,
-						password, 0))) {
+	if (NT_STATUS_IS_OK(nt_status = cli_full_connection(&c, global_myname, server, 
+							    &ip, 0,
+							    share, "?????",  
+							    username, global_myworkgroup,
+							    password, 0))) {
 		return c;
 	} else {
+		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
 		return NULL;
 	}
 }
@@ -875,7 +876,7 @@ You can string acls together with spaces, commas or newlines\n\
 
 	argc -= optind;
 	argv += optind;
-	
+
 	if (argc > 0) {
 		usage();
 		talloc_destroy(ctx);
@@ -886,7 +887,13 @@ You can string acls together with spaces, commas or newlines\n\
 
 	fstrcpy(server,share+2);
 	share = strchr_m(server,'\\');
-	if (!share) return -1;
+	if (!share) {
+		share = strchr_m(server,'/');
+		if (!share) {
+			return -1;
+		}
+	}
+
 	*share = 0;
 	share++;
 
