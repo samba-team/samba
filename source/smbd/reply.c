@@ -873,10 +873,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   /* If no username is sent use the guest account */
   if (!*user) {
-    pstrcpy(user,lp_guestaccount(-1));
-    /* If no user and no password then set guest flag. */
-    if( *smb_apasswd == 0)
-      guest = True;
+	  pstrcpy(user,lp_guestaccount(-1));
+	  guest = True;
   }
 
   pstrcpy(current_user_info.smb_name,user);
@@ -924,13 +922,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   add_session_user(user);
 
-  /*
-   * Check if the given username was the guest user with no password.
-   */
-
-  if(!guest && strequal(user,lp_guestaccount(-1)) && (*smb_apasswd == 0))
-    guest = True;
-
   /* 
    * Check with orig_user for security=server and
    * security=domain.
@@ -942,7 +933,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
          smb_apasslen, smb_ntpasswd, smb_ntpasslen) &&
       !check_hosts_equiv(user))
   {
-
     /* 
      * If we get here then the user wasn't guest and the remote
      * authentication methods failed. Check the authentication
