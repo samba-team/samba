@@ -2009,8 +2009,9 @@ static void spoolss_notify_job_size(int snum,
 }
 
 /*******************************************************************
- * fill a notify_info_data with job position
+ Fill a notify_info_data with job position.
  ********************************************************************/
+
 static void spoolss_notify_job_position(int snum, 
 					SPOOL_NOTIFY_INFO_DATA *data,
 					print_queue_struct *queue,
@@ -2022,8 +2023,9 @@ static void spoolss_notify_job_position(int snum,
 }
 
 /*******************************************************************
- * fill a notify_info_data with submitted time
+ Fill a notify_info_data with submitted time.
  ********************************************************************/
+
 static void spoolss_notify_submitted_time(int snum, 
 					  SPOOL_NOTIFY_INFO_DATA *data,
 					  print_queue_struct *queue,
@@ -2033,6 +2035,7 @@ static void spoolss_notify_submitted_time(int snum,
 	struct tm *t;
 	uint32 len;
 	SYSTEMTIME st;
+	char *p;
 
 	t=gmtime(&queue->time);
 
@@ -2047,7 +2050,21 @@ static void spoolss_notify_submitted_time(int snum,
 	}
 	
 	make_systemtime(&st, t);
-	memcpy(data->notify_data.data.string,&st,len);
+
+	/*
+	 * Systemtime must be linearized as a set of UINT16's. 
+	 * Fix from Benjamin (Bj) Kuit bj@it.uts.edu.au
+	 */
+
+	p = (char *)data->notify_data.data.string;
+	SSVAL(p, 0, st.year);
+	SSVAL(p, 2, st.month);
+	SSVAL(p, 4, st.dayofweek);
+	SSVAL(p, 6, st.day);
+	SSVAL(p, 8, st.hour);
+        SSVAL(p, 10, st.minute);
+	SSVAL(p, 12, st.second);
+	SSVAL(p, 14, st.milliseconds);
 }
 
 #define END 65535
