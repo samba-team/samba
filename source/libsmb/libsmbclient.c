@@ -1,6 +1,5 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 2.0
    SMB client library implementation
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Richard Sharpe 2000, 2002
@@ -24,17 +23,12 @@
 
 #include "includes.h"
 
-/*
- * Define this to get the real SMBCFILE and SMBCSRV structures 
- */
-#define _SMBC_INTERNAL
-
 #include "libsmbclient.h"
 
 /*
  * Functions exported by libsmb_cache.c that we need here
  */
-int smbc_default_cache_functions(SMBCCTX * context);
+int smbc_default_cache_functions(SMBCCTX *context);
 
 /* 
  * check if an element is part of the list. 

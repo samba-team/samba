@@ -95,30 +95,28 @@ struct smbc_dirent
 	    SMBC_DIR=7,
 	    SMBC_FILE=8,
 	    SMBC_LINK=9,*/ 
-	uint smbc_type; 
+	unsigned int smbc_type; 
 
 	/** Length of this smbc_dirent in bytes
 	 */
-	uint dirlen;
+	unsigned int dirlen;
 	/** The length of the comment string in bytes (includes null 
 	 *  terminator)
 	 */
-	uint commentlen;
+	unsigned int commentlen;
 	/** Points to the null terminated comment string 
 	 */
 	char *comment;
 	/** The length of the name string in bytes (includes null 
 	 *  terminator)
 	 */
-	uint namelen;
+	unsigned int namelen;
 	/** Points to the null terminated name string 
 	 */
 	char name[1];
 };
 
-
 #ifndef _CLIENT_H
-typedef unsigned short uint16;
 
 /**@ingroup structure
  * Structure that represents a print job.
@@ -128,11 +126,11 @@ struct print_job_info
 {
 	/** numeric ID of the print job
 	 */
-	uint16 id;
+	unsigned short id;
     
 	/** represents print job priority (lower numbers mean higher priority)
 	 */
-	uint16 priority;
+	unsigned short priority;
     
 	/** Size of the print job
 	 */
@@ -151,8 +149,7 @@ struct print_job_info
 	 */
 	time_t t;
 };
-#endif
-
+#endif /* ifndef _CLIENT_H */
 
 /**@ingroup structure
  * Authentication callback function type.
@@ -198,26 +195,6 @@ typedef void (*smbc_get_auth_data_fn)(const char *srv,
  */ 
 typedef void (*smbc_get_print_job_info)(struct print_job_info *i);
 
-
-
-#ifndef _SMBC_INTERNAL
-/**@ingroup structure
- * Type for connected server management
- *
- */
-typedef int SMBCSRV;
-
-/**@ingroup structure
- * Type for open file/directory management
- *
- */
-typedef int SMBCFILE;
-
-#else
-/*
- * These definitions are only available to the libsmbclient internals 
- * They all have to define _SMBC_INTERNAL to get these
- */
 typedef struct _SMBCSRV {
 	struct cli_state cli;
 	dev_t dev;
@@ -236,7 +213,6 @@ struct smbc_dir_list {
 	struct smbc_dirent *dirent;
 };
 
-
 /*
  * Structure for open file management
  */ 
@@ -251,7 +227,6 @@ typedef struct _SMBCFILE {
 
 	struct _SMBCFILE *next, *prev;
 } SMBCFILE;
-#endif /* ifndef _SMBC_INTERNAL */
 
 /**@ingroup structure
  * Structure that contains a client context information 
@@ -397,7 +372,6 @@ typedef struct _SMBCCTX {
  */
 SMBCCTX * smbc_new_context(void);
 
-
 /**@ingroup misc
  * Delete a SBMCCTX (a context) acquired from smbc_new_context().
  *
@@ -440,8 +414,8 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx);
  *                  but it might leak memory on smbc_context_init() failure. Avoid this.
  *                  You'll have to call smbc_free_context() yourself on failure.  
  */
-SMBCCTX * smbc_init_context(SMBCCTX * context);
 
+SMBCCTX * smbc_init_context(SMBCCTX * context);
 
 /**@ingroup misc
  * Initialize the samba client library.
@@ -460,8 +434,8 @@ SMBCCTX * smbc_init_context(SMBCCTX * context);
  *                  - ENOENT The smb.conf file would not load
  *
  */
-int smbc_init(smbc_get_auth_data_fn fn, int debug);
 
+int smbc_init(smbc_get_auth_data_fn fn, int debug);
 
 /**@ingroup file
  * Open a file on an SMB server.
@@ -514,8 +488,8 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug);
  *                  try again with an empty username and password. This 
  *                  often gets mapped to the guest account on some machines.
  */
-int smbc_open(const char *furl, int flags, mode_t mode);
 
+int smbc_open(const char *furl, int flags, mode_t mode);
 
 /**@ingroup file
  * Create a file on an SMB server.
@@ -548,8 +522,8 @@ int smbc_open(const char *furl, int flags, mode_t mode);
  * @see             smbc_open()
  *
  */
-int smbc_creat(const char *furl, mode_t mode);
 
+int smbc_creat(const char *furl, mode_t mode);
 
 /**@ingroup file
  * Read from a file using an opened file handle.
