@@ -3405,18 +3405,21 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
 ****************************************************************************/
 NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
 {
-  BOOL bad_path = False;
-  SMB_STRUCT_STAT sbuf;
-  int ret= -1;
+	BOOL bad_path = False;
+	SMB_STRUCT_STAT sbuf;
+	int ret= -1;
   
-  unix_convert(directory,conn,0,&bad_path,&sbuf);
+	unix_convert(directory,conn,0,&bad_path,&sbuf);
   
-  if (check_name(directory, conn))
-    ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
+	if (check_name(directory, conn))
+		ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
   
 	if (ret == -1) {
+		NTSTATUS nterr = set_bad_path_error(errno, bad_path);
+		if (!NT_STATUS_IS_OK(nterr))
+			return nterr;
 		return map_nt_error_from_unix(errno);
-  }
+	}
 
 	return NT_STATUS_OK;
 }

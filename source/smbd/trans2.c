@@ -1509,12 +1509,14 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
  Utility function to set bad path error.
 ****************************************************************************/
 
-void set_bad_path_error(int err, BOOL bad_path)
+NTSTATUS set_bad_path_error(int err, BOOL bad_path)
 {
 	if((err == ENOENT) && bad_path) {
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRbadpath;
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

@@ -4668,7 +4668,7 @@ BOOL reset_stat_cache( void );
 
 /* The following definitions come from smbd/trans2.c  */
 
-void set_bad_path_error(int err, BOOL bad_path);
+NTSTATUS set_bad_path_error(int err, BOOL bad_path);
 NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close);
 int reply_findclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_findnclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
