@@ -71,6 +71,115 @@ BOOL test_multibind(struct ldap_connection *conn, const char *userdn, const char
 	return ret;
 }
 
+static BOOL test_search_rootDSE(struct ldap_connection *conn, char **basedn)
+{
+	BOOL ret = True;
+	struct ldap_message *msg, *result;
+
+	printf("Testing RootDSE Search\n");
+
+	*basedn = NULL;
+	conn->searchid = 0;
+	conn->next_msgid = 30;
+
+	msg = new_ldap_message();
+	if (!msg) {
+		return False;
+	}
+
+	msg->type = LDAP_TAG_SearchRequest;
+	msg->r.SearchRequest.basedn = "";
+	msg->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_BASE;
+	msg->r.SearchRequest.deref = LDAP_DEREFERENCE_NEVER;
+	msg->r.SearchRequest.timelimit = 0;
+	msg->r.SearchRequest.sizelimit = 0;
+	msg->r.SearchRequest.attributesonly = False;
+	msg->r.SearchRequest.filter = talloc_strdup(msg->mem_ctx, "(objectclass=*)");
+	msg->r.SearchRequest.num_attributes = 0;
+	msg->r.SearchRequest.attributes = NULL;
+
+	if (!ldap_setsearchent(conn, msg, NULL)) {
+		printf("Could not setsearchent\n");
+		return False;
+	}
+
+	result = ldap_getsearchent(conn, NULL);
+	if (result) {
+		int i;
+		struct ldap_SearchResEntry *r = &result->r.SearchResultEntry;
+		
+		DEBUG(1,("\tdn: %s\n", r->dn));
+		for (i=0; i<r->num_attributes; i++) {
+			int j;
+			for (j=0; j<r->attributes[i].num_values; j++) {
+				DEBUG(1,("\t%s: %d %.*s\n", r->attributes[i].name,
+					 r->attributes[i].values[j].length,
+					 r->attributes[i].values[j].length,
+					 (char *)r->attributes[i].values[j].data));
+				if (!(*basedn) && 
+				    strcasecmp("defaultNamingContext",r->attributes[i].name)==0) {
+					 *basedn = talloc_asprintf(conn->mem_ctx, "%.*s",
+					 r->attributes[i].values[j].length,
+					 (char *)r->attributes[i].values[j].data);
+				}
+			}
+		}
+	} else {
+		ret = False;
+	}
+
+	ldap_endsearchent(conn, NULL);
+
+	return ret;
+}
+
+static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
+{
+	BOOL ret = True;
+	struct ldap_message *msg, *result;
+	const char *val;
+
+	printf("Testing SASL Compare: %s\n", basedn);
+
+	if (!basedn) {
+		return False;
+	}
+
+	conn->next_msgid = 55;
+
+	msg = new_ldap_message();
+	if (!msg) {
+		return False;
+	}
+
+	msg->type = LDAP_TAG_CompareRequest;
+	msg->r.CompareRequest.dn = basedn;
+	msg->r.CompareRequest.attribute = talloc_strdup(msg->mem_ctx, "objectClass");
+	val = "domain";
+	msg->r.CompareRequest.value = data_blob_talloc(msg->mem_ctx, val, strlen(val));
+
+	if (!ldap_sasl_send_msg(conn, msg, NULL)) {
+		return False;
+	}
+
+	DEBUG(5,("Code: %d DN: [%s] ERROR:[%s] REFERRAL:[%s]\n",
+		msg->r.CompareResponse.resultcode,
+		msg->r.CompareResponse.dn,
+		msg->r.CompareResponse.errormessage,
+		msg->r.CompareResponse.referral));
+
+	return True;
+	if (!result) {
+		return False;
+	}
+
+	if (result->type != LDAP_TAG_CompareResponse) {
+		return False;
+	}
+
+	return ret;
+}
+
 BOOL torture_ldap_basic(int dummy)
 {
         NTSTATUS status;
@@ -85,6 +194,7 @@ BOOL torture_ldap_basic(int dummy)
 	/*const char *basedn = lp_parm_string(-1, "torture", "ldap_basedn");*/
 	const char *secret = lp_parm_string(-1, "torture", "ldap_secret");
 	char *url;
+	char *basedn;
 
 	mem_ctx = talloc_init("torture_ldap_basic");
 
@@ -101,7 +211,15 @@ BOOL torture_ldap_basic(int dummy)
 		ret = False;
 	}
 
+	if (!test_search_rootDSE(conn, &basedn)) {
+		ret = False;
+	}
+
 	if (!test_bind_sasl(conn, username, domain, password)) {
+		ret = False;
+	}
+
+	if (!test_compare_sasl(conn, basedn)) {
 		ret = False;
 	}
 
