@@ -317,7 +317,8 @@ find the first type XX name in a node status reply - used for finding
 a servers name given its IP
 return the matched name in *name
 **************************************************************************/
-BOOL name_status_find(int type, struct in_addr to_ip, char *name)
+BOOL name_status_find(const char *q_name, int q_type, int type, 
+		      struct in_addr to_ip, char *name)
 {
 	struct node_status *status;
 	struct nmb_name nname;
@@ -325,13 +326,12 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 	int sock;
 	BOOL result = False;
 
-	DEBUG(10, ("name_status_find: looking up name type 0x%02x at %s\n",
-		   type, inet_ntoa(to_ip)));
+	DEBUG(10, ("name_status_find: looking up name type 0x%02x on %s#%02x at %s\n", type, q_name, q_type, inet_ntoa(to_ip)));
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
 	if (sock == -1) goto done;
 
-	make_nmb_name(&nname, "*", 0);
+	make_nmb_name(&nname, q_name, q_type);
 	status = name_status_query(sock, &nname, to_ip, &count);
 	close(sock);
 	if (!status) goto done;
