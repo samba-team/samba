@@ -346,7 +346,7 @@ static const char *nbt_hex_encode(TALLOC_CTX *mem_ctx, const char *s)
 		if (isalnum(s[i]) || strchr(valid_chars, s[i])) {
 			ret[len++] = s[i];
 		} else {
-			snprintf(&ret[len], 3, "%02x", s[i]);
+			snprintf(&ret[len], 4, "%%%02x", (unsigned char)s[i]);
 			len += 3;
 		}
 	}
