@@ -59,7 +59,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 	while (total) {
 		ssize_t nwritten;
 		do {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(SENDFILE64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_SENDFILE64)
 			nwritten = sendfile64(tofd, fromfd, &offset, total);
 #else
 			nwritten = sendfile(tofd, fromfd, &offset, total);
@@ -133,8 +133,11 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 #elif defined(SOLARIS_SENDFILE_API)
 
+/* Hmmm. Can't find Solaris sendfile API docs.... Where is it ? */
 ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
 {
+	errno = ENOSYS;
+	return -1;
 }
 
 #elif defined(HPUX_SENDFILE_API)
@@ -171,7 +174,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 		 */
 
 		do {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(SENDFILE64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_SENDFILE64)
 			nwritten = sendfile64(tofd, fromfd, offset, total, &hdtrl[0], 0);
 #else
 			nwritten = sendfile(tofd, fromfd, offset, total, &hdtrl[0], 0);
