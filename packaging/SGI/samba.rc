@@ -35,6 +35,7 @@ case $1 in
 'stop')
 	$ECHO "Stopping Samba Servers."
 	$KILLALL -15 smbd nmbd
+	exit 0
 	;;
 *)
 	echo "usage: /etc/init.d/samba {start|stop}"
