@@ -261,7 +261,15 @@ sub ParseFunction($)
     $result .= "\tmemset(s, 0, sizeof(struct $fn->{NAME}));\n\n";
 
     foreach my $e (@{$fn->{DATA}}) {
-	$result .= FieldFromPython($e, "in.") if util::has_property($e, "in")
+	if (util::has_property($e, "in")) {
+	    if (util::has_property($e, "ref")) {
+		$result .= "\tif (PyDict_GetItemString(obj, \"$e->{NAME}\") == Py_None) {\n";
+		$result .= "\t\tPyErr_Format(PyExc_ValueError, \"Key '$e->{NAME}' cannot be None\");\n";
+		$result .= "\t\treturn NULL;\n";
+		$result .= "\t}\n";
+	    }
+	    $result .= FieldFromPython($e, "in.") ;
+	}
     }
 
     $result .= "\n";
