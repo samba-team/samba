@@ -539,7 +539,7 @@ enum {LPQ_QUEUED=0,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING,LPQ_ERROR,LPQ_DELETING,
 
 typedef struct _print_queue_struct
 {
-  int job;		/* normally the SMB jobid -- see note in 
+  int job;		/* normally the UNIX jobid -- see note in 
 			   printing.c:traverse_fn_delete() */
   int size;
   int page_count;
