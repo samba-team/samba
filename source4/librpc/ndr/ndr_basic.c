@@ -782,6 +782,9 @@ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *
 void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_BLOB r)
 {
 	ndr->print(ndr, "%-25s: DATA_BLOB length=%u", name, r.length);
+	if (r.length) {
+		dump_data(10, r.data, r.length);
+	}
 }
 
 
