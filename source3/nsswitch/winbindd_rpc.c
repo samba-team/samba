@@ -344,7 +344,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 			   DOM_SID *user_sid, 
 			   WINBIND_USERINFO *user_info)
 {
-	CLI_POLICY_HND *hnd;
+	CLI_POLICY_HND *hnd = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND dom_pol, user_pol;
 	BOOL got_dom_pol = False, got_user_pol = False;
@@ -509,7 +509,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 				DOM_SID ***sid_mem, char ***names, 
 				uint32 **name_types)
 {
-        CLI_POLICY_HND *hnd;
+        CLI_POLICY_HND *hnd = NULL;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         uint32 i, total_names = 0;
         POLICY_HND dom_pol, group_pol;
