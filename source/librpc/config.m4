@@ -4,8 +4,11 @@ SMB_SUBSYSTEM(LIBNDR_RAW,[],
 		[librpc/ndr/ndr.o
 		librpc/ndr/ndr_basic.o
 		librpc/ndr/ndr_sec.o
-		librpc/ndr/ndr_spoolss_buf.o
-		librpc/gen_ndr/tables.o
+		librpc/ndr/ndr_spoolss_buf.o])
+
+SMB_SUBSYSTEM_NOPROTO(LIBNDR_GEN)
+SMB_SUBSYSTEM(LIBNDR_GEN,[],
+		[librpc/gen_ndr/tables.o
 		librpc/gen_ndr/ndr_audiosrv.o
 		librpc/gen_ndr/ndr_dcerpc.o
 		librpc/gen_ndr/ndr_echo.o
@@ -59,4 +62,4 @@ SMB_SUBSYSTEM(LIBRPC_RAW,[],
 		librpc/rpc/dcerpc_sock.o])
 
 SMB_SUBSYSTEM(LIBRPC,[],[],[],
-		[LIBNDR_RAW LIBRPC_RAW])
+		[LIBNDR_RAW LIBNDR_GEN LIBRPC_RAW])

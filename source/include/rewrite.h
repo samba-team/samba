@@ -60,11 +60,18 @@ typedef struct data_blob {
 	size_t length;
 } DATA_BLOB;
 
+/* Globally Unique ID */
+#define GUID_SIZE 16
+
+/* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30 */
+typedef uint64_t NTTIME;
+
+/* 8 byte aligned 'hyper' type from MS IDL */
+typedef uint64_t HYPER_T;
+
+
 #include "enums.h"
 #include "events.h"
-#include "librpc/gen_ndr/ndr_misc.h"
-#include "smb_interfaces.h"
-#include "librpc/ndr/libndr.h"
 
 /* used for network interfaces */
 struct interface
@@ -73,26 +80,6 @@ struct interface
 	struct in_addr ip;
 	struct in_addr bcast;
 	struct in_addr nmask;
-};
-
-/* key and data in the connections database - used in smbstatus and smbd */
-struct connections_key {
-	pid_t pid;
-	int cnum;
-	fstring name;
-};
-
-struct connections_data {
-	int magic;
-	pid_t pid;
-	int cnum;
-	uid_t uid;
-	gid_t gid;
-	char name[24];
-	char addr[24];
-	char machine[FSTRING_LEN];
-	time_t start;
-	uint32_t bcast_msg_flags;
 };
 
 /* the following are used by loadparm for option lists */

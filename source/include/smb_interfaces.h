@@ -20,16 +20,6 @@
 */
 
 
-/* Globally Unique ID */
-#define GUID_SIZE 16
-
-/* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30 */
-typedef uint64_t NTTIME;
-
-/* 8 byte aligned 'hyper' type from MS IDL */
-typedef uint64_t HYPER_T;
-
-
 
 /* this structure is just a wrapper for a string, the only reason we
    bother with this is that it allows us to check the length provided

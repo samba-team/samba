@@ -252,7 +252,3 @@ typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, void *);
 typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32_t, void *);
 
-#include "librpc/ndr/ndr_sec.h"
-
-/* now pull in the individual parsers */
-#include "librpc/gen_ndr/tables.h"
