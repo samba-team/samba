@@ -239,7 +239,7 @@ TTYinfo()
        TTYrows = SCREEN_ROWS;
        return;
     }
-    backspace = tgetstr("le", &bp);
+    backspace = strdup(tgetstr("le", &bp));
     TTYwidth = tgetnum("co");
     TTYrows = tgetnum("li");
 
