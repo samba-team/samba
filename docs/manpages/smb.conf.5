@@ -1,4 +1,4 @@
-.TH SMB.CONF 5 "23 Nov 2000" "smb.conf 2.2.0-alpha1"
+.TH "smb\&.conf " "5" "10 Jan 2001" "Samba" "SAMBA"
 .PP 
 .SH "NAME" 
 smb\&.conf \- The configuration file for the Samba suite
@@ -377,7 +377,7 @@ negotiation\&. It can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1\&.
 machine\&. Only some are recognized, and those may not be 100%
 reliable\&. It currently recognizes Samba, WfWg, WinNT and
 Win95\&. Anything else will be known as "UNKNOWN"\&. If it gets it wrong
-then sending a level 3 log to samba@samba\&.org
+then sending a level 3 log to \fIsamba@samba\&.org\fP
 should allow it to be fixed\&.
 .IP 
 .IP o 
@@ -583,6 +583,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBgetwd cache\fP
+.IP 
+.IP o 
+\fBhide local users\fP
 .IP 
 .IP o 
 \fBhomedir map\fP
@@ -2812,6 +2815,17 @@ The above example is based on files that the Macintosh SMB client
 (DAVE) available from \fBThursby\fP creates for
 internal use, and also still hides all files beginning with a dot\&.
 .IP 
+.IP "\fBhide local users(G)\fP" 
+.IP 
+This parameter toggles the hiding of local UNIX users (root, wheel, floppy, etc)
+from remote clients\&.
+.IP 
+\fBDefault:\fP
+\f(CW hide local users = No\fP
+.IP 
+\fBExample:\fP
+\f(CW hide local users = Yes\fP
+.IP 
 .IP "\fBhomedir map (G)\fP" 
 .IP 
 If \fB"nis homedir"\fP is true, and
@@ -5003,7 +5017,7 @@ this is not set, the default is :
 .IP 
 \f(CWSAMBA_INSTALL_DIRECTORY/lib/printers\&.def\fP
 .IP 
-This file is created from Windows 95 \f(CW"msprint\&.def"\fP files found on
+This file is created from Windows 95 \f(CW"msprint\&.inf"\fP files found on
 the Windows 95 client system\&. For more details on setting up serving
 of printer drivers to Windows 95 clients, see the documentation file
 in the docs/ directory, PRINTER_DRIVER\&.txt\&.
@@ -5797,7 +5811,7 @@ You may find that on some systems Samba will say "Unknown socket
 option" when you supply an option\&. This means you either incorrectly 
 typed it or you need to add an include file to includes\&.h for your OS\&. 
 If the latter is the case please send the patch to
-samba@samba\&.org\&.
+\fIsamba@samba\&.org\fP\&.
 .IP 
 Any of the supported socket options may be combined in any way you
 like, as long as your OS allows it\&.
@@ -6718,7 +6732,7 @@ them\&.
 .IP 
 NOTE: It is actually quite difficult to correctly produce a \fB"valid
 chars"\fP line for a particular system\&. To automate the process
-tino@augsburg\&.net has written a package called \fB"validchars"\fP
+\fItino@augsburg\&.net\fP has written a package called \fB"validchars"\fP
 which will automatically produce a complete \fB"valid chars"\fP line for
 a given client system\&. Look in the examples/validchars/ subdirectory
 of your Samba source code distribution for this package\&.
@@ -7073,7 +7087,7 @@ This man page is correct for version 2\&.0 of the Samba suite\&.
 .SH "AUTHOR" 
 .PP 
 The original Samba software and related utilities were created by
-Andrew Tridgell samba@samba\&.org\&. Samba is now developed
+Andrew Tridgell \fIsamba@samba\&.org\fP\&. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed\&.
 .PP 
@@ -7082,7 +7096,7 @@ sources were converted to YODL format (another excellent piece of Open
 Source software, available at
 \fBftp://ftp\&.icce\&.rug\&.nl/pub/unix/\fP)
 and updated for the Samba2\&.0 release by Jeremy Allison\&.
-samba@samba\&.org\&.
+\fIsamba@samba\&.org\fP\&.
 .PP 
 See \fBsamba (7)\fP to find out how to get a full
 list of contributors and details on how to submit bug reports,

@@ -431,6 +431,7 @@ parameter for details.  Note that some are synonyms.
 <p><li > <a href="smb.conf.5.html#domainmaster"><strong>domain master</strong></a>
 <p><li > <a href="smb.conf.5.html#encryptpasswords"><strong>encrypt passwords</strong></a>
 <p><li > <a href="smb.conf.5.html#getwdcache"><strong>getwd cache</strong></a>
+<p><li > <a href="smb.conf.5.html#hidelocalusers"><strong>hide local users</strong></a>
 <p><li > <a href="smb.conf.5.html#homedirmap"><strong>homedir map</strong></a>
 <p><li > <a href="smb.conf.5.html#hostsequiv"><strong>hosts equiv</strong></a>
 <p><li > <a href="smb.conf.5.html#interfaces"><strong>interfaces</strong></a>
@@ -1839,6 +1840,14 @@ files"</strong></a> and <a href="smb.conf.5.html#casesensitive"><strong>"case se
 <p>The above example is based on files that the Macintosh SMB client
 (DAVE) available from <a href="http://www.thursby.com"><strong>Thursby</strong></a> creates for
 internal use, and also still hides all files beginning with a dot.
+<p><a name="hidelocalusers"></a>
+<p></p><dt><strong><strong>hide local users(G)</strong></strong><dd>
+<p>This parameter toggles the hiding of local UNIX users (root, wheel, floppy, etc)
+from remote clients.
+<p><strong>Default:</strong>
+<code> hide local users = No</code>
+<p><strong>Example:</strong>
+<code> hide local users = Yes</code>
 <p><a name="homedirmap"></a>
 <p></p><dt><strong><strong>homedir map (G)</strong></strong><dd>
 <p>If <a href="smb.conf.5.html#nishomedir"><strong>"nis homedir"</strong></a> is true, and
@@ -3490,7 +3499,7 @@ after you have chosen the printer manufacturer.
 used when serving drivers to Windows 95 clients, is to be found. If
 this is not set, the default is :
 <p><code>SAMBA_INSTALL_DIRECTORY/lib/printers.def</code>
-<p>This file is created from Windows 95 <code>"msprint.def"</code> files found on
+<p>This file is created from Windows 95 <code>"msprint.inf"</code> files found on
 the Windows 95 client system. For more details on setting up serving
 of printer drivers to Windows 95 clients, see the documentation file
 in the docs/ directory, PRINTER_DRIVER.txt.

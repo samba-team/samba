@@ -541,6 +541,8 @@ it() link(bf(encrypt passwords))(encryptpasswords)
 
 it() link(bf(getwd cache))(getwdcache)
 
+it() link(bf(hide local users))(hidelocalusers)
+
 it() link(bf(homedir map))(homedirmap)
 
 it() link(bf(hosts equiv))(hostsequiv)
@@ -2571,6 +2573,18 @@ tt(	hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/)
 The above example is based on files that the Macintosh SMB client
 (DAVE) available from url(bf(Thursby))(http://www.thursby.com) creates for
 internal use, and also still hides all files beginning with a dot.
+
+label(hidelocalusers)
+dit(bf(hide local users(G)))
+
+This parameter toggles the hiding of local UNIX users (root, wheel, floppy, etc)
+from remote clients.
+
+  bf(Default:)
+tt( hide local users = No)
+
+  bf(Example:)
+tt( hide local users = Yes)
 
 label(homedirmap)
 dit(bf(homedir map (G)))
