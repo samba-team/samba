@@ -31,7 +31,7 @@ static BOOL parse_form_entry(char *line, nt_forms_struct *buf)
 		count++;
 	}
 
-	DEBUG(6,("Found [%d] tokens\n", count));
+	DEBUG(106,("Found [%d] tokens\n", count));
 
 	StrnCpy(buf->name,tok[NAMETOK],sizeof(buf->name)-1);
 	buf->flag=atoi(tok[FLAGTOK]);
@@ -65,7 +65,7 @@ int get_ntforms(nt_forms_struct **list)
 
 	while ( fgets(line, sizeof(pstring), f) )
 	{
-		DEBUG(5,("%s\n",line));
+		DEBUG(105,("%s\n",line));
 		
 		*list = Realloc(*list, sizeof(nt_forms_struct)*(total+1));
 		if (! *list)
@@ -82,7 +82,7 @@ int get_ntforms(nt_forms_struct **list)
 	}    
 	fclose(f);
 
-	DEBUG(4,("%d info lines on %d\n",total, grandtotal));
+	DEBUG(104,("%d info lines on %d\n",total, grandtotal));
 
 	return(total);
 }
@@ -100,7 +100,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 
        *line=0;
 
-       DEBUG(6,("write_ntforms\n"));
+       DEBUG(106,("write_ntforms\n"));
 
        if((f = sys_fopen(file, "w")) == NULL)
        {
@@ -115,11 +115,11 @@ int write_ntforms(nt_forms_struct **list, int number)
 		       (*list)[i].flag, (*list)[i].width, (*list)[i].length,
 		       (*list)[i].left, (*list)[i].top, (*list)[i].right, (*list)[i].bottom);
 
-	       DEBUGADD(7,("adding entry [%s]\n", (*list)[i].name));
+	       DEBUGADD(107,("adding entry [%s]\n", (*list)[i].name));
        }
 
        fclose(f);
-       DEBUGADD(6,("closing file\n"));
+       DEBUGADD(106,("closing file\n"));
        return(total);
 }
 
@@ -145,7 +145,7 @@ void add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	{
 		if (!strncmp((*list)[n].name, form_name, strlen(form_name)))
 		{
-			DEBUG(3, ("NT workaround, [%s] already exists\n", form_name));
+			DEBUG(103, ("NT workaround, [%s] already exists\n", form_name));
 			update=True;
 		}
 	}
@@ -175,10 +175,10 @@ void update_a_form(nt_forms_struct **list, const FORM *form, int count)
 	fstring form_name;
 	unistr2_to_ascii(form_name, &(form->name), sizeof(form_name)-1);
 
-	DEBUG(6, ("[%s]\n", form_name));
+	DEBUG(106, ("[%s]\n", form_name));
 	for (n=0; n<count; n++)
 	{
-		DEBUGADD(6, ("n [%d]:[%s]\n", n, (*list)[n].name));
+		DEBUGADD(106, ("n [%d]:[%s]\n", n, (*list)[n].name));
 		if (!strncmp((*list)[n].name, form_name, strlen(form_name)))
 			break;
 	}
@@ -209,7 +209,7 @@ int get_ntdrivers(fstring **list, char *architecture)
 	int match_len;
 	int total=0;
 
-	DEBUG(5,("Getting the driver list from directory: [%s]\n", lp_nt_drivers_file()));
+	DEBUG(105,("Getting the driver list from directory: [%s]\n", lp_nt_drivers_file()));
 	
 	*list=NULL;
 	dirp = opendir(lp_nt_drivers_file());
@@ -228,13 +228,13 @@ int get_ntdrivers(fstring **list, char *architecture)
 	{
 		if (strncmp(dpname, name_match, match_len)==0)
 		{
-			DEBUGADD(7,("Found: [%s]\n", dpname));
+			DEBUGADD(107,("Found: [%s]\n", dpname));
 			
 			fstrcpy(driver_name, dpname+match_len);
 			all_string_sub(driver_name, "#", "/", 0);
 			*list = Realloc(*list, sizeof(fstring)*(total+1));
 			StrnCpy((*list)[total], driver_name, strlen(driver_name));
-			DEBUGADD(6,("Added: [%s]\n", driver_name));		
+			DEBUGADD(106,("Added: [%s]\n", driver_name));		
 			total++;
 		}
 	}
@@ -266,20 +266,20 @@ void get_short_archi(char *short_archi, char *long_archi)
 	
 	int i=-1;
 
-	DEBUG(7,("Getting architecture dependant directory\n"));
+	DEBUG(107,("Getting architecture dependant directory\n"));
 	do {
 		i++;
 	} while ( (archi_table[i].long_archi!=NULL ) && strncmp(long_archi, archi_table[i].long_archi, strlen(long_archi)) );
 
 	if (archi_table[i].long_archi==NULL)
 	{
-		DEBUGADD(7,("Unknown architecture [%s] !\n", long_archi));
+		DEBUGADD(107,("Unknown architecture [%s] !\n", long_archi));
 	}
 	StrnCpy (short_archi, archi_table[i].short_archi, strlen(archi_table[i].short_archi));
 
-	DEBUGADD(8,("index: [%d]\n", i));
-	DEBUGADD(8,("long architecture: [%s]\n", long_archi));
-	DEBUGADD(8,("short architecture: [%s]\n", short_archi));
+	DEBUGADD(108,("index: [%d]\n", i));
+	DEBUGADD(108,("long architecture: [%s]\n", long_archi));
+	DEBUGADD(108,("short architecture: [%s]\n", short_archi));
 }
 
 /****************************************************************************
@@ -471,7 +471,7 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
 	char **dependentfiles;	
 	
-	DEBUG(6,("Dumping printer driver at level [%d]\n", level));
+	DEBUG(106,("Dumping printer driver at level [%d]\n", level));
 	
 	switch (level)
 	{
@@ -479,28 +479,28 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 		{
 			if (driver.info_3 == NULL)
 			{
-				DEBUGADD(3,("NULL pointer, memory not alloced ?\n"));
+				DEBUGADD(103,("NULL pointer, memory not alloced ?\n"));
 				success=5;
 			}
 			else
 			{
 				info3=driver.info_3;
 			
-				DEBUGADD(6,("version:[%d]\n",         info3->cversion));
-				DEBUGADD(6,("name:[%s]\n",            info3->name));
-				DEBUGADD(6,("environment:[%s]\n",     info3->environment));
-				DEBUGADD(6,("driverpath:[%s]\n",      info3->driverpath));
-				DEBUGADD(6,("datafile:[%s]\n",        info3->datafile));
-				DEBUGADD(6,("configfile:[%s]\n",      info3->configfile));
-				DEBUGADD(6,("helpfile:[%s]\n",        info3->helpfile));
-				DEBUGADD(6,("monitorname:[%s]\n",     info3->monitorname));
-				DEBUGADD(6,("defaultdatatype:[%s]\n", info3->defaultdatatype));
+				DEBUGADD(106,("version:[%d]\n",         info3->cversion));
+				DEBUGADD(106,("name:[%s]\n",            info3->name));
+				DEBUGADD(106,("environment:[%s]\n",     info3->environment));
+				DEBUGADD(106,("driverpath:[%s]\n",      info3->driverpath));
+				DEBUGADD(106,("datafile:[%s]\n",        info3->datafile));
+				DEBUGADD(106,("configfile:[%s]\n",      info3->configfile));
+				DEBUGADD(106,("helpfile:[%s]\n",        info3->helpfile));
+				DEBUGADD(106,("monitorname:[%s]\n",     info3->monitorname));
+				DEBUGADD(106,("defaultdatatype:[%s]\n", info3->defaultdatatype));
 				
 				dependentfiles=info3->dependentfiles;
 	
 				while ( **dependentfiles != '\0' )
 				{
-					DEBUGADD(6,("dependentfile:[%s]\n", *dependentfiles));
+					DEBUGADD(106,("dependentfile:[%s]\n", *dependentfiles));
 					dependentfiles++;
 				}
 				success=0;
@@ -676,7 +676,7 @@ static void dissect_and_fill_a_param(NT_PRINTER_PARAM *param, char *v)
 	char *tok[5];
 	int count = 0;
 
-	DEBUG(5,("dissect_and_fill_a_param\n"));	
+	DEBUG(105,("dissect_and_fill_a_param\n"));	
 		
 	tok[count] = strtok(v,"#");
 	count++;
@@ -693,7 +693,7 @@ static void dissect_and_fill_a_param(NT_PRINTER_PARAM *param, char *v)
 	strhex_to_str(param->data, 2*(param->data_len), tok[3]);		
 	param->next=NULL;	
 
-	DEBUGADD(5,("value:[%s], len:[%d]\n", param->value, param->data_len));
+	DEBUGADD(105,("value:[%s], len:[%d]\n", param->value, param->data_len));
 }
 
 /****************************************************************************
@@ -703,10 +703,10 @@ used when reading from disk.
 ****************************************************************************/
 void dump_a_param(NT_PRINTER_PARAM *param)
 {
-	DEBUG(5,("dump_a_param\n"));
-	DEBUGADD(6,("value [%s]\n", param->value));
-	DEBUGADD(6,("type [%d]\n", param->type));
-	DEBUGADD(6,("data len [%d]\n", param->data_len));
+	DEBUG(105,("dump_a_param\n"));
+	DEBUGADD(106,("value [%s]\n", param->value));
+	DEBUGADD(106,("type [%d]\n", param->type));
+	DEBUGADD(106,("data len [%d]\n", param->data_len));
 }
 
 /****************************************************************************
@@ -715,7 +715,7 @@ BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *par
 {
 	NT_PRINTER_PARAM *current;
 	
-	DEBUG(8,("add_a_specific_param\n"));	
+	DEBUG(108,("add_a_specific_param\n"));	
 
 	param->next=NULL;
 	
@@ -749,10 +749,10 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 	if ( !strcmp(current->value, param->value) && 
 	    (strlen(current->value)==strlen(param->value)) )
 	{
-		DEBUG(9,("deleting first value\n"));
+		DEBUG(109,("deleting first value\n"));
 		info_2->specific=current->next;
 		free(current);
-		DEBUG(9,("deleted first value\n"));
+		DEBUG(109,("deleted first value\n"));
 		return (True);
 	}
 
@@ -763,10 +763,10 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 		if (!strcmp(current->value, param->value) &&
 		    strlen(current->value)==strlen(param->value) )
 		{
-			DEBUG(9,("deleting current value\n"));
+			DEBUG(109,("deleting current value\n"));
 			previous->next=current->next;
 			free(current);
-			DEBUG(9,("deleted current value\n"));
+			DEBUG(109,("deleted current value\n"));
 			return(True);
 		}
 		
@@ -835,7 +835,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 		
 		/* don't check if v==NULL as an empty arg is valid */
 		
-		DEBUGADD(15, ("[%s]:[%s]\n", p, v));
+		DEBUGADD(115, ("[%s]:[%s]\n", p, v));
 
 		/*
 		 * The PRINTER_INFO_2 fields
@@ -1008,7 +1008,7 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	uint32 success;
 	NT_PRINTER_INFO_LEVEL_2	*info2;
 	
-	DEBUG(6,("Dumping printer at level [%d]\n", level));
+	DEBUG(106,("Dumping printer at level [%d]\n", level));
 	
 	switch (level)
 	{
@@ -1023,26 +1023,26 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			{
 				info2=printer.info_2;
 			
-				DEBUGADD(6,("attributes:[%d]\n",       info2->attributes));
-				DEBUGADD(6,("priority:[%d]\n",         info2->priority));
-				DEBUGADD(6,("default_priority:[%d]\n", info2->default_priority));
-				DEBUGADD(6,("starttime:[%d]\n",        info2->starttime));
-				DEBUGADD(6,("untiltime:[%d]\n",        info2->untiltime));
-				DEBUGADD(6,("status:[%d]\n",           info2->status));
-				DEBUGADD(6,("cjobs:[%d]\n",            info2->cjobs));
-				DEBUGADD(6,("averageppm:[%d]\n",       info2->averageppm));
+				DEBUGADD(106,("attributes:[%d]\n",       info2->attributes));
+				DEBUGADD(106,("priority:[%d]\n",         info2->priority));
+				DEBUGADD(106,("default_priority:[%d]\n", info2->default_priority));
+				DEBUGADD(106,("starttime:[%d]\n",        info2->starttime));
+				DEBUGADD(106,("untiltime:[%d]\n",        info2->untiltime));
+				DEBUGADD(106,("status:[%d]\n",           info2->status));
+				DEBUGADD(106,("cjobs:[%d]\n",            info2->cjobs));
+				DEBUGADD(106,("averageppm:[%d]\n",       info2->averageppm));
 
-				DEBUGADD(6,("servername:[%s]\n",       info2->servername));
-				DEBUGADD(6,("printername:[%s]\n",      info2->printername));
-				DEBUGADD(6,("sharename:[%s]\n",        info2->sharename));
-				DEBUGADD(6,("portname:[%s]\n",         info2->portname));
-				DEBUGADD(6,("drivername:[%s]\n",       info2->drivername));
-				DEBUGADD(6,("comment:[%s]\n",          info2->comment));
-				DEBUGADD(6,("location:[%s]\n",         info2->location));
-				DEBUGADD(6,("sepfile:[%s]\n",          info2->sepfile));
-				DEBUGADD(6,("printprocessor:[%s]\n",   info2->printprocessor));
-				DEBUGADD(6,("datatype:[%s]\n",         info2->datatype));
-				DEBUGADD(6,("parameters:[%s]\n",       info2->parameters));
+				DEBUGADD(106,("servername:[%s]\n",       info2->servername));
+				DEBUGADD(106,("printername:[%s]\n",      info2->printername));
+				DEBUGADD(106,("sharename:[%s]\n",        info2->sharename));
+				DEBUGADD(106,("portname:[%s]\n",         info2->portname));
+				DEBUGADD(106,("drivername:[%s]\n",       info2->drivername));
+				DEBUGADD(106,("comment:[%s]\n",          info2->comment));
+				DEBUGADD(106,("location:[%s]\n",         info2->location));
+				DEBUGADD(106,("sepfile:[%s]\n",          info2->sepfile));
+				DEBUGADD(106,("printprocessor:[%s]\n",   info2->printprocessor));
+				DEBUGADD(106,("datatype:[%s]\n",         info2->datatype));
+				DEBUGADD(106,("parameters:[%s]\n",       info2->parameters));
 				success=0;
 			}
 			break;
@@ -1114,7 +1114,7 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring share
 uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 {
 	uint32 success;
-	DEBUG(4,("freeing a printer at level [%d]\n", level));
+	DEBUG(104,("freeing a printer at level [%d]\n", level));
 	
 	switch (level)
 	{
@@ -1124,7 +1124,7 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			{
 				if ((printer.info_2)->devmode != NULL)
 				{
-					DEBUG(6,("deleting DEVMODE\n"));
+					DEBUG(106,("deleting DEVMODE\n"));
 					if ((printer.info_2)->devmode->private !=NULL )
 						free((printer.info_2)->devmode->private);
 					free((printer.info_2)->devmode);
@@ -1140,7 +1140,7 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 					while (	param != NULL)
 					{
 						next_param=param->next;
-						DEBUG(6,("deleting param [%s]\n", param->value));
+						DEBUG(106,("deleting param [%s]\n", param->value));
 						free(param->data);
 						free(param);
 						param=next_param;
@@ -1168,7 +1168,7 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 {
 	uint32 success;
-	DEBUG(4,("adding a printer at level [%d]\n", level));
+	DEBUG(104,("adding a printer at level [%d]\n", level));
 	dump_a_printer_driver(driver, level);
 	
 	switch (level)
@@ -1293,7 +1293,7 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 	/* right now that's enough ! */	
 	NT_PRINTER_PARAM *param;
 	
-	DEBUG(5, ("get_specific_param\n"));
+	DEBUG(105, ("get_specific_param\n"));
 	
 	param=printer.info_2->specific;
 		
@@ -1306,7 +1306,7 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 		param=param->next;
 	}
 	
-	DEBUG(6, ("found one param\n"));
+	DEBUG(106, ("found one param\n"));
 	if (param != NULL)
 	{
 		/* exited because it exist */
@@ -1316,10 +1316,10 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 		memcpy(*data, param->data, param->data_len);
 		*len=param->data_len;
 
-		DEBUG(6, ("exit of get_specific_param:true\n"));
+		DEBUG(106, ("exit of get_specific_param:true\n"));
 		return (True);
 	}
-	DEBUG(6, ("exit of get_specific_param:false\n"));
+	DEBUG(106, ("exit of get_specific_param:false\n"));
 	return (False);
 }
 

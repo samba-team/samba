@@ -270,6 +270,7 @@
 #define MIN_PRIORITY	 1
 #define DEF_PRIORITY	 1
 
+/* the flags of the query */
 #define PRINTER_ENUM_DEFAULT		0x00000001
 #define PRINTER_ENUM_LOCAL		0x00000002
 #define PRINTER_ENUM_CONNECTIONS	0x00000004
@@ -279,9 +280,9 @@
 #define PRINTER_ENUM_SHARED		0x00000020
 #define PRINTER_ENUM_NETWORK		0x00000040
 
+/* the flags of each printers */
 #define PRINTER_ENUM_EXPAND		0x00004000
 #define PRINTER_ENUM_CONTAINER		0x00008000
-
 #define PRINTER_ENUM_ICONMASK		0x00ff0000
 #define PRINTER_ENUM_ICON1		0x00010000
 #define PRINTER_ENUM_ICON2		0x00020000
@@ -685,10 +686,11 @@ typedef struct printer_info_2
 typedef struct spool_q_enumprinters
 {
 	uint32 flags;
+	uint32 servername_ptr;
 	UNISTR2 servername;
 	uint32 level;
-	BUFFER buffer;
-	uint32 buf_size;
+	NEW_BUFFER *buffer;
+	uint32 offered;
 } SPOOL_Q_ENUMPRINTERS;
 
 typedef struct printer_info_ctr_info
@@ -703,14 +705,10 @@ typedef struct printer_info_ctr_info
 
 typedef struct spool_r_enumprinters
 {
-	uint32 offered;	 /* number of bytes offered */
+	NEW_BUFFER *buffer;
 	uint32 needed;	 /* bytes needed */
-	uint32 level;
-	UNISTR servername;
-	PRINTER_INFO_CTR ctr;
 	uint32 returned; /* number of printers */
 	uint32 status;
-
 } SPOOL_R_ENUMPRINTERS;
 
 
@@ -905,9 +903,8 @@ typedef struct spool_q_enumjobs
 	uint32 firstjob;
 	uint32 numofjobs;
 	uint32 level;
-	BUFFER buffer;
-	uint32 buf_size;
-
+	NEW_BUFFER *buffer;
+	uint32 offered;
 } SPOOL_Q_ENUMJOBS;
 
 typedef struct job_info_ctr_info
@@ -922,12 +919,10 @@ typedef struct job_info_ctr_info
 
 typedef struct spool_r_enumjobs
 {
-	uint32 level;
-	uint32 offered;
-	JOB_INFO_CTR ctr;
-	uint32 numofjobs;
+	NEW_BUFFER *buffer;
+	uint32 needed;
+	uint32 returned;
 	uint32 status;
-
 } SPOOL_R_ENUMJOBS;
 
 typedef struct spool_q_schedulejob
@@ -957,10 +952,11 @@ typedef struct s_port_info_2
 
 typedef struct spool_q_enumports
 {
+	uint32 name_ptr;
 	UNISTR2 name;
 	uint32 level;
-	BUFFER buffer;
-	uint32 buf_size;
+	NEW_BUFFER *buffer;
+	uint32 offered;
 } SPOOL_Q_ENUMPORTS;
 
 typedef struct port_info_ctr_info
@@ -974,12 +970,10 @@ typedef struct port_info_ctr_info
 
 typedef struct spool_r_enumports
 {
-	uint32 level;
-	PORT_INFO_CTR ctr;
-	uint32 offered;
-	uint32 numofports;
+	NEW_BUFFER *buffer;
+	uint32 needed;	 /* bytes needed */
+	uint32 returned; /* number of printers */
 	uint32 status;
-
 } SPOOL_R_ENUMPORTS;
 
 #define JOB_CONTROL_PAUSE              1
@@ -1015,22 +1009,21 @@ typedef struct spool_r_setjob
 
 typedef struct spool_q_enumprinterdrivers
 {
+	uint32 name_ptr;
 	UNISTR2 name;
+	uint32 environment_ptr;
 	UNISTR2 environment;
 	uint32 level;
-	BUFFER buffer;
-	uint32 buf_size;
-
+	NEW_BUFFER *buffer;
+	uint32 offered;
 } SPOOL_Q_ENUMPRINTERDRIVERS;
 
 typedef struct spool_r_enumprinterdrivers
 {
-	uint32 level;
-	DRIVER_INFO ctr;
-	uint32 offered;
-	uint32 numofdrivers;
+	NEW_BUFFER *buffer;
+	uint32 needed;
+	uint32 returned;
 	uint32 status;
-
 } SPOOL_R_ENUMPRINTERDRIVERS;
 
 typedef struct spool_form_1
@@ -1264,11 +1257,13 @@ typedef struct spool_r_getprinterdriverdirectory
 
 typedef struct spool_q_enumprintprocessors
 {
+	uint32 name_ptr;
 	UNISTR2 name;
+	uint32 environment_ptr;
 	UNISTR2 environment;
 	uint32 level;
-	BUFFER buffer;
-	uint32 buf_size;
+	NEW_BUFFER *buffer;
+	uint32 offered;
 } SPOOL_Q_ENUMPRINTPROCESSORS;
 
 typedef struct printprocessor_1
@@ -1278,10 +1273,9 @@ typedef struct printprocessor_1
 
 typedef struct spool_r_enumprintprocessors
 {
-	uint32 level;
-	PRINTPROCESSOR_1 *info_1;
-	uint32 offered;
-	uint32 numofprintprocessors;
+	NEW_BUFFER *buffer;
+	uint32 needed;
+	uint32 returned;
 	uint32 status;
 } SPOOL_R_ENUMPRINTPROCESSORS;
 
@@ -1308,27 +1302,35 @@ typedef struct spool_r_enumprintprocessordatatypes
 	uint32 status;
 } SPOOL_R_ENUMPRINTPROCESSORDATATYPES;
 
-typedef struct spool_q_enumprintmonitors
-{
-	UNISTR2 name;
-	uint32 level;
-	BUFFER buffer;
-	uint32 buf_size;
-} SPOOL_Q_ENUMPRINTMONITORS;
-
 typedef struct printmonitor_1
 {
 	UNISTR name;
 } PRINTMONITOR_1;
 
+typedef struct printmonitor_2
+{
+	UNISTR name;
+	UNISTR environment;
+	UNISTR dll_name;
+} PRINTMONITOR_2;
+
+typedef struct spool_q_enumprintmonitors
+{
+	uint32 name_ptr;
+	UNISTR2 name;
+	uint32 level;
+	NEW_BUFFER *buffer;
+	uint32 offered;
+} SPOOL_Q_ENUMPRINTMONITORS;
+
 typedef struct spool_r_enumprintmonitors
 {
-	uint32 level;
-	PRINTMONITOR_1 *info_1;
-	uint32 offered;
-	uint32 numofprintmonitors;
+	NEW_BUFFER *buffer;
+	uint32 needed;
+	uint32 returned;
 	uint32 status;
 } SPOOL_R_ENUMPRINTMONITORS;
+
 
 typedef struct spool_q_enumprinterdata
 {

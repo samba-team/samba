@@ -150,15 +150,13 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 				(unsigned int)extra_space));
 		return False;
 	}
-
+	
 	/*
 	 * Decide how much extra space we really need.
 	 */
 
 	extra_space -= (ps->buffer_size - ps->data_offset);
-
 	if(ps->buffer_size == 0) {
-
 		/*
 		 * Ensure we have at least a PDU's length, or extra_space, whichever
 		 * is greater.
@@ -172,21 +170,18 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 		}
 		memset(new_data, '\0', new_size );
 	} else {
-
 		/*
 		 * If the current buffer size is bigger than the space needed, just 
 		 * double it, else add extra_space.
 		 */
+		new_size = MAX(ps->buffer_size*2, ps->buffer_size + extra_space);		
 
-		new_size = MAX(ps->buffer_size*2, ps->buffer_size + extra_space);
-
-		if((new_data = Realloc(ps->data_p, new_size)) == NULL) {
+		if ((new_data = Realloc(ps->data_p, new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
 				(unsigned int)new_size));
 			return False;
 		}
 	}
-
 	ps->buffer_size = new_size;
 	ps->data_p = new_data;
 
@@ -286,12 +281,12 @@ BOOL prs_append_prs_data(prs_struct *dst, prs_struct *src)
  Append some data from one parse_struct into another.
  ********************************************************************/
 
-BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, uint32 len)
-{
+BOOL prs_append_some_prs_data(prs_struct *dst, prs_struct *src, int32 start, uint32 len)
+{	
 	if(!prs_grow(dst, len))
 		return False;
-
-	memcpy(&dst->data_p[dst->data_offset], prs_data_p(src), (size_t)len);
+	
+	memcpy(&dst->data_p[dst->data_offset], prs_data_p(src)+start, (size_t)len);
 	dst->data_offset += len;
 
 	return True;

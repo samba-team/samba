@@ -796,7 +796,7 @@ static BOOL api_pipe_bind_and_alt_req(pipes_struct *p, prs_struct *pd, enum RPC_
 	 * Create the header, now we know the length.
 	 */
 
-	init_rpc_hdr(&p->hdr, RPC_BINDACK, RPC_FLG_FIRST | RPC_FLG_LAST,
+	init_rpc_hdr(&p->hdr, pkt_type, RPC_FLG_FIRST | RPC_FLG_LAST,
 			p->hdr.call_id,
 			RPC_HEADER_LEN + prs_offset(&out_hdr_ba) + prs_offset(&out_auth),
 			auth_len);
