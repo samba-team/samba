@@ -1,5 +1,7 @@
 2000-05-15  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.am (libroken_la_LDFLAGS): set version to 8:1:3
+
 	* roken-common.h: moved __attribute__ to roken.h.in
 
 2000-04-14  Assar Westerlund  <assar@sics.se>

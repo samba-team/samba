@@ -1,3 +1,7 @@
+2000-05-15  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (libkadm5clnt_la_LDFLAGS): set version to 5:1:1
+
 2000-05-12  Assar Westerlund  <assar@sics.se>
 
 	* get_s.c (kadm5_s_get_principal): set life, rlife to INT_MAX as a
