@@ -80,7 +80,7 @@ static BOOL test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 
 static BOOL test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			 struct policy_handle *domain_handle, char *username)
+			 struct policy_handle *domain_handle, const char *username)
 {
 	NTSTATUS status;
 	struct samr_LookupNames r1;
@@ -180,13 +180,12 @@ static BOOL test_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 static BOOL test_userinfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *domain_handle,
-			  struct dom_sid2 *domain_sid, char* user_name,
+			  struct dom_sid2 *domain_sid, const char* user_name,
 			  uint32_t *rid)
 {
 	NTSTATUS status;
 	struct rpc_composite_userinfo user;
 	struct dom_sid *user_sid;
-	char *name;
 
 	user_sid = dom_sid_add_rid(mem_ctx, domain_sid, *rid);
 
@@ -213,7 +212,7 @@ BOOL torture_userinfo(void)
 	struct dcerpc_binding b;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	struct policy_handle h, user_handle;
+	struct policy_handle h;
 	struct samr_String name;
 	struct dom_sid2 sid;
 	uint32_t rid;
