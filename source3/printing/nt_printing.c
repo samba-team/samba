@@ -2587,7 +2587,8 @@ static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 	ADS_STATUS ads_rc;
 	TALLOC_CTX *ctx = talloc_init("publish_it");
 	ADS_MODLIST mods = ads_init_mods(ctx);
-	char *prt_dn = NULL, *srv_dn, **srv_cn;
+	char *prt_dn = NULL, *srv_dn, *srv_cn_0;
+	char *srv_dn_utf8, **srv_cn_utf8;
 	void *res = NULL;
 	ADS_STRUCT *ads;
 	const char *attrs[] = {"objectGUID", NULL};
@@ -2634,12 +2635,45 @@ static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 
 	/* figure out where to publish */
 	ads_find_machine_acct(ads, &res, global_myname());
-	srv_dn = ldap_get_dn(ads->ld, res);
+
+	/* We use ldap_get_dn here as we need the answer
+	 * in utf8 to call ldap_explode_dn(). JRA. */
+
+	srv_dn_utf8 = ldap_get_dn(ads->ld, res);
+	if (!srv_dn_utf8) {
+		ads_destroy(&ads);
+		return WERR_SERVER_UNAVAILABLE;
+	}
 	ads_msgfree(ads, res);
-	srv_cn = ldap_explode_dn(srv_dn, 1);
-	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], 
+	srv_cn_utf8 = ldap_explode_dn(srv_dn_utf8, 1);
+	if (!srv_cn_utf8) {
+		ldap_memfree(srv_dn_utf8);
+		ads_destroy(&ads);
+		return WERR_SERVER_UNAVAILABLE;
+	}
+	/* Now convert to CH_UNIX. */
+	if (pull_utf8_allocate((void **) &srv_dn, srv_dn_utf8) == (size_t)-1) {
+		ldap_memfree(srv_dn_utf8);
+		ldap_memfree(srv_cn_utf8);
+		ads_destroy(&ads);
+		return WERR_SERVER_UNAVAILABLE;
+	}
+	if (pull_utf8_allocate((void **) &srv_cn_0, srv_cn_utf8[0]) == (size_t)-1) {
+		ldap_memfree(srv_dn_utf8);
+		ldap_memfree(srv_cn_utf8);
+		ads_destroy(&ads);
+		SAFE_FREE(srv_dn);
+		return WERR_SERVER_UNAVAILABLE;
+	}
+
+	ldap_memfree(srv_dn_utf8);
+	ldap_memfree(srv_cn_utf8);
+
+	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_0, 
 		 printer->info_2->sharename, srv_dn);
-	ads_memfree(ads, srv_dn);
+
+	SAFE_FREE(srv_dn);
+	SAFE_FREE(srv_cn_0);
 
 	/* publish it */
 	ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
