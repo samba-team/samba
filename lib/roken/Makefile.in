@@ -65,6 +65,7 @@ SOURCES = \
 	hstrerror.c \
 	inaddr2str.c \
 	inet_aton.c \
+	inet_ntop.c \
 	initgroups.c \
 	iruserok.c \
 	issuid.c \
@@ -90,6 +91,7 @@ SOURCES = \
 	signal.c \
 	simple_exec.c \
 	snprintf.c \
+	socket.c \
 	strcasecmp.c \
 	strcat_truncate.c \
 	strcpy_truncate.c \
@@ -146,6 +148,7 @@ OBJECTS = \
 	signal.o \
 	simple_exec.o \
 	snprintf.o \
+	socket.o \
 	tm2time.o \
 	verify.o \
 	warnerr.o \
