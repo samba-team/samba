@@ -313,7 +313,8 @@ config_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
     kd->flags |= KD_CONFIG_EXISTS;
     for(i = 0; hostlist && hostlist[i] != NULL; i++)
 	append_host_string(context, kd, hostlist[i], def_port);
-    free(hostlist);
+
+    krb5_config_free_strings(hostlist);
 }
 
 static void
