@@ -87,7 +87,7 @@ static void check_for_pipe(char *fname)
 ****************************************************************************/
 
 static BOOL open_file(files_struct *fsp,connection_struct *conn,
-		      char *fname1,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode, uint32 desired_access)
+		      const char *fname1,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode, uint32 desired_access)
 {
 	extern struct current_user current_user;
 	pstring fname;
