@@ -257,6 +257,7 @@ krb5_get_in_tkt(krb5_context context,
 	KDCOptions f;
     } opts;
     PA_DATA *pa;
+    unsigned etype;
     opts.i = options;
 
     memset(&a, 0, sizeof(a));
@@ -286,6 +287,8 @@ krb5_get_in_tkt(krb5_context context,
 		     &a.req_body.etype.val,
 		     etypes);
 
+    etype = a.req_body.etype.val[0]; /* XXX */
+
     a.req_body.addresses = malloc(sizeof(*a.req_body.addresses));
 
     if (addrs)
@@ -314,20 +317,24 @@ krb5_get_in_tkt(krb5_context context,
 	if (ret)
 	    return ret;
 	
-	ret = (*key_proc)(context, *(a.req_body.etype.val), &salt,
+	ret = (*key_proc)(context, etype, &salt,
 			  keyseed, &key);
 	krb5_data_free (&salt);
 	if (ret)
 	    return ret;
 	make_pa_enc_timestamp(context, &a.padata->val[0], key);
+	krb5_free_keyblock (context, key);
+	free (key);
 	/* make a v4 salted pa-data */
 	salt.length = 0;
 	salt.data = NULL;
-	ret = (*key_proc)(context, *(a.req_body.etype.val), &salt,
+	ret = (*key_proc)(context, etype, &salt,
 			  keyseed, &key);
 	if (ret)
 	    return ret;
 	make_pa_enc_timestamp(context, &a.padata->val[1], key);
+	krb5_free_keyblock (context, key);
+	free (key);
     } else
 	return KRB5_PREAUTH_BAD_TYPE;
 
@@ -358,6 +365,7 @@ krb5_get_in_tkt(krb5_context context,
 	    if (error.e_text)
 		fprintf (stderr,
 			 "get_in_tkt: KRB_ERROR: %s\n", *(error.e_text));
+	    free_KRB_ERROR (&error);
 	    return error.error_code;
 	}
 	return ret;
@@ -371,7 +379,7 @@ krb5_get_in_tkt(krb5_context context,
 			      pa_pw_salt, &index);
     }
     if(pa)
-	ret = (*key_proc)(context, *(a.req_body.etype.val), 
+	ret = (*key_proc)(context, etype, 
 			  &pa->padata_value, keyseed, &key);
     else{
 	/* make a v5 salted pa-data */
@@ -381,7 +389,7 @@ krb5_get_in_tkt(krb5_context context,
 	
 	if (ret)
 	    return ret;
-	ret = (*key_proc)(context, *(a.req_body.etype.val), &salt,
+	ret = (*key_proc)(context, etype, &salt,
 			  keyseed, &key);
 	krb5_data_free (&salt);
 	if (ret)
@@ -391,8 +399,12 @@ krb5_get_in_tkt(krb5_context context,
     ret = extract_ticket(context, &rep, creds, key, keyseed, 
 			 NULL, decrypt_proc, decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
+    krb5_free_keyblock (context, key);
+    free (key);
+#if 0
     krb5_data_free (&key->keyvalue);
     free (key);
+#endif
 
     free_KDC_REP(&rep.part1);
     free_EncTGSRepPart(&rep.part2);
