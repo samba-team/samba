@@ -119,6 +119,13 @@ add_dynamic_entries()
   do
     echo "f none samba/$i=$i 0644 root other"
   done
+  # add the .msg files for SWAT
+  echo "#\n# msg files \n#"
+    for file in $DISTR_BASE/source/po/*.msg ; do
+      bfile=`basename $file`
+      echo f none /usr/local/samba/lib/$bfile=source/po/$bfile
+    done
+
   echo "#\n# HTML documentation for SWAT\n#"
   cd $DISTR_BASE/docs/htmldocs
   for htmldoc in *
