@@ -600,7 +600,6 @@ static const struct enum_list enum_printing[] = {
 	{PRINT_QNX, "qnx"},
 	{PRINT_PLP, "plp"},
 	{PRINT_LPRNG, "lprng"},
-	{PRINT_SOFTQ, "softq"},
 	{PRINT_CUPS, "cups"},
 	{PRINT_LPRNT, "nt"},
 	{PRINT_LPROS2, "os2"},
@@ -1223,17 +1222,6 @@ static void init_printer_values(void)
 			string_set(&sDefault.szPrintcommand, "lp -r -P%p %s");
 			break;
 
-		case PRINT_SOFTQ:
-			string_set(&sDefault.szLpqcommand, "qstat -l -d%p");
-			string_set(&sDefault.szLprmcommand,
-				   "qstat -s -j%j -c");
-			string_set(&sDefault.szPrintcommand,
-				   "lp -d%p -s %s; rm %s");
-			string_set(&sDefault.szLppausecommand,
-				   "qstat -s -j%j -h");
-			string_set(&sDefault.szLpresumecommand,
-				   "qstat -s -j%j -r");
-			break;
 #ifdef DEVELOPER
 	case PRINT_TEST:
 	case PRINT_VLP:
