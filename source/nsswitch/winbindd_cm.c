@@ -51,9 +51,6 @@
      - I'm pretty annoyed by all the make_nmb_name() stuff.  It should be
        moved down into another function.
 
-     - There needs to be a utility function in libsmb/namequery.c that does
-       cm_get_dc_name() 
-
      - Take care when destroying cli_structs as they can be shared between
        various sam handles.
 
@@ -132,8 +129,6 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 	return True;
 }
 
-
-
 static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
 {
 	static struct get_dc_name_cache *get_dc_name_cache;
@@ -196,7 +191,7 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 
 	if (!ret) {
 		/* fall back on rpc methods if the ADS methods fail */
-		ret = rpc_find_dc(domain, srv_name, &dc_ip);
+		ret = get_dc_name(domain, srv_name, &dc_ip);
 	}
 
 	if (!ret)

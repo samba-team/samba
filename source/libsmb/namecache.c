@@ -143,10 +143,19 @@ BOOL namecache_store(const char *name, int name_type,
 	 * out of action for the entire cache timeout time!
 	 */
 
+#if 0
+	        /*
+		 * I don't think we need to do this. We are
+		 * checking at a higher level for failed DC
+		 * connections. JRA.
+		 */
+
 	if (name_type == 0x1b || name_type == 0x1c)
 		expiry = time(NULL) + 10;
 	else
 		expiry = time(NULL) + lp_name_cache_timeout();
+#endif
+	expiry = time(NULL) + lp_name_cache_timeout();
 
 	/*
 	 * Generate string representation of ip addresses list
@@ -201,7 +210,9 @@ BOOL namecache_fetch(const char *name, int name_type, struct in_addr **ip_list,
 
 	if (!gencache_get(key, &value, &timeout)) {
 		DEBUG(5, ("no entry for %s#%02X found.\n", name, name_type));
+		gencache_del(key);
 		SAFE_FREE(key);
+		SAFE_FREE(value);		 
 		return False;
 	} else {
 		DEBUG(5, ("name %s#%02X found.\n", name, name_type));
@@ -252,3 +263,75 @@ void namecache_flush(void)
 	DEBUG(5, ("Namecache flushed\n"));
 }
 
+/* Construct a name status record key. */
+
+static char *namecache_status_record_key(const char *name, int name_type1,
+				int name_type2, struct in_addr keyip)
+{
+	char *keystr;
+
+	asprintf(&keystr, "NBT/%s#%02X.%02X.%s",
+			strupper_static(name), name_type1, name_type2, inet_ntoa(keyip));
+	return keystr;
+}
+
+/* Store a name status record. */
+
+BOOL namecache_status_store(const char *keyname, int keyname_type,
+		int name_type, struct in_addr keyip,
+		const char *srvname)
+{
+	char *key;
+	time_t expiry;
+	BOOL ret;
+
+	if (!gencache_init())
+		return False;
+
+	key = namecache_status_record_key(keyname, keyname_type, name_type, keyip);
+	if (!key)
+		return False;
+
+	expiry = time(NULL) + lp_name_cache_timeout();
+	ret = gencache_set(key, srvname, expiry);
+
+	if (ret)
+		DEBUG(5, ("namecache_status_store: entry %s -> %s\n", key, srvname ));
+	else
+		DEBUG(5, ("namecache_status_store: entry %s store failed.\n", key ));
+
+	SAFE_FREE(key);
+	return ret;
+}
+
+/* Fetch a name status record. */
+
+BOOL namecache_status_fetch(const char *keyname, int keyname_type,
+			int name_type, struct in_addr keyip, char *srvname_out)
+{
+	char *key = NULL;
+	char *value = NULL;
+	time_t timeout;
+
+	if (!gencache_init())
+		return False;
+
+	key = namecache_status_record_key(keyname, keyname_type, name_type, keyip);
+	if (!key)
+		return False;
+
+	if (!gencache_get(key, &value, &timeout)) {
+		DEBUG(5, ("namecache_status_fetch: no entry for %s found.\n", key));
+		gencache_del(key);
+		SAFE_FREE(key);
+		SAFE_FREE(value);
+		return False;
+	} else {
+		DEBUG(5, ("namecache_status_fetch: key %s -> %s\n", key, value ));
+	}
+
+	strlcpy(srvname_out, value, 16);
+	SAFE_FREE(key);
+	SAFE_FREE(value);
+	return True;
+}
