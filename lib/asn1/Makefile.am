@@ -23,18 +23,30 @@ BUILT_SOURCES = asn1_APOptions.c asn1_AP_REP.c asn1_AP_REQ.c \
 	asn1_TGS_REQ.c asn1_Ticket.c asn1_TicketFlags.c \
 	asn1_TransitedEncoding.c
 
-foo=$(BUILT_SOURCES:%.c=%.x)
+foo = asn1_APOptions.x asn1_AP_REP.x asn1_AP_REQ.x \
+	asn1_AS_REP.x asn1_AS_REQ.x asn1_Authenticator.x \
+	asn1_AuthorizationData.x asn1_Checksum.x asn1_EncAPRepPart.x \
+	asn1_EncASRepPart.x asn1_EncKDCRepPart.x asn1_EncKrbCredPart.x \
+	asn1_EncKrbPrivPart.x asn1_EncTGSRepPart.x asn1_EncTicketPart.x \
+	asn1_EncryptedData.x asn1_EncryptionKey.x asn1_HostAddress.x \
+	asn1_HostAddresses.x asn1_KDCOptions.x asn1_KDC_REP.x asn1_KDC_REQ.x \
+	asn1_KDC_REQ_BODY.x asn1_KRB_CRED.x asn1_KRB_ERROR.x asn1_KRB_PRIV.x \
+	asn1_KRB_SAFE.x asn1_KRB_SAFE_BODY.x asn1_KerberosTime.x \
+	asn1_KrbCredInfo.x asn1_LastReq.x asn1_PA_DATA.x asn1_PA_ENC_TS_ENC.x \
+	asn1_PrincipalName.x asn1_Principal.x asn1_Realm.x asn1_TGS_REP.x \
+	asn1_TGS_REQ.x asn1_Ticket.x asn1_TicketFlags.x \
+	asn1_TransitedEncoding.x
 
-
-libasn1_a_SOURCES = der_get.c der_put.c der_free.c der_length.c der_copy.c \
-		timegm.c \
-		$(BUILT_SOURCES)
 
 noinst_PROGRAMS = asn1_compile
 
 asn1_compile_SOURCES = parse.y lex.l main.c hash.c symbol.c gen.c \
 	gen_encode.c gen_decode.c gen_free.c gen_length.c gen_copy.c \
 	gen_maybe.c
+
+libasn1_a_SOURCES = der_get.c der_put.c der_free.c der_length.c der_copy.c \
+		timegm.c \
+		$(BUILT_SOURCES)
 
 asn1_compile_LDADD = -L../roken -lroken @LEXLIB@
 
@@ -52,15 +64,9 @@ lex.c: lex.l
 
 lex.o: parse.h
 
-#libasn1.a: asn1_compile $(libasn1_a_OBJECTS) $(libasn1_a_DEPENDENCIES)
-#	./asn1_compile $(srcdir)/k5.asn1
-#	o=`sed -e 's/\.c/.o/g' asn1_files`; \
-#	$(MAKE) $$o && \
-#	rm -f libasn1.a && \
-#	$(AR) cru libasn1.a $(libasn1_a_OBJECTS) $(libasn1_a_LIBADD) $$o && \
-#	$(RANLIB) libasn1.a
+$(foo) asn1.h: asn1_files
 
-$(foo) asn1.h: asn1_compile $(srcdir)/k5.asn1
+asn1_files: asn1_compile $(srcdir)/k5.asn1
 	./asn1_compile $(srcdir)/k5.asn1
 
 $(libasn1_a_SOURCES): asn1.h
