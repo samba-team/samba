@@ -2348,100 +2348,180 @@ static BOOL open_sockets(BOOL is_daemon,int port)
   extern int Client;
 
   if (is_daemon)
-    {
-      int s;
-      struct sockaddr addr;
-      int in_addrlen = sizeof(addr);
-       
-      /* Stop zombies */
+  {
+    int num_interfaces = iface_count();
+    int fd_listenset[FD_SETSIZE];
+    fd_set listen_set;
+    int s;
+    int i;
+
+    /* Stop zombies */
 #ifdef SIGCLD_IGNORE
-      signal(SIGCLD, SIG_IGN);
+    signal(SIGCLD, SIG_IGN);
 #else
-      signal(SIGCLD, SIGNAL_CAST sig_cld);
+    signal(SIGCLD, SIGNAL_CAST sig_cld);
 #endif
+
+    if(atexit_set == 0)
+      atexit(killkids);
+
+    FD_ZERO(&listen_set);
+
+    if(lp_interfaces() && lp_bind_interfaces_only())
+    {
+       /* We have been given an interfaces line, and been 
+          told to only bind to those interfaces. Create a
+          socket per interface and bind to only these.
+        */
+
+      if(num_interfaces > FD_SETSIZE)
+      {
+        DEBUG(0,("open_sockets: Too many interfaces specified to bind to. Number was %d \
+max can be %d\n", num_interfaces, FD_SETSIZE));
+        return False;
+      }
+
+      /* Now open a listen socket for each of the interfaces. */
+      for(i = 0; i < num_interfaces; i++)
+      {
+        struct in_addr *ifip = iface_n_ip(i);
+
+        if(ifip == NULL)
+        {
+          DEBUG(0,("open_sockets: interface %d has NULL IP address !\n", i));
+          continue;
+        }
+        s = fd_listenset[i] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr);
+        if(s == -1)
+          return False;
+        /* ready to listen */
+        if (listen(s, 5) == -1) 
+        {
+          DEBUG(0,("listen: %s\n",strerror(errno)));
+          close(s);
+          return False;
+        }
+        FD_SET(s,&listen_set);
+      }
+    }
+    else
+    {
+      /* Just bind to 0.0.0.0 - accept connections from anywhere. */
+      num_interfaces = 1;
 
       /* open an incoming socket */
       s = open_socket_in(SOCK_STREAM, port, 0,interpret_addr(lp_socket_address()));
       if (s == -1)
-	return(False);
+        return(False);
 
       /* ready to listen */
       if (listen(s, 5) == -1) 
-	{
-	  DEBUG(0,("listen: %s\n",strerror(errno)));
-	  close(s);
-	  return False;
-	}
-      
-      if(atexit_set == 0)
-        atexit(killkids);
+      {
+        DEBUG(0,("open_sockets: listen: %s\n",strerror(errno)));
+        close(s);
+        return False;
+      }
 
-      /* now accept incoming connections - forking a new process
-	 for each incoming connection */
-      DEBUG(2,("waiting for a connection\n"));
-      while (1)
-	{
-	  Client = accept(s,&addr,&in_addrlen);
+      fd_listenset[0] = s;
+      FD_SET(s,&listen_set);
+    }      
 
-	  if (Client == -1 && errno == EINTR)
-	    continue;
+    /* now accept incoming connections - forking a new process
+       for each incoming connection */
+    DEBUG(2,("waiting for a connection\n"));
+    while (1)
+    {
+      fd_set lfds;
+      int num;
 
-	  if (Client == -1)
-	    {
-	      DEBUG(0,("accept: %s\n",strerror(errno)));
-	      continue;
-	    }
+      memcpy((char *)&lfds, (char *)&listen_set, sizeof(listen_set));
+
+      num = sys_select(&lfds,NULL);
+
+      if (num == -1 && errno == EINTR)
+        continue;
+
+      /* Find the sockets that are read-ready - accept on these. */
+      for( ; num > 0; num--)
+      {
+        struct sockaddr addr;
+        int in_addrlen = sizeof(addr);
+
+        s = -1;
+        for(i = 0; i < num_interfaces; i++)
+        {
+          if(FD_ISSET(fd_listenset[i],&lfds))
+          {
+            s = fd_listenset[i];
+            break;
+          }
+        }
+
+        Client = accept(s,&addr,&in_addrlen);
+
+        if (Client == -1 && errno == EINTR)
+          continue;
+
+        if (Client == -1)
+        {
+          DEBUG(0,("open_sockets: accept: %s\n",strerror(errno)));
+          continue;
+        }
 
 #ifdef NO_FORK_DEBUG
 #ifndef NO_SIGNAL_TEST
+        signal(SIGPIPE, SIGNAL_CAST sig_pipe);
+        signal(SIGCLD, SIGNAL_CAST SIG_DFL);
+#endif /* NO_SIGNAL_TEST */
+        return True;
+#else /* NO_FORK_DEBUG */
+        if (Client != -1 && fork()==0)
+        {
+          /* Child code ... */
+
+#ifndef NO_SIGNAL_TEST
           signal(SIGPIPE, SIGNAL_CAST sig_pipe);
           signal(SIGCLD, SIGNAL_CAST SIG_DFL);
-#endif
-	  return True;
-#else
-	  if (Client != -1 && fork()==0)
-	    {
-              /* Child code ... */
-#ifndef NO_SIGNAL_TEST
-	      signal(SIGPIPE, SIGNAL_CAST sig_pipe);
-	      signal(SIGCLD, SIGNAL_CAST SIG_DFL);
-#endif
-	      /* close the listening socket */
-	      close(s);
+#endif /* NO_SIGNAL_TEST */
+          /* close the listening socket(s) */
+          for(i = 0; i < num_interfaces; i++)
+            close(fd_listenset[i]);
 
-	      /* close our standard file descriptors */
-	      close_low_fds();
-              am_parent = 0;
+          /* close our standard file descriptors */
+          close_low_fds();
+          am_parent = 0;
   
-	      set_socket_options(Client,"SO_KEEPALIVE");
-	      set_socket_options(Client,user_socket_options);
+          set_socket_options(Client,"SO_KEEPALIVE");
+          set_socket_options(Client,user_socket_options);
 
-              /* Reset global variables in util.c so that
-                 client substitutions will be done correctly
-                 in the process.
-               */
-              reset_globals_after_fork();
-	      return True; 
-	    }
-          close(Client); /* The parent doesn't need this socket */
-#endif
-	}
-    }
+          /* Reset global variables in util.c so that
+             client substitutions will be done correctly
+             in the process.
+           */
+          reset_globals_after_fork();
+          return True; 
+        }
+        close(Client); /* The parent doesn't need this socket */
+#endif /NO_FORK_DEBUG */
+      } /* end for num */
+    } /* end while 1 */
+  } /* end if is_daemon */
   else
-    {
-      /* We will abort gracefully when the client or remote system 
-	 goes away */
+  {
+    /* Started from inetd. fd 0 is the socket. */
+    /* We will abort gracefully when the client or remote system 
+       goes away */
 #ifndef NO_SIGNAL_TEST
-      signal(SIGPIPE, SIGNAL_CAST sig_pipe);
+    signal(SIGPIPE, SIGNAL_CAST sig_pipe);
 #endif
-      Client = dup(0);
+    Client = dup(0);
 
-      /* close our standard file descriptors */
-      close_low_fds();
+    /* close our standard file descriptors */
+    close_low_fds();
 
-      set_socket_options(Client,"SO_KEEPALIVE");
-      set_socket_options(Client,user_socket_options);
-    }
+    set_socket_options(Client,"SO_KEEPALIVE");
+    set_socket_options(Client,user_socket_options);
+  }
 
   return True;
 }

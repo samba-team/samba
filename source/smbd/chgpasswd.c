@@ -124,15 +124,15 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram)
 	     slavedev));
     return(False);
   }
-#if defined(SVR4) || defined(SUNOS5)
+#if defined(SVR4) || defined(SUNOS5) || defined(SCO)
   ioctl(slave, I_PUSH, "ptem");
   ioctl(slave, I_PUSH, "ldterm");
-#else /* defined(SVR4) || defined(SUNOS5) */
+#else /* defined(SVR4) || defined(SUNOS5) || defined(SCO) */
   if (ioctl(slave,TIOCSCTTY,0) <0) {
      DEBUG(3,("Error in ioctl call for slave pty\n"));
      /* return(False); */
   }
-#endif /* defined(SVR4) || defined(SUNOS5) */
+#endif /* defined(SVR4) || defined(SUNOS5) || defined(SCO) */
 
   /* Close master. */
   close(master);
