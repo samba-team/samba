@@ -217,7 +217,7 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 		slprintf (line, sizeof(pstring) - 1, "%s %s", dfree_command, path);
 		DEBUG (3, ("disk_free: Running command %s\n", line));
 
-		pp = sys_popen(line, "r");
+		pp = sys_popen(line, "r", False);
 		if (pp) {
 			fgets(line, sizeof(pstring), pp);
 			line[sizeof(pstring)-1] = '\0';
