@@ -37,6 +37,12 @@
 /* Maximum number of referrals for each Dfs volume */
 #define MAX_REFERRAL_COUNT   256
 
+typedef struct _client_referral {
+	uint32 proximity;
+	uint32 ttl;
+	pstring dfspath;
+} CLIENT_DFS_REFERRAL;
+
 struct referral
 {
 	pstring alternate_path; /* contains the path referred */
