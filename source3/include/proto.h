@@ -2260,6 +2260,8 @@ void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int
 void make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 				POLICY_HND *domain_pol, uint16 switch_value);
 void samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_struct *ps, int depth);
+void make_unk_info3(SAM_UNK_INFO_3 *u_3);
+void sam_io_unk_info3(char *desc, SAM_UNK_INFO_3 *u_3, prs_struct *ps, int depth);
 void make_unk_info6(SAM_UNK_INFO_6 *u_6);
 void sam_io_unk_info6(char *desc, SAM_UNK_INFO_6 *u_6, prs_struct *ps, int depth);
 void make_unk_info7(SAM_UNK_INFO_7 *u_7);

@@ -322,6 +322,34 @@ void samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_st
 /*******************************************************************
 makes a structure.
 ********************************************************************/
+void make_unk_info3(SAM_UNK_INFO_3 *u_3)
+{
+	if (u_3 == NULL) return;
+
+	u_3->unknown_0 = 0x00000000;
+	u_3->unknown_1 = 0x80000000;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void sam_io_unk_info3(char *desc, SAM_UNK_INFO_3 *u_3, prs_struct *ps, int depth)
+{
+	if (u_3 == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info3");
+	depth++;
+
+	prs_uint32("unknown_0", ps, depth, &u_3->unknown_0); /* 0x0000 0000 */
+	prs_uint32("unknown_1", ps, depth, &u_3->unknown_1); /* 0x8000 0000 */
+
+	prs_align(ps);
+
+}
+
+/*******************************************************************
+makes a structure.
+********************************************************************/
 void make_unk_info6(SAM_UNK_INFO_6 *u_6)
 {
 	if (u_6 == NULL) return;
@@ -459,7 +487,6 @@ void make_unk_info1(SAM_UNK_INFO_1 *u_1)
 	memset(u_1->padding, 0, sizeof(u_1->padding)); /* 12 bytes zeros */
 	u_1->unknown_1 = 0x80000000;
 	u_1->unknown_2 = 0x00000000;
-	u_1->unknown_3 = 0x00000000;
 }
 
 /*******************************************************************
@@ -476,7 +503,6 @@ void sam_io_unk_info1(char *desc, SAM_UNK_INFO_1 *u_1, prs_struct *ps, int depth
 
 	prs_uint32("unknown_1", ps, depth, &u_1->unknown_1); /* 0x8000 0000 */
 	prs_uint32("unknown_2", ps, depth, &u_1->unknown_2); /* 0x0000 0000 */
-	prs_uint32("unknown_3", ps, depth, &u_1->unknown_3); /* 0x0000 0000 */
 
 	prs_align(ps);
 }
@@ -524,14 +550,19 @@ void samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_str
 	{
 		switch (r_u->switch_value)
 		{
+			case 0x07:
+			{
+				sam_io_unk_info7("unk_inf7", &r_u->ctr->info.inf7, ps, depth);
+				break;
+			}
 			case 0x06:
 			{
 				sam_io_unk_info6("unk_inf6", &r_u->ctr->info.inf6, ps, depth);
 				break;
 			}
-			case 0x07:
+			case 0x03:
 			{
-				sam_io_unk_info7("unk_inf7", &r_u->ctr->info.inf7, ps, depth);
+				sam_io_unk_info3("unk_inf3", &r_u->ctr->info.inf3, ps, depth);
 				break;
 			}
 			case 0x02:
@@ -552,6 +583,8 @@ void samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_str
 			}
 		}
 	}
+
+	prs_uint32("status      ", ps, depth, &(r_u->status));
 }
 
 
