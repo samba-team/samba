@@ -13,7 +13,6 @@ TESTS = n-fold-test string-to-key-test
 
 if KRB4
 KRB4LIB = $(LIB_krb4)
-keytab_krb4_c = keytab_krb4.c
 endif
 
 LDADD = libkrb5.la \
@@ -81,8 +80,8 @@ libkrb5_la_SOURCES = \
 	keytab.c \
 	keytab_file.c \
 	keytab_memory.c \
-	$(keytab_krb4_c) \
 	keytab_keyfile.c \
+	keytab_krb4.c \
 	krbhst.c \
 	kuserok.c \
 	log.c \
