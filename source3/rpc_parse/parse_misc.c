@@ -261,8 +261,8 @@ creates a UNIHDR structure.
 ********************************************************************/
 void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint32 buffer)
 {
-	hdr->uni_max_len = 2 * max_len;
 	hdr->uni_str_len = 2 * len;
+	hdr->uni_max_len = 2 * max_len;
 	hdr->buffer      = buffer;
 }
 
@@ -285,6 +285,35 @@ void smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth)
 	/* oops! XXXX maybe issue a warning that this is happening... */
 	if (hdr->uni_max_len > MAX_UNISTRLEN) hdr->uni_max_len = MAX_UNISTRLEN;
 	if (hdr->uni_str_len > MAX_UNISTRLEN) hdr->uni_str_len = MAX_UNISTRLEN;
+}
+
+/*******************************************************************
+creates a BUFHDR structure.
+********************************************************************/
+void make_buf_hdr(BUFHDR *hdr, int max_len, int len)
+{
+	hdr->buf_max_len = max_len;
+	hdr->buf_len     = len;
+}
+
+/*******************************************************************
+reads or writes a BUFHDR structure.
+********************************************************************/
+void smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth)
+{
+	if (hdr == NULL) return;
+
+	prs_debug(ps, depth, desc, "smb_io_hdrbuf");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("buf_max_len", ps, depth, &(hdr->buf_max_len));
+	prs_uint32("buf_len    ", ps, depth, &(hdr->buf_len    ));
+
+	/* oops! XXXX maybe issue a warning that this is happening... */
+	if (hdr->buf_max_len > MAX_BUFFERLEN) hdr->buf_max_len = MAX_BUFFERLEN;
+	if (hdr->buf_len     > MAX_BUFFERLEN) hdr->buf_len     = MAX_BUFFERLEN;
 }
 
 /*******************************************************************
@@ -337,53 +366,133 @@ void smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-creates a UNINOTSTR2 structure.
+creates a BUFFER3 structure from a uint32
 ********************************************************************/
-void make_uninotstr2(UNINOTSTR2 *str, char *buf, int len)
+void make_buffer3_uint32(BUFFER3 *str, uint32 val)
 {
-	/* set up string lengths. add one if string is not null-terminated */
-	str->uni_max_len = (len+1)*2;
-	str->undoc       = 0;
-	str->uni_buf_len = (len+1)*2;
+	ZERO_STRUCTP(str);
 
-	/* store the string (null-terminated copy) */
-	struni2(str->buffer, buf);
+	/* set up string lengths. */
+	str->buf_max_len = sizeof(uint32);
+	str->buf_len     = sizeof(uint32);
+
+	SIVAL(str->buffer, 0, val);
 }
 
 /*******************************************************************
-reads or writes a UNINOTSTR2 structure.
-XXXX NOTE: UNISTR2 structures need NOT be null-terminated.
-     the uni_str_len member tells you how long the string is;
-     the uni_max_len member tells you how large the buffer is.
+creates a BUFFER3 structure.
 ********************************************************************/
-void smb_io_uninotstr2(char *desc,  UNINOTSTR2 *uni2, uint32 buffer, prs_struct *ps, int depth)
+void make_buffer3_str(BUFFER3 *str, char *buf, int len)
 {
-	if (uni2 == NULL) return;
+	ZERO_STRUCTP(str);
+
+	/* set up string lengths. */
+	str->buf_max_len = len * 2;
+	str->buf_len     = len * 2;
+
+	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
+	struni2((uint16*)str->buffer, buf);
+}
+
+/*******************************************************************
+creates a BUFFER3 structure from a hex string.
+********************************************************************/
+void make_buffer3_hex(BUFFER3 *str, char *buf)
+{
+	ZERO_STRUCTP(str);
+	str->buf_max_len = str->buf_len = strhex_to_str(str->buffer, sizeof(str->buffer), buf);
+}
+
+/*******************************************************************
+creates a BUFFER3 structure.
+********************************************************************/
+void make_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len)
+{
+	ZERO_STRUCTP(str);
+
+	/* max buffer size (allocated size) */
+	str->buf_max_len = len;
+	if (buf != NULL)
+	{
+		memcpy(str->buffer, buf, MIN(str->buf_len, sizeof(str->buffer)));
+	}
+	str->buf_len = buf != NULL ? len : 0;
+}
+
+/*******************************************************************
+reads or writes a BUFFER3 structure.
+     the uni_max_len member tells you how large the buffer is.
+     the uni_str_len member tells you how much of the buffer is really used.
+********************************************************************/
+void smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth)
+{
+	if (buf3 == NULL) return;
+
+	prs_debug(ps, depth, desc, "smb_io_buffer3");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("uni_max_len", ps, depth, &(buf3->buf_max_len));
+	if (buf3->buf_max_len > MAX_UNISTRLEN) buf3->buf_max_len = MAX_UNISTRLEN;
+
+	prs_uint8s(True, "buffer     ", ps, depth, buf3->buffer, buf3->buf_max_len);
+
+	prs_uint32("buf_len    ", ps, depth, &(buf3->buf_len));
+	if (buf3->buf_len     > MAX_UNISTRLEN) buf3->buf_len     = MAX_UNISTRLEN;
+}
+
+/*******************************************************************
+creates a BUFFER2 structure.
+********************************************************************/
+void make_buffer2(BUFFER2 *str, uint8 *buf, int len)
+{
+	ZERO_STRUCTP(str);
+
+	/* max buffer size (allocated size) */
+	str->buf_max_len = len;
+	str->undoc       = 0;
+	str->buf_len = buf != NULL ? len : 0;
+
+	if (buf != NULL)
+	{
+		memcpy(str->buffer, buf, MIN(str->buf_len, sizeof(str->buffer)));
+	}
+}
+
+/*******************************************************************
+reads or writes a BUFFER2 structure.
+     the uni_max_len member tells you how large the buffer is.
+     the uni_str_len member tells you how much of the buffer is really used.
+********************************************************************/
+void smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth)
+{
+	if (buf2 == NULL) return;
 
 	if (buffer)
 	{
-		prs_debug(ps, depth, desc, "smb_io_uninotstr2");
+		prs_debug(ps, depth, desc, "smb_io_buffer2");
 		depth++;
 
 		prs_align(ps);
 		
-		prs_uint32("uni_max_len", ps, depth, &(uni2->uni_max_len));
-		prs_uint32("undoc      ", ps, depth, &(uni2->undoc      ));
-		prs_uint32("uni_buf_len", ps, depth, &(uni2->uni_buf_len));
+		prs_uint32("uni_max_len", ps, depth, &(buf2->buf_max_len));
+		prs_uint32("undoc      ", ps, depth, &(buf2->undoc      ));
+		prs_uint32("buf_len    ", ps, depth, &(buf2->buf_len));
 
 		/* oops! XXXX maybe issue a warning that this is happening... */
-		if (uni2->uni_max_len > MAX_UNISTRLEN) uni2->uni_max_len = MAX_UNISTRLEN;
-		if (uni2->uni_buf_len > MAX_UNISTRLEN) uni2->uni_buf_len = MAX_UNISTRLEN;
+		if (buf2->buf_max_len > MAX_UNISTRLEN) buf2->buf_max_len = MAX_UNISTRLEN;
+		if (buf2->buf_len     > MAX_UNISTRLEN) buf2->buf_len     = MAX_UNISTRLEN;
 
 		/* buffer advanced by indicated length of string
 		   NOT by searching for null-termination */
-		prs_uninotstr2(True, "buffer     ", ps, depth, uni2);
+		prs_buffer2(True, "buffer     ", ps, depth, buf2);
 	}
 	else
 	{
-		prs_debug(ps, depth, desc, "smb_io_uninotstr2 - NULL");
+		prs_debug(ps, depth, desc, "smb_io_buffer2 - NULL");
 		depth++;
-		bzero(uni2, sizeof(*uni2));
+		bzero(buf2, sizeof(*buf2));
 	}
 }
 
@@ -475,7 +584,7 @@ creates a UNISTR2 structure.
 ********************************************************************/
 void make_unistr2(UNISTR2 *str, char *buf, int len)
 {
-    ZERO_STRUCTP(str);
+	ZERO_STRUCTP(str);
 
 	/* set up string lengths. */
 	str->uni_max_len = len;
@@ -526,9 +635,9 @@ void smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, i
 /*******************************************************************
 creates a DOM_RID2 structure.
 ********************************************************************/
-void make_dom_rid2(DOM_RID2 *rid2, uint32 rid)
+void make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type)
 {
-	rid2->type    = 0x5;
+	rid2->type    = type;
 	rid2->undoc   = 0x5;
 	rid2->rid     = rid;
 	rid2->rid_idx = 0;
@@ -561,10 +670,10 @@ void smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth)
 /*******************************************************************
 creates a DOM_RID3 structure.
 ********************************************************************/
-void make_dom_rid3(DOM_RID3 *rid3, uint32 rid)
+void make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type)
 {
 	rid3->rid      = rid;
-	rid3->type1    = 0x1;
+	rid3->type1    = type;
 	rid3->ptr_type = 0x1; /* non-zero, basically. */
 	rid3->type2    = 0x1;
 }
@@ -946,13 +1055,13 @@ void smb_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth
 
 
 /*******************************************************************
-reads or writes a DOM_NAME structure.
+reads or writes a UNISTR3 structure.
 ********************************************************************/
-void smb_io_dom_name(char *desc,  DOM_NAME *name, prs_struct *ps, int depth)
+void smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth)
 {
 	if (name == NULL) return;
 
-	prs_debug(ps, depth, desc, "smb_io_dom_name");
+	prs_debug(ps, depth, desc, "smb_io_unistr3");
 	depth++;
 
 	prs_align(ps);
@@ -962,7 +1071,7 @@ void smb_io_dom_name(char *desc,  DOM_NAME *name, prs_struct *ps, int depth)
 	/* don't know if len is specified by uni_str_len member... */
 	/* assume unicode string is unicode-null-terminated, instead */
 
-	smb_io_unistr("", &(name->str), ps, depth);
+	prs_unistr3(True, "unistr", name, ps, depth);
 }
 
 

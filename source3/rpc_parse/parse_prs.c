@@ -175,13 +175,13 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
  stream a "not" unicode string, length/buffer specified separately,
  in byte chars
  ********************************************************************/
-BOOL prs_uninotstr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNINOTSTR2 *str)
+BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL) return False;
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->uni_max_len)
-	ps->offset += str->uni_buf_len;
+	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->buf_len/2)
+	ps->offset += str->buf_len;
 
 	return True;
 }
@@ -210,7 +210,22 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 	char *q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL) return False;
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->uni_max_len)
+	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->uni_str_len)
+	ps->offset += str->uni_str_len * sizeof(uint16);
+
+	return True;
+}
+
+/******************************************************************
+ stream a unicode string, length/buffer specified separately,
+ in uint16 chars.
+ ********************************************************************/
+BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth)
+{
+	char *q = mem_data(&(ps->data), ps->offset);
+	if (q == NULL) return False;
+
+	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->str.buffer, str->uni_str_len)
 	ps->offset += str->uni_str_len * sizeof(uint16);
 
 	return True;
@@ -281,6 +296,41 @@ BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, ui
 
 	dump_data(5+depth, (char *)start, i);
 
+	return True;
+}
+
+/*******************************************************************
+ prs_uint16 wrapper.  call this and it sets up a pointer to where the
+ uint16 should be stored, or gets the size if reading
+ ********************************************************************/
+BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *off_ptr)
+{
+	(*off_ptr) = ps->offset;
+	if (ps->io)
+	{
+		/* reading. */
+		return prs_uint16(name, ps, depth, data16);
+	}
+	return True;
+}
+
+/*******************************************************************
+ prs_uint16 wrapper.  call this and it retrospectively stores the size.
+ does nothing on reading, as that is already handled by ...._pre()
+ ********************************************************************/
+BOOL prs_uint16_post(char *name, prs_struct *ps, int depth,
+				uint32 ptr_uint16, uint32 start_offset)
+{
+	if (!ps->io)
+	{
+		/* storing: go back and do a retrospective job.  i hate this */
+		uint16 data_size = ps->offset - start_offset;
+		uint32 old_offset = ps->offset;
+
+		ps->offset = ptr_uint16;
+		prs_uint16(name, ps, depth, &data_size);
+		ps->offset = old_offset;
+	}
 	return True;
 }
 

@@ -178,8 +178,9 @@ void GetTimeOfDay(struct timeval *tval);
 void TimeInit(void);
 int TimeDiff(time_t t);
 struct tm *LocalTime(time_t *t);
-time_t interpret_nt_time(NTTIME *t);
+time_t nt_time_to_unix(NTTIME *nt);
 time_t interpret_long_date(char *p);
+void unix_to_nt_time(NTTIME *nt, time_t t);
 void put_long_date(char *p,time_t t);
 BOOL null_mtime(time_t mtime);
 void put_dos_date(char *buf,int offset,time_t unixdate);
@@ -351,6 +352,7 @@ char *safe_strcat(char *dest, char *src, int maxlength);
 char *StrCpy(char *dest,char *src);
 char *StrnCpy(char *dest,char *src,int n);
 char *strncpyn(char *dest, char *src,int n, char c);
+int strhex_to_str(char *p, int len, const char *strhex);
 BOOL in_list(char *s,char *list,BOOL casesensitive);
 BOOL string_init(char **dest,char *src);
 void string_free(char **s);
@@ -364,6 +366,9 @@ char *skip_unicode_string(char *buf,int n);
 char *unistrn2(uint16 *buf, int len);
 char *unistr2(uint16 *buf);
 char *unistr2_to_str(UNISTR2 *str);
+uint32 buffer2_to_uint32(BUFFER2 *str);
+char *buffer2_to_str(BUFFER2 *str);
+char *buffer2_to_multistr(BUFFER2 *str);
 int struni2(uint16 *p, char *buf);
 char *unistr(char *buf);
 int unistrcpy(char *dst, char *src);
@@ -1206,7 +1211,6 @@ struct passdb_ops *file_initialize_password_db(void);
 
 /*The following definitions come from  passdb/smbpassfile.c  */
 
-BOOL do_file_lock(int fd, int waitsecs, int type);
 BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth);
 BOOL pw_file_unlock(int fd, int *plock_depth);
 BOOL trust_password_lock( char *domain, char *name, BOOL update);
@@ -1287,6 +1291,42 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
 BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name);
 void cli_nt_session_close(struct cli_state *cli);
+
+/*The following definitions come from  rpc_client/cli_reg.c  */
+
+BOOL do_reg_open_policy(struct cli_state *cli, uint16 unknown_0, uint32 level,
+				POLICY_HND *hnd);
+BOOL do_reg_open_unk_4(struct cli_state *cli, uint16 unknown_0, uint32 level,
+				POLICY_HND *hnd);
+BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
+				char *class, uint32 *class_len,
+				uint32 *num_subkeys, uint32 *max_subkeylen,
+				uint32 *max_subkeysize, uint32 *num_values,
+				uint32 *max_valnamelen, uint32 *max_valbufsize,
+				uint32 *sec_desc, NTTIME *mod_time);
+BOOL do_reg_unknown_1a(struct cli_state *cli, POLICY_HND *hnd, uint32 *unk);
+BOOL do_reg_query_info(struct cli_state *cli, POLICY_HND *hnd,
+				char *type, uint32 *unk_0, uint32 *unk_1);
+BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
+				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf);
+BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
+				char *key_name, char *key_class,
+				SEC_INFO *sam_access,
+				POLICY_HND *key);
+BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
+				int key_index, char *key_name,
+				uint32 *unk_1, uint32 *unk_2,
+				time_t *mod_time);
+BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
+				char *val_name, uint32 type, BUFFER3 *data);
+BOOL do_reg_enum_val(struct cli_state *cli, POLICY_HND *hnd,
+				int val_index, int max_valnamelen, int max_valbufsize,
+				fstring val_name,
+				uint32 *val_type, BUFFER2 *value);
+BOOL do_reg_open_entry(struct cli_state *cli, POLICY_HND *hnd,
+				char *key_name, uint32 unk_0,
+				POLICY_HND *key_hnd);
+BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
@@ -1414,21 +1454,28 @@ void make_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
 void smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
 void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint32 buffer);
 void smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
+void make_buf_hdr(BUFHDR *hdr, int max_len, int len);
+void smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth);
 void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate);
 void smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
 void make_unistr(UNISTR *str, char *buf);
 void smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth);
-void make_uninotstr2(UNINOTSTR2 *str, char *buf, int len);
-void smb_io_uninotstr2(char *desc,  UNINOTSTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
+void make_buffer3_uint32(BUFFER3 *str, uint32 val);
+void make_buffer3_str(BUFFER3 *str, char *buf, int len);
+void make_buffer3_hex(BUFFER3 *str, char *buf);
+void make_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len);
+void smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth);
+void make_buffer2(BUFFER2 *str, uint8 *buf, int len);
+void smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
 void make_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf);
 void copy_unistr2(UNISTR2 *str, UNISTR2 *from);
 void make_string2(STRING2 *str, char *buf, int len);
 void smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 void make_unistr2(UNISTR2 *str, char *buf, int len);
 void smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
+void make_dom_rid2(DOM_RID2 *rid2, uint32 rid, uint8 type);
 void smb_io_dom_rid2(char *desc,  DOM_RID2 *rid2, prs_struct *ps, int depth);
-void make_dom_rid3(DOM_RID3 *rid3, uint32 rid);
+void make_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
 void smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth);
 void make_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid);
 void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
@@ -1453,7 +1500,7 @@ void smb_io_gid(char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 void smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth);
 void smb_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
 void smb_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth);
-void smb_io_dom_name(char *desc,  DOM_NAME *name, prs_struct *ps, int depth);
+void smb_io_unistr3(char *desc,  UNISTR3 *name, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_net.c  */
 
@@ -1547,24 +1594,71 @@ BOOL prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
 BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
 BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
 BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
-BOOL prs_uninotstr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNINOTSTR2 *str);
+BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str);
 BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str);
 BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str);
+BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth);
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str);
 BOOL prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, uint16 max_buf_size);
+BOOL prs_uint16_pre(char *name, prs_struct *ps, int depth, uint16 *data16, uint32 *off_ptr);
+BOOL prs_uint16_post(char *name, prs_struct *ps, int depth,
+				uint32 ptr_uint16, uint32 start_offset);
 
 /*The following definitions come from  rpc_parse/parse_reg.c  */
 
+void make_reg_q_open_pol(REG_Q_OPEN_POLICY *q_o,
+				uint16 unknown_0, uint32 level);
 void reg_io_q_open_policy(char *desc,  REG_Q_OPEN_POLICY *r_q, prs_struct *ps, int depth);
 void reg_io_r_open_policy(char *desc,  REG_R_OPEN_POLICY *r_r, prs_struct *ps, int depth);
+void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
+				char *name, char *class,
+				SEC_INFO *sam_access);
+void reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int depth);
+void reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int depth);
+void make_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
+				uint32 max_class_len);
+void reg_io_q_query_key(char *desc,  REG_Q_QUERY_KEY *r_q, prs_struct *ps, int depth);
+void reg_io_r_query_key(char *desc,  REG_R_QUERY_KEY *r_r, prs_struct *ps, int depth);
+void make_reg_q_unk_1a(REG_Q_UNK_1A *q_o, POLICY_HND *hnd);
+void reg_io_q_unk_1a(char *desc,  REG_Q_UNK_1A *r_q, prs_struct *ps, int depth);
+void reg_io_r_unk_1a(char *desc,  REG_R_UNK_1A *r_r, prs_struct *ps, int depth);
+void make_reg_q_open_unk_4(REG_Q_OPEN_UNK_4 *q_o,
+				uint16 unknown_0, uint32 level);
+void reg_io_q_open_unk_4(char *desc,  REG_Q_OPEN_UNK_4 *r_q, prs_struct *ps, int depth);
+void reg_io_r_open_unk_4(char *desc,  REG_R_OPEN_UNK_4 *r_r, prs_struct *ps, int depth);
+void make_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd);
 void reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth);
 void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth);
+void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
+				uint32 buf_len, SEC_DESC_BUF *sec_buf);
+void reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
+void make_reg_r_get_key_sec(REG_R_GET_KEY_SEC *r_i, POLICY_HND *pol, 
+				uint32 buf_len, uint8 *buf,
+				uint32 status);
+void reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
+void make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
+				time_t unix_time, uint8 major, uint8 minor);
 void reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth);
 void make_reg_r_info(REG_R_INFO *r_r,
 				uint32 level, char *os_type,
 				uint32 unknown_0, uint32 unknown_1,
 				uint32 status);
-void reg_io_r_info(char *desc,  REG_R_INFO *r_r, prs_struct *ps, int depth);
+void reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth);
+void make_reg_q_enum_val(REG_Q_ENUM_VALUE *q_i, POLICY_HND *pol,
+				uint32 val_idx, uint32 max_val_len,
+				uint32 max_buf_len);
+void reg_io_q_enum_val(char *desc,  REG_Q_ENUM_VALUE *q_q, prs_struct *ps, int depth);
+void reg_io_r_enum_val(char *desc,  REG_R_ENUM_VALUE *r_q, prs_struct *ps, int depth);
+void make_reg_q_create_val(REG_Q_CREATE_VALUE *q_i, POLICY_HND *pol,
+				char *val_name, uint32 type,
+				BUFFER3 *val);
+void reg_io_q_create_val(char *desc,  REG_Q_CREATE_VALUE *q_q, prs_struct *ps, int depth);
+void reg_io_r_create_val(char *desc,  REG_R_CREATE_VALUE *r_q, prs_struct *ps, int depth);
+void make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx);
+void reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int depth);
+void reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int depth);
+void make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
+				char *key_name, uint32 unk);
 void reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int depth);
 void make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
 				POLICY_HND *pol, uint32 status);
@@ -1803,6 +1897,15 @@ void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct
 void make_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER *r_u, uint32 status);
 void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
 
+/*The following definitions come from  rpc_parse/parse_sec.c  */
+
+void sec_io_info(char *desc, SEC_INFO *t, prs_struct *ps, int depth);
+void sec_io_ace(char *desc, SEC_ACE *t, prs_struct *ps, int depth);
+void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth);
+void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth);
+void make_sec_desc_buf(SEC_DESC_BUF *buf, int len, uint32 buf_ptr);
+void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth);
+
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 
 void make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark);
@@ -1970,6 +2073,15 @@ void cmd_lsa_lookup_sids(struct client_info *info);
 
 void cmd_netlogon_login_test(struct client_info *info);
 
+/*The following definitions come from  rpcclient/cmd_reg.c  */
+
+void cmd_reg_enum(struct client_info *info);
+void cmd_reg_query_key(struct client_info *info);
+void cmd_reg_test2(struct client_info *info);
+void cmd_reg_create_val(struct client_info *info);
+void cmd_reg_create_key(struct client_info *info);
+void cmd_reg_get_key_sec(struct client_info *info);
+
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
 void cmd_sam_ntchange_pwd(struct client_info *info);
@@ -2042,6 +2154,16 @@ void display_group_rid_info(FILE *out_hnd, enum action_type action,
 void display_alias_name_info(FILE *out_hnd, enum action_type action,
 				uint32 num_aliases, fstring *alias_name, uint32 *num_als_usrs);
 void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_INFO_21 *usr);
+char *get_sec_perms_str(uint32 type);
+void display_sec_info(FILE *out_hnd, enum action_type action, SEC_INFO *info);
+void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *ace);
+void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *acl);
+void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *sec);
+char *get_reg_val_type_str(uint32 type);
+void display_reg_value_info(FILE *out_hnd, enum action_type action,
+				char *val_name, uint32 val_type, BUFFER2 *value);
+void display_reg_key_info(FILE *out_hnd, enum action_type action,
+				char *key_name, time_t key_mod_time);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 

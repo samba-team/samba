@@ -236,18 +236,6 @@ struct tm *LocalTime(time_t *t)
   return(gmtime(&t2));
 }
 
-/****************************************************************************
-take an NTTIME structure, containing high / low time.  convert to unix time.
-lkclXXXX this may need 2 SIVALs not a memcpy.  we'll see...
-****************************************************************************/
-time_t interpret_nt_time(NTTIME *t)
-{
-  char data[8];
-  memcpy(data, t, sizeof(data));
-  return interpret_long_date(data);
-}
-
-
 #define TIME_FIXUP_CONSTANT (369.0*365.25*24*60*60-(3.0*24*60*60+6.0*60*60))
 
 /****************************************************************************
@@ -259,22 +247,19 @@ its the GMT you get by taking a localtime and adding the
 serverzone. This is NOT the same as GMT in some cases. This routine
 converts this to real GMT.
 ****************************************************************************/
-time_t interpret_long_date(char *p)
+time_t nt_time_to_unix(NTTIME *nt)
 {
   double d;
   time_t ret;
-  uint32 tlow,thigh;
   /* The next two lines are a fix needed for the 
      broken SCO compiler. JRA. */
   time_t l_time_min = TIME_T_MIN;
   time_t l_time_max = TIME_T_MAX;
 
-  tlow = IVAL(p,0);
-  thigh = IVAL(p,4);
-  if (thigh == 0) return(0);
+  if (nt->high == 0) return(0);
 
-  d = ((double)thigh)*4.0*(double)(1<<30);
-  d += (tlow&0xFFF00000);
+  d = ((double)nt->high)*4.0*(double)(1<<30);
+  d += (nt->low&0xFFF00000);
   d *= 1.0e-7;
  
   /* now adjust by 369 years to make the secs since 1970 */
@@ -293,36 +278,56 @@ time_t interpret_long_date(char *p)
 }
 
 
+
+/****************************************************************************
+interprets an nt time into a unix time_t
+****************************************************************************/
+time_t interpret_long_date(char *p)
+{
+	NTTIME nt;
+	nt.low = IVAL(p,0);
+	nt.high = IVAL(p,4);
+	return nt_time_to_unix(&nt);
+}
+
 /****************************************************************************
 put a 8 byte filetime from a time_t
 This takes real GMT as input and converts to kludge-GMT
 ****************************************************************************/
-void put_long_date(char *p,time_t t)
+void unix_to_nt_time(NTTIME *nt, time_t t)
 {
-  uint32 tlow,thigh;
-  double d;
+	double d;
 
-  if (t==0) {
-    SIVAL(p,0,0); SIVAL(p,4,0);
-    return;
-  }
+	if (t==0)
+	{
+		nt->low = 0;
+		nt->high = 0;
+		return;
+	}
 
-  /* this converts GMT to kludge-GMT */
-  t -= LocTimeDiff(t) - serverzone; 
+	/* this converts GMT to kludge-GMT */
+	t -= LocTimeDiff(t) - serverzone; 
 
-  d = (double) (t);
+	d = (double)(t);
+	d += TIME_FIXUP_CONSTANT;
+	d *= 1.0e7;
 
-  d += TIME_FIXUP_CONSTANT;
-
-  d *= 1.0e7;
-
-  thigh = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
-  tlow = (uint32)(d - ((double)thigh)*4.0*(double)(1<<30));
-
-  SIVAL(p,0,tlow);
-  SIVAL(p,4,thigh);
+	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
+	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
 }
 
+
+/****************************************************************************
+take an NTTIME structure, containing high / low time.  convert to unix time.
+lkclXXXX this may need 2 SIVALs not a memcpy.  we'll see...
+****************************************************************************/
+void put_long_date(char *p,time_t t)
+{
+	NTTIME nt;
+	unix_to_nt_time(&nt, t);
+	SIVAL(p, 0, nt.low);
+	SIVAL(p, 4, nt.high);
+}
 
 /****************************************************************************
 check if it's a null mtime

@@ -31,6 +31,9 @@
 /* miscellaneous structures / defines */
 #include "rpc_misc.h"
 
+/* security descriptor structures */
+#include "rpc_secdes.h"
+
 /* different dce/rpc pipes */
 #include "rpc_lsa.h"
 #include "rpc_netlogon.h"

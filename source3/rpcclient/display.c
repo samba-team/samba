@@ -977,12 +977,12 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 			fprintf(out_hnd, "\t\tUnknown Str : %s\n", unistrn2(usr->uni_unknown_str .buffer, usr->uni_unknown_str .uni_str_len)); /* unknown string unicode string */
 			fprintf(out_hnd, "\t\tRemote Dial : %s\n", unistrn2(usr->uni_munged_dial .buffer, usr->uni_munged_dial .uni_str_len)); /* munged remote access unicode string */
 
-			fprintf(out_hnd, "\t\tLogon Time               : %s\n", http_timestring(interpret_nt_time(&(usr->logon_time           ))));
-			fprintf(out_hnd, "\t\tLogoff Time              : %s\n", http_timestring(interpret_nt_time(&(usr->logoff_time          ))));
-			fprintf(out_hnd, "\t\tKickoff Time             : %s\n", http_timestring(interpret_nt_time(&(usr->kickoff_time         ))));
-			fprintf(out_hnd, "\t\tPassword last set Time   : %s\n", http_timestring(interpret_nt_time(&(usr->pass_last_set_time   ))));
-			fprintf(out_hnd, "\t\tPassword can change Time : %s\n", http_timestring(interpret_nt_time(&(usr->pass_can_change_time ))));
-			fprintf(out_hnd, "\t\tPassword must change Time: %s\n", http_timestring(interpret_nt_time(&(usr->pass_must_change_time))));
+			fprintf(out_hnd, "\t\tLogon Time               : %s\n", http_timestring(nt_time_to_unix(&(usr->logon_time           ))));
+			fprintf(out_hnd, "\t\tLogoff Time              : %s\n", http_timestring(nt_time_to_unix(&(usr->logoff_time          ))));
+			fprintf(out_hnd, "\t\tKickoff Time             : %s\n", http_timestring(nt_time_to_unix(&(usr->kickoff_time         ))));
+			fprintf(out_hnd, "\t\tPassword last set Time   : %s\n", http_timestring(nt_time_to_unix(&(usr->pass_last_set_time   ))));
+			fprintf(out_hnd, "\t\tPassword can change Time : %s\n", http_timestring(nt_time_to_unix(&(usr->pass_can_change_time ))));
+			fprintf(out_hnd, "\t\tPassword must change Time: %s\n", http_timestring(nt_time_to_unix(&(usr->pass_must_change_time))));
 			
 			fprintf(out_hnd, "\t\tunknown_2[0..31]...\n"); /* user passwords? */
 
@@ -1011,3 +1011,366 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 	}
 }
 
+
+/****************************************************************************
+convert a security permissions into a string
+****************************************************************************/
+char *get_sec_perms_str(uint32 type)
+{
+	static fstring typestr;
+	int i;
+
+	switch (type)
+	{
+		case SEC_RIGHTS_FULL_CONTROL:
+		{
+			fstrcpy(typestr, "Full Control");
+			return typestr;
+		}
+
+		case SEC_RIGHTS_READ:
+		{
+			fstrcpy(typestr, "Read");
+			return typestr;
+		}
+		default:
+		{
+			break;
+		}
+	}
+
+	typestr[0] = 0;
+	for (i = 0; i < 32; i++)
+	{
+		if (IS_BITS_SET_ALL(type, 1 << i))
+		{
+			switch (1 << i)
+			{
+				case SEC_RIGHTS_QUERY_VALUE    : fstrcat(typestr, "Query " ); break;
+				case SEC_RIGHTS_SET_VALUE      : fstrcat(typestr, "Set " ); break;
+				case SEC_RIGHTS_CREATE_SUBKEY  : fstrcat(typestr, "Create "); break;
+				case SEC_RIGHTS_ENUM_SUBKEYS   : fstrcat(typestr, "Enum "); break;
+				case SEC_RIGHTS_NOTIFY         : fstrcat(typestr, "Notify "); break;
+				case SEC_RIGHTS_CREATE_LINK    : fstrcat(typestr, "CreateLink "); break;
+				case SEC_RIGHTS_DELETE         : fstrcat(typestr, "Delete "); break;
+				case SEC_RIGHTS_READ_CONTROL   : fstrcat(typestr, "ReadControl "); break;
+				case SEC_RIGHTS_WRITE_DAC      : fstrcat(typestr, "WriteDAC "); break;
+				case SEC_RIGHTS_WRITE_OWNER    : fstrcat(typestr, "WriteOwner "); break;
+			}
+			type &= ~(1 << i);
+		}
+	}
+
+	/* remaining bits get added on as-is */
+	if (type != 0)
+	{
+		fstring tmp;
+		snprintf(tmp, sizeof(tmp), "[%08x]", type);
+		fstrcat(typestr, tmp);
+	}
+
+	/* remove last space */
+	i = strlen(typestr)-1;
+	if (typestr[i] == ' ') typestr[i] = 0;
+
+	return typestr;
+}
+
+/****************************************************************************
+ display sec_info structure
+ ****************************************************************************/
+void display_sec_info(FILE *out_hnd, enum action_type action, SEC_INFO *info)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fprintf(out_hnd, "\t\tPermissions: %s\n",
+			        get_sec_perms_str(info->perms));
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display sec_ace structure
+ ****************************************************************************/
+void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *ace)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\tACE\n");
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring sid_str;
+
+			display_sec_info(out_hnd, ACTION_HEADER   , &ace->info);
+			display_sec_info(out_hnd, ACTION_ENUMERATE, &ace->info);
+			display_sec_info(out_hnd, ACTION_FOOTER   , &ace->info);
+
+			sid_to_string(sid_str, &ace->sid);
+			fprintf(out_hnd, "\t\tSID: %s\n", sid_str);
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display sec_acl structure
+ ****************************************************************************/
+void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *acl)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\tACL\tNum ACEs: %d\tunk 1: %x\n", acl->num_aces, acl->unknown_1); 
+			fprintf(out_hnd, "\t---\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			if (acl->acl_size != 0 && acl->num_aces != 0)
+			{
+				int i;
+				for (i = 0; i < acl->num_aces; i++)
+				{
+					display_sec_ace(out_hnd, ACTION_HEADER   , &acl->ace[i]);
+					display_sec_ace(out_hnd, ACTION_ENUMERATE, &acl->ace[i]);
+					display_sec_ace(out_hnd, ACTION_FOOTER   , &acl->ace[i]);
+				}
+			}
+				
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display sec_desc structure
+ ****************************************************************************/
+void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *sec)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\tSecurity Descriptor\tunk 1,2: %x %x\n", sec->unknown_1, sec->unknown_2); 
+			fprintf(out_hnd, "\t-------------------\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring sid_str;
+
+			if (sec->off_acl != 0)
+			{
+				display_sec_acl(out_hnd, ACTION_HEADER   , &sec->acl);
+				display_sec_acl(out_hnd, ACTION_ENUMERATE, &sec->acl);
+				display_sec_acl(out_hnd, ACTION_FOOTER   , &sec->acl);
+			}
+			if (sec->off_owner_sid != 0)
+			{
+				sid_to_string(sid_str, &sec->owner_sid);
+				fprintf(out_hnd, "\tOwner SID: %s\n", sid_str);
+			}
+			if (sec->off_pnt_sid != 0)
+			{
+				sid_to_string(sid_str, &sec->parent_sid);
+				fprintf(out_hnd, "\tParent SID: %s\n", sid_str);
+			}
+				
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+convert a security permissions into a string
+****************************************************************************/
+char *get_reg_val_type_str(uint32 type)
+{
+	static fstring typestr;
+
+	switch (type)
+	{
+		case 0x01:
+		{
+			fstrcpy(typestr, "string");
+			return typestr;
+		}
+
+		case 0x03:
+		{
+			fstrcpy(typestr, "bytes");
+			return typestr;
+		}
+
+		case 0x04:
+		{
+			fstrcpy(typestr, "uint32");
+			return typestr;
+		}
+
+		case 0x07:
+		{
+			fstrcpy(typestr, "multi");
+			return typestr;
+		}
+		default:
+		{
+			snprintf(typestr, sizeof(typestr), "[%d]", type);
+			return typestr;
+			break;
+		}
+	}
+	return typestr;
+}
+
+
+static void print_reg_value(FILE *out_hnd, char *val_name, uint32 val_type, BUFFER2 *value)
+{
+	fstring type;
+	fstrcpy(type, get_reg_val_type_str(val_type));
+
+	switch (val_type)
+	{
+		case 0x01: /* unistr */
+		{
+			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, buffer2_to_str(value));
+			break;
+		}
+
+		default: /* unknown */
+		case 0x03: /* bytes */
+		{
+			if (value->buf_len <= 8)
+			{
+				fprintf(out_hnd,"\t%s:\t%s:\t", val_name, type);
+				out_data(out_hnd, (char*)value->buffer, value->buf_len, 8);
+			}
+			else
+			{
+				fprintf(out_hnd,"\t%s:\t%s:\n", val_name, type);
+				out_data(out_hnd, (char*)value->buffer, value->buf_len, 16);
+			}
+			break;
+		}
+
+		case 0x04: /* uint32 */
+		{
+			fprintf(out_hnd,"\t%s:\t%s: 0x%08x\n", val_name, type, buffer2_to_uint32(value));
+			break;
+		}
+
+		case 0x07: /* multiunistr */
+		{
+			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, buffer2_to_multistr(value));
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display structure
+ ****************************************************************************/
+void display_reg_value_info(FILE *out_hnd, enum action_type action,
+				char *val_name, uint32 val_type, BUFFER2 *value)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			print_reg_value(out_hnd, val_name, val_type, value);
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display structure
+ ****************************************************************************/
+void display_reg_key_info(FILE *out_hnd, enum action_type action,
+				char *key_name, time_t key_mod_time)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fprintf(out_hnd, "\t%s\t(%s)\n",
+			        key_name, http_timestring(key_mod_time));
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+#if COPY_THIS_TEMPLATE
+/****************************************************************************
+ display structure
+ ****************************************************************************/
+ void display_(FILE *out_hnd, enum action_type action, *)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\t\n"); 
+			fprintf(out_hnd, "\t-------------------\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			fprintf(out_hnd, "\n");
+			break;
+		}
+	}
+}
+
+#endif

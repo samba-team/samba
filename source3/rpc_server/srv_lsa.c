@@ -189,7 +189,7 @@ static void make_reply_lookup_rids(LSA_R_LOOKUP_RIDS *r_l,
 
 	for (i = 0; i < num_entries; i++)
 	{
-		make_dom_rid2(&(r_l->dom_rid[i]), dom_rids[i]);
+		make_dom_rid2(&(r_l->dom_rid[i]), dom_rids[i], 0x01);
 	}
 
 	r_l->num_entries3 = num_entries;

@@ -57,17 +57,22 @@ struct nt_client_info
     NET_ID_INFO_CTR ctr;
     NET_USER_INFO_3 user_info3;
 
+    /************** \PIPE\winreg stuff ********************/
+
+    POLICY_HND reg_pol_connect;
+    POLICY_HND reg_pol_unk_4;
+
     /************** \PIPE\lsarpc stuff ********************/
 
     POLICY_HND lsa_info_pol;
 
     /* domain member */
-    fstring level3_dom;
     fstring level3_sid;
+    fstring level5_sid;
 
     /* domain controller */
+    fstring level3_dom;
     fstring level5_dom;
-    fstring level5_sid;
 
     /************** \PIPE\samr stuff  ********************/
 

@@ -692,7 +692,7 @@ void lsa_io_q_lookup_rids(char *desc,  LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, i
 
 	for (i = 0; i < q_r->num_entries; i++)
 	{
-		smb_io_dom_name("", &(q_r->lookup_name[i]), ps, depth); /* names to be looked up */
+		smb_io_unistr3("", &(q_r->lookup_name[i]), ps, depth); /* names to be looked up */
 	}
 
 	prs_uint8s (False, "undoc          ", ps, depth, q_r->undoc, UNKNOWN_LEN);
