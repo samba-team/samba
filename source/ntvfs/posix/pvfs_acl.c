@@ -106,7 +106,11 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 	ace.access_mask = 0;
 
 	if (mode & S_IRUSR) {
-		ace.access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
+		if (mode & S_IWUSR) {
+			ace.access_mask |= SEC_RIGHTS_FILE_ALL;
+		} else {
+			ace.access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
+		}
 	}
 	if (mode & S_IWUSR) {
 		ace.access_mask |= SEC_RIGHTS_FILE_WRITE | SEC_STD_DELETE;
@@ -123,6 +127,7 @@ static NTSTATUS pvfs_default_acl(struct pvfs_state *pvfs,
 		ace.access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
 	}
 	if (mode & S_IWGRP) {
+		/* note that delete is not granted - this matches posix behaviour */
 		ace.access_mask |= SEC_RIGHTS_FILE_WRITE;
 	}
 	if (ace.access_mask) {
@@ -367,4 +372,161 @@ NTSTATUS pvfs_access_check_simple(struct pvfs_state *pvfs,
 				  uint32_t access_needed)
 {
 	return pvfs_access_check(pvfs, req, name, &access_needed);
+}
+
+
+/*
+  determine if an ACE is inheritable
+*/
+static BOOL pvfs_inheritable_ace(struct pvfs_state *pvfs,
+				 const struct security_ace *ace,
+				 BOOL container)
+{
+	if (!container) {
+		return (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) != 0;
+	}
+
+	if (ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
+		return True;
+	}
+
+	if ((ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT) &&
+	    !(ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT)) {
+		return True;
+	}
+
+	return False;
+}
+
+/*
+  this is the core of ACL inheritance. It copies any inheritable
+  aces from the parent SD to the child SD. Note that the algorithm 
+  depends on whether the child is a container or not
+*/
+static NTSTATUS pvfs_acl_inherit_aces(struct pvfs_state *pvfs, 
+				      struct security_descriptor *parent_sd,
+				      struct security_descriptor *sd,
+				      BOOL container)
+{
+	int i;
+	
+	for (i=0;i<parent_sd->dacl->num_aces;i++) {
+		struct security_ace ace = parent_sd->dacl->aces[i];
+		NTSTATUS status;
+
+		if (!pvfs_inheritable_ace(pvfs, &ace, container)) {
+			continue;
+		}
+
+		/* see the RAW-ACLS inheritance test for details on these rules */
+		if (!container) {
+			ace.flags = 0;
+		} else {
+			ace.flags &= ~SEC_ACE_FLAG_INHERIT_ONLY;
+
+			if (!(ace.flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+				ace.flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+			}
+			if (ace.flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+				ace.flags = 0;
+			}
+		}
+
+		status = security_descriptor_dacl_add(sd, &ace);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+
+/*
+  setup an ACL on a new file/directory based on the inherited ACL from
+  the parent. If there is no inherited ACL then we don't set anything,
+  as the default ACL applies anyway
+*/
+NTSTATUS pvfs_acl_inherit(struct pvfs_state *pvfs, 
+			  struct smbsrv_request *req,
+			  struct pvfs_filename *name,
+			  int fd)
+{
+	struct xattr_NTACL *acl;
+	NTSTATUS status;
+	struct pvfs_filename *parent;
+	struct security_descriptor *parent_sd, *sd;
+	BOOL container;
+
+	/* form the parents path */
+	status = pvfs_resolve_parent(pvfs, req, name, &parent);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	acl = talloc_p(req, struct xattr_NTACL);
+	if (acl == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = pvfs_acl_load(pvfs, parent, -1, acl);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	switch (acl->version) {
+	case 1:
+		parent_sd = acl->info.sd;
+		break;
+	default:
+		return NT_STATUS_INVALID_ACL;
+	}
+
+	if (parent_sd == NULL ||
+	    parent_sd->dacl == NULL ||
+	    parent_sd->dacl->num_aces == 0) {
+		/* go with the default ACL */
+		return NT_STATUS_OK;
+	}
+
+	/* create the new sd */
+	sd = security_descriptor_initialise(req);
+	if (sd == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = sidmap_uid_to_sid(pvfs->sidmap, sd, name->st.st_uid, &sd->owner_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = sidmap_gid_to_sid(pvfs->sidmap, sd, name->st.st_gid, &sd->group_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	sd->type |= SEC_DESC_DACL_PRESENT;
+
+	container = (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) ? True:False;
+
+	/* fill in the aces from the parent */
+	status = pvfs_acl_inherit_aces(pvfs, parent_sd, sd, container);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* if there is nothing to inherit then we fallback to the
+	   default acl */
+	if (sd->dacl == NULL || sd->dacl->num_aces == 0) {
+		return NT_STATUS_OK;
+	}
+
+	acl->info.sd = sd;
+
+	status = pvfs_acl_save(pvfs, name, fd, acl);
+	
+	return status;
 }
