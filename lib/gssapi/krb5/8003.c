@@ -166,15 +166,15 @@ gssapi_krb5_verify_8003_checksum(
     p = cksum->checksum.data;
     decode_om_uint32(p, &length);
     if(length != sizeof(hash))
-	return GSS_S_FAILURE;
+	return GSS_S_BAD_BINDINGS;;
     
     p += 4;
     
     if (input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS) {
 	if(hash_input_chan_bindings(input_chan_bindings, hash) != 0)
-	    return GSS_S_FAILURE;
+	    return GSS_S_BAD_BINDINGS;
 	if(memcmp(hash, p, sizeof(hash)) != 0)
-	    return GSS_S_FAILURE;
+	    return GSS_S_BAD_BINDINGS;
     }
     
     p += sizeof(hash);
