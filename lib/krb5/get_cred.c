@@ -142,7 +142,7 @@ init_tgs_req (krb5_context context,
 	      TGS_REQ *t,
 	      krb5_key_usage usage)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
 
     memset(t, 0, sizeof(*t));
     t->pvno = 5;
