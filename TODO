@@ -50,7 +50,7 @@ inquire_mechs_for_name not implemented.
 
 only DES MAC MD5 and DES implemented.
 
-minor_status is never set
+set minor_status in all functions
 
 init_sec_context: `initiator_cred_handle' and `time_req' ignored.
 
