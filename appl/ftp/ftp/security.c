@@ -603,6 +603,14 @@ sec_prot_internal(int level)
     return 0;
 }
 
+enum protection_level
+set_command_prot(enum protection_level level)
+{
+    enum protection_level old = command_prot;
+    command_prot = level;
+    return old;
+}
+
 void
 sec_prot(int argc, char **argv)
 {
@@ -633,7 +641,7 @@ sec_prot(int argc, char **argv)
 	    return;
 	}
     } else if(strcasecmp(argv[1], "command") == 0)
-	command_prot = level;
+	set_command_prot(level);
     else
 	goto usage;
     code = 0;
