@@ -1,0 +1,158 @@
+/*
+ Unix SMB/Netbios implementation.
+ Version 2.2.x / 3.0.x
+ sendfile implementations.
+ Copyright (C) Jeremy Allison 2002.
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+/*
+ * This file handles the OS dependent sendfile implementations.
+ * The API is such that it returns -1 on error, else returns the
+ * number of bytes written.
+ */
+
+#include "includes.h"
+
+#if defined(LINUX_SENDFILE_API)
+
+#include <sys/sendfile.h>
+
+#ifndef MSG_MORE
+#define MSG_MORE 0x8000
+#endif
+
+ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+{
+	size_t total=0;
+	ssize_t ret;
+
+	/*
+	 * Send the header first.
+	 * Use MSG_MORE to cork the TCP output until sendfile is called.
+	 */
+
+	while (total < header->length) {
+		ret = sys_send(outfd, header->data + total,header->length - total, MSG_MORE);
+		if (ret == -1)
+			return -1;
+		total += ret;
+	}
+
+	total = count;
+	while (total) {
+		ssize_t nwritten;
+		do {
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(SENDFILE64)
+			nwritten = sendfile64(outfd, infd, &offset, total);
+#else
+			nwritten = sendfile(outfd, infd, &offset, total);
+#endif
+		} while (nwritten == -1 && errno == EINTR);
+		if (nwritten == -1)
+			return -1;
+		if (nwritten == 0)
+			return -1; /* I think we're at EOF here... */
+		total -= nwritten;
+	}
+	return count + header->length;
+}
+
+#elif defined(SOLARIS_SENDFILE_API)
+
+ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+{
+}
+
+#elif defined(HPUX_SENDFILE_API)
+
+#include <sys/socket.h>
+#include <sys/uio.h>
+
+ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+{
+	size_t total=0;
+	struct iovec hdtrl[2];
+
+	/* Set up the header/trailer iovec. */
+	hdtrl[0].iov_base = header->data;
+	hdtrl[0].iov_len = header->length;
+	hdtrl[1].iov_base = NULL;
+	hdtrl[1].iov_base = 0;
+
+	total = count;
+	while (total) {
+		ssize_t nwritten;
+		do {
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(SENDFILE64)
+			nwritten = sendfile64(outfd, infd, &offset, total, &hdtrl, 0);
+#else
+			nwritten = sendfile(outfd, infd, &offset, total, &hdtrl, 0);
+#endif
+		} while (nwritten == -1 && errno == EINTR);
+		if (nwritten == -1)
+			return -1;
+		total -= nwritten;
+	}
+	return count + header->length;
+}
+
+#elif defined(FREEBSD_SENDFILE_API)
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
+
+ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+{
+	size_t total=0;
+	struct sf_hdtr hdr;
+	struct iovec hdtrl;
+
+	hdr->headers = &hdtrl;
+	hdr->hdr_cnt = 1;
+	hdr->trailers = NULL;
+	hdr->trl_cnt = 0;
+
+	/* Set up the header iovec. */
+	hdtrl.iov_base = header->data;
+	hdtrl.iov_len = header->length;
+
+	total = count;
+	while (total) {
+		ssize_t nwritten;
+		do {
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(SENDFILE64)
+			nwritten = sendfile64(outfd, infd, &offset, total, &hdr, NULL, 0);
+#else
+			nwritten = sendfile(outfd, infd, &offset, total, &hdr, NULL, 0);
+#endif
+		} while (nwritten == -1 && errno == EINTR);
+		if (nwritten == -1)
+			return -1;
+		total -= nwritten;
+	}
+	return count + header->length;
+}
+
+#else /* No sendfile implementation. Return error. */
+
+ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+{
+	/* No sendfile syscall. */
+	errno = ENOSYS;
+	return -1;
+}
+#endif
