@@ -3,7 +3,7 @@
  * Copyright (C) Andrew Tridgell 1992-1998 Modified by Jeremy Allison 1995.
  * Copyright (C) Benny Holmgren 1998 <bigfoot@astrakan.hgs.se> 
  * Copyright (C) Luke Kenneth Casson Leighton 1996-1998.
- * Copyright (C) Toomas Soomea <tsoome@ut.ee> 2001
+ * Copyright (C) Toomas Soome <tsoome@ut.ee> 2001
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
