@@ -177,7 +177,3 @@ krb5_rd_req(krb5_context context,
 				     ap_req_options,
 				     ticket);
 }
-	    
-    
-
-
