@@ -340,6 +340,30 @@ int unistrcpy(char *dst, char *src)
 	return num_wchars;
 }
 
+
+
+/*******************************************************************
+ free any existing maps
+********************************************************************/
+static void free_maps(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp)
+{
+	/* this handles identity mappings where we share the pointer */
+	if (*pp_ucs2_to_cp == *pp_cp_to_ucs2) {
+		*pp_ucs2_to_cp = NULL;
+	}
+
+	if (*pp_cp_to_ucs2) {
+		free(*pp_cp_to_ucs2);
+		*pp_cp_to_ucs2 = NULL;
+	}
+
+	if (*pp_ucs2_to_cp) {
+		free(*pp_ucs2_to_cp);
+		*pp_ucs2_to_cp = NULL;
+	}
+}
+
+
 /*******************************************************************
  Build a default (null) codepage to unicode map.
 ********************************************************************/
@@ -348,15 +372,7 @@ void default_unicode_map(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp)
 {
   int i;
 
-  if (*pp_cp_to_ucs2) {
-    free(*pp_cp_to_ucs2);
-    *pp_cp_to_ucs2 = NULL;
-  }
-
-  if (*pp_ucs2_to_cp) {
-    free(*pp_ucs2_to_cp);
-    *pp_ucs2_to_cp = NULL;
-  }
+  free_maps(pp_cp_to_ucs2, pp_ucs2_to_cp);
 
   if ((*pp_ucs2_to_cp = (uint16 *)malloc(2*65536)) == NULL) {
     DEBUG(0,("default_unicode_map: malloc fail for ucs2_to_cp size %u.\n", 2*65536));
@@ -459,15 +475,7 @@ requested (%s).\n", &buf[UNICODE_MAP_CLIENT_CODEPAGE_OFFSET], unicode_map_file_n
    * Free any old translation tables.
    */
 
-  if (cp_to_ucs2) {
-    free(cp_to_ucs2);
-    cp_to_ucs2 = NULL;
-  }
-
-  if (ucs2_to_cp) {
-    free(ucs2_to_cp);
-    ucs2_to_cp = NULL;
-  }
+  free_maps(pp_cp_to_ucs2, pp_ucs2_to_cp);
 
   if ((cp_to_ucs2 = (smb_ucs2_t *)malloc(cp_to_ucs2_size)) == NULL) {
     DEBUG(0,("load_unicode_map: malloc fail for cp_to_ucs2 size %u.\n", cp_to_ucs2_size ));
@@ -515,15 +523,7 @@ clean_and_exit:
   if(fp != NULL)
     fclose(fp);
 
-  if (cp_to_ucs2) {
-    free(cp_to_ucs2);
-    cp_to_ucs2 = NULL;
-  }
-
-  if (ucs2_to_cp) {
-    free(ucs2_to_cp);
-    ucs2_to_cp = NULL;
-  }
+  free_maps(pp_cp_to_ucs2, pp_ucs2_to_cp);
 
   default_unicode_map(pp_cp_to_ucs2, pp_ucs2_to_cp);
 
