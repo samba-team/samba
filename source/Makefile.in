@@ -285,7 +285,7 @@ SMBD_NTVFS_OBJ = ntvfs/ntvfs_base.o ntvfs/ntvfs_util.o \
 	ntvfs/ntvfs_generic.o @NTVFS_STATIC@
 
 SMBD_RPC_OBJ = rpc_server/dcerpc_server.o \
-		rpc_server/rpc_echo.o
+		rpc_server/echo/rpc_echo.o
 
 SMBD_OBJ_SRV = smbd/connection.o \
 	       smbd/session.o \
