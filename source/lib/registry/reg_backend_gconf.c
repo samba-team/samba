@@ -42,15 +42,18 @@ static WERROR reg_open_gconf_hive(struct registry_hive *h, struct registry_key *
 	return WERR_OK;
 }
 
-static WERROR gconf_open_key (TALLOC_CTX *mem_ctx, struct registry_hive *h, const char *name, struct registry_key **key) 
+static WERROR gconf_open_key (TALLOC_CTX *mem_ctx, struct registry_key *h, const char *name, struct registry_key **key) 
 {
 	struct registry_key *ret;
 	char *fullpath;
 	
-	fullpath = talloc_asprintf(mem_ctx, "/%s", reg_path_win2unix(talloc_strdup(mem_ctx, name)));
+	fullpath = talloc_asprintf(mem_ctx, "%s%s%s", 
+							   (char *)h->backend_data, 
+							   strlen((char *)h->backend_data) == 1?"":"/",
+							   reg_path_win2unix(talloc_strdup(mem_ctx, name)));
 
 	/* Check if key exists */
-	if(!gconf_client_dir_exists((GConfClient *)h->backend_data, fullpath, NULL)) {
+	if(!gconf_client_dir_exists((GConfClient *)h->hive->backend_data, fullpath, NULL)) {
 		return WERR_DEST_NOT_FOUND;
 	}
 
