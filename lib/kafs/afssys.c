@@ -243,23 +243,21 @@ aix_setup(void)
 
 
 /*
- * Try to find the cells we should try to klog to.  Look at
- * /usr/vice/etc/TheseCells and /usr/vice/etc/ThisCell,
- * in that order.
+ * Try to find the cells we should try to klog to in "file".
  */
-
-static int
+static
+int
 k_afslog_file(char *file, char *krealm)
 {
     FILE *f;
     char cell[64];
     int err = KSUCCESS;
     f = fopen(file, "r");
-    if(f == NULL)
-	return -1;
-    while(fgets(cell, sizeof(cell), f) && err == KSUCCESS){
+    if (f == NULL)
+	return KSUCCESS;	/* No config file is ok! */
+    while (fgets(cell, sizeof(cell), f) && err == KSUCCESS) {
 	char *nl = strchr(cell, '\n');
-	if(nl)
+	if (nl)
 	    *nl = 0;
 	err = k_afsklog(cell, krealm);
     }
@@ -267,19 +265,20 @@ k_afslog_file(char *file, char *krealm)
     return err;
 }
 
-static int
-k_afsklog_all_local_cells (char *krealm)
+static
+int
+k_afsklog_all_local_cells(char *krealm)
 {
     int err = KFAILURE;
     char *p, home[MaxPathLen];
 
-    if((p = getenv("HOME"))){
+    if ((p = getenv("HOME"))) {
 	sprintf(home, "%s/.TheseCells", p);
-	err = err && k_afslog_file(home, krealm);
+	err = k_afslog_file(home, krealm);
     }
     k_afslog_file(_PATH_THESECELLS, krealm);
     k_afslog_file(_PATH_THISCELL, krealm);
-    return err;
+    return KSUCCESS;	/* For now. */
 }
 
 int
