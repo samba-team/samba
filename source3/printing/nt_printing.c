@@ -768,7 +768,6 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 		free_nt_printer_param(&tofree);
 	}
 
-	free(info);
 	*info_ptr = NULL;
 }
 
@@ -782,7 +781,7 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 
 	ZERO_STRUCT(devmode);
 
-	len += tdb_unpack(buf+len, buflen-len, "p", *nt_devmode);
+	len += tdb_unpack(buf+len, buflen-len, "p", nt_devmode);
 
 	if (!*nt_devmode) return len;
 
@@ -860,7 +859,6 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	int snum;
 	NT_PRINTER_INFO_LEVEL_2 info;
 	NT_DEVICEMODE devmode;
-	SMB_STRUCT_STAT sbuf;
 
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(devmode);
@@ -878,16 +876,7 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 
 	info.devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
 
-	/*
-	 * put a better system here, please.
-	 */
-	sbuf.st_mode = 0777;
-	sbuf.st_uid = -1;
-	sbuf.st_gid = -1;
-	info.secdesc.len = convertperms_unix_to_sd(&sbuf, False,
-						    0777,
-						    &info.secdesc.sec);
-	info.secdesc.max_len = info.secdesc.len;
+	nt_printing_getsec(sharename, &info.secdesc);
 
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
 	if (! *info_ptr) return 2;
@@ -939,10 +928,9 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 			info.parameters);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
-#if 0
-	len += unpack_secdesc(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
-#endif
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
+
+	nt_printing_getsec(sharename, &info.secdesc);
 
 	*info_ptr=memdup(&info, sizeof(info));
 	
@@ -1298,6 +1286,63 @@ void init_devicemode(NT_DEVICEMODE *nt_devmode)
 	nt_devmode->private=NULL;
 }
 
+
+
+/****************************************************************************
+store a security desc for a printer
+****************************************************************************/
+uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
+{
+	prs_struct ps;
+	fstring key;
+	uint32 status;
+
+	prs_init(&ps, 0, 4, MARSHALL);
+	ps.is_dynamic = True;
+
+	if (!sec_io_desc_buf("nt_printing_setsec", secdesc_ctr, &ps, 1)) {
+		status = ERROR_INVALID_FUNCTION;
+		goto out;
+	}
+
+
+	slprintf(key, sizeof(key), "SECDESC/%s", printername);
+
+	if (tdb_prs_store(tdb, key, &ps)==0) {
+		status = 0;
+	} else {
+		DEBUG(1,("Failed to store secdesc for %s\n", printername));
+		status = ERROR_INVALID_FUNCTION;
+	}
+
+ out:
+	prs_mem_free(&ps);
+	return status;
+}
+
+/****************************************************************************
+get a security desc for a printer
+****************************************************************************/
+uint32 nt_printing_getsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
+{
+	prs_struct ps;
+	fstring key;
+
+	slprintf(key, sizeof(key), "SECDESC/%s", printername);
+
+	if (tdb_prs_fetch(tdb, key, &ps)!=0 ||
+	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
+		DEBUG(4,("using default secdesc for %s\n", printername));
+		secdesc_ctr->len = convertperms_unix_to_sd(NULL, False,
+							   0007,
+							   &secdesc_ctr->sec);
+		secdesc_ctr->max_len = secdesc_ctr->len;
+		return 0;
+	}
+
+	prs_mem_free(&ps);
+	return 0;
+}
 
 /* error code:
 	0: everything OK

@@ -2620,9 +2620,6 @@ static void construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum,
 	get_a_printer_driver(&driver, 3, printer.info_2->drivername, architecture);	
 
 	fill_printer_driver_info_3(info, driver, servername, architecture);
-
-	free_a_printer_driver(driver, 3);
-	free_a_printer(printer, 2);
 }
 
 /****************************************************************************
@@ -2933,6 +2930,23 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command)
  * called by spoolss_api_setprinter
  * when updating a printer description
  ********************************************************************/
+static uint32 update_printer_sec(const POLICY_HND *handle, uint32 level,
+				 const SPOOL_PRINTER_INFO_LEVEL *info,
+				 const SEC_DESC_BUF *secdesc_ctr)
+{
+	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+
+	if (!OPEN_HANDLE(Printer))
+		return ERROR_INVALID_HANDLE;
+
+	return nt_printing_setsec(Printer->dev.printername, secdesc_ctr);
+}
+
+
+/********************************************************************
+ * called by spoolss_api_setprinter
+ * when updating a printer description
+ ********************************************************************/
 static uint32 update_printer(const POLICY_HND *handle, uint32 level,
                            const SPOOL_PRINTER_INFO_LEVEL *info,
                            const DEVICEMODE *devmode)
@@ -3002,6 +3016,7 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   const DEVMODE_CTR devmode_ctr,
+			   const SEC_DESC_BUF *secdesc_ctr,
 			   uint32 command)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
@@ -3016,6 +3031,9 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			break;
 		case 2:
 			return update_printer(handle, level, info, devmode_ctr.devmode);
+			break;
+		case 3:
+			return update_printer_sec(handle, level, info, secdesc_ctr);
 			break;
 		default:
 			return ERROR_INVALID_LEVEL;

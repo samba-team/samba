@@ -1,3 +1,5 @@
+/* this code is broken - there is a race condition with the unlink (tridge) */
+
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
