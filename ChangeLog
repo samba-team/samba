@@ -1,3 +1,7 @@
+Fri May  1 07:29:52 1998  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: don't test for winsock.h
+
 Sat Apr 18 21:43:11 1998  Johan Danielsson  <joda@puffer.pdc.kth.se>
 
 	* Release 0.0o
