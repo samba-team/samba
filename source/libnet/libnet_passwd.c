@@ -18,14 +18,17 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "includes.h"
+
 /*
- * 1. connect to the SAMR pipe of *our* PDC
+ * do a password change using DCERPC/SAMR calls
+ * 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation)
  * 2. try samr_ChangePassword3
  */
-static NTSTATUS libnet_ChangePassword_rpc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct net_ChangePassword *r)
+static NTSTATUS libnet_ChangePassword_rpc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_ChangePassword *r)
 {
         NTSTATUS status;
-        struct dcerpc_pipe *p = NULL;
+	union libnet_rpc_connect c;
 	struct samr_ChangePasswordUser3 pw3;
 	struct samr_Name server, account;
 	struct samr_CryptPassword nt_pass, lm_pass;
@@ -33,13 +36,15 @@ static NTSTATUS libnet_ChangePassword_rpc(struct libnet_context *ctx, TALLOC_CTX
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
-	/* connect to the SAMR pipe of the */
-	status = libnet_rpc_connect_pdc(ctx, mem_ctx,
-					r->rpc.in.domain_name,
-					DCERPC_SAMR_NAME,
-					DCERPC_SAMR_UUID,
-					DCERPC_SAMR_VERSION,
-					&p);
+	/* prepare connect to the SAMR pipe of the */
+	c.pdc.level			= LIBNET_RPC_CONNECT_PDC;
+	c.pdc.in.domain_name		= r->rpc.in.domain_name;
+	c.pdc.in.dcerpc_iface_name	= DCERPC_SAMR_NAME;
+	c.pdc.in.dcerpc_iface_uuid	= DCERPC_SAMR_UUID;
+	c.pdc.in.dcerpc_iface_version	= DCERPC_SAMR_VERSION;
+
+	/* do connect to the SAMR pipe of the */
+	status = libnet_rpc_connect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
 						"Connection to SAMR pipe of PDC of domain '%s' failed\n",
@@ -47,8 +52,9 @@ static NTSTATUS libnet_ChangePassword_rpc(struct libnet_context *ctx, TALLOC_CTX
 		return status;
 	}
 
-	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	init_samr_Name(&account, r->rpc.in.account_name);
+	/* prepare password change for account */
+	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.pdc.out.dcerpc_pipe));
+	account.name = r->rpc.in.account_name;
 
 	E_md4hash(r->rpc.in.oldpassword, old_nt_hash);
 	E_md4hash(r->rpc.in.newpassword, new_nt_hash);
@@ -73,44 +79,80 @@ static NTSTATUS libnet_ChangePassword_rpc(struct libnet_context *ctx, TALLOC_CTX
 	pw3.in.lm_verifier = &lm_verifier;
 	pw3.in.password3 = NULL;
 
-	status = dcerpc_samr_ChangePassword3(p, mem_ctx, &pw3);
+	/* do password change for account */
+	status = dcerpc_samr_ChangePasswordUser3(c.pdc.out.dcerpc_pipe, mem_ctx, &pw3);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
-						"ChangePassword3 failed: %s\n",nt_errstr(status);
-		return status;
+						"ChangePassword3 failed: %s\n",nt_errstr(status));
+		goto disconnect;
 	}
 
-	if (!NT_STATUS_IS_OK(r->rpc.out.result)) {
+	/* check result of password change */
+	if (!NT_STATUS_IS_OK(pw3.out.result)) {
 		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
 						"ChangePassword3 for '%s\\%s' failed: %s\n",
 						r->rpc.in.domain_name, r->rpc.in.account_name, 
 						nt_errstr(status));
 						/* TODO: give the reason of the reject */
-		return status;
-	
+		goto disconnect;
 	}
 
-	dcerpc_diconnect(&p);
+disconnect:
+	/* close connection */
+	dcerpc_pipe_close(c.pdc.out.dcerpc_pipe);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
-static NTSTATUS libnet_ChangePassword_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct net_ChangePassword *r)
+static NTSTATUS libnet_ChangePassword_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_ChangePassword *r)
 {
-	return NT_STATUS_NOT_IMPLEMTED;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS libnet_ChangePassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct net_ChangePassword *r)
+NTSTATUS libnet_ChangePassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_ChangePassword *r)
 {
 	switch (r->generic.level) {
 		case LIBNET_CHANGE_PASSWORD_GENERIC:
 			return libnet_ChangePassword_generic(ctx, mem_ctx, r);
 		case LIBNET_CHANGE_PASSWORD_RPC:
 			return libnet_ChangePassword_rpc(ctx, mem_ctx, r);
-		case LIBNET_CHANGE_PASSWORD_ADS:
-			return NT_STATUS_NOT_IMPLEMTED;
+		case LIBNET_CHANGE_PASSWORD_KRB5:
+			return NT_STATUS_NOT_IMPLEMENTED;
+		case LIBNET_CHANGE_PASSWORD_LDAP:
+			return NT_STATUS_NOT_IMPLEMENTED;
 		case LIBNET_CHANGE_PASSWORD_RAP:
-			return NT_STATUS_NOT_IMPLEMTED;
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return NT_STATUS_INVALID_LEVEL;
+}
+
+/*
+ * set a password with DCERPC/SAMR calls
+ */
+static NTSTATUS libnet_SetPassword_rpc(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS libnet_SetPassword_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS libnet_SetPassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
+{
+	switch (r->generic.level) {
+		case LIBNET_SET_PASSWORD_GENERIC:
+			return libnet_SetPassword_generic(ctx, mem_ctx, r);
+		case LIBNET_SET_PASSWORD_RPC:
+			return libnet_SetPassword_rpc(ctx, mem_ctx, r);
+		case LIBNET_SET_PASSWORD_KRB5:
+			return NT_STATUS_NOT_IMPLEMENTED;
+		case LIBNET_SET_PASSWORD_LDAP:
+			return NT_STATUS_NOT_IMPLEMENTED;
+		case LIBNET_SET_PASSWORD_RAP:
+			return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	return NT_STATUS_INVALID_LEVEL;

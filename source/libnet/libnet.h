@@ -20,14 +20,43 @@
 
 struct libnet_context {
 	TALLOC_CTX *mem_ctx;
+
+	/* here we need:
+	 * a client env context
+	 * a user env context
+	 */
 };
 
-/* struct for doing a remote password change */
+/* struct and enum for connecting to a dcerpc inferface */
+enum libnet_rpc_connect_level {
+	LIBNET_RPC_CONNECT_PDC
+};
 
+union libnet_rpc_connect {
+	/* connect to a domains PDC */
+	struct {
+		enum libnet_rpc_connect_level level;
+
+		struct {
+			const char *domain_name;
+			const char *dcerpc_iface_name;
+			const char *dcerpc_iface_uuid;
+			uint32 dcerpc_iface_version;
+		} in;
+
+		struct	{
+			struct dcerpc_pipe *dcerpc_pipe;
+		} out;
+	} pdc;
+};
+
+
+/* struct and enum for doing a remote password change */
 enum libnet_ChangePassword_level {
 	LIBNET_CHANGE_PASSWORD_GENERIC,
 	LIBNET_CHANGE_PASSWORD_RPC,
-	LIBNET_CHANGE_PASSWORD_ADS,
+	LIBNET_CHANGE_PASSWORD_KRB5,
+	LIBNET_CHANGE_PASSWORD_LDAP,
 	LIBNET_CHANGE_PASSWORD_RAP
 };
 
@@ -57,11 +86,66 @@ union libnet_ChangePassword {
 		enum libnet_ChangePassword_level level;
 		struct _libnet_ChangePassword_in in;
 		struct _libnet_ChangePassword_out out;
-	} ads;
+	} krb5;
 
 	struct {
 		enum libnet_ChangePassword_level level;
 		struct _libnet_ChangePassword_in in;
 		struct _libnet_ChangePassword_out out;
+	} ldap;
+
+	struct {
+		enum libnet_ChangePassword_level level;
+		struct _libnet_ChangePassword_in in;
+		struct _libnet_ChangePassword_out out;
+	} rap;
+};
+
+/* struct and enum for doing a remote password set */
+enum libnet_SetPassword_level {
+	LIBNET_SET_PASSWORD_GENERIC,
+	LIBNET_SET_PASSWORD_RPC,
+	LIBNET_SET_PASSWORD_KRB5,
+	LIBNET_SET_PASSWORD_LDAP,
+	LIBNET_SET_PASSWORD_RAP
+};
+
+union libnet_SetPassword {
+	struct {
+		enum libnet_SetPassword_level level;
+
+		struct _libnet_SetPassword_in {
+			const char *account_name;
+			const char *domain_name;
+			const char *newpassword;
+		} in;
+
+		struct _libnet_SetPassword_out {
+			const char *error_string;
+		} out;
+	} generic;
+
+	struct {
+		enum libnet_SetPassword_level level;
+		struct _libnet_SetPassword_in in;
+		struct _libnet_SetPassword_out out;
+	} rpc;
+
+	struct {
+		enum libnet_SetPassword_level level;
+		struct _libnet_SetPassword_in in;
+		struct _libnet_SetPassword_out out;
+	} krb5;
+
+	struct {
+		enum libnet_SetPassword_level level;
+		struct _libnet_SetPassword_in in;
+		struct _libnet_SetPassword_out out;
+	} ldap;
+
+	struct {
+		enum libnet_ChangePassword_level level;
+		struct _libnet_SetPassword_in in;
+		struct _libnet_SetPassword_out out;
 	} rap;
 };
