@@ -1545,7 +1545,7 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 	 * for a write lock. JRA.
 	 */
 	
-	status = do_lock(fsp, conn, SVAL(inbuf,smb_pid), 
+	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), 
 			 (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, WRITE_LOCK);
 
 	if (NT_STATUS_V(status)) {
@@ -2366,7 +2366,7 @@ int reply_lock(connection_struct *conn,
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fd, fsp->fnum, (double)offset, (double)count));
 
-	status = do_lock(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK);
+	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), count, offset, WRITE_LOCK);
 	if (NT_STATUS_V(status)) {
 		if (lp_blocking_locks(SNUM(conn))) {
 			/*
@@ -3808,6 +3808,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 	}
 
 	/* Setup the timeout in seconds. */
+
 	lock_timeout = ((lock_timeout == -1) ? -1 : lock_timeout/1000);
 	
 	/* Now do any requested locks */
@@ -3829,10 +3830,11 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
 		}
 		
-		DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid %u, file %s\n",
-			  (double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
+		DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid %u, file %s timeout = %d\n",
+			(double)offset, (double)count, (unsigned int)lock_pid,
+			(int)lock_timeout, fsp->fsp_name ));
 		
-		status = do_lock(fsp,conn,lock_pid, count,offset, 
+		status = do_lock_spin(fsp,conn,lock_pid, count,offset, 
 				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
 		if (NT_STATUS_V(status)) {
 			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn))) {

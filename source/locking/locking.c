@@ -97,7 +97,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 
-NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
 {
 	NTSTATUS status;
@@ -138,6 +138,30 @@ NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		}
 	}
 
+	return status;
+}
+
+/****************************************************************************
+ Utility function called by locking requests. This is *DISGISTING*. It also
+ appears to be "What Windows Does" (tm). Andrew, ever wonder why Windows 2000
+ is so slow on the locking tests...... ? This is the reason. Much though I hate
+ it, we need this. JRA.
+****************************************************************************/
+
+NTSTATUS do_lock_spin(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
+{
+	int j, maxj = lp_lock_spin_count();
+	int sleeptime = lp_lock_sleep_time();
+	NTSTATUS status;
+
+	for (j = 0; j < maxj; j++) {
+		status = do_lock(fsp, conn, lock_pid, count, offset, lock_type);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) &&
+				!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT))
+			break;
+		usleep(sleeptime);
+	}
 	return status;
 }
 
