@@ -619,7 +619,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		container = "DomainControllers";
+		container = "Domain Controllers";
 		additional_class = "computer";
 
 	} else if (r->in.acct_flags == ACB_DOMTRUST) {
@@ -631,7 +631,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		container = "ForeignDomains";  /* FIXME: Is this correct?*/
+		container = "Users";
 		additional_class = "computer";
 
 	} else {
