@@ -171,6 +171,13 @@ static int negprot_spnego(char *p)
 	safe_strcpy((char *)guid, global_myname, 16);
 	strlower((char *)guid);
 
+	/* strangely enough, NT does not sent the single OID NTLMSSP when
+	   not a ADS member, it sends no OIDs at all */
+	if (lp_security() != SEC_ADS) {
+		memcpy(p, guid, 16);
+		return 16;
+	}
+
 	/* win2000 uses host$@REALM, which we will probably use eventually,
 	   but for now this works */
 	asprintf(&principal, "HOST/%s@%s", guid, lp_realm());
