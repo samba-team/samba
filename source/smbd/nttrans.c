@@ -595,59 +595,58 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Get the file name.
 	 */
 
-    if(root_dir_fid != 0) {
-      /*
-       * This filename is relative to a directory fid.
-       */
-      files_struct *dir_fsp = file_fsp(inbuf,smb_ntcreate_RootDirectoryFid);
-      size_t dir_name_len;
+	if(root_dir_fid != 0) {
+		/*
+		 * This filename is relative to a directory fid.
+		 */
+		files_struct *dir_fsp = file_fsp(inbuf,smb_ntcreate_RootDirectoryFid);
+		size_t dir_name_len;
 
-      if(!dir_fsp) {
-	END_PROFILE(SMBntcreateX);
-        return(ERROR_DOS(ERRDOS,ERRbadfid));
-      }
+		if(!dir_fsp) {
+			END_PROFILE(SMBntcreateX);
+			return(ERROR_DOS(ERRDOS,ERRbadfid));
+		}
 
-      if(!dir_fsp->is_directory) {
-        /* 
-         * Check to see if this is a mac fork of some kind.
-         */
+		if(!dir_fsp->is_directory) {
+			/* 
+			 * Check to see if this is a mac fork of some kind.
+			 */
 
-	srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
+			srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
 
-        if( strchr_m(fname, ':')) {
-          END_PROFILE(SMBntcreateX);
-          return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
-        }
-	END_PROFILE(SMBntcreateX);
-        return(ERROR_DOS(ERRDOS,ERRbadfid));
-      }
+			if( strchr_m(fname, ':')) {
+				END_PROFILE(SMBntcreateX);
+				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+			}
+			END_PROFILE(SMBntcreateX);
+			return(ERROR_DOS(ERRDOS,ERRbadfid));
+		}
 
-      /*
-       * Copy in the base directory name.
-       */
+		/*
+		 * Copy in the base directory name.
+		 */
 
-      pstrcpy( fname, dir_fsp->fsp_name );
-      dir_name_len = strlen(fname);
+		pstrcpy( fname, dir_fsp->fsp_name );
+		dir_name_len = strlen(fname);
 
-      /*
-       * Ensure it ends in a '\'.
-       */
+		/*
+		 * Ensure it ends in a '\'.
+		 */
 
-      if(fname[dir_name_len-1] != '\\' && fname[dir_name_len-1] != '/') {
-        pstrcat(fname, "\\");
-        dir_name_len++;
-      }
+		if(fname[dir_name_len-1] != '\\' && fname[dir_name_len-1] != '/') {
+			pstrcat(fname, "\\");
+			dir_name_len++;
+		}
 
-      srvstr_pull(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, 
-		  -1, STR_TERMINATE);
-    } else {
-      srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), 
-		  -1, STR_TERMINATE);
-    }
+		srvstr_pull(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, 
+			-1, STR_TERMINATE);
+	} else {
+		srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
+	}
 	
 	/*
 	 * Now contruct the smb_open_mode value from the filename, 
-     * desired access and the share access.
+	 * desired access and the share access.
 	 */
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -829,10 +828,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * exclusive & batch here.
 	 */
 
-    if (smb_action & EXTENDED_OPLOCK_GRANTED)	
-	  	SCVAL(p,0, BATCH_OPLOCK_RETURN);
+	if (smb_action & EXTENDED_OPLOCK_GRANTED)	
+		SCVAL(p,0, BATCH_OPLOCK_RETURN);
 	else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
-        SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
+		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
 	else
 		SCVAL(p,0,NO_OPLOCK_RETURN);
 	
