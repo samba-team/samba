@@ -9,6 +9,7 @@ mandir=@mandir@
 
 LIBS=@LIBS@
 CC=@CC@
+SHLD=@SHLD@
 CFLAGS=@CFLAGS@
 CPPFLAGS=@CPPFLAGS@
 LDFLAGS=@LDFLAGS@
@@ -591,7 +592,7 @@ bin/smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 libsmbclient: $(LIBSMBCLIENT_PICOBJS)
 	-if [ $(BLDSHARED) = true ]; then \
 	   echo Linking libsmbclient shared library bin/$@.@SHLIBEXT@; \
-	   $(LD) @LDSHFLAGS@ -o bin/$@.@SHLIBEXT@ $(LIBSMBCLIENT_PICOBJS) $(LIBS); \
+	   $(SHLD) @LDSHFLAGS@ -o bin/$@.@SHLIBEXT@ $(LIBSMBCLIENT_PICOBJS) $(LIBS); \
 	fi
 	@echo Linking libsmbclient non-shared library bin/$@.a
 	-$(AR) -rc bin/$@.a $(LIBSMBCLIENT_PICOBJS) 
