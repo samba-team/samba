@@ -300,6 +300,50 @@ BOOL unbecome_user(void )
 	return(True);
 }
 
+/****************************************************************************
+ Become the user of an authenticated connected named pipe.
+ When this is called we are currently running as the connection
+ user.
+****************************************************************************/
+
+BOOL become_authenticated_pipe_user(pipes_struct *p)
+{
+	/*
+	 * Go back to root.
+	 */
+
+	if(!unbecome_user())
+		return False;
+
+	/*
+	 * Now become the authenticated user stored in the pipe struct.
+	 */
+
+	if(!become_id(p->uid, p->gid)) {
+		/* Go back to the connection user. */
+		become_user(p->conn, p->vuid);
+		return False;
+	}
+
+	return True;	 
+}
+
+/****************************************************************************
+ Unbecome the user of an authenticated connected named pipe.
+ When this is called we are running as the authenticated pipe
+ user and need to go back to being the connection user.
+****************************************************************************/
+
+BOOL unbecome_authenticated_pipe_user(pipes_struct *p)
+{
+	if(!become_id(0,0)) {
+		DEBUG(0,("unbecome_authenticated_pipe_user: Unable to go back to root.\n"));
+		return False;
+	}
+
+	return become_user(p->conn, p->vuid);
+}
+
 static struct current_user current_user_saved;
 static int become_root_depth;
 static pstring become_root_dir;

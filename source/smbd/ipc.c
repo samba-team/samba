@@ -138,52 +138,58 @@ static BOOL prefix_ok(char *str,char *prefix)
  cause of some of the ipc problems being experienced.  lkcl26dec97
 
  ******************************************************************/
+
 static void copy_trans_params_and_data(char *outbuf, int align,
-				struct mem_buf *rparam, struct mem_buf *rdata,
-				int param_offset, int data_offset,
-				int param_len, int data_len)
+				char *rparam, int param_offset, int param_len,
+				char *rdata, int data_offset, int data_len)
 {
 	char *copy_into = smb_buf(outbuf)+1;
+
+	if(param_len < 0)
+		param_len = 0;
+
+	if(data_len < 0)
+		data_len = 0;
 
 	DEBUG(5,("copy_trans_params_and_data: params[%d..%d] data[%d..%d]\n",
 			param_offset, param_offset + param_len,
 			data_offset , data_offset  + data_len));
 
-	if (param_len) mem_buf_copy(copy_into, rparam, param_offset, param_len);
+	if (param_len)
+		memcpy(copy_into, &rparam[param_offset], param_len);
+
 	copy_into += param_len + align;
-	if (data_len ) mem_buf_copy(copy_into, rdata , data_offset , data_len);
+
+	if (data_len )
+		memcpy(copy_into, &rdata[data_offset], data_len);
 }
 
 /****************************************************************************
-  send a trans reply
-  ****************************************************************************/
+ Send a trans reply.
+ ****************************************************************************/
+
 static void send_trans_reply(char *outbuf,
-				struct mem_buf *rdata,
-				struct mem_buf *rparam,
-				uint16 *setup, int lsetup, int max_data_ret)
+				char *rparam, int rparam_len,
+				char *rdata, int rdata_len,
+				BOOL buffer_too_large)
 {
-	int i;
 	int this_ldata,this_lparam;
-	int tot_data=0,tot_param=0;
+	int tot_data_sent = 0;
+	int tot_param_sent = 0;
 	int align;
 
-	int ldata  = rdata  ? mem_buf_len(rdata ) : 0;
-	int lparam = rparam ? mem_buf_len(rparam) : 0;
-
-	BOOL buffer_too_large = max_data_ret ? ldata > max_data_ret : False;
+	int ldata  = rdata  ? rdata_len : 0;
+	int lparam = rparam ? rparam_len : 0;
 
 	if (buffer_too_large)
-	{
-		DEBUG(5,("send_trans_reply: buffer %d too large %d\n", ldata, max_data_ret));
-		ldata = max_data_ret;
-	}
+		DEBUG(5,("send_trans_reply: buffer %d too large\n", ldata ));
 
-	this_lparam = MIN(lparam,max_send - (500+lsetup*SIZEOFWORD)); /* hack */
-	this_ldata  = MIN(ldata,max_send - (500+lsetup*SIZEOFWORD+this_lparam));
+	this_lparam = MIN(lparam,max_send - 500); /* hack */
+	this_ldata  = MIN(ldata,max_send - (500+this_lparam));
 
 	align = ((this_lparam)%4);
 
-	set_message(outbuf,10+lsetup,1+align+this_ldata+this_lparam,True);
+	set_message(outbuf,10,1+align+this_ldata+this_lparam,True);
 
 	if (buffer_too_large)
 	{
@@ -193,9 +199,8 @@ static void send_trans_reply(char *outbuf,
 	}
 
 	copy_trans_params_and_data(outbuf, align,
-	                           rparam     , rdata,
-	                           tot_param  , tot_data,
-	                           this_lparam, this_ldata);
+								rparam, tot_param_sent, this_lparam,
+								rdata, tot_data_sent, this_ldata);
 
 	SSVAL(outbuf,smb_vwv0,lparam);
 	SSVAL(outbuf,smb_vwv1,ldata);
@@ -205,46 +210,46 @@ static void send_trans_reply(char *outbuf,
 	SSVAL(outbuf,smb_vwv6,this_ldata);
 	SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+1+this_lparam+align,outbuf));
 	SSVAL(outbuf,smb_vwv8,0);
-	SSVAL(outbuf,smb_vwv9,lsetup);
-
-	for (i=0;i<lsetup;i++)
-	{
-		SSVAL(outbuf,smb_vwv10+i*SIZEOFWORD,setup[i]);
-	}
+	SSVAL(outbuf,smb_vwv9,0);
 
 	show_msg(outbuf);
 	send_smb(Client,outbuf);
 
-	tot_data = this_ldata;
-	tot_param = this_lparam;
+	tot_data_sent = this_ldata;
+	tot_param_sent = this_lparam;
 
-	while (tot_data < ldata || tot_param < lparam)
+	while (tot_data_sent < ldata || tot_param_sent < lparam)
 	{
-		this_lparam = MIN(lparam-tot_param, max_send - 500); /* hack */
-		this_ldata  = MIN(ldata -tot_data , max_send - (500+this_lparam));
+		this_lparam = MIN(lparam-tot_param_sent, max_send - 500); /* hack */
+		this_ldata  = MIN(ldata -tot_data_sent, max_send - (500+this_lparam));
+
+		if(this_lparam < 0)
+			this_lparam = 0;
+
+		if(this_ldata < 0)
+			this_ldata = 0;
 
 		align = (this_lparam%4);
 
 		set_message(outbuf,10,1+this_ldata+this_lparam+align,False);
 
 		copy_trans_params_and_data(outbuf, align,
-		                           rparam     , rdata,
-		                           tot_param  , tot_data,
-		                           this_lparam, this_ldata);
+									rparam, tot_param_sent, this_lparam,
+									rdata, tot_data_sent, this_ldata);
 
 		SSVAL(outbuf,smb_vwv3,this_lparam);
 		SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
-		SSVAL(outbuf,smb_vwv5,tot_param);
+		SSVAL(outbuf,smb_vwv5,tot_param_sent);
 		SSVAL(outbuf,smb_vwv6,this_ldata);
 		SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+1+this_lparam+align,outbuf));
-		SSVAL(outbuf,smb_vwv8,tot_data);
+		SSVAL(outbuf,smb_vwv8,tot_data_sent);
 		SSVAL(outbuf,smb_vwv9,0);
 
 		show_msg(outbuf);
 		send_smb(Client,outbuf);
 
-		tot_data  += this_ldata;
-		tot_param += this_lparam;
+		tot_data_sent  += this_ldata;
+		tot_param_sent += this_lparam;
 	}
 }
 
@@ -3138,38 +3143,48 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   return(True);
 }
 
-static void api_rpc_trans_reply(char *outbuf,
-				pipes_struct *p,
-				prs_struct *pd)
-{
-	send_trans_reply(outbuf, p->rhdr.data, NULL, NULL, 0, p->file_offset);
+/****************************************************************************
+ Start the first part of an RPC reply which began with an SMBtrans request.
+****************************************************************************/
 
-	if (mem_buf_len(p->rhdr.data) <= p->file_offset)
-	{
-		/* all of data was sent: no need to wait for SMBreadX calls */
-		mem_free_data(p->rhdr .data);
-		mem_free_data(p->rdata.data);
- 		mem_free_data(p->rdata_i.data);
+static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
+{
+	char *rdata = malloc(p->max_trans_reply);
+	int data_len;
+
+	if(rdata == NULL) {
+		DEBUG(0,("api_rpc_trans_reply: malloc fail.\n"));
+		return False;
 	}
+
+	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply)) < 0) {
+		free(rdata);
+		return False;
+	}
+
+	send_trans_reply(outbuf, NULL, 0, rdata, data_len, (int)prs_offset(&p->rdata) > data_len);
+
+	free(rdata);
+	return True;
 }
 
 /****************************************************************************
  WaitNamedPipeHandleState 
 ****************************************************************************/
-static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param)
+
+static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
 {
 	uint16 priority;
 
-	if (!param) return False;
+	if (!param || param_len < 2)
+		return False;
 
-	priority = param[0] + (param[1] << 8);
+	priority = SVAL(param,0);
 	DEBUG(4,("WaitNamedPipeHandleState priority %x\n", priority));
 
-	if (wait_rpc_pipe_hnd_state(p, priority))
-	{
+	if (wait_rpc_pipe_hnd_state(p, priority)) {
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, p->file_offset);
-
+		send_trans_reply(outbuf, NULL, 0, NULL, 0, False);
 		return True;
 	}
 	return False;
@@ -3179,20 +3194,20 @@ static BOOL api_WNPHS(char *outbuf, pipes_struct *p, char *param)
 /****************************************************************************
  SetNamedPipeHandleState 
 ****************************************************************************/
-static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param)
+
+static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param, int param_len)
 {
 	uint16 id;
 
-	if (!param) return False;
+	if (!param || param_len < 2)
+		return False;
 
-	id = param[0] + (param[1] << 8);
+	id = SVAL(param,0);
 	DEBUG(4,("SetNamedPipeHandleState to code %x\n", id));
 
-	if (set_rpc_pipe_hnd_state(p, id))
-	{
+	if (set_rpc_pipe_hnd_state(p, id)) {
 		/* now send the reply */
-		send_trans_reply(outbuf, NULL, NULL, NULL, 0, p->file_offset);
-
+		send_trans_reply(outbuf, NULL, 0, NULL, 0, False);
 		return True;
 	}
 	return False;
@@ -3200,119 +3215,93 @@ static BOOL api_SNPHS(char *outbuf, pipes_struct *p, char *param)
 
 
 /****************************************************************************
- when no reply is generated, indicate unsupported.
+ When no reply is generated, indicate unsupported.
  ****************************************************************************/
+
 static BOOL api_no_reply(char *outbuf, int max_rdata_len)
 {
-	struct mem_buf rparam;
-
-	mem_init(&rparam, 0);
-	mem_alloc_data(&rparam, 4);
-
-	rparam.offset.start = 0;
-	rparam.offset.end   = 4;
+	char rparam[4];
 
 	/* unsupported */
-	SSVAL(rparam.data,0,NERR_notsupported);
-	SSVAL(rparam.data,2,0); /* converter word */
+	SSVAL(rparam,0,NERR_notsupported);
+	SSVAL(rparam,2,0); /* converter word */
 
 	DEBUG(3,("Unsupported API fd command\n"));
 
 	/* now send the reply */
-	send_trans_reply(outbuf, NULL, &rparam, NULL, 0, max_rdata_len);
+	send_trans_reply(outbuf, rparam, 4, NULL, 0, False);
 
-	mem_free_data(&rparam);
-
-	return(-1);
+	return -1;
 }
 
 /****************************************************************************
-  handle remote api calls delivered to a named pipe already opened.
-  ****************************************************************************/
+ Handle remote api calls delivered to a named pipe already opened.
+ ****************************************************************************/
+
 static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 		 	uint16 *setup,char *data,char *params,
 		 	int suwcnt,int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
-	BOOL reply    = False;
-
+	BOOL reply = False;
+	pipes_struct *p = NULL;
 	int pnum;
 	int subcommand;
-	pipes_struct *p = NULL;
-	prs_struct pd;
 
 	DEBUG(5,("api_fd_reply\n"));
 
- 	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_init(&pd, 0, 4, 0, True);
- 	mem_create(pd.data, data, 0, tdscnt, 0, False);
-
 	/* First find out the name of this file. */
-	if (suwcnt != 2)
-	{
+	if (suwcnt != 2) {
 		DEBUG(0,("Unexpected named pipe transaction.\n"));
 		return(-1);
 	}
 
 	/* Get the file handle and hence the file name. */
+	/* 
+	 * NB. The setup array has already been transformed
+	 * via SVAL and so is in gost byte order.
+	 */
 	pnum = setup[1];
 	subcommand = setup[0];
-	p = get_rpc_pipe(pnum);
 
-	if (p != NULL)
-	{
-		DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)",
-				  subcommand, p->name, pnum));
-
-		/* record maximum data length that can be transmitted in an SMBtrans */
-		p->file_offset          = mdrcnt;
-		p->prev_pdu_file_offset = 0;
-
-                DEBUG(10,("api_fd_reply: p:%p file_offset: %d\n",
-                           p, p->file_offset));
-
-		switch (subcommand)
-		{
-			case 0x26:
-			{
-				/* dce/rpc command */
-				reply = rpc_command(p, &pd);
-				if (reply)
-				{
-					api_rpc_trans_reply(outbuf, p, &pd);
-				}
-				break;
-			}
-			case 0x53:
-			{
-				/* Wait Named Pipe Handle state */
-				reply = api_WNPHS(outbuf, p, params);
-				break;
-			}
-			case 0x01:
-			{
-				/* Set Named Pipe Handle state */
-				reply = api_SNPHS(outbuf, p, params);
-				break;
-			}
-		}
-	}
-	else
-	{
+	if(!(p = get_rpc_pipe(pnum))) {
 		DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
-	}
-
- 	mem_free_data(pd.data);
-
-	if (!reply)
-	{
 		return api_no_reply(outbuf, mdrcnt);
 	}
+
+	DEBUG(3,("Got API command 0x%x on pipe \"%s\" (pnum %x)", subcommand, p->name, pnum));
+
+	/* record maximum data length that can be transmitted in an SMBtrans */
+	p->max_trans_reply = mdrcnt;
+
+	DEBUG(10,("api_fd_reply: p:%p max_trans_reply: %d\n", p, p->max_trans_reply));
+
+	switch (subcommand) {
+	case 0x26:
+		/* dce/rpc command */
+		reply = rpc_command(p, data, tdscnt);
+		if (reply)
+			reply = api_rpc_trans_reply(outbuf, p);
+		break;
+	case 0x53:
+		/* Wait Named Pipe Handle state */
+		reply = api_WNPHS(outbuf, p, params, tpscnt);
+		break;
+	case 0x01:
+		/* Set Named Pipe Handle state */
+		reply = api_SNPHS(outbuf, p, params, tpscnt);
+		break;
+	}
+
+	if (!reply)
+		return api_no_reply(outbuf, mdrcnt);
+
 	return -1;
 }
 
 /****************************************************************************
-  the buffer was too small
-  ****************************************************************************/
+ The buffer was too small
+ ****************************************************************************/
+
 static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *data,
 			 int mdrcnt,int mprcnt,
 			 char **rdata,char **rparam,
@@ -3332,8 +3321,9 @@ static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *
 
 
 /****************************************************************************
-  the request is not supported
-  ****************************************************************************/
+ The request is not supported
+ ****************************************************************************/
+
 static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
 			    int mdrcnt,int mprcnt,
 			    char **rdata,char **rparam,
@@ -3396,14 +3386,13 @@ struct
 
 
 /****************************************************************************
-  handle remote api calls
-  ****************************************************************************/
+ Handle remote api calls
+ ****************************************************************************/
+
 static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *params,
 		     int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
 {
   int api_command;
-  struct mem_buf rdata_buf;
-  struct mem_buf rparam_buf;
   char *rdata = NULL;
   char *rparam = NULL;
   int rdata_len = 0;
@@ -3424,15 +3413,20 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
 	   skip_string(params+2,1),
 	   tdscnt,tpscnt,mdrcnt,mprcnt));
 
-  for (i=0;api_commands[i].name;i++)
-    if (api_commands[i].id == api_command && api_commands[i].fn)
-      {
+  for (i=0;api_commands[i].name;i++) {
+    if (api_commands[i].id == api_command && api_commands[i].fn) {
         DEBUG(3,("Doing %s\n",api_commands[i].name));
         break;
-      }
+    }
+  }
 
-  rdata = (char *)malloc(1024); if (rdata) memset(rdata,'\0',1024);
-  rparam = (char *)malloc(1024); if (rparam) memset(rparam,'\0',1024);
+  rdata = (char *)malloc(1024);
+  if (rdata)
+    memset(rdata,'\0',1024);
+
+  rparam = (char *)malloc(1024);
+  if (rparam)
+    memset(rparam,'\0',1024);
 
   if(!rdata || !rparam) {
     DEBUG(0,("api_reply: malloc fail !\n"));
@@ -3444,29 +3438,24 @@ static int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data
 
 
   if (rdata_len > mdrcnt ||
-      rparam_len > mprcnt)
-    {
+      rparam_len > mprcnt) {
       reply = api_TooSmall(conn,vuid,params,data,mdrcnt,mprcnt,
 			   &rdata,&rparam,&rdata_len,&rparam_len);
-    }
-	    
+  }
 
   /* if we get False back then it's actually unsupported */
   if (!reply)
     api_Unsupported(conn,vuid,params,data,mdrcnt,mprcnt,
 		    &rdata,&rparam,&rdata_len,&rparam_len);
 
-      
-  mem_create(&rdata_buf , rdata , 0, rdata_len , 0, False);
-  mem_create(&rparam_buf, rparam, 0, rparam_len, 0, False);
+  send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
 
-  /* now send the reply */
-  send_trans_reply(outbuf, &rdata_buf, &rparam_buf, NULL, 0, 0);
-
-  if (rdata ) free(rdata);
-  if (rparam) free(rparam);
+  if (rdata )
+    free(rdata);
+  if (rparam)
+    free(rparam);
   
-  return(-1);
+  return -1;
 }
 
 /****************************************************************************
@@ -3480,9 +3469,7 @@ static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *na
 	DEBUG(3,("named pipe command on <%s> name\n", name));
 
 	if (strequal(name,"LANMAN"))
-	{
 		return api_reply(conn,vuid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt);
-	}
 
 	if (strequal(name,"WKSSVC") ||
 	    strequal(name,"SRVSVC") ||
@@ -3495,26 +3482,23 @@ static int named_pipe(connection_struct *conn,uint16 vuid, char *outbuf,char *na
 	}
 
 	if (strlen(name) < 1)
-	{
 		return api_fd_reply(conn,vuid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt);
-	}
 
 	if (setup)
-	{
 		DEBUG(3,("unknown named pipe: setup 0x%X setup1=%d\n", (int)setup[0],(int)setup[1]));
-	}
 
 	return 0;
 }
 
 
 /****************************************************************************
-  reply to a SMBtrans
-  ****************************************************************************/
+ Reply to a SMBtrans.
+ ****************************************************************************/
+
 int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int bufsize)
 {
 	fstring name;
-        int name_offset = 0;
+	int name_offset = 0;
 	char *data=NULL,*params=NULL;
 	uint16 *setup=NULL;
 	int outsize = 0;
@@ -3588,9 +3572,12 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 				DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
 					 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 			}
-			if (params) free(params);
-			if (data) free(data);
-			if (setup) free(setup);
+			if (params)
+				free(params);
+			if (data)
+				free(data);
+			if (setup)
+				free(setup);
 			return(ERROR(ERRSRV,ERRerror));
 		}
 
@@ -3624,15 +3611,13 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	DEBUG(3,("trans <%s> data=%d params=%d setup=%d\n",
 		 name,tdscnt,tpscnt,suwcnt));
 	
-        /*
-         * WinCE wierdness....
-         */
+	/*
+	 * WinCE wierdness....
+	 */
 
-        if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine,
-                                strlen(local_machine)) == 0) && 
-                                (name[strlen(local_machine)+1] == '\\')) {
-          name_offset = strlen(local_machine)+1;
-        }
+	if (name[0] == '\\' && (StrnCaseCmp(&name[1],local_machine, strlen(local_machine)) == 0) &&
+			(name[strlen(local_machine)+1] == '\\'))
+		name_offset = strlen(local_machine)+1;
 
 	if (strncmp(&name[name_offset],"\\PIPE\\",strlen("\\PIPE\\")) == 0) {
 		DEBUG(5,("calling named_pipe\n"));
@@ -3645,9 +3630,12 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
 
 	
-	if (data) free(data);
-	if (params) free(params);
-	if (setup) free(setup);
+	if (data)
+		free(data);
+	if (params)
+		free(params);
+	if (setup)
+		free(setup);
 	
 	if (close_on_completion)
 		close_cnum(conn,vuid);

@@ -47,18 +47,30 @@
  * in the NTDOM branch - it didn't belong there.
  */
  
-typedef struct
+typedef struct _prs_struct 
 {
-	struct mem_buf *data; /* memory buffer */
-	uint32 offset; /* offset currently being accessed in memory buffer */
-	uint8 align; /* data alignment */
 	BOOL io; /* parsing in or out of data stream */
 	/* 
 	 * If the (incoming) data is big-endian. On output we are
 	 * always little-endian.
-	 */
+	 */ 
 	BOOL bigendian_data;
+	uint8 align; /* data alignment */
+	BOOL is_dynamic; /* Do we own this memory or not ? */
+	uint32 data_offset; /* Current working offset into data. */
+	uint32 buffer_size; /* Current size of the buffer. */
+	char *data_p; /* The buffer itself. */
 } prs_struct;
+
+/*
+ * Defines for io member of prs_struct.
+ */
+
+#define MARSHALL 0
+#define UNMARSHALL 1
+
+#define MARSHALLING(ps) (!(ps)->io)
+#define UNMARSHALLING(ps) ((ps)->io)
 
 typedef struct pipes_struct
 {
@@ -72,70 +84,60 @@ typedef struct pipes_struct
 	fstring name;
 	fstring pipe_srv_name;
 
-	prs_struct rhdr; /* output header */
-	prs_struct rdata; /* output data */
-	prs_struct rdata_i; /* output data (intermediate, for fragments) */
-	prs_struct rauth; /* output authentication verifier */
-	prs_struct rverf; /* output verifier */
-	prs_struct rntlm; /* output ntlmssp */
+	RPC_HDR hdr; /* Incoming RPC header. */
+	RPC_HDR_REQ hdr_req; /* Incoming request header. */
 
-	RPC_HDR     hdr;
-	RPC_HDR_BA  hdr_ba;
-	RPC_HDR_RB  hdr_rb;
-	RPC_HDR_REQ  hdr_req;
-	RPC_HDR_RESP hdr_resp;
-	RPC_HDR_AUTH  auth_info;
-	RPC_HDR_AUTHA autha_info;
-
-	RPC_AUTH_VERIFIER     auth_verifier;
-	RPC_AUTH_NTLMSSP_NEG  ntlmssp_neg;
-	RPC_AUTH_NTLMSSP_CHAL ntlmssp_chal;
-	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
-	RPC_AUTH_NTLMSSP_CHK  ntlmssp_chk;
-
-	BOOL ntlmssp_auth;
-	BOOL ntlmssp_validated;
+	uint32 ntlmssp_chal_flags; /* Client challenge flags. */
+	BOOL ntlmssp_auth_requested; /* If the client wanted authenticated rpc. */
+	BOOL ntlmssp_auth_validated; /* If the client *got* authenticated rpc. */
+	unsigned char challenge[8];
 	unsigned char ntlmssp_hash[258];
 	uint32 ntlmssp_seq_num;
+
+	/*
+	 * Windows user info.
+	 */
 	fstring user_name;
 	fstring domain;
 	fstring wks;
 
-	uint32 file_offset; /* Offset (including headers) into the data stream sent. */
-    uint32 prev_pdu_file_offset; /* Offset (including headers) where the last whole framgent sent. */
-	uint32 hdr_offsets; /* Total number of bytes in the headers sent (0x18 * number_of_headers_sent). */
+	/*
+	 * Unix user name and credentials.
+	 */
+	fstring unix_user_name;
+	uid_t uid;
+	gid_t gid;
 
+	/* 
+	 * Raw RPC output data. This does not include RPC headers or footers.
+	 */
+	prs_struct rdata;
+
+	/* The amount of data sent from the current rdata struct. */
+	uint32 data_sent_length;
+
+	/* 
+	 * The current PDU being returned. This inclues
+	 * headers, data and authentication footer.
+	 */
+	unsigned char current_pdu[MAX_PDU_FRAG_LEN];
+
+	/* The amount of data in the current_pdu buffer. */
+	uint32 current_pdu_len;
+
+	/* The amount of data sent from the current PDU. */
+	uint32 current_pdu_sent;
+
+	/* When replying to an SMBtrans, this is the maximum amount of
+           data that can be sent in the initial reply. */
+	int max_trans_reply;
 } pipes_struct;
 
 struct api_struct
 {  
   char *name;
   uint8 opnum;
-  void (*fn) (uint16 vuid, prs_struct*, prs_struct*);
-};
-
-struct mem_desc
-{  
-	/* array memory offsets */
-	uint32 start; 
-	uint32 end;
-};
-   
-struct mem_buf
-{  
-	BOOL dynamic; /* True iff data has been dynamically allocated
-					 (and therefore can be freed) */
-	char *data;
-	uint32 data_size;
-	uint32 data_used;
-
-	uint32 margin; /* safety margin when reallocing. */
-				   /* this can be abused quite nicely */
-	uint8 align;   /* alignment of data structures (smb, dce/rpc, udp etc) */
-
-	struct mem_desc offset;
-
-	struct mem_buf *next;
+  BOOL (*fn) (uint16 vuid, prs_struct*, prs_struct*);
 };
 
 typedef struct
@@ -152,4 +154,3 @@ struct acct_info
 };
 
 #endif /* _NT_DOMAIN_H */
-

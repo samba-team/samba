@@ -4,6 +4,7 @@
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1994-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Jeremy Allison  1999.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -130,7 +131,7 @@ BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *usernam
   ctr->switch_value = INTERACTIVE_LOGON_TYPE;
 
   /* Create the structure needed for SAM logon. */
-  make_id_info1(&ctr->auth.id1, domain, 0, 
+  init_id_info1(&ctr->auth.id1, domain, 0, 
                 smb_userid_low, 0,
                 username, cli->clnt_name_slash,
                 (char *)cli->sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
@@ -166,7 +167,7 @@ BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username,
   ctr->switch_value = NET_LOGON_TYPE;
 
   /* Create the structure needed for SAM logon. */
-  make_id_info2(&ctr->auth.id2, domain, 0, 
+  init_id_info2(&ctr->auth.id2, domain, 0, 
                 smb_userid_low, 0,
                 username, cli->clnt_name_slash,
                 (uchar *)lm_chal, (uchar *)lm_chal_resp, (uchar *)nt_chal_resp);

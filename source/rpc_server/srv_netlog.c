@@ -37,7 +37,7 @@ extern DOM_SID global_sam_sid;
 /*************************************************************************
  make_net_r_req_chal:
  *************************************************************************/
-static void make_net_r_req_chal(NET_R_REQ_CHAL *r_c,
+static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
                                 DOM_CHAL *srv_chal, int status)
 {
 	DEBUG(6,("make_net_r_req_chal: %d\n", __LINE__));
@@ -56,7 +56,7 @@ static void net_reply_req_chal(NET_Q_REQ_CHAL *q_c, prs_struct *rdata,
 	DEBUG(6,("net_reply_req_chal: %d\n", __LINE__));
 
 	/* set up the LSA REQUEST CHALLENGE response */
-	make_net_r_req_chal(&r_c, srv_chal, srv_time);
+	init_net_r_req_chal(&r_c, srv_chal, srv_time);
 
 	/* store the response in the SMB stream */
 	net_io_r_req_chal("", &r_c, rdata, 0);
@@ -77,7 +77,7 @@ static void net_reply_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, prs_struct *rdata,
 	DEBUG(6,("net_reply_logon_ctrl2: %d\n", __LINE__));
 
 	/* set up the Logon Control2 response */
-	make_r_logon_ctrl2(&r_l, q_l->query_level,
+	init_r_logon_ctrl2(&r_l, q_l->query_level,
 	                   flags, pdc_status, logon_attempts,
 	                   tc_status, trust_domain_name);
 
@@ -99,7 +99,7 @@ static void net_reply_trust_dom_list(NET_Q_TRUST_DOM_LIST *q_t, prs_struct *rdat
 	DEBUG(6,("net_reply_trust_dom_list: %d\n", __LINE__));
 
 	/* set up the Trusted Domain List response */
-	make_r_trust_dom(&r_t, num_trust_domains, trust_domain_name);
+	init_r_trust_dom(&r_t, num_trust_domains, trust_domain_name);
 
 	/* store the response in the SMB stream */
 	net_io_r_trust_dom("", &r_t, rdata, 0);
@@ -270,7 +270,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 /*************************************************************************
  api_net_req_chal:
  *************************************************************************/
-static void api_net_req_chal( uint16 vuid,
+static BOOL api_net_req_chal( uint16 vuid,
                               prs_struct *data,
                               prs_struct *rdata)
 {
@@ -285,7 +285,7 @@ static void api_net_req_chal( uint16 vuid,
 	DEBUG(5,("api_net_req_chal(%d): vuid %d\n", __LINE__, (int)vuid));
 
 	if ((vuser = get_valid_user_struct(vuid)) == NULL)
-      return;
+		return False;
 
 	/* grab the challenge... */
 	net_io_q_req_chal("", &q_r, data, 0);
@@ -326,12 +326,13 @@ static void api_net_req_chal( uint16 vuid,
 	net_reply_req_chal(&q_r, rdata,
 					&(vuser->dc.srv_chal), status);
 
+	return True;
 }
 
 /*************************************************************************
  api_net_auth_2:
  *************************************************************************/
-static void api_net_auth_2( uint16 vuid,
+static BOOL api_net_auth_2( uint16 vuid,
                             prs_struct *data,
                             prs_struct *rdata)
 {
@@ -344,7 +345,7 @@ static void api_net_auth_2( uint16 vuid,
 	user_struct *vuser;
 
 	if ((vuser = get_valid_user_struct(vuid)) == NULL)
-      return;
+		return False;
 
 	srv_time.time = 0;
 
@@ -370,13 +371,15 @@ static void api_net_auth_2( uint16 vuid,
 
 	/* construct reply. */
 	net_reply_auth_2(&q_a, rdata, &srv_cred, status);
+
+	return True;
 }
 
 
 /*************************************************************************
  api_net_srv_pwset:
  *************************************************************************/
-static void api_net_srv_pwset( uint16 vuid,
+static BOOL api_net_srv_pwset( uint16 vuid,
                                prs_struct *data,
                                prs_struct *rdata)
 {
@@ -389,7 +392,7 @@ static void api_net_srv_pwset( uint16 vuid,
 	user_struct *vuser;
 
 	if ((vuser = get_valid_user_struct(vuid)) == NULL)
-      return;
+		return False;
 
 	/* grab the challenge and encrypted password ... */
 	net_io_q_srv_pwset("", &q_a, data, 0);
@@ -452,13 +455,15 @@ static void api_net_srv_pwset( uint16 vuid,
 
 	/* Construct reply. */
 	net_reply_srv_pwset(&q_a, rdata, &srv_cred, status);
+
+	return True;
 }
 
 
 /*************************************************************************
  api_net_sam_logoff:
  *************************************************************************/
-static void api_net_sam_logoff( uint16 vuid,
+static BOOL api_net_sam_logoff( uint16 vuid,
                                prs_struct *data,
                                prs_struct *rdata)
 {
@@ -470,7 +475,7 @@ static void api_net_sam_logoff( uint16 vuid,
 	user_struct *vuser;
 
 	if ((vuser = get_valid_user_struct(vuid)) == NULL)
-      return;
+		return False;
 
 	/* the DOM_ID_INFO_1 structure is a bit big.  plus we might want to
 	   dynamically allocate it inside net_io_q_sam_logon, at some point */
@@ -488,6 +493,8 @@ static void api_net_sam_logoff( uint16 vuid,
 	net_reply_sam_logoff(&q_l, rdata,
 					&srv_cred,
 	                0x0);
+
+	return True;
 }
 
 /*************************************************************************
@@ -589,7 +596,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 /*************************************************************************
  api_net_sam_logon:
  *************************************************************************/
-static void api_net_sam_logon( uint16 vuid,
+static BOOL api_net_sam_logon( uint16 vuid,
                                prs_struct *data,
                                prs_struct *rdata)
 {
@@ -605,7 +612,7 @@ static void api_net_sam_logon( uint16 vuid,
   user_struct *vuser = NULL;
 
   if ((vuser = get_valid_user_struct(vuid)) == NULL)
-    return;
+    return False;
 
   q_l.sam_id.ctr = &ctr;
 
@@ -767,7 +774,7 @@ static void api_net_sam_logon( uint16 vuid,
 
     if (pdb_name_to_rid(nt_username, &r_uid, &r_gid))
     {
-      make_net_user_info3(&usr_info,
+      init_net_user_info3(&usr_info,
                           &dummy_time, /* logon_time */
                           &dummy_time, /* logoff_time */
                           &dummy_time, /* kickoff_time */
@@ -810,13 +817,15 @@ static void api_net_sam_logon( uint16 vuid,
   }
 
   net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status);
+
+  return True;
 }
 
 
 /*************************************************************************
  api_net_trust_dom_list:
  *************************************************************************/
-static void api_net_trust_dom_list( uint16 vuid,
+static BOOL api_net_trust_dom_list( uint16 vuid,
                                  prs_struct *data,
                                  prs_struct *rdata)
 {
@@ -834,6 +843,8 @@ static void api_net_trust_dom_list( uint16 vuid,
 				1, trusted_domain);
 
 	DEBUG(6,("api_net_trust_dom_list: %d\n", __LINE__));
+
+	return True;
 }
 
 
@@ -846,7 +857,7 @@ static void api_net_trust_dom_list( uint16 vuid,
 /*************************************************************************
  api_net_logon_ctrl2:
  *************************************************************************/
-static void api_net_logon_ctrl2( uint16 vuid,
+static BOOL api_net_logon_ctrl2( uint16 vuid,
                                  prs_struct *data,
                                  prs_struct *rdata)
 {
@@ -870,6 +881,8 @@ static void api_net_logon_ctrl2( uint16 vuid,
 				tc_status, trusted_domain);
 
 	DEBUG(6,("api_net_logon_ctrl2: %d\n", __LINE__));
+
+	return True;
 }
 
 /*******************************************************************

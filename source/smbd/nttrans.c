@@ -1757,48 +1757,46 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Allocate the data we will point this at.
    */
 
-  data = *ppdata = Realloc(*ppdata, sec_desc_size + SAFETY_MARGIN);
+  data = *ppdata = Realloc(*ppdata, sec_desc_size);
   if(data == NULL) {
     free_sec_desc(&psd);
     return(ERROR(ERRDOS,ERRnomem));
   }
 
-  memset(data, '\0', sec_desc_size + SAFETY_MARGIN);
+  memset(data, '\0', sec_desc_size);
 
   /*
-   * Create the parse struct we will linearize into.
-   * This allocates a mem_buf pointer *dynamically* (why?).
+   * Init the parse struct we will linearize into.
    */
 
-  prs_init(&pd, 0, 4, 0, False);
-
-  if(pd.data == NULL) {
-    free_sec_desc(&psd);
-    return(ERROR(ERRDOS,ERRnomem));
-  }
+  prs_init(&pd, 0, 4, False);
 
   /*
    * Setup the prs_struct to point at the memory we just
-   * allocated. This is a silly way of doing things - I *must*
-   * fix the prs_struct+membuf stuff.... JRA.
+   * allocated.
    */
-
-  mem_create( pd.data, data, 0, sec_desc_size, SAFETY_MARGIN, False);
+	
+  prs_give_memory( &pd, data, (uint32)sec_desc_size, False);
 
   /*
    * Finally, linearize into the outgoing buffer.
    */
 
-  sec_io_desc( "sd data", &psd, &pd, 1);
+  if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
+    free_sec_desc(&psd);
+    DEBUG(0,("call_nt_transact_query_security_desc: Error in linearizing \
+security descriptor.\n"));
+    /*
+     * Return access denied for want of a better error message..
+     */ 
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   /*
-   * Now we can delete the security descriptor
-   * and the dynamically allocated mem_buf in the
-   * parse struct (why is this done.... ?).
+   * Now we can delete the security descriptor.
    */
 
   free_sec_desc(&psd);
-  prs_mem_free(&pd);
 
   send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sec_desc_size);
   return -1;

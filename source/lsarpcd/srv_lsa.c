@@ -88,9 +88,9 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 	d_q->buffer_dom_sid  = 2; /* domain sid pointer */
 
 	/* this string is supposed to be character short */
-	make_unistr2(&(d_q->uni_domain_name), dom_name, domlen);
+	init_unistr2(&(d_q->uni_domain_name), dom_name, domlen);
 
-	make_dom_sid2(&(d_q->dom_sid), dom_sid);
+	init_dom_sid2(&(d_q->dom_sid), dom_sid);
 }
 
 /***************************************************************************
@@ -105,7 +105,7 @@ static void lsa_reply_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 	ZERO_STRUCT(r_e);
 
 	/* set up the LSA QUERY INFO response */
-	make_r_enum_trust_dom(&r_e, enum_context, dom_name, dom_sid,
+	init_r_enum_trust_dom(&r_e, enum_context, dom_name, dom_sid,
 	      dom_name != NULL ? 0x0 : 0x80000000 | NT_STATUS_UNABLE_TO_FREE_VM);
 
 	/* store the response in the SMB stream */
@@ -160,11 +160,11 @@ static void make_dom_ref(DOM_R_REF *ref, int num_domains,
 	{
 		int len = dom_names[i] != NULL ? strlen(dom_names[i]) : 0;
 
-		make_uni_hdr(&(ref->hdr_ref_dom[i].hdr_dom_name), len, len, len != 0 ? 1 : 0);
+		init_uni_hdr(&(ref->hdr_ref_dom[i].hdr_dom_name), len, len, len != 0 ? 1 : 0);
 		ref->hdr_ref_dom[i].ptr_dom_sid = dom_sids[i] != NULL ? 1 : 0;
 
-		make_unistr2 (&(ref->ref_dom[i].uni_dom_name), dom_names[i], len);
-		make_dom_sid2(&(ref->ref_dom[i].ref_dom     ), dom_sids [i]);
+		init_unistr2 (&(ref->ref_dom[i].uni_dom_name), dom_names[i], len);
+		init_dom_sid2(&(ref->ref_dom[i].ref_dom     ), dom_sids [i]);
 	}
 
 }
@@ -189,7 +189,7 @@ static void make_reply_lookup_rids(LSA_R_LOOKUP_RIDS *r_l,
 
 	for (i = 0; i < num_entries; i++)
 	{
-		make_dom_rid2(&(r_l->dom_rid[i]), dom_rids[i], 0x01);
+		init_dom_rid2(&(r_l->dom_rid[i]), dom_rids[i], 0x01);
 	}
 
 	r_l->num_entries3 = num_entries;
@@ -231,7 +231,7 @@ static void make_lsa_trans_names(LSA_TRANS_NAME_ENUM *trn,
 
 		if (status == 0x0)
 		{
-			make_lsa_trans_name(&(trn->name    [(*total)]),
+			init_lsa_trans_name(&(trn->name    [(*total)]),
 			                    &(trn->uni_name[(*total)]),
 			                    type, name, (*total));
 			(*total)++;
@@ -306,7 +306,7 @@ static void lsa_reply_lookup_rids(prs_struct *rdata,
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static void api_lsa_open_policy2( uint16 vuid, prs_struct *data,
+static BOOL api_lsa_open_policy2( uint16 vuid, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL2 q_o;
@@ -320,12 +320,14 @@ static void api_lsa_open_policy2( uint16 vuid, prs_struct *data,
 
 	/* return a 20 byte policy handle */
 	lsa_reply_open_policy2(rdata);
+
+	return True;
 }
 
 /***************************************************************************
 api_lsa_open_policy
  ***************************************************************************/
-static void api_lsa_open_policy( uint16 vuid, prs_struct *data,
+static BOOL api_lsa_open_policy( uint16 vuid, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL q_o;
@@ -339,12 +341,14 @@ static void api_lsa_open_policy( uint16 vuid, prs_struct *data,
 
 	/* return a 20 byte policy handle */
 	lsa_reply_open_policy(rdata);
+
+	return True;
 }
 
 /***************************************************************************
 api_lsa_enum_trust_dom
  ***************************************************************************/
-static void api_lsa_enum_trust_dom( uint16 vuid, prs_struct *data,
+static BOOL api_lsa_enum_trust_dom( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	LSA_Q_ENUM_TRUST_DOM q_e;
@@ -356,12 +360,14 @@ static void api_lsa_enum_trust_dom( uint16 vuid, prs_struct *data,
 
 	/* construct reply.  return status is always 0x0 */
 	lsa_reply_enum_trust_dom(&q_e, rdata, 0, NULL, NULL);
+
+	return True;
 }
 
 /***************************************************************************
 api_lsa_query_info
  ***************************************************************************/
-static void api_lsa_query_info( uint16 vuid, prs_struct *data,
+static BOOL api_lsa_query_info( uint16 vuid, prs_struct *data,
                                 prs_struct *rdata )
 {
 	LSA_Q_QUERY_INFO q_i;
@@ -376,12 +382,14 @@ static void api_lsa_query_info( uint16 vuid, prs_struct *data,
 
 	/* construct reply.  return status is always 0x0 */
 	lsa_reply_query_info(&q_i, rdata, dom_name, &global_sam_sid);
+
+	return True;
 }
 
 /***************************************************************************
 api_lsa_lookup_sids
  ***************************************************************************/
-static void api_lsa_lookup_sids( uint16 vuid, prs_struct *data,
+static BOOL api_lsa_lookup_sids( uint16 vuid, prs_struct *data,
                                  prs_struct *rdata )
 {
 	LSA_Q_LOOKUP_SIDS q_l;
@@ -423,12 +431,14 @@ static void api_lsa_lookup_sids( uint16 vuid, prs_struct *data,
 	lsa_reply_lookup_sids(rdata,
                               q_l.sids.num_entries, q_l.sids.sid, /* SIDs */
                               4, dom_names, sid_array);
+
+	return True;
 }
 
 /***************************************************************************
 api_lsa_lookup_names
  ***************************************************************************/
-static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
+static BOOL api_lsa_lookup_names( uint16 vuid, prs_struct *data,
                                   prs_struct *rdata )
 {
 	int i;
@@ -500,56 +510,56 @@ static void api_lsa_lookup_names( uint16 vuid, prs_struct *data,
 	lsa_reply_lookup_rids(rdata,
                               q_l.num_entries, dom_rids, /* text-converted SIDs */
                               4, dom_names, sid_array);
+
+	return True;
 }
 
 /***************************************************************************
  api_lsa_close
  ***************************************************************************/
-static void api_lsa_close( uint16 vuid, prs_struct *data,
+static BOOL api_lsa_close( uint16 vuid, prs_struct *data,
                                   prs_struct *rdata)
 {
 	/* XXXX this is NOT good */
-	char *q = mem_data(&(rdata->data), rdata->offset);
+	size_t i;
+	uint32 dummy = 0;
 
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0); 
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
+	for(i =0; i < 5; i++) {
+		if(!prs_uint32("api_lsa_close", rdata, 1, &dummy)) {
+			DEBUG(0,("api_lsa_close: prs_uint32 %d failed.\n",
+				(int)i ));
+			return False;
+		}
+	}
 
-	rdata->offset += 24;
+	return True;
 }
 
 /***************************************************************************
  api_lsa_open_secret
  ***************************************************************************/
-static void api_lsa_open_secret( uint16 vuid, prs_struct *data,
+static BOOL api_lsa_open_secret( uint16 vuid, prs_struct *data,
                                   prs_struct *rdata)
 {
 	/* XXXX this is NOT good */
-	char *q = mem_data(&(rdata->data), rdata->offset);
+	size_t i;
+	uint32 dummy = 0;
 
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0);
-	q += 4;
-	SIVAL(q, 0, 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND);
-	q += 4;
-	
-	rdata->offset += 24;
+	for(i =0; i < 4; i++) {
+		if(!prs_uint32("api_lsa_close", rdata, 1, &dummy)) {
+			DEBUG(0,("api_lsa_open_secret: prs_uint32 %d failed.\n",
+				(int)i ));
+			return False;
+		}
+	}
+
+	dummy = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	if(!prs_uint32("api_lsa_close", rdata, 1, &dummy)) {
+		DEBUG(0,("api_lsa_open_secret: prs_uint32 status failed.\n"));
+		return False;
+	}
+
+	return True;
 }
 
 /***************************************************************************

@@ -27,6 +27,7 @@
 
 extern int DEBUGLEVEL;
 
+#define SD_HEADER_SIZE 0x14
 
 /*******************************************************************
  Sets up a SEC_ACCESS structure.
@@ -49,9 +50,12 @@ BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "sec_io_access");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint32("mask", ps, depth, &(t->mask));
+	if(!prs_uint32("mask", ps, depth, &(t->mask)))
+		return False;
+
 	return True;
 }
 
@@ -86,23 +90,32 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "sec_io_ace");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	old_offset = ps->offset;
+	old_offset = prs_offset(ps);
 
-	prs_uint8     ("type ", ps, depth, &psa->type);
-	prs_uint8     ("flags", ps, depth, &psa->flags);
-	prs_uint16_pre("size ", ps, depth, &psa->size, &offset_ace_size);
+	if(!prs_uint8("type ", ps, depth, &psa->type))
+		return False;
+
+	if(!prs_uint8("flags", ps, depth, &psa->flags))
+		return False;
+
+	if(!prs_uint16_pre("size ", ps, depth, &psa->size, &offset_ace_size))
+		return False;
 
 	if(!sec_io_access("info ", &psa->info, ps, depth))
 		return False;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
+
 	if(!smb_io_dom_sid("sid  ", &psa->sid , ps, depth))
 		return False;
 
+	if(!prs_uint16_post("size ", ps, depth, &psa->size, offset_ace_size, old_offset))
+		return False;
 
-	prs_uint16_post("size ", ps, depth, &psa->size, offset_ace_size, old_offset);
 	return True;
 }
 
@@ -202,13 +215,19 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "sec_io_acl");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	old_offset = ps->offset;
+	old_offset = prs_offset(ps);
 
-	prs_uint16("revision", ps, depth, &psa->revision);
-	prs_uint16_pre("size     ", ps, depth, &psa->size, &offset_acl_size);
-	prs_uint32("num_aces ", ps, depth, &psa->num_aces);
+	if(!prs_uint16("revision", ps, depth, &psa->revision))
+		return False;
+
+	if(!prs_uint16_pre("size     ", ps, depth, &psa->size, &offset_acl_size))
+		return False;
+
+	if(!prs_uint32("num_aces ", ps, depth, &psa->num_aces))
+		return False;
 
 	if (ps->io && psa->num_aces != 0)
 	{
@@ -226,13 +245,14 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 			return False;
 	}
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
-	prs_uint16_post("size     ", ps, depth, &psa->size, offset_acl_size, old_offset);
+	if(!prs_uint16_post("size     ", ps, depth, &psa->size, offset_acl_size, old_offset))
+		return False;
 
 	return True;
 }
-
 
 /*******************************************************************
  Creates a SEC_DESC structure
@@ -283,7 +303,7 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 	{
 		if (offset == 0)
 		{
-			offset = 0x14;
+			offset = SD_HEADER_SIZE;
 		}
 		dst->off_dacl = offset;
 		offset += dacl->size;
@@ -293,7 +313,7 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 	{
 		if (offset == 0)
 		{
-			offset = 0x14;
+			offset = SD_HEADER_SIZE;
 		}
 		dst->off_sacl = offset;
 		offset += sacl->size;
@@ -303,7 +323,7 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 	{
 		if (offset == 0)
 		{
-			offset = 0x14;
+			offset = SD_HEADER_SIZE;
 		}
 		dst->off_owner_sid = offset;
 		offset += sid_size(dst->owner_sid);
@@ -313,13 +333,13 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 	{
 		if (offset == 0)
 		{
-			offset = 0x14;
+			offset = SD_HEADER_SIZE;
 		}
 		dst->off_grp_sid = offset;
 		offset += sid_size(dst->grp_sid);
 	}
 
-	*sec_desc_size = (size_t)((offset == 0) ? 0x14 : offset);
+	*sec_desc_size = (size_t)((offset == 0) ? SD_HEADER_SIZE : offset);
 	return dst;
 
 error_exit:
@@ -405,46 +425,62 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "sec_io_desc");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
 	/* start of security descriptor stored for back-calc offset purposes */
-	old_offset = ps->offset;
+	old_offset = prs_offset(ps);
 
-	prs_uint16("revision ", ps, depth, &psd->revision);
-	prs_uint16("type     ", ps, depth, &psd->type);
+	if(!prs_uint16("revision ", ps, depth, &psd->revision))
+		return False;
 
-	prs_uint32("off_owner_sid", ps, depth, &psd->off_owner_sid);
-	prs_uint32("off_grp_sid  ", ps, depth, &psd->off_grp_sid);
-	prs_uint32("off_sacl     ", ps, depth, &psd->off_sacl);
-	prs_uint32("off_dacl     ", ps, depth, &psd->off_dacl);
+	if(!prs_uint16("type     ", ps, depth, &psd->type))
+		return False;
 
-	max_offset = MAX(max_offset, ps->offset);
+	if(!prs_uint32("off_owner_sid", ps, depth, &psd->off_owner_sid))
+		return False;
+
+	if(!prs_uint32("off_grp_sid  ", ps, depth, &psd->off_grp_sid))
+		return False;
+
+	if(!prs_uint32("off_sacl     ", ps, depth, &psd->off_sacl))
+		return False;
+
+	if(!prs_uint32("off_dacl     ", ps, depth, &psd->off_dacl))
+		return False;
+
+	max_offset = MAX(max_offset, prs_offset(ps));
 
 	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_DACL_PRESENT) && psd->dacl)
 	{
-		ps->offset = old_offset + psd->off_dacl;
+		if(!prs_set_offset(ps, old_offset + psd->off_dacl))
+			return False;
 		if(!sec_io_acl("dacl", &psd->dacl, ps, depth))
 			return False;
-		prs_align(ps);
+		if(!prs_align(ps))
+			return False;
 	}
 
-	max_offset = MAX(max_offset, ps->offset);
+	max_offset = MAX(max_offset, prs_offset(ps));
 
 	if (IS_BITS_SET_ALL(psd->type, SEC_DESC_SACL_PRESENT) && psd->sacl)
 	{
-		ps->offset = old_offset + psd->off_sacl;
+		if(!prs_set_offset(ps, old_offset + psd->off_sacl))
+			return False;
 		if(!sec_io_acl("sacl", &psd->sacl, ps, depth))
 			return False;
-		prs_align(ps);
+		if(!prs_align(ps))
+			return False;
 	}
 
-	max_offset = MAX(max_offset, ps->offset);
+	max_offset = MAX(max_offset, prs_offset(ps));
 
 	if (psd->off_owner_sid != 0)
 	{
 		if (ps->io)
 		{
-			ps->offset = old_offset + psd->off_owner_sid;
+			if(!prs_set_offset(ps, old_offset + psd->off_owner_sid))
+				return False;
 			/* reading */
 			if((psd->owner_sid = malloc(sizeof(*psd->owner_sid))) == NULL)
 				return False;
@@ -453,17 +489,19 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if(!smb_io_dom_sid("owner_sid ", psd->owner_sid , ps, depth))
 			return False;
-		prs_align(ps);
+		if(!prs_align(ps))
+			return False;
 	}
 
-	max_offset = MAX(max_offset, ps->offset);
+	max_offset = MAX(max_offset, prs_offset(ps));
 
 	if (psd->off_grp_sid != 0)
 	{
 		if (ps->io)
 		{
 			/* reading */
-			ps->offset = old_offset + psd->off_grp_sid;
+			if(!prs_set_offset(ps, old_offset + psd->off_grp_sid))
+				return False;
 			if((psd->grp_sid = malloc(sizeof(*psd->grp_sid))) == NULL)
 				return False;
 			ZERO_STRUCTP(psd->grp_sid);
@@ -471,12 +509,14 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if(!smb_io_dom_sid("grp_sid", psd->grp_sid, ps, depth))
 			return False;
-		prs_align(ps);
+		if(!prs_align(ps))
+			return False;
 	}
 
-	max_offset = MAX(max_offset, ps->offset);
+	max_offset = MAX(max_offset, prs_offset(ps));
 
-	ps->offset = max_offset;
+	if(!prs_set_offset(ps, max_offset))
+		return False;
 	return True;
 }
 
@@ -564,13 +604,19 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 	prs_debug(ps, depth, desc, "sec_io_desc_buf");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 	
-	prs_uint32_pre("max_len", ps, depth, &psdb->max_len, &off_max_len);
-	prs_uint32    ("undoc  ", ps, depth, &psdb->undoc);
-	prs_uint32_pre("len    ", ps, depth, &psdb->len, &off_len);
+	if(!prs_uint32_pre("max_len", ps, depth, &psdb->max_len, &off_max_len))
+		return False;
 
-	old_offset = ps->offset;
+	if(!prs_uint32    ("undoc  ", ps, depth, &psdb->undoc))
+		return False;
+
+	if(!prs_uint32_pre("len    ", ps, depth, &psdb->len, &off_len))
+		return False;
+
+	old_offset = prs_offset(ps);
 
 	/* reading, length is non-zero; writing, descriptor is non-NULL */
 	if ((psdb->len != 0 || (!ps->io)) && psdb->sec != NULL)
@@ -579,9 +625,12 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 			return False;
 	}
 
-	size = ps->offset - old_offset;
-	prs_uint32_post("max_len", ps, depth, &psdb->max_len, off_max_len, size == 0 ? psdb->max_len : size);
-	prs_uint32_post("len    ", ps, depth, &psdb->len, off_len, size);
+	size = prs_offset(ps) - old_offset;
+	if(!prs_uint32_post("max_len", ps, depth, &psdb->max_len, off_max_len, size == 0 ? psdb->max_len : size))
+		return False;
+
+	if(!prs_uint32_post("len    ", ps, depth, &psdb->len, off_len, size))
+		return False;
 
 	return True;
 }

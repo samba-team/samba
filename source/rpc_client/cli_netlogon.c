@@ -65,8 +65,8 @@ BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
   NET_Q_LOGON_CTRL2 q_l;
   BOOL ok = False;
 
-  prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-  prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+  prs_init(&buf , 1024, 4, False);
+  prs_init(&rbuf, 0,    4, True );
 
   /* create and send a MSRPC command with api NET_LOGON_CTRL2 */
 
@@ -74,18 +74,25 @@ BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
            global_myname, status_level));
 
   /* store the parameters */
-  make_q_logon_ctrl2(&q_l, cli->srv_name_slash, status_level);
+  init_q_logon_ctrl2(&q_l, cli->srv_name_slash, status_level);
 
   /* turn parameters into data stream */
-  net_io_q_logon_ctrl2("", &q_l,  &buf, 0);
+  if(!net_io_q_logon_ctrl2("", &q_l,  &buf, 0)) {
+    DEBUG(0,("cli_net_logon_ctrl2: Error : failed to marshall NET_Q_LOGON_CTRL2 struct.\n"));
+    prs_mem_free(&buf);
+    prs_mem_free(&rbuf);
+    return False;
+  }
 
   /* send the data on \PIPE\ */
   if (rpc_api_pipe_req(cli, NET_LOGON_CTRL2, &buf, &rbuf))
   {
     NET_R_LOGON_CTRL2 r_l;
 
-    net_io_r_logon_ctrl2("", &r_l, &rbuf, 0);
-    ok = (rbuf.offset != 0);
+    /*
+     * Unmarshall the return buffer.
+     */
+    ok = net_io_r_logon_ctrl2("", &r_l, &rbuf, 0);
 		
     if (ok && r_l.status != 0)
     {
@@ -96,8 +103,8 @@ BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
     }
   }
 
+  prs_mem_free(&buf);
   prs_mem_free(&rbuf);
-  prs_mem_free(&buf );
 
   return ok;
 }
@@ -119,8 +126,8 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
   NET_Q_AUTH_2 q_a;
   BOOL ok = False;
 
-  prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-  prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+  prs_init(&buf , 1024, 4, False);
+  prs_init(&rbuf, 0,    4, True );
 
   /* create and send a MSRPC command with api NET_AUTH2 */
 
@@ -129,19 +136,23 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
          credstr(cli->clnt_cred.challenge.data), neg_flags));
 
   /* store the parameters */
-  make_q_auth_2(&q_a, cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
+  init_q_auth_2(&q_a, cli->srv_name_slash, cli->mach_acct, sec_chan, global_myname,
                 &cli->clnt_cred.challenge, neg_flags);
 
   /* turn parameters into data stream */
-  net_io_q_auth_2("", &q_a,  &buf, 0);
+  if(!net_io_q_auth_2("", &q_a,  &buf, 0)) {
+    DEBUG(0,("cli_net_auth2: Error : failed to marshall NET_Q_AUTH_2 struct.\n"));
+    prs_mem_free(&buf);
+    prs_mem_free(&rbuf);
+    return False;
+  }
 
   /* send the data on \PIPE\ */
   if (rpc_api_pipe_req(cli, NET_AUTH2, &buf, &rbuf))
   {
     NET_R_AUTH_2 r_a;
 
-    net_io_r_auth_2("", &r_a, &rbuf, 0);
-    ok = (rbuf.offset != 0);
+    ok = net_io_r_auth_2("", &r_a, &rbuf, 0);
 		
     if (ok && r_a.status != 0)
     {
@@ -187,8 +198,8 @@ password ?).\n", cli->desthost ));
 
   }
 
+  prs_mem_free(&buf);
   prs_mem_free(&rbuf);
-  prs_mem_free(&buf );
 
   return ok;
 }
@@ -205,11 +216,8 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
   NET_Q_REQ_CHAL q_c;
   BOOL valid_chal = False;
 
-  if (srv_chal == NULL || clnt_chal == NULL)
-    return False;
-
-  prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-  prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+  prs_init(&buf , 1024, 4, False);
+  prs_init(&rbuf, 0,    4, True );
 
   /* create and send a MSRPC command with api NET_REQCHAL */
 
@@ -217,10 +225,15 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
          cli->desthost, global_myname, credstr(clnt_chal->data)));
 
   /* store the parameters */
-  make_q_req_chal(&q_c, cli->srv_name_slash, global_myname, clnt_chal);
+  init_q_req_chal(&q_c, cli->srv_name_slash, global_myname, clnt_chal);
 
   /* turn parameters into data stream */
-  net_io_q_req_chal("", &q_c,  &buf, 0);
+  if(!net_io_q_req_chal("", &q_c,  &buf, 0)) {
+    DEBUG(0,("cli_net_req_chal: Error : failed to marshall NET_Q_REQ_CHAL struct.\n"));
+    prs_mem_free(&buf);
+    prs_mem_free(&rbuf);
+    return False;
+  }
 
   /* send the data on \PIPE\ */
   if (rpc_api_pipe_req(cli, NET_REQCHAL, &buf, &rbuf))
@@ -228,8 +241,7 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
     NET_R_REQ_CHAL r_c;
     BOOL ok;
 
-    net_io_r_req_chal("", &r_c, &rbuf, 0);
-    ok = (rbuf.offset != 0);
+    ok = net_io_r_req_chal("", &r_c, &rbuf, 0);
 		
     if (ok && r_c.status != 0)
     {
@@ -247,8 +259,8 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
     }
   }
 
+  prs_mem_free(&buf);
   prs_mem_free(&rbuf);
-  prs_mem_free(&buf );
 
   return valid_chal;
 }
@@ -268,8 +280,8 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
 
   gen_next_creds( cli, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-  prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+  prs_init(&buf , 1024, 4, False);
+  prs_init(&rbuf, 0,    4, True );
 
   /* create and send a MSRPC command with api NET_SRV_PWSET */
 
@@ -278,19 +290,23 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
            credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
 
   /* store the parameters */
-  make_q_srv_pwset(&q_s, cli->srv_name_slash, cli->mach_acct, sec_chan_type,
+  init_q_srv_pwset(&q_s, cli->srv_name_slash, cli->mach_acct, sec_chan_type,
                    global_myname, &new_clnt_cred, (char *)hashed_mach_pwd);
 
   /* turn parameters into data stream */
-  net_io_q_srv_pwset("", &q_s,  &buf, 0);
+  if(!net_io_q_srv_pwset("", &q_s,  &buf, 0)) {
+    DEBUG(0,("cli_net_srv_pwset: Error : failed to marshall NET_Q_SRV_PWSET struct.\n"));
+    prs_mem_free(&buf);
+    prs_mem_free(&rbuf);
+    return False;
+  }
 
   /* send the data on \PIPE\ */
   if (rpc_api_pipe_req(cli, NET_SRVPWSET, &buf, &rbuf))
   {
     NET_R_SRV_PWSET r_s;
 
-    net_io_r_srv_pwset("", &r_s, &rbuf, 0);
-    ok = (rbuf.offset != 0);
+    ok = net_io_r_srv_pwset("", &r_s, &rbuf, 0);
 		
     if (ok && r_s.status != 0)
     {
@@ -312,8 +328,8 @@ password ?).\n", cli->desthost ));
     }
   }
 
+  prs_mem_free(&buf);
   prs_mem_free(&rbuf);
-  prs_mem_free(&buf );
 
   return ok;
 }
@@ -335,8 +351,8 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
 
   gen_next_creds( cli, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-  prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+  prs_init(&buf , 1024, 4, False);
+  prs_init(&rbuf, 0,    4, True );
 
   /* create and send a MSRPC command with api NET_SAMLOGON */
 
@@ -349,11 +365,16 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
 	dummy_rtn_creds.timestamp.time = time(NULL);
 
   /* store the parameters */
-  make_sam_info(&(q_s.sam_id), cli->srv_name_slash, global_myname,
+  init_sam_info(&(q_s.sam_id), cli->srv_name_slash, global_myname,
          &new_clnt_cred, &dummy_rtn_creds, ctr->switch_value, ctr, validation_level);
 
   /* turn parameters into data stream */
-  net_io_q_sam_logon("", &q_s,  &buf, 0);
+  if(!net_io_q_sam_logon("", &q_s,  &buf, 0)) {
+    DEBUG(0,("cli_net_sam_logon: Error : failed to marshall NET_Q_SAM_LOGON struct.\n"));
+    prs_mem_free(&buf);
+    prs_mem_free(&rbuf);
+    return False;
+  }
 
   /* send the data on \PIPE\ */
   if (rpc_api_pipe_req(cli, NET_SAMLOGON, &buf, &rbuf))
@@ -362,8 +383,7 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr,
 
     r_s.user = user_info3;
 
-    net_io_r_sam_logon("", &r_s, &rbuf, 0);
-    ok = (rbuf.offset != 0);
+    ok = net_io_r_sam_logon("", &r_s, &rbuf, 0);
 		
     if (ok && r_s.status != 0)
     {
@@ -393,8 +413,8 @@ password ?).\n", cli->desthost ));
     }
   }
 
+  prs_mem_free(&buf);
   prs_mem_free(&rbuf);
-  prs_mem_free(&buf );
 
   return ok;
 }
@@ -420,8 +440,8 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 
   gen_next_creds( cli, &new_clnt_cred);
 
-  prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
-  prs_init(&rbuf, 0,    4, SAFETY_MARGIN, True );
+  prs_init(&buf , 1024, 4, False);
+  prs_init(&rbuf, 0,    4, True );
 
   /* create and send a MSRPC command with api NET_SAMLOGOFF */
 
@@ -433,19 +453,23 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
   memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
 
   /* store the parameters */
-  make_sam_info(&(q_s.sam_id), cli->srv_name_slash, global_myname,
+  init_sam_info(&(q_s.sam_id), cli->srv_name_slash, global_myname,
                 &new_clnt_cred, &dummy_rtn_creds, ctr->switch_value, ctr, validation_level);
 
   /* turn parameters into data stream */
-  net_io_q_sam_logoff("", &q_s,  &buf, 0);
+  if(!net_io_q_sam_logoff("", &q_s,  &buf, 0)) {
+    DEBUG(0,("cli_net_sam_logoff: Error : failed to marshall NET_Q_SAM_LOGOFF struct.\n"));
+    prs_mem_free(&buf);
+    prs_mem_free(&rbuf);
+    return False;
+  }
 
   /* send the data on \PIPE\ */
   if (rpc_api_pipe_req(cli, NET_SAMLOGOFF, &buf, &rbuf))
   {
     NET_R_SAM_LOGOFF r_s;
 
-    net_io_r_sam_logoff("", &r_s, &rbuf, 0);
-    ok = (rbuf.offset != 0);
+    ok = net_io_r_sam_logoff("", &r_s, &rbuf, 0);
 		
     if (ok && r_s.status != 0)
     {
@@ -467,8 +491,8 @@ password ?).\n", cli->desthost ));
     }
   }
 
+  prs_mem_free(&buf);
   prs_mem_free(&rbuf);
-  prs_mem_free(&buf );
 
   return ok;
 }
@@ -507,12 +531,10 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
     return False;
   }
     
-  
-	make_nmb_name(&calling, global_myname , 0x0 , scope);
-	make_nmb_name(&called , remote_machine, 0x20, scope);
+  make_nmb_name(&calling, global_myname , 0x0 , scope);
+  make_nmb_name(&called , remote_machine, 0x20, scope);
 
-	if (!cli_session_request(&cli, &calling, &called))
-	{
+  if (!cli_session_request(&cli, &calling, &called)) {
     DEBUG(0,("modify_trust_password: machine %s rejected the session setup. \
 Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
     cli_shutdown(&cli);
@@ -527,6 +549,7 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
     cli_shutdown(&cli);
     return False;
   }
+
   if (cli.protocol != PROTOCOL_NT1) {
     DEBUG(0,("modify_trust_password: machine %s didn't negotiate NT protocol.\n", 
             remote_machine));

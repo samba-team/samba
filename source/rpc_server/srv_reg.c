@@ -1,4 +1,3 @@
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -61,7 +60,7 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 /*******************************************************************
  api_reg_close
  ********************************************************************/
-static void api_reg_close( uint16 vuid, prs_struct *data,
+static BOOL api_reg_close( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_CLOSE q_r;
@@ -71,6 +70,8 @@ static void api_reg_close( uint16 vuid, prs_struct *data,
 
 	/* construct reply.  always indicate success */
 	reg_reply_close(&q_r, rdata);
+
+	return True;
 }
 
 
@@ -100,7 +101,7 @@ static void reg_reply_open(REG_Q_OPEN_HKLM *q_r,
 /*******************************************************************
  api_reg_open
  ********************************************************************/
-static void api_reg_open( uint16 vuid, prs_struct *data,
+static BOOL api_reg_open( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_OPEN_HKLM q_u;
@@ -110,6 +111,8 @@ static void api_reg_open( uint16 vuid, prs_struct *data,
 
 	/* construct reply.  always indicate success */
 	reg_reply_open(&q_u, rdata);
+
+	return True;
 }
 
 
@@ -149,7 +152,7 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
 
-	make_reg_r_open_entry(&r_u, &pol, status);
+	init_reg_r_open_entry(&r_u, &pol, status);
 
 	/* store the response in the SMB stream */
 	reg_io_r_open_entry("", &r_u, rdata, 0);
@@ -160,7 +163,7 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 /*******************************************************************
  api_reg_open_entry
  ********************************************************************/
-static void api_reg_open_entry( uint16 vuid, prs_struct *data,
+static BOOL api_reg_open_entry( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_OPEN_ENTRY q_u;
@@ -170,6 +173,8 @@ static void api_reg_open_entry( uint16 vuid, prs_struct *data,
 
 	/* construct reply. */
 	reg_reply_open_entry(&q_u, rdata);
+
+	return True;
 }
 
 
@@ -194,7 +199,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 	{
 	}
 
-	make_reg_r_info(&r_u, 1, "LanmanNT", 0x12, 0x12, status);
+	init_reg_r_info(&r_u, 1, "LanmanNT", 0x12, 0x12, status);
 
 	/* store the response in the SMB stream */
 	reg_io_r_info("", &r_u, rdata, 0);
@@ -205,7 +210,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 /*******************************************************************
  api_reg_info
  ********************************************************************/
-static void api_reg_info( uint16 vuid, prs_struct *data,
+static BOOL api_reg_info( uint16 vuid, prs_struct *data,
                                     prs_struct *rdata )
 {
 	REG_Q_INFO q_u;
@@ -215,6 +220,8 @@ static void api_reg_info( uint16 vuid, prs_struct *data,
 
 	/* construct reply.  always indicate success */
 	reg_reply_info(&q_u, rdata);
+
+	return True;
 }
 
 

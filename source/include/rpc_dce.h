@@ -68,8 +68,17 @@ enum NTLM_MESSAGE_TYPE
 #define NTLMSSP_NEGOTIATE_128              0x20000000
 #define NTLMSSP_NEGOTIATE_KEY_EXCH         0x40000000
 
+#define SMBD_NTLMSSP_NEG_FLAGS 0x000082b1
+
 /* NTLMSSP signature version */
 #define NTLMSSP_SIGN_VERSION 0x01
+
+/* NTLMSSP auth type and level. */
+#define NTLMSSP_AUTH_TYPE 0xa
+#define NTLMSSP_AUTH_LEVEL 0x6
+
+/* Maximum PDU fragment size. */
+#define MAX_PDU_FRAG_LEN 0x1630
 
 /*
  * Actual structure of a DCE UUID
@@ -83,6 +92,8 @@ typedef struct rpc_uuid
   uint8 remaining[8];
 } RPC_UUID;
 
+#define RPC_UUID_LEN 16
+
 /* RPC_IFACE */
 typedef struct rpc_iface_info
 {
@@ -90,6 +101,8 @@ typedef struct rpc_iface_info
   uint32 version;    /* the interface version number */
 
 } RPC_IFACE;
+
+#define RPC_IFACE_LEN (RPC_UUID_LEN + 4)
 
 struct pipe_id_info
 {
@@ -116,6 +129,8 @@ typedef struct rpc_hdr_info
 
 } RPC_HDR;
 
+#define RPC_HEADER_LEN 16
+
 /* RPC_HDR_REQ - ms request rpc header */
 typedef struct rpc_hdr_req_info
 {
@@ -124,6 +139,8 @@ typedef struct rpc_hdr_req_info
   uint16  opnum;        /* opnum */
 
 } RPC_HDR_REQ;
+
+#define RPC_HDR_REQ_LEN 8
 
 /* RPC_HDR_RESP - ms response rpc header */
 typedef struct rpc_hdr_resp_info
@@ -134,6 +151,8 @@ typedef struct rpc_hdr_resp_info
   uint8  reserved;     /* 0 - reserved. */
 
 } RPC_HDR_RESP;
+
+#define RPC_HDR_RESP_LEN 8
 
 /* this seems to be the same string name depending on the name of the pipe,
  * but is more likely to be linked to the interface name
@@ -159,6 +178,8 @@ typedef struct rpc_hdr_bba_info
 
 } RPC_HDR_BBA;
 
+#define RPC_HDR_BBA_LEN 8
+
 /* RPC_HDR_AUTHA */
 typedef struct rpc_hdr_autha_info
 {
@@ -174,6 +195,8 @@ typedef struct rpc_hdr_autha_info
 
 } RPC_HDR_AUTHA;
 
+#define RPC_HDR_AUTHA_LEN 12
+
 /* RPC_HDR_AUTH */
 typedef struct rpc_hdr_auth_info
 {
@@ -185,6 +208,8 @@ typedef struct rpc_hdr_auth_info
 	uint32 unknown; /* pointer */
 
 } RPC_HDR_AUTH;
+
+#define RPC_HDR_AUTH_LEN 8
 
 /* RPC_BIND_REQ - ms req bind */
 typedef struct rpc_bind_req_info
@@ -199,6 +224,13 @@ typedef struct rpc_bind_req_info
   RPC_IFACE transfer;     /* num and vers. of interface to use for replies */
   
 } RPC_HDR_RB;
+
+/* 
+ * The following length is 8 bytes RPC_HDR_BBA_LEN, 8 bytes internals 
+ * (with 3 bytes padding), + 2 x RPC_IFACE_LEN bytes for RPC_IFACE structs.
+ */
+
+#define RPC_HDR_RB_LEN (RPC_HDR_BBA_LEN + 8 + (2*RPC_IFACE_LEN))
 
 /* RPC_RESULTS - can only cope with one reason, right now... */
 typedef struct rpc_results_info
@@ -283,7 +315,6 @@ typedef struct rpc_auth_ntlmssp_resp_info
 
 } RPC_AUTH_NTLMSSP_RESP;
 
-
 /* attached to the end of encrypted rpc requests and responses */
 /* RPC_AUTH_NTLMSSP_CHK */
 typedef struct rpc_auth_ntlmssp_chk_info
@@ -295,5 +326,6 @@ typedef struct rpc_auth_ntlmssp_chk_info
 
 } RPC_AUTH_NTLMSSP_CHK;
 
-#endif /* _DCE_RPC_H */
+#define RPC_AUTH_NTLMSSP_CHK_LEN 16
 
+#endif /* _DCE_RPC_H */
