@@ -1,0 +1,23 @@
+#/bin/bash
+# nettime, a WIN NT 'net time' command "equivalent"
+# please send hints and comments to csanson@etn.fr
+# (this is only a test purpose script for rpcclient from samba 2.1)
+
+RPCCLIENT=/usr/bin/rpcclient
+DATEBIN=/bin/date
+AWKBIN=/bin/awk
+
+if [ $# -lt 1 -o $# -gt 2 ]; then
+    echo "Usage: `basename $0` NTServer [-set]" 1>&2
+    exit 1
+fi
+
+RPCTIME=$($RPCCLIENT $DESTIP -S $1 -U% -c 'time;quit' |head -1| $AWKBIN '{print $3" "$4" "$5" "$6" "$7}')
+
+if [ "$2" = "-set" ]
+then 
+    $DATEBIN --set "$RPCTIME" 1>/dev/null 2>/dev/null
+    echo "OK, system date set to:"
+fi
+    echo $RPCTIME
+
