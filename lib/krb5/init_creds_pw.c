@@ -1291,14 +1291,16 @@ init_cred_loop(krb5_context context,
 	    } else if (ret == KRB5KRB_ERR_RESPONSE_TOO_BIG) {
 		if (send_to_kdc_flags & KRB5_KRBHST_FLAGS_LARGE_MSG) {
 		    if (ret_as_reply)
-			ret_as_reply->error = error;
+			rep.error = error;
+		    else
+			krb5_free_error_contents(context, &error);
 		    goto out;
 		}
 		krb5_free_error_contents(context, &error);
 		send_to_kdc_flags |= KRB5_KRBHST_FLAGS_LARGE_MSG;
 	    } else {
 		if (ret_as_reply)
-		    ret_as_reply->error = error;
+		    rep.error = error;
 		else
 		    krb5_free_error_contents(context, &error);
 		goto out;
