@@ -75,10 +75,10 @@ static int sig_term()
   announce_my_servers_removed();
 
   exit(0);
+
   /* Keep compiler happy.. */
   return 0;
 } /* sig_term */
-
 
 /**************************************************************************** **
  catch a sighup
@@ -577,6 +577,17 @@ int main(int argc,char *argv[])
   signal( SIGHUP,  SIGNAL_CAST sig_hup );
   signal( SIGTERM, SIGNAL_CAST sig_term );
 
+  /* Setup the signals that allow the debug log level
+     to by dynamically changed. */
+
+#if defined(SIGUSR1)
+  signal( SIGUSR1, SIGNAL_CAST sig_usr1 );
+#endif /* SIGUSR1 */
+
+#if defined(SIGUSR2)
+  signal( SIGUSR2, SIGNAL_CAST sig_usr2 );
+#endif /* SIGUSR2 */
+
   while((opt = getopt(argc, argv, "as:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:f:")) != EOF)
     {
       switch (opt)
@@ -755,8 +766,14 @@ int main(int argc,char *argv[])
     exit(1);
   }
 
-  /* We can only take sigterm signals in the select. */
+  /* We can only take signals in the select. */
   BlockSignals( True, SIGTERM );
+#if defined(SIGUSR1)
+  BlockSignals( True, SIGUSR1);
+#endif /* SIGUSR1 */
+#if defined(SIGUSR2)
+  BlockSignals( True, SIGUSR2);
+#endif /* SIGUSR2 */
 
   process();
   close_sockets();
