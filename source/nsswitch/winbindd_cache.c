@@ -202,7 +202,7 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 {
 	TDB_DATA data;
 	fstring key;
-	uint32 time_diff;
+	int time_diff;
 	
 	if (!wcache->tdb) 
 		return NT_STATUS_UNSUCCESSFUL;
@@ -219,7 +219,7 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 	/* have we expired? */
 	
 	time_diff = now - domain->last_seq_check;
-	if ( time_diff > lp_winbind_cache_time() )
+	if ( time_diff < 0 || time_diff > lp_winbind_cache_time() )
 		return NT_STATUS_UNSUCCESSFUL;
 
 	DEBUG(10,("fetch_cache_seqnum: success [%s][%u @ %u]\n", 
