@@ -72,7 +72,8 @@ uint32 domain_client_validate_backend(const char *srv_name,
 				      const char *smb_apasswd,
 				      int smb_apasslen,
 				      const char *smb_ntpasswd,
-				      int smb_ntpasslen, NET_USER_INFO_3 * info3)
+				      int smb_ntpasslen,
+				      NET_USER_INFO_3 * info3)
 {
 	NET_ID_INFO_CTR ctr;
 	uint32 smb_uid_low;
@@ -83,7 +84,7 @@ uint32 domain_client_validate_backend(const char *srv_name,
 		smb_ntpasslen == 0;
 
 	DEBUG(100, ("domain_client_validate: %s %s %s\n",
-				srv_name, user, domain));
+		    srv_name, user, domain));
 	dump_data_pw("lmpw:", smb_apasswd, smb_apasslen);
 	dump_data_pw("ntpw:", smb_ntpasswd, smb_ntpasslen);
 
@@ -236,11 +237,12 @@ uint32 domain_client_validate(const char *server,
 	}
 
 
-	return domain_client_validate_backend(server, user, domain, acct_name, acct_type,
-					      trust_passwd, 
-					      challenge, smb_apasswd, smb_apasslen,
-					      smb_ntpasswd, smb_ntpasslen,
-					      info3);
+	return domain_client_validate_backend(srv_name, user, domain,
+					      acct_name, acct_type,
+					      trust_passwd,
+					      challenge, smb_apasswd,
+					      smb_apasslen, smb_ntpasswd,
+					      smb_ntpasslen, info3);
 }
 
 
@@ -267,8 +269,7 @@ uint32 check_domain_security(const char *orig_user, const char *domain,
 	}
 
 	if (strequal(domain, global_myworkgroup) ||
-	    strequal(domain, global_myname) ||
-	    strequal(domain, ""))
+	    strequal(domain, global_myname) || strequal(domain, ""))
 	{
 		/*
 		 * local
