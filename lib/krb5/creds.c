@@ -122,3 +122,18 @@ krb5_free_creds (krb5_context context, krb5_creds *c)
     free (c);
     return 0;
 }
+
+krb5_boolean
+krb5_compare_creds(krb5_context context, krb5_flags whichfields, 
+		   krb5_creds *mcreds, krb5_creds *creds)
+{
+    krb5_boolean match;
+    if(whichfields & KRB5_TC_DONT_MATCH_REALM)
+	match = krb5_principal_compare_any_realm(context, 
+						 mcreds->server, 
+						 creds->server);
+    else
+	match = krb5_principal_compare(context, mcreds->server, creds->server);
+    return match;
+}
+
