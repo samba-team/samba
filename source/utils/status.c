@@ -165,6 +165,7 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
   ******************************************************************/
 static int profile_dump(void)
 {
+#ifdef WITH_PROFILE
 	if (!profile_setup(True)) {
 		fprintf(stderr,"Failed to initialise profile memory\n");
 		return -1;
@@ -502,6 +503,9 @@ static int profile_dump(void)
 	printf("election_count:                 %u\n", profile_p->election_count);
 	printf("election_time:                  %u\n", profile_p->election_time);
 
+#else /* ndef WITH_PROFILE */
+	fprintf(stderr,"Profile data unavailable\n");
+#endif /* WITH_PROFILE */
 	return 0;
 }
 
