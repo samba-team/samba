@@ -406,9 +406,7 @@ static BOOL chat_with_program(char *passwordprogram, char *name,
 		/*
 		 * Lose any oplock capabilities.
 		 */
-		set_process_capability(KERNEL_OPLOCK_CAPABILITY, False);
-		set_inherited_process_capability(KERNEL_OPLOCK_CAPABILITY,
-						 False);
+		oplock_set_capability(False, False);
 
 		/* make sure it doesn't freeze */
 		alarm(20);
