@@ -1944,6 +1944,10 @@ static BOOL validate_unix_sid( DOM_SID *psid, uint32 *prid, DOM_SID *sd_sid)
  Map NT perms to UNIX.
 ****************************************************************************/
 
+#define FILE_SPECIFIC_READ_BITS (FILE_READ_DATA|FILE_READ_EA|FILE_READ_ATTRIBUTES)
+#define FILE_SPECIFIC_WRITE_BITS (FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_WRITE_EA|FILE_WRITE_ATTRIBUTES)
+#define FILE_SPECIFIC_EXECUTE_BITS (FILE_EXECUTE)
+
 static mode_t map_nt_perms( SEC_ACCESS sec_access, int type)
 {
   mode_t mode = 0;
@@ -1953,27 +1957,27 @@ static mode_t map_nt_perms( SEC_ACCESS sec_access, int type)
     if(sec_access.mask & GENERIC_ALL_ACCESS)
       mode = S_IRUSR|S_IWUSR|S_IXUSR;
     else {
-      mode |= (sec_access.mask & GENERIC_READ_ACCESS) ? S_IRUSR : 0;
-      mode |= (sec_access.mask & GENERIC_WRITE_ACCESS) ? S_IWUSR : 0;
-      mode |= (sec_access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXUSR : 0;
+      mode |= (sec_access.mask & (GENERIC_READ_ACCESS|FILE_SPECIFIC_READ_BITS)) ? S_IRUSR : 0;
+      mode |= (sec_access.mask & (GENERIC_WRITE_ACCESS|FILE_SPECIFIC_WRITE_BITS)) ? S_IWUSR : 0;
+      mode |= (sec_access.mask & (GENERIC_EXECUTE_ACCESS|FILE_SPECIFIC_EXECUTE_BITS)) ? S_IXUSR : 0;
     }
     break;
   case S_IRGRP:
     if(sec_access.mask & GENERIC_ALL_ACCESS)
       mode = S_IRGRP|S_IWGRP|S_IXGRP;
     else {
-      mode |= (sec_access.mask & GENERIC_READ_ACCESS) ? S_IRGRP : 0;
-      mode |= (sec_access.mask & GENERIC_WRITE_ACCESS) ? S_IWGRP : 0;
-      mode |= (sec_access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXGRP : 0;
+      mode |= (sec_access.mask & (GENERIC_READ_ACCESS|FILE_SPECIFIC_READ_BITS)) ? S_IRGRP : 0;
+      mode |= (sec_access.mask & (GENERIC_WRITE_ACCESS|FILE_SPECIFIC_WRITE_BITS)) ? S_IWGRP : 0;
+      mode |= (sec_access.mask & (GENERIC_EXECUTE_ACCESS|FILE_SPECIFIC_EXECUTE_BITS)) ? S_IXGRP : 0;
     }
     break;
   case S_IROTH:
     if(sec_access.mask & GENERIC_ALL_ACCESS)
       mode = S_IROTH|S_IWOTH|S_IXOTH;
     else {
-      mode |= (sec_access.mask & GENERIC_READ_ACCESS) ? S_IROTH : 0;
-      mode |= (sec_access.mask & GENERIC_WRITE_ACCESS) ? S_IWOTH : 0;
-      mode |= (sec_access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXOTH : 0;
+      mode |= (sec_access.mask & (GENERIC_READ_ACCESS|FILE_SPECIFIC_READ_BITS)) ? S_IROTH : 0;
+      mode |= (sec_access.mask & (GENERIC_WRITE_ACCESS|FILE_SPECIFIC_WRITE_BITS)) ? S_IWOTH : 0;
+      mode |= (sec_access.mask & (GENERIC_EXECUTE_ACCESS|FILE_SPECIFIC_EXECUTE_BITS)) ? S_IXOTH : 0;
     }
     break;
   }
@@ -2085,7 +2089,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
      */
 
     psa->info.mask &= (GENERIC_ALL_ACCESS|GENERIC_EXECUTE_ACCESS|GENERIC_WRITE_ACCESS|
-                     GENERIC_READ_ACCESS|UNIX_ACCESS_NONE);
+                     GENERIC_READ_ACCESS|UNIX_ACCESS_NONE|FILE_ALL_ATTRIBUTES);
 
     if(psa->info.mask != UNIX_ACCESS_NONE)
       psa->info.mask &= ~UNIX_ACCESS_NONE;
