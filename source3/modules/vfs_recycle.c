@@ -213,7 +213,7 @@ static BOOL recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 	char *tok_str;
 	BOOL ret = False;
 
-	mode = S_IREAD | S_IWRITE | S_IEXEC;
+	mode = S_IRUSR | S_IWUSR | S_IXUSR;
 
 	tmp_str = strdup(dname);
 	ALLOC_CHECK(tmp_str, done);
