@@ -501,13 +501,12 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 
 		case LDB_FLAG_MOD_REPLACE:
 			/* replace all elements of this attribute name with the elements
-			   listed */
-			if (msg_delete_attribute(ldb, &msg2, msg->elements[i].name) != 0) {
-				ltdb->last_err_string = "No such attribute";
-				goto failed;
-			}
-			/* add the replacement element */
-			if (msg_add_element(ldb, &msg2, &msg->elements[i]) != 0) {
+			   listed. The attribute not existing is not an error */
+			msg_delete_attribute(ldb, &msg2, msg->elements[i].name);
+
+			/* add the replacement element, if not empty */
+			if (msg->elements[i].num_values != 0 &&
+			    msg_add_element(ldb, &msg2, &msg->elements[i]) != 0) {
 				goto failed;
 			}
 			break;
