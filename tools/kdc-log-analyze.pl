@@ -63,7 +63,10 @@ my %five24_req_server;
 my %five24_req_client;
 my $as_req_successful = 0;
 my $as_req_error = 0;
-my $as_req_no_such_princ = 0;
+my $no_such_princ = 0;
+my %no_such_princ_princ;
+my %no_such_princ_addr;
+my %no_such_princ_addr_nonlocal;
 my $as_req_etype_odd = 0;
 my %bw_addr;
 my $pa_alt_princ_request = 0;
@@ -138,7 +141,16 @@ if ($v4_cross > 0) {
 }
 print "\n";
 
-print "\tNumber of failed lookups: $as_req_no_such_princ\n\n";
+print "\tNumber of failed lookups: $no_such_princ\n\n";
+if ($no_such_princ > 0) {
+	print "\tTop ten IP addresses failing to find principal:\n";
+	topten(\%no_such_princ_addr);
+	print "\tTop ten $notlocal IP addresses failing find principal:\n";
+	topten(\%no_such_princ_addr_nonlocal);
+	print "\tTop ten failed to find principals\n";
+	topten(\%no_such_princ_princ);
+}
+print "\n";
 
 print "\tBandwidth pigs:\n";
 topten(\%bw_addr);
@@ -217,7 +229,8 @@ topten(\%tgs_req_client);
 print "\tDistinct services requested: ", int(keys %tgs_req_server), "\n";
 print "\tTop ten requested services:\n";
 topten(\%tgs_req_server);
-print "\n";
+
+print "\n\n\nReport on 524_REQ requests:\n\n";
 
 print "\t524_REQ client/server statistics\n\n";
 
@@ -240,6 +253,8 @@ print "\tTop ten requested services:\n";
 topten(\%five24_req_server);
 print "\n";
 
+print "Cross realm statistics\n\n";
+
 print "\tNumber of cross-realm tgs out: $tgs_xrealm_out\n";
 if ($tgs_xrealm_out > 0) {
 	print "\tTop ten realms used for out cross-realm:\n";
@@ -255,7 +270,7 @@ if ($tgs_xrealm_in > 0) {
 	topten(\%tgs_xrealm_in_princ);
 }
 
-print "\n\n\nReport on referral:\n\n";
+print "\n\nReport on referral:\n\n";
 
 print "\tNumber of referrals: $referrals\n";
 if ($referrals > 0) {
@@ -265,16 +280,18 @@ if ($referrals > 0) {
 	topten(\%referral_realm);
 }
 
-print "\n\n\tEnctype Stats:\n";
+print "\n\nEnctype Statistics:\n\n";
 print "\tTop ten session enctypes:\n";
 topten(\%enctype_session);
 print "\tTop ten ticket enctypes:\n";
 topten(\%enctype_ticket);
 
-print "\t";
+print "\n";
 
 
 exit 0;
+
+my $last_addr = "";
 
 sub process_line {
 	local($_) = @_;
@@ -286,12 +303,14 @@ sub process_line {
 		$v4_req++;
 		$v4_req_addr{$2}++;
 		$v4_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
+		$last_addr = $2;
 	} elsif (/AS-REQ (.*) from IPv[46]:([0-9\.:a-fA-F]+) for (.*)$/) {
 		$as_req++;
 		$as_req_client{$1}++;
 		$as_req_server{$3}++;
 		$as_req_addr{$2}++;
 		$as_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
+		$last_addr = $2;
 	} elsif (/TGS-REQ \(krb4\)/) {
 		#Nothing
 	} elsif (/TGS-REQ (.+) from IPv[46]:([0-9\.:a-fA-F]+) for (.*?)( \[.*\]){0,1}$/) {
@@ -300,6 +319,7 @@ sub process_line {
 		$tgs_req_server{$3}++;
 		$tgs_req_addr{$2}++;
 		$tgs_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
+		$last_addr = $2;
 
 		my $source = $1;
 		my $dest = $3;
@@ -322,12 +342,17 @@ sub process_line {
 		$five24_req++;
 		$five24_req_addr{$2}++;
 		$five24_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
+		$last_addr = $2;
+
 		$five24_req_client{$1}++;
 		$five24_req_server{$3}++;
 	} elsif (/TCP data of strange type from IPv[46]:([0-9\.:a-fA-F]+)/) {
 		$strange_tcp_data{$1}++;
 	} elsif (/Lookup (.*) failed: No such entry in the database/) {
-		$as_req_no_such_princ++;
+		$no_such_princ++;
+		$no_such_princ_addr{$last_addr}++;
+		$no_such_princ_addr_nonlocal{$last_addr}++ if (!islocaladdr($last_addr));
+		$no_such_princ_princ{$1}++;
 	} elsif (/Lookup .* succeeded$/) {
 		# Nothing
 	} elsif (/Malformed HTTP request from IPv[46]:([0-9\.:a-fA-F]+)$/) {
