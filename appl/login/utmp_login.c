@@ -49,11 +49,9 @@ void utmp_login(char *tty, char *username, char *hostname) { return; }
 void utmp_login(char *tty, char *username, char *hostname)
 {
     struct utmp utmp;
-    struct hostent *he;
     int fd;
 
     char *ttyx; /* tty w/o /dev/* */
-    char *id;
 
     ttyx = tty;
 
@@ -71,6 +69,7 @@ void utmp_login(char *tty, char *username, char *hostname)
 
 # ifdef HAVE_UT_ADDR
     if (hostname[0]) {
+        struct hostent *he;
 	if ((he = gethostbyname(hostname)))
 	    memcpy(&utmp.ut_addr, he->h_addr_list[0],
 		   sizeof(utmp.ut_addr));
@@ -90,11 +89,13 @@ void utmp_login(char *tty, char *username, char *hostname)
 # endif
 
 # ifdef HAVE_UT_ID
-    /* any particular reason to not include "tty" ? */
-    id = ttyx;
-    if(strncmp(ttyx, "tty", 3) == 0)
+    {
+      /* any particular reason to not include "tty" ? */
+      char *id = ttyx;
+      if(strncmp(ttyx, "tty", 3) == 0)
 	id += 3;
-    strncpy(utmp.ut_id, id, sizeof(utmp.ut_id));
+      strncpy(utmp.ut_id, id, sizeof(utmp.ut_id));
+    }
 # endif
 
 

@@ -135,7 +135,7 @@ sl_loop (SL_cmd *cmds, char *prompt)
     ptr = malloc(max_count * sizeof(*ptr));
     if (ptr == NULL) {
 	printf ("sl_loop: failed to allocate %u bytes of memory\n",
-		max_count * sizeof(*ptr));
+		(int) max_count * sizeof(*ptr));
 	return -1;
     }
 
@@ -164,7 +164,7 @@ sl_loop (SL_cmd *cmds, char *prompt)
 		    if (ptr == NULL) {
 			printf ("sl_loop: failed to allocate %u "
 				"bytes of memory\n",
-				max_count * sizeof(*ptr));
+				(int) max_count * sizeof(*ptr));
 			return -1;
 		    }
 		}

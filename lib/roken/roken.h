@@ -65,7 +65,7 @@
 #include <termios.h>
 #endif
 
-#ifdef HAVE_SYS_IOCTL_H
+#if defined(HAVE_SYS_IOCTL_H) && SunOS != 4
 #include <sys/ioctl.h>
 #endif
 
@@ -97,6 +97,10 @@ char * strlwr(char *);
 
 #ifndef HAVE_STRNLEN
 int strnlen(char*, int);
+#endif
+
+#ifndef HAVE_STRTOK_R
+char *strtok_r(char *s1, const char *s2, char **lasts);
 #endif
 
 #ifndef HAVE_STRUPR

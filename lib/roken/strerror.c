@@ -41,8 +41,9 @@
 RCSID("$Id$");
 #endif
 
-#include <errno.h>
+#include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 extern int sys_nerr;
 extern char *sys_errlist[];

@@ -43,6 +43,8 @@ RCSID("$Id$");
 
 #include <string.h>
 
+#include "roken.h"
+
 char *
 strtok_r(char *s1, const char *s2, char **lasts)
 {
