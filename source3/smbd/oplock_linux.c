@@ -284,6 +284,7 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 	act.sa_handler = NULL;
 	act.sa_sigaction = signal_handler;
 	act.sa_flags = SA_SIGINFO;
+	sigemptyset( &act.sa_mask );
 	if (sigaction(RT_SIGNAL_LEASE, &act, NULL) != 0) {
 		DEBUG(0,("Failed to setup RT_SIGNAL_LEASE handler\n"));
 		return NULL;
