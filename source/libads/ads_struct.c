@@ -62,14 +62,19 @@ char *ads_build_dn(const char *realm)
 static char *find_ldap_server(ADS_STRUCT *ads)
 {
 	char *list = NULL;
+	struct in_addr ip;
 
-	if (!ads->realm) return NULL;
-
-	if (ldap_domain2hostlist(ads->realm, &list) == LDAP_SUCCESS) {
+	if (ads->realm && 
+	    ldap_domain2hostlist(ads->realm, &list) == LDAP_SUCCESS) {
 		char *p;
 		p = strchr(list, ':');
 		if (p) *p = 0;
 		return list;
+	}
+
+	/* get desperate, find the domain controller IP */
+	if (resolve_name(lp_workgroup(), &ip, 0x1B)) {
+		return strdup(inet_ntoa(ip));
 	}
 
 	return NULL;
