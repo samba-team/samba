@@ -851,7 +851,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	ref->ttl = REFERRAL_TTL;
 	if (*lp_msdfs_proxy(snum) != '\0') {
 		pstrcpy(ref->alternate_path, lp_msdfs_proxy(snum));
-		*jn_count = 1;
+		*jn_count = ++cnt;
 		return True;
 	}
 		
