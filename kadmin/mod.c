@@ -58,7 +58,8 @@ mod_entry(int argc, char **argv)
     memset(&princ, 0, sizeof(princ));
     ret = kadm5_get_principal(kadm_handle, princ_ent, &princ, 
 			      KADM5_PRINCIPAL | KADM5_ATTRIBUTES | 
-			      KADM5_MAX_LIFE | KADM5_MAX_RLIFE);
+			      KADM5_MAX_LIFE | KADM5_MAX_RLIFE |
+			      KADM5_PRINC_EXPIRE_TIME | KADM5_PW_EXPIRATION);
     if (ret) {
 	printf ("no such principal: %s\n", argv[1]);
 	krb5_free_principal (context, princ_ent);
