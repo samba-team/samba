@@ -216,7 +216,11 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+
+#ifdef WITH_SYSLOG
 #include <syslog.h>
+#endif
+
 #include <sys/file.h>
 
 #ifdef HAVE_NETINET_TCP_H
