@@ -2607,7 +2607,9 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	/* Restore the stripped strings. */
 	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s",
 		 get_called_name());
-	strupper(info.servername);
+	slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", get_called_name(),
+			info.printername);
+	fstrcpy(info.printername, printername);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 
