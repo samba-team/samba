@@ -307,7 +307,7 @@ static long readtarheader(union hblock *hb, file_info2 *finfo, char *prefix)
       }
       fprintf(stdout, "\n");
       fprintf(stdout, "%s\n", hb -> dummy);
-      fprintf(stdout, "Tarbuf = %X, hb = %X\n", tarbuf, hb);
+      fprintf(stdout, "Tarbuf = %X, hb = %X\n", (int)tarbuf, (int)hb);
       return -1;
     }
 
@@ -2309,7 +2309,6 @@ static int read_inclusion_file(char *filename)
   char *p;
   char *tmpstr;
   int i;
-  int result = 0;
   int error = 0;
 
   clipn = 0;
@@ -2388,10 +2387,10 @@ static int read_inclusion_file(char *filename)
   }
   if (error) {
     if (cliplist) {
-      char **p;
+      char **pp;
       /* We know cliplist is always null-terminated */
-      for (p = cliplist; *p; ++p) {
-	free(*p);
+      for (pp = cliplist; *pp; ++pp) {
+        free(*pp);
       }
       free(cliplist);
       cliplist = NULL;
