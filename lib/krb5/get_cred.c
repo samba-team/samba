@@ -203,5 +203,7 @@ krb5_get_credentials (krb5_context context,
 	    return ret;
 	return krb5_cc_store_cred (context, ccache, *out_creds);
 	break;
+    default:
+	return KRB5KRB_AP_ERR_MSG_TYPE;
     }
 }
