@@ -238,6 +238,8 @@ typedef struct nttime_info
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
 #endif
 
+#define SID_MAX_SIZE ((size_t)(8+(MAXSUBAUTHS*4)))
+
 /* SID Types */
 enum SID_NAME_USE
 {
@@ -366,6 +368,7 @@ typedef struct
 	SMB_STRUCT_STAT *statinfo;
 } smb_filename;
 
+#include "fake_file.h"
 
 typedef struct files_struct
 {
@@ -401,6 +404,8 @@ typedef struct files_struct
 	BOOL directory_delete_on_close;
 	char *fsp_name;
 } files_struct;
+
+#include "ntquotas.h"
 
 /* used to hold an arbitrary blob of data */
 typedef struct data_blob {
@@ -972,23 +977,23 @@ struct bitmap {
 #define TRANSACT_WAITNAMEDPIPEHANDLESTATE 0x53
 
 /* These are the TRANS2 sub commands */
-#define TRANSACT2_OPEN                        0
-#define TRANSACT2_FINDFIRST                   1
-#define TRANSACT2_FINDNEXT                    2
-#define TRANSACT2_QFSINFO                     3
-#define TRANSACT2_SETFSINFO                   4
-#define TRANSACT2_QPATHINFO                   5
-#define TRANSACT2_SETPATHINFO                 6
-#define TRANSACT2_QFILEINFO                   7
-#define TRANSACT2_SETFILEINFO                 8
-#define TRANSACT2_FSCTL                       9
-#define TRANSACT2_IOCTL                     0xA
-#define TRANSACT2_FINDNOTIFYFIRST           0xB
-#define TRANSACT2_FINDNOTIFYNEXT            0xC
-#define TRANSACT2_MKDIR                     0xD
-#define TRANSACT2_SESSION_SETUP             0xE
-#define TRANSACT2_GET_DFS_REFERRAL         0x10
-#define TRANSACT2_REPORT_DFS_INCONSISTANCY 0x11
+#define TRANSACT2_OPEN				0x00
+#define TRANSACT2_FINDFIRST			0x01
+#define TRANSACT2_FINDNEXT			0x02
+#define TRANSACT2_QFSINFO			0x03
+#define TRANSACT2_SETFSINFO			0x04
+#define TRANSACT2_QPATHINFO			0x05
+#define TRANSACT2_SETPATHINFO			0x06
+#define TRANSACT2_QFILEINFO			0x07
+#define TRANSACT2_SETFILEINFO			0x08
+#define TRANSACT2_FSCTL				0x09
+#define TRANSACT2_IOCTL				0x0A
+#define TRANSACT2_FINDNOTIFYFIRST		0x0B
+#define TRANSACT2_FINDNOTIFYNEXT		0x0C
+#define TRANSACT2_MKDIR				0x0D
+#define TRANSACT2_SESSION_SETUP			0x0E
+#define TRANSACT2_GET_DFS_REFERRAL		0x10
+#define TRANSACT2_REPORT_DFS_INCONSISTANCY	0x11
 
 /* These are the NT transact sub commands. */
 #define NT_TRANSACT_CREATE                1
@@ -997,6 +1002,13 @@ struct bitmap {
 #define NT_TRANSACT_NOTIFY_CHANGE         4
 #define NT_TRANSACT_RENAME                5
 #define NT_TRANSACT_QUERY_SECURITY_DESC   6
+#define NT_TRANSACT_GET_USER_QUOTA	  7
+#define NT_TRANSACT_SET_USER_QUOTA	  8
+
+/* These are the NT transact_get_user_quota sub commands */
+#define TRANSACT_GET_USER_QUOTA_LIST_CONTINUE	0x0000
+#define TRANSACT_GET_USER_QUOTA_LIST_START	0x0100
+#define TRANSACT_GET_USER_QUOTA_FOR_SID		0x0101
 
 /* Relevant IOCTL codes */
 #define IOCTL_QUERY_JOB_INFO      0x530060
@@ -1237,18 +1249,23 @@ struct bitmap {
 #define RENAME_REPLACE_IF_EXISTS 1
 
 /* Filesystem Attributes. */
-#define FILE_CASE_SENSITIVE_SEARCH 0x01
-#define FILE_CASE_PRESERVED_NAMES 0x02
-#define FILE_UNICODE_ON_DISK 0x04
+#define FILE_CASE_SENSITIVE_SEARCH      0x00000001
+#define FILE_CASE_PRESERVED_NAMES       0x00000002
+#define FILE_UNICODE_ON_DISK            0x00000004
 /* According to cifs9f, this is 4, not 8 */
 /* Acconding to testing, this actually sets the security attribute! */
-#define FILE_PERSISTENT_ACLS 0x08
-/* These entries added from cifs9f --tsb */
-#define FILE_FILE_COMPRESSION 0x10
-#define FILE_VOLUME_QUOTAS 0x20
-/* I think this is wrong. JRA #define FILE_DEVICE_IS_MOUNTED 0x20 */
-#define FILE_VOLUME_SPARSE_FILE 0x40
-#define FILE_VOLUME_IS_COMPRESSED 0x8000
+#define FILE_PERSISTENT_ACLS            0x00000008
+#define FILE_FILE_COMPRESSION           0x00000010
+#define FILE_VOLUME_QUOTAS              0x00000020
+#define FILE_SUPPORTS_SPARSE_FILES      0x00000040
+#define FILE_SUPPORTS_REPARSE_POINTS    0x00000080
+#define FILE_SUPPORTS_REMOTE_STORAGE    0x00000100
+#define FS_LFN_APIS                     0x00004000
+#define FILE_VOLUME_IS_COMPRESSED       0x00008000
+#define FILE_SUPPORTS_OBJECT_IDS        0x00010000
+#define FILE_SUPPORTS_ENCRYPTION        0x00020000
+#define FILE_NAMED_STREAMS              0x00040000
+#define FILE_READ_ONLY_VOLUME           0x00080000
 
 /* ChangeNotify flags. */
 #define FILE_NOTIFY_CHANGE_FILE        0x001

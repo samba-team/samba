@@ -2778,9 +2778,9 @@ static BOOL run_deletetest(int dummy)
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
 	
-	fnum1 = cli_nt_create_full(cli1, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 
-				   FILE_DELETE_ON_CLOSE);
+				   FILE_DELETE_ON_CLOSE, 0);
 	
 	if (fnum1 == -1) {
 		printf("[1] open of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -2808,9 +2808,9 @@ static BOOL run_deletetest(int dummy)
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
 	
-	fnum1 = cli_nt_create_full(cli1, fname, GENERIC_ALL_ACCESS,
+	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_ALL_ACCESS,
 				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, 
-				   FILE_OVERWRITE_IF, 0);
+				   FILE_OVERWRITE_IF, 0, 0);
 	
 	if (fnum1 == -1) {
 		printf("[2] open of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -2846,8 +2846,8 @@ static BOOL run_deletetest(int dummy)
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
 
-	fnum1 = cli_nt_create_full(cli1, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("[3] open - 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -2858,8 +2858,8 @@ static BOOL run_deletetest(int dummy)
 	/* This should fail with a sharing violation - open for delete is only compatible
 	   with SHARE_DELETE. */
 
-	fnum2 = cli_nt_create_full(cli1, fname, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
-			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0);
+	fnum2 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0, 0);
 
 	if (fnum2 != -1) {
 		printf("[3] open  - 2 of %s succeeded - should have failed.\n", fname);
@@ -2869,8 +2869,8 @@ static BOOL run_deletetest(int dummy)
 
 	/* This should succeed. */
 
-	fnum2 = cli_nt_create_full(cli1, fname, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
-			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
+	fnum2 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0, 0);
 
 	if (fnum2 == -1) {
 		printf("[3] open  - 2 of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -2914,8 +2914,8 @@ static BOOL run_deletetest(int dummy)
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
 
-	fnum1 = cli_nt_create_full(cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
-			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0, 0);
 								
 	if (fnum1 == -1) {
 		printf("[4] open of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -2924,8 +2924,8 @@ static BOOL run_deletetest(int dummy)
 	}
 
 	/* This should succeed. */
-	fnum2 = cli_nt_create_full(cli1, fname, GENERIC_READ_ACCESS,
-			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
+	fnum2 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0, 0);
 	if (fnum2 == -1) {
 		printf("[4] open  - 2 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		correct = False;
@@ -2945,8 +2945,9 @@ static BOOL run_deletetest(int dummy)
 	}
 	
 	/* This should fail - no more opens once delete on close set. */
-	fnum2 = cli_nt_create_full(cli1, fname, GENERIC_READ_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
+	fnum2 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS,
+				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+				   FILE_OPEN, 0, 0);
 	if (fnum2 != -1) {
 		printf("[4] open  - 3 of %s succeeded ! Should have failed.\n", fname );
 		correct = False;
@@ -2991,9 +2992,9 @@ static BOOL run_deletetest(int dummy)
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
 	
-	fnum1 = cli_nt_create_full(cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA,
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA,
 				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-				   FILE_OVERWRITE_IF, 0);
+				   FILE_OVERWRITE_IF, 0, 0);
 	
 	if (fnum1 == -1) {
 		printf("[6] open of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -3021,8 +3022,8 @@ static BOOL run_deletetest(int dummy)
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname);
 	
-	fnum1 = cli_nt_create_full(cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+				   FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF, 0, 0);
 								
 	if (fnum1 == -1) {
 		printf("[7] open of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -3077,8 +3078,9 @@ static BOOL run_deletetest(int dummy)
 
 	cli_sockopt(cli1, sockops);
 	
-	fnum1 = cli_nt_create_full(cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+				   FILE_OVERWRITE_IF, 0, 0);
 	
 	if (fnum1 == -1) {
 		printf("[8] open of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -3086,8 +3088,9 @@ static BOOL run_deletetest(int dummy)
 		goto fail;
 	}
 
-	fnum2 = cli_nt_create_full(cli2, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
+	fnum2 = cli_nt_create_full(cli2, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+				   FILE_OPEN, 0, 0);
 	
 	if (fnum2 == -1) {
 		printf("[8] open of %s failed (%s)\n", fname, cli_errstr(cli1));
@@ -3123,8 +3126,8 @@ static BOOL run_deletetest(int dummy)
 		printf("eighth delete on close test succeeded.\n");
 
 	/* This should fail - we need to set DELETE_ACCESS. */
-	fnum1 = cli_nt_create_full(cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA,
-				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, FILE_DELETE_ON_CLOSE);
+	fnum1 = cli_nt_create_full(cli1, fname, 0,FILE_READ_DATA|FILE_WRITE_DATA,
+				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, FILE_DELETE_ON_CLOSE, 0);
 	
 	if (fnum1 != -1) {
 		printf("[9] open of %s succeeded should have failed!\n", fname);
@@ -3134,8 +3137,8 @@ static BOOL run_deletetest(int dummy)
 
 	printf("ninth delete on close test succeeded.\n");
 
-	fnum1 = cli_nt_create_full(cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, FILE_DELETE_ON_CLOSE);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, FILE_DELETE_ON_CLOSE, 0);
 	if (fnum1 == -1) {
 		printf("[10] open of %s failed (%s)\n", fname, cli_errstr(cli1));
 		correct = False;
@@ -3243,20 +3246,20 @@ static BOOL run_xcopy(int dummy)
 		return False;
 	}
 	
-	fnum1 = cli_nt_create_full(cli1, fname, 
+	fnum1 = cli_nt_create_full(cli1, fname, 0,
 				   FIRST_DESIRED_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 
-				   0x4044);
+				   0x4044, 0);
 
 	if (fnum1 == -1) {
 		printf("First open failed - %s\n", cli_errstr(cli1));
 		return False;
 	}
 
-	fnum2 = cli_nt_create_full(cli1, fname, 
+	fnum2 = cli_nt_create_full(cli1, fname, 0,
 				   SECOND_DESIRED_ACCESS, 0,
 				   FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 
-				   0x200000);
+				   0x200000, 0);
 	if (fnum2 == -1) {
 		printf("second open failed - %s\n", cli_errstr(cli1));
 		return False;
@@ -3288,8 +3291,8 @@ static BOOL run_rename(int dummy)
 	
 	cli_unlink(cli1, fname);
 	cli_unlink(cli1, fname1);
-	fnum1 = cli_nt_create_full(cli1, fname, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_READ, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("First open failed - %s\n", cli_errstr(cli1));
@@ -3310,11 +3313,11 @@ static BOOL run_rename(int dummy)
 
 	cli_unlink(cli1, fname);
 	cli_unlink(cli1, fname1);
-	fnum1 = cli_nt_create_full(cli1, fname,GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
 #if 0
-				   FILE_SHARE_DELETE|FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+				   FILE_SHARE_DELETE|FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 #else
-				   FILE_SHARE_DELETE|FILE_SHARE_READ, FILE_OVERWRITE_IF, 0);
+				   FILE_SHARE_DELETE|FILE_SHARE_READ, FILE_OVERWRITE_IF, 0, 0);
 #endif
 
 	if (fnum1 == -1) {
@@ -3337,8 +3340,8 @@ static BOOL run_rename(int dummy)
 	cli_unlink(cli1, fname);
 	cli_unlink(cli1, fname1);
 
-	fnum1 = cli_nt_create_full(cli1, fname,READ_CONTROL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, READ_CONTROL_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("Third open failed - %s\n", cli_errstr(cli1));
@@ -3350,8 +3353,8 @@ static BOOL run_rename(int dummy)
   {
   int fnum2;
 
-	fnum2 = cli_nt_create_full(cli1, fname,DELETE_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+	fnum2 = cli_nt_create_full(cli1, fname, 0, DELETE_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum2 == -1) {
 		printf("Fourth open failed - %s\n", cli_errstr(cli1));
@@ -3405,8 +3408,8 @@ static BOOL run_pipe_number(int dummy)
 
 	cli_sockopt(cli1, sockops);
 	while(1) {
-		fnum = cli_nt_create_full(cli1, pipe_name,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN_IF, 0);
+		fnum = cli_nt_create_full(cli1, pipe_name, 0, FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN_IF, 0, 0);
 
 		if (fnum == -1) {
 			printf("Open of pipe %s failed with error (%s)\n", pipe_name, cli_errstr(cli1));
@@ -3594,16 +3597,16 @@ static BOOL run_opentest(int dummy)
 
 	printf("TEST #1 testing 2 non-io opens (no delete)\n");
 	
-	fnum1 = cli_nt_create_full(cli1, fname,FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("test 1 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
-	fnum2 = cli_nt_create_full(cli2, fname,FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OPEN_IF, 0);
+	fnum2 = cli_nt_create_full(cli2, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
 		printf("test 1 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
@@ -3625,16 +3628,16 @@ static BOOL run_opentest(int dummy)
 
 	printf("TEST #2 testing 2 non-io opens (first with delete)\n");
 	
-	fnum1 = cli_nt_create_full(cli1, fname,DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("test 2 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
-	fnum2 = cli_nt_create_full(cli2, fname,FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OPEN_IF, 0);
+	fnum2 = cli_nt_create_full(cli2, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
 		printf("test 2 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
@@ -3656,16 +3659,16 @@ static BOOL run_opentest(int dummy)
 
 	printf("TEST #3 testing 2 non-io opens (second with delete)\n");
 	
-	fnum1 = cli_nt_create_full(cli1, fname,FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("test 3 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
-	fnum2 = cli_nt_create_full(cli2, fname,DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OPEN_IF, 0);
+	fnum2 = cli_nt_create_full(cli2, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
 		printf("test 3 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
@@ -3687,16 +3690,16 @@ static BOOL run_opentest(int dummy)
 
 	printf("TEST #4 testing 2 non-io opens (both with delete)\n");
 	
-	fnum1 = cli_nt_create_full(cli1, fname,DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("test 4 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
-	fnum2 = cli_nt_create_full(cli2, fname,DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OPEN_IF, 0);
+	fnum2 = cli_nt_create_full(cli2, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OPEN_IF, 0, 0);
 
 	if (fnum2 != -1) {
 		printf("test 4 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, cli_errstr(cli2));
@@ -3716,16 +3719,16 @@ static BOOL run_opentest(int dummy)
 
 	printf("TEST #5 testing 2 non-io opens (both with delete - both with file share delete)\n");
 	
-	fnum1 = cli_nt_create_full(cli1, fname,DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("test 5 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
-	fnum2 = cli_nt_create_full(cli2, fname,DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_DELETE, FILE_OPEN_IF, 0);
+	fnum2 = cli_nt_create_full(cli2, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_DELETE, FILE_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
 		printf("test 5 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
@@ -3748,16 +3751,16 @@ static BOOL run_opentest(int dummy)
 	
 	cli_unlink(cli1, fname);
 
-	fnum1 = cli_nt_create_full(cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("test 6 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
-	fnum2 = cli_nt_create_full(cli2, fname,FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_READ, FILE_OPEN_IF, 0);
+	fnum2 = cli_nt_create_full(cli2, fname, 0, FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ, FILE_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
 		printf("test 6 open 2 of %s failed (%s)\n", fname, cli_errstr(cli2));
@@ -3780,16 +3783,16 @@ static BOOL run_opentest(int dummy)
 
 	cli_unlink(cli1, fname);
 
-	fnum1 = cli_nt_create_full(cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+	fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
 		printf("test 7 open 1 of %s failed (%s)\n", fname, cli_errstr(cli1));
 		return False;
 	}
 
-	fnum2 = cli_nt_create_full(cli2, fname,DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
-				   FILE_SHARE_READ|FILE_SHARE_DELETE, FILE_OPEN_IF, 0);
+	fnum2 = cli_nt_create_full(cli2, fname, 0, DELETE_ACCESS|FILE_READ_ATTRIBUTES, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ|FILE_SHARE_DELETE, FILE_OPEN_IF, 0, 0);
 
 	if (fnum2 != -1) {
 		printf("test 7 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, cli_errstr(cli2));
@@ -3893,8 +3896,8 @@ static BOOL run_openattrtest(int dummy)
 	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32); i++) {
 		cli_setatr(cli1, fname, 0, 0);
 		cli_unlink(cli1, fname);
-		fnum1 = cli_nt_create_full(cli1, fname,FILE_WRITE_DATA, open_attrs_table[i],
-				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+		fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_WRITE_DATA, open_attrs_table[i],
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0, 0);
 
 		if (fnum1 == -1) {
 			printf("open %d (1) of %s failed (%s)\n", i, fname, cli_errstr(cli1));
@@ -3907,8 +3910,8 @@ static BOOL run_openattrtest(int dummy)
 		}
 
 		for (j = 0; j < sizeof(open_attrs_table)/sizeof(uint32); j++) {
-			fnum1 = cli_nt_create_full(cli1, fname,FILE_READ_DATA|FILE_WRITE_DATA, open_attrs_table[j],
-					   FILE_SHARE_NONE, FILE_OVERWRITE, 0);
+			fnum1 = cli_nt_create_full(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA, open_attrs_table[j],
+					   FILE_SHARE_NONE, FILE_OVERWRITE, 0, 0);
 
 			if (fnum1 == -1) {
 				for (l = 0; l < sizeof(attr_results)/sizeof(struct trunc_open_results); l++) {
@@ -4220,8 +4223,8 @@ static BOOL run_dirtest1(int dummy)
 	for (i=0;i<1000;i++) {
 		fstring fname;
 		slprintf(fname, sizeof(fname), "\\LISTDIR\\f%d", i);
-		fnum = cli_nt_create_full(cli, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
-				   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0);
+		fnum = cli_nt_create_full(cli, fname, 0, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_ARCHIVE,
+				   FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0, 0);
 		if (fnum == -1) {
 			fprintf(stderr,"Failed to open %s\n", fname);
 			return False;

@@ -165,8 +165,8 @@ static PyObject *py_smb_nt_create_andx(PyObject *self, PyObject *args,
 		return NULL;
 
 	result = cli_nt_create_full(
-		cli->cli, filename, desired_access, file_attributes,
-		share_access, create_disposition, create_options);
+		cli->cli, filename, 0, desired_access, file_attributes,
+		share_access, create_disposition, create_options, 0);
 
 	if (cli_is_error(cli->cli)) {
 		PyErr_SetString(PyExc_RuntimeError, "nt_create_andx failed");
