@@ -2120,14 +2120,17 @@ encrypt_internal_derived(krb5_context context,
 			  p, 
 			  block_sz,
 			  &cksum);
-    if(ret == 0 && cksum.checksum.length != checksum_sz)
-	ret =  KRB5_CRYPTO_INTERNAL;
+    if(ret == 0 && cksum.checksum.length != checksum_sz) {
+	free_Checksum (&cksum);
+	ret = KRB5_CRYPTO_INTERNAL;
+    }
     if(ret) {
 	memset(p, 0, block_sz + checksum_sz);
 	free(p);
 	return ret;
     }
     memcpy(p + block_sz, cksum.checksum.data, cksum.checksum.length);
+    free_Checksum (&cksum);
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
     if(ret) {
 	memset(p, 0, block_sz + checksum_sz);
