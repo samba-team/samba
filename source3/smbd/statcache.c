@@ -30,8 +30,10 @@ extern BOOL case_sensitive;
 *****************************************************************************/
 
 typedef struct {
-  int name_len;
-  char names[2]; /* This is extended via malloc... */
+	char *original_path;
+	char *translated_path;
+	size_t translated_path_length;
+	char names[2]; /* This is extended via malloc... */
 } stat_cache_entry;
 
 #define INIT_STAT_CACHE_SIZE 512
@@ -45,14 +47,15 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
 {
   stat_cache_entry *scp;
   stat_cache_entry *found_scp;
-  pstring orig_name;
-  pstring translated_path;
-  int namelen;
+  char *translated_path;
+  size_t translated_path_length;
+
+  char *original_path;
+  size_t original_path_length;
+
   hash_element *hash_elem;
 
   if (!lp_stat_cache()) return;
-
-  namelen = strlen(orig_translated_path);
 
   /*
    * Don't cache trivial valid directory entries.
@@ -75,74 +78,97 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
    * translated path.
    */
 
-  pstrcpy(translated_path, orig_translated_path);
-  if(translated_path[namelen-1] == '/') {
-    translated_path[namelen-1] = '\0';
-    namelen--;
+  translated_path = strdup(orig_translated_path);
+  if (!translated_path)
+	  return;
+
+  translated_path_length = strlen(translated_path);
+
+  if(translated_path[translated_path_length-1] == '/') {
+    translated_path[translated_path_length-1] = '\0';
+    translated_path_length--;
   }
 
+  original_path = strdup(full_orig_name);
+  if (!original_path) 
+	  return;
+
+  original_path_length = strlen(original_path);
+
+  if(!case_sensitive)
+	  strupper(original_path);
+  
+#if 0
   /*
    * We will only replace namelen characters 
    * of full_orig_name.
    * StrnCpy always null terminates.
    */
 
-  StrnCpy(orig_name, full_orig_name, namelen);
+  smbStrnCpy(orig_name, full_orig_name, namelen);
   if(!case_sensitive)
     strupper( orig_name );
+#endif
 
   /*
    * Check this name doesn't exist in the cache before we 
    * add it.
    */
 
-  if ((hash_elem = hash_lookup(&stat_cache, orig_name))) {
-    found_scp = (stat_cache_entry *)(hash_elem->value);
-    if (strcmp((found_scp->names+found_scp->name_len+1), translated_path) == 0) {
-      return;
-    } else {
-      hash_remove(&stat_cache, hash_elem);
-      if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)+2*namelen)) == NULL) {
-        DEBUG(0,("stat_cache_add: Out of memory !\n"));
-        return;
-      }
-      overmalloc_safe_strcpy(scp->names, orig_name, namelen);
-      overmalloc_safe_strcpy((scp->names+namelen+1), translated_path, namelen);
-      scp->name_len = namelen;
-      hash_insert(&stat_cache, (char *)scp, orig_name);
-    }
-    return;
-  } else {
-
-    /*
-     * New entry.
-     */
-
-    if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)+2*namelen)) == NULL) {
-      DEBUG(0,("stat_cache_add: Out of memory !\n"));
-      return;
-    }
-    overmalloc_safe_strcpy(scp->names, orig_name, namelen);
-    overmalloc_safe_strcpy(scp->names+namelen+1, translated_path, namelen);
-    scp->name_len = namelen;
-    hash_insert(&stat_cache, (char *)scp, orig_name);
+  if ((hash_elem = hash_lookup(&stat_cache, original_path))) {
+	  found_scp = (stat_cache_entry *)(hash_elem->value);
+	  if (strcmp((found_scp->translated_path), orig_translated_path) == 0) {
+		  /* already in hash table */
+		  return;
+	  }
+	  /* hash collision - remove before we re-add */
+	  hash_remove(&stat_cache, hash_elem);
+  }  
+  
+  /*
+   * New entry.
+   */
+  
+  if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)
+				       +original_path_length
+				       +translated_path_length)) == NULL) {
+	  DEBUG(0,("stat_cache_add: Out of memory !\n"));
+	  return;
   }
 
-  DEBUG(5,("stat_cache_add: Added entry %s -> %s\n", scp->names, (scp->names+scp->name_len+1)));
+  scp->original_path = scp->names;
+  scp->translated_path = scp->names + original_path_length + 1;
+  safe_strcpy(scp->original_path, original_path, original_path_length);
+  safe_strcpy(scp->translated_path, translated_path, translated_path_length);
+  scp->translated_path_length = translated_path_length;
+
+  hash_insert(&stat_cache, (char *)scp, original_path);
+
+  DEBUG(5,("stat_cache_add: Added entry %s -> %s\n", scp->original_path, scp->translated_path));
 }
 
-/****************************************************************************
- Look through the stat cache for an entry - promote it to the top if found.
- Return True if we translated (and did a scuccessful stat on) the entire name.
-*****************************************************************************/
+/**
+ * Look through the stat cache for an entry
+ *
+ * The hash-table's internals will promote it to the top if found.
+ *
+ * @param conn    A connection struct to do the stat() with.
+ * @param name    The path we are attempting to cache, modified by this routine
+ *                to be correct as far as the cache can tell us
+ * @param dirpath The path as far as the stat cache told us.
+ * @param start   A pointer into name, for where to 'start' in fixing the rest of the name up.
+ * @param psd     A stat buffer, NOT from the cache, but just a side-effect.
+ *
+ * @return True if we translated (and did a scuccessful stat on) the entire name.
+ *
+ */
 
 BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath, 
 		       char **start, SMB_STRUCT_STAT *pst)
 {
   stat_cache_entry *scp;
-  char *trans_name;
   pstring chk_name;
-  int namelen;
+  size_t namelen;
   hash_element *hash_elem;
   char *sp;
 
@@ -191,18 +217,20 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
     } else {
       scp = (stat_cache_entry *)(hash_elem->value);
       DO_PROFILE_INC(statcache_hits);
-      trans_name = scp->names+scp->name_len+1;
-      if(vfs_stat(conn,trans_name, pst) != 0) {
+      if(vfs_stat(conn,scp->translated_path, pst) != 0) {
         /* Discard this entry - it doesn't exist in the filesystem.  */
         hash_remove(&stat_cache, hash_elem);
         return False;
       }
-      memcpy(name, trans_name, scp->name_len);
-      *start = &name[scp->name_len];
+      memcpy(name, scp->translated_path, MIN(sizeof(pstring)-1, scp->translated_path_length));
+
+      /* set pointer for 'where to start' on fixing the rest of the name */
+      *start = &name[scp->translated_path_length];
       if(**start == '/')
         ++*start;
-      StrnCpy( dirpath, trans_name, name - (*start));
-      return (namelen == scp->name_len);
+
+      pstrcpy(dirpath, scp->translated_path);
+      return (namelen == scp->translated_path_length);
     }
   }
 }
