@@ -1,3 +1,8 @@
+2001-05-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am.common: define `ROKEN_RENAME' conditionalised on
+	`do_roken_rename'
+
 2001-03-26  Assar Westerlund  <assar@sics.se>
 
 	* broken-glob.m4: also test for GLOB_LIMIT
