@@ -35,6 +35,16 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
                           unsigned char new_trust_passwd_hash[16])
 {
   struct cli_state cli;
+  DOM_SID domain_sid;
+
+  /*
+   * Ensure we have the domain SID for this domain.
+   */
+
+  if (!secrets_fetch_domain_sid(domain, &domain_sid)) {
+    DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
+    return False;
+  }
 
   ZERO_STRUCT(cli);
   if(cli_initialise(&cli) == NULL) {
@@ -114,13 +124,6 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
    * Ok - we have an anonymous connection to the IPC$ share.
    * Now start the NT Domain stuff :-).
    */
-
-  if(cli_lsa_get_domain_sid(&cli, remote_machine) == False) {
-    DEBUG(0,("modify_trust_password: unable to obtain domain sid from %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False;
-  }
 
   if(cli_nt_session_open(&cli, PIPE_NETLOGON) == False) {
     DEBUG(0,("modify_trust_password: unable to open the domain client session to \
