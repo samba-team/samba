@@ -809,6 +809,7 @@ static void usage(char *pname)
 		exit(1);
 	}
 	register_msg_pool_usage();
+	register_dmalloc_msgs();
 
 	/* Setup the main smbd so that we can get messages. */
 	claim_connection(NULL,"",MAXSTATUS,True);

@@ -3,7 +3,7 @@
    Version 3.0
    program to send control messages to Samba processes
    Copyright (C) Andrew Tridgell 1994-1998
-   Copyright (C) 2001 by Martin Pool
+   Copyright (C) 2001, 2002 by Martin Pool
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,6 +39,8 @@ static struct {
         {"samsync", MSG_SMB_SAM_SYNC},
         {"samrepl", MSG_SMB_SAM_REPL},
 	{"pool-usage", MSG_REQ_POOL_USAGE },
+	{"dmalloc-mark", MSG_REQ_DMALLOC_MARK },
+	{"dmalloc-log-changed", MSG_REQ_DMALLOC_LOG_CHANGED },
 	{NULL, -1}
 };
 
@@ -68,7 +70,6 @@ static BOOL got_level;
 static BOOL pong_registered = False;
 static BOOL debuglevel_registered = False;
 static BOOL profilelevel_registered = False;
-static BOOL pool_usage_registered = False;
 
 
 /**
@@ -213,6 +214,12 @@ static int parse_type(char *mtype)
 		if (strequal(mtype, msg_types[i].name)) return msg_types[i].value;
 	}
 	return -1;
+}
+
+
+static void register_all(void)
+{
+	message_register(MSG_POOL_USAGE, pool_usage_cb);
 }
 
 
@@ -404,14 +411,16 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		break;
 
 	case MSG_REQ_POOL_USAGE:
-		if (!pool_usage_registered) {
-			message_register(MSG_POOL_USAGE, pool_usage_cb);
-			pool_usage_registered = True;
-		}
 		if (!send_message(dest, MSG_REQ_POOL_USAGE, NULL, 0, True))
 			return False;
 		wait_for_replies(MAX_WAIT, NULL);
 		
+		break;
+
+	case MSG_REQ_DMALLOC_LOG_CHANGED:
+	case MSG_REQ_DMALLOC_MARK:
+		if (!send_message(dest, mtype, NULL, 0, False))
+			return False;
 		break;
 	}
 
@@ -452,6 +461,8 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 
 	argc -= optind;
 	argv = &argv[optind];
+
+	register_all();
 
 	if (!interactive) {
 		if (argc < 2) usage(True);
