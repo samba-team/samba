@@ -1,3 +1,7 @@
+2003-02-08  Assar Westerlund  <assar@kth.se>
+
+	* afssysdefs.h: fix FreeBSD section
+
 2003-02-06  Love Hörquist Åstrand <lha@it.su.se>
 
 	* afssysdefs.h: use syscall 208 on openbsd (all version) use
