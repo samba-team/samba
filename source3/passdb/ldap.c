@@ -24,6 +24,9 @@
 
 #include "includes.h"
 
+#include <ldap.h>
+#include <lber.h>
+
 #define ADD_USER 1
 #define MODIFY_USER 2
 
