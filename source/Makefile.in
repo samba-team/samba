@@ -771,7 +771,7 @@ installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
 
 installdat: installdirs
-        @$(SHELL) $(srcdir)/script/installdat.sh $(LIBDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installdat.sh $(LIBDIR) $(srcdir)
 
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
