@@ -102,11 +102,27 @@ print_entry_short(kadm5_principal_ent_t princ)
     printf("\n");
 }
 
+/*
+ * return 0 iff `salt' actually is the same as the current salt in `k'
+ */
+
+static int
+cmp_salt (const krb5_salt *salt, const krb5_key_data *k)
+{
+    if (salt->salttype != k->key_data_type[1])
+	return 1;
+    if (salt->saltvalue.length != k->key_data_length[1])
+	return 1;
+    return memcmp (salt->saltvalue.data, k->key_data_contents[1],
+		   salt->saltvalue.length);
+}
+
 static void
 print_entry_long(kadm5_principal_ent_t princ)
 {
     char buf[1024];
     int i;
+    krb5_salt def_salt;
     
     krb5_unparse_name_fixed(context, princ->principal, buf, sizeof(buf));
     printf("%24s: %s\n", "Principal", buf);
@@ -139,12 +155,14 @@ print_entry_long(kadm5_principal_ent_t princ)
     attributes2str (princ->attributes, buf, sizeof(buf));
     printf("%24s: %s\n", "Attributes", buf);
 
-    printf("%24s: ", "Keytypes(salts)");
+    printf("%24s: ", "Keytypes(salttype[(salt-value)])");
+
+    krb5_get_pw_salt (context, princ->principal, &def_salt);
 
     for (i = 0; i < princ->n_key_data; ++i) {
 	krb5_key_data *k = &princ->key_data[i];
 	krb5_error_code ret;
-	char *e_string, *s_string;
+	char *e_string, *s_string, *salt;
 
 	ret = krb5_enctype_to_string (context,
 				      k->key_data_type[0],
@@ -159,10 +177,18 @@ print_entry_long(kadm5_principal_ent_t princ)
 	if (ret)
 	    asprintf (&s_string, "unknown(%d)", k->key_data_type[1]);
 
-	printf ("%s%s(%s)", (i != 0) ? ", " : "", e_string, s_string);
+	if (cmp_salt(&def_salt, k) == 0)
+	    salt = strdup("");
+	else
+	    asprintf (&salt, "(%.*s)", k->key_data_length[1],
+		      (char *)k->key_data_contents[1]);
+
+	printf ("%s%s(%s%s)", (i != 0) ? ", " : "", e_string, s_string, salt);
 	free (e_string);
 	free (s_string);
+	free (salt);
     }
+    krb5_free_salt (context, def_salt);
     printf("\n\n");
 }
 
