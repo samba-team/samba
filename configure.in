@@ -457,6 +457,7 @@ AC_CONFIG_FILES(Makefile 		\
 	kpasswd/Makefile		\
 	kadmin/Makefile			\
 	admin/Makefile			\
+	kcm/Makefile			\
 	kdc/Makefile			\
 	appl/Makefile			\
 	appl/afsutil/Makefile		\
