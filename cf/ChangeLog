@@ -1,3 +1,9 @@
+Mon Mar 29 16:51:12 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* check-xau.m4: check for XauWriteAuth before checking for
+ 	XauReadAuth to catch -lX11:s not containing XauWriteAuth, and IRIX
+ 	6.5 that doesn't work with -lXau
+
 Sat Mar 27 18:03:58 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* osfc2.m4: --enable-osfc2
