@@ -1,3 +1,8 @@
+2005-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/changepw.c (change_password_loop): on failing to find a
+	kdc, set result_code to KRB5_KPASSWD_HARDERROR
+	
 2005-01-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* doc/heimdal.texi: Happy New Year
