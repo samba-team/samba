@@ -1,7 +1,27 @@
+2004-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/win2k.texi: fix bugs in examples, add more restrictions, use
+	example.com as an example. From: Pavel Ferdan
+	<xferdan@informatics.muni.cz>
+
 2004-03-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/krb5.conf.5: add a bunch of Li and document [kadmin]
 	password_lifetime; from Henry B. Hotz
+
+2004-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/mk_rep.c (krb5_mk_rep): if KRB5_AUTH_CONTEXT_USE_SUBKEY
+	is set send subkey
+	(generate if needed)
+
+	* lib/krb5/krb5.h: add KRB5_AUTH_CONTEXT_USE_SUBKEY
+	
+2004-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c: clean up error handling, plug memory leaks,
+	and free memory in error path, assume realloc(NULL, ...) works,
+	factor out common code, indent
 
 2004-03-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
