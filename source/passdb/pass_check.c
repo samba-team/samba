@@ -28,8 +28,10 @@ extern int DEBUGLEVEL;
 
 /* these are kept here to keep the string_combinations function simple */
 static fstring this_user;
+#if !(defined(WITH_PAM) || defined(KRB4_AUTH) || defined(KRB5_AUTH))
 static fstring this_salt;
 static fstring this_crypted;
+#endif
 
 #ifdef WITH_AFS
 
@@ -550,11 +552,12 @@ try all combinations with N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
-static BOOL string_combinations2(char *s, int offset, BOOL (*fn) (char *),
+static NTSTATUS string_combinations2(char *s, int offset, NTSTATUS (*fn) (char *),
 				 int N)
 {
 	int len = strlen(s);
 	int i;
+	NTSTATUS nt_status;
 
 #ifdef PASSWORD_LENGTH
 	len = MIN(len, PASSWORD_LENGTH);
@@ -568,11 +571,12 @@ static BOOL string_combinations2(char *s, int offset, BOOL (*fn) (char *),
 		if (!islower(c))
 			continue;
 		s[i] = toupper(c);
-		if (string_combinations2(s, i + 1, fn, N - 1))
-			return (True);
+		if (!NT_STATUS_EQUAL(nt_status = string_combinations2(s, i + 1, fn, N - 1),NT_STATUS_WRONG_PASSWORD)) {
+			return (nt_status);
+		}
 		s[i] = c;
 	}
-	return (False);
+	return (NT_STATUS_WRONG_PASSWORD);
 }
 
 /****************************************************************************
@@ -582,71 +586,80 @@ try all combinations with up to N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
-static BOOL string_combinations(char *s, BOOL (*fn) (char *), int N)
+static NTSTATUS string_combinations(char *s, NTSTATUS (*fn) (char *), int N)
 {
 	int n;
+	NTSTATUS nt_status;
 	for (n = 1; n <= N; n++)
-		if (string_combinations2(s, 0, fn, n))
-			return (True);
-	return (False);
+		if (!NT_STATUS_EQUAL(nt_status = string_combinations2(s, 0, fn, n), NT_STATUS_WRONG_PASSWORD))
+			return nt_status;
+	return NT_STATUS_WRONG_PASSWORD;
 }
 
 
 /****************************************************************************
 core of password checking routine
 ****************************************************************************/
-static BOOL password_check(char *password)
+static NTSTATUS password_check(char *password)
 {
-
 #ifdef WITH_PAM
-	return NT_STATUS_IS_OK(smb_pam_passcheck(this_user, password));
-#endif /* WITH_PAM */
+	return smb_pam_passcheck(this_user, password);
+#elif defined(KRB5_AUTH)
+	return krb5_auth(this_user, password) ? NT_STATUS_WRONG_PASSWORD : NT_STATUS_OK;
+#elif defined(KRB4_AUTH)
+	return krb4_auth(this_user, password) ? NT_STATUS_WRONG_PASSWORD : NT_STATUS_OK;
+#else
+
+	BOOL ret;
 
 #ifdef WITH_AFS
 	if (afs_auth(this_user, password))
-		return (True);
+		return NT_STATUS_OK;
 #endif /* WITH_AFS */
 
 #ifdef WITH_DFS
 	if (dfs_auth(this_user, password))
-		return (True);
+		return NT_STATUS_OK;
 #endif /* WITH_DFS */
 
-#ifdef KRB5_AUTH
-	if (krb5_auth(this_user, password))
-		return (True);
-#endif /* KRB5_AUTH */
-
-#ifdef KRB4_AUTH
-	if (krb4_auth(this_user, password))
-		return (True);
-#endif /* KRB4_AUTH */
-
 #ifdef OSF1_ENH_SEC
-	{
-		BOOL ret =
-			(strcmp
-			 (osf1_bigcrypt(password, this_salt),
-			  this_crypted) == 0);
-		if (!ret) {
-			DEBUG(2,
-			      ("OSF1_ENH_SEC failed. Trying normal crypt.\n"));
-			ret = (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
-		}
-		return ret;
+	
+	ret = (strcmp(osf1_bigcrypt(password, this_salt),
+		      this_crypted) == 0);
+	if (!ret) {
+		DEBUG(2,
+		      ("OSF1_ENH_SEC failed. Trying normal crypt.\n"));
+		ret = (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
 	}
+	if (ret) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+	
 #endif /* OSF1_ENH_SEC */
-
+	
 #ifdef ULTRIX_AUTH
-	return (strcmp((char *)crypt16(password, this_salt), this_crypted) == 0);
+	ret = (strcmp((char *)crypt16(password, this_salt), this_crypted) == 0);
+	if (ret) {
+		return NT_STATUS_OK;
+        } else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+	
 #endif /* ULTRIX_AUTH */
-
+	
 #ifdef LINUX_BIGCRYPT
-	return (linux_bigcrypt(password, this_salt, this_crypted));
+	ret = (linux_bigcrypt(password, this_salt, this_crypted));
+        if (ret) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
 #endif /* LINUX_BIGCRYPT */
-
+	
 #if defined(HAVE_BIGCRYPT) && defined(HAVE_CRYPT) && defined(USE_BOTH_CRYPT_CALLS)
-
+	
 	/*
 	 * Some systems have bigcrypt in the C library but might not
 	 * actually use it for the password hashes (HPUX 10.20) is
@@ -655,39 +668,56 @@ static BOOL password_check(char *password)
 	 */
 
 	if (strcmp(bigcrypt(password, this_salt), this_crypted) == 0)
-		return True;
+		return NT_STATUS_OK;
 	else
-		return (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
+		ret = (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
+	if (ret) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
 #else /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
-
+	
 #ifdef HAVE_BIGCRYPT
-	return (strcmp(bigcrypt(password, this_salt), this_crypted) == 0);
+	ret = (strcmp(bigcrypt(password, this_salt), this_crypted) == 0);
+        if (ret) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
 #endif /* HAVE_BIGCRYPT */
-
+	
 #ifndef HAVE_CRYPT
 	DEBUG(1, ("Warning - no crypt available\n"));
-	return (False);
+	return NT_STATUS_LOGON_FAILURE;
 #else /* HAVE_CRYPT */
-	return (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
+	ret = (strcmp((char *)crypt(password, this_salt), this_crypted) == 0);
+        if (ret) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_WRONG_PASSWORD;
+	}
 #endif /* HAVE_CRYPT */
 #endif /* HAVE_BIGCRYPT && HAVE_CRYPT && USE_BOTH_CRYPT_CALLS */
+#endif /* WITH_PAM || KRB4_AUTH || KRB5_AUTH */
 }
 
 
 
 /****************************************************************************
-check if a username/password is OK
+CHECK if a username/password is OK
 the function pointer fn() points to a function to call when a successful
 match is found and is used to update the encrypted password file 
-return True on correct match, False otherwise
+return NT_STATUS_OK on correct match, appropriate error otherwise
 ****************************************************************************/
 
-BOOL pass_check(struct passwd *pass, char *user, char *password, int pwlen, 
-		BOOL (*fn) (char *, char *), BOOL run_cracker)
+NTSTATUS pass_check(struct passwd *pass, char *user, char *password, 
+		    int pwlen, BOOL (*fn) (char *, char *), BOOL run_cracker)
 {
 	pstring pass2;
 	int level = lp_passwordlevel();
 
+	NTSTATUS nt_status;
 	if (password)
 		password[pwlen] = 0;
 
@@ -696,12 +726,12 @@ BOOL pass_check(struct passwd *pass, char *user, char *password, int pwlen,
 #endif
 
 	if (!password)
-		return (False);
+		return NT_STATUS_LOGON_FAILURE;
 
 	if (((!*password) || (!pwlen)) && !lp_null_passwords())
-		return (False);
+		return NT_STATUS_LOGON_FAILURE;
 
-#ifdef WITH_PAM
+#if defined(WITH_PAM) || defined(KRB4_AUTH) || defined(KRB5_AUTH)
 
 	/*
 	 * If we're using PAM we want to short-circuit all the 
@@ -712,13 +742,13 @@ BOOL pass_check(struct passwd *pass, char *user, char *password, int pwlen,
 
 	DEBUG(4, ("pass_check: Checking (PAM) password for user %s (l=%d)\n", user, pwlen));
 
-#else /* Not using PAM */
+#else /* Not using PAM or Kerebos */
 
 	DEBUG(4, ("pass_check: Checking password for user %s (l=%d)\n", user, pwlen));
 
 	if (!pass) {
 		DEBUG(3, ("Couldn't find user %s\n", user));
-		return (False);
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 #ifdef HAVE_GETSPNAM
@@ -782,7 +812,6 @@ BOOL pass_check(struct passwd *pass, char *user, char *password, int pwlen,
 #endif
 
 	/* extract relevant info */
-	fstrcpy(this_user, pass->pw_name);
 	fstrcpy(this_salt, pass->pw_passwd);
 
 #if defined(HAVE_TRUNCATED_SALT)
@@ -797,34 +826,39 @@ BOOL pass_check(struct passwd *pass, char *user, char *password, int pwlen,
 		if (!lp_null_passwords()) {
 			DEBUG(2, ("Disallowing %s with null password\n",
 				  this_user));
-			return (False);
+			return NT_STATUS_LOGON_FAILURE;
 		}
 		if (!*password) {
 			DEBUG(3,
 			      ("Allowing access to %s with null password\n",
 			       this_user));
-			return (True);
+			return NT_STATUS_OK;
 		}
 	}
 
-#endif /* WITH_PAM */
+#endif /* defined(WITH_PAM) || defined(KRB4_AUTH) || defined(KRB5_AUTH) */
 
 	/* try it as it came to us */
-	if (password_check(password)) {
-		if (fn)
-			fn(user, password);
-		return (True);
-	}
+	nt_status = password_check(password);
+        if NT_STATUS_IS_OK(nt_status) {
+                if (fn) {
+                        fn(user, password);
+		}
+		return (nt_status);
+	} else if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
+                /* No point continuing if its not the password thats to blame (ie PAM disabled). */
+                return (nt_status);
+        }
 
 	if (!run_cracker) {
-		return False;
+		return (nt_status);
 	}
 
 	/* if the password was given to us with mixed case then we don't
-	   need to proceed as we know it hasn't been case modified by the
-	   client */
+	 * need to proceed as we know it hasn't been case modified by the
+	 * client */
 	if (strhasupper(password) && strhaslower(password)) {
-		return (False);
+		return nt_status;
 	}
 
 	/* make a copy of it */
@@ -833,10 +867,10 @@ BOOL pass_check(struct passwd *pass, char *user, char *password, int pwlen,
 	/* try all lowercase if it's currently all uppercase */
 	if (strhasupper(password)) {
 		strlower(password);
-		if (password_check(password)) {
-			if (fn)
+		if NT_STATUS_IS_OK(nt_status = password_check(password)) {
+		        if (fn)
 				fn(user, password);
-			return (True);
+			return (nt_status);
 		}
 	}
 
@@ -844,20 +878,24 @@ BOOL pass_check(struct passwd *pass, char *user, char *password, int pwlen,
 	if (level < 1) {
 		/* restore it */
 		fstrcpy(password, pass2);
-		return (False);
+		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* last chance - all combinations of up to level chars upper! */
 	strlower(password);
 
-	if (string_combinations(password, password_check, level)) {
-		if (fn)
+ 
+        if NT_STATUS_IS_OK(nt_status = string_combinations(password, password_check, level)) {
+                if (fn)
 			fn(user, password);
-		return (True);
+		return nt_status;
 	}
-
+        
 	/* restore it */
 	fstrcpy(password, pass2);
 
-	return (False);
+	return NT_STATUS_WRONG_PASSWORD;
 }
+
+
+

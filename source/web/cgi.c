@@ -390,7 +390,7 @@ static BOOL cgi_handle_authorization(char *line)
 	 * Validate the password they have given.
 	 */
 	
-	if (pass_check(pass, user, user_pass, 
+	if NT_STATUS_IS_OK(pass_check(pass, user, user_pass, 
 		      strlen(user_pass), NULL, False)) {
 		
 		if (pass) {
@@ -398,13 +398,7 @@ static BOOL cgi_handle_authorization(char *line)
 			 * Password was ok.
 			 */
 			
-			if(pass->pw_uid != 0) {
-				/*
-				 * We have not authenticated as root,
-				 * become the user *permanently*.
-				 */
-				become_user_permanently(pass->pw_uid, pass->pw_gid);
-			}
+			become_user_permanently(pass->pw_uid, pass->pw_gid);
 			
 			/* Save the users name */
 			C_user = strdup(user);
@@ -507,6 +501,9 @@ void cgi_setup(char *rootdir, int auth_required)
 		cgi_setup_error("400 Server Error", "",
 				"chdir failed - the server is not configured correctly");
 	}
+
+	/* Handle the possability we might be running as non-root */
+	sec_init();
 
 	/* maybe we are running under a web server */
 	if (getenv("CONTENT_LENGTH") || getenv("REQUEST_METHOD")) {
