@@ -264,7 +264,7 @@ static int lldb_search(struct ldb_context *ldb, const char *base,
 
 		(*res)[msg_count]->num_elements = 0;
 		(*res)[msg_count]->elements = NULL;
-		(*res)[msg_count]->private = NULL;
+		(*res)[msg_count]->private_data = NULL;
 
 		/* loop over all attributes */
 		for (attr=ldap_first_attribute(lldb->ldap, msg, &berptr);

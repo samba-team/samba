@@ -410,7 +410,7 @@ void ldif_read_free(struct ldb_ldif *ldif)
 		if (msg->elements[i].values) free(msg->elements[i].values);
 	}
 	if (msg->elements) free(msg->elements);
-	if (msg->private) free(msg->private);
+	if (msg->private_data) free(msg->private_data);
 	free(ldif);
 }
 
@@ -444,7 +444,7 @@ static int msg_add_empty(struct ldb_message *msg, const char *name, unsigned fla
 /*
  read from a LDIF source, creating a ldb_message
 */
-struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private)
+struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private_data)
 {
 	struct ldb_ldif *ldif;
 	struct ldb_message *msg;
@@ -463,14 +463,14 @@ struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private)
 	msg->dn = NULL;
 	msg->elements = NULL;
 	msg->num_elements = 0;
-	msg->private = NULL;
+	msg->private_data = NULL;
 
-	chunk = next_chunk(fgetc_fn, private);
+	chunk = next_chunk(fgetc_fn, private_data);
 	if (!chunk) {
 		goto failed;
 	}
 
-	msg->private = chunk;
+	msg->private_data = chunk;
 	s = chunk;
 
 	if (next_attr(&s, &attr, &value) != 0) {

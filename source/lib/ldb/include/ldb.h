@@ -86,7 +86,7 @@ struct ldb_message {
 	char *dn;
 	unsigned int num_elements;
 	struct ldb_message_element *elements;
-	void *private; /* private to the backend */
+	void *private_data; /* private to the backend */
 };
 
 enum ldb_changetype {
@@ -210,10 +210,10 @@ const char *ldb_errstring(struct ldb_context *ldb);
   ldif manipulation functions
 */
 int ldif_write(int (*fprintf_fn)(void *, const char *, ...), 
-	       void *private,
+	       void *private_data,
 	       const struct ldb_ldif *ldif);
 void ldif_read_free(struct ldb_ldif *);
-struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private);
+struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private_data);
 struct ldb_ldif *ldif_read_file(FILE *f);
 struct ldb_ldif *ldif_read_string(const char *s);
 int ldif_write_file(FILE *f, const struct ldb_ldif *msg);

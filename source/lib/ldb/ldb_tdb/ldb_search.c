@@ -166,7 +166,7 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 
 	ret->num_elements = 0;
 	ret->elements = NULL;
-	ret->private = NULL;
+	ret->private_data = NULL;
 
 	if (!attrs) {
 		if (msg_add_all_elements(ret, msg) != 0) {
@@ -221,7 +221,7 @@ void ltdb_search_dn1_free(struct ldb_context *ldb, struct ldb_message *msg)
 {
 	int i;
 	if (msg->dn) free(msg->dn);
-	if (msg->private) free(msg->private);
+	if (msg->private_data) free(msg->private_data);
 	for (i=0;i<msg->num_elements;i++) {
 		if (msg->elements[i].values) free(msg->elements[i].values);
 	}
@@ -258,7 +258,7 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
 		free(tdb_data.dptr);
 		return -1;
 	}
-	msg->private = tdb_data.dptr;
+	msg->private_data = tdb_data.dptr;
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
