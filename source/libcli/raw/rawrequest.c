@@ -526,7 +526,7 @@ static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_c
 		return 0;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_UCS2, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (const void **)dest);
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
@@ -725,7 +725,7 @@ static size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 		src_len2 += 2;
 	}
 
-	ret = convert_string_talloc(mem_ctx, CH_UCS2, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (const void **)dest);
 	if (ret == -1) {
 		*dest = NULL;
 		return 0;
