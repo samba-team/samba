@@ -115,22 +115,39 @@ DECL(merge);
 
 /* util.c */
 
-void timeval2str(time_t t, char *str, size_t len, int include_time);
+void attributes2str(krb5_flags attributes, char *str, size_t len);
+int  str2attributes(const char *str, krb5_flags *flags);
+int  parse_attributes (const char *resp, krb5_flags *attr, int *mask, int bit);
+int  edit_attributes (const char *prompt, krb5_flags *attr, int *mask,
+		      int bit);
+
+void time_t2str(time_t t, char *str, size_t len, int include_time);
+int  str2time_t (const char *str, time_t *time);
+int  parse_timet (const char *resp, krb5_timestamp *value, int *mask, int bit);
+int  edit_timet (const char *prompt, krb5_timestamp *value, int *mask,
+		 int bit);
+
 void deltat2str(unsigned t, char *str, size_t len);
-int str2timeval (const char *str, time_t *time);
-int str2deltat(const char *str, unsigned *delta);
-void attr2str(krb5_flags attributes, char *str, size_t len);
-int str2attr(const char *str, krb5_flags *flags);
-void get_response(const char*, const char*, char*, size_t);
-int get_deltat(const char*, const char*, unsigned *);
+int  str2deltat(const char *str, unsigned *delta);
+int  parse_deltat (const char *resp, krb5_deltat *value, int *mask, int bit);
+int  edit_deltat (const char *prompt, krb5_deltat *value, int *mask, int bit);
+
 int edit_entry(kadm5_principal_ent_t ent, int *mask,
 	       kadm5_principal_ent_t default_ent, int default_mask);
 int set_entry(krb5_context context,
-	      kadm5_principal_ent_t ent, int *mask,
+	      kadm5_principal_ent_t ent,
+	      int *mask,
 	      const char *max_ticket_life,
 	      const char *max_renewable_life,
+	      const char *expiration,
+	      const char *pw_expiration,
 	      const char *attributes);
-int foreach_principal(const char *, int (*)(krb5_principal, void*), void *);
+int
+foreach_principal(const char *exp, 
+		  int (*func)(krb5_principal, void*), 
+		  void *data);
+
+void get_response(const char *prompt, const char *def, char *buf, size_t len);
 
 /* server.c */
 
