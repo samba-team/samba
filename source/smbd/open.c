@@ -296,7 +296,7 @@ static void check_for_pipe(char *fname)
 {
 	/* special case of pipe opens */
 	char s[10];
-	StrnCpy(s,fname,9);
+	StrnCpy(s,fname,sizeof(s)-1);
 	strlower(s);
 	if (strstr(s,"pipe/")) {
 		DEBUG(3,("Rejecting named pipe open for %s\n",fname));

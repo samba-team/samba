@@ -94,7 +94,7 @@ static int CopyAndAdvance(char** dst, char* src, int* n)
 {
   int l;
   if (!src || !dst || !n || !(*dst)) return(0);
-  StrnCpy(*dst,src,*n);
+  StrnCpy(*dst,src,*n-1);
   l = strlen(*dst) + 1;
   (*dst) += l;
   (*n) -= l;
@@ -401,7 +401,7 @@ va_dcl
     needed = get_counter(&p->curpos);
     {
       char *s = va_arg(args,char*);
-      if (p->buflen >= needed) StrnCpy(p->structbuf,s?s:"",needed);
+      if (p->buflen >= needed) StrnCpy(p->structbuf,s?s:"",needed-1);
     }
     break;
   case 'z':			/* offset to zero terminated string (4 byte) */

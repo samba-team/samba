@@ -568,8 +568,8 @@ BOOL user_ok(char *user,int snum)
 	pstring valid, invalid;
 	BOOL ret;
 
-	StrnCpy(valid, lp_valid_users(snum), sizeof(pstring));
-	StrnCpy(invalid, lp_invalid_users(snum), sizeof(pstring));
+	StrnCpy(valid, lp_valid_users(snum), sizeof(pstring)-1);
+	StrnCpy(invalid, lp_invalid_users(snum), sizeof(pstring)-1);
 
 	string_sub(valid,"%S",lp_servicename(snum));
 	string_sub(invalid,"%S",lp_servicename(snum));

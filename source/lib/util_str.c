@@ -845,8 +845,9 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 }
 
 /****************************************************************************
-this is a safer strcpy(), meant to prevent core dumps when nasty things happen
+ This is a safer strcpy(), meant to prevent core dumps when nasty things happen
 ****************************************************************************/
+
 char *StrCpy(char *dest,const char *src)
 {
   char *d = dest;
@@ -864,8 +865,10 @@ char *StrCpy(char *dest,const char *src)
 }
 
 /****************************************************************************
-like strncpy but always null terminates. Make sure there is room!
+ Like strncpy but always null terminates. Make sure there is room!
+ The variable n should always be one less than the available size.
 ****************************************************************************/
+
 char *StrnCpy(char *dest,const char *src,size_t n)
 {
   char *d = dest;
@@ -878,7 +881,6 @@ char *StrnCpy(char *dest,const char *src,size_t n)
   *d = 0;
   return(dest);
 }
-
 
 /****************************************************************************
 like strncpy but copies up to the character marker.  always null terminates.

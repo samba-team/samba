@@ -2060,7 +2060,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				p += 4; /* EA size */
 				p += 2; /* short name len? */
 				p += 24; /* short name? */	  
-				StrnCpy(finfo->name,p,namelen);
+				StrnCpy(finfo->name,p,MIN(sizeof(finfo->name)-1,namelen));
 				return(ret);
 			}
 			return(SVAL(p,0));
@@ -2184,7 +2184,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 				case 260:
 					ff_resume_key =0;
 					StrnCpy(mask,p+ff_lastname,
-						data_len-ff_lastname);
+						MIN(sizeof(mask)-1,data_len-ff_lastname));
 					break;
 				case 1:
 					pstrcpy(mask,p + ff_lastname + 1);
