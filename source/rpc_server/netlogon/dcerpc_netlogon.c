@@ -53,6 +53,7 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 	state = talloc_p(mem_ctx, struct server_pipe_state);
 	if (state == NULL) {
 		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(state);
 	state->mem_ctx = mem_ctx;
@@ -60,6 +61,7 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 	
 	if (dce_call->conn->auth_state.session_info == NULL) {
 		talloc_destroy(mem_ctx);
+		smb_panic("No session info provided by schannel level setup!");
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 	
@@ -68,6 +70,7 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 				       &state->creds);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("getting schannel credentials failed with %s\n", nt_errstr(status)));
 		talloc_destroy(mem_ctx);
 		return status;
 	}
@@ -89,8 +92,11 @@ static NTSTATUS netlogon_bind(struct dcesrv_call_state *dce_call, const struct d
 	    dce_call->conn->auth_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
 		NTSTATUS status;
 
+		DEBUG(5, ("schannel bind on netlogon\n"));
+
 		status = netlogon_schannel_setup(dce_call);
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("schannel bind on netlogon failed with %s\n", nt_errstr(status)));
 			return status;
 		}
 	}
@@ -190,16 +196,16 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
 				   r->in.account_name);
 
+	samdb_close(sam_ctx);
+
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
 			 r->in.account_name));
-		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (num_records > 1) {
 		DEBUG(0,("Found %d records matching user [%s]\n", num_records, r->in.account_name));
-		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -239,11 +245,8 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 
 	nt_status = samdb_result_passwords(mem_ctx, msgs[0], NULL, &mach_pwd);
 	if (!NT_STATUS_IS_OK(nt_status) || mach_pwd == NULL) {
-		samdb_close(sam_ctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	samdb_close(sam_ctx);
 
 	if (!pipe_state->creds) {
 		pipe_state->creds = talloc_p(pipe_state->mem_ctx, struct creds_CredentialState);

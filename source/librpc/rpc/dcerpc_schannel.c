@@ -101,6 +101,7 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 	struct schannel_bind bind_schannel;
 	struct schannel_bind_ack bind_schannel_ack;
 	const char *account_name;
+	*out = data_blob(NULL, 0);
 
 	switch (gensec_security->gensec_role) {
 	case GENSEC_CLIENT:
@@ -138,7 +139,7 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 		
 		if (dce_schan_state->state != DCERPC_SCHANNEL_STATE_START) {
 			/* no third leg on this protocol */
-			return NT_STATUS_OK;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 		
 		/* parse the schannel startup blob */
@@ -187,7 +188,7 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 
 		dce_schan_state->state = DCERPC_SCHANNEL_STATE_UPDATE_1;
 
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+		return NT_STATUS_OK;
 	}
 	return NT_STATUS_INVALID_PARAMETER;
 }
@@ -244,7 +245,7 @@ NTSTATUS dcerpc_schannel_creds(struct gensec_security *gensec_security,
 	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
 
 	*creds = talloc_p(mem_ctx, struct creds_CredentialState);
-	if (*creds) {
+	if (!*creds) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

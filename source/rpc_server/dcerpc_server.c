@@ -100,7 +100,7 @@ static const struct dcesrv_interface *find_interface(const struct dcesrv_endpoin
   see if a uuid and if_version match to an interface
 */
 static BOOL interface_match_by_uuid(const struct dcesrv_interface *iface,
-							const char *uuid, uint32_t if_version)
+				    const char *uuid, uint32_t if_version)
 {
 	if (iface->ndr->if_version != if_version) {
 		return False;
@@ -117,7 +117,7 @@ static BOOL interface_match_by_uuid(const struct dcesrv_interface *iface,
   find the interface operations on an endpoint by uuid
 */
 static const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoint *endpoint,
-						       const char *uuid, uint32_t if_version)
+							     const char *uuid, uint32_t if_version)
 {
 	struct dcesrv_if_list *ifl;
 	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
@@ -509,8 +509,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	if (call->conn->iface) {
 		status = call->conn->iface->bind(call, call->conn->iface);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2,("Request for dcerpc interface %s/%d rejected\n", uuid, if_version));
-			return status;
+			DEBUG(2,("Request for dcerpc interface %s/%d rejected: %s\n", uuid, if_version, nt_errstr(status)));
+			return dcesrv_bind_nak(call, 0);
 		}
 	}
 
