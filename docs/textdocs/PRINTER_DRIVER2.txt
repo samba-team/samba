@@ -1,5 +1,5 @@
 !==
-!== PRINTER_DRIVER2.txt for Samba release 2.2.0-alpha1 23 Nov 2000
+!== PRINTER_DRIVER2.txt for Samba release 2.2.0-alpha2 30 Jan 2001
 !==
 
 ==========================================================================
@@ -135,7 +135,6 @@ root user in order to add a new printer driver.
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-!== The Windows NT APW
 
 Once you have created the required [print$] service and associated
 subdirectories, simply log onto the Samba server using a root account
@@ -178,7 +177,6 @@ also be able modify other printer properties such as
 ACLs and device settings using this dialog box.
 
 
-!== Imprints  
 
 The Imprints tool set provides a UNIX equivalent of the Windows
 NT Add Printer Wizard.  For complete information, please refer
@@ -252,7 +250,6 @@ The Installation Client
 	4.	rpcclient: Issue an AddPrinterEx() MS-RPC to actually
 		create the printer
 		
-!== The printer driver name space problem
 
 	One of the problems encountered when implementing the Imprints
 	tool set was the name space issues between various supported
@@ -327,6 +324,4 @@ Here are the possible scenarios for supporting migration:
 		drivers.  (comment: this could possibly be scripted using 
 		smbclient and rpcclient, but I haven't had time  --jerry)
 
-!== end of PRINTER_DRIVER2.txt =======================================
-!=====================================================================
 
