@@ -42,7 +42,8 @@ krb5_mk_req_internal(krb5_context context,
 		     krb5_data *in_data,
 		     krb5_creds *in_creds,
 		     krb5_data *outbuf,
-		     krb5_key_usage usage)
+		     krb5_key_usage checksum_usage,
+		     krb5_key_usage encrypt_usage)
 {
   krb5_error_code ret;
   krb5_data authenticator;
@@ -110,7 +111,7 @@ krb5_mk_req_internal(krb5_context context,
 	      return ret;
 	  ret = krb5_create_checksum(context, 
 				     crypto,
-				     usage,
+				     checksum_usage,
 				     in_data->data,
 				     in_data->length,
 				     &c);
@@ -128,7 +129,8 @@ krb5_mk_req_internal(krb5_context context,
 				  in_creds,
 				  c_opt,
 				  NULL,
-				  &authenticator);
+				  &authenticator,
+				  encrypt_usage);
   if (c_opt)
       free_Checksum (c_opt);
   if (ret)
@@ -155,5 +157,6 @@ krb5_mk_req_extended(krb5_context context,
 				 in_data,
 				 in_creds,
 				 outbuf,
-				 KRB5_KU_AP_REQ_AUTH_CKSUM);
+				 KRB5_KU_AP_REQ_AUTH_CKSUM,
+				 KRB5_KU_AP_REQ_AUTH);
 }
