@@ -103,9 +103,8 @@ BOOL become_gid(gid_t gid)
 	if (gid == (gid_t) - 1
 	    || ((sizeof(gid_t) == 2) && (gid == (gid_t) 65535)))
 	{
-		DEBUG(1,
-		      ("WARNING: using gid %d is a security risk\n",
-		       (int)gid));
+		DEBUG(1, ("WARNING: using gid %d is a security risk\n",
+			  (int)gid));
 	}
 
 	set_effective_gid(gid);
@@ -143,8 +142,8 @@ BOOL unbecome_to_initial_uid(void)
 	current_user.gid = 0;
 
 	if (dos_ChDir(OriginalDir) != 0)
-		DEBUG(0,
-		      ("chdir(%s) failed in unbecome_user\n", OriginalDir));
+		DEBUG(0, ("chdir(%s) failed in unbecome_user\n",
+			  OriginalDir));
 
 	DEBUG(5, ("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
 		  (int)getuid(), (int)geteuid(), (int)getgid(),
@@ -152,7 +151,6 @@ BOOL unbecome_to_initial_uid(void)
 
 	current_user.conn = NULL;
 	current_user.key.vuid = UID_FIELD_INVALID;
-
 
 	return (True);
 }

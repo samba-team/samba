@@ -999,7 +999,7 @@ char *sid_to_string(pstring sidstr_out, const DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
-void sid_copy(DOM_SID *sid1, const DOM_SID *sid2);
+void sid_copy(DOM_SID *dst, const DOM_SID *src);
 BOOL sid_front_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 int sid_size(const DOM_SID *sid);
@@ -2271,8 +2271,7 @@ BOOL lsa_lookup_names(POLICY_HND *hnd,
 		      char **names,
 		      DOM_SID ** sids, uint32 ** types, int *num_sids);
 BOOL lsa_lookup_sids(POLICY_HND *hnd,
-		     int num_sids,
-		     DOM_SID ** sids,
+		     int num_sids, DOM_SID **sids,
 		     char ***names, uint32 ** types, int *num_names);
 BOOL lsa_query_sec_obj(const POLICY_HND *hnd, uint32 sec_info,
 		       SEC_DESC_BUF *sec_buf);
@@ -3645,8 +3644,7 @@ BOOL smb_io_rpc_hdr_nack(char *desc, RPC_HDR_NACK * rpc, prs_struct * ps,
 			 int depth);
 BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT * rpc, prs_struct * ps,
 			  int depth);
-BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct * ps,
-			     int depth);
+BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_rb(RPC_HDR_RB * rpc,
 		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 		     uint8 num_elements, uint16 context_id,

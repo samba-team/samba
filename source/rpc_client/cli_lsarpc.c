@@ -772,8 +772,7 @@ BOOL lsa_lookup_names(POLICY_HND *hnd,
 do a LSA Lookup SIDs
 ****************************************************************************/
 BOOL lsa_lookup_sids(POLICY_HND *hnd,
-		     int num_sids,
-		     DOM_SID ** sids,
+		     int num_sids, DOM_SID **sids,
 		     char ***names, uint32 ** types, int *num_names)
 {
 	prs_struct rbuf;
@@ -829,9 +828,8 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 		    r_l.status != (0xC0000000 | NT_STATUS_NONE_MAPPED))
 		{
 			/* report error code */
-			DEBUG(1,
-			      ("LSA_LOOKUP_SIDS: %s\n",
-			       get_nt_error_msg(r_l.status)));
+			DEBUG(1, ("LSA_LOOKUP_SIDS: %s\n",
+				  get_nt_error_msg(r_l.status)));
 			p = False;
 		}
 
@@ -853,8 +851,10 @@ BOOL lsa_lookup_sids(POLICY_HND *hnd,
 			uint32 i;
 			for (i = 0; i < t_names.num_entries; i++)
 			{
-				if (t_names.name[i].domain_idx >=
-				    ref.num_ref_doms_1)
+				if ((t_names.name[i].domain_idx >=
+				     ref.num_ref_doms_1)
+				    && (t_names.name[i].domain_idx !=
+					0xffffffff))
 				{
 					DEBUG(0,
 					      ("LSA_LOOKUP_SIDS: domain index out of bounds\n"));

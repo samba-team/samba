@@ -152,8 +152,7 @@ BOOL lsa_lookup_names(POLICY_HND *hnd,
 		      char **names,
 		      DOM_SID ** sids, uint32 ** types, int *num_sids);
 BOOL lsa_lookup_sids(POLICY_HND *hnd,
-		     int num_sids,
-		     DOM_SID ** sids,
+		     int num_sids, DOM_SID **sids,
 		     char ***names, uint32 ** types, int *num_names);
 BOOL lsa_query_sec_obj(const POLICY_HND *hnd, uint32 sec_info,
 		       SEC_DESC_BUF *sec_buf);

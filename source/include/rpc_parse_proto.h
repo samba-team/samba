@@ -93,8 +93,7 @@ BOOL make_lsa_trans_name(LSA_TRANS_NAME * trn, UNISTR2 * uni_name,
 			 uint16 sid_name_use, char *name, uint32 idx);
 int make_dom_ref_uni(DOM_R_REF * ref, const UNISTR2 * uni_domname,
 		     const DOM_SID * dom_sid);
-int make_dom_ref(DOM_R_REF * ref, const char *domname,
-		 const DOM_SID * dom_sid);
+int make_dom_ref(DOM_R_REF * ref, const char *domname, const DOM_SID *dom_sid);
 BOOL make_lsa_sec_qos(LSA_SEC_QOS * qos, uint16 imp_lev, uint8 ctxt,
 		      uint8 eff, uint32 unknown);
 BOOL make_lsa_obj_attr(LSA_OBJ_ATTR * attr, uint32 attributes,
@@ -115,9 +114,10 @@ BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 * r_p, prs_struct * ps,
 			int depth);
 BOOL make_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ * q_q, const POLICY_HND *hnd,
 				uint32 sec_info);
-BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ * q_q, prs_struct * ps,
-		    int depth);
-BOOL lsa_io_r_query_sec_obj(char *desc,  LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth);
+BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ * q_q,
+			    prs_struct *ps, int depth);
+BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u,
+			    prs_struct *ps, int depth);
 BOOL make_q_query(LSA_Q_QUERY_INFO * q_q, POLICY_HND *hnd, uint16 info_class);
 BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO * q_q, prs_struct * ps,
 		    int depth);
@@ -163,8 +163,7 @@ BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM * r_e,
 void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e);
 BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q, prs_struct * ps,
 		    int depth);
-BOOL make_lsa_sid_enum(LSA_SID_ENUM * sen, uint32 num_entries,
-		       DOM_SID ** sids);
+BOOL make_lsa_sid_enum(LSA_SID_ENUM * sen, uint32 num_entries, DOM_SID **sids);
 BOOL make_q_lookup_sids(LSA_Q_LOOKUP_SIDS * q_l, POLICY_HND *hnd,
 			int num_sids, DOM_SID ** sids, uint16 level);
 BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS * q_s,
@@ -374,8 +373,7 @@ BOOL smb_io_rpc_hdr_nack(char *desc, RPC_HDR_NACK * rpc, prs_struct * ps,
 			 int depth);
 BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT * rpc, prs_struct * ps,
 			  int depth);
-BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct * ps,
-			     int depth);
+BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_rb(RPC_HDR_RB * rpc,
 		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 		     uint8 num_elements, uint16 context_id,

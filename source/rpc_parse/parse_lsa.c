@@ -115,8 +115,7 @@ int make_dom_ref_uni(DOM_R_REF * ref, const UNISTR2 * uni_domname,
 	return num;
 }
 
-int make_dom_ref(DOM_R_REF * ref, const char *domname,
-		 const DOM_SID * dom_sid)
+int make_dom_ref(DOM_R_REF * ref, const char *domname, const DOM_SID *dom_sid)
 {
 	UNISTR2 *uni_domname;
 	int ret;
@@ -130,10 +129,10 @@ int make_dom_ref(DOM_R_REF * ref, const char *domname,
 /*******************************************************************
 reads or writes a DOM_R_REF structure.
 ********************************************************************/
-static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF * r_r, prs_struct * ps,
-			     int depth)
+static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF * r_r,
+			     prs_struct *ps, int depth)
 {
-	uint32 i, s, n;
+	uint32 i;
 
 	prs_debug(ps, depth, desc, "smb_io_dom_r_ref");
 	depth++;
@@ -158,36 +157,31 @@ static BOOL lsa_io_dom_r_ref(char *desc, DOM_R_REF * r_r, prs_struct * ps,
 		{
 			fstring t;
 
-			slprintf(t, sizeof(t) - 1, "dom_ref[%d] ", i);
+			slprintf(t, sizeof(t) - 1, "dom_hdr[%d]", i);
 			smb_io_unihdr(t, &(r_r->hdr_ref_dom[i].hdr_dom_name),
 				      ps, depth);
 
-			slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
+			slprintf(t, sizeof(t) - 1, "sid_ptr[%d]", i);
 			prs_uint32(t, ps, depth,
 				   &(r_r->hdr_ref_dom[i].ptr_dom_sid));
 		}
 
-		for (i = 0, n = 0, s = 0; i < r_r->num_ref_doms_2; i++)
+		for (i = 0; i < r_r->num_ref_doms_2; i++)
 		{
 			fstring t;
 
-			if (r_r->hdr_ref_dom[i].hdr_dom_name.buffer != 0)
-			{
-				slprintf(t, sizeof(t) - 1, "dom_ref[%d] ", i);
-				smb_io_unistr2(t,
-					       &(r_r->ref_dom[n].
-						 uni_dom_name), True, ps, depth);	/* domain name unicode string */
-				prs_align(ps);
-				n++;
-			}
+			slprintf(t, sizeof(t) - 1, "dom_name[%d]", i);
+			smb_io_unistr2(t, &(r_r->ref_dom[i].uni_dom_name),
+				       r_r->hdr_ref_dom[i].hdr_dom_name.
+				       buffer,
+				       ps, depth);
+			prs_align(ps);
 
 			if (r_r->hdr_ref_dom[i].ptr_dom_sid != 0)
 			{
-				slprintf(t, sizeof(t) - 1, "sid_ptr[%d] ", i);
-				smb_io_dom_sid2("",
-						&(r_r->ref_dom[s].ref_dom),
-						ps, depth);	/* referenced domain SIDs */
-				s++;
+				slprintf(t, sizeof(t) - 1, "sid[%d]", i);
+				smb_io_dom_sid2(t, &(r_r->ref_dom[i].ref_dom),
+						ps, depth);
 			}
 		}
 	}
@@ -339,8 +333,8 @@ BOOL make_q_open_pol(LSA_Q_OPEN_POL * r_q, uint16 system_name,
 	if (r_q == NULL)
 		return False;
 
-	DEBUG(5,
-	      ("make_open_pol: attr:%d da:%d\n", attributes, desired_access));
+	DEBUG(5, ("make_open_pol: attr:%d da:%d\n",
+		  attributes, desired_access));
 
 	r_q->ptr = 1;		/* undocumented pointer */
 
@@ -496,8 +490,8 @@ BOOL make_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ * q_q, const POLICY_HND *hnd,
 /*******************************************************************
 reads or writes an LSA_Q_QUERY_SEC_OBJ structure.
 ********************************************************************/
-BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ * q_q, prs_struct * ps,
-		    int depth)
+BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ * q_q,
+			    prs_struct *ps, int depth)
 {
 	if (q_q == NULL)
 		return False;
@@ -514,9 +508,11 @@ BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ * q_q, prs_struct * 
 /*******************************************************************
 reads or writes a LSA_R_QUERY_SEC_OBJ structure.
 ********************************************************************/
-BOOL lsa_io_r_query_sec_obj(char *desc,  LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth)
+BOOL lsa_io_r_query_sec_obj(char *desc, LSA_R_QUERY_SEC_OBJ *r_u,
+			    prs_struct *ps, int depth)
 {
-	if (r_u == NULL) return False;
+	if (r_u == NULL)
+		return False;
 
 	prs_debug(ps, depth, desc, "lsa_io_r_query_sec_obj");
 	depth++;
@@ -532,6 +528,7 @@ BOOL lsa_io_r_query_sec_obj(char *desc,  LSA_R_QUERY_SEC_OBJ *r_u, prs_struct *p
 
 	return True;
 }
+
 /*******************************************************************
 makes an LSA_Q_QUERY_INFO structure.
 ********************************************************************/
@@ -1110,8 +1107,7 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q, prs_struct * ps,
 /*******************************************************************
 makes a LSA_SID_ENUM structure.
 ********************************************************************/
-BOOL make_lsa_sid_enum(LSA_SID_ENUM * sen, uint32 num_entries,
-		       DOM_SID ** sids)
+BOOL make_lsa_sid_enum(LSA_SID_ENUM * sen, uint32 num_entries, DOM_SID **sids)
 {
 	uint32 i, i2;
 	if (sen == NULL || sids == NULL)

@@ -380,6 +380,7 @@ uint32 _lsa_lookup_sids(const POLICY_HND * hnd,
 			if (sid_name_use == SID_NAME_WKN_GRP)
 			{
 				sid_split_rid(&find_sid, &rid);
+				dom_name[0] = 0;
 				map_domain_sid_to_name(&find_sid, dom_name);
 			}
 		}

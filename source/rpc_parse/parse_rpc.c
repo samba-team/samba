@@ -156,7 +156,7 @@ interface/version dce/rpc pipe identification
                 { 0x82, 0x73, 0x00, 0xaa,   \
                   0x00, 0x4a, 0xe6, 0x73 }  \
         }, 0x03                             \
-} 
+}
 
 struct pipe_id_info pipe_names[] = {
 	/* client pipe , abstract syntax , server pipe   , transfer syntax */
@@ -171,7 +171,7 @@ struct pipe_id_info pipe_names[] = {
 	{PIPE_ATSVC, SYNT_ATSVC_V1, PIPE_ATSVC, TRANS_SYNT_V2},
 	{PIPE_SPOOLSS, SYNT_SPOOLSS_V1, PIPE_SPOOLSS, TRANS_SYNT_V2},
 	{PIPE_EVENTLOG, SYNT_EVENTLOG_V0, PIPE_EVENTLOG, TRANS_SYNT_V2},
-	{PIPE_NETDFS, SYNT_NETDFS_V3, PIPE_NETDFS, TRANS_SYNT_V2}, 
+	{PIPE_NETDFS, SYNT_NETDFS_V3, PIPE_NETDFS, TRANS_SYNT_V2},
 	{NULL, SYNT_NONE_V0, NULL, SYNT_NONE_V0}
 };
 
@@ -294,13 +294,12 @@ BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT * rpc, prs_struct * ps,
 /*******************************************************************
  Reads or writes an RPC_UUID structure.
 ********************************************************************/
-BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct * ps,
-			     int depth)
+BOOL smb_io_rpc_uuid(char *desc, RPC_UUID * uuid, prs_struct *ps, int depth)
 {
 	if (uuid == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "smb_io_rpc_iface");
+	prs_debug(ps, depth, desc, "smb_io_rpc_uuid");
 	depth++;
 
 	prs_align(ps);

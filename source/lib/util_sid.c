@@ -147,22 +147,22 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
 /*****************************************************************
  copies a sid
 *****************************************************************/  
-void sid_copy(DOM_SID *sid1, const DOM_SID *sid2)
+void sid_copy(DOM_SID *dst, const DOM_SID *src)
 {
 	int i;
 
 	for (i = 0; i < 6; i++)
 	{
-		sid1->id_auth[i] = sid2->id_auth[i];
+		dst->id_auth[i] = src->id_auth[i];
 	}
 
-	for (i = 0; i < sid2->num_auths; i++)
+	for (i = 0; i < src->num_auths; i++)
 	{
-		sid1->sub_auths[i] = sid2->sub_auths[i];
+		dst->sub_auths[i] = src->sub_auths[i];
 	}
 
-	sid1->num_auths   = sid2->num_auths;
-	sid1->sid_rev_num = sid2->sid_rev_num;
+	dst->num_auths   = src->num_auths;
+	dst->sid_rev_num = src->sid_rev_num;
 }
 
 /*****************************************************************
@@ -202,8 +202,10 @@ BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 		if (sid1->sub_auths[i] != sid2->sub_auths[i]) return False;
 	}
 
-	if (sid1->num_auths   != sid2->num_auths  ) return False;
-	if (sid1->sid_rev_num != sid2->sid_rev_num) return False;
+	if (sid1->num_auths   != sid2->num_auths  )
+		return False;
+	if (sid1->sid_rev_num != sid2->sid_rev_num)
+		return False;
 
 	for (i = 0; i < 6; i++)
 	{
