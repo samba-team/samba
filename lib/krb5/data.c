@@ -47,7 +47,7 @@ krb5_data_free(krb5_data *p)
 {
     if(p->data != NULL)
 	free(p->data);
-    p->length = 0;
+    krb5_data_zero(p);
 }
 
 void 
