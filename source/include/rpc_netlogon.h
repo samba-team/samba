@@ -168,7 +168,9 @@ typedef struct net_user_info_3
 	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
 
 	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
-	uint8 padding[40];    /* unused padding bytes.  expansion room */
+	uint8 lm_sess_key[8];	/* lm session key */
+	uint32 acct_flags;	/* account flags */
+	uint32 unknown[7];	/* unknown */
 
 	uint32 num_other_sids; /* number of foreign/trusted domain sids */
 	uint32 buffer_other_sids;

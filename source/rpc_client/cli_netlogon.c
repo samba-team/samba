@@ -654,6 +654,7 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	char *workstation_name_slash;
 	uint8 netlogon_sess_key[16];
 	static uint8 zeros[16];
+	int i;
 	
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -716,10 +717,15 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 		memset(info3->user_sess_key, '\0', 16);
 	}
 
-	if (memcmp(zeros, info3->padding, 16) != 0) {
-		SamOEMhash(info3->padding, netlogon_sess_key, 16);
+	if (memcmp(zeros, info3->lm_sess_key, 8) != 0) {
+		SamOEMhash(info3->lm_sess_key, netlogon_sess_key, 8);
 	} else {
-		memset(info3->padding, '\0', 16);
+		memset(info3->lm_sess_key, '\0', 8);
+	}
+
+	memset(&info3->acct_flags, '\0', 4);
+	for (i=0; i < 7; i++) {
+		memset(&info3->unknown[i], '\0', 4);
 	}
 
         /* Return results */
