@@ -513,11 +513,11 @@ uuid(DB7C21F8-FE33-4C11-AEA5-CEB56F076FBB),
 ]
 interface IStream : IUnknown
 {
-	WERROR Read([in] uint32 num_requested, 
+	WERROR IStream_Read([in] uint32 num_requested, 
 				[out,size_is(*num_read)] uint8 *data, 
 				[out] uint32 *num_read);
 
-	WERROR Write([in,size_is(num_requested)] uint8 *data,
+	WERROR IStream_Write([in,size_is(num_requested)] uint8 *data,
 				 [in] uint32 num_requested,
 				 [out] uint32 *num_written);
 }

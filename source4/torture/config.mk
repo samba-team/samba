@@ -50,6 +50,16 @@ REQUIRED_SUBSYSTEMS = \
 #################################
 
 #################################
+# Start SUBSYSTEM TORTURE_DCOM
+[SUBSYSTEM::TORTURE_DCOM]
+ADD_OBJ_FILES = \
+		torture/dcom/simple.o
+REQUIRED_SUBSYSTEMS = \
+		LIBDCOM
+# End SUBSYSTEM TORTURE_DCOM
+#################################
+
+#################################
 # Start SUBSYSTEM TORTURE_RPC
 [SUBSYSTEM::TORTURE_RPC]
 ADD_OBJ_FILES = \
@@ -147,6 +157,7 @@ REQUIRED_SUBSYSTEMS = \
 		TORTURE_BASIC \
 		TORTURE_RAW \
 		TORTURE_RPC \
+		TORTURE_DCOM \
 		TORTURE_RAP \
 		TORTURE_AUTH \
 		TORTURE_LOCAL \

@@ -34,39 +34,6 @@ static WERROR dcom_tower_from_oxid(TALLOC_CTX *mem_ctx, HYPER_T oxid, struct epm
 	return WERR_NOT_SUPPORTED;
 }
 
-static WERROR dcom_get_class_object (struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct GUID clsid)
-{
-	struct RemoteActivation r;
-	NTSTATUS status;
-	struct GUID iids[2];
-	uint16 protseq[3] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID };
-
-	ZERO_STRUCT(r.in);
-	r.in.this.version.MajorVersion = 5;
-	r.in.this.version.MinorVersion = 1;
-	uuid_generate_random(&r.in.this.cid);
-	r.in.Clsid = clsid;
-	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;
-	r.in.num_protseqs = 3;
-	r.in.protseq = protseq;
-	r.in.Interfaces = 1;
-	GUID_from_string(DCERPC_IUNKNOWN_UUID, &iids[0]);
-	r.in.pIIDs = iids;
-	r.in.Mode = MODE_GET_CLASS_OBJECT;
-
-	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
-	if(NT_STATUS_IS_ERR(status)) {
-		fprintf(stderr, "RemoteActivation: %s\n", nt_errstr(status));
-		return ntstatus_to_werror(status);
-	}
-
-	if(!W_ERROR_IS_OK(r.out.result)) { return r.out.result; }
-	if(!W_ERROR_IS_OK(r.out.hr)) { return r.out.hr; }
-	if(!W_ERROR_IS_OK(r.out.results[0])) { return r.out.results[0]; }
-
-	return WERR_OK;
-}
-
 static WERROR dcom_create_instance (struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct GUID clsid) 
 {
 	return WERR_NOT_SUPPORTED;
@@ -88,5 +55,45 @@ static WERROR IUnknown_QueryInterface(struct GUID *riid, void **data)
 {
 	/* FIXME: Ask local server for interface pointer. Local server can then 
 	 * call RemQueryInterface if necessary */
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR dcom_create_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface **ip)
+{
+	return WERR_NOT_SUPPORTED;
+}
+
+WERROR dcom_get_class_object(TALLOC_CTX *mem_ctx, struct GUID *clsid, const char *server, struct GUID *iid, struct dcom_interface **ip)
+{
+	struct RemoteActivation r;
+	struct dcerpc_pipe *p = NULL; /* FIXME */
+	NTSTATUS status;
+	struct GUID iids[2];
+	uint16 protseq[3] = { EPM_PROTOCOL_TCP, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID };
+
+	ZERO_STRUCT(r.in);
+	r.in.this.version.MajorVersion = 5;
+	r.in.this.version.MinorVersion = 1;
+	uuid_generate_random(&r.in.this.cid);
+	r.in.Clsid = *clsid;
+	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;
+	r.in.num_protseqs = 3;
+	r.in.protseq = protseq;
+	r.in.Interfaces = 1;
+	GUID_from_string(DCERPC_IUNKNOWN_UUID, &iids[0]);
+	r.in.pIIDs = iids;
+	r.in.Mode = MODE_GET_CLASS_OBJECT;
+
+	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
+	if(NT_STATUS_IS_ERR(status)) {
+		fprintf(stderr, "RemoteActivation: %s\n", nt_errstr(status));
+		return ntstatus_to_werror(status);
+	}
+
+	if(!W_ERROR_IS_OK(r.out.result)) { return r.out.result; }
+	if(!W_ERROR_IS_OK(r.out.hr)) { return r.out.hr; }
+	if(!W_ERROR_IS_OK(r.out.results[0])) { return r.out.results[0]; }
+
+
 	return WERR_NOT_SUPPORTED;
 }
