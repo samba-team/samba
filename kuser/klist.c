@@ -483,11 +483,10 @@ display_v5_ccache (const char *cred_cache, int do_test, int do_verbose)
     ret = krb5_cc_get_principal (context, ccache, &principal);
     if (ret) {
 	if(ret == ENOENT) {
-	    if (do_test)
-		return 1;
-	    else
-		krb5_errx(context, 1, "No ticket file: %s", 
-			  krb5_cc_get_name(context, ccache));
+	    if (!do_test)
+		krb5_warnx(context, "No ticket file: %s",
+			   krb5_cc_get_name(context, ccache));
+	    return 1;
 	} else
 	    krb5_err (context, 1, ret, "krb5_cc_get_principal");
     }
@@ -510,7 +509,7 @@ static int help_flag	= 0;
 static int do_verbose	= 0;
 static int do_test	= 0;
 #ifdef KRB4
-static int do_v4	= 0;
+static int do_v4	= 1;
 static int do_tokens	= 0;
 #endif
 static int do_v5	= 1;
