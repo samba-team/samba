@@ -524,7 +524,7 @@ static BOOL test_DeleteAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
     	struct samr_DeleteDomAlias d;
 	NTSTATUS status;
-	BOOL ret;
+	BOOL ret = True;
 	printf("Testing DeleteAlias\n");
 
 	d.in.handle = alias_handle;
@@ -658,7 +658,7 @@ static BOOL test_DeleteUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
     	struct samr_DeleteUser d;
 	NTSTATUS status;
-	BOOL ret;
+	BOOL ret = True;
 
 	printf("Testing DeleteUser\n");
 
