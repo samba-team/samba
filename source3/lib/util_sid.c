@@ -442,29 +442,40 @@ BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid)
 /*****************************************************************
  Compare two sids.
 *****************************************************************/  
-
-BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
+int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	int i;
 
-	if (sid1 == sid2) return True;
-	if (!sid1 || !sid2) return False;
+	if (sid1 == sid2) return 0;
+	if (!sid1) return -1;
+	if (!sid2) return 1;
 
 	/* compare most likely different rids, first: i.e start at end */
 	for (i = sid1->num_auths-1; i >= 0; --i)
 		if (sid1->sub_auths[i] != sid2->sub_auths[i])
-			return False;
+			return sid1->sub_auths[i] - sid2->sub_auths[i];
 
 	if (sid1->num_auths != sid2->num_auths)
-		return False;
+		return sid1->num_auths - sid2->num_auths;
+
 	if (sid1->sid_rev_num != sid2->sid_rev_num)
-		return False;
+		return sid1->sid_rev_num - sid2->sid_rev_num;
 
 	for (i = 0; i < 6; i++)
 		if (sid1->id_auth[i] != sid2->id_auth[i])
-			return False;
+			return sid1->id_auth[i] - sid2->id_auth[i];
 
-	return True;
+	return 0;
+}
+
+
+/*****************************************************************
+ Compare two sids.
+*****************************************************************/  
+
+BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
+{
+	return sid_compare(sid1, sid2) == 0;
 }
 
 

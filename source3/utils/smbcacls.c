@@ -175,7 +175,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 	fprintf(f, "%s:", sidstr);
 
 	if (numeric) {
-		fprintf(f, "%d/%d/0x%08x\n", 
+		fprintf(f, "%d/%d/0x%08x", 
 			ace->type, ace->flags, ace->info.mask);
 		return;
 	}
@@ -198,7 +198,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 
 	for (v = standard_values; v->perm; v++) {
 		if (ace->info.mask == v->mask) {
-			fprintf(f, "%s\n", v->perm);
+			fprintf(f, "%s", v->perm);
 			return;
 		}
 	}
@@ -226,8 +226,6 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 			goto again;
 		}
 	}
-
-	fprintf(f, "\n");
 }
 
 
@@ -441,6 +439,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 		SEC_ACE *ace = &sd->dacl->ace[i];
 		fprintf(f, "ACL:");
 		print_ace(f, ace);
+		fprintf(f, "\n");
 	}
 
 }
@@ -533,51 +532,41 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 	return EXIT_OK;
 }
 
+
 /* The MSDN is contradictory over the ordering of ACE entries in an ACL.
    However NT4 gives a "The information may have been modified by a
    computer running Windows NT 5.0" if denied ACEs do not appear before
    allowed ACEs. */
 
+static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
+{
+	if (sec_ace_equal(ace1, ace2)) return 0;
+	if (ace1->type != ace2->type) return ace1->type - ace2->type;
+	if (sid_compare(&ace1->sid, &ace2->sid)) return sid_compare(&ace1->sid, &ace2->sid);
+	if (ace1->flags != ace2->flags) return ace1->flags - ace2->flags;
+	if (ace1->info.mask != ace2->info.mask) return ace1->info.mask - ace2->info.mask;
+	if (ace1->size != ace2->size) return ace1->size - ace2->size;
+	return memcmp(ace1, ace2, sizeof(SEC_ACE));
+}
+
 static void sort_acl(SEC_ACL *the_acl)
 {
-	SEC_ACE *tmp_ace;
-	int i, ace_ndx = 0;
-	BOOL do_denied = True;
-
+	int i;
 	if (!the_acl) return;
 
-	tmp_ace = (SEC_ACE *)malloc(sizeof(SEC_ACE) * the_acl->num_aces);
+	qsort(the_acl->ace, the_acl->num_aces, sizeof(the_acl->ace[0]), ace_compare);
 
-	if (!tmp_ace) return;
-
- copy_aces:
-	
-	for (i = 0; i < the_acl->num_aces; i++) {
-
-		/* Copy denied ACEs */
-
-		if (do_denied &&
-		    the_acl->ace[i].type == SEC_ACE_TYPE_ACCESS_DENIED) {
-			tmp_ace[ace_ndx] = the_acl->ace[i];
-			ace_ndx++;
-		}
-
-		/* Copy other ACEs */
-
-		if (!do_denied &&
-		    the_acl->ace[i].type != SEC_ACE_TYPE_ACCESS_DENIED) {
-			tmp_ace[ace_ndx] = the_acl->ace[i];
-			ace_ndx++;
+	for (i=1;i<the_acl->num_aces;) {
+		if (sec_ace_equal(&the_acl->ace[i-1], &the_acl->ace[i])) {
+			int j;
+			for (j=i; j<the_acl->num_aces-1; j++) {
+				the_acl->ace[j] = the_acl->ace[j+1];
+			}
+			the_acl->num_aces--;
+		} else {
+			i++;
 		}
 	}
-
-	if (do_denied) {
-		do_denied = False;
-		goto copy_aces;
-	}
-
-	free(the_acl->ace);
-	the_acl->ace = tmp_ace;
 }
 
 /***************************************************** 
@@ -625,8 +614,9 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (sec_ace_equal(&sd->dacl->ace[i],
 						  &old->dacl->ace[j])) {
-					if (j != old->dacl->num_aces-1) {
-						old->dacl->ace[j] = old->dacl->ace[j+1];
+					int k;
+					for (k=j; k<old->dacl->num_aces-1;k++) {
+						old->dacl->ace[k] = old->dacl->ace[k+1];
 					}
 					old->dacl->num_aces--;
 					if (old->dacl->num_aces == 0) {
@@ -642,10 +632,9 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			}
 
 			if (!found) {
-				fstring str;
-
-				SidToString(str, &sd->dacl->ace[i].sid);
-				printf("ACL for SID %s not found\n", str);
+				printf("ACL for ACE:"); 
+				print_ace(stdout, &sd->dacl->ace[i]);
+				printf(" not found\n");
 			}
 		}
 		break;
@@ -689,11 +678,9 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	}
 
 	/* Denied ACE entries must come before allowed ones */
-
 	sort_acl(old->dacl);
 
 	/* Create new security descriptor and set it */
-
 	sd = make_sec_desc(old->revision, old->owner_sid, old->grp_sid, 
 			   NULL, old->dacl, &sd_size);
 
