@@ -807,6 +807,12 @@ static BOOL smbd_process_limit(void)
 
 		total_smbds = 1; /* In case we need to create the entry. */
 
+		if (!conn_tdb_ctx()) {
+			DEBUG(0,("smbd_process_limit: max smbd processes parameter set with status parameter not \
+set. Ignoring max smbd restriction.\n"));
+			return False;
+		}
+
 		if (tdb_change_int_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
 			return True;
 
