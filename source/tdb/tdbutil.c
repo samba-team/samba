@@ -474,7 +474,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 	if (!ptr || !*ptr)
 		return;
 
-	DEBUG(level, ("tdb(%s): %s", tdb->name ? tdb->name : "unknown", ptr));
+	DEBUG(level, ("tdb(%s): %s", tdb->name ? tdb->name : "unnamed", ptr));
 	SAFE_FREE(ptr);
 }
 
