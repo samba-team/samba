@@ -527,7 +527,7 @@ static int ldapsam_search(struct ldapsam_privates *ldap_state,
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("%s: LDAP server is down!\n",__FUNCTION__));
+		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
 		ldapsam_close(ldap_state);	
 	}
 	
@@ -551,7 +551,7 @@ static int ldapsam_modify(struct ldapsam_privates *ldap_state, char *dn, LDAPMod
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("%s: LDAP server is down!\n",__FUNCTION__));
+		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
 		ldapsam_close(ldap_state);	
 	}
 	
@@ -575,7 +575,7 @@ static int ldapsam_add(struct ldapsam_privates *ldap_state, const char *dn, LDAP
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("%s: LDAP server is down!\n",__FUNCTION__));
+		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
 		ldapsam_close(ldap_state);	
 	}
 		
@@ -599,7 +599,7 @@ static int ldapsam_delete(struct ldapsam_privates *ldap_state, char *dn)
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("%s: LDAP server is down!\n",__FUNCTION__));
+		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
 		ldapsam_close(ldap_state);	
 	}
 		
@@ -623,7 +623,7 @@ static int ldapsam_extended_operation(struct ldapsam_privates *ldap_state, LDAP_
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
-		DEBUG(0,("%s: LDAP server is down!\n",__FUNCTION__));
+		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
 		ldapsam_close(ldap_state);	
 	}
 		
