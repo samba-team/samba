@@ -2583,7 +2583,7 @@ static void remember_query_host(const char *arg,
 	BOOL message = False;
 	extern char tar_type;
 	pstring term_code;
-	const char *new_name_resolve_order = NULL;
+	static const char *new_name_resolve_order = NULL;
 	poptContext pc;
 	char *p;
 	int rc = 0;
