@@ -87,6 +87,11 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	uid_t uid;
 	gid_t gid;
 
+	pstring phomedir;
+	pstring pdir_drive;
+	pstring plogon_script;
+	pstring pprofile_path;
+
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
 		return False;
@@ -159,7 +164,6 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 
 	if (homedir) setflag = True;
 	else {
-		pstring phomedir;
 		setflag = False;
 		pstrcpy(phomedir, lp_logon_home());
 		standard_sub_advanced(-1, username, "", gid, phomedir, sizeof(phomedir));
@@ -169,7 +173,6 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 
 	if (dir_drive) setflag = True;
 	else {
-		pstring pdir_drive;
 		setflag = False;
 		pstrcpy(pdir_drive, lp_logon_drive());
 		standard_sub_advanced(-1, username, "", gid, pdir_drive, sizeof(pdir_drive));
@@ -179,7 +182,6 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 
 	if (logon_script) setflag = True;
 	else {
-		pstring plogon_script;
 		setflag = False;
 		pstrcpy(plogon_script, lp_logon_script());
 		standard_sub_advanced(-1, username, "", gid, plogon_script, sizeof(plogon_script));
@@ -189,7 +191,6 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 
 	if (profile_path) setflag = True;
 	else {
-		pstring pprofile_path;
 		setflag = False;
 		pstrcpy(pprofile_path, lp_logon_path());
 		standard_sub_advanced(-1, username, "", gid, pprofile_path, sizeof(pprofile_path));
