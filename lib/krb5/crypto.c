@@ -316,6 +316,7 @@ DES3_string_to_key(krb5_context context,
 {
     char *str;
     size_t len;
+    unsigned char tmp[24];
     des_cblock keys[3];
     
     len = password.length + salt.saltvalue.length;
@@ -329,24 +330,27 @@ DES3_string_to_key(krb5_context context,
 	des_key_schedule s[3];
 	int i;
 	
-	n_fold(str, len, keys, 24);
+	n_fold(str, len, tmp, 24);
 	
 	for(i = 0; i < 3; i++){
+	    memcpy(keys + i, tmp + i * 8, sizeof(keys[i]));
 	    des_set_odd_parity(keys + i);
 	    if(des_is_weak_key(keys + i))
 		xor(keys + i, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
 	    des_set_key(keys + i, s[i]);
 	}
 	memset(&ivec, 0, sizeof(ivec));
-	des_ede3_cbc_encrypt(keys, keys, sizeof(keys), 
+	des_ede3_cbc_encrypt((void*)tmp, (void*)tmp, sizeof(tmp), 
 			     s[0], s[1], s[2], &ivec, DES_ENCRYPT);
 	memset(s, 0, sizeof(s));
 	memset(&ivec, 0, sizeof(ivec));
 	for(i = 0; i < 3; i++){
+	    memcpy(keys + i, tmp + i * 8, sizeof(keys[i]));
 	    des_set_odd_parity(keys + i);
 	    if(des_is_weak_key(keys + i))
 		xor(keys + i, (unsigned char*)"\0\0\0\0\0\0\0\xf0");
 	}
+	memset(tmp, 0, sizeof(tmp));
     }
     key->keytype = enctype;
     krb5_data_copy(&key->keyvalue, keys, sizeof(keys));
