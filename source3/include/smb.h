@@ -251,6 +251,7 @@ typedef fstring string;
 #define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
 
+
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
 {
@@ -272,14 +273,57 @@ typedef struct nttime_info
 #define ACB_PWNOEXP    0x0200  /* 1 = User password does not expire */
 #define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
  
+#define MAX_HOURS_LEN 32
+
+struct sam_passwd
+{
+	time_t logon_time;            /* logon time */
+	time_t logoff_time;           /* logoff time */
+	time_t kickoff_time;          /* kickoff time */
+	time_t pass_last_set_time;    /* password last set time */
+	time_t pass_can_change_time;  /* password can change time */
+	time_t pass_must_change_time; /* password must change time */
+
+	char *smb_name;     /* username string */
+	char *full_name;    /* user's full name string */
+	char *home_dir;     /* home directory string */
+	char *dir_drive;    /* home directory drive string */
+	char *logon_script; /* logon script string */
+	char *profile_path; /* profile path string */
+	char *acct_desc  ;  /* user description string */
+	char *workstations; /* login from workstations string */
+	char *unknown_str ; /* don't know what this is, yet. */
+	char *munged_dial ; /* munged path name and dial-back tel number */
+
+	int smb_userid;       /* this is actually the unix uid_t */
+	int smb_grpid;        /* this is actually the unix gid_t */
+	uint32 user_rid;      /* Primary User ID */
+	uint32 group_rid;     /* Primary Group ID */
+
+	unsigned char *smb_passwd; /* Null if no password */
+	unsigned char *smb_nt_passwd; /* Null if no password */
+
+	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+	uint32 unknown_3; /* 0x00ff ffff */
+
+	uint16 logon_divs; /* 168 - number of hours in a week */
+	uint32 hours_len; /* normally 21 bytes */
+	uint8 hours[MAX_HOURS_LEN];
+
+	uint32 unknown_5; /* 0x0002 0000 */
+	uint32 unknown_6; /* 0x0000 04ec */
+};
+
 struct smb_passwd
 {
-  char *smb_name;     /* username */
-  int smb_userid;       /* this is actually the unix uid_t */
-  unsigned char *smb_passwd; /* Null if no password */
-  unsigned char *smb_nt_passwd; /* Null if no password */
-  uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
-  time_t pass_last_set_time;    /* password last set time */
+	int smb_userid;     /* this is actually the unix uid_t */
+	char *smb_name;     /* username string */
+
+	unsigned char *smb_passwd; /* Null if no password */
+	unsigned char *smb_nt_passwd; /* Null if no password */
+
+	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+	time_t pass_last_set_time;    /* password last set time */
 };
 
 
