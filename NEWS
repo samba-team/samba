@@ -1,5 +1,6 @@
 Changes in release 0.2e:
 
+ * changed copyright notices to remove `advertising'-clause.
  * get{addr,name}info added to roken and used in the other code
    (this makes things work much better with hosts with both v4 and v6
     addresses, among other things)
