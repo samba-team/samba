@@ -587,6 +587,7 @@
 
 	<itemizedlist>
 		<listitem><para><parameter>add user script</parameter></para></listitem>
+		<listitem><para><parameter>addprinter command</parameter></para></listitem>
 		<listitem><para><parameter>allow trusted domains</parameter></para></listitem>
 		<listitem><para><parameter>announce as</parameter></para></listitem>
 		<listitem><para><parameter>announce version</parameter></para></listitem>
@@ -604,10 +605,11 @@
 		<listitem><para><parameter>debug pid</parameter></para></listitem>
 		<listitem><para><parameter>debug timestamp</parameter></para></listitem>
 		<listitem><para><parameter>debug uid</parameter></para></listitem>
-		<listitem><para><parameter>debug level</parameter></para></listitem>
+		<listitem><para><parameter>debuglevel</parameter></para></listitem>
 		<listitem><para><parameter>default</parameter></para></listitem>
 		<listitem><para><parameter>default service</parameter></para></listitem>
 		<listitem><para><parameter>delete user script</parameter></para></listitem>
+		<listitem><para><parameter>deleteprinter command</parameter></para></listitem>
 		<listitem><para><parameter>dfree command</parameter></para></listitem>
 		<listitem><para><parameter>dns proxy</parameter></para></listitem>
 		<listitem><para><parameter>domain admin group</parameter></para></listitem>
@@ -923,7 +925,64 @@
 		%u</command></para>
 		</listitem>
 		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="ADDPRINTERCOMMAND">addprinter command</term>
+		<listitem><para>With the introduction of MS-RPC based printing
+		support for Windows NT/2000 clients in Samba 2.2, The MS Add
+		Printer Wizard (APW) icon is now also available in the 
+		"Printers..." folder displayed a share listing.  The APW
+		allows for printers to be add remotely to a Samba or Windows 
+		NT/2000 print server.</para>
 		
+		<para>For a Samba host this means that the printer must be 
+		physically added to underlying printing system.  The <parameter>
+		addprinter command</parameter> defines a script to be run which 
+		will perform the necessary operations for adding the printer
+		to the print system and to add the appropriate service definition 
+		to the  <filename>smb.conf</filename> file in order that it can be 
+		shared by <ulink url="smbd.8.html"><command>smbd(8)</command>
+		</ulink>.</para>
+		
+		<para>The <parameter>addprinter command</parameter> is
+		automatically invoked with the following parameter (in 
+		order:</para>
+		
+		<itemizedlist>
+			<listitem><para><parameter>printer name</parameter></para></listitem>
+			<listitem><para><parameter>share name</parameter></para></listitem>
+			<listitem><para><parameter>port name</parameter></para></listitem>
+			<listitem><para><parameter>driver name</parameter></para></listitem>
+			<listitem><para><parameter>location</parameter></para></listitem>
+			<listitem><para><parameter>Windows 9x driver location</parameter>
+			</para></listitem>
+		</itemizedlist>
+		
+		<para>All parameters are filled in from the PRINTER_INFO_2 structure sent 
+		by the Windows NT/2000 client with one excpetion.  The "Windows 9x
+		driver location" parameter is included for backwards compatibility
+		only.  The remaining fields in the structure are generated from answers
+		to the APW questions.</para>
+		
+		<para>Once the <parameter>addprinter command</parameter> has 
+		been executed, <command>smbd</command> will reparse the <filename>
+		smb.conf</filename> to determine if the share defined by the APW
+		exists.  If the sharename is still invalid, then <command>smbd
+		</command> will return an ACCESS_DENIED error to the client.</para>
+		
+		<para>See also <link linkend="DELETEPRINTERCOMMAND"><parameter>
+		deleteprinter command</parameter></link>, <link 
+		linkend="printing"><parameter>printing</parameter></link>,
+		<link linkend="SHOWADDPRINTERWIZARD"><parameter>show add
+		printer wizard</parameter></link></para>
+		
+		<para>Default: <emphasis>none</emphasis></para>
+		<para>Example: <command>addprinter command = /usr/bin/addprinter
+		</command></para>
+		</listitem>
+		</varlistentry>
 
 
 		<varlistentry>
@@ -1582,7 +1641,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="DEBUGLEVEL">debug level (G)</term>
+		<term><anchor id="DEBUGLEVEL">debuglevel (G)</term>
 		<listitem><para>The value of the parameter (an integer) allows 
 		the debug level (logging level) to be specified in the 
 		<filename>smb.conf</filename> file. This is to give greater 
@@ -1728,6 +1787,47 @@
 		<para>Example: <command>delete user script = /usr/local/samba/bin/del_user 
 		%u</command></para></listitem>
 		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="DELETEPRINTERCOMMAND">deleteprinter command</term>
+		<listitem><para>With the introduction of MS-RPC based printer
+		support for Windows NT/2000 clients in Samba 2.2, it is now 
+		possible to delete printer at run time by issuing the 
+		DeletePrinter() RPC call.</para>
+		
+		<para>For a Samba host this means that the printer must be 
+		physically deleted from underlying printing system.  The <parameter>
+		deleteprinter command</parameter> defines a script to be run which 
+		will perform the necessary operations for removing the printer
+		from the print system and from <filename>smb.conf</filename>.
+		</para>
+		
+		<para>The <parameter>deleteprinter command</parameter> is 
+		automatically called with only one parameter: <parameter>
+		"printer name"</parameter>.</para>
+		
+				
+		<para>Once the <parameter>deleteprinter command</parameter> has 
+		been executed, <command>smbd</command> will reparse the <filename>
+		smb.conf</filename> to associated printer no longer exists.  
+		If the sharename is still valid, then <command>smbd
+		</command> will return an ACCESS_DENIED error to the client.</para>
+		
+		<para>See also <link linkend="ADDPRINTERCOMMAND"><parameter>
+		addprinter command</parameter></link>, <link 
+		linkend="printing"><parameter>printing</parameter></link>,
+		<link linkend="SHOWADDPRINTERWIZARD"><parameter>show add
+		printer wizard</parameter></link></para>
+		
+		<para>Default: <emphasis>none</emphasis></para>
+		<para>Example: <command>deleteprinter command = /usr/bin/removeprinter
+		</command></para>
+		</listitem>
+		</varlistentry>
+
 
 
 
