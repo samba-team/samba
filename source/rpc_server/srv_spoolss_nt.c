@@ -4859,13 +4859,15 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, char *s
 		   the list of dependent files */
 		   
 		if ( servername )
-		slprintf(line, sizeof(line)-1, "\\\\%s%s", servername, v);
+			slprintf(line, sizeof(line)-1, "\\\\%s%s", servername, v);
 		else
 			pstrcpy( line, v );
 			
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
 		
-		if((tuary=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
+		/* add one extra unit16 for the second terminating NULL */
+		
+		if((tuary=Realloc(*uni_array, (j+1+strlen(line)+2)*sizeof(uint16))) == NULL) {
 			DEBUG(2,("init_unistr_array: Realloc error\n" ));
 			return 0;
 		} else
@@ -4879,6 +4881,9 @@ static uint32 init_unistr_array(uint16 **uni_array, fstring *char_array, char *s
 	}
 	
 	if (*uni_array) {
+		/* special case for ""; we need to add both NULL's here */
+		if (!j)
+			(*uni_array)[j++]=0x0000;	
 		(*uni_array)[j]=0x0000;
 	}
 	
@@ -5108,6 +5113,7 @@ static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum,
 	fill_printer_driver_info_6(info, driver, servername);
 
 	free_a_printer(&printer,2);
+	free_a_printer_driver(driver, 3);
 
 	return WERR_OK;
 }

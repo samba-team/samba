@@ -1870,12 +1870,17 @@ BOOL domain_client_validate( char *user, char *domain,
 			smb_apasswd, smb_apasslen,
 			smb_ntpasswd, smb_ntpasslen,
 			user_exists, pptoken, &winbindd_ok);
-
-	if (ret && winbindd_ok)
+	
+	/* if winbindd is ok then just return whatever 
+	   domain_client_validate_winbindd() said */
+	   
+	if (winbindd_ok)
 		return ret;
 
-	DEBUG(0,("domain_client_validate: winbindd auth failed, falling back to smbd auth \
-for user %s\\%s\n", domain, user ));
+	/* if winbindd is not alive, then we have to do it ourselves */
+	
+	DEBUG(0,("domain_client_validate: winbindd auth failed, falling back to smbd auth for user %s\\%s\n", 
+		domain, user ));
 
 	return domain_client_validate_direct(user, domain,
 			smb_apasswd, smb_apasslen,
