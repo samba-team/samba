@@ -9,7 +9,7 @@ SAMBA_INCL = ../../source/include
 UBIQX_SRC = ../../source/ubiqx
 SMBWR_SRC = ../../source/smbwrapper
 CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -g -I/usr/include/heimdal -fPIC
-PDB_OBJS = test.so
+PDB_OBJS = test.la
 
 # Default target
 
@@ -17,8 +17,8 @@ default: $(PDB_OBJS)
 
 # Pattern rules
 
-%.so: %.lo
-	$(LIBTOOL) --mode=link $(CC) -shared -o $@ $< $(LDFLAGS)
+%.la: %.lo
+	$(LIBTOOL) --mode=link $(CC) -module -o $@ $< $(LDFLAGS) -rpath /usr/lib/samba/pdb/
 
 %.lo: %.c
 	$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c $<
@@ -28,4 +28,4 @@ default: $(PDB_OBJS)
 clean:
 	rm -rf .libs
 	rm -f core *~ *% *.bak \
-		$(PDB_OBJS) $(PDB_OBJS:.so=.o) $(PDB_OBJS:.so=.lo) 
+		$(PDB_OBJS) $(PDB_OBJS:.la=.o) $(PDB_OBJS:.la=.lo) 
