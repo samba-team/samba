@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -66,10 +66,11 @@ der_get_int (const unsigned char *p, size_t len,
     int val = 0;
     size_t oldlen = len;
 
-    if (len--)
+    if (len > 0) {
 	val = (signed char)*p++;
-    while (len--)
-	val = val * 256 + *p++;
+	while (--len)
+	    val = val * 256 + *p++;
+    }
     *ret = val;
     if(size) *size = oldlen;
     return 0;
