@@ -193,9 +193,12 @@ find_cells(char *file, char ***cells, int *index)
 	    if(strcmp((*cells)[i], cell) == 0)
 		break;
 	if(i == ind){
-	    *cells = realloc(*cells, (ind + 1) * sizeof(**cells));
-	    if (*cells == NULL)
+	    char **tmp;
+
+	    tmp = realloc(*cells, (ind + 1) * sizeof(**cells));
+	    if (tmp == NULL)
 		break;
+	    *cells = tmp;
 	    (*cells)[ind] = strdup(cell);
 	    if ((*cells)[ind] == NULL)
 		break;
