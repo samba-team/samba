@@ -294,9 +294,12 @@ fi
 
 # Build codepage load files
 cd /etc
-for i in 437 737 775 850 852 861 866 932 936 949 950
+for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
 /usr/bin/make_smbcodepage c $i /etc/codepages/src/codepage_def.$i /etc/codepages/codepage.$i
+done
+for i in 437 737 850 852 861 866 932 936 949 950
+do
 /usr/bin/make_unicodemap CP$i.TXT /etc/codepages/src/CP$i.TXT /etc/codepages/unicode_map.$i
 done
 for i in 1251
