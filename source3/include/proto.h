@@ -2102,6 +2102,7 @@ int struni2(uint16 *p, char *buf);
 char *unistr(char *buf);
 int unistrncpy(char *dst, char *src, int len);
 int unistrcpy(char *dst, char *src);
+char *string_create_s(int size);
 char *safe_strcpy(char *dest, char *src, int maxlength);
 char *safe_strcat(char *dest, char *src, int maxlength);
 char *align4(char *q, char *base);
