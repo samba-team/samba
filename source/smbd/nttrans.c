@@ -603,6 +603,10 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
     
 	/* See if it is one we want to handle. */
+
+	if (lp_lanman_printing_only() && strequal(fname, "\\spoolss"))
+		return(ERROR(ERRSRV,ERRaccess));
+
 	for( i = 0; known_nt_pipes[i]; i++ )
 		if( strequal(fname,known_nt_pipes[i]))
 			break;

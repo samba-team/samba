@@ -880,7 +880,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   /* remove any trailing username */
   if ((p = strchr(QueueName,'%'))) *p = 0;
  
-  DEBUG(3,("PrintQueue uLevel=%d name=%s\n",uLevel,QueueName));
+  DEBUG(3,("api_DosPrintQGetInfo: uLevel=%d name=%s\n",uLevel,QueueName));
  
   /* check it's a supported varient */
   if (!prefix_ok(str1,"zWrLh")) return False;
@@ -919,8 +919,10 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 
   if (mdrcnt > 0) {
     *rdata = REALLOC(*rdata,mdrcnt);
-    desc.base = *rdata;
-    desc.buflen = mdrcnt;
+  }
+  desc.base = *rdata;
+  desc.buflen = mdrcnt;
+#if 0
   } else {
     /*
      * Don't return data but need to get correct length
@@ -929,12 +931,14 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
      desc.buflen = getlen(desc.format);
      desc.base = tmpdata = (char *) malloc (desc.buflen);
   }
+#endif
 
   if (init_package(&desc,1,count)) {
 	  desc.subcount = count;
 	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
-  } else if(uLevel == 0) {
+  } 
 #if 0
+  else if(uLevel == 0) {
 	/*
 	 * This is a *disgusting* hack.
 	 * This is *so* bad that even I'm embarrassed (and I
@@ -954,8 +958,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
  	 */
 
 	fail_next_srvsvc_open();
-#endif
   }
+#endif
 
   *rdata_len = desc.usedlen;
   
