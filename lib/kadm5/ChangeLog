@@ -1,3 +1,7 @@
+2000-04-05  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (LDADD): add LIB_openldap
+
 2000-04-03  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libkadm5srv_la_LDFLAGS): set version to 6:0:1

@@ -1,3 +1,7 @@
+2000-04-05  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am.common (INCLUDE_openldap, LIB_openldap): add
+
 2000-03-28  Assar Westerlund  <assar@sics.se>
 
 	* krb-prog-yacc.m4: AC_MSG_WARNING should be AC_MSG_WARN

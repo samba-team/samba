@@ -1,3 +1,13 @@
+2000-04-09  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/Makefile.am (gen_files): add asn1_UNSIGNED.x
+	* lib/asn1/gen_locl.h (filename): add prototype
+	(init_generate): const-ize
+	* lib/asn1/gen.c (filename): new function clean-up a little bit.
+	* lib/asn1/parse.y: be more tolerant in ranges
+	* lib/asn1/lex.l: count lines correctly.
+	(error_message): print filename in messages
+
 2000-04-08  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/rd_safe.c (krb5_rd_safe): increment sequence number

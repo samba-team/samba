@@ -1,3 +1,8 @@
+2000-04-09  Assar Westerlund  <assar@sics.se>
+
+	* login.c: allow conversion of v5 -> v4 tickets when logging in
+	with forwarded tickets
+
 1999-11-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* conf.c: remove case for not having cgetent, since it's in roken

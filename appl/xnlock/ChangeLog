@@ -1,3 +1,9 @@
+2000-04-09  Assar Westerlund  <assar@sics.se>
+
+	* xnlock.c (verfiy_krb5): get the v4-realm from the v5-ticket and
+	not from the default one.
+	* xnlock.c (verify_krb5): add obtainting of v4 tickets.
+
 1999-11-17  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: only build when we have X11.  From: Simon Josefsson
