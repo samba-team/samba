@@ -22,11 +22,15 @@
 <!ENTITY ADS-HOWTO SYSTEM "ADS-HOWTO.sgml">
 <!ENTITY Passdb SYSTEM "passdb.sgml">
 <!ENTITY VFS SYSTEM "VFS.sgml">
-<!ENTITY GroupProfiles SYSTEM "GroupProfiles.sgml">
 <!ENTITY SecuringSamba SYSTEM "securing-samba.sgml">
 <!ENTITY Compiling SYSTEM "Compiling.sgml">
 <!ENTITY unicode SYSTEM "unicode.sgml">
 <!ENTITY CUPS SYSTEM "CUPS-printing.sgml">
+<!ENTITY AdvancedNetworkAdmin SYSTEM "AdvancedNetworkAdmin.sgml">
+<!ENTITY PolicyMgmt SYSTEM "PolicyMgmt.sgml">
+<!ENTITY ProfileMgmt SYSTEM "ProfileMgmt.sgml">
+<!ENTITY NT4Migration SYSTEM "NT4Migration.sgml">
+<!ENTITY SWAT SYSTEM "SWAT.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -102,30 +106,34 @@ for various environments.
 </part>
 
 <part id="optional">
-<title>Optional configuration</title>
+<title>Advanced Configuration</title>
 <partintro>
 <title>Introduction</title>
 <para>Samba has several features that you might want or might not want to use. The chapters in this 
 part each cover one specific feature.</para>
 </partintro>
-&IntegratingWithWindows;
 &NT-Security;
-&Samba-PAM;
-&MS-Dfs-Setup;
+&GROUP-MAPPING-HOWTO;
 &PRINTER-DRIVER2;
 &CUPS;
 &WINBIND;
-&BROWSING;
+&AdvancedNetworkAdmin;
+&PolicyMgmt;
+&ProfileMgmt;
+&Samba-PAM;
 &VFS;
-&GROUP-MAPPING-HOWTO;
-&SPEED;
-&GroupProfiles;
+&MS-Dfs-Setup;
+&IntegratingWithWindows;
+&BROWSING;
 &SecuringSamba;
 &unicode;
 </part>
 
 <part id="Appendixes">
 <title>Appendixes</title>
+&SWAT;
+&NT4Migration;
+&SPEED;
 &Portability;
 &Other-Clients;
 &Compiling;
@@ -133,4 +141,4 @@ part each cover one specific feature.</para>
 &Diagnosis;
 </part>
 
-</book>
+
