@@ -42,6 +42,7 @@
 /*****************************************************/
 
 #include "includes.h"
+#include "utils/net/net.h"
 #include "lib/cmdline/popt_common.h"
 
 /*

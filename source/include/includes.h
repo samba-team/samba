@@ -28,31 +28,6 @@
 
 #include "local.h"
 
-#ifdef AIX
-#define DEFAULT_PRINTING PRINT_AIX
-#define PRINTCAP_NAME "/etc/qconfig"
-#endif
-
-#ifdef HPUX
-#define DEFAULT_PRINTING PRINT_HPUX
-#endif
-
-#ifdef QNX
-#define DEFAULT_PRINTING PRINT_QNX
-#endif
-
-#ifdef SUNOS4
-/* on SUNOS4 termios.h conflicts with sys/ioctl.h */
-#undef HAVE_TERMIOS_H
-#endif
-
-#ifndef DEFAULT_PRINTING
-#define DEFAULT_PRINTING PRINT_BSD
-#endif
-#ifndef PRINTCAP_NAME
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-
 #if (__GNUC__ >= 3)
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
@@ -215,8 +190,6 @@ extern int errno;
 #include "structs.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
-#include "libnet/libnet.h"
-#include "utils/net/net.h"
 #include "nsswitch/winbind_client.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
@@ -245,52 +218,8 @@ typedef int (*comparison_fn_t)(const void *, const void *);
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
-#ifndef SIGCLD
-#define SIGCLD SIGCHLD
-#endif
-
-#ifndef MAP_FILE
-#define MAP_FILE 0
-#endif
-
-#if defined(HAVE_PUTPRPWNAM) && defined(AUTH_CLEARTEXT_SEG_CHARS)
-#define OSF1_ENH_SEC 1
-#endif
-
-#ifndef ALLOW_CHANGE_PASSWORD
-#if (defined(HAVE_TERMIOS_H) && defined(HAVE_DUP2) && defined(HAVE_SETSID))
-#define ALLOW_CHANGE_PASSWORD 1
-#endif
-#endif
-
-/* what is the longest significant password available on your system? 
- Knowing this speeds up password searches a lot */
-#ifndef PASSWORD_LENGTH
-#define PASSWORD_LENGTH 8
-#endif
-
 #ifndef HAVE_PIPE
 #define SYNC_DNS 1
-#endif
-
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 256
-#endif
-
-#ifndef SEEK_SET
-#define SEEK_SET 0
-#endif
-
-#ifndef INADDR_LOOPBACK
-#define INADDR_LOOPBACK 0x7f000001
-#endif
-
-#ifndef INADDR_NONE
-#define INADDR_NONE 0xffffffff
-#endif
-
-#if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
-#define ULTRIX_AUTH 1
 #endif
 
 #ifndef HAVE_STRDUP
@@ -311,10 +240,6 @@ size_t strlcpy(char *d, const char *s, size_t bufsize);
 
 #ifndef HAVE_STRLCAT
 size_t strlcat(char *d, const char *s, size_t bufsize);
-#endif
-
-#ifndef HAVE_FTRUNCATE
-int ftruncate(int f,long l);
 #endif
 
 #ifndef HAVE_STRNDUP
@@ -362,10 +287,6 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #define VA_COPY(dest, src) __va_copy(dest, src)
 #else
 #define VA_COPY(dest, src) (dest) = (src)
-#endif
-
-#ifndef HAVE_TIMEGM
-time_t timegm(struct tm *tm);
 #endif
 
 #if defined(VALGRIND)

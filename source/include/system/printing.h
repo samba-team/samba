@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
-   
-   Copyright (C) Stefan Metzmacher	2004
+
+   printing system include wrappers
+
+   Copyright (C) Andrew Tridgell 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,29 +20,23 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "libnet/libnet.h"
+#ifdef AIX
+#define DEFAULT_PRINTING PRINT_AIX
+#define PRINTCAP_NAME "/etc/qconfig"
+#endif
 
-struct libnet_context *libnet_context_init(void)
-{
-	TALLOC_CTX *mem_ctx;
-	struct libnet_context *ctx;
+#ifdef HPUX
+#define DEFAULT_PRINTING PRINT_HPUX
+#endif
 
-	mem_ctx = talloc_init("libnet_context");
+#ifdef QNX
+#define DEFAULT_PRINTING PRINT_QNX
+#endif
 
-	ctx = talloc_p(mem_ctx, struct libnet_context);
-	if (!ctx) {
-		return NULL;
-	}
+#ifndef DEFAULT_PRINTING
+#define DEFAULT_PRINTING PRINT_BSD
+#endif
+#ifndef PRINTCAP_NAME
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
 
-	ctx->mem_ctx = mem_ctx;
-
-	return ctx;
-}
-
-void libnet_context_destroy(struct libnet_context **libnetctx)
-{
-	talloc_destroy((*libnetctx)->mem_ctx);
-
-	(*libnetctx) = NULL;
-}

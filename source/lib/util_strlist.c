@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 
 /**
  List of Strings manipulation functions

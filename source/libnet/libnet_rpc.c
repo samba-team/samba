@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "libnet/libnet.h"
 
 /* find a domain pdc generic */
 static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_find_pdc *r)

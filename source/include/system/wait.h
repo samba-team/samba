@@ -31,3 +31,7 @@
 typedef int sig_atomic_t;
 #endif
 
+#ifndef SIGCLD
+#define SIGCLD SIGCHLD
+#endif
+
