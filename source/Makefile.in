@@ -127,7 +127,8 @@ SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ bin/swat@EXEEXT@ @EXTRA_SBIN_PROG
 BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 	bin/testparm@EXEEXT@ bin/testprns@EXEEXT@ bin/smbstatus@EXEEXT@ 
 BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
-	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ bin/tdbdump@EXEEXT@
+	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ bin/tdbdump@EXEEXT@ \
+	bin/tdbtool@EXEEXT@
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
 	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ \
 	bin/smbcquotas@EXEEXT@
@@ -316,7 +317,7 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/util_sam_sid.o passdb/pdb_compat.o \
-		passdb/privileges.o passdb/lookup_sid.o \
+		passdb/lookup_sid.o \
 		passdb/login_cache.o @PDB_STATIC@ passdb/pdb_sql.o \
 		lib/system_smbd.o
 
@@ -468,7 +469,7 @@ TESTPARM_OBJ = utils/testparm.o \
 	       $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
 
 TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
-               $(LIB_NONSMBD_OBJ)
+               $(LIB_NONSMBD_OBJ) libsmb/nterr.o
 
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSCHANGE_OBJ) $(PARAM_OBJ) $(SECRETS_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ)\
@@ -541,7 +542,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
 	   utils/net_cache.o utils/net_groupmap.o utils/net_idmap.o \
-	   utils/net_status.o utils/net_rpc_printer.o utils/net_privileges.o
+	   utils/net_status.o utils/net_rpc_printer.o
 
 NET_OBJ = $(NET_OBJ1) $(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -601,7 +602,7 @@ SMBCQUOTAS_OBJ = utils/smbcquotas.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(UBIQX_OBJ) $(LIB_NONSMBD_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
 		$(LIBMSRPC_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
-TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ)
+TALLOCTORT_OBJ = lib/talloctort.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(UBIQX_OBJ) libsmb/nterr.o
 
 RPCTORTURE_OBJ = torture/rpctorture.o \
              rpcclient/display.o \
@@ -687,6 +688,8 @@ POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
 
 TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o $(SNPRINTF_OBJ) $(TDBBASE_OBJ)
+
+TDBTOOL_OBJ = tdb/tdbtool.o $(TDBBASE_OBJ)
 
 TDBDUMP_OBJ = tdb/tdbdump.o $(TDBBASE_OBJ)
 
@@ -1269,6 +1272,10 @@ bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBBACKUP_OBJ)
+
+bin/tdbtool@EXEEXT@: $(TDBTOOL_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(DYNEXP) $(TDBTOOL_OBJ)
 
 bin/tdbdump@EXEEXT@: $(TDBDUMP_OBJ) bin/.dummy
 	@echo Linking $@

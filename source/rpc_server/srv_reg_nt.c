@@ -388,7 +388,7 @@ WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 		val = dup_registry_value(
 			regval_ctr_specific_value( &regvals, 0 ) );
  	
-		status = NT_STATUS_OK;
+		status = WERR_OK;
 	
 		goto out;
 	}

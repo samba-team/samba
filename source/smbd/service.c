@@ -32,6 +32,7 @@ BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 {
 	extern char magic_char;
 	static connection_struct *last_conn;
+	static uint16 last_flags;
 	int snum;
 
 	if (!conn)  {
@@ -51,10 +52,12 @@ BOOL set_current_service(connection_struct *conn, uint16 flags, BOOL do_chdir)
 		return(False);
 	}
 
-	if (conn == last_conn)
+	if ((conn == last_conn) && (last_flags == flags)) {
 		return(True);
+	}
 
 	last_conn = conn;
+	last_flags = flags;
 
 	/* Obey the client case sensitivity requests - only for clients that support it. */
 	if (lp_casesensitive(snum) == Auto) {
@@ -372,7 +375,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 	conn->nt_user_token = NULL;
-	conn->privs = NULL;
 
 	conn->read_only = lp_readonly(conn->service);
 	conn->admin_user = False;
@@ -481,12 +483,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
 						      conn->ngroups, conn->groups,
 						      guest);
-
-		init_privilege(&(conn->privs));
-
-		become_root();
-		pdb_get_privilege_set(conn->nt_user_token->user_sids, conn->nt_user_token->num_sids, conn->privs);
-		unbecome_root();
 	}
 
 	/*
