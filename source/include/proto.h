@@ -1780,8 +1780,14 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint16 nt_pipe_fnum,
 BOOL cli_net_sam_logon(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr, 
                        NET_USER_INFO_3 *user_info3);
 BOOL cli_net_sam_logoff(struct cli_state *cli, uint16 nt_pipe_fnum, NET_ID_INFO_CTR *ctr);
-BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum, uint32 database_id, uint32 *num_deltas, SAM_DELTA_HDR *hdr_deltas, SAM_DELTA_CTR *deltas);
+BOOL cli_net_sam_sync(struct cli_state *cli, uint16 nt_pipe_fnum,
+				const char* srv_name,
+				uint32 database_id,
+				uint32 *num_deltas,
+				SAM_DELTA_HDR *hdr_deltas,
+				SAM_DELTA_CTR *deltas);
 BOOL do_sam_sync(struct cli_state *cli, uchar trust_passwd[16],
+				const char* acct_name,
 				const char* srv_name,
 				SAM_DELTA_HDR hdr_deltas[MAX_SAM_DELTAS],
 				SAM_DELTA_CTR deltas    [MAX_SAM_DELTAS],

@@ -45,7 +45,9 @@ experimental nt login.
 void cmd_netlogon_login_test(struct client_info *info)
 {
 	uint16 nt_pipe_fnum;
+#if 0
 	extern BOOL global_machine_password_needs_changing;
+#endif
 
 	fstring nt_user_name;
 	fstring password;
@@ -195,7 +197,8 @@ void cmd_sam_sync(struct client_info *info)
 		return;
 	}
 
-	if (do_sam_sync(smb_cli, trust_passwd, global_myname,
+	if (do_sam_sync(smb_cli, trust_passwd,
+	    smb_cli->mach_acct, global_myname,
 	    hdr_deltas, deltas, &num))
 	{
 		display_sam_sync(out_hnd, ACTION_HEADER   , hdr_deltas, deltas, num);
