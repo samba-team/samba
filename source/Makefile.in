@@ -987,7 +987,7 @@ bin/mysql.@SHLIBEXT@: $(MYSQL_OBJ)
 
 bin/ldapsam.@SHLIBEXT@: passdb/pdb_ldap.o
 	@echo "Building plugin $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ @LDAP_LIBS@ passdb/pdb_ldap.o \
+	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_ldap.o \
 		@SONAMEFLAG@`basename $@`
 
 bin/tdbsam.@SHLIBEXT@: passdb/pdb_tdb.o
