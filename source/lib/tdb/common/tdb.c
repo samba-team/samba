@@ -1070,26 +1070,12 @@ static tdb_off tdb_find(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash,
 	return TDB_ERRCODE(TDB_ERR_NOEXIST, 0);
 }
 
-/* If they do lockkeys, check that this hash is one they locked */
-static int tdb_keylocked(TDB_CONTEXT *tdb, u32 hash)
-{
-	u32 i;
-	if (!tdb->lockedkeys)
-		return 1;
-	for (i = 0; i < tdb->lockedkeys[0]; i++)
-		if (tdb->lockedkeys[i+1] == hash)
-			return 1;
-	return TDB_ERRCODE(TDB_ERR_NOLOCK, 0);
-}
-
 /* As tdb_find, but if you succeed, keep the lock */
 static tdb_off tdb_find_lock_hash(TDB_CONTEXT *tdb, TDB_DATA key, u32 hash, int locktype,
 			     struct list_struct *rec)
 {
 	u32 rec_ptr;
 
-	if (!tdb_keylocked(tdb, hash))
-		return 0;
 	if (tdb_lock(tdb, BUCKET(hash), locktype) == -1)
 		return 0;
 	if (!(rec_ptr = tdb_find(tdb, key, hash, rec)))
@@ -1290,10 +1276,6 @@ static int tdb_next_lock(TDB_CONTEXT *tdb, struct tdb_traverse_lock *tlock,
 			 struct list_struct *rec)
 {
 	int want_next = (tlock->off != 0);
-
-	/* No traversal allows if you've called tdb_lockkeys() */
-	if (tdb->lockedkeys)
-		return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
 
 	/* Lock each chain from the start one. */
 	for (; tlock->hash < tdb->header.hash_size; tlock->hash++) {
@@ -1526,8 +1508,6 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 
 	/* find which hash bucket it is in */
 	hash = tdb->hash_fn(&key);
-	if (!tdb_keylocked(tdb, hash))
-		return -1;
 	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
 		return -1;
 
@@ -1644,8 +1624,6 @@ int tdb_append(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 
 	/* find which hash bucket it is in */
 	hash = tdb->hash_fn(&key);
-	if (!tdb_keylocked(tdb, hash))
-		return -1;
 	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
 		return -1;
 
@@ -1780,7 +1758,6 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->fd = -1;
 	tdb->name = NULL;
 	tdb->map_ptr = NULL;
-	tdb->lockedkeys = NULL;
 	tdb->flags = tdb_flags;
 	tdb->open_flags = open_flags;
 	tdb->log_fn = log_fn?log_fn:null_log_fn;
@@ -1968,7 +1945,6 @@ int tdb_close(TDB_CONTEXT *tdb)
 	if (tdb->fd != -1)
 		ret = close(tdb->fd);
 	SAFE_FREE(tdb->locked);
-	SAFE_FREE(tdb->lockedkeys);
 
 	/* Remove from contexts list */
 	for (i = &tdbs; *i; i = &(*i)->next) {
@@ -1992,8 +1968,6 @@ int tdb_lockall(TDB_CONTEXT *tdb)
 	/* There are no locks on read-only dbs */
 	if (tdb->read_only)
 		return TDB_ERRCODE(TDB_ERR_LOCK, -1);
-	if (tdb->lockedkeys)
-		return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
 	for (i = 0; i < tdb->header.hash_size; i++) 
 		if (tdb_lock(tdb, i, F_WRLCK))
 			break;
@@ -2014,51 +1988,6 @@ void tdb_unlockall(TDB_CONTEXT *tdb)
 	u32 i;
 	for (i=0; i < tdb->header.hash_size; i++)
 		tdb_unlock(tdb, i, F_WRLCK);
-}
-
-int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[])
-{
-	u32 i, j, hash;
-
-	/* Can't lock more keys if already locked */
-	if (tdb->lockedkeys)
-		return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
-	if (!(tdb->lockedkeys = malloc(sizeof(u32) * (number+1))))
-		return TDB_ERRCODE(TDB_ERR_OOM, -1);
-	/* First number in array is # keys */
-	tdb->lockedkeys[0] = number;
-
-	/* Insertion sort by bucket */
-	for (i = 0; i < number; i++) {
-		hash = tdb->hash_fn(&keys[i]);
-		for (j = 0; j < i && BUCKET(tdb->lockedkeys[j+1]) < BUCKET(hash); j++);
-			memmove(&tdb->lockedkeys[j+2], &tdb->lockedkeys[j+1], sizeof(u32) * (i-j));
-		tdb->lockedkeys[j+1] = hash;
-	}
-	/* Finally, lock in order */
-	for (i = 0; i < number; i++)
-		if (tdb_lock(tdb, BUCKET(tdb->lockedkeys[i+1]), F_WRLCK))
-			break;
-
-	/* If error, release locks we have... */
-	if (i < number) {
-		for ( j = 0; j < i; j++)
-			tdb_unlock(tdb, BUCKET(tdb->lockedkeys[j+1]), F_WRLCK);
-		SAFE_FREE(tdb->lockedkeys);
-		return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
-	}
-	return 0;
-}
-
-/* Unlock the keys previously locked by tdb_lockkeys() */
-void tdb_unlockkeys(TDB_CONTEXT *tdb)
-{
-	u32 i;
-	if (!tdb->lockedkeys)
-		return;
-	for (i = 0; i < tdb->lockedkeys[0]; i++)
-		tdb_unlock(tdb, BUCKET(tdb->lockedkeys[i+1]), F_WRLCK);
-	SAFE_FREE(tdb->lockedkeys);
 }
 
 /* lock/unlock one hash chain. This is meant to be used to reduce
