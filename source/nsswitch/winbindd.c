@@ -362,7 +362,7 @@ void winbind_process_packet(struct winbindd_cli_state *state)
 	/* Process request */
 	
 	/* Ensure null termination of entire request */
-	state->request.domain[sizeof(state->request.domain)-1]='\0';
+	state->request.null_term = '\0';
 
 	state->pid = state->request.pid;
 	
@@ -519,6 +519,12 @@ static void process_loop(void)
 		/* Initialise fd lists for select() */
 
 		listen_sock = open_winbindd_socket();
+
+		if (listen_sock == -1) {
+			perror("open_winbind_socket");
+			exit(1);
+		}
+
 		maxfd = listen_sock;
 
 		FD_ZERO(&r_fds);

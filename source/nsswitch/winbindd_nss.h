@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 5
+#define WINBIND_INTERFACE_VERSION 6
 
 /* Socket commands */
 
@@ -156,7 +156,7 @@ struct winbindd_request {
 		} name;
 		uint32 num_entries;  /* getpwent, getgrent */
 	} data;
-	fstring domain;      /* {set,get,end}{pw,gr}ent() */
+	char null_term;
 };
 
 /* Response values */
