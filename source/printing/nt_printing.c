@@ -1276,18 +1276,35 @@ uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 {
 	uint32 success;
-	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
 	
 	switch (level)
 	{
 		case 3: 
 		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
 			if (driver.info_3 != NULL)
 			{
 				info3=driver.info_3;
 				safe_free(info3->dependentfiles);
-				safe_free(info3);
 				ZERO_STRUCTP(info3);
+				safe_free(info3);
+				success=0;
+			}
+			else
+			{
+				success=4;
+			}
+			break;
+		}
+		case 6: 
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_3 *info6;
+			if (driver.info_6 != NULL)
+			{
+				info6=driver.info_6;
+				safe_free(info6->dependentfiles);
+				ZERO_STRUCTP(info6);
+				safe_free(info6);
 				success=0;
 			}
 			else

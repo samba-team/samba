@@ -618,6 +618,15 @@ BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+ Frees a BUFFER5 structure (just the malloced part).
+********************************************************************/
+
+void free_buffer5(BUFFER5 *buf5)
+{
+	safe_free(buf5->buffer);
+}
+
+/*******************************************************************
  Inits a BUFFER2 structure.
 ********************************************************************/
 

@@ -1275,8 +1275,6 @@ char *lp_domain_admin_group(void);
 char *lp_domain_guest_group(void);
 char *lp_domain_admin_users(void);
 char *lp_domain_guest_users(void);
-char *lp_nt_forms(void);
-char *lp_nt_drivers_file(void);
 char *lp_winbind_uid(void);
 char *lp_winbind_gid(void);
 char *lp_template_homedir(void);
@@ -1943,6 +1941,7 @@ void init_buffer3_hex(BUFFER3 *str, char *buf);
 void init_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len);
 BOOL smb_io_buffer3(char *desc, BUFFER3 *buf3, prs_struct *ps, int depth);
 BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
+void free_buffer5(BUFFER5 *buf5);
 void init_buffer2(BUFFER2 *str, uint8 *buf, int len);
 BOOL smb_io_buffer2(char *desc, BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
 void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
@@ -2559,11 +2558,15 @@ BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct
 BOOL spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u, 
                                           prs_struct *ps, int depth);
+void free_spool_printer_driver_info_level_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u);
 BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u, 
                                           prs_struct *ps, int depth);
+void free_spool_printer_driver_info_level_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u);
 BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
+void free_spool_printer_driver_info_level(SPOOL_PRINTER_DRIVER_INFO_LEVEL *il);
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
+void free_spoolss_q_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u);
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
                                 NT_PRINTER_DRIVER_INFO_LEVEL_3 **asc);

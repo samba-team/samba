@@ -833,9 +833,12 @@ static BOOL api_spoolss_addprinterdriver(prs_struct *data, prs_struct *rdata)
 				
 	if(!spoolss_io_r_addprinterdriver("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addprinterdriver: unable to marshall SPOOL_R_ADDPRINTERDRIVER.\n"));
+		free_spoolss_q_addprinterdriver(&q_u);
 		return False;
 	}
 	
+	free_spoolss_q_addprinterdriver(&q_u);
+
 	return True;
 }
 
