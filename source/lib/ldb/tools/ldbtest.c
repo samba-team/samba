@@ -287,35 +287,28 @@ be indexed
 */
 static void start_test_index(struct ldb_context **ldb)
 {
+	const char *base = "ou=Ldb Test,ou=People,o=University of Michigan,c=US";
 	struct ldb_message msg;
-	struct ldb_message_element el[1];
-	struct ldb_val val[1];
 	struct ldb_message **res;
 	int ret;
 
 	printf("Starting index test\n");
 
+	memset(&msg, 0, sizeof(msg));
 	msg.dn = strdup("@INDEXLIST");
-	msg.num_elements = 1;
-	msg.elements = el;
-
-	el[0].flags = 0;
-	el[0].name = strdup("@IDXATTR");
-	el[0].num_values = 1;
-	el[0].values = val;
-	
-	val[0].data = strdup("test");
-	val[0].length = strlen(val[0].data);
+	ldb_msg_add_string(*ldb, &msg, "@IDXATTR", strdup("uid"));
 
 	if (ldb_add(*ldb, &msg) != 0) {
 		printf("Add of %s failed - %s\n", msg.dn, ldb_errstring(*ldb));
 		exit(1);
 	}
 
-	msg.dn = strdup("test1");
-	el[0].name = strdup("test");
-	val[0].data = strdup("foo");
-	val[0].length = strlen(val[0].data);
+	memset(&msg, 0, sizeof(msg));
+	asprintf(&msg.dn, "cn=%s,%s", "test", base);
+	ldb_msg_add_string(*ldb, &msg, "cn", strdup("test"));
+	ldb_msg_add_string(*ldb, &msg, "sn", strdup("test"));
+	ldb_msg_add_string(*ldb, &msg, "uid", strdup("test"));
+	ldb_msg_add_string(*ldb, &msg, "objectClass", strdup("OpenLDAPperson"));
 
 	if (ldb_add(*ldb, &msg) != 0) {
 		printf("Add of %s failed - %s\n", msg.dn, ldb_errstring(*ldb));
@@ -334,13 +327,13 @@ static void start_test_index(struct ldb_context **ldb)
 		exit(1);
 	}
 
-	ret = ldb_search(*ldb, NULL, LDB_SCOPE_SUBTREE, "test=foo", NULL, &res);
+	ret = ldb_search(*ldb, NULL, LDB_SCOPE_SUBTREE, "uid=test", NULL, &res);
 	if (ret != 1) {
 		printf("Should have found 1 record - found %d\n", ret);
 		exit(1);
 	}
 
-	if (ldb_delete(*ldb, "test1") != 0 ||
+	if (ldb_delete(*ldb, msg.dn) != 0 ||
 	    ldb_delete(*ldb, "@INDEXLIST") != 0) {
 		printf("cleanup failed - %s\n", ldb_errstring(*ldb));
 		exit(1);
