@@ -268,7 +268,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   }
   else
   {
-    char *fsname = "NTFS";
+    char *fsname = "SAMBA";
     char *p;
 
     set_message(outbuf,3,3,True);
