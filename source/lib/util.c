@@ -2435,6 +2435,21 @@ BOOL unix_wild_match(const char *pattern, const char *string)
 	return unix_do_match(p2, s2) == 0;	
 }
 
+/**********************************************************************
+ Converts a name to a fully qalified domain name.
+***********************************************************************/
+                                                                                                                                                   
+void name_to_fqdn(fstring fqdn, const char *name)
+{
+	struct hostent *hp = sys_gethostbyname(name);
+	if ( hp && hp->h_name && *hp->h_name ) {
+		DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, hp->h_name));
+		fstrcpy(fqdn,hp->h_name);
+	} else {
+		DEBUG(10,("name_to_fqdn: lookup for %s failed.\n", name));
+		fstrcpy(fqdn, name);
+	}
+}
 
 #ifdef __INSURE__
 
