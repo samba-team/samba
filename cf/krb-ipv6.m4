@@ -122,4 +122,29 @@ if test "$ac_cv_lib_ipv6" = yes; then
 else
   CFLAGS="${save_CFLAGS}"
 fi
+
+/* test for AIX missing in6addr_loopback */
+if test "$ac_cv_lib_ipv6" = yes; then
+	AC_CACHE_CHECK([for in6addr_loopback],[ac_cv_var_in6addr_loopback],[
+	AC_TRY_LINK([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_NETINET_IN6_H
+#include <netinet/in6.h>
+#endif],[
+struct sockaddr_in6 sin6;
+sin6.sin6_addr = in6addr_loopback;
+],ac_cv_var_in6addr_loopback=yes,ac_cv_var_in6addr_loopback=no)])
+	if test "$ac_cv_var_in6addr_loopback" = yes; then
+		AC_DEFINE(HAVE_IN6ADDR_LOOPBACK, 1, 
+			[Define if you have the in6addr_loopback variable])
+	fi
+fi
 ])
