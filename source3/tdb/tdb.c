@@ -40,7 +40,7 @@
 #define TDB_FREE_MAGIC (~TDB_MAGIC)
 #define TDB_ALIGN 4
 #define MIN_REC_SIZE (2*sizeof(struct list_struct) + TDB_ALIGN)
-#define DEFAULT_HASH_SIZE 128
+#define DEFAULT_HASH_SIZE 131
 #define TDB_PAGE_SIZE 0x2000
 #define TDB_LEN_MULTIPLIER 10
 #define FREELIST_TOP (sizeof(struct tdb_header))
