@@ -373,6 +373,7 @@ BOOL enumdomains(char ***doms, uint32 *num_entries);
 void BlockSignals(BOOL block,int signum);
 void CatchSignal(int signum,void (*handler)(int ));
 void CatchChild(void);
+void CatchChildLeaveStatus(void);
 
 /*The following definitions come from  lib/slprintf.c  */
 
@@ -544,7 +545,6 @@ void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
-BOOL become_user_permanently(uid_t uid, gid_t gid);
 char *get_trusted_serverlist(const char* domain);
 char *pwdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pwdb_decode_acct_ctrl(const char *p);
@@ -644,6 +644,17 @@ uint32 lookup_builtin_alias_name(const char *alias_name, const char *domain,
 char *lookup_wk_alias_rid(uint32 rid);
 char *lookup_wk_user_rid(uint32 rid);
 char *lookup_wk_group_rid(uint32 rid);
+
+/*The following definitions come from  lib/util_sec.c  */
+
+void gain_root_privilege(void);
+void gain_root_group_privilege(void);
+void set_effective_uid(uid_t uid);
+void set_effective_gid(gid_t gid);
+void save_re_uid(void);
+void restore_re_uid(void);
+int set_re_uid(void);
+void become_user_permanently(uid_t uid, gid_t gid);
 
 /*The following definitions come from  lib/util_sid.c  */
 
@@ -2007,8 +2018,10 @@ BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
 BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 				const char *domain, const char *username, 
 				uint32 luid_low, char lm_chal[8],
-				char lm_chal_resp[24],
-				char nt_chal_resp[24],
+				char *lm_chal_resp,
+				int lm_chal_len,
+				char *nt_chal_resp,
+				int nt_chal_len,
 				NET_ID_INFO_CTR *ctr,
 				NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_logoff(const char* srv_name, const char* myhostname,
@@ -2823,7 +2836,7 @@ BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				const char *user_name, const char *wksta_name,
 				char sess_key[16],
-				unsigned char lm_cypher[16], unsigned char nt_cypher[16]);
+				uchar lm_cypher[16], uchar nt_cypher[16]);
 BOOL make_id_info4(NET_ID_INFO_4 *id, const char *domain_name,
 				uint32 param_ctrl,
 				uint32 log_id_low, uint32 log_id_high,
@@ -2833,9 +2846,11 @@ BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
 				uint32 param_ctrl,
 				uint32 log_id_low, uint32 log_id_high,
 				const char *user_name, const char *wksta_name,
-				unsigned char lm_challenge[8],
-				unsigned char lm_chal_resp[24],
-				unsigned char nt_chal_resp[24]);
+				uchar lm_challenge[8],
+				uchar *lm_chal_resp,
+				int lm_chal_len,
+				uchar *nt_chal_resp,
+				int nt_chal_len);
 BOOL make_sam_info(DOM_SAM_INFO *sam,
 				const char *logon_srv, const char *comp_name,
 				DOM_CRED *clnt_cred,

@@ -664,14 +664,15 @@ BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				const char *user_name, const char *wksta_name,
 				char sess_key[16],
-				unsigned char lm_cypher[16], unsigned char nt_cypher[16])
+				uchar lm_cypher[16], uchar nt_cypher[16])
 {
 	int len_domain_name = strlen(domain_name);
 	int len_user_name   = strlen(user_name  );
 	int len_wksta_name  = strlen(wksta_name );
 
-	unsigned char lm_owf[16];
-	unsigned char nt_owf[16];
+	uchar lm_owf[16];
+	uchar nt_owf[16];
+	uchar key[16];
 
 	if (id == NULL) return False;
 
@@ -688,34 +689,42 @@ BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  );
 	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name );
 
-	if (lm_cypher && nt_cypher)
+	memset(key, 0, 16);
+	memcpy(key, sess_key, 8);
+
+	if (lm_cypher != NULL)
 	{
-		unsigned char key[16];
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("lm cypher:"));
 		dump_data(100, lm_cypher, 16);
-
-		DEBUG(100,("nt cypher:"));
-		dump_data(100, nt_cypher, 16);
 #endif
-
-		memset(key, 0, 16);
-		memcpy(key, sess_key, 8);
 
 		memcpy(lm_owf, lm_cypher, 16);
 		SamOEMhash(lm_owf, key, False);
-		memcpy(nt_owf, nt_cypher, 16);
-		SamOEMhash(nt_owf, key, False);
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("encrypt of lm owf password:"));
 		dump_data(100, lm_owf, 16);
+#endif
+		/* set up pointers to cypher blocks */
+		lm_cypher = lm_owf;
+	}
 
+	if (nt_cypher != NULL)
+	{
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("nt cypher:"));
+		dump_data(100, nt_cypher, 16);
+#endif
+
+		memcpy(nt_owf, nt_cypher, 16);
+		SamOEMhash(nt_owf, key, False);
+
+#ifdef DEBUG_PASSWORD
 		DEBUG(100,("encrypt of nt owf password:"));
 		dump_data(100, nt_owf, 16);
 #endif
 		/* set up pointers to cypher blocks */
-		lm_cypher = lm_owf;
 		nt_cypher = nt_owf;
 	}
 
@@ -867,17 +876,17 @@ BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
 				uint32 param_ctrl,
 				uint32 log_id_low, uint32 log_id_high,
 				const char *user_name, const char *wksta_name,
-				unsigned char lm_challenge[8],
-				unsigned char lm_chal_resp[24],
-				unsigned char nt_chal_resp[24])
+				uchar lm_challenge[8],
+				uchar *lm_chal_resp,
+				int lm_chal_len,
+				uchar *nt_chal_resp,
+				int nt_chal_len)
 {
 	int len_domain_name = strlen(domain_name);
 	int len_user_name   = strlen(user_name  );
 	int len_wksta_name  = strlen(wksta_name );
- 	int nt_chal_resp_len = ((nt_chal_resp != NULL) ? 24 : 0);
-	int lm_chal_resp_len = ((lm_chal_resp != NULL) ? 24 : 0);
-	unsigned char lm_owf[24];
-	unsigned char nt_owf[24];
+	uchar lm_owf[24];
+	uchar nt_owf[128];
 
 	if (id == NULL) return False;
 
@@ -894,29 +903,29 @@ BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
 	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  );
 	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name );
 
-	if (nt_chal_resp)
+	if (nt_chal_resp != NULL)
 	{
 		/* oops.  can only send what-ever-it-is direct */
-		memcpy(nt_owf, nt_chal_resp, 24);
+		memcpy(nt_owf, nt_chal_resp, MIN(nt_chal_len, sizeof(nt_owf)));
 		nt_chal_resp = nt_owf;
 	}
-	if (lm_chal_resp)
+	if (lm_chal_resp != NULL)
 	{
 		/* oops.  can only send what-ever-it-is direct */
-		memcpy(lm_owf, lm_chal_resp, 24);
+		memcpy(lm_owf, lm_chal_resp, MIN(nt_chal_len, sizeof(lm_owf)));
 		lm_chal_resp = lm_owf;
 	}
 
 	memcpy(id->lm_chal, lm_challenge, sizeof(id->lm_chal));
-	make_str_hdr(&(id->hdr_nt_chal_resp), 24, nt_chal_resp_len, nt_chal_resp != NULL ? 1 : 0);
-	make_str_hdr(&(id->hdr_lm_chal_resp), 24, lm_chal_resp_len, lm_chal_resp != NULL ? 1 : 0);
+	make_str_hdr(&(id->hdr_nt_chal_resp), sizeof(nt_owf), nt_chal_len, nt_chal_resp != NULL ? 1 : 0);
+	make_str_hdr(&(id->hdr_lm_chal_resp), sizeof(lm_owf), lm_chal_len, lm_chal_resp != NULL ? 1 : 0);
 
 	make_unistr2(&(id->uni_domain_name), domain_name, len_domain_name);
 	make_unistr2(&(id->uni_user_name  ), user_name  , len_user_name  );
 	make_unistr2(&(id->uni_wksta_name ), wksta_name , len_wksta_name );
 
-	make_string2(&(id->nt_chal_resp ), (char *)nt_chal_resp , nt_chal_resp_len);
-	make_string2(&(id->lm_chal_resp ), (char *)lm_chal_resp , lm_chal_resp_len);
+	make_string2(&(id->nt_chal_resp ), (char *)nt_chal_resp , nt_chal_len);
+	make_string2(&(id->lm_chal_resp ), (char *)lm_chal_resp , lm_chal_len);
 
 	return True;
 }

@@ -370,6 +370,7 @@ void SamOEMhash( uchar *data, const uchar *key, int val)
   if (val == 0) len = 16;
   if (val == 3) len = 8;
   if (val == 2) len = 68;
+  if (val == 4) len = 32;
 
   for (ind = 0; ind < 256; ind++)
   {

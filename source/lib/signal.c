@@ -22,22 +22,51 @@
 
 #include "includes.h"
 
-
 /****************************************************************************
-catch child exits
+ Catch child exits and reap the child zombie status.
 ****************************************************************************/
+
 static void sig_cld(int signum)
 {
-	while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0) ;
+	while (sys_waitpid((pid_t)-1,(int *)NULL, WNOHANG) > 0)
+		;
 
+	/*
+	 * Turns out it's *really* important not to
+	 * restore the signal handler here if we have real POSIX
+	 * signal handling. If we do, then we get the signal re-delivered
+	 * immediately - hey presto - instant loop ! JRA.
+	 */
+
+#if !defined(HAVE_SIGACTION)
 	CatchSignal(SIGCLD, sig_cld);
+#endif
 }
 
+/****************************************************************************
+catch child exits - leave status;
+****************************************************************************/
 
+static void sig_cld_leave_status(int signum)
+{
+	/*
+	 * Turns out it's *really* important not to
+	 * restore the signal handler here if we have real POSIX
+	 * signal handling. If we do, then we get the signal re-delivered
+	 * immediately - hey presto - instant loop ! JRA.
+	 */
+
+#if !defined(HAVE_SIGACTION)
+	CatchSignal(SIGCLD, sig_cld_leave_status);
+#else
+	;
+#endif
+}
 
 /*******************************************************************
-block sigs
+ Block sigs.
 ********************************************************************/
+
 void BlockSignals(BOOL block,int signum)
 {
 #ifdef HAVE_SIGPROCMASK
@@ -63,14 +92,13 @@ void BlockSignals(BOOL block,int signum)
 #endif
 }
 
-
-
 /*******************************************************************
-catch a signal. This should implement the following semantics:
+ Catch a signal. This should implement the following semantics:
 
-1) the handler remains installed after being called
-2) the signal should be blocked during handler execution
+ 1) The handler remains installed after being called.
+ 2) The signal should be blocked during handler execution.
 ********************************************************************/
+
 void CatchSignal(int signum,void (*handler)(int ))
 {
 #ifdef HAVE_SIGACTION
@@ -80,23 +108,35 @@ void CatchSignal(int signum,void (*handler)(int ))
 
 	act.sa_handler = handler;
 #ifdef SA_RESTART
-	act.sa_flags = SA_RESTART;
+	/*
+	 * We *want* SIGALRM to interrupt a system call.
+	 */
+	if(signum != SIGALRM)
+		act.sa_flags = SA_RESTART;
 #endif
 	sigemptyset(&act.sa_mask);
 	sigaddset(&act.sa_mask,signum);
 	sigaction(signum,&act,NULL);
-#else
+#else /* !HAVE_SIGACTION */
 	/* FIXME: need to handle sigvec and systems with broken signal() */
 	signal(signum, handler);
 #endif
 }
 
-
-
 /*******************************************************************
-ignore SIGCLD via whatever means is necessary for this OS
+ Ignore SIGCLD via whatever means is necessary for this OS.
 ********************************************************************/
+
 void CatchChild(void)
 {
 	CatchSignal(SIGCLD, sig_cld);
+}
+
+/*******************************************************************
+ Catch SIGCLD but leave the child around so it's status can be reaped.
+********************************************************************/
+
+void CatchChildLeaveStatus(void)
+{
+	CatchSignal(SIGCLD, sig_cld_leave_status);
 }

@@ -110,7 +110,6 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	RPC_HDR_AUTH  auth_info;
 	RPC_AUTH_NETSEC_CHK verf;
 	char *data_buf;
-	uchar chal[8];
 	uchar sign[8];
 
 	a = (netsec_auth_struct *)cli_conn_get_auth_info(con);
@@ -163,12 +162,10 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	make_rpc_hdr_auth(&auth_info, 0x44, 0x06, 0x08, 1);
 	smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &hdr_auth, 0);
 
-	generate_random_buffer(chal, 8, False);
-
 	memset(sign, 0, sizeof(sign));
 	sign[4] = 0x80;
 
-	make_rpc_auth_netsec_chk(&verf, NETSEC_SIGNATURE, chal, sign, NULL);
+	make_rpc_auth_netsec_chk(&verf, NETSEC_SIGNATURE, NULL, sign, NULL);
 	ret = netsec_encode(a, &verf, data_buf, len);
 
 	if (ret)
@@ -329,10 +326,6 @@ static BOOL decode_netsec_bind_resp(struct cli_connection *con,
 		RPC_AUTH_NETSEC_RESP rresp;
 		smb_io_rpc_auth_netsec_resp("", &rresp, rdata, 0);
 		if (rdata->offset == 0) valid_ack = False;
-		if (rresp.flags != 0x05)
-		{
-			valid_ack = False;
-		}
 	}
 	return valid_ack;
 }

@@ -200,15 +200,8 @@ BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
 
 	DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
 
-#ifdef DEBUG_PASSWORD
-
-	DEBUG(100,("nt owf of user password: "));
-	dump_data(100, lm_owf_user_pwd, 16);
-
-	DEBUG(100,("nt owf of user password: "));
-	dump_data(100, nt_owf_user_pwd, 16);
-
-#endif
+	dump_data_pw("nt owf of user password:\n", lm_owf_user_pwd, 16);
+	dump_data_pw("nt owf of user password:\n", nt_owf_user_pwd, 16);
 
 	if (!cli_get_sesskey_srv(srv_name, sess_key))
 	{
@@ -228,14 +221,22 @@ BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
 
 	/* Ensure we overwrite all the plaintext password
 	equivalents. */
-	memset(lm_owf_user_pwd, '\0', sizeof(lm_owf_user_pwd));
-	memset(nt_owf_user_pwd, '\0', sizeof(nt_owf_user_pwd));
+	if (lm_owf_user_pwd != NULL)
+	{
+		memset(lm_owf_user_pwd, 0, 16);
+	}
+	if (nt_owf_user_pwd != NULL)
+	{
+		memset(nt_owf_user_pwd, 0, 16);
+	}
 
 	/* Send client sam-logon request - update credentials on success. */
 	ret = cli_net_sam_logon(srv_name, myhostname, ctr, user_info3);
 
-	memset(ctr->auth.id1.lm_owf.data, '\0', sizeof(lm_owf_user_pwd));
-	memset(ctr->auth.id1.nt_owf.data, '\0', sizeof(nt_owf_user_pwd));
+	memset(ctr->auth.id1.lm_owf.data, '\0',
+	       sizeof(ctr->auth.id1.lm_owf.data));
+	memset(ctr->auth.id1.nt_owf.data, '\0',
+	       sizeof(ctr->auth.id1.nt_owf.data));
 
 	return ret;
 }
@@ -249,8 +250,10 @@ password equivalents over the network. JRA.
 BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 				const char *domain, const char *username, 
 				uint32 luid_low, char lm_chal[8],
-				char lm_chal_resp[24],
-				char nt_chal_resp[24],
+				char *lm_chal_resp,
+				int lm_chal_len,
+				char *nt_chal_resp,
+				int nt_chal_len,
 				NET_ID_INFO_CTR *ctr,
 				NET_USER_INFO_3 *user_info3)
 {
@@ -271,7 +274,9 @@ BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 	make_id_info2(&ctr->auth.id2, domain, 0, 
 		luid_low, 0,
 		username, myhostname,
-		(uchar *)lm_chal, (uchar *)lm_chal_resp, (uchar *)nt_chal_resp);
+		(uchar *)lm_chal,
+	        (uchar *)lm_chal_resp, lm_chal_len,
+	        (uchar *)nt_chal_resp, nt_chal_len);
 
 	/* Send client sam-logon request - update credentials on success. */
 	ret = cli_net_sam_logon(srv_name, myhostname, ctr, user_info3);

@@ -223,20 +223,22 @@ max can be %d\n",
 				if(FD_ISSET(fd_listenset[i * 2],&lfds)) {
 					s = fd_listenset[i * 2];
 					ClientPort = SMB_PORT;
+
+					/* Clear this so we don't look
+					   at it again. */
+					FD_CLR(fd_listenset[i * 2], &lfds);
 					break;
 				}
-#if 0
 				if(FD_ISSET(fd_listenset[i * 2 + 1],&lfds)) {
 					s = fd_listenset[i * 2 + 1];
 					ClientPort = SMB_PORT2;
+
+					/* Clear this so we don't look
+					   at it again. */
+					FD_CLR(fd_listenset[i * 2 + 1], &lfds);
 					break;
 				}
-#endif
 			}
-
-			/* Clear this so we don't look
-			   at it again. */
-			FD_CLR(s,&lfds);
 
 			Client = accept(s,&addr,&in_addrlen);
 			

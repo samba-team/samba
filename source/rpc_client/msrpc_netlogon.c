@@ -133,9 +133,9 @@ static uint32 domain_client_validate( char *user, char *domain,
 		status = cli_nt_login_network(srv_name,
 			global_myname, 
 	                domain, user,
-	               smb_uid_low, (char *)challenge,
-			((smb_apasslen != 0) ? smb_apasswd : NULL),
-			((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
+		        smb_uid_low, (char *)challenge,
+			(uchar*)smb_apasswd, smb_apasslen,
+			(uchar*)smb_ntpasswd, smb_ntpasslen,
 			&ctr, &info3);
 
 		if (lm_pw8 != NULL)

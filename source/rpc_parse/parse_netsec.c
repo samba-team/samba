@@ -254,6 +254,17 @@ BOOL netsec_encode(struct netsec_auth_struct *a,
 
 	dump_data_pw("data   :\n", data, data_len);
 	MD5Update(&ctx3, data, data_len); 
+
+	{
+		char digest_tmp[16];
+		char digest2[16];
+		MD5Final(digest_tmp, &ctx3);
+		hmac_md5(a->sess_key, digest_tmp, 16, digest2);
+		dump_data_pw("digest_tmp:\n", digest_tmp, sizeof(digest_tmp));
+		dump_data_pw("digest:\n", digest2, sizeof(digest2));
+		memcpy(verf->data1, digest2, sizeof(verf->data1));
+	}
+
 	netsechash(digest1, data , data_len);
 	dump_data_pw("data:\n", data, data_len);
 
@@ -268,13 +279,6 @@ BOOL netsec_encode(struct netsec_auth_struct *a,
 	netsechash(digest1, verf->data3, 8);
 	dump_data_pw("verf->data3:\n", verf->data3, sizeof(verf->data3));
 
-	{
-		char digest_tmp[16];
-		MD5Final(digest_tmp, &ctx3);
-		hmac_md5(digest_tmp, a->sess_key, 16, digest1);
-	}
-
-	dump_data_pw("digest:\n", digest1, sizeof(digest1));
 
 	return True;
 }
@@ -333,10 +337,12 @@ BOOL netsec_decode(struct netsec_auth_struct *a,
 	{
 		char digest_tmp[16];
 		MD5Final(digest_tmp, &ctx3);
-		hmac_md5(digest_tmp, a->sess_key, 16, digest1);
+		hmac_md5(a->sess_key, digest_tmp, 16, digest1);
+		dump_data_pw("digest_tmp:\n", digest_tmp, sizeof(digest_tmp));
 	}
 
 	dump_data_pw("digest:\n", digest1, sizeof(digest1));
+	dump_data_pw("verf->data1:\n", verf->data1, sizeof(verf->data1));
 
-	return True;
+	return memcmp(digest1, verf->data1, sizeof(verf->data1)) == 0;
 }

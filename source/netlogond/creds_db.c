@@ -95,7 +95,7 @@ BOOL cred_store(const char *domain, const char* wks, struct dcinfo *dc)
 
 BOOL cred_init_db(void)
 {
-	db = tdb_open(lock_path("netlogoncreds.tdb"), 0, TDB_CLEAR_IF_FIRST, 
+	db = tdb_open(lock_path("netlogoncreds.tdb"), 0, 0, 
 		      O_RDWR | O_CREAT | O_TRUNC, 0600);
 
 	if (db == NULL)

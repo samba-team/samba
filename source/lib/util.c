@@ -3225,59 +3225,6 @@ BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
 	return True;
 }
 
-/****************************************************************************
-  become the specified uid - permanently !
-****************************************************************************/
-BOOL become_user_permanently(uid_t uid, gid_t gid)
-{
-	/* now completely lose our privilages. This is a fairly paranoid
-	   way of doing it, but it does work on all systems that I know of */
-
-#ifdef HAVE_SETRESUID
-	/*
-	 * Firstly ensure all our uids are set to root.
-	 */
-	setresgid(0,0,0);
-	setresuid(0,0,0);
-
-	/*
-	 * Now ensure we change all our gids.
-	 */
-	setresgid(gid,gid,gid);
-	
-	/*
-	 * Now ensure all the uids are the user.
-	 */
-	setresuid(uid,uid,uid);
-#else
-	/*
-	 * Firstly ensure all our uids are set to root.
-	 */
-	setuid(0);
-	seteuid(0);
-	
-	/*
-	 * Now ensure we change all our gids.
-	 */
-	setgid(gid);
-	setegid(gid);
-	
-	/*
-	 * Now ensure all the uids are the user.
-	 */
-	setuid(uid);
-	seteuid(uid);
-#endif
-	
-	if (getuid() != uid || geteuid() != uid ||
-	    getgid() != gid || getegid() != gid) {
-		/* We failed to lose our privilages. */
-		return False;
-	}
-	
-	return(True);
-}
-
 char *get_trusted_serverlist(const char* domain)
 {
 	pstring tmp;
