@@ -1411,7 +1411,7 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 		for (i = 0; i < backtrace_size; i++)
 			DEBUGADD(0, (" #%u %s\n", i, backtrace_strings[i]));
 
-		SAFE_FREE(backtrace_strings);
+		/* Leak the backtrace_strings, rather than risk what free() might do */
 	}
 
 #elif HAVE_LIBEXC
