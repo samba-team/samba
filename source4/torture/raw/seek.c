@@ -31,7 +31,7 @@
 #define CHECK_VALUE(v, correct) do { \
 	if ((v) != (correct)) { \
 		printf("(%d) Incorrect value %s=%d - should be %d\n", \
-		       __LINE__, #v, v, correct); \
+		       __LINE__, #v, (int)v, (int)correct); \
 		ret = False; \
 		goto done; \
 	}} while (0)
@@ -45,9 +45,10 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	struct smb_seek io;
 	union smb_fileinfo finfo;
+	union smb_setfileinfo sfinfo;
 	NTSTATUS status;
 	BOOL ret = True;
-	int fnum;
+	int fnum, fnum2;
 	const char *fname = BASEDIR "\\test.txt";
 
 	if (cli_deltree(cli, BASEDIR) == -1 ||
@@ -56,7 +57,7 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	fnum = create_complex_file(cli, mem_ctx, fname);
+	fnum = cli_open(cli, fname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to open test.txt - %s\n", cli_errstr(cli));
 		ret = False;
@@ -119,6 +120,32 @@ static BOOL test_seek(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.out.offset, 999);
+
+	printf("Testing position information\n");
+	fnum2 = cli_open(cli, fname, O_RDWR, DENY_NONE);
+	if (fnum2 == -1) {
+		printf("2nd open failed - %s\n", cli_errstr(cli));
+		ret = False;
+		goto done;
+	}
+	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
+	sfinfo.position_information.file.fnum = fnum2;
+	sfinfo.position_information.in.position = 25;
+	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	finfo.position_information.in.fnum = fnum2;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.position_information.out.position, 25);
+
+	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	finfo.position_information.in.fnum = fnum;
+	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.position_information.out.position, 0);
+	
 
 done:
 	smb_raw_exit(cli->session);

@@ -133,7 +133,7 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_rename io;
 	NTSTATUS status;
 	BOOL ret = True;
-	int fnum;
+	int fnum, i;
 	const char *fname1 = BASEDIR "\\test1.txt";
 	const char *fname2 = BASEDIR "\\test2.txt";
 	union smb_fileinfo finfo;
@@ -154,7 +154,7 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntrename.in.old_name = fname1;
 	io.ntrename.in.new_name = fname2;
 	io.ntrename.in.attrib = 0;
-	io.ntrename.in.root_fid = 0;
+	io.ntrename.in.unknown = 0;
 	io.ntrename.in.flags = RENAME_FLAG_RENAME;
 	
 	status = smb_raw_rename(cli->tree, &io);
@@ -275,6 +275,55 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	io.ntrename.in.flags = 0x106;
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	printf("Checking unknown field\n");
+	io.ntrename.in.old_name = fname1;
+	io.ntrename.in.new_name = fname2;
+	io.ntrename.in.attrib = 0;
+	io.ntrename.in.flags = RENAME_FLAG_RENAME;
+	io.ntrename.in.unknown = 0xff;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	fnum = create_directory_handle(cli, BASEDIR "\\testdir");
+	printf("Trying flags 0x102 fnum=%d\n", fnum);
+
+	io.ntrename.in.old_name = fname2;
+	io.ntrename.in.new_name = fname1;
+	io.ntrename.in.attrib = 0;
+	io.ntrename.in.flags = 0x102;
+	io.ntrename.in.unknown = fnum;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	for (i=0;i<32;i++) {
+		io.ntrename.in.unknown = (1<<i);
+		status = smb_raw_rename(cli->tree, &io);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			printf("i=0x%x status=%s\n", i, nt_errstr(status));
+		}
+		CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	}
+
+	printf("Checking other flags\n");
+
+	for (i=0;i<0xFFF;i++) {
+		if (i == RENAME_FLAG_RENAME ||
+		    i == RENAME_FLAG_HARD_LINK ||
+		    i == RENAME_FLAG_COPY) {
+			continue;
+		}
+
+		io.ntrename.in.old_name = fname2;
+		io.ntrename.in.new_name = fname1;
+		io.ntrename.in.flags = i;
+		io.ntrename.in.attrib = 0;
+		io.ntrename.in.unknown = 0;
+		status = smb_raw_rename(cli->tree, &io);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			printf("flags=0x%x status=%s\n", i, nt_errstr(status));
+		}
+	}
 	
 done:
 	smb_raw_exit(cli->session);
