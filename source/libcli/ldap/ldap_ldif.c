@@ -307,7 +307,7 @@ static BOOL fill_mods(struct ldap_message *msg, char **chunk)
 /*
  read from a LDIF source, creating a ldap_message
 */
-static struct ldap_message *ldif_read(int (*fgetc_fn)(void *),
+static struct ldap_message *ldif_read(TALLOC_CTX *mem_ctx, int (*fgetc_fn)(void *),
 				      void *private_data)
 {
 	struct ldap_message *msg;
@@ -318,7 +318,7 @@ static struct ldap_message *ldif_read(int (*fgetc_fn)(void *),
 
 	value.data = NULL;
 
-	msg = new_ldap_message();
+	msg = new_ldap_message(mem_ctx);
 	if (msg == NULL)
 		return NULL;
 
@@ -383,7 +383,7 @@ static struct ldap_message *ldif_read(int (*fgetc_fn)(void *),
 	DEBUG(3, ("changetype %s not supported\n", (char *)value.data));
 
 failed:
-	destroy_ldap_message(msg);
+	talloc_free(msg);
 	return NULL;
 }
 
@@ -403,10 +403,10 @@ static int fgetc_string(void *private_data)
 	return EOF;
 }
 
-struct ldap_message *ldap_ldif2msg(const char *s)
+struct ldap_message *ldap_ldif2msg(TALLOC_CTX *mem_ctx, const char *s)
 {
 	struct ldif_read_string_state state;
 	state.s = s;
-	return ldif_read(fgetc_string, &state);
+	return ldif_read(mem_ctx, fgetc_string, &state);
 }
 

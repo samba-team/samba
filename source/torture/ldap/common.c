@@ -67,25 +67,25 @@ NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, const char *userna
 }
 
 /* open a ldap connection to a server */
-NTSTATUS torture_ldap_connection(struct ldap_connection **conn, 
+NTSTATUS torture_ldap_connection(TALLOC_CTX *mem_ctx, struct ldap_connection **conn, 
 				const char *url, const char *userdn, const char *password)
 {
         NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	BOOL ret;
+	int ret;
 
 	if (!url) {
 		printf("You must specify a url string\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	*conn = new_ldap_connection();
+	*conn = ldap_connect(mem_ctx, url);
 	if (!*conn) {
 		printf("Failed to initialize ldap_connection structure\n");
 		return status;
 	}
 
-	ret = ldap_setup_connection(*conn, url, userdn, password);
-	if (!ret) {
+	ret = ldap_bind_simple(*conn, userdn, password);
+	if (ret != LDAP_SUCCESS) {
 		printf("Failed to connect with url [%s]\n", url);
 		/* FIXME: what abut actually implementing an ldap_connection_free() function ?
 		          :-) sss */
