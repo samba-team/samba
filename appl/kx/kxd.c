@@ -138,7 +138,8 @@ recv_conn (int sock, kx_context *kc,
      kc->thisaddr = thisaddr;
      kc->thataddr = thataddr;
 
-     getnameinfo_verified (&thataddr, addrlen, remotehost, sizeof(remotehost),
+     getnameinfo_verified ((struct sockaddr *)&thataddr, addrlen,
+			   remotehost, sizeof(remotehost),
 			   NULL, 0, 0);
 
      if (net_read (sock, msg, 4) != 4) {
