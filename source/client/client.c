@@ -42,7 +42,6 @@ static char *cmdstr;
 static BOOL got_pass;
 static int io_bufsize = 65520;
 extern struct in_addr ipzero;
-extern pstring scope;
 
 static int name_type = 0x20;
 
@@ -1890,8 +1889,8 @@ struct cli_state *do_connect(char *server, char *share)
 	
 	ip = ipzero;
 
-	make_nmb_name(&calling, global_myname, 0x0, "");
-	make_nmb_name(&called , server, name_type, "");
+	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&called , server, name_type);
 
  again:
 	ip = ipzero;
@@ -1914,7 +1913,7 @@ struct cli_state *do_connect(char *server, char *share)
 			goto again;
 		}
 		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20, "");
+			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
 		}
 		return NULL;
@@ -2141,8 +2140,8 @@ static int do_message_op(void)
 
 	ip = ipzero;
 
-	make_nmb_name(&calling, global_myname, 0x0, "");
-	make_nmb_name(&called , desthost, name_type, "");
+	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&called , desthost, name_type);
 
 	ip = ipzero;
 	if (have_ip) ip = dest_ip;
@@ -2329,7 +2328,11 @@ static int do_message_op(void)
 			message = True;
 			break;
 		case 'i':
-			pstrcpy(scope,optarg);
+			{
+				extern pstring global_scope;
+				pstrcpy(global_scope,optarg);
+				strupper(global_scope);
+			}
 			break;
 		case 'N':
 			got_pass = True;

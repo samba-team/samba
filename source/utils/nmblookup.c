@@ -26,8 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
-
 extern struct in_addr ipzero;
 
 static BOOL use_bcast = True;
@@ -178,9 +176,12 @@ int main(int argc,char *argv[])
         translate_addresses = !translate_addresses;
 	break;
       case 'i':
-	fstrcpy(scope,optarg);
-	strupper(scope);
-	break;
+	      {
+		      extern pstring global_scope;
+		      pstrcpy(global_scope,optarg);
+		      strupper(global_scope);
+	      }
+	      break;
       case 'M':
 	find_master = True;
 	break;

@@ -28,7 +28,6 @@ extern int DEBUGLEVEL;
 
 extern char **my_netbios_names;
 extern fstring global_myworkgroup;
-extern pstring scope;
 
 extern uint16 samba_nb_type; /* Samba's NetBIOS type. */
 
@@ -119,13 +118,13 @@ BOOL register_my_workgroup_and_names(void)
          */
         struct nmb_name nmbname;
 
-        make_nmb_name(&nmbname, my_netbios_names[i],0x20, scope);
+        make_nmb_name(&nmbname, my_netbios_names[i],0x20);
         insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
 
-        make_nmb_name(&nmbname, my_netbios_names[i],0x3, scope);
+        make_nmb_name(&nmbname, my_netbios_names[i],0x3);
         insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
 
-        make_nmb_name(&nmbname, my_netbios_names[i],0x0, scope);
+        make_nmb_name(&nmbname, my_netbios_names[i],0x0);
         insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type);
       }
     }
@@ -142,10 +141,10 @@ BOOL register_my_workgroup_and_names(void)
        */
       struct nmb_name nmbname;
 
-      make_nmb_name(&nmbname, global_myworkgroup, 0x0, scope);
+      make_nmb_name(&nmbname, global_myworkgroup, 0x0);
       insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
 
-      make_nmb_name(&nmbname, global_myworkgroup, 0x1e, scope);
+      make_nmb_name(&nmbname, global_myworkgroup, 0x1e);
       insert_permanent_name_into_unicast(subrec, &nmbname, samba_nb_type|NB_GROUP);
     }
   }

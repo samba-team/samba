@@ -32,7 +32,6 @@
 #include "smb.h"
 
 extern int DEBUGLEVEL;
-extern pstring scope;
 
 struct sync_record {
 	struct sync_record *next, *prev;
@@ -77,8 +76,8 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	make_nmb_name(&calling, local_machine, 0x0    , scope);
-	make_nmb_name(&called , name         , nm_type, scope);
+	make_nmb_name(&calling, local_machine, 0x0);
+	make_nmb_name(&called , name         , nm_type);
 
 	if (!cli_session_request(&cli, &calling, &called))
 	{

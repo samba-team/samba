@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-extern pstring scope;
 extern int DEBUGLEVEL;
 
 /* nmbd.c sets this to True. */
@@ -131,7 +130,7 @@ static BOOL internal_name_status(int fd,char *name,int name_type,BOOL recurse,
   nmb->header.nscount = 0;
   nmb->header.arcount = 0;
 
-  make_nmb_name(&nmb->question.question_name,name,name_type,scope);
+  make_nmb_name(&nmb->question.question_name,name,name_type);
 
   nmb->question.question_type = 0x21;
   nmb->question.question_class = 0x1;
@@ -238,7 +237,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
   nmb->header.nscount = 0;
   nmb->header.arcount = 0;
 
-  make_nmb_name(&nmb->question.question_name,name,name_type,scope);
+  make_nmb_name(&nmb->question.question_name,name,name_type);
 
   nmb->question.question_type = 0x20;
   nmb->question.question_class = 0x1;
@@ -781,8 +780,8 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
 	dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
 	dgram->header.packet_offset = 0;
 	
-	make_nmb_name(&dgram->source_name,srcname,0,scope);
-	make_nmb_name(&dgram->dest_name,domain,0x1B,scope);
+	make_nmb_name(&dgram->source_name,srcname,0);
+	make_nmb_name(&dgram->dest_name,domain,0x1B);
 	
 	ptr = &dgram->data[0];
 	

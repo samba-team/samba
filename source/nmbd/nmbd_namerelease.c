@@ -26,8 +26,6 @@
 
 extern int DEBUGLEVEL;
 
-extern pstring scope;
-
 /****************************************************************************
  Deal with a response packet when releasing one of our names.
 ****************************************************************************/

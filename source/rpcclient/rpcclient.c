@@ -30,7 +30,6 @@
 #endif
 
 extern pstring debugf;
-extern pstring scope;
 extern pstring global_myname;
 
 extern pstring user_socket_options;
@@ -71,8 +70,8 @@ static BOOL rpcclient_connect(struct client_info *info)
 	struct nmb_name calling;
 	struct nmb_name called;
 
-	make_nmb_name(&called , dns_to_netbios_name(info->dest_host ), info->name_type, scope);
-	make_nmb_name(&calling, dns_to_netbios_name(info->myhostname), 0x0            , scope);
+	make_nmb_name(&called , dns_to_netbios_name(info->dest_host ), info->name_type);
+	make_nmb_name(&calling, dns_to_netbios_name(info->myhostname), 0x0            );
 
 	if (!cli_establish_connection(smb_cli, 
 	                          info->dest_host, &info->dest_ip, 
@@ -573,7 +572,9 @@ enum client_action
 
 			case 'i':
 			{
-				pstrcpy(scope, optarg);
+				extern pstring global_scope;
+				pstrcpy(global_scope, optarg);
+				strupper(global_scope);
 				break;
 			}
 

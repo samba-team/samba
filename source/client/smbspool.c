@@ -242,8 +242,8 @@ smb_connect(char *workgroup,		/* I - Workgroup */
 
   ip = ipzero;
 
-  make_nmb_name(&calling, myname, 0x0, "");
-  make_nmb_name(&called, server, 0x20, "");
+  make_nmb_name(&calling, myname, 0x0);
+  make_nmb_name(&called, server, 0x20);
 
  /*
   * Open a new connection to the SMB server...
