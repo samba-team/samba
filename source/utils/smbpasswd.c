@@ -555,6 +555,9 @@ static int process_root(int argc, char *argv[])
 	char *old_passwd = NULL;
 	char *remote_machine = NULL;
 
+        ZERO_STRUCT(user_name);
+        ZERO_STRUCT(user_password);
+
 	while ((ch = getopt(argc, argv, "ax:d:e:hmnj:r:sR:D:U:L")) != EOF) {
 		switch(ch) {
 		case 'L':
