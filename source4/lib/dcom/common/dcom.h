@@ -34,12 +34,12 @@ struct dcom_context
 		struct dcom_object_exporter *prev, *next;
 		struct STRINGARRAY resolver_address;
 		struct DUALSTRINGARRAY bindings;
-		HYPER_T oxid;
+		uint64_t oxid;
 		struct dcerpc_pipe *pipe;
 		struct dcom_object
 		{
 			struct dcom_object *prev, *next;
-			HYPER_T oid;
+			uint64_t oid;
 			void *private_data;
 		} *objects;
 	} *oxids;

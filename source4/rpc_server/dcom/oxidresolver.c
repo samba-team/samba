@@ -31,7 +31,7 @@ struct OXIDObject
 
 struct PingSet
 {
-	HYPER_T id;
+	uint64_t id;
 	struct OXIDObject *objects;
 	struct PingSet *prev, *next;
 };

@@ -470,7 +470,7 @@ sub ParseElementPullSwitch($$$$)
 	if (!defined $utype ||
 	    !util::has_property($utype, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
-		my $type_decl = $e2->{TYPE};
+		my $type_decl = util::map_type($e2->{TYPE});
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
 		if (util::is_enum($e2->{TYPE})) {
 			$type_decl = util::enum_type_decl($e2);

@@ -116,7 +116,7 @@ WERROR dcom_init(struct dcom_context **ctx, const char *domain, const char *user
 	return WERR_OK;
 }
 
-static struct dcom_object_exporter *oxid_mapping_by_oxid (struct dcom_context *ctx, HYPER_T oxid)
+static struct dcom_object_exporter *oxid_mapping_by_oxid (struct dcom_context *ctx, uint64_t oxid)
 {
 	struct dcom_object_exporter *m;
 	
@@ -345,7 +345,7 @@ NTSTATUS dcom_get_pipe (struct dcom_interface_p *iface, struct dcerpc_pipe **pp)
 {
 	struct dcerpc_binding binding;
 	struct GUID iid;
-	HYPER_T oxid;
+	uint64_t oxid;
 	NTSTATUS status;
 	int i;
 	struct dcerpc_pipe *p;
@@ -408,7 +408,7 @@ NTSTATUS dcom_get_pipe (struct dcom_interface_p *iface, struct dcerpc_pipe **pp)
 	return NT_STATUS_OK;
 }
 
-struct dcom_object *dcom_object_by_oid(struct dcom_object_exporter *ox, HYPER_T oid)
+struct dcom_object *dcom_object_by_oid(struct dcom_object_exporter *ox, uint64_t oid)
 {
 	struct dcom_object *o;
 
@@ -544,7 +544,7 @@ NTSTATUS dcom_ifacep_from_OBJREF(struct dcom_context *ctx, struct dcom_interface
 	return NT_STATUS_NOT_SUPPORTED;	
 }
 
-HYPER_T dcom_get_current_oxid(void)
+uint64_t dcom_get_current_oxid(void)
 {
 	return getpid();
 }

@@ -135,8 +135,8 @@
 		uint16 password_history_length;
 		uint32 password_properties;
 		/* yes, these are signed. They are in negative 100ns */
-		int64  max_password_age;
-		int64  min_password_age;
+		dlong  max_password_age;
+		dlong  min_password_age;
 	} samr_DomInfo1;
 
 	typedef struct {
@@ -144,7 +144,7 @@
 		samr_String comment;
 		samr_String domain;  /* domain name */
 		samr_String primary; /* PDC name if this is a BDC */
-		uint64 sequence_num;
+		udlong sequence_num;
 		uint32 unknown2;
 		samr_Role role;
 		uint32 unknown3;

@@ -28,7 +28,7 @@
 #define CLSID_SIMPLE "5e9ddec7-5767-11cf-beab-00aa006c3606"
 #define CLSID_COFFEEMACHINE "DB7C21F8-FE33-4C11-AEA5-CEB56F076FBB"
 
-static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T *oxid, struct GUID *oid)
+static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t *oxid, struct GUID *oid)
 {
 	struct RemoteActivation r;
 	NTSTATUS status;
@@ -74,7 +74,7 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYP
 	return 1;
 }
 
-static int test_SimplePing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T setid)
+static int test_SimplePing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t setid)
 {
 	struct SimplePing r;
 	NTSTATUS status;
@@ -95,7 +95,7 @@ static int test_SimplePing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T s
 	return 1;
 }
 
-static int test_ComplexPing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T *setid, struct GUID oid)
+static int test_ComplexPing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t *setid, struct GUID oid)
 {
 	struct ComplexPing r;
 	NTSTATUS status;
@@ -143,7 +143,7 @@ static int test_ServerAlive(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return 1;
 }
 
-static int test_ResolveOxid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T oxid)
+static int test_ResolveOxid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t oxid)
 {
 	struct ResolveOxid r;
 	NTSTATUS status;
@@ -167,7 +167,7 @@ static int test_ResolveOxid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T 
 	return 1;
 }
 
-static int test_ResolveOxid2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T oxid)
+static int test_ResolveOxid2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint64_t oxid)
 {
 	struct ResolveOxid2 r;
 	NTSTATUS status;
@@ -220,8 +220,8 @@ BOOL torture_rpc_oxidresolve(void)
        struct dcerpc_pipe *p, *premact;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	HYPER_T setid;
-	HYPER_T oxid;
+	uint64_t setid;
+	uint64_t oxid;
 	struct GUID oid;
 
 	mem_ctx = talloc_init("torture_rpc_oxidresolve");
