@@ -2319,9 +2319,10 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 			 * this smb into a queued request and push it
 			 * onto the blocking lock queue.
 			 */
-			if(push_blocking_lock_request(inbuf, length, -1, 0))
+			if(push_blocking_lock_request(inbuf, length, -1, 0)) {
 				END_PROFILE(SMBlockread);
-			return -1;
+				return -1;
+			}
 		}
 		END_PROFILE(SMBlockread);
 		return ERROR_NT(status);
