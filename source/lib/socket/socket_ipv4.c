@@ -243,7 +243,7 @@ static NTSTATUS ipv4_tcp_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 					const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
 {
 	ssize_t len;
-	int flgs = MSG_NOSIGNAL;
+	int flgs = 0;
 
 	/* TODO: we need to map all flags here */
 	if (!(flags & SOCKET_FLAG_BLOCK)) {
