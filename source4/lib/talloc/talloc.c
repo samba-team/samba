@@ -36,6 +36,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include "talloc.h"
+/* assume a modern system */
+#define HAVE_VA_COPY
 #endif
 
 /* use this to force every realloc to change the pointer, to stress test
@@ -946,9 +948,15 @@ static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap) PRINT
 
 static char *talloc_vasprintf_append(char *s, const char *fmt, va_list ap)
 {	
-	struct talloc_chunk *tc = talloc_chunk_from_ptr(s);
+	struct talloc_chunk *tc;
 	int len, s_len;
 	va_list ap2;
+
+	if (s == NULL) {
+		return talloc_vasprintf(NULL, fmt, ap);
+	}
+
+	tc = talloc_chunk_from_ptr(s);
 
 	VA_COPY(ap2, ap);
 
