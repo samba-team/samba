@@ -224,7 +224,7 @@ static const struct smb_message_struct
 /* 0x23 */ { "SMBgetattrE",reply_getattrE,AS_USER},
 /* 0x24 */ { "SMBlockingX",reply_lockingX,AS_USER},
 /* 0x25 */ { "SMBtrans",reply_trans,AS_USER},
-/* 0x26 */ { "SMBtranss",NULL,AS_USER},
+/* 0x26 */ { "SMBtranss",reply_transs,AS_USER},
 /* 0x27 */ { "SMBioctl",reply_ioctl,0},
 /* 0x28 */ { "SMBioctls",NULL,AS_USER},
 /* 0x29 */ { "SMBcopy",reply_copy,AS_USER},
