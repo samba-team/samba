@@ -2045,6 +2045,7 @@ tn(int argc, char **argv)
     char *cmd, *hostp = 0, *portp = 0;
     char *user = 0;
     int family, port = 0;
+    char **addr_list;
 
     /* clear the socket address prior to use */
 
@@ -2146,6 +2147,7 @@ tn(int argc, char **argv)
 	    if (host) {
 		strcpy_truncate(_hostname, host->h_name, sizeof(_hostname));
 		family = host->h_addrtype;
+		addr_list = host->h_addr_list;
 
 		switch(family) {
 		case AF_INET:
@@ -2153,7 +2155,7 @@ tn(int argc, char **argv)
 		    sa_size = sizeof(sin);
 		    sa = (struct sockaddr *)&sin;
 		    sin.sin_family = family;
-		    sin.sin_addr   = *((struct in_addr *)(*host->h_addr_list));
+		    sin.sin_addr   = *((struct in_addr *)(*addr_list));
 		    break;
 #ifdef HAVE_IPV6
 		case AF_INET6:
@@ -2161,7 +2163,7 @@ tn(int argc, char **argv)
 		    sa_size = sizeof(sin6);
 		    sa = (struct sockaddr *)&sin6;
 		    sin6.sin6_family = family;
-		    sin6.sin6_addr   = *((struct in6_addr *)(*host->h_addr_list));
+		    sin6.sin6_addr   = *((struct in6_addr *)(*addr_list));
 		    break;
 #endif
 		default:
@@ -2274,14 +2276,14 @@ tn(int argc, char **argv)
 	}
 
 	if (connect(net, sa, sa_size) < 0) {
-	    if (host && host->h_addr_list[1]) {
+	    if (host && addr_list[1]) {
 		int oerrno = errno;
 
 		switch(family) {
 		case AF_INET :
 		    fprintf(stderr, "telnet: connect to address %s: ",
 			    inet_ntoa(sin.sin_addr));
-		    sin.sin_addr = *((struct in_addr *)(*++host->h_addr_list));
+		    sin.sin_addr = *((struct in_addr *)(*++addr_list));
 		    break;
 #ifdef HAVE_IPV6
 		case AF_INET6: {
@@ -2290,7 +2292,7 @@ tn(int argc, char **argv)
 		    fprintf(stderr, "telnet: connect to address %s: ",
 			    inet_ntop(AF_INET6, &sin6.sin6_addr, buf,
 				      sizeof(buf)));
-		    sin6.sin6_addr = *((struct in6_addr *)(*++host->h_addr_list));
+		    sin6.sin6_addr = *((struct in6_addr *)(*++addr_list));
 		    break;
 		}
 #endif
@@ -2648,14 +2650,9 @@ sourceroute(char *arg, char **cpp, int *lenp)
 		if ((tmp = inet_addr(cp)) != -1) {
 			sin_addr.s_addr = tmp;
 		} else if ((host = roken_gethostbyname(cp))) {
-#if	defined(h_addr)
 			memmove(&sin_addr,
 				host->h_addr_list[0],
 				sizeof(sin_addr));
-#else
-			memmove(&sin_addr, host->h_addr,
-				sizeof(sin_addr));
-#endif
 		} else {
 			*cpp = cp;
 			return(0);
