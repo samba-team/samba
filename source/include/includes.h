@@ -281,6 +281,7 @@ typedef unsigned short mode_t;
 #ifndef USE_WAITPID
 #define USE_WAITPID
 #endif
+#define USE_SYSV_IPC
 /* SunOS doesn't have POSIX atexit */
 #define atexit on_exit
 #endif
