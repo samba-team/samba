@@ -375,6 +375,7 @@ main(int argc, char **argv)
 		/* reply(220,) must follow */
 	}
 	gethostname(hostname, sizeof(hostname));
+#if 0
 #ifdef KRB5
 	reply(220, "%s FTP server (%s+%s) ready.", hostname, 
 	      version, heimdal_version);
@@ -384,6 +385,8 @@ main(int argc, char **argv)
 #else
 	reply(220, "%s FTP server (%s) ready.", hostname, version);
 #endif
+#endif
+	reply(220, "%s FTP server (%s) ready.", hostname, version);
 	setjmp(errcatch);
 	for (;;)
 	    yyparse();
