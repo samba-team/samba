@@ -762,7 +762,7 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum, fnum2, i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
-	struct security_descriptor *sd, *sd_orig;
+	struct security_descriptor *sd, *sd_orig, *sd_def;
 	const char *owner_sid;
 	const struct {
 		uint32_t parent_flags;
@@ -901,12 +901,24 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	owner_sid = dom_sid_string(mem_ctx, sd_orig->owner_sid);
 
+	sd_def = security_descriptor_create(mem_ctx,
+					    owner_sid, NULL,
+					    owner_sid,
+					    SEC_ACE_TYPE_ACCESS_ALLOWED,
+					    SEC_RIGHTS_FILE_ALL,
+					    0,
+					    SID_NT_SYSTEM,
+					    SEC_ACE_TYPE_ACCESS_ALLOWED,
+					    SEC_RIGHTS_FILE_ALL,
+					    0,
+					    NULL);
+
 	for (i=0;i<ARRAY_SIZE(test_flags);i++) {
 		sd = security_descriptor_create(mem_ctx,
 						NULL, NULL,
 						owner_sid,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
-						SEC_FILE_ALL | SEC_STD_ALL,
+						SEC_FILE_WRITE_DATA,
 						test_flags[i].parent_flags,
 						SID_WORLD,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -933,15 +945,23 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		smbcli_close(cli->tree, fnum2);
 		smbcli_unlink(cli->tree, fname1);
 
+		if (!(test_flags[i].parent_flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
+			if (!security_descriptor_equal(q.query_secdesc.out.sd, sd_def)) {
+				printf("Expected default sd at %d - got:\n", i);
+				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+			}
+			goto check_dir;
+		}
 
 		if (q.query_secdesc.out.sd->dacl == NULL ||
 		    q.query_secdesc.out.sd->dacl->num_aces < 1 ||
+		    q.query_secdesc.out.sd->dacl->aces[0].access_mask != SEC_FILE_WRITE_DATA ||
 		    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
 				   sd_orig->owner_sid)) {
-			printf("Bad sd in child at %d\n", i);
+			printf("Bad sd in child file at %d\n", i);
 			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 			ret = False;
-			goto done;
+			goto check_dir;
 		}
 
 		if (q.query_secdesc.out.sd->dacl->aces[0].flags != 
@@ -954,6 +974,7 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			ret = False;
 		}
 
+	check_dir:
 		io.ntcreatex.in.fname = fname2;
 		io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
@@ -967,14 +988,26 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		smbcli_close(cli->tree, fnum2);
 		smbcli_rmdir(cli->tree, fname2);
 
+		if (!(test_flags[i].parent_flags & SEC_ACE_FLAG_CONTAINER_INHERIT) &&
+		    (!(test_flags[i].parent_flags & SEC_ACE_FLAG_OBJECT_INHERIT) ||
+		     (test_flags[i].parent_flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT))) {
+			if (!security_descriptor_equal(q.query_secdesc.out.sd, sd_def)) {
+				printf("Expected default sd for dir at %d - got:\n", i);
+				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+			}
+			continue;
+		}
+
 		if (q.query_secdesc.out.sd->dacl == NULL ||
 		    q.query_secdesc.out.sd->dacl->num_aces < 1 ||
+		    q.query_secdesc.out.sd->dacl->aces[0].access_mask != SEC_FILE_WRITE_DATA ||
 		    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
 				   sd_orig->owner_sid)) {
-			printf("Bad sd in child at %d\n", i);
+			printf("Bad sd in child dir at %d (parent 0x%x)\n", 
+			       i, test_flags[i].parent_flags);
 			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 			ret = False;
-			goto done;
+			continue;
 		}
 
 		if (q.query_secdesc.out.sd->dacl->aces[0].flags != 
