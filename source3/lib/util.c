@@ -3082,7 +3082,7 @@ int set_filelen(int fd, SMB_OFF_T len)
   char c = 0;
   SMB_OFF_T currpos = sys_lseek(fd, (SMB_OFF_T)0, SEEK_CUR);
 
-  if(currpos < 0)
+  if(currpos == -1)
     return -1;
   /* Do an fstat to see if the file is longer than
      the requested size (call ftruncate),
@@ -3105,7 +3105,8 @@ int set_filelen(int fd, SMB_OFF_T len)
   if(write(fd, &c, 1)!=1)
     return -1;
   /* Seek to where we were */
-  sys_lseek(fd, currpos, SEEK_SET);
+  if(sys_lseek(fd, currpos, SEEK_SET) != currpos)
+    return -1;
   return 0;
 #endif
 }

@@ -31,11 +31,20 @@ seek a file. Try to avoid the seek if possible
 SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 {
   SMB_OFF_T offset = 0;
+  SMB_OFF_T seek_ret;
 
   if (fsp->print_file && lp_postscript(fsp->conn->service))
     offset = 3;
 
-  fsp->pos = (sys_lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET) - offset);
+  seek_ret = sys_lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET);
+
+  if((seek_ret == -1) || (seek_ret != pos+offset)) {
+    DEBUG(0,("seek_file: sys_lseek failed. Error was %s\n", strerror(errno) ));
+    fsp->pos = -1;
+    return -1;
+  }
+
+  fsp->pos = seek_ret - offset;
 
   DEBUG(10,("seek_file: requested pos = %.0f, new pos = %.0f\n",
         (double)(pos+offset), (double)fsp->pos ));
@@ -75,7 +84,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
   }
 #endif
 
-  if (seek_file(fsp,pos) != pos) {
+  if (seek_file(fsp,pos) == -1) {
     DEBUG(3,("read_file: Failed to seek to %.0f\n",(double)pos));
     return(ret);
   }

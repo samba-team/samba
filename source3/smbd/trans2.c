@@ -1253,7 +1253,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
       return(UNIXERROR(ERRDOS,ERRbadfid));
     }
-    pos = sys_lseek(fsp->fd_ptr->fd,0,SEEK_CUR);
+    if((pos = sys_lseek(fsp->fd_ptr->fd,0,SEEK_CUR)) == -1)
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
   } else {
     /* qpathinfo */
     info_level = SVAL(params,0);

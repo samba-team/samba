@@ -1844,6 +1844,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   
 #if UNSAFE_READRAW
   {
+    BOOL seek_fail = False;
     int predict=0;
     _smb_setlen(header,nread);
 
@@ -1852,11 +1853,18 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
       predict = read_predict(fsp->fd_ptr->fd,startpos,header+4,NULL,nread);
 #endif /* USE_READ_PREDICTION */
 
-    if ((nread-predict) > 0)
-      seek_file(fsp,startpos + predict);
-    
-    ret = (ssize_t)transfer_file(fsp->fd_ptr->fd,Client,(SMB_OFF_T)(nread-predict),header,4+predict,
-			startpos+predict);
+    if ((nread-predict) > 0) {
+      if(seek_file(fsp,startpos + predict) == -1) {
+        DEBUG(0,("reply_readbraw: ERROR: seek_file failed.\n"));
+        ret = 0;
+        seek_fail = True;
+      } 
+    }
+
+    if(!seek_fail)
+      ret = (ssize_t)transfer_file(fsp->fd_ptr->fd,Client,
+                                   (SMB_OFF_T)(nread-predict),header,4+predict, 
+                                   startpos+predict);
   }
 
   if (ret != nread+4)
@@ -2065,8 +2073,10 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   if (is_locked(fsp,conn,tcount,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  if (seek_file(fsp,startpos) != startpos)
+  if (seek_file(fsp,startpos) == -1) {
     DEBUG(0,("couldn't seek to %.0f in writebraw\n",(double)startpos));
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   if (numtowrite>0)
     nwritten = write_file(fsp,data,numtowrite);
@@ -2153,7 +2163,8 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int dum
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  seek_file(fsp,startpos);
+  if(seek_file(fsp,startpos) == -1)
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
 
   /* The special X/Open SMB protocol handling of
      zero length writes is *NOT* done for
@@ -2205,7 +2216,8 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int dum_size,i
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  seek_file(fsp,startpos);
+  if(seek_file(fsp,startpos) == -1)
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
 
   /* X/Open SMB protocol says that if smb_vwv1 is
      zero then the file size should be extended or
@@ -2272,7 +2284,8 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  seek_file(fsp,startpos);
+  if(seek_file(fsp,startpos) == -1)
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
   
   /* X/Open SMB protocol says that, unlike SMBwrite
      if the length is zero then NO truncation is
@@ -2331,7 +2344,9 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
       umode = SEEK_SET; break;
   }
 
-  res = sys_lseek(fsp->fd_ptr->fd,startpos,umode);
+  if((res = sys_lseek(fsp->fd_ptr->fd,startpos,umode)) == -1)
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+
   fsp->pos = res;
   
   outsize = set_message(outbuf,2,0,True);
@@ -2469,7 +2484,8 @@ int reply_writeclose(connection_struct *conn,
 	if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
 		return(ERROR(ERRDOS,ERRlock));
       
-	seek_file(fsp,startpos);
+	if(seek_file(fsp,startpos) == -1)
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
       
 	nwritten = write_file(fsp,data,numtowrite);
 
@@ -3312,7 +3328,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 {
   int Access,action;
   SMB_STRUCT_STAT st;
-  int ret=0;
+  int ret=-1;
   files_struct *fsp1,*fsp2;
   pstring dest;
   
@@ -3357,7 +3373,15 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   }
 
   if ((ofun&3) == 1) {
-    sys_lseek(fsp2->fd_ptr->fd,0,SEEK_END);
+    if(sys_lseek(fsp2->fd_ptr->fd,0,SEEK_END) == -1) {
+      DEBUG(0,("copy_file: error - sys_lseek returned error %s\n",
+               strerror(errno) ));
+      /*
+       * Stop the copy from occurring.
+       */
+      ret = -1;
+      st.st_size = 0;
+    }
   }
   
   if (st.st_size)
@@ -3807,7 +3831,9 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int dum_s
   if (is_locked(fsp,conn,tcount,startpos,F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
 
-  seek_file(fsp,startpos);
+  if(seek_file(fsp,startpos) == -1)
+    return(UNIXERROR(ERRDOS,ERRnoaccess));
+
   nwritten = write_file(fsp,data,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
@@ -3909,7 +3935,18 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   if(wbms->wr_discard)
     return -1; /* Just discard the packet */
 
-  seek_file(fsp,startpos);
+  if(seek_file(fsp,startpos) == -1)
+  {
+    if(write_through)
+    {
+      /* We are returning an error - we can delete the aux struct */
+      if (wbms) free((char *)wbms);
+      fsp->wbmpx_ptr = NULL;
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+    }
+    return(CACHE_ERROR(wbms,ERRDOS,ERRnoaccess));
+  } 
+
   nwritten = write_file(fsp,data,numtowrite);
 
   if(lp_syncalways(SNUM(conn)) || write_through)
