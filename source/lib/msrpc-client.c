@@ -154,7 +154,10 @@ open the msrpcent sockets
 BOOL ncalrpc_l_connect(struct msrpc_local *msrpc, const char *pipe_name)
 {
 	fstring path;
-	slprintf(path, sizeof(path) - 1, "%s/.msrpc/%s", LOCKDIR, pipe_name);
+	fstring pname;
+	fstrcpy(pname, pipe_name);
+	strlower(pname);
+	slprintf(path, sizeof(path) - 1, "%s/.msrpc/%s", LOCKDIR, pname);
 
 	fstrcpy(msrpc->pipe_name, pipe_name);
 

@@ -362,6 +362,8 @@ static void usage(char *pname)
 	pipes_struct p;
 	fstring service_name;
 
+	charset_initialise();
+
 	if (fn == NULL)
 	{
 		fprintf(stderr,"no services table!\n");
@@ -373,10 +375,9 @@ static void usage(char *pname)
 		exit_server("fn->main() initialisation failed!");
 	}
 
+	strlower(pipe_name);
 	pstrcpy(remote_machine, pipe_name);
 	split_at_last_component(argv[0], NULL, '/', service_name);
-
-	charset_initialise();
 
 	/* make absolutely sure we run as root - to handle cases where people
 	   are crazy enough to have it setuid */
