@@ -1,7 +1,7 @@
 #!/bin/sh
 # $Id$
 #
-usage="Usage: $0 [-l username] [-t args_to_telnet] [-x args_to_xterm] host"
+usage="Usage: $0 [-l username] [-t args_to_telnet] [-x args_to_xterm] host [port]"
 while true
 do
   case $1 in
@@ -17,8 +17,8 @@ if test $# -lt 1; then
   exit 1
 fi
 host=$1
+port=$2
 title="${title}${host}"
-shift
 bindir=%bindir%
 pdc_trams=`dirname $0`
 PATH=$pdc_trams:$bindir:$PATH
@@ -45,8 +45,8 @@ for i in $*; do
   done
 done
 if test -n "$term"; then
-  ($term -title $title -name $title $xterm_args -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host; kill -USR2 $pid) &
+  ($term -title $title -name $title $xterm_args -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host $port; kill -USR2 $pid) &
 else
-  env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host
+  env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host $port
   kill -USR2 $pid
 fi
