@@ -171,10 +171,12 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 	/*** clear out the password ***/
 	memset(password, 0, sizeof(password));
 
+#if 0
 	/* ok!  you're logged in!  do anything you like, then... */
 
 	/* do an NT logout */
 	res = res ? cli_nt_logoff(srv_name, info->myhostname, &info->dom.ctr) : False;
+#endif
 
 	report(out_hnd,"cmd_nt_login: login (%s) test succeeded: %s\n",
 		nt_user_name, BOOLSTR(res));

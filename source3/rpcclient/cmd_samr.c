@@ -770,12 +770,12 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 
 	if (acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)
 	{
-		upw.uni_str_len = 24;
-		upw.uni_max_len = 24;
+		upw.uni_str_len = 12;
+		upw.uni_max_len = 12;
 		generate_random_buffer((uchar*)upw.buffer,
-		                       upw.uni_str_len, True);
+		                       upw.uni_str_len*2, True);
 		password = (char*)upw.buffer;
-		plen = upw.uni_str_len;
+		plen = upw.uni_str_len * 2;
 	}
 
 	if (msrpc_sam_create_dom_user(srv_name, &sid1,

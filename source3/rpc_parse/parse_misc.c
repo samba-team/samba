@@ -978,7 +978,9 @@ BOOL smb_io_dom_rid3(char *desc,  DOM_RID3 *rid3, prs_struct *ps, int depth)
 /*******************************************************************
 makes a DOM_CLNT_SRV structure.
 ********************************************************************/
-static BOOL make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name)
+static BOOL make_clnt_srv(DOM_CLNT_SRV *log,
+				const char *logon_srv, 
+				const char *comp_name)
 {
 	if (log == NULL) return False;
 
@@ -1122,7 +1124,7 @@ BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth)
 makes a DOM_CLNT_INFO2 structure.
 ********************************************************************/
 BOOL make_clnt_info2(DOM_CLNT_INFO2 *clnt,
-				char *logon_srv, char *comp_name,
+				const char *logon_srv, const char *comp_name,
 				DOM_CRED *clnt_cred)
 {
 	if (clnt == NULL) return False;
@@ -1170,8 +1172,8 @@ BOOL smb_io_clnt_info2(char *desc,  DOM_CLNT_INFO2 *clnt, prs_struct *ps, int de
 makes a DOM_CLNT_INFO structure.
 ********************************************************************/
 BOOL make_clnt_info(DOM_CLNT_INFO *clnt,
-		char *logon_srv, char *acct_name,
-		uint16 sec_chan, char *comp_name,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name,
 				DOM_CRED *cred)
 {
 	if (clnt == NULL || cred == NULL) return False;

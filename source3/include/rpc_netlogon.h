@@ -345,14 +345,14 @@ typedef struct sam_info
   DOM_CRED        rtn_cred; /* return credentials */
   uint16          logon_level;
   NET_ID_INFO_CTR *ctr;
-  uint16          validation_level;
 
 } DOM_SAM_INFO;
 
 /* NET_Q_SAM_LOGON */
 typedef struct net_q_sam_logon_info
 {
-    DOM_SAM_INFO sam_id;
+	DOM_SAM_INFO sam_id;
+	uint16          validation_level;
 
 } NET_Q_SAM_LOGON;
 

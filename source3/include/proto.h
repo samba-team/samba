@@ -2302,7 +2302,7 @@ uint32 msrpc_sam_enum_aliases( const char* srv_name,
 				ALIAS_INFO_FN(als_inf_fn),
 				ALIAS_MEM_FN(als_mem_fn));
 BOOL create_samr_domain_user( POLICY_HND *pol_dom,
-				const char *acct_name, uint16 acb_info,
+				char *acct_name, uint16 acb_info,
 				const char* password, int plen,
 				uint32 *rid);
 BOOL create_samr_domain_alias( POLICY_HND *pol_open_domain,
@@ -2349,7 +2349,7 @@ BOOL get_samr_query_aliasinfo(
 				uint32 info_level,
 				uint32 alias_rid, ALIAS_INFO_CTR *ctr);
 BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
-				const char *acct_name, uint16 acb_info,
+				char *acct_name, uint16 acb_info,
 				const char *password, int plen,
 				uint32 *rid);
 BOOL msrpc_sam_query_dispinfo(const char* srv_name, const char* domain,
@@ -2516,12 +2516,12 @@ BOOL smb_io_log_info(char *desc,  DOM_LOG_INFO *log, prs_struct *ps, int depth);
 BOOL smb_io_chal(char *desc,  DOM_CHAL *chal, prs_struct *ps, int depth);
 BOOL smb_io_cred(char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
 BOOL make_clnt_info2(DOM_CLNT_INFO2 *clnt,
-				char *logon_srv, char *comp_name,
+				const char *logon_srv, const char *comp_name,
 				DOM_CRED *clnt_cred);
 BOOL smb_io_clnt_info2(char *desc,  DOM_CLNT_INFO2 *clnt, prs_struct *ps, int depth);
 BOOL make_clnt_info(DOM_CLNT_INFO *clnt,
-		char *logon_srv, char *acct_name,
-		uint16 sec_chan, char *comp_name,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name,
 				DOM_CRED *cred);
 BOOL smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth);
 BOOL make_owf_info(OWF_INFO *hash, uint8 data[16]);
@@ -2587,7 +2587,7 @@ BOOL make_sam_info(DOM_SAM_INFO *sam,
 				const char *logon_srv, const char *comp_name,
 				DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
-				NET_ID_INFO_CTR *ctr, uint16 validation_level);
+				NET_ID_INFO_CTR *ctr);
 BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
 
 	NTTIME *logon_time,

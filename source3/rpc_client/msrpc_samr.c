@@ -996,7 +996,7 @@ uint32 msrpc_sam_enum_aliases( const char* srv_name,
 do a SAMR create domain user
 ****************************************************************************/
 BOOL create_samr_domain_user( POLICY_HND *pol_dom,
-				const char *acct_name, uint16 acb_info,
+				char *acct_name, uint16 acb_info,
 				const char* password, int plen,
 				uint32 *rid)
 {
@@ -1028,7 +1028,7 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 	if (ret == (NT_STATUS_USER_EXISTS | 0xC0000000))
 	{
 		uint32 num_rids;
-		const char *names[1];
+		char *names[1];
 		uint32 type[1];
 
 		names[0] = acct_name;
@@ -1512,7 +1512,7 @@ BOOL get_samr_query_aliasinfo(
 SAM create domain user.
 ****************************************************************************/
 BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
-				const char *acct_name, uint16 acb_info,
+				char *acct_name, uint16 acb_info,
 				const char *password, int plen,
 				uint32 *rid)
 {
@@ -1523,7 +1523,6 @@ BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 	uint32 user_rid; 
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
-	char *pwd = NULL;
 
 	/* establish a connection. */
 	res = res ? samr_connect( 
@@ -1536,8 +1535,7 @@ BOOL msrpc_sam_create_dom_user(const char* srv_name, DOM_SID *sid1,
 	            &pol_dom) : False;
 
 	/* create a domain user */
-	res2 = res1 ? create_samr_domain_user( 
-				&pol_dom,
+	res2 = res1 ? create_samr_domain_user( &pol_dom,
 	                        acct_name, 
 				acb_info, password, plen, &user_rid) : False;
 

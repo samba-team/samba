@@ -416,7 +416,9 @@ BOOL cli_net_sam_logon(const char* srv_name, const char* myhostname,
 
   /* store the parameters */
   make_sam_info(&(q_s.sam_id), srv_name, myhostname,
-         &new_clnt_cred, &dummy_rtn_creds, ctr->switch_value, ctr, validation_level);
+         &new_clnt_cred, &dummy_rtn_creds, ctr->switch_value, ctr);
+
+	q_s.validation_level = validation_level;
 
   /* turn parameters into data stream */
   net_io_q_sam_logon("", &q_s,  &buf, 0);
@@ -481,7 +483,6 @@ BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
   prs_struct rbuf;
   prs_struct buf; 
   NET_Q_SAM_LOGOFF q_s;
-  uint16 validation_level = 3;
   BOOL ok = False;
 
 	struct cli_connection *con = NULL;
@@ -507,7 +508,7 @@ BOOL cli_net_sam_logoff(const char* srv_name, const char* myhostname,
 
   /* store the parameters */
   make_sam_info(&(q_s.sam_id), srv_name, myhostname,
-                &new_clnt_cred, &dummy_rtn_creds, ctr->switch_value, ctr, validation_level);
+                &new_clnt_cred, &dummy_rtn_creds, ctr->switch_value, ctr);
 
   /* turn parameters into data stream */
   net_io_q_sam_logoff("", &q_s,  &buf, 0);
