@@ -159,7 +159,7 @@ static BOOL api_dfs_enum(pipes_struct *p)
 ********************************************************************/
 
 #ifdef RPC_DFS_DYNAMIC
-int rpc_pipe_init(void)
+int init_module(void)
 #else
 int rpc_dfs_init(void)
 #endif

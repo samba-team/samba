@@ -61,7 +61,7 @@ static BOOL api_wks_query_info(pipes_struct *p)
  ********************************************************************/
 
 #ifdef RPC_WKS_DYNAMIC
-int rpc_pipe_init(void)
+int init_module(void)
 #else
 int rpc_wks_init(void)
 #endif
