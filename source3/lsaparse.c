@@ -108,6 +108,64 @@ char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int al
 }
 
 /*******************************************************************
+makes an LSA_Q_CLOSE structure.
+********************************************************************/
+void make_q_close(LSA_Q_CLOSE *q_c, LSA_POL_HND *hnd)
+{
+	if (q_c == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_q_close\n"));
+
+	memcpy(&(q_c->pol), hnd, sizeof(q_c->pol));
+}
+
+
+/*******************************************************************
+reads or writes an LSA_Q_CLOSE structure.
+********************************************************************/
+char* lsa_io_q_close(BOOL io, LSA_Q_CLOSE *q_c, char *q, char *base, int align, int depth)
+{
+	if (q_c == NULL) return NULL;
+
+	DEBUG(5,("%s%04x lsa_io_q_close\n", tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = smb_io_pol_hnd(io, &(q_c->pol), q, base, align, depth);
+
+	return q;
+}
+
+/*******************************************************************
+makes an LSA_R_CLOSE structure.
+********************************************************************/
+void make_r_close(LSA_R_CLOSE *q_r, LSA_POL_HND *hnd)
+{
+	if (q_r == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_r_close\n"));
+
+	memcpy(&(q_r->pol), hnd, sizeof(q_r->pol));
+}
+
+
+/*******************************************************************
+reads or writes an LSA_R_CLOSE structure.
+********************************************************************/
+char* lsa_io_r_close(BOOL io, LSA_R_CLOSE *r_c, char *q, char *base, int align, int depth)
+{
+	if (r_c == NULL) return NULL;
+
+	DEBUG(5,("%s%04x lsa_io_r_close\n", tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = smb_io_pol_hnd(io, &(r_c->pol), q, base, align, depth);
+
+	DBG_RW_IVAL("status", depth, base, io, q, r_c->status); q += 4;
+
+	return q;
+}
+
+/*******************************************************************
 reads or writes an LSA_Q_QUERY_INFO structure.
 ********************************************************************/
 char* lsa_io_r_query(BOOL io, LSA_R_QUERY_INFO *r_q, char *q, char *base, int align, int depth)

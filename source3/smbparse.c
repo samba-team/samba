@@ -136,7 +136,7 @@ char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int 
 	/* oops! XXXX should really issue a warning here... */
 	if (sid->num_auths > MAXSUBAUTHS) sid->num_auths = MAXSUBAUTHS;
 
-	DBG_RW_PIVAL("num_auths ", depth, base, io, q, sid->sub_auths, sid->num_auths); q += sid->num_auths * 4;
+	DBG_RW_PIVAL("sub_auths ", depth, base, io, q, sid->sub_auths, sid->num_auths); q += sid->num_auths * 4;
 
 	return q;
 }
@@ -278,7 +278,7 @@ char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align, int
 
 	/* buffer advanced by indicated length of string
        NOT by searching for null-termination */
-	DBG_RW_PSVAL("buffer    ", depth, base, io, q, uni2->buffer, uni2->uni_max_len); q += uni2->uni_max_len * 2;
+	DBG_RW_PSVAL("buffer     ", depth, base, io, q, uni2->buffer, uni2->uni_max_len); q += uni2->uni_max_len * 2;
 
 	return q;
 }

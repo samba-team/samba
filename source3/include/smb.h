@@ -364,7 +364,7 @@ typedef struct sid_info
   uint8  sid_rev_num;             /* SID revision number */
   uint8  num_auths;               /* number of sub-authorities */
   uint8  id_auth[6];              /* Identifier Authority */
-  uint16 sub_auths[MAXSUBAUTHS];  /* pointer to sub-authorities. */
+  uint32 sub_auths[MAXSUBAUTHS];  /* pointer to sub-authorities. */
 
 } DOM_SID;
 
@@ -632,9 +632,26 @@ typedef struct lsa_r_query_info
 
     } dom;
 
-  uint32 status; /* return code */
+	uint32 status; /* return code */
 
 } LSA_R_QUERY_INFO;
+
+/* LSA_Q_CLOSE */
+typedef struct lsa_q_close_info
+{
+	LSA_POL_HND pol; /* policy handle */
+
+} LSA_Q_CLOSE;
+
+/* LSA_R_CLOSE */
+typedef struct lsa_r_close_info
+{
+	LSA_POL_HND pol; /* policy handle.  should be all zeros. */
+
+	uint32 status; /* return code */
+
+} LSA_R_CLOSE;
+
 
 #define MAX_REF_DOMAINS 10
 

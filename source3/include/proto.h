@@ -380,6 +380,10 @@ char* lsa_io_q_open_pol(BOOL io, LSA_Q_OPEN_POL *r_q, char *q, char *base, int a
 char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int align, int depth);
 void make_q_query(LSA_Q_QUERY_INFO *q_q, LSA_POL_HND *hnd, uint16 info_class);
 char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int align, int depth);
+void make_q_close(LSA_Q_CLOSE *q_c, LSA_POL_HND *hnd);
+char* lsa_io_q_close(BOOL io, LSA_Q_CLOSE *q_c, char *q, char *base, int align, int depth);
+void make_r_close(LSA_R_CLOSE *q_r, LSA_POL_HND *hnd);
+char* lsa_io_r_close(BOOL io, LSA_R_CLOSE *r_c, char *q, char *base, int align, int depth);
 char* lsa_io_r_query(BOOL io, LSA_R_QUERY_INFO *r_q, char *q, char *base, int align, int depth);
 char* lsa_io_q_lookup_sids(BOOL io, LSA_Q_LOOKUP_SIDS *q_s, char *q, char *base, int align, int depth);
 char* lsa_io_r_lookup_sids(BOOL io, LSA_R_LOOKUP_SIDS *r_s, char *q, char *base, int align, int depth);
