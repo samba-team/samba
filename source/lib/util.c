@@ -4179,7 +4179,7 @@ void smb_panic(char *why)
 		system(cmd);
 	}
 	DEBUG(0,("PANIC: %s\n", why));
-	exit(1);
+	abort();
 }
 
 
