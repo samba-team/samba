@@ -64,7 +64,8 @@ typedef struct _functable {
 #define ADMINF    11
 #define SERVICEF  12
 #define PASSWORDF 13
-#define HELPF     14
+#define DOMJOINF  14
+#define HELPF     15
 
 const functable net_func[] = {
   { FILEF, "FILE"},
@@ -80,6 +81,8 @@ const functable net_func[] = {
   { ADMINF, "ADMIN"},
   { SERVICEF, "SERVICE"},
   { PASSWORDF, "PASSWORD"},
+  { DOMJOINF, "JOIN"},
+  { DOMJOINF, "DOMAINMEMBER"},
   { HELPF, "HELP"}
 };
 
@@ -117,7 +120,7 @@ const char share_type[][6] = {
     "  net file \tto list open files on a server \n"\
     "  net group \tto list user groups  \n"\
     "  net groupmember to list users in a group \n"\
-    "  net password to change the password of a user\n"\
+    "  net password\t to change the password of a user\n"\
     "  net printq \tto list the print queues on a server\n"\
     "  net server \tto list servers in a domain\n"\
     "  net session \tto list clients with open sessions to a server\n"\
@@ -299,7 +302,7 @@ const char share_type[][6] = {
 #define WORKGROUP_USAGE   "\t-w or --workgroup=<wg>\t\ttarget workgroup or domain name\n"
 #define COMMENT_USAGE     "\t-C or --comment=<comment>\tdescriptive comment (for add only)\n"
 #define MYWORKGROUP_USAGE "\t-W or --myworkgroup=<wg>\tclient workgroup\n"
-#define DEBUG_USAGE       "\t-d or --debug=<level>\t\tdebug level (1-9)\n"
+#define DEBUG_USAGE       "\t-d or --debug=<level>\t\tdebug level (0-10)\n"
 #define MYNAME_USAGE      "\t-n or --myname=<name>\t\tclient name\n"
 #define USER_USAGE        "\t-U or --user=<name>\t\tuser name\n"
 #define CONF_USAGE        "\t-s or --conf=<path>\t\tpathname of smb.conf file\n"
@@ -796,9 +799,7 @@ int net_server(char * temp_workgroup, int subfunct)
   d_printf(SERVER_ENUM_DISPLAY); /* header for list of servers */
   return cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, display_server_func,NULL); 
 	
-  /* BB add mechanism to find PDC for our domain and send enum to it in this error case */ 
-	   
-  /* BB add server service (smb server daemon) start and stop */
+  /* BB add mechanism to find PDC for our domain and send enum to it in the error case */ 	   
 }
 		      
 void domain_usage(void)
@@ -823,27 +824,30 @@ int net_domain(void)
 {
   char *our_workgroup;
   struct in_addr msbrow_ip;
+  struct in_addr * ip_list = NULL;
+  int addr_count;
 	
 
   our_workgroup = lp_workgroup();
   if((have_ip == 0) && (host[0] == 0)) {
-    if (!resolve_name(MSBROWSE, &msbrow_ip, 1)) {
-      DEBUG(1,("Unable to resolve global master browser via name lookup"));
-      if (!resolve_name(our_workgroup, &msbrow_ip, 0x1D))  {
-        DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
-        return -2;
+  /*  if (!resolve_name(MSBROWSE, &msbrow_ip, 1)) */
+      if (!get_dmb_list(&ip_list,&addr_count)){
+        DEBUG(1,("Unable to resolve global master browser via name lookup"));
+        if (!resolve_name(our_workgroup, &msbrow_ip, 0x1D))  {
+          DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
+          return -2;
         } else {
           have_ip = True;
           dest_ip = msbrow_ip;
         }
     } else {
       have_ip = True;
-      dest_ip = msbrow_ip;
+      dest_ip = *ip_list;                                                         
     }
   }
   if(host[0] == 0)
     strncpy(host, inet_ntoa(dest_ip),16);
-  cli = connect_to_ipc(host);
+  cli = connect_to_ipc(host);  /* BB fix two common failures i.e. to os2 due to *SMBSERVER and also due to access denied by picking wrong starting DMB */
   if(!cli) {
     d_printf(ERRMSG_NOCONN_BROWSE_MSTR);
     return -2;
@@ -1356,6 +1360,12 @@ int net_admin(const char * command, const char * cmd_args, const char * environm
 
 }
 
+void join_usage(void)
+{
+	d_printf(ERRMSG_NOT_IMPLEMENTED);
+}
+
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -1391,6 +1401,7 @@ int main(int argc,char *argv[])
     {"myname",      'n', POPT_ARG_STRING, &requester_name},
     {"conf",        's', POPT_ARG_STRING, &servicesf},
     {"debug",       'd', POPT_ARG_INT,    &debuglevel, 'd'},
+    {"debuglevel",  'd', POPT_ARG_INT,    &debuglevel, 'd'},
     {"server",      'S', POPT_ARG_STRING, &dest_host},
     {"comment",     'C', POPT_ARG_STRING, &comment},
     {"maxusers",    'M', POPT_ARG_INT,    &maxusers},
@@ -1503,17 +1514,20 @@ int main(int argc,char *argv[])
 	    validate_usage();
 	    break;
       case SERVICEF:
-        service_usage();
-        break;
+	    service_usage();
+	    break;
       case ADMINF:
-        admin_usage();
-        break;
+	    admin_usage();
+	    break;
       case GROUPMEMBERF:
 	    groupmember_usage();
 	    break;
+      case DOMJOINF:
+	    join_usage();
+            break;
       case PASSWORDF:
-        password_usage();
-        break;
+            password_usage();
+            break;
       case HELPF:
 	    usage();
 	    break;
@@ -1649,6 +1663,8 @@ int main(int argc,char *argv[])
       else
 	    rc = net_printq(subfunc, argv_new[3], jobid);
       break;
+ /* case DOMJOINF:
+      break; */ /* not implemented yet */
     default:
       usage();
       return -1;
