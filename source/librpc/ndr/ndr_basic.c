@@ -1102,7 +1102,10 @@ void ndr_print_NTTIME(struct ndr_print *ndr, const char *name, NTTIME t)
 
 void ndr_print_NTTIME_1sec(struct ndr_print *ndr, const char *name, NTTIME_1sec t)
 {
-	ndr_print_NTTIME(ndr, name, t * 10000000);
+	/* this is a standard NTTIME here
+	 * as it's already converted in the pull/push code
+	 */
+	ndr_print_NTTIME(ndr, name, t);
 }
 
 void ndr_print_NTTIME_hyper(struct ndr_print *ndr, const char *name, NTTIME_hyper t)
