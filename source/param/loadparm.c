@@ -924,6 +924,7 @@ static void init_globals(void)
 
 	do_parameter("fstype", FSTYPE_STRING);
 	do_parameter("ntvfs handler", "unixuid default");
+	do_parameter("max connections", "-1");
 
 	do_parameter("dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg IOXIDResolver IRemoteActivation");
 	do_parameter("server services", "smb rpc");
@@ -1653,32 +1654,34 @@ int lp_add_service(const char *pszService, int iDefaultService)
  Add the IPC service.
 ***************************************************************************/
 
-static BOOL lp_add_ipc(const char *ipc_name, BOOL guest_ok)
+static BOOL lp_add_hidden(const char *name, const char *fstype, BOOL guest_ok)
 {
 	pstring comment;
-	int i = add_a_service(&sDefault, ipc_name);
+	int i = add_a_service(&sDefault, name);
 
 	if (i < 0)
 		return (False);
 
 	slprintf(comment, sizeof(comment) - 1,
-		 "IPC Service (%s)", Globals.szServerString);
+		 "%s Service (%s)", fstype, Globals.szServerString);
 
 	string_set(&ServicePtrs[i]->szPath, tmpdir());
 	string_set(&ServicePtrs[i]->szUsername, "");
 	string_set(&ServicePtrs[i]->comment, comment);
-	string_set(&ServicePtrs[i]->fstype, "IPC");
+	string_set(&ServicePtrs[i]->fstype, fstype);
 	ServicePtrs[i]->iMaxConnections = 0;
 	ServicePtrs[i]->bAvailable = True;
 	ServicePtrs[i]->bRead_only = True;
 	ServicePtrs[i]->bGuest_only = False;
 	ServicePtrs[i]->bGuest_ok = guest_ok;
 	ServicePtrs[i]->bPrint_ok = False;
-	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+	ServicePtrs[i]->bBrowseable = False;
 
-	lp_do_parameter(i, "ntvfs handler", "default");
+	if (strcasecmp(fstype, "IPC") == 0) {
+		lp_do_parameter(i, "ntvfs handler", "default");
+	}
 
-	DEBUG(3, ("adding IPC service\n"));
+	DEBUG(3, ("adding hidden service %s\n", name));
 
 	return (True);
 }
@@ -3056,8 +3059,8 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	if (add_ipc) {
 		/* When 'restrict anonymous = 2' guest connections to ipc$
 		   are denied */
-		lp_add_ipc("IPC$", (lp_restrict_anonymous() < 2));
-		lp_add_ipc("ADMIN$", False);
+		lp_add_hidden("IPC$", "IPC", (lp_restrict_anonymous() < 2));
+		lp_add_hidden("ADMIN$", "DISK", False);
 	}
 
 	set_server_role();
