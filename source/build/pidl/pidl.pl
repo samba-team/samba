@@ -7,6 +7,10 @@
 # released under the GNU GPL
 
 use strict;
+
+my($PIDLBASE) = "$ENV{HOME}/pidl";
+use lib "$ENV{HOME}/pidl";
+
 use Getopt::Long;
 use Data::Dumper;
 use Parse::RecDescent;
@@ -35,9 +39,10 @@ sub IdlParse($)
                           $item[1] : 
                           "XX_" . $item[0] . "_XX[$#item]"  };
     my($filename) = shift;
-    my($grammer) = util::FileLoad("idl.gram");    
+    my($grammer) = util::FileLoad("$PIDLBASE/idl.gram");
     my($parser) = Parse::RecDescent->new($grammer);
     my($saved_sep) = $/;
+
     undef $/;
     my($idl) = $parser->idl(`cpp $filename`);
     $/ = $saved_sep;

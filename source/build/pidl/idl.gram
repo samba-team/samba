@@ -33,14 +33,14 @@ typedef : 'typedef' <commit> type identifier array_len(?) ';'
                      "TYPE" => "TYPEDEF", 
 		     "NAME" => $item{identifier},
 		     "DATA" => $item{type},
-		     "ARRAY_LEN" => $item{array_len}[0]
+		     "ARRAY_LEN" => $item[5][0]
         }}
         | <error?>
 
 struct: 'struct' <commit> '{' element_list1(?) '}' 
         {{
                      "TYPE" => "STRUCT", 
-		     "ELEMENTS" => util::FlattenArray($item{element_list1})
+		     "ELEMENTS" => util::FlattenArray2($item[4])
         }}
       | <error?>
 
@@ -48,7 +48,7 @@ union: property_list(s?) 'union' <commit> '{' union_element(s?) '}'
 	 {{
 		"TYPE" => "UNION",
 		"PROPERTIES" => util::FlattenArray($item[1]),
-		"DATA" => $item{union_element}
+		"DATA" => $item[5]
 	 }}
 	 | <error?>
 
@@ -70,8 +70,8 @@ base_element: property_list(s?) type pointer(s?) identifier array_len(?)
 			   "NAME" => $item{identifier},
 			   "TYPE" => $item{type},
 			   "PROPERTIES" => util::FlattenArray($item[1]),
-			   "POINTERS" => $#{$item{pointer}}==-1?undef:$#{$item{pointer}}+1,
-			   "ARRAY_LEN" => $item{array_len}[0]
+			   "POINTERS" => $#{$item[3]}==-1?undef:$#{$item[3]}+1,
+			   "ARRAY_LEN" => $item[5][0]
               }}
             | <error>
 
@@ -97,6 +97,7 @@ property: 'unique'
 	  | 'in'
 	  | 'out'
 	  | 'ref'
+	  | 'struct_len'
 	  | 'context_handle'
 	  | 'string'
 	  | 'byte_count_pointer' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
