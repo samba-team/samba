@@ -75,13 +75,15 @@ krb5_error_code
 hdb_process_master_key(krb5_context context, EncryptionKey key, 
 		       krb5_data *schedule)
 {
+    krb5_error_code ret;
+
     if(key.keytype != ETYPE_DES_CBC_MD5)
 	return KRB5_PROG_KEYTYPE_NOSUPP;
-    schedule->length = sizeof(des_key_schedule);
-    schedule->data   = malloc(schedule->length);
-    if (schedule->length != 0 && schedule->data == NULL)
-	return ENOMEM;
-    
+
+    ret = krb5_data_alloc (schedule, sizeof(des_key_schedule));
+    if (ret)
+	return ret;
+
     des_set_key((des_cblock*)key.keyvalue.data, schedule->data);
     return 0;
 }
