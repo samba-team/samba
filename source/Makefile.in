@@ -397,7 +397,7 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 # now the rules...
 ######################################################################
 
-all : CHECK include/proto.h $(SPROGS) $(PROGS) 
+all : CHECK include/proto.h $(SPROGS) $(PROGS) bin/libsmbclient.so 
 
 # removed SHLIBS until it compiles on more platforms (tridge)
 # $(SHLIBS)
