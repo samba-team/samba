@@ -875,14 +875,6 @@ size_t strlcat(char *d, const char *s, size_t bufsize);
 int ftruncate(int f,long l);
 #endif
 
-#ifndef HAVE_STRNDUP
-char *strndup(const char *s, size_t n);
-#endif
-
-#ifndef HAVE_STRNLEN
-size_t strnlen(const char *s, size_t n);
-#endif
-
 #ifndef HAVE_STRTOUL
 unsigned long strtoul(const char *nptr, char **endptr, int base);
 #endif
