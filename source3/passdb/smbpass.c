@@ -21,6 +21,7 @@
 
 #ifdef USE_SMBPASS_DB
 
+extern int pw_file_lock_depth;
 extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
@@ -141,7 +142,7 @@ struct sam_passwd *getsmb21pwent(void *vp)
 		user.smb_userid    = pw_buf->smb_userid;
 		user.smb_grpid     = pwfile->pw_gid;
 
-		user.user_rid  = uid_to_user_rid (user.smb_userid);
+		user.user_rid  = pdb_uid_to_user_rid (user.smb_userid);
 		user.group_rid = DOMAIN_GROUP_RID_USERS; /* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
 
 		pstrcpy(full_name    , "");
