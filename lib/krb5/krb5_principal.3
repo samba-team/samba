@@ -35,6 +35,7 @@
 .Dt KRB5_PRINCIPAL 3
 .Os HEIMDAL
 .Sh NAME
+.Nm krb5_get_default_principal ,
 .Nm krb5_principal ,
 .Nm krb5_build_principal ,
 .Nm krb5_build_principal_ext ,
@@ -115,6 +116,8 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fn krb5_sname_to_principal  "krb5_context context" "const char *hostname" "const char *sname" "int32_t type" "krb5_principal *ret_princ"
 .Ft krb5_error_code
 .Fn krb5_sock_to_principal "krb5_context context" "int socket" "const char *sname" "int32_t type" "krb5_principal *principal"
+.Ft krb5_error_code
+.Fn krb5_get_default_principal "krb5_context context" "krb5_principal *princ"
 .Sh DESCRIPTION
 .Li krb5_principal
 holds the name of a user or service in Kerberos.
@@ -311,6 +314,10 @@ socket.
 This function require there is a mapping between the address
 .Fq sockname .
 This function might try to resolve the name in DNS.
+.Pp
+.Fn krb5_get_default_principal
+tries to find out what's a reasonable default principal by looking at
+the enviroment its run in.
 .\" .Sh EXAMPLES
 .Sh SEE ALSO
 .Xr krb5_425_conv_principal 3 ,
