@@ -787,11 +787,20 @@ krb5_parse_address(krb5_context context,
 	++n;
 
     ALLOC_SEQ(addresses, n);
+    if (addresses->val == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	freeaddrinfo(ai);
+	return ENOMEM;
+    }
 
+    addresses->len = 0;
     for (a = ai, i = 0; a != NULL; a = a->ai_next) {
-	if(krb5_sockaddr2address (context, ai->ai_addr, 
-				  &addresses->val[i]) == 0)
-	    i++;
+	if (krb5_sockaddr2address (context, ai->ai_addr, &addresses->val[i]))
+	    continue;
+	if(krb5_address_search(context, &addresses->val[i], addresses))
+	    continue;
+	addresses->len = i;
+	i++;
     }
     freeaddrinfo (ai);
     return 0;
