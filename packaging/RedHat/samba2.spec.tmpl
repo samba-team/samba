@@ -43,6 +43,10 @@ for Shadow passwords and quotas. Do NOT recompile with the
 SHADOW_PWD option enabled
 
 %changelog
+* Mon Aug 1 2001 Tim Potter <tpot@samba.org>
+ - Install winbind daemon, client programs, nss and pam libraries
+ - Removed codepage stuff so spec file works with current HEAD branch
+
 * Sat Mar 31 2001 Andrew Bartlett <abartlet@pcug.org.au>
  - Changed prefix/share/man for _mandir/share/man
   - Changed this for a sed macro MANDIR_MACRO
@@ -152,7 +156,6 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--localstatedir=/var \
 	--with-configdir=/etc/samba \
 	--with-privatedir=/etc/samba \
-	--with-codepagedir=/etc/codepages \
 	--with-fhs \
 	--with-quotas \
 	--with-smbmount \
@@ -173,7 +176,6 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/sbin
 mkdir -p $RPM_BUILD_ROOT/etc/samba
-mkdir -p $RPM_BUILD_ROOT/etc/codepages/src
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
@@ -183,12 +185,11 @@ mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
 mkdir -p $RPM_BUILD_ROOT/var/lock/samba
 mkdir -p $RPM_BUILD_ROOT/var/log/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
-mkdir -p $RPM_BUILD_ROOT/lib
+mkdir -p $RPM_BUILD_ROOT/lib/security
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-      make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool \
-      smbcacls smbcontrol
+      make_printerdef rpcclient smbspool smbcacls smbcontrol wbinfo
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -198,7 +199,7 @@ install -m755 source/script/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbumount smbmnt debug2html 
+for i in smbd nmbd swat smbmount smbumount smbmnt debug2html winbindd
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT%{prefix}/sbin
 done
@@ -213,22 +214,20 @@ cd source
 make LIBDIR=$RPM_BUILD_ROOT/etc/samba \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
-	CODEPAGEDIR=$RPM_BUILD_ROOT/etc/codepages \
 	SWATDIR=$RPM_BUILD_ROOT/usr/share/swat \
 	SAMBABOOK=$RPM_BUILD_ROOT/usr/share/swat/using_samba \
-	installman installcp installswat
+	installman installswat
 cd ..
 
-# Install codepage source files
-for i in source/codepages/codepage_def.* source/codepages/*.TXT
-do
-install -m644 $i $RPM_BUILD_ROOT/etc/codepages/src
-done
-
-# Install the nsswitch library extenstion file
+# Install the nsswitch library extension file
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
+
 # Make link for wins resolver
 ( cd $RPM_BUILD_ROOT/lib; ln -s libnss_wins.so libnss_wins.so.2; )
+
+# Install winbind shared libraries
+install -m755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/lib
+install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
@@ -324,6 +323,10 @@ else
 	rm -f /etc/samba/samba.stack
 fi
 
+# Create winbind nss client symlink
+
+ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2
+
 %preun
 if [ $1 = 0 ] ; then
     /sbin/chkconfig --del smb
@@ -357,6 +360,11 @@ if [ $1 = 0 ] ; then
 		rm -f /var/lock/samba/messages.tdb
 	fi
 
+	# Remove winbind nss client symlink
+
+	if [ -L /lib/libnss_winbind.so.2 ]; then
+		rm -f /lib/libnss_winbind.so.2
+	fi
 fi
 
 %postun
@@ -406,6 +414,7 @@ fi
 %attr(-,root,root) %{prefix}/sbin/smbmnt
 %attr(-,root,root) %{prefix}/sbin/smbmount
 %attr(-,root,root) %{prefix}/sbin/smbumount
+%attr(-,root,root) %{prefix}/sbin/winbindd
 %attr(-,root,root) /sbin/mount.smbfs
 %attr(-,root,root) /sbin/mount.smb
 %attr(-,root,root) %{prefix}/bin/mksmbpasswd.sh
@@ -417,14 +426,13 @@ fi
 %attr(-,root,root) %{prefix}/bin/findsmb
 %attr(-,root,root) %{prefix}/bin/smbstatus
 %attr(-,root,root) %{prefix}/bin/nmblookup
-%attr(-,root,root) %{prefix}/bin/make_smbcodepage
-%attr(-,root,root) %{prefix}/bin/make_unicodemap
 %attr(-,root,root) %{prefix}/bin/make_printerdef
 %attr(-,root,root) %{prefix}/bin/smbpasswd
 %attr(-,root,root) %{prefix}/bin/smbtar
 %attr(-,root,root) %{prefix}/bin/smbprint
 %attr(-,root,root) %{prefix}/bin/smbcontrol
 %attr(-,root,root) %{prefix}/bin/smbcacls
+%attr(-,root,root) %{prefix}/bin/wbinfo
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(-,root,root) %{prefix}/share/swat/help/*
 %attr(-,root,root) %{prefix}/share/swat/images/*
@@ -443,7 +451,8 @@ fi
 %attr(-,root,root) MANDIR_MACRO/man5/*
 %attr(-,root,root) MANDIR_MACRO/man7/*
 %attr(-,root,root) MANDIR_MACRO/man8/*
-%attr(-,root,root) %dir /etc/codepages/*
 %attr(755,root,root) %dir /var/lock/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
+%attr(-,root,root) /lib/libnss_winbind.so
+%attr(-,root,root) /lib/security/pam_winbind.so
