@@ -159,6 +159,7 @@ kt_add(int argc, char **argv)
     char *enctype_string = NULL;
     krb5_enctype enctype;
     char *password_string = NULL;
+    int salt_flag = 1;
     int random_flag = 0;
     int help_flag = 0;
     struct getargs args[] = {
@@ -166,6 +167,7 @@ kt_add(int argc, char **argv)
 	{ "kvno", 'V', arg_integer, NULL, "key version of key" },
 	{ "enctype", 'e', arg_string, NULL, "encryption type of key" },
 	{ "password", 'w', arg_string, NULL, "password for key"},
+	{ "salt", 's',	arg_negative_flag, NULL, "no salt" },
 	{ "random",  'r', arg_flag, NULL, "generate random key" },
 	{ "help", 'h', arg_flag, NULL }
     };
@@ -176,6 +178,7 @@ kt_add(int argc, char **argv)
     args[i++].value = &kvno;
     args[i++].value = &enctype_string;
     args[i++].value = &password_string;
+    args[i++].value = &salt_flag;
     args[i++].value = &random_flag;
     args[i++].value = &help_flag;
 
@@ -226,11 +229,25 @@ kt_add(int argc, char **argv)
 	des_read_pw_string(buf, sizeof(buf), "Password: ", 1);
 	password_string = buf;
     }
-    if(password_string)
-	krb5_string_to_key(context, enctype, password_string, 
-			   entry.principal, &entry.keyblock);
-    else
+    if(password_string) {
+	if (!salt_flag) {
+	    krb5_salt salt;
+	    krb5_data pw;
+
+	    salt.salttype         = KRB5_PW_SALT;
+	    salt.saltvalue.data   = NULL;
+	    salt.saltvalue.length = 0;
+	    pw.data = (void*)password_string;
+	    pw.length = strlen(password_string);
+	    krb5_string_to_key_data_salt(context, enctype, pw, salt,
+					 &entry.keyblock);
+        } else {
+	    krb5_string_to_key(context, enctype, password_string, 
+			       entry.principal, &entry.keyblock);
+	}
+    } else {
 	krb5_generate_random_keyblock(context, enctype, &entry.keyblock);
+    }
     entry.vno = kvno;
     ret = krb5_kt_add_entry(context, keytab, &entry);
     if(ret)
