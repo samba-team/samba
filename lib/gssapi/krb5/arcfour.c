@@ -139,7 +139,7 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
 			gss_buffer_t message_token,
 			krb5_keyblock *key)
 {
-    gss_arcfour_mic_token *token;
+    gss_arcfour_mic_token token;
     krb5_error_code ret;
     int32_t seq_number;
     size_t len, total_len;
@@ -157,7 +157,7 @@ _gssapi_get_mic_arcfour(OM_uint32 * minor_status,
     p = _gssapi_make_mech_header(message_token->value,
 				 len,
 				 GSS_KRB5_MECHANISM);
-    token = (gss_arcfour_mic_token *)p;
+    token = (gss_arcfour_mic_token)p;
     
     token->TOK_ID[0] = 0x01;
     token->TOK_ID[1] = 0x01;
@@ -321,7 +321,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
 {
     u_char Klocaldata[16], k6_data[16], *p;
     size_t len, total_len, datalen;
-    gss_arcfour_wrap_token *token;
+    gss_arcfour_wrap_token token;
     krb5_keyblock Klocal;
     krb5_error_code ret;
     int32_t seq_number;
@@ -340,7 +340,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     p = _gssapi_make_mech_header(output_message_buffer->value,
 				 len,
 				 GSS_KRB5_MECHANISM);
-    token = (gss_arcfour_wrap_token *)p;
+    token = (gss_arcfour_wrap_token)p;
 
     token->TOK_ID[0] = 0x02;
     token->TOK_ID[1] = 0x01;
@@ -463,7 +463,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     OM_uint32 omret;
     char k6_data[16], SND_SEQ[8], Confounder[8];
     char cksum_data[8];
-    gss_arcfour_wrap_token *token;
+    gss_arcfour_wrap_token token;
     u_char *p;
     int cmp;
     int conf_flag;
@@ -480,7 +480,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 				       GSS_KRB5_MECHANISM);
     if (omret)
 	return omret;
-    token = (gss_arcfour_wrap_token *)p;
+    token = (gss_arcfour_wrap_token)p;
 
     datalen = input_message_buffer->length -
 	(p - ((u_char *)input_message_buffer->value)) -
