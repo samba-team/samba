@@ -547,6 +547,9 @@
 /* Define if you have the pipe function.  */
 #undef HAVE_PIPE
 
+/* Define if you have the popen function.  */
+#undef HAVE_POPEN
+
 /* Define if you have the pread function.  */
 #undef HAVE_PREAD
 
