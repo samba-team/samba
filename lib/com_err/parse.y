@@ -58,7 +58,7 @@ extern char *yytext;
 %%
 
 file		: /* */ 
-		| header statements end
+		| header statements
 		;
 
 header		: id et
@@ -123,8 +123,7 @@ statement	: INDEX NUMBER
 		    APPEND(codes, ec);
 		    number++;
 		}
-		;
-end		: END
+		| END
 		{
 			return;
 		}
