@@ -500,26 +500,26 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
 uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
 {
 	uint32 status = NT_STATUS_NOPROBLEMO;
-    NET_USER_INFO_3 *usr_info = NULL;
-    DOM_CRED srv_cred;
-    struct smb_passwd *smb_pass = NULL;
-    struct sam_passwd *sam_pass = NULL;
-    UNISTR2 *uni_samlogon_user = NULL;
-    fstring nt_username;
+	NET_USER_INFO_3 *usr_info = NULL;
+	DOM_CRED srv_cred;
+	struct smb_passwd *smb_pass = NULL;
+	struct sam_passwd *sam_pass = NULL;
+	UNISTR2 *uni_samlogon_user = NULL;
+	fstring nt_username;
    
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
 		return NT_STATUS_NO_MEMORY;
 	ZERO_STRUCTP(usr_info);
  
-    if (!get_valid_user_struct(p->vuid))
-        return NT_STATUS_NO_SUCH_USER;
+	if (!get_valid_user_struct(p->vuid))
+		return NT_STATUS_NO_SUCH_USER;
     
-    /* checks and updates credentials.  creates reply credentials */
-    if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred))
-        return NT_STATUS_INVALID_HANDLE;
-    else
-        memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
+	/* checks and updates credentials.  creates reply credentials */
+	if (!deal_with_creds(p->dc.sess_key, &p->dc.clnt_cred, &q_u->sam_id.client.cred, &srv_cred))
+		return NT_STATUS_INVALID_HANDLE;
+	else
+		memcpy(&p->dc.srv_cred, &p->dc.clnt_cred, sizeof(p->dc.clnt_cred));
     
 	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
 	memcpy(&r_u->srv_creds, &srv_cred, sizeof(r_u->srv_creds));
@@ -530,7 +530,7 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	r_u->auth_resp = 1; /* authoritative response */
 	r_u->switch_value = 3; /* indicates type of validation user info */
 
-    /* find the username */
+	/* find the username */
     
 	switch (q_u->sam_id.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
