@@ -1286,7 +1286,7 @@ struct bitmap {
 #ifdef HAVE_STDARG_H
 int slprintf(char *str, int n, char *format, ...)
 #ifdef __GNUC__
-     __attribute__ ((format (printf, 3, 4)))
+     __attribute__ ((format (__printf__, 3, 4)))
 #endif
 ;
 #else
@@ -1296,7 +1296,7 @@ int slprintf();
 #ifdef HAVE_STDARG_H
 int fdprintf(int fd, char *format, ...)
 #ifdef __GNUC__
-     __attribute__ ((format (printf, 2, 3)))
+     __attribute__ ((format (__printf__, 2, 3)))
 #endif
 ;
 #else

@@ -195,13 +195,13 @@ static codepage_p load_client_codepage( int client_codepage )
 
   DEBUG(5, ("load_client_codepage: loading codepage %d.\n", client_codepage));
 
-  if(strlen(CODEPAGEDIR) + 14 > sizeof(codepage_file_name))
+  if(strlen(lp_codepagedir()) + 14 > sizeof(codepage_file_name))
   {
     DEBUG(0,("load_client_codepage: filename too long to load\n"));
     return NULL;
   }
 
-  pstrcpy(codepage_file_name, CODEPAGEDIR);
+  pstrcpy(codepage_file_name, lp_codepagedir());
   pstrcat(codepage_file_name, "/");
   pstrcat(codepage_file_name, "codepage.");
   slprintf(&codepage_file_name[strlen(codepage_file_name)], 
@@ -348,13 +348,13 @@ void codepage_initialise(int client_codepage)
 #ifdef KANJI
     DEBUG(6,("codepage_initialise: loading dynamic codepage file %s/codepage.%d \
 for code page %d failed. Using default client codepage 932\n", 
-             CODEPAGEDIR, client_codepage, client_codepage));
+             lp_codepagedir(), client_codepage, client_codepage));
     cp = cp_932;
     client_codepage = KANJI_CODEPAGE;
 #else /* KANJI */
     DEBUG(6,("codepage_initialise: loading dynamic codepage file %s/codepage.%d \
 for code page %d failed. Using default client codepage 850\n", 
-             CODEPAGEDIR, client_codepage, client_codepage));
+             lp_codepagedir(), client_codepage, client_codepage));
     cp = cp_850;
     client_codepage = MSDOS_LATIN_1_CODEPAGE;
 #endif /* KANJI */

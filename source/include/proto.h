@@ -1370,6 +1370,7 @@ char *lp_winbind_gid(void);
 char *lp_template_homedir(void);
 char *lp_template_shell(void);
 char *lp_winbind_separator(void);
+char *lp_codepagedir(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_filter(void);
