@@ -19,7 +19,7 @@ for i in $*; do
     ;;
   --version)
     echo "@PACKAGE@ @VERSION@"
-    echo "$Id$"
+    echo '$Id$'
     exit 0
     ;;
   --prefix=*)
