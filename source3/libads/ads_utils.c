@@ -3,7 +3,8 @@
    ads (active directory) utility library
    
    Copyright (C) Stefan (metze) Metzmacher 2002
-   
+   Copyright (C) Andrew Tridgell 2001
+  
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -20,9 +21,6 @@
 */
 
 #include "includes.h"
-
-#ifdef HAVE_ADS
-
 
 /* 
 translated the ACB_CTRL Flags to UserFlags (userAccountControl) 
@@ -168,4 +166,16 @@ uint32 ads_gtype2atype(uint32 gtype)
 	return atype;
 }
 
-#endif
+/* turn a sAMAccountType into a SID_NAME_USE */
+enum SID_NAME_USE ads_atype_map(uint32 atype)
+{
+	switch (atype & 0xF0000000) {
+	case ATYPE_GLOBAL_GROUP:
+		return SID_NAME_DOM_GRP;
+	case ATYPE_ACCOUNT:
+		return SID_NAME_USER;
+	default:
+		DEBUG(1,("hmm, need to map account type 0x%x\n", atype));
+	}
+	return SID_NAME_UNKNOWN;
+}

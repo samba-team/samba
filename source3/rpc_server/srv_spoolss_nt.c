@@ -313,11 +313,6 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		return WERR_BADFID;
 	}
 
-	if (del_a_printer(Printer->dev.handlename) != 0) {
-		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
-		return WERR_BADFID;
-	}
-
 	/* 
 	 * It turns out that Windows allows delete printer on a handle
 	 * opened by an admin user, then used on a pipe handle created
@@ -341,6 +336,11 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		return WERR_ACCESS_DENIED;
 	}
 #endif
+
+	if (del_a_printer(Printer->dev.handlename) != 0) {
+		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
+		return WERR_BADFID;
+	}
 
 	if (*lp_deleteprinter_cmd()) {
 

@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-#ifdef HAVE_ADS
+#ifdef HAVE_LDAP
 
 /**
  * @file ldap.c
@@ -65,6 +65,29 @@ static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
 	free(srv);
 
 	return True;
+}
+
+/*
+  try a connection to a given ldap server, based on URL, returning True if successful
+ */
+static BOOL ads_try_connect_uri(ADS_STRUCT *ads)
+{
+#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
+	DEBUG(5,("ads_try_connect: trying ldap server at URI '%s'\n", 
+		 ads->server.ldap_uri));
+
+	
+	if (ldap_initialize((LDAP**)&(ads->ld), ads->server.ldap_uri) == LDAP_SUCCESS) {
+		return True;
+	}
+	DEBUG(0, ("ldap_initialize: %s\n", strerror(errno)));
+	
+#else 
+
+	DEBUG(1, ("no URL support in LDAP libs!\n"));
+#endif
+
+	return False;
 }
 
 /* used by the IP comparison function */
@@ -210,6 +233,13 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	ads->last_attempt = time(NULL);
 	ads->ld = NULL;
 
+	/* try with a URL based server */
+
+	if (ads->server.ldap_uri &&
+	    ads_try_connect_uri(ads)) {
+		goto got_connection;
+	}
+
 	/* try with a user specified server */
 	if (ads->server.ldap_server && 
 	    ads_try_connect(ads, ads->server.ldap_server, LDAP_PORT)) {
@@ -276,6 +306,14 @@ got_connection:
 
 	if (ads->auth.flags & ADS_AUTH_NO_BIND) {
 		return ADS_SUCCESS;
+	}
+
+	if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
+		return ADS_ERROR(ldap_simple_bind_s( ads->ld, NULL, NULL));
+	}
+
+	if (ads->auth.flags & ADS_AUTH_SIMPLE_BIND) {
+		return ADS_ERROR(ldap_simple_bind_s( ads->ld, ads->auth.user_name, ads->auth.password));
 	}
 
 	return ads_sasl_bind(ads);
@@ -741,7 +779,11 @@ ADS_STATUS ads_find_machine_acct(ADS_STRUCT *ads, void **res, const char *host)
 
 	/* the easiest way to find a machine account anywhere in the tree
 	   is to look for hostname$ */
-	asprintf(&exp, "(samAccountName=%s$)", host);
+	if (asprintf(&exp, "(samAccountName=%s$)", host) == -1) {
+		DEBUG(1, ("asprintf failed!\n"));
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+	
 	status = ads_search(ads, res, exp, attrs);
 	free(exp);
 	return status;
@@ -898,13 +940,15 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	controls[0] = &PermitModify;
 	controls[1] = NULL;
 
-	push_utf8_allocate((void **) &utf8_dn, mod_dn);
+	if (push_utf8_allocate(&utf8_dn, mod_dn) == -1) {
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
-	ret = ldap_modify_ext_s(ads->ld, utf8_dn ? utf8_dn : mod_dn,
+	ret = ldap_modify_ext_s(ads->ld, utf8_dn,
 				(LDAPMod **) mods, controls, NULL);
 	SAFE_FREE(utf8_dn);
 	return ADS_ERROR(ret);
@@ -922,7 +966,10 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	int ret, i;
 	char *utf8_dn = NULL;
 
-	push_utf8_allocate((void **) &utf8_dn, new_dn);
+	if (push_utf8_allocate(&utf8_dn, new_dn) == -1) {
+		DEBUG(1, ("ads_gen_add: push_utf8_allocate failed!"));
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
@@ -944,7 +991,11 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 {
 	int ret;
 	char *utf8_dn = NULL;
-	push_utf8_allocate((void **) &utf8_dn, del_dn);
+	if (push_utf8_allocate(&utf8_dn, del_dn) == -1) {
+		DEBUG(1, ("ads_del_dn: push_utf8_allocate failed!"));
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+	
 	ret = ldap_delete(ads->ld, utf8_dn ? utf8_dn : del_dn);
 	return ADS_ERROR(ret);
 }
@@ -991,6 +1042,10 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", host_spn, ads->config.realm)))
 		goto done;
 	ou_str = ads_ou_string(org_unit);
+	if (!ou_str) {
+		DEBUG(1, ("ads_ou_string returned NULL (malloc failure?)\n"));
+		goto done;
+	}
 	new_dn = talloc_asprintf(ctx, "cn=%s,%s,%s", hostname, ou_str, 
 				 ads->config.bind_path);
 	free(ou_str);
@@ -1320,9 +1375,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	const char     *attrs[] = {"ntSecurityDescriptor", "objectSid", 0};
 	char           *exp     = 0;
 	size_t          sd_size = 0;
-	struct berval **bvals   = 0;
 	struct berval   bval = {0, NULL};
-	prs_struct      ps;
 	prs_struct      ps_wire;
 
 	LDAPMessage *res  = 0;
@@ -1339,37 +1392,39 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 
 	ret = ADS_ERROR(LDAP_SUCCESS);
 
-	asprintf(&exp, "(samAccountName=%s$)", hostname);
+	if (asprintf(&exp, "(samAccountName=%s$)", hostname) == -1) {
+		DEBUG(1, ("ads_set_machine_sd: asprintf failed!\n"));
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+
 	ret = ads_search(ads, (void *) &res, exp, attrs);
 
 	if (!ADS_ERR_OK(ret)) return ret;
 
 	msg   = ads_first_entry(ads, res);
-	bvals = ldap_get_values_len(ads->ld, msg, attrs[0]);
 	ads_pull_sid(ads, msg, attrs[1], &sid);	
-	ads_msgfree(ads, res);
-#if 0
-	file_save("/tmp/sec_desc.old", bvals[0]->bv_val, bvals[0]->bv_len);
-#endif
-	if (!(ctx = talloc_init_named("sec_io_desc")))
-		return ADS_ERROR(LDAP_NO_MEMORY);
-
-	prs_init(&ps, bvals[0]->bv_len, ctx, UNMARSHALL);
-	prs_append_data(&ps, bvals[0]->bv_val, bvals[0]->bv_len);
-	ps.data_offset = 0;
-	ldap_value_free_len(bvals);
-
-	if (!sec_io_desc("sd", &psd, &ps, 1))
+	if (!(ctx = talloc_init_named("sec_io_desc"))) {
+		ret =  ADS_ERROR(LDAP_NO_MEMORY);
 		goto ads_set_sd_error;
+	}
+
+	if (!ads_pull_sd(ads, ctx, msg, attrs[0], &psd)) {
+		ret = ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		goto ads_set_sd_error;
+	}
 
 	status = sec_desc_add_sid(ctx, &psd, &sid, SEC_RIGHTS_FULL_CTRL, &sd_size);
 
-	if (!NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = ADS_ERROR_NT(status);
 		goto ads_set_sd_error;
+	}
 
 	prs_init(&ps_wire, sd_size, ctx, MARSHALL);
-	if (!sec_io_desc("sd_wire", &psd, &ps_wire, 1))
+	if (!sec_io_desc("sd_wire", &psd, &ps_wire, 1)) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto ads_set_sd_error;
+	}
 
 #if 0
 	file_save("/tmp/sec_desc.new", ps_wire.data_p, sd_size);
@@ -1381,47 +1436,11 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	ads_mod_ber(ctx, &mods, attrs[0], &bval);
 	ret = ads_gen_mod(ads, dn, mods);
 
-	prs_mem_free(&ps);
+ads_set_sd_error:
+	ads_msgfree(ads, res);
 	prs_mem_free(&ps_wire);
 	talloc_destroy(ctx);
 	return ret;
-
-ads_set_sd_error:
-	prs_mem_free(&ps);
-	prs_mem_free(&ps_wire);
-	talloc_destroy(ctx);
-	return ADS_ERROR(LDAP_NO_MEMORY);
-}
-
-/**
- * Set the machine account password
- * @param ads connection to ads server
- * @param hostname machine whose password is being set
- * @param password new password
- * @return status of password change
- **/
-ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
-				    const char *hostname, 
-				    const char *password)
-{
-	ADS_STATUS status;
-	char *host = strdup(hostname);
-	char *principal; 
-
-	strlower(host);
-
-	/*
-	  we need to use the '$' form of the name here, as otherwise the
-	  server might end up setting the password for a user instead
-	 */
-	asprintf(&principal, "%s$@%s", host, ads->auth.realm);
-	
-	status = krb5_set_password(ads->auth.kdc_server, principal, password, ads->auth.time_offset);
-	
-	free(host);
-	free(principal);
-
-	return status;
 }
 
 /**
@@ -1596,6 +1615,60 @@ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	return count;
 }
 
+/**
+ * pull a SEC_DESC from a ADS result
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX for allocating sid array
+ * @param msg Results of search
+ * @param field Attribute to retrieve
+ * @param sd Pointer to *SEC_DESC to store result (talloc()ed)
+ * @return boolean inidicating success
+*/
+BOOL ads_pull_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+		  void *msg, const char *field, SEC_DESC **sd)
+{
+	struct berval **values;
+	prs_struct      ps;
+	BOOL ret = False;
+
+	values = ldap_get_values_len(ads->ld, msg, field);
+
+	if (!values) return False;
+
+	if (values[0]) {
+		prs_init(&ps, values[0]->bv_len, mem_ctx, UNMARSHALL);
+		prs_append_data(&ps, values[0]->bv_val, values[0]->bv_len);
+		ps.data_offset = 0;
+
+		ret = sec_io_desc("sd", sd, &ps, 1);
+	}
+	
+	ldap_value_free_len(values);
+	return ret;
+}
+
+/* 
+ * in order to support usernames longer than 21 characters we need to 
+ * use both the sAMAccountName and the userPrincipalName attributes 
+ * It seems that not all users have the userPrincipalName attribute set
+ *
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX for allocating sid array
+ * @param msg Results of search
+ * @return the username
+ */
+char *ads_pull_username(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, void *msg)
+{
+	char *ret, *p;
+
+	ret = ads_pull_string(ads, mem_ctx, msg, "userPrincipalName");
+	if (ret && (p = strchr(ret, '@'))) {
+		*p = 0;
+		return ret;
+	}
+	return ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+}
+
 
 /**
  * find the update serial number - this is the core of the ldap cache
@@ -1705,8 +1778,9 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	ads->config.realm = strdup(p+2);
 	ads->config.bind_path = ads_build_dn(ads->config.realm);
 
-	DEBUG(3,("got ldap server name %s@%s\n", 
-		 ads->config.ldap_server_name, ads->config.realm));
+	DEBUG(3,("got ldap server name %s@%s, using bind path: %s\n", 
+		 ads->config.ldap_server_name, ads->config.realm,
+		 ads->config.bind_path));
 
 	ads->config.current_time = ads_parse_time(timestr);
 

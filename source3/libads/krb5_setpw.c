@@ -471,4 +471,35 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
 }
 
 
+/**
+ * Set the machine account password
+ * @param ads connection to ads server
+ * @param hostname machine whose password is being set
+ * @param password new password
+ * @return status of password change
+ **/
+ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
+				    const char *hostname, 
+				    const char *password)
+{
+	ADS_STATUS status;
+	char *host = strdup(hostname);
+	char *principal; 
+
+	strlower(host);
+
+	/*
+	  we need to use the '$' form of the name here, as otherwise the
+	  server might end up setting the password for a user instead
+	 */
+	asprintf(&principal, "%s$@%s", host, ads->auth.realm);
+	
+	status = krb5_set_password(ads->auth.kdc_server, principal, password, ads->auth.time_offset);
+	
+	free(host);
+	free(principal);
+
+	return status;
+}
+
 #endif

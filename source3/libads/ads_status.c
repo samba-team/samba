@@ -72,6 +72,12 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 	if (status.error_type == ADS_ERROR_NT){
 		return status.err.nt_status;	
 	}
+#ifdef HAVE_LDAP
+	if ((status.error_type == ADS_ERROR_LDAP) 
+	    && (status.err.rc == LDAP_NO_MEMORY)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+#endif
 	if (ADS_ERR_OK(status)) return NT_STATUS_OK;
 	return NT_STATUS_UNSUCCESSFUL;
 }
