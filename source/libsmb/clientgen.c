@@ -614,8 +614,8 @@ prots[] =
       {PROTOCOL_LANMAN1,"LANMAN1.0"},
       {PROTOCOL_LANMAN2,"LM1.2X002"},
       {PROTOCOL_LANMAN2,"Samba"},
-      {PROTOCOL_NT1,"NT LM 0.12"},
       {PROTOCOL_NT1,"NT LANMAN 1.0"},
+      {PROTOCOL_NT1,"NT LM 0.12"},
       {-1,NULL}
     };
 
@@ -1318,7 +1318,8 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	SIVAL(cli->outbuf,smb_vwv3,offset);
 	SIVAL(cli->outbuf,smb_vwv5,IS_BITS_SET_ALL(mode, 0x0008) ? 0xFFFFFFFF : 0);
 	SSVAL(cli->outbuf,smb_vwv7,mode);
-	
+
+	SSVAL(cli->outbuf,smb_vwv8,IS_BITS_SET_ALL(mode, 0x0008) ? size : 0);
 	SSVAL(cli->outbuf,smb_vwv10,size);
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
