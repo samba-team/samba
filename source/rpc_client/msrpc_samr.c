@@ -720,10 +720,13 @@ BOOL sam_query_aliasmem(const char *srv_name,
 				char ***name,
 				uint32 **type)
 {
+        POLICY_HND lsa_pol;
 	BOOL res3 = True;
 	BOOL res4 = True;
 	DOM_SID2 sid_mem[MAX_LOOKUP_SIDS];
 	uint32 num_aliases = 0;
+        uint32 i;
+        uint32 numsids = 0;
 
 	*sids = NULL;
 	*num_names = 0;
@@ -735,29 +738,31 @@ BOOL sam_query_aliasmem(const char *srv_name,
 			pol_dom,
 			alias_rid, &num_aliases, sid_mem);
 
-	if (res3 && num_aliases != 0)
-	{
-		POLICY_HND lsa_pol;
+	if (!res3) 
+        {
+            return False;
+        }
 
-		uint32 i;
-		uint32 numsids = 0;
+        if (num_aliases == 0) 
+        {
+            return True;
+        }
 
-		for (i = 0; i < num_aliases; i++)
-		{
-			add_sid_to_array(&numsids, sids, &sid_mem[i].sid);
-		}
+        for (i = 0; i < num_aliases; i++)
+        {
+            add_sid_to_array(&numsids, sids, &sid_mem[i].sid);
+        }
 
-		/* lookup domain controller; receive a policy handle */
-		res3 = res3 ? lsa_open_policy( srv_name,
-					&lsa_pol, True, 0x02000000) : False;
+        /* lookup domain controller; receive a policy handle */
+        res3 = res3 ? lsa_open_policy( srv_name,
+                                       &lsa_pol, True, 0x02000000) : False;
 
-		/* send lsa lookup sids call */
-		res4 = res3 ? lsa_lookup_sids( &lsa_pol,
-					       num_aliases, *sids, 
-					       name, type, num_names) : False;
+        /* send lsa lookup sids call */
+        res4 = res3 ? lsa_lookup_sids( &lsa_pol,
+                                       num_aliases, *sids, 
+                                       name, type, num_names) : False;
 
-		res3 = res3 ? lsa_close(&lsa_pol) : False;
-	}
+        res3 = res3 ? lsa_close(&lsa_pol) : False;
 
 	if (!res4)
 	{
