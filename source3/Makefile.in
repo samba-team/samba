@@ -640,7 +640,7 @@ smbfilter : SHOWFLAGS bin/smbfilter@EXEEXT@
 
 talloctort : SHOWFLAGS bin/talloctort@EXEEXT@
 
-nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/@WINBIND_NSS@.@SHLIBEXT@ nsswitch/pam_winbind.@SHLIBEXT@
+nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ nsswitch/@WINBIND_NSS@ nsswitch/pam_winbind.@SHLIBEXT@
 
 wins : SHOWFLAGS nsswitch/libnss_wins.@SHLIBEXT@
 
@@ -966,7 +966,7 @@ bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS) \
 	 	@LDAP_LIBS@
 
-nsswitch/@WINBIND_NSS@.@SHLIBEXT@: $(WINBIND_NSS_PICOBJS)
+nsswitch/@WINBIND_NSS@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
 	@$(SHLD) $(WINBIND_NSS_LDSHFLAGS) -o $@ $(WINBIND_NSS_PICOBJS) \
 		@WINBIND_NSS_EXTRA_LIBS@ @SONAMEFLAG@`basename $@`

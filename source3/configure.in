@@ -3198,7 +3198,7 @@ HAVE_WINBIND=yes
 # Define the winbind shared library name and any specific linker flags
 # it needs to be built with.
 
-WINBIND_NSS=libnss_winbind
+WINBIND_NSS=libnss_winbind.$SHLIBEXT
 WINBIND_NSS_LDSHFLAGS=$LDSHFLAGS
 
 case "$host_os" in
@@ -3207,7 +3207,7 @@ case "$host_os" in
 		;;
 	*irix*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_irix.o"
-		WINBIND_NSS="libns_winbind"
+		WINBIND_NSS="libns_winbind.$SHLIBEXT"
 		;;
 	*solaris*)
 		# Solaris winbind client is implemented as a wrapper around
@@ -3222,6 +3222,7 @@ case "$host_os" in
 	*aix*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_aix.o"
 		WINBIND_NSS_LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-ewb_aix_init"
+		WINBIND_NSS="WINBIND"
 		;;
 	*)
 		HAVE_WINBIND=no
@@ -3268,7 +3269,7 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo\$(EXEEXT)"
 	EXTRA_SBIN_PROGS="$EXTRA_SBIN_PROGS bin/winbindd\$(EXEEXT)"
         if test x"$BLDSHARED" = x"true"; then
-		SHLIB_PROGS="$SHLIB_PROGS nsswitch/$WINBIND_NSS.$SHLIBEXT"
+		SHLIB_PROGS="$SHLIB_PROGS nsswitch/$WINBIND_NSS"
 
 		if test x"$with_pam" = x"yes"; then
 			SHLIB_PROGS="$SHLIB_PROGS nsswitch/pam_winbind.$SHLIBEXT"
