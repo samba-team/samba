@@ -332,6 +332,9 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #define REPLACE_GETPASS
 #endif /* REPLACE_GETPASS */
 #define USE_SIGPROCMASK
+#ifndef QSORT_CAST
+#define QSORT_CAST (int (*)(const void *, const void *))
+#endif /* QSORT_CAST */
 #endif
 
 
