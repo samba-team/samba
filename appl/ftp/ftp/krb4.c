@@ -241,6 +241,8 @@ krb4_auth(void *app_data, char *host)
     int checksum;
     u_int32_t cs;
     struct krb4_data *d = app_data;
+    struct sockaddr_in *localaddr  = (struct sockaddr_in *)LOCAL_ADDR;
+    struct sockaddr_in *remoteaddr = (struct sockaddr_in *)REMOTE_ADDR;
 
     checksum = getpid();
     ret = mk_auth(d, &adat, "ftp", host, checksum);
@@ -251,7 +253,35 @@ krb4_auth(void *app_data, char *host)
 	return AUTH_CONTINUE;
     }
 
-    if(base64_encode(adat.dat, adat.length, &p) < 0) {
+    if (krb_get_config_bool("nat_in_use")) {
+      struct in_addr natAddr;
+
+      if (krb_get_our_ip_for_realm(krb_realmofhost(host),
+				   &natAddr) != KSUCCESS)
+	printf("Can't get address for realm %s\n",
+	       krb_realmofhost(host));
+      else {
+	if (natAddr.s_addr != localaddr->sin_addr.s_addr) {
+	  printf("Using NAT IP address (%s) for kerberos 4\n",
+		 inet_ntoa(natAddr));
+	  localaddr->sin_addr = natAddr;
+	  
+	  /*
+	   * This not the best place to do this, but it
+	   * is here we know that (probably) NAT is in
+	   * use!
+	   */
+
+	  passivemode = 1;
+	  printf("Setting: Passive mode on.\n");
+	}
+      }
+    }
+
+    printf("Local address is %s\n", inet_ntoa(localaddr->sin_addr));
+    printf("Remote address is %s\n", inet_ntoa(remoteaddr->sin_addr));
+
+   if(base64_encode(adat.dat, adat.length, &p) < 0) {
 	printf("Out of memory base64-encoding.\n");
 	return AUTH_CONTINUE;
     }
