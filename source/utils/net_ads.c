@@ -564,7 +564,7 @@ static int net_ads_leave(int argc, const char **argv)
 	if (!opt_password) {
 		char *user_name;
 		asprintf(&user_name, "%s$", global_myname());
-		opt_password = secrets_fetch_machine_password();
+		opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
 		opt_user_name = user_name;
 	}
 
@@ -596,7 +596,7 @@ static int net_ads_join_ok(void)
 
 	asprintf(&user_name, "%s$", global_myname());
 	opt_user_name = user_name;
-	opt_password = secrets_fetch_machine_password();
+	opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
 
 	if (!(ads = ads_startup())) {
 		return -1;
@@ -637,6 +637,8 @@ int net_ads_join(int argc, const char **argv)
 	void *res;
 	DOM_SID dom_sid;
 	char *ou_str;
+	uint32 sec_channel_type;
+	uint32 account_type = UF_WORKSTATION_TRUST_ACCOUNT;
 
 	if (argc > 0) org_unit = argv[0];
 
@@ -644,6 +646,11 @@ int net_ads_join(int argc, const char **argv)
 		DEBUG(1,("Failed to initialise secrets database\n"));
 		return -1;
 	}
+
+	/* check what type of join 
+	   TODO: make this variable like RPC
+	*/
+	account_type = UF_WORKSTATION_TRUST_ACCOUNT;
 
 	tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 	password = strdup(tmp_password);
@@ -669,7 +676,7 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}	
 
-	rc = ads_join_realm(ads, global_myname(), org_unit);
+	rc = ads_join_realm(ads, global_myname(), account_type, org_unit);
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
 		return -1;
@@ -692,7 +699,7 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!secrets_store_machine_password(password)) {
+	if (!secrets_store_machine_password(password, lp_workgroup(), sec_channel_type)) {
 		DEBUG(1,("Failed to save machine password\n"));
 		return -1;
 	}
@@ -945,7 +952,7 @@ int net_ads_changetrustpw(int argc, const char **argv)
     asprintf(&user_name, "%s$", global_myname());
     opt_user_name = user_name;
 
-    opt_password = secrets_fetch_machine_password();
+    opt_password = secrets_fetch_machine_password(opt_target_workgroup, NULL, NULL);
 
     use_in_memory_ccache();
 

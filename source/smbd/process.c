@@ -1179,9 +1179,11 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
       return True;
     }
 
-    if(!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd_hash, &lct)) {
+    if(!secrets_fetch_trust_account_password(lp_workgroup(), 
+					     trust_passwd_hash, 
+					     &lct, NULL)) {
       DEBUG(0,("process: unable to read the machine account password for \
-machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
+machine %s in domain %s.\n", global_myname(), lp_workgroup()));
       secrets_lock_trust_account_password(lp_workgroup(), False);
       return True;
     }

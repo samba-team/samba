@@ -62,18 +62,12 @@ int net_rpc_join_ok(const char *domain)
 	}
 
 	if (!secrets_fetch_trust_account_password(domain,
-						  stored_md4_trust_password, NULL)) {
+						  stored_md4_trust_password, 
+						  NULL, &channel)) {
 		DEBUG(0,("Could not retreive domain trust secret"));
 		goto done;
 	}
 	
-	if (lp_server_role() == ROLE_DOMAIN_BDC || 
-	    lp_server_role() == ROLE_DOMAIN_PDC) {
-		channel = SEC_CHAN_BDC;
-	} else {
-		channel = SEC_CHAN_WKSTA;
-	}
-
 	CHECK_RPC_ERR(cli_nt_setup_creds(cli, 
 					 channel,
 					 stored_md4_trust_password, &neg_flags, 2),
@@ -108,7 +102,8 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
-        uint32 acb_info;
+        uint32 acb_info = ACB_WSTRUST;
+	uint32 sec_channel_type;
 
 	/* rpc variables */
 
@@ -121,10 +116,11 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	char *clear_trust_password = NULL;
 	fstring ucs2_trust_password;
 	int ucs2_pw_len;
-	uchar pwbuf[516], sess_key[16];
+	uchar pwbuf[516];
 	SAM_USERINFO_CTR ctr;
 	SAM_USER_INFO_24 p24;
 	SAM_USER_INFO_10 p10;
+	uchar md4_trust_password[16];
 
 	/* Misc */
 
@@ -135,6 +131,25 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	uint32 flags = 0x3e8;
 	char *acct_name;
 	const char *const_acct_name;
+	uint32 neg_flags = 0x000001ff;
+
+	/* check what type of join */
+	if (argc >= 0) {
+		sec_channel_type = get_sec_channel_type(argv[0]);
+	} else {
+		sec_channel_type = get_sec_channel_type(NULL);
+	}
+
+	switch (sec_channel_type) {
+	case SEC_CHAN_WKSTA:
+		acb_info = ACB_WSTRUST;
+	case SEC_CHAN_BDC:
+		acb_info = ACB_SVRTRUST;
+#if 0
+	case SEC_CHAN_DOMAIN:
+		acb_info = ACB_DOMTRUST;
+#endif
+	}
 
 	/* Connect to remote machine */
 
@@ -188,8 +203,6 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname()); 
 	strlower(acct_name);
 	const_acct_name = acct_name;
-
-        acb_info = ((lp_server_role() == ROLE_DOMAIN_BDC) || lp_server_role() == ROLE_DOMAIN_PDC) ? ACB_SVRTRUST : ACB_WSTRUST;
 
 	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
 					  acct_name, acb_info,
@@ -245,6 +258,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		char *str;
 		str = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 		clear_trust_password = strdup(str);
+		E_md4hash(clear_trust_password, md4_trust_password);
 	}
 
 	ucs2_pw_len = push_ucs2(NULL, ucs2_trust_password, 
@@ -287,8 +301,22 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	   as a normal user with "Add workstation to domain" privilege. */
 
 	result = cli_samr_set_userinfo2(cli, mem_ctx, &user_pol, 0x10, 
-					sess_key, &ctr);
+					cli->user_session_key, &ctr);
 
+	/* Now check the whole process from top-to-bottom */
+	cli_samr_close(cli, mem_ctx, &user_pol);
+	cli_nt_session_close(cli); /* Done with this pipe */
+
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
+		goto done;
+	}
+
+	CHECK_RPC_ERR(cli_nt_setup_creds(cli, 
+					 sec_channel_type,
+					 md4_trust_password, &neg_flags, 2),
+			  "error in domain join verification");
+	
 	/* Now store the secret in the secrets database */
 
 	strupper(domain);
@@ -298,14 +326,11 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		goto done;
 	}
 
-	if (!secrets_store_machine_password(clear_trust_password)) {
+	if (!secrets_store_machine_password(clear_trust_password, domain, sec_channel_type)) {
 		DEBUG(0, ("error storing plaintext domain secrets for %s\n", domain));
 	}
 
-	/* Now check the whole process from top-to-bottom */
-	cli_samr_close(cli, mem_ctx, &user_pol);
-	cli_nt_session_close(cli); /* Done with this pipe */
-
+	/* double-check, connection from scratch */
 	retval = net_rpc_join_ok(domain);
 	
 done:
@@ -317,7 +342,6 @@ done:
 	/* Display success or failure */
 
 	if (retval != 0) {
-		trust_password_delete(domain);
 		fprintf(stderr,"Unable to join domain %s.\n",domain);
 	} else {
 		printf("Joined domain %s.\n",domain);

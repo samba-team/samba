@@ -78,6 +78,7 @@ static void generate_random_sid(DOM_SID *sid)
 
 static BOOL pdb_generate_sam_sid(void)
 {
+	DOM_SID domain_sid;
 	char *fname = NULL;
 	BOOL is_dc = False;
 
@@ -97,8 +98,14 @@ static BOOL pdb_generate_sam_sid(void)
 		break;
 	}
 
+	if (is_dc) {
+		if (secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+			sid_copy(global_sam_sid, &domain_sid);
+			return True;
+		}
+	}
+
 	if (secrets_fetch_domain_sid(global_myname(), global_sam_sid)) {
-		DOM_SID domain_sid;
 
 		/* We got our sid. If not a pdc/bdc, we're done. */
 		if (!is_dc)
@@ -117,11 +124,11 @@ static BOOL pdb_generate_sam_sid(void)
 
 		if (!sid_equal(&domain_sid, global_sam_sid)) {
 
-			/* Domain name sid doesn't match global sam sid. Re-store global sam sid as domain sid. */
+			/* Domain name sid doesn't match global sam sid. Re-store domain sid as 'local' sid. */
 
 			DEBUG(0,("pdb_generate_sam_sid: Mismatched SIDs as a pdc/bdc.\n"));
-			if (!secrets_store_domain_sid(lp_workgroup(), global_sam_sid)) {
-				DEBUG(0,("pdb_generate_sam_sid: Can't re-store domain SID as a pdc/bdc.\n"));
+			if (!secrets_store_domain_sid(global_myname(), &domain_sid)) {
+				DEBUG(0,("pdb_generate_sam_sid: Can't re-store domain SID for local sid as PDC/BDC.\n"));
 				return False;
 			}
 			return True;
