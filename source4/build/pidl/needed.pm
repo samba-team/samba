@@ -44,9 +44,6 @@ sub NeededTypedef($)
 			if ($needed{"push_$t->{NAME}"}) {
 				$needed{"push_$e->{TYPE}"} = 1;
 			}
-			if ($needed{"ndr_size_$t->{NAME}"}) {
-				$needed{"ndr_size_$e->{TYPE}"} = 1;
-			}
 		}
 	}
 	if ($t->{DATA}->{TYPE} eq "UNION") {

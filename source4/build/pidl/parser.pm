@@ -804,6 +804,8 @@ sub ParseEnumPush($)
 
 	if (util::has_property($enum->{PARENT}, "v1_enum")) {
 		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, r));\n";
+	} elsif (util::has_property($enum->{PARENT}, "enum8bit")) {
+		pidl "\tNDR_CHECK(ndr_push_uint8(ndr, r));\n";
 	} else {
 		pidl "\tNDR_CHECK(ndr_push_uint16(ndr, r));\n";
 	}
@@ -822,6 +824,9 @@ sub ParseEnumPull($)
 	if (util::has_property($enum->{PARENT}, "v1_enum")) {
 		pidl "\tuint32_t v;\n";
 		pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, &v));\n";
+	} elsif (util::has_property($enum->{PARENT}, "enum8bit")) {
+		pidl "\tuint8_t v;\n";
+		pidl "\tNDR_CHECK(ndr_pull_uint8(ndr, &v));\n";
 	} else {
 		pidl "\tuint16_t v;\n";
 		pidl "\tNDR_CHECK(ndr_pull_uint16(ndr, &v));\n";
@@ -961,54 +966,12 @@ sub ParseStructNdrSize($)
 	my $static = fn_prefix($t);
 	my $sizevar;
 
-	pidl $static . "size_t ndr_size_$t->{NAME}(int ret, const struct $t->{NAME} *r, int flags)\n";
+	pidl "size_t ndr_size_$t->{NAME}(const struct $t->{NAME} *r, int flags)\n";
 	pidl "{\n";
-
-	if (util::has_property($t, "flag")) {
-		pidl "\tflags = flags | " . $t->{PROPERTIES}->{flag} . ";\n";	
+	if (my $flags = util::has_property($t, "flag")) {
+		pidl "\tflags |= $flags;\n";
 	}
-
-	pidl "\tif(!r) return 0;\n";
-
-	pidl "\tret = NDR_SIZE_ALIGN(ret, " . struct_alignment($t->{DATA}) . ", flags);\n";
-
-	for my $e (@{$t->{DATA}->{ELEMENTS}}) {
-		my $switch = "";
-
-		if (util::has_property($e, "subcontext")) {
-			pidl "\tret += $e->{PROPERTIES}->{subcontext}; /* Subcontext length */\n";
-		}
-
-		if (util::has_property($e, "switch_is")) {
-			$switch = ", r->$e->{PROPERTIES}->{switch_is}";
-		}
-
-		if ($e->{POINTERS} > 0) {
-			pidl "\tret = ndr_size_ptr(ret, &r->$e->{NAME}, flags); \n";
-		} elsif (util::is_inline_array($e)) {
-			$sizevar = find_size_var($e, util::array_size($e), "r->");
-			check_null_pointer($sizevar);
-			pidl "\t{\n";
-			pidl "\t\tint i;\n";
-			pidl "\t\tfor(i = 0; i < $sizevar; i++) {\n";
-			pidl "\t\t\tret = ndr_size_$e->{TYPE}(ret, &r->" . $e->{NAME} . "[i], flags);\n";
-			pidl "\t\t}\n";
-			pidl "\t}\n";
-		} else {
-			pidl "\tret = ndr_size_$e->{TYPE}(ret, &r->$e->{NAME}$switch, flags); \n";
-		}
-	}
-	
-	# Add lengths of relative members
-	for my $e (@{$t->{DATA}->{ELEMENTS}}) {
-		next unless (util::has_property($e, "relative"));
-
-		pidl "\tif (r->$e->{NAME}) {\n";
-		pidl "\t\tret = ndr_size_$e->{TYPE}(ret, r->$e->{NAME}, flags); \n"; 
-		pidl "\t}\n";
-	}
-
-	pidl "\treturn ret;\n";
+	pidl "\treturn ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_$t->{NAME});\n";
 	pidl "}\n\n";
 }
 
@@ -1162,42 +1125,6 @@ sub ParseUnionPull($)
 	end_flags($e);
 }
 
-#####################################################################
-# calculate size of ndr union
-
-sub ParseUnionNdrSize($)
-{
-	my $t = shift;
-	my $static = fn_prefix($t);
-
-	pidl $static . "size_t ndr_size_$t->{NAME}(int ret, const union $t->{NAME} *data, uint16 level, int flags)\n";
-	pidl "{\n";
-	if (util::has_property($t, "flag")) {
-		pidl "\tflags = flags | " . $t->{PROPERTIES}->{flag} . ";\n";	
-	}
-	pidl "\tif(!data) return 0;\n\n";
-	
-	pidl "\tret = NDR_SIZE_ALIGN(ret, " . union_alignment($t->{DATA}) . ", flags);\n";
-
-	pidl "\tswitch(level) {\n";
-
-	for my $e (@{$t->{DATA}->{DATA}}) {
-		if ($e->{TYPE} eq "UNION_ELEMENT") {
-			
-			if ($e->{CASE} eq "default") {
-				pidl "\t\tdefault:";
-			} else { 
-				pidl "\t\tcase $e->{CASE}:";
-			}
-			
-			pidl " return ndr_size_$e->{DATA}->{TYPE}(ret, &data->$e->{DATA}->{NAME}, flags); \n";
-
-		}
-	}
-	pidl "\t}\n";
-	pidl "\treturn ret;\n";
-	pidl "}\n\n";
-}
 
 #####################################################################
 # parse a type
@@ -1376,10 +1303,6 @@ sub ParseTypedefNdrSize($)
 	
 	($t->{DATA}->{TYPE} eq "STRUCT") &&
 		ParseStructNdrSize($t);
-
-	($t->{DATA}->{TYPE} eq "UNION") &&
-		ParseUnionNdrSize($t);
-
 }
 
 #####################################################################
@@ -1707,11 +1630,6 @@ sub ParseInterface($)
 	}
 
 	foreach my $d (@{$data}) {
-		($d->{TYPE} eq "TYPEDEF") && 
-			ParseTypedefNdrSize($d);
-	}
-
-	foreach my $d (@{$data}) {
 		($d->{TYPE} eq "TYPEDEF") &&
 		    ParseTypedefPush($d);
 		($d->{TYPE} eq "FUNCTION") && 
@@ -1732,6 +1650,11 @@ sub ParseInterface($)
 		    !util::has_property($d, "noprint")) {
 			ParseFunctionPrint($d);
 		}
+	}
+
+	foreach my $d (@{$data}) {
+		($d->{TYPE} eq "TYPEDEF") && 
+			ParseTypedefNdrSize($d);
 	}
 
 	FunctionTable($interface);

@@ -638,7 +638,7 @@ interface netlogon
 	} netr_DELTA_ID_UNION;
 
 	typedef struct {
-		uint16 delta_type;
+		netr_DeltaEnum delta_type;
 		[switch_is(delta_type)] netr_DELTA_ID_UNION delta_id_union;
 		[switch_is(delta_type)] netr_DELTA_UNION delta_union;
 	} netr_DELTA_ENUM;

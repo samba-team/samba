@@ -862,3 +862,24 @@ NTSTATUS ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
 
 	return NT_STATUS_OK;
 }
+
+/*
+  generic ndr_size_*() handler for structures
+*/
+size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push)
+{
+	struct ndr_push *ndr;
+	NTSTATUS status;
+	size_t ret;
+
+	ndr = ndr_push_init_ctx(NULL);
+	if (!ndr) return 0;
+	ndr->flags |= flags;
+	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, discard_const(p));
+	if (!NT_STATUS_IS_OK(status)) {
+		return 0;
+	}
+	ret = ndr->offset;
+	talloc_free(ndr);
+	return ret;
+}

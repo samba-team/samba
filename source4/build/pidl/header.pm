@@ -188,6 +188,11 @@ sub HeaderTypedef($)
 sub HeaderTypedefProto($)
 {
     my($d) = shift;
+
+    if (needed::is_needed("ndr_size_$d->{NAME}")) {
+	    $res .= "size_t ndr_size_$d->{NAME}(const struct $d->{NAME} *r, int flags);\n";
+    }
+
     if (!util::has_property($d, "public")) {
 	    return;
     }
@@ -199,9 +204,6 @@ sub HeaderTypedefProto($)
 		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, struct $d->{NAME} *r);\n";
 	    }
 
-	if (needed::is_needed("ndr_size_$d->{NAME}")) {
-		$res .= "size_t ndr_size_$d->{NAME}(int ret, const struct $d->{NAME} *r, int flags);\n";
-	}
     }
     if ($d->{DATA}{TYPE} eq "UNION") {
 	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
