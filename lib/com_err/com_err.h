@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,6 +63,6 @@ void com_err __P((const char *, long, const char *, ...));
 errf set_com_err_hook __P((errf));
 errf reset_com_err_hook __P((void));
 
-const char *error_table_name(int num);
+const char *error_table_name  __P((int num));
 
 #endif /* __COM_ERR_H__ */
