@@ -102,7 +102,7 @@ PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup
 TORTURE_PROGS = bin/smbtorture bin/msgtest bin/masktest bin/locktest bin/locktest2
 SHLIBS = libsmbclient
 
-SCRIPTS = $(srcdir)/script/smbtar 
+SCRIPTS = $(srcdir)/script/smbtar  $(srcdir)/script/findsmb
 
 QUOTAOBJS=@QUOTAOBJS@
 
