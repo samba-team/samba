@@ -180,7 +180,7 @@ retry:
 			second_time = True;
 			goto retry;
 		} else {
-			DEBUG(1,("ads_connect: %s\n", ads_errstr(status)));
+			DEBUG(0,("ads_connect: %s\n", ads_errstr(status)));
 			return NULL;
 		}
 	}
@@ -1163,7 +1163,7 @@ int net_ads_changetrustpw(int argc, const char **argv)
 {    
 	ADS_STRUCT *ads;
 	char *host_principal;
-	fstring my_fqdn;
+	fstring my_name;
 	ADS_STATUS ret;
 
 	if (!secrets_init()) {
@@ -1179,9 +1179,9 @@ int net_ads_changetrustpw(int argc, const char **argv)
 		return -1;
 	}
 
-	name_to_fqdn(my_fqdn, global_myname());
-	strlower_m(my_fqdn);
-	asprintf(&host_principal, "%s@%s", my_fqdn, ads->config.realm);
+	fstrcpy(my_name, global_myname());
+	strlower_m(my_name);
+	asprintf(&host_principal, "%s@%s", my_name, ads->config.realm);
 	d_printf("Changing password for principal: HOST/%s\n", host_principal);
 
 	ret = ads_change_trust_account_password(ads, host_principal);
