@@ -419,8 +419,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	uint32 hours_len;
 	uint8 		hours[MAX_HOURS_LEN];
 	pstring temp;
+	struct passwd	*pw = NULL;
 	uid_t		uid = -1;
-	gid_t		gid = getegid();
+	gid_t		gid = -1;
 
 	/*
 	 * do a little initialization
@@ -454,6 +455,14 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 	DEBUG(2, ("Entry found for user: %s\n", username));
+
+	/* I'm not going to fail here, since there are checks 
+	   higher up the cal stack to do this   --jerry */
+
+	if ( (pw=Get_Pwnam(username)) != NULL ) {
+		uid = pw->pw_uid;
+		gid = pw->pw_gid;
+	}
 
 	pstrcpy(nt_username, username);
 
