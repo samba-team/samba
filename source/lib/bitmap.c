@@ -35,10 +35,10 @@ struct bitmap *bitmap_allocate(int n)
 	struct bitmap *bm;
 
 	bm = (struct bitmap *)malloc(sizeof(*bm));
-	bm->n = n;
 
 	if (!bm) return NULL;
 	
+	bm->n = n;
 	bm->b = (uint32 *)malloc(sizeof(bm->b[0])*(n+31)/32);
 	if (!bm->b) {
 		free(bm);
