@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,6 +41,9 @@ RCSID("$Id$");
 int
 issuid(void)
 {
+#if defined(HAVE_ISSETUGID)
+    return issetugid();
+#endif
 #if defined(HAVE_GETUID) && defined(HAVE_GETEUID)
     if(getuid() != geteuid())
 	return 1;
