@@ -611,13 +611,6 @@ BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd)
 
 		ret = pass_check_smb(user, global_myworkgroup,
 		                      challenge, (uchar *)password, (uchar *)password, pwd);
-		if (!ret)
-		{
-			/* BEGIN_ADMIN_LOG */
-			if (lp_security() == SEC_DOMAIN)
-				sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication via Microsoft networking was unsuccessful. User name: %s."), user);
-			/* END_ADMIN_LOG */
-		}
 		return ret;
 	} 
 
@@ -1620,6 +1613,9 @@ BOOL domain_client_validate( char *user, char *domain,
     cli_error(&cli, NULL, NULL, &nt_rpc_err);
     DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, cli.srv_name_slash, cli_errstr(&cli)));
+    /* BEGIN_ADMIN_LOG */
+    sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication via Microsoft networking was unsuccessful. User name: %s\\%s."), domain,user);
+    /* END_ADMIN_LOG */
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
