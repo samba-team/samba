@@ -38,6 +38,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(struct cli_tree *tree)
 		return NULL;
 	}
 
+	p->reference_count = 0;
 	p->mem_ctx = mem_ctx;
 	p->tree = tree;
 	p->tree->reference_count++;
@@ -746,7 +747,10 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 
 
 /*
-  a useful helper function for synchronous rpc requests
+  a useful helper function for synchronous rpc requests 
+
+  this can be used when you have ndr push/pull functions in the
+  standard format
 */
 NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 			    uint32 opnum,

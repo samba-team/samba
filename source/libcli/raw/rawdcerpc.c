@@ -105,7 +105,10 @@ struct cli_request *dcerpc_raw_send(struct dcerpc_pipe *p, DATA_BLOB *blob)
 
 	trans.in.max_param = 0;
 	trans.in.max_data = 0x8000;
+	trans.in.max_setup = 0;
 	trans.in.setup_count = 2;
+	trans.in.flags = 0;
+	trans.in.timeout = 0;
 	trans.in.setup = setup;
 	trans.in.trans_name = "\\PIPE\\";
 
