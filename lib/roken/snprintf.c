@@ -80,7 +80,6 @@ static int
 sn_append_char (struct state *state, char c)
 {
   if (sn_reserve (state, 1)) {
-    *state->s++ = '\0';
     return 1;
   } else {
     *state->s++ = c;
@@ -91,17 +90,16 @@ sn_append_char (struct state *state, char c)
 static int
 as_reserve (struct state *state, size_t n)
 {
-  while (state->s + n > state->theend) {
+  if (state->s + n > state->theend) {
     int off = state->s - state->str;
     char *tmp;
 
     if (state->max_sz && state->sz >= state->max_sz)
       return 1;
 
+    state->sz = max(state->sz * 2, state->sz + n);
     if (state->max_sz)
-      state->sz = min(state->max_sz, state->sz*2);
-    else
-      state->sz *= 2;
+      state->sz = min(state->sz, state->max_sz);
     tmp = realloc (state->str, state->sz);
     if (tmp == NULL)
       return 1;
@@ -560,10 +558,7 @@ vasnprintf (char **ret, size_t max_sz, const char *format, va_list args)
   struct state state;
 
   state.max_sz = max_sz;
-  if (max_sz)
-    state.sz   = min(1, max_sz);
-  else
-    state.sz   = 1;
+  state.sz     = 1;
   state.str    = malloc(state.sz);
   if (state.str == NULL) {
     *ret = NULL;
