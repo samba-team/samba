@@ -1341,7 +1341,8 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
   data_len = fixed_len = string_len = 0;
   missed = 0;
 
-  qsort(servers,total,sizeof(servers[0]),QSORT_CAST srv_comp);
+  if (total > 0)
+    qsort(servers,total,sizeof(servers[0]),QSORT_CAST srv_comp);
 
   {
     char *lastname=NULL;

@@ -1024,9 +1024,11 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
       return ret;
 
 	/* Realloc the size of parameters and data we will return */
-	params = *ppparams = Realloc(*ppparams, 69);
+	params = Realloc(*ppparams, 69);
 	if(params == NULL)
 		return(ERROR(ERRDOS,ERRnomem));
+
+	*ppparams = params;
 
 	memset((char *)params,'\0',69);
 
@@ -1337,9 +1339,11 @@ static int call_nt_transact_create(connection_struct *conn,
   restore_case_semantics(file_attributes);
 
   /* Realloc the size of parameters and data we will return */
-  params = *ppparams = Realloc(*ppparams, 69);
+  params = Realloc(*ppparams, 69);
   if(params == NULL)
     return(ERROR(ERRDOS,ERRnomem));
+
+  *ppparams = params;
 
   memset((char *)params,'\0',69);
 
@@ -1520,9 +1524,11 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   DEBUG(3,("call_nt_transact_query_security_desc: file = %s\n", fsp->fsp_name ));
 
-  params = *ppparams = Realloc(*ppparams, 4);
+  params = Realloc(*ppparams, 4);
   if(params == NULL)
     return(ERROR(ERRDOS,ERRnomem));
+
+  *ppparams = params;
 
   /*
    * Get the permissions to return.
@@ -1548,11 +1554,13 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    * Allocate the data we will point this at.
    */
 
-  data = *ppdata = Realloc(*ppdata, sd_size);
+  data = Realloc(*ppdata, sd_size);
   if(data == NULL) {
     free_sec_desc(&psd);
     return(ERROR(ERRDOS,ERRnomem));
   }
+
+  *ppdata = data;
 
   memset(data, '\0', sd_size);
 
