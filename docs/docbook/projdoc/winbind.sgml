@@ -351,15 +351,6 @@ to control access and authenticate users on your Linux box using
 the winbind services which come with SAMBA 2.2.2.
 </para>
 
-<para>
-There is also some Solaris specific information in 
-<filename>docs/textdocs/Solaris-Winbind-HOWTO.txt</filename>.
-Future revisions of this document will incorporate that
-information.
-</para>
-
-
-
 <sect2>
 <title>Introduction</title>
 
@@ -628,6 +619,19 @@ command as root:
 </para>
 
 <para>
+Winbindd can now also run in 'dual daemon mode'. This will make it 
+run as 2 processes. The first will answer all requests from the cache,
+thus making responses to clients faster. The other will
+update the cache for the query that the first has just responded.
+Advantage of this is that responses stay accurate and are faster. 
+You can enable dual daemon mode by adding '-B' to the commandline:
+</para>
+
+<para>
+<prompt>root#</prompt> <command>/usr/local/samba/bin/winbindd -B</command>
+</para>
+
+<para>
 I'm always paranoid and like to make sure the daemon 
 is really running...
 </para>
@@ -756,9 +760,22 @@ start() {
 }
 </programlisting></para>
 
+<para>If you would like to run winbindd in dual daemon mode, replace 
+the line 
+<programlisting>
+        daemon /usr/local/samba/bin/winbindd
+</programlisting>
+
+in the example above with:
+
+<programlisting>
+        daemon /usr/local/samba/bin/winbindd -B
+</programlisting>.
+</para>
+
 <para>
 The 'stop' function has a corresponding entry to shut down the 
-services and look s like this:
+services and looks like this:
 </para>
 
 <para><programlisting>
@@ -842,6 +859,19 @@ echo Starting Winbind Daemon
    ;;
 esac
 </programlisting></para>
+
+<para>Again, if you would like to run samba in dual daemon mode, replace 
+<programlisting>
+   /usr/local/samba/bin/winbindd
+</programlisting>
+
+in the script above with:
+
+<programlisting>
+   /usr/local/samba/bin/winbindd -B
+</programlisting>
+</para>
+
 </sect4>
 
 <sect4>
