@@ -91,7 +91,11 @@ void setup_logging(char *pname,BOOL interactive)
   if (!interactive) {
     char *p = strrchr(pname,'/');
     if (p) pname = p+1;
+#ifdef LOG_DAEMON
     openlog(pname, LOG_PID, LOG_DAEMON);
+#else /* LOG_DAEMON - for old systems that have no facility codes. */
+    openlog(pname, LOG_PID);
+#endif /* LOG_DAEMON */
   }
 #endif
   if (interactive) {

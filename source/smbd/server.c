@@ -1978,6 +1978,18 @@ struct
   {0,0,0}
 };
 
+/* Mapping for old clients. */
+
+struct
+{
+  int new_smb_error;
+  int old_smb_error;
+  int protocol_level;
+} old_client_errmap[] =
+{
+  {ERRbaddirectory, ERRbadpath, (int)PROTOCOL_NT1},
+  {0,0,0}
+};
 
 /****************************************************************************
   create an error packet from errno
@@ -1998,16 +2010,29 @@ int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int
   else
     {
       while (unix_smb_errmap[i].smbclass != 0)
-	{
-	  if (unix_smb_errmap[i].unixerror == errno)
+      {
+	    if (unix_smb_errmap[i].unixerror == errno)
 	    {
 	      eclass = unix_smb_errmap[i].smbclass;
 	      ecode = unix_smb_errmap[i].smbcode;
 	      break;
 	    }
 	  i++;
-	}
+      }
     }
+
+  /* Make sure we don't return error codes that old
+     clients don't understand. */
+
+  for(i = 0; old_client_errmap[i].new_smb_error != 0; i++)
+  {
+    if((Protocol < old_client_errmap[i].protocol_level) && 
+       (old_client_errmap[i].new_smb_error == ecode))
+    {
+      ecode = old_client_errmap[i].old_smb_error;
+      break;
+    }
+  }
 
   return(error_packet(inbuf,outbuf,eclass,ecode,line));
 }

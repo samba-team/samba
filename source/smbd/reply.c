@@ -269,11 +269,8 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   else
   {
     char *fsname = "NTFS";
-    int devlen = strlen(devicename)+1;
-    int fslen = strlen(fsname)+1;
-    int len = devlen + fslen + 1;
-
     char *p;
+
     set_message(outbuf,3,3,True);
 
     p = smb_buf(outbuf);
