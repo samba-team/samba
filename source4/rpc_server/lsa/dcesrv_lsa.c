@@ -38,7 +38,6 @@ enum lsa_handle {
 struct lsa_policy_state {
 	int reference_count;
 	void *sam_ctx;
-	TALLOC_CTX *mem_ctx;
 	uint32_t access_mask;
 	const char *domain_dn;
 };
@@ -51,7 +50,7 @@ static void lsa_Policy_close(struct lsa_policy_state *state)
 {
 	state->reference_count--;
 	if (state->reference_count == 0) {
-		talloc_destroy(state->mem_ctx);
+		talloc_free(state);
 	}
 }
 
@@ -145,40 +144,33 @@ static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 {
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *handle;
-	TALLOC_CTX *lsa_mem_ctx;
 
 	ZERO_STRUCTP(r->out.handle);
 
-	lsa_mem_ctx = talloc_init("lsa_OpenPolicy");
-	if (!lsa_mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	state = talloc_p(lsa_mem_ctx, struct lsa_policy_state);
+	state = talloc_p(dce_call->conn, struct lsa_policy_state);
 	if (!state) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state->mem_ctx = lsa_mem_ctx;
 
 	/* make sure the sam database is accessible */
-	state->sam_ctx = samdb_connect(state->mem_ctx);
+	state->sam_ctx = samdb_connect(state);
 	if (state->sam_ctx == NULL) {
-		talloc_destroy(state->mem_ctx);
+		talloc_free(state);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
 	/* work out the domain_dn - useful for so many calls its worth
 	   fetching here */
-	state->domain_dn = samdb_search_string(state->sam_ctx, state->mem_ctx, NULL,
+	state->domain_dn = samdb_search_string(state->sam_ctx, state, NULL,
 					       "dn", "(&(objectClass=domain)(!(objectclass=builtinDomain)))");
 	if (!state->domain_dn) {
-		talloc_destroy(state->mem_ctx);
+		talloc_free(state);
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
 	handle = dcesrv_handle_new(dce_call->conn, LSA_HANDLE_POLICY);
 	if (!handle) {
-		talloc_destroy(state->mem_ctx);
+		talloc_free(state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
