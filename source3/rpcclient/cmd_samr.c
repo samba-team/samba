@@ -1194,20 +1194,22 @@ static uint32 cmd_samr_delete_dom_user(struct cli_state *cli, int argc,
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
-	{ "SAMR", 		NULL,		 		"" },
 
-	{ "queryuser", 		cmd_samr_query_user, 		"Query user info" },
-	{ "querygroup", 	cmd_samr_query_group, 		"Query group info" },
-	{ "queryusergroups", 	cmd_samr_query_usergroups, 	"Query user groups" },
-	{ "querygroupmem", 	cmd_samr_query_groupmem, 	"Query group membership" },
-	{ "queryaliasmem", 	cmd_samr_query_aliasmem, 	"Query alias membership" },
-	{ "querydispinfo", 	cmd_samr_query_dispinfo, 	"Query display info" },
-	{ "querydominfo", 	cmd_samr_query_dominfo, 	"Query domain info" },
-	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       "Enumerate domain groups" },
+	{ "SAMR" },
 
-	{ "createdomuser",      cmd_samr_create_dom_user,       "Create domain user" },
-	{ "samlookupnames",     cmd_samr_lookup_names, "Look up names" },
-	{ "samlookuprids",      cmd_samr_lookup_rids, "Look up names" },
-	{ "deletedomuser",      cmd_samr_delete_dom_user, "Delete domain user" },
-	{ NULL, NULL, NULL }
+	{ "queryuser", 		cmd_samr_query_user, 		"Query user info",         "" },
+	{ "querygroup", 	cmd_samr_query_group, 		"Query group info",        "" },
+	{ "queryusergroups", 	cmd_samr_query_usergroups, 	"Query user groups",       "" },
+	{ "querygroupmem", 	cmd_samr_query_groupmem, 	"Query group membership",  "" },
+	{ "queryaliasmem", 	cmd_samr_query_aliasmem, 	"Query alias membership",  "" },
+	{ "querydispinfo", 	cmd_samr_query_dispinfo, 	"Query display info",      "" },
+	{ "querydominfo", 	cmd_samr_query_dominfo, 	"Query domain info",       "" },
+	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       "Enumerate domain groups", "" },
+
+	{ "createdomuser",      cmd_samr_create_dom_user,       "Create domain user",      "" },
+	{ "samlookupnames",     cmd_samr_lookup_names,          "Look up names",           "" },
+	{ "samlookuprids",      cmd_samr_lookup_rids,           "Look up names",           "" },
+	{ "deletedomuser",      cmd_samr_delete_dom_user,       "Delete domain user",      "" },
+
+	{ NULL }
 };

@@ -237,7 +237,10 @@ static uint32 cmd_srvsvc_srv_query_info(struct cli_state *cli, int argc,
 /* List of commands exported by this module */
 
 struct cmd_set srvsvc_commands[] = {
-	{ "SRVSVC", 	NULL,		   	    "" },
-	{ "srvinfo",    cmd_srvsvc_srv_query_info,  "Server query info" },
-	{ NULL, NULL, NULL }
+
+	{ "SRVSVC" },
+
+	{ "srvinfo",    cmd_srvsvc_srv_query_info,  "Server query info", "" },
+
+	{ NULL }
 };

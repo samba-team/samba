@@ -101,8 +101,11 @@ static uint32 cmd_netlogon_logon_ctrl(struct cli_state *cli, int argc,
 /* List of commands exported by this module */
 
 struct cmd_set netlogon_commands[] = {
-	{ "NETLOGON", 	NULL,			  "" },
-	{ "logonctrl2", cmd_netlogon_logon_ctrl2, "Logon Control 2" },
-	{ "logonctrl",  cmd_netlogon_logon_ctrl,  "Logon Control" },
-	{ NULL, NULL, NULL }
+
+	{ "NETLOGON" },
+
+	{ "logonctrl2", cmd_netlogon_logon_ctrl2, "Logon Control 2", "" },
+	{ "logonctrl",  cmd_netlogon_logon_ctrl,  "Logon Control",   "" },
+
+	{ NULL }
 };
