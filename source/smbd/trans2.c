@@ -1177,7 +1177,6 @@ static int call_trans2qfsinfo(connection_struct *conn,
     {
       int fstype_len;
       SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
-			FILE_DEVICE_IS_MOUNTED|
             (lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
 #if 0 /* Old code. JRA. */
       SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
@@ -1494,6 +1493,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		SIVAL(pdata,16,sbuf.st_nlink);
 		CVAL(pdata,20) = 0;
 		CVAL(pdata,21) = (mode&aDIR)?1:0;
+
+		DEBUG(5,("FILE_STANDARD_INFO: size = %.0f\n", (double)size ));
 		break;
 
 	case SMB_FILE_EA_INFORMATION:

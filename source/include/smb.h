@@ -1048,7 +1048,9 @@ struct bitmap {
 #define FILE_ATTRIBUTE_ARCHIVE aARCH
 #define FILE_ATTRIBUTE_NORMAL 0x80L
 #define FILE_ATTRIBUTE_TEMPORARY 0x100L
+#define FILE_ATTRIBUTE_SPARSE 0x200L
 #define FILE_ATTRIBUTE_COMPRESSED 0x800L
+#define FILE_ATTRIBUTE_NONINDEXED 0x2000L
 #define SAMBA_ATTRIBUTES_MASK 0x7F
 
 /* Flags - combined with attributes. */
@@ -1102,9 +1104,10 @@ struct bitmap {
 /* Acconding to testing, this actually sets the security attribute! */
 #define FILE_PERSISTENT_ACLS 0x08
 /* These entries added from cifs9f --tsb */
-#define FILE_FILE_COMPRESSION 0x08
-#define FILE_VOLUME_QUOTAS 0x10
-#define FILE_DEVICE_IS_MOUNTED 0x20
+#define FILE_FILE_COMPRESSION 0x10
+#define FILE_VOLUME_QUOTAS 0x20
+/* I think this is wrong. JRA #define FILE_DEVICE_IS_MOUNTED 0x20 */
+#define FILE_VOLUME_SPARSE_FILE 0x40
 #define FILE_VOLUME_IS_COMPRESSED 0x8000
 
 /* ChangeNotify flags. */

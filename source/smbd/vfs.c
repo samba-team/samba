@@ -503,6 +503,7 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 	int ret;
 
 	release_level_2_oplocks_on_change(fsp);
+	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
 	if ((ret = fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, len)) != -1)
 		set_filelen_write_cache(fsp, len);
 
