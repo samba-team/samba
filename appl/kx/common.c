@@ -152,7 +152,7 @@ get_xsockets (int *unix_socket, int *tcp_socket)
      if (h)
 	 memcpy (&local, h->h_addr, h->h_length);
      else
-	 local.s_addr = inet_addr ("127.0.0.1");
+	 local.s_addr = INADDR_LOOPBACK;
 
      for(dpy = 4; dpy < 256; ++dpy) {
 	 unixfd = socket (AF_UNIX, SOCK_STREAM, 0);
