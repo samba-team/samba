@@ -105,7 +105,7 @@ static struct rpc_request *dcom_proxy_$interface->{NAME}_$name\_send(struct dcom
 		NDR_PRINT_IN_DEBUG($name, r);		
 	}
 
-	return dcerpc_ndr_request_table_send(p, &d->ipid, &dcerpc_table_$interface->{NAME}, DCERPC_$uname, mem_ctx, r);
+	return dcerpc_ndr_request_send(p, &d->ipid, &dcerpc_table_$interface->{NAME}, DCERPC_$uname, mem_ctx, r);
 }
 
 static NTSTATUS dcom_proxy_$interface->{NAME}_$name(struct dcom_interface_p *d, TALLOC_CTX *mem_ctx, struct $name *r)
