@@ -109,9 +109,15 @@ static BOOL test_inq_princ_name(struct dcerpc_pipe *p,
 			continue;
 		}
 		if (W_ERROR_IS_OK(r.out.result)) {
+			const char *name = gensec_get_name_by_authtype(i);
 			ret = True;
-			printf("\tprinciple name for proto %u is '%s'\n", 
-			       i, r.out.princ_name);
+			if (name) {
+				printf("\tprinciple name for proto %u (%s) is '%s'\n", 
+				       i, name, r.out.princ_name);
+			} else {
+				printf("\tprinciple name for proto %u is '%s'\n", 
+				       i, r.out.princ_name);
+			}
 		}
 	}
 
