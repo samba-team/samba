@@ -25,6 +25,45 @@
 #include "librpc/gen_ndr/ndr_xattr.h"
 
 /*
+  reply to a RAW_FILEINFO_EA_LIST call
+*/
+static NTSTATUS pvfs_query_ea_list(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
+				   struct pvfs_filename *name, int fd, 
+				   uint_t num_names,
+				   struct ea_name *names,
+				   struct smb_ea_list *eas)
+{
+	NTSTATUS status;
+	int i;
+	struct xattr_DosEAs *ealist = talloc_p(mem_ctx, struct xattr_DosEAs);
+
+	ZERO_STRUCTP(eas);
+	status = pvfs_doseas_load(pvfs, name, fd, ealist);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	eas->eas = talloc_array_p(mem_ctx, struct ea_struct, num_names);
+	if (eas->eas == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	eas->num_eas = num_names;
+	for (i=0;i<num_names;i++) {
+		int j;
+		eas->eas[i].flags = 0;
+		eas->eas[i].name.s = names[i].name.s;
+		eas->eas[i].value = data_blob(NULL, 0);
+		for (j=0;j<ealist->num_eas;j++) {
+			if (StrCaseCmp(eas->eas[i].name.s, 
+				       ealist->eas[j].name) == 0) {
+				eas->eas[i].value = ealist->eas[j].value;
+				break;
+			}
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+/*
   reply to a RAW_FILEINFO_ALL_EAS call
 */
 static NTSTATUS pvfs_query_all_eas(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
@@ -40,15 +79,16 @@ static NTSTATUS pvfs_query_all_eas(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	eas->num_eas = ealist->num_eas;
-	eas->eas = talloc_array_p(mem_ctx, struct ea_struct, eas->num_eas);
+	eas->eas = talloc_array_p(mem_ctx, struct ea_struct, ealist->num_eas);
 	if (eas->eas == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	for (i=0;i<eas->num_eas;i++) {
-		eas->eas[i].flags = 0;
-		eas->eas[i].name.s = ealist->eas[i].name;
-		eas->eas[i].value = ealist->eas[i].value;
+	eas->num_eas = 0;
+	for (i=0;i<ealist->num_eas;i++) {
+		eas->eas[eas->num_eas].flags = 0;
+		eas->eas[eas->num_eas].name.s = ealist->eas[i].name;
+		eas->eas[eas->num_eas].value = ealist->eas[i].value;
+		eas->num_eas++;
 	}
 	return NT_STATUS_OK;
 }
@@ -90,6 +130,12 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 		info->ea_size.out.attrib      = name->dos.attrib;
 		info->ea_size.out.ea_size     = name->dos.ea_size;
 		return NT_STATUS_OK;
+
+	case RAW_FILEINFO_EA_LIST:
+		return pvfs_query_ea_list(pvfs, req, name, fd, 
+					  info->ea_list.in.num_names,
+					  info->ea_list.in.ea_names, 
+					  &info->ea_list.out);
 
 	case RAW_FILEINFO_ALL_EAS:
 		return pvfs_query_all_eas(pvfs, req, name, fd, &info->all_eas.out);

@@ -614,6 +614,15 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 		      st->alignment_information.out.alignment_requirement);
 		return NT_STATUS_OK;
 
+	case RAW_FILEINFO_EA_LIST:
+		list_size = ea_list_size(st->ea_list.out.num_eas,
+					 st->ea_list.out.eas);
+		trans2_setup_reply(req, trans, 2, list_size, 0);
+		SSVAL(trans->out.params.data, 0, 0);
+		ea_put_list(trans->out.data.data, 
+			    st->ea_list.out.num_eas, st->ea_list.out.eas);
+		return NT_STATUS_OK;
+
 	case RAW_FILEINFO_ALL_EAS:
 		list_size = ea_list_size(st->all_eas.out.num_eas,
 						  st->all_eas.out.eas);
@@ -753,6 +762,15 @@ static NTSTATUS trans2_qpathinfo(struct smbsrv_request *req, struct smb_trans2 *
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
+	if (st.generic.level == RAW_FILEINFO_EA_LIST) {
+		status = ea_pull_name_list(&trans->in.data, req, 
+					   &st.ea_list.in.num_names,
+					   &st.ea_list.in.ea_names);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
 	/* call the backend */
 	status = ntvfs_qpathinfo(req, &st);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -787,6 +805,15 @@ static NTSTATUS trans2_qfileinfo(struct smbsrv_request *req, struct smb_trans2 *
 	st.generic.level = (enum smb_fileinfo_level)level;
 	if (st.generic.level >= RAW_FILEINFO_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	if (st.generic.level == RAW_FILEINFO_EA_LIST) {
+		status = ea_pull_name_list(&trans->in.data, req, 
+					   &st.ea_list.in.num_names,
+					   &st.ea_list.in.ea_names);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	/* call the backend */
