@@ -623,6 +623,19 @@ static BOOL afs_auth(char *this_user,char *password)
 
 #ifdef DFS_AUTH
 
+/*****************************************************************
+ This new version of the DFS_AUTH code was donated by Karsten Muuss
+ <muuss@or.uni-bonn.de>. It fixes the following problems with the
+ old code :
+
+  - Server credentials may expire
+  - Client credential cache files have wrong owner
+  - purge_context() function is called with invalid argument
+
+ This new code was modified to ensure that on exit the uid/gid is
+ still root, and the original directory is restored. JRA.
+******************************************************************/
+
 sec_login_handle_t my_dce_sec_context;
 int dcelogin_atmost_once = 0;
 
@@ -634,70 +647,261 @@ static BOOL dfs_auth(char *this_user,char *password)
   error_status_t err;
   int err2;
   int prterr;
+  signed32 expire_time, current_time;
   boolean32 password_reset;
-  sec_passwd_rec_t my_dce_password;
+  struct passwd *pw;
+  sec_passwd_rec_t passwd_rec;
   sec_login_auth_src_t auth_src = sec_login_auth_src_network;
   unsigned char dce_errstr[dce_c_error_string_len];
 
+  if (dcelogin_atmost_once) return(False);
+
+#ifndef NO_CRYPT
   /*
    * We only go for a DCE login context if the given password
    * matches that stored in the local password file.. 
    * Assumes local passwd file is kept in sync w/ DCE RGY!
    */
 
-  /* Fix for original (broken) code from Brett Wooldridge <brettw@austin.ibm.com> */
-  if (dcelogin_atmost_once)
-    return (False);
-  /* This can be ifdefed as the DCE check below is stricter... */
-#ifndef NO_CRYPT
   if ( strcmp((char *)crypt(password,this_salt),this_crypted) )
-    return (False);
+    return(False);
 #endif
 
-  if (sec_login_setup_identity(
-			       (unsigned char *)this_user,
-			       sec_login_no_flags,
-			       &my_dce_sec_context,
-			       &err) == 0)
+  sec_login_get_current_context(&my_dce_sec_context, &err);
+  if (err != error_status_ok ) {  
+    dce_error_inq_text(err, dce_errstr, &err2);
+    DEBUG(0,("DCE can't get current context. %s\n", dce_errstr));
+
+    return(False);
+  }
+
+  sec_login_certify_identity(my_dce_sec_context, &err);
+  if (err != error_status_ok ) {  
+    dce_error_inq_text(err, dce_errstr, &err2);
+    DEBUG(0,("DCE can't get current context. %s\n", dce_errstr));
+
+    return(False);
+  }
+
+  sec_login_get_expiration(my_dce_sec_context, &expire_time, &err);
+  if (err != error_status_ok ) {
+    dce_error_inq_text(err, dce_errstr, &err2);
+    DEBUG(0,("DCE can't get expiration. %s\n", dce_errstr));
+
+    return(False);
+  }
+  
+  time(&current_time);
+
+  if (expire_time < (current_time + 60)) {
+    struct passwd    *pw;
+    sec_passwd_rec_t *key;
+  
+    sec_login_get_pwent(my_dce_sec_context, 
+                        (sec_login_passwd_t*)&pw, &err);
+    if (err != error_status_ok ) {
+      dce_error_inq_text(err, dce_errstr, &err2);
+      DEBUG(0,("DCE can't get pwent. %s\n", dce_errstr));
+
+      return(False);
+    }
+  
+    sec_login_refresh_identity(my_dce_sec_context, &err);
+    if (err != error_status_ok ) {                                       
+      dce_error_inq_text(err, dce_errstr, &err2);
+      DEBUG(0,("DCE can't refresh identity. %s\n", dce_errstr));
+
+      return(False);
+    }
+  
+    sec_key_mgmt_get_key(rpc_c_authn_dce_secret, NULL,
+                         (unsigned char *)pw->pw_name,
+                         sec_c_key_version_none,
+                         (void**)&key, &err);
+    if (err != error_status_ok ) {
+      dce_error_inq_text(err, dce_errstr, &err2);
+      DEBUG(0,("DCE can't get key for %s. %s\n", pw->pw_name, dce_errstr));
+
+      return(False);
+    }
+  
+    sec_login_valid_and_cert_ident(my_dce_sec_context, key,
+                                   &password_reset, &auth_src, &err);
+    if (err != error_status_ok ) {
+      dce_error_inq_text(err, dce_errstr, &err2);
+      DEBUG(0,("DCE can't validate and certify identity for %s. %s\n", 
+                pw->pw_name, dce_errstr));
+    }
+  
+    sec_key_mgmt_free_key(key, &err);
+    if (err != error_status_ok ) {
+      dce_error_inq_text(err, dce_errstr, &err2);
+      DEBUG(0,("DCE can't free key.\n", dce_errstr));
+    }
+  }
+
+  if (sec_login_setup_identity((unsigned char *)this_user,
+                               sec_login_no_flags,
+                               &my_dce_sec_context,
+                               &err) == 0)
+
     {
       dce_error_inq_text(err, dce_errstr, &err2);
       DEBUG(0,("DCE Setup Identity for %s failed: %s\n",
-	       this_user,dce_errstr));
+               this_user,dce_errstr));
       return(False);
     }
 
-  my_dce_password.version_number = sec_passwd_c_version_none;
-  my_dce_password.pepper = NULL; 
-  my_dce_password.key.key_type = sec_passwd_plain;
-  my_dce_password.key.tagged_union.plain  = (idl_char *)password;
-  
-  if (sec_login_valid_and_cert_ident(my_dce_sec_context,
-				     &my_dce_password,
-				     &password_reset,
-				     &auth_src,
-				     &err) == 0 )
-    { 
+  sec_login_get_pwent(my_dce_sec_context, 
+                      (sec_login_passwd_t*)&pw, &err);
+  if (err != error_status_ok ) {
+    dce_error_inq_text(err, dce_errstr, &err2);
+    DEBUG(0,("DCE can't get pwent. %s\n", dce_errstr));
+
+    return(False);
+  }
+
+  sec_login_purge_context(&my_dce_sec_context, &err);
+  if (err != error_status_ok ) {
+    dce_error_inq_text(err, dce_errstr, &err2);
+    DEBUG(0,("DCE can't purge context. %s\n", dce_errstr));
+
+    return(False);
+  }
+
+  /*
+   * NB. I'd like to change these to call something like become_user()
+   * instead but currently we don't have a connection
+   * context to become the correct user. This is already
+   * fairly platform specific code however, so I think
+   * this should be ok. I have added code to go
+   * back to being root on error though. JRA.
+   */
+
+  if (setregid(-1, pw->pw_gid) != 0) {
+    DEBUG(0,("Can't set egid to %d (%s)\n", pw->pw_gid, strerror(errno)));
+    return False;
+  }
+
+  if (setreuid(-1, pw->pw_uid) != 0) {
+    setgid(0);
+    DEBUG(0,("Can't set euid to %d (%s)\n", pw->pw_uid, strerror(errno)));
+    return False;
+  }
+ 
+  if (sec_login_setup_identity((unsigned char *)this_user,
+                               sec_login_no_flags,
+                               &my_dce_sec_context,
+                               &err) == 0)
+
+    {
       dce_error_inq_text(err, dce_errstr, &err2);
-      DEBUG(0,("DCE Identity Validation failed for principal %s: %s\n",
-	       this_user,dce_errstr));
-	  
+      /* Go back to root, JRA. */
+      setuid(0);
+      setgid(0);
+      DEBUG(0,("DCE Setup Identity for %s failed: %s\n",
+               this_user,dce_errstr));
       return(False);
     }
+
+  sec_login_get_pwent(my_dce_sec_context, 
+                      (sec_login_passwd_t*)&pw, &err);
+  if (err != error_status_ok ) {
+    dce_error_inq_text(err, dce_errstr, &err2);
+    /* Go back to root, JRA. */
+    setuid(0);
+    setgid(0);
+    DEBUG(0,("DCE can't get pwent. %s\n", dce_errstr));
+
+    return(False);
+  }
+
+  passwd_rec.version_number = sec_passwd_c_version_none;
+  passwd_rec.pepper = NULL;
+  passwd_rec.key.key_type = sec_passwd_plain;
+  passwd_rec.key.tagged_union.plain  = (idl_char *)password;
+  
+  sec_login_validate_identity(my_dce_sec_context,
+                              &passwd_rec, &password_reset,
+                              &auth_src, &err);
+  if (err != error_status_ok ) { 
+    dce_error_inq_text(err, dce_errstr, &err2);
+    /* Go back to root, JRA. */
+    setuid(0);
+    setgid(0);
+    DEBUG(0,("DCE Identity Validation failed for principal %s: %s\n",
+             this_user,dce_errstr));
+
+    return(False);
+  }
+
+  sec_login_certify_identity(my_dce_sec_context, &err);
+  if (err != error_status_ok ) { 
+    dce_error_inq_text(err, dce_errstr, &err2);
+    /* Go back to root, JRA. */
+    setuid(0);
+    setgid(0);
+    DEBUG(0,("DCE certify identity failed: %s\n", dce_errstr));
+
+    return(False);
+  }
+
+  if (auth_src != sec_login_auth_src_network) { 
+     DEBUG(0,("DCE context has no network credentials.\n"));
+  }
 
   sec_login_set_context(my_dce_sec_context, &err);
-  if (err != error_status_ok )
-    {  
+  if (err != error_status_ok ) {  
       dce_error_inq_text(err, dce_errstr, &err2);
       DEBUG(0,("DCE login failed for principal %s, cant set context: %s\n",
-	       this_user,dce_errstr));
-      sec_login_purge_context(my_dce_sec_context, &err);
+               this_user,dce_errstr));
+
+      sec_login_purge_context(&my_dce_sec_context, &err);
+      /* Go back to root, JRA. */
+      setuid(0);
+      setgid(0);
       return(False);
     }
-  else
-    {
-      DEBUG(0,("DCE login succeeded for principal %s on pid %d\n",
-	       this_user, getpid()));
-    }
+
+  sec_login_get_pwent(my_dce_sec_context, 
+                      (sec_login_passwd_t*)&pw, &err);
+  if (err != error_status_ok ) {
+    dce_error_inq_text(err, dce_errstr, &err2);
+    DEBUG(0,("DCE can't get pwent. %s\n", dce_errstr));
+
+    /* Go back to root, JRA. */
+    setuid(0);
+    setgid(0);
+    return(False);
+  }
+
+  DEBUG(0,("DCE login succeeded for principal %s on pid %d\n",
+           this_user, getpid()));
+
+  DEBUG(3,("DCE principal: %s\n"
+           "          uid: %d\n"
+           "          gid: %d\n",
+           pw->pw_name, pw->pw_uid, pw->pw_gid));
+  DEBUG(3,("         info: %s\n"
+           "          dir: %s\n"
+           "        shell: %s\n",
+           pw->pw_gecos, pw->pw_dir, pw->pw_shell));
+
+  sec_login_get_expiration(my_dce_sec_context, &expire_time, &err);
+  if (err != error_status_ok ) {
+    dce_error_inq_text(err, dce_errstr, &err2);
+    /* Go back to root, JRA. */
+    setuid(0);
+    setgid(0);
+    DEBUG(0,("DCE can't get expiration. %s\n", dce_errstr));
+
+    return(False);
+  }
+
+  setuid(0);
+  setgid(0);
+
+  DEBUG(0,("DCE context expires: %s",asctime(localtime(&expire_time))));
 
   dcelogin_atmost_once = 1;
   return (True);
@@ -709,15 +913,14 @@ void dfs_unlogin(void)
   int err2;
   unsigned char dce_errstr[dce_c_error_string_len];
 
-  sec_login_purge_context(my_dce_sec_context, &err);
+  sec_login_purge_context(&my_dce_sec_context, &err);
   if (err != error_status_ok )
     {  
       dce_error_inq_text(err, dce_errstr, &err2);
       DEBUG(0,("DCE purge login context failed for server instance %d: %s\n",
-	       getpid(), dce_errstr));
+               getpid(), dce_errstr));
     }
 }
-
 #endif
 
 #ifdef KRB5_AUTH
