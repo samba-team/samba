@@ -85,9 +85,6 @@ void dcerpc_pipe_close(struct dcerpc_pipe *p)
 	if (!p) return;
 	p->reference_count--;
 	if (p->reference_count <= 0) {
-		if (p->security_state.generic_state) {
-			gensec_end(&p->security_state.generic_state);
-		}
 		p->transport.shutdown_pipe(p);
 		talloc_free(p);
 	}

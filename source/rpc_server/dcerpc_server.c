@@ -274,7 +274,8 @@ static int dcesrv_endpoint_destructor(void *ptr)
 	}
 
 	if (p->auth_state.gensec_security) {
-		gensec_end(&p->auth_state.gensec_security);
+		talloc_free(p->auth_state.gensec_security);
+		p->auth_state.gensec_security = NULL;
 	}
 
 	return 0;

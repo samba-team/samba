@@ -45,16 +45,6 @@ struct spnego_state {
 };
 
 
-static int gensec_spnego_destroy(void *ptr)
-{
-	struct spnego_state *spnego_state = ptr;
-
-	if (spnego_state->sub_sec_security) {
-		gensec_end(&spnego_state->sub_sec_security);
-	}
-	return 0;
-}
-
 static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
 {
 	struct spnego_state *spnego_state;
@@ -67,8 +57,6 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_CLIENT_START;
 	spnego_state->sub_sec_security = NULL;
-
-	talloc_set_destructor(spnego_state, gensec_spnego_destroy);
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -86,8 +74,6 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_SERVER_START;
 	spnego_state->sub_sec_security = NULL;
-
-	talloc_set_destructor(spnego_state, gensec_spnego_destroy);
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -246,8 +232,9 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 		nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
 						     all_ops[i]->oid);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			gensec_end(&spnego_state->sub_sec_security);
-					continue;
+			talloc_free(spnego_state->sub_sec_security);
+			spnego_state->sub_sec_security = NULL;
+			continue;
 		}
 		nt_status = gensec_update(spnego_state->sub_sec_security,
 							  out_mem_ctx, in, out);
@@ -255,7 +242,8 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 			spnego_state->state_position = SPNEGO_FALLBACK;
 			return nt_status;
 		}
-		gensec_end(&spnego_state->sub_sec_security);
+		talloc_free(spnego_state->sub_sec_security);
+		spnego_state->sub_sec_security = NULL;
 	}
 	DEBUG(1, ("Failed to parse SPNEGO request\n"));
 	return NT_STATUS_INVALID_PARAMETER;
@@ -283,7 +271,8 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
 						     mechType[i]);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			gensec_end(&spnego_state->sub_sec_security);
+			talloc_free(spnego_state->sub_sec_security);
+			spnego_state->sub_sec_security = NULL;
 			continue;
 		}
 		
@@ -302,7 +291,8 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed: %s\n", 
 				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
-			gensec_end(&spnego_state->sub_sec_security);
+			talloc_free(spnego_state->sub_sec_security);
+			spnego_state->sub_sec_security = NULL;
 		}
 		return nt_status;
 	}
@@ -344,8 +334,9 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 	nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
 					     mechTypes[0]);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		gensec_end(&spnego_state->sub_sec_security);
-			return nt_status;
+		talloc_free(spnego_state->sub_sec_security);
+		spnego_state->sub_sec_security = NULL;
+		return nt_status;
 	}
 	nt_status = gensec_update(spnego_state->sub_sec_security,
 				  out_mem_ctx, in, &unwrapped_out);
@@ -367,7 +358,8 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 		spnego_state->state_position = SPNEGO_CLIENT_TARG;
 		return nt_status;
 	}
-	gensec_end(&spnego_state->sub_sec_security);
+	talloc_free(spnego_state->sub_sec_security);
+	spnego_state->sub_sec_security = NULL;
 
 	DEBUG(1, ("Failed to setup SPNEGO netTokenInit request\n"));
 	return NT_STATUS_INVALID_PARAMETER;
@@ -515,7 +507,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		if (!in.length) {
 			/* client to produce negTokenInit */
-			return gensec_spnego_client_negTokenInit(gensec_security, spnego_state, out_mem_ctx, in, out);
+			return gensec_spnego_client_negTokenInit(gensec_security, spnego_state, 
+								 out_mem_ctx, in, out);
 		}
 		
 		len = spnego_read_data(in, &spnego);

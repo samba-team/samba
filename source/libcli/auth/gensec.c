@@ -440,16 +440,6 @@ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_
 	return gensec_security->ops->update(gensec_security, out_mem_ctx, in, out);
 }
 
-void gensec_end(struct gensec_security **gensec_security)
-{
-	if (!*gensec_security) {
-		return;
-	}
-
-	talloc_free(*gensec_security);
-	*gensec_security = NULL;
-}
-
 /** 
  * Set the requirement for a certain feature on the connection
  *
