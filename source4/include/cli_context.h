@@ -215,6 +215,7 @@ struct cli_tree {
 	char *fs_type;
 };
 
+
 /* the context for a single SMB request. This is passed to any request-context 
  * functions (similar to context.h, the server version).
  * This will allow requests to be multi-threaded. */
@@ -249,37 +250,8 @@ struct cli_request {
 	/* the mid of this packet - used to match replies */
 	uint16_t mid;
 
-	struct {
-		/* the raw SMB buffer, including the 4 byte length header */
-		char *buffer;
-		
-		/* the size of the raw buffer, including 4 byte header */
-		uint_t size;
-
-		/* how much has been allocated - on reply the buffer is over-allocated to 
-		   prevent too many realloc() calls 
-		*/
-		uint_t allocated;
-
-		/* the start of the SMB header - this is always buffer+4 */
-		char *hdr;
-
-		/* the command words and command word count. vwv points
-		   into the raw buffer */
-		char *vwv;
-		uint_t wct;
-
-		/* the data buffer and size. data points into the raw buffer */
-		char *data;
-		uint_t data_size;
-
-		/* ptr is used as a moving pointer into the data area
-		 * of the packet. The reason its here and not a local
-		 * variable in each function is that when a realloc of
-		 * a send packet is done we need to move this
-		 * pointer */
-		char *ptr;
-	} in, out;
+	struct request_buffer in;
+	struct request_buffer out;
 
 	/* information on what to do with a reply when it is received
 	   asyncronously. If this is not setup when a reply is received then

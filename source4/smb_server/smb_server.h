@@ -141,37 +141,8 @@ struct smbsrv_request {
 		NTSTATUS status;
 	} async;
 
-	struct {
-		/* the raw SMB buffer, including the 4 byte length header */
-		char *buffer;
-		
-		/* the size of the raw buffer, including 4 byte header */
-		unsigned size;
-
-		/* how much has been allocated - on reply the buffer is over-allocated to 
-		   prevent too many realloc() calls 
-		*/
-		unsigned allocated;
-
-		/* the start of the SMB header - this is always buffer+4 */
-		char *hdr;
-
-		/* the command words and command word count. vwv points
-		   into the raw buffer */
-		char *vwv;
-		unsigned wct;
-
-		/* the data buffer and size. data points into the raw buffer */
-		char *data;
-		unsigned data_size;
-
-		/* ptr is used as a moving pointer into the data area
-		 * of the packet. The reason its here and not a local
-		 * variable in each function is that when a realloc of
-		 * a reply packet is done we need to move this
-		 * pointer */
-		char *ptr;
-	} in, out;
+	struct request_buffer in;
+	struct request_buffer out;
 };
 
 /* this contains variables that should be used in % substitutions for

@@ -260,7 +260,7 @@ static void use_nt1_session_keys(struct cli_session *session,
 	E_md4hash(password, nt_hash);
 	SMBsesskeygen_ntv1(nt_hash, session_key.data);
 
-	cli_transport_simple_set_signing(transport, session_key, *nt_response, 0);
+	cli_transport_simple_set_signing(transport, session_key, *nt_response);
 
 	cli_session_set_user_session_key(session, &session_key);
 	data_blob_free(&session_key);
@@ -380,6 +380,7 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct cli_session *session
 						  union smb_sesssetup *parms) 
 {
 	NTSTATUS status;
+	NTSTATUS session_key_err = NT_STATUS_NO_USER_SESSION_KEY;
 	union smb_sesssetup s2;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
@@ -443,15 +444,20 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct cli_session *session
 			       &s2.spnego.in.secblob);
 
 	while(1) {
+		if (NT_STATUS_IS_OK(status) && s2.spnego.in.secblob.length == 0) {
+			break;
+		}
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
 			break;
 		}
 
-		status = gensec_session_key(session->gensec, &session_key);
-		if (NT_STATUS_IS_OK(status)) {
-			cli_transport_simple_set_signing(session->transport, session_key, null_data_blob, 0);
+		if (!NT_STATUS_IS_OK(session_key_err)) {
+			session_key_err = gensec_session_key(session->gensec, &session_key);
 		}
-
+		if (NT_STATUS_IS_OK(session_key_err)) {
+			cli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
+		}
+		
 		session->vuid = s2.spnego.out.vuid;
 		status = smb_raw_session_setup(session, mem_ctx, &s2);
 		session->vuid = UID_FIELD_INVALID;
@@ -464,19 +470,14 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct cli_session *session
 				       s2.spnego.out.secblob,
 				       &s2.spnego.in.secblob);
 
-		if (NT_STATUS_IS_OK(status)) {
-			break;
-		}
 	}
 
 done:
 	if (NT_STATUS_IS_OK(status)) {
-		status = gensec_session_key(session->gensec, &session_key);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		if (!NT_STATUS_IS_OK(session_key_err)) {
+			DEBUG(1, ("Failed to get user session key: %s\n", nt_errstr(session_key_err)));
+			return session_key_err;
 		}
-		
-		cli_transport_simple_set_signing(session->transport, session_key, null_data_blob, 2 /* two legs on last packet */);
 
 		cli_session_set_user_session_key(session, &session_key);
 
@@ -484,6 +485,9 @@ done:
 		parms->generic.out.os = s2.spnego.out.os;
 		parms->generic.out.lanman = s2.spnego.out.lanman;
 		parms->generic.out.domain = s2.spnego.out.domain;
+	} else {
+		DEBUG(1, ("Failed to login with SPNEGO: %s\n", nt_errstr(status)));
+		return status;
 	}
 
 	return status;
@@ -528,7 +532,18 @@ NTSTATUS smb_raw_session_setup(struct cli_session *session, TALLOC_CTX *mem_ctx,
 	struct cli_request *req;
 
 	if (parms->generic.level == RAW_SESSSETUP_GENERIC) {
-		return smb_raw_session_setup_generic(session, mem_ctx, parms);
+		NTSTATUS ret = smb_raw_session_setup_generic(session, mem_ctx, parms);
+
+		if (NT_STATUS_IS_OK(ret) 
+		    && parms->generic.in.user 
+		    && *parms->generic.in.user) {
+			if (!session->transport->negotiate.sign_info.doing_signing 
+			    && session->transport->negotiate.sign_info.mandatory_signing) {
+				DEBUG(0, ("SMB signing required, but server does not support it\n"));
+				return NT_STATUS_ACCESS_DENIED;
+			}
+		}
+		return ret;
 	}
 
 	req = smb_raw_session_setup_send(session, parms);
