@@ -989,7 +989,12 @@ BOOL cli_tdis(struct cli_state *cli)
 	if (!cli_receive_smb(cli))
 		return False;
 	
-	return !cli_is_error(cli);
+	if (cli_is_error(cli)) {
+		return False;
+	}
+
+	cli->cnum = -1;
+	return True;
 }
 
 /****************************************************************************
