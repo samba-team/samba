@@ -1585,6 +1585,7 @@ Parse tar arguments. Sets tar_type, tar_excl, etc.
 
 int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 {
+	int newOptind = Optind;
 	char tar_clipfl='\0';
 
 	/* Reset back to defaults - could be from interactive version 
@@ -1612,6 +1613,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 					return 0;
 				} else {
 					Optind++;
+					newOptind++;
 				}
 				break;
 			case 'g':
@@ -1629,6 +1631,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 						newer_than = stbuf.st_mtime;
 						DEBUG(1,("Getting files newer than %s",
 							asctime(LocalTime(&newer_than))));
+						newOptind++;
 						Optind++;
 					} else {
 						DEBUG(0,("Error setting newer-than time\n"));
@@ -1696,7 +1699,9 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 			DEBUG(0,("Option F must be followed by exactly one filename.\n"));
 			return 0;
 		}
-		if (! read_inclusion_file(argv[Optind+1])) {
+		newOptind++;
+		Optind++;
+		if (! read_inclusion_file(argv[Optind])) {
 			return 0;
 		}
 	} else if (Optind+1<argc && !tar_re_search) { /* For backwards compatibility */
@@ -1731,6 +1736,8 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 
 		cliplist = tmplist;
 		must_free_cliplist = True;
+
+		newOptind += clipn;
 	}
 
 	if (Optind+1<argc && tar_re_search) {  /* Doing regular expression seaches */
@@ -1755,6 +1762,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 
 		clipn=argc-Optind-1;
 		cliplist=argv+Optind+1;
+		newOptind += clipn;
 	}
 
 	if (Optind>=argc || !strcmp(argv[Optind], "-")) {
@@ -1767,6 +1775,10 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 		if (tarhandle == 1)  {
 			dbf = x_stderr;
 		}
+		if (!strcmp(argv[Optind], "-")) {
+			newOptind++;
+		}
+
 	} else {
 		if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0)) {
 			if (!dry_run) {
@@ -1779,7 +1791,8 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 			DEBUG(0,("Error opening local file %s - %s\n", argv[Optind], strerror(errno)));
 			return(0);
 		}
+		newOptind++;
 	}
 
-	return 1;
+	return newOptind;
 }

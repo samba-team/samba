@@ -2824,9 +2824,25 @@ static void remember_query_host(const char *arg,
 			max_protocol = interpret_protocol(poptGetOptArg(pc), max_protocol);
 			break;
 		case 'T':
-			if (!tar_parseargs(argc, argv, poptGetOptArg(pc), optind)) {
-				poptPrintUsage(pc, stderr, 0);
-				exit(1);
+			/* We must use old option processing for this. Find the
+			 * position of the -T option in the raw argv[]. */
+			{
+				int i, optnum;
+				for (i = 1; i < argc; i++) {
+					if (strncmp("-T", argv[i],2)==0)
+						break;
+				}
+				i++;
+				if (!(optnum = tar_parseargs(argc, argv, poptGetOptArg(pc), i))) {
+					poptPrintUsage(pc, stderr, 0);
+					exit(1);
+				}
+				/* Now we must eat (optnum - i) options - they have
+				 * been processed by tar_parseargs().
+				 */
+				optnum -= i;
+				for (i = 0; i < optnum; i++)
+					poptGetOptArg(pc);
 			}
 			break;
 		case 'D':
@@ -2851,7 +2867,7 @@ static void remember_query_host(const char *arg,
 		}
 	}
 
-	if (poptPeekArg(pc)) { 
+	if (poptPeekArg(pc) && !cmdline_auth_info.got_pass) { 
 		cmdline_auth_info.got_pass = True;
 		pstrcpy(cmdline_auth_info.password,poptGetArg(pc));  
 	}
