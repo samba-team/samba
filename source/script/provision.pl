@@ -322,6 +322,8 @@ $basedn = "DC=" . join(",DC=", split(/\./, $opt_realm));
 my $data = FileLoad("provision.ldif") || die "Unable to load provision.ldif\n";
 
 $data .= add_foreign("S-1-5-7", "Anonymous", "\${NOBODY}");
+$data .= add_foreign("S-1-1-0", "World", "\${NOGROUP}");
+$data .= add_foreign("S-1-5-2", "Network", "\${NOGROUP}");
 $data .= add_foreign("S-1-5-18", "System", "root");
 $data .= add_foreign("S-1-5-11", "Authenticated Users", "\${USERS}");
 
