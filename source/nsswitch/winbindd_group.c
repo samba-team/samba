@@ -919,24 +919,6 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 	return WINBINDD_OK;
 }
 
-static void add_gid_to_array_unique(gid_t gid, gid_t **gids, int *num)
-{
-	int i;
-
-	for (i=0; i<*num; i++) {
-		if ((*gids)[i] == gid)
-			return;
-	}
-
-	*gids = Realloc(*gids, (*num+1) * sizeof(gid_t));
-
-	if (*gids == NULL)
-		return;
-
-	(*gids)[*num] = gid;
-	*num += 1;
-}
-
 static void add_local_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 {
 	gid_t gid;
