@@ -49,6 +49,10 @@ struct sl_cmd {
 
 typedef struct sl_cmd SL_cmd;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void sl_help (SL_cmd *, int argc, char **argv);
 int  sl_loop (SL_cmd *, const char *prompt);
 int  sl_command_loop (SL_cmd *cmds, const char *prompt, void **data);
@@ -56,5 +60,8 @@ int  sl_command (SL_cmd *cmds, int argc, char **argv);
 int sl_make_argv(char*, int*, char***);
 void sl_apropos (SL_cmd *cmd, const char *topic);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SL_H */
