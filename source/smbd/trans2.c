@@ -1785,7 +1785,10 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 18;
-			SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);	
+			if (SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+				return(UNIXERROR(ERRHRD,ERRgeneral));
+			}
+
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
 				SMB_BIG_UINT factor = block_size/bsize;
@@ -1877,7 +1880,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 24;
-			SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);
+			if (SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+				return(UNIXERROR(ERRHRD,ERRgeneral));
+			}
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
 				SMB_BIG_UINT factor = block_size/bsize;
@@ -1907,7 +1912,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		{
 			SMB_BIG_UINT dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 32;
-			SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize);
+			if (SMB_VFS_DISK_FREE(conn,".",False,&bsize,&dfree,&dsize) == (SMB_BIG_UINT)-1) {
+				return(UNIXERROR(ERRHRD,ERRgeneral));
+			}
 			block_size = lp_block_size(snum);
 			if (bsize < block_size) {
 				SMB_BIG_UINT factor = block_size/bsize;
