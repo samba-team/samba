@@ -1,3 +1,8 @@
+Thu Apr  8 15:06:40 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* ftpd/ftpd.c: remove definition of KRB_VERIFY_USER (moved to
+ 	config.h)
+
 Wed Apr  7 16:15:21 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* ftp/gssapi.c (gss_auth): call gss_display_status to get a sane
