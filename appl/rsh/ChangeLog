@@ -1,3 +1,7 @@
+Wed Mar 24 03:59:42 1999  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c (loop): more braces to make gcc happy
+
 Tue Mar 23 17:08:32 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* rsh_locl.h: kafs.h
