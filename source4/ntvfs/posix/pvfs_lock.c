@@ -91,7 +91,7 @@ static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
   range, so we should try the lock again. Note that on timeout we
   do retry the lock, giving it a last chance.
 */
-static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
+static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reason)
 {
 	struct pvfs_pending_lock *pending = private;
 	struct pvfs_state *pvfs = pending->pvfs;
@@ -102,6 +102,10 @@ static void pvfs_pending_lock_continue(void *private, BOOL timed_out)
 	enum brl_type rw;
 	NTSTATUS status;
 	int i;
+	BOOL timed_out;
+
+	/* we consider a cancel to be a timeout */
+	timed_out = (reason != PVFS_WAIT_EVENT);
 
 	locks = lck->lockx.in.locks + lck->lockx.in.ulock_cnt;
 

@@ -29,14 +29,14 @@
 struct pvfs_wait {
 	struct pvfs_wait *next, *prev;
 	struct pvfs_state *pvfs;
-	void (*handler)(void *, BOOL);
+	void (*handler)(void *, enum pvfs_wait_notice);
 	void *private;
 	struct timed_event *te;
 	int msg_type;
 	struct messaging_context *msg_ctx;
 	struct event_context *ev;
 	struct smbsrv_request *req;
-	BOOL timed_out;
+	enum pvfs_wait_notice reason;
 };
 
 /*
@@ -48,7 +48,7 @@ NTSTATUS pvfs_async_setup(struct ntvfs_module_context *ntvfs,
 			  struct smbsrv_request *req, void *private)
 {
 	struct pvfs_wait *pwait = private;
-	pwait->handler(pwait->private, pwait->timed_out);
+	pwait->handler(pwait->private, pwait->reason);
 	return NT_STATUS_OK;
 }
 
@@ -68,7 +68,7 @@ static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uin
 	    *(void **)data->data != pwait->private) {
 		return;
 	}
-	pwait->timed_out = False;
+	pwait->reason = PVFS_WAIT_EVENT;
 	req = pwait->req;
 
 	/* the extra reference here is to ensure that the req
@@ -90,7 +90,7 @@ static void pvfs_wait_timeout(struct event_context *ev,
 	struct pvfs_wait *pwait = te->private;
 	struct smbsrv_request *req = pwait->req;
 
-	pwait->timed_out = True;
+	pwait->reason = PVFS_WAIT_TIMEOUT;
 
 	talloc_increase_ref_count(req);
 	ntvfs_async_setup(pwait->req, pwait);
@@ -117,11 +117,11 @@ static int pvfs_wait_destructor(void *ptr)
   the return value is a handle. To stop waiting talloc_free this
   handle.
 */
-void *pvfs_wait_message(struct pvfs_state *pvfs, 
+ void *pvfs_wait_message(struct pvfs_state *pvfs, 
 			struct smbsrv_request *req, 
 			int msg_type, 
 			struct timeval end_time,
-			void (*fn)(void *, BOOL),
+			void (*fn)(void *, enum pvfs_wait_notice),
 			void *private)
 {
 	struct timed_event te;
@@ -180,8 +180,9 @@ NTSTATUS pvfs_cancel(struct ntvfs_module_context *ntvfs, struct smbsrv_request *
 	for (pwait=pvfs->wait_list;pwait;pwait=pwait->next) {
 		if (SVAL(req->in.hdr, HDR_MID) == SVAL(pwait->req->in.hdr, HDR_MID) &&
 		    req->smbpid == pwait->req->smbpid) {
-			/* trigger an early timeout */
-			pvfs_wait_timeout(pwait->ev, pwait->te, timeval_current());
+			/* trigger a cancel on the request */
+			pwait->reason = PVFS_WAIT_CANCEL;
+			ntvfs_async_setup(pwait->req, pwait);
 			return NT_STATUS_OK;
 		}
 	}
