@@ -123,12 +123,15 @@ void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 		return;
 	}
 
+	mem_ctx = talloc_init("gwsam_connect");
 	/* If connected, get list of jobs */
 	status = dcerpc_pipe_connect_b(&sam_pipe, gtk_rpc_binding_dialog_get_binding(d, mem_ctx), DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION, lp_workgroup(), gtk_rpc_binding_dialog_get_username(d), gtk_rpc_binding_dialog_get_password(d));
+
 	if(!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);
 		sam_pipe = NULL;
 		gtk_widget_destroy(GTK_WIDGET(d));
+		talloc_destroy(mem_ctx);
 		return;
 	}
 
@@ -136,7 +139,6 @@ void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.connect_handle = &sam_handle;
 
-	mem_ctx = talloc_init("connect");                                                                                                 
 	status = dcerpc_samr_Connect(sam_pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		gtk_show_ntstatus(mainwin, status);

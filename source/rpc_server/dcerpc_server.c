@@ -1178,7 +1178,7 @@ BOOL subsystem_dcerpc_init(void)
 		return False;
 	}
 
-	/* FIXME: Perhaps panic if a basic endpoint server, such as EPMAPER, fails to initialise? */
+	/* FIXME: Perhaps panic if a basic endpoint server, such as EPMAPPER, fails to initialise? */
 	static_init_dcerpc;
 
 	DEBUG(3,("DCERPC subsystem version %d initialised\n", DCERPC_MODULE_VERSION));
