@@ -48,6 +48,11 @@ struct winbindd_cli_state {
 	struct winbindd_response response;        /* Respose to client */
 	struct getent_state *getpwent_state;      /* State for getpwent() */
 	struct getent_state *getgrent_state;      /* State for getgrent() */
+
+	/* Local groups for getgrent() */
+	char **local_group_names;
+	int num_local_group_names;
+	int local_group_ndx;
 };
 
 /* State between get{pw,gr}ent() calls */
