@@ -243,6 +243,24 @@ ScreenSaver(int save)
 static void talk(int force_erase);
 static unsigned long look(void);
 
+static int
+zrefresh()
+{
+  switch (fork()) {
+  case -1:
+      fprintf(stderr, "Warning %s: Failed to fork zrefresh\n", ProgName);
+      return -1;
+  case 0:
+      /* Child */
+      execlp("zrefresh", "zrefresh", 0);
+      fprintf(stderr, "Warning %s: Failed to exec zrefresh\n", ProgName);
+      return -1;
+  default:
+      /* Parent */
+      break;
+  }
+  return 0;
+}
 
 static void
 leave(void)
@@ -254,6 +272,7 @@ leave(void)
     XUngrabKeyboard(dpy, CurrentTime);
 #endif
     ScreenSaver(0);
+    zrefresh();
     exit(0);
 }
 
