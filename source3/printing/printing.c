@@ -320,8 +320,63 @@ static void print_cache_flush(int snum)
 }
 
 /****************************************************************************
+ Check if someone already thinks they are doing the update.
+****************************************************************************/
+
+static pid_t get_updating_pid(fstring printer_name)
+{
+	fstring keystr;
+	TDB_DATA data, key;
+	pid_t updating_pid;
+
+	slprintf(keystr, sizeof(keystr), "UPDATING/%s", printer_name);
+    	key.dptr = keystr;
+	key.dsize = strlen(keystr);
+
+	data = tdb_fetch(tdb, key);
+	if (!data.dptr || data.dsize != sizeof(pid_t))
+		return (pid_t)-1;
+
+	memcpy(&updating_pid, data.dptr, sizeof(pid_t));
+	free(data.dptr);
+
+	if (process_exists(updating_pid))
+		return updating_pid;
+
+	return (pid_t)-1;
+}
+
+/****************************************************************************
+ Set the fact that we're doing the update, or have finished doing the update
+ in th tdb.
+****************************************************************************/
+
+static void set_updating_pid(fstring printer_name, BOOL delete)
+{
+	fstring keystr;
+	TDB_DATA key;
+	TDB_DATA data;
+	pid_t updating_pid = getpid();
+
+	slprintf(keystr, sizeof(keystr), "UPDATING/%s", printer_name);
+    	key.dptr = keystr;
+	key.dsize = strlen(keystr);
+
+	if (delete) {
+		tdb_delete(tdb, key);
+		return;
+	}
+	
+	data.dptr = (void *)&updating_pid;
+	data.dsize = sizeof(pid_t);
+
+	tdb_store(tdb, key, data, TDB_REPLACE);	
+}
+
+/****************************************************************************
 update the internal database from the system print queue for a queue
 ****************************************************************************/
+
 static void print_queue_update(int snum)
 {
 	char *path = lp_pathname(snum);
@@ -334,21 +389,71 @@ static void print_queue_update(int snum)
 	print_status_struct old_status;
 	struct printjob *pjob;
 	struct traverse_struct tstruct;
-	fstring keystr, printer_name;
+	fstring keystr, printer_name, cachestr;
 	TDB_DATA data, key;
-              
+
 	/* Convert printer name (i.e. share name) to unix-codepage for all of the 
 	 * following tdb key generation */
 	fstrcpy(printer_name, lp_servicename(snum));
 	dos_to_unix(printer_name, True);
 	
 	/*
-	 * Update the cache time FIRST ! Stops others doing this
-	 * if the lpq takes a long time.
+	 * Check to see if someone else is doing this update.
+	 * This is essentially a mutex on the update.
 	 */
 
-	slprintf(keystr, sizeof(keystr), "CACHE/%s", printer_name);
-	tdb_store_int(tdb, keystr, (int)time(NULL));
+	if (get_updating_pid(printer_name) == -1) {
+		/* Lock the queue for the database update */
+
+		slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
+		tdb_lock_bystring(tdb, keystr);
+
+		/*
+		 * Ensure that no one else got in here.
+		 * If the updating pid is still -1 then we are
+		 * the winner.
+		 */
+
+		if (get_updating_pid(printer_name) != -1) {
+			/*
+			 * Someone else is doing the update, exit.
+			 */
+			tdb_unlock_bystring(tdb, keystr);
+			return;
+		}
+
+		/*
+		 * We're going to do the update ourselves.
+		 */
+
+		/* Tell others we're doing the update. */
+		set_updating_pid(printer_name, False);
+
+		/*
+		 * Allow others to enter and notice we're doing
+		 * the update.
+		 */
+
+		tdb_unlock_bystring(tdb, keystr);
+
+		/*
+		 * Update the cache time FIRST ! Stops others even
+		 * attempting to get the lock and doing this
+		 * if the lpq takes a long time.
+		 */
+
+		slprintf(cachestr, sizeof(cachestr), "CACHE/%s", printer_name);
+		tdb_store_int(tdb, cachestr, (int)time(NULL));
+
+	}
+	else
+	{
+		/*
+		 * Someone else is already doing the update, defer to
+		 * them.
+		 */
+		return;
+	}
 
 	slprintf(tmp_file, sizeof(tmp_file), "%s/smblpq.%d", path, local_pid);
 
@@ -378,11 +483,6 @@ static void print_queue_update(int snum)
 
 	DEBUG(3, ("%d job%s in queue for %s\n", qcount, (qcount != 1) ?
 		"s" : "", printer_name));
-
-	/* Lock the queue for the database update */
-
-	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
-	tdb_lock_bystring(tdb, keystr);
 
 	/*
 	  any job in the internal database that is marked as spooled
@@ -446,18 +546,13 @@ static void print_queue_update(int snum)
 
 	/* store the new queue status structure */
 	slprintf(keystr, sizeof(keystr), "STATUS/%s", printer_name);
-    key.dptr = keystr;
+	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 
 	status.qcount = qcount;
 	data.dptr = (void *)&status;
 	data.dsize = sizeof(status);
 	tdb_store(tdb, key, data, TDB_REPLACE);	
-
-	/* Unlock for database update */
-
-	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", printer_name);
-	tdb_unlock_bystring(tdb, keystr);
 
 	/*
 	 * Update the cache time again. We want to do this call
@@ -466,6 +561,9 @@ static void print_queue_update(int snum)
 
 	slprintf(keystr, sizeof(keystr), "CACHE/%s", printer_name);
 	tdb_store_int(tdb, keystr, (int)time(NULL));
+
+	/* Delete our pid from the db. */
+	set_updating_pid(printer_name, True);
 }
 
 /****************************************************************************
