@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -190,37 +190,49 @@ do_get_entry(krb5_principal principal, void *data)
     return 0;
 }
 
-int
-get_entry(int argc, char **argv)
+static int
+getit(const char *name, int terse_flag, int argc, char **argv)
 {
     int i;
     krb5_error_code ret;
     struct get_entry_data data;
     struct getargs args[] = {
 	{ "long",	'l',	arg_flag,	NULL, "long format" },
+	{ "short",	's',	arg_flag,	NULL, "short format" },
 	{ "terse",	't',	arg_flag,	NULL, "terse format" },
     };
     int num_args = sizeof(args) / sizeof(args[0]);
     int optind = 0;
-    int long_flag = 0;
-    int terse_flag = 0;
+    int long_flag = -1;
+    int short_flag = -1;
     
     args[0].value = &long_flag;
-    args[1].value = &terse_flag;
+    args[1].value = &short_flag;
+    args[2].value = &terse_flag;
+
     if(getarg(args, num_args, argc, argv, &optind))
 	goto usage;
     if(optind == argc)
 	goto usage;
 
+    if(long_flag == -1 && (short_flag == 1 || terse_flag == 1))
+	long_flag = 0;
+    if(short_flag == -1 && (long_flag == 1 || terse_flag == 1))
+	short_flag = 0;
+    if(terse_flag == -1 && (long_flag == 1 || short_flag == 1))
+	terse_flag = 0;
+    if(long_flag == 0 && short_flag == 0 && terse_flag == 0)
+	short_flag = 1;
+
     if(long_flag) {
 	data.format = print_entry_long;
 	data.header = NULL;
+    } else if(short_flag){
+	data.format = print_entry_short;
+	data.header = print_header_short;
     } else if(terse_flag) {
 	data.format = print_entry_terse;
 	data.header = NULL;
-    } else {
-	data.format = print_entry_short;
-	data.header = print_header_short;
     }
 
     argc -= optind;
@@ -230,21 +242,18 @@ get_entry(int argc, char **argv)
 	ret = foreach_principal(argv[i], do_get_entry, &data);
     return 0;
 usage:
-    arg_printusage (args, num_args, "get", "principal...");
+    arg_printusage (args, num_args, name, "principal...");
     return 0;
+}
+
+int
+get_entry(int argc, char **argv)
+{
+    return getit("get", 0, argc, argv);
 }
 
 int
 list_princs(int argc, char **argv)
 {
-    int i;
-    krb5_error_code ret;
-    struct get_entry_data data;
-
-    data.format = print_entry_terse;
-    data.header = NULL;
-    
-    for(i = 1; i < argc; i++)
-	ret = foreach_principal(argv[i], do_get_entry, &data);
-    return 0;
+    return getit("list", 1, argc, argv);
 }
