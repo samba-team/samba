@@ -51,6 +51,10 @@ des_clock_rand(unsigned char *data, int size)
     struct sigaction sa, osa;
     int i;
   
+    /*
+     * First try to open /dev/random.
+     */
+
     gdata = data;
     gsize = size;
     igdata = 0;
