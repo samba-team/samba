@@ -38,6 +38,8 @@ extern pstring global_myname;
 static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 				uint16 level,
 				SAM_USERINFO_CTR *ctr,
+				DOM_GID **gids,
+				uint32 *num_grps,
 				BOOL set)
 {
 	POLICY_HND sam_pol;
@@ -49,6 +51,7 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 	uint32 status_dom = NT_STATUS_NOPROBLEMO;
 	uint32 status_usr = NT_STATUS_NOPROBLEMO;
 	uint32 status_pwd = NT_STATUS_NOPROBLEMO;
+	uint32 status_grp = NT_STATUS_NOPROBLEMO;
 
 	ZERO_STRUCTP(ctr);
 
@@ -80,6 +83,11 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 	}
 	if (status_usr == NT_STATUS_NOPROBLEMO)
 	{
+		if (set && gids != NULL && num_grps != NULL)
+		{
+			status_grp = _samr_query_usergroups(&usr_pol,
+			                                    num_grps, gids);
+		}
 		if (set)
 		{
 			status_pwd = _samr_set_userinfo(&usr_pol, level, ctr);
@@ -93,12 +101,22 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 	if (status_dom == NT_STATUS_NOPROBLEMO) _samr_close(&dom_pol);
 	if (status_sam == NT_STATUS_NOPROBLEMO) _samr_close(&sam_pol);
 
-	if (status_pwd == NT_STATUS_NOPROBLEMO && ctr->info.id == NULL)
+	if (status_pwd != NT_STATUS_NOPROBLEMO)
 	{
-		status_pwd = NT_STATUS_NO_MEMORY;
+		return status_pwd;
 	}
 
-	return status_pwd;
+	if (status_grp != NT_STATUS_NOPROBLEMO)
+	{
+		return status_grp;
+	}
+
+	if (ctr->info.id == NULL)
+	{
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /******************************************************************
@@ -136,7 +154,8 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 	 * must do all this as root
 	 */
 	become_root(True);
-	status_pwd = direct_samr_userinfo(&uni_trust_acct, 0x12, &ctr, False);
+	status_pwd = direct_samr_userinfo(&uni_trust_acct, 0x12, &ctr,
+	                                   NULL, NULL, False);
 	unbecome_root(True);
 
 	if (status_pwd == NT_STATUS_NOPROBLEMO)
@@ -166,7 +185,8 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	SAM_USERINFO_CTR ctr;
 
 	become_root(True);
-	status = direct_samr_userinfo(uni_samusr, 0x12, &ctr, False);
+	status = direct_samr_userinfo(uni_samusr, 0x12, &ctr, 
+	                                   NULL, NULL, False);
 	unbecome_root(True);
 
 	if (status != NT_STATUS_NOPROBLEMO)
@@ -226,9 +246,14 @@ static uint32 net_login_general(NET_ID_INFO_4 *id4,
 #endif
 	DEBUG(5,("\n"));
 
+	DEBUG(0,("net_login_general: TODO - \"update encrypted\" disabled\n"));
+
 	if (pass_check(user, general, pw_len, NULL,
+#if 0
 	                    lp_update_encrypted() ?
-	                    update_smbpassword_file : NULL) ) 
+	                    update_smbpassword_file :
+#endif
+	                    NULL) ) 
 	{
 		unsigned char key[16];
 
@@ -279,7 +304,8 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	unistr2_to_ascii(domain, &id2->uni_domain_name, sizeof(domain)-1);
 
 	become_root(True);
-	status = direct_samr_userinfo(uni_samusr, 0x12, &ctr, False);
+	status = direct_samr_userinfo(uni_samusr, 0x12, &ctr, 
+	                                   NULL, NULL, False);
 	unbecome_root(True);
 
 	if (status != NT_STATUS_NOPROBLEMO)
@@ -640,16 +666,18 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 			    uint16 remote_pid)
 {
 	pstring trust_acct;
-	struct smb_passwd *smb_pass;
 	unsigned char hash3_pwd[16];
-	BOOL ret;
+	uint32 status_pwd;
 
 	fstring trust_name;
 	struct dcinfo dc;
+	const UNISTR2 *uni_samusr;
+	SAM_USERINFO_CTR ctr;
 
 	ZERO_STRUCT(dc);
 
-	unistr2_to_ascii(trust_name, &(clnt_id->login.uni_comp_name),
+	uni_samusr = &(clnt_id->login.uni_comp_name);
+	unistr2_to_ascii(trust_name, uni_samusr,
 	                             sizeof(trust_name)-1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
@@ -672,14 +700,16 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 	DEBUG(3,("Server Password Set Wksta:[%s]\n", trust_acct));
 
 	become_root(True);
-	smb_pass = getsmbpwnam(trust_acct);
+	status_pwd = direct_samr_userinfo(uni_samusr, 0x12, &ctr, 
+	                                   NULL, NULL, False);
 	unbecome_root(True);
 
-	if (smb_pass == NULL)
+	if (status_pwd != NT_STATUS_NOPROBLEMO)
 	{
-		return NT_STATUS_WRONG_PASSWORD;
+		free_samr_userinfo_ctr(&ctr);
+		return status_pwd;
 	}
-
+	
 	/* Some debug output, needed an iterater variable */
 	{
 		int i;
@@ -695,19 +725,19 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO *clnt_id,
 	cred_hash3( hash3_pwd, pwd, dc.sess_key, 0);
 
 	/* lies!  nt and lm passwords are _not_ the same: don't care */
-	smb_pass->smb_passwd    = hash3_pwd;
-	smb_pass->smb_nt_passwd = hash3_pwd;
-	smb_pass->acct_ctrl     = ACB_WSTRUST;
+	memcpy(ctr.info.id12->lm_pwd, hash3_pwd, sizeof(hash3_pwd));
+	memcpy(ctr.info.id12->nt_pwd, hash3_pwd, sizeof(hash3_pwd));
 
 	become_root(True);
-	ret = mod_smbpwd_entry(smb_pass,False);
+	status_pwd = direct_samr_userinfo(uni_samusr, 0x12, &ctr, 
+	                                   NULL, NULL, True);
 	unbecome_root(True);
 
-	if (!ret)
+	if (status_pwd != NT_STATUS_NOPROBLEMO)
 	{
-		return NT_STATUS_ACCESS_DENIED;
+		return status_pwd;
 	}
-
+	
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_INVALID_HANDLE;
@@ -755,7 +785,6 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	uint32 group_rid;
 
 	int num_gids = 0;
-	DOMAIN_GRP *grp_mem = NULL;
 	DOM_GID *gids = NULL;
 
 	fstring trust_name;
@@ -853,7 +882,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	 * added by "update encrypted" in general login
 	 */
 	become_root(True);
-	status_pwd = direct_samr_userinfo(uni_samusr, 21, &ctr, False);
+	status_pwd = direct_samr_userinfo(uni_samusr, 21, &ctr, 
+	                                   &gids, &num_gids, False);
 	unbecome_root(True);
 
 	if (status_pwd != NT_STATUS_NOPROBLEMO)
@@ -930,6 +960,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 		}
 		if (status != NT_STATUS_NOPROBLEMO)
 		{
+			safe_free(gids);
 			free_samr_userinfo_ctr(&ctr);
 			return status;
 		}
@@ -944,14 +975,6 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 
 	/* set up pointer indicating user/password failed to be found */
 	user->ptr_user_info = 0;
-
-	if (!getusergroupsntnam(nt_username, &grp_mem, &num_gids))
-	{
-		free_samr_userinfo_ctr(&ctr);
-		return NT_STATUS_INVALID_PRIMARY_GROUP;
-	}
-
-	num_gids = make_dom_gids(grp_mem, num_gids, &gids);
 
 	make_unistr2(&uni_myname, global_myname, strlen(global_myname));
 	make_unistr2(&uni_sam_name, global_sam_name, strlen(global_sam_name));
@@ -992,7 +1015,6 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 
 	/* Free any allocated groups array. */
 	safe_free(gids);
-
 	free_samr_userinfo_ctr(&ctr);
 
 	if (!cred_store(remote_pid, global_sam_name, trust_name, &dc))
@@ -1131,6 +1153,7 @@ uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 				 	    &usr->uni_munged_dial);
 
 			i++;
+			free_samr_userinfo_ctr(&ctr);
 		}
 
 		if (status_usr == NT_STATUS_NOPROBLEMO)

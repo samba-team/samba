@@ -240,8 +240,10 @@ GROUPDB_OBJ = groupdb/groupdb.o groupdb/aliasdb.o groupdb/builtindb.o \
 
 SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o passdb/sampassldap.o passdb/mysqlsampass.o passdb/sampassnt5ldap.o
 
+UNIXPASSDB_OBJ = passdb/pass_check.o 
+
 PASSDB_OBJ = passdb/passdb.o passdb/smbpass.o \
-             passdb/pass_check.o passdb/ldap.o passdb/ldapdb.o passdb/nt5ldap.o passdb/nispass.o \
+             passdb/ldap.o passdb/ldapdb.o passdb/nt5ldap.o passdb/nispass.o \
              passdb/smbpasschange.o passdb/mysqlpass.o passdb/smbpassnt5ldap.o \
              lib/util_pwdb.o lib/domain_namemap.o 
 
@@ -259,7 +261,6 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o smbd/vfs.o \
 	    smbd/vfs-wrap.o smbd/dfs.o \
 		smbd/challenge.o \
-		passdb/pass_check.o \
 		lib/util_pwdb.o
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
@@ -288,7 +289,6 @@ NETLOGOND_OBJ1 = netlogond/netlogond.o \
 		netlogond/srv_netlogon_nt.o \
 		rpc_server/srv_netlog.o \
 		rpc_server/srv_pipe_netsec.o \
-		rpc_server/srv_lookup.o \
 		lib/passcheck.o
 
 SAMRTDBLIB_OBJ = lib/sursalgdomonly.o \
@@ -332,7 +332,7 @@ SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 		spoolssd/srv_spoolss_nt.o \
 		printing/nt_printing.o 
 
-SMBD_OBJ = $(SMBD_OBJ1) \
+SMBD_OBJ = $(SMBD_OBJ1) $(UNIXPASSDB_OBJ) \
            $(RPC_SERVER_OBJ) \
            libsmb/clienttrust.o \
            lib/domain_namemap.o \
@@ -378,11 +378,11 @@ NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
-		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
+		$(UNIXPASSDB_OBJ) $(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
 
 NETLOGOND_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAMRPASSLIB)
 
-NETLOGONTDBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SIDDB_OBJ) $(SAMRTDBLIB)  
+NETLOGONTDBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB)  
 
 NETLOGONNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB)  
 
@@ -430,6 +430,7 @@ SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o libsmb/passchange.o $(LOCKING_OBJ) \
            rpc_server/srv_lookup.o \
            $(SIDDB_OBJ) \
+           $(UNIXPASSDB_OBJ) \
            $(STUB_UID_OBJ)
 SWAT_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
 
