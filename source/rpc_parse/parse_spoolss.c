@@ -29,20 +29,20 @@
 #define TNG
 
 #ifdef TNG
-	#undef prs_uint16 
-	#undef prs_uint32
-	#undef prs_uint8s
-	#undef prs_uint16s
-	#undef prs_unistr
-	#undef prs_unistr2
-	#define prs_uint16 _prs_uint16
-	#define prs_uint32 _prs_uint32
-	#define prs_uint8s _prs_uint8s
-	#define prs_uint16s _prs_uint16s
-	#define prs_unistr _prs_unistr
-	#define prs_unistr2 _prs_unistr2
-	#define init_unistr2 make_unistr2
-	#define init_buf_unistr2 make_buf_unistr2
+#undef prs_uint16 
+#undef prs_uint32
+#undef prs_uint8s
+#undef prs_uint16s
+#undef prs_unistr
+#undef prs_unistr2
+#define prs_uint16 _prs_uint16
+#define prs_uint32 _prs_uint32
+#define prs_uint8s _prs_uint8s
+#define prs_uint16s _prs_uint16s
+#define prs_unistr _prs_unistr
+#define prs_unistr2 _prs_unistr2
+#define init_unistr2 make_unistr2
+#define init_buf_unistr2 make_buf_unistr2
 #endif
 
 
