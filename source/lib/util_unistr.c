@@ -55,7 +55,7 @@ static uint16 *ucs2_to_unixcp;
 size_t dos_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
 {
 	size_t ret = 0;
-	while (*src && (len > 2)) {
+	while (*src && (len >= 2)) {
 		size_t skip = get_character_len(*src);
 		smb_ucs2_t val = (*src & 0xff);
 

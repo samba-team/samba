@@ -184,11 +184,15 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 
 #ifdef HAVE_SETGROUPS
 	sys_setgroups(ngroups, groups);
+#endif
 
 	sec_ctx_stack[sec_ctx_stack_ndx].ngroups = ngroups;
+
+	if (sec_ctx_stack[sec_ctx_stack_ndx].groups != NULL)
+		free(sec_ctx_stack[sec_ctx_stack_ndx].groups);
+
 	sec_ctx_stack[sec_ctx_stack_ndx].groups = 
 		memdup(groups, sizeof(gid_t) * ngroups);
-#endif
 
 	become_id(uid, gid);
 
