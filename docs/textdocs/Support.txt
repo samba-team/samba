@@ -27,7 +27,7 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                24
+    AMERICA - USA                                25
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        6
@@ -540,8 +540,21 @@ telephone 1+ 360 792 6938; mailto:opc@aa.net; http://www.aa.net/~opc;
 Unix Systems and TCP/IP Network design, programming, and administration.
 ------------------------------------------------------------------------------
 
+------------------------------------------------------------------------------
+WASHINGTON STATE - USA
 
+INTERNET:   bill@Celestial.COM  Bill Campbell; Celestial Systems, Inc.
+UUCP:               camco!bill  PO Box 820; 2835 82nd Avenue S.E. S-100
+FAX:            (206) 232-9186  Mercer Island, WA 98040-0820; (206) 236-1676
+URL: http://www.celestial.com/
 
+We provide support for Samba and many other Unix related systems.  Our
+primary systems are SCO, Caldera Linux, and Solaris on Sun systems.
+
+Celestial has been in business since late 1984 working primarily on
+medium to large Unix systems.  More information is available on our
+web site, http://www.celestial.com/.
+------------------------------------------------------------------------------
 
 
 
