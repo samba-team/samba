@@ -25,7 +25,6 @@
 
 extern enum protocol_types Protocol;
 extern int smb_read_error;
-extern fstring local_machine;
 extern int global_oplock_break;
 extern uint32 global_client_caps;
 extern struct current_user current_user;
@@ -1825,7 +1824,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
-			SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
+			SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ (str_checksum(get_local_machine_name())<<16) );
 			len = srvstr_push(outbuf, pdata+l2_vol_szVolLabel, vname, -1, STR_NOALIGN);
 			SCVAL(pdata,l2_vol_cch,len);
 			data_len = l2_vol_szVolLabel + len;
@@ -1868,7 +1867,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			 * the called hostname and the service name.
 			 */
 			SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ 
-				(str_checksum(local_machine)<<16));
+				(str_checksum(get_local_machine_name())<<16));
 
 			len = srvstr_push(outbuf, pdata+18, vname, -1, STR_UNICODE);
 			SIVAL(pdata,12,len);
