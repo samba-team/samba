@@ -257,7 +257,7 @@ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
 int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		  char *domain,BOOL guest, NT_USER_TOKEN *ptok)
+		  char *domain,BOOL guest, NT_USER_TOKEN **pptok)
 {
 	user_struct *vuser = NULL;
 	struct passwd *pwfile; /* for getting real name from passwd file */
@@ -306,11 +306,11 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	initialise_groups(unix_name, uid, gid);
 	get_current_groups( &vuser->n_groups, &vuser->groups);
 
-	if (ptok)
-		add_supplementary_nt_login_groups(&vuser->n_groups, &vuser->groups, &ptok);
+	if (*pptok)
+		add_supplementary_nt_login_groups(&vuser->n_groups, &vuser->groups, pptok);
 
 	/* Create an NT_USER_TOKEN struct for this user. */
-	vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups, guest, ptok);
+	vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups, guest, *pptok);
 
 	next_vuid++;
 	num_validated_vuids++;

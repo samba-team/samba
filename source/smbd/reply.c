@@ -1072,7 +1072,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
 
-  sess_vuid = register_vuid(uid,gid,user,current_user_info.smb_name,domain,guest,ptok);
+  sess_vuid = register_vuid(uid,gid,user,current_user_info.smb_name,domain,guest,&ptok);
 
   delete_nt_token(&ptok);
   
