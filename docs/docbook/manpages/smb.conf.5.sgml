@@ -5229,7 +5229,7 @@
 
   		<para>If the <link linkend="PAMPASSWORDCHANGE"><parameter>pam
  		password change</parameter></link> parameter is set to true, the chat pairs
-                may be matched in any order, and sucess is determined by the PAM result, 
+                may be matched in any order, and success is determined by the PAM result, 
                 not any particular output. The \n macro is ignored for PAM conversions.
   		</para>
 
