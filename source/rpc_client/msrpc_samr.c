@@ -154,7 +154,7 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 	BOOL res = True;
 	BOOL res1 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
-	const char *names[1];
+	char *names[1];
 	uint32 *rids = NULL;
 	uint32 *types = NULL;
 	uint32 num_rids;
@@ -503,7 +503,7 @@ BOOL msrpc_sam_query_user( const char* srv_name,
 	BOOL res = True;
 	BOOL res1 = True;
 
-	const char *names[1];
+	char *names[1];
 	uint32 num_rids;
 	uint32 *rid = NULL;
 	uint32 *type = NULL;
@@ -1308,7 +1308,7 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 	if (ret == (NT_STATUS_USER_EXISTS))
 	{
 		uint32 num_rids;
-		const char *names[1];
+		char *names[1];
 		uint32 *types = NULL;
 		uint32 *rids = NULL;
 
@@ -1979,7 +1979,7 @@ BOOL msrpc_sam_query_userinfo(const char* srv_name, const DOM_SID *sid,
 	BOOL res = True;
 	BOOL res1 = True;
 
-	const char *names[1];
+	char *names[1];
 	uint32 num_rids;
 	uint32 *rids = NULL;
 	uint32 *types = NULL;
@@ -1991,10 +1991,11 @@ BOOL msrpc_sam_query_userinfo(const char* srv_name, const DOM_SID *sid,
 	res = res ? samr_open_domain( &sam_pol, 0x304, sid, &pol_dom) : False;
 
 	/* look up user rid */
-	names[0] = user_name;
+	names[0] = strdup(user_name);
 	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
 					1, names,
 					&num_rids, &rids, &types) : False;
+	safe_free(names[0]);
 
 	/* send user info query */
 	if (res1 && num_rids == 1)
