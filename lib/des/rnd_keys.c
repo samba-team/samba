@@ -111,7 +111,7 @@ sigALRM(int sig)
     SIGRETURN(0);
 }
 
-#if !definded(HAVE_SETITIMER) && defined(HAVE_RANDOM)
+#if !defined(HAVE_SETITIMER) && defined(HAVE_RANDOM)
 
 /* XXX this is a quick hack, should be fixed */
 
