@@ -61,15 +61,12 @@ sub HeaderElement($)
     HeaderType($element, $element->{TYPE}, "");
     pidl " ";
     if ($element->{POINTERS} && $element->{TYPE} ne "string") {
-	    my($n) = $element->{POINTERS};
-	    for (my($i)=$n; $i > 0; $i--) {
+	    for (my($i)=$element->{POINTERS}; $i > 0; $i--) {
 		    pidl "*";
 	    }
-    }
-    if (defined $element->{ARRAY_LEN} && 
-	!util::is_constant($element->{ARRAY_LEN}) &&
-	!$element->{POINTERS}) {
-	    # conformant arrays are ugly! I choose to implement them with
+    } elsif (NdrParser::is_surrounding_array($element) || 
+		defined $element->{ARRAY_LEN} && !util::is_constant($element->{ARRAY_LEN})) {
+	    # surrounding arrays are ugly! I choose to implement them with
 	    # pointers instead of the [1] method
 	    pidl "*";
     }
