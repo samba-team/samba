@@ -833,32 +833,30 @@ winbindd_proto:
 	  $(WINBINDD_OBJ1)
 
 delheaders:
-	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h
-	@/bin/rm -f include/proto.h include/build_env.h
-
-# we want our generated headers to be rebuilt if they don't exist, but not rebuilt every time
-.headers.stamp:
-	@[ -f $@ ] || touch $@
-
-$(PROTO_OBJ) : .headers.stamp
+	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h 
+	@/bin/rm -f $(srcdir)/include/wrepld_proto.h $(srcdir)/nsswitch/winbindd_proto.h 
+	@/bin/rm -f include/proto.h include/build_env.h include/wrepld_proto.h nsswitch/winbindd_proto.h 
 
 include/proto.h:
-	@echo rebuilding include/proto.h
+	@echo Building include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > $(builddir)/include/proto.h
 
 include/build_env.h:
-	@echo rebuilding include/build_env.h
+	@echo Building include/build_env.h
 	@cd $(srcdir) && $(SHELL) script/build_env.sh $(srcdir) $(builddir) $(CC) > $(builddir)/include/build_env.h
 
 include/wrepld_proto.h:
-	@echo rebuilding include/wrepld_proto.h
+	@echo Building include/wrepld_proto.h
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
 	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
 	  $(WREPL_OBJ1)
 
-headers: delheaders include/proto.h include/build_env.h include/wrepld_proto.h .headers.stamp
+headers: 
+	$(MAKE) $(MAKEFLAGS) delheaders include/proto.h include/build_env.h include/wrepld_proto.h winbindd_proto
 
-proto: headers winbindd_proto
+proto: headers 
+
+.PHONY: headers proto
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
