@@ -111,7 +111,9 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	CHECK_STRING(io.out.wins_server, address);
 	CHECK_VALUE(io.out.rcode, 0);
 
-	if (name->type != NBT_NAME_MASTER && nb_flags & NBT_NM_GROUP) {
+	if (name->type != NBT_NAME_MASTER && 
+	    name->type != NBT_NAME_LOGON && 
+	    (nb_flags & NBT_NM_GROUP)) {
 		printf("Try to register as non-group\n");
 		io.in.nb_flags &= ~NBT_NM_GROUP;
 		status = nbt_name_register_wins(nbtsock, mem_ctx, &io);
@@ -152,7 +154,8 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	
 	CHECK_NAME(query.out.name, *name);
 	CHECK_VALUE(query.out.num_addrs, 1);
-	if (nb_flags & NBT_NM_GROUP) {
+	if (name->type != NBT_NAME_LOGON &&
+	    (nb_flags & NBT_NM_GROUP)) {
 		CHECK_STRING(query.out.reply_addrs[0], "255.255.255.255");
 	} else {
 		CHECK_STRING(query.out.reply_addrs[0], myaddress);
@@ -258,7 +261,8 @@ static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
 	printf("query the name to make sure its gone\n");
 	query.in.name = *name;
 	status = nbt_name_query(nbtsock, mem_ctx, &query);
-	if (nb_flags & NBT_NM_GROUP) {
+	if (name->type != NBT_NAME_LOGON &&
+	    (nb_flags & NBT_NM_GROUP)) {
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("ERROR: Name query failed after group release - %s\n",
 			       nt_errstr(status));
@@ -298,6 +302,9 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, const char *address)
 	name.type = NBT_NAME_MASTER;
 	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H);
 
+	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H | NBT_NM_GROUP);
+
+	name.type = NBT_NAME_LOGON;
 	ret &= nbt_test_wins_name(mem_ctx, address, &name, NBT_NODE_H | NBT_NM_GROUP);
 
 	name.scope = "example";
