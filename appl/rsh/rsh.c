@@ -35,13 +35,15 @@
 RCSID("$Id$");
 
 enum auth_method auth_method;
+#if defined(KRB4) || defined(KRB5)
 int do_encrypt       = -1;
-int do_forward       = -1;
-int do_forwardable   = -1;
+#endif
+#ifdef KRB5
 int do_unique_tkfile = 0;
 char *unique_tkfile  = NULL;
 char tkfile[MAXPATHLEN];
-#ifdef KRB5
+int do_forward       = -1;
+int do_forwardable   = -1;
 krb5_context context;
 krb5_keyblock *keyblock;
 krb5_crypto crypto;
@@ -55,7 +57,9 @@ int sock_debug	     = 0;
 #ifdef KRB4
 static int use_v4 = -1;
 #endif
+#ifdef KRB5
 static int use_v5 = -1;
+#endif
 static int use_only_broken = 0;
 static int use_broken = 1;
 static char *port_str;
@@ -748,24 +752,30 @@ struct getargs args[] = {
 #ifdef KRB4
     { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4" },
 #endif
+#ifdef KRB5
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5" },
-    { "broken", 'K', arg_flag,		&use_only_broken, "Use only priv port" },
-    { NULL,	'd', arg_flag,		&sock_debug, "Enable socket debugging" },
-    { "input",	'n', arg_negative_flag,	&input,		"Close stdin" },
-    { "encrypt", 'x', arg_flag,		&do_encrypt,	"Encrypt connection" },
-    { NULL, 	'z', arg_negative_flag,      &do_encrypt,
-      "Don't encrypt connection", NULL },
-    { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials"},
+    { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials (krb5)"},
     { NULL, 'G', arg_negative_flag,&do_forward,	"Don't forward credentials" },
     { "forwardable", 'F', arg_flag,	&do_forwardable,
       "Forward forwardable credentials" },
+#endif
+#if defined(KRB4) || defined(KRB5)
+    { "broken", 'K', arg_flag,		&use_only_broken, "Use only priv port" },
+    { "encrypt", 'x', arg_flag,		&do_encrypt,	"Encrypt connection" },
+    { NULL, 	'z', arg_negative_flag,      &do_encrypt,
+      "Don't encrypt connection", NULL },
+#endif
+#ifdef KRB5
     { "unique", 'u', arg_flag,	&do_unique_tkfile,
-      "Use unique remote tkfile" },
+      "Use unique remote tkfile (krb5)" },
     { "tkfile", 'U', arg_string,  &unique_tkfile,
-      "Use that remote tkfile" },
+      "Use that remote tkfile (krb5)" },
+#endif
+    { NULL,	'd', arg_flag,		&sock_debug, "Enable socket debugging" },
+    { "input",	'n', arg_negative_flag,	&input,		"Close stdin" },
     { "port",	'p', arg_string,	&port_str,	"Use this port",
-      "number-or-service" },
-    { "user",	'l', arg_string,	&user,		"Run as this user" },
+      "port" },
+    { "user",	'l', arg_string,	&user,		"Run as this user", "login" },
     { "stderr", 'e', arg_negative_flag, &do_errsock,	"Don't open stderr"},
     { "version", 0,  arg_flag,		&do_version,	NULL },
     { "help",	 0,  arg_flag,		&do_help,	NULL }
@@ -777,7 +787,7 @@ usage (int ret)
     arg_printusage (args,
 		    sizeof(args) / sizeof(args[0]),
 		    NULL,
-		    "host [command]");
+		    "[login@]host [command]");
     exit (ret);
 }
 
@@ -854,19 +864,23 @@ main(int argc, char **argv)
     else if (do_forward == 0)
 	do_forwardable = 0;
 
+    if (do_forwardable)
+	do_forward = 1;
+#endif
+#if defined(KRB4) || defined(KRB5)
     if (do_encrypt == -1) {
 	/* we want to tell the -x flag from the default encryption
            option */
+#ifdef KRB5
+	/* the normal default for krb4 should be to disable encryption */
 	if(!krb5_config_get_bool (context, NULL,
 				  "libdefaults",
 				  "encrypt",
 				  NULL))
+#endif
 	    do_encrypt = 0;
     }
 #endif
-
-    if (do_forwardable)
-	do_forward = 1;
 
 #if defined(KRB4) && defined(KRB5)
     if(use_v4 == -1 && use_v5 == 1)
@@ -879,7 +893,9 @@ main(int argc, char **argv)
 #ifdef KRB4
 	use_v4 = 0;
 #endif
+#ifdef KRB5
 	use_v5 = 0;
+#endif
     }
 
     if(priv_socket1 < 0) {
@@ -888,10 +904,14 @@ main(int argc, char **argv)
 	use_broken = 0;
     }
 
+#if defined(KRB4) || defined(KRB5)
     if (do_encrypt == 1 && use_only_broken)
 	errx (1, "encryption not supported with old style authentication");
+#endif
 
 
+
+#ifdef KRB5
     if (do_unique_tkfile && unique_tkfile != NULL)
 	errx (1, "Only one of -u and -U allowed.");
 
@@ -905,6 +925,7 @@ main(int argc, char **argv)
 	do_unique_tkfile = 1;
 	snprintf (tkfile, sizeof(tkfile), "-U %s ", unique_tkfile);
     }
+#endif
 
     if (host == NULL) {
 	if (argc - optind < 1)

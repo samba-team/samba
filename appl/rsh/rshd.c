@@ -68,7 +68,9 @@ static int do_kerberos = 0;
 #define DO_KRB5 4
 static int do_vacuous = 0;
 static int do_log = 1;
+#ifdef KRB4
 static int do_newpag = 1;
+#endif
 static int do_addr_verify = 0;
 static int do_keepalive = 1;
 static int do_version;
@@ -601,7 +603,7 @@ setup_environment (char ***env, const struct passwd *pwd)
 }
 
 static void
-doit (int do_kerberos, int check_rhosts)
+doit (void)
 {
     u_char buf[BUFSIZ];
     u_char *p;
@@ -865,18 +867,22 @@ struct getargs args[] = {
     { "keepalive",	'n',	arg_negative_flag,	&do_keepalive },
     { "inetd",		'i',	arg_negative_flag,	&do_inetd,
       "Not started from inetd" },
+#if defined(KRB4) || defined(KRB5)
     { "kerberos",	'k',	arg_flag,	&do_kerberos,
       "Implement kerberised services" },
     { "encrypt",	'x',	arg_flag,		&do_encrypt,
       "Implement encrypted service" },
+#endif
     { "rhosts",		'l',	arg_negative_flag, &do_rhosts,
       "Don't check users .rhosts" },
     { "port",		'p',	arg_string,	&port_str,	"Use this port",
       "port" },
     { "vacuous",	'v',	arg_flag, &do_vacuous,
       "Don't accept non-kerberised connections" },
+#ifdef KRB4
     { NULL,		'P',	arg_negative_flag, &do_newpag,
       "Don't put process in new PAG" },
+#endif
     /* compatibility flag: */
     { NULL,		'L',	arg_flag, &do_log },
     { "version",	0, 	arg_flag,		&do_version },
@@ -918,11 +924,13 @@ main(int argc, char **argv)
 	exit(0);
     }
 
+#if defined(KRB4) || defined(KRB5)
     if (do_encrypt)
 	do_kerberos = 1;
 
     if(do_kerberos)
 	do_kerberos = DO_KRB4 | DO_KRB5;
+#endif
 
     if (do_keepalive &&
 	setsockopt(0, SOL_SOCKET, SO_KEEPALIVE, (char *)&on,
@@ -952,6 +960,7 @@ main(int argc, char **argv)
 		errx (1, "getaddrinfo: %s", gai_strerror (error));
 	}
 	if (ai == NULL) {
+#if defined(KRB4) || defined(KRB5)
 	    if (do_kerberos) {
 		if (do_encrypt) {
 		    error = getaddrinfo(NULL, "ekshell", &hints, &ai);
@@ -970,15 +979,17 @@ main(int argc, char **argv)
 		    if(error) 
 			errx (1, "getaddrinfo: %s", gai_strerror (error));
 		}
-	    } else {
-		error = getaddrinfo(NULL, "shell", &hints, &ai);
-		if(error == EAI_NONAME) {
-		    snprintf(portstr, sizeof(portstr), "%d", 514);
-		    error = getaddrinfo(NULL, portstr, &hints, &ai);
+	    } else
+#endif
+		{
+		    error = getaddrinfo(NULL, "shell", &hints, &ai);
+		    if(error == EAI_NONAME) {
+			snprintf(portstr, sizeof(portstr), "%d", 514);
+			error = getaddrinfo(NULL, portstr, &hints, &ai);
+		    }
+		    if(error) 
+			errx (1, "getaddrinfo: %s", gai_strerror (error));
 		}
-		if(error) 
-		    errx (1, "getaddrinfo: %s", gai_strerror (error));
-	    }
 	}
 	mini_inetd_addrinfo (ai);
 	freeaddrinfo(ai);
@@ -986,6 +997,6 @@ main(int argc, char **argv)
 
     signal (SIGPIPE, SIG_IGN);
 
-    doit (do_kerberos, do_rhosts);
+    doit ();
     return 0;
 }
