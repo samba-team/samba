@@ -39,7 +39,6 @@ krb5_context context;
 static int
 proto (int sock, const char *hostname, const char *service)
 {
-    krb5_context context;
     krb5_auth_context auth_context;
     krb5_error_code status;
     krb5_principal server;
