@@ -21,6 +21,8 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "dlinklist.h"
+#include "asn_1.h"
 
 /*
   close the socket and shutdown a server_context
@@ -443,7 +445,7 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 	uint8_t *buf;
 	int buf_length, msg_length;
 	DATA_BLOB blob;
-	ASN1_DATA data;
+	struct asn1_data data;
 	struct ldapsrv_call *call;
 	NTSTATUS status;
 

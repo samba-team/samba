@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "ioctl.h"
 
 /*
   connect to a share - used when a tree_connect operation comes

@@ -19,15 +19,16 @@
 */
 
 #include "includes.h"
+#include "asn_1.h"
 
 /* free an asn1 structure */
-void asn1_free(ASN1_DATA *data)
+void asn1_free(struct asn1_data *data)
 {
 	talloc_free(data->data);
 }
 
 /* write to the ASN1 buffer, advancing the buffer pointer */
-BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
+BOOL asn1_write(struct asn1_data *data, const void *p, int len)
 {
 	if (data->has_error) return False;
 	if (data->length < data->ofs+len) {
@@ -47,13 +48,13 @@ BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 }
 
 /* useful fn for writing a uint8_t */
-BOOL asn1_write_uint8(ASN1_DATA *data, uint8_t v)
+BOOL asn1_write_uint8(struct asn1_data *data, uint8_t v)
 {
 	return asn1_write(data, &v, 1);
 }
 
 /* push a tag onto the asn1 data buffer. Used for nested structures */
-BOOL asn1_push_tag(ASN1_DATA *data, uint8_t tag)
+BOOL asn1_push_tag(struct asn1_data *data, uint8_t tag)
 {
 	struct nesting *nesting;
 
@@ -71,7 +72,7 @@ BOOL asn1_push_tag(ASN1_DATA *data, uint8_t tag)
 }
 
 /* pop a tag */
-BOOL asn1_pop_tag(ASN1_DATA *data)
+BOOL asn1_pop_tag(struct asn1_data *data)
 {
 	struct nesting *nesting;
 	size_t len;
@@ -110,7 +111,7 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 /* "i" is the one's complement representation, as is the normal result of an
  * implicit signed->unsigned conversion */
 
-static BOOL push_int_bigendian(ASN1_DATA *data, unsigned int i, BOOL negative)
+static BOOL push_int_bigendian(struct asn1_data *data, unsigned int i, BOOL negative)
 {
 	uint8_t lowest = i & 0xFF;
 
@@ -153,7 +154,7 @@ static BOOL push_int_bigendian(ASN1_DATA *data, unsigned int i, BOOL negative)
 /* write an Integer without the tag framing. Needed for example for the LDAP
  * Abandon Operation */
 
-BOOL asn1_write_implicit_Integer(ASN1_DATA *data, int i)
+BOOL asn1_write_implicit_Integer(struct asn1_data *data, int i)
 {
 	if (i == -1) {
 		/* -1 is special as it consists of all-0xff bytes. In
@@ -168,7 +169,7 @@ BOOL asn1_write_implicit_Integer(ASN1_DATA *data, int i)
 
 
 /* write an integer */
-BOOL asn1_write_Integer(ASN1_DATA *data, int i)
+BOOL asn1_write_Integer(struct asn1_data *data, int i)
 {
 	if (!asn1_push_tag(data, ASN1_INTEGER)) return False;
 	if (!asn1_write_implicit_Integer(data, i)) return False;
@@ -176,7 +177,7 @@ BOOL asn1_write_Integer(ASN1_DATA *data, int i)
 }
 
 /* write an object ID to a ASN1 buffer */
-BOOL asn1_write_OID(ASN1_DATA *data, const char *OID)
+BOOL asn1_write_OID(struct asn1_data *data, const char *OID)
 {
 	uint_t v, v2;
 	const char *p = (const char *)OID;
@@ -205,7 +206,7 @@ BOOL asn1_write_OID(ASN1_DATA *data, const char *OID)
 }
 
 /* write an octet string */
-BOOL asn1_write_OctetString(ASN1_DATA *data, const void *p, size_t length)
+BOOL asn1_write_OctetString(struct asn1_data *data, const void *p, size_t length)
 {
 	asn1_push_tag(data, ASN1_OCTET_STRING);
 	asn1_write(data, p, length);
@@ -214,7 +215,7 @@ BOOL asn1_write_OctetString(ASN1_DATA *data, const void *p, size_t length)
 }
 
 /* write a general string */
-BOOL asn1_write_GeneralString(ASN1_DATA *data, const char *s)
+BOOL asn1_write_GeneralString(struct asn1_data *data, const char *s)
 {
 	asn1_push_tag(data, ASN1_GENERAL_STRING);
 	asn1_write(data, s, strlen(s));
@@ -222,7 +223,7 @@ BOOL asn1_write_GeneralString(ASN1_DATA *data, const char *s)
 	return !data->has_error;
 }
 
-BOOL asn1_write_ContextSimple(ASN1_DATA *data, uint8_t num, DATA_BLOB *blob)
+BOOL asn1_write_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blob)
 {
 	asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(num));
 	asn1_write(data, blob->data, blob->length);
@@ -231,7 +232,7 @@ BOOL asn1_write_ContextSimple(ASN1_DATA *data, uint8_t num, DATA_BLOB *blob)
 }
 
 /* write a BOOLEAN */
-BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
+BOOL asn1_write_BOOLEAN(struct asn1_data *data, BOOL v)
 {
 	asn1_push_tag(data, ASN1_BOOLEAN);
 	asn1_write_uint8(data, v ? 0xFF : 0);
@@ -239,7 +240,7 @@ BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 	return !data->has_error;
 }
 
-BOOL asn1_read_BOOLEAN(ASN1_DATA *data, BOOL *v)
+BOOL asn1_read_BOOLEAN(struct asn1_data *data, BOOL *v)
 {
 	uint8_t tmp = 0;
 	asn1_start_tag(data, ASN1_BOOLEAN);
@@ -254,7 +255,7 @@ BOOL asn1_read_BOOLEAN(ASN1_DATA *data, BOOL *v)
 }
 
 /* check a BOOLEAN */
-BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
+BOOL asn1_check_BOOLEAN(struct asn1_data *data, BOOL v)
 {
 	uint8_t b = 0;
 
@@ -272,8 +273,8 @@ BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
 }
 
 
-/* load a ASN1_DATA structure with a lump of data, ready to be parsed */
-BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
+/* load a struct asn1_data structure with a lump of data, ready to be parsed */
+BOOL asn1_load(struct asn1_data *data, DATA_BLOB blob)
 {
 	ZERO_STRUCTP(data);
 	data->data = talloc_memdup(NULL, blob.data, blob.length);
@@ -286,7 +287,7 @@ BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 }
 
 /* Peek into an ASN1 buffer, not advancing the pointer */
-BOOL asn1_peek(ASN1_DATA *data, void *p, int len)
+BOOL asn1_peek(struct asn1_data *data, void *p, int len)
 {
 	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len)
 		return False;
@@ -299,7 +300,7 @@ BOOL asn1_peek(ASN1_DATA *data, void *p, int len)
 }
 
 /* read from a ASN1 buffer, advancing the buffer pointer */
-BOOL asn1_read(ASN1_DATA *data, void *p, int len)
+BOOL asn1_read(struct asn1_data *data, void *p, int len)
 {
 	if (!asn1_peek(data, p, len)) {
 		data->has_error = True;
@@ -311,17 +312,17 @@ BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 }
 
 /* read a uint8_t from a ASN1 buffer */
-BOOL asn1_read_uint8(ASN1_DATA *data, uint8_t *v)
+BOOL asn1_read_uint8(struct asn1_data *data, uint8_t *v)
 {
 	return asn1_read(data, v, 1);
 }
 
-BOOL asn1_peek_uint8(ASN1_DATA *data, uint8_t *v)
+BOOL asn1_peek_uint8(struct asn1_data *data, uint8_t *v)
 {
 	return asn1_peek(data, v, 1);
 }
 
-BOOL asn1_peek_tag(ASN1_DATA *data, uint8_t tag)
+BOOL asn1_peek_tag(struct asn1_data *data, uint8_t tag)
 {
 	uint8_t b;
 
@@ -336,7 +337,7 @@ BOOL asn1_peek_tag(ASN1_DATA *data, uint8_t tag)
 }
 
 /* start reading a nested asn1 structure */
-BOOL asn1_start_tag(ASN1_DATA *data, uint8_t tag)
+BOOL asn1_start_tag(struct asn1_data *data, uint8_t tag)
 {
 	uint8_t b;
 	struct nesting *nesting;
@@ -378,7 +379,7 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8_t tag)
 	return !data->has_error;
 }
 
-static BOOL read_one_uint8(int sock, uint8_t *result, ASN1_DATA *data,
+static BOOL read_one_uint8(int sock, uint8_t *result, struct asn1_data *data,
 			   const struct timeval *endtime)
 {
 	if (read_data_until(sock, result, 1, endtime) != 1)
@@ -388,7 +389,7 @@ static BOOL read_one_uint8(int sock, uint8_t *result, ASN1_DATA *data,
 }
 
 /* Read a complete ASN sequence (ie LDAP result) from a socket */
-BOOL asn1_read_sequence_until(int sock, ASN1_DATA *data,
+BOOL asn1_read_sequence_until(int sock, struct asn1_data *data,
 			      const struct timeval *endtime)
 {
 	uint8_t b;
@@ -444,7 +445,7 @@ BOOL asn1_read_sequence_until(int sock, ASN1_DATA *data,
 BOOL asn1_object_length(uint8_t *buf, size_t buf_length,
 			uint8_t tag, size_t *result)
 {
-	ASN1_DATA data;
+	struct asn1_data data;
 
 	/* Fake the asn1_load to avoid the memdup, this is just to be able to
 	 * re-use the length-reading in asn1_start_tag */
@@ -461,7 +462,7 @@ BOOL asn1_object_length(uint8_t *buf, size_t buf_length,
 }
 
 /* stop reading a tag */
-BOOL asn1_end_tag(ASN1_DATA *data)
+BOOL asn1_end_tag(struct asn1_data *data)
 {
 	struct nesting *nesting;
 
@@ -484,7 +485,7 @@ BOOL asn1_end_tag(ASN1_DATA *data)
 }
 
 /* work out how many bytes are left in this nested tag */
-int asn1_tag_remaining(ASN1_DATA *data)
+int asn1_tag_remaining(struct asn1_data *data)
 {
 	if (!data->nesting) {
 		data->has_error = True;
@@ -494,7 +495,7 @@ int asn1_tag_remaining(ASN1_DATA *data)
 }
 
 /* read an object ID from a ASN1 buffer */
-BOOL asn1_read_OID(ASN1_DATA *data, const char **OID)
+BOOL asn1_read_OID(struct asn1_data *data, const char **OID)
 {
 	uint8_t b;
 	char *tmp_oid = NULL;
@@ -523,7 +524,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, const char **OID)
 }
 
 /* check that the next object ID is correct */
-BOOL asn1_check_OID(ASN1_DATA *data, const char *OID)
+BOOL asn1_check_OID(struct asn1_data *data, const char *OID)
 {
 	const char *id;
 
@@ -538,7 +539,7 @@ BOOL asn1_check_OID(ASN1_DATA *data, const char *OID)
 }
 
 /* read a GeneralString from a ASN1 buffer */
-BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
+BOOL asn1_read_GeneralString(struct asn1_data *data, char **s)
 {
 	int len;
 	if (!asn1_start_tag(data, ASN1_GENERAL_STRING)) return False;
@@ -559,7 +560,7 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 }
 
 /* read a octet string blob */
-BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
+BOOL asn1_read_OctetString(struct asn1_data *data, DATA_BLOB *blob)
 {
 	int len;
 	ZERO_STRUCTP(blob);
@@ -581,7 +582,7 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 	return True;
 }
 
-BOOL asn1_read_ContextSimple(ASN1_DATA *data, uint8_t num, DATA_BLOB *blob)
+BOOL asn1_read_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blob)
 {
 	int len;
 	ZERO_STRUCTP(blob);
@@ -598,7 +599,7 @@ BOOL asn1_read_ContextSimple(ASN1_DATA *data, uint8_t num, DATA_BLOB *blob)
 }
 
 /* read an interger without tag*/
-BOOL asn1_read_implicit_Integer(ASN1_DATA *data, int *i)
+BOOL asn1_read_implicit_Integer(struct asn1_data *data, int *i)
 {
 	uint8_t b;
 	*i = 0;
@@ -612,7 +613,7 @@ BOOL asn1_read_implicit_Integer(ASN1_DATA *data, int *i)
 }
 
 /* read an interger */
-BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
+BOOL asn1_read_Integer(struct asn1_data *data, int *i)
 {
 	*i = 0;
 
@@ -623,7 +624,7 @@ BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 }
 
 /* read an interger */
-BOOL asn1_read_enumerated(ASN1_DATA *data, int *v)
+BOOL asn1_read_enumerated(struct asn1_data *data, int *v)
 {
 	*v = 0;
 	
@@ -637,7 +638,7 @@ BOOL asn1_read_enumerated(ASN1_DATA *data, int *v)
 }
 
 /* check a enumarted value is correct */
-BOOL asn1_check_enumerated(ASN1_DATA *data, int v)
+BOOL asn1_check_enumerated(struct asn1_data *data, int v)
 {
 	uint8_t b;
 	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return False;
@@ -651,7 +652,7 @@ BOOL asn1_check_enumerated(ASN1_DATA *data, int v)
 }
 
 /* write an enumarted value to the stream */
-BOOL asn1_write_enumerated(ASN1_DATA *data, uint8_t v)
+BOOL asn1_write_enumerated(struct asn1_data *data, uint8_t v)
 {
 	if (!asn1_push_tag(data, ASN1_ENUMERATED)) return False;
 	asn1_write_uint8(data, v);

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "dlinklist.h"
 
 /****************************************************************************
 init the tcon structures

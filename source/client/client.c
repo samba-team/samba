@@ -27,6 +27,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 #include "system/dir.h"
+#include "dlinklist.h"
 
 #ifndef REGISTER
 #define REGISTER 0

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 
 /*
   allocate a new rpc handle

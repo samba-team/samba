@@ -27,13 +27,13 @@ struct nesting {
 	struct nesting *next;
 };
 
-typedef struct asn1_data {
+struct asn1_data {
 	uint8_t *data;
 	size_t length;
 	off_t ofs;
 	struct nesting *nesting;
 	BOOL has_error;
-} ASN1_DATA;
+};
 
 #define ASN1_APPLICATION(x) ((x)+0x60)
 #define ASN1_APPLICATION_SIMPLE(x) ((x)+0x40)

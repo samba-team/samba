@@ -57,6 +57,7 @@
 #include "system/iconv.h"
 #include "system/network.h"
 #include "librpc/gen_ndr/ndr_svcctl.h"
+#include "include/dlinklist.h"
 
 BOOL in_client = False;		/* Not in the client by default */
 static BOOL bLoaded = False;

@@ -78,3 +78,6 @@
 #define MAXHOSTNAMELEN 254
 #endif
 
+#ifndef HAVE_SOCKLEN_T_TYPE
+typedef int socklen_t;
+#endif

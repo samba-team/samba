@@ -22,6 +22,7 @@
 
 #include "include/includes.h"
 #include "vfs_posix.h"
+#include "ioctl.h"
 
 /*
   old ioctl interface 

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "asn_1.h"
 
 struct gensec_ntlmssp_state {
 	struct auth_context *auth_context;

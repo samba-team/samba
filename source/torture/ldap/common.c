@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "asn_1.h"
 
 NTSTATUS torture_ldap_bind(struct ldap_connection *conn, const char *userdn, const char *password)
 {
@@ -111,7 +112,7 @@ BOOL ldap_sasl_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
 	DATA_BLOB creds;
 	DATA_BLOB pdu;
 	int len;
-	ASN1_DATA asn1;
+	struct asn1_data asn1;
 	TALLOC_CTX *mem_ctx;
 
 	msg->messageid = conn->next_msgid++;

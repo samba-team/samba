@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
+#include "dlinklist.h"
 
 
 static void smbcli_transport_process_recv(struct smbcli_transport *transport);

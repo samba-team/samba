@@ -27,6 +27,8 @@
 #include "system/network.h"
 #include "system/iconv.h"
 #include "auth/auth.h"
+#include "asn_1.h"
+#include "dlinklist.h"
 
 /****************************************************************************
  *
@@ -303,7 +305,7 @@ static struct ldap_parse_tree *ldap_parse_tree(TALLOC_CTX *mem_ctx, const char *
 	return ldap_parse_simple(mem_ctx, s);
 }
 
-static BOOL ldap_push_filter(ASN1_DATA *data, struct ldap_parse_tree *tree)
+static BOOL ldap_push_filter(struct asn1_data *data, struct ldap_parse_tree *tree)
 {
 	switch (tree->operation) {
 	case LDAP_OP_SIMPLE: {
@@ -354,7 +356,7 @@ static BOOL ldap_push_filter(ASN1_DATA *data, struct ldap_parse_tree *tree)
 	return !data->has_error;
 }
 
-static void ldap_encode_response(ASN1_DATA *data, struct ldap_Result *result)
+static void ldap_encode_response(struct asn1_data *data, struct ldap_Result *result)
 {
 	asn1_write_enumerated(data, result->resultcode);
 	asn1_write_OctetString(data, result->dn,
@@ -369,7 +371,7 @@ static void ldap_encode_response(ASN1_DATA *data, struct ldap_Result *result)
 
 BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 {
-	ASN1_DATA data;
+	struct asn1_data data;
 	int i, j;
 
 	ZERO_STRUCT(data);
@@ -663,7 +665,7 @@ static const char *blob2string_talloc(TALLOC_CTX *mem_ctx,
 }
 
 static BOOL asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
-					 ASN1_DATA *data,
+					 struct asn1_data *data,
 					 const char **result)
 {
 	DATA_BLOB string;
@@ -675,7 +677,7 @@ static BOOL asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
 }
 
 static void ldap_decode_response(TALLOC_CTX *mem_ctx,
-				 ASN1_DATA *data,
+				 struct asn1_data *data,
 				 struct ldap_Result *result)
 {
 	asn1_read_enumerated(data, &result->resultcode);
@@ -690,7 +692,7 @@ static void ldap_decode_response(TALLOC_CTX *mem_ctx,
 	}
 }
 
-static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, ASN1_DATA *data,
+static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 			       char **filter)
 {
 	uint8 filter_tag, tag_desc;
@@ -795,7 +797,7 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, ASN1_DATA *data,
 	return True;
 }
 
-static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, ASN1_DATA *data,
+static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 			       struct ldap_attribute *attrib)
 {
 	asn1_start_tag(data, ASN1_SEQUENCE(0));
@@ -815,7 +817,7 @@ static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, ASN1_DATA *data,
 	
 }
 
-static void ldap_decode_attribs(TALLOC_CTX *mem_ctx, ASN1_DATA *data,
+static void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 				struct ldap_attribute **attributes,
 				int *num_attributes)
 {
@@ -830,7 +832,7 @@ static void ldap_decode_attribs(TALLOC_CTX *mem_ctx, ASN1_DATA *data,
 	asn1_end_tag(data);
 }
 
-BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
+BOOL ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 {
 	uint8 tag;
 

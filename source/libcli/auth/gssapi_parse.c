@@ -23,13 +23,14 @@
 */
 
 #include "includes.h"
+#include "asn_1.h"
 
 /*
   generate a krb5 GSS-API wrapper packet given a ticket
 */
 DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *ticket, const uint8 tok_id[2])
 {
-	ASN1_DATA data;
+	struct asn1_data data;
 	DATA_BLOB ret;
 
 	ZERO_STRUCT(data);
@@ -58,7 +59,7 @@ DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *tick
 BOOL gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, DATA_BLOB *ticket, uint8 tok_id[2])
 {
 	BOOL ret;
-	ASN1_DATA data;
+	struct asn1_data data;
 	int data_remaining;
 
 	asn1_load(&data, *blob);

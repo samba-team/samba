@@ -28,6 +28,7 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 
 #define NDR_BASE_MARSHALL_SIZE 1024
 

@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_oxidresolver.h"
 #include "auth/auth.h"
+#include "dlinklist.h"
 
 /*
   see if two endpoints match

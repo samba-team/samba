@@ -26,6 +26,7 @@
 #include "system/passwd.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/auth.h"
+#include "asn_1.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

@@ -49,8 +49,7 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 	char* realm = NULL;
 	char* c;
 	char* princ;
-
-	ASN1_DATA req;
+	struct asn1_data req;
 	DATA_BLOB ret;
 
 

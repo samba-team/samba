@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 
 
 /* the list of currently registered NTVFS backends, note that there

@@ -110,18 +110,6 @@
 #endif
 
 /*
- * Define additional missing types
- */
-#ifndef HAVE_SIG_ATOMIC_T_TYPE
-typedef int sig_atomic_t;
-#endif
-
-#ifndef HAVE_SOCKLEN_T_TYPE
-typedef int socklen_t;
-#endif
-
-
-/*
    Samba needs type definitions for 
    int8_t,  int16_t,  int32_t, int64_t 
    uint8_t, uint16_t, uint32_t and uint64_t.
@@ -194,7 +182,6 @@ extern int errno;
 
 /* Lists, trees, caching, database... */
 #include "xfile.h"
-#include "dlinklist.h"
 #include "talloc.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/tdb/include/tdb.h"
@@ -203,9 +190,7 @@ extern int errno;
 #include "db_wrap.h"
 #include "nt_status.h"
 #include "trans2.h"
-#include "ioctl.h"
 #include "nterr.h"
-#include "messages.h"
 #include "charset.h"
 #include "dynconfig.h"
 
@@ -220,8 +205,6 @@ extern int errno;
 #include "byteorder.h"
 
 #include "module.h"
-
-#include "asn_1.h"
 
 #include "mutex.h"
 
