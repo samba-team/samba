@@ -121,7 +121,7 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
 BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
                                  enum SID_NAME_USE *type);
 BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
-                              uint32 user_rid, SAM_USERINFO_CTR *user_info);
+                              uint32 user_rid, SAM_USERINFO_CTR **user_info);
 BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 				uint32 user_rid, uint32 *num_groups,
 				DOM_GID **user_groups);
@@ -131,10 +131,6 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
                               uint32 group_rid, uint32 *num_names, 
                               uint32 **rid_mem, char ***names, 
                               enum SID_NAME_USE **name_types);
-int winbindd_lookup_aliasmem(struct winbindd_domain *domain,
-                             uint32 alias_rid, uint32 *num_names, 
-                             DOM_SID ***sids, char ***names, 
-                             enum SID_NAME_USE **name_types);
 struct winbindd_domain *find_domain_from_name(char *domain_name);
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 void free_getent_state(struct getent_state *state);
@@ -146,4 +142,4 @@ uint32 winbindd_query_dispinfo(struct winbindd_domain *domain,
 			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
 BOOL check_domain_env(char *domain_env, char *domain);
 void parse_domain_user(char *domuser, fstring domain, fstring user);
-#endif /* _WINBINDD_PROTO_H_ */
+#endif /* _PROTO_H_ */

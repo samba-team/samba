@@ -254,17 +254,6 @@ BOOL wb_samr_open_domain(CLI_POLICY_HND *connect_pol, uint32 ace_perms,
 	return False;
 }
 
-/*******************************************************************
-frees a structure.
-********************************************************************/
-void wb_free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr)
-{
-	if (ctr == NULL)
-		return;
-	safe_free(ctr->info.id);
-	ctr->info.id = NULL;
-}
-
 /****************************************************************************
 do a SAMR enumerate groups
 ****************************************************************************/
@@ -281,10 +270,10 @@ uint32 wb_samr_enum_dom_groups(CLI_POLICY_HND *pol, uint32 *start_idx,
 }
 
 /****************************************************************************
-do a SAMR enumerate groups
+do a SAMR query userinfo
 ****************************************************************************/
 BOOL wb_get_samr_query_userinfo(CLI_POLICY_HND *pol, uint32 info_level,
-				uint32 user_rid, SAM_USERINFO_CTR *ctr)
+				uint32 user_rid, SAM_USERINFO_CTR **ctr)
 {
 	POLICY_HND user_pol;
 	BOOL got_user_pol = False;

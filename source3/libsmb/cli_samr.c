@@ -320,7 +320,7 @@ uint32 cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 uint32 cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			       POLICY_HND *user_pol, uint16 switch_value, 
-			       SAM_USERINFO_CTR *ctr)
+			       SAM_USERINFO_CTR **ctr)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_QUERY_USERINFO q;
@@ -346,8 +346,6 @@ uint32 cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Unmarshall response */
 
-	r.ctr = ctr;
-
 	if (!samr_io_r_query_userinfo("", &r, &rbuf, 0)) {
 		goto done;
 	}
@@ -355,6 +353,7 @@ uint32 cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Return output parameters */
 
 	result = r.status;
+	*ctr = r.ctr;
 
  done:
 	prs_mem_free(&qbuf);
