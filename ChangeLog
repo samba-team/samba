@@ -1,5 +1,7 @@
 2003-12-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/crypto.c: require cipher-text to be padded to padsize
+	
 	* lib/krb5/eai_to_heim_errno.c: EAI_ADDRFAMILY and EAI_NODATA is
 	deprecated in RFC3493
 
