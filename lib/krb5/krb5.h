@@ -422,6 +422,8 @@ extern krb5_cc_ops krb5_mcc_ops;
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
 
+struct sockaddr;
+
 #include <krb5-protos.h>
 
 #endif /* __KRB5_H__ */
