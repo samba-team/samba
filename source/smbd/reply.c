@@ -1917,12 +1917,30 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   fsp = file_fsp(inbuf,smb_vwv0);
 
   startpos = IVAL(inbuf,smb_vwv1);
-#ifdef LARGE_SMB_OFF_T
   if(CVAL(inbuf,smb_wct) == 10) {
     /*
      * This is a large offset (64 bit) read.
      */
+#ifdef LARGE_SMB_OFF_T
+
     startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv8)) << 32);
+
+#else /* !LARGE_SMB_OFF_T */
+
+    /*
+     * Ensure we haven't been sent a >32 bit offset.
+     */
+
+    if(IVAL(inbuf,smb_vwv8) != 0) {
+      DEBUG(0,("readbraw - large offset (%x << 32) used and we don't support \
+64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv8) ));
+      _smb_setlen(header,0);
+      transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
+      return(-1);
+    }
+
+#endif /* LARGE_SMB_OFF_T */
+
     if(startpos < 0) {
       DEBUG(0,("readbraw - negative 64 bit readraw offset (%.0f) !\n",
             (double)startpos ));
@@ -1931,7 +1949,6 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	  return(-1);
     }      
   }
-#endif /* LARGE_SMB_OFF_T */
   maxcount = (SVAL(inbuf,smb_vwv3) & 0xFFFF);
   mincount = (SVAL(inbuf,smb_vwv4) & 0xFFFF);
 
@@ -2135,14 +2152,28 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   set_message(outbuf,12,0,True);
   data = smb_buf(outbuf);
 
-#ifdef LARGE_SMB_OFF_T
   if(CVAL(inbuf,smb_wct) == 12) {
+#ifdef LARGE_SMB_OFF_T
     /*
      * This is a large offset (64 bit) read.
      */
     startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv10)) << 32);
-  }
+
+#else /* !LARGE_SMB_OFF_T */
+
+    /*
+     * Ensure we haven't been sent a >32 bit offset.
+     */
+
+    if(IVAL(inbuf,smb_vwv10) != 0) {
+      DEBUG(0,("reply_read_and_X - large offset (%x << 32) used and we don't support \
+64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv10) ));
+      return(ERROR(ERRDOS,ERRbadaccess));
+    }
+
 #endif /* LARGE_SMB_OFF_T */
+
+  }
 
   if (is_locked(fsp,conn,smb_maxcnt,startpos, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));
@@ -2400,14 +2431,27 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 
   data = smb_base(inbuf) + smb_doff;
 
-#ifdef LARGE_SMB_OFF_T
   if(CVAL(inbuf,smb_wct) == 14) {
+#ifdef LARGE_SMB_OFF_T
     /*
      * This is a large offset (64 bit) write.
      */
     startpos |= (((SMB_OFF_T)IVAL(inbuf,smb_vwv12)) << 32);
-  }
+
+#else /* !LARGE_SMB_OFF_T */
+
+    /*
+     * Ensure we haven't been sent a >32 bit offset.
+     */
+
+    if(IVAL(inbuf,smb_vwv12) != 0) {
+      DEBUG(0,("reply_write_and_X - large offset (%x << 32) used and we don't support \
+64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv12) ));
+      return(ERROR(ERRDOS,ERRbadaccess));
+    }
+
 #endif /* LARGE_SMB_OFF_T */
+  }
 
   if (is_locked(fsp,conn,numtowrite,startpos, F_WRLCK))
     return(ERROR(ERRDOS,ERRlock));
@@ -3728,8 +3772,8 @@ SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, B
      */
       
     if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) != 0){
-      DEBUG(0,("get_lock_count: Error : a large file count was sent and we don't \
-support large counts.\n" ));
+      DEBUG(0,("get_lock_count: Error : a large file count (%x << 32) was sent and we don't \
+support large counts.\n", (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) ));
 
       *err = True;
       return (SMB_OFF_T)-1;
@@ -3765,8 +3809,8 @@ SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, 
      */
       
     if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) != 0){
-      DEBUG(0,("get_lock_count: Error : a large file offset was sent and we don't \
-support large offsets.\n" ));
+      DEBUG(0,("get_lock_count: Error : a large file offset (%x << 32) was sent and we don't \
+support large offsets.\n", (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) ));
 
       *err = True;
       return (SMB_OFF_T)-1;
