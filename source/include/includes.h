@@ -724,7 +724,7 @@ extern int errno;
 
 #include "session.h"
 
-#include "asn1.h"
+#include "asn_1.h"
 
 #include "popt.h"
 
