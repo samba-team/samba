@@ -1291,6 +1291,31 @@ done:
 	return result;
 }
 
+static NTSTATUS cmd_samr_get_dom_pwinfo(struct cli_state *cli, 
+					TALLOC_CTX *mem_ctx,
+					int argc, char **argv) 
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint16 unk_0, unk_1, unk_2;
+
+	if (argc != 1) {
+		printf("Usage: %s\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = cli_samr_get_dom_pwinfo(cli, mem_ctx, &unk_0, &unk_1, &unk_2);
+	
+	if (NT_STATUS_IS_OK(result)) {
+		printf("unk_0 = 0x%08x\n", unk_0);
+		printf("unk_1 = 0x%08x\n", unk_1);
+		printf("unk_2 = 0x%08x\n", unk_2);
+	}
+
+ done:
+	return result;
+}
+
+
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
@@ -1313,6 +1338,7 @@ struct cmd_set samr_commands[] = {
 	{ "samlookuprids",      cmd_samr_lookup_rids,           PIPE_SAMR,	"Look up names",           "" },
 	{ "deletedomuser",      cmd_samr_delete_dom_user,       PIPE_SAMR,	"Delete domain user",      "" },
 	{ "samquerysecobj",     cmd_samr_query_sec_obj,         PIPE_SAMR, "Query SAMR security object",   "" },
+	{ "getdompwinfo",       cmd_samr_get_dom_pwinfo,        PIPE_SAMR, "Retrieve domain password info", "" },
 
 	{ NULL }
 };
