@@ -20,9 +20,11 @@ please contact Andrew.Tridgell@anu.edu.au, or via normal mail at
 Lee Fisher (leefi@microsoft.com)
 Charles Fox (cfox@microsoft.com)
 Dan Perry (danp@exchnge.microsoft.com)
+Paul Leach (paulle@microsoft.com)
+Isaac Heizer (isaache@microsoft.com)
 
     These Microsoft people have been very helpful and supportive of
-    the development of Samba. 
+    the development of Samba over some years.
 
     Lee very kindly supplied me with a copy of the X/Open SMB
     specs. These have been invaluable in getting the details of the
@@ -43,6 +45,11 @@ Dan Perry (danp@exchnge.microsoft.com)
     NT browsing spec, which will help a lot in the development of the
     Samba browser code.
 
+    Paul was responsible for Microsoft paying my flight to Seattle for the
+    first CIFS conference (see http://samba.anu.edu.au/cifs) and has been
+    generally helpful and cooperative as the SMB community moves towards
+    an Internet-ready specification. Isaac has regularly provided help on
+    the behaviour of NT networks.
 
 Bruce Perens (bruce@pixar.com)
 
@@ -93,7 +100,7 @@ Steve Kennedy (steve@gbnet.net)
 
 John Terpstra (jht@aquasoft.com.au)
 
-        Aquasoft are a speciaist consulting company whose Samba using
+        Aquasoft are a specialist consulting company whose Samba-using
         customers span the world.
 
         Aquasoft have been avid supporters of the Samba project. As a
