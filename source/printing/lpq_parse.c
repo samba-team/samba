@@ -989,21 +989,21 @@ BOOL parse_lpq_entry(int snum,char *line,
       switch (status->status) {
       case LPSTAT_OK:
 	for (i=0; stat0_strings[i]; i++)
-	  if (strstr(line,stat0_strings[i])) {
+	  if (strstr_m(line,stat0_strings[i])) {
 		  fstrcpy(status->message,line);
 		  status->status=LPSTAT_OK;
 		  return ret;
 	  }
       case LPSTAT_STOPPED:
 	for (i=0; stat1_strings[i]; i++)
-	  if (strstr(line,stat1_strings[i])) {
+	  if (strstr_m(line,stat1_strings[i])) {
 		  fstrcpy(status->message,line);
 		  status->status=LPSTAT_STOPPED;
 		  return ret;
 	  }
       case LPSTAT_ERROR:
 	for (i=0; stat2_strings[i]; i++)
-	  if (strstr(line,stat2_strings[i])) {
+	  if (strstr_m(line,stat2_strings[i])) {
 		  fstrcpy(status->message,line);
 		  status->status=LPSTAT_ERROR;
 		  return ret;
