@@ -166,7 +166,7 @@ typedef struct {
 typedef struct {
 	POLICY_HND handle;
 	uint32 parmcount;
-	UNISTR2_ARRAY parameters;
+	UNISTR4_ARRAY *parameters;
 } SVCCTL_Q_START_SERVICE;
 
 typedef struct {

@@ -68,7 +68,7 @@
 #define LSA_LOOKUPPRIVNAME     0x20
 #define LSA_PRIV_GET_DISPNAME  0x21
 #define LSA_DELETEOBJECT       0x22
-#define LSA_ENUMACCTWITHRIGHT  0x23
+#define LSA_ENUMACCTWITHRIGHT  0x23	/* TODO: implement this one  -- jerry */
 #define LSA_ENUMACCTRIGHTS     0x24
 #define LSA_ADDACCTRIGHTS      0x25
 #define LSA_REMOVEACCTRIGHTS   0x26
@@ -532,7 +532,7 @@ typedef struct
 typedef struct
 {
 	uint32 count;
-	UNISTR2_ARRAY rights;
+	UNISTR4_ARRAY *rights;
 	NTSTATUS status;
 } LSA_R_ENUM_ACCT_RIGHTS;
 
@@ -542,8 +542,8 @@ typedef struct
 {
 	POLICY_HND pol; /* policy handle */
 	DOM_SID2 sid;
-	UNISTR2_ARRAY rights;
 	uint32 count;
+	UNISTR4_ARRAY *rights;
 } LSA_Q_ADD_ACCT_RIGHTS;
 
 /* LSA_R_ADD_ACCT_RIGHTS - LSA add account rights */
@@ -559,8 +559,8 @@ typedef struct
 	POLICY_HND pol; /* policy handle */
 	DOM_SID2 sid;
 	uint32 removeall;
-	UNISTR2_ARRAY rights;
 	uint32 count;
+	UNISTR4_ARRAY *rights;
 } LSA_Q_REMOVE_ACCT_RIGHTS;
 
 /* LSA_R_REMOVE_ACCT_RIGHTS - LSA remove account rights */

@@ -1260,12 +1260,16 @@ NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	
-	privileges = TALLOC_ARRAY(mem_ctx, fstring, *count);
-	names = TALLOC_ARRAY(mem_ctx, char *, *count);
+	privileges = TALLOC_ARRAY( mem_ctx, fstring, *count );
+	names      = TALLOC_ARRAY( mem_ctx, char *, *count );
+
 	for ( i=0; i<*count; i++ ) {
-		/* ensure NULL termination ... what a hack */
-		pull_ucs2(NULL, privileges[i], r.rights.strings[i].string.buffer, 
-			sizeof(fstring), r.rights.strings[i].string.uni_str_len*2 , 0);
+		UNISTR4 *uni_string = &r.rights->strings[i];
+
+		if ( !uni_string->string )
+			continue;
+
+		rpcstr_pull( privileges[i], uni_string->string->buffer, sizeof(privileges[i]), -1, STR_TERMINATE );
 			
 		/* now copy to the return array */
 		names[i] = talloc_strdup( mem_ctx, privileges[i] );
@@ -1284,7 +1288,8 @@ done:
 
 NTSTATUS cli_lsa_add_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				    POLICY_HND *pol, DOM_SID sid,
-				    uint32 count, const char **privs_name)
+				    
+uint32 count, const char **privs_name)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_ADD_ACCT_RIGHTS q;
