@@ -2098,9 +2098,25 @@ BOOL sam_query_groupmem(struct cli_state *cli, uint16 fnum,
 	return res3;
 }
 
+static void sam_display_group_members(uint32 group_rid, char *group_name,
+				uint32 num_names,
+				uint32 *rid_mem,
+				char **name,
+				uint32 *type)
+{
+	report(out_hnd, "Group RID: %8x  Group Name: %s\n",
+			  group_rid, group_name);
+
+	display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
+	display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
+	display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
+}
+
 static void req_groupmem_info(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_dom,
-				uint32 group_rid)
+				uint32 group_rid,
+				char *group_name,
+				void(*act_fn)(uint32, char*, uint32, uint32*, char**, uint32*))
 {
 	uint32 num_names = 0;
 	char **name = NULL;
@@ -2110,9 +2126,8 @@ static void req_groupmem_info(struct cli_state *cli, uint16 fnum,
 	if (sam_query_groupmem(cli, fnum, pol_dom, group_rid,
 				&num_names, &rid_mem, &name, &type))
 	{
-		display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
-		display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
-		display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
+
+		act_fn(group_rid, group_name, num_names, rid_mem, name, type);
 
 		free_char_array(num_names, name);
 		if (type != NULL)
@@ -2128,7 +2143,7 @@ SAM groups query.
 uint32 msrpc_sam_enum_groups(struct client_info *info,
 				struct acct_info **sam,
 				uint32 *num_sam_entries,
-				BOOL request_member_info,
+				void(*grp_mem_fn)(uint32, char*, uint32, uint32*, char**, uint32*),
 				BOOL request_group_info)
 {
 	uint16 fnum;
@@ -2198,18 +2213,17 @@ uint32 msrpc_sam_enum_groups(struct client_info *info,
 		for (group_idx = 0; group_idx < (*num_sam_entries); group_idx++)
 		{
 			uint32 group_rid = (*sam)[group_idx].rid;
-
-			report(out_hnd, "Group RID: %8x  Group Name: %s\n",
-					  group_rid,
-					  (*sam)[group_idx].acct_name);
+			char *group_name = (*sam)[group_idx].acct_name;
 
 			if (request_group_info)
 			{
 				query_groupinfo(smb_cli, fnum, &pol_dom, group_rid);
 			}
-			if (request_member_info)
+			if (grp_mem_fn != NULL)
 			{
-				req_groupmem_info(smb_cli, fnum, &pol_dom, group_rid);
+				req_groupmem_info(smb_cli, fnum, &pol_dom,
+				                  group_rid, group_name,
+				                  grp_mem_fn);
 			}
 		}
 	}
@@ -2261,8 +2275,8 @@ void cmd_sam_enum_groups(struct client_info *info)
 	}
 
 	msrpc_sam_enum_groups(info, &sam, &num_sam_entries,
-	                     request_member_info,
-	                     request_group_info);
+	            request_group_info ? sam_display_group_members : NULL,
+	            request_member_info);
 
 	if (sam != NULL)
 	{
