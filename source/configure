@@ -2704,7 +2704,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_volatile" >&5
 echo "${ECHO_T}$samba_cv_volatile" >&6
 if test x"$samba_cv_volatile" = x"yes"; then
-   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_VOLATILE 1
 _ACEOF
 
@@ -2853,7 +2854,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_prog_cc_Ae" >&5
 echo "${ECHO_T}$ac_cv_prog_cc_Ae" >&6
       # mmap on HPUX is completely broken...
-      cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define MMAP_BLACKLIST 1
 _ACEOF
 
@@ -2868,50 +2870,61 @@ _ACEOF
       case `uname -r` in
 			*9*|*10*)
 				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_ALIGNMENT_REQUIRED=1 -D_MAX_ALIGNMENT=4"
-		   		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define USE_BOTH_CRYPT_CALLS 1
 _ACEOF
 
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _HPUX_SOURCE 1
 _ACEOF
 
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _POSIX_SOURCE 1
 _ACEOF
 
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _ALIGNMENT_REQUIRED 1
 _ACEOF
 
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _MAX_ALIGNMENT 4
 _ACEOF
 
 				;;
 			*11*)
 				CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_POSIX_SOURCE -D_LARGEFILE64_SOURCE -D_ALIGNMENT_REQUIRED=1 -D_MAX_ALIGNMENT=4"
-		   		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define USE_BOTH_CRYPT_CALLS 1
 _ACEOF
 
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _HPUX_SOURCE 1
 _ACEOF
 
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _POSIX_SOURCE 1
 _ACEOF
 
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _LARGEFILE64_SOURCE 1
 _ACEOF
 
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _ALIGNMENT_REQUIRED 1
 _ACEOF
 
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _MAX_ALIGNMENT 4
 _ACEOF
 
@@ -2936,7 +2949,8 @@ echo "${ECHO_T}disabling const" >&6
 	  echo "$as_me:$LINENO: result: enabling large file support" >&5
 echo "${ECHO_T}enabling large file support" >&6
       CPPFLAGS="$CPPFLAGS -D_LARGE_FILES"
-      cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _LARGE_FILES 1
 _ACEOF
 
@@ -2965,18 +2979,21 @@ echo "${ECHO_T}enabling large file support" >&6
 				case "$ac_cv_gcc_compiler_version_number" in
 					*"gcc version 2.6"*|*"gcc version 2.7"*)
 						CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
-						cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _LARGEFILE64_SOURCE 1
 _ACEOF
 
 						;;
 					*)
 						CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
-						cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _LARGEFILE64_SOURCE 1
 _ACEOF
 
-						cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _FILE_OFFSET_BITS 64
 _ACEOF
 
@@ -2984,11 +3001,13 @@ _ACEOF
 				esac
 			else
 				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _LARGEFILE64_SOURCE 1
 _ACEOF
 
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _FILE_OFFSET_BITS 64
 _ACEOF
 
@@ -3045,7 +3064,8 @@ fi
         CPPFLAGS="$old_CPPFLAGS"
         if test x$SINIX_LFS_SUPPORT = xyes ; then
           CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
-          cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _LARGEFILE64_SOURCE 1
 _ACEOF
 
@@ -3131,15 +3151,18 @@ fi
         CPPFLAGS="$old_CPPFLAGS"
         if test x$LINUX_LFS_SUPPORT = xyes ; then
           CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
-          cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _LARGEFILE64_SOURCE 1
 _ACEOF
 
-          cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _FILE_OFFSET_BITS 64
 _ACEOF
 
-          cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _GNU_SOURCE 1
 _ACEOF
 
@@ -3193,11 +3216,13 @@ fi
         CPPFLAGS="$old_CPPFLAGS"
         if test x$GLIBC_LFS_SUPPORT = xyes ; then
           CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
-          cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _LARGEFILE64_SOURCE 1
 _ACEOF
 
-          cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define _GNU_SOURCE 1
 _ACEOF
 
@@ -5146,7 +5171,8 @@ ac_cv_header_shadow_h=no
 fi
 rm -f conftest.$ac_objext conftest.$ac_ext
 		if test x"$ac_cv_header_shadow_h" = x"yes"; then
-		   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SHADOW_H 1
 _ACEOF
 
@@ -7858,7 +7884,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_dirent_d_off" >&5
 echo "${ECHO_T}$ac_cv_dirent_d_off" >&6
 if test $ac_cv_dirent_d_off = yes; then
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_DIRENT_D_OFF 1
 _ACEOF
 
@@ -8176,7 +8203,8 @@ fi
 
 
         if test "x$CUPS_CONFIG" != x; then
-                        cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_CUPS 1
 _ACEOF
 
@@ -8187,7 +8215,7 @@ _ACEOF
 fi
 
 ############################################
-# we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the new VFS code
+# we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the plugin loading code
 
 for ac_func in dlopen
 do
@@ -8310,7 +8338,8 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_dl_dlopen" >&5
 echo "${ECHO_T}$ac_cv_lib_dl_dlopen" >&6
 if test $ac_cv_lib_dl_dlopen = yes; then
   LIBS="$LIBS -ldl";
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_DLOPEN 1
 _ACEOF
 
@@ -8373,7 +8402,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_immediate_structures" >&5
 echo "${ECHO_T}$samba_cv_immediate_structures" >&6
 if test x"$samba_cv_immediate_structures" = x"yes"; then
-   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_IMMEDIATE_STRUCTURES 1
 _ACEOF
 
@@ -8430,7 +8460,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_unixsocket" >&5
 echo "${ECHO_T}$samba_cv_unixsocket" >&6
 if test x"$samba_cv_unixsocket" = x"yes"; then
-   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UNIXSOCKET 1
 _ACEOF
 
@@ -8484,7 +8515,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_socklen_t" >&5
 echo "${ECHO_T}$samba_cv_socklen_t" >&6
 if test x"$samba_cv_socklen_t" = x"yes"; then
-   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SOCKLEN_T_TYPE 1
 _ACEOF
 
@@ -8537,7 +8569,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_sig_atomic_t" >&5
 echo "${ECHO_T}$samba_cv_sig_atomic_t" >&6
 if test x"$samba_cv_sig_atomic_t" = x"yes"; then
-   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SIG_ATOMIC_T_TYPE 1
 _ACEOF
 
@@ -8586,7 +8619,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_have_errno_decl" >&5
 echo "${ECHO_T}$ac_cv_have_errno_decl" >&6
  if test x"$ac_cv_have_errno_decl" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_ERRNO_DECL 1
 _ACEOF
 
@@ -8634,7 +8668,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_have_setresuid_decl" >&5
 echo "${ECHO_T}$ac_cv_have_setresuid_decl" >&6
  if test x"$ac_cv_have_setresuid_decl" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SETRESUID_DECL 1
 _ACEOF
 
@@ -8682,7 +8717,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_have_setresgid_decl" >&5
 echo "${ECHO_T}$ac_cv_have_setresgid_decl" >&6
  if test x"$ac_cv_have_setresgid_decl" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SETRESGID_DECL 1
 _ACEOF
 
@@ -8730,7 +8766,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_have_asprintf_decl" >&5
 echo "${ECHO_T}$ac_cv_have_asprintf_decl" >&6
  if test x"$ac_cv_have_asprintf_decl" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_ASPRINTF_DECL 1
 _ACEOF
 
@@ -8778,7 +8815,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_have_vasprintf_decl" >&5
 echo "${ECHO_T}$ac_cv_have_vasprintf_decl" >&6
  if test x"$ac_cv_have_vasprintf_decl" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_VASPRINTF_DECL 1
 _ACEOF
 
@@ -8826,7 +8864,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_have_vsnprintf_decl" >&5
 echo "${ECHO_T}$ac_cv_have_vsnprintf_decl" >&6
  if test x"$ac_cv_have_vsnprintf_decl" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_VSNPRINTF_DECL 1
 _ACEOF
 
@@ -8874,7 +8913,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_have_snprintf_decl" >&5
 echo "${ECHO_T}$ac_cv_have_snprintf_decl" >&6
  if test x"$ac_cv_have_snprintf_decl" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SNPRINTF_DECL 1
 _ACEOF
 
@@ -8923,7 +8963,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_have_setresuid" >&5
 echo "${ECHO_T}$samba_cv_have_setresuid" >&6
 if test x"$samba_cv_have_setresuid" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SETRESUID 1
 _ACEOF
 
@@ -8972,7 +9013,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_have_setresgid" >&5
 echo "${ECHO_T}$samba_cv_have_setresgid" >&6
 if test x"$samba_cv_have_setresgid" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SETRESGID 1
 _ACEOF
 
@@ -9173,7 +9215,8 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_crypt_crypt" >&5
 echo "${ECHO_T}$ac_cv_lib_crypt_crypt" >&6
 if test $ac_cv_lib_crypt_crypt = yes; then
   AUTHLIBS="$AUTHLIBS -lcrypt";
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_CRYPT 1
 _ACEOF
 
@@ -9647,7 +9690,8 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_readline_rl_callback_handler_install" >
 echo "${ECHO_T}$ac_cv_lib_readline_rl_callback_handler_install" >&6
 if test $ac_cv_lib_readline_rl_callback_handler_install = yes; then
   TERMLIBS="-lreadline $TERMLIBS"
-       cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_LIBREADLINE 1
 _ACEOF
 
@@ -10130,7 +10174,8 @@ if test $ac_cv_lib_readline_rl_callback_handler_install = yes; then
        TERMCPPFLAGS="-I$with_readline/include"
        CPPFLAGS="-I$with_readline/include $CPPFLAGS"
        TERMLIBS="-lreadline $TERMLIBS"
-       cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_LIBREADLINE 1
 _ACEOF
 
@@ -10545,7 +10590,8 @@ fi
        test x"$ac_cv_lib_inet_connect" = x"yes"; then
         # ac_cv_func_connect=yes
         # don't!  it would cause AC_CHECK_FUNC to succeed next time configure is run
-        cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_CONNECT 1
 _ACEOF
 
@@ -10676,7 +10722,8 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_nsl_yp_get_default_domain" >&5
 echo "${ECHO_T}$ac_cv_lib_nsl_yp_get_default_domain" >&6
 if test $ac_cv_lib_nsl_yp_get_default_domain = yes; then
   LIBS="$LIBS -lnsl";
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_YP_GET_DEFAULT_DOMAIN 1
 _ACEOF
 
@@ -12783,7 +12830,8 @@ rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
   echo "$as_me:$LINENO: result: $ac_cv_func_stat64" >&5
 echo "${ECHO_T}$ac_cv_func_stat64" >&6
   if test x$ac_cv_func_stat64 = xyes ; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_STAT64 1
 _ACEOF
 
@@ -12832,7 +12880,7 @@ rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
 echo "${ECHO_T}$ac_cv_func_lstat64" >&6
   if test x$ac_cv_func_lstat64 = xyes ; then
     cat >>confdefs.h <<\_ACEOF
-#define HAVE_LSTAT64 1
+#define HAVE_LSTAT64 Whether lstat64() is available
 _ACEOF
 
   fi
@@ -12879,7 +12927,8 @@ rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
   echo "$as_me:$LINENO: result: $ac_cv_func_fstat64" >&5
 echo "${ECHO_T}$ac_cv_func_fstat64" >&6
   if test x$ac_cv_func_fstat64 = xyes ; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_FSTAT64 1
 _ACEOF
 
@@ -15214,7 +15263,8 @@ echo $ECHO_N "checking ability to build shared libraries... $ECHO_C" >&6
 
 # and these are for particular systems
 case "$host_os" in
-		*linux*)   cat >>confdefs.h <<\_ACEOF
+		*linux*)
+cat >>confdefs.h <<\_ACEOF
 #define LINUX 1
 _ACEOF
 
@@ -15228,7 +15278,8 @@ _ACEOF
 _ACEOF
 
 		;;
-		*solaris*) cat >>confdefs.h <<\_ACEOF
+		*solaris*)
+cat >>confdefs.h <<\_ACEOF
 #define SUNOS5 1
 _ACEOF
 
@@ -15248,12 +15299,14 @@ _ACEOF
 				POBAD_CC=""
 				PICSUFFIX="po.o"
 			fi
-			cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_ST_BLOCKSIZE 512
 _ACEOF
 
 		;;
-		*sunos*) cat >>confdefs.h <<\_ACEOF
+		*sunos*)
+cat >>confdefs.h <<\_ACEOF
 #define SUNOS4 1
 _ACEOF
 
@@ -15267,7 +15320,8 @@ _ACEOF
 			DYNEXP="-Wl,--export-dynamic"
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC -DPIC"
-			cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_ST_BLOCKSIZE 512
 _ACEOF
 
@@ -15277,17 +15331,20 @@ _ACEOF
 			DYNEXP="-Wl,-Bdynamic"
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
-			cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_ST_BLOCKSIZE 512
 _ACEOF
 
 		;;
-		*irix*) cat >>confdefs.h <<\_ACEOF
+		*irix*)
+cat >>confdefs.h <<\_ACEOF
 #define IRIX 1
 _ACEOF
 
 			case "$host_os" in
-			*irix6*) cat >>confdefs.h <<\_ACEOF
+			*irix6*)
+cat >>confdefs.h <<\_ACEOF
 #define IRIX6 1
 _ACEOF
 
@@ -15303,12 +15360,14 @@ _ACEOF
 			else
 				PICFLAG="-KPIC"
 			fi
-			cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_ST_BLOCKSIZE 512
 _ACEOF
 
 		;;
-		*aix*) cat >>confdefs.h <<\_ACEOF
+		*aix*)
+cat >>confdefs.h <<\_ACEOF
 #define AIX 1
 _ACEOF
 
@@ -15321,12 +15380,14 @@ _ACEOF
 				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
 			fi
 
-			cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_ST_BLOCKSIZE DEV_BSIZE
 _ACEOF
 
 		;;
-		*hpux*) cat >>confdefs.h <<\_ACEOF
+		*hpux*)
+cat >>confdefs.h <<\_ACEOF
 #define HPUX 1
 _ACEOF
 
@@ -15340,16 +15401,19 @@ _ACEOF
 				PICFLAG="+z"
 			fi
 			DYNEXP="-Wl,-E"
-			cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_ST_BLOCKSIZE 8192
 _ACEOF
 
 		;;
-		*qnx*) cat >>confdefs.h <<\_ACEOF
+		*qnx*)
+cat >>confdefs.h <<\_ACEOF
 #define QNX 1
 _ACEOF
 ;;
-		*osf*) cat >>confdefs.h <<\_ACEOF
+		*osf*)
+cat >>confdefs.h <<\_ACEOF
 #define OSF1 1
 _ACEOF
 
@@ -15358,11 +15422,13 @@ _ACEOF
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 		;;
-		*sco*) cat >>confdefs.h <<\_ACEOF
+		*sco*)
+cat >>confdefs.h <<\_ACEOF
 #define SCO 1
 _ACEOF
 ;;
-		*unixware*) cat >>confdefs.h <<\_ACEOF
+		*unixware*)
+cat >>confdefs.h <<\_ACEOF
 #define UNIXWARE 1
 _ACEOF
 
@@ -15371,7 +15437,8 @@ _ACEOF
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-KPIC"
 		;;
-		*next2*) cat >>confdefs.h <<\_ACEOF
+		*next2*)
+cat >>confdefs.h <<\_ACEOF
 #define NEXT2 1
 _ACEOF
 ;;
@@ -15410,13 +15477,15 @@ else
 echo "${ECHO_T}no" >&6
 fi
 ;;
-		*sysv4*) cat >>confdefs.h <<\_ACEOF
+		*sysv4*)
+cat >>confdefs.h <<\_ACEOF
 #define SYSV 1
 _ACEOF
 
 			case "$host" in
 				*-univel-*)     if  test "$GCC" != yes ; then
-						cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_MEMSET 1
 _ACEOF
 
@@ -15424,29 +15493,28 @@ _ACEOF
 					LDSHFLAGS="-G"
                              		DYNEXP="-Bexport"
 				;;
-				*mips-sni-sysv4*) cat >>confdefs.h <<\_ACEOF
+				*mips-sni-sysv4*)
+cat >>confdefs.h <<\_ACEOF
 #define RELIANTUNIX 1
 _ACEOF
 ;;
 			esac
 		;;
 
-		*sysv5*) cat >>confdefs.h <<\_ACEOF
+		*sysv5*)
+cat >>confdefs.h <<\_ACEOF
 #define SYSV 1
 _ACEOF
 
 			if  test "$GCC" != yes ; then
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_MEMSET 1
 _ACEOF
 
 			fi
 			LDSHFLAGS="-G"
 		;;
-		*sysv*) cat >>confdefs.h <<\_ACEOF
-#define SYSV 1
-_ACEOF
-;;
 esac
 
 echo "$as_me:$LINENO: result: $BLDSHARED" >&5
@@ -15534,7 +15602,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_have_longlong" >&5
 echo "${ECHO_T}$samba_cv_have_longlong" >&6
 if test x"$samba_cv_have_longlong" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_LONGLONG 1
 _ACEOF
 
@@ -15585,7 +15654,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_compiler_supports_ll" >&5
 echo "${ECHO_T}$samba_cv_compiler_supports_ll" >&6
 if test x"$samba_cv_compiler_supports_ll" = x"yes"; then
-   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define COMPILER_SUPPORTS_LL 1
 _ACEOF
 
@@ -15633,7 +15703,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_SIZEOF_OFF_T" >&5
 echo "${ECHO_T}$samba_cv_SIZEOF_OFF_T" >&6
 if test x"$samba_cv_SIZEOF_OFF_T" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define SIZEOF_OFF_T 8
 _ACEOF
 
@@ -15684,7 +15755,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_OFF64_T" >&5
 echo "${ECHO_T}$samba_cv_HAVE_OFF64_T" >&6
 if test x"$samba_cv_HAVE_OFF64_T" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_OFF64_T 1
 _ACEOF
 
@@ -15731,7 +15803,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_SIZEOF_INO_T" >&5
 echo "${ECHO_T}$samba_cv_SIZEOF_INO_T" >&6
 if test x"$samba_cv_SIZEOF_INO_T" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define SIZEOF_INO_T 8
 _ACEOF
 
@@ -15782,7 +15855,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_INO64_T" >&5
 echo "${ECHO_T}$samba_cv_HAVE_INO64_T" >&6
 if test x"$samba_cv_HAVE_INO64_T" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_INO64_T 1
 _ACEOF
 
@@ -15833,7 +15907,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_DEV64_T" >&5
 echo "${ECHO_T}$samba_cv_HAVE_DEV64_T" >&6
 if test x"$samba_cv_HAVE_DEV64_T" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_DEV64_T 1
 _ACEOF
 
@@ -15885,7 +15960,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_STRUCT_DIRENT64" >&5
 echo "${ECHO_T}$samba_cv_HAVE_STRUCT_DIRENT64" >&6
 if test x"$samba_cv_HAVE_STRUCT_DIRENT64" = x"yes" && test x"$ac_cv_func_readdir64" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_STRUCT_DIRENT64 1
 _ACEOF
 
@@ -15935,7 +16011,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_DEVICE_MAJOR_FN" >&5
 echo "${ECHO_T}$samba_cv_HAVE_DEVICE_MAJOR_FN" >&6
 if test x"$samba_cv_HAVE_DEVICE_MAJOR_FN" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_DEVICE_MAJOR_FN 1
 _ACEOF
 
@@ -15985,7 +16062,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_DEVICE_MINOR_FN" >&5
 echo "${ECHO_T}$samba_cv_HAVE_DEVICE_MINOR_FN" >&6
 if test x"$samba_cv_HAVE_DEVICE_MINOR_FN" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_DEVICE_MINOR_FN 1
 _ACEOF
 
@@ -16031,7 +16109,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UNSIGNED_CHAR" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UNSIGNED_CHAR" >&6
 if test x"$samba_cv_HAVE_UNSIGNED_CHAR" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UNSIGNED_CHAR 1
 _ACEOF
 
@@ -16080,7 +16159,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_SOCK_SIN_LEN" >&5
 echo "${ECHO_T}$samba_cv_HAVE_SOCK_SIN_LEN" >&6
 if test x"$samba_cv_HAVE_SOCK_SIN_LEN" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SOCK_SIN_LEN 1
 _ACEOF
 
@@ -16129,7 +16209,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_SEEKDIR_RETURNS_VOID" >&5
 echo "${ECHO_T}$samba_cv_SEEKDIR_RETURNS_VOID" >&6
 if test x"$samba_cv_SEEKDIR_RETURNS_VOID" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define SEEKDIR_RETURNS_VOID 1
 _ACEOF
 
@@ -16176,7 +16257,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_FILE_MACRO" >&5
 echo "${ECHO_T}$samba_cv_HAVE_FILE_MACRO" >&6
 if test x"$samba_cv_HAVE_FILE_MACRO" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_FILE_MACRO 1
 _ACEOF
 
@@ -16223,7 +16305,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_FUNCTION_MACRO" >&5
 echo "${ECHO_T}$samba_cv_HAVE_FUNCTION_MACRO" >&6
 if test x"$samba_cv_HAVE_FUNCTION_MACRO" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_FUNCTION_MACRO 1
 _ACEOF
 
@@ -16271,7 +16354,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_GETTIMEOFDAY_TZ" >&5
 echo "${ECHO_T}$samba_cv_HAVE_GETTIMEOFDAY_TZ" >&6
 if test x"$samba_cv_HAVE_GETTIMEOFDAY_TZ" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_GETTIMEOFDAY_TZ 1
 _ACEOF
 
@@ -16319,7 +16403,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_VA_COPY" >&5
 echo "${ECHO_T}$samba_cv_HAVE_VA_COPY" >&6
 if test x"$samba_cv_HAVE_VA_COPY" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_VA_COPY 1
 _ACEOF
 
@@ -16387,7 +16472,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_C99_VSNPRINTF" >&5
 echo "${ECHO_T}$samba_cv_HAVE_C99_VSNPRINTF" >&6
 if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_C99_VSNPRINTF 1
 _ACEOF
 
@@ -16436,7 +16522,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_BROKEN_READDIR" >&5
 echo "${ECHO_T}$samba_cv_HAVE_BROKEN_READDIR" >&6
 if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_BROKEN_READDIR 1
 _ACEOF
 
@@ -16484,7 +16571,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UTIMBUF" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UTIMBUF" >&6
 if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UTIMBUF 1
 _ACEOF
 
@@ -16608,7 +16696,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UT_UT_NAME" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UT_UT_NAME" >&6
 if test x"$samba_cv_HAVE_UT_UT_NAME" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UT_UT_NAME 1
 _ACEOF
 
@@ -16656,7 +16745,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UT_UT_USER" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UT_UT_USER" >&6
 if test x"$samba_cv_HAVE_UT_UT_USER" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UT_UT_USER 1
 _ACEOF
 
@@ -16704,7 +16794,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UT_UT_ID" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UT_UT_ID" >&6
 if test x"$samba_cv_HAVE_UT_UT_ID" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UT_UT_ID 1
 _ACEOF
 
@@ -16752,7 +16843,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UT_UT_HOST" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UT_UT_HOST" >&6
 if test x"$samba_cv_HAVE_UT_UT_HOST" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UT_UT_HOST 1
 _ACEOF
 
@@ -16800,7 +16892,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UT_UT_TIME" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UT_UT_TIME" >&6
 if test x"$samba_cv_HAVE_UT_UT_TIME" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UT_UT_TIME 1
 _ACEOF
 
@@ -16848,7 +16941,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UT_UT_TV" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UT_UT_TV" >&6
 if test x"$samba_cv_HAVE_UT_UT_TV" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UT_UT_TV 1
 _ACEOF
 
@@ -16896,7 +16990,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UT_UT_TYPE" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UT_UT_TYPE" >&6
 if test x"$samba_cv_HAVE_UT_UT_TYPE" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UT_UT_TYPE 1
 _ACEOF
 
@@ -16944,7 +17039,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UT_UT_PID" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UT_UT_PID" >&6
 if test x"$samba_cv_HAVE_UT_UT_PID" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UT_UT_PID 1
 _ACEOF
 
@@ -16992,7 +17088,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UT_UT_EXIT" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UT_UT_EXIT" >&6
 if test x"$samba_cv_HAVE_UT_UT_EXIT" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UT_UT_EXIT 1
 _ACEOF
 
@@ -17040,7 +17137,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UT_UT_ADDR" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UT_UT_ADDR" >&6
 if test x"$samba_cv_HAVE_UT_UT_ADDR" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UT_UT_ADDR 1
 _ACEOF
 
@@ -17089,7 +17187,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_PUTUTLINE_RETURNS_UTMP" >&5
 echo "${ECHO_T}$samba_cv_PUTUTLINE_RETURNS_UTMP" >&6
   if test x"$samba_cv_PUTUTLINE_RETURNS_UTMP" = x"yes"; then
-      cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define PUTUTLINE_RETURNS_UTMP 1
 _ACEOF
 
@@ -17138,7 +17237,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UX_UT_SYSLEN" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UX_UT_SYSLEN" >&6
 if test x"$samba_cv_HAVE_UX_UT_SYSLEN" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UX_UT_SYSLEN 1
 _ACEOF
 
@@ -17222,7 +17322,8 @@ _ACEOF
 
 fi
 
-    cat >>confdefs.h <<_ACEOF
+
+cat >>confdefs.h <<_ACEOF
 #define WITH_LIBICONV "${withval}"
 _ACEOF
 
@@ -17283,7 +17384,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_NATIVE_ICONV" >&5
 echo "${ECHO_T}$samba_cv_HAVE_NATIVE_ICONV" >&6
 if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_NATIVE_ICONV 1
 _ACEOF
 
@@ -17339,7 +17441,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_KERNEL_OPLOCKS_LINUX" >&5
 echo "${ECHO_T}$samba_cv_HAVE_KERNEL_OPLOCKS_LINUX" >&6
 if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_LINUX" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_KERNEL_OPLOCKS_LINUX 1
 _ACEOF
 
@@ -17394,7 +17497,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" >&5
 echo "${ECHO_T}$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" >&6
 if test x"$samba_cv_HAVE_KERNEL_CHANGE_NOTIFY" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_KERNEL_CHANGE_NOTIFY 1
 _ACEOF
 
@@ -17451,7 +17555,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_KERNEL_SHARE_MODES" >&5
 echo "${ECHO_T}$samba_cv_HAVE_KERNEL_SHARE_MODES" >&6
 if test x"$samba_cv_HAVE_KERNEL_SHARE_MODES" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_KERNEL_SHARE_MODES 1
 _ACEOF
 
@@ -17502,7 +17607,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_KERNEL_OPLOCKS_IRIX" >&5
 echo "${ECHO_T}$samba_cv_HAVE_KERNEL_OPLOCKS_IRIX" >&6
 if test x"$samba_cv_HAVE_KERNEL_OPLOCKS_IRIX" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_KERNEL_OPLOCKS_IRIX 1
 _ACEOF
 
@@ -17558,7 +17664,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES" >&5
 echo "${ECHO_T}$samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES" >&6
 if test x"$samba_cv_HAVE_IRIX_SPECIFIC_CAPABILITIES" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_IRIX_SPECIFIC_CAPABILITIES 1
 _ACEOF
 
@@ -17613,7 +17720,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_INT16_FROM_RPC_RPC_H" >&5
 echo "${ECHO_T}$samba_cv_HAVE_INT16_FROM_RPC_RPC_H" >&6
 if test x"$samba_cv_HAVE_INT16_FROM_RPC_RPC_H" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_INT16_FROM_RPC_RPC_H 1
 _ACEOF
 
@@ -17663,7 +17771,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UINT16_FROM_RPC_RPC_H" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UINT16_FROM_RPC_RPC_H" >&6
 if test x"$samba_cv_HAVE_UINT16_FROM_RPC_RPC_H" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UINT16_FROM_RPC_RPC_H 1
 _ACEOF
 
@@ -17713,7 +17822,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_INT32_FROM_RPC_RPC_H" >&5
 echo "${ECHO_T}$samba_cv_HAVE_INT32_FROM_RPC_RPC_H" >&6
 if test x"$samba_cv_HAVE_INT32_FROM_RPC_RPC_H" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_INT32_FROM_RPC_RPC_H 1
 _ACEOF
 
@@ -17763,7 +17873,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_UINT32_FROM_RPC_RPC_H" >&5
 echo "${ECHO_T}$samba_cv_HAVE_UINT32_FROM_RPC_RPC_H" >&6
 if test x"$samba_cv_HAVE_UINT32_FROM_RPC_RPC_H" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UINT32_FROM_RPC_RPC_H 1
 _ACEOF
 
@@ -17818,7 +17929,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_RPC_AUTH_ERROR_CONFLICT" >&5
 echo "${ECHO_T}$samba_cv_HAVE_RPC_AUTH_ERROR_CONFLICT" >&6
 if test x"$samba_cv_HAVE_RPC_AUTH_ERROR_CONFLICT" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_RPC_AUTH_ERROR_CONFLICT 1
 _ACEOF
 
@@ -17899,7 +18011,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_FTRUNCATE_EXTEND" >&5
 echo "${ECHO_T}$samba_cv_HAVE_FTRUNCATE_EXTEND" >&6
 if test x"$samba_cv_HAVE_FTRUNCATE_EXTEND" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_FTRUNCATE_EXTEND 1
 _ACEOF
 
@@ -17991,7 +18104,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_BROKEN_GETGROUPS" >&5
 echo "${ECHO_T}$samba_cv_HAVE_BROKEN_GETGROUPS" >&6
 if test x"$samba_cv_HAVE_BROKEN_GETGROUPS" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_BROKEN_GETGROUPS 1
 _ACEOF
 
@@ -18048,7 +18162,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_REPLACE_GETPASS" >&5
 echo "${ECHO_T}$samba_cv_REPLACE_GETPASS" >&6
 if test x"$samba_cv_REPLACE_GETPASS" = x"yes"; then
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define REPLACE_GETPASS 1
 _ACEOF
 
@@ -18103,7 +18218,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_REPLACE_INET_NTOA" >&5
 echo "${ECHO_T}$samba_cv_REPLACE_INET_NTOA" >&6
 if test x"$samba_cv_REPLACE_INET_NTOA" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define REPLACE_INET_NTOA 1
 _ACEOF
 
@@ -18161,7 +18277,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_SECURE_MKSTEMP" >&5
 echo "${ECHO_T}$samba_cv_HAVE_SECURE_MKSTEMP" >&6
 if test x"$samba_cv_HAVE_SECURE_MKSTEMP" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SECURE_MKSTEMP 1
 _ACEOF
 
@@ -18207,7 +18324,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_SYSCONF_SC_NGROUPS_MAX" >&5
 echo "${ECHO_T}$samba_cv_SYSCONF_SC_NGROUPS_MAX" >&6
 if test x"$samba_cv_SYSCONF_SC_NGROUPS_MAX" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define SYSCONF_SC_NGROUPS_MAX 1
 _ACEOF
 
@@ -18252,7 +18370,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_ROOT" >&5
 echo "${ECHO_T}$samba_cv_HAVE_ROOT" >&6
 if test x"$samba_cv_HAVE_ROOT" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_ROOT 1
 _ACEOF
 
@@ -18307,7 +18426,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_IFACE_AIX" >&5
 echo "${ECHO_T}$samba_cv_HAVE_IFACE_AIX" >&6
 if test x"$samba_cv_HAVE_IFACE_AIX" = x"yes"; then
-    iface=yes;cat >>confdefs.h <<\_ACEOF
+    iface=yes;
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_IFACE_AIX 1
 _ACEOF
 
@@ -18357,7 +18477,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_IFACE_IFCONF" >&5
 echo "${ECHO_T}$samba_cv_HAVE_IFACE_IFCONF" >&6
 if test x"$samba_cv_HAVE_IFACE_IFCONF" = x"yes"; then
-    iface=yes;cat >>confdefs.h <<\_ACEOF
+    iface=yes;
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_IFACE_IFCONF 1
 _ACEOF
 
@@ -18408,7 +18529,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_IFACE_IFREQ" >&5
 echo "${ECHO_T}$samba_cv_HAVE_IFACE_IFREQ" >&6
 if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
-    iface=yes;cat >>confdefs.h <<\_ACEOF
+    iface=yes;
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_IFACE_IFREQ 1
 _ACEOF
 
@@ -18463,7 +18585,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_USE_SETRESUID" >&5
 echo "${ECHO_T}$samba_cv_USE_SETRESUID" >&6
 if test x"$samba_cv_USE_SETRESUID" = x"yes"; then
-    seteuid=yes;cat >>confdefs.h <<\_ACEOF
+    seteuid=yes;
+cat >>confdefs.h <<\_ACEOF
 #define USE_SETRESUID 1
 _ACEOF
 
@@ -18515,7 +18638,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_USE_SETREUID" >&5
 echo "${ECHO_T}$samba_cv_USE_SETREUID" >&6
 if test x"$samba_cv_USE_SETREUID" = x"yes"; then
-    seteuid=yes;cat >>confdefs.h <<\_ACEOF
+    seteuid=yes;
+cat >>confdefs.h <<\_ACEOF
 #define USE_SETREUID 1
 _ACEOF
 
@@ -18566,7 +18690,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_USE_SETEUID" >&5
 echo "${ECHO_T}$samba_cv_USE_SETEUID" >&6
 if test x"$samba_cv_USE_SETEUID" = x"yes"; then
-    seteuid=yes;cat >>confdefs.h <<\_ACEOF
+    seteuid=yes;
+cat >>confdefs.h <<\_ACEOF
 #define USE_SETEUID 1
 _ACEOF
 
@@ -18617,7 +18742,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_USE_SETUIDX" >&5
 echo "${ECHO_T}$samba_cv_USE_SETUIDX" >&6
 if test x"$samba_cv_USE_SETUIDX" = x"yes"; then
-    seteuid=yes;cat >>confdefs.h <<\_ACEOF
+    seteuid=yes;
+cat >>confdefs.h <<\_ACEOF
 #define USE_SETUIDX 1
 _ACEOF
 
@@ -18664,7 +18790,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_MMAP" >&5
 echo "${ECHO_T}$samba_cv_HAVE_MMAP" >&6
 if test x"$samba_cv_HAVE_MMAP" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_MMAP 1
 _ACEOF
 
@@ -18709,7 +18836,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_FTRUNCATE_NEEDS_ROOT" >&5
 echo "${ECHO_T}$samba_cv_FTRUNCATE_NEEDS_ROOT" >&6
 if test x"$samba_cv_FTRUNCATE_NEEDS_ROOT" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define FTRUNCATE_NEEDS_ROOT 1
 _ACEOF
 
@@ -18754,7 +18882,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_FCNTL_LOCK" >&5
 echo "${ECHO_T}$samba_cv_HAVE_FCNTL_LOCK" >&6
 if test x"$samba_cv_HAVE_FCNTL_LOCK" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_FCNTL_LOCK 1
 _ACEOF
 
@@ -18799,7 +18928,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_BROKEN_FCNTL64_LOCKS" >&5
 echo "${ECHO_T}$samba_cv_HAVE_BROKEN_FCNTL64_LOCKS" >&6
 if test x"$samba_cv_HAVE_BROKEN_FCNTL64_LOCKS" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_BROKEN_FCNTL64_LOCKS 1
 _ACEOF
 
@@ -18867,7 +18997,8 @@ echo "$as_me:$LINENO: result: $samba_cv_HAVE_STRUCT_FLOCK64" >&5
 echo "${ECHO_T}$samba_cv_HAVE_STRUCT_FLOCK64" >&6
 
   if test x"$samba_cv_HAVE_STRUCT_FLOCK64" = x"yes"; then
-      cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_STRUCT_FLOCK64 1
 _ACEOF
 
@@ -18917,7 +19048,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_STAT_ST_BLOCKS" >&5
 echo "${ECHO_T}$samba_cv_HAVE_STAT_ST_BLOCKS" >&6
 if test x"$samba_cv_HAVE_STAT_ST_BLOCKS" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_STAT_ST_BLOCKS 1
 _ACEOF
 
@@ -18966,7 +19098,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_STAT_ST_BLKSIZE" >&5
 echo "${ECHO_T}$samba_cv_HAVE_STAT_ST_BLKSIZE" >&6
 if test x"$samba_cv_HAVE_STAT_ST_BLKSIZE" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_STAT_ST_BLKSIZE 1
 _ACEOF
 
@@ -19022,7 +19155,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS" >&5
 echo "${ECHO_T}$samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS" >&6
 if test x"$samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS" = x"yes"; then
-   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define BROKEN_REDHAT_7_SYSTEM_HEADERS 1
 _ACEOF
 
@@ -19074,7 +19208,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_BROKEN_NISPLUS_INCLUDE_FILES" >&5
 echo "${ECHO_T}$samba_cv_BROKEN_NISPLUS_INCLUDE_FILES" >&6
 if test x"$samba_cv_BROKEN_NISPLUS_INCLUDE_FILES" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define BROKEN_NISPLUS_INCLUDE_FILES 1
 _ACEOF
 
@@ -19093,7 +19228,8 @@ if test "${with_smbwrapper+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SMBWRAPPER 1
 _ACEOF
 
@@ -19144,7 +19280,8 @@ if test "${with_afs+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_AFS 1
 _ACEOF
 
@@ -19173,7 +19310,8 @@ if test "${with_dfs+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_DFS 1
 _ACEOF
 
@@ -19208,7 +19346,8 @@ if test "${with_ads+set}" = set; then
 fi;
 
 if test x"$with_ads_support" = x"yes"; then
-   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_ADS 1
 _ACEOF
 
@@ -19667,7 +19806,8 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_krb5_krb5_mk_req_extended" >&5
 echo "${ECHO_T}$ac_cv_lib_krb5_krb5_mk_req_extended" >&6
 if test $ac_cv_lib_krb5_krb5_mk_req_extended = yes; then
   LIBS="$LIBS -lkrb5";
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_KRB5 1
 _ACEOF
 
@@ -19727,7 +19867,8 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_gssapi_krb5_gss_display_status" >&5
 echo "${ECHO_T}$ac_cv_lib_gssapi_krb5_gss_display_status" >&6
 if test $ac_cv_lib_gssapi_krb5_gss_display_status = yes; then
   LIBS="$LIBS -lgssapi_krb5";
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_GSSAPI 1
 _ACEOF
 
@@ -19869,7 +20010,8 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_ldap_ldap_domain2hostlist" >&5
 echo "${ECHO_T}$ac_cv_lib_ldap_ldap_domain2hostlist" >&6
 if test $ac_cv_lib_ldap_ldap_domain2hostlist = yes; then
   LIBS="$LIBS -lldap";
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_LDAP 1
 _ACEOF
 
@@ -19991,7 +20133,8 @@ rm -f conftest.$ac_objext conftest.$ac_ext
 fi
 echo "$as_me:$LINENO: result: $pam_ldap_cv_ldap_set_rebind_proc" >&5
 echo "${ECHO_T}$pam_ldap_cv_ldap_set_rebind_proc" >&6
-	cat >>confdefs.h <<_ACEOF
+
+cat >>confdefs.h <<_ACEOF
 #define LDAP_SET_REBIND_PROC_ARGS $pam_ldap_cv_ldap_set_rebind_proc
 _ACEOF
 
@@ -20010,7 +20153,8 @@ if test "${with_automount+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_AUTOMOUNT 1
 _ACEOF
 
@@ -20040,7 +20184,8 @@ if test "${with_smbmount+set}" = set; then
 	*linux*)
 		echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SMBMOUNT 1
 _ACEOF
 
@@ -20080,7 +20225,8 @@ if test "${with_pam+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_PAM 1
 _ACEOF
 
@@ -20149,7 +20295,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_lib_pam_pam_get_data" >&5
 echo "${ECHO_T}$ac_cv_lib_pam_pam_get_data" >&6
 if test $ac_cv_lib_pam_pam_get_data = yes; then
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_LIBPAM 1
 _ACEOF
 
@@ -20321,7 +20468,8 @@ echo "$as_me:$LINENO: result: $ac_cv_lib_crypt_crypt" >&5
 echo "${ECHO_T}$ac_cv_lib_crypt_crypt" >&6
 if test $ac_cv_lib_crypt_crypt = yes; then
   AUTHLIBS="$AUTHLIBS -lcrypt";
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_CRYPT 1
 _ACEOF
 
@@ -20379,7 +20527,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_TRUNCATED_SALT" >&5
 echo "${ECHO_T}$samba_cv_HAVE_TRUNCATED_SALT" >&6
 if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_TRUNCATED_SALT 1
 _ACEOF
 
@@ -20398,7 +20547,8 @@ if test "${with_sam+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SAM 1
 _ACEOF
 
@@ -20433,7 +20583,8 @@ if test "${with_ldapsam+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_LDAP_SAMCONFIG 1
 _ACEOF
 
@@ -20461,7 +20612,8 @@ if test "${with_tdbsam+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_TDB_SAM 1
 _ACEOF
 
@@ -20489,7 +20641,8 @@ if test "${with_nisplussam+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_NISPLUS_SAM 1
 _ACEOF
 
@@ -20523,7 +20676,8 @@ if test "${with_nisplus_home+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_NISPLUS_HOME 1
 _ACEOF
 
@@ -20551,7 +20705,8 @@ if test "${with_syslog+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SYSLOG 1
 _ACEOF
 
@@ -20579,7 +20734,8 @@ if test "${with_profiling_data+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_PROFILE 1
 _ACEOF
 
@@ -20659,12 +20815,14 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_linux_2_4_quota_braindamage" >&5
 echo "${ECHO_T}$samba_cv_linux_2_4_quota_braindamage" >&6
 if test x"$samba_cv_linux_2_4_quota_braindamage" = x"yes"; then
-        cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define LINUX_QUOTAS_2 1
 _ACEOF
 
 else
-        cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define LINUX_QUOTAS_1 1
 _ACEOF
 
@@ -20674,7 +20832,8 @@ fi
         ;;
     esac
     QUOTAOBJS=smbd/quotas.o
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_QUOTAS 1
 _ACEOF
 
@@ -20704,7 +20863,8 @@ if test "${with_utmp+set}" = set; then
   yes)
     echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_UTMP 1
 _ACEOF
 
@@ -20844,7 +21004,8 @@ echo "$as_me:$LINENO: result: $fu_cv_sys_stat_statvfs64" >&5
 echo "${ECHO_T}$fu_cv_sys_stat_statvfs64" >&6
   if test $fu_cv_sys_stat_statvfs64 = yes; then
     space=yes
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_STATVFS64 1
 _ACEOF
 
@@ -20901,7 +21062,8 @@ echo "$as_me:$LINENO: result: $fu_cv_sys_stat_statvfs" >&5
 echo "${ECHO_T}$fu_cv_sys_stat_statvfs" >&6
   if test $fu_cv_sys_stat_statvfs = yes; then
     space=yes
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_STATVFS 1
 _ACEOF
 
@@ -20959,7 +21121,8 @@ fi
 echo "${ECHO_T}$fu_cv_sys_stat_statfs3_osf1" >&6
   if test $fu_cv_sys_stat_statfs3_osf1 = yes; then
     space=yes
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_STATFS3_OSF1 1
 _ACEOF
 
@@ -21023,7 +21186,8 @@ fi
 echo "${ECHO_T}$fu_cv_sys_stat_statfs2_bsize" >&6
   if test $fu_cv_sys_stat_statfs2_bsize = yes; then
     space=yes
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_STATFS2_BSIZE 1
 _ACEOF
 
@@ -21078,7 +21242,8 @@ fi
 echo "${ECHO_T}$fu_cv_sys_stat_statfs4" >&6
   if test $fu_cv_sys_stat_statfs4 = yes; then
     space=yes
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_STATFS4 1
 _ACEOF
 
@@ -21139,7 +21304,8 @@ fi
 echo "${ECHO_T}$fu_cv_sys_stat_statfs2_fsize" >&6
   if test $fu_cv_sys_stat_statfs2_fsize = yes; then
     space=yes
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_STATFS2_FSIZE 1
 _ACEOF
 
@@ -21204,7 +21370,8 @@ fi
 echo "${ECHO_T}$fu_cv_sys_stat_fs_data" >&6
   if test $fu_cv_sys_stat_fs_data = yes; then
     space=yes
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define STAT_STATFS2_FS_DATA 1
 _ACEOF
 
@@ -21259,7 +21426,8 @@ samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=no
 fi
 rm -f conftest.$ac_objext conftest.$ac_ext
 if test x"$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" = x"yes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_EXPLICIT_LARGEFILE_SUPPORT 1
 _ACEOF
 
@@ -21274,35 +21442,40 @@ if test "${with_spinlocks+set}" = set; then
 
 fi;
 if test "x$with_spinlocks" = "xyes"; then
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define USE_SPINLOCKS 1
 _ACEOF
 
 
     case "$host_cpu" in
         sparc)
-            cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define SPARC_SPINLOCKS 1
 _ACEOF
 
             ;;
 
         i386|i486|i586|i686)
-            cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define INTEL_SPINLOCKS 1
 _ACEOF
 
             ;;
 
         mips)
-            cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define MIPS_SPINLOCKS 1
 _ACEOF
 
             ;;
 
         powerpc)
-            cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define POWERPC_SPINLOCKS 1
 _ACEOF
 
@@ -21326,7 +21499,8 @@ if test "${with_acl_support+set}" = set; then
 	*sysv5*)
 		echo "$as_me:$LINENO: result: Using UnixWare ACLs" >&5
 echo "${ECHO_T}Using UnixWare ACLs" >&6
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_UNIXWARE_ACLS 1
 _ACEOF
 
@@ -21334,7 +21508,8 @@ _ACEOF
 	*solaris*)
 		echo "$as_me:$LINENO: result: Using solaris ACLs" >&5
 echo "${ECHO_T}Using solaris ACLs" >&6
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SOLARIS_ACLS 1
 _ACEOF
 
@@ -21342,7 +21517,8 @@ _ACEOF
 	*hpux*)
 		echo "$as_me:$LINENO: result: Using HPUX ACLs" >&5
 echo "${ECHO_T}Using HPUX ACLs" >&6
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_HPUX_ACLS 1
 _ACEOF
 
@@ -21350,7 +21526,8 @@ _ACEOF
 	*irix*)
 		echo "$as_me:$LINENO: result: Using IRIX ACLs" >&5
 echo "${ECHO_T}Using IRIX ACLs" >&6
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_IRIX_ACLS 1
 _ACEOF
 
@@ -21358,7 +21535,8 @@ _ACEOF
 	*aix*)
 		echo "$as_me:$LINENO: result: Using AIX ACLs" >&5
 echo "${ECHO_T}Using AIX ACLs" >&6
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_AIX_ACLS 1
 _ACEOF
 
@@ -21366,7 +21544,8 @@ _ACEOF
 	*osf*)
 		echo "$as_me:$LINENO: result: Using Tru64 ACLs" >&5
 echo "${ECHO_T}Using Tru64 ACLs" >&6
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_TRU64_ACLS 1
 _ACEOF
 
@@ -21476,7 +21655,8 @@ echo "${ECHO_T}$samba_cv_HAVE_POSIX_ACLS" >&6
 			if test x"$samba_cv_HAVE_POSIX_ACLS" = x"yes"; then
 				echo "$as_me:$LINENO: result: Using posix ACLs" >&5
 echo "${ECHO_T}Using posix ACLs" >&6
-				cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_POSIX_ACLS 1
 _ACEOF
 
@@ -21522,7 +21702,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_ACL_GET_PERM_NP" >&5
 echo "${ECHO_T}$samba_cv_HAVE_ACL_GET_PERM_NP" >&6
 				if test x"$samba_cv_HAVE_ACL_GET_PERM_NP" = x"yes"; then
-					cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_ACL_GET_PERM_NP 1
 _ACEOF
 
@@ -21534,14 +21715,16 @@ _ACEOF
   *)
     echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_NO_ACLS 1
 _ACEOF
 
     ;;
   esac
 else
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_NO_ACLS 1
 _ACEOF
 
@@ -21712,37 +21895,45 @@ echo "$as_me:$LINENO: result: $samba_cv_HAVE_BROKEN_LINUX_SENDFILE" >&5
 echo "${ECHO_T}$samba_cv_HAVE_BROKEN_LINUX_SENDFILE" >&6
 
 	if test x"$samba_cv_HAVE_SENDFILE64" = x"yes"; then
-    		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SENDFILE64 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define LINUX_SENDFILE_API 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SENDFILE 1
 _ACEOF
 
 	elif test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
-    		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SENDFILE 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define LINUX_SENDFILE_API 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SENDFILE 1
 _ACEOF
 
 	elif test x"$samba_cv_HAVE_BROKEN_LINUX_SENDFILE" = x"yes"; then
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define LINUX_BROKEN_SENDFILE_API 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SENDFILE 1
 _ACEOF
 
@@ -21810,15 +22001,18 @@ echo "$as_me:$LINENO: result: $samba_cv_HAVE_SENDFILE" >&5
 echo "${ECHO_T}$samba_cv_HAVE_SENDFILE" >&6
 
 	if test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
-    		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SENDFILE 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define FREEBSD_SENDFILE_API 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SENDFILE 1
 _ACEOF
 
@@ -21883,15 +22077,18 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_SENDFILE64" >&5
 echo "${ECHO_T}$samba_cv_HAVE_SENDFILE64" >&6
 	if test x"$samba_cv_HAVE_SENDFILE64" = x"yes"; then
-    		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SENDFILE64 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HPUX_SENDFILE_API 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SENDFILE 1
 _ACEOF
 
@@ -21954,15 +22151,18 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_HAVE_SENDFILE" >&5
 echo "${ECHO_T}$samba_cv_HAVE_SENDFILE" >&6
 	if test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
-    		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SENDFILE 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HPUX_SENDFILE_API 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SENDFILE 1
 _ACEOF
 
@@ -22036,15 +22236,18 @@ echo "$as_me:$LINENO: result: $samba_cv_HAVE_SENDFILEV64" >&5
 echo "${ECHO_T}$samba_cv_HAVE_SENDFILEV64" >&6
 
 	if test x"$samba_cv_HAVE_SENDFILEV64" = x"yes"; then
-    		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SENDFILEV64 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define SOLARIS_SENDFILE_API 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SENDFILE 1
 _ACEOF
 
@@ -22115,15 +22318,18 @@ echo "$as_me:$LINENO: result: $samba_cv_HAVE_SENDFILEV" >&5
 echo "${ECHO_T}$samba_cv_HAVE_SENDFILEV" >&6
 
 	if test x"$samba_cv_HAVE_SENDFILEV" = x"yes"; then
-    		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_SENDFILEV 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define SOLARIS_SENDFILE_API 1
 _ACEOF
 
-		cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_SENDFILE 1
 _ACEOF
 
@@ -22215,7 +22421,8 @@ WINBIND_PAM_PROGS=""
 if test x"$HAVE_WINBIND" = x"yes"; then
         echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define WITH_WINBIND 1
 _ACEOF
 
@@ -22293,7 +22500,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_passwd_pw_comment" >&5
 echo "${ECHO_T}$samba_cv_passwd_pw_comment" >&6
 if test x"$samba_cv_passwd_pw_comment" = x"yes"; then
-   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_PASSWD_PW_COMMENT 1
 _ACEOF
 
@@ -22344,7 +22552,8 @@ fi
 echo "$as_me:$LINENO: result: $samba_cv_passwd_pw_age" >&5
 echo "${ECHO_T}$samba_cv_passwd_pw_age" >&6
 if test x"$samba_cv_passwd_pw_age" = x"yes"; then
-   cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_PASSWD_PW_AGE 1
 _ACEOF
 
