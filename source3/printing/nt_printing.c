@@ -1987,7 +1987,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 		}
 	}
 
-	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+	init_sec_access(&sa, PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT);
 	init_sec_ace(&ace[1], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 

@@ -305,8 +305,7 @@ static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
 		memset(dom_name, '\0', sizeof(dom_name));
 		memset(name, '\0', sizeof(name));
 
-		status = winbind_lookup_sid(&find_sid, dom_name, name, 
-					    &sid_name_use);
+		status = lookup_sid(&find_sid, dom_name, name, &sid_name_use);
 
 		if (!status) {
 			sid_name_use = SID_NAME_UNKNOWN;

@@ -241,16 +241,16 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 				/*
 				 * The owner always has SEC_RIGHTS_WRITE_DAC.
 				 */
-				if (tmp_acc_desired & SEC_RIGHTS_WRITE_DAC)
-					tmp_acc_desired &= ~SEC_RIGHTS_WRITE_DAC;
+				if (tmp_acc_desired & WRITE_DAC_ACCESS)
+					tmp_acc_desired &= ~WRITE_DAC_ACCESS;
 			}
 		}
 	}
 
 	acl = sd->dacl;
 
-	if (tmp_acc_desired & SEC_RIGHTS_MAXIMUM_ALLOWED) {
-		tmp_acc_desired &= ~SEC_RIGHTS_MAXIMUM_ALLOWED;
+	if (tmp_acc_desired & MAXIMUM_ALLOWED_ACCESS) {
+		tmp_acc_desired &= ~MAXIMUM_ALLOWED_ACCESS;
 		return get_max_access( acl, token, acc_granted, tmp_acc_desired, status);
 	}
 
