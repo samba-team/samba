@@ -200,6 +200,9 @@ max can be %d\n",
 		/* Free up temporary memory from the main smbd. */
 		lp_talloc_free();
 
+		/* Ensure we respond to PING and DEBUG messages from the main smbd. */
+		message_dispatch();
+
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
@@ -715,6 +718,11 @@ static void usage(char *pname)
 
 	if (!message_init()) {
 		exit(1);
+	}
+
+	/* Setup the main smbd so that we can get messages. */
+	if (lp_status(-1)) {
+		claim_connection(NULL,"",MAXSTATUS,True);
 	}
 
 	if (!open_sockets(is_daemon,port))
