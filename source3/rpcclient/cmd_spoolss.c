@@ -1355,7 +1355,6 @@ static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **
 	}
 		
 
-done:
 	/* cleanup */
 	cli_nt_session_close (cli);
 	talloc_destroy(mem_ctx);
