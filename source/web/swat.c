@@ -1026,6 +1026,7 @@ static void printers_page(void)
 	load_config(True);
 	iNumNonAutoPrintServices = lp_numservices();
 	load_printers();
+	codepage_initialise(lp_client_code_page());
 
 	cgi_setup(SWATDIR, !demo_mode);
 
