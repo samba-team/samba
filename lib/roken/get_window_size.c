@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -81,8 +81,8 @@ get_window_size(int fd, struct winsize *wp)
     if(wp->ws_col > 0 && wp->ws_row > 0)
 	return 0;
     
-#if defined(TIOGCWINSZ)
-    ret = ioctl(fd, TIOGCWINSZ, &tmp);
+#if defined(TIOCGWINSZ)
+    ret = ioctl(fd, TIOCGWINSZ, &tmp);
 #elif defined(TIOCGSIZE)
     {
 	struct ttysize ts;
@@ -90,7 +90,7 @@ get_window_size(int fd, struct winsize *wp)
 	ret = ioctl(fd, TIOCGSIZE, &ts);
 	if(ret == 0) {
 	    tmp.ws_row = ts.ts_lines;
-	    tmp.ws_row = ts.ts_cols;
+	    tmp.ws_col = ts.ts_cols;
 	    tmp.ws_xpixel = 0;
 	    tmp.ws_ypixel = 0;
 	}
