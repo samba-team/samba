@@ -70,54 +70,6 @@
  __ERROR__XX__UNKNOWN_ADDRTYPE
 #endif
 
-#if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_USE_ENCTYPE) && defined(HAVE_KRB5_STRING_TO_KEY)
- int create_kerberos_key_from_string(krb5_context context,
-					krb5_principal host_princ,
-					krb5_data *password,
-					krb5_keyblock *key)
-{
-	int ret;
-	krb5_data salt,
-	krb5_encrypt_block eblock;
-
-	ret = krb5_principal2salt(context, host_princ, &salt);
-	if (ret) {
-		DEBUG(1,("krb5_principal2salt failed (%s)\n", error_message(ret)));
-		return ret;
-	}
-	krb5_use_enctype(context, &eblock, ENCTYPE_DES_CBC_MD5);
-	return krb5_string_to_key(context, &eblock, key, password, &salt);
-}
-#elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
- int create_kerberos_key_from_string(krb5_context context,
-					krb5_principal host_princ,
-					krb5_data *password,
-					krb5_keyblock *key)
-{
-	int ret;
-	krb5_salt salt;
-
-	ret = krb5_get_pw_salt(context, host_princ, &salt);
-	if (ret) {
-		DEBUG(1,("krb5_get_pw_salt failed (%s)\n", error_message(ret)));
-		return ret;
-	}
-	return krb5_string_to_key_salt(context, ENCTYPE_DES_CBC_MD5, password->data,
-			salt, key);
-}
-#else
- __ERROR_XX_UNKNOWN_CREATE_KEY_FUNCTIONS
-#endif
-
-#if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
- krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context,
-		krb5_auth_context auth_context,
-		krb5_keyblock *keyblock)
-{
-	return krb5_auth_con_setkey(context, auth_context, keyblock);
-}
-#endif
-
 /*
   we can't use krb5_mk_req because w2k wants the service to be in a particular format
 */
