@@ -1,9 +1,10 @@
 <chapter id="Browsing-Quick">
 <chapterinfo>
 	<author>
-		<firstname>John</firstname><surname>Terpstra</surname>
+		<firstname>John H</firstname><surname>Terpstra</surname>
 	</author>
 	<pubdate>July 5, 1998</pubdate>
+	<pubdate>Updated: March 15, 2003</pubdate>
 </chapterinfo>
 
 <title>Quick Cross Subnet Browsing / Cross Workgroup Browsing guide</title>
@@ -16,16 +17,22 @@ of NetBIOS names to IP addesses. WINS is NOT involved in browse list handling
 except by way of name to address mapping.
 </para>
 
+<para>
+Note: MS Windows 2000 and later can be configured to operate with NO NetBIOS 
+over TCP/IP. Samba-3 and later also supports this mode of operation.
+</para>
+
+
 <sect1>
 <title>Discussion</title>
 
 <para>
 Firstly, all MS Windows networking is based on SMB (Server Message
-Block) based messaging. SMB messaging is implemented using NetBIOS. Samba
-implements NetBIOS by encapsulating it over TCP/IP. MS Windows products can
-do likewise. NetBIOS based networking uses broadcast messaging to affect
-browse list management. When running NetBIOS over TCP/IP this uses UDP
-based messaging. UDP messages can be broadcast or unicast.
+Block) based messaging. SMB messaging may be implemented using NetBIOS or 
+without NetBIOS. Samba implements NetBIOS by encapsulating it over TCP/IP.
+MS Windows products can do likewise. NetBIOS based networking uses broadcast
+messaging to affect browse list management. When running NetBIOS over
+TCP/IP this uses UDP based messaging. UDP messages can be broadcast or unicast.
 </para>
 
 <para>
@@ -45,20 +52,27 @@ the "remote browse sync" parameters to your smb.conf file.
 </para>
 
 <para>
-If only one WINS server is used then the use of the "remote announce" and the
-"remote browse sync" parameters should NOT be necessary.
+If only one WINS server is used for an entire multi-segment network then
+the use of the "remote announce" and the "remote browse sync" parameters
+should NOT be necessary.
 </para>
 
 <para>
-Samba WINS does not support MS-WINS replication. This means that when setting up
-Samba as a WINS server there must only be one nmbd configured as a WINS server
-on the network. Some sites have used multiple Samba WINS servers for redundancy
-(one server per subnet) and then used "remote browse sync" and "remote announce"
-to affect browse list collation across all segments. Note that this means
-clients will only resolve local names, and must be configured to use DNS to
-resolve names on other subnets in order to resolve the IP addresses of the
-servers they can see on other subnets. This setup is not recommended, but is
-mentioned as a practical consideration (ie: an 'if all else fails' scenario).
+As of Samba-3 WINS replication is being worked on. The bulk of the code has
+been committed, but it still needs maturation.
+</para>
+
+<para>
+Right now samba WINS does not support MS-WINS replication. This means that
+when setting up Samba as a WINS server there must only be one nmbd configured
+as a WINS server on the network. Some sites have used multiple Samba WINS
+servers for redundancy (one server per subnet) and then used "remote browse
+sync" and "remote announce" to affect browse list collation across all
+segments. Note that this means clients will only resolve local names,
+and must be configured to use DNS to resolve names on other subnets in
+order to resolve the IP addresses of the servers they can see on other
+subnets. This setup is not recommended, but is mentioned as a practical
+consideration (ie: an 'if all else fails' scenario).
 </para>
 
 <para>
@@ -198,8 +212,9 @@ To configure Samba to register with a WINS server just add
 </para>
 
 <para>
-<emphasis>DO NOT EVER</emphasis> use both "wins support = yes" together with "wins server = a.b.c.d"
-particularly not using it's own IP address.
+<emphasis>DO NOT EVER</emphasis> use both "wins support = yes" together
+with "wins server = a.b.c.d" particularly not using it's own IP address.
+Specifying both will cause nmbd to refuse to start!
 </para>
 
 </sect1>
@@ -213,7 +228,7 @@ one protocol on an MS Windows machine.
 </para>
 
 <para>
-Every NetBIOS machine take part in a process of electing the LMB (and DMB)
+Every NetBIOS machine takes part in a process of electing the LMB (and DMB)
 every 15 minutes. A set of election criteria is used to determine the order
 of precidence for winning this election process. A machine running Samba or
 Windows NT will be biased so that the most suitable machine will predictably
@@ -231,6 +246,15 @@ interface over the IPX protocol. Samba will then lose the LMB role as Windows
 as an LMB and thus browse list operation on all TCP/IP only machines will
 fail.
 </para>
+
+<para><emphasis>
+Windows 95, 98, 98se, Me are referred to generically as Windows 9x.
+The Windows NT4, 2000, XP and 2003 use common protocols. These are roughly
+referred to as the WinNT family, but it should be recognised that 2000 and
+XP/2003 introduce new protocol extensions that cause them to behave 
+differently from MS Windows NT4. Generally, where a server does NOT support
+the newer or extended protocol, these will fall back to the NT4 protocols.
+</emphasis></para>
 
 <para>
 The safest rule of all to follow it this - USE ONLY ONE PROTOCOL!

@@ -27,8 +27,15 @@ document.
 </para>
 
 <para>
-Browsing will NOT work if name resolution from NetBIOS names to IP
-addresses does not function correctly. Use of a WINS server is highly
+MS Windows 2000 and later, as with Samba-3 and later, can be
+configured to not use NetBIOS over TCP/IP. When configured this way
+it is imperative that name resolution (using DNS/LDAP/ADS) be correctly
+configured and operative. Browsing will NOT work if name resolution
+from SMB machine names to IP addresses does not function correctly.
+</para>
+
+<para>
+Where NetBIOS over TCP/IP is enabled use of a WINS server is highly
 recommended to aid the resolution of NetBIOS (SMB) names to IP addresses.
 WINS allows remote segment clients to obtain NetBIOS name_type information
 that can NOT be provided by any other means of name resolution.
@@ -40,14 +47,10 @@ that can NOT be provided by any other means of name resolution.
 <title>Browsing support in samba</title>
 
 <para>
-Samba now fully supports browsing.  The browsing is supported by nmbd
+Samba facilitates browsing.  The browsing is supported by nmbd
 and is also controlled by options in the smb.conf file (see smb.conf(5)).
-</para>
-
-<para>
 Samba can act as a local browse master for a workgroup and the ability
-for samba to support domain logons and scripts is now available.  See
-DOMAIN.txt for more information on domain logons.
+for samba to support domain logons and scripts is now available.
 </para>
 
 <para>
@@ -68,12 +71,12 @@ that is providing this service.
 
 <para>
 [Note that nmbd can be configured as a WINS server, but it is not
-necessary to specifically use samba as your WINS server.  NTAS can
-be configured as your WINS server.  In a mixed NT server and
-samba environment on a Wide Area Network, it is recommended that
-you use the NT server's WINS server capabilities.  In a samba-only
-environment, it is recommended that you use one and only one nmbd
-as your WINS server].
+necessary to specifically use samba as your WINS server.  MS Windows
+NT4, Server or Advanced Server 2000 or 2003 can be configured as
+your WINS server.  In a mixed NT/2000/2003 server and samba environment on
+a Wide Area Network, it is recommended that you use the Microsoft
+WINS server capabilities.  In a samba-only environment, it is
+recommended that you use one and only one Samba server as your WINS server.
 </para>
 
 <para>
@@ -113,6 +116,15 @@ connection that lists the shares is done as guest, and thus you must
 have a valid guest account.
 </para>
 
+<para><emphasis>
+MS Windows 2000 and upwards (as with Samba) can be configured to disallow
+anonymous (ie: Guest account) access to the IPC$ share. In that case, the
+MS Windows 2000/XP/2003 machine acting as an SMB/CIFS client will use the
+name of the currently logged in user to query the IPC$ share. MS Windows
+9X clients are not able to do this and thus will NOT be able to browse
+server resources.
+</emphasis></para>
+
 <para>
 Also, a lot of people are getting bitten by the problem of too many
 parameters on the command line of nmbd in inetd.conf.  This trick is to
@@ -132,7 +144,7 @@ in smb.conf)
 <sect1>
 <title>Browsing across subnets</title>
 <para>
-With the release of Samba 1.9.17(alpha1 and above) Samba has been
+Since the release of Samba 1.9.17(alpha1) Samba has been
 updated to enable it to support the replication of browse lists
 across subnet boundaries.  New code and options have been added to
 achieve this.  This section describes how to set this feature up
@@ -167,8 +179,7 @@ settings) for Samba this is in the smb.conf file.
 Cross subnet browsing is a complicated dance, containing multiple
 moving parts.  It has taken Microsoft several years to get the code
 that achieves this correct, and Samba lags behind in some areas.
-However, with the 1.9.17 release, Samba is capable of cross subnet
-browsing when configured correctly.
+Samba is capable of cross subnet browsing when configured correctly.
 </para>
 
 <para>
@@ -419,9 +430,9 @@ in the [globals] section add the line
 </para>
 
 <para>
-Versions of Samba previous to 1.9.17 had this parameter default to
+Versions of Samba prior to 1.9.17 had this parameter default to
 yes.  If you have any older versions of Samba on your network it is
-strongly suggested you upgrade to 1.9.17 or above, or at the very
+strongly suggested you upgrade to a recent version, or at the very
 least set the parameter to 'no' on all these machines.
 </para>
 
@@ -473,7 +484,7 @@ machine or its IP address.
 Note that this line MUST NOT BE SET in the smb.conf file of the Samba
 server acting as the WINS server itself.  If you set both the
 "<command>wins support = yes</command>" option and the 
-"<command>wins server = &gt;name&lt;</command>" option then
+"<command>wins server = &lt;name&gt;</command>" option then
 nmbd will fail to start.
 </para>
 
@@ -538,11 +549,12 @@ server, if you require.
 <para>
 Next, you should ensure that each of the subnets contains a
 machine that can act as a local master browser for the
-workgroup.  Any NT machine should be able to do this, as will
-Windows 95 machines (although these tend to get rebooted more
-often, so it's not such a good idea to use these).  To make a 
-Samba server a local master browser set the following
-options in the [global] section of the smb.conf file :
+workgroup.  Any MS Windows NT/2K/XP/2003  machine should be
+able to do this, as will Windows 9x machines (although these
+tend to get rebooted more often, so it's not such a good idea
+to use these).  To make a Samba server a local master browser
+set the following options in the [global] section of the
+smb.conf file :
 </para>
 
 <para>
@@ -594,7 +606,7 @@ you must not set up a Samba server as a domain master browser.
 By default, a Windows NT Primary Domain Controller for a Domain
 name is also the Domain master browser for that name, and many
 things will break if a Samba server registers the Domain master
-browser NetBIOS name (DOMAIN&gt;1B&lt;) with WINS instead of the PDC.
+browser NetBIOS name (DOMAIN&lt;1B&gt;) with WINS instead of the PDC.
 </para>
 
 <para>
@@ -661,8 +673,8 @@ samba systems!)
 </para>
 
 <para>
-A "os level" of 2 would make it beat WfWg and Win95, but not NTAS.  A
-NTAS domain controller uses level 32.
+A "os level" of 2 would make it beat WfWg and Win95, but not MS Windows
+NT/2K Server.  A MS Windows NT/2K Server domain controller uses level 32.
 </para>
 
 <para>The maximum os level is 255</para>
