@@ -490,6 +490,7 @@ static void close_tdb(struct tdbsam_privates *tdb_state)
 static void tdbsam_endsampwent(struct pdb_methods *my_methods)
 {
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
+	SAFE_FREE(tdb_state->key.dptr);
 	close_tdb(tdb_state);
 	
 	DEBUG(7, ("endtdbpwent: closed sam database.\n"));
@@ -503,7 +504,7 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct tdbsam_privates *tdb_state = (struct tdbsam_privates *)my_methods->private_data;
-	TDB_DATA 	data;
+	TDB_DATA 	data, old_key;
 	const char *prefix = USERPREFIX;
 	int  prefixlen = strlen (prefix);
 
@@ -514,9 +515,15 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *
 	}
 
 	/* skip all non-USER entries (eg. RIDs) */
-	while ((tdb_state->key.dsize != 0) && (strncmp(tdb_state->key.dptr, prefix, prefixlen)))
+	while ((tdb_state->key.dsize != 0) && (strncmp(tdb_state->key.dptr, prefix, prefixlen))) {
+
+		old_key = tdb_state->key;
+
 		/* increment to next in line */
 		tdb_state->key = tdb_nextkey(tdb_state->passwd_tdb, tdb_state->key);
+
+		SAFE_FREE(old_key.dptr);
+	}
 
 	/* do we have an valid iteration pointer? */
 	if(tdb_state->passwd_tdb == NULL) {
@@ -538,8 +545,12 @@ static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT *
 	}
 	SAFE_FREE(data.dptr);
 	
+	old_key = tdb_state->key;
+	
 	/* increment to next in line */
 	tdb_state->key = tdb_nextkey(tdb_state->passwd_tdb, tdb_state->key);
+
+	SAFE_FREE(old_key.dptr);
 
 	return NT_STATUS_OK;
 }
