@@ -9,6 +9,8 @@
 struct cli_state *open_pipe_creds(char *system_name, PyObject *creds, 
 				  cli_pipe_fn *connect_fn,
 				  struct cli_state *cli);
+PyObject *new_policy_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *pol);
 void initspoolss(void);
 
 /* The following definitions come from python/py_spoolss_drivers.c  */
