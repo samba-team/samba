@@ -145,9 +145,12 @@ Data(Authenticator *ap, int type, void *d, int c)
 int
 kerberos5_init(Authenticator *ap, int server)
 {
-    krb5_init_context(&context);
+    krb5_error_code ret;
+
+    ret = krb5_init_context(&context);
+    if (ret)
+	return 0;
     if (server) {
-	krb5_error_code ret;
 	krb5_keytab kt;
 	krb5_kt_cursor cursor;
 
