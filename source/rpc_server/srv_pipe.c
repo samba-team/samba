@@ -1084,6 +1084,8 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ", rpc_name, p->hdr_req.opnum));
 
+	prs_dump(rpc_name, p->hdr_req.opnum, rpc_in);
+
 	for (fn_num = 0; api_rpc_cmds[fn_num].name; fn_num++) {
 		if (api_rpc_cmds[fn_num].opnum == p->hdr_req.opnum && api_rpc_cmds[fn_num].fn != NULL) {
 			DEBUG(3,("api_rpcTNP: rpc command: %s\n", api_rpc_cmds[fn_num].name));
