@@ -2755,7 +2755,7 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 			continue;
 		}   
 
-		if (ismyip(dest_ip))
+		if ((lp_security() != SEC_USER) && (ismyip(dest_ip)))
 		{
 			DEBUG(1,("cli_connect_serverlist: Password server loop - not using password server %s\n", remote_machine));
 			continue;
