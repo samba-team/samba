@@ -383,7 +383,7 @@ struct nt_client_info
 
 	fstring mach_acct;
 
-	char sess_key[16];
+	uint8 sess_key[16];
 	DOM_CRED clnt_cred;
 	DOM_CRED rtn_cred;
 

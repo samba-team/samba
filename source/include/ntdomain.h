@@ -456,7 +456,7 @@ typedef struct gid_info
 typedef struct logon_hours_info
 {
 	uint32 len; /* normally 21 bytes */
-	char hours[32];
+	uint8 hours[32];
 
 } LOGON_HRS;
 

@@ -91,7 +91,7 @@ static int _my_mbstowcs(int16 *dst, uchar *src, int len)
  * Creates the MD4 Hash of the users password in NT UNICODE.
  */
  
-void E_md4hash(uchar *passwd, uchar *p16)
+void E_md4hash(uchar *passwd, uchar p16[16])
 {
 	int len;
 	int16 wpwd[129];
@@ -121,28 +121,28 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24])
 }
 
 /* Does the NT owf of a user's password */
-void nt_owf_gen(char *pwd, char nt_p16[16])
+void nt_owf_gen(char *pwd, uchar nt_p16[16])
 {
 	char passwd[130];
 	StrnCpy(passwd, pwd, sizeof(passwd)-1);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	memset(nt_p16, '\0', 16);
-	E_md4hash((uchar *)passwd, (uchar *)nt_p16);
+	E_md4hash((uchar *)passwd, nt_p16);
 
 	/* clear out local copy of user's password (just being paranoid). */
 	bzero(passwd, sizeof(passwd));
 }
 
 /* Does both the NT and LM owfs of a user's password */
-void nt_lm_owf_gen(char *pwd, char nt_p16[16], char p16[16])
+void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], char p16[16])
 {
 	char passwd[130];
 	StrnCpy(passwd, pwd, sizeof(passwd)-1);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	memset(nt_p16, '\0', 16);
-	E_md4hash((uchar *)passwd, (uchar *)nt_p16);
+	E_md4hash((uchar *)passwd, nt_p16);
 
 	/* Mangle the passwords into Lanman format */
 	passwd[14] = '\0';

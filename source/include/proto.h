@@ -1425,7 +1425,7 @@ void make_clnt_info(DOM_CLNT_INFO *clnt,
 void smb_io_clnt_info(char *desc, BOOL io, DOM_CLNT_INFO *clnt, struct mem_buffer *buf, int *q, int depth);
 void make_logon_id(DOM_LOGON_ID *log, uint32 log_id_low, uint32 log_id_high);
 void smb_io_logon_id(char *desc, BOOL io, DOM_LOGON_ID *log, struct mem_buffer *buf, int *q, int depth);
-void make_arc4_owf(ARC4_OWF *hash, char data[16]);
+void make_arc4_owf(ARC4_OWF *hash, uint8 data[16]);
 void smb_io_arc4_owf(char *desc, BOOL io, ARC4_OWF *hash, struct mem_buffer *buf, int *q, int depth);
 void make_id_info1(DOM_ID_INFO_1 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
@@ -1492,10 +1492,10 @@ void srv_io_share_info1(char *desc, BOOL io, SH_INFO_1 *sh1, struct mem_buffer *
 void srv_io_share_1_ctr(char *desc, BOOL io, SHARE_INFO_1_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_q_net_share_enum(char *desc, BOOL io, SRV_Q_NET_SHARE_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_r_net_share_enum(char *desc, BOOL io, SRV_R_NET_SHARE_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
-void make_srv_sess_info0_str(SESS_INFO_0_STR *sh0, char *name);
-void srv_io_sess_info0_str(char *desc, BOOL io, SESS_INFO_0_STR *sh0, struct mem_buffer *buf, int *q,  int depth);
-void make_srv_sess_info0(SESS_INFO_0 *sh0, char *name);
-void srv_io_sess_info0(char *desc, BOOL io, SESS_INFO_0 *sh0, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name);
+void srv_io_sess_info0_str(char *desc, BOOL io, SESS_INFO_0_STR *ss0, struct mem_buffer *buf, int *q,  int depth);
+void make_srv_sess_info0(SESS_INFO_0 *ss0, char *name);
+void srv_io_sess_info0(char *desc, BOOL io, SESS_INFO_0 *ss0, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_sess_0_ctr(char *desc, BOOL io, SESS_INFO_0_CTR *ctr, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_q_net_sess_enum(char *desc, BOOL io, SRV_Q_NET_SESS_ENUM *q_n, struct mem_buffer *buf, int *q,  int depth);
 void srv_io_r_net_sess_enum(char *desc, BOOL io, SRV_R_NET_SESS_ENUM *r_n, struct mem_buffer *buf, int *q,  int depth);
@@ -1600,10 +1600,10 @@ void cred_hash2(unsigned char out[8], unsigned char in[8], unsigned char key[16]
 
 void SMBencrypt(uchar *passwd, uchar *c8, uchar p24[24]);
 void SMBNTencrypt(char *passwd, uchar *c8, uchar p24[24]);
-void E_md4hash(uchar *passwd, uchar *p16);
+void E_md4hash(uchar *passwd, uchar p16[16]);
 void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
-void nt_owf_gen(char *pwd, char nt_p16[16]);
-void nt_lm_owf_gen(char *pwd, char nt_p16[16], char p16[16]);
+void nt_owf_gen(char *pwd, uchar nt_p16[16]);
+void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], char p16[16]);
 BOOL obfuscate_pwd(unsigned char pwd[16], unsigned char sess_key[16], uint8 mode);
 
 /*The following definitions come from  smberr.c  */
@@ -1842,7 +1842,7 @@ char *align4(char *q, char *base);
 char *align2(char *q, char *base);
 char *align_offset(char *q, char *base, int align_offset_len);
 void print_asc(int level, unsigned char *buf,int len);
-void dump_data(int level,char *buf1,int len);
+void dump_data(int level,char *buf1, size_t len);
 char *tab_depth(int depth);
 int writefile(BOOL translation, int f, char *b, int n);
 int readfile(BOOL translation, char *b, int size, int n, FILE *f);
