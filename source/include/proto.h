@@ -1904,8 +1904,10 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 				const char* val_name,
 				uint32 *type, BUFFER2 *buffer);
 BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+				uint32 sec_info,
 				uint32 sec_buf_size, SEC_DESC *sec_buf);
 BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+				uint32 sec_info,
 				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf);
 BOOL do_reg_delete_val(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *val_name);
 BOOL do_reg_delete_key(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, char *key_name);
@@ -2651,10 +2653,12 @@ BOOL make_reg_q_close(REG_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL reg_io_q_close(char *desc,  REG_Q_CLOSE *q_u, prs_struct *ps, int depth);
 BOOL reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth);
 BOOL make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
+				uint32 sec_info,
 				uint32 buf_len, SEC_DESC *sec_desc);
 BOOL reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, int depth);
 BOOL reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, int depth);
 BOOL make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
+				uint32 sec_info,
 				uint32 buf_len, SEC_DESC_BUF *sec_buf);
 BOOL reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
 BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, int depth);
@@ -3498,17 +3502,20 @@ BOOL api_ntlsa_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_lsa_hnd.c  */
 
-void init_lsa_policy_hnd(void);
-BOOL open_lsa_policy_hnd(POLICY_HND *hnd);
-int find_lsa_policy_by_hnd(POLICY_HND *hnd);
-BOOL set_lsa_policy_samr_rid(POLICY_HND *hnd, uint32 rid);
-BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
-BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
-BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
-uint32 get_lsa_policy_samr_rid(POLICY_HND *hnd);
-BOOL set_lsa_policy_reg_name(POLICY_HND *hnd, fstring name);
-BOOL get_lsa_policy_reg_name(POLICY_HND *hnd, fstring name);
-BOOL close_lsa_policy_hnd(POLICY_HND *hnd);
+void init_policy_hnd(int num_pol_hnds);
+BOOL open_policy_hnd(POLICY_HND *hnd);
+int find_policy_by_hnd(POLICY_HND *hnd);
+BOOL set_policy_samr_rid(POLICY_HND *hnd, uint32 rid);
+BOOL set_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
+BOOL set_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
+BOOL get_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
+uint32 get_policy_samr_rid(POLICY_HND *hnd);
+BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name);
+BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name);
+BOOL set_policy_cli_state(POLICY_HND *hnd, struct cli_state *cli, uint16 fnum,
+				void (*free_fn)(struct cli_state *, uint16));
+BOOL get_policy_cli_state(POLICY_HND *hnd, struct cli_state **cli, uint16 *fnum);
+BOOL close_policy_hnd(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 

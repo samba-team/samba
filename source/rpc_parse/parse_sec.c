@@ -94,6 +94,7 @@ BOOL sec_io_ace(char *desc, SEC_ACE *t, prs_struct *ps, int depth)
 	sec_io_access   ("info ", &t->info, ps, depth);
 	prs_align(ps);
 	smb_io_dom_sid("sid  ", &t->sid , ps, depth);
+	prs_align(ps);
 
 	prs_uint16_post("size ", ps, depth, &t->size, offset_ace_size, old_offset);
 
@@ -519,9 +520,11 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 		sec_io_desc("sec   ", sec->sec, ps, depth);
 	}
 
+	prs_align(ps);
+	
 	size = ps->offset - old_offset;
-	prs_uint32_post("max_len", ps, depth, &(sec->max_len), off_max_len, size == 0 ? sec->max_len : size);
-	prs_uint32_post("len    ", ps, depth, &(sec->len    ), off_len    , size);
+	prs_uint32_post("max_len", ps, depth, &(sec->max_len), off_max_len, size == 0 ? sec->max_len : size + 8);
+	prs_uint32_post("len    ", ps, depth, &(sec->len    ), off_len    , size == 0 ? 0 : size + 8);
 
 	return True;
 }

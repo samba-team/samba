@@ -159,8 +159,6 @@ typedef struct q_reg_get_key_sec_info
 /* REG_R_GET_KEY_SEC */
 typedef struct r_reg_get_key_sec_info
 {
-	uint32 sec_info;       /* xxxx_SECURITY_INFORMATION */
-
 	uint32 ptr;       /* pointer */
 	BUFHDR hdr_sec;    /* header for security data */
 	SEC_DESC_BUF *data;    /* security data */

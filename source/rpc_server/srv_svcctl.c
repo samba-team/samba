@@ -41,7 +41,7 @@ static void svc_reply_close(SVC_Q_CLOSE *q_r,
 	bzero(r_u.pol.data, POL_HND_SIZE);
 
 	/* close the policy handle */
-	if (close_lsa_policy_hnd(&(q_r->pol)))
+	if (close_policy_hnd(&(q_r->pol)))
 	{
 		r_u.status = 0;
 	}
@@ -83,12 +83,12 @@ static void svc_reply_open_service(SVC_Q_OPEN_SERVICE *q_u,
 
 	DEBUG(5,("svc_open_service: %d\n", __LINE__));
 
-	if (status == 0x0 && find_lsa_policy_by_hnd(&q_u->scman_pol) == -1)
+	if (status == 0x0 && find_policy_by_hnd(&q_u->scman_pol) == -1)
 	{
 		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !open_lsa_policy_hnd(&pol))
+	if (status == 0x0 && !open_policy_hnd(&pol))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -101,7 +101,7 @@ static void svc_reply_open_service(SVC_Q_OPEN_SERVICE *q_u,
 		/* lkcl XXXX do a check on the name, here */
 	}
 
-	if (status == 0x0 && !set_lsa_policy_reg_name(&pol, name))
+	if (status == 0x0 && !set_policy_reg_name(&pol, name))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -137,7 +137,7 @@ static void svc_reply_start_service(SVC_Q_START_SERVICE *q_s,
 
 	r_s.status = 0x0;
 
-	if (find_lsa_policy_by_hnd(&q_s->pol) == -1)
+	if (find_policy_by_hnd(&q_s->pol) == -1)
 	{
 		r_s.status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -174,7 +174,7 @@ static void svc_reply_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
 
 	DEBUG(5,("svc_open_sc_man: %d\n", __LINE__));
 
-	if (status == 0x0 && !open_lsa_policy_hnd(&pol))
+	if (status == 0x0 && !open_policy_hnd(&pol))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -187,7 +187,7 @@ static void svc_reply_open_sc_man(SVC_Q_OPEN_SC_MAN *q_u,
 		/* lkcl XXXX do a check on the name, here */
 	}
 
-	if (status == 0x0 && !set_lsa_policy_reg_name(&pol, name))
+	if (status == 0x0 && !set_policy_reg_name(&pol, name))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -242,7 +242,7 @@ static void svc_reply_enum_svcs_status(SVC_Q_ENUM_SVCS_STATUS *q_u,
 
 	DEBUG(5,("svc_enum_svcs_status: %d\n", __LINE__));
 
-	if (dos_status == 0x0 && find_lsa_policy_by_hnd(&q_u->pol) == -1)
+	if (dos_status == 0x0 && find_policy_by_hnd(&q_u->pol) == -1)
 	{
 		dos_status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -338,7 +338,7 @@ static void svc_reply_query_disp_name(SVC_Q_QUERY_DISP_NAME *q_u,
 
 	DEBUG(5,("svc_query_disp_name: %d\n", __LINE__));
 
-	if (find_lsa_policy_by_hnd(&q_u->scman_pol) == -1)
+	if (find_policy_by_hnd(&q_u->scman_pol) == -1)
 	{
 		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}

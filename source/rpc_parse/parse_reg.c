@@ -664,13 +664,14 @@ BOOL reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 makes a structure.
 ********************************************************************/
 BOOL make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
+				uint32 sec_info,
 				uint32 buf_len, SEC_DESC *sec_desc)
 {
 	if (q_i == NULL) return False;
 
 	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
 
-	q_i->sec_info = DACL_SECURITY_INFORMATION;
+	q_i->sec_info = sec_info;
 
 	q_i->ptr = 1;
 	make_buf_hdr(&(q_i->hdr_sec), buf_len, buf_len);
@@ -723,15 +724,14 @@ BOOL reg_io_r_set_key_sec(char *desc, REG_R_SET_KEY_SEC *r_q, prs_struct *ps, in
 makes a structure.
 ********************************************************************/
 BOOL make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol, 
+				uint32 sec_info,
 				uint32 buf_len, SEC_DESC_BUF *sec_buf)
 {
 	if (q_i == NULL) return False;
 
 	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
 
-	q_i->sec_info = OWNER_SECURITY_INFORMATION |
-	                GROUP_SECURITY_INFORMATION |
-	                DACL_SECURITY_INFORMATION;
+	q_i->sec_info = sec_info;
 
 	q_i->ptr = sec_buf != NULL ? 1 : 0;
 	q_i->data = sec_buf;

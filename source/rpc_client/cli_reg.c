@@ -509,6 +509,7 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 do a REG Set Key Security 
 ****************************************************************************/
 BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+				uint32 sec_info,
 				uint32 sec_buf_size, SEC_DESC *sec_buf)
 {
 	prs_struct rbuf;
@@ -525,7 +526,7 @@ BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 
 	DEBUG(4,("REG Set Key security.\n"));
 
-	make_reg_q_set_key_sec(&q_o, hnd, sec_buf_size, sec_buf);
+	make_reg_q_set_key_sec(&q_o, hnd, sec_info, sec_buf_size, sec_buf);
 
 	/* turn parameters into data stream */
 	reg_io_q_set_key_sec("", &q_o, &buf, 0);
@@ -558,6 +559,7 @@ BOOL do_reg_set_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 do a REG Query Key Security 
 ****************************************************************************/
 BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
+				uint32 sec_info,
 				uint32 *sec_buf_size, SEC_DESC_BUF *sec_buf)
 {
 	prs_struct rbuf;
@@ -574,7 +576,7 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 
 	DEBUG(4,("REG query key security.  buf_size: %d\n", *sec_buf_size));
 
-	make_reg_q_get_key_sec(&q_o, hnd, *sec_buf_size, sec_buf);
+	make_reg_q_get_key_sec(&q_o, hnd, sec_info, *sec_buf_size, sec_buf);
 
 	/* turn parameters into data stream */
 	reg_io_q_get_key_sec("", &q_o, &buf, 0);
