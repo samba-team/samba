@@ -1637,6 +1637,13 @@ BOOL check_file_sharing(int cnum,char *fname, BOOL rename_op)
           {
             DEBUG(0,("check_file_sharing: NT redirector workaround - rename attempted on \
 batch oplocked file %s, dev = %x, inode = %x\n", fname, dev, inode));
+#if 0
+            /* 
+             * This next line is a test that allows the deny-mode
+             * processing to be skipped. JRA.
+             */ 
+            continue;
+#endif
           }
           else
           {
