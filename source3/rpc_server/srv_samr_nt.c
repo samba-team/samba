@@ -126,19 +126,6 @@ static void free_samr_info(void *ptr)
  Ensure password info is never given out. Paranioa... JRA.
  ********************************************************************/
 
-static void samr_clear_passwd_fields( SAM_USER_INFO_21 *pass, int num_entries)
-{
-	int i;
-
-	if (!pass)
-		return;
-
-	for (i = 0; i < num_entries; i++) {
-		memset(&pass[i].lm_pwd, '\0', sizeof(pass[i].lm_pwd));
-		memset(&pass[i].nt_pwd, '\0', sizeof(pass[i].nt_pwd));
-	}
-}
-
 static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 {
 	
@@ -265,103 +252,6 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 	return NT_STATUS_OK;
 }
 
-
-/*******************************************************************
-  This next function should be replaced with something that
-  dynamically returns the correct user info..... JRA.
- ********************************************************************/
-
-static NTSTATUS get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
-                                int *total_entries, int *num_entries,
-                                int max_num_entries, uint16 acb_mask)
-{
-	SAM_ACCOUNT *pwd = NULL;
-	BOOL not_finished = True;
-	NTSTATUS nt_status;
-
-	(*num_entries) = 0;
-	(*total_entries) = 0;
-
-	if (pw_buf == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&pwd))) {
-		return nt_status;
-	}
-
-	if (!pdb_setsampwent(False)) {
-		DEBUG(0, ("get_sampwd_entries: Unable to open passdb.\n"));
-		pdb_free_sam(&pwd);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	
-	while (((not_finished = pdb_getsampwent(pwd)) != False) 
-	       && (*num_entries) < max_num_entries) 
-	{
-	        int user_name_len;
-		const char *user_name;
-
-	        if (start_idx > 0) {
-
-			pdb_free_sam(&pwd);
-			
-			if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&pwd))) {
-				pdb_endsampwent();
-				return nt_status;
-			}
-
-			/* skip the requested number of entries.
-			   not very efficient, but hey...  */
-			start_idx--;
-			continue;
-		}
-		
-		user_name = pdb_get_username(pwd);
-
-		if (!user_name) {
-			DEBUG(2, ("account had NULL username!\n"));
-		} else if (!(acb_mask == 0 || (pdb_get_acct_ctrl(pwd) & acb_mask))) {
-			DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
-		} else {
-			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
-			
-			user_name_len = strlen(user_name)+1;
-			init_unistr2(&pw_buf[(*num_entries)].uni_user_name, user_name, user_name_len);
-			init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
-			pw_buf[(*num_entries)].user_rid = pdb_get_user_rid(pwd);
-			memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
-			
-			/* Now check if the NT compatible password is available. */
-			if (pdb_get_nt_passwd(pwd))
-				memcpy( pw_buf[(*num_entries)].nt_pwd , pdb_get_nt_passwd(pwd), 16);
-			
-			pw_buf[(*num_entries)].acb_info = pdb_get_acct_ctrl(pwd);
-			
-			DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
-				  (*num_entries), pdb_get_username(pwd), pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd) ));
-			
-			(*num_entries)++;
-		}
-
-		(*total_entries)++;
-		
-		pdb_free_sam(&pwd);
-
-		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&pwd))) {
-			pdb_endsampwent();
-			return nt_status;
-		}
-
-	}
-	
-	pdb_endsampwent();
-	pdb_free_sam(&pwd);
-
-	if (not_finished)
-		return STATUS_MORE_ENTRIES;
-	else
-		return NT_STATUS_OK;
-}
 
 /*******************************************************************
  _samr_close_hnd
@@ -526,69 +416,118 @@ NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_
 makes a SAM_ENTRY / UNISTR2* structure from a user list.
 ********************************************************************/
 
-static void make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR2 **uni_name_pp,
-                uint32 num_sam_entries, SAM_USER_INFO_21 *pass)
+static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR2 **uni_name_pp,
+					 uint32 num_entries, uint32 start_idx, DISP_USER_INFO *disp_user_info,
+					 DOM_SID *domain_sid)
 {
 	uint32 i;
 	SAM_ENTRY *sam;
 	UNISTR2 *uni_name;
-
+	SAM_ACCOUNT *pwd = NULL;
+	UNISTR2 uni_temp_name;
+	const char *temp_name;
+	const DOM_SID *user_sid;
+	uint32 user_rid;
+	fstring user_sid_string;
+	fstring domain_sid_string;
+	
 	*sam_pp = NULL;
 	*uni_name_pp = NULL;
 
-	if (num_sam_entries == 0)
-		return;
+	if (num_entries == 0)
+		return NT_STATUS_OK;
 
-	sam = (SAM_ENTRY *)talloc_zero(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
+	sam = (SAM_ENTRY *)talloc_zero(ctx, sizeof(SAM_ENTRY)*num_entries);
 
-	uni_name = (UNISTR2 *)talloc_zero(ctx, sizeof(UNISTR2)*num_sam_entries);
+	uni_name = (UNISTR2 *)talloc_zero(ctx, sizeof(UNISTR2)*num_entries);
 
 	if (sam == NULL || uni_name == NULL) {
-		DEBUG(0, ("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
-		return;
+		DEBUG(0, ("make_user_sam_entry_list: talloc_zero failed!\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	ZERO_STRUCTP(sam);
-	ZERO_STRUCTP(uni_name);
+	for (i = 0; i < num_entries; i++) {
+		int len = uni_temp_name.uni_str_len;
+		
+		pwd = disp_user_info[i+start_idx].sam;
+		temp_name = pdb_get_username(pwd);
+		init_unistr2(&uni_temp_name, temp_name, strlen(temp_name)+1);
+		user_sid = pdb_get_user_sid(pwd);
 
-	for (i = 0; i < num_sam_entries; i++) {
-		int len = pass[i].uni_user_name.uni_str_len;
+		if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
+			DEBUG(0, ("make_user_sam_entry_list: User %s has SID %s, which conflicts with "
+				  "the domain sid %s.  Failing operation.\n", 
+				  temp_name, 
+				  sid_to_string(user_sid_string, user_sid),
+				  sid_to_string(domain_sid_string, domain_sid)));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 
-		init_sam_entry(&sam[i], len, pass[i].user_rid);
-		copy_unistr2(&uni_name[i], &pass[i].uni_user_name);
+		init_sam_entry(&sam[i], len, user_rid);
+		copy_unistr2(&uni_name[i], &uni_temp_name);
 	}
 
 	*sam_pp = sam;
 	*uni_name_pp = uni_name;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
  samr_reply_enum_dom_users
  ********************************************************************/
 
-NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_ENUM_DOM_USERS *r_u)
+NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, 
+			      SAMR_R_ENUM_DOM_USERS *r_u)
 {
-	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
-	int num_entries = 0;
-	int total_entries = 0;
+	struct samr_info *info = NULL;
+	uint32 struct_size=0x20; /* W2K always reply that, client doesn't care */
+	int num_account;
+	uint32 enum_context=q_u->start_idx;
+	uint32 max_size=q_u->max_size;
+	uint32 temp_size;
+	enum remote_arch_types ra_type = get_remote_arch();
+	int max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
+	uint32 max_entries = max_sam_entries;
+	DOM_SID domain_sid;
 	
 	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &domain_sid))
 		return NT_STATUS_INVALID_HANDLE;
 
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
 	become_root();
-	r_u->status = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
-								MAX_SAM_ENTRIES, q_u->acb_mask);
+	r_u->status=load_sampwd_entries(info, q_u->acb_mask);
 	unbecome_root();
-
-	if (NT_STATUS_IS_ERR(r_u->status))
+	
+	if (!NT_STATUS_IS_OK(r_u->status))
 		return r_u->status;
 
-	samr_clear_passwd_fields(pass, num_entries);
+	num_account = info->disp_info.num_user_account;
+
+	if (enum_context > num_account) {
+		DEBUG(5, ("_samr_enum_dom_users: enumeration handle over total entries\n"));
+		return NT_STATUS_OK;
+	}
+
+	/* verify we won't overflow */
+	if (max_entries > num_account-enum_context) {
+		max_entries = num_account-enum_context;
+		DEBUG(5, ("_samr_enum_dom_users: only %d entries to return\n", max_entries));
+	}
+
+	/* calculate the size and limit on the number of entries we will return */
+	temp_size=max_entries*struct_size;
+	
+	if (temp_size>max_size) {
+		max_entries=MIN((max_size/struct_size),max_entries);;
+		DEBUG(5, ("_samr_enum_dom_users: buffer size limits to only %d entries\n", max_entries));
+	}
 
 	/* 
 	 * Note from JRA. total_entries is not being used here. Currently if there is a
@@ -603,9 +542,20 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_
 	 * value (again I think this is wrong).
 	 */
 
-	make_user_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_acct_name, num_entries, pass);
+	r_u->status = make_user_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_acct_name, 
+					       max_entries, enum_context, 
+					       info->disp_info.disp_user_info,
+					       &domain_sid);
 
-	init_samr_r_enum_dom_users(r_u, q_u->start_idx + num_entries, num_entries);
+	if (!NT_STATUS_IS_OK(r_u->status))
+		return r_u->status;
+
+	if (enum_context+max_entries < num_account)
+		r_u->status = STATUS_MORE_ENTRIES;
+
+	DEBUG(5, ("_samr_enum_dom_users: %d\n", __LINE__));
+
+	init_samr_r_enum_dom_users(r_u, q_u->start_idx + max_entries, max_entries);
 
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
@@ -891,7 +841,8 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 /*******************************************************************
  samr_reply_query_dispinfo
  ********************************************************************/
-NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_QUERY_DISPINFO *r_u)
+NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, 
+			      SAMR_R_QUERY_DISPINFO *r_u)
 {
 	struct samr_info *info = NULL;
 	uint32 struct_size=0x20; /* W2K always reply that, client doesn't care */
@@ -906,15 +857,17 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 	NTSTATUS disp_ret;
 	uint32 num_account = 0;
 	enum remote_arch_types ra_type = get_remote_arch();
-	int max_sam_entries;
-
-	max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
+	int max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
+	DOM_SID domain_sid;
 
 	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
 	r_u->status = NT_STATUS_OK;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info))
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!get_lsa_policy_samr_sid(p, &q_u->domain_pol, &domain_sid))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/*
@@ -1015,7 +968,8 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 			if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_1))))
 				return NT_STATUS_NO_MEMORY;
 		}
-		disp_ret = init_sam_dispinfo_1(p->mem_ctx, ctr->sam.info1, max_entries, enum_context, info->disp_info.disp_user_info);
+		disp_ret = init_sam_dispinfo_1(p->mem_ctx, ctr->sam.info1, max_entries, enum_context, 
+					       info->disp_info.disp_user_info, &domain_sid);
 		if (!NT_STATUS_IS_OK(disp_ret))
 			return disp_ret;
 		break;
@@ -1024,7 +978,8 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 			if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_2))))
 				return NT_STATUS_NO_MEMORY;
 		}
-		disp_ret = init_sam_dispinfo_2(p->mem_ctx, ctr->sam.info2, max_entries, enum_context, info->disp_info.disp_user_info);
+		disp_ret = init_sam_dispinfo_2(p->mem_ctx, ctr->sam.info2, max_entries, enum_context, 
+					       info->disp_info.disp_user_info, &domain_sid);
 		if (!NT_STATUS_IS_OK(disp_ret))
 			return disp_ret;
 		break;
@@ -1582,7 +1537,8 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx, SAM_USER_INFO_20 *id20, DO
  get_user_info_21
  *************************************************************************/
 
-static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21, DOM_SID *user_sid)
+static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21, 
+				 DOM_SID *user_sid, DOM_SID *domain_sid)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
@@ -1607,7 +1563,7 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21, DO
 	DEBUG(3,("User:[%s]\n",  pdb_get_username(sampass) ));
 
 	ZERO_STRUCTP(id21);
-	init_sam_user_info21A(id21, sampass);
+	nt_status = init_sam_user_info21A(id21, sampass, domain_sid);
 	
 	pdb_free_sam(&sampass);
 
@@ -1622,12 +1578,18 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 {
 	SAM_USERINFO_CTR *ctr;
 	struct samr_info *info = NULL;
-
+	DOM_SID domain_sid;
+	uint32 rid;
+	
 	r_u->status=NT_STATUS_OK;
 
 	/* search for the handle */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
+
+	domain_sid = info->sid;
+
+	sid_split_rid(&domain_sid, &rid);
 
 	if (!sid_check_is_in_our_domain(&info->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
@@ -1700,7 +1662,8 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 		ctr->info.id21 = (SAM_USER_INFO_21 *)talloc_zero(p->mem_ctx,sizeof(SAM_USER_INFO_21));
 		if (ctr->info.id21 == NULL)
 			return NT_STATUS_NO_MEMORY;
-		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_21(p->mem_ctx, ctr->info.id21, &info->sid)))
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_21(p->mem_ctx, ctr->info.id21, 
+								    &info->sid, &domain_sid)))
 			return r_u->status;
 		break;
 

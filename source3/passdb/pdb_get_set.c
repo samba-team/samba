@@ -172,27 +172,6 @@ const DOM_SID *pdb_get_group_sid(const SAM_ACCOUNT *sampass)
 		return (NULL);
 }	
 
-uint32 pdb_get_user_rid (const SAM_ACCOUNT *sampass)
-{
-	uint32 u_rid;
-
-	if (sampass)
-		if (sid_peek_check_rid(get_global_sam_sid(), pdb_get_user_sid(sampass),&u_rid))
-			return u_rid;
-	
-	return (0);
-}
-
-uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
-{
-	uint32 g_rid;
-
-	if (sampass)
-		if (sid_peek_check_rid(get_global_sam_sid(), pdb_get_group_sid(sampass),&g_rid))
-			return g_rid;
-	return (0);
-}
-
 /**
  * Get flags showing what is initalised in the SAM_ACCOUNT
  * @param sampass the SAM_ACCOUNT in question
@@ -574,60 +553,6 @@ BOOL pdb_set_group_sid_from_string (SAM_ACCOUNT *sampass, fstring g_sid)
 		DEBUG(1, ("pdb_set_group_sid_from_string: could not set sid %s on SAM_ACCOUNT!\n", g_sid));
 		return False;
 	}
-	return True;
-}
-
-BOOL pdb_set_user_sid_from_rid (SAM_ACCOUNT *sampass, uint32 rid)
-{
-	DOM_SID u_sid;
-	const DOM_SID *global_sam_sid;
-	
-	if (!sampass)
-		return False;
-
-	if (!(global_sam_sid = get_global_sam_sid())) {
-		DEBUG(1, ("pdb_set_user_sid_from_rid: Could not read global sam sid!\n"));
-		return False;
-	}
-
-	sid_copy(&u_sid, global_sam_sid);
-
-	if (!sid_append_rid(&u_sid, rid))
-		return False;
-
-	if (!pdb_set_user_sid(sampass, &u_sid))
-		return False;
-
-	DEBUG(10, ("pdb_set_user_sid_from_rid:\n\tsetting user sid %s from rid %d\n", 
-		    sid_string_static(&u_sid),rid));
-
-	return True;
-}
-
-BOOL pdb_set_group_sid_from_rid (SAM_ACCOUNT *sampass, uint32 grid)
-{
-	DOM_SID g_sid;
-	const DOM_SID *global_sam_sid;
-
-	if (!sampass)
-		return False;
-	
-	if (!(global_sam_sid = get_global_sam_sid())) {
-		DEBUG(1, ("pdb_set_user_sid_from_rid: Could not read global sam sid!\n"));
-		return False;
-	}
-
-	sid_copy(&g_sid, global_sam_sid);
-	
-	if (!sid_append_rid(&g_sid, grid))
-		return False;
-
-	if (!pdb_set_group_sid(sampass, &g_sid))
-		return False;
-
-	DEBUG(10, ("pdb_set_group_sid_from_rid:\n\tsetting group sid %s from rid %d\n", 
-		    sid_string_static(&g_sid), grid));
-
 	return True;
 }
 
