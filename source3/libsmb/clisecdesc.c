@@ -36,7 +36,6 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 	TALLOC_CTX *mem_ctx;
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
-	SEC_DESC *ret;
 
 	SIVAL(param, 0, fd);
 	SSVAL(param, 4, 0x7);
@@ -48,7 +47,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 			       param, 8, 4,
 			       NULL, 0, 0x10000)) {
 		DEBUG(1,("Failed to send NT_TRANSACT_QUERY_SECURITY_DESC\n"));
-		return NULL;
+		goto cleanup;
 	}
 
 
@@ -56,12 +55,12 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 				  &rparam, &rparam_count,
 				  &rdata, &rdata_count)) {
 		DEBUG(1,("Failed to recv NT_TRANSACT_QUERY_SECURITY_DESC\n"));
-		return NULL;
+		goto cleanup;
 	}
 
 	if ((mem_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("talloc_init failed.\n"));
-		return NULL;
+		goto cleanup;
 	}
 
 	prs_init(&pd, rdata_count, 4, mem_ctx, UNMARSHALL);
@@ -70,13 +69,17 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd)
 
 	if (!sec_io_desc("sd data", &psd, &pd, 1)) {
 		DEBUG(1,("Failed to parse secdesc\n"));
-		talloc_destroy(mem_ctx);
-		return NULL;
+		goto cleanup;
 	}
 
-	ret = dup_sec_desc(psd);
+ cleanup:
+
 	talloc_destroy(mem_ctx);
-	return ret;
+	safe_free(rparam);
+	safe_free(rdata);
+
+	prs_mem_free(&pd);
+	return psd;
 }
 
 
@@ -92,10 +95,11 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 	int rparam_count=0, rdata_count=0;
 	TALLOC_CTX *mem_ctx;
 	prs_struct pd;
+	BOOL ret = False;
 
 	if ((mem_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("talloc_init failed.\n"));
-		return False;
+		goto cleanup;
 	}
 
 	prs_init(&pd, 0, 4, mem_ctx, MARSHALL);
@@ -103,7 +107,7 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 
 	if (!sec_io_desc("sd data", &sd, &pd, 1)) {
 		DEBUG(1,("Failed to marshall secdesc\n"));
-		return False;
+		goto cleanup;
 	}
 
 	SIVAL(param, 0, fd);
@@ -116,7 +120,7 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 			       param, 8, 0,
 			       pd.data_p, pd.data_offset, 0)) {
 		DEBUG(1,("Failed to send NT_TRANSACT_SET_SECURITY_DESC\n"));
-		return False;
+		goto cleanup;
 	}
 
 
@@ -124,14 +128,19 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 				  &rparam, &rparam_count,
 				  &rdata, &rdata_count)) {
 		DEBUG(1,("NT_TRANSACT_SET_SECURITY_DESC failed\n"));
-		return False;
+		goto cleanup;
 	}
 
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
+	ret = True;
+
+  cleanup:
+
+	safe_free(rparam);
+	safe_free(rdata);
 
 	talloc_destroy(mem_ctx);
 
-	return True;
+	prs_mem_free(&pd);
+	return ret;
 }
 

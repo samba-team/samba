@@ -120,12 +120,12 @@ static void SidToString(fstring str, DOM_SID *sid)
 }
 
 /* convert a string to a SID, either numeric or username/group */
-static BOOL StringToSid(DOM_SID *sid, fstring str)
+static BOOL StringToSid(DOM_SID *sid, char *str)
 {
 	uint32 *types = NULL;
 	DOM_SID *sids = NULL;
 	int num_sids;
-	BOOL result = False;
+	BOOL result = True;
 	
 	/* Short cut */
 
@@ -136,7 +136,7 @@ static BOOL StringToSid(DOM_SID *sid, fstring str)
 
 	if (open_policy_hnd() &&
 	    cli_lsa_lookup_names(&lsa_cli, &pol, 1, &str, &sids, &types, 
-				 &num_sids) == NT_STATUS_NOPROBLEMO) {
+				 &num_sids) != NT_STATUS_NOPROBLEMO) {
 		result = string_to_sid(sid, str);
 		goto done;
 	}
@@ -147,6 +147,7 @@ static BOOL StringToSid(DOM_SID *sid, fstring str)
 	safe_free(types);
 
  done:
+
 	return result;
 }
 
@@ -372,9 +373,12 @@ static SEC_DESC *sec_desc_parse(char *str)
 
 		if (strncmp(tok,"ACL:", 4) == 0) {
 			SEC_ACE ace;
-			if (!parse_ace(&ace, tok+4) || 
-			    !add_ace(&dacl, &ace)) {
-				printf("Failed to parse ACL\n");
+			if (!parse_ace(&ace, tok+4)) {
+				printf("Failed to parse ACL %s\n", tok);
+				return NULL;
+			}
+			if(!add_ace(&dacl, &ace)) {
+				printf("Failed to add ACL %s\n", tok);
 				return NULL;
 			}
 			continue;
@@ -565,7 +569,6 @@ static void cacl_set(struct cli_state *cli, char *filename,
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
-		return;
 	}
 
 	free_sec_desc(&sd);
@@ -607,12 +610,15 @@ struct cli_state *connect_one(char *share)
 	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, 139) == 0) ||
 	    !cli_connect(c, server_n, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", server_n));
+		cli_shutdown(c);
+		safe_free(c);
 		return NULL;
 	}
 
 	if (!cli_session_request(c, &calling, &called)) {
 		DEBUG(0,("session request to %s failed\n", called.name));
 		cli_shutdown(c);
+		safe_free(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
@@ -625,6 +631,7 @@ struct cli_state *connect_one(char *share)
 	if (!cli_negprot(c)) {
 		DEBUG(0,("protocol negotiation failed\n"));
 		cli_shutdown(c);
+		safe_free(c);
 		return NULL;
 	}
 
@@ -640,6 +647,8 @@ struct cli_state *connect_one(char *share)
 			       password, strlen(password),
 			       lp_workgroup())) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
+		cli_shutdown(c);
+		safe_free(c);
 		return NULL;
 	}
 
@@ -649,6 +658,7 @@ struct cli_state *connect_one(char *share)
 			    password, strlen(password)+1)) {
 		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
+		safe_free(c);
 		return NULL;
 	}
 

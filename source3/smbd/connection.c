@@ -33,6 +33,15 @@ static void utmp_claim(const struct connections_data *crec, const connection_str
 #endif
 
 /****************************************************************************
+ Return the connection tdb context (used for message send all).
+****************************************************************************/
+
+TDB_CONTEXT *conn_tdb_ctx(void)
+{
+	return tdb;
+}
+
+/****************************************************************************
 delete a connection record
 ****************************************************************************/
 BOOL yield_connection(connection_struct *conn,char *name,int max_connections)

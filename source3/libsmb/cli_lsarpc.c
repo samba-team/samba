@@ -109,12 +109,16 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos,
 
 	if (!lsa_io_q_open_pol("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_OPENPOLICY, &qbuf, &rbuf)) {
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Unmarshall response */
 
 	if (!lsa_io_r_open_pol("", &r, &rbuf, 0)) {
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -126,6 +130,8 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos,
 		*hnd = r.pol;
 	}
 
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 	return result;
 }
 
@@ -152,12 +158,16 @@ uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	if (!lsa_io_q_close("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_CLOSE, &qbuf, &rbuf)) {
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Unmarshall response */
 
 	if (!lsa_io_r_close("", &r, &rbuf, 0)) {
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -169,6 +179,8 @@ uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 		*hnd = r.pol;
 	}
 
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 	return result;
 }
 
@@ -200,6 +212,8 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
 
 	if (!lsa_io_q_lookup_sids("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_LOOKUPSIDS, &qbuf, &rbuf)) {
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -212,6 +226,8 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
 	r.names = &t_names;
 
 	if (!lsa_io_r_lookup_sids("", &r, &rbuf, 0)) {
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -271,6 +287,9 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
 	}
 
  done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
 	return result;
 }
 
@@ -301,6 +320,8 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
 
 	if (!lsa_io_q_lookup_names("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
@@ -309,7 +330,9 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
 	ZERO_STRUCT(ref);
 	r.dom_ref = &ref;
 
-	if (!lsa_io_r_lookup_names(cli->mem_ctx, "", &r, &rbuf, 0)) {
+	if (!lsa_io_r_lookup_names("", &r, &rbuf, 0)) {
+		prs_mem_free(&qbuf);
+		prs_mem_free(&rbuf);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -366,5 +389,8 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
 	}
 
  done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
 	return result;
 }

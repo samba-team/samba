@@ -321,7 +321,7 @@ void init_uni_hdr(UNIHDR *hdr, int len)
 {
 	hdr->uni_str_len = 2 * len;
 	hdr->uni_max_len = 2 * len;
-	hdr->buffer = len != 0;
+	hdr->buffer      = len != 0 ? 1 : 0;
 }
 
 /*******************************************************************
@@ -867,8 +867,7 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 {
 	ZERO_STRUCTP(str);
 
-	/* Set up string lengths. */
-
+	/* set up string lengths. */
 	str->uni_max_len = (uint32)len;
 	str->undoc       = 0;
 	str->uni_str_len = (uint32)len;
@@ -881,7 +880,8 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 	len *= sizeof(uint16);
 
 	str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
-	if ((str->buffer == NULL) && (len > 0)) {
+	if ((str->buffer == NULL) && (len > 0))
+	{
 		smb_panic("init_unistr2: malloc fail\n");
 		return;
 	}

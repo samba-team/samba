@@ -710,14 +710,14 @@ static BOOL lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen,
 	/* Mallocate memory if we're unpacking from the wire */
 
 	if (UNMARSHALLING(ps)) {
-		if ((sen->ptr_sid = (uint32 *)malloc(
+		if ((sen->ptr_sid = (uint32 *)prs_alloc_mem( ps,
 			sen->num_entries * sizeof(uint32))) == NULL) {
 			DEBUG(3, ("init_lsa_sid_enum(): out of memory for "
 				  "ptr_sid\n"));
 			return False;
 		}
 
-		if ((sen->sid = (DOM_SID2 *)malloc(
+		if ((sen->sid = (DOM_SID2 *)prs_alloc_mem( ps,
 			sen->num_entries * sizeof(DOM_SID2))) == NULL) {
 			DEBUG(3, ("init_lsa_sid_enum(): out of memory for "
 				  "sids\n"));
@@ -824,13 +824,13 @@ static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
 
 		if (UNMARSHALLING(ps)) {
 			if ((trn->name = (LSA_TRANS_NAME *)
-			     malloc(trn->num_entries * 
+			     prs_alloc_mem(ps, trn->num_entries * 
 				    sizeof(LSA_TRANS_NAME))) == NULL) {
 				return False;
 			}
 
 			if ((trn->uni_name = (UNISTR2 *)
-			     malloc(trn->num_entries *
+			     prs_alloc_mem(ps, trn->num_entries *
 				    sizeof(UNISTR2))) == NULL) {
 				return False;
 			}
@@ -964,23 +964,40 @@ BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, 
 	if(!smb_io_pol_hnd("", &q_r->pol, ps, depth)) /* policy handle */
 		return False;
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("num_entries    ", ps, depth, &q_r->num_entries))
 		return False;
 	if(!prs_uint32("num_entries2   ", ps, depth, &q_r->num_entries2))
 		return False;
 
+	if (UNMARSHALLING(ps)) {
+		if (q_r->num_entries) {
+			if ((q_r->hdr_name = (UNIHDR *)prs_alloc_mem(ps,
+					q_r->num_entries * sizeof(UNIHDR))) == NULL)
+				return False;
+			if ((q_r->uni_name = (UNISTR2 *)prs_alloc_mem(ps,
+					q_r->num_entries * sizeof(UNISTR2))) == NULL)
+				return False;
+		}
+	}
+
 	for (i = 0; i < q_r->num_entries; i++) {
+		if(!prs_align(ps))
+			return False;
 		if(!smb_io_unihdr("hdr_name", &q_r->hdr_name[i], ps, depth)) /* pointer names */
 			return False;
 	}
 
 	for (i = 0; i < q_r->num_entries; i++) {
-		if(!smb_io_unistr2("dom_name", &q_r->uni_name[i], q_r->hdr_name[i].buffer, ps, depth)) /* names to be looked up */
-			return False;
 		if(!prs_align(ps))
+			return False;
+		if(!smb_io_unistr2("dom_name", &q_r->uni_name[i], q_r->hdr_name[i].buffer, ps, depth)) /* names to be looked up */
 			return False;
 	}
 
+	if(!prs_align(ps))
+		return False;
 	if(!prs_uint32("num_trans_entries ", ps, depth, &q_r->num_trans_entries))
 		return False;
 	if(!prs_uint32("ptr_trans_sids ", ps, depth, &q_r->ptr_trans_sids))
@@ -997,8 +1014,7 @@ BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, 
 reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_names(TALLOC_CTX *mem_ctx, char *desc, 
-			   LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth)
+BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth)
 {
 	int i;
 
@@ -1032,11 +1048,12 @@ BOOL lsa_io_r_lookup_names(TALLOC_CTX *mem_ctx, char *desc,
 			return False;
 		}
 
-		if ((r_r->dom_rid = (DOM_RID2 *)
-		     talloc(mem_ctx, r_r->num_entries2 * sizeof(DOM_RID2)))
-		    == NULL) {
-			DEBUG(3, ("lsa_io_r_lookup_names(): out of memory\n"));
-			return False;
+		if (UNMARSHALLING(ps)) {
+			if ((r_r->dom_rid = (DOM_RID2 *)prs_alloc_mem(ps, r_r->num_entries2 * sizeof(DOM_RID2)))
+			    == NULL) {
+				DEBUG(3, ("lsa_io_r_lookup_names(): out of memory\n"));
+				return False;
+			}
 		}
 
 		for (i = 0; i < r_r->num_entries2; i++)
