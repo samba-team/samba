@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 INCLUDES += -I$(srcdir)/../krb5 $(INCLUDE_des) $(INCLUDE_krb4)
 
 lib_LTLIBRARIES = libgssapi.la
-libgssapi_la_LDFLAGS = -version-info 3:6:2
+libgssapi_la_LDFLAGS = -version-info 4:0:0
 libgssapi_la_LIBADD  = ../krb5/libkrb5.la $(LIB_des) ../asn1/libasn1.la ../roken/libroken.la
 
 man_MANS = gssapi.3 gss_acquire_cred.3
