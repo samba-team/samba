@@ -442,3 +442,33 @@ For information about the InfoMagic Workgroup Server contact InfoMagic:
 To contact Stelias about custom arrangments, send email to
 info@stelias.com.
 ------------------------------------------------------------------------------
+
+
+
+------------------------------------------------------------------------------
+
+BAY AREA, SILICON VALLEY  CALIFORNIA - USA
+
+Adital Corp.
+
+7291 Coronado Dr. ,Suite 4  San-Jose Ca 95129
+
+Phone : (408) 257-7717     Fax   : (408) 257-7772    E-Mail: ephi@adital.com
+
+Contact: Ephi Dror, Director of software development.
+
+Adital is a company that specialized in networking products development.
+We have been doing many development projects on Windows (NT/95), Macintosh,
+UNIX and embedded system platforms in the area of networking drivers and
+applications during the last few years.  In regards to SAMBA, we have a lot
+of experience in SMB/CIFS protocol development. 
+
+We have special expertise in porting SAMBA to embedded system environments for 
+NT/WIN95/WFW client/server connectivity.
+
+We can help you defining and specifying your product as well as designing, 
+implementing, testing, upgrading and maintaining it.
+
+
+
+------------------------------------------------------------------------------
