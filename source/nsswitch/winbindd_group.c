@@ -56,7 +56,7 @@ static BOOL winbindd_fill_grent_mem(char *server_name, DOM_SID *domain_sid,
     /* Initialise group membership information */
 
     gr->num_gr_mem = 0;
-    fstrcpy(groupmem_list, "");
+    pstrcpy(groupmem_list, "");
         
     /* Lookup group information */
 
@@ -84,24 +84,30 @@ static BOOL winbindd_fill_grent_mem(char *server_name, DOM_SID *domain_sid,
 
             /* Check name type */
 
+            fprintf(stderr, "%s:%d: got name %s\n", __FUNCTION__,
+                    __LINE__, names[i]);
+
             if (name_type == SID_NAME_USER) {
         
                 /* Add to group membership list if not a builtin group */
                 
                 if (strcmp(domain_name, "BUILTIN") != 0) {
-                    fstrcat(groupmem_list, domain_name);
-                    fstrcat(groupmem_list, "/");
+                    pstrcat(groupmem_list, domain_name);
+                    pstrcat(groupmem_list, "/");
                 }
 
-                fstrcat(groupmem_list, names[i]);
-                fstrcat(groupmem_list, ",");
-                
+                pstrcat(groupmem_list, names[i]);
+                pstrcat(groupmem_list, ",");
+
                 gr->num_gr_mem++;
             }
         }
     }
     
     pstrcpy(gr->gr_mem, groupmem_list);
+
+    fprintf(stderr, "%s:%d: groupmem list is %s\n", __FUNCTION__,
+            __LINE__, gr->gr_mem);
 
     /* Free memory */
 
@@ -486,6 +492,9 @@ enum winbindd_result winbindd_getgrent(pid_t pid, struct winbindd_gr *gr)
                 fstrcat(domain_group_name, group_name);
    
                 /* Get group entry from group name */
+
+                fprintf(stderr, "%s:%d: getting grnam from group for %s\n",
+                        __FUNCTION__, __LINE__, domain_group_name);
 
                 result = winbindd_getgrnam_from_group(
                     domain_group_name, &sam_pipe->sam_dom_handle, gr);
