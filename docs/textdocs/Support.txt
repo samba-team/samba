@@ -938,3 +938,34 @@ site has approx. 100 users.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+BERLIN - GERMANY
+
+Name:                   innominate GbR
+Address:                Soldiner Str. 96, 13359 Berlin; Bundesland: Berlin;
+Country: Germany
+Phone:                  +49 30 49308195,  +49 177 2649655 (mobil)
+Fax:                    +49 30 49308196
+EMail:                  innominate@poboxes.com
+
+Contact        :        Sascha Ottolski
+
+Type of support:        vor Ort, Email, Fernzugriff ueber Internet/ISDN,
+                  
+Special
+expertise: Wir verfuegen ueber umfangreiche Erfahrung mit Samba, vor allem
+           in Internet- und Intranetumgebungen. Neben Beratung, Dienstleistung 
+           und Schulung bieten wir auch individuell vorkonfigurierte
+           Kommunikationsserver ("Lingo") auf der Basis von Linux an.
+           Neben anderen Modulen (ISDN/Internet/Intranet/Email/Proxy
+           u.a.) ist in Lingo ein Fileserver-Modul auf Samba-Basis inklusive
+           einem mehrstufigen Firewallsystem enthalten.
+           Auﬂerdem verfuegt Lingo ueber eine grafische Administrations-
+           oberflaeche, mit der z.B. das Hinzufuegen von neuen Benutzern
+           von jedem Client per WWW-Browser moeglich ist.
+                
+Sample prices:  - Komplettpreise fuer Lingo nach Vereinbarung
+                - 120 DM/Stunde fuer Dienstleistung
+                - Schulung nach Vereinbarung
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
