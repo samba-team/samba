@@ -242,7 +242,7 @@ BOOL isDfsShare(char* svc,char* vol)
 
 }
 
-void msdfs_close()
+void msdfs_close(void)
 {
   if(msdfs_map != NULL)
       tdb_close(msdfs_map);
@@ -250,7 +250,7 @@ void msdfs_close()
   msdfs_map = NULL;
 }
 
-void msdfs_end()
+void msdfs_end(void)
 {
   pstring fname;
   msdfs_close();

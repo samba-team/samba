@@ -820,15 +820,15 @@ BOOL msdfs_open(BOOL update);
 BOOL add_junction_entry(struct junction_map* junction);
 BOOL get_junction_entry(struct junction_map* junction);
 BOOL isDfsShare(char* svc,char* vol);
-void msdfs_close();
-void msdfs_end();
+void msdfs_close(void);
+void msdfs_end(void);
 
 /*The following definitions come from  msdfs/parse_dfs_map.c  */
 
 BOOL parse_referral(char* s, struct referral* ref);
-void load_dfsmaps();
+void load_dfsmaps(void);
 BOOL load_dfsmap(char* fname, int snum);
-void load_dfsmaps();
+void load_dfsmaps(void);
 
 /*The following definitions come from  nmbd/asyncdns.c  */
 
@@ -2338,7 +2338,7 @@ BOOL make_systemtime(SYSTEMTIME *systime, struct tm *unixtime);
 BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
                                      prs_struct *ps, int depth);
 BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, fstring printername, fstring datatype, 
-					uint32 access_required, fstring client_name, fstring user_name);
+					uint32 access_required, fstring clientname, fstring user_name);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
@@ -2458,7 +2458,7 @@ BOOL spoolss_io_q_enumprintmonitors(char *desc, SPOOL_Q_ENUMPRINTMONITORS *q_u, 
 BOOL spoolss_io_r_enumprintmonitors(char *desc, SPOOL_R_ENUMPRINTMONITORS *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_enumprinterdata(char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *ps, int depth);
-BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, POLICY_HND *hnd, uint32 index, uint32 valuelen, uint32 datalen);
+BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, POLICY_HND *hnd, uint32 idx, uint32 valuelen, uint32 datalen);
 BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
 BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
@@ -2704,11 +2704,11 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environment, uint32 level,
 					NEW_BUFFER *buffer, uint32 offered, 
 					uint32 *needed);
-uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 index,
+uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 				uint32 in_value_len, uint32 in_data_len,
 				uint32 *out_max_value_len, uint16 **out_value, uint32 *out_value_len,
 				uint32 *out_type,
-				uint32 *out_max_data_len, uint8  **out_data, uint32 *out_data_len);
+				uint32 *out_max_data_len, uint8  **data_out, uint32 *out_data_len);
 uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
 				const UNISTR2 *value,
 				uint32 type,

@@ -712,35 +712,49 @@ typedef struct printer_info_0
 	UNISTR printername;
 	UNISTR servername;
 	uint32 cjobs;
-	uint32 attributes;
-	uint32 unknown0;
-	uint32 unknown1;
-	uint32 unknown2;
-	uint32 unknown3;
-	uint32 unknown4;
-	uint32 unknown5;
-	uint32 unknown6;
-	uint16 majorversion;
-	uint16 buildversion;
+	uint32 total_jobs;
+	uint32 total_bytes;
+	
+	uint16 year;
+	uint16 month;
+	uint16 dayofweek;
+	uint16 day;
+	uint16 hour;
+	uint16 minute;
+	uint16 second;
+	uint16 milliseconds;
+
+	uint32 global_counter;
+	uint32 total_pages;
+
+	uint16 major_version;
+	uint16 build_version;
+
 	uint32 unknown7;
 	uint32 unknown8;
 	uint32 unknown9;
-	uint32 unknown10;
+	uint32 session_counter;
 	uint32 unknown11;
-	uint32 unknown12;
+	uint32 printer_errors;
 	uint32 unknown13;
 	uint32 unknown14;
 	uint32 unknown15;
 	uint32 unknown16;
-	uint32 unknown17;
+	uint32 change_id;
 	uint32 unknown18;
 	uint32 status;
 	uint32 unknown20;
-	uint32 unknown21;
+	uint32 c_setprinter;
+
 	uint16 unknown22;
-	uint32 unknown23;
-}
-PRINTER_INFO_0;
+	uint16 unknown23;
+	uint16 unknown24;
+	uint16 unknown25;
+	uint16 unknown26;
+	uint16 unknown27;
+	uint16 unknown28;
+	uint16 unknown29;
+} PRINTER_INFO_0;
 
 typedef struct printer_info_1
 {
@@ -830,11 +844,7 @@ typedef struct spool_r_getprinter
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 status;
-
-}
-SPOOL_R_GETPRINTER;
-
-struct _print_queue_struct;
+} SPOOL_R_GETPRINTER;
 
 struct s_notify_info_data_table
 {
@@ -842,16 +852,15 @@ struct s_notify_info_data_table
 	uint16 field;
 	char *name;
 	uint32 size;
-	void (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA * data,
-		    struct _print_queue_struct * queue,
-		    NT_PRINTER_INFO_LEVEL * printer);
+	void (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data,
+		    print_queue_struct *queue,
+		    NT_PRINTER_INFO_LEVEL *printer);
 };
 
 typedef struct driver_info_1
 {
 	UNISTR name;
-}
-DRIVER_INFO_1;
+} DRIVER_INFO_1;
 
 typedef struct driver_info_2
 {
@@ -861,8 +870,7 @@ typedef struct driver_info_2
 	UNISTR driverpath;
 	UNISTR datafile;
 	UNISTR configfile;
-}
-DRIVER_INFO_2;
+} DRIVER_INFO_2;
 
 typedef struct driver_info_3
 {

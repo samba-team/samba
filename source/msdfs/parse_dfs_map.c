@@ -111,7 +111,7 @@ BOOL parse_referral(char* s, struct referral* ref)
   return True;
 }
 
-void load_dfsmaps()
+void load_dfsmaps(void)
 {
   int i=0;
   if(!lp_host_msdfs()) 
@@ -247,7 +247,7 @@ BOOL load_dfsmap(char* fname, int snum)
 #else 
 /* Stub function if MS_DFS is not defined */	  
 
-void load_dfsmaps()
+void load_dfsmaps(void)
 {}	  
 	  
 #endif		
