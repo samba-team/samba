@@ -29,6 +29,7 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct GUID uuid;
 	struct rpc_if_id_t iface;
 	struct policy_handle handle;
+	int i;
 
 	ZERO_STRUCT(uuid);
 	ZERO_STRUCT(iface);
@@ -46,6 +47,12 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		status = dcerpc_epm_Lookup(p, mem_ctx, &r);
 		if (NT_STATUS_IS_OK(status) && r.out.status == 0) {
 			printf("Found '%s'\n", r.out.entries[0].annotation);
+			for (i=0;i<r.out.entries[0].tower->towers.num_floors;i++) {
+				struct epm_lhs *lhs = &r.out.entries[0].tower->towers.floors[i].lhs;
+				if (lhs->protocol == 13) {
+					NDR_PRINT_DEBUG(epm_prot_uuid, &lhs->info.uuid);
+				}
+			}
 		}
 	} while (NT_STATUS_IS_OK(status) && r.out.status == 0);
 
