@@ -177,7 +177,8 @@ static void remove_old_servers(struct work_record *work, time_t t)
 /*******************************************************************
   remove workgroups
   ******************************************************************/
-struct work_record *remove_workgroup(struct domain_record *d, struct work_record *work)
+struct work_record *remove_workgroup(struct domain_record *d, 
+				     struct work_record *work)
 {
   struct work_record *ret_work = NULL;
   
@@ -388,19 +389,18 @@ static void dump_workgroups(void)
 	{
 	  struct work_record *work;
 	  
-	  DEBUG(3,("dump domain %15s: ", inet_ntoa(d->bcast_ip)));
-	  DEBUG(3,(" %15s:\n", inet_ntoa(d->bcast_ip)));
+	  DEBUG(4,("dump domain bcast=%15s: ", inet_ntoa(d->bcast_ip)));
+	  DEBUG(4,(" netmask=%15s:\n", inet_ntoa(d->mask_ip)));
 	  
 	  for (work = d->workgrouplist; work; work = work->next)
 	    {
+	      DEBUG(4,("\t%s(%d)\n", work->work_group, work->token));
 	      if (work->serverlist)
 		{
-		  struct server_record *s;
-		  
-		  DEBUG(3,("\t%s(%d)\n", work->work_group, work->token));
+		  struct server_record *s;		  
 		  for (s = work->serverlist; s; s = s->next)
 		    {
-		      DEBUG(3,("\t\t%s %8x (%s)\n",
+		      DEBUG(4,("\t\t%s %8x (%s)\n",
 			       s->serv.name, s->serv.type, s->serv.comment));
 		    }
 		}
@@ -674,7 +674,7 @@ void write_browse_list(void)
 	      sprintf(tmp, "\"%s\"", s->serv.name);
 	      fprintf(f, "%-25s ", tmp);
 	      fprintf(f, "%08x ", s->serv.type);
-	      sprintf(tmp, "\"%s\"", s->serv.comment);
+	      sprintf(tmp, "\"%s\" ", s->serv.comment);
 	      fprintf(f, "%-30s", tmp);
 	      fprintf(f, "\"%s\"\n", work->work_group);
 	    }

@@ -412,6 +412,16 @@ void *dptr_fetch_lanman2(char *params,int dptr_num)
 }
 
 /****************************************************************************
+check a filetype for being valid
+****************************************************************************/
+BOOL dir_check_ftype(int cnum,int mode,struct stat *st,int dirtype)
+{
+  if (((mode & ~dirtype) & (aHIDDEN | aSYSTEM | aDIR)) != 0)
+    return False;
+  return True;
+}
+
+/****************************************************************************
   get a directory entry
 ****************************************************************************/
 BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend)
@@ -474,11 +484,11 @@ BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mo
 	  
 	  *mode = dos_mode(cnum,pathreal,&sbuf);
 
-	  if (((*mode & ~dirtype) & (aHIDDEN | aSYSTEM | aDIR)) != 0)
-	    {	      
-	      DEBUG(5,("[%s] attribs didn't match %x\n",filename,dirtype));
-	      continue;
-	    }
+	  if (!dir_check_ftype(cnum,*mode,&sbuf,dirtype)) {
+	    DEBUG(5,("[%s] attribs didn't match %x\n",filename,dirtype));
+	    continue;
+	  }
+
 	  *size = sbuf.st_size;
 	  *date = sbuf.st_mtime;
 

@@ -293,7 +293,14 @@ static void process(void)
       run_elections();
 
       announce_host();
+
+#if 0
+      /* what was this stuff supposed to do? It sent
+	 ANN_GetBackupListReq packets which I think should only be
+	 sent when trying to find out who to browse with */	 
       announce_backup();
+#endif
+
       announce_master();
 
       expire_names_and_servers();

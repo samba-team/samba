@@ -54,10 +54,6 @@ extern int  workgroup_count;
 
 /* what server type are we currently */
 
-#define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
-#define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
-#define AM_DOMCTL(work) (work->ServerType & SV_TYPE_DOMAIN_CTRL)
-
 #define MSBROWSE "\001\002__MSBROWSE__\002"
 #define BROWSE_MAILSLOT "\\MAILSLOT\\BROWSE"
 
@@ -73,12 +69,12 @@ void announce_request(struct work_record *work, struct in_addr ip)
 
   work->needannounce = True;
 
-  DEBUG(2,("Sending announce request to %s for workgroup %s\n",
+  DEBUG(2,("sending announce request to %s for workgroup %s\n",
 	   inet_ntoa(ip),work->work_group));
 
   bzero(outbuf,sizeof(outbuf));
   p = outbuf;
-  CVAL(p,0) = 2; /* announce request */
+  CVAL(p,0) = ANN_AnnouncementRequest;
   p++;
 
   CVAL(p,0) = work->token; /* flags?? XXXX probably a token*/
@@ -95,7 +91,8 @@ void announce_request(struct work_record *work, struct in_addr ip)
 /****************************************************************************
   request an announcement
   **************************************************************************/
-void do_announce_request(char *info, char *to_name, int announce_type, int from,
+void do_announce_request(char *info, char *to_name, int announce_type, 
+			 int from,
 			 int to, struct in_addr dest_ip)
 {
   pstring outbuf;
@@ -103,10 +100,10 @@ void do_announce_request(char *info, char *to_name, int announce_type, int from,
   
   bzero(outbuf,sizeof(outbuf));
   p = outbuf;
-  CVAL(p,0) = announce_type; /* announce request */
+  CVAL(p,0) = announce_type; 
   p++;
   
-  DEBUG(2,("Sending announce type %d: info %s to %s - server %s(%x)\n",
+  DEBUG(2,("sending announce type %d: info %s to %s - server %s(%x)\n",
 	   announce_type, info, inet_ntoa(dest_ip),to_name,to));
   
   StrnCpy(p,info,16);
@@ -122,68 +119,66 @@ void do_announce_request(char *info, char *to_name, int announce_type, int from,
   **************************************************************************/
 void announce_backup(void)
 {
-	static time_t lastrun = 0;
-	time_t t = time(NULL);
-	pstring outbuf;
-	char *p;
-	struct domain_record *d1;
-	int tok;
-
-	if (!lastrun) lastrun = t;
-	if (t < lastrun + 1*60) return;
-	lastrun = t;
-
-	for (tok = 0; tok <= workgroup_count; tok++)
+  static time_t lastrun = 0;
+  time_t t = time(NULL);
+  pstring outbuf;
+  char *p;
+  struct domain_record *d1;
+  int tok;
+  
+  if (!lastrun) lastrun = t;
+  if (t < lastrun + 1*60) return;
+  lastrun = t;
+  
+  for (tok = 0; tok <= workgroup_count; tok++)
+    {
+      for (d1 = domainlist; d1; d1 = d1->next)
 	{
-		for (d1 = domainlist; d1; d1 = d1->next)
-		{
-			struct work_record *work;
-			struct domain_record *d;
+	  struct work_record *work;
+	  struct domain_record *d;
+	  
+	  /* search for unique workgroup: only the name matters */
+	  for (work = d1->workgrouplist;
+	       work && (tok != work->token);
+	       work = work->next);
+	  
+	  if (!work) continue;
 
-			/* search for unique workgroup: only the name matters */
-			for (work = d1->workgrouplist;
-			     work && (tok != work->token);
-			     work = work->next);
+	  /* found one: announce it across all domains */
+	  for (d = domainlist; d; d = d->next)
+	    {
+	      int type=0;
 
-			if (work)
-			{
-				/* found one: announce it across all domains */
-				for (d = domainlist; d; d = d->next)
-				{
-					DEBUG(2,("Sending announce backup %s workgroup %s(%d)\n",
-						 inet_ntoa(d->bcast_ip),work->work_group,
-					     work->token));
-
-					bzero(outbuf,sizeof(outbuf));
-					p = outbuf;
-					CVAL(p,0) = 9; /* backup list response */
-					p++;
-
-					CVAL(p,0) = 1; /* count? */
-					SIVAL(p,1,work->token); /* workgroup unique key index */
-					p += 5;
-					p++;
-
-					if (AM_DOMCTL(work))
-					{
-						send_mailslot_reply(BROWSE_MAILSLOT,
-							   ClientDGRAM,outbuf,
-							   PTR_DIFF(p,outbuf),
-							   myname, work->work_group,
-							   0x0,0x1b,d->bcast_ip,myip);
-					}
-					else if (AM_MASTER(work))
-					{
-						send_mailslot_reply(BROWSE_MAILSLOT,
-							   ClientDGRAM,outbuf,
-							   PTR_DIFF(p,outbuf),
-							   myname, work->work_group,
-							   0x0,0x1d,d->bcast_ip,myip);
-					}
-				}
-			}
-		}
+	      if (AM_DOMCTL(work)) {
+		type = 0x1b;
+	      } else if (AM_MASTER(work)) {
+		type = 0x1d;
+	      } else {
+		continue;
+	      }
+	      
+	      DEBUG(2,("sending announce backup %s workgroup %s(%d)\n",
+		       inet_ntoa(d->bcast_ip),work->work_group,
+		       work->token));
+	      
+	      bzero(outbuf,sizeof(outbuf));
+	      p = outbuf;
+	      CVAL(p,0) = ANN_GetBackupListReq;
+	      p++;
+	      
+	      CVAL(p,0) = 1; /* count? */
+	      SIVAL(p,1,work->token); /* workgroup unique key index */
+	      p += 5;
+	      p++;
+	      
+	      send_mailslot_reply(BROWSE_MAILSLOT,
+				  ClientDGRAM,outbuf,
+				  PTR_DIFF(p,outbuf),
+				  myname, work->work_group,
+				  0x0,type,d->bcast_ip,myip);
+	    }
 	}
+    }
 }
 
 
@@ -236,9 +231,6 @@ void announce_host(void)
 	  
 	  work->lastannounce_time = t;
 
-	  DEBUG(2,("Sending announcement to subnet %s for workgroup %s\n",
-		   inet_ntoa(d->bcast_ip),work->work_group));
-
 	  if (!ip_equal(bcast_ip,d->bcast_ip)) {
 	    stype &= ~(SV_TYPE_POTENTIAL_BROWSER | SV_TYPE_MASTER_BROWSER |
 		       SV_TYPE_DOMAIN_MASTER | SV_TYPE_BACKUP_BROWSER |
@@ -258,7 +250,8 @@ void announce_host(void)
 	      p = outbuf+1;
 	      
 	      CVAL(p,0) = updatecount;
-	      SIVAL(p,1,work->announce_interval*1000); /* ms - despite the spec */
+	      /* ms - despite the spec */
+	      SIVAL(p,1,work->announce_interval*1000); 
 	      namep = p+5;
 	      StrnCpy(namep,my_name,16);
 	      strupper(namep);
@@ -279,14 +272,20 @@ void announce_host(void)
 		    {
 		      SIVAL(stypep,0,work->ServerType);
 		      
-		      CVAL(outbuf,0) = 15; /* local member announce */
+		      DEBUG(2,("sending local master announce to %s for %s\n",
+			       inet_ntoa(d->bcast_ip),work->work_group));
+
+		      CVAL(outbuf,0) = ANN_LocalMasterAnnouncement;
 		      
 		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
 					  PTR_DIFF(p,outbuf),
 					  my_name,work->work_group,0,
 					  0x1e,d->bcast_ip,myip);
 		      
-		      CVAL(outbuf,0) = 12; /* domain announce */
+		      DEBUG(2,("sending domain announce to %s for %s\n",
+			       inet_ntoa(d->bcast_ip),work->work_group));
+
+		      CVAL(outbuf,0) = ANN_DomainAnnouncement;
 		      
 		      StrnCpy(namep,work->work_group,15);
 		      strupper(namep);
@@ -302,11 +301,15 @@ void announce_host(void)
 		    }
 		  else
 		    {
-		      CVAL(outbuf,0) = 1; /* host announce */
+		      DEBUG(2,("sending host announce to %s for %s\n",
+			       inet_ntoa(d->bcast_ip),work->work_group));
+
+		      CVAL(outbuf,0) = ANN_HostAnnouncement;
 		      
 		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
 					  PTR_DIFF(p,outbuf),
-					  my_name,work->work_group,0,0x1d,d->bcast_ip,myip);
+					  my_name,work->work_group,0,0x1d,
+					  d->bcast_ip,myip);
 		    }
 		}
 	    }
