@@ -21,7 +21,7 @@ AC_DEFUN([_SMB_BUILD_CORE],
 echo "config.status: creating ./config.smb_build.pl"
 
 cat > config.smb_build.pl <<\_SMB_ACEOF
-#!/usr/bin/perl -W
+#!$PERL
 #
 
 use strict;
