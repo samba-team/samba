@@ -22,7 +22,7 @@ libcommon_OBJS = base64.o glob.o
 all: libcommon.a
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I$(srcdir) -I.. $(DEFS) $<
+	$(CC) -c $(CFLAGS) -I$(srcdir) -I../../../include -I.. $(DEFS) $<
 
 libcommon.a: $(libcommon_OBJS)
 	ar cr libcommon.a $(libcommon_OBJS)

@@ -36,14 +36,6 @@
  * SUCH DAMAGE.
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
-#if 0
-static char sccsid[] = "@(#)glob.c	8.3 (Berkeley) 10/13/93";
-#else
-static char rcsid[] = "$NetBSD: glob.c,v 1.5 1995/02/27 04:13:35 cgd Exp $";
-#endif
-#endif /* LIBC_SCCS and not lint */
-
 /*
  * glob(3) -- a superset of the one defined in POSIX 1003.2.
  *
@@ -87,6 +79,7 @@ static char rcsid[] = "$NetBSD: glob.c,v 1.5 1995/02/27 04:13:35 cgd Exp $";
 #include <unistd.h>
 
 #include "glob.h"
+#include "roken.h"
 
 #define	DOLLAR		'$'
 #define	DOT		'.'
