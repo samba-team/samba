@@ -15,11 +15,3 @@ if test t$SMB_EXT_LIB_ENABLE_gtk = tYES; then
 	SMB_BINARY_ENABLE(gepdump, YES)
 	AC_DEFINE(HAVE_GTK, 1, [Whether GTK+ is available])
 fi
-
-SMB_SUBSYSTEM_NOPROTO(GTKSMB)
-SMB_SUBSYSTEM_MK(GTKSMB,gtk/config.mk)
-SMB_BINARY_MK(gregedit,gtk/config.mk)
-SMB_BINARY_MK(gwcrontab,gtk/config.mk)
-SMB_BINARY_MK(gwsam,gtk/config.mk)
-SMB_BINARY_MK(gepdump,gtk/config.mk)
-

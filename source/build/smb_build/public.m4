@@ -19,25 +19,6 @@ dnl		6:required_libraries,
 dnl		7:required_subsystems
 dnl		)
 dnl
-dnl SMB_MODULE_MK(
-dnl		1:name,
-dnl		2:subsystem,
-dnl		3:default_build,
-dnl		4:config_mk_file
-dnl			[MODULE::test]
-dnl			INIT_OBJ_FILES = \
-dnl					test.o 
-dnl			ADD_OBJ_FILES = \
-dnl					test_utils1.o \
-dnl					test_utils2.o
-dnl			REQUIRED_LIBRARIES = \
-dnl					LIB_EXT_TEST1 \
-dnl					LIB_EXT_TEST2
-dnl			REQUIRED_SUBSYSTEMS = \
-dnl					OTHER_SUBSYSTEM1 \
-dnl					OTHER_SUBSYSTEM2
-dnl		)
-dnl
 dnl SMB_SUBSYSTEM_ENABLE(
 dnl		1:name,
 dnl		2:default_build
@@ -53,23 +34,6 @@ dnl		2:init_obj_files,
 dnl		3:add_obj_files,
 dnl		4:required_libraries,
 dnl		5:required_subsystems
-dnl		)
-dnl
-dnl SMB_SUBSYSTEM_MK(
-dnl		1:name,
-dnl		2:config_mk_file
-dnl			[SUBSYSTEM::test]
-dnl			INIT_OBJ_FILES = \
-dnl					test.o 
-dnl			ADD_OBJ_FILES = \
-dnl					test_utils1.o \
-dnl					test_utils2.o
-dnl			REQUIRED_LIBRARIES = \
-dnl					LIB_EXT_TEST1 \
-dnl					LIB_EXT_TEST2
-dnl			REQUIRED_SUBSYSTEMS = \
-dnl					OTHER_SUBSYSTEM1 \
-dnl					OTHER_SUBSYSTEM2
 dnl		)
 dnl
 dnl SMB_EXT_LIB_ENABLE(
@@ -105,24 +69,6 @@ dnl		6:required_libraries,
 dnl		7:required_subsystems
 dnl		)
 dnl
-dnl SMB_LIBRARY_MK(
-dnl		1:name,
-dnl		2:config_mk_file
-dnl			[LIBRARY::test]
-dnl			MAJOR_VERSION = 0
-dnl			MINOR_VERSION = 0
-dnl			RELEASE_VERSION = 1
-dnl			OBJ_FILES = \
-dnl					test1.o \
-dnl					test2.o
-dnl			REQUIRED_LIBRARIES = \
-dnl					LIB_EXT_TEST1 \
-dnl					LIB_EXT_TEST2
-dnl			REQUIRED_SUBSYSTEMS = \
-dnl					OTHER_SUBSYSTEM1 \
-dnl					OTHER_SUBSYSTEM2
-dnl		)
-dnl
 dnl SMB_BINARY_ENABLE(
 dnl		1:name,
 dnl		2:default_build
@@ -135,23 +81,6 @@ dnl		3:install_path
 dnl		4:obj_files,
 dnl		5:required_libraries,
 dnl		6:required_subsystems
-dnl		)
-dnl
-dnl SMB_BINARY_MK(
-dnl		1:name,
-dnl		2:config_mk_file
-dnl			[BINARY::test]
-dnl			BUILD_TARGETS =
-dnl			INSTALL_PATH =
-dnl			OBJ_FILES = \
-dnl					test1.o \
-dnl					test2.o
-dnl			REQUIRED_LIBRARIES = \
-dnl					LIB_EXT_TEST1 \
-dnl					LIB_EXT_TEST2
-dnl			REQUIRED_SUBSYSTEMS = \
-dnl					OTHER_SUBSYSTEM1 \
-dnl					OTHER_SUBSYSTEM2
 dnl		)
 dnl
 dnl SMB_MAKE_TARGET(
@@ -234,47 +163,6 @@ SMB_INFO_MODULES="$SMB_INFO_MODULES
 "
 ])
 
-dnl SMB_MODULE_MK(
-dnl		1:name,
-dnl		2:subsystem,
-dnl		3:default_build,
-dnl		4:config_mk_file
-dnl		)
-AC_DEFUN([SMB_MODULE_MK],
-[
-
-	if test -z "$[SMB_MODULE_DEFAULT_][$1]"; then
-		[SMB_MODULE_DEFAULT_][$1]=$3
-	fi
-	
-	if test "$[SMB_MODULE_][$1]"; then
-		[SMB_MODULE_][$1]=$[SMB_MODULE_][$1]
-	elif test "$[SMB_MODULE_]translit([$2], [A-Z], [a-z])" -a x"$[SMB_MODULE_DEFAULT_][$1]" != xNOT; then
-		[SMB_MODULE_][$1]=$[SMB_MODULE_]translit([$2], [A-Z], [a-z])
-	else
-		[SMB_MODULE_][$1]="DEFAULT";
-	fi
-
-SMB_INFO_MODULES="$SMB_INFO_MODULES
-###################################
-# Start MODULE $1
-\$INPUT{$1} = {
-	TYPE => \"MODULE\",
-	NAME => \"$1\",
-	SUBSYSTEM => \"$2\",
-	DEFAULT_BUILD => \"$[SMB_MODULE_DEFAULT_][$1]\",
-	INIT_OBJ_FILES => @<:@ config_mk::module_get_array(\"$4\", \"$1\", \"INIT_OBJ_FILES\") @:>@,
-	ADD_OBJ_FILES => @<:@ config_mk::module_get_array(\"$4\", \"$1\", \"ADD_OBJ_FILES\") @:>@,
-	REQUIRED_LIBRARIES => @<:@ config_mk::module_get_array(\"$4\", \"$1\", \"REQUIRED_LIBRARIES\") @:>@,
-	REQUIRED_SUBSYSTEMS => @<:@ config_mk::module_get_array(\"$4\", \"$1\", \"REQUIRED_SUBSYSTEMS\") @:>@,
-	INIT_FUNCTION => config_mk::module_get_var(\"$4\", \"$1\", \"INIT_FUNCTION\"),
-	CHOSEN_BUILD => \"$[SMB_MODULE_][$1]\"
-};
-# End MODULE $1
-###################################
-"
-])
-
 dnl SMB_SUBSYSTEM_ENABLE(
 dnl		1:name,
 dnl		2:default_build
@@ -320,40 +208,6 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 	ADD_OBJ_FILES => ][STR2ARRAY([$3])][,
 	REQUIRED_LIBRARIES => ][STR2ARRAY([$4])][,
 	REQUIRED_SUBSYSTEMS => ][STR2ARRAY([$5])][,
-	ENABLE => \"$[SMB_SUBSYSTEM_ENABLE_][$1]\",
-	NOPROTO => \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\"
-};
-# End Subsystem $1
-###################################
-"
-])
-
-dnl SMB_SUBSYSTEM_MK(
-dnl		1:name,
-dnl		2:config_mk_file
-dnl		)
-AC_DEFUN([SMB_SUBSYSTEM_MK],
-[
-
-	if test -z "$[SMB_SUBSYSTEM_ENABLE_][$1]"; then
-		[SMB_SUBSYSTEM_ENABLE_][$1]="YES";
-	fi
-
-	if test -z "$[SMB_SUBSYSTEM_NOPROTO_][$1]"; then
-		[SMB_SUBSYSTEM_NOPROTO_][$1]="NO";
-	fi
-
-SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
-###################################
-# Start Subsystem $1
-\$INPUT{$1} = {
-	TYPE => \"SUBSYSTEM\",
-	NAME => \"$1\",
-	INIT_OBJ_FILES => @<:@ config_mk::subsystem_get_array(\"$2\", \"$1\", \"INIT_OBJ_FILES\") @:>@,
-	ADD_OBJ_FILES => @<:@ config_mk::subsystem_get_array(\"$2\", \"$1\", \"ADD_OBJ_FILES\") @:>@,
-	REQUIRED_LIBRARIES => @<:@ config_mk::subsystem_get_array(\"$2\", \"$1\", \"REQUIRED_LIBRARIES\") @:>@,
-	REQUIRED_SUBSYSTEMS => @<:@ config_mk::subsystem_get_array(\"$2\", \"$1\", \"REQUIRED_SUBSYSTEMS\") @:>@,
-	INIT_FUNCTION => config_mk::subsystem_get_var(\"$2\", \"$1\", \"INIT_FUNCTION\"),
 	ENABLE => \"$[SMB_SUBSYSTEM_ENABLE_][$1]\",
 	NOPROTO => \"$[SMB_SUBSYSTEM_NOPROTO_][$1]\"
 };
@@ -495,36 +349,6 @@ SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 "
 ])
 
-dnl SMB_LIBRARY_MK(
-dnl		1:name,
-dnl		2:config_mk_file
-dnl		)
-AC_DEFUN([SMB_LIBRARY_MK],
-[
-
-	if test -z "$[SMB_LIBRARY_ENABLE_][$1]"; then
-		[SMB_LIBRARY_ENABLE_][$1]="NO";
-	fi
-
-SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
-###################################
-# Start Library $1
-\$INPUT{$1} = {
-	TYPE => \"LIBRARY\",
-	NAME => \"$1\",
-	MAJOR_VERSION => config_mk::library_get_var(\"$2\", \"$1\", \"MAJOR_VERSION\"),
-	MINOR_VERSION => config_mk::library_get_var(\"$2\", \"$1\", \"MINOR_VERSION\"),
-	RELEASE_VERSION => config_mk::library_get_var(\"$2\", \"$1\", \"RELEASE_VERSION\"),
-	OBJ_FILES => @<:@ config_mk::library_get_array(\"$2\", \"$1\", \"OBJ_FILES\") @:>@,
-	REQUIRED_LIBRARIES => @<:@ config_mk::library_get_array(\"$2\", \"$1\", \"REQUIRED_LIBRARIES\") @:>@,
-	REQUIRED_SUBSYSTEMS => @<:@ config_mk::library_get_array(\"$2\", \"$1\", \"REQUIRED_SUBSYSTEMS\") @:>@,
-	ENABLE => \"$[SMB_LIBRARY_ENABLE_][$1]\"
-};
-# End Library $1
-###################################
-"
-])
-
 dnl SMB_BINARY_ENABLE(
 dnl		1:name,
 dnl		2:default_build
@@ -560,35 +384,6 @@ SMB_INFO_BINARIES="$SMB_INFO_BINARIES
 	OBJ_FILES => ][STR2ARRAY([$4])][,
 	REQUIRED_LIBRARIES => ][STR2ARRAY([$5])][,
 	REQUIRED_SUBSYSTEMS => ][STR2ARRAY([$6])][,
-	ENABLE => \"$[SMB_BINARY_ENABLE_][$1]\"
-};
-# End Binary $1
-###################################
-"
-])
-
-dnl SMB_BINARY_MK(
-dnl		1:name,
-dnl		2:config_mk_file
-dnl		)
-AC_DEFUN([SMB_BINARY_MK],
-[
-
-	if test -z "$[SMB_BINARY_ENABLE_][$1]"; then
-		[SMB_BINARY_ENABLE_][$1]="YES";
-	fi
-
-SMB_INFO_BINARIES="$SMB_INFO_BINARIES
-###################################
-# Start Binary $1
-\$INPUT{$1} = {
-	TYPE => \"BINARY\",
-	NAME => \"$1\",
-	BUILD_TARGETS => @<:@ config_mk::binary_get_array(\"$2\", \"$1\", \"BUILD_TARGETS\") @:>@,
-	INSTALL_PATH => @<:@ config_mk::binary_get_array(\"$2\", \"$1\", \"INSTALL_PATH\") @:>@,
-	OBJ_FILES => @<:@ config_mk::binary_get_array(\"$2\", \"$1\", \"OBJ_FILES\") @:>@,
-	REQUIRED_LIBRARIES => @<:@ config_mk::binary_get_array(\"$2\", \"$1\",\"REQUIRED_LIBRARIES\") @:>@,
-	REQUIRED_SUBSYSTEMS => @<:@ config_mk::binary_get_array(\"$2\", \"$1\",\"REQUIRED_SUBSYSTEMS\") @:>@,
 	ENABLE => \"$[SMB_BINARY_ENABLE_][$1]\"
 };
 # End Binary $1

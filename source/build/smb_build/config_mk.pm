@@ -61,7 +61,7 @@ sub _parse_config_mk($)
 		}
 		
 		#
-		# 1.)	lines with an aplhanumeric character indicate
+		# 1.)	lines with an alphanumeric character indicate
 		# 	a new variable, 
 		# 2.)	followed by zero or more whitespaces or tabs
 		# 3.)	then one '=' character
@@ -436,5 +436,27 @@ sub binary_get_array($$$)
 	my $section = "BINARY::".$binary;
 
 	return _fetch_array_from_config_mk($filename,$section,$var);
+}
+
+sub import_file($$)
+{
+	my $input = shift;
+	my $filename = shift;
+
+	my $result = _parse_config_mk($filename);
+
+	die ($result->{ERROR_STR}) unless $result->{ERROR_CODE} == 0;
+
+	foreach my $section (keys %{$result}) {
+		next if ($section eq "ERROR_CODE");
+		my ($type, $name) = split(/::/, $section, 2);
+		
+		$input->{$name}{NAME} = $name;
+		$input->{$name}{TYPE} = $type;
+
+		foreach my $key (values %{$result->{$section}}) {
+			$input->{$name}{$key->{KEY}} = [input::str2array($key->{VAL})];
+		}
+	}
 }
 1;
