@@ -228,6 +228,7 @@
 #undef LINUX_QUOTAS_1
 #undef LINUX_QUOTAS_2
 #undef BROKEN_REDHAT_7_SYSTEM_HEADERS
+#undef HAVE_IMMEDIATE_STRUCTURES
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

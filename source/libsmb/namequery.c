@@ -207,7 +207,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 
   register_ip.s_addr = name_ip.s_addr;  /* Fix this ... */
   
-  bzero((char *)&p, sizeof(p));
+  memset((char *)&p, '\0', sizeof(p));
 
   *count = 0;
 
@@ -239,7 +239,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 
   }
 
-  bzero((char *)nmb->additional, sizeof(struct res_rec));
+  memset((char *)nmb->additional, '\0', sizeof(struct res_rec));
 
   nmb->additional->rr_name  = nmb->question.question_name;
   nmb->additional->rr_type  = RR_TYPE_NB;

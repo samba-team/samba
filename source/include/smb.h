@@ -199,6 +199,36 @@ typedef struct nttime_info
 
 } NTTIME;
 
+/* the following rather strange looking definitions of NTSTATUS and WERROR
+   and there in order to catch common coding errors where different error types
+   are mixed up. This is especially important as we slowly convert Samba
+   from using BOOL for internal functions
+*/
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
+typedef struct {uint32 v;} NTSTATUS;
+#define NT_STATUS(x) ((NTSTATUS) { x })
+#define NT_STATUS_V(x) ((x).v)
+#else
+typedef uint32 NTSTATUS;
+#define NT_STATUS(x) (x)
+#define NT_STATUS_V(x) (x)
+#endif
+ 
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
+typedef struct {uint32 v;} WERROR;
+#define W_ERROR(x) ((WERROR) { x })
+#define W_ERROR_V(x) ((x).v)
+#else
+typedef uint32 WERROR;
+#define W_ERROR(x) (x)
+#define W_ERROR_V(x) (x)
+#endif
+ 
+#define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
+#define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
+#define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
+#define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
+
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */
 #define ACB_HOMDIRREQ  0x0002  /* 1 = Home directory required */
@@ -1591,13 +1621,5 @@ typedef struct user_struct
 
 #include "nsswitch/winbindd_nss.h"
 #include "smb_acls.h"
-
-/* Used by winbindd_glue functions */
-
-typedef struct {
-	struct cli_state *cli;
-	POLICY_HND handle;
-	TALLOC_CTX *mem_ctx;
-} CLI_POLICY_HND;
 
 #endif /* _SMB_H */
