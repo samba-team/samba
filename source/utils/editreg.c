@@ -312,6 +312,22 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 #define True 1
 #define REG_KEY_LIST_SIZE 10
 
+/*
+ * Structures for dealing with the on-disk format of the registry
+ */
+
+#define IVAL(buf) ((unsigned int) \
+                   (unsigned int)*((unsigned char *)(buf)+3)<<24| \
+                   (unsigned int)*((unsigned char *)(buf)+2)<<16| \
+                   (unsigned int)*((unsigned char *)(buf)+1)<<8| \
+                   (unsigned int)*((unsigned char *)(buf)+0)) 
+
+#define SVAL(buf) ((unsigned short) \
+                   (unsigned short)*((unsigned char *)(buf)+1)<<8| \
+                   (unsigned short)*((unsigned char *)(buf)+0)) 
+
+#define CVAL(buf) ((unsigned char)*((unsigned char *)(buf)))
+
 static int verbose = 0;
 static int print_security = 0;
 
@@ -337,6 +353,8 @@ typedef struct date_time_s {
 #define REG_SUB_KEY  2
 #define REG_SYM_LINK 3
 
+typedef struct key_sec_desc_s KEY_SEC_DESC;
+
 typedef struct reg_key_s {
   char *name;         /* Name of the key                    */
   char *class_name;
@@ -345,7 +363,7 @@ typedef struct reg_key_s {
   struct reg_key_s *owner;
   struct key_list_s *sub_keys;
   struct val_list_s *values;
-  struct key_sec_desc_s *security;
+  KEY_SEC_DESC *security;
 } REG_KEY;
 
 /*
@@ -403,12 +421,12 @@ typedef struct sec_desc_s {
 #define SEC_DESC_RES 1
 #define SEC_DESC_OCU 2
 
-typedef struct key_sec_desc_s {
+struct key_sec_desc_s {
   struct key_sec_desc_s *prev, *next;
   int ref_cnt;
   int state;
   SEC_DESC *sec_desc;
-} KEY_SEC_DESC; 
+}; 
 
 /* 
  * All of the structures below actually have a four-byte lenght before them
@@ -817,6 +835,7 @@ int nt_delete_key_by_name(REGF *regf, char *name)
   key = nt_find_key_by_name(regf->root, name);
 
   if (key) {
+    if (key == regf->root) regf->root = NULL;
     return nt_delete_reg_key(key, True);
   }
 
@@ -982,11 +1001,52 @@ REG_KEY *nt_create_reg_key1(char *name, REG_KEY *parent)
 
   if (!(tmp->name = strdup(name))) goto error;
 
-
-
  error:
   if (tmp) free(tmp);
   return NULL;
+}
+
+/*
+ * Convert a string of the form S-1-5-x[-y-z-r] to a SID
+ */
+int strng_to_sid(DOM_SID **sid, char *sid_str)
+{
+  int i = 0, auth;
+  char *lstr; 
+
+  *sid = (DOM_SID *)malloc(sizeof(DOM_SID));
+  if (!*sid) return 0;
+
+  bzero(*sid, sizeof(DOM_SID));
+
+  if (strncmp(sid_str, "S-1-5", 5)) {
+    fprintf(stderr, "Does not conform to S-1-5...: %s\n", sid_str);
+    return 0;
+  }
+
+  /* We only allow strings of form S-1-5... */
+
+  (*sid)->ver = 1;
+  (*sid)->auth[5] = 5;
+
+  lstr = sid_str + 5;
+
+  while (1) {
+    if (!lstr || !lstr[0] || sscanf(lstr, "-%u", &auth) == 0) {
+      if (i < 1) {
+	fprintf(stderr, "Not of form -d-d...: %s, %u\n", lstr, i);
+	return 0;
+      }
+      (*sid)->auths=i;
+      return 1;
+    }
+
+    (*sid)->sub_auths[i] = auth;
+    i++;
+    lstr = strchr(lstr + 1, '-'); 
+  }
+
+  return 1;
 }
 
 /*
@@ -1001,8 +1061,24 @@ KEY_SEC_DESC *nt_inherit_security(REG_KEY *key)
   return key->security;
 }
 
-REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create);
-REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
+/*
+ * Create an initial security descriptor and init other structures, if needed
+ * We assume that the initial security stuff is empty ...
+ */
+KEY_SEC_DESC *nt_create_init_sec(REGF *regf)
+{
+  KEY_SEC_DESC *tsec = NULL;
+  
+
+  return tsec;
+}
+
+REG_KEY *nt_add_reg_subkey(REGF *regf, REG_KEY *key, char *name, int create);
+
+/*
+ * Add a sub-key 
+ */
+REG_KEY *nt_add_reg_key_list(REGF *regf, REG_KEY *key, char * name, int create)
 {
   int i;
   REG_KEY *ret = NULL, *tmp = NULL;
@@ -1021,7 +1097,7 @@ REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
   }
 
   for (i = 0; i < list->key_count; i++) {
-    if ((ret = nt_add_reg_key(list->keys[i], name, create)))
+    if ((ret = nt_add_reg_subkey(regf, key, name, create)))
       return ret;
   }
 
@@ -1069,6 +1145,7 @@ REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
   tmp->name = strdup(c1);
   if (!tmp->name) goto error;
   tmp->owner = key;
+  tmp->type = REG_SUB_KEY;
   /*
    * Next, pull security from the parent, but override by with
    * anything passed in on the command line
@@ -1078,7 +1155,7 @@ REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
   list->keys[list->key_count - 1] = tmp;
 
   if (c2) {
-    ret = nt_add_reg_key(key, c2, True);
+    ret = nt_add_reg_subkey(regf, key, c2, True);
   }
 
   if (lname) free(lname);
@@ -1091,17 +1168,27 @@ REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
   return NULL;
 }
 
-REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create)
+REG_KEY *nt_add_reg_subkey(REGF *regf, REG_KEY *key, char *name, int create)
+{
+
+  return NULL;
+}
+
+/*
+ * This routine only adds a key from the root down.
+ * It calls helper functions to handle sub-key lists and sub-keys
+ */
+REG_KEY *nt_add_reg_key(REGF *regf, char *name, int create)
 {
   char *lname = NULL, *c1, *c2;
-  REG_KEY * tmp;
+  REG_KEY * tmp = NULL, *key = NULL;
 
   /*
    * Look until we hit the first component that does not exist, and
    * then add from there. However, if the first component does not 
    * match and the path we are given is the root, then it must match
    */
-  if (!key || !name || !*name) return NULL;
+  if (!regf || !name || !*name) return NULL;
 
   lname = strdup(name);
   if (!lname) return NULL;
@@ -1114,36 +1201,43 @@ REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create)
   }
 
   /*
-   * If we don't match, then we have to return error ...
-   * If we do match on this component, check the next one in the
-   * list, and if not found, add it ... short circuit, add all the
-   * way down
+   * If the root does not exist, create it and make it equal to the
+   * first component ...
    */
 
-  if (strcmp(c1, key->name) != 0)
-    goto error;
-  
-  tmp = nt_add_reg_key_list(key, c2, True);
+  if (!regf->root) {
+    
+    tmp = (REG_KEY *)malloc(sizeof(REG_KEY));
+    if (!tmp) goto error;
+    bzero(tmp, sizeof(REG_KEY));
+    tmp->name = strdup(c1);
+    if (!tmp->name) goto error;
+    tmp->security = nt_create_init_sec(regf);
+    if (!tmp->security) goto error;
+    regf->root = tmp;
+
+  }
+  else {
+    /*
+     * If we don't match, then we have to return error ...
+     * If we do match on this component, check the next one in the
+     * list, and if not found, add it ... short circuit, add all the
+     * way down
+     */
+
+    if (strcmp(c1, key->name) != 0)
+      goto error;
+  }
+
+  tmp = nt_add_reg_key_list(regf, key, c2, True);
   free(lname);
   return tmp;
   
  error:
+  if (tmp) free(tmp);
   if (lname) free(lname);
   return NULL;
 }
-
-/*
- * Create/delete value lists, add/delete values, count them
- */
-
-
-/*
- * Create/delete security descriptors, add/delete SIDS, count SIDS, etc.
- * We reference count the security descriptors. Any new reference increments 
- * the ref count. If we modify an SD, we copy the old one, dec the ref count
- * and make the change. We also want to be able to check for equality so
- * we can reduce the number of SDs in use.
- */
 
 /*
  * Load and unload a registry file.
@@ -1176,22 +1270,6 @@ REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create)
                               (r)->last_mod_time.high = (t2);
 
 #define REGF_HDR_BLKSIZ 0x1000 
-
-/*
- * Structures for dealing with the on-disk format of the registry
- */
-
-#define IVAL(buf) ((unsigned int) \
-                   (unsigned int)*((unsigned char *)(buf)+3)<<24| \
-                   (unsigned int)*((unsigned char *)(buf)+2)<<16| \
-                   (unsigned int)*((unsigned char *)(buf)+1)<<8| \
-                   (unsigned int)*((unsigned char *)(buf)+0)) 
-
-#define SVAL(buf) ((unsigned short) \
-                   (unsigned short)*((unsigned char *)(buf)+1)<<8| \
-                   (unsigned short)*((unsigned char *)(buf)+0)) 
-
-#define CVAL(buf) ((unsigned char)*((unsigned char *)(buf)))
 
 #define OFF(f) ((f) + REGF_HDR_BLKSIZ + 4) 
 #define LOCN(base, f) ((base) + OFF(f))
@@ -3030,10 +3108,27 @@ int main(int argc, char *argv[])
        * Now, apply the requests to the tree ...
        */
       switch (cmd->cmd) {
-      case CMD_ADD_KEY:
+      case CMD_ADD_KEY: {
+	REG_KEY *tmp = NULL;
+
+	tmp = nt_find_key_by_name(regf->root, cmd->key);
+
+	/* If we found it, apply the other bits, else create such a key */
+
+	if (!tmp)
+	  tmp = nt_add_reg_key(regf, cmd->key, True);
+
+	if (tmp) {
+
+	}
+
+	while (cmd->val_count) {
+
+	}
 
 	break;
-
+      }
+      
       case CMD_DEL_KEY:
 	/* 
 	 * Any value does not matter ...
