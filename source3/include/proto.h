@@ -79,7 +79,7 @@ void *dptr_fetch(char *buf,int *num);
 void *dptr_fetch_lanman2(char *params,int dptr_num);
 BOOL dir_check_ftype(int cnum,int mode,struct stat *st,int dirtype);
 BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend);
-void *OpenDir(char *name);
+void *OpenDir(char *name, BOOL use_veto);
 void CloseDir(void *p);
 char *ReadDirName(void *p);
 BOOL SeekDir(void *p,int pos);

@@ -361,7 +361,7 @@ static BOOL scan_directory(char *path, char *name,int snum,BOOL docache)
     check_mangled_stack(name);
 
   /* open the directory */
-  if (!(cur_dir = OpenDir(path))) 
+  if (!(cur_dir = OpenDir(path, True))) 
     {
       DEBUG(3,("scan dir didn't open dir [%s]\n",path));
       return(False);
