@@ -682,57 +682,111 @@ done:
 
 static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
-	union smb_open io1;
 	union smb_fileinfo finfo1, finfo2;
-	union smb_write io3;
 	const char *fname = BASEDIR "\\torture_file.txt";
 	NTSTATUS status;
-	int fnum = -1;
+	int fnum1 = -1;
 	BOOL ret = True;
+	ssize_t written;
 
-	io1.generic.level = RAW_OPEN_NTCREATEX;
-	io1.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
-	io1.ntcreatex.in.root_fid = 0;
-	io1.ntcreatex.in.access_mask = GENERIC_RIGHTS_FILE_WRITE|GENERIC_RIGHTS_FILE_READ;
-	io1.ntcreatex.in.alloc_size = 1024*1024;
-	io1.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io1.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
-	io1.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
-	io1.ntcreatex.in.create_options = 0;
-	io1.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
-	io1.ntcreatex.in.security_flags = 0;
-	io1.ntcreatex.in.fname = fname;
-
-	status = smb_raw_open(cli->tree, mem_ctx, &io1);
-
-	if (!NT_STATUS_IS_OK(status))
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
+	}
 
-	fnum = io1.ntcreatex.out.fnum;
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		ret = False;
+		goto done;
+	}
 
 	finfo1.basic_info.level = RAW_FILEINFO_BASIC_INFO;
-	finfo1.basic_info.in.fnum = fnum;
+	finfo1.basic_info.in.fnum = fnum1;
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo1);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-		return False;
+		ret = False;
+		goto done;
 	}
-
-	io3.generic.level = RAW_WRITE_WRITE;
-	io3.write.in.fnum = fnum;
-	io3.write.in.count = 1;
-	io3.write.in.offset = 0;
-	io3.write.in.remaining = 0;
-	io3.write.in.data = "x";
 
 	msleep(1000);
 
-	status = smb_raw_write(cli->tree, &io3);
+	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
 
-	if (!NT_STATUS_IS_OK(status))
-		return False;
+	if (written != 1) {
+		ret = False;
+		goto done;
+	}
+
+	{
+		struct smbcli_state *cli2;
+		int fnum2;
+
+		if (!torture_open_connection(&cli2)) {
+			return False;
+		}
+
+		fnum2 = smbcli_open(cli2->tree, fname, O_RDWR, DENY_NONE);
+		if (fnum2 == -1) {
+			ret = False;
+			goto done;
+		}
+
+		written =  smbcli_write(cli2->tree, fnum2, 0, "x", 0, 1);
+
+		if (written != 1) {
+			ret = False;
+			goto done;
+		}
+
+		finfo2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+		finfo2.basic_info.in.fname = fname;
+
+		status = smb_raw_pathinfo(cli2->tree, mem_ctx, &finfo2);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
+			ret = False;
+			goto done;
+		}
+
+		if (finfo1.basic_info.out.create_time !=
+		    finfo2.basic_info.out.create_time) {
+			ret = False;
+			goto done;
+		}
+		
+		if (finfo1.basic_info.out.access_time !=
+		    finfo2.basic_info.out.access_time) {
+			ret = False;
+			goto done;
+		}
+		
+		if (finfo1.basic_info.out.write_time !=
+		    finfo2.basic_info.out.write_time) {
+			ret = False;
+			goto done;
+		}
+		
+		if (finfo1.basic_info.out.change_time !=
+		    finfo2.basic_info.out.change_time) {
+			ret = False;
+			goto done;
+		}
+
+		/* One of the two following calls updates the qpathinfo. */
+
+		/* If you had skipped the smbcli_write on fnum2, it would
+		 * *not* have updated the stat on disk */
+
+		smbcli_close(cli2->tree, fnum2);
+		torture_close_connection(cli2);
+	}
+
+	/* This call is only for the people looking at ethereal :-) */
 
 	finfo2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	finfo2.basic_info.in.fname = fname;
@@ -741,31 +795,15 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-		return False;
+		ret = False;
+		goto done;
 	}
 
-	if (finfo1.basic_info.out.create_time !=
-	    finfo2.basic_info.out.create_time) {
-		ret = False;
-	}
-		
-	if (finfo1.basic_info.out.access_time !=
-	    finfo2.basic_info.out.access_time) {
-		ret = False;
-	}
-		
-	if (finfo1.basic_info.out.write_time !=
-	    finfo2.basic_info.out.write_time) {
-		ret = False;
-	}
-		
-	if (finfo1.basic_info.out.change_time !=
-	    finfo2.basic_info.out.change_time) {
-		ret = False;
-	}
-	
-	smbcli_close(cli->tree, fnum);
+ done:
+	if (fnum1 != -1)
+		smbcli_close(cli->tree, fnum1);
 	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
