@@ -55,6 +55,14 @@ krb5_data_free(krb5_data *p)
     p->length = 0;
 }
 
+void
+krb5_free_data(krb5_context context,
+	       krb5_data *p)
+{
+    krb5_data_free(p);
+    free(p);
+}
+
 krb5_error_code
 krb5_data_alloc(krb5_data *p, int len)
 {
@@ -88,4 +96,19 @@ krb5_data_copy(krb5_data *p, const void *data, size_t len)
 	p->data = NULL;
     p->length = len;
     return 0;
+}
+
+krb5_error_code
+krb5_copy_data(krb5_context context, 
+	       const krb5_data *indata, 
+	       krb5_data **outdata)
+{
+    krb5_error_code ret;
+    ALLOC(*outdata, 1);
+    if(*outdata == NULL)
+	return ENOMEM;
+    ret = copy_octet_string(indata, outdata);
+    if(ret)
+	free(*outdata);
+    return ret;
 }
