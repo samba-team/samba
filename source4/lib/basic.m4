@@ -20,5 +20,5 @@ SMB_SUBSYSTEM(LIBBASIC,[lib/version.o],
 		lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 		lib/gencache.o lib/module.o lib/mutex.o \
 		lib/ldap_escape.o lib/events.o \
-		tdb/tdb.o tdb/spinlock.o tdb/tdbutil.o \$(CHARSET_OBJS)],
+		lib/tdb/tdb.o lib/tdb/spinlock.o lib/tdb/tdbutil.o \$(CHARSET_OBJS)],
 		lib/libbasic_public_proto.h)
