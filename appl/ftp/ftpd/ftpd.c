@@ -936,12 +936,11 @@ retrieve(char *cmd, char *name)
 			char *ext;
 			char *cmd;
 		    } cmds[] = {
-		        /* XXX  - make this more general */
-			{".tar", "/bin/gtar cPf - "},
-			{".tar.gz", "/bin/gtar zcPf - "},
-			{".tar.Z", "/bin/gtar ZcPf - "},
-			{".gz", "/bin/gzip -c "},
-			{".Z", "/bin/compress -c "},
+			{".tar", "/bin/gtar cPf - %s"},
+			{".tar.gz", "/bin/gtar zcPf - %s"},
+			{".tar.Z", "/bin/gtar ZcPf - %s"},
+			{".gz", "/bin/gzip -c %s"},
+			{".Z", "/bin/compress -c %s"},
 			{NULL, NULL}
 		    };
 		    struct cmds *p;
@@ -949,9 +948,10 @@ retrieve(char *cmd, char *name)
 			char *tail = name + strlen(name) - strlen(p->ext);
 			
 			if(strcmp(tail, p->ext) == 0){
-			    snprintf (line, sizeof(line),
-				      "%s%s",
-				      p->cmd, name);
+			    char c = *tail;
+			    *tail  = 0;
+			    snprintf (line, sizeof(line), p->cmd, name);
+			    *tail  = c;
 			    break;
 			}
 		    }
