@@ -202,3 +202,37 @@ Error was %s.\n", unixname, strerror(errno) ));
            
   fclose(fp);
 }
+
+/***********************************************************
+ Lookup a SID entry by gid_t.
+************************************************************/
+
+void map_gid_to_sid( gid_t gid, DOM_SID *psid)
+{
+  groupname_map_entry *gmep;
+
+  /*
+   * Initialize and load if not already loaded.
+   */
+  load_groupname_map();
+
+  for( gmep = (groupname_map_entry *)ubi_slFirst( &groupname_map_list);
+       gmep; gmep = (groupname_map_entry *)ubi_slNext( gmep )) {
+
+    if( gmep->unix_gid == gid) {
+      *psid = gmep->windows_sid;
+      DEBUG(7,("map_gid_to_sid: Mapping unix group %s to windows group %s.\n",
+               gmep->unix_name, gmep->windows_name ));
+      return;
+    }
+  }
+
+  /*
+   * If there's no map, convert the UNIX gid_t
+   * to a rid within this domain SID.
+   */
+  *psid = global_machine_sid;
+  psid->sub_auths[psid->num_auths++] = pdb_gid_to_group_rid(gid);
+
+  return;
+}

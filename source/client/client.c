@@ -3550,12 +3550,12 @@ static void usage(char *pname)
   pstring query_host;
   BOOL message = False;
   BOOL nt_domain_logon = False;
+  BOOL explicit_user = False;
   extern char tar_type;
   static pstring servicesf = CONFIGFILE;
   pstring term_code;
   pstring new_name_resolve_order;
   char *p;
-  int save_debuglevel = -1;
 
 #ifdef KANJI
   pstrcpy(term_code, KANJI);
@@ -3575,6 +3575,22 @@ static void usage(char *pname)
   TimeInit();
   charset_initialise();
 
+  if(!get_myname(myhostname,NULL))
+  {
+    DEBUG(0,("Failed to get my hostname.\n"));
+  }
+
+  if (!lp_load(servicesf,True,False,False)) {
+    fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+  }
+
+  codepage_initialise(lp_client_code_page());
+
+  interpret_coding_system(term_code);
+
+  pstrcpy(workgroup,lp_workgroup());
+
+  load_interfaces();
   pid = getpid();
   uid = getuid();
   gid = getgid();
@@ -3694,12 +3710,15 @@ static void usage(char *pname)
       case 'L':
 	got_pass = True;
 	pstrcpy(query_host,optarg);
+    if(!explicit_user)
+      *username = '\0';
 	break;
       case 'U':
 	{
 	  char *lp;
-	pstrcpy(username,optarg);
-	if ((lp=strchr(username,'%')))
+      explicit_user = True;
+      pstrcpy(username,optarg);
+      if ((lp=strchr(username,'%')))
 	  {
 	    *lp = 0;
 	    pstrcpy(password,lp+1);
@@ -3734,9 +3753,9 @@ static void usage(char *pname)
 	break;
       case 'd':
 	if (*optarg == 'A')
-	  save_debuglevel = DEBUGLEVEL = 10000;
+	  DEBUGLEVEL = 10000;
 	else
-	  save_debuglevel = DEBUGLEVEL = atoi(optarg);
+	  DEBUGLEVEL = atoi(optarg);
 	break;
       case 'l':
 	slprintf(debugf,sizeof(debugf)-1, "%s.client",optarg);
@@ -3763,6 +3782,12 @@ static void usage(char *pname)
 	exit(1);
       }
 
+  get_myname((*global_myname)?NULL:global_myname,NULL);  
+  strupper(global_myname);
+
+  if(*new_name_resolve_order)
+    lp_set_name_resolve_order(new_name_resolve_order);
+
   if (!tar_type && !*query_host && !*service && !message)
     {
       usage(pname);
@@ -3771,37 +3796,6 @@ static void usage(char *pname)
 
 
   DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
-
-  if(!get_myname(myhostname,NULL))
-  {
-    DEBUG(0,("Failed to get my hostname.\n"));
-  }
-
-  if (!lp_load(servicesf,True,False,False)) {
-    fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
-  }
-
-  /*
-   * We need to reset the global debuglevel here, as
-   * lp_load will reset it from smb.conf.
-   */
-
-  if(save_debuglevel != -1)
-    DEBUGLEVEL = save_debuglevel;
-
-  codepage_initialise(lp_client_code_page());
-
-  interpret_coding_system(term_code);
-
-  if (*workgroup == 0)
-    pstrcpy(workgroup,lp_workgroup());
-
-  load_interfaces();
-  get_myname((*global_myname)?NULL:global_myname,NULL);  
-  strupper(global_myname);
-
-  if(*new_name_resolve_order)
-    lp_set_name_resolve_order(new_name_resolve_order);
 
   if (tar_type) {
     recurse=True;
