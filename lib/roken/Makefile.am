@@ -30,9 +30,9 @@ libtest_la_SOURCES = strftime.c strptime.c snprintf.c
 libtest_la_CFLAGS = -DTEST_SNPRINTF
 
 strpftime_test_SOURCES	= strpftime-test.c
-strpftime_test_LDADD = libtest.la
+strpftime_test_LDADD = libtest.la $(LDADD)
 snprintf_test_SOURCES	= snprintf-test.c
-snprintf_test_LDADD = libtest.la
+snprintf_test_LDADD = libtest.la $(LDADD)
 snprintf_test_CFLAGS	= -DTEST_SNPRINTF
 
 libroken_la_SOURCES =		\
