@@ -2127,438 +2127,501 @@ BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER * rav,
 
 /*The following definitions come from  rpc_parse/parse_samr.c  */
 
-BOOL make_samr_q_close_hnd(SAMR_Q_CLOSE_HND *q_c, POLICY_HND *hnd);
-BOOL samr_io_q_close_hnd(char *desc,  SAMR_Q_CLOSE_HND *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_lookup_domain(SAMR_Q_LOOKUP_DOMAIN *q_u,
-		POLICY_HND *pol, const char *dom_name);
-BOOL samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN *r_u,
-		DOM_SID *dom_sid, uint32 status);
-BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_unknown_2d(SAMR_Q_UNKNOWN_2D *q_u,
-				const POLICY_HND *dom_pol, 
-				const DOM_SID *sid);
-BOOL samr_io_q_unknown_2d(char *desc,  SAMR_Q_UNKNOWN_2D *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_unknown_2d(char *desc,  SAMR_R_UNKNOWN_2D *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
-				const POLICY_HND *connect_pol, uint32 flags,
-				const DOM_SID *sid);
-BOOL samr_io_q_open_domain(char *desc,  SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_open_domain(char *desc,  SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_get_usrdom_pwinfo(SAMR_Q_GET_USRDOM_PWINFO *q_u, POLICY_HND *user_pol);
-BOOL samr_io_q_get_usrdom_pwinfo(char *desc,  SAMR_Q_GET_USRDOM_PWINFO *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_get_usrdom_pwinfo(char *desc,  SAMR_R_GET_USRDOM_PWINFO *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_query_sec_obj(SAMR_Q_QUERY_SEC_OBJ *q_u,
-				const POLICY_HND *user_pol, uint32 sec_info);
-BOOL samr_io_q_query_sec_obj(char *desc,  SAMR_Q_QUERY_SEC_OBJ *q_u, prs_struct *ps, int depth);
-BOOL make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
-				POLICY_HND *domain_pol, uint16 switch_value);
-BOOL samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_struct *ps, int depth);
-BOOL make_unk_info3(SAM_UNK_INFO_3 *u_3);
-BOOL make_unk_info6(SAM_UNK_INFO_6 *u_6);
-BOOL make_unk_info7(SAM_UNK_INFO_7 *u_7);
-BOOL make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server);
-BOOL make_unk_info1(SAM_UNK_INFO_1 *u_1);
-BOOL make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO *r_u, 
-				uint16 switch_value, SAM_UNK_CTR *ctr,
+BOOL make_samr_q_close_hnd(SAMR_Q_CLOSE_HND * q_c, POLICY_HND * hnd);
+BOOL samr_io_q_close_hnd(char *desc, SAMR_Q_CLOSE_HND * q_u, prs_struct * ps,
+			 int depth);
+BOOL samr_io_r_close_hnd(char *desc, SAMR_R_CLOSE_HND * r_u, prs_struct * ps,
+			 int depth);
+BOOL make_samr_q_lookup_domain(SAMR_Q_LOOKUP_DOMAIN * q_u,
+			       POLICY_HND * pol, const char *dom_name);
+BOOL samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN * q_u,
+			     prs_struct * ps, int depth);
+BOOL make_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN * r_u,
+			       DOM_SID * dom_sid, uint32 status);
+BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN * r_u,
+			     prs_struct * ps, int depth);
+BOOL make_samr_q_unknown_2d(SAMR_Q_UNKNOWN_2D * q_u,
+			    const POLICY_HND * dom_pol, const DOM_SID * sid);
+BOOL samr_io_q_unknown_2d(char *desc, SAMR_Q_UNKNOWN_2D * q_u,
+			  prs_struct * ps, int depth);
+BOOL samr_io_r_unknown_2d(char *desc, SAMR_R_UNKNOWN_2D * r_u,
+			  prs_struct * ps, int depth);
+BOOL make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN * q_u,
+			     const POLICY_HND * connect_pol, uint32 flags,
+			     const DOM_SID * sid);
+BOOL samr_io_q_open_domain(char *desc, SAMR_Q_OPEN_DOMAIN * q_u,
+			   prs_struct * ps, int depth);
+BOOL samr_io_r_open_domain(char *desc, SAMR_R_OPEN_DOMAIN * r_u,
+			   prs_struct * ps, int depth);
+BOOL make_samr_q_get_usrdom_pwinfo(SAMR_Q_GET_USRDOM_PWINFO * q_u,
+				   POLICY_HND * user_pol);
+BOOL samr_io_q_get_usrdom_pwinfo(char *desc, SAMR_Q_GET_USRDOM_PWINFO * q_u,
+				 prs_struct * ps, int depth);
+BOOL samr_io_r_get_usrdom_pwinfo(char *desc, SAMR_R_GET_USRDOM_PWINFO * r_u,
+				 prs_struct * ps, int depth);
+BOOL make_samr_q_query_sec_obj(SAMR_Q_QUERY_SEC_OBJ * q_u,
+			       const POLICY_HND * user_pol, uint32 sec_info);
+BOOL samr_io_q_query_sec_obj(char *desc, SAMR_Q_QUERY_SEC_OBJ * q_u,
+			     prs_struct * ps, int depth);
+BOOL make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO * q_u,
+				POLICY_HND * domain_pol, uint16 switch_value);
+BOOL samr_io_q_query_dom_info(char *desc, SAMR_Q_QUERY_DOMAIN_INFO * q_u,
+			      prs_struct * ps, int depth);
+BOOL make_unk_info3(SAM_UNK_INFO_3 * u_3);
+BOOL make_unk_info6(SAM_UNK_INFO_6 * u_6);
+BOOL make_unk_info7(SAM_UNK_INFO_7 * u_7);
+BOOL make_unk_info2(SAM_UNK_INFO_2 * u_2, char *domain, char *server);
+BOOL make_unk_info1(SAM_UNK_INFO_1 * u_1);
+BOOL make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO * r_u,
+				uint16 switch_value, SAM_UNK_CTR * ctr,
 				uint32 status);
-BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_struct *ps, int depth);
-BOOL samr_io_r_query_sec_obj(char *desc,  SAMR_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth);
-BOOL make_sam_entry(SAM_ENTRY *sam, uint32 len_sam_name, uint32 rid);
-BOOL make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
-				uint32 start_idx, 
+BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
+			      prs_struct * ps, int depth);
+BOOL samr_io_r_query_sec_obj(char *desc, SAMR_R_QUERY_SEC_OBJ * r_u,
+			     prs_struct * ps, int depth);
+BOOL make_sam_entry(SAM_ENTRY * sam, uint32 len_sam_name, uint32 rid);
+BOOL make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS * q_e, POLICY_HND * pol,
+				uint32 start_idx,
 				uint16 acb_mask, uint16 unk_1, uint32 size);
-BOOL samr_io_q_enum_dom_users(char *desc,  SAMR_Q_ENUM_DOM_USERS *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
-		uint32 next_idx,
-		uint32 num_sam_entries);
-BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
+BOOL samr_io_q_enum_dom_users(char *desc, SAMR_Q_ENUM_DOM_USERS * q_e,
+			      prs_struct * ps, int depth);
+BOOL make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS * r_u,
+				uint32 next_idx, uint32 num_sam_entries);
+BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS * r_u,
+			      prs_struct * ps, int depth);
+BOOL make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO * q_e, POLICY_HND * pol,
 				uint16 switch_level, uint32 start_idx,
 				uint32 max_entries);
-BOOL samr_io_q_query_dispinfo(char *desc,  SAMR_Q_QUERY_DISPINFO *q_e, prs_struct *ps, int depth);
-BOOL make_sam_dispinfo_1(SAM_DISPINFO_1 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
+BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
+			      prs_struct * ps, int depth);
+BOOL make_sam_dispinfo_1(SAM_DISPINFO_1 * sam, uint32 * num_entries,
+			 uint32 * data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-BOOL make_sam_dispinfo_2(SAM_DISPINFO_2 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
+BOOL make_sam_dispinfo_2(SAM_DISPINFO_2 * sam, uint32 * num_entries,
+			 uint32 * data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-BOOL make_sam_dispinfo_3(SAM_DISPINFO_3 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 DOMAIN_GRP *grp);
-BOOL make_sam_dispinfo_4(SAM_DISPINFO_4 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
+BOOL make_sam_dispinfo_3(SAM_DISPINFO_3 * sam, uint32 * num_entries,
+			 uint32 * data_size, uint32 start_idx,
+			 DOMAIN_GRP * grp);
+BOOL make_sam_dispinfo_4(SAM_DISPINFO_4 * sam, uint32 * num_entries,
+			 uint32 * data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-BOOL make_sam_dispinfo_5(SAM_DISPINFO_5 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 DOMAIN_GRP *grp);
-BOOL make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
+BOOL make_sam_dispinfo_5(SAM_DISPINFO_5 * sam, uint32 * num_entries,
+			 uint32 * data_size, uint32 start_idx,
+			 DOMAIN_GRP * grp);
+BOOL make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO * r_u,
 				uint32 num_entries, uint32 data_size,
-				uint16 switch_level, SAM_DISPINFO_CTR *ctr,
+				uint16 switch_level, SAM_DISPINFO_CTR * ctr,
 				uint32 status);
-BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_open_group(SAMR_Q_OPEN_GROUP *q_c,
-				const POLICY_HND *hnd,
-				uint32 access_mask, uint32 rid);
-BOOL samr_io_q_open_group(char *desc,  SAMR_Q_OPEN_GROUP *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_open_group(char *desc,  SAMR_R_OPEN_GROUP *r_u, prs_struct *ps, int depth);
-BOOL make_samr_group_info1(GROUP_INFO1 *gr1,
-				char *acct_name, char *acct_desc,
-				uint32 num_members);
-BOOL samr_io_group_info1(char *desc,  GROUP_INFO1 *gr1, prs_struct *ps, int depth);
-BOOL make_samr_group_info4(GROUP_INFO4 *gr4, const char *acct_desc);
-BOOL samr_io_group_info4(char *desc,  GROUP_INFO4 *gr4, prs_struct *ps, int depth);
-BOOL samr_group_info_ctr(char *desc,  GROUP_INFO_CTR *ctr, prs_struct *ps, int depth);
-BOOL make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_e,
-				POLICY_HND *pol,
-				const char *acct_desc);
-BOOL samr_io_q_create_dom_group(char *desc,  SAMR_Q_CREATE_DOM_GROUP *q_e, prs_struct *ps, int depth);
-BOOL samr_io_r_create_dom_group(char *desc,  SAMR_R_CREATE_DOM_GROUP *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_c, POLICY_HND *hnd);
-BOOL samr_io_q_delete_dom_group(char *desc,  SAMR_Q_DELETE_DOM_GROUP *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_delete_dom_group(char *desc,  SAMR_R_DELETE_DOM_GROUP *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_del_groupmem(SAMR_Q_DEL_GROUPMEM *q_e,
-				POLICY_HND *pol,
-				uint32 rid);
-BOOL samr_io_q_del_groupmem(char *desc,  SAMR_Q_DEL_GROUPMEM *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_del_groupmem(SAMR_R_DEL_GROUPMEM *r_u, POLICY_HND *pol,
-		uint32 status);
-BOOL samr_io_r_del_groupmem(char *desc,  SAMR_R_DEL_GROUPMEM *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_add_groupmem(SAMR_Q_ADD_GROUPMEM *q_e,
-				POLICY_HND *pol,
-				uint32 rid);
-BOOL samr_io_q_add_groupmem(char *desc,  SAMR_Q_ADD_GROUPMEM *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_add_groupmem(SAMR_R_ADD_GROUPMEM *r_u, POLICY_HND *pol,
-		uint32 status);
-BOOL samr_io_r_add_groupmem(char *desc,  SAMR_R_ADD_GROUPMEM *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_set_groupinfo(SAMR_Q_SET_GROUPINFO *q_e,
-				POLICY_HND *pol, GROUP_INFO_CTR *ctr);
-BOOL samr_io_q_set_groupinfo(char *desc,  SAMR_Q_SET_GROUPINFO *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_set_groupinfo(SAMR_R_SET_GROUPINFO *r_u, 
-		uint32 status);
-BOOL samr_io_r_set_groupinfo(char *desc,  SAMR_R_SET_GROUPINFO *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_e,
-				POLICY_HND *pol,
-				uint16 switch_level);
-BOOL samr_io_q_query_groupinfo(char *desc,  SAMR_Q_QUERY_GROUPINFO *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_query_groupinfo(SAMR_R_QUERY_GROUPINFO *r_u, GROUP_INFO_CTR *ctr,
-		uint32 status);
-BOOL samr_io_r_query_groupinfo(char *desc,  SAMR_R_QUERY_GROUPINFO *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_query_groupmem(SAMR_Q_QUERY_GROUPMEM *q_c, POLICY_HND *hnd);
-BOOL samr_io_q_query_groupmem(char *desc,  SAMR_Q_QUERY_GROUPMEM *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM *r_u,
-		uint32 num_entries, uint32 *rid, uint32 *attr, uint32 status);
-BOOL samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struct *ps, int depth);
-void samr_free_r_query_groupmem(SAMR_R_QUERY_GROUPMEM *r_u);
-BOOL make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
-				POLICY_HND *hnd);
-BOOL samr_io_q_query_usergroups(char *desc,  SAMR_Q_QUERY_USERGROUPS *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
-		uint32 num_gids, DOM_GID *gid, uint32 status);
-BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID **gid, prs_struct *ps, int depth);
-BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS *q_e,
-			      const POLICY_HND *pol,
-			      uint32 start_idx, uint32 size);
-BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS *r_u,
-		uint32 next_idx, uint32 num_sam_entries);
-BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e,
-				 const POLICY_HND *pol,
-				 uint32 start_idx, uint32 size);
-BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
-		uint32 next_idx, uint32 num_sam_entries);
-BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, POLICY_HND *pol,
-				uint32 start_idx, uint32 size);
-BOOL samr_io_q_enum_dom_aliases(char *desc,  SAMR_Q_ENUM_DOM_ALIASES *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
-		uint32 next_idx,
-		uint32 num_sam_entries);
-BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES *r_u, prs_struct *ps, int depth);
-BOOL make_samr_alias_info3(ALIAS_INFO3 *al3, const char *acct_desc);
-BOOL samr_io_alias_info3(char *desc,  ALIAS_INFO3 *al3, prs_struct *ps, int depth);
-BOOL samr_alias_info_ctr(char *desc,  ALIAS_INFO_CTR *ctr, prs_struct *ps, int depth);
-BOOL make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_e,
-				 const POLICY_HND *pol, uint16 switch_level);
-BOOL samr_io_q_query_aliasinfo(char *desc,  SAMR_Q_QUERY_ALIASINFO *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
-				 ALIAS_INFO_CTR *ctr, uint32 status);
-BOOL samr_io_r_query_aliasinfo(char *desc,  SAMR_R_QUERY_ALIASINFO *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_set_aliasinfo(SAMR_Q_SET_ALIASINFO *q_u,
-			       const POLICY_HND *hnd,
-			       ALIAS_INFO_CTR *ctr);
-BOOL samr_io_q_set_aliasinfo(char *desc,  SAMR_Q_SET_ALIASINFO *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_set_aliasinfo(char *desc,  SAMR_R_SET_ALIASINFO *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
-				   const POLICY_HND *hnd,
-				   uint32  num_sids,
-				   uint32 *ptr_sid, DOM_SID2 *sid);
-BOOL samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs_struct *ps, int depth);
-void samr_free_q_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u);
-BOOL make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES *r_u,
-		uint32 num_rids, uint32 *rid, uint32 status);
-BOOL samr_io_rids(char *desc, uint32 *num_rids, uint32 **rid, prs_struct *ps, int depth);
-BOOL samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u, const POLICY_HND *pol,
-				uint32 unknown_0, uint32 rid);
-BOOL samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_open_alias(char *desc,  SAMR_R_OPEN_ALIAS *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
-		const POLICY_HND *pol, uint32 flags,
-		uint32 num_rids, const uint32 *rid);
-BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps, int depth);
-void samr_free_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u);
-BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
-		uint32 num_names, UNIHDR *hdr_name, UNISTR2 *uni_name,
-		uint32 *type);
-BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth);
-void samr_free_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u);
-BOOL make_samr_q_delete_alias(SAMR_Q_DELETE_DOM_ALIAS *q_u, POLICY_HND *hnd);
-BOOL samr_io_q_delete_alias(char *desc,  SAMR_Q_DELETE_DOM_ALIAS *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_delete_alias(char *desc,  SAMR_R_DELETE_DOM_ALIAS *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u, POLICY_HND *hnd,
-				const char *acct_desc);
-BOOL samr_io_q_create_dom_alias(char *desc,  SAMR_Q_CREATE_DOM_ALIAS *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_create_dom_alias(char *desc,  SAMR_R_CREATE_DOM_ALIAS *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u, POLICY_HND *hnd,
-				DOM_SID *sid);
-BOOL samr_io_q_add_aliasmem(char *desc,  SAMR_Q_ADD_ALIASMEM *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_add_aliasmem(char *desc,  SAMR_R_ADD_ALIASMEM *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_del_aliasmem(SAMR_Q_DEL_ALIASMEM *q_u, POLICY_HND *hnd,
-				DOM_SID *sid);
-BOOL samr_io_q_del_aliasmem(char *desc,  SAMR_Q_DEL_ALIASMEM *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_del_aliasmem(char *desc,  SAMR_R_DEL_ALIASMEM *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS *q_c, POLICY_HND *hnd);
-BOOL samr_io_q_delete_dom_alias(char *desc,  SAMR_Q_DELETE_DOM_ALIAS *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_delete_dom_alias(SAMR_R_DELETE_DOM_ALIAS *r_u,
-		uint32 status);
-BOOL samr_io_r_delete_dom_alias(char *desc,  SAMR_R_DELETE_DOM_ALIAS *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_c,
-				const POLICY_HND *hnd);
-BOOL samr_io_q_query_aliasmem(char *desc,  SAMR_Q_QUERY_ALIASMEM *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
-		uint32 num_sids, DOM_SID2 *sid, uint32 status);
-BOOL samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
-			      const POLICY_HND *pol, uint32 flags,
-			      uint32 num_names, char **name);
-BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
-void samr_free_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_l);
-BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
-			      uint32 num_rids,
-			      const uint32 *rid, const uint32 *type,
+BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO * r_u,
+			      prs_struct * ps, int depth);
+BOOL make_samr_q_open_group(SAMR_Q_OPEN_GROUP * q_c,
+			    const POLICY_HND * hnd,
+			    uint32 access_mask, uint32 rid);
+BOOL samr_io_q_open_group(char *desc, SAMR_Q_OPEN_GROUP * q_u,
+			  prs_struct * ps, int depth);
+BOOL samr_io_r_open_group(char *desc, SAMR_R_OPEN_GROUP * r_u,
+			  prs_struct * ps, int depth);
+BOOL make_samr_group_info1(GROUP_INFO1 * gr1,
+			   char *acct_name, char *acct_desc,
+			   uint32 num_members);
+BOOL samr_io_group_info1(char *desc, GROUP_INFO1 * gr1, prs_struct * ps,
+			 int depth);
+BOOL make_samr_group_info4(GROUP_INFO4 * gr4, const char *acct_desc);
+BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4, prs_struct * ps,
+			 int depth);
+BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR * ctr, prs_struct * ps,
+			 int depth);
+BOOL make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP * q_e,
+				  POLICY_HND * pol, const char *acct_desc);
+BOOL samr_io_q_create_dom_group(char *desc, SAMR_Q_CREATE_DOM_GROUP * q_e,
+				prs_struct * ps, int depth);
+BOOL samr_io_r_create_dom_group(char *desc, SAMR_R_CREATE_DOM_GROUP * r_u,
+				prs_struct * ps, int depth);
+BOOL make_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP * q_c,
+				  POLICY_HND * hnd);
+BOOL samr_io_q_delete_dom_group(char *desc, SAMR_Q_DELETE_DOM_GROUP * q_u,
+				prs_struct * ps, int depth);
+BOOL samr_io_r_delete_dom_group(char *desc, SAMR_R_DELETE_DOM_GROUP * r_u,
+				prs_struct * ps, int depth);
+BOOL make_samr_q_del_groupmem(SAMR_Q_DEL_GROUPMEM * q_e,
+			      POLICY_HND * pol, uint32 rid);
+BOOL samr_io_q_del_groupmem(char *desc, SAMR_Q_DEL_GROUPMEM * q_e,
+			    prs_struct * ps, int depth);
+BOOL make_samr_r_del_groupmem(SAMR_R_DEL_GROUPMEM * r_u, POLICY_HND * pol,
 			      uint32 status);
-BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth);
-void samr_free_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_l);
-BOOL make_samr_q_delete_dom_user(SAMR_Q_DELETE_DOM_USER *q_c, POLICY_HND *hnd);
-BOOL samr_io_q_delete_dom_user(char *desc,  SAMR_Q_DELETE_DOM_USER *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_delete_dom_user(char *desc,  SAMR_R_DELETE_DOM_USER *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
-				const POLICY_HND *pol,
-				uint32 access_mask, uint32 rid);
-BOOL samr_io_q_open_user(char *desc,  SAMR_Q_OPEN_USER *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_open_user(char *desc,  SAMR_R_OPEN_USER *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_create_user(SAMR_Q_CREATE_USER *q_u,
-				POLICY_HND *pol,
-				const char *name,
-				uint16 acb_info, uint32 access_mask);
-BOOL samr_io_q_create_user(char *desc,  SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_create_user(char *desc,  SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
-				POLICY_HND *hnd, uint16 switch_value);
-BOOL samr_io_q_query_userinfo(char *desc,  SAMR_Q_QUERY_USERINFO *q_u, prs_struct *ps, int depth);
-BOOL make_sam_user_info12(SAM_USER_INFO_12 *usr,
-				uint16 acb_info,
-				const uint8 lm_pwd[16],
-				const uint8 nt_pwd[16]);
-BOOL sam_io_user_info12(char *desc,  SAM_USER_INFO_12 *u, prs_struct *ps, int depth);
-BOOL make_sam_user_info10(SAM_USER_INFO_10 *usr,
-				uint32 acb_info);
-BOOL sam_io_user_info10(char *desc,  SAM_USER_INFO_10 *usr, prs_struct *ps, int depth);
-BOOL make_sam_user_info11(SAM_USER_INFO_11 *usr,
-				NTTIME *expiry,
-				char *mach_acct,
-				uint32 rid_user,
-				uint32 rid_group,
-				uint16 acct_ctrl);
-BOOL sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
-BOOL make_sam_user_info24(SAM_USER_INFO_24 *usr,
-	const char newpass[516], uint16 passlen);
-BOOL make_sam_user_info23W(SAM_USER_INFO_23 *usr,
-
-	const NTTIME *logon_time, /* all zeros */
-	const NTTIME *logoff_time, /* all zeros */
-	const NTTIME *kickoff_time, /* all zeros */
-	const NTTIME *pass_last_set_time, /* all zeros */
-	const NTTIME *pass_can_change_time, /* all zeros */
-	const NTTIME *pass_must_change_time, /* all zeros */
-
-	const UNISTR2 *user_name, 
-	const UNISTR2 *full_name,
-	const UNISTR2 *home_dir,
-	const UNISTR2 *dir_drive,
-	const UNISTR2 *log_scr,
-	const UNISTR2 *prof_path,
-	const UNISTR2 *desc,
-	const UNISTR2 *wkstas,
-	const UNISTR2 *unk_str,
-	const UNISTR2 *mung_dial,
-
-	uint32 user_rid, /* 0x0000 0000 */
-	uint32 group_rid,
-	uint16 acb_info, 
-
-	uint32 unknown_3,
-	uint16 logon_divs,
-	LOGON_HRS *hrs,
-	uint32 unknown_5,
-	char newpass[516],
-	uint32 unknown_6);
-BOOL make_sam_user_info23A(SAM_USER_INFO_23 *usr,
-
-	NTTIME *logon_time, /* all zeros */
-	NTTIME *logoff_time, /* all zeros */
-	NTTIME *kickoff_time, /* all zeros */
-	NTTIME *pass_last_set_time, /* all zeros */
-	NTTIME *pass_can_change_time, /* all zeros */
-	NTTIME *pass_must_change_time, /* all zeros */
-
-	char *user_name, /* NULL */
-	char *full_name,
-	char *home_dir,
-	char *dir_drive,
-	char *log_scr,
-	char *prof_path,
-	char *desc,
-	char *wkstas,
-	char *unk_str,
-	char *mung_dial,
-
-	uint32 user_rid, /* 0x0000 0000 */
-	uint32 group_rid,
-	uint16 acb_info, 
-
-	uint32 unknown_3,
-	uint16 logon_divs,
-	LOGON_HRS *hrs,
-	uint32 unknown_5,
-	char newpass[516],
-	uint32 unknown_6);
-BOOL make_sam_user_info21W(SAM_USER_INFO_21 *usr,
-
-	const NTTIME *logon_time,
-	const NTTIME *logoff_time,
-	const NTTIME *kickoff_time,
-	const NTTIME *pass_last_set_time,
-	const NTTIME *pass_can_change_time,
-	const NTTIME *pass_must_change_time,
-
-	const UNISTR2 *user_name, 
-	const UNISTR2 *full_name,
-	const UNISTR2 *home_dir,
-	const UNISTR2 *dir_drive,
-	const UNISTR2 *log_scr,
-	const UNISTR2 *prof_path,
-	const UNISTR2 *desc,
-	const UNISTR2 *wkstas,
-	const UNISTR2 *unk_str,
-	const UNISTR2 *mung_dial,
-
-	const uchar lm_pwd[16],
-	const uchar nt_pwd[16],
-
-	uint32 user_rid,
-	uint32 group_rid,
-	uint16 acb_info, 
-
-	uint32 unknown_3,
-	uint16 logon_divs,
-	const LOGON_HRS *hrs,
-	uint32 unknown_5,
-	uint32 unknown_6);
-BOOL make_sam_user_info21A(SAM_USER_INFO_21 *usr,
-
-	NTTIME *logon_time,
-	NTTIME *logoff_time,
-	NTTIME *kickoff_time,
-	NTTIME *pass_last_set_time,
-	NTTIME *pass_can_change_time,
-	NTTIME *pass_must_change_time,
-
-	char *user_name,
-	char *full_name,
-	char *home_dir,
-	char *dir_drive,
-	char *log_scr,
-	char *prof_path,
-	char *desc,
-	char *wkstas,
-	char *unk_str,
-	char *mung_dial,
-
-	uint32 user_rid,
-	uint32 group_rid,
-	uint16 acb_info, 
-
-	uint32 unknown_3,
-	uint16 logon_divs,
-	LOGON_HRS *hrs,
-	uint32 unknown_5,
-	uint32 unknown_6);
-BOOL sam_io_user_info21(char *desc,  SAM_USER_INFO_21 *usr, prs_struct *ps, int depth);
-uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR *ctr,
-				uint16 switch_value,
-				const SAM_USER_INFO_21 *usr);
-BOOL make_samr_userinfo_ctr(SAM_USERINFO_CTR *ctr, const uchar *sess_key,
-				uint16 switch_value, void *info);
-BOOL samr_io_userinfo_ctr(char *desc,  SAM_USERINFO_CTR *ctr, prs_struct *ps, int depth);
-void free_samr_userinfo_ctr(SAM_USERINFO_CTR *ctr);
-BOOL make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
-				SAM_USERINFO_CTR *ctr, uint32 status);
-BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u,
-				POLICY_HND *hnd,
-				uint16 switch_value, void *info);
-BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps, int depth);
-void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO *q_u);
-BOOL make_samr_r_set_userinfo(SAMR_R_SET_USERINFO *r_u, uint32 status);
-BOOL samr_io_r_set_userinfo(char *desc,  SAMR_R_SET_USERINFO *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u,
-				POLICY_HND *hnd,
-				uint16 switch_value, 
-				SAM_USERINFO_CTR *ctr);
-BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 *q_u, prs_struct *ps, int depth);
-void free_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u);
-BOOL make_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 *r_u,
+BOOL samr_io_r_del_groupmem(char *desc, SAMR_R_DEL_GROUPMEM * r_u,
+			    prs_struct * ps, int depth);
+BOOL make_samr_q_add_groupmem(SAMR_Q_ADD_GROUPMEM * q_e,
+			      POLICY_HND * pol, uint32 rid);
+BOOL samr_io_q_add_groupmem(char *desc, SAMR_Q_ADD_GROUPMEM * q_e,
+			    prs_struct * ps, int depth);
+BOOL make_samr_r_add_groupmem(SAMR_R_ADD_GROUPMEM * r_u, POLICY_HND * pol,
+			      uint32 status);
+BOOL samr_io_r_add_groupmem(char *desc, SAMR_R_ADD_GROUPMEM * r_u,
+			    prs_struct * ps, int depth);
+BOOL make_samr_q_set_groupinfo(SAMR_Q_SET_GROUPINFO * q_e,
+			       POLICY_HND * pol, GROUP_INFO_CTR * ctr);
+BOOL samr_io_q_set_groupinfo(char *desc, SAMR_Q_SET_GROUPINFO * q_e,
+			     prs_struct * ps, int depth);
+BOOL make_samr_r_set_groupinfo(SAMR_R_SET_GROUPINFO * r_u, uint32 status);
+BOOL samr_io_r_set_groupinfo(char *desc, SAMR_R_SET_GROUPINFO * r_u,
+			     prs_struct * ps, int depth);
+BOOL make_samr_q_query_groupinfo(SAMR_Q_QUERY_GROUPINFO * q_e,
+				 POLICY_HND * pol, uint16 switch_level);
+BOOL samr_io_q_query_groupinfo(char *desc, SAMR_Q_QUERY_GROUPINFO * q_e,
+			       prs_struct * ps, int depth);
+BOOL make_samr_r_query_groupinfo(SAMR_R_QUERY_GROUPINFO * r_u,
+				 GROUP_INFO_CTR * ctr, uint32 status);
+BOOL samr_io_r_query_groupinfo(char *desc, SAMR_R_QUERY_GROUPINFO * r_u,
+			       prs_struct * ps, int depth);
+BOOL make_samr_q_query_groupmem(SAMR_Q_QUERY_GROUPMEM * q_c, POLICY_HND * hnd);
+BOOL samr_io_q_query_groupmem(char *desc, SAMR_Q_QUERY_GROUPMEM * q_u,
+			      prs_struct * ps, int depth);
+BOOL make_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u,
+				uint32 num_entries, uint32 * rid,
+				uint32 * attr, uint32 status);
+BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
+			      prs_struct * ps, int depth);
+void samr_free_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u);
+BOOL make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS * q_u,
+				  POLICY_HND * hnd);
+BOOL samr_io_q_query_usergroups(char *desc, SAMR_Q_QUERY_USERGROUPS * q_u,
+				prs_struct * ps, int depth);
+BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS * r_u,
+				  uint32 num_gids, DOM_GID * gid,
+				  uint32 status);
+BOOL samr_io_gids(char *desc, uint32 * num_gids, DOM_GID ** gid,
+		  prs_struct * ps, int depth);
+BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS * r_u,
+				prs_struct * ps, int depth);
+BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS * q_e,
+			      const POLICY_HND * pol,
+			      uint32 start_idx, uint32 size);
+BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS * q_e,
+			    prs_struct * ps, int depth);
+BOOL make_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS * r_u,
+			      uint32 next_idx, uint32 num_sam_entries);
+BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
+			    prs_struct * ps, int depth);
+BOOL make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS * q_e,
+				 const POLICY_HND * pol,
+				 uint32 start_idx, uint32 size);
+BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS * q_e,
+			       prs_struct * ps, int depth);
+BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS * r_u,
+				 uint32 next_idx, uint32 num_sam_entries);
+BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
+			       prs_struct * ps, int depth);
+BOOL make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES * q_e,
+				  POLICY_HND * pol, uint32 start_idx,
+				  uint32 size);
+BOOL samr_io_q_enum_dom_aliases(char *desc, SAMR_Q_ENUM_DOM_ALIASES * q_e,
+				prs_struct * ps, int depth);
+BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES * r_u,
+				  uint32 next_idx, uint32 num_sam_entries);
+BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
+				prs_struct * ps, int depth);
+BOOL make_samr_alias_info3(ALIAS_INFO3 * al3, const char *acct_desc);
+BOOL samr_io_alias_info3(char *desc, ALIAS_INFO3 * al3, prs_struct * ps,
+			 int depth);
+BOOL samr_alias_info_ctr(char *desc, ALIAS_INFO_CTR * ctr, prs_struct * ps,
+			 int depth);
+BOOL make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO * q_e,
+				 const POLICY_HND * pol, uint16 switch_level);
+BOOL samr_io_q_query_aliasinfo(char *desc, SAMR_Q_QUERY_ALIASINFO * q_e,
+			       prs_struct * ps, int depth);
+BOOL make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO * r_u,
+				 ALIAS_INFO_CTR * ctr, uint32 status);
+BOOL samr_io_r_query_aliasinfo(char *desc, SAMR_R_QUERY_ALIASINFO * r_u,
+			       prs_struct * ps, int depth);
+BOOL make_samr_q_set_aliasinfo(SAMR_Q_SET_ALIASINFO * q_u,
+			       const POLICY_HND * hnd, ALIAS_INFO_CTR * ctr);
+BOOL samr_io_q_set_aliasinfo(char *desc, SAMR_Q_SET_ALIASINFO * q_u,
+			     prs_struct * ps, int depth);
+BOOL samr_io_r_set_aliasinfo(char *desc, SAMR_R_SET_ALIASINFO * r_u,
+			     prs_struct * ps, int depth);
+BOOL make_samr_q_query_useraliases(SAMR_Q_QUERY_USERALIASES * q_u,
+				   const POLICY_HND * hnd,
+				   uint32 num_sids,
+				   uint32 * ptr_sid, DOM_SID2 * sid);
+BOOL samr_io_q_query_useraliases(char *desc, SAMR_Q_QUERY_USERALIASES * q_u,
+				 prs_struct * ps, int depth);
+void samr_free_q_query_useraliases(SAMR_Q_QUERY_USERALIASES * q_u);
+BOOL make_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES * r_u,
+				   uint32 num_rids, uint32 * rid,
+				   uint32 status);
+BOOL samr_io_rids(char *desc, uint32 * num_rids, uint32 ** rid,
+		  prs_struct * ps, int depth);
+BOOL samr_io_r_query_useraliases(char *desc, SAMR_R_QUERY_USERALIASES * r_u,
+				 prs_struct * ps, int depth);
+BOOL make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS * q_u, const POLICY_HND * pol,
+			    uint32 unknown_0, uint32 rid);
+BOOL samr_io_q_open_alias(char *desc, SAMR_Q_OPEN_ALIAS * q_u,
+			  prs_struct * ps, int depth);
+BOOL samr_io_r_open_alias(char *desc, SAMR_R_OPEN_ALIAS * r_u,
+			  prs_struct * ps, int depth);
+BOOL make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS * q_u,
+			     const POLICY_HND * pol, uint32 flags,
+			     uint32 num_rids, const uint32 * rid);
+BOOL samr_io_q_lookup_rids(char *desc, SAMR_Q_LOOKUP_RIDS * q_u,
+			   prs_struct * ps, int depth);
+void samr_free_q_lookup_rids(SAMR_Q_LOOKUP_RIDS * q_u);
+BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS * r_u,
+			     uint32 num_names, UNIHDR * hdr_name,
+			     UNISTR2 * uni_name, uint32 * type);
+BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS * r_u,
+			   prs_struct * ps, int depth);
+void samr_free_r_lookup_rids(SAMR_R_LOOKUP_RIDS * r_u);
+BOOL make_samr_q_delete_alias(SAMR_Q_DELETE_DOM_ALIAS * q_u, POLICY_HND * hnd);
+BOOL samr_io_q_delete_alias(char *desc, SAMR_Q_DELETE_DOM_ALIAS * q_u,
+			    prs_struct * ps, int depth);
+BOOL samr_io_r_delete_alias(char *desc, SAMR_R_DELETE_DOM_ALIAS * r_u,
+			    prs_struct * ps, int depth);
+BOOL make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS * q_u,
+				  POLICY_HND * hnd, const char *acct_desc);
+BOOL samr_io_q_create_dom_alias(char *desc, SAMR_Q_CREATE_DOM_ALIAS * q_u,
+				prs_struct * ps, int depth);
+BOOL samr_io_r_create_dom_alias(char *desc, SAMR_R_CREATE_DOM_ALIAS * r_u,
+				prs_struct * ps, int depth);
+BOOL make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM * q_u, POLICY_HND * hnd,
+			      DOM_SID * sid);
+BOOL samr_io_q_add_aliasmem(char *desc, SAMR_Q_ADD_ALIASMEM * q_u,
+			    prs_struct * ps, int depth);
+BOOL samr_io_r_add_aliasmem(char *desc, SAMR_R_ADD_ALIASMEM * r_u,
+			    prs_struct * ps, int depth);
+BOOL make_samr_q_del_aliasmem(SAMR_Q_DEL_ALIASMEM * q_u, POLICY_HND * hnd,
+			      DOM_SID * sid);
+BOOL samr_io_q_del_aliasmem(char *desc, SAMR_Q_DEL_ALIASMEM * q_u,
+			    prs_struct * ps, int depth);
+BOOL samr_io_r_del_aliasmem(char *desc, SAMR_R_DEL_ALIASMEM * r_u,
+			    prs_struct * ps, int depth);
+BOOL make_samr_q_delete_dom_alias(SAMR_Q_DELETE_DOM_ALIAS * q_c,
+				  POLICY_HND * hnd);
+BOOL samr_io_q_delete_dom_alias(char *desc, SAMR_Q_DELETE_DOM_ALIAS * q_u,
+				prs_struct * ps, int depth);
+BOOL make_samr_r_delete_dom_alias(SAMR_R_DELETE_DOM_ALIAS * r_u,
+				  uint32 status);
+BOOL samr_io_r_delete_dom_alias(char *desc, SAMR_R_DELETE_DOM_ALIAS * r_u,
+				prs_struct * ps, int depth);
+BOOL make_samr_q_query_aliasmem(SAMR_Q_QUERY_ALIASMEM * q_c,
+				const POLICY_HND * hnd);
+BOOL samr_io_q_query_aliasmem(char *desc, SAMR_Q_QUERY_ALIASMEM * q_u,
+			      prs_struct * ps, int depth);
+BOOL make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM * r_u,
+				uint32 num_sids, DOM_SID2 * sid,
 				uint32 status);
-BOOL samr_io_r_set_userinfo2(char *desc,  SAMR_R_SET_USERINFO2 *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_connect(SAMR_Q_CONNECT *q_u,
-				const char *srv_name, uint32 access_mask);
-BOOL samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_connect(char *desc,  SAMR_R_CONNECT *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u);
-BOOL samr_io_q_connect_anon(char *desc,  SAMR_Q_CONNECT_ANON *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_connect_anon(char *desc,  SAMR_R_CONNECT_ANON *r_u, prs_struct *ps, int depth);
-BOOL make_samr_q_get_dom_pwinfo(SAMR_Q_GET_DOM_PWINFO *q_u, const char *srv_name);
-BOOL samr_io_q_get_dom_pwinfo(char *desc,  SAMR_Q_GET_DOM_PWINFO *q_u, prs_struct *ps, int depth);
-BOOL samr_io_r_get_dom_pwinfo(char *desc,  SAMR_R_GET_DOM_PWINFO *r_u, prs_struct *ps, int depth);
-BOOL make_enc_passwd(SAMR_ENC_PASSWD *pwd, const char pass[512]);
-BOOL samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth);
-BOOL make_enc_hash(SAMR_ENC_HASH *hsh, const uchar hash[16]);
-BOOL samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth);
-BOOL make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
+BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
+			      prs_struct * ps, int depth);
+BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
+			      const POLICY_HND * pol, uint32 flags,
+			      uint32 num_names, char **name);
+BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
+			    prs_struct * ps, int depth);
+void samr_free_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_l);
+BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES * r_u,
+			      uint32 num_rids,
+			      const uint32 * rid, const uint32 * type,
+			      uint32 status);
+BOOL samr_io_r_lookup_names(char *desc, SAMR_R_LOOKUP_NAMES * r_u,
+			    prs_struct * ps, int depth);
+void samr_free_r_lookup_names(SAMR_R_LOOKUP_NAMES * r_l);
+BOOL make_samr_q_delete_dom_user(SAMR_Q_DELETE_DOM_USER * q_c,
+				 POLICY_HND * hnd);
+BOOL samr_io_q_delete_dom_user(char *desc, SAMR_Q_DELETE_DOM_USER * q_u,
+			       prs_struct * ps, int depth);
+BOOL samr_io_r_delete_dom_user(char *desc, SAMR_R_DELETE_DOM_USER * r_u,
+			       prs_struct * ps, int depth);
+BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER * q_u,
+			   const POLICY_HND * pol,
+			   uint32 access_mask, uint32 rid);
+BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER * q_u, prs_struct * ps,
+			 int depth);
+BOOL samr_io_r_open_user(char *desc, SAMR_R_OPEN_USER * r_u, prs_struct * ps,
+			 int depth);
+BOOL make_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
+			     POLICY_HND * pol,
+			     const char *name,
+			     uint32 acb_info, uint32 access_mask);
+BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER * q_u,
+			   prs_struct * ps, int depth);
+BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER * r_u,
+			   prs_struct * ps, int depth);
+BOOL make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO * q_u,
+				POLICY_HND * hnd, uint16 switch_value);
+BOOL samr_io_q_query_userinfo(char *desc, SAMR_Q_QUERY_USERINFO * q_u,
+			      prs_struct * ps, int depth);
+BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
+			  uint16 acb_info,
+			  const uint8 lm_pwd[16], const uint8 nt_pwd[16]);
+BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u, prs_struct * ps,
+			int depth);
+BOOL make_sam_user_info10(SAM_USER_INFO_10 * usr, uint32 acb_info);
+BOOL sam_io_user_info10(char *desc, SAM_USER_INFO_10 * usr, prs_struct * ps,
+			int depth);
+BOOL make_sam_user_info11(SAM_USER_INFO_11 * usr,
+			  NTTIME * expiry,
+			  char *mach_acct,
+			  uint32 rid_user, uint32 rid_group, uint16 acct_ctrl);
+BOOL sam_io_user_info11(char *desc, SAM_USER_INFO_11 * usr, prs_struct * ps,
+			int depth);
+BOOL make_sam_user_info24(SAM_USER_INFO_24 * usr,
+			  const char newpass[516], uint16 passlen);
+BOOL make_sam_user_info23W(SAM_USER_INFO_23 * usr, const NTTIME * logon_time,	/* all zeros */
+			   const NTTIME * logoff_time,	/* all zeros */
+			   const NTTIME * kickoff_time,	/* all zeros */
+			   const NTTIME * pass_last_set_time,	/* all zeros */
+			   const NTTIME * pass_can_change_time,	/* all zeros */
+			   const NTTIME * pass_must_change_time,	/* all zeros */
+			   const UNISTR2 * user_name,
+			   const UNISTR2 * full_name,
+			   const UNISTR2 * home_dir,
+			   const UNISTR2 * dir_drive,
+			   const UNISTR2 * log_scr,
+			   const UNISTR2 * prof_path,
+			   const UNISTR2 * desc,
+			   const UNISTR2 * wkstas,
+			   const UNISTR2 * unk_str,
+			   const UNISTR2 * mung_dial, uint32 user_rid,	/* 0x0000 0000 */
+			   uint32 group_rid,
+			   uint32 acb_info,
+			   uint32 unknown_3,
+			   uint16 logon_divs,
+			   LOGON_HRS * hrs,
+			   uint32 unknown_5,
+			   char newpass[516], uint32 unknown_6);
+BOOL make_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all zeros */
+			   NTTIME * logoff_time,	/* all zeros */
+			   NTTIME * kickoff_time,	/* all zeros */
+			   NTTIME * pass_last_set_time,	/* all zeros */
+			   NTTIME * pass_can_change_time,	/* all zeros */
+			   NTTIME * pass_must_change_time,	/* all zeros */
+			   char *user_name,	/* NULL */
+			   char *full_name,
+			   char *home_dir, char *dir_drive, char *log_scr, char *prof_path, char *desc, char *wkstas, char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
+			   uint32 group_rid,
+			   uint32 acb_info,
+			   uint32 unknown_3,
+			   uint16 logon_divs,
+			   LOGON_HRS * hrs,
+			   uint32 unknown_5,
+			   char newpass[516], uint32 unknown_6);
+BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
+			   const NTTIME * logon_time,
+			   const NTTIME * logoff_time,
+			   const NTTIME * kickoff_time,
+			   const NTTIME * pass_last_set_time,
+			   const NTTIME * pass_can_change_time,
+			   const NTTIME * pass_must_change_time,
+			   const UNISTR2 * user_name,
+			   const UNISTR2 * full_name,
+			   const UNISTR2 * home_dir,
+			   const UNISTR2 * dir_drive,
+			   const UNISTR2 * log_scr,
+			   const UNISTR2 * prof_path,
+			   const UNISTR2 * desc,
+			   const UNISTR2 * wkstas,
+			   const UNISTR2 * unk_str,
+			   const UNISTR2 * mung_dial,
+			   const uchar lm_pwd[16],
+			   const uchar nt_pwd[16],
+			   uint32 user_rid,
+			   uint32 group_rid,
+			   uint32 acb_info,
+			   uint32 unknown_3,
+			   uint16 logon_divs,
+			   const LOGON_HRS * hrs,
+			   uint32 unknown_5, uint32 unknown_6);
+BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
+			   NTTIME * logon_time,
+			   NTTIME * logoff_time,
+			   NTTIME * kickoff_time,
+			   NTTIME * pass_last_set_time,
+			   NTTIME * pass_can_change_time,
+			   NTTIME * pass_must_change_time,
+			   char *user_name,
+			   char *full_name,
+			   char *home_dir,
+			   char *dir_drive,
+			   char *log_scr,
+			   char *prof_path,
+			   char *desc,
+			   char *wkstas,
+			   char *unk_str,
+			   char *mung_dial,
+			   uint32 user_rid,
+			   uint32 group_rid,
+			   uint32 acb_info,
+			   uint32 unknown_3,
+			   uint16 logon_divs,
+			   LOGON_HRS * hrs,
+			   uint32 unknown_5, uint32 unknown_6);
+BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr, prs_struct * ps,
+			int depth);
+uint32 make_samr_userinfo_ctr_usr21(SAM_USERINFO_CTR * ctr,
+				    uint16 switch_value,
+				    const SAM_USER_INFO_21 * usr);
+BOOL make_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, const uchar * sess_key,
+			    uint16 switch_value, void *info);
+BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr, prs_struct * ps,
+			  int depth);
+void free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr);
+BOOL make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO * r_u,
+				SAM_USERINFO_CTR * ctr, uint32 status);
+BOOL samr_io_r_query_userinfo(char *desc, SAMR_R_QUERY_USERINFO * r_u,
+			      prs_struct * ps, int depth);
+BOOL make_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u,
+			      POLICY_HND * hnd,
+			      uint16 switch_value, void *info);
+BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO * q_u,
+			    prs_struct * ps, int depth);
+void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u);
+BOOL make_samr_r_set_userinfo(SAMR_R_SET_USERINFO * r_u, uint32 status);
+BOOL samr_io_r_set_userinfo(char *desc, SAMR_R_SET_USERINFO * r_u,
+			    prs_struct * ps, int depth);
+BOOL make_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
+			       POLICY_HND * hnd,
+			       uint16 switch_value, SAM_USERINFO_CTR * ctr);
+BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 * q_u,
+			     prs_struct * ps, int depth);
+void free_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u);
+BOOL make_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 * r_u, uint32 status);
+BOOL samr_io_r_set_userinfo2(char *desc, SAMR_R_SET_USERINFO2 * r_u,
+			     prs_struct * ps, int depth);
+BOOL make_samr_q_connect(SAMR_Q_CONNECT * q_u,
+			 const char *srv_name, uint32 access_mask);
+BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u, prs_struct * ps,
+		       int depth);
+BOOL samr_io_r_connect(char *desc, SAMR_R_CONNECT * r_u, prs_struct * ps,
+		       int depth);
+BOOL make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON * q_u);
+BOOL samr_io_q_connect_anon(char *desc, SAMR_Q_CONNECT_ANON * q_u,
+			    prs_struct * ps, int depth);
+BOOL samr_io_r_connect_anon(char *desc, SAMR_R_CONNECT_ANON * r_u,
+			    prs_struct * ps, int depth);
+BOOL make_samr_q_get_dom_pwinfo(SAMR_Q_GET_DOM_PWINFO * q_u,
+				const char *srv_name);
+BOOL samr_io_q_get_dom_pwinfo(char *desc, SAMR_Q_GET_DOM_PWINFO * q_u,
+			      prs_struct * ps, int depth);
+BOOL samr_io_r_get_dom_pwinfo(char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
+			      prs_struct * ps, int depth);
+BOOL make_enc_passwd(SAMR_ENC_PASSWD * pwd, const char pass[512]);
+BOOL samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD * pwd, prs_struct * ps,
+			int depth);
+BOOL make_enc_hash(SAMR_ENC_HASH * hsh, const uchar hash[16]);
+BOOL samr_io_enc_hash(char *desc, SAMR_ENC_HASH * hsh, prs_struct * ps,
+		      int depth);
+BOOL make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER * q_u,
 				const char *dest_host, const char *user_name,
 				const char nt_newpass[516],
 				const uchar nt_oldhash[16],
 				const char lm_newpass[516],
 				const uchar lm_oldhash[16]);
-BOOL samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER *r_u, uint32 status);
-BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
+BOOL samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER * q_u,
+			      prs_struct * ps, int depth);
+BOOL make_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER * r_u, uint32 status);
+BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER * r_u,
+			      prs_struct * ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_sec.c  */
 

@@ -4843,7 +4843,7 @@ reads or writes a structure.
 BOOL make_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
 			     POLICY_HND * pol,
 			     const char *name,
-			     uint16 acb_info, uint32 access_mask)
+			     uint32 acb_info, uint32 access_mask)
 {
 	int len_name;
 	if (q_u == NULL)
@@ -4885,8 +4885,7 @@ BOOL samr_io_q_create_user(char *desc, SAMR_Q_CREATE_USER * q_u,
 		       depth);
 	prs_align(ps);
 
-	prs_uint16("acb_info   ", ps, depth, &(q_u->acb_info));
-	prs_align(ps);
+	prs_uint32("acb_info   ", ps, depth, &(q_u->acb_info));
 	prs_uint32("access_mask", ps, depth, &(q_u->access_mask));
 
 	prs_align(ps);
@@ -5253,7 +5252,7 @@ BOOL make_sam_user_info23W(SAM_USER_INFO_23 * usr, const NTTIME * logon_time,	/*
 			   const UNISTR2 * unk_str,
 			   const UNISTR2 * mung_dial, uint32 user_rid,	/* 0x0000 0000 */
 			   uint32 group_rid,
-			   uint16 acb_info,
+			   uint32 acb_info,
 			   uint32 unknown_3,
 			   uint16 logon_divs,
 			   LOGON_HRS * hrs,
@@ -5350,7 +5349,7 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			   char *full_name,
 			   char *home_dir, char *dir_drive, char *log_scr, char *prof_path, char *desc, char *wkstas, char *unk_str, char *mung_dial, uint32 user_rid,	/* 0x0000 0000 */
 			   uint32 group_rid,
-			   uint16 acb_info,
+			   uint32 acb_info,
 			   uint32 unknown_3,
 			   uint16 logon_divs,
 			   LOGON_HRS * hrs,
@@ -5471,8 +5470,7 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
 
 	prs_uint32("user_rid      ", ps, depth, &(usr->user_rid));	/* User ID */
 	prs_uint32("group_rid     ", ps, depth, &(usr->group_rid));	/* Group ID */
-	prs_uint16("acb_info      ", ps, depth, &(usr->acb_info));	/* Group ID */
-	prs_align(ps);
+	prs_uint32("acb_info      ", ps, depth, &(usr->acb_info));	
 
 	prs_uint32("unknown_3     ", ps, depth, &(usr->unknown_3));
 	prs_uint16("logon_divs    ", ps, depth, &(usr->logon_divs));	/* logon divisions per week */
@@ -5560,7 +5558,7 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 			   const uchar nt_pwd[16],
 			   uint32 user_rid,
 			   uint32 group_rid,
-			   uint16 acb_info,
+			   uint32 acb_info,
 			   uint32 unknown_3,
 			   uint16 logon_divs,
 			   const LOGON_HRS * hrs,
@@ -5676,7 +5674,7 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
 			   char *mung_dial,
 			   uint32 user_rid,
 			   uint32 group_rid,
-			   uint16 acb_info,
+			   uint32 acb_info,
 			   uint32 unknown_3,
 			   uint16 logon_divs,
 			   LOGON_HRS * hrs,
@@ -5794,8 +5792,7 @@ BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr, prs_struct * ps,
 
 	prs_uint32("user_rid      ", ps, depth, &(usr->user_rid));	/* User ID */
 	prs_uint32("group_rid     ", ps, depth, &(usr->group_rid));	/* Group ID */
-	prs_uint16("acb_info      ", ps, depth, &(usr->acb_info));	/* Group ID */
-	prs_align(ps);
+	prs_uint32("acb_info      ", ps, depth, &(usr->acb_info));	
 
 	prs_uint32("unknown_3     ", ps, depth, &(usr->unknown_3));
 	prs_uint16("logon_divs    ", ps, depth, &(usr->logon_divs));	/* logon divisions per week */

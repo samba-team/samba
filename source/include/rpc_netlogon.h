@@ -93,8 +93,6 @@ typedef struct net_user_info_2
 
 	DOM_SID2 dom_sid;           /* domain SID */
 
-	uint32 auth_resp; /* 1 - Authoritative response */
-
 } NET_USER_INFO_2;
 
 /* NET_USER_INFO_3 */
@@ -149,8 +147,6 @@ typedef struct net_user_info_3
 
 	DOM_SID2 dom_sid;           /* domain SID */
 	DOM_SID2 other_sids[LSA_MAX_SIDS]; /* undocumented - domain SIDs */
-
-	uint32 auth_resp; /* 1 - Authoritative response */
 
 } NET_USER_INFO_3;
 
@@ -453,6 +449,7 @@ typedef struct net_r_sam_logon_info
 	DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
 
 	NET_USER_INFO_CTR ctr;
+	uint32 auth_resp; /* 1 - Authoritative response */
 
 	uint32 status; /* return code */
 

@@ -1157,8 +1157,6 @@ BOOL make_net_user_info2W(NET_USER_INFO_2 * usr,
 	make_dom_sid2(&(usr->dom_sid), dom_sid);
 	/* "other" sids are set up above */
 
-	usr->auth_resp = 1;
-
 	return True;
 }
 
@@ -1271,8 +1269,6 @@ BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
 	make_dom_sid2(&(usr->dom_sid), dom_sid);
 	/* "other" sids are set up above */
 
-	usr->auth_resp = 1;
-
 	return True;
 }
 
@@ -1351,8 +1347,6 @@ BOOL net_io_user_info2(char *desc, NET_USER_INFO_2 * usr, prs_struct * ps,
 		       usr->hdr_logon_srv.buffer, ps, depth);	/* logon domain unicode string */
 
 	smb_io_dom_sid2("sid", &(usr->dom_sid), ps, depth);	/* domain SID */
-
-	prs_uint32("auth_resp   ", ps, depth, &usr->auth_resp);	/* 1 - Authoritative response; 0 - Non-Auth? */
 
 	return True;
 }
@@ -1535,8 +1529,6 @@ BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 	make_dom_sid2(&(usr->dom_sid), dom_sid);
 	/* "other" sids are set up above */
 
-	usr->auth_resp = 1;
-
 	return True;
 }
 
@@ -1657,8 +1649,6 @@ BOOL make_net_user_info3(NET_USER_INFO_3 * usr,
 	make_dom_sid2(&(usr->dom_sid), dom_sid);
 	/* "other" sids are set up above */
 
-	usr->auth_resp = 1;
-
 	return True;
 }
 
@@ -1748,8 +1738,6 @@ BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 * usr, prs_struct * ps,
 		smb_io_dom_sid2("sids", &(usr->other_sids[i]), ps, depth);	/* other domain SIDs */
 	}
 
-	prs_uint32("auth_resp   ", ps, depth, &usr->auth_resp);	/* 1 - Authoritative response; 0 - Non-Auth? */
-
 	return True;
 }
 
@@ -1816,6 +1804,8 @@ BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s,
 		r_s->ctr.switch_value = 0;
 		r_s->ctr.usr.id = NULL;
 	}
+
+	r_s->auth_resp = 1;
 
 	r_s->status = status;
 
@@ -1908,12 +1898,13 @@ BOOL net_io_r_sam_logon(char *desc, NET_R_SAM_LOGON * r_l, prs_struct * ps,
 	prs_debug(ps, depth, desc, "net_io_r_sam_logon");
 	depth++;
 
-	prs_uint32("buffer_creds", ps, depth, &(r_l->buffer_creds));	/* undocumented buffer pointer */
-	smb_io_cred("", &(r_l->srv_creds), ps, depth);	/* server credentials.  server time stamp appears to be ignored. */
+	prs_uint32("buffer_creds", ps, depth, &r_l->buffer_creds);
+	smb_io_cred("", &(r_l->srv_creds), ps, depth);	
 
 	net_io_user_info_ctr("", &r_l->ctr, ps, depth);
 
-	prs_uint32("status      ", ps, depth, &(r_l->status));
+	prs_uint32("auth_resp   ", ps, depth, &r_l->auth_resp);	
+	prs_uint32("status      ", ps, depth, &r_l->status);
 
 	prs_align(ps);
 

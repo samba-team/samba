@@ -818,7 +818,8 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
-		      NET_USER_INFO_CTR * uctr, uint16 remote_pid)
+		      NET_USER_INFO_CTR * uctr, uint16 remote_pid,
+		      uint32 * auth_resp)
 {
 	UNISTR2 *uni_samusr = NULL;
 	UNISTR2 *uni_domain = NULL;
@@ -944,6 +945,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		{
 			return status;
 		}
+		(*auth_resp) = 1;
 	}
 
 	/*
@@ -1010,9 +1012,10 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* interactive login. */
 				status =
 					net_login_interactive(&
-							      (sam_id->
-							       ctr->auth.id1),
+							      (sam_id->ctr->
+							       auth.id1),
 							      &dc);
+				(*auth_resp) = 1;
 				break;
 			}
 			case NETWORK_LOGON_TYPE:
@@ -1020,12 +1023,13 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* network login.  lm challenge and 24 byte responses */
 				status =
 					net_login_network(&
-							  (sam_id->ctr->
-							   auth.id2),
-							  acb_info, &dc,
-usr_sess_key, lm_pw8);
+							  (sam_id->ctr->auth.
+							   id2), acb_info,
+							  &dc, usr_sess_key,
+lm_pw8);
 				padding = lm_pw8;
 				enc_user_sess_key = usr_sess_key;
+				(*auth_resp) = 1;
 				break;
 			}
 			case GENERAL_LOGON_TYPE:

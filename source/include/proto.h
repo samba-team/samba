@@ -1242,7 +1242,8 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
-		      NET_USER_INFO_CTR * uctr, uint16 remote_pid);
+		      NET_USER_INFO_CTR * uctr, uint16 remote_pid,
+		      uint32 * auth_resp);
 uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
 		       DOM_CRED * srv_creds, uint16 remote_pid);
 uint32 _net_sam_sync(const UNISTR2 * uni_srv_name,
@@ -3685,7 +3686,7 @@ uint32 lookup_name(const char *name, DOM_SID *sid, uint32 *type);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 
-BOOL api_netlog_rpc(rpcsrv_struct *p);
+BOOL api_netlog_rpc(rpcsrv_struct * p);
 
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 

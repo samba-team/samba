@@ -181,8 +181,7 @@ typedef struct sam_user_info_23
 	uint32 user_rid;      /* Primary User ID */
 	uint32 group_rid;     /* Primary Group ID */
 
-	uint16 acb_info; /* account info (ACB_xxxx bit-mask) */
-	/* uint8 pad[2] */
+	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
 
 	uint32 unknown_3; /* 0x09f8 27fa */
 
@@ -250,8 +249,7 @@ typedef struct sam_user_info_21
 	uint32 user_rid;      /* Primary User ID */
 	uint32 group_rid;     /* Primary Group ID */
 
-	uint16 acb_info; /* account info (ACB_xxxx bit-mask) */
-	/* uint8 pad[2] */
+	uint32 acb_info; /* account info (ACB_xxxx bit-mask) */
 
 	uint32 unknown_3; /* 0x00ff ffff */
 
@@ -1338,7 +1336,7 @@ typedef struct q_samr_create_user_info
 	UNIHDR  hdr_name;       /* unicode account name header */
 	UNISTR2 uni_name;       /* unicode account name */
 
-	uint16 acb_info;      /* account control info */
+	uint32 acb_info;      /* account control info */
 	uint32 access_mask;     /* 0xe005 00b0 */
 
 } SAMR_Q_CREATE_USER;

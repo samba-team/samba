@@ -275,7 +275,8 @@ static BOOL api_net_sam_logon(rpcsrv_struct * p,
 
 	status = _net_sam_logon(&q_l.sam_id,
 				q_l.validation_level,
-				&srv_creds, &uctr, p->key.pid);
+				&srv_creds, &uctr, p->key.pid,
+				&r_s.auth_resp);
 	make_r_sam_logon(&r_s, &srv_creds, q_l.validation_level,
 			 status == NT_STATUS_NOPROBLEMO ? uctr.usr.id : NULL,
 			 status);

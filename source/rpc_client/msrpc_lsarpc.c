@@ -347,16 +347,22 @@ BOOL msrpc_lsa_query_trust_passwd(const char *srv_name,
 	STRING2 secret;
 	UNISTR2 uni_pwd;
 	uint32 len;
+	pstring data;
+	int i;
+
 	if (!msrpc_lsa_query_secret(srv_name, secret_name, &secret,
 				    last_update))
 	{
 		return False;
 	}
-	if (!secret_get_data(&secret, (uchar*)&uni_pwd.buffer, &len))
+	if (!secret_get_data(&secret, data, &len))
 	{
 		return False;
 	}
-
+	for (i = 0; i < len; i++)
+	{
+		uni_pwd.buffer[i] = SVAL(data, i*2);
+	}
 	uni_pwd.uni_str_len = len / 2;
 	uni_pwd.uni_max_len = len / 2;
 	nt_owf_genW(&uni_pwd, trust_passwd);
