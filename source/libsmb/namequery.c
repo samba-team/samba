@@ -108,7 +108,7 @@ static BOOL internal_name_status(int fd,char *name,int name_type,BOOL recurse,
 {
   BOOL found=False;
   int retries = 2;
-  int retry_time = 5000;
+  int retry_time = 2000;
   struct timeval tval;
   struct packet_struct p;
   struct packet_struct *p2;
@@ -822,12 +822,70 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 	return False;
 }
 
+#if !defined(I_HATE_WINDOWS_REPLY_CODE)
+/********************************************************
+ Internal function to extract the MACHINE<0x20> name.
+*********************************************************/
+
+static void _lookup_pdc_name(char *p, char *master,char *rname)
+{
+  int numnames = CVAL(p,0);
+
+  *rname = '\0';
+
+  p += 1;
+  while (numnames--) {
+    int type = CVAL(p,15);
+    if(type == 0x20) {
+      StrnCpy(rname,p,15);
+      trim_string(rname,NULL," ");
+      return;
+    }
+    p += 18;
+  }
+}
+#endif /* I_HATE_WINDOWS_REPLY_CODE */
 
 /********************************************************
  Lookup a PDC name given a Domain name and IP address.
 *********************************************************/
+
 BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name)
 {
+#if !defined(I_HATE_WINDOWS_REPLY_CODE)
+
+  fstring pdc_name;
+  BOOL ret;
+
+  /*
+   * Due to the fact win WinNT *sucks* we must do a node status
+   * query here... JRA.
+   */
+
+  int sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True );
+
+  if(sock == -1)
+    return False;
+
+  *pdc_name = '\0';
+
+  ret = internal_name_status(sock,"*SMBSERVER",0x20,True,
+		 *pdc_ip,NULL,pdc_name,False,_lookup_pdc_name);
+
+  close(sock);
+
+  if(ret && *pdc_name) {
+    fstrcpy(ret_name, pdc_name);
+    return True;
+  }
+
+  return False;
+
+#else /* defined(I_HATE_WINDOWS_REPLY_CODE) */
+
+JRA - This code is broken with BDC rollover - we need to do a full
+NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
+
 	int retries = 3;
 	int retry_time = 2000;
 	struct timeval tval;
@@ -998,6 +1056,7 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
 	
 	close(sock);
 	return False;
+#endif /* defined(I_HATE_WINDOWS_REPLY_CODE) */
 }
 
 
