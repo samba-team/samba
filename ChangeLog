@@ -1,3 +1,7 @@
+2003-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/kerberos5.c (fix_transited_encoding): set transited type
+	
 2003-10-21  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/kdc.8: document enforce-transited-policy
