@@ -481,7 +481,12 @@ typedef struct q_samr_query_domain_info
 typedef struct sam_unknown_info_3_info
 {
 	uint32 unknown_0; /* 0x0000 0000 */
-	uint32 unknown_1; /* 0x8000 0000 */
+	uint32 unknown_1; 
+	
+	/* 0x8000 0000 */ /* DON'T forcibly disconnect remote users from server when logon hours expire*/
+
+	/* 0x0000 0000 */ /* forcibly disconnect remote users from server when logon hours expire*/
+
 
 } SAM_UNK_INFO_3;
 
@@ -551,9 +556,11 @@ typedef struct sam_unknown_info_2_inf
 
 typedef struct sam_unknown_info_1_inf
 {
-	uint8 padding[12]; /* 12 bytes zeros */
-	uint32 unknown_1; /* 0x8000 0000 */
-	uint32 unknown_2; /* 0x0000 0000 */
+	uint16 min_length_password;
+	uint16 password_history;
+	uint32 flag;
+	NTTIME expire;
+	NTTIME min_passwordage;
 
 } SAM_UNK_INFO_1;
 
@@ -1750,5 +1757,42 @@ typedef struct sid_info_3
 
 } DOM_SID3;
 
+/* SAMR_Q_UNKNOWN_2E */
+typedef struct q_samr_unknown_2e_info
+{
+	POLICY_HND dom_pol;   /* policy handle */
+	uint16 switch_value;
+
+} SAMR_Q_UNKNOWN_2E;
+
+typedef struct sam_unknown_2e_info_12
+{
+	uint32 duration_low;
+	uint32 duration_high;
+	uint32 reset_count_low;
+	uint32 reset_count_high;
+	uint32 bad_attempt_lockout;
+} SAM_UNK_2E_INFO_12;
+
+typedef struct sam_unknown_2e_ctr_info
+{
+	union
+	{
+		SAM_UNK_2E_INFO_12 info12;
+	} info;
+
+} SAM_UNK_2E_CTR;
+
+
+/* SAMR_R_UNKNOWN_2E - probably an open */
+typedef struct r_samr_unknown_2e_info
+{
+	uint32 ptr;
+	uint16 switch_value;
+	SAM_UNK_2E_CTR *ctr;
+	
+	uint32 status;         /* return status */
+
+} SAMR_R_UNKNOWN_2E;
 #endif /* _RPC_SAMR_H */
 

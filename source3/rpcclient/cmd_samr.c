@@ -95,6 +95,54 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 	}
 }
 
+static char *display_time(NTTIME nttime)
+{
+	static fstring string;
+
+	float high;
+	float low;
+	int sec;
+	int days, hours, mins, secs;
+
+	if (nttime.high==0 && nttime.low==0)
+		return "Now";
+
+	if (nttime.high==0x80000000 && nttime.low==0)
+		return "Never";
+
+	high = 65536;	
+	high = high/10000;
+	high = high*65536;
+	high = high/1000;
+	high = high * (~nttime.high);
+
+	low = ~nttime.low;	
+	low = low/(1000*1000*10);
+
+	sec=high+low;
+
+	days=sec/(60*60*24);
+	hours=(sec - (days*60*60*24)) / (60*60);
+	mins=(sec - (days*60*60*24) - (hours*60*60) ) / 60;
+	secs=sec - (days*60*60*24) - (hours*60*60) - (mins*60);
+
+	snprintf(string, sizeof(string)-1, "%u days, %u hours, %u minutes, %u seconds", days, hours, mins, secs);
+	return (string);
+}
+
+static void display_sam_unk_info_1(SAM_UNK_INFO_1 *info1)
+{
+	
+	printf("Minimum password length:                     %d\n", info1->min_length_password);
+	printf("Password uniqueness (remember x passwords):  %d\n", info1->password_history);
+	printf("flag:                                        ");
+	if(info1->flag&&2==2) printf("users must open a session to change password ");
+	printf("\n");
+
+	printf("password expire in:                          %s\n", display_time(info1->expire));
+	printf("Min password age (allow changing in x days): %s\n", display_time(info1->min_passwordage));
+}
+
 static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 {
 	fstring name;
@@ -656,6 +704,9 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 	/* Display domain info */
 
 	switch (switch_value) {
+	case 1:
+		display_sam_unk_info_1(&ctr.info.inf1);
+		break;
 	case 2:
 		display_sam_unk_info_2(&ctr.info.inf2);
 		break;
