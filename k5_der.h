@@ -50,8 +50,6 @@ struct KdcOptions {
 
 typedef struct KdcOptions KdcOptions;
 
-typedef int EncryptionType;
-
 struct  Kdc_Req {
      int pvno;
      int msg_type;
@@ -77,22 +75,6 @@ struct EncryptedData {
 };
 
 typedef struct EncryptedData EncryptedData;
-
-struct Ticket {
-     int tkt_vno;
-     krb5_realm realm;
-     krb5_principal sname;
-     EncryptedData enc_part;
-};
-
-typedef struct Ticket Ticket;
-
-struct EncryptionKey {
-     int keytype;
-     krb5_data keyvalue;
-};
-
-typedef struct EncryptionKey EncryptionKey;
 
 struct LastReq {
      int number;
@@ -121,7 +103,7 @@ struct TicketFlags {
 typedef struct TicketFlags TicketFlags;
 
 struct EncKdcRepPart {
-     EncryptionKey key;
+     krb5_keyblock key;
      LastReq req;
      int nonce;
      krb5_time *key_expiration;
@@ -145,7 +127,7 @@ struct krb5_kdc_rep {
      int msg_type;
      krb5_realm realm;
      krb5_principal cname;
-     Ticket ticket;
+     krb5_ticket ticket;
      EncryptedData enc_part;
      EncASRepPart enc_part2;
 };

@@ -80,24 +80,17 @@ krb5_get_in_tkt(krb5_context context,
      krb5_error_code err;
      As_Req a;
      krb5_kdc_rep rep;
-     krb5_principal_data server;
      krb5_data req, resp;
      char buf[BUFSIZ];
      Buffer buffer;
      krb5_data salt;
      krb5_keyblock *key;
 
-     server.type = KRB5_NT_SRV_INST;
-     server.ncomp = 2;
-     server.comp = malloc (sizeof(*server.comp) * server.ncomp);
-     server.comp[0] = string_make ("krbtgt");
-     server.comp[1] = creds->client->realm;
-
      a.pvno = 5;
      a.msg_type = KRB_AS_REQ;
 /* a.kdc_options */
      a.cname = creds->client;
-     a.sname = &server;
+     a.sname = creds->server;
      a.realm = creds->client->realm;
      a.till  = creds->times.endtime;
      a.nonce = 17;
@@ -118,7 +111,6 @@ krb5_get_in_tkt(krb5_context context,
      
      req.length = der_put_as_req (buf + sizeof(buf) - 1, &a);
      req.data   = buf + sizeof(buf) - req.length;
-     free (server.comp);
      if (addrs == NULL) {
 	  int i;
 
@@ -135,6 +127,22 @@ krb5_get_in_tkt(krb5_context context,
      if (der_get_as_rep (&buffer, &rep) == -1) {
 	  return ASN1_PARSE_ERROR;
      }
+     krb5_data_free (&rep.realm);
+     krb5_principal_free (rep.cname);
+     creds->ticket.kvno  = rep.ticket.kvno;
+     creds->ticket.etype = rep.ticket.etype;
+     creds->ticket.enc_part.length = 0;
+     creds->ticket.enc_part.data   = NULL;
+     krb5_data_copy (&creds->ticket.enc_part,
+		     rep.ticket.enc_part.data,
+		     rep.ticket.enc_part.length);
+     krb5_data_free (&rep.ticket.enc_part);
+
+     krb5_copy_principal (context,
+			  rep.ticket.sprinc,
+			  &creds->ticket.sprinc);
+     krb5_free_principal (rep.ticket.sprinc);
+
      salt.length = 0;
      salt.data = NULL;
      err = krb5_get_salt (creds->client, creds->client->realm, &salt);
@@ -152,7 +160,40 @@ krb5_get_in_tkt(krb5_context context,
      memset (key->contents.data, 0, key->contents.length);
      krb5_data_free (&key->contents);
      free (key);
+     if (rep.enc_part2.key_expiration)
+	  free (rep.enc_part2.key_expiration);
+     if (rep.enc_part2.starttime)
+	  free (rep.enc_part2.starttime);
+     if (rep.enc_part2.renew_till)
+	  free (rep.enc_part2.renew_till);
+     if (rep.enc_part2.req.values)
+	  free (rep.enc_part2.req.values);
+     if (rep.enc_part2.caddr.addrs) {
+	  int i;
+
+	  for (i = 0; i < rep.enc_part2.caddr.number; ++i) {
+	       krb5_data_free (&rep.enc_part2.caddr.addrs[i].address);
+	  }
+	  free (rep.enc_part2.caddr.addrs);
+     }
+     krb5_principal_free (rep.enc_part2.sname);
+     krb5_data_free (&rep.enc_part2.srealm);
+	  
      if (err)
 	  return err;
+
+     creds->session.contents.length = 0;
+     creds->session.contents.data   = NULL;
+     creds->session.keytype = rep.enc_part2.key.keytype;
+     err = krb5_data_copy (&creds->session.contents,
+			   rep.enc_part2.key.contents.data,
+			   rep.enc_part2.key.contents.length);
+     memset (rep.enc_part2.key.contents.data, 0,
+	     rep.enc_part2.key.contents.length);
+     krb5_data_free (&rep.enc_part2.key.contents);
+
+     if (err)
+	  return err;
+
      return 0;
 }

@@ -69,11 +69,13 @@ der_get_encrypteddata (Buffer *b, EncryptedData *e)
 }
 
 int
-der_get_ticket (Buffer *b, Ticket *t)
+der_get_ticket (Buffer *b, krb5_ticket *t)
 {
      Identifier i0, i1, i;
+     EncryptedData e;
      Buffer tmp;
      int len;
+     int tkt_vno;
 
      if (matchid3 (b, &i0, APPL, CONS, APPL_TICKET) == NULL)
 	  return -1;
@@ -81,14 +83,19 @@ der_get_ticket (Buffer *b, Ticket *t)
 	  return -1;
      if (matchcontextid3 (b, &i, UNIV, PRIM, UT_Integer, 0) == NULL)
 	  return -1;
-     getdata (b, &i, &t->tkt_vno);
+     getdata (b, &i, &tkt_vno);
+     if (tkt_vno != 5)
+	  return -1;
+     t->sprinc = malloc (sizeof (*t->sprinc));
+     if (t->sprinc == NULL)
+	  return -1;
      if (matchcontextid3 (b, &i, UNIV, PRIM, UT_GeneralString, 1) == NULL)
 	  return -1;
-     getdata (b, &i, &t->realm);
+     getdata (b, &i, &t->sprinc->realm);
      if (matchid3 (b, &i, CONTEXT, CONS, 2) == NULL)
 	  return -1;
      buf_derive(b, &tmp, i.len);
-     len = der_get_principalname (&tmp, &t->sname);
+     len = der_get_principalname (&tmp, &t->sprinc);
      if (len == -1)
 	  return -1;
      buf_advance (b, len);
@@ -96,13 +103,16 @@ der_get_ticket (Buffer *b, Ticket *t)
      if (matchid3 (b, &i, CONTEXT, CONS, 3) == NULL)
 	  return -1;
      buf_derive (b, &tmp, i.len);
-     len = der_get_encrypteddata (&tmp, &t->enc_part);
+     len = der_get_encrypteddata (&tmp, &e);
      if (len == -1)
 	  return -1;
      buf_advance (b, len);
      getzeros (b, i.len);
      getzeros (b, i1.len);
      getzeros (b, i0.len);
+     t->kvno  = *e.kvno;
+     t->etype = e.etype;
+     t->enc_part = e.cipher;
      return buf_length (b);
 }
 
@@ -183,7 +193,7 @@ der_get_tgs_rep (Buffer *b, Tgs_Rep *a)
 }
 
 int
-der_get_encryptionkey (Buffer *b, EncryptionKey *k)
+der_get_encryptionkey (Buffer *b, krb5_keyblock *k)
 {
      Identifier i;
 
@@ -194,7 +204,7 @@ der_get_encryptionkey (Buffer *b, EncryptionKey *k)
      getdata (b, &i, &k->keytype);
      if (matchcontextid3 (b, &i, UNIV, PRIM, UT_OctetString, 1) == NULL)
 	  return -1;
-     getdata (b, &i, &k->keyvalue);
+     getdata (b, &i, &k->contents);
      return buf_length (b);
 }
 

@@ -137,8 +137,6 @@ typedef struct krb5_ticket{
   krb5_enctype etype;
 }krb5_ticket;
 
-
-
 #define KRB5_PARSE_MALFORMED 17
 #define KRB5_PROG_ETYPE_NOSUPP 4711
 

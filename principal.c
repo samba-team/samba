@@ -287,6 +287,7 @@ krb5_copy_principal(krb5_context context,
   }
   
   for(i=0; i<inprinc->ncomp; i++){
+    p->comp[i].length = 0;
     if(krb5_data_copy(&p->comp[i], inprinc->comp[i].data, 
 		      inprinc->comp[i].length)){
       krb5_free_principal(p);
