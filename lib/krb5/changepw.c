@@ -65,6 +65,7 @@ chgpw_send_request (krb5_context context,
 		    krb5_auth_context *auth_context,
 		    krb5_creds *creds,
 		    krb5_principal targprinc,
+		    int is_stream,
 		    int sock,
 		    char *passwd,
 		    const char *host)
@@ -78,6 +79,9 @@ chgpw_send_request (krb5_context context,
     u_char *p;
     struct iovec iov[3];
     struct msghdr msghdr;
+
+    if (is_stream)
+	return KRB5_KPASSWD_MALFORMED;
 
     if (targprinc &&
 	krb5_principal_compare(context, creds->client, targprinc) != TRUE)
@@ -154,6 +158,7 @@ setpw_send_request (krb5_context context,
 		    krb5_auth_context *auth_context,
 		    krb5_creds *creds,
 		    krb5_principal targprinc,
+		    int is_stream,
 		    int sock,
 		    char *passwd,
 		    const char *host)
@@ -164,7 +169,7 @@ setpw_send_request (krb5_context context,
     krb5_data pwd_data;
     ChangePasswdDataMS chpw;
     size_t len;
-    u_char header[6];
+    u_char header[4 + 6];
     u_char *p;
     struct iovec iov[3];
     struct msghdr msghdr;
@@ -210,6 +215,10 @@ setpw_send_request (krb5_context context,
 
     len = 6 + ap_req_data.length + krb_priv_data.length;
     p = header;
+    if (is_stream) {
+	_krb5_put_int(p, len, 4);
+	p += 4;
+    }
     *p++ = (len >> 8) & 0xFF;
     *p++ = (len >> 0) & 0xFF;
     *p++ = 0xff;
@@ -228,7 +237,10 @@ setpw_send_request (krb5_context context,
 #endif
 
     iov[0].iov_base    = (void*)header;
-    iov[0].iov_len     = 6;
+    if (is_stream)
+	iov[0].iov_len     = 10;
+    else
+	iov[0].iov_len     = 6;
     iov[1].iov_base    = ap_req_data.data;
     iov[1].iov_len     = ap_req_data.length;
     iov[2].iov_base    = krb_priv_data.data;
@@ -249,6 +261,7 @@ out2:
 static krb5_error_code
 process_reply (krb5_context context,
 	       krb5_auth_context auth_context,
+	       int is_stream,
 	       int sock,
 	       int *result_code,
 	       krb5_data *result_code_string,
@@ -256,21 +269,53 @@ process_reply (krb5_context context,
 	       const char *host)
 {
     krb5_error_code ret;
-    u_char reply[BUFSIZ];
-    size_t len;
+    u_char reply[1024 * 3];
+    ssize_t len;
     u_int16_t pkt_len, pkt_ver;
     krb5_data ap_rep_data;
     int save_errno;
 
-    ret = recvfrom (sock, reply, sizeof(reply), 0, NULL, NULL);
-    if (ret < 0) {
-	save_errno = errno;
-	krb5_set_error_string(context, "recvfrom %s: %s",
-			      host, strerror(save_errno));
-	return save_errno;
-    }
+    len = 0;
+    if (is_stream) {
+	while (len < sizeof(reply)) {
+	    unsigned long size;
 
-    len = ret;
+	    ret = recvfrom (sock, reply + len, sizeof(reply) - len, 
+			    0, NULL, NULL);
+	    if (ret < 0) {
+		save_errno = errno;
+		krb5_set_error_string(context, "recvfrom %s: %s",
+				      host, strerror(save_errno));
+		return save_errno;
+	    } else if (ret == 0) {
+		krb5_set_error_string(context, "recvfrom timeout %s", host);
+		return 1;
+	    }
+	    len += ret;
+	    if (len < 4)
+		continue;
+	    _krb5_get_int(reply, &size, 4);
+	    if (size + 4 < len)
+		continue;
+	    memmove(reply, reply + 4, size);		
+	    len = size;
+	    break;
+	}
+	if (len == sizeof(reply)) {
+	    krb5_set_error_string(context, "message too large from %s",
+				  host);
+	    return ENOMEM;
+	}
+    } else {
+	ret = recvfrom (sock, reply, sizeof(reply), 0, NULL, NULL);
+	if (ret < 0) {
+	    save_errno = errno;
+	    krb5_set_error_string(context, "recvfrom %s: %s",
+				  host, strerror(save_errno));
+	    return save_errno;
+	}
+	len = ret;
+    }
 
     if (len < 6) {
 	str2data (result_string, "server %s sent to too short message "
@@ -410,10 +455,12 @@ typedef krb5_error_code (*kpwd_send_request) (krb5_context,
 					      krb5_creds *,
 					      krb5_principal,
 					      int,
+					      int,
 					      char *,
 					      const char *);
 typedef krb5_error_code (*kpwd_process_reply) (krb5_context,
 					       krb5_auth_context,
+					       int,
 					       int,
 					       int *,
 					       krb5_data *,
@@ -422,11 +469,24 @@ typedef krb5_error_code (*kpwd_process_reply) (krb5_context,
 
 struct kpwd_proc {
     const char *name;
+    int flags;
+#define SUPPORT_TCP	1
+#define SUPPORT_UDP	2
     kpwd_send_request send_req;
     kpwd_process_reply process_rep;
 } procs[] = {
-    { "MS set password", setpw_send_request, process_reply },
-    { "change password", chgpw_send_request, process_reply },
+    {
+	"MS set password", 
+	SUPPORT_TCP|SUPPORT_UDP,
+	setpw_send_request, 
+	process_reply
+    },
+    {
+	"change password",
+	SUPPORT_UDP,
+	chgpw_send_request,
+	process_reply
+    },
     { NULL }
 };
 
@@ -477,6 +537,22 @@ change_password_loop (krb5_context	context,
 
     while (!done && (ret = krb5_krbhst_next(context, handle, &hi)) == 0) {
 	struct addrinfo *ai, *a;
+	int is_stream;
+
+	switch (hi->proto) {
+	case KRB5_KRBHST_UDP:
+	    if ((proc->flags & SUPPORT_UDP) == 0)
+		continue;
+	    is_stream = 0;
+	    break;
+	case KRB5_KRBHST_TCP:
+	    if ((proc->flags & SUPPORT_TCP) == 0)
+		continue;
+	    is_stream = 1;
+	    break;
+	default:
+	    continue;
+	}
 
 	ret = krb5_krbhst_get_addrinfo(context, hi, &ai);
 	if (ret)
@@ -513,6 +589,7 @@ change_password_loop (krb5_context	context,
 					     &auth_context,
 					     creds,
 					     targprinc,
+					     is_stream,
 					     sock,
 					     newpw,
 					     hi->hostname);
@@ -542,6 +619,7 @@ change_password_loop (krb5_context	context,
 		if (ret == 1) {
 		    ret = (*proc->process_rep) (context,
 						auth_context,
+						is_stream,
 						sock,
 						result_code,
 						result_code_string,
