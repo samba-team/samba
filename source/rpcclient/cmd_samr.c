@@ -1989,7 +1989,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
-	SAM_USERINFO_CTR *ctr = NULL;
+	SAM_USERINFO_CTR ctr;
 	uint16 acb_set = 0x0;
 
 	fstrcpy(domain, info->dom.level5_dom);
@@ -2050,7 +2050,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	/* send set user info */
 	if (res1 && num_rids == 1 && get_samr_query_userinfo( &pol_dom,
 						    0x10, rids[0],
-	                                            &ctr) && ctr != NULL)
+	                                            &ctr))
 	{
 		void *usr = NULL;
 		uint32 switch_value = 0;
@@ -2058,7 +2058,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 		if (True)
 		{
 			SAM_USER_INFO_16 *p = (SAM_USER_INFO_16 *)malloc(sizeof(SAM_USER_INFO_16));
-			p->acb_info = ctr->info.id10->acb_info;
+			p->acb_info = ctr.info.id10->acb_info;
 			if (set_acb_bits)
 			{
 				p->acb_info |= acb_set;
@@ -2096,11 +2096,7 @@ void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[])
 	{
 		free(types);
 	}
-	if (ctr != NULL)
-	{
-		free_samr_userinfo_ctr(ctr);
-		free(ctr);
-	}
+	free_samr_userinfo_ctr(&ctr);
 }
 
 /****************************************************************************
@@ -2126,7 +2122,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	uint32 *types;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
-	SAM_USER_INFO_21 usr21;
+	SAM_USERINFO_CTR ctr;
 
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
@@ -2205,7 +2201,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 
 	/* send set user info */
 	if (res1 && num_rids == 1 && get_samr_query_userinfo( &pol_dom,
-						    0x15, rids[0], &usr21))
+						    0x15, rids[0], &ctr))
 	{
 		void *usr = NULL;
 		uint32 switch_value = 0;
@@ -2228,38 +2224,39 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 		
 		if (False)
 		{
+			SAM_USER_INFO_21 *usr21 = ctr.info.id21;
 			SAM_USER_INFO_23 *p = (SAM_USER_INFO_23*)malloc(sizeof(SAM_USER_INFO_23));
 			/* send user info query, level 0x15 */
 			make_sam_user_info23W(p,
-				&usr21.logon_time, 
-				&usr21.logoff_time, 
-				&usr21.kickoff_time, 
-				&usr21.pass_last_set_time, 
-				&usr21.pass_can_change_time, 
-				&usr21.pass_must_change_time, 
+				&usr21->logon_time, 
+				&usr21->logoff_time, 
+				&usr21->kickoff_time, 
+				&usr21->pass_last_set_time, 
+				&usr21->pass_can_change_time, 
+				&usr21->pass_must_change_time, 
 
-				&usr21.uni_user_name, 
-				&usr21.uni_full_name,
-				&usr21.uni_home_dir,
-				&usr21.uni_dir_drive,
-				&usr21.uni_logon_script,
-				&usr21.uni_profile_path,
-				&usr21.uni_acct_desc,
-				&usr21.uni_workstations,
-				&usr21.uni_unknown_str,
-				&usr21.uni_munged_dial,
+				&usr21->uni_user_name, 
+				&usr21->uni_full_name,
+				&usr21->uni_home_dir,
+				&usr21->uni_dir_drive,
+				&usr21->uni_logon_script,
+				&usr21->uni_profile_path,
+				&usr21->uni_acct_desc,
+				&usr21->uni_workstations,
+				&usr21->uni_unknown_str,
+				&usr21->uni_munged_dial,
 
 				0x0, 
-				usr21.group_rid,
-				usr21.acb_info, 
+				usr21->group_rid,
+				usr21->acb_info, 
 
 				0x09f827fa,
-				usr21.logon_divs,
-				&usr21.logon_hrs,
-				usr21.unknown_5,
+				usr21->logon_divs,
+				&usr21->logon_hrs,
+				usr21->unknown_5,
 				pwbuf
 #if 0
-				, usr21.unknown_6
+				, usr21->unknown_6
 #endif
 				);
 
@@ -2294,6 +2291,7 @@ void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	{
 		free(types);
 	}
+	free_samr_userinfo_ctr(&ctr);
 }
 
 static void sam_display_disp_info(const char* domain, const DOM_SID *sid,
