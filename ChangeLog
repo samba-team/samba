@@ -1,3 +1,30 @@
+Sun Nov 29 01:56:21 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_addrs.c (krb5_get_all_server_addrs): add.  almost
+ 	the same as krb5_get_all_client_addrs except that it includes
+ 	loopback addresses
+
+	* kdc/connect.c (init_socket): bind to a particular address
+	(init_sockets): get all local addresses and bind to them all
+
+	* lib/krb5/addr_families.c (addr2sockaddr, print_addr): new
+ 	methods
+	(find_af, find_atype): new functions.  use them.
+
+	* configure.in: add hesiod
+
+Mon Nov 23 12:53:48 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/kadm5/log.c: rename delete -> remove
+
+	* lib/kadm5/delete_s.c: rename delete -> remove
+
+	* lib/hdb/common.c: rename delete -> remove
+
+Sun Nov 22 12:26:26 1998  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: check for environ and `struct spwd'
+
 Sun Nov 22 11:42:45 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* kdc/kerberos5.c (as_rep): set keytype to sess_ktype if
@@ -6,6 +33,37 @@ Sun Nov 22 11:42:45 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 	* lib/krb5/encrypt.c (krb5_keytype_to_etypes): zero terminate
  	etypes
 	(em): sort entries
+
+Sun Nov 22 06:54:48 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/init_creds_pw.c: more type correctness
+
+	* lib/krb5/get_cred.c: re-structure code.  remove limits on ASN1
+ 	generated bits.
+
+Sat Nov 21 23:12:27 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/free.c (krb5_xfree): new function
+
+	* lib/krb5/creds.c (krb5_free_creds_contents): new function
+
+	* lib/krb5/context.c: more type correctness
+
+	* lib/krb5/checksum.c: more type correctness
+
+	* lib/krb5/auth_context.c (krb5_auth_con_init): more type
+ 	correctness
+
+	* lib/asn1/der_get.c (der_get_length): fix test of len
+	(der_get_tag): more type correctness
+
+	* kuser/klist.c (usage): void-ize
+
+	* admin/ktutil.c (kt_remove): some more type correctness.
+
+Fri Nov 13 05:35:48 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.h (KRB5_TGS_NAME, KRB5_TGS_NAME_SIZE): added
 
 Mon Nov  2 01:15:06 1998  Assar Westerlund  <assar@sics.se>
 
