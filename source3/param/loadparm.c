@@ -1194,7 +1194,7 @@ static void init_globals(void)
 
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
-	Globals.szPassdbBackend = str_list_make("smbpasswd unixsam");
+	Globals.szPassdbBackend = str_list_make("smbpasswd unixsam", NULL);
 
 	/* use the new 'hash2' method by default */
 	string_set(&Globals.szManglingMethod, "hash2");
@@ -2850,7 +2850,7 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 			break;
 
 		case P_LIST:
-			*(char ***)parm_ptr = str_list_make(pszParmValue);
+			*(char ***)parm_ptr = str_list_make(pszParmValue, NULL);
 			break;
 
 		case P_STRING:

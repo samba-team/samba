@@ -351,7 +351,7 @@ BOOL user_ok(const char *user,int snum)
 	if (valid) str_list_free (&valid);
 
 	if (ret && lp_onlyuser(snum)) {
-		char **user_list = str_list_make (lp_username(snum));
+		char **user_list = str_list_make (lp_username(snum), NULL);
 		if (user_list && str_list_substitute(user_list, "%S", lp_servicename(snum))) {
 			ret = user_in_list(user, user_list);
 		}

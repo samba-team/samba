@@ -52,14 +52,54 @@ int web_open(const char *fname, int flags, mode_t mode)
   choose from a list of languages. The list can be comma or space
   separated
   Keep choosing until we get a hit 
+  Changed to habdle priority -- Simo
 */
-void web_set_lang(const char *lang_list)
+void web_set_lang(const char *lang_string)
 {
-	fstring lang;
-	char *p = (char *)lang_list;
+	char **lang_list, **count;
+	float *pri;
+	int lang_num, i;
+
+	/* build the lang list */
+	lang_list = str_list_make(lang_string, ", \t\r\n");
+	if (!lang_list) return;
 	
-	while (next_token(&p, lang, ", \t\r\n", sizeof(lang))) {
-		if (lang_tdb_init(lang)) return;
+	/* sort the list by priority */
+	lang_num = 0;
+	count = lang_list;
+	while (*count && **count) {
+		count++;
+		lang_num++;
+	}
+	pri = (float *)malloc(sizeof(float) * lang_num);
+	for (i = 0; i < lang_num; i++) {
+		char *pri_code;
+		if ((pri_code=strstr(lang_list[i], ";q="))) {
+			*pri_code = '\0';
+			pri_code += 3;
+			pri[i] = strtof(pri_code, NULL);
+		} else {
+			pri[i] = 1;
+		}
+		if (i != 0) {
+			int l;
+			for (l = i; l > 0; l--) {
+				if (pri[l] > pri[l-1]) {
+					char *tempc;
+					int tempf;
+					tempc = lang_list[l];
+					tempf = pri[l];
+					lang_list[l] = lang_list[l-1];
+					pri[i] = pri[l-1];
+					lang_list[l-1] = tempc;
+					pri[l-1] = tempf;
+				}
+			}
+		 }
+	}
+
+	for (i = 0; i < lang_num; i++) {
+		if (lang_tdb_init(lang_list[i])) return;
 	}
 	
 	/* it's not an error to not initialise - we just fall back to 
