@@ -350,6 +350,7 @@ sub HeaderInterface($)
 	    $res .= "NTSTATUS dcerpc_server_$interface->{NAME}_init(void);\n\n";
     }
 
+	$count = $interface->{INHERITED_FUNCTIONS};
     foreach my $d (@{$data}) {
 	    if ($d->{TYPE} eq "FUNCTION") {
 		    my $u_name = uc $d->{NAME};

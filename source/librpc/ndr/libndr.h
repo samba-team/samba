@@ -124,6 +124,8 @@ struct ndr_print {
    offset, not base) */
 #define LIBNDR_FLAG_RELATIVE_CURRENT  (1<<29)
 
+/* set if an object uuid will be present */
+#define LIBNDR_FLAG_OBJECT_PRESENT    (1<<30)
 
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)

@@ -128,6 +128,8 @@ NTSTATUS dcerpc_IUnknown_Release(struct dcom_interface *p, TALLOC_CTX *mem_ctx, 
 	struct RemRelease r;
 	struct REMINTERFACEREF ref;
 
+	return NT_STATUS_NOT_SUPPORTED;
+	
 	p->private_references--;
 
 	/* Only do the remote version of this call when all local references have 
@@ -313,8 +315,6 @@ NTSTATUS dcom_get_pipe (struct dcom_interface *iface, struct dcerpc_pipe **p)
 		DEBUG(0, ("dcom_get_pipe: OBJREF_CUSTOM not supported!\n"));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
-
-	DEBUG(1, ("DCOM: Connecting to %s\n", GUID_string(NULL, &iface->objref->iid)));
 
 	oxid = iface->objref->u_objref.u_standard.std.oxid;
 	iid = iface->objref->iid;

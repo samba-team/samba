@@ -40,6 +40,8 @@ BOOL torture_dcom_simple(void)
 	struct IStream_Write r_write;
 	WERROR results[2];
 	struct dcom_context *ctx;
+	char test_data[5];
+	int i;
 
 	mem_ctx = talloc_init("torture_dcom_simple");
 
@@ -62,16 +64,28 @@ BOOL torture_dcom_simple(void)
 	}
 	
 	ZERO_STRUCT(r_read);
+	r_read.in.num_requested = 20; /* Give me 20 0xFF bytes... */
 	status = dcerpc_IStream_Read(&interfaces[0], mem_ctx, &r_read);
 	if (NT_STATUS_IS_ERR(status)) {
 		printf("IStream::Read() failed - %s\n", nt_errstr(status));
-		return False;
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r_read.out.result)) {
+		printf("IStream::Read() failed - %s\n", win_errstr(r_read.out.result));
+		ret = False;
 	}
 
+	for (i = 0; i < 5; i++) {
+		test_data[i] = i+1;
+	}
+	r_write.in.num_requested = 5;
+	r_write.in.data = (uint8_t *)&test_data;
 	status = dcerpc_IStream_Write(&interfaces[0], mem_ctx, &r_write);
 	if (NT_STATUS_IS_ERR(status)) {
 		printf("IStream::Write() failed - %s\n", nt_errstr(status));
-		return False;
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r_write.out.result)) {
+		printf("IStream::Write() failed - %s\n", win_errstr(r_write.out.result));
+		ret = False;
 	}
 
 	status = dcerpc_IUnknown_Release(&interfaces[1], mem_ctx, NULL);
