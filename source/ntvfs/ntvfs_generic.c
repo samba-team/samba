@@ -472,7 +472,7 @@ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info
 	case RAW_FILEINFO_STREAM_INFORMATION:
 		info->stream_info.out.num_streams = info2->generic.out.num_streams;
 		if (info->stream_info.out.num_streams > 0) {
-			info->stream_info.out.streams = talloc(req->mem_ctx, 
+			info->stream_info.out.streams = talloc(req, 
 				info->stream_info.out.num_streams * sizeof(struct stream_struct));
 			if (!info->stream_info.out.streams) {
 				DEBUG(2,("ntvfs_map_fileinfo: no memory for %d streams\n",
@@ -482,7 +482,7 @@ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info
 			for (i=0; i < info->stream_info.out.num_streams; i++) {
 				info->stream_info.out.streams[i] = info2->generic.out.streams[i];
 				info->stream_info.out.streams[i].stream_name.s = 
-					talloc_strdup(req->mem_ctx, info2->generic.out.streams[i].stream_name.s);
+					talloc_strdup(req, info2->generic.out.streams[i].stream_name.s);
 				if (!info->stream_info.out.streams[i].stream_name.s) {
 					DEBUG(2,("ntvfs_map_fileinfo: no memory for stream_name\n"));
 					return NT_STATUS_NO_MEMORY;
@@ -493,13 +493,13 @@ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info
 
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
-		info->name_info.out.fname.s = talloc_strdup(req->mem_ctx, info2->generic.out.fname.s);
+		info->name_info.out.fname.s = talloc_strdup(req, info2->generic.out.fname.s);
 		info->name_info.out.fname.private_length = info2->generic.out.fname.private_length;
 		return NT_STATUS_OK;
 		
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
-		info->alt_name_info.out.fname.s = talloc_strdup(req->mem_ctx, info2->generic.out.alt_fname.s);
+		info->alt_name_info.out.fname.s = talloc_strdup(req, info2->generic.out.alt_fname.s);
 		info->alt_name_info.out.fname.private_length = info2->generic.out.alt_fname.private_length;
 		return NT_STATUS_OK;
 	
@@ -510,7 +510,7 @@ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info
 	case RAW_FILEINFO_ALL_EAS:
 		info->all_eas.out.num_eas = info2->generic.out.num_eas;
 		if (info->all_eas.out.num_eas > 0) {
-			info->all_eas.out.eas = talloc(req->mem_ctx, 
+			info->all_eas.out.eas = talloc(req, 
 				info->all_eas.out.num_eas * sizeof(struct ea_struct));
 			if (!info->all_eas.out.eas) {
 				DEBUG(2,("ntvfs_map_fileinfo: no memory for %d eas\n",
@@ -520,13 +520,13 @@ NTSTATUS ntvfs_map_fileinfo(struct smbsrv_request *req, union smb_fileinfo *info
 			for (i = 0; i < info->all_eas.out.num_eas; i++) {
 				info->all_eas.out.eas[i] = info2->generic.out.eas[i];
 				info->all_eas.out.eas[i].name.s = 
-					talloc_strdup(req->mem_ctx, info2->generic.out.eas[i].name.s);
+					talloc_strdup(req, info2->generic.out.eas[i].name.s);
 				if (!info->all_eas.out.eas[i].name.s) {
 					DEBUG(2,("ntvfs_map_fileinfo: no memory for stream_name\n"));
 					return NT_STATUS_NO_MEMORY;
 				}
 				info->all_eas.out.eas[i].value.data = 
-					talloc_memdup(req->mem_ctx,
+					talloc_memdup(req,
 						info2->generic.out.eas[i].value.data,
 						info2->generic.out.eas[i].value.length);
 				if (!info->all_eas.out.eas[i].value.data) {

@@ -78,7 +78,6 @@ thinking the server is still available.
 ****************************************************************************/
 struct smbsrv_tcon *conn_new(struct smbsrv_connection *smb_conn)
 {
-	TALLOC_CTX *mem_ctx;
 	struct smbsrv_tcon *tcon;
 	int i;
 
@@ -89,14 +88,11 @@ struct smbsrv_tcon *conn_new(struct smbsrv_connection *smb_conn)
 		return NULL;
 	}
 
-	mem_ctx = talloc_init("smbsrv_tcon[%d]", i);
-
-	tcon = talloc_p(mem_ctx, struct smbsrv_tcon);
+	tcon = talloc_p(smb_conn, struct smbsrv_tcon);
 	if (!tcon) return NULL;
 
 	ZERO_STRUCTP(tcon);
 
-	tcon->mem_ctx = mem_ctx;
 	tcon->cnum = i;
 	tcon->smb_conn = smb_conn;
 
@@ -152,6 +148,6 @@ void conn_free(struct smbsrv_connection *smb_conn, struct smbsrv_tcon *tcon)
 	bitmap_clear(smb_conn->tree.bmap, tcon->cnum);
 	smb_conn->tree.num_open--;
 
-	talloc_destroy(tcon->mem_ctx);
+	talloc_destroy(tcon);
 }
 

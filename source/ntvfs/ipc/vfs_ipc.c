@@ -110,11 +110,11 @@ static NTSTATUS ipc_connect(struct smbsrv_request *req, const char *sharename)
 	struct smbsrv_tcon *tcon = req->tcon;
 	struct ipc_private *private;
 
-	tcon->fs_type = talloc_strdup(tcon->mem_ctx, "IPC");
-	tcon->dev_type = talloc_strdup(tcon->mem_ctx, "IPC");
+	tcon->fs_type = talloc_strdup(tcon, "IPC");
+	tcon->dev_type = talloc_strdup(tcon, "IPC");
 
 	/* prepare the private state for this connection */
-	private = talloc(tcon->mem_ctx, sizeof(struct ipc_private));
+	private = talloc_p(tcon, struct ipc_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -604,7 +604,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct smbsrv_request *req, struct smb_trans2 *tr
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	trans->out.data = data_blob_talloc(req->mem_ctx, NULL, trans->in.max_data);
+	trans->out.data = data_blob_talloc(req, NULL, trans->in.max_data);
 	if (!trans->out.data.data) {
 		return NT_STATUS_NO_MEMORY;
 	}

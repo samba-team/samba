@@ -395,7 +395,7 @@ NTSTATUS ipc_rap_call(struct smbsrv_request *req, struct smb_trans2 *trans)
 	struct ndr_push *final_param;
 	struct ndr_push *final_data;
 
-	call = new_rap_srv_call(req->mem_ctx, trans);
+	call = new_rap_srv_call(req, trans);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -406,8 +406,8 @@ NTSTATUS ipc_rap_call(struct smbsrv_request *req, struct smb_trans2 *trans)
 	NDR_CHECK(ndr_pull_string(call->ndr_pull_param, NDR_SCALARS,
 				  &call->datadesc));
 
-	call->ndr_push_param = ndr_push_init_ctx(req->mem_ctx);
-	call->ndr_push_data = ndr_push_init_ctx(req->mem_ctx);
+	call->ndr_push_param = ndr_push_init_ctx(req);
+	call->ndr_push_data = ndr_push_init_ctx(req);
 
 	if ((call->ndr_push_param == NULL) || (call->ndr_push_data == NULL))
 		return NT_STATUS_NO_MEMORY;
@@ -432,8 +432,8 @@ NTSTATUS ipc_rap_call(struct smbsrv_request *req, struct smb_trans2 *trans)
 	result_param = ndr_push_blob(call->ndr_push_param);
 	result_data = ndr_push_blob(call->ndr_push_data);
 
-	final_param = ndr_push_init_ctx(req->mem_ctx);
-	final_data = ndr_push_init_ctx(req->mem_ctx);
+	final_param = ndr_push_init_ctx(req);
+	final_data = ndr_push_init_ctx(req);
 
 	if ((final_param == NULL) || (final_data == NULL))
 		return NT_STATUS_NO_MEMORY;

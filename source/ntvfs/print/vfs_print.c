@@ -64,7 +64,7 @@ static NTSTATUS print_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 
 	if (io->ioctl.in.request == IOCTL_QUERY_JOB_INFO) {
 		/* a request for the print job id of an open print job */
-		io->ioctl.out.blob = data_blob_talloc(req->mem_ctx, NULL, 32);
+		io->ioctl.out.blob = data_blob_talloc(req, NULL, 32);
 
 		data_blob_clear(&io->ioctl.out.blob);
 

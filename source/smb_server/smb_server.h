@@ -61,9 +61,6 @@ struct smbsrv_tcon {
 	/* the server context that this was created on */
 	struct smbsrv_connection *smb_conn;
 
-	/* a talloc context for all data in this structure */
-	TALLOC_CTX *mem_ctx;
-
 	/* a private structure used by the active NTVFS backend */
 	void *ntvfs_private;
 
@@ -86,9 +83,6 @@ struct smbsrv_tcon {
 /* the context for a single SMB request. This is passed to any request-context 
    functions */
 struct smbsrv_request {
-	/* a talloc context for the lifetime of this request */
-	TALLOC_CTX *mem_ctx;
-
 	/* the server_context contains all context specific to this SMB socket */
 	struct smbsrv_connection *smb_conn;
 
@@ -173,9 +167,6 @@ struct substitute_context {
  * information associated with a SMB server connection 
  */
 struct smbsrv_connection {
-	/* a talloc context for all data in this structure */
-	TALLOC_CTX *mem_ctx;
-
 	/* this is the context for a SMB socket associated with the socket itself */
 	struct {
 		/* the open file descriptor */

@@ -29,9 +29,9 @@
 static void sesssetup_common_strings(struct smbsrv_request *req,
 				     char **os, char **lanman, char **domain)
 {
-	(*os) = talloc_asprintf(req->mem_ctx, "Unix");
-	(*lanman) = talloc_asprintf(req->mem_ctx, "Samba %s", SAMBA_VERSION_STRING);
-	(*domain) = talloc_asprintf(req->mem_ctx, "%s", lp_workgroup());
+	(*os) = talloc_asprintf(req, "Unix");
+	(*lanman) = talloc_asprintf(req, "Samba %s", SAMBA_VERSION_STRING);
+	(*domain) = talloc_asprintf(req, "%s", lp_workgroup());
 }
 
 
@@ -205,7 +205,7 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		status = gensec_update(smb_sess->gensec_ctx, req->mem_ctx, sess->spnego.in.secblob, &sess->spnego.out.secblob);
+		status = gensec_update(smb_sess->gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
 	} else {
 		status = gensec_server_start(&gensec_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -221,7 +221,7 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 			return status;
 		}
 
-		status = gensec_update(gensec_ctx, req->mem_ctx, sess->spnego.in.secblob, &sess->spnego.out.secblob);
+		status = gensec_update(gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
 
 	}
 

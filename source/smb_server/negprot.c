@@ -328,7 +328,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 			return;
 		}
 
-		nt_status = gensec_update(gensec_security, req->mem_ctx, null_data_blob, &blob);
+		nt_status = gensec_update(gensec_security, req, null_data_blob, &blob);
 
 		if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			DEBUG(0, ("Failed to get SPNEGO to give us the first token: %s\n", nt_errstr(nt_status)));

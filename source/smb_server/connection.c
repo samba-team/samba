@@ -110,12 +110,16 @@ BOOL claim_connection(struct smbsrv_tcon *tcon, const char *name,int max_connect
 	struct connections_data crec;
 	TDB_DATA kbuf, dbuf;
 
-	if (!tdb)
-		tdb = tdb_open_log(lock_path(tcon->mem_ctx, "connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-			       O_RDWR | O_CREAT, 0644);
+	if (!tdb) {
+		char *lpath = lock_path(tcon, "connections.tdb");
+		tdb = tdb_open_log(lpath, 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+				   O_RDWR | O_CREAT, 0644);
+		talloc_free(lpath);
+	}
 
-	if (!tdb)
+	if (!tdb) {
 		return False;
+	}
 
 	/*
 	 * Enforce the max connections parameter.

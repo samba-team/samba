@@ -38,7 +38,7 @@ void req_destroy(struct smbsrv_request *req)
 
 	/* ahh, its so nice to destroy a complex structure in such a
 	 * simple way! */
-	talloc_destroy(req->mem_ctx);
+	talloc_free(req);
 }
 
 /****************************************************************************
@@ -48,20 +48,10 @@ such as change notify and oplock break requests
 struct smbsrv_request *init_smb_request(struct smbsrv_connection *smb_conn)
 {
 	struct smbsrv_request *req;
-	TALLOC_CTX *mem_ctx;
-
-	/* each request gets its own talloc context. The request
-	   structure itself is also allocated inside this context, so
-	   we need to allocate it before we construct the request
-	*/
-	mem_ctx = talloc_init("request_context[%d]", smb_conn->connection->socket->pkt_count);
-	if (!mem_ctx) {
-		return NULL;
-	}
 
 	smb_conn->connection->socket->pkt_count++;
 
-	req = talloc(mem_ctx, sizeof(*req));
+	req = talloc_p(smb_conn, struct smbsrv_request);
 	if (!req) {
 		return NULL;
 	}
@@ -70,7 +60,6 @@ struct smbsrv_request *init_smb_request(struct smbsrv_connection *smb_conn)
 
 	/* setup the request context */
 	req->smb_conn = smb_conn;
-	req->mem_ctx = mem_ctx;
 	
 	return req;
 }
@@ -123,7 +112,7 @@ void req_setup_reply(struct smbsrv_request *req, uint_t wct, uint_t buflen)
 	/* over allocate by a small amount */
 	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
 
-	req->out.buffer = talloc(req->mem_ctx, req->out.allocated);
+	req->out.buffer = talloc(req, req->out.allocated);
 	if (!req->out.buffer) {
 		smbsrv_terminate_connection(req->smb_conn, "allocation failed");
 	}
@@ -468,7 +457,7 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
 		src_len2 += 2;
 	}
 
-	ret = convert_string_talloc(req->mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc(req, CH_UTF16, CH_UNIX, src, src_len2, (const void **)dest);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -515,7 +504,7 @@ static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, cons
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(req->mem_ctx, CH_DOS, CH_UNIX, src, src_len2, (const void **)dest);
+	ret = convert_string_talloc(req, CH_DOS, CH_UNIX, src, src_len2, (const void **)dest);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -564,7 +553,7 @@ size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const char
 
 	if (PTR_DIFF(src, req->in.data) + 1 > req->in.data_size) {
 		/* win2000 treats this as the NULL string! */
-		(*dest) = talloc_strdup(req->mem_ctx, "");
+		(*dest) = talloc_strdup(req, "");
 		return 0;
 	}
 
@@ -575,7 +564,7 @@ size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const char
 
 	ret = req_pull_string(req, dest, src, -1, flags);
 	if (ret == -1) {
-		(*dest) = talloc_strdup(req->mem_ctx, "");
+		(*dest) = talloc_strdup(req, "");
 		return 1;
 	}
 	
@@ -593,7 +582,7 @@ BOOL req_pull_blob(struct smbsrv_request *req, const char *src, int len, DATA_BL
 		return False;
 	}
 
-	(*blob) = data_blob_talloc(req->mem_ctx, src, len);
+	(*blob) = data_blob_talloc(req, src, len);
 
 	return True;
 }

@@ -73,10 +73,10 @@ static void trans2_setup_reply(struct smbsrv_request *req,
 {
 	trans->out.setup_count = setup_count;
 	if (setup_count != 0) {
-		trans->out.setup = talloc_zero(req->mem_ctx, sizeof(uint16_t) * setup_count);
+		trans->out.setup = talloc_zero(req, sizeof(uint16_t) * setup_count);
 	}
-	trans->out.params = data_blob_talloc(req->mem_ctx, NULL, param_size);
-	trans->out.data = data_blob_talloc(req->mem_ctx, NULL, data_size);
+	trans->out.params = data_blob_talloc(req, NULL, param_size);
+	trans->out.data = data_blob_talloc(req, NULL, data_size);
 }
 
 
@@ -371,7 +371,7 @@ static NTSTATUS trans2_qfsinfo(struct smbsrv_request *req, struct smb_trans2 *tr
 
 		trans2_setup_reply(req, trans, 0, 64, 0);
 
-		status = ndr_push_struct_blob(&guid_blob, req->mem_ctx, 
+		status = ndr_push_struct_blob(&guid_blob, req, 
 					      &fsinfo.objectid_information.out.guid,
 					      (ndr_push_flags_fn_t)ndr_push_GUID);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -722,7 +722,7 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 			DATA_BLOB blob2;
 			blob2.data = blob->data+4;
 			blob2.length = len-4;
-			len = ea_pull_struct(&blob2, req->mem_ctx, &st->ea_set.in.ea);
+			len = ea_pull_struct(&blob2, req, &st->ea_set.in.ea);
 		}
 		if (len == 0) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -1275,7 +1275,7 @@ void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 	}
 
 	/* parse out the setup words */
-	trans.in.setup = talloc(req->mem_ctx, trans.in.setup_count * sizeof(uint16_t));
+	trans.in.setup = talloc(req, trans.in.setup_count * sizeof(uint16_t));
 	if (trans.in.setup_count && !trans.in.setup) {
 		req_reply_error(req, NT_STATUS_NO_MEMORY);
 		return;
