@@ -46,9 +46,26 @@ gssapi_encode_om_uint32(OM_uint32 n, u_char *p)
 }
 
 krb5_error_code
+gssapi_encode_be_om_uint32(OM_uint32 n, u_char *p)
+{
+  p[0] = (n >> 24) & 0xFF;
+  p[1] = (n >> 16) & 0xFF;
+  p[2] = (n >> 8)  & 0xFF;
+  p[3] = (n >> 0)  & 0xFF;
+  return 0;
+}
+
+krb5_error_code
 gssapi_decode_om_uint32(u_char *p, OM_uint32 *n)
 {
     *n = (p[0] << 0) | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+    return 0;
+}
+
+krb5_error_code
+gssapi_decode_be_om_uint32(u_char *p, OM_uint32 *n)
+{
+    *n = (p[0] <<24) | (p[1] << 16) | (p[2] << 8) | (p[3] << 0);
     return 0;
 }
 
