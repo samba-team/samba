@@ -23,6 +23,31 @@
 #include "include/includes.h"
 #include "vfs_posix.h"
 
+
+/* 
+   list files in a directory matching a wildcard pattern - old SMBsearch interface
+*/
+static NTSTATUS pvfs_search_first_old(struct smbsrv_request *req, union smb_search_first *io, 
+				      void *search_private, 
+				      BOOL (*callback)(void *, union smb_search_data *))
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/* continue a old style search */
+static NTSTATUS pvfs_search_next_old(struct smbsrv_request *req, union smb_search_next *io, 
+				     void *search_private, 
+				     BOOL (*callback)(void *, union smb_search_data *))
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/* close a old style search */
+static NTSTATUS pvfs_search_close_old(struct smbsrv_request *req, union smb_search_close *io)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 /*
   fill in a single search result for a given info level
 */
@@ -42,7 +67,63 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		return status;
 	}
 
+	if (!pvfs_match_attrib(pvfs, name, search_attrib)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
 	switch (level) {
+	case RAW_SEARCH_STANDARD:
+		file->standard.resume_key   = dir_index;
+		file->standard.create_time  = nt_time_to_unix(name->dos.create_time);
+		file->standard.access_time  = nt_time_to_unix(name->dos.access_time);
+		file->standard.write_time   = nt_time_to_unix(name->dos.write_time);
+		file->standard.size         = name->st.st_size;
+		file->standard.alloc_size   = name->dos.alloc_size;
+		file->standard.attrib       = name->dos.attrib;
+		file->standard.name.s       = fname;
+		break;
+
+	case RAW_SEARCH_EA_SIZE:
+		file->ea_size.resume_key   = dir_index;
+		file->ea_size.create_time  = nt_time_to_unix(name->dos.create_time);
+		file->ea_size.access_time  = nt_time_to_unix(name->dos.access_time);
+		file->ea_size.write_time   = nt_time_to_unix(name->dos.write_time);
+		file->ea_size.size         = name->st.st_size;
+		file->ea_size.alloc_size   = name->dos.alloc_size;
+		file->ea_size.attrib       = name->dos.attrib;
+		file->ea_size.ea_size      = name->dos.ea_size;
+		file->ea_size.name.s       = fname;
+		break;
+
+	case RAW_SEARCH_DIRECTORY_INFO:
+		file->directory_info.file_index   = dir_index;
+		file->directory_info.create_time  = name->dos.create_time;
+		file->directory_info.access_time  = name->dos.access_time;
+		file->directory_info.write_time   = name->dos.write_time;
+		file->directory_info.change_time  = name->dos.change_time;
+		file->directory_info.size         = name->st.st_size;
+		file->directory_info.alloc_size   = name->dos.alloc_size;
+		file->directory_info.attrib       = name->dos.attrib;
+		file->directory_info.name.s       = fname;
+		break;
+
+	case RAW_SEARCH_FULL_DIRECTORY_INFO:
+		file->full_directory_info.file_index   = dir_index;
+		file->full_directory_info.create_time  = name->dos.create_time;
+		file->full_directory_info.access_time  = name->dos.access_time;
+		file->full_directory_info.write_time   = name->dos.write_time;
+		file->full_directory_info.change_time  = name->dos.change_time;
+		file->full_directory_info.size         = name->st.st_size;
+		file->full_directory_info.alloc_size   = name->dos.alloc_size;
+		file->full_directory_info.attrib       = name->dos.attrib;
+		file->full_directory_info.ea_size      = name->dos.ea_size;
+		file->full_directory_info.name.s       = fname;
+		break;
+
+	case RAW_SEARCH_NAME_INFO:
+		file->name_info.file_index   = dir_index;
+		file->name_info.name.s       = fname;
+		break;
 
 	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
 		file->both_directory_info.file_index   = dir_index;
@@ -57,6 +138,38 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->both_directory_info.short_name.s = pvfs_short_name(pvfs, name);
 		file->both_directory_info.name.s       = fname;
 		break;
+
+	case RAW_SEARCH_ID_FULL_DIRECTORY_INFO:
+		file->id_full_directory_info.file_index   = dir_index;
+		file->id_full_directory_info.create_time  = name->dos.create_time;
+		file->id_full_directory_info.access_time  = name->dos.access_time;
+		file->id_full_directory_info.write_time   = name->dos.write_time;
+		file->id_full_directory_info.change_time  = name->dos.change_time;
+		file->id_full_directory_info.size         = name->st.st_size;
+		file->id_full_directory_info.alloc_size   = name->dos.alloc_size;
+		file->id_full_directory_info.attrib       = name->dos.attrib;
+		file->id_full_directory_info.ea_size      = name->dos.ea_size;
+		file->id_full_directory_info.file_id      = name->dos.file_id;
+		file->id_full_directory_info.name.s       = fname;
+		break;
+
+	case RAW_SEARCH_ID_BOTH_DIRECTORY_INFO:
+		file->id_both_directory_info.file_index   = dir_index;
+		file->id_both_directory_info.create_time  = name->dos.create_time;
+		file->id_both_directory_info.access_time  = name->dos.access_time;
+		file->id_both_directory_info.write_time   = name->dos.write_time;
+		file->id_both_directory_info.change_time  = name->dos.change_time;
+		file->id_both_directory_info.size         = name->st.st_size;
+		file->id_both_directory_info.alloc_size   = name->dos.alloc_size;
+		file->id_both_directory_info.attrib       = name->dos.attrib;
+		file->id_both_directory_info.ea_size      = name->dos.ea_size;
+		file->id_both_directory_info.file_id      = name->dos.file_id;
+		file->id_both_directory_info.short_name.s = pvfs_short_name(pvfs, name);
+		file->id_both_directory_info.name.s       = fname;
+		break;
+
+	default:
+		return NT_STATUS_INVALID_LEVEL;
 	}
 
 	return NT_STATUS_OK;
@@ -85,6 +198,62 @@ static NTSTATUS pvfs_next_search_handle(struct pvfs_state *pvfs, uint16_t *handl
 	return NT_STATUS_OK;
 }
 
+
+/*
+  the search fill loop
+*/
+static NTSTATUS pvfs_search_fill(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
+				 uint_t max_count, 
+				 struct pvfs_search_state *search,
+				 enum smb_search_level level,
+				 uint_t *reply_count,
+				 void *search_private, 
+				 BOOL (*callback)(void *, union smb_search_data *))
+{
+	int i;
+	struct pvfs_dir *dir = search->dir;
+	NTSTATUS status;
+
+	*reply_count = 0;
+
+	for (i = search->current_index; i < dir->count;i++) {
+		union smb_search_data *file;
+
+		file = talloc_p(mem_ctx, union smb_search_data);
+		if (!file) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = fill_search_info(pvfs, level, dir->unix_path, dir->names[i], 
+					  search->search_attrib, i, file);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			talloc_free(file);
+			continue;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(file);
+			search->current_index = i;
+			return status;
+		}
+
+		if (!callback(search_private, file)) {
+			talloc_free(file);
+			break;
+		}
+		(*reply_count)++;
+		talloc_free(file);
+
+		/* note that this deliberately allows a reply_count of
+		   1 for a max_count of 0. w2k3 allows this too. */
+		if (*reply_count >= max_count) break;
+	}
+
+	search->current_index = i;
+
+	return NT_STATUS_OK;
+}
+
 /* 
    list files in a directory matching a wildcard pattern
 */
@@ -95,22 +264,18 @@ NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *i
 	struct pvfs_dir *dir;
 	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
 	struct pvfs_search_state *search;
-	uint16_t max_count, reply_count;
+	uint_t reply_count;
 	uint16_t search_attrib;
 	const char *pattern;
-	int i;
 	NTSTATUS status;
 	struct pvfs_filename *name;
 
-	if (io->generic.level == RAW_SEARCH_SEARCH) {
-		max_count     = io->search_first.in.max_count;
-		search_attrib = io->search_first.in.search_attrib;
-		pattern       = io->search_first.in.pattern;
-	} else {
-		max_count     = io->t2ffirst.in.max_count;
-		search_attrib = io->t2ffirst.in.search_attrib;
-		pattern       = io->t2ffirst.in.pattern;
+	if (io->generic.level >= RAW_SEARCH_SEARCH) {
+		return pvfs_search_first_old(req, io, search_private, callback);
 	}
+
+	search_attrib = io->t2ffirst.in.search_attrib;
+	pattern       = io->t2ffirst.in.pattern;
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, pattern, 0, &name);
@@ -119,7 +284,7 @@ NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *i
 	}
 
 	if (!name->has_wildcard && !name->exists) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return NT_STATUS_NO_SUCH_FILE;
 	}
 
 	/* we initially make search a child of the request, then if we
@@ -152,59 +317,32 @@ NTSTATUS pvfs_search_first(struct smbsrv_request *req, union smb_search_first *i
 	search->current_index = 0;
 	search->search_attrib = search_attrib;
 
-	if (dir->count < max_count) {
-		max_count = dir->count;
-	}
-
-	/* note that fill_search_info() can fail, if for example a
-	   file disappears during a search or we don't have sufficient
-	   permissions to stat() it, or the search_attrib does not
-	   match the files attribute. In that case the name is ignored
-	   and the search continues. */
-	for (i=reply_count=0; i < dir->count && reply_count < max_count;i++) {
-		union smb_search_data *file;
-
-		file = talloc_p(req, union smb_search_data);
-		if (!file) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		status = fill_search_info(pvfs, io->generic.level, dir->unix_path, dir->names[i], 
-					  search_attrib, i, file);
-		if (NT_STATUS_IS_OK(status)) {
-			if (!callback(search_private, file)) {
-				break;
-			}
-			reply_count++;
-		}
-		talloc_free(file);
+	status = pvfs_search_fill(pvfs, req, io->t2ffirst.in.max_count, search, io->generic.level,
+				  &reply_count, search_private, callback);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* not matching any entries is an error */
 	if (reply_count == 0) {
-		return NT_STATUS_NO_MORE_ENTRIES;
+		return NT_STATUS_NO_SUCH_FILE;
 	}
 
-	search->current_index = i;
+	io->t2ffirst.out.count = reply_count;
+	io->t2ffirst.out.handle = search->handle;
+	io->t2ffirst.out.end_of_search = (search->current_index == dir->count) ? 1 : 0;
 
-	if (io->generic.level == RAW_SEARCH_SEARCH) {
-		io->search_first.out.count = reply_count;
-		DEBUG(0,("TODO: handle RAW_SEARCH_SEARCH continue\n"));
+	/* work out if we are going to keep the search state
+	   and allow for a search continue */
+	if ((io->t2ffirst.in.flags & FLAG_TRANS2_FIND_CLOSE) ||
+	    ((io->t2ffirst.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && 
+	     io->t2ffirst.out.end_of_search)) {
+		talloc_free(search);
 	} else {
-		io->t2ffirst.out.count = reply_count;
-		io->t2ffirst.out.handle = search->handle;
-		io->t2ffirst.out.end_of_search = (i == dir->count) ? 1 : 0;
-		/* work out if we are going to keep the search state
-		   and allow for a search continue */
-		if ((io->t2ffirst.in.flags & FLAG_TRANS2_FIND_CLOSE) ||
-		    ((io->t2ffirst.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && (i == dir->count))) {
-			talloc_free(search);
-		} else {
-			pvfs->search.num_active_searches++;
-			pvfs->search.next_search_handle++;
-			talloc_steal(pvfs, search);
-			DLIST_ADD(pvfs->search.open_searches, search);
-		}
+		pvfs->search.num_active_searches++;
+		pvfs->search.next_search_handle++;
+		talloc_steal(pvfs, search);
+		DLIST_ADD(pvfs->search.open_searches, search);
 	}
 
 	return NT_STATUS_OK;
@@ -215,32 +353,27 @@ NTSTATUS pvfs_search_next(struct smbsrv_request *req, union smb_search_next *io,
 			  void *search_private, 
 			  BOOL (*callback)(void *, union smb_search_data *))
 {
-#if 0
 	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
-	struct search_state *search;
-	union smb_search_data file;
-	uint_t max_count;
+	struct pvfs_search_state *search;
+	struct pvfs_dir *dir;
+	uint_t reply_count;
 	uint16_t handle;
+	NTSTATUS status;
 	int i;
 
-	if (io->generic.level == RAW_SEARCH_SEARCH) {
-		max_count     = io->search_next.in.max_count;
-		search_attrib = io->search_next.in.search_attrib;
-	} else {
-		handle = io->t2fnext.in.handle;
+	if (io->generic.level >= RAW_SEARCH_SEARCH) {
+		return pvfs_search_next_old(req, io, search_private, callback);
 	}
 
-	if (io->generic.level != RAW_SEARCH_BOTH_DIRECTORY_INFO) {
-		return NT_STATUS_NOT_SUPPORTED;
-	}
+	handle = io->t2fnext.in.handle;
 
-	for (search=private->search; search; search = search->next) {
-		if (search->handle == io->t2fnext.in.handle) break;
+	for (search=pvfs->search.open_searches; search; search = search->next) {
+		if (search->handle == handle) break;
 	}
 	
 	if (!search) {
 		/* we didn't find the search handle */
-		return NT_STATUS_FOOBAR;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	dir = search->dir;
@@ -248,11 +381,10 @@ NTSTATUS pvfs_search_next(struct smbsrv_request *req, union smb_search_next *io,
 	/* the client might be asking for something other than just continuing
 	   with the search */
 	if (!(io->t2fnext.in.flags & FLAG_TRANS2_FIND_CONTINUE) &&
-	    (io->t2fnext.in.flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) &&
 	    io->t2fnext.in.last_name && *io->t2fnext.in.last_name) {
 		/* look backwards first */
 		for (i=search->current_index; i > 0; i--) {
-			if (strcmp(io->t2fnext.in.last_name, dir->files[i-1].name) == 0) {
+			if (strcmp(io->t2fnext.in.last_name, dir->names[i-1]) == 0) {
 				search->current_index = i;
 				goto found;
 			}
@@ -260,7 +392,7 @@ NTSTATUS pvfs_search_next(struct smbsrv_request *req, union smb_search_next *io,
 
 		/* then look forwards */
 		for (i=search->current_index+1; i <= dir->count; i++) {
-			if (strcmp(io->t2fnext.in.last_name, dir->files[i-1].name) == 0) {
+			if (strcmp(io->t2fnext.in.last_name, dir->names[i-1]) == 0) {
 				search->current_index = i;
 				goto found;
 			}
@@ -268,46 +400,56 @@ NTSTATUS pvfs_search_next(struct smbsrv_request *req, union smb_search_next *io,
 	}
 
 found:	
-	max_count = search->current_index + io->t2fnext.in.max_count;
-
-	if (max_count > dir->count) {
-		max_count = dir->count;
+	status = pvfs_search_fill(pvfs, req, io->t2fnext.in.max_count, search, io->generic.level,
+				  &reply_count, search_private, callback);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	for (i = search->current_index; i < max_count;i++) {
-		ZERO_STRUCT(file);
-		unix_to_nt_time(&file.both_directory_info.create_time, dir->files[i].st.st_ctime);
-		unix_to_nt_time(&file.both_directory_info.access_time, dir->files[i].st.st_atime);
-		unix_to_nt_time(&file.both_directory_info.write_time,  dir->files[i].st.st_mtime);
-		unix_to_nt_time(&file.both_directory_info.change_time, dir->files[i].st.st_mtime);
-		file.both_directory_info.name.s = dir->files[i].name;
-		file.both_directory_info.short_name.s = dir->files[i].name;
-		file.both_directory_info.size = dir->files[i].st.st_size;
-		file.both_directory_info.attrib = pvfs_unix_to_dos_attrib(dir->files[i].st.st_mode);
-
-		if (!callback(search_private, &file)) {
-			break;
-		}
+	/* not matching any entries is an error */
+	if (reply_count == 0) {
+		return NT_STATUS_NO_MORE_ENTRIES;
 	}
 
-	io->t2fnext.out.count = i - search->current_index;
-	io->t2fnext.out.end_of_search = (i == dir->count) ? 1 : 0;
-
-	search->current_index = i;
+	io->t2fnext.out.count = reply_count;
+	io->t2fnext.out.end_of_search = (search->current_index == dir->count) ? 1 : 0;
 
 	/* work out if we are going to keep the search state */
 	if ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE) ||
-	    ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && (i == dir->count))) {
-		DLIST_REMOVE(private->search, search);
+	    ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && 
+	     io->t2fnext.out.end_of_search)) {
+		DLIST_REMOVE(pvfs->search.open_searches, search);
 		talloc_free(search);
 	}
-#endif
+
 	return NT_STATUS_OK;
 }
 
 /* close a search */
 NTSTATUS pvfs_search_close(struct smbsrv_request *req, union smb_search_close *io)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct pvfs_state *pvfs = req->tcon->ntvfs_private;
+	struct pvfs_search_state *search;
+	uint16_t handle;
+
+	if (io->generic.level >= RAW_SEARCH_SEARCH) {
+		return pvfs_search_close_old(req, io);
+	}
+
+	handle = io->findclose.in.handle;
+
+	for (search=pvfs->search.open_searches; search; search = search->next) {
+		if (search->handle == handle) break;
+	}
+	
+	if (!search) {
+		/* we didn't find the search handle */
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	DLIST_REMOVE(pvfs->search.open_searches, search);
+	talloc_free(search);
+
+	return NT_STATUS_OK;
 }
 

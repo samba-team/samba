@@ -51,6 +51,9 @@ NTSTATUS pvfs_map_errno(struct pvfs_state *pvfs, int unix_errno)
 */
 BOOL pvfs_match_attrib(struct pvfs_state *pvfs, struct pvfs_filename *name, uint32_t attrib)
 {
-	/* TODO: add attribute conversion */
+	if ((name->dos.attrib & ~attrib) & 
+	    (FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM)) {
+		return False;
+	}
 	return True;
 }
