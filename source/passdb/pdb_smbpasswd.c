@@ -1576,6 +1576,8 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 		return nt_status;
 	}
 
+	(*pdb_method)->name = "smbpasswd";
+
 	(*pdb_method)->setsampwent = smbpasswd_setsampwent;
 	(*pdb_method)->endsampwent = smbpasswd_endsampwent;
 	(*pdb_method)->getsampwent = smbpasswd_getsampwent;
@@ -1609,7 +1611,6 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 
 	(*pdb_method)->private_data = privates;
 
-
 	(*pdb_method)->free_private_data = free_private_data;
 
 	return NT_STATUS_OK;
@@ -1623,6 +1624,8 @@ NTSTATUS pdb_init_smbpasswd_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	if (!NT_STATUS_IS_OK(nt_status = pdb_init_smbpasswd(pdb_context, pdb_method, location))) {
 		return nt_status;
 	}
+
+	(*pdb_method)->name = "smbpasswd_nua";
 
 	privates = (*pdb_method)->private_data;
 	
