@@ -1,3 +1,13 @@
+2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* md4.c (MD4_Final): make the function threadsafe by removing
+	static on the local variable zeros
+	
+	* md5.c (MD5_Final): make the function threadsafe by removing
+	static on the local variable zeros
+
+	* switch to the DES_ api, dont provide any compat glue
+
 2003-08-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* sha.c: make the function threadsafe by removing static on the
