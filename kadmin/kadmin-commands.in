@@ -30,6 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE. 
  */
+/* $Id$ */
 
 command = {
 	name = "stash"
@@ -221,11 +222,13 @@ command = {
 	name = "get"
 	name = "get_entry"
 	function = "get_entry"
+	/* XXX sync options with "list" */
 	option = {
 		long = "long"
 		short = "l"
 		type = "flag"
 		help = "long format"
+		default = "-1"
 	}
 	option = {
 		long = "short"
@@ -238,6 +241,12 @@ command = {
 		short = "t"
 		type = "flag"
 		help = "terse format"
+	}
+	option = {
+		long = "column-info"
+		short = "o"
+		type = "string"
+		help = "columns to print for short output"
 	}
 	argument = "principal..."
 	help = "Shows information about principals matching the expressions."
@@ -300,6 +309,7 @@ command = {
 command = {
 	name = "list"
 	function = "list_princs"
+	/* XXX sync options with "get" */
 	option = {
 		long = "long"
 		short = "l"
@@ -317,6 +327,13 @@ command = {
 		short = "t"
 		type = "flag"
 		help = "terse format"
+		default = "-1"
+	}
+	option = {
+		long = "column-info"
+		short = "o"
+		type = "string"
+		help = "columns to print for short output"
 	}
 	argument = "principal..."
 	help = "Lists principals in a terse format. Equivalent to \"get -t\"." 
