@@ -174,6 +174,8 @@ typedef struct
   char *szSourceEnv;
   char *szWinbindUID;
   char *szWinbindGID;
+  char *szTemplateHomedir;
+  char *szTemplateShell;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -957,10 +959,12 @@ static struct parm_struct parm_table[] =
   {"host msdfs",      P_BOOL,    P_GLOBAL, &Globals.bHostMSDfs,        NULL,   NULL, FLAG_GLOBAL},
 #endif
 
-  {"Winbind options", P_SEP, P_SEPARATOR},
+  {"Winbind daemon options", P_SEP, P_SEPARATOR},
 
   {"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_id, NULL, 0},
   {"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_id, NULL, 0},
+  {"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, 0},
+  {"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, 0},
 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL, 0}
 };
@@ -1397,6 +1401,8 @@ FN_GLOBAL_STRING(lp_nt_drivers_file,&Globals.szNtDriverFile)
 
 FN_GLOBAL_STRING(lp_winbind_uid,&Globals.szWinbindUID)
 FN_GLOBAL_STRING(lp_winbind_gid,&Globals.szWinbindGID)
+FN_GLOBAL_STRING(lp_template_homedir,&Globals.szTemplateHomedir)
+FN_GLOBAL_STRING(lp_template_shell,&Globals.szTemplateShell)
 
 #if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
@@ -2408,6 +2414,7 @@ static BOOL handle_winbind_id(char *pszParmValue, char **ptr)
     /* Parse OK */
 
     string_set(ptr,pszParmValue);
+
     return True;
 }
 
