@@ -56,15 +56,6 @@ enum NTLM_MESSAGE_TYPE
 /* NTLMSSP signature version */
 #define NTLMSSP_SIGN_VERSION 0x01
 
-
-/* RPC_AUTH_NTLMSSP_VERIFIER */
-typedef struct rpc_auth_ntlmssp_verif_info
-{
-	fstring signature; /* "NTLMSSP" */
-	uint32  msg_type; /* NTLMSSP_MESSAGE_TYPE (1,2,3) */
-
-} RPC_AUTH_NTLMSSP_VERIFIER;
-
 /* this is TEMPORARILY coded up as a specific structure */
 /* this structure comes after the bind request */
 /* RPC_AUTH_NTLMSSP_NEG */

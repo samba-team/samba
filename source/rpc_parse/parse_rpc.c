@@ -632,3 +632,33 @@ BOOL smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int dept
 	return True;
 }
 
+/*******************************************************************
+creates an RPC_AUTH_VERIFIER structure.
+********************************************************************/
+BOOL make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
+				char *signature, uint32 msg_type)
+{
+	if (rav == NULL) return False;
+
+	fstrcpy(rav->signature, signature); 
+	rav->msg_type = msg_type;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes an RPC_AUTH_VERIFIER structure.
+********************************************************************/
+BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth)
+{
+	if (rav == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_auth_verifier");
+	depth++;
+
+	prs_string("signature", ps, depth, rav->signature, 0, sizeof(rav->signature));
+	prs_align(ps);
+	prs_uint32("msg_type ", ps, depth, &(rav->msg_type  )); 
+
+	return True;
+}

@@ -37,42 +37,12 @@ BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH *rai)
 }
 
 /*******************************************************************
-checks an RPC_AUTH_NTLMSSP_VERIFIER structure.
+checks an RPC_AUTH_VERIFIER structure.
 ********************************************************************/
-BOOL rpc_auth_ntlmssp_verifier_chk(RPC_AUTH_NTLMSSP_VERIFIER *rav,
+BOOL rpc_auth_ntlmssp_verifier_chk(RPC_AUTH_VERIFIER *rav,
 				char *signature, uint32 msg_type)
 {
 	return (strequal(rav->signature, signature) && rav->msg_type == msg_type);
-}
-
-/*******************************************************************
-creates an RPC_AUTH_NTLMSSP_VERIFIER structure.
-********************************************************************/
-BOOL make_rpc_auth_ntlmssp_verifier(RPC_AUTH_NTLMSSP_VERIFIER *rav,
-				char *signature, uint32 msg_type)
-{
-	if (rav == NULL) return False;
-
-	fstrcpy(rav->signature, signature); /* "NTLMSSP" */
-	rav->msg_type = msg_type; /* NTLMSSP_MESSAGE_TYPE */
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes an RPC_AUTH_NTLMSSP_VERIFIER structure.
-********************************************************************/
-BOOL smb_io_rpc_auth_ntlmssp_verifier(char *desc, RPC_AUTH_NTLMSSP_VERIFIER *rav, prs_struct *ps, int depth)
-{
-	if (rav == NULL) return False;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_auth_verifier");
-	depth++;
-
-	prs_string("signature", ps, depth, rav->signature, 0, sizeof(rav->signature)); /* "NTLMSSP" */
-	prs_uint32("msg_type ", ps, depth, &(rav->msg_type  )); /* NTLMSSP_MESSAGE_TYPE */
-
-	return True;
 }
 
 /*******************************************************************

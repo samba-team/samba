@@ -2872,11 +2872,8 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 /*The following definitions come from  rpc_parse/parse_ntlmssp.c  */
 
 BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH *rai);
-BOOL rpc_auth_ntlmssp_verifier_chk(RPC_AUTH_NTLMSSP_VERIFIER *rav,
+BOOL rpc_auth_ntlmssp_verifier_chk(RPC_AUTH_VERIFIER *rav,
 				char *signature, uint32 msg_type);
-BOOL make_rpc_auth_ntlmssp_verifier(RPC_AUTH_NTLMSSP_VERIFIER *rav,
-				char *signature, uint32 msg_type);
-BOOL smb_io_rpc_auth_ntlmssp_verifier(char *desc, RPC_AUTH_NTLMSSP_VERIFIER *rav, prs_struct *ps, int depth);
 BOOL make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 				uint32 neg_flgs,
 				fstring myname, fstring domain);
@@ -3046,35 +3043,14 @@ BOOL make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
 				uint8 auth_type, uint8 auth_level,
 				uint8 stub_type_len);
 BOOL smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int depth);
-BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH *rai);
 BOOL make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
 				uint8 stub_type_len,
 				uint32 ptr);
 BOOL smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth);
-BOOL rpc_auth_ntlmssp_verifier_chk(RPC_AUTH_NTLMSSP_VERIFIER *rav,
+BOOL make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
 				char *signature, uint32 msg_type);
-BOOL make_rpc_auth_ntlmssp_verifier(RPC_AUTH_NTLMSSP_VERIFIER *rav,
-				char *signature, uint32 msg_type);
-BOOL smb_io_rpc_auth_ntlmssp_verifier(char *desc, RPC_AUTH_NTLMSSP_VERIFIER *rav, prs_struct *ps, int depth);
-BOOL make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
-				uint32 neg_flgs,
-				fstring myname, fstring domain);
-BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth);
-BOOL make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
-				uint32 neg_flags,
-				uint8 challenge[8]);
-BOOL smb_io_rpc_auth_ntlmssp_chal(char *desc, RPC_AUTH_NTLMSSP_CHAL *chl, prs_struct *ps, int depth);
-BOOL make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
-				uchar lm_resp[24],
-				uchar *nt_resp, size_t nt_len,
-				char *domain, char *user, char *wks,
-				uint32 neg_flags);
-BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_struct *ps, int depth);
-BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 seq_num);
-BOOL make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk,
-				uint32 ver, uint32 crc32, uint32 seq_num);
-BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_struct *ps, int depth);
+BOOL smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_samr.c  */
 

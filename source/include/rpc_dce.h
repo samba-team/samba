@@ -157,6 +157,14 @@ typedef struct rpc_hdr_auth_info
 
 } RPC_HDR_AUTH;
 
+/* RPC_AUTH_VERIFIER */
+typedef struct rpc_auth_ntlmssp_info
+{
+	fstring signature; /* authentication type */
+	uint32  msg_type; /* message type (1,2,3) */
+
+} RPC_AUTH_VERIFIER;
+
 /* RPC_BIND_REQ - ms req bind */
 typedef struct rpc_bind_req_info
 {

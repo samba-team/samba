@@ -309,7 +309,7 @@ static BOOL create_ntlmssp_bind_req(struct cli_connection *con,
 	RPC_HDR_RB           hdr_rb;
 	RPC_HDR              hdr;
 	RPC_HDR_AUTH         hdr_auth;
-	RPC_AUTH_NTLMSSP_VERIFIER auth_verifier;
+	RPC_AUTH_VERIFIER auth_verifier;
 	RPC_AUTH_NTLMSSP_NEG ntlmssp_neg;
 
 	struct ntuser_creds *usr;
@@ -331,10 +331,10 @@ static BOOL create_ntlmssp_bind_req(struct cli_connection *con,
 	make_rpc_hdr_auth(&hdr_auth, 0x0a, 0x06, 0x00, 1);
 	smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, &rhdr_auth, 0);
 
-	make_rpc_auth_ntlmssp_verifier(&auth_verifier,
+	make_rpc_auth_verifier(&auth_verifier,
 			       "NTLMSSP", NTLMSSP_NEGOTIATE);
 
-	smb_io_rpc_auth_ntlmssp_verifier("auth_verifier", &auth_verifier, &auth_req, 0);
+	smb_io_rpc_auth_verifier("auth_verifier", &auth_verifier, &auth_req, 0);
 
 	make_rpc_auth_ntlmssp_neg(&ntlmssp_neg,
 			       usr->ntlmssp_flags, global_myname, usr->domain);
@@ -399,8 +399,8 @@ static BOOL decode_ntlmssp_bind_resp(struct cli_connection *con,
 	}
 	if (valid_ack)
 	{
-		RPC_AUTH_NTLMSSP_VERIFIER rhdr_verf;
-		smb_io_rpc_auth_ntlmssp_verifier("", &rhdr_verf, rdata, 0);
+		RPC_AUTH_VERIFIER rhdr_verf;
+		smb_io_rpc_auth_verifier("", &rhdr_verf, rdata, 0);
 		if (rdata->offset == 0 ||
 		    !rpc_auth_ntlmssp_verifier_chk(&rhdr_verf,
 		                                   "NTLMSSP",
@@ -433,18 +433,18 @@ static BOOL create_ntlmssp_rpc_bind_resp(struct pwd_info *pwd,
                                 prs_struct *rhdr_autha,
                                 prs_struct *auth_resp)
 {
-	RPC_HDR                   hdr;
-	RPC_HDR_AUTHA             hdr_autha;
-	RPC_AUTH_NTLMSSP_VERIFIER auth_verifier;
+	RPC_HDR           hdr;
+	RPC_HDR_AUTHA     hdr_autha;
+	RPC_AUTH_VERIFIER auth_verifier;
 
 	make_rpc_hdr_autha(&hdr_autha, 0x1630, 0x1630, 0x0a, 0x06, 0x00);
 	smb_io_rpc_hdr_autha("hdr_autha", &hdr_autha, rhdr_autha, 0);
 	prs_realloc_data(rhdr_autha, rhdr_autha->offset);
 
-	make_rpc_auth_ntlmssp_verifier(&auth_verifier,
+	make_rpc_auth_verifier(&auth_verifier,
 			       "NTLMSSP", NTLMSSP_AUTH);
 
-	smb_io_rpc_auth_ntlmssp_verifier("auth_verifier", &auth_verifier, auth_resp, 0);
+	smb_io_rpc_auth_verifier("auth_verifier", &auth_verifier, auth_resp, 0);
 	prs_realloc_data(auth_resp, auth_resp->offset);
 
 	create_ntlmssp_resp(pwd, domain, user_name, my_name, ntlmssp_cli_flgs,

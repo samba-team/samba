@@ -422,7 +422,7 @@ static BOOL api_ntlmssp(rpcsrv_struct *l, uint32 msg_type)
 static BOOL api_ntlmssp_bind_auth_resp(rpcsrv_struct *l)
 {
 	RPC_HDR_AUTHA autha_info;
-	RPC_AUTH_NTLMSSP_VERIFIER auth_verifier;
+	RPC_AUTH_VERIFIER auth_verifier;
 
 	DEBUG(5,("api_pipe_bind_auth_resp: decode request. %d\n", __LINE__));
 
@@ -432,7 +432,7 @@ static BOOL api_ntlmssp_bind_auth_resp(rpcsrv_struct *l)
 	smb_io_rpc_hdr_autha("", &autha_info, &l->data_i, 0);
 	if (l->data_i.offset == 0) return False;
 
-	smb_io_rpc_auth_ntlmssp_verifier("", &auth_verifier, &l->data_i, 0);
+	smb_io_rpc_auth_verifier("", &auth_verifier, &l->data_i, 0);
 	if (l->data_i.offset == 0) return False;
 
 	if (!rpc_auth_ntlmssp_verifier_chk(&auth_verifier, "NTLMSSP", NTLMSSP_AUTH)) return False;
@@ -452,8 +452,8 @@ static BOOL api_ntlmssp_auth_chk(rpcsrv_struct *l,
 		case RPC_BINDACK:
 		case RPC_ALTCONTRESP:
 		{
-			RPC_AUTH_NTLMSSP_VERIFIER auth_verifier;
-			smb_io_rpc_auth_ntlmssp_verifier("", &auth_verifier, &l->data_i, 0);
+			RPC_AUTH_VERIFIER auth_verifier;
+			smb_io_rpc_auth_verifier("", &auth_verifier, &l->data_i, 0);
 			if (l->data_i.offset == 0) return False;
 
 			if (strequal(auth_verifier.signature, "NTLMSSP"))
@@ -476,7 +476,7 @@ static BOOL api_ntlmssp_auth_gen(rpcsrv_struct *l, prs_struct *resp,
 	BOOL ret;
 	uint8 challenge[8];
 	RPC_HDR_AUTH  auth_info;
-	RPC_AUTH_NTLMSSP_VERIFIER auth_verifier;
+	RPC_AUTH_VERIFIER auth_verifier;
 	prs_struct rhdr;
 	prs_struct rauth;
 	prs_struct rverf;
@@ -499,9 +499,9 @@ static BOOL api_ntlmssp_auth_gen(rpcsrv_struct *l, prs_struct *resp,
 
 	/*** NTLMSSP verifier ***/
 
-	make_rpc_auth_ntlmssp_verifier(&auth_verifier,
+	make_rpc_auth_verifier(&auth_verifier,
 			       "NTLMSSP", NTLMSSP_CHALLENGE);
-	smb_io_rpc_auth_ntlmssp_verifier("", &auth_verifier, &rauth, 0);
+	smb_io_rpc_auth_verifier("", &auth_verifier, &rauth, 0);
 	prs_realloc_data(&rauth, rauth.offset);
 
 	/* NTLMSSP challenge ***/
