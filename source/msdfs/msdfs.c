@@ -151,10 +151,8 @@ static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. Error was %s\n",
 					conn->connectpath, strerror(errno) ));
-#if 0 /* JRATEST ? */
 		talloc_destroy( conn->mem_ctx );
 		return False;
-#endif
 	}
 	return True;
 }
@@ -407,12 +405,40 @@ BOOL dfs_redirect(pstring pathname, connection_struct* conn,
 }
 
 /**********************************************************************
+ Return a self referral.
+**********************************************************************/
+
+static BOOL self_ref(char *pathname, struct junction_map *jucn,
+			int *consumedcntp, BOOL *self_referralp)
+{
+	struct referral *ref;
+
+	if (self_referralp != NULL)
+		*self_referralp = True;
+
+	jucn->referral_count = 1;
+	if((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
+		DEBUG(0,("self_ref: malloc failed for referral\n"));
+		return False;
+	}
+
+	pstrcpy(ref->alternate_path,pathname);
+	ref->proximity = 0;
+	ref->ttl = REFERRAL_TTL;
+	jucn->referral_list = ref;
+	if (consumedcntp)
+		*consumedcntp = strlen(pathname);
+
+	return True;
+}
+
+/**********************************************************************
  Gets valid referrals for a dfs path and fills up the
  junction_map structure
- **********************************************************************/
+**********************************************************************/
 
-BOOL get_referred_path(char *pathname, struct junction_map* jucn,
-		       int* consumedcntp, BOOL* self_referralp)
+BOOL get_referred_path(char *pathname, struct junction_map *jucn,
+		       int *consumedcntp, BOOL *self_referralp)
 {
 	struct dfs_path dp;
 
@@ -421,11 +447,12 @@ BOOL get_referred_path(char *pathname, struct junction_map* jucn,
 	pstring conn_path;
 	int snum;
 	BOOL ret = False;
-
 	BOOL self_referral = False;
 
 	if (!pathname || !jucn)
 		return False;
+
+	ZERO_STRUCT(conns);
 
 	if (self_referralp)
 		*self_referralp = False;
@@ -453,7 +480,18 @@ BOOL get_referred_path(char *pathname, struct junction_map* jucn,
 		if ((snum = find_service(jucn->service_name)) < 0)
 			return False;
 	}
-	
+
+	/*
+	 * Self referrals are tested with a anonymous IPC connection and
+	 * a GET_DFS_REFERRAL call to \\server\share. (which means dp.reqpath[0] points
+	 * to an empty string). create_conn_struct cd's into the directory and will
+	 * fail if it cannot (as the anonymous user). Cope with this.
+	 */
+
+	if (dp.reqpath[0] == '\0') {
+		return self_ref(pathname, jucn, consumedcntp, self_referralp);
+	}
+
 	pstrcpy(conn_path, lp_pathname(snum));
 	if (!create_conn_struct(conn, snum, conn_path))
 		return False;
@@ -496,24 +534,16 @@ BOOL get_referred_path(char *pathname, struct junction_map* jucn,
 	
 	/* if self_referral, fill up the junction map */
 	if (*self_referralp) {
-		struct referral* ref;
-		jucn->referral_count = 1;
-		if((ref = (struct referral*) malloc(sizeof(struct referral))) == NULL) {
-			DEBUG(0,("malloc failed for referral\n"));
+		if (self_ref(pathname, jucn, consumedcntp, self_referralp) == False) {
 			goto out;
 		}
-      
-		pstrcpy(ref->alternate_path,pathname);
-		ref->proximity = 0;
-		ref->ttl = REFERRAL_TTL;
-		jucn->referral_list = ref;
-		if (consumedcntp)
-			*consumedcntp = strlen(pathname);
 	}
 	
 	ret = True;
+
 out:
-	talloc_destroy( conn->mem_ctx );
+	if (conn->mem_ctx)
+		talloc_destroy( conn->mem_ctx );
 	
 	return ret;
 }
