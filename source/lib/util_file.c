@@ -273,44 +273,6 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 }
 
 
-/****************************************************************************
-load from a pipe into memory
-****************************************************************************/
-char *file_pload(char *syscmd, size_t *size)
-{
-	int fd, n;
-	char *p, *tp;
-	pstring buf;
-	size_t total;
-	
-	fd = sys_popen(syscmd);
-	if (fd == -1) return NULL;
-
-	p = NULL;
-	total = 0;
-
-	while ((n = read(fd, buf, sizeof(buf))) > 0) {
-		tp = Realloc(p, total + n + 1);
-		if (!tp) {
-		        DEBUG(0,("file_pload: failed to expand buffer!\n"));
-			close(fd);
-			SAFE_FREE(p);
-			return NULL;
-		} else p = tp;
-		memcpy(p+total, buf, n);
-		total += n;
-	}
-	if (p) p[total] = 0;
-
-	/* FIXME: Perhaps ought to check that the command completed
-	 * successfully (returned 0); if not the data may be
-	 * truncated. */
-	sys_pclose(fd);
-
-	if (size) *size = total;
-
-	return p;
-}
 
 /****************************************************************************
 load a file into memory from a fd.
@@ -461,21 +423,6 @@ char **fd_lines_load(int fd, int *numlines)
 	return file_lines_parse(p, size, numlines);
 }
 
-
-/****************************************************************************
-load a pipe into memory and return an array of pointers to lines in the data
-must be freed with file_lines_free(). 
-****************************************************************************/
-char **file_lines_pload(char *syscmd, int *numlines)
-{
-	char *p;
-	size_t size;
-
-	p = file_pload(syscmd, &size);
-	if (!p) return NULL;
-
-	return file_lines_parse(p, size, numlines);
-}
 
 /****************************************************************************
 free lines loaded with file_lines_load
