@@ -45,8 +45,6 @@ BOOL py_from_SID(PyObject **obj, DOM_SID *sid)
 
 BOOL py_to_SID(DOM_SID *sid, PyObject *obj)
 {
-	BOOL result;
-
 	if (!PyString_Check(obj))
 		return False;
 
@@ -264,11 +262,23 @@ BOOL py_to_SECDESC(SEC_DESC **sd, PyObject *dict, TALLOC_CTX *mem_ctx)
 		}
 	}
 
+#if 0				/* For new secdesc code */
 	*sd = make_sec_desc(mem_ctx, revision, 
 			    got_owner_sid ? &owner_sid : NULL, 
 			    got_group_sid ? &group_sid : NULL,
 			    got_sacl ? &sacl : NULL, 
 			    got_dacl ? &dacl : NULL);
-	
+#else
+	{
+		size_t sd_size;
+
+		*sd = make_sec_desc(mem_ctx, revision,
+			    got_owner_sid ? &owner_sid : NULL, 
+			    got_group_sid ? &group_sid : NULL,
+			    got_sacl ? &sacl : NULL, 
+			    got_dacl ? &dacl : NULL, &sd_size);
+	}
+#endif
+
 	return True;
 }
