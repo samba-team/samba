@@ -229,14 +229,18 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 				break;
 			case E2BIG:
 				reason="No more room"; 
-				if (!conv_silent)
-					DEBUG(3, ("convert_string_internal: Required %lu, available %lu\n",
-						(unsigned long)srclen, (unsigned long)destlen));
-				/* we are not sure we need srclen bytes,
-			          may be more, may be less.
-				  We only know we need more than destlen
-				  bytes ---simo */
-		               break;
+				if (!conv_silent) {
+					if (from == CH_UNIX) {
+						DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u - '%s'\n",
+							charset_name(from), charset_name(to),
+							(unsigned int)srclen, (unsigned int)destlen, (const char *)src));
+					} else {
+						DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u\n",
+							charset_name(from), charset_name(to),
+							(unsigned int)srclen, (unsigned int)destlen));
+					}
+				}
+				break;
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
 				if (!conv_silent)
