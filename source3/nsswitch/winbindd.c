@@ -479,6 +479,13 @@ static void client_write(struct winbindd_cli_state *state)
 	int num_written;
 	
 	/* Write some data */
+	/*
+	 * The fancy calculation of data below allows us to handle the 
+	 * case where write (sys_write) does not write all the data we 
+	 * gave it. In that case, we will come back through here again
+	 * because of the loop above us, and we want to pick up where
+	 * we left off.
+	 */
 	
 	if (!state->write_extra_data) {
 
