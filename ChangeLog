@@ -1,3 +1,20 @@
+Wed Jul 16 03:17:30 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* kdc/kerberos5.c: Split tgs_rep in smaller functions. Add better
+ 	error handing. Do some logging.
+
+	* kdc/log.c: Some simple logging facilities.
+
+	* kdc/misc.c (db_fetch): Take a krb5_principal.
+
+	* kdc/connect.c: Pass address of request to as_rep and
+ 	tgs_rep. Send KRB-ERROR.
+
+	* lib/krb5/mk_error.c: Add more fields.
+
+	* lib/krb5/get_cred.c: Print normal error code if no e_text is
+ 	available.
+
 Wed Jul 16 03:07:50 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_in_tkt.c: implement `krb5_init_etype'.
