@@ -654,7 +654,7 @@ static struct parm_struct parm_table[] = {
 	{"comment", P_STRING, P_LOCAL, &sDefault.comment, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
 	{"path", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_BASIC | FLAG_SHARE | FLAG_PRINT | FLAG_DOS_STRING},
 	{"directory", P_STRING, P_LOCAL, &sDefault.szPath, NULL, NULL, FLAG_DOS_STRING},
-	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkGroup, NULL, NULL, FLAG_BASIC | FLAG_DOS_STRING},
+	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkGroup, NULL, NULL, FLAG_BASIC },
 	{"netbios name", P_UGSTRING, P_GLOBAL, global_myname, handle_netbios_name, NULL, FLAG_BASIC | FLAG_DOS_STRING},
 	{"netbios aliases", P_STRING, P_GLOBAL, &Globals.szNetbiosAliases, NULL, NULL, FLAG_DOS_STRING},
 	{"netbios scope", P_UGSTRING, P_GLOBAL, global_scope, NULL, NULL, FLAG_DOS_STRING},
