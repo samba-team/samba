@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -50,7 +50,7 @@ krb5_data_zero(krb5_data *p)
 void
 krb5_data_free(krb5_data *p)
 {
-    if(p->length && p->data)
+    if(p->data != NULL)
 	free(p->data);
     p->length = 0;
 }
