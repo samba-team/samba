@@ -22,6 +22,10 @@
 
    12 aug 96: Erik.Devriendt@te6.siemens.be
    added support for shared memory implementation of share mode locking
+
+   21-Jul-1998: rsharpe@ns.aus.com (Richard Sharpe)
+   Added -L (locks only) -S (shares only) flags and code
+
 */
 
 /*
@@ -53,11 +57,14 @@ int            Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
 int            Ucrit_MaxPid=0;                        /* added by OH */
 unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 
+int            shares_only = 0;            /* Added by RJS */
+int            locks_only  = 0;            /* Added by RJS */
+
 /* we need these because we link to locking*.o */
  void become_root(BOOL save_dir) {}
  void unbecome_root(BOOL restore_dir) {}
 connection_struct Connections[MAX_CONNECTIONS];
-files_struct Files[MAX_FNUMS];
+files_struct Files[MAX_OPEN_FILES];
 struct current_user current_user;
 
 
@@ -129,7 +136,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
     return(1);
   }
 
-  while ((c = getopt(argc, argv, "pds:u:b")) != EOF) {
+  while ((c = getopt(argc, argv, "pdLSs:u:b")) != EOF) {
     switch (c) {
     case 'b':
       brief = 1;
@@ -137,8 +144,14 @@ static void print_share_mode(share_mode_entry *e, char *fname)
     case 'd':
       verbose = 1;
       break;
+    case 'L':
+      locks_only = 1;
+      break;
     case 'p':
       processes_only = 1;
+      break;
+    case 'S':
+      shares_only = 1;
       break;
     case 's':
       pstrcpy(servicesf, optarg);
@@ -147,7 +160,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
       Ucrit_addUsername(optarg);                    /* added by OH */
       break;
     default:
-      fprintf(stderr, "Usage: %s [-d] [-p] [-s configfile] [-u username]\n", *argv); /* changed by OH */
+      fprintf(stderr, "Usage: %s [-d] [-L] [-p] [-S] [-s configfile] [-u username]\n", *argv); /* changed by OH */
       return (-1);
     }
   }
@@ -182,74 +195,76 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 
   uid = getuid();
 
-  if (!processes_only) {
-    printf("\nSamba version %s\n",VERSION);
+  if (!locks_only) {
 
-    if (brief)
-    {
-      printf("PID     Username  Machine                       Time logged in\n");
-      printf("-------------------------------------------------------------------\n");
-    }
-    else
-    {
-      printf("Service      uid      gid      pid     machine\n");
-      printf("----------------------------------------------\n");
-    }
-  }
+    if (!processes_only) {
+      printf("\nSamba version %s\n",VERSION);
 
-  while (!feof(f))
-    {
-      if (fread(&crec,sizeof(crec),1,f) != 1)
-	break;
-      if (crec.cnum == -1) continue;
-      if ( crec.magic == 0x280267 && process_exists(crec.pid) 
-           && Ucrit_checkUsername(uidtoname(crec.uid))                      /* added by OH */
-         )
+      if (brief)
+	{
+	  printf("PID     Username  Machine                       Time logged in\n");
+	  printf("-------------------------------------------------------------------\n");
+	}
+      else
+	{
+	  printf("Service      uid      gid      pid     machine\n");
+	  printf("----------------------------------------------\n");
+	}
+    }
+
+    while (!feof(f))
       {
-        if (brief)
-        {
-	  ptr=srecs;
-	  while (ptr!=NULL)
+	if (fread(&crec,sizeof(crec),1,f) != 1)
+	  break;
+	if (crec.cnum == -1) continue;
+	if ( crec.magic == 0x280267 && process_exists(crec.pid) 
+	     && Ucrit_checkUsername(uidtoname(crec.uid))                      /* added by OH */
+	     )
 	  {
-	    if ((ptr->pid==crec.pid)&&(strncmp(ptr->machine,crec.machine,30)==0)) 
-	    {
-	      if (ptr->start > crec.start)
-		ptr->start=crec.start;
-	      break;
-	    }
-	    ptr=ptr->next;
-	  }
-	  if (ptr==NULL)
-	  {
-	    ptr=(struct session_record *) malloc(sizeof(struct session_record));
-	    ptr->uid=crec.uid;
-	    ptr->pid=crec.pid;
-	    ptr->start=crec.start;
-	    strncpy(ptr->machine,crec.machine,30);
-	    ptr->machine[30]='\0';
-	    ptr->next=srecs;
-	    srecs=ptr;
-	  }
-        }
-        else
-        {
-	  Ucrit_addPid(crec.pid);                                             /* added by OH */
-	  if (processes_only) {
-	    if (last_pid != crec.pid)
-	      printf("%d\n",crec.pid);
-	    last_pid = crec.pid; /* XXXX we can still get repeats, have to
+	    if (brief)
+	      {
+		ptr=srecs;
+		while (ptr!=NULL)
+		  {
+		    if ((ptr->pid==crec.pid)&&(strncmp(ptr->machine,crec.machine,30)==0)) 
+		      {
+			if (ptr->start > crec.start)
+			  ptr->start=crec.start;
+			break;
+		      }
+		    ptr=ptr->next;
+		  }
+		if (ptr==NULL)
+		  {
+		    ptr=(struct session_record *) malloc(sizeof(struct session_record));
+		    ptr->uid=crec.uid;
+		    ptr->pid=crec.pid;
+		    ptr->start=crec.start;
+		    strncpy(ptr->machine,crec.machine,30);
+		    ptr->machine[30]='\0';
+		    ptr->next=srecs;
+		    srecs=ptr;
+		  }
+	      }
+	    else
+	      {
+		Ucrit_addPid(crec.pid);                                             /* added by OH */
+		if (processes_only) {
+		  if (last_pid != crec.pid)
+		    printf("%d\n",crec.pid);
+		  last_pid = crec.pid; /* XXXX we can still get repeats, have to
 				    add a sort at some time */
+		}
+		else	  
+		  printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
+			 crec.name,uidtoname(crec.uid),gidtoname(crec.gid),crec.pid,
+			 crec.machine,crec.addr,
+			 asctime(LocalTime(&crec.start)));
+	      }
 	  }
-	  else	  
-	    printf("%-10.10s   %-8s %-8s %5d   %-8s (%s) %s",
-		   crec.name,uidtoname(crec.uid),gidtoname(crec.gid),crec.pid,
-		   crec.machine,crec.addr,
-		   asctime(LocalTime(&crec.start)));
-        }
       }
-    }
-  fclose(f);
-
+    fclose(f);
+  }
   if (processes_only) exit(0);
   
   if (brief)
@@ -266,16 +281,19 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 
   printf("\n");
 
-  locking_init(1);
+  if (!shares_only) {
 
-  if (share_mode_forall(print_share_mode) <= 0)
-    printf("No locked files\n");
+    locking_init(1);
 
-  printf("\n");
+    if (share_mode_forall(print_share_mode) <= 0)
+      printf("No locked files\n");
+    
+    printf("\n");
 
-  share_status(stdout);
+    share_status(stdout);
 
-  locking_end();
+    locking_end();
+  }
 
   return (0);
 }

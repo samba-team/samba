@@ -8,10 +8,17 @@ smbstatus \- report on current Samba connections
 ] [
 .B \-d
 ] [
+.B \-L
+] [
 .B \-p
+] [
+.B \-S
 ] [
 .B \-s
 .I configuration file
+] [
+.b \-u
+.i username
 ]
 .SH DESCRIPTION
 This program is part of the Samba suite.
@@ -27,21 +34,30 @@ gives brief output.
 .B \-d
 gives verbose output.
 
+.B \-L
+causes smbstatus to only list locks.
+
 .B \-p
 print a list of
 .B smbd
 processes and exit. Useful for scripting.
 
+.B \-S
+causes smbstatus to only list shares.
+
 .B \-s
 .I configuration file
-
 .RS 3
 The default configuration file name is determined at compile time.
-
 The file specified contains the configuration details required by the server.
 See
 .BR smb.conf (5)
 for more information.
+
+.B \-u
+.I username
+selects information relevant to .B username only.
+
 .RE
 .SH ENVIRONMENT VARIABLES
 Not applicable.
