@@ -98,7 +98,7 @@ static int find_service(const char *service)
 
 	/* just possibly it's a default service? */
 	if (iService == -1) {
-		char *pdefservice = lp_defaultservice();
+		const char *pdefservice = lp_defaultservice();
 		if (pdefservice && *pdefservice && 
 		    !strequal(pdefservice,service) &&
 		    !strstr(service,"..")) {
