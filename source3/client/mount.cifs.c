@@ -74,7 +74,13 @@ static void mount_cifs_usage(void)
 {
 	printf("\nUsage:  %s <remotetarget> <dir> -o <options>\n", thisprogram);
 	printf("\nMount the remote target, specified as a UNC name,");
-	printf(" to a local directory.\n");
+	printf(" to a local directory.\n\nOptions:\n");
+	printf("\tuser=<arg>\n\tpass=<arg>\n\tdom=<arg>\n");
+	printf("\nOther less commonly used options are described in the manual page");
+	printf("\n\tman 8 mount.cifs\n");
+	printf("\nTo display the version number of the mount helper:");
+	printf("\n\t%s -V\n",thisprogram);
+
 	if(mountpassword) {
 		memset(mountpassword,0,64);
 		free(mountpassword);
@@ -95,7 +101,7 @@ static char * getusername(void) {
 
 char * parse_cifs_url(char * unc_name)
 {
-	printf("\ncifs url %s\n",unc_name);
+	printf("\nMounting cifs URL not implemented yet. Attempt to mount %s\n",unc_name);
 	return NULL;
 }
 
@@ -590,6 +596,7 @@ int main(int argc, char ** argv)
 	char * uuid = NULL;
 	char * mountpoint;
 	char * options;
+	char * resolved_path;
 	char * temp;
 	int rc;
 	int rsize = 0;
@@ -730,13 +737,22 @@ int main(int argc, char ** argv)
 	}
 
 	ipaddr = parse_server(share_name);
+
+	if(ipaddr == NULL)
+		return -1;
 	
 	if (orgoptions && parse_options(orgoptions, &flags))
-		return 1;
+		return -1;
 
 	/* BB save off path and pop after mount returns? */
-	/* BB canonicalize the path in argv[1]? */
-
+	resolved_path = malloc(PATH_MAX+1);
+	if(resolved_path) {
+		/* Note that if we can not canonicalize the name, we get
+		another chance to see if it is valid when we chdir to it */
+		if (realpath(mountpoint, resolved_path)) {
+			mountpoint = resolved_path; 
+		}
+	}
 	if(chdir(mountpoint)) {
 		printf("mount error: can not change directory into mount target %s\n",mountpoint);
 		return -1;
@@ -890,6 +906,10 @@ int main(int argc, char ** argv)
 		memset(orgoptions,0,orgoptlen);
 		free(orgoptions);
 	}
+	if(resolved_path) {
+		free(resolved_path);
+	}
+
 	return 0;
 }
 
