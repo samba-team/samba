@@ -192,6 +192,13 @@ esac
 
 AC_VALIDATE_CACHE_SYSTEM_TYPE
 
+DYNEXP=
+
+# I'm sure gcc supports -rdynamic
+if test "$ac_cv_prog_gcc" = yes; then
+    DYNEXP="-rdynamic"
+fi
+
 #
 # Config CPPFLAG settings for strange OS's that must be set
 # before other tests.
@@ -220,6 +227,7 @@ case "$host_os" in
 		   		AC_DEFINE(USE_BOTH_CRYPT_CALLS)
 				;;
       esac
+      DYNEXP="-Wl,-E"
       ;;
 
 
@@ -266,6 +274,7 @@ case "$host_os" in
 						;;
 				esac
 			else
+				DYNEXP="-dc -dp"
 				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 			fi
 			;;
@@ -368,23 +377,6 @@ exit(1);
     ;;
 
 esac
-
-AC_CACHE_CHECK([for dynamic executables],samba_cv_dynamic_executables,[
-
-    _ldflags=${LDFLAGS}
-    LDFLAGS="-rdynamic $LDFLAGS"
-
-    AC_TRY_RUN([
-#include <unistd.h>
-main () {
-exit(0);
-}], samba_cv_dynamic_executables=yes,samba_cv_dynamic_executables=no,samba_cv_dynamic_executables=cross)])
-if test x"$samba_cv_dynamic_executables" = x"yes"; then
-	LDFLAGS="-rdynamic $_ldflags"
-else
-	LDFLAGS="$_ldflags"
-fi
-
 
 AC_INLINE
 AC_HEADER_STDC
@@ -812,6 +804,7 @@ case "$host_os" in
 		*linux*)   AC_DEFINE(LINUX)
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
+			DYNEXP="-Wl,--export-dynamic"
 			PICFLAG="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
@@ -869,6 +862,7 @@ case "$host_os" in
 				LDSHFLAGS="-B symbolic -b -z +h \$@"
 				PICFLAG="+z"
 			fi
+			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192)
 			;;
 		*qnx*) AC_DEFINE(QNX);;
@@ -891,6 +885,7 @@ case "$host_os" in
 									AC_DEFINE(HAVE_MEMSET)
 								fi
 								LDSHFLAGS="-G"
+								DYNEXP="-Bexport"
 				;;
 				*mips-sni-sysv4*) AC_DEFINE(RELIANTUNIX);;
 			esac
@@ -902,6 +897,7 @@ case "$host_os" in
 			LDSHFLAGS="-G"
 			;;
 esac
+AC_SUBST(DYNEXP)
 AC_MSG_RESULT($BLDSHARED)
 AC_MSG_CHECKING([linker flags for shared libraries])
 AC_MSG_RESULT([$LDSHFLAGS])
