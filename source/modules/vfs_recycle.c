@@ -280,7 +280,7 @@ static BOOL recycle_create_dir(connection_struct *conn, const char *dname)
 
 	/* Create directory tree if neccessary */
 	for(token = strtok(tok_str, "/"); token; token = strtok(NULL, "/")) {
-		safe_strcat(new_dir, token, len - 1);
+		safe_strcat(new_dir, token, len);
 		if (recycle_directory_exist(conn, new_dir))
 			DEBUG(10, ("recycle.bin: dir %s already exists\n", new_dir));
 		else {
@@ -291,7 +291,7 @@ static BOOL recycle_create_dir(connection_struct *conn, const char *dname)
 				goto done;
 			}
 		}
-		safe_strcat(new_dir, "/", len - 1);
+		safe_strcat(new_dir, "/", len);
 		}
 
 	ret = True;
