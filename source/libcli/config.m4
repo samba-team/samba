@@ -12,8 +12,6 @@ SMB_SUBSYSTEM(LIBCLI_RAW,[],
 		libcli/raw/clitransport.o 
 		libcli/raw/clisession.o 
 		libcli/raw/clitree.o 
-		libcli/raw/clikrb5.o 
-		libcli/raw/clispnego.o 
 		libcli/raw/rawrequest.o 
 		libcli/raw/rawreadwrite.o 
 		libcli/raw/rawsearch.o 
@@ -43,13 +41,17 @@ SMB_SUBSYSTEM(LIBCLI_UTILS,[],
 		libcli/util/dom_sid.o])
 
 SMB_SUBSYSTEM(LIBCLI_AUTH,[],
-		[libcli/auth/ntlmssp.o
+		[libcli/auth/spnego.o
+		libcli/auth/ntlmssp.o
 		libcli/auth/ntlmssp_parse.o
 		libcli/auth/ntlmssp_sign.o
 		libcli/auth/schannel.o
 		libcli/auth/credentials.o
 		libcli/auth/session.o
-		libcli/auth/ntlm_check.o])
+		libcli/auth/ntlm_check.o
+		libcli/auth/kerberos.o
+		libcli/auth/kerberos_verify.o
+		libcli/auth/clikrb5.o])
 
 SMB_SUBSYSTEM(LIBCLI_NMB,[],
 		[libcli/unexpected.o

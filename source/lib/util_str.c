@@ -1252,6 +1252,22 @@ DATA_BLOB strhex_to_data_blob(const char *strhex)
 	return ret_blob;
 }
 
+/**
+ * Routine to print a buffer as HEX digits, into an allocated string.
+ */
+
+void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
+{
+	int i;
+	char *hex_buffer;
+
+	*out_hex_buffer = smb_xmalloc((len*2)+1);
+	hex_buffer = *out_hex_buffer;
+
+	for (i = 0; i < len; i++)
+		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
+}
+
 
 /**
  Unescape a URL encoded string, in place.
