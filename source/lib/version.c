@@ -27,13 +27,14 @@ const char *samba_version_string(void)
 #ifndef SAMBA_VERSION_VENDOR_SUFFIX
 	return SAMBA_VERSION_OFFICIAL_STRING;
 #else
-	static fstring samba_version;
+	static char *samba_version;
 	static BOOL init_samba_version;
 
 	if (init_samba_version)
 		return samba_version;
 
-	snprintf(samba_version,sizeof(samba_version),"%s-%s",
+	samba_version = talloc_asprintf(
+		talloc_autofree_context(), "%s-%s",
 		SAMBA_VERSION_OFFICIAL_STRING,
 		SAMBA_VERSION_VENDOR_SUFFIX);
 
