@@ -135,7 +135,7 @@ Aug 25 07:25:55  Aug 25 17:25:55  krbtgt/MY.REALM@@MY.REALM
 To verify that the contents of the database you can use the @samp{dump}
 command to list all the entries.  It should look something similar to
 the following example (note that the entries here are divided into two
-lines for typographically reasons):
+lines for typographical reasons):
 
 @smallexample
 kdb_edit> dump
