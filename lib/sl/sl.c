@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -38,6 +38,92 @@ RCSID("$Id$");
 
 #include "sl_locl.h"
 
+static size_t __attribute__ ((unused))
+print_sl (FILE *stream, int mdoc, int longp, SL_cmd *c)
+{
+    if(mdoc){
+	if(longp)
+	    fprintf(stream, "= Ns");
+	fprintf(stream, " Ar ");
+    }else
+	if (longp)
+	    putc ('=', stream);
+	else
+	    putc (' ', stream);
+
+    return 1;
+}
+
+static void
+mandoc_template(SL_cmd *cmds,
+		const char *extra_string)
+{
+    SL_cmd *c, *prev;
+    char timestr[64], cmd[64];
+    const char *p;
+    time_t t;
+
+    printf(".\\\" Things to fix:\n");
+    printf(".\\\"   * correct section, and operating system\n");
+    printf(".\\\"   * remove Op from mandatory flags\n");
+    printf(".\\\"   * use better macros for arguments (like .Pa for files)\n");
+    printf(".\\\"\n");
+    t = time(NULL);
+    strftime(timestr, sizeof(timestr), "%b %d, %Y", localtime(&t));
+    printf(".Dd %s\n", timestr);
+    p = strrchr(__progname, '/');
+    if(p) p++; else p = __progname;
+    strncpy(cmd, p, sizeof(cmd));
+    cmd[sizeof(cmd)-1] = '\0';
+    strupr(cmd);
+       
+    printf(".Dt %s SECTION\n", cmd);
+    printf(".Os OPERATING_SYSTEM\n");
+    printf(".Sh NAME\n");
+    printf(".Nm %s\n", p);
+    printf(".Nd\n");
+    printf("in search of a description\n");
+    printf(".Sh SYNOPSIS\n");
+    printf(".Nm\n");
+    for(c = cmds; c->name; ++c) {
+/*	if (c->func == NULL)
+	    continue; */
+	printf(".Op Fl %s", c->name);
+/*	print_sl(stdout, 1, 0, c);*/
+	printf("\n");
+	
+    }
+    if (extra_string && *extra_string)
+	printf (".Ar %s\n", extra_string);
+    printf(".Sh DESCRIPTION\n");
+    printf("Supported options:\n");
+    printf(".Bl -tag -width Ds\n");
+    prev = NULL;
+    for(c = cmds; c->name; ++c) {
+	if (c->func) {
+	    if (prev)
+		printf ("\n%s\n", prev->usage);
+
+	    printf (".It Fl %s", c->name);
+	    prev = c;
+	} else
+	    printf (", %s\n", c->name);
+    }
+    if (prev)
+	printf ("\n%s\n", prev->usage);
+
+    printf(".El\n");
+    printf(".\\\".Sh ENVIRONMENT\n");
+    printf(".\\\".Sh FILES\n");
+    printf(".\\\".Sh EXAMPLES\n");
+    printf(".\\\".Sh DIAGNOSTICS\n");
+    printf(".\\\".Sh SEE ALSO\n");
+    printf(".\\\".Sh STANDARDS\n");
+    printf(".\\\".Sh HISTORY\n");
+    printf(".\\\".Sh AUTHORS\n");
+    printf(".\\\".Sh BUGS\n");
+}
+
 static SL_cmd *
 sl_match (SL_cmd *cmds, char *cmd, int exactp)
 {
@@ -65,6 +151,11 @@ void
 sl_help (SL_cmd *cmds, int argc, char **argv)
 {
     SL_cmd *c, *prev_c;
+
+    if (getenv("SLMANDOC")) {
+	mandoc_template(cmds, NULL);
+	return;
+    }
 
     if (argc == 1) {
 	prev_c = NULL;
@@ -220,4 +311,12 @@ sl_loop(SL_cmd *cmds, char *prompt)
     while((ret = sl_command_loop(cmds, prompt, &data)) == 0)
 	;
     return ret;
+}
+
+void
+sl_apropos (SL_cmd *cmd, char *topic)
+{
+    for (; cmd->name != NULL; ++cmd)
+        if (cmd->usage != NULL && strstr(cmd->usage, topic) != NULL)
+	    printf ("%-20s%s\n", cmd->name, cmd->usage);
 }
