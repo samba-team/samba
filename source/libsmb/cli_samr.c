@@ -5,7 +5,8 @@
    Copyright (C) Andrew Tridgell              1992-1997,2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997,2000,
    Copyright (C) Paul Ashton                       1997,2000,
-   Copyright (C) Elrond                                 2000.
+   Copyright (C) Elrond                                 2000,
+   Copyright (C) Rafal Szczesniak                       2002.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -490,6 +491,115 @@ NTSTATUS cli_samr_query_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+/**
+ * Enumerate domain users
+ *
+ * @param cli client state structure
+ * @param mem_ctx talloc context
+ * @param pol opened domain policy handle
+ * @param start_idx starting index of enumeration, returns context for
+                    next enumeration
+ * @param acb_mask account control bit mask (to enumerate some particular
+ *                 kind of accounts)
+ * @param size max acceptable size of response
+ * @param dom_users returned array of domain user names
+ * @param rids returned array of domain user RIDs
+ * @param num_dom_users numer returned entries
+ * 
+ * @return NTSTATUS returned in rpc response
+ **/
+NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                 POLICY_HND *pol, uint32 *start_idx, uint16 acb_mask,
+                                 uint32 size, char ***dom_users, uint32 **rids,
+                                 uint32 *num_dom_users)
+{
+	prs_struct qdata;
+	prs_struct rdata;
+	SAMR_Q_ENUM_DOM_USERS q;
+	SAMR_R_ENUM_DOM_USERS r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	int i;
+	
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+	
+	if (cli == NULL || pol == NULL)
+		return result;
+	
+	/* initialise parse structures */
+	prs_init(&qdata, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, mem_ctx, UNMARSHALL);
+	
+	DEBUG(4, ("SAMR Enum Domain Users. start_idx: %d, acb: %d, size: %d\n",
+			*start_idx, acb_mask, size));
+	
+	/* fill query structure with parameters */
+	init_samr_q_enum_dom_users(&q, pol, *start_idx, acb_mask, 0, size);
+	
+	/* prepare query stream */
+	if (!samr_io_q_enum_dom_users("", &q, &qdata, 0)) {
+		prs_mem_free(&qdata);
+		prs_mem_free(&rdata);
+		return result;
+	}
+	
+	/* send rpc call over the pipe */
+	if (!rpc_api_pipe_req(cli, SAMR_ENUM_DOM_USERS, &qdata, &rdata)) {
+		prs_mem_free(&qdata);
+		prs_mem_free(&rdata);
+		return result;
+	}
+		
+	/* unpack received stream */
+	if(!samr_io_r_enum_dom_users("", &r, &rdata, 0)) {
+		prs_mem_free(&qdata);
+		prs_mem_free(&rdata);
+		result = r.status;
+		return result;
+	}
+	
+	/* return the data obtained in response */
+	if (!NT_STATUS_IS_OK(r.status) &&
+		(NT_STATUS_EQUAL(r.status, STATUS_MORE_ENTRIES) ||
+		NT_STATUS_EQUAL(r.status, NT_STATUS_NO_MORE_ENTRIES))) {
+		return r.status;
+	}
+	
+	*start_idx = r.next_idx;
+	*num_dom_users = r.num_entries2;
+	result = r.status;
+
+	if (r.num_entries2) {
+		/* allocate memory needed to return received data */	
+		*rids = (uint32*)talloc(mem_ctx, sizeof(uint32) * r.num_entries2);
+		if (!*rids) {
+			DEBUG(0, ("Error in cli_samr_enum_dom_users(): out of memory\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		*dom_users = (char**)talloc(mem_ctx, sizeof(char*) * r.num_entries2);
+		if (!*dom_users) {
+			DEBUG(0, ("Error in cli_samr_enum_dom_users(): out of memory\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		/* fill output buffers with rpc response */
+		for (i = 0; i < r.num_entries2; i++) {
+			fstring conv_buf;
+			
+			(*rids)[i] = r.sam[i].rid;
+			unistr2_to_ascii(conv_buf, &(r.uni_acct_name[i]), sizeof(conv_buf) - 1);
+			(*dom_users)[i] = talloc_strdup(mem_ctx, conv_buf);
+		}
+	}
+	
+	prs_mem_free(&qdata);
+	prs_mem_free(&rdata);
+	
+	return result;
+};
+
 
 /* Enumerate domain groups */
 

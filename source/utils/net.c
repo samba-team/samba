@@ -234,7 +234,7 @@ BOOL net_find_server(unsigned flags, struct in_addr *server_ip, char **server_na
 }
 
 
-BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, char *domain_name)
+BOOL net_find_dc(struct in_addr *server_ip, fstring server_name, const char *domain_name)
 {
 	struct in_addr *ip_list;
 	int addr_count;
