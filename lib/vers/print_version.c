@@ -72,7 +72,7 @@ print_version(const char *progname)
 	}
     }
     fprintf(stderr, "%s (%s)\n", progname, msg);
-    fprintf(stderr, "Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan\n");
+    fprintf(stderr, "Copyright (c) 1999-2001 Kungliga Tekniska Högskolan\n");
     if(num_args != 0)
 	free(msg);
 }
