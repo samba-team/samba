@@ -895,6 +895,31 @@ struct parm_struct
 #define smb_droff smb_vwv7
 #define smb_drdisp smb_vwv8
 
+/* these are for the NT trans primary request. */
+#define smb_nt_MaxSetupCount smb_vwv0
+#define smb_nt_Flags (smb_vwv0 + 1)
+#define smb_nt_TotalParameterCount (smb_vwv0 + 3)
+#define smb_nt_TotalDataCount (smb_vwv0 + 7)
+#define smb_nt_MaxParameterCount (smb_vwv0 + 11)
+#define smb_nt_MaxDataCount (smb_vwv0 + 15)
+#define smb_nt_ParameterCount (smb_vwv0 + 19)
+#define smb_nt_ParameterOffset (smb_vwv0 + 23)
+#define smb_nt_DataCount (smb_vwv0 + 27)
+#define smb_nt_DataOffset (smb_vwv0 + 31)
+#define smb_nt_SetupCount (smb_vwv0 + 35)
+#define smb_nt_Function (smb_vwv0 + 36)
+#define smb_nt_SetupStart (smb_vwv0 + 39)
+
+/* these are for the NT trans secondary request. */
+#define smb_nts_TotalParameterCount (smb_vwv0 + 3)
+#define smb_nts_TotalDataCount (smb_vwv0 + 7)
+#define smb_nts_ParameterCount (smb_vwv0 + 11)
+#define smb_nts_ParameterOffset (smb_vwv0 + 15)
+#define smb_nts_ParameterDisplacement (smb_vwv0 + 19)
+#define smb_nts_DataCount (smb_vwv0 + 23)
+#define smb_nts_DataOffset (smb_vwv0 + 27)
+#define smb_nts_DataDisplacement (smb_vwv0 + 31)
+
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)
 
