@@ -91,7 +91,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 
-		status = pvfs_can_delete(pvfs, name2);
+		status = pvfs_can_delete(pvfs, req, name2);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}

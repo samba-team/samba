@@ -1211,7 +1211,9 @@ NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
   determine if a file can be deleted, or if it is prevented by an
   already open file
 */
-NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs, struct pvfs_filename *name)
+NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs, 
+			 struct smbsrv_request *req,
+			 struct pvfs_filename *name)
 {
 	NTSTATUS status;
 	DATA_BLOB key;
@@ -1227,6 +1229,10 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs, struct pvfs_filename *name)
 			      NTCREATEX_SHARE_ACCESS_DELETE, 
 			      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 
 			      SEC_STD_DELETE);
+
+	if (NT_STATUS_IS_OK(status)) {
+		status = pvfs_access_check_simple(pvfs, req, name, SEC_STD_DELETE);
+	}
 
 	return status;
 }

@@ -390,3 +390,16 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	
 	return status;
 }
+
+
+/*
+  a simplified interface to access check, designed for calls that
+  do not take or return an access check mask
+*/
+NTSTATUS pvfs_access_check_simple(struct pvfs_state *pvfs, 
+				  struct smbsrv_request *req,
+				  struct pvfs_filename *name,
+				  uint32_t access_needed)
+{
+	return pvfs_access_check(pvfs, req, name, &access_needed);
+}
