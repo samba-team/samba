@@ -7,7 +7,7 @@
      Corporation, and the Organization for the Advancement of
      Structured Information Standards (OASIS).
 
-     $Id: dbcent.mod,v 1.1 2001/02/26 13:35:46 jerry Exp $
+     $Id: dbcent.mod,v 1.3 2001/12/06 07:37:55 jerry Exp $
 
      Permission to use, copy, modify and distribute the DocBook DTD and
      its accompanying documentation for any purpose and without fee is
