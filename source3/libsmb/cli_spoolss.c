@@ -3,7 +3,7 @@
    RPC pipe client
 
    Copyright (C) Gerald Carter                2001,
-   Copyright (C) Tim Potter                   2000-2001,
+   Copyright (C) Tim Potter                   2000-2002,
    Copyright (C) Andrew Tridgell              1994-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Jean-Francois Micouleau      1999-2000.
@@ -30,6 +30,20 @@
  *
  * @{
  **/
+
+/** Opens a SMB connection and connects to the SPOOLSS pipe.
+ *
+ * @param cli Uninitialised client handle.
+ * @param system_name NETBIOS name of the machine to connect to.
+ * @param creds User credentials to connect as.
+ * @returns Initialised client handle.
+ */
+struct cli_state *cli_spoolss_initialise(struct cli_state *cli, 
+					 char *system_name, 
+					 struct ntuser_creds *creds)
+{
+        return cli_pipe_initialise(cli, system_name, PIPE_SPOOLSS, creds);
+}
 
 /** Return a handle to the specified printer or print server.
  *
@@ -780,22 +794,19 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 /**********************************************************************
  * Get installed printer drivers for a given printer
  */
-NTSTATUS cli_spoolss_enumprinterdrivers (
-	struct cli_state 	*cli, 
-	TALLOC_CTX		*mem_ctx,
-	uint32 			level,
-	char* 			env,
-	uint32			*returned,
-	PRINTER_DRIVER_CTR  	*ctr
-)
+WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli, 
+				       TALLOC_CTX *mem_ctx,
+				       uint32 offered, uint32 *needed,
+				       uint32 level, char *env,
+				       uint32 *num_drivers,
+				       PRINTER_DRIVER_CTR *ctr)
 {
-	prs_struct 			qbuf, rbuf;
-	SPOOL_Q_ENUMPRINTERDRIVERS 	q;
-        SPOOL_R_ENUMPRINTERDRIVERS 	r;
-	NEW_BUFFER 			buffer;
-	uint32 				needed = 0;
-	NTSTATUS 			result;
-	fstring 			server;
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ENUMPRINTERDRIVERS q;
+        SPOOL_R_ENUMPRINTERDRIVERS r;
+	NEW_BUFFER buffer;
+	WERROR result = W_ERROR(ERRgeneral);
+	fstring server;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -803,60 +814,60 @@ NTSTATUS cli_spoolss_enumprinterdrivers (
         slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 
-	do 
-	{
-		/* Initialise input parameters */
-		init_buffer(&buffer, needed, mem_ctx);
+	/* Initialise input parameters */
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	init_buffer(&buffer, offered, mem_ctx);
 
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-		/* write the request */
-		make_spoolss_q_enumprinterdrivers(&q, server, env, level, &buffer, needed);
+	/* Write the request */
 
-		/* Marshall data and send request */
-		if (!spoolss_io_q_enumprinterdrivers ("", &q, &qbuf, 0) ||
-		    !rpc_api_pipe_req (cli, SPOOLSS_ENUMPRINTERDRIVERS, &qbuf, &rbuf)) 
-		{
-			result = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
+	make_spoolss_q_enumprinterdrivers(&q, server, env, level, &buffer, 
+					  offered);
+	
+	/* Marshall data and send request */
+	
+	if (!spoolss_io_q_enumprinterdrivers ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_ENUMPRINTERDRIVERS, &qbuf, &rbuf))
+		goto done;
 
-		/* Unmarshall response */
-		if (spoolss_io_r_enumprinterdrivers ("", &r, &rbuf, 0)) 
-		{
-			needed = r.needed;
-		}
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_enumprinterdrivers ("", &r, &rbuf, 0))
+		goto done;
+
+	if (needed)
+		*needed = r.needed;
+
+	if (num_drivers)
+		*num_drivers = r.returned;
+
+	result = r.status;
+
+	/* Return output parameters */
+
+	if (W_ERROR_IS_OK(result) && (r.returned != 0)) {
+		*num_drivers = r.returned;
+
+		switch (level) {
+		case 1:
+			decode_printer_driver_1(mem_ctx, r.buffer, r.returned, &ctr->info1);
+			break;
+		case 2:
+			decode_printer_driver_2(mem_ctx, r.buffer, r.returned, &ctr->info2);
+			break;
+		case 3:
+			decode_printer_driver_3(mem_ctx, r.buffer, r.returned, &ctr->info3);
+			break;
+		}			
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 		
-		/* Return output parameters */
-		result = werror_to_ntstatus(r.status);
-		if (NT_STATUS_IS_OK(result) && 
-		    (r.returned != 0))
-		{
-			*returned = r.returned;
-
-			switch (level) 
-			{
-			case 1:
-				decode_printer_driver_1(mem_ctx, r.buffer, r.returned, &ctr->info1);
-				break;
-			case 2:
-				decode_printer_driver_2(mem_ctx, r.buffer, r.returned, &ctr->info2);
-				break;
-			case 3:
-				decode_printer_driver_3(mem_ctx, r.buffer, r.returned, &ctr->info3);
-				break;
-			}			
-		}
-
-	done:
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
-
-	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
-
-	return result;	
+	return result;
 }
 
 
