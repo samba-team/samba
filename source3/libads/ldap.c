@@ -1573,27 +1573,26 @@ char *ads_pull_string(ADS_STRUCT *ads,
  * @return Result strings in talloc context
  **/
 char **ads_pull_strings(ADS_STRUCT *ads, 
-		       TALLOC_CTX *mem_ctx, void *msg, const char *field)
+			TALLOC_CTX *mem_ctx, void *msg, const char *field,
+			int *num_values)
 {
 	char **values;
 	char **ret = NULL;
-	int i, n;
+	int i;
 
 	values = ldap_get_values(ads->ld, msg, field);
 	if (!values)
 		return NULL;
 
-	for (i=0;values[i];i++)
-		/* noop */ ;
-	n = i;
+	*num_values = ldap_count_values(values);
 
-	ret = talloc(mem_ctx, sizeof(char *) * (n+1));
+	ret = talloc(mem_ctx, sizeof(char *) * (*num_values+1));
 	if (!ret) {
 		ldap_value_free(values);
 		return NULL;
 	}
 
-	for (i=0;i<n;i++) {
+	for (i=0;i<*num_values;i++) {
 		if (pull_utf8_talloc(mem_ctx, &ret[i], values[i]) == -1) {
 			ldap_value_free(values);
 			return NULL;
@@ -1605,6 +1604,89 @@ char **ads_pull_strings(ADS_STRUCT *ads,
 	return ret;
 }
 
+/**
+ * pull an array of strings from a ADS result 
+ *  (handle large multivalue attributes with range retrieval)
+ * @param ads connection to ads server
+ * @param mem_ctx TALLOC_CTX to use for allocating result string
+ * @param msg Results of search
+ * @param field Attribute to retrieve
+ * @param num_values How many values did we get this time?
+ * @param more_values Are there more values to get?
+ * @return Result strings in talloc context
+ **/
+char **ads_pull_strings_range(ADS_STRUCT *ads, 
+			      TALLOC_CTX *mem_ctx,
+			      void *msg, const char *field,
+			      int *num_values,
+			      BOOL *more_values)
+{
+	char *first_attr, *second_attr;
+	char *expected_range_attrib, *range_attr;
+	BerElement *ptr = NULL;
+	char **result;
+
+	/* Get the first and second attributes. This assumes that the LDAP msg
+	 * contains the requested attributes first and then a possible
+	 * range-augmented attribute. This is the case for the group
+	 * membership query we do against windows AD, but a general
+	 * range-based value retrieval would have to be modified. */
+
+	first_attr = ldap_first_attribute(ads->ld, (LDAPMessage *)msg, &ptr);
+
+	if (first_attr == NULL)
+		return NULL;
+
+	expected_range_attrib = talloc_asprintf(mem_ctx, "%s;Range=", field);
+
+	if (!strequal(first_attr, field) &&
+	    !strnequal(first_attr, expected_range_attrib,
+		       strlen(expected_range_attrib)))
+	{
+		DEBUG(1, ("Expected attribute [%s], got [%s]\n",
+			  field, first_attr));
+		return NULL;
+	}
+
+	second_attr = ldap_next_attribute(ads->ld, (LDAPMessage *)msg, ptr);
+	ber_free(ptr, 0);
+
+	DEBUG(10,("attr: [%s], first_attr: [%s], second_attr: [%s]\n", 
+		  field, first_attr, second_attr));
+
+	if ((second_attr != NULL) &&
+	    (strnequal(second_attr, expected_range_attrib,
+		       strlen(expected_range_attrib)))) {
+
+		/* This is the first in a row of range results. We can not ask
+		 * for the attribute we wanted, as this is empty in the LDAP
+		 * msg, the delivered values are in the second range-augmented
+		 * attribute. */
+		range_attr = second_attr;
+
+	} else {
+
+		/* Upon second and subsequent requests to get attribute
+		 * values, first_attr carries the Range= specifier. */
+		range_attr = first_attr;
+
+	}
+
+	/* We have to ask for more if we have a range specifier in the
+	 * attribute and the attribute does not end in "*". */
+
+	*more_values = ( (strnequal(range_attr, expected_range_attrib,
+				    strlen(expected_range_attrib))) &&
+			 (range_attr[strlen(range_attr)-1] != '*') );
+
+	result = ads_pull_strings(ads, mem_ctx, msg, range_attr, num_values);
+
+	ldap_memfree(first_attr);
+	if (second_attr != NULL)
+		ldap_memfree(second_attr);
+
+	return result;
+}
 
 /**
  * pull a single uint32 from a ADS result
@@ -1956,6 +2038,7 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *
 	int i;
 	void *res;
 	const char *attrs[] = {"servicePrincipalName", NULL};
+	int num_principals;
 
 	(*workgroup) = NULL;
 
@@ -1968,7 +2051,8 @@ ADS_STATUS ads_workgroup_name(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *
 		return rc;
 	}
 
-	principles = ads_pull_strings(ads, mem_ctx, res, "servicePrincipalName");
+	principles = ads_pull_strings(ads, mem_ctx, res,
+				      "servicePrincipalName", &num_principals);
 
 	ads_msgfree(ads, res);
 
