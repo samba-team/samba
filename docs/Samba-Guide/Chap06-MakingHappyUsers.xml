@@ -2360,12 +2360,19 @@ writing new configuration file:
 	In the following examples, as the LDAP database is initialized, we do create a container
 	for Computer (machine) accounts. In the Samba-3 &smb.conf; files, specific use is made
 	of the People container, not the Computers container, for domain member accounts. This is not a
-	mistake; it is a deliberate action that is necessitated by the fact that there is a bug in Samba-3
-	that prevents it from being able to search the LDAP database for computer accounts if they are
-	placed in the Computers container. By placing all machine accounts in the People container, we
-	are able to side-step this bug. It is expected that at some time in the future this problem will
-	be resolved. At that time, it will be possible to use the Computers container in order to keep
-	machine accounts separate from user accounts.
+	mistake; it is a deliberate action that is necessitated by the fact that the resolution of 
+	a machine (computer) account to a UID is done via NSS. The only way this can be handled is
+	using the NSS (<filename>/etc/nsswitch.conf</filename>) entry for <constant>passwd</constant>
+	which is resolved using the <filename>nss_ldap</filename> library. The configuration file for
+	the <filename>nss_ldap</filename> library is the file <filename>/etc/ldap.conf</filename> that
+	provides only one possible LDAP search command that is specified by the entry called
+	<constant>nss_base_passwd</constant>. This means that the search path must take into account
+	the directory structure so that the LDAP search will commence at a level that is above
+	both the Computers container and the Users (or People) container. If this is done, it is
+	necessary to use a search that will descend the directory tree so that the machine account
+	can be found. Alternately, by placing all machine accounts in the People container, we
+	are able to side-step this limitation. This is the simpler solution that has been adopted
+	in this chapter.
 	</para></note>
 
 
