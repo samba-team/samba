@@ -2,6 +2,8 @@
 
 RCSID("$Id$");
 
+#ifndef HAVE_TIMEGM
+
 static int
 is_leap(unsigned y)
 {
@@ -31,3 +33,5 @@ timegm (struct tm *tm)
   res += tm->tm_sec;
   return res;
 }
+
+#endif
