@@ -19,32 +19,41 @@ void strupr(char *s)
 
 #define BITSIZE(TYPE)						\
 {								\
-    int b = 0; TYPE x = 1; char *pre = "u_";			\
+    int b = 0; TYPE x = 1, zero = 0; char *pre = "u_";		\
     char tmp[128], tmp2[128];					\
-    while(x){ x <<= 1; b++; if(x < 0) pre=""; }			\
+    while(x){ x <<= 1; b++; if(x < zero) pre=""; }		\
     if(b >= len){						\
         int tabs;						\
 	sprintf(tmp, "%sint%d_t" , pre, len);			\
 	sprintf(tmp2, "typedef %s %s;", #TYPE, tmp);		\
 	strupr(tmp);						\
 	tabs = 5 - strlen(tmp2) / 8;				\
-	printf("#ifndef HAVE_%s\n", tmp);			\
-	printf("#define HAVE_%s\n", tmp);			\
-        printf("%s", tmp2);					\
-	while(tabs-- > 0) printf("\t");				\
-	printf("/* %2d bits */\n", b);				\
-	printf("#endif /* HAVE_%s */\n", tmp);			\
+	fprintf(f, "#ifndef HAVE_%s\n", tmp);			\
+	fprintf(f, "#define HAVE_%s\n", tmp);			\
+        fprintf(f, "%s", tmp2);					\
+	while(tabs-- > 0) fprintf(f, "\t");			\
+	fprintf(f, "/* %2d bits */\n", b);			\
+	fprintf(f, "#endif /* HAVE_%s */\n", tmp);		\
 	continue;						\
     }								\
 }
 
-int main()
+int main(int argc, char **argv)
 {
     int i, b, len;
+    FILE *f;
     int sizes[] = { 8, 16, 32, 64 };
-    printf("#ifndef __BITS_H__\n");
-    printf("#define __BITS_H__\n");
-    printf("\n");
+    
+    if(argc < 2)
+	f = stdout;
+    else
+	f = fopen(argv[1], "w");
+    fprintf(f, "/*\n");
+    fprintf(f, " * bits.h -- this file was generated for %s\n", HOST); 
+    fprintf(f, " */\n\n");
+    fprintf(f, "#ifndef __BITS_H__\n");
+    fprintf(f, "#define __BITS_H__\n");
+    fprintf(f, "\n");
     for(i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++){
 	len = sizes[i];
 	BITSIZE(char);
@@ -54,10 +63,10 @@ int main()
 #ifdef HAVE_LONG_LONG
 	BITSIZE(long long);
 #endif
-	printf("/* There is no %d bit type */\n", len);
+	fprintf(f, "/* There is no %d bit type */\n", len);
 	break;
     }
-    printf("\n");
+    fprintf(f, "\n");
     for(i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++){
 	len = sizes[i];
 	BITSIZE(unsigned char);
@@ -67,10 +76,10 @@ int main()
 #ifdef HAVE_LONG_LONG
 	BITSIZE(unsigned long long);
 #endif
-	printf("/* There is no %d bit type */\n", len);
+	fprintf(f, "/* There is no %d bit type */\n", len);
 	break;
     }
-    printf("\n");
-    printf("#endif /* __BITS_H__ */\n");
+    fprintf(f, "\n");
+    fprintf(f, "#endif /* __BITS_H__ */\n");
     return 0;
 }
