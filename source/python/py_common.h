@@ -24,5 +24,7 @@
 /* Function prototypes */
 
 void py_samba_init(void);
+PyObject *py_werror_tuple(WERROR werror);
+PyObject *py_ntstatus_tuple(NTSTATUS ntstatus);
 
 #endif /* _PY_COMMON_H */

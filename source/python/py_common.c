@@ -19,6 +19,23 @@
 */
 
 #include "includes.h"
+#include "Python.h"
+
+/* Return a tuple of (error code, error string) from a WERROR */
+
+PyObject *py_werror_tuple(WERROR werror)
+{
+	return Py_BuildValue("is", W_ERROR_V(werror), 
+			     dos_errstr(werror));
+}
+
+/* Return a tuple of (error code, error string) from a WERROR */
+
+PyObject *py_ntstatus_tuple(NTSTATUS ntstatus)
+{
+	return Py_BuildValue("is", NT_STATUS_V(ntstatus), 
+			     nt_errstr(ntstatus));
+}
 
 /* Initialise samba client routines */
 
