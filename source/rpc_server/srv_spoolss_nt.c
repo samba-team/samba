@@ -3587,7 +3587,7 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
+static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
 				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
 				uint32 user_switch, const SPOOL_USER_CTR *user,
@@ -3599,24 +3599,19 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 
 	clear_handle(handle);
 	
-/* 
- * FIX: JFM: we need to check the user here !!!!
- *
- * as the code is running as root, anybody can add printers to the server
- */
 	/* NULLify info_2 here */
 	/* don't put it in convert_printer_info as it's used also with non-NULL values */
 	printer.info_2=NULL;
 
 	/* convert from UNICODE to ASCII */
-	convert_printer_info(info, &printer, level);
+	convert_printer_info(info, &printer, 2);
 
 	unistr2_to_ascii(share_name, &((info->info_2)->printername), sizeof(share_name)-1);
 	
 	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname, share_name);
 
 	/* write the ASCII on disk */
-	if (add_a_printer(printer, level) != 0x0)
+	if (add_a_printer(printer, 2) != 0x0)
 		return ERROR_ACCESS_DENIED;
 
 	create_printer_hnd(handle);
@@ -3635,6 +3630,31 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 
 	return NT_STATUS_NO_PROBLEMO;
 }
+
+/****************************************************************************
+****************************************************************************/
+uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
+				const SPOOL_PRINTER_INFO_LEVEL *info,
+				uint32 unk0, uint32 unk1, uint32 unk2, uint32 unk3,
+				uint32 user_switch, const SPOOL_USER_CTR *user,
+				POLICY_HND *handle)
+{
+	switch (level) {
+		case 1:
+			/* we don't handle yet */
+			/* but I know what to do ... */
+			break;
+		case 2:
+			return spoolss_addprinterex_level_2(uni_srv_name, info, 
+							    unk0, unk1, unk2, unk3,
+							    user_switch, user, handle);
+			break;
+		default:
+			return ERROR_INVALID_LEVEL;
+			break;
+	}
+}
+
 
 /****************************************************************************
 ****************************************************************************/
