@@ -26,10 +26,11 @@ sub generate_shared_library($)
 	@{$lib->{LINK_LIST}} = ("\$($lib->{TYPE}_$lib->{NAME}\_OBJS)");
 	$lib->{LIBRARY_NAME} = $lib->{NAME}.".so";
 	$lib->{OUTPUT} = "bin/$lib->{LIBRARY_NAME}";
-	if ($lib->{MAJOR_VERSION}) {
+	if (defined($lib->{MAJOR_VERSION})) {
 		$lib->{LIBRARY_SONAME} = $lib->{LIBRARY_NAME}.".$lib->{MAJOR_VERSION}";
 		$lib->{LIBRARY_REALNAME} = $lib->{LIBRARY_SONAME}.".$lib->{MINOR_VERSION}.$lib->{RELEASE_VERSION}";
 		$lib->{OUTPUT} = "bin/$lib->{LIBRARY_REALNAME}";
+		@{$lib->{LINK_FLAGS}} = ("\@SONAMEFLAG\@$lib->{LIBRARY_SONAME}");
 	}
 }
 
