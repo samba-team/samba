@@ -2148,6 +2148,7 @@ BOOL lp_default_devmode(int );
 BOOL lp_nt_acl_support(int );
 BOOL lp_force_unknown_acl_user(int );
 BOOL lp_use_sendfile(int );
+BOOL lp_profile_acls(int );
 int lp_create_mask(int );
 int lp_force_create_mode(int );
 int lp_security_mask(int );

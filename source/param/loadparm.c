@@ -411,10 +411,11 @@ typedef struct
 	BOOL bUseClientDriver;
 	BOOL bDefaultDevmode;
 	BOOL bNTAclSupport;
+	BOOL bForceUnknownAclUser;
 #ifdef WITH_SENDFILE
 	BOOL bUseSendfile;
 #endif
-	BOOL bForceUnknownAclUser;
+	BOOL bProfileAcls;
 
 	char dummy[3];		/* for alignment */
 }
@@ -539,6 +540,7 @@ static service sDefault = {
 #ifdef WITH_SENDFILE
 	False,                  /* bUseSendfile */
 #endif
+	False,			/* bProfileAcls */
 
 	""			/* dummy */
 };
@@ -861,6 +863,7 @@ static struct parm_struct parm_table[] = {
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, 0},
 	{"nt acl support", P_BOOL,  P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE },
 	{"nt status support", P_BOOL,  P_GLOBAL, &Globals.bNTStatusSupport, NULL, NULL, 0 },
+	{"profile acls", P_BOOL,  P_LOCAL, &sDefault.bProfileAcls, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE },
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, 0},
 	{"announce as", P_ENUM, P_GLOBAL, &Globals.announce_as, NULL, enum_announce_as, 0},
 	{"max mux", P_INTEGER, P_GLOBAL, &Globals.max_mux, NULL, NULL, 0},
@@ -1801,6 +1804,7 @@ FN_LOCAL_BOOL(lp_force_unknown_acl_user, bForceUnknownAclUser)
 #ifdef WITH_SENDFILE
 FN_LOCAL_BOOL(lp_use_sendfile, bUseSendfile)
 #endif
+FN_LOCAL_BOOL(lp_profile_acls, bProfileAcls)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_security_mask, iSecurity_mask)
