@@ -2283,7 +2283,13 @@ BOOL new_smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INF
 	if (!prs_uint32("date.high", ps, depth, &info->driver_date.high))
 		return False;
 
-	if (!prs_uint32("driver_version", ps, depth, &info->driver_version))
+	if (!prs_uint32("padding", ps, depth, &info->padding))
+		return False;
+
+	if (!prs_uint32("driver_version_low", ps, depth, &info->driver_version_low))
+		return False;
+
+	if (!prs_uint32("driver_version_high", ps, depth, &info->driver_version_high))
 		return False;
 
 	if (!new_smb_io_relstr("mfgname", buffer, depth, &info->mfgname))
@@ -2871,14 +2877,26 @@ uint32 spoolss_size_printer_driver_info_3(DRIVER_INFO_3 *info)
 	return size;
 }
 
+uint32 spoolss_size_string_array(uint16 *string)
+{
+	uint32 i = 0;
+
+	if (string) {
+		for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
+	}
+	i=i+2; /* to count all chars including the leading zero */
+	i=2*i; /* because we need the value in bytes */
+	i=i+4; /* the offset pointer size */
+
+	return i;
+}
+
 /*******************************************************************
 return the size required by a struct in the stream
 ********************************************************************/
 uint32 spoolss_size_printer_driver_info_6(DRIVER_INFO_6 *info)
 {
-	int size=0;
-	uint16 *string;
-	int i=0;
+	uint32 size=0;
 
 	size+=size_of_uint32( &info->version );	
 	size+=size_of_relative_string( &info->name );
@@ -2888,31 +2906,21 @@ uint32 spoolss_size_printer_driver_info_6(DRIVER_INFO_6 *info)
 	size+=size_of_relative_string( &info->configfile );
 	size+=size_of_relative_string( &info->helpfile );
 
-	string=info->dependentfiles;
-	if (string) {
-		for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
-	}
+	size+=spoolss_size_string_array(info->dependentfiles);
 
 	size+=size_of_relative_string( &info->monitorname );
 	size+=size_of_relative_string( &info->defaultdatatype );
 	
-	string=info->previousdrivernames;
-	if (string) {
-		for (i=0; (string[i]!=0x0000) || (string[i+1]!=0x0000); i++);
-	}
+	size+=spoolss_size_string_array(info->previousdrivernames);
 
 	size+=size_of_nttime(&info->driver_date);
-	size+=size_of_uint32( &info->driver_version );	
+	size+=size_of_uint32( &info->padding );	
+	size+=size_of_uint32( &info->driver_version_low );	
+	size+=size_of_uint32( &info->driver_version_high );	
 	size+=size_of_relative_string( &info->mfgname );
 	size+=size_of_relative_string( &info->oem_url );
 	size+=size_of_relative_string( &info->hardware_id );
 	size+=size_of_relative_string( &info->provider );
-
-	i=i+2; /* to count all chars including the leading zero */
-	i=2*i; /* because we need the value in bytes */
-	i=i+4; /* the offset pointer size */
-
-	size+=i;
 
 	return size;
 }
