@@ -1320,7 +1320,7 @@ int reply_open(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fstat(fsp->f_u.fd_ptr->fd,&sbuf) != 0) {
+  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1425,7 +1425,7 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fstat(fsp->f_u.fd_ptr->fd,&sbuf) != 0) {
+  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1603,7 +1603,7 @@ int reply_mknew(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
  
   DEBUG( 2, ( "new file %s\n", fname ) );
   DEBUG( 3, ( "mknew %s fd=%d fnum=%d cnum=%d dmode=%d umode=%o\n",
-        fname, fsp->f_u.fd_ptr->fd, fnum, cnum, createmode, unixmode ) );
+        fname, fsp->fd_ptr->fd, fnum, cnum, createmode, unixmode ) );
 
   return(outsize);
 }
@@ -1682,7 +1682,7 @@ int reply_ctemp(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
   DEBUG( 2, ( "created temp file %s\n", fname2 ) );
   DEBUG( 3, ( "ctemp %s fd=%d fnum=%d cnum=%d dmode=%d umode=%o\n",
-        fname2, fsp->f_u.fd_ptr->fd, fnum, cnum, createmode, unixmode ) );
+        fname2, fsp->fd_ptr->fd, fnum, cnum, createmode, unixmode ) );
 
   return(outsize);
 }
@@ -1865,7 +1865,7 @@ int reply_readbraw(char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
   {
     fsp = &Files[fnum];
 
-    fd = fsp->f_u.fd_ptr->fd;
+    fd = fsp->fd_ptr->fd;
     fname = fsp->name;
   }
 
@@ -1877,7 +1877,7 @@ int reply_readbraw(char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 	    
     if (size < sizeneeded) {
       struct stat st;
-      if (fstat(fsp->f_u.fd_ptr->fd,&st) == 0)
+      if (fstat(fsp->fd_ptr->fd,&st) == 0)
         size = st.st_size;
       if (!fsp->can_write) 
         fsp->size = size;
@@ -2148,7 +2148,7 @@ int reply_writebraw(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 	     tcount,nwritten,numtowrite));
   }
 
-  nwritten = transfer_file(Client,Files[fnum].f_u.fd_ptr->fd,numtowrite,NULL,0,
+  nwritten = transfer_file(Client,Files[fnum].fd_ptr->fd,numtowrite,NULL,0,
 			   startpos+nwritten);
   total_written += nwritten;
   
@@ -2265,7 +2265,7 @@ int reply_write(char *inbuf,char *outbuf,int dum_size,int dum_buffsize)
      zero then the file size should be extended or
      truncated to the size given in smb_vwv[2-3] */
   if(numtowrite == 0)
-    nwritten = set_filelen(Files[fnum].f_u.fd_ptr->fd, startpos);
+    nwritten = set_filelen(Files[fnum].fd_ptr->fd, startpos);
   else
     nwritten = write_file(fnum,data,numtowrite);
   
@@ -2383,7 +2383,7 @@ int reply_lseek(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
   fsp = &Files[fnum];
   
-  res = lseek(fsp->f_u.fd_ptr->fd,startpos,umode);
+  res = lseek(fsp->fd_ptr->fd,startpos,umode);
   fsp->pos = res;
   
   outsize = set_message(outbuf,2,0,True);
@@ -2493,7 +2493,7 @@ int reply_close(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
     set_filetime(cnum, fsp->name,mtime);
 
     DEBUG( 3, ( "close fd=%d fnum=%d cnum=%d (numopen=%d)\n",
-          fsp->f_u.fd_ptr->fd, fnum, cnum,
+          fsp->fd_ptr->fd, fnum, cnum,
           Connections[cnum].num_files_open ) );
   
     close_file(fnum,True);
@@ -2577,7 +2577,7 @@ int reply_lock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   offset = IVAL(inbuf,smb_vwv3);
 
   DEBUG( 3, ("lock fd=%d fnum=%d cnum=%d ofs=%d cnt=%d\n",
-            Files[fnum].f_u.fd_ptr->fd, fnum, cnum, offset, count ) );
+            Files[fnum].fd_ptr->fd, fnum, cnum, offset, count ) );
 
   if(!do_lock( fnum, cnum, count, offset, F_WRLCK, &eclass, &ecode))
     return (ERROR(eclass,ecode));
@@ -2610,7 +2610,7 @@ int reply_unlock(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
     return (ERROR(eclass,ecode));
 
   DEBUG( 3, ( "unlock fd=%d fnum=%d cnum=%d ofs=%d cnt=%d\n",
-        Files[fnum].f_u.fd_ptr->fd, fnum, cnum, offset, count ) );
+        Files[fnum].fd_ptr->fd, fnum, cnum, offset, count ) );
   
   return(outsize);
 }
@@ -2759,7 +2759,7 @@ int reply_printopen(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   SSVAL(outbuf,smb_vwv0,fnum);
   
   DEBUG( 3, ("openprint %s fd=%d fnum=%d cnum=%d\n",
-            fname2, fsp->f_u.fd_ptr->fd, fnum, cnum ) );
+            fname2, fsp->fd_ptr->fd, fnum, cnum ) );
 
   return(outsize);
 }
@@ -2783,7 +2783,7 @@ int reply_printclose(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
     return(ERROR(ERRDOS,ERRnoaccess));
   
   DEBUG( 3, ( "printclose fd=%d fnum=%d cnum=%d\n",
-            Files[fnum].f_u.fd_ptr->fd,fnum,cnum));
+            Files[fnum].fd_ptr->fd,fnum,cnum));
   
   close_file(fnum,True);
 
@@ -3476,12 +3476,12 @@ static BOOL copy_file(char *src,char *dest1,int cnum,int ofun,
   }
 
   if ((ofun&3) == 1) {
-    lseek(Files[fnum2].f_u.fd_ptr->fd,0,SEEK_END);
+    lseek(Files[fnum2].fd_ptr->fd,0,SEEK_END);
   }
   
   if (st.st_size)
-    ret = transfer_file(Files[fnum1].f_u.fd_ptr->fd,
-                        Files[fnum2].f_u.fd_ptr->fd,st.st_size,NULL,0,0);
+    ret = transfer_file(Files[fnum1].fd_ptr->fd,
+                        Files[fnum2].fd_ptr->fd,st.st_size,NULL,0,0);
 
   close_file(fnum1,False);
   close_file(fnum2,False);
@@ -3678,7 +3678,7 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
   uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
   uint16 num_locks = SVAL(inbuf,smb_vwv7);
   uint32 count, offset;
-
+  int32 lock_timeout = IVAL(inbuf,smb_vwv4);
   int cnum;
   int i;
   char *data;
@@ -3699,8 +3699,8 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
   {
     int token;
     files_struct *fsp = &Files[fnum];
-    uint32 dev = fsp->f_u.fd_ptr->dev;
-    uint32 inode = fsp->f_u.fd_ptr->inode;
+    uint32 dev = fsp->fd_ptr->dev;
+    uint32 inode = fsp->fd_ptr->inode;
 
     DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
               fnum));
@@ -3749,6 +3749,9 @@ dev = %x, inode = %x\n",
       return ERROR(eclass,ecode);
   }
 
+  /* Setup the timeout in seconds. */
+  lock_timeout = ((lock_timeout == -1) ? -1 : lock_timeout/1000);
+
   /* Now do any requested locks */
   data += 10*num_ulocks;
   /* Data now points at the beginning of the list
@@ -3758,6 +3761,16 @@ dev = %x, inode = %x\n",
     offset = IVAL(data,SMB_LKOFF_OFFSET(i)); 
     if(!do_lock(fnum,cnum,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
                 &eclass, &ecode))
+#if 0 /* JRATEST - blocking lock code. */
+      if((ecode == ERRlock) && (lock_timeout != 0)) {
+        /*
+         * A blocking lock was requested. Package up
+         * this smb into a queued request and push it
+         * onto the blocking lock queue.
+         */
+        if(push_blocking_lock_request(inbuf, length, lock_timeout, i))
+          return -1;
+#endif /* JRATEST */
       break;
   }
 
@@ -4103,7 +4116,7 @@ int reply_getattrE(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   CHECK_ERROR(fnum);
 
   /* Do an fstat on this file */
-  if(fstat(Files[fnum].f_u.fd_ptr->fd, &sbuf))
+  if(fstat(Files[fnum].fd_ptr->fd, &sbuf))
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
   mode = dos_mode(cnum,Files[fnum].name,&sbuf);

@@ -268,8 +268,8 @@ static void shm_del_share_mode(int token, int fnum)
   BOOL found = False;
   int pid = getpid();
 
-  dev = Files[fnum].f_u.fd_ptr->dev;
-  inode = Files[fnum].f_u.fd_ptr->inode;
+  dev = Files[fnum].fd_ptr->dev;
+  inode = Files[fnum].fd_ptr->inode;
 
   hash_entry = HASH_ENTRY(dev, inode);
 
@@ -396,8 +396,8 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   int new_entry_offset;
   BOOL found = False;
 
-  dev = fs_p->f_u.fd_ptr->dev;
-  inode = fs_p->f_u.fd_ptr->inode;
+  dev = fs_p->fd_ptr->dev;
+  inode = fs_p->fd_ptr->inode;
 
   hash_entry = HASH_ENTRY(dev, inode);
 
@@ -505,8 +505,8 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
   BOOL found = False;
   int pid = getpid();
 
-  dev = Files[fnum].f_u.fd_ptr->dev;
-  inode = Files[fnum].f_u.fd_ptr->inode;
+  dev = Files[fnum].fd_ptr->dev;
+  inode = Files[fnum].fd_ptr->inode;
 
   hash_entry = HASH_ENTRY(dev, inode);
 

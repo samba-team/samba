@@ -572,7 +572,7 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
         return(ERROR(ERRDOS,ERRnoaccess));
       }
     } else {
-      if (fstat(fsp->f_u.fd_ptr->fd,&sbuf) != 0) {
+      if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
         close_file(fnum,False);
         restore_case_semantics(file_attributes);
         return(ERROR(ERRDOS,ERRnoaccess));
@@ -801,7 +801,7 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int length,
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       } 
   
-      if (fstat(fsp->f_u.fd_ptr->fd,&sbuf) != 0) {
+      if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
         close_file(fnum,False);
 
         restore_case_semantics(file_attributes);
@@ -969,6 +969,8 @@ typedef struct {
   int fnum;
   int cnum;
   time_t next_check_time;
+  time_t modify_time; /* Info from the directory we're monitoring. */ 
+  time_t status_time; /* Info from the directory we're monitoring. */
   char request_buf[smb_size];
 } change_notify_buf;
 
@@ -981,8 +983,9 @@ static ubi_slList change_notify_queue = { NULL, (ubi_slNodePtr)&change_notify_qu
 static void change_notify_reply_packet(char *inbuf, int error_class, uint32 error_code)
 {
   extern int Client;
-  char outbuf[smb_size];
+  char outbuf[smb_size+38];
 
+  memset(outbuf, '\0', sizeof(outbuf));
   construct_reply_common(inbuf, outbuf);
 
   /*
@@ -993,10 +996,17 @@ static void change_notify_reply_packet(char *inbuf, int error_class, uint32 erro
    * can even determine how MS failed to test stuff and why.... :-). JRA.
    */
 
-  if(error_class == 0 && error_code == NT_STATUS_NOTIFY_ENUM_DIR)
+  if(error_class == 0) /* NT Error. */
     SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 
   ERROR(error_class,error_code);
+
+  /*
+   * Seems NT needs a transact command with an error code
+   * in it. This is a longer packet than a simple error.
+   */
+  set_message(outbuf,18,0,False);
+
   send_smb(Client,outbuf);
 }
 
@@ -1032,7 +1042,7 @@ void remove_pending_change_notify_requests_by_mid(int mid)
 
   while(cnbp != NULL) {
     if(SVAL(cnbp->request_buf,smb_mid) == mid) {
-      change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);
+      change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_CANCELLED);
       free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       continue;
@@ -1109,8 +1119,8 @@ Error was %s.\n", fsp->name, strerror(errno) ));
       continue;
     }
 
-    if(fsp->f_u.dir_ptr->modify_time != st.st_mtime ||
-       fsp->f_u.dir_ptr->status_time != st.st_ctime) {
+    if(cnbp->modify_time != st.st_mtime ||
+       cnbp->status_time != st.st_ctime) {
       /*
        * Remove the entry and return a change notify to the client.
        */
@@ -1160,40 +1170,6 @@ static int call_nt_transact_notify_change(char *inbuf, char *outbuf, int length,
   if((!fsp->open) || (!fsp->is_directory) || (cnum != fsp->cnum))
     return(ERROR(ERRDOS,ERRbadfid));
 
-  if(fsp->f_u.dir_ptr == NULL) {
-
-    /*
-     * No currently stored directory info - we must
-     * generate it here.
-     */
-
-    if((fsp->f_u.dir_ptr = (dir_status_struct *)malloc(sizeof(dir_status_struct))) == NULL) {
-      DEBUG(0,("call_nt_transact_notify_change: Malloc fail !\n" ));
-      return -1;
-    }
-
-    /*
-     * Setup the current directory information in the
-     * directory entry in the files_struct. We will use
-     * this to check against when the timer expires.
-     * NB. We only do this if there is no current directory
-     * information in the directory struct - as when we start
-     * monitoring file size etc. this information will start
-     * becoming increasingly expensive to maintain, so we won't
-     * want to re-generate it for every ChangeNofity call.
-     */
-
-    if(sys_stat(fsp->name, &st) < 0) {
-      DEBUG(0,("call_nt_transact_notify_change: Unable to stat fnum = %d, name = %s. \
-Error was %s\n", fnum, fsp->name, strerror(errno) ));
-      return -1;
-    }
- 
-    fsp->f_u.dir_ptr->modify_time = st.st_mtime;
-    fsp->f_u.dir_ptr->status_time = st.st_ctime;
-
-  }
-
   /*
    * Now queue an entry on the notify change stack. We timestamp
    * the entry we are adding so that we know when to scan next.
@@ -1207,9 +1183,23 @@ Error was %s\n", fnum, fsp->name, strerror(errno) ));
     return -1;
   }
 
+  /* 
+   * Store the current timestamp on the directory we are monitoring.
+   */
+
+  if(sys_stat(fsp->name, &st) < 0) {
+    DEBUG(0,("call_nt_transact_notify_change: Unable to stat fnum = %d, name = %s. \
+Error was %s\n", fnum, fsp->name, strerror(errno) ));
+    free((char *)cnbp);
+    return(UNIXERROR(ERRDOS,ERRbadfid));
+  }
+ 
   memcpy(cnbp->request_buf, inbuf, smb_size);
   cnbp->fnum = fnum;
   cnbp->cnum = cnum;
+  cnbp->modify_time = st.st_mtime;
+  cnbp->status_time = st.st_ctime;
+
   cnbp->next_check_time = time(NULL) + lp_change_notify_timeout();
 
   /*

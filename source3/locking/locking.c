@@ -38,6 +38,140 @@ extern files_struct Files[];
 
 static struct share_ops *share_ops;
 
+#if 0 /* JRATEST - blocking lock code - under development. */
+
+/****************************************************************************
+ This is the structure to queue to implement blocking locks.
+ notify. It consists of the requesting SMB and the expiry time.
+*****************************************************************************/
+
+typedef struct {
+  ubi_slNode msg_next;
+  time_t expire_time;
+  int lock_num;
+  char *inbuf;
+  int length;
+} blocking_lock_record;
+
+static ubi_slList blocking_lock_queue = { NULL, (ubi_slNodePtr)&blocking_lock_queue, 0};
+
+/****************************************************************************
+ Function to push a blocking lockingX request onto the lock queue.
+****************************************************************************/
+
+BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num)
+{
+  blocking_lock_record *blr;
+  int fnum = GETFNUM(inbuf,smb_vwv2);
+
+  /*
+   * Now queue an entry on the blocking lock queue. We setup
+   * the expiration time here.
+   */
+
+  if((blr = (blocking_lock_record *)malloc(sizeof(blocking_lock_record))) == NULL) {
+    DEBUG(0,("push_blocking_lock_request: Malloc fail !\n" ));
+    return False;
+  }
+
+  if((blr->inbuf = (char *)malloc(length)) == NULL) {
+    DEBUG(0,("push_blocking_lock_request: Malloc fail (2)!\n" ));
+    free((char *)blr);
+    return False;
+  }
+
+  memcpy(blr->inbuf, inbuf, length);
+  blr->length = length;
+  blr->lock_num = lock_num;
+  blr->expire_time = (lock_timeout == -1) ? (time_t)-1 : time(NULL) + (time_t)lock_timeout;
+
+  ubi_slAddTail(&blocking_lock_queue, blr);
+
+  DEBUG(3,("push_blocking_lock_request: lock request blocked with expiry time %d \
+for fnum = %d, name = %s\n", blr->expire_time, fnum, Files[fnum].name ));
+
+  return True;
+}
+
+/****************************************************************************
+ Process the blocking lock queue. Note that this is only called as root.
+*****************************************************************************/
+
+void process_blocking_lock_queue(time_t t)
+{
+  blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst( &blocking_lock_queue );
+  blocking_lock_record *prev = NULL;
+
+  if(blr == NULL)
+    return;
+
+  /*
+   * Go through the queue and see if we can get any of the locks.
+   */
+
+  while(blr != NULL) {
+    int fnum = GETFNUM(blr->inbuf,smb_vwv2);
+    int cnum = SVAL(blr->inbuf,smb_tid);
+    files_struct *fsp = &Files[fnum];
+    uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID :
+                  SVAL(blr->inbuf,smb_uid);
+
+    if(blr->expire_time > t) {
+      /*
+       * Lock expired - throw away all previously
+       * obtained locks and return lock error.
+       */
+
+      blocking_lock_fail(blr);
+      blocking_lock_reply_error(blr);
+      free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
+      blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      continue;
+    }
+
+    if(!become_user(&Connections[cnum],cnum,vuid)) {
+      DEBUG(0,("process_blocking_lock_queue: Unable to become user vuid=%d.\n",
+            vuid ));
+      /*
+       * Remove the entry and return an error to the client.
+       */
+      blocking_lock_reply_error(blr);
+      free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
+      blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      continue;
+    }
+
+    if(!become_service(cnum,True)) {
+      DEBUG(0,("process_blocking_lock_queue: Unable to become service cnum=%d. \
+Error was %s.\n", cnum, strerror(errno) ));
+      /*
+       * Remove the entry and return an error to the client.
+       */
+      blocking_lock_reply_error(blr);
+      free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
+      blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
+      unbecome_user();
+      continue;
+    }
+
+    /*
+     * Go through the remaining locks and try and obtain them.
+     * If we get them all then return success and delete this
+     * record.
+     */
+
+    if(blocking_lock_record_process(blr)) {
+      /*
+       * Success -
+    unbecome_user();
+    /*
+     * Move to the next in the list.
+     */
+    prev = blr;
+    blr = (blocking_lock_record *)ubi_slNext(blr);
+  }
+#endif /* JRATEST */
+
 /****************************************************************************
  Utility function to map a lock type correctly depending on the real open
  mode of a file.
@@ -45,7 +179,7 @@ static struct share_ops *share_ops;
 
 static int map_lock_type( files_struct *fsp, int lock_type)
 {
-  if((lock_type == F_WRLCK) && (fsp->f_u.fd_ptr->real_open_flags == O_RDONLY)) {
+  if((lock_type == F_WRLCK) && (fsp->fd_ptr->real_open_flags == O_RDONLY)) {
     /*
      * Many UNIX's cannot get a write lock on a file opened read-only.
      * Win32 locking semantics allow this.
@@ -53,7 +187,7 @@ static int map_lock_type( files_struct *fsp, int lock_type)
      */
     DEBUG(10,("map_lock_type: Downgrading write lock to read due to read-only file.\n"));
     return F_RDLCK;
-  } else if( (lock_type == F_RDLCK) && (fsp->f_u.fd_ptr->real_open_flags == O_WRONLY)) {
+  } else if( (lock_type == F_RDLCK) && (fsp->fd_ptr->real_open_flags == O_WRONLY)) {
     /*
      * Ditto for read locks on write only files.
      */
@@ -90,7 +224,7 @@ BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset, int lock_type)
    * fd. So we don't need to use map_lock_type here.
    */
 
-  return(fcntl_lock(fsp->f_u.fd_ptr->fd,F_GETLK,offset,count,lock_type));
+  return(fcntl_lock(fsp->fd_ptr->fd,F_GETLK,offset,count,lock_type));
 }
 
 
@@ -114,7 +248,7 @@ BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int lock_type,
   }
 
   if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->cnum == cnum))
-    ok = fcntl_lock(fsp->f_u.fd_ptr->fd,F_SETLK,offset,count,
+    ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,
                     map_lock_type(fsp,lock_type));
 
   if (!ok) {
@@ -139,7 +273,7 @@ BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *
     return(True);
 
   if (OPEN_FNUM(fnum) && fsp->can_lock && (fsp->cnum == cnum))
-    ok = fcntl_lock(fsp->f_u.fd_ptr->fd,F_SETLK,offset,count,F_UNLCK);
+    ok = fcntl_lock(fsp->fd_ptr->fd,F_SETLK,offset,count,F_UNLCK);
    
   if (!ok) {
     *eclass = ERRDOS;

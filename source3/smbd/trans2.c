@@ -251,7 +251,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fstat(fsp->f_u.fd_ptr->fd,&sbuf) != 0) {
+  if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
@@ -1207,11 +1207,11 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     CHECK_ERROR(fnum);
 
     fname = Files[fnum].name;
-    if (fstat(Files[fnum].f_u.fd_ptr->fd,&sbuf) != 0) {
+    if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
       DEBUG(3,("fstat of fnum %d failed (%s)\n",fnum, strerror(errno)));
       return(UNIXERROR(ERRDOS,ERRbadfid));
     }
-    pos = lseek(Files[fnum].f_u.fd_ptr->fd,0,SEEK_CUR);
+    pos = lseek(Files[fnum].fd_ptr->fd,0,SEEK_CUR);
   } else {
     /* qpathinfo */
     info_level = SVAL(params,0);
@@ -1431,7 +1431,7 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
     CHECK_ERROR(fnum);
 
     fname = Files[fnum].name;
-    fd = Files[fnum].f_u.fd_ptr->fd;
+    fd = Files[fnum].fd_ptr->fd;
 
     if(fstat(fd,&st)!=0) {
       DEBUG(3,("fstat of %s failed (%s)\n", fname, strerror(errno)));
