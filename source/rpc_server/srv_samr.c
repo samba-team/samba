@@ -78,9 +78,9 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 		}
 
 		user_name_len = strlen(pwd->smb_name);
-		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len-1);
-		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len-1, 
-		               user_name_len-1, 1);
+		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len);
+		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len, 
+		               user_name_len, 1);
 		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
 		bzero( pw_buf[(*num_entries)].nt_pwd , 16);
 
@@ -418,7 +418,7 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 
 	got_grps = True;
 	num_entries = 1;
-	make_unistr2(&(pass[0].uni_user_name), dummy_group, strlen(dummy_group)-1);
+	make_unistr2(&(pass[0].uni_user_name), dummy_group, strlen(dummy_group));
 	pass[0].user_rid = DOMAIN_GROUP_RID_ADMINS;
 
 	if (r_e.status == 0 && got_grps)
@@ -481,7 +481,7 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 		char *name;
 		while (num_entries < MAX_SAM_ENTRIES && ((name = builtin_alias_rids[num_entries].name) != NULL))
 		{
-			make_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)-1);
+			make_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name));
 			pass[num_entries].user_rid = builtin_alias_rids[num_entries].rid;
 			num_entries++;
 		}
