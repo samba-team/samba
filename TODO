@@ -36,6 +36,10 @@ prepend a prefix on all generated symbols
 
 PAM
 
+** lib/des
+
+make everything work with openssl
+
 ** lib/gssapi
 
 process_context_token, display_status, add_cred, inquire_cred_by_mech,
