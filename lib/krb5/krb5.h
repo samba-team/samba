@@ -733,7 +733,7 @@ krb5_net_read (krb5_context context,
 ssize_t
 krb5_net_write (krb5_context context,
 		int fd,
-		void *buf,
+		const void *buf,
 		size_t len);
 
 #include "cache.h"
