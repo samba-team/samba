@@ -33,16 +33,17 @@ extern fstring global_myworkgroup;
  * Some useful sids
  */
 
-DOM_SID global_sid_Builtin;              /* Local well-known domain */
-DOM_SID global_sid_World_Domain;         /* Everyone domain */
-DOM_SID global_sid_World;                /* Everyone */
-DOM_SID global_sid_Creator_Owner_Domain; /* Creator Owner domain */
-DOM_SID global_sid_Creator_Owner;        /* Creator Owner */
-DOM_SID global_sid_NT_Authority;         /* NT Authority */
-DOM_SID global_sid_NULL;                 /* NULL sid */
-DOM_SID global_sid_Builtin_Guests;       /* Builtin guest users */
-DOM_SID global_sid_Authenticated_Users;  /* All authenticated rids */
-DOM_SID global_sid_Network;              /* Network rids */
+DOM_SID global_sid_Builtin; 				/* Local well-known domain */
+DOM_SID global_sid_World_Domain;	    	/* Everyone domain */
+DOM_SID global_sid_World;    				/* Everyone */
+DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner domain */
+DOM_SID global_sid_Creator_Owner;    		/* Creator Owner */
+DOM_SID global_sid_NT_Authority;    		/* NT Authority */
+DOM_SID global_sid_NULL;            		/* NULL sid */
+DOM_SID global_sid_Builtin_Guests;			/* Builtin guest users */
+DOM_SID global_sid_Authenticated_Users;		/* All authenticated rids */
+DOM_SID global_sid_Network;					/* Network rids */
+DOM_SID global_sid_Anonymous;				/* Anonymous login */
 
 const DOM_SID *global_sid_everyone = &global_sid_World;
 
@@ -89,11 +90,23 @@ sid_name_map[] =
 {
 	{ &global_sam_sid, global_myname, NULL},
 	{ &global_sam_sid, global_myworkgroup, NULL},
+	{ &global_sid_Builtin, "BUILTIN", NULL},
 	{ &global_sid_Builtin, "", &builtin_users[0]},
 	{ &global_sid_World_Domain, "", &everyone_users[0] },
 	{ &global_sid_Creator_Owner_Domain, "", &creator_owner_users[0] },
 	{ &global_sid_NT_Authority, "NT Authority", &nt_authority_users[0] },
 	{ NULL, NULL, NULL}
+};
+
+/*
+ * An NT compatible anonymous token.
+ */
+
+static DOM_SID anon_sid_array[3];
+
+NT_USER_TOKEN anonymous_token = {
+    3,
+    anon_sid_array
 };
 
 /****************************************************************************
@@ -112,6 +125,12 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_NULL, "S-1-0-0");
 	string_to_sid(&global_sid_Authenticated_Users, "S-1-5-11");
 	string_to_sid(&global_sid_Network, "S-1-5-2");
+	string_to_sid(&global_sid_Anonymous, "S-1-5-7");
+
+	/* Create the anon token. */
+	sid_copy( &anonymous_token.user_sids[0], &global_sid_World);
+	sid_copy( &anonymous_token.user_sids[1], &global_sid_Network);
+	sid_copy( &anonymous_token.user_sids[2], &global_sid_Anonymous);
 }
 
 /**************************************************************************
