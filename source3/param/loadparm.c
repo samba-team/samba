@@ -3666,7 +3666,7 @@ int lp_servicenumber(const char *pszServiceName)
 }
 
 /*******************************************************************
- A useful volume label function. Returns a string in DOS codepage.
+ A useful volume label function. 
 ********************************************************************/
 
 char *volume_label(int snum)
