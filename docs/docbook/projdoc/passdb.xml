@@ -703,12 +703,12 @@ backends of the same type. For example, to use two different tdbsam databases:
 
 			<para>
 			Samba 3.0 includes the necessary schema file for OpenLDAP 2.0 in
-			<filename>examples/LDAP/samba.schema</filename>.  The sambaAccount objectclass is given here:
+			<filename>examples/LDAP/samba.schema</filename>.  The sambaSamAccount objectclass is given here:
 			</para>
 
 <para>
 <programlisting>
-objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
+objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaSamAccount' SUP top AUXILIARY
     DESC 'Samba Auxilary Account'
     MUST ( uid $ rid )
     MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
@@ -728,8 +728,8 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 
 			<para>
 			Just as the smbpasswd file is meant to store information which supplements a
-			user's <filename>/etc/passwd</filename> entry, so is the sambaAccount object
-			meant to supplement the UNIX user account information.  A sambaAccount is a
+			user's <filename>/etc/passwd</filename> entry, so is the sambaSamAccount object
+			meant to supplement the UNIX user account information.  A sambaSamAccount is a
 			<constant>STRUCTURAL</constant> objectclass so it can be stored individually
 			in the directory.  However, there are several fields (e.g. uid) which overlap
 			with the posixAccount objectclass outlined in RFC2307.  This is by design.
@@ -740,7 +740,7 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 
 			<para>
 			In order to store all user account information (UNIX and Samba) in the directory,
-			it is necessary to use the sambaAccount and posixAccount objectclasses in
+			it is necessary to use the sambaSamAccount and posixAccount objectclasses in
 			combination.  However, smbd will still obtain the user's UNIX account
 			information via the standard C library calls (e.g. getpwnam(), et. al.).
 			This means that the Samba server must also have the LDAP NSS library installed
@@ -754,7 +754,7 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 		<title>OpenLDAP configuration</title>
 
 			<para>
-			To include support for the sambaAccount object in an OpenLDAP directory
+			To include support for the sambaSamAccount object in an OpenLDAP directory
 			server, first copy the samba.schema file to slapd's configuration directory.
 			The samba.schema file can be found in the directory <filename>examples/LDAP</filename>
 			in the samba source distribution.
@@ -768,7 +768,7 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 
 			<para>
 			Next, include the <filename>samba.schema</filename> file in <filename>slapd.conf</filename>.
-			The sambaAccount object contains two attributes which depend upon other schema
+			The sambaSamAccount object contains two attributes which depend upon other schema
 			files.  The 'uid' attribute is defined in <filename>cosine.schema</filename> and
 			the 'displayName' attribute is defined in the <filename>inetorgperson.schema</filename>
 			file.  Both of these must be included before the <filename>samba.schema</filename> file.
@@ -781,7 +781,7 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
 ## schema files (core.schema is required by default)
 include	           /etc/openldap/schema/core.schema
 
-## needed for sambaAccount
+## needed for sambaSamAccount
 include            /etc/openldap/schema/cosine.schema
 include            /etc/openldap/schema/inetorgperson.schema
 include            /etc/openldap/schema/samba.schema
@@ -792,7 +792,7 @@ include            /etc/openldap/schema/nis.schema
 
 		<para>
 		It is recommended that you maintain some indices on some of the most usefull attributes,
-		like in the following example, to speed up searches made on sambaAccount objectclasses
+		like in the following example, to speed up searches made on sambaSamAccount objectclasses
 		(and possibly posixAccount and posixGroup as well).
 		</para>
 
@@ -988,7 +988,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
      ldap suffix = "ou=people,dc=samba,dc=org"
 
      # generally the default ldap search filter is ok
-     # ldap filter = "(&amp;(uid=%u)(objectclass=sambaAccount))"
+     # ldap filter = "(&amp;(uid=%u)(objectclass=sambaSamAccount))"
 </programlisting>
 </para>
 
@@ -998,12 +998,12 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 		<title>Accounts and Groups management</title>
 
 			<para>
-			As users accounts are managed thru the sambaAccount objectclass, you should
-			modify your existing administration tools to deal with sambaAccount attributes.
+			As users accounts are managed thru the sambaSamAccount objectclass, you should
+			modify your existing administration tools to deal with sambaSamAccount attributes.
 			</para>
 
 			<para>
-			Machines accounts are managed with the sambaAccount objectclass, just
+			Machines accounts are managed with the sambaSamAccount objectclass, just
 			like users accounts. However, it's up to you to store thoses accounts
 			in a different tree of your LDAP namespace: you should use
 			"ou=Groups,dc=plainjoe,dc=org" to store groups and
@@ -1022,12 +1022,12 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 		</sect3>
 
 		<sect3>
-		<title>Security and sambaAccount</title>
+		<title>Security and sambaSamAccount</title>
 
 
 			<para>
 			There are two important points to remember when discussing the security
-			of sambaAccount entries in the directory.
+			of sambaSamAccount entries in the directory.
 			</para>
 
 			<itemizedlist>
@@ -1045,7 +1045,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			</para>
 
 			<para>
-			To remedy the first security issue, the "ldap ssl" smb.conf parameter defaults
+				To remedy the first security issue, the <parameter>ldap ssl</parameter> &smb.conf; parameter defaults
 			to require an encrypted session (<parameter>ldap ssl = on</parameter>) using
 			the default port of <constant>636</constant>
 			when contacting the directory server.  When using an OpenLDAP server, it
@@ -1078,15 +1078,15 @@ access to attrs=lmPassword,ntPassword
 		</sect3>
 
 		<sect3>
-		<title>LDAP special attributes for sambaAccounts</title>
+		<title>LDAP special attributes for sambaSamAccounts</title>
 
 			<para>
-			The sambaAccount objectclass is composed of the following attributes:
+			The sambaSamAccount objectclass is composed of the following attributes:
 			</para>
 
 			<para>
 			<table frame="all">
-				<title>Attributes in the sambaAccount objectclass (LDAP)</title>
+				<title>Attributes in the sambaSamAccount objectclass (LDAP)</title>
 			<tgroup cols="2" align="left">
 			<tbody>
 				<row><entry><constant>lmPassword</constant></entry><entry>the LANMAN password 16-byte hash stored as a character
@@ -1151,7 +1151,7 @@ access to attrs=lmPassword,ntPassword
 			The majority of these parameters are only used when Samba is acting as a PDC of
 			a domain (refer to the <link linkend="samba-pdc">Samba as a primary domain controller</link> chapter for details on
 			how to configure Samba as a Primary Domain Controller). The following four attributes
-			are only stored with the sambaAccount entry if the values are non-default values:
+			are only stored with the sambaSamAccount entry if the values are non-default values:
 			</para>
 
 			<simplelist>
@@ -1162,7 +1162,7 @@ access to attrs=lmPassword,ntPassword
 			</simplelist>
 
 			<para>
-			These attributes are only stored with the sambaAccount entry if
+			These attributes are only stored with the sambaSamAccount entry if
 			the values are non-default values.  For example, assume TASHTEGO has now been
 			configured as a PDC and that <parameter>logon home = \\%L\%u</parameter> was defined in
 			its &smb.conf; file. When a user named "becky" logons to the domain,
@@ -1177,7 +1177,7 @@ access to attrs=lmPassword,ntPassword
 		</sect3>
 
 		<sect3>
-		<title>Example LDIF Entries for a sambaAccount</title>
+		<title>Example LDIF Entries for a sambaSamAccount</title>
 
 			<para>
 			The following is a working LDIF with the inclusion of the posixAccount objectclass:
@@ -1192,7 +1192,7 @@ access to attrs=lmPassword,ntPassword
 	lmPassword: 552902031BEDE9EFAAD3B435B51404EE
 	pwdLastSet: 1010179124
 	logonTime: 0
-	objectClass: sambaAccount
+	objectClass: sambaSamAccount
 	uid: guest2
 	kickoffTime: 2147483647
 	acctFlags: [UX         ]
@@ -1203,7 +1203,7 @@ access to attrs=lmPassword,ntPassword
 	</para>
 
 			<para>
-			The following is an LDIF entry for using both the sambaAccount and
+			The following is an LDIF entry for using both the sambaSamAccount and
 			posixAccount objectclasses:
 			</para>
 
@@ -1215,7 +1215,7 @@ access to attrs=lmPassword,ntPassword
 	lmPassword: 552902031BEDE9EFAAD3B435B51404EE
 	primaryGroupID: 1201
 	objectClass: posixAccount
-	objectClass: sambaAccount
+	objectClass: sambaSamAccount
 	acctFlags: [UX         ]
 	userPassword: {crypt}BpM2ej8Rkzogo
 	uid: gcarter
@@ -1262,22 +1262,11 @@ access to attrs=lmPassword,ntPassword
 		       <varlistentry>
 			       <term>only</term>
 			       <listitem><para>Only update the LDAP password and let the LDAP server worry
-					       about the other fields. This option is only available when
-					       the LDAP library supports LDAP_EXOP_X_MODIFY_PASSWD. </para></listitem>
+					       about the other fields. This option is only available when the LDAP server supports LDAP_EXOP_X_MODIFY_PASSWD. </para></listitem>
 		       </varlistentry>
 		</variablelist>
 
 		<para>More information can be found in the <ulink url="smb.conf.5.html#LDAPPASSWDSYNC">smb.conf</ulink> manpage.
-		</para>
-
-		</sect3>
-
-		<sect3>
-		<title>ldap trust ids</title>
-
-		<para>
-		LDAP Performance can be improved by using the <command>ldap trust ids</command> parameter.
-		See the <ulink url="smb.conf.5.html#LDAPTRUSTIDS">smb.conf</ulink> manpage for details.
 		</para>
 
 		</sect3>

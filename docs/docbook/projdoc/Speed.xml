@@ -199,17 +199,6 @@ the lowest practical <parameter>password level</parameter> will improve things.
 </sect1>
 
 <sect1>
-<title>LDAP</title>
-
-<para>
-LDAP can be vastly improved by using the
-<ulink url="smb.conf.5.html#LDAPTRUSTIDS"><parameter>ldap trust ids</parameter></ulink> parameter.
-</para>
-
-</sect1>
-
-
-<sect1>
 <title>Client tuning</title>
 
 <para>
