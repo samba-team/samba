@@ -1,0 +1,65 @@
+/*
+  atsvc interface definition
+*/
+
+[ uuid(1ff70682-0a51-30e8-076d-740be8cee98b),
+  version(1.0),
+  pointer_default(unique)
+] interface atsvc
+{
+	typedef struct {
+		uint32 job_time;
+		uint32 days_of_month;
+		uint8 days_of_week;
+		uint8 flags;
+		unistr *command;
+	} atsvc_JobInfo;
+
+	/******************/
+	/* Function: 0x00 */
+	NTSTATUS atsvc_JobAdd(
+		[in]	 unistr *servername,
+		[in,ref] atsvc_JobInfo *job_info,
+		[out]	 uint32 job_id
+	);
+
+	/******************/
+	/* Function: 0x01 */
+	NTSTATUS atsvc_JobDel(
+		[in]	unistr *servername,
+		[in]	uint32 min_job_id,
+		[in]	uint32 max_job_id
+	);
+
+	typedef struct {
+		uint32 job_id;
+		uint32 job_time;
+		uint32 days_of_month;
+		uint8 days_of_week;
+		uint8 flags;
+		unistr *command;
+	} atsvc_JobEnumInfo;
+
+	typedef struct {
+		uint32 entries_read;
+		[size_is(entries_read)] atsvc_JobEnumInfo *first_entry;
+	} atsvc_enum_ctr;
+
+	/******************/
+	/* Function: 0x02 */
+	NTSTATUS atsvc_JobEnum(
+		[in]         unistr *servername,
+		[in,out,ref] atsvc_enum_ctr *ctr,
+		[in]	     uint32 preferred_max_len,
+		[out]	     uint32 total_entries,
+		[in,out]     uint32 *resume_handle
+	);
+
+	/******************/
+	/* Function: 0x03 */
+	NTSTATUS atsvc_JobGetInfo(
+		[in]	unistr *servername,
+		[in]	uint32 job_id,
+		[out]	atsvc_JobInfo *job_info
+	);
+}
