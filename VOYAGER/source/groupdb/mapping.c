@@ -1653,15 +1653,15 @@ static BOOL find_name_entry(TDB_CONTEXT *ctx, TDB_DATA key, TDB_DATA dbuf,
 			 &is_user);
 
 	if (ret == -1)
-		return True;
+		return False;
 
-	if ((closure->want_user != is_user) &&
+	if ((closure->want_user != is_user) ||
 	    (strcmp(closure->unixname, unixname) != 0))
-		return True;
+		return False;
 
 	*(closure->ntname) = strdup(ntname);
 	closure->found = True;
-	return False;
+	return True;
 }
 
 static BOOL set_name_mapping(const char *unixname, const char *ntname,
@@ -1690,7 +1690,7 @@ static BOOL set_name_mapping(const char *unixname, const char *ntname,
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 
-	res = (tdb_store(tdb, kbuf, dbuf, 0) == 0);
+	res = (tdb_store(tdb, kbuf, dbuf, tdb_flag) == 0);
 
 	SAFE_FREE(lcname);
 	SAFE_FREE(key);
@@ -1711,7 +1711,7 @@ static void generate_name_mapping(const char *unixname, char **ntname,
 	slprintf(generated_name, sizeof(generated_name), "%s.%s",
 		 unixname, is_user ? "user" : "group");
 
-	if (set_name_mapping(unixname, unixname, is_user, TDB_INSERT)) {
+	if (set_name_mapping(unixname, generated_name, is_user, TDB_INSERT)) {
 		*ntname = strdup(generated_name);
 		return;
 	}
@@ -1721,7 +1721,7 @@ static void generate_name_mapping(const char *unixname, char **ntname,
 	for (attempts = 0; attempts < 5; attempts++) {
 		slprintf(generated_name, sizeof(generated_name), "%s.%s",
 			 unixname, generate_random_str(4));
-		if (set_name_mapping(unixname, unixname, is_user,
+		if (set_name_mapping(unixname, generated_name, is_user,
 				     TDB_INSERT)) {
 			*ntname = strdup(generated_name);
 			return;
@@ -1733,7 +1733,7 @@ static void generate_name_mapping(const char *unixname, char **ntname,
 	for (attempts = 0; attempts < 5; attempts++) {
 		slprintf(generated_name, sizeof(generated_name), "%s",
 			 generate_random_str(8));
-		if (set_name_mapping(unixname, unixname, is_user,
+		if (set_name_mapping(unixname, generated_name, is_user,
 				     TDB_INSERT)) {
 			*ntname = strdup(generated_name);
 			return;

@@ -79,16 +79,30 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
 
 	if ((NT_STATUS_IS_OK(sid_to_uid(sid, &uid))) &&
 	    ((pwd = getpwuid(uid)) != NULL)) {
+
+		char *ntname;
+
 		fstrcpy(dom_name, get_global_sam_name());
-		fstrcpy(name, pwd->pw_name);
+
+		unix_username_to_ntname(pwd->pw_name, &ntname);
+		fstrcpy(name, ntname);
+		SAFE_FREE(ntname);
+
 		*name_type = SID_NAME_USER;
 		return True;
 	}
 
 	if ((NT_STATUS_IS_OK(sid_to_gid(sid, &gid))) &&
 	    ((grp = getgrgid(gid)) != NULL)) {
+
+		char *ntname;
+
 		fstrcpy(dom_name, get_global_sam_name());
-		fstrcpy(name, grp->gr_name);
+
+		unix_groupname_to_ntname(grp->gr_name, &ntname);
+		fstrcpy(name, ntname);
+		SAFE_FREE(ntname);
+
 		*name_type = SID_NAME_DOM_GRP;
 		return True;
 	}
