@@ -196,78 +196,6 @@ reply_priv (krb5_auth_context auth_context,
     krb5_data_free (&krb_priv_data);
 }
 
-static const char *
-simple_passwd_quality (krb5_context context,
-		krb5_principal principal,
-		krb5_data *pwd)
-{
-    if (pwd->length < 6)
-	return "Password too short";
-    else
-	return NULL;
-}
-
-static const char* (*passwd_quality_check)(krb5_context, 
-					   krb5_principal, 
-					   krb5_data*) = simple_passwd_quality;
-
-#ifdef HAVE_DLOPEN
-extern const char *check_library;
-extern const char *check_function;
-
-#define PASSWD_VERSION 0
-
-#endif
-
-static void
-setup_passwd_quality_check(krb5_context context)
-{
-#ifdef HAVE_DLOPEN
-    void *handle;
-    void *sym;
-    int *version;
-    int flags;
-
-#ifdef RTLD_NOW
-    flags = RTLD_NOW;
-#else
-    flags = 0;
-#endif
-
-    if(check_library == NULL)
-	return;
-    handle = dlopen(check_library, flags);
-    if(handle == NULL) {
-	krb5_warnx(context, "failed to open `%s'", check_library);
-	return;
-    }
-    version = dlsym(handle, "version");
-    if(version == NULL) {
-	krb5_warnx(context,
-		   "didn't find `version' symbol in `%s'", check_library);
-	dlclose(handle);
-	return;
-    }
-    if(*version != PASSWD_VERSION) {
-	krb5_warnx(context,
-		   "version of loaded library is %d (expected %d)",
-		   *version, PASSWD_VERSION);
-	dlclose(handle);
-	return;
-    }
-    sym = dlsym(handle, check_function);
-    if(sym == NULL) {
-	krb5_warnx(context, 
-		   "didn't find `%s' symbol in `%s'", 
-		   check_function, check_library);
-	dlclose(handle);
-	return;
-    }
-    passwd_quality_check = sym;
-    return;
-#endif
-}
-
 /*
  * Change the password for `principal', sending the reply back on `s'
  * (`sa', `sa_size') to `pwd_data'.
@@ -313,7 +241,7 @@ change (krb5_auth_context auth_context,
     krb5_warnx (context, "Changing password for %s", client);
     free (client);
 
-    pwd_reason = (*passwd_quality_check) (context, principal, pwd_data);
+    pwd_reason = kadm5_check_password_quality (context, principal, pwd_data);
     if (pwd_reason != NULL ) {
 	krb5_warnx (context, "%s", pwd_reason);
 	reply_priv (auth_context, s, sa, sa_size, 4, pwd_reason);
@@ -637,10 +565,8 @@ sigterm(int sig)
     exit_flag = 1;
 }
 
-#ifdef HAVE_DLOPEN
-const char *check_library;
-const char *check_function;
-#endif
+const char *check_library  = NULL;
+const char *check_function = NULL;
 char *keytab_str = "HDB:";
 char *realm_str;
 int version_flag;
@@ -683,30 +609,6 @@ main (int argc, char **argv)
     krb5_openlog (context, "kpasswdd", &log_facility);
     krb5_set_warn_dest(context, log_facility);
 
-#ifdef HAVE_DLOPEN
-    {
-	const char *tmp;
-	if(check_library == NULL) {
-	    tmp = krb5_config_get_string(context, NULL, 
-					 "password_quality", 
-					 "check_library", 
-					 NULL);
-	    if(tmp != NULL)
-		check_library = tmp;
-	}
-	if(check_function == NULL) {
-	    tmp = krb5_config_get_string(context, NULL, 
-					 "password_quality", 
-					 "check_function", 
-					 NULL);
-	    if(tmp != NULL)
-		check_function = tmp;
-	}
-	if(check_library != NULL && check_function == NULL)
-	    check_function = "passwd_check";
-    }
-#endif
-
     ret = krb5_kt_register(context, &hdb_kt_ops);
     if(ret)
 	krb5_err(context, 1, ret, "krb5_kt_register");
@@ -715,7 +617,7 @@ main (int argc, char **argv)
     if(ret)
 	krb5_err(context, 1, ret, "%s", keytab_str);
     
-    setup_passwd_quality_check(context);
+    kadm5_setup_passwd_quality_check (context, check_library, check_function);
 
 #ifdef HAVE_SIGACTION
     {
