@@ -41,7 +41,7 @@ struct spnego_state {
 	uint_t ref_count;
 	enum spnego_message_type expected_packet;
 	enum spnego_message_type state_position;
-	enum spnego_negResult result;
+	negResult_t result;
 	struct gensec_security *sub_sec_security;
 };
 
@@ -169,7 +169,9 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				     out_mem_ctx, in, out);
 	}
 
-	if (spnego_state->state_position == SPNEGO_SERVER_START) {
+	len = spnego_read_data(in, &spnego);
+
+	if (len == -1 && spnego_state->state_position == SPNEGO_SERVER_START) {
 		int i;
 		int num_ops;
 		const struct gensec_security_ops **all_ops = gensec_security_all(&num_ops);
@@ -196,152 +198,140 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			}
 			gensec_end(&spnego_state->sub_sec_security);
 		}
-		DEBUG(1, ("Failed to start SPENGO SERVER\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	len = spnego_read_data(in, &spnego);
-	if (len == -1) {
 		DEBUG(1, ("Failed to parse SPENGO request\n"));
 		return NT_STATUS_INVALID_PARAMETER;
-	}
+	} else {
 
-	if (spnego.type != spnego_state->expected_packet) {
-		spnego_free_data(&spnego);
-		DEBUG(1, ("Invalid SPENGO request: %d, expected %d\n", spnego.type, 
-			  spnego_state->expected_packet));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (spnego_state->state_position == SPNEGO_CLIENT_GET_MECHS) {
-
-		/* The server offers a list of mechanisms */
-		
-		char **mechType = spnego.negTokenInit.mechTypes;
-		char *my_mechs[] = {NULL, NULL};
-		int i;
-		NTSTATUS nt_status;
-
-		spnego_state->sub_sec_security = NULL;
-
-		for (i=0; mechType && mechType[i]; i++) {
-			nt_status = gensec_client_start(&spnego_state->sub_sec_security);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				break;
-			}
-			/* forward the user info to the sub context */
-			spnego_state->sub_sec_security->user = gensec_security->user;
-			spnego_state->sub_sec_security->password_callback = gensec_security->password_callback;
-			spnego_state->sub_sec_security->password_callback_private = gensec_security->password_callback_private;
-			/* select the sub context */
-			nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
-							     mechType[i]);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				gensec_end(&spnego_state->sub_sec_security);
-				continue;
-			}
-
-			if (i == 0) {
-				nt_status = gensec_update(spnego_state->sub_sec_security,
-							  out_mem_ctx, 
-							  spnego.negTokenInit.mechToken, 
-							  &unwrapped_out);
-			} else {
-				/* only get the helping start blob for the first OID */
-				nt_status = gensec_update(spnego_state->sub_sec_security,
-							  out_mem_ctx, 
-							  null_data_blob, 
-							  &unwrapped_out);
-			}
-			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-				DEBUG(1, ("SPENGO(%s) NEG_TOKEN_INIT failed: %s\n", 
-					  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
-				gensec_end(&spnego_state->sub_sec_security);
-			} else {
-				break;
-			}
-		}
-		if (!spnego_state->sub_sec_security) {
-			DEBUG(1, ("SPENGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
+		if (spnego.type != spnego_state->expected_packet) {
+			spnego_free_data(&spnego);
+			DEBUG(1, ("Invalid SPENGO request: %d, expected %d\n", spnego.type, 
+				  spnego_state->expected_packet));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		spnego_free_data(&spnego);
-		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			return nt_status;
-		}
-		
-		/* compose reply */
-		my_mechs[0] = spnego_state->sub_sec_security->ops->oid;
+		if (spnego_state->state_position == SPNEGO_CLIENT_GET_MECHS) {
 
-		spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
-		spnego_out.negTokenInit.mechTypes = my_mechs;
-		spnego_out.negTokenInit.reqFlags = 0;
-		spnego_out.negTokenInit.mechListMIC = null_data_blob;
-		spnego_out.negTokenInit.mechToken = unwrapped_out;
-		
-		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
-			DEBUG(1, ("Failed to write SPENGO reply to NEG_TOKEN_INIT\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		/* set next state */
-		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
-		spnego_state->state_position = SPNEGO_TARG;
-
-		return nt_status;
-	} else if (spnego_state->state_position == SPNEGO_TARG) {
-		NTSTATUS nt_status;
-		if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		if (spnego.negTokenTarg.responseToken.length) {
-			nt_status = gensec_update(spnego_state->sub_sec_security,
-						  out_mem_ctx, 
-						  spnego.negTokenTarg.responseToken, 
-						  &unwrapped_out);
-		} else {
-			unwrapped_out = data_blob(NULL, 0);
-			nt_status = NT_STATUS_OK;
-		}
-		
-		if (NT_STATUS_IS_OK(nt_status) 
-		    && (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED)) {
-			nt_status = NT_STATUS_INVALID_PARAMETER;
-		}
-
-		spnego_state->result = spnego.negTokenTarg.negResult;
-		spnego_free_data(&spnego);
-		
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			/* compose reply */
-			spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
-			spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
-			spnego_out.negTokenTarg.supportedMech 
-				= spnego_state->sub_sec_security->ops->oid;
-			spnego_out.negTokenTarg.responseToken = unwrapped_out;
-			spnego_out.negTokenTarg.mechListMIC = null_data_blob;
+			/* The server offers a list of mechanisms */
 			
+			char **mechType = spnego.negTokenInit.mechTypes;
+			char *my_mechs[] = {NULL, NULL};
+			int i;
+			NTSTATUS nt_status;
+			
+			for (i=0; mechType[i]; i++) {
+				nt_status = gensec_client_start(&spnego_state->sub_sec_security);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					break;
+				}
+				nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
+								     mechType[i]);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					gensec_end(&spnego_state->sub_sec_security);
+					continue;
+				}
+
+				if (i == 0) {
+					nt_status = gensec_update(spnego_state->sub_sec_security,
+								  out_mem_ctx, 
+								  spnego.negTokenInit.mechToken, 
+								  &unwrapped_out);
+				} else {
+					/* only get the helping start blob for the first OID */
+					nt_status = gensec_update(spnego_state->sub_sec_security,
+								  out_mem_ctx, 
+								  null_data_blob, 
+								  &unwrapped_out);
+				}
+				if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+					DEBUG(1, ("SPENGO(%s) NEG_TOKEN_INIT failed: %s\n", 
+						  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
+					gensec_end(&spnego_state->sub_sec_security);
+				} else {
+					break;
+				}
+			}
+			if (!mechType[i]) {
+				DEBUG(1, ("SPENGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
+			}
+
+			spnego_free_data(&spnego);
+			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+				return nt_status;
+			}
+			
+			/* compose reply */
+			my_mechs[0] = spnego_state->sub_sec_security->ops->oid;
+
+			spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
+			spnego_out.negTokenInit.mechTypes = my_mechs;
+			spnego_out.negTokenInit.reqFlags = 0;
+			spnego_out.negTokenInit.mechListMIC = null_data_blob;
+			spnego_out.negTokenInit.mechToken = unwrapped_out;
+			
+			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
+				DEBUG(1, ("Failed to write SPENGO reply to NEG_TOKEN_INIT\n"));
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			/* set next state */
+			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
+			spnego_state->state_position = SPNEGO_TARG;
+
+			return nt_status;
+		} else if (spnego_state->state_position == SPNEGO_TARG) {
+			NTSTATUS nt_status;
+			if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
+
+			if (spnego.negTokenTarg.responseToken.length) {
+				nt_status = gensec_update(spnego_state->sub_sec_security,
+							  out_mem_ctx, 
+							  spnego.negTokenTarg.responseToken, 
+							  &unwrapped_out);
+			} else {
+				unwrapped_out = data_blob(NULL, 0);
+				nt_status = NT_STATUS_OK;
+			}
+			
+			if (NT_STATUS_IS_OK(nt_status) 
+			    && (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED)) {
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+			}
+
+			spnego_state->result = spnego.negTokenTarg.negResult;
+			spnego_free_data(&spnego);
+			
+			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+				/* compose reply */
+				spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
+				spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
+				spnego_out.negTokenTarg.supportedMech 
+					= spnego_state->sub_sec_security->ops->oid;
+;
+				spnego_out.negTokenTarg.responseToken = unwrapped_out;
+				spnego_out.negTokenTarg.mechListMIC = null_data_blob;
+				
 			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 				DEBUG(1, ("Failed to write SPENGO reply to NEG_TOKEN_TARG\n"));
 				return NT_STATUS_INVALID_PARAMETER;
 			}
-			spnego_state->state_position = SPNEGO_TARG;
-		} else if (NT_STATUS_IS_OK(nt_status)) {
-			spnego_state->state_position = SPNEGO_DONE;
-		} else {
-			DEBUG(1, ("SPENGO(%s) login failed: %s\n", 
-				  spnego_state->sub_sec_security->ops->name, 
-				  nt_errstr(nt_status)));
+				spnego_state->state_position = SPNEGO_TARG;
+			} else if (NT_STATUS_IS_OK(nt_status)) {
+				spnego_state->state_position = SPNEGO_DONE;
+			} else {
+				DEBUG(1, ("SPENGO(%s) login failed: %s\n", 
+					  spnego_state->sub_sec_security->ops->name, 
+					  nt_errstr(nt_status)));
+				return nt_status;
+			}
+			
 			return nt_status;
+		} else {
+			spnego_free_data(&spnego);
+			DEBUG(1, ("Invalid SPENGO request: %d\n", spnego.type));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
-		
-		return nt_status;
-	} else {
-		spnego_free_data(&spnego);
-		DEBUG(1, ("Invalid SPENGO request: %d\n", spnego.type));
-		return NT_STATUS_INVALID_PARAMETER;
 	}
 }
 
