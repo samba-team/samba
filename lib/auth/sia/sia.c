@@ -47,6 +47,8 @@ RCSID("$Id$");
 
 #include <krb.h>
 
+/* Is it necessary to have all functions? I think not. */
+
 int 
 siad_init(void)
 {
@@ -62,7 +64,9 @@ siad_chk_invoker(void)
 int 
 siad_ses_init(SIAENTITY *entity, int pkgind)
 {
-    entity->mech[pkgind] = NULL;
+    entity->mech[pkgind] = (int*)malloc(MaxPathLen);
+    if(entity->mech[pkgind] == NULL)
+	return SIADFAIL;
     return SIADSUCCESS;
 }
 
@@ -123,11 +127,11 @@ siad_ses_authent(sia_collect_func_t *collect,
 	}
 	num = pr - prompts;
 	if(num == 1){
-	    if((*collect)(240, SIAONELINER, (unsigned char*)"bar", num, 
+	    if((*collect)(240, SIAONELINER, (unsigned char*)"", num, 
 			  prompts) != SIACOLSUCCESS)
 		return SIADFAIL | SIADSTOP;
 	} else if(num > 0){
-	    if((*collect)(0, SIAFORM, (unsigned char*)"foo", num, 
+	    if((*collect)(0, SIAFORM, (unsigned char*)"", num, 
 			  prompts) != SIACOLSUCCESS)
 		return SIADFAIL | SIADSTOP;
 	}
@@ -141,23 +145,28 @@ siad_ses_authent(sia_collect_func_t *collect,
     {
 	char realm[REALM_SZ];
 	int ret;
-	struct passwd pwd;
-	char buf[1024];
+	struct passwd pw;
+	char pwbuf[1024];
 
-	sprintf(buf, "%s_%d", TKT_ROOT, getpid());
-	entity->mech[pkgind] = (int*)strdup(buf);
-	krb_set_tkt_string(buf);
-
-	krb_get_lrealm(realm, 0);
+	if(getpwnam_r(entity->name, &pw, pwbuf, sizeof(pwbuf)) < 0)
+	    return SIADFAIL;
+	sprintf((char*)entity->mech[pkgind], "%d%d_%d", 
+		TKT_ROOT, pw.pw_uid, getpid());
+	krb_set_tkt_string((char*)entity->mech[pkgind]);
+	
+	krb_get_lrealm(realm, 1);
 	ret = krb_verify_user(entity->name, "", realm, 
-			      entity->password, 0, NULL);
+			      entity->password, 1, NULL);
 	if(ret){
-	    SIALOG("WARNING", "krb_verify_user(%s): %s", 
-		   entity->name, krb_get_err_text(ret));
+	    if(ret != KDC_PR_UNKNOWN)
+		/* since this is most likely a local user (such as
+                   root), just silently return failure when the
+                   principal doesn't exist */
+		SIALOG("WARNING", "krb_verify_user(%s): %s", 
+		       entity->name, krb_get_err_text(ret));
 	    return SIADFAIL;
 	}
-	getpwnam_r(entity->name, &pwd, buf, sizeof(buf));
-	if(sia_make_entity_pwd(&pwd, entity) == SIAFAIL)
+	if(sia_make_entity_pwd(&pw, entity) == SIAFAIL)
 	    return SIADFAIL;
     }
     return SIADSUCCESS;
@@ -175,13 +184,9 @@ siad_ses_launch(sia_collect_func_t *collect,
 		SIAENTITY *entity,
 		int pkgind)
 {
-    char buf[1024];
-    if(entity->mech[pkgind] == NULL)
-	return SIADFAIL;
-    sprintf(buf, "%s%d", TKT_ROOT, entity->pwd->pw_uid);
-    rename((char*)entity->mech[pkgind], buf);
-    krb_set_tkt_string(buf);
-    chown(buf, entity->pwd->pw_uid, entity->pwd->pw_gid);
+    char buf[MaxPathLen];
+    chown((char*)entity->mech[pkgind],entity->pwd->pw_uid, entity->pwd->pw_gid);
+    setenv("KRBTKFILE", (char*)entity->mech[pkgind]);
     return SIADSUCCESS;
 }
 
@@ -193,15 +198,68 @@ siad_ses_release(SIAENTITY *entity, int pkgind)
     return SIADSUCCESS;
 }
 
-/* Is it necessary to have all these? I think not. */
-
 int 
 siad_ses_suauthent(sia_collect_func_t *collect,
 		   SIAENTITY *entity,
 		   int siastat,
 		   int pkgind)
 {
-    return SIADFAIL;
+    char name[ANAME_SZ];
+    char toname[ANAME_SZ];
+    char toinst[INST_SZ];
+    char realm[REALM_SZ];
+    struct passwd pw, topw;
+    char pw_buf[1024], topw_buf[1024];
+    
+    if(geteuid() != 0)
+	return SIADFAIL;
+    if(siastat == SIADSUCCESS)
+	return SIADSUCCESS;
+    if(getpwuid_r(getuid(), &pw, pw_buf, sizeof(pw_buf)) < 0)
+	return SIADFAIL;
+    if(entity->name[0] == 0 || strcmp(entity->name, "root") == 0){
+	strcpy(toname, pw.pw_name);
+	strcpy(toinst, "root");
+	if(getpwnam_r("root", &topw, topw_buf, sizeof(topw_buf)) < 0)
+	    return SIADFAIL;
+    }else{
+	strcpy(toname, entity->name);
+	toinst[0] = 0;
+	if(getpwnam_r(entity->name, &topw, topw_buf, sizeof(topw_buf)) < 0)
+	    return SIADFAIL;
+    }
+    if(krb_get_lrealm(realm, 1))
+	return SIADFAIL;
+    if(entity->password == NULL){
+	prompt_t prompt;
+	if(collect == NULL)
+	    return SIADFAIL;
+	setup_password(entity, &prompt);
+	if((*collect)(0, SIAONELINER, (unsigned char*)"", 1, 
+		      &prompt) != SIACOLSUCCESS)
+	    return SIADFAIL;
+    }
+    if(entity->password == NULL)
+	return SIADFAIL;
+    {
+	int ret;
+
+	if(krb_kuserok(toname, toinst, realm, entity->name))
+	    return SIADFAIL;
+	
+	sprintf((char*)entity->mech[pkgind], "/tmp/tkt_%s_to_%s_%d", 
+		pw.pw_name, topw.pw_name, getpid());
+	krb_set_tkt_string((char*)entity->mech[pkgind]);
+	ret = krb_verify_user(toname, toinst, realm, entity->password, 1, NULL);
+	if(ret){
+	    SIALOG("WARNING", "krb_verify_user(%s.%s): %s", toname, toinst, 
+		   krb_get_err_text(ret);
+	    return SIADFAIL;
+	}
+    }
+    if(sia_make_entity_pwd(&topw, entity) == SIAFAIL)
+	return SIADFAIL;
+    return SIADSUCCESS;
 }
 
 
