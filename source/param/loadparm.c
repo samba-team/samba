@@ -3804,18 +3804,23 @@ static void set_server_role(void)
 
 	switch (lp_security()) {
 		case SEC_SHARE:
-		case SEC_SERVER:
-		case SEC_ADS:
 			if (lp_domain_logons())
 				DEBUG(0, ("Server's Role (logon server) conflicts with share-level security\n"));
 			break;
-		case SEC_DOMAIN:
+		case SEC_SERVER:
+			if (lp_domain_logons())
+				DEBUG(0, ("Server's Role (logon server) conflicts with server-level security\n"));
+			break;
+		case SEC_ADS:
 			if (lp_domain_logons()) {
-				server_role = ROLE_DOMAIN_BDC;
+				server_role = ROLE_DOMAIN_PDC;
 				break;
 			}
 			server_role = ROLE_DOMAIN_MEMBER;
 			break;
+		case SEC_DOMAIN:
+			if (lp_domain_logons())
+				DEBUG(0, ("Server's Role (logon server) NOT ADVISED with domain-level security\n"));
 		case SEC_USER:
 			if (lp_domain_logons()) {
 
