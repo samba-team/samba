@@ -235,7 +235,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	}
 
 	if (ret > 1) {
-		DEBUG(1,("Found %d records matching user [%s]\n", ret, username));
+		DEBUG(0,("Found %d records matching user [%s]\n", ret, username));
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -259,7 +259,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	}
 
 	if (ret_domain > 1) {
-		DEBUG(1,("Found %d records matching domain [%s]\n", 
+		DEBUG(0,("Found %d records matching domain [%s]\n", 
 			 ret_domain, domain_sid));
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

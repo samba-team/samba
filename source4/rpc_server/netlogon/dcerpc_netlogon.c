@@ -199,7 +199,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	}
 
 	if (num_records > 1) {
-		DEBUG(1,("Found %d records matching user [%s]\n", num_records, r->in.account_name));
+		DEBUG(0,("Found %d records matching user [%s]\n", num_records, r->in.account_name));
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -390,7 +390,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	if (num_records > 1) {
-		DEBUG(1,("Found %d records matching user [%s]\n", num_records, 
+		DEBUG(0,("Found %d records matching user [%s]\n", num_records, 
 			 pipe_state->account_name));
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -399,7 +399,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
 	if (!domain_sid) {
 		samdb_close(sam_ctx);
-		DEBUG(1,("no objectSid in user record\n"));
+		DEBUG(0,("no objectSid in user record\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -417,7 +417,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	if (num_records_domain > 1) {
-		DEBUG(1,("Found %d records matching domain [%s]\n", 
+		DEBUG(0,("Found %d records matching domain [%s]\n", 
 			 num_records_domain, domain_sid));
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
