@@ -1,5 +1,11 @@
 Fri Mar  6 00:41:30 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/gssapi/{accept_sec_context,release_cred}.c: Use
+	krb5_kt_close/krb5_kt_resolve.
+	
+	* lib/krb5/principal.c (krb5_425_conv_principal_ext): Use resolver
+ 	to lookup hosts, so CNAMEs can be ignored.
+
 	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc, send_and_recv_http):
  	Add support for using proxy.
 
