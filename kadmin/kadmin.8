@@ -39,6 +39,7 @@
 .Nd Kerberos administration utility
 .Sh SYNOPSIS
 .Nm
+.Bk -words
 .Oo Fl p Ar string \*(Ba Xo
 .Fl -principal= Ns Ar string
 .Xc
@@ -71,6 +72,7 @@
 .Op Fl h | Fl -help
 .Op Fl v | Fl -version
 .Op Ar command
+.Ek
 .Sh DESCRIPTION
 The
 .Nm
@@ -174,7 +176,7 @@ Removes a principal.
 .Ar principal enctypes...
 .Pp
 .Bd -ragged -offset indent
-Removes some enctypes from a principal. This can be useful the service
+Removes some enctypes from a principal; this can be useful the service
 belonging to the principal is known to not handle certain enctypes.
 .Ed
 .Pp
