@@ -428,7 +428,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		} 
 		if (inbuf+smb_vwv14+(suwcnt*SIZEOFWORD) > inbuf + size)
 			goto bad_param;
-		if (inbuf+smb_vwv14+(suwcnt*SIZEOFWORD) > inbuf + size)
+		if ((smb_vwv14+(suwcnt*SIZEOFWORD) < smb_vwv14) || (smb_vwv14+(suwcnt*SIZEOFWORD) < (suwcnt*SIZEOFWORD)))
 			goto bad_param;
 
 		for (i=0;i<suwcnt;i++)
