@@ -204,11 +204,17 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 
 /*
   see if a ldb_val is a wildcard
+  return 1 if yes, 0 if no
 */
 int ltdb_has_wildcard(struct ldb_context *ldb, const char *attr_name, 
 		      const struct ldb_val *val)
 {
 	int flags;
+
+	/* all attribute types recognise the "*" wildcard */
+	if (val->length == 1 && strncmp((char *)val->data, "*", 1) == 0) {
+		return 1;
+	}
 
 	if (strpbrk(val->data, "*?") == NULL) {
 		return 0;

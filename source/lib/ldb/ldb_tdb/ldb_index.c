@@ -590,6 +590,14 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 			       char *dn)
 {
 	struct ldb_val *v2;
+	int i;
+
+	/* for multi-valued attributes we can end up with repeats */
+	for (i=0;i<msg->elements[idx].num_values;i++) {
+		if (strcmp(dn, msg->elements[idx].values[i].data) == 0) {
+			return 0;
+		}
+	}
 
 	v2 = realloc_p(msg->elements[idx].values,
 		       struct ldb_val, 
