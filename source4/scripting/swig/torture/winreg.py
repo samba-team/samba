@@ -30,12 +30,16 @@ def test_CloseKey(pipe, handle):
 
     dcerpc.winreg_CloseKey(pipe, r)
 
-def test_Enum(pipe, handle, depth = 0):
+def test_Enum(pipe, handle, name, depth = 0):
 
     if depth > 2:
         return
 
-    keyinfo = test_QueryInfoKey(pipe, handle)
+    try:
+        keyinfo = test_QueryInfoKey(pipe, handle)
+    except dcerpc.WERROR, arg:
+        if arg[0] == dcerpc.WERR_ACCESS_DENIED:
+            return
 
     # Enumerate keys
 
@@ -68,7 +72,8 @@ def test_Enum(pipe, handle, depth = 0):
 
         result = dcerpc.winreg_OpenKey(pipe, s)
 
-        test_Enum(pipe, result['handle'], depth + 1)
+        test_Enum(pipe, result['handle'], name + '/' + s['keyname']['name'],
+                  depth + 1)
 
         test_CloseKey(pipe, result['handle'])
 
@@ -77,44 +82,30 @@ def test_Enum(pipe, handle, depth = 0):
     r = {}
     r['handle'] = handle
 
-    keyinfo['max_valnamelen'] = 18
-    keyinfo['max_valbufsize'] = 0x31f5
-
-    r['foo'] = {}
-    r['foo']['len'] = 0
-    r['foo']['max_len'] = keyinfo['max_valnamelen'] * 2
-    r['foo']['buffer'] = {}
-    r['foo']['buffer']['max_len'] = keyinfo['max_valnamelen']
-    r['foo']['buffer']['offset'] = 0
-    r['foo']['buffer']['len'] = 0
-    r['foo']['buffer']['buffer'] = ''
+    r['name_in'] = {}
+    r['name_in']['len'] = 0
+    r['name_in']['max_len'] = (keyinfo['max_valnamelen'] + 1) * 2
+    r['name_in']['buffer'] = {}
+    r['name_in']['buffer']['max_len'] = keyinfo['max_valnamelen']  + 1
+    r['name_in']['buffer']['offset'] = 0
+    r['name_in']['buffer']['len'] = 0
     r['type'] = 0
-    r['value'] = {}
-    r['value']['max_len'] = keyinfo['max_valbufsize']
-    r['value']['offset'] = 0
-    r['value']['len'] = 0
-    r['value']['buffer'] = []
-    r['returned_len'] = 0
-    r['foo2'] = {}
-    r['foo2']['max_len'] = keyinfo['max_valbufsize']
-    r['foo2']['offset'] = 0
-    r['foo2']['len'] = 0
-    r['foo2']['buffer'] = ''
-    r['value1'] = keyinfo['max_valbufsize']
-    r['value2'] = 0
+    r['value_in'] = {}
+    r['value_in']['max_len'] = keyinfo['max_valbufsize']
+    r['value_in']['offset'] = 0
+    r['value_in']['len'] = 0
+    r['value_len1'] = keyinfo['max_valbufsize']
+    r['value_len2'] = 0
     
     for i in range(0, keyinfo['num_values']):
 
         r['enum_index'] = i
 
-        print keyinfo
-        print dcerpc.winreg_EnumValue(pipe, r)
+        dcerpc.winreg_EnumValue(pipe, r)
 
-        sys.exit(1)        
+def test_Key(pipe, handle, name):
 
-def test_Key(pipe, handle):
-
-    test_Enum(pipe, handle)        
+    test_Enum(pipe, handle, name)
 
 def runtests(binding, domain, username, password):
     
@@ -126,5 +117,4 @@ def runtests(binding, domain, username, password):
 
     handle = test_OpenHKLM(pipe)
 
-    test_Key(pipe, handle)
-    
+    test_Key(pipe, handle, 'HKLM')

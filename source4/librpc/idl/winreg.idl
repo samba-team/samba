@@ -127,23 +127,37 @@
         typedef struct {
 	        uint32 max_len;
 	        uint32 offset;
-	        DATA_BLOB buffer;
-        } EnumValue;
+ 	        uint32 len;
+        } EnumValueIn;
 
         typedef struct {
                 uint16 len;
                 uint16 max_len;
-                EnumValue *buffer;
-        } EnumValueName;
+                EnumValueIn *buffer;
+        } EnumValueNameIn;
+
+        typedef struct {
+	        uint32 max_len;
+	        uint32 offset;
+	        DATA_BLOB buffer;
+        } EnumValueOut;
+
+        typedef struct {
+                uint16 len;
+                uint16 max_len;
+                unistr *name;
+        } EnumValueNameOut;
 
 	/******************/
 	/* Function: 0x0a */
 	WERROR winreg_EnumValue(
 		[in,ref] policy_handle *handle,
 		[in] uint32 enum_index,
-		[in,out] EnumValueName name,
+		[in] EnumValueNameIn name_in,
+		[out] EnumValueNameOut name_out,
 		[in,out] uint32 *type,
-		[in,out] EnumValue *value,
+		[in] EnumValueIn *value_in,
+		[out] EnumValueOut *value_out,
 		[in,out] uint32 *value_len1,
 		[in,out] uint32 *value_len2
 	);
