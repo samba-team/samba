@@ -73,6 +73,7 @@ get_window_size(int fd, struct winsize *wp)
     int ret = -1;
     
     memset(wp, 0, sizeof(*wp));
+    memset(&tmp, 0, sizeof(tmp));
     if((s = getenv("COLUMNS")))
 	wp->ws_col = atoi(s);
     if((s = getenv("LINES")))
@@ -107,14 +108,14 @@ get_window_size(int fd, struct winsize *wp)
     }
 #endif
     if(ret == 0) {
-	if(wp->ws_col == 0)
+	if(wp->ws_col == 0) {
 	    wp->ws_col = tmp.ws_col;
-	if(wp->ws_row == 0)
-	    wp->ws_row = tmp.ws_row;
-	if(wp->ws_xpixel == 0)
 	    wp->ws_xpixel = tmp.ws_xpixel;
-	if(wp->ws_ypixel == 0)
+	}
+	if(wp->ws_row == 0) {
+	    wp->ws_row = tmp.ws_row;
 	    wp->ws_ypixel = tmp.ws_ypixel;
+	}
     }
     return ret;
 }
