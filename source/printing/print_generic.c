@@ -104,7 +104,7 @@ static int generic_job_delete(int snum, struct printjob *pjob)
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
 	return print_run_command(
 		   snum, 
-		   lp_lprmcommand(snum), NULL, NULL,
+		   lp_lprmcommand(snum), NULL,
 		   "%j", jobstr,
 		   "%T", http_timestring(pjob->starttime),
 		   NULL);
@@ -120,7 +120,7 @@ static int generic_job_pause(int snum, struct printjob *pjob)
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
 	return print_run_command(snum, 
-				 lp_lppausecommand(snum), NULL, NULL,
+				 lp_lppausecommand(snum), NULL,
 				 "%j", jobstr,
 				 NULL);
 }
@@ -135,7 +135,7 @@ static int generic_job_resume(int snum, struct printjob *pjob)
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
 	return print_run_command(snum, 
-				 lp_lpresumecommand(snum), NULL, NULL,
+				 lp_lpresumecommand(snum), NULL,
 				 "%j", jobstr,
 				 NULL);
 }
@@ -172,7 +172,7 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, 
-			  lp_printcommand(snum), NULL, NULL,
+			  lp_printcommand(snum), NULL,
 			  "%s", p,
   			  "%J", jobname,
 			  "%f", p,
@@ -189,11 +189,8 @@ get the current list of queued jobs
 ****************************************************************************/
 static int generic_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 {
-	char *path = lp_pathname(snum);
-	char *cmd = lp_lpqcommand(snum);
 	char **qlines;
 	int fd;
-	pstring tmp_file;
 	int numlines, i, qcount;
 	print_queue_struct *queue = NULL;
 	fstring printer_name;
@@ -202,10 +199,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 	fstrcpy(printer_name, lp_servicename(snum));
 	dos_to_unix(printer_name, True);
 	
-	slprintf(tmp_file, sizeof(tmp_file)-1, "%s/smblpq.%d", path, sys_getpid());
-
-	unlink(tmp_file);
-	print_run_command(snum, cmd, &fd, tmp_file, NULL);
+	print_run_command(snum, lp_lpqcommand(snum), &fd, NULL);
 
 	if (fd == -1) {
 		DEBUG(5,("generic_queue_get: Can't read print queue status for printer %s\n",
@@ -243,8 +237,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 ****************************************************************************/
 static int generic_queue_pause(int snum)
 {
-	return print_run_command(snum, lp_queuepausecommand(snum), NULL, NULL,
-				 NULL);
+	return print_run_command(snum, lp_queuepausecommand(snum), NULL, NULL);
 }
 
 /****************************************************************************
@@ -252,6 +245,5 @@ static int generic_queue_pause(int snum)
 ****************************************************************************/
 static int generic_queue_resume(int snum)
 {
-	return print_run_command(snum, lp_queueresumecommand(snum), NULL, NULL,
-				 NULL);
+	return print_run_command(snum, lp_queueresumecommand(snum), NULL, NULL);
 }

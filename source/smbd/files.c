@@ -43,7 +43,7 @@ static int files_used;
 /****************************************************************************
   find first available file slot
 ****************************************************************************/
-files_struct *file_new(void )
+files_struct *file_new(connection_struct *conn)
 {
 	int i;
 	static int first_file;
@@ -72,7 +72,7 @@ files_struct *file_new(void )
 		for (fsp=Files;fsp;fsp=next) {
 			next=fsp->next;
 			if (attempt_close_oplocked_file(fsp)) {
-				return file_new();
+				return file_new(conn);
 			}
 		}
 
@@ -91,6 +91,7 @@ files_struct *file_new(void )
 
 	ZERO_STRUCTP(fsp);
 	fsp->fd = -1;
+	fsp->conn = conn;
 
 	first_file = (i+1) % real_max_open_files;
 

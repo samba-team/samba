@@ -64,7 +64,9 @@ struct vfs_ops default_vfs_ops = {
 	vfswrap_lstat,
 	vfswrap_unlink,
 	vfswrap_chmod,
+	vfswrap_fchmod,
 	vfswrap_chown,
+	vfswrap_fchown,
 	vfswrap_chdir,
 	vfswrap_getwd,
 	vfswrap_utime,
@@ -224,8 +226,16 @@ BOOL vfs_init_custom(connection_struct *conn)
 	conn->vfs_ops.chmod = default_vfs_ops.chmod;
     }
 
+    if (conn->vfs_ops.fchmod == NULL) {
+	conn->vfs_ops.fchmod = default_vfs_ops.fchmod;
+    }
+
     if (conn->vfs_ops.chown == NULL) {
 	conn->vfs_ops.chown = default_vfs_ops.chown;
+    }
+
+    if (conn->vfs_ops.fchown == NULL) {
+	conn->vfs_ops.fchown = default_vfs_ops.fchown;
     }
 
     if (conn->vfs_ops.chdir == NULL) {
