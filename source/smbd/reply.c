@@ -1730,6 +1730,13 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		header.free = NULL;
 
 		if ( conn->vfs_ops.sendfile( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt) == -1) {
+			/*
+			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
+			 * return ENOSYS then pretend we just got a normal read.
+			 */
+			if (errno == ENOSYS)
+				goto normal_read;
+
 			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
 				fsp->fsp_name, strerror(errno) ));
 			exit_server("send_file_readX sendfile failed");
