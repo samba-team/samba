@@ -164,7 +164,7 @@ remove a change notify data structure
 *****************************************************************************/
 static void hash_remove_notify(void *datap)
 {
-	free(datap);
+	SAFE_FREE(datap);
 }
 
 

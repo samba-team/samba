@@ -71,9 +71,9 @@ void invalidate_vuid(uint16 vuid)
 
 	DLIST_REMOVE(validated_users, vuser);
 
-	safe_free(vuser->groups);
+	SAFE_FREE(vuser->groups);
 	delete_nt_token(&vuser->nt_user_token);
-	safe_free(vuser);
+	SAFE_FREE(vuser);
 	num_validated_vuids--;
 }
 
@@ -139,7 +139,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 	num_sids = 5 + ngroups;
 
 	if ((token->user_sids = (DOM_SID *)malloc( num_sids*sizeof(DOM_SID))) == NULL) {
-		free(token);
+		SAFE_FREE(token);
 		return NULL;
 	}
 
@@ -503,7 +503,7 @@ and given password ok\n", user));
 				}
 			}
 
-			free(user_list);
+			SAFE_FREE(user_list);
 		}
 
 		/* check for a previously validated username/password pair */

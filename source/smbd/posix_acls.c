@@ -74,7 +74,7 @@ static void free_canon_ace_list( canon_ace *list_head )
 	while (list_head) {
 		canon_ace *old_head = list_head;
 		DLIST_REMOVE(list_head, list_head);
-		free(old_head);
+		SAFE_FREE(old_head);
 	}
 }
 
@@ -256,7 +256,7 @@ static void merge_aces( canon_ace **pp_list_head )
 
 				curr_ace_outer->perms |= curr_ace->perms;
 				DLIST_REMOVE(list_head, curr_ace);
-				free(curr_ace);
+				SAFE_FREE(curr_ace);
 				curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
 			}
 		}
@@ -301,7 +301,7 @@ static void merge_aces( canon_ace **pp_list_head )
 					 */
 
 					DLIST_REMOVE(list_head, curr_ace);
-					free(curr_ace);
+					SAFE_FREE(curr_ace);
 					curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
 
 				} else {
@@ -317,7 +317,7 @@ static void merge_aces( canon_ace **pp_list_head )
 					 */
 
 					DLIST_REMOVE(list_head, curr_ace_outer);
-					free(curr_ace_outer);
+					SAFE_FREE(curr_ace_outer);
 				}
 			}
 
@@ -746,7 +746,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 
 			free_canon_ace_list(file_ace);
 			free_canon_ace_list(dir_ace);
-			free(current_ace);
+			SAFE_FREE(current_ace);
 			DEBUG(0,("create_canon_ace_lists: unable to map SID %s to uid or gid.\n",
 				sid_to_string(str, &current_ace->sid) ));
 			return False;
@@ -816,7 +816,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 					free_canon_ace_list(file_ace);
 					free_canon_ace_list(dir_ace);
-					free(current_ace);
+					SAFE_FREE(current_ace);
 					return False;
 				}	
 
@@ -867,7 +867,7 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 				free_canon_ace_list(file_ace);
 				free_canon_ace_list(dir_ace);
-				free(current_ace);
+				SAFE_FREE(current_ace);
 				return False;
 			}	
 
@@ -883,8 +883,7 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 		 * Free if ACE was not added.
 		 */
 
-		if (current_ace)
-			free(current_ace);
+		SAFE_FREE(current_ace);
 	}
 
 	if (fsp->is_directory && all_aces_are_inherit_only) {
@@ -1968,8 +1967,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		sys_acl_free_acl(dir_acl);
 	free_canon_ace_list(file_ace);
 	free_canon_ace_list(dir_ace);
-	if (nt_ace_list)
-		free(nt_ace_list);
+	SAFE_FREE(nt_ace_list);
 
 	return sd_size;
 }

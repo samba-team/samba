@@ -311,7 +311,7 @@ void file_free(files_struct *fsp)
 
 	if (fsp == chain_fsp) chain_fsp = NULL;
 
-	free(fsp);
+	SAFE_FREE(fsp);
 }
 
 

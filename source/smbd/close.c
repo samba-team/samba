@@ -161,7 +161,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 			GET_DELETE_ON_CLOSE_FLAG(share_entry->share_mode) )
 		delete_on_close = True;
 
-	safe_free(share_entry);
+	SAFE_FREE(share_entry);
 
 	/*
 	 * NT can set delete_on_close of the last open

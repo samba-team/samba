@@ -177,8 +177,7 @@ void conn_free(connection_struct *conn)
 	DLIST_REMOVE(Connections, conn);
 
 	if (conn->ngroups && conn->groups) {
-		free(conn->groups);
-		conn->groups = NULL;
+		SAFE_FREE(conn->groups);
 		conn->ngroups = 0;
 	}
 
@@ -196,7 +195,7 @@ void conn_free(connection_struct *conn)
 	num_open--;
 
 	ZERO_STRUCTP(conn);
-	free(conn);
+	SAFE_FREE(conn);
 }
 
 

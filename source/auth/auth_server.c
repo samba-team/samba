@@ -77,7 +77,7 @@ struct cli_state *server_cryptkey(void)
 		}
 	}
 
-	free(pserver);
+	SAFE_FREE(pserver);
 
 	if (!connected_ok) {
 		DEBUG(0,("password server not available\n"));

@@ -1693,9 +1693,9 @@ due to being in oplock break state.\n" ));
  
   if ((total_parameter_count && !params)  || (total_data_count && !data) ||
       (setup_count && !setup)) {
-	safe_free(setup);
-	safe_free(params);
-	safe_free(data);
+	SAFE_FREE(setup);
+	SAFE_FREE(params);
+	SAFE_FREE(data);
     DEBUG(0,("reply_nttrans : Out of memory\n"));
     END_PROFILE(SMBnttrans);
     return ERROR_DOS(ERRDOS,ERRnomem);
@@ -1745,12 +1745,9 @@ due to being in oplock break state.\n" ));
 		DEBUG(0,("reply_nttrans: %s in getting secondary nttrans response.\n",
 			 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 	}
-        if(params)
-          free(params);
-        if(data)
-          free(data);
-        if(setup)
-          free(setup);
+        SAFE_FREE(params);
+        SAFE_FREE(data);
+        SAFE_FREE(setup);
 	END_PROFILE(SMBnttrans);
         return ERROR_DOS(ERRSRV,ERRerror);
       }
@@ -1821,12 +1818,9 @@ due to being in oplock break state.\n" ));
   default:
 	  /* Error in request */
 	  DEBUG(0,("reply_nttrans: Unknown request %d in nttrans call\n", function_code));
-	  if(setup)
-		  free(setup);
-	  if(params)
-		  free(params);
-	  if(data)
-		  free(data);
+	  SAFE_FREE(setup);
+	  SAFE_FREE(params);
+	  SAFE_FREE(data);
 	  END_PROFILE(SMBnttrans);
 	  return ERROR_DOS(ERRSRV,ERRerror);
   }
@@ -1838,12 +1832,9 @@ due to being in oplock break state.\n" ));
      an error packet. 
   */
 
-  if(setup)
-    free(setup);
-  if(params)
-    free(params);
-  if(data)
-    free(data);
+  SAFE_FREE(setup);
+  SAFE_FREE(params);
+  SAFE_FREE(data);
   END_PROFILE(SMBnttrans);
   return outsize; /* If a correct response was needed the call_nt_transact_xxxx 
 		     calls have already sent it. If outsize != -1 then it is

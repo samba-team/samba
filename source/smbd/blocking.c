@@ -46,8 +46,8 @@ static ubi_slList blocking_lock_queue = { NULL, (ubi_slNodePtr)&blocking_lock_qu
 
 static void free_blocking_lock_record(blocking_lock_record *blr)
 {
-  free(blr->inbuf);
-  free((char *)blr);
+  SAFE_FREE(blr->inbuf);
+  SAFE_FREE(blr);
 }
 
 /****************************************************************************
@@ -103,7 +103,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int 
 
   if((blr->inbuf = (char *)malloc(length)) == NULL) {
     DEBUG(0,("push_blocking_lock_request: Malloc fail (2)!\n" ));
-    free((char *)blr);
+    SAFE_FREE(blr);
     return False;
   }
 

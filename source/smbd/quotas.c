@@ -413,7 +413,7 @@ static BOOL nfs_quotas(char *nfspath, uid_t euser_id, SMB_BIG_UINT *bsize, SMB_B
 
 	DEBUG(5,("nfs_quotas: For path \"%s\" returning  bsize %.0f, dfree %.0f, dsize %.0f\n",args.gqa_pathp,(double)*bsize,(double)*dfree,(double)*dsize));
 
-	safe_free(cutstr);
+	SAFE_FREE(cutstr);
 	DEBUG(10,("nfs_quotas: End of nfs_quotas\n" ));
 	return ret;
 }

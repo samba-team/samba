@@ -64,12 +64,12 @@ free a smbw_dir structure and all entries
 *******************************************************/
 static void free_dir(struct smbw_dir *dir)
 {
-	if (dir->list) {
-		free(dir->list);
-	}
-	if (dir->path) free(dir->path);
+	if(!dir) return;
+
+	SAFE_FREE(dir->list);
+	SAFE_FREE(dir->path);
 	ZERO_STRUCTP(dir);
-	free(dir);
+	SAFE_FREE(dir);
 }
 
 static struct smbw_dir *cur_dir;
@@ -274,10 +274,8 @@ int smbw_dir_open(const char *fname)
 	return dir->fd;
 
  failed:
-	if (dir) {
-		free_dir(dir);
-	}
-
+	free_dir(dir);
+	
 	return -1;
 }
 

@@ -151,11 +151,11 @@ NTSTATUS smb_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 				}
 			}
 			
-			free(workstation_list);		
+			SAFE_FREE(workstation_list);		
 			if (invalid_ws) 
 				return NT_STATUS_INVALID_WORKSTATION;
 		} else {
-			free(workstation_list);
+			SAFE_FREE(workstation_list);
 		}
 	} else {
 		return NT_STATUS_NO_MEMORY;

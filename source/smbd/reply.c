@@ -3051,7 +3051,7 @@ int reply_printqueue(connection_struct *conn,
 			SSVAL(smb_buf(outbuf),1,28*count);
 		}
 
-		if (queue) free(queue);
+		SAFE_FREE(queue);
 	  
 		DEBUG(3,("%d entries returned in queue\n",count));
 	}
