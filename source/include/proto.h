@@ -400,9 +400,9 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t);
 BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   size_t *size, uint32 *mode);
-BOOL cli_qpathinfo2(struct cli_state *cli, char *fname, 
+BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
-		    time_t *w_time, uint32 *size);
+		    time_t *w_time, size_t *size, uint32 *mode);
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
 		   uint32 *mode, size_t *size,
 		   time_t *c_time, time_t *a_time, time_t *m_time);

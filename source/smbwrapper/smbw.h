@@ -37,6 +37,7 @@ struct smbw_server {
 	char *server_name;
 	char *share_name;
 	dev_t dev;
+	BOOL no_pathinfo2;
 };
 
 struct smbw_filedes {

@@ -65,16 +65,16 @@ BOOL smbw_getatr(struct smbw_server *srv, char *path,
 {
 	DEBUG(5,("sending qpathinfo\n"));
 
-	if (cli_qpathinfo(&srv->cli, path, c_time, a_time, m_time,
-			  size, mode)) return True;
-
-	DEBUG(5,("qpathinfo OK\n"));
+	if (!srv->no_pathinfo2 &&
+	    cli_qpathinfo2(&srv->cli, path, c_time, a_time, m_time, NULL,
+			   size, mode)) return True;
 
 	/* if this is NT then don't bother with the getatr */
 	if (srv->cli.capabilities & CAP_NT_SMBS) return False;
 
 	if (cli_getatr(&srv->cli, path, mode, size, m_time)) {
 		a_time = c_time = m_time;
+		srv->no_pathinfo2 = True;
 		return True;
 	}
 	return False;

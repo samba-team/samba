@@ -1557,9 +1557,9 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 /****************************************************************************
 send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
 ****************************************************************************/
-BOOL cli_qpathinfo2(struct cli_state *cli, char *fname, 
+BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
-		    time_t *w_time, uint32 *size)
+		    time_t *w_time, size_t *size, uint32 *mode)
 {
 	int data_len = 0;
 	int param_len = 0;
@@ -1607,6 +1607,9 @@ BOOL cli_qpathinfo2(struct cli_state *cli, char *fname,
 	}
 	if (size) {
 		*size = IVAL(rdata, 40);
+	}
+	if (mode) {
+		*mode = IVAL(rdata, 32);
 	}
 
 	if (rdata) free(rdata);
