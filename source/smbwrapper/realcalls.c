@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "realcalls.h"
 
 #ifdef REPLACE_UTIME
 int real_utime(const char *name, struct utimbuf *buf)
