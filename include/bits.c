@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000, 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -226,6 +226,9 @@ int main(int argc, char **argv)
     fprintf(f, "typedef int krb5_socklen_t;\n");
 #endif
 #if defined(HAVE_SSIZE_T)
+#ifdef HAVE_UNISTD_H
+    fprintf(f, "#include <unistd.h>\n");
+#endif
     fprintf(f, "typedef ssize_t krb5_ssize_t;\n");
 #else
     fprintf(f, "typedef int krb5_ssize_t;\n");
