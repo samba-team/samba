@@ -68,7 +68,7 @@ BOOL conn_snum_used(int snum)
 /****************************************************************************
 find a conn given a cnum
 ****************************************************************************/
-connection_struct *conn_find(int cnum)
+connection_struct *conn_find(unsigned cnum)
 {
 	int count=0;
 	connection_struct *conn;
@@ -174,7 +174,7 @@ clear a vuid out of the validity cache, and as the 'owner' of a connection.
 void conn_clear_vuid_cache(uint16 vuid)
 {
 	connection_struct *conn;
-	int i;
+	unsigned int i;
 
 	for (conn=Connections;conn;conn=conn->next) {
 		if (conn->vuid == vuid) {

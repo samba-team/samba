@@ -468,12 +468,12 @@ BOOL secrets_store_ldap_pw(const char* dn, char* pw)
  * @return nt status code of rpc response
  **/ 
 
-NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num_domains, int *num_domains, TRUSTDOM ***domains)
+NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, unsigned int max_num_domains, int *num_domains, TRUSTDOM ***domains)
 {
 	TDB_LIST_NODE *keys, *k;
 	TRUSTDOM *dom = NULL;
 	char *pattern;
-	int start_idx;
+	unsigned int start_idx;
 	uint32 idx = 0;
 	size_t size;
 	fstring dom_name;
