@@ -1465,7 +1465,7 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
 	else
 		remove_from_jobs_changed(snum, jobid);
 
-	/* Delete the tdb entry if the delete suceeded or the job hasn't
+	/* Delete the tdb entry if the delete succeeded or the job hasn't
 	   been spooled. */
 
 	if (result == 0) {
