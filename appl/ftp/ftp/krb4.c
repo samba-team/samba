@@ -228,7 +228,8 @@ krb4_auth(void *app_data, char *host)
     int len;
     KTEXT_ST adat;
     MSG_DAT msg_data;
-    int checksum, cs;
+    int checksum;
+    u_int32_t cs;
     struct krb4_data *d = app_data;
 
     checksum = getpid();
