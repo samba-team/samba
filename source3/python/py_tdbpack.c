@@ -1,7 +1,7 @@
 /* -*- c-file-style: "python"; indent-tabs-mode: nil; -*-
 	 
    Python wrapper for Samba tdb pack/unpack functions
-   Copyright (C) Martin Pool 2002
+   Copyright (C) Martin Pool 2002, 2003
 
 
    NOTE PYTHON STYLE GUIDE
