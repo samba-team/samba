@@ -1228,7 +1228,7 @@ send_data(FILE *instr, FILE *outstr)
 		int in = fileno(instr);
 		if(fstat(in, &st) == 0 && S_ISREG(st.st_mode)) {
 		    chunk = mmap(0, st.st_size, PROT_READ, MAP_SHARED, in, 0);
-		    if(chunk != (void *)MAP_FAILED) {
+		    if((void *)chunk != (void *)MAP_FAILED) {
 			cnt = st.st_size - restart_point;
 			sec_write(fileno(outstr),
 				   chunk + restart_point,
