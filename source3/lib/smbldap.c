@@ -914,6 +914,9 @@ int smbldap_search(struct smbldap_state *ldap_state,
 	char           *utf8_filter;
 
 	SMB_ASSERT(ldap_state);
+	
+	DEBUG(5,("smbldap_search: base => [%s], filter => [%s], scope => [%d]\n",
+		base, filter, scope));
 
 	if (ldap_state->last_rebind.tv_sec > 0) {
 		struct timeval	tval;
@@ -970,6 +973,8 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 
 	SMB_ASSERT(ldap_state);
 
+	DEBUG(5,("smbldap_modify: dn => [%s]\n", dn ));
+
 	if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
 		return LDAP_NO_MEMORY;
 	}
@@ -1001,6 +1006,8 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 	
 	SMB_ASSERT(ldap_state);
 
+	DEBUG(5,("smbldap_add: dn => [%s]\n", dn ));
+
 	if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
 		return LDAP_NO_MEMORY;
 	}
@@ -1031,6 +1038,8 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 	char           *utf8_dn;
 	
 	SMB_ASSERT(ldap_state);
+
+	DEBUG(5,("smbldap_delete: dn => [%s]\n", dn ));
 
 	if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
 		return LDAP_NO_MEMORY;
@@ -1094,8 +1103,6 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state, const char *filter,
 	int scope = LDAP_SCOPE_SUBTREE;
 	int rc;
 
-	DEBUG(2, ("smbldap_search_suffix: searching for:[%s]\n", filter));
-
 	rc = smbldap_search(ldap_state, lp_ldap_suffix(), scope, filter, search_attr, 0, result);
 
 	if (rc != LDAP_SUCCESS)	{
@@ -1104,8 +1111,6 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state, const char *filter,
 				&ld_error);
 		DEBUG(0,("smbldap_search_suffix: Problem during the LDAP search: %s (%s)\n", 
 			ld_error?ld_error:"(unknown)", ldap_err2string (rc)));
-		DEBUG(3,("smbldap_search_suffix: Query was: %s, %s\n", lp_ldap_suffix(), 
-			filter));
 		SAFE_FREE(ld_error);
 	}
 	

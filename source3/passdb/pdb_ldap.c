@@ -1639,9 +1639,6 @@ static int ldapsam_search_one_group (struct ldapsam_privates *ldap_state,
 	int rc;
 	char **attr_list;
 
-	DEBUG(2, ("ldapsam_search_one_group: searching for:[%s]\n", filter));
-
-
 	attr_list = get_attr_list(groupmap_attr_list);
 	rc = smbldap_search(ldap_state->smbldap_state, 
 			    lp_ldap_group_suffix (), scope,
