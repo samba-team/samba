@@ -58,7 +58,7 @@ krb5_storage_is_flags(krb5_storage *sp, krb5_flags flags)
     return (sp->flags & flags) == flags;
 }
 
-size_t
+ssize_t
 _krb5_put_int(void *buffer, unsigned long value, size_t size)
 {
     unsigned char *p = buffer;
@@ -70,7 +70,7 @@ _krb5_put_int(void *buffer, unsigned long value, size_t size)
     return size;
 }
 
-size_t
+ssize_t
 _krb5_get_int(void *buffer, unsigned long *value, size_t size)
 {
     unsigned char *p = buffer;
@@ -284,10 +284,11 @@ krb5_store_stringz(krb5_storage *sp,
 		  char *s)
 {
     size_t len = strlen(s) + 1;
-    size_t ret;
+    ssize_t ret;
+
     ret = sp->store(sp, s, len);
     if(ret != len) {
-	if((int)ret < 0)
+	if(ret < 0)
 	    return ret;
 	else
 	    return KRB5_CC_END;
@@ -302,10 +303,18 @@ krb5_ret_stringz(krb5_storage *sp,
     char c;
     char *s = NULL;
     size_t len = 0;
-    size_t ret;
+    ssize_t ret;
+
     while((ret = sp->fetch(sp, &c, 1)) == 1){
+	char *tmp;
+
 	len++;
-	s = realloc(s, len);
+	tmp = realloc (s, len);
+	if (tmp == NULL) {
+	    free (s);
+	    return ENOMEM;
+	}
+	s = tmp;
 	s[len - 1] = c;
 	if(c == 0)
 	    break;
