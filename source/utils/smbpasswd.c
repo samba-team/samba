@@ -99,7 +99,9 @@ static void usage(void)
 	printf("  -t DOMAIN            change trust account password on domain\n");
 	printf("  -S DOMAIN            Retrieve the domain SID for DOMAIN\n");
 	printf("  -R ORDER             name resolve order\n");
-
+	printf("  -W S-1-5-...	       Write the SID S-1-5-... to the secrets file\n");
+	printf("  -X SERVER|DOMAIN     Extract SID for SERVER or DOMAIN from the secrets file\n");
+	
 	exit(1);
 }
 
