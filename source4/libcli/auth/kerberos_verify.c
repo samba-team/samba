@@ -28,6 +28,7 @@
 #include "asn_1.h"
 #include "lib/ldb/include/ldb.h"
 #include "secrets.h"
+#include "pstring.h"
 
 #ifdef HAVE_KRB5
 

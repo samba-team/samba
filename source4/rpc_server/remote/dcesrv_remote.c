@@ -164,7 +164,7 @@ static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const 
 static NTSTATUS remote_op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
 {
 	int i;
-	char **ifaces = str_list_make(dce_ctx, lp_parm_string(-1,"dcerpc_remote","interfaces"),NULL);
+	const char **ifaces = str_list_make(dce_ctx, lp_parm_string(-1,"dcerpc_remote","interfaces"),NULL);
 
 	if (!ifaces) {
 		DEBUG(3,("remote_op_init_server: no interfaces configured\n"));
