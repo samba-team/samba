@@ -2183,6 +2183,7 @@ BOOL pdb_set_pass_must_change_time (SAM_ACCOUNT *sampass, time_t mytime);
 BOOL pdb_set_pass_last_set_time (SAM_ACCOUNT *sampass, time_t mytime);
 BOOL pdb_set_hours_len (SAM_ACCOUNT *sampass, uint32 len);
 BOOL pdb_set_logons_divs (SAM_ACCOUNT *sampass, uint16 hours);
+BOOL pdb_set_init_flag (SAM_ACCOUNT *sampass, uint32 flag);
 BOOL pdb_set_uid (SAM_ACCOUNT *sampass, uid_t uid);
 BOOL pdb_set_gid (SAM_ACCOUNT *sampass, gid_t gid);
 BOOL pdb_set_user_rid (SAM_ACCOUNT *sampass, uint32 rid);

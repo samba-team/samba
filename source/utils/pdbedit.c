@@ -680,20 +680,23 @@ int main (int argc, char **argv)
 		return 0;
 	}
 	
-	if(!initialize_password_db(True)) {
-		fprintf(stderr, "Can't setup password database vectors.\n");
-		exit(1);
-	}
-	
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			servicesf);
 		exit(1);
 	}
+
+	secrets_init();
+
+	if(!initialize_password_db(True)) {
+		fprintf(stderr, "Can't setup password database vectors.\n");
+		exit(1);
+	}
+	
 	
 	codepage_initialise(lp_client_code_page());
 
-	while ((ch = getopt(argc, argv, "ad:f:h:i:lmp:s:u:vwx")) != EOF) {
+	while ((ch = getopt(argc, argv, "ad:f:h:i:lmp:s:u:vwxD:")) != EOF) {
 		switch(ch) {
 		case 'a':
 			add_user = True;
@@ -740,6 +743,9 @@ int main (int argc, char **argv)
 			import = True;
 			smbpasswd = optarg;
 			break;
+		case 'D':
+                        DEBUGLEVEL = atoi(optarg);
+                        break;
 		default:
 			usage();
 		}

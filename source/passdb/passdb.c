@@ -1325,6 +1325,16 @@ BOOL pdb_set_logons_divs (SAM_ACCOUNT *sampass, uint16 hours)
 	return True;
 }
 
+BOOL pdb_set_init_flag (SAM_ACCOUNT *sampass, uint32 flag)
+{
+	if (!sampass)
+		return False;
+	
+	sampass->init_flag |= flag;
+
+	return True;
+}
+
 BOOL pdb_set_uid (SAM_ACCOUNT *sampass, uid_t uid)
 {
 	if (!sampass)
@@ -1447,6 +1457,9 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script)
 
 	StrnCpy (sampass->logon_script, logon_script, strlen(logon_script));
 
+	if (strcmp(logon_script, lp_logon_script()))
+		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT);
+
 	return True;
 }
 
@@ -1463,6 +1476,9 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
 		return False;
 	
 	StrnCpy (sampass->profile_path, profile_path, strlen(profile_path));
+
+	if (strcmp(profile_path, lp_logon_path()))
+		pdb_set_init_flag(sampass, FLAG_SAM_PROFILE);
 	
 	return True;
 }
@@ -1480,6 +1496,9 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
 		return False;
 
 	StrnCpy (sampass->dir_drive, dir_drive, strlen(dir_drive));
+	
+	if (strcmp(dir_drive, lp_logon_drive()))
+		pdb_set_init_flag(sampass, FLAG_SAM_DRIVE);
 
 	return True;
 }
@@ -1497,6 +1516,9 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
 		return False;
 	
 	StrnCpy (sampass->home_dir, homedir, strlen(homedir));
+
+	if (strcmp(homedir, lp_logon_home()))
+		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
 
 	return True;
 }

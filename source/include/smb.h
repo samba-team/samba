@@ -585,6 +585,8 @@ typedef struct {
 	(((x)->init_flag & SAM_ACCT_UNIX_UID) \
 	 && ((x)->init_flag & SAM_ACCT_UNIX_GID))
 
+#define IS_SAM_SET(x, flag) 	((x)->init_flag & (flag))
+
 		
 typedef struct sam_passwd
 {
