@@ -37,6 +37,7 @@ smbtorture
 smbtree
 smbumount
 swat
+t_strcmp
 t_stringoverflow
 talloctort
 tdbbackup
