@@ -4794,9 +4794,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	free_a_printer(&printer, 2);
 	free_a_printer(&old_printer, 2);
 
-#if 0	/* JERRY */
 	srv_spoolss_sendnotify(0, PRINTER_CHANGE_SET_PRINTER);
-#endif
 
 	return result;
 }
