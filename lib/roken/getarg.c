@@ -275,10 +275,10 @@ getarg(struct getargs *args, size_t num_args,
 			    if(sscanf(optarg, "%d", &tmp) != 1)
 				return ARG_ERR_BAD_ARG;
 			    *(int*)args[k].value = tmp;
-			    break;
+			    goto out;
 			}else if(args[k].type == arg_string){
 			    *(char**)args[k].value = optarg;
-			    break;
+			    goto out;
 			}
 			return ARG_ERR_BAD_ARG;
 		    }
@@ -287,6 +287,7 @@ getarg(struct getargs *args, size_t num_args,
 		if (k == num_args)
 		    return ARG_ERR_NO_MATCH;
 	    }
+	out:
 	}
     }
     *optind = i;
