@@ -27,7 +27,8 @@ libss_la_SOURCES = $(libsl_la_SOURCES) ss.c ss.h
 
 bin_PROGRAMS = mk_cmds
 
-mk_cmds_SOURCES = make_cmds.c make_cmds.h parse.y lex.l $(ES)
+mk_cmds_SOURCES = make_cmds.c make_cmds.h parse.y lex.l
+mk_cmds_LDADD = libsl.la $(LDADD)
 
 ssincludedir = $(includedir)/ss
 ssinclude_HEADERS = ss.h
