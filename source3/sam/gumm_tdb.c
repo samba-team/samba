@@ -264,7 +264,8 @@ static NTSTATUS get_object_by_name(TALLOC_CTX *mem_ctx, struct tdbsam2_object *o
 		return ret;
 	}
 
-	unix_strlower(name, -1, objname, sizeof(objname));
+	fstrcpy(objname, name);
+	strlower(objname);
 
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", NAMEPREFIX, objname);
 	key.dptr = keystr;
@@ -603,7 +604,8 @@ static NTSTATUS tdbsam2_get_domain_sid(DOM_SID *sid, const char* name)
 		goto done;
 	}
 
-	unix_strlower(name, -1, domname, sizeof(domname));
+	fstrcpy(domname, name);
+	strlower(domname);
 
 	ret = get_object_by_name(mem_ctx, &obj, domname);
 
@@ -650,7 +652,8 @@ static NTSTATUS tdbsam2_set_domain_sid (const DOM_SID *sid, const char *name)
 		}
 	}
 
-	unix_strlower(name, -1, domname, sizeof(domname));
+	fstrcpy(domname, name);
+	strlower(domname);
 
 /* TODO: we need to lock this entry until updated! */
 

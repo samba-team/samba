@@ -236,11 +236,11 @@ static NTSTATUS db_set_mapping(DOM_SID *sid, unid_t id, int id_type)
 	kid.dsize = strlen(kidstr) + 1;
 
 	if (tdb_store(idmap_tdb, ksid, kid, TDB_INSERT) == -1) {
-		DEBUG(0, ("idb_set_mapping: tdb_store 1 error: %s", tdb_errorstr(idmap_tdb)));
+		DEBUG(0, ("idb_set_mapping: tdb_store 1 error: %s\n", tdb_errorstr(idmap_tdb)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	if (tdb_store(idmap_tdb, kid, ksid, TDB_INSERT) == -1) {
-		DEBUG(0, ("idb_set_mapping: tdb_store 2 error: %s", tdb_errorstr(idmap_tdb)));
+		DEBUG(0, ("idb_set_mapping: tdb_store 2 error: %s\n", tdb_errorstr(idmap_tdb)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	return NT_STATUS_OK;
