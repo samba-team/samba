@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -59,8 +59,9 @@ struct key_info {
 int
 kt_list(int argc, char **argv)
 {
-    krb5_error_code ret;
+    krb5_error_code ret = 0;
     krb5_kt_cursor cursor;
+    krb5_keytab keytab;
     krb5_keytab_entry entry;
     int optind = 0;
     struct key_info *ki, **kie = &ki, *kp;
@@ -83,15 +84,38 @@ kt_list(int argc, char **argv)
 	return 0;
     }
 
+    if (keytab_string == NULL) {
+	ret = krb5_kt_default_name (context, keytab_buf, sizeof(keytab_buf));
+	if (ret) {
+	    krb5_warn(context, ret, "krb5_kt_default_name");
+	    return 1;
+	}
+	keytab_string = keytab_buf;
+    }
+    ret = krb5_kt_resolve(context, keytab_string, &keytab);
+    if (ret) {
+	krb5_warn(context, ret, "resolving keytab %s", keytab_string);
+	goto out;
+    }
+
+    if (verbose_flag)
+	fprintf (stderr, "Using keytab %s\n", keytab_string);
+	
     ret = krb5_kt_start_seq_get(context, keytab, &cursor);
     if(ret){
 	krb5_warn(context, ret, "krb5_kt_start_seq_get %s", keytab_string);
-	return 1;
+	goto out;
     }
     while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0){
 #define CHECK_MAX(F) if(max_##F < strlen(kp->F)) max_##F = strlen(kp->F)
 
 	kp = malloc(sizeof(*kp));
+	if (kp == NULL) {
+	    krb5_kt_free_entry(context, &entry);
+	    krb5_kt_end_seq_get(context, keytab, &cursor);
+	    krb5_warnx(context, ret, "malloc failed");
+	    goto out;
+	}
 
 	asprintf(&kp->version, "%d", entry.vno);
 	CHECK_MAX(version);
@@ -159,5 +183,7 @@ kt_list(int argc, char **argv)
 	kp = kp->next;
 	free(ki);
     }
-    return 0;
+out:
+    krb5_kt_close(context, keytab);
+    return ret != 0;
 }
