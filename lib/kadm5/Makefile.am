@@ -7,6 +7,9 @@ libkadm5srv_la_LDFLAGS = -version-info 7:3:0
 libkadm5clnt_la_LDFLAGS = -version-info 6:2:2
 sbin_PROGRAMS = dump_log replay_log truncate_log
 
+libkadm5srv_la_LIBADD = ../krb5/libkrb5.la ../hdb/libhdb.la ../roken/libroken.la
+libkadm5clnt_la_LIBADD = ../krb5/libkrb5.la ../hdb/libhdb.la ../roken/libroken.la
+
 libexec_PROGRAMS = ipropd-master ipropd-slave
 
 kadm5includedir = $(includedir)/kadm5
