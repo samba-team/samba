@@ -552,6 +552,11 @@ k_setpag(void)
     return syscall(AFS_SYSCALL2, AFSCALL_SETPAG);
 #endif
 
+#ifdef AFS_SYSCALL3
+  if (afs_entry_point == SINGLE_ENTRY_POINT3)
+    return syscall(AFS_SYSCALL3, AFSCALL_SETPAG);
+#endif
+
 #ifdef _AIX
   if (afs_entry_point == AIX_ENTRY_POINTS)
       return Setpag();
