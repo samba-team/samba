@@ -544,7 +544,7 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 		DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
 			   snum, lp_printerdriver(snum), lp_driverfile(snum)));
 
-		lines = file_lines_load(lp_driverfile(snum),NULL);
+		lines = file_lines_load(lp_driverfile(snum),NULL, False);
 		if (!lines) 
 		{
 			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),
@@ -785,7 +785,7 @@ static int get_printerdrivernumber(int snum)
 		DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
 			  snum, lp_printerdriver(snum), lp_driverfile(snum)));
 		
-		lines = file_lines_load(lp_driverfile(snum), NULL);
+		lines = file_lines_load(lp_driverfile(snum), NULL, False);
 		if (!lines) 
 		{
 			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),strerror(errno)));
@@ -1089,7 +1089,7 @@ static int get_server_info(uint32 servertype,
   BOOL local_list_only;
   int i;
 
-  lines = file_lines_load(lock_path(SERVER_LIST), NULL);
+  lines = file_lines_load(lock_path(SERVER_LIST), NULL, False);
   if (!lines) {
     DEBUG(4,("Can't open %s - %s\n",lock_path(SERVER_LIST),strerror(errno)));
     return(0);

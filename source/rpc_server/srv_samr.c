@@ -128,7 +128,7 @@ static char *unmap_unixname(char *unix_user_name, int name_idx)
 	if (!*unix_user_name) return NULL;
 	if (!*mapfile) return NULL;
 
-	lines = file_lines_load(mapfile, NULL);
+	lines = file_lines_load(mapfile, NULL,False);
 	if (!lines) {
 		DEBUG(0,("unmap_unixname: can't open username map %s\n", mapfile));
 		return NULL;
