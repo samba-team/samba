@@ -1,3 +1,4 @@
+dnl -*- mode: m4-mode -*-
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
@@ -819,7 +820,7 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    ac_cv_shlib_works=no
    # try building a trivial shared library
    $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o shlib.po ${srcdir-.}/tests/shlib.c &&
-     $SHLD $CPPFLAGS $CFLAGS $LDSHFLAGS -o shlib.so shlib.po &&
+     $CC $CPPFLAGS $CFLAGS $LDSHFLAGS -o shlib.so shlib.po &&
      ac_cv_shlib_works=yes
    rm -f shlib.so shlib.po
 ])
