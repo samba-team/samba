@@ -1,3 +1,8 @@
+Wed Jan 21 01:34:09 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/init_creds_pw.c: Return some error if prompter
+ 	functions return failure.
+
 Tue Jan 20 22:58:31 1998  Assar Westerlund  <assar@sics.se>
 
 	* kuser/kinit.c: rename `-s' to `-S' to be MIT-compatible.
