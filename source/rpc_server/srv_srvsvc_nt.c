@@ -93,6 +93,73 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 	init_srv_share_info2_str(&sh2->info_2_str, net_name, remark, path, passwd);
 }
 
+/*******************************************************************
+ Fake up a Everyone, full access for now.
+ ********************************************************************/
+
+static SEC_DESC *get_share_security( TALLOC_CTX *ctx, int snum, size_t *psize)
+{
+	extern DOM_SID global_sid_World;
+	SEC_ACCESS sa;
+	SEC_ACE ace;
+	SEC_ACL *psa = NULL;
+	SEC_DESC *psd = NULL;
+
+    init_sec_access(&sa, GENERIC_ALL_ACCESS );
+    init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 0);
+
+	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 1, &ace)) != NULL) {
+		psd = make_sec_desc(ctx, SEC_DESC_REVISION, NULL, NULL, NULL, psa, psize);
+	}
+
+	if (!psd) {
+		DEBUG(0,("get_share_security: Failed to make SEC_DESC.\n"));
+		return NULL;
+	}
+
+	return psd;
+}
+
+/*******************************************************************
+ Fill in a share info level 502 structure.
+ ********************************************************************/
+
+static void init_srv_share_info_502(TALLOC_CTX *ctx, SRV_SHARE_INFO_502 *sh502, int snum)
+{
+	int len_net_name;
+	pstring net_name;
+	pstring remark;
+	pstring path;
+	pstring passwd;
+	uint32 type;
+	SEC_DESC *sd;
+	size_t sd_size;
+
+	ZERO_STRUCTP(sh502);
+
+	pstrcpy(net_name, lp_servicename(snum));
+	pstrcpy(remark, lp_comment(snum));
+	pstring_sub(remark,"%S",lp_servicename(snum));
+	pstrcpy(path, lp_pathname(snum));
+	pstrcpy(passwd, "");
+	len_net_name = strlen(net_name);
+
+	/* work out the share type */
+	type = STYPE_DISKTREE;
+		
+	if (lp_print_ok(snum))
+		type = STYPE_PRINTQ;
+	if (strequal("IPC$", net_name))
+		type = STYPE_IPC;
+	if (net_name[len_net_name] == '$')
+		type |= STYPE_HIDDEN;
+
+	sd = get_share_security(ctx, snum, &sd_size);
+
+	init_srv_share_info502(&sh502->info_502, net_name, type, remark, 0, 0xffffffff, 1, path, passwd, sd, sd_size);
+	init_srv_share_info502_str(&sh502->info_502_str, net_name, remark, path, passwd, sd, sd_size);
+}
+
 /***************************************************************************
  Fill in a share info level 1005 structure.
  ***************************************************************************/
@@ -174,6 +241,23 @@ static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
 		break;
 	}
 
+	case 502:
+	{
+		SRV_SHARE_INFO_502 *info502;
+		int i = 0;
+
+		info502 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_502));
+
+		for (snum = *resume_hnd; snum < num_services; snum++) {
+			if (lp_browseable(snum) && lp_snum_ok(snum)) {
+				init_srv_share_info_502(ctx, &info502[i++], snum);
+			}
+		}
+
+		ctr->share.info502 = info502;
+		break;
+	}
+
 	default:
 		DEBUG(5,("init_srv_share_info_ctr: unsupported switch value %d\n", info_level));
 		return False;
@@ -205,7 +289,7 @@ static void init_srv_r_net_share_enum(TALLOC_CTX *ctx, SRV_R_NET_SHARE_ENUM *r_n
  Inits a SRV_R_NET_SHARE_GET_INFO structure.
 ********************************************************************/
 
-static void init_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n,
+static void init_srv_r_net_share_get_info(TALLOC_CTX *ctx, SRV_R_NET_SHARE_GET_INFO *r_n,
 				  char *share_name, uint32 info_level)
 {
 	uint32 status = NT_STATUS_NOPROBLEMO;
@@ -213,20 +297,23 @@ static void init_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n,
 
 	DEBUG(5,("init_srv_r_net_share_get_info: %d\n", __LINE__));
 
-	r_n->switch_value = info_level;
+	r_n->info.switch_value = info_level;
 
 	snum = find_service(share_name);
 
 	if (snum >= 0) {
 		switch (info_level) {
 		case 1:
-			init_srv_share_info_1(&r_n->share.info1, snum);
+			init_srv_share_info_1(&r_n->info.share.info1, snum);
 			break;
 		case 2:
-			init_srv_share_info_2(&r_n->share.info2, snum);
+			init_srv_share_info_2(&r_n->info.share.info2, snum);
+			break;
+		case 502:
+			init_srv_share_info_502(ctx, &r_n->info.share.info502, snum);
 			break;
 		case 1005:
-			init_srv_share_info_1005(&r_n->share.info1005, snum);
+			init_srv_share_info_1005(&r_n->info.share.info1005, snum);
 			break;
 		default:
 			DEBUG(5,("init_srv_net_share_get_info: unsupported switch value %d\n", info_level));
@@ -237,7 +324,7 @@ static void init_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n,
 		status = NT_STATUS_BAD_NETWORK_NAME;
 	}
 
-	r_n->ptr_share_ctr = (status == NT_STATUS_NOPROBLEMO) ? 1 : 0;
+	r_n->info.ptr_share_ctr = (status == NT_STATUS_NOPROBLEMO) ? 1 : 0;
 	r_n->status = status;
 }
 
@@ -815,9 +902,60 @@ uint32 _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, S
 
 	/* Create the list of shares for the response. */
 	share_name = dos_unistr2_to_str(&q_u->uni_share_name);
-	init_srv_r_net_share_get_info(r_u, share_name, q_u->info_level);
+	init_srv_r_net_share_get_info(p->mem_ctx, r_u, share_name, q_u->info_level);
 
 	DEBUG(5,("_srv_net_share_get_info: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+/*******************************************************************
+ Net share set info.
+********************************************************************/
+
+uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, SRV_R_NET_SHARE_SET_INFO *r_u)
+{
+	char *share_name;
+	uint32 status = NT_STATUS_NOPROBLEMO;
+	int snum;
+
+	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
+
+	share_name = dos_unistr2_to_str(&q_u->uni_share_name);
+
+	r_u->switch_value = q_u->info_level;
+
+	snum = find_service(share_name);
+
+	/* For now we only handle setting the security descriptor. JRA. */
+
+	if (snum >= 0) {
+		switch (q_u->info_level) {
+		case 1:
+			status = NT_STATUS_ACCESS_DENIED;
+			break;
+		case 2:
+			status = NT_STATUS_ACCESS_DENIED;
+			break;
+		case 502:
+			/* we set sd's here. FIXME. JRA */
+			status = NT_STATUS_ACCESS_DENIED;
+			break;
+		case 1005:
+			status = NT_STATUS_ACCESS_DENIED;
+			break;
+		default:
+			DEBUG(5,("_srv_net_share_set_info: unsupported switch value %d\n", q_u->info_level));
+			status = NT_STATUS_INVALID_INFO_CLASS;
+			break;
+		}
+	} else {
+		status = NT_STATUS_BAD_NETWORK_NAME;
+	}
+
+	r_u->status = status;
+
+	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
 	return r_u->status;
 }
