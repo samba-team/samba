@@ -3810,6 +3810,12 @@ static void set_server_role(void)
 		case SEC_SERVER:
 			if (lp_domain_logons())
 				DEBUG(0, ("Server's Role (logon server) conflicts with server-level security\n"));
+			server_role = ROLE_DOMAIN_MEMBER;
+			break;
+		case SEC_DOMAIN:
+			if (lp_domain_logons())
+				DEBUG(0, ("Server's Role (logon server) NOT ADVISED with domain-level security\n"));
+			server_role = ROLE_DOMAIN_MEMBER;
 			break;
 		case SEC_ADS:
 			if (lp_domain_logons()) {
@@ -3818,9 +3824,6 @@ static void set_server_role(void)
 			}
 			server_role = ROLE_DOMAIN_MEMBER;
 			break;
-		case SEC_DOMAIN:
-			if (lp_domain_logons())
-				DEBUG(0, ("Server's Role (logon server) NOT ADVISED with domain-level security\n"));
 		case SEC_USER:
 			if (lp_domain_logons()) {
 
