@@ -397,7 +397,7 @@
 
 	NTSTATUS samr_QueryGroupInfo(
 		[in,ref]                  policy_handle *group_handle,
-		[in]                      uint16 level,
+		[in]                      GroupInfo level,
 		[out,switch_is(level)]    samr_GroupInfo *info
 		);
 
@@ -405,7 +405,7 @@
 	/* Function    0x15     */
 	NTSTATUS samr_SetGroupInfo(
 		[in,ref]                  policy_handle *group_handle,
-		[in]                      uint16 level,
+		[in]                      GroupInfo level,
 		[in,switch_is(level),ref] samr_GroupInfo *info
 		);
 
@@ -493,8 +493,8 @@
 	} samr_AliasInfo;
 
 	NTSTATUS samr_QueryAliasInfo(
-		[in,ref]                  policy_handle *alias_handle,
-		[in]                      uint16 level,
+		[in,ref]                  policy_handle  *alias_handle,
+		[in]                      AliasInfo      level,
 		[out,switch_is(level)]    samr_AliasInfo *info
 		);
 
@@ -502,8 +502,8 @@
 	/* Function    0x1d     */
 	NTSTATUS samr_SetAliasInfo(
 		[in,ref]                  policy_handle  *alias_handle,
-		[in]                      uint16          level,
-		[in,switch_is(level),ref] samr_AliasInfo  *info
+		[in]                      AliasInfo      level,
+		[in,switch_is(level),ref] samr_AliasInfo *info
 		);
 
 	/************************/
@@ -676,7 +676,7 @@
 	const int SAMR_FIELD_WORKSTATION  = 0x00000400;
 	const int SAMR_FIELD_LOGON_HOURS  = 0x00002000;
 	const int SAMR_FIELD_ACCT_FLAGS   = 0x00100000;
-	const int SAMR_FIELD_PARAMETERS     = 0x00200000;
+	const int SAMR_FIELD_PARAMETERS   = 0x00200000;
 	const int SAMR_FIELD_COUNTRY_CODE = 0x00400000;
 	const int SAMR_FIELD_CODE_PAGE    = 0x00800000;
 	const int SAMR_FIELD_PASSWORD     = 0x01000000; /* either of these */
