@@ -1027,7 +1027,6 @@ static struct parm_struct parm_table[] = {
 	{"ldap passwd sync", P_ENUM, P_GLOBAL, &Globals.ldap_passwd_sync, NULL, enum_ldap_passwd_sync, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ldap trust ids", P_BOOL, P_GLOBAL, &Globals.ldap_trust_ids, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"ldap delete dn", P_BOOL, P_GLOBAL, &Globals.ldap_delete_dn, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"ldap del only sam attr", P_BOOLREV, P_GLOBAL, &Globals.ldap_delete_dn, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
