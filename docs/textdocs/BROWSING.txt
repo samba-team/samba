@@ -74,7 +74,7 @@ parameters on the command line of nmbd in inetd.conf.  This trick is to
 not use spaces between the option and the parameter (eg: -d2 instead
 of -d 2), and to not use the -B and -N options.  New versions of nmbd
 are now far more likely to correctly find your broadcast and network
-addess, so in most cases these aren't needed.
+address, so in most cases these aren't needed.
 
 The other big problem people have is that their broadcast address,
 netmask or IP address is wrong (specified with the "interfaces" option

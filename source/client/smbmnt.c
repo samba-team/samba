@@ -53,18 +53,18 @@ help(void)
                "-f mode        permission the files get (octal notation)\n"
                "-d mode        permission the dirs get (octal notation)\n"
 	       "-P pid         connection handler's pid\n\n"
+	       "-s share       share name on server\n\n"
                "-h             print this help text\n");
 }
 
 static int
-parse_args(int argc, char *argv[], struct smb_mount_data *data)
+parse_args(int argc, char *argv[], struct smb_mount_data *data, char **share)
 {
         int opt;
         struct passwd *pwd;
         struct group  *grp;
 
-        while ((opt = getopt (argc, argv, "u:g:f:d:"))
-	       != EOF)
+        while ((opt = getopt (argc, argv, "u:g:f:d:s:")) != EOF)
 	{
                 switch (opt)
 		{
@@ -107,6 +107,9 @@ parse_args(int argc, char *argv[], struct smb_mount_data *data)
                         break;
                 case 'd':
                         data->dir_mode = strtol(optarg, NULL, 8);
+                        break;
+                case 's':
+                        *share = optarg;
                         break;
                 default:
                         return -1;
@@ -157,17 +160,13 @@ mount_ok(struct stat *st)
 int 
 main(int argc, char *argv[])
 {
-        struct smb_mount_data data;
-        struct stat st;
-
-        int fd;
-        int um;
+	char *mount_point, *share_name = NULL;
+	FILE *mtab;
+	int fd, um;
 	unsigned int flags;
-
-        char *mount_point;
-
-        struct mntent ment;
-        FILE *mtab;
+	struct smb_mount_data data;
+	struct stat st;
+	struct mntent ment;
 
         progname = argv[0];
 
@@ -222,7 +221,7 @@ main(int argc, char *argv[])
         data.file_mode = (S_IRWXU|S_IRWXG|S_IRWXO) & ~um;
         data.dir_mode  = 0;
 
-        if (parse_args(argc, argv, &data) != 0) {
+        if (parse_args(argc, argv, &data, &share_name) != 0) {
                 usage();
                 return -1;
         }
@@ -239,15 +238,14 @@ main(int argc, char *argv[])
 
 	flags = MS_MGC_VAL;
 
-	if (mount(NULL, mount_point, "smbfs",
-                  flags, (char *)&data) < 0) {
+	if (mount(share_name, mount_point, "smbfs", flags, (char *)&data) < 0)
+	{
 		perror("mount error");
-		printf("Please look at smbmount's manual page for "
-		       "possible reasons\n");
+		printf("Please refer to the smbmnt(8) manual page\n");
 		return -1;
 	}
 
-        ment.mnt_fsname = "none";
+        ment.mnt_fsname = share_name ? share_name : "none";
         ment.mnt_dir = fullpath(mount_point);
         ment.mnt_type = "smbfs";
         ment.mnt_opts = "";

@@ -23,6 +23,12 @@
 #undef SYSLOG
 #endif
 
+#include <linux/version.h>
+#define LVERSION(major,minor,patch) (((((major)<<8)+(minor))<<8)+(patch))
+#if LINUX_VERSION_CODE < LVERSION(2,1,70)
+#error this code will only compile on versions of linux after 2.1.70
+#endif
+
 #include "includes.h"
 #include <linux/smb_fs.h>
 static struct smb_conn_opt conn_options;
@@ -30,6 +36,9 @@ static struct smb_conn_opt conn_options;
 #ifndef REGISTER
 #define REGISTER 0
 #endif
+
+/* Uncomment this to allow debug the smbmount daemon */
+#define SMBFS_DEBUG 1
 
 pstring cur_dir = "\\";
 pstring cd_path = "";
@@ -60,6 +69,7 @@ extern pstring user_socket_options;
 extern int name_type;
 
 extern int max_protocol;
+int port = SMB_PORT;
 
 
 time_t newer_than = 0;
@@ -178,9 +188,6 @@ static BOOL chkpath(char *path,BOOL report)
   return(CVAL(inbuf,smb_rcls) == 0);
 }
 
-
-/* #define SMBFS_DEBUG 1 */
-
 static void
 daemonize(void)
 {
@@ -260,9 +267,7 @@ send_fs_socket(char *mount_point, char *inbuf, char *outbuf)
 	{
 		if ((fd = open(mount_point, O_RDONLY)) < 0)
 		{
-#ifdef SMBFS_DEBUG
-			printf("smbclient: can't open %s\n", mount_point);
-#endif
+			DEBUG(0, ("smbmount: can't open %s\n", mount_point));
 			break;
 		}		
 
@@ -276,9 +281,7 @@ send_fs_socket(char *mount_point, char *inbuf, char *outbuf)
 		res = ioctl(fd, SMB_IOC_NEWCONN, &conn_options);
 		if (res != 0)
 		{
-#ifdef SMBFS_DEBUG
-			printf("smbclient: ioctl failed, res=%d\n",res);
-#endif
+			DEBUG(0, ("smbmount: ioctl failed, res=%d\n", res));
 		}
 
 		close_sockets();
@@ -299,21 +302,22 @@ send_fs_socket(char *mount_point, char *inbuf, char *outbuf)
 		 */
 		signal(SIGUSR1, &usr1_handler);
 		pause();
-#ifdef SMBFS_DEBUG
-		printf("smbclient: got signal, getting new socket\n");
-#endif
+		DEBUG(0, ("smbmount: got signal, getting new socket\n"));
 
-		res = mount_send_login(inbuf,outbuf);
+		res = cli_open_sockets(port);
 		if (!res)
 		{
-#ifdef SMBFS_DEBUG
-			printf("smbclient: login failed\n");
-#endif
+			DEBUG(0, ("smbmount: can't open sockets\n"));
+			continue;
+		}
+
+		res = mount_send_login(inbuf, outbuf);
+		if (!res)
+		{
+			DEBUG(0, ("smbmount: login failed\n"));
 		}
 	}
-#ifdef SMBFS_DEBUG
-	printf("smbclient: exit\n");
-#endif
+	DEBUG(0, ("smbmount: exit\n"));
 	exit(1);
 }
 
@@ -323,10 +327,11 @@ mount smbfs
 static void cmd_mount(char *inbuf,char *outbuf)
 {
 	pstring mpoint;
-	char mount_point[MAXPATHLEN+1];
+	pstring share_name;
 	pstring mount_command;
 	fstring buf;
 	int retval;
+	char mount_point[MAXPATHLEN+1];
 
 	if (!next_token(NULL, mpoint, NULL))
 	{
@@ -342,7 +347,15 @@ static void cmd_mount(char *inbuf,char *outbuf)
 		return;
 	}
 
-	sprintf(mount_command, "smbmnt %s", mount_point);
+	/*
+	 * Build the service name to report on the Unix side,
+	 * converting '\' to '/' and ' ' to '_'.
+	 */
+	strcpy(share_name, service);  
+	string_replace(share_name, '\\', '/');
+	string_replace(share_name, ' ', '_');
+
+	sprintf(mount_command, "smbmnt %s -s %s", mount_point, share_name);
 
 	while(next_token(NULL, buf, NULL))
 	{
@@ -350,7 +363,7 @@ static void cmd_mount(char *inbuf,char *outbuf)
 		strcat(mount_command, buf);
 	}
 
-	DEBUG(3,("mount command: %s\n", mount_command));
+	DEBUG(3, ("mount command: %s\n", mount_command));
 
 	/*
 	 * Create the background process before trying the mount.
@@ -366,9 +379,6 @@ static void cmd_mount(char *inbuf,char *outbuf)
 	}
 	send_fs_socket(mount_point, inbuf, outbuf);
 }	
-
-
-
 
 
 /* This defines the commands supported by this client */
@@ -667,7 +677,6 @@ static void usage(char *pname)
 {
   fstring base_directory;
   char *pname = argv[0];
-  int port = SMB_PORT;
   int opt;
   extern FILE *dbf;
   extern char *optarg;
@@ -739,7 +748,7 @@ static void usage(char *pname)
   if (*argv[1] != '-')
     {
 
-      strcpy(service,argv[1]);  
+      strcpy(service, argv[1]);  
       /* Convert any '/' characters in the service name to '\' characters */
       string_replace( service, '/','\\');
       argc--;
@@ -751,15 +760,6 @@ static void usage(char *pname)
 	  printf("\n%s: Not enough '\\' characters in service\n",service);
 	  exit(1);
 	}
-
-/*
-      if (count_chars(service,'\\') > 3)
-	{
-	  usage(pname);
-	  printf("\n%s: Too many '\\' characters in service\n",service);
-	  exit(1);
-	}
-	*/
 
       if (argc > 1 && (*argv[1] != '-'))
 	{
