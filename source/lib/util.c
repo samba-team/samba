@@ -1782,7 +1782,6 @@ BOOL ms_has_wild(char *s)
  *******************************************************************/
 BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 {
-	extern int Protocol;
 	fstring p2, s2;
 
 	if (strcmp(string,"..") == 0) string = ".";
@@ -1806,7 +1805,6 @@ BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 BOOL wild_match(char *string, char *pattern)
 {
 	pstring p2, s2;
-	extern int Protocol;
 
 	pstrcpy(p2, pattern);
 	pstrcpy(s2, string);
