@@ -100,13 +100,12 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_LOCK_NOT_GRANTED;
 
 	if (!lp_locking(SNUM(conn)))
 		return NT_STATUS_OK;
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
-
 
 	DEBUG(10,("do_lock: lock type %s start=%.0f len=%.0f requested for file %s\n",
 		  lock_type_name(lock_type), (double)offset, (double)count, fsp->fsp_name ));
