@@ -229,7 +229,7 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 
 	/* you can only connect to the IPC$ service as an ipc device */
 	if (strequal(lp_fstype(snum), "IPC"))
-		pstrcpy(dev,"IPC");
+		fstrcpy(dev,"IPC");
 	
 	if (dev[0] == '?' || !dev[0]) {
 		if (lp_print_ok(snum)) {
