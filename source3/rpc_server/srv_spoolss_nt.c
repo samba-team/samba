@@ -7700,13 +7700,22 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	pstring path;
 	pstring long_archi;
 	fstring servername;
+	char *pservername; 
 	const char *short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
 
 	unistr2_to_ascii(servername, name, sizeof(servername)-1);
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
+
+	/* check for beginning double '\'s and that the server
+	   long enough */
+
+	pservername = servername;
+	if ( *pservername == '\\' && strlen(servername)>2 ) {
+		pservername += 2;
+	} 
 	
-	if ( !is_myname_or_ipaddr( servername ) )
+	if ( !is_myname_or_ipaddr( pservername ) )
 		return WERR_INVALID_PARAM;
 
 	if (!(short_archi = get_short_archi(long_archi)))
@@ -7715,7 +7724,7 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)
 		return WERR_NOMEM;
 
-	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", servername, short_archi);
+	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", pservername, short_archi);
 
 	DEBUG(4,("printer driver directory: [%s]\n", path));
 
