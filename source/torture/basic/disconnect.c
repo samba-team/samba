@@ -59,8 +59,12 @@ static BOOL test_disconnect_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	io.ntcreatex.in.share_access = 0;
 	req1 = smb_raw_open_send(cli->tree, &io);
 	req2 = smb_raw_open_send(cli->tree, &io);
+
+	status = smbcli_chkpath(cli->tree, "\\");
+	CHECK_STATUS(status, NT_STATUS_OK);
 	
 	talloc_free(cli);
 
@@ -105,6 +109,9 @@ static BOOL test_disconnect_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	lock[0].pid = 2;
 	io.lockx.in.timeout = 3000;
 	req = smb_raw_lock_send(cli->tree, &io);
+
+	status = smbcli_chkpath(cli->tree, "\\");
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	talloc_free(cli);
 
