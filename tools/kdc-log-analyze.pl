@@ -56,7 +56,8 @@ my %as_req_addr;
 my %as_req_addr_nonlocal;
 my %as_req_client;
 my %as_req_server;
-my %client_uses_des;
+my %addr_uses_des;
+my %princ_uses_des;
 my $five24_req = 0;
 my %five24_req_addr;
 my %five24_req_addr_nonlocal;
@@ -101,17 +102,6 @@ my $http_non_kdc = 0;
 my %http_non_kdc_addr;
 my $tcp_conn_timeout = 0;
 my %tcp_conn_timeout_addr;
-
-my %enctype;
-
-$enctype{25} = 'AES256-CTS';
-$enctype{24} = 'AES128-CTS';
-$enctype{23} = 'RC4-HMAC';
-$enctype{16} = '3DES-CBC-SHA1';
-$enctype{5} = '3DES-CBC-MD5';
-$enctype{3} = 'DES-CBC-MD5';
-$enctype{2} = 'DES-CBC-MD4';
-$enctype{1} = 'DES-CBC-CRC';
 
 while (<>) {
 	process_line($_);
@@ -287,9 +277,12 @@ topten(\%enctype_session);
 print "\tTop ten ticket enctypes:\n";
 topten(\%enctype_ticket);
 
-print "\tDistinct clients still uses DES: ", int(keys %client_uses_des), "\n";
-print "\tTop ten clients using DES:\n";
-topten(\%client_uses_des);
+print "\tDistinct IP addresses uses DES: ", int(keys %addr_uses_des), "\n";
+print "\tTop IP addresses using DES:\n";
+topten(\%addr_uses_des);
+print "\tDistinct principals uses DES: ", int(keys %princ_uses_des), "\n";
+print "\tTop ten principals using DES:\n";
+topten(\%princ_uses_des);
 
 print "\n";
 
@@ -297,6 +290,7 @@ print "\n";
 exit 0;
 
 my $last_addr = "";
+my $last_principal = "";
 
 sub process_line {
 	local($_) = @_;
@@ -309,6 +303,7 @@ sub process_line {
 		$v4_req_addr{$2}++;
 		$v4_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
 		$last_addr = $2;
+		$last_principal = $1;
 	} elsif (/AS-REQ (.*) from IPv[46]:([0-9\.:a-fA-F]+) for (.*)$/) {
 		$as_req++;
 		$as_req_client{$1}++;
@@ -316,6 +311,7 @@ sub process_line {
 		$as_req_addr{$2}++;
 		$as_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
 		$last_addr = $2;
+		$last_principal = $1;
 	} elsif (/TGS-REQ \(krb4\)/) {
 		#Nothing
 	} elsif (/TGS-REQ (.+) from IPv[46]:([0-9\.:a-fA-F]+) for (.*?)( \[.*\]){0,1}$/) {
@@ -325,6 +321,7 @@ sub process_line {
 		$tgs_req_addr{$2}++;
 		$tgs_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
 		$last_addr = $2;
+		$last_principal = $1;
 
 		my $source = $1;
 		my $dest = $3;
@@ -350,6 +347,7 @@ sub process_line {
 		$five24_req_addr{$2}++;
 		$five24_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
 		$last_addr = $2;
+		$last_principal = $1;
 	} elsif (/TCP data of strange type from IPv[46]:([0-9\.:a-fA-F]+)/) {
 		$strange_tcp_data{$1}++;
 	} elsif (/Lookup (.*) failed: No such entry in the database/) {
@@ -388,7 +386,8 @@ sub process_line {
 		my $session = $2;
 
 		if ($ticket =~ /des-cbc-(crc|md4|md5)/) {
-			$client_uses_des{$last_addr}++;
+			$addr_uses_des{$last_addr}++;
+			$princ_uses_des{$last_principal}++;
 		}
 
 	} elsif (/krb_rd_req: Incorrect network address/) {
