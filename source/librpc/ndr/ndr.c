@@ -32,26 +32,6 @@
 #define NDR_BASE_MARSHALL_SIZE 1024
 
 /*
-  only include interfaces that contain callable dcerpc functions here
-*/
-const struct dcerpc_interface_table *dcerpc_pipes[] = {
-	&dcerpc_table_samr,
-	&dcerpc_table_lsarpc,
-	&dcerpc_table_netdfs,
-	&dcerpc_table_atsvc,
-	&dcerpc_table_rpcecho,
-	&dcerpc_table_epmapper,
-	&dcerpc_table_eventlog,
-	&dcerpc_table_spoolss,
-	&dcerpc_table_srvsvc,
-	&dcerpc_table_winreg,
-	&dcerpc_table_wkssvc,
-	&dcerpc_table_mgmt,
-	NULL
-};
-
-
-/*
   work out the number of bytes needed to align on a n byte boundary
 */
 size_t ndr_align_size(uint32 offset, size_t n)

@@ -3,7 +3,7 @@
 ###################################################
 # package to parse IDL files and generate code for 
 # rpc functions in Samba
-# Copyright tridge@samba.org 2000
+# Copyright tridge@samba.org 2000-2003
 # released under the GNU GPL
 
 use strict;

@@ -8,10 +8,14 @@ FULLBUILD=$1
 ( cd build/pidl && make ) || exit 1
 
 PIDL="build/pidl/pidl.pl --output librpc/gen_ndr/ndr_ --parse --header --parser --client librpc/gen_rpc/rpc_"
+TABLES="build/pidl/tables.pl --output librpc/gen_ndr/tables"
 
 if [ x$FULLBUILD = xFULL ]; then
       echo Rebuilding all idl files in librpc/idl
       $PIDL librpc/idl/*.idl || exit 1
+
+      echo Rebuilding IDL tables
+      $TABLES librpc/gen_ndr/ndr_*.h
       exit 0
 fi
 

@@ -190,7 +190,7 @@ LIBCLIUTIL_OBJ = libcli/util/asn1.o \
 
 LIBRAW_NDR_OBJ = librpc/ndr/ndr.o librpc/ndr/ndr_basic.o librpc/ndr/ndr_sec.o \
 		librpc/ndr/ndr_spoolss_buf.o \
-		librpc/gen_ndr/ndr_dcerpc.o \
+		librpc/gen_ndr/tables.o librpc/gen_ndr/ndr_dcerpc.o \
 		librpc/gen_ndr/ndr_echo.o librpc/gen_ndr/ndr_misc.o \
 		librpc/gen_ndr/ndr_lsa.o librpc/gen_ndr/ndr_dfs.o \
 		librpc/gen_ndr/ndr_samr.o librpc/gen_ndr/ndr_spoolss.o \
@@ -645,7 +645,7 @@ MAKEDIR = || exec false; \
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
 # 'make pch' is extremely useful for fast compiles if you have gcc-3.4
-pch:
+pch: basics
 	rm -f $(srcdir)/include/includes.h.gch
 	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
