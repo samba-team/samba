@@ -28,8 +28,6 @@ MANPAGES_NAMES=findsmb.1 smbclient.1 \
 
 TEXSTYLESHEET = @TEXSTYLESHEET@
 XSLTPROC = @XSLTPROC@ @PAPERSIZE@ --stringparam samba-book 1 --stringparam duplicate_ulinks "@DUPLICATE_ULINKS@" @FONTSIZE@ @CROP@
-PDFLATEX = TEXINPUTS=xslt/latex:.: @PDFLATEX@ --interaction nonstopmode
-LATEX = TEXINPUTS=xslt/latex:.: @LATEX@ --interaction nonstopmode
 DVIPS = @DVIPS@
 PNGTOPNM = @PNGTOPNM@
 PNMTOPS = @PNMTOPS@
@@ -49,6 +47,8 @@ TXTDIR = ../textdocs
 FAQPROJDOC = faq
 FAQDIR = ../faq
 HTMLDIR=../htmldocs
+PDFLATEX = TEXINPUTS=xslt/latex:.: @PDFLATEX@ --interaction nonstopmode
+LATEX = TEXINPUTS=xslt/latex:.: @LATEX@ --interaction nonstopmode
 
 MANPAGES=$(patsubst %,$(MANDIR)/%,$(MANPAGES_NAMES))
 MANPAGES_HTML=$(patsubst %,$(HTMLDIR)/%.html,$(MANPAGES_NAMES))
@@ -82,16 +82,15 @@ everything: manpages pdf html-single html htmlman htmlfaq txt ps
 pdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf $(PDFDIR)/Samba-Developers-Guide.pdf
 dvi: $(DVIDIR) $(DVIDIR)/Samba-HOWTO-Collection.dvi $(DVIDIR)/Samba-Developers-Guide.dvi
 ps: $(PSDIR) $(PSDIR)/Samba-HOWTO-Collection.ps $(PSDIR)/Samba-Developers-Guide.ps
-hpdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf
 txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
 htmlfaq: $(HTMLDIR) CSS
 	@$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQPROJDOC)/sambafaq.xml
 html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
-html: $(HTMLDIR) CSS $(PROJDOC_DEPS)
-	@$(XSLTPROC) xslt/html-chunk.xsl $(PROJDOC)/samba-doc.xml
+html: $(HTMLDIR) CSS Samba-HOWTO-Collection.xml
+	@$(XSLTPROC) xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
 manpages: $(MANDIR) $(MANPAGES)
-tex: samba-doc.tex dev-doc.tex
+tex: Samba-HOWTO-Collection.tex Samba-Developers-Guide.tex
 
 Samba-HOWTO-Collection.xml: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS)
 	$(XSLTPROC) --xinclude --output $@ xslt/expand-sambadoc.xsl $<
@@ -99,7 +98,7 @@ Samba-HOWTO-Collection.xml: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS)
 Samba-Developers-Guide.xml: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
 	$(XSLTPROC) --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
-$(PROJDOC)/attributions.xml: $(PROJDOC)/samba-doc.xml $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
+$(PROJDOC)/attributions.xml: $(PROJDOC)/samba-doc.xml
 	@echo > $@ # Make sure we don't get recursive dependencies, etc!
 	@echo "Generating attributions page"
 	@$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
@@ -111,9 +110,9 @@ $(DEVDOC)/attributions.xml: $(DEVDOC)/dev-doc.xml
 
 clean: 
 	@rm -f *.xml $(MANPAGES) $(TXTDIR)/*.txt $(PSDIR)/*.ps $(PDFDIR)/*.pdf 
-	@rm -f $(MANPROJDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.*.xml $(DVIDIR)/*.dvi
+	@rm -f $(SMBDOTCONFDOC)/parameters.*.xml $(DVIDIR)/*.dvi
 	@rm -f samba-doc.* dev-doc.* $(PROJDOC)/attributions.xml
-	@rm -f $(IMAGEPROJDIR)/*.eps
+	@rm -f $(IMAGEPROJDIR)/*.eps $(MANPROJDIR)/smb.conf.5.xml
 
 # Text files
 $(TXTDIR):
@@ -129,22 +128,20 @@ $(TXTDIR)/%.txt: %.xml
 	@$(XSLTPROC) --output $@ xslt/latex.xsl $<
 	
 # Adobe PDF files
-$(PDFDIR)/%.pdf: %.tex epsimages
-	@echo "Building LaTeX sources via $(PDFLATEX)..."
-	@$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
-	$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
-	$(PDFLATEX) $< || echo
-	@echo "done"
+$(PDFDIR)/%.pdf: %.tex
+	$(PDFLATEX) $<
+	$(PDFLATEX) $<
+	$(PDFLATEX) $<
+	mv $(patsubst %.tex,%.pdf,$<) $@
 
 epsimages: $(PROJDOC_IMAGES_EPS)
 
 # DVI files
 $(DVIDIR)/%.dvi: %.tex epsimages
-	@echo "Building LaTeX sources via $(LATEX)..."
-	@$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
-	$(LATEX) $< 2>&1 | grep 'Rerun to get cross-references right' && \
-	$(LATEX) $< 2>&1 || echo
-	@echo "done"
+	$(LATEX) $<
+	$(LATEX) $< 
+	$(LATEX) $< 
+	mv $(patsubst %.tex,%.dvi,$<) $@
 
 %.eps: %.png
 	@$(PNGTOPNM) $< | $(PNMTOPS) > $@
@@ -161,10 +158,10 @@ $(HTMLDIR):
 CSS: $(HTMLDIR) xslt/html/samba.css
 	@cp xslt/html/samba.css $(HTMLDIR)/
 
-$(HTMLDIR)/Samba-HOWTO-Collection.html: $(PROJDOC)/samba-doc.xml $(PROJDOC_DEPS) $(PROJDOC_IMAGES_PNG)
+$(HTMLDIR)/Samba-HOWTO-Collection.html: Samba-HOWTO-Collection.xml $(PROJDOC_DEPS) $(PROJDOC_IMAGES_PNG)
 	@$(XSLTPROC) --output $@ xslt/html.xsl $<
 
-$(HTMLDIR)/Samba-Developers-Guide.html: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
+$(HTMLDIR)/Samba-Developers-Guide.html: Samba-Developers-Guide.xml $(DEVDOC_DEPS)
 	@$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 
@@ -193,10 +190,12 @@ $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(S
 	generate-context.xsl parameters.all.xml && \
 	cd ..
 
-$(MANPROJDOC)/smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml \
- 			$(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml \
- 			xslt/expand-sambadoc.xsl
-	@$(XSLTPROC) --xinclude --output $(MANPROJDOC)/smb.conf.5.xml xslt/expand-sambadoc.xsl $(SMBDOTCONFDOC)/smb.conf.5.xml
+smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml \
+ 			$(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
+	@$(XSLTPROC) --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+
+$(MANPROJDIR)/smb.conf.5.xml: smb.conf.5.xml
+	@cp $< $@
 
 $(MANDIR): 
 	mkdir $(MANDIR)
