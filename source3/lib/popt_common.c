@@ -348,8 +348,8 @@ static void popt_common_credentials_callback(poptContext con,
 	struct poptOption popt_common_credentials[] = {
 		{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, popt_common_credentials_callback },
 		{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "USERNAME" },
-		{ "no-pass", 'N', POPT_ARG_VAL, &cmdline_auth_info.got_pass, TRUE, "Don't ask for a password" },
-		{ "kerberos", 'k', POPT_ARG_VAL, &cmdline_auth_info.use_kerberos, TRUE, "Use kerberos (active directory) authentication" },
+		{ "no-pass", 'N', POPT_ARG_VAL, &cmdline_auth_info.got_pass, True, "Don't ask for a password" },
+		{ "kerberos", 'k', POPT_ARG_VAL, &cmdline_auth_info.use_kerberos, True, "Use kerberos (active directory) authentication" },
 		{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
 		{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
 		{ 0 }
