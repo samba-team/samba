@@ -81,6 +81,22 @@ if [ -d $SRCDIR../docs/htmldocs/ ]; then
 	cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
 	chmod 0644 $FNAME
     done
+
+    if [ -d $SRCDIR../docs/htmldocs/images/ ]; then
+        if [ ! -d $SWATDIR/help/images/ ]; then
+            mkdir $SWATDIR/help/images
+            if [ ! -d $SWATDIR/help/images/ ]; then
+                echo Failed to make directory $SWATDIR/help/images, does $USER have privileges?
+                exit 1
+            fi
+        fi
+        for f in $SRCDIR../docs/htmldocs/images/*.png; do
+            FNAME=$SWATDIR/help/images/`basename $f`
+            echo $FNAME
+            cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+            chmod 0644 $FNAME
+        done
+    fi
 fi
 
 # Install Using Samba book (but only if it is there)
