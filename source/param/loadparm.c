@@ -1496,8 +1496,7 @@ void lp_talloc_free(void)
 
 static char *lp_string(const char *s)
 {
-	size_t len = s ? strlen(s) : 0;
-	char *ret;
+	char *ret, *tmpstr;
 
 	/* The follow debug is useful for tracking down memory problems
 	   especially if you have an inner loop that is calling a lp_*()
@@ -1511,25 +1510,16 @@ static char *lp_string(const char *s)
 	if (!lp_talloc)
 		lp_talloc = talloc_init("lp_talloc");
 
-	ret = (char *)talloc(lp_talloc, len + 100);	/* leave room for substitution */
-
-	if (!ret)
-		return NULL;
-
-	/* Note: safe_strcpy touches len+1 bytes, but we allocate 100
-	 * extra bytes so we're OK. */
-
-	if (!s)
-		*ret = 0;
-	else
-		safe_strcpy(ret, s, len+99);
-
-	if (trim_string(ret, "\"", "\"")) {
-		if (strchr(ret,'"') != NULL)
-			safe_strcpy(ret, s, len+99);
+	tmpstr = alloc_sub_basic(current_user_info.smb_name, s);
+	if (trim_string(tmpstr, "\"", "\"")) {
+		if (strchr(tmpstr,'"') != NULL) {
+			SAFE_FREE(tmpstr);
+			tmpstr = alloc_sub_basic(current_user_info.smb_name,s);
+		}
 	}
-
-	standard_sub_basic(current_user_info.smb_name,ret,len+100);
+	ret = talloc_strdup(lp_talloc, tmpstr);
+	SAFE_FREE(tmpstr);
+			
 	return (ret);
 }
 
