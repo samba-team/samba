@@ -1,3 +1,7 @@
+2003-08-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* emalloc.3: manpage
+	
 2003-07-11  Love  <lha@stacken.kth.se>
 
 	* resolve.c: AIX have broken res_nsearch() in 5.1 (5.0 also ?)  so
