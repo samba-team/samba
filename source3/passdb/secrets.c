@@ -88,3 +88,35 @@ BOOL secrets_delete(char *key)
 	kbuf.dsize = strlen(key);
 	return tdb_delete(tdb, kbuf) == 0;
 }
+
+BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid)
+{
+	fstring key;
+
+	slprintf(key, sizeof(key), "%s/%s", SECRETS_DOMAIN_SID, domain);
+	return secrets_store(key, sid, sizeof(DOM_SID));
+}
+
+BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
+{
+	DOM_SID *dyn_sid;
+	fstring key;
+	int size;
+
+	slprintf(key, sizeof(key), "%s/%s", SECRETS_DOMAIN_SID, domain);
+	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
+
+	if (dyn_sid == NULL)
+		return False;
+
+	if (size != sizeof(DOM_SID))
+	{ 
+		free(dyn_sid);
+		return False;
+	}
+
+	*sid = *dyn_sid;
+	free(dyn_sid);
+	return True;
+}
+

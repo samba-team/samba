@@ -88,24 +88,18 @@ Init dom_query
 
 static void init_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 {
-	fstring sid_str;
-	int domlen = strlen(dom_name);
-
-	*sid_str = '\0';
+	int domlen = (dom_name != NULL) ? strlen(dom_name) : 0;
 
 	d_q->uni_dom_max_len = domlen * 2;
 	d_q->uni_dom_str_len = domlen * 2;
 
-	d_q->buffer_dom_name = domlen  != 0    ? 1 : 0; /* domain buffer pointer */
-	d_q->buffer_dom_sid  = dom_sid != NULL ? 1 : 0; /* domain sid pointer */
+	d_q->buffer_dom_name = (dom_name != 0)   ? 1 : 0;
+	d_q->buffer_dom_sid  = (dom_sid != NULL) ? 1 : 0;
 
 	/* this string is supposed to be character short */
 	init_unistr2(&d_q->uni_domain_name, dom_name, domlen);
-
-	if(dom_sid) {
-		sid_to_string(sid_str, dom_sid);
+	if (dom_sid != NULL)
 		init_dom_sid2(&d_q->dom_sid, dom_sid);
-	}
 }
 
 /***************************************************************************
@@ -506,11 +500,10 @@ api_lsa_query_info
 static BOOL api_lsa_query_info(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_QUERY_INFO q_i;
-	fstring name;
+	DOM_SID domain_sid;
+	char *name = NULL;
 	DOM_SID *sid = NULL;
 	uint32 status_code = 0;
-
-	memset(name, 0, sizeof(name));
 
 	ZERO_STRUCT(q_i);
 
@@ -522,15 +515,26 @@ static BOOL api_lsa_query_info(prs_struct *data, prs_struct *rdata)
 
 	switch (q_i.info_class) {
 	case 0x03:
-		if(lp_domain_logons()) {
-			fstrcpy(name, global_myworkgroup);
-			sid = &global_sam_sid;
-		} else {
-			*name = '\0';
+		switch (lp_server_role())
+		{
+			case ROLE_DOMAIN_PDC:
+			case ROLE_DOMAIN_BDC:
+				name = global_myworkgroup;
+				sid = &global_sam_sid;
+				break;
+			case ROLE_DOMAIN_MEMBER:
+				if (secrets_fetch_domain_sid(global_myworkgroup,
+					&domain_sid))
+				{
+					name = global_myworkgroup;
+					sid = &domain_sid;
+				}
+			default:
+				break;
 		}
 		break;
 	case 0x05:
-		fstrcpy(name, global_myname);
+		name = global_myname;
 		sid = &global_sam_sid;
 		break;
 	default:
