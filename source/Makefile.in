@@ -133,7 +133,7 @@ UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
 PARAM_OBJ = param/loadparm.o param/params.o dynconfig.o
 
 LIBADS_OBJ = libads/ldap.o libads/sasl.o libads/krb5_setpw.o libads/kerberos.o \
-	     libads/ads_struct.o passdb/secrets.o 
+	     libads/ads_struct.o passdb/secrets.o libads/util.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \

@@ -1,8 +1,9 @@
-tdbtool
+*.po
+*.po32
+tdbdump
 tdbtest
+tdbtool
 tdbtorture
 test.db
 test.gdbm
 test.tdb
-*.po
-*.po32

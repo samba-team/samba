@@ -3,6 +3,8 @@
    Version 3.0
    ads (active directory) utility library
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Remus Koos 2001
+   
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -442,9 +444,17 @@ ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 {
 	ADS_STATUS status;
 	char *host = strdup(hostname);
+	char *principal; 
+
 	strlower(host);
-	status = krb5_set_password(ads->kdc_server, host, ads->realm, password);
+
+	asprintf(&principal, "%s@%s", host, ads->realm);
+	
+	status = krb5_set_password(ads->kdc_server, principal, password);
+	
 	free(host);
+	free(principal);
+
 	return status;
 }
 

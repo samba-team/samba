@@ -3,6 +3,7 @@
    Version 3.0
    net ads commands
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
+   Copyright (C) 2001 Remus Koos (remuskoos@yahoo.com)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,6 +39,11 @@ int net_ads_usage(int argc, const char **argv)
 "\n\tshows some info on the server\n"\
 "\nnet ads status"\
 "\n\tdump the machine account details to stdout\n"
+"\nnet ads password <username@realm> -Uadmin_username@realm%%admin_pass"\
+"\n\tchange a user's password using an admin account"
+"\n\t(note: use realm in UPPERCASE)\n"
+"\nnet ads chostpass"
+"\n\tchange the trust account password of this machine in the AD tree\n"
 		);
 	return -1;
 }
@@ -257,6 +263,89 @@ static int net_ads_join(int argc, const char **argv)
 	return 0;
 }
 
+
+static int net_ads_password(int argc, const char **argv)
+{
+    ADS_STRUCT *ads;
+    extern char *opt_user_name;
+    extern char *opt_password;
+    char *auth_principal = opt_user_name;
+    char *auth_password = opt_password;
+    char *realm = NULL;
+    char *new_password = NULL;
+    char *c;
+    char *prompt;
+    ADS_STATUS ret;
+
+    
+    if ((argc != 1) || (opt_user_name == NULL) || 
+	(opt_password == NULL) || (strchr(opt_user_name, '@') == NULL) ||
+	(strchr(argv[0], '@') == NULL)) {
+	return net_ads_usage(argc, argv);
+    }
+    
+    c = strchr(auth_principal, '@');
+    realm = ++c;
+
+    /* use the realm so we can eventually change passwords for users 
+    in realms other than default */
+    if (!(ads = ads_init(realm, NULL, NULL, NULL))) return -1;
+
+    asprintf(&prompt, "Enter new password for %s:", argv[0]);
+
+    new_password = getpass(prompt);
+
+    ret = kerberos_set_password(ads->kdc_server, auth_principal, 
+				auth_password, argv[0], new_password);
+    if (!ADS_ERR_OK(ret)) {
+	d_printf("Password change failed :-( ...\n");
+	ads_destroy(&ads);
+	free(prompt);
+	return -1;
+    }
+
+    d_printf("Password change for %s completed.\n", argv[0]);
+    ads_destroy(&ads);
+    free(prompt);
+
+    return 0;
+}
+
+
+static int net_ads_change_localhost_pass(int argc, const char **argv)
+{    
+    ADS_STRUCT *ads;
+    extern pstring global_myname;
+    char *host_principal;
+    char *hostname;
+    ADS_STATUS ret;
+
+
+    if (!(ads = ads_init(NULL, NULL, NULL, NULL))) return -1;
+
+    hostname = strdup(global_myname);
+    strlower(hostname);
+    asprintf(&host_principal, "%s@%s", hostname, ads->realm);
+    SAFE_FREE(hostname);
+    d_printf("Changing password for principal: HOST/%s\n", host_principal);
+    
+    ret = ads_change_trust_account_password(ads, host_principal);
+
+    if (!ADS_ERR_OK(ret)) {
+	d_printf("Password change failed :-( ...\n");
+	ads_destroy(&ads);
+	SAFE_FREE(host_principal);
+	return -1;
+    }
+    
+    d_printf("Password change for principal HOST/%s succeeded.\n", host_principal);
+    ads_destroy(&ads);
+    SAFE_FREE(host_principal);
+
+    return 0;
+}
+
+
 int net_ads(int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -266,6 +355,8 @@ int net_ads(int argc, const char **argv)
 		{"STATUS", net_ads_status},
 		{"USER", net_ads_user},
 		{"GROUP", net_ads_group},
+		{"PASSWORD", net_ads_password},
+		{"CHOSTPASS", net_ads_change_localhost_pass},
 		{NULL, NULL}
 	};
 	

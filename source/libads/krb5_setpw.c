@@ -3,6 +3,7 @@
    Version 3.0
    krb5 set password implementation
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Remus Koos 2001 (remuskoos@yahoo.com)
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,11 +33,35 @@
 /* This implements the Kerb password change protocol as specifed in
  * kerb-chg-password-02.txt
  */
-static DATA_BLOB encode_krb5_setpw(const char *hostname, 
-				   const char *realm, const char *password)
+static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 {
+        char* princ_part1 = NULL;
+	char* princ_part2 = NULL;
+	char* realm = NULL;
+	char* c;
+	char* princ;
+
 	ASN1_DATA req;
 	DATA_BLOB ret;
+
+
+	princ = strdup(principal);
+
+	if ((c = strchr(princ, '/')) == NULL) {
+	    c = princ; 
+	} else {
+	    *c = '\0';
+	    c++;
+	    princ_part1 = princ;
+	}
+
+	princ_part2 = c;
+
+	if ((c = strchr(c, '@')) != NULL) {
+	    *c = '\0';
+	    c++;
+	    realm = c;
+	}
 
 	memset(&req, 0, sizeof(req));
 	
@@ -54,8 +79,11 @@ static DATA_BLOB encode_krb5_setpw(const char *hostname,
 
 	asn1_push_tag(&req, ASN1_CONTEXT(1));
 	asn1_push_tag(&req, ASN1_SEQUENCE(0));
-	asn1_write_GeneralString(&req, "HOST");
-	asn1_write_GeneralString(&req, hostname);
+
+	if (princ_part1) 
+	    asn1_write_GeneralString(&req, princ_part1);
+	
+	asn1_write_GeneralString(&req, princ_part2);
 	asn1_pop_tag(&req);
 	asn1_pop_tag(&req);
 	asn1_pop_tag(&req);
@@ -69,14 +97,15 @@ static DATA_BLOB encode_krb5_setpw(const char *hostname,
 	ret = data_blob(req.data, req.length);
 	asn1_free(&req);
 
+	free(princ);
+
 	return ret;
 }	
 
 static krb5_error_code build_setpw_request(krb5_context context,
 					   krb5_auth_context auth_context,
 					   krb5_data *ap_req,
-					   const char *hostname,
-					   const char *realm,
+					   const char *princ,
 					   const char *passwd,
 					   krb5_data *packet)
 {
@@ -95,13 +124,16 @@ static krb5_error_code build_setpw_request(krb5_context context,
 		return ret;
 	}
 
-	setpw = encode_krb5_setpw(hostname, realm, passwd);
+	setpw = encode_krb5_setpw(princ, passwd);
 
 	encoded_setpw.data = setpw.data;
 	encoded_setpw.length = setpw.length;
 
 	ret = krb5_mk_priv(context, auth_context,
 			   &encoded_setpw, &cipherpw, &replay);
+	
+	data_blob_free(&setpw); 	/*from 'encode_krb5_setpw(...)' */
+	
 	if (ret) {
 		DEBUG(1,("krb5_mk_priv failed (%s)\n", error_message(ret)));
 		return ret;
@@ -118,6 +150,8 @@ static krb5_error_code build_setpw_request(krb5_context context,
 	packet->length = PTR_DIFF(p,packet->data);
 	RSSVAL(packet->data, 0, packet->length);
 	
+	free(cipherpw.data);    /* from 'krb5_mk_priv(...)' */
+
 	return 0;
 }
 
@@ -196,6 +230,7 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	}
 
 	if (clearresult.length < 2) {
+	        free(clearresult.data);
 		ret = KRB5KRB_AP_ERR_MODIFIED;
 		return KRB5KRB_AP_ERR_MODIFIED;
 	}
@@ -204,21 +239,23 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 	
 	res_code = RSVAL(p, 0);
 	
+	free(clearresult.data);
+
 	if ((res_code < KRB5_KPASSWD_SUCCESS) || 
-	    (res_code > KRB5_KPASSWD_ACCESSDENIED)) {
+	    (res_code >= KRB5_KPASSWD_ACCESSDENIED)) {
 		return KRB5KRB_AP_ERR_MODIFIED;
 	}
 	
 	return 0;
 }
 
-ADS_STATUS krb5_set_password(const char *kdc_host, const char *hostname,
-			     const char *realm,  const char *newpw)
+ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char *newpw)
 {
 	krb5_context context;
 	krb5_auth_context auth_context = NULL;
 	krb5_principal principal;
 	char *princ_name;
+	char *realm;
 	krb5_creds creds, *credsp;
 	krb5_ccache ccache;
 	krb5_data ap_req, chpw_req, chpw_rep;
@@ -234,33 +271,40 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	
 	ret = krb5_cc_default(context, &ccache);
 	if (ret) {
+	        krb5_free_context(context);
 		DEBUG(1,("Failed to get default creds (%s)\n", error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
 
 	ZERO_STRUCT(creds);
 	
+	realm = strchr(princ, '@');
+	realm++;
+
 	asprintf(&princ_name, "kadmin/changepw@%s", realm);
 	ret = krb5_parse_name(context, princ_name, &creds.server);
 	if (ret) {
+                krb5_free_context(context);
 		DEBUG(1,("Failed to parse kadmin/changepw (%s)\n", error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
 	free(princ_name);
 
-	asprintf(&princ_name, "HOST/%s@%s", hostname, realm);
-	ret = krb5_parse_name(context, princ_name, &principal);
+	/* parse the principal we got as a function argument */
+	ret = krb5_parse_name(context, princ, &principal);
 	if (ret) {
+                krb5_free_context(context);
 		DEBUG(1,("Failed to parse %s (%s)\n", princ_name, error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
-	free(princ_name);
 
 	krb5_princ_set_realm(context, creds.server,
 			     krb5_princ_realm(context, principal));
 	
 	ret = krb5_cc_get_principal(context, ccache, &creds.client);
 	if (ret) {
+	        krb5_free_principal(context, principal);
+                krb5_free_context(context);
 		DEBUG(1,("Failed to get principal from ccache (%s)\n", 
 			 error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
@@ -268,13 +312,21 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	
 	ret = krb5_get_credentials(context, 0, ccache, &creds, &credsp);
 	if (ret) {
+	        krb5_free_principal(context, creds.client);
+	        krb5_free_principal(context, principal);
+	        krb5_free_context(context);
 		DEBUG(1,("krb5_get_credentials failed (%s)\n", error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
 	
+	//we might have to call krb5_free_creds(...) from now on ...
 	ret = krb5_mk_req_extended(context, &auth_context, AP_OPTS_USE_SUBKEY,
 				   NULL, credsp, &ap_req);
 	if (ret) {
+	        krb5_free_creds(context, credsp);
+	        krb5_free_principal(context, creds.client);
+	        krb5_free_principal(context, principal);
+	        krb5_free_context(context);
 		DEBUG(1,("krb5_mk_req_extended failed (%s)\n", error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
@@ -282,6 +334,11 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	sock = open_udp_socket(kdc_host, DEFAULT_KPASSWD_PORT);
 	if (sock == -1) {
 		int rc = errno;
+	        free(ap_req.data);
+	        krb5_free_creds(context, credsp);
+		krb5_free_principal(context, creds.client);
+		krb5_free_principal(context, principal);
+		krb5_free_context(context);
 		DEBUG(1,("failed to open kpasswd socket to %s (%s)\n", 
 			 kdc_host, strerror(errno)));
 		return ADS_ERROR_SYSTEM(rc);
@@ -301,18 +358,37 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *hostname,
 
 	ret = krb5_auth_con_setaddrs(context, auth_context, &local_kaddr, NULL);
 	if (ret) {
+	        close(sock);
+	        free(ap_req.data);
+	        krb5_free_creds(context, credsp);
+	        krb5_free_principal(context, creds.client);
+	        krb5_free_principal(context, principal);
+	        krb5_free_context(context);
 		DEBUG(1,("krb5_auth_con_setaddrs failed (%s)\n", error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
 
 	ret = build_setpw_request(context, auth_context, &ap_req,
-				  hostname, realm, newpw, &chpw_req);
+				  princ, newpw, &chpw_req);
 	if (ret) {
+	        close(sock);
+	        free(ap_req.data);
+	        krb5_free_creds(context, credsp);
+	        krb5_free_principal(context, creds.client);
+	        krb5_free_principal(context, principal);
+	        krb5_free_context(context);
 		DEBUG(1,("build_setpw_request failed (%s)\n", error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
 
 	if (write(sock, chpw_req.data, chpw_req.length) != chpw_req.length) {
+	        close(sock);
+		free(chpw_req.data);
+	        free(ap_req.data);
+	        krb5_free_creds(context, credsp);
+		krb5_free_principal(context, creds.client);
+		krb5_free_principal(context, principal);
+		krb5_free_context(context);
 		DEBUG(1,("send of chpw failed (%s)\n", strerror(errno)));
 		return ADS_ERROR(LDAP_ENCODING_ERROR);
 	}
@@ -324,6 +400,14 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *hostname,
 
 	ret = read(sock, chpw_rep.data, chpw_rep.length);
 	if (ret < 0) {
+	        close(sock);
+		free(chpw_rep.data);
+		free(ap_req.data);
+	        krb5_free_creds(context, credsp);
+		krb5_free_principal(context, creds.client);
+		krb5_free_principal(context, principal);
+		krb5_free_context(context);
+		DEBUG(1,("recv of chpw reply failed (%s)\n", strerror(errno)));
 		return ADS_ERROR_SYSTEM(errno);
 	}
 
@@ -332,6 +416,12 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *hostname,
 
 	ret = krb5_auth_con_setaddrs(context, auth_context, NULL,&remote_kaddr);
 	if (ret) {
+	        free(chpw_rep.data);
+	        free(ap_req.data);
+	        krb5_free_creds(context, credsp);
+		krb5_free_principal(context, creds.client);
+		krb5_free_principal(context, principal);
+		krb5_free_context(context);
 		DEBUG(1,("krb5_auth_con_setaddrs on reply failed (%s)\n", 
 			 error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
@@ -341,12 +431,39 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *hostname,
 	free(chpw_rep.data);
 
 	if (ret) {
+	        free(ap_req.data);
+	        krb5_free_creds(context, credsp);
+		krb5_free_principal(context, creds.client);
+		krb5_free_principal(context, principal);
+		krb5_free_context(context);
 		DEBUG(1,("parse_setpw_reply failed (%s)\n", 
 			 error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
 
+	free(ap_req.data);
+	krb5_free_creds(context, credsp);
+	krb5_free_principal(context, creds.client);
+	krb5_free_principal(context, principal);
+	krb5_free_context(context);
+
 	return ADS_SUCCESS;
 }
+
+
+ADS_STATUS kerberos_set_password(const char *kpasswd_server, 
+				 const char *auth_principal, const char *auth_password,
+				 const char *target_principal, const char *new_password)
+{
+    int ret;
+
+    if ((ret = kerberos_kinit_password(auth_principal, auth_password))) {
+	DEBUG(1,("Failed kinit for principal %s (%s)\n", auth_principal, error_message(ret)));
+	return ADS_ERROR_KRB5(ret);
+    }
+
+    return krb5_set_password(kpasswd_server, target_principal, new_password);
+}
+
 
 #endif

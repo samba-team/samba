@@ -3,6 +3,8 @@
    Version 3.0
    kerberos utility library
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Remus Koos 2001
+   
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,8 +29,7 @@
   simulate a kinit, putting the tgt in the default cache location
   remus@snapserver.com
 */
-int kerberos_kinit_password(const char *principal, const char *password, 
-			    time_t real_time)
+int kerberos_kinit_password(const char *principal, const char *password)
 {
 	krb5_context ctx;
 	krb5_error_code code = 0;
@@ -44,10 +45,6 @@ int kerberos_kinit_password(const char *principal, const char *password,
 	if ((code = krb5_init_context(&ctx)))
 		return code;
 	
-	if (real_time) {
-		krb5_set_real_time(ctx, real_time, 0);
-	}
-
 	if ((code = krb5_cc_default(ctx, &cc))) {
 		krb5_free_context(ctx);
 		return code;
@@ -58,7 +55,7 @@ int kerberos_kinit_password(const char *principal, const char *password,
 		return code;
 	}
 	
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, password, NULL, 
+	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, (char*)password, NULL, 
 						NULL, 0, NULL, NULL))) {
 		krb5_free_principal(ctx, me);
 		krb5_free_context(ctx);		
@@ -105,7 +102,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 		asprintf(&ads->user_name, "HOST/%s", global_myname);
 	}
 	asprintf(&s, "%s@%s", ads->user_name, ads->realm);
-	ret = kerberos_kinit_password(s, ads->password, 0);
+	ret = kerberos_kinit_password(s, ads->password);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n", 
