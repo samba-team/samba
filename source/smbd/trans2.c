@@ -2508,18 +2508,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
 		{
-			if (total_data < l1_cbFile+4)
+			if (total_data < 12)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
 			/* access time */
 			tvs.actime = make_unix_date2(pdata+l1_fdateLastAccess);
-
 			/* write time */
 			tvs.modtime = make_unix_date2(pdata+l1_fdateLastWrite);
-
-			dosmode = SVAL(pdata,l1_attrFile);
-			size = IVAL(pdata,l1_cbFile);
-
 			break;
 		}
 
