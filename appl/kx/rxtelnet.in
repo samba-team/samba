@@ -31,8 +31,8 @@ for i in $*; do
   done
 done
 if test -n "$term"; then
-  $term -title $host -name $host -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host
+  ($term -title $host -name $host -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host; kill -USR2 $pid) &
 else
   env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host
+  kill -USR2 $pid
 fi
-kill -USR2 $pid
