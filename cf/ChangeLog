@@ -31,6 +31,10 @@
  	which we use in the code.  This test avoids false positives on
  	OpenBSD
 
+1999-11-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* grok-type.m4: inttypes.h
+
 1999-11-05  Assar Westerlund  <assar@sics.se>
 
 	* check-x.m4: include X_PRE_LIBS and X_EXTRA_LIBS when testing
