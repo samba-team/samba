@@ -502,12 +502,12 @@ typedef struct id_info_1
   uint32            param_ctrl;          /* param control */
   DOM_LOGON_ID      logon_id;            /* logon ID */
   UNIHDR            hdr_user_name;       /* user name unicode header */
-  UNIHDR            hdr_workgroup_name;  /* workgroup name unicode header */
+  UNIHDR            hdr_wksta_name;      /* workgroup name unicode header */
   ARC4_OWF          arc4_lm_owf;         /* arc4 LM OWF Password */
   ARC4_OWF          arc4_nt_owf;         /* arc4 NT OWF Password */
   UNISTR2           uni_domain_name;     /* domain name unicode string */
   UNISTR2           uni_user_name;       /* user name unicode string */
-  UNISTR2           uni_workgroup_name;  /* workgroup name unicode string */
+  UNISTR2           uni_wksta_name;      /* workgroup name unicode string */
 
 } DOM_ID_INFO_1;
 
@@ -522,7 +522,7 @@ typedef struct sam_info
   
   union
   {
-    DOM_ID_INFO_1 id1; /* auth-level 1 */
+    DOM_ID_INFO_1 *id1; /* auth-level 1 */
 
   } auth;
   
