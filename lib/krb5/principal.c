@@ -14,7 +14,12 @@ void
 krb5_free_principal(krb5_context context,
 		    krb5_principal p)
 {
-    krb5_principal_free(p);
+    int i;
+    for(i = 0; i < p->ncomp; i++)
+	krb5_data_free(&p->comp[i]);
+    free(p->comp);
+    krb5_data_free(&p->realm);
+    free(p);
 }
 
 krb5_error_code
@@ -275,7 +280,8 @@ build_principal(krb5_context context,
     krb5_principal p;
     int n;
   
-    if(krb5_principal_alloc(&p))
+    p = calloc(1, sizeof(*p));
+    if (p == NULL)
 	return ENOMEM;
     p->type = KRB5_NT_PRINCIPAL;
 
@@ -334,7 +340,8 @@ krb5_copy_principal(krb5_context context,
 {
     krb5_principal p;
     int i;
-    if(krb5_principal_alloc(&p))
+    p = calloc(1, sizeof(*p));
+    if (p == NULL)
 	return ENOMEM;
     p->type = inprinc->type;
     if(krb5_data_copy(&p->realm, inprinc->realm.data, inprinc->realm.length)){
