@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,6 +39,12 @@
 #include "krb5_locl.h"
 
 RCSID("$Id$");
+
+krb5_error_code
+krb5_free_cred_contents (krb5_context context, krb5_creds *c)
+{
+    return krb5_free_creds_contents (context, c);
+}    
 
 krb5_error_code
 krb5_free_creds_contents (krb5_context context, krb5_creds *c)
