@@ -386,11 +386,6 @@ enum client_action
  int main(int argc,char *argv[])
 {
 	BOOL interactive = True;
-
-	printf("Please use rpcclient from the SAMBA_TNG cvs tag.\n");
-	printf("Please refer to http://samba.org/cvs.html for details.\n");
-	exit(-1);
-
 	int opt;
 	extern FILE *dbf;
 	extern char *optarg;
@@ -406,6 +401,10 @@ enum client_action
 	struct client_info cli_info;
 
 	pstring password; /* local copy only, if one is entered */
+
+	printf("Please use rpcclient from the SAMBA_TNG cvs tag.\n");
+	printf("Please refer to http://samba.org/cvs.html for details.\n");
+	exit(-1);
 
 	out_hnd = stdout;
 	fstrcpy(debugf, argv[0]);
