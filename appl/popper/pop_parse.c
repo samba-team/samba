@@ -22,7 +22,7 @@ pop_parse(POP *p, char *buf)
     for (mp = buf, i = 0; ; i++) {
     
         /*  Skip leading spaces and tabs in the message */
-        while (isspace(*mp))mp++;
+        while (isspace((unsigned char)*mp))mp++;
 
         /*  Are we at the end of the message? */
         if (*mp == 0) break;
@@ -37,7 +37,7 @@ pop_parse(POP *p, char *buf)
         p->pop_parm[i] = mp;
 
         /*  Search for the first space character (end of the token) */
-        while (!isspace(*mp) && *mp) mp++;
+        while (!isspace((unsigned char)*mp) && *mp) mp++;
 
         /*  Delimit the token with a null */
         if (*mp) *mp++ = 0;
