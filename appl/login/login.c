@@ -491,7 +491,7 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 	if(rootlogin == 0)
 	    exit(1);
     }
-    if(setuid(pwd->pw_uid)){
+    if(setuid(pwd->pw_uid) || (pwd->pw_uid != 0 && setuid(0) == 0)) {
 	warn("setuid(%u)", (unsigned)pwd->pw_uid);
 	if(rootlogin == 0)
 	    exit(1);
