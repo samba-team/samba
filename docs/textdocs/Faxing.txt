@@ -1,21 +1,32 @@
-Contributor:		Gerhard Zuber <zuber@berlin.snafu.de>
-Initial Release:	?
+Contributor:    Gerhard Zuber <zuber@berlin.snafu.de>
+Date:			August 5th 1997.
+Status:			Current
 
-Subject:            F A X I N G   with  S A M B A
-=============================================================================
+Subject:        F A X I N G   with  S A M B A
+==========================================================================
 
 This text describes how to turn your SAMBA-server into a fax-server
 for any environment, especially for Windows.
+   Author: Gerhard Zuber <zuber@berlin.snafu.de>
+   Version: 1.4
+   Date: 04. Aug. 1997
 
 Requirements:
-   UNIX box (Linux preferred) with SAMBA
+   UNIX box (Linux preferred) with SAMBA and a faxmodem
    ghostscript package
    mgetty+sendfax package
    pbm package (portable bitmap tools)
 
 FTP sites:
-   mgetty099-May31.tar.gz
-   I got it from: ftp://ftp.gwdg.de/pub/linux/misc/mgetty/mgetty099-May31.tar.gz
+   sunsite.unc.edu:/pub/Linux/system/Serial/mgetty+sendfax*
+   tsx-11.mit.edu:/pub/linux/sources/sbin/mgetty+sendfax
+   ftp.leo.org:/pub/comp/networking/communication/modem/mgetty/mgetty1.1.6-May05.tar.gz
+
+   pbm10dec91.tgz
+   ftp.leo.org:/pub/comp/networking/communication/modem/mgetty/pbm10dec91.tgz
+   sunsite.unc.edu: ..../apps/graphics/convert/pbmplus-10dec91-bin.tar.gz
+   ftp.gwdg.de/pub/linux/grafik/pbmplus.src.tar.Z (this is 10dec91 source)
+                 or ???   pbm10dec91.tgz pbmplus10dec91.tgz
 
 
 making mgetty+sendfax running:
@@ -26,11 +37,11 @@ making mgetty+sendfax running:
 
    change your settings: valid tty ports, modem initstring, Station-Id
 
-#define MODEM_INIT_STRING	"AT &F S0=0 &D3 &K3 &C1\\\\N2"
+#define MODEM_INIT_STRING       "AT &F S0=0 &D3 &K3 &C1\\\\N2"
 
-#define FAX_STATION_ID	"49 30 12345678"
+#define FAX_STATION_ID  "49 30 12345678"
 
-#define FAX_MODEM_TTYS	"ttyS1:ttyS2:ttyS3"
+#define FAX_MODEM_TTYS  "ttyS1:ttyS2:ttyS3"
 
    Modem initstring is for rockwell based modems
    if you want to use mgetty+sendfax as PPP-dialin-server,
@@ -53,9 +64,11 @@ s3:45:respawn:/usr/local/sbin/mgetty ttyS2 vt100
    if you want a PPP dialin-server, edit 
       /usr/local/etc/mgetty+sendfax/login.config
 
-/AutoPPP/ -	ppp	/usr/sbin/pppd auth debug passive modem 
+/AutoPPP/ -     ppp     /usr/sbin/pppd auth debug passive modem 
 
 
+   Note: this package automatically decides between a fax call and
+         a modem call. In case of modem call you get a login prompt !
 
 Tools for printing faxes:
 =========================
@@ -70,9 +83,20 @@ Tools for printing faxes:
      g3cat $i | g3tolj | lpr -P hp
      done
 
+   in case of low resolution use instead:
+
+     g3cat $i | g3tolj -aspect 2 | lpr -P hp
+
+
    g3cat is in the tools-section, g3tolj is in the contrib-section
    for printing to HP lasers.
 
+   If you want to produce files for displaying and printing with Windows, use
+   some tools from the pbm-package like follow
+
+     g3cat $i | g3topbm - |  ppmtopcx - >$i.pcx  
+
+   and view it with your favourite Windows tool (maybe paintbrush)
 
 
 Now making the fax-server:
@@ -86,21 +110,30 @@ Now making the fax-server:
       /usr/local/etc/mgetty+sendfax/
 
     prepare your faxspool file as mentioned in this file
-      /usr/local/bin/faxspool
+    edit fax/faxspool.in and reinstall or change the final
+    /usr/local/bin/faxspool too.
 
-	    if [ "$user" = "root" -o "$user" = "fax" -o \
-	         "$user" = "lp" -o "$user" = "daemon" -o "$user" = "bin" ]
+            if [ "$user" = "root" -o "$user" = "fax" -o \
+                 "$user" = "lp" -o "$user" = "daemon" -o "$user" = "bin" ]
+
+    find the first line and change the second.
 
     make sure you have pbmtext (from the pbm-package). This is
-    needed for creaating the small header line on each page.
+    needed for creating the small header line on each page.
+    Notes on pbmplus:
+    Some peoples had problems with precompiled binaries (especially
+    at linux) with a shared lib libgr.so.x.x. The better way is
+    to fetch the source and compile it. One needs only pbmtext for
+    generating the small line on top of each page /faxheader). Install
+    only the individual programs you need. If you install the full
+    package then install pbmplus first and then mgetty+sendfax, because
+    this package has some changed programs by itself (but not pbmtext).
 
     make sure your ghostscript is functional. You need fonts !
     I prefer these from the OS/2 disks
 
-
     prepare your faxheader
       /usr/local/etc/mgetty+sendfax/faxheader
-
 
     edit your /etc/printcap file:
 
@@ -117,7 +150,6 @@ lp3|fax:\
     edit your /usr/local/samba/lib/smb.conf
 
     so you have a smb based printer named "fax"
-
 
 
 The final step:
@@ -152,6 +184,8 @@ The final step:
     as the recipients fax-number. Make sure this text does not
     occur in regular text ! Make sure this text is not broken
     by formatting information, e.g. format it as a single entity.
+    (Windows Write and Win95 Wordpad are functional, maybe newer
+    versions of Winword are breaking formatting information).
 
     The trick is that postscript output is human readable and
     the faxfilter program scans the text for this pattern and
@@ -160,4 +194,27 @@ The final step:
     Now print your fax through the fax-printer and it will be
     queued for later transmission. Use faxrunq for sending the
     queue out.
+
+    Notes of SAMBA smb.conf:
+    Simply use fall through from the samba printer to the unix
+    printer. Sample:
+
+
+ printcap name = /etc/printcap
+ print command = /usr/bin/lpr -r -P %p %s
+ lpq command = /usr/bin/lpq -P %p
+ lprm command = /usr/bin/lprm -P %p %j
+
+
+[fax]
+    comment = FAX (mgetty+sendfax)
+    path = /tmp
+    printable = yes
+    public = yes
+    writable = no
+    create mode = 0700
+    browseable = yes
+    guest ok = no
+
+
 
