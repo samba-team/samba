@@ -4240,6 +4240,7 @@ static struct {
         {"RPC-EVENTLOG", torture_rpc_eventlog, 0},
         {"RPC-EPMAPPER", torture_rpc_epmapper, 0},
         {"RPC-WINREG", torture_rpc_winreg, 0},
+        {"RPC-OXIDRESOLVE", torture_rpc_oxidresolve, 0},
         {"RPC-MGMT", torture_rpc_mgmt, 0},
         {"RPC-SCANNER", torture_rpc_scanner, 0},
         {"RPC-AUTOIDL", torture_rpc_autoidl, 0},
