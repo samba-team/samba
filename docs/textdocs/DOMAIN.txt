@@ -30,7 +30,7 @@ To use domain logons and profiles you need to do the following:
 
 
 1) Setup nmbd and smbd by configuring smb.conf so that Samba is
-   acting as the master browser. See INSTALL.txt and BROWSING.txt
+   acting as the master browser. See <your OS>_INSTALL.txt and BROWSING.txt
    for details.
 
 2) Setup a WINS server (see NetBIOS.txt) and configure all your clients
