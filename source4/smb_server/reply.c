@@ -2066,6 +2066,7 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 	memcpy(req->out.data, sess.spnego.out.secblob.data, sess.spnego.out.secblob.length);
 	req_push_str(req, NULL, sess.spnego.out.os, -1, STR_TERMINATE);
 	req_push_str(req, NULL, sess.spnego.out.lanman, -1, STR_TERMINATE);
+	req_push_str(req, NULL, sess.spnego.out.domain, -1, STR_TERMINATE);
 
 	chain_reply(req);
 }
