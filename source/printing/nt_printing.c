@@ -1936,7 +1936,7 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 
 /****************************************************************************
 ****************************************************************************/
-static int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
+int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 {
 	int len = 0;
 
@@ -2316,7 +2316,7 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 
 /****************************************************************************
 ****************************************************************************/
-static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
+int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 {
 	int len = 0;
 	int extra_len = 0;

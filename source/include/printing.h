@@ -22,6 +22,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+/* forward declaration to get around header file dependencies */
+
+struct printjob;
+
 #include "includes.h"
 
 /*
@@ -44,6 +48,7 @@ struct printjob {
 	fstring jobname; /* the job name given to us by the client */
 	fstring user; /* the user who started the job */
 	fstring queuename; /* service number of printer for this job */
+	NT_DEVICEMODE *nt_devmode;
 };
 
 /* Information for print interfaces */

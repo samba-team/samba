@@ -311,15 +311,49 @@ static TDB_DATA print_key(uint32 jobid)
 	return ret;
 }
 
+/***********************************************************************
+ unpack a pjob from a tdb buffer 
+***********************************************************************/
+ 
+int unpack_pjob( char* buf, int buflen, struct printjob *pjob )
+{
+	int	len = 0;
+	
+	if ( !buf || !pjob )
+		return -1;
+		
+	len += tdb_unpack(buf+len, buflen-len, "dddddddddffff",
+				&pjob->pid,
+				&pjob->sysjob,
+				&pjob->fd,
+				&pjob->starttime,
+				&pjob->status,
+				&pjob->size,
+				&pjob->page_count,
+				&pjob->spooled,
+				&pjob->smbjob,
+				pjob->filename,
+				pjob->jobname,
+				pjob->user,
+				pjob->queuename);
+
+
+	len += unpack_devicemode(&pjob->nt_devmode, buf+len, buflen-len);
+	
+	return len;
+
+}
+
 /****************************************************************************
  Useful function to find a print job in the database.
 ****************************************************************************/
 
 static struct printjob *print_job_find(int snum, uint32 jobid)
 {
-	static struct printjob pjob;
-	TDB_DATA ret;
-	struct tdb_print_db *pdb = get_print_db_byname(lp_const_servicename(snum));
+	static struct printjob 	pjob;
+	TDB_DATA 		ret;
+	struct tdb_print_db 	*pdb = get_print_db_byname(lp_const_servicename(snum));
+	
 
 	if (!pdb)
 		return NULL;
@@ -327,11 +361,17 @@ static struct printjob *print_job_find(int snum, uint32 jobid)
 	ret = tdb_fetch(pdb->tdb, print_key(jobid));
 	release_print_db(pdb);
 
-	if (!ret.dptr || ret.dsize != sizeof(pjob))
+	if (!ret.dptr)
 		return NULL;
-
-	memcpy(&pjob, ret.dptr, sizeof(pjob));
-	SAFE_FREE(ret.dptr);
+	
+	if ( pjob.nt_devmode )
+		free_nt_devicemode( &pjob.nt_devmode );
+		
+	ZERO_STRUCT( pjob );
+	
+	unpack_pjob( ret.dptr, ret.dsize, &pjob );
+	
+	SAFE_FREE(ret.dptr);	
 	return &pjob;
 }
 
@@ -462,9 +502,12 @@ static void pjob_store_notify(int snum, uint32 jobid, struct printjob *old_data,
 
 static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
 {
-	TDB_DATA old_data, new_data;
-	BOOL ret;
-	struct tdb_print_db *pdb = get_print_db_byname(lp_const_servicename(snum));
+	TDB_DATA 		old_data, new_data;
+	BOOL 			ret = False;
+	struct tdb_print_db 	*pdb = get_print_db_byname(lp_const_servicename(snum));
+	char			*buf = NULL;
+	int			len, newlen, buflen;
+	
 
 	if (!pdb)
 		return False;
@@ -473,22 +516,63 @@ static BOOL pjob_store(int snum, uint32 jobid, struct printjob *pjob)
 
 	old_data = tdb_fetch(pdb->tdb, print_key(jobid));
 
+	/* Doh!  Now we have to pack/unpack data since the NT_DEVICEMODE was added */
+
+	newlen = 0;
+	
+	do {
+		len = 0;
+		buflen = newlen;
+		len += tdb_pack(buf+len, buflen-len, "dddddddddffff",
+				pjob->pid,
+				pjob->sysjob,
+				pjob->fd,
+				pjob->starttime,
+				pjob->status,
+				pjob->size,
+				pjob->page_count,
+				pjob->spooled,
+				pjob->smbjob,
+				pjob->filename,
+				pjob->jobname,
+				pjob->user,
+				pjob->queuename);
+
+		len += pack_devicemode(pjob->nt_devmode, buf+len, buflen-len);
+	
+		if (buflen != len) 
+		{
+			char *tb;
+
+			tb = (char *)Realloc(buf, len);
+			if (!tb) {
+				DEBUG(0,("pjob_store: failed to enlarge buffer!\n"));
+				goto done;
+			}
+			else 
+				buf = tb;
+			newlen = len;
+		}
+	}
+	while ( buflen != len );
+		
+	
 	/* Store new data */
 
-	new_data.dptr = (void *)pjob;
-	new_data.dsize = sizeof(*pjob);
+	new_data.dptr = buf;
+	new_data.dsize = len;
 	ret = (tdb_store(pdb->tdb, print_key(jobid), new_data, TDB_REPLACE) == 0);
 
 	release_print_db(pdb);
 
 	/* Send notify updates for what has changed */
 
-	if (ret && (old_data.dsize == 0 || old_data.dsize == sizeof(*pjob))) {
-		pjob_store_notify(
-			snum, jobid, (struct printjob *)old_data.dptr,
-			(struct printjob *)new_data.dptr);
-		free(old_data.dptr);
-	}
+	if ( ret && (old_data.dsize == 0 || old_data.dsize == sizeof(*pjob)) )
+		pjob_store_notify( snum, jobid, (struct printjob *)old_data.dptr, pjob );
+
+done:
+	SAFE_FREE( old_data.dptr );
+	SAFE_FREE( buf );
 
 	return ret;
 }
@@ -956,6 +1040,23 @@ char *print_job_fname(int snum, uint32 jobid)
 	return pjob->filename;
 }
 
+
+/****************************************************************************
+ Give the filename used for a jobid.
+ Only valid for the process doing the spooling and when the job
+ has not been spooled.
+****************************************************************************/
+
+NT_DEVICEMODE *print_job_devmode(int snum, uint32 jobid)
+{
+	struct printjob *pjob = print_job_find(snum, jobid);
+	
+	if ( !pjob )
+		return NULL;
+		
+	return pjob->nt_devmode;
+}
+
 /****************************************************************************
  Set the place in the queue for a job.
 ****************************************************************************/
@@ -1321,7 +1422,7 @@ int print_queue_length(int snum, print_status_struct *pstatus)
  Start spooling a job - return the jobid.
 ***************************************************************************/
 
-uint32 print_job_start(struct current_user *user, int snum, char *jobname)
+uint32 print_job_start(struct current_user *user, int snum, char *jobname, NT_DEVICEMODE *nt_devmode )
 {
 	uint32 jobid;
 	char *path;
@@ -1381,7 +1482,9 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 	}
 
 	/* create the database entry */
+	
 	ZERO_STRUCT(pjob);
+	
 	pjob.pid = local_pid;
 	pjob.sysjob = -1;
 	pjob.fd = -1;
@@ -1390,7 +1493,8 @@ uint32 print_job_start(struct current_user *user, int snum, char *jobname)
 	pjob.size = 0;
 	pjob.spooled = False;
 	pjob.smbjob = True;
-
+	pjob.nt_devmode = nt_devmode;
+	
 	fstrcpy(pjob.jobname, jobname);
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
@@ -1578,10 +1682,10 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	int i;
 	uint32 jobid;
 
-	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int))
-		return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
-	memcpy(&pjob,  data.dptr, sizeof(pjob));
+	
+	if ( !unpack_pjob( data.dptr, data.dsize, &pjob ) )
+		return 0;
 
 	/* maybe it isn't for this queue */
 	if (ts->snum != lp_servicenumber(pjob.queuename))
@@ -1620,10 +1724,10 @@ static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, 
 	struct printjob pjob;
 	uint32 jobid;
 
-	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int))
-		return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
-	memcpy(&pjob,  data.dptr, sizeof(pjob));
+	
+	if ( !unpack_pjob( data.dptr, data.dsize, &pjob ) )
+		return 0;
 
 	/* maybe it isn't for this queue - this cannot happen with the tdb/printer code. JRA */
 	if (ts->snum != lp_servicenumber(pjob.queuename))
