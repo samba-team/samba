@@ -324,13 +324,20 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 	printf("\n");
 
 	if (!shares_only) {
+		int ret;
+
 		if (!locking_init(1)) {
 			printf("Can't initialise shared memory - exiting\n");
 			exit(1);
 		}
 		
-		if (share_mode_forall(print_share_mode) <= 0)
+		ret = share_mode_forall(print_share_mode);
+
+		if (ret == 0) {
 			printf("No locked files\n");
+		} else if (ret == -1) {
+			printf("locked file list truncated\n");
+		}
 		
 		printf("\n");
 		
