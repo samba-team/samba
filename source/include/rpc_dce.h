@@ -55,6 +55,13 @@ enum RPC_PKT_TYPE
 #define NTLMSSP_AUTH_TYPE 0xa
 #define NTLMSSP_AUTH_LEVEL 0x6
 
+/* Netlogon schannel auth type and level */
+#define NETSEC_AUTH_TYPE 0x44
+#define NETSEC_AUTH_LEVEL 0x6
+#define NETSEC_SIGNATURE { 0x77, 0x00, 0x7a, 0x00, 0xff, 0xff, 0x00, 0x00 }
+#define RPC_AUTH_NETSEC_CHK_LEN 0x20
+#define NETLOGON_NEG_SCHANNEL    0x40000000
+
 /* Maximum PDU fragment size. */
 #define MAX_PDU_FRAG_LEN 0x1630
 /* #define MAX_PDU_FRAG_LEN 0x10b8		this is what w2k sets */
@@ -199,6 +206,34 @@ typedef struct rpc_hdr_auth_info
 
 #define RPC_HDR_AUTH_LEN 8
 
+/* this is TEMPORARILY coded up as a specific structure */
+/* this structure comes after the bind request */
+/* RPC_AUTH_NETSEC_NEG */
+typedef struct rpc_auth_netsec_neg_info
+{
+	uint32 unknown1;
+	uint32 unknown2;
+	fstring domain; /* calling workstations's domain */
+	fstring myname; /* calling workstation's name */
+} RPC_AUTH_NETSEC_NEG;
+
+/* attached to the end of encrypted rpc requests and responses */
+/* RPC_AUTH_NETSEC_CHK */
+typedef struct rpc_auth_netsec_chk_info
+{
+	uint8 sig  [8]; /* 77 00 7a 00 ff ff 00 00 */
+	uint8 data1[8];
+	uint8 data3[8]; /* verifier, seq num */
+	uint8 data8[8]; /* random 8-byte nonce */
+} RPC_AUTH_NETSEC_CHK;
+
+struct netsec_auth_struct
+{
+	RPC_AUTH_NETSEC_NEG netsec_neg;
+	uchar sess_key[16];
+	uint32 seq_num;
+};
+
 /* RPC_BIND_REQ - ms req bind */
 typedef struct rpc_bind_req_info
 {
@@ -248,8 +283,8 @@ typedef struct rpc_hdr_ba_info
 /* RPC_AUTH_VERIFIER */
 typedef struct rpc_auth_verif_info
 {
-	fstring signature; /* "NTLMSSP" */
-	uint32  msg_type; /* NTLMSSP_MESSAGE_TYPE (1,2,3) */
+	fstring signature; /* "NTLMSSP".. Ok, not quite anymore */
+	uint32  msg_type; /* NTLMSSP_MESSAGE_TYPE (1,2,3) and 5 for schannel */
 
 } RPC_AUTH_VERIFIER;
 

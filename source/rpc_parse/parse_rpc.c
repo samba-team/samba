@@ -692,6 +692,30 @@ BOOL smb_io_rpc_auth_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_stru
 }
 
 /*******************************************************************
+ This parses an RPC_AUTH_VERIFIER for NETLOGON schannel. I thing
+ assuming "NTLMSSP" in sm_io_rpc_auth_verifier is somewhat wrong.
+ I have to look at that later...
+********************************************************************/
+
+BOOL smb_io_rpc_netsec_verifier(const char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth)
+{
+	if (rav == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_auth_verifier");
+	depth++;
+
+	/* "NTLMSSP" */
+	if(!prs_string("signature", ps, depth, rav->signature, strlen(rav->signature),
+			sizeof(rav->signature)))
+		return False;
+	if(!prs_uint32("msg_type ", ps, depth, &rav->msg_type)) /* NTLMSSP_MESSAGE_TYPE */
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Inits an RPC_AUTH_NTLMSSP_NEG structure.
 ********************************************************************/
 
@@ -1104,3 +1128,74 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(const char *desc, RPC_AUTH_NTLMSSP_CHK *chk, pr
 
 	return True;
 }
+
+/*******************************************************************
+ Reads or writes an RPC_AUTH_NETSEC_NEG structure.
+********************************************************************/
+
+BOOL smb_io_rpc_auth_netsec_neg(const char *desc, RPC_AUTH_NETSEC_NEG *neg,
+				prs_struct *ps, int depth)
+{
+	if (neg == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_auth_netsec_neg");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("unknown1", ps, depth, &neg->unknown1))
+		return False;
+	if(!prs_uint32("unknown2", ps, depth, &neg->unknown2))
+		return False;
+	if(!prs_string("domain  ", ps, depth, neg->domain,
+		       strlen(&ps->data_p[ps->data_offset]), sizeof(neg->domain)))
+		return False;
+	if(!prs_string("myname  ", ps, depth, neg->myname, 
+		       strlen(&ps->data_p[ps->data_offset]), sizeof(neg->myname)))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+creates an RPC_AUTH_NETSEC_CHK structure.
+********************************************************************/
+BOOL init_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK * chk,
+			      const uchar sig[8],
+			      const uchar data1[8],
+			      const uchar data3[8], const uchar data8[8])
+{
+	if (chk == NULL)
+		return False;
+
+	memcpy(chk->sig, sig, sizeof(chk->sig));
+	memcpy(chk->data1, data1, sizeof(chk->data1));
+	memcpy(chk->data3, data3, sizeof(chk->data3));
+	memcpy(chk->data8, data8, sizeof(chk->data8));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes an RPC_AUTH_NETSEC_CHK structure.
+********************************************************************/
+BOOL smb_io_rpc_auth_netsec_chk(const char *desc, RPC_AUTH_NETSEC_CHK * chk,
+				prs_struct *ps, int depth)
+{
+	if (chk == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_auth_netsec_chk");
+	depth++;
+
+	prs_uint8s(False, "sig  ", ps, depth, chk->sig, sizeof(chk->sig));
+	prs_uint8s(False, "data3", ps, depth, chk->data3, sizeof(chk->data3));
+	prs_uint8s(False, "data1", ps, depth, chk->data1, sizeof(chk->data1));
+	prs_uint8s(False, "data8", ps, depth, chk->data8, sizeof(chk->data8));
+
+	return True;
+}
+
