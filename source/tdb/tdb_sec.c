@@ -21,8 +21,12 @@
 */
 
 /*
+ * function prototypes:
  *
- * int tdbsec_set(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA secdata)
+ * int tdbsec_setsec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA secdata)
+ *
+ *
+ * int tdbsec_delsec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA secdata)
  *
  *
  * TDB_DATA tdbsec_fetch(TDB_CONTEXT *tdb, TDB_DATA key, 
@@ -31,6 +35,17 @@
  *
  * int tdbsec_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
  *                  int (*sec_check)(TDB_DATA , void *), void *arg)
+ *
+ *
+ * example uses.  must set security first, followed by store actual data.
+ *
+ * tdbsec_setsec(tdb, key, security_data_for_key);
+ * 
+ * tdbsec_store (tdb, key, data, sec_store_check_fn());
+ * tdbsec_fetch (tdb, key, data, sec_fetch_check_fn());
+ * 
+ * tdbsec_delete(tdb, key, sec_delete_check_fn());
+ * tdbsec_delsec(tdb, key);
  *
  */
 
@@ -89,6 +104,33 @@ TDB_DATA tdbsec_fetch(TDB_CONTEXT *tdb, TDB_DATA key,
 	return null_data;
 }
 
+int tdbsec_delete(TDB_CONTEXT *tdb, TDB_DATA key,
+		 int (*sec_check)(TDB_DATA , void *), void *arg)
+{
+	TDB_DATA key2, data2;
+
+	data2 = null_data;
+
+	key2 = tdbsec_genkey(key);
+	if (!key2.dptr) goto failed;
+
+	data2 = tdb_fetch(tdb, key2);
+
+	if (sec_check(data2, arg) != 0) {
+		goto failed;
+	}
+
+	tdbsec_free(key2);
+	tdbsec_free(data2);
+
+	return tdb_delete(tdb, key);
+
+ failed:
+	tdbsec_free(key2);
+	tdbsec_free(data2);
+	return -1;
+}
+
 int tdbsec_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
 		 int (*sec_check)(TDB_DATA , void *), void *arg)
 {
@@ -117,7 +159,7 @@ int tdbsec_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data,
 }
 
 
-int tdbsec_set(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA secdata)
+int tdbsec_setsec(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA secdata)
 {
 	int ret;
 	TDB_DATA key2;
@@ -126,6 +168,20 @@ int tdbsec_set(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA secdata)
 	if (!key2.dptr) return -1;
 	
 	ret = tdb_store(tdb, key2, secdata, TDB_REPLACE);
+	
+	tdbsec_free(key2);
+	return ret;
+}
+
+int tdbsec_delsec(TDB_CONTEXT *tdb, TDB_DATA key)
+{
+	int ret;
+	TDB_DATA key2;
+
+	key2 = tdbsec_genkey(key);
+	if (!key2.dptr) return -1;
+	
+	ret = tdb_delete(tdb, key2);
 	
 	tdbsec_free(key2);
 	return ret;
