@@ -1,6 +1,5 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1999
    Copyright (C) John H Terpstra 1996-1999
@@ -37,9 +36,14 @@
 #define IS_DOS_SYSTEM(test_mode)   (((test_mode) & aSYSTEM) != 0)
 #define IS_DOS_HIDDEN(test_mode)   (((test_mode) & aHIDDEN) != 0)
 
-/* free memory if the pointer is valid and zero the pointer */
-
 #ifndef SAFE_FREE /* Oh no this is also defined in tdb.h */
+
+/**
+ * Free memory if the pointer and zero the pointer.
+ *
+ * @note You are explicitly allowed to pass NULL pointers -- they will
+ * always be ignored.
+ **/
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 #endif
 
