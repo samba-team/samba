@@ -37,6 +37,9 @@ extern int DEBUGLEVEL;
    jobids are assigned when a job starts spooling. 
 */
 
+#define NEXT_JOBID(j) ((j+1) % PRINT_MAX_JOBID > 0 ? (j+1) % PRINT_MAX_JOBID : 1)
+
+
 struct printjob {
 	pid_t pid; /* which process launched the job */
 	int sysjob; /* the system (lp) job number */
@@ -587,9 +590,11 @@ static BOOL is_owner(struct current_user *user, int jobid)
 	if (!pjob || !user) return False;
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
-		return strequal(pjob->user, vuser->user.smb_name);
+		return strequal(pjob->user, 
+				unix_to_dos(vuser->user.smb_name,False));
 	} else {
-		return strequal(pjob->user, uidtoname(user->uid));
+		return strequal(pjob->user, 
+				unix_to_dos(uidtoname(user->uid),False));
 	}
 }
 
@@ -883,9 +888,9 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	fstrcpy(pjob.jobname, jobname);
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
-		fstrcpy(pjob.user, vuser->user.smb_name);
+		fstrcpy(pjob.user, unix_to_dos(vuser->user.smb_name,False));
 	} else {
-		fstrcpy(pjob.user, uidtoname(user->uid));
+		fstrcpy(pjob.user, unix_to_dos(uidtoname(user->uid),False));
 	}
 
 	fstrcpy(pjob.qname, lp_servicename(snum));
@@ -897,10 +902,8 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	next_jobid = tdb_fetch_int(tdb, "INFO/nextjob");
 	if (next_jobid == -1) next_jobid = 1;
 
-	for (jobid = next_jobid+1; jobid != next_jobid; ) {
+	for (jobid = NEXT_JOBID(next_jobid); jobid != next_jobid; jobid = NEXT_JOBID(jobid)) {
 		if (!print_job_exists(jobid)) break;
-		jobid = (jobid + 1) % PRINT_MAX_JOBID;
-		if (jobid == 0) jobid = 1;
 	}
 	if (jobid == next_jobid || !print_job_store(jobid, &pjob)) {
 		jobid = -1;
@@ -1066,11 +1069,6 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	ts->queue[i].time = pjob.starttime;
 	fstrcpy(ts->queue[i].user, pjob.user);
 	fstrcpy(ts->queue[i].file, pjob.jobname);
-
-	/* Convert username to DOS codepage.  For some reason the job name
-	   is already in DOS codepage so it doesn't need converting. */
-
-	unix_to_dos(ts->queue[i].user, True);
 
 	ts->qcount++;
 
