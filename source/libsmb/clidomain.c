@@ -530,13 +530,19 @@ BOOL get_any_dc_name(char *domain, fstring srv_name)
 			/* Check that this DC is actually a member of the
 			   domain we are interested in */
 
-			if (!name_status_find(0x1b, dest_ip, the_domain) ||
-			    !strequal(the_domain, domain)) {
-				DEBUG(1, ("get_any_dc_name(): dc %s not a member of domain %s (%s)\n",
-					  remote_machine, domain, the_domain));
-				connected_ok = False;
-				continue;
-			}
+			if (name_status_find(0x1c, dest_ip, the_domain)) {
+                                if (!strequal(the_domain, domain)) {
+                                        DEBUG(1, ("get_any_dc_name(): dc %s not a member of domain %s (%s)\n",
+                                                  remote_machine, domain, the_domain));
+                                        connected_ok = False;
+                                        continue;
+                                }
+			} else {
+                                DEBUG(1, ("get_any_dc_name(): %s not a dc\n",
+                                          remote_machine));
+                                connected_ok = False;
+                                continue;
+                        }
 
 			connected_ok = attempt_connect_dc(domain, dest_ip);
 		}
