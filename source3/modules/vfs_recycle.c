@@ -472,24 +472,20 @@ static void recycle_touch(connection_struct *conn, const char *fname)
 /**
  * Check if file should be recycled
  **/
-static int recycle_unlink(connection_struct *conn, const char *inname)
+static int recycle_unlink(connection_struct *conn, const char *file_name)
 {
 	recycle_bin_private_data *recdata;
 	recycle_bin_connections *recconn;
 	recycle_bin_struct *recbin;
-	char *file_name = NULL;
 	char *path_name = NULL;
        	char *temp_name = NULL;
 	char *final_name = NULL;
-	char *base;
+	const char *base;
 	int i;
 /*	SMB_BIG_UINT dfree, dsize, bsize;	*/
 	SMB_OFF_T file_size; /* space_avail;	*/
 	BOOL exist;
 	int rc = -1;
-
-	file_name = strdup(inname);
-	ALLOC_CHECK(file_name, done);
 
 	recbin = NULL;
 	if (recycle_bin_private_handle) {
@@ -560,14 +556,13 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 	path_name = (char *)malloc(PATH_MAX);
 	ALLOC_CHECK(path_name, done);
 	*path_name = '\0';
-	safe_strcpy(path_name, file_name, PATH_MAX);
+	safe_strcpy(path_name, file_name, PATH_MAX - 1);
 	base = strrchr(path_name, '/');
 	if (base == NULL) {
 		base = file_name;
-		safe_strcpy(path_name, "/", PATH_MAX);
+		safe_strcpy(path_name, "/", PATH_MAX - 1);
 	}
 	else {
-		*base = '\0';
 		base++;
 	}
 
@@ -591,14 +586,13 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 		goto done;
 	}
 
-	temp_name = (char *)malloc(PATH_MAX);
+	temp_name = (char *)strdup(recbin->repository);
 	ALLOC_CHECK(temp_name, done);
-	safe_strcpy(temp_name, recbin->repository, PATH_MAX);
 
 	/* see if we need to recreate the original directory structure in the recycle bin */
 	if (recbin->keep_dir_tree == True) {
-		safe_strcat(temp_name, "/", PATH_MAX);
-		safe_strcat(temp_name, path_name, PATH_MAX);
+		safe_strcat(temp_name, "/", PATH_MAX - 1);
+		safe_strcat(temp_name, path_name, PATH_MAX - 1);
 	}
 
 	exist = recycle_directory_exist(conn, temp_name);
@@ -613,9 +607,9 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 		}
 	}
 
-	final_name = (char *)malloc(PATH_MAX);
+	final_name = NULL;
+	asprintf(&final_name, "%s/%s", temp_name, base);
 	ALLOC_CHECK(final_name, done);
-	snprintf(final_name, PATH_MAX, "%s/%s", temp_name, base);
 	DEBUG(10, ("recycle.bin: recycled file name%s\n", temp_name));		/* new filename with path */
 
 	/* check if we should delete file from recycle bin */
@@ -647,7 +641,6 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 		recycle_touch(conn, final_name);
 
 done:
-	SAFE_FREE(file_name);
 	SAFE_FREE(path_name);
 	SAFE_FREE(temp_name);
 	SAFE_FREE(final_name);
