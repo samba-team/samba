@@ -1,3 +1,11 @@
+2000-07-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kadmind.c: if stdin is not a socket create and listen to sockets
+
+	* kadm_conn.c: socket creation functions
+
+	* util.c (deltat2str): treat 0 and INT_MAX as never
+
 2000-07-08  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (INCLUDES): add ../lib/krb5
