@@ -258,9 +258,8 @@ close a cnum
 ****************************************************************************/
 void close_cnum(struct tcon_context *conn)
 {
-	DEBUG(3, ("%s (%s) closed connection to service %s\n",
-		  sub_get_remote_machine(),conn->smb->socket.client_addr,
-		  lp_servicename(SNUM(conn))));
+	DEBUG(3,("%s closed connection to service %s\n",
+		 conn->smb->socket.client_addr, lp_servicename(SNUM(conn))));
 
 	yield_connection(conn, lp_servicename(SNUM(conn)));
 
