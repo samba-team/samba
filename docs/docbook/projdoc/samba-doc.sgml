@@ -1,5 +1,13 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
-<!ENTITY Chapter1 SYSTEM "chapter1.sgml">
+<!ENTITY UNIX-INSTALL SYSTEM "UNIX_INSTALL.sgml">
+<!ENTITY ENCRYPTION SYSTEM "ENCRYPTION.sgml">
+<!ENTITY MS-Dfs-Setup SYSTEM "msdfs_setup.sgml">
+<!ENTITY PRINTER-DRIVER2 SYSTEM "printer_driver2.sgml">
+<!ENTITY DOMAIN-MEMBER SYSTEM "DOMAIN_MEMBER.sgml">
+<!ENTITY WINBIND SYSTEM "winbind.sgml">
+<!ENTITY NT-Security SYSTEM "NT_Security.sgml">
+<!ENTITY OS2-Client SYSTEM "OS2-Client-HOWTO.sgml">
+<!ENTITY Samba-PDC-HOWTO SYSTEM "Samba-PDC-HOWTO.sgml">
 ]>
 
 <book id="Samba-Project-Documentation">
@@ -10,13 +18,36 @@
 	<author>
 		<surname>SAMBA Team</surname>
 	</author>
-	<address><email>samba&commat;samba.org</email></address>
+	<address><email>samba@samba.org</email></address>
 	<pubdate>$rcsId</pubdate>
 </bookinfo>
 
-<toc></toc>
+<dedication>
+<title>Abstract</title>
 
+<para>
+This book is a collection of HOWTOs added to Samba documentation over the year.
+I try to ensure that all are current, but sometimes the is a larger job
+than one person can maintain.  You can always find the later version of this
+PDF file at <ulink url="http://www.samba.org/">http://www.samba.org/</ulink>
+on the "Documentation" page.  Please send updates to <ulink 
+url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
+</para>
 
-&Chapter1;
+<para>
+Cheers, jerry
+</para>
+
+</dedication>
+
+&UNIX-INSTALL;
+&ENCRYPTION;
+&MS-Dfs-Setup;
+&PRINTER-DRIVER2;
+&DOMAIN-MEMBER;
+&Samba-PDC-HOWTO;
+&WINBIND;
+&NT-Security;
+&OS2-Client;
 
 </book>
