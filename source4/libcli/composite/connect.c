@@ -103,15 +103,16 @@ static NTSTATUS connect_session_setup(struct smbcli_composite *c,
 				      struct smb_composite_connect *io)
 {
 	struct connect_state *state = c->private;
-	struct smbcli_request *req = c->req;
-	union smb_sesssetup *io_setup = c->req_parms;
+	struct smbcli_composite *req = c->req;
+	struct smbcli_request *req2;
+	struct smb_composite_sesssetup *io_setup = c->req_parms;
 	union smb_tcon *io_tcon;
 	NTSTATUS status;
 
-	status = smb_raw_session_setup_recv(req, c, io_setup);
+	status = smb_composite_sesssetup_recv(req);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
-	state->session->vuid = io_setup->nt1.out.vuid;
+	state->session->vuid = io_setup->out.vuid;
 	
 	/* setup for a tconx */
 	io->out.tree = smbcli_tree_init(state->session);
@@ -136,38 +137,16 @@ static NTSTATUS connect_session_setup(struct smbcli_composite *c,
 		io_tcon->tconx.in.device = io->in.service_type;
 	}
 
-	req = smb_tree_connect_send(io->out.tree, io_tcon);
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	req2 = smb_tree_connect_send(io->out.tree, io_tcon);
+	NT_STATUS_HAVE_NO_MEMORY(req2);
 
-	req->async.fn = request_handler;
-	req->async.private = c;
+	req2->async.fn = request_handler;
+	req2->async.private = c;
 	c->req_parms = io_tcon;
-	c->req = req;
+	c->req = req2;
 	c->stage = CONNECT_TCON;
 
 	return NT_STATUS_OK;
-}
-
-/*
-  form an encrypted lanman password from a plaintext password
-  and the server supplied challenge
-*/
-static DATA_BLOB lanman_blob(const char *pass, DATA_BLOB challenge)
-{
-	DATA_BLOB blob = data_blob(NULL, 24);
-	SMBencrypt(pass, challenge.data, blob.data);
-	return blob;
-}
-
-/*
-  form an encrypted NT password from a plaintext password
-  and the server supplied challenge
-*/
-static DATA_BLOB nt_blob(const char *pass, DATA_BLOB challenge)
-{
-	DATA_BLOB blob = data_blob(NULL, 24);
-	SMBNTencrypt(pass, challenge.data, blob.data);
-	return blob;
 }
 
 /*
@@ -178,8 +157,9 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 {
 	struct connect_state *state = c->private;
 	struct smbcli_request *req = c->req;
+	struct smbcli_composite *req2;
 	NTSTATUS status;
-	union smb_sesssetup *io_setup;
+	struct smb_composite_sesssetup *io_setup;
 
 	status = smb_raw_negotiate_recv(req);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -191,45 +171,23 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 	/* get rid of the extra reference to the transport */
 	talloc_free(state->transport);
 
-	io_setup = talloc(c, union smb_sesssetup);
+	io_setup = talloc(c, struct smb_composite_sesssetup);
 	NT_STATUS_HAVE_NO_MEMORY(io_setup);
 
 	/* prepare a session setup to establish a security context */
-	io_setup->nt1.level = RAW_SESSSETUP_NT1;
-	io_setup->nt1.in.bufsize = state->session->transport->options.max_xmit;
-	io_setup->nt1.in.mpx_max = state->session->transport->options.max_mux;
-	io_setup->nt1.in.vc_num = 1;
-	io_setup->nt1.in.sesskey = state->transport->negotiate.sesskey;
-	io_setup->nt1.in.capabilities = state->transport->negotiate.capabilities;
-	io_setup->nt1.in.domain = io->in.domain;
-	io_setup->nt1.in.user = io->in.user;
-	io_setup->nt1.in.os = "Unix";
-	io_setup->nt1.in.lanman = "Samba";
+	io_setup->in.sesskey      = state->transport->negotiate.sesskey;
+	io_setup->in.capabilities = state->transport->negotiate.capabilities;
+	io_setup->in.domain       = io->in.domain;
+	io_setup->in.user         = io->in.user;
+	io_setup->in.password     = io->in.password;
 
-	if (!io->in.password) {
-		io_setup->nt1.in.password1 = data_blob(NULL, 0);
-		io_setup->nt1.in.password2 = data_blob(NULL, 0);
-	} else if (state->session->transport->negotiate.sec_mode & 
-		   NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
-		io_setup->nt1.in.password1 = lanman_blob(io->in.password, 
-							 state->transport->negotiate.secblob);
-		io_setup->nt1.in.password2 = nt_blob(io->in.password, 
-						     state->transport->negotiate.secblob);
-		smb_session_use_nt1_session_keys(state->session, io->in.password, &io_setup->nt1.in.password2);
+	req2 = smb_composite_sesssetup_send(state->session, io_setup);
+	NT_STATUS_HAVE_NO_MEMORY(req2);
 
-	} else {
-		io_setup->nt1.in.password1 = data_blob(io->in.password, 
-						       strlen(io->in.password));
-		io_setup->nt1.in.password2 = data_blob(NULL, 0);
-	}
-
-	req = smb_raw_session_setup_send(state->session, io_setup);
-	NT_STATUS_HAVE_NO_MEMORY(req);
-
-	req->async.fn = request_handler;
-	req->async.private = c;
+	req2->async.fn = composite_handler;
+	req2->async.private = c;
 	c->req_parms = io_setup;
-	c->req = req;
+	c->req = req2;
 	c->stage = CONNECT_SESSION_SETUP;
 	
 	return NT_STATUS_OK;

@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    SMB client transport context management functions
-   Copyright (C) Andrew Tridgell 1994-2003
+
+   Copyright (C) Andrew Tridgell 1994-2005
    Copyright (C) James Myers 2003 <myersjj@samba.org>
    
    This program is free software; you can redistribute it and/or modify

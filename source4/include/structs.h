@@ -142,3 +142,4 @@ struct smbcli_composite;
 struct smb_composite_loadfile;
 struct smb_composite_savefile;
 struct smb_composite_connect;
+struct smb_composite_sesssetup;
