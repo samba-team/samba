@@ -181,9 +181,9 @@ LIBMSRPC_SERVER_OBJ = libsmb/trust_passwd.o
 
 LIBMSRPC_PICOBJ = $(LIBMSRPC_OBJ:.o=.po)
 
-REGOBJS_OBJ = registry/reg_objects.c
+REGOBJS_OBJ = registry/reg_objects.o
 REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
-               registry/reg_db.o $(REGOBJS_OBJ)
+               registry/reg_db.o 
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
@@ -192,7 +192,7 @@ RPC_SERVER_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o \
 		 rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o rpc_server/srv_wkssvc_nt.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o rpc_server/srv_dfs_nt.o \
-                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o $(REGISTRY_OBJ)
+                 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o 
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -203,7 +203,8 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
                 rpc_parse/parse_reg.o rpc_parse/parse_rpc.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
                 rpc_parse/parse_wks.o \
-		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o
+		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
+		$(REGOBJS_OBJ)
 
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
@@ -270,7 +271,7 @@ SMBD_OBJ_BASE = $(SMBD_OBJ_SRV) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_
 		$(NOTIFY_OBJ) $(GROUPDB_OBJ) $(AUTH_OBJ) \
 		$(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
 		$(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
-		$(LIB_SMBD_OBJ)
+		$(LIB_SMBD_OBJ) $(REGISTRY_OBJ)
 
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
@@ -494,7 +495,7 @@ WINBINDD_OBJ = \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		$(PROFILE_OBJ) $(UNIGRP_OBJ) \
-		$(SECRETS_OBJ) $(LIBADS_OBJ) $(REGOBJS_OBJ)
+		$(SECRETS_OBJ) $(LIBADS_OBJ) 
 
 WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o
 
