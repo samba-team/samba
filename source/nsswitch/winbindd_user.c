@@ -88,8 +88,8 @@ enum winbindd_result winbindd_getpwnam_from_user(char *user_name,
 
     /* Get domain sid for the domain */
 
-    if (!find_domain_sid_from_domain(name_domain, &domain_sid,
-                                     domain_controller)) {
+    if (!find_domain_sid_from_name(name_domain, &domain_sid,
+                                   domain_controller)) {
         DEBUG(0, ("Could not get domain sid for domain %s\n", name_domain));
         return WINBINDD_ERROR;
     }
@@ -256,8 +256,8 @@ struct winbindd_enum_pwent {
 
 static struct winbindd_enum_pwent *enum_pwent_list = NULL;
 
-extern int num_domain_uid;
-extern struct winbind_domain_uid *domain_uid;
+extern int num_domain;
+extern struct winbind_domain *domain_list;
 
 /* Get static data for getpwent() and friends */
 
@@ -281,7 +281,7 @@ static struct winbindd_enum_pwent *get_pwent_static(pid_t pid)
 enum winbindd_result winbindd_setpwent(pid_t pid)
 {
     struct winbindd_enum_pwent *enum_pwent = get_pwent_static(pid);
-    struct winbind_domain_uid *tmp;
+    struct winbind_domain *tmp;
     int i;
 
     /* Free old static data if it exists */
@@ -311,26 +311,27 @@ enum winbindd_result winbindd_setpwent(pid_t pid)
     enum_pwent->pid = pid;
     
     if ((enum_pwent->sam_pipes = (struct winbindd_enum_pwent_sam_pipes *)
-         malloc(sizeof(*enum_pwent->sam_pipes) * num_domain_uid)) == NULL) {
+         malloc(sizeof(*enum_pwent->sam_pipes) * num_domain)) == NULL) {
         
         free(enum_pwent);
         return WINBINDD_ERROR;
     }
 
-    enum_pwent->num_sam_pipes = num_domain_uid;
+    enum_pwent->num_sam_pipes = num_domain;
     memset(enum_pwent->sam_pipes, 0, sizeof(*enum_pwent->sam_pipes) * 
-           num_domain_uid);
+           num_domain);
 
     /* Create sam pipes for each domain we know about */
 
     i = 0;
 
-    for(tmp = domain_uid; tmp != NULL; tmp = tmp->next) {
+    for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
         BOOL res;
 
         /* Connect to sam database */
 
-        res = samr_connect(tmp->domain_controller, SEC_RIGHTS_MAXIMUM_ALLOWED, 
+        res = samr_connect(tmp->domain_controller, 
+                           SEC_RIGHTS_MAXIMUM_ALLOWED, 
                            &enum_pwent->sam_pipes[i].sam_handle);
 
         res = res ? samr_open_domain(&enum_pwent->sam_pipes[i].sam_handle,
@@ -437,6 +438,13 @@ enum winbindd_result winbindd_getpwent(pid_t pid, struct winbindd_pw *pw)
                 char *user_name = (sam_pipe->sam_entries)
                     [sam_pipe->index].acct_name; 
                 
+                /* Don't bother with machine accounts */
+
+                if (user_name[strlen(user_name) - 1] == '$') {
+                    sam_pipe->index++;
+                    continue;
+                }
+
                 /* Prepend domain to name */
         
                 fstrcpy(domain_user_name, sam_pipe->domain_name);

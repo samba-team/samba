@@ -59,15 +59,6 @@ static BOOL winbindd_fill_grent_mem(char *server_name, DOM_SID *domain_sid,
         
     /* Lookup group information */
 
-    {
-        fstring sid_str;
-
-        sid_to_string(sid_str, domain_sid);
-
-        DEBUG(0, ("server/domain %s/%s sid=%s group rid=%d\n",
-                  server_name, domain_name, sid_str, group_rid));
-    }
-
     if (!winbindd_lookup_groupmem(server_name, domain_sid, group_rid, 
                                   &num_names, &rid_mem, &names, &name_types) &&
         !winbindd_lookup_aliasmem(server_name, global_sid_builtin, 
@@ -131,7 +122,7 @@ enum winbindd_result winbindd_getgrnam_from_group(char *groupname,
 
     /* Get domain sid for the domain */
 
-    if (!find_domain_sid_from_domain(name_domain, &domain_sid, 
+    if (!find_domain_sid_from_name(name_domain, &domain_sid, 
                                      domain_controller)) {
         DEBUG(0, ("getgrname_from_group(): could not get domain sid for "
                   "domain %s\n", name_domain));
@@ -273,8 +264,8 @@ struct winbindd_enum_grent {
 
 static struct winbindd_enum_grent *enum_grent_list = NULL;
 
-extern int num_domain_gid;
-extern struct winbind_domain_gid *domain_gid;
+extern struct winbind_domain *domain_list;
+extern int num_domain;
 
 /* Return the winbindd_enum_grent structure for a given pid */
 
@@ -296,7 +287,7 @@ static struct winbindd_enum_grent *get_grent_static(pid_t pid)
 enum winbindd_result winbindd_setgrent(pid_t pid)
 {
     struct winbindd_enum_grent *enum_grent = get_grent_static(pid);
-    struct winbind_domain_gid *tmp;
+    struct winbind_domain *tmp;
     int i;
 
     /* Free old static data if it exists */
@@ -326,21 +317,21 @@ enum winbindd_result winbindd_setgrent(pid_t pid)
     enum_grent->pid = pid;
 
     if ((enum_grent->sam_pipes = (struct winbindd_enum_grent_sam_pipes *)
-         malloc(sizeof(*enum_grent->sam_pipes) * num_domain_gid)) == NULL) {
+         malloc(sizeof(*enum_grent->sam_pipes) * num_domain)) == NULL) {
 
         free(enum_grent);
         return WINBINDD_ERROR;
     }
 
-    enum_grent->num_sam_pipes = num_domain_gid;
+    enum_grent->num_sam_pipes = num_domain;
     memset(enum_grent->sam_pipes, 0, sizeof(*enum_grent->sam_pipes) *
-           num_domain_gid);
+           num_domain);
 
     /* Connect to samr pipe for each domain */
 
     i = 0;
 
-    for (tmp = domain_gid; tmp != NULL; tmp = tmp->next) {
+    for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
         BOOL res;
 
         /* Connect to sam database */

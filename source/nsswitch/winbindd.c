@@ -47,9 +47,6 @@ BOOL lookup_domain_sid(fstring domain_name, DOM_SID *domain_sid,
         fstrcpy(domain_controller, system_name);
     }
 
-    DEBUG(0, ("lookup_domain_sid: Found domain controller %s for domain %s\n",
-              system_name, domain_name));
-
     /* Get SID from domain controller */
 
     res = lsa_open_policy(system_name, &lsa_handle, False, 
