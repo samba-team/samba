@@ -275,6 +275,103 @@
 </refsect1>
 
 <refsect1>
+	<title>TDB FILES</title>
+
+	<para>Samba stores it's data in several TDB (Trivial Database) files, usually located in <filename>/var/lib/samba</filename>.</para>
+	
+	<para>
+	(*) information persistent across restarts (but not
+	necessarily important to backup).
+	</para>
+
+<variablelist>
+<varlistentry><term>account_policy.tdb*</term>
+<listitem>
+<para>NT account policy settings such as pw expiration, etc...</para>
+</listitem>
+</varlistentry>
+
+<varlistentry><term>brlock.tdb</term>
+<listitem><para>byte range locks</para></listitem>
+</varlistentry>
+
+<varlistentry><term>browse.dat</term>
+<listitem><para>browse lists</para></listitem>
+</varlistentry>
+
+<varlistentry><term>connections.tdb</term>
+<listitem><para>share connections (used to enforce max connections, etc...)</para></listitem>
+</varlistentry>
+
+<varlistentry><term>gencache.tdb</term>
+<listitem><para>generic caching db</para></listitem>
+</varlistentry>
+
+<varlistentry><term>group_mapping.tdb*</term>
+<listitem><para>group mapping information</para></listitem>
+</varlistentry>
+
+<varlistentry><term>locking.tdb</term>
+<listitem><para>share modes &amp; oplocks</para></listitem>
+</varlistentry>
+
+<varlistentry><term>login_cache.tdb*</term>
+<listitem><para>bad pw attempts</para></listitem>
+</varlistentry>
+
+<varlistentry><term>messages.tdb</term>
+<listitem><para>Samba messaging system</para></listitem>
+</varlistentry>
+
+<varlistentry><term>netsamlogon_cache.tdb*</term>
+<listitem><para>cache of user net_info_3 struct	from net_samlogon() request (as a domain member)</para></listitem>
+</varlistentry>
+
+<varlistentry><term>ntdrivers.tdb*</term>
+<listitem><para>installed printer drivers</para></listitem>
+</varlistentry>
+
+<varlistentry><term>ntforms.tdb*</term>
+<listitem><para>installed printer forms</para></listitem>
+</varlistentry>
+
+<varlistentry><term>ntprinters.tdb*</term>
+<listitem><para>installed printer information</para></listitem>
+</varlistentry>
+
+<varlistentry><term>printing/</term>
+<listitem><para>directory containing tdb per print queue of cached lpq output</para></listitem>
+</varlistentry>
+
+<varlistentry><term>registry.tdb</term>
+<listitem><para>Windows registry skeleton (connect via regedit.exe)</para></listitem>
+</varlistentry>
+
+<varlistentry><term>sessionid.tdb</term>
+<listitem><para>session information (e.g. support for 'utmp = yes')</para></listitem>
+</varlistentry>
+
+<varlistentry><term>share_info.tdb*</term>
+<listitem><para>share acls</para></listitem>
+</varlistentry>
+
+<varlistentry><term>winbindd_cache.tdb</term>
+<listitem><para>winbindd's cache of user lists, etc...</para></listitem>
+</varlistentry>
+
+<varlistentry><term>winbindd_idmap.tdb*</term>
+<listitem><para>winbindd's local idmap db</para></listitem>
+</varlistentry>
+
+<varlistentry><term>wins.dat*</term>
+<listitem><para>wins database when 'wins support = yes'</para></listitem>
+</varlistentry>
+
+</variablelist>
+
+</refsect1>
+
+<refsect1>
 	<title>SIGNALS</title>
 
 	<para>Sending the <command>smbd</command> a SIGHUP will cause it to 
