@@ -706,6 +706,8 @@ it() link(bf(socket address))(socketaddress)
 
 it() link(bf(socket options))(socketoptions)
 
+it() link(bf(source environment))(sourceenvironment)
+
 it() link(bf(ssl))(ssl)
 
 it() link(bf(ssl CA certDir))(sslCAcertDir)
@@ -5723,6 +5725,31 @@ tt(	socket options = TCP_NODELAY)
 
   bf(Example:)
 tt(	socket options = IPTOS_LOWDELAY)
+
+label(sourceenvironment)
+dit(bf(source environment (G)))
+
+This parameter causes Samba to set environment variables as per the
+content of the file named.
+
+If the value of this parameter starts with a "|" character then Samba will
+treat that value as a pipe command to open and will set the environment
+variables from the oput of the pipe.
+
+The contents of the file or the output of the pipe should be formatted
+as the output of the standard Unix env(1) command. This is of the form :
+
+Example environment entry:
+tt( SAMBA_NETBIOS_NAME=myhostname )
+
+  bf(Default:)
+tt(No default value)
+
+  bf(Examples:)
+
+tt(	source environment = |/etc/smb.conf.sh)
+
+tt(	source environment = /usr/local/smb_env_vars)
 
 label(ssl)
 dit(bf(ssl (G)))
