@@ -1791,9 +1791,11 @@ NTSTATUS rpccli_samr_lookup_rids(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-	if (!NT_STATUS_IS_OK(result = r.status)) {
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED))
 		goto done;
-	}
 
 	if (r.num_names1 == 0) {
 		*num_names = 0;
