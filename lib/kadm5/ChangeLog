@@ -1,3 +1,7 @@
+2001-08-30  Jacques Vidrine <n@nectar.com>
+
+	* ipropd_slave.c, ipropd_master.c (main): call pidfile
+
 2001-08-28  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libkadm5srv_la_LDFLAGS): set version to 7:4:0
