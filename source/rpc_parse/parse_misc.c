@@ -5,6 +5,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Bartlett                   2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -918,6 +919,59 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 		return;
 
 	rpcstr_push((char *)str->buffer, buf, len, STR_TERMINATE);
+}
+
+/*******************************************************************
+ Inits a UNIHDR and UNISTR2 structure at one time.
+********************************************************************/
+
+void init_unistr2_and_hdr(UNISTR2 *str, UNIHDR *hdr, const char *buf )
+{
+	size_t convbuf_len_bytes, len_bytes;
+	int len;
+
+	uint16 *conversion_buffer;
+
+	if (buf == NULL) {
+		str->buffer = NULL;
+		hdr->uni_str_len = 0;
+		hdr->uni_max_len = 0;
+		hdr->buffer = 0;
+		return;
+	}
+
+	convbuf_len_bytes = (sizeof(uint16)*(strlen(buf) + 1));
+	/* Our strings cannot expand from internal to unicode by more 
+	   than a factor of 2 */
+	
+	conversion_buffer = malloc(convbuf_len_bytes);
+	if (conversion_buffer == NULL)
+		smb_panic("init_unistr: malloc fail\n");
+
+	/* Check this */
+
+	len_bytes = rpcstr_push(conversion_buffer, buf, convbuf_len_bytes, STR_TERMINATE);
+
+	len = len_bytes/sizeof(uint16);
+
+	if (len > MAX_UNISTRLEN) { 
+		len = MAX_UNISTRLEN;
+	}
+
+	str->buffer = (uint16 *)talloc_zero(get_talloc_ctx(), len*sizeof(uint16));
+	if (str->buffer == NULL)
+		smb_panic("init_unistr: talloc fail\n");
+
+	hdr->uni_str_len = len;
+	hdr->uni_max_len = len;
+
+	hdr->buffer      = 1;
+
+	str->uni_str_len = len;
+	str->uni_max_len = len;
+	memcpy(str->buffer, conversion_buffer, len*sizeof(uint16));
+
+	free(conversion_buffer);
 }
 
 /*******************************************************************
