@@ -231,7 +231,6 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 	char *host_princ_s = NULL;
 	BOOL got_replay_mutex = False;
 
-	fstring myname;
 	BOOL auth_ok = False;
 
 	ZERO_STRUCT(packet);
