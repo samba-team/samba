@@ -183,7 +183,7 @@ static BOOL del_samtdbpwd_entry(const char *name)
      return False;
   }
   
-  slprintf(keystr, sizeof(keystr), "USER_%s", name);
+  slprintf(keystr, sizeof(keystr)-1, "USER_%s", name);
   dos_to_unix(keystr, True);               /* Convert key to unix-codepage */
   key.dptr = keystr;
   key.dsize = strlen (keystr) + 1;
@@ -289,7 +289,7 @@ static BOOL mod_samtdb21pwd_entry(struct sam_passwd* newpwd, BOOL override)
   if (newpwd->munged_dial)
     memcpy (tdb_entry->strings + tdb_entry->munged_dial_offset, newpwd->munged_dial, munged_dial_len);
  
-  slprintf(keystr, sizeof(keystr), "USER_%s", newpwd->smb_name);
+  slprintf(keystr, sizeof(keystr)-1, "USER_%s", newpwd->smb_name);
   dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
   key.dptr = keystr;
   key.dsize = strlen (keystr) + 1;
@@ -400,7 +400,7 @@ static BOOL add_samtdb21pwd_entry(struct sam_passwd *newpwd)
   if (newpwd->munged_dial)
     memcpy (tdb_entry->strings + tdb_entry->munged_dial_offset, newpwd->munged_dial, munged_dial_len);
   
-  slprintf(keystr, sizeof(keystr), "USER_%s", newpwd->smb_name);
+  slprintf(keystr, sizeof(keystr)-1, "USER_%s", newpwd->smb_name);
   dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
   key.dptr = keystr;
   key.dsize = strlen (keystr) + 1;
@@ -462,7 +462,7 @@ static struct sam_passwd *getsamtdb21pwnam(char *name)
      return False;
   }
 
-  slprintf(keystr, sizeof(keystr), "USER_%s", name);
+  slprintf(keystr, sizeof(keystr)-1, "USER_%s", name);
   dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
   key.dptr = keystr;
   key.dsize = strlen (keystr) + 1;

@@ -636,10 +636,10 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	slprintf(pwdlchg_t, 13, "CCT-%08X", (uint32)newpwd->pass_can_change_time);
 	slprintf(pwdmchg_t, 13, "MCT-%08X", (uint32)newpwd->pass_must_change_time);
 
-	slprintf(uid, sizeof(uid), "%u", newpwd->smb_userid);
-	slprintf(user_rid, sizeof(user_rid), "0x%x", newpwd->user_rid);
-	slprintf(smb_grpid, sizeof(smb_grpid), "%u", newpwd->smb_grpid);
-	slprintf(group_rid, sizeof(group_rid), "0x%x", newpwd->group_rid);
+	slprintf(uid, sizeof(uid)-1, "%u", newpwd->smb_userid);
+	slprintf(user_rid, sizeof(user_rid)-1, "0x%x", newpwd->user_rid);
+	slprintf(smb_grpid, sizeof(smb_grpid)-1, "%u", newpwd->smb_grpid);
+	slprintf(group_rid, sizeof(group_rid)-1, "0x%x", newpwd->group_rid);
 
 	safe_strcpy(acb, pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN), sizeof(acb)-1); 
 
@@ -868,7 +868,7 @@ static BOOL mod_nisp21pwd_entry(struct sam_passwd* pwd, BOOL override)
   pwd->pass_last_set_time = time(NULL);
 
   if(got_pass_last_set_time) {
-    slprintf(lct, 12, "LCT-%08X", (uint32)pwd->pass_last_set_time);
+    slprintf(lct, 13, "LCT-%08X", (uint32)pwd->pass_last_set_time);
   }
 
   set_single_attribute(obj, NPF_LMPWD,     lmpwd, strlen(lmpwd), EN_CRYPT);
