@@ -144,9 +144,8 @@ struct name_record *find_name_on_subnet(struct subnet_record *subrec,
   Find a name over all known broadcast subnets.
 **************************************************************************/
 
-struct name_record 
-  *find_name_for_remote_broadcast_subnet( struct nmb_name *nmbname,
-                                          BOOL             self_only )
+struct name_record *find_name_for_remote_broadcast_subnet( struct nmb_name *nmbname,
+                                                           BOOL self_only )
 {
   struct subnet_record *subrec;
   struct name_record *namerec = NULL;
