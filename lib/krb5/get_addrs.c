@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -129,7 +129,11 @@ find_all_addresses (krb5_context context,
 	 }
 	 ifconf.ifc_len = buf_size;
 	 ifconf.ifc_buf = buf;
-	 if (ioctl (fd, siocgifconf, &ifconf) < 0) {
+
+	 /*
+	  * Solaris returns EINVAL when the buffer is too small.
+	  */
+	 if (ioctl (fd, siocgifconf, &ifconf) < 0 && errno != EINVAL) {
 	     ret = errno;
 	     goto error_out;
 	 }
@@ -290,7 +294,7 @@ get_addrs_int (krb5_context context, krb5_addresses *res, int flags)
 krb5_error_code
 krb5_get_all_client_addrs (krb5_context context, krb5_addresses *res)
 {
-    int flags = LOOP_IF_NONE | EXTRA_ADDRESSES;
+    int flags = LOOP | EXTRA_ADDRESSES;
 
     if (context->scan_interfaces)
 	flags |= SCAN_INTERFACES;
