@@ -27,6 +27,10 @@ Wed Mar 17 03:04:38 1999  Assar Westerlund  <assar@sics.se>
 	* lib/krb5/get_host_realm.c (krb5_get_host_realm): include leading
  	dot (if any) when looking up realms.
 
+Wed Mar 10 19:29:46 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* configure.in: use AC_WFLAGS
+
 Mon Mar  8 11:49:43 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Release 0.1c
@@ -53,10 +57,6 @@ Mon Mar  1 10:49:14 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* lib/krb5/get_addrs.c: SOCKADDR_HAS_SA_LEN ->
  	HAVE_STRUCT_SOCKADDR_SA_LEN
-
-	* appl/login/utmpx_login.c: HAVE_UT_* -> HAVE_STRUCT_UTMP*_UT_*
-
-	* appl/login/utmp_login.c: HAVE_UT_* -> HAVE_STRUCT_UTMP*_UT_*
 
 	* configure.in, acconfig.h, cf/*: update to automake 1.4/autoconf 2.13
 
