@@ -91,10 +91,12 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	printf("\ntesting OpenPolicy\n");
 
+	qos.len = 0;
 	qos.impersonation_level = 2;
 	qos.context_mode = 1;
 	qos.effective_only = 0;
 
+	attr.len = 0;
 	attr.root_dir = NULL;
 	attr.object_name = NULL;
 	attr.attributes = 0;
@@ -126,10 +128,12 @@ static BOOL test_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("\ntesting OpenPolicy2\n");
 
+	qos.len = 0;
 	qos.impersonation_level = 2;
 	qos.context_mode = 1;
 	qos.effective_only = 0;
 
+	attr.len = 0;
 	attr.root_dir = NULL;
 	attr.object_name = NULL;
 	attr.attributes = 0;

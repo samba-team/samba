@@ -38,7 +38,7 @@ struct dfs_Remove {
 
 };
 
-struct dfs_UNKNOWN3 {
+struct dfs_SetInfo {
 	struct {
 	} in;
 
@@ -195,6 +195,6 @@ struct dfs_Enum {
 #define DCERPC_DFS_EXIST 0
 #define DCERPC_DFS_ADD 1
 #define DCERPC_DFS_REMOVE 2
-#define DCERPC_DFS_UNKNOWN3 3
+#define DCERPC_DFS_SETINFO 3
 #define DCERPC_DFS_GETINFO 4
 #define DCERPC_DFS_ENUM 5

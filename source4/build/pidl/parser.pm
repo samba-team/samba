@@ -189,10 +189,6 @@ sub ParseElementPrintScalar($$)
 	my($var_prefix) = shift;
 	my $cprefix = util::c_push_prefix($e);
 
-	if (util::has_property($e, "struct_len")) {
-		return;
-	}
-
 	if (defined $e->{VALUE}) {
 		$res .= "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $e->{VALUE});\n";
 	} elsif (util::has_direct_buffers($e)) {
@@ -393,25 +389,10 @@ sub ParseElementPullBuffer($$$)
 sub ParseStructPush($)
 {
 	my($struct) = shift;
-	my($struct_len);
 	my $conform_e;
 
 	if (! defined $struct->{ELEMENTS}) {
 		return;
-	}
-
-	# see if we have a structure length
-	foreach my $e (@{$struct->{ELEMENTS}}) {
-		$e->{PARENT} = $struct;
-		if (util::has_property($e, "struct_len")) {
-			$struct_len = $e;
-			$e->{VALUE} = "0";
-		}
-	}	
-
-	if (defined $struct_len) {
-		$res .= "\tstruct ndr_push_save _save1, _save2, _save3;\n";
-		$res .= "\tndr_push_save(ndr, &_save1);\n";
 	}
 
 	# see if the structure contains a conformant array. If it
@@ -433,10 +414,7 @@ sub ParseStructPush($)
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		if (defined($struct_len) && $e == $struct_len) {
-			$res .= "\tNDR_CHECK(ndr_push_align(ndr, sizeof($e->{TYPE})));\n";
-			$res .= "\tndr_push_save(ndr, &_save2);\n";
-		}
+		$e->{PARENT} = $struct;
 		ParseElementPushScalar($e, "r->", "NDR_SCALARS");
 	}	
 
@@ -444,14 +422,6 @@ sub ParseStructPush($)
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPushBuffer($e, "r->", "NDR_BUFFERS");
-	}
-
-	if (defined $struct_len) {
-		$res .= "\tndr_push_save(ndr, &_save3);\n";
-		$res .= "\tndr_push_restore(ndr, &_save2);\n";
-		$struct_len->{VALUE} = "_save3.offset - _save1.offset";
-		ParseElementPushScalar($struct_len, "r->", "NDR_SCALARS");
-		$res .= "\tndr_push_restore(ndr, &_save3);\n";
 	}
 
 	$res .= "done:\n";
@@ -479,7 +449,6 @@ sub ParseStructPrint($)
 sub ParseStructPull($)
 {
 	my($struct) = shift;
-	my($struct_len);
 	my $conform_e;
 
 	if (! defined $struct->{ELEMENTS}) {
@@ -507,24 +476,6 @@ sub ParseStructPull($)
 	}
 
 
-	# see if we have a structure length. If we do then we need to advance
-	# the ndr_pull offset to that length past the front of the structure
-	# when we have finished with the structure
-	# we also need to make sure that we limit the size of our parsing
-	# of this structure to the given size
-	foreach my $e (@{$struct->{ELEMENTS}}) {
-		if (util::has_property($e, "struct_len")) {
-			$struct_len = $e;
-			$e->{VALUE} = "&_size";
-		}
-	}	
-
-	if (defined $struct_len) {
-		$res .= "\tuint32 _size;\n";
-		$res .= "\tstruct ndr_pull_save _save;\n";
-		$res .= "\tndr_pull_save(ndr, &_save);\n";
-	}
-
 	if (defined $conform_e) {
 		$res .= "\tNDR_CHECK(ndr_pull_uint32(ndr, &$conform_e->{CONFORMANT_SIZE}));\n";
 	}
@@ -535,20 +486,12 @@ sub ParseStructPull($)
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPullScalar($e, "r->", "NDR_SCALARS");
-		if (defined($struct_len) && $e == $struct_len) {
-			$res .= "\tNDR_CHECK(ndr_pull_limit_size(ndr, _size, 4));\n";
-		}
 	}	
 
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPullBuffer($e, "r->", "NDR_BUFFERS");
-	}
-
-	if (defined $struct_len) {
-		$res .= "\tndr_pull_restore(ndr, &_save);\n";
-		$res .= "\tNDR_CHECK(ndr_pull_advance(ndr, _size));\n";
 	}
 
 	$res .= "done:\n";

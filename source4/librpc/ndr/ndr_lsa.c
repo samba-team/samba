@@ -61,35 +61,23 @@ NTSTATUS ndr_push_lsa_ChangePassword(struct ndr_push *ndr, struct lsa_ChangePass
 
 static NTSTATUS ndr_push_lsa_QosInfo(struct ndr_push *ndr, int ndr_flags, struct lsa_QosInfo *r)
 {
-	struct ndr_push_save _save1, _save2, _save3;
-	ndr_push_save(ndr, &_save1);
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_align(ndr, sizeof(uint32)));
-	ndr_push_save(ndr, &_save2);
-	NDR_CHECK(ndr_push_uint32(ndr, 0));
+	NDR_CHECK(ndr_push_uint32(ndr, r->len));
 	NDR_CHECK(ndr_push_uint16(ndr, r->impersonation_level));
 	NDR_CHECK(ndr_push_uint8(ndr, r->context_mode));
 	NDR_CHECK(ndr_push_uint8(ndr, r->effective_only));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-	ndr_push_save(ndr, &_save3);
-	ndr_push_restore(ndr, &_save2);
-	NDR_CHECK(ndr_push_uint32(ndr, _save3.offset - _save1.offset));
-	ndr_push_restore(ndr, &_save3);
 done:
 	return NT_STATUS_OK;
 }
 
 static NTSTATUS ndr_push_lsa_ObjectAttribute(struct ndr_push *ndr, int ndr_flags, struct lsa_ObjectAttribute *r)
 {
-	struct ndr_push_save _save1, _save2, _save3;
-	ndr_push_save(ndr, &_save1);
 	NDR_CHECK(ndr_push_align(ndr, 4));
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_align(ndr, sizeof(uint32)));
-	ndr_push_save(ndr, &_save2);
-	NDR_CHECK(ndr_push_uint32(ndr, 0));
+	NDR_CHECK(ndr_push_uint32(ndr, r->len));
 	NDR_CHECK(ndr_push_ptr(ndr, r->root_dir));
 	NDR_CHECK(ndr_push_ptr(ndr, r->object_name));
 	NDR_CHECK(ndr_push_uint32(ndr, r->attributes));
@@ -109,10 +97,6 @@ buffers:
 	if (r->sec_qos) {
 		NDR_CHECK(ndr_push_lsa_QosInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->sec_qos));
 	}
-	ndr_push_save(ndr, &_save3);
-	ndr_push_restore(ndr, &_save2);
-	NDR_CHECK(ndr_push_uint32(ndr, _save3.offset - _save1.offset));
-	ndr_push_restore(ndr, &_save3);
 done:
 	return NT_STATUS_OK;
 }
@@ -1630,6 +1614,7 @@ void ndr_print_lsa_QosInfo(struct ndr_print *ndr, const char *name, struct lsa_Q
 {
 	ndr_print_struct(ndr, name, "lsa_QosInfo");
 	ndr->depth++;
+	ndr_print_uint32(ndr, "len", r->len);
 	ndr_print_uint16(ndr, "impersonation_level", r->impersonation_level);
 	ndr_print_uint8(ndr, "context_mode", r->context_mode);
 	ndr_print_uint8(ndr, "effective_only", r->effective_only);
@@ -1640,6 +1625,7 @@ void ndr_print_lsa_ObjectAttribute(struct ndr_print *ndr, const char *name, stru
 {
 	ndr_print_struct(ndr, name, "lsa_ObjectAttribute");
 	ndr->depth++;
+	ndr_print_uint32(ndr, "len", r->len);
 	ndr_print_ptr(ndr, "root_dir", r->root_dir);
 	ndr->depth++;
 	if (r->root_dir) {

@@ -40,7 +40,7 @@ NTSTATUS ndr_push_dfs_Remove(struct ndr_push *ndr, struct dfs_Remove *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_dfs_UNKNOWN3(struct ndr_push *ndr, struct dfs_UNKNOWN3 *r)
+NTSTATUS ndr_push_dfs_SetInfo(struct ndr_push *ndr, struct dfs_SetInfo *r)
 {
 
 	return NT_STATUS_OK;
@@ -425,7 +425,7 @@ NTSTATUS ndr_pull_dfs_Remove(struct ndr_pull *ndr, struct dfs_Remove *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_dfs_UNKNOWN3(struct ndr_pull *ndr, struct dfs_UNKNOWN3 *r)
+NTSTATUS ndr_pull_dfs_SetInfo(struct ndr_pull *ndr, struct dfs_SetInfo *r)
 {
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
