@@ -101,7 +101,7 @@
 #endif
 #include <kafs.h>
 
-/* #include <resolve.h> */
+#include <resolve.h>
 
 #include "afssysdefs.h"
 

@@ -143,11 +143,10 @@ kafs_settoken(const char *cell, uid_t uid, CREDENTIALS *c)
     return ret;
 }
 
-#if 0
 /* Try to get a db-server for an AFS cell from a AFSDB record */
 
 static int
-dns_find_cell(const char *cell, char *dbserver)
+dns_find_cell(const char *cell, char *dbserver, size_t len)
 {
     struct dns_reply *r;
     int ok = -1;
@@ -156,8 +155,8 @@ dns_find_cell(const char *cell, char *dbserver)
 	struct resource_record *rr = r->head;
 	while(rr){
 	    if(rr->type == T_AFSDB && rr->u.afsdb->preference == 1){
-		strncpy(dbserver, rr->u.afsdb->domain, MaxHostNameLen);
-		dbserver[MaxHostNameLen - 1] = 0;
+		strncpy(dbserver, rr->u.afsdb->domain, len);
+		dbserver[len - 1] = '\0';
 		ok = 0;
 		break;
 	    }
@@ -167,7 +166,6 @@ dns_find_cell(const char *cell, char *dbserver)
     }
     return ok;
 }
-#endif
 
 
 /*
@@ -260,40 +258,33 @@ realm_of_cell(kafs_data *data, const char *cell, char **realm)
     char *p;
     int ret = -1;
 
-    if ((F = fopen(_PATH_CELLSERVDB, "r")))
-      {
-	while (fgets(buf, sizeof(buf), F))
-	  {
+    if ((F = fopen(_PATH_CELLSERVDB, "r"))) {
+	while (fgets(buf, sizeof(buf), F)) {
 	    if (buf[0] != '>')
-	      continue;		/* Not a cell name line, try next line */
-	    if (strncmp(buf + 1, cell, strlen(cell)) == 0)
-	      {
+		continue; /* Not a cell name line, try next line */
+	    if (strncmp(buf + 1, cell, strlen(cell)) == 0) {
 		/*
 		 * We found the cell name we're looking for.
 		 * Read next line on the form ip-address '#' hostname
 		 */
 		if (fgets(buf, sizeof(buf), F) == NULL)
-		  break;	/* Read failed, give up */
+		    break;	/* Read failed, give up */
 		p = strchr(buf, '#');
 		if (p == NULL)
-		  break;	/* No '#', give up */
+		    break;	/* No '#', give up */
 		p++;
 		if (buf[strlen(buf) - 1] == '\n')
-		  buf[strlen(buf) - 1] = 0;
+		    buf[strlen(buf) - 1] = '\0';
 		*realm = (*data->get_realm)(data, p);
-		if (*realm && **realm != 0)
-		  ret = 0;
+		if (*realm && **realm != '\0')
+		    ret = 0;
 		break;		/* Won't try any more */
-	      }
-	  }
+	    }
+	}
 	fclose(F);
-      }
-#if 0
-    if (realm == NULL) {
-	if (dns_find_cell(cell, buf) == 0)
-	    realm = krb_realmofhost(buf);
     }
-#endif
+    if (*realm == NULL && dns_find_cell(cell, buf, sizeof(buf)) == 0)
+	*realm = strdup(krb_realmofhost(buf));
     return ret;
 }
 
