@@ -1575,6 +1575,15 @@ static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEV
 		uint32 struct_offset = prs_offset(ps);
 		uint32 relative_offset;
 		
+		if (*devmode == NULL) {
+			relative_offset=0;
+			if (!prs_uint32("offset", ps, depth, &relative_offset))
+				return False;
+			DEBUG(8, ("boing, the devmode was NULL\n"));
+			
+			return True;
+		}
+		
 		buffer->string_at_end -= ((*devmode)->size + (*devmode)->driverextra);
 		
 		if(!prs_set_offset(ps, buffer->string_at_end))
