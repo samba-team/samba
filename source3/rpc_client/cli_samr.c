@@ -590,16 +590,14 @@ NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	if(!samr_io_r_enum_dom_users("", &r, &rbuf, 0))
 		goto done;
 	
-	/* return the data obtained in response */
-	if (!NT_STATUS_IS_OK(r.status) &&
-		(NT_STATUS_EQUAL(r.status, STATUS_MORE_ENTRIES) ||
-		NT_STATUS_EQUAL(r.status, NT_STATUS_NO_MORE_ENTRIES))) {
-		return r.status;
-	}
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result) &&
+	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES))
+		goto done;
 	
 	*start_idx = r.next_idx;
 	*num_dom_users = r.num_entries2;
-	result = r.status;
 
 	if (r.num_entries2) {
 		/* allocate memory needed to return received data */	
