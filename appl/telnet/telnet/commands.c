@@ -1417,10 +1417,9 @@ static int bye(int argc, char **argv)
 	/* reset options */
 	tninit();
     }
-    if ((argc != 2) || (strcmp(argv[1], "fromquit") != 0)) {
+    if ((argc != 2) || (strcmp(argv[1], "fromquit") != 0)) 
 	longjmp(toplevel, 1);
-	/* NOTREACHED */
-    }
+    return 0;	/* NOTREACHED */
 }
 
 /*VARARGS*/
@@ -1428,7 +1427,7 @@ int quit(void)
 {
 	(void) call(bye, "bye", "fromquit", 0);
 	Exit(0);
-	/*NOTREACHED*/
+	return 0; /*NOTREACHED*/
 }
 
 /*VARARGS*/
