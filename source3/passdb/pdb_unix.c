@@ -66,28 +66,6 @@ static BOOL unixsam_getsampwrid (struct pdb_methods *methods,
 }
 
 /***************************************************************************
-  Delete a SAM_ACCOUNT
- ****************************************************************************/
-
-static BOOL unixsam_delete_sam_account(struct pdb_methods *methods, const SAM_ACCOUNT *sam_pass)
-{
-	/* 
-	 * Unsupported as well - we don't need to get involved in 
-	 * unix passdb's - and hey, we would need to use pam for that anyway 
-	 */
-	return False;
-}
-
-/***************************************************************************
-  Modifies an existing SAM_ACCOUNT
- ****************************************************************************/
-
-static BOOL unixsam_update_sam_account (struct pdb_methods *methods, const SAM_ACCOUNT *newpwd)
-{
-	return False;
-}
-
-/***************************************************************************
   Adds an existing SAM_ACCOUNT
  ****************************************************************************/
 
@@ -95,6 +73,21 @@ static BOOL unixsam_add_sam_account (struct pdb_methods *methods, const SAM_ACCO
 {
 	DEBUG(0,("pdb_unix should not be listed as the first passdb backend! You can't add users to it.\n"));
 	return False;
+}
+
+/***************************************************************************
+  Updates a SAM_ACCOUNT
+
+  This isn't a particulary practical option for pdb_unix.  We certainly don't
+  want to twidde the filesystem, so what should we do?
+
+  Current plan is to transparently add the account.  It should appear
+  as if the pdb_unix version was modified, but its actually stored somehwere.
+ ****************************************************************************/
+
+static BOOL unixsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+{
+	return methods->parent->pdb_add_sam_account(methods->parent, newpwd);
 }
 
 NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
@@ -119,7 +112,7 @@ NTSTATUS pdb_init_unixsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 	(*pdb_method)->getsampwrid = unixsam_getsampwrid;
 	(*pdb_method)->add_sam_account = unixsam_add_sam_account;
 	(*pdb_method)->update_sam_account = unixsam_update_sam_account;
-	(*pdb_method)->delete_sam_account = unixsam_delete_sam_account;
+	(*pdb_method)->delete_sam_account = NULL;
 	
 	/* There's not very much to initialise here */
 	return NT_STATUS_OK;
