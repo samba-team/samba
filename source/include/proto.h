@@ -971,7 +971,7 @@ BOOL get_any_dc_name(const char *domain, char *srv_name);
 
 char *credstr(const uchar *cred);
 void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, const char *pass,
-		      const uchar session_key[8]);
+		      uchar session_key[8]);
 void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred);
 int cred_assert(const DOM_CHAL *cred, uchar session_key[8],
@@ -1059,7 +1059,7 @@ void E_P16(uchar *p14,uchar *p16);
 void E_P24(const uchar *p21, const uchar *c8, uchar *p24);
 void D_P16(const uchar *p14, const uchar *in, uchar *out);
 void E_old_pw_hash( const uchar *p14, const uchar *in, uchar *out);
-void cred_hash1(uchar *out,uchar *in,uchar *key);
+void cred_hash1(uchar *out, const uchar *in, const uchar *key);
 void cred_hash2(uchar *out,uchar *in,uchar *key);
 void cred_hash3(uchar *out, const uchar *in,uchar *key, int forw);
 void SamOEMhash( uchar *data, const uchar *key, int val);
@@ -2425,7 +2425,7 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 			      DOM_SID *dom_sid);
 BOOL samr_query_lookup_names(const POLICY_HND *pol, uint32 flags,
-			     uint32 num_names, const char **names,
+			     uint32 num_names, char **names,
 			     uint32 *num_rids, uint32 **rids, uint32 **types);
 BOOL samr_query_lookup_rids(  const POLICY_HND *pol, uint32 flags,
 				uint32 num_rids, const uint32 *rids,

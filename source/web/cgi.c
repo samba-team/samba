@@ -333,7 +333,7 @@ handle a http authentication line
 static BOOL cgi_handle_authorization(char *line)
 {
 	char *p, *user, *user_pass;
-	struct passwd *pass = NULL;
+	const struct passwd *pass = NULL;
 	BOOL ret = False;
 
 	if (strncasecmp(line,"Basic ", 6)) {

@@ -4121,7 +4121,7 @@ makes a SAMR_Q_LOOKUP_NAMES structure.
 ********************************************************************/
 BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 			      const POLICY_HND *pol, uint32 flags,
-			      uint32 num_names, const char **name)
+			      uint32 num_names, char **name)
 {
 	uint32 i;
 	if (q_u == NULL) return False;

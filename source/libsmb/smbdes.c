@@ -331,7 +331,7 @@ void E_old_pw_hash( const uchar *p14, const uchar *in, uchar *out)
         smbhash(out+8, in+8, p14+7, 1);
 }
 
-void cred_hash1(uchar *out,uchar *in,uchar *key)
+void cred_hash1(uchar *out, const uchar *in, const uchar *key)
 {
 	uchar buf[8];
 

@@ -106,7 +106,8 @@ static void update_trust_account(void)
 	}
 	if (s2 == NT_STATUS_NOPROBLEMO)
 	{
-		if (!secret_get_data(&secret, old_trust, 16))
+		int len;
+		if (!secret_get_data(&secret, old_trust, &len) || len != 16)
 		{
 			s2 = NT_STATUS_ACCESS_DENIED;
 		}

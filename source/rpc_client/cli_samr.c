@@ -1761,7 +1761,7 @@ BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 do a SAMR Query Lookup Names
 ****************************************************************************/
 BOOL samr_query_lookup_names(const POLICY_HND *pol, uint32 flags,
-			     uint32 num_names, const char **names,
+			     uint32 num_names, char **names,
 			     uint32 *num_rids, uint32 **rids, uint32 **types)
 {
 	prs_struct data;

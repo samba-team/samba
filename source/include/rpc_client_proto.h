@@ -336,7 +336,7 @@ BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 BOOL samr_query_lookup_domain(  POLICY_HND *pol, const char *dom_name,
 			      DOM_SID *dom_sid);
 BOOL samr_query_lookup_names(const POLICY_HND *pol, uint32 flags,
-			     uint32 num_names, const char **names,
+			     uint32 num_names, char **names,
 			     uint32 *num_rids, uint32 **rids, uint32 **types);
 BOOL samr_query_lookup_rids(  const POLICY_HND *pol, uint32 flags,
 				uint32 num_rids, const uint32 *rids,

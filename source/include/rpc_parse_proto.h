@@ -520,7 +520,7 @@ BOOL make_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM *r_u,
 BOOL samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 			      const POLICY_HND *pol, uint32 flags,
-			      uint32 num_names, const char **name);
+			      uint32 num_names, char **name);
 BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth);
 void samr_free_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_l);
 BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
