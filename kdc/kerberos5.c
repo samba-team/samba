@@ -1358,13 +1358,31 @@ tgs_make_reply(KDC_REQ_BODY *b,
     if(ret)
 	goto out;
 
-    ret = fix_transited_encoding(enforce_transited_policy
-				 || server->flags.enforce_transited_policy
-				 || !f.disable_transited_check,
-				 &tgt->transited, &et,
-				 *krb5_princ_realm(context, client_principal),
-				 *krb5_princ_realm(context, server->principal),
-				 *krb5_princ_realm(context, krbtgt->principal));
+    /* We should check the transited encoding if:
+       1) the request doesn't ask not to be checked
+       2) globally enforcing a check
+       3) principal requires checking
+       4) we allow non-check per-principal, but principal isn't marked as allowing this
+       5) we don't globally allow this
+    */
+
+#define GLOBAL_FORCE_TRANSITED_CHECK		(trpolicy == TRPOLICY_ALWAYS_CHECK)
+#define GLOBAL_ALLOW_PER_PRINCIPAL		(trpolicy == TRPOLICY_ALLOW_PER_PRINCIPAL)
+#define GLOBAL_ALLOW_DISABLE_TRANSITED_CHECK	(trpolicy == TRPOLICY_ALWAYS_HONOUR_REQUEST)
+/* these will consult the database in future release */
+#define PRINCIPAL_FORCE_TRANSITED_CHECK(P)		0
+#define PRINCIPAL_ALLOW_DISABLE_TRANSITED_CHECK(P)	0
+
+	ret = fix_transited_encoding(!f.disable_transited_check ||
+				     GLOBAL_FORCE_TRANSITED_CHECK ||
+				     PRINCIPAL_FORCE_TRANSITED_CHECK(server) ||
+				     !((GLOBAL_ALLOW_PER_PRINCIPAL && 
+					PRINCIPAL_ALLOW_DISABLE_TRANSITED_CHECK(server)) ||
+				       GLOBAL_ALLOW_DISABLE_TRANSITED_CHECK),
+				     &tgt->transited, &et,
+				     *krb5_princ_realm(context, client_principal),
+				     *krb5_princ_realm(context, server->principal),
+				     *krb5_princ_realm(context, krbtgt->principal));
     if(ret)
 	goto out;
 
@@ -1461,7 +1479,7 @@ tgs_make_reply(KDC_REQ_BODY *b,
        DES3? */
     ret = encode_reply(&rep, &et, &ek, etype, adtkt ? 0 : server->kvno, ekey,
 		       0, &tgt->key, e_text, reply);
-out:
+  out:
     free_TGS_REP(&rep);
     free_TransitedEncoding(&et.transited);
     if(et.starttime)
