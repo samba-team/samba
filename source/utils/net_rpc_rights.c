@@ -46,8 +46,11 @@ static NTSTATUS name_to_sid(struct cli_state *cli,
 
 	result = cli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, &sids, &sid_types);
 	
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
+		d_printf("Failed to convert \"%s\" to a SID [%s]\n",
+			name, nt_errstr(result));
 		goto done;
+	}
 
 	sid_copy( sid, &sids[0] );
 
@@ -117,9 +120,45 @@ static NTSTATUS enum_privileges_for_user( TALLOC_CTX *ctx, struct cli_state *cli
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
+
+	if ( count == 0 )
+		d_printf("No privileges assigned\n");
 		
 	for (i = 0; i < count; i++) {
-		printf("%30s\n", rights[i]);
+		printf("%s\n", rights[i]);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
+static NTSTATUS enum_privileges_for_accounts( TALLOC_CTX *ctx, struct cli_state *cli,
+                                              POLICY_HND *pol )
+{
+	NTSTATUS result;
+	uint32 enum_context=0;
+	uint32 pref_max_length=0x1000;
+	DOM_SID *sids;
+	uint32 count=0;
+	int i;
+
+	result = cli_lsa_enum_sids(cli, ctx, pol, &enum_context, 
+		pref_max_length, &count, &sids);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+		
+	for ( i=0; i<count; i++ ) {
+
+		d_printf("%s\n", sid_string_static(&sids[i]));
+		result = enum_privileges_for_user( ctx, cli, pol, &sids[i] );
+		
+		if ( !NT_STATUS_IS_OK(result) )
+			return result;
+
+		d_printf("\n");
 	}
 
 	return NT_STATUS_OK;
@@ -148,13 +187,19 @@ static NTSTATUS rpc_rights_list_internal( const DOM_SID *domain_sid, const char 
 		break;
 			
 	case 1:
-		/* TODO: add special name 'accounts' which lists all privileged
-		   SIDs and their associated rights */
+		/* special case to enuemrate all privileged SIDs 
+		   with associated rights */
+		
+		if ( strequal( argv[0], "accounts" ) ) {
+			result = enum_privileges_for_accounts( mem_ctx, cli, &pol );
+		}
+		else {
 
-		result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
-		if (!NT_STATUS_IS_OK(result))
-			goto done;	
-		result = enum_privileges_for_user( mem_ctx, cli, &pol, &sid );
+			result = name_to_sid(cli, mem_ctx, &sid, argv[0]);
+			if (!NT_STATUS_IS_OK(result))
+				goto done;	
+			result = enum_privileges_for_user( mem_ctx, cli, &pol, &sid );
+		}
 		break;
 			
 	default:		
@@ -300,14 +345,14 @@ static int rpc_rights_revoke( int argc, const char **argv )
 
 static int net_help_rights( int argc, const char **argv )
 {
-	d_printf("net rpc rights list       View available privileges\n");
-	d_printf("net rpc rights grant      View available privileges\n");
-	d_printf("net rpc rights revoke     View available privileges\n");
+	d_printf("net rpc rights list [accounts|username]   View available or assigned privileges\n");
+	d_printf("net rpc rights grant <name|SID> <right>   Assign privilege[s]\n");
+	d_printf("net rpc rights revoke <name|SID> <right>  Revoke privilege[s]\n");
 	
-	d_printf("Both 'grant' and 'revoke' require a SID and a commaa separated\n");
-	d_printf("list of privilege names.  For example\n");
-	d_printf("  net rpc grant S-1-5-32-550 SePrintOperatorsPrivilege\n");
-	d_printf("would grant the printer admin right to the 'BUILTIN\\Print Operators' group\n");
+	d_printf("\nBoth 'grant' and 'revoke' require a SID and a list of privilege names.\n");
+	d_printf("For example\n");
+	d_printf("\n  net rpc grant 'VALE\\biddle' SePrintOperatorPrivilege SeDiskOperatorPrivlege\n");
+	d_printf("\nwould grant the printer admin and disk manager rights to the user 'VALE\\biddle'\n\n");
 	
 	
 	return -1;
