@@ -570,9 +570,7 @@ write_stats(krb5_context context, slave *slaves, u_int32_t current_version)
 	else
 	    rtbl_add_column_entry(tbl, SLAVE_STATUS, "Up");
 
-	if (strftime(str, sizeof(str), "%Y-%m-%d %H:%M:%S %Z", 
-		     localtime(&slaves->seen)) == 0)
-	    strlcpy(str, "Unknown time", sizeof(str));
+	ret = krb5_format_time(context, slaves->seen, str, sizeof(str), TRUE); 
 	rtbl_add_column_entry(tbl, SLAVE_SEEN, str);
 
 	slaves = slaves->next;
