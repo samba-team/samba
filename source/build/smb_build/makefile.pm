@@ -487,7 +487,8 @@ bin/$ctx->{BINARY}: bin/.dummy \$(BINARY_$ctx->{NAME}_DEPEND_LIST)
 	\@echo Linking \$\@
 	\@\$(LD) \$(LD_FLAGS) -o \$\@ \\
 		\$(BINARY_$ctx->{NAME}_LINK_FLAGS) \\
-		\$(BINARY_$ctx->{NAME}_LINK_LIST)
+		\$(BINARY_$ctx->{NAME}_LINK_LIST) \\
+		\$(BINARY_$ctx->{NAME}_LINK_FLAGS)
 binary_$ctx->{BINARY}: basics bin/$ctx->{BINARY}
 # End Binary $ctx->{BINARY}
 ###################################
