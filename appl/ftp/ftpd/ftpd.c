@@ -161,7 +161,6 @@ extern char *optarg;
 extern int optind, opterr;
 
 int fclose(FILE*);
-char* crypt(char*, char*);
 #endif
 
 char *getusershell(void);
