@@ -92,3 +92,14 @@ define(AC_ADD_INCLUDE,
 [#include] $1
 EOF
 ])
+
+dnl Copied from libtool.m4
+AC_DEFUN(AC_PROG_LD_GNU,
+[AC_CACHE_CHECK([if the linker ($LD) is GNU ld], ac_cv_prog_gnu_ld,
+[# I'd rather use --version here, but apparently some GNU ld's only accept -v.
+if $LD -v 2>&1 </dev/null | egrep '(GNU|with BFD)' 1>&5; then
+  ac_cv_prog_gnu_ld=yes
+else
+  ac_cv_prog_gnu_ld=no
+fi])
+])
