@@ -1,7 +1,7 @@
 build_env.h
 config.h
-config.h.in
-proto.h
 stamp-h
-version.h
+proto.h
 wrepld_proto.h
+config.h.in
+version.h
