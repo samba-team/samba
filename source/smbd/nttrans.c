@@ -780,7 +780,16 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		}
 	}
 
+#if 0
+	/* This is the correct thing to do (check every time) but can_delete is
+	   expensive (it may have to read the parent directory permissions). So
+	   for now we're not doing it unless we have a strong hint the client
+	   is really going to delete this file. */
 	if (desired_access & DELETE_ACCESS) {
+#else
+	/* Setting FILE_SHARE_DELETE is the hint. */
+	if ((share_access & FILE_SHARE_DELETE) && (desired_access & DELETE_ACCESS)) {
+#endif
 		status = can_delete(conn, fname, file_attributes, bad_path, True);
 		/* We're only going to fail here if it's access denied, as that's the
 		   only error we care about for "can we delete this ?" questions. */
