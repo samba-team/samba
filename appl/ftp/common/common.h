@@ -62,32 +62,4 @@ void set_buffer_size(int, int);
 
 void *alloc_buffer (void *oldbuf, size_t *sz, struct stat *st);
 
-void
-socket_set_address_and_port (struct sockaddr *sa, const void *ptr, int port);
-
-size_t
-socket_addr_size (const struct sockaddr *sa);
-
-
-size_t
-socket_sockaddr_size (const struct sockaddr *sa);
-
-void *
-socket_get_address (struct sockaddr *sa);
-
-int
-socket_get_port (const struct sockaddr *sa);
-
-void
-socket_set_port (struct sockaddr *sa, int port);
-
-void
-socket_set_debug (int sock);
-
-void
-socket_set_tos (int sock, int tos);
-
-void
-socket_set_reuseaddr (int sock, int val);
-
 #endif /* __COMMON_H__ */
