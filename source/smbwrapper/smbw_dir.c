@@ -587,19 +587,23 @@ a wrapper for fchdir()
 int smbw_fchdir(unsigned int fd)
 {
 	struct smbw_dir *dir;
+	int ret;
 
 	smbw_busy++;
 
 	dir = smbw_dir(fd);
-	if (!dir) {
-		errno = EBADF;
+	if (dir) {
 		smbw_busy--;
-		return -1;
+		return chdir(dir->path);
 	}	
 
+	ret = real_fchdir(fd);
+	if (ret == 0) {
+		sys_getwd(smbw_cwd);		
+	}
+
 	smbw_busy--;
-	
-	return chdir(dir->path);
+	return ret;
 }
 
 /***************************************************** 

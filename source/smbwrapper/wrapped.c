@@ -164,11 +164,7 @@
 
  int fchdir(int fd)
 {
-	if (smbw_fd(fd)) {
-		return smbw_fchdir(fd);
-	}
-
-	return real_fchdir(fd);
+	return smbw_fchdir(fd);
 }
 
 #ifdef HAVE___FCHDIR
