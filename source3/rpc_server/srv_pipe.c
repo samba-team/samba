@@ -538,6 +538,11 @@ static struct api_cmd api_fd_commands[] =
 #ifndef RPC_DFS_DYNAMIC
     { "netdfs",   rpc_dfs_init },
 #endif
+#ifdef DEVELOPER
+#ifndef RPC_ECHO_DYNAMIC
+    { "rpcecho",   rpc_echo_init },
+#endif
+#endif
     { NULL, NULL }
 };
 

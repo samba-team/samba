@@ -422,6 +422,7 @@ extern struct cmd_set srvsvc_commands[];
 extern struct cmd_set dfs_commands[];
 extern struct cmd_set reg_commands[];
 extern struct cmd_set ds_commands[];
+extern struct cmd_set echo_commands[];
 
 static struct cmd_set *rpcclient_command_list[] = {
 	rpcclient_commands,
@@ -433,6 +434,7 @@ static struct cmd_set *rpcclient_command_list[] = {
 	srvsvc_commands,
 	dfs_commands,
 	reg_commands,
+	echo_commands,
 	NULL
 };
 
@@ -486,13 +488,14 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 		if (!cli_nt_open_netlogon(cli, trust_password,
 					  SEC_CHAN_WKSTA)) {
-			DEBUG(0, ("Could not initialize NETLOGON pipe\n"));
+			DEBUG(0, ("Could not initialise NETLOGON pipe\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else {
 		if (cmd_entry->pipe_idx != -1) {
 			if (!cli_nt_session_open(cli, cmd_entry->pipe_idx)) {
-				DEBUG(0, ("Could not initialize pipe\n"));
+				DEBUG(0, ("Could not initialise %s\n",
+					  get_pipe_name_from_index(cmd_entry->pipe_idx)));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 		}
