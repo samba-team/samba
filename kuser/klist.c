@@ -105,6 +105,10 @@ print_cred(krb5_context context, krb5_creds *cred, rtbl_t ct, int do_flags)
 	    *sp++ = 'I';
 	if(cred->flags.b.invalid)
 	    *sp++ = 'i';
+	if(cred->flags.b.pre_authent)
+	    *sp++ = 'A';
+	if(cred->flags.b.hw_authent)
+	    *sp++ = 'H';
 	*sp++ = '\0';
 	rtbl_add_column_entry(ct, COL_FLAGS, s);
     }
@@ -134,11 +138,12 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 
 	decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
 	ret = krb5_enctype_to_string(context, t.enc_part.etype, &s);
+	printf("Ticket etype: ");
 	if (ret == 0) {
-	    printf("Ticket etype: %s", s);
+	    printf("%s", s);
 	    free(s);
 	} else {
-	    printf("Unknown etype: %d", t.enc_part.etype);
+	    printf("unknown(%d)", t.enc_part.etype);
 	}
 	if(t.enc_part.kvno)
 	    printf(", kvno %d", *t.enc_part.kvno);
