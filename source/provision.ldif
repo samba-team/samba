@@ -935,3 +935,10 @@ name: TemplateAlias
 instanceType: 4
 groupType: 0x80000002
 sAMAccountType: 0x10000000
+
+dn: CN=TemplateForeignSecurityPrincipal,CN=Templates,${BASEDN}
+objectClass: top
+objectClass: Template
+objectClass: foreignSecurityPrincipalTemplate
+cn: TemplateForeignSecurityPrincipal
+name: TemplateForeignSecurityPrincipal
