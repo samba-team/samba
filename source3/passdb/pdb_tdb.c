@@ -136,18 +136,21 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		
 	} else {
 		struct passwd *pw;
+		uid_t uid;
 		/* validate the account and fill in UNIX uid and gid. Standard
 		 * getpwnam() is used instead of Get_Pwnam() as we do not need
 		 * to try case permutations
 		 */
 		if (!username || !(pw=getpwnam(username))) {
-			DEBUG(0,("tdb_sam: getpwnam_alloc(%s) return NULL.  User does not exist!\n", 
+			DEBUG(0,("tdb_sam: getpwnam(%s) return NULL.  User does not exist!\n", 
 			          username?username:"NULL"));
 			ret = False;
 			goto done;
 		}
-		pdb_set_uid(sampass, pw->pw_uid);
+		uid_t = pw->pw_uid;
 		gid = pw->pw_gid;
+
+		pdb_set_uid(sampass, uid);
 		pdb_set_gid(sampass, gid);
 	}
 
