@@ -464,6 +464,31 @@ static BOOL parse_id_list(char *paramstr, BOOL is_user)
     return True;
 }
 
+static struct winbindd_domain *add_trusted_domain(char *domain_name)
+{
+    struct winbindd_domain *domain;
+
+    /* Create new domain entry */
+
+    if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL) {
+        return NULL;
+    }
+
+    /* Fill in fields */
+
+    ZERO_STRUCTP(domain);
+
+    if (domain_name) {
+        fstrcpy(domain->name, domain_name);
+    }
+
+    /* Link to domain list */
+
+    DLIST_ADD(domain_list, domain);
+
+    return domain;
+}
+
 /* Initialise trusted domain info */
 
 BOOL winbindd_param_init(void)
@@ -494,21 +519,20 @@ BOOL winbindd_param_init(void)
         return False;
     }
     
-    /* Initialise list of trusted domains */
-    
-    if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL) {
+    /* Add builtin domain */
+
+    if (!add_trusted_domain("BUILTIN")) {
+        DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
         return False;
     }
 
-    ZERO_STRUCTP(domain);
+    /* Add our workgroup - keep handle to look up trusted domains */
 
-    fstrcpy(domain->name, lp_workgroup());
-    fstrcpy(domain->controller, server_state.controller);
+    if (!(domain = add_trusted_domain(lp_workgroup()))) {
+        DEBUG(0, ("could not add record for domain %s\n", lp_workgroup()));
+        return False;
+    }
 
-    DLIST_ADD(domain_list, domain);
-
-    fprintf(stderr, "added primary domain %s\n", domain->name);
-    
     if (!open_lsa_handle(domain)) {
         return False;
     }
@@ -520,16 +544,12 @@ BOOL winbindd_param_init(void)
         int i;
 
         for(i = 0; i < num_doms; i++) {
-            if ((domain = (struct winbindd_domain *)
-                 malloc(sizeof(*domain))) == NULL) {
-                return False;
+
+            if (!add_trusted_domain(domain->name)) {
+                DEBUG(0, ("could not add record for domain %s\n",
+                          domain->name));
+                result = False;
             }
-
-            ZERO_STRUCTP(domain);
-            fstrcpy(domain->name, domains[i]);
-            DLIST_ADD(domain_list, domain);
-
-            fprintf(stderr, "added trusted domain %s\n", domains[i]);
         }
 
         /* Free memory */
