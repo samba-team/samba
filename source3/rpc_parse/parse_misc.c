@@ -747,7 +747,7 @@ BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf)
 /*******************************************************************
 copies a UNISTR2 structure.
 ********************************************************************/
-BOOL copy_unistr2(UNISTR2 *str, UNISTR2 *from)
+BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 {
 	/* set up string lengths. add one if string is not null-terminated */
 	str->uni_max_len = from->uni_max_len;
@@ -758,6 +758,24 @@ BOOL copy_unistr2(UNISTR2 *str, UNISTR2 *from)
 	memcpy(str->buffer, from->buffer, sizeof(from->buffer));
 
 	return True;
+}
+
+/*******************************************************************
+duplicates a UNISTR2 structure.
+********************************************************************/
+UNISTR2 *unistr2_dup(const UNISTR2 *name)
+{
+	UNISTR2 *copy = (UNISTR2*)malloc(sizeof(*copy));
+	copy_unistr2(copy, name);
+	return copy;
+}
+
+/*******************************************************************
+frees a UNISTR2 structure.
+********************************************************************/
+void unistr2_free(UNISTR2 *name)
+{
+	free(name);
 }
 
 /*******************************************************************

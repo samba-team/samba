@@ -94,7 +94,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^LOCAL_GRP|^DOMAIN_GRP|^DOM_SID|^SEC_DESC/ ) {
+  if( $0 ~ /^UNISTR2|^LOCAL_GRP|^DOMAIN_GRP|^DOM_SID|^SEC_DESC/ ) {
     gotstart = 1;
   }
 
