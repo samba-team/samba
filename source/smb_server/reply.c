@@ -2369,7 +2369,7 @@ void reply_sendtxt(struct smbsrv_request *req)
 void reply_special(struct smbsrv_request *req)
 {
 	uint8_t msg_type;
-	char buf[4];
+	char *buf = talloc_zero_array_p(req, char, 4);
 	
 	msg_type = CVAL(req->in.buffer,0);
 
