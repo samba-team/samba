@@ -69,7 +69,7 @@ usage(void)
 {
   fprintf(stderr, "Usage: %s %s%s%s%s\n", prompt,
 #ifdef	AUTHENTICATION
-	  "[-8] [-E] [-K] [-L] [-S tos] [-X atype] [-a] [-c] [-d] [-e char]",
+	  "[-8] [-E] [-K] [-L] [-G] [-S tos] [-X atype] [-a] [-c] [-d] [-e char]",
 	  "\n\t[-k realm] [-l user] [-f/-F] [-n tracefile] ",
 #else
 	  "[-8] [-E] [-L] [-S tos] [-a] [-c] [-d] [-e char] [-l user]",
@@ -90,6 +90,11 @@ usage(void)
  */
 
 
+#ifdef	FORWARD
+extern int forward_flags;
+static int default_forward=0;
+#endif	/* FORWARD */
+
 #ifdef KRB5
 /* XXX ugly hack to setup dns-proxy stuff */
 #define Authenticator asn1_Authenticator
@@ -99,8 +104,29 @@ krb5_init(void)
 {
     krb5_context context;
     krb5_init_context(&context);
+
+#if defined(AUTHENTICATION) && defined(KRB5) && defined(FORWARD)
+    if (krb5_config_get_bool (context, NULL,
+         "libdefaults", "forward", NULL)) {
+           forward_flags |= OPTS_FORWARD_CREDS;
+           default_forward=1;
+    }
+    if (krb5_config_get_bool (context, NULL,
+         "libdefaults", "forwardable", NULL)) {
+           forward_flags |= OPTS_FORWARDABLE_CREDS;
+           default_forward=1;
+    }
+#endif
+#ifdef  ENCRYPTION
+    if (krb5_config_get_bool (context, NULL,
+        "libdefaults", "encrypt", NULL)) {
+          encrypt_auto(1);
+          decrypt_auto(1); 
+          EncryptVerbose(1);
+        }
+#endif
+
     krb5_free_context(context);
-    
 }
 #endif
 
@@ -109,9 +135,6 @@ main(int argc, char **argv)
 {
 	int ch;
 	char *user;
-#ifdef	FORWARD
-	extern int forward_flags;
-#endif	/* FORWARD */
 
 #ifdef KRB5
 	krb5_init();
@@ -137,7 +160,8 @@ main(int argc, char **argv)
 	 */
 	autologin = -1;
 
-	while((ch = getopt(argc, argv, "78DEKLS:X:abcde:fFk:l:n:rx")) != EOF) {
+	while((ch = getopt(argc, argv,
+			   "78DEKLS:X:abcde:fFk:l:n:rxG")) != EOF) {
 		switch(ch) {
 		case '8':
 			eight = 3;	/* binary output and input */
@@ -202,7 +226,8 @@ main(int argc, char **argv)
 			break;
 		case 'f':
 #if defined(AUTHENTICATION) && defined(KRB5) && defined(FORWARD)
-			if (forward_flags & OPTS_FORWARD_CREDS) {
+			if ((forward_flags & OPTS_FORWARD_CREDS) &&
+			    !default_forward) {
 			    fprintf(stderr,
 				    "%s: Only one of -f and -F allowed.\n",
 				    prompt);
@@ -217,7 +242,8 @@ main(int argc, char **argv)
 			break;
 		case 'F':
 #if defined(AUTHENTICATION) && defined(KRB5) && defined(FORWARD)
-			if (forward_flags & OPTS_FORWARD_CREDS) {
+			if ((forward_flags & OPTS_FORWARD_CREDS) &&
+			    !default_forward) {
 			    fprintf(stderr,
 				    "%s: Only one of -f and -F allowed.\n",
 				    prompt);
@@ -269,6 +295,17 @@ main(int argc, char **argv)
 								prompt);
 #endif
 			break;
+		case 'G':
+#if defined(AUTHENTICATION) && defined(KRB5) && defined(FORWARD)
+                        forward_flags ^= OPTS_FORWARD_CREDS;
+                        forward_flags ^= OPTS_FORWARDABLE_CREDS;
+#else
+                        fprintf(stderr,
+                         "%s: Warning: -G ignored, no Kerberos V5 support.\n",
+                                prompt);
+#endif
+                        break;
+
 		case '?':
 		default:
 			usage();
