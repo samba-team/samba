@@ -31,7 +31,7 @@ extern uint32 global_client_caps;
 #define VERSION3_REFERRAL_SIZE 0x22
 #define REFERRAL_HEADER_SIZE 0x08
 
-void create_nondfs_path(char* pathname, struct dfs_path* pdp)
+static void create_nondfs_path(char* pathname, struct dfs_path* pdp)
 {
   pstrcpy(pathname,pdp->volumename); 
   pstrcat(pathname,"\\"); 
@@ -40,7 +40,7 @@ void create_nondfs_path(char* pathname, struct dfs_path* pdp)
 
 /* Parse the pathname  of the form \hostname\service\volume\restofthepath
    into the dfs_path structure */
-BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
+static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 {
   pstring pathname_local;
   char* p,*temp;
@@ -246,7 +246,6 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
     case 2:
       {
 	unsigned char uni_requestedpath[1024];
-	unsigned char uni_altpath[1024];
 	int uni_reqpathoffset1,uni_reqpathoffset2;
 	int uni_curroffset;
 	int requestedpathlen=0;
@@ -339,7 +338,6 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
     case 3:
       {
 	unsigned char uni_reqpath[1024];
-	unsigned char uni_altpath[1024];
 	int uni_reqpathoffset1, uni_reqpathoffset2;
 	int uni_curroffset;
 
@@ -442,7 +440,7 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
 #endif
 
 /* Trivial fn that chops off upper bytes to convert unicode to dos */
-void unistr_to_dos(char* dst,uint16* src)	       
+void unistr_to_dos(char* dst,char* src)	       
 {
   pstring s;
   int i=0;
