@@ -1526,7 +1526,7 @@ static NTSTATUS ldapsam_modify_trustpw(struct pdb_methods *methods,
 	}
 
 	if (!mod) {
-		DEBUG(5, ("ldapsam_modify_trustpw: mod is empty: nothing to modify\n"));
+		DEBUG(5, ("ldapsam_modify_trustpw: mod is empty: there's nothing to modify\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1553,7 +1553,7 @@ static NTSTATUS ldapsam_modify_trustpw(struct pdb_methods *methods,
 		char *ldap_err = NULL;
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 		                &ldap_err);
-		DEBUG(1, ("ldapsam_modify_trustpw: Failed to %s trustpw dn= %s with: %s\n\t%s\n",
+		DEBUG(0, ("ldapsam_modify_trustpw: Failed to %s trustpw (dn=%s) with: %s\n\t%s\n",
 		          ldap_op == LDAP_MOD_ADD ? "add" : "modify",
 		          dn, ldap_err2string(rc),
 		          ldap_err ? ldap_err : "unknown"));
@@ -3304,11 +3304,16 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 		if (strlen(pdb_get_tp_domain_name_c(trustpw))) {
 			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 							   attr_domain, attr_val, sizeof(attr_val));
-			if (ret && strncmp(pdb_get_tp_domain_name_c(trustpw), attr_val, sizeof(attr_val)))
+			if (ret && strncmp(pdb_get_tp_domain_name_c(trustpw), attr_val, sizeof(attr_val))) {
+				DEBUG(10, ("Adding ldap mod to update (%s=%s)\n", attr_domain,
+					  pdb_get_tp_domain_name_c(trustpw)));
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 						 attr_domain, pdb_get_tp_domain_name_c(trustpw));
+			}
 		}
 	} else {
+		DEBUG(10, ("Adding ldap mod to add (%s=%s)\n", attr_domain,
+			  pdb_get_tp_domain_name_c(trustpw)));
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 				 attr_domain, pdb_get_tp_domain_name_c(trustpw));
 	}
@@ -3320,13 +3325,25 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 		if (strlen(pdb_get_tp_pass(trustpw))) {
 			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 							   attr_ntpw, attr_val, sizeof(attr_val));
-			if (ret && strncmp(pdb_get_tp_pass(trustpw), attr_val, sizeof(attr_val)))
+			if (ret && strncmp(pdb_get_tp_pass(trustpw), attr_val, sizeof(attr_val))) {
+#ifdef DEBUG_PASSWORD
+				DEBUG(10, ("Adding ldap mod to update (%s=%s)\n", attr_ntpw,
+					  pdb_get_tp_pass(trustpw)));
+#else
+				DEBUG(10, ("Adding ldap mod to update (%s)\n", attr_ntpw));
+#endif
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 						 attr_ntpw, pdb_get_tp_pass(trustpw));
+			}
 		}
 	} else {
-		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-				 attr_ntpw, pdb_get_tp_pass(trustpw));
+#ifdef DEBUG_PASSWORD
+		DEBUG(10, ("Adding ldap mod to add (%s=%s)\n", attr_ntpw, pdb_get_tp_pass(trustpw)));
+#else
+		DEBUG(10, ("Adding ldap mod to add (%s)\n", attr_ntpw));
+#endif
+		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod, attr_ntpw,
+				 pdb_get_tp_pass(trustpw));
 	}
 
 	/* SID of the trust password */
@@ -3340,11 +3357,14 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 		if (sid_compare(&empty_sid, sid)) {
 			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 							   attr_sid, attr_val, sizeof(attr_val));
-			if (ret && strncmp(sid_to_string(sidstr, sid), attr_val, sizeof(attr_val)))
+			if (ret && strncmp(sid_to_string(sidstr, sid), attr_val, sizeof(attr_val))) {
+				DEBUG(10, ("Adding ldap mod to update (%s=%s)\n", attr_sid, sidstr));
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 						 attr_sid, sidstr);
+			}
 		}			
 	} else {
+		DEBUG(10, ("Adding ldap mod to add (%s=%s)\n", attr_sid, sidstr));
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 				 attr_sid, sidstr);
 	}
@@ -3354,10 +3374,13 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 	if (entry) {
 		ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 						   attr_lct, attr_val, sizeof(attr_val));
-		if (ret && strncmp(mtime_str, attr_val, sizeof(attr_val)))
+		if (ret && strncmp(mtime_str, attr_val, sizeof(attr_val))) {
+			DEBUG(10, ("Adding ldap mod to update (%s=%s)\n", attr_lct, mtime_str));
 			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 					 attr_lct, mtime_str);
+		}
 	} else {
+		DEBUG(10, ("Adding ldap mod to add (%s=%s)\n", attr_lct, mtime_str));
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 				 attr_lct, mtime_str);
 	}
@@ -3368,11 +3391,14 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 		if (pdb_get_tp_flags(trustpw)) {
 			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 							   attr_flags, attr_val, sizeof(attr_val));
-			if (ret && strncmp(flags_str, attr_val, sizeof(attr_val)))
+			if (ret && strncmp(flags_str, attr_val, sizeof(attr_val))) {
+				DEBUG(10, ("Adding ldap mod to update (%s=%s)\n", attr_flags, flags_str));
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 						 attr_flags, flags_str);
+			}
 		}
 	} else {
+		DEBUG(10, ("Adding ldap mod to add (%s=%s)\n", attr_flags, flags_str));
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
 				 attr_flags, flags_str);
 	}
@@ -3872,7 +3898,7 @@ static NTSTATUS ldapsam_delete_trust_passwd(struct pdb_methods *methods, const S
 	int rc, count;
 
 	if (!trust) {
-		DEBUG(0, ("trust was NULL!\n"));
+		DEBUG(0, ("trust parameter was NULL!\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -3888,7 +3914,14 @@ static NTSTATUS ldapsam_delete_trust_passwd(struct pdb_methods *methods, const S
 	   - search and count the results */
 	rc = ldapsam_search_trustpw_by_name(ldap_state, dom_name, &res, attr_list);
 	if (rc != LDAP_SUCCESS) {
+		char *ldap_err = NULL;
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
+				&ldap_err);
+		DEBUG(0, ("Couldn't search trust password (%s) in ldap directory. Error was: %s\n\t%s\n\n",
+			  dom_name, ldap_err2string(rc), ldap_err ? ldap_err : "unknown"));
+
 		free_attr_list(attr_list);
+		SAFE_FREE(ldap_err);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -3917,7 +3950,7 @@ static NTSTATUS ldapsam_delete_trust_passwd(struct pdb_methods *methods, const S
 		char *ldap_err = NULL;
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ldap_err);
-		DEBUG(1, ("Failed to delete trustpw dn= %s with %s\n\t%s\n", dn,
+		DEBUG(0, ("Failed to delete trustpw dn= %s with %s\n\t%s\n", dn,
 			  ldap_err2string(rc), ldap_err ? ldap_err : "unknown"));
 		SAFE_FREE(ldap_err);
 		return NT_STATUS_UNSUCCESSFUL;
