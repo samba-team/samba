@@ -1,5 +1,5 @@
 mailto(samba-bugs@samba.org)
-manpage(winbindd htmlcommand((1)))(1)(8 May 2000)(Samba)(SAMBA)
+manpage(winbindd htmlcommand((8)))(8)(13 Jun 2000)(Samba)(SAMBA)
 
 label(NAME)
 manpagename(winbindd)(Name Service Switch daemon for resolving names from NT servers)
@@ -121,13 +121,16 @@ separator) or a + character. The + character appears to be the best
 choice for 100% compatibility with existing unix utilities, but may be
 an aesthetically bad choice depending on your taste.
 
+  bf(Default:)
+tt(     winbind separator = \)
+
   bf(Example:)
 tt(     winbind separator = +)
 
 dit(winbind uid)
 
 The winbind uid parameter specifies the range of user ids that are
-allocated by the url(bf(winbindd))(winbindd.8.html) daemon.  This range of
+allocated by the bf(winbindd) daemon.  This range of
 ids should have no existing local or nis users within it as strange
 conflicts can occur otherwise.
 
@@ -140,9 +143,9 @@ tt(     winbind uid = 10000-20000)
 dit(winbind gid)
 
 The winbind gid parameter specifies the range of group ids that are
-allocated by the url(bf(winbindd))(winbindd.8.html) daemon.  This range of
-group ids should have no existing local or nis groups within it as strange
-conflicts can occur otherwise.
+allocated by the bf(winbindd) daemon.  This range of group ids should have
+no existing local or nis groups within it as strange conflicts can occur
+otherwise.
 
   bf(Default:)
 tt(     winbind gid = <empty string>)
@@ -152,14 +155,13 @@ tt(     winbind gid = 10000-20000)
 
 dit(winbind cache time)
 
-This parameter specifies the number of seconds the
-url(bf(winbindd))(winbindd.8.html) daemon will cache user and group
-information before querying a Windows NT server again. When a item in
-the cache is older than this time winbindd will ask the domain
-controller for the sequence number of the servers account database. If
-the sequence number has not changed then the cached item is marked as
-valid for a further "winbind cache time" seconds.  Otherwise the item
-is fetched from the server. This means that as long as the account
+This parameter specifies the number of seconds the bf(winbindd) daemon will
+cache user and group information before querying a Windows NT server
+again. When a item in the cache is older than this time winbindd will ask
+the domain controller for the sequence number of the servers account
+database. If the sequence number has not changed then the cached item is
+marked as valid for a further "winbind cache time" seconds.  Otherwise the
+item is fetched from the server. This means that as long as the account
 database is not actively changing winbindd will only have to send one
 sequence number query packet every "winbind cache time" seconds.
 
@@ -169,10 +171,10 @@ tt(     winbind cache time = 15)
 dit(template homedir)
 
 When filling out the user information for a Windows NT user, the
-url(bf(winbindd))(winbindd.8.html) daemon uses this parameter to fill in
-the home directory for that user.  If the string tt(%D) is present it is
-substituted with the user's Windows NT domain name.  If the string tt(%U)
-is present it is substituted with the user's Windows NT user name.
+bf(winbindd) daemon uses this parameter to fill in the home directory for
+that user.  If the string tt(%D) is present it is substituted with the
+user's Windows NT domain name.  If the string tt(%U) is present it is
+substituted with the user's Windows NT user name.
 
   bf(Default:)
 tt(     template homedir = /home/%D/%U)
@@ -180,8 +182,7 @@ tt(     template homedir = /home/%D/%U)
 dit(template shell)
 
 When filling out the user information for a Windows NT user, the
-url(bf(winbindd))(winbindd.8.html) daemon uses this parameter to fill in
-the shell for that user.  
+bf(winbindd) daemon uses this parameter to fill in the shell for that user.
 
   bf(Default:)
 tt(     template shell = /bin/false)
@@ -256,29 +257,57 @@ syntax for the username. You may wish to use the commands "getent
 passwd" and "getent group" to confirm the correct operation of
 winbindd. 
 
-NOTE: url(bf(nmbd))(nmbd.8.html) must be running on the local machine for
-url(bf(winbindd))(winbindd.8.html) to work.
+label(NOTES)
+manpagesection(NOTES)
+
+The following notes are useful when configuring and running bf(winbindd):
+
+startdit()
+
+dit()
+url(bf(nmbd))(nmbd.8.html) must be running on the local machine for
+bf(winbindd) to work.
+
+dit() 
+Client processes resolving names through the bf(winbindd) nsswitch module
+read an environment variable named tt(WINBINDD_DOMAIN).  If this variable
+contains a comma separated list of Windows NT domain names, then winbindd
+will only resolve users and groups within those Windows NT domains.
+
+dit()
+PAM is really easy to misconfigure.  Make sure you know what you are doing
+when modifying PAM configuration files.  It is possible to set up PAM
+such that you can no longer log into your system.
+
+dit()
+If more than one UNIX machine is running bf(winbindd), then in general the
+user and groups ids allocated by bf(winbindd) will not be the same.  The
+user and group ids will only be valid for the local machine.  
+
+dit()
+If the the Windows NT RID to UNIX user and group id mapping file
+is damaged or destroyed then the mappings will be lost.
+
+enddit()
 
 label(SIGNALS)
 manpagesection(SIGNALS)
 
-The following signals can be used to manipulate the
-url(bf(winbindd))(winbindd.8.html) daemon.
+The following signals can be used to manipulate the bf(winbindd) daemon.
 
 startdit()
 
 dit(tt(SIGHUP))
 
 Reload the tt(smb.conf) file and apply any parameter changes to the running
-version of url(bf(winbindd))(winbindd.8.html).  This signal also clears any
-cached user and group information.
+version of bf(winbindd).  This signal also clears any cached user and group
+information.
 
 dit(tt(SIGUSR1))
 
-The tt(SIGUSR1) signal will cause url(bf(winbindd))(winbindd.8.html) to
-write status information to the winbind log file including information
-about the number of user and group ids allocated by
-url(bf(winbindd))(winbindd.8.html).
+The tt(SIGUSR1) signal will cause bf(winbindd) to write status information
+to the winbind log file including information about the number of user and
+group ids allocated by bf(winbindd).
 
 Log files are stored in the filename specified by the bf(log file) parameter.
 
@@ -309,10 +338,8 @@ Implementation of name service switch library.
 
 dit($LOCKDIR/winbindd_idmap.tdb)
 
-Storage for the Windows NT rid to UNIX user/group id mapping.  If this file
-is damaged or destroyed then the mappings will be lost.
-
-The lock directory is specified when Samba is initially compiled using the
+Storage for the Windows NT rid to UNIX user/group id mapping.  The lock
+directory is specified when Samba is initially compiled using the
 tt(--with-lockdir) option.  This directory is by default
 tt(/usr/local/samba/var/locks).
 
@@ -335,4 +362,4 @@ The original Samba software and related utilities were created by
 Andrew Tridgell. Samba is now developed by the Samba Team as an Open
 Source project.
 
-Winbindd was written by Tim Potter.
+bf(winbindd) was written by Tim Potter.

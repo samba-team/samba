@@ -3,7 +3,7 @@
 
 
 
-<html><head><title>winbindd (1)</title>
+<html><head><title>winbindd (8)</title>
 
 <link rev="made" href="mailto:samba-bugs@samba.org">
 </head>
@@ -11,9 +11,9 @@
 
 <hr>
 
-<h1>winbindd (1)</h1>
+<h1>winbindd (8)</h1>
 <h2>Samba</h2>
-<h2>8 May 2000</h2>
+<h2>13 Jun 2000</h2>
 
 
     
@@ -115,11 +115,13 @@ alternatives may be / (although that conflicts with the unix directory
 separator) or a + character. The + character appears to be the best
 choice for 100% compatibility with existing unix utilities, but may be
 an aesthetically bad choice depending on your taste.
+<p><strong>Default:</strong>
+<code>     winbind separator = \</code>
 <p><strong>Example:</strong>
 <code>     winbind separator = +</code>
 <p><p></p><dt><strong>winbind uid</strong><dd>
 <p>The winbind uid parameter specifies the range of user ids that are
-allocated by the <a href="winbindd.8.html"><strong>winbindd</strong></a> daemon.  This range of
+allocated by the <strong>winbindd</strong> daemon.  This range of
 ids should have no existing local or nis users within it as strange
 conflicts can occur otherwise.
 <p><strong>Default:</strong>
@@ -128,38 +130,36 @@ conflicts can occur otherwise.
 <code>     winbind uid = 10000-20000</code>
 <p><p></p><dt><strong>winbind gid</strong><dd>
 <p>The winbind gid parameter specifies the range of group ids that are
-allocated by the <a href="winbindd.8.html"><strong>winbindd</strong></a> daemon.  This range of
-group ids should have no existing local or nis groups within it as strange
-conflicts can occur otherwise.
+allocated by the <strong>winbindd</strong> daemon.  This range of group ids should have
+no existing local or nis groups within it as strange conflicts can occur
+otherwise.
 <p><strong>Default:</strong>
 <code>     winbind gid = &lt;empty string&gt;</code>
 <p><strong>Example:</strong>
 <code>     winbind gid = 10000-20000</code>
 <p><p></p><dt><strong>winbind cache time</strong><dd>
-<p>This parameter specifies the number of seconds the
-<a href="winbindd.8.html"><strong>winbindd</strong></a> daemon will cache user and group
-information before querying a Windows NT server again. When a item in
-the cache is older than this time winbindd will ask the domain
-controller for the sequence number of the servers account database. If
-the sequence number has not changed then the cached item is marked as
-valid for a further "winbind cache time" seconds.  Otherwise the item
-is fetched from the server. This means that as long as the account
+<p>This parameter specifies the number of seconds the <strong>winbindd</strong> daemon will
+cache user and group information before querying a Windows NT server
+again. When a item in the cache is older than this time winbindd will ask
+the domain controller for the sequence number of the servers account
+database. If the sequence number has not changed then the cached item is
+marked as valid for a further "winbind cache time" seconds.  Otherwise the
+item is fetched from the server. This means that as long as the account
 database is not actively changing winbindd will only have to send one
 sequence number query packet every "winbind cache time" seconds.
 <p><strong>Default:</strong>
 <code>     winbind cache time = 15</code>
 <p><p></p><dt><strong>template homedir</strong><dd>
 <p>When filling out the user information for a Windows NT user, the
-<a href="winbindd.8.html"><strong>winbindd</strong></a> daemon uses this parameter to fill in
-the home directory for that user.  If the string <code>%D</code> is present it is
-substituted with the user's Windows NT domain name.  If the string <code>%U</code>
-is present it is substituted with the user's Windows NT user name.
+<strong>winbindd</strong> daemon uses this parameter to fill in the home directory for
+that user.  If the string <code>%D</code> is present it is substituted with the
+user's Windows NT domain name.  If the string <code>%U</code> is present it is
+substituted with the user's Windows NT user name.
 <p><strong>Default:</strong>
 <code>     template homedir = /home/%D/%U</code>
 <p><p></p><dt><strong>template shell</strong><dd>
 <p>When filling out the user information for a Windows NT user, the
-<a href="winbindd.8.html"><strong>winbindd</strong></a> daemon uses this parameter to fill in
-the shell for that user.  
+<strong>winbindd</strong> daemon uses this parameter to fill in the shell for that user.
 <p><strong>Default:</strong>
 <code>     template shell = /bin/false</code>
 <p></dl>
@@ -237,23 +237,44 @@ can login to your unix box as a domain user, using the <code>DOMAIN+user</code>
 syntax for the username. You may wish to use the commands "getent
 passwd" and "getent group" to confirm the correct operation of
 winbindd. 
-<p>NOTE: <a href="nmbd.8.html"><strong>nmbd</strong></a> must be running on the local machine for
-<a href="winbindd.8.html"><strong>winbindd</strong></a> to work.
+<p><a name="NOTES"></a>
+<h2>NOTES</h2>
+    
+<p>The following notes are useful when configuring and running <strong>winbindd</strong>:
+<p><dl>
+<p><p></p><dt><strong></strong><dd>
+<a href="nmbd.8.html"><strong>nmbd</strong></a> must be running on the local machine for
+<strong>winbindd</strong> to work.
+<p><p></p><dt><strong></strong><dd> 
+Client processes resolving names through the <strong>winbindd</strong> nsswitch module
+read an environment variable named <code>WINBINDD_DOMAIN</code>.  If this variable
+contains a comma separated list of Windows NT domain names, then winbindd
+will only resolve users and groups within those Windows NT domains.
+<p><p></p><dt><strong></strong><dd>
+PAM is really easy to misconfigure.  Make sure you know what you are doing
+when modifying PAM configuration files.  It is possible to set up PAM
+such that you can no longer log into your system.
+<p><p></p><dt><strong></strong><dd>
+If more than one UNIX machine is running <strong>winbindd</strong>, then in general the
+user and groups ids allocated by <strong>winbindd</strong> will not be the same.  The
+user and group ids will only be valid for the local machine.  
+<p><p></p><dt><strong></strong><dd>
+If the the Windows NT RID to UNIX user and group id mapping file
+is damaged or destroyed then the mappings will be lost.
+<p></dl>
 <p><a name="SIGNALS"></a>
 <h2>SIGNALS</h2>
     
-<p>The following signals can be used to manipulate the
-<a href="winbindd.8.html"><strong>winbindd</strong></a> daemon.
+<p>The following signals can be used to manipulate the <strong>winbindd</strong> daemon.
 <p><dl>
 <p><p></p><dt><strong><code>SIGHUP</code></strong><dd>
 <p>Reload the <code>smb.conf</code> file and apply any parameter changes to the running
-version of <a href="winbindd.8.html"><strong>winbindd</strong></a>.  This signal also clears any
-cached user and group information.
+version of <strong>winbindd</strong>.  This signal also clears any cached user and group
+information.
 <p><p></p><dt><strong><code>SIGUSR1</code></strong><dd>
-<p>The <code>SIGUSR1</code> signal will cause <a href="winbindd.8.html"><strong>winbindd</strong></a> to
-write status information to the winbind log file including information
-about the number of user and group ids allocated by
-<a href="winbindd.8.html"><strong>winbindd</strong></a>.
+<p>The <code>SIGUSR1</code> signal will cause <strong>winbindd</strong> to write status information
+to the winbind log file including information about the number of user and
+group ids allocated by <strong>winbindd</strong>.
 <p>Log files are stored in the filename specified by the <strong>log file</strong> parameter.
 <p></dl>
 <p><a name="FILES"></a>
@@ -272,9 +293,8 @@ For security reasons, the winbind client will only attempt to connect to the
 <p><p></p><dt><strong>/lib/libnss_winbind.so.X</strong><dd>
 <p>Implementation of name service switch library. 
 <p><p></p><dt><strong>$LOCKDIR/winbindd_idmap.tdb</strong><dd>
-<p>Storage for the Windows NT rid to UNIX user/group id mapping.  If this file
-is damaged or destroyed then the mappings will be lost.
-<p>The lock directory is specified when Samba is initially compiled using the
+<p>Storage for the Windows NT rid to UNIX user/group id mapping.  The lock
+directory is specified when Samba is initially compiled using the
 <code>--with-lockdir</code> option.  This directory is by default
 <code>/usr/local/samba/var/locks</code>.
 <p><p></p><dt><strong>$LOCKDIR/winbindd_cache.tdb</strong><dd>
@@ -291,6 +311,6 @@ is damaged or destroyed then the mappings will be lost.
 <p>The original Samba software and related utilities were created by
 Andrew Tridgell. Samba is now developed by the Samba Team as an Open
 Source project.
-<p>Winbindd was written by Tim Potter.
+<p><strong>winbindd</strong> was written by Tim Potter.
 </body>
 </html>
