@@ -24,8 +24,6 @@
 #ifndef _RPC_SPOOLSS_H		/* _RPC_SPOOLSS_H */
 #define _RPC_SPOOLSS_H
 
-#define INTEGER 1
-
 /* spoolss pipe: this are the calls which are not implemented ...
 #define SPOOLSS_GETPRINTERDRIVER			0x0b
 #define SPOOLSS_READPRINTER				0x16
@@ -198,10 +196,10 @@
 
 /* Notify field types */
 
-#define ONE_VALUE 1		/* Notify data is stored in value1 */
-#define TWO_VALUE 2		/* Notify data is stored in value2 */
-#define POINTER   3		/* Data is a pointer to a buffer */
-#define STRING    4		/* Data is a pointer to a buffer w/length */
+#define NOTIFY_ONE_VALUE 1		/* Notify data is stored in value1 */
+#define NOTIFY_TWO_VALUE 2		/* Notify data is stored in value2 */
+#define NOTIFY_POINTER   3		/* Data is a pointer to a buffer */
+#define NOTIFY_STRING    4		/* Data is a pointer to a buffer w/length */
 
 #define PRINTER_NOTIFY_TYPE 0x00
 #define JOB_NOTIFY_TYPE     0x01
