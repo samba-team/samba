@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -w
 
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
@@ -23,6 +23,10 @@
 # Purpose of smbldap-useradd : user (posix,shadow,samba) add
 
 use strict;
+
+use FindBin;
+use FindBin qw($RealBin);
+use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
 
@@ -31,7 +35,7 @@ use smbldap_conf;
 use Getopt::Std;
 my %Options;
 
-my $ok = getopts('axnmwPG:u:g:d:s:c:k:A:B:C:D:E:F:H:?', \%Options);
+my $ok = getopts('axnmwPG:u:g:d:s:c:k:A:B:C:D:E:F:H:N:S:?', \%Options);
 
 if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
 	print "Usage: $0 [-awmugdsckGPABCDEFH?] username\n";
@@ -55,6 +59,8 @@ if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
 	print "  -E	sambaLogonScript (DOS script to execute on login)\n";
 	print "  -F	sambaProfilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')\n";
 	print "  -H	sambaAcctFlags (samba account control bits like '[NDHTUMWSLKI]')\n";
+  print "  -N   canonical name\n";
+  print "  -S   surname\n";
 	print "  -?	show this help message\n";
 	exit (1);
 }
@@ -75,7 +81,9 @@ if (!defined($userUidNumber)) {
 		$UID_START++;
 	}
 	$userUidNumber = $UID_START;
-} elsif (getpwuid($userUidNumber)) { die "Uid already exists.\n"; }
+} elsif (getpwuid($userUidNumber)) {
+  die "Uid already exists.\n";
+}
 
 if ($nscd_status == 0) {
    system "/etc/init.d/nscd start > /dev/null 2>&1";
@@ -126,6 +134,14 @@ if (defined($Options{'x'})) {
 # Read only first @ARGV
 my $userName = $ARGV[0];
 
+# untaint $userName (can finish with one or two $)
+if ($userName =~ /^([\w -]+\$?)$/) {
+  $userName = $1;
+} else {
+  print "$0: illegal username\n";
+  exit (1);
+}
+
 # user must not exist in LDAP (should it be nss-wide ?)
 my ($rc, $dn) = get_user_dn2($userName);
 if ($rc and defined($dn)) {
@@ -137,16 +153,23 @@ if ($rc and defined($dn)) {
 }
 
 my $userHomeDirectory;
+my ($userCN, $userSN);
 my $tmp;
-if (!defined($userHomeDirectory = $Options{'d'}))
-{
+if (!defined($userHomeDirectory = $Options{'d'})) {
     $userHomeDirectory = $_userHomePrefix."/".$userName;
 }
 $_userLoginShell = $tmp if (defined($tmp = $Options{'s'}));
 $_userGecos = $tmp if (defined($tmp = $Options{'c'}));
 $_skeletonDir = $tmp if (defined($tmp = $Options{'k'}));
+$userCN = ($Options{'c'} || $userName);
+$userCN = $tmp if (defined($tmp = $Options{'N'}));
+$userSN = $userName;
+$userSN = $tmp if (defined($tmp = $Options{'S'}));
+
 
 ########################
+
+my $ldap_master=connect_ldap_master();
 
 # MACHINE ACCOUNT
 if (defined($tmp = $Options{'w'})) {
@@ -163,55 +186,47 @@ if (defined($tmp = $Options{'w'})) {
     }
 
     if (!$with_smbpasswd) {
-	if (!add_samba_machine_mkntpwd($userName, $userUidNumber)) {
-	    die "$0: error while adding samba account\n";
-	}
+	# (jtournier)
+	# Objectclass sambaSAMAccount is now added directly by samba when joigning the domain (for samba3)
+	#if (!add_samba_machine_mkntpwd($userName, $userUidNumber)) {
+	#  die "$0: error while adding samba account\n";
+	#}
     } else {
 	if (!add_samba_machine($userName)) {
 	    die "$0: error while adding samba account\n";
 	}
-
-	my $tmpldif =
-"dn: uid=$userName,$computersdn
-changetype: modify
-sambaAcctFlags: [W          ]
-
-";
-	die "$0: error while modifying accountflags of $userName\n"
-	    unless (do_ldapmodify($tmpldif) == 0);
-	undef $tmpldif;
+	my $modify = $ldap_master->modify ( "$dn",
+										changes => [
+													replace => [sambaAcctFlags => '[W          ]']
+												   ]
+									  );
+	$modify->code && warn "failed to modify entry: ", $modify->error ;
     }
 
     exit 0;
 }
 
-#######################
-
 # USER ACCOUNT
-
 # add posix account first
 
-my $tmpldif =
-"dn: uid=$userName,$usersdn
-objectclass: inetOrgPerson
-objectclass: posixAccount
-cn: $userName
-sn: $userName
-uid: $userName
-uidNumber: $userUidNumber
-gidNumber: $userGidNumber
-homeDirectory: $userHomeDirectory
-loginShell: $_userLoginShell
-gecos: $_userGecos
-description: $_userGecos
-userPassword: {crypt}x
+my $add = $ldap_master->add ("uid=$userName,$usersdn",
+							 attr => [
+									  'objectclass' => ['top','inetOrgPerson', 'posixAccount'],
+									  'cn'   => "$userCN",
+									  'sn'   => "$userSN",
+									  'uid'   => "$userName",
+									  'uidNumber'   => "$userUidNumber",
+									  'gidNumber'   => "$userGidNumber",
+									  'homeDirectory'   => "$userHomeDirectory",
+									  'loginShell'   => "$_userLoginShell",
+									  'gecos'   => "$_userGecos",
+									  'description'   => "$_userGecos",
+									  'userPassword'   => "{crypt}x"
+									 ]
+							);
 
-";
+$add->code && warn "failed to add entry: ", $add->error ;
 
-die "$0: error while adding posix user $userName\n"
-    unless (do_ldapadd($tmpldif) == 0);
-
-undef $tmpldif;
 
 #if ($createGroup) {
 #    group_add($userName, $userGidNumber);
@@ -267,28 +282,24 @@ if (defined($Options{'a'})) {
 	    $valacctflags = "$tmp";
 	}
 
-	my $tmpldif =
-"dn: uid=$userName,$usersdn
-changetype: modify
-objectClass: inetOrgPerson
-objectclass: posixAccount
-objectClass: sambaSAMAccount
-sambaPwdLastSet: 0
-sambaLogonTime: 0
-sambaLogoffTime: 2147483647
-sambaKickoffTime: 2147483647
-sambaPwdCanChange: $valpwdcanchange
-sambaPwdMustChange: $valpwdmustchange
-displayName: $_userGecos
-sambaAcctFlags: $valacctflags
-sambaSID: $smbldap_conf::SID-$userRid
 
-";
+	my $modify = $ldap_master->modify ( "uid=$userName,$usersdn",
+										changes => [
+													add => [objectClass => 'sambaSAMAccount'],
+													add => [sambaPwdLastSet => '0'],
+													add => [sambaLogonTime => '0'],
+													add => [sambaLogoffTime => '2147483647'],
+													add => [sambaKickoffTime => '2147483647'],
+													add => [sambaPwdCanChange => "$valpwdcanchange"],
+													add => [sambaPwdMustChange => "$valpwdmustchange"],
+													add => [displayName => "$_userGecos"],
+													add => [sambaAcctFlags => "$valacctflags"],
+													add => [sambaSID => "$SID-$userRid"]
+												   ]
+									  );
 	
-	die "$0: error while adding samba account to posix user $userName\n"
-	    unless (do_ldapmodify($tmpldif) == 0);
+	$modify->code && die "failed to add entry: ", $modify->error ;
 
-	undef $tmpldif;
     } else {
 	my $FILE="|smbpasswd -s -a $userName >/dev/null" ;
 	open (FILE, $FILE) || die "$!\n";
@@ -326,24 +337,24 @@ if (defined($tmp = $Options{'F'})) {
     $valprofilepath = "$tmp";
 }
 
-    my $tmpldif =
-"dn: uid=$userName,$usersdn
-changetype: modify
-sambaSID: $smbldap_conf::SID-$userRid
-sambaPrimaryGroupSID: $smbldap_conf::SID-$userGroupRid
-sambaHomeDrive: $valhomedrive
-sambaHomePath: $valsmbhome
-sambaProfilePath: $valprofilepath
-sambaLogonScript: $valscriptpath
-sambaLMPassword: XXX
-sambaNTPassword: XXX
+	
+  my $modify = $ldap_master->modify ( "uid=$userName,$usersdn",
+									  changes => [
+												  add => [sambaPrimaryGroupSID => "$SID-$userGroupRid"],
+												  add => [sambaHomeDrive => "$valhomedrive"],
+												  add => [sambaHomePath => "$valsmbhome"],
+												  add => [sambaProfilePath => "$valprofilepath"],
+												  add => [sambaLogonScript => "$valscriptpath"],
+												  add => [sambaLMPassword => 'XXX'],
+												  add => [sambaNTPassword => 'XXX']
+												 ]
+									);
 
-";
+  $modify->code && die "failed to add entry: ", $modify->error ;
 
-    die "$0: error while modifying samba account of user $userName\n"
-	    unless (do_ldapmodify($tmpldif) == 0);
-    undef $tmpldif;
 }
+$ldap_master->unbind;			# take down session
+
 
 if (defined($Options{'P'})) {
     exec "/usr/local/sbin/smbldap-passwd.pl $userName"
@@ -418,8 +429,8 @@ exit 0;
 
        -m     The user's home directory will be created if it does not  exist.
               The  files  contained in skeleton_dir will be copied to the home
-              directory if the -k option is used,  otherwise  the  files  con­
-              tained  in /etc/skel will be used instead.  Any directories con­
+              directory if the -k option is used,  otherwise  the  files  conÂ­
+              tained  in /etc/skel will be used instead.  Any directories conÂ­
               tained in skeleton_dir or  /etc/skel  will  be  created  in  the
               user's  home  directory as well.  The -k option is only valid in
               conjunction with the -m option.  The default is  to  not  create
@@ -450,6 +461,11 @@ exit 0;
        -F     sambaProfilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')
 
        -H     sambaAcctFlags, spaces and trailing bracket are ignored (samba account control bits like '[NDHTUMWSLKI]')
+
+       -N     canonical name (defaults to gecos or username, if gecos not set)
+
+       -S     surname (defaults to username)
+
 
 =head1 SEE ALSO
 

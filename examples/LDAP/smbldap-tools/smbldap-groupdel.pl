@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -w
 
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
@@ -23,6 +23,9 @@
 # Purpose of smbldap-groupdel : group (posix) deletion
 
 use strict;
+use FindBin;
+use FindBin qw($RealBin);
+use lib "$RealBin/";
 use smbldap_tools;
 use smbldap_conf;
 
@@ -48,9 +51,7 @@ if (!defined($dn_line = get_group_dn($_groupName))) {
 
 my $dn = get_dn_from_line($dn_line);
 
-my $rc = system "$ldapdelete $dn >/dev/null";
-die "$0: error while deleting group $_groupName\n"
-    unless ($rc == 0);
+group_del($dn);
 
 my $nscd_status = system "/etc/init.d/nscd status >/dev/null 2>&1";
 

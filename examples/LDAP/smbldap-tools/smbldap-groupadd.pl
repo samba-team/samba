@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -w
 
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
@@ -23,6 +23,9 @@
 # Purpose of smbldap-groupadd : group (posix) add
 
 use strict;
+use FindBin;
+use FindBin qw($RealBin);
+use lib "$RealBin/";
 use smbldap_tools;
 
 use Getopt::Std;
