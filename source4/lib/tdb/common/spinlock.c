@@ -27,7 +27,7 @@
 #include <config.h>
 #endif
 
-#if STANDALONE
+#ifndef _SAMBA_BUILD_
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -157,12 +157,12 @@ static inline int __spin_is_locked(spinlock_t *lock)
  * "sgi" and "_COMPILER_VERSION" are always defined by MIPSPro.
  */
 
-#if defined(STANDALONE)
+#ifndef _SAMBA_BUILD_
 
 /* MIPSPro 7.3 has "__inline" as an extension, but not "inline. */
 #define inline __inline
 
-#endif /* STANDALONE */
+#endif /* _SAMBA_BUILD_ */
 
 /* Returns 0 if the lock is acquired, EBUSY otherwise. */
 static inline int __spin_trylock(spinlock_t *lock)
