@@ -62,6 +62,8 @@
 
 	* install-catman.sh: script to install preformatted manual pages
 
+	* Makefile.am.common: change cat handling
+
 2000-11-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: don't use AC_CONFIG_FILES here, since it doesn't
