@@ -1536,9 +1536,11 @@ done
 
 ############
 # check for iconv in libc
+ic_save_LIBS="$LIBS"
+LIBS="$LIBS -L$ICONV_LOCATION/lib"
 AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
 AC_TRY_RUN([
-#include <iconv.h>
+#include <$jm_cv_include>
 main() {
        iconv_t cd = iconv_open("ASCII", "UCS-2LE");
        if (cd == 0 || cd == (iconv_t)-1) return -1;
@@ -1549,6 +1551,7 @@ samba_cv_HAVE_NATIVE_ICONV=yes,samba_cv_HAVE_NATIVE_ICONV=no,samba_cv_HAVE_NATIV
 if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
     AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
 fi
+LIBS="$ic_save_LIBS"
 
 if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; then
     AC_MSG_WARN([Sufficient support for iconv function was not found. 
