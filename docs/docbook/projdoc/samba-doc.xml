@@ -9,10 +9,6 @@
 
 <bookinfo>
 	<authorgroup>
-	<author>
-		<othername>SAMBA Team</othername>
-		<affiliation><address><email>samba@samba.org</email></address></affiliation>
-	</author>
 	<editor>&person.jelmer;</editor>
 	<editor>&person.jht;</editor>
 	<editor>&person.jerry;</editor>
@@ -50,6 +46,9 @@ version 2.  A copy of the license is included with the Samba source
 distribution.  A copy can be found on-line at <ulink 
 url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</ulink>
 </para>
+
+&attributions;
+
 </legalnotice>
 </bookinfo>
 
