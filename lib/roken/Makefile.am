@@ -15,6 +15,8 @@ make_print_version_LDADD = $(LIB_krb4)
 libroken_la_SOURCES =		\
 	base64.c		\
 	concat.c		\
+	emalloc.c		\
+	erealloc.c		\
 	get_window_size.c	\
 	getarg.c		\
 	inaddr2str.c		\
