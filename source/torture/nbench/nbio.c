@@ -30,10 +30,13 @@ static int nprocs;
 static BOOL bypass_io;
 static int warmup;
 
-static struct {
-	int fd;
-	int handle;
-} ftable[MAX_FILES];
+struct ftable {
+	struct ftable *next, *prev;
+	int fd;     /* the fd that we got back from the server */
+	int handle; /* the handle in the load file */
+};
+
+static struct ftable *ftable;
 
 static struct {
 	double bytes_in, bytes_out;
@@ -74,12 +77,12 @@ void nb_alarm(void)
 	t = end_timer();
 
 	if (warmup) {
-		printf("%4d  %8d  %.2f MB/sec  warmup %.0f sec   \r", 
+		printf("%4d  %8d  %.2f MB/sec  warmup %.0f sec   \n", 
 		       num_clients, lines/nprocs, 
 		       1.0e-6 * nbio_total() / t, 
 		       t);
 	} else {
-		printf("%4d  %8d  %.2f MB/sec  execute %.0f sec   \r", 
+		printf("%4d  %8d  %.2f MB/sec  execute %.0f sec   \n", 
 		       num_clients, lines/nprocs, 
 		       1.0e-6 * nbio_total() / t, 
 		       t);
@@ -106,12 +109,25 @@ void nbio_shmem(int n)
 	}
 }
 
+static struct ftable *find_ftable(int handle)
+{
+	struct ftable *f;
+
+	for (f=ftable;f;f=f->next) {
+		if (f->handle == handle) return f;
+	}
+	return NULL;
+}
+
 static int find_handle(int handle)
 {
-	int i;
+	struct ftable *f;
+
 	children[nbio_id].line = nbench_line_count;
-	for (i=0;i<MAX_FILES;i++) {
-		if (ftable[i].handle == handle) return i;
+
+	f = find_ftable(handle);
+	if (f) {
+		return f->fd;
 	}
 	printf("(%d) ERROR: handle %d was not found\n", 
 	       nbench_line_count, handle);
@@ -121,7 +137,17 @@ static int find_handle(int handle)
 }
 
 
+
 static struct cli_state *c;
+
+/*
+  a handler function for oplock break requests
+*/
+static BOOL oplock_handler(struct cli_transport *transport, uint16 tid, uint16 fnum, uint8 level, void *private)
+{
+	struct cli_tree *tree = private;
+	return cli_oplock_ack(tree, fnum, level);
+}
 
 void nb_setup(struct cli_state *cli, int id, int warmupt)
 {
@@ -134,6 +160,10 @@ void nb_setup(struct cli_state *cli, int id, int warmupt)
 	}
 	if (bypass_io)
 		printf("skipping I/O\n");
+
+	if (cli) {
+		cli_oplock_handler(cli->transport, oplock_handler, cli->tree);
+	}
 }
 
 
@@ -181,10 +211,11 @@ void nb_createx(const char *fname,
 		NTSTATUS status)
 {
 	union smb_open io;	
-	int i;
 	uint32 desired_access;
 	NTSTATUS ret;
 	TALLOC_CTX *mem_ctx;
+	unsigned flags = 0;
+	struct ftable *f;
 
 	mem_ctx = talloc_init("raw_open");
 
@@ -196,10 +227,13 @@ void nb_createx(const char *fname,
 			SA_RIGHT_FILE_WRITE_DATA |
 			SA_RIGHT_FILE_READ_ATTRIBUTES |
 			SA_RIGHT_FILE_WRITE_ATTRIBUTES;
+		flags = NTCREATEX_FLAGS_EXTENDED \
+			NTCREATEX_FLAGS_REQUEST_OPLOCK | 
+			NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
 	}
 
 	io.ntcreatex.level = RAW_OPEN_NTCREATEX;
-	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.flags = flags;
 	io.ntcreatex.in.root_fid = 0;
 	io.ntcreatex.in.access_mask = desired_access;
 	io.ntcreatex.in.file_attr = 0;
@@ -219,16 +253,11 @@ void nb_createx(const char *fname,
 
 	if (!NT_STATUS_IS_OK(ret)) return;
 
-	for (i=0;i<MAX_FILES;i++) {
-		if (ftable[i].handle == 0) break;
-	}
-	if (i == MAX_FILES) {
-		printf("(%d) file table full for %s\n", nbench_line_count, 
-		       fname);
-		exit(1);
-	}
-	ftable[i].handle = handle;
-	ftable[i].fd = io.ntcreatex.out.fnum;
+	f = malloc(sizeof(struct ftable));
+	f->handle = handle;
+	f->fd = io.ntcreatex.out.fnum;
+
+	DLIST_ADD_END(ftable, f, struct ftable *);
 }
 
 void nb_writex(int handle, int offset, int size, int ret_size, NTSTATUS status)
@@ -246,7 +275,7 @@ void nb_writex(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	memset(buf, 0xab, size);
 
 	io.writex.level = RAW_WRITE_WRITEX;
-	io.writex.in.fnum = ftable[i].fd;
+	io.writex.in.fnum = i;
 	io.writex.in.wmode = 0;
 	io.writex.in.remaining = 0;
 	io.writex.in.offset = offset;
@@ -284,7 +313,7 @@ void nb_write(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	memset(buf, 0x12, size);
 
 	io.write.level = RAW_WRITE_WRITE;
-	io.write.in.fnum = ftable[i].fd;
+	io.write.in.fnum = i;
 	io.write.in.remaining = 0;
 	io.write.in.offset = offset;
 	io.write.in.count = size;
@@ -320,7 +349,7 @@ void nb_lockx(int handle, unsigned offset, int size, NTSTATUS status)
 	lck.count = size;
 
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.in.fnum = ftable[i].fd;
+	io.lockx.in.fnum = i;
 	io.lockx.in.mode = 0;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.ulock_cnt = 0;
@@ -346,7 +375,7 @@ void nb_unlockx(int handle, unsigned offset, int size, NTSTATUS status)
 	lck.count = size;
 
 	io.lockx.level = RAW_LOCK_LOCKX;
-	io.lockx.in.fnum = ftable[i].fd;
+	io.lockx.in.fnum = i;
 	io.lockx.in.mode = 0;
 	io.lockx.in.timeout = 0;
 	io.lockx.in.ulock_cnt = 1;
@@ -372,7 +401,7 @@ void nb_readx(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	buf = malloc(size);
 
 	io.readx.level = RAW_READ_READX;
-	io.readx.in.fnum = ftable[i].fd;
+	io.readx.in.fnum = i;
 	io.readx.in.offset    = offset;
 	io.readx.in.mincnt    = size;
 	io.readx.in.maxcnt    = size;
@@ -386,9 +415,10 @@ void nb_readx(int handle, int offset, int size, int ret_size, NTSTATUS status)
 	check_status("ReadX", status, ret);
 
 	if (NT_STATUS_IS_OK(ret) && io.readx.out.nread != ret_size) {
-		printf("[%d] Warning: ReadX got count %d expected %d\n", 
+		printf("[%d] ERROR: ReadX got count %d expected %d\n", 
 		       nbench_line_count,
 		       io.readx.out.nread, ret_size);
+		exit(1);
 	}	
 
 	children[nbio_id].bytes_in += ret_size;
@@ -396,14 +426,14 @@ void nb_readx(int handle, int offset, int size, int ret_size, NTSTATUS status)
 
 void nb_close(int handle, NTSTATUS status)
 {
-	int i;
 	NTSTATUS ret;
 	union smb_close io;
-	
+	int i;
+
 	i = find_handle(handle);
 
 	io.close.level = RAW_CLOSE_CLOSE;
-	io.close.in.fnum = ftable[i].fd;
+	io.close.in.fnum = i;
 	io.close.in.write_time = 0;
 
 	ret = smb_raw_close(c->tree, &io);
@@ -411,7 +441,9 @@ void nb_close(int handle, NTSTATUS status)
 	check_status("Close", status, ret);
 
 	if (NT_STATUS_IS_OK(ret)) {
-		ftable[i].handle = 0;
+		struct ftable *f = find_ftable(handle);
+		DLIST_REMOVE(ftable, f);
+		free(f);
 	}
 }
 
@@ -485,7 +517,7 @@ void nb_qfileinfo(int fnum, int level, NTSTATUS status)
 	mem_ctx = talloc_init("nb_qfileinfo");
 
 	io.generic.level = level;
-	io.generic.in.fnum = ftable[i].fd;
+	io.generic.in.fnum = i;
 
 	ret = smb_raw_fileinfo(c->tree, mem_ctx, &io);
 
@@ -510,7 +542,7 @@ void nb_sfileinfo(int fnum, int level, NTSTATUS status)
 	i = find_handle(fnum);
 
 	io.generic.level = level;
-	io.generic.file.fnum = ftable[i].fd;
+	io.generic.file.fnum = i;
 	unix_to_nt_time(&io.basic_info.in.create_time, time(NULL));
 	unix_to_nt_time(&io.basic_info.in.access_time, 0);
 	unix_to_nt_time(&io.basic_info.in.write_time, 0);
@@ -579,7 +611,7 @@ void nb_flush(int fnum, NTSTATUS status)
 	int i;
 	i = find_handle(fnum);
 
-	io.in.fnum = ftable[i].fd;
+	io.in.fnum = i;
 
 	ret = smb_raw_flush(c->tree, &io);
 
@@ -592,7 +624,11 @@ void nb_deltree(const char *dname)
 
 	smb_raw_exit(c->session);
 
-	ZERO_STRUCT(ftable);
+	while (ftable) {
+		struct ftable *f = ftable;
+		DLIST_REMOVE(ftable, f);
+		free(f);
+	}
 
 	total_deleted = cli_deltree(c->tree, dname);
 
