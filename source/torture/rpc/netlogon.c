@@ -294,37 +294,6 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.secure_channel_type = SEC_CHAN_BDC;
 	r.in.computer_name = TEST_MACHINE_NAME;
 
-	password = "";
-	E_md4hash(password, r.in.new_password.hash);
-
-	creds_des_encrypt(creds, &r.in.new_password);
-	/* by changing the machine password to ""
-	 * we check if the server uses password restrictions
-	 * for ServerPasswordSet2
-	 * (win2k3 accepts "")
-	 */
-	printf("Testing a second ServerPasswordSet on machine account\n");
-	printf("Changing machine account password to '%s'\n", password);
-
-	creds_client_authenticator(creds, &r.in.credential);
-
-	status = dcerpc_netr_ServerPasswordSet(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerPasswordSet (2) - %s\n", nt_errstr(status));
-		return False;
-	}
-
-	if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
-		printf("Credential chaining failed\n");
-	}
-
-	machine_password = password;
-
-	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME, machine_password, &creds)) {
-		printf("ServerPasswordSet failed to actually change the password\n");
-		return False;
-	}
-
 	password = generate_random_str(mem_ctx, 8);
 	E_md4hash(password, r.in.new_password.hash);
 
@@ -383,6 +352,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct netr_ServerPasswordSet2 r;
 	const char *password;
 	struct creds_CredentialState *creds;
+	struct samr_CryptPassword password_buf;
 
 	if (!test_SetupCredentials(p, mem_ctx, TEST_MACHINE_NAME,
 				   machine_password, &creds)) {
@@ -394,23 +364,26 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.secure_channel_type = SEC_CHAN_BDC;
 	r.in.computer_name = TEST_MACHINE_NAME;
 
-	password = "";
-	encode_pw_buffer(r.in.new_password.data, password, STR_UNICODE);
-	creds_arcfour_crypt(creds, r.in.new_password.data, 516);
+	password = generate_random_str(mem_ctx, 8);
+	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
+	creds_arcfour_crypt(creds, password_buf.data, 516);
+
+	memcpy(r.in.new_password.data, password_buf.data, 512);
+	r.in.new_password.length = IVAL(password_buf.data, 512);
 
 	/* by changing the machine password to ""
 	 * we check if the server uses password restrictions
 	 * for ServerPasswordSet2
 	 * (win2k3 accepts "")
 	 */
-	printf("Testing a second ServerPasswordSet2 on machine account\n");
+	printf("Testing ServerPasswordSet2 on machine account\n");
 	printf("Changing machine account password to '%s'\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
 	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerPasswordSet (2) - %s\n", nt_errstr(status));
+		printf("ServerPasswordSet2 - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -427,17 +400,20 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	/* now try a random password */
 	password = generate_random_str(mem_ctx, 8);
-	encode_pw_buffer(r.in.new_password.data, password, STR_UNICODE);
-	creds_arcfour_crypt(creds, r.in.new_password.data, 516);
+	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
+	creds_arcfour_crypt(creds, password_buf.data, 516);
 
-	printf("Testing ServerPasswordSet2 on machine account\n");
+	memcpy(r.in.new_password.data, password_buf.data, 512);
+	r.in.new_password.length = IVAL(password_buf.data, 512);
+
+	printf("Testing second ServerPasswordSet2 on machine account\n");
 	printf("Changing machine account password to '%s'\n", password);
 
 	creds_client_authenticator(creds, &r.in.credential);
 
 	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerPasswordSet2 - %s\n", nt_errstr(status));
+		printf("ServerPasswordSet2 (2) - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -456,7 +432,7 @@ static BOOL test_SetPassword2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	status = dcerpc_netr_ServerPasswordSet2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ServerPasswordSet (2) - %s\n", nt_errstr(status));
+		printf("ServerPasswordSet (3) - %s\n", nt_errstr(status));
 		return False;
 	}
 

@@ -1018,6 +1018,8 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 	char new_pass[512];
 	uint32_t new_pass_len;
 
+	struct samr_CryptPassword password_buf;
+
 	const char *attrs[] = {"objectSid", NULL };
 
 	const char **domain_attrs = attrs;
@@ -1080,10 +1082,12 @@ static NTSTATUS netr_ServerPasswordSet2(struct dcesrv_call_state *dce_call, TALL
 	NT_STATUS_HAVE_NO_MEMORY(mod);
 	mod->dn = talloc_reference(mod, msgs[0]->dn);
     
-	creds_arcfour_crypt(pipe_state->creds, r->in.new_password.data, 516);
+	memcpy(password_buf.data, r->in.new_password.data, 512);
+	SIVAL(password_buf.data,512,r->in.new_password.length);
+	creds_arcfour_crypt(pipe_state->creds, password_buf.data, 516);
 
-	ret = decode_pw_buffer(r->in.new_password.data, new_pass, sizeof(new_pass),
-			      &new_pass_len, STR_UNICODE);
+	ret = decode_pw_buffer(password_buf.data, new_pass, sizeof(new_pass),
+			       &new_pass_len, STR_UNICODE);
 	if (!ret) {
 		DEBUG(3,("netr_ServerPasswordSet2: failed to decode password buffer\n"));
 		return NT_STATUS_ACCESS_DENIED;
