@@ -306,16 +306,6 @@ sub array_size($)
 	return undef;
 }
 
-# determine if an element has a direct buffers component
-sub has_direct_buffers($)
-{
-	my $e = shift;
-	if ($e->{POINTERS} || array_size($e)) {
-		return 1;
-	}
-	return 0;
-}
-
 # return 1 if the string is a C constant
 sub is_constant($)
 {

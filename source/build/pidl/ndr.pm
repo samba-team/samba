@@ -551,7 +551,7 @@ sub ParseElementPrintScalar($$)
 
 	if (util::is_fixed_array($e)) {
 		ParseElementPrintBuffer($e, $var_prefix);
-	} elsif (util::has_direct_buffers($e)) {
+	} elsif ($e->{POINTERS} || util::array_size($e)) {
 		pidl "\tndr_print_ptr(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME});\n";
 		pidl "\tndr->depth++;\n";
 		ParseElementPrintBuffer($e, $var_prefix);
