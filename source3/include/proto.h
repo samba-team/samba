@@ -3055,7 +3055,7 @@ int reply_nttrans(connection_struct *conn,
 
 /*The following definitions come from  smbd/open.c  */
 
-void fd_close(files_struct *fsp, int *err_ret);
+int fd_close(struct connection_struct *conn, files_struct *fsp);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action);
 int open_file_stat(files_struct *fsp,connection_struct *conn,
