@@ -38,11 +38,12 @@
 
 #include "krb5_locl.h"
 #define USE_RESOLVER
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
 #include "resolve.h"
 
 RCSID("$Id$");
-
-/* Public principal handling functions */
 
 #define princ_num_comp(P) ((P)->name.name_string.len)
 #define princ_type(P) ((P)->name.name_type)
