@@ -937,7 +937,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		mode_t mode = pvfs_fileperms(pvfs, attrib);
 		if (fchmod(fd, mode) == -1) {
 			talloc_free(lck);
-			return map_nt_error_from_unix(errno);
+			return pvfs_map_errno(pvfs, errno);
 		}
 		name->dos.attrib = attrib;
 		status = pvfs_dosattrib_save(pvfs, name, fd);

@@ -48,6 +48,7 @@ static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum;
 	const char *fname1 = BASEDIR "\\test1.txt";
 	const char *fname2 = BASEDIR "\\test2.txt";
+	union smb_open op;
 
 	printf("Testing SMBmv\n");
 
@@ -57,16 +58,58 @@ static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying simple rename\n");
 
-	fnum = create_complex_file(cli, mem_ctx, fname1);
-	
+	op.generic.level = RAW_OPEN_NTCREATEX;
+	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.flags = 0;
+	op.ntcreatex.in.access_mask = SEC_RIGHT_MAXIMUM_ALLOWED;
+	op.ntcreatex.in.create_options = 0;
+	op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	op.ntcreatex.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_READ | 
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	op.ntcreatex.in.alloc_size = 0;
+	op.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	op.ntcreatex.in.security_flags = 0;
+	op.ntcreatex.in.fname = fname1;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = op.ntcreatex.out.fnum;
+
 	io.generic.level = RAW_RENAME_RENAME;
 	io.rename.in.pattern1 = fname1;
 	io.rename.in.pattern2 = fname2;
 	io.rename.in.attrib = 0;
 	
+	printf("trying rename while first file open\n");
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
-	
+
+	smbcli_close(cli->tree, fnum);
+
+	op.ntcreatex.in.access_mask = GENERIC_RIGHTS_FILE_READ;
+	op.ntcreatex.in.share_access = 
+		NTCREATEX_SHARE_ACCESS_DELETE | 
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	status = smb_raw_open(cli->tree, mem_ctx, &op);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = op.ntcreatex.out.fnum;
+
+	printf("trying rename while first file open with SHARE_ACCESS_DELETE\n");
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io.rename.in.pattern1 = fname2;
+	io.rename.in.pattern2 = fname1;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io.rename.in.pattern1 = fname1;
+	io.rename.in.pattern2 = fname2;
+
+	printf("trying rename while not open\n");
 	smb_raw_exit(cli->session);
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
