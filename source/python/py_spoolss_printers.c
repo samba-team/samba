@@ -279,8 +279,8 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 	uint32 needed, num_printers;
 	static char *kwlist[] = {"server", "name", "level", "flags", 
 				 "creds", NULL};
-	TALLOC_CTX *mem_ctx = NULL;
-	struct cli_state *cli = NULL;
+	TALLOC_CTX *mem_ctx;
+	struct cli_state *cli;
 	char *server, *name = NULL;
 
 	/* Parse parameters */
@@ -311,7 +311,8 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 	
 	if (!W_ERROR_IS_OK(werror)) {
 		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
-		return NULL;
+		result = NULL;
+		goto done;
 	}
 
 	result = PyList_New(num_printers);
@@ -359,6 +360,58 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 		break;
 	}
 
-	Py_INCREF(result);
+done:
+	cli_shutdown(cli);
+	talloc_destroy(mem_ctx);
+
+	return result;
+}
+
+/* Add a printer */
+
+PyObject *spoolss_addprinterex(PyObject *self, PyObject *args, PyObject *kw)
+{
+	static char *kwlist[] = { "server", "printername", "info", "creds", 
+				  NULL};
+	char *printername, *server;
+	PyObject *info, *result = NULL, *creds = NULL;
+	struct cli_state *cli = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	PRINTER_INFO_CTR ctr;
+	PRINTER_INFO_2 info2;
+	WERROR werror;
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "ssO!|O!", kwlist, &server, &printername,
+		    &PyDict_Type, &info, &PyDict_Type, &creds))
+		return NULL;
+
+	if (!(cli = open_pipe_creds(server, creds, 
+				    cli_spoolss_initialise, NULL)))
+		goto done;
+
+	mem_ctx = talloc_init();
+
+	if (!(cli = open_pipe_creds(server, creds, cli_spoolss_initialise,
+				    NULL)))
+		goto done;
+
+	if (!py_to_PRINTER_INFO_2(&info2, info, mem_ctx)) {
+		PyErr_SetString(spoolss_error,
+				"error converting to printer info 2");
+		goto done;
+	}
+
+	ctr.printers_2 = &info2;
+
+	werror = cli_spoolss_addprinterex(cli, mem_ctx, 2, &ctr);
+
+	Py_INCREF(Py_None);
+	result = Py_None;
+
+done:
+	cli_shutdown(cli);
+	talloc_destroy(mem_ctx);
+
 	return result;
 }
