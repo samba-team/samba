@@ -186,7 +186,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	    return -1;
 	}
 	(*rr)->u.mx->preference = (p[0] << 8) | p[1];
-	strlcpy((*rr)->u.mx->domain, host, hostlen);
+	strlcpy((*rr)->u.mx->domain, host, hostlen + 1);
 	break;
     }
     case T_SRV:{
@@ -212,7 +212,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	(*rr)->u.srv->priority = (p[0] << 8) | p[1];
 	(*rr)->u.srv->weight = (p[2] << 8) | p[3];
 	(*rr)->u.srv->port = (p[4] << 8) | p[5];
-	strlcpy((*rr)->u.srv->target, host, hostlen);
+	strlcpy((*rr)->u.srv->target, host, hostlen + 1);
 	break;
     }
     case T_TXT:{
@@ -294,7 +294,7 @@ parse_record(const unsigned char *data, const unsigned char *end_data,
 	(*rr)->u.sig->sig_len        = sig_len;
 	memcpy ((*rr)->u.sig->sig_data, p + 18 + status, sig_len);
 	(*rr)->u.sig->signer         = &(*rr)->u.sig->sig_data[sig_len];
-	strlcpy((*rr)->u.sig->signer, host, hostlen);
+	strlcpy((*rr)->u.sig->signer, host, hostlen + 1);
 	break;
     }
 
