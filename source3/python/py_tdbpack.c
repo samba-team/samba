@@ -25,6 +25,13 @@
 
 #include "Python.h"
 
+/* This symbol is used in both config.h and Python.h which causes an
+   annoying compiler warning. */
+
+#ifdef HAVE_FSTAT
+#undef HAVE_FSTAT
+#endif
+
 /* This module is supposed to be standalone, however for portability
    it would be good to use the FUNCTION_MACRO preprocessor define. */
 
