@@ -108,7 +108,7 @@ init_cred (krb5_context context,
 	if (ret)
 	    goto out;
 	server_realm = strdup (*client_realm);
-	free (cred->server->realm);
+	free (*krb5_princ_realm(context, cred->server));
 	krb5_princ_set_realm (context, cred->server, &server_realm);
     } else {
 	ret = krb5_make_principal(context, &cred->server, 
@@ -526,6 +526,8 @@ krb5_get_init_creds_keytab(krb5_context context,
 			    NULL,
 			    &this_cred,
 			    NULL);
+    free (a);
+
     if (ret)
 	goto out;
     free (pre_auth_types);
