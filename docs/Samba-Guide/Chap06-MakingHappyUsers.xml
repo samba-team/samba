@@ -258,6 +258,8 @@
 	</para></blockquote>
 	</para>
 
+<?latex \newpage ?>
+
 	<sect2>
 		<title>Assignment Tasks</title>
 
@@ -1573,14 +1575,10 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<smbconfoption><name>delete user script</name><value>/opt/IDEALX/sbin/smbldap-userdel "%u"</value></smbconfoption>
 	<smbconfoption><name>add group script</name><value>/opt/IDEALX/sbin/smbldap-groupadd -p "%g"</value></smbconfoption>
 	<smbconfoption><name>delete group script</name><value>/opt/IDEALX/sbin/smbldap-groupdel "%g"</value></smbconfoption>
-	<smbconfoption><name>add user to group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
-		<member><parameter>smbldap-groupmod -m "%u" "%g"</parameter></member>
-	<smbconfoption><name>delete user from group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
-		<member><parameter>smbldap-groupmod -x "%u" "%g"</parameter></member>
-	<smbconfoption><name>set primary group script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
-		<member><parameter>smbldap-usermod -g "%g" "%u"</parameter></member>
-	<smbconfoption><name>add machine script</name><value>/opt/IDEALX/sbin/</value></smbconfoption>
-		<member><parameter>smbldap-useradd -w "%u"</parameter></member>
+	<smbconfoption><name>add user to group script</name><value>/opt/IDEALX/sbin/smbldap-groupmod -m "%u" "%g"</value></smbconfoption>
+	<smbconfoption><name>delete user from group script</name><value>/opt/IDEALX/sbin/smbldap-groupmod -x "%u" "%g"</value></smbconfoption>
+	<smbconfoption><name>set primary group script</name><value>/opt/IDEALX/sbin/smbldap-usermod -g "%g" "%u"</value></smbconfoption>
+	<smbconfoption><name>add machine script</name><value>/opt/IDEALX/sbin/smbldap-useradd -w "%u"</value></smbconfoption>
 </smbconfexample>
 
 <smbconfexample id="ch6-massive-smbconfb">
@@ -2937,7 +2935,7 @@ smb: \> q
 	<smbconfoption><name>ldap group suffix</name><value>ou=Groups</value></smbconfoption>
 	<smbconfoption><name>ldap idmap suffix</name><value>ou=Idmap</value></smbconfoption>
 	<smbconfoption><name>ldap admin dn</name><value>cn=Manager,dc=abmas,dc=biz</value></smbconfoption>
-	<smbconfoption><name>idmap backend</name><value>ldap://massive.abmas.biz</value></smbconfoption>
+	<smbconfoption><name>idmap backend</name><value>ldap:ldap://massive.abmas.biz</value></smbconfoption>
 	<smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
 	<smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>
 	<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
