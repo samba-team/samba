@@ -607,7 +607,10 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
   for (i=0; pure_address && name[i]; i++)
     if (!(isdigit((int)name[i]) || name[i] == '.'))
       pure_address = False;
-   
+  
+  /* Check that a pure number is not misinterpreted as an IP */
+  pure_address = pure_address && (strchr(name, '.') != NULL);
+ 
   /* if it's in the form of an IP address then get the lib to interpret it */
   if (pure_address) {
     return_ip->s_addr = inet_addr(name);
