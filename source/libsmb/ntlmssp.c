@@ -680,7 +680,6 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 			
 		} else {
-			data_blob_free(&encrypted_session_key);
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM2 session key.\n"));
 			session_key = data_blob(NULL, 0);
 		}
@@ -699,7 +698,6 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 				session_key = lm_session_key;
 			}
 		} else {
-			data_blob_free(&encrypted_session_key);
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM session key.\n"));
 			session_key = data_blob(NULL, 0);
 		}
@@ -737,7 +735,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 								      encrypted_session_key.data, 
 								      encrypted_session_key.length);
 			dump_data_pw("KEY_EXCH session key:\n", encrypted_session_key.data, 
-				encrypted_session_key.length);
+				     encrypted_session_key.length);
 		}
 	} else {
 		ntlmssp_state->session_key = session_key;
