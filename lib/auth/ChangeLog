@@ -38,6 +38,10 @@
 	* afskauthlib/verify.c (verify_krb5): remove krb5_kuserok.  use
  	krb5_verify_user_lrealm
 
+1999-08-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* pam/Makefile.in: link with res_search/dn_expand libraries
+
 1999-08-11  Johan Danielsson  <joda@pdc.kth.se>
 
 	* afskauthlib/verify.c: make this compile w/o krb4
