@@ -231,8 +231,8 @@ AC_BROKEN(chown daemon err errx fchown flock fnmatch getcwd)
 AC_BROKEN(getdtablesize getopt getusershell inet_aton)
 AC_BROKEN(initgroups innetgr iruserok lstat memmove mkstemp)
 AC_BROKEN(putenv rcmd readv setegid setenv setenv seteuid)
-AC_BROKEN(seteuid strcasecmp strdup strerror strftime strlwr)
-AC_BROKEN(strnlen strsep strtok_r strupr unsetenv verr verrx)
+AC_BROKEN(seteuid strcasecmp strcpy_truncate strdup strerror strftime)
+AC_BROKEN(strlwr strnlen strsep strtok_r strupr unsetenv verr verrx)
 AC_BROKEN(vsyslog vwarn vwarnx warn warnx writev)
 
 AC_CACHE_CHECK(if realloc if broken, ac_cv_func_realloc_broken, [
