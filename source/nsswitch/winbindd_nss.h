@@ -61,8 +61,17 @@ enum winbindd_cmd {
 
 	/* SID conversion */
 
-	WINBINDD_LOOKUPSID,        /* Convert sid to name */
-	WINBINDD_LOOKUPNAME        /* Convert name to sid */
+	WINBINDD_LOOKUPSID,
+	WINBINDD_LOOKUPNAME,
+
+	/* S*RS functions */
+
+	WINBINDD_SID_TO_UID,       
+	WINBINDD_SID_TO_GID,
+	WINBINDD_UID_TO_SID,
+	WINBINDD_GID_TO_SID,
+
+	WINBINDD_NUM_CMDS        /* Placeholder for end of cmd list */
 };
 
 /* Winbind request structure */
@@ -72,10 +81,10 @@ struct winbindd_request {
 	pid_t pid;               /* pid of calling process */
 
 	union {
-		fstring username;    /* getpwnam() */
-		fstring groupname;   /* getgrnam() */
-		uid_t uid;           /* getpwuid() */
-		gid_t gid;           /* getgrgid() */
+		fstring username;    /* getpwnam */
+		fstring groupname;   /* getgrnam */
+		uid_t uid;           /* getpwuid, uid_to_sid */
+		gid_t gid;           /* getgrgid, gid_to_sid */
 		struct {
 			fstring user;
 			fstring pass;
@@ -85,7 +94,7 @@ struct winbindd_request {
                     fstring oldpass;
                     fstring newpass;
                 } chauthtok;         /* pam_winbind passwd module */
-		fstring sid;         /* lookupsid */
+		fstring sid;         /* lookupsid, sid_to_[ug]id */
 		fstring name;        /* lookupname */
 	} data;
         fstring domain;      /* {set,get,end}{pw,gr}ent() */
@@ -134,8 +143,10 @@ struct winbindd_response {
 			int grent_ndx;
 		} gr;
 
-		fstring sid;        /* lookupname */
+		fstring sid;        /* lookupname, [ug]id_to_sid */
 		fstring name;       /* lookupsid */
+		uid_t uid;          /* sid_to_uid */
+		gid_t gid;          /* sid_to_gid */
 	} data;
 
 	/* Variable length return data */
