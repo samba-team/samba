@@ -153,8 +153,6 @@ krb5_verify_init_creds(krb5_context context,
 			     KEYTYPE_DES,
 			     &entry);
     if (ret) {
-	const char *p;
-
 	if (((options->flags & KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL) && 
 	     options->ap_req_nofail == 1) || 
 	    krb5_config_get_bool (context->cf,

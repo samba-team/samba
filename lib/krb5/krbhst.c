@@ -49,7 +49,6 @@ krb5_get_krbhst (krb5_context context,
     unsigned max, count;
     krb5_config_binding *pointer;
     char *r;
-    char *h;
     krb5_boolean done;
     char **tmp;
 

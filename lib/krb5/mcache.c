@@ -174,7 +174,6 @@ mcc_get_next (krb5_context context,
 	      krb5_cc_cursor *cursor,
 	      krb5_creds *creds)
 {
-    krb5_error_code ret;
     struct link *l;
 
     l = (struct link *)cursor->u.v;

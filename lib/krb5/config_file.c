@@ -358,63 +358,6 @@ krb5_config_file_free (krb5_config_section *s)
     return 0;
 }
 
-static int print_list (FILE *f, krb5_config_binding *l, unsigned level);
-static int print_binding (FILE *f, krb5_config_binding *b, unsigned level);
-static int print_section (FILE *f, krb5_config_section *s, unsigned level);
-static int print_config (FILE *f, krb5_config_section *c);
-
-static void
-tab (FILE *f, unsigned count)
-{
-    while(count--)
-	fprintf (f, "\t");
-}
-
-static int
-print_list (FILE *f, krb5_config_binding *l, unsigned level)
-{
-    while(l) {
-	print_binding (f, l, level);
-	l = l->next;
-    }
-    return 0;
-}
-
-static int
-print_binding (FILE *f, krb5_config_binding *b, unsigned level)
-{
-    tab (f, level);
-    fprintf (f, "%s = ", b->name);
-    if (b->type == krb5_config_string)
-	fprintf (f, "%s\n", b->u.string);
-    else if (b->type == krb5_config_list) {
-	fprintf (f, "{\n");
-	print_list (f, b->u.list, level + 1);
-	tab (f, level);
-	fprintf (f, "}\n");
-    } else
-	abort ();
-    return 0;
-}
-
-static int
-print_section (FILE *f, krb5_config_section *s, unsigned level)
-{
-    fprintf (f, "[%s]\n", s->name);
-    print_list (f, s->u.list, level + 1);
-    return 0;
-}
-
-static int
-print_config (FILE *f, krb5_config_section *c)
-{
-    while (c) {
-	print_section (f, c, 0);
-	c = c->next;
-    }
-    return 0;
-}
-
 const void *
 krb5_config_get_next (krb5_config_section *c,
 		      krb5_config_binding **pointer,
@@ -675,6 +618,64 @@ krb5_config_get_int (krb5_config_section *c,
 }
 
 #ifdef TEST
+
+static int print_list (FILE *f, krb5_config_binding *l, unsigned level);
+static int print_binding (FILE *f, krb5_config_binding *b, unsigned level);
+static int print_section (FILE *f, krb5_config_section *s, unsigned level);
+static int print_config (FILE *f, krb5_config_section *c);
+
+static void
+tab (FILE *f, unsigned count)
+{
+    while(count--)
+	fprintf (f, "\t");
+}
+
+static int
+print_list (FILE *f, krb5_config_binding *l, unsigned level)
+{
+    while(l) {
+	print_binding (f, l, level);
+	l = l->next;
+    }
+    return 0;
+}
+
+static int
+print_binding (FILE *f, krb5_config_binding *b, unsigned level)
+{
+    tab (f, level);
+    fprintf (f, "%s = ", b->name);
+    if (b->type == krb5_config_string)
+	fprintf (f, "%s\n", b->u.string);
+    else if (b->type == krb5_config_list) {
+	fprintf (f, "{\n");
+	print_list (f, b->u.list, level + 1);
+	tab (f, level);
+	fprintf (f, "}\n");
+    } else
+	abort ();
+    return 0;
+}
+
+static int
+print_section (FILE *f, krb5_config_section *s, unsigned level)
+{
+    fprintf (f, "[%s]\n", s->name);
+    print_list (f, s->u.list, level + 1);
+    return 0;
+}
+
+static int
+print_config (FILE *f, krb5_config_section *c)
+{
+    while (c) {
+	print_section (f, c, 0);
+	c = c->next;
+    }
+    return 0;
+}
+
 
 int
 main(void)

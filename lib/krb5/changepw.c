@@ -167,8 +167,6 @@ str2data (krb5_data *d,
 	  char *fmt,
 	  ...)
 {
-    char *p;
-    size_t len;
     va_list args;
 
     va_start(args, fmt);
@@ -286,7 +284,6 @@ krb5_change_password (krb5_context	context,
 {
     krb5_error_code ret;
     krb5_auth_context auth_context = NULL;
-    krb5_creds cred;
     int sock;
     int i;
     char *buf;

@@ -51,7 +51,6 @@ krb5_get_forwarded_creds (krb5_context	    context,
 {
     krb5_error_code ret;
     krb5_creds *out_creds;
-    krb5_creds in_cred;
     krb5_addresses addrs;
     struct hostent *hostent;
     unsigned n;
@@ -61,7 +60,6 @@ krb5_get_forwarded_creds (krb5_context	    context,
     EncKrbCredPart enc_krb_cred_part;
     size_t len;
     u_char buf[1024];
-    krb5_data enc_data;
     int32_t sec, usec;
     krb5_kdc_flags kdc_flags;
     krb5_enctype enctype;

@@ -316,7 +316,6 @@ build_principal(krb5_context context,
 		va_list ap)
 {
     krb5_principal p;
-    int n;
   
     p = calloc(1, sizeof(*p));
     if (p == NULL)

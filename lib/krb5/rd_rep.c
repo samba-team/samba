@@ -49,8 +49,6 @@ krb5_rd_rep(krb5_context context,
   krb5_error_code ret;
   AP_REP ap_rep;
   size_t len;
-  des_key_schedule schedule;
-  char *buf;
   krb5_data data;
 
   krb5_data_zero (&data);

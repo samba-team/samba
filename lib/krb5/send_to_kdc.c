@@ -65,7 +65,6 @@ send_and_recv (int fd,
 	 if (ret <= 0)
 	     return -1;
 	 else {
-	     int len;
 
 	     if (ioctl (fd, FIONREAD, &nbytes) < 0)
 		 return -1;

@@ -62,7 +62,6 @@ krb5_get_host_realm(krb5_context context,
     krb5_error_code ret;
     char hostname[MAXHOSTNAMELEN];
     char *res = NULL;
-    const char *partial = NULL;
     const krb5_config_binding *l;
     struct in_addr addr;
     struct hostent *hostent;

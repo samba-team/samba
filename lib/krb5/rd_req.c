@@ -336,7 +336,6 @@ krb5_rd_req(krb5_context context,
 	    krb5_flags *ap_req_options,
 	    krb5_ticket **ticket)
 {
-    krb5_keytab_entry entry;
     krb5_error_code ret;
     krb5_keytab real_keytab;
 

@@ -184,8 +184,6 @@ krb5_auth_con_getaddrs(krb5_context context,
 		       krb5_address **local_addr,
 		       krb5_address **remote_addr)
 {
-    krb5_error_code ret;
-
     if(*local_addr)
 	krb5_free_address (context, *local_addr);
     *local_addr = malloc (sizeof(**local_addr));

@@ -184,7 +184,6 @@ krb5_kt_start_seq_get(krb5_context context,
 {
   int16_t tag;
   int ret;
-  krb5_storage *sp;
 
   cursor->fd = open (id->filename, O_RDONLY);
   if (cursor->fd < 0)
@@ -331,7 +330,6 @@ krb5_kt_store_principal(krb5_storage *sp,
 {
     int i;
     int ret;
-    int16_t tmp;
     
     ret = krb5_store_int16(sp, p->name.name_string.len);
     if(ret) return ret;

@@ -68,7 +68,7 @@ krb524_convert_creds_kdc(krb5_context context,
 			   &reply);
     sp = krb5_storage_from_mem(reply.data, reply.length);
     if(sp == NULL)
-	return ;
+	return ENOMEM;
     krb5_ret_int32(sp, &tmp);
     ret = tmp;
     if(ret == 0){

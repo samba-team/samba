@@ -48,10 +48,8 @@ krb5_mk_rep(krb5_context context,
   krb5_error_code ret;
   AP_REP ap;
   EncAPRepPart body;
-  u_char buf[1024], *p;
+  u_char buf[1024];
   size_t len;
-  des_cblock key;
-  des_key_schedule schedule;
 
   ap.pvno = 5;
   ap.msg_type = krb_ap_rep;

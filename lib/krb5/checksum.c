@@ -154,6 +154,7 @@ MD4_DES_verify (void *p, size_t len, const krb5_keyblock *keyblock,
     return memcmp (res, (u_char *)other + 8, 16);
 }
 
+#if 0
 static void
 MD4_DES_broken_checksum (void *p, size_t len, const krb5_keyblock *keyblock,
 			 void *result)
@@ -188,6 +189,7 @@ MD4_DES_broken_verify (void *p, size_t len, const krb5_keyblock *keyblock,
 
     return memcmp (res, (u_char *)other, 16);
 }
+#endif
 
 static void
 MD5_DES_checksum (void *p, size_t len, const krb5_keyblock *keyblock,
@@ -283,7 +285,6 @@ MD5_DES3_verify (void *p, size_t len, const krb5_keyblock *keyblock,
     des_cblock ivec;
     des_key_schedule sched[3];
     unsigned char res[16];
-    unsigned char *orig_key = (unsigned char *)keyblock->keyvalue.data;
     struct md5 md5;
     
     fix_des3_key(keyblock, sched);
