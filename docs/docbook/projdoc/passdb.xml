@@ -834,7 +834,7 @@ index   default               sub
 
 <para>
 <programlisting>
-root# </prompt><userinput>/etc/init.d/slapd restart</userinput>
+<prompt>root# </prompt><userinput>/etc/init.d/slapd restart</userinput>
 </programlisting>
 </para>
 

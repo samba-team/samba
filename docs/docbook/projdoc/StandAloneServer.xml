@@ -70,8 +70,8 @@ the samba server is NOT a member of a domain security context.
 <para>
 Through the use of PAM (Pluggable Authentication Modules) and nsswitch
 (the name service switcher) the source of authentication may reside on 
-another server. We call this the authentication server.  This means that
-the samba server may use the local Unix/Linux system password database
+another server. We would be inclined to call this the authentication server.
+This means that the samba server may use the local Unix/Linux system password database
 (/etc/passwd or /etc/shadow), may use a local smbpasswd file, or may use
 an LDAP back end, or even via PAM and Winbind another CIFS/SMB server
 for authentication.
