@@ -130,7 +130,7 @@ similar to the following if you have it, at least while adding the
 principals that are going to share keys with Windows 2000.
 
 @example
-	[kadmin]default_keys = des3:pw-salt des:pw-salt des:pw-salt:
+	[kadmin]default_keys = v5 v4
 @end example
 
 You must also set:
