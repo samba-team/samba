@@ -8,15 +8,50 @@
 .Ar command
 .Nd
 handle a keytab
+.Sh SYNOPSIS
+.Nm
+.Op Fl k Ar keytab
+.Op Fl -keytab= Ns Ar keytab
+.Op Fl v
+.Op Fl -version
+.Op Fl h
+.Op Fl -help
+.Ar command
 .Sh DESCRIPTION
 .Nm
-is the program for managing a keytab.
+is a program for managing keytabs.
 .Ar command
 can be one of these:
 .Bl -tag -width Ds
-.It list Op Ar keytab
-List the keys stored in the keytab
-.Ar keytab .
+.It add Xo
+.Op Fl p Ar principal
+.Op Fl -principal= Ns Ar principal
+.Op Fl V Ar kvno
+.Op Fl -kvno= Ns Ar kvno
+.Op Fl t Ar keytype
+.Op Fl -keytype= Ns Ar keytype
+.Op Fl w Ar password
+.Op Fl -password= Ns Ar password
+.Op Fl r
+.Op Fl -random
+.Xc
+Adds a key to the keytab. Options that are not specified will be
+prompted for.
+.It list
+List the keys stored in the keytab.
+.It remove Xo
+.Op Fl p Ar principal
+.Op Fl -principal= Ns Ar principal
+.Op Fl V kvno
+.Op Fl -kvno= Ns Ar kvno
+.Op Fl t keytype
+.Op Fl -keytype= Ns Ar keytype
+.Xc
+Removes the specified key or keys. Not specifying a
+.Ar kvno
+removes keys with any version number. Not specifying a
+.Ar keytype
+removes keys of any type.  Removes a key from the keytab.
 .It srvconvert
 .It srv2keytab Xo
 .Op Fl s Ar srvtab
