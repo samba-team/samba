@@ -1274,5 +1274,18 @@ void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
 BOOL krb5_get_smb_session_key(krb5_context context, krb5_auth_context auth_context, uint8 session_key[16]);
 #endif /* HAVE_KRB5 */
 
-#endif /* _INCLUDES_H */
+/* TRUE and FALSE are part of the C99 standard and gcc, but
+   unfortunately many vendor compilers don't support them.  Use True
+   and False instead. */
 
+#ifdef TRUE
+#undef TRUE
+#endif
+#define TRUE __ERROR__XX__DONT_USE_TRUE
+
+#ifdef FALSE
+#undef FALSE
+#endif
+#define FALSE __ERROR__XX__DONT_USE_FALSE
+
+#endif /* _INCLUDES_H */
