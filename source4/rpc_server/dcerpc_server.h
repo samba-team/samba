@@ -79,6 +79,7 @@ struct dcesrv_call_state {
 	} *replies;
 };
 
+#define DCESRV_HANDLE_ANY 255
 
 /* a dcerpc handle in internal format */
 struct dcesrv_handle {
