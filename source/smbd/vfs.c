@@ -62,6 +62,9 @@ static struct vfs_ops default_vfs = {
 	
 		vfswrap_opendir,
 		vfswrap_readdir,
+		vfswrap_seekdir,
+		vfswrap_telldir,
+		vfswrap_rewinddir,
 		vfswrap_mkdir,
 		vfswrap_rmdir,
 		vfswrap_closedir,
@@ -611,13 +614,13 @@ SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
 
 char *vfs_readdirname(connection_struct *conn, void *p)
 {
-	struct dirent *ptr= NULL;
+	SMB_STRUCT_DIRENT *ptr= NULL;
 	char *dname;
 
 	if (!p)
 		return(NULL);
 
-	ptr = (struct dirent *)SMB_VFS_READDIR(conn,p);
+	ptr = SMB_VFS_READDIR(conn,p);
 	if (!ptr)
 		return(NULL);
 
