@@ -2695,6 +2695,7 @@ WINBIND_PAM_PROGS=""
 
 if test x"$HAVE_WINBIND" = x"yes"; then
         AC_MSG_RESULT(yes)
+	AC_DEFINE(WITH_WINBIND)
 
 	WINBIND_TARGETS="bin/wbinfo"
 	WINBIND_STARGETS="bin/winbindd"

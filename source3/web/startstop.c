@@ -67,6 +67,27 @@ void start_nmbd(void)
 	exit(0);
 }
 
+/** Startup winbindd from web interface. */
+void start_winbindd(void)
+{
+	pstring binfile;
+
+	if (geteuid() != 0) return;
+
+	if (fork()) {
+		sleep(SLEEP_TIME);
+		return;
+	}
+
+	slprintf(binfile, sizeof(pstring) - 1, "%s/winbindd", dyn_SBINDIR);
+
+	become_daemon();
+
+	execl(binfile, binfile, NULL);
+
+	exit(0);
+}
+
 
 /* stop smbd */
 void stop_smbd(void)
@@ -91,7 +112,19 @@ void stop_nmbd(void)
 
 	kill(pid, SIGTERM);
 }
+#ifdef WITH_WINBIND
+/* stop winbindd */
+void stop_winbindd(void)
+{
+	pid_t pid = pidfile_pid("winbindd");
 
+	if (geteuid() != 0) return;
+
+	if (pid <= 0) return;
+
+	kill(pid, SIGTERM);
+}
+#endif
 /* kill a specified process */
 void kill_pid(pid_t pid)
 {
