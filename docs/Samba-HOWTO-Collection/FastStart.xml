@@ -1192,7 +1192,7 @@ userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
 				</para></step>
 
 				<step><para>
-				Add the LDAP password to the <filename>secrets.tdc</filename> file so Samba can update
+				Add the LDAP password to the <filename>secrets.tdb</filename> file so Samba can update
 				the LDAP database:
 <screen>
 &rootprompt;<userinput>smbpasswd -w mordonL8</userinput>
