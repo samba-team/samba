@@ -1342,7 +1342,7 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
 {
 	fstring group_names[MAX_SAM_ENTRIES];
-	uint32 group_attrs[MAX_SAM_ENTRIES];
+	uint32 *group_attrs = NULL;
 	UNIHDR *hdr_name = NULL;
 	UNISTR2 *uni_name = NULL;
 	DOM_SID pol_sid;
@@ -1360,6 +1360,11 @@ uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP
 	if (num_rids > MAX_SAM_ENTRIES) {
 		num_rids = MAX_SAM_ENTRIES;
 		DEBUG(5,("_samr_lookup_rids: truncating entries to %d\n", num_rids));
+	}
+
+	if (num_rids) {
+		if ((group_attrs = (uint32 *)talloc(p->mem_ctx, num_rids * sizeof(uint32))) == NULL)
+			return NT_STATUS_NO_MEMORY;
 	}
 
 	r_u->status = NT_STATUS_NONE_MAPPED;
