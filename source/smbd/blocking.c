@@ -576,7 +576,7 @@ void process_blocking_lock_queue(time_t t)
     DEBUG(5,("process_blocking_lock_queue: examining pending lock fnum = %d for file %s\n",
           fsp->fnum, fsp->fsp_name ));
 
-    if((blr->expire_time != -1) && (blr->expire_time > t)) {
+    if((blr->expire_time != -1) && (blr->expire_time <= t)) {
       /*
        * Lock expired - throw away all previously
        * obtained locks and return lock error.
