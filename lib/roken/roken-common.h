@@ -260,6 +260,9 @@ SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 #endif
 
 int ROKEN_LIB_FUNCTION simple_execve(const char*, char*const[], char*const[]);
+int ROKEN_LIB_FUNCTION simple_execve_timed(const char *, char *const[], 
+					   char *const [], time_t (*)(void *), 
+					   void *, time_t);
 int ROKEN_LIB_FUNCTION simple_execvp(const char*, char *const[]);
 int ROKEN_LIB_FUNCTION simple_execvp_timed(const char *, char *const[], 
 					   time_t (*)(void *), void *, time_t);
@@ -317,6 +320,9 @@ socket_set_tos (int sock, int tos);
 
 void
 socket_set_reuseaddr (int sock, int val);
+
+void
+socket_set_no_ipsec(int sock);
 
 char **
 vstrcollect(va_list *ap);
