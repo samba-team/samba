@@ -431,11 +431,16 @@ BOOL sec_io_desc(char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 	psd = *ppsd;
 
-	if(UNMARSHALLING(ps) && psd == NULL) {
-		if((psd = (SEC_DESC *)malloc(sizeof(SEC_DESC))) == NULL)
-			return False;
-		ZERO_STRUCTP(psd);
-		*ppsd = psd;
+	if (psd == NULL) {
+		if(UNMARSHALLING(ps)) {
+			if((psd = (SEC_DESC *)malloc(sizeof(SEC_DESC))) == NULL)
+				return False;
+			ZERO_STRUCTP(psd);
+			*ppsd = psd;
+		} else {
+			/* Marshalling - just ignore. */
+			return True;
+		}
 	}
 
 	prs_debug(ps, depth, desc, "sec_io_desc");
@@ -629,7 +634,7 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int depth
 	old_offset = prs_offset(ps);
 
 	/* reading, length is non-zero; writing, descriptor is non-NULL */
-	if ((psdb->len != 0 || MARSHALLING(ps)) && psdb->sec != NULL) {
+	if ((UNMARSHALLING(ps) && psdb->len != 0) || (MARSHALLING(ps) && psdb->sec != NULL)) {
 		if(!sec_io_desc("sec   ", &psdb->sec, ps, depth))
 			return False;
 	}

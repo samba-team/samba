@@ -776,6 +776,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	  desc.subcount = count;
 	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
   } else if(uLevel == 0) {
+#if 0
 	/*
 	 * This is a *disgusting* hack.
 	 * This is *so* bad that even I'm embarrassed (and I
@@ -795,6 +796,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
  	 */
 
 	fail_next_srvsvc_open();
+#endif
   }
 
   *rdata_len = desc.usedlen;
