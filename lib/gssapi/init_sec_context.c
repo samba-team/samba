@@ -57,7 +57,7 @@ init_auth
             OM_uint32 * time_rec
            )
 {
-    OM_uint32 ret;
+    OM_uint32 ret = GSS_S_FAILURE;
     krb5_error_code kret;
     krb5_flags ap_options;
     krb5_creds this_cred, *cred;
@@ -258,7 +258,7 @@ failure:
     free (*context_handle);
     krb5_data_free (&outbuf);
     *context_handle = GSS_C_NO_CONTEXT;
-    return GSS_S_FAILURE;
+    return ret;
 }
 
 static OM_uint32
