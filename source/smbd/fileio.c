@@ -36,7 +36,7 @@ SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
   if (fsp->print_file && lp_postscript(fsp->conn->service))
     offset = 3;
 
-  seek_ret = sys_lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET);
+  seek_ret = fsp->conn->vfs_ops.lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET);
 
   if((seek_ret == -1) || (seek_ret != pos+offset)) {
     DEBUG(0,("seek_file: sys_lseek failed. Error was %s\n", strerror(errno) ));
@@ -62,7 +62,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 
 #if USE_READ_PREDICTION
   if (!fsp->can_write) {
-    ret = read_predict(fsp->fd_ptr->fd,pos,data,NULL,n);
+    ret = read_predict(fsp, fsp->fd_ptr->fd,pos,data,NULL,n);
 
     data += ret;
     n -= ret;
@@ -88,9 +88,9 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
     DEBUG(3,("read_file: Failed to seek to %.0f\n",(double)pos));
     return(ret);
   }
-  
+
   if (n > 0) {
-    readret = read(fsp->fd_ptr->fd,data,n);
+    readret = fsp->conn->vfs_ops.read(fsp->fd_ptr->fd,data,n);
     if (readret > 0) ret += readret;
   }
 
@@ -104,7 +104,6 @@ write to a file
 
 ssize_t write_file(files_struct *fsp,char *data,size_t n)
 {
-
   if (!fsp->can_write) {
     errno = EPERM;
     return(0);
@@ -113,7 +112,7 @@ ssize_t write_file(files_struct *fsp,char *data,size_t n)
   if (!fsp->modified) {
     SMB_STRUCT_STAT st;
     fsp->modified = True;
-    if (sys_fstat(fsp->fd_ptr->fd,&st) == 0) {
+    if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&st) == 0) {
       int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
       if (MAP_ARCHIVE(fsp->conn) && !IS_DOS_ARCHIVE(dosmode)) {	
         file_chmod(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st);
@@ -121,7 +120,7 @@ ssize_t write_file(files_struct *fsp,char *data,size_t n)
     }  
   }
 
-  return(write_data(fsp->fd_ptr->fd,data,n));
+  return(vfs_write_data(fsp,data,n));
 }
 
 
@@ -129,7 +128,7 @@ ssize_t write_file(files_struct *fsp,char *data,size_t n)
 sync a file
 ********************************************************************/
 
-void sync_file(connection_struct *conn, files_struct *fsp)
+void sys_sync_file(struct connection_struct *conn, files_struct *fsp)
 {
 #ifdef HAVE_FSYNC
     if(lp_strict_sync(SNUM(conn)))
