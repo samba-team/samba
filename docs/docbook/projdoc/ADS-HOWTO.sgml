@@ -11,7 +11,7 @@
 <para>
 This is a rough guide to setting up Samba 3.0 with kerberos authentication against a
 Windows2000 KDC. 
-</para>
+</para> 
 
 <sect1>
 <title>Setup your <filename>smb.conf</filename></title>
@@ -44,6 +44,8 @@ In case samba can't figure out your ads server using your realm name, use the
 <sect1>
 <title>Setup your <filename>/etc/krb5.conf</filename></title>
 
+<para>Note: you will need the krb5 workstation, devel, and libs installed</para>
+
 <para>The minimal configuration for <filename>krb5.conf</filename> is:</para>
 
 <para><programlisting>
@@ -53,10 +55,16 @@ In case samba can't figure out your ads server using your realm name, use the
     }
 </programlisting></para>
 
-<para>Test your config by doing a <userinput>kinit <replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput> and making sure that
+<para>Test your config by doing a <userinput>kinit
+<replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput> and making sure that
   your password is accepted by the Win2000 KDC. </para>
 
-<note><para>The realm must be uppercase. </para></note>
+<note><para>The realm must be uppercase or you will get "Cannot find KDC for requested
+realm while getting initial credentials" error </para></note>
+
+<note><para>Time between the two servers must be synchronized.  You will get a
+"kinit(v5): Clock skew too great while getting initial credentials" if the time
+difference is more than five minutes. </para>
 
 <para>
 You also must ensure that you can do a reverse DNS lookup on the IP
@@ -99,7 +107,15 @@ As a user that has write permission on the Samba private directory
 <para>
 <variablelist>
 <varlistentry><term>"ADS support not compiled in"</term>
-<listitem><para>Samba must be reconfigured (remove config.cache) and recompiled (make clean all install) after the kerberos libs and headers are installed.</para></listitem></varlistentry>
+<listitem><para>Samba must be reconfigured (remove config.cache) and recompiled
+(make clean all install) after the kerberos libs and headers are installed.
+</para></listitem></varlistentry>
+
+<varlistentry><term>net ads join prompts for user name</term>
+<listitem><para>You need to login to the domain using <userinput>kinit
+<replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput>.
+<replaceable>USERNAME</replaceable> must be a user who has rights to add a machine
+to the domain.  </para></listitem></varlistentry>
 </variablelist>
 </para>
 
@@ -109,6 +125,12 @@ As a user that has write permission on the Samba private directory
 
 <sect1 id="ads-test-server">
 <title>Test your server setup</title>
+
+<para>
+If the join was successful, you will see a new computer account with the
+NetBIOS name of your Samba server in Active Directory (in the "Computers"
+folder under Users and Computers.
+</para>
 
 <para>
 On a Windows 2000 client try <userinput>net use * \\server\share</userinput>. You should
@@ -135,6 +157,8 @@ specify the <parameter>-k</parameter> option to choose kerberos authentication.
 
 <para>You must change administrator password at least once after DC 
 install, to create the right encoding types</para>
+
+<!--RS: right encoding types for what?  I don't understand this note as I did not do this on my server and did not have any problems (that I know of)-->
 
 <para>w2k doesn't seem to create the _kerberos._udp and _ldap._tcp in
    their defaults DNS setup. Maybe fixed in service packs?</para>
