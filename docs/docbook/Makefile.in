@@ -194,8 +194,8 @@ $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(S
 
 $(MANPROJDOC)/smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml \
  			$(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml \
- 			xslt/expand-samabaodc.xsl
-	@$(XSLTPROC) --xinclude --output $(MANPROJDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/expand-smb.conf.xsl $(SMBDOTCONFDOC)/smb.conf.5.xml
+ 			xslt/expand-sambadoc.xsl
+	@$(XSLTPROC) --xinclude --output $(MANPROJDOC)/smb.conf.5.xml xslt/expand-sambadoc.xsl $(SMBDOTCONFDOC)/smb.conf.5.xml
 
 $(MANDIR): 
 	mkdir $(MANDIR)
