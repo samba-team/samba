@@ -480,6 +480,27 @@ static int smb_delete_user(char *unix_user)
 }
 
 /****************************************************************************
+ Check user is in correct domain if required
+****************************************************************************/
+
+static BOOL check_domain_match(char *user, char *domain) 
+{
+  /*
+   * If we aren't serving to trusted domains, we must make sure that
+   * the validation request comes from an account in the same domain
+   * as the Samba server
+   */
+
+  if (!lp_allow_trusted_domains() &&
+      !strequal(lp_workgroup(), domain) ) {
+      DEBUG(1, ("check_domain_match: Attempt to connect as user %s from domain %s denied.\n", user, domain));
+      return False;
+  } else {
+      return True;
+  }
+}
+
+/****************************************************************************
  Check for a valid username and password in security=server mode.
 ****************************************************************************/
 
@@ -491,6 +512,9 @@ static BOOL check_server_security(char *orig_user, char *domain, char *unix_user
 
   if(lp_security() != SEC_SERVER)
     return False;
+
+  if (!check_domain_match(orig_user, domain))
+     return False;
 
   ret = server_validate(orig_user, domain, 
                             smb_apasswd, smb_apasslen, 
@@ -525,6 +549,9 @@ static BOOL check_domain_security(char *orig_user, char *domain, char *unix_user
 
   if(lp_security() != SEC_DOMAIN)
     return False;
+
+  if (!check_domain_match(orig_user, domain))
+     return False;
 
   ret = domain_client_validate(orig_user, domain,
                                 smb_apasswd, smb_apasslen,

@@ -1054,6 +1054,7 @@ BOOL lp_nt_smb_support(void);
 BOOL lp_nt_pipe_support(void);
 BOOL lp_nt_acl_support(void);
 BOOL lp_stat_cache(void);
+BOOL lp_allow_trusted_domains(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);

@@ -1,4 +1,4 @@
-.TH SMB.CONF 5 "28 Feb 1999" "smb.conf 2.0.3"
+.TH "smb\&.conf " "5" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smb\&.conf \- The configuration file for the Samba suite
@@ -492,6 +492,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBadd user script\fP
+.IP 
+.IP o 
+\fBallow trusted domains\fP
 .IP 
 .IP o 
 \fBannounce as\fP
@@ -1296,6 +1299,28 @@ file permissions\&.
 .IP "\fBallow hosts (S)\fP" 
 .IP 
 Synonym for \fBhosts allow\fP\&.
+.IP 
+.IP "\fBallow trusted domains (G)\fP" 
+.IP 
+This option only takes effect when the \fBsecurity\fP
+option is set to \fBserver\fP or \fBdomain\fP\&.  If it is set to no,
+then attempts to connect to a resource from a domain or workgroup other than
+the one which smbd is running in will fail, even if that domain
+is trusted by the remote server doing the authentication\&.
+.IP 
+This is useful if you only want your Samba server to serve resources
+to users in the domain it is a member of\&. As an example, suppose that there are
+two domains DOMA and DOMB\&.  DOMB is trusted by DOMA, which contains
+the Samba server\&.  Under normal circumstances, a user with an account
+in DOMB can then access the resources of a UNIX account with the same
+account name on the Samba server even if they do not have an account
+in DOMA\&.  This can make implementing a security boundary difficult\&.
+.IP 
+\fBDefault:\fP
+\f(CW     allow trusted domains = Yes\fP
+.IP 
+\fBExample:\fP
+\f(CW     allow trusted domains = No\fP
 .IP 
 .IP "\fBalternate permissions (S)\fP" 
 .IP 

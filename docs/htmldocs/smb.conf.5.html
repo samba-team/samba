@@ -402,6 +402,7 @@ password.
 parameter for details.  Note that some are synonyms.
 <p><br><ul>
 <p><br><li > <a href="smb.conf.5.html#adduserscript"><strong>add user script</strong></a>
+<p><br><li > <a href="smb.conf.5.html#allowtrusteddomains"><strong>allow trusted domains</strong></a>
 <p><br><li > <a href="smb.conf.5.html#announceas"><strong>announce as</strong></a>
 <p><br><li > <a href="smb.conf.5.html#announceversion"><strong>announce version</strong></a>
 <p><br><li > <a href="smb.conf.5.html#autoservices"><strong>auto services</strong></a>
@@ -710,6 +711,24 @@ file permissions.
 <p><br><a name="allowhosts"></a>
 <li><strong><strong>allow hosts (S)</strong></strong>
 <p><br>Synonym for <a href="smb.conf.5.html#hostsallow"><strong>hosts allow</strong></a>.
+<p><br><a name="allowtrusteddomains"></a>
+<li><strong><strong>allow trusted domains (G)</strong></strong>
+<p><br>This option only takes effect when the <a href="smb.conf.5.html#security"><strong>security</strong></a>
+option is set to <strong>server</strong> or <strong>domain</strong>.  If it is set to no,
+then attempts to connect to a resource from a domain or workgroup other than
+the one which smbd is running in will fail, even if that domain
+is trusted by the remote server doing the authentication.
+<p><br>This is useful if you only want your Samba server to serve resources
+to users in the domain it is a member of. As an example, suppose that there are
+two domains DOMA and DOMB.  DOMB is trusted by DOMA, which contains
+the Samba server.  Under normal circumstances, a user with an account
+in DOMB can then access the resources of a UNIX account with the same
+account name on the Samba server even if they do not have an account
+in DOMA.  This can make implementing a security boundary difficult.
+<p><br><strong>Default:</strong>
+<code>     allow trusted domains = Yes</code>
+<p><br><strong>Example:</strong>
+<code>     allow trusted domains = No</code>
 <p><br><a name="alternatepermissions"></a>
 <li><strong><strong>alternate permissions (S)</strong></strong>
 <p><br>This is a deprecated parameter. It no longer has any effect in Samba2.0.

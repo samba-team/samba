@@ -237,6 +237,7 @@ typedef struct
   BOOL bNTAclSupport;
   BOOL bStatCache;
   BOOL bKernelOplocks;
+  BOOL bAllowTrustedDomains;
 } global;
 
 static global Globals;
@@ -524,6 +525,7 @@ static struct parm_struct parm_table[] =
   {"security",         P_ENUM,    P_GLOBAL, &Globals.security,          NULL,   enum_security, FLAG_BASIC},
   {"encrypt passwords",P_BOOL,    P_GLOBAL, &Globals.bEncryptPasswords, NULL,   NULL,  FLAG_BASIC},
   {"update encrypted", P_BOOL,    P_GLOBAL, &Globals.bUpdateEncrypt,    NULL,   NULL,  FLAG_BASIC},
+  {"allow trusted domains",P_BOOL,P_GLOBAL, &Globals.bAllowTrustedDomains,NULL, NULL,  0},
   {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
   {"min passwd length",     P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL,   NULL,  0},
   {"min password length",   P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL,   NULL,  0},
@@ -965,6 +967,8 @@ static void init_globals(void)
    */
   Globals.bKernelOplocks = True;
 
+  Globals.bAllowTrustedDomains = True;
+
   /*
    * This must be done last as it checks the value in 
    * client_code_page.
@@ -1209,6 +1213,7 @@ FN_GLOBAL_BOOL(lp_nt_smb_support,&Globals.bNTSmbSupport)
 FN_GLOBAL_BOOL(lp_nt_pipe_support,&Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_acl_support,&Globals.bNTAclSupport)
 FN_GLOBAL_BOOL(lp_stat_cache,&Globals.bStatCache)
+FN_GLOBAL_BOOL(lp_allow_trusted_domains,&Globals.bAllowTrustedDomains)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
