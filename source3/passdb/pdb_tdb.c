@@ -38,7 +38,7 @@ static int tdbsam_debug_level = DBGC_ALL;
 #endif
 
 #define TDBSAM_VERSION	1			/* Most recent TDBSAM version */
-#define PDB_VERSION		"20010830"
+#define TDBSAM_VERSION_STRING	"INFO/version"
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define USERPREFIX		"USER_"
 #define RIDPREFIX		"RID_"
@@ -68,7 +68,7 @@ static struct pwent_list *tdbsam_pwent_list;
 
 static BOOL tdbsam_convert(TDB_CONTEXT *pdb_tdb, tdbsamver_t from) 
 {
-	const char * vstring = "INFO/version";
+	const char * vstring = TDBSAM_VERSION_STRING;
 	SAM_ACCOUNT *user = NULL;
 	const char *prefix = USERPREFIX;
 	TDB_DATA 	data, key, old_key;
@@ -187,7 +187,8 @@ static TDB_CONTEXT * tdbsam_tdbopen (const char *name, int open_flags)
 		return NULL;
 
 	/* Check the version */
-	version = (tdbsamver_t) tdb_fetch_int32(pdb_tdb, "INFO/version");
+	version = (tdbsamver_t) tdb_fetch_int32(pdb_tdb, 
+						TDBSAM_VERSION_STRING);
 	if (version == -1)
 		version = 0;	/* Version not found, assume version 0 */
 	
