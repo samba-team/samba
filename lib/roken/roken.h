@@ -342,6 +342,10 @@ extern const char *__progname;
 
 void set_progname(char *argv0);
 
+#ifndef F_OK
+#define F_OK 0
+#endif
+
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
