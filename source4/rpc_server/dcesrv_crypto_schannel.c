@@ -111,8 +111,6 @@ static NTSTATUS dcesrv_crypto_schannel_update(struct dcesrv_auth *auth, TALLOC_C
 */
 static NTSTATUS dcesrv_crypto_schannel_session_info(struct dcesrv_auth *auth, struct auth_session_info **session_info) 
 {
-	struct srv_schannel_state *srv_schannel_state = auth->crypto_ctx.private_data;
-
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
