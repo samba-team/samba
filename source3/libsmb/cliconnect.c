@@ -920,10 +920,6 @@ BOOL cli_session_request(struct cli_state *cli,
 	_smb_setlen(cli->outbuf,len);
 	SCVAL(cli->outbuf,0,0x81);
 
-#ifdef WITH_SSL
-retry:
-#endif /* WITH_SSL */
-
 	cli_send_smb(cli);
 	DEBUG(5,("Sent session request\n"));
 
@@ -968,15 +964,6 @@ retry:
 			return ret;
 		}
 	} /* C. Hoch 9/14/95 End */
-
-#ifdef WITH_SSL
-    if (CVAL(cli->inbuf,0) == 0x83 && CVAL(cli->inbuf,4) == 0x8e){ /* use ssl */
-        if (!sslutil_fd_is_ssl(cli->fd)){
-            if (sslutil_connect(cli->fd) == 0)
-                goto retry;
-        }
-    }
-#endif /* WITH_SSL */
 
 	if (CVAL(cli->inbuf,0) != 0x82) {
                 /* This is the wrong place to put the error... JRA. */

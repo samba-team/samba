@@ -52,13 +52,6 @@
 #endif /* WITH_NISPLUS_HOME */
 #endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
-#ifdef WITH_SSL
-#include <openssl/ssl.h>
-#undef Realloc  /* SSLeay defines this and samba has a function of this name */
-extern SSL  *ssl;
-extern int  sslFd;
-#endif  /* WITH_SSL */
-
 int Protocol = PROTOCOL_COREPLUS;
 
 /* a default finfo structure to ensure all fields are sensible */

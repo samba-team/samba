@@ -782,15 +782,6 @@ static void usage(char *pname)
 	}
 #endif
 
-#ifdef WITH_SSL
-	{
-		extern BOOL sslEnabled;
-		sslEnabled = lp_ssl_enabled();
-		if(sslEnabled)
-			sslutil_init(True);
-	}
-#endif        /* WITH_SSL */
-
 	fstrcpy(global_myworkgroup, lp_workgroup());
 
 	DEBUG(3,( "loaded services\n"));

@@ -829,10 +829,6 @@ set. Ignoring max smbd restriction.\n"));
 ****************************************************************************/
 void process_smb(char *inbuf, char *outbuf)
 {
-#ifdef WITH_SSL
-  extern BOOL sslEnabled;     /* don't use function for performance reasons */
-  static int sslConnected = 0;
-#endif /* WITH_SSL */
   static int trans_num;
   int msg_type = CVAL(inbuf,0);
   int32 len = smb_len(inbuf);
@@ -859,18 +855,6 @@ void process_smb(char *inbuf, char *outbuf)
 
   DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type, len ) );
   DEBUG( 3, ( "Transaction %d of length %d\n", trans_num, nread ) );
-
-#ifdef WITH_SSL
-    if(sslEnabled && !sslConnected){
-        sslConnected = sslutil_negotiate_ssl(smbd_server_fd(), msg_type);
-        if(sslConnected < 0){   /* an error occured */
-            exit_server("SSL negotiation failed");
-        }else if(sslConnected){
-            trans_num++;
-            return;
-        }
-    }
-#endif  /* WITH_SSL */
 
   if (msg_type == 0)
     show_msg(inbuf);

@@ -21,13 +21,6 @@
 
 #include "includes.h"
 
-#ifdef WITH_SSL
-#include <openssl/ssl.h>
-#undef Realloc  /* SSLeay defines this and samba has a function of this name */
-extern SSL  *ssl;
-extern int  sslFd;
-#endif  /* WITH_SSL */
-
 /* the last IP received from */
 struct in_addr lastip;
 
@@ -243,15 +236,7 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
 		if (mincnt == 0) mincnt = maxcnt;
 		
 		while (nread < mincnt) {
-#ifdef WITH_SSL
-			if (fd == sslFd) {
-				readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-			} else {
-				readret = sys_read(fd, buf + nread, maxcnt - nread);
-			}
-#else /* WITH_SSL */
 			readret = sys_read(fd, buf + nread, maxcnt - nread);
-#endif /* WITH_SSL */
 			
 			if (readret == 0) {
 				DEBUG(5,("read_socket_with_timeout: blocking read. EOF from client.\n"));
@@ -300,15 +285,7 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
 			return -1;
 		}
 		
-#ifdef WITH_SSL
-		if (fd == sslFd) {
-			readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-		}else{
-			readret = sys_read(fd, buf + nread, maxcnt - nread);
-		}
-#else /* WITH_SSL */
 		readret = sys_read(fd, buf+nread, maxcnt-nread);
-#endif /* WITH_SSL */
 		
 		if (readret == 0) {
 			/* we got EOF on the file descriptor */
@@ -353,15 +330,7 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 		if (mincnt == 0) mincnt = maxcnt;
 		
 		while (nread < mincnt) {
-#ifdef WITH_SSL
-			if(fd == sslFd){
-				readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-			}else{
-				readret = sys_read(fd, buf + nread, maxcnt - nread);
-			}
-#else /* WITH_SSL */
 			readret = sys_read(fd, buf + nread, maxcnt - nread);
-#endif /* WITH_SSL */
 			
 			if (readret <= 0)
 				return readret;
@@ -383,15 +352,7 @@ ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 		if(selrtn <= 0)
 			return selrtn;
 		
-#ifdef WITH_SSL
-		if(fd == sslFd){
-			readret = SSL_read(ssl, buf + nread, maxcnt - nread);
-		}else{
-			readret = sys_read(fd, buf + nread, maxcnt - nread);
-		}
-#else /* WITH_SSL */
 		readret = sys_read(fd, buf+nread, maxcnt-nread);
-#endif /* WITH_SSL */
 		
 		if (readret <= 0)
 			return readret;
@@ -429,15 +390,7 @@ ssize_t read_data(int fd,char *buffer,size_t N)
 	smb_read_error = 0;
 
 	while (total < N) {
-#ifdef WITH_SSL
-		if(fd == sslFd){
-			ret = SSL_read(ssl, buffer + total, N - total);
-		}else{
-			ret = sys_read(fd,buffer + total,N - total);
-		}
-#else /* WITH_SSL */
 		ret = sys_read(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
 
 		if (ret == 0) {
 			DEBUG(10,("read_data: read of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
@@ -467,15 +420,7 @@ static ssize_t read_socket_data(int fd,char *buffer,size_t N)
 	smb_read_error = 0;
 
 	while (total < N) {
-#ifdef WITH_SSL
-		if(fd == sslFd){
-			ret = SSL_read(ssl, buffer + total, N - total);
-		}else{
-			ret = sys_read(fd,buffer + total,N - total);
-    }
-#else /* WITH_SSL */
 		ret = sys_read(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
 
 		if (ret == 0) {
 			DEBUG(10,("read_socket_data: recv of %d returned 0. Error = %s\n", (int)(N - total), strerror(errno) ));
@@ -503,15 +448,7 @@ ssize_t write_data(int fd,char *buffer,size_t N)
 	ssize_t ret;
 
 	while (total < N) {
-#ifdef WITH_SSL
-		if(fd == sslFd){
-			ret = SSL_write(ssl,buffer + total,N - total);
-		}else{
-			ret = sys_write(fd,buffer + total,N - total);
-		}
-#else /* WITH_SSL */
 		ret = sys_write(fd,buffer + total,N - total);
-#endif /* WITH_SSL */
 
 		if (ret == -1) {
 			DEBUG(0,("write_data: write failure. Error = %s\n", strerror(errno) ));
@@ -535,15 +472,7 @@ ssize_t write_socket_data(int fd,char *buffer,size_t N)
 	ssize_t ret;
 
 	while (total < N) {
-#ifdef WITH_SSL
-		if(fd == sslFd){
-			ret = SSL_write(ssl,buffer + total,N - total);
-		}else{
-			ret = sys_send(fd,buffer + total,N - total, 0);
-    }
-#else /* WITH_SSL */
 		ret = sys_send(fd,buffer + total,N - total,0);
-#endif /* WITH_SSL */
 
 		if (ret == -1) {
 			DEBUG(0,("write_socket_data: write failure. Error = %s\n", strerror(errno) ));

@@ -1346,11 +1346,6 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};
 
-#ifdef WITH_SSL
-/* SSL version options */
-enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
-#endif /* WITH_SSL */
-
 /*
  * Global value meaing that the smb_uid field should be
  * ingored (in share level security and protocol level == CORE)

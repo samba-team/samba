@@ -113,12 +113,6 @@ void build_options(BOOL screen)
 #ifdef WITH_NISPLUS_HOME
        output(screen,"   WITH_NISPLUS_HOME\n");
 #endif
-#ifdef WITH_SSL
-       output(screen,"   WITH_SSL\n");
-#endif
-#ifdef SSL_DIR
-       output(screen,"   SSL_DIR: %s\n",SSL_DIR);
-#endif
 #ifdef WITH_SYSLOG
        output(screen,"   WITH_SYSLOG\n");
 #endif

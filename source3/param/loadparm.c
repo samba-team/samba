@@ -212,25 +212,6 @@ typedef struct
 	char *szLdapFilter;
 	char *szLdapAdminDn;
 #endif				/* WITH_LDAP_SAM */
-#ifdef WITH_SSL
-	int sslVersion;
-	char **sslHostsRequire;
-	char **sslHostsResign;
-	char *sslCaCertDir;
-	char *sslCaCertFile;
-	char *sslServerCert;
-	char *sslServerPrivKey;
-	char *sslClientCert;
-	char *sslClientPrivKey;
-	char *sslCiphers;
-	char *sslEgdSocket;
-	char *sslEntropyFile;
-	int  sslEntropyBytes;
-	BOOL sslEnabled;
-	BOOL sslReqClientCert;
-	BOOL sslReqServerCert;
-	BOOL sslCompatibility;
-#endif				/* WITH_SSL */
 	BOOL bMsAddPrinterWizard;
 	BOOL bDNSproxy;
 	BOOL bWINSsupport;
@@ -679,16 +660,6 @@ static struct enum_list enum_map_to_guest[] = {
 	{-1, NULL}
 };
 
-#ifdef WITH_SSL
-static struct enum_list enum_ssl_version[] = {
-	{SMB_SSL_V2, "ssl2"},
-	{SMB_SSL_V3, "ssl3"},
-	{SMB_SSL_V23, "ssl2or3"},
-	{SMB_SSL_TLS1, "tls1"},
-	{-1, NULL}
-};
-#endif
-
 /* note that we do not initialise the defaults union - it is not allowed in ANSI C */
 static struct parm_struct parm_table[] = {
 	{"Base Options", P_SEP, P_SEPARATOR},
@@ -788,28 +759,6 @@ static struct parm_struct parm_table[] = {
 	{"allow hosts", P_LIST, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, 0},
 	{"hosts deny", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
 	{"deny hosts", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, 0},
-
-#ifdef WITH_SSL
-	{"Secure Socket Layer Options", P_SEP, P_SEPARATOR},
-	{"ssl", P_BOOL, P_GLOBAL, &Globals.sslEnabled, NULL, NULL, 0},
-	
-	{"ssl hosts", P_LIST, P_GLOBAL, &Globals.sslHostsRequire, NULL, NULL, 0},
-	{"ssl hosts resign", P_LIST, P_GLOBAL, &Globals.sslHostsResign, NULL, NULL, 0},
-	{"ssl CA certDir", P_STRING, P_GLOBAL, &Globals.sslCaCertDir, NULL, NULL, 0},
-	{"ssl CA certFile", P_STRING, P_GLOBAL, &Globals.sslCaCertFile, NULL, NULL, 0},
-	{"ssl server cert", P_STRING, P_GLOBAL, &Globals.sslServerCert, NULL, NULL, 0},
-	{"ssl server key", P_STRING, P_GLOBAL, &Globals.sslServerPrivKey, NULL, NULL, 0},
-	{"ssl client cert", P_STRING, P_GLOBAL, &Globals.sslClientCert, NULL, NULL, 0},
-	{"ssl client key", P_STRING, P_GLOBAL, &Globals.sslClientPrivKey, NULL, NULL, 0},
-	{"ssl egd socket", P_STRING, P_GLOBAL, &Globals.sslEgdSocket, NULL, NULL, 0},
-	{"ssl entropy file", P_STRING, P_GLOBAL, &Globals.sslEntropyFile, NULL, NULL, 0},
-	{"ssl entropy bytes", P_INTEGER, P_GLOBAL, &Globals.sslEntropyBytes, NULL, NULL, 0},
-	{"ssl require clientcert", P_BOOL, P_GLOBAL, &Globals.sslReqClientCert, NULL, NULL, 0},
-	{"ssl require servercert", P_BOOL, P_GLOBAL, &Globals.sslReqServerCert, NULL, NULL, 0},
-	{"ssl ciphers", P_STRING, P_GLOBAL, &Globals.sslCiphers, NULL, NULL, 0},
-	{"ssl version", P_ENUM, P_GLOBAL, &Globals.sslVersion, NULL, enum_ssl_version, 0},
-	{"ssl compatibility", P_BOOL, P_GLOBAL, &Globals.sslCompatibility, NULL, NULL, 0},
-#endif /* WITH_SSL */
 
 	{"Logging Options", P_SEP, P_SEPARATOR},
 
@@ -1376,26 +1325,6 @@ static void init_globals(void)
 	Globals.ldap_ssl = LDAP_SSL_ON;
 #endif /* WITH_LDAP_SAM */
 
-#ifdef WITH_SSL
-	Globals.sslVersion = SMB_SSL_V23;
-	/* Globals.sslHostsRequire = NULL;
-	Globals.sslHostsResign = NULL; */
-	string_set(&Globals.sslCaCertDir, "");
-	string_set(&Globals.sslCaCertFile, "");
-	string_set(&Globals.sslServerCert, "");
-	string_set(&Globals.sslServerPrivKey, "");
-	string_set(&Globals.sslClientCert, "");
-	string_set(&Globals.sslClientPrivKey, "");
-	string_set(&Globals.sslCiphers, "");
-	string_set(&Globals.sslEgdSocket, "");
-	string_set(&Globals.sslEntropyFile, "");
-	Globals.sslEntropyBytes = 256;
-	Globals.sslEnabled = False;
-	Globals.sslReqClientCert = False;
-	Globals.sslReqServerCert = False;
-	Globals.sslCompatibility = False;
-#endif /* WITH_SSL */
-
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
 
@@ -1602,26 +1531,6 @@ FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
-
-#ifdef WITH_SSL
-FN_GLOBAL_INTEGER(lp_ssl_version, &Globals.sslVersion)
-FN_GLOBAL_LIST(lp_ssl_hosts, &Globals.sslHostsRequire)
-FN_GLOBAL_LIST(lp_ssl_hosts_resign, &Globals.sslHostsResign)
-FN_GLOBAL_STRING(lp_ssl_cacertdir, &Globals.sslCaCertDir)
-FN_GLOBAL_STRING(lp_ssl_cacertfile, &Globals.sslCaCertFile)
-FN_GLOBAL_STRING(lp_ssl_server_cert, &Globals.sslServerCert)
-FN_GLOBAL_STRING(lp_ssl_server_privkey, &Globals.sslServerPrivKey)
-FN_GLOBAL_STRING(lp_ssl_client_cert, &Globals.sslClientCert)
-FN_GLOBAL_STRING(lp_ssl_client_privkey, &Globals.sslClientPrivKey)
-FN_GLOBAL_STRING(lp_ssl_ciphers, &Globals.sslCiphers)
-FN_GLOBAL_STRING(lp_ssl_egdsocket, &Globals.sslEgdSocket)
-FN_GLOBAL_STRING(lp_ssl_entropyfile, &Globals.sslEntropyFile)
-FN_GLOBAL_INTEGER(lp_ssl_entropybytes, &Globals.sslEntropyBytes)
-FN_GLOBAL_BOOL(lp_ssl_enabled, &Globals.sslEnabled)
-FN_GLOBAL_BOOL(lp_ssl_reqClientCert, &Globals.sslReqClientCert)
-FN_GLOBAL_BOOL(lp_ssl_reqServerCert, &Globals.sslReqServerCert)
-FN_GLOBAL_BOOL(lp_ssl_compatibility, &Globals.sslCompatibility)
-#endif /* WITH_SSL */
 
 FN_GLOBAL_BOOL(lp_ms_add_printer_wizard, &Globals.bMsAddPrinterWizard)
 FN_GLOBAL_BOOL(lp_dns_proxy, &Globals.bDNSproxy)
