@@ -72,10 +72,16 @@ find a conn given a cnum
 ****************************************************************************/
 connection_struct *conn_find(int cnum)
 {
+	int count=0;
 	connection_struct *conn;
 
-	for (conn=Connections;conn;conn=conn->next) {
-		if (conn->cnum == cnum) return conn;
+	for (conn=Connections;conn;conn=conn->next,count++) {
+		if (conn->cnum == cnum) {
+			if (count > 10) {
+				DLIST_PROMOTE(Connections, conn);
+			}
+			return conn;
+		}
 	}
 
 	return NULL;
@@ -114,14 +120,7 @@ connection_struct *conn_new(void)
 	string_init(&conn->connectpath,"");
 	string_init(&conn->origpath,"");
 	
-	/* hook into the front of the list */
-	if (!Connections) {
-		Connections = conn;
-	} else {
-		Connections->prev = conn;
-		conn->next = Connections;
-		Connections = conn;
-	}
+	DLIST_ADD(Connections, conn);
 
 	return conn;
 }
@@ -165,13 +164,7 @@ free a conn structure
 ****************************************************************************/
 void conn_free(connection_struct *conn)
 {
-	if (conn == Connections) {
-		Connections = conn->next;
-		if (Connections) Connections->prev = NULL;
-	} else {
-		conn->prev->next = conn->next;
-		if (conn->next) conn->next->prev = conn->prev;
-	}
+	DLIST_REMOVE(Connections, conn);
 
 	if (conn->ngroups && conn->groups) {
 		free(conn->groups);

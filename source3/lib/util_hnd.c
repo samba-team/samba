@@ -124,14 +124,7 @@ BOOL open_lsa_policy_hnd(POLICY_HND *hnd)
 
 	bitmap_set(bmap, i);
 
-	/* hook into the front of the list */
-	if (!Policy) {
-		Policy = p;
-	} else {
-		Policy->prev = p;
-		p->next = Policy;
-		Policy = p;
-	}
+	DLIST_ADD(Policy, p);
 	
 	DEBUG(4,("Opened policy hnd[%x] ", i));
 	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
@@ -303,13 +296,7 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd)
 
 	DEBUG(3,("Closed policy name pnum=%x\n",  p->pnum));
 
-	if (p == Policy) {
-		Policy = p->next;
-		if (Policy) Policy->prev = NULL;
-	} else {
-		p->prev->next = p->next;
-		if (p->next) p->next->prev = p->prev;
-	}
+	DLIST_REMOVE(Policy, p);
 
 	bitmap_clear(bmap, p->pnum);
 

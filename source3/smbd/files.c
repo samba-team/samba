@@ -100,14 +100,7 @@ files_struct *file_new(void )
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
 	string_init(&fsp->fsp_name,"");
 	
-	/* hook into the front of the list */
-	if (!Files) {
-		Files = fsp;
-	} else {
-		Files->prev = fsp;
-		fsp->next = Files;
-		Files = fsp;
-	}
+	DLIST_ADD(Files, fsp);
 
 	DEBUG(5,("allocated file structure %d (%d used)\n",
 		 i, files_used));
@@ -180,14 +173,7 @@ file_fd_struct *fd_get_new(void)
 	bitmap_set(fd_bmap, i);
 	fd_ptr_used++;
 
-	/* hook into the front of the list */
-	if (!FileFd) {
-		FileFd = fd_ptr;
-	} else {
-		FileFd->prev = fd_ptr;
-		fd_ptr->next = FileFd;
-		FileFd = fd_ptr;
-	}
+	DLIST_ADD(FileFd, fd_ptr);
 
 	DEBUG(5,("allocated fd_ptr structure %d (%d used)\n",
 		 i, fd_ptr_used));
@@ -269,14 +255,18 @@ find a fsp given a device, inode and timevalue
 ****************************************************************************/
 files_struct *file_find_dit(int dev, int inode, struct timeval *tval)
 {
+	int count=0;
 	files_struct *fsp;
 
-	for (fsp=Files;fsp;fsp=fsp->next) {
+	for (fsp=Files;fsp;fsp=fsp->next,count++) {
 		if (fsp->open && 
 		    fsp->fd_ptr->dev == dev && 
 		    fsp->fd_ptr->inode == inode &&
 		    fsp->open_time.tv_sec == tval->tv_sec &&
 		    fsp->open_time.tv_usec == tval->tv_usec) {
+			if (count > 10) {
+				DLIST_PROMOTE(Files, fsp);
+			}
 			return fsp;
 		}
 	}
@@ -320,13 +310,7 @@ free up a fd_ptr
 ****************************************************************************/
 static void fd_ptr_free(file_fd_struct *fd_ptr)
 {
-	if (fd_ptr == FileFd) {
-		FileFd = fd_ptr->next;
-		if (FileFd) FileFd->prev = NULL;
-	} else {
-		fd_ptr->prev->next = fd_ptr->next;
-		if (fd_ptr->next) fd_ptr->next->prev = fd_ptr->prev;
-	}
+	DLIST_REMOVE(FileFd, fd_ptr);
 
 	bitmap_clear(fd_bmap, fd_ptr->fdnum);
 	fd_ptr_used--;
@@ -346,13 +330,7 @@ free up a fsp
 ****************************************************************************/
 void file_free(files_struct *fsp)
 {
-	if (fsp == Files) {
-		Files = fsp->next;
-		if (Files) Files->prev = NULL;
-	} else {
-		fsp->prev->next = fsp->next;
-		if (fsp->next) fsp->next->prev = fsp->prev;
-	}
+	DLIST_REMOVE(Files, fsp);
 
 	string_free(&fsp->fsp_name);
 
@@ -381,16 +359,19 @@ get a fsp from a packet given the offset of a 16 bit fnum
 ****************************************************************************/
 files_struct *file_fsp(char *buf, int where)
 {
-	int fnum;
+	int fnum, count=0;
 	files_struct *fsp;
 
 	if (chain_fsp) return chain_fsp;
 
 	fnum = SVAL(buf, where);
 
-	for (fsp=Files;fsp;fsp=fsp->next) {
+	for (fsp=Files;fsp;fsp=fsp->next, count++) {
 		if (fsp->fnum == fnum) {
 			chain_fsp = fsp;
+			if (count > 10) {
+				DLIST_PROMOTE(Files, fsp);
+			}
 			return fsp;
 		}
 	}
