@@ -40,10 +40,13 @@ static int pipes_open;
  * writers more than I hate the Windows spooler service driver
  * writers. This gets around a combination of bugs in the spooler
  * and the HP 8500 PCL driver that causes a spooler spin. JRA.
+ *
+ * bumped up from 20 -> 64 after viewing traffic from WordPerfect 
+ * 2002 running on NT 4.- SP6
  */
 
 #ifndef MAX_OPEN_SPOOLSS_PIPES
-#define MAX_OPEN_SPOOLSS_PIPES 20
+#define MAX_OPEN_SPOOLSS_PIPES 64
 #endif
 static int current_spoolss_pipes_open;
 
