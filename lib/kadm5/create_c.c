@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -51,21 +51,28 @@ kadm5_c_create_principal(void *server_handle,
     krb5_storage *sp;
     unsigned char buf[1024];
     int32_t tmp;
+    krb5_data reply;
 
     sp = krb5_storage_from_mem(buf, sizeof(buf));
+    if (sp == NULL)
+	return ENOMEM;
     krb5_store_int32(sp, kadm_create);
     kadm5_store_principal_ent(sp, princ);
     krb5_store_int32(sp, mask);
     krb5_store_string(sp, password);
     ret = _kadm5_client_send(context, sp);
-    sp->seek(sp, SEEK_SET, 0);
-    ret = _kadm5_client_recv(context, sp);
-    if(ret)
-	goto out;
-    krb5_ret_int32(sp, &tmp);
-    ret = tmp;
-out:
     krb5_storage_free(sp);
-    return ret;
+    ret = _kadm5_client_recv(context, &reply);
+    if(ret)
+	return ret;
+    sp = krb5_storage_from_data (&reply);
+    if (sp == NULL) {
+	krb5_data_free (&reply);
+	return ENOMEM;
+    }
+    krb5_ret_int32(sp, &tmp);
+    krb5_storage_free(sp);
+    krb5_data_free (&reply);
+    return tmp;
 }
 
