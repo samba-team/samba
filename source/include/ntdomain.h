@@ -143,7 +143,6 @@ typedef struct _input_data {
 struct policy
 {
     struct policy *next, *prev;
-    struct pipes_struct *p;
 
     POLICY_HND pol_hnd;
 
