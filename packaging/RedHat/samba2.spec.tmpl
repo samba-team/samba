@@ -102,7 +102,7 @@ do
 done
 
 # Install secure binary files
-for i in smbd nmbd swat smbmount smbumount debug2html winbindd wrepld
+for i in smbd nmbd swat smbmount smbumount debug2html winbindd 
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/sbin
 done
@@ -374,7 +374,6 @@ fi
 %{prefix}/sbin/smbmount
 %{prefix}/sbin/smbumount
 %{prefix}/sbin/winbindd
-%{prefix}/sbin/wrepld
 %{prefix}/sbin/samba
 %{prefix}/sbin/debug2html
 /sbin/mount.smbfs
