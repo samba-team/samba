@@ -759,7 +759,7 @@ static BOOL lookup_remote_ntname(const char *ntdomain,
 
 	DEBUG(5, ("lookup_remote_ntname: %s\n", ntname));
 
-	if (!get_any_dc_name(ntname, srv_name))
+	if (!get_any_dc_name(ntdomain, srv_name))
 	{
 		return False;
 	}
@@ -995,7 +995,7 @@ BOOL lookupsmbpwntnam(const char *fullntname, DOM_NAME_MAP * gmep)
 		}
 		gmep->unix_id = (uint32)uid;
 
-		return get_sid_and_type(nt_name, nt_domain, gmep->type, gmep);
+		return get_sid_and_type(nt_domain, nt_name, gmep->type, gmep);
 	}
 
 	/* oops. */
