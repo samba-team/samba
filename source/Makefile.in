@@ -619,15 +619,15 @@ bin/smbw_sample: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBW_OBJ) utils/smbw_sample.o $(LDFLAGS) $(LIBS)
 
-@WRAPPROG@: $(SMBSH_OBJ) bin/.dummy
+bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
 
-@WRAP@: $(PICOBJS)
+smbwrapper.@SHLIBEXT@: $(PICOBJS)
 	@echo Linking shared library bin/$@
 	@$(SHLD) @LDSHFLAGS@ -o bin/$@ $(PICOBJS) $(LIBS)
 
-@WRAP32@: $(PICOBJS32)
+smbwrapper.32.@SHLIBEXT@: $(PICOBJS32)
 	@echo Linking shared library bin/$@
 	@$(SHLD) -32 @LDSHFLAGS@ -o bin/$@ $(PICOBJS32) $(LIBS)
 
