@@ -19,7 +19,6 @@ my $netbiosname;
 my $dnsname;
 my $basedn;
 my $defaultsite = "Default-First-Site-Name";
-my $joinpass = randpass();
 my $usn = 1;
 
 # return the current NTTIME as an integer
@@ -44,7 +43,8 @@ sub randguid()
 }
 
 my $opt_domainguid = randguid();
-my $hostguid = randguid();
+my $opt_hostguid = randguid();
+my $opt_invocationid = randguid();
 
 sub randsid()
 {
@@ -65,6 +65,8 @@ sub randpass()
 	}
 	return $pass;
 }
+
+my $joinpass = randpass();
 
 sub ldaptime()
 {
@@ -132,7 +134,11 @@ sub substitute($)
 	}
 
 	if ($var eq "HOSTGUID") {
-		return $hostguid;
+		return $opt_hostguid;
+	}
+
+	if ($var eq "INVOCATIONID") {
+		return $opt_invocationid;
 	}
 
 	if ($var eq "DEFAULTSITE") {
@@ -243,15 +249,19 @@ sub ShowHelp()
 Samba4 provisioning
 
 provision.pl [options]
-  --realm     REALM        set realm
-  --domain    DOMAIN       set domain
-  --hostname  HOSTNAME     set hostname
-  --hostip    IPADDRESS    set ipaddress
-  --adminpass PASSWORD     choose admin password (otherwise random)
-  --nobody    USERNAME     choose 'nobody' user
-  --nogroup   GROUPNAME    choose 'nogroup' group
-  --wheel     GROUPNAME    choose 'wheel' privileged group
-  --users     GROUPNAME    choose 'users' group
+ --realm	REALM		set realm
+ --domain	DOMAIN		set domain
+ --domain-guid	GUID		set domainguid (otherwise random)
+ --domain-sid	SID		set domainsid (otherwise random)
+ --host-name	HOSTNAME	set hostname
+ --host-ip	IPADDRESS	set ipaddress
+ --host-guid	GUID		set hostguid (otherwise random)
+ --invocationid	GUID		set invocationid (otherwise random)
+ --adminpass	PASSWORD	choose admin password (otherwise random)
+ --nobody	USERNAME	choose 'nobody' user
+ --nogroup	GROUPNAME	choose 'nogroup' group
+ --wheel	GROUPNAME	choose 'wheel' privileged group
+ --users	GROUPNAME	choose 'users' group
 
 You must provide at least a realm and domain
 
@@ -267,8 +277,10 @@ GetOptions(
 	    'domain=s' => \$opt_domain,
 	    'domain-guid=s' => \$opt_domainguid,
 	    'domain-sid=s' => \$opt_domainsid,
-	    'hostname=s' => \$opt_hostname,
-	    'hostip=s' => \$opt_hostip,
+	    'host-name=s' => \$opt_hostname,
+	    'host-ip=s' => \$opt_hostip,
+	    'host-guid=s' => \$opt_hostguid,
+	    'invocationid=s' => \$opt_invocationid,
 	    'adminpass=s' => \$opt_adminpass,
 	    'nobody=s' => \$opt_nobody,
 	    'nogroup=s' => \$opt_nogroup,
