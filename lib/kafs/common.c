@@ -184,10 +184,12 @@ find_cells(char *file, char ***cells, int *index)
     if (f == NULL)
 	return;
     while (fgets(cell, sizeof(cell), f)) {
-	char *nl = strchr(cell, '\n');
-	if (nl)
-	    *nl = '\0';
-	if (cell[0] == '\0')
+	char *t;
+	t = cell + strlen(cell);
+	for (; t >= cell; t--)
+	  if (*t == '\n' || *t == '\t' || *t == ' ')
+	    *t = 0;
+	if (cell[0] == '\0' || cell[0] == '#')
 	    continue;
 	for(i = 0; i < ind; i++)
 	    if(strcmp((*cells)[i], cell) == 0)
