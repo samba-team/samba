@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -72,7 +72,7 @@ krb5_build_ap_req (krb5_context context,
   ap.authenticator.cipher = authenticator;
 
   retdata->length = length_AP_REQ(&ap);
-  retdata->data = malloc(retdata->length);
+  retdata->data   = malloc(retdata->length);
   if(retdata->data == NULL)
       ret = ENOMEM;
   else
