@@ -902,7 +902,14 @@ BOOL cli_session_request(struct cli_state *cli,
 	name_mangle(cli->calling.name, p, cli->calling.name_type);
 	len += name_len(p);
 
-	/* setup the packet length */
+        /* setup the packet length
+         * Remove four bytes from the length count, since the length
+         * field in the NBT Session Service header counts the number
+         * of bytes which follow.  The cli_send_smb() function knows
+         * about this and accounts for those four bytes.
+         * CRH.
+         */
+        len -= 4;
 	_smb_setlen(cli->outbuf,len);
 	SCVAL(cli->outbuf,0,0x81);
 
