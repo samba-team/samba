@@ -17,16 +17,9 @@ krb5_mk_safe(krb5_context context,
   size_t len;
   unsigned tmp_seq;
 
-  r = krb5_create_checksum (context,
-			    auth_context->cksumtype,
-			    userdata->data,
-			    userdata->length,
-			    &s.cksum);
-  if (r)
-    return r;
-
   s.pvno = 5;
   s.msg_type = krb_safe;
+
   s.safe_body.user_data = *userdata;
   gettimeofday (&tv, NULL);
   usec = tv.tv_usec;
@@ -41,9 +34,31 @@ krb5_mk_safe(krb5_context context,
   s.safe_body.s_address = auth_context->local_address;
   s.safe_body.r_address = auth_context->remote_address;
 
+  s.cksum.cksumtype       = 0;
+  s.cksum.checksum.data   = NULL;
+  s.cksum.checksum.length = 0;
+
+  r = encode_KRB_SAFE (buf + sizeof(buf) - 1,
+		       sizeof(buf),
+		       &s,
+		       &len);
+
+  if (r)
+    return r;
+
+  r = krb5_create_checksum (context,
+			    auth_context->cksumtype,
+			    buf + sizeof(buf) - len,
+			    len,
+			    &auth_context->key,
+			    &s.cksum);
+  if (r)
+    return r;
+
   r = encode_KRB_SAFE (buf + sizeof(buf) - 1, sizeof(buf), &s, &len);
   if (r)
     return r;
+
   outbuf->length = len;
   outbuf->data   = malloc (len);
   if (outbuf->data == NULL)

@@ -25,7 +25,7 @@ krb5_rd_safe(krb5_context context,
       goto failure;
   }
   /* XXX - checksum collision-proff and keyed */
-  if (safe.cksum.cksumtype != CKSUMTYPE_RSA_MD4) {
+  if (safe.cksum.cksumtype != CKSUMTYPE_RSA_MD5_DES) {
       r = KRB5KRB_AP_ERR_INAPP_CKSUM;
       goto failure;
   }
@@ -74,12 +74,31 @@ krb5_rd_safe(krb5_context context,
       }
   }
 
-  r = krb5_verify_checksum (context,
-			    safe.safe_body.user_data.data,
-			    safe.safe_body.user_data.length,
-			    &safe.cksum);
-  if (r)
-      goto failure;
+  {
+      u_char buf[1024];
+      size_t len;
+      Checksum c;
+
+      copy_Checksum (&safe.cksum, &c);
+      
+      safe.cksum.cksumtype       = 0;
+      safe.cksum.checksum.data   = NULL;
+      safe.cksum.checksum.length = 0;
+
+      encode_KRB_SAFE (buf + sizeof(buf) - 1,
+		       sizeof(buf),
+		       &safe,
+		       &len);
+
+      r = krb5_verify_checksum (context,
+				buf + sizeof(buf) - len,
+				len,
+				&auth_context->key,
+				&c);
+      free_Checksum (&c);
+      if (r)
+	  goto failure;
+  }
   outbuf->length = safe.safe_body.user_data.length;
   outbuf->data   = malloc(outbuf->length);
   if (outbuf->data == NULL) {
