@@ -112,7 +112,7 @@ static NTSTATUS enum_privileges( TALLOC_CTX *ctx, struct cli_state *cli,
 	/* Print results */
 	
 	for (i = 0; i < count; i++) {
-		d_printf("%30s  ", privs_name[i] ? privs_name[i] : "*unknown*" );
+		d_printf("%34s  ", privs_name[i] ? privs_name[i] : "*unknown*" );
 		
 		/* try to get the description */
 		

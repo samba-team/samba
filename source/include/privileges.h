@@ -6,7 +6,7 @@
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
    Copyright (C) Simo Sorce 2003
-   Copyright (C) Gerald (Jerry) Carter 2004
+   Copyright (C) Gerald (Jerry) Carter 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -57,6 +57,7 @@ typedef struct {
 #define SE_ADD_USERS			{ { 0x00000040, 0x00000000, 0x00000000, 0x00000000 } }
 #define SE_DISK_OPERATOR		{ { 0x00000080, 0x00000000, 0x00000000, 0x00000000 } }
 #define SE_REMOTE_SHUTDOWN		{ { 0x00000100, 0x00000000, 0x00000000, 0x00000000 } }
+#define SE_BACKUP			{ { 0x00000200, 0x00000000, 0x00000000, 0x00000000 } }
 
 /* defined in lib/privilegs.c */
 
