@@ -82,8 +82,6 @@ static BOOL abort_mget = True;
 
 static pstring fileselection = "";
 
-extern file_info def_finfo;
-
 /* timing globals */
 SMB_BIG_UINT get_total_size = 0;
 unsigned int get_total_time_ms = 0;

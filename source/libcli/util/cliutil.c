@@ -24,9 +24,6 @@
  Functions nicked from lib/util.c needed by client.
 *******************************************************************/
 
-/* a default finfo structure to ensure all fields are sensible */
-file_info def_finfo = {-1,0,0,0,0,0,0,"",""};
-
 /*******************************************************************
  A wrapper that handles case sensitivity and the special handling
  of the ".." name.

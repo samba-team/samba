@@ -109,7 +109,6 @@ static char **cliplist=NULL;
 static int clipn=0;
 static BOOL must_free_cliplist = False;
 
-extern file_info def_finfo;
 extern BOOL lowercase;
 extern uint16 cnum;
 extern BOOL readbraw_supported;
@@ -624,14 +623,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     finfo.name  = finfo1 -> name;
   }
   else {
-    finfo.size  = def_finfo.size;
-    finfo.mode  = def_finfo.mode;
-    finfo.uid   = def_finfo.uid;
-    finfo.gid   = def_finfo.gid;
-    finfo.mtime = def_finfo.mtime;
-    finfo.atime = def_finfo.atime;
-    finfo.ctime = def_finfo.ctime;
-    finfo.name  = def_finfo.name;
+	  ZERO_STRUCT(finfo);
   }
 
   if (dry_run)
