@@ -734,7 +734,10 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	}
 	
 	/* see if the passdb can help us with the name of the user */
+
+	become_root();
 	if (pdb_getsampwsid(sam_account, sid)) {
+		unbecome_root();
 		fstrcpy(name, pdb_get_username(sam_account));
 		*psid_name_use = SID_NAME_USER;
 
@@ -742,7 +745,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 			
 		return True;
 	}
-
+	unbecome_root();
 	pdb_free_sam(&sam_account);
 		
 	if (pdb_getgrsid(&map, *sid)) {
@@ -840,13 +843,16 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 		return False;
 	}
 	
+	become_root();
 	if (pdb_getsampwnam(sam_account, user)) {
+		unbecome_root();
 		sid_copy(psid, pdb_get_user_sid(sam_account));
 		*psid_name_use = SID_NAME_USER;
 		
 		pdb_free_sam(&sam_account);
 		return True;
 	}
+	unbecome_root();
 
 	pdb_free_sam(&sam_account);
 
@@ -907,7 +913,10 @@ BOOL local_password_change(const char *user_name, int local_flags,
 
 	/* Get the smb passwd entry for this user */
 	pdb_init_sam(&sam_pass);
+
+	become_root();
 	if(!pdb_getsampwnam(sam_pass, user_name)) {
+		unbecome_root();
 		pdb_free_sam(&sam_pass);
 		
 		if ((local_flags & LOCAL_ADD_USER) || (local_flags & LOCAL_DELETE_USER)) {
@@ -921,6 +930,7 @@ BOOL local_password_change(const char *user_name, int local_flags,
 			return False;
 		}
 	} else {
+		unbecome_root();
 		/* the entry already existed */
 		local_flags &= ~LOCAL_ADD_USER;
 	}
@@ -1046,8 +1056,6 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	SAM_ACCOUNT *sampw = NULL;
 	struct passwd *unix_pw;
 	
-	
-	
 	winbind_off();
 	unix_pw = sys_getpwuid( uid );
 	winbind_on();
@@ -1062,11 +1070,14 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 		return NULL;
 	}
 	
+	become_root();
 	if ( !pdb_getsampwnam( sampw, unix_pw->pw_name ) ) {
+		unbecome_root();
 		DEBUG(4,("local_uid_to_sid: User %s [uid == %d] has no samba account\n",
 			unix_pw->pw_name, uid));
 		return NULL;
 	}
+	unbecome_root();
 	
 	sid_copy( psid, pdb_get_user_sid(sampw) );
 	
@@ -1108,11 +1119,14 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 		return False;
 	}
 		
+	become_root();
 	if ( !pdb_getsampwsid(sampw, psid) ) {
+		unbecome_root();
 		DEBUG(8,("local_sid_to_uid: Could not find SID %s in passdb\n",
 			sid_string_static(psid)));
 		return False;
 	}
+	unbecome_root();
 	
 	user_name = pdb_get_username(sampw);
 
