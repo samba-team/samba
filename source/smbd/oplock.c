@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -1234,5 +1232,3 @@ address %lx. Error was %s\n", (long)htonl(INADDR_LOOPBACK), strerror(errno)));
 
 	return True;
 }
-
-#undef OLD_NTDOMAIN

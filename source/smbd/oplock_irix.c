@@ -1,6 +1,4 @@
-#define OLD_NTDOMAIN 1
-
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 2.x
    IRIX kernel oplock processing
@@ -278,5 +276,3 @@ struct kernel_oplocks *irix_init_kernel_oplocks(void)
 #else
  void oplock_irix_dummy(void) {}
 #endif /* HAVE_KERNEL_OPLOCKS_IRIX */
-
-#undef OLD_NTDOMAIN

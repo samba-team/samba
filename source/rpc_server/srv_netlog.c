@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -814,12 +813,12 @@ static BOOL api_net_sam_logon(pipes_struct *p)
          * make_dom_gids allocates the gids array. JRA.
          */
         gids = NULL;
-        num_gids = make_dom_gids(domain_groups, &gids);
+        num_gids = make_dom_gids(p->mem_ctx, domain_groups, &gids);
         
         sam_logon_in_ssb = False;
         
         if (pdb_name_to_rid(nt_username, &r_uid, &r_gid))
-            init_net_user_info3(&usr_info,
+            init_net_user_info3(p->mem_ctx, &usr_info,
                                 &dummy_time, /* logon_time */
                                 &dummy_time, /* logoff_time */
                                 &dummy_time, /* kickoff_time */
@@ -853,17 +852,11 @@ static BOOL api_net_sam_logon(pipes_struct *p)
         else
             status = NT_STATUS_NO_SUCH_USER;
         
-        /* Free any allocated groups array. */
-        if(gids)
-            free((char *)gids);
     }
     
     if(!net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status)) {
-		free_user_info3(&usr_info);
         return False;
    	}
-
-	free_user_info3(&usr_info); 
 
     return True;
 }
@@ -964,4 +957,3 @@ BOOL api_netlog_rpc(pipes_struct *p)
 {
 	return api_rpcTNP(p, "api_netlog_rpc", api_net_cmds);
 }
-#undef OLD_NTDOMAIN

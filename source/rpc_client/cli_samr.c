@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -63,6 +62,9 @@ BOOL get_samr_query_usergroups(struct cli_state *cli,
 	return do_samr_close(cli, &pol_open_user);
 }
 
+#if 0
+/* DOES NOT COMPILE WITH THE NEW SAMR PARSE CODE. JRA. */
+
 /****************************************************************************
 do a SAMR query user info
 ****************************************************************************/
@@ -97,6 +99,7 @@ BOOL get_samr_query_userinfo(struct cli_state *cli,
 
 	return do_samr_close(cli, &pol_open_user);
 }
+#endif
 
 /****************************************************************************
 do a SAMR change user password command
@@ -156,6 +159,10 @@ BOOL do_samr_chgpasswd_user(struct cli_state *cli,
 	return True;
 }
 
+#if 0 
+
+/* CURRENTLY THIS DOESN'T COMPILE AND IS NOT USED ANYWHERE. JRA. */
+
 /****************************************************************************
 do a SAMR unknown 0x38 command
 ****************************************************************************/
@@ -208,6 +215,7 @@ BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name)
 
 	return True;
 }
+#endif
 
 /****************************************************************************
 do a SAMR unknown 0x8 command
@@ -265,6 +273,10 @@ BOOL do_samr_query_dom_info(struct cli_state *cli,
 
 	return True;
 }
+
+#if 0
+
+/* CURRENTLY DOESN'T COMPILE WITH THE NEW SAMR PARSE CODE. JRA */
 
 /****************************************************************************
 do a SAMR enumerate users
@@ -356,6 +368,7 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli,
 
 	return True;
 }
+#endif
 
 /****************************************************************************
 do a SAMR Connect
@@ -541,6 +554,10 @@ BOOL do_samr_open_domain(struct cli_state *cli,
 	return True;
 }
 
+#if 0
+
+/* CURRENTLY DOES NOT COMPILE AND IS NOT USED ANYWHERE. JRA. */
+
 /****************************************************************************
 do a SAMR Query Unknown 12
 ****************************************************************************/
@@ -621,6 +638,7 @@ BOOL do_samr_query_unknown_12(struct cli_state *cli,
 
 	return True;
 }
+#endif
 
 /****************************************************************************
 do a SAMR Query User Groups
@@ -683,6 +701,10 @@ BOOL do_samr_query_usergroups(struct cli_state *cli,
 
 	return True;
 }
+
+#if 0
+
+/* CURRENTLY DOES NOT COMPILE WITH THE NEW SAMR PARSE CODE. JRA */
 
 /****************************************************************************
 do a SAMR Query User Info
@@ -756,6 +778,8 @@ BOOL do_samr_query_userinfo(struct cli_state *cli,
 	return True;
 }
 
+#endif
+
 /****************************************************************************
 do a SAMR Close
 ****************************************************************************/
@@ -822,5 +846,3 @@ BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	return True;
 }
-
-#undef OLD_NTDOMAIN

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /*
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -1099,7 +1098,6 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint security_i
 	 */
 
 	if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
-		free_sec_desc(&psd);
 		DEBUG(0,("set_sd: Error in unmarshalling security descriptor.\n"));
 		/*
 		 * Return access denied for want of a better error message..
@@ -1122,14 +1120,12 @@ static BOOL set_sd(files_struct *fsp, char *data, uint32 sd_len, uint security_i
 	ret = set_nt_acl( fsp, security_info_sent, psd);
 
 	if (!ret) {
-		free_sec_desc(&psd);
 		talloc_destroy(mem_ctx);
 		*pdef_class = ERRDOS;
 		*pdef_code = ERRnoaccess;
 		return False;
 	}
 
-	free_sec_desc(&psd);
 	talloc_destroy(mem_ctx);
 
 	*pdef_class = 0;
@@ -1638,8 +1634,6 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   if(max_data_count < sd_size) {
 
-    free_sec_desc(&psd);
-
     send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL,
                     params, 4, *ppdata, 0);
     return -1;
@@ -1651,7 +1645,6 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   data = Realloc(*ppdata, sd_size);
   if(data == NULL) {
-    free_sec_desc(&psd);
     return(ERROR(ERRDOS,ERRnomem));
   }
 
@@ -1665,7 +1658,6 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   if ((mem_ctx = talloc_init()) == NULL) {
     DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
-    free_sec_desc(&psd);
     return(ERROR(ERRDOS,ERRnomem));
   }
 
@@ -1683,7 +1675,6 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
    */
 
   if(!sec_io_desc( "sd data", &psd, &pd, 1)) {
-    free_sec_desc(&psd);
     DEBUG(0,("call_nt_transact_query_security_desc: Error in marshalling \
 security descriptor.\n"));
     /*
@@ -1697,7 +1688,6 @@ security descriptor.\n"));
    * Now we can delete the security descriptor.
    */
 
-  free_sec_desc(&psd);
   talloc_destroy(mem_ctx);
 
   send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, (int)sd_size);
@@ -1983,4 +1973,3 @@ due to being in oplock break state.\n" ));
 		     calls have already sent it. If outsize != -1 then it is
 		     returning an error packet. */
 }
-#undef OLD_NTDOMAIN

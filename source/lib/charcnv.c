@@ -226,7 +226,7 @@ static void init_iso8859_9(void)
 
 /* init for Baltic Rim */
 
-static void init_iso8859_13() {
+static void init_iso8859_13(void) {
 
 	setupmaps();
 

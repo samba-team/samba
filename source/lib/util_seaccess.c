@@ -305,7 +305,7 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
    the parent container.  This child object can either be a container or
    non-container object. */
 
-SEC_DESC_BUF *se_create_child_secdesc(SEC_DESC *parent_ctr, 
+SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr, 
 				      BOOL child_container)
 {
 	SEC_DESC_BUF *sdb;
@@ -321,7 +321,7 @@ SEC_DESC_BUF *se_create_child_secdesc(SEC_DESC *parent_ctr,
 
 	acl = parent_ctr->dacl;
 
-	if (!(new_ace_list = malloc(sizeof(SEC_ACE) * acl->num_aces))) 
+	if (!(new_ace_list = talloc(ctx, sizeof(SEC_ACE) * acl->num_aces))) 
 		return NULL;
 
 	for (i = 0; acl && i < acl->num_aces; i++) {
@@ -398,24 +398,19 @@ SEC_DESC_BUF *se_create_child_secdesc(SEC_DESC *parent_ctr,
 
 	/* Create child security descriptor to return */
 	
-	new_dacl = make_sec_acl(ACL_REVISION, new_ace_list_ndx, new_ace_list);
-	safe_free(new_ace_list);
+	new_dacl = make_sec_acl(ctx, ACL_REVISION, new_ace_list_ndx, new_ace_list);
 
 	/* Use the existing user and group sids.  I don't think this is
 	   correct.  Perhaps the user and group should be passed in as
 	   parameters by the caller? */
 
-	sd = make_sec_desc(SEC_DESC_REVISION,
+	sd = make_sec_desc(ctx, SEC_DESC_REVISION,
 			   parent_ctr->owner_sid,
 			   parent_ctr->grp_sid,
 			   parent_ctr->sacl,
 			   new_dacl, &size);
 
-	free_sec_acl(&new_dacl);
-
-	sdb = make_sec_desc_buf(size, sd);
-
-	free_sec_desc(&sd);
+	sdb = make_sec_desc_buf(ctx, size, sd);
 
 	return sdb;
 }

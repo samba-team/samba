@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -334,5 +332,3 @@ BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime)
   
   return(True);
 } 
-
-#undef OLD_NTDOMAIN

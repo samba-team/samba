@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /*
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -2022,7 +2021,6 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 	DEBUG(106,("free_nt_printer_info_level_2: deleting info\n"));
 
 	free_nt_devicemode(&info->devmode);
-	free_sec_desc_buf(&info->secdesc_buf);
 
 	for(param_ptr = info->specific; param_ptr; ) {
 		NT_PRINTER_PARAM *tofree = param_ptr;
@@ -2192,7 +2190,10 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 		goto fail;
 #endif
 
-	if (!nt_printing_getsec(sharename, &info.secdesc_buf))
+	/* This will get the current RPC talloc context, but we should be
+	   passing this as a parameter... fixme... JRA ! */
+
+	if (!nt_printing_getsec(get_talloc_ctx(), sharename, &info.secdesc_buf))
 		goto fail;
 
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
@@ -2207,8 +2208,6 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 
 	if (info.devmode)
 		free_nt_devicemode(&info.devmode);
-	if (info.secdesc_buf)
-		free_sec_desc_buf(&info.secdesc_buf);
 	return 2;
 }
 
@@ -2270,7 +2269,10 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
-	nt_printing_getsec(sharename, &info.secdesc_buf);
+	/* This will get the current RPC talloc context, but we should be
+       passing this as a parameter... fixme... JRA ! */
+
+	nt_printing_getsec(get_talloc_ctx(), sharename, &info.secdesc_buf);
 
 	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
@@ -2715,7 +2717,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 		SEC_DESC *psd = NULL;
 		size_t size;
 
-		nt_printing_getsec(printername, &old_secdesc_ctr);
+		nt_printing_getsec(mem_ctx, printername, &old_secdesc_ctr);
 
 		/* Pick out correct owner and group sids */
 
@@ -2737,18 +2739,13 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 		/* Make a deep copy of the security descriptor */
 
-		psd = make_sec_desc(secdesc_ctr->sec->revision,
+		psd = make_sec_desc(mem_ctx, secdesc_ctr->sec->revision,
 				    owner_sid, group_sid,
 				    sacl,
 				    dacl,
 				    &size);
 
-		new_secdesc_ctr = make_sec_desc_buf(size, psd);
-
-		/* Free up memory */
-
-		free_sec_desc(&psd);
-		free_sec_desc_buf(&old_secdesc_ctr);
+		new_secdesc_ctr = make_sec_desc_buf(mem_ctx, size, psd);
 	}
 
 	if (!new_secdesc_ctr) {
@@ -2778,11 +2775,6 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	/* Free mallocated memory */
 
  out:
-	free_sec_desc_buf(&old_secdesc_ctr);
-
-	if (new_secdesc_ctr != secdesc_ctr) {
-		free_sec_desc_buf(&new_secdesc_ctr);
-	}
 
 	prs_mem_free(&ps);
 	if (mem_ctx)
@@ -2794,7 +2786,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
  Construct a default security descriptor buffer for a printer.
 ****************************************************************************/
 
-static SEC_DESC_BUF *construct_default_printer_sdb(void)
+static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 {
 	SEC_ACE ace[3];
 	SEC_ACCESS sa;
@@ -2844,13 +2836,10 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	   descriptors.  NT4 complains about the property being edited by a
 	   NT5 machine. */
 
-#define NT4_ACL_REVISION 0x2
-
-	if ((psa = make_sec_acl(NT4_ACL_REVISION, 3, ace)) != NULL) {
-		psd = make_sec_desc(SEC_DESC_REVISION,
+	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) != NULL) {
+		psd = make_sec_desc(ctx, SEC_DESC_REVISION,
 				    &owner_sid, NULL,
 				    NULL, psa, &sd_size);
-		free_sec_acl(&psa);
 	}
 
 	if (!psd) {
@@ -2858,12 +2847,11 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 		return NULL;
 	}
 
-	sdb = make_sec_desc_buf(sd_size, psd);
+	sdb = make_sec_desc_buf(ctx, sd_size, psd);
 
 	DEBUG(4,("construct_default_printer_sdb: size = %u.\n",
 		 (unsigned int)sd_size));
 
-	free_sec_desc(&psd);
 	return sdb;
 }
 
@@ -2871,16 +2859,11 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
  Get a security desc for a printer.
 ****************************************************************************/
 
-BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
+BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secdesc_ctr)
 {
 	prs_struct ps;
-	TALLOC_CTX *mem_ctx = NULL;
 	fstring key;
 	char *temp;
-
-	mem_ctx = talloc_init();
-	if (mem_ctx == NULL)
-		return False;
 
 	if ((temp = strchr(printername + 2, '\\'))) {
 		printername = temp + 1;
@@ -2890,17 +2873,15 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 
 	slprintf(key, sizeof(key), "SECDESC/%s", printername);
 
-	if (tdb_prs_fetch(tdb, key, &ps, mem_ctx)!=0 ||
+	if (tdb_prs_fetch(tdb, key, &ps, ctx)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
 
 		DEBUG(4,("using default secdesc for %s\n", printername));
 
-		if (!(*secdesc_ctr = construct_default_printer_sdb())) {
-			talloc_destroy(mem_ctx);
+		if (!(*secdesc_ctr = construct_default_printer_sdb(ctx))) {
 			return False;
 		}
 
-		talloc_destroy(mem_ctx);
 		return True;
 	}
 
@@ -2924,20 +2905,17 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 
 			sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 
-			psd = make_sec_desc((*secdesc_ctr)->sec->revision,
+			psd = make_sec_desc(ctx, (*secdesc_ctr)->sec->revision,
 					    &owner_sid,
 					    (*secdesc_ctr)->sec->grp_sid,
 					    (*secdesc_ctr)->sec->sacl,
 					    (*secdesc_ctr)->sec->dacl,
 					    &size);
 
-			new_secdesc_ctr = make_sec_desc_buf(size, psd);
-
-			free_sec_desc(&psd);
+			new_secdesc_ctr = make_sec_desc_buf(ctx, size, psd);
 
 			/* Swap with other one */
 
-			free_sec_desc_buf(secdesc_ctr);
 			*secdesc_ctr = new_secdesc_ctr;
 
 			/* Set it */
@@ -2965,7 +2943,6 @@ BOOL nt_printing_getsec(char *printername, SEC_DESC_BUF **secdesc_ctr)
 	}
 
 	prs_mem_free(&ps);
-	talloc_destroy(mem_ctx);
 	return True;
 }
 
@@ -3043,6 +3020,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	uint32 access_granted, status;
 	BOOL result;
 	char *pname;
+	TALLOC_CTX *mem_ctx = NULL;
 	extern struct current_user current_user;
 	
 	/* If user is NULL then use the current_user structure */
@@ -3067,7 +3045,12 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	/* Get printer security descriptor */
 
-	nt_printing_getsec(pname, &secdesc);
+	if(!(mem_ctx = talloc_init())) {
+		errno = ENOMEM;
+		return False;
+	}
+
+	nt_printing_getsec(mem_ctx, pname, &secdesc);
 
 	if (access_type == JOB_ACCESS_ADMINISTER) {
 		SEC_DESC_BUF *parent_secdesc = secdesc;
@@ -3076,9 +3059,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 		   against.  This is because print jobs are child objects
 		   objects of a printer. */
 
-		secdesc = se_create_child_secdesc(parent_secdesc->sec, False);
-
-		free_sec_desc_buf(&parent_secdesc);
+		secdesc = se_create_child_secdesc(mem_ctx, parent_secdesc->sec, False);
 
 		/* Now this is the bit that really confuses me.  The access
 		   type needs to be changed from JOB_ACCESS_ADMINISTER to
@@ -3097,11 +3078,9 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 				 &access_granted, &status);
 
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));
+
+	talloc_destroy(mem_ctx);
 	
-	/* Free mallocated memory */
-
-	free_sec_desc_buf(&secdesc);
-
 	if (!result)
 		errno = EACCES;
 
@@ -3215,5 +3194,3 @@ uint32 printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	free_a_printer(&printer, 2);
 	return result;
 }
-
-#undef OLD_NTDOMAIN

@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -80,7 +78,7 @@ rid_name domain_group_rids[] =
     { 0                             , NULL }
 };
 
-int make_dom_gids(char *gids_str, DOM_GID **ppgids)
+int make_dom_gids(TALLOC_CTX *ctx, char *gids_str, DOM_GID **ppgids)
 {
   char *ptr;
   pstring s2;
@@ -99,10 +97,10 @@ int make_dom_gids(char *gids_str, DOM_GID **ppgids)
        count++)
     ;
 
-  gids = (DOM_GID *)malloc( sizeof(DOM_GID) * count );
+  gids = (DOM_GID *)talloc(ctx, sizeof(DOM_GID) * count );
   if(!gids)
   {
-    DEBUG(0,("make_dom_gids: malloc fail !\n"));
+    DEBUG(0,("make_dom_gids: talloc fail !\n"));
     return 0;
   }
 
@@ -343,5 +341,3 @@ uint32 local_lookup_user_rid(char *user_name, uint32 *rid)
 
 	return NT_STATUS_NONE_MAPPED;
 }
-
-#undef OLD_NTDOMAIN

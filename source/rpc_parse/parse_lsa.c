@@ -591,17 +591,16 @@ BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e,
 
 		num_domains = r_e->num_domains2;
 
-		if (!(r_e->hdr_domain_name = (UNIHDR2 *)
-		      malloc(sizeof(UNIHDR2) * num_domains)))
-			return False;
+		if (UNMARSHALLING(ps)) {
+			if (!(r_e->hdr_domain_name = (UNIHDR2 *)prs_alloc_mem(ps,sizeof(UNIHDR2) * num_domains)))
+				return False;
 
-		if (!(r_e->uni_domain_name = (UNISTR2 *)
-		      malloc(sizeof(UNISTR2) * num_domains)))
-			return False;
+			if (!(r_e->uni_domain_name = (UNISTR2 *)prs_alloc_mem(ps,sizeof(UNISTR2) * num_domains)))
+				return False;
 
-		if (!(r_e->domain_sid = (DOM_SID2 *)
-		      malloc(sizeof(DOM_SID2) * num_domains)))
-			return False;
+			if (!(r_e->domain_sid = (DOM_SID2 *)prs_alloc_mem(ps,sizeof(DOM_SID2) * num_domains)))
+				return False;
+		}
 
 		for (i = 0; i < num_domains; i++) {
 			if(!smb_io_unihdr2 ("", &r_e->hdr_domain_name[i], ps, 

@@ -26,18 +26,66 @@
 
 extern int DEBUGLEVEL;
 
-static TALLOC_CTX *parse_misc_talloc = NULL;
+/****************************************************************************
+ A temporary TALLOC context for things like unistrs, that is valid for
+ the life of a complete RPC call.
+****************************************************************************/
 
-/******************************************************************* a
+static TALLOC_CTX *current_rpc_talloc = NULL;
+
+TALLOC_CTX *get_current_rpc_talloc(void)
+{
+    return current_rpc_talloc;
+}
+
+void set_current_rpc_talloc( TALLOC_CTX *ctx)
+{
+	current_rpc_talloc = ctx;
+}
+
+static TALLOC_CTX *main_loop_talloc = NULL;
+
+/*******************************************************************
 free up temporary memory - called from the main loop
 ********************************************************************/
 
-void parse_talloc_free(void)
+void main_loop_talloc_free(void)
 {
-    if (!parse_misc_talloc)
+    if (!main_loop_talloc)
         return;
-    talloc_destroy(parse_misc_talloc);
-    parse_misc_talloc = NULL;
+    talloc_destroy(main_loop_talloc);
+    main_loop_talloc = NULL;
+}
+
+/*******************************************************************
+ Get a talloc context that is freed in the main loop...
+********************************************************************/
+
+TALLOC_CTX *main_loop_talloc_get(void)
+{
+    if (!main_loop_talloc) {
+        main_loop_talloc = talloc_init();
+        if (!main_loop_talloc)
+            smb_panic("main_loop_talloc: malloc fail\n");
+    }
+
+    return main_loop_talloc;
+}
+
+/*******************************************************************
+ Try and get a talloc context. Get the rpc one if possible, else
+ get the main loop one. The main loop one is more dangerous as it
+ goes away between packets, the rpc one will stay around for as long
+ as a current RPC lasts.
+********************************************************************/ 
+
+TALLOC_CTX *get_talloc_ctx(void)
+{
+	TALLOC_CTX *tc = get_current_rpc_talloc();
+
+	if (tc)
+		return tc;
+	return main_loop_talloc_get();
 }
 
 /*******************************************************************
@@ -483,14 +531,11 @@ void init_unistr(UNISTR *str, const char *buf)
 
 	len = strlen(buf) + 1;
 
-	if (!parse_misc_talloc)
-		parse_misc_talloc = talloc_init();
-
 	if (len < MAX_UNISTRLEN)
 		len = MAX_UNISTRLEN;
 	len *= sizeof(uint16);
 
-	str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
+	str->buffer = (uint16 *)talloc(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
 		smb_panic("init_unistr: malloc fail\n");
 
@@ -527,15 +572,12 @@ BOOL smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int depth)
 
 static void create_buffer3(BUFFER3 *str, size_t len)
 {
-    if (!parse_misc_talloc)
-		parse_misc_talloc = talloc_init();
-
 	if (len < MAX_BUFFERLEN)
 		len = MAX_BUFFERLEN;
 
-    str->buffer = talloc(parse_misc_talloc, len);
+    str->buffer = talloc(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
-		smb_panic("create_buffer3: malloc fail\n");
+		smb_panic("create_buffer3: talloc fail\n");
 
 }
 
@@ -673,14 +715,11 @@ void init_buffer2(BUFFER2 *str, uint8 *buf, int len)
 	str->buf_len = buf != NULL ? len : 0;
 
 	if (buf != NULL) {
-		if (!parse_misc_talloc)
-			parse_misc_talloc = talloc_init();
-
 		if (len < MAX_BUFFERLEN)
 			len = MAX_BUFFERLEN;
-		str->buffer = talloc(parse_misc_talloc, len);
+		str->buffer = talloc(get_talloc_ctx(), len);
 		if (str->buffer == NULL)
-			smb_panic("init_buffer2: malloc fail\n");
+			smb_panic("init_buffer2: talloc fail\n");
 		memcpy(str->buffer, buf, MIN(str->buf_len, len));
 	}
 }
@@ -767,17 +806,14 @@ void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
 	if (str->buffer == NULL) {
 		size_t len = from->uni_max_len * sizeof(uint16);
 
-		if (!parse_misc_talloc)
-			parse_misc_talloc = talloc_init();
-
 		if (len < MAX_UNISTRLEN)
 			len = MAX_UNISTRLEN;
 		len *= sizeof(uint16);
 
-   		str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
+   		str->buffer = (uint16 *)talloc(get_talloc_ctx(), len);
 		if ((str->buffer == NULL) && (len > 0 ))
 		{
-			smb_panic("copy_unistr2: malloc fail\n");
+			smb_panic("copy_unistr2: talloc fail\n");
 			return;
 		}
 	}
@@ -801,12 +837,9 @@ void init_string2(STRING2 *str, char *buf, int len)
 
 	/* store the string */
 	if(len != 0) {
-		if (!parse_misc_talloc)
-			parse_misc_talloc = talloc_init();
-
 		if (len < MAX_STRINGLEN)
 			alloc_len = MAX_STRINGLEN;
-		str->buffer = talloc(parse_misc_talloc, alloc_len);
+		str->buffer = talloc(get_talloc_ctx(), alloc_len);
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail\n");
 		memcpy(str->buffer, buf, len);
@@ -869,14 +902,11 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 	str->undoc       = 0;
 	str->uni_str_len = (uint32)len;
 
-	if (!parse_misc_talloc)
-		parse_misc_talloc = talloc_init();
-
 	if (len < MAX_UNISTRLEN)
 		len = MAX_UNISTRLEN;
 	len *= sizeof(uint16);
 
-	str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
+	str->buffer = (uint16 *)talloc(get_talloc_ctx(), len);
 	if ((str->buffer == NULL) && (len > 0))
 	{
 		smb_panic("init_unistr2: malloc fail\n");
@@ -917,11 +947,8 @@ void init_unistr2_from_unistr (UNISTR2 *to, UNISTR *from)
 	to->undoc       = 0;
 	to->uni_str_len = i;
 
-	if (!parse_misc_talloc)
-		parse_misc_talloc = talloc_init();
-	
 	/* allocate the space and copy the string buffer */
-	to->buffer = (uint16 *)talloc(parse_misc_talloc, sizeof(uint16)*(to->uni_str_len));
+	to->buffer = (uint16 *)talloc(get_talloc_ctx(), sizeof(uint16)*(to->uni_str_len));
 	if (to->buffer == NULL)
 		smb_panic("init_unistr2_from_unistr: malloc fail\n");
 	memcpy(to->buffer, from->buffer, to->uni_max_len*sizeof(uint16));

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /*
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -2884,7 +2883,6 @@ static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		for (i=0; i<*returned; i++) {
 			free_devmode(printers[i].devmode);
-			free_sec_desc(&printers[i].secdesc);
 		}
 		safe_free(printers);
 		return ERROR_INSUFFICIENT_BUFFER;
@@ -2897,7 +2895,6 @@ static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 
 	/* clear memory */
 	for (i=0; i<*returned; i++) {
 		free_devmode(printers[i].devmode);
-		free_sec_desc(&printers[i].secdesc);
 	}
 	safe_free(printers);
 
@@ -3904,7 +3901,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	   dialog boxes when the user doesn't have permission to change
 	   the security descriptor. */
 
-	nt_printing_getsec(Printer->dev.handlename, &old_secdesc_ctr);
+	nt_printing_getsec(p->mem_ctx, Printer->dev.handlename, &old_secdesc_ctr);
 
 	if (DEBUGLEVEL >= 10) {
 		SEC_ACL *acl;
@@ -3942,7 +3939,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 		}
 	}
 
-	new_secdesc_ctr = sec_desc_merge(secdesc_ctr, old_secdesc_ctr);
+	new_secdesc_ctr = sec_desc_merge(p->mem_ctx, secdesc_ctr, old_secdesc_ctr);
 
 	if (sec_desc_equal(new_secdesc_ctr->sec, old_secdesc_ctr->sec)) {
 		result = NT_STATUS_NO_PROBLEMO;
@@ -3966,8 +3963,6 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	result = nt_printing_setsec(Printer->dev.handlename, new_secdesc_ctr);
 
  done:
-	free_sec_desc_buf(&new_secdesc_ctr);
-	free_sec_desc_buf(&old_secdesc_ctr);
 
 	return result;
 }
@@ -6293,4 +6288,3 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 		return ERROR_INVALID_LEVEL;
 	}
 }
-#undef OLD_NTDOMAIN

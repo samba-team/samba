@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -543,5 +542,3 @@ int vfswrap_fchmod_acl(files_struct *fsp, int fd, mode_t mode)
 {
 	return fchmod_acl(fd, mode);
 }
-
-#undef OLD_NTDOMAIN

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /*
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -41,6 +40,7 @@ typedef struct canon_ace {
 
 static void free_canon_ace_list( canon_ace *list_head );
 
+#if !defined(HAVE_NO_ACLS)
 /****************************************************************************
  Function to duplicate a canon_ace entry.
 ****************************************************************************/
@@ -56,6 +56,7 @@ static canon_ace *dup_canon_ace( canon_ace *src_ace)
 	dst_ace->prev = dst_ace->next = NULL;
 	return dst_ace;
 }
+#endif /* HAVE_NO_ACLS */
 
 /****************************************************************************
  Function to create owner and group SIDs from a SMB_STRUCT_STAT.
@@ -243,6 +244,7 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 	return True;
 }
 
+#if !defined(HAVE_NO_ACLS)
 /****************************************************************************
  Merge aces with a common user.
 ****************************************************************************/
@@ -378,6 +380,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 
 	return True;
 }
+#endif /* HAVE_NO_ACLS */
 
 /****************************************************************************
  Unpack a SEC_DESC into two canonical ace lists. We don't depend on this
@@ -577,7 +580,6 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		 */
 
 		DEBUG(10,("unpack_canon_ace: Win2k inherit acl traverse. Ignoring DACL.\n"));
-		free_sec_acl(&psd->dacl);
 	}
 
 	/*
@@ -788,7 +790,6 @@ static BOOL unpack_posix_permissions(files_struct *fsp, SMB_STRUCT_STAT *psbuf, 
      */
 
     DEBUG(10,("unpack_posix_permissions: Win2k inherit acl traverse. Ignoring DACL.\n"));
-    free_sec_acl(&psd->dacl);
   }
 
   /*
@@ -1403,13 +1404,13 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	}
 
 	if (num_acls) {
-		if((psa = make_sec_acl( ACL_REVISION, num_aces, nt_ace_list)) == NULL) {
+		if((psa = make_sec_acl( main_loop_talloc_get(), ACL_REVISION, num_aces, nt_ace_list)) == NULL) {
 			DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
 			goto done;
 		}
 	}
 
-	*ppdesc = make_standard_sec_desc( &owner_sid, &group_sid, psa, &sd_size);
+	*ppdesc = make_standard_sec_desc( main_loop_talloc_get(), &owner_sid, &group_sid, psa, &sd_size);
 
 	if(!*ppdesc) {
 		DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
@@ -1426,8 +1427,6 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	free_canon_ace_list(dir_ace);
 	if (nt_ace_list)
 		free(nt_ace_list);
-	if (psa)
-		free_sec_acl(&psa);
 
 	return sd_size;
 }
@@ -1700,5 +1699,3 @@ int fchmod_acl(int fd, mode_t mode)
 	sys_acl_free_acl(posix_acl);
 	return ret;
 }
-
-#undef OLD_NTDOMAIN

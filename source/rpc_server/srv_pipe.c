@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -1146,7 +1145,9 @@ BOOL api_pipe_request(pipes_struct *p)
 		if (strequal(api_fd_commands[i].pipe_clnt_name, p->name) &&
 		    api_fd_commands[i].fn != NULL) {
 			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i].pipe_clnt_name));
+			set_current_rpc_talloc(p->mem_ctx);
 			ret = api_fd_commands[i].fn(p);
+			set_current_rpc_talloc(NULL);
 		}
 	}
 
@@ -1229,5 +1230,3 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 
 	return True;
 }
-
-#undef OLD_NTDOMAIN

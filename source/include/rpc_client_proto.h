@@ -127,7 +127,6 @@ BOOL do_reg_close(struct cli_state *cli, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
-#if OLD_NTDOMAIN
 BOOL get_samr_query_usergroups(struct cli_state *cli, 
 				POLICY_HND *pol_open_domain, uint32 user_rid,
 				uint32 *num_groups, DOM_GID *gid);
@@ -166,7 +165,6 @@ BOOL do_samr_query_usergroups(struct cli_state *cli,
 BOOL do_samr_query_userinfo(struct cli_state *cli, 
 				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL do_samr_close(struct cli_state *cli, POLICY_HND *hnd);
-#endif
 
 /*The following definitions come from  rpc_client/cli_spoolss_notify.c  */
 

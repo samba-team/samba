@@ -3400,7 +3400,6 @@ BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps
 void free_spoolss_q_setprinter(SPOOL_Q_SETPRINTER *q_u)
 {
 	free_spool_printer_info_level(&q_u->info);
-	free_sec_desc_buf( &q_u->secdesc_ctr );
 	free_devmode( q_u->devmode_ctr.devmode );
 }
 
@@ -5621,8 +5620,6 @@ void free_printer_info_2(PRINTER_INFO_2 *printer)
 	if (printer!=NULL) {
 		free_devmode(printer->devmode);
 		printer->devmode = NULL;
-		if (printer->secdesc != NULL)
-			free_sec_desc(&printer->secdesc);
 		safe_free(printer);
 	}
 }
@@ -5630,8 +5627,6 @@ void free_printer_info_2(PRINTER_INFO_2 *printer)
 void free_printer_info_3(PRINTER_INFO_3 *printer)
 {
 	if (printer!=NULL) {
-		if (printer->secdesc != NULL)
-			free_sec_desc(&printer->secdesc);
 		safe_free(printer);
 	}
 }
@@ -5644,8 +5639,6 @@ void free_spool_printer_info_1(SPOOL_PRINTER_INFO_LEVEL_1 *printer)
 void free_spool_printer_info_2(SPOOL_PRINTER_INFO_LEVEL_2 *printer)
 {
 	if (printer!=NULL) {
-		if (printer->secdesc != NULL)
-			free_sec_desc_buf(&printer->secdesc);
 		safe_free(printer);
 	}
 }

@@ -40,7 +40,7 @@ typedef uint16 ZUSTRING;
 #ifndef _PSTRING
 
 #define PSTRING_LEN 1024
-#define FSTRING_LEN 128
+#define FSTRING_LEN 256
 
 typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];

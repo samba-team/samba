@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0
@@ -1316,4 +1315,3 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 
 	return True;
 }
-#undef OLD_NTDOMAIN

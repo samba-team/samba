@@ -83,7 +83,7 @@ FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol @RUNPROG@
-PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/make_unicodemap bin/rpcclient @WRAP@ @WRAP32@
+PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap @WRAP@ @WRAP32@
 MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef 
 
@@ -130,7 +130,7 @@ LIBMSRPC_OBJ = libsmb/cli_lsarpc.o rpc_client/cli_pipe.o
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o \
                  rpc_server/srv_pipe_hnd.o rpc_server/srv_reg.o \
-                 rpc_server/srv_samr.o rpc_server/srv_srvsvc.o \
+                 rpc_server/srv_samr.o rpc_server/srv_samr_nt.o rpc_server/srv_srvsvc.o \
                  rpc_server/srv_util.o rpc_server/srv_wkssvc.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o \
 		 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o

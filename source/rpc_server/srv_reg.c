@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
@@ -294,4 +293,3 @@ BOOL api_reg_rpc(pipes_struct *p)
 {
 	return api_rpcTNP(p, "api_reg_rpc", api_reg_cmds);
 }
-#undef OLD_NTDOMAIN

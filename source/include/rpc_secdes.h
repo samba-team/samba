@@ -105,6 +105,10 @@ typedef struct security_ace_info
 #define ACL_REVISION 0x3
 #endif
 
+#ifndef NT4_ACL_REVISION
+#define NT4_ACL_REVISION 0x2
+#endif
+
 #ifndef _SEC_ACL
 /* SEC_ACL */
 typedef struct security_acl_info

@@ -1,5 +1,3 @@
-#define OLD_NTDOMAIN 1
-
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -514,6 +512,3 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
   CloseDir(cur_dir);
   return(False);
 }
-
-
-#undef OLD_NTDOMAIN

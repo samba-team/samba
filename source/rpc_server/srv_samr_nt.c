@@ -807,8 +807,15 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	case 0x1:
 	case 0x4:
 		become_root();
+		ret = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+						MAX_SAM_ENTRIES, acb_mask);
+#if 0
+	/*
+	 * Which should we use here ? JRA.
+	 */
 		ret = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
 						MAX_SAM_ENTRIES, acb_mask);
+#endif
 		unbecome_root();
 		if (!ret) {
 			DEBUG(5, ("get_sampwd_entries: failed\n"));
@@ -1219,8 +1226,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 {
     struct smb_passwd *smb_pass;
 
-    if (!pdb_rid_is_user(user_rid))
-    {
+    if (!pdb_rid_is_user(user_rid)) {
         DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
         return False;
     }
@@ -1240,6 +1246,33 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
     init_sam_user_info10(id10, smb_pass->acct_ctrl);
 
     return True;
+}
+
+/*************************************************************************
+ get_user_info_21
+ *************************************************************************/
+
+static BOOL get_user_info_12(SAM_USER_INFO_12 * id12, uint32 user_rid)
+{
+    struct smb_passwd *smb_pass;
+
+	become_root();
+	smb_pass = getsmbpwrid(user_rid);
+	unbecome_root();
+
+	if (smb_pass == NULL) {
+		DEBUG(4, ("User 0x%x not found\n", user_rid));
+		return False;
+	}
+
+    DEBUG(3,("User:[%s] 0x%x\n", smb_pass->smb_name, smb_pass->acct_ctrl));
+
+	if (smb_pass->acct_ctrl & ACB_DISABLED)
+        return False;
+
+	init_sam_user_info12(id12, smb_pass->smb_passwd, smb_pass->smb_nt_passwd);
+
+	return True;
 }
 
 /*************************************************************************
@@ -1340,6 +1373,8 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 	if (!ctr)
 		return NT_STATUS_NO_MEMORY;
 
+	ZERO_STRUCTP(ctr);
+
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	ctr->switch_value = q_u->switch_value;
 
@@ -1399,7 +1434,7 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-    init_samr_r_query_userinfo(r_u, q_u->switch_value, ctr, r_u->status);
+    init_samr_r_query_userinfo(r_u, ctr, r_u->status);
 
     DEBUG(5,("_samr_query_userinfo: %d\n", __LINE__));
 
@@ -1455,50 +1490,54 @@ uint32 _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAM
 
 uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR_R_QUERY_DOMAIN_INFO *r_u)
 {
-    SAM_UNK_CTR ctr;
+    SAM_UNK_CTR *ctr;
     uint16 switch_value = 0;
 
-    ZERO_STRUCT(ctr);
+	if ((ctr = (SAM_UNK_CTR *)talloc(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+    ZERO_STRUCTP(ctr);
 
     r_u->status = NT_STATUS_NO_PROBLEMO;
 
     DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
 
     /* find the policy handle.  open a policy on it. */
-    if (find_lsa_policy_by_hnd(&q_u.domain_pol) == -1)
+    if (find_lsa_policy_by_hnd(&q_u->domain_pol) == -1)
         return NT_STATUS_INVALID_HANDLE;
 
-    switch (q_u.switch_value) {
+    switch (q_u->switch_value) {
         case 0x01:
             switch_value = 0x1;
-            init_unk_info1(&ctr.info.inf1);
+            init_unk_info1(&ctr->info.inf1);
             break;
         case 0x02:
             switch_value = 0x2;
-            init_unk_info2(&ctr.info.inf2, global_myworkgroup, global_myname);
+			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
+            init_unk_info2(&ctr->info.inf2, global_myworkgroup, global_myname, (uint32) time(NULL));
             break;
         case 0x03:
             switch_value = 0x3;
-            init_unk_info3(&ctr.info.inf3);
+            init_unk_info3(&ctr->info.inf3);
             break;
         case 0x06:
             switch_value = 0x6;
-            init_unk_info6(&ctr.info.inf6);
+            init_unk_info6(&ctr->info.inf6);
             break;
         case 0x07:
             switch_value = 0x7;
-            init_unk_info7(&ctr.info.inf7);
+            init_unk_info7(&ctr->info.inf7);
             break;
         case 0x0c:
             switch_value = 0xc;
-            init_unk_info12(&ctr.info.inf12);
+            init_unk_info12(&ctr->info.inf12);
             break;
         default:
-            status = NT_STATUS_INVALID_INFO_CLASS;
+            return NT_STATUS_INVALID_INFO_CLASS;
             break;
     }
 
-    init_samr_r_query_dom_info(p->mem_ctx, &r_u, switch_value, &ctr, status);
+    init_samr_r_query_dom_info(r_u, q_u->switch_value, ctr, NT_STATUS_NOPROBLEMO);
 
     DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
 
@@ -1518,11 +1557,10 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
     int local_flags=0;
     DOM_SID sid;
     pstring add_script;
-    POLICY_HND dom_pol = q_u->pol;
-    UNISTR2 user_account = q_u->uni_mach_acct;
+    POLICY_HND dom_pol = q_u->domain_pol;
+    UNISTR2 user_account = q_u->uni_name;
     uint32 acb_info = q_u->acb_info;
-    uint32 access_mask = q_u->access_mask;
-    POLICY_HND *user_pol = &r_u->pol;
+    POLICY_HND *user_pol = &r_u->user_pol;
 
     /* find the policy handle.  open a policy on it. */
     if (find_lsa_policy_by_hnd(&dom_pol) == -1)
@@ -1613,7 +1651,7 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
     }
 
     r_u->user_rid=sam_pass->user_rid;
-    r_u->unknown0 = 0x000703ff;
+    r_u->unknown_0 = 0x000703ff;
 
     return NT_STATUS_NO_PROBLEMO;
 }
@@ -1659,7 +1697,7 @@ uint32 _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u)
     if (!set_lsa_policy_samr_pol_status(&r_u->connect_pol, q_u->access_mask))
         return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-    close_lsa_policy_hnd(&r_u.connect_pol);
+    close_lsa_policy_hnd(&r_u->connect_pol);
 
     DEBUG(5,("_samr_connect: %d\n", __LINE__));
 
@@ -1684,11 +1722,51 @@ uint32 _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_LO
     return r_u->status;
 }
 
+/******************************************************************
+makes a SAMR_R_ENUM_DOMAINS structure.
+********************************************************************/
+
+static BOOL make_enum_domains(TALLOC_CTX *ctx, SAM_ENTRY **pp_sam,
+			UNISTR2 **pp_uni_name, uint32 num_sam_entries, fstring doms[])
+{
+	uint32 i;
+	SAM_ENTRY *sam;
+	UNISTR2 *uni_name;
+
+	DEBUG(5, ("make_enum_domains\n"));
+
+	*pp_sam = NULL;
+	*pp_uni_name = NULL;
+
+	if (num_sam_entries == 0)
+		return True;
+
+	sam = (SAM_ENTRY *)talloc(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
+	uni_name = (UNISTR2 *)talloc(ctx, sizeof(UNISTR2)*num_sam_entries);
+
+	if (sam == NULL || uni_name == NULL)
+		return False;
+
+	for (i = 0; i < num_sam_entries; i++) {
+		int len = doms[i] != NULL ? strlen(doms[i]) : 0;
+
+		init_sam_entry(&sam[i], len, 0);
+		init_unistr2(&uni_name[i], doms[i], len);
+	}
+
+	*pp_sam = sam;
+	*pp_uni_name = uni_name;
+
+	return True;
+}
+
 /**********************************************************************
  api_samr_enum_domains
  **********************************************************************/
+
 uint32 _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_ENUM_DOMAINS *r_u)
 {
+	uint32 num_entries = 2;
 	fstring dom[2];
 
 	r_u->status = NT_STATUS_NO_PROBLEMO;
@@ -1696,7 +1774,10 @@ uint32 _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_ENUM
 	fstrcpy(dom[0],global_myworkgroup);
 	fstrcpy(dom[1],"Builtin");
 
-	init_samr_r_enum_domains(p->mem_ctx, r_u, q_u->start_idx, dom, 2); 
+	if (!make_enum_domains(p->mem_ctx, &r_u->sam, &r_u->uni_dom_name, num_entries, dom))
+		return NT_STATUS_NO_MEMORY;
+
+	init_samr_r_enum_domains(r_u, q_u->start_idx + num_entries, num_entries);
 
 	return r_u->status;
 }

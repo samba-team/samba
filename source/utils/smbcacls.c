@@ -30,6 +30,7 @@ static pstring owner_username;
 static fstring server;
 static int got_pass;
 static int test_args;
+static TALLOC_CTX *ctx;
 
 /* numeric is set when the user wants numeric SIDs and ACEs rather
    than going via LSA calls to resolve them */
@@ -325,15 +326,14 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 	SEC_ACL *new;
 	SEC_ACE *aces;
 	if (! *the_acl) {
-		(*the_acl) = make_sec_acl(3, 1, ace);
+		(*the_acl) = make_sec_acl(ctx, 3, 1, ace);
 		return True;
 	}
 
 	aces = calloc(1+(*the_acl)->num_aces,sizeof(SEC_ACE));
 	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
-	new = make_sec_acl((*the_acl)->revision,1+(*the_acl)->num_aces, aces);
-	free_sec_acl(the_acl);
+	new = make_sec_acl(ctx, (*the_acl)->revision,1+(*the_acl)->num_aces, aces);
 	free(aces);
 	(*the_acl) = new;
 	return True;
@@ -394,10 +394,8 @@ static SEC_DESC *sec_desc_parse(char *str)
 		return NULL;
 	}
 
-	ret = make_sec_desc(revision, owner_sid, grp_sid, 
+	ret = make_sec_desc(ctx, revision, owner_sid, grp_sid, 
 			    NULL, dacl, &sd_size);
-
-	free_sec_acl(&dacl);
 
 	if (grp_sid) free(grp_sid);
 	if (owner_sid) free(owner_sid);
@@ -490,8 +488,6 @@ static int cacl_dump(struct cli_state *cli, char *filename)
 
 	sec_desc_print(stdout, sd);
 
-	free_sec_desc(&sd);
-
 	cli_close(cli, fnum);
 
 	return EXIT_OK;
@@ -524,7 +520,7 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 
 	old = cli_query_secdesc(cli, fnum);
 
-	sd = make_sec_desc(old->revision,
+	sd = make_sec_desc(ctx, old->revision,
 				(change_mode == REQUEST_CHOWN) ? &sid : old->owner_sid,
 				(change_mode == REQUEST_CHGRP) ? &sid : old->grp_sid,
 			   NULL, old->dacl, &sd_size);
@@ -532,9 +528,6 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
 	}
-
-	free_sec_desc(&sd);
-	free_sec_desc(&old);
 
 	cli_close(cli, fnum);
 
@@ -679,13 +672,8 @@ static int cacl_set(struct cli_state *cli, char *filename,
 		break;
 
 	case ACL_SET:
- 		free_sec_desc(&old);
  		old = sd;
 		break;
-	}
-
-	if (sd != old) {
-		free_sec_desc(&sd);
 	}
 
 	/* Denied ACE entries must come before allowed ones */
@@ -694,7 +682,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 
 	/* Create new security descriptor and set it */
 
-	sd = make_sec_desc(old->revision, old->owner_sid, old->grp_sid, 
+	sd = make_sec_desc(ctx, old->revision, old->owner_sid, old->grp_sid, 
 			   NULL, old->dacl, &sd_size);
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
@@ -703,9 +691,6 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	}
 
 	/* Clean up */
-
-	free_sec_desc(&sd);
-	free_sec_desc(&old);
 
 	cli_close(cli, fnum);
 
@@ -844,6 +829,8 @@ You can string acls together with spaces, commas or newlines\n\
 	enum chown_mode change_mode = REQUEST_NONE;
 	int result;
 
+	ctx = talloc_init();
+
 	setlinebuf(stdout);
 
 	dbf = stderr;
@@ -977,6 +964,8 @@ You can string acls together with spaces, commas or newlines\n\
 	} else {
 		result = cacl_dump(cli, filename);
 	}
+
+	talloc_destroy(ctx);
 
 	return result;
 }

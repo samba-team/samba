@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -804,5 +803,3 @@ static void usage(char *pname)
 	exit_server("normal exit");
 	return(0);
 }
-
-#undef OLD_NTDOMAIN

@@ -1,4 +1,3 @@
-#define OLD_NTDOMAIN 1
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
@@ -1209,7 +1208,7 @@ void smbd_process(void)
 		
 		/* free up temporary memory */
 		lp_talloc_free();
-		parse_talloc_free();
+		main_loop_talloc_free();
 
 		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout)) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
@@ -1256,5 +1255,3 @@ void smbd_process(void)
 		}
 	}
 }
-
-#undef OLD_NTDOMAIN

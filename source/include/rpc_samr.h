@@ -399,7 +399,7 @@ typedef struct q_samr_query_sec_obj_info
 typedef struct r_samr_query_sec_obj_info
 {
 	uint32 ptr;
-	SEC_DESC_BUF buf;
+	SEC_DESC_BUF *buf;
 
 	uint32 status;         /* return status */
 
@@ -1085,7 +1085,7 @@ typedef struct alias_info_ctr
 typedef struct r_samr_query_aliasinfo_info
 {
 	uint32 ptr;        
-	ALIAS_INFO_CTR *ctr;
+	ALIAS_INFO_CTR ctr;
 
 	uint32 status;
 
@@ -1096,7 +1096,7 @@ typedef struct r_samr_query_aliasinfo_info
 typedef struct q_samr_set_alias_info
 {
 	POLICY_HND alias_pol;        /* policy handle */
-	ALIAS_INFO_CTR *ctr;
+	ALIAS_INFO_CTR ctr;
 
 } SAMR_Q_SET_ALIASINFO;
 
