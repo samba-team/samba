@@ -85,6 +85,7 @@ POP     *   p;
 		static char tmpbuf[MAXMSGLINELEN];
 		strcpy(tmpbuf, "Return-Path:");
 		strcat(tmpbuf, return_path_adr);
+		strcat(tmpbuf, "\n");
 		pop_sendline (p,tmpbuf);
 		return_path_sent++;
 	    }
