@@ -2519,7 +2519,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				 * a new info level should be used for mknod. JRA.
 				 */
 
-#if defined(HAVE_MAKEDEV_FN)
+#if !defined(HAVE_MAKEDEV_FN)
 				return(ERROR_DOS(ERRDOS,ERRnoaccess));
 #else /* HAVE_MAKEDEV_FN */
 				uint32 file_type = IVAL(pdata,0);
