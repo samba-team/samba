@@ -140,5 +140,7 @@ struct dns_reply{
 
 struct dns_reply* dns_lookup(const char *, const char *);
 void dns_free_data(struct dns_reply *);
+int dns_string_to_type(const char *name);
+const char *dns_type_to_string(int type);
 
 #endif /* __RESOLVE_H__ */
