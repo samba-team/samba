@@ -322,6 +322,14 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 			pdb_set_profile_path(account, new_string, PDB_CHANGED);
 	}
 
+	if (delta->hdr_parameters.buffer) {
+		old_string = pdb_get_munged_dial(account);
+		new_string = unistr2_static(&delta->uni_parameters);
+
+		if (STRING_CHANGED)
+			pdb_set_munged_dial(account, new_string, PDB_CHANGED);
+	}
+
 	/* User and group sid */
 	if (pdb_get_user_rid(account) != delta->user_rid)
 		pdb_set_user_sid_from_rid(account, delta->user_rid, PDB_CHANGED);
