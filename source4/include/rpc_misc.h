@@ -21,7 +21,6 @@
 */
 
 #include "ntdomain.h"
-#include "rpc_dce.h"
 
 #ifndef _RPC_MISC_H /* _RPC_MISC_H */
 #define _RPC_MISC_H 
@@ -79,16 +78,5 @@
 /* The two common types. */
 #define USER_RID_TYPE 0
 #define GROUP_RID_TYPE 1
-
-/* DOM_SID2 - security id */
-typedef struct sid_info_2
-{
-	uint32 num_auths; /* length, bytes, including length of len :-) */
-
-	DOM_SID sid;
-
-} DOM_SID2;
-
-
 
 #endif /* _RPC_MISC_H */
