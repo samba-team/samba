@@ -6,11 +6,29 @@ Directory	Notes:
 =========	======
 docs		(Samba Documentation):
 --------------------------------------
-	Note in particular two files - INSTALL.txt and DIAGNOSIS.txt
-	You should also pay close attention to all the files with a
-	.txt extension.
 
-	Most problems can be solved by reference to the two files mentioned.
+	The Samba documentation for 1.9.17 has had some of its content
+	updated and a new structure has been put in place. However, since
+	this is all rather new the documentation format of previous
+	versions will remain in place. 
+
+	Note in particular two files - <your OS>_INSTALL.txt and DIAGNOSIS.txt
+	There is the potential for there to be many *INSTALL.txt files, one
+	for each OS that Samba supports. However we are moving all this into
+	the new structure. For now, most people will be using UNIX_INSTALL.txt.
+
+	You pay close attention to all the files with a
+	.txt extension. Most problems can be solved by reference to the 
+	two files mentioned.
+
+	The new documentation can be accessed starting from Samba-meta-FAQ.html,
+	in the docs/faq directory. This is incomplete, but to quote from the 
+	abstract, it:
+	
+	"contains overview information for the Samba suite of programs, 
+	a quick-start guide, and pointers to all other Samba documentation. 
+	Other FAQs exist for specific client and server issues, and HOWTO 
+	documents for more extended topics to do with Samba software."
 
 
 examples	(Example configuration files):
