@@ -1363,9 +1363,13 @@ struct cli_state {
 	int protocol;
 	int sec_mode;
 	int error;
-	int privilages;
+	int privileges;
 	fstring eff_name;
-	fstring desthost;
+
+	fstring full_dest_host_name;
+	char called_netbios_name[16];
+	char calling_netbios_name[16];
+
 	char cryptkey[8];
 	uint32 sesskey;
 	int serverzone;
@@ -2020,6 +2024,15 @@ char *Strstr(char *s, char *p);
 #define BROWSER_CONSTANT	0xaa55
 
 
+/* NT Flags2 bits - cifs6.txt section 3.1.2 */
+
+#define FLAGS2_LONG_PATH_COMPONENTS   0x0001
+#define FLAGS2_EXTENDED_ATTRIBUTES    0x0002
+#define FLAGS2_DFS_PATHNAMES          0x1000
+#define FLAGS2_READ_PERMIT_NO_EXECUTE 0x2000
+#define FLAGS2_32_BIT_ERROR_CODES     0x4000
+#define FLAGS2_UNICODE_STRINGS        0x8000
+
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
 #define CAP_RAW_MODE         0x0001
@@ -2037,14 +2050,39 @@ char *Strstr(char *s, char *p);
 
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets */
-enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANMAN1,PROTOCOL_LANMAN2,PROTOCOL_NT1};
+enum protocol_types
+{
+	PROTOCOL_NONE,
+	PROTOCOL_CORE,
+	PROTOCOL_COREPLUS,
+	PROTOCOL_LANMAN1,
+	PROTOCOL_LANMAN2,
+	PROTOCOL_NT1
+};
 
 /* security levels */
-enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER};
+enum security_types
+{
+	SEC_SHARE,
+	SEC_USER,
+	SEC_SERVER
+};
+
+/* bit-masks for security mode.  see cifs6.txt Negprot 4.1.1 server response */
+#define USE_USER_LEVEL_SECURITY 1
+#define USE_CHALLENGE_RESPONSE  2
 
 /* printing types */
-enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
-		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG};
+enum printing_types
+{
+	PRINT_BSD,
+	PRINT_SYSV,
+	PRINT_AIX,
+	PRINT_HPUX,
+	PRINT_QNX,
+	PRINT_PLP,
+	PRINT_LPRNG
+};
 
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_SAMBA};
