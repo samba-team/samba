@@ -109,24 +109,34 @@ as_append_char (struct state *state, unsigned char c)
     *state->s++ = c;
 }
 
+/* longest integer types */
+
+#ifdef HAVE_LONG_LONG
+typedef unsigned long long u_longest;
+typedef long long longest;
+#else
+typedef unsigned long u_longest;
+typedef long longest;
+#endif
+
 /*
  * is # supposed to do anything?
  */
 
 static int
-use_alternative (int flags, unsigned long num, unsigned base)
+use_alternative (int flags, u_longest num, unsigned base)
 {
   return flags & alternate_flag && (base == 16 || base == 8) && num != 0;
 }
 
 static int
 append_number(struct state *state,
-	      unsigned long num, unsigned base, char *rep,
+	      u_longest num, unsigned base, char *rep,
 	      int width, int prec, int flags, int minusp)
 {
   int len = 0;
   int i;
-  unsigned long n = num;
+  u_longest n = num;
 
   /* given precision, ignore zero flag */
   if(prec != -1)
@@ -268,6 +278,20 @@ append_char(struct state *state,
  * This can't be made into a function...
  */
 
+#ifdef HAVE_LONG_LONG
+
+#define PARSE_INT_FORMAT(res, arg, unsig) \
+if (long_long_flag) \
+     res = (unsig long long)va_arg(arg, unsig long long); \
+else if (long_flag) \
+     res = (unsig long)va_arg(arg, unsig long); \
+else if (short_flag) \
+     res = (unsig short)va_arg(arg, unsig int); \
+else \
+     res = (unsig int)va_arg(arg, unsig int)
+
+#else
+
 #define PARSE_INT_FORMAT(res, arg, unsig) \
 if (long_flag) \
      res = (unsig long)va_arg(arg, unsig long); \
@@ -275,6 +299,8 @@ else if (short_flag) \
      res = (unsig short)va_arg(arg, unsig int); \
 else \
      res = (unsig int)va_arg(arg, unsig int)
+
+#endif
 
 /*
  * zyxprintf - return length, as snprintf
@@ -289,11 +315,12 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 
   while((c = *format++)) {
     if (c == '%') {
-      int flags      = 0;
-      int width      = 0;
-      int prec       = -1;
-      int long_flag  = 0;
-      int short_flag = 0;
+      int flags          = 0;
+      int width          = 0;
+      int prec           = -1;
+      int long_long_flag = 0;
+      int long_flag      = 0;
+      int short_flag     = 0;
 
       /* flags */
       while((c = *format++)){
@@ -351,6 +378,10 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
       } else if (c == 'l') {
 	long_flag = 1;
 	c = *format++;
+	if (c == 'l') {
+	    long_long_flag = 1;
+	    c = *format++;
+	}
       }
 
       switch (c) {
@@ -367,8 +398,8 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 	break;
       case 'd' :
       case 'i' : {
-	long arg;
-	unsigned long num;
+	longest arg;
+	u_longest num;
 	int minusp = 0;
 
 	PARSE_INT_FORMAT(arg, ap, signed);
@@ -384,7 +415,7 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 	break;
       }
       case 'u' : {
-	unsigned long arg;
+	u_longest arg;
 
 	PARSE_INT_FORMAT(arg, ap, unsigned);
 
@@ -393,7 +424,7 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 	break;
       }
       case 'o' : {
-	unsigned long arg;
+	u_longest arg;
 
 	PARSE_INT_FORMAT(arg, ap, unsigned);
 
@@ -402,7 +433,7 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 	break;
       }
       case 'x' : {
-	unsigned long arg;
+	u_longest arg;
 
 	PARSE_INT_FORMAT(arg, ap, unsigned);
 
@@ -411,7 +442,7 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 	break;
       }
       case 'X' :{
-	unsigned long arg;
+	u_longest arg;
 
 	PARSE_INT_FORMAT(arg, ap, unsigned);
 
