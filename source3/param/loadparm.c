@@ -2717,8 +2717,10 @@ static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 
 static BOOL handle_charset(const char *pszParmValue, char **ptr)
 {
-	string_set(ptr, pszParmValue);
-	init_iconv();
+	if (strcmp(*ptr, pszParmValue) != 0) {
+		string_set(ptr, pszParmValue);
+		init_iconv();
+	}
 	return True;
 }
 
