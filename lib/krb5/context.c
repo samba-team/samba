@@ -11,6 +11,7 @@ krb5_init_context(krb5_context *context)
     return ENOMEM;
   memset(p, 0, sizeof(krb5_context_data));
   krb5_init_ets(p);
+  p->cc_ops = NULL;
   krb5_config_parse_file (krb5_config_file, &p->cf);
   krb5_set_default_realm(p, NULL);
   *context = p;
@@ -24,7 +25,15 @@ void krb5_os_free_context(krb5_context context)
 
 void krb5_free_context(krb5_context context)
 {
+  int i;
+
+  free(context->etypes);
   free(context->default_realm);
+  krb5_config_file_free (context->cf);
+  destroy_hdb_error_table (context->et_list);
+  for(i = 0; i < context->num_ops; ++i)
+    free(context->cc_ops[i].prefix);
+  free(context->cc_ops);
   free(context);
 }
 
