@@ -525,12 +525,13 @@ string.
 
 The format is:
 
-  TRANSPORT:host:[flags] or 
-  TRANSPORT:[flags] (for server side or general specifications)
+  TRANSPORT:host[flags]
 
 where TRANSPORT is either ncacn_np for SMB or ncacn_ip_tcp for RPC/TCP
 
-"host" is an IP or hostname or netbios name
+"host" is an IP or hostname or netbios name. If the binding string 
+identifies the server side of an endpoint, "host" may be an empty 
+string.
 
 "flags" can include a SMB pipe name if using the ncacn_np transport or
 a TCP port number if using the ncacn_ip_tcp transport, otherwise they
@@ -550,27 +551,24 @@ other recognised flags are:
 For example, these all connect to the samr pipe:
 
    ncacn_np:myserver
-   ncacn_np:myserver:samr
-   ncacn_np:myserver:samr,seal
-   ncacn_np:myserver:\pipe\samr
-   ncacn_np:myserver:/pipe/samr
    ncacn_np:myserver[samr]
    ncacn_np:myserver[\pipe\samr]
    ncacn_np:myserver[/pipe/samr]
-   ncacn_np:myserver:[samr,sign,print]
-   ncacn_np:myserver:[\pipe\samr,sign,seal,bigendian]
-   ncacn_np:myserver:[/pipe/samr,seal,validate]
+   ncacn_np:myserver[samr,sign,print]
+   ncacn_np:myserver[\pipe\samr,sign,seal,bigendian]
+   ncacn_np:myserver[/pipe/samr,seal,validate]
+   ncacn_np:
+   ncacn_np:[/pipe/samr]
 
    ncacn_ip_tcp:myserver
-   ncacn_ip_tcp:myserver:1024
    ncacn_ip_tcp:myserver[1024]
-   ncacn_ip_tcp:myserver:[1024,sign,seal]
+   ncacn_ip_tcp:myserver[1024,sign,seal]
 
 
 IDEA: Maybe extend UNC names like this?
 
  smbclient //server/share
- smbclient //server/share:[sign,seal,spnego]
+ smbclient //server/share[sign,seal,spnego]
 
 DCERPC Handles
 --------------

@@ -142,6 +142,7 @@ struct dcerpc_interface_table {
 /* this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
+	struct GUID *object;
 	const char *host;
 	const char **options;
 	uint32_t flags;
