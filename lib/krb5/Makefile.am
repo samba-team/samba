@@ -27,6 +27,7 @@ lib_LTLIBRARIES = libkrb5.la
 ERR_FILES = krb5_err.c heim_err.c
 
 libkrb5_la_SOURCES = \
+	acl.c \
 	add_et_list.c \
 	addr_families.c \
 	address.c \
