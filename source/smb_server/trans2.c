@@ -840,7 +840,7 @@ static NTSTATUS trans2_setpathinfo(struct smbsrv_request *req, struct smb_trans2
 	blob = &trans->in.data;
 	st.generic.level = (enum smb_setfileinfo_level)level;
 
-	trans2_pull_blob_string(req, &trans->in.params, 4, &st.generic.file.fname, 0);
+	trans2_pull_blob_string(req, &trans->in.params, 6, &st.generic.file.fname, 0);
 	if (st.generic.file.fname == NULL) {
 		return NT_STATUS_FOOBAR;
 	}
