@@ -212,21 +212,31 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	if (strequal(service,HOMES_NAME)) {
-		if (*user && Get_Pwnam(user,True))
-			return(make_connection(user,user,password,
+		if (*user && Get_Pwnam(user,True)) {
+			fstring dos_username;
+			fstrcpy(dos_username, user);
+			unix_to_dos(dos_username, True);
+			return(make_connection(dos_username,user,password,
 					       pwlen,dev,vuid,ecode));
+		}
 
 		if(lp_security() != SEC_SHARE) {
 			if (validated_username(vuid)) {
-				pstrcpy(user,validated_username(vuid));
-				return(make_connection(user,user,password,pwlen,dev,vuid,ecode));
+				fstring dos_username;
+				fstrcpy(user,validated_username(vuid));
+				fstrcpy(dos_username, user);
+				unix_to_dos(dos_username, True);
+				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		} else {
 			/* Security = share. Try with sesssetup_user
 			 * as the username.  */
 			if(*sesssetup_user) {
-				pstrcpy(user,sesssetup_user);
-				return(make_connection(user,user,password,pwlen,dev,vuid,ecode));
+				fstring dos_username;
+				fstrcpy(user,sesssetup_user);
+				fstrcpy(dos_username, user);
+				unix_to_dos(dos_username, True);
+				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		}
 	}

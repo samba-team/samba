@@ -222,11 +222,10 @@ int reply_tcon(connection_struct *conn,
 	parse_connect(smb_buf(inbuf)+1,service,user,password,&pwlen,dev);
 
     /*
-     * Ensure the user, password and service names are in UNIX codepage format.
+     * Ensure the user and password names are in UNIX codepage format.
      */
 
     dos_to_unix(user,True);
-    dos_to_unix(service,True);
 	if (!doencrypt)
     	dos_to_unix(password,True);
 
@@ -312,11 +311,10 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	DEBUG(4,("Got device type %s\n",devicename));
 
     /*
-     * Ensure the user, password and service names are in UNIX codepage format.
+     * Ensure the user and password names are in UNIX codepage format.
      */
 
     dos_to_unix(user,True);
-    dos_to_unix(service,True);
 	if (!doencrypt)
 		dos_to_unix(password,True);
 

@@ -411,7 +411,7 @@ char *dos_GetWd(char *path)
 
   if (sys_stat(".",&st) == -1)
   {
-    DEBUG(0,("Very strange, couldn't stat \".\"\n"));
+    DEBUG(0,("Very strange, couldn't stat \".\" path=%s\n", path));
     return(dos_getwd(path));
   }
 

@@ -338,7 +338,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
    * JRA.
    */
 
-  if (conn->read_only && !conn->printer) {
+  if (!CAN_WRITE(conn) && !conn->printer) {
     /* It's a read-only share - fail if we wanted to write. */
     if(accmode != O_RDONLY) {
       DEBUG(3,("Permission denied opening %s\n",fname));
@@ -1139,7 +1139,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 			 * Try and create the directory.
 			 */
 
-			if(conn->read_only) {
+			if(!CAN_WRITE(conn)) {
 				DEBUG(2,("open_directory: failing create on read-only share\n"));
 				errno = EACCES;
 				return -1;
