@@ -525,7 +525,8 @@ SMBTORTURE_RAW_OBJ = torture/raw/qfsinfo.o torture/raw/qfileinfo.o torture/raw/s
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/torture_util.o torture/nbio.o torture/scanner.o \
 		torture/utable.o torture/denytest.o torture/mangle_test.o \
-		torture/aliases.o libcli/raw/clirewrite.o $(SMBTORTURE_RAW_OBJ)
+		torture/aliases.o libcli/raw/clirewrite.o $(SMBTORTURE_RAW_OBJ) \
+		rpc_parse/parse_lsa.o
 
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) \
 	$(LIBSMB_OBJ) $(LIBDFS_OBJ) $(PARAM_OBJ) $(LIB_OBJ)
