@@ -1,4 +1,12 @@
+2002-08-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken.h.in: we may need a prototype for strndup
+
 2002-08-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken.h.in: typedef ssize_t here
+
+	* getarg.c: don't put Ns before comma
 
 	* resolve.c: _res might not be available
 
