@@ -858,7 +858,7 @@ $(PROTO_OBJ): .proto.stamp
 # different to the existing ones.
 $(srcdir)/include/proto.h: .proto.check
 
-.proto.check: $(srcdir)/*.c $(srcdir)/*/*.c
+.proto.check: $(ALL_SOURCE) 
 	@echo Checking $(srcdir)/include/proto.h
 	@cd $(srcdir) && $(AWK) -f script/mkproto.awk \
 	`echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` \
@@ -872,8 +872,12 @@ $(srcdir)/include/proto.h: .proto.check
 	mv $(builddir)/include/proto.h.new include/proto.h; \
 	fi
 
-.proto.stamp: .proto.check
-	@[ -f .proto.stamp ] || touch .proto.stamp
+.proto.stamp: 
+	@if [ \! -f .proto.stamp ] ; \
+	then \
+	touch .proto.stamp; \
+	ALL_SOURCE="`echo $(srcdir)/*.c $(srcdir)/*/*.c`" $(MAKE) $(MAKEFLAGS) .proto.check; \
+	fi
 
 include/build_env.h:
 	@echo rebuilding include/build_env.h
@@ -885,7 +889,7 @@ include/wrepld_proto.h:
 	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
 	  $(WREPL_OBJ1)
 
-headers: .proto.check $(srcdir)/include/proto.h include/build_env.h include/wrepld_proto.h
+headers: .proto.stamp $(srcdir)/include/proto.h include/build_env.h include/wrepld_proto.h
 
 proto: headers winbindd_proto
 
