@@ -2378,8 +2378,7 @@ void reply_special(struct smbsrv_request *req)
 	switch (msg_type) {
 	case 0x81: /* session request */
 		if (req->smb_conn->negotiate.done_nbt_session) {
-			smbsrv_terminate_connection(req->smb_conn, 
-						    "multiple session request not permitted");
+			DEBUG(0,("Warning: ignoring secondary session request\n"));
 			return;
 		}
 		
