@@ -39,6 +39,8 @@ RCSID("$Id$");
 
 #define NUSERS 1000
 
+#define WORDBUF_SIZE 65535
+
 static unsigned
 read_words (const char *filename, char ***ret_w)
 {
@@ -46,19 +48,29 @@ read_words (const char *filename, char ***ret_w)
     FILE *f;
     char buf[256];
     char **w = NULL;
+    char *wbuf = NULL, *wptr = NULL, *wend = NULL;
 
     f = fopen (filename, "r");
     if (f == NULL)
 	err (1, "cannot open %s", filename);
     alloc = n = 0;
     while (fgets (buf, sizeof(buf), f) != NULL) {
+	size_t len;
+
 	if (buf[strlen (buf) - 1] == '\n')
 	    buf[strlen (buf) - 1] = '\0';
 	if (n >= alloc) {
-	    alloc += 16;
+	    alloc = max(alloc + 16, alloc * 2);
 	    w = erealloc (w, alloc * sizeof(char **));
 	}
-	w[n++] = estrdup (buf);
+	len = strlen(buf);
+	if (wptr + len + 1 >= wend) {
+	    wptr = wbuf = emalloc (WORDBUF_SIZE);
+	    wend = wbuf + WORDBUF_SIZE;
+	}
+	memmove (wptr, buf, len + 1);
+	w[n++] = wptr;
+	wptr += len + 1;
     }
     *ret_w = w;
     return n;
