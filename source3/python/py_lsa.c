@@ -71,6 +71,13 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
+	if (server[0] != '\\' || server[1] != '\\') {
+		PyErr_SetString(PyExc_ValueError, "UNC name required");
+		return NULL;
+	}
+
+	server += 2;
+
 	if (!(cli = open_pipe_creds(server, creds, PIPE_LSARPC, &errstr))) {
 		PyErr_SetString(lsa_error, errstr);
 		free(errstr);
