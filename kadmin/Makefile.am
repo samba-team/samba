@@ -8,7 +8,7 @@ sbin_PROGRAMS = kadmin
 
 libexec_PROGRAMS = kadmind
 
-man_MANS = kadmind.8
+man_MANS = kadmin.8 kadmind.8
 
 noinst_PROGRAMS = add_random_users
 
