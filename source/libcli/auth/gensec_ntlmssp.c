@@ -178,10 +178,10 @@ static NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_secur
 		return nt_status;
 	}
 
-	if (gensec_security->want_features & GENSEC_WANT_SIGN) {
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
-	if (gensec_security->want_features & GENSEC_WANT_SEAL) {
+	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
@@ -219,7 +219,7 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 		return status;
 	}
 
-	if (gensec_security->want_features & GENSEC_WANT_SESSION_KEY) {
+	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
 		/*
 		 * We need to set this to allow a later SetPassword
 		 * via the SAMR pipe to succeed. Strange.... We could
@@ -231,10 +231,10 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
 		 */
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
-	if (gensec_security->want_features & GENSEC_WANT_SIGN) {
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
-	if (gensec_security->want_features & GENSEC_WANT_SEAL) {
+	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
 		gensec_ntlmssp_state->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
@@ -343,8 +343,27 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, T
 				      const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
+	NTSTATUS status;
 
-	return ntlmssp_update(gensec_ntlmssp_state->ntlmssp_state, out_mem_ctx, in, out);
+	status = ntlmssp_update(gensec_ntlmssp_state->ntlmssp_state, out_mem_ctx, in, out);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+		gensec_security->have_features |= GENSEC_FEATURE_SIGN;
+	}
+
+	if (gensec_ntlmssp_state->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		gensec_security->have_features |= GENSEC_FEATURE_SEAL;
+	}
+
+	if (gensec_ntlmssp_state->ntlmssp_state->session_key.data) {
+		gensec_security->have_features |= GENSEC_FEATURE_SESSION_KEY;
+	}
+
+	return status;
 }
 
 /** 
