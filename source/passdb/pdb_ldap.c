@@ -2591,7 +2591,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 
 	/* This sid will be replaced later */
 
-	add_sid_to_array_unique(&global_sid_NULL, sids, &num_sids);
+	add_sid_to_array_unique(NULL, &global_sid_NULL, sids, &num_sids);
 
 	for (entry = ldap_first_entry(conn->ldap_struct, msg);
 	     entry != NULL;
@@ -2624,7 +2624,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 			sid_copy(&(*sids)[0], &sid);
 		} else {
 			add_gid_to_array_unique(gid, gids, &num_gids);
-			add_sid_to_array_unique(&sid, sids, &num_sids);
+			add_sid_to_array_unique(NULL, &sid, sids, &num_sids);
 		}
 	}
 
@@ -3170,7 +3170,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 		if (!string_to_sid(&member, values[i]))
 			continue;
 
-		add_sid_to_array(&member, members, num_members);
+		add_sid_to_array(NULL, &member, members, num_members);
 	}
 
 	ldap_value_free(values);
@@ -3246,7 +3246,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		if (!string_to_sid(&sid, sid_str))
 			continue;
 
-		add_sid_to_array_unique(&sid, aliases, num_aliases);
+		add_sid_to_array_unique(NULL, &sid, aliases, num_aliases);
 	}
 
 	ldap_msgfree(result);

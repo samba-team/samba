@@ -128,6 +128,8 @@ enum winbindd_cmd {
 	WINBINDD_DUAL_UID2NAME,
 	WINBINDD_DUAL_GID2NAME,
 	WINBINDD_DUAL_IDMAPSET,
+	/* Return the list of aliases for a list of SIDs */
+	WINBINDD_DUAL_GETSIDALIASES,
 
 	/* Placeholder for end of cmd list */
 	WINBINDD_NUM_CMDS
@@ -232,6 +234,9 @@ struct winbindd_request {
 			gid_t gid;
 			fstring sid;
 		} dual_idmapset;
+		struct {
+			fstring cache_key;
+		} dual_sidaliases;
 	} data;
 	char null_term;
 };

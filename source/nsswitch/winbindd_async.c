@@ -307,4 +307,323 @@ enum winbindd_result winbindd_lookup_name_async(TALLOC_CTX *mem_ctx,
 			lookup_name_recv, cont, private);
 }
 
+static BOOL print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
+			  int num_sids, char **result)
+{
+	int i;
+	size_t buflen = 0;
+	ssize_t len = 0;
 
+	*result = NULL;
+	for (i=0; i<num_sids; i++)
+		sprintf_append(mem_ctx, result, &len, &buflen,
+			       "%s\n", sid_string_static(&sids[i]));
+
+	return (*result != NULL);
+}
+
+static BOOL parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
+			  DOM_SID **sids, int *num_sids)
+{
+	char *p, *q;
+
+	p = sidstr;
+	if (p == NULL)
+		return True;
+
+	while (p[0] != '\0') {
+		DOM_SID sid;
+		q = strchr(p, '\n');
+		if (q == NULL) {
+			DEBUG(0, ("Got invalid sidstr: %s\n", p));
+			return False;
+		}
+		*q = '\0';
+		q += 1;
+		if (!string_to_sid(&sid, p)) {
+			DEBUG(0, ("Could not parse sid %s\n", p));
+			return False;
+		}
+		add_sid_to_array(mem_ctx, &sid, sids, num_sids);
+		p = q;
+	}
+	return True;
+}
+
+static void getsidaliases_recv(TALLOC_CTX *mem_ctx, BOOL success,
+			       struct winbindd_response *response,
+			       void *c, void *private)
+{
+	void (*cont)(void *priv, BOOL succ,
+		     DOM_SID *aliases, int num_aliases) = c;
+	char *aliases_str;
+	DOM_SID *sids = NULL;
+	int num_sids = 0;
+
+	if (!success) {
+		cont(private, success, NULL, 0);
+		return;
+	}
+
+	aliases_str = response->extra_data;
+
+	if (aliases_str == NULL) {
+		cont(private, True, NULL, 0);
+		return;
+	}
+
+	if (!parse_sidlist(mem_ctx, aliases_str, &sids, &num_sids)) {
+		DEBUG(0, ("Could not parse sids\n"));
+		cont(private, False, NULL, 0);
+		return;
+	}
+
+	cont(private, True, sids, num_sids);
+}
+
+void winbindd_getsidaliases_async(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const DOM_SID *sids, int num_sids,
+			 	  void (*cont)(void *private,
+				 	       BOOL success,
+					       const DOM_SID *aliases,
+					       int num_aliases),
+				  void *private)
+{
+	struct winbindd_request request;
+	char *sidstr = NULL;
+	char *keystr;
+
+	if (num_sids == 0) {
+		cont(private, True, NULL, 0);
+		return;
+	}
+
+	if (!print_sidlist(mem_ctx, sids, num_sids, &sidstr)) {
+		cont(private, False, NULL, 0);
+		return;
+	}
+
+	keystr = cache_store_request_data(mem_ctx, sidstr);
+	if (keystr == NULL) {
+		cont(private, False, NULL, 0);
+		return;
+	}
+
+	request.cmd = WINBINDD_DUAL_GETSIDALIASES;
+	fstrcpy(request.domain_name, domain->name);
+	fstrcpy(request.data.dual_sidaliases.cache_key, keystr);
+
+	do_async(mem_ctx, &domain->child, &request, getsidaliases_recv,
+		 cont, private);
+}
+
+enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	DOM_SID *sids = NULL;
+	int num_sids = 0;
+	char *key = state->request.data.dual_sidaliases.cache_key;
+	char *sidstr;
+	int i, num_aliases;
+	uint32 *alias_rids;
+	NTSTATUS result;
+
+	DEBUG(3, ("[%5lu]: getsidaliases\n", (unsigned long)state->pid));
+
+	/* Ensure null termination */
+        state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';
+        state->request.data.dual_sidaliases.cache_key
+		[sizeof(state->request.data.dual_sidaliases.cache_key)-1]='\0';
+
+	domain = find_domain_from_name(state->request.domain_name);
+	if (domain == NULL) {
+		DEBUG(0, ("Could not find domain %s\n",
+			  state->request.domain_name));
+		return WINBINDD_ERROR;
+	}
+
+	sidstr = cache_retrieve_request_data(state->mem_ctx, key);
+	if (sidstr == NULL)
+		sidstr = talloc_strdup(state->mem_ctx, "\n"); /* No SID */
+
+	DEBUG(10, ("Sidlist: %s\n", sidstr));
+
+	if (!parse_sidlist(state->mem_ctx, sidstr, &sids, &num_sids)) {
+		DEBUG(0, ("Could not parse SID list: %s\n", sidstr));
+		return WINBINDD_ERROR;
+	}
+
+	num_aliases = 0;
+	alias_rids = NULL;
+
+	result = domain->methods->lookup_useraliases(domain,
+						     state->mem_ctx,
+						     num_sids, sids,
+						     &num_aliases,
+						     &alias_rids);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(3, ("Could not lookup_useraliases: %s\n",
+			  nt_errstr(result)));
+		return WINBINDD_ERROR;
+	}
+
+	num_sids = 0;
+	sids = NULL;
+
+	DEBUG(10, ("Got %d aliases\n", num_aliases));
+
+	for (i=0; i<num_aliases; i++) {
+		DOM_SID sid;
+		DEBUGADD(10, (" rid %d\n", alias_rids[i]));
+		sid_copy(&sid, &domain->sid);
+		sid_append_rid(&sid, alias_rids[i]);
+		add_sid_to_array(state->mem_ctx, &sid, &sids, &num_sids);
+	}
+
+	if (!print_sidlist(NULL, sids, num_sids,
+			   (char **)&state->response.extra_data)) {
+		DEBUG(0, ("Could not print_sidlist\n"));
+		return WINBINDD_ERROR;
+	}
+
+	if (state->response.extra_data != NULL) {
+		DEBUG(10, ("aliases_list: %s\n",
+			   (char *)state->response.extra_data));
+		state->response.length += strlen(state->response.extra_data)+1;
+	}
+	
+	return WINBINDD_OK;
+}
+
+struct gettoken_state {
+	TALLOC_CTX *mem_ctx;
+	const DOM_SID *user_sid;
+	struct winbindd_domain *alias_domain;
+	struct winbindd_domain *builtin_domain;
+	DOM_SID *sids;
+	int num_sids;
+	void (*cont)(void *private, BOOL success, DOM_SID *sids, int num_sids);
+	void *private;
+};
+
+static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
+				   struct winbindd_response *response,
+				   void *c, void *private);
+static void gettoken_recvaliases(void *private, BOOL success,
+				 const DOM_SID *aliases,
+				 int num_aliases);
+				 
+
+enum winbindd_result winbindd_gettoken_async(TALLOC_CTX *mem_ctx,
+					     const DOM_SID *user_sid,
+					     struct winbindd_domain *alias_domain,
+					     struct winbindd_domain *builtin_domain,
+					     void (*cont)(void *private,
+							  BOOL success,
+							  DOM_SID *sids,
+							  int num_sids),
+					     void *private)
+{
+	struct winbindd_domain *domain;
+	struct winbindd_request request;
+	struct gettoken_state *state;
+
+	state = TALLOC_P(mem_ctx, struct gettoken_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return WINBINDD_ERROR;
+	}
+
+	state->mem_ctx = mem_ctx;
+	state->user_sid = user_sid;
+	state->alias_domain = alias_domain;
+	state->builtin_domain = builtin_domain;
+	state->cont = cont;
+	state->private = private;
+
+	domain = find_domain_from_sid(user_sid);
+	if (domain == NULL) {
+		DEBUG(5, ("Could not find domain from SID %s\n",
+			  sid_string_static(user_sid)));
+		return WINBINDD_ERROR;
+	}
+
+	request.cmd = WINBINDD_GETUSERDOMGROUPS;
+	fstrcpy(request.data.sid, sid_string_static(user_sid));
+
+	return do_async(mem_ctx, &domain->child, &request,
+			gettoken_recvdomgroups, NULL, state);
+}
+
+static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, BOOL success,
+				   struct winbindd_response *response,
+				   void *c, void *private)
+{
+	struct gettoken_state *state = private;
+	char *sids_str;
+	
+	if (!success) {
+		state->cont(state->private, success, NULL, 0);
+		return;
+	}
+
+	sids_str = response->extra_data;
+
+	if (sids_str == NULL) {
+		state->cont(state->private, True, NULL, 0);
+		return;
+	}
+
+	state->sids = NULL;
+	state->num_sids = 0;
+
+	add_sid_to_array(mem_ctx, state->user_sid, &state->sids,
+			 &state->num_sids);
+
+	if (!parse_sidlist(mem_ctx, sids_str, &state->sids,
+			   &state->num_sids)) {
+		DEBUG(0, ("Could not parse sids\n"));
+		state->cont(state->private, False, NULL, 0);
+		return;
+	}
+
+	if (state->alias_domain == NULL) {
+		state->cont(state->private, True, state->sids,
+			    state->num_sids);
+		return;
+	}
+
+	winbindd_getsidaliases_async(state->alias_domain, mem_ctx,
+				     state->sids, state->num_sids,
+				     gettoken_recvaliases, state);
+}
+
+static void gettoken_recvaliases(void *private, BOOL success,
+				 const DOM_SID *aliases,
+				 int num_aliases)
+{
+	struct gettoken_state *state = private;
+	int i;
+
+	if (!success) {
+		state->cont(state->private, False, NULL, 0);
+		return;
+	}
+
+	for (i=0; i<num_aliases; i++)
+		add_sid_to_array(state->mem_ctx, &aliases[i],
+				 &state->sids, &state->num_sids);
+
+	if (state->builtin_domain != NULL) {
+		struct winbindd_domain *builtin_domain = state->builtin_domain;
+		state->builtin_domain = NULL;
+		winbindd_getsidaliases_async(builtin_domain, state->mem_ctx,
+					     state->sids, state->num_sids,
+					     gettoken_recvaliases, state);
+		return;
+	}
+
+	state->cont(state->private, True, state->sids, state->num_sids);
+}

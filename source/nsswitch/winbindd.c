@@ -237,7 +237,7 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 	{ WINBINDD_GETPWENT, winbindd_getpwent, "GETPWENT" },
 
 	{ WINBINDD_GETGROUPS, winbindd_getgroups, "GETGROUPS" },
-	{ WINBINDD_GETUSERSIDS, winbindd_getusersids, "GETUSERSIDS" },
+	{ WINBINDD_GETUSERSIDS, winbindd_getusersids_async, "GETUSERSIDS" },
 	{ WINBINDD_GETUSERDOMGROUPS, winbindd_getuserdomgroups_async,
 	  "GETUSERDOMGROUPS" },
 

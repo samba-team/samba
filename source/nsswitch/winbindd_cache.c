@@ -1126,7 +1126,7 @@ do_query:
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *user_sid, 
-				  uint32 *num_groups, DOM_SID ***user_gids)
+				  uint32 *num_groups, DOM_SID **user_gids)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1159,11 +1159,12 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (*num_groups == 0)
 		goto do_cached;
 
-	(*user_gids) = TALLOC_ARRAY(mem_ctx, DOM_SID *, *num_groups);
+	(*user_gids) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_groups);
 	if (! (*user_gids))
 		smb_panic("lookup_usergroups out of memory");
 	for (i=0; i<(*num_groups); i++) {
-		(*user_gids)[i] = centry_sid(centry, mem_ctx);
+		DOM_SID *sid = centry_sid(centry, mem_ctx);
+		sid_copy(&(*user_gids)[i], sid);
 	}
 
 do_cached:	
@@ -1196,7 +1197,7 @@ do_query:
 		goto skip_save;
 	centry_put_uint32(centry, *num_groups);
 	for (i=0; i<(*num_groups); i++) {
-		centry_put_sid(centry, (*user_gids)[i]);
+		centry_put_sid(centry, &(*user_gids)[i]);
 	}	
 	centry_end(centry, "UG/%s", sid_to_string(sid_string, user_sid));
 	centry_free(centry);
@@ -1207,7 +1208,7 @@ skip_save:
 
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, DOM_SID **sids,
+				   uint32 num_sids, DOM_SID *sids,
 				   uint32 *num_aliases, uint32 **alias_rids)
 {
 	struct winbind_cache *cache = get_cache(domain);
@@ -1230,7 +1231,7 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 
 	for (i=0; i<num_sids; i++) {
 		sidlist = talloc_asprintf(mem_ctx, "%s/%s", sidlist,
-					  sid_string_static(sids[i]));
+					  sid_string_static(&sids[i]));
 		if (sidlist == NULL)
 			return NT_STATUS_NO_MEMORY;
 	}
@@ -1505,18 +1506,18 @@ static BOOL init_wcache(void)
 
 void cache_store_response(pid_t pid, struct winbindd_response *response)
 {
-	TDB_DATA key, data;
 	fstring key_str;
 
 	if (!init_wcache())
 		return;
 
+	DEBUG(10, ("Storing response for pid %d, len %d\n",
+		   pid, response->length));
+
 	fstr_sprintf(key_str, "DR/%d", pid);
-	key.dptr = key_str;
-	key.dsize = strlen(key_str);
-	data.dptr = (void *)response;
-	data.dsize = sizeof(*response);
-	if (tdb_store(wcache->tdb, key, data, TDB_REPLACE) == -1)
+	if (tdb_store(wcache->tdb, string_tdb_data(key_str), 
+		      make_tdb_data((void *)response, sizeof(*response)),
+		      TDB_REPLACE) == -1)
 		return;
 
 	if (response->length == sizeof(*response))
@@ -1524,38 +1525,37 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 
 	/* There's extra data */
 
+	DEBUG(10, ("Storing extra data: len=%d\n",
+		   response->length - sizeof(*response)));
+
 	fstr_sprintf(key_str, "DE/%d", pid);
-	key.dptr = key_str;
-	key.dsize = strlen(key_str);
-	data.dptr = response->extra_data;
-	data.dsize = response->length - sizeof(*response);
-	if (tdb_store(wcache->tdb, key, data, TDB_REPLACE) == 0)
+	if (tdb_store(wcache->tdb, string_tdb_data(key_str),
+		      make_tdb_data(response->extra_data,
+				    response->length - sizeof(*response)),
+		      TDB_REPLACE) == 0)
 		return;
 
 	/* We could not store the extra data, make sure the tdb does not
 	 * contain a main record with wrong dangling extra data */
 
 	fstr_sprintf(key_str, "DR/%d", pid);
-	key.dptr = key_str;
-	key.dsize = strlen(key_str);
-	tdb_delete(wcache->tdb, key);
+	tdb_delete(wcache->tdb, string_tdb_data(key_str));
 
 	return;
 }
 
 BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 {
-	TDB_DATA key, data;
+	TDB_DATA data;
 	fstring key_str;
 
 	if (!init_wcache())
 		return False;
 
-	fstr_sprintf(key_str, "DR/%d", pid);
-	key.dptr = key_str;
-	key.dsize = strlen(key_str);
+	DEBUG(10, ("Retrieving response for pid %d\n", pid));
 
-	data = tdb_fetch(wcache->tdb, key);
+	fstr_sprintf(key_str, "DR/%d", pid);
+	data = tdb_fetch(wcache->tdb, string_tdb_data(key_str));
 
 	if (data.dptr == NULL)
 		return False;
@@ -1573,20 +1573,75 @@ BOOL cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 
 	/* There's extra data */
 
+	DEBUG(10, ("Retrieving extra data length=%d\n",
+		   response->length - sizeof(*response)));
+
 	fstr_sprintf(key_str, "DE/%d", pid);
-	key.dptr = key_str;
-	key.dsize = strlen(key_str);
+	data = tdb_fetch(wcache->tdb, string_tdb_data(key_str));
 
-	data = tdb_fetch(wcache->tdb, key);
-
-	if (data.dptr == NULL)
+	if (data.dptr == NULL) {
+		DEBUG(0, ("Did not find extra data\n"));
 		return False;
+	}
 
 	if (data.dsize != (response->length - sizeof(*response))) {
+		DEBUG(0, ("Invalid extra data length: %d\n", data.dsize));
 		SAFE_FREE(data.dptr);
 		return False;
 	}
 
 	response->extra_data = data.dptr;
 	return True;
+}
+
+char *cache_store_request_data(TALLOC_CTX *mem_ctx, char *request_string)
+{
+	int i;
+
+	if (!init_wcache())
+		return NULL;
+
+	for (i=0; i<2; i++) {
+		char *key = talloc_strdup(mem_ctx, generate_random_str(16));
+		if (key == NULL)
+			return NULL;
+		DEBUG(10, ("Storing request key %s\n", key));
+		if (tdb_store_bystring(wcache->tdb, key,
+			      	       string_tdb_data(request_string),
+			      	       TDB_INSERT) == 0)
+			return key;
+	}
+	return NULL;
+}
+
+char *cache_retrieve_request_data(TALLOC_CTX *mem_ctx, char *key)
+{
+	TDB_DATA data;
+	char *result = NULL;
+
+	if (!init_wcache())
+		return NULL;
+
+	DEBUG(10, ("Retrieving key %s\n", key));
+
+	data = tdb_fetch_bystring(wcache->tdb, key);
+	if (data.dptr == NULL)
+		return NULL;
+
+	if (strnlen(data.dptr, data.dsize) != (data.dsize)) {
+		DEBUG(0, ("Received invalid request string\n"));
+		goto done;
+	}
+	result = TALLOC_ARRAY(mem_ctx, char, data.dsize+1);
+	if (result != NULL) {
+		memcpy(result, data.dptr, data.dsize);
+		result[data.dsize] = '\0';
+	}
+	if (tdb_delete_bystring(wcache->tdb, key) != 0) {
+		DEBUG(0, ("Could not delete key %s\n", key));
+		result = NULL;
+	}
+  done:
+	SAFE_FREE(data.dptr);
+	return result;
 }

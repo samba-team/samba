@@ -147,7 +147,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *user_sid,
-				  uint32 *num_groups, DOM_SID ***user_gids)
+				  uint32 *num_groups, DOM_SID **user_gids)
 {
 	NTSTATUS result;
 
@@ -165,7 +165,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32 num_sids, DOM_SID **sids,
+				   uint32 num_sids, DOM_SID *sids,
 				   uint32 *num_aliases, uint32 **alias_rids)
 {
 	NTSTATUS result;

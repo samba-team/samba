@@ -242,13 +242,13 @@ struct winbindd_methods {
 	NTSTATUS (*lookup_usergroups)(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
 				      const DOM_SID *user_sid,
-				      uint32 *num_groups, DOM_SID ***user_gids);
+				      uint32 *num_groups, DOM_SID **user_gids);
 
 	/* Lookup all aliases that the sids delivered are member of. This is
 	 * to implement 'domain local groups' correctly */
 	NTSTATUS (*lookup_useraliases)(struct winbindd_domain *domain,
 				       TALLOC_CTX *mem_ctx,
-				       uint32 num_sids, DOM_SID **sids,
+				       uint32 num_sids, DOM_SID *sids,
 				       uint32 *num_aliases,
 				       uint32 **alias_rids);
 

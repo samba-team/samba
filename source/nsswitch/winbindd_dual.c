@@ -438,6 +438,8 @@ static struct winbindd_dispatch_table child_dispatch_table[] = {
 	  "ALLOCATE_RID_AND_GID" },
 	{ WINBINDD_GETUSERDOMGROUPS, winbindd_getuserdomgroups,
 	  "GETUSERDOMGROUPS" },
+	{ WINBINDD_DUAL_GETSIDALIASES, winbindd_dual_getsidaliases,
+	  "GETSIDALIASES" },
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }

@@ -394,7 +394,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const DOM_SID *user_sid,
-				  uint32 *num_groups, DOM_SID ***user_grpsids)
+				  uint32 *num_groups, DOM_SID **user_grpsids)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND dom_pol, user_pol;
@@ -424,11 +424,11 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 			
 		*num_groups = user->num_groups;
 				
-		(*user_grpsids) = TALLOC_ARRAY(mem_ctx, DOM_SID*, *num_groups);
+		(*user_grpsids) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_groups);
 		for (i=0;i<(*num_groups);i++) {
-			(*user_grpsids)[i] =
-				rid_to_talloced_sid(domain, mem_ctx,
-						    user->gids[i].g_rid);
+			sid_copy(&((*user_grpsids)[i]), &domain->sid);
+			sid_append_rid(&((*user_grpsids)[i]),
+				       user->gids[i].g_rid);
 		}
 				
 		SAFE_FREE(user);
@@ -458,14 +458,14 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result) || (*num_groups) == 0)
 		return result;
 
-	(*user_grpsids) = TALLOC_ARRAY(mem_ctx, DOM_SID *, *num_groups);
+	(*user_grpsids) = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_groups);
 	if (!(*user_grpsids))
 		return NT_STATUS_NO_MEMORY;
 
 	for (i=0;i<(*num_groups);i++) {
-		(*user_grpsids)[i] =
-			rid_to_talloced_sid(domain, mem_ctx,
-					    user_groups[i].g_rid);
+		sid_copy(&((*user_grpsids)[i]), &domain->sid);
+		sid_append_rid(&((*user_grpsids)[i]),
+				user_groups[i].g_rid);
 	}
 	
 	return NT_STATUS_OK;
@@ -473,7 +473,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  uint32 num_sids, DOM_SID **sids,
+				  uint32 num_sids, DOM_SID *sids,
 				  uint32 *num_aliases, uint32 **alias_rids)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -497,7 +497,7 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 
 	for (i=0; i<num_sids; i++) {
-		sid_copy(&sid2[i].sid, sids[i]);
+		sid_copy(&sid2[i].sid, &sids[i]);
 		sid2[i].num_auths = sid2[i].sid.num_auths;
 	}
 
