@@ -220,7 +220,7 @@ proto (int sock, const char *hostname, const char *service,
 				  NULL);
 
     if (status) {
-	krb5_warn (context, status, "krb5_build_principal");
+	krb5_warn (context, status, "krb5_make_principal");
 	return 1;
     }
 
