@@ -1537,6 +1537,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	SMB_STRUCT_STAT sbuf;
 	pstring fname1;
 	char *fname;
+	pstring dos_fname;
 	char *fullpathname;
 	char *p;
 	int l;
@@ -1690,6 +1691,12 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		sbuf.st_mtime &= ~1;
 	}
 
+        /* NT expects the name to be in an exact form */
+	if (strequal(fname,"."))
+		pstrcpy(dos_fname, "\\");
+	else
+		snprintf(dos_fname, sizeof(dos_fname), "\\%s", fname);
+
 	switch (info_level) {
 	case SMB_INFO_STANDARD:
 	case SMB_INFO_QUERY_EA_SIZE:
@@ -1719,7 +1726,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		break;
 
 	case 6:
-			return ERROR_DOS(ERRDOS,ERRbadfunc); /* os/2 needs this */      
+		return ERROR_DOS(ERRDOS,ERRbadfunc); /* os/2 needs this */      
 
 	case SMB_FILE_BASIC_INFORMATION:
 	case SMB_QUERY_FILE_BASIC_INFO:
@@ -1797,9 +1804,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		if(strequal(".", fname) && (global_client_caps & CAP_UNICODE)) {
 			l = l*2;
 			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
-			dos_PutUniCode(pdata + 4, "\\",sizeof(pstring), False);
+			dos_PutUniCode(pdata + 4, dos_fname,sizeof(pstring), False);
 		} else {
-			pstrcpy(pdata+4,fname);
+			pstrcpy(pdata+4,dos_fname);
 		}
 		data_size = 4 + l;
 		SIVAL(pdata,0,l);
@@ -1844,7 +1851,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		pdata += 4;
 		pdata += 4; /* alignment */
 		SIVAL(pdata,0,l);
-		pstrcpy(pdata+4,fname);
+		pstrcpy(pdata+4,dos_fname);
 		pdata += 4 + l;
 		data_size = PTR_DIFF(pdata,(*ppdata));
 		break;
@@ -1864,12 +1871,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	case SMB_FILE_NAME_INFORMATION:
 		/* Pathname with leading '\'. */
 		{
-			pstring new_fname;
 			size_t byte_len;
 
-			pstrcpy(new_fname, "\\");
-			pstrcat(new_fname, fname);
-			byte_len = dos_PutUniCode(pdata+4,new_fname,max_data_bytes,False);
+			byte_len = dos_PutUniCode(pdata+4,dos_fname,max_data_bytes,False);
 			SIVAL(pdata,0,byte_len);
 			data_size = 4 + byte_len;
 			break;
@@ -1899,7 +1903,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	/* Not yet finished... JRA */
 	case 1018:
 		{
-			pstring new_fname;
 			size_t byte_len;
 
 			put_long_date(pdata,c_time);
@@ -1923,7 +1926,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	case SMB_FILE_ALTERNATE_NAME_INFORMATION:
 		/* Last component of pathname. */
 		{
-			size_t byte_len = dos_PutUniCode(pdata+4,fname,max_data_bytes,False);
+			size_t byte_len = dos_PutUniCode(pdata+4,dos_fname,max_data_bytes,False);
 			SIVAL(pdata,0,byte_len);
 			data_size = 4 + byte_len;
 			break;
