@@ -2,6 +2,12 @@
 
 	* rsh.c: new option `-e' for not trying to open an stderr socket
 
+1999-06-17  Assar Westerlund  <assar@sics.se>
+
+	* rsh_locl.h (RSH_BUFSIZ): bump to 16 * 1024 to be sure that we
+ 	don't leave any data inside des_enc_read.  (that constant should
+ 	really be exported in some way...)
+
 1999-06-15  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c: use get_default_username and resulting const pollution
