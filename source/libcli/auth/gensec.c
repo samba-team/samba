@@ -212,6 +212,17 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 	return gensec_start_mech(gensec_security);
 }
 
+const char *gensec_get_name_by_authtype(uint8_t authtype) 
+{
+	const struct gensec_security_ops *ops;
+	ops = gensec_security_by_authtype(authtype);
+	if (ops) {
+		return ops->name;
+	}
+	return NULL;
+}
+	
+
 /** 
  * Start a GENSEC sub-mechanism by OID, used in SPNEGO
  *
