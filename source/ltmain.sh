@@ -2688,7 +2688,7 @@ static const void *lt_preloaded_setup() {
 	    ;;
 	  *)
 	    # Relative path: add a thisdir entry.
-	    rpath="$rpath\$thisdir/$dir:"
+	    rpath="$rpath\$relink_curdir/$dir:"
 	    ;;
 	  esac
 	done
