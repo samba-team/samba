@@ -106,9 +106,3 @@ des_init_random_number_generator(des_cblock *seed)
   des_new_random_key(&new_key);
   des_set_random_generator_seed(&new_key);
 }
-
-void
-des_fixup_key_parity(des_cblock *key)
-{
-  des_set_odd_parity(key);
-}
