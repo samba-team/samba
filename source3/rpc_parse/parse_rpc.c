@@ -532,8 +532,8 @@ void make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 
 	neg->neg_flgs = neg_flgs ; /* 0x00b2b3 */
 
-	make_str_hdr(&neg->hdr_myname, len_myname, len_myname, 0x20); 
-	make_str_hdr(&neg->hdr_domain, len_domain, len_domain, 0x20 + len_myname+1); 
+	make_str_hdr(&neg->hdr_myname, len_myname+1, len_myname+1, 0x20); 
+	make_str_hdr(&neg->hdr_domain, len_domain+1, len_domain+1, 0x20 + len_myname+1); 
 
 	fstrcpy(neg->myname, myname);
 	fstrcpy(neg->domain, domain);
@@ -554,8 +554,8 @@ void smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_stru
 	smb_io_strhdr("hdr_myname", &(neg->hdr_myname), ps, depth); 
 	smb_io_strhdr("hdr_domain", &(neg->hdr_domain), ps, depth); 
 
-	prs_string("domain", ps, depth, neg->domain, neg->hdr_domain.str_str_len, sizeof(neg->domain)); 
-	prs_string("myname", ps, depth, neg->myname, neg->hdr_myname.str_str_len, sizeof(neg->myname)); 
+	prs_string("domain", ps, depth, neg->domain, neg->hdr_domain.str_str_len-1, sizeof(neg->domain)); 
+	prs_string("myname", ps, depth, neg->myname, neg->hdr_myname.str_str_len-1, sizeof(neg->myname)); 
 }
 
 /*******************************************************************

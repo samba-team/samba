@@ -463,6 +463,11 @@ enum client_action
 	myumask = umask(0);
 	umask(myumask);
 
+	if (!get_myname(global_myname, NULL))
+	{
+		fprintf(stderr, "Failed to get my hostname.\n");
+	}
+
 	if (getenv("USER"))
 	{
 		pstrcpy(smb_cli->user_name,getenv("USER"));
@@ -540,7 +545,7 @@ enum client_action
 		cli_action = CLIENT_SVC;
 	}
 
-	while ((opt = getopt(argc, argv,"s:B:O:M:S:i:N:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+	while ((opt = getopt(argc, argv,"s:B:O:M:S:i:N:n:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
 	{
 		switch (opt)
 		{
@@ -616,6 +621,12 @@ enum client_action
 				break;
 			}
 
+			case 'n':
+			{
+				fstrcpy(global_myname, optarg);
+				break;
+			}
+
 			case 'N':
 			{
 				got_pass = True;
@@ -679,15 +690,10 @@ enum client_action
 		exit(1);
 	}
 
-	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
-
-	if (!get_myname(cli_info.myhostname, NULL))
-	{
-		fprintf(stderr, "Failed to get my hostname.\n");
-	}
-
-	fstrcpy(global_myname, cli_info.myhostname);
 	strupper(global_myname);
+	fstrcpy(cli_info.myhostname, global_myname);
+
+	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
 
 	if (!lp_load(servicesf,True, False, False))
 	{

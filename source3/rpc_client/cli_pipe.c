@@ -37,10 +37,15 @@ extern pstring global_myname;
 /********************************************************************
  rpc pipe call id 
  ********************************************************************/
+static uint32 call_id = 0;
 static uint32 get_rpc_call_id(void)
 {
-  static uint32 call_id = 1;
   return ++call_id;
+}
+
+static uint32 reset_rpc_call_id(void)
+{
+	call_id = 0;
 }
 
 /*******************************************************************
@@ -451,7 +456,7 @@ static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, int data_len,
 
 	if (auth_len != 0)
 	{
-		alloc_hint = data_len - 0x18 - auth_len - 10;
+		alloc_hint = data_len - 0x18 - auth_len - 16;
 	}
 	else
 	{
@@ -849,6 +854,8 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 	prs_mem_free(&rdata    );
 	prs_mem_free(&rparam   );
 
+	reset_rpc_call_id();
+
 	return valid_ack;
 }
 
@@ -861,6 +868,8 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
 	int fnum;
+
+	reset_rpc_call_id();
 
 	/******************* open the pipe *****************/
 	if (IS_BITS_SET_ALL(cli->capabilities, CAP_NT_SMBS))

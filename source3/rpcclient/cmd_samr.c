@@ -61,7 +61,6 @@ void cmd_sam_test(struct client_info *info)
 	fstrcat(srv_name, info->myhostname);
 	strupper(srv_name);
 
-
 	fprintf(out_hnd, "SAM Encryption Test\n");
 
 	/* open SAMR session.  */
