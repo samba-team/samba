@@ -1,7 +1,3 @@
-if [ $whoami != "root" ]; then
-	exit 0;
-fi
-
 . basicsmb.fns
 
 test_joindomain_nt4() {
