@@ -970,8 +970,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	nt_extmode = mode ? mode : FILE_ATTRIBUTE_NORMAL;
 
 	switch (info_level) {
-		case SMB_INFO_STANDARD:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_INFO_STANDARD\n"));
+		case SMB_FIND_INFO_STANDARD:
+			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_INFO_STANDARD\n"));
 			if(requires_resume_key) {
 				SIVAL(p,0,reskey);
 				p += 4;
@@ -1002,8 +1002,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			p += len;
 			break;
 
-		case SMB_INFO_QUERY_EA_SIZE:
-			DEBUG(10,("get_lanman2_dir_entry: SMB_INFO_QUERY_EA_SIZE\n"));
+		case SMB_FIND_EA_SIZE:
+			DEBUG(10,("get_lanman2_dir_entry: SMB_FIND_EA_SIZE\n"));
 			if(requires_resume_key) {
 				SIVAL(p,0,reskey);
 				p += 4;
@@ -1356,8 +1356,8 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	}
  
 	switch (info_level) {
-		case SMB_INFO_STANDARD:
-		case SMB_INFO_QUERY_EA_SIZE:
+		case SMB_FIND_INFO_STANDARD:
+		case SMB_FIND_EA_SIZE:
 		case SMB_FIND_FILE_DIRECTORY_INFO:
 		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
 		case SMB_FIND_FILE_NAMES_INFO:
@@ -1600,8 +1600,8 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	}
 
 	switch (info_level) {
-		case SMB_INFO_STANDARD:
-		case SMB_INFO_QUERY_EA_SIZE:
+		case SMB_FIND_INFO_STANDARD:
+		case SMB_FIND_EA_SIZE:
 		case SMB_FIND_FILE_DIRECTORY_INFO:
 		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
 		case SMB_FIND_FILE_NAMES_INFO:
