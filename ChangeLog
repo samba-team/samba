@@ -1,5 +1,7 @@
 2001-09-05  Johan Danielsson  <joda@pdc.kth.se>
 
+	* configure.in: check for termcap.h
+
 	* lib/asn1/lex.l: add another undef ECHO to keep AIX lex happy
 
 2001-09-03  Assar Westerlund  <assar@sics.se>
