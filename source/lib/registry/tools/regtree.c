@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "registry.h"
 #include "lib/cmdline/popt_common.h"
 
 static void print_tree(int l, struct registry_key *p, int fullpath, int novals)

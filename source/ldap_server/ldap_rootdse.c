@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "ldap_server/ldap_server.h"
 #include "system/time.h"
 
 #define ATTR_BLOB_CONST(val) data_blob_talloc(mem_ctx, val, sizeof(val)-1)

@@ -304,6 +304,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 *************************************************************************/
 
 #include "includes.h"
+#include "registry.h"
 #include "system/shmem.h"
 
 #define REG_KEY_LIST_SIZE 10

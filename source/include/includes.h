@@ -225,9 +225,6 @@ extern int errno;
 #include "smb_server/smb_server.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
-#include "registry.h"
-#include "rap.h"
-#include "ldap_server/ldap_server.h"
 
 #include "libnet/libnet.h"
 #include "utils/net/net.h"
