@@ -190,9 +190,11 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	    smbd/process.o smbd/service.o smbd/error.o \
 	    printing/printfsp.o lib/util_seaccess.o smbd/srvstr.o
 
-PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_cups.o printing/load.o
-
-PRINTBACKEND_OBJ = printing/printing.o printing/lpq_parse.o printing/nt_printing.o
+PRINTING_OBJ = printing/pcap.o printing/print_svid.o \
+				printing/print_cups.o printing/print_generic.o \
+				printing/lpq_parse.o printing/load.o
+ 
+PRINTBACKEND_OBJ = printing/printing.o printing/nt_printing.o
 
 MSDFS_OBJ = msdfs/msdfs.o 
 
