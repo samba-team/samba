@@ -6544,30 +6544,12 @@
 
 		<varlistentry>
 		<term><anchor id="RESTRICTANONYMOUS">restrict anonymous (G)</term>
-		<listitem><para>This is a boolean parameter.  If it is <constant>yes</constant>, then 
-		anonymous access to the server will be restricted, namely in the 
-		case where the server is expecting the client to send a username, 
-		but it doesn't.  Setting it to <constant>yes</constant> will force these anonymous 
- 		connections to be denied, and the client will be required to always 
-		supply a username and password when connecting. Use of this parameter 
-		is only recommended for homogeneous NT client environments.</para>
+		<listitem><para>This is a integer parameter, and
+		mirrors as much as possible the functinality the
+		<constant>RestrictAnonymous</constant>
+                registry key does on NT/Win2k.  
 
-		<para>This parameter makes the use of macro expansions that rely
-		on the username (%U, %G, etc) consistent.  NT 4.0 
-		likes to use anonymous connections when refreshing the share list, 
-		and this is a way to work around that.</para>
-
-		<para>When restrict anonymous is <constant>yes</constant>, all anonymous connections 
-		are denied no matter what they are for.  This can effect the ability 
-		of a machine to access the Samba Primary Domain Controller to revalidate 
-		its machine account after someone else has logged on the client 
-		interactively.  The NT client will display a message saying that 
-		the machine's account in  the domain doesn't exist or the password is 
-		bad.  The best way to deal  with this is to reboot NT client machines 
-		between interactive logons,  using "Shutdown and Restart", rather 
-		than "Close all programs and logon as a different user".</para>
-
-		<para>Default: <command>restrict anonymous = no</command></para>
+		<para>Default: <command>restrict anonymous = 0</command></para>
 		</listitem>
 		</varlistentry>
 

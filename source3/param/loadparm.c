@@ -3619,7 +3619,9 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	lp_add_auto_services(lp_auto_services());
 
 	if (add_ipc) {
-		lp_add_ipc("IPC$", True);
+		/* When 'restrict anonymous = 2' guest connections to ipc$
+		   are denied */
+		lp_add_ipc("IPC$", (lp_restrict_anonymous() < 2));
 		lp_add_ipc("ADMIN$", False);
 	}
 
