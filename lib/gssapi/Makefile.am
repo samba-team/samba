@@ -59,10 +59,5 @@ libgssapi_la_SOURCES =		\
         wrap.c                  \
         address_to_krb5addr.c
 
-noinst_PROGRAMS = test_acquire_cred test_sequence
-
-test_acquire_cred_SOURCES = test_acquire_cred.c
-
-test_acquire_cred_LDADD = libgssapi.la
-
-test_sequence_SOURCES = test_sequence.c sequence.c
+check_PROGRAMS = test_acquire_cred test_sequence
+LDADD = libgssapi.la
