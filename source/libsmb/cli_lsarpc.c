@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 2.2
    RPC pipe client
-   Copyright (C) Tim Potter                             2000,
+   Copyright (C) Tim Potter                        2000-2001,
    Copyright (C) Andrew Tridgell              1992-1997,2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997,2000,
    Copyright (C) Paul Ashton                       1997,2000,
@@ -84,13 +84,8 @@ void cli_lsa_shutdown(struct cli_state *cli)
 
 /* Open a LSA policy handle */
 
-uint32 cli_lsa_open_policy(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	BOOL sec_qos, 
-	uint32 des_access, 
-	POLICY_HND *pol
-)
+uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_OPEN_POL q;
@@ -145,11 +140,8 @@ uint32 cli_lsa_open_policy(
 
 /* Close a LSA policy handle */
 
-uint32 cli_lsa_close(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol
-)
+uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+		     POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_CLOSE q;
@@ -196,16 +188,9 @@ uint32 cli_lsa_close(
 
 /* Lookup a list of sids */
 
-uint32 cli_lsa_lookup_sids(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	int num_sids, 
-	DOM_SID *sids, 
-	char ***names, 
-	uint32 **types, 
-	int *num_names
-)
+uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   POLICY_HND *pol, int num_sids, DOM_SID *sids, 
+			   char ***names, uint32 **types, int *num_names)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
@@ -310,16 +295,9 @@ uint32 cli_lsa_lookup_sids(
 
 /* Lookup a list of names */
 
-uint32 cli_lsa_lookup_names(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	int num_names, 
-	char **names, 
-	DOM_SID **sids,
-	uint32 **types, 
-	int *num_sids
-)
+uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			    POLICY_HND *pol, int num_names, char **names, 
+			    DOM_SID **sids, uint32 **types, int *num_sids)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_NAMES q;
@@ -418,14 +396,9 @@ uint32 cli_lsa_lookup_names(
 
 /* Query info policy */
 
-uint32 cli_lsa_query_info_policy(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol, 
-	uint16 info_class, 
-	fstring domain_name, 
-	DOM_SID * domain_sid
-)
+uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 POLICY_HND *pol, uint16 info_class, 
+				 fstring domain_name, DOM_SID *domain_sid)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_QUERY_INFO q;
@@ -507,15 +480,10 @@ uint32 cli_lsa_query_info_policy(
 
 /* Enumerate list of trusted domains */
 
-uint32 cli_lsa_enum_trust_dom(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol, 
-	uint32 *enum_ctx, 
-	uint32 *num_domains,
-	char ***domain_names, 
-	DOM_SID **domain_sids
-)
+uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, uint32 *enum_ctx, 
+			      uint32 *num_domains, char ***domain_names, 
+			      DOM_SID **domain_sids)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_ENUM_TRUST_DOM q;

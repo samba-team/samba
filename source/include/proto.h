@@ -745,55 +745,23 @@ unsigned long wins_srv_count( void );
 struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 				     struct ntuser_creds *creds);
 void cli_lsa_shutdown(struct cli_state *cli);
-uint32 cli_lsa_open_policy(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	BOOL sec_qos, 
-	uint32 des_access, 
-	POLICY_HND *pol
-);
-uint32 cli_lsa_close(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol
-);
-uint32 cli_lsa_lookup_sids(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	int num_sids, 
-	DOM_SID *sids, 
-	char ***names, 
-	uint32 **types, 
-	int *num_names
-);
-uint32 cli_lsa_lookup_names(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	int num_names, 
-	char **names, 
-	DOM_SID **sids,
-	uint32 **types, 
-	int *num_sids
-);
-uint32 cli_lsa_query_info_policy(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol, 
-	uint16 info_class, 
-	fstring domain_name, 
-	DOM_SID * domain_sid
-);
-uint32 cli_lsa_enum_trust_dom(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol, 
-	uint32 *enum_ctx, 
-	uint32 *num_domains,
-	char ***domain_names, 
-	DOM_SID **domain_sids
-);
+uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   BOOL sec_qos, uint32 des_access, POLICY_HND *pol);
+uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+		     POLICY_HND *pol);
+uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   POLICY_HND *pol, int num_sids, DOM_SID *sids, 
+			   char ***names, uint32 **types, int *num_names);
+uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			    POLICY_HND *pol, int num_names, char **names, 
+			    DOM_SID **sids, uint32 **types, int *num_sids);
+uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 POLICY_HND *pol, uint16 info_class, 
+				 fstring domain_name, DOM_SID *domain_sid);
+uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, uint32 *enum_ctx, 
+			      uint32 *num_domains, char ***domain_names, 
+			      DOM_SID **domain_sids);
 
 /*The following definitions come from  libsmb/cli_samr.c  */
 
