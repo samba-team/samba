@@ -489,7 +489,7 @@ static int print_subpath_printers( char *key, REGSUBKEY_CTR *subkeys )
 		
 		free_a_printer( &printer, 2 );
 		
-		regsubkey_ctr_addkey( subkeys, "PrinterDriverData" );
+		regsubkey_ctr_addkey( subkeys, SPOOL_PRINTERDATA_KEY );
 	}
 	
 	/* no other subkeys below here */
@@ -617,7 +617,7 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 	
 	/* here should be no more path components here */
 	
-	if ( new_path || strcmp(base, "PrinterDriverData") )
+	if ( new_path || strcmp(base, SPOOL_PRINTERDATA_KEY) )
 		goto done;
 		
 	/* now enumerate the PrinterDriverData key */
@@ -629,10 +629,12 @@ static int print_subpath_values_printers( char *key, REGVAL_CTR *val )
 	
 	/* iterate over all printer data and fill the regval container */
 	
+#if 0	/* JERRY */
 	for ( i=0; get_specific_param_by_index(*printer, 2, i, valuename, &data, &type, &data_len); i++ )
 	{
 		regval_ctr_addvalue( val, valuename, type, data, data_len );
 	}
+#endif
 		
 	free_a_printer( &printer, 2 );
 

@@ -185,6 +185,38 @@ void free_registry_value( REGISTRY_VALUE *val )
 	return;
 }
 
+/**********************************************************************
+ *********************************************************************/
+
+uint8* regval_data_p( REGISTRY_VALUE *val )
+{
+	return val->data_p;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+int regval_size( REGISTRY_VALUE *val )
+{
+	return val->size;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+char* regval_name( REGISTRY_VALUE *val )
+{
+	return val->valuename;
+}
+
+/**********************************************************************
+ *********************************************************************/
+
+uint32 regval_type( REGISTRY_VALUE *val )
+{
+	return val->type;
+}
+
 /***********************************************************************
  Retreive a pointer to a specific value.  Caller shoud dup the structure
  since this memory may go away with a regval_ctr_destroy()
@@ -211,7 +243,7 @@ TALLOC_CTX* regval_ctr_getctx( REGVAL_CTR *val )
 }
 
 /***********************************************************************
- Add a new regostry value to the array
+ Add a new registry value to the array
  **********************************************************************/
 
 int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type, 
@@ -234,7 +266,7 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type,
 				ctr->values = ppreg;
 		}
 
-		/* allocate a new valuie and store the pointer in the arrya */
+		/* allocate a new value and store the pointer in the arrya */
 		
 		ctr->values[ctr->num_values] = talloc( ctr->ctx, sizeof(REGISTRY_VALUE) );
 
@@ -248,6 +280,60 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type,
 	}
 
 	return ctr->num_values;
+}
+
+/***********************************************************************
+ Delete a single value from the registry container.
+ No need to free memory since it is talloc'd.
+ **********************************************************************/
+
+int regval_ctr_delvalue( REGVAL_CTR *ctr, char *name )
+{
+	int 	i;
+	
+	/* search for the value */
+	
+	for ( i=0; i<ctr->num_values; i++ ) {
+		if ( strcmp( ctr->values[i]->valuename, name ) == 0)
+			break;
+	}
+	
+	/* just return if we don't find it */
+	
+	if ( i == ctr->num_values )
+		return ctr->num_values;
+	
+	/* just shift everything down one */
+	
+	for ( /* use previous i */; i<(ctr->num_values-1); i++ )
+		memcpy( ctr->values[i], ctr->values[i+1], sizeof(REGISTRY_VALUE) );
+		
+	/* paranoia */
+	
+	ZERO_STRUCTP( ctr->values[i] );
+	
+	ctr->num_values--;
+	
+	return ctr->num_values;
+}
+
+/***********************************************************************
+ Delete a single value from the registry container.
+ No need to free memory since it is talloc'd.
+ **********************************************************************/
+
+REGISTRY_VALUE* regval_ctr_getvalue( REGVAL_CTR *ctr, char *name )
+{
+	int 	i;
+	
+	/* search for the value */
+	
+	for ( i=0; i<ctr->num_values; i++ ) {
+		if ( strequal( ctr->values[i]->valuename, name ) )
+			return ctr->values[i];
+	}
+	
+	return NULL;
 }
 
 /***********************************************************************

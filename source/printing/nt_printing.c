@@ -1248,8 +1248,7 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	
 /****************************************************************************
 ****************************************************************************/
-static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver,
-											 struct current_user *user)
+static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver, struct current_user *user)
 {
 	fstring architecture;
 	fstring new_name;
@@ -1304,8 +1303,7 @@ static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 	 *	NT 4: cversion=2
 	 *	NT2K: cversion=3
 	 */
-	if ((driver->version = get_correct_cversion(architecture,
-									driver->driverpath, user, &err)) == -1)
+	if ((driver->version = get_correct_cversion(architecture, driver->driverpath, user, &err)) == -1)
 		return err;
 
 	return WERR_OK;
@@ -1792,7 +1790,8 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 			  driver.defaultdatatype);
 
 	i=0;
-	while (len < dbuf.dsize) {
+	while (len < dbuf.dsize) 
+	{
 		fstring *tddfs;
 
 		tddfs = (fstring *)Realloc(driver.dependentfiles,
@@ -1807,12 +1806,14 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 				  &driver.dependentfiles[i]);
 		i++;
 	}
+	
 	if (driver.dependentfiles != NULL)
 		fstrcpy(driver.dependentfiles[i], "");
 
 	SAFE_FREE(dbuf.dptr);
 
-	if (len != dbuf.dsize) {
+	if (len != dbuf.dsize) 
+	{
 			SAFE_FREE(driver.dependentfiles);
 
 		return get_a_printer_driver_3_default(info_ptr, drivername, arch);
@@ -1995,22 +1996,52 @@ static int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 }
 
 /****************************************************************************
-****************************************************************************/
-static int pack_specifics(NT_PRINTER_PARAM *param, char *buf, int buflen)
+ Pack all values in all printer keys
+ ***************************************************************************/
+ 
+static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
 {
 	int len = 0;
+	int 		i, j;
+	REGISTRY_VALUE	*val;
+	REGVAL_CTR	*val_ctr;
+	pstring		path;
+	int		num_values;
 
-	while (param != NULL) {
-		len += tdb_pack(buf+len, buflen-len, "pfdB",
-				param,
-				param->value,
-				param->type,
-				param->data_len,
-				param->data);
-		param=param->next;	
+	if ( !data )
+		return 0;
+
+	/* loop over all keys */
+		
+	for ( i=0; i<data->num_keys; i++ )
+	{	
+		val_ctr = &data->keys[i].values;
+		num_values = regval_ctr_numvals( val_ctr );
+		
+		/* loop over all values */
+		
+		for ( j=0; j<num_values; j++ )
+		{
+			/* pathname should be stored as <key>\<value> */
+			
+			val = regval_ctr_specific_value( val_ctr, j );
+			pstrcpy( path, data->keys[i].name );
+			pstrcat( path, "\\" );
+			pstrcat( path, regval_name(val) );
+			
+			len += tdb_pack(buf+len, buflen-len, "pPdB",
+					val,
+					path,
+					regval_type(val),
+					regval_size(val),
+					regval_data_p(val) );
 	}
 
-	len += tdb_pack(buf+len, buflen-len, "p", param);
+	}
+
+	/* terminator */
+	
+	len += tdb_pack(buf+len, buflen-len, "p", NULL);
 
 	return len;
 }
@@ -2106,7 +2137,7 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	len += pack_devicemode(info->devmode, buf+len, buflen-len);
 	
-	len += pack_specifics(info->specific, buf+len, buflen-len);
+	len += pack_values( &info->data, buf+len, buflen-len );
 
 	if (buflen != len) {
 		char *tb;
@@ -2145,89 +2176,6 @@ done:
 	return ret;
 }
 
-
-/****************************************************************************
-****************************************************************************/
-void add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM **param)
-{
-	NT_PRINTER_PARAM *current;
-	
-	DEBUG(108,("add_a_specific_param\n"));	
-
-	(*param)->next=NULL;
-	
-	if (info_2->specific == NULL)
-	{
-		info_2->specific=*param;
-	}
-	else
-	{
-		current=info_2->specific;		
-		while (current->next != NULL) {
-			current=current->next;
-		}		
-		current->next=*param;
-	}
-
-	*param = NULL;
-}
-
-/****************************************************************************
-****************************************************************************/
-BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param)
-{
-	NT_PRINTER_PARAM *current;
-	NT_PRINTER_PARAM *previous;
-	
-	current=info_2->specific;
-	previous=current;
-	
-	if (current==NULL) return (False);
-	
-	if ( !strcmp(current->value, param->value) &&
-	    (strlen(current->value)==strlen(param->value)) ) {
-		DEBUG(109,("deleting first value\n"));
-		info_2->specific=current->next;
-		SAFE_FREE(current->data);
-		SAFE_FREE(current);
-		DEBUG(109,("deleted first value\n"));
-		return (True);
-	}
-
-	current=previous->next;
-		
-	while ( current!=NULL ) {
-		if (!strcmp(current->value, param->value) &&
-		    strlen(current->value)==strlen(param->value) ) {
-			DEBUG(109,("deleting current value\n"));
-			previous->next=current->next;
-			SAFE_FREE(current->data);
-			SAFE_FREE(current);
-			DEBUG(109,("deleted current value\n"));
-			return(True);
-		}
-		
-		previous=previous->next;
-		current=current->next;
-	}
-	return (False);
-}
-
-/****************************************************************************
- Clean up and deallocate a (maybe partially) allocated NT_PRINTER_PARAM.
-****************************************************************************/
-void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
-{
-	NT_PRINTER_PARAM *param = *param_ptr;
-
-	if(param == NULL)
-		return;
-
-	DEBUG(106,("free_nt_printer_param: deleting param [%s]\n", param->value));
-
-		SAFE_FREE(param->data);
-	SAFE_FREE(*param_ptr);
-}
 
 /****************************************************************************
  Malloc and return an NT devicemode.
@@ -2340,21 +2288,27 @@ void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
 static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 {
 	NT_PRINTER_INFO_LEVEL_2 *info = *info_ptr;
-	NT_PRINTER_PARAM *param_ptr;
+	NT_PRINTER_DATA		*data;
+	int 			i;
 
-	if(info == NULL)
+	if ( !info )
 		return;
 
 	DEBUG(106,("free_nt_printer_info_level_2: deleting info\n"));
 
 	free_nt_devicemode(&info->devmode);
 
-	for(param_ptr = info->specific; param_ptr; ) {
-		NT_PRINTER_PARAM *tofree = param_ptr;
+	/* clean up all registry keys */
 
-		param_ptr = param_ptr->next;
-		free_nt_printer_param(&tofree);
+	data = &info->data;
+	for ( i=0; i<data->num_keys; i++ ) 
+	{
+		SAFE_FREE( data->keys[i].name );
+		regval_ctr_destroy( &data->keys[i].values );
 	}
+	SAFE_FREE( data->keys );
+
+	/* finally the top level structure */
 
 	SAFE_FREE(*info_ptr);
 }
@@ -2436,31 +2390,390 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 }
 
 /****************************************************************************
-****************************************************************************/
-static int unpack_specifics(NT_PRINTER_PARAM **list, char *buf, int buflen)
+ allocate and initialize a new slot in 
+ ***************************************************************************/
+ 
+static int add_new_printer_key( NT_PRINTER_DATA *data, char *name )
+{
+	NT_PRINTER_KEY	*d;
+	int		key_index;
+	
+	if ( !data || !name )
+		return -1;
+	
+	/* allocate another slot in the NT_PRINTER_KEY array */
+	
+	d = Realloc( data->keys, sizeof(NT_PRINTER_KEY)*(data->num_keys+1) );
+	if ( d )
+		data->keys = d;
+	
+	key_index = data->num_keys;
+	
+	/* initialze new key */
+	
+	data->num_keys++;
+	data->keys[key_index].name = strdup( name );
+	
+	ZERO_STRUCTP( &data->keys[key_index].values );
+	
+	regval_ctr_init( &data->keys[key_index].values );
+	
+	DEBUG(10,("add_new_printer_key: Inserted new data key [%s]\n", name ));
+	
+	return key_index;
+}
+
+/****************************************************************************
+ search for a registry key name in the existing printer data
+ ***************************************************************************/
+ 
+int lookup_printerkey( NT_PRINTER_DATA *data, char *name )
+{
+	int		key_index = -1;
+	int		i;
+	
+	if ( !data || !name )
+		return -1;
+
+	DEBUG(12,("lookup_printerkey: Looking for [%s]\n", name));
+
+	/* loop over all existing keys */
+	
+	for ( i=0; i<data->num_keys; i++ ) 
+	{
+		if ( strequal(data->keys[i].name, name) ) {
+			DEBUG(12,("lookup_printerkey: Found [%s]!\n", name));
+			key_index = i;
+			break;
+		
+		}
+	}
+	
+	return key_index;
+}
+
+/****************************************************************************
+ ***************************************************************************/
+
+uint32 get_printer_subkeys( NT_PRINTER_DATA *data, char* key, fstring **subkeys )
+{
+	int	i, j;
+	int	key_len;
+	int	num_subkeys = 0;
+	char	*p;
+	fstring	*ptr, *subkeys_ptr = NULL;
+	fstring subkeyname;
+	
+	if ( !data )
+		return 0;
+		
+	for ( i=0; i<data->num_keys; i++ ) 
+	{
+		if ( StrnCaseCmp(data->keys[i].name, key, strlen(key)) == 0 )
+		{
+			/* match sure it is a subkey and not the key itself */
+			
+			key_len = strlen( key );
+			if ( strlen(data->keys[i].name) == key_len )
+				continue;
+			
+			/* get subkey path */
+
+			p = data->keys[i].name + key_len;
+			if ( *p == '\\' )
+				p++;
+			fstrcpy( subkeyname, p );
+			if ( (p = strchr( subkeyname, '\\' )) )
+				*p = '\0';
+			
+			/* don't add a key more than once */
+			
+			for ( j=0; j<num_subkeys; j++ ) {
+				if ( strequal( subkeys_ptr[j], subkeyname ) )
+					break;
+			}
+			
+			if ( j != num_subkeys )
+				continue;
+
+			/* found a match, so allocate space and copy the name */
+			
+			if ( !(ptr = Realloc( subkeys_ptr, (num_subkeys+2)*sizeof(fstring))) ) {
+				DEBUG(0,("get_printer_subkeys: Realloc failed for [%d] entries!\n", 
+					num_subkeys+1));
+				SAFE_FREE( subkeys );
+				return 0;
+			}
+			
+			subkeys_ptr = ptr;
+			fstrcpy( subkeys_ptr[num_subkeys], subkeyname );
+			num_subkeys++;
+		}
+		
+	}
+	
+	/* tag of the end */
+	
+	fstrcpy( subkeys_ptr[num_subkeys], "" );
+	
+	*subkeys = subkeys_ptr;
+
+	return num_subkeys;
+}
+ 
+/****************************************************************************
+ ***************************************************************************/
+ 
+WERROR delete_all_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key )
+{
+	NT_PRINTER_DATA	*data;
+	int		i;
+	int		removed_keys = 0;
+	int		empty_slot;
+	
+	data = &p2->data;
+	empty_slot = data->num_keys;
+
+	if ( !key )
+		return WERR_INVALID_PARAM;
+	
+	/* remove all keys */
+
+	if ( !strlen(key) ) 
+	{
+		for ( i=0; i<data->num_keys; i++ ) 
+		{
+			DEBUG(8,("delete_all_printer_data: Removed all Printer Data from key [%s]\n",
+				data->keys[i].name));
+		
+			SAFE_FREE( data->keys[i].name );
+			regval_ctr_destroy( &data->keys[i].values );
+		}
+	
+		DEBUG(8,("delete_all_printer_data: Removed all Printer Data from printer [%s]\n",
+			p2->printername ));
+	
+		SAFE_FREE( data->keys );
+		ZERO_STRUCTP( data );
+
+		return WERR_OK;
+	}
+
+	/* remove a specific key (and all subkeys) */
+	
+	for ( i=0; i<data->num_keys; i++ ) 
+	{
+		if ( StrnCaseCmp( data->keys[i].name, key, strlen(key)) == 0 )
+		{
+			DEBUG(8,("delete_all_printer_data: Removed all Printer Data from key [%s]\n",
+				data->keys[i].name));
+		
+			SAFE_FREE( data->keys[i].name );
+			regval_ctr_destroy( &data->keys[i].values );
+		
+			/* mark the slot as empty */
+
+			ZERO_STRUCTP( &data->keys[i] );
+		}
+	}
+
+	/* find the first empty slot */
+
+	for ( i=0; i<data->num_keys; i++ ) {
+		if ( !data->keys[i].name ) {
+			empty_slot = i;
+			removed_keys++;
+			break;
+		}
+	}
+
+	if ( i == data->num_keys )
+		/* nothing was removed */
+		return WERR_INVALID_PARAM;
+
+	/* move everything down */
+	
+	for ( i=empty_slot+1; i<data->num_keys; i++ ) {
+		if ( data->keys[i].name ) {
+			memcpy( &data->keys[empty_slot], &data->keys[i], sizeof(NT_PRINTER_KEY) ); 
+			ZERO_STRUCTP( &data->keys[i] );
+			empty_slot++;
+			removed_keys++;
+		}
+	}
+
+	/* update count */
+		
+	data->num_keys -= removed_keys;
+
+	/* sanity check to see if anything is left */
+
+	if ( !data->num_keys )
+	{
+		DEBUG(8,("delete_all_printer_data: No keys left for printer [%s]\n", p2->printername ));
+
+		SAFE_FREE( data->keys );
+		ZERO_STRUCTP( data );
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+ ***************************************************************************/
+ 
+WERROR delete_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key, char *value )
+{
+	WERROR 		result = WERR_OK;
+	int		key_index;
+	
+	/* we must have names on non-zero length */
+	
+	if ( !key || !*key|| !value || !*value )
+		return WERR_INVALID_NAME;
+		
+	/* find the printer key first */
+
+	key_index = lookup_printerkey( &p2->data, key );
+	if ( key_index == -1 )
+		return WERR_OK;
+		
+	regval_ctr_delvalue( &p2->data.keys[key_index].values, value );
+	
+	DEBUG(8,("delete_printer_data: Removed key => [%s], value => [%s]\n",
+		key, value ));
+	
+	return result;
+}
+
+/****************************************************************************
+ ***************************************************************************/
+ 
+WERROR add_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key, char *value, 
+                           uint32 type, uint8 *data, int real_len )
+{
+	WERROR 		result = WERR_OK;
+	int		key_index;
+
+	/* we must have names on non-zero length */
+	
+	if ( !key || !*key|| !value || !*value )
+		return WERR_INVALID_NAME;
+		
+	/* find the printer key first */
+	
+	key_index = lookup_printerkey( &p2->data, key );
+	if ( key_index == -1 )
+		key_index = add_new_printer_key( &p2->data, key );
+		
+	if ( key_index == -1 )
+		return WERR_NOMEM;
+	
+	regval_ctr_addvalue( &p2->data.keys[key_index].values, value,
+		type, data, real_len );
+	
+	DEBUG(8,("add_printer_data: Added key => [%s], value => [%s], size => [%d]\n",
+		key, value, real_len ));
+	
+	return result;
+}
+
+/****************************************************************************
+ ***************************************************************************/
+ 
+REGISTRY_VALUE* get_printer_data( NT_PRINTER_INFO_LEVEL_2 *p2, char *key, char *value )
+{
+	int		key_index;
+
+	if ( (key_index = lookup_printerkey( &p2->data, key )) == -1 )
+		return NULL;
+
+	DEBUG(8,("get_printer_data: Attempting to lookup key => [%s], value => [%s]\n",
+		key, value ));
+
+	return regval_ctr_getvalue( &p2->data.keys[key_index].values, value );
+}
+
+/****************************************************************************
+ Unpack a list of registry values frem the TDB
+ ***************************************************************************/
+ 
+static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 {
 	int len = 0;
-	NT_PRINTER_PARAM param, *p;
+	uint32		type;
+	pstring		string, valuename, keyname;
+	char		*str;
+	int		size;
+	uint8		*data_p;
+	REGISTRY_VALUE 	*regval_p;
+	int		key_index;
+	
+	/* add the "PrinterDriverData" key first for performance reasons */
 
-	*list = NULL;
+	add_new_printer_key( printer_data, SPOOL_PRINTERDATA_KEY );
 
-	while (1) {
-		len += tdb_unpack(buf+len, buflen-len, "p", &p);
-		if (!p) break;
+	/* loop and unpack the rest of the registry values */
+	
+	while ( True ) 
+	{
+	
+		/* check to see if there are any more registry values */
+		
+		len += tdb_unpack(buf+len, buflen-len, "p", &regval_p);		
+		if ( !regval_p ) 
+			break;
+
+		/* unpack the next regval */
 
 		len += tdb_unpack(buf+len, buflen-len, "fdB",
-				  param.value,
-				  &param.type,
-				  &param.data_len,
-				  &param.data);
-		param.next = *list;
-		*list = memdup(&param, sizeof(param));
+				  string,
+				  &type,
+				  &size,
+				  &data_p);
+	
+		/*
+		 * break of the keyname from the value name.  
+		 * Should only be one '\' in the string returned.
+		 */	
+		 
+		str = strrchr( string, '\\');
+		
+		/* Put in "PrinterDriverData" is no key specified */
+		
+		if ( !str ) {
+			pstrcpy( keyname, SPOOL_PRINTERDATA_KEY );
+			pstrcpy( valuename, string );
+		}
+		else {
+			*str = '\0';
+			pstrcpy( keyname, string );
+			pstrcpy( valuename, str+1 );
+		}
 
-		DEBUG(8,("specific: [%s], len: %d\n", param.value, param.data_len));
+		/* see if we need a new key */
+		
+		if ( (key_index=lookup_printerkey( printer_data, keyname )) == -1 )
+			key_index = add_new_printer_key( printer_data, keyname );
+			
+		if ( key_index == -1 ) {
+			DEBUG(0,("unpack_values: Failed to allocate a new key [%s]!\n",
+				keyname));
+			break;
+		}
+		
+		/* add the new value */
+		
+		regval_ctr_addvalue( &printer_data->keys[key_index].values, valuename, type, data_p, size );
+
+		DEBUG(8,("specific: [%s:%s], len: %d\n", keyname, valuename, size));
 	}
 
 	return len;
 }
+
+/****************************************************************************
+ ***************************************************************************/
 
 static void map_to_os2_driver(fstring drivername)
 {
@@ -2696,7 +3009,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 		info.devmode = construct_nt_devicemode(printername);
 	}
 
-	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
+	len += unpack_values( &info.data, dbuf.dptr+len, dbuf.dsize-len );
 
 	/* This will get the current RPC talloc context, but we should be
        passing this as a parameter... fixme... JRA ! */
@@ -2891,21 +3204,18 @@ static BOOL set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	int                     len = 0;
 	pstring                 key;
 	TDB_DATA                kbuf, dbuf;
-	NT_PRINTER_PARAM        *current;
 	NT_PRINTER_INFO_LEVEL_2 info;
 
+
+	ZERO_STRUCT(info);
+
 	/*
-	 * Delete any printer data 'specifics' already set. When called for driver
+	 * Delete any printer data 'values' already set. When called for driver
 	 * replace, there will generally be some, but during an add printer, there
 	 * should not be any (if there are delete them).
 	 */
-	while ( (current=info_ptr->specific) != NULL ) {
-		info_ptr->specific=current->next;
-		SAFE_FREE(current->data);
-		SAFE_FREE(current);
-	}
 
-	ZERO_STRUCT(info);
+	delete_all_printer_data( info_ptr, "" );
 
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
 	dos_to_unix(key);                /* Convert key to unix-codepage */
@@ -2926,12 +3236,14 @@ static BOOL set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	/*
 	 * Get the saved DEVMODE..
 	 */
+	 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 
 	/*
 	 * The saved DEVMODE contains the devicename from the printer used during
 	 * the initialization save. Change it to reflect the new printer.
 	 */
+	 
 	ZERO_STRUCT(info.devmode->devicename);
 	fstrcpy(info.devmode->devicename, info_ptr->printername);
 
@@ -2947,45 +3259,21 @@ static BOOL set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	 * --jerry
 	 */
 
-#if 1	/* JERRY */
 
-	/* 
-	 * 	Bind the saved DEVMODE to the new the printer.
-	 */
+	/* Bind the saved DEVMODE to the new the printer */
+	 
 	free_nt_devicemode(&info_ptr->devmode);
 	info_ptr->devmode = info.devmode;
-#else
-	/* copy the entire devmode if we currently don't have one */
 
-	if (!info_ptr->devmode) {
-		DEBUG(10,("set_driver_init_2: Current Devmode is NULL.  Copying entire Device Mode\n"));
-		info_ptr->devmode = info.devmode;
-	}
-	else {
-		/* only set the necessary fields */
 
-		DEBUG(10,("set_driver_init_2: Setting driverversion [0x%x] and private data [0x%x]\n",
-			info.devmode->driverversion, info.devmode->driverextra));
-
-		info_ptr->devmode->driverversion = info.devmode->driverversion;
-
-		SAFE_FREE(info_ptr->devmode->private);
-		info_ptr->devmode->private = NULL;
-
-		if (info.devmode->driverversion)
-			info_ptr->devmode->private = memdup(info.devmode->private, info.devmode->driverversion);
-
-		free_nt_devicemode(&info.devmode);
-	}
-#endif
 
 	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
 			info_ptr->printername, info_ptr->drivername));
 
-	/* 
-	 * Add the printer data 'specifics' to the new printer
-	 */
-	len += unpack_specifics(&info_ptr->specific,dbuf.dptr+len, dbuf.dsize-len);
+	/* Add the printer data 'values' to the new printer */
+
+	len += unpack_values( &info_ptr->data, dbuf.dptr+len, dbuf.dsize-len );
+
 
 	SAFE_FREE(dbuf.dptr);
 
@@ -3044,7 +3332,7 @@ BOOL del_driver_init(char *drivername)
 }
 
 /****************************************************************************
- Pack up the DEVMODE and specifics for a printer into a 'driver init' entry 
+ Pack up the DEVMODE and values for a printer into a 'driver init' entry 
  in the tdb. Note: this is different from the driver entry and the printer
  entry. There should be a single driver init entry for each driver regardless
  of whether it was installed from NT or 2K. Technically, they should be
@@ -3065,7 +3353,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	len = 0;
 	len += pack_devicemode(info->devmode, buf+len, buflen-len);
 
-	len += pack_specifics(info->specific, buf+len, buflen-len);
+	len += pack_values( &info->data, buf+len, buflen-len );
 
 	if (buflen != len) {
 		char *tb;
@@ -3097,14 +3385,14 @@ done:
 
 	SAFE_FREE(buf);
 
-	DEBUG(10,("update_driver_init_2: Saved printer [%s] init DEVMODE & specifics for driver [%s]\n",
+	DEBUG(10,("update_driver_init_2: Saved printer [%s] init DEVMODE & values for driver [%s]\n",
 		 info->sharename, info->drivername));
 
 	return ret;
 }
 
 /****************************************************************************
- Update (i.e. save) the driver init info (DEVMODE and specifics) for a printer
+ Update (i.e. save) the driver init info (DEVMODE and values) for a printer
 ****************************************************************************/
 
 uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
@@ -3127,6 +3415,8 @@ uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	
 	return result;
 }
+
+#if 0	/* TO BE DELETED - as soon as I get the ok from jreilly */
 
 /****************************************************************************
  Convert the printer data value, a REG_BINARY array, into an initialization 
@@ -3239,10 +3529,6 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 				  printer->info_2->printername));
 	}
 	
-#if 0	/* JERRY */
-	srv_spoolss_sendnotify(p, handle);
-#endif
-
   done:
 	talloc_destroy(ctx);
 	if (nt_devmode)
@@ -3257,7 +3543,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
  Update the driver init info (DEVMODE and specifics) for a printer
 ****************************************************************************/
 
-WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param)
+static WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param)
 {
 	WERROR status = WERR_OK;
 	
@@ -3275,6 +3561,8 @@ WERROR save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER
 	
 	return status;
 }
+
+#endif	/* TO BE DELETED */
 
 /****************************************************************************
  Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.
@@ -3903,83 +4191,6 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *i, struct current_
 	return delete_printer_driver_internal(i, user, version, delete_files );
 }
 
-
-/****************************************************************************
-****************************************************************************/
-
-BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, uint32 param_index,
-                                 fstring value, uint8 **data, uint32 *type, uint32 *len)
-{
-	/* right now that's enough ! */
-	NT_PRINTER_PARAM *param;
-	int i=0;
-	
-	param=printer.info_2->specific;
-	
-	while (param != NULL && i < param_index) {
-		param=param->next;
-		i++;
-	}
-	
-	if (param == NULL)
-		return False;
-
-	/* exited because it exist */
-	*type=param->type;		
-	StrnCpy(value, param->value, sizeof(fstring)-1);
-	*data=(uint8 *)malloc(param->data_len*sizeof(uint8));
-	if(*data == NULL)
-		return False;
-	ZERO_STRUCTP(*data);
-	memcpy(*data, param->data, param->data_len);
-	*len=param->data_len;
-	return True;
-}
-
-/****************************************************************************
-****************************************************************************/
-BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
-                        fstring value, uint8 **data, uint32 *type, uint32 *len)
-{
-	/* right now that's enough ! */	
-	NT_PRINTER_PARAM *param;
-	
-	DEBUG(10, ("get_specific_param\n"));
-	
-	param=printer.info_2->specific;
-		
-	while (param != NULL)
-	{
-#if 1 /* JRA - I think this should be case insensitive.... */
-		if ( strequal(value, param->value)
-#else
-		if ( !strcmp(value, param->value)
-#endif
-		    && strlen(value)==strlen(param->value))
-			break;
-			
-		param=param->next;
-	}
-	
-	if (param != NULL)
-	{
-        DEBUGADD(10, ("get_specific_param: found one param\n"));
-		/* exited because it exist */
-		*type=param->type;	
-		
-		*data=(uint8 *)malloc(param->data_len*sizeof(uint8));
-		if(*data == NULL)
-			return False;
-		memcpy(*data, param->data, param->data_len);
-		*len=param->data_len;
-
-		DEBUGADD(10, ("get_specific_param: exit true\n"));
-		return (True);
-	}
-	DEBUGADD(10, ("get_specific_param: exit false\n"));
-	return (False);
-}
-
 /****************************************************************************
  Store a security desc for a printer.
 ****************************************************************************/
@@ -4421,76 +4632,3 @@ BOOL print_time_access_check(int snum)
 	return ok;
 }
 
-#if 0	/* JERRY - not used */
-/****************************************************************************
- Attempt to write a default device.
-*****************************************************************************/
-
-WERROR printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_default)
-{
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	WERROR result;
-
-	/*
-	 * Don't bother if no default devicemode was sent.
-	 */
-
-	if (printer_default->devmode_cont.devmode == NULL)
-		return WERR_OK;
-
-	result = get_a_printer(&printer, 2, lp_servicename(snum));
-	if (!W_ERROR_IS_OK(result)) return result;
-
-	/*
-	 * Just ignore it if we already have a devmode.
-	 */
-#if 0
-	if (printer->info_2->devmode != NULL)
-		goto done;
-#endif
-	/*
-	 * We don't have a devicemode and we're trying to write
-	 * one. Check we have the access needed.
-	 */
-	DEBUG(5,("printer_write_default_dev: access: %x\n", printer_default->access_required));
-
-	if ( (printer_default->access_required & PRINTER_ACCESS_ADMINISTER) != 
-	      PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(5,("printer_write_default_dev: invalid request access to update: %x\n", printer_default->access_required));
-		result = WERR_ACCESS_DENIED;
-		goto done;
-	}
-
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(5,("printer_write_default_dev: Access denied for printer %s\n",
-			lp_servicename(snum) ));
-		result = WERR_ACCESS_DENIED;
-		/*result = NT_STATUS_NO_PROBLEMO;*/
-		goto done;
-	}
-
-	DEBUG(5,("printer_write_default_dev: updating, check OK.\n"));
-
-	/*
-	 * Convert the on the wire devicemode format to the internal one.
-	 */
-
-	if (!convert_devicemode(printer->info_2->printername,
-				printer_default->devmode_cont.devmode,
-				&printer->info_2->devmode)) {
-		result = WERR_NOMEM;
-		goto done;
-	}
-
-	/*
-	 * Finally write back to the tdb.
-	 */
-
-	result = mod_a_printer(*printer, 2);
-
-  done:
-
-	free_a_printer(&printer, 2);
-	return result;
-}
-#endif	/* JERRY */

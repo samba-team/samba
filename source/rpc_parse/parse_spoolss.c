@@ -687,9 +687,11 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 	   Let the size determine that */
 	   
 	switch (devmode->specversion) {
+		/* list of observed spec version's */
 		case 0x0320:
 		case 0x0400:
 		case 0x0401:
+		case 0x040d:
 			break;
 			
 		default:
@@ -6180,42 +6182,6 @@ BOOL spoolss_io_r_resetprinter(char *desc, SPOOL_R_RESETPRINTER *r_u, prs_struct
 		return False;
 	if(!prs_werror("status",     ps, depth, &r_u->status))
 		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
-				uint32 type, const uint8 *data, uint32 len)
-{
-	DEBUG(5,("converting a specific param struct\n"));
-
-	if (*param == NULL)
-	{
-		*param=(NT_PRINTER_PARAM *)malloc(sizeof(NT_PRINTER_PARAM));
-		if(*param == NULL)
-			return False;
-		memset((char *)*param, '\0', sizeof(NT_PRINTER_PARAM));
-		DEBUGADD(6,("Allocated a new PARAM struct\n"));
-	}
-	unistr2_to_dos((*param)->value, value, sizeof((*param)->value)-1);
-	(*param)->type = type;
-	
-	/* le champ data n'est pas NULL termine */
-	/* on stocke donc la longueur */
-	
-	(*param)->data_len=len;
-	
-	if (len) {
-		(*param)->data=(uint8 *)malloc(len * sizeof(uint8));
-		if((*param)->data == NULL)
-			return False;
-		memcpy((*param)->data, data, len);
-	}
-		
-	DEBUGADD(6,("\tvalue:[%s], len:[%d]\n",(*param)->value, (*param)->data_len));
-	dump_data(10, (char *)(*param)->data, (*param)->data_len);
 
 	return True;
 }
