@@ -1551,8 +1551,7 @@ static BOOL api_PrintJobInfo(int cnum,int uid,char *param,char *data,
 	int l = 0;
 	while (l<64 && *s)
 	  {
-	    if (isalnum(*s) || strchr("-._",*s))
-	      name[l++] = *s;
+	    if (issafe(*s)) name[l++] = *s;
 	    s++;
 	  }      
 	name[l] = 0;
