@@ -232,7 +232,7 @@ struct getargs args[] = {
     { NULL, 'u', arg_string, &umask_string, "umask for user logins" },
     { NULL, 'd', arg_flag, &debug_flag, "enable debugging" },
     { NULL, 'v', arg_flag, &debug_flag, "enable debugging" },
-    { "builtin-ls", 0, arg_flag, &use_builtin_ls, "use built-in ls to list files" },
+    { "builtin-ls", 'B', arg_flag, &use_builtin_ls, "use built-in ls to list files" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 'h', arg_flag, &help_flag }
 };
