@@ -141,12 +141,18 @@ do_request(void *buf, size_t len,
 static void
 handle_udp(struct descr *d)
 {
-    unsigned char buf[1024];
+    unsigned char *buf;
     struct sockaddr_in from;
     int from_len = sizeof(from);
     size_t n;
     
-    n = recvfrom(d->s, buf, sizeof(buf), 0, 
+    buf = malloc(max_request);
+    if(buf == NULL){
+	kdc_log(0, "Failed to allocate %u bytes", max_request);
+	return;
+    }
+
+    n = recvfrom(d->s, buf, max_request, 0, 
 		 (struct sockaddr*)&from, &from_len);
     if(n < 0){
 	warn("recvfrom");
@@ -202,24 +208,20 @@ handle_tcp(struct descr *d, int index, int min_free)
 	return;
     }
     if(d[index].size - d[index].len < n){
-	if(d[index].size == 0){
-	    d[index].buf = malloc(1024);
-	    if(d[index].buf == NULL){
-		warnx("No memory");
-		close(d[index].s);
-		return;
-	    }
-	    d[index].size = 1024;
-	    d[index].len = 0;
-	}else{
-	    unsigned char *tmp;
-	    tmp = realloc(d[index].buf, 2 * d[index].size);
-	    if(tmp == NULL){
-		warnx("No memory");
-		close(d[index].s);
-		return;
-	    }
+	unsigned char *tmp;
+	d[index].size += 1024;
+	if(d[index].size >= max_request){
+	    kdc_log(0, "Request exceeds max request size (%u bytes).", d[index].size);
+	    clear_descr(d + index);
+	    return;
 	}
+	tmp = realloc(d[index].buf, d[index].size);
+	if(tmp == NULL){
+	    kdc_log(0, "Failed to re-allocate %u bytes.", d[index].size);
+	    clear_descr(d + index);
+	    return;
+	}
+	d[index].buf = tmp;
     }
     memcpy(d[index].buf + d[index].len, buf, n);
     d[index].len += n;
