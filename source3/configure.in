@@ -2352,7 +2352,7 @@ fi
 
 ########################################################
 # Compile with MySQL support?
-AM_PATH_MYSQL([0.11.0],[MODULE_MYSQL=bin/pdb_mysql.so],[MODULE_MYSQL=])
+AM_PATH_MYSQL([0.11.0],[MODULE_MYSQL=bin/pdb_mysql.$.so],[MODULE_MYSQL=])
 CFLAGS="$CFLAGS $MYSQL_CFLAGS"
 AC_SUBST(MODULE_MYSQL)
 
@@ -2444,7 +2444,7 @@ AC_ARG_WITH(pam_smbpass,
        elif test x$ac_cv_lib_pam_pam_get_data = xno; then
           AC_MSG_RESULT([No libpam found -- disabling pam_smbpass])
        else
-          SHLIB_PROGS="$SHLIB_PROGS bin/pam_smbpass.so"
+          SHLIB_PROGS="$SHLIB_PROGS bin/pam_smbpass.$SHLIBEXT"
        fi
     ;;
   *)
