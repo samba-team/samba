@@ -18,7 +18,9 @@ Implement RFC1731 and 1734, pop over GSS-API
 
 add rcp program
 
-** appl/ftp
+* kdc
+
+preferably use keys with default salt for v5 requests
 
 * kadmin
 
@@ -69,6 +71,9 @@ always generates a new subkey in an authenticator
 should the sequence numbers be XORed?
 
 OTP?
+
+make checksum/encryption type configuration more realm-specific.  make
+some simple way of handling the w2k situtation
 
 ** lib/roken
 
