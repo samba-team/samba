@@ -6259,7 +6259,6 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	int snum;
 	print_status_struct prt_status;
 	print_queue_struct *queue=NULL;
-	int max_rep_jobs;
 
 	/* that's an [in out] buffer */
 	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
@@ -6273,8 +6272,6 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
 
-	max_rep_jobs = lp_max_reported_jobs(snum);
-
 	*returned = print_queue_status(snum, &queue, &prt_status);
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
 
@@ -6282,9 +6279,6 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 		SAFE_FREE(queue);
 		return WERR_OK;
 	}
-
-	if (max_rep_jobs && (*returned > max_rep_jobs))
-		*returned = max_rep_jobs;
 
 	switch (level) {
 	case 1:
