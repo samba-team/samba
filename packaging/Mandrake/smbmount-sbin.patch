@@ -1,0 +1,15 @@
++++ samba-2.2.1/source/client/smbmount.c	Sun Apr 15 01:03:46 2001
+--- samba-2.2.1/source/client/smbmount.c.seb	Mon Jun 11 14:26:23 2001
+@@ -484,9 +484,9 @@
+ 	}
+ 
+ 	if (sys_fork() == 0) {
+-		if (file_exist(BINDIR "/smbmnt", NULL)) {
+-			execv(BINDIR "/smbmnt", args);
+-			fprintf(stderr,"execv of %s failed. Error was %s.", BINDIR "/smbmnt", strerror(errno));
++		if (file_exist(SBINDIR "/smbmnt", NULL)) {
++			execv(SBINDIR "/smbmnt", args);
++			fprintf(stderr,"execv of %s failed. Error was %s.", SBINDIR "/smbmnt", strerror(errno));
+ 		} else {
+ 			execvp("smbmnt", args);
+ 			fprintf(stderr,"execvp of smbmnt failed. Error was %s.", strerror(errno) );
