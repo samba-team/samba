@@ -1,0 +1,5 @@
+Sun Dec 21 09:31:30 1997  Assar Westerlund  <assar@sics.se>
+
+	* otp.c (renew): don't set the OTP if the reading of the string
+ 	fails.
+
