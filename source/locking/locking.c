@@ -476,8 +476,8 @@ size_t del_share_mode(files_struct *fsp, share_mode_entry **ppse)
 	   from the record */
 	for (i=0;i<data->num_share_mode_entries;) {
 		if (shares[i].pid == pid &&
-		    memcmp(&shares[i].time, 
-			   &fsp->open_time,sizeof(struct timeval)) == 0) {
+		    shares[i].time.tv_sec == fsp->open_time.tv_sec &&
+		    shares[i].time.tv_usec == fsp->open_time.tv_usec ) {
 			*ppse = memdup(&shares[i], sizeof(*shares));
 			data->num_share_mode_entries--;
 			memmove(&shares[i], &shares[i+1], 
@@ -594,8 +594,8 @@ static BOOL mod_share_mode(files_struct *fsp,
 	for (i=0;i<data->num_share_mode_entries;i++) {
 		if (pid == shares[i].pid && 
 		    shares[i].share_mode == fsp->share_mode &&
-		    memcmp(&shares[i].time, 
-			   &fsp->open_time,sizeof(struct timeval)) == 0) {
+		    shares[i].time.tv_sec == fsp->open_time.tv_sec &&
+		    shares[i].time.tv_usec == fsp->open_time.tv_usec ) {
 			mod_fn(&shares[i], fsp->dev, fsp->inode, param);
 			need_store=1;
 		}
