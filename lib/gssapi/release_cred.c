@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -52,11 +52,8 @@ OM_uint32 gss_release_cred
     gssapi_krb5_init ();
 
     krb5_free_principal(gssapi_krb5_context, (*cred_handle)->principal);
-    if ((*cred_handle)->keytab != NULL) {
-	if ((*cred_handle)->keytab->filename != NULL)
-	    free((*cred_handle)->keytab->filename);
-        free((*cred_handle)->keytab);
-    }
+    if ((*cred_handle)->keytab != NULL)
+	krb5_kt_close(gssapi_krb5_context, (*cred_handle)->keytab);
     gss_release_oid_set(NULL, &(*cred_handle)->mechanisms);
     free(*cred_handle);
     *cred_handle = GSS_C_NO_CREDENTIAL;

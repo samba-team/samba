@@ -40,15 +40,22 @@
 
 RCSID("$Id$");
 
-static krb5_keytab_data gss_keytab = { NULL };
+static krb5_keytab gss_keytab;
 
-OM_uint32 gsskrb5_register_acceptor_identity
-        (char *identity)
+OM_uint32
+gsskrb5_register_acceptor_identity (char *identity)
 {
-  if (gss_keytab.filename != NULL)
-    free(gss_keytab.filename);
-  gss_keytab.filename = strdup(identity);
-  return GSS_S_COMPLETE;
+    char *p;
+    if(gss_keytab != NULL) {
+	krb5_kt_close(gssapi_krb5_context, gss_keytab);
+	gss_keytab = NULL;
+    }
+    asprintf(&p, "FILE:%s", identity);
+    if(p == NULL)
+	return GSS_S_FAILURE;
+    krb5_kt_resolve(gssapi_krb5_context, p, &gss_keytab);
+    free(p);
+    return GSS_S_COMPLETE;
 }
 
 OM_uint32 gss_accept_sec_context
@@ -72,7 +79,7 @@ OM_uint32 gss_accept_sec_context
   OM_uint32 flags;
   krb5_ticket *ticket;
   Checksum cksum;
-  krb5_keytab_data *keytab = NULL;
+  krb5_keytab keytab = NULL;
 
   gssapi_krb5_init ();
 
@@ -114,8 +121,8 @@ OM_uint32 gss_accept_sec_context
     goto failure;
 
   if (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) {
-     if (gss_keytab.filename != NULL) {
-        keytab = &gss_keytab;
+      if (gss_keytab != NULL) {
+	  keytab = gss_keytab;
      }
   } else if (acceptor_cred_handle->keytab != NULL) {
      keytab = acceptor_cred_handle->keytab;
