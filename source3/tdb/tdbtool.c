@@ -170,6 +170,12 @@ static char *getline(char *prompt)
 	return p?line:NULL;
 }
 
+static int do_delete_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf,
+                     void *state)
+{
+    return tdb_delete(tdb, key);
+}
+
 int main(int argc, char *argv[])
 {
 	char *line;
@@ -199,7 +205,7 @@ int main(int argc, char *argv[])
 		} else if (strcmp(tok,"show") == 0) {
 			show_tdb();
 		} else if (strcmp(tok,"erase") == 0) {
-			tdb_traverse(tdb, tdb_delete, NULL);
+			tdb_traverse(tdb, do_delete_fn, NULL);
 		} else if (strcmp(tok,"delete") == 0) {
 			delete_tdb();
 		} else if (strcmp(tok,"dump") == 0) {
