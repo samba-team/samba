@@ -2260,6 +2260,7 @@ int net_rpc(int argc, const char **argv)
 		{"abortshutdown", rpc_shutdown_abort},
 		{"shutdown", rpc_shutdown},
 		{"samdump", rpc_samdump},
+		{"vampire", rpc_samdump},
 		{"getsid", net_rpc_getsid},
 		{"help", net_rpc_help},
 		{NULL, NULL}
