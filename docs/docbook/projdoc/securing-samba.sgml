@@ -68,7 +68,7 @@ You can change this behaviour using options like the following:
 <para><programlisting>
   interfaces = eth* lo
   bind interfaces only = yes
-</programlisting><para>
+</programlisting></para>
 
 <para>
 This tells Samba to only listen for connections on interfaces with a

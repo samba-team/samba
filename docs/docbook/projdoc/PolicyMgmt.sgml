@@ -206,7 +206,8 @@ executable name poledit.exe), GPOs are created and managed using a Microsoft Man
 <para>
 Go to the Windows 200x / XP menu <filename>Start->Programs->Administrative Tools</filename>
 	and select the MMC snap-in called "Active Directory Users and Computers"
-<para></step>
+</para>
+</step>
 
 <step><para>
 Select the domain or organizational unit (OU) that you wish to manage, then right click
@@ -241,6 +242,7 @@ use this powerful tool. Please refer to the resource kit manuals for specific us
 </para>
 </note>
 
+</sect3>
 </sect2>
 </sect1>
 
@@ -312,6 +314,7 @@ With a Samba Domain Controller, the new tools for managing of user account and p
 man pages for these tools and become familiar with their use.
 </para>
 
+</sect2>
 </sect1>
 
 <sect1>

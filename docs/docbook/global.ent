@@ -378,3 +378,104 @@ an Active Directory environment.
 
 <!-- We only need this for SGML, and not for XML... -->
 <!ENTITY percnt '%'>
+
+<!-- IDs for various Samba documentation sections -->
+
+<!ENTITY ID-UNIX-INSTALL SYSTEM "install">
+<!ENTITY ID-ENCRYPTION SYSTEM "pwencrypt">
+<!ENTITY ID-MS-Dfs-Setup SYSTEM "msdfs">
+<!ENTITY ID-PRINTER-DRIVER2 SYSTEM "printing">
+<!ENTITY ID-DOMAIN-MEMBER SYSTEM "domain-security">
+<!ENTITY ID-WINBIND SYSTEM "winbind">
+<!ENTITY ID-NT-Security SYSTEM "unix-permissions">
+<!ENTITY ID-Samba-PDC-HOWTO SYSTEM "samba-pdc">
+<!ENTITY ID-Samba-BDC-HOWTO SYSTEM "samba-bdc">
+<!ENTITY ID-CVS-Access SYSTEM "cvs-access">
+<!ENTITY ID-IntegratingWithWindows SYSTEM "integrate-ms-networks">
+<!ENTITY ID-Samba-PAM SYSTEM "pam">
+<!ENTITY ID-Samba-LDAP SYSTEM "samba-ldap-howto">
+<!ENTITY ID-Diagnosis SYSTEM "diagnosis">
+<!ENTITY ID-BUGS SYSTEM "bugreport">
+<!ENTITY ID-SECURITY-LEVEL SYSTEM "securitylevels">
+<!ENTITY ID-SPEED SYSTEM "speed">
+<!ENTITY ID-BROWSING SYSTEM "improved-browsing">
+<!ENTITY ID-BROWSING-Quick SYSTEM "Browsing-Quick">
+<!ENTITY ID-GROUP-MAPPING-HOWTO SYSTEM "groupmapping">
+<!ENTITY ID-Portability SYSTEM "Portability">
+<!ENTITY ID-Other-Clients SYSTEM "Other-Clients">
+<!ENTITY ID-ADS-HOWTO SYSTEM "ADS">
+<!ENTITY ID-pdb-mysql SYSTEM "pdb-mysql">
+<!ENTITY ID-pdb-xml SYSTEM "pdb-xml">
+<!ENTITY ID-VFS SYSTEM "VFS">
+
+<!ENTITY MANUALPAGES SYSTEM "manpages/manuals.sgml">
+<!ENTITY MAN-FINDSMB SYSTEM "manpages/findsmb.1.sgml">
+<!ENTITY MAN-NMBLOOKUP SYSTEM "manpages/nmblookup.1.sgml">
+<!ENTITY MAN-RPCCLIENT SYSTEM "manpages/rpcclient.1.sgml">
+<!ENTITY MAN-SMBCACLS SYSTEM "manpages/smbcacls.1.sgml">
+<!ENTITY MAN-SMBCLIENT SYSTEM "manpages/smbclient.1.sgml">
+<!ENTITY MAN-SMBCONTROL SYSTEM "manpages/smbcontrol.1.sgml">
+<!ENTITY MAN-LMHOSTS SYSTEM "manpages/lmhosts.5.sgml">
+<!ENTITY MAN-SMBCONF SYSTEM "manpages/smb.conf.5.sgml">
+<!ENTITY MAN-SAMBA SYSTEM "manpages/samba.7.sgml">
+<!ENTITY MAN-NET SYSTEM "manpages/net.8.sgml">
+<!ENTITY MAN-NMBD SYSTEM "manpages/nmbd.8.sgml">
+<!ENTITY MAN-PDBEDIT SYSTEM "manpages/pdbedit.8.sgml">
+<!ENTITY MAN-SMBD SYSTEM "manpages/smbd.8.sgml">
+<!ENTITY MAN-SMBGROUPEDIT SYSTEM "manpages/smbgroupedit.8.sgml">
+<!ENTITY MAN-SMBMOUNT SYSTEM "manpages/smbmount.8.sgml">
+<!ENTITY MAN-SMBMNT SYSTEM "manpages/smbmnt.8.sgml">
+<!ENTITY MAN-SMBPASSWDCONF SYSTEM "manpages/smbpasswd.5.sgml">
+<!ENTITY MAN-SMBPASSWD SYSTEM "manpages/smbpasswd.8.sgml">
+<!ENTITY MAN-SMBSH SYSTEM "manpages/smbsh.1.sgml">
+<!ENTITY MAN-SMBTAR SYSTEM "manpages/smbtar.1.sgml">
+<!ENTITY MAN-SMBSPOOL SYSTEM "manpages/smbspool.8.sgml">
+<!ENTITY MAN-SMBSTATUS SYSTEM "manpages/smbstatus.1.sgml">
+<!ENTITY MAN-SMBUMOUNT SYSTEM "manpages/smbumount.8.sgml">
+<!ENTITY MAN-SWAT SYSTEM "manpages/swat.8.sgml">
+<!ENTITY MAN-TESTPARM SYSTEM "manpages/testparm.1.sgml">
+<!ENTITY MAN-TESTPRNS SYSTEM "manpages/testprns.1.sgml">
+<!ENTITY MAN-VFSTEST SYSTEM "manpages/vfstest.1.sgml">
+<!ENTITY MAN-WBINFO SYSTEM "manpages/wbinfo.1.sgml">
+<!ENTITY MAN-WINBINDD SYSTEM "manpages/winbindd.8.sgml">
+
+
+<!ENTITY UNIX-INSTALL SYSTEM "projdoc/UNIX_INSTALL.sgml">
+<!ENTITY ENCRYPTION SYSTEM "projdoc/ENCRYPTION.sgml">
+<!ENTITY MS-Dfs-Setup SYSTEM "projdoc/msdfs_setup.sgml">
+<!ENTITY PRINTER-DRIVER2 SYSTEM "projdoc/printer_driver2.sgml">
+<!ENTITY DOMAIN-MEMBER SYSTEM "projdoc/DOMAIN_MEMBER.sgml">
+<!ENTITY WINBIND SYSTEM "projdoc/winbind.sgml">
+<!ENTITY NT-Security SYSTEM "projdoc/NT_Security.sgml">
+<!ENTITY Samba-PDC-HOWTO SYSTEM "projdoc/Samba-PDC-HOWTO.sgml">
+<!ENTITY Samba-BDC-HOWTO SYSTEM "projdoc/Samba-BDC-HOWTO.sgml">
+<!ENTITY CVS-Access SYSTEM "projdoc/CVS-Access.sgml">
+<!ENTITY IntegratingWithWindows SYSTEM "projdoc/Integrating-with-Windows.sgml">
+<!ENTITY Samba-PAM SYSTEM "projdoc/PAM-Authentication-And-Samba.sgml">
+<!ENTITY Samba-LDAP SYSTEM "projdoc/Samba-LDAP-HOWTO.sgml">
+<!ENTITY Diagnosis SYSTEM "projdoc/Diagnosis.sgml">
+<!ENTITY BUGS SYSTEM "projdoc/Bugs.sgml">
+<!ENTITY SECURITY-LEVEL SYSTEM "projdoc/security_level.sgml">
+<!ENTITY SPEED SYSTEM "projdoc/Speed.sgml">
+<!ENTITY BROWSING SYSTEM "projdoc/Browsing.sgml">
+<!ENTITY BROWSING-Quick SYSTEM "projdoc/Browsing-Quickguide.sgml">
+<!ENTITY GROUP-MAPPING-HOWTO SYSTEM "projdoc/GROUP-MAPPING-HOWTO.sgml">
+<!ENTITY Portability SYSTEM "projdoc/Portability.sgml">
+<!ENTITY Other-Clients SYSTEM "projdoc/Other-Clients.sgml">
+<!ENTITY ADS-HOWTO SYSTEM "projdoc/ADS-HOWTO.sgml">
+<!ENTITY pdb-mysql SYSTEM "projdoc/pdb_mysql.sgml">
+<!ENTITY pdb.sgml SYSTEM "projdoc/pdb.sgml.sgml">
+<!ENTITY VFS SYSTEM "projdoc/VFS.sgml">
+<!ENTITY Passdb SYSTEM "projdoc/passdb.sgml">
+<!ENTITY ServerType SYSTEM "projdoc/ServerType.sgml">
+<!ENTITY SecuringSamba SYSTEM "projdoc/securing-samba.sgml">
+<!ENTITY Compiling SYSTEM "projdoc/Compiling.sgml">
+<!ENTITY unicode SYSTEM "projdoc/unicode.sgml">
+<!ENTITY CUPS SYSTEM "projdoc/CUPS-printing.sgml">
+<!ENTITY AdvancedNetworkAdmin SYSTEM "projdoc/AdvancedNetworkAdmin.sgml">
+<!ENTITY PolicyMgmt SYSTEM "projdoc/PolicyMgmt.sgml">
+<!ENTITY ProfileMgmt SYSTEM "projdoc/ProfileMgmt.sgml">
+<!ENTITY NT4Migration SYSTEM "projdoc/NT4Migration.sgml">
+<!ENTITY SWAT SYSTEM "projdoc/SWAT.sgml">
+<!ENTITY Trusts SYSTEM "projdoc/InterdomainTrusts.sgml">
+<!ENTITY problems SYSTEM "projdoc/Problems.sgml">
