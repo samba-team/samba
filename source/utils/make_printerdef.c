@@ -428,12 +428,18 @@ void scan_short_desc(FILE *fichier, char *short_desc)
 
   if (i) fprintf(stderr,"End of section found\n");
  
-  fprintf(stderr,"CopyFiles: %s\n",copyfiles);
-  fprintf(stderr,"Datasection: %s\n",datasection);
-  fprintf(stderr,"Datafile: %s\n",datafile);
-  fprintf(stderr,"Driverfile: %s\n",driverfile);
-  fprintf(stderr,"Helpfile: %s\n",helpfile);
-  fprintf(stderr,"LanguageMonitor: %s\n",languagemonitor);
+  fprintf(stderr,"CopyFiles: %s\n",
+	copyfiles?copyfiles:"(null)");
+  fprintf(stderr,"Datasection: %s\n",
+	datasection?datasection:"(null)");
+  fprintf(stderr,"Datafile: %s\n",
+	datafile?datafile:"(null)");
+  fprintf(stderr,"Driverfile: %s\n",
+	driverfile?driverfile:"(null)");
+  fprintf(stderr,"Helpfile: %s\n",
+	helpfile?helpfile:"(null)");
+  fprintf(stderr,"LanguageMonitor: %s\n",
+	languagemonitor?languagemonitor:"(null)");
   if (copyfiles) scan_copyfiles(fichier,copyfiles);
 }
 
