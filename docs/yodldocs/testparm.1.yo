@@ -89,8 +89,10 @@ Linux kernel is developed.
 
 The original Samba man pages were written by Karl Auer. The man page
 sources were converted to YODL format (another excellent piece of Open
-Source software) and updated for the Samba2.0 release by Jeremy
-Allison, email(samba-bugs@samba.anu.edu.au).
+Source software, available at
+url(bf(ftp://ftp.icce.rug.nl/pub/unix/))(ftp://ftp.icce.rug.nl/pub/unix/))
+and updated for the Samba2.0 release by Jeremy Allison.
+email(samba-bugs@samba.anu.edu.au).
 
 See url(bf(samba (7)))(samba.7.html) to find out how to get a full
 list of contributors and details on how to submit bug reports,
