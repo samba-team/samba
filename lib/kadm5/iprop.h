@@ -46,6 +46,8 @@
 #include <util.h>
 #endif
 
+#include <parse_time.h>
+
 #define IPROP_VERSION "iprop-0.0"
 
 #define KADM5_SLAVE_ACL HDB_DB_DIR "/slaves"
@@ -62,7 +64,9 @@ enum iprop_cmd { I_HAVE = 1,
 		 FOR_YOU = 2,
 		 TELL_YOU_EVERYTHING = 3,
 		 ONE_PRINC = 4,
-		 NOW_YOU_HAVE = 5
+		 NOW_YOU_HAVE = 5,
+		 ARE_YOU_THERE = 6,
+		 I_AM_HERE = 7
 };
 
 #endif /* __IPROP_H__ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -36,6 +36,8 @@
 RCSID("$Id$");
 
 static krb5_log_facility *log_facility;
+static char *server_time_lost = "5 min";
+static int time_before_lost;
 
 static int
 connect_to_master (krb5_context context, const char *master)
@@ -191,7 +193,7 @@ receive_loop (krb5_context context,
 	ret = kadm5_log_replay (server_context,
 				op, vers, len, sp);
 	if (ret)
-	    krb5_warn (context, ret, "kadm5_log_replay");
+	    krb5_warn (context, ret, "kadm5_log_replay: %d", (int)vers);
 	else
 	    server_context->log_context.version = vers;
 	krb5_storage_seek (sp, 8, SEEK_CUR);
@@ -216,6 +218,26 @@ receive (krb5_context context,
     ret = server_context->db->close (context, server_context->db);
     if (ret)
 	krb5_err (context, 1, ret, "db->close");
+}
+
+static void
+send_im_here (krb5_context context, int fd,
+	      krb5_auth_context auth_context)
+{
+    krb5_data data;
+    int ret;
+
+    ret = krb5_data_alloc (&data, 4);
+    if (ret)
+	krb5_err (context, 1, ret, "send_im_here");
+
+    _krb5_put_int(data.data, I_AM_HERE, 4);
+
+    ret = krb5_write_priv_message(context, auth_context, &fd, &data);
+    krb5_data_free(&data);
+
+    if (ret)
+	krb5_err (context, 1, ret, "krb5_write_priv_message");
 }
 
 static void
@@ -321,6 +343,8 @@ static struct getargs args[] = {
     { "realm", 'r', arg_string, &realm },
     { "keytab", 'k', arg_string, &keytab_str,
       "keytab to get authentication from", "kspec" },
+    { "time-lost", 0, arg_string, &server_time_lost,
+      "time before server is considered lost", "time" },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -375,6 +399,10 @@ main(int argc, char **argv)
     if(ret)
 	krb5_err(context, 1, ret, "krb5_kt_register");
 
+    time_before_lost = parse_time (server_time_lost,  "s");
+    if (time_before_lost < 0)
+	krb5_errx (context, 1, "couldn't parse time: %s", server_time_lost);
+
     memset(&conf, 0, sizeof(conf));
     if(realm) {
 	conf.mask |= KADM5_CONFIG_REALM;
@@ -420,6 +448,29 @@ main(int argc, char **argv)
 	krb5_data out;
 	krb5_storage *sp;
 	int32_t tmp;
+	fd_set readset;
+	struct timeval to;
+
+	if (master_fd >= FD_SETSIZE)
+	    krb5_errx (context, 1, "fd too large");
+
+	FD_ZERO(&readset);
+	FD_SET(master_fd, &readset);
+
+	to.tv_sec = time_before_lost;
+	to.tv_usec = 0;
+
+	ret = select (master_fd + 1,
+		      &readset, NULL, NULL, &to);
+	if (ret < 0) {
+	    if (errno == EINTR)
+		continue;
+	    else
+		krb5_err (context, 1, errno, "select");
+	}
+	if (ret == 0)
+	    krb5_errx (context, 1, "server didn't send a message "
+		       "in %d seconds", time_before_lost);
 
 	ret = krb5_read_priv_message(context, auth_context, &master_fd, &out);
 
@@ -438,9 +489,13 @@ main(int argc, char **argv)
 	    receive_everything (context, master_fd, server_context,
 				auth_context);
 	    break;
+	case ARE_YOU_THERE :
+	    send_im_here (context, master_fd, auth_context);
+	    break;
 	case NOW_YOU_HAVE :
 	case I_HAVE :
 	case ONE_PRINC :
+	case I_AM_HERE :
 	default :
 	    krb5_warnx (context, "Ignoring command %d", tmp);
 	    break;

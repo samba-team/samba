@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -39,6 +39,11 @@ RCSID("$Id$");
 static krb5_log_facility *log_facility;
 
 const char *slave_stats_file = KADM5_SLAVE_STATS;
+const char *slave_time_missing = "2 min";
+const char *slave_time_gone = "5 min";
+
+static int time_before_missing;
+static int time_before_gone;
 
 static int
 make_signal_socket (krb5_context context)
@@ -120,6 +125,22 @@ static void
 slave_seen(slave *s)
 {
     s->seen = time(NULL);
+}
+
+static int
+slave_missing_p (slave *s)
+{
+    if (time(NULL) > s->seen + time_before_missing)
+	return 1;
+    return 0;
+}
+
+static int
+slave_gone_p (slave *s)
+{
+    if (time(NULL) > s->seen + time_before_gone)
+	return 1;
+    return 0;
 }
 
 static void
@@ -317,6 +338,35 @@ send_complete (krb5_context context, slave *s,
 }
 
 static int
+send_are_you_there (krb5_context context, slave *s)
+{
+    krb5_data data;
+    int ret;
+
+    if (s->flags & SLAVE_F_DEAD)
+	return 0;
+
+    ret = krb5_data_alloc (&data, 4);
+    if (ret) {
+	krb5_warn (context, ret, "are_you_there: krb5_data_alloc");
+	slave_dead(s);
+	return 1;
+    }
+    _krb5_put_int(data.data, ARE_YOU_THERE, 4);
+    
+    ret = krb5_write_priv_message(context, s->ac, &s->fd, &data);
+    krb5_data_free(&data);
+
+    if (ret) {
+	krb5_warn (context, ret, "are_you_there: krb5_write_priv_message");
+	slave_dead(s);
+	return 1;
+    }
+
+    return 0;
+}
+
+static int
 send_diffs (krb5_context context, slave *s, int log_fd,
 	    const char *database, u_int32_t current_version)
 {
@@ -348,7 +398,12 @@ send_diffs (krb5_context context, slave *s, int log_fd,
 	if (left == 0)
 	    return send_complete (context, s, database, current_version);
     }
-    krb5_data_alloc (&data, right - left + 4);
+    ret = krb5_data_alloc (&data, right - left + 4);
+    if (ret) {
+	krb5_warn (context, ret, "send_diffs: krb5_data_alloc");
+	slave_dead(s);
+	return 1;
+    }
     krb5_storage_read (sp, (char *)data.data + 4, data.length - 4);
     krb5_storage_free(sp);
 
@@ -358,7 +413,7 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     krb5_data_free(&data);
 
     if (ret) {
-	krb5_warn (context, ret, "krb5_write_priv_message");
+	krb5_warn (context, ret, "send_diffs: krb5_write_priv_message");
 	slave_dead(s);
 	return 1;
     }
@@ -383,13 +438,29 @@ process_msg (krb5_context context, slave *s, int log_fd,
     }
 
     sp = krb5_storage_from_mem (out.data, out.length);
-    krb5_ret_int32 (sp, &tmp);
+    if (sp == NULL) {
+	krb5_warnx (context, "process_msg: no memory");
+	krb5_data_free (&out);
+	return 1;
+    }
+    if (krb5_ret_int32 (sp, &tmp) != 0) {
+	krb5_warnx (context, "process_msg: client send too short command");
+	krb5_data_free (&out);
+	return 1;
+    }
     switch (tmp) {
     case I_HAVE :
-	krb5_ret_int32 (sp, &tmp);
+	ret = krb5_ret_int32 (sp, &tmp);
+	if (ret != 0) {
+	    krb5_warnx (context, "process_msg: client send too I_HAVE data");
+	    break;
+	}
 	s->version = tmp;
 	ret = send_diffs (context, s, log_fd, database, current_version);
 	break;
+    case I_AM_HERE :
+	break;
+    case ARE_YOU_THERE:
     case FOR_YOU :
     default :
 	krb5_warnx (context, "Ignoring command %d", tmp);
@@ -490,6 +561,8 @@ static struct getargs args[] = {
       "keytab to get authentication from", "kspec" },
     { "database", 'd', arg_string, &database, "database", "file"},
     { "slave-stats-file", 0, arg_string, &slave_stats_file, "file"},
+    { "time-missing", 0, arg_string, &slave_time_missing, "time"},
+    { "time-gone", 0, arg_string, &slave_time_gone, "time"},
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -518,6 +591,13 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+    time_before_gone = parse_time (slave_time_gone,  "s");
+    if (time_before_gone < 0)
+	krb5_errx (context, 1, "couldn't parse time: %s", slave_time_gone);
+    time_before_missing = parse_time (slave_time_missing,  "s");
+    if (time_before_missing < 0)
+	krb5_errx (context, 1, "couldn't parse time: %s", slave_time_missing);
 
     pidfile (NULL);
     krb5_openlog (context, "ipropd-master", &log_facility);
@@ -593,12 +673,13 @@ main(int argc, char **argv)
 	    old_version = current_version;
 	    kadm5_log_get_version_fd (log_fd, &current_version);
 
-	    if (current_version > old_version)
+	    if (current_version > old_version) {
 		for (p = slaves; p != NULL; p = p->next) {
 		    if (p->flags & SLAVE_F_DEAD)
 			continue;
 		    send_diffs (context, p, log_fd, database, current_version);
 		}
+	    }
 	}
 
 	if (ret && FD_ISSET(signal_fd, &readset)) {
@@ -615,16 +696,19 @@ main(int argc, char **argv)
 	    kadm5_log_get_version_fd (log_fd, &current_version);
 	    for (p = slaves; p != NULL; p = p->next)
 		send_diffs (context, p, log_fd, database, current_version);
-	}
+        }
 
 	for(p = slaves; ret && p != NULL; p = p->next) {
 	    if (p->flags & SLAVE_F_DEAD)
-		continue;
+	        continue;
 	    if (FD_ISSET(p->fd, &readset)) {
 		--ret;
 		if(process_msg (context, p, log_fd, database, current_version))
 		    slave_dead(p);
-	    }
+	    } else if (slave_gone_p (p))
+		slave_dead (p);
+	    else if (slave_missing_p (p))
+		send_are_you_there (context, p);
 	}
 
 	if (ret && FD_ISSET(listen_fd, &readset)) {
