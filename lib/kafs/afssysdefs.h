@@ -50,8 +50,12 @@
 #define AFS_SYSCALL	105
 #endif
 
-#if SunOS >= 57
+#if SunOS == 57
 #define AFS_SYSCALL	73
+#endif
+
+#if SunOS >= 58
+#define AFS_SYSCALL	65
 #endif
 
 #if defined(__hpux)
