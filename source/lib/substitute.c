@@ -172,9 +172,21 @@ void standard_sub_basic(char *str)
 	fstring pidstr;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {
+		fstring tmp_str;
+
 		int l = sizeof(pstring) - (int)(p-str);
 		
 		switch (*(p+1)) {
+		case 'U' : 
+			fstrcpy(tmp_str, sam_logon_in_ssb?samlogon_user:current_user_info.smb_name);
+			strlower(tmp_str);
+			string_sub(p,"%U",tmp_str,l);
+			break;
+		case 'D' :
+			fstrcpy(tmp_str, current_user_info.domain);
+			strupper(tmp_str);
+			string_sub(p,"%D", tmp_str,l);
+			break;
 		case 'I' : string_sub(p,"%I", client_addr(),l); break;
 		case 'L' : string_sub(p,"%L", local_machine,l); break;
 		case 'M' : string_sub(p,"%M", client_name(),l); break;
@@ -212,7 +224,6 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 		int l = sizeof(pstring) - (int)(p-str);
 		
 		switch (*(p+1)) {
-		case 'U' : string_sub(p,"%U",sam_logon_in_ssb?samlogon_user:current_user_info.smb_name,l); break;
 		case 'G' :
 			if ((pass = Get_Pwnam(user,False))!=NULL) {
 				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
@@ -220,7 +231,6 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 				p += 2;
 			}
 			break;
-		case 'D' : string_sub(p,"%D", current_user_info.domain,l); break;
 		case 'N' : string_sub(p,"%N", automount_server(user),l); break;
 		case 'H':
 			if ((home = get_user_home_dir(user))) {
