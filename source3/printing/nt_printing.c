@@ -1222,8 +1222,7 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	
 /****************************************************************************
 ****************************************************************************/
-static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver,
-											 struct current_user *user)
+static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver, struct current_user *user)
 {
 	fstring architecture;
 	fstring new_name;
@@ -1278,8 +1277,7 @@ static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 	 *	NT 4: cversion=2
 	 *	NT2K: cversion=3
 	 */
-	if ((driver->version = get_correct_cversion(architecture,
-									driver->driverpath, user, &err)) == -1)
+	if ((driver->version = get_correct_cversion(architecture, driver->driverpath, user, &err)) == -1)
 		return err;
 
 	return WERR_OK;
