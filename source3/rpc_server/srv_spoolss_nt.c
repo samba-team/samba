@@ -2870,7 +2870,7 @@ static BOOL enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 of
 					return ERROR_NOT_ENOUGH_MEMORY;
 				}
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *returned));		
-				memcpy(&(printers[*returned]), &current_prt, sizeof(PRINTER_INFO_1));
+				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_1));
 				(*returned)++;
 			}
 		}
@@ -2878,14 +2878,14 @@ static BOOL enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 of
 		
 	/* check the required size. */	
 	for (i=0; i<*returned; i++)
-		(*needed) += spoolss_size_printer_info_1(&(printers[i]));
+		(*needed) += spoolss_size_printer_info_1(&printers[i]);
 
 	if (!alloc_buffer_size(buffer, *needed))
 		return ERROR_INSUFFICIENT_BUFFER;
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
-		new_smb_io_printer_info_1("", buffer, &(printers[i]), 0);	
+		new_smb_io_printer_info_1("", buffer, &printers[i], 0);	
 
 	/* clear memory */
 	safe_free(printers);
