@@ -191,7 +191,7 @@ krb5_store_string(krb5_storage *sp, const char *s)
 {
     krb5_data data;
     data.length = strlen(s);
-    data.data = s;
+    data.data = (void*)s;
     return krb5_store_data(sp, data);
 }
 
