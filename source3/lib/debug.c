@@ -84,6 +84,7 @@ pstring debugf     = "";
 BOOL    append_log = False;
 
 int     DEBUGLEVEL_CLASS[DBGC_LAST];
+BOOL    DEBUGLEVEL_CLASS_ISSET[DBGC_LAST];
 int     DEBUGLEVEL = DEBUGLEVEL_CLASS;
 
 
@@ -129,13 +130,14 @@ static BOOL    log_overflow   = False;
 * must be in the table in the order of DBGC_<class name>.. 
 */
 char *classname_table[] = {
-	"all",               /* DBGC_ALL; index references traditional DEBUGLEVEL */
-	"tdb",               /* DBGC_TDB	*/
+	"all",               /* DBGC_ALL; index refs traditional DEBUGLEVEL */
+	"tdb",               /* DBGC_TDB	  */
 	"printdrivers",      /* DBGC_PRINTDRIVERS */
-	"lanman",            /* DBGC_LANMAN */
-	"smb",               /* DBGC_SMB */
-	"rpc",               /* DBGC_RPC */
-	"rpc_hdr",           /* DBGC_RPC_HDR */
+	"lanman",            /* DBGC_LANMAN       */
+	"smb",               /* DBGC_SMB          */
+	"rpc",               /* DBGC_RPC          */
+	"rpc_hdr",           /* DBGC_RPC_HDR      */
+	"bdc",               /* DBGC_BDC          */
 };
 
 
@@ -171,7 +173,8 @@ int debug_lookup_classname(char* classname)
 parse the debug levels from smbcontrol. Example debug level parameter:
   printdrivers:7
 ****************************************************************************/
-BOOL debug_parse_params(char **params, int *debuglevel_class)
+BOOL debug_parse_params(char **params, int *debuglevel_class,
+			BOOL *debuglevel_class_isset)
 {
 	int   i, ndx;
 	char *class_name;
@@ -185,10 +188,11 @@ BOOL debug_parse_params(char **params, int *debuglevel_class)
 	 */
 	if (isdigit((int)params[0][0])) {
 		debuglevel_class[DBGC_ALL] = atoi(params[0]);
+		debuglevel_class_isset[DBGC_ALL] = True;
 		i = 1; /* start processing at the next params */
 	}
 	else
-		i = 0; /* DBGC_ALL not specified  OR calss name was included */
+		i = 0; /* DBGC_ALL not specified  OR class name was included */
 
 	/* Fill in new debug class levels */
 	for (; i < DBGC_LAST && params[i]; i++) {
@@ -196,6 +200,7 @@ BOOL debug_parse_params(char **params, int *debuglevel_class)
 			(class_level=strtok(NULL, "\0")) &&
             ((ndx = debug_lookup_classname(class_name)) != -1)) {
 				debuglevel_class[ndx] = atoi(class_level);
+				debuglevel_class_isset[ndx] = True;
 		} else {
 			DEBUG(0,("debug_parse_params: unrecognized debug class name or format [%s]\n", params[i]));
 			return False;
@@ -215,9 +220,11 @@ BOOL debug_parse_levels(char *params_str)
 	int  i;
 	char *params[DBGC_LAST];
 	int  debuglevel_class[DBGC_LAST];	
+	BOOL debuglevel_class_isset[DBGC_LAST];
 
 	ZERO_ARRAY(params);
 	ZERO_ARRAY(debuglevel_class);
+	ZERO_ARRAY(debuglevel_class_isset);
 
 	if ((params[0]=strtok(params_str," ,"))) {
 		for (i=1; i<DBGC_LAST;i++) {
@@ -228,13 +235,26 @@ BOOL debug_parse_levels(char *params_str)
 	else
 		return False;
 
-	if (debug_parse_params(params, debuglevel_class)) {
+	if (debug_parse_params(params, debuglevel_class, 
+			       debuglevel_class_isset)) {
 		debug_message(0, getpid(), (void*)debuglevel_class, sizeof(debuglevel_class));
 
-#if 0
 		memcpy(DEBUGLEVEL_CLASS, debuglevel_class, 
 		       sizeof(debuglevel_class));
-#endif
+
+		memcpy(DEBUGLEVEL_CLASS_ISSET, debuglevel_class_isset,
+		       sizeof(debuglevel_class_isset));
+
+		{
+			int q;
+
+			for (q = 0; q < DBGC_LAST; q++)
+				DEBUG(0, ("%s: %d/%d\n",
+					  classname_table[q],
+					  DEBUGLEVEL_CLASS[q],
+					  DEBUGLEVEL_CLASS_ISSET[q]));
+		}
+
 		return True;
 	} else
 		return False;
@@ -245,11 +265,13 @@ receive a "set debug level" message
 ****************************************************************************/
 void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 {
+	struct debuglevel_message *dm = (struct debuglevel_message *)buf;
 	int i;
 
-	/* Set the new DEBUGLEVEL_CLASS array from the pased array */
-	memcpy(DEBUGLEVEL_CLASS, buf, sizeof(DEBUGLEVEL_CLASS));
-	
+	/* Set the new DEBUGLEVEL_CLASS array from the passed message */
+	memcpy(DEBUGLEVEL_CLASS, dm->debuglevel_class, sizeof(dm->debuglevel_class));
+	memcpy(DEBUGLEVEL_CLASS_ISSET, dm->debuglevel_class_isset, sizeof(dm->debuglevel_class_isset));
+
 	DEBUG(1,("INFO: Debug class %s level = %d   (pid %u from pid %u)\n",
 			classname_table[DBGC_ALL],
 			DEBUGLEVEL_CLASS[DBGC_ALL], (unsigned int)getpid(), (unsigned int)src));
