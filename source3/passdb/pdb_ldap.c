@@ -218,7 +218,7 @@ static int ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP **
 			
 			DEBUG(3,("LDAPS option set...!\n"));
 #else
-			DEBUG(0,("ldap_open_connection: Secure connection not supported by LDAP client libraries!\n"));
+			DEBUG(0,("ldapsam_open_connection: Secure connection not supported by LDAP client libraries!\n"));
 			return LDAP_OPERATIONS_ERROR;
 #endif
 		}
@@ -254,12 +254,12 @@ static int ldapsam_open_connection (struct ldapsam_privates *ldap_state, LDAP **
 			return LDAP_OPERATIONS_ERROR;
 		}
 #else
-		DEBUG(0,("ldap_open_connection: StartTLS not supported by LDAP client libraries!\n"));
+		DEBUG(0,("ldapsam_open_connection: StartTLS not supported by LDAP client libraries!\n"));
 		return LDAP_OPERATIONS_ERROR;
 #endif
 	}
 
-	DEBUG(2, ("ldap_open_connection: connection opened\n"));
+	DEBUG(2, ("ldapsam_open_connection: connection opened\n"));
 	return rc;
 }
 
@@ -284,7 +284,7 @@ static int rebindproc_with_state  (LDAP * ld, char **whop, char **credp,
 		memset(*credp, '\0', strlen(*credp));
 		SAFE_FREE(*credp);
 	} else {
-		DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n", 
+		DEBUG(5,("rebind_proc_with_state: Rebinding as \"%s\"\n", 
 			  ldap_state->bind_dn));
 
 		*whop = strdup(ldap_state->bind_dn);
@@ -315,7 +315,7 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 {
 	struct ldapsam_privates *ldap_state = arg;
 	int rc;
-	DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n", 
+	DEBUG(5,("rebindproc_connect_with_state: Rebinding as \"%s\"\n", 
 		 ldap_state->bind_dn));
 	
 	/** @TODO Should we be doing something to check what servers we rebind to?
@@ -385,8 +385,8 @@ static int ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ld
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
 	   (OpenLDAP) doesnt' seem to support it */
 	   
-	DEBUG(10,("ldap_connect_system: Binding to ldap server as \"%s\"\n",
-		ldap_dn));
+	DEBUG(10,("ldap_connect_system: Binding to ldap server %s as \"%s\"\n",
+		  ldap_state->uri, ldap_dn));
 
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 # if LDAP_SET_REBIND_PROC_ARGS == 2	
@@ -407,7 +407,14 @@ static int ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ld
 	rc = ldap_simple_bind_s(ldap_struct, ldap_dn, ldap_secret);
 
 	if (rc != LDAP_SUCCESS) {
-		DEBUG(0, ("Bind failed: %s\n", ldap_err2string(rc)));
+		char *ld_error;
+		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
+				&ld_error);
+		DEBUG(0,
+		      ("failed to bind to server with dn= %s Error: %s\n\t%s\n",
+			       ldap_dn, ldap_err2string(rc),
+			       ld_error));
+		free(ld_error);
 		return rc;
 	}
 	
