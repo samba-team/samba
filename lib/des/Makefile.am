@@ -9,9 +9,9 @@ include_HEADERS = des.h md4.h md5.h sha.h rc4.h aes.h
 
 build_HEADERZ = $(include_HEADERS)
 
-check_PROGRAMS = destest mdtest md5crypt_test
+check_PROGRAMS = destest mdtest md5crypt_test rctest
 
-TESTS = destest mdtest md5crypt_test
+TESTS = destest mdtest md5crypt_test rctest
 CHECK_LOCAL = no-check-local
 bin_PROGRAMS = des #rpw speed
 
@@ -46,8 +46,7 @@ libdes_la_SOURCES =	\
 	pcbc_enc.c	\
 	podd.h		\
 	qud_cksm.c	\
-	rc4_skey.c	\
-	rc4_enc.c	\
+	rc4.c		\
 	read_pwd.c	\
 	rijndael-alg-fst.c \
 	rnd_keys.c	\
