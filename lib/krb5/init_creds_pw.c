@@ -278,11 +278,12 @@ krb5_get_init_creds_password(krb5_context context,
     krb5_enctype *etypes = NULL;
     krb5_preauthtype *pre_auth_types = NULL;
     krb5_creds this_cred;
-    /* krb5_kdc_rep kdc_reply; */
+    krb5_kdc_rep kdc_reply;
     char buf[BUFSIZ];
     krb5_data password_data;
 
-    ret = get_init_creds_common(context, creds, client, start_time, in_tkt_service, options,
+    ret = get_init_creds_common(context, creds, client, start_time,
+				in_tkt_service, options,
 				&addrs, &etypes, &this_cred, &pre_auth_types);
     if(ret)
 	goto out;
@@ -322,7 +323,11 @@ krb5_get_init_creds_password(krb5_context context,
     if (ret)
 	goto out;
     if (prompter)
-	print_expire (context, client_realm, &kdc_reply, prompter, data);
+	print_expire (context,
+		      krb5_princ_realm (context, creds->client),
+		      &kdc_reply,
+		      prompter,
+		      data);
     krb5_free_kdc_rep (context, &kdc_reply);
 
     free (pre_auth_types);
