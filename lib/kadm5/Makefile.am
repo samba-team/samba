@@ -95,3 +95,7 @@ all-local: $(inc_DATA)
 $(libkadm5srv_la_OBJECTS): kadm5_err.h
 
 client_glue.lo server_glue.lo: $(srcdir)/common_glue.c
+
+kadm5_err.h: kadm5_err.et
+
+kadm5_err.c: kadm5_err.et
