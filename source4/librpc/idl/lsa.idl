@@ -477,10 +477,23 @@
 		);
 
 
+	/**********************/
 	/* Function:       0x25 */
-	NTSTATUS lsa_AddAccountRights();
-	/* Function:    0x26 */
-	NTSTATUS lsa_RemoveAccountRights();
+	NTSTATUS lsa_AddAccountRights (
+		[in,ref]     policy_handle *handle,
+		[in,ref]     dom_sid2 *sid,
+		[in,ref]     lsa_RightSet *rights
+		);
+	
+	/**********************/
+	/* Function:       0x26 */
+	NTSTATUS lsa_RemoveAccountRights (
+		[in,ref]     policy_handle *handle,
+		[in,ref]     dom_sid2 *sid,
+		[in]         uint32 unknown,
+		[in,ref]     lsa_RightSet *rights
+		);
+
 	/* Function:   0x27 */
 	NTSTATUS lsa_QueryTrustDomainInfo();
 	/* Function:     0x28 */
