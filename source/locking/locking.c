@@ -227,6 +227,8 @@ int get_share_modes(connection_struct *conn,
 	struct locking_data *data;
 	int ret;
 
+	*shares = NULL;
+
 	dbuf = tdb_fetch(tdb, locking_key(dev, inode));
 	if (!dbuf.dptr) return 0;
 
