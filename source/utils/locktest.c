@@ -29,6 +29,7 @@ static int got_pass;
 static int numops = 1000;
 static BOOL showall;
 static BOOL analyze;
+static BOOL hide_unlock_fails;
 
 #define FILENAME "\\locktest.dat"
 #define LOCKRANGE 100
@@ -264,14 +265,14 @@ static BOOL test_one(struct cli_state *cli[2][2],
 		ret2 = cli_unlock(cli[1][conn], 
 				  fnum[1][conn][f],
 				  start, len);
-		if (showall || ret1 != ret2) {
+		if (showall || (!hide_unlock_fails && (ret1 != ret2))) {
 			printf("unlock conn=%u f=%u range=%u:%u(%u)       -> %u:%u\n",
 			       conn, f, 
 			       start, start+len-1, len,
 			       ret1, ret2);
 		}
 		if (showall) brl_forall(print_brl);
-		if (ret1 != ret2) return False;
+		if (!hide_unlock_fails && ret1 != ret2) return False;
 	} else {
 		/* reopen the file */
 		cli_close(cli[0][conn], fnum[0][conn][f]);
@@ -459,6 +460,7 @@ static void usage(void)
         -U user%%pass\n\
         -s seed\n\
         -o numops\n\
+        -u          hide unlock fails\n\
         -a          (show all ops)\n\
 ");
 }
@@ -523,6 +525,9 @@ static void usage(void)
 			break;
 		case 's':
 			seed = atoi(optarg);
+			break;
+		case 'u':
+			hide_unlock_fails = True;
 			break;
 		case 'o':
 			numops = atoi(optarg);
