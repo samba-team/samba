@@ -639,6 +639,23 @@ extern const krb5_kt_ops krb5_any_ops;
 
 #define KPASSWD_PORT 464
 
+/* types for the new krbhst interface */
+#define KRB5_KRBHST_KDC		1
+#define KRB5_KRBHST_ADMIN	2
+#define KRB5_KRBHST_CHANGEPW	3
+#define KRB5_KRBHST_KRB524	4
+
+typedef struct krb5_krbhst_info {
+    enum { KRB5_KRBHST_UDP,
+	   KRB5_KRBHST_TCP,
+	   KRB5_KRBHST_HTTP } proto;
+    unsigned short port;
+    struct addrinfo *ai;
+    struct krb5_krbhst_info *next;
+    char hostname[1]; /* has to come last */
+} krb5_krbhst_info;
+
+
 struct credentials; /* this is to keep the compiler happy */
 struct getargs;
 
