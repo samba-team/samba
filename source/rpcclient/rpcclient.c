@@ -407,6 +407,7 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
 	pstring buf;
 	char *p = cmd;
 	uint32 result=0;
+	int len = 0;
 
 	if (cmd[strlen(cmd) - 1] == '\n')
 		cmd[strlen(cmd) - 1] = '\0';
@@ -414,6 +415,11 @@ static uint32 process_cmd(struct cli_state *cli, char *cmd)
 	if (!next_token(&p, buf, " ", sizeof(buf))) {
 		return 0;
 	}
+
+        /* strip the trainly \n if it exsists */
+	len = strlen(buf);
+	if (buf[len-1] == '\n')
+		buf[len-1] = '\0';
 
 	/* Search for matching commands */
 
