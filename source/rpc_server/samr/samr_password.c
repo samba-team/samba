@@ -28,6 +28,7 @@
 #include "system/time.h"
 #include "lib/crypto/crypto.h"
 #include "lib/ldb/include/ldb.h"
+#include "ads.h"
 
 /* 
   samr_ChangePasswordUser 

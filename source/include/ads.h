@@ -20,7 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
  
-typedef struct {
+typedef struct ads_struct {
 	void *ld; /* the active ldap structure */
 	struct ipv4_addr ldap_ip; /* the ip of the active connection, if any */
 	time_t last_attempt; /* last attempt to reconnect */
