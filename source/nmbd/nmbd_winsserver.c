@@ -529,8 +529,9 @@ static void wins_register_query_fail(struct subnet_record *subrec,
 
   namerec = find_name_on_subnet(subrec, question_name, FIND_ANY_NAME);
 
-  if((namerec != NULL) && (namerec->source == REGISTER_NAME) && 
-            ip_equal(rrec->packet->ip, *namerec->ip) )
+  if( (namerec != NULL)
+   && (namerec->data.source == REGISTER_NAME)
+   && ip_equal(rrec->packet->ip, *namerec->data.ip) )
   {
     remove_name_from_namelist( subrec, namerec);
     namerec = NULL;
@@ -646,11 +647,13 @@ IP %s\n", registering_group_name ? "Group" : "Unique", namestr(question), inet_n
    * name.
    */
 
-  if((namerec != NULL) && ((namerec->source == DNS_NAME) || (namerec->source == DNSFAIL_NAME)))
+  if( (namerec != NULL)
+   && ( (namerec->data.source == DNS_NAME)
+     || (namerec->data.source == DNSFAIL_NAME) ) )
   {
-    DEBUG(5,("wins_process_name_registration_request: Name (%s) in WINS was a dns lookup \
-- removing it.\n", namestr(question) ));
-    remove_name_from_namelist( subrec, namerec);
+    DEBUG(5,("wins_process_name_registration_request: Name (%s) in WINS was \
+a dns lookup - removing it.\n", namestr(question) ));
+    remove_name_from_namelist( subrec, namerec );
     namerec = NULL;
   }
 
@@ -659,10 +662,11 @@ IP %s\n", registering_group_name ? "Group" : "Unique", namestr(question), inet_n
    * (ie. Don't allow any static names to be overwritten.
    */
 
-  if((namerec != NULL) && (namerec->source != REGISTER_NAME))
+  if((namerec != NULL) && (namerec->data.source != REGISTER_NAME))
   {
-    DEBUG(3,("wins_process_name_registration_request: Attempt to register name %s. Name \
-already exists in WINS with source type %d.\n", namestr(question), namerec->source ));
+    DEBUG( 3, ( "wins_process_name_registration_request: Attempt \
+to register name %s. Name already exists in WINS with source type %d.\n",
+                namestr(question), namerec->data.source ));
     send_wins_name_registration_response(RFS_ERR, 0, p);
     return;
   }
@@ -768,11 +772,13 @@ is one of our (WINS server) names. Denying registration.\n", namestr(question) )
    * is the same as the the (single) already registered IP then just update the ttl.
    */
 
-  if(!registering_group_name && (namerec != NULL) && (namerec->num_ips == 1) && 
-           ip_equal(namerec->ip[0], from_ip))
+  if( !registering_group_name
+   && (namerec != NULL)
+   && (namerec->data.num_ips == 1)
+   && ip_equal( namerec->data.ip[0], from_ip ) )
   {
-    update_name_ttl(namerec, ttl);
-    send_wins_name_registration_response(0, ttl, p);
+    update_name_ttl( namerec, ttl );
+    send_wins_name_registration_response( 0, ttl, p );
     return;
   }
 
@@ -781,7 +787,7 @@ is one of our (WINS server) names. Denying registration.\n", namestr(question) )
    * to see if they still claim to have the name.
    */
 
-  if(namerec != NULL)
+  if( namerec != NULL )
   {
     char ud[sizeof(struct userdata_struct) + sizeof(struct packet_struct *)];
     struct userdata_struct *userdata = (struct userdata_struct *)ud;
@@ -815,10 +821,12 @@ is one of our (WINS server) names. Denying registration.\n", namestr(question) )
      * code. JRA.
      */
 
-    query_name_from_wins_server( *namerec->ip, question->name, question->name_type, 
-                wins_register_query_success,
-                wins_register_query_fail,
-                userdata);
+    query_name_from_wins_server( *namerec->data.ip,
+                                  question->name,
+                                  question->name_type, 
+                                  wins_register_query_success,
+                                  wins_register_query_fail,
+                                  userdata );
     return;
   }
 
@@ -870,7 +878,7 @@ static void wins_multihomed_register_query_success(struct subnet_record *subrec,
 
   namerec = find_name_on_subnet(subrec, question_name, FIND_ANY_NAME);
 
-  if( (namerec == NULL) || (namerec->source != REGISTER_NAME) )
+  if( (namerec == NULL) || (namerec->data.source != REGISTER_NAME) )
   {
     DEBUG(3,("wins_multihomed_register_query_success: name %s is not in the correct state to add \
 a subsequent IP addess.\n", namestr(question_name) ));
@@ -981,7 +989,9 @@ to register name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
    * name.
    */
 
-  if((namerec != NULL) && ((namerec->source == DNS_NAME) || (namerec->source == DNSFAIL_NAME)))
+  if( (namerec != NULL)
+   && ( (namerec->data.source == DNS_NAME)
+     || (namerec->data.source == DNSFAIL_NAME) ) )
   {
     DEBUG(5,("wins_process_multihomed_name_registration_request: Name (%s) in WINS was a dns lookup \
 - removing it.\n", namestr(question) ));
@@ -994,10 +1004,11 @@ to register name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
    * (ie. Don't allow any static names to be overwritten.
    */
 
-  if((namerec != NULL) && (namerec->source != REGISTER_NAME))
+  if( (namerec != NULL) && (namerec->data.source != REGISTER_NAME) )
   {
-    DEBUG(3,("wins_process_multihomed_name_registration_request: Attempt to register name %s. Name \
-already exists in WINS with source type %d.\n", namestr(question), namerec->source ));
+    DEBUG( 3, ( "wins_process_multihomed_name_registration_request: Attempt \
+to register name %s. Name already exists in WINS with source type %d.\n",
+    namestr(question), namerec->data.source ));
     send_wins_name_registration_response(RFS_ERR, 0, p);
     return;
   }
@@ -1139,7 +1150,7 @@ static void process_wins_dmb_query_request(struct subnet_record *subrec,
   for(namerec = subrec->namelist; namerec; namerec = namerec->next)
   {
     if(namerec->name.name_type == 0x1b)
-      num_ips += namerec->num_ips;
+      num_ips += namerec->data.num_ips;
   }
 
   if(num_ips == 0)
@@ -1169,10 +1180,10 @@ static void process_wins_dmb_query_request(struct subnet_record *subrec,
     if(namerec->name.name_type == 0x1b)
     {
       int i;
-      for(i = 0; i < namerec->num_ips; i++)
+      for(i = 0; i < namerec->data.num_ips; i++)
       {
-        set_nb_flags(&prdata[num_ips * 6],namerec->nb_flags);
-        putip((char *)&prdata[(num_ips * 6) + 2], &namerec->ip[i]);
+        set_nb_flags(&prdata[num_ips * 6],namerec->data.nb_flags);
+        putip((char *)&prdata[(num_ips * 6) + 2], &namerec->data.ip[i]);
         num_ips++;
       }
     }
@@ -1213,18 +1224,18 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
   {
     int same_net_index = -1;
 
-    ttl = (namerec->death_time != PERMANENT_TTL) ?
-             namerec->death_time - p->timestamp : lp_max_wins_ttl();
+    ttl = (namerec->data.death_time != PERMANENT_TTL) ?
+             namerec->data.death_time - p->timestamp : lp_max_wins_ttl();
 
     /* Copy all known ip addresses into the return data. */
     /* Optimise for the common case of one IP address so
        we don't need a malloc. */
 
-    if(namerec->num_ips == 1 )
+    if( namerec->data.num_ips == 1 )
       prdata = rdata;
     else
     {
-      if((prdata = (char *)malloc( namerec->num_ips * 6 )) == NULL)
+      if((prdata = (char *)malloc( namerec->data.num_ips * 6 )) == NULL)
       {
         DEBUG(0,("send_wins_name_query_response: malloc fail !\n"));
         return;
@@ -1244,12 +1255,12 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
       {
         struct in_addr *n_mask = iface_nmask(p->ip);
 
-        for( j = 0; j < namerec->num_ips; j++)
+        for( j = 0; j < namerec->data.num_ips; j++)
         {
-          if(same_net( namerec->ip[j], p->ip, *n_mask))
+          if(same_net( namerec->data.ip[j], p->ip, *n_mask))
           {
-            set_nb_flags(&prdata[0],namerec->nb_flags);
-            putip((char *)&prdata[2], &namerec->ip[j]);
+            set_nb_flags(&prdata[0],namerec->data.nb_flags);
+            putip((char *)&prdata[2], &namerec->data.ip[j]);
             same_net_index = j;
             i = 1;
           }
@@ -1257,15 +1268,15 @@ void send_wins_name_query_response(int rcode, struct packet_struct *p,
       }
     }
 
-    for(j = 0; j < namerec->num_ips; j++)
+    for(j = 0; j < namerec->data.num_ips; j++)
     {
       if(j == same_net_index)
         continue;
-      set_nb_flags(&prdata[i*6],namerec->nb_flags);
-      putip((char *)&prdata[2+(i*6)], &namerec->ip[j]);
+      set_nb_flags(&prdata[i*6],namerec->data.nb_flags);
+      putip((char *)&prdata[2+(i*6)], &namerec->data.ip[j]);
       i++;
     }
-    reply_data_len = namerec->num_ips * 6;
+    reply_data_len = namerec->data.num_ips * 6;
 
   }
 
@@ -1316,7 +1327,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
      * If it's a DNSFAIL_NAME then reply name not found.
      */
 
-    if(namerec->source == DNSFAIL_NAME)
+    if( namerec->data.source == DNSFAIL_NAME )
     {
       DEBUG(3,("wins_process_name_query: name query for name %s returning DNS fail.\n",
              namestr(question) ));
@@ -1328,7 +1339,8 @@ void wins_process_name_query_request(struct subnet_record *subrec,
      * If the name has expired then reply name not found.
      */
 
-    if((namerec->death_time != PERMANENT_TTL) && (namerec->death_time < p->timestamp))
+    if( (namerec->data.death_time != PERMANENT_TTL)
+     && (namerec->data.death_time < p->timestamp) )
     {
       DEBUG(3,("wins_process_name_query: name query for name %s - name expired. Returning fail.\n",
                 namestr(question) ));
@@ -1337,7 +1349,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
     }
 
     DEBUG(3,("wins_process_name_query: name query for name %s returning first IP %s.\n",
-           namestr(question), inet_ntoa(namerec->ip[0]) ));
+           namestr(question), inet_ntoa(namerec->data.ip[0]) ));
 
     send_wins_name_query_response(0, p, namerec);
     return;
@@ -1437,7 +1449,8 @@ to release name %s from IP %s.", namestr(question), inet_ntoa(p->ip) ));
     
   namerec = find_name_on_subnet(subrec, question, FIND_ANY_NAME);
 
-  if((namerec == NULL) || ((namerec != NULL) && (namerec->source != REGISTER_NAME)) )
+  if( (namerec == NULL)
+   || ((namerec != NULL) && (namerec->data.source != REGISTER_NAME)) )
   {
     send_wins_name_release_response(NAM_ERR, p);
     return;
@@ -1479,7 +1492,7 @@ release name %s as IP %s is not one of the known IP's for this name.\n",
   /* 
    * Remove the name entirely if no IP addresses left.
    */
-  if (namerec->num_ips == 0)
+  if (namerec->data.num_ips == 0)
     remove_name_from_namelist(subrec, namerec);
 
 }
@@ -1544,27 +1557,27 @@ void wins_write_database(void)
 
     DEBUG(4,("%-19s ", namestr(&namerec->name) ));
 
-    if(namerec->death_time != PERMANENT_TTL)
+    if( namerec->data.death_time != PERMANENT_TTL )
     {
-      tm = LocalTime(&namerec->death_time);
+      tm = LocalTime(&namerec->data.death_time);
       DEBUG(4,("TTL = %s", asctime(tm) ));
     }
     else
       DEBUG(4,("TTL = PERMANENT\t"));
 
-    for (i = 0; i < namerec->num_ips; i++)
-      DEBUG(4,("%15s ", inet_ntoa(namerec->ip[i]) ));
-    DEBUG(4,("%2x\n", namerec->nb_flags ));
+    for (i = 0; i < namerec->data.num_ips; i++)
+      DEBUG(4,("%15s ", inet_ntoa(namerec->data.ip[i]) ));
+    DEBUG(4,("%2x\n", namerec->data.nb_flags ));
 
-    if (namerec->source == REGISTER_NAME)
+    if( namerec->data.source == REGISTER_NAME )
     {
       fprintf(fp, "\"%s#%02x\" %d ",
 	      namerec->name.name,namerec->name.name_type, /* Ignore scope. */
-	      (int)namerec->death_time);
+	      (int)namerec->data.death_time);
 
-      for (i = 0; i < namerec->num_ips; i++)
-        fprintf(fp, "%s ", inet_ntoa(namerec->ip[i]));
-      fprintf(fp, "%2xR\n", namerec->nb_flags);
+      for (i = 0; i < namerec->data.num_ips; i++)
+        fprintf( fp, "%s ", inet_ntoa( namerec->data.ip[i] ) );
+      fprintf( fp, "%2xR\n", namerec->data.nb_flags );
     }
   }
   

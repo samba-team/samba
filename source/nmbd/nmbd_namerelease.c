@@ -201,15 +201,15 @@ BOOL release_name(struct subnet_record *subrec, struct name_record *namerec,
   int i;
 
   /* Ensure it's a SELF name, and in the ACTIVE state. */
-  if((namerec->source != SELF_NAME) || !NAME_IS_ACTIVE(namerec))
+  if((namerec->data.source != SELF_NAME) || !NAME_IS_ACTIVE(namerec))
   {
     DEBUG(0,("release_name: Cannot release name %s from subnet %s. Source was %d \n",
-           namestr(&namerec->name), subrec->subnet_name, namerec->source)); 
+          namestr(&namerec->name), subrec->subnet_name, namerec->data.source)); 
     return True;
   }
 
   /* Set the name into the deregistering state. */
-  namerec->nb_flags |= NB_DEREG;
+  namerec->data.nb_flags |= NB_DEREG;
 
   /*  
    * Go through and release the name for all known ip addresses.
@@ -217,20 +217,20 @@ BOOL release_name(struct subnet_record *subrec, struct name_record *namerec,
    * only be done once).
    */
 
-  for( i = 0; i < namerec->num_ips; i++)
+  for( i = 0; i < namerec->data.num_ips; i++)
   {
     if(queue_release_name( subrec,
         release_name_response,
         release_name_timeout_response,
-        (i == (namerec->num_ips - 1)) ? success_fn : NULL,
-        (i == (namerec->num_ips - 1)) ? fail_fn : NULL,
-        (i == (namerec->num_ips - 1)) ? userdata : NULL,
+        (i == (namerec->data.num_ips - 1)) ? success_fn : NULL,
+        (i == (namerec->data.num_ips - 1)) ? fail_fn : NULL,
+        (i == (namerec->data.num_ips - 1)) ? userdata : NULL,
         &namerec->name,
-        namerec->nb_flags,
-        namerec->ip[i]) == NULL)
+        namerec->data.nb_flags,
+        namerec->data.ip[i]) == NULL)
     {
       DEBUG(0,("release_name: Failed to send packet trying to release name %s IP %s\n",
-            namestr(&namerec->name), inet_ntoa(namerec->ip[i]) ));
+            namestr(&namerec->name), inet_ntoa(namerec->data.ip[i]) ));
       return True;
     }
   }

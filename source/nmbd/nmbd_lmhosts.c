@@ -93,7 +93,7 @@ BOOL find_name_in_lmhosts(struct nmb_name *nmbname, struct name_record **namerec
                                  FIND_ANY_NAME))==NULL)
     return False;
 
-  if(!NAME_IS_ACTIVE(namerec) || (namerec->source != LMHOSTS_NAME))
+  if(!NAME_IS_ACTIVE(namerec) || (namerec->data.source != LMHOSTS_NAME))
     return False;
 
   *namerecp = namerec;

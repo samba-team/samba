@@ -158,7 +158,8 @@ void release_my_names(void)
     for (namerec = subrec->namelist; namerec; namerec = nextnamerec)
     {
       nextnamerec = namerec->next;
-      if ((namerec->source == SELF_NAME) && !NAME_IS_DEREGISTERING(namerec))
+      if( (namerec->data.source == SELF_NAME)
+       && !NAME_IS_DEREGISTERING(namerec) )
         release_name(subrec, namerec, standard_success_release,
                      NULL, NULL);
     }
@@ -180,18 +181,19 @@ void refresh_my_names(time_t t)
     for (namerec = subrec->namelist; namerec; namerec = namerec->next)
     {
       /* Each SELF name has an individual time to be refreshed. */
-      if ((namerec->source == SELF_NAME) && (namerec->refresh_time < t) && 
-          (namerec->death_time != PERMANENT_TTL))
+      if( (namerec->data.source == SELF_NAME)
+       && (namerec->data.refresh_time < t)
+       && ( namerec->data.death_time != PERMANENT_TTL) )
       {
         /* We cheat here and pretend the refresh is going to be
            successful & update the refresh times. This stops
            multiple refresh calls being done. We actually
            deal with refresh failure in the fail_fn.
          */
-        if(!is_refresh_already_queued( subrec, namerec))
-          refresh_name(subrec, namerec, NULL, NULL, NULL);
-          namerec->death_time += lp_max_ttl();
-          namerec->refresh_time += lp_max_ttl();
+        if( !is_refresh_already_queued( subrec, namerec) )
+          refresh_name( subrec, namerec, NULL, NULL, NULL );
+        namerec->data.death_time += lp_max_ttl();
+        namerec->data.refresh_time += lp_max_ttl();
       }
     }
   }

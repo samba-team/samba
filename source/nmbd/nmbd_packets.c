@@ -629,7 +629,7 @@ struct response_record *queue_refresh_name( struct subnet_record *subrec,
                      subrec->bcast_ip)) == NULL)
     return NULL;
 
-  if(initiate_name_refresh_packet( p, namerec->nb_flags, &refresh_ip) == False)
+  if( !initiate_name_refresh_packet( p, namerec->data.nb_flags, &refresh_ip ) )
   {
     p->locked = False;
     free_packet(p);
