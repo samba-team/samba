@@ -110,17 +110,17 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
 	      if (stype & SV_TYPE_DOMAIN_ENUM)
 		{
 		  /* creates workgroup on remote subnet */
-		  if ((w = find_workgroupstruct(d,sname, True)))
+		  if ((w = find_workgroupstruct(d,sname,True)))
 		    {
 		      if (d->my_interface)
 			{
 			  announce_request(w, d->bcast_ip);
 			}
 		    }
-		}	      
+		}
 	      
-	      if (w)
-		add_server_entry(d,w,sname,stype,lp_max_ttl(),cmnt,False);
+          if (w)
+	        add_server_entry(d,w,sname,stype,lp_max_ttl(),cmnt,False);
 	    }
 	}
     }

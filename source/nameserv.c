@@ -70,9 +70,28 @@ static struct subnet_record *find_req_subnet(struct in_addr ip, BOOL bcast)
 ****************************************************************************/
 static BOOL name_equal(struct nmb_name *n1,struct nmb_name *n2)
 {
-  if (n1->name_type != n2->name_type) return(False);
+  return n1->name_type == n2->name_type &&
+		 strequal(n1->name ,n2->name ) &&
+         strequal(n1->scope,n2->scope);
+}
 
-  return(strequal(n1->name,n2->name) && strequal(n1->scope,n2->scope));
+
+/****************************************************************************
+  true if the netbios name is ^1^2__MSBROWSE__^2^1
+
+  note: this name is registered if as a master browser or backup browser
+  you are responsible for a workgroup (when you announce a domain by
+  broadcasting on your local subnet, you announce it as coming from this
+  name: see announce_host()).
+
+  WINS is configured to ignore this 'special browser name', presumably
+  because it's redundant: there's no such thing as an announceable
+  domain when dealing with a wide area network and a WINS server.
+
+  **************************************************************************/
+BOOL special_browser_name(char *name, int type)
+{
+  return strequal(name,MSBROWSE) && type == 0x01;
 }
 
 
@@ -344,7 +363,7 @@ void load_netbios_names(void)
 	       name,type, inet_ntoa(ipaddr), ttd, nb_flags));
 
       /* add all entries that have 60 seconds or more to live */
-      if (ttd - 10 < time(NULL) || ttd == 0)
+      if (ttd - 60 < time(NULL) || ttd == 0)
       {
         time_t t = (ttd?ttd-time(NULL):0) / 3;
 
@@ -369,7 +388,7 @@ void remove_netbios_name(struct subnet_record *d,
   int search = FIND_LOCAL;
 
   /* if it's not a special browser name, search the WINS database */
-  if (type != 0x01 && type != 0x1d && type != 0x1e)
+  if (!special_browser_name(name, type))
     search |= FIND_WINS;
 
   make_nmb_name(&nn, name, type, scope);
@@ -409,7 +428,7 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
   {
     if (wins)
     {
-	  if (type == 0x01 || type == 0x1d || type == 0x1e)
+	  if (special_browser_name(name, type))
       {
          /* XXXX WINS server supposed to ignore special browser names. hm.
             but is a primary domain controller supposed to ignore special
@@ -518,7 +537,10 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
 	re_reg = True;
 
   /* always add our own entries */
-  add_netbios_entry(d,name,type,nb_flags,0,SELF,ipzero,False,lp_wins_support());
+  /* a time-to-live allows us to refresh this name with the WINS server. */
+  add_netbios_entry(d,name,type,
+				nb_flags,GET_TTL(0),
+				SELF,ipzero,False,lp_wins_support());
 
   /* XXXX BUG: if samba is offering WINS support, it should still add the
      name entry to a local-subnet name database. see rfc1001.txt 15.1.1 p28
@@ -558,11 +580,14 @@ void add_my_names(void)
 
   for (d = subnetlist; d; d = d->next)
   {
+    /* these names need to be refreshed with the WINS server */
 	add_my_name_entry(d, myname,0x20,NB_ACTIVE);
 	add_my_name_entry(d, myname,0x03,NB_ACTIVE);
 	add_my_name_entry(d, myname,0x00,NB_ACTIVE);
 	add_my_name_entry(d, myname,0x1f,NB_ACTIVE);
 
+    /* these names are added permanently (ttl of zero) and will NOT be
+       refreshed with the WINS server  */
 	add_netbios_entry(d,"*",0x0,NB_ACTIVE,0,SELF,ip,False,wins);
 	add_netbios_entry(d,"__SAMBA__",0x20,NB_ACTIVE,0,SELF,ip,False,wins);
 	add_netbios_entry(d,"__SAMBA__",0x00,NB_ACTIVE,0,SELF,ip,False,wins);
@@ -615,7 +640,8 @@ void refresh_my_names(time_t t)
 	for (n = d->namelist; n; n = n->next)
     {
       /* each SELF name has an individual time to be refreshed */
-      if (n->source == SELF && n->refresh_time < time(NULL))
+      if (n->source == SELF && n->refresh_time < time(NULL) && 
+          n->death_time != 0)
       {
         add_my_name_entry(d,n->name.name,n->name.name_type,n->nb_flags);
       }
@@ -832,44 +858,28 @@ void response_name_reg(struct subnet_record *d, struct packet_struct *p)
   DEBUG(4,("response name registration received!\n"));
   
   if (nmb->header.rcode == 0 && nmb->answers->rdata)
-    {
+  {
       /* IMPORTANT: see expire_netbios_response_entries() */
 
       int nb_flags = nmb->answers->rdata[0];
-      struct in_addr found_ip;
       int ttl = nmb->answers->ttl;
-      enum name_source source = REGISTER;
-      
+      struct in_addr found_ip;
+
       putip((char*)&found_ip,&nmb->answers->rdata[2]);
       
-      if (ismyip(found_ip)) source = SELF;
-      
-      add_netbios_entry(d, name,type,nb_flags,ttl,source,found_ip,True,!bcast);
-    }
+      name_register_work(d,name,type,nb_flags,ttl,found_ip,bcast);
+  }
   else
-    {
-		struct work_record *work;
-
-      DEBUG(1,("name registration for %s rejected!\n",
+  {
+    DEBUG(1,("name registration for %s rejected!\n",
 	       namestr(&nmb->question.question_name)));
 
-	  /* XXXX oh dear. we have problems. must deal with our name having
-         been rejected: e.g if it was our GROUP(1d) name, we must unbecome
-         a master browser. */
+	/* XXXX oh dear. we have problems. must deal with our name having
+       been rejected: e.g if it was our GROUP(1d) name, we must unbecome
+       a master browser. */
 	
-        remove_netbios_name(d,name,type,SELF,ipzero);
-
-		if (!(work = find_workgroupstruct(d, name, False))) return;
-
-		if (AM_MASTER(work) && (type == 0x1d || type == 0x1b))
-		{
-			int remove_type = 0;
-			if (type == 0x1d) remove_type = SV_TYPE_MASTER_BROWSER;
-			if (type == 0x1b) remove_type = SV_TYPE_DOMAIN_MASTER;
-			
-			become_nonmaster(d, work, remove_type);
-		}
-    }
+    name_unregister_work(d,name,type);
+  }
 }
 
 
@@ -1253,36 +1263,11 @@ void reply_name_query(struct packet_struct *p)
   struct name_record *n;
   int search = 0;
 
-  if (name_type == 0x20 || name_type == 0x00 || name_type == 0x1b ||
-      name_type == 0x1f || name_type == 0x03 || name_type == 0x01 ||
-      name_type == 0x1c)
+  if (!(d = find_req_subnet(p->ip, bcast)))
   {
-    /* search for any of the non-'special browser' names, or for a PDC type
-       (0x1b) name in the WINS database.
-       XXXX should we include name type 0x1c: WINS server type?
-     */
-	search |= FIND_WINS;
-  }
-  else
-  {
-	/* special browser name types e.g 
-       ^1^2__MSBROWSE__^2^1, GROUP(1d) and GROUP(1e)
-
-       name_type == 0x01 || name_type == 0x1d || name_type == 0x1e.
-
-       XXXX luke reckons we should be able to search for any SELF name
-       in the WINS database, if we are a primary domain controller.
-     */
-
-    if (!(d = find_req_subnet(p->ip, bcast)))
-    {
-      DEBUG(3,("name query: bcast %s not known\n",
+    DEBUG(3,("name query: bcast %s not known\n",
 				  inet_ntoa(p->ip)));
-      success = False;
-    }
-
-    /* XXXX delete if shouldn't search for SELF names in WINS database */
-    search |= FIND_WINS;
+    success = False;
   }
 
   if (bcast)
@@ -1290,6 +1275,11 @@ void reply_name_query(struct packet_struct *p)
     /* a name query has been made by a non-WINS configured host. search the
        local interface database as well */
     search |= FIND_LOCAL;
+
+  }
+  else if (!special_browser_name(question->name, name_type))
+  {
+    search |= FIND_WINS;
   }
 
   DEBUG(3,("Name query "));
@@ -1574,7 +1564,7 @@ static BOOL response_problem_check(struct response_record *n,
     			case NAME_QUERY_MST_SRV_CHK:
                 case NAME_QUERY_SRV_CHK:
                 case NAME_QUERY_MST_CHK:
-                /* don't do case NAME_QUERY_FIND_MST: MSBROWSE isn't a unique name. */
+                /* don't do case NAME_QUERY_FIND_MST */
                 {
 	              if (!strequal(qname,n->name.name))
 	              {
@@ -1662,8 +1652,8 @@ static BOOL response_compatible(struct response_record *n,
       
     default:
     {
-		DEBUG(0,("unknown state type received in response_netbios_packet\n"));
-		break;
+		DEBUG(1,("unknown state type received in response_netbios_packet\n"));
+		return False;
     }
   }
   return True;
@@ -1724,7 +1714,7 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
 
     default:
     {
-		DEBUG(0,("unknown state type received in response_netbios_packet\n"));
+		DEBUG(1,("unknown state type received in response_netbios_packet\n"));
 		break;
     }
   }

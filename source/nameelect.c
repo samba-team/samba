@@ -34,6 +34,7 @@ extern int DEBUGLEVEL;
 extern pstring scope;
 
 extern pstring myname;
+extern struct in_addr ipzero;
 
 /* machine comment for host announcements */
 extern  pstring ServerComment;
@@ -149,50 +150,182 @@ void send_election(struct subnet_record *d, char *group,uint32 criterion,
 }
 
 
-/*******************************************************************
-  become the master browser
-  ******************************************************************/
-static void become_master(struct subnet_record *d, struct work_record *work)
+/****************************************************************************
+  un-register a SELF name that got rejected.
+
+  if this name happens to be rejected when samba is in the process
+  of becoming a master browser (registering __MSBROWSE__, WORKGROUP(1d)
+  or WORKGROUP(1b)) then we must stop being a master browser. sad.
+
+  **************************************************************************/
+void name_unregister_work(struct subnet_record *d, char *name, int name_type)
 {
-  uint32 domain_type = SV_TYPE_DOMAIN_ENUM | SV_TYPE_SERVER_UNIX | 0x00400000;
+    struct work_record *work;
+
+    remove_netbios_name(d,name,name_type,SELF,ipzero);
+
+    if (!(work = find_workgroupstruct(d, name, False))) return;
+
+    if (special_browser_name(name, name_type) ||
+        (AM_MASTER(work) && strequal(name, lp_workgroup()) == 0 &&
+         (name_type == 0x1d || name_type == 0x1b)))
+    {
+      int remove_type = 0;
+
+      if (special_browser_name(name, name_type))
+        remove_type = SV_TYPE_MASTER_BROWSER|SV_TYPE_DOMAIN_MASTER;
+      if (name_type == 0x1d)
+        remove_type = SV_TYPE_MASTER_BROWSER;
+      if (name_type == 0x1b)
+        remove_type = SV_TYPE_DOMAIN_MASTER;
+			
+      become_nonmaster(d, work, remove_type);
+    }
+}
+
+
+/****************************************************************************
+  registers a name.
+
+  if the name being added is a SELF name, we must additionally check
+  whether to proceed to the next stage in samba becoming a master browser.
+
+  **************************************************************************/
+void name_register_work(struct subnet_record *d, char *name, int name_type,
+				int nb_flags, time_t ttl, struct in_addr ip, BOOL bcast)
+{
+  enum name_source source = ismyip(ip) ? SELF : REGISTER;
+
+  if (source == SELF)
+  {
+    struct work_record *work = find_workgroupstruct(d, lp_workgroup(), False);
+
+    if (work && work->state != MST_NONE)
+    {
+      /* samba is in the process of working towards master browser-ness.
+         initiate the next stage.
+       */
+      become_master(d, work);
+    }
+  }
+  add_netbios_entry(d,name,name_type,nb_flags,ttl,source,ip,True,!bcast);
+}
+
+
+/*******************************************************************
+  become the master browser.
+
+  this is done in stages. note that this could take a while, 
+  particularly on a broadcast subnet, as we have to wait for
+  the implicit registration of each name to be accepted.
+
+  as each name is successfully registered, become_master() is
+  called again, in order to initiate the next stage. see
+  dead_netbios_entry() - deals with implicit name registration
+  and response_name_reg() - deals with explicit registration
+  with a WINS server.
+
+  stage 1: was MST_NONE - go to MST_NONE and register ^1^2__MSBROWSE__^2^1.
+  stage 2: was MST_WON  - go to MST_MSB  and register WORKGROUP(0x1d)
+  stage 3: was MST_MSB  - go to MST_BROWSER and register WORKGROUP(0x1b)
+  stage 4: was MST_BROWSER - go to MST_DOMAIN (do not pass GO, do not...)
+
+  XXXX note: this code still does not cope with the distinction
+  between different types of nodes, particularly between M and P
+  nodes. that comes later.
+
+  ******************************************************************/
+void become_master(struct subnet_record *d, struct work_record *work)
+{
+  uint32 domain_type = SV_TYPE_DOMAIN_ENUM|SV_TYPE_SERVER_UNIX|0x00400000;
 
   if (!work) return;
   
-  DEBUG(2,("Becoming master for %s\n",work->work_group));
+  DEBUG(2,("Becoming master for %s (stage %d)",work->work_group,work->state));
   
-  work->ServerType |= SV_TYPE_MASTER_BROWSER;
-  work->ServerType &= ~SV_TYPE_POTENTIAL_BROWSER;
-  work->ElectionCriterion |= 0x5;
-  
-  /* add browse, master and general names to database or register with WINS */
-  add_my_name_entry(d,MSBROWSE        ,0x01,NB_ACTIVE|NB_GROUP);
-  add_my_name_entry(d,work->work_group,0x1d,NB_ACTIVE         );
-  
-  if (lp_domain_master())
+  switch (work->state)
+  {
+    case MST_NONE: /* while we were nothing but a server... */
     {
-      DEBUG(4,("Domain master: adding names...\n"));
-      
-      /* add domain master and domain member names or register with WINS */
-      add_my_name_entry(d,work->work_group,0x1b,NB_ACTIVE         );
-      
-      work->ServerType |= SV_TYPE_DOMAIN_MASTER;
-      
-      if (lp_domain_logons())
-	{
-	  work->ServerType |= SV_TYPE_DOMAIN_CTRL;
-	  work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
-	}
+      work->state = MST_WON; /* election win was successful */
+
+      work->ElectionCriterion |= 0x5;
+
+      /* update our server status */
+      work->ServerType &= ~SV_TYPE_POTENTIAL_BROWSER;
+      add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
+
+      DEBUG(2,("first stage: register ^1^2__MSBROWSE__^2^1\n"));
+
+      /* add special browser name */
+      add_my_name_entry(d,MSBROWSE        ,0x01,NB_ACTIVE|NB_GROUP);
+
+      break;
     }
-  
-  /* update our server status */
-  add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
-  add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
-  
-  if (d->my_interface)
+    case MST_WON: /* while nothing had happened except we won an election... */
     {
-      /* ask all servers on our local net to announce to us */
-      announce_request(work, d->bcast_ip);
+      work->state = MST_MSB; /* registering MSBROWSE was successful */
+
+      /* add server entry on successful registration of MSBROWSE */
+      add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
+
+      DEBUG(2,("second stage: register as master browser\n"));
+
+      /* add master name */
+      add_my_name_entry(d,work->work_group,0x1d,NB_ACTIVE         );
+  
+      break;
     }
+    case MST_MSB: /* while we were still only registered MSBROWSE state */
+    {
+      work->state = MST_BROWSER; /* registering WORKGROUP(1d) was successful */
+
+      /* update our server status */
+      work->ServerType |= SV_TYPE_MASTER_BROWSER;
+      add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
+
+      if (d->my_interface && work->serverlist == NULL) /* no servers! */
+      {
+        /* ask all servers on our local net to announce to us */
+        announce_request(work, d->bcast_ip);
+      }
+
+      if (lp_domain_master())
+      {
+        DEBUG(2,("third stage: register as domain master\n"));
+        /* add domain master name */
+        add_my_name_entry(d,work->work_group,0x1b,NB_ACTIVE         );
+      }
+  
+      break;
+    }
+    case MST_BROWSER: /* while we were still a master browser... */
+    {
+      work->state = MST_DOMAIN; /* registering WORKGROUP(1b) was successful */
+
+      /* update our server status */
+      if (lp_domain_master())
+      {
+        work->ServerType |= SV_TYPE_DOMAIN_MASTER;
+      
+        if (lp_domain_logons())
+	    {
+	      work->ServerType |= SV_TYPE_DOMAIN_CTRL;
+	      work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
+	    }
+        DEBUG(2,("fourth stage: samba is now a domain master.\n"));
+        add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
+      }
+  
+      break;
+    }
+    case MST_DOMAIN:
+    {
+      /* nothing else to become, at the moment: we are top-dog. */
+      DEBUG(2,("fifth stage: there isn't one yet!\n"));
+      break;
+    }
+  }
 }
 
 
@@ -222,6 +355,7 @@ void become_nonmaster(struct subnet_record *d, struct work_record *work,
 
   	work->ServerType |= SV_TYPE_POTENTIAL_BROWSER;
     work->ElectionCriterion &= ~0x4;
+    work->state = MST_NONE;
 
 	/* announce ourselves as no longer active as a master browser. */
     announce_server(d, work, work->work_group, myname, 0, 0);
@@ -231,10 +365,19 @@ void become_nonmaster(struct subnet_record *d, struct work_record *work,
   work->ServerType = new_server_type;
 
   if (!(work->ServerType & SV_TYPE_DOMAIN_MASTER))
+  {
+    if (work->state == MST_DOMAIN)
+      work->state = MST_BROWSER;
     remove_name_entry(d,work->work_group,0x1b);
+    
+  }
 
   if (!(work->ServerType & SV_TYPE_DOMAIN_MASTER))
+  {
+    if (work->state >= MST_BROWSER)
+      work->state = MST_NONE;
     remove_name_entry(d,work->work_group,0x1d);
+  }
 }
 
 
@@ -270,6 +413,8 @@ void run_elections(void)
 			   work->work_group,inet_ntoa(d->bcast_ip)));
 		  
 		  work->RunningElection = False;
+          work->state = MST_NONE;
+
 		  become_master(d, work);
 		}
 	    }
@@ -340,6 +485,7 @@ void process_election(struct packet_struct *p,char *buf)
 		{
 		  work->needelection = True;
 		  work->ElectionCount=0;
+          work->state = MST_NONE;
 		}
 	    }
 	  else

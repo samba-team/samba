@@ -79,6 +79,8 @@
 enum name_source {STATUS_QUERY, LMHOSTS, REGISTER, SELF, DNS, DNSFAIL};
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
 enum packet_type {NMB_PACKET, DGRAM_PACKET};
+enum master_state { MST_NONE, MST_WON, MST_MSB, MST_BROWSER, MST_DOMAIN };
+
 enum state_type
 {
 	NAME_STATUS_MASTER_CHECK,
@@ -149,6 +151,9 @@ struct work_record
 
   struct server_record *serverlist;
 
+  /* stage of development from non-master to master browser / domain master */
+  enum master_state state;
+
   /* work group info */
   fstring work_group;
   int     token;        /* used when communicating with backup browsers */
@@ -158,6 +163,7 @@ struct work_record
   time_t lastannounce_time;
   int announce_interval;
   BOOL    needannounce;
+
 
   /* election info */
   BOOL    RunningElection;
