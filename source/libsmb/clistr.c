@@ -50,7 +50,7 @@ int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len
 		dest_len = sizeof(pstring);
 	}
 
-	if (clistr_align(cli, dest, flags)) {
+	if (clistr_align_out(cli, dest, flags)) {
 		*(char *)dest = 0;
 		dest = (void *)((char *)dest + 1);
 		dest_len--;
@@ -101,7 +101,7 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 		dest_len = sizeof(pstring);
 	}
 
-	if (clistr_align(cli, src, flags)) {
+	if (clistr_align_in(cli, src, flags)) {
 		src = (const void *)((const char *)src + 1);
 		if (src_len > 0) src_len--;
 	}
@@ -146,8 +146,20 @@ return an alignment of either 0 or 1
 if unicode is not negotiated then return 0
 otherwise return 1 if offset is off
 ****************************************************************************/
-int clistr_align(struct cli_state *cli, const void *p, int flags)
+static int clistr_align(struct cli_state *cli, char *buf, const void *p, int flags)
 {
 	if ((flags & STR_NOALIGN) || !UNICODE_FLAG(cli, flags)) return 0;
-	return PTR_DIFF(p, cli->outbuf) & 1;
+	return PTR_DIFF(p, buf) & 1;
 }
+
+int clistr_align_out(struct cli_state *cli, const void *p, int flags)
+{
+	return clistr_align(cli, cli->outbuf, p, flags);
+}
+
+int clistr_align_in(struct cli_state *cli, const void *p, int flags)
+{
+	return clistr_align(cli, cli->inbuf, p, flags);
+}
+
+
