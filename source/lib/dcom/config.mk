@@ -3,8 +3,10 @@
 [SUBSYSTEM::LIBDCOM]
 INIT_OBJ_FILES = \
 		lib/dcom/common/main.o \
-		lib/dcom/common/tables.o
-REQUIRED_SUBSYSTEMS = LIBNDR_RAW LIBNDR_GEN LIBRPC_RAW
+		lib/dcom/common/tables.o \
+		lib/dcom/common/rot.o
+REQUIRED_SUBSYSTEMS = DCOM_PROXY_DCOM RPC_NDR_REMACT \
+					  RPC_NDR_OXIDRESOLVER
 #
 # End SUBSYSTEM LIBDCOM
 ################################################

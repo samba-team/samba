@@ -31,5 +31,6 @@ ADD_OBJ_FILES = \
 		ntvfs/posix/pvfs_acl.o \
 		ntvfs/common/opendb.o \
 		ntvfs/common/brlock.o
+REQUIRED_SUBSYSTEMS = NDR_XATTR
 # End MODULE ntvfs_posix
 ################################################

@@ -168,18 +168,35 @@ sub process_file($)
 	}
 
 	if ($opt_server) {
-		my($server) = util::ChangeExtension($output, "_s.c");
-		my $res = "";
+		my $h_filename = util::ChangeExtension($output, ".h");
+		my $plain = "";
+		my $dcom = "";
+
 		foreach my $x (@{$pidl}) {
 			next if ($x->{TYPE} ne "INTERFACE");
 
 			if (util::has_property($x, "object")) {
-				$res .= IdlStub::ParseInterface($x);
+				$dcom .= IdlStub::ParseInterface($x);
 			} else {
-				$res .= IdlServer::ParseInterface($x);
+				$plain .= IdlServer::ParseInterface($x);
 			}
 		}
-		util::FileSave($server, $res);
+
+		if ($plain ne "") {
+			util::FileSave(util::ChangeExtension($output, "_s.c"), $plain);
+		}
+
+		if ($dcom ne "") {
+			$dcom = "
+#include \"includes.h\"
+#include \"$h_filename\"
+#include \"rpc_server/dcerpc_server.h\"
+#include \"rpc_server/common/common.h\"
+
+$dcom
+";
+			util::FileSave(util::ChangeExtension($output, "_d.c"), $dcom);
+		}
 	}
 
 	if ($opt_parser) {
