@@ -36,7 +36,7 @@ msgstr "Ustaw domy¶lnie"
 #: web/swat.c:502
 #, c-format
 msgid "Logged in as <b>%s</b><p>\n"
-msgstr "Zalogowany jako <b>%s</b>\n"
+msgstr "Zalogowany jako <b>%s</b><p>\n"
 
 #: web/swat.c:505
 msgid "Home"
