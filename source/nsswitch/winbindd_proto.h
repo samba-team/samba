@@ -91,6 +91,7 @@ BOOL winbindd_idmap_get_rid_from_uid(uid_t uid, uint32 *user_rid,
 BOOL winbindd_idmap_get_rid_from_gid(gid_t gid, uint32 *group_rid, 
                                      struct winbindd_domain **domain);
 BOOL winbindd_idmap_init(void);
+BOOL winbindd_idmap_close(void);
 void winbindd_idmap_status(void);
 
 /*The following definitions come from  nsswitch/winbindd_misc.c  */

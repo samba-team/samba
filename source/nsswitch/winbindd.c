@@ -157,6 +157,9 @@ static void terminate(void)
 {
 	pstring path;
 	
+	/* Close idmap. */
+	winbindd_idmap_close();
+
 	/* Remove socket file */
 	snprintf(path, sizeof(path), "%s/%s", 
 		 WINBINDD_SOCKET_DIR, WINBINDD_SOCKET_NAME);
