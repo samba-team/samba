@@ -429,7 +429,6 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 	struct list_struct rec;
 	tdb_off offset;
 	char b = 0;
-	void *old_map_ptr;
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) return 0;
 
@@ -439,8 +438,6 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 	/* always make room for at least 10 more records, and round
            the database up to a multiple of TDB_PAGE_SIZE */
 	size = TDB_ALIGN(tdb->map_size + size*10, TDB_PAGE_SIZE) - tdb->map_size;
-
-	old_map_ptr = tdb->map_ptr;
 
 	if (!(tdb->flags & TDB_INTERNAL) && tdb->map_ptr)
 		tdb->map_ptr = tdb_munmap(tdb->map_ptr, tdb->map_size);
@@ -472,9 +469,8 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 
 	if (!(tdb->flags & TDB_NOMMAP)) {
 		tdb->map_ptr = tdb_mmap(tdb->map_size, 0, tdb->fd);
-		/* if old_map_ptr was != NULL but the new one is, we have an error. */
-		if (old_map_ptr && (tdb->map_ptr == NULL))
-			goto fail;
+		/* We're ok if this fails and returns NULL, as we'll
+			fallback to read/write here. */
 	}
 
 	/* form a new freelist record */

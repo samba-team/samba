@@ -127,7 +127,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 	uint32 d;
 	int i;
 	void *p;
-	int len=0;
+	int len;
 	char *s;
 	char c;
 	char *buf0 = buf;
@@ -188,6 +188,7 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...)
 		default:
 			DEBUG(0,("Unknown tdb_pack format %c in %s\n", 
 				 c, fmt));
+			len = 0;
 			break;
 		}
 
@@ -213,7 +214,7 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 	va_list ap;
 	uint16 *w;
 	uint32 *d;
-	int len=0;
+	int len;
 	int *i;
 	void **p;
 	char *s, **b;
@@ -272,6 +273,8 @@ int tdb_unpack(char *buf, int bufsize, char *fmt, ...)
 		default:
 			DEBUG(0,("Unknown tdb_unpack format %c in %s\n", 
 				 c, fmt));
+
+			len = 0;
 			break;
 		}
 
