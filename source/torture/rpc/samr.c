@@ -355,7 +355,7 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	encode_pw_buffer(u.info24.password.data, newpass, STR_UNICODE);
 	/* w2k3 ignores this length */
-	u.info24.pw_len = str_charnum(newpass)*2;
+	u.info24.pw_len = strlen_m(newpass) * 2;
 
 	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2424,12 +2424,10 @@ static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 			/* Querydisplayinfo returns ascii -- convert */
 
-			namelen = convert_string_allocate(CH_DISPLAY, CH_UNIX,
-							  q2.out.info.info5.entries[i].account_name.name,
-							  q2.out.info.info5.entries[i].account_name.name_len,
-							  (void **)&name);
-			name = realloc(name, namelen+1);
-			name[namelen] = 0;
+			namelen = convert_string_talloc(mem_ctx, CH_DISPLAY, CH_UNIX,
+							q2.out.info.info5.entries[i].account_name.name,
+							q2.out.info.info5.entries[i].account_name.name_len,
+							(void **)&name);
 
 			for (j=0; j<num_names; j++) {
 				if (names[j] == NULL)
