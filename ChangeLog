@@ -1,3 +1,11 @@
+2004-04-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c (pk_rd_pa_reply_dh): use krb5_random_to_key
+	From: Luke Howard <lukeh@padl.com>
+	
+	* lib/krb5/rd_req.c (krb5_verify_ap_req2): clear the whole ticket,
+	not just a pointer size of it From: Luke Howard <lukeh@padl.com>
+	
 2004-04-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* fix-export: add -E flag where needed to make-proto
