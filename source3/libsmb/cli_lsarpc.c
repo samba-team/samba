@@ -30,56 +30,7 @@
 struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 				     struct ntuser_creds *creds)
 {
-	struct in_addr dest_ip;
-	struct nmb_name calling, called;
-	fstring dest_host;
-	extern pstring global_myname;
-	struct ntuser_creds anon;
-
-	/* Initialise cli_state information */
-
-	if (!cli_initialise(cli)) {
-		return NULL;
-	}
-
-	if (!creds) {
-		ZERO_STRUCT(anon);
-		anon.pwd.null_pwd = 1;
-		creds = &anon;
-	}
-
-	cli_init_creds(cli, creds);
-
-	/* Establish a SMB connection */
-
-	if (!resolve_srv_name(system_name, dest_host, &dest_ip)) {
-		return NULL;
-	}
-
-	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
-
-	if (!cli_establish_connection(cli, dest_host, &dest_ip, &calling, 
-				      &called, "IPC$", "IPC", False, True)) {
-		return NULL;
-	}
-
-	/* Open a NT session thingy */
-
-	if (!cli_nt_session_open(cli, PIPE_LSARPC)) {
-		cli_shutdown(cli);
-		return NULL;
-	}
-
-	return cli;
-}
-
-/* Shut down a SMB connection to the LSA pipe */
-
-void cli_lsa_shutdown(struct cli_state *cli)
-{
-	if (cli->fd != -1) cli_ulogoff(cli);
-	cli_shutdown(cli);
+        return cli_pipe_initialise(cli, system_name, PIPE_LSASS, creds);
 }
 
 /* Open a LSA policy handle */
