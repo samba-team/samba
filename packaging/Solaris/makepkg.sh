@@ -48,9 +48,11 @@ add_dynamic_entries()
 	echo f none lib/libsmbclient.so 0755 root other
 	echo f none include/libsmbclient.h 0644 root other
 
-	echo "#\n# smbwrapper\n#"
-	echo f none lib/smbwrapper.so 0755 root other
-	echo f none bin/smbsh 0755 root other
+	if [ -f lib/smbwrapper.so -a -f bin/smbsh ]; then
+		echo "#\n# smbwrapper\n#"
+		echo f none lib/smbwrapper.so 0755 root other
+		echo f none bin/smbsh 0755 root other
+	fi
 
 	echo "#\n# nss_winbind.so\n#"
 	echo f none /lib/nss_winbind.so.1=lib/nss_winbind.so.1 0755 root other
@@ -100,12 +102,13 @@ add_dynamic_entries()
 ## BEGIN MAIN 
 #####################################################################
 
-TMPINSTALLDIR=/export/build
-
 # Try to guess the distribution base..
-CURR_DIR=`pwd`
-DISTR_BASE=`echo $CURR_DIR | sed 's|\(.*\)/packaging.*|\1|'`
-echo "Assuming Samba distribution is rooted at $DISTR_BASE.."
+DISTR_BASE=`dirname \`pwd\` |sed -e 's@/packaging$@@'`
+echo "Distribution base:  $DISTR_BASE"
+
+TMPINSTALLDIR="/tmp/`basename $DISTR_BASE`-build"
+echo "Temp install dir:   $TMPINSTALLDIR"
+echo "Install directory:  $INSTALL_BASE"
 
 ##
 ## first build the source
@@ -114,7 +117,7 @@ echo "Assuming Samba distribution is rooted at $DISTR_BASE.."
 cd $DISTR_BASE/source
 
 if [ "x$1" != "xnobuild" ]; then
-	./configure --prefix=$INSTALL_DIR \
+	./configure --prefix=$INSTALL_BASE \
 		--with-acl-support \
 		--with-included-popt \
 		--localstatedir=/var/lib/samba \
@@ -130,11 +133,11 @@ if [ "x$1" != "xnobuild" ]; then
 	fi
 fi
 	
+mkdir $TMPINSTALLDIR
 make DESTDIR=$TMPINSTALLDIR install
 
 ## clear out *.old
-( cd $TMPINSTALLDIR; du -a | grep \.old$ | awk '{print "rm -rf "$2}' | sh )
-
+find $TMPINSTALLDIR -name \*.old |while read x; do rm -rf "$x"; done
  
 ##
 ## Now get the install locations
@@ -157,9 +160,12 @@ cp -fp nsswitch/libnss_winbind.so $TMPINSTALLDIR/$LIBDIR/nss_winbind.so.1
 if [ -f nsswitch/pam_winbind.so ]; then
 	cp -fp nsswitch/pam_winbind.so $TMPINSTALLDIR/$LIBDIR/pam_winbind.so
 fi
-
-cp -p bin/smbwrapper.so $TMPINSTALLDIR/$INSTALL_BASE/lib
-cp -p bin/smbsh $TMPINSTALLDIR/$INSTALL_BASE/bin
+if [ -f bin/smbwrapper.so ]; then
+	cp -fp bin/smbwrapper.so $TMPINSTALLDIR/$INSTALL_BASE/lib
+fi
+if [ -f bin/smbsh ]; then
+	cp -fp bin/smbsh $TMPINSTALLDIR/$INSTALL_BASE/bin
+fi
 
 mkdir -p $TMPINSTALLDIR/$INSTALL_BASE/docs
 cp -p ../docs/*pdf $TMPINSTALLDIR/$INSTALL_BASE/docs
