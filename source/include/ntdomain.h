@@ -395,7 +395,6 @@ typedef struct {
 #include "rpc_netlogon.h"
 #include "rpc_reg.h"
 #include "rpc_samr.h"
-#include "rpc_samba.h"
 #include "rpc_srvsvc.h"
 #include "rpc_wkssvc.h"
 #include "rpc_svcctl.h"

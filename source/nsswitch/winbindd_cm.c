@@ -548,8 +548,6 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	goto nbtstat;
-
 	for (i=0; i<5; i++) {
 		int j;
 		BOOL retry = False;
@@ -915,14 +913,6 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 		return;
 	}
 
-	result = cm_connect_samba(domain, &cli);
-
-	if (NT_STATUS_IS_OK(result)) {
-		domain->is_samba = True;
-		domain->initialized = True;
-		return;
-	}
-
 	cli = cli_rpc_open_noauth(domain->conn.cli, PI_LSARPC_DS);
 
 	if (cli == NULL) {
@@ -1092,36 +1082,6 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	*cli = conn->lsa_pipe;
 	*lsa_policy = conn->lsa_policy;
-	return result;
-}
-
-NTSTATUS cm_connect_samba(struct winbindd_domain *domain,
-			  struct rpc_pipe_client **cli)
-{
-	struct winbindd_cm_conn *conn;
-	NTSTATUS result;
-
-	result = init_dc_connection(domain);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-
-	conn = &domain->conn;
-
-	if (conn->samba_pipe == NULL) {
-		conn->samba_pipe = cli_rpc_open_noauth(conn->cli, PI_SAMBA);
-		if (conn->samba_pipe == NULL) {
-			result = NT_STATUS_PIPE_NOT_AVAILABLE;
-			goto done;
-		}
-	}
-
- done:
-	if (!NT_STATUS_IS_OK(result)) {
-		invalidate_cm_connection(conn);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	*cli = conn->samba_pipe;
 	return result;
 }
 

@@ -118,8 +118,6 @@ typedef struct {
 struct winbindd_cm_conn {
 	struct cli_state *cli;
 
-	struct rpc_pipe_client *samba_pipe;
-
 	struct rpc_pipe_client *samr_pipe;
 	POLICY_HND sam_connect_handle, sam_domain_handle;
 
@@ -154,7 +152,6 @@ struct winbindd_domain {
 	BOOL initialized;		       /* Did we already ask for the domain mode? */
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
 	BOOL active_directory;                 /* is this a win2k active directory ? */
-	BOOL is_samba;			       /* Is this a samba domain? */
 	BOOL primary;                          /* is this our primary domain ? */
 	BOOL internal;		/* BUILTIN and member SAM */
 

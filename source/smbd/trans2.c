@@ -2192,7 +2192,6 @@ int set_bad_path_error(int err, BOOL bad_path, char *outbuf, int def_class, uint
 	return UNIXERROR(def_class,def_code);
 }
 
-#if defined(HAVE_POSIX_ACLS)
 /****************************************************************************
  Utility function to count the number of entries in a POSIX acl.
 ****************************************************************************/
@@ -2307,7 +2306,6 @@ static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 
 	return True;
 }
-#endif
 
 /****************************************************************************
  Reply to a TRANS2_QFILEPATHINFO or TRANSACT2_QFILEINFO (query file info by
@@ -2873,7 +2871,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				break;
 			}
 
-#if defined(HAVE_POSIX_ACLS)
 		case SMB_QUERY_POSIX_ACL:
 			{
 				SMB_ACL_T file_acl = NULL;
@@ -2950,7 +2947,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				data_size = (num_file_acls + num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE;
 				break;
 			}
-#endif
 
 		default:
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
@@ -3760,7 +3756,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			return(-1);
 		}
 
-#if defined(HAVE_POSIX_ACLS)
 		case SMB_SET_POSIX_ACL:
 		{
 			uint16 posix_acl_version;
@@ -3810,7 +3805,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 			return(-1);
 		}
-#endif
 
 		default:
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
