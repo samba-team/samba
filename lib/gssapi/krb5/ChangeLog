@@ -1,3 +1,9 @@
+2001-05-04  Assar Westerlund  <assar@sics.se>
+
+	* gssapi_locl.h: add config.h for completeness
+	* gssapi.h: remove config.h, this is an installed header file
+	sys/types.h is not needed either
+	
 2001-03-12  Assar Westerlund  <assar@sics.se>
 
 	* acquire_cred.c (gss_acquire_cred): remove memory leaks.  from
