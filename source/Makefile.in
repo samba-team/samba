@@ -464,7 +464,7 @@ bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 
 nsswitch/libnss_wins.so: $(NSS_OBJ)
 	@echo "Linking $@"
-	@$(LD) @LDSHFLAGS@ -o $@ $(NSS_OBJ)
+	@$(LD) @LDSHFLAGS@ -o $@ $(NSS_OBJ) -lc
 
 nsswitch: nsswitch/libnss_wins.so
 
