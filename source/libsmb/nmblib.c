@@ -1152,8 +1152,8 @@ static int name_interpret(char *in, fstring name)
       in += 2;
       out++;
     }
-  *out = 0;
   ret = out[-1];
+  out[-1] = 0;
 
 #ifdef NETBIOS_SCOPE
   /* Handle any scope names */
@@ -1167,7 +1167,7 @@ static int name_interpret(char *in, fstring name)
       in += len;
     }
 #endif
-  pull_ascii(name, out, sizeof(fstring), sizeof(out), STR_TERMINATE);
+  pull_ascii(name, out_string, sizeof(fstring), sizeof(out_string), STR_TERMINATE);
 
   return(ret);
 }
@@ -1249,7 +1249,7 @@ static char *name_ptr(char *buf,int ofs)
 }  
 
 /****************************************************************************
-extract a netbios name from a buf (into a unix string)
+extract a netbios name from a buf (into a unix string) return name type
 ****************************************************************************/
 int name_extract(char *buf,int ofs, fstring name)
 {

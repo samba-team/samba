@@ -75,23 +75,16 @@ int reply_special(char *inbuf,char *outbuf)
 			return(0);
 		}
 		name_extract(inbuf,4,name1);
-		name_extract(inbuf,4 + name_len(inbuf + 4),name2);
+		name_type = name_extract(inbuf,4 + name_len(inbuf + 4),name2);
 		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
 			 name1,name2));      
-
-		name1[15] = 0;
-
-		len = strlen(name2);
-		if (len == 16) {
-			name_type = name2[15];
-			name2[15] = 0;
-		}
 
 		set_local_machine_name(name1, True);
 		set_remote_machine_name(name2, True);
 
-		DEBUG(2,("netbios connect: local=%s remote=%s\n",
-			get_local_machine_name(), get_remote_machine_name() ));
+		DEBUG(2,("netbios connect: local=%s remote=%s, name type = %x\n",
+			 get_local_machine_name(), get_remote_machine_name(),
+			 name_type));
 
 		if (name_type == 'R') {
 			/* We are being asked for a pathworks session --- 
