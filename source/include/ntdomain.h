@@ -30,7 +30,6 @@
 
 /* dce/rpc authentication support */
 #include "rpc_ntlmssp.h"
-#include "rpc_netsec.h"
 
 /* miscellaneous structures / defines */
 #include "rpc_misc.h"
@@ -102,16 +101,6 @@ prs_struct;
 #define UNMARSHALLING(ps) ((ps)->io)
 
 #include "rpc_spoolss.h"
-
-typedef struct netsec_auth_struct
-{
-	RPC_AUTH_NETSEC_NEG netsec_neg;
-	uchar sess_key[16];
-
-	uint32 seq_num;
-
-}
-netsec_auth_struct;
 
 typedef struct ntlmssp_auth_struct
 {

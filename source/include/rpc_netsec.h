@@ -54,4 +54,14 @@ typedef struct rpc_auth_netsec_chk_info
 	uint8 data8[8]; /* random 8-byte nonce */
 } RPC_AUTH_NETSEC_CHK;
 
+typedef struct netsec_auth_struct
+{
+	RPC_AUTH_NETSEC_NEG netsec_neg;
+	uchar sess_key[16];
+
+	uint32 seq_num;
+
+}
+netsec_auth_struct;
+
 #endif /* RPC_NETSEC_H */

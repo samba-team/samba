@@ -30,8 +30,7 @@
 #include "nterr.h"
 #include "sids.h"
 
-extern int DEBUGLEVEL;
-
+#if 0
 /****************************************************************************
  set secret tdb database
 ****************************************************************************/
@@ -61,6 +60,7 @@ static BOOL get_tdbsecdb(struct policy_cache *cache, const POLICY_HND * hnd,
 
 	return True;
 }
+#endif
 
 typedef struct tdb_sec_info
 {

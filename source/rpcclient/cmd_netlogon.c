@@ -395,8 +395,8 @@ void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
 experimental nt login.
 ****************************************************************************/
-void cmd_netlogon_domain_test(struct client_info *info, int argc,
-			      char *argv[])
+uint32 cmd_netlogon_domain_test(struct client_info *info,
+				int argc, char *argv[])
 {
 	char *nt_trust_dom;
 	BOOL res = True;
@@ -439,7 +439,7 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc,
 	if (argc < 2)
 	{
 		report(out_hnd, "domtest: must specify domain name\n");
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	nt_trust_dom = argv[1];
@@ -465,6 +465,8 @@ void cmd_netlogon_domain_test(struct client_info *info, int argc,
 
 	report(out_hnd, "cmd_nt_login: credentials (%s) test succeeded: %s\n",
 	       nt_trust_dom, BOOLSTR(res));
+
+	return 0x0;
 }
 
 /****************************************************************************

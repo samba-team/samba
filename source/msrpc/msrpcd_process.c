@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "rpc_parse.h"
 
-extern int DEBUGLEVEL;
 
 /* 
  * Size of data we can send to client. Set
@@ -37,23 +36,21 @@ int max_send = BUFFER_SIZE;
  */
 int max_recv = BUFFER_SIZE;
 
-extern int last_message;
-extern pstring sesssetup_user;
 extern int smb_read_error;
 extern BOOL reload_after_sighup;
-extern int max_send;
 
 
 /****************************************************************************
  select on a timeout on the dce/rpc socket.
  ****************************************************************************/
 
-static BOOL receive_message_or_msrpc(int c, prs_struct * ps,
+static BOOL receive_message_or_msrpc(int c, prs_struct *ps,
 				     int timeout, BOOL *got_msrpc)
 {
 	int selrtn;
 
-	DEBUG(10, ("receive_message_or_msrpc: timeout %d fd %d\n", timeout, c));
+	DEBUG(10, ("receive_message_or_msrpc: timeout %d fd %d\n",
+		   timeout, c));
 
 	smb_read_error = 0;
 
@@ -114,7 +111,7 @@ force write permissions on print services.
   it can be used by the oplock break code.
 ****************************************************************************/
 static void process_msrpc(rpcsrv_struct * l, const char *name,
-			  prs_struct * pdu)
+			  prs_struct *pdu)
 {
 	int32 len = prs_buf_len(pdu);
 	BOOL more;
@@ -122,7 +119,7 @@ static void process_msrpc(rpcsrv_struct * l, const char *name,
 
 	dump_data(10, pdu->data, len);
 
-	more = rpc_local(l, pdu->data, len, name); 
+	more = rpc_local(l, pdu->data, len, name);
 	while (more)
 	{
 		more = msrpc_send(l->c, &l->rsmb_pdu);
@@ -241,7 +238,7 @@ static void free_srv_auth_fns_array(uint32 num_entries,
 	free_void_array(num_entries, (void **)entries, NULL);
 }
 
-static srv_auth_fns *add_srv_auth_fns_to_array(uint32 * len,
+static srv_auth_fns *add_srv_auth_fns_to_array(uint32 *len,
 					       srv_auth_fns *** array,
 					       srv_auth_fns * name)
 {
@@ -369,11 +366,11 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 
 		errno = 0;
 
-		counter = (counter + 1 ) % 200;
-		
+		counter = (counter + 1) % 200;
+
 		if (!receive_message_or_msrpc(l->c, &pdu,
-					       SMBD_SELECT_TIMEOUT * 1000,
-					       &got_msrpc))
+					      SMBD_SELECT_TIMEOUT * 1000,
+					      &got_msrpc))
 		{
 			if (smb_read_error == READ_TIMEOUT)
 			{
@@ -415,8 +412,7 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 
 		if (reload_after_sighup)
 		{
-			DEBUG(0,
-			      ("Reloading services after SIGHUP\n"));
+			DEBUG(0, ("Reloading services after SIGHUP\n"));
 			fn->reload_services(False);
 			reload_after_sighup = False;
 			/*
@@ -431,4 +427,3 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 		prs_free_data(&pdu);
 	}
 }
-

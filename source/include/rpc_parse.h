@@ -24,6 +24,9 @@
 #ifndef _RPC_PARSE_H
 #define _RPC_PARSE_H 
 
+/* dce/rpc authentication support */
+#include "rpc_netsec.h"
+
 /* different dce/rpc pipes */
 #include "rpc_reg.h"
 #include "rpc_brs.h"

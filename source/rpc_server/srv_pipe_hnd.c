@@ -250,7 +250,7 @@ pipes_struct *get_rpc_pipe_p(char *buf, int where)
 /****************************************************************************
   get an rpc pipe
 ****************************************************************************/
-pipes_struct *get_rpc_vuser(const vuser_key * key)
+static pipes_struct *get_rpc_vuser(const vuser_key * key)
 {
 	pipes_struct *p;
 

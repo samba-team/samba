@@ -2131,7 +2131,6 @@ BOOL wait_rpc_pipe_hnd_state(pipes_struct * p, uint16 priority);
 BOOL set_rpc_pipe_hnd_state(pipes_struct * p, uint16 device_state);
 BOOL close_rpc_pipe_hnd(pipes_struct * p);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);
-pipes_struct *get_rpc_vuser(const vuser_key * key);
 pipes_struct *get_rpc_pipe(int pnum);
 
 /*The following definitions come from  rpc_server/srv_pipe_netsec.c  */
@@ -2215,8 +2214,8 @@ uint32 cmd_lsa_enum_sids(struct client_info *info, int argc, char *argv[]);
 void cmd_netlogon_pwset(struct client_info *info, int argc, char *argv[]);
 void cmd_netlogon_dom_list(struct client_info *info, int argc, char *argv[]);
 void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[]);
-void cmd_netlogon_domain_test(struct client_info *info, int argc,
-			      char *argv[]);
+uint32 cmd_netlogon_domain_test(struct client_info *info,
+				int argc, char *argv[]);
 uint32 cmd_sam_sync(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_reg.c  */

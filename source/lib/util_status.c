@@ -37,15 +37,11 @@ parse the STATUS..LCK file.  caller is responsible for freeing *crec.
 BOOL get_connection_status(struct connect_record **crec,
 				uint32 *connection_count)
 {
-  int fd;
-  pstring fname;
   TDB_CONTEXT *tdb;
   TDB_DATA key,nextkey,d;
   int conn;
-  int num_recs;
   struct connect_record *c;
   struct connections_data cdata;  
-  int i;
 
   if (crec == NULL || connection_count == NULL)
   {
