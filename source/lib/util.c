@@ -3779,29 +3779,7 @@ check if a process exists. Does this work on all unixes?
 ****************************************************************************/
 BOOL process_exists(int pid)
 {
-#ifdef LINUX
-  fstring s;
-  sprintf(s,"/proc/%d",pid);
-  return(directory_exist(s,NULL));
-#else
-  {
-    static BOOL tested=False;
-    static BOOL ok=False;
-    fstring s;
-    if (!tested) {
-      tested = True;
-      sprintf(s,"/proc/%05d",(int)getpid());
-      ok = file_exist(s,NULL);
-    }
-    if (ok) {
-      sprintf(s,"/proc/%05d",pid);
-      return(file_exist(s,NULL));
-    }
-  }
-
-  /* CGH 8/16/96 - added ESRCH test */
-  return(pid == getpid() || kill(pid,0) == 0 || errno != ESRCH);
-#endif
+	return(kill(pid,0) == 0 || errno != ESRCH);
 }
 
 
