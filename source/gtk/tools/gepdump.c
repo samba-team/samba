@@ -35,12 +35,15 @@
  */
 
 static GtkWidget *mainwin;
-static GtkWidget *entry_binding;
 static GtkTreeStore *store_eps;
 static GtkWidget *table_statistics;
 static GtkWidget *lbl_calls_in, *lbl_calls_out, *lbl_pkts_in, *lbl_pkts_out;
 static GtkWidget *lbl_iface_version, *lbl_iface_uuid, *lbl_iface_name;
 TALLOC_CTX *eps_ctx = NULL;
+TALLOC_CTX *conn_ctx = NULL;
+
+struct dcerpc_pipe *epmapper_pipe;
+struct dcerpc_pipe *mgmt_pipe;
 
 static void on_quit1_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
@@ -106,36 +109,24 @@ static void add_epm_entry(TALLOC_CTX *mem_ctx, const char *annotation, struct ep
 	}
 }
 
-static void on_dump_clicked (GtkButton *btn, gpointer user_data)
+static void refresh_eps(void)
 {
 	NTSTATUS status;
 	struct epm_Lookup r;
 	struct GUID uuid;
 	struct rpc_if_id_t iface;
 	struct policy_handle handle;
-	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx = talloc_init("dump");
 
 	talloc_destroy(eps_ctx);
 
-	status = dcerpc_pipe_connect(&p, gtk_entry_get_text(GTK_ENTRY(entry_binding)), DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, lp_workgroup(), "", "");
-
-	if (NT_STATUS_IS_ERR(status)) {
-		gtk_show_ntstatus(mainwin, status);
-		talloc_destroy(mem_ctx);
-		return;
-	}
-
-	ZERO_STRUCT(uuid);
-	ZERO_STRUCT(iface);
 	ZERO_STRUCT(handle);
 
 	r.in.inquiry_type = 0;
 	r.in.object = &uuid;
 	r.in.interface_id = &iface;
 	r.in.vers_option = 0;
-	r.in.entry_handle = &handle;
-	r.out.entry_handle = &handle;
+	r.in.entry_handle = r.out.entry_handle = &handle;
 	r.in.max_ents = 10;
 
 	gtk_tree_store_clear(store_eps);
@@ -144,13 +135,17 @@ static void on_dump_clicked (GtkButton *btn, gpointer user_data)
 
 	do {
 		int i;
-		status = dcerpc_epm_Lookup(p, eps_ctx, &r);
+		ZERO_STRUCT(uuid);
+		ZERO_STRUCT(iface);
+
+		status = dcerpc_epm_Lookup(epmapper_pipe, eps_ctx, &r);
 		if (!NT_STATUS_IS_OK(status) || r.out.result != 0) {
 			break;
 		}
 		for (i=0;i<r.out.num_ents;i++) {
 			add_epm_entry(mem_ctx, r.out.entries[i].annotation, &r.out.entries[i].tower->tower);
 		}
+
 	} while (NT_STATUS_IS_OK(status) && 
 		 r.out.result == 0 && 
 		 r.out.num_ents == r.in.max_ents);
@@ -163,10 +158,17 @@ static void on_dump_clicked (GtkButton *btn, gpointer user_data)
 	talloc_destroy(mem_ctx);
 }
 
-static void on_select_target_clicked(GtkButton *btn, gpointer         user_data)
+static void on_refresh_clicked (GtkButton *btn, gpointer user_data)
+{
+	refresh_eps();
+}
+
+static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 {
 	GtkRpcBindingDialog *d;
+	const char *bs;
 	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
 	gint result;
 
 	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(TRUE, NULL));
@@ -179,32 +181,41 @@ static void on_select_target_clicked(GtkButton *btn, gpointer         user_data)
 		return;
 	}
 
-	mem_ctx = talloc_init("select_target");
-	gtk_entry_set_text(GTK_ENTRY(entry_binding), gtk_rpc_binding_dialog_get_binding_string (d, mem_ctx));
-	talloc_destroy(mem_ctx);
+	mem_ctx = talloc_init("connect");
+	bs = gtk_rpc_binding_dialog_get_binding_string (d, mem_ctx);
+
+	status = dcerpc_pipe_connect(&epmapper_pipe, bs, DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, lp_workgroup(), "", "");
+
+	if (NT_STATUS_IS_ERR(status)) {
+		gtk_show_ntstatus(mainwin, status);
+		goto fail;
+	}
+
+	refresh_eps();
+
+	status = dcerpc_secondary_context(epmapper_pipe, &mgmt_pipe, DCERPC_MGMT_UUID, DCERPC_MGMT_VERSION);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		mgmt_pipe = NULL;
+		gtk_show_ntstatus(NULL, status);
+		goto fail;
+	}
+
+fail:
 	gtk_widget_destroy(GTK_WIDGET(d));
 }
 
 static gboolean on_eps_select(GtkTreeSelection *selection,
     GtkTreeModel *model, GtkTreePath *path, gboolean path_currently_selected, gpointer data)
 {
-	struct dcerpc_pipe *p;
 	NTSTATUS status;
-	struct dcerpc_binding bd;
-	TALLOC_CTX *mem_ctx = talloc_init("eps");
-
-	ZERO_STRUCT(bd);
-	bd.host = "192.168.4.26";
-	bd.endpoint = "samr";
-	bd.transport = NCACN_NP;
-
-	status = dcerpc_pipe_connect_b(&p, &bd, DCERPC_MGMT_UUID, DCERPC_MGMT_VERSION, "", "administrator", "penguin");
-
-	if (NT_STATUS_IS_ERR(status)) {
-		gtk_show_ntstatus(NULL, status);
-		return FALSE;
-	}
+	TALLOC_CTX *mem_ctx;
 	
+	if (mgmt_pipe == NULL) 
+		return FALSE;
+	
+	mem_ctx = talloc_init("eps");
+
 	{
 		/* Do an InqStats call */
 		struct mgmt_inq_stats r;
@@ -212,7 +223,7 @@ static gboolean on_eps_select(GtkTreeSelection *selection,
 		r.in.max_count = MGMT_STATS_ARRAY_MAX_SIZE;
 		r.in.unknown = 0;
 
-		status = dcerpc_mgmt_inq_stats(p, mem_ctx, &r);
+		status = dcerpc_mgmt_inq_stats(mgmt_pipe, mem_ctx, &r);
 		if (NT_STATUS_IS_ERR(status)) {
 			gtk_show_ntstatus(NULL, status);
 			return TRUE;
@@ -237,7 +248,7 @@ static gboolean on_eps_select(GtkTreeSelection *selection,
 			r.in.authn_proto = i;  /* DCERPC_AUTH_TYPE_* */
 			r.in.princ_name_size = 100;
 
-			status = dcerpc_mgmt_inq_princ_name(p, mem_ctx, &r);
+			status = dcerpc_mgmt_inq_princ_name(mgmt_pipe, mem_ctx, &r);
 			if (!NT_STATUS_IS_OK(status)) {
 				continue;
 			}
@@ -268,13 +279,10 @@ static GtkWidget* create_mainwindow (void)
 	GtkWidget *quit1;
 	GtkWidget *menuitem4;
 	GtkWidget *menuitem4_menu;
+	GtkWidget *mnu_connect;
+	GtkWidget *mnu_refresh;
 	GtkWidget *about1;
-	GtkWidget *handlebox1;
-	GtkWidget *hbox1;
 	GtkWidget *hbox2;
-	GtkWidget *label1;
-	GtkWidget *btn_select_target;
-	GtkWidget *btn_dump;
 	GtkWidget *scrolledwindow1;
 	GtkWidget *frame1;
 	GtkWidget *tree_eps;
@@ -303,6 +311,12 @@ static GtkWidget* create_mainwindow (void)
 	menuitem1_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem1), menuitem1_menu);
 
+	mnu_connect = gtk_menu_item_new_with_mnemonic ("_Connect");
+	gtk_container_add(GTK_CONTAINER(menuitem1_menu), mnu_connect);
+
+	mnu_refresh = gtk_menu_item_new_with_mnemonic ("_Refresh");
+	gtk_container_add(GTK_CONTAINER(menuitem1_menu), mnu_refresh);
+
 	quit1 = gtk_image_menu_item_new_from_stock ("gtk-quit", accel_group);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), quit1);
 
@@ -314,25 +328,6 @@ static GtkWidget* create_mainwindow (void)
 
 	about1 = gtk_menu_item_new_with_mnemonic ("_About");
 	gtk_container_add (GTK_CONTAINER (menuitem4_menu), about1);
-
-	handlebox1 = gtk_handle_box_new ();
-	gtk_box_pack_start (GTK_BOX (vbox1), handlebox1, FALSE, TRUE, 0);
-
-	hbox1 = gtk_hbox_new (FALSE, 0);
-	gtk_container_add (GTK_CONTAINER (handlebox1), hbox1);
-
-	label1 = gtk_label_new ("Location:");
-	gtk_box_pack_start (GTK_BOX (hbox1), label1, FALSE, FALSE, 0);
-
-	entry_binding = gtk_entry_new ();
-	gtk_entry_set_text(GTK_ENTRY(entry_binding), "ncalrpc:");
-	gtk_box_pack_start (GTK_BOX (hbox1), entry_binding, FALSE, FALSE, 0);
-
-	btn_select_target = gtk_button_new_with_mnemonic ("_Select Target");
-	gtk_box_pack_start (GTK_BOX (hbox1), btn_select_target, FALSE, FALSE, 0);
-
-	btn_dump = gtk_button_new_with_mnemonic ("_Dump");
-	gtk_box_pack_start (GTK_BOX (hbox1), btn_dump, FALSE, FALSE, 0);
 
 	hbox2 = gtk_hbox_new (FALSE, 0);
 	gtk_container_add (GTK_CONTAINER (vbox1), hbox2);
@@ -406,11 +401,11 @@ static GtkWidget* create_mainwindow (void)
 	g_signal_connect ((gpointer) about1, "activate",
 					  G_CALLBACK (on_about1_activate),
 					  NULL);
-	g_signal_connect ((gpointer) btn_select_target, "clicked",
-					  G_CALLBACK (on_select_target_clicked),
+	g_signal_connect ((gpointer) mnu_connect, "activate",
+					  G_CALLBACK (on_connect_clicked),
 					  NULL);
-	g_signal_connect ((gpointer) btn_dump, "clicked",
-					  G_CALLBACK (on_dump_clicked),
+	g_signal_connect ((gpointer) mnu_refresh, "activate",
+					  G_CALLBACK (on_refresh_clicked),
 					  NULL);
 
 	gtk_window_add_accel_group (GTK_WINDOW (mainwindow), accel_group);
