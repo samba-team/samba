@@ -398,7 +398,7 @@
  int stat(char *name, void *st)
 {
 #if HAVE___XSTAT
-	return xstat(name, st);
+	return __xstat(0, name, st);
 #else
 	if (smbw_path(name)) {
 		return smbw_stat(name, st);
