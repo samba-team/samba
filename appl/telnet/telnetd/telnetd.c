@@ -708,7 +708,8 @@ doit(struct sockaddr_in *who)
 #endif	/* _SC_CRAY_SECURE_SYS */
 
     /* get name of connected client */
-    hp = gethostbyaddr((char *)&who->sin_addr, sizeof (struct in_addr),
+    hp = gethostbyaddr((const char *)&who->sin_addr,
+		       sizeof (struct in_addr),
 		       who->sin_family);
 
     if (hp == NULL && registerd_host_only) {
@@ -794,7 +795,7 @@ telnet(int f, int p)
     char	defent[TABBUFSIZ];
     char	defstrs[TABBUFSIZ];
 #undef	TABBUFSIZ
-    char *HE;
+    char *he;
     char *HN;
     char *IM;
     void netflush();
@@ -948,8 +949,8 @@ telnet(int f, int p)
 	hostinfo = 0;
 
     IM = DEFAULT_IM;
-    HE = 0;
-    edithost(HE, host_name);
+    he = 0;
+    edithost(he, host_name);
     if (hostinfo && *IM)
 	putf(IM, ptyibuf2);
 
