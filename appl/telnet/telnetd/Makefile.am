@@ -11,6 +11,8 @@ CHECK_LOCAL =
 telnetd_SOURCES  = telnetd.c state.c termstat.c slc.c sys_term.c \
 		   utility.c global.c authenc.c defs.h ext.h telnetd.h
 
+man_MANS = telnetd.8
+
 LDADD = \
 	../libtelnet/libtelnet.a \
 	$(LIB_krb5) \
