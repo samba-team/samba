@@ -64,7 +64,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 		/* Set the date on this file */
 		if (utime(f->name->full_name, &unix_times) == -1) {
-			return NT_STATUS_ACCESS_DENIED;
+			return pvfs_map_errno(pvfs, errno);
 		}
   		break;
 
