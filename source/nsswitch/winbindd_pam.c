@@ -102,7 +102,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	result = cli_netlogon_sam_network_logon(
 		cli, mem_ctx, name_user, name_domain, global_myname_unix(), 
-		chal, lm_resp, nt_resp, &info3);
+		chal, lm_resp, nt_resp, &info3, NULL, NULL);
         
 done:
 
@@ -190,7 +190,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	result = cli_netlogon_sam_network_logon(
 		cli, mem_ctx, state->request.data.auth_crap.user, domain,
 		global_myname_unix(), state->request.data.auth_crap.chal, 
-		lm_resp, nt_resp, &info3);
+		lm_resp, nt_resp, &info3, NULL, NULL);
         
 done:
 
@@ -212,6 +212,115 @@ done:
 }
 
 #endif	/* WITH_WINBIND_AUTH_CRAP */
+
+/* smbd Challenge Response Authentication Protocol */
+
+enum winbindd_result winbindd_smbd_auth_crap(struct winbindd_cli_state *state) 
+{
+	NTSTATUS result;
+	unsigned char trust_passwd[16];
+	time_t last_change_time;
+        NET_USER_INFO_3 info3;
+        struct cli_state *cli = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	const char *domain = NULL;
+	char *raw_info3_data = NULL;
+	size_t raw_data_len = 0;
+
+	DATA_BLOB lm_resp, nt_resp;
+
+	DEBUG(3, ("[%5d]: smbd auth crap domain: %s user: %s\n", state->pid,
+		  state->request.data.smbd_auth_crap.domain, state->request.data.smbd_auth_crap.user));
+
+	if (!(mem_ctx = talloc_init_named("winbind smbd auth crap for %s", state->request.data.smbd_auth_crap.user))) {
+		DEBUG(0, ("winbindd_smbd_auth_crap: could not talloc_init()!\n"));
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	if (*state->request.data.smbd_auth_crap.domain) {
+		domain = talloc_strdup(mem_ctx, state->request.data.smbd_auth_crap.domain);
+	} else if (lp_winbind_use_default_domain()) {
+		domain = talloc_strdup(mem_ctx, lp_workgroup_unix());
+	} else {
+		DEBUG(5,("no domain specified with username (%s) - failing auth\n",
+					state->request.data.smbd_auth_crap.user));
+		result = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (!domain) {
+		DEBUG(0,("winbindd_smbd_auth_crap: talloc_strdup failed!\n"));
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	lm_resp = data_blob_talloc(mem_ctx, state->request.data.smbd_auth_crap.lm_resp,
+			state->request.data.smbd_auth_crap.lm_resp_len);
+	nt_resp = data_blob_talloc(mem_ctx, state->request.data.smbd_auth_crap.nt_resp,
+			state->request.data.smbd_auth_crap.nt_resp_len);
+	
+	/*
+	 * Get the machine account password for our primary domain
+	 */
+
+	if (!secrets_fetch_trust_account_password(
+                lp_workgroup_unix(), trust_passwd, &last_change_time)) {
+		DEBUG(0, ("winbindd_smbd_auth: could not fetch trust account "
+                          "password for domain %s\n", lp_workgroup_unix()));
+		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto done;
+	}
+
+	/* Ensure the client sent us proof it knew the secret. */
+	if (memcmp( trust_passwd, state->request.data.smbd_auth_crap.proof, 16) != 0) {
+		DEBUG(0, ("winbindd_smbd_auth: incorrect proof of trust account "
+                          "password for domain %s\n", lp_workgroup_unix()));
+		result = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
+
+	ZERO_STRUCT(info3);
+
+	/* Don't shut this down - it belongs to the connection cache code */
+        result = cm_get_netlogon_cli(lp_workgroup_unix(), trust_passwd, &cli);
+
+        if (!NT_STATUS_IS_OK(result)) {
+                DEBUG(3, ("could not open handle to NETLOGON pipe (%s)\n", nt_errstr(result)));
+                goto done;
+        }
+
+	result = cli_netlogon_sam_network_logon(
+		cli, mem_ctx, state->request.data.smbd_auth_crap.user, domain,
+		global_myname_unix(), state->request.data.smbd_auth_crap.chal, 
+		lm_resp, nt_resp, &info3, &raw_info3_data, &raw_data_len);
+        
+	if (NT_STATUS_IS_OK(result) && raw_info3_data && raw_data_len) {
+		/*
+		 * Return the raw info3 data as extra data.
+		 */
+
+		state->response.extra_data = raw_info3_data;
+		state->response.length += raw_data_len;
+	}
+
+done:
+
+	state->response.data.auth.nt_status = NT_STATUS_V(result);
+	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
+	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
+	state->response.data.auth.pam_error = nt_status_to_pam(result);
+
+	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, ("SMBD NTLM CRAP authentication for user [%s]\\[%s] returned %s\n", 
+	      state->request.data.smbd_auth_crap.domain, 
+	      state->request.data.smbd_auth_crap.user,
+	      state->response.data.auth.nt_status_string));
+
+	if (mem_ctx) 
+		talloc_destroy(mem_ctx);
+
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
+}
 
 /* Change a user password */
 

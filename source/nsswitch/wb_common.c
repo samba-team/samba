@@ -290,7 +290,7 @@ int read_reply(struct winbindd_response *response)
 	/* Read variable length response */
 	
 	if (response->length > sizeof(struct winbindd_response)) {
-		int extra_data_len = response->length - 
+		size_t extra_data_len = response->length - 
 			sizeof(struct winbindd_response);
 		
 		/* Mallocate memory for extra data */

@@ -36,7 +36,7 @@
 
 /* Update this when you change the interface.  */
 
-#define WINBIND_INTERFACE_VERSION 4
+#define WINBIND_INTERFACE_VERSION 5
 
 /* Socket commands */
 
@@ -65,6 +65,7 @@ enum winbindd_cmd {
 
 	WINBINDD_PAM_AUTH,
 	WINBINDD_PAM_AUTH_CRAP,
+	WINBINDD_SMBD_AUTH_CRAP,
 	WINBINDD_PAM_CHAUTHTOK,
 
 	/* List various things */
@@ -133,6 +134,16 @@ struct winbindd_request {
                         fstring nt_resp;
                         uint16 nt_resp_len;
                 } auth_crap;
+                struct _smbd_auth_crap {
+                        unsigned char proof[16];
+                        unsigned char chal[8];
+                        fstring user;
+                        fstring domain;
+                        fstring lm_resp;
+                        uint16 lm_resp_len;
+                        fstring nt_resp;
+                        uint16 nt_resp_len;
+                } smbd_auth_crap;
                 struct {
                     fstring user;
                     fstring oldpass;

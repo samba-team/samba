@@ -514,7 +514,7 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 					const char *unix_username, const char *unix_domain, const char *workstation, 
 					const uint8 chal[8],
 					DATA_BLOB lm_response, DATA_BLOB nt_response,
-					NET_USER_INFO_3 *info3)
+					NET_USER_INFO_3 *info3, char **pp_raw_data, size_t *p_raw_data_len)
 
 {
 	prs_struct qbuf, rbuf;
@@ -588,8 +588,16 @@ NTSTATUS cli_netlogon_sam_network_logon(struct cli_state *cli, TALLOC_CTX *mem_c
 	result = r.status;
 
  done:
+
 	prs_mem_free(&qbuf);
-	prs_mem_free(&rbuf);
+
+	/* Return the raw (marshalled) info3 data if required. */
+	if (NT_STATUS_IS_OK(result) && pp_raw_data && p_raw_data_len) {
+		uint32 len;
+		*pp_raw_data = prs_take_memory(&rbuf, &len);
+		*p_raw_data_len = (size_t)len;
+	} else
+		prs_mem_free(&rbuf);
 
         return result;
 }

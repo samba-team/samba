@@ -468,3 +468,71 @@ BOOL winbind_nametogid(gid_t *pgid, const char *gname)
 
 	return winbind_sid_to_gid(pgid, &g_sid);
 }
+
+NTSTATUS winbind_smb_auth_crap(const char *domain, const char *username,
+			const unsigned char proof[16],
+			const unsigned char challenge[8],
+			const unsigned char nt_resp[24],
+			const unsigned char lm_resp[24],
+			char **pp_raw,
+			size_t *pdata_len)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	struct _smbd_auth_crap *psmbd_auth_crap;
+	int result;
+
+	*pp_raw = NULL;
+	*pdata_len = 0;
+
+	/* Send off request */
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	psmbd_auth_crap = &request.data.smbd_auth_crap;
+
+	memcpy(psmbd_auth_crap->proof, proof, 16);
+	fstrcpy(psmbd_auth_crap->user, username);
+	fstrcpy(psmbd_auth_crap->domain, domain);
+
+	memcpy(psmbd_auth_crap->chal, challenge, 8);
+
+	if (lm_resp) {
+		memcpy(psmbd_auth_crap->lm_resp, lm_resp, 24);
+		psmbd_auth_crap->lm_resp_len = 24;
+	}
+	if (nt_resp) {
+		memcpy(psmbd_auth_crap->nt_resp, nt_resp, 24);
+		psmbd_auth_crap->nt_resp_len = 24;
+	}
+
+	result = winbindd_request(WINBINDD_SMBD_AUTH_CRAP, &request, &response);
+
+	DEBUG(5,("winbind_smb_auth_crap for user %s\\%s %s\n",
+			domain, username,
+			(result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed"));
+
+	if (result != NSS_STATUS_SUCCESS) {
+		if (response.data.auth.nt_status) {
+			DEBUG(5,("winbind_smb_auth_crap error code was %s (0x%x)\n",
+				response.data.auth.nt_status_string,
+				response.data.auth.nt_status));
+			return  NT_STATUS(response.data.auth.nt_status);
+		}
+		/*
+		 * If we can't talk to winbindd return pipe not available. Allows
+		 * caller to decide what to do.
+		 */
+
+		if (result == NSS_STATUS_NOTFOUND || result == NSS_STATUS_UNAVAIL)
+				return NT_STATUS_PIPE_NOT_AVAILABLE;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	/* Return the raw INFO3 data. */
+
+	if (response.extra_data) {
+		 *pp_raw = response.extra_data;
+		 *pdata_len = response.length - sizeof(struct winbindd_response);;
+	}
+	return NT_STATUS_OK;
+}

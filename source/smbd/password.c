@@ -1522,12 +1522,226 @@ static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_pass
 }
 
 /***********************************************************************
+ Do the same as security=server, but ask winbindd.
+ user and domain are in UNIX character set.
+************************************************************************/
+
+static BOOL domain_client_validate_winbindd( char *user, char *domain, 
+                             char *smb_apasswd, int smb_apasslen, 
+                             char *smb_ntpasswd, int smb_ntpasslen,
+                             BOOL *user_exists, NT_USER_TOKEN **pptoken,
+			     BOOL *winbindd_ok)
+{
+	unsigned char local_challenge[8];
+	unsigned char local_lm_response[24];
+	unsigned char local_nt_response[24];
+	unsigned char trust_passwd[16];
+	NET_USER_INFO_3 info3;
+	NET_R_SAM_LOGON r;
+	TALLOC_CTX *mem_ctx = NULL;
+	prs_struct rbuf;
+	uint32 smb_uid_low;
+	time_t last_change_time;
+	NTSTATUS status;
+	char *raw_data;
+	size_t raw_data_len;
+
+	if (pptoken)
+		*pptoken = NULL;
+
+	if(user_exists != NULL)
+		*user_exists = True; /* Only set false on a very specific error. */
+
+	if (winbindd_ok)
+		*winbindd_ok = True;
+
+	/* We really don't care what LUID we give the user. */
+	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
+
+	ZERO_STRUCT(info3);
+
+	/* 
+	 * Check that the requested domain is not our own machine name.
+	 * If it is, we should never check the PDC here, we use our own local
+	 * password file.
+	 */
+
+	if(strequal( domain, global_myname_unix())) {
+		DEBUG(3,("domain_client_validate_winbindd: Requested domain was for this machine.\n"));
+		return False;
+	}
+
+	/*
+	 * Next, check that the passwords given were encrypted.
+	 */
+
+	if(((smb_apasslen != 24) && (smb_apasslen != 0)) || 
+			((smb_ntpasslen != 24) && (smb_ntpasslen != 0))) {
+
+		/*
+		 * Not encrypted - do so.
+		 */
+
+		DEBUG(3,("domain_client_validate_winbindd: User passwords not in encrypted format.\n"));
+		generate_random_buffer( local_challenge, 8, False);
+		SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
+		SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_response);
+		smb_apasslen = 24;
+		smb_ntpasslen = 24;
+		smb_apasswd = (char *)local_lm_response;
+		smb_ntpasswd = (char *)local_nt_response;
+	} else {
+
+		/*
+		 * Encrypted - get the challenge we sent for these
+		 * responses.
+		 */
+
+		if (!last_challenge(local_challenge)) {
+			DEBUG(0,("domain_client_validate_winbindd: no challenge done - password failed\n"));
+			return False;
+		}
+	}
+
+	/*
+	 * Get the machine account password for our primary domain
+	 */
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup_unix(), trust_passwd, &last_change_time)) {
+		DEBUG(0, ("domain_client_validate_winbindd: could not fetch trust account password for domain %s\n", lp_workgroup_unix()));
+		return False;
+	}
+
+	/* Test if machine password is expired and need to be changed */
+
+	if (lp_machine_password_timeout()) {
+
+		if (time(NULL) > (last_change_time + 
+				  lp_machine_password_timeout())) {
+			DEBUG(10,("domain_client_validate_winbindd: machine account password needs changing. Last change time = (%u) %s. Machine password timeout = %u seconds\n",
+				  (unsigned int)last_change_time, 
+				  http_timestring(last_change_time),
+				  (unsigned int)lp_machine_password_timeout()));
+			global_machine_password_needs_changing = True;
+		}
+	}
+
+	/*
+	 * At this point, smb_apasswd points to the lanman response to
+	 * the challenge in local_challenge, and smb_ntpasswd points to
+	 * the NT response to the challenge in local_challenge. Ship
+	 * these over the secure channel to winbindd and see if they were valid.
+	 */
+
+	raw_data = NULL;
+	raw_data_len = 0;
+
+	status = winbind_smb_auth_crap( domain, user,
+			trust_passwd,
+			local_challenge,
+			((smb_apasslen != 0) ? smb_apasswd : NULL),
+			((smb_ntpasslen != 0) ? smb_ntpasswd : NULL),
+			&raw_data,
+			&raw_data_len);
+
+	if (!NT_STATUS_IS_OK(status)) {
+
+		SAFE_FREE(raw_data);
+
+		DEBUG(0,("domain_client_validate_winbindd: unable to validate password for user %s in domain \
+%s to winbindd. Error was %s.\n", user, domain, get_nt_error_msg(status) ));
+
+		/* BEGIN_ADMIN_LOG */
+		sys_adminlog( LOG_ERR, (char *) gettext( "Authentication failed-- user authentication \
+via Microsoft networking was unsuccessful. User name: %s\\%s."), domain,user);
+		/* END_ADMIN_LOG */
+
+		if((NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) && (user_exists != NULL))
+			*user_exists = False;
+
+		if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_PIPE_NOT_AVAILABLE))
+			/* Can't talk to winbindd. */
+			*winbindd_ok = False;
+
+		return False;
+	}
+
+	mem_ctx = talloc_init_named("winbind_smbd_auth");
+	if (!mem_ctx) {
+		SAFE_FREE(raw_data);
+		return False;
+	}
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	prs_give_memory( &rbuf, raw_data, (uint32)raw_data_len, False);
+	r.user = &info3;
+
+	if (!net_io_r_sam_logon("", &r, &rbuf, 0)) {
+		SAFE_FREE(raw_data);
+		talloc_destroy(mem_ctx);
+		return False;
+	}
+
+	SAFE_FREE(raw_data);
+
+	/*
+	 * Here, if we really want it, we have lots of info about the user in info3.
+	 */
+
+	/* Return group membership as returned by NT.  This contains group
+	 membership in nested groups which doesn't seem to be accessible by any
+	 other means.  We merge this into the NT_USER_TOKEN associated with the vuid
+	 later on. */
+ 
+	if (pptoken && (info3.num_groups2 != 0)) {
+		NT_USER_TOKEN *ptok;
+		int i;
+ 
+		*pptoken = NULL;
+ 
+		if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
+			DEBUG(0, ("domain_client_validate_winbindd: Out of memory allocating NT_USER_TOKEN\n"));
+			talloc_destroy(mem_ctx);
+			return False;
+		}
+ 
+		ptok->num_sids = (size_t)info3.num_groups2 + info3.num_other_sids;
+		if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
+			DEBUG(0, ("domain_client_validate_winbindd: Out of memory allocating group SIDS\n"));
+			SAFE_FREE(ptok);
+			talloc_destroy(mem_ctx);
+			return False;
+		}
+ 
+		/* Group membership (including nested groups) is
+		   stored here. */
+
+		for (i = 0; i < info3.num_groups2; i++) {
+			sid_copy(&ptok->user_sids[i], &info3.dom_sid.sid);
+			sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
+		}
+
+		/* Universal group memberships for other domains are
+		   stored in the info3.other_sids field.  We also need to
+		   do sid filtering here. */
+
+		for (i = 0; i < info3.num_other_sids; i++)
+			sid_copy(&ptok->user_sids[info3.num_groups2 + i], 
+				 &info3.other_sids[i].sid);
+
+		*pptoken = ptok;
+	}
+
+	talloc_destroy(mem_ctx);
+	return True;
+}
+
+/***********************************************************************
  Do the same as security=server, but using NT Domain calls and a session
  key from the machine password.
  user and domain are in UNIX character set.
 ************************************************************************/
 
-BOOL domain_client_validate( char *user, char *domain, 
+static BOOL domain_client_validate_direct( char *user, char *domain, 
                              char *smb_apasswd, int smb_apasslen, 
                              char *smb_ntpasswd, int smb_ntpasslen,
                              BOOL *user_exists, NT_USER_TOKEN **pptoken)
@@ -1552,6 +1766,11 @@ BOOL domain_client_validate( char *user, char *domain,
 	if(user_exists != NULL)
 		*user_exists = True; /* Only set false on a very specific error. */
  
+	/* We really don't care what LUID we give the user. */
+	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
+
+	ZERO_STRUCT(info3);
+
 	/* 
 	 * Check that the requested domain is not our own machine name.
 	 * If it is, we should never check the PDC here, we use our own local
@@ -1559,7 +1778,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	 */
 
 	if(strequal( domain, global_myname_unix())) {
-		DEBUG(3,("domain_client_validate: Requested domain was for this machine.\n"));
+		DEBUG(3,("domain_client_validate_direct: Requested domain was for this machine.\n"));
 		return False;
 	}
 
@@ -1574,7 +1793,7 @@ BOOL domain_client_validate( char *user, char *domain,
 		 * Not encrypted - do so.
 		 */
 
-		DEBUG(3,("domain_client_validate: User passwords not in encrypted format.\n"));
+		DEBUG(3,("domain_client_validate_direct: User passwords not in encrypted format.\n"));
 		generate_random_buffer( local_challenge, 8, False);
 		SMBencrypt( (uchar *)smb_apasswd, local_challenge, local_lm_response);
 		SMBNTencrypt((uchar *)smb_ntpasswd, local_challenge, local_nt_response);
@@ -1590,7 +1809,7 @@ BOOL domain_client_validate( char *user, char *domain,
 		 */
 
 		if (!last_challenge(local_challenge)) {
-			DEBUG(0,("domain_client_validate: no challenge done - password failed\n"));
+			DEBUG(0,("domain_client_validate_direct: no challenge done - password failed\n"));
 			return False;
 		}
 	}
@@ -1600,7 +1819,7 @@ BOOL domain_client_validate( char *user, char *domain,
 	 */
 
 	if (!secrets_fetch_trust_account_password(lp_workgroup_unix(), trust_passwd, &last_change_time)) {
-		DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", lp_workgroup_unix()));
+		DEBUG(0, ("domain_client_validate_direct: could not fetch trust account password for domain %s\n", lp_workgroup_unix()));
 		return False;
 	}
 
@@ -1610,7 +1829,7 @@ BOOL domain_client_validate( char *user, char *domain,
 
 		if (time(NULL) > (last_change_time + 
 				  lp_machine_password_timeout())) {
-			DEBUG(10,("domain_client_validate: machine account password needs changing. Last change time = (%u) %s. Machine password timeout = %u seconds\n",
+			DEBUG(10,("domain_client_validate_direct: machine account password needs changing. Last change time = (%u) %s. Machine password timeout = %u seconds\n",
 				  (unsigned int)last_change_time, 
 				  http_timestring(last_change_time),
 				  (unsigned int)lp_machine_password_timeout()));
@@ -1653,17 +1872,12 @@ BOOL domain_client_validate( char *user, char *domain,
 	}
 
 	if (!connected_ok) {
-		DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
+		DEBUG(0,("domain_client_validate_direct: Domain password server not available.\n"));
 		if (pcli)
 			cli_shutdown(pcli);
 		release_server_mutex();
 		return False;
 	}
-
-	/* We really don't care what LUID we give the user. */
-	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
-
-	ZERO_STRUCT(info3);
 
 	status = cli_nt_login_network(pcli, domain, user, smb_uid_low, (char *)local_challenge,
 				((smb_apasslen != 0) ? smb_apasswd : NULL),
@@ -1672,7 +1886,7 @@ BOOL domain_client_validate( char *user, char *domain,
 
 	if (!NT_STATUS_IS_OK(status)) {
 
-		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
+		DEBUG(0,("domain_client_validate_direct: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, get_nt_error_msg(status) ));
 		cli_nt_session_close(pcli);
 		cli_ulogoff(pcli);
@@ -1706,14 +1920,14 @@ via Microsoft networking was unsuccessful. User name: %s\\%s."), domain,user);
 		*pptoken = NULL;
  
 		if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
-			DEBUG(0, ("domain_client_validate: Out of memory allocating NT_USER_TOKEN\n"));
+			DEBUG(0, ("domain_client_validate_direct: Out of memory allocating NT_USER_TOKEN\n"));
 			release_server_mutex();
 			return False;
 		}
  
 		ptok->num_sids = (size_t)info3.num_groups2 + info3.num_other_sids;
 		if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
-			DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
+			DEBUG(0, ("domain_client_validate_direct: Out of memory allocating group SIDS\n"));
 			SAFE_FREE(ptok);
 			release_server_mutex();
 			return False;
@@ -1738,24 +1952,6 @@ via Microsoft networking was unsuccessful. User name: %s\\%s."), domain,user);
 		*pptoken = ptok;
 	}
 
-#if 0
-	/* 
-	 * We don't actually need to do this - plus it fails currently with
-	 * NT_STATUS_INVALID_INFO_CLASS - we need to know *exactly* what to
-	 * send here. JRA.
-	 */
-
-	if(cli_nt_logoff(pcli, &ctr) == False) {
-		DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(pcli)));        
-		cli_nt_session_close(pcli);
-		cli_ulogoff(pcli);
-		cli_shutdown(pcli);
-		release_server_mutex();
-		return False;
-	}
-#endif /* 0 */
-
 	/* Note - once the cli stream is shutdown the mem_ctx used
 	to allocate the other_sids and gids structures has been deleted - so
 	these pointers are no longer valid..... */
@@ -1765,4 +1961,30 @@ via Microsoft networking was unsuccessful. User name: %s\\%s."), domain,user);
 	cli_shutdown(pcli);
 	release_server_mutex();
 	return True;
+}
+
+/******************************************************************
+ Switch between the two choices above...
+******************************************************************/
+
+BOOL domain_client_validate( char *user, char *domain, 
+                             char *smb_apasswd, int smb_apasslen, 
+                             char *smb_ntpasswd, int smb_ntpasslen,
+                             BOOL *user_exists, NT_USER_TOKEN **pptoken)
+{
+	BOOL winbindd_ok = True;
+	BOOL ret;
+
+	ret = domain_client_validate_winbindd(user, domain,
+			smb_apasswd, smb_apasslen,
+			smb_ntpasswd, smb_ntpasslen,
+			user_exists, pptoken, &winbindd_ok);
+
+	if (!ret && winbindd_ok)
+		return ret;
+
+	return domain_client_validate_direct(user, domain,
+			smb_apasswd, smb_apasslen,
+			smb_ntpasswd, smb_ntpasslen,
+			user_exists, pptoken);
 }

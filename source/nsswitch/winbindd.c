@@ -227,6 +227,7 @@ static struct dispatch_table dispatch_table[] = {
 #ifdef WITH_WINBIND_AUTH_CRAP
 	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
 #endif
+	{ WINBINDD_SMBD_AUTH_CRAP, winbindd_smbd_auth_crap, "SMBD_AUTH_CRAP" },
 	{ WINBINDD_PAM_CHAUTHTOK, winbindd_pam_chauthtok, "CHAUTHTOK" },
 
 	/* Enumeration functions */
