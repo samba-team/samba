@@ -332,9 +332,9 @@ static int
 ka_dump(struct prop_data *pd, const char *file, const char *cell)
 {
     struct ka_header header;
-    krb5_error_code ret;
     int i;
     int fd = open(file, O_RDONLY);
+
     if(fd < 0)
 	krb5_err(pd->context, 1, errno, "open(%s)", file);
     read_block(pd->context, fd, 0, &header, sizeof(header));
