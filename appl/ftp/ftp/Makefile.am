@@ -6,6 +6,8 @@ INCLUDES += -I$(srcdir)/../common $(INCLUDE_readline) $(INCLUDE_krb4)
 
 bin_PROGRAMS = ftp
 
+CHECK_LOCAL = 
+
 if KRB4
 krb4_sources = krb4.c kauth.c
 endif

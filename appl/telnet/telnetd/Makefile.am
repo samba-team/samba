@@ -6,6 +6,8 @@ INCLUDES += -I$(srcdir)/.. $(INCLUDE_krb4)
 
 libexec_PROGRAMS = telnetd
 
+CHECK_LOCAL = 
+
 telnetd_SOURCES  = telnetd.c state.c termstat.c slc.c sys_term.c \
 		   utility.c global.c authenc.c defs.h ext.h telnetd.h
 
