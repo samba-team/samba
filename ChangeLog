@@ -1,5 +1,8 @@
 2002-07-24  Johan Danielsson  <joda@pdc.kth.se>
 
+	* fix-export: if DATEDVERSION is set, change the version to
+	current date
+
 	* configure.in: don't use AC_PROG_RANLIB, and use magic foo to set
 	LTLIBOBJS
 
