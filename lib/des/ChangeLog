@@ -1,3 +1,7 @@
+1999-11-29  Assar Westerlund  <assar@sics.se>
+
+	* fcrypt.c (crypt_md5): add trailing $
+	
 1999-10-28  Assar Westerlund  <assar@sics.se>
 
 	* md5crypt_test.c: change the test case.  apparently we should not
