@@ -412,6 +412,16 @@ static int rec_free_read(TDB_CONTEXT *tdb, tdb_off off, struct list_struct *rec)
 {
 	if (tdb_read(tdb, off, rec, sizeof(*rec),DOCONV()) == -1)
 		return -1;
+
+	if (rec->magic == TDB_MAGIC) {
+		/* this happens when a app is showdown while deleting a record - we should
+		   not completely fail when this happens */
+		TDB_LOG((tdb, 0,"rec_free_read non-free magic at offset=%d - fixing\n", 
+			 rec->magic, off));
+		rec->magic = TDB_FREE_MAGIC;
+		tdb_write(tdb, off, rec, sizeof(*rec));
+	}
+
 	if (rec->magic != TDB_FREE_MAGIC) {
 		TDB_LOG((tdb, 0,"rec_free_read bad magic 0x%x at offset=%d\n", 
 			   rec->magic, off));
