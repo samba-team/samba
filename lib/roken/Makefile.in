@@ -112,6 +112,7 @@ SOURCES = \
 	strtok_r.c \
 	strupr.c \
 	tm2time.c \
+	timeval.c \
 	unsetenv.c \
 	verify.c \
 	verr.c \
