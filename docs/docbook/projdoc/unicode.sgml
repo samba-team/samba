@@ -58,7 +58,7 @@ samba knows of three kinds of character sets:
 		<term>unix charset</term>
 		<listitem><para>
 		This is the charset used internally by your operating system. 
-		The default is <emphasis>ASCII</emphasis>, which is fine for most 
+		The default is <constant>ASCII</constant>, which is fine for most 
 		systems.
 		</para></listitem>
 	</varlistentry>
@@ -80,8 +80,6 @@ samba knows of three kinds of character sets:
 		</para></listitem>
 	</varlistentry>
 </variablelist>
-
-<para>
 
 </sect1>
 </chapter>

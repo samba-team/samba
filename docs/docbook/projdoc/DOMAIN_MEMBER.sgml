@@ -20,12 +20,12 @@
 	with NetBIOS names <constant>DOMBDC1</constant> and <constant>DOMBDC2
 	</constant>.</para>
 
-	<para>Firstly, you must edit your <ulink url="smb.conf.5.html"><filename>smb.conf(5)</filename>
-	</ulink> file to tell Samba it should now use domain security.</para>
+	<para>Firstly, you must edit your &smb.conf; file to tell Samba it should
+	now use domain security.</para>
 	
 	<para>Change (or add) your <ulink url="smb.conf.5.html#SECURITY">
 	<parameter>security =</parameter></ulink> line in the [global] section 
-	of your smb.conf to read:</para>
+	of your &smb.conf; to read:</para>
 
 	<para><command>security = domain</command></para>
 

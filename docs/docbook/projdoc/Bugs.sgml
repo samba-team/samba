@@ -87,7 +87,7 @@ detail, but may use too much disk space.
 
 <para>
 To set the debug level use <command>log level =</command> in your 
-<filename>smb.conf</filename>. You may also find it useful to set the log 
+&smb.conf;. You may also find it useful to set the log 
 level higher for just one machine and keep separate logs for each machine. 
 To do this use:
 </para>
@@ -102,17 +102,17 @@ include = /usr/local/samba/lib/smb.conf.%m
 then create a file 
 <filename>/usr/local/samba/lib/smb.conf.<replaceable>machine</replaceable></filename> where
 <replaceable>machine</replaceable> is the name of the client you wish to debug. In that file
-put any smb.conf commands you want, for example 
+put any &smb.conf; commands you want, for example 
 <command>log level=</command> may be useful. This also allows you to 
 experiment with different security systems, protocol levels etc on just 
 one machine.
 </para>
 
 <para>
-The <filename>smb.conf</filename> entry <command>log level =</command> 
+The &smb.conf; entry <command>log level =</command> 
 is synonymous with the entry <command>debuglevel =</command> that has been 
 used in older versions of Samba and is being retained for backwards 
-compatibility of <filename>smb.conf</filename> files.
+compatibility of &smb.conf; files.
 </para>
 
 <para>

@@ -83,7 +83,7 @@ level security. They normally send a valid username but no
 password. Samba records this username in a list of "possible
 usernames". When the client then does a "tree connection" it also adds
 to this list the name of the share they try to connect to (useful for
-home directories) and any users listed in the "user =" smb.conf
+home directories) and any users listed in the <command>user =</command> &smb.conf;
 line. The password is then checked in turn against these "possible
 usernames". If a match is found then the client is authenticated as
 that user.
@@ -221,7 +221,7 @@ for support of encrypted passwords:
 <title>Use MS Windows NT as an authentication server</title>
 
 <para>
-This method involves the additions of the following parameters in the smb.conf file:
+This method involves the additions of the following parameters in the &smb.conf; file:
 </para>
 
 <para><programlisting>
@@ -270,7 +270,7 @@ all authentication requests to be passed through to the domain controllers.
 <title>Samba as a member of an MS Windows NT security domain</title>
 
 <para>
-This method involves additon of the following paramters in the smb.conf file:
+This method involves additon of the following paramters in the &smb.conf; file:
 </para>
 
 <para><programlisting>
@@ -281,7 +281,7 @@ This method involves additon of the following paramters in the smb.conf file:
 </programlisting></para>
 
 <para>
-The use of the "*" argument to "password server" will cause samba to locate the
+The use of the "*" argument to <command>password server</command> will cause samba to locate the
 domain controller in a way analogous to the way this is done within MS Windows NT.
 This is the default behaviour.
 </para>
