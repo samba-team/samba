@@ -60,7 +60,7 @@
 		<varlistentry>
 		<term>use_first_pass</term>
 		<listitem><para>
-		By default, that pam_winbind tries to get the
+		By default, pam_winbind tries to get the
 		authentication token from a previous module. If no token is available it asks the user
 		for the old password. With this option, pam_winbind aborts with an
 		error if no authentication token from a previous module is available.
