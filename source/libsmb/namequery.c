@@ -434,8 +434,6 @@ void endlmhosts(FILE *fp)
   fclose(fp);
 }
 
-
-
 /********************************************************
 resolve via "bcast" method
 *********************************************************/
@@ -447,7 +445,7 @@ static BOOL resolve_bcast(const char *name, struct in_addr *return_ip, int name_
 	 * "bcast" means do a broadcast lookup on all the local interfaces.
 	 */
 
-	DEBUG(3,("resolve_name: Attempting broadcast lookup for name %s<0x20>\n", name));
+	DEBUG(3,("resolve_name: Attempting broadcast lookup for name %s<0x%x>\n", name, name_type));
 
 	sock = open_socket_in( SOCK_DGRAM, 0, 3,
 			       interpret_addr(lp_socket_address()) );
@@ -499,7 +497,7 @@ static BOOL resolve_wins(const char *name, struct in_addr *return_ip, int name_t
        * would then block).
        */
 
-      DEBUG(3,("resolve_name: Attempting wins lookup for name %s<0x20>\n", name));
+      DEBUG(3,("resolve_name: Attempting wins lookup for name %s<0x%x>\n", name, name_type));
 
       if(!*lp_wins_server()) {
 	      DEBUG(3,("resolve_name: WINS server resolution selected and no WINS server present.\n"));
@@ -545,13 +543,14 @@ static BOOL resolve_lmhosts(const char *name, struct in_addr *return_ip, int nam
 	pstring lmhost_name;
 	int name_type2;
 
-	DEBUG(3,("resolve_name: Attempting lmhosts lookup for name %s\n", name));
+	DEBUG(3,("resolve_name: Attempting lmhosts lookup for name %s<0x%x>\n", name, name_type));
 
 	fp = startlmhosts( LMHOSTSFILE );
 	if(fp) {
 		while (getlmhostsent(fp, lmhost_name, &name_type2, return_ip)) {
 			if (strequal(name, lmhost_name) && 
-			    name_type == name_type2) {
+                ((name_type2 == -1) || (name_type == name_type2))
+               ) {
 				endlmhosts(fp);
 				return True; 
 			}
@@ -572,7 +571,7 @@ static BOOL resolve_hosts(const char *name, struct in_addr *return_ip)
 	 */
 	struct hostent *hp;
 
-	DEBUG(3,("resolve_name: Attempting host lookup for name %s\n", name));
+	DEBUG(3,("resolve_name: Attempting host lookup for name %s<0x20>\n", name));
 	
 	if (((hp = Get_Hostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
 		putip((char *)return_ip,(char *)hp->h_addr);
