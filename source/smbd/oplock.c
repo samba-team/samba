@@ -108,6 +108,13 @@ BOOL receive_local_message( char *buffer, int buffer_len, int timeout)
 			if (koplocks && koplocks->msg_waiting(&fds)) {
 				return koplocks->receive_message(&fds, buffer, buffer_len);
 			}
+			/* Linux 2.0.x seems to have a bug in that
+			 * it can return -1, EINTR with a timeout of zero.
+			 */
+			if (timeout <= 1) {
+				smb_read_error = READ_TIMEOUT;
+				return False;
+			}
 			/* Not a kernel interrupt - could be a SIGUSR1 message. We must restart. */
 			/* We need to decrement the timeout here. */
 			timeout -= ((time(NULL) - starttime)*1000);

@@ -117,10 +117,18 @@ int sys_select_intr(int maxfd, fd_set *fds,struct timeval *tval)
 {
 	int ret;
 	fd_set fds2;
+	struct timeval tval2, *ptval;
+
+	if (tval)
+		ptval = &tval2;
+	else
+		ptval = NULL;
 
 	do {
 		fds2 = *fds;
-		ret = sys_select(maxfd, &fds2, tval);
+		if (tval)
+			tval2 = *tval;
+		ret = sys_select(maxfd, &fds2, ptval);
 	} while (ret == -1 && errno == EINTR);
 
 	*fds = fds2;
