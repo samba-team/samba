@@ -1,3 +1,7 @@
+2004-09-23  Johan Danielsson  <joda@pdc.kth.se>
+
+	* admin/list.c: use rtbl
+	
 2004-09-14  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/kinit.c: make sure we don't always get renewable creds
