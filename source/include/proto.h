@@ -546,6 +546,8 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 
 /*The following definitions come from  lib/util_sec.c  */
 
+void sec_init(void);
+BOOL non_root_mode(void);
 void gain_root_privilege(void);
 void gain_root_group_privilege(void);
 void set_effective_uid(uid_t uid);
@@ -1232,10 +1234,10 @@ int brl_forall(BRLOCK_FN(fn));
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       enum brl_type lock_type, BOOL check_self);
-BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+BOOL do_lock(files_struct *fsp,connection_struct *conn,
              SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
              int *eclass,uint32 *ecode);
-BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+BOOL do_unlock(files_struct *fsp,connection_struct *conn,
                SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       int *eclass,uint32 *ecode);
 void locking_close_file(files_struct *fsp);
@@ -4232,7 +4234,6 @@ int rename_internals(connection_struct *conn,
 int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-uint16 get_lock_pid( char *data, int data_offset, BOOL large_file_format);
 SMB_BIG_UINT get_lock_count( char *data, int data_offset, BOOL large_file_format);
 SMB_BIG_UINT get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err);
 int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
