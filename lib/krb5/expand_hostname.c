@@ -130,7 +130,7 @@ krb5_expand_hostname_realms (krb5_context context,
 
     for (a = ai; a != NULL; a = a->ai_next) {
 	if (a->ai_canonname != NULL) {
-	    ret = copy_hostname (context, orig_hostname, new_hostname);
+	    ret = copy_hostname (context, a->ai_canonname, new_hostname);
 	    if (ret) {
 		freeaddrinfo (ai);
 		return ret;
