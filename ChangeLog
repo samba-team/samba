@@ -1,4 +1,6 @@
 Mon Dec 16 16:30:20 1996  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/krb5/cache.c: Get correct address type from cache.
+
 	* lib/krb5/krb5.h: Change int16 to int to be compatible with asn1.
 
