@@ -664,7 +664,11 @@ typedef struct {
 		
 typedef struct sam_passwd
 {
-	struct {
+	TALLOC_CTX *mem_ctx;
+	
+	void (*free_fn)(struct sam_passwd **);
+
+	struct user_data {
 		/* initiailization flags */
 		uint32 init_flag;
 		
@@ -675,18 +679,18 @@ typedef struct sam_passwd
 		time_t pass_can_change_time;  /* password can change time */
 		time_t pass_must_change_time; /* password must change time */
 		
-		pstring username;     /* UNIX username string */
-		pstring domain;       /* Windows Domain name */
-		pstring nt_username;  /* Windows username string */
-		pstring full_name;    /* user's full name string */
-		pstring home_dir;     /* home directory string */
-		pstring dir_drive;    /* home directory drive string */
-		pstring logon_script; /* logon script string */
-		pstring profile_path; /* profile path string */
-		pstring acct_desc  ;  /* user description string */
-		pstring workstations; /* login from workstations string */
-		pstring unknown_str ; /* don't know what this is, yet. */
-		pstring munged_dial ; /* munged path name and dial-back tel number */
+		char * username;     /* UNIX username string */
+		char * domain;       /* Windows Domain name */
+		char * nt_username;  /* Windows username string */
+		char * full_name;    /* user's full name string */
+		char * home_dir;     /* home directory string */
+		char * dir_drive;    /* home directory drive string */
+		char * logon_script; /* logon script string */
+		char * profile_path; /* profile path string */
+		char * acct_desc  ;  /* user description string */
+		char * workstations; /* login from workstations string */
+		char * unknown_str ; /* don't know what this is, yet. */
+		char * munged_dial ; /* munged path name and dial-back tel number */
 		
 		uid_t uid;          /* this is a unix uid_t */
 		gid_t gid;          /* this is a unix gid_t */

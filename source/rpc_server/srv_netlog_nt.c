@@ -189,7 +189,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 	}
 #endif /* 0 */
 
-	if(!pdb_init_sam(&sampass))
+	if(!NT_STATUS_IS_OK(pdb_init_sam(&sampass)))
 		return False;
 
 	/* JRA. This is ok as it is only used for generating the challenge. */

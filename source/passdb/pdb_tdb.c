@@ -681,7 +681,7 @@ BOOL pdb_delete_sam_account(const char *sname)
 	}
   
   	/* unpack the buffer */
-	if (!pdb_init_sam (&sam_pass)) {
+	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pass))) {
 		tdb_close (pwd_tdb);
 		return False;
 	}

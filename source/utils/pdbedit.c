@@ -443,7 +443,7 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 
-		if (!pdb_init_sam_pw(&sam_pwent, pwd)) {
+		if (!NT_STATUS_IS_OK(pdb_init_sam_pw(&sam_pwent, pwd))) {
 			fprintf(stderr, "Failed initialise SAM_ACCOUNT for user %s.\n", user_name);
 			return False;
 		}

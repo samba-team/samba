@@ -24,6 +24,14 @@
 
 #include "includes.h"
 
+/**
+ * @todo Redefine this to NULL, but this changes the API becouse
+ *       much of samba assumes that the pdb_get...() funtions 
+ *       return pstrings.  (ie not null-pointers).
+ */
+
+#define PDB_NOT_QUITE_NULL ""
+
 /*********************************************************************
  Collection of get...() functions for SAM_ACCOUNT_INFO.
  ********************************************************************/
@@ -464,14 +472,15 @@ BOOL pdb_set_username(SAM_ACCOUNT *sampass, const char *username)
 {	
 	if (!sampass)
 		return False;
-	
-	*sampass->private.username = '\0';
+
 	DEBUG(10, ("pdb_set_username: setting username %s, was %s\n", 
 		   username, sampass->private.username));
  
-	if (!username)
-		return False;
-	StrnCpy (sampass->private.username, username, sizeof(pstring) - 1);
+	if (username) { 
+		sampass->private.username = talloc_strdup(sampass->mem_ctx, username);
+	} else {
+		sampass->private.username = PDB_NOT_QUITE_NULL;
+	}
 
 	return True;
 }
@@ -484,11 +493,15 @@ BOOL pdb_set_domain(SAM_ACCOUNT *sampass, const char *domain)
 {	
 	if (!sampass)
 		return False;
-	*sampass->private.domain = '\0';
-	if (!domain)
-		return False;
 
-	StrnCpy (sampass->private.domain, domain, sizeof(pstring) - 1);
+	DEBUG(10, ("pdb_set_domain: setting domain %s, was %s\n", 
+		   domain, sampass->private.domain));
+ 
+	if (domain) { 
+		sampass->private.domain = talloc_strdup(sampass->mem_ctx, domain);
+	} else {
+		sampass->private.domain = PDB_NOT_QUITE_NULL;
+	}
 
 	return True;
 }
@@ -501,11 +514,15 @@ BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, const char *nt_username)
 {
 	if (!sampass)
 		return False;
-	*sampass->private.nt_username = '\0';
-	if (!nt_username)
-		return False;
 
-	StrnCpy (sampass->private.nt_username, nt_username, sizeof(pstring) - 1);
+	DEBUG(10, ("pdb_set_nt_username: setting nt username %s, was %s\n", 
+		   nt_username, sampass->private.nt_username));
+ 
+	if (nt_username) { 
+		sampass->private.nt_username = talloc_strdup(sampass->mem_ctx, nt_username);
+	} else {
+		sampass->private.nt_username = PDB_NOT_QUITE_NULL;
+	}
 
 	return True;
 }
@@ -514,19 +531,19 @@ BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, const char *nt_username)
  Set the user's full name.
  ********************************************************************/
 
-BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, const char *fullname)
+BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, const char *full_name)
 {
 	if (!sampass)
 		return False;
 
-	DEBUG(10, ("pdb_set_fullname: setting full name %s, was %s\n", 
-		   fullname, sampass->private.full_name));
- 
-	*sampass->private.full_name = '\0';
-	if (!fullname)
-		return False;
-
-	StrnCpy (sampass->private.full_name, fullname, sizeof(pstring) - 1);
+	DEBUG(10, ("pdb_set_full_name: setting full name %s, was %s\n", 
+		   full_name, sampass->private.full_name));
+	
+	if (full_name) { 
+		sampass->private.full_name = talloc_strdup(sampass->mem_ctx, full_name);
+	} else {
+		sampass->private.full_name = PDB_NOT_QUITE_NULL;
+	}
 
 	return True;
 }
@@ -543,12 +560,12 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, BOOL s
 	DEBUG(10, ("pdb_set_logon_script: setting logon script (store:%d) %s, was %s\n", 
 		   store, logon_script, sampass->private.logon_script));
  
-	*sampass->private.logon_script = '\0';
-	if (!logon_script)
-		return False;
-
-	StrnCpy (sampass->private.logon_script, logon_script, sizeof(pstring) - 1);
-
+	if (logon_script) { 
+		sampass->private.logon_script = talloc_strdup(sampass->mem_ctx, logon_script);
+	} else {
+		sampass->private.logon_script = PDB_NOT_QUITE_NULL;
+	}
+	
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT); 
 
@@ -567,15 +584,15 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, BOOL 
 	DEBUG(10, ("pdb_set_profile_path: setting profile path (store:%d) %s, was %s\n", 
 		   store, profile_path, sampass->private.profile_path));
  
-	*sampass->private.profile_path = '\0';
-	if (!profile_path)
-		return False;
-	
-	StrnCpy (sampass->private.profile_path, profile_path, sizeof(pstring) - 1);
+	if (profile_path) { 
+		sampass->private.profile_path = talloc_strdup(sampass->mem_ctx, profile_path);
+	} else {
+		sampass->private.profile_path = PDB_NOT_QUITE_NULL;
+	}
 
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_PROFILE);
-	
+
 	return True;
 }
 
@@ -587,12 +604,13 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, BOOL store)
 {
 	if (!sampass)
 		return False;
-	*sampass->private.dir_drive = '\0';
-	if (!dir_drive)
-		return False;
 
-	StrnCpy (sampass->private.dir_drive, dir_drive, sizeof(pstring) - 1);
-
+	if (dir_drive) { 
+		sampass->private.dir_drive = talloc_strdup(sampass->mem_ctx, dir_drive);
+	} else {
+		sampass->private.dir_drive = PDB_NOT_QUITE_NULL;
+	}
+	
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_DRIVE);
 
@@ -603,15 +621,16 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, BOOL store)
  Set the user's home directory.
  ********************************************************************/
 
-BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *homedir, BOOL store)
+BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *home_dir, BOOL store)
 {
 	if (!sampass)
 		return False;
-	*sampass->private.home_dir = '\0';
-	if (!homedir)
-		return False;
-	
-	StrnCpy (sampass->private.home_dir, homedir, sizeof(pstring) - 1);
+
+	if (home_dir) { 
+		sampass->private.home_dir = talloc_strdup(sampass->mem_ctx, home_dir);
+	} else {
+		sampass->private.home_dir = PDB_NOT_QUITE_NULL;
+	}
 
 	if (store)
 		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
@@ -627,11 +646,12 @@ BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, const char *acct_desc)
 {
 	if (!sampass)
 		return False;
-	*sampass->private.acct_desc = '\0';
-	if (!acct_desc)
-		return False;
-	
-	StrnCpy (sampass->private.acct_desc, acct_desc, sizeof(pstring) - 1);
+
+	if (acct_desc) { 
+		sampass->private.acct_desc = talloc_strdup(sampass->mem_ctx, acct_desc);
+	} else {
+		sampass->private.acct_desc = PDB_NOT_QUITE_NULL;
+	}
 
 	return True;
 }
@@ -644,11 +664,12 @@ BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, const char *workstations)
 {
 	if (!sampass)
 		return False;
-	*sampass->private.workstations = '\0';
-	if (!workstations)
-		return False;
 
-	StrnCpy (sampass->private.workstations, workstations, sizeof(pstring) - 1);
+	if (workstations) { 
+		sampass->private.workstations = talloc_strdup(sampass->mem_ctx, workstations);
+	} else {
+		sampass->private.workstations = PDB_NOT_QUITE_NULL;
+	}
 
 	return True;
 }
@@ -661,11 +682,12 @@ BOOL pdb_set_unknown_str (SAM_ACCOUNT *sampass, const char *unknown_str)
 {
 	if (!sampass)
 		return False;
-	*sampass->private.unknown_str = '\0';
-	if (!unknown_str)
-		return False;
 
-	StrnCpy (sampass->private.unknown_str, unknown_str, sizeof(pstring) - 1);
+	if (unknown_str) { 
+		sampass->private.unknown_str = talloc_strdup(sampass->mem_ctx, unknown_str);
+	} else {
+		sampass->private.unknown_str = PDB_NOT_QUITE_NULL;
+	}
 
 	return True;
 }
@@ -678,11 +700,11 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, const char *munged_dial)
 {
 	if (!sampass)
 		return False;
-	*sampass->private.munged_dial = '\0';
-	if (!munged_dial)
-		return False;
-
-	StrnCpy (sampass->private.munged_dial, munged_dial, sizeof(pstring) - 1);
+	if (munged_dial) { 
+		sampass->private.munged_dial = talloc_strdup(sampass->mem_ctx, munged_dial);
+	} else {
+		sampass->private.munged_dial = PDB_NOT_QUITE_NULL;
+	}
 
 	return True;
 }
