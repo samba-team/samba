@@ -316,8 +316,16 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 		fstring dom_name, name;
 		enum SID_NAME_USE type;
 
-		if (!winbindd_lookup_name_by_sid(&sid, dom_name, name, &type))
-			return WINBINDD_ERROR;
+		if (sid_check_is_in_our_domain(&sid)) {
+			/* This is for half-created aliases... */
+			type = SID_NAME_ALIAS;
+		} else {
+			/* Foreign domains need to be looked up by the DC if
+			 * it's the right type */
+			if (!winbindd_lookup_name_by_sid(&sid, dom_name, name,
+							 &type))
+				return WINBINDD_ERROR;
+		}
 
 		if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
 		    (type != SID_NAME_WKN_GRP))
