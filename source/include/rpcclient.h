@@ -74,16 +74,6 @@ struct nt_client_info
     /* domain controller */
     fstring level3_dom;
     fstring level5_dom;
-
-    /************** \PIPE\samr stuff  ********************/
-
-    POLICY_HND samr_pol_connect;
-    POLICY_HND samr_pol_open_domain;
-    POLICY_HND samr_pol_open_builtindom;
-    POLICY_HND samr_pol_open_user;
-
-    struct acct_info *sam;
-    int num_sam_entries;
 };
 
 struct client_info

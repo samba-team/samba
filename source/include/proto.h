@@ -3216,6 +3216,8 @@ void cmd_sam_delete_dom_group(struct client_info *info);
 void cmd_sam_add_groupmem(struct client_info *info);
 void cmd_sam_create_dom_group(struct client_info *info);
 int msrpc_sam_enum_users(struct client_info *info,
+			struct acct_info **sam,
+			uint32 *num_sam_entries,
 			BOOL request_user_info,
 			BOOL request_group_info,
 			BOOL request_alias_info);
@@ -3227,12 +3229,15 @@ BOOL sam_query_dominfo(struct client_info *info, DOM_SID *sid1,
 void cmd_sam_query_dominfo(struct client_info *info);
 void cmd_sam_enum_aliases(struct client_info *info);
 BOOL sam_query_groupmem(struct client_info *info, uint16 fnum,
+				POLICY_HND *pol_dom,
 				uint32 group_rid,
 				uint32 *num_names,
 				uint32 **rid_mem,
 				char ***name,
 				uint32 **type);
-BOOL msrpc_sam_enum_groups(struct client_info *info,
+uint32 msrpc_sam_enum_groups(struct client_info *info,
+				struct acct_info **sam,
+				uint32 *num_sam_entries,
 				BOOL request_member_info,
 				BOOL request_group_info);
 void cmd_sam_enum_groups(struct client_info *info);

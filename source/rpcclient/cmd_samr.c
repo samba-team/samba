@@ -184,6 +184,7 @@ void cmd_sam_lookup_domain(struct client_info *info)
 	fstring str_sid;
 	DOM_SID dom_sid;
 	BOOL res = True;
+	POLICY_HND sam_pol;
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -203,13 +204,13 @@ void cmd_sam_lookup_domain(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_query_lookup_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, domain, &dom_sid) : False;
+	            &sam_pol, domain, &dom_sid) : False;
 
-	res = res ? samr_close(smb_cli, fnum, &info->dom.samr_pol_connect) : False;
+	res = res ? samr_close(smb_cli, fnum, &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -247,6 +248,8 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	DOM_SID member_sid; 
 	uint32 alias_rid;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -277,16 +280,16 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	/* connect to the domain */
 	res1 = res ? samr_open_alias(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain,
+	            &pol_dom,
 	            0x000f001f, alias_rid, &alias_pol) : False;
 
 	while (next_token(NULL, tmp, NULL, sizeof(tmp)) && res2 && res1)
@@ -302,8 +305,8 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 	}
 
 	res1 = res1 ? samr_close(smb_cli, fnum, &alias_pol) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &info->dom.samr_pol_open_domain) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &info->dom.samr_pol_connect) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &pol_dom) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -341,6 +344,8 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 	uint32 rid [MAX_LOOKUP_SIDS];
 	uint32 type[MAX_LOOKUP_SIDS];
 	uint32 num_rids;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -370,17 +375,17 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	names[0] = name;
 
 	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain, 0x000003e8,
+	            &pol_dom, 0x000003e8,
 	            1, names,
 	            &num_rids, rid, type) : False;
 
@@ -391,14 +396,14 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 
 	/* connect to the domain */
 	res1 = res1 ? samr_open_alias(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain,
+	            &pol_dom,
 	            0x000f001f, alias_rid, &alias_pol) : False;
 
 	res2 = res1 ? samr_delete_dom_alias(smb_cli, fnum, &alias_pol) : False;
 
 	res1 = res1 ? samr_close(smb_cli, fnum, &alias_pol) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &info->dom.samr_pol_open_domain) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &info->dom.samr_pol_connect) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &pol_dom) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -440,6 +445,8 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	DOM_SID *sids = NULL; 
 	int num_sids = 0;
 	int i;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -521,16 +528,16 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	/* connect to the domain */
 	res1 = res ? samr_open_alias(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain,
+	            &pol_dom,
 	            0x000f001f, alias_rid, &alias_pol) : False;
 
 	for (i = 1; i < num_sids && res2 && res1; i++)
@@ -546,8 +553,8 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	}
 
 	res1 = res1 ? samr_close(smb_cli, fnum, &alias_pol) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &info->dom.samr_pol_open_domain) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &info->dom.samr_pol_connect) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &pol_dom) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -588,6 +595,8 @@ void cmd_sam_create_dom_user(struct client_info *info)
 	BOOL res1 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	uint32 user_rid; 
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -625,23 +634,23 @@ void cmd_sam_create_dom_user(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	/* create a domain user */
 	res1 = res ? create_samr_domain_user(smb_cli, fnum, 
-				&info->dom.samr_pol_open_domain,
+				&pol_dom,
 	                        acct_name, ACB_NORMAL, &user_rid) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &pol_dom) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_connect) : False;
+	            &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -675,6 +684,8 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 	BOOL res1 = True;
 	uint32 ace_perms = 0x02000000; /* permissions */
 	uint32 alias_rid; 
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -712,23 +723,23 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	/* create a domain alias */
 	res1 = res ? create_samr_domain_alias(smb_cli, fnum, 
-				&info->dom.samr_pol_open_domain,
+				&pol_dom,
 	                        acct_name, acct_desc, &alias_rid) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &pol_dom) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_connect) : False;
+	            &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -764,6 +775,8 @@ void cmd_sam_del_groupmem(struct client_info *info)
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	uint32 member_rid; 
 	uint32 group_rid;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -794,16 +807,16 @@ void cmd_sam_del_groupmem(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	/* connect to the domain */
 	res1 = res ? samr_open_group(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain,
+	            &pol_dom,
 	            0x0000001f, group_rid, &group_pol) : False;
 
 	while (next_token(NULL, tmp, NULL, sizeof(tmp)) && res2 && res1)
@@ -819,8 +832,8 @@ void cmd_sam_del_groupmem(struct client_info *info)
 	}
 
 	res1 = res1 ? samr_close(smb_cli, fnum, &group_pol) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &info->dom.samr_pol_open_domain) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &info->dom.samr_pol_connect) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &pol_dom) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -859,6 +872,8 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 	uint32 rid [MAX_LOOKUP_SIDS];
 	uint32 type[MAX_LOOKUP_SIDS];
 	uint32 num_rids;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -888,17 +903,17 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	names[0] = name;
 
 	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain, 0x000003e8,
+	            &pol_dom, 0x000003e8,
 	            1, names,
 	            &num_rids, rid, type) : False;
 
@@ -909,14 +924,14 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 
 	/* connect to the domain */
 	res1 = res1 ? samr_open_group(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain,
+	            &pol_dom,
 	            0x0000001f, group_rid, &group_pol) : False;
 
 	res2 = res1 ? samr_delete_dom_group(smb_cli, fnum, &group_pol) : False;
 
 	res1 = res1 ? samr_close(smb_cli, fnum, &group_pol) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &info->dom.samr_pol_open_domain) : False;
-	res  = res  ? samr_close(smb_cli, fnum, &info->dom.samr_pol_connect) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &pol_dom) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -962,6 +977,10 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	uint32 num_group_rids;
 	uint32 i;
 	DOM_SID sid_1_5_20;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+	POLICY_HND pol_blt;
+
 	string_to_sid(&sid_1_5_20, "S-1-5-32");
 
 	sid_copy(&sid1, &info->dom.level5_sid);
@@ -1007,38 +1026,38 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res1 = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	/* connect to the domain */
 	res1 = res1 ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid_1_5_20,
-	            &info->dom.samr_pol_open_builtindom) : False;
+	            &sam_pol, ace_perms, &sid_1_5_20,
+	            &pol_blt) : False;
 
 	res2 = res1 ? samr_query_lookup_names(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain, 0x000003e8,
+	            &pol_dom, 0x000003e8,
 	            1, group_names,
 	            &num_group_rids, group_rid, group_type) : False;
 
 	/* open the group */
 	res2 = res2 ? samr_open_group(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain,
+	            &pol_dom,
 	            0x0000001f, group_rid[0], &group_pol) : False;
 
 	if (!res2 || (group_type != NULL && group_type[0] == SID_NAME_UNKNOWN))
 	{
 		res2 = res1 ? samr_query_lookup_names(smb_cli, fnum,
-			    &info->dom.samr_pol_open_builtindom, 0x000003e8,
+			    &pol_blt, 0x000003e8,
 			    1, group_names, 
 			    &num_group_rids, group_rid, group_type) : False;
 
 		/* open the group */
 		res2 = res2 ? samr_open_group(smb_cli, fnum,
-			    &info->dom.samr_pol_open_builtindom,
+			    &pol_blt,
 			    0x0000001f, group_rid[0], &group_pol) : False;
 	}
 
@@ -1049,7 +1068,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 		return;
 	}
 	res1 = res2 ? samr_query_lookup_names(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain, 0x000003e8,
+	            &pol_dom, 0x000003e8,
 	            num_names, names,
 	            &num_rids, rid, type) : False;
 
@@ -1065,9 +1084,9 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	}
 
 	res1 = res ? samr_close(smb_cli, fnum, &group_pol) : False;
-	res1 = res ? samr_close(smb_cli, fnum, &info->dom.samr_pol_open_builtindom) : False;
-	res1 = res ? samr_close(smb_cli, fnum, &info->dom.samr_pol_open_domain) : False;
-	res  = res ? samr_close(smb_cli, fnum, &info->dom.samr_pol_connect) : False;
+	res1 = res ? samr_close(smb_cli, fnum, &pol_blt) : False;
+	res1 = res ? samr_close(smb_cli, fnum, &pol_dom) : False;
+	res  = res ? samr_close(smb_cli, fnum, &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -1112,6 +1131,8 @@ void cmd_sam_create_dom_group(struct client_info *info)
 	BOOL res1 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	uint32 group_rid; 
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
@@ -1149,23 +1170,23 @@ void cmd_sam_create_dom_group(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	/* read some users */
 	res1 = res ? create_samr_domain_group(smb_cli, fnum, 
-				&info->dom.samr_pol_open_domain,
+				&pol_dom,
 	                        acct_name, acct_desc, &group_rid) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &pol_dom) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_connect) : False;
+	            &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -1183,12 +1204,13 @@ void cmd_sam_create_dom_group(struct client_info *info)
 }
 
 static void req_user_info(struct client_info *info, uint16 fnum,
+				POLICY_HND *pol_dom,
 				uint32 user_rid)
 {
 	SAM_USER_INFO_21 usr;
 	/* send user info query, level 0x15 */
 	if (get_samr_query_userinfo(smb_cli, fnum,
-				    &info->dom.samr_pol_open_domain,
+				    pol_dom,
 				    0x15, user_rid, &usr))
 	{
 		display_sam_user_info_21(out_hnd, ACTION_HEADER   , &usr);
@@ -1198,13 +1220,14 @@ static void req_user_info(struct client_info *info, uint16 fnum,
 }
 
 static void query_groupinfo(struct client_info *info, uint16 fnum,
+				POLICY_HND *pol_dom,
 				uint32 group_rid)
 {
 	GROUP_INFO_CTR ctr;
 
 	/* send group info query */
 	if (get_samr_query_groupinfo(smb_cli, fnum,
-				      &info->dom.samr_pol_open_domain,
+				      pol_dom,
 				      1, group_rid, &ctr))
 	{
 #if 0
@@ -1216,6 +1239,7 @@ static void query_groupinfo(struct client_info *info, uint16 fnum,
 }
 
 static void req_group_info(struct client_info *info, uint16 fnum,
+				POLICY_HND *pol_dom,
 				uint32 user_rid)
 {
 	uint32 num_groups;
@@ -1223,7 +1247,7 @@ static void req_group_info(struct client_info *info, uint16 fnum,
 
 	/* send user group query */
 	if (get_samr_query_usergroups(smb_cli, fnum,
-				      &info->dom.samr_pol_open_domain,
+				      pol_dom,
 				      user_rid, &num_groups, &gid) &&
 	    gid != NULL)
 	{
@@ -1247,7 +1271,7 @@ static void req_group_info(struct client_info *info, uint16 fnum,
 		}
 
 		if (samr_query_lookup_rids(smb_cli, fnum, 
-				&info->dom.samr_pol_open_domain, 0x3e8,
+				pol_dom, 0x3e8,
 				num_groups, rid_mem, 
 				&num_names, &name, &type))
 		{
@@ -1269,7 +1293,8 @@ static void req_group_info(struct client_info *info, uint16 fnum,
 	}
 }
 
-static void req_alias_info(struct client_info *info, uint16 fnum,
+static void req_alias_info(uint16 fnum,
+				POLICY_HND *pol_dom,
 				DOM_SID *sid1, uint32 user_rid)
 {
 	uint32 num_aliases;
@@ -1288,7 +1313,7 @@ static void req_alias_info(struct client_info *info, uint16 fnum,
 
 	/* send user alias query */
 	if (samr_query_useraliases(smb_cli, fnum,
-				&info->dom.samr_pol_open_domain,
+				pol_dom,
 				ptr_sid, als_sid, &num_aliases, &rid))
 	{
 		uint32 num_names;
@@ -1296,7 +1321,7 @@ static void req_alias_info(struct client_info *info, uint16 fnum,
 		uint32  *type = NULL;
 
 		if (samr_query_lookup_rids(smb_cli, fnum, 
-				&info->dom.samr_pol_open_domain, 0x3e8,
+				pol_dom, 0x3e8,
 				num_aliases, rid, 
 				&num_names, &name, &type))
 		{
@@ -1305,31 +1330,6 @@ static void req_alias_info(struct client_info *info, uint16 fnum,
 			display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
 		}
 
-		free_char_array(num_names, name);
-		if (type != NULL)
-		{
-			free(type);
-		}
-	}
-
-	/* send user alias query */
-	if (samr_query_useraliases(smb_cli, fnum,
-				&info->dom.samr_pol_open_builtindom,
-				ptr_sid, als_sid, &num_aliases, &rid))
-	{
-		uint32 num_names;
-		char **name = NULL;
-		uint32  *type = NULL;
-
-		if (samr_query_lookup_rids(smb_cli, fnum, 
-				&info->dom.samr_pol_open_builtindom, 0x3e8,
-				num_aliases, rid, 
-				&num_names, &name, &type))
-		{
-			display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
-			display_group_members(out_hnd, ACTION_ENUMERATE, num_names, name, type);
-			display_group_members(out_hnd, ACTION_FOOTER   , num_names, name, type);
-		}
 		free_char_array(num_names, name);
 		if (type != NULL)
 		{
@@ -1353,6 +1353,8 @@ static void req_alias_info(struct client_info *info, uint16 fnum,
 experimental SAM users enum.
 ****************************************************************************/
 int msrpc_sam_enum_users(struct client_info *info,
+			struct acct_info **sam,
+			uint32 *num_sam_entries,
 			BOOL request_user_info,
 			BOOL request_group_info,
 			BOOL request_alias_info)
@@ -1373,13 +1375,16 @@ int msrpc_sam_enum_users(struct client_info *info,
 	uint16 unk_1 = 0x0;
 	uint32 ace_perms = 0x304; /* access control permissions */
 	uint32 status = STATUS_MORE_ENTRIES;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+	POLICY_HND pol_blt;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
-	info->dom.sam = NULL;
-	info->dom.num_sam_entries = 0;
+	(*sam) = NULL;
+	(*num_sam_entries) = 0;
 
 	if (sid1.num_auths == 0)
 	{
@@ -1407,17 +1412,17 @@ int msrpc_sam_enum_users(struct client_info *info,
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res1 = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	/* connect to the S-1-5-20 domain */
 	res2 = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid_1_5_20,
-	            &info->dom.samr_pol_open_builtindom) : False;
+	            &sam_pol, ace_perms, &sid_1_5_20,
+	            &pol_blt) : False;
 
 	if (res1)
 	{
@@ -1425,51 +1430,47 @@ int msrpc_sam_enum_users(struct client_info *info,
 		while (status == STATUS_MORE_ENTRIES)
 		{
 			status = samr_enum_dom_users(smb_cli, fnum, 
-			     &info->dom.samr_pol_open_domain,
+			     &pol_dom,
 			     &start_idx, acb_mask, unk_1, 0x10000,
-			     &info->dom.sam, &info->dom.num_sam_entries);
+			     sam, num_sam_entries);
 		}
 
-		if (info->dom.num_sam_entries == 0)
+		if ((*num_sam_entries) == 0)
 		{
 			report(out_hnd, "No users\n");
 		}
 
 		/* query all the users */
 		for (user_idx = 0; res && user_idx <
-			      info->dom.num_sam_entries; user_idx++)
+			      (*num_sam_entries); user_idx++)
 		{
-			uint32 user_rid = info->dom.sam[user_idx].rid;
+			uint32 user_rid = (*sam)[user_idx].rid;
 
 			report(out_hnd, "User RID: %8x  User Name: %s\n",
 				user_rid,
-				info->dom.sam[user_idx].acct_name);
+				(*sam)[user_idx].acct_name);
 
 			if (request_group_info)
 			{
-				req_group_info(info, fnum, user_rid);
+				req_group_info(info, fnum, &pol_dom, user_rid);
 			}
 
 			if (request_user_info)
 			{
-				req_user_info(info, fnum, user_rid);
+				req_user_info(info, fnum, &pol_dom, user_rid);
 			}
 
 			if (request_alias_info)
 			{
-				req_alias_info(info, fnum, &sid1, user_rid);
+				req_alias_info(fnum, &pol_dom, &sid1, user_rid);
+				req_alias_info(fnum, &pol_blt, &sid1, user_rid);
 			}
 		}
 	}
 
-	res2 = res2 ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_open_builtindom) : False;
-
-	res1 = res1 ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain) : False;
-
-	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_connect) : False;
+	res2 = res2 ? samr_close(smb_cli, fnum, &pol_blt) : False;
+	res1 = res1 ? samr_close(smb_cli, fnum, &pol_dom) : False;
+	res  = res  ? samr_close(smb_cli, fnum, &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -1483,7 +1484,7 @@ int msrpc_sam_enum_users(struct client_info *info,
 		DEBUG(5,("msrpc_sam_enum_users: failed\n"));
 	}
 
-	return info->dom.num_sam_entries;
+	return (*num_sam_entries);
 }
 
 
@@ -1496,6 +1497,8 @@ void cmd_sam_enum_users(struct client_info *info)
 	BOOL request_group_info = False;
 	BOOL request_alias_info = False;
 	fstring tmp;
+	struct acct_info *sam = NULL;
+	uint32 num_sam_entries = 0;
 	int i;
 
 	for (i = 0; i < 3; i++)
@@ -1513,14 +1516,14 @@ void cmd_sam_enum_users(struct client_info *info)
 		}
 	}
 
-	msrpc_sam_enum_users(info,
+	msrpc_sam_enum_users(info, &sam, &num_sam_entries,
 	                     request_user_info,
 	                     request_group_info,
 	                     request_alias_info);
 
-	if (info->dom.sam != NULL)
+	if (sam != NULL)
 	{
-		free(info->dom.sam);
+		free(sam);
 	}
 }
 
@@ -1545,6 +1548,8 @@ void cmd_sam_query_user(struct client_info *info)
 	uint32 type[MAX_LOOKUP_SIDS];
 	uint32 info_level = 0x15;
 	SAM_USER_INFO_21 usr;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	fstrcpy(domain, info->dom.level5_dom);
 	sid_copy(&sid, &info->dom.level5_sid);
@@ -1577,30 +1582,30 @@ void cmd_sam_query_user(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum,
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum,
-	            &info->dom.samr_pol_connect, 0x304, &sid,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, 0x304, &sid,
+	            &pol_dom) : False;
 
 	/* look up user rid */
 	names[0] = user_name;
 	res1 = res ? samr_query_lookup_names(smb_cli, fnum,
-					&info->dom.samr_pol_open_domain, 0x3e8,
+					&pol_dom, 0x3e8,
 					1, names,
 					&num_rids, rid, type) : False;
 
 	/* send user info query */
 	res1 = (res1 && num_rids == 1) ? get_samr_query_userinfo(smb_cli, fnum,
-					 &info->dom.samr_pol_open_domain,
+					 &pol_dom,
 					 info_level, rid[0], &usr) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_connect) : False;
+	            &sam_pol) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &pol_dom) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -1637,6 +1642,8 @@ void cmd_sam_query_dispinfo(struct client_info *info)
 	SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 inf1;
 	uint32 num_entries;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
@@ -1668,25 +1675,25 @@ void cmd_sam_query_dispinfo(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
 	ctr.sam.info1 = &inf1;
 
 	/* send a samr query_disp_info command */
 	res = res ? samr_query_dispinfo(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain, switch_value, 
+	            &pol_dom, switch_value, 
 		    &num_entries, &ctr) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_connect) : False;
+	            &sam_pol) : False;
 
 	res = res ? samr_close(smb_cli, fnum, 
-	            &info->dom.samr_pol_open_domain) : False;
+	            &pol_dom) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -1719,6 +1726,8 @@ BOOL sam_query_dominfo(struct client_info *info, DOM_SID *sid1,
 	BOOL res1 = True;
 	BOOL res2 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -1730,22 +1739,22 @@ BOOL sam_query_dominfo(struct client_info *info, DOM_SID *sid1,
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum, 
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res1 = res ? samr_open_domain(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect, ace_perms, sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, sid1,
+	            &pol_dom) : False;
 
 	/* send a samr 0x8 command */
 	res2 = res ? samr_query_dom_info(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain, switch_value, ctr) : False;
+	            &pol_dom, switch_value, ctr) : False;
 
 	res1 = res1 ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_connect) : False;
+	            &sam_pol) : False;
 
 	res = res ? samr_close(smb_cli, fnum, 
-	            &info->dom.samr_pol_open_domain) : False;
+	            &pol_dom) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -1824,6 +1833,10 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	uint32 ace_perms = 0x02000000; /* access control permissions */
 	fstring tmp;
 	uint32 alias_idx;
+	struct acct_info *sam;
+	uint32 num_sam_entries;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
@@ -1858,35 +1871,35 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum,
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum,
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
-	info->dom.sam = NULL;
+	sam = NULL;
 
 	/* read some aliases */
 	res = res ? samr_enum_dom_aliases(smb_cli, fnum,
-	                        &info->dom.samr_pol_open_domain,
+	                        &pol_dom,
 	                        0x0, 0xffff,
-	                        &info->dom.sam, &info->dom.num_sam_entries) : False;
+	                        &sam, &num_sam_entries) : False;
 
-	if (res && info->dom.num_sam_entries == 0)
+	if (res && num_sam_entries == 0)
 	{
 		report(out_hnd, "No aliases\n");
 	}
 
 	if (res)
 	{
-	for (alias_idx = 0; alias_idx < info->dom.num_sam_entries; alias_idx++)
+	for (alias_idx = 0; alias_idx < num_sam_entries; alias_idx++)
 	{
-		uint32 alias_rid = info->dom.sam[alias_idx].rid;
+		uint32 alias_rid = sam[alias_idx].rid;
 
 		report(out_hnd, "Alias RID: %8x  Group Name: %s\n",
 				  alias_rid,
-				  info->dom.sam[alias_idx].acct_name);
+				  sam[alias_idx].acct_name);
 
 		if (request_member_info)
 		{
@@ -1895,7 +1908,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 
 			/* send user aliases query */
 			if (get_samr_query_aliasmem(smb_cli, fnum, 
-				&info->dom.samr_pol_open_domain,
+				&pol_dom,
 						alias_rid, &num_aliases, sid_mem))
 			{
 				uint16 fnum_lsa;
@@ -1955,17 +1968,17 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	}
 
 	res = res ? samr_close(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect) : False;
+	            &sam_pol) : False;
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &pol_dom) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
 
-	if (info->dom.sam != NULL)
+	if (sam != NULL)
 	{
-		free(info->dom.sam);
+		free(sam);
 	}
 
 	if (res)
@@ -1979,6 +1992,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 }
 
 BOOL sam_query_groupmem(struct client_info *info, uint16 fnum,
+				POLICY_HND *pol_dom,
 				uint32 group_rid,
 				uint32 *num_names,
 				uint32 **rid_mem,
@@ -1996,7 +2010,7 @@ BOOL sam_query_groupmem(struct client_info *info, uint16 fnum,
 
 	/* get group members */
 	res3 = get_samr_query_groupmem(smb_cli, fnum, 
-		&info->dom.samr_pol_open_domain,
+		pol_dom,
 		group_rid, &num_mem, rid_mem, &attr_mem);
 
 	if (res3 && num_mem != 0)
@@ -2012,7 +2026,7 @@ BOOL sam_query_groupmem(struct client_info *info, uint16 fnum,
 			}
 			/* resolve names */
 			res3 = samr_query_lookup_rids(smb_cli, fnum,
-		                   &info->dom.samr_pol_open_domain, 1000,
+		                   pol_dom, 1000,
 		                   num_mem, rid_copy, num_names, name, type);
 		}
 	}
@@ -2051,6 +2065,7 @@ BOOL sam_query_groupmem(struct client_info *info, uint16 fnum,
 }
 
 static void req_groupmem_info(struct client_info *info, uint16 fnum,
+				POLICY_HND *pol_dom,
 				uint32 group_rid)
 {
 	uint32 num_names = 0;
@@ -2058,7 +2073,7 @@ static void req_groupmem_info(struct client_info *info, uint16 fnum,
 	uint32 *type = NULL;
 	uint32 *rid_mem = NULL;
 
-	if (sam_query_groupmem(info, fnum, group_rid,
+	if (sam_query_groupmem(info, fnum, pol_dom, group_rid,
 				&num_names, &rid_mem, &name, &type))
 	{
 		display_group_members(out_hnd, ACTION_HEADER   , num_names, name, type);
@@ -2076,7 +2091,9 @@ static void req_groupmem_info(struct client_info *info, uint16 fnum,
 /****************************************************************************
 SAM groups query.
 ****************************************************************************/
-BOOL msrpc_sam_enum_groups(struct client_info *info,
+uint32 msrpc_sam_enum_groups(struct client_info *info,
+				struct acct_info **sam,
+				uint32 *num_sam_entries,
 				BOOL request_member_info,
 				BOOL request_group_info)
 {
@@ -2088,6 +2105,8 @@ BOOL msrpc_sam_enum_groups(struct client_info *info,
 	BOOL res = True;
 	uint32 ace_perms = 0x02000000; /* access control permissions. */
 	uint32 group_idx;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 
@@ -2114,52 +2133,52 @@ BOOL msrpc_sam_enum_groups(struct client_info *info,
 	/* establish a connection. */
 	res = res ? samr_connect(smb_cli, fnum,
 				srv_name, 0x02000000,
-				&info->dom.samr_pol_connect) : False;
+				&sam_pol) : False;
 
 	/* connect to the domain */
 	res = res ? samr_open_domain(smb_cli, fnum,
-	            &info->dom.samr_pol_connect, ace_perms, &sid1,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
 
-	info->dom.sam = NULL;
+	(*sam) = NULL;
 
 	/* read some groups */
 	res = res ? samr_enum_dom_groups(smb_cli, fnum,
-	                        &info->dom.samr_pol_open_domain,
+	                        &pol_dom,
 	                        0x0, 0x100000,
-	                        &info->dom.sam, &info->dom.num_sam_entries) : False;
+	                        sam, num_sam_entries) : False;
 
-	if (res && info->dom.num_sam_entries == 0)
+	if (res && (*num_sam_entries) == 0)
 	{
 		report(out_hnd, "No groups\n");
 	}
 
 	if (res)
 	{
-		for (group_idx = 0; group_idx < info->dom.num_sam_entries; group_idx++)
+		for (group_idx = 0; group_idx < (*num_sam_entries); group_idx++)
 		{
-			uint32 group_rid = info->dom.sam[group_idx].rid;
+			uint32 group_rid = (*sam)[group_idx].rid;
 
 			report(out_hnd, "Group RID: %8x  Group Name: %s\n",
 					  group_rid,
-					  info->dom.sam[group_idx].acct_name);
+					  (*sam)[group_idx].acct_name);
 
 			if (request_group_info)
 			{
-				query_groupinfo(info, fnum, group_rid);
+				query_groupinfo(info, fnum, &pol_dom, group_rid);
 			}
 			if (request_member_info)
 			{
-				req_groupmem_info(info, fnum, group_rid);
+				req_groupmem_info(info, fnum, &pol_dom, group_rid);
 			}
 		}
 	}
 
 	res = res ? samr_close(smb_cli, fnum,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &pol_dom) : False;
 
 	res = res ? samr_close(smb_cli, fnum, 
-	            &info->dom.samr_pol_connect) : False;
+	            &sam_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
@@ -2172,7 +2191,7 @@ BOOL msrpc_sam_enum_groups(struct client_info *info,
 	{
 		DEBUG(5,("msrpc_sam_enum_groups: failed\n"));
 	}
-	return info->dom.num_sam_entries;
+	return (*num_sam_entries);
 }
 
 /****************************************************************************
@@ -2184,6 +2203,8 @@ void cmd_sam_enum_groups(struct client_info *info)
 	BOOL request_group_info = False;
 	fstring tmp;
 	int i;
+	struct acct_info *sam;
+	uint32 num_sam_entries;
 
 	for (i = 0; i < 3; i++)
 	{
@@ -2199,12 +2220,12 @@ void cmd_sam_enum_groups(struct client_info *info)
 		}
 	}
 
-	msrpc_sam_enum_groups(info,
+	msrpc_sam_enum_groups(info, &sam, &num_sam_entries,
 	                     request_member_info,
 	                     request_group_info);
 
-	if (info->dom.sam != NULL)
+	if (sam != NULL)
 	{
-		free(info->dom.sam);
+		free(sam);
 	}
 }
