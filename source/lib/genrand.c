@@ -106,7 +106,7 @@ static void get_random_stream(unsigned char *data, size_t datasize)
  Note that the hash is not initialised.
 *****************************************************************/
 
-static void do_filehash(char *fname, unsigned char *hash)
+static void do_filehash(char *fname, unsigned char *the_hash)
 {
 	unsigned char buf[1011]; /* deliberate weird size */
 	unsigned char tmp_md4[16];
@@ -119,7 +119,7 @@ static void do_filehash(char *fname, unsigned char *hash)
 	while ((n = read(fd, (char *)buf, sizeof(buf))) > 0) {
 		mdfour(tmp_md4, buf, n);
 		for (n=0;n<16;n++)
-			hash[n] ^= tmp_md4[n];
+			the_hash[n] ^= tmp_md4[n];
 	}
 	close(fd);
 }
