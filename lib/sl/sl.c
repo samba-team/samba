@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -144,6 +144,41 @@ sl_command(SL_cmd *cmds, int argc, char **argv)
 }
 
 int
+sl_make_argv(char *line, int *ret_argc, char ***ret_argv)
+{
+    char *foo = NULL;
+    char *p;
+    int argc, nargv;
+    char **argv;
+    
+    nargv = 10;
+    argv = malloc(nargv * sizeof(*argv));
+    if(argv == NULL)
+	return ENOMEM;
+    argc = 0;
+
+    for(p = strtok_r (line, " \t", &foo);
+	p;
+	p = strtok_r (NULL, " \t", &foo)) {
+	if(argc == nargv - 1) {
+	    char **tmp;
+	    nargv *= 2;
+	    tmp = realloc (argv, nargv * sizeof(*argv));
+	    if (tmp == NULL) {
+		free(argv);
+		return ENOMEM;
+	    }
+	    argv = tmp;
+	}
+	argv[argc++] = p;
+    }
+    argv[argc] = NULL;
+    *ret_argc = argc;
+    *ret_argv = argv;
+    return 0;
+}
+
+int
 sl_loop (SL_cmd *cmds, char *prompt)
 {
     unsigned max_count;
@@ -171,25 +206,10 @@ sl_loop (SL_cmd *cmds, char *prompt)
 	if(*buf)
 	    add_history(buf);
 	count = 0;
-	{
-	    char *foo = NULL;
-	    char *p;
-
-	    for(p = strtok_r (buf, " \t", &foo);
-		p;
-		p = strtok_r (NULL, " \t", &foo)) {
-		if(count == max_count) {
-		    max_count *= 2;
-		    ptr = realloc (ptr, max_count * sizeof(*ptr));
-		    if (ptr == NULL) {
-			printf ("sl_loop: failed to allocate %u "
-				"bytes of memory\n",
-				(unsigned) max_count * sizeof(*ptr));
-			return -1;
-		    }
-		}
-		ptr[count++] = p;
-	    }
+	ret = sl_make_argv(buf, &count, &ptr);
+	if(ret) {
+	    warnx ("sl_loop: %s", strerror(ret));
+	    return -1;
 	}
 	if (count > 0) {
 	    c = sl_match (cmds, ptr[0], 0);
