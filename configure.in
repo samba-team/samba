@@ -426,7 +426,7 @@ fi
 AC_SUBST(DBLIB)dnl
 
 AC_CHECK_FUNCS(_getpty _scrsize asnprintf asprintf cgetent fcntl)
-AC_CHECK_FUNCS(getmsg getrlimit getspnam getspuid gettimeofday getuid)
+AC_CHECK_FUNCS(getmsg getrlimit getspnam gettimeofday getuid)
 AC_CHECK_FUNCS(grantpt mktime ptsname rand random setproctitle)
 AC_CHECK_FUNCS(revoke select setitimer setpcred setpgid)
 AC_CHECK_FUNCS(setregid setresgid setresuid setreuid setutent)
