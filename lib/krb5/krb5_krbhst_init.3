@@ -8,7 +8,9 @@
 .Nm krb5_krbhst_next ,
 .Nm krb5_krbhst_next_as_string ,
 .Nm krb5_krbhst_reset ,
-.Nm krb5_krbhst_free
+.Nm krb5_krbhst_free ,
+.Nm krb5_krbhst_format_string ,
+.Nm krb5_krbhst_get_addrinfo
 .Nd lookup Kerberos KDC hosts
 .Sh SYNOPSIS
 .Fd #include <krb5.h>
@@ -23,8 +25,11 @@
 .Fn krb5_krbhst_reset "krb5_context context" "krb5_krbhst_handle handle"
 .Ft void
 .Fn krb5_krbhst_free "krb5_context context" "krb5_krbhst_handle handle"
+.Ft krb5_error_code
+.Fn krb5_krbhst_format_string "krb5_context context" "const krb5_krbhst_info *host" "char *hostname" "size_t hostlen"
+.Ft krb5_error_code
+.Fn krb5_krbhst_get_addrinfo "krb5_context context" "krb5_krbhst_info *host" "struct addrinfo **ai"
 .Sh DESCRIPTION
-
 These functions are used to sequence through all Kerberos hosts of a
 particular realm and service. The service type can be the KDCs, the
 administrative servers, the password changing servers, or the servers
@@ -84,6 +89,17 @@ will return the first host.
 When done with the handle, 
 .Fn krb5_krbhst_free
 should be called.
+.Pp
+To use a
+.Va krb5_krbhst_info ,
+there are two functions:
+.Fn krb5_krbhst_format_string
+that will return a printable representation of that struct
+and
+.Fn krb5_krbhst_get_addrinfo
+that will return a
+.Va struct addrinfo
+that can then be used for communicating with the server mentioned.
 .Sh EXAMPLE
 The following code will print the KDCs of the realm 
 .Dq MY.REALM .
@@ -100,4 +116,5 @@ krb5_krbhst_free(context, handle);
 .Sh HISTORY
 These functions first appeared in Heimdal 0.3g.
 .Sh SEE ALSO
-.Xr krb5_get_krbhst 3
+.Xr krb5_get_krbhst 3 ,
+.Xr getaddrinfo 3
