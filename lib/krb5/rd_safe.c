@@ -24,10 +24,32 @@ krb5_rd_safe(krb5_context context,
       r = KRB5KRB_AP_ERR_MSG_TYPE;
       goto failure;
   }
+  /* XXX - checksum collision-proff and keyed */
   if (safe.cksum.cksumtype != CKSUMTYPE_RSA_MD4) {
       r = KRB5KRB_AP_ERR_INAPP_CKSUM;
       goto failure;
   }
+
+  /* check sender address */
+
+  if (safe.safe_body.s_address
+      && !krb5_address_compare (context,
+				auth_context->remote_address,
+				safe.safe_body.s_address)) {
+      r = KRB5KRB_AP_ERR_BADADDR;
+      goto failure;
+  }
+
+  /* check receiver address */
+
+  if (safe.safe_body.r_address
+      && !krb5_address_compare (context,
+				auth_context->local_address,
+				safe.safe_body.r_address)) {
+      r = KRB5KRB_AP_ERR_BADADDR;
+      goto failure;
+  }
+
   /* check timestamp */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
       struct timeval tv;

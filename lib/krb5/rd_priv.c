@@ -40,6 +40,26 @@ krb5_rd_priv(krb5_context context,
   if (r) 
       return r;
   
+  /* check sender address */
+
+  if (part.s_address
+      && !krb5_address_compare (context,
+				auth_context->remote_address,
+				part.s_address)) {
+      r = KRB5KRB_AP_ERR_BADADDR;
+      goto failure_part;
+  }
+
+  /* check receiver address */
+
+  if (part.r_address
+      && !krb5_address_compare (context,
+				auth_context->local_address,
+				part.r_address)) {
+      r = KRB5KRB_AP_ERR_BADADDR;
+      goto failure_part;
+  }
+
   /* check timestamp */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
     struct timeval tv;
@@ -49,7 +69,7 @@ krb5_rd_priv(krb5_context context,
 	part.usec      == NULL ||
 	*part.timestamp - tv.tv_sec > 600) {
 	r = KRB5KRB_AP_ERR_SKEW;
-	goto failure_priv;
+	goto failure_part;
     }
   }
 
@@ -60,19 +80,19 @@ krb5_rd_priv(krb5_context context,
     if (part.seq_number == NULL ||
 	*part.seq_number != ++auth_context->remote_seqnumber) {
       r = KRB5KRB_AP_ERR_BADORDER;
-      goto failure_priv;
+      goto failure_part;
     }
   }
 
   r = krb5_data_copy (outbuf, part.user_data.data, part.user_data.length);
   if (r)
-      goto failure_priv;
+      goto failure_part;
 
   free_EncKrbPrivPart (&part);
   free_KRB_PRIV (&priv);
   return 0;
 
-failure_priv:
+failure_part:
   free_EncKrbPrivPart (&part);
 
 failure:
