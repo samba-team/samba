@@ -5,9 +5,9 @@ Samba now fully supports browsing. The browsing is supported by nmbd
 and is also controlled by options in the smb.conf file (see
 smb.conf(5)).
 
-Samba can act as a browse master for a workgroup, but currently cannot
-act as a domain controller. The ability to be a domain controller will
-be added in a later version.
+Samba can act as a browse master for a workgroup and the ability for 
+samba to support domain logons and scripts is now available with features 
+still being added.  See DOMAIN.txt for more information.
 
 To get browsing to work you need to run nmbd as usual, but will need
 to use the "workgroup" option in smb.conf to control what workgroup
@@ -69,7 +69,7 @@ have a valid guest account.
 Also, a lot of people are getting bitten by the problem of too many
 parameters on the command line of nmbd in inetd.conf. This trick is to
 not use spaces between the option and the parameter (eg: -d2 instead
-of -d 2), and to not use the -B and -N options. New versions of nmbd
+Of -d 2), and to not use the -B and -N options. New versions of nmbd
 are now far more likely to correctly find your broadcast and network
 addess, so in most cases these aren't needed.
 
