@@ -1753,6 +1753,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
 	int jobid, errcode;
+	extern struct current_user current_user;
 
 	jobid = SVAL(p,0);
 
@@ -1773,13 +1774,16 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	
 	switch (function) {
 	case 81:		/* delete */ 
-		if (print_job_delete(NULL, jobid)) errcode = NERR_Success;
+		if (print_job_delete(&current_user, jobid)) 
+			errcode = NERR_Success;
 		break;
 	case 82:		/* pause */
-		if (print_job_pause(NULL, jobid)) errcode = NERR_Success;
+		if (print_job_pause(&current_user, jobid)) 
+			errcode = NERR_Success;
 		break;
 	case 83:		/* resume */
-		if (print_job_resume(NULL, jobid)) errcode = NERR_Success;
+		if (print_job_resume(&current_user, jobid)) 
+			errcode = NERR_Success;
 		break;
 	}
 	
