@@ -539,7 +539,7 @@ static BOOL spool_io_user_level(char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps,
  * on reading allocate memory for the private member
  ********************************************************************/
 
-static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
+BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_devmode");
 	depth++;

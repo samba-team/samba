@@ -32,6 +32,7 @@ static TDB_CONTEXT *tdb_printers; /* used for printers files */
 
 #define FORMS_PREFIX "FORMS/"
 #define DRIVERS_PREFIX "DRIVERS/"
+#define DRIVER_INIT_PREFIX "DRIVER_INIT/"
 #define PRINTERS_PREFIX "PRINTERS/"
 #define SECDESC_PREFIX "SECDESC/"
  
@@ -2683,6 +2684,306 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	}
 	
 	return result;
+}
+
+/****************************************************************************
+ Initialize printer devmode & data with previously saved driver init values.
+****************************************************************************/
+static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
+{
+	int                     len = 0;
+	pstring                 key;
+	TDB_DATA                kbuf, dbuf;
+	NT_PRINTER_PARAM        *current;
+	NT_PRINTER_INFO_LEVEL_2 info;
+
+	ZERO_STRUCT(info);
+
+	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+
+	dbuf = tdb_fetch(tdb_drivers, kbuf);
+	if (!dbuf.dptr)
+		return False;
+
+	/*
+	 * Get the saved DEVMODE..
+	 */
+	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+
+	/*
+	 * The saved DEVMODE contains the devicename from the printer used during
+	 * the initialization save. Change it to reflect the new printer.
+	 */
+	ZERO_STRUCT(info.devmode->devicename);
+	fstrcpy(info.devmode->devicename, info_ptr->printername);
+
+	/* 
+	 * 	Bind the saved DEVMODE to the new the printer.
+	 */
+	free_nt_devicemode(&info_ptr->devmode);
+	info_ptr->devmode = info.devmode;
+
+	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
+			info_ptr->printername, info_ptr->drivername));
+
+	/* 
+	 * There should not be any printer data 'specifics' already set during the
+	 * add printer operation, if there are delete them. 
+	 */
+	while ( (current=info_ptr->specific) != NULL ) {
+		info_ptr->specific=current->next;
+		safe_free(current->data);
+		safe_free(current);
+	}
+
+	/* 
+	 * Add the printer data 'specifics' to the new printer
+	 */
+	len += unpack_specifics(&info_ptr->specific,dbuf.dptr+len, dbuf.dsize-len);
+
+	safe_free(dbuf.dptr);
+
+	return True;	
+}
+
+/****************************************************************************
+ Initialize printer devmode & data with previously saved driver init values.
+ When a printer is created using AddPrinter, the drivername bound to the
+ printer is used to lookup previously saved driver initialization info, which
+ is bound to the new printer.
+****************************************************************************/
+
+uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
+{
+	uint32 result;
+	
+	switch (level)
+	{
+		case 2:
+		{
+			result=set_driver_init_2(printer->info_2);
+			break;
+		}
+		default:
+			result=1;
+			break;
+	}
+	
+	return result;
+}
+
+/****************************************************************************
+ Pack up the DEVMODE and specifics for a printer into a 'driver init' entry 
+ in the tdb. Note: this is different from the driver entry and the printer
+ entry. There should be a single driver init entry for each driver regardless
+ of whether it was installed from NT or 2K. Technically, they should be
+ different, but they work out to the same struct.
+****************************************************************************/
+static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
+{
+	pstring key;
+	char *buf;
+	int buflen, len, ret;
+	TDB_DATA kbuf, dbuf;
+
+	buf = NULL;
+	buflen = 0;
+
+ again:	
+	len = 0;
+	len += pack_devicemode(info->devmode, buf+len, buflen-len);
+
+	len += pack_specifics(info->specific, buf+len, buflen-len);
+
+	if (buflen != len) {
+		buf = (char *)Realloc(buf, len);
+		buflen = len;
+		goto again;
+	}
+
+	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info->drivername);
+	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+	dbuf.dptr = buf;
+	dbuf.dsize = len;
+
+	ret = tdb_store(tdb_drivers, kbuf, dbuf, TDB_REPLACE);
+
+	if (ret == -1)
+		DEBUG(8, ("update_driver_init_2: error updating printer init to tdb on disk\n"));
+
+	safe_free(buf);
+
+	DEBUG(10,("update_driver_init_2: Saved printer [%s] init DEVMODE & specifics for driver [%s]\n",
+		 info->sharename, info->drivername));
+
+	return ret;
+}
+
+/****************************************************************************
+ Update (i.e. save) the driver init info (DEVMODE and specifics) for a printer
+****************************************************************************/
+
+static uint32 update_driver_init(NT_PRINTER_INFO_LEVEL printer, uint32 level)
+{
+	uint32 result;
+	
+	dump_a_printer(printer, level);	
+	
+	switch (level)
+	{
+		case 2:
+		{
+			result=update_driver_init_2(printer.info_2);
+			break;
+		}
+		default:
+			result=1;
+			break;
+	}
+	
+	return result;
+}
+
+/****************************************************************************
+ Convert the printer data value, a REG_BINARY array, into an initialization 
+ DEVMODE. Note: the array must be parsed as if it was a DEVMODE in an rpc...
+ got to keep the endians happy :).
+****************************************************************************/
+
+static BOOL convert_driver_init(NT_PRINTER_PARAM *param, TALLOC_CTX *ctx, NT_DEVICEMODE *nt_devmode)
+{
+	BOOL       result = False;
+	prs_struct ps;
+	DEVICEMODE devmode;
+
+	ZERO_STRUCT(devmode);
+
+	prs_init(&ps, 0, ctx, UNMARSHALL);
+	ps.data_p      = param->data;
+	ps.buffer_size = param->data_len;
+
+	if (spoolss_io_devmode("phantom DEVMODE", &ps, 0, &devmode))
+		result = convert_devicemode("", &devmode, &nt_devmode);
+	else
+		DEBUG(10,("convert_driver_init: error parsing DEVMODE\n"));
+
+	return result;
+}
+
+/****************************************************************************
+ Set the DRIVER_INIT info in the tdb. Requires Win32 client code that:
+
+ 1. Use the driver's config DLL to this UNC printername and:
+    a. Call DrvPrintEvent with PRINTER_EVENT_INITIALIZE
+    b. Call DrvConvertDevMode with CDM_DRIVER_DEFAULT to get default DEVMODE
+ 2. Call SetPrinterData with the 'magic' key and the DEVMODE as data.
+
+ The last step triggers saving the "driver initialization" information for
+ this printer into the tdb. Later, new printers that use this driver will
+ have this initialization information bound to them. This simulates the
+ driver initialization, as if it had run on the Samba server (as it would
+ have done on NT).
+
+ The Win32 client side code requirement sucks! But until we can run arbitrary
+ Win32 printer driver code on any Unix that Samba runs on, we are stuck with it.
+ 
+ It would have been easier to use SetPrinter because all the UNMARSHALLING of
+ the DEVMODE is done there, but 2K/XP clients do not set the DEVMODE... think
+ about it and you will realize why.  JRR 010720
+****************************************************************************/
+
+static uint32 save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARAM *param)
+{
+	uint32        status       = ERROR_SUCCESS;
+	TALLOC_CTX    *ctx         = NULL;
+	NT_DEVICEMODE *nt_devmode  = NULL;
+	NT_DEVICEMODE *tmp_devmode = printer->info_2->devmode;
+	
+	/*
+	 * Set devmode on printer info, so entire printer initialization can be 
+	 * saved to tdb.
+	 */
+	if ((ctx = talloc_init()) == NULL)
+		return ERROR_NOT_ENOUGH_MEMORY;
+
+	if ((nt_devmode = (NT_DEVICEMODE*)malloc(sizeof(NT_DEVICEMODE))) == NULL) {
+		status = ERROR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+	
+	ZERO_STRUCTP(nt_devmode);
+
+	/*
+	 * The DEVMODE is held in the 'data' component of the param in raw binary.
+	 * Convert it to to a devmode structure
+	 */
+	if (!convert_driver_init(param, ctx, nt_devmode)) {
+		DEBUG(10,("save_driver_init_2: error converting DEVMODE\n"));
+		status = ERROR_INVALID_PARAMETER;
+		goto done;
+	}
+
+	/*
+	 * Pack up and add (or update) the DEVMODE and any current printer data to
+	 * a 'driver init' element in the tdb
+	 * 
+	 */
+	printer->info_2->devmode = nt_devmode;
+	if (update_driver_init(*printer, 2)!=0) {
+		DEBUG(10,("save_driver_init_2: error updating DEVMODE\n"));
+		status = ERROR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+	
+	/*
+	 * If driver initialization info was successfully saved, set the current 
+	 * printer to match it. This allows initialization of the current printer 
+	 * as well as the driver.
+	 */
+	if (mod_a_printer(*printer, 2)!=0) {
+		DEBUG(10,("save_driver_init_2: error setting DEVMODE on printer [%s]\n",
+				  printer->info_2->printername));
+		status = ERROR_INVALID_PARAMETER;
+	}
+
+  done:
+	talloc_destroy(ctx);
+	if (nt_devmode)
+		safe_free(nt_devmode->private);
+	safe_free(nt_devmode);
+	printer->info_2->devmode = tmp_devmode;
+
+	return status;
+}
+
+/****************************************************************************
+ Update the driver init info (DEVMODE and specifics) for a printer
+****************************************************************************/
+
+uint32 save_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level, NT_PRINTER_PARAM *param)
+{
+	uint32 status = ERROR_SUCCESS;
+	
+	switch (level)
+	{
+		case 2:
+		{
+			status=save_driver_init_2(printer, param);
+			break;
+		}
+		default:
+			status=ERROR_INVALID_LEVEL;
+			break;
+	}
+	
+	return status;
 }
 
 /****************************************************************************
