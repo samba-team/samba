@@ -53,6 +53,30 @@ static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
 #define ERROR_NO_LOGON_SERVERS 0x51f
 
 /*************************************************************************
+ net_reply_logon_ctrl:
+ *************************************************************************/
+
+/* Some flag values reverse engineered from NLTEST.EXE */
+
+#define LOGON_CTRL_IN_SYNC          0x00
+#define LOGON_CTRL_REPL_NEEDED      0x01
+#define LOGON_CTRL_REPL_IN_PROGRESS 0x02
+
+uint32 _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u, 
+		       NET_R_LOGON_CTRL *r_u)
+{
+	uint32 flags = 0x0;
+	uint32 pdc_connection_status = 0x00; /* Maybe a win32 error code? */
+	
+	/* Setup the Logon Control response */
+
+	init_net_r_logon_ctrl(r_u, q_u->query_level, flags, 
+			      pdc_connection_status);
+
+	return r_u->status;
+}
+
+/*************************************************************************
  net_reply_logon_ctrl2:
  *************************************************************************/
 
@@ -68,9 +92,9 @@ uint32 _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTR
 	DEBUG(6,("_net_logon_ctrl2: %d\n", __LINE__));
 
 	/* set up the Logon Control2 response */
-	init_r_logon_ctrl2(r_u, q_u->query_level,
-	                   flags, pdc_connection_status, logon_attempts,
-	                   tc_status, trusted_domain);
+	init_net_r_logon_ctrl2(r_u, q_u->query_level,
+			       flags, pdc_connection_status, logon_attempts,
+			       tc_status, trusted_domain);
 
 	DEBUG(6,("_net_logon_ctrl2: %d\n", __LINE__));
 
