@@ -49,11 +49,6 @@ static int do_global_checks(void)
 	int ret = 0;
 	SMB_STRUCT_STAT st;
 
-	if (lp_security() > SEC_SHARE && lp_revalidate(-1)) {
-		printf("WARNING: the 'revalidate' parameter is ignored in all but \
-'security=share' mode.\n");
-	}
-
 	if (lp_security() == SEC_DOMAIN && !lp_encrypted_passwords()) {
 		printf("ERROR: in 'security=domain' mode the 'encrypt passwords' parameter must also be set to 'true'.\n");
 		ret = 1;

@@ -311,7 +311,7 @@ BOOL authorise_login(int snum, char *user, char *domain,
 		}
 
 		/* check for a previously validated username/password pair */
-		if (!ok && (!lp_revalidate(snum) || lp_security() > SEC_SHARE)
+		if (!ok && (lp_security() > SEC_SHARE)
 		    && (vuser != 0) && !vuser->guest
 		    && user_ok(vuser->unix_name, snum))
 		{

@@ -346,7 +346,6 @@ typedef struct
   BOOL bAlternatePerm;
   BOOL bPreexecClose;
   BOOL bRootpreexecClose;
-  BOOL bRevalidate;
   BOOL bCaseSensitive;
   BOOL bCasePreserve;
   BOOL bShortCasePreserve;
@@ -457,7 +456,6 @@ static service sDefault =
   False,   /* bAlternatePerm */
   False,   /* bPreexecClose */
   False,   /* bRootpreexecClose */
-  False,   /* revalidate */
   False,   /* case sensitive */
   True,   /* case preserve */
   True,   /* short case preserve */
@@ -648,7 +646,6 @@ static struct parm_struct parm_table[] =
   {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL,   NULL,  0},
   {"unix password sync", P_BOOL,  P_GLOBAL, &Globals.bUnixPasswdSync,   NULL,   NULL,  0},
   {"restrict anonymous", P_BOOL,  P_GLOBAL, &Globals.bRestrictAnonymous,NULL,   NULL,  0},
-  {"revalidate",       P_BOOL,    P_LOCAL,  &sDefault.bRevalidate,      NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
   {"username",         P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  FLAG_GLOBAL|FLAG_SHARE},
   {"user",             P_STRING,  P_LOCAL,  &sDefault.szUsername,       NULL,   NULL,  0},
@@ -1565,7 +1562,6 @@ FN_LOCAL_BOOL(lp_msdfs_root, bMSDfsRoot)
 FN_LOCAL_BOOL(lp_autoloaded,autoloaded)
 FN_LOCAL_BOOL(lp_preexec_close,bPreexecClose)
 FN_LOCAL_BOOL(lp_rootpreexec_close,bRootpreexecClose)
-FN_LOCAL_BOOL(lp_revalidate,bRevalidate)
 FN_LOCAL_BOOL(lp_casesensitive,bCaseSensitive)
 FN_LOCAL_BOOL(lp_preservecase,bCasePreserve)
 FN_LOCAL_BOOL(lp_shortpreservecase,bShortCasePreserve)
