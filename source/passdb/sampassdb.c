@@ -621,19 +621,20 @@ struct sam_passwd *pwdb_sam_map_names(struct sam_passwd *sam)
 	static fstring unix_name;
 	static fstring nt_name;
 
-	DEBUG(10,("pwdb_sam_map_names: unix %s nt %s unix %d nt%d\n",
-	           sam->unix_name != NULL ? sam->unix_name : "NULL",
-	           sam->nt_name   != NULL ? sam->nt_name   : "NULL",
-	           sam->unix_uid, sam->user_rid));
-
 	/*
 	 * name details
 	 */
 
 	if (sam == NULL)
 	{
+		DEBUG(10,("pwdb_sam_map_names: NULL\n"));
 		return NULL;
 	}
+
+	DEBUG(10,("pwdb_sam_map_names: unix %s nt %s unix %d nt%d\n",
+	           sam->unix_name != NULL ? sam->unix_name : "NULL",
+	           sam->nt_name   != NULL ? sam->nt_name   : "NULL",
+	           sam->unix_uid, sam->user_rid));
 
 	if (!found && sam->unix_name != NULL)
 	{
