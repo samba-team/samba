@@ -37,7 +37,7 @@ static BOOL analyze;
 #define READ_PCT 50
 #define LOCK_PCT 25
 #define UNLOCK_PCT 65
-#define RANGE_MULTIPLE 1
+#define RANGE_MULTIPLE 32
 
 struct record {
 	char r1, r2;
@@ -47,13 +47,17 @@ struct record {
 };
 
 static struct record preset[] = {
-#if 1
+#if 0
 {36,  5, 1, 1,  1,  2, 1},
 { 2,  6, 0, 1,  0,  2, 1},
 {53, 92, 1, 1,  0,  0, 1},
 {99, 11, 1, 1,  2,  1, 1},
 #endif
-	};
+{36, 5, 1, 1, 1888, 960, 1},
+{47, 23, 0, 1, 0, 2176, 1},
+{84, 95, 1, 1, 3072, 96, 1},
+{65, 14, 0, 0, 2752, 352, 1},
+};
 
 static struct record *recorded;
 
