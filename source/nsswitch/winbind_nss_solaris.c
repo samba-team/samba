@@ -11,7 +11,6 @@
 #include <string.h>
 #include <pwd.h>
 #include <syslog.h>
-#include <sys/syslog.h>
 #include "includes.h"
 #include "winbind_nss_config.h"
 

@@ -3684,7 +3684,7 @@ BOOL make_spoolss_q_setprinter(
 		info->printers_2->secdesc = NULL;
 		
 		make_spoolss_printer_info_2 (mem_ctx, &q_u->info.info_2, info->printers_2);
-#if 0	/* JERRY TEST */
+#if 1	/* JERRY TEST */
 		q_u->secdesc_ctr = (SEC_DESC_BUF*)malloc(sizeof(SEC_DESC_BUF));
 		if (!q_u->secdesc_ctr)
 			return False;
@@ -5198,7 +5198,6 @@ BOOL uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 		/* we allocate memory iff called from 
 		 * addprinter(ex) so we can do one time stuff here.
 		 */
-		(*asc)->setuptime=time_unix;
 
 	}	
 	DEBUGADD(8,("start converting\n"));

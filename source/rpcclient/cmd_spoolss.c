@@ -339,7 +339,7 @@ static NTSTATUS cmd_spoolss_enum_printers(struct cli_state *cli,
 	if (NT_STATUS_IS_OK(result)) 
 	{
 		if (!returned)
-			printf ("No Printers printers returned.\n");
+			printf ("No Printers returned.\n");
 	
 		switch(info_level) {
 		case 0:
@@ -444,6 +444,73 @@ static NTSTATUS cmd_spoolss_enum_ports(struct cli_state *cli,
 			}
 		}
 	}
+
+	return result;
+}
+
+/***********************************************************************
+ * Set printer comment - use a level2 set.
+ */
+static NTSTATUS cmd_spoolss_setprinter(struct cli_state *cli, 
+                                       TALLOC_CTX *mem_ctx,
+                                       int argc, char **argv)
+{
+	POLICY_HND 	pol;
+	NTSTATUS	result;
+	uint32 		info_level = 2;
+	BOOL 		opened_hnd = False;
+	PRINTER_INFO_CTR ctr;
+	fstring 	printername, 
+			servername,
+			user,
+			comment;
+
+	if (argc == 1 || argc > 3) {
+		printf("Usage: %s printername comment\n", argv[0]);
+		
+		return NT_STATUS_OK;
+	}
+
+	/* Open a printer handle */
+	if (argc == 3) {
+		fstrcpy(comment, argv[2]);
+	}
+
+	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (servername);
+	fstrcpy (printername, argv[1]);
+	fstrcpy  (user, cli->user_name);
+	
+	/* get a printer handle */
+	result = cli_spoolss_open_printer_ex(
+		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS, servername,
+		user, &pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+ 
+	opened_hnd = True;
+
+	/* Get printer info */
+	result = cli_spoolss_getprinter(cli, mem_ctx, &pol, info_level, &ctr);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+#if 0
+	/* Modify the comment. */
+	init_unistr(&ctr.printers_2->comment, comment);
+#else
+	ctr.printers_2->priority++;
+#endif
+
+	result =  cli_spoolss_setprinter(cli, mem_ctx, &pol, info_level, &ctr, 0);
+	if (NT_STATUS_IS_OK(result))
+		printf("Success in setting comment.\n");
+
+ done: 
+	if (opened_hnd) 
+		cli_spoolss_close_printer(cli, mem_ctx, &pol);
 
 	return result;
 }
@@ -1268,6 +1335,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "getprintprocdir",	cmd_spoolss_getprintprocdir,    PIPE_SPOOLSS, "Get print processor directory",       "" },
 	{ "openprinter",	cmd_spoolss_open_printer_ex,	PIPE_SPOOLSS, "Open printer handle",                 "" },
 	{ "setdriver",		cmd_spoolss_setdriver,		PIPE_SPOOLSS, "Set printer driver",                  "" },
+	{ "setprinter",	        cmd_spoolss_setprinter,         PIPE_SPOOLSS, "Set printer comment",                 "" },
 	{ "setprinterdata",	cmd_spoolss_setprinterdata,     PIPE_SPOOLSS, "Set REG_SZ printer data",             "" },
 
 	{ NULL }
