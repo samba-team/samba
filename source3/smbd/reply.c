@@ -3045,20 +3045,22 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  Resolve wildcards in a filename rename.
 ********************************************************************/
 
-static BOOL resolve_wildcards(char *name1,char *name2)
+static BOOL resolve_wildcards(const char *name1, char *name2)
 {
 	fstring root1,root2;
 	fstring ext1,ext2;
-	char *p,*p2;
+	char *p,*p2, *pname1, *pname2;
+	int available_space;
+	
 
-	name1 = strrchr_m(name1,'/');
-	name2 = strrchr_m(name2,'/');
+	pname1 = strrchr_m(name1,'/');
+	pname2 = strrchr_m(name2,'/');
 
-	if (!name1 || !name2)
+	if (!pname1 || !pname2)
 		return(False);
   
-	fstrcpy(root1,name1);
-	fstrcpy(root2,name2);
+	fstrcpy(root1,pname1);
+	fstrcpy(root2,pname2);
 	p = strrchr_m(root1,'.');
 	if (p) {
 		*p = 0;
@@ -3100,10 +3102,13 @@ static BOOL resolve_wildcards(char *name1,char *name2)
 			p++;
 	}
 
-	pstrcpy(name2,root2);
+	available_space = sizeof(pstring) - PTR_DIFF(pname2, name2);
+	
+	StrnCpy(pname2, root2, available_space-1);
+	available_space -= strlen(root2);
 	if (ext2[0]) {
-		pstrcat(name2,".");
-		pstrcat(name2,ext2);
+		strncat(pname2, ".", available_space-1);
+		strncat(pname2, ext2, available_space-2);
 	}
 
 	return(True);
