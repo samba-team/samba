@@ -445,6 +445,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
 		show_msg(outbuf);
+		srv_signing_trans_stop();
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_trans: send_smb failed.");
 	}
@@ -455,6 +456,13 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
       
 		ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
+
+		/*
+		 * The sequence number for the trans reply is always
+		 * based on the last secondary received.
+		 */
+
+		srv_signing_trans_start(SVAL(inbuf,smb_mid));
 
 		if ((ret && (CVAL(inbuf, smb_com) != SMBtranss)) || !ret) {
 			if(ret) {
