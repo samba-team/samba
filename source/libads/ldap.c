@@ -1267,7 +1267,7 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	ADS_STATUS ret;
 	TALLOC_CTX *ctx;
 	LDAPMessage *res = NULL;
-	char *host_spn, *host_upn, *psp1, *psp2, *psp3;
+	char *host_spn, *psp1, *psp2, *psp3;
 	ADS_MODLIST mods;
 	fstring my_fqdn;
 	char *dn_string = NULL;
@@ -1293,11 +1293,6 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 	strlower_m(my_fqdn);
 
 	if (!(host_spn = talloc_asprintf(ctx, "HOST/%s", my_fqdn))) {
-		talloc_destroy(ctx);
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
-	}
-	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", host_spn, ads->config.realm))) {
 		talloc_destroy(ctx);
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
