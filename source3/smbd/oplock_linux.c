@@ -127,7 +127,7 @@ static BOOL linux_oplock_receive_message(fd_set *fds, char *buffer, int buffer_l
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	SMB_STRUCT_STAT sbuf;
-	BOOL ret;
+	BOOL ret = True;
 
 	if (signals_received == signals_processed) return False;
 
@@ -164,7 +164,7 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
 	signals_processed++;
 	BlockSignals(False, RT_SIGNAL_LEASE);
      
-	return True;
+	return ret;
 }
 
 
