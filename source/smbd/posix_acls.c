@@ -715,6 +715,17 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 		SEC_ACE *psa = &dacl->ace[i];
 
 		/*
+		 * Ignore non-mappable SIDs (NT Authority, BUILTIN etc).
+		 */
+
+		if (non_mappable_sid(&psa->sid)) {
+			fstring str;
+			DEBUG(10,("create_canon_ace_lists: ignoring non-mappable SID %s\n",
+				sid_to_string(str, &psa->sid) ));
+			continue;
+		}
+
+		/*
 		 * Create a cannon_ace entry representing this NT DACL ACE.
 		 */
 

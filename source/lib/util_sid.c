@@ -569,3 +569,27 @@ size_t sid_size(DOM_SID *sid)
 
 	return sid->num_auths * sizeof(uint32) + 8;
 }
+
+/*****************************************************************
+ Returns true if SID is internal (and non-mappable).
+*****************************************************************/
+
+BOOL non_mappable_sid(DOM_SID *sid)
+{
+	DOM_SID dom;
+	uint32 rid;
+
+	sid_copy(&dom, sid);
+	sid_split_rid(&dom, &rid);
+
+	if (sid_equal(&dom, &global_sid_Builtin))
+		return True;
+
+    if (sid_equal(&dom, &global_sid_Creator_Owner_Domain))
+		return True;
+ 
+	if (sid_equal(&dom, &global_sid_NT_Authority))
+		return True;
+
+	return False;
+}

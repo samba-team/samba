@@ -2563,8 +2563,21 @@ uint32 _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SE
 
 uint32 _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
 {
-  DEBUG(0,("_samr_query_useraliases: Not yet implemented.\n"));
-  return False;
+	uint32 *rid=NULL;
+	int num_rids;
+
+	num_rids = 1;
+	rid=(uint32 *)talloc_zero(p->mem_ctx, num_rids*sizeof(uint32));
+	if (rid == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	/* until i see a real useraliases query, we fack one up */
+ 
+	rid[0] = BUILTIN_ALIAS_RID_USERS;
+ 
+	init_samr_r_query_useraliases(r_u, num_rids, rid, NT_STATUS_OK);
+ 
+	return r_u->status;
 }
 
 /*********************************************************************
