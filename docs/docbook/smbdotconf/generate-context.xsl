@@ -34,7 +34,7 @@
                   'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
   </xsl:variable>
   
-  <xsl:if test="contains(@context,$smb.context)">
+  <xsl:if test="contains(@context,$smb.context) or $smb.context='ALL'">
      <xsl:element name="listitem">
         <xsl:element name="para">
            <xsl:element name="link">
