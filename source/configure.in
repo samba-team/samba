@@ -1214,9 +1214,9 @@ if test "$enable_shared" = "yes"; then
 			# Use special PIC flags for the native HP-UX compiler.
 			if test $ac_cv_prog_cc_Ae = yes; then
 				BLDSHARED="true"
-				SHLD="/usr/bin/ld"
-				LDSHFLAGS="-B symbolic -b -z"
-				SONAMEFLAG="+h "
+				SHLD="cc"
+				LDSHFLAGS="-b -Wl,-B,symbolic,-b,-z"
+				SONAMEFLAG="-Wl,+h "
 				PICFLAGS="+z"
 			elif test "${GCC}" = "yes"; then
 				PICFLAGS="-fPIC"
