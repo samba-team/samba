@@ -2,9 +2,7 @@
                  context="S"
                  xmlns:samba="http://samba.org/common">
 <listitem>
-	<para>This boolean parameter is only available if 
-	Samba is configured  and  compiled with the <command moreinfo="none">
-	--with-msdfs</command> option.  If set to <constant>yes</constant>, 
+	<para>If set to <constant>yes</constant>, 
 	Samba treats the share as a Dfs root and  allows clients to browse 
 	the distributed file system tree rooted at the share directory. 
 	Dfs links are specified  in  the share directory by symbolic 
