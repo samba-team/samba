@@ -258,6 +258,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	int passlen = SVAL(inbuf,smb_vwv3);
 	char *path;
 	char *p;
+	  BOOL doencrypt = SMBENCRYPT();
 	
 	*service = *user = *password = *devicename = 0;
 
@@ -279,7 +280,12 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 			*password = 0;
 		passlen = strlen(password);
 	}
-	
+	else if (doencrypt)
+	{
+		passlen = 0;
+		*password = 0;
+	}
+
 	fstrcpy(service,path+2);
 	p = strchr(service,'\\');
 	if (!p)
@@ -464,6 +470,8 @@ user %s attempted down-level SMB connection\n", user));
     enum remote_arch_types ra_type = get_remote_arch();
     char *p = smb_buf(inbuf);    
 
+	DEBUG(10,("passlen1: %d passlen2: %d\n", passlen1, passlen2));
+
     global_client_caps = IVAL(inbuf,smb_vwv11);
 
     /* client_caps is used as final determination if client is NT or Win95. 
@@ -548,8 +556,8 @@ user %s attempted down-level SMB connection\n", user));
     fstrcpy(user,p); p = skip_string(p,1);
     domain = p;
 
-    DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
-	     domain, skip_string(p,1), skip_string(p,2)));
+    DEBUG(3,("passlen: %d %d Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
+	     passlen1, passlen2, domain, skip_string(p,1), skip_string(p,2)));
   }
 
   DEBUG(3,("sesssetupX:name=[%s]\n",user));
