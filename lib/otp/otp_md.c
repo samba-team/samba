@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -69,7 +69,7 @@ otp_md_init (OtpKey key,
 	     char *seed,
 	     void (*init)(void *),
 	     void (*update)(void *, void *, size_t),
-	     void (*finito)(void *, void *),
+	     void (*final)(void *, void *),
 	     void *arg,
 	     unsigned char *res,
 	     size_t ressz)
@@ -86,7 +86,7 @@ otp_md_init (OtpKey key,
   strcat (p, pwd);
   (*init)(arg);
   (*update)(arg, p, len);
-  (*finito)(arg, res);
+  (*final)(res, arg);
   free (p);
   compressmd (key, res, ressz);
   return 0;
@@ -96,14 +96,14 @@ static int
 otp_md_next (OtpKey key,
 	     void (*init)(void *),
 	     void (*update)(void *, void *, size_t),
-	     void (*finito)(void *, void *),
+	     void (*final)(void *, void *),
 	     void *arg,
 	     unsigned char *res,
 	     size_t ressz)
 {
   (*init)(arg);
   (*update)(arg, key, OTPKEYSIZE);
-  (*finito)(arg, res);
+  (*final)(res, arg);
   compressmd (key, res, ressz);
   return 0;
 }
@@ -113,14 +113,14 @@ otp_md_hash (char *data,
 	     size_t len,
 	     void (*init)(void *),
 	     void (*update)(void *, void *, size_t),
-	     void (*finito)(void *, void *),
+	     void (*final)(void *, void *),
 	     void *arg,
 	     unsigned char *res,
 	     size_t ressz)
 {
   (*init)(arg);
   (*update)(arg, data, len);
-  (*finito)(arg, res);
+  (*final)(res, arg);
   return 0;
 }
 
@@ -128,12 +128,12 @@ int
 otp_md4_init (OtpKey key, char *pwd, char *seed)
 {
   unsigned char res[16];
-  struct md4 md4;
+  MD4_CTX md4;
 
   return otp_md_init (key, pwd, seed,
-		      (void (*)(void *))md4_init,
-		      (void (*)(void *, void *, size_t))md4_update, 
-		      (void (*)(void *, void *))md4_finito,
+		      (void (*)(void *))MD4Init,
+		      (void (*)(void *, void *, size_t))MD4Update, 
+		      (void (*)(void *, void *))MD4Final,
 		      &md4, res, sizeof(res));
 }
 
@@ -142,12 +142,12 @@ otp_md4_hash (char *data,
 	      size_t len,
 	      unsigned char *res)
 {
-  struct md4 md4;
+  MD4_CTX md4;
 
   return otp_md_hash (data, len,
-		      (void (*)(void *))md4_init,
-		      (void (*)(void *, void *, size_t))md4_update, 
-		      (void (*)(void *, void *))md4_finito,
+		      (void (*)(void *))MD4Init,
+		      (void (*)(void *, void *, size_t))MD4Update, 
+		      (void (*)(void *, void *))MD4Finito,
 		      &md4, res, 16);
 }
 
@@ -155,12 +155,12 @@ int
 otp_md4_next (OtpKey key)
 {
   unsigned char res[16];
-  struct md4 md4;
+  MD4_CTX md4;
 
   return otp_md_next (key, 
-		      (void (*)(void *))md4_init, 
-		      (void (*)(void *, void *, size_t))md4_update, 
-		      (void (*)(void *, void *))md4_finito,
+		      (void (*)(void *))MD4Init, 
+		      (void (*)(void *, void *, size_t))MD4Update, 
+		      (void (*)(void *, void *))MD4FInal,
 		      &md4, res, sizeof(res));
 }
 
@@ -169,12 +169,12 @@ int
 otp_md5_init (OtpKey key, char *pwd, char *seed)
 {
   unsigned char res[16];
-  struct md5 md5;
+  MD5_CTX md5;
 
   return otp_md_init (key, pwd, seed, 
-		      (void (*)(void *))md5_init, 
-		      (void (*)(void *, void *, size_t))md5_update, 
-		      (void (*)(void *, void *))md5_finito,
+		      (void (*)(void *))MD5Init, 
+		      (void (*)(void *, void *, size_t))MD5Update, 
+		      (void (*)(void *, void *))MD5Final,
 		      &md5, res, sizeof(res));
 }
 
@@ -183,12 +183,12 @@ otp_md5_hash (char *data,
 	      size_t len,
 	      unsigned char *res)
 {
-  struct md5 md5;
+  MD5_CTX md5;
 
   return otp_md_hash (data, len,
-		      (void (*)(void *))md5_init,
-		      (void (*)(void *, void *, size_t))md5_update, 
-		      (void (*)(void *, void *))md5_finito,
+		      (void (*)(void *))MD5Init,
+		      (void (*)(void *, void *, size_t))MD5Update, 
+		      (void (*)(void *, void *))MD5Final,
 		      &md5, res, 16);
 }
 
@@ -196,12 +196,12 @@ int
 otp_md5_next (OtpKey key)
 {
   unsigned char res[16];
-  struct md5 md5;
+  MD5_CTX md5;
 
   return otp_md_next (key, 
-		      (void (*)(void *))md5_init, 
-		      (void (*)(void *, void *, size_t))md5_update, 
-		      (void (*)(void *, void *))md5_finito,
+		      (void (*)(void *))MD5Init, 
+		      (void (*)(void *, void *, size_t))MD5Update, 
+		      (void (*)(void *, void *))MD5Final,
 		      &md5, res, sizeof(res));
 }
 
