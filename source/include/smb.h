@@ -171,7 +171,10 @@ implemented */
 #define ERRbaddirectory 267 /* Invalid directory name in a path. */
 #define ERRunknownipc 2142
 
+#define ERROR_INVALID_FUNCTION		  (1)
 #define ERROR_ACCESS_DENIED		  (5)
+#define ERROR_INVALID_HANDLE		  (6)
+#define ERROR_NOT_ENOUGH_MEMORY		  (8)
 #define ERROR_INVALID_PARAMETER		 (87)
 #define ERROR_INSUFFICIENT_BUFFER	(122)
 #define ERROR_INVALID_NAME		(123)
