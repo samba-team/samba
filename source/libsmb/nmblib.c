@@ -21,15 +21,104 @@
 */
 
 #include "includes.h"
-#include "nameserv.h"
+#include "localnet.h"
+#include "loadparm.h"
 
+extern struct in_addr myip;
 extern int DEBUGLEVEL;
 
-int num_good_sends=0;
-int  num_good_receives=0;
-static uint16 name_trn_id = 0;
-BOOL CanRecurse = True;
+int num_good_sends = 0;
+int num_good_receives = 0;
 extern pstring scope;
+extern pstring myname;
+extern struct in_addr ipzero;
+
+
+/****************************************************************************
+  print out a res_rec structure
+  ****************************************************************************/
+static void debug_nmb_res_rec(struct res_rec *res, char *hdr)
+{
+  int i, j;
+
+  DEBUG(4,("    %s: nmb_name=%s rr_type=%d rr_class=%d ttl=%d\n",
+	   hdr,
+	   namestr(&res->rr_name),
+	   res->rr_type,
+	   res->rr_class,
+	   res->ttl));
+		
+  if (res->rdlength == 0 || res->rdata == NULL) return;
+
+  for (i = 0; i < res->rdlength; i+= 16)
+    {
+      DEBUG(4, ("    %s %3x char ", hdr, i));
+
+      for (j = 0; j < 16; j++)
+	{
+	  unsigned char x = res->rdata[i+j];
+	  if (x < 32 || x > 127) x = '.';
+	  
+	  if (i+j >= res->rdlength) break;
+	  DEBUG(4, ("%c", x));
+	}
+      
+      DEBUG(4, ("   hex ", i));
+
+      for (j = 0; j < 16; j++)
+	{
+	  if (i+j >= res->rdlength) break;
+	  DEBUG(4, ("%02X", (unsigned char)res->rdata[i+j]));
+	}
+      
+      DEBUG(4, ("\n"));
+    }
+}
+
+/****************************************************************************
+  process a nmb packet
+  ****************************************************************************/
+void debug_nmb_packet(struct packet_struct *p)
+{
+  struct nmb_packet *nmb = &p->packet.nmb;
+  
+  DEBUG(4,("nmb packet from %s header: id=%d opcode=%d response=%s\n",
+	   inet_ntoa(p->ip),
+	   nmb->header.name_trn_id,nmb->header.opcode,BOOLSTR(nmb->header.response)));
+  DEBUG(4,("    header: flags: bcast=%s rec_avail=%s rec_des=%s trunc=%s auth=%s\n",
+	   BOOLSTR(nmb->header.nm_flags.bcast),
+	   BOOLSTR(nmb->header.nm_flags.recursion_available),
+	   BOOLSTR(nmb->header.nm_flags.recursion_desired),
+	   BOOLSTR(nmb->header.nm_flags.trunc),
+	   BOOLSTR(nmb->header.nm_flags.authoritative)));
+  DEBUG(4,("    header: rcode=%d qdcount=%d ancount=%d nscount=%d arcount=%d\n",
+	   nmb->header.rcode,
+	   nmb->header.qdcount,
+	   nmb->header.ancount,
+	   nmb->header.nscount,
+	   nmb->header.arcount));
+
+  if (nmb->header.qdcount)
+    {
+      DEBUG(4,("    question: q_name=%s q_type=%d q_class=%d\n",
+	       namestr(&nmb->question.question_name),
+	       nmb->question.question_type,
+	       nmb->question.question_class));
+    }
+
+  if (nmb->answers && nmb->header.ancount) 
+    {
+      debug_nmb_res_rec(nmb->answers,"answers");
+    }
+  if (nmb->nsrecs && nmb->header.nscount)
+    {
+      debug_nmb_res_rec(nmb->nsrecs,"nsrecs");
+    }
+  if (nmb->additional && nmb->header.arcount)
+    {
+      debug_nmb_res_rec(nmb->additional,"additional");
+    }
+}
 
 /*******************************************************************
   handle "compressed" name pointers
@@ -38,7 +127,7 @@ static BOOL handle_name_ptrs(unsigned char *ubuf,int *offset,int length,
 			     BOOL *got_pointer,int *ret)
 {
   int loop_count=0;
-
+  
   while ((ubuf[*offset] & 0xC0) == 0xC0) {
     if (!*got_pointer) (*ret) += 2;
     (*got_pointer)=True;
@@ -54,8 +143,7 @@ static BOOL handle_name_ptrs(unsigned char *ubuf,int *offset,int length,
   parse a nmb name from "compressed" format to something readable
   return the space taken by the name, or 0 if the name is invalid
   ******************************************************************/
-static int parse_nmb_name(char *inbuf,int offset,int length,
-			  struct nmb_name *name)
+static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *name)
 {
   int m,n=0;
   unsigned char *ubuf = (unsigned char *)inbuf;
@@ -186,11 +274,10 @@ char *namestr(struct nmb_name *n)
 }
 
 /*******************************************************************
-  allocate are parse some resource records
+  allocate and parse some resource records
   ******************************************************************/
 static BOOL parse_alloc_res_rec(char *inbuf,int *offset,int length,
-				struct res_rec **recs,
-				int count)
+				struct res_rec **recs, int count)
 {
   int i;
   *recs = (struct res_rec *)malloc(sizeof(**recs)*count);
@@ -382,10 +469,10 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
   char buf[MAX_DGRAM_SIZE];
   int length;
   BOOL ok=False;
-
+  
   length = read_udp_socket(fd,buf,sizeof(buf));
   if (length < MIN_DGRAM_SIZE) return(NULL);
-
+  
   packet = (struct packet_struct *)malloc(sizeof(*packet));
   if (!packet) return(NULL);
 
@@ -528,6 +615,7 @@ static int build_nmb(char *buf,struct packet_struct *p)
   if (nmb->header.nm_flags.recursion_available) ubuf[offset+3] |= 0x80;
   if (nmb->header.nm_flags.bcast) ubuf[offset+3] |= 0x10;
   ubuf[offset+3] |= (nmb->header.rcode & 0xF);
+
   RSSVAL(ubuf,offset+4,nmb->header.qdcount);
   RSSVAL(ubuf,offset+6,nmb->header.ancount);
   RSSVAL(ubuf,offset+8,nmb->header.nscount);
@@ -604,337 +692,6 @@ struct packet_struct *receive_packet(int fd,enum packet_type type,int t)
     return(read_packet(fd,type));
 
   return(NULL);
-}
-
-
-/****************************************************************************
-interpret a node status response
-****************************************************************************/
-static void interpret_node_status(char *p, char *master,char *rname)
-{
-  int level = (master||rname)?4:0;
-  int numnames = CVAL(p,0);
-  DEBUG(level,("received %d names\n",numnames));
-
-  if (rname) *rname = 0;
-  if (master) *master = 0;
-
-  p += 1;
-  while (numnames--)
-    {
-      char qname[17];
-      int type;
-      fstring flags;
-      int i;
-      *flags = 0;
-      StrnCpy(qname,p,15);
-      type = CVAL(p,15);
-      p += 16;
-
-      strcat(flags, (p[0] & 0x80) ? "<GROUP> " : "        ");
-      if ((p[0] & 0x60) == 0x00) strcat(flags,"B ");
-      if ((p[0] & 0x60) == 0x20) strcat(flags,"P ");
-      if ((p[0] & 0x60) == 0x40) strcat(flags,"M ");
-      if ((p[0] & 0x60) == 0x60) strcat(flags,"_ ");
-      if (p[0] & 0x10) strcat(flags,"<DEREGISTERING> ");
-      if (p[0] & 0x08) strcat(flags,"<CONFLICT> ");
-      if (p[0] & 0x04) strcat(flags,"<ACTIVE> ");
-      if (p[0] & 0x02) strcat(flags,"<PERMANENT> ");
-
-      if (master && !*master && type == 0x1d) {
-	StrnCpy(master,qname,15);
-	trim_string(master,NULL," ");
-      }
-
-      if (rname && !*rname && type == 0x20 && !(p[0]&0x80)) {
-	StrnCpy(rname,qname,15);
-	trim_string(rname,NULL," ");
-      }
-      
-      for (i = strlen( qname) ; --i >= 0 ; ) {
-	if (!isprint(qname[i])) qname[i] = '.';
-      }
-      DEBUG(level,("\t%-15s <%02x> - %s\n",qname,type,flags));
-      p+=2;
-    }
-  DEBUG(level,("num_good_sends=%d num_good_receives=%d\n",
-	       IVAL(p,20),IVAL(p,24)));
-}
-
-
-/****************************************************************************
-  do a netbios name status query on a host
-
-  the "master" parameter is a hack used for finding workgroups.
-  **************************************************************************/
-BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
-		 struct in_addr to_ip,char *master,char *rname,
-		 void (*fn)())
-{
-  BOOL found=False;
-  int retries = 2;
-  int retry_time = 5000;
-  struct timeval tval;
-  struct packet_struct p;
-  struct packet_struct *p2;
-  struct nmb_packet *nmb = &p.packet.nmb;
-
-  bzero((char *)&p,sizeof(p));
-
-  if (!name_trn_id) name_trn_id = (time(NULL)%(unsigned)0x7FFF) + 
-    (getpid()%(unsigned)100);
-  name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
-
-  nmb->header.name_trn_id = name_trn_id;
-  nmb->header.opcode = 0;
-  nmb->header.response = False;
-  nmb->header.nm_flags.bcast = False;
-  nmb->header.nm_flags.recursion_available = CanRecurse;
-  nmb->header.nm_flags.recursion_desired = recurse;
-  nmb->header.nm_flags.trunc = False;
-  nmb->header.nm_flags.authoritative = False;
-  nmb->header.rcode = 0;
-  nmb->header.qdcount = 1;
-  nmb->header.ancount = 0;
-  nmb->header.nscount = 0;
-  nmb->header.arcount = 0;
-
-  make_nmb_name(&nmb->question.question_name,name,name_type,scope);
-
-  nmb->question.question_type = 0x21;
-  nmb->question.question_class = 0x1;
-
-  p.ip = to_ip;
-  p.port = NMB_PORT;
-  p.fd = fd;
-  p.timestamp = time(NULL);
-  p.packet_type = NMB_PACKET;
-
-  GetTimeOfDay(&tval);
-
-  if (!send_packet(&p)) 
-    return(False);
-
-  retries--;
-
-  while (1)
-    {
-      struct timeval tval2;
-      GetTimeOfDay(&tval2);
-      if (TvalDiff(&tval,&tval2) > retry_time) {
-	if (!retries) break;
-	if (!found && !send_packet(&p))
-	  return False;
-	GetTimeOfDay(&tval);
-	retries--;
-      }
-
-      if ((p2=receive_packet(fd,NMB_PACKET,90)))
-	{     
-	  struct nmb_packet *nmb2 = &p2->packet.nmb;
-	  if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
-	      !nmb2->header.response) {
-	    /* its not for us - maybe deal with it later */
-	    if (fn) 
-	      fn(p2);
-	    else
-	      free_packet(p2);
-	    continue;
-	  }
-	  
-	  if (nmb2->header.opcode != 0 ||
-	      nmb2->header.nm_flags.bcast ||
-	      nmb2->header.rcode ||
-	      !nmb2->header.ancount ||
-	      nmb2->answers->rr_type != 0x21) {
-	    /* XXXX what do we do with this? could be a redirect, but
-	       we'll discard it for the moment */
-	    free_packet(p2);
-	    continue;
-	  }
-
-	  interpret_node_status(&nmb2->answers->rdata[0], master,rname);
-	  free_packet(p2);
-	  return(True);
-	}
-    }
-  
-
-  DEBUG(0,("No status response (this is not unusual)\n"));
-
-  return(False);
-}
-
-
-/****************************************************************************
-  do a netbios name query to find someones IP
-  ****************************************************************************/
-BOOL name_query(int fd,char *name,int name_type, 
-		BOOL bcast,BOOL recurse,
-		struct in_addr to_ip, struct in_addr *ip,void (*fn)())
-{
-  BOOL found=False;
-  int retries = 3;
-  int retry_time = bcast?250:2000;
-  struct timeval tval;
-  struct packet_struct p;
-  struct packet_struct *p2;
-  struct nmb_packet *nmb = &p.packet.nmb;
-
-  bzero((char *)&p,sizeof(p));
-
-  if (!name_trn_id) name_trn_id = (time(NULL)%(unsigned)0x7FFF) + 
-    (getpid()%(unsigned)100);
-  name_trn_id = (name_trn_id+1) % (unsigned)0x7FFF;
-
-  nmb->header.name_trn_id = name_trn_id;
-  nmb->header.opcode = 0;
-  nmb->header.response = False;
-  nmb->header.nm_flags.bcast = bcast;
-  nmb->header.nm_flags.recursion_available = CanRecurse;
-  nmb->header.nm_flags.recursion_desired = recurse;
-  nmb->header.nm_flags.trunc = False;
-  nmb->header.nm_flags.authoritative = False;
-  nmb->header.rcode = 0;
-  nmb->header.qdcount = 1;
-  nmb->header.ancount = 0;
-  nmb->header.nscount = 0;
-  nmb->header.arcount = 0;
-
-  make_nmb_name(&nmb->question.question_name,name,name_type,scope);
-
-  nmb->question.question_type = 0x20;
-  nmb->question.question_class = 0x1;
-
-  p.ip = to_ip;
-  p.port = NMB_PORT;
-  p.fd = fd;
-  p.timestamp = time(NULL);
-  p.packet_type = NMB_PACKET;
-
-  GetTimeOfDay(&tval);
-
-  if (!send_packet(&p)) 
-    return(False);
-
-  retries--;
-
-  while (1)
-    {
-      struct timeval tval2;
-      GetTimeOfDay(&tval2);
-      if (TvalDiff(&tval,&tval2) > retry_time) {
-	if (!retries) break;
-	if (!found && !send_packet(&p))
-	  return False;
-	GetTimeOfDay(&tval);
-	retries--;
-      }
-
-      if ((p2=receive_packet(fd,NMB_PACKET,90)))
-	{     
-	  struct nmb_packet *nmb2 = &p2->packet.nmb;
-	  if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
-	      !nmb2->header.response) {
-	    /* its not for us - maybe deal with it later 
-	       (put it on the queue?) */
-	    if (fn) 
-	      fn(p2);
-	    else
-	      free_packet(p2);
-	    continue;
-	  }
-	  
-	  if (nmb2->header.opcode != 0 ||
-	      nmb2->header.nm_flags.bcast ||
-	      nmb2->header.rcode ||
-	      !nmb2->header.ancount) {
-	    /* XXXX what do we do with this? could be a redirect, but
-	       we'll discard it for the moment */
-	    free_packet(p2);
-	    continue;
-	  }
-
-	  if (ip) {
-	    putip((char *)ip,&nmb2->answers->rdata[2]);
-	    DEBUG(fn?3:2,("Got a positive name query response from %s",
-			  inet_ntoa(p2->ip)));
-	    DEBUG(fn?3:2,(" (%s)\n",inet_ntoa(*ip)));
-	  }
-	  found=True; retries=0;
-	  free_packet(p2);
-	  if (fn) break;
-	}
-    }
-
-  return(found);
-}
-
-
-/****************************************************************************
-  construct and send a netbios DGRAM
-
-  Note that this currently sends all answers to port 138. thats the
-  wrong things to do! I should send to the requestors port. XXX
-  **************************************************************************/
-BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,
-			 char *srcname,char *dstname,
-			 int src_type,int dest_type,
-			 struct in_addr dest_ip,
-			 struct in_addr src_ip)
-{
-  struct packet_struct p;
-  struct dgram_packet *dgram = &p.packet.dgram;
-  char *ptr,*p2;
-  char tmp[4];
-
-  bzero((char *)&p,sizeof(p));
-
-  dgram->header.msg_type = 0x11; /* DIRECT GROUP DATAGRAM */
-  dgram->header.flags.node_type = M_NODE;
-  dgram->header.flags.first = True;
-  dgram->header.flags.more = False;
-  dgram->header.dgm_id = name_trn_id++;
-  dgram->header.source_ip = src_ip;
-  dgram->header.source_port = DGRAM_PORT;
-  dgram->header.dgm_length = 0; /* let build_dgram() handle this */
-  dgram->header.packet_offset = 0;
-  
-  make_nmb_name(&dgram->source_name,srcname,src_type,scope);
-  make_nmb_name(&dgram->dest_name,dstname,dest_type,scope);
-
-  ptr = &dgram->data[0];
-
-  /* now setup the smb part */
-  ptr -= 4; /* XXX ugliness because of handling of tcp SMB length */
-  memcpy(tmp,ptr,4);
-  set_message(ptr,17,17 + len,True);
-  memcpy(ptr,tmp,4);
-
-  CVAL(ptr,smb_com) = SMBtrans;
-  SSVAL(ptr,smb_vwv1,len);
-  SSVAL(ptr,smb_vwv11,len);
-  SSVAL(ptr,smb_vwv12,70 + strlen(mailslot));
-  SSVAL(ptr,smb_vwv13,3);
-  SSVAL(ptr,smb_vwv14,1);
-  SSVAL(ptr,smb_vwv15,1);
-  SSVAL(ptr,smb_vwv16,2);
-  p2 = smb_buf(ptr);
-  strcpy(p2,mailslot);
-  p2 = skip_string(p2,1);
-
-  memcpy(p2,buf,len);
-  p2 += len;
-
-  dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length */
-
-  p.ip = dest_ip;
-  p.port = DGRAM_PORT;
-  p.fd = fd;
-  p.timestamp = time(NULL);
-  p.packet_type = DGRAM_PACKET;
-
-  return(send_packet(&p));
 }
 
 

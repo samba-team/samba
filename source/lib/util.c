@@ -182,10 +182,10 @@ write an debug message on the debugfile. This is called by the DEBUG
 macro
 ********************************************************************/
 #ifdef __STDC__
-int Debug1(char *format_str, ...)
+ int Debug1(char *format_str, ...)
 {
 #else
-int Debug1(va_alist)
+ int Debug1(va_alist)
 va_dcl
 {  
   char *format_str;
@@ -3234,7 +3234,7 @@ void *Realloc(void *p,int size)
 /****************************************************************************
 duplicate a string
 ****************************************************************************/
-char *strdup(char *s)
+ char *strdup(char *s)
 {
   char *ret = NULL;
   if (!s) return(NULL);
@@ -3260,7 +3260,7 @@ void Abort(void )
 /****************************************************************************
 a replacement strlen() that returns int for solaris
 ****************************************************************************/
-int Strlen(char *s)
+ int Strlen(char *s)
 {
   int ret=0;
   if (!s) return(0);
@@ -3274,7 +3274,7 @@ int Strlen(char *s)
  /*******************************************************************
 ftruncate for operating systems that don't have it
 ********************************************************************/
-int ftruncate(int f,long l)
+ int ftruncate(int f,long l)
 {
       struct  flock   fl;
 
@@ -3382,7 +3382,7 @@ int open_socket_in(int type, int port, int dlevel)
   if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0) 
     { 
       if (port) {
-	if (port == 139 || port == 137)
+	if (port == SMB_PORT || port == NMB_PORT)
 	  DEBUG(dlevel,("bind failed on port %d (%s)\n",
 			port,strerror(errno))); 
 	close(res); 
@@ -3566,6 +3566,21 @@ void standard_sub_basic(char *s)
       string_sub(s,"%G",gidtoname(pass->pw_gid));
     }
   }
+}
+
+
+/*******************************************************************
+are two IPs on the same subnet?
+********************************************************************/
+BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask)
+{
+  unsigned long net1,net2,nmask;
+
+  nmask = ntohl(mask.s_addr);
+  net1  = ntohl(ip1.s_addr);
+  net2  = ntohl(ip2.s_addr);
+            
+  return((net1 & nmask) == (net2 & nmask));
 }
 
 
@@ -3797,7 +3812,7 @@ long nap(long milliseconds) {
 /****************************************************************************
  some systems don't have an initgroups call 
 ****************************************************************************/
-int initgroups(char *name,gid_t id)
+ int initgroups(char *name,gid_t id)
 {
 #ifdef NO_SETGROUPS
   /* yikes! no SETGROUPS or INITGROUPS? how can this work? */
@@ -3981,8 +3996,7 @@ time_t Mktime(struct tm      *t)
 
 #ifdef REPLACE_RENAME
 /* Rename a file. (from libiberty in GNU binutils)  */
-int
-rename (zfrom, zto)
+ int rename (zfrom, zto)
      const char *zfrom;
      const char *zto;
 {
@@ -4003,8 +4017,7 @@ rename (zfrom, zto)
 /*
  * Search for a match in a netgroup. This replaces it on broken systems.
  */
-int InNetGr(group, host, user, dom)
-        char *group, *host, *user, *dom;
+int InNetGr(char *group,char *host,char *user,char *dom)
 {
   char *hst, *usr, *dm;
   

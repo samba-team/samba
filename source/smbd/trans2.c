@@ -264,7 +264,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
   int mode=0;
   uint32 size=0,len;
   uint32 mdate=0, adate=0, cdate=0;
-  char *name_ptr;
+  char *nameptr;
   BOOL isrootdir = (strequal(Connections[cnum].dirpath,"./") ||
 		    strequal(Connections[cnum].dirpath,".") ||
 		    strequal(Connections[cnum].dirpath,"/"));
@@ -349,7 +349,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 #endif
 
   p = pdata;
-  name_ptr = p;
+  nameptr = p;
 
   name_map_mangle(fname,False,SNUM(cnum));
 
@@ -368,7 +368,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SSVAL(p,l1_attrFile,mode);
       SCVAL(p,l1_cchName,strlen(fname));
       strcpy(p + l1_achName, fname);
-      name_ptr = p + l1_achName;
+      nameptr = p + l1_achName;
       p += l1_achName + strlen(fname) + 1;
       break;
 
@@ -387,7 +387,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SIVAL(p,l2_cbList,0); /* No extended attributes */
       SCVAL(p,l2_cchName,strlen(fname));
       strcpy(p + l2_achName, fname);
-      name_ptr = p + l2_achName;
+      nameptr = p + l2_achName;
       p += l2_achName + strlen(fname) + 1;
       break;
 
@@ -402,7 +402,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SIVAL(p,26,4);
       CVAL(p,30) = strlen(fname);
       strcpy(p+31, fname);
-      name_ptr = p+31;
+      nameptr = p+31;
       p += 31 + strlen(fname) + 1;
       break;
 
@@ -420,7 +420,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       SSVAL(p,24,mode);
       CVAL(p,32) = strlen(fname);
       strcpy(p + 33, fname);
-      name_ptr = p+33;
+      nameptr = p+33;
       p += 33 + strlen(fname) + 1;
       break;
 
@@ -452,7 +452,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
       strupper(p+2);
       SSVAL(p,0,strlen(p+2));
       p += 2 + 24;
-      /* name_ptr = p;  */
+      /* nameptr = p;  */
       strcpy(p,fname); p += strlen(p);
       p = pdata + len;
       break;
@@ -517,7 +517,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
   }
 
   /* Setup the last_filename pointer, as an offset from base_data */
-  *last_name_off = PTR_DIFF(name_ptr,base_data);
+  *last_name_off = PTR_DIFF(nameptr,base_data);
   /* Advance the data pointer to the next slot */
   *ppdata = p;
   return(found);
@@ -1004,7 +1004,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
 
 
   if (tran_call == TRANSACT2_QFILEINFO) {
-    int16 fnum = SVAL(params,0);
+    int16 fnum = SVALS(params,0);
     info_level = SVAL(params,2);
 
     CHECK_FNUM(fnum,cnum);
@@ -1198,7 +1198,7 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
     return(ERROR(ERRSRV,ERRaccess));
 
   if (tran_call == TRANSACT2_SETFILEINFO) {
-    int16 fnum = SVAL(params,0);
+    int16 fnum = SVALS(params,0);
     info_level = SVAL(params,2);    
 
     CHECK_FNUM(fnum,cnum);

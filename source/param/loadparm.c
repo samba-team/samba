@@ -131,8 +131,8 @@ typedef struct
    char *szUsernameMap;
    char *szCharacterSet;
    char *szLogonScript;
-   char *szWINSserver;
    char *szSmbrun;
+   char *szWINSserver;
    int max_log_size;
    int mangled_stack;
    int max_xmit;
@@ -148,6 +148,7 @@ typedef struct
    int syslog;
    int os_level;
    int max_ttl;
+   BOOL bWINSsupport;
    BOOL bPreferredMaster;
    BOOL bDomainMaster;
    BOOL bDomainLogons;
@@ -396,7 +397,6 @@ struct parm_struct
   {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL},
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set},
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL},
-  {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL},
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL},
   {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL},
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL},
@@ -413,6 +413,8 @@ struct parm_struct
 #endif /* KANJI */
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL},
   {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL},
+  {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL},
+  {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL},
   {"preferred master", P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL},
   {"prefered master",  P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL},
   {"domain master",    P_BOOL,    P_GLOBAL, &Globals.bDomainMaster,     NULL},
@@ -577,6 +579,7 @@ static void init_globals(void)
   Globals.bDomainLogons = False;
   Globals.bBrowseList = True;
   Globals.bProxyNameResolution = True;
+  Globals.bWINSsupport = True;
 
 #ifdef KANJI
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
@@ -702,6 +705,7 @@ FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet)
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 
+FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_domain_master,&Globals.bDomainMaster)
 FN_GLOBAL_BOOL(lp_domain_logons,&Globals.bDomainLogons)
 FN_GLOBAL_BOOL(lp_preferred_master,&Globals.bPreferredMaster)

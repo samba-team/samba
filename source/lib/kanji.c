@@ -796,8 +796,7 @@ setup_string_function (int codes)
 /*
  * Interpret coding system.
  */
-int 
-interpret_coding_system (char *str, int def)
+int interpret_coding_system(char *str, int def)
 {
     int codes = def;
     
@@ -890,6 +889,6 @@ interpret_coding_system (char *str, int def)
     return setup_string_function (codes);
 }
 #else 
-int kanji_dummy_procedure(void)
+ int kanji_dummy_procedure(void)
 {return 0;}
 #endif /* KANJI */

@@ -1928,10 +1928,10 @@ int reply_close(char *inbuf,char *outbuf)
 
   mtime = make_unix_date3(inbuf+smb_vwv1);
 
-  close_file(fnum);
-
   /* try and set the date */
   set_filetime(Files[fnum].name,mtime);
+
+  close_file(fnum);
 
   /* We have a cached error */
   if(eclass || err)
@@ -1976,10 +1976,10 @@ int reply_writeclose(char *inbuf,char *outbuf)
       
   nwritten = write_file(fnum,data,numtowrite);
 
-  close_file(fnum);
-
   set_filetime(Files[fnum].name,mtime);
   
+  close_file(fnum);
+
   DEBUG(3,("%s writeclose fnum=%d cnum=%d num=%d wrote=%d (numopen=%d)\n",
 	   timestring(),fnum,cnum,numtowrite,nwritten,
 	   Connections[cnum].num_files_open));

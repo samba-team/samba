@@ -41,7 +41,7 @@
 extern FILE *dbf;
 extern int DEBUGLEVEL;
 
-int main(int argc, char *argv[])
+ int main(int argc, char *argv[])
 {
   pstring configfile;
   int s;

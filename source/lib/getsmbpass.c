@@ -40,12 +40,12 @@ static struct termio t;
 #define TCSANOW 0
 #endif
 
-int tcgetattr(int fd, struct termio *t)
+ int tcgetattr(int fd, struct termio *t)
 {
 	return ioctl(fd, TCGETA, t);
 }
 
-int tcsetattr(int fd, int flags, const struct termio *t)
+ int tcsetattr(int fd, int flags, const struct termio *t)
 {
 	if(flags & TCSAFLUSH)
 		ioctl(fd, TCFLSH, TCIOFLUSH);
@@ -71,12 +71,12 @@ static struct sgttyb t;
 #define TCSANOW 0
 #endif
 
-int tcgetattr(int fd, struct sgttyb *t)
+ int tcgetattr(int fd, struct sgttyb *t)
 {
 	return ioctl(fd, TIOCGETP, (char *)t);
 }
 
-int tcsetattr(int fd, int flags, const struct sgttyb *t)
+ int tcsetattr(int fd, int flags, const struct sgttyb *t)
 {
 	return ioctl(fd, TIOCSETP, (char *)t);
 }
@@ -92,8 +92,7 @@ static struct termios t;
 #endif /* BSD_TERMIO */
 #endif /* SYSV_TERMIO */
 
-char *
-getsmbpass(char *prompt)     
+char *getsmbpass(char *prompt)    
 {
   FILE *in, *out;
   int echo_off;
@@ -162,5 +161,5 @@ getsmbpass(char *prompt)
 
 #else
 
-void getsmbpasswd_dummy() {;}
+ void getsmbpasswd_dummy() {;}
 #endif

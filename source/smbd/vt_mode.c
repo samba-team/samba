@@ -60,8 +60,7 @@ int		ms_type = MS_NONE,
 /*
 VT_Check: test incoming packet for "vtp" or "iVT1\0"
 */
-int	VT_Check(buffer)
-char	*buffer;
+int	VT_Check(char	*buffer)
 {
 	DEBUG(3,("Checking packet: <%10s...>\n", buffer+4));
 	if((strncmp(buffer+4, "vtp", 3) == 0 && smb_len(buffer) == 3) || (strncmp(buffer+4, "iVT1\0", 5) == 0 && smb_len(buffer) == 5))
@@ -74,7 +73,7 @@ char	*buffer;
 /*
 VT_Start_utmp: prepare /etc/utmp for /bin/login
 */
-VT_Start_utmp()
+int VT_Start_utmp(void)
 {
 	struct utmp	u, *v;
 	char		*tt;
@@ -111,7 +110,7 @@ VT_Start_utmp()
 /*
 VT_Stop_utmp: prepare /etc/utmp for other processes
 */
-VT_Stop_utmp()
+int VT_Stop_utmp(void)
 {
 	struct utmp	u, *v;
 
@@ -138,7 +137,7 @@ VT_Stop_utmp()
 /*
 VT_AtExit: Things to do when the program exits
 */
-void	VT_AtExit()
+void	VT_AtExit(void)
 {
 	if(VT_ChildPID > 0) {
 		kill(VT_ChildPID, SIGHUP);
@@ -152,8 +151,7 @@ void	VT_AtExit()
 /*
 VT_SigCLD: signalhandler for SIGCLD: set flag if child-process died
 */
-void	VT_SigCLD(sig)
-int	sig;
+void	VT_SigCLD(int	sig)
 {
 	if(wait(NULL) == VT_ChildPID)
 		VT_ChildDied = True;
@@ -165,8 +163,7 @@ int	sig;
 /*
 VT_SigEXIT: signalhandler for signals that cause the process to exit
 */
-void	VT_SigEXIT(sig)
-int	sig;
+void	VT_SigEXIT(int	sig)
 {
 	VT_AtExit();
 
@@ -177,7 +174,7 @@ int	sig;
 /*
 VT_Start: initialize vt-specific data, alloc pty, spawn shell and send ACK
 */
-int	VT_Start()
+int	VT_Start(void)
 {
 	char	OutBuf [64], *X, *Y;
 
@@ -330,8 +327,7 @@ int	VT_Start()
 /*
 VT_Output: transport data from socket to pty
 */
-int	VT_Output(Buffer)
-char	*Buffer;
+int	VT_Output(char	*Buffer)
 {
 	int		i, len, nb;
 
@@ -350,9 +346,7 @@ char	*Buffer;
 /*
 VT_Input: transport data from pty to socket
 */
-int	VT_Input(Buffer, Size)
-char	*Buffer;
-int		Size;
+int	VT_Input(char	*Buffer,int		Size)
 {
 	int		len;
 
@@ -372,7 +366,7 @@ int		Size;
 /*
 VT_Process: main loop while in vt-mode
 */
-void VT_Process()
+void VT_Process(void)
 {
 	static int	trans_num = 0;
 	extern int	Client;

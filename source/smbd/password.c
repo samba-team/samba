@@ -1258,7 +1258,7 @@ BOOL server_cryptkey(char *buf)
   fstring desthost;
   struct in_addr dest_ip;
   extern struct in_addr myip;
-  int port = 139;
+  int port = SMB_PORT;
   BOOL ret;
 
   if (password_client >= 0)

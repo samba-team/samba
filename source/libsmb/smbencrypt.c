@@ -28,19 +28,6 @@
 
 extern int DEBUGLEVEL;
 
-#ifndef uchar
-#define uchar unsigned char
-#endif
-#ifndef int16
-#define int16 unsigned short
-#endif
-#ifndef uint16
-#define uint16 unsigned short
-#endif
-#ifndef uint32
-#define uint32 unsigned int
-#endif
-
 #include "byteorder.h"
 
 void str_to_key(uchar *str,uchar *key)
@@ -198,5 +185,5 @@ void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)
 }
 
 #else
-void smbencrypt_dummy(void){}
+ void smbencrypt_dummy(void){}
 #endif

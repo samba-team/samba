@@ -24,7 +24,6 @@
 #endif
 
 #include "includes.h"
-#include "nameserv.h"
 
 #ifndef REGISTER
 #define REGISTER 0
@@ -44,6 +43,7 @@ BOOL connect_as_printer = False;
 BOOL connect_as_ipc = False;
 extern struct in_addr bcast_ip;
 static BOOL got_bcast=False;
+struct in_addr ipzero;
 
 char cryptkey[8];
 BOOL doencrypt=False;
@@ -72,16 +72,29 @@ extern int DEBUGLEVEL;
 
 BOOL translation = False;
 
+
+static BOOL send_trans_request(char *outbuf,int trans,
+			       char *name,int fid,int flags,
+			       char *data,char *param,uint16 *setup,
+			       int ldata,int lparam,int lsetup,
+			       int mdata,int mparam,int msetup);
+static BOOL receive_trans_response(char *inbuf,int trans,
+                                   int *data_len,int *param_len,
+				   char **data,char **param);
+static int interpret_long_filename(int level,char *p,file_info *finfo);
+static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,BOOL recurse_dir,void (*fn)(),BOOL longdir);
+static int interpret_short_filename(char *p,file_info *finfo);
+static BOOL call_api(int prcnt,int drcnt,
+		     int mprcnt,int mdrcnt,
+		     int *rprcnt,int *rdrcnt,
+		     char *param,char *data,
+		     char **rparam,char **rdata);
+
+
 /* clitar bits insert */
-extern void cmd_tar();
-extern void cmd_block();
-extern void cmd_tarmode();
-extern void cmd_setmode();
 extern int blocksize;
 extern BOOL tar_inc;
 extern BOOL tar_reset;
-extern int process_tar();
-extern int tar_parseargs();
 /* clitar bits end */
  
 
@@ -150,20 +163,6 @@ setup_term_code (char *code)
 #define CNV_LANG(s) dos2unix_format(s,False)
 #define CNV_INPUT(s) unix2dos_format(s,True)
 #endif
-
-static void send_logout(void );
-BOOL reopen_connection(char *inbuf,char *outbuf);
-static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir);
-static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir);
-static BOOL call_api(int prcnt,int drcnt,int mprcnt,int mdrcnt,
-		     int *rprcnt,int *rdrcnt,char *param,char *data,
-		     char **rparam,char **rdata);
-static BOOL send_trans_request(char *outbuf,int trans,
-			       char *name,int fid,int flags,
-			       char *data,char *param,uint16 *setup,
-			       int ldata,int lparam,int lsetup,
-			       int mdata,int mparam,int msetup);
-
 
 /****************************************************************************
 setup basics in a outgoing packet
@@ -486,6 +485,319 @@ static void display_finfo(file_info *finfo)
 	   asctime(LocalTime(&t))));
 }
 
+
+/****************************************************************************
+  do a directory listing, calling fn on each file found. Use the TRANSACT2
+  call for long filenames
+  ****************************************************************************/
+static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir)
+{
+  int max_matches = 512;
+  int info_level = Protocol<PROTOCOL_NT1?1:260; /* NT uses 260, OS/2 uses 2. Both accept 1. */
+  char *p;
+  pstring mask;
+  file_info finfo;
+  int i;
+  char *dirlist = NULL;
+  int dirlist_len = 0;
+  int total_received = 0;
+  BOOL First = True;
+  char *resp_data=NULL;
+  char *resp_param=NULL;
+  int resp_data_len = 0;
+  int resp_param_len=0;
+
+  int ff_resume_key = 0;
+  int ff_searchcount=0;
+  int ff_eos=0;
+  int ff_lastname=0;
+  int ff_dir_handle=0;
+  int loop_count = 0;
+
+  uint16 setup;
+  pstring param;
+
+  strcpy(mask,Mask);
+
+  while (ff_eos == 0)
+    {
+      loop_count++;
+      if (loop_count > 200)
+	{
+	  DEBUG(0,("ERROR: Looping in FIND_NEXT??\n"));
+	  break;
+	}
+
+      if (First)
+	{
+	  setup = TRANSACT2_FINDFIRST;
+	  SSVAL(param,0,attribute); /* attribute */
+	  SSVAL(param,2,max_matches); /* max count */
+	  SSVAL(param,4,8+4+2);	/* resume required + close on end + continue */
+	  SSVAL(param,6,info_level); 
+	  SIVAL(param,8,0);
+	  strcpy(param+12,mask);
+	}
+      else
+	{
+	  setup = TRANSACT2_FINDNEXT;
+	  SSVAL(param,0,ff_dir_handle);
+	  SSVAL(param,2,max_matches); /* max count */
+	  SSVAL(param,4,info_level); 
+	  SIVAL(param,6,ff_resume_key); /* ff_resume_key */
+	  SSVAL(param,10,8+4+2);	/* resume required + close on end + continue */
+	  strcpy(param+12,mask);
+
+	  DEBUG(5,("hand=0x%X resume=%d ff_lastname=%d mask=%s\n",
+		   ff_dir_handle,ff_resume_key,ff_lastname,mask));
+	}
+      /* ??? original code added 1 pad byte after param */
+
+      send_trans_request(outbuf,SMBtrans2,NULL,FID_UNUSED,0,
+			 NULL,param,&setup,
+			 0,12+strlen(mask)+1,1,
+			 BUFFER_SIZE,10,0);
+
+      if (!receive_trans_response(inbuf,SMBtrans2,
+			      &resp_data_len,&resp_param_len,
+			          &resp_data,&resp_param))
+	{
+	  DEBUG(3,("FIND%s gave %s\n",First?"FIRST":"NEXT",smb_errstr(inbuf)));
+	  break;
+	}
+
+      /* parse out some important return info */
+      p = resp_param;
+      if (First)
+	{
+	  ff_dir_handle = SVAL(p,0);
+	  ff_searchcount = SVAL(p,2);
+	  ff_eos = SVAL(p,4);
+	  ff_lastname = SVAL(p,8);
+	}
+      else
+	{
+	  ff_searchcount = SVAL(p,0);
+	  ff_eos = SVAL(p,2);
+	  ff_lastname = SVAL(p,6);
+	}
+
+      if (ff_searchcount == 0) 
+	break;
+
+      /* point to the data bytes */
+      p = resp_data;
+
+      /* we might need the lastname for continuations */
+      if (ff_lastname > 0)
+	{
+	  switch(info_level)
+	    {
+	    case 260:
+	      ff_resume_key =0;
+	      StrnCpy(mask,p+ff_lastname,resp_data_len-ff_lastname);
+	      /* strcpy(mask,p+ff_lastname+94); */
+	      break;
+	    case 1:
+	      strcpy(mask,p + ff_lastname + 1);
+	      ff_resume_key = 0;
+	      break;
+	    }
+	}
+      else
+	strcpy(mask,"");
+  
+      /* and add them to the dirlist pool */
+      dirlist = Realloc(dirlist,dirlist_len + resp_data_len);
+
+      if (!dirlist)
+	{
+	  DEBUG(0,("Failed to expand dirlist\n"));
+	  break;
+	}
+
+      /* put in a length for the last entry, to ensure we can chain entries 
+	 into the next packet */
+      {
+	char *p2;
+	for (p2=p,i=0;i<(ff_searchcount-1);i++)
+	  p2 += interpret_long_filename(info_level,p2,NULL);
+	SSVAL(p2,0,resp_data_len - PTR_DIFF(p2,p));
+      }
+
+      /* grab the data for later use */
+      memcpy(dirlist+dirlist_len,p,resp_data_len);
+      dirlist_len += resp_data_len;
+
+      total_received += ff_searchcount;
+
+      if (resp_data) free(resp_data); resp_data = NULL;
+      if (resp_param) free(resp_param); resp_param = NULL;
+
+      DEBUG(3,("received %d entries (eos=%d resume=%d)\n",
+	       ff_searchcount,ff_eos,ff_resume_key));
+
+      First = False;
+    }
+
+  if (!fn)
+    for (p=dirlist,i=0;i<total_received;i++)
+      {
+	p += interpret_long_filename(info_level,p,&finfo);
+	display_finfo(&finfo);
+      }
+
+  for (p=dirlist,i=0;i<total_received;i++)
+    {
+      p += interpret_long_filename(info_level,p,&finfo);
+      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,True);
+    }
+
+  /* free up the dirlist buffer */
+  if (dirlist) free(dirlist);
+  return(total_received);
+}
+
+
+/****************************************************************************
+  do a directory listing, calling fn on each file found
+  ****************************************************************************/
+static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir)
+{
+  char *p;
+  int received = 0;
+  BOOL first = True;
+  char status[21];
+  int num_asked = (max_xmit - 100)/DIR_STRUCT_SIZE;
+  int num_received = 0;
+  int i;
+  char *dirlist = NULL;
+  pstring mask;
+  file_info finfo;
+
+  finfo = def_finfo;
+
+  bzero(status,21);
+
+  strcpy(mask,Mask);
+  
+  while (1)
+    {
+      bzero(outbuf,smb_size);
+      if (first)	
+	set_message(outbuf,2,5 + strlen(mask),True);
+      else
+	set_message(outbuf,2,5 + 21,True);
+
+#if FFIRST
+      if (Protocol >= PROTOCOL_LANMAN1)
+	CVAL(outbuf,smb_com) = SMBffirst;
+      else
+#endif
+	CVAL(outbuf,smb_com) = SMBsearch;
+
+      SSVAL(outbuf,smb_tid,cnum);
+      setup_pkt(outbuf);
+
+      SSVAL(outbuf,smb_vwv0,num_asked);
+      SSVAL(outbuf,smb_vwv1,attribute);
+  
+      p = smb_buf(outbuf);
+      *p++ = 4;
+      
+      if (first)
+	strcpy(p,mask);
+      else
+	strcpy(p,"");
+      p += strlen(p) + 1;
+      
+      *p++ = 5;
+      if (first)
+	SSVAL(p,0,0);
+      else
+	{
+	  SSVAL(p,0,21);
+	  p += 2;
+	  memcpy(p,status,21);
+	}
+
+      send_smb(Client,outbuf);
+      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
+
+      received = SVAL(inbuf,smb_vwv0);
+
+      DEBUG(5,("dir received %d\n",received));
+
+      DEBUG(6,("errstr=%s\n",smb_errstr(inbuf)));
+
+      if (received <= 0) break;
+
+      first = False;
+
+      dirlist = Realloc(dirlist,(num_received + received)*DIR_STRUCT_SIZE);
+
+      if (!dirlist) 
+	return 0;
+
+      p = smb_buf(inbuf) + 3;
+
+      memcpy(dirlist+num_received*DIR_STRUCT_SIZE,
+	     p,received*DIR_STRUCT_SIZE);
+
+      memcpy(status,p + ((received-1)*DIR_STRUCT_SIZE),21);
+
+      num_received += received;
+
+      if (CVAL(inbuf,smb_rcls) != 0) break;
+    }
+
+#if FFIRST
+  if (!first && Protocol >= PROTOCOL_LANMAN1)
+    {
+      bzero(outbuf,smb_size);
+      CVAL(outbuf,smb_com) = SMBfclose;
+
+      SSVAL(outbuf,smb_tid,cnum);
+      setup_pkt(outbuf);
+
+      p = smb_buf(outbuf);
+      *p++ = 4;
+      
+      strcpy(p,"");
+      p += strlen(p) + 1;
+      
+      *p++ = 5;
+      SSVAL(p,0,21);
+      p += 2;
+      memcpy(p,status,21);
+
+      send_smb(Client,outbuf);
+      receive_smb(Client,inbuf,CLIENT_TIMEOUT,False);
+
+      if (CVAL(inbuf,smb_rcls) != 0) 
+	DEBUG(0,("Error closing search: %s\n",smb_errstr(inbuf)));      
+    }
+#endif
+
+  if (!fn)
+    for (p=dirlist,i=0;i<num_received;i++)
+      {
+	p += interpret_short_filename(p,&finfo);
+	display_finfo(&finfo);
+      }
+
+  for (p=dirlist,i=0;i<num_received;i++)
+    {
+      p += interpret_short_filename(p,&finfo);
+      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,False);
+    }
+
+  if (dirlist) free(dirlist);
+  return(num_received);
+}
+
+
+
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
@@ -685,148 +997,11 @@ static void dir_action(char *inbuf,char *outbuf,int attribute,file_info *finfo,B
 
 
 /****************************************************************************
-  do a directory listing, calling fn on each file found
-  ****************************************************************************/
-static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir)
-{
-  char *p;
-  int received = 0;
-  BOOL first = True;
-  char status[21];
-  int num_asked = (max_xmit - 100)/DIR_STRUCT_SIZE;
-  int num_received = 0;
-  int i;
-  char *dirlist = NULL;
-  pstring mask;
-  file_info finfo;
-
-  finfo = def_finfo;
-
-  bzero(status,21);
-
-  strcpy(mask,Mask);
-  
-  while (1)
-    {
-      bzero(outbuf,smb_size);
-      if (first)	
-	set_message(outbuf,2,5 + strlen(mask),True);
-      else
-	set_message(outbuf,2,5 + 21,True);
-
-#if FFIRST
-      if (Protocol >= PROTOCOL_LANMAN1)
-	CVAL(outbuf,smb_com) = SMBffirst;
-      else
-#endif
-	CVAL(outbuf,smb_com) = SMBsearch;
-
-      SSVAL(outbuf,smb_tid,cnum);
-      setup_pkt(outbuf);
-
-      SSVAL(outbuf,smb_vwv0,num_asked);
-      SSVAL(outbuf,smb_vwv1,attribute);
-  
-      p = smb_buf(outbuf);
-      *p++ = 4;
-      
-      if (first)
-	strcpy(p,mask);
-      else
-	strcpy(p,"");
-      p += strlen(p) + 1;
-      
-      *p++ = 5;
-      if (first)
-	SSVAL(p,0,0);
-      else
-	{
-	  SSVAL(p,0,21);
-	  p += 2;
-	  memcpy(p,status,21);
-	}
-
-      send_smb(Client,outbuf);
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
-
-      received = SVAL(inbuf,smb_vwv0);
-
-      DEBUG(5,("dir received %d\n",received));
-
-      DEBUG(6,("errstr=%s\n",smb_errstr(inbuf)));
-
-      if (received <= 0) break;
-
-      first = False;
-
-      dirlist = Realloc(dirlist,(num_received + received)*DIR_STRUCT_SIZE);
-
-      if (!dirlist) 
-	return 0;
-
-      p = smb_buf(inbuf) + 3;
-
-      memcpy(dirlist+num_received*DIR_STRUCT_SIZE,
-	     p,received*DIR_STRUCT_SIZE);
-
-      memcpy(status,p + ((received-1)*DIR_STRUCT_SIZE),21);
-
-      num_received += received;
-
-      if (CVAL(inbuf,smb_rcls) != 0) break;
-    }
-
-#if FFIRST
-  if (!first && Protocol >= PROTOCOL_LANMAN1)
-    {
-      bzero(outbuf,smb_size);
-      CVAL(outbuf,smb_com) = SMBfclose;
-
-      SSVAL(outbuf,smb_tid,cnum);
-      setup_pkt(outbuf);
-
-      p = smb_buf(outbuf);
-      *p++ = 4;
-      
-      strcpy(p,"");
-      p += strlen(p) + 1;
-      
-      *p++ = 5;
-      SSVAL(p,0,21);
-      p += 2;
-      memcpy(p,status,21);
-
-      send_smb(Client,outbuf);
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT,False);
-
-      if (CVAL(inbuf,smb_rcls) != 0) 
-	DEBUG(0,("Error closing search: %s\n",smb_errstr(inbuf)));      
-    }
-#endif
-
-  if (!fn)
-    for (p=dirlist,i=0;i<num_received;i++)
-      {
-	p += interpret_short_filename(p,&finfo);
-	display_finfo(&finfo);
-      }
-
-  for (p=dirlist,i=0;i<num_received;i++)
-    {
-      p += interpret_short_filename(p,&finfo);
-      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,False);
-    }
-
-  if (dirlist) free(dirlist);
-  return(num_received);
-}
-
-/****************************************************************************
   receive a SMB trans or trans2 response allocating the necessary memory
   ****************************************************************************/
 static BOOL receive_trans_response(char *inbuf,int trans,
                                    int *data_len,int *param_len,
-				      char **data,char **param)
+				   char **data,char **param)
 {
   int total_data=0;
   int total_param=0;
@@ -892,178 +1067,6 @@ static BOOL receive_trans_response(char *inbuf,int trans,
     }
   
   return(True);
-}
-
-/****************************************************************************
-  do a directory listing, calling fn on each file found. Use the TRANSACT2
-  call for long filenames
-  ****************************************************************************/
-static int do_long_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(),BOOL recurse_dir)
-{
-  int max_matches = 512;
-  int info_level = Protocol<PROTOCOL_NT1?1:260; /* NT uses 260, OS/2 uses 2. Both accept 1. */
-  char *p;
-  pstring mask;
-  file_info finfo;
-  int i;
-  char *dirlist = NULL;
-  int dirlist_len = 0;
-  int total_received = 0;
-  BOOL First = True;
-  char *resp_data=NULL;
-  char *resp_param=NULL;
-  int resp_data_len = 0;
-  int resp_param_len=0;
-
-  int ff_resume_key = 0;
-  int ff_searchcount=0;
-  int ff_eos=0;
-  int ff_lastname=0;
-  int ff_dir_handle=0;
-  int loop_count = 0;
-
-  uint16 setup;
-  pstring param;
-
-  strcpy(mask,Mask);
-
-  while (ff_eos == 0)
-    {
-      loop_count++;
-      if (loop_count > 200)
-	{
-	  DEBUG(0,("ERROR: Looping in FIND_NEXT??\n"));
-	  break;
-	}
-
-      if (First)
-	{
-	  setup = TRANSACT2_FINDFIRST;
-	  SSVAL(param,0,attribute); /* attribute */
-	  SSVAL(param,2,max_matches); /* max count */
-	  SSVAL(param,4,8+4+2);	/* resume required + close on end + continue */
-	  SSVAL(param,6,info_level); 
-	  SIVAL(param,8,0);
-	  strcpy(param+12,mask);
-	}
-      else
-	{
-	  setup = TRANSACT2_FINDNEXT;
-	  SSVAL(param,0,ff_dir_handle);
-	  SSVAL(param,2,max_matches); /* max count */
-	  SSVAL(param,4,info_level); 
-	  SIVAL(param,6,ff_resume_key); /* ff_resume_key */
-	  SSVAL(param,10,8+4+2);	/* resume required + close on end + continue */
-	  strcpy(param+12,mask);
-
-	  DEBUG(5,("hand=0x%X resume=%d ff_lastname=%d mask=%s\n",
-		   ff_dir_handle,ff_resume_key,ff_lastname,mask));
-	}
-      /* ??? original code added 1 pad byte after param */
-
-      send_trans_request(outbuf,SMBtrans2,NULL,FID_UNUSED,0,
-			 NULL,param,&setup,
-			 0,12+strlen(mask)+1,1,
-			 BUFFER_SIZE,10,0);
-
-      if (!receive_trans_response(inbuf,SMBtrans2,
-			      &resp_data_len,&resp_param_len,
-			          &resp_data,&resp_param))
-	{
-	  DEBUG(3,("FIND%s gave %s\n",First?"FIRST":"NEXT",smb_errstr(inbuf)));
-	  break;
-	}
-
-      /* parse out some important return info */
-      p = resp_param;
-      if (First)
-	{
-	  ff_dir_handle = SVAL(p,0);
-	  ff_searchcount = SVAL(p,2);
-	  ff_eos = SVAL(p,4);
-	  ff_lastname = SVAL(p,8);
-	}
-      else
-	{
-	  ff_searchcount = SVAL(p,0);
-	  ff_eos = SVAL(p,2);
-	  ff_lastname = SVAL(p,6);
-	}
-
-      if (ff_searchcount == 0) 
-	break;
-
-      /* point to the data bytes */
-      p = resp_data;
-
-      /* we might need the lastname for continuations */
-      if (ff_lastname > 0)
-	{
-	  switch(info_level)
-	    {
-	    case 260:
-	      ff_resume_key =0;
-	      StrnCpy(mask,p+ff_lastname,resp_data_len-ff_lastname);
-	      /* strcpy(mask,p+ff_lastname+94); */
-	      break;
-	    case 1:
-	      strcpy(mask,p + ff_lastname + 1);
-	      ff_resume_key = 0;
-	      break;
-	    }
-	}
-      else
-	strcpy(mask,"");
-  
-      /* and add them to the dirlist pool */
-      dirlist = Realloc(dirlist,dirlist_len + resp_data_len);
-
-      if (!dirlist)
-	{
-	  DEBUG(0,("Failed to expand dirlist\n"));
-	  break;
-	}
-
-      /* put in a length for the last entry, to ensure we can chain entries 
-	 into the next packet */
-      {
-	char *p2;
-	for (p2=p,i=0;i<(ff_searchcount-1);i++)
-	  p2 += interpret_long_filename(info_level,p2,NULL);
-	SSVAL(p2,0,resp_data_len - PTR_DIFF(p2,p));
-      }
-
-      /* grab the data for later use */
-      memcpy(dirlist+dirlist_len,p,resp_data_len);
-      dirlist_len += resp_data_len;
-
-      total_received += ff_searchcount;
-
-      if (resp_data) free(resp_data); resp_data = NULL;
-      if (resp_param) free(resp_param); resp_param = NULL;
-
-      DEBUG(3,("received %d entries (eos=%d resume=%d)\n",
-	       ff_searchcount,ff_eos,ff_resume_key));
-
-      First = False;
-    }
-
-  if (!fn)
-    for (p=dirlist,i=0;i<total_received;i++)
-      {
-	p += interpret_long_filename(info_level,p,&finfo);
-	display_finfo(&finfo);
-      }
-
-  for (p=dirlist,i=0;i<total_received;i++)
-    {
-      p += interpret_long_filename(info_level,p,&finfo);
-      dir_action(inbuf,outbuf,attribute,&finfo,recurse_dir,fn,True);
-    }
-
-  /* free up the dirlist buffer */
-  if (dirlist) free(dirlist);
-  return(total_received);
 }
 
 
@@ -3999,7 +4002,7 @@ BOOL reopen_connection(char *inbuf,char *outbuf)
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-BOOL process(char *base_directory)
+static BOOL process(char *base_directory)
 {
   extern FILE *dbf;
   pstring line;
@@ -4115,7 +4118,7 @@ BOOL process(char *base_directory)
 /****************************************************************************
 usage on the program
 ****************************************************************************/
-void usage(char *pname)
+static void usage(char *pname)
 {
   DEBUG(0,("Usage: %s service <password> [-p port] [-d debuglevel] [-l log] ",
 	   pname));
@@ -4152,11 +4155,11 @@ void usage(char *pname)
 /****************************************************************************
   main program
 ****************************************************************************/
-int main(int argc,char *argv[])
+ int main(int argc,char *argv[])
 {
   fstring base_directory;
   char *pname = argv[0];
-  int port = 139;
+  int port = SMB_PORT;
   int opt;
   extern FILE *dbf;
   extern char *optarg;
@@ -4174,6 +4177,8 @@ int main(int argc,char *argv[])
 
   TimeInit();
   charset_initialise();
+
+  ipzero = *interpret_addr2("0.0.0.0");
 
   pid = getpid();
   uid = getuid();
