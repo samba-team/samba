@@ -1585,7 +1585,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	int len, buflen;
 	fstring architecture;
 	pstring directory;
-	pstring temp_name;
+	fstring temp_name;
 	pstring key;
 	char *buf;
 	int i, ret;

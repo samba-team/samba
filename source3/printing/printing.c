@@ -1934,7 +1934,7 @@ int print_queue_status(int snum,
 	*queue = NULL;
 	printername = lp_const_servicename(snum);
 	pdb = get_print_db_byname(printername);
-	
+
 	if (!pdb)
 		return 0;
 

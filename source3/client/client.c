@@ -2847,9 +2847,9 @@ static void remember_query_host(const char *arg,
 			pstrcpy(desthost,optarg);
 			if( 0 == port )
 				port = 139;
-			message = True;
-			break;
-		case 'i':
+ 			message = True;
+ 			break;
+ 		case 'i':
 			set_global_scope(optarg);
 			break;
 		case 'N':
@@ -2978,7 +2978,7 @@ static void remember_query_host(const char *arg,
 			}
 			break;
 		case 'D':
-			pstrcpy(base_directory,optarg);
+			fstrcpy(base_directory,optarg);
 			break;
 		case 'c':
 			cmdstr = optarg;
