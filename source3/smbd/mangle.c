@@ -66,7 +66,7 @@ void mangle_reset_cache(void)
 {
 	mangle_init();
 
-	return mangle_fns->reset();
+	mangle_fns->reset();
 }
 
 /*
