@@ -97,7 +97,7 @@ static void check_for_master_browser_fail( struct subnet_record *subrec,
 		return;
 	}
 
-	if (strequal(work->work_group, lp_workgroup())) {
+	if (strnequal(work->work_group, lp_workgroup(), sizeof(nstring))) {
 
 		if (lp_local_master()) {
 			/* We have discovered that there is no local master
@@ -145,7 +145,7 @@ void check_master_browser_exists(time_t t)
 		struct work_record *work;
 
 		for (work = subrec->workgrouplist; work; work = work->next) {
-			if (strequal(work->work_group, workgroup_name) && !AM_LOCAL_MASTER_BROWSER(work)) {
+			if (strnequal(work->work_group, workgroup_name, sizeof(nstring)) && !AM_LOCAL_MASTER_BROWSER(work)) {
 				/* Do a name query for the local master browser on this net. */
 				query_name( subrec, work->work_group, 0x1d,
 					check_for_master_browser_success,
@@ -284,7 +284,7 @@ void process_election(struct subnet_record *subrec, struct packet_struct *p, cha
 		goto done;
 	}
 
-	if (!strequal(work->work_group, lp_workgroup())) {
+	if (!strnequal(work->work_group, lp_workgroup(), sizeof(nstring))) {
 		DEBUG(3,("process_election: ignoring election request for workgroup %s on subnet %s as this \
 is not my workgroup.\n", work->work_group, subrec->subnet_name ));
 		goto done;
@@ -381,7 +381,7 @@ void nmbd_message_election(int msg_type, pid_t src, void *buf, size_t len)
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		struct work_record *work;
 		for (work = subrec->workgrouplist; work; work = work->next) {
-			if (strequal(work->work_group, lp_workgroup())) {
+			if (strnequal(work->work_group, lp_workgroup(), sizeof(nstring))) {
 				work->needelection = True;
 				work->ElectionCount=0;
 				work->mst_state = lp_local_master() ? MST_POTENTIAL : MST_NONE;

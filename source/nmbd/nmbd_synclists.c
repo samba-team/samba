@@ -31,8 +31,8 @@
 
 struct sync_record {
 	struct sync_record *next, *prev;
-	fstring workgroup;
-	fstring server;
+	nstring workgroup;
+	nstring server;
 	pstring fname;
 	struct in_addr ip;
 	pid_t pid;
@@ -148,8 +148,8 @@ done:
 
 	ZERO_STRUCTP(s);
 	
-	fstrcpy(s->workgroup, work->work_group);
-	fstrcpy(s->server, name);
+	nstrcpy(s->workgroup, work->work_group);
+	nstrcpy(s->server, name);
 	s->ip = ip;
 
 	slprintf(s->fname, sizeof(pstring)-1,
@@ -206,8 +206,7 @@ static void complete_one(struct sync_record *s,
 							  sname, lp_max_ttl());
 			if (work) {
 				/* remember who the master is */
-				fstrcpy(work->local_master_browser_name, 
-					comment);
+				nstrcpy(work->local_master_browser_name, comment);
 			}
 		}
 		return;

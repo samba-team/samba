@@ -590,5 +590,5 @@ local_master_browser_name for workgroup %s to workgroup name.\n",
   }
 #endif
 
-	fstrcpy(work->local_master_browser_name, newname);
+	nstrcpy(work->local_master_browser_name, newname);
 }
