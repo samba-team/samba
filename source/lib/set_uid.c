@@ -206,7 +206,7 @@ BOOL become_unix_sec_ctx(const vuser_key * k, connection_struct * conn,
 	}
 	{
 		int i;
-		DEBUG(3, ("Setting %d in %d groups: ", new_uid, n_groups));
+		DEBUG(3, ("Setting %d in %d groups: ", (int)new_uid, n_groups));
 		for (i = 0; i < n_groups; i++)
 		{
 			DEBUG(3, ("%s%d", (i ? ", " : ""), (int)groups[i]));

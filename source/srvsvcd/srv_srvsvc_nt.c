@@ -690,7 +690,7 @@ static void make_srv_sess_info_1(SRV_SESS_INFO_1 * ss1, uint32 *snum,
 		{
 			DEBUG(0, ("sess1 machine: %s, uid : %u\n",
 				  crec[num_entries].machine,
-				  crec[num_entries].uid));
+				  (uint32)crec[num_entries].uid));
 			make_srv_sess_1_info(&(ss1->info_1[num_entries]),
 					     &(ss1->info_1_str[num_entries]),
 					     crec[num_entries].machine,
