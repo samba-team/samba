@@ -93,6 +93,18 @@ as_rep(krb5_context context,
 	goto out;
     }
 
+    if (client->valid_start && *client->valid_start > kdc_time) {
+	kdc_log(0, "Client not yet valid -- %s", client_name);
+	ret = KRB5KDC_ERR_CLIENT_NOTYET;
+	goto out;
+    }
+
+    if (client->valid_end && *client->valid_end < kdc_time) {
+	kdc_log(0, "Client expired -- %s", client_name);
+	ret = KRB5KDC_ERR_NAME_EXP;
+	goto out;
+    }
+
     server = db_fetch(context, server_princ);
 
     if(server == NULL){
@@ -101,6 +113,17 @@ as_rep(krb5_context context,
 	goto out;
     }
 
+    if (server->valid_start && *server->valid_start > kdc_time) {
+	kdc_log(0, "Server not yet valid -- %s", server_name);
+	ret = KRB5KDC_ERR_SERVICE_NOTYET;
+	goto out;
+    }
+
+    if (server->valid_end && *server->valid_end < kdc_time) {
+	kdc_log(0, "Server expired -- %s", server_name);
+	ret = KRB5KDC_ERR_SERVICE_EXP;
+	goto out;
+    }
 
     if(!client->flags.client){
 	ret = KRB5KDC_ERR_POLICY;
@@ -112,6 +135,13 @@ as_rep(krb5_context context,
 	ret = KRB5KDC_ERR_POLICY;
 	kdc_log(context, 0, "Principal (%s) may not act as server -- %s", 
 		server_name, client_name);
+	goto out;
+    }
+
+    if (client->pw_end && *client->pw_end < kdc_time
+	&& !server->flags.change_pw) {
+	ret = KRB5KDC_ERR_KEY_EXPIRED;
+	kdc_log(0, "Client (%s)'s key has expired", client_name);
 	goto out;
     }
 
@@ -230,7 +260,8 @@ as_rep(krb5_context context,
 	    e_text = NULL;
 	    goto out;
 	}
-    }else if (require_preauth) {
+    }else if (require_preauth
+	      || client->flags.require_preauth) {
 	METHOD_DATA method_data;
 	PA_DATA pa_data;
 	u_char buf[16];
@@ -373,12 +404,30 @@ as_rep(krb5_context context,
      * incapable to correctly decode vectors of zero length.
      *
      * To fix this, always send at least one no-op last_req
+     *
+     * If there's a pw_end we will use that, otherwise just a dummy lr.
      */
     ek.last_req.len = 1;
     ALLOC(ek.last_req.val);
-    ek.last_req.val->lr_type = 0;
-    ek.last_req.val->lr_value = 0;
+    if (client->pw_end) {
+	ek.last_req.val->lr_type  = 6;
+	ek.last_req.val->lr_value = *client->pw_end;
+    } else {
+	ek.last_req.val->lr_type  = 0;
+	ek.last_req.val->lr_value = 0;
+    }
     ek.nonce = b->nonce;
+    if (client->valid_end || client->pw_end) {
+	ALLOC(ek.key_expiration);
+	if (client->valid_end)
+	    if (client->pw_end)
+		*ek.key_expiration = min(*client->valid_end, *client->pw_end);
+	    else
+		*ek.key_expiration = *client->valid_end;
+	else
+	    *ek.key_expiration = *client->pw_end;
+    } else
+	ek.key_expiration = NULL;
     ek.flags = et.flags;
     ek.authtime = et.authtime;
     if (et.starttime) {
