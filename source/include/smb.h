@@ -433,9 +433,6 @@ struct interface
 	struct in_addr ip;
 	struct in_addr bcast;
 	struct in_addr nmask;
-	char *name;
-	size_t mtu;		/* may be useful in future... */
-	short flags;
 };
 
 /* share mode record pointed to in shared memory hash bucket */
@@ -455,6 +452,9 @@ typedef struct
 {
   smb_shm_offset_t next_share_mode_entry;
   int pid;
+#ifdef USE_OPLOCKS
+  uint16 op_port;
+#endif /* USE_OPLOCKS */
   int share_mode;
   struct timeval time;
 } share_mode_entry;
@@ -463,6 +463,9 @@ typedef struct
 typedef struct
 {
   int pid;
+#ifdef USE_OPLOCKS
+  uint16 op_port;
+#endif /* USE_OPLOCKS */
   int share_mode;
   struct timeval time;
 } min_share_mode_entry;
@@ -487,8 +490,13 @@ struct connect_record
   time_t start;
 };
 
-
+#ifndef LOCKING_VERSION
+#ifdef USE_OPLOCKS
+#define LOCKING_VERSION 4
+#else /* USE_OPLOCKS */
 #define LOCKING_VERSION 3
+#endif /* USE_OPLOCKS */
+#endif /* LOCKING_VERSION */
 
 /* these are useful macros for checking validity of handles */
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < MAX_OPEN_FILES))
