@@ -3265,6 +3265,7 @@ static void set_server_role(void)
 		}
 		case SEC_SERVER:
 		case SEC_DOMAIN:
+		case SEC_ADS:
 		{
 			if (lp_domain_logons())
 			{
