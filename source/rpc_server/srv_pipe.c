@@ -800,7 +800,7 @@ int rpc_load_module(const char *module)
         void *handle;
         int (*module_init)(void);
         pstring full_path;
-        char *error;
+        const char *error;
         
         pstrcpy(full_path, lib_path("rpc"));
         pstrcat(full_path, "/librpc_");
