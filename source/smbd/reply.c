@@ -2581,10 +2581,9 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
   CHECK_ERROR(fsp);
 
   mode = SVAL(inbuf,smb_vwv1) & 3;
-  startpos = IVAL(inbuf,smb_vwv2);
+  startpos = IVALS(inbuf,smb_vwv2);
 
-  switch (mode & 3) 
-  {
+  switch (mode) {
     case 0: umode = SEEK_SET; break;
     case 1: umode = SEEK_CUR; break;
     case 2: umode = SEEK_END; break;
@@ -2592,16 +2591,48 @@ int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int
       umode = SEEK_SET; break;
   }
 
-  if((res = sys_lseek(fsp->fd_ptr->fd,startpos,umode)) == -1)
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
+  if((res = sys_lseek(fsp->fd_ptr->fd,startpos,umode)) == -1) {
+    /*
+     * Check for the special case where a seek before the start
+     * of the file sets the offset to zero. Added in the CIFS spec,
+     * section 4.2.7.
+     */
+
+    if(errno == EINVAL) {
+      SMB_OFF_T current_pos = startpos;
+
+      if(umode == SEEK_CUR) {
+
+        if((current_pos = sys_lseek(fsp->fd_ptr->fd,0,SEEK_CUR)) == -1)
+          return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+        current_pos += startpos;
+
+      } else if (umode == SEEK_END) {
+
+        SMB_STRUCT_STAT sbuf;
+
+        if(sys_fstat( fsp->fd_ptr->fd, &sbuf) == -1)
+          return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+        current_pos += sbuf.st_size;
+      }
+ 
+      if(current_pos < 0)
+        res = sys_lseek(fsp->fd_ptr->fd,0,SEEK_SET);
+    }
+
+    if(res == -1)
+      return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
 
   fsp->pos = res;
   
   outsize = set_message(outbuf,2,0,True);
-  SIVALS(outbuf,smb_vwv0,res);
+  SIVAL(outbuf,smb_vwv0,res);
   
-  DEBUG(3,("lseek fnum=%d ofs=%.0f mode=%d\n",
-	   fsp->fnum, (double)startpos, mode));
+  DEBUG(3,("lseek fnum=%d ofs=%.0f newpos = %.0f mode=%d\n",
+	   fsp->fnum, (double)startpos, (double)res, mode));
 
   return(outsize);
 }
