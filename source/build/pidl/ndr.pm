@@ -2,7 +2,7 @@
 # Samba4 NDR parser generator for IDL structures
 # Copyright tridge@samba.org 2000-2003
 # Copyright tpot@samba.org 2001
-# Copyright jelmer@samba.org 2004
+# Copyright jelmer@samba.org 2004-2005
 # released under the GNU GPL
 
 package NdrParser;
@@ -13,7 +13,9 @@ use needed;
 # list of known types
 our %typedefs;
 
-my %type_alignments = 
+sub RegisterPrimitives()
+{
+	my %type_alignments = 
     (
      "char"           => 1,
      "int8"           => 1,
@@ -40,15 +42,16 @@ my %type_alignments =
      "NTTIME_hyper"   => 8
      );
 
-foreach my $k (keys %type_alignments) {
-	$typedefs{$k} = {
-		NAME => $k,
-		TYPE => "TYPEDEF",
-		DATA => {
-			TYPE => "SCALAR",
-			ALIGN => $type_alignments{$k}
-		}
-	};
+	foreach my $k (keys %type_alignments) {
+		$typedefs{$k} = {
+			NAME => $k,
+			TYPE => "TYPEDEF",
+			DATA => {
+				TYPE => "SCALAR",
+				ALIGN => $type_alignments{$k}
+			}
+		};
+	}
 }
 
 sub is_scalar_type($)
@@ -56,9 +59,7 @@ sub is_scalar_type($)
     my $type = shift;
 
 	if (my $dt = $typedefs{$type}->{DATA}->{TYPE}) {
-		return 1 if ($dt eq "SCALAR");
-		return 1 if ($dt eq "ENUM");
-		return 1 if ($dt eq "BITMAP");
+		return 1 if ($dt eq "SCALAR" or $dt eq "ENUM" or $dt eq "BITMAP");
 	}
 
     return 0;
@@ -171,22 +172,6 @@ my $res = "";
 sub pidl($)
 {
 	$res .= shift;
-}
-
-#####################################################################
-# parse a properties list
-sub ParseProperties($)
-{
-    my($props) = shift;
-    foreach my $d (@{$props}) {
-	if (ref($d) ne "HASH") {
-	    pidl "[$d] ";
-	} else {
-	    foreach my $k (keys %{$d}) {
-		pidl "[$k($d->{$k})] ";
-	    }
-	}
-    }
 }
 
 ###################################
@@ -328,7 +313,6 @@ sub end_flags($)
 	}
 }
 
-
 #####################################################################
 # work out the correct alignment for a structure or union
 sub struct_alignment
@@ -459,7 +443,6 @@ sub CheckArraySizes($$)
 		pidl "\t}\n";
 	}
 }
-
 
 #####################################################################
 # parse an array - pull side
@@ -1320,55 +1303,29 @@ sub ParseUnionPull($)
 	end_flags($e);
 }
 
-
-#####################################################################
-# parse a type
-sub ParseTypePush($)
-{
-	my($data) = shift;
-
-	($data->{TYPE} eq "STRUCT") &&
-	    ParseStructPush($data);
-	($data->{TYPE} eq "UNION") &&
-	    ParseUnionPush($data);
-	($data->{TYPE} eq "ENUM") &&
-	    ParseEnumPush($data);
-	($data->{TYPE} eq "BITMAP") &&
-	    ParseBitmapPush($data);
-}
-
-#####################################################################
-# generate a print function for a type
-sub ParseTypePrint($)
-{
-	my($data) = shift;
-
-	($data->{TYPE} eq "STRUCT") &&
-	    ParseStructPrint($data);
-	($data->{TYPE} eq "UNION") &&
-	    ParseUnionPrint($data);
-	($data->{TYPE} eq "ENUM") &&
-	    ParseEnumPrint($data);
-	($data->{TYPE} eq "BITMAP") &&
-	    ParseBitmapPrint($data);
-}
-
-#####################################################################
-# parse a type
-sub ParseTypePull($)
-{
-	my($data) = shift;
-
-	($data->{TYPE} eq "STRUCT") &&
-	    ParseStructPull($data);
-	($data->{TYPE} eq "UNION") &&
-	    ParseUnionPull($data);
-	($data->{TYPE} eq "ENUM") &&
-	    ParseEnumPull($data);
-	($data->{TYPE} eq "BITMAP") &&
-	    ParseBitmapPull($data);
-}
-
+my %typefamily = (
+	STRUCT => {
+		PUSH_FN_BODY => \&ParseStructPush,
+		PULL_FN_BODY => \&ParseStructPull,
+		PRINT_FN_BODY => \&ParseStructPrint
+	},
+	UNION => {
+		PUSH_FN_BODY => \&ParseUnionPush,
+		PULL_FN_BODY => \&ParseUnionPull,
+		PRINT_FN_BODY => \&ParseUnionPrint
+	},
+	ENUM => {
+		PUSH_FN_BODY => \&ParseEnumPush,
+		PULL_FN_BODY => \&ParseEnumPull,
+		PRINT_FN_BODY => \&ParseEnumPrint
+	},
+	BITMAP => {
+		PUSH_FN_BODY => \&ParseBitmapPush,
+		PULL_FN_BODY => \&ParseBitmapPull,
+		PRINT_FN_BODY => \&ParseBitmapPrint
+	}
+);
+	
 #####################################################################
 # parse a typedef - push side
 sub ParseTypedefPush($)
@@ -1387,38 +1344,26 @@ sub ParseTypedefPush($)
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
 		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r)";
-		pidl "\n{\n";
-		ParseTypePush($e->{DATA});
-		pidl "\treturn NT_STATUS_OK;\n";
-		pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
 		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $e->{NAME} *r)";
-		pidl "\n{\n";
-		ParseTypePush($e->{DATA});
-		pidl "\treturn NT_STATUS_OK;\n";
-		pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
 		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, enum $e->{NAME} r)";
-		pidl "\n{\n";
-		ParseTypePush($e->{DATA});
-		pidl "\treturn NT_STATUS_OK;\n";
-		pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
 		my $type_decl = util::bitmap_type_decl($e->{DATA});
 		pidl $static . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, $type_decl r)";
-		pidl "\n{\n";
-		ParseTypePush($e->{DATA});
-		pidl "\treturn NT_STATUS_OK;\n";
-		pidl "}\n\n";
 	}
-}
 
+	pidl "\n{\n";
+	$typefamily{$e->{DATA}->{TYPE}}->{PUSH_FN_BODY}($e->{DATA});
+	pidl "\treturn NT_STATUS_OK;\n";
+	pidl "}\n\n";
+}
 
 #####################################################################
 # parse a typedef - pull side
@@ -1438,38 +1383,26 @@ sub ParseTypedefPull($)
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
 		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r)";
-		pidl "\n{\n";
-		ParseTypePull($e->{DATA});
-		pidl "\treturn NT_STATUS_OK;\n";
-		pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
 		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, int level, union $e->{NAME} *r)";
-		pidl "\n{\n";
-		ParseTypePull($e->{DATA});
-		pidl "\treturn NT_STATUS_OK;\n";
-		pidl "}\n\n";
-	}
+		}
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
 		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, enum $e->{NAME} *r)";
-		pidl "\n{\n";
-		ParseTypePull($e->{DATA});
-		pidl "\treturn NT_STATUS_OK;\n";
-		pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
 		my $type_decl = util::bitmap_type_decl($e->{DATA});
 		pidl $static . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, $type_decl *r)";
-		pidl "\n{\n";
-		ParseTypePull($e->{DATA});
-		pidl "\treturn NT_STATUS_OK;\n";
-		pidl "}\n\n";
 	}
-}
 
+	pidl "\n{\n";
+	$typefamily{$e->{DATA}->{TYPE}}->{PULL_FN_BODY}($e->{DATA});
+	pidl "\treturn NT_STATUS_OK;\n";
+	pidl "}\n\n";
+}
 
 #####################################################################
 # parse a typedef - print side
@@ -1485,32 +1418,27 @@ sub ParseTypedefPrint($)
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, struct $e->{NAME} *r)";
 		pidl "\n{\n";
 		pidl "\tndr_print_struct(ndr, name, \"$e->{NAME}\");\n";
-		ParseTypePrint($e->{DATA});
-		pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, int level, union $e->{NAME} *r)";
 		pidl "\n{\n";
 		pidl "\tndr_print_union(ndr, name, level, \"$e->{NAME}\");\n";
-		ParseTypePrint($e->{DATA});
-		pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "ENUM") {
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, enum $e->{NAME} r)";
 		pidl "\n{\n";
-		ParseTypePrint($e->{DATA});
-		pidl "}\n\n";
 	}
 
 	if ($e->{DATA}->{TYPE} eq "BITMAP") {
 		my $type_decl = util::bitmap_type_decl($e->{DATA});
 		pidl "void ndr_print_$e->{NAME}(struct ndr_print *ndr, const char *name, $type_decl r)";
 		pidl "\n{\n";
-		ParseTypePrint($e->{DATA});
-		pidl "}\n\n";
 	}
+
+	$typefamily{$e->{DATA}->{TYPE}}->{PRINT_FN_BODY}($e->{DATA});
+	pidl "}\n\n";
 }
 
 #####################################################################
@@ -1575,7 +1503,6 @@ sub ParseFunctionPrint($)
 	pidl "\tndr->depth--;\n";
 	pidl "}\n\n";
 }
-
 
 #####################################################################
 # parse a function element
@@ -1672,7 +1599,6 @@ sub ParseFunctionElementPull($$)
 	}
 }
 
-
 ############################################################
 # allocate ref variables
 sub AllocateRefVars($)
@@ -1705,7 +1631,6 @@ sub AllocateRefVars($)
 		pidl "\tmemset(r->out.$e->{NAME}, 0, $size * sizeof(*r->out.$e->{NAME}));\n";
 	}
 }
-
 
 #####################################################################
 # parse a function
@@ -2023,5 +1948,7 @@ sub Parse($$)
 
 	return $res;
 }
+
+RegisterPrimitives();
 
 1;
