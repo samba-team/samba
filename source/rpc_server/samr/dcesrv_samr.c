@@ -2074,6 +2074,8 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	const char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
 	void *sam_ctx;
 
+	ZERO_STRUCT(r->out.info);
+
 	sam_ctx = samdb_connect();
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
