@@ -664,10 +664,12 @@ doit (int do_kerberos, int check_rhosts)
 	long    today;
     
 	sp = getspnam(server_user);
-	today = time(0)/(24L * 60 * 60);
-	if (sp->sp_expire > 0) 
-	    if (today > sp->sp_expire) 
-		fatal(s, "Account has expired.");
+	if (sp != NULL) {
+	    today = time(0)/(24L * 60 * 60);
+	    if (sp->sp_expire > 0) 
+		if (today > sp->sp_expire) 
+		    fatal(s, "Account has expired.");
+	}
     }
 #endif
     
