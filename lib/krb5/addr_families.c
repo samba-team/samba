@@ -218,7 +218,7 @@ krb5_sockaddr2address (const struct sockaddr *sa, krb5_address *addr)
 }
 
 size_t
-krb5_max_sockaddr_size ()
+krb5_max_sockaddr_size (void)
 {
     if (max_sockaddr_size == 0) {
 	struct addr_operations *a;
