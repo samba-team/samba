@@ -52,7 +52,7 @@ set_progname(char *argv0)
 {
 #ifndef HAVE___PROGNAME
     char *p;
-    if(argv == NULL)
+    if(argv0 == NULL)
 	return;
     p = strrchr(argv0, '/');
     if(p == NULL)
