@@ -50,7 +50,6 @@ BOOL torture_rpc_wkssvc(int dummy)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	struct policy_handle handle;
 
 	mem_ctx = talloc_init("torture_rpc_wkssvc");
 
