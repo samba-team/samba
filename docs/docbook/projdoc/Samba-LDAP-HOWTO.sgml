@@ -2,12 +2,12 @@
 
 <chapterinfo>
 	<author>
-		<firstname>Gerald (Jerry)></firstname><surname>Carter</surname>
+		<firstname>Gerald (Jerry)</firstname><surname>Carter</surname>
 		<affiliation>
 			<orgname>Samba Team</orgname>
 			<address><email>jerry@samba.org</email></address>
 		</affiliation>
-		<firstname>Olivier (lem)></firstname><surname>Lemaire</surname>
+		<firstname>Olivier (lem)</firstname><surname>Lemaire</surname>
 		<affiliation>
 			<orgname>IDEALX</orgname>
 			<address><email>olem@IDEALX.org</email></address>
@@ -47,7 +47,7 @@ Two additional Samba resources which may prove to be helpful are
 </para>
 
 <itemizedlist>
-	<listitem><para>The <ulink url="http://www.unav.es/cti/ldap-smb/ldap-smb-2_2-howto.html">Samba-PDC-LDAP-HOWTO</ulink>
+	<listitem><para>The <ulink url="http://www.unav.es/cti/ldap-smb/ldap-smb-3-howto.html">Samba-PDC-LDAP-HOWTO</ulink>
 	maintained by Ignacio Coupeau.</para></listitem>
 
 	<listitem><para>The NT migration scripts from <ulink url="http://samba.idealx.org/">IDEALX</ulink> that are

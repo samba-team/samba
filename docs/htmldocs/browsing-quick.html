@@ -9,12 +9,15 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="General installation"
+HREF="introduction.html"><LINK
 REL="PREVIOUS"
-TITLE="Improved browsing in samba"
-HREF="improved-browsing.html"><LINK
+TITLE="Oplocks"
+HREF="oplocks.html"><LINK
 REL="NEXT"
-TITLE="Samba performance issues"
-HREF="speed.html"></HEAD
+TITLE="LanMan and NT Password Encryption in Samba"
+HREF="pwencrypt.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -42,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="improved-browsing.html"
+HREF="oplocks.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -56,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="speed.html"
+HREF="pwencrypt.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -71,7 +74,7 @@ CLASS="CHAPTER"
 ><A
 NAME="BROWSING-QUICK"
 ></A
->Chapter 16. Quick Cross Subnet Browsing / Cross Workgroup Browsing guide</H1
+>Chapter 4. Quick Cross Subnet Browsing / Cross Workgroup Browsing guide</H1
 ><P
 >This document should be read in conjunction with Browsing and may
 be taken as the fast track guide to implementing browsing across subnets
@@ -83,9 +86,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2665"
+NAME="AEN393"
 ></A
->16.1. Discussion</H1
+>4.1. Discussion</H1
 ><P
 >Firstly, all MS Windows networking is based on SMB (Server Message
 Block) based messaging. SMB messaging is implemented using NetBIOS. Samba
@@ -129,9 +132,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2673"
+NAME="AEN401"
 ></A
->16.2. Use of the "Remote Announce" parameter</H1
+>4.2. Use of the "Remote Announce" parameter</H1
 ><P
 >The "remote announce" parameter of smb.conf can be used to forcibly ensure
 that all the NetBIOS names on a network get announced to a remote network.
@@ -187,9 +190,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2687"
+NAME="AEN415"
 ></A
->16.3. Use of the "Remote Browse Sync" parameter</H1
+>4.3. Use of the "Remote Browse Sync" parameter</H1
 ><P
 >The "remote browse sync" parameter of smb.conf is used to announce to
 another LMB that it must synchronise it's NetBIOS name list with our
@@ -209,9 +212,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2692"
+NAME="AEN420"
 ></A
->16.4. Use of WINS</H1
+>4.4. Use of WINS</H1
 ><P
 >Use of WINS (either Samba WINS _or_ MS Windows NT Server WINS) is highly
 recommended. Every NetBIOS machine registers it's name together with a
@@ -271,9 +274,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2703"
+NAME="AEN431"
 ></A
->16.5. Do NOT use more than one (1) protocol on MS Windows machines</H1
+>4.5. Do NOT use more than one (1) protocol on MS Windows machines</H1
 ><P
 >A very common cause of browsing problems results from installing more than
 one protocol on an MS Windows machine.</P
@@ -301,9 +304,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2709"
+NAME="AEN437"
 ></A
->16.6. Name Resolution Order</H1
+>4.6. Name Resolution Order</H1
 ><P
 >Resolution of NetBIOS names to IP addresses can take place using a number
 of methods. The only ones that can provide NetBIOS name_type information
@@ -398,7 +401,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="improved-browsing.html"
+HREF="oplocks.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -416,7 +419,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="speed.html"
+HREF="pwencrypt.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -426,17 +429,21 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Improved browsing in samba</TD
+>Oplocks</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="introduction.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Samba performance issues</TD
+>LanMan and NT Password Encryption in Samba</TD
 ></TR
 ></TABLE
 ></DIV

@@ -210,6 +210,41 @@ Example: \fBpdbedit -P "bad lockout attempt" -V 3\fR
 		account policy value for bad lockout attempt is now 3
 		
 .fi
+.TP
+\fB-d|--debug=debuglevel\fR
+\fIdebuglevel\fR is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.
+
+The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.
+
+Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.
+
+Note that specifying this parameter here will 
+override the log
+level file.
+.TP
+\fB-h|--help\fR
+Print a summary of command line options.
+.TP
+\fB-s <configuration file>\fR
+The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See \fIsmb.conf(5)\fR for more information.
+The default configuration file name is determined at 
+compile time.
 .SH "NOTES"
 .PP
 This command may be used only by root.

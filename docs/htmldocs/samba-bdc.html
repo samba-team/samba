@@ -9,12 +9,15 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Type of installation"
+HREF="type.html"><LINK
 REL="PREVIOUS"
-TITLE="How to Configure Samba 2.2 as a Primary Domain Controller"
+TITLE="How to Configure Samba as a NT4 Primary Domain Controller"
 HREF="samba-pdc.html"><LINK
 REL="NEXT"
-TITLE="Storing Samba's User/Machine Account information in an LDAP Directory"
-HREF="samba-ldap-howto.html"></HEAD
+TITLE="Samba as a ADS domain member"
+HREF="ads.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -56,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="samba-ldap-howto.html"
+HREF="ads.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -71,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="SAMBA-BDC"
 ></A
->Chapter 12. How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</H1
+>Chapter 8. How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2148"
+NAME="AEN1143"
 ></A
->12.1. Prerequisite Reading</H1
+>8.1. Prerequisite Reading</H1
 ><P
 >Before you continue reading in this chapter, please make sure
 that you are comfortable with configuring a Samba PDC
@@ -94,9 +97,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2152"
+NAME="AEN1147"
 ></A
->12.2. Background</H1
+>8.2. Background</H1
 ><P
 >What is a Domain Controller? It is a machine that is able to answer
 logon requests from workstations in a Windows NT Domain. Whenever a
@@ -139,9 +142,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2160"
+NAME="AEN1155"
 ></A
->12.3. What qualifies a Domain Controller on the network?</H1
+>8.3. What qualifies a Domain Controller on the network?</H1
 ><P
 >Every machine that is a Domain Controller for the domain SAMBA has to
 register the NetBIOS group name SAMBA#1c with the WINS server and/or
@@ -156,9 +159,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2163"
+NAME="AEN1158"
 ></A
->12.3.1. How does a Workstation find its domain controller?</H2
+>8.3.1. How does a Workstation find its domain controller?</H2
 ><P
 >A NT workstation in the domain SAMBA that wants a local user to be
 authenticated has to find the domain controller for SAMBA. It does
@@ -175,9 +178,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2166"
+NAME="AEN1161"
 ></A
->12.3.2. When is the PDC needed?</H2
+>8.3.2. When is the PDC needed?</H2
 ><P
 >Whenever a user wants to change his password, this has to be done on
 the PDC. To find the PDC, the workstation does a NetBIOS name query
@@ -191,9 +194,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2169"
+NAME="AEN1164"
 ></A
->12.4. Can Samba be a Backup Domain Controller?</H1
+>8.4. Can Samba be a Backup Domain Controller?</H1
 ><P
 >With version 2.2, no. The native NT SAM replication protocols have
 not yet been fully implemented. The Samba Team is working on
@@ -210,9 +213,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2173"
+NAME="AEN1168"
 ></A
->12.5. How do I set up a Samba BDC?</H1
+>8.5. How do I set up a Samba BDC?</H1
 ><P
 >Several things have to be done:</P
 ><P
@@ -277,9 +280,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2190"
+NAME="AEN1185"
 ></A
->12.5.1. How do I replicate the smbpasswd file?</H2
+>8.5.1. How do I replicate the smbpasswd file?</H2
 ><P
 >Replication of the smbpasswd file is sensitive. It has to be done
 whenever changes to the SAM are made. Every user's password change is
@@ -329,7 +332,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="samba-ldap-howto.html"
+HREF="ads.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -339,17 +342,21 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->How to Configure Samba 2.2 as a Primary Domain Controller</TD
+>How to Configure Samba as a NT4 Primary Domain Controller</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="type.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Storing Samba's User/Machine Account information in an LDAP Directory</TD
+>Samba as a ADS domain member</TD
 ></TR
 ></TABLE
 ></DIV

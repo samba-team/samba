@@ -1,12 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML
 ><HEAD
 ><TITLE
 >SAMBA Developers Guide</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
-"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
 ><BODY
 CLASS="BOOK"
 BGCOLOR="#FFFFFF"
@@ -17,24 +16,35 @@ ALINK="#0000FF"
 ><DIV
 CLASS="BOOK"
 ><A
-NAME="SAMBA-DEVELOPER-DOCUMENTATION"><DIV
+NAME="SAMBA-DEVELOPERS-GUIDE"
+></A
+><DIV
 CLASS="TITLEPAGE"
 ><H1
 CLASS="TITLE"
 ><A
-NAME="SAMBA-DEVELOPER-DOCUMENTATION">SAMBA Developers Guide</H1
+NAME="SAMBA-DEVELOPERS-GUIDE"
+></A
+>SAMBA Developers Guide</H1
 ><H3
 CLASS="AUTHOR"
 ><A
-NAME="AEN4">SAMBA Team</H3
+NAME="AEN4"
+></A
+>SAMBA Team</H3
 ><HR></DIV
 ><HR><H1
 ><A
-NAME="AEN8">Abstract</H1
+NAME="AEN8"
+></A
+>Abstract</H1
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Last Update</I
+></SPAN
 > : Mon Sep 30 15:23:53 CDT 2002</P
 ><P
 >This book is a collection of documents that might be useful for 
@@ -68,109 +78,109 @@ CLASS="TOC"
 >Table of Contents</B
 ></DT
 ><DT
-><A
+>1. <A
 HREF="#NETBIOS"
 >Definition of NetBIOS Protocol and Name Resolution Modes</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>1.1. <A
 HREF="#AEN24"
 >NETBIOS</A
 ></DT
 ><DT
-><A
+>1.2. <A
 HREF="#AEN35"
 >BROADCAST NetBIOS</A
 ></DT
 ><DT
-><A
+>1.3. <A
 HREF="#AEN39"
 >NBNS NetBIOS</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
+>2. <A
 HREF="#ARCHITECTURE"
 >Samba Architecture</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>2.1. <A
 HREF="#AEN54"
 >Introduction</A
 ></DT
 ><DT
-><A
+>2.2. <A
 HREF="#AEN65"
 >Multithreading and Samba</A
 ></DT
 ><DT
-><A
+>2.3. <A
 HREF="#AEN70"
 >Threading smbd</A
 ></DT
 ><DT
-><A
+>2.4. <A
 HREF="#AEN86"
 >Threading nmbd</A
 ></DT
 ><DT
-><A
+>2.5. <A
 HREF="#AEN92"
 >nbmd Design</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
+>3. <A
 HREF="#DEBUG"
 >The samba DEBUG system</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>3.1. <A
 HREF="#AEN103"
 >New Output Syntax</A
 ></DT
 ><DT
-><A
+>3.2. <A
 HREF="#AEN128"
 >The DEBUG() Macro</A
 ></DT
 ><DT
-><A
+>3.3. <A
 HREF="#AEN151"
 >The DEBUGADD() Macro</A
 ></DT
 ><DT
-><A
+>3.4. <A
 HREF="#AEN159"
 >The DEBUGLVL() Macro</A
 ></DT
 ><DT
-><A
+>3.5. <A
 HREF="#AEN179"
 >New Functions</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>3.5.1. <A
 HREF="#AEN181"
 >dbgtext()</A
 ></DT
 ><DT
-><A
+>3.5.2. <A
 HREF="#AEN184"
 >dbghdr()</A
 ></DT
 ><DT
-><A
+>3.5.3. <A
 HREF="#AEN188"
 >format_debug_text()</A
 ></DT
@@ -179,177 +189,177 @@ HREF="#AEN188"
 ></DL
 ></DD
 ><DT
-><A
+>4. <A
 HREF="#CODINGSUGGESTIONS"
 >Coding Suggestions</A
 ></DT
 ><DT
-><A
+>5. <A
 HREF="#INTERNALS"
 >Samba Internals</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>5.1. <A
 HREF="#AEN284"
 >Character Handling</A
 ></DT
 ><DT
-><A
+>5.2. <A
 HREF="#AEN288"
 >The new functions</A
 ></DT
 ><DT
-><A
+>5.3. <A
 HREF="#AEN317"
 >Macros in byteorder.h</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>5.3.1. <A
 HREF="#AEN320"
 >CVAL(buf,pos)</A
 ></DT
 ><DT
-><A
+>5.3.2. <A
 HREF="#AEN323"
 >PVAL(buf,pos)</A
 ></DT
 ><DT
-><A
+>5.3.3. <A
 HREF="#AEN326"
 >SCVAL(buf,pos,val)</A
 ></DT
 ><DT
-><A
+>5.3.4. <A
 HREF="#AEN329"
 >SVAL(buf,pos)</A
 ></DT
 ><DT
-><A
+>5.3.5. <A
 HREF="#AEN332"
 >IVAL(buf,pos)</A
 ></DT
 ><DT
-><A
+>5.3.6. <A
 HREF="#AEN335"
 >SVALS(buf,pos)</A
 ></DT
 ><DT
-><A
+>5.3.7. <A
 HREF="#AEN338"
 >IVALS(buf,pos)</A
 ></DT
 ><DT
-><A
+>5.3.8. <A
 HREF="#AEN341"
 >SSVAL(buf,pos,val)</A
 ></DT
 ><DT
-><A
+>5.3.9. <A
 HREF="#AEN344"
 >SIVAL(buf,pos,val)</A
 ></DT
 ><DT
-><A
+>5.3.10. <A
 HREF="#AEN347"
 >SSVALS(buf,pos,val)</A
 ></DT
 ><DT
-><A
+>5.3.11. <A
 HREF="#AEN350"
 >SIVALS(buf,pos,val)</A
 ></DT
 ><DT
-><A
+>5.3.12. <A
 HREF="#AEN353"
 >RSVAL(buf,pos)</A
 ></DT
 ><DT
-><A
+>5.3.13. <A
 HREF="#AEN356"
 >RIVAL(buf,pos)</A
 ></DT
 ><DT
-><A
+>5.3.14. <A
 HREF="#AEN359"
 >RSSVAL(buf,pos,val)</A
 ></DT
 ><DT
-><A
+>5.3.15. <A
 HREF="#AEN362"
 >RSIVAL(buf,pos,val)</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
+>5.4. <A
 HREF="#AEN365"
 >LAN Manager Samba API</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>5.4.1. <A
 HREF="#AEN371"
 >Parameters</A
 ></DT
 ><DT
-><A
+>5.4.2. <A
 HREF="#AEN406"
 >Return value</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
+>5.5. <A
 HREF="#AEN420"
 >Code character table</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
+>6. <A
 HREF="#PARSING"
 >The smb.conf file</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>6.1. <A
 HREF="#AEN451"
 >Lexical Analysis</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>6.1.1. <A
 HREF="#AEN472"
 >Handling of Whitespace</A
 ></DT
 ><DT
-><A
+>6.1.2. <A
 HREF="#AEN484"
 >Handling of Line Continuation</A
 ></DT
 ><DT
-><A
+>6.1.3. <A
 HREF="#AEN495"
 >Line Continuation Quirks</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
+>6.2. <A
 HREF="#AEN515"
 >Syntax</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>6.2.1. <A
 HREF="#AEN530"
 >About params.c</A
 ></DT
@@ -358,294 +368,294 @@ HREF="#AEN530"
 ></DL
 ></DD
 ><DT
-><A
+>7. <A
 HREF="#UNIX-SMB"
 >NetBIOS in a Unix World</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
+>7.1. <A
 HREF="#AEN540"
 >Introduction</A
 ></DT
 ><DT
-><A
+>7.2. <A
 HREF="#AEN544"
 >Usernames</A
 ></DT
 ><DT
-><A
+>7.3. <A
 HREF="#AEN552"
 >File Ownership</A
 ></DT
 ><DT
-><A
+>7.4. <A
 HREF="#AEN557"
 >Passwords</A
 ></DT
 ><DT
-><A
+>7.5. <A
 HREF="#AEN563"
 >Locking</A
 ></DT
 ><DT
-><A
-HREF="#AEN570"
+>7.6. <A
+HREF="#AEN571"
 >Deny Modes</A
 ></DT
 ><DT
-><A
-HREF="#AEN574"
+>7.7. <A
+HREF="#AEN575"
 >Trapdoor UIDs</A
 ></DT
 ><DT
-><A
-HREF="#AEN578"
+>7.8. <A
+HREF="#AEN579"
 >Port numbers</A
 ></DT
 ><DT
-><A
-HREF="#AEN583"
+>7.9. <A
+HREF="#AEN584"
 >Protocol Complexity</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
+>8. <A
 HREF="#TRACING"
 >Tracing samba system calls</A
 ></DT
 ><DT
-><A
+>9. <A
 HREF="#NTDOMAIN"
 >NT Domain RPC's</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN651"
+>9.1. <A
+HREF="#AEN652"
 >Introduction</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN687"
+>9.1.1. <A
+HREF="#AEN688"
 >Sources</A
 ></DT
 ><DT
-><A
-HREF="#AEN694"
+>9.1.2. <A
+HREF="#AEN695"
 >Credits</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
-HREF="#AEN701"
+>9.2. <A
+HREF="#AEN702"
 >Notes and Structures</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN703"
+>9.2.1. <A
+HREF="#AEN704"
 >Notes</A
 ></DT
 ><DT
-><A
-HREF="#AEN716"
+>9.2.2. <A
+HREF="#AEN717"
 >Enumerations</A
 ></DT
 ><DT
-><A
-HREF="#AEN774"
+>9.2.3. <A
+HREF="#AEN775"
 >Structures</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
-HREF="#AEN1570"
+>9.3. <A
+HREF="#AEN1571"
 >MSRPC over Transact Named Pipe</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN1573"
+>9.3.1. <A
+HREF="#AEN1574"
 >MSRPC Pipes</A
 ></DT
 ><DT
-><A
-HREF="#AEN1587"
+>9.3.2. <A
+HREF="#AEN1588"
 >Header</A
 ></DT
 ><DT
-><A
-HREF="#AEN1841"
+>9.3.3. <A
+HREF="#AEN1842"
 >Tail</A
 ></DT
 ><DT
-><A
-HREF="#AEN1853"
+>9.3.4. <A
+HREF="#AEN1854"
 >RPC Bind / Bind Ack</A
 ></DT
 ><DT
-><A
-HREF="#AEN1897"
+>9.3.5. <A
+HREF="#AEN1898"
 >NTLSA Transact Named Pipe</A
 ></DT
 ><DT
-><A
-HREF="#AEN1938"
+>9.3.6. <A
+HREF="#AEN1939"
 >LSA Open Policy</A
 ></DT
 ><DT
-><A
-HREF="#AEN1972"
+>9.3.7. <A
+HREF="#AEN1973"
 >LSA Query Info Policy</A
 ></DT
 ><DT
-><A
-HREF="#AEN2000"
+>9.3.8. <A
+HREF="#AEN2001"
 >LSA Enumerate Trusted Domains</A
 ></DT
 ><DT
-><A
-HREF="#AEN2024"
+>9.3.9. <A
+HREF="#AEN2025"
 >LSA Open Secret</A
 ></DT
 ><DT
-><A
-HREF="#AEN2053"
+>9.3.10. <A
+HREF="#AEN2054"
 >LSA Close</A
 ></DT
 ><DT
-><A
-HREF="#AEN2070"
+>9.3.11. <A
+HREF="#AEN2071"
 >LSA Lookup SIDS</A
 ></DT
 ><DT
-><A
-HREF="#AEN2129"
+>9.3.12. <A
+HREF="#AEN2130"
 >LSA Lookup Names</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
-HREF="#AEN2192"
+>9.4. <A
+HREF="#AEN2193"
 >NETLOGON rpc Transact Named Pipe</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN2231"
+>9.4.1. <A
+HREF="#AEN2232"
 >LSA Request Challenge</A
 ></DT
 ><DT
-><A
-HREF="#AEN2266"
+>9.4.2. <A
+HREF="#AEN2267"
 >LSA Authenticate 2</A
 ></DT
 ><DT
-><A
-HREF="#AEN2305"
+>9.4.3. <A
+HREF="#AEN2306"
 >LSA Server Password Set</A
 ></DT
 ><DT
-><A
-HREF="#AEN2334"
+>9.4.4. <A
+HREF="#AEN2335"
 >LSA SAM Logon</A
 ></DT
 ><DT
-><A
-HREF="#AEN2358"
+>9.4.5. <A
+HREF="#AEN2359"
 >LSA SAM Logoff</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
-HREF="#AEN2381"
+>9.5. <A
+HREF="#AEN2382"
 >\\MAILSLOT\NET\NTLOGON</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN2385"
+>9.5.1. <A
+HREF="#AEN2386"
 >Query for PDC</A
 ></DT
 ><DT
-><A
-HREF="#AEN2459"
+>9.5.2. <A
+HREF="#AEN2460"
 >SAM Logon</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
-HREF="#AEN2549"
+>9.6. <A
+HREF="#AEN2550"
 >SRVSVC Transact Named Pipe</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN2561"
+>9.6.1. <A
+HREF="#AEN2562"
 >Net Share Enum</A
 ></DT
 ><DT
-><A
-HREF="#AEN2622"
+>9.6.2. <A
+HREF="#AEN2623"
 >Net Server Get Info</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
-HREF="#AEN2653"
+>9.7. <A
+HREF="#AEN2654"
 >Cryptographic side of NT Domain Authentication</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN2655"
+>9.7.1. <A
+HREF="#AEN2656"
 >Definitions</A
 ></DT
 ><DT
-><A
-HREF="#AEN2698"
+>9.7.2. <A
+HREF="#AEN2699"
 >Protocol</A
 ></DT
 ><DT
-><A
-HREF="#AEN2708"
+>9.7.3. <A
+HREF="#AEN2709"
 >Comments</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
-HREF="#AEN2715"
+>9.8. <A
+HREF="#AEN2716"
 >SIDs and RIDs</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN2723"
+>9.8.1. <A
+HREF="#AEN2724"
 >Well-known SIDs</A
 ></DT
 ><DT
-><A
-HREF="#AEN2811"
+>9.8.2. <A
+HREF="#AEN2812"
 >Well-known RIDS</A
 ></DT
 ></DL
@@ -653,50 +663,154 @@ HREF="#AEN2811"
 ></DL
 ></DD
 ><DT
-><A
+>10. <A
 HREF="#PRINTING"
 >Samba Printing Internals</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN2895"
+>10.1. <A
+HREF="#AEN2896"
 >Abstract</A
 ></DT
 ><DT
-><A
-HREF="#AEN2898"
+>10.2. <A
+HREF="#AEN2899"
 >Printing Interface to Various Back ends</A
 ></DT
 ><DT
-><A
-HREF="#AEN2924"
+>10.3. <A
+HREF="#AEN2925"
 >Print Queue TDB's</A
 ></DT
 ><DT
-><A
-HREF="#AEN2958"
+>10.4. <A
+HREF="#AEN2959"
 >ChangeID &#38; Client Caching of Printer Information</A
 ></DT
 ><DT
-><A
-HREF="#AEN2961"
+>10.5. <A
+HREF="#AEN2962"
 >Windows NT/2K Printer Change Notify</A
 ></DT
 ></DL
 ></DD
 ><DT
-><A
+>11. <A
 HREF="#WINS"
 >Samba WINS Internals</A
 ></DT
 ><DD
 ><DL
 ><DT
-><A
-HREF="#AEN3032"
+>11.1. <A
+HREF="#AEN3033"
 >WINS Failover</A
+></DT
+></DL
+></DD
+><DT
+>12. <A
+HREF="#SAM"
+>The Upcoming SAM System</A
+></DT
+><DD
+><DL
+><DT
+>12.1. <A
+HREF="#AEN3054"
+>Security in the 'new SAM'</A
+></DT
+><DT
+>12.2. <A
+HREF="#AEN3071"
+>Standalone from UNIX</A
+></DT
+><DT
+>12.3. <A
+HREF="#AEN3075"
+>Handles and Races in the new SAM</A
+></DT
+><DT
+>12.4. <A
+HREF="#AEN3086"
+>Layers</A
+></DT
+><DD
+><DL
+><DT
+>12.4.1. <A
+HREF="#AEN3088"
+>Application</A
+></DT
+><DT
+>12.4.2. <A
+HREF="#AEN3091"
+>SAM Interface</A
+></DT
+><DT
+>12.4.3. <A
+HREF="#AEN3095"
+>SAM Modules</A
+></DT
+></DL
+></DD
+><DT
+>12.5. <A
+HREF="#AEN3098"
+>SAM Modules</A
+></DT
+><DD
+><DL
+><DT
+>12.5.1. <A
+HREF="#AEN3100"
+>Special Module: sam_passdb</A
+></DT
+><DT
+>12.5.2. <A
+HREF="#AEN3103"
+>sam_ads</A
+></DT
+></DL
+></DD
+><DT
+>12.6. <A
+HREF="#AEN3107"
+>Memory Management</A
+></DT
+><DT
+>12.7. <A
+HREF="#AEN3121"
+>Testing</A
+></DT
+></DL
+></DD
+><DT
+>13. <A
+HREF="#PWENCRYPT"
+>LanMan and NT Password Encryption</A
+></DT
+><DD
+><DL
+><DT
+>13.1. <A
+HREF="#AEN3147"
+>Introduction</A
+></DT
+><DT
+>13.2. <A
+HREF="#AEN3151"
+>How does it work?</A
+></DT
+><DT
+>13.3. <A
+HREF="#AEN3162"
+><A
+NAME="SMBPASSWDFILEFORMAT"
+></A
+>The smbpasswd file</A
 ></DT
 ></DL
 ></DD
@@ -706,13 +820,17 @@ HREF="#AEN3032"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="NETBIOS">Definition of NetBIOS Protocol and Name Resolution Modes</H1
+NAME="NETBIOS"
+></A
+>Chapter 1. Definition of NetBIOS Protocol and Name Resolution Modes</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN24">NETBIOS</H2
+NAME="AEN24"
+></A
+>1.1. NETBIOS</H2
 ><P
 >NetBIOS runs over the following tranports: TCP/IP; NetBEUI and IPX/SPX.
 Samba only uses NetBIOS over TCP/IP.  For details on the TCP/IP NetBIOS 
@@ -766,7 +884,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN35">BROADCAST NetBIOS</H2
+NAME="AEN35"
+></A
+>1.2. BROADCAST NetBIOS</H2
 ><P
 > 
 Clients can claim names, and therefore offer services on successfully claimed
@@ -787,7 +907,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN39">NBNS NetBIOS</H2
+NAME="AEN39"
+></A
+>1.3. NBNS NetBIOS</H2
 ><P
 >rfc1001.txt describes, amongst other things, the implementation and use
 of, a 'NetBIOS Name Service'.  NT/AS offers 'Windows Internet Name Service'
@@ -837,13 +959,17 @@ contact the WINS server to resolve a NetBIOS name.</P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="ARCHITECTURE">Samba Architecture</H1
+NAME="ARCHITECTURE"
+></A
+>Chapter 2. Samba Architecture</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN54">Introduction</H2
+NAME="AEN54"
+></A
+>2.1. Introduction</H2
 ><P
 >This document gives a general overview of how Samba works
 internally. The Samba Team has tried to come up with a model which is
@@ -876,7 +1002,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN65">Multithreading and Samba</H2
+NAME="AEN65"
+></A
+>2.2. Multithreading and Samba</H2
 ><P
 >People sometimes tout threads as a uniformly good thing. They are very
 nice in their place but are quite inappropriate for smbd. nmbd is
@@ -900,7 +1028,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN70">Threading smbd</H2
+NAME="AEN70"
+></A
+>2.3. Threading smbd</H2
 ><P
 >A few problems that would arise from a threaded smbd are:</P
 ><P
@@ -949,7 +1079,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN86">Threading nmbd</H2
+NAME="AEN86"
+></A
+>2.4. Threading nmbd</H2
 ><P
 >This would be ideal, but gets sunk by portability requirements.</P
 ><P
@@ -983,7 +1115,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN92">nbmd Design</H2
+NAME="AEN92"
+></A
+>2.5. nbmd Design</H2
 ><P
 >Originally Andrew used recursion to simulate a multi-threaded
 environment, which use the stack enormously and made for really
@@ -1011,36 +1145,31 @@ for browsing and WINS support. </P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="DEBUG">The samba DEBUG system</H1
+NAME="DEBUG"
+></A
+>Chapter 3. The samba DEBUG system</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN103">New Output Syntax</H2
+NAME="AEN103"
+></A
+>3.1. New Output Syntax</H2
 ><P
 >   The syntax of a debugging log file is represented as:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->  &#62;debugfile&#60; :== { &#62;debugmsg&#60; }
+>  &gt;debugfile&lt; :== { &gt;debugmsg&lt; }
 
-  &#62;debugmsg&#60;  :== &#62;debughdr&#60; '\n' &#62;debugtext&#60;
+  &gt;debugmsg&lt;  :== &gt;debughdr&lt; '\n' &gt;debugtext&lt;
 
-  &#62;debughdr&#60;  :== '[' TIME ',' LEVEL ']' FILE ':' [FUNCTION] '(' LINE ')'
+  &gt;debughdr&lt;  :== '[' TIME ',' LEVEL ']' FILE ':' [FUNCTION] '(' LINE ')'
 
-  &#62;debugtext&#60; :== { &#62;debugline&#60; }
+  &gt;debugtext&lt; :== { &gt;debugline&lt; }
 
-  &#62;debugline&#60; :== TEXT '\n'</PRE
-></TD
-></TR
-></TABLE
+  &gt;debugline&lt; :== TEXT '\n'</PRE
 ></P
 ><P
 >TEXT is a string of characters excluding the newline character.</P
@@ -1091,12 +1220,6 @@ by a newline.</P
 ><P
 >Here's some example output:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >    [1998/08/03 12:55:25, 1] nmbd.c:(659)
@@ -1104,9 +1227,6 @@ CLASS="PROGRAMLISTING"
       Copyright Andrew Tridgell 1994-1997
     [1998/08/03 12:55:25, 3] loadparm.c:(763)
       Initializing global parameters</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >Note that in the above example the function names are not listed on
@@ -1118,7 +1238,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN128">The DEBUG() Macro</H2
+NAME="AEN128"
+></A
+>3.2. The DEBUG() Macro</H2
 ><P
 >Use of the DEBUG() macro is unchanged. DEBUG() takes two parameters.
 The first is the message level, the second is the body of a function
@@ -1128,34 +1250,16 @@ call to the Debug1() function.</P
 ><P
 >Here's an example which may help a bit. If you would write</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >printf( "This is a %s message.\n", "debug" );</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >to send the output to stdout, then you would write</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >DEBUG( 0, ( "This is a %s message.\n", "debug" ) );</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >to send the output to the debug file.  All of the normal printf()
@@ -1168,19 +1272,10 @@ statement is processed.</P
 ><P
 >The output of the above example would be something like:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >    [1998/07/30 16:00:51, 0] file.c:function(128)
       This is a debug message.</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >Each call to DEBUG() creates a new header *unless* the output produced
@@ -1193,12 +1288,6 @@ DEBUG() is called, the new input is simply appended.</P
 DEBUG() has been used to write partial lines. Here's a simple (dumb)
 example of the kind of thing I'm talking about:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >    DEBUG( 0, ("The test returned " ) );
@@ -1207,20 +1296,11 @@ CLASS="PROGRAMLISTING"
     else
       DEBUG(0, ("False") );
     DEBUG(0, (".\n") );</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >Without the format buffer, the output (assuming test() returned true)
 would look like this:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >    [1998/07/30 16:00:51, 0] file.c:function(256)
@@ -1229,9 +1309,6 @@ CLASS="PROGRAMLISTING"
       True
     [1998/07/30 16:00:51, 0] file.c:function(261)
       .</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >Which isn't much use. The format buffer kludge fixes this problem.</P
@@ -1241,7 +1318,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN151">The DEBUGADD() Macro</H2
+NAME="AEN151"
+></A
+>3.3. The DEBUGADD() Macro</H2
 ><P
 >In addition to the kludgey solution to the broken line problem
 described above, there is a clean solution. The DEBUGADD() macro never
@@ -1249,38 +1328,20 @@ generates a header. It will append new text to the current debug
 message even if the format buffer is empty. The syntax of the
 DEBUGADD() macro is the same as that of the DEBUG() macro.</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >    DEBUG( 0, ("This is the first line.\n" ) );
     DEBUGADD( 0, ("This is the second line.\nThis is the third line.\n" ) );</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >Produces</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >    [1998/07/30 16:00:51, 0] file.c:function(512)
       This is the first line.
       This is the second line.
       This is the third line.</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DIV
 ><DIV
@@ -1288,57 +1349,35 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN159">The DEBUGLVL() Macro</H2
+NAME="AEN159"
+></A
+>3.4. The DEBUGLVL() Macro</H2
 ><P
 >One of the problems with the DEBUG() macro was that DEBUG() lines
 tended to get a bit long. Consider this example from
 nmbd_sendannounce.c:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >  DEBUG(3,("send_local_master_announcement: type %x for name %s on subnet %s for workgroup %s\n",
             type, global_myname, subrec-&#62;subnet_name, work-&#62;work_group));</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >One solution to this is to break it down using DEBUG() and DEBUGADD(),
 as follows:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >  DEBUG( 3, ( "send_local_master_announcement: " ) );
   DEBUGADD( 3, ( "type %x for name %s ", type, global_myname ) );
   DEBUGADD( 3, ( "on subnet %s ", subrec-&#62;subnet_name ) );
   DEBUGADD( 3, ( "for workgroup %s\n", work-&#62;work_group ) );</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >A similar, but arguably nicer approach is to use the DEBUGLVL() macro.
 This macro returns True if the message level is less than or equal to
 the global DEBUGLEVEL value, so:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >  if( DEBUGLVL( 3 ) )
@@ -1348,9 +1387,6 @@ CLASS="PROGRAMLISTING"
     dbgtext( "on subnet %s ", subrec-&#62;subnet_name );
     dbgtext( "for workgroup %s\n", work-&#62;work_group );
     }</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >(The dbgtext() function is explained below.)</P
@@ -1381,13 +1417,17 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN179">New Functions</H2
+NAME="AEN179"
+></A
+>3.5. New Functions</H2
 ><DIV
 CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN181">dbgtext()</H3
+NAME="AEN181"
+></A
+>3.5.1. dbgtext()</H3
 ><P
 >This function prints debug message text to the debug file (and
 possibly to syslog) via the format buffer. The function uses a
@@ -1403,7 +1443,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN184">dbghdr()</H3
+NAME="AEN184"
+></A
+>3.5.2. dbghdr()</H3
 ><P
 >This is the function that writes a debug message header.
 Headers are not processed via the format buffer. Also note that
@@ -1418,7 +1460,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN188">format_debug_text()</H3
+NAME="AEN188"
+></A
+>3.5.3. format_debug_text()</H3
 ><P
 >This is a static function in debug.c. It stores the output text
 for the body of the message in a buffer until it encounters a
@@ -1435,7 +1479,9 @@ syslog output).</P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="CODINGSUGGESTIONS">Coding Suggestions</H1
+NAME="CODINGSUGGESTIONS"
+></A
+>Chapter 4. Coding Suggestions</H1
 ><P
 >So you want to add code to Samba ...</P
 ><P
@@ -1652,13 +1698,17 @@ added.</P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="INTERNALS">Samba Internals</H1
+NAME="INTERNALS"
+></A
+>Chapter 5. Samba Internals</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN284">Character Handling</H2
+NAME="AEN284"
+></A
+>5.1. Character Handling</H2
 ><P
 >This section describes character set handling in Samba, as implemented in
 Samba 3.0 and above</P
@@ -1675,7 +1725,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN288">The new functions</H2
+NAME="AEN288"
+></A
+>5.2. The new functions</H2
 ><P
 >The new system works like this:</P
 ><P
@@ -1784,7 +1836,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN317">Macros in byteorder.h</H2
+NAME="AEN317"
+></A
+>5.3. Macros in byteorder.h</H2
 ><P
 >This section describes the macros defined in byteorder.h.  These macros 
 are used extensively in the Samba code.</P
@@ -1793,7 +1847,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN320">CVAL(buf,pos)</H3
+NAME="AEN320"
+></A
+>5.3.1. CVAL(buf,pos)</H3
 ><P
 >returns the byte at offset pos within buffer buf as an unsigned character.</P
 ></DIV
@@ -1802,7 +1858,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN323">PVAL(buf,pos)</H3
+NAME="AEN323"
+></A
+>5.3.2. PVAL(buf,pos)</H3
 ><P
 >returns the value of CVAL(buf,pos) cast to type unsigned integer.</P
 ></DIV
@@ -1811,7 +1869,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN326">SCVAL(buf,pos,val)</H3
+NAME="AEN326"
+></A
+>5.3.3. SCVAL(buf,pos,val)</H3
 ><P
 >sets the byte at offset pos within buffer buf to value val.</P
 ></DIV
@@ -1820,7 +1880,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN329">SVAL(buf,pos)</H3
+NAME="AEN329"
+></A
+>5.3.4. SVAL(buf,pos)</H3
 ><P
 >	returns the value of the unsigned short (16 bit) little-endian integer at 
 	offset pos within buffer buf.  An integer of this type is sometimes
@@ -1831,7 +1893,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN332">IVAL(buf,pos)</H3
+NAME="AEN332"
+></A
+>5.3.5. IVAL(buf,pos)</H3
 ><P
 >returns the value of the unsigned 32 bit little-endian integer at offset 
 pos within buffer buf.</P
@@ -1841,7 +1905,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN335">SVALS(buf,pos)</H3
+NAME="AEN335"
+></A
+>5.3.6. SVALS(buf,pos)</H3
 ><P
 >returns the value of the signed short (16 bit) little-endian integer at 
 offset pos within buffer buf.</P
@@ -1851,7 +1917,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN338">IVALS(buf,pos)</H3
+NAME="AEN338"
+></A
+>5.3.7. IVALS(buf,pos)</H3
 ><P
 >returns the value of the signed 32 bit little-endian integer at offset pos
 within buffer buf.</P
@@ -1861,7 +1929,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN341">SSVAL(buf,pos,val)</H3
+NAME="AEN341"
+></A
+>5.3.8. SSVAL(buf,pos,val)</H3
 ><P
 >sets the unsigned short (16 bit) little-endian integer at offset pos within 
 buffer buf to value val.</P
@@ -1871,7 +1941,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN344">SIVAL(buf,pos,val)</H3
+NAME="AEN344"
+></A
+>5.3.9. SIVAL(buf,pos,val)</H3
 ><P
 >sets the unsigned 32 bit little-endian integer at offset pos within buffer 
 buf to the value val.</P
@@ -1881,7 +1953,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN347">SSVALS(buf,pos,val)</H3
+NAME="AEN347"
+></A
+>5.3.10. SSVALS(buf,pos,val)</H3
 ><P
 >sets the short (16 bit) signed little-endian integer at offset pos within 
 buffer buf to the value val.</P
@@ -1891,7 +1965,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN350">SIVALS(buf,pos,val)</H3
+NAME="AEN350"
+></A
+>5.3.11. SIVALS(buf,pos,val)</H3
 ><P
 >sets the signed 32 bit little-endian integer at offset pos withing buffer
 buf to the value val.</P
@@ -1901,7 +1977,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN353">RSVAL(buf,pos)</H3
+NAME="AEN353"
+></A
+>5.3.12. RSVAL(buf,pos)</H3
 ><P
 >returns the value of the unsigned short (16 bit) big-endian integer at 
 offset pos within buffer buf.</P
@@ -1911,7 +1989,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN356">RIVAL(buf,pos)</H3
+NAME="AEN356"
+></A
+>5.3.13. RIVAL(buf,pos)</H3
 ><P
 >returns the value of the unsigned 32 bit big-endian integer at offset 
 pos within buffer buf.</P
@@ -1921,7 +2001,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN359">RSSVAL(buf,pos,val)</H3
+NAME="AEN359"
+></A
+>5.3.14. RSSVAL(buf,pos,val)</H3
 ><P
 >sets the value of the unsigned short (16 bit) big-endian integer at 
 offset pos within buffer buf to value val.
@@ -1932,7 +2014,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN362">RSIVAL(buf,pos,val)</H3
+NAME="AEN362"
+></A
+>5.3.15. RSIVAL(buf,pos,val)</H3
 ><P
 >sets the value of the unsigned 32 bit big-endian integer at offset 
 pos within buffer buf to value val.</P
@@ -1943,26 +2027,19 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN365">LAN Manager Samba API</H2
+NAME="AEN365"
+></A
+>5.4. LAN Manager Samba API</H2
 ><P
 >This section describes the functions need to make a LAN Manager RPC call.
 This information had been obtained by examining the Samba code and the LAN
 Manager 2.0 API documentation.  It should not be considered entirely
 reliable.</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >call_api(int prcnt, int drcnt, int mprcnt, int mdrcnt, 
 	char *param, char *data, char **rparam, char **rdata);</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >This function is defined in client.c.  It uses an SMB transaction to call a
@@ -1972,7 +2049,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN371">Parameters</H3
+NAME="AEN371"
+></A
+>5.4.1. Parameters</H3
 ><P
 >The parameters are as follows:</P
 ><P
@@ -2064,7 +2143,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN406">Return value</H3
+NAME="AEN406"
+></A
+>5.4.2. Return value</H3
 ><P
 >The returned parameters (pointed to by rparam), in their order of appearance
 are:</P
@@ -2115,7 +2196,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN420">Code character table</H2
+NAME="AEN420"
+></A
+>5.5. Code character table</H2
 ><P
 >Certain data structures are described by means of ASCIIz strings containing
 code characters.  These are the code characters:</P
@@ -2170,13 +2253,17 @@ TYPE="1"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="PARSING">The smb.conf file</H1
+NAME="PARSING"
+></A
+>Chapter 6. The smb.conf file</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN451">Lexical Analysis</H2
+NAME="AEN451"
+></A
+>6.1. Lexical Analysis</H2
 ><P
 >Basically, the file is processed on a line by line basis.  There are
 four types of lines that are recognized by the lexical analyzer
@@ -2233,7 +2320,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN472">Handling of Whitespace</H3
+NAME="AEN472"
+></A
+>6.1.1. Handling of Whitespace</H3
 ><P
 >Whitespace is defined as all characters recognized by the isspace()
 function (see ctype(3C)) except for the newline character ('\n')
@@ -2268,7 +2357,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN484">Handling of Line Continuation</H3
+NAME="AEN484"
+></A
+>6.1.2. Handling of Line Continuation</H3
 ><P
 >Long section header and parameter lines may be extended across
 multiple lines by use of the backslash character ('\\').  Line
@@ -2279,35 +2370,17 @@ a parameter line is a backslash, then the next line will be
 (logically) concatonated with the current line by the lexical
 analyzer.  For example:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >	param name = parameter value string \
 	with line continuation.</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >Would be read as</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >    param name = parameter value string     with line continuation.</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >Note that there are five spaces following the word 'string',
@@ -2324,110 +2397,58 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN495">Line Continuation Quirks</H3
+NAME="AEN495"
+></A
+>6.1.3. Line Continuation Quirks</H3
 ><P
 >Note the following example:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >	param name = parameter value string \
     \
     with line continuation.</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >The middle line is *not* parsed as a blank line because it is first
 concatonated with the top line.  The result is</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >param name = parameter value string         with line continuation.</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >The same is true for comment lines.</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >	param name = parameter value string \
 	; comment \
     with a comment.</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >This becomes:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >param name = parameter value string     ; comment     with a comment.</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >On a section header line, the closing bracket (']') is considered a
 terminating character, and the rest of the line is ignored.  The lines</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >	[ section   name ] garbage \
     param  name  = value</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >are read as</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >	[section name]
     param name = value</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DIV
 ></DIV
@@ -2436,25 +2457,18 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN515">Syntax</H2
+NAME="AEN515"
+></A
+>6.2. Syntax</H2
 ><P
 >The syntax of the smb.conf file is as follows:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->  &#60;file&#62;            :==  { &#60;section&#62; } EOF
-  &#60;section&#62;         :==  &#60;section header&#62; { &#60;parameter line&#62; }
-  &#60;section header&#62;  :==  '[' NAME ']'
-  &#60;parameter line&#62;  :==  NAME '=' VALUE NL</PRE
-></TD
-></TR
-></TABLE
+>  &lt;file&gt;            :==  { &lt;section&gt; } EOF
+  &lt;section&gt;         :==  &lt;section header&gt; { &lt;parameter line&gt; }
+  &lt;section header&gt;  :==  '[' NAME ']'
+  &lt;parameter line&gt;  :==  NAME '=' VALUE NL</PRE
 ></P
 ><P
 >Basically, this means that</P
@@ -2490,7 +2504,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN530">About params.c</H3
+NAME="AEN530"
+></A
+>6.2.1. About params.c</H3
 ><P
 >The parsing of the config file is a bit unusual if you are used to
 lex, yacc, bison, etc.  Both lexical analysis (scanning) and parsing
@@ -2503,13 +2519,17 @@ loadparm.c.</P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="UNIX-SMB">NetBIOS in a Unix World</H1
+NAME="UNIX-SMB"
+></A
+>Chapter 7. NetBIOS in a Unix World</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN540">Introduction</H2
+NAME="AEN540"
+></A
+>7.1. Introduction</H2
 ><P
 >This is a short document that describes some of the issues that
 confront a SMB implementation on unix, and how Samba copes with
@@ -2524,7 +2544,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN544">Usernames</H2
+NAME="AEN544"
+></A
+>7.2. Usernames</H2
 ><P
 >The SMB protocol has only a loose username concept. Early SMB
 protocols (such as CORE and COREPLUS) have no username concept at
@@ -2568,7 +2590,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN552">File Ownership</H2
+NAME="AEN552"
+></A
+>7.3. File Ownership</H2
 ><P
 >The commonly used SMB protocols have no way of saying "you can't do
 that because you don't own the file". They have, in fact, no concept
@@ -2593,7 +2617,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN557">Passwords</H2
+NAME="AEN557"
+></A
+>7.4. Passwords</H2
 ><P
 >Many SMB clients uppercase passwords before sending them. I have no
 idea why they do this. Interestingly WfWg uppercases the password only
@@ -2622,7 +2648,12 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN563">Locking</H2
+NAME="AEN563"
+></A
+>7.5. Locking</H2
+><P
+>Since samba 2.2, samba supports other types of locking as well. This 
+section is outdated.</P
 ><P
 >The locking calls available under a DOS/Windows environment are much
 richer than those available in unix. This means a unix server (like
@@ -2657,7 +2688,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN570">Deny Modes</H2
+NAME="AEN571"
+></A
+>7.6. Deny Modes</H2
 ><P
 >When a SMB client opens a file it asks for a particular "deny mode" to
 be placed on the file. These modes (DENY_NONE, DENY_READ, DENY_WRITE,
@@ -2678,7 +2711,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN574">Trapdoor UIDs</H2
+NAME="AEN575"
+></A
+>7.7. Trapdoor UIDs</H2
 ><P
 >A SMB session can run with several uids on the one socket. This
 happens when a user connects to two shares with different
@@ -2695,7 +2730,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN578">Port numbers</H2
+NAME="AEN579"
+></A
+>7.8. Port numbers</H2
 ><P
 >There is a convention that clients on sockets use high "unprivilaged"
 port numbers (&#62;1000) and connect to servers on low "privilaged" port
@@ -2725,7 +2762,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN583">Protocol Complexity</H2
+NAME="AEN584"
+></A
+>7.9. Protocol Complexity</H2
 ><P
 >There are many "protocol levels" in the SMB protocol. It seems that
 each time new functionality was added to a Microsoft operating system,
@@ -2770,7 +2809,9 @@ mailing list hosted by Microsft.</P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="TRACING">Tracing samba system calls</H1
+NAME="TRACING"
+></A
+>Chapter 8. Tracing samba system calls</H1
 ><P
 >This file describes how to do a system call trace on Samba to work out
 what its doing wrong. This is not for the faint of heart, but if you
@@ -2820,18 +2861,9 @@ CLASS="COMMAND"
 hello</B
 > output is:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >write(1, "hello\n", 6)                  = 6</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >all the rest is just setting up to run the program.</P
@@ -2883,19 +2915,10 @@ CLASS="FILENAME"
 > is not world writeable, which
 causes printing to fail with Samba:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >[pid 28268] open("/dev/null", O_RDWR)   = -1 EACCES (Permission denied)
 [pid 28268] open("/dev/null", O_WRONLY) = -1 EACCES (Permission denied)</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >The process is trying to first open <TT
@@ -2912,13 +2935,17 @@ incorrect permissions.</P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="NTDOMAIN">NT Domain RPC's</H1
+NAME="NTDOMAIN"
+></A
+>Chapter 9. NT Domain RPC's</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN651">Introduction</H2
+NAME="AEN652"
+></A
+>9.1. Introduction</H2
 ><P
 >This document contains information to provide an NT workstation with login
 services, without the need for an NT server. It is the sgml version of <A
@@ -2988,11 +3015,14 @@ CLASS="FILENAME"
 >HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters</TT
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Incorrect direct editing of the registry can cause your
 machine to fail. Then again, so can incorrect implementation of this 
 protocol. See "Liability:" above.</I
+></SPAN
 ></P
 ><P
 >Bear in mind that each packet over-the-wire will have its origin in an
@@ -3037,7 +3067,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN687">Sources</H3
+NAME="AEN688"
+></A
+>9.1.1. Sources</H3
 ><P
 ></P
 ><TABLE
@@ -3069,7 +3101,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN694">Credits</H3
+NAME="AEN695"
+></A
+>9.1.2. Credits</H3
 ><P
 ></P
 ><TABLE
@@ -3102,13 +3136,17 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN701">Notes and Structures</H2
+NAME="AEN702"
+></A
+>9.2. Notes and Structures</H2
 ><DIV
 CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN703">Notes</H3
+NAME="AEN704"
+></A
+>9.2.1. Notes</H3
 ><P
 ></P
 ><OL
@@ -3158,13 +3196,17 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN716">Enumerations</H3
+NAME="AEN717"
+></A
+>9.2.2. Enumerations</H3
 ><DIV
 CLASS="SECT3"
 ><H4
 CLASS="SECT3"
 ><A
-NAME="AEN718">MSRPC Header type</H4
+NAME="AEN719"
+></A
+>9.2.2.1. MSRPC Header type</H4
 ><P
 >command number in the msrpc packet header</P
 ><P
@@ -3204,7 +3246,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN738">MSRPC Packet info</H4
+NAME="AEN739"
+></A
+>9.2.2.2. MSRPC Packet info</H4
 ><P
 >The meaning of these flags is undocumented</P
 ><P
@@ -3269,13 +3313,17 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN774">Structures</H3
+NAME="AEN775"
+></A
+>9.2.3. Structures</H3
 ><DIV
 CLASS="SECT3"
 ><H4
 CLASS="SECT3"
 ><A
-NAME="AEN776">VOID *</H4
+NAME="AEN777"
+></A
+>9.2.3.1. VOID *</H4
 ><P
 >sizeof VOID* is 32 bits.</P
 ></DIV
@@ -3284,7 +3332,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN779">char</H4
+NAME="AEN780"
+></A
+>9.2.3.2. char</H4
 ><P
 >sizeof char is 8 bits.</P
 ></DIV
@@ -3293,7 +3343,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN782">UTIME</H4
+NAME="AEN783"
+></A
+>9.2.3.3. UTIME</H4
 ><P
 >UTIME is 32 bits, indicating time in seconds since 01jan1970.  documented in cifs6.txt (section 3.5 page, page 30).</P
 ></DIV
@@ -3302,7 +3354,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN785">NTTIME</H4
+NAME="AEN786"
+></A
+>9.2.3.4. NTTIME</H4
 ><P
 >NTTIME is 64 bits.  documented in cifs6.txt (section 3.5 page, page 30).</P
 ></DIV
@@ -3311,7 +3365,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN788">DOM_SID (domain SID structure)</H4
+NAME="AEN789"
+></A
+>9.2.3.5. DOM_SID (domain SID structure)</H4
 ><P
 ></P
 ><DIV
@@ -3350,9 +3406,12 @@ CLASS="VARIABLELIST"
 ></DL
 ></DIV
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: the domain SID is documented elsewhere.</I
+></SPAN
 ></P
 ></DIV
 ><DIV
@@ -3360,7 +3419,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN813">STR (string)</H4
+NAME="AEN814"
+></A
+>9.2.3.6. STR (string)</H4
 ><P
 >STR (string) is a char[] : a null-terminated string of ascii characters.</P
 ></DIV
@@ -3369,7 +3430,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN816">UNIHDR (unicode string header)</H4
+NAME="AEN817"
+></A
+>9.2.3.7. UNIHDR (unicode string header)</H4
 ><P
 ></P
 ><DIV
@@ -3401,7 +3464,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN831">UNIHDR2 (unicode string header plus buffer pointer)</H4
+NAME="AEN832"
+></A
+>9.2.3.8. UNIHDR2 (unicode string header plus buffer pointer)</H4
 ><P
 ></P
 ><DIV
@@ -3427,7 +3492,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN842">UNISTR (unicode string)</H4
+NAME="AEN843"
+></A
+>9.2.3.9. UNISTR (unicode string)</H4
 ><P
 ></P
 ><DIV
@@ -3447,7 +3514,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN849">NAME (length-indicated unicode string)</H4
+NAME="AEN850"
+></A
+>9.2.3.10. NAME (length-indicated unicode string)</H4
 ><P
 ></P
 ><DIV
@@ -3473,7 +3542,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN860">UNISTR2 (aligned unicode string)</H4
+NAME="AEN861"
+></A
+>9.2.3.11. UNISTR2 (aligned unicode string)</H4
 ><P
 ></P
 ><DIV
@@ -3517,7 +3588,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN883">OBJ_ATTR (object attributes)</H4
+NAME="AEN884"
+></A
+>9.2.3.12. OBJ_ATTR (object attributes)</H4
 ><P
 ></P
 ><DIV
@@ -3567,7 +3640,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN910">POL_HND (LSA policy handle)</H4
+NAME="AEN911"
+></A
+>9.2.3.13. POL_HND (LSA policy handle)</H4
 ><P
 ></P
 ><DIV
@@ -3587,7 +3662,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN917">DOM_SID2 (domain SID structure, SIDS stored in unicode)</H4
+NAME="AEN918"
+></A
+>9.2.3.14. DOM_SID2 (domain SID structure, SIDS stored in unicode)</H4
 ><P
 ></P
 ><DIV
@@ -3620,14 +3697,20 @@ CLASS="VARIABLELIST"
 ></DL
 ></DIV
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	there is a conflict between the unicode string header and the unicode string itself as to which to use to indicate string length.  this will need to be resolved.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	the SID type indicates, for example, an alias; a well-known group etc. this is documented somewhere.</I
+></SPAN
 ></P
 ></DIV
 ><DIV
@@ -3635,7 +3718,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN940">DOM_RID (domain RID structure)</H4
+NAME="AEN941"
+></A
+>9.2.3.15. DOM_RID (domain RID structure)</H4
 ><P
 ></P
 ><DIV
@@ -3673,16 +3758,24 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN959">LOG_INFO (server, account, client structure)</H4
+NAME="AEN960"
+></A
+>9.2.3.16. LOG_INFO (server, account, client structure)</H4
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	logon server name starts with two '\' characters and is upper case.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	account name is the logon client name from the LSA Request Challenge, with a $ on the end of it, in upper case.</I
+></SPAN
 ></P
 ><P
 ></P
@@ -3727,11 +3820,16 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN986">CLNT_SRV (server, client names structure)</H4
+NAME="AEN987"
+></A
+>9.2.3.17. CLNT_SRV (server, client names structure)</H4
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	logon server name starts with two '\' characters and is upper case.</I
+></SPAN
 ></P
 ><P
 ></P
@@ -3770,7 +3868,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1007">CREDS (credentials + time stamp)</H4
+NAME="AEN1008"
+></A
+>9.2.3.18. CREDS (credentials + time stamp)</H4
 ><P
 ></P
 ><DIV
@@ -3796,12 +3896,17 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1018">CLNT_INFO2 (server, client structure, client credentials)</H4
+NAME="AEN1019"
+></A
+>9.2.3.19. CLNT_INFO2 (server, client structure, client credentials)</H4
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: whenever this structure appears in a request, you must take a copy of the client-calculated credentials received, because they will beused in subsequent credential checks.  the presumed intention is to
 	maintain an authenticated request/response trail.</I
+></SPAN
 ></P
 ><P
 ></P
@@ -3840,11 +3945,16 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1039">CLNT_INFO (server, account, client structure, client credentials)</H4
+NAME="AEN1040"
+></A
+>9.2.3.20. CLNT_INFO (server, account, client structure, client credentials)</H4
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: whenever this structure appears in a request, you must take a copy of the client-calculated credentials received, because they will be used in subsequent credential checks.  the presumed intention is to maintain an authenticated request/response trail.</I
+></SPAN
 ></P
 ><P
 ></P
@@ -3871,7 +3981,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1052">ID_INFO_1 (id info structure, auth level 1)</H4
+NAME="AEN1053"
+></A
+>9.2.3.21. ID_INFO_1 (id info structure, auth level 1)</H4
 ><P
 ></P
 ><DIV
@@ -3951,11 +4063,16 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1099">SAM_INFO (sam logon/logoff id info structure)</H4
+NAME="AEN1100"
+></A
+>9.2.3.22. SAM_INFO (sam logon/logoff id info structure)</H4
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: presumably, the return credentials is supposedly for the server to verify that the credential chain hasn't been compromised.</I
+></SPAN
 ></P
 ><P
 ></P
@@ -3995,12 +4112,6 @@ CLASS="VARIABLELIST"
 ></DL
 ></DIV
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >        switch (switch_value)
@@ -4008,9 +4119,6 @@ CLASS="PROGRAMLISTING"
         {
             ID_INFO_1     id_info_1;
         }</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DIV
 ><DIV
@@ -4018,7 +4126,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1126">GID (group id info)</H4
+NAME="AEN1127"
+></A
+>9.2.3.23. GID (group id info)</H4
 ><P
 ></P
 ><DIV
@@ -4044,7 +4154,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1137">DOM_REF (domain reference info)</H4
+NAME="AEN1138"
+></A
+>9.2.3.24. DOM_REF (domain reference info)</H4
 ><P
 ></P
 ><DIV
@@ -4112,7 +4224,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1176">DOM_INFO (domain info, levels 3 and 5 are the same))</H4
+NAME="AEN1177"
+></A
+>9.2.3.25. DOM_INFO (domain info, levels 3 and 5 are the same))</H4
 ><P
 ></P
 ><DIV
@@ -4168,11 +4282,16 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1207">USER_INFO (user logon info)</H4
+NAME="AEN1208"
+></A
+>9.2.3.26. USER_INFO (user logon info)</H4
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: it would be nice to know what the 16 byte user session key is for.</I
+></SPAN
 ></P
 ><P
 ></P
@@ -4415,11 +4534,16 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1364">SH_INFO_1_PTR (pointers to level 1 share info strings)</H4
+NAME="AEN1365"
+></A
+>9.2.3.27. SH_INFO_1_PTR (pointers to level 1 share info strings)</H4
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	see cifsrap2.txt section5, page 10.</I
+></SPAN
 ></P
 ><P
 ></P
@@ -4481,7 +4605,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1387">SH_INFO_1_STR (level 1 share info strings)</H4
+NAME="AEN1388"
+></A
+>9.2.3.28. SH_INFO_1_STR (level 1 share info strings)</H4
 ><P
 ></P
 ><DIV
@@ -4507,7 +4633,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1398">SHARE_INFO_1_CTR</H4
+NAME="AEN1399"
+></A
+>9.2.3.29. SHARE_INFO_1_CTR</H4
 ><P
 >share container with 0 entries:</P
 ><P
@@ -4592,11 +4720,16 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1444">SERVER_INFO_101</H4
+NAME="AEN1445"
+></A
+>9.2.3.30. SERVER_INFO_101</H4
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	see cifs6.txt section 6.4 - the fields described therein will be of assistance here.  for example, the type listed below is the 	same as fServerType, which is described in 6.4.1. </I
+></SPAN
 ></P
 ><P
 ></P
@@ -4800,7 +4933,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN1570">MSRPC over Transact Named Pipe</H2
+NAME="AEN1571"
+></A
+>9.3. MSRPC over Transact Named Pipe</H2
 ><P
 >For details on the SMB Transact Named Pipe, see cifs6.txt</P
 ><DIV
@@ -4808,7 +4943,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1573">MSRPC Pipes</H3
+NAME="AEN1574"
+></A
+>9.3.1. MSRPC Pipes</H3
 ><P
 >The MSRPC is conducted over an SMB Transact Pipe with a name of 
 <TT
@@ -4854,20 +4991,11 @@ is sent.</P
 >lkcl/01nov97 there appear to be two additional bytes after the null-terminated \PIPE\ name for the RPC pipe.  Values seen so far are
 listed below:</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >        initial SMBopenX request:         RPC API command 0x26 params:
         "\\PIPE\\lsarpc"                  0x65 0x63; 0x72 0x70; 0x44 0x65;
         "\\PIPE\\srvsvc"                  0x73 0x76; 0x4E 0x00; 0x5C 0x43;</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DIV
 ><DIV
@@ -4875,7 +5003,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1587">Header</H3
+NAME="AEN1588"
+></A
+>9.3.2. Header</H3
 ><P
 >[section to be rewritten, following receipt of work by Duncan Stansfield]</P
 ><P
@@ -5044,7 +5174,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1648">RPC_Packet for request, response, bind and bind acknowledgement</H4
+NAME="AEN1649"
+></A
+>9.3.2.1. RPC_Packet for request, response, bind and bind acknowledgement</H4
 ><P
 ></P
 ><DIV
@@ -5112,23 +5244,16 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1687">Interface identification</H4
+NAME="AEN1688"
+></A
+>9.3.2.2. Interface identification</H4
 ><P
 >the interfaces are numbered. as yet I haven't seen more than one interface used on the same pipe name srvsvc</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >abstract (0x4B324FC8, 0x01D31670, 0x475A7812, 0x88E16EBF, 0x00000003)
 transfer (0x8A885D04, 0x11C91CEB, 0x0008E89F, 0x6048102B, 0x00000002)</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DIV
 ><DIV
@@ -5136,7 +5261,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1692">RPC_Iface RW</H4
+NAME="AEN1693"
+></A
+>9.3.2.3. RPC_Iface RW</H4
 ><P
 ></P
 ><DIV
@@ -5162,7 +5289,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1703">RPC_ReqBind RW</H4
+NAME="AEN1704"
+></A
+>9.3.2.4. RPC_ReqBind RW</H4
 ><P
 >the remainder of the packet after the header if "type" was Bind in the response header, "type" should be BindAck</P
 ><P
@@ -5232,7 +5361,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1743">RPC_Address RW</H4
+NAME="AEN1744"
+></A
+>9.3.2.5. RPC_Address RW</H4
 ><P
 ></P
 ><DIV
@@ -5258,7 +5389,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1754">RPC_ResBind RW</H4
+NAME="AEN1755"
+></A
+>9.3.2.6. RPC_ResBind RW</H4
 ><P
 >the response to place after the header in the reply packet</P
 ><P
@@ -5334,7 +5467,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1798">RPC_ReqNorm RW</H4
+NAME="AEN1799"
+></A
+>9.3.2.7. RPC_ReqNorm RW</H4
 ><P
 >the remainder of the packet after the header for every other other request</P
 ><P
@@ -5374,7 +5509,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1818">RPC_ResNorm RW</H4
+NAME="AEN1819"
+></A
+>9.3.2.8. RPC_ResNorm RW</H4
 ><P
 ></P
 ><DIV
@@ -5419,7 +5556,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1841">Tail</H3
+NAME="AEN1842"
+></A
+>9.3.3. Tail</H3
 ><P
 >The end of each of the NTLSA and NETLOGON named pipes ends with:</P
 ><P
@@ -5447,29 +5586,40 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1853">RPC Bind / Bind Ack</H3
+NAME="AEN1854"
+></A
+>9.3.4. RPC Bind / Bind Ack</H3
 ><P
 >RPC Binds are the process of associating an RPC pipe (e.g \PIPE\lsarpc)
 with a "transfer syntax" (see RPC_Iface structure).  The purpose for doing
 this is unknown.</P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: The RPC_ResBind SMB Transact request is sent with two uint16 setup parameters.  The first is 0x0026; the second is the file handle
 	returned by the SMBopenX Transact response.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	The RPC_ResBind members maxtsize, maxrsize and assocgid are the same in the response as the same members in the RPC_ReqBind.  The
 	RPC_ResBind member transfersyntax is the same in the response as
 	the</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	The RPC_ResBind response member secondaddr contains the name of what is presumed to be the service behind the RPC pipe.  The
 	mapping identified so far is:</I
+></SPAN
 ></P
 ><P
 ></P
@@ -5515,9 +5665,12 @@ CLASS="VARIABLELIST"
 ></DL
 ></DIV
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	The RPC_Packet fraglength member in both the Bind Request and Bind Acknowledgment must contain the length of the entire RPC data, including the RPC_Packet header.</I
+></SPAN
 ></P
 ><P
 >Request:</P
@@ -5563,7 +5716,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1897">NTLSA Transact Named Pipe</H3
+NAME="AEN1898"
+></A
+>9.3.5. NTLSA Transact Named Pipe</H3
 ><P
 >The sequence of actions taken on this pipe are:</P
 ><P
@@ -5660,18 +5815,25 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1938">LSA Open Policy</H3
+NAME="AEN1939"
+></A
+>9.3.6. LSA Open Policy</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	The policy handle can be anything you like.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1942">Request</H4
+NAME="AEN1943"
+></A
+>9.3.6.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -5709,7 +5871,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1961">Response</H4
+NAME="AEN1962"
+></A
+>9.3.6.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -5736,18 +5900,25 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN1972">LSA Query Info Policy</H3
+NAME="AEN1973"
+></A
+>9.3.7. LSA Query Info Policy</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	The info class in response must be the same as that in the request.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1976">Request</H4
+NAME="AEN1977"
+></A
+>9.3.7.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -5773,7 +5944,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN1987">Response</H4
+NAME="AEN1988"
+></A
+>9.3.7.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -5794,12 +5967,6 @@ CLASS="VARIABLELIST"
 ></DL
 ></DIV
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >switch (info class)
@@ -5810,9 +5977,6 @@ DOM_INFO domain info, levels 3 and 5 (are the same).
 }
 
 return    0 - indicates success</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DIV
 ></DIV
@@ -5821,13 +5985,17 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2000">LSA Enumerate Trusted Domains</H3
+NAME="AEN2001"
+></A
+>9.3.8. LSA Enumerate Trusted Domains</H3
 ><DIV
 CLASS="SECT3"
 ><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2002">Request</H4
+NAME="AEN2003"
+></A
+>9.3.8.1. Request</H4
 ><P
 >no extra data</P
 ></DIV
@@ -5836,7 +6004,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2005">Response</H4
+NAME="AEN2006"
+></A
+>9.3.8.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -5875,13 +6045,17 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2024">LSA Open Secret</H3
+NAME="AEN2025"
+></A
+>9.3.9. LSA Open Secret</H3
 ><DIV
 CLASS="SECT3"
 ><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2026">Request</H4
+NAME="AEN2027"
+></A
+>9.3.9.1. Request</H4
 ><P
 >no extra data</P
 ></DIV
@@ -5890,7 +6064,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2029">Response</H4
+NAME="AEN2030"
+></A
+>9.3.9.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -5937,13 +6113,17 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2053">LSA Close</H3
+NAME="AEN2054"
+></A
+>9.3.10. LSA Close</H3
 ><DIV
 CLASS="SECT3"
 ><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2055">Request</H4
+NAME="AEN2056"
+></A
+>9.3.10.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -5963,7 +6143,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2062">Response</H4
+NAME="AEN2063"
+></A
+>9.3.10.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -5986,18 +6168,25 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2070">LSA Lookup SIDS</H3
+NAME="AEN2071"
+></A
+>9.3.11. LSA Lookup SIDS</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	num_entries in response must be same as num_entries in request.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2074">Request</H4
+NAME="AEN2075"
+></A
+>9.3.11.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -6047,7 +6236,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2101">Response</H4
+NAME="AEN2102"
+></A
+>9.3.11.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -6100,18 +6291,25 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2129">LSA Lookup Names</H3
+NAME="AEN2130"
+></A
+>9.3.12. LSA Lookup Names</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	num_entries in response must be same as num_entries in request.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2133">Request</H4
+NAME="AEN2134"
+></A
+>9.3.12.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -6167,7 +6365,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2164">Response</H4
+NAME="AEN2165"
+></A
+>9.3.12.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -6221,7 +6421,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2192">NETLOGON rpc Transact Named Pipe</H2
+NAME="AEN2193"
+></A
+>9.4. NETLOGON rpc Transact Named Pipe</H2
 ><P
 >The sequence of actions taken on this pipe are:</P
 ><P
@@ -6319,28 +6521,41 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2231">LSA Request Challenge</H3
+NAME="AEN2232"
+></A
+>9.4.1. LSA Request Challenge</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	logon server name starts with two '\' characters and is upper case.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	logon client is the machine, not the user.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	the initial LanManager password hash, against which the challenge is issued, is the machine name itself (lower case).  there will becalls issued (LSA Server Password Set) which will change this, later. refusing these calls allows you to always deal with the same password (i.e the LM# of the machine name in lower case).</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2239">Request</H4
+NAME="AEN2240"
+></A
+>9.4.1.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -6378,7 +6593,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2258">Response</H4
+NAME="AEN2259"
+></A
+>9.4.1.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -6401,28 +6618,41 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2266">LSA Authenticate 2</H3
+NAME="AEN2267"
+></A
+>9.4.2. LSA Authenticate 2</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	in between request and response, calculate the client credentials, and check them against the client-calculated credentials (this process uses the previously received client credentials).</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	neg_flags in the response is the same as that in the request.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	you must take a copy of the client-calculated credentials received 	here, because they will be used in subsequent authentication packets.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2274">Request</H4
+NAME="AEN2275"
+></A
+>9.4.2.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -6460,7 +6690,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2293">Response</H4
+NAME="AEN2294"
+></A
+>9.4.2.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -6489,33 +6721,49 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2305">LSA Server Password Set</H3
+NAME="AEN2306"
+></A
+>9.4.3. LSA Server Password Set</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: the new password is suspected to be a DES encryption using the old password to generate the key.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: in between request and response, calculate the client credentials, and check them against the client-calculated credentials (this process uses the previously received client credentials).</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: the server credentials are constructed from the client-calculated credentials and the client time + 1 second.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: you must take a copy of the client-calculated credentials received here, because they will be used in subsequent authentication packets.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2315">Request</H4
+NAME="AEN2316"
+></A
+>9.4.3.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -6541,7 +6789,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2326">Response</H4
+NAME="AEN2327"
+></A
+>9.4.3.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -6564,19 +6814,26 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2334">LSA SAM Logon</H3
+NAME="AEN2335"
+></A
+>9.4.4. LSA SAM Logon</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	valid_user is True iff the username and password hash are valid for
 	the requested domain.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2338">Request</H4
+NAME="AEN2339"
+></A
+>9.4.4.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -6596,7 +6853,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2345">Response</H4
+NAME="AEN2346"
+></A
+>9.4.4.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -6617,12 +6876,6 @@ CLASS="VARIABLELIST"
 ></DL
 ></DIV
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >if (valid_user)
@@ -6644,9 +6897,6 @@ else
 
     return    0xC000 0064 - NT_STATUS_NO_SUCH_USER.
 }</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></DIV
 ></DIV
@@ -6655,19 +6905,26 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2358">LSA SAM Logoff</H3
+NAME="AEN2359"
+></A
+>9.4.5. LSA SAM Logoff</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	presumably, the SAM_INFO structure is validated, and a (currently
 	undocumented) error code returned if the Logoff is invalid.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2362">Request</H4
+NAME="AEN2363"
+></A
+>9.4.5.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -6687,7 +6944,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2369">Response</H4
+NAME="AEN2370"
+></A
+>9.4.5.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -6717,31 +6976,43 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2381">\\MAILSLOT\NET\NTLOGON</H2
+NAME="AEN2382"
+></A
+>9.5. \\MAILSLOT\NET\NTLOGON</H2
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	mailslots will contain a response mailslot, to which the response
 	should be sent.  the target NetBIOS name is REQUEST_NAME&#60;20&#62;, where
 	REQUEST_NAME is the name of the machine that sent the request.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2385">Query for PDC</H3
+NAME="AEN2386"
+></A
+>9.5.1. Query for PDC</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	NTversion, LMNTtoken, LM20token in response are the same as those 	given in the request.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2389">Request</H4
+NAME="AEN2390"
+></A
+>9.5.1.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -6803,7 +7074,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2424">Response</H4
+NAME="AEN2425"
+></A
+>9.5.1.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -6866,28 +7139,41 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2459">SAM Logon</H3
+NAME="AEN2460"
+></A
+>9.5.2. SAM Logon</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note: machine name in response is preceded by two '\' characters.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	NTversion, LMNTtoken, LM20token in response are the same as those given in the request.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	user name in the response is presumably the same as that in the request.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2467">Request</H4
+NAME="AEN2468"
+></A
+>9.5.2.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -6973,7 +7259,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2518">Response</H4
+NAME="AEN2519"
+></A
+>9.5.2.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -7031,7 +7319,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2549">SRVSVC Transact Named Pipe</H2
+NAME="AEN2550"
+></A
+>9.6. SRVSVC Transact Named Pipe</H2
 ><P
 >Defines for this pipe, identifying the query are:</P
 ><P
@@ -7058,23 +7348,33 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2561">Net Share Enum</H3
+NAME="AEN2562"
+></A
+>9.6.1. Net Share Enum</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	share level and switch value in the response are presumably the same as those in the request.</I
+></SPAN
 ></P
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	cifsrap2.txt (section 5) may be of limited assistance here.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2567">Request</H4
+NAME="AEN2568"
+></A
+>9.6.1.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -7136,7 +7436,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2602">Response</H4
+NAME="AEN2603"
+></A
+>9.6.1.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -7177,18 +7479,25 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2622">Net Server Get Info</H3
+NAME="AEN2623"
+></A
+>9.6.2. Net Server Get Info</H3
 ><P
+><SPAN
+CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note:	level is the same value as in the request.</I
+></SPAN
 ></P
 ><DIV
 CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2626">Request</H4
+NAME="AEN2627"
+></A
+>9.6.2.1. Request</H4
 ><P
 ></P
 ><DIV
@@ -7214,7 +7523,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2637">Response</H4
+NAME="AEN2638"
+></A
+>9.6.2.2. Response</H4
 ><P
 ></P
 ><DIV
@@ -7250,13 +7561,17 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2653">Cryptographic side of NT Domain Authentication</H2
+NAME="AEN2654"
+></A
+>9.7. Cryptographic side of NT Domain Authentication</H2
 ><DIV
 CLASS="SECT2"
 ><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2655">Definitions</H3
+NAME="AEN2656"
+></A
+>9.7.1. Definitions</H3
 ><P
 ></P
 ><DIV
@@ -7331,7 +7646,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2698">Protocol</H3
+NAME="AEN2699"
+></A
+>9.7.2. Protocol</H3
 ><P
 >C-&#62;S ReqChal,Cc S-&#62;C Cs</P
 ><P
@@ -7365,7 +7682,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2708">Comments</H3
+NAME="AEN2709"
+></A
+>9.7.3. Comments</H3
 ><P
 >On first joining the domain the session key could be computed by
 anyone listening in on the network as the machine password has a well
@@ -7394,7 +7713,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2715">SIDs and RIDs</H2
+NAME="AEN2716"
+></A
+>9.8. SIDs and RIDs</H2
 ><P
 >SIDs and RIDs are well documented elsewhere.</P
 ><P
@@ -7424,13 +7745,17 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2723">Well-known SIDs</H3
+NAME="AEN2724"
+></A
+>9.8.1. Well-known SIDs</H3
 ><DIV
 CLASS="SECT3"
 ><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2725">Universal well-known SIDs</H4
+NAME="AEN2726"
+></A
+>9.8.1.1. Universal well-known SIDs</H4
 ><P
 ></P
 ><DIV
@@ -7492,7 +7817,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2760">NT well-known SIDs</H4
+NAME="AEN2761"
+></A
+>9.8.1.2. NT well-known SIDs</H4
 ><P
 ></P
 ><DIV
@@ -7579,7 +7906,9 @@ CLASS="SECT2"
 ><HR><H3
 CLASS="SECT2"
 ><A
-NAME="AEN2811">Well-known RIDS</H3
+NAME="AEN2812"
+></A
+>9.8.2. Well-known RIDS</H3
 ><P
 >A RID is a sub-authority value, as part of either a SID, or in the case
 of Group RIDs, part of the DOM_GID structure, in the USER_INFO_1
@@ -7589,7 +7918,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2814">Well-known RID users</H4
+NAME="AEN2815"
+></A
+>9.8.2.1. Well-known RID users</H4
 ><P
 ><B
 >Groupname: </B
@@ -7620,7 +7951,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2828">Well-known RID groups</H4
+NAME="AEN2829"
+></A
+>9.8.2.2. Well-known RID groups</H4
 ><P
 ><B
 >Groupname: </B
@@ -7663,7 +7996,9 @@ CLASS="SECT3"
 ><HR><H4
 CLASS="SECT3"
 ><A
-NAME="AEN2846">Well-known RID aliases</H4
+NAME="AEN2847"
+></A
+>9.8.2.3. Well-known RID aliases</H4
 ><P
 ><B
 >Groupname: </B
@@ -7780,13 +8115,17 @@ NAME="AEN2846">Well-known RID aliases</H4
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="PRINTING">Samba Printing Internals</H1
+NAME="PRINTING"
+></A
+>Chapter 10. Samba Printing Internals</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2895">Abstract</H2
+NAME="AEN2896"
+></A
+>10.1. Abstract</H2
 ><P
 >The purpose of this document is to provide some insight into
 Samba's printing functionality and also to describe the semantics
@@ -7797,7 +8136,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2898">Printing Interface to Various Back ends</H2
+NAME="AEN2899"
+></A
+>10.2. Printing Interface to Various Back ends</H2
 ><P
 >Samba uses a table of function pointers to seven functions.  The
 function prototypes are defined in the <TT
@@ -7863,7 +8204,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2924">Print Queue TDB's</H2
+NAME="AEN2925"
+></A
+>10.3. Print Queue TDB's</H2
 ><P
 >Samba provides periodic caching of the output from the "lpq command"
 for performance reasons.  This cache time is configurable in seconds.
@@ -7887,12 +8230,6 @@ client which will insert the job information directly into the TDB.
 The second method is to have the print job picked up by executing the
 "lpq command".</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >/* included from printing.h */
@@ -7912,16 +8249,13 @@ struct printjob {
 	fstring queuename; /* service number of printer for this job */
 	NT_DEVICEMODE *nt_devmode;
 };</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >The current manifestation of the printjob structure contains a field
 for the UNIX job id returned from the "lpq command" and a Windows job
 ID (32-bit bounded by PRINT_MAX_JOBID).  When a print job is returned
 by the "lpq command" that does not match an existing job in the queue's
-TDB, a 32-bit job ID above the &#60;*vance doesn't know what word is missing here*&#62; is generating by adding UNIX_JOB_START to
+TDB, a 32-bit job ID above the &lt;*vance doesn't know what word is missing here*&gt; is generating by adding UNIX_JOB_START to
 the id reported by lpq.</P
 ><P
 >In order to match a 32-bit Windows jobid onto a 16-bit lanman print job
@@ -7968,12 +8302,6 @@ CLASS="REPLACEABLE"
 ></LI
 ><LI
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="90%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >	foreach job in the queue
@@ -7988,9 +8316,6 @@ CLASS="PROGRAMLISTING"
 				update the job status only
 		}
 	}</PRE
-></TD
-></TR
-></TABLE
 ></P
 ></LI
 ><LI
@@ -8028,7 +8353,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2958">ChangeID &#38; Client Caching of Printer Information</H2
+NAME="AEN2959"
+></A
+>10.4. ChangeID &#38; Client Caching of Printer Information</H2
 ><P
 >[To be filled in later]</P
 ></DIV
@@ -8037,7 +8364,9 @@ CLASS="SECT1"
 ><HR><H2
 CLASS="SECT1"
 ><A
-NAME="AEN2961">Windows NT/2K Printer Change Notify</H2
+NAME="AEN2962"
+></A
+>10.5. Windows NT/2K Printer Change Notify</H2
 ><P
 >When working with Windows NT+ clients, it is possible for a
 print server to use RPC to send asynchronous change notification
@@ -8096,12 +8425,6 @@ notification event to clients.  The process of registering a new change
 notification handle is as follows.  The 'C' is for client and the
 'S' is for server.  All error conditions have been eliminated.</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >C:	Obtain handle to printer or to the printer
@@ -8113,7 +8436,7 @@ C:	Send a RFFPCN request with the previously obtained
 	to monitor, or (b) a PRINTER_NOTIFY_OPTIONS structure
 	containing the event information to monitor.  The windows
 	spooler has only been observed to use (b).
-S:	The &#60;* another missing word*&#62; opens a new TCP session to the client (thus requiring
+S:	The &lt;* another missing word*&gt; opens a new TCP session to the client (thus requiring
 	all print clients to be CIFS servers as well) and sends
 	a ReplyOpenPrinter() request to the client.
 C:	The client responds with a printer handle that can be used to
@@ -8135,9 +8458,6 @@ C:	If the change notification handle is ever released by the
 S:	The server closes the internal change notification handle
 	(POLICY_HND) and does not send any further change notification
 	events to the client for that printer or job.</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >The current list of notification events supported by Samba can be
@@ -8262,80 +8582,57 @@ data values.</P
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="WINS">Samba WINS Internals</H1
+NAME="WINS"
+></A
+>Chapter 11. Samba WINS Internals</H1
 ><DIV
 CLASS="SECT1"
 ><H2
 CLASS="SECT1"
 ><A
-NAME="AEN3032">WINS Failover</H2
+NAME="AEN3033"
+></A
+>11.1. WINS Failover</H2
 ><P
 >The current Samba codebase possesses the capability to use groups of WINS
 servers that share a common namespace for NetBIOS name registration and 
 resolution.  The formal parameter syntax is</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >	WINS_SERVER_PARAM 	= SERVER [ SEPARATOR SERVER_LIST ]
-	WINS_SERVER_PARAM 	= "wins server"
+	WINS_SERVER_PARAM 	= &quot;wins server&quot;
 	SERVER 			= ADDR[:TAG]
 	ADDR 			= ip_addr | fqdn
 	TAG 			= string
 	SEPARATOR		= comma | \s+
 	SERVER_LIST		= SERVER [ SEPARATOR SERVER_LIST ]</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >A simple example of a valid wins server setting is</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >[global]
 	wins server = 192.168.1.2 192.168.1.3</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >In the event that no TAG is defined in for a SERVER in the list, smbd assigns a default
-TAG of "*".  A TAG is used to group servers of a shared NetBIOS namespace together.  Upon
+TAG of &quot;*&quot;.  A TAG is used to group servers of a shared NetBIOS namespace together.  Upon
 startup, nmbd will attempt to register the netbios name value with one server in each
 tagged group.</P
 ><P
 >An example using tags to group WINS servers together is show here.  Note that the use of
 interface names in the tags is only by convention and is not a technical requirement.</P
 ><P
-><TABLE
-BORDER="0"
-BGCOLOR="#E0E0E0"
-WIDTH="100%"
-><TR
-><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >[global]
 	wins server = 192.168.1.2:eth0 192.168.1.3:eth0 192.168.2.2:eth1</PRE
-></TD
-></TR
-></TABLE
 ></P
 ><P
 >Using this configuration, nmbd would attempt to register the server's NetBIOS name 
-with one WINS server in each group.  Because the "eth0" group has two servers, the 
+with one WINS server in each group.  Because the &quot;eth0&quot; group has two servers, the 
 second server would only be used when a registration (or resolution) request to 
 the first server in that group timed out.</P
 ><P
@@ -8347,6 +8644,662 @@ If a timeout occurs when querying a specific WINS server, that server is marked 
 prevent further timeouts and the next server in the WINS group is contacted.  Once marked as 
 dead, Samba will not attempt to contact that server for name registration/resolution queries 
 for a period of 10 minutes.</P
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="SAM"
+></A
+>Chapter 12. The Upcoming SAM System</H1
+><DIV
+CLASS="SECT1"
+><H2
+CLASS="SECT1"
+><A
+NAME="AEN3054"
+></A
+>12.1. Security in the 'new SAM'</H2
+><P
+>One of the biggest problems with passdb is it's implementation of
+'security'.  Access control is on a 'are you root at the moment' basis,
+and it has no concept of NT ACLs.  Things like ldapsam had to add
+'magic' 'are you root' checks.</P
+><P
+>We took this very seriously when we started work, and the new structure
+is designed with this in mind, from the ground up.  Each call to the SAM
+has a NT_TOKEN and (if relevant) an 'access desired'.  This is either
+provided as a parameter, or implicitly supplied by the object being
+accessed.</P
+><P
+>For example, when you call </P
+><PRE
+CLASS="PROGRAMLISTING"
+>&#60;
+NTSTATUS sam_get_account_by_name(const SAM_CONTEXT *context, const
+NT_USER_TOKEN *access_token, uint32 access_desired, const char *domain,
+const char *name, SAM_ACCOUNT_HANDLE **account)</PRE
+><P
+>The context can be NULL (and is used to allow import/export by setting
+up 2 contexts, and allowing calls on both simultaneously)</P
+><P
+>The access token *must* be specified.  Normally the user's token out of
+current_user, this can also be a global 'system' context.</P
+><P
+>The access desired is as per the ACL, for passing to the seaccess stuff.</P
+><P
+>The domain/username are standard.  Even if we only have one domain,
+keeping this ensures that we don't get 'unqualified' usernames (same
+problem as we had with unqualified SIDs).</P
+><P
+>We return a 'handle'.  This is opaque to the rest of Samba, but is
+operated on by get/set routines, all of which return NTSTATUS.</P
+><P
+>The access checking is done by the SAM module.   The reason it is not
+done 'above' the interface is to ensure a 'choke point'.  I put a lot of
+effort into the auth subsystem to ensure we never 'accidentally' forgot
+to check for null passwords, missed a restriction etc.  I intend the SAM
+to be written with the same caution.</P
+><P
+>The reason the access checking is not handled by the interface itself is
+due to the different implementations it make take on.  For example, on
+ADS, you cannot set a password over a non-SSL connection.  Other
+backends may have similar requirements - we need to leave this policy up
+to the modules.  They will naturally have access to 'helper' procedures
+and good examples to avoid mishaps.</P
+><P
+>(Furthermore, some backends my actually chose to push the whole ACL
+issue to the remote server, and - assuming ldap for this example - bind
+as the user directly)</P
+><P
+>Each returned handle has an internal 'access permitted', which allows
+the 'get' and 'set' routines to return 'ACCESS_DENIED' for things that
+were not able to be retrieved from the backend.  This removes the need
+to specify the NT_TOKEN on every operation, and allows for 'object not
+present' to be easily distinguished from 'access denied'.</P
+><P
+>When you 'set' an object (calling sam_update_account) the internal
+details are again used.  Each change that has been made to the object
+has been flagged, so as to avoid race conditions (on unmodified
+components) and to avoid violating any extra ACL requirements on the
+actual data store (like the LDAP server).</P
+><P
+>Finally, we have generic get_sec_desc() and set_sec_desc() routines to
+allow external ACL manipulation.  These do lookups based on SID.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3071"
+></A
+>12.2. Standalone from UNIX</H2
+><P
+>One of the primary tenants of the 'new SAM' is that it would not attempt
+to deal with 'what unix id for that'.  This would be left to the 'SMS'
+(Sid Mapping System') or SID farm, and probably administered via
+winbind.  We have had constructive discussion on how 'basic' unix
+accounts like 'root' would be handled, and we think this can work.  
+Accounts not preexisting in unix would be served up via winbind.</P
+><P
+>This is an *optional* part, and my preferred end-game.  We have a fare
+way to go before things like winbind up to it however.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3075"
+></A
+>12.3. Handles and Races in the new SAM</H2
+><P
+>One of the things that the 'new SAM' work has tried to face is both
+compatibility with existing code, and a closer alignment to the SAMR
+interface.  I consider SAMR to be a 'primary customer' to the this work,
+because if we get alignment with that wrong, things get more, rather
+than less complex.  Also, most other parts of Samba are much more
+flexible with what they can allow.</P
+><P
+>In any case, that was a decision taken as to how the general design
+would progress.  BTW, my understanding of SAMR may be completely flawed.</P
+><P
+>One of the most race-prone areas of the new code is the conflicting
+update problem.  We have taken two approaches:  </P
+><P
+></P
+><UL
+><LI
+><P
+>'Not conflicting' conflicts.  Due to the way usrmgr operates, it will
+open a user, display all the properties and *save* them all, even if you
+don't change any.</P
+><P
+>For this, see what I've done in rpc_server/srv_samr_util.c.  I intend
+to take this one step further, and operate on the 'handle' that the
+values were read from.  This should mean that we only update things that
+have *really* changed.</P
+></LI
+><LI
+><P
+>'conflicting' updates:  Currently we don't deal with this (in passdb
+or the new sam stuff), but the design is sufficiently flexible to 'deny'
+a second update.  I don't foresee locking records however.</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3086"
+></A
+>12.4. Layers</H2
+><DIV
+CLASS="SECT2"
+><H3
+CLASS="SECT2"
+><A
+NAME="AEN3088"
+></A
+>12.4.1. Application</H3
+><P
+>This is where smbd, samtest and whatever end-user replacement we have
+for pdbedit sits.  They use only the SAM interface, and do not get
+'special knowledge' of what is below them.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H3
+CLASS="SECT2"
+><A
+NAME="AEN3091"
+></A
+>12.4.2. SAM Interface</H3
+><P
+>This level 'owns' the various handle structures, the get/set routines on
+those structures and provides the public interface.  The application
+layer may initialize a 'context' to be passed to all interface routines,
+else a default, self-initialising context will be supplied.  This layser
+finds the appropriate backend module for the task, and tries very hard
+not to need to much 'knowledge'.  It should just provide the required
+abstraction to the modules below, and arrange for their initial loading.</P
+><P
+>We could possibly add ACL checking at this layer, to avoid discrepancies
+in implementation modules.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H3
+CLASS="SECT2"
+><A
+NAME="AEN3095"
+></A
+>12.4.3. SAM Modules</H3
+><P
+>These do not communicate with the application directly, only by setting
+values in the handles, and receiving requests from the interface.  These
+modules are responsible for translating values from the handle's
+.private into (say) an LDAP modification list.  The module is expected
+to 'know' things like it's own domain SID, domain name, and any other
+state attached to the SAM.  Simpler modules may call back to some helper
+routine.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3098"
+></A
+>12.5. SAM Modules</H2
+><DIV
+CLASS="SECT2"
+><H3
+CLASS="SECT2"
+><A
+NAME="AEN3100"
+></A
+>12.5.1. Special Module: sam_passdb</H3
+><P
+>In order for there to be a smooth transition, kai is writing a module
+that reads existing passdb backends, and translates them into SAM
+replies.  (Also pulling data from the account policy DB etc).  We also
+intend to write a module that does the reverse - gives the SAM a passdb
+interface.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H3
+CLASS="SECT2"
+><A
+NAME="AEN3103"
+></A
+>12.5.2. sam_ads</H3
+><P
+>This is the first of the SAM modules to be committed to the tree -
+mainly because I needed to coordinate work with metze (who authored most
+of it).  This module aims to use Samba's libads code to provide an
+Active Directory LDAP client, suitable for use on a mixed-mode DC. 
+While it is currently being tested against Win2k servers (with a
+password in the smb.conf file) it is expected to eventually use a
+(possibly modified) OpenLDAP server.  We hope that this will assist in
+the construction of an Samba AD DC.</P
+><P
+>We also intend to construct a Samba 2.2/3.0 compatible ldap module,
+again using libads code.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3107"
+></A
+>12.6. Memory Management</H2
+><P
+> 
+The 'new SAM' development effort also concerned itself with getting a
+sane implementation of memory management.  It was decided that we would
+be (as much as possible) talloc based, using an 'internal talloc
+context' on many objects.  That is, the creation of an object would
+initiate it's own internal talloc context, and this would be used for
+all operations on that object.  Much of this is already implemented in
+passdb.  Also, like passdb, it will be possible to specify that some
+object actually be created on a specified context.  </P
+><P
+>Memory management is important here because the APIs in the 'new SAM' do
+not use 'pdb_init()' or an equivalent.  They always allocate new
+objects.  Enumeration's are slightly different, and occur on a supplied
+context that 'owns' the entire list, rather than per-element.  (the
+enumeration functions return an array of all elements - not full handles
+just basic (and public) info)  Likewise for things that fill in a char
+**.</P
+><P
+>For example:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>NTSTATUS sam_lookup_sid(const SAM_CONTEXT *context, const NT_USER_TOKEN
+*access_token, TALLOC_CTX *mem_ctx, const DOM_SID *sid, char **name,
+uint32 *type)</PRE
+></P
+><P
+>Takes a context to allocate the 'name' on, while:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>NTSTATUS sam_get_account_by_sid(const SAM_CONTEXT *context, const
+NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID
+*accountsid, SAM_ACCOUNT_HANDLE **account)</PRE
+></P
+><P
+>Allocates a handle and stores the allocation context on that handle.</P
+><P
+>I think that the following:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>NTSTATUS sam_enum_accounts(const SAM_CONTEXT *context, const
+NT_USER_TOKEN *access_token, const DOM_SID *domainsid, uint16 acct_ctrl,
+int32 *account_count, SAM_ACCOUNT_ENUM **accounts)</PRE
+></P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3121"
+></A
+>12.7. Testing</H2
+><P
+>Testing is vital in any piece of software, and Samba is certainly no
+exception. In designing this new subsystem, we have taken care to ensure
+it is easily tested, independent of outside protocols.</P
+><P
+>To this end, Jelmer has constructed 'samtest'.  </P
+><P
+>This utility (see torture/samtest.c) is structured like rpcclient, but
+instead operates on the SAM subsystem.  It creates a 'custom' SAM
+context, that may be distinct from the default values used by the rest
+of the system, and can load a separate configuration file.  </P
+><P
+>A small number of commands are currently implemented, but these have
+already proved vital in testing.   I expect SAM module authors will find
+it particularly valuable.</P
+><P
+>Example useage:</P
+><P
+><TT
+CLASS="PROMPT"
+>$</TT
+> <B
+CLASS="COMMAND"
+>bin/samtest</B
+></P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>&#62; context ads:ldap://192.168.1.96</PRE
+>
+(this loads a new context, using the new ADS module.  The parameter is
+the 'location' of the ldap server)</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>&#62; lookup_name DOMAIN abartlet</PRE
+>
+(returns a sid).</P
+><P
+>Because the 'new SAM' is NT ACL based, there will be a command to
+specify an arbitrary NT ACL, but for now it uses 'system' by default.</P
+></DIV
+></DIV
+><DIV
+CLASS="CHAPTER"
+><HR><H1
+><A
+NAME="PWENCRYPT"
+></A
+>Chapter 13. LanMan and NT Password Encryption</H1
+><DIV
+CLASS="SECT1"
+><H2
+CLASS="SECT1"
+><A
+NAME="AEN3147"
+></A
+>13.1. Introduction</H2
+><P
+>With the development of LanManager and Windows NT 
+	compatible password encryption for Samba, it is now able 
+	to validate user connections in exactly the same way as 
+	a LanManager or Windows NT server.</P
+><P
+>This document describes how the SMB password encryption 
+	algorithm works and what issues there are in choosing whether 
+	you want to use it. You should read it carefully, especially 
+	the part about security and the "PROS and CONS" section.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3151"
+></A
+>13.2. How does it work?</H2
+><P
+>LanManager encryption is somewhat similar to UNIX 
+	password encryption. The server uses a file containing a 
+	hashed value of a user's password.  This is created by taking 
+	the user's plaintext password, capitalising it, and either 
+	truncating to 14 bytes or padding to 14 bytes with null bytes. 
+	This 14 byte value is used as two 56 bit DES keys to encrypt 
+	a 'magic' eight byte value, forming a 16 byte value which is 
+	stored by the server and client. Let this value be known as 
+	the "hashed password".</P
+><P
+>Windows NT encryption is a higher quality mechanism, 
+	consisting of doing an MD4 hash on a Unicode version of the user's 
+	password. This also produces a 16 byte hash value that is 
+	non-reversible.</P
+><P
+>When a client (LanManager, Windows for WorkGroups, Windows 
+	95 or Windows NT) wishes to mount a Samba drive (or use a Samba 
+	resource), it first requests a connection and negotiates the 
+	protocol that the client and server will use. In the reply to this 
+	request the Samba server generates and appends an 8 byte, random 
+	value - this is stored in the Samba server after the reply is sent 
+	and is known as the "challenge".  The challenge is different for 
+	every client connection.</P
+><P
+>The client then uses the hashed password (16 byte values 
+	described above), appended with 5 null bytes, as three 56 bit 
+	DES keys, each of which is used to encrypt the challenge 8 byte 
+	value, forming a 24 byte value known as the "response".</P
+><P
+>In the SMB call SMBsessionsetupX (when user level security 
+	is selected) or the call SMBtconX (when share level security is 
+	selected), the 24 byte response is returned by the client to the 
+	Samba server.  For Windows NT protocol levels the above calculation 
+	is done on both hashes of the user's password and both responses are 
+	returned in the SMB call, giving two 24 byte values.</P
+><P
+>The Samba server then reproduces the above calculation, using 
+	its own stored value of the 16 byte hashed password (read from the 
+	<TT
+CLASS="FILENAME"
+>smbpasswd</TT
+> file - described later) and the challenge 
+	value that it kept from the negotiate protocol reply. It then checks 
+	to see if the 24 byte value it calculates matches the 24 byte value 
+	returned to it from the client.</P
+><P
+>If these values match exactly, then the client knew the 
+	correct password (or the 16 byte hashed value - see security note 
+	below) and is thus allowed access. If not, then the client did not 
+	know the correct password and is denied access.</P
+><P
+>Note that the Samba server never knows or stores the cleartext 
+	of the user's password - just the 16 byte hashed values derived from 
+	it. Also note that the cleartext password or 16 byte hashed values 
+	are never transmitted over the network - thus increasing security.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H2
+CLASS="SECT1"
+><A
+NAME="AEN3162"
+></A
+>13.3. <A
+NAME="SMBPASSWDFILEFORMAT"
+></A
+>The smbpasswd file</H2
+><P
+>In order for Samba to participate in the above protocol 
+	it must be able to look up the 16 byte hashed values given a user name.
+	Unfortunately, as the UNIX password value is also a one way hash
+	function (ie. it is impossible to retrieve the cleartext of the user's
+	password given the UNIX hash of it), a separate password file
+	containing this 16 byte value must be kept. To minimise problems with
+	these two password files, getting out of sync, the UNIX <TT
+CLASS="FILENAME"
+>	/etc/passwd</TT
+> and the <TT
+CLASS="FILENAME"
+>smbpasswd</TT
+> file, 
+	a utility, <B
+CLASS="COMMAND"
+>mksmbpasswd.sh</B
+>, is provided to generate
+	a smbpasswd file from a UNIX <TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+> file.
+	</P
+><P
+>To generate the smbpasswd file from your <TT
+CLASS="FILENAME"
+>/etc/passwd
+	</TT
+> file use the following command :</P
+><P
+><TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
+>cat /etc/passwd | mksmbpasswd.sh
+	&gt; /usr/local/samba/private/smbpasswd</B
+></TT
+></P
+><P
+>If you are running on a system that uses NIS, use</P
+><P
+><TT
+CLASS="PROMPT"
+>$ </TT
+><TT
+CLASS="USERINPUT"
+><B
+>ypcat passwd | mksmbpasswd.sh
+	&gt; /usr/local/samba/private/smbpasswd</B
+></TT
+></P
+><P
+>The <B
+CLASS="COMMAND"
+>mksmbpasswd.sh</B
+> program is found in 
+	the Samba source directory. By default, the smbpasswd file is 
+	stored in :</P
+><P
+><TT
+CLASS="FILENAME"
+>/usr/local/samba/private/smbpasswd</TT
+></P
+><P
+>The owner of the <TT
+CLASS="FILENAME"
+>/usr/local/samba/private/</TT
+> 
+	directory should be set to root, and the permissions on it should 
+	be set to 0500 (<B
+CLASS="COMMAND"
+>chmod 500 /usr/local/samba/private</B
+>).
+	</P
+><P
+>Likewise, the smbpasswd file inside the private directory should 
+	be owned by root and the permissions on is should be set to 0600
+	(<B
+CLASS="COMMAND"
+>chmod 600 smbpasswd</B
+>).</P
+><P
+>The format of the smbpasswd file is (The line has been 
+	wrapped here. It should appear as one entry per line in 
+	your smbpasswd file.)</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>username:uid:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:
+	[Account type]:LCT-&lt;last-change-time&gt;:Long name
+	</PRE
+></P
+><P
+>Although only the <TT
+CLASS="REPLACEABLE"
+><I
+>username</I
+></TT
+>, 
+	<TT
+CLASS="REPLACEABLE"
+><I
+>uid</I
+></TT
+>, <TT
+CLASS="REPLACEABLE"
+><I
+>	XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</I
+></TT
+>,
+	[<TT
+CLASS="REPLACEABLE"
+><I
+>Account type</I
+></TT
+>] and <TT
+CLASS="REPLACEABLE"
+><I
+>	last-change-time</I
+></TT
+> sections are significant 
+	and are looked at in the Samba code.</P
+><P
+>It is <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>VITALLY</I
+></SPAN
+> important that there by 32 
+	'X' characters between the two ':' characters in the XXX sections - 
+	the smbpasswd and Samba code will fail to validate any entries that 
+	do not have 32 characters  between ':' characters. The first XXX 
+	section is for the Lanman password hash, the second is for the 
+	Windows NT version.</P
+><P
+>When the password file is created all users have password entries
+	consisting of 32 'X' characters. By default this disallows any access
+	as this user. When a user has a password set, the 'X' characters change
+	to 32 ascii hexadecimal digits (0-9, A-F). These are an ascii
+	representation of the 16 byte hashed value of a user's password.</P
+><P
+>To set a user to have no password (not recommended), edit the file
+	using vi, and replace the first 11 characters with the ascii text
+	<TT
+CLASS="CONSTANT"
+>"NO PASSWORD"</TT
+> (minus the quotes).</P
+><P
+>For example, to clear the password for user bob, his smbpasswd file 
+	entry would look like :</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	bob:100:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:[U          ]:LCT-00000000:Bob's full name:/bobhome:/bobshell
+	</PRE
+></P
+><P
+>If you are allowing users to use the smbpasswd command to set 
+	their own passwords, you may want to give users NO PASSWORD initially 
+	so they do not have to enter a previous password when changing to their 
+	new password (not recommended). In order for you to allow this the
+	<B
+CLASS="COMMAND"
+>smbpasswd</B
+> program must be able to connect to the 
+	<B
+CLASS="COMMAND"
+>smbd</B
+> daemon as that user with no password. Enable this 
+	by adding the line :</P
+><P
+><B
+CLASS="COMMAND"
+>null passwords = yes</B
+></P
+><P
+>to the [global] section of the smb.conf file (this is why 
+	the above scenario is not recommended). Preferably, allocate your
+	users a default password to begin with, so you do not have
+	to enable this on your server.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Note : </I
+></SPAN
+>This file should be protected very 
+	carefully. Anyone with access to this file can (with enough knowledge of 
+	the protocols) gain access to your SMB server. The file is thus more 
+	sensitive than a normal unix <TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+> file.</P
 ></DIV
 ></DIV
 ></DIV

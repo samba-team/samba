@@ -9,12 +9,15 @@ CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Appendixes"
+HREF="appendixes.html"><LINK
 REL="PREVIOUS"
-TITLE="HOWTO Access Samba source code via CVS"
-HREF="cvs-access.html"><LINK
+TITLE="Samba and other CIFS clients"
+HREF="other-clients.html"><LINK
 REL="NEXT"
-TITLE="Group mapping HOWTO"
-HREF="groupmapping.html"></HEAD
+TITLE="Diagnosing your samba server"
+HREF="diagnosis.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -42,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="cvs-access.html"
+HREF="other-clients.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -56,7 +59,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="groupmapping.html"
+HREF="diagnosis.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -71,17 +74,26 @@ CLASS="CHAPTER"
 ><A
 NAME="BUGREPORT"
 ></A
->Chapter 19. Reporting Bugs</H1
+>Chapter 26. Reporting Bugs</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2921"
+NAME="AEN3368"
 ></A
->19.1. Introduction</H1
+>26.1. Introduction</H1
 ><P
->The email address for bug reports is samba@samba.org</P
+>The email address for bug reports for stable releases is <A
+HREF="samba@samba.org"
+TARGET="_top"
+>samba@samba.org</A
+>. 
+Bug reports for alpha releases should go to <A
+HREF="mailto:samba-technical@samba.org"
+TARGET="_top"
+>samba-technical@samba.org</A
+>.</P
 ><P
 >Please take the time to read this file before you submit a bug
 report. Also, please see if it has changed between releases, as we
@@ -102,16 +114,20 @@ that list that may be able to help you.</P
 ><P
 >You may also like to look though the recent mailing list archives,
 which are conveniently accessible on the Samba web pages
-at http://samba.org/samba/ </P
+at <A
+HREF="http://samba.org/samba/"
+TARGET="_top"
+>http://samba.org/samba/</A
+>.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2928"
+NAME="AEN3378"
 ></A
->19.2. General info</H1
+>26.2. General info</H1
 ><P
 >Before submitting a bug report check your config for silly
 errors. Look in your log files for obvious messages that tell you that
@@ -134,9 +150,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2934"
+NAME="AEN3384"
 ></A
->19.3. Debug levels</H1
+>26.3. Debug levels</H1
 ><P
 >If the bug has anything to do with Samba behaving incorrectly as a
 server (like refusing to open a file) then the log files will probably
@@ -204,9 +220,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2951"
+NAME="AEN3401"
 ></A
->19.4. Internal errors</H1
+>26.4. Internal errors</H1
 ><P
 >If you get a "INTERNAL ERROR" message in your log files it means that
 Samba got an unexpected signal while running. It is probably a
@@ -248,9 +264,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2961"
+NAME="AEN3411"
 ></A
->19.5. Attaching to a running process</H1
+>26.5. Attaching to a running process</H1
 ><P
 >Unfortunately some unixes (in particular some recent linux kernels)
 refuse to dump a core file if the task has changed uid (which smbd
@@ -265,9 +281,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2964"
+NAME="AEN3414"
 ></A
->19.6. Patches</H1
+>26.6. Patches</H1
 ><P
 >The best sort of bug report is one that includes a fix! If you send us
 patches please use <B
@@ -298,7 +314,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="cvs-access.html"
+HREF="other-clients.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -316,7 +332,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="groupmapping.html"
+HREF="diagnosis.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -326,17 +342,21 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->HOWTO Access Samba source code via CVS</TD
+>Samba and other CIFS clients</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
->&nbsp;</TD
+><A
+HREF="appendixes.html"
+ACCESSKEY="U"
+>Up</A
+></TD
 ><TD
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Group mapping HOWTO</TD
+>Diagnosing your samba server</TD
 ></TR
 ></TABLE
 ></DIV
