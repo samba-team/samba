@@ -22,11 +22,11 @@
 <!ENTITY ADS-HOWTO SYSTEM "ADS-HOWTO.sgml">
 <!ENTITY Passdb SYSTEM "passdb.sgml">
 <!ENTITY VFS SYSTEM "VFS.sgml">
-<!ENTITY GroupProfiles SYSTEM "GroupProfiles.sgml">
 <!ENTITY SecuringSamba SYSTEM "securing-samba.sgml">
 <!ENTITY Compiling SYSTEM "Compiling.sgml">
 <!ENTITY unicode SYSTEM "unicode.sgml">
 <!ENTITY CUPS SYSTEM "CUPS-printing.sgml">
+<!ENTITY AdvancedNetworkManagement SYSTEM "AdvancedNetworkAdmin.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -102,30 +102,30 @@ for various environments.
 </part>
 
 <part id="optional">
-<title>Optional configuration</title>
+<title>Advanced Configuration</title>
 <partintro>
 <title>Introduction</title>
 <para>Samba has several features that you might want or might not want to use. The chapters in this 
 part each cover one specific feature.</para>
 </partintro>
-&IntegratingWithWindows;
+&AdvancedNetworkManagment;
 &NT-Security;
+&GROUP-MAPPING-HOWTO;
 &Samba-PAM;
-&MS-Dfs-Setup;
 &PRINTER-DRIVER2;
 &CUPS;
 &WINBIND;
+&IntegratingWithWindows;
 &BROWSING;
+&MS-Dfs-Setup;
 &VFS;
-&GROUP-MAPPING-HOWTO;
-&SPEED;
-&GroupProfiles;
 &SecuringSamba;
 &unicode;
 </part>
 
 <part id="Appendixes">
 <title>Appendixes</title>
+&SPEED;
 &Portability;
 &Other-Clients;
 &Compiling;
@@ -133,4 +133,4 @@ part each cover one specific feature.</para>
 &Diagnosis;
 </part>
 
-</book>
+
