@@ -66,7 +66,7 @@ Possible motivations to make a change include:
 </itemizedlist>
 
 <para>
-It is vital that oit be well recognised that Samba-3 is NOT MS Windows NT4. Samba-3 offers
+It is vital that it be well recognised that Samba-3 is NOT MS Windows NT4. Samba-3 offers
 an alternative solution that is both different from MS Windows NT4 and that offers some
 advantages compared with it. It should also be recognised that Samba-3 lacks many of the
 features that Microsoft has promoted as core values in migration from MS Windows NT4 to 
@@ -164,7 +164,7 @@ and network bandwidth.
 A physical network segment may house several domains, each of which may span multiple network segments.
 Where domains span routed network segments it is most advisable to consider and test the performance
 implications of the design and layout of a network. A Centrally located domain controller that is being
-designed to server mulitple route network segments may result in severe performance problems if the
+designed to serve mulitple routed network segments may result in severe performance problems if the
 response time (eg: ping timing) between the remote segment and the PDC is more than 100 ms. In situations
 where the delay is too long it is highly recommended to locate a backup controller (BDC) to serve as
 the local authentication and access control server.
@@ -252,7 +252,7 @@ to be changed to the SID of the Samba-3 domain.
 
 <para>
 It is possible to migrate all account settings from an MS Windows NT4 domain to Samba-3. Before
- attempting to migrate user and group accounts it is STRONGLY advised to create in Samba-3 the
+attempting to migrate user and group accounts it is STRONGLY advised to create in Samba-3 the
 groups that are present on the MS Windows NT4 domain <emphasis>AND</emphasis> to connect these to
 suitable Unix/Linux groups. Following this simple advice will mean that all user and group attributes
 should migrate painlessly.
@@ -265,8 +265,7 @@ should migrate painlessly.
 <title>Steps In Migration Process</title>
 
 <para>
-This is not a definitive ste-by-step process yet - just a place holder so the info 
-is not lost.
+The approximate migration process is described below.
 </para>
 
 <itemizedlist>
@@ -279,44 +278,49 @@ Samba-3 set up as a DC with netlogon share, profile share, etc.
 </para></listitem>
 </itemizedlist>
 
-<para><programlisting>
-Process:
-	Create a BDC account for the samba server using NT Server Manager
-		- Samba must NOT be running
+<procedure><title>The Account Migration Process</title>
+	<step><para>Create a BDC account for the samba server using NT Server Manager</para>
+		<substeps><step><para>Samba must NOT be running</para></step></substeps></step>
 
-	rpcclient NT4PDC -U Administrator%passwd
-		lsaquery
+	<step>
+	<para>rpcclient NT4PDC -U Administrator%passwd</para>
+		<substeps><step><para>lsaquery</para></step>
+		 	  <step><para>Note the SID returned</para></step>
+		</substeps>
+	</step>
 
-		Note the SID returned by step b.
+	<step><para>net getsid -S NT4PDC -w DOMNAME -U Administrator%passwd</para>
+		<substeps><step><para>Note the SID</para></step></substeps>
+	</step>
 
-	net getsid -S NT4PDC -w DOMNAME -U Administrator%passwd
+	<step><para>net getlocalsid</para>
+		<substeps>
+		<step><para>Note the SID, now check that all three SIDS reported are the same!</para></step>
+		</substeps>
+	</step>
 
-		Note the SID in step c.
+	<step><para>net rpc join -S NT4PDC -w DOMNAME -U Administrator%passwd</para></step>
 
-	net getlocalsid
+	<step><para>net rpc vampire -S NT4PDC -U administrator%passwd</para></step>
 
-		Note the SID, now check that all three SIDS reported are the same!
+	<step><para>pdbedit -l</para>
+		<substeps><step><para>Note - did the users migrate?</para></step></substeps>
+	</step>
 
-	net rpc join -S NT4PDC -w DOMNAME -U Administrator%passwd
+	<step><para>initGrps.sh DOMNAME</para></step>
 
-	net rpc vampire -S NT4PDC -U administrator%passwd
+	<step><para>smbgroupedit -v</para>
+		<substeps><step><para>Now check that all groups are recognised</para></step></substeps>
+	</step>
 
-	pdbedit -l
+	<step><para>net rpc campire -S NT4PDC -U administrator%passwd</para></step>
 
-		Note - did the users migrate?
-
-	initGrps.sh DOMNAME
-
-	smbgroupedit -v
-
-		Now check that all groups are recognised
-
-	net rpc campire -S NT4PDC -U administrator%passwd
-
-	pdbedit -lv
-
-		Note - check that all group membership has been migrated.
-</programlisting></para>
+	<step><para>pdbedit -lv</para>
+		<substeps><step>
+			<para>Note - check that all group membership has been migrated</para>
+		</step></substeps>
+	</step>
+</procedure>
 
 <para>
 Now it is time to migrate all the profiles, then migrate all policy files.
@@ -324,6 +328,168 @@ More later.
 </para>
 
 </sect2>
+</sect1>
+
+<sect1>
+<title>Migration Options</title>
+
+<para>
+Based on feedback from many sites as well as from actual installation and maintenance
+experience sites that wish to migrate from MS Windows NT4 Domain Control to a Samba
+based solution fit into three basic categories.
+</para>
+
+<table frame="all"><title>The 3 Major Site Types</title>
+<tgroup cols="2" align="center">
+	<thead>
+	<row><entry align="center">Number of Users</entry><entry>Description</entry></row>
+	</thead>
+	<tbody>
+	<row><entry align="center">&lt 50</entry><entry><para>Want simple conversion with NO pain</para></entry></row>
+	<row><entry align="center">50 - 250</entry><entry><para>Want new features, can manage some in-house complexity</para></entry></row>
+	<row><entry align="center">&gt 250</entry><entry><para>Solution/Implementation MUST scale well, complex needs. Cross departmental decision process. Local expertise in most areas</para></entry></row>
+	</tbody>
+</tgroup>
+</table>
+
+<sect2>
+<title>Planning for Success</title>
+
+<para>
+There are three basic choices for sites that intend to migrate from MS Windwows NT4
+to Samba-3.
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	Simple Conversion (total replacement)
+	</para></listitem>
+
+	<listitem><para>
+	Upgraded Conversion (could be one of integration)
+	</para></listitem>
+
+	<listitem><para>
+	Complete Redesign (completely new solution)
+	</para></listitem>
+</itemizedlist>
+
+<para>
+No matter what choice you make, the following rules will minimise down-stream problems:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	Take sufficient time
+	</para></listitem>
+
+	<listitem><para>
+	Avoid Panic
+	</para></listitem>
+
+	<listitem><para>
+	Test ALL assumptions
+	</para></listitem>
+
+	<listitem><para>
+	Test full roll-out program, including workstation deployment
+	</para></listitem>
+</itemizedlist>
+
+<table frame="top"><title>Nature of the Conversion Choices</title>
+<tgroup cols="3" align="center">
+	<thead>
+	<row><entry>Simple</entry><entry>Upgraded</entry><entry>Redesign</entry></row>
+	</thead>
+	<tbody>
+	<row>
+	<entry><para>Make use of minimal OS specific features</para></entry>
+	<entry><para>Translate NT4 features to new host OS features</para></entry>
+	<entry><para>Decide:</para></entry>
+	</row>
+	<row>
+	<entry><para>Suck all accounts from NT4 into Samba-3</para></entry>
+	<entry><para>Copy and improve:</para></entry>
+	<entry><para>Authentication Regime (database location and access)</para></entry>
+	</row>
+	<row>
+	<entry><para>Make least number of operational changes</para></entry>
+	<entry><para>Make progressive improvements</para></entry>
+	<entry><para>Desktop Management Methods</para></entry>
+	</row>
+	<row>
+	<entry><para>Take least amount of time to migrate</para></entry>
+	<entry><para>Minimise user impact</para></entry>
+	<entry><para>Better Control of Desktops / Users</para></entry>
+	</row>
+	<row>
+	<entry><para>Live versus Isolated Conversion</para></entry>
+	<entry><para>Maximise functionality</para></entry>
+	<entry><para>Identify Needs for: Manageability, Scalability, Security, Availability</para></entry>
+	</row>
+	<row>
+	<entry><para>Integrate Samba-3 then migrate while users are active, then Change of control (ie: swap out)</para></entry>
+	<entry><para>Take advantage of lower maintenance opportunity</para></entry>
+	<entry><para></para></entry>
+	</row>
+	</tbody>
+</tgroup>
+</table>
+</sect2>
+
+<sect2>
+<title>Samba Implementation Choices</title>
+
+<para><programlisting>
+Authentication database back end
+	Winbind (external Samba or NT4/200x server)
+	Can use pam_mkhomedir.so to auto-create home dirs
+	External server could use Active Directory or NT4 Domain
+Database type
+	smbpasswd, tdbsam, ldapsam, MySQLsam
+		With local accounts or with No Unix Accounts (NUA option)
+Access Control Points
+	On the Share itself (Use NT4 Server Manager)
+	On the file system
+	Unix permissions on files and directories
+	Posix ACLs enablement in file system?
+	Through Samba share parameters
+		Not recommended - except as only resort
+Policies (migrate or create new ones)
+	Group Policy Editor (NT4)
+	Watch out for Tattoo effect
+User and Group Profiles
+	Platform specific so use platform tool to change from a Local to a Roaming profile
+	Can use new profiles tool to change SIDs (NTUser.DAT)
+Logon Scripts (Know how they work)
+User and Group mapping to Unix/Linux
+	username map facility may be needed
+	Use smbgroupedit to connect NT4 groups to Unix groups
+	Use pdbedit to set/change user configuration
+NOTE:
+If migrating to LDAP back end it may be easier to dump initial LDAP database to LDIF, then edit, then reload into LDAP
+	OS specific scripts / programs may be needed
+		Add / delete Users
+			Note OS limits on size of name (Linux 8 chars)
+				NT4 up to 254 chars
+		Add / delete machines
+			Applied only to domain members (note up to 16 chars)
+		Add / delete Groups
+			Note OS limits on size and nature
+				Linux limit is 16 char, no spaces and no upper case chars (groupadd)
+
+Migration Tools
+	Domain Control (NT4 Style)
+	Profiles, Policies, Access Controls, Security
+Migration Tools
+	Samba: net, rpcclient, smbpasswd, pdbedit, smbgroupedit, profiles
+	Windows: NT4 Domain User Manager, Server Manager (NEXUS)
+Authentication
+	New SAM back end (smbpasswd, tdbsam, ldapsam, mysqlsam)
+		With of without Unix Accounts (NUA)
+</programlisting>
+</para>
+
 </sect1>
 
 <sect1>
