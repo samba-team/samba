@@ -48,52 +48,82 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr)
 
 		case 0x9:
 			printf(" IP:");
-			if (rhs->data.length == 4) {
+			if (rhs->rhs_data.length == 4) {
 				struct in_addr in;
-				in.s_addr = RIVAL(rhs->data.data, 0);
+				in.s_addr = RIVAL(rhs->rhs_data.data, 0);
 				printf("%s", inet_ntoa(in));
 			}
 			break;
 
 		case 0x10:
-			printf(" PIPE:%.*s", rhs->data.length, rhs->data.data);
+			printf(" PIPE:%.*s", rhs->rhs_data.length, rhs->rhs_data.data);
 			break;
 
 		case 0x0f:
-			printf(" SMBNP:%.*s", rhs->data.length, rhs->data.data);
+			printf(" SMB:%.*s", rhs->rhs_data.length, rhs->rhs_data.data);
 			break;
 
 		case 0x11:
-			printf(" SMB:%.*s", rhs->data.length, rhs->data.data);
+			printf(" NetBIOS:%.*s", rhs->rhs_data.length, rhs->rhs_data.data);
 			break;
 
 		case 0x01:
-			printf(" UNK(1):%.*s", rhs->data.length, rhs->data.data);
+			printf(" UNK(1):%.*s", rhs->rhs_data.length, rhs->rhs_data.data);
 			break;
 
 		case 0x1f:
 			printf(" TCP:");
-			if (rhs->data.length == 2) {
-				printf("%d", SVAL(rhs->data.data, 0));
-			}
-			break;
-
-		case 0x07:
-			printf(" XXX:");
-			if (rhs->data.length == 2) {
-				printf("%d", SVAL(rhs->data.data, 0));
+			if (rhs->rhs_data.length == 2) {
+				printf("%d", SVAL(rhs->rhs_data.data, 0));
 			}
 			break;
 
 		default:
 			printf(" UNK(%02x):", lhs->protocol);
-			if (rhs->data.length == 2) {
-				printf("%d", SVAL(rhs->data.data, 0));
+			if (rhs->rhs_data.length == 2) {
+				printf("%d", SVAL(rhs->rhs_data.data, 0));
 			}
 			break;
 		}
 	}
 	printf("\n");
+}
+
+
+static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		     struct epm_twr_t *twr)
+{
+	NTSTATUS status;
+	struct epm_Map r;
+	GUID uuid;
+	struct policy_handle handle;
+	int i;
+
+	ZERO_STRUCT(uuid);
+	ZERO_STRUCT(handle);
+
+	r.in.object = &uuid;
+	r.in.map_tower = twr;
+	r.in.entry_handle = &handle;	
+	r.out.entry_handle = &handle;
+	r.in.max_towers = 100;
+
+	status = dcerpc_epm_Map(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status) || r.out.status != 0) {
+		printf("epm_Map failed - %s/0x%x\n", 
+		       nt_errstr(status), r.out.status);
+		return False;
+	}
+
+	printf("epm_Map results:\n");
+
+	for (i=0;i<r.out.num_towers;i++) {
+		if (r.out.towers[i].twr) {
+			display_tower(mem_ctx, &r.out.towers[i].twr->towers);
+		}
+	}
+	
+	return True;
 }
 
 static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
@@ -117,13 +147,15 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.max_ents = 10;
 
 	do {
+		int i;
 		status = dcerpc_epm_Lookup(p, mem_ctx, &r);
-		if (NT_STATUS_IS_OK(status) && r.out.status == 0) {
-			int i;
-			for (i=0;i<r.out.num_ents;i++) {
-				printf("Found '%s'\n", r.out.entries[i].annotation);
-				display_tower(mem_ctx, &r.out.entries[i].tower->towers);
-			}
+		if (!NT_STATUS_IS_OK(status) || r.out.status != 0) {
+			break;
+		}
+		for (i=0;i<r.out.num_ents;i++) {
+			printf("\nFound '%s'\n", r.out.entries[i].annotation);
+			display_tower(mem_ctx, &r.out.entries[i].tower->towers);
+			test_Map(p, mem_ctx, r.out.entries[i].tower);
 		}
 	} while (NT_STATUS_IS_OK(status) && 
 		 r.out.status == 0 && 

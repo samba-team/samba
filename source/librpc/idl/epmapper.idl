@@ -30,7 +30,7 @@ interface epmapper
 
 	typedef [nodiscriminant] union {
 		[case(13)] epm_prot_uuid uuid;
-		[default]  ;
+		[default]  [flag(NDR_REMAINING)] DATA_BLOB lhs_data;
 	} epm_protocol_info;
 
 	typedef struct {
@@ -39,7 +39,7 @@ interface epmapper
 	} epm_lhs;
 
 	typedef struct {
-		[flag(NDR_REMAINING)] DATA_BLOB data;
+		[flag(NDR_REMAINING)] DATA_BLOB rhs_data;
 	} epm_rhs;
 
 	typedef struct {
@@ -47,10 +47,10 @@ interface epmapper
 		[subcontext(2)] epm_rhs rhs;
 	} epm_floor;
 
-	/* not that the NDR_NOALIGN flag is inherited by all nested
+	/* note that the NDR_NOALIGN flag is inherited by all nested
 	   structures. All of the towers/floors stuff is
 	   non-aligned. I wonder what sort of wicked substance these
-	   guys were smoking? 
+	   guys were smoking?
 	*/
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16 num_floors;
