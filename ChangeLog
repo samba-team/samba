@@ -1,3 +1,7 @@
+2003-05-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/klist.c: print tokens even if there isn't v4 support
+	
 2003-05-06  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/name-45-test.c: need to use empty krb5.conf for some
