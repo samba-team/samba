@@ -4221,28 +4221,32 @@ void readline_init(void);
 
 msrpc_service_fns *get_service_fns(void);
 
-/*The following definitions come from  samrd/srv_samr_tdb.c  */
+/*The following definitions come from  samrd/srv_samr_als_tdb.c  */
 
-uint32 _samr_close(POLICY_HND *hnd);
+uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
+uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
+uint32 _samr_query_aliasinfo(const POLICY_HND *alias_pol,
+				uint16 switch_level,
+				ALIAS_INFO_CTR *ctr);
+uint32 _samr_delete_dom_alias(POLICY_HND *alias_pol);
+uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol, 
+				uint32 *num_mem, DOM_SID2 **sid);
+uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
+				const UNISTR2 *uni_acct_name,
+				uint32 access_mask,
+				POLICY_HND *alias_pol, uint32 *rid);
+uint32 _samr_open_alias(const POLICY_HND *domain_pol,
+					uint32 access_mask, uint32 alias_rid,
+					POLICY_HND *alias_pol);
+
+/*The following definitions come from  samrd/srv_samr_dom_tdb.c  */
+
 uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 				uint32 ace_perms,
 				const DOM_SID *sid,
 				POLICY_HND *domain_pol);
-uint32 _samr_unknown_2c(const POLICY_HND *user_pol,
-				uint32 *unknown_0,
-				uint32 *unknown_1);
-uint32 _samr_unknown_3(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff);
 uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size,
-				SAM_ENTRY **sam,
-				UNISTR2 **uni_acct_name,
-				uint32 *num_sam_users);
-uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown);
-uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid);
-uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
-uint32 _samr_del_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
-uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx, 
-				uint32 size,
 				SAM_ENTRY **sam,
 				UNISTR2 **uni_acct_name,
 				uint32 *num_sam_users);
@@ -4263,23 +4267,6 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 					uint32 *data_size,
 					uint32 *num_entries,
 					SAM_DISPINFO_CTR *ctr);
-uint32 _samr_delete_dom_group(POLICY_HND *group_pol);
-uint32 _samr_query_groupmem(const POLICY_HND *group_pol, 
-					uint32 *num_mem,
-					uint32 **rid,
-					uint32 **attr);
-uint32 _samr_query_groupinfo(const POLICY_HND *pol,
-				uint16 switch_level,
-				GROUP_INFO_CTR* ctr);
-uint32 _samr_query_aliasinfo(const POLICY_HND *alias_pol,
-				uint16 switch_level,
-				ALIAS_INFO_CTR *ctr);
-uint32 _samr_query_useraliases(const POLICY_HND *pol,
-				const uint32 *ptr_sid, const DOM_SID2 *sid,
-				uint32 *num_aliases, uint32 **rid);
-uint32 _samr_delete_dom_alias(POLICY_HND *alias_pol);
-uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol, 
-				uint32 *num_mem, DOM_SID2 **sid);
 uint32 _samr_lookup_names(const POLICY_HND *pol,
 				
 			uint32 num_names1,
@@ -4291,6 +4278,50 @@ uint32 _samr_lookup_names(const POLICY_HND *pol,
 			uint32 rid[MAX_SAM_ENTRIES],
 			uint32 *num_types1,
 			uint32 type[MAX_SAM_ENTRIES]);
+uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
+					uint32 num_rids, const uint32 *rids,
+					uint32 *num_names,
+					UNIHDR **hdr_name, UNISTR2** uni_name,
+					uint32 **types);
+uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
+				uint16 switch_value,
+				SAM_UNK_CTR *ctr);
+
+/*The following definitions come from  samrd/srv_samr_grp_tdb.c  */
+
+uint32 _samr_add_groupmem(const POLICY_HND *pol, uint32 rid, uint32 unknown);
+uint32 _samr_del_groupmem(const POLICY_HND *pol, uint32 rid);
+uint32 _samr_delete_dom_group(POLICY_HND *group_pol);
+uint32 _samr_query_groupmem(const POLICY_HND *group_pol, 
+					uint32 *num_mem,
+					uint32 **rid,
+					uint32 **attr);
+uint32 _samr_query_groupinfo(const POLICY_HND *pol,
+				uint16 switch_level,
+				GROUP_INFO_CTR* ctr);
+uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
+				const UNISTR2 *uni_acct_name,
+				uint32 access_mask,
+				POLICY_HND *group_pol, uint32 *rid);
+uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
+				uint32 group_rid,
+				POLICY_HND *group_pol);
+
+/*The following definitions come from  samrd/srv_samr_sam_tdb.c  */
+
+uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx, 
+				uint32 size,
+				SAM_ENTRY **sam,
+				UNISTR2 **uni_acct_name,
+				uint32 *num_sam_users);
+uint32 _samr_connect_anon(const UNISTR2 *srv_name, uint32 access_mask,
+				POLICY_HND *connect_pol);
+uint32 _samr_connect(const UNISTR2 *srv_name, uint32 access_mask,
+				POLICY_HND *connect_pol);
+uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
+				const UNISTR2 *uni_domain,
+				DOM_SID *dom_sid);
+uint32 _samr_close(POLICY_HND *hnd);
 uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 				const UNISTR2 *uni_user_name,
 				const char nt_newpass[516],
@@ -4299,11 +4330,40 @@ uint32 _samr_chgpasswd_user( const UNISTR2 *uni_dest_host,
 				const uchar lm_oldhash[16]);
 uint32 _samr_unknown_38(const UNISTR2 *uni_srv_name,
 				uint16 *unk_0, uint16 *unk_1, uint16 *unk_2);
-uint32 _samr_lookup_rids(const POLICY_HND *pol, uint32 flags,
-					uint32 num_rids, const uint32 *rids,
-					uint32 *num_names,
-					UNIHDR **hdr_name, UNISTR2** uni_name,
-					uint32 **types);
+
+/*The following definitions come from  samrd/srv_samr_tdb.c  */
+
+BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
+				TDB_CONTEXT *tdb);
+BOOL get_tdbsam(struct policy_cache *cache, const POLICY_HND *hnd,
+				TDB_CONTEXT **tdb);
+BOOL set_tdbdomsid(struct policy_cache *cache, POLICY_HND *hnd,
+				TDB_CONTEXT *usr_tdb,
+				TDB_CONTEXT *grp_tdb,
+				TDB_CONTEXT *als_tdb,
+				const DOM_SID *sid);
+BOOL get_tdbdomsid(struct policy_cache *cache, const POLICY_HND *hnd,
+				TDB_CONTEXT **usr_tdb,
+				TDB_CONTEXT **grp_tdb,
+				TDB_CONTEXT **als_tdb,
+				DOM_SID *sid);
+BOOL set_tdbsid(struct policy_cache *cache, POLICY_HND *hnd,
+				TDB_CONTEXT *tdb, const DOM_SID *sid);
+BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
+				TDB_CONTEXT **tdb, DOM_SID *sid);
+
+/*The following definitions come from  samrd/srv_samr_usr_tdb.c  */
+
+uint32 _samr_unknown_2c(const POLICY_HND *user_pol,
+				uint32 *unknown_0,
+				uint32 *unknown_1);
+uint32 _samr_unknown_3(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff);
+uint32 _samr_query_usergroups(const POLICY_HND *pol,
+				uint32 *num_groups,
+				DOM_GID **gids);
+uint32 _samr_query_useraliases(const POLICY_HND *pol,
+				const uint32 *ptr_sid, const DOM_SID2 *sid,
+				uint32 *num_aliases, uint32 **rid);
 uint32 _samr_open_user(const POLICY_HND *domain_pol,
 					uint32 access_mask, uint32 user_rid, 
 					POLICY_HND *user_pol);
@@ -4313,38 +4373,11 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr);
 uint32 _samr_set_userinfo2(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO2_CTR *ctr);
-uint32 _samr_query_usergroups(const POLICY_HND *pol,
-				uint32 *num_groups,
-				DOM_GID **gids);
-uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol,
-				const UNISTR2 *uni_acct_name,
-				uint32 access_mask,
-				POLICY_HND *alias_pol, uint32 *rid);
-uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
-				const UNISTR2 *uni_acct_name,
-				uint32 access_mask,
-				POLICY_HND *group_pol, uint32 *rid);
-uint32 _samr_query_dom_info(const POLICY_HND *domain_pol,
-				uint16 switch_value,
-				SAM_UNK_CTR *ctr);
 uint32 _samr_create_user(const POLICY_HND *domain_pol,
 				const UNISTR2 *uni_username,
 				uint16 acb_info, uint32 access_mask, 
 				POLICY_HND *user_pol,
 				uint32 *unknown_0, uint32 *user_rid);
-uint32 _samr_connect_anon(const UNISTR2 *srv_name, uint32 access_mask,
-				POLICY_HND *connect_pol);
-uint32 _samr_connect(const UNISTR2 *srv_name, uint32 access_mask,
-				POLICY_HND *connect_pol);
-uint32 _samr_open_alias(const POLICY_HND *domain_pol,
-					uint32 access_mask, uint32 alias_rid,
-					POLICY_HND *alias_pol);
-uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
-				uint32 group_rid,
-				POLICY_HND *group_pol);
-uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
-				const UNISTR2 *uni_domain,
-				DOM_SID *dom_sid);
 
 /*The following definitions come from  smbd/blocking.c  */
 
