@@ -96,7 +96,7 @@ static krb5_addresses no_addrs = {0, NULL};
 void
 krb5_get_init_creds_opt_set_default_flags(krb5_context context,
 					  const char *appname, 
-					  krb5_realm realm,
+					  krb5_const_realm realm,
 					  krb5_get_init_creds_opt *opt)
 {
     krb5_boolean b;
