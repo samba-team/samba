@@ -4047,11 +4047,19 @@ struct hostent *Get_Hostbyname(char *name)
       exit(0);
     }
 
+  /*
+   * This next test is redundent and causes some systems (with
+   * broken isalnum() calls) problems.
+   * JRA.
+   */
+
+#if 0
   if (!isalnum(*name2))
     {
       free(name2);
       return(NULL);
     }
+#endif /* 0 */
 
   ret = sys_gethostbyname(name2);
   if (ret != NULL)

@@ -153,6 +153,7 @@ typedef struct
   char *szDomainOtherSIDs;
   char *szDomainGroups;
   char *szDriverFile;
+  char *szNameResolveOrder;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -291,6 +292,7 @@ typedef struct
   BOOL bDeleteVetoFiles;
   BOOL bDosFiletimes;
   BOOL bDosFiletimeResolution;
+  BOOL bFakeDirCreateTimes;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -378,6 +380,7 @@ static service sDefault =
   False, /* bDeleteVetoFiles */
   False, /* bDosFiletimes */
   False, /* bDosFiletimeResolution */
+  False, /* bFakeDirCreateTimes */
   ""     /* dummy */
 };
 
@@ -514,6 +517,7 @@ static struct parm_struct
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL,   NULL},
   {"max xmit",         P_INTEGER, P_GLOBAL, &Globals.max_xmit,          NULL,   NULL},
   {"max packet",       P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL},
+  {"name resolve order",  P_STRING,  P_GLOBAL, &Globals.szNameResolveOrder,  NULL,   NULL},
   {"packet size",      P_INTEGER, P_GLOBAL, &Globals.max_packet,        NULL,   NULL},
   {"password level",   P_INTEGER, P_GLOBAL, &Globals.pwordlevel,        NULL,   NULL},
   {"username level",   P_INTEGER, P_GLOBAL, &Globals.unamelevel,        NULL,   NULL},
@@ -640,6 +644,7 @@ static struct parm_struct
   {"delete readonly",  P_BOOL,    P_LOCAL,  &sDefault.bDeleteReadonly,  NULL,   NULL},
   {"dos filetimes",    P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimes,    NULL,   NULL},
   {"dos filetime resolution",   P_BOOL,    P_LOCAL,  &sDefault.bDosFiletimeResolution,    NULL,   NULL},
+  {"fake directory create times",    P_BOOL,    P_LOCAL,  &sDefault.bFakeDirCreateTimes, NULL,   NULL},
 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL}
 };
@@ -695,6 +700,8 @@ static void init_globals(void)
   /* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
   string_set(&Globals.szLogonHome, "\\\\%N\\%U");
   string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
+
+  string_set(&Globals.szNameResolveOrder, "lmhosts host wins bcast");
 
   Globals.bLoadPrinters = True;
   Globals.bUseRhosts = False;
@@ -906,6 +913,7 @@ FN_GLOBAL_STRING(lp_auto_services,&Globals.szAutoServices)
 FN_GLOBAL_STRING(lp_passwd_program,&Globals.szPasswdProgram)
 FN_GLOBAL_STRING(lp_passwd_chat,&Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver,&Globals.szPasswordServer)
+FN_GLOBAL_STRING(lp_name_resolve_order,&Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_workgroup,&Globals.szWorkGroup)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
@@ -1052,6 +1060,7 @@ FN_LOCAL_BOOL(lp_fake_oplocks,bFakeOplocks)
 FN_LOCAL_BOOL(lp_recursive_veto_delete,bDeleteVetoFiles)
 FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution,bDosFiletimeResolution)
+FN_LOCAL_BOOL(lp_fake_dir_create_times,bFakeDirCreateTimes)
 
 FN_LOCAL_INTEGER(lp_create_mode,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)

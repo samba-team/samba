@@ -44,6 +44,8 @@ extern pstring myname;
 extern fstring myworkgroup;
 extern char **my_netbios_names;
 
+extern BOOL global_in_nmbd;
+
 /* are we running as a daemon ? */
 static BOOL is_daemon = False;
 
@@ -552,7 +554,10 @@ int main(int argc,char *argv[])
   char pidFile[100] = { 0 };
 
   global_nmb_port = NMB_PORT;
+
   *host_file = 0;
+
+  global_in_nmbd = True;
 
   StartupTime = time(NULL);
 

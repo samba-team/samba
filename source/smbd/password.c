@@ -1556,9 +1556,8 @@ struct cli_state *server_cryptkey(void)
 		standard_sub_basic(desthost);
 		strupper(desthost);
 
-		dest_ip = *interpret_addr2(desthost);
-		if (zero_ip(dest_ip)) {
-			DEBUG(1,("Can't resolve address for %s\n",p));
+                if(!resolve_name( desthost, &dest_ip)) {
+			DEBUG(1,("server_cryptkey: Can't resolve address for %s\n",p));
 			continue;
 		}
 

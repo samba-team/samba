@@ -25,6 +25,8 @@
 extern pstring scope;
 extern int DEBUGLEVEL;
 
+/* nmbd.c sets this to True. */
+BOOL global_in_nmbd = False;
 
 /****************************************************************************
 interpret a node status response
@@ -302,4 +304,265 @@ struct in_addr *name_query(int fd,char *name,int name_type,
     }
 
   return ip_list;
+}
+
+/********************************************************
+ Start parsing the lmhosts file.
+*********************************************************/
+
+FILE *startlmhosts(char *fname)
+{
+  FILE *fp = fopen(fname,"r");
+  if (!fp) {
+    DEBUG(2,("startlmhosts: Can't open lmhosts file %s. Error was %s\n",
+             fname, strerror(errno)));
+    return NULL;
+  }
+  return fp;
+}
+
+/********************************************************
+ Parse the next line in the lmhosts file.
+*********************************************************/
+
+BOOL getlmhostsent( FILE *fp, char *name, int *name_type, struct in_addr *ipaddr)
+{
+  pstring line;
+
+  while(!feof(fp) && !ferror(fp)) {
+    pstring ip,flags,extra;
+    char *ptr;
+    int count = 0;
+
+    *name_type = -1;
+
+    if (!fgets_slash(line,sizeof(pstring),fp))
+      continue;
+
+    if (*line == '#')
+      continue;
+
+    strcpy(ip,"");
+    strcpy(name,"");
+    strcpy(flags,"");
+
+    ptr = line;
+
+    if (next_token(&ptr,ip   ,NULL))
+      ++count;
+    if (next_token(&ptr,name ,NULL))
+      ++count;
+    if (next_token(&ptr,flags,NULL))
+      ++count;
+    if (next_token(&ptr,extra,NULL))
+      ++count;
+
+    if (count <= 0)
+      continue;
+
+    if (count > 0 && count < 2)
+    {
+      DEBUG(0,("getlmhostsent: Ill formed hosts line [%s]\n",line));
+      continue;
+    }
+
+    if (count >= 4)
+    {
+      DEBUG(0,("getlmhostsent: too many columns in lmhosts file (obsolete syntax)\n"));
+      continue;
+    }
+
+    DEBUG(4, ("getlmhostsent: lmhost entry: %s %s %s\n", ip, name, flags));
+
+    if (strchr(flags,'G') || strchr(flags,'S'))
+    {
+      DEBUG(0,("getlmhostsent: group flag in lmhosts ignored (obsolete)\n"));
+      continue;
+    }
+
+    *ipaddr = *interpret_addr2(ip);
+
+    /* Extra feature. If the name ends in '#XX', where XX is a hex number,
+       then only add that name type. */
+    if((ptr = strchr(name, '#')) != NULL)
+    {
+      char *endptr;
+
+      ptr++;
+      *name_type = (int)strtol(ptr, &endptr,0);
+
+      if(!*ptr || (endptr == ptr))
+      {
+        DEBUG(0,("getlmhostsent: invalid name %s containing '#'.\n", name));
+        continue;
+      }
+
+      *(--ptr) = '\0'; /* Truncate at the '#' */
+    }
+
+    return True;
+  }
+
+  return False;
+}
+
+/********************************************************
+ Finish parsing the lmhosts file.
+*********************************************************/
+
+void endlmhosts(FILE *fp)
+{
+  fclose(fp);
+}
+
+/********************************************************
+ Resolve a name into an IP address. Use this function if
+ the string is either an IP address, DNS or host name
+ or NetBIOS name. This uses the name switch in the
+ smb.conf to determine the order of name resolution.
+*********************************************************/
+
+BOOL resolve_name(char *name, struct in_addr *return_ip)
+{
+  char *p;
+  int i;
+  BOOL pure_address = True;
+
+  if (strcmp(name,"0.0.0.0") == 0) {
+    return_ip->s_addr = 0;
+    return True;
+  }
+  if (strcmp(name,"255.255.255.255") == 0) {
+    return_ip->s_addr = 0xFFFFFFFF;
+    return True;
+  }
+   
+  for (i=0; pure_address && name[i]; i++)
+    if (!(isdigit(name[i]) || name[i] == '.'))
+      pure_address = False;
+   
+  /* if it's in the form of an IP address then get the lib to interpret it */
+  if (pure_address) {
+    return_ip->s_addr = inet_addr(name);
+    return True;
+  }
+
+  for (p=strtok(lp_name_resolve_order(),LIST_SEP); p; p = strtok(NULL,LIST_SEP)) {
+    if(strequal(p, "host") || strequal(p, "hosts")) {
+
+      /*
+       * "host" means do a localhost, or dns lookup.
+       */
+
+      struct hostent *hp;
+
+      DEBUG(3,("resolve_name: Attempting host lookup for name %s\n"));
+
+      if (((hp = Get_Hostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
+        putip((char *)return_ip,(char *)hp->h_addr);
+        return True;
+      }
+
+    } else if(strequal( p, "lmhosts")) {
+
+      /*
+       * "lmhosts" means parse the local lmhosts file.
+       */
+
+      FILE *fp;
+      pstring lmhost_name;
+      int name_type;
+
+      DEBUG(3,("resolve_name: Attempting lmhosts lookup for name %s\n"));
+
+      fp = startlmhosts( LMHOSTSFILE );
+      if(fp) {
+        while( getlmhostsent(fp, lmhost_name, &name_type, return_ip ) ) {
+          if( strequal(name, lmhost_name )) {
+            endlmhosts(fp);
+            return True; 
+          }
+        }
+        endlmhosts(fp);
+      }
+
+    } else if(strequal( p, "wins")) {
+
+      int sock;
+
+      /*
+       * "wins" means do a unicast lookup to the WINS server.
+       * Ignore if there is no WINS server specified or if the
+       * WINS server is one of our interfaces (if we're being
+       * called from within nmbd - we can't do this call as we
+       * would then block).
+       */
+
+      DEBUG(3,("resolve_name: Attempting wins lookup for name %s\n"));
+
+      if(*lp_wins_server()) {
+        struct in_addr wins_ip = *interpret_addr2(lp_wins_server());
+        BOOL wins_ismyip = ismyip(wins_ip);
+
+        if((wins_ismyip && !global_in_nmbd) || !wins_ismyip) {
+          sock = open_socket_in( SOCK_DGRAM, 0, 3,
+                               interpret_addr(lp_socket_address()) );
+
+          if (sock != -1) {
+            struct in_addr *iplist = NULL;
+            int count;
+            iplist = name_query(sock, name, 0x20, False, True, wins_ip, &count, NULL);
+            if(iplist != NULL) {
+              *return_ip = iplist[0];
+              free((char *)iplist);
+              close(sock);
+              return True;
+            }
+            close(sock);
+          }
+        }
+      } else {
+        DEBUG(3,("resolve_name: WINS server resolution selected and no WINS server present.\n"));
+      }
+    } else if(strequal( p, "bcast")) {
+
+      int sock;
+
+      /*
+       * "bcast" means do a broadcast lookup on all the local interfaces.
+       */
+
+      DEBUG(3,("resolve_name: Attempting broadcast lookup for name %s\n"));
+
+      sock = open_socket_in( SOCK_DGRAM, 0, 3,
+                             interpret_addr(lp_socket_address()) );
+
+      if (sock != -1) {
+        struct in_addr *iplist = NULL;
+        int count;
+        int num_interfaces = iface_count();
+        set_socket_options(sock,"SO_BROADCAST");
+        /*
+         * Lookup the name on all the interfaces, return on
+         * the first successful match.
+         */
+        for( i = 0; i < num_interfaces; i++) {
+          struct in_addr sendto_ip = *iface_bcast(*iface_n_ip(i));
+          iplist = name_query(sock, name, 0x20, True, False, sendto_ip, &count, NULL);
+          if(iplist != NULL) {
+            *return_ip = iplist[0];
+            free((char *)iplist);
+            close(sock);
+            return True;
+          }
+        }
+        close(sock);
+      }
+
+    } else {
+      DEBUG(0,("resolve_name: unknown name switch type %s\n", p));
+    }
+  }
+
+  return False;
 }

@@ -33,88 +33,21 @@ Load a lmhosts file.
 ****************************************************************************/
 void load_lmhosts_file(char *fname)
 {  
-  FILE *fp = fopen(fname,"r");
-  pstring line;
+  pstring name;
+  int name_type;
+  struct in_addr ipaddr;
+  FILE *fp = startlmhosts( fname );
+
   if (!fp) {
     DEBUG(2,("load_lmhosts_file: Can't open lmhosts file %s. Error was %s\n",
              fname, strerror(errno)));
     return;
   }
    
-  while (!feof(fp))
+  while (getlmhostsent(fp, name, &name_type, &ipaddr) )
   {
-    pstring ip,name,flags,extra;
     struct subnet_record *subrec = NULL;
-    char *ptr;
-    int count = 0;  
-    struct in_addr ipaddr;
     enum name_source source = LMHOSTS_NAME;
-    int name_type = -1;
-
-    if (!fgets_slash(line,sizeof(pstring),fp))
-      continue;
-
-    if (*line == '#')
-      continue;
-
-    strcpy(ip,"");     
-    strcpy(name,"");
-    strcpy(flags,"");
-     
-    ptr = line;
-     
-    if (next_token(&ptr,ip   ,NULL))
-      ++count;
-    if (next_token(&ptr,name ,NULL))
-      ++count;
-    if (next_token(&ptr,flags,NULL))
-      ++count;
-    if (next_token(&ptr,extra,NULL))
-      ++count;
-   
-    if (count <= 0)
-      continue;
-     
-    if (count > 0 && count < 2)
-    {
-      DEBUG(0,("load_lmhosts_file: Ill formed hosts line [%s]\n",line));
-      continue;
-    }
-      
-    if (count >= 4)
-    {
-      DEBUG(0,("load_lmhosts_file: too many columns in lmhosts file %s (obsolete syntax)\n",
-             fname));
-      continue;
-    }
-      
-    DEBUG(4, ("load_lmhosts_file: lmhost entry: %s %s %s\n", ip, name, flags));
-    
-    if (strchr(flags,'G') || strchr(flags,'S'))
-    {
-      DEBUG(0,("load_lmhosts_file: group flag in %s ignored (obsolete)\n",fname));
-      continue;
-    }
-
-    ipaddr = *interpret_addr2(ip);
-
-    /* Extra feature. If the name ends in '#XX', where XX is a hex number,
-       then only add that name type. */
-    if((ptr = strchr(name, '#')) != NULL)
-    {
-      char *endptr;
-
-      ptr++;
-      name_type = (int)strtol(ptr, &endptr,0);
-
-      if(!*ptr || (endptr == ptr))
-      {
-        DEBUG(0,("load_lmhosts_file: invalid name %s containing '#'.\n", name));
-        continue;
-      }
-
-      *(--ptr) = '\0'; /* Truncate at the '#' */
-    }
 
     /* We find a relevent subnet to put this entry on, then add it. */
     /* Go through all the broadcast subnets and see if the mask matches. */
@@ -141,7 +74,7 @@ void load_lmhosts_file(char *fname)
     }
   }
    
-  fclose(fp);
+  endlmhosts(fp);
 }
 
 /****************************************************************************

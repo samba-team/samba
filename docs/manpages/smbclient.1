@@ -87,6 +87,11 @@ on the Lan Manager server "lanman", you would use the servicename
 Note that the server name required is NOT necessarily the host name of the
 server! The name required is a Lan Manager server name, which may or may not
 be the same as the hostname of the machine running the server.
+
+With Samba 1.9.18p4 the server name is looked up according to the
+"name resolve order=" parameter in the smb.conf file, allowing an
+administrator to change the order and methods by which server names
+are looked up.
 .RE
 
 .B password

@@ -1343,13 +1343,9 @@ BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip)
 	fstrcpy(cli->desthost, host);
 	
 	if (!ip) {
-		struct hostent *hp;
-
-		if ((hp = Get_Hostbyname(cli->desthost)) == 0) {
-			return False;
-		}
-
-		putip((char *)&dest_ip,(char *)hp->h_addr);
+                if(!resolve_name( cli->desthost, &dest_ip)) {
+                        return False;
+                }
 	} else {
 		dest_ip = *ip;
 	}
