@@ -661,9 +661,9 @@ bin/winbindd: $(WINBINDD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) 
 
-nsswitch/libnss_winbind.so: $(WINBIND_NSS_PICOBJS)
+@WINBIND_LTARGETS@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
-	@$(SHLD) @LDSHFLAGS@ -o $@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@
+	@$(SHLD) @LDSHFLAGS@ -o nsswitch/$@ $(WINBIND_NSS_PICOBJS) @WINBIND_NSS_EXTRA_LIBS@
 
 nsswitch/pam_winbind.so: $(PAM_WINBIND_OBJ) bin/.dummy
 	@echo Linking $@

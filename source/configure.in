@@ -878,7 +878,7 @@ case "$host_os" in
 			esac
 			ATTEMPT_WRAP32_BUILD=yes
 			BLDSHARED="true"
-			LDSHFLAGS="-soname \$@ -shared"
+			LDSHFLAGS="-set_version sgi1.0 -soname \$@ -shared"
 			SHLD="\${LD}" 
 			if test "${ac_cv_prog_CC}" = "gcc"; then
 				PICFLAG="-fPIC"
@@ -2672,7 +2672,15 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 
 	WINBIND_TARGETS="bin/wbinfo"
 	WINBIND_STARGETS="bin/winbindd"
-	WINBIND_LTARGETS="nsswitch/libnss_winbind.so"
+	case "$host_os" in
+        *irix*)
+		WINBIND_LTARGETS="libns_winbind.so"
+                ;;
+        *)
+		WINBIND_LTARGETS="libnss_winbind.so"
+                ;;
+	esac
+
 
 	case "$with_pam" in
 		yes)
