@@ -20,15 +20,11 @@
 */
 
 #include "includes.h"
+#include "sids.h"
 #include "winbindd.h"
 
-#define SERVER "controller"
-
-extern int DEBUGLEVEL;
-extern pstring debugf;
-
 /****************************************************************************
-exit the server
+exit thy server
 ****************************************************************************/
 void exit_server(char *reason)
 {
@@ -54,6 +50,36 @@ void exit_server(char *reason)
 #endif
 	exit(0);
 }
+
+/* Mapping table for well known database*/
+
+struct wkrid_map wkrid_namemap[] =
+{
+    /* Well known users */
+
+    { DOMAIN_USER_RID_ADMIN, "nt-admin", SID_NAME_USER },
+    { DOMAIN_USER_RID_GUEST, "nt-guest", SID_NAME_USER },
+
+    /* Well known groups */
+
+    { DOMAIN_GROUP_RID_ADMINS, "nt-admins", SID_NAME_DOM_GRP },
+    { DOMAIN_GROUP_RID_USERS,  "nt-users", SID_NAME_DOM_GRP }, 
+    { DOMAIN_GROUP_RID_GUESTS, "nt-guests", SID_NAME_DOM_GRP },
+
+    /* Well known aliases */
+
+    { BUILTIN_ALIAS_RID_ADMINS,      "nt-localadmins", SID_NAME_ALIAS },
+    { BUILTIN_ALIAS_RID_USERS,       "nt-localusers", SID_NAME_ALIAS },
+    { BUILTIN_ALIAS_RID_GUESTS,      "nt-localguests", SID_NAME_ALIAS },
+    { BUILTIN_ALIAS_RID_POWER_USERS, "nt-localpower", SID_NAME_ALIAS },
+    { BUILTIN_ALIAS_RID_ACCOUNT_OPS, "nt-localacct", SID_NAME_ALIAS }, 
+    { BUILTIN_ALIAS_RID_SYSTEM_OPS,  "nt-localsys", SID_NAME_ALIAS },
+    { BUILTIN_ALIAS_RID_PRINT_OPS,   "nt-localprn", SID_NAME_ALIAS },
+    { BUILTIN_ALIAS_RID_BACKUP_OPS,  "nt-localbkp", SID_NAME_ALIAS },
+    { BUILTIN_ALIAS_RID_REPLICATOR,  "nt-localrepl", SID_NAME_ALIAS },
+
+    { 0, NULL, 0 }
+};
 
 /* Connect to a domain controller and return domain sid */
 
@@ -136,9 +162,9 @@ int winbind_lookup_by_name(char *system_name, DOM_SID *level5_sid,
 
 /* Return a username and type within a domain given a rid */
 
-static int winbind_lookup_by_rid(char *system_name, DOM_SID *level5_sid,
-                                 uint32 rid, char *user_name,
-                                 enum SID_NAME_USE *type)
+int winbind_lookup_by_rid(char *system_name, DOM_SID *level5_sid,
+                          uint32 rid, char *user_name,
+                          enum SID_NAME_USE *type)
 {
     POLICY_HND sam_handle, sam_dom_handle;
     BOOL res = True, res1 = False;
@@ -182,8 +208,8 @@ static int winbind_lookup_by_rid(char *system_name, DOM_SID *level5_sid,
 
 /* Lookup user information from rid */
 
-static int winbind_lookup_userinfo(char *system_name, DOM_SID *level5_sid,
-                                   uint32 user_rid, SAM_USER_INFO_21 *info)
+int winbind_lookup_userinfo(char *system_name, DOM_SID *level5_sid,
+                            uint32 user_rid, SAM_USER_INFO_21 *info)
 {
     POLICY_HND sam_handle, sam_dom_handle;
     SAM_USERINFO_CTR userinfo;
@@ -209,8 +235,8 @@ static int winbind_lookup_userinfo(char *system_name, DOM_SID *level5_sid,
     return res;
 }                                   
 
-static int winbind_lookup_groupinfo(char *system_name, DOM_SID *level5_sid,
-                                    uint32 group_rid, SAM_USER_INFO_21 *info)
+int winbind_lookup_groupinfo(char *system_name, DOM_SID *level5_sid,
+                             uint32 group_rid, SAM_USER_INFO_21 *info)
 {
     return 0;
 }
@@ -268,103 +294,6 @@ int create_winbind_socket(void)
     return sock;
 }
 
-void do_getpwnam_from_user(DOM_SID *domain_sid,
-                           struct winbindd_request *request,
-                           struct winbindd_response *response)
-{
-    uint32 rid, type;
-    SAM_USER_INFO_21 user_info;
-    
-    fprintf(stderr, "getpwname from user %s\n", request->data.username);
-            
-    /* Get rid and name type */
-    
-    if (!winbind_lookup_by_name(SERVER, domain_sid, 
-                                    request->data.username, &rid, &type)) {
-        fprintf(stderr, "user does not exist\n");
-        return;
-    }
-    
-    /* Get some user info */
-    
-    if (!winbind_lookup_userinfo(SERVER, domain_sid, rid, &user_info)) {
-        fprintf(stderr, "error getting user info\n");
-        return;
-    }
-    
-    if (type == SID_NAME_USER) {
-        struct winbindd_pw *pw = &response->data.pw;
-        fstring temp;
-        
-        /* Fill in passwd field */
-        
-        strncpy(pw->pw_name, request->data.username, sizeof(pw->pw_name) - 1);
-        strncpy(pw->pw_passwd, "x", sizeof(pw->pw_name) - 1);
-        
-        pw->pw_uid = 666;
-        pw->pw_gid = 666;
-        
-        unistr2_to_ascii(temp, &user_info.uni_full_name, sizeof(temp));
-        fprintf(stderr, "full name = %s\n", temp);
-        strncpy(pw->pw_gecos, temp, sizeof(pw->pw_gecos) - 1);
-        
-        unistr2_to_ascii(temp, &user_info.uni_dir_drive, sizeof(temp));
-        strncpy(pw->pw_dir, temp, sizeof(pw->pw_dir) - 1);
-        
-        strncpy(pw->pw_shell, "/dev/null", sizeof(pw->pw_shell) - 1);
-        
-        response->result = WINBINDD_OK;
-        
-        fprintf(stderr, "returning pw info\n");
-    }
-}       
-
-void do_getpwnam_from_uid(DOM_SID *domain_sid,
-                          struct winbindd_request *request,
-                          struct winbindd_response *response)
-{
-    fprintf(stderr, "get pwnam from uid %d\n", request->data.uid);
-}
-
-void do_getgrnam_from_group(DOM_SID *domain_sid,
-                            struct winbindd_request *request,
-                            struct winbindd_response *response)
-{
-    uint32 rid, type; 
-
-    fprintf(stderr, "getgrnam from group %s\n", request->data.groupname);
-
-    /* Get rid and name type */
-
-    if (!winbind_lookup_by_name(SERVER, domain_sid, request->data.groupname, 
-                                &rid, &type)) {
-        fprintf(stderr, "name %s does not exist\n", request->data.groupname);
-        return;
-    }
-
-    /* Get group info */
-    
-    if (!winbind_lookup_groupinfo(SERVER, domain_sid, rid, NULL)) {
-        fprintf(stderr, "error getting group info\n");
-        return;
-    }
-
-    if ((type == SID_NAME_DOM_GRP) ||
-        (type == SID_NAME_ALIAS)) {
-        struct winbindd_gr *gr = &response->data.gr;
-        fstring temp;
-
-        /* Fill in group entry */
-    }
-}
-
-void do_getgrnam_from_gid(DOM_SID *domain_sid,
-                          struct winbindd_request *request,
-                          struct winbindd_response *respose)
-{
-    fprintf(stderr, "get grnam from gid %d\n", request->data.gid);
-}
-
 /*
  * Main function 
  */
@@ -393,8 +322,11 @@ int main(int argc, char **argv)
     }
 
     sid_to_string(sid, &domain_sid);
-    DEBUG(0, ("Domain controller for domain %s has sid %s\n",
+    DEBUG(3, ("Domain controller for domain %s has sid %s\n",
               domain_name, sid));
+
+    sid_copy(&global_sam_sid, &domain_sid); /* ??? */
+    generate_wellknown_sids(); /* ??? */
 
     /* Loop waiting for requests */
 
@@ -430,35 +362,37 @@ int main(int argc, char **argv)
             /* User functions */
 
         case WINBINDD_GETPWNAM_FROM_USER: 
-            do_getpwnam_from_user(&domain_sid, &request, &response);
+            DEBUG(3, ("getpwnam from user '%s'\n", request.data.username));
+            winbindd_getpwnam_from_user(&domain_sid, &request, &response);
             break;
 
         case WINBINDD_GETPWNAM_FROM_UID:
-            do_getpwnam_from_uid(&domain_sid, &request, &response);
+            DEBUG(3, ("getpwnam from uid %d\n", request.data.uid));
+            winbindd_getpwnam_from_uid(&domain_sid, &request, &response);
             break;
 
             /* Group functions */
 
         case WINBINDD_GETGRNAM_FROM_GROUP:
-            do_getgrnam_from_group(&domain_sid, &request, &response);
+            DEBUG(3, ("getgrnam from group '%s'\n", request.data.groupname));
+            winbindd_getgrnam_from_group(&domain_sid, &request, &response);
             break;
 
         case WINBINDD_GETGRNAM_FROM_GID:
-            do_getgrnam_from_gid(&domain_sid, &request, &response);
+            DEBUG(3, ("getgrnam from gid %d\n", request.data.gid));
+            winbindd_getgrnam_from_gid(&domain_sid, &request, &response);
             break;
 
             /* Oops */
 
         default:
-            fprintf(stderr, "unknown command %d\n", request.cmd);
+            DEBUG(0, ("oops - unknown command %d\n", request.cmd));
             break;
-
         }
 
         /* Send response */
 
         write(sock2, &response, sizeof(response));
-
         close(sock2);
     }
 

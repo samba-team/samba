@@ -23,6 +23,19 @@
 #define _WINBINDD_H
 
 #define SOCKET_NAME "/tmp/winbindd"
+#define SERVER "controller"
+
+/* Naughty global stuff */
+
+extern int DEBUGLEVEL;
+extern pstring debugf;
+
+/* uid/gid/rid translation */
+
+#define WINBINDD_UID_BASE 1000       /* All rid user mappings >= this */
+#define WINBINDD_GID_BASE 1000       /* All rid group mappings >= this */
+
+/* Socket commands */
 
 enum winbindd_cmd {
     WINBINDD_GETPWNAM_FROM_USER,
@@ -30,6 +43,8 @@ enum winbindd_cmd {
     WINBINDD_GETGRNAM_FROM_GROUP,
     WINBINDD_GETGRNAM_FROM_GID
 };
+
+/* Winbind request structure */
 
 struct winbindd_request {
     enum winbindd_cmd cmd;
@@ -42,10 +57,14 @@ struct winbindd_request {
     } data;
 };
 
+/* Response values */
+
 enum winbindd_result {
     WINBINDD_ERROR,
     WINBINDD_OK
 };
+
+/* Winbind response structure */
 
 struct winbindd_response {
     enum winbindd_result result;
@@ -68,5 +87,16 @@ struct winbindd_response {
         } gr;
     } data;
 };
+
+/* Well known rids */
+
+struct wkrid_map
+{
+    uint32 rid;
+    char *name;
+    enum SID_NAME_USE type;
+};
+
+extern struct wkrid_map wkrid_namemap[];
 
 #endif /* _WINBINDD_H */
