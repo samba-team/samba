@@ -812,8 +812,6 @@ void smbd_process(void)
     int last_keepalive=0;
     int service_load_counter = 0;
     BOOL got_smb = False;
-	BOOL trust_pwd_needs_changing = False;
-	NTTIME ntlct;
 
     if (deadtime <= 0)
       deadtime = DEFAULT_SMBD_TIMEOUT;
@@ -908,28 +906,6 @@ void smbd_process(void)
       if (allidle && conn_num_open()>0) {
 	      DEBUG(2,("Closing idle connection 2.\n"));
 	      return;
-      }
-
-	if (msrpc_lsa_query_secret("\\\\.", "$MACHINE.ACC", NULL, &ntlct))
-	{
-		if (time(NULL) > nt_time_to_unix(&ntlct) + lp_machine_password_timeout())
-		{
-			trust_pwd_needs_changing = True;
-		}
-	}
-
-      if(trust_pwd_needs_changing)
-      {
-        unsigned char trust_passwd_hash[16];
-
-        /*
-         * We're in domain level security, and the code that
-         * read the machine password flagged that the machine
-         * password needs changing.
-         */
-
-	  generate_random_buffer( trust_passwd_hash, 16, True);
-          msrpc_lsa_set_secret("\\\\.", "$MACHINE.ACC", trust_passwd_hash, 16);
       }
 
       /*
