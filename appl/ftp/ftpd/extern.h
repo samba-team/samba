@@ -67,6 +67,8 @@ char  **copyblk(char **);
 void	cwd(char *);
 void	do_delete(char *);
 void	dologout(int);
+void	eprt(char *);
+void	epsv(char *);
 void	fatal(char *);
 int	filename_check(char *);
 int	ftpd_pclose(FILE *);
@@ -86,7 +88,7 @@ __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
 void	pass(char *);
-void	passive(void);
+void	pasv(void);
 void	perror_reply(int, char *);
 void	pwd(void);
 void	removedir(char *);
@@ -126,10 +128,10 @@ int	klogin(char *name, char *password);
 
 const char *ftp_rooted(const char *path);
 
-extern struct sockaddr_in ctrl_addr, his_addr;
+extern struct sockaddr *ctrl_addr, *his_addr;
 extern char hostname[];
 
-extern	struct sockaddr_in data_dest;
+extern	struct sockaddr *data_dest;
 extern	int logged_in;
 extern	struct passwd *pw;
 extern	int guest;
