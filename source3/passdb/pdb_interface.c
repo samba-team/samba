@@ -240,7 +240,7 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 		{
 			DEBUG(5,("Found pdb backend %s (at pos %d)\n", module_name, i));
 			if (NT_STATUS_IS_OK(nt_status 
-								= builtin_pdb_init_functions[i].init(context, methods, module_location))) {
+					    = builtin_pdb_init_functions[i].init(context, methods, module_location))) {
 				DEBUG(5,("pdb backend %s has a valid init\n", selected));
 			} else {
 				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));

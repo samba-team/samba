@@ -521,7 +521,7 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 		sid_copy(&tmp_sid, sid);
 		sid_split_rid(&tmp_sid, &rid);
 		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
-				lookup_known_rid(&tmp_sid, rid, name, name_type);
+			lookup_known_rid(&tmp_sid, rid, name, name_type);
 	}
 	return True;
 }
@@ -578,7 +578,8 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 		}
 	}
 
-	local_gid_to_sid(psid, gid);
+	/* Make sure we report failure, (when psid == NULL) */
+	psid = local_gid_to_sid(psid, gid);
         
 	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid, sid_to_string(sid, psid)));
 

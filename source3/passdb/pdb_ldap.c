@@ -72,24 +72,6 @@ struct ldapsam_privates {
 static uint32 ldapsam_get_next_available_nua_rid(struct ldapsam_privates *ldap_state);
 
 /*******************************************************************
- Converts NT user RID to a UNIX uid.
- ********************************************************************/
-
-static uid_t pdb_user_rid_to_uid(uint32 user_rid)
-{
-	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
-}
-
-/*******************************************************************
- converts UNIX uid to an NT User RID.
- ********************************************************************/
-
-static uint32 pdb_uid_to_user_rid(uid_t uid)
-{
-	return (((((uint32)uid)*RID_MULTIPLIER) + 1000) | USER_RID_TYPE);
-}
-
-/*******************************************************************
  find the ldap password
 ******************************************************************/
 static BOOL fetch_ldapsam_pw(char *dn, char* pw, int len)
@@ -347,7 +329,7 @@ static int ldapsam_search_one_user_by_rid (struct ldapsam_privates *ldap_state,
 	
 	if (rc != LDAP_SUCCESS)
 		rc = ldapsam_search_one_user_by_uid(ldap_state, ldap_struct, 
-						    pdb_user_rid_to_uid(rid), 
+						    fallback_user_rid_to_uid(rid), 
 						    result);
 
 	return rc;
@@ -754,7 +736,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	if ( pdb_get_user_rid(sampass) ) {
 		rid = pdb_get_user_rid(sampass);
 	} else if (IS_SAM_SET(sampass, FLAG_SAM_UID)) {
-		rid = pdb_uid_to_user_rid(pdb_get_uid(sampass));
+		rid = fallback_uid_to_user_rid(pdb_get_uid(sampass));
 	} else if (ldap_state->permit_non_unix_accounts) {
 		rid = ldapsam_get_next_available_nua_rid(ldap_state);
 		if (rid == 0) {
@@ -1511,9 +1493,9 @@ NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ldap_state->low_nua_rid=pdb_uid_to_user_rid(low_nua_uid);
+	ldap_state->low_nua_rid=fallback_uid_to_user_rid(low_nua_uid);
 
-	ldap_state->high_nua_rid=pdb_uid_to_user_rid(high_nua_uid);
+	ldap_state->high_nua_rid=fallback_uid_to_user_rid(high_nua_uid);
 
 	return NT_STATUS_OK;
 }

@@ -197,7 +197,7 @@ void generate_wellknown_sids(void)
  Turns a domain SID into a name, returned in the nt_domain argument.
 ***************************************************************************/
 
-BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain)
+BOOL map_domain_sid_to_name(DOM_SID *sid, fstring nt_domain)
 {
 	fstring sid_str;
 	int i = 0;
@@ -344,11 +344,18 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid)
 {
   char subauth[16];
   int i;
+  uint32 ia;
+  
+  if (!sid) {
+	  fstrcpy(sidstr_out, "(NULL SID)");
+	  return sidstr_out;
+  }
+
   /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-  uint32 ia = (sid->id_auth[5]) +
-              (sid->id_auth[4] << 8 ) +
-              (sid->id_auth[3] << 16) +
-              (sid->id_auth[2] << 24);
+  ia = (sid->id_auth[5]) +
+	  (sid->id_auth[4] << 8 ) +
+	  (sid->id_auth[3] << 16) +
+	  (sid->id_auth[2] << 24);
 
   slprintf(sidstr_out, sizeof(fstring) - 1, "S-%u-%lu", (unsigned int)sid->sid_rev_num, (unsigned long)ia);
 

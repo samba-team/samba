@@ -596,6 +596,7 @@
 		<listitem><para><link linkend="ADDSHARECOMMAND"><parameter>add share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDMACHINESCRIPT"><parameter>add machine script</parameter></link></para></listitem>
+		<listitem><para><link linkend="ALGORITHMICRIDBASE"><parameter>algorithmic rid base</parameter></link></para></listitem>
 		<listitem><para><link linkend="ALLOWTRUSTEDDOMAINS"><parameter>allow trusted domains</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEAS"><parameter>announce as</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEVERSION"><parameter>announce version</parameter></link></para></listitem>
@@ -1136,8 +1137,28 @@
 		<parameter>hosts allow</parameter></link>.</para></listitem>
 		</varlistentry>
 		
+		<varlistentry>
+		<term><anchor id="ALGORITHMICRIDBASE">algorithmic rid base (G)</term>
+		<listitem><para>This determines if Samba how will use its
+                algorithmic mapping from uids/gid to the RIDs needed to construct
+                NT Security Identifiers.</para>
 
+                <para>Setting this option to a larger value could be useful to sites
+                transitioning from WinNT and Win2k, as existing user and 
+                group rids would otherwise clash with sytem users etc. 
+                </para>
 
+                <para>All UIDs and GIDs must be able to be resolved into SIDs for  
+                the correct operation of ACLs on the server.  As such the algorithmic
+                mapping can't be 'turned off', but pushing it 'out of the way' should
+                resolve the issues.  Users and groups can then be assigned 'low' RIDs
+                in arbitary-rid supporting backends. </para>
+
+		<para>Default: <command>algorithmic rid base = 1000</command></para>
+
+		<para>Example: <command>algorithmic rid base = 100000</command></para>
+		</varlistentry>
+		
 		<varlistentry>
 		<term><anchor id="ALLOWTRUSTEDDOMAINS">allow trusted domains (G)</term>
 		<listitem><para>This option only takes effect when the <link 
