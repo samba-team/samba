@@ -34,15 +34,6 @@
 		</listitem>
 
 		<listitem>
-			<para>The first three alphanumeric characters of the final 
-			extension are preserved, forced to upper case and appear as the 
-			extension of the mangled name. The final extension is defined as that 
-			part of the original filename after the rightmost dot. If there are no 
-			dots in the filename, the mangled name will have no extension (except 
-			in the case of &quot;hidden files&quot; - see below).</para>
-		</listitem>
-
-		<listitem>
 			<para>Files whose UNIX name begins with a dot will be 
 			presented as DOS hidden files. The mangled name will be created as 
 			for other filenames, but with the leading dot removed and &quot;___&quot; as 
