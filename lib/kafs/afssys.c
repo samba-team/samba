@@ -90,6 +90,40 @@ try_aix(void)
 }
 #endif /* _AIX */
 
+/* 
+ * This probably only works under Solaris and could get confused if
+ * there's a /etc/name_to_sysnum file.  
+ */
+
+#define _PATH_ETC_NAME_TO_SYSNUM "/etc/name_to_sysnum"
+
+static int
+map_syscall_name_to_number (const char *str, int *res)
+{
+    FILE *f;
+    char buf[256];
+    size_t str_len = strlen (str);
+
+    f = fopen (_PATH_ETC_NAME_TO_SYSNUM, "r");
+    if (f == NULL)
+	return -1;
+    while (fgets (buf, sizeof(buf), f) != NULL) {
+	if (strncmp (str, buf, str_len) == 0) {
+	    char *begptr = buf + str_len;
+	    char *endptr;
+	    long val = strtol (begptr, &endptr, 0);
+
+	    if (val != 0 && endptr != begptr) {
+		fclose (f);
+		*res = val;
+		return 0;
+	    }
+	}
+    }
+    fclose (f);
+    return -1;
+}
+
 #define NO_ENTRY_POINT		0
 #define SINGLE_ENTRY_POINT	1
 #define MULTIPLE_ENTRY_POINT	2
@@ -252,7 +286,8 @@ k_hasafs(void)
     char *env = getenv ("AFS_SYSCALL");
   
     /*
-     * Already checked presence of AFS syscalls?  */
+     * Already checked presence of AFS syscalls?
+     */
     if (afs_entry_point != UNKNOWN_ENTRY_POINT)
 	return afs_entry_point != NO_ENTRY_POINT;
 
@@ -273,9 +308,29 @@ k_hasafs(void)
     {
 	int tmp;
 
-	if (env != NULL && sscanf (env, "%d", &tmp) == 1)
-	    if (try_one (tmp) == 0)
-		goto done;
+	if (env != NULL) {
+	    if (sscanf (env, "%d", &tmp) == 1) {
+		if (try_one (tmp) == 0)
+		    goto done;
+	    } else {
+		char *end = NULL;
+		char *p;
+		char *s = strdup (env);
+
+		if (s != NULL) {
+		    for (p = strtok_r (s, ",", &end);
+			 p != NULL;
+			 p = strtok_r (NULL, ",", &end)) {
+			if (map_syscall_name_to_number (p, &tmp) == 0)
+			    if (try_one (tmp) == 0) {
+				free (s);
+				goto done;
+			    }
+		    }
+		    free (s);
+		}
+	    }
+	}
     }
 #endif /* AFS_SYSCALL || AFS_SYSCALL2 || AFS_SYSCALL3 */
 
