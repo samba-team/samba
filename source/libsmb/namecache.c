@@ -93,8 +93,10 @@ static TDB_DATA namecache_value(struct in_addr *ip_list, int num_names,
 	struct nc_value *value;
 	int size;
 
-	size = sizeof(struct nc_value) + sizeof(struct in_addr) *
-		(num_names-1);
+	size = sizeof(struct nc_value);
+
+	if (num_names > 0)
+		size += sizeof(struct in_addr) * (num_names-1);
 
 	value = (struct nc_value *)malloc(size);
 		
