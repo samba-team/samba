@@ -199,8 +199,8 @@ typedef struct
 	int oplock_break_wait_time;
 	int winbind_cache_time;
 #ifdef WITH_LDAP_SAM
-       char *szLdapMachineSuffix;
-       char *szLdapUserSuffix;
+	char *szLdapMachineSuffix;
+	char *szLdapUserSuffix;
 	int ldap_port;
 	int ldap_ssl;
 	char *szLdapSuffix;
@@ -1319,14 +1319,15 @@ static void init_globals(void)
 	Globals.bUseMmap = True;
 #endif
 
-       string_set(&Globals.szLdapMachineSuffix, "");
-       string_set(&Globals.szLdapUserSuffix, "");
 	/* hostname lookups can be very expensive and are broken on
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
 #ifdef WITH_LDAP_SAM
 	string_set(&Globals.szLdapSuffix, "");
+	string_set(&Globals.szLdapMachineSuffix, "");
+	string_set(&Globals.szLdapUserSuffix, "");
+
 	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_ON;
