@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -215,26 +215,53 @@ get_null (const struct addrinfo *hints,
     return 0;
 }
 
+/*
+ * Try to find a fqdn (with `.') in he if possible, else return h_name
+ */
+
+static char *
+find_fqdn (const struct hostent *he)
+{
+    char *ret = he->h_name;
+    char **h;
+
+    if (strchr (ret, '.') == NULL)
+	for (h = he->h_aliases; *h; ++h) {
+	    if (strchr (*h, '.') != NULL) {
+		ret = *h;
+		break;
+	    }
+	}
+    return ret;
+}
+
 static int
 add_hostent (int port, int protocol, int socktype,
 	     struct addrinfo ***current,
 	     int (*func)(struct addrinfo *, void *data, int port),
 	     struct hostent *he, int *flags)
 {
-    char **h;
     int ret;
     char *canonname = NULL;
 
     if (*flags & AI_CANONNAME) {
-	canonname = he->h_name;
+	canonname = find_fqdn (he);
 
-	if (strchr (he->h_name, '.') == NULL)
-	    for (h = he->h_aliases; *h; ++h) {
-		if (strchr (*h, '.') != NULL) {
-		    canonname = *h;
-		    break;
-		}
+	if (strchr (canonname, '.') == NULL) {
+	    struct hostent *he2;
+	    int error;
+
+	    he2 = getipnodebyaddr (he->h_addr_list[0], he->h_length,
+				   he->h_addrtype, &error);
+	    if (he2 != NULL) {
+		char *tmp = find_fqdn (he2);
+
+		if (strchr (tmp, '.') != NULL)
+		    canonname = tmp;
+		freehostent (he2);
 	    }
+	}
+
 	canonname = strdup (canonname);
 	if (canonname == NULL)
 	    return EAI_MEMORY;
