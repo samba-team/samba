@@ -1,3 +1,7 @@
+2001-09-17  Assar Westerlund  <assar@sics.se>
+
+	* login.c (do_login): add setpcred
+
 2001-07-06  Assar Westerlund  <assar@sics.se>
 
 	* login.c: move osf2c magic earlier.  from Mark Davies
