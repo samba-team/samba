@@ -1,6 +1,6 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
 <refentry id="smb.conf">
-
+	
 <refmeta>
 	<refentrytitle>smb.conf</refentrytitle>
 	<manvolnum>5</manvolnum>
@@ -869,6 +869,7 @@
 		<listitem><para><link linkend="MAXCONNECTIONS"><parameter>max connections</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAXPRINTJOBS"><parameter>max print jobs</parameter></link></para></listitem>
 		<listitem><para><link linkend="MINPRINTSPACE"><parameter>min print space</parameter></link></para></listitem>
+		<listitem><para><link linkend="MSDFSPROXY"><parameter>msdfs proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="MSDFSROOT"><parameter>msdfs root</parameter></link></para></listitem>
 		<listitem><para><link linkend="NTACLSUPPORT"><parameter>nt acl support</parameter></link></para></listitem>
 		<listitem><para><link linkend="ONLYGUEST"><parameter>only guest</parameter></link></para></listitem>
@@ -4847,8 +4848,25 @@
 		</varlistentry>
 
 
-		
-		
+		<varlistentry>
+		<term><anchor id="MSDFSPROXY">msdfs proxy (S)</term>
+		<listitem><para>This parameter indicates that the share is a
+		stand-in for another CIFS share whose location is specified by
+		the value of the parameter. When clients attempt to connect to
+		this share, they are redirected to the proxied share using
+		the SMB-Dfs protocol.</para>
+		<para>Only Dfs roots can act as proxy shares. Take a look at the
+		<link linkend="MSDFSROOT"><parameter>msdfs root</parameter></link>
+		and
+		<link linkend="HOSTMSDFS"><parameter>host msdfs</parameter></link>
+		options to find out how to set up a Dfs root share.</para>
+		<para>Example: <command>msdfs proxy = \otherserver\someshare</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
 		<varlistentry>
 		<term><anchor id="MSDFSROOT">msdfs root (S)</term>
 		<listitem><para>This boolean parameter is only available if 
@@ -4857,8 +4875,8 @@
 		Samba treats the share as a Dfs root and  allows clients to browse 
 		the distributed file system tree rooted at the share directory. 
 		Dfs links are specified  in  the share directory by symbolic 
-		links of the form <filename>msdfs:serverA\shareA,serverB\shareB
-		</filename> and so on.  For more information on setting up a Dfs tree 
+		links of the form <filename>msdfs:serverA\shareA,serverB\shareB</filename>
+		and so on.  For more information on setting up a Dfs tree 
 		on Samba,  refer to <ulink url="msdfs_setup.html">msdfs_setup.html
 		</ulink>.</para>
 		
