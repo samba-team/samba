@@ -22,8 +22,6 @@
 #include "includes.h"
 #include "smb.h"
 
-extern pstring global_myname;
-
 
 /* check to see if nmbd is running on localhost by looking for a __SAMBA__
    response */
@@ -59,7 +57,7 @@ BOOL smbd_running(void)
 	if (!cli_initialise(&cli))
 		return False;
 
-	if (!cli_connect(&cli, global_myname, &loopback_ip)) {
+	if (!cli_connect(&cli, "localhost", &loopback_ip)) {
 		cli_shutdown(&cli);
 		return False;
 	}
