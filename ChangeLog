@@ -2,6 +2,10 @@
 
 	* Release 0.2c
 
+	* lib/krb5/string-to-key-test.c (tests): update the test cases
+ 	with empty principals so that they actually use an empty realm and
+ 	not the default.  use the correct etype for 3DES
+
 	* lib/krb5/Makefile.am: bump version to 4:1:0
 
 	* kdc/config.c (configure): more careful with the port string
