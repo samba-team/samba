@@ -13,6 +13,8 @@
 
 2001-09-03  Assar Westerlund  <assar@sics.se>
 
+	* write_pid.c: handle atexit or on_exit
+
 	* Makefile.am (EXTRA_libroken_la_SOURCES): add vis.hin to help
 	solaris make
 
