@@ -74,7 +74,10 @@ to
 Get a key for
 .Nm principal
 and store it in a keytab.
-.It list
+.It list Xo
+.Op Fl -keys
+.Op Fl -timestamp
+.Xc
 List the keys stored in the keytab.
 .It remove Xo
 .Op Fl p Ar principal
@@ -94,8 +97,8 @@ removes keys of any type.
 .Xc
 Removes all old entries (for which there is a newer version) that are
 older than
-.Ar age
-seconds.
+.Ar age 
+(default one week).
 .It srvconvert
 .It srv2keytab Xo
 .Op Fl s Ar srvtab
