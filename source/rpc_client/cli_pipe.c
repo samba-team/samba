@@ -198,7 +198,6 @@ static BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data,
 	BOOL last  = True;
 	RPC_HDR    rhdr;
 	prs_struct rpdu;
-	cli_auth_fns *auth = cli_conn_get_authfns(con);
 
 	prs_init(&rpdu, 0, 4, True);
 
@@ -226,8 +225,11 @@ static BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data,
 		last = True;
 	}
 
+#if 0
 	if (rhdr.auth_len != 0)
 	{
+		cli_auth_fns *auth = cli_conn_get_authfns(con);
+		DEBUG(10,("rpc_api_pipe_bind: auth_len: %d\n", rhdr.auth_len));
 		if (auth->cli_decode_pdu == NULL)
 		{
 			return False;
@@ -237,6 +239,7 @@ static BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct *data,
 			return False;
 		}
 	}
+#endif
 
 	{
 		char *d = prs_data(&rpdu, rpdu.offset);
@@ -965,20 +968,20 @@ BOOL rpc_pipe_bind(struct cli_connection *con,
 
 		if (valid_ack && auth->decode_bind_resp != NULL)
 		{
-			prs_struct dataa;
-			prs_init(&dataa, 0, 4, False);
-
 			valid_ack = auth->decode_bind_resp(con, &rdata);
-			if (valid_ack)
+			if (valid_ack && auth->create_bind_cont != NULL)
 			{
+				prs_struct dataa;
+				prs_init(&dataa, 0, 4, False);
+
 				valid_ack = auth->create_bind_cont(con,
 				                      &dataa, rpc_call_id);
+				if (valid_ack)
+				{
+					valid_ack = rpc_api_write(con, &dataa);
+				}
+				prs_free_data(&dataa);
 			}
-			if (valid_ack)
-			{
-				valid_ack = rpc_api_write(con, &dataa);
-			}
-			prs_free_data(&dataa);
 		}
 	}
 

@@ -76,14 +76,13 @@ creates an RPC_AUTH_NETSEC_RESP structure.
 *** lkclXXXX the actual offset is at the start of the auth verifier    ***
 
 ********************************************************************/
-BOOL make_rpc_auth_netsec_resp(RPC_AUTH_NETSEC_RESP *rsp)
+BOOL make_rpc_auth_netsec_resp(RPC_AUTH_NETSEC_RESP *rsp, uint32 flags)
 {
 	DEBUG(5,("make_rpc_auth_netsec_resp\n"));
 
 	if (rsp == NULL) return False;
 
-	rsp->pad   = 0x0;
-	rsp->flags = 0x05000000;
+	rsp->flags = flags;
 
 	return True;
 }
@@ -102,7 +101,6 @@ BOOL smb_io_rpc_auth_netsec_resp(char *desc, RPC_AUTH_NETSEC_RESP *rsp, prs_stru
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_netsec_resp");
 	depth++;
 
-	prs_uint32("pad  ", ps, depth, &rsp->pad  ); 
 	prs_uint32("flags", ps, depth, &rsp->flags); 
 
 	return True;

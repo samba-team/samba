@@ -33,6 +33,8 @@ extern int DEBUGLEVEL;
  *****************************************************************************/
 void msrpc_auth_init(rpcsrv_struct *l)
 {
+	extern srv_auth_fns netsec_fns;
+	add_srv_auth_fn(l, &netsec_fns);
 }
 
 /*************************************************************************

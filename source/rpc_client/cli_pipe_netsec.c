@@ -233,7 +233,7 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	{
 		RPC_HDR_AUTH         rhdr_auth;
 
-		make_rpc_hdr_auth(&rhdr_auth, 0x0a, 0x06, 0x08, (auth_verify ? 1 : 0));
+		make_rpc_hdr_auth(&rhdr_auth, 0x44, 0x06, 0x08, (auth_verify ? 1 : 0));
 		smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &hdr_auth, 0);
 	}
 
@@ -332,7 +332,7 @@ static BOOL create_netsec_bind_req(struct cli_connection *con,
 	/* stream the bind request data */
 	smb_io_rpc_hdr_rb("", &hdr_rb,  &rhdr_rb, 0);
 
-	make_rpc_hdr_auth(&hdr_auth, 0x0a, 0x06, 0x00, 1);
+	make_rpc_hdr_auth(&hdr_auth, 0x44, 0x06, 0x00, 1);
 	smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, &rhdr_auth, 0);
 
 	make_rpc_auth_verifier(&auth_verifier, "", 0x3);
@@ -377,7 +377,6 @@ static BOOL create_netsec_bind_req(struct cli_connection *con,
 static BOOL decode_netsec_bind_resp(struct cli_connection *con,
 				prs_struct *rdata)
 {
-#if 0
 	BOOL valid_ack = True;
 	netsec_auth_struct *a;
 	a = (netsec_auth_struct *)cli_conn_get_auth_info(con);
@@ -402,21 +401,22 @@ static BOOL decode_netsec_bind_resp(struct cli_connection *con,
 		RPC_AUTH_VERIFIER rhdr_verf;
 		smb_io_rpc_auth_verifier("", &rhdr_verf, rdata, 0);
 		if (rdata->offset == 0 ||
-		    !rpc_auth_verifier_chk(&rhdr_verf,
-		                                   "NETSEC",
-		                                    NETSEC_CHALLENGE))
+		    !rpc_auth_verifier_chk(&rhdr_verf, "\001", 0))
 		{
 			valid_ack = False;
 		}
 	}
 	if (valid_ack)
 	{
-		smb_io_rpc_auth_netsec_chal("", &a->netsec_chal, rdata, 0);
+		RPC_AUTH_NETSEC_RESP rresp;
+		smb_io_rpc_auth_netsec_resp("", &rresp, rdata, 0);
 		if (rdata->offset == 0) valid_ack = False;
+		if (rresp.flags != 0x05)
+		{
+			valid_ack = False;
+		}
 	}
 	return valid_ack;
-#endif
-	return False;
 }
 
 cli_auth_fns cli_netsec_fns =

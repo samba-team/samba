@@ -267,6 +267,7 @@ WINREGD_OBJ1 = winregd/winregd.o \
 NETLOGOND_OBJ1 = netlogond/netlogond.o \
 		netlogond/creds_db.o \
 		rpc_server/srv_netlog.o \
+		rpc_server/srv_pipe_netsec.o \
 		rpc_client/msrpc_lsarpc.o   \
 		rpc_server/srv_lookup.o \
 		rpc_client/cli_lsarpc.o   \

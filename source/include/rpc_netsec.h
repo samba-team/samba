@@ -39,7 +39,6 @@ typedef struct rpc_auth_netsec_neg_info
 /* RPC_AUTH_NETSEC_RESP */
 typedef struct rpc_auth_netsec_resp_info
 {
-	uint32 pad  ; /* 0x0000 0000 */
 	uint32 flags; /* 0x0500 0000 */
 
 } RPC_AUTH_NETSEC_RESP;

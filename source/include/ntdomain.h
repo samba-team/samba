@@ -90,6 +90,8 @@ typedef struct parse_struct
 
 typedef struct netsec_auth_struct
 {
+	RPC_AUTH_NETSEC_NEG netsec_neg;
+
 	HMACMD5Context    ctx2;
 	struct MD5Context ctx3;
 	HMACMD5Context    ctx4;

@@ -2888,7 +2888,7 @@ BOOL make_rpc_auth_netsec_neg(RPC_AUTH_NETSEC_NEG *neg,
 				fstring domain,
 				fstring myname);
 BOOL smb_io_rpc_auth_netsec_neg(char *desc, RPC_AUTH_NETSEC_NEG *neg, prs_struct *ps, int depth);
-BOOL make_rpc_auth_netsec_resp(RPC_AUTH_NETSEC_RESP *rsp);
+BOOL make_rpc_auth_netsec_resp(RPC_AUTH_NETSEC_RESP *rsp, uint32 flags);
 BOOL smb_io_rpc_auth_netsec_resp(char *desc, RPC_AUTH_NETSEC_RESP *rsp, prs_struct *ps, int depth);
 BOOL rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK *chk);
 BOOL make_rpc_auth_netsec_chk(RPC_AUTH_NETSEC_CHK *chk,
@@ -3854,6 +3854,9 @@ BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
 BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
 pipes_struct *get_rpc_pipe_p(char *buf, int where);
 pipes_struct *get_rpc_pipe(int pnum);
+
+/*The following definitions come from  rpc_server/srv_pipe_netsec.c  */
+
 
 /*The following definitions come from  rpc_server/srv_pipe_noauth.c  */
 
