@@ -158,6 +158,14 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 
 /* telnet stuff ----------------------------------------------- */
 
+/*
+ * Define NDBM if you are using the 4.3 ndbm library (which is part of
+ * libc).  If not defined, 4.2 dbm will be assumed.
+ */
+#if defined(HAVE_DBM_FIRSTKEY)
+#define NDBM
+#endif
+
 /* define this for OTP support */
 #undef OTP
 
