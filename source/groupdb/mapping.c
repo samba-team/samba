@@ -27,6 +27,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 #define DATABASE_VERSION_V2 2 /* le format. */
 
 #define GROUP_PREFIX "UNIXGROUP/"
+#define ALIASMEM_PREFIX "ALIASMEMBERS/"
 
 PRIVS privs[] = {
 	{SE_PRIV_NONE,           "no_privs",                  "No privilege"                    }, /* this one MUST be first */
@@ -489,6 +490,246 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 	return True;
 }
 
+static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+{
+	GROUP_MAP map;
+	TDB_DATA kbuf, dbuf;
+	pstring key;
+	fstring string_sid;
+	char *new_memberstring;
+	int result;
+
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!get_group_map_from_sid(*alias, &map))
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	if ( (map.sid_name_use != SID_NAME_ALIAS) &&
+	     (map.sid_name_use != SID_NAME_WKN_GRP) )
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	sid_to_string(string_sid, alias);
+	slprintf(key, sizeof(key), "%s%s", ALIASMEM_PREFIX, string_sid);
+
+	kbuf.dsize = strlen(key)+1;
+	kbuf.dptr = key;
+
+	dbuf = tdb_fetch(tdb, kbuf);
+
+	sid_to_string(string_sid, member);
+
+	if (dbuf.dptr != NULL) {
+		asprintf(&new_memberstring, "%s %s", (char *)(dbuf.dptr),
+			 string_sid);
+	} else {
+		new_memberstring = strdup(string_sid);
+	}
+
+	if (new_memberstring == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	SAFE_FREE(dbuf.dptr);
+	dbuf.dsize = strlen(new_memberstring)+1;
+	dbuf.dptr = new_memberstring;
+
+	result = tdb_store(tdb, kbuf, dbuf, 0);
+
+	SAFE_FREE(new_memberstring);
+
+	return (result == 0 ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED);
+}
+
+static BOOL add_sid_to_array(DOM_SID sid, DOM_SID **sids, int *num)
+{
+	*sids = Realloc(*sids, ((*num)+1) * sizeof(DOM_SID));
+
+	if (*sids == NULL)
+		return False;
+
+	sid_copy(&((*sids)[*num]), &sid);
+	*num += 1;
+
+	return True;
+}
+
+static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, int *num)
+{
+	GROUP_MAP map;
+	TDB_DATA kbuf, dbuf;
+	pstring key;
+	fstring string_sid;
+	const char *p;
+
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!get_group_map_from_sid(*alias, &map))
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	if ( (map.sid_name_use != SID_NAME_ALIAS) &&
+	     (map.sid_name_use != SID_NAME_WKN_GRP) )
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	*sids = NULL;
+	*num = 0;
+
+	sid_to_string(string_sid, alias);
+	slprintf(key, sizeof(key), "%s%s", ALIASMEM_PREFIX, string_sid);
+
+	kbuf.dsize = strlen(key)+1;
+	kbuf.dptr = key;
+
+	dbuf = tdb_fetch(tdb, kbuf);
+
+	if (dbuf.dptr == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	p = dbuf.dptr;
+
+	while (next_token(&p, string_sid, " ", sizeof(string_sid))) {
+
+		DOM_SID sid;
+
+		if (!string_to_sid(&sid, string_sid))
+			continue;
+
+		if (!add_sid_to_array(sid, sids, num))
+			return NT_STATUS_NO_MEMORY;
+	}
+
+	SAFE_FREE(dbuf.dptr);
+
+	return NT_STATUS_OK;
+}
+
+/* This is racy as hell, but hey, it's only a prototype :-) */
+
+static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+{
+	NTSTATUS result;
+	DOM_SID *sids;
+	int i, num;
+	BOOL found = False;
+	char *member_string;
+	TDB_DATA kbuf, dbuf;
+	pstring key;
+	fstring sid_string;
+
+	result = enum_aliasmem(alias, &sids, &num);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	for (i=0; i<num; i++) {
+		if (sid_compare(&sids[i], member) == 0) {
+			found = True;
+			break;
+		}
+	}
+
+	if (!found) {
+		SAFE_FREE(sids);
+		return NT_STATUS_MEMBER_NOT_IN_ALIAS;
+	}
+
+	if (i < num)
+		sids[i] = sids[num-1];
+
+	num -= 1;
+
+	member_string = strdup("");
+
+	if (member_string == NULL) {
+		SAFE_FREE(sids);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num; i++) {
+		char *s = member_string;
+
+		sid_to_string(sid_string, &sids[i]);
+		asprintf(&member_string, "%s %s", s, sid_string);
+
+		SAFE_FREE(s);
+		if (member_string == NULL) {
+			SAFE_FREE(sids);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	sid_to_string(sid_string, alias);
+	slprintf(key, sizeof(key), "%s%s", ALIASMEM_PREFIX, sid_string);
+
+	kbuf.dsize = strlen(key)+1;
+	kbuf.dptr = key;
+	dbuf.dsize = strlen(member_string)+1;
+	dbuf.dptr = member_string;
+
+	result = tdb_store(tdb, kbuf, dbuf, 0) == 0 ?
+		NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
+
+	SAFE_FREE(sids);
+	SAFE_FREE(member_string);
+
+	return result;
+}
+
+static BOOL is_foreign_alias_member(const DOM_SID *sid, const DOM_SID *alias)
+{
+	DOM_SID *members;
+	int i, num;
+	BOOL result = False;
+
+	if (!NT_STATUS_IS_OK(enum_aliasmem(alias, &members, &num)))
+		return False;
+
+	for (i=0; i<num; i++) {
+
+		if (sid_compare(&members[i], sid) == 0) {
+			result = True;
+			break;
+		}
+	}
+
+	SAFE_FREE(members);
+	return result;
+}
+
+static NTSTATUS alias_memberships(const DOM_SID *sid, DOM_SID **sids, int *num)
+{
+	GROUP_MAP *maps;
+	int i, num_maps;
+
+	*num = 0;
+	*sids = NULL;
+
+	if (!enum_group_mapping(SID_NAME_WKN_GRP, &maps, &num_maps, False))
+		return NT_STATUS_NO_MEMORY;
+
+	for (i=0; i<num_maps; i++) {
+		if (is_foreign_alias_member(sid, &maps[i].sid))
+			add_sid_to_array(maps[i].sid, sids, num);
+	}
+	SAFE_FREE(maps);
+				
+	if (!enum_group_mapping(SID_NAME_ALIAS, &maps, &num_maps, False))
+		return NT_STATUS_NO_MEMORY;
+
+	for (i=0; i<num_maps; i++) {
+		if (is_foreign_alias_member(sid, &maps[i].sid))
+			add_sid_to_array(maps[i].sid, sids, num);
+	}
+	SAFE_FREE(maps);
+				
+	return NT_STATUS_OK;
+}
+
 /*
  *
  * High level functions
@@ -568,7 +809,8 @@ BOOL get_local_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
 	if ( !ret )
 		return False;
 		
-	if ( (map->sid_name_use != SID_NAME_ALIAS)
+	if ( ( (map->sid_name_use != SID_NAME_ALIAS) &&
+	       (map->sid_name_use != SID_NAME_WKN_GRP) )
 		|| (map->gid == -1)
 		|| (getgrgid(map->gid) == NULL) ) 
 	{
@@ -704,6 +946,9 @@ BOOL get_sid_list_of_group(gid_t gid, DOM_SID **sids, int *num_sids)
 	int i=0;
 	char *gr;
 	DOM_SID *s;
+	DOM_SID sid;
+	DOM_SID *members;
+	int num_members;
 
 	struct sys_pwent *userlist;
 	struct sys_pwent *user;
@@ -803,6 +1048,15 @@ BOOL get_sid_list_of_group(gid_t gid, DOM_SID **sids, int *num_sids)
 	DEBUG(10, ("got primary groups, members: [%d]\n", *num_sids));
 
 	winbind_on();
+
+	if ( NT_STATUS_IS_OK(gid_to_sid(&sid, gid)) &&
+	     NT_STATUS_IS_OK(enum_aliasmem(&sid, &members, &num_members)) ) {
+
+		for (i=0; i<num_members; i++) {
+			add_sid_to_array(members[i], sids, num_sids);
+		}
+	}
+
         return True;
 }
 
@@ -1027,6 +1281,32 @@ NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
 {
 	return enum_group_mapping(sid_name_use, rmap, num_entries, unix_only) ?
 		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+NTSTATUS pdb_default_add_aliasmem(struct pdb_methods *methods,
+				  const DOM_SID *alias, const DOM_SID *member)
+{
+	return add_aliasmem(alias, member);
+}
+
+NTSTATUS pdb_default_del_aliasmem(struct pdb_methods *methods,
+				  const DOM_SID *alias, const DOM_SID *member)
+{
+	return del_aliasmem(alias, member);
+}
+
+NTSTATUS pdb_default_enum_aliasmem(struct pdb_methods *methods,
+				   const DOM_SID *alias, DOM_SID **members,
+				   int *num_members)
+{
+	return enum_aliasmem(alias, members, num_members);
+}
+
+NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
+				       const DOM_SID *sid,
+				       DOM_SID **aliases, int *num)
+{
+	return alias_memberships(sid, aliases, num);
 }
 
 /**********************************************************************

@@ -3381,7 +3381,8 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	
 	if (check != True) {
 		pdb_free_sam(&sam_user);
-		return NT_STATUS_NO_SUCH_USER;
+		return pdb_add_aliasmem(&alias_sid, &q_u->sid.sid) ?
+			NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* check a real user exist before we run the script to add a user to a group */
@@ -3457,7 +3458,8 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
-	if( !get_local_group_from_sid(&alias_sid, &map))
+	if( !get_local_group_from_sid(&alias_sid, &map) &&
+	    !get_builtin_group_from_sid(&alias_sid, &map) )
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	if ((grp=getgrgid(map.gid)) == NULL)
@@ -3471,7 +3473,8 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 	if(!pdb_getsampwsid(sam_pass, &q_u->sid.sid)) {
 		DEBUG(5,("_samr_del_aliasmem:User %s doesn't exist.\n", pdb_get_username(sam_pass)));
 		pdb_free_sam(&sam_pass);
-		return NT_STATUS_NO_SUCH_USER;
+		return pdb_del_aliasmem(&alias_sid, &q_u->sid.sid) ?
+			NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* if the user is not in the group */

@@ -310,6 +310,23 @@ typedef struct pdb_context
 					   GROUP_MAP **rmap, int *num_entries,
 					   BOOL unix_only);
 
+	NTSTATUS (*pdb_add_aliasmem)(struct pdb_context *context,
+				     const DOM_SID *alias,
+				     const DOM_SID *member);
+
+	NTSTATUS (*pdb_del_aliasmem)(struct pdb_context *context,
+				     const DOM_SID *alias,
+				     const DOM_SID *member);
+
+	NTSTATUS (*pdb_enum_aliasmem)(struct pdb_context *context,
+				      const DOM_SID *alias,
+				      DOM_SID **members, int *num_members);
+
+	NTSTATUS (*pdb_enum_alias_memberships)(struct pdb_context *context,
+					       const DOM_SID *alias,
+					       DOM_SID **aliases,
+					       int *num);
+
 	/* group functions */
 
 	NTSTATUS (*pdb_get_group_info_by_sid)(struct pdb_context *context, GROUP_INFO *info, const DOM_SID *group);
@@ -398,6 +415,17 @@ typedef struct pdb_methods
 				       enum SID_NAME_USE sid_name_use,
 				       GROUP_MAP **rmap, int *num_entries,
 				       BOOL unix_only);
+
+	NTSTATUS (*add_aliasmem)(struct pdb_methods *methods,
+				 const DOM_SID *alias, const DOM_SID *member);
+	NTSTATUS (*del_aliasmem)(struct pdb_methods *methods,
+				 const DOM_SID *alias, const DOM_SID *member);
+	NTSTATUS (*enum_aliasmem)(struct pdb_methods *methods,
+				  const DOM_SID *alias, DOM_SID **members,
+				  int *num_members);
+	NTSTATUS (*enum_alias_memberships)(struct pdb_methods *methods,
+					   const DOM_SID *sid,
+					   DOM_SID **aliases, int *num);
 
 	/* group functions */
 

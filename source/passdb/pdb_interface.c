@@ -426,6 +426,67 @@ static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
 							num_entries, unix_only);
 }
 
+static NTSTATUS context_add_aliasmem(struct pdb_context *context,
+				     const DOM_SID *alias,
+				     const DOM_SID *member)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->add_aliasmem(context->pdb_methods,
+						  alias, member);
+}
+	
+static NTSTATUS context_del_aliasmem(struct pdb_context *context,
+				     const DOM_SID *alias,
+				     const DOM_SID *member)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->del_aliasmem(context->pdb_methods,
+						  alias, member);
+}
+	
+static NTSTATUS context_enum_aliasmem(struct pdb_context *context,
+				      const DOM_SID *alias, DOM_SID **members,
+				      int *num)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->enum_aliasmem(context->pdb_methods,
+						   alias, members, num);
+}
+	
+static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
+					       const DOM_SID *sid,
+					       DOM_SID **aliases, int *num)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->
+		enum_alias_memberships(context->pdb_methods, sid, aliases,
+				       num);
+}
+	
 static NTSTATUS context_gettrustpwent(struct pdb_context *context,
                                       SAM_TRUST_PASSWD *trust)
 {
@@ -641,6 +702,10 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_update_group_mapping_entry = context_update_group_mapping_entry;
 	(*context)->pdb_delete_group_mapping_entry = context_delete_group_mapping_entry;
 	(*context)->pdb_enum_group_mapping = context_enum_group_mapping;
+	(*context)->pdb_add_aliasmem = context_add_aliasmem;
+	(*context)->pdb_del_aliasmem = context_del_aliasmem;
+	(*context)->pdb_enum_aliasmem = context_enum_aliasmem;
+	(*context)->pdb_enum_alias_memberships = context_enum_alias_memberships;
 	(*context)->pdb_gettrustpwent = context_gettrustpwent;
 	(*context)->pdb_gettrustpwsid = context_gettrustpwsid;
 	(*context)->pdb_add_trust_passwd = context_add_trust_passwd;
@@ -955,6 +1020,58 @@ BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 						      rmap, num_entries, unix_only));
 }
 
+BOOL pdb_add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_add_aliasmem(pdb_context, alias, member));
+}
+
+BOOL pdb_del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_add_aliasmem(pdb_context, alias, member));
+}
+
+BOOL pdb_enum_aliasmem(const DOM_SID *alias,
+		       DOM_SID **members, int *num_members)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_enum_aliasmem(pdb_context, alias,
+						 members, num_members));
+}
+
+BOOL pdb_enum_alias_memberships(const DOM_SID *sid,
+				DOM_SID **aliases, int *num)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return False;
+	}
+
+	return NT_STATUS_IS_OK(pdb_context->
+			       pdb_enum_alias_memberships(pdb_context, sid,
+							  aliases, num));
+}
+
 /***************************************************************
   Initialize the static context (at smbd startup etc). 
 
@@ -1065,6 +1182,10 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->update_group_mapping_entry = pdb_default_update_group_mapping_entry;
 	(*methods)->delete_group_mapping_entry = pdb_default_delete_group_mapping_entry;
 	(*methods)->enum_group_mapping = pdb_default_enum_group_mapping;
+	(*methods)->add_aliasmem = pdb_default_add_aliasmem;
+	(*methods)->del_aliasmem = pdb_default_del_aliasmem;
+	(*methods)->enum_aliasmem = pdb_default_enum_aliasmem;
+	(*methods)->enum_alias_memberships = pdb_default_alias_memberships;
 	
 	(*methods)->gettrustpwent = pdb_default_gettrustpwent;
 	(*methods)->gettrustpwsid = pdb_default_gettrustpwsid;
