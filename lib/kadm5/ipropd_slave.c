@@ -74,7 +74,7 @@ get_creds(krb5_context context, const char *keytab_str,
     krb5_creds creds;
     char my_hostname[128];
     char *server;
-    const char keytab_buf[256];
+    char keytab_buf[256];
     
     ret = krb5_kt_register(context, &hdb_kt_ops);
     if(ret)
