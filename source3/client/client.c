@@ -2003,7 +2003,7 @@ static void browse_fn(const char *name, uint32 m,
 	   in any of these fields, they can corrupt the output.  We
 	   should remove them. */
 	if (!grepable) {
-		d_printf("\t%-15.15s%-10.10s%s\n",
+		d_printf("\t%-15s %-10.10s%s\n",
                		name,typestr,comment);
 	} else {
 		d_printf ("%s|%s|%s\n",typestr,name,comment);
@@ -2018,8 +2018,8 @@ static BOOL browse_host(BOOL sort)
 {
 	int ret;
 	if (!grepable) {
-	        d_printf("\n\tSharename      Type      Comment\n");
-	        d_printf("\t---------      ----      -------\n");
+	        d_printf("\n\tSharename       Type      Comment\n");
+	        d_printf("\t---------       ----      -------\n");
 	}
 
 	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1)
@@ -2037,7 +2037,7 @@ static void server_fn(const char *name, uint32 m,
 {
 	
 	if (!grepable){
-		d_printf("\t%-16.16s     %s\n", name, comment);
+		d_printf("\t%-16s     %s\n", name, comment);
 	} else {
 		d_printf("%s|%s|%s\n",(char *)state, name, comment);
 	}
