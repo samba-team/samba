@@ -1,3 +1,13 @@
+Changed in release 0.1h:
+
+ * kf: new program for forwarding credentials
+ * portability fixes
+ * make forwarding credentials work with MIT code
+ * better conversion of ka database
+ * add etc/services.append
+ * correct `modified by' from kpasswdd
+ * lots of bug fixes
+
 Changes in release 0.1g:
 
  * kgetcred: new program for explicitly obtaining tickets
