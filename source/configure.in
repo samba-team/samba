@@ -20,6 +20,7 @@ CFLAGS=${CFLAGS-"-O"}
 
 dnl Checks for programs.
 AC_PROG_CC
+AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_AWK
 
@@ -65,6 +66,16 @@ case "$host_os" in
     *aix4*)
       CPPFLAGS="$CPPFLAGS -D_LARGE_FILES"
       ;;    
+#
+# Irix needs standards.h to detect netinet
+#
+    *irix*)
+	AC_CHECK_HEADER(standards.h,
+		cat >> confdefs.h <<EOF
+#include <standards.h>
+EOF
+)
+      ;;
 esac
 
 AC_INLINE
