@@ -1,3 +1,7 @@
+2004-05-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* tools/Makefile.am: use ! instead of , as sed delimiter
+	
 2004-05-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/*.c: add KRB5_LIB_FUNCTION to all exported functions
