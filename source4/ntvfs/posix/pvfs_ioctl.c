@@ -29,15 +29,7 @@
 static NTSTATUS pvfs_ioctl_old(struct ntvfs_module_context *ntvfs,
 			struct smbsrv_request *req, union smb_ioctl *io)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
-	struct pvfs_file *f;
-
-	f = pvfs_find_fd(pvfs, req, io->ioctl.in.fnum);
-	if (!f) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	return NT_STATUS_NOT_SUPPORTED;
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 /*
