@@ -106,7 +106,7 @@ recv_loop (int fd,
  * of a datagram socket.  See `recv_loop'.
  */
 
-static int
+int
 send_and_recv_udp(int fd, 
 		  time_t tmout,
 		  const krb5_data *req,
@@ -155,6 +155,15 @@ send_and_recv_tcp(int fd,
 	return -1;
     }
     return 0;
+}
+
+int
+_krb5_send_and_recv_tcp(int fd,
+			time_t tmout,
+			const krb5_data *req,
+			krb5_data *rep)
+{
+    return send_and_recv_tcp(fd, tmout, req, rep);
 }
 
 /*
