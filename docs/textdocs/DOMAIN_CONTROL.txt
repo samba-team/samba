@@ -1,0 +1,60 @@
+August 22, 1996
+===============
+
+Contributor: John H Terpstra
+
+Subject:     Windows NT Domain Control & Samba
+             =================================
+
+Windows NT Server can be installed as either a plain file and print server
+or as a server that participates in Domain Control.
+
+To many people these terms can be confusing, so let's try to clear the air.
+
+Every Windows NT system (workstation or server) has a registry database.
+The registry contains entries that describe the initialisation information
+for all services (the equivalent of Unix Daemons) that run within the Windows
+NT environment. The registry also contains entries that tell application
+software where to find dynamically loadable libraries that they depend upon.
+In fact, the registry contains entries that describes everything that anything
+may need to know to interact with the rest of the system.
+
+The Microsoft Windows NT system is structured within a security model that
+says that all applications and services much authenticate themselves before
+they can obtain permission from the security manager to do what they set out
+to do.
+
+The Windows NT User database also resides within the registry. This part of
+the registry contains the user's security identifier, home directory, group
+memberships, desktop profile, and so on.
+
+Every Windows NT system (workstation as well as server) will have it's own
+registry. Windows NT Servers that participate in Domain Security control
+have a database that they share in common - thus they do NOT own a complete
+and independant full registry database of their own, as do Workstations and
+plain Servers.
+
+The User database is called the SAM (Security Access Manager) database and
+is used for all user authentication as well as for authentication of inter-
+process authentication (ie: to ensure that the service action a user has
+requested is permitted within the limits of that user's privilidges).
+
+Windows for Workgroups, Windows 95, and Windows NT Workstations and Servers
+can participate in a Domain security system that is controlled by Windows NT
+servers that have been correctly configured. At most every domain will have
+ONE Primary Domain Controller (PDC). It is desirable that each domain will
+have at least one Backup Domain Controller (BDC).
+
+The PDC and BDCs then participate in replication of the SAM database so that
+each Domain Controlling participant will have an up to date SAM component
+within it's registry.
+
+Samba can NOT at this time function as a Domain Controller for any of these
+security services, but like all other domain members can interact with the
+Windows NT security system for all access authentication.
+
+When Samba is configured with the 'security = server' option and the
+'domain controller = Your_Windows_NT_Server_Name' option, then it will
+redirect all access authentication to that Domain Contolling (PDC or BDC)
+Windows NT Server.
+
