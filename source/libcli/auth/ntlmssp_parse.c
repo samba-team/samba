@@ -216,7 +216,9 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 					/* if odd length and unicode */
 					return False;
 				}
-				
+				if (blob->data + ptr < (uint8 *)ptr || blob->data + ptr < blob->data)
+					return False;
+
 				if (0 < len1) {
 					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
 						    len1, 
@@ -241,7 +243,10 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
 					return False;
 				}
-				
+
+				if (blob->data + ptr < (uint8 *)ptr || blob->data + ptr < blob->data)
+					return False;	
+
 				if (0 < len1) {
 					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
 						    len1, 
@@ -266,6 +271,10 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
 					return False;
 				}
+
+				if (blob->data + ptr < (uint8 *)ptr || blob->data + ptr < blob->data)
+					return False;	
+			
 				*b = data_blob(blob->data + ptr, len1);
 			}
 			break;
@@ -274,6 +283,9 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			len1 = va_arg(ap, unsigned);
 			/* make sure its in the right format - be strict */
 			NEED_DATA(len1);
+			if (blob->data + head_ofs < (uint8 *)head_ofs || blob->data + head_ofs < blob->data)
+				return False;	
+			
 			*b = data_blob(blob->data + head_ofs, len1);
 			head_ofs += len1;
 			break;
@@ -284,6 +296,10 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			break;
 		case 'C':
 			s = va_arg(ap, char *);
+
+			if (blob->data + head_ofs < (uint8 *)head_ofs || blob->data + head_ofs < blob->data)
+				return False;	
+	
 			head_ofs += pull_string(NULL, p, blob->data+head_ofs, sizeof(p), 
 						blob->length - head_ofs, 
 						STR_ASCII|STR_TERMINATE);

@@ -41,6 +41,8 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 		return auth_context->challenge.data;
 	}
 
+	auth_context->challenge_may_be_modified = False;
+
 	for (auth_method = auth_context->auth_method_list; auth_method; auth_method = auth_method->next) {
 		if (auth_method->get_chal == NULL) {
 			DEBUG(5, ("auth_get_challenge: module %s did not want to specify a challenge\n", auth_method->name));
@@ -80,11 +82,12 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 							   chal, sizeof(chal));
 		
 		challenge_set_by = "random";
+		auth_context->challenge_may_be_modified = True;
 	} 
 	
 	DEBUG(5, ("auth_context challenge created by %s\n", challenge_set_by));
 	DEBUG(5, ("challenge is: \n"));
-	dump_data(5, (const char*)auth_context->challenge.data, auth_context->challenge.length);
+	dump_data(5, (const char *)auth_context->challenge.data, auth_context->challenge.length);
 	
 	SMB_ASSERT(auth_context->challenge.length == 8);
 
@@ -156,9 +159,8 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 				    const struct auth_usersupplied_info *user_info, 
 				    struct auth_serversupplied_info **server_info)
 {
-	
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	const char *pdb_username;
+	/* if all the modules say 'not for me' this is reasonable */
+	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
 	auth_methods *auth_method;
 	TALLOC_CTX *mem_ctx;
 
@@ -181,7 +183,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 					auth_context->challenge_set_by));
 
 	DEBUG(10, ("challenge is: \n"));
-	dump_data(5, (const char*)auth_context->challenge.data, auth_context->challenge.length);
+	dump_data(5, (const char *)auth_context->challenge.data, auth_context->challenge.length);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("user_info has passwords of length %d and %d\n", 
@@ -197,12 +199,24 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
+		NTSTATUS result;
+		
 		mem_ctx = talloc_init("%s authentication for user %s\\%s", auth_method->name, 
 					    user_info->domain.str, user_info->smb_name.str);
 
-		nt_status = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
+		result = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
+
+		/* check if the module did anything */
+		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ) {
+			DEBUG(10,("check_ntlm_password: %s had nothing to say\n", auth_method->name));
+			talloc_destroy(mem_ctx);
+			continue;
+		}
+
+		nt_status = result;
+
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] suceeded\n", 
+			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] succeeded\n", 
 				  auth_method->name, user_info->smb_name.str));
 		} else {
 			DEBUG(5, ("check_ntlm_password: %s authentication for user [%s] FAILED with error %s\n", 
@@ -211,8 +225,10 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 		talloc_destroy(mem_ctx);
 
-		if (NT_STATUS_IS_OK(nt_status))
-			break;
+		if ( NT_STATUS_IS_OK(nt_status))
+		{
+				break;			
+		}
 	}
 
 	/* This is one of the few places the *relies* (rather than just sets defaults
@@ -222,29 +238,12 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		smb_user_control(user_info, *server_info, nt_status);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		pdb_username = pdb_get_username((*server_info)->sam_account);
-		if (!(*server_info)->guest) {
-			/* We might not be root if we are an RPC call */
-			become_root();
-			nt_status = smb_pam_accountcheck(pdb_username);
-			unbecome_root();
-			
-			if (NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(5, ("check_ntlm_password:  PAM Account for user [%s] suceeded\n", 
-					  pdb_username));
-			} else {
-				DEBUG(3, ("check_ntlm_password:  PAM Account for user [%s] FAILED with error %s\n", 
-					  pdb_username, nt_errstr(nt_status)));
-			} 
-		}
-		
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG((*server_info)->guest ? 5 : 2, 
-			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] suceeded\n", 
+			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] succeeded\n", 
 			       (*server_info)->guest ? "guest " : "", 
 			       user_info->smb_name.str, 
-			       user_info->internal_username.str, 
-			       pdb_username));
+			       user_info->internal_username.str));
 		}
 	}
 
@@ -263,9 +262,20 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 static void free_auth_context(struct auth_context **auth_context)
 {
-	if (*auth_context != NULL)
+	auth_methods *auth_method;
+
+	if (*auth_context) {
+		/* Free private data of context's authentication methods */
+		for (auth_method = (*auth_context)->auth_method_list; auth_method; auth_method = auth_method->next) {
+			if (auth_method->free_private_data) {
+				auth_method->free_private_data (&auth_method->private_data);
+				auth_method->private_data = NULL;
+			}
+		}
+
 		talloc_destroy((*auth_context)->mem_ctx);
-	*auth_context = NULL;
+		*auth_context = NULL;
+	}
 }
 
 /***************************************************************************
@@ -372,7 +382,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		{
 		case SEC_DOMAIN:
 			DEBUG(5,("Making default auth method list for security=domain\n"));
-			auth_method_list = str_list_make("guest sam winbind ntdomain", NULL);
+			auth_method_list = str_list_make("guest sam winbind:ntdomain", NULL);
 			break;
 		case SEC_SERVER:
 			DEBUG(5,("Making default auth method list for security=server\n"));
@@ -398,7 +408,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 			break;
 		case SEC_ADS:
 			DEBUG(5,("Making default auth method list for security=ADS\n"));
-			auth_method_list = str_list_make("guest sam ads winbind ntdomain", NULL);
+			auth_method_list = str_list_make("guest sam winbind:ntdomain", NULL);
 			break;
 		default:
 			DEBUG(5,("Unknown auth method!\n"));
@@ -428,7 +438,7 @@ NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[
 		return nt_status;
 	}
 	
-	(*auth_context)->challenge = data_blob(chal, 8);
+	(*auth_context)->challenge = data_blob_talloc((*auth_context)->mem_ctx, chal, 8);
 	(*auth_context)->challenge_set_by = "fixed";
 	return nt_status;
 }
@@ -507,7 +517,6 @@ const struct auth_critical_sizes *auth_interface_version(void)
 		sizeof(struct auth_usersupplied_info),
 		sizeof(struct auth_serversupplied_info),
 		sizeof(struct auth_str),
-		sizeof(struct auth_unistr)
 	};
 
 	return &critical_sizes;

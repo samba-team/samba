@@ -26,7 +26,8 @@ SMB_SUBSYSTEM(LIBCLI_UTILS,[],
 SMB_SUBSYSTEM(LIBCLI_AUTH,[],
 		[libcli/auth/ntlmssp.o libcli/auth/ntlmssp_parse.o \
 		libcli/auth/ntlmssp_sign.o libcli/auth/schannel.o \
-		libcli/auth/credentials.o libcli/auth/session.o],
+		libcli/auth/credentials.o libcli/auth/session.o \
+		libcli/auth/ntlm_check.o],
 		libcli/auth/libcli_auth_public_proto.h)
 
 SMB_SUBSYSTEM(LIBCLI_NMB,[],

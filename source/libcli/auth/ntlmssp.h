@@ -94,6 +94,13 @@ typedef struct ntlmssp_state
 	DATA_BLOB session_key;
 	
 	uint32 neg_flags; /* the current state of negotiation with the NTLMSSP partner */
+
+	/* internal variables used by NTLM2 */
+	BOOL doing_ntlm2; 
+	uchar session_nonce[16];
+
+	/* internal variables used by KEY_EXCH (client-supplied user session key */
+	DATA_BLOB encrypted_session_key;
 	
 	void *auth_context;
 

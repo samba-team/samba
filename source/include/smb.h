@@ -1120,7 +1120,7 @@ typedef struct user_struct
 
 	NT_USER_TOKEN *nt_user_token;
 
-	uint8 session_key[16];
+	DATA_BLOB session_key;
 
 	char *session_keystr; /* used by utmp and pam session code.  
 				 TDB key string */

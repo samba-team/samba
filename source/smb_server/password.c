@@ -60,6 +60,8 @@ void invalidate_vuid(struct server_context *smb, uint16 vuid)
 	SAFE_FREE(vuser->unix_homedir);
 	SAFE_FREE(vuser->logon_script);
 	
+	data_blob_free(&vuser->session_key);
+
 	session_yield(vuser);
 
 	free_server_info(&vuser->server_info);
@@ -95,6 +97,10 @@ void invalidate_all_vuids(struct server_context *smb)
  *  @param server_info The token returned from the authentication process. 
  *   (now 'owned' by register_vuid)
  *
+ *  @param session_key The User session key for the login session (now also 'owned' by register_vuid)
+ *
+ *  @param smb_name The untranslated name of the user
+ *
  *  @return Newly allocated vuid, biased by an offset. (This allows us to
  *   tell random client vuid's (normally zero) from valid vuids.)
  *
@@ -102,6 +108,7 @@ void invalidate_all_vuids(struct server_context *smb)
 
 int register_vuid(struct server_context *smb,
 		  struct auth_serversupplied_info *server_info, 
+		  DATA_BLOB *session_key,
 		  const char *smb_name)
 {
 	user_struct *vuser = NULL;
@@ -184,7 +191,7 @@ int register_vuid(struct server_context *smb,
 		}
 	}
 
-	memcpy(vuser->session_key, server_info->session_key, sizeof(vuser->session_key));
+	vuser->session_key = *session_key;
 
 	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", 
 		  (unsigned int)vuser->uid, 

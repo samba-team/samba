@@ -282,7 +282,7 @@ void ntlmssp_end(NTLMSSP_STATE **ntlmssp_state)
 		data_blob_free(&(*ntlmssp_state)->chal);
 		data_blob_free(&(*ntlmssp_state)->lm_resp);
 		data_blob_free(&(*ntlmssp_state)->nt_resp);
-
+		data_blob_free(&(*ntlmssp_state)->encrypted_session_key);
 		talloc_destroy(mem_ctx);
 	}
 
@@ -330,7 +330,7 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->unicode = False;
 	}
 
-	if (neg_flags & NTLMSSP_NEGOTIATE_LM_KEY && allow_lm) {
+	if ((neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) && allow_lm) {
 		/* other end forcing us to use LM */
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
 		ntlmssp_state->use_ntlmv2 = False;
@@ -338,9 +338,12 @@ static void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
+	if (neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	}
+
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
 	if (!(neg_flags & NTLMSSP_NEGOTIATE_128)) {
@@ -403,13 +406,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	
 	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, lp_lanman_auth());
 
-	chal_flags = ntlmssp_state->neg_flags;
-
-	target_name = ntlmssp_target_name(ntlmssp_state, 
-					  neg_flags, &chal_flags); 
-	if (target_name == NULL) 
-		return NT_STATUS_INVALID_PARAMETER;
-
 	/* Ask our caller what challenge they would like in the packet */
 	cryptkey = ntlmssp_state->get_challenge(ntlmssp_state);
 
@@ -418,9 +414,21 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
+	/* The flags we send back are not just the negotiated flags,
+	 * they are also 'what is in this packet'.  Therfore, we
+	 * operate on 'chal_flags' from here on 
+	 */
+
+	chal_flags = ntlmssp_state->neg_flags;
+
+	/* get the right name to fill in as 'target' */
+	target_name = ntlmssp_target_name(ntlmssp_state, 
+					  neg_flags, &chal_flags); 
+	if (target_name == NULL) 
+		return NT_STATUS_INVALID_PARAMETER;
+
 	ntlmssp_state->chal = data_blob_talloc(ntlmssp_state->mem_ctx, cryptkey, 8);
 	ntlmssp_state->internal_chal = data_blob_talloc(ntlmssp_state->mem_ctx, cryptkey, 8);
-	
 
 	/* This should be a 'netbios domain -> DNS domain' mapping */
 	dnsdomname[0] = '\0';
@@ -429,7 +437,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	
 	dnsname[0] = '\0';
 	get_myfullname(dnsname);
-	strlower_m(dnsname);
 	
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) 
@@ -486,29 +493,18 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
  * @return Errors or NT_STATUS_OK. 
  */
 
-static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
-				    const DATA_BLOB request, DATA_BLOB *reply) 
+static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
+				       const DATA_BLOB request) 
 {
-	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
-	DATA_BLOB nt_session_key = data_blob(NULL, 0);
-	DATA_BLOB lm_session_key = data_blob(NULL, 0);
-	DATA_BLOB session_key = data_blob(NULL, 0);
 	uint32 ntlmssp_command, auth_flags;
 	NTSTATUS nt_status;
 
-	/* used by NTLM2 */
-	BOOL doing_ntlm2 = False;
-
-	uchar session_nonce[16];
 	uchar session_nonce_hash[16];
 
 	const char *parse_string;
 	char *domain = NULL;
 	char *user = NULL;
 	char *workstation = NULL;
-
-	/* parse the NTLMSSP packet */
-	*reply = data_blob(NULL, 0);
 
 #if 0
 	file_save("ntlmssp_auth.dat", request.data, request.length);
@@ -536,14 +532,14 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			 &domain, 
 			 &user, 
 			 &workstation,
-			 &encrypted_session_key,
+			 &ntlmssp_state->encrypted_session_key,
 			 &auth_flags)) {
 		DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP:\n"));
 		dump_data(2, (const char *)request.data, request.length);
 		SAFE_FREE(domain);
 		SAFE_FREE(user);
 		SAFE_FREE(workstation);
-		data_blob_free(&encrypted_session_key);
+		data_blob_free(&ntlmssp_state->encrypted_session_key);
 		auth_flags = 0;
 		
 		/* Try again with a shorter string (Win9X truncates this packet) */
@@ -572,11 +568,14 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		}
 	}
 
+	if (auth_flags)
+		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, lp_lanman_auth());
+
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, domain))) {
 		SAFE_FREE(domain);
 		SAFE_FREE(user);
 		SAFE_FREE(workstation);
-		data_blob_free(&encrypted_session_key);
+		data_blob_free(&ntlmssp_state->encrypted_session_key);
 		return nt_status;
 	}
 
@@ -584,7 +583,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		SAFE_FREE(domain);
 		SAFE_FREE(user);
 		SAFE_FREE(workstation);
-		data_blob_free(&encrypted_session_key);
+		data_blob_free(&ntlmssp_state->encrypted_session_key);
 		return nt_status;
 	}
 
@@ -592,7 +591,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		SAFE_FREE(domain);
 		SAFE_FREE(user);
 		SAFE_FREE(workstation);
-		data_blob_free(&encrypted_session_key);
+		data_blob_free(&ntlmssp_state->encrypted_session_key);
 		return nt_status;
 	}
 
@@ -618,13 +617,13 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			struct MD5Context md5_session_nonce_ctx;
 			SMB_ASSERT(ntlmssp_state->internal_chal.data && ntlmssp_state->internal_chal.length == 8);
 			
-			doing_ntlm2 = True;
+			ntlmssp_state->doing_ntlm2 = True;
 
-			memcpy(session_nonce, ntlmssp_state->internal_chal.data, 8);
-			memcpy(&session_nonce[8], ntlmssp_state->lm_resp.data, 8);
+			memcpy(ntlmssp_state->session_nonce, ntlmssp_state->internal_chal.data, 8);
+			memcpy(&ntlmssp_state->session_nonce[8], ntlmssp_state->lm_resp.data, 8);
 			
 			MD5Init(&md5_session_nonce_ctx);
-			MD5Update(&md5_session_nonce_ctx, session_nonce, 16);
+			MD5Update(&md5_session_nonce_ctx, ntlmssp_state->session_nonce, 16);
 			MD5Final(session_nonce_hash, &md5_session_nonce_ctx);
 			
 			ntlmssp_state->chal = data_blob_talloc(ntlmssp_state->mem_ctx, session_nonce_hash, 8);
@@ -634,74 +633,163 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 			/* We changed the effective challenge - set it */
 			if (!NT_STATUS_IS_OK(nt_status = ntlmssp_state->set_challenge(ntlmssp_state, &ntlmssp_state->chal))) {
-				data_blob_free(&encrypted_session_key);
+				data_blob_free(&ntlmssp_state->encrypted_session_key);
 				return nt_status;
 			}
 		}
 	}
+	return NT_STATUS_OK;
+}
 
-	/* Finally, actually ask if the password is OK */
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_state->check_password(ntlmssp_state, &nt_session_key, &lm_session_key))) {
-		data_blob_free(&encrypted_session_key);
-		return nt_status;
-	}
+/**
+ * Next state function for the Authenticate packet
+ * 
+ * @param ntlmssp_state NTLMSSP State
+ * @param request The request, as a DATA_BLOB
+ * @param reply The reply, as an allocated DATA_BLOB, caller to free.
+ * @return Errors or NT_STATUS_OK. 
+ */
 
-	dump_data_pw("NT session key:\n", nt_session_key.data, nt_session_key.length);
-	dump_data_pw("LM first-8:\n", lm_session_key.data, lm_session_key.length);
+static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
+					DATA_BLOB *user_session_key, 
+					DATA_BLOB *lm_session_key, 
+					DATA_BLOB *reply) 
+{
+	NTSTATUS nt_status;
+	DATA_BLOB session_key = data_blob(NULL, 0);
+
+	/* parse the NTLMSSP packet */
+	*reply = data_blob(NULL, 0);
+
+	if (user_session_key)
+		dump_data_pw("USER session key:\n", user_session_key->data, user_session_key->length);
+
+	if (lm_session_key) 
+		dump_data_pw("LM first-8:\n", lm_session_key->data, lm_session_key->length);
 
 	/* Handle the different session key derivation for NTLM2 */
-	if (doing_ntlm2) {
-		if (nt_session_key.data && nt_session_key.length == 16) {
+	if (ntlmssp_state->doing_ntlm2) {
+		if (user_session_key && user_session_key->data && user_session_key->length == 16) {
 			session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
-			hmac_md5(nt_session_key.data, session_nonce, 
-				 sizeof(session_nonce), session_key.data);
+			hmac_md5(user_session_key->data, ntlmssp_state->session_nonce, 
+				 sizeof(ntlmssp_state->session_nonce), session_key.data);
+			DEBUG(10,("ntlmssp_server_auth: Created NTLM2 session key.\n"));
 			dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
-
+			
+		} else {
+			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM2 session key.\n"));
+			session_key = data_blob(NULL, 0);
 		}
 	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
-		if (lm_session_key.data && lm_session_key.length >= 8 && 
-		    ntlmssp_state->lm_resp.data && ntlmssp_state->lm_resp.length == 24) {
-			session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
-			SMBsesskeygen_lmv1(lm_session_key.data, ntlmssp_state->lm_resp.data, 
-					   session_key.data);
-			dump_data_pw("LM session key:\n", session_key.data, session_key.length);
+		if (lm_session_key && lm_session_key->data && lm_session_key->length >= 8) {
+			if (ntlmssp_state->lm_resp.data && ntlmssp_state->lm_resp.length == 24) {
+				session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
+				SMBsesskeygen_lm_sess_key(lm_session_key->data, ntlmssp_state->lm_resp.data, 
+							  session_key.data);
+				DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
+				dump_data_pw("LM session key:\n", session_key.data, session_key.length);
+			} else {
+				/* use the key unmodified - it's
+				 * probably a NULL key from the guest
+				 * login */
+				session_key = *lm_session_key;
+			}
+		} else {
+			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM session key.\n"));
+			session_key = data_blob(NULL, 0);
 		}
-	} else if (nt_session_key.data) {
-		session_key = nt_session_key;
+	} else if (user_session_key && user_session_key->data) {
+		session_key = *user_session_key;
+		DEBUG(10,("ntlmssp_server_auth: Using unmodified nt session key.\n"));
 		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
+	} else if (lm_session_key && lm_session_key->data) {
+		session_key = *lm_session_key;
+		DEBUG(10,("ntlmssp_server_auth: Using unmodified lm session key.\n"));
+		dump_data_pw("unmodified session key:\n", session_key.data, session_key.length);
+	} else {
+		DEBUG(10,("ntlmssp_server_auth: Failed to create unmodified session key.\n"));
+		session_key = data_blob(NULL, 0);
 	}
 
 	/* With KEY_EXCH, the client supplies the proposed session key, 
 	   but encrypts it with the long-term key */
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
-		if (!encrypted_session_key.data || encrypted_session_key.length != 16) {
-			data_blob_free(&encrypted_session_key);
+		if (!ntlmssp_state->encrypted_session_key.data 
+		    || ntlmssp_state->encrypted_session_key.length != 16) {
+			data_blob_free(&ntlmssp_state->encrypted_session_key);
 			DEBUG(1, ("Client-supplied KEY_EXCH session key was of invalid length (%u)!\n", 
-				  encrypted_session_key.length));
+				  ntlmssp_state->encrypted_session_key.length));
 			return NT_STATUS_INVALID_PARAMETER;
 		} else if (!session_key.data || session_key.length != 16) {
 			DEBUG(5, ("server session key is invalid (len == %u), cannot do KEY_EXCH!\n", 
 				  session_key.length));
+			ntlmssp_state->session_key = session_key;
 		} else {
-			dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
-			SamOEMhash(encrypted_session_key.data, 
+			dump_data_pw("KEY_EXCH session key (enc):\n", 
+				     ntlmssp_state->encrypted_session_key.data, 
+				     ntlmssp_state->encrypted_session_key.length);
+			SamOEMhash(ntlmssp_state->encrypted_session_key.data, 
 				   session_key.data, 
-				   encrypted_session_key.length);
+				   ntlmssp_state->encrypted_session_key.length);
 			ntlmssp_state->session_key = data_blob_talloc(ntlmssp_state->mem_ctx, 
-								      encrypted_session_key.data, 
-								      encrypted_session_key.length);
-			dump_data_pw("KEY_EXCH session key:\n", session_key.data, session_key.length);
+								      ntlmssp_state->encrypted_session_key.data, 
+								      ntlmssp_state->encrypted_session_key.length);
+			dump_data_pw("KEY_EXCH session key:\n", ntlmssp_state->encrypted_session_key.data, 
+				     ntlmssp_state->encrypted_session_key.length);
 		}
 	} else {
 		ntlmssp_state->session_key = session_key;
 	}
 
-	data_blob_free(&encrypted_session_key);
+	nt_status = ntlmssp_sign_init(ntlmssp_state);
+
+	data_blob_free(&ntlmssp_state->encrypted_session_key);
 	
 	/* allow arbitarily many authentications */
 	ntlmssp_state->expected_state = NTLMSSP_AUTH;
 
 	return nt_status;
+}
+
+
+/**
+ * Next state function for the Authenticate packet
+ * 
+ * @param ntlmssp_state NTLMSSP State
+ * @param request The request, as a DATA_BLOB
+ * @param reply The reply, as an allocated DATA_BLOB, caller to free.
+ * @return Errors or NT_STATUS_OK. 
+ */
+
+static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
+				    const DATA_BLOB request, DATA_BLOB *reply) 
+{
+	DATA_BLOB user_session_key = data_blob(NULL, 0);
+	DATA_BLOB lm_session_key = data_blob(NULL, 0);
+	NTSTATUS nt_status;
+
+	/* parse the NTLMSSP packet */
+	*reply = data_blob(NULL, 0);
+
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_server_preauth(ntlmssp_state, request))) {
+		return nt_status;
+	}
+
+	/*
+	 * Note we don't check here for NTLMv2 auth settings. If NTLMv2 auth
+	 * is required (by "ntlm auth = no" and "lm auth = no" being set in the
+	 * smb.conf file) and no NTLMv2 response was sent then the password check
+	 * will fail here. JRA.
+	 */
+
+	/* Finally, actually ask if the password is OK */
+
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_state->check_password(ntlmssp_state, 
+								       &user_session_key, &lm_session_key))) {
+		return nt_status;
+	}
+	
+	return ntlmssp_server_postauth(ntlmssp_state, &user_session_key, &lm_session_key, reply);
 }
 
 /**
@@ -874,7 +962,14 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	if (!ntlmssp_state->password) {
+		static const uchar zeros[16];
 		/* do nothing - blobs are zero length */
+
+		/* session key is all zeros */
+		session_key = data_blob_talloc(ntlmssp_state->mem_ctx, zeros, 16);
+		
+		/* not doing NLTM2 without a password */
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	} else if (ntlmssp_state->use_ntlmv2) {
 
 		if (!struct_blob.length) {
@@ -900,7 +995,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		uchar nt_hash[16];
 		uchar session_nonce[16];
 		uchar session_nonce_hash[16];
-		uchar nt_session_key[16];
+		uchar user_session_key[16];
 		E_md4hash(ntlmssp_state->password, nt_hash);
 		
 		lm_response = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 24);
@@ -917,7 +1012,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 		DEBUG(5, ("NTLMSSP challenge set by NTLM2\n"));
 		DEBUG(5, ("challenge is: \n"));
-		dump_data(5, session_nonce_hash, 8);
+		dump_data(5, (const char *)session_nonce_hash, 8);
 		
 		nt_response = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 24);
 		SMBNTencrypt(ntlmssp_state->password,
@@ -926,8 +1021,8 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 		session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
 
-		SMBsesskeygen_ntv1(nt_hash, NULL, nt_session_key);
-		hmac_md5(nt_session_key, session_nonce, sizeof(session_nonce), session_key.data);
+		SMBsesskeygen_ntv1(nt_hash, NULL, user_session_key);
+		hmac_md5(user_session_key, session_nonce, sizeof(session_nonce), session_key.data);
 		dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 	} else {
 		
@@ -964,16 +1059,19 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	/* Key exchange encryptes a new client-generated session key with
 	   the password-derived key */
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
+		/* Make up a new session key */
 		uint8 client_session_key[16];
-		
-		generate_random_buffer(client_session_key, sizeof(client_session_key), False);	
+		generate_random_buffer(client_session_key, sizeof(client_session_key), False);
+
+		/* Encrypt the new session key with the old one */
 		encrypted_session_key = data_blob(client_session_key, sizeof(client_session_key));
 		dump_data_pw("KEY_EXCH session key:\n", encrypted_session_key.data, encrypted_session_key.length);
-
 		SamOEMhash(encrypted_session_key.data, session_key.data, encrypted_session_key.length);
+		dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
+
+		/* Mark the new session key as the 'real' session key */
 		data_blob_free(&session_key);
 		session_key = data_blob_talloc(ntlmssp_state->mem_ctx, client_session_key, sizeof(client_session_key));
-		dump_data_pw("KEY_EXCH session key (enc):\n", encrypted_session_key.data, encrypted_session_key.length);
 	}
 
 	/* this generates the actual auth packet */
@@ -1018,7 +1116,7 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
 	
 	*ntlmssp_state = talloc_zero(mem_ctx, sizeof(**ntlmssp_state));
 	if (!*ntlmssp_state) {
-		DEBUG(0,("ntlmssp_server_start: talloc failed!\n"));
+		DEBUG(0,("ntlmssp_client_start: talloc failed!\n"));
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
