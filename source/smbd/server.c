@@ -389,6 +389,9 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component)
   struct stat st;
   char *start, *end;
   pstring dirpath;
+#ifdef YOSTW
+  char szName[132], *p;
+#endif
 
   *dirpath = 0;
   if(saved_last_component)
@@ -398,6 +401,23 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component)
   unix_format(name);
   unix_clean_name(name);
 
+#ifdef YOSTW
+  /* Remove leading path specifications to check for 8_3 name */
+  if ( strncmp( name, "./",2) == 0 ) {
+	strcpy( szName, name+2 );
+  }
+  else {
+	strcpy( szName, name );
+  }
+  p = strrchr( szName, '/' );
+  if ( p != NULL ) {
+	p++;
+  }
+  else {
+	p = szName;
+  }
+#endif
+  
   if (!case_sensitive && 
       (!case_preserve || (is_8_3(name) && !short_case_preserve)))
     strnorm(name);
