@@ -31,7 +31,7 @@
 static void creds_init_64bit(struct creds_CredentialState *creds,
 			     const struct netr_Credential *client_challenge,
 			     const struct netr_Credential *server_challenge,
-			     const uint8_t machine_password[16])
+			     const struct samr_Password *machine_password)
 {
 	uint32_t sum[2];
 	uint8_t sum2[8];
@@ -44,7 +44,7 @@ static void creds_init_64bit(struct creds_CredentialState *creds,
 
 	ZERO_STRUCT(creds->session_key);
 
-	des_crypt128(creds->session_key, sum2, machine_password);
+	des_crypt128(creds->session_key, sum2, machine_password->hash);
 
 	des_crypt112(creds->client.data, client_challenge->data, creds->session_key, 1);
 	des_crypt112(creds->server.data, server_challenge->data, creds->session_key, 1);
@@ -60,7 +60,7 @@ static void creds_init_64bit(struct creds_CredentialState *creds,
 static void creds_init_128bit(struct creds_CredentialState *creds,
 			      const struct netr_Credential *client_challenge,
 			      const struct netr_Credential *server_challenge,
-			      const uint8_t machine_password[16])
+			      const struct samr_Password *machine_password)
 {
 	unsigned char zero[4], tmp[16];
 	HMACMD5Context ctx;
@@ -70,13 +70,13 @@ static void creds_init_128bit(struct creds_CredentialState *creds,
 
 	memset(zero, 0, sizeof(zero));
 
-	hmac_md5_init_rfc2104(machine_password, 16, &ctx);	
+	hmac_md5_init_rfc2104(machine_password->hash, sizeof(machine_password->hash), &ctx);	
 	MD5Init(&md5);
 	MD5Update(&md5, zero, sizeof(zero));
 	MD5Update(&md5, client_challenge->data, 8);
 	MD5Update(&md5, server_challenge->data, 8);
 	MD5Final(tmp, &md5);
-	hmac_md5_update(tmp, 16, &ctx);
+	hmac_md5_update(tmp, sizeof(tmp), &ctx);
 	hmac_md5_final(creds->session_key, &ctx);
 
 	creds->client = *client_challenge;
@@ -169,7 +169,7 @@ next comes the client specific functions
 void creds_client_init(struct creds_CredentialState *creds,
 		       const struct netr_Credential *client_challenge,
 		       const struct netr_Credential *server_challenge,
-		       const uint8_t machine_password[16],
+		       const struct samr_Password *machine_password,
 		       struct netr_Credential *initial_credential,
 		       uint32_t negotiate_flags)
 {
@@ -178,7 +178,7 @@ void creds_client_init(struct creds_CredentialState *creds,
 
 	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
 	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
-	dump_data_pw("Machine Pass", machine_password, 16);
+	dump_data_pw("Machine Pass", machine_password->hash, sizeof(machine_password->hash));
 
 	if (negotiate_flags & NETLOGON_NEG_128BIT) {
 		creds_init_128bit(creds, client_challenge, server_challenge, machine_password);
@@ -236,7 +236,7 @@ next comes the server specific functions
 void creds_server_init(struct creds_CredentialState *creds,
 		       const struct netr_Credential *client_challenge,
 		       const struct netr_Credential *server_challenge,
-		       const uint8_t machine_password[16],
+		       const struct samr_Password *machine_password,
 		       struct netr_Credential *initial_credential,
 		       uint32_t negotiate_flags)
 {
