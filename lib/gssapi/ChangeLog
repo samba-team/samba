@@ -1,5 +1,24 @@
 2003-08-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* wrap.c,unwrap.c,get_mic.c,verify_mic.c,cfx.c,cfx.h:
+	prefix cfx symbols with _gssapi_
+
+	* arcfour.c: release the right buffer
+	
+	* arcfour.c: rename token structure in consistency with rest of
+	GSS-API From: Luke Howard <lukeh@PADL.COM>
+	
+	* unwrap.c (unwrap_des3): use _gssapi_verify_pad
+	(unwrap_des): use _gssapi_verify_pad
+
+	* arcfour.c (_gssapi_wrap_arcfour): set the correct padding
+	(_gssapi_unwrap_arcfour): verify and strip padding
+
+	* gssapi_locl.h: added _gssapi_verify_pad
+	
+	* decapsulate.c (_gssapi_verify_pad): verify padding of a gss
+	wrapped message and return its length
+	
 	* arcfour.c: support KEYTYPE_ARCFOUR_56 keys, from Luke Howard
 	<lukeh@PADL.COM>
 	
