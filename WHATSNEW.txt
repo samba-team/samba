@@ -9,7 +9,8 @@ New Parameters
 
 Refer to the smb.conf(5) man page for complete descriptions of new parameters.
 
-  * profile acls (S)
+  * profile acls (S)		workaround for issue with WinXP SP1
+				and roaming user profiles
 
 
 Removed Parameters
@@ -22,7 +23,8 @@ Removed Parameters
 Modified Parameters
 -------------------
 
-  * max xmit (G)
+  * max xmit (G) 		new default value
+  * large readwrite (G)		new default value
 
 
 The following options have been added to Samba's configure script
