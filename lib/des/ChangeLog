@@ -1,3 +1,7 @@
+2000-02-07  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: set version to 2:0:0
+
 2000-01-26  Assar Westerlund  <assar@sics.se>
 
 	* mdtest.c: update to pseudo-standard APIs for md4,md5,sha.
