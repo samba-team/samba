@@ -460,11 +460,13 @@ sub ParseStruct($)
 
     $result .= "\n";
     $result .= "\treturn obj;\n";
-    $result .= "}\n";
+    $result .= "}\n\n";
 
-    # Generate function to convert DATA_BLOB to Python dict
+    # Generate function to convert DATA_BLOB to Python dict and an array
+    # of Python dicts.
 
     if (util::has_property($s->{DATA}, "public")) {
+
 	$result .= "/* Convert a Python string to a struct $s->{NAME} python dict */\n\n";
 	$result .= "NTSTATUS unmarshall_$s->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct $s->{NAME} *s)\n";
 	$result .= "{\n";
@@ -473,22 +475,46 @@ sub ParseStruct($)
 	$result .= "\tresult = ndr_pull_struct_blob(blob, mem_ctx, s, ndr_pull_$s->{NAME});\n";
 	$result .= "\treturn result;\n";
 	$result .= "}\n\n";
+
+	$result .= "/* Convert a Python string to an array of struct $s->{NAME} python dicts */\n\n";
+	$result .= "NTSTATUS unmarshall_$s->{NAME}_array(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, uint32 count, struct $s->{NAME} **s)\n";
+	$result .= "{\n";
+	$result .= "\tstruct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx);\n";
+	$result .= "\tNTSTATUS result;\n\n";
+	$result .= "\t*s = talloc(mem_ctx, sizeof(struct $s->{NAME}) * count);\n\n";
+	$result .= "\tresult = ndr_pull_array(ndr, NDR_SCALARS|NDR_BUFFERS, *s, sizeof(struct $s->{NAME}), count, ndr_pull_$s->{NAME});\n\n";
+	$result .= "\treturn result;\n";
+	$result .= "}\n\n";
     }
 
-    $result .= "\n%}\n\n";    
+    $result .= "%}\n\n";    
 
     if (util::has_property($s->{DATA}, "public")) {
 
-	$result .= "%typemap(in, numinputs=0) struct $s->{NAME} *EMPTY (struct $s->{NAME} *temp_$s->{NAME}) {\n";
+	$result .= "%typemap(in, numinputs=0) struct $s->{NAME} *EMPTY (struct $s->{NAME} temp_$s->{NAME}) {\n";
 	$result .= "\t\$1 = &temp_$s->{NAME};\n";
 	$result .= "}\n\n";
 
-	$result .= "%typemap(argout) struct $s->{NAME} * {\n";
-	$result .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(argout) $s->{NAME}\");\n\n";
+	$result .= "%typemap(argout) struct $s->{NAME} *EMPTY {\n";
+	$result .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(argout) $s->{NAME} *\");\n\n";
 	$result .= "\t\$result = $s->{NAME}_ptr_to_python(mem_ctx, \$1);\n";
 	$result .= "}\n\n";
 
 	$result .= "NTSTATUS unmarshall_$s->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct $s->{NAME} *EMPTY);\n\n";
+
+	$result .= "%typemap(in, numinputs=0) struct $s->{NAME} **ARRAY (struct $s->{NAME} *temp_$s->{NAME}) {\n";
+	$result .= "\t\$1 = &temp_$s->{NAME};\n";
+	$result .= "}\n\n";
+
+	$result .= "%typemap(argout) (uint32 count, struct $s->{NAME} **ARRAY) {\n";
+	$result .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(argout) $s->{NAME} **\");\n";
+	$result .= "\tuint32 i;\n\n";
+	$result .= "\t\$result = PyList_New(\$1);\n\n";
+	$result .= "\tfor (i = 0; i < \$1; i++)\n";
+	$result .= "\t\tPyList_SetItem(\$result, i, spoolss_PrinterInfo1_ptr_to_python(mem_ctx, \$2[i]));\n";
+	$result .= "}\n\n";
+
+	$result .= "NTSTATUS unmarshall_$s->{NAME}_array(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, uint32 count, struct $s->{NAME} **ARRAY);\n\n";
     }
 
     return $result;
