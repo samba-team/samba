@@ -179,7 +179,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       q += 4;
       domainsidsize = IVAL(q, 0);
       q += 4;
-      q += domainsidsize + 3;
+      q += domainsidsize + 2;
+      q = align2(q, buf);
+
       ntversion = IVAL(q, 0);
       q += 4;
       lmnttoken = SVAL(q, 0);
@@ -187,7 +189,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       lm20token = SVAL(q, 0);
       q += 2;
 
-      DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %d\n", domainsidsize, ntversion));
+      DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %x\n", domainsidsize, ntversion));
 
       /*
        * we respond regadless of whether the machine is in our password 
@@ -198,7 +200,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       fstrcpy(reply_name+2,my_name); 
 
-      if (DEBUGLVL(3)) {
+      if (DEBUGLVL(3))
+	{
 	      fstring ascuser;
 	      fstring asccomp;
 
