@@ -56,25 +56,6 @@ DOM_SID global_machine_sid;
  *
  */
 
-#if 0
-static struct smb_passwd    *getPDBpwent        (void *vp)                              { return pdb_sam_to_smb(getPDB21pwent(vp)); } 
-static BOOL                  add_PDBpwd_entry   (struct smb_passwd *newpwd)             { return add_PDB21pwd_entry(pdb_smb_to_sam(newpwd)); } 
-static BOOL                  mod_PDBpwd_entry   (struct smb_passwd* pwd, BOOL override) { return mod_PDB21pwd_entry(pdb_smb_to_sam(pwd), override); } 
-static struct smb_passwd    *getPDBpwnam        (char *name)                            { return pdb_sam_to_smb(getPDB21pwnam(name)); } 
-static struct smb_passwd    *getPDBpwuid        (uid_t smb_userid)                      { return pdb_sam_to_smb(getPDB21pwuid(pdb_uid_to_user_rid(smb_userid))); } 
-
-static struct sam_passwd    *getPDB21pwent      (void *vp)                              { return pdb_smb_to_sam(getPDBpwent(vp)); } 
-static BOOL                  add_PDB21pwd_entry (struct sam_passwd *newpwd)             { return add_PDBpwd_entry(pdb_sam_to_smb(newpwd)); } 
-static BOOL                  mod_PDB21pwd_entry (struct sam_passwd* pwd, BOOL override) { return mod_PDBpwd_entry(pdb_sam_to_smb(pwd), override); } 
-static struct sam_passwd    *getPDB21pwnam      (char *name)                            { return pdb_smb_to_sam(getPDBpwnam(name)); } 
-static struct sam_passwd    *getPDB21pwrid      (uint32 rid)                            { return pdb_smb_to_sam(getPDBpwuid(pdb_user_rid_to_uid(rid))); } 
-static struct sam_passwd    *getPDB21pwuid      (uid_t uid)                             { return pdb_smb_to_sam(getPDBpwuid(uid)); } 
-
-static struct sam_disp_info *getPDBdispnam      (char *name)                            { return pdb_sam_to_dispinfo(getPDB21pwnam(name)); } 
-static struct sam_disp_info *getPDBdisprid      (uint32 rid)                            { return pdb_sam_to_dispinfo(getPDB21pwrid(rid)); } 
-static struct sam_disp_info *getPDBdispent      (void *vp)                              { return pdb_sam_to_dispinfo(getPDB21pwent(vp)); } 
-#endif /* 0 */
-
 static struct passdb_ops *pdb_ops;
 
 /***************************************************************
@@ -488,6 +469,28 @@ struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user)
 	return &pw_buf;
 }
 
+
+/*************************************************************
+ converts a smb_passwd structure to a sam_passwd structure.
+ **************************************************************/
+
+struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user)
+{
+	static struct sam_passwd pw_buf;
+
+	if (user == NULL) return NULL;
+
+	pdb_init_sam(&pw_buf);
+
+	pw_buf.smb_userid         = user->smb_userid;
+	pw_buf.smb_name           = user->smb_name;
+	pw_buf.smb_passwd         = user->smb_passwd;
+	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
+	pw_buf.acct_ctrl          = user->acct_ctrl;
+	pw_buf.pass_last_set_time = user->pass_last_set_time;
+
+	return &pw_buf;
+}
 
 /**********************************************************
  Encode the account control bits into a string.
