@@ -61,8 +61,6 @@ static char rcsid[] = "$NetBSD: popen.c,v 1.5 1995/04/11 02:45:00 cgd Exp $";
 #include <string.h>
 #include <unistd.h>
 
-#include <sys/resource.h>
-
 #include "extern.h"
 
 /*
@@ -86,26 +84,12 @@ ftpd_popen(char *program, char *type)
 
 	if (!pids) {
 
-	    /* This is really ugly. One would have hoped that
-	     * getdtablesize would be dead and buried, and that
-	     * getrlimit would be available everywhere. However, in
-	     * AIX getrlimit is available, but there is no
-	     * RLIMIT_NOFILE to be found. So we have to use
-	     * getdtablesize if it is available.  
-	     *
-	     * (and besides this function is ugly and should be
-	     * rewritten, in modern unices there is no such thing as a
-	     * maximum filedescriptor)
+	    /* This function is ugly and should be rewritten, in
+	     * modern unices there is no such thing as a maximum
+	     * filedescriptor.
 	     */
 
-#ifdef HAVE_GETDTABLESIZE
 	    fds = getdtablesize();
-#else
-	    struct rlimit r;
-	    if(getrlimit(RLIMIT_NOFILE, &r) < 0)
-		return NULL;
-	    fds = r.rlim_cur;
-#endif
 	    pids = (int*)calloc(fds, sizeof(int));
 	    if(!pids)
 		return NULL;
