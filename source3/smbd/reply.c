@@ -3832,7 +3832,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 		
 		DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid %u, file %s timeout = %d\n",
 			(double)offset, (double)count, (unsigned int)lock_pid,
-			(int)lock_timeout, fsp->fsp_name ));
+			fsp->fsp_name, (int)lock_timeout ));
 		
 		status = do_lock_spin(fsp,conn,lock_pid, count,offset, 
 				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
