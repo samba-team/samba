@@ -497,8 +497,10 @@
 
 #ifdef LARGE_SMB_OFF_T
 #define SOFF_T(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,(v)&0xFFFFFFFF), SIVAL(p,ofs,(v)>>32))
 #else 
 #define SOFF_T(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
+#define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,v),SIVAL(p,ofs,0))
 #endif
 
 /*
@@ -793,6 +795,24 @@ enum nss_status {
 #define ULTRIX_AUTH 1
 #endif
 
+#ifdef HAVE_LIBREADLINE
+#  ifdef HAVE_READLINE_READLINE_H
+#    include <readline/readline.h>
+#    ifdef HAVE_READLINE_HISTORY_H
+#      include <readline/history.h>
+#    endif
+#  else
+#    ifdef HAVE_READLINE_H
+#      include <readline.h>
+#      ifdef HAVE_HISTORY_H
+#        include <history.h>
+#      endif
+#    else
+#      undef HAVE_LIBREADLINE
+#    endif
+#  endif
+#endif
+
 #ifndef HAVE_STRDUP
 char *strdup(const char *s);
 #endif
@@ -915,6 +935,16 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #ifndef S_IXOTH
 #define S_IXOTH 00001           /* execute permission: other */
 #endif
+
+/* NetBSD doesn't have these */
+#ifndef SHM_R
+#define SHM_R 0400
+#endif
+
+#ifndef SHM_W
+#define SHM_W 0200
+#endif
+
 
 /* Some systems (SCO) treat UNIX domain sockets as FIFOs */
 
