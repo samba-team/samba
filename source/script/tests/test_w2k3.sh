@@ -33,7 +33,7 @@ testit() {
 }
 
 for transport in ncacn_ip_tcp ncacn_np; do
- for bindoptions in connect sign seal validate bigendian; do
+ for bindoptions in padcheck connect sign seal spnego,sign spnego,seal validate bigendian; do
      case $transport in
 	 ncacn_np) tests=$ncacn_np_tests ;;
 	 ncacn_ip_tcp) tests=$ncacn_ip_tcp_tests ;;
