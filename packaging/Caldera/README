@@ -1,0 +1,11 @@
+Preparation Date: Mon November 16 1998
+Preparer:	  John H Terpstra <jht@samba.anu.edu.au>
+
+Instructions:	Preparing Samba Packages for Caldera OpenLinux 1.2
+==================================================================
+
+We provide support only for current versions of Caldera OpenLinux.
+
+To produce the RPMS simply type:
+	sh makerpms.sh
+

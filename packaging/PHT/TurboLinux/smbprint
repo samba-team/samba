@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 
 # This script is an input filter for printcap printing on a unix machine. It
 # uses the smbclient program to print the file to the specified smb-based 
