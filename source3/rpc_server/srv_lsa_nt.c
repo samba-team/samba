@@ -109,7 +109,7 @@ static int init_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 
 static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 				int num_entries, UNISTR2 name[MAX_LOOKUP_SIDS],
-				uint32 *mapped_count)
+				uint32 *mapped_count, BOOL endian)
 {
 	int i;
 	int total = 0;
@@ -128,7 +128,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 
 		/* Split name into domain and user component */
 
-		pstrcpy(full_name, dos_unistr2_to_str(&name[i]));
+		pstrcpy(full_name, rpc_unistr2_to_str(&name[i], endian));
 		split_domain_name(full_name, dom_name, user);
 
 		/* Lookup name */
@@ -479,7 +479,7 @@ uint32 _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP_N
 		return NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup RIDs response */
-	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count);
+	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count, p->endian);
 	init_reply_lookup_names(r_u, ref, num_entries, rids, mapped_count);
 
 	return r_u->status;
