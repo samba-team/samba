@@ -95,14 +95,14 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: lookupname %s%s%s\n", (unsigned long)state->pid,
 		  name_domain, lp_winbind_separator(), name_user));
 
-	if ((domain = find_domain_from_name(name_domain)) == NULL) {
+	if ((domain = find_lookup_domain_from_name(name_domain)) == NULL) {
 		DEBUG(0, ("could not find domain entry for domain %s\n", 
 			  name_domain));
 		return WINBINDD_ERROR;
 	}
 
 	/* Lookup name from PDC using lsa_lookup_names() */
-	if (!winbindd_lookup_sid_by_name(domain, name_user, &sid, &type)) {
+	if (!winbindd_lookup_sid_by_name(domain, name_domain, name_user, &sid, &type)) {
 		return WINBINDD_ERROR;
 	}
 
@@ -335,7 +335,7 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 			return WINBINDD_ERROR;
 		}
 
-		if ( !winbindd_lookup_sid_by_name(domain, pw->pw_name, &sid, &type) )
+		if ( !winbindd_lookup_sid_by_name(domain, domain->name, pw->pw_name, &sid, &type) )
 			return WINBINDD_ERROR;
 		
 		if ( type != SID_NAME_USER )
@@ -405,7 +405,7 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 			return WINBINDD_ERROR;
 		}
 
-		if ( !winbindd_lookup_sid_by_name(domain, grp->gr_name, &sid, &type) )
+		if ( !winbindd_lookup_sid_by_name(domain, domain->name, grp->gr_name, &sid, &type) )
 			return WINBINDD_ERROR;
 		
 		if ( type!=SID_NAME_DOM_GRP && type!=SID_NAME_ALIAS )

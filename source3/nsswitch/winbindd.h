@@ -94,6 +94,7 @@ struct winbindd_domain {
 	fstring name;                          /* Domain name */	
 	fstring alt_name;                      /* alt Domain name (if any) */
 	DOM_SID sid;                           /* SID for this domain */
+	BOOL initialized;		       /* Did we already ask for the domain mode? */
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
 	BOOL active_directory;                 /* is this a win2k active directory ? */
 	BOOL primary;                          /* is this our primary domain ? */
@@ -149,6 +150,7 @@ struct winbindd_methods {
 	/* convert one user or group name to a sid */
 	NTSTATUS (*name_to_sid)(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
+				const char *domain_name,
 				const char *name,
 				DOM_SID *sid,
 				enum SID_NAME_USE *type);
@@ -157,6 +159,7 @@ struct winbindd_methods {
 	NTSTATUS (*sid_to_name)(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				const DOM_SID *sid,
+				char **domain_name,
 				char **name,
 				enum SID_NAME_USE *type);
 
