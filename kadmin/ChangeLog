@@ -1,5 +1,7 @@
 1999-11-25  Assar Westerlund  <assar@sics.se>
 
+	* del_enctype.c (del_enctype): try not to leak memory
+
 	* version4.c (kadm_ser_mod): use kadm5_s_modify_principal (no
  	_with_key)
 
