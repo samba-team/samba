@@ -264,14 +264,16 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	DATA_BLOB auth;
 	char *workgroup, *user, *machine;
 	DATA_BLOB lmhash, nthash, sess_key;
+	DATA_BLOB plaintext_password = data_blob(NULL, 0);
+	DATA_BLOB sec_blob;
 	uint32 ntlmssp_command, neg_flags;
 	NTSTATUS nt_status;
 	int sess_vuid;
-	gid_t gid;
-	uid_t uid;
-	char *full_name;
 	char *p;
-	const struct passwd *pw;
+	char chal[8];
+
+	auth_usersupplied_info *user_info = NULL;
+	auth_serversupplied_info *server_info = NULL;
 
 	if (!spnego_parse_auth(blob1, &auth)) {
 #if 0
@@ -305,36 +307,40 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	file_save("lmhash1.dat", lmhash.data, lmhash.length);
 #endif
 
-	nt_status = pass_check_smb(user, user, 
-				   workgroup, machine,
-				   lmhash.data,
-				   lmhash.length,
-				   nthash.data,
-				   nthash.length);
-
-	data_blob_free(&nthash);
-	data_blob_free(&lmhash);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return ERROR_NT(nt_status);
-	}
-
-	/* the password is good - let them in */
-	pw = smb_getpwnam(user,False);
-	if (!pw) {
-		DEBUG(1,("Username %s is invalid on this system\n",user));
+	if (!last_challenge(chal)) {
+		DEBUG(0,("Encrypted login but no challange set!\n"));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
-	gid = pw->pw_gid;
-	uid = pw->pw_uid;
-	full_name = pw->pw_gecos;
-
-	sess_vuid = register_vuid(uid,gid,user,user,workgroup,False, full_name);
-
-	free(user);
-	free(workgroup);
-	free(machine);
+	sec_blob = data_blob(chal, 8);
+	if (!sec_blob.data) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	
+	if (!make_user_info_map(&user_info, 
+				user, workgroup, 
+				machine, sec_blob,
+				lmhash, nthash,
+				plaintext_password, 
+				neg_flags, True)) {
+		return ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+	
+	nt_status = check_password(user_info, &server_info); 
+	
+	free_user_info(&user_info);
+	
+	data_blob_free(&lmhash);
+	
+	data_blob_free(&nthash);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ERROR_NT(nt_status_squash(nt_status));
+	}
+
+	sess_vuid = register_vuid(server_info, user, False);
+
+	free_server_info(&server_info);
+  
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
@@ -360,30 +366,16 @@ reply to a session setup spnego anonymous packet
 static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *outbuf,
 				  int length, int bufsize)
 {
-	char *user;
 	int sess_vuid;
-	gid_t gid;
-	uid_t uid;
-	char *full_name;
 	char *p;
-	const struct passwd *pw;
+	auth_serversupplied_info *server_info = NULL;
 
 	DEBUG(3,("Got anonymous request\n"));
 
-	user = lp_guestaccount(-1);
-
-	/* the password is good - let them in */
-	pw = smb_getpwnam(user,False);
-	if (!pw) {
-		DEBUG(1,("Guest username %s is invalid on this system\n",user));
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-	gid = pw->pw_gid;
-	uid = pw->pw_uid;
-	full_name = pw->pw_gecos;
-
-	sess_vuid = register_vuid(uid,gid,user,user,lp_workgroup(),True,full_name);
-	
+	make_server_info_guest(&server_info);
+	sess_vuid = register_vuid(server_info, lp_guestaccount(-1), False);
+	free_server_info(&server_info);
+  
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
@@ -414,7 +406,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,cha
 	extern uint32 global_client_caps;
 	int ret;
 
-	DEBUG(3,("Doing spego session setup\n"));
+	DEBUG(3,("Doing spnego session setup\n"));
 
 	if (global_client_caps == 0) {
 		global_client_caps = IVAL(inbuf,smb_vwv10);
@@ -464,16 +456,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			  int length,int bufsize)
 {
 	int sess_vuid;
-	gid_t gid;
-	uid_t uid;
-	char* full_name;
 	int   smb_bufsize;    
-	int   smb_apasslen = 0;   
-	pstring smb_apasswd;
-	int   smb_ntpasslen = 0;   
-	pstring smb_ntpasswd;
+	DATA_BLOB lm_resp;
+	DATA_BLOB nt_resp;
+	DATA_BLOB plaintext_password;
 	pstring user;
-	pstring orig_user;
 	fstring domain;
 	fstring native_os;
 	fstring native_lanman;
@@ -486,8 +473,17 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	extern fstring remote_machine;
 	extern userdom_struct current_user_info;
 	extern int max_send;
+
+	auth_usersupplied_info *user_info = NULL;
+	auth_serversupplied_info *server_info = NULL;
+
 	BOOL doencrypt = global_encrypted_passwords_negotiated;
+
 	START_PROFILE(SMBsesssetupX);
+
+	ZERO_STRUCT(lm_resp);
+	ZERO_STRUCT(nt_resp);
+	ZERO_STRUCT(plaintext_password);
 
 	DEBUG(3,("wct=%d flg2=0x%x\n", CVAL(inbuf, smb_wct), SVAL(inbuf, smb_flg2)));
 	
@@ -503,28 +499,35 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 
-	*smb_apasswd = *smb_ntpasswd = 0;
-	
 	smb_bufsize = SVAL(inbuf,smb_vwv2);
-	
+
 	if (Protocol < PROTOCOL_NT1) {
-		smb_apasslen = SVAL(inbuf,smb_vwv7);
-		if (smb_apasslen > MAX_PASS_LEN) {
+		uint16 passlen1 = SVAL(inbuf,smb_vwv7);
+		if (passlen1 > MAX_PASS_LEN) {
 			return ERROR_DOS(ERRDOS,ERRbuftoosmall);
 		}
 
-		memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
-		srvstr_pull(inbuf, user, smb_buf(inbuf)+smb_apasslen, sizeof(user), -1, STR_TERMINATE);
-		
-		if (!doencrypt && (lp_security() != SEC_SERVER)) {
-			smb_apasslen = strlen(smb_apasswd);
+		if (doencrypt) {
+			lm_resp = data_blob(smb_buf(inbuf), passlen1);
+		} else {
+			plaintext_password = data_blob(smb_buf(inbuf), passlen1+1);
+			if (!plaintext_password.data) {
+				DEBUG(0,("reply_sesssetup_and_X: malloc failed for plaintext_password!\n"));
+				return ERROR_NT(NT_STATUS_NO_MEMORY);
+			} else {
+				/* Ensure null termination */
+				plaintext_password.data[passlen1] = 0;
+			}
 		}
+
+		srvstr_pull(inbuf, user, smb_buf(inbuf)+passlen1, sizeof(user), -1, STR_TERMINATE);
+  
 	} else {
 		uint16 passlen1 = SVAL(inbuf,smb_vwv7);
 		uint16 passlen2 = SVAL(inbuf,smb_vwv8);
 		enum remote_arch_types ra_type = get_remote_arch();
 		char *p = smb_buf(inbuf);    
-		
+
 		if(global_client_caps == 0)
 			global_client_caps = IVAL(inbuf,smb_vwv11);
 		
@@ -539,16 +542,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			}
 		}
 		
-		if (passlen1 != 24 && passlen2 < 24)
-			doencrypt = False;
-		
 		if (passlen1 > MAX_PASS_LEN) {
 			return ERROR_DOS(ERRDOS,ERRbuftoosmall);
 		}
-		
+
 		passlen1 = MIN(passlen1, MAX_PASS_LEN);
 		passlen2 = MIN(passlen2, MAX_PASS_LEN);
-		
+
 		if (!doencrypt) {
 			/* both Win95 and WinNT stuff up the password lengths for
 			   non-encrypting systems. Uggh. 
@@ -591,23 +591,20 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 				passlen1 = 1;
 			}
 		}
-
+		
 		/* Save the lanman2 password and the NT md4 password. */
-		smb_apasslen = passlen1;
-		memcpy(smb_apasswd,p,smb_apasslen);
-
-		smb_ntpasslen = passlen2;
-		memcpy(smb_ntpasswd,p+passlen1,smb_ntpasslen);
-
-		if (smb_apasslen != 24 || !doencrypt) {
-			/* trim the password */
-			smb_apasslen = strlen(smb_apasswd);
-			
-			/* wfwg sometimes uses a space instead of a null */
-			if (strequal(smb_apasswd," ")) {
-				smb_apasslen = 0;
-				*smb_apasswd = 0;
-			}
+		
+		if ((doencrypt) && (passlen1 != 0) && (passlen1 != 24)) {
+			doencrypt = False;
+		}
+		
+		if (doencrypt) {
+			lm_resp = data_blob(p, passlen1);
+			nt_resp = data_blob(p+passlen1, passlen2);
+		} else {
+			plaintext_password = data_blob(p, passlen1+1);
+			/* Ensure null termination */
+			plaintext_password.data[passlen1] = 0;
 		}
 		
 		p += passlen1 + passlen2;
@@ -630,15 +627,29 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	if (lp_security() == SEC_SHARE) {
-		/* in share level we should ignore any passwords */
-		smb_ntpasslen = 0;
-		smb_apasslen = 0;
+	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, remote_machine));
+
+	/* If no username is sent use the guest account */
+	if (!*user) {
+		pstrcpy(user,lp_guestaccount(-1));
 		guest = True;
 	}
 
+	pstrcpy(current_user_info.smb_name,user);
 
-	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n",user, domain, remote_machine));
+	reload_services(True);
+	
+	if (lp_security() == SEC_SHARE) {
+		/* in share level we should ignore any passwords */
+
+		data_blob_free(&lm_resp);
+		data_blob_free(&nt_resp);
+		data_blob_free(&plaintext_password);
+
+		guest = True;
+		map_username(user);
+		add_session_user(user);
+	}
 	
 	if (done_sesssetup && lp_restrict_anonymous()) {
 		/* tests show that even if browsing is done over
@@ -649,106 +660,61 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		 * only deny connections that have no session
 		 * information.  If a domain has been provided, then
 		 * it's not a purely anonymous connection. AAB */
-		if (!*user && !*smb_apasswd && !*domain) {
+		if (!*user && !*domain) {
 			DEBUG(0, ("restrict anonymous is True and anonymous connection attempted. Denying access.\n"));
+			
+			data_blob_free(&lm_resp);
+			data_blob_free(&nt_resp);
+			data_blob_free(&plaintext_password);
+
 			END_PROFILE(SMBsesssetupX);
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
 		}
 	}
-
-	/* If no username is sent use the guest account */
-	if (!*user) {
-		pstrcpy(user,lp_guestaccount(-1));
-		guest = True;
-	}
-	
-	pstrcpy(current_user_info.smb_name,user);
-	
-	reload_services(True);
-	
-	/*
-	 * Save the username before mapping. We will use
-	 * the original username sent to us for security=server
-	 * and security=domain checking.
-	 */
-	
-	pstrcpy( orig_user, user);
-	
-	/*
-	 * Always try the "DOMAIN\user" lookup first, as this is the most
-	 * specific case. If this fails then try the simple "user" lookup.
-	 * But don't do this for guests, as this is always a local user.
-	 */
-	
-	if (!guest) {
-		pstring dom_user;
-		
-		/* Work out who's who */
-		
-		slprintf(dom_user, sizeof(dom_user) - 1,"%s%s%s",
-			 domain, lp_winbind_separator(), user);
-		
-		if (sys_getpwnam(dom_user) != NULL) {
-			pstrcpy(user, dom_user);
-			DEBUG(3,("Using unix username %s\n", dom_user));
-		}
-		
-		/*
-		 * Pass the user through the NT -> unix user mapping
-		 * function.
-		 */
-		
-		(void)map_username(user);
-		
-		/*
-		 * Do any UNIX username case mangling.
-		 */
-		smb_getpwnam(user, True);
-	}
-	
-	add_session_user(user);
 	
 	if (!guest) {
 		NTSTATUS nt_status;
-		nt_status = pass_check_smb(orig_user, user, 
-					   domain, remote_machine,
-					   (unsigned char *)smb_apasswd, 
-					   smb_apasslen, 
-					   (unsigned char *)smb_ntpasswd,
-					   smb_ntpasslen);
-	  
-		if NT_STATUS_IS_OK(nt_status) {
-
-		} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
-			if ((lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) || 
-			    (lp_map_to_guest() ==  MAP_TO_GUEST_ON_BAD_PASSWORD)) {
-				DEBUG(3,("No such user %s [%s] - using guest account\n",user, domain));
-				pstrcpy(user,lp_guestaccount(-1));
-				guest = True;
-			} else {
+		if (!make_user_info_for_reply(&user_info, 
+					      user, domain, 
+					      lm_resp, nt_resp,
+					      plaintext_password, doencrypt)) {
+			return ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+		
+		nt_status = check_password(user_info, &server_info); 
+		
+		free_user_info(&user_info);
+		
+		data_blob_free(&lm_resp);
+		data_blob_free(&nt_resp);
+		data_blob_free(&plaintext_password);
+		
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
+				if ((lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) || 
+				    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
+					DEBUG(3,("No such user %s [%s] - using guest account\n",user, domain));
+					pstrcpy(user,lp_guestaccount(-1));
+					guest = True;
+					
+				}
+			} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) {
+				if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {
+					pstrcpy(user,lp_guestaccount(-1));
+					DEBUG(3,("Registered username %s for guest access\n",user));
+					guest = True;
+				}
 				/* Match WinXP and don't give the game away */
 				return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 			}
-		} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) {
-			if (lp_map_to_guest() ==  MAP_TO_GUEST_ON_BAD_PASSWORD) {
-				pstrcpy(user,lp_guestaccount(-1));
-				DEBUG(3,("Registered username %s for guest access\n",user));
-				guest = True;
-			} else {
-				/* Match WinXP and don't give the game away */
-				return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-			}
-		} else {
-			return ERROR_NT(nt_status);
+			
+			if (!guest) {
+				free_server_info(&server_info);
+				return ERROR_NT(nt_status_squash(nt_status));
+			}  
 		}
 	}
 	
-	if (!strequal(user,lp_guestaccount(-1)) &&
-	    lp_servicenumber(user) < 0) {
-		add_home_service(user,get_user_home_dir(user));
-	}
-
-
 	/* it's ok - setup a reply */
 	if (Protocol < PROTOCOL_NT1) {
 		set_message(outbuf,3,0,True);
@@ -763,30 +729,26 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		/* perhaps grab OS version here?? */
 	}
 	
-	/* Set the correct uid in the outgoing and incoming packets
-	   We will use this on future requests to determine which
-	   user we should become.
-	*/
-	{
-		const struct passwd *pw = smb_getpwnam(user,False);
-		if (!pw) {
-			DEBUG(1,("Username %s is invalid on this system\n",user));
-			END_PROFILE(SMBsesssetupX);
-			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-		}
-		gid = pw->pw_gid;
-		uid = pw->pw_uid;
-		full_name = pw->pw_gecos;
-	}
-	
-	if (guest)
+	if (guest) {
 		SSVAL(outbuf,smb_vwv2,1);
-	
+		free_server_info(&server_info);
+		make_server_info_guest(&server_info);
+	} else {
+		const char *home_dir = pdb_get_homedir(server_info->sam_account);
+		const char *username = pdb_get_username(server_info->sam_account);
+		if ((home_dir && *home_dir)
+		    && (lp_servicenumber(username) < 0)) {
+			add_home_service(username, home_dir);	  
+		}
+	}
+
 	/* register the name and uid as being validated, so further connections
 	   to a uid can get through without a password, on the same VC */
-	
-	sess_vuid = register_vuid(uid,gid,user,orig_user,domain,guest, full_name);
-	
+
+	sess_vuid = register_vuid(server_info, user, guest);
+
+	free_server_info(&server_info);
+  
 	if (sess_vuid == -1) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}

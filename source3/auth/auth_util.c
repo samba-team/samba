@@ -25,6 +25,8 @@
 /* Data to do lanman1/2 password challenge. */
 static unsigned char saved_challenge[8];
 static BOOL challenge_sent=False;
+extern fstring remote_machine;
+extern pstring global_myname;
 
 /*******************************************************************
 Get the next challenge value - no repeats.
@@ -64,7 +66,7 @@ BOOL last_challenge(unsigned char *challenge)
  Create a UNIX user on demand.
 ****************************************************************************/
 
-static int smb_create_user(char *unix_user, char *homedir)
+static int smb_create_user(const char *unix_user, const char *homedir)
 {
 	pstring add_script;
 	int ret;
@@ -100,40 +102,560 @@ static int smb_delete_user(char *unix_user)
  Add and Delete UNIX users on demand, based on NTSTATUS codes.
 ****************************************************************************/
 
-void smb_user_control(char *unix_user, NTSTATUS nt_status) 
+void smb_user_control(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info, NTSTATUS nt_status) 
 {
 	struct passwd *pwd=NULL;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		/*
-		 * User validated ok against Domain controller.
-		 * If the admin wants us to try and create a UNIX
-		 * user on the fly, do so.
-		 */
-		if(lp_adduser_script() && !(pwd = smb_getpwnam(unix_user,True)))
-			smb_create_user(unix_user, NULL);
 
-		if(lp_adduser_script() && pwd) {
-			SMB_STRUCT_STAT st;
-
+		if (!(server_info->sam_fill_level & SAM_FILL_UNIX)) {
+			
 			/*
-			 * Also call smb_create_user if the users home directory
-			 * doesn't exist. Used with winbindd to allow the script to
-			 * create the home directory for a user mapped with winbindd.
+			 * User validated ok against Domain controller.
+			 * If the admin wants us to try and create a UNIX
+			 * user on the fly, do so.
 			 */
+			
+			if(lp_adduser_script() && !(pwd = Get_Pwnam(user_info->internal_username.str))) {
+				smb_create_user(user_info->internal_username.str, NULL);
+			}
+		} else {			
+			if(lp_adduser_script()) {
+				SMB_STRUCT_STAT st;
+				const char *home_dir = pdb_get_homedir(server_info->sam_account);
+				/*
+				 * Also call smb_create_user if the users home directory
+				 * doesn't exist. Used with winbindd to allow the script to
+				 * create the home directory for a user mapped with winbindd.
+				 */
 
-			if (pwd->pw_dir && (sys_stat(pwd->pw_dir, &st) == -1) && (errno == ENOENT))
-				smb_create_user(unix_user, pwd->pw_dir);
+				if (home_dir && 
+				    (sys_stat(home_dir, &st) == -1) && (errno == ENOENT)) {
+					smb_create_user(user_info->internal_username.str, home_dir);
+				}
+			}
 		}
-
-	} else if (NT_STATUS_V(nt_status) == NT_STATUS_V(NT_STATUS_NO_SUCH_USER)) {
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		/*
 		 * User failed to validate ok against Domain controller.
 		 * If the failure was "user doesn't exist" and admin 
 		 * wants us to try and delete that UNIX user on the fly,
 		 * do so.
 		 */
-		if(lp_deluser_script() && smb_getpwnam(unix_user,True))
-			smb_delete_user(unix_user);
+		if (lp_deluser_script()) {
+			smb_delete_user(user_info->internal_username.str);
+		}
 	}
 }
+
+/****************************************************************************
+ Create an auth_usersupplied_data structure
+****************************************************************************/
+
+BOOL make_user_info(auth_usersupplied_info **user_info, 
+		    char *smb_name, char *internal_username,
+		    char *client_domain, char *domain,
+		    char *wksta_name, DATA_BLOB sec_blob, 
+		    DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
+		    DATA_BLOB plaintext, 
+		    uint32 ntlmssp_flags, BOOL encrypted)
+{
+
+	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
+
+	*user_info = malloc(sizeof(**user_info));
+	if (!user_info) {
+		DEBUG(0,("malloc failed for user_info (size %d)\n", sizeof(*user_info)));
+		return False;
+	}
+
+	ZERO_STRUCTP(*user_info);
+
+	DEBUG(5,("makeing strings for %s's user_info struct\n", internal_username));
+
+	(*user_info)->smb_name.str = strdup(smb_name);
+	if ((*user_info)->smb_name.str) { 
+		(*user_info)->smb_name.len = strlen(smb_name);
+	} else {
+		free_user_info(user_info);
+		return False;
+	}
+	
+	(*user_info)->internal_username.str = strdup(internal_username);
+	if ((*user_info)->internal_username.str) { 
+		(*user_info)->internal_username.len = strlen(internal_username);
+	} else {
+		free_user_info(user_info);
+		return False;
+	}
+
+	(*user_info)->domain.str = strdup(domain);
+	if ((*user_info)->domain.str) { 
+		(*user_info)->domain.len = strlen(domain);
+	} else {
+		free_user_info(user_info);
+		return False;
+	}
+
+	(*user_info)->client_domain.str = strdup(client_domain);
+	if ((*user_info)->client_domain.str) { 
+		(*user_info)->client_domain.len = strlen(client_domain);
+	} else {
+		free_user_info(user_info);
+		return False;
+	}
+
+	(*user_info)->wksta_name.str = strdup(wksta_name);
+	if ((*user_info)->wksta_name.str) { 
+		(*user_info)->wksta_name.len = strlen(wksta_name);
+	} else {
+		free_user_info(user_info);
+		return False;
+	}
+
+	DEBUG(5,("makeing blobs for %s's user_info struct\n", internal_username));
+
+	(*user_info)->sec_blob = data_blob(sec_blob.data, sec_blob.length);
+	(*user_info)->lm_resp = data_blob(lm_pwd.data, lm_pwd.length);
+	(*user_info)->nt_resp = data_blob(nt_pwd.data, nt_pwd.length);
+	(*user_info)->plaintext_password = data_blob(plaintext.data, plaintext.length);
+
+	(*user_info)->encrypted = encrypted;
+	(*user_info)->ntlmssp_flags = ntlmssp_flags;
+
+	DEBUG(10,("made an %sencrypted user_info for %s (%s)\n", encrypted ? "":"un" , internal_username, smb_name));
+
+	return True;
+}
+
+/****************************************************************************
+ Create an auth_usersupplied_data structure after appropriate mapping.
+****************************************************************************/
+
+BOOL make_user_info_map(auth_usersupplied_info **user_info, 
+			char *smb_name, 
+			char *client_domain, 
+			char *wksta_name, DATA_BLOB sec_blob, 
+			DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
+			DATA_BLOB plaintext, 
+			uint32 ntlmssp_flags, BOOL encrypted)
+{
+	char *domain;
+	fstring internal_username;
+	fstrcpy(internal_username, smb_name);
+	map_username(internal_username); 
+	
+	if (lp_allow_trusted_domains()) {
+		domain = client_domain;
+	} else {
+		domain = lp_workgroup();
+	}
+	
+	return make_user_info(user_info, 
+			      smb_name, internal_username,
+			      client_domain, domain,
+			      wksta_name, sec_blob,
+			      lm_pwd, nt_pwd,
+			      plaintext, 
+			      ntlmssp_flags, encrypted);
+	
+}
+
+/****************************************************************************
+ Create an auth_usersupplied_data, making the DATA_BLOBs here. 
+ Decrupt and encrypt the passwords.
+****************************************************************************/
+
+BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info, 
+				     char *smb_name, 
+				     char *client_domain, 
+				     char *wksta_name, uchar chal[8],
+				     uchar *lm_network_pwd, int lm_pwd_len,
+				     uchar *nt_network_pwd, int nt_pwd_len)
+{
+	BOOL ret;
+	DATA_BLOB sec_blob = data_blob(chal, sizeof(chal));
+	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
+	DATA_BLOB nt_blob = data_blob(nt_network_pwd, nt_pwd_len);
+	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
+	uint32 ntlmssp_flags = 0;
+
+	if (lm_pwd_len)
+		ntlmssp_flags |= NTLMSSP_NEGOTIATE_OEM;
+	if (nt_pwd_len)
+		ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM; 
+	
+	ret = make_user_info_map(user_info, 
+				 smb_name, client_domain, 
+				 wksta_name, sec_blob, 
+				 nt_blob, lm_blob,
+				 plaintext_blob, 
+				 ntlmssp_flags, True);
+		
+	data_blob_free(&lm_blob);
+	data_blob_free(&nt_blob);
+	return ret;
+}
+
+/****************************************************************************
+ Create an auth_usersupplied_data, making the DATA_BLOBs here. 
+ Decrupt and encrypt the passwords.
+****************************************************************************/
+
+BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info, 
+				char *smb_name, 
+				char *client_domain, 
+				char *wksta_name, 
+				uchar *lm_interactive_pwd, int lm_pwd_len,
+				uchar *nt_interactive_pwd, int nt_pwd_len,
+				uchar *dc_sess_key)
+{
+	char nt_pwd[16];
+	char lm_pwd[16];
+	unsigned char local_lm_response[24];
+	unsigned char local_nt_response[24];
+	unsigned char key[16];
+	uint8 chal[8];
+	uint32 ntlmssp_flags = 0;
+	
+	generate_random_buffer(chal, 8, False);
+
+	memset(key, 0, 16);
+	memcpy(key, dc_sess_key, 8);
+	
+	memcpy(lm_pwd, lm_interactive_pwd, 16);
+	memcpy(nt_pwd, nt_interactive_pwd, 16);
+	
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("key:"));
+	dump_data(100, (char *)key, 16);
+	
+	DEBUG(100,("lm owf password:"));
+	dump_data(100, lm_pwd, 16);
+	
+	DEBUG(100,("nt owf password:"));
+	dump_data(100, nt_pwd, 16);
+#endif
+	
+	SamOEMhash((uchar *)lm_pwd, key, 16);
+	SamOEMhash((uchar *)nt_pwd, key, 16);
+	
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("decrypt of lm owf password:"));
+	dump_data(100, lm_pwd, 16);
+	
+	DEBUG(100,("decrypt of nt owf password:"));
+	dump_data(100, nt_pwd, 16);
+#endif
+	
+	generate_random_buffer(chal, 8, False);
+	SMBOWFencrypt((const unsigned char *)lm_pwd, chal, local_lm_response);
+	SMBOWFencrypt((const unsigned char *)nt_pwd, chal, local_nt_response);
+	
+	/* Password info parinoia */
+	ZERO_STRUCT(lm_pwd);
+	ZERO_STRUCT(nt_pwd);
+	ZERO_STRUCT(key);
+
+	{
+		BOOL ret;
+		DATA_BLOB sec_blob = data_blob(chal, sizeof(chal));
+		DATA_BLOB local_lm_blob = data_blob(local_lm_response, sizeof(local_lm_response));
+		DATA_BLOB local_nt_blob = data_blob(local_nt_response, sizeof(local_nt_response));
+		DATA_BLOB plaintext_blob = data_blob(NULL, 0);
+
+		ntlmssp_flags = NTLMSSP_NEGOTIATE_OEM | NTLMSSP_NEGOTIATE_NTLM;		
+		ret = make_user_info_map(user_info, 
+					 smb_name, client_domain, 
+					 wksta_name, sec_blob, 
+					 local_nt_blob,
+					 local_lm_blob,
+					 plaintext_blob, 
+					 ntlmssp_flags, True);
+		
+		data_blob_free(&local_lm_blob);
+		data_blob_free(&local_nt_blob);
+		return ret;
+	}
+}
+
+/****************************************************************************
+ Create an auth_usersupplied_data structure
+****************************************************************************/
+
+BOOL make_user_info_for_winbind(auth_usersupplied_info **user_info, 
+				char *username,
+				char *domain, 
+				char *password)
+{
+	unsigned char local_lm_response[24];
+	unsigned char local_nt_response[24];
+	char chal[8];
+	DATA_BLOB local_lm_blob;
+	DATA_BLOB local_nt_blob;
+	DATA_BLOB plaintext_blob;
+	uint32 ntlmssp_flags = 0;
+
+	/*
+	 * Not encrypted - do so.
+	 */
+	
+	DEBUG(5,("pass_check_smb: User passwords not in encrypted format.\n"));
+	
+	generate_random_buffer(chal, 8, False);
+
+	if (*password) {
+		SMBencrypt( (uchar *)password, chal, local_lm_response);
+		
+		/* This encrypts the lm_pwd feild, which actualy contains the password
+		   rather than the nt_pwd field becouse that contains nothing */
+		
+		/* WATCH OUT. This doesn't work if the incoming password is incorrectly cased. 
+		   We might want to add a check here and only do an LM in that case */
+		
+		SMBNTencrypt((uchar *)password, chal, local_nt_response);
+
+		local_lm_blob = data_blob(local_lm_response, sizeof(local_lm_response));
+		local_nt_blob = data_blob(local_nt_response, sizeof(local_nt_response));
+		plaintext_blob = data_blob(password, strlen(password)+1);
+		if ((!local_lm_blob.data) || (!local_nt_blob.data)|| (!plaintext_blob.data)) {
+			data_blob_free(&local_lm_blob);
+			data_blob_free(&local_nt_blob);
+			data_blob_clear_free(&plaintext_blob);
+			return False;
+		}
+		ntlmssp_flags = NTLMSSP_NEGOTIATE_OEM | NTLMSSP_NEGOTIATE_NTLM;
+	} else {
+		local_lm_blob = data_blob(NULL, 0);
+		local_nt_blob = data_blob(NULL, 0);
+		plaintext_blob = data_blob(NULL, 0);
+	}
+
+	{
+		BOOL ret;
+		DATA_BLOB sec_blob = data_blob(chal, sizeof(chal));
+		
+		if (!sec_blob.data) {
+			return False;
+		}
+
+		ret = make_user_info(user_info, 
+				     username, username,
+				     domain, domain, 
+				     global_myname, sec_blob, 
+				     local_nt_blob,
+				     local_lm_blob,
+				     plaintext_blob, 
+				     ntlmssp_flags, False);
+		
+		data_blob_free(&local_lm_blob);
+		data_blob_free(&local_nt_blob);
+		data_blob_clear_free(&plaintext_blob);
+		return ret;
+	}
+}
+
+/****************************************************************************
+ Create an auth_usersupplied_data, making the DATA_BLOBs here. 
+ Decrupt and encrypt the passwords.
+****************************************************************************/
+
+BOOL make_user_info_winbind_crap(auth_usersupplied_info **user_info, 
+				 char *smb_name, 
+				 char *client_domain, 
+				 uchar chal[8],
+				 uchar *lm_network_pwd, int lm_pwd_len,
+				 uchar *nt_network_pwd, int nt_pwd_len)
+{
+	BOOL ret;
+	DATA_BLOB sec_blob = data_blob(chal, sizeof(chal));
+	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
+	DATA_BLOB nt_blob = data_blob(nt_network_pwd, nt_pwd_len);
+	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
+	uint32 ntlmssp_flags = 0;
+
+	if (lm_pwd_len)
+		ntlmssp_flags |= NTLMSSP_NEGOTIATE_OEM;
+	if (nt_pwd_len)
+		ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM; 
+	
+	ret = make_user_info(user_info, 
+			     smb_name, smb_name, 
+			     client_domain, client_domain, 
+			     global_myname, sec_blob, 
+			     nt_blob, lm_blob,
+			     plaintext_blob, 
+			     ntlmssp_flags, True);
+
+	data_blob_free(&lm_blob);
+	data_blob_free(&nt_blob);
+	return ret;
+}
+
+/****************************************************************************
+ Create an auth_usersupplied_data structure
+****************************************************************************/
+
+BOOL make_user_info_for_reply(auth_usersupplied_info **user_info, 
+			      char *smb_name,
+			      char *client_domain, 
+			      DATA_BLOB lm_resp, DATA_BLOB nt_resp,
+			      DATA_BLOB plaintext_password,
+			      BOOL encrypted)
+{
+	uchar chal[8];
+
+	DATA_BLOB local_lm_blob;
+	DATA_BLOB local_nt_blob;
+	DATA_BLOB sec_blob;
+	BOOL ret = False;
+	uint32 ntlmssp_flags = 0;
+			
+	if (encrypted) {
+		DATA_BLOB no_plaintext_blob = data_blob(NULL, 0); 
+		if (!last_challenge(chal)) {
+			DEBUG(0,("Encrypted login but no challange set!\n"));
+			return False;
+		}
+		sec_blob = data_blob(chal, 8);
+		
+		if (lm_resp.length == 24) {
+			ntlmssp_flags |= NTLMSSP_NEGOTIATE_OEM;
+		}
+		if (nt_resp.length == 0) {
+		} else if (nt_resp.length == 24) {
+			ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM;
+		} else {
+			ntlmssp_flags |= NTLMSSP_NEGOTIATE_NTLM2;
+		}
+
+		return make_user_info_map(user_info, smb_name, 
+					  client_domain, 
+					  remote_machine, sec_blob,
+					  lm_resp, 
+					  nt_resp, 
+					  no_plaintext_blob, 
+					  ntlmssp_flags, encrypted);
+	}
+
+	generate_random_buffer(chal, 8, False);
+
+	sec_blob = data_blob(chal, 8);
+	
+	/*
+	 * Not encrypted - do so.
+	 */
+	
+	DEBUG(5,("pass_check_smb: User passwords not in encrypted format.\n"));
+	
+	if (plaintext_password.data) {
+		unsigned char local_lm_response[24];
+
+		SMBencrypt( (uchar *)plaintext_password.data, chal, local_lm_response);
+		local_lm_blob = data_blob(local_lm_response, 24);
+		
+		/* We can't do an NT hash here, as the password needs to be case insensitive */
+		local_nt_blob = data_blob(NULL, 0); 
+		
+		ntlmssp_flags = NTLMSSP_NEGOTIATE_OEM;
+	} else {
+		local_lm_blob = data_blob(NULL, 0); 
+		local_nt_blob = data_blob(NULL, 0); 
+	}
+	
+	ret = make_user_info_map(user_info, smb_name,
+				 client_domain, 
+				 remote_machine,
+				 sec_blob,
+				 local_lm_blob,
+				 local_nt_blob,
+				 plaintext_password, 
+				 ntlmssp_flags, encrypted);
+	
+	data_blob_free(&local_lm_blob);
+	return ret;
+}
+
+BOOL make_server_info(auth_serversupplied_info **server_info) 
+{
+	*server_info = malloc(sizeof(**server_info));
+	if (!*server_info) {
+		DEBUG(0,("make_server_info_sam: malloc failed!\n"));
+		return False;
+	}
+	ZERO_STRUCTP(*server_info);
+	return True;
+}
+
+BOOL make_server_info_sam(auth_serversupplied_info **server_info, SAM_ACCOUNT *sampass) 
+{
+	if (!make_server_info(server_info)) {
+		return False;
+	}
+
+	(*server_info)->sam_fill_level = SAM_FILL_ALL;
+	(*server_info)->sam_account = sampass;
+
+	DEBUG(5,("make_server_info_sam: made sever info for user %s\n",
+		 pdb_get_username((*server_info)->sam_account)));
+	return True;
+}
+
+BOOL make_server_info_pw(auth_serversupplied_info **server_info, struct passwd *pwd)
+{
+	SAM_ACCOUNT *sampass = NULL;
+	if (!pdb_init_sam_pw(&sampass, pwd)) {		
+		return False;
+	}
+	return make_server_info_sam(server_info, sampass);
+}
+
+void free_user_info(auth_usersupplied_info **user_info)
+{
+	DEBUG(5,("attempting to free (and zero) a user_info structure\n"));
+	if (*user_info != NULL) {
+		if ((*user_info)->smb_name.str) {
+			DEBUG(10,("structure was created for %s\n", (*user_info)->smb_name.str));
+		}
+		SAFE_FREE((*user_info)->smb_name.str);
+		SAFE_FREE((*user_info)->internal_username.str);
+		SAFE_FREE((*user_info)->client_domain.str);
+		SAFE_FREE((*user_info)->domain.str);
+		data_blob_free(&(*user_info)->sec_blob);
+		data_blob_free(&(*user_info)->lm_resp);
+		data_blob_free(&(*user_info)->nt_resp);
+		SAFE_FREE((*user_info)->interactive_password);
+		data_blob_clear_free(&(*user_info)->plaintext_password);
+		ZERO_STRUCT(**user_info);
+	}
+	SAFE_FREE(*user_info);
+}
+
+/***************************************************************************
+ Clear out a server_info struct that has been allocated
+***************************************************************************/
+void free_server_info(auth_serversupplied_info **server_info)
+{
+	if (*server_info != NULL) {
+		pdb_free_sam(&(*server_info)->sam_account);
+		
+		/* call pam_end here, unless we know we are keeping it */
+		SAFE_FREE((*server_info)->group_rids);
+
+		ZERO_STRUCT(**server_info);
+	}
+	SAFE_FREE(*server_info);
+}
+
+/***************************************************************************
+ Make a server_info struct for a guest user 
+***************************************************************************/
+void make_server_info_guest(auth_serversupplied_info **server_info) 
+{
+	struct passwd *pass = sys_getpwnam(lp_guestaccount(-1));
+	
+	if (pass) {
+		make_server_info_pw(server_info, pass);
+	}
+}
+

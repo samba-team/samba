@@ -26,53 +26,65 @@
 /****************************************************************************
 core of smb password checking routine.
 ****************************************************************************/
-static BOOL smb_pwd_check_ntlmv1(const uchar *password,
+static BOOL smb_pwd_check_ntlmv1(DATA_BLOB nt_response,
 				const uchar *part_passwd,
-				const uchar *c8,
-				char user_sess_key[16])
+				DATA_BLOB sec_blob,
+				uint8 user_sess_key[16])
 {
-  /* Finish the encryption of part_passwd. */
-  uchar p24[24];
+	/* Finish the encryption of part_passwd. */
+	uchar p24[24];
+	
+	if (part_passwd == NULL) {
+		DEBUG(10,("No password set - DISALLOWING access\n"));
+		/* No password set - always false ! */
+		return False;
+	}
+	
+	if (sec_blob.length != 8) {
+		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challange size (%d)\n", sec_blob.length));
+		return False;
+	}
+	
+	if (nt_response.length != 24) {
+		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%d)\n", nt_response.length));
+		return False;
+	}
 
-  if (part_passwd == NULL) {
-	  DEBUG(10,("No password set - DISALLOWING access\n"));
-	  /* No password set - always false ! */
-	  return False;
-  }
-
-  SMBOWFencrypt(part_passwd, c8, p24);
+	SMBOWFencrypt(part_passwd, sec_blob.data, p24);
 	if (user_sess_key != NULL)
 	{
 		SMBsesskeygen_ntv1(part_passwd, NULL, user_sess_key);
 	}
-
-
-
+	
+	
+	
 #if DEBUG_PASSWORD
 	DEBUG(100,("Part password (P16) was |"));
 	dump_data(100, part_passwd, 16);
 	DEBUG(100,("Password from client was |"));
-	dump_data(100, password, 24);
+	dump_data(100, nt_response.data, nt_response.length);
 	DEBUG(100,("Given challenge was |"));
-	dump_data(100, c8, 8);
+	dump_data(100, sec_blob.data, sec_blob.length);
 	DEBUG(100,("Value from encryption was |"));
 	dump_data(100, p24, 24);
 #endif
-  return (memcmp(p24, password, 24) == 0);
+  return (memcmp(p24, nt_response.data, 24) == 0);
 }
 
 /****************************************************************************
 core of smb password checking routine.
 ****************************************************************************/
-static BOOL smb_pwd_check_ntlmv2(const uchar *password, size_t pwd_len,
+static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 				const uchar *part_passwd,
-				const uchar *c8,
+				const DATA_BLOB sec_blob,
 				const char *user, const char *domain,
-				char user_sess_key[16])
+				uint8 user_sess_key[16])
 {
 	/* Finish the encryption of part_passwd. */
 	uchar kr[16];
-	uchar resp[16];
+	uchar value_from_encryption[16];
+	uchar client_response[16];
+	DATA_BLOB client_key_data;
 
 	if (part_passwd == NULL)
 	{
@@ -81,25 +93,42 @@ static BOOL smb_pwd_check_ntlmv2(const uchar *password, size_t pwd_len,
 		return False;
 	}
 
+	if (ntv2_response.length < 16) {
+		/* We MUST have more than 16 bytes, or the stuff below will go
+		   crazy... */
+		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%d)\n", 
+			  ntv2_response.length));
+		return False;
+	}
+
+	client_key_data = data_blob(ntv2_response.data+16, ntv2_response.length-16);
+	memcpy(client_response, ntv2_response.data, ntv2_response.length);
+
+	if (!client_key_data.data) {
+		return False;
+	}
+
 	ntv2_owf_gen(part_passwd, user, domain, kr);
-	SMBOWFencrypt_ntv2(kr, c8, 8, password+16, pwd_len-16, (char *)resp);
+	SMBOWFencrypt_ntv2(kr, sec_blob, client_key_data, (char *)value_from_encryption);
 	if (user_sess_key != NULL)
 	{
-		SMBsesskeygen_ntv2(kr, resp, user_sess_key);
+		SMBsesskeygen_ntv2(kr, value_from_encryption, user_sess_key);
 	}
 
 #if DEBUG_PASSWORD
 	DEBUG(100,("Part password (P16) was |"));
 	dump_data(100, part_passwd, 16);
 	DEBUG(100,("Password from client was |"));
-	dump_data(100, password, pwd_len);
+	dump_data(100, ntv2_response.data, ntv2_response.length);
+	DEBUG(100,("Variable data from client was |"));
+	dump_data(100, ntv2_response.data, ntv2_response.length);
 	DEBUG(100,("Given challenge was |"));
-	dump_data(100, c8, 8);
+	dump_data(100, sec_blob.data, sec_blob.length);
 	DEBUG(100,("Value from encryption was |"));
-	dump_data(100, resp, 16);
+	dump_data(100, value_from_encryption, 16);
 #endif
-
-	return (memcmp(resp, password, 16) == 0);
+	data_blob_clear_free(&client_key_data);
+	return (memcmp(value_from_encryption, client_response, 16) == 0);
 }
 
 
@@ -107,11 +136,12 @@ static BOOL smb_pwd_check_ntlmv2(const uchar *password, size_t pwd_len,
  Do a specific test for an smb password being correct, given a smb_password and
  the lanman and NT responses.
 ****************************************************************************/
-NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info, char user_sess_key[16])
+NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info, uint8 user_sess_key[16])
 {
 	const uint8 *nt_pw, *lm_pw;
 	uint16	acct_ctrl = pdb_get_acct_ctrl(sampass);
-	
+	uint32 ntlmssp_flags;
+
 	if (!user_info || !sampass) 
 		return NT_STATUS_LOGON_FAILURE;
 
@@ -119,12 +149,12 @@ NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 	{
 		if (lp_null_passwords()) 
 		{
-			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", sampass->username));
+			DEBUG(3,("Account for user '%s' has no password and null passwords are allowed.\n", pdb_get_username(sampass)));
 			return(NT_STATUS_OK);
 		} 
 		else 
 		{
-			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", sampass->username));
+			DEBUG(3,("Account for user '%s' has no password and null passwords are NOT allowed.\n", pdb_get_username(sampass)));
 			return(NT_STATUS_LOGON_FAILURE);
 		}		
 	}
@@ -132,61 +162,84 @@ NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 	nt_pw = pdb_get_nt_passwd(sampass);
 	lm_pw = pdb_get_lanman_passwd(sampass);
 	
-	if (nt_pw != NULL && user_info->nt_resp.len > 0) {
-		if ((user_info->nt_resp.len > 24 )) {
+	ntlmssp_flags = user_info->ntlmssp_flags;
+
+	if (nt_pw == NULL) {
+		DEBUG(3,("smb_password_ok: NO NT password stored for user %s.\n", 
+			 pdb_get_username(sampass)));
+		/* No return, we want to check the LM hash below in this case */
+		ntlmssp_flags &= (~(NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_NTLM2));
+	}
+
+	if (ntlmssp_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 			/* We have the NT MD4 hash challenge available - see if we can
 			   use it (ie. does it exist in the smbpasswd file).
 			*/
 			DEBUG(4,("smb_password_ok: Checking NTLMv2 password\n"));
-			if (smb_pwd_check_ntlmv2( user_info->nt_resp.buffer, 
-						  user_info->nt_resp.len, 
+			if (smb_pwd_check_ntlmv2( user_info->nt_resp, 
 						  nt_pw, 
-						  user_info->chal, user_info->smb_username.str, 
-						  user_info->requested_domain.str,
+						  user_info->sec_blob, user_info->smb_name.str, 
+						  user_info->client_domain.str,
 						  user_sess_key))
 			{
 				return NT_STATUS_OK;
 			} else {
-				DEBUG(4,("smb_password_ok: NTLMv2 password check failed\n"));
-					return NT_STATUS_WRONG_PASSWORD;
+				DEBUG(3,("smb_password_ok: NTLMv2 password check failed\n"));
+				return NT_STATUS_WRONG_PASSWORD;
 			}
-				
-		} else if (lp_ntlm_auth() && (user_info->nt_resp.len == 24)) {
+	} else if (ntlmssp_flags & NTLMSSP_NEGOTIATE_NTLM) {
+			if (lp_ntlm_auth()) {				
 				/* We have the NT MD4 hash challenge available - see if we can
 				   use it (ie. does it exist in the smbpasswd file).
 				*/
-			DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
-			if (smb_pwd_check_ntlmv1(user_info->nt_resp.buffer, 
-						 nt_pw, user_info->chal,
-						 user_sess_key)) 
-			{
-				return NT_STATUS_OK;
+				DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
+				if (smb_pwd_check_ntlmv1(user_info->nt_resp, 
+							 nt_pw, user_info->sec_blob,
+							 user_sess_key)) 
+				{
+					return NT_STATUS_OK;
+				} else {
+					DEBUG(3,("smb_password_ok: NT MD4 password check failed for user %s\n",pdb_get_username(sampass)));
+					return NT_STATUS_WRONG_PASSWORD;
+				}
 			} else {
-				DEBUG(4,("smb_password_ok: NT MD4 password check failed\n"));
-				return NT_STATUS_WRONG_PASSWORD;
+				DEBUG(2,("smb_password_ok: NTLMv1 passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));			
+				/* No return, we want to check the LM hash below in this case */
 			}
-		} else {
-			return NT_STATUS_LOGON_FAILURE;
-		}
 	} 
 
-	if (lm_pw != NULL && user_info->lm_resp.len == 24) {
-		if (lp_lanman_auth()) {
-			DEBUG(4,("smb_password_ok: Checking LM password\n"));
-			if (smb_pwd_check_ntlmv1(user_info->lm_resp.buffer, 
-						 lm_pw, user_info->chal,
-						 user_sess_key)) 
-			{
-				return NT_STATUS_OK;
-			} else {
-				DEBUG(4,("smb_password_ok: LM password check failed\n"));
-				return NT_STATUS_WRONG_PASSWORD;
-			}       
+	if (lm_pw == NULL) {
+		DEBUG(3,("smb_password_ok: NO LanMan password set for user %s (and no NT password supplied)\n",pdb_get_username(sampass)));
+		ntlmssp_flags &= (~NTLMSSP_NEGOTIATE_OEM);		
+	}
+	
+	if (ntlmssp_flags & NTLMSSP_NEGOTIATE_OEM) {
+		
+		if (user_info->lm_resp.length != 24) {
+			DEBUG(2,("smb_password_ok: invalid LanMan password length (%d) for user %s\n", 
+				 user_info->nt_resp.length, pdb_get_username(sampass)));		
 		}
+		
+		if (!lp_lanman_auth()) {
+			DEBUG(3,("smb_password_ok: Lanman passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));			
+			return NT_STATUS_LOGON_FAILURE;
+		}
+		
+		DEBUG(4,("smb_password_ok: Checking LM password\n"));
+		if (smb_pwd_check_ntlmv1(user_info->lm_resp, 
+					 lm_pw, user_info->sec_blob,
+					 user_sess_key)) 
+		{
+			return NT_STATUS_OK;
+		} else {
+			DEBUG(4,("smb_password_ok: LM password check failed for user %s\n",pdb_get_username(sampass)));
+			return NT_STATUS_WRONG_PASSWORD;
+		} 
 	}
 
-	/* Should not be reached */
-	return NT_STATUS_LOGON_FAILURE;
+	/* Should not be reached, but if they send nothing... */
+	DEBUG(3,("smb_password_ok: NEITHER LanMan nor NT password supplied for user %s\n",pdb_get_username(sampass)));
+	return NT_STATUS_WRONG_PASSWORD;
 }
 
 /****************************************************************************
@@ -290,33 +343,58 @@ SMB hash supplied in the user_info structure
 return an NT_STATUS constant.
 ****************************************************************************/
 
-NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
+NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_serversupplied_info **server_info)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
 	NTSTATUS nt_status;
+	uint8 user_sess_key[16];
+	const uint8* lm_hash;
 
 	pdb_init_sam(&sampass);
 
 	/* get the account information */
 
 	become_root();
-	ret = pdb_getsampwnam(sampass, user_info->unix_username.str);
+	ret = pdb_getsampwnam(sampass, user_info->internal_username.str);
 	unbecome_root();
 
 	if (ret == False)
 	{
-		DEBUG(1,("Couldn't find user '%s' in passdb file.\n", user_info->unix_username.str));
+		DEBUG(1,("Couldn't find user '%s' in passdb file.\n", user_info->internal_username.str));
 		pdb_free_sam(&sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	nt_status = sam_password_ok(sampass, user_info, (char *)(server_info->session_key));
+	nt_status = sam_password_ok(sampass, user_info, user_sess_key);
 
-	if NT_STATUS_IS_OK(nt_status) {
-		nt_status = sam_account_ok(sampass, user_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		pdb_free_sam(&sampass);
+		return nt_status;
 	}
 
-	pdb_free_sam(&sampass);
+	nt_status = sam_account_ok(sampass, user_info);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		pdb_free_sam(&sampass);
+		return nt_status;
+	}
+
+	if (!make_server_info_sam(server_info, sampass)) {		
+		DEBUG(0,("failed to malloc memory for server_info\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	lm_hash = pdb_get_lanman_passwd((*server_info)->sam_account);
+	if (lm_hash) {
+		memcpy((*server_info)->first_8_lm_hash, lm_hash, 8);
+	}
+	
+	memcpy((*server_info)->session_key, user_sess_key, sizeof(user_sess_key));
+
 	return nt_status;
 }
+
+
+
+

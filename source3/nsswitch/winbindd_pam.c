@@ -60,12 +60,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
 
-	unsigned char local_lm_response[24];
-	unsigned char local_nt_response[24];
-
-	auth_usersupplied_info user_info;
-	auth_serversupplied_info server_info;
-	AUTH_STR theirdomain, smb_username, wksta_name;
+	auth_usersupplied_info *user_info;
+	auth_serversupplied_info *server_info;
 
 	DEBUG(3, ("[%5d]: pam auth %s\n", state->pid,
 		  state->request.data.auth.user));
@@ -82,37 +78,10 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	passlen = strlen(state->request.data.auth.pass);
 		
-	ZERO_STRUCT(user_info);
-	ZERO_STRUCT(theirdomain);
-	ZERO_STRUCT(smb_username);
-	ZERO_STRUCT(wksta_name);
-	
-	theirdomain.str = name_domain;
-	theirdomain.len = strlen(theirdomain.str);
-
-	user_info.requested_domain = theirdomain;
-	user_info.domain = theirdomain;
-	
-	user_info.smb_username.str = name_user;
-	user_info.smb_username.len = strlen(name_user);
-
-	user_info.unix_username.str = name_user;
-	user_info.unix_username.len = strlen(name_user);
-
-	user_info.wksta_name.str = global_myname;
-	user_info.wksta_name.len = strlen(user_info.wksta_name.str);
-
-	user_info.wksta_name = wksta_name;
-
-	generate_random_buffer( user_info.chal, 8, False);
-
 	if (state->request.data.auth.pass[0]) {
-		SMBencrypt((uchar *)state->request.data.auth.pass, user_info.chal, local_lm_response);
-		user_info.lm_resp.buffer = (uint8 *)local_lm_response;
-		user_info.lm_resp.len = 24;
-		SMBNTencrypt((uchar *)state->request.data.auth.pass, user_info.chal, local_nt_response);
-		user_info.nt_resp.buffer = (uint8 *)local_nt_response;
-		user_info.nt_resp.len = 24;
+		make_user_info_for_winbind(&user_info, 
+					   name_user, name_domain,
+					   state->request.data.auth.pass);
 	} else {
 		return WINBINDD_ERROR;
 	}
@@ -137,11 +106,11 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	   for each authentication performed.  This can theoretically
 	   be optimised to use an already open IPC$ connection. */
 
-	result = domain_client_validate(&user_info, &server_info,
+	result = domain_client_validate(user_info, &server_info,
                                         auth_dc, trust_passwd, 
                                         last_change_time);
 
-        free_serversupplied_info(&server_info); /* No info needed */
+        free_server_info(&server_info); /* No info needed */
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
@@ -154,9 +123,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	fstring name_domain, name_user, auth_dc;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
-	auth_usersupplied_info user_info;
-	auth_serversupplied_info server_info;
-	AUTH_STR theirdomain, smb_username, wksta_name;
+	auth_usersupplied_info *user_info;
+	auth_serversupplied_info *server_info;
 
 	DEBUG(3, ("[%5d]: pam auth crap %s\n", state->pid,
 		  state->request.data.auth_crap.user));
@@ -166,36 +134,11 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	parse_domain_user(state->request.data.auth_crap.user, name_domain, 
                           name_user);
 
-	ZERO_STRUCT(user_info);
-	ZERO_STRUCT(theirdomain);
-	ZERO_STRUCT(smb_username);
-	ZERO_STRUCT(wksta_name);
+       	make_user_info_winbind_crap(&user_info, name_user, 
+				    name_domain, state->request.data.auth_crap.chal,
+				    (uchar *)state->request.data.auth_crap.lm_resp, 24,
+				    (uchar *)state->request.data.auth_crap.nt_resp, 24);
 	
-	theirdomain.str = name_domain;
-	theirdomain.len = strlen(theirdomain.str);
-
-	user_info.requested_domain = theirdomain;
-	user_info.domain = theirdomain;
-	
-	user_info.smb_username.str = name_user;
-	user_info.smb_username.len = strlen(name_user);
-
-	user_info.unix_username.str = name_user;
-	user_info.unix_username.len = strlen(name_user);
-
-	user_info.wksta_name.str = global_myname;
-	user_info.wksta_name.len = strlen(user_info.wksta_name.str);
-
-	user_info.wksta_name = wksta_name;
-
-        memcpy(user_info.chal, state->request.data.auth_crap.chal, 8);
-
-        user_info.lm_resp.buffer = (uchar *)state->request.data.auth_crap.lm_resp;
-        user_info.nt_resp.buffer = (uchar *)state->request.data.auth_crap.nt_resp;
-        
-        user_info.lm_resp.len = 24;
-        user_info.nt_resp.len = 24;
-
 	/*
 	 * Get the machine account password for our primary domain
 	 */
@@ -216,11 +159,11 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	   for each authentication performed.  This can theoretically
 	   be optimised to use an already open IPC$ connection. */
 
-	result = domain_client_validate(&user_info, &server_info,
+	result = domain_client_validate(user_info, &server_info,
                                         auth_dc, trust_passwd,
                                         last_change_time);
 
-        free_serversupplied_info(&server_info); /* No info needed */        
+        free_server_info(&server_info); /* No info needed */        
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }

@@ -131,11 +131,11 @@ static BOOL check_user_equiv(const char *user, const char *remote, const char *e
 /****************************************************************************
 check for a possible hosts equiv or rhosts entry for the user
 ****************************************************************************/
-static BOOL check_hosts_equiv(char *user) /* should be const... */
+
+static BOOL check_hosts_equiv(struct passwd *pass)
 {
   char *fname = NULL;
   pstring rhostsfile;
-  struct passwd *pass = Get_Pwnam(user);
 
   if (!pass) 
     return(False);
@@ -149,15 +149,15 @@ static BOOL check_hosts_equiv(char *user) /* should be const... */
   }
   
   if (lp_use_rhosts())
-    {
-      char *home = pass->pw_dir;
-      if (home) {
-	      slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
-	      if (check_user_equiv(pass->pw_name,client_name(),rhostsfile))
-		      return(True);
-      }
-    }
-
+  {
+	  char *home = pass->pw_dir;
+	  if (home) {
+		  slprintf(rhostsfile, sizeof(rhostsfile)-1, "%s/.rhosts", home);
+		  if (check_user_equiv(pass->pw_name,client_name(),rhostsfile))
+			  return(True);
+	  }
+  }
+  
   return(False);
 }
 
@@ -166,15 +166,21 @@ static BOOL check_hosts_equiv(char *user) /* should be const... */
 ****************************************************************************/
 
 NTSTATUS check_rhosts_security(const auth_usersupplied_info *user_info, 
-			     auth_serversupplied_info *server_info)
+			     auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-
-	become_root();
-	if (check_hosts_equiv(user_info->unix_username.str)) {
-		nt_status = NT_STATUS_OK;
+	struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
+	
+	if (pass) {
+		become_root();
+		if (check_hosts_equiv(pass)) {
+			nt_status = NT_STATUS_OK;
+			make_server_info_pw(server_info, pass);
+		}
+		unbecome_root();
+	} else {
+		nt_status = NT_STATUS_NO_SUCH_USER;
 	}
-	unbecome_root();
 
 	return nt_status;
 }

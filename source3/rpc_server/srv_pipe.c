@@ -269,10 +269,16 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	fstring domain;
 	fstring wks;
 	BOOL guest_user = False;
-	SAM_ACCOUNT *sampass = NULL;
 	uchar null_smb_passwd[16];
+
 	const uchar *smb_passwd_ptr = NULL;
 	
+	auth_usersupplied_info *user_info;
+	auth_serversupplied_info *server_info;
+
+	uid_t *puid;
+	uid_t *pgid;
+
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
 	memset(p->user_name, '\0', sizeof(p->user_name));
@@ -336,14 +342,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 		
 	} else {
 
-		/*
-		 * Pass the user through the NT -> unix user mapping
-		 * function.
-		 */
-		
-		fstrcpy(pipe_user_name, user_name);
-		(void)map_username(pipe_user_name);
-		
 	 	/* 
 		 * Do the length checking only if user is not NULL.
 		 */
@@ -362,41 +360,28 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	}
 
 	if(!guest_user) {
+		NTSTATUS nt_status;
 
-		become_root();
+		if (!make_user_info_netlogon_network(&user_info, 
+						     user_name, domain, wks,  (uchar*)p->challenge, 
+						     lm_owf, lm_pw_len, 
+						     nt_owf, nt_pw_len)) {
+			DEBUG(0,("make_user_info_netlogon_network failed!  Failing authenticaion.\n"));
+			return False;
+		}
 
-		p->ntlmssp_auth_validated = 
-			NT_STATUS_IS_OK(pass_check_smb_with_chal(pipe_user_name, NULL, 
-								 domain, wks, 
-								 (uchar*)p->challenge, 
-								 lm_owf, lm_pw_len, 
-								 nt_owf, nt_pw_len));
+		nt_status = check_password(user_info, &server_info); 
+		
+		free_user_info(&user_info);
+
+		p->ntlmssp_auth_validated = NT_STATUS_IS_OK(nt_status);
+
 		if (!p->ntlmssp_auth_validated) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: User %s\\%s from machine %s \
 failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name ));
-			unbecome_root();
+			free_server_info(&server_info);
 			return False;
 		}
-
-		pdb_init_sam(&sampass);
-
-		if(!pdb_getsampwnam(sampass, pipe_user_name)) {
-			DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in smb passwd database.\n",
-				pipe_user_name));
-			pdb_free_sam(&sampass);
-			unbecome_root();
-			return False;
-		}
-
-		unbecome_root();
-
-		if(!pdb_get_nt_passwd(sampass)) {
-			DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
-			pdb_free_sam(&sampass);
-			return False;
-	        }
- 
-	        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
 	}
 
 	/*
@@ -405,7 +390,7 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 
 	{
 		uchar p24[24];
-		NTLMSSPOWFencrypt(smb_passwd_ptr, lm_owf, p24);
+		NTLMSSPOWFencrypt(server_info->first_8_lm_hash, lm_owf, p24);
 		{
 			unsigned char j = 0;
 			int ind;
@@ -447,8 +432,17 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
-	p->pipe_user.uid = pdb_get_uid(sampass);
-	p->pipe_user.gid = pdb_get_gid(sampass);
+	puid = pdb_get_uid(server_info->sam_account);
+	pgid = pdb_get_gid(server_info->sam_account);
+	
+	if (!puid || !pgid) {
+		DEBUG(0,("Attempted authenticated pipe with invalid user.  No uid/gid in SAM_ACCOUNT\n"));
+		free_server_info(&server_info);
+		return False;
+	}
+	
+	p->pipe_user.uid = *puid;
+	p->pipe_user.gid = *pgid;
 
 	/* Set up pipe user group membership. */
 	initialise_groups(pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);
@@ -461,7 +455,7 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 
 	p->ntlmssp_auth_validated = True;
 
-	pdb_free_sam(&sampass);
+	pdb_free_sam(&server_info->sam_account);
 	return True;
 }
 

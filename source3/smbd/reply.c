@@ -159,14 +159,16 @@ int reply_tcon(connection_struct *conn,
 	int pwlen=0;
 	NTSTATUS nt_status;
 	char *p;
-
+	DATA_BLOB password_blob;
+	
 	START_PROFILE(SMBtcon);
 
 	*service = *password = *dev = 0;
 
 	p = smb_buf(inbuf)+1;
 	p += srvstr_pull(inbuf, service, p, sizeof(service), -1, STR_TERMINATE) + 1;
-	p += srvstr_pull(inbuf, password, p, sizeof(password), -1, STR_TERMINATE) + 1;
+	pwlen = srvstr_pull(inbuf, password, p, sizeof(password), -1, STR_TERMINATE) + 1;
+	p += pwlen;
 	p += srvstr_pull(inbuf, dev, p, sizeof(dev), -1, STR_TERMINATE) + 1;
 
 	p = strrchr_m(service,'\\');
@@ -174,7 +176,9 @@ int reply_tcon(connection_struct *conn,
 		pstrcpy(service, p+1);
 	}
 
-	conn = make_connection(service,password,pwlen,dev,vuid,&nt_status);
+	password_blob = data_blob(password, pwlen+1);
+
+	conn = make_connection(service,password_blob,dev,vuid,&nt_status);
   
 	if (!conn) {
 		END_PROFILE(SMBtcon);
@@ -200,16 +204,17 @@ int reply_tcon(connection_struct *conn,
 int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	fstring service;
-	pstring password;
+	DATA_BLOB password;
 	pstring devicename;
 	NTSTATUS nt_status;
 	uint16 vuid = SVAL(inbuf,smb_uid);
 	int passlen = SVAL(inbuf,smb_vwv3);
 	pstring path;
 	char *p, *q;
-	START_PROFILE(SMBtconX);
-	
-	*service = *password = *devicename = 0;
+	extern BOOL global_encrypted_passwords_negotiated;
+	START_PROFILE(SMBtconX);	
+
+	*service = *devicename = 0;
 
 	/* we might have to close an old one */
 	if ((SVAL(inbuf,smb_vwv2) & 0x1) && conn) {
@@ -220,17 +225,17 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		return ERROR_DOS(ERRDOS,ERRbuftoosmall);
 	}
  
-	memcpy(password,smb_buf(inbuf),passlen);
-	password[passlen]=0;    
+	if (global_encrypted_passwords_negotiated) {
+		password = data_blob(smb_buf(inbuf),passlen);
+	} else {
+		password = data_blob(smb_buf(inbuf),passlen+1);
+		/* Ensure correct termination */
+		password.data[passlen]=0;    
+	}
+
 	p = smb_buf(inbuf) + passlen;
 	p += srvstr_pull(inbuf, path, p, sizeof(path), -1, STR_TERMINATE);
 
-	if (passlen != 24) {
-		if (strequal(password," "))
-			*password = 0;
-		passlen = strlen(password);
-	}
-	
 	/*
 	 * the service name can be either: \\server\share
 	 * or share directly like on the DELL PowerVault 705
@@ -250,7 +255,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	DEBUG(4,("Got device type %s\n",devicename));
 
-	conn = make_connection(service,password,passlen,devicename,vuid,&nt_status);
+	conn = make_connection(service,password,devicename,vuid,&nt_status);
 	
 	if (!conn) {
 		END_PROFILE(SMBtconX);

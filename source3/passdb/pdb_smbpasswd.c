@@ -1135,12 +1135,22 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
  ********************************************************************/
 static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampass)
 {
+	uid_t *uid;
+	gid_t *gid;
+
 	if (sampass == NULL) 
 		return False;
+	uid = pdb_get_uid(sampass);
+	gid = pdb_get_gid(sampass);
+
+	if (!uid || !gid) {
+		DEBUG(0,("build_sam_pass: Failing attempt to store user	without a UNIX uid or gid. \n"));
+		return False;
+	}
 
 	ZERO_STRUCTP(smb_pw);
 
-	smb_pw->smb_userid=pdb_get_uid(sampass);
+	smb_pw->smb_userid=*uid;
 	smb_pw->smb_name=pdb_get_username(sampass);
 
 	smb_pw->smb_passwd=pdb_get_lanman_passwd(sampass);
@@ -1149,12 +1159,12 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 	smb_pw->acct_ctrl=pdb_get_acct_ctrl(sampass);
 	smb_pw->pass_last_set_time=pdb_get_pass_last_set_time(sampass);
 
-	if (smb_pw->smb_userid != pdb_user_rid_to_uid(pdb_get_user_rid(sampass))) {
+	if (*uid != pdb_user_rid_to_uid(pdb_get_user_rid(sampass))) {
 		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
 		return False;
 	}
 
-	if (pdb_get_gid(sampass) != pdb_group_rid_to_gid(pdb_get_group_rid(sampass))) {
+	if (*gid != pdb_group_rid_to_gid(pdb_get_group_rid(sampass))) {
 		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-gid based primary group RID. \n"));
 		return False;
 	}
@@ -1184,14 +1194,15 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 		return False;
 	}
 
+	pdb_set_uid (sam_pass, &pwfile->pw_uid);
+	pdb_set_gid (sam_pass, &pwfile->pw_gid);
+
 	/* FIXME!!  This doesn't belong here.  Should be set in net_sam_logon() 
 	   --jerry */
+
 	pstrcpy(samlogon_user, pw_buf->smb_name);
-	
 	sam_logon_in_ssb = True;
 		
-	pdb_set_uid (sam_pass, pwfile->pw_uid);
-	pdb_set_gid (sam_pass, pwfile->pw_gid);
 	pdb_set_fullname(sam_pass, pwfile->pw_gecos);		
 	
 	pdb_set_user_rid(sam_pass, pdb_uid_to_user_rid (pwfile->pw_uid));

@@ -216,27 +216,27 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 
 /* Does the md5 encryption from the NT hash for NTLMv2. */
 void SMBOWFencrypt_ntv2(const uchar kr[16],
-			const uchar * srv_chal, int srv_chal_len,
-			const uchar * cli_chal, int cli_chal_len,
+			const DATA_BLOB srv_chal,
+			const DATA_BLOB cli_chal,
 			char resp_buf[16])
 {
 	HMACMD5Context ctx;
 
 	hmac_md5_init_limK_to_64(kr, 16, &ctx);
-	hmac_md5_update(srv_chal, srv_chal_len, &ctx);
-	hmac_md5_update(cli_chal, cli_chal_len, &ctx);
+	hmac_md5_update(srv_chal.data, srv_chal.length, &ctx);
+	hmac_md5_update(cli_chal.data, cli_chal.length, &ctx);
 	hmac_md5_final((unsigned char *)resp_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, cli_chal, resp_buf\n"));
-	dump_data(100, srv_chal, srv_chal_len);
-	dump_data(100, cli_chal, cli_chal_len);
+	dump_data(100, srv_chal.data, srv_chal.length);
+	dump_data(100, cli_chal.data, cli_chal.length);
 	dump_data(100, resp_buf, 16);
 #endif
 }
 
 void SMBsesskeygen_ntv2(const uchar kr[16],
-			const uchar * nt_resp, char sess_key[16])
+			const uchar * nt_resp, uint8 sess_key[16])
 {
 	HMACMD5Context ctx;
 
@@ -251,7 +251,7 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 }
 
 void SMBsesskeygen_ntv1(const uchar kr[16],
-			const uchar * nt_resp, char sess_key[16])
+			const uchar * nt_resp, uint8 sess_key[16])
 {
 	mdfour((unsigned char *)sess_key, kr, 16);
 

@@ -1193,7 +1193,7 @@ static BOOL smb_io_sam_info(char *desc, DOM_SAM_INFO *sam, prs_struct *ps, int d
 void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
 			 uint16 logon_count, uint16 bad_pw_count,
  		 	 uint32 num_groups, DOM_GID *gids,
-			 uint32 user_flgs, char *sess_key,
+			 uint32 user_flgs, uchar *sess_key,
  			 char *logon_srv, char *logon_dom,
 			 DOM_SID *dom_sid, char *other_sids)
 {

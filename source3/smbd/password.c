@@ -197,10 +197,11 @@ has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
-int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
-		  char *domain,BOOL guest, char *full_name)
+int register_vuid(auth_serversupplied_info *server_info, char *smb_name, BOOL guest)
 {
 	user_struct *vuser = NULL;
+	uid_t *puid;
+	gid_t *pgid;
 
 	/* Ensure no vuid gets registered in share level security. */
 	if(lp_security() == SEC_SHARE)
@@ -217,8 +218,14 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 
 	ZERO_STRUCTP(vuser);
 
-	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", (unsigned int)uid, (unsigned int)gid,
-				unix_name, requested_name, domain, guest ));
+        puid = pdb_get_uid(server_info->sam_account);
+        pgid = pdb_get_gid(server_info->sam_account);
+
+	if (!puid || !pgid) {
+		DEBUG(0,("Attempted session setup with invalid user.  No uid/gid in SAM_ACCOUNT\n"));
+		free(vuser);
+		return UID_FIELD_INVALID;
+	}
 
 	/* Allocate a free vuid. Yes this is a linear search... :-) */
 	while( get_valid_user_struct(next_vuid) != NULL ) {
@@ -231,13 +238,19 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 	DEBUG(10,("register_vuid: allocated vuid = %u\n", (unsigned int)next_vuid ));
 
 	vuser->vuid = next_vuid;
-	vuser->uid = uid;
-	vuser->gid = gid;
+	vuser->uid = *puid;
+	vuser->gid = *pgid;
 	vuser->guest = guest;
-	fstrcpy(vuser->user.unix_name,unix_name);
-	fstrcpy(vuser->user.smb_name,requested_name);
-	fstrcpy(vuser->user.domain,domain);
-	fstrcpy(vuser->user.full_name, full_name);
+	fstrcpy(vuser->user.unix_name, pdb_get_username(server_info->sam_account));
+	fstrcpy(vuser->user.smb_name, smb_name);
+	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
+	fstrcpy(vuser->user.full_name, pdb_get_fullname(server_info->sam_account));
+
+	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", 
+		  (unsigned int)vuser->uid, 
+		  (unsigned int)vuser->gid,
+		  vuser->user.unix_name, vuser->user.smb_name, vuser->user.domain, guest ));
+
 	DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,vuser->user.full_name));	
 
 	vuser->n_groups = 0;
@@ -332,7 +345,7 @@ BOOL user_ok(char *user,int snum)
 /****************************************************************************
 validate a group username entry. Return the username or NULL
 ****************************************************************************/
-static char *validate_group(char *group,char *password,int pwlen,int snum)
+static char *validate_group(char *group, DATA_BLOB password,int snum)
 {
 #ifdef HAVE_NETGROUP
 	{
@@ -341,7 +354,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 		while (getnetgrent(&host, &user, &domain)) {
 			if (user) {
 				if (user_ok(user, snum) && 
-				    password_ok(user,password,pwlen)) {
+				    password_ok(user,password)) {
 					endnetgrent();
 					return(user);
 				}
@@ -396,7 +409,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 				static fstring name;
 				fstrcpy(name,member);
 				if (user_ok(name,snum) &&
-				    password_ok(name,password,pwlen)) {
+				    password_ok(name,password)) {
 					endgrent();
 					return(&name[0]);
 				}
@@ -419,7 +432,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
  Note this is *NOT* used when logging on using sessionsetup_and_X.
 ****************************************************************************/
 
-BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
+BOOL authorise_login(int snum,char *user, DATA_BLOB password, 
 		     BOOL *guest,BOOL *force,uint16 vuid)
 {
 	BOOL ok = False;
@@ -427,7 +440,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
 #if DEBUG_PASSWORD
 	DEBUG(100,("authorise_login: checking authorisation on user=%s pass=%s\n",
-			user,password));
+			user,password.data));
 #endif
 
 	*guest = False;
@@ -472,7 +485,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 		/* check for a previously registered guest username */
 		if (!ok && (vuser != 0) && vuser->guest) {	  
 			if (user_ok(vuser->user.unix_name,snum) &&
-					password_ok(vuser->user.unix_name, password, pwlen)) {
+					password_ok(vuser->user.unix_name, password)) {
 				fstrcpy(user, vuser->user.unix_name);
 				vuser->guest = False;
 				DEBUG(3,("authorise_login: ACCEPTED: given password with registered user %s\n", user));
@@ -494,7 +507,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 				if (!user_ok(user2,snum))
 					continue;
 		  
-				if (password_ok(user2,password, pwlen)) {
+				if (password_ok(user2,password)) {
 					ok = True;
 					fstrcpy(user,user2);
 					DEBUG(3,("authorise_login: ACCEPTED: session list username (%s) \
@@ -526,7 +539,7 @@ and given password ok\n", user));
 			for (auser=strtok(user_list,LIST_SEP); auser && !ok;
 											auser = strtok(NULL,LIST_SEP)) {
 				if (*auser == '@') {
-					auser = validate_group(auser+1,password,pwlen,snum);
+					auser = validate_group(auser+1,password,snum);
 					if (auser) {
 						ok = True;
 						fstrcpy(user,auser);
@@ -536,7 +549,7 @@ and given password ok (%s)\n", user));
 				} else {
 					fstring user2;
 					fstrcpy(user2,auser);
-					if (user_ok(user2,snum) && password_ok(user2,password,pwlen)) {
+					if (user_ok(user2,snum) && password_ok(user2,password)) {
 						ok = True;
 						fstrcpy(user,user2);
 						DEBUG(3,("authorise_login: ACCEPTED: user list username \
