@@ -7,6 +7,7 @@ fi
 host=$1
 bindir=%bindir%
 set `$bindir/kx $host`
-disp=:$1
-auth=$2
-xterm -T $host -n $host -e env DISPLAY=$disp XAUTHORITY=$auth $bindir/telnet -D $host &
+pid=$1
+disp=:$2
+auth=$3
+(xterm -T $host -n $host -e env DISPLAY=$disp XAUTHORITY=$auth $bindir/telnet -D $host ; kill -USR1 $pid) &
