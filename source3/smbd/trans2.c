@@ -2138,12 +2138,11 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   BOOL NT_arch = ((ra_type == RA_WINNT) || (ra_type == RA_WIN2K));
   pstring pathname;
   int reply_size = 0;
-  char* dfs_referral = NULL;
   int max_referral_level = SVAL(params,0);
 #endif
 
   DEBUG(10,("call_trans2getdfsreferral\n"));
-#ifdef MS_DFS
+
   if(!lp_host_msdfs())
     return(ERROR(ERRDOS,ERRbadfunc));
 
@@ -2163,10 +2162,8 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_UNICODE_STRINGS | 
 	FLAGS2_DFS_PATHNAMES);
   send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size);
-#else
-  DEBUG(0,("Unexpected DFS referral request!\n"));
-  return(ERROR(ERRDOS,ERRbadfunc));
-#endif
+
+  return(-1);
 }
 
 
