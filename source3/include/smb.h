@@ -251,7 +251,7 @@ enum SID_NAME_USE
 	SID_NAME_DELETED,     /* deleted account: needed for c2 rating */
 	SID_NAME_INVALID,     /* invalid account */
 	SID_NAME_UNKNOWN,     /* unknown sid type */
-	SID_NAME_COMPUTER,    /* sid for a computer */
+	SID_NAME_COMPUTER     /* sid for a computer */
 };
 
 /**
@@ -625,7 +625,7 @@ enum pdb_elements {
 	PDB_NTPASSWD,
 
 	/* this must be the last element */
-	PDB_COUNT,
+	PDB_COUNT
 };
 
 enum pdb_value_state {
