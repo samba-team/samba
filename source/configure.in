@@ -766,7 +766,7 @@ case "$host_os" in
 			;;
 		*solaris*) AC_DEFINE(SUNOS5)
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-h,\$@.so -G"
+			LDSHFLAGS="-h \$@ -G"
 			if test "${ac_cv_prog_CC}" = "gcc"; then
 				PICFLAG="-fPIC"
 			else
