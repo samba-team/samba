@@ -22,6 +22,7 @@ catchSIGHUP(int sig)
     /* This should not be a problem on BSD systems */
     signal(SIGHUP,  catchSIGHUP);
     signal(SIGPIPE, catchSIGHUP);
+    SIGRETURN(0);
 }
 
 int     pop_timeout = POP_TIMEOUT;

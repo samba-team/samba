@@ -138,7 +138,7 @@ intr(int sig)
 	longjmp(toplevel, 1);
 }
 
-void
+RETSIGTYPE
 lostpeer(int sig)
 {
 
@@ -166,6 +166,7 @@ lostpeer(int sig)
 	}
 	proxflag = 0;
 	pswitch(0);
+	SIGRETURN(0);
 }
 
 /*

@@ -520,7 +520,7 @@ empty(fd_set *mask, int sec)
 
 jmp_buf	sendabort;
 
-void
+static RETSIGTYPE
 abortsend(int sig)
 {
 
@@ -582,9 +582,9 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 	struct stat st;
 	struct timeval start, stop;
 	int c, d;
-	FILE *fin, *dout = 0, *popen(const char *, const char *);
+	FILE *fin, *dout = 0;
 	int (*closefunc) __P((FILE *));
-	sighand oldintr, oldintp;
+	RETSIGTYPE (*oldintr)(), (*oldintp)();
 	long bytes = 0, hashbytes = HASHBYTES;
 	char *lmode;
 

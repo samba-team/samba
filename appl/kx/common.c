@@ -82,6 +82,7 @@ childhandler (int sig)
        pid = waitpid (-1, &status, WNOHANG|WUNTRACED);
      } while(pid > 0);
      signal (SIGCHLD, childhandler);
+     SIGRETURN(0);
 }
 
 /*

@@ -1004,7 +1004,7 @@ getline(char *s, int n)
 	return (s);
 }
 
-static void
+static RETSIGTYPE
 toolong(int signo)
 {
 
@@ -1015,6 +1015,7 @@ toolong(int signo)
 		syslog(LOG_INFO, "User %s timed out after %d seconds",
 		    (pw ? pw -> pw_name : "unknown"), ftpd_timeout);
 	dologout(1);
+	SIGRETURN(0);
 }
 
 static int

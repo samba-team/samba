@@ -515,7 +515,7 @@ static jmp_buf catch_SIGSYS;
 
 #ifdef SIGSYS
 
-static void
+static RETSIGTYPE
 SIGSYS_handler(int sig)
 {
   errno = 0;

@@ -403,6 +403,27 @@ usage:
 	    argv[1] != oldargv1 || argv[2] != oldargv2);
 }
 
+/* ARGSUSED */
+static RETSIGTYPE
+mabort(int signo)
+{
+	int ointer;
+
+	printf("\n");
+	(void) fflush(stdout);
+	if (mflag && fromatty) {
+		ointer = interactive;
+		interactive = 1;
+		if (confirm("Continue with", mname)) {
+			interactive = ointer;
+			longjmp(jabort,0);
+		}
+		interactive = ointer;
+	}
+	mflag = 0;
+	longjmp(jabort,0);
+}
+
 /*
  * Send multiple files.
  */
@@ -410,7 +431,7 @@ void
 mput(int argc, char **argv)
 {
 	int i;
-	sighand oldintr;
+	RETSIGTYPE (*oldintr)();
 	int ointer;
 	char *tp;
 
@@ -642,27 +663,6 @@ usage:
 	    argv[1] != oldargv1 || argv[2] != oldargv2);
 	restart_point = 0;
 	return (0);
-}
-
-/* ARGSUSED */
-void
-mabort(int signo)
-{
-	int ointer;
-
-	printf("\n");
-	(void) fflush(stdout);
-	if (mflag && fromatty) {
-		ointer = interactive;
-		interactive = 1;
-		if (confirm("Continue with", mname)) {
-			interactive = ointer;
-			longjmp(jabort,0);
-		}
-		interactive = ointer;
-	}
-	mflag = 0;
-	longjmp(jabort,0);
 }
 
 /*
@@ -1177,7 +1177,7 @@ void
 shell(int argc, char **argv)
 {
 	pid_t pid;
-	sighand old1, old2;
+	RETSIGTYPE (*old1)(), (*old2)();
 	char shellnam[40], *shell, *namep; 
 	int status;
 
@@ -1548,7 +1548,7 @@ account(int argc, char **argv)
 
 jmp_buf abortprox;
 
-void
+static RETSIGTYPE
 proxabort(int sig)
 {
 
@@ -1569,7 +1569,7 @@ void
 doproxy(int argc, char **argv)
 {
 	struct cmd *c;
-	sighand oldintr;
+	RETSIGTYPE (*oldintr)();
 
 	if (argc < 2 && !another(&argc, &argv, "command")) {
 		printf("usage: %s command\n", argv[0]);
