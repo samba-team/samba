@@ -63,9 +63,6 @@
 #define HEIMDAL_MUTEX_unlock(m) mutex_unlock(m)
 #define HEIMDAL_MUTEX_destroy(m) mutex_destroy(m)
 
-/* XXX hole for Jacques to fill in :)
-   #el if defined(__FreeBSD_version) &&  */
-
 #elif defined(ENABLE_PTHREAD_SUPPORT)
 
 #define HEIMDAL_MUTEX pthread_mutex_t
@@ -75,7 +72,7 @@
 #define HEIMDAL_MUTEX_unlock(m) pthread_mutex_unlock(m)
 #define HEIMDAL_MUTEX_destroy(m) pthread_mutex_destroy(m)
 
-#elif defined(HEIMDAL_DEBUG_THREADS) || 1
+#elif defined(HEIMDAL_DEBUG_THREADS)
 
 /* no threads support, just do consistency checks */
 #include <stdlib.h>
