@@ -1,13 +1,13 @@
             WHAT'S NEW IN Samba 2.2.6rc3  - 11th October 2002
             =================================================
 
-This is a prelease snapshot of SAMBA_2_2 cvs branch.  This is a non-production
+This is a preview snapshot of SAMBA_2_2 cvs branch.  This is a non-production
 release provided for testing purposes only.
 
 The following new new smb.conf(5) options have been added in this preview
 release:
 
-	* profiles acls (S)
+  * profile acls (S)
 
 The following options have been added to Samba's configure script
 
@@ -30,7 +30,7 @@ Changes since 2.2.5
 8)  Parsing fix for PRINTER_INFO_2 structure which was causing viewing
     printer properties to fail
 9)  Fix for printer change notification and Windows NT clients which caused
-    the client to go into an infinite loop of refeshing the local printers
+    the client to go into an infinite loop of refreshing the local printers
     folder
 10) Allow trans2 and nttrans messages to be processed in oplock break state
     which fixes a problem with oplock break requests and Win2k clients
@@ -39,8 +39,8 @@ Changes since 2.2.5
 13) Updates to stop spurious error message in tdb
 14) Fix silly logic bug in 'make smbd processes' and 'status = no' check
 15) Fix compilation of pam_smbpass and --with-ldap
-16) Fix compilation of samwrapper on Solaris hosts
-17) fix logic error in a check for enableing the winbind_pam_auth_crap() code
+16) Fix compilation of smbwrapper on Solaris hosts
+17) fix logic error in a check for enabling the winbind_pam_auth_crap() code
     & fix formatting typo in --with-winbind-auth-challenge
 18) Correcting check for ldap_start_tls()
 19) Fixed a problem with getgroups() where it could include our current
