@@ -1,3 +1,8 @@
+2000-07-23  Assar Westerlund  <assar@sics.se>
+
+	* util.c (str2time_t): be more careful with strptime that might
+	zero out the `struct tm'
+
 2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kadm_conn.c: make the parent process wait for children and
