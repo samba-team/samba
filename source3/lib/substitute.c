@@ -223,7 +223,6 @@ void standard_sub_basic(char *str)
 void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
 {
 	char *p, *s, *home;
-	struct passwd *pass;
 
 	for (s=str; (p=strchr_m(s, '%'));s=p) {
 		int l = sizeof(pstring) - (int)(p-str);
