@@ -831,7 +831,7 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
 	int len;
 	struct sockaddr_in sock_name;
 	int sock_len = sizeof(sock_name);
-	const char *mailslot = "\\MAILSLOT\\NET\\NETLOGON";
+	const char *mailslot = NET_LOGON_MAILSLOT;
 	char *mailslot_name;
 	char buffer[1024];
 	char *bufp;
