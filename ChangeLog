@@ -1,5 +1,20 @@
 2001-05-10  Assar Westerlund  <assar@sics.se>
 
+	* admin/remove.c (kt_remove): reorganize some.  open the keytab
+	(defaulting to the modify one).
+	* admin/purge.c (kt_purge): reorganize some.  open the keytab
+	(defaulting to the modify one). correct usage strings
+	* admin/list.c (kt_list): reorganize some.  open the keytab
+	* admin/get.c (kt_get): reorganize some.  open the keytab
+	(defaulting to the modify one)
+	* admin/copy.c (kt_copy): default to modify key name.  re-organise
+	* admin/change.c (kt_change): reorganize some.  open the keytab
+	(defaulting to the modify one)
+	* admin/add.c (kt_add): reorganize some.  open the keytab
+	(defaulting to the modify one)
+	* admin/ktutil.c (main): do not open the keytab, let every
+	sub-function handle it
+
 	* kdc/config.c (configure): call free_getarg_strings
 
 	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): set error strings for
