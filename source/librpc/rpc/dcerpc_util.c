@@ -293,8 +293,18 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 
 	p = strchr(s, ':');
 	if (!p) {
-		part2 = talloc_strdup(mem_ctx, s);
-		part3 = NULL;
+		p = strchr(s, '[');
+		if (p) {
+			part2 = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
+			part3 = talloc_strdup(mem_ctx, p+1);
+			if (part3[strlen(part3)-1] != ']') {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			part3[strlen(part3)-1] = 0;
+		} else {
+			part2 = talloc_strdup(mem_ctx, s);
+			part3 = NULL;
+		}
 	} else {
 		part2 = talloc_strndup(mem_ctx, s, PTR_DIFF(p, s));
 		part3 = talloc_strdup(mem_ctx, p+1);
@@ -458,6 +468,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 
 	status = dcerpc_pipe_open_tcp(p, binding->host, port);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to connect to %s:%d\n", binding->host, port));
                 return status;
         }
 
@@ -531,6 +542,7 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **p,
 
 	status = dcerpc_parse_binding(mem_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding));
 		talloc_destroy(mem_ctx);
 		return status;
 	}
