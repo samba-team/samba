@@ -276,8 +276,8 @@ ssize_t spnego_read_data(DATA_BLOB data, struct spnego_data *token)
 	asn1_load(&asn1, data);
 
 	uint8_t context;
-	if (!asn1_peek_uint8(asn1, &context)) {
-		asn1->has_error = True;
+	if (!asn1_peek_uint8(&asn1, &context)) {
+		asn1.has_error = True;
 	} else {
 		switch (context) {
 		case ASN1_APPLICATION(0):
