@@ -4960,17 +4960,6 @@
 		</varlistentry>
 
 
-		<listitem><para>This boolean parameter controls whether 
-		<ulink url="smbd.8.html">smbd(8)</ulink> will attempt to map 
-		UNIX permissions into Windows NT access control lists.
-		This parameter was formally a global parameter in releases
-		prior to 2.2.2.</para>
-		
-		<para>Default: <command>nt acl support = yes</command></para>
-		</listitem>
-		</varlistentry>
-
-
 
 		<varlistentry>
 		<term><anchor id="NTACLSUPPORT">nt acl support (S)</term>
