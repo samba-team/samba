@@ -182,6 +182,14 @@ krb524_convert_creds_kdc(krb5_context context,
 			   hostlist,
 			   port,
 			   &reply);
+	if(ret == KRB5_KDC_UNREACH) {
+	    port = krb5_getportbyname (context, "kerberos", "udp", 88);
+	    ret = krb5_sendto (context,
+			       &v5_creds->ticket,
+			       hostlist,
+			       port,
+			       &reply);
+	}
 	krb5_free_krbhst (context, hostlist);
     }
     if (ret)
