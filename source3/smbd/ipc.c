@@ -663,7 +663,7 @@ static BOOL api_DosPrintQEnum(int cnum, int uid, char* param, char* data,
 
   DEBUG(3,("DosPrintQEnum uLevel=%d\n",uLevel));
  
-  if (prefix_ok(param_format,"WrLeh")) return False;
+  if (!prefix_ok(param_format,"WrLeh")) return False;
   if (!check_printq_info(&desc,uLevel,output_format1,output_format2))
     return False;
   queuecnt = 0;
