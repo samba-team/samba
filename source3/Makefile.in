@@ -976,8 +976,7 @@ nsswitch/libnss_wins.@SHLIBEXT@: $(NSS_OBJ)
 
 bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS) \
-	 	@LDAP_LIBS@
+	@$(LINK) -o $@ $(WINBINDD_OBJ) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS) @LDAP_LIBS@
 
 nsswitch/@WINBIND_NSS@: $(WINBIND_NSS_PICOBJS)
 	@echo "Linking $@"
