@@ -33,7 +33,7 @@
 .\"
 .\"     @(#)ftpd.8	8.2 (Berkeley) 4/19/94
 .\"
-.Dd April 19, 1994
+.Dd April 25, 1996
 .Dt FTPD 8
 .Os BSD 4.2
 .Sh NAME
@@ -42,9 +42,12 @@
 Internet File Transfer Protocol server
 .Sh SYNOPSIS
 .Nm ftpd
-.Op Fl dl
+.Op Fl a Ar authmode
+.Op Fl dilv
+.Op Fl p Ar port 
 .Op Fl T Ar maxtimeout
 .Op Fl t Ar timeout
+.Op Fl u Ar default umask
 .Sh DESCRIPTION
 .Nm Ftpd
 is the
@@ -59,8 +62,21 @@ service specification; see
 .Pp
 Available options:
 .Bl -tag -width Ds
+.It Fl a
+Select the level of authentication required. Recognised values are:
+.Bl -tag -width debug
+.It none
+Allows anyone to connect.
+.It safe
+Allows only authorized access and anonymous ftp.
+.It user
+Allows only authorized access.
+.El
 .It Fl d
 Debugging information is written to the syslog using LOG_FTP.
+.It Fl i
+Open a socket and wait for a connection. This is mainly used for
+debugging when ftpd isn't started by inetd.
 .It Fl l
 Each successful and failed 
 .Xr ftp 1
@@ -68,6 +84,11 @@ session is logged using syslog with a facility of LOG_FTP.
 If this option is specified twice, the retrieve (get), store (put), append,
 delete, make directory, remove directory and rename operations and
 their filename arguments are also logged.
+.It Fl p
+Use
+.Ar port
+(a service name or number) instead of the default 
+.Ar ftp/tcp .
 .It Fl T
 A client may also request a different timeout period;
 the maximum period allowed may be set to
@@ -80,6 +101,8 @@ The default limit is 2 hours.
 The inactivity timeout period is set to
 .Ar timeout
 seconds (the default is 15 minutes).
+.It Fl v
+Verbose mode.
 .El
 .Pp
 The file
@@ -145,6 +168,18 @@ The case of the requests is ignored.
 .It XRMD Ta "remove a directory (deprecated)"
 .El
 .Pp
+The following commands are specified by ftpsec draft.
+.Bl -column Request -offset indent
+.It AUTH Ta "authentication/security mechanism"
+.It ADAT Ta "authentication/security data"
+.It PROT Ta "data channel protection level"
+.It PBSZ Ta "protection buffer size"
+.It MIC Ta "integrity protected command"
+.It CONF Ta "confidentiality protected command"
+.It ENC Ta "privacy protected command"
+.It CCC Ta "clear command channel"
+.El
+.Pp
 The following non-standard or
 .Tn UNIX
 specific commands are supported
@@ -152,11 +187,15 @@ by the
 SITE request.
 .Pp
 .Bl -column Request -offset indent
-.It Sy Request Ta Sy Description
 .It UMASK Ta change umask, e.g. ``SITE UMASK 002''
 .It IDLE Ta set idle-timer, e.g. ``SITE IDLE 60''
 .It CHMOD Ta change mode of a file, e.g. ``SITE CHMOD 755 filename''
 .It HELP Ta give help information.
+.El
+.Pp
+The following Kerberos related site commands are understood.
+.Bl -column Request -offset indent
+.It KAUTH Ta obtain remote tickets.
 .El
 .Pp
 The remaining ftp requests specified in Internet RFC 959
@@ -187,6 +226,9 @@ This allows users to utilize the metacharacters
 authenticates users according to five rules. 
 .Pp
 .Bl -enum -offset indent
+.It
+If Kerberos authentication is used, the user must pass valid tickets
+and the principal must be allowed to login as the remote user.
 .It
 The login name must be in the password data base,
 .Pa /etc/pwd.db ,
@@ -296,12 +338,21 @@ Welcome notice.
 Welcome notice after login.
 .It Pa /etc/nologin
 Displayed and access refused.
+.It Pa ~/.klogin
+Login access for Kerberos.
 .El
 .Sh SEE ALSO
 .Xr ftp 1 ,
 .Xr skey 1 ,
 .Xr getusershell 3 ,
-.Xr syslogd 8
+.Xr syslogd 8 ,
+.Sh STANDARDS
+.Bl -tag -compact -width RFC-959
+.It Cm RFC-959
+FTP PROTOCOL SPECIFICATION
+.It Cm draft-ietf-cat-ftpsec-08
+FTP Security Extensions. This is work in progress and might change in
+the future.
 .Sh BUGS
 The server must run as the super-user
 to create sockets with privileged port numbers.  It maintains
