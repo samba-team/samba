@@ -204,7 +204,7 @@ void reply_name_reg(struct packet_struct *p)
   DEBUG(3,("Name registration for name %s at %s - ",
 	           namestr(question),inet_ntoa(ip)));
   
-  if (group)
+  if (group && qname_type != 0x1c)
     {
       /* apparently we should return 255.255.255.255 for group queries
 	 (email from MS) */
