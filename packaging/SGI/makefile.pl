@@ -12,8 +12,8 @@ else {
   $OSver = $ARGV[0];
 }
 
-open(MAKEIN,"../../source/Makefile");
-open(MAKEOUT,">Makefile");
+open(MAKEIN,"../../source/Makefile") || die "Unable to open source Makefile\n";
+open(MAKEOUT,">Makefile") || die "Unable to open Makefile for output\n";
 while (<MAKEIN>) {
     if (/^BASEDIR =/) {
 	print MAKEOUT "BASEDIR = /usr/samba\n";
