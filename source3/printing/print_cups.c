@@ -912,6 +912,8 @@ static int cups_queue_get(const char *printer_name,
 	*    printer-uri
 	*/
 
+	request = ippNew();
+
 	request->request.op.operation_id = IPP_GET_PRINTER_ATTRIBUTES;
 	request->request.op.request_id   = 1;
 
