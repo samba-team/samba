@@ -61,13 +61,12 @@ static void msg_deliver(void)
   }
 
   /*
-   * Incoming message is in DOS codepage format. Convert to UNIX in
-   * place.
+   * Incoming message is in DOS codepage format. Convert to UNIX.
    */
 
   if(msgpos > 0) {
     msgbuf[msgpos] = '\0'; /* Ensure null terminated. */
-    dos_to_unix(msgbuf,True);
+    pstrcpy(msgbuf,dos_to_unix(msgbuf,False));
   }
 
   for (i=0;i<msgpos;) {
