@@ -49,8 +49,11 @@ krb5_error_code
 krb5_get_default_realms (krb5_context context,
 			 krb5_realm **realms)
 {
-    if (context->default_realms == NULL)
-	return KRB5_CONFIG_NODEFREALM;
+    if (context->default_realms == NULL) {
+	krb5_error_code ret = krb5_set_default_realm (context, NULL);
+	if (ret)
+	    return KRB5_CONFIG_NODEFREALM;
+    }
 
     return krb5_copy_host_realm (context,
 				 context->default_realms,
@@ -68,8 +71,11 @@ krb5_get_default_realm(krb5_context context,
     char *res;
 
     if (context->default_realms == NULL
-	|| context->default_realms[0] == NULL)
-	return KRB5_CONFIG_NODEFREALM;
+	|| context->default_realms[0] == NULL) {
+	krb5_error_code ret = krb5_set_default_realm (context, NULL);
+	if (ret)
+	    return KRB5_CONFIG_NODEFREALM;
+    }
 
     res = strdup (context->default_realms[0]);
     if (res == NULL)
