@@ -553,8 +553,6 @@ void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
 
 BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth)
 {
-	int old_align;
-
 	if (q_c == NULL)
 		return False;
 
@@ -572,15 +570,8 @@ BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int dep
 	if(!smb_io_unistr2("", &q_c->uni_logon_clnt, True, ps, depth)) /* logon client unicode string */
 		return False;
 
-	old_align = ps->align;
-	ps->align = 0;
-	/* client challenge is _not_ aligned after the unicode strings */
-	if(!smb_io_chal("", &q_c->clnt_chal, ps, depth)) {
-		/* client challenge */
-		ps->align = old_align;
+	if(!smb_io_chal("", &q_c->clnt_chal, ps, depth))
 		return False;
-	}
-	ps->align = old_align;
 
 	return True;
 }
@@ -616,7 +607,6 @@ BOOL net_io_r_req_chal(char *desc, NET_R_REQ_CHAL *r_c, prs_struct *ps, int dept
 
 BOOL net_io_q_auth(char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
 {
-	int old_align;
 	if (q_a == NULL)
 		return False;
 
@@ -628,15 +618,8 @@ BOOL net_io_q_auth(char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
     
 	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
 		return False;
-	/* client challenge is _not_ aligned */
-	old_align = ps->align;
-	ps->align = 0;
-	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth)) {
-		/* client-calculated credentials */
-		ps->align = old_align;
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth))
 		return False;
-	}
-	ps->align = old_align;
 
 	return True;
 }
@@ -688,7 +671,6 @@ void init_q_auth_2(NET_Q_AUTH_2 *q_a,
 
 BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth)
 {
-	int old_align;
 	if (q_a == NULL)
 		return False;
 
@@ -700,15 +682,8 @@ BOOL net_io_q_auth_2(char *desc, NET_Q_AUTH_2 *q_a, prs_struct *ps, int depth)
     
 	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
 		return False;
-	/* client challenge is _not_ aligned */
-	old_align = ps->align;
-	ps->align = 0;
-	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth)) {
-		/* client-calculated credentials */
-		ps->align = old_align;
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth))
 		return False;
-	}
-	ps->align = old_align;
 	if(!net_io_neg_flags("", &q_a->clnt_flgs, ps, depth))
 		return False;
 
@@ -764,7 +739,6 @@ void init_q_auth_3(NET_Q_AUTH_3 *q_a,
 
 BOOL net_io_q_auth_3(char *desc, NET_Q_AUTH_3 *q_a, prs_struct *ps, int depth)
 {
-	int old_align;
 	if (q_a == NULL)
 		return False;
 
@@ -776,15 +750,8 @@ BOOL net_io_q_auth_3(char *desc, NET_Q_AUTH_3 *q_a, prs_struct *ps, int depth)
     
 	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
 		return False;
-	/* client challenge is _not_ aligned */
-	old_align = ps->align;
-	ps->align = 0;
-	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth)) {
-		/* client-calculated credentials */
-		ps->align = old_align;
+	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth))
 		return False;
-	}
-	ps->align = old_align;
 	if(!net_io_neg_flags("", &q_a->clnt_flgs, ps, depth))
 		return False;
 
