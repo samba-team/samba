@@ -646,9 +646,10 @@ int main(int argc,char *argv[])
           exit(0);
           break;
         default:
-          if (!is_a_socket(0))
+          if( !is_a_socket(0) )
           {
             usage(argv[0]);
+            exit(0);
           }
           break;
         }
