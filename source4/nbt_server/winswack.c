@@ -57,7 +57,15 @@ static void wins_wack_allow(struct wack_state *state)
 {
 	uint32_t ttl;
 	time_t now = time(NULL);
-	struct winsdb_record *rec = state->rec;
+	struct winsdb_record *rec = state->rec, *rec2;
+
+	rec2 = winsdb_load(state->winssrv, rec->name, state);
+	if (rec2 == NULL || rec2->version != rec->version) {
+		DEBUG(1,("WINS: record %s changed during WACK - failing registration\n",
+			 nbt_name_string(state, rec->name)));
+		wins_wack_deny(state);
+		return;
+	}
 
 	nbtd_name_registration_reply(state->nbtsock, state->request_packet, 
 				     state->src_address, state->src_port, NBT_RCODE_OK);

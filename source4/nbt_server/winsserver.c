@@ -123,7 +123,7 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 		rcode = wins_register_new(nbtsock, packet, src_address, src_port);
 		goto done;
 	} else if (rec->state != WINS_REC_ACTIVE) {
-		winsdb_delete(winssrv, rec->name);
+		winsdb_delete(winssrv, rec);
 		rcode = wins_register_new(nbtsock, packet, src_address, src_port);
 		goto done;
 	}

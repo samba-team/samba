@@ -28,6 +28,62 @@
 #include "system/time.h"
 
 /*
+  save the min/max version IDs for the database
+*/
+static BOOL winsdb_save_version(struct wins_server *winssrv)
+{
+	int i, ret = 0;
+	struct ldb_context *ldb = winssrv->wins_db->ldb;
+	struct ldb_message *msg = ldb_msg_new(winssrv);
+	if (msg == NULL) goto failed;
+
+	msg->dn = talloc_strdup(msg, "CN=VERSION");
+	if (msg->dn == NULL) goto failed;
+
+	ret |= ldb_msg_add_fmt(ldb, msg, "minVersion", "%llu", winssrv->min_version);
+	ret |= ldb_msg_add_fmt(ldb, msg, "maxVersion", "%llu", winssrv->max_version);
+	if (ret != 0) goto failed;
+
+	for (i=0;i<msg->num_elements;i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	ret = ldb_modify(ldb, msg);
+	if (ret != 0) ret = ldb_add(ldb, msg);
+	if (ret != 0) goto failed;
+
+	talloc_free(msg);
+	return True;
+
+failed:
+	talloc_free(msg);
+	return False;
+}
+
+/*
+  allocate a new version id for a record
+*/
+static uint64_t winsdb_allocate_version(struct wins_server *winssrv)
+{
+	winssrv->max_version++;
+	if (!winsdb_save_version(winssrv)) {
+		return 0;
+	}
+	return winssrv->max_version;
+}
+
+/*
+  allocate a new version id for a record
+*/
+static void winsdb_remove_version(struct wins_server *winssrv, uint64_t version)
+{
+	if (version == winssrv->min_version) {
+		winssrv->min_version++;
+		winsdb_save_version(winssrv);
+	}
+}
+
+/*
   load a WINS entry from the database
 */
 struct winsdb_record *winsdb_load(struct wins_server *winssrv, 
@@ -60,6 +116,7 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 	rec->nb_flags       = ldb_msg_find_int(res[0], "nbFlags", 0);
 	rec->expire_time    = ldap_string_to_time(ldb_msg_find_string(res[0], "expires", NULL));
 	rec->registered_by  = ldb_msg_find_string(res[0], "registeredBy", NULL);
+	rec->version        = ldb_msg_find_uint64(res[0], "version", 0);
 	talloc_steal(rec, rec->registered_by);
 
 	el = ldb_msg_find_element(res[0], "address");
@@ -109,6 +166,7 @@ static struct ldb_message *winsdb_message(struct wins_server *winssrv,
 	ret |= ldb_msg_add_string(ldb, msg, "registeredBy", rec->registered_by);
 	ret |= ldb_msg_add_string(ldb, msg, "expires", 
 				  ldap_timestring(msg, rec->expire_time));
+	ret |= ldb_msg_add_fmt(ldb, msg, "version", "%llu", rec->version);
 	for (i=0;rec->addresses[i];i++) {
 		ret |= ldb_msg_add_string(ldb, msg, "address", rec->addresses[i]);
 	}
@@ -129,6 +187,9 @@ uint8_t winsdb_add(struct wins_server *winssrv, struct winsdb_record *rec)
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
 	int ret;
+
+	rec->version = winsdb_allocate_version(winssrv);
+	if (rec->version == 0) goto failed;
 
 	msg = winsdb_message(winssrv, rec, tmp_ctx);
 	if (msg == NULL) goto failed;
@@ -155,6 +216,9 @@ uint8_t winsdb_modify(struct wins_server *winssrv, struct winsdb_record *rec)
 	int ret;
 	int i;
 
+	rec->version = winsdb_allocate_version(winssrv);
+	if (rec->version == 0) goto failed;
+
 	msg = winsdb_message(winssrv, rec, tmp_ctx);
 	if (msg == NULL) goto failed;
 
@@ -177,14 +241,16 @@ failed:
 /*
   delete a WINS record from the database
 */
-uint8_t winsdb_delete(struct wins_server *winssrv, struct nbt_name *name)
+uint8_t winsdb_delete(struct wins_server *winssrv, struct winsdb_record *rec)
 {
 	struct ldb_context *ldb = winssrv->wins_db->ldb;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
 	int ret;
 	const char *dn;
 
-	dn = talloc_asprintf(tmp_ctx, "NAME=%s", nbt_name_string(tmp_ctx, name));
+	winsdb_remove_version(winssrv, rec->version);
+
+	dn = talloc_asprintf(tmp_ctx, "NAME=%s", nbt_name_string(tmp_ctx, rec->name));
 	if (dn == NULL) goto failed;
 
 	ret = ldb_delete(ldb, dn);
