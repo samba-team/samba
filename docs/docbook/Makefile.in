@@ -160,9 +160,11 @@ $(HTMLDIR)/Samba-HOWTO-Collection.html: Samba-HOWTO-Collection.xml $(PROJDOC_DEP
 $(HTMLDIR)/Samba-Developers-Guide.html: Samba-Developers-Guide.xml $(DEVDOC_DEPS)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
+$(HTMLDIR)/%.html: %.xml
+	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
-$(HTMLDIR)/%.html: $(MANPROJDOC)/%.xml
-	$(XSLTPROC) xslt/expand-sambadoc.xsl $< | $(XSLTPROC) --output $@ xslt/html.xsl -
+%.xml: $(MANPROJDOC)/%.xml
+	$(XSLTPROC) --output $@ xslt/expand-sambadoc.xsl $<
 
 # Manpages
 $(SMBDOTCONFDOC)/parameters.all.xml: $(SMBDOTCONFDOC)/generate-file-list.sh
@@ -186,16 +188,15 @@ $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(S
 	generate-context.xsl parameters.all.xml && \
 	cd ..
 
-$(MANPROJDOC)/smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml \
- 			$(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
+smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml \
+ 		$(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
 	$(XSLTPROC) --xinclude --output $@ xslt/expand-sambadoc.xsl $<
-	-ln -s global.ent $(MANPROJDOC)/global.ent
 
 $(MANDIR): 
 	mkdir $(MANDIR)
 
-$(MANDIR)/%: $(MANPROJDOC)/%.xml
-	$(XSLTPROC) xslt/expand-sambadoc.xsl $< | $(XSLTPROC) xslt/man.xsl - > $@
+$(MANDIR)/%: %.xml
+	$(XSLTPROC) --output $@ xslt/man.xsl $<
 
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml
 	$(PERL) scripts/find_missing_doc.pl ../..
