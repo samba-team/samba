@@ -1,13 +1,67 @@
+/*
+   http://support.microsoft.com/default.aspx?scid=KB;en-us;q159298
+   Any UUID starting with:
+   A4 - store
+   F5 - directory
+ */
+
 [
-	uuid(1544f5e0-613c-11d1-93df-00c04fd7bd09),
-	helpstring("Exchange 2003 System Attendant Request For Response")
-] interface exchange_rfr
+	uuid(99e64010-b032-11d0-97a4-00c04fd6551d),
+	version(3.0)
+] interface exchange_store_admin3
 {
-	void rfr_dummy();
+	void ec_store_admin3_dummy();
+}
+
+
+[
+	uuid(89742ace-a9ed-11cf-9c0c-08002be7ae86),
+	version(2.0)
+] interface exchange_store_admin2
+{
+	void ec_store_admin2_dummy();
 }
 
 [
-	uuid(469d6ec0-0d87-11ce-b13f-00aa003bec6c),
+	uuid(a4f1db00-ca47-1067-b31e-00dd010662da),
+	version(1.0)
+] interface exchange_store_admin1
+{
+	void ec_store_admin1_dummy();
+}
+
+
+[
+	uuid(1544f5e0-613c-11d1-93df-00c04fd7bd09),
+	version(1.0),
+	helpstring("Exchange 2003 Directory Request For Response")
+] interface exchange_ds_rfr
+{
+	/*****************/
+	/* Function 0x00 */
+	void RfrGetNewDSA();
+
+	/*****************/
+	/* Function 0x01 */
+	void RfrGetFQDNFromLegacyDN();
+}
+
+[
+	uuid(f930c514-1215-11d3-99a5-00a0c9b61b04),
+	helpstring("System Attendant Cluster Interface"),
+	version(1.0)
+] interface exchange_sysatt_cluster
+{
+	void sysatt_cluster_dummy();
+}
+
+/*
+[83d72bf0-0d89-11ce-b13f-00aa003bac6c] MS Exchange
+System Attendant Private Interface
+*/
+
+[
+	uuid(469d6ec0-0d87-11ce-b13f-00aa003bac6c),
 	helpstring("Exchange 5.5 System Attendant Request for Response")
 ] interface exchange_system_attendant
 {
@@ -16,22 +70,59 @@
 
 [
 	uuid(9e8ee830-4559-11ce-979b-00aa005ffebe),
+	version(2.0),
 	helpstring("Exchange 5.5 MTA")
 ] interface exchange_mta
 {
-	void mta_dummy();
+	/*****************/
+	/* Function 0x00 */
+	void MtaBind();
+
+	/*****************/
+	/* Function 0x01 */
+	void MtaBindAck();
 }
 
 [
 	uuid(f5cc59b4-4264-101a-8c59-08002b2f8426),
+	version(21.0),
 	helpstring("Exchange 5.5 DRS")
 ] interface exchange_drs
 {
-	void drs_dummy();
+	/*****************/
+	/* Function 0x00 */
+	void ds_abandon();
+
+	/*****************/
+	/* Function 0x01 */
+	void ds_add_entry();
+
+	void ds_bind();
+	void ds_compare();
+	void ds_list();
+	void ds_modify_entry();
+	void ds_modify_rdn();
+	void ds_read();
+	void ds_receive_result();
+	void ds_remove_entry();
+	void ds_search();
+	void ds_unbind();
+	void ds_wait();
+	void dra_replica_add();
+	void dra_replica_delete();
+	void dra_replica_synchronize();
+	void dra_reference_update();
+	void dra_authorize_replica();
+	void dra_unauthorize_replica();
+	void dra_adopt();
+	void dra_set_status();
+	void dra_modify_entry();
+	void dra_delete_subref();
 }
 
 [
 	uuid(f5cc5a7c-4264-101a-8c59-08002b2f8426),
+	version(21.0),
 	helpstring("Exchange 5.5 XDS")
 ] interface exchange_xds
 {
@@ -39,19 +130,96 @@
 }
 
 [
+	uuid(38a94e72-a9bc-11d2-8faf-00c04fa378ff),
+	version(1.0)
+] interface exchange_mta_qadmin
+{
+	void exchange_mta_qadmin();
+}
+
+
+[
+	uuid(0e4a0156-dd5d-11d2-8c2f-00c04fb6bcde),
+	version(1.0)
+] interface exchange_store_information
+{
+	void exchange_store_information_dummy();
+}
+
+[
 	uuid(f5cc5a18-4264-101a-8c59-08002b2f8426),
+	version(56.0),
 	helpstring("Exchange 5.5 Name Service Provider")
 ] interface exchange_nsp
 {
-	void nsp_dummy();
+	void NspiBind();
+	void NspiUnbind();
+	void NspiUpdateStat();
+	void NspiQueryRows();
+	void NspiSeekEntries();
+	void NspiGetMatches();
+	void NspiResortRestriction();
+	void NspiDNToEph();
+	void NspiGetPropList();
+	void NspiGetProps();
+	void NspiCompareDNTs();
+	void NspiModProps();
+	void NspiGetHierarchyInfo();
+	void NspiGetTemplateInfo();
+	void NspiModLInkAtt();
+	void NspiDeleteEntries();
+	void NspiQueryColumns();
+	void NspiGetNamesFromIDs();
+	void NspiGetIDsFromNames();
+	void NspiResolveNames();
+	void NspiResolveNamesW();
 }
 
 [
 	uuid(a4f1db00-ca47-1067-b31f-00dd010662da),
+	version(0.81),
 	helpstring("Exchange 5.5 EMSMDB")
 ] interface exchange_emsmdb
 {
-	void emsmdb_dummy();
+	/*****************/
+	/* Function 0x00 */
+	void EcDoConnect();
+
+	/*****************/
+	/* Function 0x01 */
+	void EcDoDisconnect();
+
+	/*****************/
+	/* Function 0x02 */
+	void EcDoRpc();
+
+	/*****************/
+	/* Function 0x03 */
+	void EcGetMoreRpc();
+
+	/*****************/
+	/* Function 0x04 */
+	void EcRRegisterPushNotification();
+
+	/*****************/
+	/* Function 0x05 */
+	void EcRUnregisterPushNotification();
+
+	/*****************/
+	/* Function 0x06 */
+	void EcDummyRpc();
+
+	/*****************/
+	/* Function 0x07 */
+	void EcRGetDCName();
+
+	/*****************/
+	/* Function 0x08 */
+	void EcRNetGetDCName();
+
+	/*****************/
+	/* Function 0x09 */
+	void EcDoRpcExt();
 }
 
 [

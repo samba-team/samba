@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   test suite for dcom rpc operations
+   test suite for dcom operations
 
    Copyright (C) Jelmer Vernooij 2004
    

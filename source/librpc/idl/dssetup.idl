@@ -1,0 +1,17 @@
+[
+	uuid(3919286a-b10c-11d0-9ba8-00c04fd92ef5),
+	version(0.0)
+] interface dssetup
+{
+	void DsRolerGetPrimaryDomainInformation();
+	void DsRolerDnsNameToFlatName();
+	void DsRolerDcAsDc();
+	void DsRolerDcAsReplica();
+	void DsRolerDemoteDc();
+	void DsRolerGetDcOperationProgress();
+	void DsRolerGetDcOperationResults();
+	void DsRolerCancel();
+	void DsRolerServerSaveStateForUpgrade();
+	void DsRolerUpgradeDownlevelServer();
+	void DsRolerAbortDownlevelServerUpgrade();
+}

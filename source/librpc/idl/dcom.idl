@@ -9,6 +9,16 @@
 #define OLESTR unistr
 
 [
+	uuid(18f70770-8e64-11cf-9af1-0020af6e72f4),
+	version(0.0)
+] interface dcom_Uknown
+{
+	void dcomu_UseProtSeq();
+	void dcomu_GetCustomProtseqInfo();
+	void dcomu_UpdateResolverBindings();
+}
+
+[
 	uuid(99fcfe60-5260-101b-bbcb-00aa0021347a),
 	pointer_default(unique)
 ]
@@ -245,6 +255,7 @@ interface ObjectRpcBaseTypes
 	} MInterfacePointer;
 }
 
+
 [
 	object,
 	uuid(00000000-0000-0000-C000-000000000046)
@@ -263,6 +274,22 @@ interface IUnknown
 	/*****************/
 	/* Function 0x02 */
 	uint32 Release();
+}
+
+
+[
+	object,
+	uuid(00000001-0000-0000-C000-000000000046),
+	pointer_default(unique)
+] interface IClassFactory : IUnknown
+{
+	HRESULT CreateInstance();
+
+	HRESULT RemoteCreateInstance();
+
+	HRESULT LockServer();
+
+	HRESULT RemoteLockServer();
 }
 
 //////////////////////////////////////////////////////////////////
@@ -428,12 +455,15 @@ interface IRemoteActivation
 		MInterfacePointer *ppInterfaceData;
 	} ppInterfaceDataArray;
 
+	typedef [public] struct {
+		DUALSTRINGARRAY *dualstringarray;
+	} REF_DUALSTRINGARRAY;
+
 	const uint32 MODE_GET_CLASS_OBJECT = 0xffffffff;
 	HRESULT RemoteActivation (
-							  [in,ref] policy_handle *hRpc,
-							  [in] ORPCTHIS *ORPCthis,
-							  [out] ORPCTHAT *ORPCthat,
-							  [in] GUID *Clsid,
+							  [in] ORPCTHIS ORPCthis,
+							  [out] ORPCTHAT ORPCthat,
+							  [in] GUID Clsid,
 							  [in, unique] unistr *pwszObjectName,
 							  [in, unique] MInterfacePointer *pObjectStorage,
 							  [in] uint32 ClientImpLevel,
@@ -441,11 +471,10 @@ interface IRemoteActivation
 							  [in] uint32 Interfaces,
 							  [in,unique,size_is(Interfaces)] IID *pIIDs,
 							  [in] uint16 cRequestedProtseqs,
-							  [in, size_is(cRequestedProtseqs)]
-							  uint16 RequestedProtseqs[],
-							  [out] OXID *pOxid,
-							  [out] ppdsaOxidBindingsArray *ppdsaOxidBindings,
-							  [out] IPID *pipidRemUnknown,
+							  [in, size_is(cRequestedProtseqs)] uint16 RequestedProtseqs[],
+							  [out] OXID pOxid,
+							  [out] DUALSTRINGARRAY *pdsaOxidBindings,
+							  [out] IPID ipidRemUnknown,
 							  [out] uint32 *pAuthnHint,
 							  [out] COMVERSION *pServerVersion,
 							  [out] HRESULT *phr,
@@ -457,40 +486,22 @@ interface IRemoteActivation
 
 /* The Win2k equivalent of IRemoteActivation */
 [
+	object,
 	uuid(000001a0-0000-0000-c000-000000000046),
 	version(0.0)
 ]
-interface ISystemActivator
+interface ISystemActivator : IUnknown
 {
-
-	/*****************/
-	/* Function 0x00 */
-	NTSTATUS isa_Unknown0();
-
-	/*****************/
-	/* Function 0x01 */
-	NTSTATUS isa_Unknown1();
-
-	/*****************/
-	/* Function 0x02 */
-	NTSTATUS isa_Unknown2();
-
-	/*****************/
-	/* Function 0x03 */
-	NTSTATUS isa_Unknown3();
-
-	// Binding strings and the OBJREF_SIGNATURE in this call
-	/*****************/
-	/* Function 0x04 */
-	NTSTATUS isa_Unknown4();
+	void ISystemActivatorRemoteGetClassObject();
+	void ISystemActivatorRemoteCreateInstance();
 }
 
 [
 	uuid(00000132-0000-0000-C000-000000000046),
 	version(0.0)
-] interface IObjServer
+] interface ILocalSystemActivator
 {
-	WERROR IObjServer_Unknown();
+	WERROR ILocalSystemActivator_Unknown();
 }
 
 [
@@ -498,18 +509,27 @@ interface ISystemActivator
 	version(0.0)
 ] interface IRunDown
 {
-	WERROR IRunDown_Dummy();
+	void IRunDown_Dummy();
 }
 
 
-// Service COntrol Manager
+// Service Control Manager
 
 [
-	uuid(00000136-0000-0000-C000-000000000046),
-	version(0.0)
-] interface ISCMLocalActivator
+	uuid(),
+	version(2.0)
+] interface SCM
 {
-	WERROR ISCMLocalActivator();
+	void SCM_Dummy();
+}
+
+[
+	object,
+	uuid(00000136-0000-0000-C000-000000000046)
+] interface ISCMActivator : IUnknown
+{
+	WERROR SCMActivator_GetClassObject();
+	WERROR SCMActivator_CreateInstance();
 }
 
 [
@@ -523,12 +543,20 @@ interface ISystemActivator
 	HRESULT GetTypeInfoCount(
 						 [out] uint16 *pctinfo);
 
+	typedef struct {
+		uint8 FIXME;
+	} ITypeInfo;
+
+	typedef struct {
+		ITypeInfo *pTInfo;
+	} REF_ITypeInfo;
+
 	/*****************/
 	/* Function 0x04 */
 	HRESULT GetTypeInfo (
 					 [in] uint16 iTInfo,
-					 [in] LCID lcid/*FIXME,
-					 [out] ITypeInfo **ppTInfo*/);
+					 [in] LCID lcid,
+					 [out] REF_ITypeInfo *ppTInfo);
 
 	/*****************/
 	/* Function 0x05 */

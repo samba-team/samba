@@ -36,6 +36,7 @@ SMB_INCLUDE_M4(client/config.m4)
 SMB_INCLUDE_M4(utils/config.m4)
 SMB_INCLUDE_M4(smbd/config.m4)
 SMB_INCLUDE_M4(gtk/config.m4)
+SMB_INCLUDE_M4(lib/dcom/config.m4)
 
 ALLLIBS_LIBS="$LIBS"
 ALLLIBS_CFLAGS="$CFLAGS"

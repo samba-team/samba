@@ -11,7 +11,7 @@
 {
 	/******************/
 	/* Function: 0x00 */
-	void dfs_Exist(
+	void dfs_GetManagerVersion(
 		[out,ref] uint32 *exist_flag
 		);
 
@@ -171,4 +171,55 @@
 		[in]     uint32 *unknown,
 		[in,out] uint32 *total
 		);
+
+	/* Function 0x06 */
+	WERROR dfs_Rename();
+
+	/* Function 0x07 */
+	WERROR dfs_Move();
+
+	/* Function 0x08 */
+	WERROR dfs_ManagerGetConfigInfo();
+
+	/* Function 0x09 */
+	WERROR dfs_ManagerSendSiteInfo();
+
+	/* Function 0x0a */
+	WERROR dfs_AddFtRoot();
+
+	/* Function 0x0b */
+	WERROR dfs_RemoveFtRoot();
+
+	/* Function 0x0c */
+	WERROR dfs_AddStdRoot();
+
+	/* Function 0x0d */
+	WERROR dfs_RemoveStdRoot();
+
+	/* Function 0x0e */
+	WERROR dfs_ManagerInitialize();
+
+	/* Function 0x0f */
+	WERROR dfs_AddStdRootForced();
+
+	/* Function 0x10 */
+	WERROR dfs_GetDcAddress();
+
+	/* Function 0x11 */
+	WERROR dfs_SetDcAddress();
+
+	/* Function 0x12 */
+	WERROR dfs_FlushFtTable();
+
+	/* Function 0x13 */
+	WERROR dfs_Add2();
+
+	/* Function 0x14 */
+	WERROR dfs_Remove2();
+
+	/* Function 0x15 */
+	WERROR dfs_EnumEx();
+
+	/* Function 0x16 */
+	WERROR dfs_SetInfo2();
 }

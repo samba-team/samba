@@ -22,17 +22,17 @@
 #include "includes.h"
 
 
-static BOOL test_Exist(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_GetManagerVersion(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
-	struct dfs_Exist r;
+	struct dfs_GetManagerVersion r;
 	uint32_t exist = 0;
 
 	r.out.exist_flag = &exist;
 
-	status = dcerpc_dfs_Exist(p, mem_ctx, &r);
+	status = dcerpc_dfs_GetManagerVersion(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Exist failed - %s\n", nt_errstr(status));
+		printf("GetManagerVersion failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -180,7 +180,7 @@ BOOL torture_rpc_dfs(int dummy)
 		return False;
 	}
 
-	if (!test_Exist(p, mem_ctx)) {
+	if (!test_GetManagerVersion(p, mem_ctx)) {
 		ret = False;
 	}
 

@@ -3,6 +3,19 @@
 	version(1.0)
 ] interface audiosrv
 {
-	void AudioSrv_Dummy();
-
+	void audiosrv_CreatezoneFactoriesList();
+	void audiosrv_CreateGfxFactoriesList();
+	void audiosrv_CreateGfxList();
+	void audiosrv_RemoveGfx();
+	void audiosrv_AddGfx();
+	void audiosrv_ModifyGfx();
+	void audiosrv_OpenGfx();
+	void audiosrv_Logon();
+	void audiosrv_Logoff();
+	void audiosrv_RegisterSessionNotificationEvent();
+	void audiosrv_UnregisterSessionNotificationEvent();
+	void audiosrv_SessionConnectState();
+	void audiosrv_DriverOpenDrvRegKey();
+	void audiosrv_AdvisePreferredDeviceChange();
+	void audiosrv_GetPnpInfo();
 }

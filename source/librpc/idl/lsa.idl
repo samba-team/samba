@@ -384,23 +384,27 @@
 
 
 	/* Function:            0x13 */
-	NTSTATUS ADDPRIVS ();
+	NTSTATUS lsa_AddPrivilegesToAccount();
+	
 	/* Function:         0x14 */
-	NTSTATUS REMOVEPRIVS ();
+	NTSTATUS lsa_RemovePrivilegesFromAccount();
+
 	/* Function:           0x15 */
-	NTSTATUS GETQUOTAS ();
+	NTSTATUS lsa_GetQuotasForAccount();
+	
 	/* Function:           0x16 */
-	NTSTATUS SETQUOTAS ();
+	NTSTATUS lsa_SetQuotasForAccount();
+	
 	/* Function:    0x17 */
-	NTSTATUS GETSYSTEMACCOUNT ();
+	NTSTATUS lsa_GetSystemAccessAccount();
 	/* Function:    0x18 */
-	NTSTATUS SETSYSTEMACCOUNT ();
+	NTSTATUS lsa_SetSystemAccessAccount();
 	/* Function:        0x19 */
-	NTSTATUS OPENTRUSTDOM ();
+	NTSTATUS lsa_OpenTrustedDomain();
 	/* Function:       0x1a */
-	NTSTATUS QUERYTRUSTDOM ();
+	NTSTATUS lsa_QueryInfoTrustedDomain();
 	/* Function:     0x1b */
-	NTSTATUS SETINFOTRUSTDOM ();
+	NTSTATUS lsa_SetInformationTrustedDomain();
 
 	/* Function:          0x1c */
 	NTSTATUS lsa_OpenSecret(
@@ -437,7 +441,7 @@
 		);
 
 	/* Function:     0x1f */
-	NTSTATUS LOOKUPPRIVVALUE ();
+	NTSTATUS lsa_LookupPrivValue();
 
 
 	/* Function:      0x20 */
@@ -449,11 +453,11 @@
 
 
 	/* Function:  0x21 */
-	NTSTATUS PRIV_GET_DISPNAME ();
+	NTSTATUS lsa_LookupPrivDisplayName();
 	/* Function:        0x22 */
-	NTSTATUS DELETEOBJECT ();
+	NTSTATUS lsa_DeleteObject();
 	/* Function:   0x23 */
-	NTSTATUS ENUMACCTWITHRIGHT ();
+	NTSTATUS lsa_EnumAccountsWithUserRight();
 
 	/* Function:      0x24 */
 	typedef struct {
@@ -473,19 +477,19 @@
 
 
 	/* Function:       0x25 */
-	NTSTATUS ADDACCTRIGHTS ();
+	NTSTATUS lsa_AddAccountRights();
 	/* Function:    0x26 */
-	NTSTATUS REMOVEACCTRIGHTS ();
+	NTSTATUS lsa_RemoveAccountRights();
 	/* Function:   0x27 */
-	NTSTATUS QUERYTRUSTDOMINFO ();
+	NTSTATUS lsa_QueryTrustDomainInfo();
 	/* Function:     0x28 */
-	NTSTATUS SETTRUSTDOMINFO ();
+	NTSTATUS lsa_SetTrustDomainInfo();
 	/* Function:      0x29 */
-	NTSTATUS DELETETRUSTDOM ();
+	NTSTATUS lsa_DeleteTrustDomain();
 	/* Function:       0x2a */
-	NTSTATUS STOREPRIVDATA ();
+	NTSTATUS lsa_StorePrivateData();
 	/* Function:        0x2b */
-	NTSTATUS RETRPRIVDATA ();
+	NTSTATUS lsa_RetrievePrivateData();
 
 
 	/**********************/
@@ -499,7 +503,7 @@
 
 
 	/* Function:    0x2d */
-	NTSTATUS UNK_GET_CONNUSER ();
+	NTSTATUS lsa_GetUserName();
 
 	/**********************/
 	/* Function:          0x2e */
@@ -509,4 +513,43 @@
 		[in]                     uint16 level,
 		[out,switch_is(level)]   lsa_PolicyInformation *info
 		);
+
+	/* Function 0x2f */
+	NTSTATUS lsa_SetInfoPolicy2();
+
+	/* Function 0x30 */
+	NTSTATUS lsa_QueryTrustedDomainInfoByName();
+
+	/* Function 0x31 */
+	NTSTATUS lsa_SetTrustedDomainInfoByName();
+
+	/* Function 0x32 */
+	NTSTATUS lsa_EnumTrustedDomainsEx();
+
+	/* Function 0x33 */
+	NTSTATUS lsa_CreateTrustedDomainEx();
+
+	/* Function 0x34 */
+	NTSTATUS lsa_CloseTrustedDomainEx();
+
+	/* Function 0x35 */
+	NTSTATUS lsa_QueryDomainInformationPolicy();
+
+	/* Function 0x36 */
+	NTSTATUS lsa_SetDomInfoPolicy();
+
+	/* Function 0x37 */
+	NTSTATUS lsa_OpenTrustedDomainByName();
+
+	/* Function 0x38 */
+	NTSTATUS lsa_TestCall();
+
+	/* Function 0x39 */
+	NTSTATUS lsa_LookupSids2();
+
+	/* Function 0x3a */
+	NTSTATUS lsa_LookupNames2();
+
+	/* Function 0x3b */
+	NTSTATUS lsa_CreateTrustedDomainEx2();
 }
