@@ -1016,6 +1016,12 @@ char *get_socket_name(int fd)
 			pstrcpy(name_buf,"UNKNOWN");
 		}
 	}
+
+	alpha_strcpy(name_buf, name_buf, "_-.", sizeof(name_buf));
+	if (strstr(name_buf,"..")) {
+		pstrcpy(name_buf, "UNKNOWN");
+	}
+
 	return name_buf;
 }
 
