@@ -15,14 +15,18 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbcontrol</command>
-		<arg>-i</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">-s &lt;smb config file&gt;</arg>
+		<arg choice="req">-i</arg>
 	</cmdsynopsis>
 	
 	<cmdsynopsis>
 		<command>smbcontrol</command>
-		<arg>destination</arg>
-		<arg>message-type</arg>
-		<arg>parameter</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">-s &lt;smb config file&gt;</arg>
+		<arg choice="req">destination</arg>
+		<arg choice="req">message-type</arg>
+		<arg choice="opt">parameter</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -44,6 +48,20 @@
 	<title>OPTIONS</title>
 
 	<variablelist>
+		<varlistentry>
+		<term>-d &lt;debuglevel&gt;</term>
+		<listitem><para>debuglevel is an integer from 0 to 10.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-s &lt;smb.conf&gt;</term>
+		<listitem><para>This parameter specifies the pathname to
+		the Samba configuration file, <ulink url="smb.conf.5.html">
+		smb.conf(5)</ulink>.  This file controls all aspects of
+		the Samba setup on the machine.</para></listitem>
+		</varlistentry>
+	
 		<varlistentry>
 		<term>-i</term>
 		<listitem><para>Run interactively. Individual commands 

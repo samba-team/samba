@@ -36,17 +36,17 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >smbcontrol</B
->  [-i]</P
+>  [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] {-i}</P
 ><P
 ><B
 CLASS="COMMAND"
 >smbcontrol</B
->  [destination] [message-type] [parameter]</P
+>  [-d &#60;debug level&#62;] [-s &#60;smb config file&#62;] {destination} {message-type} [parameter]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN17"
+NAME="AEN21"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -81,7 +81,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN26"
+NAME="AEN30"
 ></A
 ><H2
 >OPTIONS</H2
@@ -90,6 +90,24 @@ NAME="AEN26"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
+><DT
+>-d &#60;debuglevel&#62;</DT
+><DD
+><P
+>debuglevel is an integer from 0 to 10.</P
+></DD
+><DT
+>-s &#60;smb.conf&#62;</DT
+><DD
+><P
+>This parameter specifies the pathname to
+		the Samba configuration file, <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+>		smb.conf(5)</A
+>.  This file controls all aspects of
+		the Samba setup on the machine.</P
+></DD
 ><DT
 >-i</DT
 ><DD
@@ -268,7 +286,7 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN81"
+NAME="AEN94"
 ></A
 ><H2
 >VERSION</H2
@@ -279,7 +297,7 @@ NAME="AEN81"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN84"
+NAME="AEN97"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -305,7 +323,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN91"
+NAME="AEN104"
 ></A
 ><H2
 >AUTHOR</H2
