@@ -150,36 +150,6 @@ struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e0,
 }
 
 
-/*
-  remove all fd based events that match a specified fd
-*/
-void event_remove_fd_all(struct event_context *ev, int fd)
-{
-	struct fd_event *e = ev->fd_events;
-	/* be careful to cope with extra reference counts on events */
-	while (e) {
-		if (talloc_free(ev->fd_events) == 0) {
-			e = ev->fd_events;
-		} else {
-			e = e->next;
-		}
-	}
-}
-
-/*
-  remove all fd based events that match a specified handler
-*/
-void event_remove_fd_all_handler(struct event_context *ev, void *handler)
-{
-	struct fd_event *e, *next;
-	for (e=ev->fd_events; e; e=next) {
-		next = e->next;
-		if (handler == (void *)e->handler) {
-			talloc_free(e);
-		}
-	}
-}
-
 static int event_timed_destructor(void *ptr)
 {
 	struct timed_event *te = talloc_get_type(ptr, struct timed_event);
