@@ -856,8 +856,7 @@ krb5_524_conv_principal(krb5_context context,
 
 /*
  * Create a principal in `ret_princ' for the service `sname' running
- * on host `hostname'.
- */
+ * on host `hostname'.  */
 			
 krb5_error_code
 krb5_sname_to_principal (krb5_context context,
@@ -879,15 +878,17 @@ krb5_sname_to_principal (krb5_context context,
     if(sname == NULL)
 	sname = "host";
     if(type == KRB5_NT_SRV_HST) {
-	ret = krb5_expand_hostname (context, hostname, &host);
+	ret = krb5_expand_hostname_realms (context, hostname,
+					   &host, &realms);
 	if (ret)
 	    return ret;
 	strlwr(host);
 	hostname = host;
+    } else {
+	ret = krb5_get_host_realm(context, hostname, &realms);
+	if(ret)
+	    return ret;
     }
-    ret = krb5_get_host_realm(context, hostname, &realms);
-    if(ret)
-	return ret;
 
     ret = krb5_make_principal(context, ret_princ, realms[0], sname,
 			      hostname, NULL);
