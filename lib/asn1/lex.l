@@ -1,6 +1,6 @@
 %{
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,6 +56,8 @@ static unsigned lineno = 1;
 
 #undef ECHO
 
+static void handle_comment(int type);
+
 %}
 
 
@@ -88,7 +90,8 @@ IDENTIFIER		{ return IDENTIFIER; }
 "["			{ return *yytext; }
 "]"			{ return *yytext; }
 ::=			{ return EEQUAL; }
---[^\n]*\n		{ ++lineno; }
+--			{ handle_comment(0); }
+\/\*			{ handle_comment(1); }
 -?(0x)?[0-9]+		{ char *e, *y = yytext;
 			  yylval.constant = strtol((const char *)yytext,
 						   &e, 0);
@@ -125,4 +128,59 @@ error_message (const char *format, ...)
      fprintf (stderr, "%s:%d: ", filename(), lineno);
      vfprintf (stderr, format, args);
      va_end (args);
+}
+
+static void
+handle_comment(int type)
+{
+    int c;
+    int start_lineno = lineno;
+    if(type == 0) {
+	int f = 0;
+	while((c = input()) != EOF) {
+	    if(f && c == '-')
+		return;
+	    if(c == '-') {
+		f = 1;
+		continue;
+	    }
+	    if(c == '\n') {
+		lineno++;
+		return;
+	    }
+	    f = 0;
+	}
+    } else {
+	int level = 1;
+	int seen_star = 0;
+	int seen_slash = 0;
+	while((c = input()) != EOF) {
+	    if(c == '/') {
+		if(seen_star) {
+		    if(--level == 0)
+			return;
+		    seen_star = 0;
+		    continue;
+		}
+		seen_slash = 1;
+		continue;
+	    }
+	    if(c == '*') {
+		if(seen_slash) {
+		    level++;
+		    seen_star = seen_slash = 0;
+		    continue;
+		} 
+		seen_star = 1;
+		continue;
+	    }
+	    seen_star = seen_slash = 0;
+	    if(c == '\n') {
+		lineno++;
+		continue;
+	    }
+	}
+    }
+    if(c == EOF)
+	error_message("unterminated comment, possibly started on line %d\n", start_lineno);
 }
