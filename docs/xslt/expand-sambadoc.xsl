@@ -232,6 +232,9 @@
 			</xsl:attribute>
 
 			<xsl:element name="title">
+				<xsl:if test="imagedescription = ''">
+					<xsl:message><xsl:text>imagedescription of image with id </xsl:text><xsl:value-of select="@id"/><xsl:text> is empty.</xsl:text></xsl:message>
+				</xsl:if>
 				<xsl:value-of select="imagedescription"/>
 			</xsl:element>
 			<xsl:element name="mediaobject">
