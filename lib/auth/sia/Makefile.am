@@ -13,7 +13,7 @@ DEFS = @DEFS@
 ## link with non-installed libraries
 
 L =					\
-	$(top_builddir)/lib/kafs/.libs/libkafs.a	\
+	$(LIB_kafs)					\
 	$(top_builddir)/lib/krb5/.libs/libkrb5.a	\
 	$(top_builddir)/lib/asn1/.libs/libasn1.a	\
 	$(LIB_krb4)					\

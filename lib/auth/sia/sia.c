@@ -390,6 +390,7 @@ siad_ses_reauthent (sia_collect_func_t *collect,
            duplicate some code here... */
 	struct state *s = (struct state*)entity->mech[pkgind];
 	chown(s->ticket, entity->pwd->pw_uid, entity->pwd->pw_gid);
+#ifdef KRB4
 	if(k_hasafs()) {
 	    char cell[64];
 	    if(k_afs_cell_of_file(entity->pwd->pw_dir, 
@@ -397,6 +398,7 @@ siad_ses_reauthent (sia_collect_func_t *collect,
 		krb_afslog(cell, 0);
 	    krb_afslog_home(0, 0, entity->pwd->pw_dir);
 	}
+#endif
     }
     return ret;
 }

@@ -267,6 +267,7 @@ check_for_tgt (krb5_context context,
     return expired;
 }
 
+#ifdef KRB4
 /*
  * Print a list of all AFS tokens
  */
@@ -322,6 +323,7 @@ display_tokens(int do_verbose)
 	putchar('\n');
     }
 }
+#endif
 
 static int version_flag = 0;
 static int help_flag	= 0;
@@ -413,8 +415,10 @@ main (int argc, char **argv)
     krb5_free_principal (context, principal);
     krb5_free_context (context);
 
+#ifdef KRB4
     if (!do_test && do_tokens && k_hasafs ())
 	display_tokens (do_verbose);
+#endif
 
     return exit_status;
 }
