@@ -77,7 +77,7 @@ RCSID("$Id$");
 #include "misc.h"
 
 int kerberos4_cksum P((unsigned char *, int));
-extern auth_debug_mode;
+extern int auth_debug_mode;
 
 static unsigned char str_data[1024] = { IAC, SB, TELOPT_AUTHENTICATION, 0,
 			  		AUTHTYPE_KERBEROS_V4, };

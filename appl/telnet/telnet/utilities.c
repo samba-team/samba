@@ -131,7 +131,7 @@ Dump(char direction, unsigned char *buffer, int length)
 #   define min(x,y)	((x<y)? x:y)
     unsigned char *pThis;
     int offset;
-    extern pettydump;
+    extern int pettydump;
 
     offset = 0;
 

@@ -48,7 +48,7 @@ RCSID("$Id$");
 
 #include <des.h>
 
-extern encrypt_debug_mode;
+extern int encrypt_debug_mode;
 
 #define	CFB	0
 #define	OFB	1

@@ -94,7 +94,7 @@ pop_dropinfo(POP *p)
 
 #ifdef DEBUG
     if(p->debug && msg_num > 0) {
-        register    i;
+        int i;
         for (i = 0, mp = p->mlp; i < p->msg_count; i++, mp++)
             pop_log(p,POP_DEBUG,
                 "Msg %d at offset %d is %d octets long and has %u lines.",

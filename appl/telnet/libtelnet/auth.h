@@ -83,5 +83,5 @@ typedef struct XauthP {
 
 #include "auth-proto.h"
 
-extern auth_debug_mode;
+extern int auth_debug_mode;
 #endif

@@ -1766,7 +1766,7 @@ static
 void
 rmut(void)
 {
-	register f;
+	int f;
 	int found = 0;
 	struct utmp *u, *utmp;
 	int nutmp;
