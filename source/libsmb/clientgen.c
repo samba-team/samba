@@ -88,10 +88,9 @@ static BOOL cli_send_smb(struct cli_state *cli)
 			}
 		}
 		if (ret <= 0) {
-			DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",
+			DEBUG(0,("Error writing %d bytes to client. %d\n",
 				 (int)len,(int)ret));
-			close_sockets();
-			exit(1);
+			return False;
 		}
 		nwritten += ret;
 	}
@@ -1516,11 +1515,11 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 
 		if (size2 > block) {
 			DEBUG(0,("server returned more than we wanted!\n"));
-			exit(1);
+			return -1;
 		}
 		if (mid >= issued) {
 			DEBUG(0,("invalid mid from server!\n"));
-			exit(1);
+			return -1;
 		}
 		p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
 
@@ -2551,7 +2550,6 @@ retry:
 		/* SESSION RETARGET */
 		putip((char *)&cli->dest_ip,cli->inbuf+4);
 
-		close_sockets();
 		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, port, LONG_CONNECT_TIMEOUT);
 		if (cli->fd == -1)
 			return False;
@@ -2561,7 +2559,18 @@ retry:
 		set_socket_options(cli->fd,user_socket_options);
 
 		/* Try again */
-		return cli_session_request(cli, calling, called);
+		{
+			static int depth;
+			BOOL ret;
+			if (depth > 4) {
+				DEBUG(0,("Retarget recursion - failing\n"));
+				return False;
+			}
+			depth++;
+			ret = cli_session_request(cli, calling, called);
+			depth--;
+			return ret;
+		}
 	} /* C. Hoch 9/14/95 End */
 
 #ifdef WITH_SSL

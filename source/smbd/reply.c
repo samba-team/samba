@@ -40,7 +40,6 @@ extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
-extern int Client;
 extern int global_oplock_break;
 uint32 global_client_caps = 0;
 unsigned int smb_echo_count = 0;
@@ -55,7 +54,7 @@ static void overflow_attack(int len)
 		dbgtext( "ERROR: Invalid password length %d.\n", len );
 		dbgtext( "Your machine may be under attack by someone " );
 		dbgtext( "attempting to exploit an old bug.\n" );
-		dbgtext( "Attack was from IP = %s.\n", client_addr(Client) );
+		dbgtext( "Attack was from IP = %s.\n", client_addr() );
 	}
 	exit_server("possible attack");
 }
@@ -2048,7 +2047,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   if(global_oplock_break)
   {
     _smb_setlen(header,0);
-    transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
+    transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
     DEBUG(5,("readbraw - oplock break finished\n"));
     return -1;
   }
@@ -2061,7 +2060,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	   */
 	  DEBUG(3,("fnum %d not open in readbraw - cache prime?\n",(int)SVAL(inbuf,smb_vwv0)));
 	  _smb_setlen(header,0);
-	  transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
+	  transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
 	  return(-1);
   }
 
@@ -2088,7 +2087,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
       DEBUG(0,("readbraw - large offset (%x << 32) used and we don't support \
 64 bit offsets.\n", (unsigned int)IVAL(inbuf,smb_vwv8) ));
       _smb_setlen(header,0);
-      transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
+      transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
       return(-1);
     }
 
@@ -2098,7 +2097,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
       DEBUG(0,("readbraw - negative 64 bit readraw offset (%.0f) !\n",
             (double)startpos ));
 	  _smb_setlen(header,0);
-	  transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
+	  transfer_file(0,smbd_server_fd(),(SMB_OFF_T)0,header,4,0);
 	  return(-1);
     }      
   }
@@ -2167,7 +2166,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   if (ret < mincount) ret = 0;
 
   _smb_setlen(header,ret);
-  transfer_file(0,Client,0,header,4+ret,0);
+  transfer_file(0,smbd_server_fd(),0,header,4+ret,0);
 #endif /* UNSAFE_READRAW */
 
   DEBUG(5,("readbraw finished\n"));
@@ -2403,10 +2402,10 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
   CVAL(outbuf,smb_com) = SMBwritebraw;
   SSVALS(outbuf,smb_vwv0,-1);
   outsize = set_message(outbuf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
-  send_smb(Client,outbuf);
+  send_smb(smbd_server_fd(),outbuf);
   
   /* Now read the raw data into the buffer and write it */
-  if (read_smb_length(Client,inbuf,SMB_SECONDARY_WAIT) == -1) {
+  if (read_smb_length(smbd_server_fd(),inbuf,SMB_SECONDARY_WAIT) == -1) {
     exit_server("secondary writebraw failed");
   }
   
@@ -2419,7 +2418,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	     (int)tcount,(int)nwritten,(int)numtowrite));
   }
 
-  nwritten = vfs_transfer_file(Client, NULL, -1, fsp,
+  nwritten = vfs_transfer_file(smbd_server_fd(), NULL, -1, fsp,
 			       (SMB_OFF_T)numtowrite,NULL,0, 
 			       startpos+nwritten);
   total_written += nwritten;
@@ -3002,7 +3001,7 @@ int reply_echo(connection_struct *conn,
 
 		smb_setlen(outbuf,outsize - 4);
 
-		send_smb(Client,outbuf);
+		send_smb(smbd_server_fd(),outbuf);
 	}
 
 	DEBUG(3,("echo %d times\n", smb_reverb));
@@ -4346,7 +4345,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
       SSVAL(outbuf,smb_vwv6,nread);
       SSVAL(outbuf,smb_vwv7,smb_offset(data,outbuf));
 
-      send_smb(Client,outbuf);
+      send_smb(smbd_server_fd(),outbuf);
 
       total_read += nread;
       startpos += nread;
@@ -4437,7 +4436,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
   if (write_through && tcount==nwritten) {
     /* we need to send both a primary and a secondary response */
     smb_setlen(outbuf,outsize - 4);
-    send_smb(Client,outbuf);
+    send_smb(smbd_server_fd(),outbuf);
 
     /* now the secondary */
     outsize = set_message(outbuf,1,0,True);

@@ -58,7 +58,6 @@ extern fstring global_myworkgroup;
 #define SNLEN 15		/* service name length */
 #define QNLEN 12		/* queue name maximum length */
 
-extern int Client;
 extern int smb_read_error;
 
 static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
@@ -212,7 +211,7 @@ static void send_trans_reply(char *outbuf,
 	SSVAL(outbuf,smb_vwv9,0);
 
 	show_msg(outbuf);
-	send_smb(Client,outbuf);
+	send_smb(smbd_server_fd(),outbuf);
 
 	tot_data_sent = this_ldata;
 	tot_param_sent = this_lparam;
@@ -245,7 +244,7 @@ static void send_trans_reply(char *outbuf,
 		SSVAL(outbuf,smb_vwv9,0);
 
 		show_msg(outbuf);
-		send_smb(Client,outbuf);
+		send_smb(smbd_server_fd(),outbuf);
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
@@ -3608,7 +3607,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
 		show_msg(outbuf);
-		send_smb(Client,outbuf);
+		send_smb(smbd_server_fd(),outbuf);
 	}
 
 	/* receive the rest of the trans packet */

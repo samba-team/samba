@@ -253,13 +253,13 @@ BOOL check_access(int sock, char *allow_list, char *deny_list)
 
 	if (!ret) {
 		if (allow_access(deny_list,allow_list,
-				 client_name(sock),client_addr(sock))) {
+				 get_socket_name(sock),get_socket_addr(sock))) {
 			DEBUG(2,("Allowed connection from %s (%s)\n",
-				 client_name(sock),client_addr(sock)));
+				 get_socket_name(sock),get_socket_addr(sock)));
 			ret = True;
 		} else {
 			DEBUG(0,("Denied connection from %s (%s)\n",
-				 client_name(sock),client_addr(sock)));
+				 get_socket_name(sock),get_socket_addr(sock)));
 		}
 	}
 

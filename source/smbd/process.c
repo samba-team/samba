@@ -133,7 +133,6 @@ The timeout is in milli seconds
 static BOOL receive_message_or_smb(char *buffer, int buffer_len, 
                                    int timeout, BOOL *got_smb)
 {
-  extern int Client;
   fd_set fds;
   int selrtn;
   struct timeval to;
@@ -167,13 +166,13 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len,
    */
 
   FD_ZERO(&fds);
-  FD_SET(Client,&fds);
+  FD_SET(smbd_server_fd(),&fds);
   maxfd = setup_oplock_select_set(&fds);
 
   to.tv_sec = timeout / 1000;
   to.tv_usec = (timeout % 1000) * 1000;
 
-  selrtn = sys_select(MAX(maxfd,Client)+1,&fds,timeout>0?&to:NULL);
+  selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,timeout>0?&to:NULL);
 
   /* Check if error */
   if(selrtn == -1) {
@@ -188,10 +187,10 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len,
     return False;
   }
 
-  if (FD_ISSET(Client,&fds))
+  if (FD_ISSET(smbd_server_fd(),&fds))
   {
     *got_smb = True;
-    return receive_smb(Client, buffer, 0);
+    return receive_smb(smbd_server_fd(), buffer, 0);
   }
   else
   {
@@ -419,7 +418,6 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   static int num_smb_messages = 
     sizeof(smb_messages) / sizeof(struct smb_message_struct);
   int match;
-  extern int Client;
   extern int global_smbpid;
 
   if (pid == (pid_t)-1)
@@ -535,7 +533,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       /* does this protocol need to be run as guest? */
       if ((flags & AS_GUEST) && 
 	  (!become_guest() || 
-	   !check_access(Client, lp_hostsallow(-1), lp_hostsdeny(-1)))) {
+	   !check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1)))) {
         return(ERROR(ERRSRV,ERRaccess));
       }
 
@@ -589,7 +587,6 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 ****************************************************************************/
 void process_smb(char *inbuf, char *outbuf)
 {
-  extern int Client;
 #ifdef WITH_SSL
   extern BOOL sslEnabled;     /* don't use function for performance reasons */
   static int sslConnected = 0;
@@ -608,13 +605,13 @@ void process_smb(char *inbuf, char *outbuf)
 	     deny parameters before doing any parsing of the packet
 	     passed to us by the client.  This prevents attacks on our
 	     parsing code from hosts not in the hosts allow list */
-	  if (!check_access(Client, lp_hostsallow(-1), lp_hostsdeny(-1))) {
+	  if (!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1))) {
 		  /* send a negative session response "not listining on calling
 		   name" */
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		  DEBUG( 1, ( "Connection denied from %s\n",
-			      client_addr(Client) ) );
-		  send_smb(Client,(char *)buf);
+			      client_addr() ) );
+		  send_smb(smbd_server_fd(),(char *)buf);
 		  exit_server("connection denied");
 	  }
   }
@@ -624,7 +621,7 @@ void process_smb(char *inbuf, char *outbuf)
 
 #ifdef WITH_SSL
     if(sslEnabled && !sslConnected){
-        sslConnected = sslutil_negotiate_ssl(Client, msg_type);
+        sslConnected = sslutil_negotiate_ssl(smbd_server_fd(), msg_type);
         if(sslConnected < 0){   /* an error occured */
             exit_server("SSL negotiation failed");
         }else if(sslConnected){
@@ -660,7 +657,7 @@ void process_smb(char *inbuf, char *outbuf)
                  nread, smb_len(outbuf)));
     }
     else
-      send_smb(Client,outbuf);
+      send_smb(smbd_server_fd(),outbuf);
   }
   trans_num++;
 }
@@ -851,7 +848,6 @@ void check_reload(int t)
 
 static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_timeout_processing_time)
 {
-  extern int Client;
   static time_t last_keepalive_sent_time = 0;
   static time_t last_idle_closed_check = 0;
   time_t t;
@@ -897,7 +893,7 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
   if (keepalive && (t - last_keepalive_sent_time)>keepalive) 
   {
     struct cli_state *cli = server_client();
-    if (!send_keepalive(Client)) {
+    if (!send_keepalive(smbd_server_fd())) {
       DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
       return False;
     }	    

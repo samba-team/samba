@@ -65,9 +65,6 @@ int Protocol = PROTOCOL_COREPLUS;
 /* a default finfo structure to ensure all fields are sensible */
 file_info def_finfo = {-1,0,0,0,0,0,0,""};
 
-/* the client file descriptor */
-extern int Client;
-
 /* this is used by the chaining code */
 int chain_size = 0;
 
@@ -1610,52 +1607,6 @@ BOOL zero_ip(struct in_addr ip)
 }
 
 
-/*******************************************************************
- matchname - determine if host name matches IP address 
- ******************************************************************/
-BOOL matchname(char *remotehost,struct in_addr  addr)
-{
-  struct hostent *hp;
-  int     i;
-  
-  if ((hp = Get_Hostbyname(remotehost)) == 0) {
-    DEBUG(0,("Get_Hostbyname(%s): lookup failure.\n", remotehost));
-    return False;
-  } 
-
-  /*
-   * Make sure that gethostbyname() returns the "correct" host name.
-   * Unfortunately, gethostbyname("localhost") sometimes yields
-   * "localhost.domain". Since the latter host name comes from the
-   * local DNS, we just have to trust it (all bets are off if the local
-   * DNS is perverted). We always check the address list, though.
-   */
-  
-  if (strcasecmp(remotehost, hp->h_name)
-      && strcasecmp(remotehost, "localhost")) {
-    DEBUG(0,("host name/name mismatch: %s != %s\n",
-	     remotehost, hp->h_name));
-    return False;
-  }
-	
-  /* Look up the host address in the address list we just got. */
-  for (i = 0; hp->h_addr_list[i]; i++) {
-    if (memcmp(hp->h_addr_list[i], (caddr_t) & addr, sizeof(addr)) == 0)
-      return True;
-  }
-
-  /*
-   * The host name does not map to the original host address. Perhaps
-   * someone has compromised a name server. More likely someone botched
-   * it, but that could be dangerous, too.
-   */
-  
-  DEBUG(0,("host name/address mismatch: %s != %s\n",
-	   inet_ntoa(addr), hp->h_name));
-  return False;
-}
-
-
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 /******************************************************************
  Remove any mount options such as -rsize=2048,wsize=2048 etc.
@@ -1953,9 +1904,9 @@ void standard_sub_basic(char *str)
 				break;
 			}
 			case 'N' : string_sub(p,"%N", automount_server(username),l); break;
-			case 'I' : string_sub(p,"%I", client_addr(Client),l); break;
+			case 'I' : string_sub(p,"%I", client_addr(),l); break;
 			case 'L' : string_sub(p,"%L", local_machine,l); break;
-			case 'M' : string_sub(p,"%M", client_name(Client),l); break;
+			case 'M' : string_sub(p,"%M", client_name(),l); break;
 			case 'R' : string_sub(p,"%R", remote_proto,l); break;
 			case 'T' : string_sub(p,"%T", timestring(False),l); break;
 			case 'U' : string_sub(p,"%U", username,l); break;

@@ -859,7 +859,6 @@ static void usage(char *pname)
 #endif /* SIGUSR2 */
 
   process();
-  close_sockets();
 
   if (dbf)
     fclose(dbf);

@@ -47,6 +47,26 @@ extern int dcelogin_atmost_once;
 extern fstring remote_machine;
 extern pstring OriginalDir;
 
+
+/* really we should have a top level context structure that has the
+   client file descriptor as an element. That would require a major rewrite :(
+
+   the following 2 functions are an alternative - they make the file
+   descriptor private to smbd
+ */
+static int server_fd;
+
+int smbd_server_fd(void)
+{
+	return server_fd;
+}
+
+void smbd_set_server_fd(int fd)
+{
+	server_fd = fd;
+	client_setfd(fd);
+}
+
 /****************************************************************************
   when exiting, take the whole family
 ****************************************************************************/
@@ -70,18 +90,16 @@ static void  killkids(void)
 ****************************************************************************/
 static BOOL open_sockets_inetd(void)
 {
-	extern int Client;
-
 	/* Started from inetd. fd 0 is the socket. */
 	/* We will abort gracefully when the client or remote system 
 	   goes away */
-	Client = dup(0);
+	smbd_set_server_fd(dup(0));
 	
 	/* close our standard file descriptors */
 	close_low_fds();
 	
-	set_socket_options(Client,"SO_KEEPALIVE");
-	set_socket_options(Client,user_socket_options);
+	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
+	set_socket_options(smbd_server_fd(),user_socket_options);
 
 	return True;
 }
@@ -92,7 +110,6 @@ static BOOL open_sockets_inetd(void)
 ****************************************************************************/
 static BOOL open_sockets(BOOL is_daemon,int port)
 {
-	extern int Client;
 	int num_interfaces = iface_count();
 	int fd_listenset[FD_SETSIZE];
 	fd_set listen_set;
@@ -211,18 +228,18 @@ max can be %d\n",
 				}
 			}
 
-			Client = accept(s,&addr,&in_addrlen);
+			smbd_set_server_fd(accept(s,&addr,&in_addrlen));
 			
-			if (Client == -1 && errno == EINTR)
+			if (smbd_server_fd() == -1 && errno == EINTR)
 				continue;
 			
-			if (Client == -1) {
+			if (smbd_server_fd() == -1) {
 				DEBUG(0,("open_sockets: accept: %s\n",
 					 strerror(errno)));
 				continue;
 			}
 			
-			if (Client != -1 && fork()==0) {
+			if (smbd_server_fd() != -1 && fork()==0) {
 				/* Child code ... */
 				
 				/* close the listening socket(s) */
@@ -234,8 +251,8 @@ max can be %d\n",
 				close_low_fds();
 				am_parent = 0;
 				
-				set_socket_options(Client,"SO_KEEPALIVE");
-				set_socket_options(Client,user_socket_options);
+				set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
+				set_socket_options(smbd_server_fd(),user_socket_options);
 				
 				/* Reset global variables in util.c so
 				   that client substitutions will be
@@ -252,7 +269,7 @@ max can be %d\n",
 				return True; 
 			}
 			/* The parent doesn't need this socket */
-			close(Client); 
+			close(smbd_server_fd()); 
 
 			/* Force parent to check log size after
 			 * spawning child.  Fix from
@@ -320,10 +337,9 @@ BOOL reload_services(BOOL test)
 	load_interfaces();
 
 	{
-		extern int Client;
-		if (Client != -1) {      
-			set_socket_options(Client,"SO_KEEPALIVE");
-			set_socket_options(Client,user_socket_options);
+		if (smbd_server_fd() != -1) {      
+			set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
+			set_socket_options(smbd_server_fd(),user_socket_options);
 		}
 	}
 
@@ -776,7 +792,6 @@ static void usage(char *pname)
 		exit(1);
 
 	smbd_process();
-	close_sockets();
 	
 	exit_server("normal exit");
 	return(0);

@@ -276,7 +276,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
      */
 
 	if (!allow_access(lp_domain_hostsdeny(), lp_domain_hostsallow(),
-	                  client_name(Client), client_addr(Client)))
+	                  client_name(), client_addr()))
 	{
 		DEBUG(0,("get_md4pw: Workstation %s denied access to domain\n", mach_acct));
 		return False;
