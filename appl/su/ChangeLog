@@ -1,0 +1,4 @@
+Tue Apr 20 13:26:13 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* su.c: don't depend on paths.h
+
