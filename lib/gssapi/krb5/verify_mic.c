@@ -58,8 +58,10 @@ verify_mic_des
   ret = gssapi_krb5_verify_header (&p,
 				   token_buffer->length,
 				   "\x01\x01");
-  if (ret)
+  if (ret) {
+      *minor_status = 0;
       return ret;
+  }
 
   if (memcmp(p, "\x00\x00", 2) != 0)
       return GSS_S_BAD_SIG;
@@ -144,8 +146,10 @@ verify_mic_des3
   ret = gssapi_krb5_verify_header (&p,
 				   token_buffer->length,
 				   "\x01\x01");
-  if (ret)
+  if (ret) {
+      *minor_status = 0;
       return ret;
+  }
 
   if (memcmp(p, "\x04\x00", 2) != 0) /* SGN_ALG = HMAC SHA1 DES3-KD */
       return GSS_S_BAD_SIG;

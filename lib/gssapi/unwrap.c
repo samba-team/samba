@@ -222,8 +222,10 @@ unwrap_des3
   ret = gssapi_krb5_verify_header (&p,
 				   input_message_buffer->length,
 				   "\x02\x01");
-  if (ret)
+  if (ret) {
+      *minor_status = 0;
       return ret;
+  }
 
   if (memcmp (p, "\x04\x00", 2) != 0) /* HMAC SHA1 DES3_KD */
     return GSS_S_BAD_SIG;

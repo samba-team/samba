@@ -400,11 +400,10 @@ init_auth
 	goto failure;
     }
 
-    ret = gssapi_krb5_encapsulate (&outbuf, output_token, "\x01\x00");
-    if (ret) {
-	*minor_status = kret;
+    ret = gssapi_krb5_encapsulate (minor_status, &outbuf, output_token,
+				   "\x01\x00");
+    if (ret)
 	goto failure;
-    }
 
     krb5_data_free (&outbuf);
 
@@ -452,12 +451,11 @@ repl_mutual
     krb5_data indata;
     krb5_ap_rep_enc_part *repl;
 
-    ret = gssapi_krb5_decapsulate (input_token, &indata, "\x02\x00");
-    if (ret) {
+    ret = gssapi_krb5_decapsulate (minor_status, input_token, &indata,
+				   "\x02\x00");
+    if (ret)
 				/* XXX - Handle AP_ERROR */
-	*minor_status = 0;
-	return GSS_S_FAILURE;
-    }
+	return ret;
 
     kret = krb5_rd_rep (gssapi_krb5_context,
 			(*context_handle)->auth_context,

@@ -198,11 +198,12 @@ gss_accept_sec_context
 			   tmp);
   }
 
-  ret = gssapi_krb5_decapsulate (input_token_buffer,
+  ret = gssapi_krb5_decapsulate (minor_status,
+				 input_token_buffer,
 				 &indata,
 				 "\x01\x00");
   if (ret) {
-      kret = 0;
+      kret = *minor_status;
       goto failure;
   }
 
@@ -355,13 +356,14 @@ end_fwd:
       gssapi_krb5_set_error_string ();
       goto failure;
     }
-    ret = gssapi_krb5_encapsulate (&outbuf,
+    ret = gssapi_krb5_encapsulate (minor_status,
+				   &outbuf,
 				   output_token,
 				   "\x02\x00");
     krb5_data_free (&outbuf);
     if (ret) {
-	kret = 0;
-      goto failure;
+	kret = *minor_status;
+	goto failure;
     }
   } else {
     output_token->length = 0;

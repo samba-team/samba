@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -78,6 +78,7 @@ gssapi_krb5_make_header (u_char *p,
 
 OM_uint32
 gssapi_krb5_encapsulate(
+			OM_uint32 *minor_status,    
 			const krb5_data *in_data,
 			gss_buffer_t output_token,
 			u_char *type
@@ -90,8 +91,10 @@ gssapi_krb5_encapsulate(
     
     output_token->length = outer_len;
     output_token->value  = malloc (outer_len);
-    if (output_token->value == NULL)
+    if (output_token->value == NULL) {
+	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
+    }	
 
     p = gssapi_krb5_make_header (output_token->value, len, type);
     memcpy (p, in_data->data, in_data->length);
