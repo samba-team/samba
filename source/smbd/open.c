@@ -637,8 +637,10 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 	if (conn->printer) {
 		/* printers are handled completely differently. Most
 			of the passed parameters are ignored */
-		*Access = DOS_OPEN_WRONLY;
-		*action = FILE_WAS_CREATED;
+		if (Access)
+			*Access = DOS_OPEN_WRONLY;
+		if (action)
+			*action = FILE_WAS_CREATED;
 		return print_fsp_open(conn, fname);
 	}
 
