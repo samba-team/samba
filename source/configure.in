@@ -81,8 +81,6 @@ AC_ARG_WITH(piddir,
     ;;
   esac])
 
-sinclude(web/config.m4)
-
 #################################################
 # set configuration directory location
 AC_ARG_WITH(configdir,
@@ -240,7 +238,7 @@ default_shared_modules=""
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules"
-   default_shared_modules="$default_shared_modules charset_weird"
+   default_shared_modules="$default_shared_modules"
 fi
 
 #
@@ -2790,7 +2788,6 @@ samba_cv_HAVE_SENDFILEV=yes,samba_cv_HAVE_SENDFILEV=no)])
 
 sinclude(nsswitch/config.m4)
 sinclude(popt/config.m4)
-sinclude(python/config.m4)
 
 for i in `echo $default_static_modules | sed -e's/,/ /g'`
 do
@@ -2826,7 +2823,6 @@ AC_ARG_WITH(shared-modules,
 	done
 fi ])
 
-SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
 SMB_SUBSYSTEM(CHARSET,lib/iconv.o)
 
 sinclude(ntvfs/config.m4)

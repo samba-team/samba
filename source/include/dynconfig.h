@@ -25,8 +25,7 @@
  **/
 
 extern char const *dyn_SBINDIR,
-	*dyn_BINDIR,
-	*dyn_SWATDIR;
+	*dyn_BINDIR;
 
 extern pstring dyn_CONFIGFILE;
 extern const char *dyn_LOGFILEBASE;

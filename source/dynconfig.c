@@ -41,8 +41,7 @@
  **/
 
 char const *dyn_SBINDIR = SBINDIR,
-	*dyn_BINDIR = BINDIR,
-	*dyn_SWATDIR = SWATDIR;
+	*dyn_BINDIR = BINDIR;
 
 pstring dyn_CONFIGFILE = CONFIGFILE; /**< Location of smb.conf file. **/
 
