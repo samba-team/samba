@@ -77,7 +77,7 @@ print (int argc,
     alg->next (key);
     if (i >= n - count) {
       (*print_fn)(key, s);
-      printf ("%d: %s%s\n", i + 1, ext, s);
+      printf ("%d: %s\n", i + 1, s);
     }
   }
   return 0;
