@@ -32,6 +32,8 @@ int net_ads_usage(int argc, const char **argv)
 "\n\tjoins the local machine to a ADS realm\n"\
 "\nnet ads leave"\
 "\n\tremoves the local machine from a ADS realm\n"\
+"\nnet ads testjoin"\
+"\n\ttests that an exiting join is OK\n"\
 "\nnet ads user"\
 "\n\tlist, add, or delete users in the realm\n"\
 "\nnet ads group"\
@@ -537,6 +539,45 @@ static int net_ads_leave(int argc, const char **argv)
 	return 0;
 }
 
+static int net_ads_join_ok(void)
+{
+	ADS_STRUCT *ads = NULL;
+	extern pstring global_myname;
+
+	if (!secrets_init()) {
+		DEBUG(1,("Failed to initialise secrets database\n"));
+		return -1;
+	}
+
+	asprintf(&opt_user_name, "%s$", global_myname);
+	opt_password = secrets_fetch_machine_password();
+
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
+
+	ads_destroy(&ads);
+	return 0;
+}
+
+/*
+  check that an existing join is OK
+ */
+int net_ads_testjoin(int argc, const char **argv)
+{
+	/* Display success or failure */
+	if (net_ads_join_ok() != 0) {
+		fprintf(stderr,"Join to domain is not valid\n");
+		return -1;
+	}
+
+	printf("Join is OK\n");
+	return 0;
+}
+
+/*
+  join a domain using ADS
+ */
 int net_ads_join(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
@@ -948,6 +989,7 @@ int net_ads(int argc, const char **argv)
 	struct functable func[] = {
 		{"INFO", net_ads_info},
 		{"JOIN", net_ads_join},
+		{"TESTJOIN", net_ads_testjoin},
 		{"LEAVE", net_ads_leave},
 		{"STATUS", net_ads_status},
 		{"USER", net_ads_user},
