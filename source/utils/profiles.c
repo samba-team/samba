@@ -531,7 +531,7 @@ int main(int argc, char *argv[])
   int opt;
   int i, fd, aces, start = 0;
   int process_sids = 0;
-  void *base;
+  char *base;
   struct stat sbuf;
   fstring sid_str;
   REGF_HDR *regf_hdr;
