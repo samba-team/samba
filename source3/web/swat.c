@@ -42,7 +42,9 @@ struct current_user current_user;
 /* start the page with standard stuff */
 static void print_header(void)
 {
-	printf("Expires: 0\r\n");
+	if (!cgi_waspost()) {
+		printf("Expires: 0\r\n");
+	}
 	printf("Content-type: text/html\r\n\r\n");
 	printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n");
 	printf("<HTML>\n<HEAD>\n<TITLE>Samba Web Administration Tool</TITLE>\n</HEAD>\n<BODY background=\"%simages/background.jpg\">\n\n", cgi_rooturl());
