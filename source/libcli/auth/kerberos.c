@@ -26,6 +26,7 @@
 #include "libcli/auth/kerberos.h"
 #include "system/time.h"
 #include "secrets.h"
+#include "pstring.h"
 
 #ifdef HAVE_KRB5
 
