@@ -32,7 +32,6 @@ AUTHLIBS=@AUTHLIBS@
 ACLLIBS=@ACLLIBS@
 PASSDBLIBS=@PASSDBLIBS@
 IDMAP_LIBS=@IDMAP_LIBS@
-ADSLIBS=@ADSLIBS@
 KRB5LIBS=@KRB5_LIBS@
 LDAPLIBS=@LDAP_LIBS@
 
@@ -727,12 +726,12 @@ bin/.dummy:
 
 bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(ADSLIBS) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(KRB5LIBS) $(LDAPLIBS) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
 	  $(AUTHLIBS) $(ACLLIBS) $(PASSDBLIBS) $(LIBS) @POPTLIBS@
 
 bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(ADSLIBS)
+	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS)
 
 bin/wrepld@EXEEXT@: $(WREPL_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -741,19 +740,19 @@ bin/wrepld@EXEEXT@: $(WREPL_OBJ) @BUILD_POPT@ bin/.dummy
 bin/swat@EXEEXT@: $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINTLIBS) \
-	  $(AUTHLIBS) $(LIBS) $(PASSDBLIBS) @POPTLIBS@ $(KRB5LIBS)
+	  $(AUTHLIBS) $(LIBS) $(PASSDBLIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS)
 
 bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(ADSLIBS)
+	@$(CC) $(FLAGS) -o $@ $(PASSDBLIBS) $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS)
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(ADSLIBS)
+	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS)
 
 bin/net@EXEEXT@: $(NET_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(ADSLIBS) $(PASSDBLIBS)
+	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAPLIBS) $(PASSDBLIBS)
 
 bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -801,7 +800,7 @@ bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(PASSDBLIBS) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(PASSDBLIBS) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAPLIBS)
 
 bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -873,7 +872,7 @@ bin/smbfilter@EXEEXT@: $(SMBFILTER_OBJ) bin/.dummy
 
 bin/smbw_sample@EXEEXT@: $(SMBW_OBJ) utils/smbw_sample.o bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBW_OBJ) utils/smbw_sample.o $(LDFLAGS) $(LIBS) $(KRB5LIBS)
+	@$(CC) $(FLAGS) -o $@ $(SMBW_OBJ) utils/smbw_sample.o $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAPLIBS)
 
 bin/smbsh@EXEEXT@: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
@@ -882,12 +881,14 @@ bin/smbsh@EXEEXT@: $(SMBSH_OBJ) bin/.dummy
 bin/smbwrapper.@SHLIBEXT@: $(PICOBJS) bin/.dummy
 	@echo Linking shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(PICOBJS) $(LIBS) \
-		@SONAMEFLAG@`basename $@` $(KRB5LIBS)
+		$(KRB5LIBS) $(LDAPLIBS) \
+		@SONAMEFLAG@`basename $@`
 
 bin/libsmbclient.@SHLIBEXT@: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBSMBCLIENT_PICOBJS) $(LDFLAGS) $(LIBS) \
-	$(KRB5LIBS) @SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
+		$(KRB5LIBS) $(LDAPLIBS) \
+		@SONAMEFLAG@`basename $@`.$(LIBSMBCLIENT_MAJOR)
 
 bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 	@echo Linking libsmbclient non-shared library $@
@@ -897,7 +898,8 @@ bin/libsmbclient.a: $(LIBSMBCLIENT_PICOBJS)
 bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	@echo Linking bigballofmud shared library $@
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_PICOBJS) $(LIBS) \
-		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR) $(PASSDBLIBS) $(IDMAP_LIBS) $(ADSLIBS)
+		$(PASSDBLIBS) $(IDMAP_LIBS) $(KRB5LIBS) $(LDAPLIBS) \
+		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR)
 	ln -snf libbigballofmud.so bin/libbigballofmud.so.0
 
 # It would be nice to build a static bigballofmud too, but when I try
@@ -1149,7 +1151,7 @@ python_ext: $(PYTHON_PICOBJS)
 	fi
 	PYTHON_OBJS="$(PYTHON_PICOBJS)" \
 	PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
-	LIBS="$(LIBS) $(PASSDBLIBS) $(IDMAP_LIBS) $(KRB5LIBS)" \
+	LIBS="$(LIBS) $(PASSDBLIBS) $(IDMAP_LIBS) $(KRB5LIBS) $(LDAPLIBS)" \
 		$(PYTHON) python/setup.py build
 
 python_install: $(PYTHON_PICOBJS)
