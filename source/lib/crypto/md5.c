@@ -22,6 +22,7 @@
 
 #include "md5.h"
 
+
 static void MD5Transform(uint32_t buf[4], uint32_t const in[16]);
 
 /*
@@ -57,7 +58,7 @@ void MD5Init(struct MD5Context *ctx)
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-void MD5Update(struct MD5Context *ctx, uint8_t const *buf, uint_t len)
+void MD5Update(struct MD5Context *ctx, const uint8_t const *buf, uint_t len)
 {
     register uint32_t t;
 
