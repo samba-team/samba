@@ -625,6 +625,10 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 			return False;
 		data = (struct locking_data *)p;
 		data->u.num_share_mode_entries = 1;
+	
+		DEBUG(10,("set_share_mode: creating entry for file %s. num_share_modes = 1\n",
+			fsp->fsp_name ));
+
 		pstrcpy(p + sizeof(*data) + sizeof(share_mode_entry), fname);
 		fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 		dbuf.dptr = p;
@@ -639,6 +643,10 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	data = (struct locking_data *)dbuf.dptr;
 
 	data->u.num_share_mode_entries++;
+	
+	DEBUG(10,("set_share_mode: adding entry for file %s. new num_share_modes = %d\n",
+		fsp->fsp_name, data->u.num_share_mode_entries ));
+
 	size = dbuf.dsize + sizeof(share_mode_entry);
 	p = malloc(size);
 	if (!p)
