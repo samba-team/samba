@@ -24,6 +24,7 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     char                    buffer[BUFSIZ];         /*  Read buffer */
     long                    offset;                 /*  Old/New boundary */
     int                     nchar;                  /*  Bytes written/read */
+    int                     tf_fd;                  /*  fd for temp file */
 
     /*  Create a temporary maildrop into which to copy the updated maildrop */
     snprintf(p->temp_drop, sizeof(p->temp_drop), POP_DROP,p->user);
@@ -39,9 +40,9 @@ pop_dropcopy(POP *p, struct passwd *pwp)
      * running as root.
      */
 
-    /* First create a unique file.  Would prefer mkstemp, but Ultrix...*/
-    strcpy(template,POP_TMPDROP);
-    if ((tf=fdopen(mkstemp(template),"w+")) == NULL) {	/* failure, bail out */
+    strcpy(template, POP_TMPDROP);
+    if ((tf_fd = mkstemp(template) < 0) ||
+	(tf = fdopen(tf_fd, "w+")) == NULL) {
         pop_log(p,POP_PRIORITY,
             "Unable to create temporary temporary maildrop '%s': %s",template,
 		strerror(errno));
