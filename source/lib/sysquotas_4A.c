@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_QUOTA
+
 #ifdef HAVE_QUOTACTL_4A
 /* long quotactl(int cmd, char *special, qid_t id, caddr_t addr) */
 /* this is used by: HPUX,IRIX */
@@ -89,6 +92,9 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 
 	switch (qtype) {
 		case SMB_USER_QUOTA_TYPE:
+			DEBUG(10,("sys_get_vfs_quota: path[%s] bdev[%s] SMB_USER_QUOTA_TYPE uid[%u]\n",
+				path, bdev, (unsigned)id.uid));
+
 			if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), bdev, id.uid, (void *)&D))&&errno != EDQUOT) {
 				return ret;
 			}
@@ -103,6 +109,9 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			break;
 #ifdef HAVE_GROUP_QUOTA
 		case SMB_GROUP_QUOTA_TYPE:
+			DEBUG(10,("sys_get_vfs_quota: path[%s] bdev[%s] SMB_GROUP_QUOTA_TYPE gid[%u]\n",
+				path, bdev, (unsigned)id.gid));
+
 			if ((ret = quotactl(QCMD(Q_GETQUOTA,GRPQUOTA), bdev, id.gid, (void *)&D))&&errno != EDQUOT) {
 				return ret;
 			}
@@ -119,6 +128,9 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 		case SMB_USER_FS_QUOTA_TYPE:
 			id.uid = getuid();
 
+			DEBUG(10,("sys_get_vfs_quota: path[%s] bdev[%s] SMB_USER_FS_QUOTA_TYPE (uid[%u])\n",
+				path, bdev, (unsigned)id.uid));
+
 			if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), bdev, id.uid, (void *)&D))==0) {
 				qflags |= QUOTAS_DENY_DISK;
 			}
@@ -128,6 +140,9 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 #ifdef HAVE_GROUP_QUOTA
 		case SMB_GROUP_FS_QUOTA_TYPE:
 			id.gid = getgid();
+
+			DEBUG(10,("sys_get_vfs_quota: path[%s] bdev[%s] SMB_GROUP_FS_QUOTA_TYPE (gid[%u])\n",
+				path, bdev, (unsigned)id.gid));
 
 			if ((ret = quotactl(QCMD(Q_GETQUOTA,GRPQUOTA), bdev, id.gid, (void *)&D))==0) {
 				qflags |= QUOTAS_DENY_DISK;
@@ -184,10 +199,16 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 
 	switch (qtype) {
 		case SMB_USER_QUOTA_TYPE:
+			DEBUG(10,("sys_set_vfs_quota: path[%s] bdev[%s] SMB_USER_QUOTA_TYPE uid[%u]\n",
+				path, bdev, (unsigned)id.uid));
+
 			ret = quotactl(QCMD(Q_SETQLIM,USRQUOTA), bdev, id.uid, (void *)&D);
 			break;
 #ifdef HAVE_GROUP_QUOTA
 		case SMB_GROUP_QUOTA_TYPE:
+			DEBUG(10,("sys_set_vfs_quota: path[%s] bdev[%s] SMB_GROUP_QUOTA_TYPE gid[%u]\n",
+				path, bdev, (unsigned)id.gid));
+
 			ret = quotactl(QCMD(Q_SETQLIM,GRPQUOTA), bdev, id.gid, (void *)&D);
 			break;
 #endif /* HAVE_GROUP_QUOTA */
@@ -202,9 +223,11 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			 * we need to fix sys_path_to_bdev()
 			 *
 			 */
-#if 0
 			id.uid = getuid();
+			DEBUG(10,("sys_set_vfs_quota: path[%s] bdev[%s] SMB_USER_FS_QUOTA_TYPE (uid[%u])\n",
+				path, bdev, (unsigned)id.uid));
 
+#if 0
 			ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), bdev, id.uid, (void *)&D);
 
 			if ((qflags&QUOTAS_DENY_DISK)||(qflags&QUOTAS_ENABLED)) {
@@ -231,11 +254,9 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 				}		
 			}
 
-			DEBUG(0,("vfs_fs_quota: ret(%d) errno(%d)[%s] uid(%d) bdev[%s]\n",
+			DEBUG(0,("sys_set_vfs_quota: ret(%d) errno(%d)[%s] uid(%d) bdev[%s]\n",
 				ret,errno,strerror(errno),id.uid,bdev));
 #else
-			id.uid = getuid();
-
 			if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), bdev, id.uid, (void *)&D))==0) {
 				oldqflags |= QUOTAS_DENY_DISK;
 			}
@@ -259,9 +280,11 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			 * we need to fix sys_path_to_bdev()
 			 *
 			 */
-#if 0
 			id.gid = getgid();
+			DEBUG(10,("sys_set_vfs_quota: path[%s] bdev[%s] SMB_GROUP_FS_QUOTA_TYPE (gid[%u])\n",
+				path, bdev, (unsigned)id.gid));
 
+#if 0
 			ret = quotactl(QCMD(Q_GETQUOTA,GRPQUOTA), bdev, id, (void *)&D);
 
 			if ((qflags&QUOTAS_DENY_DISK)||(qflags&QUOTAS_ENABLED)) {
@@ -288,11 +311,9 @@ int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 				}		
 			}
 
-			DEBUG(0,("vfs_fs_quota: ret(%d) errno(%d)[%s] uid(%d) bdev[%s]\n",
+			DEBUG(0,("sys_set_vfs_quota: ret(%d) errno(%d)[%s] uid(%d) bdev[%s]\n",
 				ret,errno,strerror(errno),id.gid,bdev));
 #else
-			id.gid = getgid();
-
 			if ((ret = quotactl(QCMD(Q_GETQUOTA,GRPQUOTA), bdev, id.gid, (void *)&D))==0) {
 				oldqflags |= QUOTAS_DENY_DISK;
 			}

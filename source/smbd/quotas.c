@@ -27,6 +27,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_QUOTA
+
 #ifndef HAVE_SYS_QUOTAS
 
 /* just a quick hack because sysquotas.h is included before linux/quota.h */
@@ -82,10 +85,10 @@ static int get_smb_linux_xfs_quota(char *path, uid_t euser_id, gid_t egrp_id, LI
 
 	ZERO_STRUCT(D);
 
-	ret = quotactl(QCMD(Q_XGETQUOTA,XFS_USER_QUOTA), path, euser_id, (caddr_t)&D);
+	ret = quotactl(QCMD(Q_XGETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D);
 
 	if (ret)
-		ret = quotactl(QCMD(Q_XGETQUOTA,XFS_GROUP_QUOTA), path, egrp_id, (caddr_t)&D);
+		ret = quotactl(QCMD(Q_XGETQUOTA,GRPQUOTA), path, egrp_id, (caddr_t)&D);
 
 	if (ret)
 		return ret;
@@ -1195,7 +1198,8 @@ BOOL disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BI
 	unid_t id;
 
 	id.uid = geteuid();
-  
+
+	ZERO_STRUCT(D);
   	r=sys_get_quota(path, SMB_USER_QUOTA_TYPE, id, &D);
 
 	/* Use softlimit to determine disk space, except when it has been exceeded */
@@ -1231,9 +1235,9 @@ BOOL disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BI
 	return True;
 	
 try_group_quota:
-#ifdef HAVE_GROUP_QUOTA
 	id.gid = getegid();
-  
+
+	ZERO_STRUCT(D);
   	r=sys_get_quota(path, SMB_GROUP_QUOTA_TYPE, id, &D);
 
 	/* Use softlimit to determine disk space, except when it has been exceeded */
@@ -1267,8 +1271,5 @@ try_group_quota:
 	}
 
 	return (True);
-#else /* HAVE_GROUP_QUOTA */
-	return False;
-#endif /* HAVE_GROUP_QUOTA */
 }
 #endif /* HAVE_SYS_QUOTAS */

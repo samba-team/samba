@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_QUOTA
+
 #ifdef HAVE_SYS_QUOTAS
 
 #if defined(HAVE_QUOTACTL_4A) 
@@ -384,12 +387,18 @@ int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 		return ret;
 	}
 
+	errno = 0;
+	DEBUG(10,("sys_get_quota() uid(%u, %u)\n", (unsigned)getuid(), (unsigned)geteuid()));
+
 	for (i=0;(fs && sys_quota_backends[i].name && sys_quota_backends[i].get_quota);i++) {
 		if (strcmp(fs,sys_quota_backends[i].name)==0) {
 			ret = sys_quota_backends[i].get_quota(mntpath, bdev, qtype, id, dp);
 			if (ret!=0) {
-				DEBUG(10,("sys_get_%s_quota() failed for mntpath[%s] bdev[%s] qtype[%d] id[%d] ret[%d].\n",
-					fs,mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid),ret));
+				DEBUG(3,("sys_get_%s_quota() failed for mntpath[%s] bdev[%s] qtype[%d] id[%d]: %s.\n",
+					fs,mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid),strerror(errno)));
+			} else {
+				DEBUG(10,("sys_get_%s_quota() called for mntpath[%s] bdev[%s] qtype[%d] id[%d].\n",
+					fs,mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid)));
 			}
 			ready = True;
 			break;	
@@ -400,8 +409,11 @@ int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 		/* use the default vfs quota functions */
 		ret=sys_get_vfs_quota(mntpath, bdev, qtype, id, dp);
 		if (ret!=0) {
-			DEBUG(10,("sys_get_%s_quota() failed for mntpath[%s] bdev[%s] qtype[%d] id[%d] ret[%d].\n",
-				"vfs",mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid),ret));
+			DEBUG(3,("sys_get_%s_quota() failed for mntpath[%s] bdev[%s] qtype[%d] id[%d]: %s\n",
+				"vfs",mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid),strerror(errno)));
+		} else {
+			DEBUG(10,("sys_get_%s_quota() called for mntpath[%s] bdev[%s] qtype[%d] id[%d].\n",
+				"vfs",mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid)));
 		}
 	}
 
@@ -410,6 +422,7 @@ int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	SAFE_FREE(fs);
 
 	if ((ret!=0)&& (errno == EDQUOT)) {
+		DEBUG(10,("sys_get_quota() warning over quota!\n"));
 		return 0;
 	}
 
@@ -441,12 +454,18 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 		return ret;
 	}
 
+	errno = 0;
+	DEBUG(10,("sys_set_quota() uid(%u, %u)\n", (unsigned)getuid(), (unsigned)geteuid())); 
+
 	for (i=0;(fs && sys_quota_backends[i].name && sys_quota_backends[i].set_quota);i++) {
 		if (strcmp(fs,sys_quota_backends[i].name)==0) {
 			ret = sys_quota_backends[i].set_quota(mntpath, bdev, qtype, id, dp);
 			if (ret!=0) {
-				DEBUG(10,("sys_set_%s_quota() failed for mntpath[%s] bdev[%s] qtype[%d] id[%d] ret[%d].\n",
-					fs,mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid),ret));
+				DEBUG(3,("sys_set_%s_quota() failed for mntpath[%s] bdev[%s] qtype[%d] id[%d]: %s.\n",
+					fs,mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid),strerror(errno)));
+			} else {
+				DEBUG(10,("sys_set_%s_quota() called for mntpath[%s] bdev[%s] qtype[%d] id[%d].\n",
+					fs,mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid)));
 			}
 			ready = True;
 			break;
@@ -457,8 +476,11 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 		/* use the default vfs quota functions */
 		ret=sys_set_vfs_quota(mntpath, bdev, qtype, id, dp);
 		if (ret!=0) {
-			DEBUG(10,("sys_set_%s_quota() failed for mntpath[%s] bdev[%s] qtype[%d] id[%d] ret[%d].\n",
-				"vfs",mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid),ret));
+			DEBUG(3,("sys_set_%s_quota() failed for mntpath[%s] bdev[%s] qtype[%d] id[%d]: %s.\n",
+				"vfs",mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid),strerror(errno)));
+		} else {
+			DEBUG(10,("sys_set_%s_quota() called for mntpath[%s] bdev[%s] qtype[%d] id[%d].\n",
+				"vfs",mntpath,bdev,qtype,(qtype==SMB_GROUP_QUOTA_TYPE?id.gid:id.uid)));
 		}
 	}
 
@@ -467,6 +489,7 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	SAFE_FREE(fs);
 
 	if ((ret!=0)&& (errno == EDQUOT)) {
+		DEBUG(10,("sys_set_quota() warning over quota!\n"));
 		return 0;
 	}
 

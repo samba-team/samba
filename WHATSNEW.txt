@@ -40,6 +40,11 @@ o   Volker Lendecke <vl@samba.org>
     
 o   Stefan Metzmacher <metze@samba.org>
     * Fix XFS quotas: HAVE_XFS_QUOTA -> HAVE_XFS_QUOTAS
+                      XFS_USER_QUOTA -> USRQUOTA
+                      XFS_GROUP_QUOTA -> GRPQUOTA
+    * Fix disk_free calculation with group quotas.
+    * Add debug class 'quota' and a lot of DEBUG()'s 
+      to the quota code.
 
 o   Tim Potter <tpot@samba.org>
 
