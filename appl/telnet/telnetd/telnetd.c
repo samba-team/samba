@@ -410,7 +410,7 @@ int main(int argc, char **argv)
 
     roken_openlog("telnetd", LOG_PID | LOG_ODELAY, LOG_DAEMON);
     fromlen = sizeof (from);
-    if (getpeername(0, (struct sockaddr *)&from, &fromlen) < 0) {
+    if (getpeername(STDIN_FILENO, (struct sockaddr *)&from, &fromlen) < 0) {
 	fprintf(stderr, "%s: ", progname);
 	perror("getpeername");
 	_exit(1);
@@ -714,10 +714,6 @@ Please contact your net administrator");
     /* XXX - should be k_gethostname? */
     gethostname(host_name, sizeof (host_name));
     hostname = host_name;
-
-#ifndef abs
-#define abs(x) ((x < 0) ? (-x) : x)
-#endif
 
     /* Only trim if too long (and possible) */
     if (strlen(remote_host_name) > abs(utmp_len)) {
