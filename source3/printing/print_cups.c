@@ -664,7 +664,6 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 		httpClose(http);
 
 	return ret;
-	return (ret);
 }
 
 /*
