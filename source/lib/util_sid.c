@@ -344,7 +344,14 @@ char *sid_to_string(fstring sidstr_out, const DOM_SID *sid)
   char subauth[16];
   int i;
   /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-  uint32 ia = (sid->id_auth[5]) +
+  uint32 ia;
+  
+  if ( !sid ) {
+  	fstrcpy( sidstr_out, "(null sid)" );
+	return sidstr_out;
+  }
+  
+  ia = (sid->id_auth[5]) +
               (sid->id_auth[4] << 8 ) +
               (sid->id_auth[3] << 16) +
               (sid->id_auth[2] << 24);
