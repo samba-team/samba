@@ -468,17 +468,14 @@ static mode_t apply_default_perms(files_struct *fsp, mode_t perms, mode_t type)
 	mode_t and_bits = (mode_t)0;
 	mode_t or_bits = (mode_t)0;
 
-	if (!lp_restrict_acl_with_mask(snum))
-		return perms;
-
 	/* Get the initial bits to apply. */
 
 	if (fsp->is_directory) {
-		and_bits = lp_dir_mask(snum);
-		or_bits = lp_force_dir_mode(snum);
+		and_bits = lp_dir_security_mask(snum);
+		or_bits = lp_force_dir_security_mode(snum);
 	} else {
-		and_bits = lp_create_mask(snum);
-		or_bits = lp_force_create_mode(snum);
+		and_bits = lp_security_mask(snum);
+		or_bits = lp_force_security_mode(snum);
 	}
 
 	/* Now bounce them into the S_USR space. */	
@@ -1174,20 +1171,17 @@ static mode_t create_default_mode(files_struct *fsp, BOOL interitable_mode)
 	if (fsp->is_directory)
 		mode |= (S_IWUSR|S_IXUSR);
 
-	if (!lp_restrict_acl_with_mask(snum))
-		return mode;
-
 	/*
 	 * Now AND with the create mode/directory mode bits then OR with the
 	 * force create mode/force directory mode bits.
 	 */
 
 	if (fsp->is_directory) {
-		and_bits = lp_dir_mask(snum);
-		or_bits = lp_force_dir_mode(snum);
+		and_bits = lp_dir_security_mask(snum);
+		or_bits = lp_force_dir_security_mode(snum);
 	} else {
-		and_bits = lp_create_mask(snum);
-		or_bits = lp_force_create_mode(snum);
+		and_bits = lp_security_mask(snum);
+		or_bits = lp_force_security_mode(snum);
 	}
 
 	return ((mode & and_bits)|or_bits);
@@ -1703,6 +1697,8 @@ static BOOL convert_canon_ace_to_posix_perms( files_struct *fsp, canon_ace *file
 	canon_ace *owner_ace = NULL;
 	canon_ace *group_ace = NULL;
 	canon_ace *other_ace = NULL;
+	mode_t and_bits;
+	mode_t or_bits;
 
 	if (ace_count != 3) {
 		DEBUG(3,("convert_canon_ace_to_posix_perms: Too many ACE entries for file %s to convert to \
@@ -1743,23 +1739,17 @@ posix perms.\n", fsp->fsp_name ));
 
 	/* If requested apply the masks. */
 
-	if (lp_restrict_acl_with_mask(snum)) {
-		mode_t and_bits;
-		mode_t or_bits;
+	/* Get the initial bits to apply. */
 
-		/* Get the initial bits to apply. */
-
-		if (fsp->is_directory) {
-			and_bits = lp_dir_mask(snum);
-			or_bits = lp_force_dir_mode(snum);
-		} else {
-			and_bits = lp_create_mask(snum);
-			or_bits = lp_force_create_mode(snum);
-		}
-
-		*posix_perms = (((*posix_perms) & and_bits)|or_bits);
-
+	if (fsp->is_directory) {
+		and_bits = lp_dir_security_mask(snum);
+		or_bits = lp_force_dir_security_mode(snum);
+	} else {
+		and_bits = lp_security_mask(snum);
+		or_bits = lp_force_security_mode(snum);
 	}
+
+	*posix_perms = (((*posix_perms) & and_bits)|or_bits);
 
 	DEBUG(10,("convert_canon_ace_to_posix_perms: converted u=%o,g=%o,w=%o to perm=0%o for file %s.\n",
 		(int)owner_ace->perms, (int)group_ace->perms, (int)other_ace->perms, (int)*posix_perms,
