@@ -29,6 +29,9 @@ extern int Client;
 extern int oplock_sock;
 extern int smb_read_error;
 extern int global_oplock_break;
+extern BOOL case_sensitive;
+extern BOOL case_preserve;
+extern BOOL short_case_preserve;
 
 static char *known_nt_pipes[] = {
   "\\LANMAN",
@@ -43,12 +46,46 @@ static char *known_nt_pipes[] = {
   NULL
 };
 
+static BOOL saved_case_sensitive;
+static BOOL saved_case_preserve;
+static BOOL saved_short_case_preserve;
+
+/****************************************************************************
+ Save case semantics.
+****************************************************************************/
+
+static void set_posix_case_semantics(uint32 file_attributes)
+{
+  if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
+    return;
+
+  saved_case_sensitive = case_sensitive;
+  saved_case_preserve = case_preserve;
+  saved_short_case_preserve = short_case_preserve;
+
+  /* Set to POSIX. */
+  case_sensitive = True;
+  case_preserve = True;
+  short_case_preserve = True;
+}
+
+/****************************************************************************
+ Restore case semantics.
+****************************************************************************/
+
+static void restore_case_semantics(uint32 file_attributes)
+{
+  if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
+    return;
+
+  case_sensitive = saved_case_sensitive;
+  case_preserve = saved_case_preserve;
+  short_case_preserve = saved_short_case_preserve;
+}
+
 /****************************************************************************
   reply to an NT create and X call.
 ****************************************************************************/
-
-THIS IS JUST CRIBBED FROM REPLY.C AT PRESENT AND IS A WORK
-IN PROGRESS. JRA.
 
 int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {  
@@ -60,29 +97,29 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   uint32 file_attributes = SIVAL(inbuf,smb_ntcreate_FileAttributes);
   uint32 share_access = SIVAL(inbuf,smb_ntcreate_ShareAccess);
   uint32 create_disposition = SIVAL(inbuf,smb_ntcreate_CreateDisposition);
-
+  uint32 fname_len = MIN(((uint32)SSVAL(inbuf,smb_ntcreate_NameLength)),
+                         ((uint32)sizeof(fname)-1));
   int smb_ofun;
   int smb_open_mode;
-  int smb_attr = SVAL(inbuf,smb_vwv5);
+  int smb_attr = file_attributes & SAMBA_ATTRIBUTES_MASK;
   /* Breakout the oplock request bits so we can set the
      reply bits separately. */
-  BOOL ex_oplock_request = flags & 
-  BOOL core_oplock_request = CORE_OPLOCK_REQUEST(inbuf);
-  BOOL oplock_request = ex_oplock_request | core_oplock_request;
+  int oplock_request = flags & (REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
   int unixmode;
   int size=0,fmode=0,mtime=0,rmode=0;
   struct stat sbuf;
   int smb_action = 0;
   BOOL bad_path = False;
   files_struct *fsp;
-    
+  char *p = NULL;
+  
   /* If it's an IPC, pass off the pipe handler. */
   if (IS_IPC(cnum))
     return nt_open_pipe_and_X(inbuf,outbuf,length,bufsize);
 
   /* If it's a request for a directory open, fail it. */
   if(flags & OPEN_DIRECTORY)
-    return(ERROR(ERRSRV,ERRfilespecs));
+    return(ERROR(ERRDOS,ERRnoaccess));
 
   /* 
    * We need to construct the open_and_X ofun value from the
@@ -159,12 +196,22 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if(file_attributes & FILE_FLAG_WRITE_THROUGH)
     smb_open_mode |= (1<<14);
 
-  pstrcpy(fname,smb_buf(inbuf));
+  /*
+   * Check if POSIX semantics are wanted.
+   */
+
+  set_posix_case_semantics(file_attributes);
+
+  StrnCpy(fname,smb_buf(inbuf),fname_len);
   unix_convert(fname,cnum,0,&bad_path);
     
   fnum = find_free_file();
   if (fnum < 0)
+  {
+    restore_case_semantics(file_attributes);
     return(ERROR(ERRSRV,ERRnofids));
+  }
+
   if (!check_name(fname,cnum))
   { 
     if((errno == ENOENT) && bad_path)
@@ -173,6 +220,9 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       unix_ERR_code = ERRbadpath;
     }
     Files[fnum].reserved = False;
+
+    restore_case_semantics(file_attributes);
+
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   } 
   
@@ -191,11 +241,17 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
       unix_ERR_code = ERRbadpath;
     }
     Files[fnum].reserved = False;
+
+    restore_case_semantics(file_attributes);
+
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   } 
   
   if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fnum,False);
+
+    restore_case_semantics(file_attributes);
+
     return(ERROR(ERRDOS,ERRnoaccess));
   } 
   
@@ -204,6 +260,9 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   mtime = sbuf.st_mtime;
   if (fmode & aDIR) {
     close_file(fnum,False);
+
+    restore_case_semantics(file_attributes);
+
     return(ERROR(ERRDOS,ERRnoaccess));
   } 
   
@@ -212,29 +271,45 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
      correct bit for extended oplock reply.
    */
     
-  if (ex_oplock_request && lp_fake_oplocks(SNUM(cnum))) {
+  if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   } 
   
-  if(ex_oplock_request && fsp->granted_oplock) {
+  if(oplock_request && fsp->granted_oplock) {
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   } 
   
-  /* If the caller set the core oplock request bit
-     and we granted one (by whatever means) - set the
-     correct bit for core oplock reply.
-   */
-    
-  if (core_oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
-  } 
+  set_message(outbuf,34,0,True);
+
+  p = outbuf + smb_vwv2;
+
+  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? );
+  p++;
+  SSVAL(p,0,fnum);
+  p += 2;
+  SIVAL(p,0,smb_action);
+  p += 4;
   
-  if(core_oplock_request && fsp->granted_oplock) {
-    CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
-  } 
-  
-  set_message(outbuf,15,0,True);
-  SSVAL(outbuf,smb_vwv2,fnum);
+  CreationTime
+  p += 8;
+  LastAccessTime;
+  p += 8;
+  LastWriteTime;
+  p += 8;
+  ChangeTime;
+  p += 8;
+  FileAttributes;
+  p += 4;
+  AllocationSize;
+  p += 8;
+  EndOfFile;
+  p += 8;
+  SSVAL(p,0,0); /* File Type */
+  p += 2;
+  SSVAL(p,0,0); /* Device State */
+  p += 1;
+  SCVAL(p,0,0); /* Not Directory. */
+
   SSVAL(outbuf,smb_vwv3,fmode);
   if(lp_dos_filetime_resolution(SNUM(cnum)) )
     put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
@@ -246,8 +321,10 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     
   chain_fnum = fnum;
     
+  restore_case_semantics(file_attributes);
+
   return chain_reply(inbuf,outbuf,length,bufsize);
-}   
+}
 
 /****************************************************************************
   reply to an unsolicited SMBNTtranss - just ignore it!

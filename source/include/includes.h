@@ -600,6 +600,8 @@ char *mktemp(char *); /* No standard include */
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <locale.h>
+#include <grp.h>
+#define HAVE_GETGRNAM 1
 #define SYSV
 #define USE_WAITPID
 #define USE_SIGBLOCK

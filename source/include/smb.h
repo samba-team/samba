@@ -1090,6 +1090,8 @@ struct parm_struct
 #define FILE_ATTRIBUTE_NORMAL 0x80L
 #define FILE_ATTRIBUTE_TEMPORARY 0x100L
 #define FILE_ATTRIBUTE_COMPRESSED 0x800L
+#define SAMBA_ATTRIBUTES_MASK 0x7F
+
 /* Flags - combined with attributes. */
 #define FILE_FLAG_WRITE_THROUGH    0x80000000L
 #define FILE_FLAG_NO_BUFFERING     0x20000000L
@@ -1105,6 +1107,12 @@ struct parm_struct
 #define OPEN_EXISTING 3
 #define OPEN_ALWAYS 4
 #define TRUNCATE_EXISTING 5
+
+/* Filesystem Attributes. */
+#define FILE_CASE_SENSITIVE_SEARCH 0x1
+#define FILE_CASE_PRESERVED_NAMES 0x2
+#define FILE_UNICODE_ON_DISK 0x4
+#define FILE_PERISITANT_ACLS 0x8
 
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)
