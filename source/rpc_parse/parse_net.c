@@ -432,7 +432,7 @@ BOOL net_io_r_logon_ctrl(const char *desc, NET_R_LOGON_CTRL *r_l, prs_struct *ps
 void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 			uint32 num_doms, const char *dom_name)
 {
-	int i = 0;
+	unsigned int i = 0;
 
 	DEBUG(5,("init_r_trust_dom\n"));
 
@@ -1038,12 +1038,12 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 		   uint32 log_id_low, uint32 log_id_high,
 		   const char *user_name, const char *wksta_name,
 		   const uchar lm_challenge[8],
-		   const uchar * lm_chal_resp, int lm_chal_resp_len,
-		   const uchar * nt_chal_resp, int nt_chal_resp_len)
+		   const uchar * lm_chal_resp, size_t lm_chal_resp_len,
+		   const uchar * nt_chal_resp, size_t nt_chal_resp_len)
 {
-	int len_domain_name = strlen(domain_name);
-	int len_user_name   = strlen(user_name  );
-	int len_wksta_name  = strlen(wksta_name );
+	size_t len_domain_name = strlen(domain_name);
+	size_t len_user_name   = strlen(user_name  );
+	size_t len_wksta_name  = strlen(wksta_name );
 	unsigned char lm_owf[24];
 	unsigned char nt_owf[128];
 
@@ -1281,7 +1281,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
-	int i;
+	unsigned int i;
 	int num_other_sids = 0;
 	
 	NTTIME 		logon_time, logoff_time, kickoff_time,
@@ -1390,7 +1390,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 		       int depth, uint16 validation_level)
 {
-	int i;
+	unsigned int i;
 
 	if (usr == NULL)
 		return False;
@@ -2363,7 +2363,7 @@ reads or writes a structure.
 static BOOL net_io_sam_policy_info(const char *desc, SAM_DELTA_POLICY *info,
 				      prs_struct *ps, int depth)
 {
-	int i;
+	unsigned int i;
 	prs_debug(ps, depth, desc, "net_io_sam_policy_info");
 	depth++;
 
@@ -2584,7 +2584,7 @@ reads or writes a structure.
 static BOOL net_io_sam_privs_info(const char *desc, SAM_DELTA_PRIVS *info,
 				      prs_struct *ps, int depth)
 {
-	int i;
+	unsigned int i;
 
 	prs_debug(ps, depth, desc, "net_io_sam_privs_info");
 	depth++;
@@ -2895,7 +2895,7 @@ reads or writes a structure.
 BOOL net_io_r_sam_deltas(const char *desc, uint8 sess_key[16],
                          NET_R_SAM_DELTAS *r_s, prs_struct *ps, int depth)
 {
-        int i;
+        unsigned int i;
 
 	prs_debug(ps, depth, desc, "net_io_r_sam_deltas");
 	depth++;

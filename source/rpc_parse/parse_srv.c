@@ -1665,8 +1665,8 @@ static BOOL srv_io_srv_sess_info_0(const char *desc, SRV_SESS_INFO_0 *ss0, prs_s
 		return False;
 
 	if (ss0->ptr_sess_info != 0) {
-		int i;
-		int num_entries = ss0->num_entries_read;
+		uint32 i;
+		uint32 num_entries = ss0->num_entries_read;
 
 		if (num_entries > MAX_SESS_ENTRIES) {
 			num_entries = MAX_SESS_ENTRIES; /* report this! */
@@ -1802,8 +1802,8 @@ static BOOL srv_io_srv_sess_info_1(const char *desc, SRV_SESS_INFO_1 *ss1, prs_s
 		return False;
 
 	if (ss1->ptr_sess_info != 0) {
-		int i;
-		int num_entries = ss1->num_entries_read;
+		uint32 i;
+		uint32 num_entries = ss1->num_entries_read;
 
 		if (num_entries > MAX_SESS_ENTRIES) {
 			num_entries = MAX_SESS_ENTRIES; /* report this! */
@@ -1944,7 +1944,7 @@ BOOL srv_io_q_net_sess_enum(const char *desc, SRV_Q_NET_SESS_ENUM *q_n, prs_stru
 	if(!prs_uint32("sess_level", ps, depth, &q_n->sess_level))
 		return False;
 	
-	if (q_n->sess_level != -1) {
+	if (q_n->sess_level != (uint32)-1) {
 		if(!srv_io_srv_sess_ctr("sess_ctr", &q_n->ctr, ps, depth))
 			return False;
 	}
@@ -1976,7 +1976,7 @@ BOOL srv_io_r_net_sess_enum(const char *desc, SRV_R_NET_SESS_ENUM *r_n, prs_stru
 	if(!prs_uint32("sess_level", ps, depth, &r_n->sess_level))
 		return False;
 
-	if (r_n->sess_level != -1) {
+	if (r_n->sess_level != (uint32)-1) {
 		if(!srv_io_srv_sess_ctr("sess_ctr", &r_n->ctr, ps, depth))
 			return False;
 	}
@@ -2309,7 +2309,7 @@ BOOL srv_io_q_net_conn_enum(const char *desc, SRV_Q_NET_CONN_ENUM *q_n, prs_stru
 	if(!prs_uint32("conn_level", ps, depth, &q_n->conn_level))
 		return False;
 	
-	if (q_n->conn_level != -1) {
+	if (q_n->conn_level != (uint32)-1) {
 		if(!srv_io_srv_conn_ctr("conn_ctr", &q_n->ctr, ps, depth))
 			return False;
 	}
@@ -2341,7 +2341,7 @@ BOOL srv_io_r_net_conn_enum(const char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_str
 	if(!prs_uint32("conn_level", ps, depth, &r_n->conn_level))
 		return False;
 
-	if (r_n->conn_level != -1) {
+	if (r_n->conn_level != (uint32)-1) {
 		if(!srv_io_srv_conn_ctr("conn_ctr", &r_n->ctr, ps, depth))
 			return False;
 	}
@@ -2573,7 +2573,7 @@ BOOL srv_io_q_net_file_enum(const char *desc, SRV_Q_NET_FILE_ENUM *q_n, prs_stru
 	if(!prs_uint32("file_level", ps, depth, &q_n->file_level))
 		return False;
 
-	if (q_n->file_level != -1) {
+	if (q_n->file_level != (uint32)-1) {
 		if(!srv_io_srv_file_ctr("file_ctr", &q_n->ctr, ps, depth))
 			return False;
 	}
@@ -3271,7 +3271,7 @@ BOOL srv_io_q_net_disk_enum(const char *desc, SRV_Q_NET_DISK_ENUM *q_n, prs_stru
 BOOL srv_io_r_net_disk_enum(const char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_struct *ps, int depth)
 {
 
-	int i;
+	unsigned int i;
 	uint32 entries_read, entries_read2, entries_read3;
 
 	if (r_n == NULL)
