@@ -2346,8 +2346,8 @@
 		<parameter>workgroup</parameter></link> it is in. Samba 2.2 also 
 		has limited capability to act as a domain controller for Windows 
 		NT 4 Domains.  For more details on setting up this feature see 
-		the file DOMAINS.txt in the Samba documentation directory <filename>docs/
-		</filename> shipped with the source code.</para>
+		the Samba-PDC-HOWTO included in the <filename>htmldocs/</filename>
+		directory shipped with the source code.</para>
 		
 		<para>Default: <command>domain logons = no</command></para></listitem>
 		</varlistentry>
