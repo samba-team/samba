@@ -1,3 +1,7 @@
+1999-08-16  Johan Danielsson  <joda@pdc.kth.se>
+
+	* getcap.c: protect from db-less systems
+
 1999-08-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* simple_exec.c: add simple_exec{ve,le}
