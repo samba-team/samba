@@ -378,9 +378,6 @@ yet registered on subnet %s\n", namestr(&nmbname), subrec->subnet_name ));
         work->ElectionCount = 0;
         work->RunningElection = True;
         work->needelection = False;
-
-        /* Send a force election packet to begin. */
-        send_election_dgram(subrec, work->work_group, 0, 0, "");
       }
     }
   }
