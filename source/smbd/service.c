@@ -142,6 +142,11 @@ int find_service(char *service)
       }
    }
 
+   /* Check for default vfs service?  Unsure whether to implement this */
+   if (iService < 0)
+   {
+   }
+
    /* just possibly it's a default service? */
    if (iService < 0) 
    {
@@ -351,6 +356,60 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	string_set(&conn->dirpath,"");
 	string_set(&conn->user,user);
 	
+        conn->vfs_conn = (struct vfs_connection_struct *)
+            malloc(sizeof(struct vfs_connection_struct));
+
+        if (conn->vfs_conn == NULL) {
+            DEBUG(0, ("No memory to create vfs_connection_struct"));
+            return NULL;
+        }
+        
+        ZERO_STRUCTP(conn->vfs_conn);
+
+        /* Copy across relevant data from connection struct */
+        
+        conn->vfs_conn->printer = conn->printer;
+        conn->vfs_conn->ipc = conn->ipc;
+        conn->vfs_conn->read_only = conn->read_only;
+        conn->vfs_conn->admin_user = conn->admin_user;
+
+        pstrcpy(conn->vfs_conn->dirpath, conn->dirpath);
+        pstrcpy(conn->vfs_conn->connectpath, conn->connectpath);
+        pstrcpy(conn->vfs_conn->origpath, conn->origpath);
+        
+        pstrcpy(conn->vfs_conn->service, service);
+        pstrcpy(conn->vfs_conn->user, conn->user);
+        
+        conn->vfs_conn->uid = conn->uid;
+        conn->vfs_conn->gid = conn->gid;
+        conn->vfs_conn->ngroups = conn->ngroups;
+        conn->vfs_conn->groups = (gid_t *)memdup(conn->groups, 
+                                                 conn->ngroups * sizeof(gid_t));
+
+	/* Initialise VFS function pointers */
+
+	if (*lp_vfsobj(SNUM(conn))) {
+
+#ifdef HAVE_LIBDL
+
+	    /* Loadable object file */
+
+	    if (!vfs_init_custom(conn)) {
+		return NULL;
+	    }
+#else
+	    DEBUG(0, ("No libdl present - cannot use VFS objects\n"));
+	    conn_free(conn);
+	    return NULL;
+#endif
+
+	} else {
+
+	    /* Normal share - initialise with disk access functions */
+
+	    vfs_init_default(conn);
+	}
+
 	/*
 	 * If force user is true, then store the
 	 * given userid and also the primary groupid
@@ -560,7 +619,15 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(SNUM(conn)));
 	}
 	
-	return(conn);
+	/* Invoke VFS make connection hook */
+
+        if (conn->vfs_ops.connect) {
+            if (conn->vfs_ops.connect(conn->vfs_conn, service, user) < 0) {
+                return NULL;
+            }
+        }
+            
+        return(conn);
 }
 
 
@@ -576,6 +643,29 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
 				 remote_machine,conn->client_address,
 				 lp_servicename(SNUM(conn))));
+
+	if (conn->vfs_ops.disconnect != NULL) {
+
+	    /* Call VFS disconnect hook */
+	    
+	    conn->vfs_ops.disconnect();
+	    
+	}
+
+        /* Close dlopen() handle */
+
+        if (conn->vfs_conn->dl_handle != NULL) {
+            dlclose(conn->vfs_conn->dl_handle);  /* should we check return val? */
+        }
+
+        /* Free vfs_connection_struct */
+	    
+        if (conn->vfs_conn != NULL) {
+            if (conn->vfs_conn->groups != NULL) {
+                free(conn->vfs_conn->groups);
+            }
+            free(conn->vfs_conn);
+        }
 
 	yield_connection(conn,
 			 lp_servicename(SNUM(conn)),

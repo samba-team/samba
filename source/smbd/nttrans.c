@@ -842,13 +842,15 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 		
 	if(fsp->is_directory) {
-		if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+		if(fsp->conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False),
+					   &sbuf) != 0) {
 			close_file(fsp,True);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
-		if (!fsp->stat_open && sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+		if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) 
+		    != 0) {
 			close_file(fsp,False);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
@@ -1096,7 +1098,8 @@ static int call_nt_transact_create(connection_struct *conn,
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       }
 
-      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+      if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name, False),
+			     &sbuf) != 0) {
         close_file(fsp,True);
         restore_case_semantics(file_attributes);
         return(ERROR(ERRDOS,ERRnoaccess));
@@ -1169,13 +1172,13 @@ static int call_nt_transact_create(connection_struct *conn,
       } 
   
       if(fsp->is_directory) {
-          if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+          if(conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf) != 0) {
               close_file(fsp,True);
               restore_case_semantics(file_attributes);
               return(ERROR(ERRDOS,ERRnoaccess));
           }
       } else {
-          if (!fsp->stat_open && sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+          if (!fsp->stat_open && conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
               close_file(fsp,False);
               restore_case_semantics(file_attributes);
               return(ERROR(ERRDOS,ERRnoaccess));
@@ -1790,7 +1793,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
         return 0;
       }
     } else {
-      if(sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      if(fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
         return 0;
       }
     }
@@ -2288,9 +2291,9 @@ security descriptor.\n"));
     int ret;
 
     if(fsp->fd_ptr == NULL)
-      ret = dos_stat(fsp->fsp_name, &sbuf);
+      ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
     else
-      ret = sys_fstat(fsp->fd_ptr->fd,&sbuf);
+      ret = conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf);
 
     if(ret != 0) {
       return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2326,9 +2329,9 @@ security descriptor.\n"));
       int ret;
     
       if(fsp->fd_ptr == NULL)
-        ret = dos_stat(fsp->fsp_name, &sbuf);
+        ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
       else
-        ret = sys_fstat(fsp->fd_ptr->fd,&sbuf);
+        ret = conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf);
   
       if(ret != 0)
         return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2374,7 +2377,7 @@ security descriptor.\n"));
       DEBUG(3,("call_nt_transact_set_security_desc: chmod %s. perms = 0%o.\n",
             fsp->fsp_name, (unsigned int)perms ));
 
-      if(dos_chmod( fsp->fsp_name, perms) == -1) {
+      if(conn->vfs_ops.chmod(dos_to_unix(fsp->fsp_name, False), perms) == -1) {
         DEBUG(3,("call_nt_transact_set_security_desc: chmod %s, 0%o failed. Error = %s.\n",
               fsp->fsp_name, (unsigned int)perms, strerror(errno) ));
         return(UNIXERROR(ERRDOS,ERRnoaccess));

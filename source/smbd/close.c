@@ -117,10 +117,10 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	locking_close_file(fsp);
 
-	if(fd_attempt_close(fsp->fd_ptr,&err) == 0)
+	if(fd_attempt_close(fsp, &err) == 0)
 		last_reference = True;
 
-    fsp->fd_ptr = NULL;
+        fsp->fd_ptr = NULL;
 
 	if (lp_share_modes(SNUM(conn)))
 		unlock_share_entry(conn, dev, inode);
@@ -142,8 +142,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
     if (normal_close && last_reference && delete_on_close) {
         DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
 	    fsp->fsp_name));
-		if(dos_unlink(fsp->fsp_name) != 0) {
-
+		if(fsp->conn->vfs_ops.unlink(dos_to_unix(fsp->fsp_name, False)) != 0) {
           /*
            * This call can potentially fail as another smbd may have
            * had the file open with delete on close set and deleted

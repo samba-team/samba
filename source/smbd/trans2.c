@@ -255,7 +255,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+  if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
     close_file(fsp,False);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
@@ -404,7 +404,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       if(needslash)
         pstrcat(pathreal,"/");
       pstrcat(pathreal,dname);
-      if (dos_stat(pathreal,&sbuf) != 0) 
+      if (conn->vfs_ops.stat(dos_to_unix(pathreal,False),&sbuf) != 0) 
       {
         DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",pathreal,strerror(errno)));
         continue;
@@ -1124,7 +1124,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 
   DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
-  if(dos_stat(".",&st)!=0) {
+  if(conn->vfs_ops.stat(".",&st)!=0) {
     DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n", strerror(errno)));
     return (ERROR(ERRSRV,ERRinvdevice));
   }
@@ -1138,7 +1138,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
     {
       SMB_BIG_UINT dfree,dsize,bsize;
       data_len = 18;
-      sys_disk_free(".",False,&bsize,&dfree,&dsize);	
+      conn->vfs_ops.disk_free(".",False,&bsize,&dfree,&dsize);	
       SIVAL(pdata,l1_idFileSystem,st.st_dev);
       SIVAL(pdata,l1_cSectorUnit,bsize/512);
       SIVAL(pdata,l1_cUnit,dsize);
@@ -1216,7 +1216,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
     {
       SMB_BIG_UINT dfree,dsize,bsize;
       data_len = 24;
-      sys_disk_free(".",False,&bsize,&dfree,&dsize);	
+      conn->vfs_ops.disk_free(".",False,&bsize,&dfree,&dsize);	
       SBIG_UINT(pdata,0,dsize);
       SBIG_UINT(pdata,8,dfree);
       SIVAL(pdata,16,bsize/512);
@@ -1315,7 +1315,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
        */
       fname = fsp->fsp_name;
       unix_convert(fname,conn,0,&bad_path,&sbuf);
-      if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && dos_stat(fname,&sbuf))) {
+      if (!check_name(fname,conn) || 
+          (!VALID_STAT(sbuf) && conn->vfs_ops.stat(dos_to_unix(fname,False),&sbuf))) {
         DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
         if((errno == ENOENT) && bad_path)
         {
@@ -1335,11 +1336,11 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       CHECK_ERROR(fsp);
 
       fname = fsp->fsp_name;
-      if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
         DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
         return(UNIXERROR(ERRDOS,ERRbadfid));
       }
-      if((pos = sys_lseek(fsp->fd_ptr->fd,0,SEEK_CUR)) == -1)
+      if((pos = fsp->conn->vfs_ops.lseek(fsp->fd_ptr->fd,0,SEEK_CUR)) == -1)
         return(UNIXERROR(ERRDOS,ERRnoaccess));
 
       delete_pending = fsp->fd_ptr->delete_on_close;
@@ -1353,7 +1354,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
     fname = &fname1[0];
     pstrcpy(fname,&params[6]);
     unix_convert(fname,conn,0,&bad_path,&sbuf);
-    if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && dos_stat(fname,&sbuf))) {
+    if (!check_name(fname,conn) || 
+        (!VALID_STAT(sbuf) && conn->vfs_ops.stat(dos_to_unix(fname,False),&sbuf))) {
       DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
       if((errno == ENOENT) && bad_path)
       {
@@ -1593,7 +1595,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
        */
       fname = fsp->fsp_name;
       unix_convert(fname,conn,0,&bad_path,&st);
-      if (!check_name(fname,conn) || (!VALID_STAT(st) && dos_stat(fname,&st))) {
+      if (!check_name(fname,conn) || 
+          (!VALID_STAT(st) && conn->vfs_ops.stat(dos_to_unix(fname,False),&st))) {
         DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
         if((errno == ENOENT) && bad_path)
         {
@@ -1612,7 +1615,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       fname = fsp->fsp_name;
       fd = fsp->fd_ptr->fd;
 
-      if (sys_fstat(fd,&st) != 0) {
+      if (fsp->conn->vfs_ops.fstat(fd,&st) != 0) {
         DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
         return(UNIXERROR(ERRDOS,ERRbadfid));
       }
@@ -1633,7 +1636,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRbadpath));
     }
  
-    if(!VALID_STAT(st) && dos_stat(fname,&st)!=0) {
+    if(!VALID_STAT(st) && conn->vfs_ops.stat(dos_to_unix(fname,False),&st)!=0) {
       DEBUG(3,("stat of %s failed (%s)\n", fname, strerror(errno)));
       if((errno == ENOENT) && bad_path)
       {
@@ -1980,13 +1983,13 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
           fname, (double)size ));
 
     if (fd == -1) {
-      fd = dos_open(fname,O_RDWR,0);
+      fd = conn->vfs_ops.open(dos_to_unix(fname,False),O_RDWR,0);
       if (fd == -1)
         return(UNIXERROR(ERRDOS,ERRbadpath));
-      set_filelen(fd, size);
-      close(fd);
+      set_filelen(fd, size); /* tpot vfs */
+      conn->vfs_ops.close(fd);
     } else {
-      set_filelen(fd, size);
+        set_filelen(fd, size); /* tpot vfs */
     }
 
     if(fsp)
@@ -2021,7 +2024,8 @@ static int call_trans2mkdir(connection_struct *conn,
 
   unix_convert(directory,conn,0,&bad_path,NULL);
   if (check_name(directory,conn))
-    ret = dos_mkdir(directory,unix_mode(conn,aDIR,directory));
+    ret = conn->vfs_ops.mkdir(dos_to_unix(directory,False),
+			      unix_mode(conn,aDIR,directory));
   
   if(ret < 0)
     {

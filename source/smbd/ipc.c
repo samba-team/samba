@@ -2073,7 +2073,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 				    !become_service(fconn,True))
 					break;
 	      
-				if (dos_rename(fsp->fsp_name,name) == 0) {
+				if (fsp->conn->vfs_ops.rename(fsp->fsp_name,name) == 0) {
 					string_set(&fsp->fsp_name,name);
 				}
 				break;
