@@ -138,16 +138,18 @@ DOMAIN_GRP *iterate_getgroupnam(char *name, DOMAIN_GRP_MEMBER **mem, int *num_me
  *************************************************************************/
 BOOL add_domain_group(DOMAIN_GRP **grps, int *num_grps, DOMAIN_GRP *grp)
 {
-	if (grps == NULL || num_grps == NULL || grp == NULL)
-	{
-		return False;
-	}
+	DOMAIN_GRP *tgrps;
 
-	(*grps) = Realloc((*grps), ((*num_grps)+1) * sizeof(DOMAIN_GRP));
-	if ((*grps) == NULL)
-	{
+	if (grps == NULL || num_grps == NULL || grp == NULL)
 		return False;
-	}
+
+	tgrps = (DOMAIN_GRP *)Realloc((*grps), ((*num_grps)+1) * sizeof(DOMAIN_GRP));
+	if (tgrps == NULL) {
+		if (*grps)
+			free(*grps);
+		return False;
+	} else
+		(*grps) = tgrps;
 
 	DEBUG(10,("adding group %s(%s)\n", grp->name, grp->comment));
 
