@@ -53,7 +53,7 @@ PyObject *spoolss_enumports(PyObject *self, PyObject *args, PyObject *kw)
 		return NULL;
 	}
 
-	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PI_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
