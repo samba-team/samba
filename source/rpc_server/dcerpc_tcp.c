@@ -62,7 +62,7 @@ static void add_socket_rpc(struct server_service *service,
 	char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
-		if (e->ep_description.type == ENDPOINT_TCP) {
+		if (e->ep_description.type == NCACN_IP_TCP) {
 			struct server_socket *sock;
 			struct dcesrv_socket_context *dcesrv_sock;
 

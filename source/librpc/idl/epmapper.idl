@@ -62,14 +62,14 @@ interface epmapper
 		EPM_PROTOCOL_NETBEUI   		= 0x12,
 		EPM_PROTOCOL_SPX     		= 0x13,
 		EPM_PROTOCOL_NB_IPX  		= 0x14, /* NetBIOS over IPX */
-		EPM_PROTOCOL_ATALK_STREAM 	= 0x16,
-		EPM_PROTOCOL_ATALK_DATAGRAM = 0x17,
+		EPM_PROTOCOL_DSP 			= 0x16, /* AppleTalk Data Stream Protocol */
+		EPM_PROTOCOL_DDP		    = 0x17, /* AppleTalk Data Datagram Protocol */
 		EPM_PROTOCOL_APPLETALK		= 0x18, /* AppleTalk */
 		EPM_PROTOCOL_VINES_SPP		= 0x1a, 
-		EPM_PROTOCOL_VINES_IPC		= 0x1b,
-		EPM_PROTOCOL_STREETTALK		= 0x1c,
+		EPM_PROTOCOL_VINES_IPC		= 0x1b, /* Inter Process Communication */
+		EPM_PROTOCOL_STREETTALK		= 0x1c, /* Vines Streettalk */
 		EPM_PROTOCOL_HTTP    		= 0x1f,
-		EPM_PROTOCOL_UNIX_DS  		= 0x20,  /* Unix domain socket */
+		EPM_PROTOCOL_UNIX_DS  		= 0x20, /* Unix domain socket */
 		EPM_PROTOCOL_NULL			= 0x21
 	} epm_protocols;
 
@@ -193,8 +193,8 @@ interface epmapper
 		[case(EPM_PROTOCOL_NETBEUI)] epm_rhs_netbeui netbeui;
 		[case(EPM_PROTOCOL_SPX)] epm_rhs_spx spx;
 		[case(EPM_PROTOCOL_NB_IPX)] epm_rhs_nb_ipx nb_ipx;
-		[case(EPM_PROTOCOL_ATALK_STREAM)] epm_rhs_atalk_stream atalk_stream;
-		[case(EPM_PROTOCOL_ATALK_DATAGRAM)] epm_rhs_atalk_datagram atalk_datagram;
+		[case(EPM_PROTOCOL_DSP)] epm_rhs_atalk_stream atalk_stream;
+		[case(EPM_PROTOCOL_DDP)] epm_rhs_atalk_datagram atalk_datagram;
 		[case(EPM_PROTOCOL_APPLETALK)] epm_rhs_appletalk appletalk;
 		[case(EPM_PROTOCOL_VINES_SPP)] epm_rhs_vines_spp vines_spp;
 		[case(EPM_PROTOCOL_VINES_IPC)] epm_rhs_vines_ipc vines_ipc;

@@ -34,16 +34,19 @@ static BOOL endpoints_match(const struct dcesrv_ep_description *ep1,
 	}
 
 	switch (ep1->type) {
-		case ENDPOINT_SMB:
+		case NCACN_NP:
 			if (strcasecmp(ep1->info.smb_pipe,ep2->info.smb_pipe)==0) {
 				return True;
 			}			
 			break;
-		case ENDPOINT_TCP:
+		case NCACN_IP_TCP:
 			if (ep1->info.tcp_port == ep2->info.tcp_port) {
 				return True;
 			}
 			break;
+		default: 
+			/* Not supported yet */
+			return False;
 	}
 
 	return False;
@@ -164,19 +167,21 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		return status;
 	}
 
-	if (binding.transport == NCACN_IP_TCP) {
-		ep_description.type = ENDPOINT_TCP;
+	ep_description.type = binding.transport;
+	switch (binding.transport) {
+	case NCACN_IP_TCP:
 		ep_description.info.tcp_port = 0;
 
 		if (binding.options && binding.options[0]) {
 			ep_description.info.tcp_port = atoi(binding.options[0]);
 		}
-	} else if (binding.transport == NCACN_NP) {
-		ep_description.type = ENDPOINT_SMB;
+		break;
+	case NCACN_NP:
 		ep_description.info.smb_pipe = binding.options[0];
-	} else {
-		DEBUG(0, ("Unknown transport type '%d'\n", binding.transport));
-		return NT_STATUS_INVALID_PARAMETER;
+		break;
+	default:
+		DEBUG(0, ("Unsupported transport type '%d'\n", binding.transport));
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
 	/* check if this endpoint exists
@@ -187,16 +192,20 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		ZERO_STRUCTP(ep);
-		if (binding.transport == NCACN_IP_TCP) {
-			ep->ep_description.type = ENDPOINT_TCP;
+		ep->ep_description.type = binding.transport;
+		switch (binding.transport) { 
+		case NCACN_IP_TCP:
 			ep->ep_description.info.tcp_port = 0;
 
 			if (binding.options && binding.options[0]) {
 				ep->ep_description.info.tcp_port = atoi(binding.options[0]);
 			}
-		} else {
-			ep->ep_description.type = ENDPOINT_SMB;
+			break;
+		case NCACN_NP:
 			ep->ep_description.info.smb_pipe = binding.options[0];
+			break;
+		default:
+			return NT_STATUS_NOT_SUPPORTED;
 		}
 		add_ep = True;
 	}
