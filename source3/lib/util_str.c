@@ -1115,7 +1115,7 @@ char *strchr_m(const char *s, char c)
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
 
-	while (*s && !(((unsigned char)s[0]) & 0x7F)) {
+	while (*s && (((unsigned char)s[0]) & 0x80)) {
 		if (*s == c)
 			return s;
 	}
@@ -1134,17 +1134,53 @@ char *strchr_m(const char *s, char c)
 
 char *strrchr_m(const char *s, char c)
 {
-	wpstring ws;
-	pstring s2;
-	smb_ucs2_t *p;
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars). Also, in Samba
+	   we only search for ascii characters in 'c' and that
+	   in all mb character sets with a compound character
+	   containing c, if 'c' is not a match at position
+	   p, then p[-1] > 0x7f. JRA. */
 
-	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
-	p = strrchr_w(ws, UCS2_CHAR(c));
-	if (!p)
-		return NULL;
-	*p = 0;
-	pull_ucs2_pstring(s2, ws);
-	return (char *)(s+strlen(s2));
+	{
+		size_t len = strlen(s);
+		const char *cp = s;
+		BOOL got_mb = False;
+
+		if (len == 0)
+			return NULL;
+		cp += (len - 1);
+		do {
+			if (c == *cp) {
+				/* Could be a match. Part of a multibyte ? */
+			       	if ((cp > s) && (((unsigned char)cp[-1]) & 0x80)) {
+					/* Yep - go slow :-( */
+					got_mb = True;
+					break;
+				}
+				/* No - we have a match ! */
+			       	return cp;
+			}
+		} while (cp-- != s);
+		if (!got_mb)
+			return NULL;
+	}
+
+	/* String contained a non-ascii char. Slow path. */
+	{
+		wpstring ws;
+		pstring s2;
+		smb_ucs2_t *p;
+
+		push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
+		p = strrchr_w(ws, UCS2_CHAR(c));
+		if (!p)
+			return NULL;
+		*p = 0;
+		pull_ucs2_pstring(s2, ws);
+		return (char *)(s+strlen(s2));
+	}
 }
 
 /***********************************************************************
