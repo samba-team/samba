@@ -1,12 +1,6 @@
 /*
-<<<<<<< pdb_gums.c
  * 'Gums' password backend for samba
- * Copyright (C) Simo Sorce 2003
-=======
- * GUMS password backend for samba
- * Copyright (C) Jelmer Vernooij 2002
- * Copyright (C) Andrew Bartlett 2003
->>>>>>> 1.4
+ * Copyright (C) Simo Sorce 2004
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
