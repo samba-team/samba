@@ -146,6 +146,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	CLI_POLICY_HND *hnd;
 	POLICY_HND dom_pol;
 	NTSTATUS result;
+	uint32 start = 0;
 
 	*num_entries = 0;
 	*info = NULL;
@@ -161,11 +162,12 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	do {
 		struct acct_info *info2 = NULL;
-		uint32 count = 0, start = *num_entries;
+		uint32 count = 0;
 		TALLOC_CTX *mem_ctx2;
 
 		mem_ctx2 = talloc_init_named("enum_dom_groups[rpc]");
 
+		/* This call updates 'start' */
 		result = cli_samr_enum_dom_groups(
 			hnd->cli, mem_ctx2, &dom_pol, &start,
 			0xFFFF, /* buffer size? */ &info2, &count);
