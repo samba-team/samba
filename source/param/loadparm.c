@@ -123,6 +123,8 @@ typedef struct
   char *szSocketOptions;
   char *szValidChars;
   char *szWorkGroup;
+  char *szTrustedDomains;
+  char *szTrustingDomains;
   char *szUsernameMap;
   char *szAliasnameMap;
   char *szGroupnameMap;
@@ -717,6 +719,8 @@ static struct parm_struct parm_table[] =
 
   {"Domain Options", P_SEP, P_SEPARATOR},
 
+  {"trusted domains",   P_STRING, P_GLOBAL, &Globals.szTrustedDomains,  NULL,   NULL,  0},
+  {"trusting domains",  P_STRING, P_GLOBAL, &Globals.szTrustingDomains, NULL,   NULL,  0},
   {"local group map",   P_STRING, P_GLOBAL, &Globals.szAliasnameMap,     NULL,   NULL,  0},
   {"domain group map",  P_STRING, P_GLOBAL, &Globals.szGroupnameMap,     NULL,   NULL,  0},
   {"builtin group map", P_STRING, P_GLOBAL, &Globals.szBuiltinnameMap,   NULL,   NULL,  0},
@@ -1203,6 +1207,8 @@ FN_GLOBAL_STRING(lp_passwd_chat,&Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver,&Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order,&Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_workgroup,&Globals.szWorkGroup)
+FN_GLOBAL_STRING(lp_trusted_domains,&Globals.szTrustedDomains)
+FN_GLOBAL_STRING(lp_trusting_domains,&Globals.szTrustingDomains)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_aliasname_map,&Globals.szAliasnameMap)
 FN_GLOBAL_STRING(lp_groupname_map,&Globals.szGroupnameMap)

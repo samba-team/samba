@@ -294,7 +294,7 @@ BOOL net_io_r_logon_ctrl2(char *desc,  NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, i
 makes an NET_R_TRUST_DOM_LIST structure.
 ********************************************************************/
 BOOL make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
-			uint32 num_doms, char *dom_name)
+			uint32 num_doms, char **dom_name)
 {
 	uint32 i = 0;
 
@@ -312,7 +312,7 @@ BOOL make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 	for (i = 0; i < num_doms; i++)
 	{
 		fstring domain_name;
-		fstrcpy(domain_name, dom_name);
+		fstrcpy(domain_name, dom_name[i]);
 		strupper(domain_name);
 		make_unistr2(&(r_t->uni_trust_dom_name[i]), domain_name, strlen(domain_name)+1);
 		/* the use of UNISTR2 here is non-standard. */
@@ -357,8 +357,8 @@ BOOL net_io_q_trust_dom(char *desc,  NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, 
 	prs_debug(ps, depth, desc, "net_io_q_trust_dom");
 	depth++;
 
-	prs_uint32("ptr          ", ps, depth, &(q_l->ptr          ));
-	smb_io_unistr2 ("", &(q_l->uni_server_name), q_l->ptr, ps, depth);
+	prs_uint32("ptr", ps, depth, &(q_l->ptr));
+	smb_io_unistr2 ("name", &(q_l->uni_server_name), q_l->ptr, ps, depth);
 
 	prs_align(ps);
 

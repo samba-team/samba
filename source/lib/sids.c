@@ -600,6 +600,29 @@ BOOL split_domain_name(const char *fullname, char *domain, char *name)
 /**************************************************************************
  enumerates all domains for which the SAM server is responsible
 ***************************************************************************/
+BOOL enumtrustdoms(char ***doms, uint32 *num_entries)
+{
+	fstring tmp;
+	char *tok;
+
+	/* add trusted domains */
+
+	tok = lp_trusted_domains();
+	if (next_token(&tok, tmp, NULL, sizeof(tmp)))
+	{
+		do
+		{
+			add_chars_to_array(num_entries, doms, tmp);
+
+		} while (next_token(NULL, tmp, NULL, sizeof(tmp)));
+	}
+
+	return True;
+}
+
+/**************************************************************************
+ enumerates all domains for which the SAM server is responsible
+***************************************************************************/
 BOOL enumdomains(char ***doms, uint32 *num_entries)
 {
 	add_chars_to_array(num_entries, doms, global_sam_name);

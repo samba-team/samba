@@ -303,6 +303,7 @@ BOOL generate_sam_sid(char *domain_name);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain);
 BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
 BOOL split_domain_name(const char *fullname, char *domain, char *name);
+BOOL enumtrustdoms(char ***doms, uint32 *num_entries);
 BOOL enumdomains(char ***doms, uint32 *num_entries);
 
 /*The following definitions come from  lib/signal.c  */
@@ -1290,6 +1291,8 @@ char *lp_passwd_chat(void);
 char *lp_passwordserver(void);
 char *lp_name_resolve_order(void);
 char *lp_workgroup(void);
+char *lp_trusted_domains(void);
+char *lp_trusting_domains(void);
 char *lp_username_map(void);
 char *lp_aliasname_map(void);
 char *lp_groupname_map(void);
@@ -2322,7 +2325,7 @@ BOOL make_r_logon_ctrl2(NET_R_LOGON_CTRL2 *r_l, uint32 query_level,
 				uint32 tc_status, char *trusted_domain_name);
 BOOL net_io_r_logon_ctrl2(char *desc,  NET_R_LOGON_CTRL2 *r_l, prs_struct *ps, int depth);
 BOOL make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
-			uint32 num_doms, char *dom_name);
+			uint32 num_doms, char **dom_name);
 BOOL net_io_r_trust_dom(char *desc,  NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth);
 BOOL net_io_q_trust_dom(char *desc,  NET_Q_TRUST_DOM_LIST *q_l, prs_struct *ps, int depth);
 BOOL make_q_req_chal(NET_Q_REQ_CHAL *q_c,
@@ -2330,6 +2333,12 @@ BOOL make_q_req_chal(NET_Q_REQ_CHAL *q_c,
 				DOM_CHAL *clnt_chal);
 BOOL net_io_q_req_chal(char *desc,  NET_Q_REQ_CHAL *q_c, prs_struct *ps, int depth);
 BOOL net_io_r_req_chal(char *desc,  NET_R_REQ_CHAL *r_c, prs_struct *ps, int depth);
+BOOL make_q_auth(NET_Q_AUTH *q_a,
+		const char *logon_srv, const char *acct_name,
+		uint16 sec_chan, const char *comp_name,
+		DOM_CHAL *clnt_chal);
+BOOL net_io_q_auth(char *desc,  NET_Q_AUTH *q_a, prs_struct *ps, int depth);
+BOOL net_io_r_auth(char *desc,  NET_R_AUTH *r_a, prs_struct *ps, int depth);
 BOOL make_q_auth_2(NET_Q_AUTH_2 *q_a,
 		const char *logon_srv, const char *acct_name,
 		uint16 sec_chan, const char *comp_name,
