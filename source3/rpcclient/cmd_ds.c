@@ -53,7 +53,7 @@ struct cmd_set ds_commands[] = {
 
 	{ "LSARPC-DS" },
 
-	{ "dsroledominfo",	cmd_ds_dsrole_getprimarydominfo,       PI_LSARPC_DS, "Get Primary Domain Information", "" },
+	{ "dsroledominfo", RPC_RTYPE_NTSTATUS, cmd_ds_dsrole_getprimarydominfo, NULL, PI_LSARPC_DS, "Get Primary Domain Information", "" },
 
 	{ NULL }
 };

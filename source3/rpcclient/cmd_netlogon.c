@@ -332,11 +332,11 @@ struct cmd_set netlogon_commands[] = {
 
 	{ "NETLOGON" },
 
-	{ "logonctrl2", cmd_netlogon_logon_ctrl2, PI_NETLOGON, "Logon Control 2",     "" },
-	{ "logonctrl",  cmd_netlogon_logon_ctrl,  PI_NETLOGON, "Logon Control",       "" },
-	{ "samsync",    cmd_netlogon_sam_sync,    PI_NETLOGON, "Sam Synchronisation", "" },
-	{ "samdeltas",  cmd_netlogon_sam_deltas,  PI_NETLOGON, "Query Sam Deltas",    "" },
-        { "samlogon",   cmd_netlogon_sam_logon,   PI_NETLOGON, "Sam Logon",           "" },
+	{ "logonctrl2", RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl2, NULL, PI_NETLOGON, "Logon Control 2",     "" },
+	{ "logonctrl",  RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl,  NULL, PI_NETLOGON, "Logon Control",       "" },
+	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, PI_NETLOGON, "Sam Synchronisation", "" },
+	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, PI_NETLOGON, "Query Sam Deltas",    "" },
+     { "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_logon,   NULL, PI_NETLOGON, "Sam Logon",           "" },
 
 	{ NULL }
 };

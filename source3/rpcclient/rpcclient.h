@@ -22,10 +22,18 @@
 #ifndef RPCCLIENT_H
 #define RPCCLIENT_H
 
+typedef enum {
+        RPC_RTYPE_NTSTATUS = 0,
+        RPC_RTYPE_WERROR,
+        MAX_RPC_RETURN_TYPE,
+} RPC_RETURN_TYPE;
+
 struct cmd_set {
 	const char *name;
-	NTSTATUS (*fn)(struct cli_state *cli, TALLOC_CTX *mem_ctx, int argc, 
+        RPC_RETURN_TYPE returntype;
+	NTSTATUS (*ntfn)(struct cli_state *cli, TALLOC_CTX *mem_ctx, int argc, 
                        const char **argv);
+        WERROR (*wfn)(struct cli_state *cli, TALLOC_CTX *mem_ctx, int argc, const char **argv);
         int pipe_idx;
 	const char *description;
 	const char *usage;

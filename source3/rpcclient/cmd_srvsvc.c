@@ -179,7 +179,7 @@ static void display_srv_info_102(SRV_INFO_102 *sv102)
 }
 
 /* Server query info */
-static NTSTATUS cmd_srvsvc_srv_query_info(struct cli_state *cli, 
+static WERROR cmd_srvsvc_srv_query_info(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
@@ -189,7 +189,7 @@ static NTSTATUS cmd_srvsvc_srv_query_info(struct cli_state *cli,
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
-		return NT_STATUS_OK;
+		return WERR_OK;
 	}
 
 	if (argc == 2)
@@ -217,7 +217,7 @@ static NTSTATUS cmd_srvsvc_srv_query_info(struct cli_state *cli,
 	}
 
  done:
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return result;
 }
 
 static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
@@ -246,7 +246,7 @@ static void display_share_info_2(SRV_SHARE_INFO_2 *info2)
 	printf("\tpassword:\t%s\n", passwd);
 }
 
-static NTSTATUS cmd_srvsvc_net_share_enum(struct cli_state *cli, 
+static WERROR cmd_srvsvc_net_share_enum(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
@@ -258,7 +258,7 @@ static NTSTATUS cmd_srvsvc_net_share_enum(struct cli_state *cli,
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
-		return NT_STATUS_OK;
+		return WERR_OK;
 	}
 
 	if (argc == 2)
@@ -289,10 +289,10 @@ static NTSTATUS cmd_srvsvc_net_share_enum(struct cli_state *cli,
 	}
 
  done:
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return result;
 }
 
-static NTSTATUS cmd_srvsvc_net_remote_tod(struct cli_state *cli, 
+static WERROR cmd_srvsvc_net_remote_tod(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
                                           int argc, const char **argv)
 {
@@ -301,7 +301,7 @@ static NTSTATUS cmd_srvsvc_net_remote_tod(struct cli_state *cli,
 
 	if (argc > 1) {
 		printf("Usage: %s\n", argv[0]);
-		return NT_STATUS_OK;
+		return WERR_OK;
 	}
 
 	result = cli_srvsvc_net_remote_tod(
@@ -311,10 +311,10 @@ static NTSTATUS cmd_srvsvc_net_remote_tod(struct cli_state *cli,
 		goto done;
 
  done:
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return result;
 }
 
-static NTSTATUS cmd_srvsvc_net_file_enum(struct cli_state *cli, 
+static WERROR cmd_srvsvc_net_file_enum(struct cli_state *cli, 
 					 TALLOC_CTX *mem_ctx,
 					 int argc, const char **argv)
 {
@@ -326,7 +326,7 @@ static NTSTATUS cmd_srvsvc_net_file_enum(struct cli_state *cli,
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
-		return NT_STATUS_OK;
+		return WERR_OK;
 	}
 
 	if (argc == 2)
@@ -343,7 +343,7 @@ static NTSTATUS cmd_srvsvc_net_file_enum(struct cli_state *cli,
 		goto done;
 
  done:
-	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	return result;
 }
 
 /* List of commands exported by this module */
@@ -352,10 +352,10 @@ struct cmd_set srvsvc_commands[] = {
 
 	{ "SRVSVC" },
 
-	{ "srvinfo",    cmd_srvsvc_srv_query_info,  PI_SRVSVC, "Server query info", "" },
-	{ "netshareenum", cmd_srvsvc_net_share_enum, PI_SRVSVC, "Enumerate shares", "" },
-	{ "netfileenum", cmd_srvsvc_net_file_enum, PI_SRVSVC, "Enumerate open files", "" },
-	{ "netremotetod", cmd_srvsvc_net_remote_tod, PI_SRVSVC, "Fetch remote time of day", "" },
+	{ "srvinfo",     RPC_RTYPE_WERROR, NULL, cmd_srvsvc_srv_query_info, PI_SRVSVC, "Server query info", "" },
+	{ "netshareenum",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum, PI_SRVSVC, "Enumerate shares", "" },
+	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  PI_SRVSVC, "Enumerate open files", "" },
+	{ "netremotetod",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_remote_tod, PI_SRVSVC, "Fetch remote time of day", "" },
 
 	{ NULL }
 };
