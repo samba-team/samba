@@ -40,6 +40,41 @@
 
 RCSID("$Id$");
 
+static const char *
+get_config_string (krb5_context context,
+		   char *realm,
+		   char *name,
+		   const char *def)
+{
+    const char *ret;
+
+    ret = krb5_config_get_string (context->cf,
+				  "libdefaults",
+				  realm,
+				  name,
+				  NULL);
+    if (ret)
+	return ret;
+    ret = krb5_config_get_string (context->cf,
+				  "libdefaults",
+				  name,
+				  NULL);
+    if (ret)
+	return ret;
+    return def;
+}
+
+static int
+ison (const char *s)
+{
+    return strcasecmp (s, "y") == 0
+	|| strcasecmp (s, "yes") == 0
+	|| strcasecmp (s, "t") == 0
+	|| strcasecmp (s, "true") == 0
+	|| strcasecmp (s, "1") == 0
+	|| strcasecmp (s, "on") == 0;
+}
+
 static krb5_error_code
 init_cred (krb5_context context,
 	   krb5_creds *cred,
@@ -50,22 +85,10 @@ init_cred (krb5_context context,
 {
     krb5_error_code ret;
     krb5_realm *client_realm;
+    int tmp;
 
     memset (cred, 0, sizeof(*cred));
     
-    if (start_time)
-	cred->times.starttime  = time(NULL) + start_time;
-
-    if (options->flags & KRB5_GET_INIT_CREDS_OPT_TKT_LIFE)
-	cred->times.endtime    = time(NULL) + options->tkt_life;
-    else
-	cred->times.endtime    = 0;
-
-    if (options->flags & KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE)
-	cred->times.renew_till = time(NULL) + options->renew_life;
-    else
-	cred->times.renew_till = 0;
-
     if (client)
 	cred->client = client;
     else {			/* XXX -> get_default_principal */
@@ -99,6 +122,31 @@ init_cred (krb5_context context,
 
     client_realm = krb5_princ_realm (context, cred->client);
 
+    if (start_time)
+	cred->times.starttime  = time(NULL) + start_time;
+
+    if (options->flags & KRB5_GET_INIT_CREDS_OPT_TKT_LIFE)
+	tmp = options->tkt_life;
+    else
+	tmp = parse_time(get_config_string (context,
+					    *client_realm,
+					    "ticket_lifetime",
+					    "36000"),
+			 NULL);
+    cred->times.endtime = time(NULL) + tmp;
+
+    tmp = 0;
+    if (options->flags & KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE)
+	tmp = options->renew_life;
+    else
+	tmp = parse_time(get_config_string (context,
+					    *client_realm,
+					    "renew_lifetime",
+					    "0"),
+			 NULL);
+    if (tmp)
+	cred->times.renew_till = time(NULL) + tmp;
+
     if (in_tkt_service) {
 	ret = krb5_parse_name (context, in_tkt_service, &cred->server);
 	if (ret)
@@ -120,7 +168,7 @@ init_cred (krb5_context context,
     return 0;
 
 out:
-    krb5_free_creds (context, cred);
+    krb5_free_creds_contents (context, cred);
     return ret;
 }
 
@@ -144,21 +192,36 @@ krb5_get_init_creds_password(krb5_context context,
     krb5_kdc_rep kdc_reply;
     char buf[BUFSIZ];
     krb5_data password_data;
+    const char *tmp_str;
+    krb5_realm *client_realm;
 
     ret = init_cred (context, &this_cred, client, start_time,
 		     in_tkt_service, options);
     if (ret)
 	return ret;
 
+    client_realm = krb5_princ_realm (context, this_cred.client);
+
     flags.i = 0;
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_FORWARDABLE)
 	flags.b.forwardable = 1;
+    else
+	flags.b.forwardable = ison(get_config_string (context,
+						      *client_realm,
+						      "forwardable",
+						      "no"));
+
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PROXIABLE)
 	flags.b.proxiable = 1;
-    if (options->flags & KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE)
-	flags.b.renewable = 1;
+    else
+	flags.b.proxiable = ison(get_config_string (context,
+						    *client_realm,
+						    "proxiable",
+						    "no"));
 
+    if (this_cred.times.renew_till)
+	flags.b.renewable = 1;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST)
 	addrs = options->address_list;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ETYPE_LIST) {
@@ -225,12 +288,12 @@ krb5_get_init_creds_password(krb5_context context,
     if (creds)
 	*creds = this_cred;
     else
-	krb5_free_creds (context, &this_cred);
+	krb5_free_creds_contents (context, &this_cred);
     return 0;
 
 out:
     free (pre_auth_types);
     free (etypes);
-    krb5_free_creds (context, &this_cred);
+    krb5_free_creds_contents (context, &this_cred);
     return ret;
 }
