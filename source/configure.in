@@ -2464,6 +2464,8 @@ AC_ARG_WITH(expsam,
       AM_PATH_MYSQL([0.11.0],[default_shared_modules="$default_shared_modules pdb_mysql"],[])
       CFLAGS="$CFLAGS $MYSQL_CFLAGS"
       ;;
+    no)
+      ;;
     *)
       echo "Unknown module name \"$i\"!  Exiting..."
       exit 1
