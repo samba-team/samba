@@ -295,7 +295,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
   if (name->scope[0]) {
     /* XXXX this scope handling needs testing */
     ret += strlen(name->scope) + 1;
-    pstrcpy(&buf[offset+1],name->scope);  
+    safe_strcpy(&buf[offset+1],name->scope,sizeof(name->scope));  
   
     p = &buf[offset+1];
     while ((p = strchr_m(p,'.'))) {
