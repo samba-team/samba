@@ -1490,6 +1490,56 @@ int reply_ntcancel(connection_struct *conn,
 }
 
 /****************************************************************************
+ Reply to a NT rename request.
+****************************************************************************/
+
+int reply_ntrename(connection_struct *conn,
+		   char *inbuf,char *outbuf,int length,int bufsize)
+{
+	int outsize = 0;
+	pstring name;
+	pstring newname;
+	char *p;
+	NTSTATUS status;
+
+	START_PROFILE(SMBntrename);
+
+	p = smb_buf(inbuf) + 1;
+	p += srvstr_get_path(inbuf, name, p, sizeof(name), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(status);
+	}
+	p++;
+	p += srvstr_get_path(inbuf, newname, p, sizeof(newname), STR_TERMINATE,&status);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(status);
+	}
+	
+	RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH(newname, conn, inbuf, outbuf);
+	
+	DEBUG(3,("reply_ntrename : %s -> %s\n",name,newname));
+	
+	status = rename_internals(conn, name, newname, False);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBntrename);
+		return ERROR_NT(status);
+	}
+
+	/*
+	 * Win2k needs a changenotify request response before it will
+	 * update after a rename..
+	 */	
+	process_pending_change_notify_queue((time_t)0);
+	outsize = set_message(outbuf,0,0,True);
+  
+	END_PROFILE(SMBntrename);
+	return(outsize);
+}
+
+/****************************************************************************
  Reply to an unsolicited SMBNTtranss - just ignore it!
 ****************************************************************************/
 
