@@ -1677,6 +1677,12 @@ Can't find printer handle we created for printer %s\n", name ));
 			&Printer->nt_devmode );
 	 }
 
+	/* HACK ALERT!!! Sleep for 1/3 of a second to try trigger a LAN/WAN 
+	   optimization in Windows 2000 clients  --jerry */
+
+	if ( RA_WIN2K == get_remote_arch() )
+		usleep( 384000 );
+
 	return WERR_OK;
 }
 
