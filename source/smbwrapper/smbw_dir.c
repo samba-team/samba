@@ -87,7 +87,7 @@ static void smbw_dir_add(struct file_info *finfo, const char *mask,
 		cdl = (struct file_info *)Realloc(cur_dir->list, 
 							    sizeof(cur_dir->list[0])*
 							    (cur_dir->count+100));
-		if (!cur_dir->list) {
+		if (!cdl) {
 			/* oops */
 			return;
 		}
