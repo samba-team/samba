@@ -1,3 +1,7 @@
+2001-06-21  Assar Westerlund  <assar@sics.se>
+
+	* simple_exec.c (pipe_execv): remove unused variable
+
 2001-06-20  Johan Danielsson  <joda@pdc.kth.se>
 
 	* getdtablesize.c: fix typo in obviously never used sysctl case
