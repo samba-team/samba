@@ -519,7 +519,7 @@ void become_logon_server(struct subnet_record *d, struct work_record *work)
 {
   if (!work || !d) return;
   
-  if (lp_domain_logons())
+  if (!lp_domain_logons())
   {
     DEBUG(0,("samba not configured as a logon master.\n"));
     return;
