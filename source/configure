@@ -11419,9 +11419,10 @@ fi
 # If we don't have all of these then disable large
 # file support.
 #
-echo "checking if large file support can be enabled"
+echo $ac_n "checking if large file support can be enabled""... $ac_c" 1>&6
+echo "configure:11424: checking if large file support can be enabled" >&5
 cat > conftest.$ac_ext <<EOF
-#line 11425 "configure"
+#line 11426 "configure"
 #include "confdefs.h"
 
 #if defined(HAVE_LONGLONG) && (defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8)))
@@ -11434,7 +11435,7 @@ int main() {
 int i
 ; return 0; }
 EOF
-if { (eval echo configure:11438: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:11439: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=yes
 else
@@ -11445,14 +11446,12 @@ else
 fi
 rm -f conftest*
 if test x"$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" = x"yes"; then
-    echo "yes"
     cat >> confdefs.h <<\EOF
 #define HAVE_EXPLICIT_LARGEFILE_SUPPORT 1
 EOF
 
-else
-    echo "no"
 fi
+echo "$ac_t""$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" 1>&6
 
 # Check whether --with-spinlocks or --without-spinlocks was given.
 if test "${with_spinlocks+set}" = set; then
@@ -11502,11 +11501,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 11506 "configure"
+#line 11505 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:11510: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11509: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else
