@@ -1433,7 +1433,7 @@ static void init_globals(void)
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
 	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
 	Globals.enhanced_browsing = True; 
-	Globals.iLockSpinCount = 3; /* Try 2 times. */
+	Globals.iLockSpinCount = 3; /* Try 3 times. */
 	Globals.iLockSpinTime = 10; /* usec. */
 #ifdef MMAP_BLACKLIST
 	Globals.bUseMmap = False;

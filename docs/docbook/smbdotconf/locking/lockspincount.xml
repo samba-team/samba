@@ -12,6 +12,6 @@
 	and FoxPro.
 	</para>
 
-	<para>Default: <command moreinfo="none">lock spin count = 2</command></para>
+	<para>Default: <command moreinfo="none">lock spin count = 3</command></para>
 </listitem>
 </samba:parameter>
