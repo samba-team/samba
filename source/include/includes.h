@@ -173,7 +173,6 @@ extern int errno;
 #include "ads.h"
 #include "lib/socket/socket.h"
 #include "libcli/ldap/ldap.h"
-#include "nameserv.h"
 #include "byteorder.h"
 #include "module.h"
 #include "mutex.h"
