@@ -950,6 +950,80 @@ void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 }
 
 /********************************************************************
+ Send a message to ourself about new driver being installed
+ so we can upgrade the information for each printer bound to this
+ driver
+ ********************************************************************/
+ 
+static BOOL srv_spoolss_reset_printerdata(char* drivername)
+{
+	int len = strlen(drivername);
+	
+	if (!len)
+		return False;
+
+	DEBUG(10,("srv_spoolss_reset_printerdata: Sending message about resetting printerdata [%s]\n",
+		drivername));
+		
+	message_send_pid(sys_getpid(), MSG_PRINTERDATA_INIT_RESET, drivername, len+1, False);
+
+	return True;
+}
+
+/**********************************************************************
+ callback to receive a MSG_PRINTERDATA_INIT_RESET message and interate
+ over all printers, resetting printer data as neessary 
+ **********************************************************************/
+ 
+void reset_all_printerdata(int msg_type, pid_t src, void *buf, size_t len)
+{
+	fstring drivername;
+	int snum;
+	int n_services = lp_numservices();
+	
+	len = MIN( len, sizeof(drivername)-1 );
+	strncpy( drivername, buf, len );
+	
+	DEBUG(10,("reset_all_printerdata: Got message for new driver [%s]\n", drivername ));
+
+	/* Iterate the printer list */
+	
+	for ( snum=0; snum<n_services; snum++ )
+	{
+		if ( lp_snum_ok(snum) && lp_print_ok(snum) ) 
+		{
+			WERROR result;
+			NT_PRINTER_INFO_LEVEL *printer = NULL;
+			
+			result = get_a_printer( &printer, 2, lp_servicename(snum) );
+			if ( !W_ERROR_IS_OK(result) )
+				continue;
+				
+			/* 
+			 * if the printer is bound to the driver, 
+			 * then reset to the new driver initdata 
+			 */
+			
+			if ( printer && printer->info_2 && !strcmp(drivername, printer->info_2->drivername) ) 
+			{
+				DEBUG(6,("reset_all_printerdata: Updating printer [%s]\n", printer->info_2->printername));
+				
+				if ( !set_driver_init(printer, 2) ) {
+					DEBUG(5,("reset_all_printerdata: Error resetting printer data for printer [%s], driver [%s]!\n",
+						printer->info_2->printername, printer->info_2->drivername));
+				}	
+			}
+			
+			free_a_printer( &printer, 2 );
+		}
+	}
+	
+	/* all done */	
+	
+	return;
+}
+
+/********************************************************************
  Copy routines used by convert_to_openprinterex()
  *******************************************************************/
 
@@ -5535,6 +5609,12 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
+		
+		/* we need to reset all driver init data for all printers 
+		   bound to this driver */
+		
+		srv_spoolss_reset_printerdata( printer->info_2->drivername );
+		
 	} else {
 		/*
 		 * When a *new* driver is bound to a printer, the drivername is used to
