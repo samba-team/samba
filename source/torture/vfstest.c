@@ -545,7 +545,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* some basic initialization stuff */
-	vfs.conn = (struct connection_struct *)malloc(sizeof(struct connection_struct));
+	conn_init();
+	vfs.conn = conn_new();
 	vfs.conn->user = "vfstest";
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;
