@@ -29,7 +29,36 @@
 <title>Features and Benefits</title>
 
 	<para>
-	Stuff goes here.
+	Samba allows the administrator to create MS Windows NT4 / 200x group accounts and to
+	arbitrarily associate them with Unix/Linux group accounts.
+	</para>
+
+	<para>
+	Group accounts can be managed using the MS Windows NT4 or MS Windows 200x MMC tools
+	so long as appropriate interface scripts have been provided to &smb.conf;
+	</para>
+
+	<para>
+	Administrators should be aware that where &smb.conf; group interface scripts make
+	direct calls to the Unix/Linux system tools (eg: the shadow utilities, <command>groupadd,
+	groupdel, groupmod</command>) then the resulting Unix/Linux group names will be subject
+	to any limits imposed by these tools. If the tool does NOT allow upper case characters
+	or space characters, then the creation of an MS Windows NT4 / 200x style group of
+	<parameter>Engineering Managers</parameter> will attempt to create an identically named
+	Unix/Linux group, an attempt that will of course fail!
+	</para>
+
+	<para>
+	There are several possible work-arounds for the operating system tools limitation. One
+	method is to use a script that generates a name for the Unix/Linux system group that
+	fits the operating system limits, and that then just passes the Unix/Linux group id (GID)
+	back to the calling samba interface. This will provide a dynamic work-around solution.
+	</para>
+
+	<para>
+	Another work-around is to manually create a Unix/Linux group, then manually create the
+	MS Windows NT4 / 200x group on the Samba server and then use the <command>net groupmap</command>
+	tool to connect the two to each other.
 	</para>
 
 </sect1>
@@ -149,6 +178,85 @@
 	Everyone needs tools. Some of us like to create our own, others prefer to use canned tools
 	(ie: prepared by someone else for general use). 
 	</para>
+
+	<sect2>
+	<title>Sample &smb.conf; <emphasis><parameter>add group script</parameter></emphasis></title>
+
+		<para>
+		A script to great complying group names for use by the samba group interfaces:
+		</para>
+
+<para>
+<screen>
+Script name: smbgrpadd.sh
+
+#!/bin/bash
+
+# Add the group using normal system groupadd tool.
+groupadd smbtmpgrp00
+
+thegid=`cat /etc/group | grep smbtmpgrp00 | cut -d ":" -f3`
+
+# Now change the name to what we want for the MS Windows networking end
+cat /etc/group | sed s/smbtmpgrp00/$1/g > /etc/group
+
+# Now return the GID as would normally happen.
+echo $thegid
+exit 0
+</screen>
+</para>
+
+		<para>
+		The &smb.conf; entry for the above script would look like:
+		<screen>
+		add group script = /path_to_tool/smbgrpadd.sh %g
+		</screen>
+		</para>
+
+	</sect2>
+	
+	<sect2>
+	<title>Script to configure Group Mapping</title>
+
+	<para>
+	In our example we have created a Unix/Linux group called <parameter>ntadmin</parameter>.
+	Our script will create the additional groups <parameter>Engineers, Marketoids, Gnomes</parameter>:
+	</para>
+
+<para>
+<screen>
+#!/bin/bash
+
+net groupmap modify ntgroup="Domain Admins" unixgroup=ntadmin
+net groupmap modify ntgroup="Domain Users" unixgroup=users
+net groupmap modify ntgroup="Domain Guests" unixgroup=nobody
+net groupmap modify ntgroup="Administrators" unixgroup=root
+net groupmap modify ntgroup="Users" unixgroup=users
+net groupmap modify ntgroup="Guests" unixgroup=nobody
+net groupmap modify ntgroup="System Operators" unixgroup=sys
+net groupmap modify ntgroup="Account Operators" unixgroup=root
+net groupmap modify ntgroup="Backup Operators" unixgroup=bin
+net groupmap modify ntgroup="Print Operators" unixgroup=lp
+net groupmap modify ntgroup="Replicators" unixgroup=daemon
+net groupmap modify ntgroup="Power Users" unixgroup=sys
+
+#groupadd Engineers
+#groupadd Marketoids
+#groupadd Gnomes
+
+#net groupmap add ntgroup="Engineers"  unixgroup=Engineers    type=d
+#net groupmap add ntgroup="Marketoids" unixgroup=Marketoids   type=d
+#net groupmap add ntgroup="Gnomes"     unixgroup=Gnomes       type=d
+</screen>
+</para>
+
+	<para>
+	Of course it is expected that the admininstrator will modify this to suit local needs.
+	For information regarding the use of the <command>net groupmap</command> tool please
+	refer to the man page.
+	</para>
+
+	</sect2>
 
 </sect1>
 

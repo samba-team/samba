@@ -866,6 +866,79 @@ index   default               sub
 		</sect3>
 
 		<sect3>
+		<title>Initialise the LDAP database</title>
+
+		<para>
+		Before you can add accounts to the LDAP database you must create the account containers
+		that they will be stored in. The following LDIF file should be modified to match your
+		needs (ie: Your DNS entries, etc.).
+		</para>
+		
+<para>
+<screen>
+# Organization for Samba Base
+dn: dc=plainjoe,dc=org
+objectclass: dbObject
+objectclass: organization
+dc: plainjoe
+o: Terpstra Org Network
+description: The Samba-3 Network LDAP Example
+
+# Organizational Role for Directory Management
+db: cn=Manager,dc=plainjoe,dc=org
+objectclass: organizationalRole
+cn: Manager
+description: Directory Manager
+
+# Setting up container for users
+dn: ou=People,dc=plainjoe,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: People
+
+# Setting up admin handle for People OU
+dn: cn=admin,ou=People,dc=plainjoe,dc=org
+cn: admin
+objectclass: top
+objectclass: organizationalRole
+objectclass: simpleSecurityObject
+userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
+</screen>
+</para>
+
+		<para>
+		The userPassword shown above should be generated using <command>slappasswd</command>.
+		</para>
+
+		<para>
+		The following command will then load the contents of the LDIF file into the LDAP
+		database.
+		</para>
+
+<para>
+<screen>
+slapadd -v -l initldap.dif
+</screen>
+</para>
+
+		<para>
+		Do not forget to secure your LDAP server with an adequate access control list,
+		as well as an admin password.
+		</para>
+
+		<note>
+		<para>
+		Before Samba can access the LDAP server you need to stoe the LDAP admin password
+		into the Samba-3 <filename>secrets.tdb</filename> database by:
+		<screen>
+		&rootprompt; <command>smbpasswd -w secret</command>
+		</screen>
+		</para>
+		</note>
+
+		</sect3>
+
+		<sect3>
 		<title>Configuring Samba</title>
 
 			<para>
