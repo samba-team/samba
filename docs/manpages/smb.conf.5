@@ -3222,11 +3222,14 @@ master on it's segment.
 
 .SS revalidate (S)
 
-This options controls whether Samba will allow a previously validated
+This option controls whether Samba will allow a previously validated
 username/password pair to be used to attach to a share. Thus if you
 connect to \e\eserver\eshare1 then to \e\eserver\eshare2 it won't
 automatically allow the client to request connection to the second
 share as the same username as the first without a password.
+
+Note that this option only works with security=share and will
+be ignored if this is not the case.
 
 If "revalidate" is True then the client will be denied automatic
 access as the same username.
