@@ -1056,7 +1056,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 /********************************************************
  Get the IP address list of the PDC/BDC's of a Domain.
 *********************************************************/
-BOOL get_dc_list(char *group, struct in_addr **ip_list, int *count)
+BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count)
 {
-	return internal_resolve_name(group, 0x1C, ip_list, count);
+	return internal_resolve_name(group, pdc_only ? 0x1B : 0x1C, ip_list, count);
 }

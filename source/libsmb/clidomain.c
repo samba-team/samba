@@ -416,10 +416,11 @@ static BOOL find_connect_pdc(char *domain, struct in_addr *dc_ip)
 	struct in_addr *ip_list = NULL;
 	BOOL connected_ok = False;
 	int count, i;
+	BOOL use_pdc_only = False;
 
 	/* Get list of possible domain controllers */
 
-	if (!get_dc_list(domain, &ip_list, &count)) {
+	if (!get_dc_list(use_pdc_only, domain, &ip_list, &count)) {
 		DEBUG(3, ("could not get dc list for workgroup %s\n",
 			  domain));
                 return False;
