@@ -1,5 +1,8 @@
 2001-08-24  Assar Westerlund  <assar@sics.se>
 
+	* acl.c (fetch_acl): do not return bogus flags and re-organize
+	function
+
 	* Makefile.am: rename variable name to avoid error from current
 	automake
 
