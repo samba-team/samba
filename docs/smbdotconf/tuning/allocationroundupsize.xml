@@ -8,6 +8,7 @@
     size of 1Mb generally results in improved Windows client
     performance.   However, rounding the allocation size may cause
     difficulties for some applications, e.g. MS Visual Studio.
+    </para>
 
     <para>The integer parameter specifies the roundup size in bytes.</para>
 </description>
