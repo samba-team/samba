@@ -1,6 +1,6 @@
 #include "des_locl.h"
 
-RCSID("$Id");
+RCSID("$Id$");
 
 #include <sys/time.h>
 
