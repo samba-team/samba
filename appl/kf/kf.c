@@ -46,12 +46,12 @@ static char *port_str;
 char *service     = SERVICE;
 char *remote_name = NULL;
 int forwardable   = 0;
-char *tk_file     = NULL;
+char *ccache      = NULL;
 
 static struct getargs args[] = {
     { "port", 'p', arg_string, &port_str, "port to connect to", "port" },
     { "login", 'l',arg_string, &remote_name,"remote login name","login"},
-    { "tkfile", 't',arg_string, &tk_file,"remote ticket file","tkfile"},
+    { "ccache", 'c',arg_string, &ccache, "remote cred cache","ccache"},
     { "forwardable",'F',arg_flag,&forwardable,
        "Forward forwardable credentials", NULL },
     { "help", 'h', arg_flag, &help_flag },
@@ -213,12 +213,11 @@ proto (int sock, const char *hostname, const char *service)
 	return 1;
     }
   
-    if (tk_file)
-	snprintf (buf, sizeof(buf), "%s", tk_file);  
-    else
-	snprintf (buf, sizeof(buf), "");
-    data_send.data   = buf;
-    data_send.length = strlen(buf)+1;
+    if (ccache == NULL)
+	ccache = "";
+
+    data_send.data   = ccache;
+    data_send.length = strlen(ccache)+1;
     status = krb5_write_message(context, &sock, &data_send);
     if (status) {
 	krb5_warnx (context, status, "krb5_write_message");
