@@ -12,7 +12,7 @@ build_HEADERZ = $(include_HEADERS)
 check_PROGRAMS = destest mdtest md5crypt_test
 
 TESTS = destest mdtest md5crypt_test
-CHECK_LOCAL = 
+CHECK_LOCAL = no-check-local
 bin_PROGRAMS = des #rpw speed
 
 des_SOURCES = des.c des_ver.h
