@@ -1,3 +1,8 @@
+Tue Jul 15 17:14:21 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/error/compile_et.awk: generate a prototype for the
+ 	`destroy_foo_error_table' function.
+
 Mon Jul 14 12:24:40 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krbhst.c (krb5_get_krbhst): Get all kdc's and try also
