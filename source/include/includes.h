@@ -117,6 +117,7 @@
    by the previous section 
 */
 #include "local.h"
+#include "ubi_dLinkList.h"
 #include <stdio.h>
 #ifdef POSIX_STDLIBH
 #include <posix/stdlib.h>
