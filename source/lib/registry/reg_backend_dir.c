@@ -39,10 +39,10 @@ static WERROR reg_dir_del_key(struct registry_key *k)
 	return (rmdir((char *)k->backend_data) == 0)?WERR_OK:WERR_GENERAL_FAILURE;
 }
 
-static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, const char *name, struct registry_key **subkey)
+static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx, struct registry_key *p, const char *name, struct registry_key **subkey)
 {
 	DIR *d;
-	char *fullpath;
+	char *fullpath, *unixpath;
 	struct registry_key *ret;
 	
 	if(!name) {
@@ -51,18 +51,19 @@ static WERROR reg_dir_open_key(TALLOC_CTX *mem_ctx, struct registry_hive *h, con
 	}
 
 	
-	fullpath = talloc_asprintf(mem_ctx, "%s%s", h->location, name);
-	fullpath = reg_path_win2unix(fullpath);
+	fullpath = talloc_asprintf(mem_ctx, "%s/%s", (char *)p->backend_data, name);
+	unixpath = reg_path_win2unix(fullpath);
 	
-	d = opendir(fullpath);
+	d = opendir(unixpath);
 	if(!d) {
-		DEBUG(3,("Unable to open '%s': %s\n", fullpath, strerror(errno)));
+		DEBUG(3,("Unable to open '%s': %s\n", unixpath, strerror(errno)));
 		return WERR_BADFILE;
 	}
 	closedir(d);
 	ret = talloc_p(mem_ctx, struct registry_key);
-	ret->hive = h;
+	ret->hive = p->hive;
 	ret->path = fullpath;
+	ret->backend_data = unixpath;
 	*subkey = ret;
 	return WERR_OK;
 }
@@ -89,7 +90,6 @@ static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 			stat(thispath, &stbuf);
 
 			if(S_ISDIR(stbuf.st_mode)) {
-				i++;
 				if(i == idx) {
 					(*key) = talloc_p(mem_ctx, struct registry_key);
 					(*key)->name = e->d_name;
@@ -99,6 +99,7 @@ static WERROR reg_dir_key_by_index(TALLOC_CTX *mem_ctx, struct registry_key *k, 
 					closedir(d);
 					return WERR_OK;
 				}
+				i++;
 			}
 
 			SAFE_FREE(thispath);

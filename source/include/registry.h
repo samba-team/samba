@@ -114,7 +114,7 @@ struct hive_operations {
 	WERROR (*close_hive) (struct registry_hive *);
 
 	/* Or this one */
-	WERROR (*open_key) (TALLOC_CTX *, struct registry_hive *, const char *name, struct registry_key **);
+	WERROR (*open_key) (TALLOC_CTX *, struct registry_key *, const char *name, struct registry_key **);
 
 	/* Either implement these */
 	WERROR (*num_subkeys) (struct registry_key *, int *count);

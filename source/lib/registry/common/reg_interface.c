@@ -218,7 +218,6 @@ WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle, co
  */
 WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char *name, struct registry_key **result)
 {
-	char *fullname;
 	WERROR error;
 
 	if(!parent) {
@@ -257,15 +256,12 @@ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent, const char
 		return WERR_NOT_SUPPORTED;
 	}
 
-
-	fullname = ((parent->hive->root == parent)?talloc_strdup(mem_ctx, name):talloc_asprintf(mem_ctx, "%s\\%s", parent->path, name));
-
-	error = parent->hive->functions->open_key(mem_ctx, parent->hive, fullname, result);
+	error = parent->hive->functions->open_key(mem_ctx, parent, name, result);
 
 	if(!W_ERROR_IS_OK(error)) return error;
 		
 	(*result)->hive = parent->hive;
-	(*result)->path = fullname;
+	(*result)->path = ((parent->hive->root == parent)?talloc_strdup(mem_ctx, name):talloc_asprintf(mem_ctx, "%s\\%s", parent->path, name));
 	(*result)->hive = parent->hive;
 
 	return WERR_OK;
@@ -369,7 +365,7 @@ WERROR reg_key_get_subkey_by_name(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	if(key->hive->functions->get_subkey_by_name) {
 		error = key->hive->functions->get_subkey_by_name(mem_ctx, key,name,subkey);
 	} else if(key->hive->functions->open_key) {
-		error = key->hive->functions->open_key(mem_ctx, key->hive, talloc_asprintf(mem_ctx, "%s\\%s", key->path, name), subkey);
+		error = key->hive->functions->open_key(mem_ctx, key, name, subkey);
 	} else if(key->hive->functions->get_subkey_by_index) {
 		for(i = 0; W_ERROR_IS_OK(error); i++) {
 			error = reg_key_get_subkey_by_index(mem_ctx, key, i, subkey);
