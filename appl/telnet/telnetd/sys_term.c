@@ -330,7 +330,6 @@ getnpty()
 }
 #endif /* CRAY */
 
-#ifndef	convex
 /*
  * getpty()
  *
@@ -537,7 +536,6 @@ int getpty(int *ptynum)
 #endif /* OPENPTY */
 	return(-1);
 #endif
-#endif
 }
 
 #ifdef	LINEMODE
@@ -562,18 +560,11 @@ int getpty(int *ptynum)
  * tty_rspeed(val)	Set receive speed to val.
  */
 
-#ifdef convex
-static int linestate;
-#endif
 
 	int
 tty_linemode()
 {
-#ifndef convex
 	return(termbuf.c_lflag & EXTPROC);
-#else
-	return(linestate);
-#endif
 }
 
 	void
@@ -581,15 +572,9 @@ tty_setlinemode(on)
 	int on;
 {
 #ifdef	TIOCEXT
-# ifndef convex
 	set_termbuf();
-# else
-	linestate = on;
-# endif
 	(void) ioctl(ourpty, TIOCEXT, (char *)&on);
-# ifndef convex
 	init_termbuf();
-# endif
 #else	/* !TIOCEXT */
 # ifdef	EXTPROC
 	if (on)

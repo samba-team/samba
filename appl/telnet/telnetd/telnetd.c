@@ -428,10 +428,6 @@ int main(int argc, char **argv)
 	    (void) dup2(ns, 0);
 	    (void) close(ns);
 	    (void) close(s);
-#ifdef convex
-	} else if (argc == 1) {
-		; /* VOID*/		/* Just ignore the host/port name */
-#endif
 	} else if (argc > 0) {
 		usage();
 		/* NOT REACHED */
@@ -772,11 +768,7 @@ char *hostname;
 char host_name[MaxHostNameLen];
 char remote_host_name[MaxHostNameLen];
 
-#ifndef	convex
 extern void telnet P((int, int));
-#else
-extern void telnet P((int, int, char *));
-#endif
 
 /*
  * Get a pty, scan input lines.
@@ -793,26 +785,10 @@ void doit(struct sockaddr_in *who)
 	/*
 	 * Find an available pty to use.
 	 */
-#ifndef	convex
 	ourpty = getpty(&ptynum);
 	if (ourpty < 0)
 		fatal(net, "All network ports in use");
 	set_utid();
-#else
-	for (;;) {
-		char *lp;
-		extern char *line, *getpty();
-
-		if ((lp = getpty()) == NULL)
-			fatal(net, "Out of ptys");
-
-		if ((ourpty = open(lp, 2)) >= 0) {
-			strcpy(line,lp);
-			line[5] = 't';
-			break;
-		}
-	}
-#endif
 
 #if	defined(_SC_CRAY_SECURE_SYS)
 	/*
@@ -857,8 +833,6 @@ void doit(struct sockaddr_in *who)
 #define abs(x) ((x < 0) ? (-x) : x)
 #endif
 
-#define TRIM_HOSTNAME
-#ifdef  TRIM_HOSTNAME
       /* Only trim if too long (and possible) */
       if (strlen(remote_host_name) > abs(utmp_len)) {
               char *domain = strchr(host_name, '.');
@@ -866,7 +840,7 @@ void doit(struct sockaddr_in *who)
               if (domain && p && (strcmp(p, domain) == 0))
                       *p = 0; /* remove domain part */
       }
-#endif /* TRIM_HOSTNAME */
+
 
       /*
        * If hostname still doesn't fit utmp, use ipaddr.
@@ -891,7 +865,6 @@ void doit(struct sockaddr_in *who)
 	/*
 	 * Start up the login process on the slave side of the terminal
 	 */
-#ifndef	convex
 	startslave(host, level, user_name);
 
 #if	defined(_SC_CRAY_SECURE_SYS)
@@ -904,9 +877,6 @@ void doit(struct sockaddr_in *who)
 #endif	/* _SC_CRAY_SECURE_SYS */
 
 	telnet(net, ourpty);  /* begin server processing */
-#else
-	telnet(net, ourpty, host);
-#endif
 	/*NOTREACHED*/
 }  /* end of doit */
 
@@ -915,15 +885,8 @@ void doit(struct sockaddr_in *who)
  * hand data to telnet receiver finite state machine.
  */
 	void
-#ifndef	convex
 telnet(f, p)
-#else
-telnet(f, p, host)
-#endif
 	int f, p;
-#ifdef convex
-	char *host;
-#endif
 {
 	int on = 1;
 #define	TABBUFSIZ	512
@@ -1136,9 +1099,6 @@ telnet(f, p, host)
 		{sprintf(nfrontp, "td: Entering processing loop\r\n");
 		 nfrontp += strlen(nfrontp);});
 
-#ifdef	convex
-	startslave(host);
-#endif
 
 	nfd = ((f > p) ? f : p) + 1;
 	for (;;) {
