@@ -28,7 +28,7 @@
   verify an incoming ticket and parse out the principal name and 
   authorization_data if available 
 */
-NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket, 
+NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket, 
 			   char **principal, DATA_BLOB *auth_data,
 			   DATA_BLOB *ap_rep,
 			   uint8 session_key[16])
@@ -79,7 +79,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	ret = krb5_set_default_realm(context, ads->auth.realm);
+	ret = krb5_set_default_realm(context, realm);
 	if (ret) {
 		DEBUG(1,("ads_verify_ticket: krb5_set_default_realm failed (%s)\n", error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
