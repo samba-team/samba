@@ -198,3 +198,10 @@ DOM_SID *get_global_sam_sid(void)
 	return global_sam_sid;
 }
 
+/** 
+ * Force get_global_sam_sid to requery the backends 
+ */
+void reset_global_sam_sid() 
+{
+	SAFE_FREE(global_sam_sid);
+}

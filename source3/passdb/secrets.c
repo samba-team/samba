@@ -99,10 +99,16 @@ BOOL secrets_delete(const char *key)
 BOOL secrets_store_domain_sid(const char *domain, const DOM_SID *sid)
 {
 	fstring key;
+	BOOL ret;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
 	strupper_m(key);
-	return secrets_store(key, sid, sizeof(DOM_SID));
+	ret = secrets_store(key, sid, sizeof(DOM_SID));
+
+	/* Force a re-query, in case we modified our domain */
+	if (ret)
+		reset_global_sam_sid();
+	return ret;
 }
 
 BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
