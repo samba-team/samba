@@ -1,4 +1,3 @@
-# $Source: /data/src/mirror/cvs/samba/examples/LDAP/smbldap-tools/smbldap-tools.spec,v $
 %define version	0.8
 %define release	1
 %define name 	smbldap-tools

@@ -1,5 +1,3 @@
-# $Source: /data/src/mirror/cvs/samba/examples/LDAP/smbldap-tools/ChangeLog,v $
-#
 ## ChangeLog for SMBLDAP-TOOLS
 
 * 2002-07-24: top and account objectclasses replaced with inetorgperson
