@@ -8,7 +8,7 @@
 
 INSTALL_BASE=/opt/samba
 
-SBINPROS="smbd nmbd winbindd swat"
+SBINPROGS="smbd nmbd winbindd swat"
 BINPROGS="findsmb nmblookup pdbedit rpcclient smbclient smbcquotas smbspool smbtar tdbbackup testparm wbinfo net ntlm_auth profiles smbcacls smbcontrol smbpasswd smbstatus smbtree tdbdump testprns"
 MSGFILES="de.msg en.msg fr.msg it.msg ja.msg nl.msg pl.msg tr.msg"
 VFSLIBS="audit.so default_quota.so extd_audit.so full_audit.so readonly.so shadow_copy.so cap.so expand_msdfs.so fake_perms.so netatalk.so recycle.so"
@@ -34,11 +34,11 @@ add_dynamic_entries()
  	for file in $MSGFILES; do
 		echo f none lib/$file 0644 root other
 	done
- 	for file in $VFSLIBS; do
-		echo f none lib/vfs/$file 0755 root other
-	done
  	for file in $DATFILES; do
 		echo f none lib/$file 0644 root other
+	done
+ 	for file in $VFSLIBS; do
+		echo f none lib/vfs/$file 0755 root other
 	done
  	for file in $CHARSETLIBS; do
 		echo f none lib/charset/$file 0755 root other
@@ -53,26 +53,22 @@ add_dynamic_entries()
 	echo f none bin/smbsh 0755 root other
 
 	echo "#\n# nss_winbind.so\n#"
-	echo f none /usr/lib/nss_winbind.so.1=lib/libnss_winbind.so 0755 root other
-	echo s none /lib/nss_winbind.so.1=../usr/lib/nss_winbind.so.1 0755 root other
+	echo f none /lib/nss_winbind.so.1=lib/nss_winbind.so.1 0755 root other
+	# echo s none /lib/nss_winbind.so.1=/usr/lib/nss_winbind.so.1 0755 root other
 	if [ -f lib/pam_winbind.so ]; then
 		echo f none /usr/lib/security/pam_winbind.so=lib/pam_winbind.so 0755 root other
 	fi
 
-	# Add the manpages
 	echo "#\n# man pages \n#"
-	echo d none /usr ? ? ?
-	echo d none /usr/share ? ? ?
-	echo d none /usr/share/man ? ? ?
 
 	# Create directories for man page sections if nonexistent
 	cd man
 	for i in 1 2 3 4 5 6 7 8 9; do
-		manpages=`ls *.$i 2>/dev/null`
+		manpages=`ls man$i 2>/dev/null`
 		if [ $? -eq 0 ]; then
-			echo d none /usr/share/man/man$i ? ? ?
+			echo d none man/man${i} ? ? ?
 			for manpage in $manpages; do
-				echo f none /usr/share/man/man${i}/${manpage}=docs/manpages/$manpage 0644 root other
+				echo f none man/man${i}/${manpage} 0644 root other
 			done
 		fi
 	done
@@ -94,7 +90,7 @@ add_dynamic_entries()
 	done
 
 	# Create entries for docs for the beginner
-	echo s none docs/using_samba=$BASEDIR/swat/help/using_samba
+	echo 's none docs/using_samba=$BASEDIR/swat/using_samba'
 	for file in docs/*pdf; do
 		echo f none $file 0644 root other
 	done
@@ -104,7 +100,7 @@ add_dynamic_entries()
 ## BEGIN MAIN 
 #####################################################################
 
-TMPINSTALLDIR=$HOME/build
+TMPINSTALLDIR=/export/build
 
 # Try to guess the distribution base..
 CURR_DIR=`pwd`
@@ -157,7 +153,7 @@ DOCDIR=$INSTALL_BASE/docs
 ## 
 ## copy some misc files that are ont done as part of 'make install'
 ##
-cp -fp nsswitch/libnss_winbind.so $TMPINSTALLDIR/$LIBDIR/libnss_winbind.so
+cp -fp nsswitch/libnss_winbind.so $TMPINSTALLDIR/$LIBDIR/nss_winbind.so.1
 if [ -f nsswitch/pam_winbind.so ]; then
 	cp -fp nsswitch/pam_winbind.so $TMPINSTALLDIR/$LIBDIR/pam_winbind.so
 fi
@@ -194,14 +190,9 @@ done
 ##
 ## Start building the prototype file
 ##
-echo "SBINDIR=sbin" >> pkginfo
-echo "BINDIR=bin" >> pkginfo
-echo "SWATDIR=swat" >> pkginfo
 echo "CONFIGDIR=$CONFIGDIR" >> pkginfo
 echo "LOGFILEBASE=$LOGFILEBASE" >> pkginfo
-echo "LIBDIR=lib" >> pkginfo
 echo "PIDDIR=$PIDDIR" >> pkginfo
-echo "DOCDIR=docs" >> pkginfo
 echo "PRIVATE_DIR=$PRIVATE_DIR" >> pkginfo
 
 cp prototype.master prototype
