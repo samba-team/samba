@@ -86,6 +86,7 @@ struct ndr_push_save {
 struct ndr_print {
 	uint32_t flags; /* LIBNDR_FLAG_* */
 	uint32_t depth;
+	struct ndr_token_list *switch_list;
 	void (*print)(struct ndr_print *, const char *, ...);
 	void *private;
 };
@@ -248,5 +249,4 @@ typedef NTSTATUS (*ndr_push_const_fn_t)(struct ndr_push *, int ndr_flags, const 
 typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, void *);
-typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32_t, void *);
 

@@ -670,12 +670,14 @@ sub ParseElementPrint($$)
 
 	if (util::array_size($e)) {
 		ParseArrayPrint($e, $var_prefix)
-	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		my $switch_var = ParseExpr($e, $switch, $var_prefix);
-		check_null_pointer_void($switch_var);
-
-		pidl "ndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $switch_var, $cprefix$var_prefix$e->{NAME});";
 	} else {
+		if (my $switch = util::has_property($e, "switch_is")) {
+			my $switch_var = ParseExpr($e, $switch, $var_prefix);
+			check_null_pointer_void($switch_var);
+
+			pidl "ndr_print_set_switch_value(ndr, $cprefix$var_prefix$e->{NAME}, $switch_var);";
+		}
+
 		pidl "ndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});";
 	}
 
@@ -1406,6 +1408,8 @@ sub ParseUnionPrint($)
 	my $have_default = 0;
 	my($name) = $e->{PARENT}->{NAME};
 
+	pidl "int level = ndr_print_get_switch_value(ndr, r);";
+
 	pidl "ndr_print_union(ndr, name, level, \"$name\");";
 	start_flags($e);
 
@@ -1535,7 +1539,7 @@ sub ArgsUnionPush($)
 sub ArgsUnionPrint($)
 {
 	my $e = shift;
-	return "struct ndr_print *ndr, const char *name, int level, union $e->{NAME} *r";
+	return "struct ndr_print *ndr, const char *name, union $e->{NAME} *r";
 }
 
 sub ArgsUnionPull($)
