@@ -112,6 +112,12 @@ AC_CHECK_HEADERS(sys/proc.h, , , [AC_INCLUDES_DEFAULT
 ])
 
 AC_CHECK_HEADERS(resolv.h, , , [AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
