@@ -817,6 +817,9 @@
 /* Define if you have the <grp.h> header file.  */
 #undef HAVE_GRP_H
 
+/* Define if you have the <gssapi/gssapi.h> header file.  */
+#undef HAVE_GSSAPI_GSSAPI_H
+
 /* Define if you have the <history.h> header file.  */
 #undef HAVE_HISTORY_H
 
@@ -885,9 +888,6 @@
 
 /* Define if you have the <rpcsvc/ypclnt.h> header file.  */
 #undef HAVE_RPCSVC_YPCLNT_H
-
-/* Define if you have the <sasl.h> header file.  */
-#undef HAVE_SASL_H
 
 /* Define if you have the <security/_pam_macros.h> header file.  */
 #undef HAVE_SECURITY__PAM_MACROS_H

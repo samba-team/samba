@@ -44,7 +44,23 @@ static ADS_STRUCT *ads_startup(void)
 {
 	ADS_STRUCT *ads;
 	int rc;
+	extern char *opt_password;
+	extern char *opt_user_name;
+
 	ads = ads_init(NULL, NULL, NULL, NULL);
+
+	if (!opt_user_name) {
+		opt_user_name = "administrator";
+	}
+
+	if (!opt_password) {
+		char *prompt;
+		asprintf(&prompt,"%s password: ", opt_user_name);
+		opt_password = getpass(prompt);
+		free(prompt);
+	}
+	ads->password = strdup(opt_password);
+	ads->user_name = strdup(opt_user_name);
 
 	rc = ads_connect(ads);
 	if (rc) {

@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-static char *ads_build_dn(const char *realm)
+char *ads_build_dn(const char *realm)
 {
 	char *p, *r;
 	int numdots = 0;
@@ -54,46 +54,6 @@ static char *ads_build_dn(const char *realm)
 	return ret;
 }
 
-#ifdef HAVE_KRB5
-
-/*
-  get the default relm from krb5.conf
-*/
-static char *get_default_realm(ADS_STRUCT *ads)
-{
-	BOOL ret;
-	krb5_context context;
-	char *realm;
-
-	ret = krb5_init_context(&context);
-	if (ret) {
-		DEBUG(1,("krb5_init_context failed (%s)\n", error_message(ret)));
-		return NULL;
-	}
-
-	ret = krb5_get_default_realm(context, &realm);
-	if (ret) {
-		DEBUG(1,("krb5_get_default_realm failed (%s)\n", error_message(ret)));
-		krb5_free_context(context);
-		return NULL;
-	} else {
-		DEBUG(5,("krb5_get_default_realm got (%s)\n", realm));
-	}
-	krb5_free_context(context);
-		
-	return realm;
-}
-
-#else 
-static char *get_default_realm(ADS_STRUCT *ads)
-{
-	/* We can't do this if we don't have krb5, 
-	   but save linking nightmares */
-	DEBUG(5,("get_default_realm:  not compiled with krb5.\n"));
-	return NULL;
-}
-
-#endif
 
 #ifdef HAVE_LDAP
 /*
@@ -151,11 +111,10 @@ ADS_STRUCT *ads_init(const char *realm,
 	if (!ads->realm) {
 		ads->realm = strdup(lp_realm());
 		if (!ads->realm[0]) {
-			ads->realm = get_default_realm(ads);
+			SAFE_FREE(ads->realm);
 		}
-		if (!ads->realm) ads->realm = strdup("");
 	}
-	if (!ads->bind_path) {
+	if (!ads->bind_path && ads->realm) {
 		ads->bind_path = ads_build_dn(ads->realm);
 	}
 	if (!ads->ldap_server) {
@@ -183,9 +142,11 @@ void ads_destroy(ADS_STRUCT **ads)
 #endif
 		SAFE_FREE((*ads)->realm);
 		SAFE_FREE((*ads)->ldap_server);
+		SAFE_FREE((*ads)->ldap_server_name);
 		SAFE_FREE((*ads)->kdc_server);
 		SAFE_FREE((*ads)->bind_path);
 		SAFE_FREE((*ads)->password);
+		SAFE_FREE((*ads)->user_name);
 		ZERO_STRUCTP(*ads);
 		SAFE_FREE(*ads);
 	}

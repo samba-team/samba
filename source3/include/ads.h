@@ -8,11 +8,13 @@ typedef struct {
 	void *ld;
 	char *realm;
 	char *ldap_server;
+	char *ldap_server_name;
 	char *kdc_server;
 	int ldap_port;
 	char *bind_path;
 	time_t last_attempt;
 	char *password;
+	char *user_name;
 } ADS_STRUCT;
 
 

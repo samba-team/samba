@@ -249,7 +249,7 @@ AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/i
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
-AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h ldap.h sasl.h)
+AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h ldap.h gssapi/gssapi.h)
 
 #
 # HPUX has a bug in that including shadow.h causes a re-definition of MAXINT.
@@ -1649,6 +1649,7 @@ AC_CHECK_HEADERS(krb5.h)
 # we might need the k5crypto and com_err libraries on some systems
 AC_CHECK_LIB(com_err, _et_list, [LIBS="$LIBS -lcom_err"])
 AC_CHECK_LIB(k5crypto, krb5_encrypt_data, [LIBS="$LIBS -lk5crypto"])
+AC_CHECK_LIB(gssapi_krb5, gss_import_name, [LIBS="$LIBS -lgssapi_krb5"])
 
 
 ########################################################

@@ -85,19 +85,29 @@ int ads_kinit_password(ADS_STRUCT *ads)
 {
 	char *s;
 	int ret;
-	extern pstring global_myname;
-	fstring myname;
+	char *ccache;
+
+	ccache = lock_path("winbindd_ccache");
 
 	/* we don't want this to affect the users ccache */
-	setenv("KRB5CCNAME", lock_path("winbindd_ccache"), 1);
+	setenv("KRB5CCNAME", ccache, 1);
 
-	fstrcpy(myname, global_myname);
-	strlower(myname);
-	asprintf(&s, "HOST/%s@%s", global_myname, ads->realm);
+	unlink(ccache);
+
+	if (!ads->user_name) {
+		/* by default use the machine account */
+		extern pstring global_myname;
+		fstring myname;
+		fstrcpy(myname, global_myname);
+		strlower(myname);
+		asprintf(&ads->user_name, "HOST/%s", global_myname);
+	}
+	asprintf(&s, "%s@%s", ads->user_name, ads->realm);
 	ret = kerberos_kinit_password(s, ads->password);
 	free(s);
 	if (ret) {
-		DEBUG(1,("kerberos_kinit_password failed: %s\n", error_message(ret)));
+		DEBUG(1,("kerberos_kinit_password %s failed: %s\n", 
+			 s, error_message(ret)));
 	}
 	return ret;
 }

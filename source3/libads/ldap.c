@@ -36,25 +36,6 @@ char *ads_errstr(int rc)
 }
 
 /*
-  this is a minimal interact function, just enough for SASL to talk
-  GSSAPI/kerberos to W2K
-  Error handling is a bit of a problem. I can't see how to get Cyrus-sasl
-  to give sensible errors
-*/
-static int sasl_interact(LDAP *ld,unsigned flags,void *defaults,void *in)
-{
-	sasl_interact_t *interact = in;
-
-	while (interact->id != SASL_CB_LIST_END) {
-		interact->result = strdup("");
-		interact->len = strlen(interact->result);
-		interact++;
-	}
-	
-	return LDAP_SUCCESS;
-}
-
-/*
   connect to the LDAP server
 */
 int ads_connect(ADS_STRUCT *ads)
@@ -68,67 +49,38 @@ int ads_connect(ADS_STRUCT *ads)
 	if (!ads->ld) {
 		return LDAP_SERVER_DOWN;
 	}
+	if (!ads_server_info(ads)) {
+		DEBUG(1,("Failed to get ldap server info\n"));
+		return LDAP_SERVER_DOWN;
+	}
+
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
 	if (ads->password) {
-		/* the machine acct password might have changed */
-		free(ads->password);
-		ads->password = secrets_fetch_machine_password();
 		ads_kinit_password(ads);
 	}
 
-	rc = ldap_sasl_interactive_bind_s(ads->ld, NULL, NULL, NULL, NULL, 
-					  LDAP_SASL_QUIET,
-					  sasl_interact, NULL);
-
+	rc = ads_sasl_bind(ads);
 	return rc;
 }
 
 /*
-  a wrapper around ldap_search_s that retries depending on the error code
-  this is supposed to catch dropped connections and auto-reconnect
+  do a search with a timeout
 */
-int ads_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope, const char *exp,
-		     const char **attrs, void **res)
+int ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope, const char *exp,
+		  const char **attrs, void **res)
 {
 	struct timeval timeout;
-	int rc = -1, rc2;
-	int count = 3;
 
-	if (!ads->ld &&
-	    time(NULL) - ads->last_attempt < ADS_RECONNECT_TIME) {
-		return LDAP_SERVER_DOWN;
-	}
+	timeout.tv_sec = ADS_SEARCH_TIMEOUT;
+	timeout.tv_usec = 0;
+	*res = NULL;
 
-	while (count--) {
-		*res = NULL;
-		timeout.tv_sec = ADS_SEARCH_TIMEOUT;
-		timeout.tv_usec = 0;
-		if (ads->ld) {
-			rc = ldap_search_ext_s(ads->ld, bind_path, scope, exp, attrs, 0, NULL, NULL, 
-					       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
-			if (rc == 0) return rc;
-		}
-
-		if (*res) ads_msgfree(ads, *res);
-		*res = NULL;
-		DEBUG(1,("Reopening ads connection after error %s\n", ads_errstr(rc)));
-		if (ads->ld) {
-			/* we should unbind here, but that seems to trigger openldap bugs :(
-			   ldap_unbind(ads->ld); 
-			*/
-		}
-		ads->ld = NULL;
-		rc2 = ads_connect(ads);
-		if (rc2) {
-			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n", ads_errstr(rc)));
-			return rc2;
-		}
-	}
-	DEBUG(1,("ads reopen failed after error %s\n", ads_errstr(rc)));
-	return rc;
+	return ldap_search_ext_s(ads->ld, 
+				 bind_path, scope,
+				 exp, attrs, 0, NULL, NULL, 
+				 &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
 }
-
 /*
   do a general ADS search
 */
@@ -136,7 +88,8 @@ int ads_search(ADS_STRUCT *ads, void **res,
 	       const char *exp, 
 	       const char **attrs)
 {
-	return ads_search_retry(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, exp, attrs, res);
+	return ads_do_search(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, 
+			     exp, attrs, res);
 }
 
 /*
@@ -146,7 +99,7 @@ int ads_search_dn(ADS_STRUCT *ads, void **res,
 		  const char *dn, 
 		  const char **attrs)
 {
-	return ads_search_retry(ads, dn, LDAP_SCOPE_BASE, "(objectclass=*)", attrs, res);
+	return ads_do_search(ads, dn, LDAP_SCOPE_BASE, "(objectclass=*)", attrs, res);
 }
 
 /*
@@ -586,7 +539,7 @@ BOOL ads_USN(ADS_STRUCT *ads, uint32 *usn)
 	void *res;
 	BOOL ret;
 
-	rc = ads_search_retry(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	rc = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
 	if (rc || ads_count_replies(ads, res) != 1) return False;
 	ret = ads_pull_uint32(ads, res, "highestCommittedUSN", usn);
 	ads_msgfree(ads, res);
@@ -594,5 +547,56 @@ BOOL ads_USN(ADS_STRUCT *ads, uint32 *usn)
 }
 
 
+/* find the servers name and realm - this can be done before authentication 
+   The ldapServiceName field on w2k  looks like this:
+     vnet3.home.samba.org:win2000-vnet3$@VNET3.HOME.SAMBA.ORG
+*/
+BOOL ads_server_info(ADS_STRUCT *ads)
+{
+	const char *attrs[] = {"ldapServiceName", NULL};
+	int rc;
+	void *res;
+	char **values;
+	char *ret, *p;
+
+	rc = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	if (rc || ads_count_replies(ads, res) != 1) return False;
+
+	values = ldap_get_values(ads->ld, res, "ldapServiceName");
+
+	if (!values || !values[0]) return False;
+
+	p = strchr(values[0], ':');
+	if (!p) {
+		ldap_value_free(values);
+		ldap_msgfree(res);
+		return False;
+	}
+
+	SAFE_FREE(ads->ldap_server_name);
+
+	ads->ldap_server_name = strdup(p+1);
+	p = strchr(ads->ldap_server_name, '$');
+	if (!p || p[1] != '@') {
+		ldap_value_free(values);
+		ldap_msgfree(res);
+		SAFE_FREE(ads->ldap_server_name);
+		return False;
+	}
+
+	*p = 0;
+
+	/* in case the realm isn't configured in smb.conf */
+	if (!ads->realm || !ads->realm[0]) {
+		SAFE_FREE(ads->realm);
+		SAFE_FREE(ads->bind_path);
+		ads->realm = strdup(p+2);
+		ads->bind_path = ads_build_dn(ads->realm);
+	}
+
+	DEBUG(3,("got ldap server name %s@%s\n", ret, ads->realm));
+
+	return True;
+}
 
 #endif
