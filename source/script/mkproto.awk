@@ -108,7 +108,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^TALLOC_CTX|^hash_element/ ) {
+  if( $0 ~ /^TDB_CONTEXT|^TDB_DATA|^smb_ucs2_t|^TALLOC_CTX|^hash_element|^NT_DEVICEMODE/ ) {
     gotstart = 1;
   }
 
