@@ -437,6 +437,10 @@
 #include <com_err.h>
 #endif
 
+#if HAVE_SYS_ATTRIBUTES_H
+#include <sys/attributes.h>
+#endif
+
 #if HAVE_ATTR_XATTR_H
 #include <attr/xattr.h>
 #endif
