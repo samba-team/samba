@@ -593,7 +593,7 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 				   will return domain local groups; while NT4 or mixed mode 2k DCs
 				   will not */
 			
-				if ( winbind_lookup_name(NULL, *list, &g_sid, &name_type) 
+				if ( winbind_lookup_name(domain, groupname, &g_sid, &name_type) 
 					&& ( name_type==SID_NAME_DOM_GRP || 
 					   (strequal(lp_workgroup(), domain) && name_type==SID_NAME_ALIAS) ) )
 				{
