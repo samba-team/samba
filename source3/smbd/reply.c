@@ -1609,7 +1609,8 @@ int reply_lockread(connection_struct *conn, char *inbuf,char *outbuf, int length
 			 * this smb into a queued request and push it
 			 * onto the blocking lock queue.
 			 */
-			if(push_blocking_lock_request(inbuf, length, -1, 0)) {
+			if(push_blocking_lock_request(inbuf, length, -1, 0, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)startpos,
+								(SMB_BIG_UINT)numtoread)) {
 				END_PROFILE(SMBlockread);
 				return -1;
 			}
@@ -2514,7 +2515,7 @@ int reply_lock(connection_struct *conn,
 			 * this smb into a queued request and push it
 			 * onto the blocking lock queue.
 			 */
-			if(push_blocking_lock_request(inbuf, length, -1, 0)) {
+			if(push_blocking_lock_request(inbuf, length, -1, 0, SVAL(inbuf,smb_pid), offset, count)) {
 				END_PROFILE(SMBlock);
 				return -1;
 			}
@@ -3955,7 +3956,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 				 * this smb into a queued request and push it
 				 * onto the blocking lock queue.
 				 */
-				if(push_blocking_lock_request(inbuf, length, lock_timeout, i)) {
+				if(push_blocking_lock_request(inbuf, length, lock_timeout, i, lock_pid, offset, count)) {
 					END_PROFILE(SMBlockingX);
 					return -1;
 				}
