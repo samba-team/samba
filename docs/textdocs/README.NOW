@@ -1,8 +1,0 @@
-The files in the directory have either yet to
-converted into SGML/DocBook format or are outdated.
-To create ASCII versions of the documentation
-in the ../htmldocs/ directory, run
-
-	$ lynx -dump file.html > file.txt
-
-
