@@ -408,7 +408,7 @@ int my_sid_equal(DOM_SID *s1, DOM_SID *s2)
 
   if (sa1 != sa2) return 0;
 
-  return !bcmp((char *)&s1->id_auth, (char *)&s2->id_auth,
+  return !memcmp((char *)&s1->id_auth, (char *)&s2->id_auth,
 		6 + sa1 * 4);
 
 }
