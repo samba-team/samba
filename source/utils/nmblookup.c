@@ -85,7 +85,7 @@ static void usage(void)
   printf("\t-i NetBIOS scope      Use the given NetBIOS scope for name queries\n");
   printf("\t-s smb.conf file      Use the given path to the smb.conf file\n");
   printf("\t-h                    Print this help message.\n");
-  printf("\n  if name is \"-\", lookup __MSBROWSE__<01>\n");
+  printf("\n  If you specify -M and name is \"-\", nmblookup looks up __MSBROWSE__<01>\n");
   printf("\n");
 }
 
