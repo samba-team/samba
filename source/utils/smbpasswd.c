@@ -48,6 +48,61 @@ static fstring ldap_secret;
 #endif
 
 
+
+/*********************************************************
+ A strdup with exit
+**********************************************************/
+
+static char *strdup_x(const char *s)
+{
+	char *new_s = strdup(s);
+	if (!new_s) {
+		fprintf(stderr,"out of memory\n");
+		exit(1);
+	}
+	return new_s;
+}
+
+
+/*********************************************************
+ Print command usage on stderr and die.
+**********************************************************/
+static void usage(void)
+{
+	if (getuid() == 0) {
+		printf("smbpasswd [options] [username] [password]\n");
+	} else {
+		printf("smbpasswd [options] [password]\n");
+	}
+	printf("options:\n");
+	printf("  -c smb.conf file     Use the given path to the smb.conf file\n");
+	printf("  -s                   use stdin for password prompt\n");
+	printf("  -D LEVEL             debug level\n");
+	printf("  -U USER              remote username\n");
+	printf("  -r MACHINE           remote machine\n");
+
+	if (getuid() == 0 || local_mode) {
+		printf("  -L                   local mode\n");
+		printf("  -R ORDER             name resolve order\n");
+		printf("  -j DOMAIN            join domain name\n");
+		printf("  -a                   add user\n");
+		printf("  -x                   delete user\n");
+		printf("  -d                   disable user\n");
+		printf("  -e                   enable user\n");
+		printf("  -n                   set no password\n");
+		printf("  -m                   machine trust account\n");
+#ifdef WITH_LDAP_SAM
+		printf("  -w                   ldap admin password\n");
+#endif
+	}
+	exit(1);
+}
+
+static void set_line_buffering(FILE *f)
+{
+	setvbuf(f, NULL, _IOLBF, 0);
+}
+
 /*******************************************************************
  Process command line options
  ******************************************************************/
@@ -177,55 +232,6 @@ bad_args:
 		usage();
 	}
 
-}
-
-/*********************************************************
- A strdup with exit
-**********************************************************/
-
-static char *strdup_x(const char *s)
-{
-	char *new_s = strdup(s);
-	if (!new_s) {
-		fprintf(stderr,"out of memory\n");
-		exit(1);
-	}
-	return new_s;
-}
-
-
-/*********************************************************
- Print command usage on stderr and die.
-**********************************************************/
-static void usage(void)
-{
-	if (getuid() == 0) {
-		printf("smbpasswd [options] [username] [password]\n");
-	} else {
-		printf("smbpasswd [options] [password]\n");
-	}
-	printf("options:\n");
-	printf("  -c smb.conf file     Use the given path to the smb.conf file\n");
-	printf("  -s                   use stdin for password prompt\n");
-	printf("  -D LEVEL             debug level\n");
-	printf("  -U USER              remote username\n");
-	printf("  -r MACHINE           remote machine\n");
-
-	if (getuid() == 0 || local_mode) {
-		printf("  -L                   local mode\n");
-		printf("  -R ORDER             name resolve order\n");
-		printf("  -j DOMAIN            join domain name\n");
-		printf("  -a                   add user\n");
-		printf("  -x                   delete user\n");
-		printf("  -d                   disable user\n");
-		printf("  -e                   enable user\n");
-		printf("  -n                   set no password\n");
-		printf("  -m                   machine trust account\n");
-#ifdef WITH_LDAP_SAM
-		printf("  -w                   ldap admin password\n");
-#endif
-	}
-	exit(1);
 }
 
 /* Initialise client credentials for authenticated pipe access */
@@ -588,11 +594,6 @@ unable to join domain.\n");
 	}
 	
 	return 0;
-}
-
-static void set_line_buffering(FILE *f)
-{
-	setvbuf(f, NULL, _IOLBF, 0);
 }
 
 /*************************************************************
