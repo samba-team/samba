@@ -55,6 +55,7 @@ do
 				exit 1
 			fi
 			cp $bn.html ../htmldocs || echo "Cannot create $YODLDIR/../htmldocs/$bn.html"
+		;;
 		*)
 #
 # Non man-page YODL docs - just make html and text.
