@@ -57,6 +57,17 @@ struct user_creds *usr_creds = NULL;
 vuser_key *user_key = NULL;
 
 extern int DEBUGLEVEL;
+extern pstring global_myname;
+cli_auth_fns cli_noauth_fns = 
+{
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
+
 
 
 void init_connections(void)
@@ -75,6 +86,16 @@ static void free_con_array(uint32 num_entries,
 }
 
 
+static struct cli_connection *add_con_to_array(uint32 * len,
+                                               struct cli_connection ***array,
+                                               struct cli_connection *con)
+{
+        return (struct cli_connection *)add_item_to_array(len,
+                                                          (void ***)array,
+                                                          (void *)con);
+
+}
+
 void free_connections(void)
 {
         DEBUG(3, ("free_connections: closing all MSRPC connections\n"));
@@ -83,6 +104,128 @@ void free_connections(void)
 
         init_connections();
 }
+
+static struct cli_connection *cli_con_get(const char *srv_name,
+                                          const char *pipe_name,
+                                          cli_auth_fns * auth,
+                                          void *auth_creds, BOOL reuse)
+{
+        struct cli_connection *con = NULL;
+        BOOL is_new_connection = False;
+	CREDS_NT usr;
+
+        vuser_key key;
+
+        con = (struct cli_connection *)malloc(sizeof(*con));
+
+        if (con == NULL)
+        {
+                return NULL;
+        }
+
+        memset(con, 0, sizeof(*con));
+        con->type = MSRPC_NONE;
+
+        copy_user_creds(&con->usr_creds, NULL);
+        con->usr_creds.reuse = reuse;
+
+        if (srv_name != NULL)
+        {
+                con->srv_name = strdup(srv_name);
+        }
+        if (pipe_name != NULL)
+        {
+                con->pipe_name = strdup(pipe_name);
+        }
+
+#if 0   /* commented out by JERRY */
+        if (strequal(srv_name, "\\\\."))
+        {
+                con->type = MSRPC_LOCAL;
+                become_root(False);
+                con->msrpc.local = ncalrpc_l_use_add(pipe_name, user_key,
+                                                     reuse,
+                                                     &is_new_connection);
+                unbecome_root(False);
+        }
+        else
+#endif	/* commented of by JERRY */
+        {
+                struct ntuser_creds *ntc = NULL;
+                if (usr_creds != NULL)
+                {
+                        ntc = &usr_creds->ntc;
+                }
+                con->type = MSRPC_SMB;
+                con->msrpc.smb =
+                        ncacn_np_use_add(pipe_name, user_key, srv_name,
+                                         ntc, reuse,
+                                         &is_new_connection);
+
+                if (con->msrpc.smb == NULL)
+                        return NULL;
+
+                key = con->msrpc.smb->smb->key;
+                con->msrpc.smb->smb->key.pid = 0;
+                con->msrpc.smb->smb->key.vuid = UID_FIELD_INVALID;
+		create_ntc_from_cli_state ( &usr, con->msrpc.smb->smb );
+                copy_nt_creds(&con->usr_creds.ntc, &usr);
+        }
+
+        if (con->msrpc.cli != NULL)
+        {
+                if (is_new_connection)
+                {
+                        con->auth_info = NULL;
+                        con->auth_creds = auth_creds;
+
+                        if (auth != NULL)
+                        {
+                                con->auth = auth;
+                        }
+                        else
+                        {
+                                con->auth = &cli_noauth_fns;
+                        }
+
+                        if (!rpc_pipe_bind(con->msrpc.smb->smb, pipe_name, global_myname))
+                        {
+                                DEBUG(0, ("rpc_pipe_bind failed\n"));
+                                cli_connection_free(con);
+                                return NULL;
+                        }
+                }
+                else
+                {
+                        con->auth_info = cli_conn_get_auth_creds(con);
+                        con->auth = cli_conn_get_authfns(con);
+                        if (con->auth_info != NULL)
+                        {
+                                DEBUG(1,("cli_con_get: TODO: auth reuse\n"));
+                                cli_connection_free(con);
+                                return NULL;
+                        }
+                        else
+                        {
+                                con->auth = &cli_noauth_fns;
+                        }
+                }
+        }
+
+        if (con->msrpc.cli == NULL)
+        {
+                cli_connection_free(con);
+                return NULL;
+        }
+
+        if (con->type == MSRPC_SMB)
+        {
+                con->msrpc.smb->smb->key = key;
+        }
+        add_con_to_array(&num_cons, &con_list, con);
+        return con;
+}
+
 
 /****************************************************************************
 terminate client connection
@@ -188,3 +331,76 @@ void cli_connection_free(struct cli_connection *con)
 
         free(con);
 }
+
+void cli_connection_unlink(struct cli_connection *con)
+{
+        if (con != NULL)
+        {
+                cli_connection_free(con);
+        }
+        return;
+}
+
+/****************************************************************************
+init client state
+****************************************************************************/
+BOOL cli_connection_init(const char *srv_name, const char *pipe_name,
+                         struct cli_connection **con)
+{
+        return cli_connection_init_auth(srv_name, pipe_name, con, NULL, NULL);
+}
+
+/****************************************************************************
+init client state
+****************************************************************************/
+BOOL cli_connection_init_auth(const char *srv_name, const char *pipe_name,
+                              struct cli_connection **con,
+                              cli_auth_fns * auth, void *auth_creds)
+{
+        BOOL reuse = True;
+
+        /*
+         * allocate
+         */
+
+        DEBUG(10, ("cli_connection_init_auth: %s %s\n",
+                   srv_name != NULL ? srv_name : "<null>", pipe_name));
+
+        *con = cli_con_get(srv_name, pipe_name, auth, auth_creds, reuse);
+
+        return (*con) != NULL;
+}
+
+/****************************************************************************
+ get auth functions associated with an msrpc session.
+****************************************************************************/
+struct cli_auth_fns *cli_conn_get_authfns(struct cli_connection *con)
+{
+        return con != NULL ? con->auth : NULL;
+}
+
+
+/****************************************************************************
+ get auth info associated with an msrpc session.
+****************************************************************************/
+void *cli_conn_get_auth_creds(struct cli_connection *con)
+{
+        return con != NULL ? con->auth_creds : NULL;
+}
+
+/****************************************************************************
+ send a request on an rpc pipe.
+ ****************************************************************************/
+BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
+                      prs_struct * data, prs_struct * rdata)
+{
+        BOOL ret;
+        DEBUG(10, ("rpc_con_pipe_req: op_num %d offset %d used: %d\n",
+                   op_num, data->data_offset, data->buffer_size));
+        prs_dump("in_rpcclient", (int)op_num, data);
+        prs_realloc_data(data, data->data_offset);
+        ret = rpc_api_pipe_req(con->msrpc.smb->smb, op_num, data, rdata);
+        prs_dump("out_rpcclient", (int)op_num, rdata);
+        return ret;
+}
+

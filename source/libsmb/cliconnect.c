@@ -640,7 +640,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	{
 		DEBUG(1,("failed negprot\n"));
 		if (do_shutdown)
-          cli_shutdown(cli);
+          		cli_shutdown(cli);
 		return False;
 	}
 
@@ -707,10 +707,20 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		{
 			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown)
-              cli_shutdown(cli);
+		              cli_shutdown(cli);
 			return False;
 		}
 
+    		DEBUG(1,("session setup ok\n"));
+    
+    		if (*cli->server_domain || *cli->server_os || *cli->server_type)
+    		{
+    			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
+    			     cli->server_domain,
+    		             cli->server_os,
+    		             cli->server_type));
+    		}
+		
 		if (do_tcon)
 		{
 			if (!cli_send_tconX(cli, service, service_type,

@@ -37,6 +37,29 @@ static struct ncalrpc_use **clis = NULL;
 static uint32 num_clis = 0;
 
 /****************************************************************************
+add a client state to the array
+****************************************************************************/
+static struct ncalrpc_use *add_cli_to_array(uint32 * len,
+                                            struct ncalrpc_use ***array,
+                                            struct ncalrpc_use *cli)
+{
+        int i;
+        for (i = 0; i < num_clis; i++)
+        {
+                if (clis[i] == NULL)
+                {
+                        clis[i] = cli;
+                        return cli;
+                }
+        }
+
+        return (struct ncalrpc_use *)add_item_to_array(len,
+                                                       (void ***)array,
+                                                       (void *)cli);
+
+}
+
+/****************************************************************************
 terminate client connection
 ****************************************************************************/
 static void ncalrpc_use_free(struct ncalrpc_use *cli)
@@ -51,6 +74,141 @@ static void ncalrpc_use_free(struct ncalrpc_use *cli)
         }
 
         free(cli);
+}
+
+/****************************************************************************
+find client state.  server name, user name, vuid name and password must all
+match.
+****************************************************************************/
+static struct ncalrpc_use *ncalrpc_l_find(const char *pipe_name,
+                                          const vuser_key * key, BOOL reuse)
+{
+        int i;
+        vuser_key null_usr;
+
+        if (key == NULL)
+        {
+                key = &null_usr;
+                null_usr.pid = sys_getpid();
+                null_usr.vuid = UID_FIELD_INVALID;
+        }
+
+        DEBUG(10, ("ncalrpc_l_find: %s [%d,%x]\n",
+                   pipe_name, key->pid, key->vuid));
+
+        for (i = 0; i < num_clis; i++)
+        {
+                char *cli_name = NULL;
+                struct ncalrpc_use *c = clis[i];
+
+                if (c == NULL || !c->cli->initialised)
+                {
+                        continue;
+                }
+
+                cli_name = c->cli->pipe_name;
+
+                DEBUG(10, ("ncalrpc_l_find[%d]: %s [%d,%x]\n",
+                           i, cli_name,
+                           c->cli->nt.key.pid, c->cli->nt.key.vuid));
+
+                if (!strequal(cli_name, pipe_name))
+                {
+                        continue;
+                }
+                if (reuse)
+                {
+                        return c;
+                }
+                if (key->vuid == c->cli->nt.key.vuid &&
+                    key->pid == c->cli->nt.key.pid)
+                {
+                        return c;
+                }
+        }
+
+        return NULL;
+}
+
+/****************************************************************************
+create a new client state from user credentials
+****************************************************************************/
+static struct ncalrpc_use *ncalrpc_use_get(const char *pipe_name,
+                                           const vuser_key * key)
+{
+        struct ncalrpc_use *cli = (struct ncalrpc_use *)malloc(sizeof(*cli));
+
+        if (cli == NULL)
+        {
+                return NULL;
+        }
+
+        memset(cli, 0, sizeof(*cli));
+
+        cli->cli = ncalrpc_l_initialise(NULL, key);
+
+        if (cli->cli == NULL)
+        {
+                return NULL;
+        }
+
+        return cli;
+}
+
+
+/****************************************************************************
+init client state
+****************************************************************************/
+struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
+                                      const vuser_key * key,
+                                      BOOL reuse, BOOL *is_new)
+{
+        struct ncalrpc_use *cli;
+
+        DEBUG(10, ("ncalrpc_l_use_add\n"));
+
+        if (strnequal("\\PIPE\\", pipe_name, 6))
+        {
+                pipe_name = &pipe_name[6];
+        }
+
+        cli = ncalrpc_l_find(pipe_name, key, reuse);
+
+        if (cli != NULL)
+        {
+                cli->num_users++;
+                DEBUG(10,
+                      ("ncalrpc_l_use_add: num_users: %d\n", cli->num_users));
+                (*is_new) = False;
+                return cli->cli;
+        }
+
+        /*
+         * allocate
+         */
+
+        cli = ncalrpc_use_get(pipe_name, key);
+
+        /*
+         * connect
+         */
+
+        if (!ncalrpc_l_establish_connection(cli->cli, pipe_name))
+        {
+                DEBUG(0, ("ncalrpc_l_use_add: connection failed\n"));
+                cli->cli = NULL;
+                ncalrpc_use_free(cli);
+                return NULL;
+        }
+
+        add_cli_to_array(&num_clis, &clis, cli);
+        cli->num_users++;
+
+        DEBUG(10, ("ncalrpc_l_use_add: num_users: %d\n", cli->num_users));
+
+        (*is_new) = True;
+
+        return cli->cli;
 }
 
 /****************************************************************************

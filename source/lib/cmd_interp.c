@@ -348,8 +348,9 @@ static uint32 do_command(struct client_info *info, char *line)
 	{
 		return False;
 	}
-
-	if ((i = process_tok(cmd_argv[0])) >= 0)
+	
+	i = process_tok(cmd_argv[0]);
+	if (i >= 0)
 	{
 		int argc = ((int)cmd_argc)-1;
 		char **argv = cmd_argv;
@@ -418,7 +419,7 @@ static uint32 process(struct client_info *info, char *cmd_str)
 	{
 		while (!feof(stdin))
 		{
-#ifdef HAVE_READLINE
+#ifdef HAVE_LIBREADLINE
 			char *ret_line;
 #endif
 			pstring pline;
@@ -447,7 +448,7 @@ static uint32 process(struct client_info *info, char *cmd_str)
 				    sizeof(pline) - 1);
 			safe_strcat(pline, "]$ ", sizeof(pline) - 1);
 
-#ifndef HAVE_READLINE
+#ifndef HAVE_LIBREADLINE
 
 			/* display a prompt */
 			fprintf(out_hnd, "%s", CNV_LANG(pline));
@@ -461,7 +462,7 @@ static uint32 process(struct client_info *info, char *cmd_str)
 				break;
 			}
 
-#else /* HAVE_READLINE */
+#else /* HAVE_LIBREADLINE */
 
 			if (!(ret_line = readline(pline)))
 				break;
@@ -535,7 +536,7 @@ static void usage(char *pname)
 	fprintf(out_hnd, "\n");
 }
 
-#ifdef HAVE_READLINE
+#ifdef HAVE_LIBREADLINE
 
 /****************************************************************************
 GNU readline completion functions
@@ -648,7 +649,7 @@ static char *complete_cmd_null(char *text, int state)
 	return NULL;
 }
 
-#endif /* HAVE_READLINE */
+#endif /* HAVE_LIBREADLINE */
 
 static void set_user_password(struct ntuser_creds *u,
 			      BOOL got_pass, char *password)
@@ -708,6 +709,7 @@ static uint32 cmd_use(struct client_info *info, int argc, char *argv[])
 		report(out_hnd, "    -d     Deletes a connection\n");
 		report(out_hnd, "    -f     Forcibly deletes a connection\n");
 		report(out_hnd, "net -u     Shows all connections\n");
+		return 0;
 	}
 
 	if (argc > 1 && (*argv[1] != '-'))
@@ -1248,7 +1250,7 @@ static void read_user_env(struct ntuser_creds *u)
 
 static void readline_init(void)
 {
-#ifdef HAVE_READLINE
+#ifdef HAVE_LIBREADLINE
 	/* Initialise GNU Readline */ rl_readline_name = "rpcclient";
 	rl_attempted_completion_function = completion_fn;
 	rl_completion_entry_function = (Function *) complete_cmd_null;
@@ -1260,7 +1262,7 @@ static void readline_init(void)
 #else
 	int x;
 	x = 0;			/* stop compiler warnings */
-#endif /* HAVE_READLINE */
+#endif /* HAVE_LIBREADLINE */
 }
 
 /****************************************************************************

@@ -37,6 +37,18 @@
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.
  */
+
+#define CHECK_STRUCT(data) \
+{ \
+        if ((data)->struct_start != 0xfefefefe || \
+            (data)->struct_end != 0xdcdcdcdc) \
+        { \
+                DEBUG(0,("uninitialised structure (%s, %d)\n", \
+                FUNCTION_MACRO, __LINE__)); \
+                sleep(30); \
+        } \
+}
+
  
 typedef struct _prs_struct 
 {

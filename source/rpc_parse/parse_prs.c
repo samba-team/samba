@@ -27,6 +27,35 @@ extern int DEBUGLEVEL;
 
 
 /*******************************************************************
+ search for a memory buffer that falls within the specified offset
+ ********************************************************************/
+static const prs_struct *prs_find(const prs_struct *buf, uint32 offset)
+{
+        const prs_struct *f = NULL;
+
+#if 0  	/* comment out by JERRY */
+        if (buf == NULL)
+                return False;
+
+        f = buf;
+
+        while (f != NULL && offset >= f->end)
+        {
+                DEBUG(200, ("prs_find: next[%d..%d]\n", f->start, f->end));
+
+                f = f->next;
+        }
+
+        if (f != NULL)
+        {
+                DEBUG(200, ("prs_find: found [%d..%d]\n", f->start, f->end));
+        }
+
+#endif
+        return f;
+}
+
+/*******************************************************************
 dump a prs to a file
  ********************************************************************/
 void prs_dump(char *name, int v, prs_struct *ps)
@@ -63,10 +92,10 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
 	DEBUG(5+depth, ("%s%06x %s %s\n", tab_depth(depth), ps->data_offset, fn_name, desc));
 }
 
+
 /*******************************************************************
  Initialise a parse structure - malloc the data if requested.
  ********************************************************************/
-
 BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io)
 {
 	ZERO_STRUCTP(ps);
@@ -804,6 +833,89 @@ BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 	}
 	return True;
 }
+
+/*******************************************************************
+ frees a memory buffer.
+ ********************************************************************/
+void prs_free_data(prs_struct *buf)
+{
+        if (buf == NULL)
+                return;
+
+        if (buf->data_p != NULL)
+        {
+                free(buf->data_p);
+                buf->data_p = NULL;
+        }
+        buf->buffer_size = 0;
+}
+
+/*******************************************************************
+ reallocate a memory buffer
+********************************************************************/
+BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
+{
+        char *new_data;
+
+        /* prs_sma_init();  JERRY */
+
+        prs_debug(buf, 200, "prs_realloc_data - before", "prs_realloc_data");
+
+        SMB_ASSERT(((ssize_t) new_size) >= 0);
+
+        if (new_size == 0)
+        {
+                prs_free_data(buf);
+                return True;
+        }
+
+        /* new_data = sma_realloc(prs_sma_region, buf->data_p, new_size); */
+        new_data = realloc(buf->data_p, new_size);
+
+        if (new_data != NULL)
+        {
+                if (new_size > buf->buffer_size)
+                {
+                        memset(&new_data[buf->buffer_size], 0,
+                               new_size - buf->buffer_size);
+                }
+                buf->data_p = new_data;
+                buf->buffer_size = new_size;
+        }
+        else if (buf->buffer_size >= new_size)
+        {
+                DEBUG(3, ("prs_realloc_data: warning - "
+                          "could not realloc to %d\n", new_size));
+        }
+        else
+        {
+                DEBUG(3, ("prs_realloc_data: error - "
+                          "could not realloc to %d\n", new_size));
+
+                prs_free_data(buf);
+                return False;
+        }
+
+        prs_debug(buf, 200, "prs_realloc_data - after", "prs_realloc_data");
+        return True;
+}
+
+/*******************************************************************
+ return the memory location specified by   may return NULL.
+ ********************************************************************/
+char *prs_data(const prs_struct *buf, uint32 offset)
+{
+        buf = prs_find(buf, offset);
+        if (buf != NULL)
+        {
+                /* return &(buf->data[offset - buf->start]); */
+                return &(buf->data_p[offset]);
+        }
+        return NULL;
+}
+
+
+
 
 /* useful function to store a structure in rpc wire format */
 int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
