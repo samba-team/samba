@@ -47,6 +47,8 @@ if test "$with_krb4"; then
 	AC_DEFINE(KRB4, 1)
 	LIB_krb4="$KRB4LIB -ldes"
 	INCLUDE_krb4="$KRB4INCLUDE"
+	EXTRA_LIB45=lib45.a
+	AC_SUBST(EXTRA_LIB45)
 fi
 AM_CONDITIONAL(KRB4, test "$with_krb4")
 AC_SUBST(LIB_krb4)
@@ -317,6 +319,7 @@ AC_OUTPUT(Makefile 			\
 	lib/krb5/Makefile		\
 	lib/hdb/Makefile		\
 	lib/gssapi/Makefile		\
+	lib/45/Makefile			\
 	lib/otp/Makefile		\
 	kuser/Makefile			\
 	kpasswd/Makefile		\
