@@ -258,40 +258,6 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 	return connected_ok;
 }
 
-/* Some routines to fetch the trust account password from a HEAD
-   version of Samba.  Yuck.  )-: */
-
-/************************************************************************
-form a key for fetching a domain trust password from
-************************************************************************/
-static char *trust_keystr(char *domain)
-{
-	static fstring keystr;
-
-	snprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, 
-		 domain);
-
-	return keystr;
-}
-
-/************************************************************************
- Routine to get the trust account password for a domain
-************************************************************************/
-BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
-				 time_t *pass_last_set_time)
-{
-	struct machine_acct_pass *pass;
-	size_t size;
-
-	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) ||
-	    size != sizeof(*pass)) return False;
-
-	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
-	memcpy(ret_pwd, pass->hash, 16);
-	free(pass);
-	return True;
-}
-
 /***********************************************************************
  Connect to a remote machine for domain security authentication
  given a name or IP address.
