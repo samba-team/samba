@@ -1,12 +1,8 @@
 /* $Id$ */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "der.h"
+#include "asn1_locl.h"
+
+RCSID("$Id$");
 
 /*
  * All encoding functions take a pointer `p' to first position in
@@ -231,4 +227,15 @@ encode_generalized_time (unsigned char *p, int len, time_t *t)
   len -= l;
   ret += l;
   return ret;
+}
+
+int
+fix_dce(int reallen, int *len)
+{
+    if(reallen == 0)
+	return 1;
+    if(*len < reallen)
+	return -1;
+    *len = reallen;
+    return 0;
 }
