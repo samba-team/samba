@@ -69,3 +69,5 @@ int	options;		/* used during socket creation */
 int macnum;			/* number of defined macros */
 struct macel macros[16];
 char macbuf[4096];
+
+char username[32];

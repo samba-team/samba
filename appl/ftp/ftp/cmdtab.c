@@ -106,6 +106,9 @@ char	umaskhelp[] =	"get (set) umask on remote side";
 char	userhelp[] =	"send new user information";
 char	verbosehelp[] =	"toggle verbose mode";
 
+char	prothelp[] = 	"set protection level";
+char	kauthhelp[] = 	"get remote tokens";
+
 struct cmd cmdtab[] = {
 	{ "!",		shellhelp,	0,	0,	0,	shell },
 	{ "$",		domachelp,	1,	0,	0,	domacro },
@@ -179,6 +182,10 @@ struct cmd cmdtab[] = {
 	{ "umask",	umaskhelp,	0,	1,	1,	do_umask },
 	{ "verbose",	verbosehelp,	0,	0,	0,	setverbose },
 	{ "?",		helphelp,	0,	0,	1,	help },
+
+	{ "prot", 	prothelp, 	0, 	1, 	0,	sec_prot },
+	{ "kauth", 	kauthhelp, 	0, 	1, 	0,	kauth },
+	
 	{ 0 },
 };
 

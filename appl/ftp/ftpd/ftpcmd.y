@@ -107,6 +107,8 @@ char	*fromname;
 	AUTH	ADAT	PROT	PBSZ	CCC	MIC
 	CONF	ENC
 
+	KAUTH
+
 	LEXERR
 
 %token	<s> STRING
@@ -475,6 +477,24 @@ cmd
 				    timeout);
 			}
 		}
+
+	| SITE SP KAUTH SP STRING CRLF
+		{
+			char *p;
+			size_t s;
+			
+			p = strpbrk($5, " \t");
+			if(p){
+				*p++ = 0;
+				s = strspn(p, " \t");				
+				if(s >= 0)
+					kauth($5, p + s);
+				else
+					kauth($5, p);
+			}else
+				kauth($5, NULL);
+			free($5);
+		}
 	| STOU check_login SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
@@ -841,7 +861,7 @@ struct tab cmdtab[] = {		/* In order defined in RFC 765 */
 	{ "AUTH", AUTH,	STR1, 1,	"<sp> auth-type" },
 	{ "ADAT", ADAT,	STR1, 1,	"<sp> auth-data" },
 	{ "PBSZ", PBSZ,	ARGS, 1,	"<sp> buffer-size" },
-	{ "PROT", PROT,	ARGS, 1,	"<sp> prot-level" },
+	{ "PROT", PROT,	STR1, 1,	"<sp> prot-level" },
 	{ "CCC",  CCC,	ARGS, 1,	"" },
 	{ "MIC",  MIC,	STR1, 1,	"<sp> integrity command" },
 	{ "CONF", CONF,	STR1, 1,	"<sp> confidentiality command" },
@@ -855,6 +875,9 @@ struct tab sitetab[] = {
 	{ "IDLE", IDLE, ARGS, 1,	"[ <sp> maximum-idle-time ]" },
 	{ "CHMOD", CHMOD, NSTR, 1,	"<sp> mode <sp> file-name" },
 	{ "HELP", HELP, OSTR, 1,	"[ <sp> <string> ]" },
+
+	{ "KAUTH", KAUTH, STR1, 1,	"<sp> principal [ <sp> ticket ]" },
+	
 	{ NULL,   0,    0,    0,	0 }
 };
 
@@ -867,9 +890,7 @@ static void	 toolong __P((int));
 static int	 yylex __P((void));
 
 static struct tab *
-lookup(p, cmd)
-	struct tab *p;
-	char *cmd;
+lookup(struct tab *p, char *cmd)
 {
 
 	for (; p->name != NULL; p++)
@@ -958,8 +979,7 @@ getline(char *s, int n)
 }
 
 static void
-toolong(signo)
-	int signo;
+toolong(int signo)
 {
 
 	reply(421,
@@ -971,7 +991,7 @@ toolong(signo)
 }
 
 static int
-yylex()
+yylex(void)
 {
 	static int cpos, state;
 	char *cp, *cp2;
@@ -1189,8 +1209,7 @@ yylex()
 }
 
 void
-upper(s)
-	char *s;
+upper(char *s)
 {
 	while (*s != '\0') {
 		if (islower(*s))
@@ -1200,8 +1219,7 @@ upper(s)
 }
 
 static char *
-copy(s)
-	char *s;
+copy(char *s)
 {
 	char *p;
 
@@ -1213,9 +1231,7 @@ copy(s)
 }
 
 static void
-help(ctab, s)
-	struct tab *ctab;
-	char *s;
+help(struct tab *ctab, char *s)
 {
 	struct tab *c;
 	int width, NCMDS;
@@ -1278,8 +1294,7 @@ help(ctab, s)
 }
 
 static void
-sizecmd(filename)
-	char *filename;
+sizecmd(char *filename)
 {
 	switch (type) {
 	case TYPE_L:

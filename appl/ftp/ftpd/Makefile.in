@@ -19,18 +19,18 @@ libdir = $(exec_prefix)/lib
 
 ATHENA = /usr/athena
 
-ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o
+ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o
 
 all: ftpd
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I.. -I$(srcdir)/.. -I../common -I$(srcdir)/../common -I$(ATHENA)/include  $(DEFS) $<
+	$(CC) -c $(CFLAGS) -I. -I$(srcdir) -I.. -I$(srcdir)/.. -I../common -I$(srcdir)/../common -I$(ATHENA)/include  $(DEFS) $<
 
 install:
 
 
 ftpd: $(ftpd_OBJS) ../common/libcommon.a
-	$(CC) -o ftpd $(ftpd_OBJS) ../common/libcommon.a -L$(ATHENA)/lib -lkrb -ldes
+	$(CC) -o ftpd $(ftpd_OBJS) ../common/libcommon.a -L$(ATHENA)/lib -lkafs -lkrb -ldes
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<

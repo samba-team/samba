@@ -77,6 +77,8 @@ void	upper(char *);
 void	user(char *);
 void	yyerror(char *);
 
+void	kauth(char *, char*);
+
 extern struct sockaddr_in ctrl_addr, his_addr;
 extern char hostname[];
 
@@ -101,6 +103,5 @@ extern	char proctitle[];
 extern	int usedefault;
 extern  int transflag;
 extern  char tmpline[];
-
 
 #endif /* _EXTERN_H_ */

@@ -1,5 +1,5 @@
-#ifndef _AUTH_H_
-#define _AUTH_H_
+#ifndef __AUTH_H__
+#define __AUTH_H__
 
 #include <stdarg.h>
 
@@ -8,27 +8,32 @@ struct at {
   int (*auth)(char*);
   int (*adat)(char*);
   int (*pbsz)(int);
-  int (*prot)(char*);
+  int (*prot)(int);
   int (*ccc)(void);
   int (*mic)(char*);
   int (*conf)(char*);
   int (*enc)(char*);
+  int (*read)(int, void*, int);
+  int (*write)(int, void*, int);
   int (*userok)(char*);
   int (*vprintf)(const char*, va_list);
 };
 
-struct at *ct;
+extern struct at *ct;
 
 enum protection_levels {
   prot_clear, prot_safe, prot_confidential, prot_private
 };
 
+extern char *protection_names[];
+
 extern char *ftp_command;
 extern int prot_level;
 
-int data_protection;
-int buffer_size;
-int auth_complete;
+extern int data_protection;
+extern int buffer_size;
+extern unsigned char *data_buffer;
+extern int auth_complete;
 
 void auth_init(void);
 
@@ -41,9 +46,12 @@ void mic(char*);
 void conf(char*);
 void enc(char*);
 
+int auth_read(int, void*, int);
+int auth_write(int, void*, int);
+
 void auth_vprintf(const char *fmt, va_list ap);
 void auth_printf(const char *fmt, ...);
 
 void new_ftp_command(char *command);
 
-#endif /* _AUTH_H_ */
+#endif /* __AUTH_H__ */

@@ -165,3 +165,5 @@ extern int	proxy;
 extern char	reply_string[];
 extern off_t	restart_point;
 extern int	NCMDS;
+
+extern char 	username[32];

@@ -38,7 +38,7 @@
 #include "ftp_locl.h"
 
 #ifndef HAVE___PROGNAME
-char *__progname;
+char *__progname = "ftp";
 #endif
 
 int
@@ -54,10 +54,6 @@ main(int argc, char **argv)
 	doglob = 1;
 	interactive = 1;
 	autologin = 1;
-
-#ifndef HAVE___PROGNAME
-	__progname = argv[0];
-#endif
 
 	while ((ch = getopt(argc, argv, "dgintv")) != EOF) {
 		switch (ch) {

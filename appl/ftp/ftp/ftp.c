@@ -35,8 +35,6 @@
 
 #include "ftp_locl.h"
 
-
-
 struct	sockaddr_in hisctladdr;
 struct	sockaddr_in data_addr;
 int	data = -1;
@@ -159,77 +157,6 @@ bad:
 	return ((char *)0);
 }
 
-#include <des.h>
-#include <krb.h>
-
-int krb4_auth = 0;
-KTEXT_ST krb4_adat;
-
-static des_cblock key;
-static des_key_schedule schedule;
-
-int do_auth(char *service, char *host)
-{
-    int ret;
-    CREDENTIALS cred;
-    char sname[SNAME_SZ], inst[INST_SZ], realm[REALM_SZ];
-    strcpy(sname, service);
-    strcpy(inst, krb_get_phost(host));
-    strcpy(realm, krb_realmofhost(host));
-    ret = krb_mk_req(&krb4_adat, sname, inst, realm, 0);
-    if(ret)
-	return ret;
-    strcpy(sname, service);
-    strcpy(inst, krb_get_phost(host));
-    strcpy(realm, krb_realmofhost(host));
-    ret = krb_get_cred(sname, inst, realm, &cred);
-    memmove(&key, &cred.session, sizeof(des_cblock));
-    des_key_sched(&key, schedule);
-    memset(&cred, 0, sizeof(cred));
-    return ret;
-}
-
-
-int do_klogin(char *host)
-{
-    int ret;
-    char *phost;
-    char *p, *q;
-    int len;
-    char *serv = "ftp";
-    char adat[1024];
-    MSG_DAT msg_data;
-    int checksum;
-
-    ret = command("AUTH KERBEROS_V4");
-    if(ret == CONTINUE){
-	ret = do_auth("ftp", host);
-	if(ret == KDC_PR_UNKNOWN)
-	    ret = do_auth("rcmd", host);
-	if(ret)
-	    return ret;
-	base64_encode(krb4_adat.dat, krb4_adat.length, &p);
-	ret = command("ADAT %s", p);
-	free(p);
-	if(ret == COMPLETE){
-	    p = strstr(reply_string, "ADAT=");
-	    if(p){
-		p+=5;
-		for(q = p; isalnum(*q) || strchr("/+=", *q); q++);
-		*q = 0;
-		len = base64_decode(p, adat);
-		ret = krb_rd_safe(adat, len, &key, 
-				  &hisctladdr, &myctladdr, &msg_data);
-		memmove(&checksum, msg_data.app_data, 4);
-		checksum = ntohl(checksum);
-	    }
-	    krb4_auth = 1;
-	    return 0;
-	}
-    }
-    return -1;
-}
-
 int
 login(char *host)
 {
@@ -263,13 +190,17 @@ login(char *host)
 			user = tmp;
 	}
 	if(strcmp(user, "ftp") && strcmp(user, "anonymous")){
-	    do_klogin(host);
+	    if(do_klogin(host) < 0)
+		fprintf(stderr, "Resorting to plaintext user and password.\n");
 	}
+	strcpy(username, user);
 	n = command("USER %s", user);
 	if (n == CONTINUE) {
-		if (pass == NULL)
-			pass = getpass("Password:");
-		n = command("PASS %s", pass);
+	    if(auth_complete)
+		pass = user;
+	    else if (pass == NULL)
+		pass = getpass("Password:");
+	    n = command("PASS %s", pass);
 	}
 	if (n == CONTINUE) {
 		aflag++;
@@ -306,69 +237,6 @@ cmdabort(int sig)
 		longjmp(ptabort,1);
 }
 
-int krb4_write_enc(FILE *F, char *fmt, va_list ap)
-{
-    int len;
-    char *p;
-    char buf[1024];
-    char enc[1024];
-    vsprintf(buf, fmt, ap);
-    len = krb_mk_priv(buf, enc, strlen(buf), schedule, &key, 
-		      &myctladdr, &hisctladdr);
-    base64_encode(enc, len, &p);
-
-    fprintf(F, "ENC %s", p);
-    return 0;
-}
-
-
-int krb4_read_msg(char *s, int priv)
-{
-    int len;
-    int ret;
-    char buf[1024];
-    MSG_DAT m;
-    int code;
-    
-    len = base64_decode(s + 4, buf);
-    if(priv)
-	ret = krb_rd_priv(buf, len, schedule, &key, 
-			  &hisctladdr, &myctladdr, &m);
-    else
-	ret = krb_rd_safe(buf, len, &key, &myctladdr, &hisctladdr, &m);
-    if(ret){
-      fprintf(stderr, "%s\n", krb_get_err_text(ret));
-      return -1;
-    }
-	
-    m.app_data[m.app_length] = 0;
-    if(m.app_data[3] == '-')
-      code = 0;
-    else
-      sscanf((char*)m.app_data, "%d", &code);
-    strncpy(s, (char*)m.app_data, strlen((char*)m.app_data));
-    
-    s[m.app_length] = 0;
-    len = strlen(s);
-    if(s[len-1] == '\n')
-	s[len-1] = 0;
-    
-    return code;
-}
-
-int
-krb4_read_mic(char *s)
-{
-    return krb4_read_msg(s, 0);
-}
-
-int
-krb4_read_enc(char *s)
-{
-    return krb4_read_msg(s, 1);
-}
-
-
 int
 command(char *fmt, ...)
 {
@@ -391,7 +259,7 @@ command(char *fmt, ...)
 		printf("PASS XXXX");
 	    else 
 		vfprintf(stdout, fmt, ap);
-	if(krb4_auth)
+	if(auth_complete)
 	    krb4_write_enc(cout, fmt, ap);
 	else
 	    vfprintf(cout, fmt, ap);
@@ -464,8 +332,8 @@ getreply(int expecteof)
 		    sscanf(buf, "%d", &code);
 		    fprintf(stdout, "P:");
 		}else if(code == 633){
-		    fprintf(stdout, "Confidentiality is meaningless:/n");
-		}else if(krb4_auth)
+		    fprintf(stdout, "Confidentiality is meaningless:\n");
+		}else if(auth_complete)
 		    fprintf(stdout, "!!"); /* clear text */
 		fprintf(stdout, "%s\n", buf);
 		if(buf[3] == ' '){
@@ -484,7 +352,7 @@ getreply(int expecteof)
 		    return code / 100;
 		}
 	    }else{
-		if(krb4_auth)
+		if(auth_complete)
 		    fprintf(stdout, "!!");
 		fprintf(stdout, "%s\n", buf);
 	    }
@@ -589,7 +457,7 @@ getreply(int expecteof)
 			continue;
 		}
 		*cp = '\0';
-		if(krb4_auth){
+		if(auth_complete){
 		    if(code == 631)
 			krb4_read_mic(reply_string);
 		    else
@@ -784,8 +652,8 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 		while ((c = read(fileno(fin), buf, sizeof (buf))) > 0) {
 			bytes += c;
 			for (bufp = buf; c > 0; c -= d, bufp += d)
-				if ((d = write(fileno(dout), bufp, c)) <= 0)
-					break;
+			    if ((d = sec_write(fileno(dout), bufp, c)) <= 0)
+				break;
 			if (hash) {
 				while (bytes >= hashbytes) {
 					(void) putchar('#');
@@ -794,6 +662,7 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 				(void) fflush(stdout);
 			}
 		}
+		sec_fflush(dout);
 		if (hash && bytes > 0) {
 			if (bytes < HASHBYTES)
 				(void) putchar('#');
@@ -810,39 +679,36 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 		break;
 
 	case TYPE_A:
-		while ((c = getc(fin)) != EOF) {
-			if (c == '\n') {
-				while (hash && (bytes >= hashbytes)) {
-					(void) putchar('#');
-					(void) fflush(stdout);
-					hashbytes += HASHBYTES;
-				}
-				if (ferror(dout))
-					break;
-				(void) putc('\r', dout);
-				bytes++;
-			}
-			(void) putc(c, dout);
-			bytes++;
-	/*		if (c == '\r') {			  	*/
-	/*		(void)	putc('\0', dout);  // this violates rfc */
-	/*			bytes++;				*/
-	/*		}                          			*/	
-		}
-		if (hash) {
-			if (bytes < hashbytes)
-				(void) putchar('#');
-			(void) putchar('\n');
+	    while ((c = getc(fin)) != EOF) {
+		if (c == '\n') {
+		    while (hash && (bytes >= hashbytes)) {
+			(void) putchar('#');
 			(void) fflush(stdout);
+			hashbytes += HASHBYTES;
+		    }
+		    if (ferror(dout))
+			break;
+		    (void) sec_putc('\r', dout);
+		    bytes++;
 		}
-		if (ferror(fin))
-			warn("local: %s", local);
-		if (ferror(dout)) {
-			if (errno != EPIPE)
-				warn("netout");
-			bytes = -1;
-		}
-		break;
+		sec_putc(c, dout);
+		bytes++;
+	    }
+	    sec_fflush(dout);
+	    if (hash) {
+		if (bytes < hashbytes)
+		    (void) putchar('#');
+		(void) putchar('\n');
+		(void) fflush(stdout);
+	    }
+	    if (ferror(fin))
+		warn("local: %s", local);
+	    if (ferror(dout)) {
+		if (errno != EPIPE)
+		    warn("netout");
+		bytes = -1;
+	    }
+	    break;
 	}
 	if (closefunc != NULL)
 		(*closefunc)(fin);
@@ -1048,17 +914,17 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 			return;
 		}
 		errno = d = 0;
-		while ((c = read(fileno(din), buf, bufsize)) > 0) {
-			if ((d = write(fileno(fout), buf, c)) != c)
-				break;
-			bytes += c;
-			if (hash) {
-				while (bytes >= hashbytes) {
-					(void) putchar('#');
-					hashbytes += HASHBYTES;
-				}
-				(void) fflush(stdout);
+		while ((c = sec_read(fileno(din), buf, bufsize)) > 0) {
+		    if ((d = write(fileno(fout), buf, c)) != c)
+			break;
+		    bytes += c;
+		    if (hash) {
+			while (bytes >= hashbytes) {
+			    (void) putchar('#');
+			    hashbytes += HASHBYTES;
 			}
+			(void) fflush(stdout);
+		    }
 		}
 		if (hash && bytes > 0) {
 			if (bytes < HASHBYTES)
@@ -1087,7 +953,7 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 				goto done;
 			n = restart_point;
 			for (i = 0; i++ < n;) {
-				if ((ch = getc(fout)) == EOF)
+				if ((ch = sec_getc(fout)) == EOF)
 					goto done;
 				if (ch == '\n')
 					i++;
@@ -1100,7 +966,8 @@ done:
 				return;
 			}
 		}
-		while ((c = getc(din)) != EOF) {
+
+		while ((c = sec_getc(din)) != EOF) {
 			if (c == '\n')
 				bare_lfs++;
 			while (c == '\r') {
@@ -1110,7 +977,7 @@ done:
 					hashbytes += HASHBYTES;
 				}
 				bytes++;
-				if ((c = getc(din)) != '\n' || tcrflag) {
+				if ((c = sec_getc(din)) != '\n' || tcrflag) {
 					if (ferror(fout))
 						goto break2;
 					(void) putc('\r', fout);

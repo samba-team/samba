@@ -226,23 +226,23 @@ curdir(void)
 
 static void conn_wait(void)
 {
-  int s, t;
-  struct sockaddr_in sa;
-  int one = 1;
-  s = socket(AF_INET, SOCK_STREAM, 0);
+    int s, t;
+    struct sockaddr_in sa;
+    int one = 1;
+    s = socket(AF_INET, SOCK_STREAM, 0);
 
-  setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-  memset(&sa, 0, sizeof(sa));
-  sa.sin_port = htons(21);
-  sa.sin_addr.s_addr = INADDR_ANY;
-  bind(s, (struct sockaddr*)&sa, sizeof(sa));
-  listen(s, 5);
-  t = accept(s, NULL, 0);
-  close(s);
-  dup2(t, 0);
-  dup2(t, 1);
-  if(t > 2)
-    close(t);
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    memset(&sa, 0, sizeof(sa));
+    sa.sin_port = htons(21);
+    sa.sin_addr.s_addr = INADDR_ANY;
+    bind(s, (struct sockaddr*)&sa, sizeof(sa));
+    listen(s, 5);
+    t = accept(s, NULL, 0);
+    close(s);
+    dup2(t, 0);
+    dup2(t, 1);
+    if(t > 2)
+	close(t);
 }
 
 
@@ -258,10 +258,16 @@ main(int argc, char **argv, char **envp)
 	char *cp, line[LINE_MAX];
 	FILE *fd;
 
+	char tkfile[1024];
+
 #if 0
 	conn_wait();
 #endif
 
+	sprintf(tkfile, "/tmp/ftp_%d", getpid());
+	setenv("KRBTKFILE", tkfile);
+	if(k_hasafs())
+	    k_setpag();
 	/*
 	 * LOG_NDELAY sets up the logging connection immediately,
 	 * necessary for anonymous ftp's that chroot and can't do it later.
@@ -988,6 +994,8 @@ send_data(FILE *instr, FILE *outstr, off_t blksize)
 {
 	int c, cnt, filefd, netfd;
 	char *buf;
+	int i = 0;
+	char s[1024];
 
 	transflag++;
 	if (setjmp(urgcatch)) {
@@ -998,14 +1006,18 @@ send_data(FILE *instr, FILE *outstr, off_t blksize)
 
 	case TYPE_A:
 		while ((c = getc(instr)) != EOF) {
-			byte_count++;
-			if (c == '\n') {
-				if (ferror(outstr))
-					goto data_err;
-				(void) putc('\r', outstr);
-			}
-			(void) putc(c, outstr);
+		    byte_count++;
+		    if(i > 1022){
+			auth_write(fileno(outstr), s, i);
+			i = 0;
+		    }
+		    if(c == '\n')
+			s[i++] = '\r';
+		    s[i++] = c;
 		}
+		if(i)
+		    auth_write(fileno(outstr), s, i);
+		auth_write(fileno(outstr), s, 0);
 		fflush(outstr);
 		transflag = 0;
 		if (ferror(instr))
@@ -1025,8 +1037,9 @@ send_data(FILE *instr, FILE *outstr, off_t blksize)
 		netfd = fileno(outstr);
 		filefd = fileno(instr);
 		while ((cnt = read(filefd, buf, (u_int)blksize)) > 0 &&
-		    write(netfd, buf, cnt) == cnt)
-			byte_count += cnt;
+		       auth_write(netfd, buf, cnt) == cnt)
+		    byte_count += cnt;
+		auth_write(netfd, buf, 0); /* to end an encrypted stream */
 		transflag = 0;
 		(void)free(buf);
 		if (cnt != 0) {
@@ -1061,79 +1074,90 @@ file_err:
 static int
 receive_data(FILE *instr, FILE *outstr)
 {
-	int c;
-	int cnt, bare_lfs = 0;
-	char buf[BUFSIZ];
+    int c;
+    int cnt, bare_lfs = 0;
+    char buf[BUFSIZ];
 
-	transflag++;
-	if (setjmp(urgcatch)) {
-		transflag = 0;
-		return (-1);
+    transflag++;
+    if (setjmp(urgcatch)) {
+	transflag = 0;
+	return (-1);
+    }
+    switch (type) {
+
+    case TYPE_I:
+    case TYPE_L:
+	while ((cnt = auth_read(fileno(instr), buf, sizeof(buf))) > 0) {
+	    if (write(fileno(outstr), buf, cnt) != cnt)
+		goto file_err;
+	    byte_count += cnt;
 	}
-	switch (type) {
+	if (cnt < 0)
+	    goto data_err;
+	transflag = 0;
+	return (0);
 
-	case TYPE_I:
-	case TYPE_L:
-		while ((cnt = read(fileno(instr), buf, sizeof(buf))) > 0) {
-			if (write(fileno(outstr), buf, cnt) != cnt)
-				goto file_err;
-			byte_count += cnt;
-		}
-		if (cnt < 0)
-			goto data_err;
-		transflag = 0;
-		return (0);
+    case TYPE_E:
+	reply(553, "TYPE E not implemented.");
+	transflag = 0;
+	return (-1);
 
-	case TYPE_E:
-		reply(553, "TYPE E not implemented.");
-		transflag = 0;
-		return (-1);
-
-	case TYPE_A:
-		while ((c = getc(instr)) != EOF) {
-			byte_count++;
-			if (c == '\n')
-				bare_lfs++;
-			while (c == '\r') {
-				if (ferror(outstr))
-					goto data_err;
-				if ((c = getc(instr)) != '\n') {
-					(void) putc ('\r', outstr);
-					if (c == '\0' || c == EOF)
-						goto contin2;
-				}
-			}
-			(void) putc(c, outstr);
-	contin2:	;
-		}
-		fflush(outstr);
-		if (ferror(instr))
-			goto data_err;
-		if (ferror(outstr))
-			goto file_err;
-		transflag = 0;
-		if (bare_lfs) {
-			lreply(226,
-		"WARNING! %d bare linefeeds received in ASCII mode",
-			    bare_lfs);
-		(void)printf("   File may not have transferred correctly.\r\n");
-		}
-		return (0);
-	default:
-		reply(550, "Unimplemented TYPE %d in receive_data", type);
-		transflag = 0;
-		return (-1);
+    case TYPE_A:
+    {
+	char *p, *q;
+	int cr_flag = 0;
+	while ((cnt = auth_read(fileno(instr), buf+cr_flag, sizeof(buf))) > 0){
+	    byte_count += cnt;
+	    cr_flag = 0;
+	    for(p = buf, q = buf; p < buf + cnt;){
+		if(*p == '\n')
+		    bare_lfs++;
+		if(*p == '\r')
+		    if(p == buf + cnt - 1){
+			cr_flag = 1;
+			p++;
+			continue;
+		    }else if(p[1] == '\n'){
+			*q++ = '\n';
+			p += 2;
+			continue;
+		    }
+		*q++ = *p++;
+	    }
+	    fwrite(buf, q - buf, 1, outstr);
+	    if(cr_flag)
+		buf[0] = '\r';
 	}
-
+	if(cr_flag)
+	    putc('\r', outstr);
+	fflush(outstr);
+	if (ferror(instr))
+	    goto data_err;
+	if (ferror(outstr))
+	    goto file_err;
+	transflag = 0;
+	if (bare_lfs) {
+	    lreply(226, "WARNING! %d bare linefeeds received in ASCII mode\r\n"
+		   "    File may not have transferred correctly.\r\n",
+		   bare_lfs);
+	}
+	return (0);
+    }
+    default:
+	reply(550, "Unimplemented TYPE %d in receive_data", type);
+	transflag = 0;
+	return (-1);
+    }
+	
 data_err:
-	transflag = 0;
-	perror_reply(426, "Data Connection");
-	return (-1);
-
+    transflag = 0;
+    perror_reply(426, "Data Connection");
+    return (-1);
+	
 file_err:
-	transflag = 0;
-	perror_reply(452, "Error writing file");
-	return (-1);
+    transflag = 0;
+    perror_reply(452, "Error writing file");
+    return (-1);
 }
 
 void
@@ -1417,10 +1441,9 @@ dologout(int status)
 	if (logged_in) {
 		(void) seteuid((uid_t)0);
 		logwtmp(ttyline, "", "");
-#if defined(KERBEROS)
-		if (!notickets && krbtkfile_env)
-			unlink(krbtkfile_env);
-#endif
+		dest_tkt();
+		if(k_hasafs())
+		    k_unlog();
 	}
 	/* beware of flushing buffers after a SIGPIPE */
 	_exit(status);

@@ -26,11 +26,14 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <netinet/in.h>
 
 #include "extern.h"
 #include "common.h"
 #include "ftp_var.h"
 #include "pathnames.h"
+
+#include "krb4.h"
 
 #if defined(__sun__) && !defined(__svr4)
 int fclose(FILE*);
