@@ -324,6 +324,28 @@ static char *osf1_bigcrypt(char *password,char *salt1)
 }
 #endif
 
+/****************************************************************************
+update the encrypted smbpasswd file from the plaintext username and password
+*****************************************************************************/
+BOOL update_smbpassword_file( struct passwd *pass, fstring password)
+{
+  struct smb_passwd smbpw;
+  BOOL ret;
+
+  /* Fake up an smb_passwd. */
+  smbpw.smb_userid = pass->pw_uid;
+  smbpw.smb_name = pass->pw_name;
+  smbpw.smb_passwd = NULL;
+  smbpw.smb_nt_passwd = NULL;
+  smbpw.acct_ctrl = ACB_NORMAL;
+
+  /* Here, the flag is one, because we want to ignore the XXXXXXX'd out password */
+  ret = change_oem_password( &smbpw, password, 1);
+  if (ret == False)
+    DEBUG(3,("update_smbpasswd_entry: change_oem_password returned False\n"));
+ 
+  return ret;
+}
 
 /****************************************************************************
 update the enhanced security database. Only relevant for OSF1 at the moment.
@@ -889,6 +911,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   int level = lp_passwordlevel();
   struct passwd *pass;
   char challenge[8];
+  BOOL update_encrypted = lp_update_encrypted();
   struct smb_passwd *smb_pass;
   BOOL challenge_done = False;
 
@@ -1085,6 +1108,8 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   if (password_check(password))
     {
       update_protected_database(user,True);
+      if (pass && update_encrypted)
+        update_smbpassword_file(pass,password);
       return(True);
     }
 
@@ -1102,6 +1127,8 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   if (password_check(password))
     {
       update_protected_database(user,True);
+      if (pass && update_encrypted)
+        update_smbpassword_file(pass,password);
       return(True);
     }
 
@@ -1122,6 +1149,8 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
   if (string_combinations(password,password_check,level))
     {
       update_protected_database(user,True);
+      if (pass && update_encrypted)
+        update_smbpassword_file(pass,password);
       return(True);
     }
 

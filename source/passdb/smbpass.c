@@ -125,6 +125,8 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 	char           *pfile = lp_smb_passwd_file();
 
         pw_buf.acct_ctrl = ACB_NORMAL;
+        pw_buf.smb_passwd = NULL;
+        pw_buf.smb_nt_passwd = NULL;
 
 	if (!*pfile) {
 		DEBUG(0, ("No SMB password file set\n"));
@@ -560,8 +562,11 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
 /*
  * Routine to search the smbpasswd file for an entry matching the username.
  * and then modify its password entry
+ * override = 0, normal
+ * override = 1, don't care about XXXXXXXX'd out password or NO PASS
  */
-BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
+
+BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 {
 	/* Static buffers we will return. */
 	static pstring  user_name;
@@ -733,7 +738,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 	/* record exact password position */
 	pwd_seekpos += PTR_DIFF(p, linebuf);
 
-	if (*p == '*' || *p == 'X')
+	if (!override && (*p == '*' || *p == 'X'))
 	{
 		/* Password deliberately invalid - end here. */
 		DEBUG(10, ("get_smbpwd_entry: entry invalidated for user %s\n", user_name));
@@ -758,7 +763,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 		return False;
 	}
 
-	if (*p == '*' || *p == 'X')
+	if (!override && (*p == '*' || *p == 'X'))
 	{
 		fclose(fp);
 		pw_file_unlock(lockfd);

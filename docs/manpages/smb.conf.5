@@ -517,6 +517,8 @@ unix password sync
 
 unix realname
 
+update encrypted
+
 username level
 
 username map
@@ -3619,6 +3621,33 @@ mail clients and WWW browsers on systems used by more than one person.
 
 .B Example:
 	unix realname = yes
+
+.SS update encrypted (G)
+This boolean parameter allows a user logging on with a plaintext
+password to have their encrypted (hashed) password in the smbpasswd
+file to be updated automatically as they log on. This option allows
+a site to migrate from plaintext password authentication (users 
+authenticate with plaintext password over the wire, and are checked
+against a UNIX account database) to encrypted password authentication
+(the SMB challenge/response authentication mechanism) without forcing
+all users to re-enter their passwords via smbpasswd at the time the change
+is made. This is a convenience option to allow the change over to
+encrypted passwords to be made over a longer period. Once all users
+have encrypted representations of their passwords in the smbpasswd
+file this parameter should be set to "off".
+
+In order for this parameter to work correctly the "encrypt passwords"
+must be set to "no" when this parameter is set to "yes".
+
+Note that even when this parameter is set a user authenticating to
+smbd must still enter a valid password in order to connect correctly,
+and to update their hashed (smbpasswd) passwords.
+
+.B Default:
+	update encrypted = no
+
+.B Example:
+	update encrypted = yes
 
 .SS user (S)
 See
