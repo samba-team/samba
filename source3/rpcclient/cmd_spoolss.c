@@ -99,7 +99,7 @@ void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[
 	fstring srv_name;
 	fstring station;
 	char *printer_name;
-	PRINTER_HND hnd;
+	POLICY_HND hnd;
 
 	BOOL res = True;
 
@@ -157,7 +157,7 @@ BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
 				void ***ctr,
 				JOB_INFO_FN(fn))
 {
-	PRINTER_HND hnd;
+	POLICY_HND hnd;
 	uint32 buf_size = 0x0;
 	uint32 status = 0x0;
 
