@@ -15,6 +15,7 @@ fetch mail via POP
 .Op Fl f | Fl -fork
 .Op Fl l | -leave
 .Op Fl -from
+.Op Fl c | -count
 .Op Fl -header
 .Oo Fl p Ar port-spec  \*(Ba Xo
 .Fl -port= Ns Ar port-spec Oc
@@ -73,6 +74,11 @@ don't delete fetched mail
 .Fl -from
 .Xc
 behave like from.
+.It Xo
+.Fl c Ns ,
+.Fl -count
+.Xc
+first print how many messages and bytes there are.
 .It Xo
 .Fl -header
 .Xc
