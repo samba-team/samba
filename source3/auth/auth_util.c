@@ -85,23 +85,6 @@ void smb_user_control(const auth_usersupplied_info *user_info, auth_serversuppli
 			if(lp_adduser_script() && !(pwd = Get_Pwnam(user_info->internal_username.str))) {
 				smb_create_user(user_info->internal_username.str, NULL);
 			}
-		} else {			
-			if(lp_adduser_script()) {
-				SMB_STRUCT_STAT st;
-				const char *home_dir = pdb_get_homedir(server_info->sam_account);
-				/*
-				 * Also call smb_create_user if the users
-				 * home directory doesn't exist. Used with
-				 * winbindd to allow the script to create
-				 * the home directory for a user mapped
-				 * with winbindd.
-				 */
-
-				if (home_dir && 
-				    (sys_stat(home_dir, &st) == -1) && (errno == ENOENT)) {
-						smb_create_user(user_info->internal_username.str, home_dir);
-				}
-			}
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		/*

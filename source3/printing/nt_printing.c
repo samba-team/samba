@@ -935,9 +935,12 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 
 	ZERO_STRUCT(st);
 
+	*perr = WERR_INVALID_PARAM;
+
 	/* If architecture is Windows 95/98/ME, the version is always 0. */
 	if (strcmp(architecture, "WIN40") == 0) {
 		DEBUG(10,("get_correct_cversion: Driver is Win9x, cversion = 0\n"));
+		*perr = WERR_OK;
 		return 0;
 	}
 
@@ -1018,6 +1021,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	close_file(fsp, True);
 	close_cnum(conn, user->vuid);
 	unbecome_user();
+	*perr = WERR_OK;
 	return cversion;
 
   error_exit:
