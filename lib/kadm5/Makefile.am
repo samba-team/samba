@@ -8,17 +8,21 @@ sbin_PROGRAMS = dump_log replay_log
 libexec_PROGRAMS = ipropd-master ipropd-slave
 
 kadm5includedir = $(includedir)/kadm5
+buildkadm5include = $(buildinclude)/kadm5
 
 kadm5include_HEADERS = kadm5_err.h admin.h private.h
 
-include__DATA = kadm5_err.h
-
-
-incdir = $(includedir)/kadm5
-idir = $(top_builddir)/include/kadm5
-inc_DATA = kadm5_err.h
-
-
+install-build-headers::
+	@foo='$(kadm5include_HEADERS)'; \
+	for f in $$foo; do \
+		if test -f "$(srcdir)/$$f"; then file="$(srcdir)/$$f"; \
+		else file="$$f"; fi; \
+		if cmp -s  $$file $(buildkadm5include)/$$f 2> /dev/null ; then \
+		: ; else \
+			echo "$(INSTALL_DATA) $$file $(buildkadm5include)/$$f";\
+			$(INSTALL_DATA) $$file $(buildkadm5include)/$$f; \
+		fi ; \
+	done
 
 COMMON_SOURCES =	\
 	acl.c		\
@@ -83,26 +87,6 @@ LDADD = \
 
 CLEANFILES = kadm5_err.c kadm5_err.h
 
-SUFFIXES = .et .h
-
-all-local: $(inc_DATA)
-	@for i in $(inc_DATA); do \
-		if cmp -s  $$i $(idir)/$$i 2> /dev/null ; then :; else\
-			echo " $(INSTALL_DATA) $$i $(idir)/$$i"; \
-			$(INSTALL_DATA) $$i $(idir)/$$i; \
-		fi ; \
-	done
-
-.et.h:
-	$(COMPILE_ET) $<
-
-.et.c:
-	$(COMPILE_ET) $<
-
 $(libkadm5srv_la_OBJECTS): kadm5_err.h
 
 client_glue.lo server_glue.lo: $(srcdir)/common_glue.c
-
-kadm5_err.h: kadm5_err.et
-
-kadm5_err.c: kadm5_err.et
