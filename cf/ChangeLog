@@ -1,3 +1,11 @@
+Sat Mar 27 18:03:58 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* osfc2.m4: --enable-osfc2
+
+Fri Mar 19 15:34:52 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* shared-libs.m4: move shared lib stuff here
+
 Wed Mar 24 23:24:51 1999  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am.common (install-build-headers): simplify loop

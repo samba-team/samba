@@ -1,5 +1,9 @@
 Sat Mar 27 17:48:31 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
+	* configure.in: check for OSF C2; bind/bitypes.h, getudbnam,
+ 	setlim; check for auth modules; siad.h, getpwnam_r;
+ 	lib/auth/Makefile, lib/auth/sia/Makefile
+
 	* lib/krb5/crypto.c: n_fold -> _krb5_n_fold
 
 	* lib/krb5/n-fold.c: n_fold -> _krb5_n_fold
