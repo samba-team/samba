@@ -261,7 +261,8 @@ static void add_command_set(struct cmd_set *cmd_set)
 
 static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *cmd)
 {
-	char *p = cmd, **argv = NULL;
+	const char *p = cmd;
+	char **argv = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	pstring buf;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -338,7 +339,7 @@ static NTSTATUS process_cmd(struct vfs_state *vfs, char *cmd)
 	struct cmd_list *temp_list;
 	BOOL found = False;
 	pstring buf;
-	char *p = cmd;
+	const char *p = cmd;
 	NTSTATUS result = NT_STATUS_OK;
 	int len = 0;
 
