@@ -282,7 +282,7 @@ static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
 
 /* Sam synchronisation */
 
-NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx, DOM_CRED *ret_creds,
                                uint32 database_id, uint32 *num_deltas,
                                SAM_DELTA_HDR **hdr_deltas, 
                                SAM_DELTA_CTR **deltas)
@@ -306,7 +306,7 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         gen_next_creds(cli, &clnt_creds);
 
 	init_net_q_sam_sync(&q, cli->srv_name_slash, cli->clnt_name_slash + 2,
-                            &clnt_creds, database_id);
+                            &clnt_creds, ret_creds, database_id);
 
 	/* Marshall data and send request */
 
@@ -329,6 +329,8 @@ NTSTATUS cli_netlogon_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         *num_deltas = r.num_deltas2;
         *hdr_deltas = r.hdr_deltas;
         *deltas = r.deltas;
+
+	memcpy(ret_creds, &r.srv_creds, sizeof(*ret_creds));
 
  done:
 	prs_mem_free(&qbuf);

@@ -1592,18 +1592,21 @@ BOOL net_io_r_sam_logoff(char *desc, NET_R_SAM_LOGOFF *r_l, prs_struct *ps, int 
 makes a NET_Q_SAM_SYNC structure.
 ********************************************************************/
 BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
-                         const char *cli_name, DOM_CRED * cli_creds, 
-                         uint32 database_id)
+                         const char *cli_name, DOM_CRED *cli_creds, 
+                         DOM_CRED *ret_creds, uint32 database_id)
 {
 	DEBUG(5, ("init_q_sam_sync\n"));
 
 	init_unistr2(&q_s->uni_srv_name, srv_name, strlen(srv_name) + 1);
 	init_unistr2(&q_s->uni_cli_name, cli_name, strlen(cli_name) + 1);
 
-        if (cli_creds) {
+        if (cli_creds)
                 memcpy(&q_s->cli_creds, cli_creds, sizeof(q_s->cli_creds));
-                memset(&q_s->ret_creds, 0, sizeof(q_s->ret_creds));
-        }
+
+	if (cli_creds)
+                memcpy(&q_s->ret_creds, ret_creds, sizeof(q_s->ret_creds));
+	else
+		memset(&q_s->ret_creds, 0, sizeof(q_s->ret_creds));
 
 	q_s->database_id = database_id;
 	q_s->restart_state = 0;

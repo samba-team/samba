@@ -264,6 +264,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
         uint32 num_deltas_0, num_deltas_1, num_deltas_2;
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DOM_CRED ret_creds;
         /* Initialise */
 
 	if (!(mem_ctx = talloc_init())) {
@@ -283,9 +284,12 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
                 goto done;
         }
 
+	/* on first call the returnAuthenticator is empty */
+	memset(&ret_creds, 0, sizeof(ret_creds));
+
         /* Do sam synchronisation on the SAM database*/
 
-	result = cli_netlogon_sam_sync(cli, mem_ctx, 0, &num_deltas_0, &hdr_deltas_0, &deltas_0);
+	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 0, &num_deltas_0, &hdr_deltas_0, &deltas_0);
         
         if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -300,11 +304,10 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 	 * we must chain the credentials
 	 */
 
-
-#if 0
+#if 1
         /* Do sam synchronisation on the LSA database */
 
-	result = cli_netlogon_sam_sync(cli, mem_ctx, 2, &num_deltas_2, &hdr_deltas_2, &deltas_2);
+	result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, 2, &num_deltas_2, &hdr_deltas_2, &deltas_2);
         
         if (!NT_STATUS_IS_OK(result))
 		goto done;
