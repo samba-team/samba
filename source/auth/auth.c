@@ -89,7 +89,7 @@ static const uint8_t *get_ntlm_challenge(struct auth_context *auth_context)
 	
 	DEBUG(5, ("auth_context challenge created by %s\n", challenge_set_by));
 	DEBUG(5, ("challenge is: \n"));
-	dump_data(5, (const char *)auth_context->challenge.data, auth_context->challenge.length);
+	dump_data(5, auth_context->challenge.data, auth_context->challenge.length);
 	
 	SMB_ASSERT(auth_context->challenge.length == 8);
 
@@ -188,7 +188,7 @@ static NTSTATUS check_ntlm_password(struct auth_context *auth_context,
 					auth_context->challenge_set_by));
 
 	DEBUG(10, ("challenge is: \n"));
-	dump_data(5, (const char *)auth_context->challenge.data, auth_context->challenge.length);
+	dump_data(5, auth_context->challenge.data, auth_context->challenge.length);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("user_info has passwords of length %d and %d\n", 
