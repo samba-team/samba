@@ -2282,7 +2282,7 @@ int read_smb_length(int fd,char *inbuf,int timeout)
 
   for(;;)
   {
-    len = read_smb_length(fd, inbuf, timeout);
+    len = read_smb_length_return_keepalive(fd, inbuf, timeout);
 
     if(len < 0)
       return len;
