@@ -139,9 +139,8 @@ static uint32 do_reseed(unsigned char *md4_outbuf)
 
   if(!got_random) {
     /*
-     * /dev/urandom failed - try /tmp and /dev for timestamps.
+     * /dev/urandom failed - try /dev for timestamps.
      */
-    do_dirrand("/tmp", md4_inbuf, sizeof(md4_inbuf));
     do_dirrand("/dev", md4_inbuf, sizeof(md4_inbuf));
   }
 
