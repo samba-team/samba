@@ -8,7 +8,6 @@
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <protos.h>
 RCSID("$Id$");
 #endif
 
@@ -29,8 +28,15 @@ RCSID("$Id$");
 #include <pwd.h>
 #endif
 
+#ifdef KRB5
+#include <krb5.h>
+#endif
+#ifdef KRB4
 #include <krb.h>
+#endif
+#if defined(KRB4) || defined(KRB5)
 #include <kafs.h>
+#endif
 
 #include <roken.h>
 #include <err.h>
@@ -223,8 +229,7 @@ init_words (int argc, char **argv)
 		    errx (1, "cannot allocate memory for message");
 	    }
 	} else {
-	    appres.text = malloc(128);
-	    appres.text[0] = 0;
+	    appres.text = strdup("");
 	    if (appres.text == NULL)
 		errx (1, "cannot allocate memory for message");
 	    while (argv[i]) {
@@ -233,7 +238,6 @@ init_words (int argc, char **argv)
 				    strlen(appres.text) + n + 2);
 		if (tmp == NULL)
 		    errx (1, "cannot allocate memory for message");
-		appres.text = tmp;
 		strcat (appres.text, argv[i]);
 		strcat (appres.text, " ");
 		++i;
@@ -542,6 +546,41 @@ countdown(XtPointer _t, XtIntervalId *_d)
 }
 
 static int
+verify_krb5(const char *name, const char *inst, const char *realm, 
+	    const char *password)
+{
+    krb5_context context;
+    krb5_principal client;
+    krb5_error_code ret;
+    krb5_ccache id;
+    
+    krb5_init_context(&context);
+    if(inst && inst[0] == 0)
+	inst = NULL;
+    krb5_make_principal(context, &client, realm, name, inst, NULL);
+    krb5_cc_default(context, &id);
+    ret = krb5_verify_user(context,
+			   client, 
+			   id,
+			   password, 
+			   0,
+			   NULL);
+    krb5_free_principal(context, client);
+    if (ret == 0){
+	if (k_hasafs())
+	    krb5_afslog(context, id, NULL, NULL);
+	krb5_free_context(context);
+	return 0;
+    }
+    if (ret != INTK_BADPW)
+	krb5_warn(context, ret, "verify_krb5");
+    
+    krb5_free_context(context);
+    return -1;
+}
+
+
+static int
 verify(char *password)
 {
     int ret;
@@ -582,12 +621,18 @@ verify(char *password)
 	return 0;
 
     /*
-     * Try to verify as user with kerberos.
+     * Try to verify as user with kerberos 5.
+     */
+    if(verify_krb5(name, inst, realm, password) == 0)
+	return 0;
+
+    /*
+     * Try to verify as user with kerberos 4.
      */
     ret = krb_verify_user(name, inst, realm, password, 0, NULL);
     if (ret == KSUCCESS){
 	if (k_hasafs())
-	    k_afsklog(0, 0);
+	    krb_afslog(NULL, NULL);
 	return 0;
     }
     if (ret != INTK_BADPW)
