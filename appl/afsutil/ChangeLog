@@ -1,3 +1,10 @@
+2002-11-26  Johan Danielsson  <joda@pdc.kth.se>
+
+	* afslog.c: create a list of cells to get tokens for, before
+	actually doing anything, and try to get tokens via krb4 if krb5
+	fails, and give it a chance to work with krb4-only; also some bug
+	fixes, partially from Tomas Olsson.
+
 2002-08-23  Assar Westerlund  <assar@kth.se>
 
 	* pagsh.c: make it handle --version/--help
