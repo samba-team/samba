@@ -300,12 +300,12 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 			}
 			if (lp_map_system(s) && !(lp_create_mask(s) & S_IXGRP)) {
 				printf("Invalid combination of parameters for service %s. \
-					   Map hidden can only work if create mask includes octal 010 (S_IXGRP).\n",
+					   Map system can only work if create mask includes octal 010 (S_IXGRP).\n",
 					   lp_servicename(s) );
 			}
 			if (lp_map_system(s) && (lp_force_create_mode(s) & S_IXGRP)) {
 				printf("Invalid combination of parameters for service %s. \
-					   Map hidden can only work if force create mode excludes octal 010 (S_IXGRP).\n",
+					   Map system can only work if force create mode excludes octal 010 (S_IXGRP).\n",
 					   lp_servicename(s) );
 			}
 		}
