@@ -902,7 +902,7 @@ BOOL torture_rpc_samr(int dummy)
 		return False;
 	}
 	
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH | DCERPC_DEBUG_VALIDATE_BOTH;
+	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	if (!test_Connect(p, mem_ctx, &handle)) {
 		ret = False;

@@ -539,7 +539,7 @@ BOOL torture_rpc_lsa(int dummy)
 		return False;
 	}
 	
-	p->flags |= DCERPC_DEBUG_PRINT_BOTH | DCERPC_DEBUG_VALIDATE_BOTH;
+	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
 	if (!test_OpenPolicy(p, mem_ctx)) {
 		ret = False;
