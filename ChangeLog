@@ -1,3 +1,32 @@
+Wed Mar 17 03:04:38 1999  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/store.c (krb5_store_stringz): braces fix
+
+	* lib/kadm5/get_s.c (kadm5_s_get_principal): braces fix
+
+	* lib/kadm5/ent_setup.c (_kadm5_setup_entry): braces fix
+
+	* kdc/connect.c (loop): braces fix
+
+	* lib/krb5/config_file.c: cast to unsigned char to make is* happy
+
+	* lib/krb5/log.c (krb5_addlog_dest): more braces to make gcc happy
+
+	* lib/krb5/crypto.c (krb5_verify_checksum): rename C -> cksum to
+ 	be consistent
+
+	* kadmin/util.c (timeval2str): more braces to make gcc happy
+
+	* kadmin/load.c: cast in is* to get rid of stupid warning
+
+	* kadmin/dump.c (append_hex): cast in isalnum to get rid of stupid
+ 	warning
+
+	* kdc/kaserver.c: malloc checks and fixes
+
+	* lib/krb5/get_host_realm.c (krb5_get_host_realm): include leading
+ 	dot (if any) when looking up realms.
+
 Mon Mar  8 11:49:43 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Release 0.1c
