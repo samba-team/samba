@@ -152,7 +152,8 @@ static BOOL get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
  Return a linked list of the total EA's. Plus the total size
 ****************************************************************************/
 
-static struct ea_list *get_ea_list(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp, const char *fname, size_t *pea_total_len)
+static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
+					const char *fname, size_t *pea_total_len)
 {
 	/* Get a list of all xattrs. Max namesize is 64k. */
 	size_t ea_namelist_size = 1024;
@@ -186,7 +187,7 @@ static struct ea_list *get_ea_list(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	if (sizeret == -1)
 		return NULL;
 
-	DEBUG(10,("get_ea_list: ea_namelist size = %d\n", sizeret ));
+	DEBUG(10,("get_ea_list_from_file: ea_namelist size = %d\n", sizeret ));
 
 	if (sizeret) {
 		for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p) + 1) {
@@ -207,7 +208,7 @@ static struct ea_list *get_ea_list(TALLOC_CTX *mem_ctx, connection_struct *conn,
 				fstring dos_ea_name;
 				push_ascii_fstring(dos_ea_name, listp->ea.name);
 				*pea_total_len += 4 + strlen(dos_ea_name) + 1 + listp->ea.value.length;
-				DEBUG(10,("get_ea_list: total_len = %u, %s, val len = %u\n",
+				DEBUG(10,("get_ea_list_from_file: total_len = %u, %s, val len = %u\n",
 					*pea_total_len, dos_ea_name,
 					(unsigned int)listp->ea.value.length ));
 			}
@@ -219,7 +220,7 @@ static struct ea_list *get_ea_list(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		}
 	}
 
-	DEBUG(10,("get_ea_list: total_len = %u\n", *pea_total_len));
+	DEBUG(10,("get_ea_list_from_file: total_len = %u\n", *pea_total_len));
 	return ea_list_head;
 }
 
@@ -282,7 +283,7 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 		return 0;
 	}
 	mem_ctx = talloc_init("estimate_ea_size");
-	(void)get_ea_list(mem_ctx, conn, fsp, fname, &total_ea_len);
+	(void)get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
 	talloc_destroy(mem_ctx);
 	return total_ea_len;
 }
@@ -295,7 +296,7 @@ static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, con
 {
 	size_t total_ea_len;
 	TALLOC_CTX *mem_ctx = talloc_init("canonicalize_ea_name");
-	struct ea_list *ea_list = get_ea_list(mem_ctx, conn, fsp, fname, &total_ea_len);
+	struct ea_list *ea_list = get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
 
 	for (; ea_list; ea_list = ea_list->next) {
 		if (strequal(&unix_ea_name[5], ea_list->ea.name)) {
@@ -437,6 +438,57 @@ static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t d
 	}
 
 	return ea_list_head;
+}
+
+/****************************************************************************
+ Count the total EA size needed.
+****************************************************************************/
+
+static size_t ea_list_size(struct ea_list *ealist)
+{
+	fstring dos_ea_name;
+	struct ea_list *listp;
+	size_t ret = 0;
+
+	for (listp = ealist; listp; listp = listp->next) {
+		push_ascii_fstring(dos_ea_name, listp->ea.name);
+		ret += 4 + strlen(dos_ea_name) + 1 + listp->ea.value.length;
+	}
+	/* Add on 4 for total length. */
+	if (ret) {
+		ret += 4;
+	}
+
+	return ret;
+}
+
+/****************************************************************************
+ Return a union of EA's from a file list and a list of names.
+****************************************************************************/
+
+static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *file_list, size_t *total_ea_len)
+{
+	struct ea_list *nlistp, *flistp;
+
+	for (flistp = file_list; flistp;) {
+		struct ea_list *rem_entry = flistp;
+
+		for (nlistp = name_list; nlistp; nlistp = nlistp->next) {
+			if (strequal(nlistp->ea.name, flistp->ea.name)) {
+				break;
+			}
+		}
+
+		flistp = flistp->next;
+
+		if (nlistp == NULL) {
+			/* Remove this entry from file ea list. */
+			DLIST_REMOVE(file_list, rem_entry);
+		}
+	}
+
+	*total_ea_len = ea_list_size(file_list);
+	return file_list;
 }
 
 /****************************************************************************
@@ -2608,14 +2660,29 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			
 		case SMB_INFO_QUERY_EAS_FROM_LIST:
 		{
+			size_t total_ea_len = 0;
+			struct ea_list *ea_file_list = NULL;
+
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_INFO_QUERY_EAS_FROM_LIST\n"));
-			data_size = 24;
 			put_dos_date2(pdata,0,c_time);
 			put_dos_date2(pdata,4,sbuf.st_atime);
 			put_dos_date2(pdata,8,sbuf.st_mtime);
 			SIVAL(pdata,12,(uint32)file_size);
 			SIVAL(pdata,16,(uint32)allocation_size);
 			SIVAL(pdata,20,mode);
+
+			ea_file_list = get_ea_list_from_file(ea_ctx, conn, fsp, fname, &total_ea_len);
+
+			ea_list = ea_list_union(ea_list, ea_file_list, &total_ea_len);
+
+			if (!ea_list || (total_ea_len > data_size - 24)) {
+				talloc_destroy(ea_ctx);
+				data_size = 4;
+				break;
+			}
+
+			data_size = fill_ea_buffer(ea_ctx, pdata + 24, data_size - 24, conn, ea_list);
+			data_size += 24;
 			talloc_destroy(ea_ctx);
 			break;
 		}
@@ -2632,7 +2699,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				return ERROR_NT(NT_STATUS_NO_MEMORY);
 			}
 
-			ea_list = get_ea_list(ea_ctx, conn, fsp, fname, &total_ea_len);
+			ea_list = get_ea_list_from_file(ea_ctx, conn, fsp, fname, &total_ea_len);
 			if (!ea_list || (total_ea_len > data_size)) {
 				talloc_destroy(ea_ctx);
 				data_size = 4;
