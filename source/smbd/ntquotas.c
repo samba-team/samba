@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-#ifdef WITH_QUOTAS
-
 static SMB_BIG_UINT limit_nt2unix(SMB_BIG_UINT in, SMB_BIG_UINT bsize)
 {
 	SMB_BIG_UINT ret = (SMB_BIG_UINT)0;
@@ -123,7 +121,11 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, DOM_SID *psid,
 
 	id.uid = -1;
 
+#if defined(QUOTABLOCK_SIZE)
 	D.bsize     = (SMB_BIG_UINT)QUOTABLOCK_SIZE;
+#else
+	D.bsize     = (SMB_BIG_UINT)1024;
+#endif
 	D.softlimit = limit_nt2unix(qt->softlim,D.bsize);
 	D.hardlimit = limit_nt2unix(qt->hardlim,D.bsize);
 	D.qflags     = qt->qflags;
@@ -260,4 +262,3 @@ void destroy_quota_handle(void **pqt_handle)
 	return;
 }
 
-#endif /* WITH_QUOTAS */
