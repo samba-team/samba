@@ -1,3 +1,8 @@
+NOTE: The NT Registry changes contained within this file may be injurious to
+the health of your system. Please make ABSOLUTELY sure that you backup the
+original values for each parameter BEFORE you make any changes.
+
+===================================== CUT HERE ================================
 REGEDIT4
 
 ;Contributor:   John H Terpstra <jht@samba.org>
