@@ -52,7 +52,7 @@ static void add_workgroup(struct subnet_record *subrec, struct work_record *work
   Create an empty workgroup.
   **************************************************************************/
 
-static struct work_record *create_workgroup(char *name, int ttl)
+static struct work_record *create_workgroup(const char *name, int ttl)
 {
   struct work_record *work;
   struct subnet_record *subrec;
@@ -180,7 +180,7 @@ struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec,
   **************************************************************************/
 
 struct work_record *create_workgroup_on_subnet(struct subnet_record *subrec,
-                                               fstring name, int ttl)
+                                               const char *name, int ttl)
 {
   struct work_record *work = NULL;
 
