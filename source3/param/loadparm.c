@@ -221,8 +221,8 @@ typedef struct
 #endif				/* WITH_LDAP */
 #ifdef WITH_SSL
 	int sslVersion;
-	char *sslHostsRequire;
-	char *sslHostsResign;
+	char **sslHostsRequire;
+	char **sslHostsResign;
 	char *sslCaCertDir;
 	char *sslCaCertFile;
 	char *sslCert;
@@ -317,8 +317,8 @@ typedef struct
 	char *szPrinterDriverLocation;
 	char *szDriverFile;
 	char *szDontdescend;
-	char *szHostsallow;
-	char *szHostsdeny;
+	char **szHostsallow;
+	char **szHostsdeny;
 	char *szMagicScript;
 	char *szMagicOutput;
 	char *szMangledMap;
@@ -738,17 +738,17 @@ static struct parm_struct parm_table[] = {
 	{"public", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, 0},
 	
 	{"only user", P_BOOL, P_LOCAL, &sDefault.bOnlyUser, NULL, NULL, FLAG_SHARE},
-	{"hosts allow", P_STRING, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
-	{"allow hosts", P_STRING, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, 0},
-	{"hosts deny", P_STRING, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
-	{"deny hosts", P_STRING, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, 0},
+	{"hosts allow", P_LIST, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
+	{"allow hosts", P_LIST, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, 0},
+	{"hosts deny", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_SHARE | FLAG_PRINT},
+	{"deny hosts", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, 0},
 
 #ifdef WITH_SSL
 	{"Secure Socket Layer Options", P_SEP, P_SEPARATOR},
 	{"ssl", P_BOOL, P_GLOBAL, &Globals.sslEnabled, NULL, NULL, 0},
 	
-	{"ssl hosts", P_STRING, P_GLOBAL, &Globals.sslHostsRequire, NULL, NULL, 0},
-	{"ssl hosts resign", P_STRING, P_GLOBAL, &Globals.sslHostsResign, NULL, NULL, 0},
+	{"ssl hosts", P_LIST, P_GLOBAL, &Globals.sslHostsRequire, NULL, NULL, 0},
+	{"ssl hosts resign", P_LIST, P_GLOBAL, &Globals.sslHostsResign, NULL, NULL, 0},
 	{"ssl CA certDir", P_STRING, P_GLOBAL, &Globals.sslCaCertDir, NULL, NULL, 0},
 	{"ssl CA certFile", P_STRING, P_GLOBAL, &Globals.sslCaCertFile, NULL, NULL, 0},
 	{"ssl server cert", P_STRING, P_GLOBAL, &Globals.sslCert, NULL, NULL, 0},
@@ -1301,8 +1301,8 @@ static void init_globals(void)
 
 #ifdef WITH_SSL
 	Globals.sslVersion = SMB_SSL_V23;
-	string_set(&Globals.sslHostsRequire, "");
-	string_set(&Globals.sslHostsResign, "");
+	/* Globals.sslHostsRequire = NULL;
+	Globals.sslHostsResign = NULL; */
 	string_set(&Globals.sslCaCertDir, "");
 	string_set(&Globals.sslCaCertFile, "");
 	string_set(&Globals.sslCert, "");
@@ -1411,6 +1411,8 @@ static char *lp_string(const char *s)
 
 #define FN_GLOBAL_STRING(fn_name,ptr) \
  char *fn_name(void) {return(lp_string(*(char **)(ptr) ? *(char **)(ptr) : ""));}
+#define FN_GLOBAL_LIST(fn_name,ptr) \
+ char **fn_name(void) {return(*(char ***)(ptr));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
  BOOL fn_name(void) {return(*(BOOL *)(ptr));}
 #define FN_GLOBAL_CHAR(fn_name,ptr) \
@@ -1420,6 +1422,8 @@ static char *lp_string(const char *s)
 
 #define FN_LOCAL_STRING(fn_name,val) \
  char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
+#define FN_LOCAL_LIST(fn_name,val) \
+ char **fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
  BOOL fn_name(int i) {return(LP_SNUM_OK(i)? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_CHAR(fn_name,val) \
@@ -1506,8 +1510,8 @@ FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
 
 #ifdef WITH_SSL
 FN_GLOBAL_INTEGER(lp_ssl_version, &Globals.sslVersion)
-FN_GLOBAL_STRING(lp_ssl_hosts, &Globals.sslHostsRequire)
-FN_GLOBAL_STRING(lp_ssl_hosts_resign, &Globals.sslHostsResign)
+FN_GLOBAL_LIST(lp_ssl_hosts, &Globals.sslHostsRequire)
+FN_GLOBAL_LIST(lp_ssl_hosts_resign, &Globals.sslHostsResign)
 FN_GLOBAL_STRING(lp_ssl_cacertdir, &Globals.sslCaCertDir)
 FN_GLOBAL_STRING(lp_ssl_cacertfile, &Globals.sslCaCertFile)
 FN_GLOBAL_STRING(lp_ssl_cert, &Globals.sslCert)
@@ -1618,8 +1622,8 @@ FN_LOCAL_STRING(lp_queueresumecommand, szQueueresumecommand)
 static FN_LOCAL_STRING(_lp_printername, szPrintername)
 FN_LOCAL_STRING(lp_driverfile, szDriverFile)
 FN_LOCAL_STRING(lp_printerdriver, szPrinterDriver)
-FN_LOCAL_STRING(lp_hostsallow, szHostsallow)
-FN_LOCAL_STRING(lp_hostsdeny, szHostsdeny)
+FN_LOCAL_LIST(lp_hostsallow, szHostsallow)
+FN_LOCAL_LIST(lp_hostsdeny, szHostsdeny)
 FN_LOCAL_STRING(lp_magicscript, szMagicScript)
 FN_LOCAL_STRING(lp_magicoutput, szMagicOutput)
 FN_LOCAL_STRING(lp_comment, comment)
@@ -1743,12 +1747,20 @@ static void free_service(service * pservice)
 	}
 
 	for (i = 0; parm_table[i].label; i++)
+	{
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
 		    parm_table[i].class == P_LOCAL)
 			string_free((char **)
 				    (((char *)pservice) +
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
+		else if (parm_table[i].type == P_LIST &&
+			 parm_table[i].class == P_LOCAL)
+			     lp_list_free(*(char ***)
+			     		    (((char *)pservice) +
+					     PTR_DIFF(parm_table[i].ptr, &sDefault)));
+	}
+				
 
 	ZERO_STRUCTP(pservice);
 }
@@ -2034,6 +2046,9 @@ static void copy_service(service * pserviceDest,
 					string_set(dest_ptr,
 						   *(char **)src_ptr);
 					strupper(*(char **)dest_ptr);
+					break;
+				case P_LIST:
+					lp_list_copy((char ***)dest_ptr, *(char ***)src_ptr);
 					break;
 				default:
 					break;
@@ -2630,6 +2645,10 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 			sscanf(pszParmValue, "%o", (int *)parm_ptr);
 			break;
 
+		case P_LIST:
+			*(char ***)parm_ptr = lp_list_make(pszParmValue);
+			break;
+
 		case P_STRING:
 			string_set(parm_ptr, pszParmValue);
 			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
@@ -2733,6 +2752,21 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(
 			fprintf(f, "%s", octal_string(*(int *)ptr));
 			break;
 
+		case P_LIST:
+			if ((char ***)ptr && *(char ***)ptr) {
+				char **list = *(char ***)ptr;
+				
+				if (p->flags & FLAG_DOS_STRING)
+					for (; *list; list++)
+						fprintf(f, "%s%s", dos_to_ext(*list, False),
+								   ((*(list+1))?", ":""));
+				else
+					for (; *list; list++)
+						fprintf(f, "%s%s", *list,
+								   ((*(list+1))?", ":""));
+			}
+			break;
+
 		case P_GSTRING:
 		case P_UGSTRING:
 			if ((char *)ptr) {
@@ -2776,6 +2810,9 @@ static BOOL equal_parameter(parm_type type, void *ptr1, void *ptr2)
 
 		case P_CHAR:
 			return (*((char *)ptr1) == *((char *)ptr2));
+		
+		case P_LIST:
+			return lp_list_compare(*(char ***)ptr1, *(char ***)ptr2);
 
 		case P_GSTRING:
 		case P_UGSTRING:
@@ -2875,6 +2912,9 @@ static BOOL is_default(int i)
 		return False;
 	switch (parm_table[i].type)
 	{
+		case P_LIST:
+			return lp_list_compare (parm_table[i].def.lvalue, 
+						*(char ***)parm_table[i].ptr);
 		case P_STRING:
 		case P_USTRING:
 			return strequal(parm_table[i].def.svalue,
@@ -3178,6 +3218,10 @@ static void lp_save_defaults(void)
 			continue;
 		switch (parm_table[i].type)
 		{
+			case P_LIST:
+				lp_list_copy(&(parm_table[i].def.lvalue),
+					    *(char ***)parm_table[i].ptr);
+				break;
 			case P_STRING:
 			case P_USTRING:
 				parm_table[i].def.svalue =
@@ -3622,3 +3666,125 @@ char *lp_printername(int snum)
 
 	return ret;
 }
+
+
+/***********************************************************
+ List Parameters manipulation functions
+***********************************************************/
+
+#define P_LIST_ABS 16 /* P_LIST Allocation Block Size */
+
+char **lp_list_make(char *string)
+{
+	char **list, **rlist;
+	char *str;
+	char *tok;
+	int num, lsize;
+	
+	if (!string || !*string) return NULL;
+	str = strdup(string);
+	if (!str || !*str) return NULL;
+	
+	list = (char**)malloc(((sizeof(char**)) * P_LIST_ABS));
+	if (!list) {
+		free (str);
+		return NULL;
+	}
+	memset (list, 0, ((sizeof(char**)) * P_LIST_ABS));
+	lsize = P_LIST_ABS;
+	
+	num = 0;
+	
+	for (tok = strtok(str, LIST_SEP); tok; tok = strtok(NULL, LIST_SEP))
+	{
+		if (!*tok) continue;
+		
+		if ((num +1) == lsize) {
+			lsize += P_LIST_ABS;
+			rlist = (char **)realloc(list, ((sizeof(char **)) * lsize));
+			if (!rlist) {
+				lp_list_free (list);
+				free (str);
+				return NULL;
+			}
+			else list = rlist;
+			memset (&list[num], 0, ((sizeof(char**)) * P_LIST_ABS));
+		}
+		
+		list[num] = strdup(tok);
+		if (!list[num]) {
+			lp_list_free (list);
+			free (str);
+			return NULL;
+		}
+	
+		num++;	
+	}
+	
+	free (str);
+	return list;
+}
+
+BOOL lp_list_copy(char ***dest, char **src)
+{
+	char **list, **rlist;
+	char *tok;
+	int num, lsize;
+	
+	*dest = NULL;
+	if (!src) return False;
+	
+	list = (char**)malloc(((sizeof(char**)) * P_LIST_ABS));
+	if (!list) return False;
+	memset (list, 0, ((sizeof(char**)) * P_LIST_ABS));
+	lsize = P_LIST_ABS;
+		
+	for (num = 0; src[num]; num++)
+	{
+		if ((num +1) == lsize) {
+			lsize += P_LIST_ABS;
+			rlist = (char **)realloc(list, ((sizeof(char **)) * lsize));
+			if (!rlist) {
+				lp_list_free (list);
+				return False;
+			}
+			else list = rlist;
+			memset (&list[num], 0, ((sizeof(char**)) * P_LIST_ABS));
+		}
+		
+		list[num] = strdup(src[num]);
+		if (!list[num]) {
+			lp_list_free (list);
+			return False;
+		}
+	}
+	
+	*dest = list;
+	return True;	
+}
+
+/* return true if all the elemnts of the list matches exactly */
+BOOL lp_list_compare(char **list1, char **list2)
+{
+	int num;
+	
+	if (!list1 || !list2) return (list1 == list2); 
+	
+	for (num = 0; list1[num]; num++) {
+		if (!list2[num]) return False;
+		if (!strcsequal(list1[num], list2[num])) return False;
+	}
+	if (list2[num]) return False; /* if list2 has more elements than list1 fail */
+	
+	return True;
+}
+
+void lp_list_free(char **list)
+{
+	char **tlist = list;
+	
+	if (!list) return;
+	for(; *tlist; tlist++) free(*tlist);
+	free (list);
+}
+

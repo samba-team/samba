@@ -735,7 +735,7 @@ struct locking_data {
 /* the following are used by loadparm for option lists */
 typedef enum
 {
-  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,
+  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,P_LIST,
   P_STRING,P_USTRING,P_GSTRING,P_UGSTRING,P_ENUM,P_SEP
 } parm_type;
 
@@ -774,6 +774,7 @@ struct parm_struct
 		int ivalue;
 		char *svalue;
 		char cvalue;
+		char **lvalue;
 	} def;
 };
 

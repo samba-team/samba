@@ -148,20 +148,11 @@ token '%s' in an allow/deny hosts line.\n", invalid_char, tok ));
 }
 
 /* list_match - match an item against a list of tokens with exceptions */
-/* (All modifications are marked with the initials "jkf") */
-static int list_match(char *list,char *item, int (*match_fn)(char *, char *))
+static int list_match(char **list,char *item, int (*match_fn)(char *, char *))
 {
-    char   *tok;
-    char   *listcopy;		/* jkf */
     int     match = False;
 
-    /*
-     * jkf@soton.ac.uk -- 31 August 1994 -- Stop list_match()
-     * overwriting the list given as its first parameter.
-     */
-
-    /* jkf -- can get called recursively with NULL list */
-    listcopy = (list == 0) ? (char *)0 : strdup(list);
+    if (!list) return False;
 
     /*
      * Process tokens one at a time. We have exhausted all possible matches
@@ -170,30 +161,30 @@ static int list_match(char *list,char *item, int (*match_fn)(char *, char *))
      * the match is affected by any exceptions.
      */
 
-    for (tok = strtok(listcopy, sep); tok ; tok = strtok(NULL, sep)) {
-	if (strcasecmp(tok, "EXCEPT") == 0)	/* EXCEPT: give up */
+    for (; *list ; list++) {
+	if (strcasecmp(*list, "EXCEPT") == 0)	/* EXCEPT: give up */
 	    break;
-	if ((match = (*match_fn) (tok, item)))	/* True or FAIL */
+	if ((match = (*match_fn) (*list, item)))	/* True or FAIL */
 	    break;
     }
     /* Process exceptions to True or FAIL matches. */
 
     if (match != False) {
-	while ((tok = strtok((char *) 0, sep)) && strcasecmp(tok, "EXCEPT"))
-	     /* VOID */ ;
-	if (tok == 0 || list_match((char *) 0, item, match_fn) == False) {
-	    if (listcopy != 0) free(listcopy); /* jkf */
-	    return (match);
+	while (*list  && strcasecmp(*list, "EXCEPT"))
+		list++;
+
+	for (; *list; list++) {
+		if ((*match_fn) (*list, item)) /* Exception Found */
+			return False;
 	}
     }
 
-    if (listcopy != 0) free(listcopy); /* jkf */
-    return (False);
+    return (match);
 }
 
 
 /* return true if access should be allowed */
-BOOL allow_access(char *deny_list,char *allow_list,
+BOOL allow_access(char **deny_list,char **allow_list,
 		  char *cname,char *caddr)
 {
 	char *client[2];
@@ -241,24 +232,22 @@ BOOL allow_access(char *deny_list,char *allow_list,
 
 /* return true if the char* contains ip addrs only.  Used to avoid 
 gethostbyaddr() calls */
-static BOOL only_ipaddrs_in_list(const char* list)
+static BOOL only_ipaddrs_in_list(char** list)
 {
 	BOOL 		only_ip = True;
-	char		*listcopy,
-			*tok;
+	
+	if (!list) return True;
 			
-	listcopy = strdup(list);
-
-	for (tok = strtok(listcopy, sep); tok ; tok = strtok(NULL, sep)) 
+	for (; *list ; list++) 
 	{
 		/* factor out the special strings */
-		if (!strcasecmp(tok, "ALL") || !strcasecmp(tok, "FAIL") || 
-		    !strcasecmp(tok, "EXCEPT"))
+		if (!strcasecmp(*list, "ALL") || !strcasecmp(*list, "FAIL") || 
+		    !strcasecmp(*list, "EXCEPT"))
 		{
 			continue;
 		}
 		
-		if (!is_ipaddress(tok))
+		if (!is_ipaddress(*list))
 		{
 			char *p;
 			/* 
@@ -266,30 +255,24 @@ static BOOL only_ipaddrs_in_list(const char* list)
 			 * was a network/netmask pair.  Only network/netmask pairs
 			 * have a '/' in them
 			 */
-			if ((p=strchr(tok, '/')) == NULL)
+			if ((p=strchr(*list, '/')) == NULL)
 			{
 				only_ip = False;
-				DEBUG(3,("only_ipaddrs_in_list: list [%s] has non-ip address %s\n", list, tok));
+				DEBUG(3,("only_ipaddrs_in_list: list has non-ip address (%s)\n", *list));
 				break;
 			}
 		}
 	}
 	
-	if (listcopy) 
-		free (listcopy);
-	
 	return only_ip;
 }
 
 /* return true if access should be allowed to a service for a socket */
-BOOL check_access(int sock, char *allow_list, char *deny_list)
+BOOL check_access(int sock, char **allow_list, char **deny_list)
 {
 	BOOL ret = False;
 	BOOL only_ip = False;
 	
-	if (deny_list) deny_list = strdup(deny_list);
-	if (allow_list) allow_list = strdup(allow_list);
-
 	if ((!deny_list || *deny_list==0) && (!allow_list || *allow_list==0)) 
 	{
 		ret = True;
@@ -325,8 +308,5 @@ BOOL check_access(int sock, char *allow_list, char *deny_list)
 		}
 	}
 
-	if (deny_list) free(deny_list);
-	if (allow_list) free(allow_list);
-	
 	return(ret);
 }
