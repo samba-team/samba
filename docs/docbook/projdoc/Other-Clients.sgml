@@ -168,7 +168,8 @@ packages, Samba, and Linux (and other UNIX-based systems) see
 <title>Use latest TCP/IP stack from Microsoft</title>
 
 <para>Use the latest TCP/IP stack from microsoft if you use Windows
-for workgroups.</para>
+for workgroups. 
+</para>
 
 <para>The early TCP/IP stacks had lots of bugs.</para>
 
@@ -234,6 +235,24 @@ it may break the print queue reporting on some systems.
 It is presumably a WfWg bug.</para>
 
 </sect2>
+
+<sect2>
+<title>Speed improvement</title>
+
+<para>
+Note that some people have found that setting DefaultRcvWindow in
+the [MSTCP] section of the SYSTEM.INI file under WfWg to 3072 gives a
+big improvement. I don't know why.
+</para>
+
+<para>
+My own experience wth DefaultRcvWindow is that I get much better
+performance with a large value (16384 or larger). Other people have
+reported that anything over 3072 slows things down enourmously. One
+person even reported a speed drop of a factor of 30 when he went from
+3072 to 8192. I don't know why.
+</para>
+</sect2>
 </sect1>
 
 <sect1>
@@ -265,6 +284,17 @@ fix may stop your machine from hanging for an extended period when exiting
 OutLook and you may also notice a significant speedup when accessing network
 neighborhood services.
 </para>
+
+<sect2>
+<title>Speed improvement</title>
+
+<para>
+Configure the win95 TCPIP registry settings to give better
+performance. I use a program called MTUSPEED.exe which I got off the
+net. There are various other utilities of this type freely available.
+</para>
+
+</sect2>
 
 </sect1>
 

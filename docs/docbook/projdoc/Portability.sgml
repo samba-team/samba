@@ -189,6 +189,9 @@ samba performance significally.
 <sect1>
 <title>Solaris</title>
 
+<sect2>
+<title>Locking improvements</title>
+
 <para>Some people have been experiencing problems with F_SETLKW64/fcntl 
 when running samba on solaris. The built in file locking mechanism was
 not scalable. Performance would degrade to the point where processes would
@@ -216,6 +219,16 @@ and rebuild samba.
 </para>
 
 <para>Thanks to Joe Meslovich for reporting</para>
+
+</sect2>
+
+<sect2 id="winbind-solaris9">
+<title>Winbind on Solaris 9</title>
+<para>
+Nsswitch on Solaris 9 refuses to use the winbind nss module.  This behavior
+is fixed by Sun in patch 113476-05 which as of March 2003 is not in any
+roll-up packages.
+</para>
 </sect1>
 
 </chapter>
