@@ -600,10 +600,6 @@
 		<listitem><para><link linkend="BROWSELIST"><parameter>browse list</parameter></link></para></listitem>
 		<listitem><para><link linkend="CHANGENOTIFYTIMEOUT"><parameter>change notify timeout</parameter></link></para></listitem>
 		<listitem><para><link linkend="CHANGESHARECOMMAND"><parameter>change share command</parameter></link></para></listitem>
-		<listitem><para><link linkend="CHARACTERSET"><parameter>character set</parameter></link></para></listitem>
-		<listitem><para><link linkend="CLIENTCODEPAGE"><parameter>client code page</parameter></link></para></listitem>
-		<listitem><para><link linkend="CODEPAGEDIRECTORY"><parameter>code page directory</parameter></link></para></listitem>
-		<listitem><para><link linkend="CODINGSYSTEM"><parameter>coding system</parameter></link></para></listitem>
 		<listitem><para><link linkend="CONFIGFILE"><parameter>config file</parameter></link></para></listitem>
 		<listitem><para><link linkend="DEADTIME"><parameter>deadtime</parameter></link></para></listitem>
 		<listitem><para><link linkend="DEBUGHIRESTIMESTAMP"><parameter>debug hires timestamp</parameter></link></para></listitem>
@@ -758,7 +754,6 @@
 		<listitem><para><link linkend="USERNAMEMAP"><parameter>username map</parameter></link></para></listitem>
 		<listitem><para><link linkend="UTMP"><parameter>utmp</parameter></link></para></listitem>
 		<listitem><para><link linkend="UTMPDIRECTORY"><parameter>utmp directory</parameter></link></para></listitem>
-		<listitem><para><link linkend="VALIDCHARS"><parameter>valid chars</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDCACHETIME"><parameter>winbind cache time</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDENUMUSERS"><parameter>winbind enum users</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDENUMGROUPS"><parameter>winbind enum groups</parameter></link></para></listitem>
@@ -1457,192 +1452,7 @@
 
 
 		
-		<varlistentry>
-		<term><anchor id="CHARACTERSET">character set (G)</term>
-		<listitem><para>This allows <ulink url="smbd.8.html">smbd</ulink> to map incoming filenames 
-		from a DOS Code page (see the <link linkend="CLIENTCODEPAGE">client 
-		code page</link> parameter) to several built in UNIX character sets. 
-		The built in code page translations are:</para>
-		
-		<itemizedlist>
-			<listitem><para><constant>ISO8859-1</constant> : Western European 
-			UNIX character set. The parameter <parameter>client code page</parameter>
-			<emphasis>MUST</emphasis> be set to code page 850 if the 
-			<parameter>character set</parameter> parameter is set to
-			<constant>ISO8859-1</constant> in order for the conversion to the 
-			UNIX character set to be done correctly.</para></listitem>
 
-			<listitem><para><constant>ISO8859-2</constant> : Eastern European 
-			UNIX character set. The parameter <parameter>client code page
-			</parameter> <emphasis>MUST</emphasis> be set to code page 852 if 
-			the <parameter> character set</parameter> parameter is set 
-			to <constant>ISO8859-2</constant> in order for the conversion 
-			to the UNIX character set to be done correctly. </para></listitem>
-
-			<listitem><para><constant>ISO8859-5</constant> : Russian Cyrillic 
-			UNIX character set. The parameter <parameter>client code page
-			</parameter> <emphasis>MUST</emphasis> be set to code page 
-			866 if the <parameter>character set </parameter> parameter is 
-			set to <constant>ISO8859-5</constant> in order for the conversion 
-			to the UNIX character set to be done correctly. </para></listitem>
-
-			<listitem><para><constant>ISO8859-7</constant> : Greek UNIX 
-			character set. The parameter <parameter>client code page
-			</parameter> <emphasis>MUST</emphasis> be set to code page 
-			737 if the <parameter>character set</parameter> parameter is 
-			set to <constant>ISO8859-7</constant> in order for the conversion 
-			to the UNIX character set to be done correctly.</para></listitem>
- 
-			<listitem><para><constant>KOI8-R</constant> : Alternate mapping 
-			for Russian Cyrillic UNIX character set. The parameter 
-			<parameter>client code page</parameter> <emphasis>MUST</emphasis> 
-			be set to code page 866 if the <parameter>character set</parameter> 
-			parameter is set to <constant>KOI8-R</constant> in order for the 
-			conversion to the UNIX character set to be done correctly.</para>
-			</listitem>
-		</itemizedlist>
-
-		<para><emphasis>BUG</emphasis>. These MSDOS code page to UNIX character 
-		set mappings should be dynamic, like the loading of MS DOS code pages, 
-		not static.</para>
-
-		<para>Normally this parameter is not set, meaning no filename 
-		translation is done.</para>
-
-		<para>Default: <command>character set = &lt;empty string&gt;</command></para>
-		<para>Example: <command>character set = ISO8859-1</command></para></listitem>
-		</varlistentry>
-
-
-
-		<varlistentry>
-		<term><anchor id="CLIENTCODEPAGE">client code page (G)</term>
-		<listitem><para>This parameter specifies the DOS code page 
-		that the clients accessing Samba are using. To determine what code 
-		page a Windows or DOS client is using, open a DOS command prompt 
-		and type the command <command>chcp</command>. This will output 
-		the code page. The default for USA MS-DOS, Windows 95, and
-		Windows NT releases is code page 437. The default for western 
-		European releases of the above operating systems is code page 850.</para>
-
-		<para>This parameter tells <ulink url="smbd.8.html">smbd(8)</ulink> 
-		which of the <filename>codepage.<replaceable>XXX</replaceable>
-		</filename> files to dynamically load on startup. These files,
-		described more fully in the manual page <ulink url="make_smbcodepage.1.html">
-		<command>make_smbcodepage(1)</command></ulink>, tell <command>
-		smbd</command> how to map lower to upper case characters to provide 
-		the case insensitivity of filenames that Windows clients expect.</para>
-
-		<para>Samba currently ships with the following code page files :</para>
-
-		<itemizedlist>
-			<listitem><para>Code Page 437 - MS-DOS Latin US</para></listitem>
-			<listitem><para>Code Page 737 - Windows '95 Greek</para></listitem>
-			<listitem><para>Code Page 850 - MS-DOS Latin 1</para></listitem>
-			<listitem><para>Code Page 852 - MS-DOS Latin 2</para></listitem>
-			<listitem><para>Code Page 861 - MS-DOS Icelandic</para></listitem>
-			<listitem><para>Code Page 866 - MS-DOS Cyrillic</para></listitem>
-			<listitem><para>Code Page 932 - MS-DOS Japanese SJIS</para></listitem>
-			<listitem><para>Code Page 936 - MS-DOS Simplified Chinese</para></listitem>
-			<listitem><para>Code Page 949 - MS-DOS Korean Hangul</para></listitem>
-			<listitem><para>Code Page 950 - MS-DOS Traditional Chinese</para></listitem>
-		</itemizedlist>
-
-		<para>Thus this parameter may have any of the values 437, 737, 850, 852,
-		861, 932, 936, 949, or 950.  If you don't find the codepage you need,
-		read the comments in one of the other codepage files and the
-		<command>make_smbcodepage(1)</command> man page and write one. Please 
-		remember to donate it back to the Samba user community.</para>
-
-		<para>This parameter co-operates with the <parameter>valid
-		chars</parameter> parameter in determining what characters are
-		valid in filenames and how capitalization is done. If you set both
-		this parameter and the <parameter>valid chars</parameter> parameter
-		the <parameter>client code page</parameter> parameter 
-		<emphasis>MUST</emphasis> be set before the <parameter>valid 
-		chars</parameter> parameter in the <filename>smb.conf</filename>
-		file. The <parameter>valid chars</parameter> string will then 
-		augment the character settings in the <parameter>client code page</parameter> 
-		parameter.</para>
-
-		<para>If not set, <parameter>client code page</parameter> defaults 
-		to 850.</para>
-
-		<para>See also : <link linkend="VALIDCHARS"><parameter>valid 
-		chars</parameter></link>, <link linkend="CODEPAGEDIRECTORY">
-		<parameter>code page directory</parameter></link></para>
-
-		<para>Default: <command>client code page = 850</command></para>
-		<para>Example: <command>client code page = 936</command></para>
-		</listitem>
-		</varlistentry>
-		
-
-
-
-		<varlistentry>
-		<term><anchor id="CODEPAGEDIRECTORY">code page directory (G)</term>
-		<listitem><para>Define the location of the various client code page
-		files.</para>
-		
-		<para>See also <link linkend="CLIENTCODEPAGE"><parameter>client
-		code page</parameter></link></para>
-		
-		<para>Default: <command>code page directory = ${prefix}/lib/codepages
-		</command></para>
-		<para>Example: <command>code page directory = /usr/share/samba/codepages
-		</command></para>
-		</listitem>
-		</varlistentry>
-
-
-
-
-		
-		<varlistentry>
-		<term><anchor id="CODINGSYSTEM">coding system (G)</term>
-		<listitem><para>This parameter is used to determine how incoming 
-		Shift-JIS Japanese characters are mapped from the incoming <link 
-		linkend="CLIENTCODEPAGE"><parameter>client code page</parameter>
-		</link> used by the client, into file names in the UNIX filesystem. 
-		Only useful if <parameter>client code page</parameter> is set to 
-		932 (Japanese Shift-JIS).  The options are :</para>
-
-		<itemizedlist>
-			<listitem><para><constant>SJIS</constant>  - Shift-JIS. Does no 
-			conversion of the incoming filename.</para></listitem>
-			
-			<listitem><para><constant>JIS8, J8BB, J8BH, J8@B, 
-			J8@J, J8@H </constant> - Convert from incoming Shift-JIS to eight 
-			bit JIS code with different shift-in, shift out codes.</para></listitem>
-
-			<listitem><para><constant>JIS7, J7BB, J7BH, J7@B, J7@J, 
-			J7@H </constant> - Convert from incoming Shift-JIS to seven bit 
-			JIS code with different shift-in, shift out codes.</para></listitem>
-
-			<listitem><para><constant>JUNET, JUBB, JUBH, JU@B, JU@J, JU@H </constant> 
-			- Convert from incoming Shift-JIS to JUNET code with different shift-in, 
-			shift out codes.</para></listitem>
-						
-			<listitem><para><constant>EUC</constant> - Convert an incoming 
-			Shift-JIS character to EUC code.</para></listitem>
-			
-			<listitem><para><constant>HEX</constant> - Convert an incoming 
-			Shift-JIS character to a 3 byte hex representation, i.e. 
-			<constant>:AB</constant>.</para></listitem>
-			
-			<listitem><para><constant>CAP</constant> - Convert an incoming 
-			Shift-JIS character to the 3 byte hex representation used by 
-			the Columbia AppleTalk Program (CAP), i.e. <constant>:AB</constant>.  
-			This is used for compatibility between Samba and CAP.</para></listitem>
-		</itemizedlist>
-		
-		<para>Default: <command>coding system = &lt;empty value&gt;</command>
-		</para>
-		</listitem>
-		</varlistentry>
-		
-		
 		
 		<varlistentry>
 		<term><anchor id="COMMENT">comment (S)</term>
@@ -7960,66 +7770,6 @@
 		</varlistentry>
 
 
-
-		<varlistentry>
-		<term><anchor id="VALIDCHARS">valid chars (G)</term>
-		<listitem><para>The option allows you to specify additional 
-		characters that should be considered valid by the server in 
-		filenames. This is particularly useful for national character 
-		sets, such as adding u-umlaut or a-ring.</para>
-
-		<para>The option takes a list of characters in either integer 
-		or character form with spaces between them. If you give two 
-		characters with a colon between them then it will be taken as 
-		an lowercase:uppercase pair.</para>
-
-		<para>If you have an editor capable of entering the characters 
-		into the config file then it is probably easiest to use this 
-		method. Otherwise you can specify the characters in octal, 
-		decimal or hexadecimal form using the usual C notation.</para>
-
-		<para>For example to add the single character 'Z' to the charset 
-		(which is a pointless thing to do as it's already there) you could 
-		do one of the following</para>
-
-		<para><programlisting>
-		valid chars = Z
-		valid chars = z:Z
-		valid chars = 0132:0172
-		</programlisting></para>
-		
-		<para>The last two examples above actually add two characters, 
-		and alter the uppercase and lowercase mappings appropriately.</para>
-
-		<para>Note that you <emphasis>MUST</emphasis> specify this parameter 
-		after the <parameter>client code page</parameter> parameter if you 
-		have both set. If <parameter>client code page</parameter> is set after 
-		the <parameter>valid chars</parameter> parameter the <parameter>valid 
-		chars</parameter> settings will be overwritten.</para>
-
-		<para>See also the <link linkend="CLIENTCODEPAGE"><parameter>client 
-		code page</parameter></link> parameter.</para>
-
-		<para>Default: <emphasis>Samba defaults to using a reasonable set 
-		of valid characters for English systems</emphasis></para>
-
-		<para>Example: <command>valid chars = 0345:0305 0366:0326 0344:0304
-		</command></para>
-
-		<para>The above example allows filenames to have the Swedish 
-		characters in them.</para>
-
-		<para><emphasis>NOTE:</emphasis> It is actually quite difficult to 
-		correctly produce a <parameter>valid chars</parameter> line for 
-		a particular system. To automate the process <ulink 
-		url="mailto:tino@augsburg.net">tino@augsburg.net</ulink> has written 
-		a package called <command>validchars</command> which will automatically 
-		produce a complete <parameter>valid chars</parameter> line for
-		a given client system. Look in the <filename>examples/validchars/
-		</filename> subdirectory of your Samba source code distribution 
-		for this package.</para>
-		</listitem>
-		</varlistentry>
 
 
 
