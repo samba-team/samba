@@ -234,7 +234,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 					 NAME_QUERY_ANNOUNCE_HOST,
 					 work->work_group,0x1b,0,ttl*1000,
 					 server_type,name,comment,
-					 False, False, ipzero, d->bcast_ip);
+					 False, True, ipzero, d->bcast_ip);
 			}
 			else
 			{
@@ -472,7 +472,7 @@ workgroup %s\n", am_master, work->work_group));
                     NMB_QUERY,NAME_QUERY_DOM_SRV_CHK,
                     name, type, 0,0,0,
                     work->work_group,NULL,
-                    False, False, ipzero, ipzero);
+                    False, True, ipzero, ipzero);
         }
       else if(lp_wins_support()) 
         {

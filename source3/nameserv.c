@@ -115,7 +115,7 @@ void remove_name_entry(struct subnet_record *d, char *name,int type, BOOL direct
       /* local interface: release them on the network */
       queue_netbios_packet(d,ClientNMB,NMB_REL,NAME_RELEASE,
 			 name, type, 0, 0,0,NULL,NULL,
-			 True, True, d->bcast_ip, d->bcast_ip);
+			 True, False, d->bcast_ip, d->bcast_ip);
   }
 }
 
@@ -191,7 +191,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags,
       queue_netbios_packet(d,ClientNMB,
 	 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
          name, type, nb_flags, GET_TTL(0),0,NULL,NULL,
-	 True, True, d->bcast_ip, ipzero);
+	 True, False, d->bcast_ip, ipzero);
     }
   }
 }
@@ -273,7 +273,7 @@ on workgroup %s\n", myworkgroup));
             queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,NAME_QUERY_DOMAIN,
             			myworkgroup, 0x1b,
           			0, 0,0,NULL,NULL,
-          			False, False, ipzero, ipzero);
+          			False, True, ipzero, ipzero);
           }
         }
         else

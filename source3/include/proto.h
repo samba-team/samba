@@ -496,10 +496,6 @@ void add_name_respond(struct subnet_record *d, int fd, struct in_addr from_ip,
 				struct nmb_name *name,
 				int nb_flags, int ttl, struct in_addr register_ip,
 				BOOL new_owner, struct in_addr reply_to_ip);
-void send_name_response(int fd, struct in_addr from_ip,
-				int name_trn_id, int opcode, BOOL success, BOOL recurse,
-				struct nmb_name *reply_name, int nb_flags, int ttl,
-				struct in_addr ip);
 void reply_name_release(struct packet_struct *p);
 void reply_name_reg(struct packet_struct *p);
 void reply_name_status(struct packet_struct *p);
