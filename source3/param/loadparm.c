@@ -211,7 +211,6 @@ typedef struct
 	int announce_as;	/* This is initialised in init_globals */
 	int machine_password_timeout;
 	int change_notify_timeout;
-	int stat_cache_size;
 	int map_to_guest;
 	int min_passwd_length;
 	int oplock_break_wait_time;
@@ -895,7 +894,6 @@ static struct parm_struct parm_table[] = {
 	{"read size", P_INTEGER, P_GLOBAL, &Globals.ReadSize, NULL, NULL, FLAG_DEVELOPER},
 	
 	{"socket options", P_GSTRING, P_GLOBAL, user_socket_options, NULL, NULL, FLAG_DEVELOPER},
-	{"stat cache size", P_INTEGER, P_GLOBAL, &Globals.stat_cache_size, NULL, NULL, FLAG_DEVELOPER},
 	{"strict allocate", P_BOOL, P_LOCAL, &sDefault.bStrictAllocate, NULL, NULL, FLAG_SHARE},
 	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_SHARE},
 	{"sync always", P_BOOL, P_LOCAL, &sDefault.bSyncAlways, NULL, NULL, FLAG_SHARE},
@@ -1374,7 +1372,6 @@ static void init_globals(void)
 	Globals.ReadSize = 16 * 1024;
 	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
 	Globals.lm_interval = 60;
-	Globals.stat_cache_size = 50;	/* Number of stat translations we'll keep */
 	Globals.announce_as = ANNOUNCE_AS_NT_SERVER;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 	Globals.bNISHomeMap = False;
@@ -1743,7 +1740,6 @@ FN_GLOBAL_INTEGER(lp_lm_announce, &Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval, &Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout, &Globals.machine_password_timeout)
 FN_GLOBAL_INTEGER(lp_change_notify_timeout, &Globals.change_notify_timeout)
-FN_GLOBAL_INTEGER(lp_stat_cache_size, &Globals.stat_cache_size)
 FN_GLOBAL_INTEGER(lp_map_to_guest, &Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_min_passwd_length, &Globals.min_passwd_length)
 FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
