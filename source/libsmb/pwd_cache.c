@@ -104,11 +104,33 @@ void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt)
 
 	user_pass = (char *)getpass(passwd_report);
 
+	/***********************************************
+	 This code was commented out for the following
+	 scenario--  When using the createuser subcommand
+	 under samedit, an administrative account with an
+	 empty password could not create an account because
+	 no usr_sess_key (nor password hashes) was being 
+	 generated.
+	 
+	 In order to use the pwd->null_pwd branches in the code
+	 now, you should use a -N switch on the samedit command
+	 (in case for some reason you want the createuser 
+	 command to fail?! :-)  
+	 
+	 Otherwise, and empty password string will always 
+	 be considered as an empty password and the standard
+	 password (or password hash) authentication rules will
+	 apply.    -- jerry [Thu Dec 21 14:12:15 CST 2000]
+	 ************************************************/
+#if 0	/* --jerry */
 	if (user_pass == NULL || user_pass[0] == 0)
 	{
 		pwd_set_nullpwd(pwd);
 	}
 	else if (do_encrypt)
+#endif
+
+	if (do_encrypt)
 	{
 		pwd_make_lm_nt_16(pwd, user_pass);
 	}
