@@ -347,7 +347,7 @@ PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
 	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1) \
 	    $(RPC_CLIENT_OBJ) $(LIBMSRPC_OBJ)
 
-NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
+NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
@@ -398,9 +398,6 @@ WBINFO_OBJ = nsswitch/wbinfo.o libsmb/smbencrypt.o libsmb/smbdes.o \
 WINBIND_NSS_OBJ = nsswitch/winbind_nss.o nsswitch/wb_common.o
 
 WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
-
-NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
-NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 
 ######################################################################
 # now the rules...
