@@ -2101,7 +2101,7 @@ void data_blob_clear_free(DATA_BLOB *d)
 	data_blob_free(d);
 }
 
-#ifdef __INSURE__XX_DISABLED_XX
+#ifdef __INSURE__
 
 /*******************************************************************
 This routine is a trick to immediately catch errors when debugging
@@ -2113,7 +2113,9 @@ int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6)
 	static int (*fn)();
 	int ret;
 	char pidstr[10];
-	pstring cmd = "/usr/X11R6/bin/xterm -display :0 -T Panic -n Panic -e /bin/sh -c 'cat /tmp/ierrs.*.%d ; gdb /proc/%d/exe %d'";
+	/* you can get /usr/bin/backtrace from 
+           http://samba.org/ftp/unpacked/junkcode/backtrace */
+	pstring cmd = "/usr/bin/backtrace %d";
 
 	slprintf(pidstr, sizeof(pidstr)-1, "%d", sys_getpid());
 	pstring_sub(cmd, "%d", pidstr);
