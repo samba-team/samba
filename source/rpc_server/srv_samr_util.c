@@ -256,6 +256,12 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 		DEBUG(15,("INFO_21 LOGON_HRS.HOURS: %s -> %s\n",pdb_get_hours(to),from->logon_hrs.hours));
 		/* Fix me: only update if it changes --metze */
 		pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
+
+		/* This is max logon hours */
+		DEBUG(10,("INFO_21 UNKNOWN_6: %08X -> %08X\n",pdb_get_unknown_6(to),from->unknown_6));
+		if (from->unknown_6 != pdb_get_unknown_6(to)) {
+			pdb_set_unknown_6(to, from->unknown_6, PDB_CHANGED);
+		}
 	}
 
 	if (from->fields_present & ACCT_BAD_PWD_COUNT) {
@@ -271,21 +277,6 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 			pdb_set_logon_count(to, from->logon_count, PDB_CHANGED);
 		}
 	}
-
-	/* if (from->fields_present & ACCT_??) { */
-		DEBUG(10,("INFO_21 UNKNOWN_6: %08X -> %08X\n",pdb_get_unknown_6(to),from->unknown_6));
-		if (from->unknown_6 != pdb_get_unknown_6(to)) {
-			pdb_set_unknown_6(to, from->unknown_6, PDB_CHANGED);
-		}
-	/* } */
-
-	DEBUG(10,("INFO_21 PADDING1 %02X %02X %02X %02X %02X %02X\n",
-		  from->padding1[0],
-		  from->padding1[1],
-		  from->padding1[2],
-		  from->padding1[3],
-		  from->padding1[4],
-		  from->padding1[5]));
 
 	DEBUG(10,("INFO_21 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
 	if (from->passmustchange==PASS_MUST_CHANGE_AT_NEXT_LOGON) {
@@ -512,6 +503,12 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 		DEBUG(15,("INFO_23 LOGON_HRS.HOURS: %s -> %s\n",pdb_get_hours(to),from->logon_hrs.hours));
 		/* Fix me: only update if it changes --metze */
 		pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
+
+		/* This is max logon hours */
+		DEBUG(10,("INFO_23 UNKOWN_6: %08X -> %08X\n",pdb_get_unknown_6(to),from->unknown_6));
+		if (from->unknown_6 != pdb_get_unknown_6(to)) {
+			pdb_set_unknown_6(to, from->unknown_6, PDB_CHANGED);
+		}
 	}
 
 	if (from->fields_present & ACCT_BAD_PWD_COUNT) {
@@ -527,21 +524,6 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 			pdb_set_logon_count(to, from->logon_count, PDB_CHANGED);
 		}
 	}
-
-	/* if (from->fields_present & ACCT_??) { */
-		DEBUG(10,("INFO_23 UNKOWN_6: %08X -> %08X\n",pdb_get_unknown_6(to),from->unknown_6));
-		if (from->unknown_6 != pdb_get_unknown_6(to)) {
-			pdb_set_unknown_6(to, from->unknown_6, PDB_CHANGED);
-		}
-	/* } */
-
-	DEBUG(10,("INFO_23 PADDING1 %02X %02X %02X %02X %02X %02X\n",
-		  from->padding1[0],
-		  from->padding1[1],
-		  from->padding1[2],
-		  from->padding1[3],
-		  from->padding1[4],
-		  from->padding1[5]));
 
 	DEBUG(10,("INFO_23 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
 	if (from->passmustchange==PASS_MUST_CHANGE_AT_NEXT_LOGON) {
