@@ -26,7 +26,31 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Log: ubi_BinTree.c,v
+ * Log: ubi_BinTree.c,v 
+ * Revision 4.10  2000/06/06 20:38:40  crh
+ * In the ReplaceNode() function, the old node header was being copied
+ * to the new node header using a byte-by-byte copy.  This was causing
+ * the 'insure' software testing program to report a memory leak.  The
+ * fix was to do a simple assignement: *newnode = *oldnode;
+ * This quieted the (errant) memory leak reports and is probably a bit
+ * faster than the bytewise copy.
+ *
+ * Revision 4.9  2000/01/08 23:24:30  crh
+ * Clarified a variety of if( pointer ) lines, replacing them with
+ * if( NULL != pointer ).  This is more correct, and I have heard
+ * of at least one (obscure?) system out there that uses a non-zero
+ * value for NULL.
+ * Also, speed improvement in Neighbor().  It was comparing pointers
+ * when it could have compared two gender values.  The pointer
+ * comparison was somewhat indirect (does pointer equal the pointer
+ * of the parent of the node pointed to by pointer).  Urq.
+ *
+ * Revision 4.8  1999/09/22 03:40:30  crh
+ * Modified ubi_btTraverse() and ubi_btKillTree().  They now return an
+ * unsigned long indicating the number of nodes processed.  The change
+ * is subtle.  An empty tree formerly returned False, and now returns
+ * zero.
+ *
  * Revision 4.7  1998/10/21 06:14:42  crh
  * Fixed bugs in FirstOf() and LastOf() reported by Massimo Campostrini.
  * See function comments.
@@ -162,9 +186,9 @@
  */
 
 static char ModuleID[] = "ubi_BinTree\n\
-\tRevision: 4.7\n\
-\tDate: 1998/10/21 06:14:42\n\
-\tAuthor: crh\n";
+\tRevision: 4.10 \n\
+\tDate: 2000/06/06 20:38:40 \n\
+\tAuthor: crh \n";
 
 /* ========================================================================== **
  * Internal (private) functions.
@@ -197,7 +221,8 @@ static ubi_btNodePtr qFind( ubi_btCompFunc cmp,
   {
   int tmp;
 
-  while( p && (( tmp = ubi_trAbNormal((*cmp)(FindMe, p)) ) != ubi_trEQUAL) )
+  while( (NULL != p)
+      && ((tmp = ubi_trAbNormal( (*cmp)(FindMe, p) )) != ubi_trEQUAL) )
     p = p->Link[tmp];
 
   return( p );
@@ -240,7 +265,7 @@ static ubi_btNodePtr TreeFind( ubi_btItemPtr  findme,
   char                   tmp_gender = ubi_trEQUAL;
   int                    tmp_cmp;
 
-  while( tmp_p
+  while( (NULL != tmp_p)
      && (ubi_trEQUAL != (tmp_cmp = ubi_trAbNormal((*CmpFunc)(findme, tmp_p)))) )
     {
     tmp_pp     = tmp_p;                 /* Keep track of previous node. */
@@ -276,12 +301,9 @@ static void ReplaceNode( ubi_btNodePtr *parent,
    * ------------------------------------------------------------------------ **
    */
   {
-  register int i;
-  register int btNodeSize = sizeof( ubi_btNode );
+  *newnode = *oldnode;  /* Copy node internals to new node. */
 
-  for( i = 0; i < btNodeSize; i++ ) /* Copy node internals to new node. */
-    ((unsigned char *)newnode)[i] = ((unsigned char *)oldnode)[i];
-  (*parent) = newnode;              /* Old node's parent points to new child. */
+  (*parent) = newnode;  /* Old node's parent points to new child. */
   /* Now tell the children about their new step-parent. */
   if( oldnode->Link[ubi_trLEFT] )
     (oldnode->Link[ubi_trLEFT])->Link[ubi_trPARENT] = newnode;
@@ -313,21 +335,21 @@ static void SwapNodes( ubi_btRootPtr RootPtr,
   ubi_btNodePtr  dummy_p = &dummy;
 
   /* Replace Node 1 with the dummy, thus removing Node1 from the tree. */
-  if( Node1->Link[ubi_trPARENT] )
+  if( NULL != Node1->Link[ubi_trPARENT] )
     Parent = &((Node1->Link[ubi_trPARENT])->Link[(int)(Node1->gender)]);
   else
     Parent = &(RootPtr->root);
   ReplaceNode( Parent, Node1, dummy_p );
 
   /* Swap Node 1 with Node 2, placing Node 1 back into the tree. */
-  if( Node2->Link[ubi_trPARENT] )
+  if( NULL != Node2->Link[ubi_trPARENT] )
     Parent = &((Node2->Link[ubi_trPARENT])->Link[(int)(Node2->gender)]);
   else
     Parent = &(RootPtr->root);
   ReplaceNode( Parent, Node2, Node1 );
 
   /* Swap Node 2 and the dummy, thus placing Node 2 back into the tree. */
-  if( dummy_p->Link[ubi_trPARENT] )
+  if( NULL != dummy_p->Link[ubi_trPARENT] )
     Parent = &((dummy_p->Link[ubi_trPARENT])->Link[(int)(dummy_p->gender)]);
   else
     Parent = &(RootPtr->root);
@@ -356,14 +378,11 @@ static ubi_btNodePtr SubSlide( register ubi_btNodePtr P,
    * ------------------------------------------------------------------------ **
    */
   {
-  ubi_btNodePtr Q = NULL;
 
-  while( P )
-    {
-    Q = P;
-    P = P->Link[ whichway ];
-    }
-  return( Q );
+  if( NULL != P )
+    while( NULL != P->Link[ whichway ] )
+      P = P->Link[ whichway ];
+  return( P );
   } /* SubSlide */
 
 static ubi_btNodePtr Neighbor( register ubi_btNodePtr P,
@@ -385,12 +404,12 @@ static ubi_btNodePtr Neighbor( register ubi_btNodePtr P,
   {
   if( P )
     {
-    if( P->Link[ whichway ] )
+    if( NULL != P->Link[ whichway ] )
       return( SubSlide( P->Link[ whichway ], (char)ubi_trRevWay(whichway) ) );
     else
-      while( P->Link[ ubi_trPARENT ] )
+      while( NULL != P->Link[ ubi_trPARENT ] )
         {
-        if( (P->Link[ ubi_trPARENT ])->Link[ whichway ] == P )
+        if( whichway == P->gender )
           P = P->Link[ ubi_trPARENT ];
         else
           return( P->Link[ ubi_trPARENT ] );
@@ -441,7 +460,8 @@ static ubi_btNodePtr Border( ubi_btRootPtr RootPtr,
    * subtree that contains all of the matching nodes.
    */
   q = p->Link[ubi_trPARENT];
-  while( q && (ubi_trEQUAL == ubi_trAbNormal( (*(RootPtr->cmp))(FindMe, q) )) )
+  while( (NULL != q)
+      && (ubi_trEQUAL == ubi_trAbNormal( (*(RootPtr->cmp))(FindMe, q) )) )
     {
     p = q;
     q = p->Link[ubi_trPARENT];
@@ -449,7 +469,7 @@ static ubi_btNodePtr Border( ubi_btRootPtr RootPtr,
 
   /* Next, move back down in the "whichway" direction. */
   q = p->Link[whichway];
-  while( q )
+  while( NULL != q )
     {
     q = qFind( RootPtr->cmp, FindMe, q );
     if( q )
@@ -597,7 +617,7 @@ ubi_trBool ubi_btInsert( ubi_btRootPtr  RootPtr,
                 parent = NULL;
   char          tmp;
 
-  if( !(OldNode) )       /* If they didn't give us a pointer, supply our own. */
+  if( NULL == OldNode ) /* If they didn't give us a pointer, supply our own.  */
     OldNode = &OtherP;
 
   (void)ubi_btInitNode( NewNode );     /* Init the new node's BinTree fields. */
@@ -606,9 +626,9 @@ ubi_trBool ubi_btInsert( ubi_btRootPtr  RootPtr,
   *OldNode = TreeFind(ItemPtr, (RootPtr->root), &parent, &tmp, (RootPtr->cmp));
 
   /* Now add the node to the tree... */
-  if (!(*OldNode)) /* The easy one: we have a space for a new node! */
+  if( NULL == (*OldNode) )  /* The easy one: we have a space for a new node!  */
     {
-    if (!(parent))
+    if( NULL == parent )
       RootPtr->root = NewNode;
     else
       {
@@ -630,7 +650,7 @@ ubi_trBool ubi_btInsert( ubi_btRootPtr  RootPtr,
     tmp = ubi_trRIGHT;
     q = (*OldNode);
     *OldNode = NULL;
-    while( q )
+    while( NULL != q )
       {
       parent = q;
       if( tmp == ubi_trEQUAL )
@@ -652,7 +672,7 @@ ubi_trBool ubi_btInsert( ubi_btRootPtr  RootPtr,
    */
   if( ubi_trOvwt_OK(RootPtr) )    /* Key exists, we replace */
     {
-    if (!(parent))
+    if( NULL == parent )
       ReplaceNode( &(RootPtr->root), *OldNode, NewNode );
     else
       ReplaceNode( &(parent->Link[(int)((*OldNode)->gender)]),
@@ -688,23 +708,24 @@ ubi_btNodePtr ubi_btRemove( ubi_btRootPtr RootPtr,
    * it with another node.  The other node we choose will be the Prev()ious
    * node, which is garunteed to have no RIGHT child.
    */
-  if( (DeadNode->Link[ubi_trLEFT]) && (DeadNode->Link[ubi_trRIGHT]) )
+  if( (NULL != DeadNode->Link[ubi_trLEFT])
+   && (NULL != DeadNode->Link[ubi_trRIGHT]) )
     SwapNodes( RootPtr, DeadNode, ubi_btPrev( DeadNode ) );
 
   /* The parent of the node to be deleted may be another node, or it may be
    * the root of the tree.  Since we're not sure, it's best just to have
    * a pointer to the parent pointer, whatever it is.
    */
-  if (DeadNode->Link[ubi_trPARENT])
-    parentp = &((DeadNode->Link[ubi_trPARENT])->Link[(int)(DeadNode->gender)]);
-  else
+  if( NULL == DeadNode->Link[ubi_trPARENT] )
     parentp = &( RootPtr->root );
+  else
+    parentp = &((DeadNode->Link[ubi_trPARENT])->Link[(int)(DeadNode->gender)]);
 
   /* Now link the parent to the only grand-child and patch up the gender. */
   tmp = ((DeadNode->Link[ubi_trLEFT])?ubi_trLEFT:ubi_trRIGHT);
 
   p = (DeadNode->Link[tmp]);
-  if( p )
+  if( NULL != p )
     {
     p->Link[ubi_trPARENT] = DeadNode->Link[ubi_trPARENT];
     p->gender       = DeadNode->gender;
@@ -779,7 +800,7 @@ ubi_btNodePtr ubi_btLocate( ubi_btRootPtr RootPtr,
                 &whichkid,
                 RootPtr->cmp );
 
-  if( p )   /* If we have found a match, we can resolve as follows: */
+  if( NULL != p )    /* If we have found a match, we can resolve as follows:  */
     {
     switch( CompOp )
       {
@@ -914,7 +935,8 @@ ubi_btNodePtr ubi_btFirstOf( ubi_btRootPtr RootPtr,
    */
   {
   /* If our starting point is invalid, return NULL. */
-  if( !p || (ubi_trEQUAL != ubi_trAbNormal( (*(RootPtr->cmp))( MatchMe, p ) )) )
+  if( (NULL == p)
+   || (ubi_trEQUAL != ubi_trAbNormal( (*(RootPtr->cmp))( MatchMe, p ) )) )
     return( NULL );
   return( Border( RootPtr, MatchMe, p, ubi_trLEFT ) );
   } /* ubi_btFirstOf */
@@ -943,79 +965,94 @@ ubi_btNodePtr ubi_btLastOf( ubi_btRootPtr RootPtr,
    */
   {
   /* If our starting point is invalid, return NULL. */
-  if( !p || (ubi_trEQUAL != ubi_trAbNormal( (*(RootPtr->cmp))( MatchMe, p ) )) )
+  if( (NULL != p)
+   || (ubi_trEQUAL != ubi_trAbNormal( (*(RootPtr->cmp))( MatchMe, p ) )) )
     return( NULL );
   return( Border( RootPtr, MatchMe, p, ubi_trRIGHT ) );
   } /* ubi_btLastOf */
 
-ubi_trBool ubi_btTraverse( ubi_btRootPtr   RootPtr,
-                           ubi_btActionRtn EachNode,
-                           void           *UserData )
+unsigned long ubi_btTraverse( ubi_btRootPtr   RootPtr,
+                              ubi_btActionRtn EachNode,
+                              void           *UserData )
   /* ------------------------------------------------------------------------ **
    * Traverse a tree in sorted order (non-recursively).  At each node, call
    * (*EachNode)(), passing a pointer to the current node, and UserData as the
    * second parameter.
+   *
    *  Input:   RootPtr  -  a pointer to an ubi_btRoot structure that indicates
    *                       the tree to be traversed.
    *           EachNode -  a pointer to a function to be called at each node
    *                       as the node is visited.
    *           UserData -  a generic pointer that may point to anything that
    *                       you choose.
-   *  Output:  A boolean value.  FALSE if the tree is empty, otherwise TRUE.
+   *
+   *  Output:  A count of the number of nodes visited.  This will be zero
+   *           if the tree is empty.
+   *
    * ------------------------------------------------------------------------ **
    */
   {
-  ubi_btNodePtr p;
+  ubi_btNodePtr p = ubi_btFirst( RootPtr->root );
+  unsigned long count = 0;
 
-  if( !(p = ubi_btFirst( RootPtr->root )) ) return( ubi_trFALSE );
-
-  while( p )
+  while( NULL != p )
     {
     (*EachNode)( p, UserData );
+    count++;
     p = ubi_btNext( p );
     }
-  return( ubi_trTRUE );
+  return( count );
   } /* ubi_btTraverse */
 
-ubi_trBool ubi_btKillTree( ubi_btRootPtr     RootPtr,
-                           ubi_btKillNodeRtn FreeNode )
+unsigned long ubi_btKillTree( ubi_btRootPtr     RootPtr,
+                              ubi_btKillNodeRtn FreeNode )
   /* ------------------------------------------------------------------------ **
    * Delete an entire tree (non-recursively) and reinitialize the ubi_btRoot
-   * structure.  Note that this function will return FALSE if either parameter
-   * is NULL.
+   * structure.  Return a count of the number of nodes deleted.
    *
    *  Input:   RootPtr  -  a pointer to an ubi_btRoot structure that indicates
    *                       the root of the tree to delete.
    *           FreeNode -  a function that will be called for each node in the
    *                       tree to deallocate the memory used by the node.
    *
-   *  Output:  A boolean value.  FALSE if either input parameter was NULL, else
-   *           TRUE.
+   *  Output:  The number of nodes removed from the tree.
+   *           A value of 0 will be returned if:
+   *           - The tree actually contains 0 entries.
+   *           - the value of <RootPtr> is NULL, in which case the tree is
+   *             assumed to be empty
+   *           - the value of <FreeNode> is NULL, in which case entries
+   *             cannot be removed, so 0 is returned.  *Make sure that you
+   *             provide a valid value for <FreeNode>*.
+   *           In all other cases, you should get a positive value equal to
+   *           the value of RootPtr->count upon entry.
    *
    * ------------------------------------------------------------------------ **
    */
   {
   ubi_btNodePtr p, q;
+  unsigned long count = 0;
 
-  if( !(RootPtr) || !(FreeNode) )
-    return( ubi_trFALSE );
+  if( (NULL == RootPtr) || (NULL == FreeNode) )
+    return( 0 );
 
   p = ubi_btFirst( RootPtr->root );
-  while( p )
+  while( NULL != p )
     {
     q = p;
     while( q->Link[ubi_trRIGHT] )
       q = SubSlide( q->Link[ubi_trRIGHT], ubi_trLEFT );
     p = q->Link[ubi_trPARENT];
-    if( p )
+    if( NULL != p )
       p->Link[ ((p->Link[ubi_trLEFT] == q)?ubi_trLEFT:ubi_trRIGHT) ] = NULL;
     (*FreeNode)((void *)q);
+    count++;
     }
 
+  /* overkill... */
   (void)ubi_btInitTree( RootPtr,
                         RootPtr->cmp,
                         RootPtr->flags );
-  return( ubi_trTRUE );
+  return( count );
   } /* ubi_btKillTree */
 
 ubi_btNodePtr ubi_btLeafNode( ubi_btNodePtr leader )

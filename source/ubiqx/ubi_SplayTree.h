@@ -39,6 +39,9 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_SplayTree.h,v 
+ * Revision 4.5  2000/01/08 23:26:49  crh
+ * Added ubi_trSplay() macro, which does a type cast for us.
+ *
  * Revision 4.4  1998/06/04 21:29:27  crh
  * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
  * This is more "standard", and is what people expect.  Weird, eh?
@@ -364,6 +367,9 @@ int ubi_sptModuleID( int size, char *list[] );
 
 #define ubi_trFind( Rp, Ip ) \
         ubi_sptFind( (ubi_btRootPtr)(Rp), (ubi_btItemPtr)(Ip) )
+
+#define ubi_trSplay( Rp, Sm ) \
+        ubi_sptSplay( (ubi_btRootPtr)(Rp), (ubi_btNodePtr)(Sm) )
 
 #define ubi_trModuleID( s, l ) ubi_sptModuleID( s, l )
 
