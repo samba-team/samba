@@ -811,7 +811,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				 BOOL dont_descend,char **ppdata, 
 				 char *base_data, int space_remaining, 
 				 BOOL *out_of_space, BOOL *got_exact_match,
-				 int *last_name_off)
+				 int *last_entry_off)
 {
 	const char *dname;
 	BOOL found = False;
@@ -828,6 +828,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	uint32 len;
 	time_t mdate=0, adate=0, cdate=0;
 	char *nameptr;
+	char *last_entry_ptr;
 	BOOL was_8_3;
 	int nt_extmode; /* Used for NT connections instead of mode */
 	BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
@@ -964,7 +965,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	mangle_map(fname,False,True,SNUM(conn));
 
 	p = pdata;
-	nameptr = p;
+	last_entry_ptr = p;
 
 	nt_extmode = mode ? mode : FILE_ATTRIBUTE_NORMAL;
 
@@ -1294,8 +1295,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		return False; /* Not finished - just out of space */
 	}
 
-	/* Setup the last_filename pointer, as an offset from base_data */
-	*last_name_off = PTR_DIFF(nameptr,base_data);
+	/* Setup the last entry pointer, as an offset from base_data */
+	*last_entry_off = PTR_DIFF(last_entry_ptr,base_data);
 	/* Advance the data pointer to the next slot */
 	*ppdata = p;
 
@@ -1327,7 +1328,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	pstring directory;
 	pstring mask;
 	char *p;
-	int last_name_off=0;
+	int last_entry_off=0;
 	int dptr_num = -1;
 	int numentries = 0;
 	int i;
@@ -1454,7 +1455,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 					mask,dirtype,info_level,
 					requires_resume_key,dont_descend,
 					&p,pdata,space_remaining, &out_of_space, &got_exact_match,
-					&last_name_off);
+					&last_entry_off);
 		}
 
 		if (finished && out_of_space)
@@ -1499,7 +1500,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	SSVAL(params,2,numentries);
 	SSVAL(params,4,finished);
 	SSVAL(params,6,0); /* Never an EA error */
-	SSVAL(params,8,last_name_off);
+	SSVAL(params,8,last_entry_off);
 
 	send_trans2_replies( outbuf, bufsize, params, 10, pdata, PTR_DIFF(p,pdata));
 
@@ -1554,7 +1555,7 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 	char *p;
 	uint16 dirtype;
 	int numentries = 0;
-	int i, last_name_off=0;
+	int i, last_entry_off=0;
 	BOOL finished = False;
 	BOOL dont_descend = False;
 	BOOL out_of_space = False;
@@ -1691,7 +1692,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 						mask,dirtype,info_level,
 						requires_resume_key,dont_descend,
 						&p,pdata,space_remaining, &out_of_space, &got_exact_match,
-						&last_name_off);
+						&last_entry_off);
 		}
 
 		if (finished && out_of_space)
@@ -1723,7 +1724,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	SSVAL(params,0,numentries);
 	SSVAL(params,2,finished);
 	SSVAL(params,4,0); /* Never an EA error */
-	SSVAL(params,6,last_name_off);
+	SSVAL(params,6,last_entry_off);
 
 	send_trans2_replies( outbuf, bufsize, params, 8, pdata, PTR_DIFF(p,pdata));
 
