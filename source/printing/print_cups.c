@@ -1100,6 +1100,7 @@ cups_queue_pause(int snum)
 static int
 cups_queue_resume(int snum)
 {
+	extern userdom_struct current_user_info;
 	int		ret;		/* Return value */
 	http_t		*http;		/* HTTP connection to server */
 	ipp_t		*request,	/* IPP Request */
@@ -1156,7 +1157,7 @@ cups_queue_resume(int snum)
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name",
-        	     NULL, pjob->user);
+        	     NULL, current_user_info.unix_name);
 
        /*
 	* Do the request and get back a response...
