@@ -909,7 +909,7 @@ ssize_t smbw_read(int fd, void *buf, size_t count)
 	struct smbw_file *file;
 	int ret;
 
-	DEBUG(4,("%s\n", __FUNCTION__));
+	DEBUG(4,("%s %d\n", __FUNCTION__, (int)count));
 
 	smbw_busy++;
 

@@ -1131,7 +1131,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 /****************************************************************************
   read from a file
 ****************************************************************************/
-int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size)
+size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
 {
 	char *p;
 	int total=0;
@@ -1185,7 +1185,7 @@ int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 s
 /****************************************************************************
   write to a file
 ****************************************************************************/
-int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size)
+size_t cli_write(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
 {
 	char *p;
 	int total=0;
