@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   parse a dom_sid2 - this is a dom_sid but with an extra copy of the num_auths field
@@ -111,19 +112,4 @@ size_t ndr_size_security_descriptor(struct security_descriptor *sd)
 	ret += ndr_size_security_acl(sd->dacl);
 	ret += ndr_size_security_acl(sd->sacl);
 	return ret;
-}
-
-/* 
-   talloc and copy a security descriptor
- */
-struct security_descriptor *copy_security_descriptor(TALLOC_CTX *mem_ctx, 
-							const struct security_descriptor *osd)
-{
-	struct security_descriptor *nsd;
-
-	/* FIXME */
-	DEBUG(1, ("copy_security_descriptor: sorry unimplemented yet\n"));
-	nsd = NULL;
-
-	return nsd;
 }

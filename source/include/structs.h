@@ -120,3 +120,7 @@ struct test_join_ads_dc;
 struct netr_LMSessionKey;
 
 struct ldb_message;
+
+struct security_token;
+struct security_acl;
+struct security_ace;

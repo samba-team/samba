@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "auth/auth.h"
 
 #undef DBGC_CLASS
@@ -401,7 +402,7 @@ NTSTATUS create_nt_user_token(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < n_groupSIDs; i++) {
 		size_t check_sid_idx;
 		for (check_sid_idx = 1; check_sid_idx < ptoken->num_sids; check_sid_idx++) {
-			if (sid_equal(ptoken->user_sids[check_sid_idx], 
+			if (dom_sid_equal(ptoken->user_sids[check_sid_idx], 
 				      groupSIDs[i])) {
 				break;
 			}

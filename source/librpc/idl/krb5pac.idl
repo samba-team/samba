@@ -7,7 +7,8 @@
 [
   uuid("46746756-7567-7567-5677-756756756756"),
   version(0.0),
-  pointer_default(unique)
+  pointer_default(unique),
+  depends(security)
 ]
 interface krb5pac
 {

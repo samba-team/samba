@@ -5,7 +5,6 @@ INIT_OBJ_FILES = \
 		librpc/ndr/ndr.o
 ADD_OBJ_FILES = \
 		librpc/ndr/ndr_basic.o \
-		librpc/ndr/ndr_sec.o \
 		librpc/ndr/ndr_spoolss_buf.o \
 		librpc/ndr/ndr_dcom.o 
 # End SUBSYSTEM LIBNDR_RAW

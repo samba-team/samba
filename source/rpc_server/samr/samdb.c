@@ -888,7 +888,7 @@ struct security_descriptor *samdb_default_security_descriptor(TALLOC_CTX *mem_ct
 {
 	struct security_descriptor *sd;
 
-	sd = sd_initialise(mem_ctx);
+	sd = security_descriptor_initialise(mem_ctx);
 
 	return sd;
 }
