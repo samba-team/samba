@@ -1,4 +1,4 @@
-            WHAT'S NEW IN Samba 2.2.6rc1  - 9th October 2002
+            WHAT'S NEW IN Samba 2.2.6rc2  - 9th October 2002
             ================================================
 
 This is a prelease snapshot of SAMBA_2_2 cvs branch.  This is a non-production
@@ -7,12 +7,19 @@ release provided for testing purposes only.
 The following new new smb.conf(5) options have been added in this preview
 release:
 
-	* profiles acls (S)
+  * profile acls (S)
 
 The following options have been added to Samba's configure script
 
-	--with-sendfile (enable experimental sendfile support)
+  --with-sendfile            Enable experimental sendfile support
+  --with-winbind-ldap-hack   Enable winbindd_ldap_hack() functionality
+                             for Windows 2000 native mode domains
 
+
+
+Changes since 2.2.6rc1
+----------------------
+1)  Default all LDAP connections to v3 with compiling with --with-ldapsam
 
 Changes since 2.2.6pre2
 -----------------------
@@ -66,7 +73,6 @@ Changes since 2.2.6pre2
 36) Add version strings to the usage message for smbcacls and smbpasswd
 37) Fix bug in the write cache code
 38) make the default printed values for boolean the same for all parameters
-39) Default all LDAP connections to v3 with compiling with --with-ldapsam
 
 
 Changes since 2.2.6pre1
