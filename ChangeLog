@@ -1,5 +1,11 @@
 2003-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/padata.c: add krb5_padata_add
+	
+	* lib/krb5/krb5.h: krb5_context_data.pkinit_win2k_compatible
+	
+	* lib/krb5/Makefile.am: add pkinit.c
+	
 	* kuser/kinit.c: add pkinit support
 	
 	* lib/krb5/init_creds_pw.c: add support for pkinit

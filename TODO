@@ -32,6 +32,11 @@ figure out what's the deal with do_sequence and the MIT client
 
 prepend a prefix on all generated symbols
 
+implicit optional CONS types
+
+untag optional
+
+
 ** lib/auth
 
 ** lib/auth/sia
@@ -50,6 +55,9 @@ make everything work with openssl and make prototypes compatible
 
 anonymous credentials not implemented
 
+gss_acquire_cred(GSS_C_BOTH) with a keytab only, gss_add_cred,
+gss_release_cred renders the output_cred_handle broken.
+
 ** lib/hdb
 
 ** lib/kadm5
@@ -64,8 +72,7 @@ the replay cache is, in its current state, not very useful
 
 OTP?
 
-make checksum/encryption type configuration more realm-specific.  make
-some simple way of handling the w2k situtation
+make checksum/encryption type configuration more realm-specific.
 
 crypto: allow scatter/gather creation of checksums
 
