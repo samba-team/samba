@@ -213,7 +213,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	call = new_rap_cli_call(NULL, 0);
+	call = new_rap_cli_call(NULL, RAP_WshareEnum);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -303,7 +303,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	call = new_rap_cli_call(NULL, 104);
+	call = new_rap_cli_call(NULL, RAP_NetServerEnum2);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -442,7 +442,7 @@ BOOL torture_rap_scan(void)
 {
 	TALLOC_CTX *mem_ctx;
 	struct smbcli_state *cli;
-	uint16 callno;
+	int callno;
 
 	mem_ctx = talloc_init("torture_rap_scan");
 
@@ -456,12 +456,13 @@ BOOL torture_rap_scan(void)
 
 		result = rap_cli_do_call(cli, call);
 
-		if (NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PARAMETER))
-			printf("callno %d is RAP call\n", callno);
+		if (!NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PARAMETER))
+			continue;
+
+		printf("callno %d is RAP call\n", callno);
 	}
 
 	torture_close_connection(cli);
-
 
 	return True;
 }
