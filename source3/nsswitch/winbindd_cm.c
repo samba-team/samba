@@ -65,12 +65,12 @@
    table or whatever later. */
 
 struct winbindd_cm_conn {
-        struct winbindd_cm_conn *prev, *next;
-        fstring domain;
-        fstring controller;
-        fstring pipe_name;
-        struct cli_state *cli;
-        POLICY_HND pol;
+	struct winbindd_cm_conn *prev, *next;
+	fstring domain;
+	fstring controller;
+	fstring pipe_name;
+	struct cli_state *cli;
+	POLICY_HND pol;
 };
 
 struct winbindd_cm_conn *cm_conns = NULL;
@@ -81,68 +81,64 @@ struct winbindd_cm_conn *cm_conns = NULL;
 #define GET_DC_NAME_CACHE_TIMEOUT 30 /* Seconds between dc lookups */
 
 struct get_dc_name_cache {
-        fstring domain_name;
-        fstring srv_name;
-        time_t lookup_time;
-        struct get_dc_name_cache *prev, *next;
+	fstring domain_name;
+	fstring srv_name;
+	time_t lookup_time;
+	struct get_dc_name_cache *prev, *next;
 };
 
 static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 {
-        static struct get_dc_name_cache *get_dc_name_cache;
-        struct get_dc_name_cache *dcc;
+	static struct get_dc_name_cache *get_dc_name_cache;
+	struct get_dc_name_cache *dcc;
 	struct in_addr *ip_list, dc_ip;
 	extern pstring global_myname;
 	int count, i;
 
-        /* Check the cache for previous lookups */
+	/* Check the cache for previous lookups */
 
-        for (dcc = get_dc_name_cache; dcc; dcc = dcc->next) {
+	for (dcc = get_dc_name_cache; dcc; dcc = dcc->next) {
 
-                if (!strequal(domain, dcc->domain_name))
-                        continue; /* Not our domain */
+		if (!strequal(domain, dcc->domain_name))
+			continue; /* Not our domain */
 
-                if ((time(NULL) - dcc->lookup_time) > GET_DC_NAME_CACHE_TIMEOUT) {
+		if ((time(NULL) - dcc->lookup_time) > GET_DC_NAME_CACHE_TIMEOUT) {
 
-                        /* Cache entry has expired, delete it */
+			/* Cache entry has expired, delete it */
 
-                        DEBUG(10, ("get_dc_name_cache entry expired for %s\n",
-                                   domain));
+			DEBUG(10, ("get_dc_name_cache entry expired for %s\n", domain));
 
-                        DLIST_REMOVE(get_dc_name_cache, dcc);
-                        free(dcc);
+			DLIST_REMOVE(get_dc_name_cache, dcc);
+			SAFE_FREE(dcc);
 
-                        break;
-                }
+			break;
+		}
 
-                /* Return a positive or negative lookup for this domain */
+		/* Return a positive or negative lookup for this domain */
 
-                if (dcc->srv_name[0]) {
-                        DEBUG(10, ("returning positive get_dc_name_cache "
-                                   "entry for %s\n", domain));
-                        fstrcpy(srv_name, dcc->srv_name);
-                        return True;
-                } else {
-                        DEBUG(10, ("returning negative get_dc_name_cache "
-                                   "entry for %s\n", domain));
-                        return False;
-                }
-        }
+		if (dcc->srv_name[0]) {
+			DEBUG(10, ("returning positive get_dc_name_cache " "entry for %s\n", domain));
+			fstrcpy(srv_name, dcc->srv_name);
+			return True;
+		} else {
+			DEBUG(10, ("returning negative get_dc_name_cache " "entry for %s\n", domain));
+			return False;
+		}
+	}
 
-        /* Add cache entry for this lookup. */
+	/* Add cache entry for this lookup. */
 
-        DEBUG(10, ("Creating get_dc_name_cache entry for %s\n", domain));
+	DEBUG(10, ("Creating get_dc_name_cache entry for %s\n", domain));
 
-        if (!(dcc = (struct get_dc_name_cache *)
-             malloc(sizeof(struct get_dc_name_cache))))
-                return False;
+	if (!(dcc = (struct get_dc_name_cache *) malloc(sizeof(struct get_dc_name_cache))))
+		return False;
 
-        ZERO_STRUCTP(dcc);
+	ZERO_STRUCTP(dcc);
 
-        fstrcpy(dcc->domain_name, domain);
-        dcc->lookup_time = time(NULL);
+	fstrcpy(dcc->domain_name, domain);
+	dcc->lookup_time = time(NULL);
 
-        DLIST_ADD(get_dc_name_cache, dcc);
+	DLIST_ADD(get_dc_name_cache, dcc);
 
 	/* Lookup domain controller name */
 		
@@ -166,9 +162,9 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 	if (!lookup_pdc_name(global_myname, domain, &dc_ip, srv_name))
 		return False;
 
-        /* We have a name so make the cache entry positive now */
+	/* We have a name so make the cache entry positive now */
 
-        fstrcpy(dcc->srv_name, srv_name);
+	fstrcpy(dcc->srv_name, srv_name);
 
 	return True;
 }
@@ -180,74 +176,72 @@ static BOOL cm_get_dc_name(char *domain, fstring srv_name)
 #define OPEN_CONNECTION_CACHE_TIMEOUT 30 /* Seconds between attempts */
 
 struct open_connection_cache {
-        fstring domain_name;
-        fstring controller;
-        time_t lookup_time;
-        struct open_connection_cache *prev, *next;
+	fstring domain_name;
+	fstring controller;
+	time_t lookup_time;
+	struct open_connection_cache *prev, *next;
 };
 
 static BOOL cm_open_connection(char *domain, char *pipe_name,
                                struct winbindd_cm_conn *new_conn)
 {
-        static struct open_connection_cache *open_connection_cache;
-        struct open_connection_cache *occ;
+	static struct open_connection_cache *open_connection_cache;
+	struct open_connection_cache *occ;
 	struct nmb_name calling, called;
-        extern pstring global_myname;
-        fstring dest_host;
-        struct in_addr dest_ip;
-        BOOL result = False;
-        struct ntuser_creds creds;
+	extern pstring global_myname;
+	fstring dest_host;
+	struct in_addr dest_ip;
+	BOOL result = False;
+	struct ntuser_creds creds;
 
-        fstrcpy(new_conn->domain, domain);
-        fstrcpy(new_conn->pipe_name, pipe_name);
+	fstrcpy(new_conn->domain, domain);
+	fstrcpy(new_conn->pipe_name, pipe_name);
         
-        /* Look for a domain controller for this domain.  Negative results
-           are cached so don't bother applying the caching for this
-           function just yet.  */
+	/* Look for a domain controller for this domain.  Negative results
+		are cached so don't bother applying the caching for this
+		function just yet.  */
 
-        if (!cm_get_dc_name(domain, new_conn->controller))
-                goto done;
+	if (!cm_get_dc_name(domain, new_conn->controller))
+		goto done;
 
-        /* Return false if we have tried to look up this domain and netbios
-           name before and failed. */
+	/* Return false if we have tried to look up this domain and netbios
+		name before and failed. */
 
-        for (occ = open_connection_cache; occ; occ = occ->next) {
+	for (occ = open_connection_cache; occ; occ = occ->next) {
                 
-                if (!(strequal(domain, occ->domain_name) &&
-                      strequal(new_conn->controller, occ->controller)))
-                        continue; /* Not our domain */
+		if (!(strequal(domain, occ->domain_name) &&
+					strequal(new_conn->controller, occ->controller)))
+			continue; /* Not our domain */
 
-                if ((time(NULL) - occ->lookup_time) > OPEN_CONNECTION_CACHE_TIMEOUT) {
-                        /* Cache entry has expired, delete it */
+		if ((time(NULL) - occ->lookup_time) > OPEN_CONNECTION_CACHE_TIMEOUT) {
+			/* Cache entry has expired, delete it */
 
-                        DEBUG(10, ("cm_open_connection cache entry expired "
-                                   "for %s, %s\n", domain,
-                                   new_conn->controller));
+			DEBUG(10, ("cm_open_connection cache entry expired for %s, %s\n", domain,
+				new_conn->controller));
 
-                        DLIST_REMOVE(open_connection_cache, occ);
-                        free(occ);
+			DLIST_REMOVE(open_connection_cache, occ);
+			free(occ);
 
-                        break;
-                }
+			break;
+		}
 
-                /* The timeout hasn't expired yet so return false */
+		/* The timeout hasn't expired yet so return false */
 
-                DEBUG(10, ("returning negative open_connection_cache entry "
-                           "for %s, %s\n", domain, new_conn->controller));
+		DEBUG(10, ("returning negative open_connection_cache entry for %s, %s\n",
+			domain, new_conn->controller));
 
-                goto done;
-        }
+		goto done;
+	}
 
-        /* Initialise SMB connection */
+	/* Initialise SMB connection */
 
-        if (!(new_conn->cli = cli_initialise(NULL)))
-                goto done;
+	if (!(new_conn->cli = cli_initialise(NULL)))
+		goto done;
 
 	if (!resolve_srv_name(new_conn->controller, dest_host, &dest_ip))
 		goto done;
 
-	make_nmb_name(&called, dns_to_netbios_name(new_conn->controller), 
-                      0x20);
+	make_nmb_name(&called, dns_to_netbios_name(new_conn->controller), 0x20);
 	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
 
 	ZERO_STRUCT(creds);
@@ -266,150 +260,142 @@ static BOOL cm_open_connection(char *domain, char *pipe_name,
         result = True;
 
  done:
-        /* Create negative lookup cache entry for this domain and
-           controller */
 
-        if (!result) {
-                if (!(occ = (struct open_connection_cache *)
-                      malloc(sizeof(struct open_connection_cache))))
-                        return False;
+	/* Create negative lookup cache entry for this domain and controller */
 
-                ZERO_STRUCTP(occ);
+	if (!result) {
+		if (!(occ = (struct open_connection_cache *)
+					malloc(sizeof(struct open_connection_cache))))
+			return False;
 
-                fstrcpy(occ->domain_name, domain);
-                fstrcpy(occ->controller, new_conn->controller);
-                occ->lookup_time = time(NULL);
+			ZERO_STRUCTP(occ);
 
-                DLIST_ADD(open_connection_cache, occ);
-        }
+			fstrcpy(occ->domain_name, domain);
+			fstrcpy(occ->controller, new_conn->controller);
+			occ->lookup_time = time(NULL);
 
-        if (!result && new_conn->cli)
-                cli_shutdown(new_conn->cli);
+			DLIST_ADD(open_connection_cache, occ);
+	}
 
-        return result;
+	if (!result && new_conn->cli)
+		cli_shutdown(new_conn->cli);
+
+	return result;
 }
 
 /* Return true if a connection is still alive */
 
 static BOOL connection_ok(struct winbindd_cm_conn *conn)
 {
-        if (!conn->cli->initialised)
-                return False;
+	if (!conn->cli->initialised)
+		return False;
 
-        if (conn->cli->fd == -1)
-                return False;
+	if (conn->cli->fd == -1)
+		return False;
 	
-        return True;
+	return True;
 }
 
 /* Return a LSA policy handle on a domain */
 
 CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
 {
-        struct winbindd_cm_conn *conn;
-        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-        NTSTATUS result;
-        static CLI_POLICY_HND hnd;
+	struct winbindd_cm_conn *conn;
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	NTSTATUS result;
+	static CLI_POLICY_HND hnd;
 
-        /* Look for existing connections */
+	/* Look for existing connections */
 
-        for (conn = cm_conns; conn; conn = conn->next) {
-                if (strequal(conn->domain, domain) &&
-                    strequal(conn->pipe_name, PIPE_LSARPC)) {
+	for (conn = cm_conns; conn; conn = conn->next) {
+		if (strequal(conn->domain, domain) && strequal(conn->pipe_name, PIPE_LSARPC)) {
 
-                        if (!connection_ok(conn)) {
-                                DLIST_REMOVE(cm_conns, conn);
-                                return NULL;
-                        }
+			if (!connection_ok(conn)) {
+				DLIST_REMOVE(cm_conns, conn);
+				return NULL;
+			}
 
-                        goto ok;
-                }
-        }
+			goto ok;
+		}
+	}
 
-        /* Create a new one */
+	/* Create a new one */
 
-        if (!(conn = (struct winbindd_cm_conn *)
-              malloc(sizeof(struct winbindd_cm_conn))))
-                return NULL;
+	if (!(conn = (struct winbindd_cm_conn *) malloc(sizeof(struct winbindd_cm_conn))))
+		return NULL;
 
-        ZERO_STRUCTP(conn);
+	ZERO_STRUCTP(conn);
 
-        if (!cm_open_connection(domain, PIPE_LSARPC, conn)) {
-                DEBUG(3, ("Could not connect to a dc for domain %s\n",
-                          domain));
-                return NULL;
-        }
+	if (!cm_open_connection(domain, PIPE_LSARPC, conn)) {
+		DEBUG(3, ("Could not connect to a dc for domain %s\n", domain));
+		return NULL;
+	}
 
-        result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
-                                     des_access, &conn->pol);
+	result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, des_access, &conn->pol);
 
-        if (!NT_STATUS_IS_OK(result))
-                return NULL;
+	if (!NT_STATUS_IS_OK(result))
+		return NULL;
 
-        /* Add to list */
+	/* Add to list */
 
-        DLIST_ADD(cm_conns, conn);
+	DLIST_ADD(cm_conns, conn);
 
  ok:
-        hnd.pol = conn->pol;
-        hnd.cli = conn->cli;
+	hnd.pol = conn->pol;
+	hnd.cli = conn->cli;
 
-        return &hnd;
+	return &hnd;
 }
 
 /* Return a SAM policy handle on a domain */
 
 CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 { 
-        struct winbindd_cm_conn *conn;
-        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-        NTSTATUS result;
-        static CLI_POLICY_HND hnd;
+	struct winbindd_cm_conn *conn;
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	NTSTATUS result;
+	static CLI_POLICY_HND hnd;
 
-        /* Look for existing connections */
+	/* Look for existing connections */
 
-        for (conn = cm_conns; conn; conn = conn->next) {
-                if (strequal(conn->domain, domain) &&
-                    strequal(conn->pipe_name, PIPE_SAMR)) {
+	for (conn = cm_conns; conn; conn = conn->next) {
+		if (strequal(conn->domain, domain) && strequal(conn->pipe_name, PIPE_SAMR)) {
 
-                        if (!connection_ok(conn)) {
-                                DLIST_REMOVE(cm_conns, conn);
-                                return NULL;
-                        }
+			if (!connection_ok(conn)) {
+				DLIST_REMOVE(cm_conns, conn);
+				return NULL;
+			}
 
-                        goto ok;
-                }
-        }
+			goto ok;
+		}
+	}
 
-        /* Create a new one */
+	/* Create a new one */
 
-        if (!(conn = (struct winbindd_cm_conn *)
-              malloc(sizeof(struct winbindd_cm_conn))))
-                return NULL;
+	if (!(conn = (struct winbindd_cm_conn *) malloc(sizeof(struct winbindd_cm_conn))))
+		return NULL;
 
-        ZERO_STRUCTP(conn);
+	ZERO_STRUCTP(conn);
 
-        if (!cm_open_connection(domain, PIPE_SAMR, conn)) {
-                DEBUG(3, ("Could not connect to a dc for domain %s\n",
-                          domain));
-                return NULL;
-        }
+	if (!cm_open_connection(domain, PIPE_SAMR, conn)) {
+		DEBUG(3, ("Could not connect to a dc for domain %s\n", domain));
+		return NULL;
+	}
 
-        result = cli_samr_connect(conn->cli, conn->cli->mem_ctx, des_access, 
-                                  &conn->pol);
+	result = cli_samr_connect(conn->cli, conn->cli->mem_ctx, des_access, &conn->pol);
 
-        if (!NT_STATUS_IS_OK(result))
-                return NULL;
+	if (!NT_STATUS_IS_OK(result))
+		return NULL;
 
-        /* Add to list */
+	/* Add to list */
 
-        DLIST_ADD(cm_conns, conn);
+	DLIST_ADD(cm_conns, conn);
 
  ok:
-        hnd.pol = conn->pol;
-        hnd.cli = conn->cli;
+	hnd.pol = conn->pol;
+	hnd.cli = conn->cli;
 
-        return &hnd;        
+	return &hnd;        
 }
 
 #if 0
@@ -641,62 +627,60 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
 
 struct cli_state *cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd)
 {
-        struct winbindd_cm_conn conn;
-        NTSTATUS result;
+	struct winbindd_cm_conn conn;
+	NTSTATUS result;
 
-        /* Open an initial conection */
+	/* Open an initial conection */
 
-        ZERO_STRUCT(conn);
+	ZERO_STRUCT(conn);
 
-        if (!cm_open_connection(domain, PIPE_NETLOGON, &conn)) {
-                DEBUG(3, ("Could not open a connection to %s\n", domain));
-                return NULL;
-        }
+	if (!cm_open_connection(domain, PIPE_NETLOGON, &conn)) {
+		DEBUG(3, ("Could not open a connection to %s\n", domain));
+		return NULL;
+	}
 
-        result = cli_nt_setup_creds(conn.cli, trust_passwd);
+	result = cli_nt_setup_creds(conn.cli, trust_passwd);
 
-        if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(0, ("error connecting to domain password server: %s\n",
-                          get_nt_error_msg(result)));
-                cli_shutdown(conn.cli);
-                return NULL;
-        }
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("error connecting to domain password server: %s\n",
+			get_nt_error_msg(result)));
+			cli_shutdown(conn.cli);
+			return NULL;
+	}
 
-        /* We only want the client handle from this structure */
+	/* We only want the client handle from this structure */
 
-        return conn.cli;
+	return conn.cli;
 }
 
 /* Dump the current connection status */
 
 static void dump_conn_list(void)
 {
-        struct winbindd_cm_conn *con;
+	struct winbindd_cm_conn *con;
 
-        DEBUG(0, ("\tDomain          Controller      Pipe\n"));
+	DEBUG(0, ("\tDomain          Controller      Pipe\n"));
 
-        for(con = cm_conns; con; con = con->next) {
-                char *msg;
+	for(con = cm_conns; con; con = con->next) {
+		char *msg;
 
-                /* Display pipe info */
+		/* Display pipe info */
                 
-                asprintf(&msg, "\t%-15s %-15s %-16s", con->domain, 
-                         con->controller, con->pipe_name);
+		asprintf(&msg, "\t%-15s %-15s %-16s", con->domain, con->controller, con->pipe_name);
                 
-                DEBUG(0, ("%s\n", msg));
-                free(msg);
-        }
+		DEBUG(0, ("%s\n", msg));
+		free(msg);
+	}
 }
 
 void winbindd_cm_status(void)
 {
-        /* List open connections */
+	/* List open connections */
 
-        DEBUG(0, ("winbindd connection manager status:\n"));
+	DEBUG(0, ("winbindd connection manager status:\n"));
 
-        if (cm_conns)
-                dump_conn_list();
-        else
-                DEBUG(0, ("\tNo active connections\n"));
-
+	if (cm_conns)
+		dump_conn_list();
+	else
+		DEBUG(0, ("\tNo active connections\n"));
 }

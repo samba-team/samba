@@ -255,8 +255,8 @@ static struct dispatch_table dispatch_table[] = {
 
 	/* Enumeration functions */
 
-        { WINBINDD_LIST_USERS, winbindd_list_users, "LIST_USERS" },
-        { WINBINDD_LIST_GROUPS, winbindd_list_groups, "LIST_GROUPS" },
+	{ WINBINDD_LIST_USERS, winbindd_list_users, "LIST_USERS" },
+	{ WINBINDD_LIST_GROUPS, winbindd_list_groups, "LIST_GROUPS" },
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains, "LIST_TRUSTDOM" },
 
 	/* SID related functions */
@@ -264,7 +264,7 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_LOOKUPSID, winbindd_lookupsid, "LOOKUPSID" },
 	{ WINBINDD_LOOKUPNAME, winbindd_lookupname, "LOOKUPNAME" },
 
-	/* S*RS related functions */
+	/* Lookup related functions */
 
 	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid, "SID_TO_UID" },
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
@@ -657,14 +657,12 @@ static void process_loop(int accept_sock)
 
 			flush_caches();
 			reload_services_file(True);
-
 			do_sighup = False;
 		}
 
 		if (do_sigusr1) {
 			print_winbindd_status();
-
-                        do_sigusr1 = False;
+			do_sigusr1 = False;
 		}
 	}
 }
