@@ -488,7 +488,7 @@ static struct enum_list enum_printing[] = {{PRINT_SYSV, "sysv"}, {PRINT_AIX, "ai
 					   {PRINT_HPUX, "hpux"}, {PRINT_BSD, "bsd"},
 					   {PRINT_QNX, "qnx"},   {PRINT_PLP, "plp"},
 					   {PRINT_LPRNG, "lprng"}, {PRINT_SOFTQ, "softq"},
-					   {-1, NULL}};
+					   {PRINT_CUPS, "cups"}, {-1, NULL}};
 
 /* Types of machine we can announce as. */
 #define ANNOUNCE_AS_NT_SERVER 1
@@ -1044,6 +1044,14 @@ static void init_locals(void)
       string_initial(&sDefault.szLpqcommand,"lpq -P%p");
       string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
       string_initial(&sDefault.szPrintcommand,"lpr -r -P%p %s");
+      break;
+
+    case PRINT_CUPS:
+      string_initial(&sDefault.szLpqcommand,"/usr/bin/lpstat -o%p");
+      string_initial(&sDefault.szLprmcommand,"/usr/bin/cancel %p-%j");
+      string_initial(&sDefault.szPrintcommand,"/usr/bin/lp -d%p -oraw %s; rm %s");
+      string_initial(&sDefault.szQueuepausecommand, "/usr/bin/disable %p");
+      string_initial(&sDefault.szQueueresumecommand, "/usr/bin/enable %p");
       break;
 
     case PRINT_SYSV:
