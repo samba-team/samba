@@ -619,9 +619,9 @@ static void init_structs(void )
  int main(int argc,const char *argv[])
 {
 	/* shall I run as a daemon */
-	BOOL is_daemon = False;
-	BOOL interactive = False;
-	char *ports = NULL;
+	static BOOL is_daemon = False;
+	static BOOL interactive = False;
+	static char *ports = NULL;
 	int opt;
 	poptContext pc;
 
