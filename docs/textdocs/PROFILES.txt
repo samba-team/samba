@@ -1,8 +1,8 @@
 Contributors:	Bruce Cook <BC3-AU@bigfoot.com>
 		Copyright (C) 1998 Bruce Cook
 
-		John Terpestra <samba-bugs@samba.anu.edu.au>
-		Copyright (C) 1998 John H. Terpestra
+		John Terpstra <samba-bugs@samba.anu.edu.au>
+		Copyright (C) 1998 John H. Terpstra
 
 		Wolfgang Ratzka <ratzka@hrz.uni-marburg.de>
 		Copyright (C) 1998 Wolfgang Ratzka
@@ -125,6 +125,19 @@ machine.
    the user doesn't get whatever happened last on the machine, the user will
    get a fairly minimalist configuration.
 
+[[jht:
+When a Win95 machine logs onto a Windows NT Domain the Win95 machine looks
+for the presence of a file called Config.Pol in the following location:
+	\\"Authenticating Server"\NETLOGON
+It reads this file and uses it to ammend both the desktop environment as well
+as the file %WinDir%\Profiles\%USERNAME%\User.DAT. As with Windows NT, on log
+out this file gets written back to the profile server into the %USERNAME%
+directory in the profile share.
+
+It is thus possible to share a common desktop profile between Windows NT and
+Windows 9x.
+:jht]]
+
 
 4. There are a *LOT* of reasons that the 'doze machine might not find USER.DAT
    and therefore default to a prototype.
@@ -209,6 +222,11 @@ The standard registry files are:
 	Security - Domain/Machine releated User Rights & Privs.
 	SAM - the Security Access Manager database (ie:Passwords etc.)
 
+[[jht:
+The SAM and Security files are the only files that get synchronised between
+Windows NT Domain Controllers.
+:jht]]
+
 These are used by EVERYTHING!!
 
 When a user logs in the following files get checked:
@@ -217,6 +235,13 @@ When a user logs in the following files get checked:
 		this one is a copy of the last NTConfig.Pol downloaded
 		from (1) above - if available.
 	3) %SystemRoot%\Policies\%UserName%\NTUser.DAT
+
+[[jht:
+The System Policy Editor on Windows NT can be used to create both the
+Windows 95 "Config.Pol" file, as well as the Windows NT "NTConfig.Pol"
+file. To create the Windows 95 policy file you MUST load the Windows 95
+policy template BEFORE creating the Config.Pol file.
+:jht]]
 
 The later, is first obtained from a profile server if the User_Init_Info
 passed from the Domain Logon Server specifies use of a roaming profile.
