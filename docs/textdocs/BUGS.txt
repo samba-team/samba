@@ -25,7 +25,7 @@ that list that may be able to help you.
 
 You may also like to look though the recent mailing list archives,
 which are conveniently accessible on the Samba web pages
-at http://samba.canberra.edu.au/pub/samba/ 
+at http://samba.anu.edu.au/samba/ 
 
 
 GENERAL INFO
