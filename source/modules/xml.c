@@ -47,7 +47,7 @@ static char * iota(int a) {
 	return tmp;
 }
 
-BOOL parsePass(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
+static BOOL parsePass(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 {
 	pstring temp;
 
@@ -76,7 +76,7 @@ BOOL parsePass(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 	return True;
 }
 
-BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
+static BOOL parseUser(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, SAM_ACCOUNT * u)
 {
 	char *tmp;
 	DOM_SID sid;
@@ -245,7 +245,7 @@ typedef struct pdb_xml {
 	xmlNsPtr ns;
 } pdb_xml;
 
-xmlNodePtr parseSambaXMLFile(struct pdb_xml *data)
+static xmlNodePtr parseSambaXMLFile(struct pdb_xml *data)
 {
 	xmlNodePtr cur;
 
