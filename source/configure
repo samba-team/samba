@@ -2056,7 +2056,7 @@ EOF
 		fi
 	;;
 esac
-for ac_hdr in shadow.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h
+for ac_hdr in shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6

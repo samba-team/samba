@@ -221,7 +221,7 @@
 #endif
 
 /*
- * The next two defines are needed to the IPTOS_* options
+ * The next three defines are needed to access the IPTOS_* options
  * on some systems.
  */
 
@@ -230,6 +230,10 @@
 #endif
 
 #ifdef HAVE_NETINET_IN_IP_H
+#include <netinet/in_ip.h>
+#endif
+
+#ifdef HAVE_NETINET_IP_H
 #include <netinet/ip.h>
 #endif
 
