@@ -198,7 +198,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 			       "userWorkstations",
 			       
 			       /* required for server_info, not access control: */
-			       "sAMAaccountName",
+			       "sAMAccountName",
 			       "displayName",
 			       "scriptPath",
 			       "profilePath",
