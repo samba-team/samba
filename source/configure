@@ -618,12 +618,12 @@ fi
 # Check whether --with-fhs or --without-fhs was given.
 if test "${with_fhs+set}" = set; then
   withval="$with_fhs"
-  codepagedir="\$(DATADIR)/codepages"
+  codepagedir="\$(DATADIR)/samba/codepages"
     configdir="${sysconfdir}/samba"
     lockdir="\${VARDIR}/lock/samba"
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
-    swatdir="\${DATADIR}/swat"
+    swatdir="\${DATADIR}/samba/swat"
 else
   codepagedir="\$(LIBDIR)/codepages"
     configdir="\${prefix}/lib"

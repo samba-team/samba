@@ -9,12 +9,12 @@ AC_CONFIG_HEADER(include/config.h)
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
 AC_ARG_WITH(fhs, [  --with-fhs            use FHS-compliant paths [default=no]],
-    codepagedir="\$(DATADIR)/codepages"
+    codepagedir="\$(DATADIR)/samba/codepages"
     configdir="${sysconfdir}/samba"
     lockdir="\${VARDIR}/lock/samba"
     logfilebase="\${VARDIR}/log/samba"
     privatedir="\${CONFIGDIR}/private"
-    swatdir="\${DATADIR}/swat",
+    swatdir="\${DATADIR}/samba/swat",
     codepagedir="\$(LIBDIR)/codepages"
     configdir="\${prefix}/lib"
     lockdir="\${prefix}/var/locks"
