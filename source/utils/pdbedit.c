@@ -652,7 +652,7 @@ static int import_users (char *filename)
 int main (int argc, char **argv)
 {
 	int ch;
-	static pstring servicesf = CONFIGFILE;
+	static pstring servicesf;
 	BOOL list_users = False;
 	BOOL verbose = False;
 	BOOL spstyle = False;
@@ -668,6 +668,8 @@ int main (int argc, char **argv)
 	char *logon_script = NULL;
 	char *profile_path = NULL;
 	char *smbpasswd = NULL;
+
+	pstrcpy(servicesf, dyn_CONFIGFILE);
 
 	TimeInit();
 	
