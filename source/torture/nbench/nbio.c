@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-#define MAX_FILES 1000
+#define MAX_FILES 100
 
 extern int nbench_line_count;
 static int nbio_id;
@@ -557,6 +557,10 @@ void nb_deltree(const char *dname)
 {
 	int total_deleted;
 
+	smb_raw_exit(c->session);
+
+	ZERO_STRUCT(ftable);
+
 	total_deleted = cli_deltree(c->tree, dname);
 
 	if (total_deleted == -1) {
@@ -570,7 +574,6 @@ void nb_deltree(const char *dname)
 void nb_cleanup(const char *cname)
 {
 	char *dname = NULL;
-	smb_raw_exit(c->session);
 	asprintf(&dname, "\\clients\\%s", cname);
 	nb_deltree(dname);
 	free(dname);
