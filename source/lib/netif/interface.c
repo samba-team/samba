@@ -94,7 +94,7 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 	iface->nmask = tov4(nmask);
 	iface->bcast.addr = MKBCADDR(iface->ip.addr, iface->nmask.addr);
 
-	DLIST_ADD(local_interfaces, iface);
+	DLIST_ADD_END(local_interfaces, iface, struct interface *);
 
 	DEBUG(2,("added interface ip=%s ",sys_inet_ntoa(iface->ip)));
 	DEBUG(2,("bcast=%s ",sys_inet_ntoa(iface->bcast)));
@@ -339,3 +339,18 @@ const char *iface_n_netmask(int n)
 	return NULL;
 }
 
+/*
+  return the local IP address that best matches a destination IP, or
+  our first interface if none match
+*/
+const char *iface_best_ip(const char *dest)
+{
+	struct interface *iface;
+	struct in_addr ip;
+	ip.s_addr = interpret_addr(dest);
+	iface = iface_find(ip, True);
+	if (iface) {
+		return sys_inet_ntoa(iface->ip);
+	}
+	return iface_n_ip(0);
+}

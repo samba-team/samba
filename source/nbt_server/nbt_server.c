@@ -34,6 +34,11 @@ static void nbtd_task_init(struct task_server *task)
 	struct nbtd_server *nbtsrv;
 	NTSTATUS status;
 
+	if (iface_count() == 0) {
+		task_terminate(task, "nbtd: no network interfaces configured");
+		return;
+	}
+
 	nbtsrv = talloc(task, struct nbtd_server);
 	if (nbtsrv == NULL) {
 		task_terminate(task, "nbtd: out of memory");
