@@ -1257,20 +1257,20 @@ static void api_samr_unknown_38( uint16 vuid, prs_struct *data, prs_struct *rdat
 
 
 /*******************************************************************
- samr_reply_unknown_12
+ samr_reply_lookup_rids
  ********************************************************************/
-static void samr_reply_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
+static void samr_reply_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 				prs_struct *rdata)
 {
 	fstring group_names[MAX_SAM_ENTRIES];
 	uint8   group_attrs[MAX_SAM_ENTRIES];
 	uint32 status     = 0;
-	int num_gids = q_u->num_gids1;
+	int num_rids = q_u->num_rids1;
 	DOM_SID pol_sid;
 
-	SAMR_R_UNKNOWN_12 r_u;
+	SAMR_R_LOOKUP_RIDS r_u;
 
-	DEBUG(5,("samr_unknown_12: %d\n", __LINE__));
+	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
 	if (status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
@@ -1286,42 +1286,42 @@ static void samr_reply_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 	if (status == 0x0)
 	{
 		int i;
-		if (num_gids > MAX_SAM_ENTRIES)
+		if (num_rids > MAX_SAM_ENTRIES)
 		{
-			num_gids = MAX_SAM_ENTRIES;
-			DEBUG(5,("samr_unknown_12: truncating entries to %d\n", num_gids));
+			num_rids = MAX_SAM_ENTRIES;
+			DEBUG(5,("samr_lookup_rids: truncating entries to %d\n", num_rids));
 		}
 
-		for (i = 0; i < num_gids && status == 0; i++)
+		for (i = 0; i < num_rids && status == 0; i++)
 		{
 			DOM_SID sid;
 			sid_copy(&sid, &pol_sid);
-			sid_append_rid(&sid, q_u->gid[i]);
+			sid_append_rid(&sid, q_u->rid[i]);
 			lookup_sid(&sid, group_names[i], &group_attrs[i]);
 		}
 	}
 
-	make_samr_r_unknown_12(&r_u, num_gids, group_names, group_attrs, status);
+	make_samr_r_lookup_rids(&r_u, num_rids, group_names, group_attrs, status);
 
 	/* store the response in the SMB stream */
-	samr_io_r_unknown_12("", &r_u, rdata, 0);
+	samr_io_r_lookup_rids("", &r_u, rdata, 0);
 
-	DEBUG(5,("samr_unknown_12: %d\n", __LINE__));
+	DEBUG(5,("samr_lookup_rids: %d\n", __LINE__));
 
 }
 
 /*******************************************************************
- api_samr_unknown_12
+ api_samr_lookup_rids
  ********************************************************************/
-static void api_samr_unknown_12( uint16 vuid, prs_struct *data, prs_struct *rdata)
+static void api_samr_lookup_rids( uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
-	SAMR_Q_UNKNOWN_12 q_u;
+	SAMR_Q_LOOKUP_RIDS q_u;
 
 	/* grab the samr lookup names */
-	samr_io_q_unknown_12("", &q_u, data, 0);
+	samr_io_q_lookup_rids("", &q_u, data, 0);
 
 	/* construct reply.  always indicate success */
-	samr_reply_unknown_12(&q_u, rdata);
+	samr_reply_lookup_rids(&q_u, rdata);
 }
 
 
@@ -2085,8 +2085,8 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_QUERY_DISPINFO"   , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },
 	{ "SAMR_QUERY_ALIASINFO"  , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },
 	{ "SAMR_QUERY_GROUPINFO"  , SAMR_QUERY_GROUPINFO  , api_samr_query_groupinfo  },
-	{ "SAMR_0x32"             , 0x32                  , api_samr_unknown_32       },
-	{ "SAMR_UNKNOWN_12"       , SAMR_UNKNOWN_12       , api_samr_unknown_12       },
+	{ "SAMR_0x32"             , SAMR_UNKNOWN_32       , api_samr_unknown_32       },
+	{ "SAMR_LOOKUP_RIDS"      , SAMR_LOOKUP_RIDS      , api_samr_lookup_rids      },
 	{ "SAMR_UNKNOWN_38"       , SAMR_UNKNOWN_38       , api_samr_unknown_38       },
 	{ "SAMR_CHGPASSWD_USER"   , SAMR_CHGPASSWD_USER   , api_samr_chgpasswd_user   },
 	{ "SAMR_OPEN_ALIAS"       , SAMR_OPEN_ALIAS       , api_samr_open_alias       },

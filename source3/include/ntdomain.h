@@ -145,7 +145,8 @@ typedef struct
 struct acct_info
 {
     fstring acct_name; /* account name */
-    uint32  user_rid; /* domain-relative RID */
+    fstring acct_desc; /* account description */
+    uint32  rid; /* domain-relative RID */
 };
 
 #endif /* _NT_DOMAIN_H */

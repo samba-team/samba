@@ -78,7 +78,7 @@ void samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int
 reads or writes a structure.
 ********************************************************************/
 void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
-				POLICY_HND *connect_pol, uint32 rid,
+				POLICY_HND *connect_pol, uint32 flags,
 				DOM_SID *sid)
 {
 	if (q_u == NULL) return;
@@ -86,7 +86,7 @@ void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 	DEBUG(5,("samr_make_samr_q_open_domain\n"));
 
 	memcpy(&q_u->connect_pol, connect_pol, sizeof(q_u->connect_pol));
-	q_u->rid = rid;
+	q_u->flags = flags;
 	make_dom_sid2(&(q_u->dom_sid), sid);
 }
 
@@ -105,7 +105,7 @@ void samr_io_q_open_domain(char *desc,  SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps,
 	smb_io_pol_hnd("connect_pol", &(q_u->connect_pol), ps, depth); 
 	prs_align(ps);
 
-	prs_uint32("rid", ps, depth, &(q_u->rid));
+	prs_uint32("flags", ps, depth, &(q_u->flags));
 
 	smb_io_dom_sid2("sid", &(q_u->dom_sid), ps, depth); 
 	prs_align(ps);
@@ -2544,11 +2544,11 @@ void samr_io_r_open_alias(char *desc,  SAMR_R_OPEN_ALIAS *r_u, prs_struct *ps, i
 }
 
 /*******************************************************************
-makes a SAMR_Q_UNKNOWN_12 structure.
+makes a SAMR_Q_LOOKUP_RIDS structure.
 ********************************************************************/
-void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
-		POLICY_HND *pol, uint32 rid,
-		uint32 num_gids, uint32 *gid)
+void make_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
+		POLICY_HND *pol, uint32 flags,
+		uint32 num_rids, uint32 *rid)
 {
 	int i;
 	if (q_u == NULL) return;
@@ -2557,28 +2557,28 @@ void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 
 	memcpy(&(q_u->pol), pol, sizeof(*pol));
 
-	q_u->num_gids1 = num_gids;
-	q_u->rid       = rid;
+	q_u->num_rids1 = num_rids;
+	q_u->flags     = flags;
 	q_u->ptr       = 0;
-	q_u->num_gids2 = num_gids;
+	q_u->num_rids2 = num_rids;
 
-	for (i = 0; i < num_gids; i++)
+	for (i = 0; i < num_rids; i++)
 	{
-		q_u->gid[i] = gid[i];
+		q_u->rid[i] = rid[i];
 	}
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, int depth)
+void samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps, int depth)
 {
 	int i;
 	fstring tmp;
 
 	if (q_u == NULL) return;
 
-	prs_debug(ps, depth, desc, "samr_io_q_unknown_12");
+	prs_debug(ps, depth, desc, "samr_io_q_lookup_rids");
 	depth++;
 
 	prs_align(ps);
@@ -2586,18 +2586,18 @@ void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, i
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth); 
 	prs_align(ps);
 
-	prs_uint32("num_gids1", ps, depth, &(q_u->num_gids1));
-	prs_uint32("rid      ", ps, depth, &(q_u->rid      ));
+	prs_uint32("num_rids1", ps, depth, &(q_u->num_rids1));
+	prs_uint32("flags    ", ps, depth, &(q_u->flags    ));
 	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
-	prs_uint32("num_gids2", ps, depth, &(q_u->num_gids2));
+	prs_uint32("num_rids2", ps, depth, &(q_u->num_rids2));
 
-	SMB_ASSERT_ARRAY(q_u->gid, q_u->num_gids2);
+	SMB_ASSERT_ARRAY(q_u->rid, q_u->num_rids2);
 
-	for (i = 0; i < q_u->num_gids2; i++)
+	for (i = 0; i < q_u->num_rids2; i++)
 	{
 		prs_grow(ps);
-		slprintf(tmp, sizeof(tmp) - 1, "gid[%02d]  ", i);
-		prs_uint32(tmp, ps, depth, &(q_u->gid[i]));
+		slprintf(tmp, sizeof(tmp) - 1, "rid[%02d]  ", i);
+		prs_uint32(tmp, ps, depth, &(q_u->rid[i]));
 	}
 
 	prs_align(ps);
@@ -2605,16 +2605,16 @@ void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, i
 
 
 /*******************************************************************
-makes a SAMR_R_UNKNOWN_12 structure.
+makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
-void make_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
+void make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		uint32 num_names, fstring *name, uint8 *type,
 		uint32 status)
 {
 	int i;
 	if (r_u == NULL || name == NULL || type == NULL) return;
 
-	DEBUG(5,("make_samr_r_unknown_12\n"));
+	DEBUG(5,("make_samr_r_lookup_rids\n"));
 
 	if (status == 0x0)
 	{
@@ -2653,13 +2653,13 @@ void make_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, int depth)
+void samr_io_r_lookup_rids(char *desc,  SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth)
 {
 	int i;
 	fstring tmp;
 	if (r_u == NULL) return;
 
-	prs_debug(ps, depth, desc, "samr_io_r_unknown_12");
+	prs_debug(ps, depth, desc, "samr_io_r_lookup_rids");
 	depth++;
 
 	prs_align(ps);
@@ -2870,7 +2870,7 @@ void make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u, POLICY_HND *hnd,
 	DEBUG(5,("make_samr_q_add_aliasmem\n"));
 
 	memcpy(&(q_u->alias_pol), hnd, sizeof(q_u->alias_pol));
-	sid_copy(&q_u->sid, sid);
+	make_dom_sid2(&q_u->sid, sid);
 }
 
 
@@ -2887,7 +2887,7 @@ void samr_io_q_add_aliasmem(char *desc,  SAMR_Q_ADD_ALIASMEM *q_u, prs_struct *p
 	prs_align(ps);
 
 	smb_io_pol_hnd("alias_pol", &(q_u->alias_pol), ps, depth); 
-	smb_io_dom_sid("sid      ", &(q_u->sid      ), ps, depth); 
+	smb_io_dom_sid2("sid      ", &(q_u->sid      ), ps, depth); 
 }
 
 /*******************************************************************

@@ -35,7 +35,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a LSA Open Policy
 ****************************************************************************/
-BOOL do_lsa_open_policy(struct cli_state *cli,
+BOOL lsa_open_policy(struct cli_state *cli,
 			char *server_name, POLICY_HND *hnd,
 			BOOL sec_qos)
 {
@@ -101,7 +101,7 @@ BOOL do_lsa_open_policy(struct cli_state *cli,
 /****************************************************************************
 do a LSA Lookup Names
 ****************************************************************************/
-BOOL do_lsa_lookup_names(struct cli_state *cli,
+BOOL lsa_lookup_names(struct cli_state *cli,
 			POLICY_HND *hnd,
 			int num_names,
 			char **names,
@@ -214,7 +214,7 @@ BOOL do_lsa_lookup_names(struct cli_state *cli,
 /****************************************************************************
 do a LSA Lookup SIDs
 ****************************************************************************/
-BOOL do_lsa_lookup_sids(struct cli_state *cli,
+BOOL lsa_lookup_sids(struct cli_state *cli,
 			POLICY_HND *hnd,
 			int num_sids,
 			DOM_SID **sids,
@@ -333,7 +333,7 @@ BOOL do_lsa_lookup_sids(struct cli_state *cli,
 /****************************************************************************
 do a LSA Query Info Policy
 ****************************************************************************/
-BOOL do_lsa_query_info_pol(struct cli_state *cli,
+BOOL lsa_query_info_pol(struct cli_state *cli,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid)
 {
@@ -446,7 +446,7 @@ BOOL do_lsa_query_info_pol(struct cli_state *cli,
 /****************************************************************************
 do a LSA Close
 ****************************************************************************/
-BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
+BOOL lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 {
 	prs_struct rbuf;
 	prs_struct buf; 

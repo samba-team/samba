@@ -121,15 +121,15 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 /****************************************************************************
 gets either a hex number (0xNNN) or decimal integer (NNN).
 ****************************************************************************/
-int get_number(const char *tmp)
+uint32 get_number(const char *tmp)
 {
 	if (strnequal(tmp, "0x", 2))
 	{
-		return strtol(tmp, (char**)NULL, 16);
+		return strtoul(tmp, (char**)NULL, 16);
 	}
 	else
 	{
-		return strtol(tmp, (char**)NULL, 10);
+		return strtoul(tmp, (char**)NULL, 10);
 	}
 }
 
@@ -144,7 +144,7 @@ char *Atoic(char *p, int *n, char *c)
 		return NULL;
 	}
 
-	(*n) = get_number(p);
+	(*n) = (int)get_number(p);
 
 	if (strnequal(p, "0x", 2))
 	{

@@ -43,6 +43,8 @@ BOOL create_samr_domain_alias(struct cli_state *cli,
 {
 	POLICY_HND pol_open_alias;
 	ALIAS_INFO_CTR ctr;
+	BOOL ret = True;
+
 	if (pol_open_domain == NULL || acct_name == NULL || acct_desc == NULL) return False;
 
 	/* send create alias */
@@ -66,9 +68,10 @@ BOOL create_samr_domain_alias(struct cli_state *cli,
 				&ctr))
 	{
 		DEBUG(5,("create_samr_domain_alias: error in samr_set_aliasinfo\n"));
+		ret = False;
 	}
 
-	return samr_close(cli, &pol_open_alias);
+	return samr_close(cli, &pol_open_alias) && ret;
 }
 
 /****************************************************************************
@@ -81,6 +84,8 @@ BOOL create_samr_domain_group(struct cli_state *cli,
 {
 	POLICY_HND pol_open_group;
 	GROUP_INFO_CTR ctr;
+	BOOL ret = True;
+
 	if (pol_open_domain == NULL || acct_name == NULL || acct_desc == NULL) return False;
 
 	/* send create group*/
@@ -105,9 +110,10 @@ BOOL create_samr_domain_group(struct cli_state *cli,
 				&ctr))
 	{
 		DEBUG(5,("create_samr_domain_group: error in samr_set_groupinfo\n"));
+		ret = False;
 	}
 
-	return samr_close(cli, &pol_open_group);
+	return samr_close(cli, &pol_open_group) && ret;
 }
 
 /****************************************************************************
@@ -118,6 +124,8 @@ BOOL get_samr_query_usergroups(struct cli_state *cli,
 				uint32 *num_groups, DOM_GID *gid)
 {
 	POLICY_HND pol_open_user;
+	BOOL ret = True;
+
 	if (pol_open_domain == NULL || num_groups == NULL || gid == NULL) return False;
 
 	/* send open domain (on user sid) */
@@ -135,9 +143,73 @@ BOOL get_samr_query_usergroups(struct cli_state *cli,
 				num_groups, gid))
 	{
 		DEBUG(5,("samr_query_usergroups: error in query user groups\n"));
+		ret = False;
 	}
 
-	return samr_close(cli, &pol_open_user);
+	return samr_close(cli, &pol_open_user) && ret;
+}
+
+/****************************************************************************
+do a SAMR query group members 
+****************************************************************************/
+BOOL get_samr_query_groupmem(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				uint32 group_rid, uint32 *num_mem,
+				uint32 *rid, uint32 *attr)
+{
+	POLICY_HND pol_open_group;
+	BOOL ret = True;
+
+	if (pol_open_domain == NULL || num_mem == NULL || rid == NULL || attr == NULL) return False;
+
+	/* send open domain (on group sid) */
+	if (!samr_open_group(cli, pol_open_domain,
+				group_rid,
+				&pol_open_group))
+	{
+		return False;
+	}
+
+	/* send group info query */
+	if (!samr_query_groupmem(cli, &pol_open_group, num_mem, rid, attr))
+				
+	{
+		DEBUG(5,("samr_query_group: error in query group members\n"));
+		ret = False;
+	}
+
+	return samr_close(cli, &pol_open_group) && ret;
+}
+
+/****************************************************************************
+do a SAMR query alias members 
+****************************************************************************/
+BOOL get_samr_query_aliasmem(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				uint32 alias_rid, uint32 *num_mem, DOM_SID2 *sid)
+{
+	POLICY_HND pol_open_alias;
+	BOOL ret = True;
+
+	if (pol_open_domain == NULL || num_mem == NULL || sid == NULL) return False;
+
+	/* send open domain (on alias sid) */
+	if (!samr_open_alias(cli, pol_open_domain,
+				alias_rid,
+				&pol_open_alias))
+	{
+		return False;
+	}
+
+	/* send alias info query */
+	if (!samr_query_aliasmem(cli, &pol_open_alias, num_mem, sid))
+				
+	{
+		DEBUG(5,("samr_query_alias: error in query alias members\n"));
+		ret = False;
+	}
+
+	return samr_close(cli, &pol_open_alias) && ret;
 }
 
 /****************************************************************************
@@ -149,6 +221,8 @@ BOOL get_samr_query_userinfo(struct cli_state *cli,
 				uint32 user_rid, SAM_USER_INFO_21 *usr)
 {
 	POLICY_HND pol_open_user;
+	BOOL ret = True;
+
 	if (pol_open_domain == NULL || usr == NULL) return False;
 
 	bzero(usr, sizeof(*usr));
@@ -169,9 +243,46 @@ BOOL get_samr_query_userinfo(struct cli_state *cli,
 	{
 		DEBUG(5,("samr_query_userinfo: error in query user info, level 0x%x\n",
 		          info_level));
+		ret = False;
 	}
 
-	return samr_close(cli, &pol_open_user);
+	return samr_close(cli, &pol_open_user) && ret;
+}
+
+/****************************************************************************
+do a SAMR query group info
+****************************************************************************/
+BOOL get_samr_query_groupinfo(struct cli_state *cli, 
+				POLICY_HND *pol_open_domain,
+				uint32 info_level,
+				uint32 group_rid, GROUP_INFO_CTR *ctr)
+{
+	POLICY_HND pol_open_group;
+	BOOL ret = True;
+
+	if (pol_open_domain == NULL || ctr == NULL) return False;
+
+	bzero(ctr, sizeof(*ctr));
+
+	/* send open domain (on group sid) */
+	if (!samr_open_group(cli,
+				pol_open_domain,
+				group_rid, &pol_open_group))
+	{
+		return False;
+	}
+
+	/* send group info query */
+	if (!samr_query_groupinfo(cli,
+				&pol_open_group,
+				info_level, ctr))
+	{
+		DEBUG(5,("samr_query_groupinfo: error in query group info, level 0x%x\n",
+		          info_level));
+		ret = False;
+	}
+
+	return samr_close(cli, &pol_open_group) && ret;
 }
 
 /****************************************************************************
@@ -313,7 +424,6 @@ BOOL samr_query_dom_info(struct cli_state *cli,
 	/* send the data on \PIPE\ */
 	if (rpc_api_pipe_req(cli, SAMR_QUERY_DOMAIN_INFO, &data, &rdata))
 	{
-#if 0
 		SAMR_R_QUERY_DOMAIN_INFO r_e;
 		BOOL p;
 
@@ -331,13 +441,194 @@ BOOL samr_query_dom_info(struct cli_state *cli,
 		{
 			valid_un8 = True;
 		}
-#endif
 	}
 
 	prs_mem_free(&data   );
 	prs_mem_free(&rdata  );
 
 	return valid_un8;
+}
+
+/****************************************************************************
+do a SAMR enumerate groups
+****************************************************************************/
+BOOL samr_enum_dom_groups(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 size,
+				struct acct_info **sam,
+				int *num_sam_groups)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_ENUM_DOM_GROUPS q_e;
+	BOOL valid_pol = False;
+
+	DEBUG(4,("SAMR Enum SAM DB max size:%x\n", size));
+
+	if (pol == NULL || num_sam_groups == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_ENUM_DOM_GROUPS */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* store the parameters */
+	make_samr_q_enum_dom_groups(&q_e, pol, 3, 0, size);
+
+	/* turn parameters into data stream */
+	samr_io_q_enum_dom_groups("", &q_e, &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_ENUM_DOM_GROUPS, &data, &rdata))
+	{
+		SAMR_R_ENUM_DOM_GROUPS r_e;
+		BOOL p;
+
+		samr_io_r_enum_dom_groups("", &r_e, &rdata, 0);
+
+		p = rdata.offset != 0;
+		if (p && r_e.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_ENUM_DOM_GROUPS: %s\n", get_nt_error_msg(r_e.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			int i;
+			int name_idx = 0;
+			int desc_idx = 0;
+
+			*num_sam_groups = r_e.num_entries2;
+			if (*num_sam_groups > MAX_SAM_ENTRIES)
+			{
+				*num_sam_groups = MAX_SAM_ENTRIES;
+				DEBUG(2,("samr_enum_dom_groups: sam user entries limited to %d\n",
+				          *num_sam_groups));
+			}
+
+			*sam = (struct acct_info*) malloc(sizeof(struct acct_info) * (*num_sam_groups));
+				    
+			if ((*sam) == NULL)
+			{
+				*num_sam_groups = 0;
+			}
+
+			for (i = 0; i < *num_sam_groups; i++)
+			{
+				(*sam)[i].rid = r_e.sam[i].rid_grp;
+				(*sam)[i].acct_name[0] = 0;
+				(*sam)[i].acct_desc[0] = 0;
+				if (r_e.sam[i].hdr_grp_name.buffer)
+				{
+					fstrcpy((*sam)[i].acct_name, unistr2_to_str(&r_e.str[name_idx].uni_grp_name));
+					name_idx++;
+				}
+				if (r_e.sam[i].hdr_grp_desc.buffer)
+				{
+					fstrcpy((*sam)[i].acct_desc, unistr2_to_str(&r_e.str[desc_idx].uni_grp_desc));
+					desc_idx++;
+				}
+				DEBUG(5,("samr_enum_dom_groups: idx: %4d rid: %8x acct: %s desc: %s\n",
+				          i, (*sam)[i].rid, (*sam)[i].acct_name, (*sam)[i].acct_desc));
+			}
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a SAMR enumerate aliases
+****************************************************************************/
+BOOL samr_enum_dom_aliases(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 size,
+				struct acct_info **sam,
+				int *num_sam_aliases)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_ENUM_DOM_ALIASES q_e;
+	BOOL valid_pol = False;
+
+	DEBUG(4,("SAMR Enum SAM DB max size:%x\n", size));
+
+	if (pol == NULL || num_sam_aliases == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_ENUM_DOM_ALIASES */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* store the parameters */
+	make_samr_q_enum_dom_aliases(&q_e, pol, size);
+
+	/* turn parameters into data stream */
+	samr_io_q_enum_dom_aliases("", &q_e, &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_ENUM_DOM_ALIASES, &data, &rdata))
+	{
+		SAMR_R_ENUM_DOM_ALIASES r_e;
+		BOOL p;
+
+		samr_io_r_enum_dom_aliases("", &r_e, &rdata, 0);
+
+		p = rdata.offset != 0;
+		if (p && r_e.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_ENUM_DOM_ALIASES: %s\n", get_nt_error_msg(r_e.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			int i;
+			int name_idx = 0;
+
+			*num_sam_aliases = r_e.num_entries2;
+			if (*num_sam_aliases > MAX_SAM_ENTRIES)
+			{
+				*num_sam_aliases = MAX_SAM_ENTRIES;
+				DEBUG(2,("samr_enum_dom_aliases: sam user entries limited to %d\n",
+				          *num_sam_aliases));
+			}
+
+			*sam = (struct acct_info*) malloc(sizeof(struct acct_info) * (*num_sam_aliases));
+				    
+			if ((*sam) == NULL)
+			{
+				*num_sam_aliases = 0;
+			}
+
+			for (i = 0; i < *num_sam_aliases; i++)
+			{
+				(*sam)[i].rid = r_e.sam[i].rid;
+				(*sam)[i].acct_name[0] = 0;
+				(*sam)[i].acct_desc[0] = 0;
+				if (r_e.sam[i].hdr_name.buffer)
+				{
+					fstrcpy((*sam)[i].acct_name, unistr2_to_str(&r_e.uni_grp_name[name_idx]));
+					name_idx++;
+				}
+				DEBUG(5,("samr_enum_dom_aliases: idx: %4d rid: %8x acct: %s\n",
+				          i, (*sam)[i].rid, (*sam)[i].acct_name));
+			}
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
 }
 
 /****************************************************************************
@@ -410,21 +701,16 @@ BOOL samr_enum_dom_users(struct cli_state *cli,
 
 			for (i = 0; i < *num_sam_users; i++)
 			{
-
-				(*sam)[i].user_rid = r_e.sam[i].rid;
+				(*sam)[i].rid = r_e.sam[i].rid;
+				(*sam)[i].acct_name[0] = 0;
+				(*sam)[i].acct_desc[0] = 0;
 				if (r_e.sam[i].hdr_name.buffer)
 				{
-					char *acct_name = unistrn2(r_e.uni_acct_name[name_idx].buffer,
-					                           r_e.uni_acct_name[name_idx].uni_str_len);
-					fstrcpy((*sam)[i].acct_name, acct_name);
+					fstrcpy((*sam)[i].acct_name, unistr2_to_str(&r_e.uni_acct_name[name_idx]));
 					name_idx++;
 				}
-				else
-				{
-					bzero((*sam)[i].acct_name, sizeof((*sam)[i].acct_name));
-				}
 				DEBUG(5,("samr_enum_dom_users: idx: %4d rid: %8x acct: %s\n",
-				          i, (*sam)[i].user_rid, (*sam)[i].acct_name));
+				          i, (*sam)[i].rid, (*sam)[i].acct_name));
 			}
 			valid_pol = True;
 		}
@@ -610,6 +896,61 @@ BOOL samr_open_alias(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a SAMR Add Alias Member
+****************************************************************************/
+BOOL samr_add_aliasmem(struct cli_state *cli, 
+				POLICY_HND *alias_pol, DOM_SID *sid)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_ADD_ALIASMEM q_o;
+	BOOL valid_pol = False;
+
+	if (alias_pol == NULL || sid == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_ADD_ALIASMEM */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Add Alias Member.\n"));
+
+	/* store the parameters */
+	make_samr_q_add_aliasmem(&q_o, alias_pol, sid);
+
+	/* turn parameters into data stream */
+	samr_io_q_add_aliasmem("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_ADD_ALIASMEM, &data, &rdata))
+	{
+		SAMR_R_ADD_ALIASMEM r_o;
+		BOOL p;
+
+		samr_io_r_add_aliasmem("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_ADD_ALIASMEM: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
 do a SAMR Create Domain Alias
 ****************************************************************************/
 BOOL samr_create_dom_alias(struct cli_state *cli, 
@@ -780,6 +1121,61 @@ BOOL samr_open_group(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a SAMR Add Group Member
+****************************************************************************/
+BOOL samr_add_groupmem(struct cli_state *cli, 
+				POLICY_HND *group_pol, uint32 rid)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_ADD_GROUPMEM q_o;
+	BOOL valid_pol = False;
+
+	if (group_pol == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_ADD_GROUPMEM */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Add Group Member.\n"));
+
+	/* store the parameters */
+	make_samr_q_add_groupmem(&q_o, group_pol, rid);
+
+	/* turn parameters into data stream */
+	samr_io_q_add_groupmem("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_ADD_GROUPMEM, &data, &rdata))
+	{
+		SAMR_R_ADD_GROUPMEM r_o;
+		BOOL p;
+
+		samr_io_r_add_groupmem("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_ADD_GROUPMEM: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pol = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
 do a SAMR Create Domain Group
 ****************************************************************************/
 BOOL samr_create_dom_group(struct cli_state *cli, 
@@ -896,7 +1292,7 @@ BOOL samr_set_groupinfo(struct cli_state *cli,
 do a SAMR Open Domain
 ****************************************************************************/
 BOOL samr_open_domain(struct cli_state *cli, 
-				POLICY_HND *connect_pol, uint32 rid, DOM_SID *sid,
+				POLICY_HND *connect_pol, uint32 flags, DOM_SID *sid,
 				POLICY_HND *domain_pol)
 {
 	pstring sid_str;
@@ -907,7 +1303,7 @@ BOOL samr_open_domain(struct cli_state *cli,
 	BOOL valid_pol = False;
 
 	sid_to_string(sid_str, sid);
-	DEBUG(4,("SAMR Open Domain.  SID:%s RID:%x\n", sid_str, rid));
+	DEBUG(4,("SAMR Open Domain.  SID:%s Flags:%x\n", sid_str, flags));
 
 	if (connect_pol == NULL || sid == NULL || domain_pol == NULL) return False;
 
@@ -917,7 +1313,7 @@ BOOL samr_open_domain(struct cli_state *cli,
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
 	/* store the parameters */
-	make_samr_q_open_domain(&q_o, connect_pol, rid, sid);
+	make_samr_q_open_domain(&q_o, connect_pol, flags, sid);
 
 	/* turn parameters into data stream */
 	samr_io_q_open_domain("", &q_o,  &data, 0);
@@ -952,10 +1348,11 @@ BOOL samr_open_domain(struct cli_state *cli,
 }
 
 /****************************************************************************
-do a SAMR Query Unknown 12
+do a SAMR Query Lookup RIDS
 ****************************************************************************/
-BOOL samr_query_unknown_12(struct cli_state *cli, 
-				POLICY_HND *pol, uint32 rid, uint32 num_gids, uint32 *gids,
+BOOL samr_query_lookup_rids(struct cli_state *cli, 
+				POLICY_HND *pol, uint32 flags,
+				uint32 num_rids, uint32 *rids,
 				uint32 *num_names,
 				fstring names[MAX_LOOKUP_SIDS],
 				uint32  type [MAX_LOOKUP_SIDS])
@@ -963,38 +1360,38 @@ BOOL samr_query_unknown_12(struct cli_state *cli,
 	prs_struct data;
 	prs_struct rdata;
 
-	SAMR_Q_UNKNOWN_12 q_o;
+	SAMR_Q_LOOKUP_RIDS q_o;
 	BOOL valid_query = False;
 
-	if (pol == NULL || rid == 0 || num_gids == 0 || gids == NULL ||
+	if (pol == NULL || flags == 0 || num_rids == 0 || rids == NULL ||
 	    num_names == NULL || names == NULL || type == NULL ) return False;
 
-	/* create and send a MSRPC command with api SAMR_UNKNOWN_12 */
+	/* create and send a MSRPC command with api SAMR_LOOKUP_RIDS */
 
 	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
 
-	DEBUG(4,("SAMR Query Unknown 12.\n"));
+	DEBUG(4,("SAMR Query Lookup RIDs.\n"));
 
 	/* store the parameters */
-	make_samr_q_unknown_12(&q_o, pol, rid, num_gids, gids);
+	make_samr_q_lookup_rids(&q_o, pol, flags, num_rids, rids);
 
 	/* turn parameters into data stream */
-	samr_io_q_unknown_12("", &q_o,  &data, 0);
+	samr_io_q_lookup_rids("", &q_o,  &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, SAMR_UNKNOWN_12, &data, &rdata))
+	if (rpc_api_pipe_req(cli, SAMR_LOOKUP_RIDS, &data, &rdata))
 	{
-		SAMR_R_UNKNOWN_12 r_o;
+		SAMR_R_LOOKUP_RIDS r_o;
 		BOOL p;
 
-		samr_io_r_unknown_12("", &r_o, &rdata, 0);
+		samr_io_r_lookup_rids("", &r_o, &rdata, 0);
 		p = rdata.offset != 0;
 		
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("SAMR_R_UNKNOWN_12: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,("SAMR_R_LOOKUP_RIDS: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -1027,6 +1424,67 @@ BOOL samr_query_unknown_12(struct cli_state *cli,
 				p = False;
 			}
 		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_query;
+}
+
+/****************************************************************************
+do a SAMR Query Alias Members
+****************************************************************************/
+BOOL samr_query_aliasmem(struct cli_state *cli, 
+				POLICY_HND *alias_pol, 
+				uint32 *num_mem, DOM_SID2 *sid)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_QUERY_ALIASMEM q_o;
+	BOOL valid_query = False;
+
+	DEBUG(4,("SAMR Query Alias Members.\n"));
+
+	if (alias_pol == NULL || sid == NULL || num_mem == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_QUERY_ALIASMEM */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* store the parameters */
+	make_samr_q_query_aliasmem(&q_o, alias_pol);
+
+	/* turn parameters into data stream */
+	samr_io_q_query_aliasmem("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_QUERY_ALIASMEM, &data, &rdata))
+	{
+		SAMR_R_QUERY_ALIASMEM r_o;
+		BOOL p;
+
+		/* get user info */
+		r_o.sid = sid;
+
+		samr_io_r_query_aliasmem("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_QUERY_ALIASMEM: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p && r_o.ptr != 0)
+		{
+			valid_query = True;
+			*num_mem = r_o.num_sids;
+		}
+
 	}
 
 	prs_mem_free(&data   );
@@ -1097,6 +1555,70 @@ BOOL samr_query_useraliases(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a SAMR Query Group Members
+****************************************************************************/
+BOOL samr_query_groupmem(struct cli_state *cli, 
+				POLICY_HND *group_pol, 
+				uint32 *num_mem, uint32 *rid, uint32 *attr)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_QUERY_GROUPMEM q_o;
+	BOOL valid_query = False;
+
+	DEBUG(4,("SAMR Query Group Members.\n"));
+
+	if (group_pol == NULL || rid == NULL || attr == NULL || num_mem == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_QUERY_GROUPMEM */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* store the parameters */
+	make_samr_q_query_groupmem(&q_o, group_pol);
+
+	/* turn parameters into data stream */
+	samr_io_q_query_groupmem("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_QUERY_GROUPMEM, &data, &rdata))
+	{
+		SAMR_R_QUERY_GROUPMEM r_o;
+		BOOL p;
+
+		/* get user info */
+		r_o.rid  = rid;
+		r_o.attr = attr;
+
+		samr_io_r_query_groupmem("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_QUERY_GROUPMEM: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p && r_o.ptr != 0 &&
+		    r_o.ptr_rids != 0 && r_o.ptr_attrs != 0 &&
+		    r_o.num_rids == r_o.num_attrs)
+		{
+			valid_query = True;
+			*num_mem = r_o.num_rids;
+		}
+
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_query;
+}
+
+/****************************************************************************
 do a SAMR Query User Groups
 ****************************************************************************/
 BOOL samr_query_usergroups(struct cli_state *cli, 
@@ -1148,6 +1670,71 @@ BOOL samr_query_usergroups(struct cli_state *cli,
 			*num_groups = r_o.num_entries;
 		}
 
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_query;
+}
+
+/****************************************************************************
+do a SAMR Query Group Info
+****************************************************************************/
+BOOL samr_query_groupinfo(struct cli_state *cli, 
+				POLICY_HND *pol,
+				uint16 switch_value, GROUP_INFO_CTR* ctr)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_QUERY_GROUPINFO q_o;
+	BOOL valid_query = False;
+
+	DEBUG(4,("SAMR Query Group Info.  level: %d\n", switch_value));
+
+	if (pol == NULL || ctr == NULL || switch_value == 0) return False;
+
+	/* create and send a MSRPC command with api SAMR_QUERY_GROUPINFO */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	/* store the parameters */
+	make_samr_q_query_groupinfo(&q_o, pol, switch_value);
+
+	/* turn parameters into data stream */
+	samr_io_q_query_groupinfo("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_QUERY_GROUPINFO, &data, &rdata))
+	{
+		SAMR_R_QUERY_GROUPINFO r_o;
+		BOOL p;
+
+		/* get user info */
+		r_o.ctr = ctr;
+
+		samr_io_r_query_groupinfo("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_QUERY_GROUPINFO: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p && r_o.ctr->switch_value1 != switch_value)
+		{
+			DEBUG(0,("SAMR_R_QUERY_GROUPINFO: received incorrect level %d\n",
+			          r_o.ctr->switch_value1));
+		}
+
+		if (p && r_o.ptr != 0)
+		{
+			valid_query = True;
+		}
 	}
 
 	prs_mem_free(&data   );

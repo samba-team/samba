@@ -65,23 +65,23 @@ void cmd_lsa_query_info(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? do_lsa_open_policy(smb_cli,
+	res = res ? lsa_open_policy(smb_cli,
 				srv_name,
 				&info->dom.lsa_info_pol, False) : False;
 
 	/* send client info query, level 3.  receive domain name and sid */
-	res = res ? do_lsa_query_info_pol(smb_cli, 
+	res = res ? lsa_query_info_pol(smb_cli, 
 	                                  &info->dom.lsa_info_pol, 0x03,
 	                                  info->dom.level3_dom,
 	                                  &info->dom.level3_sid) : False;
 
 	/* send client info query, level 5.  receive domain name and sid */
-	res = res ? do_lsa_query_info_pol(smb_cli,
+	res = res ? lsa_query_info_pol(smb_cli,
 	                        &info->dom.lsa_info_pol, 0x05,
 				info->dom.level5_dom,
 	                        &info->dom.level5_sid) : False;
 
-	res = res ? do_lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
+	res = res ? lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli);
@@ -160,17 +160,17 @@ void cmd_lsa_lookup_names(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? do_lsa_open_policy(smb_cli,
+	res = res ? lsa_open_policy(smb_cli,
 				srv_name,
 				&info->dom.lsa_info_pol, True) : False;
 
 	/* send lsa lookup sids call */
-	res = res ? do_lsa_lookup_names(smb_cli, 
+	res = res ? lsa_lookup_names(smb_cli, 
 	                               &info->dom.lsa_info_pol,
 	                               num_names, names,
 	                               &sids, &num_sids) : False;
 
-	res = res ? do_lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
+	res = res ? lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli);
@@ -267,17 +267,17 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 	res = res ? cli_nt_session_open(smb_cli, PIPE_LSARPC) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? do_lsa_open_policy(smb_cli,
+	res = res ? lsa_open_policy(smb_cli,
 				srv_name,
 				&info->dom.lsa_info_pol, True) : False;
 
 	/* send lsa lookup sids call */
-	res = res ? do_lsa_lookup_sids(smb_cli, 
+	res = res ? lsa_lookup_sids(smb_cli, 
 	                               &info->dom.lsa_info_pol,
 	                               num_sids, sids,
 	                               &names, &num_names) : False;
 
-	res = res ? do_lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
+	res = res ? lsa_close(smb_cli, &info->dom.lsa_info_pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli);

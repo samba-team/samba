@@ -223,22 +223,22 @@ BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5, char *servers)
 	res = res ? cli_nt_session_open(&cli, PIPE_LSARPC) : False;
 
 	/* lookup domain controller; receive a policy handle */
-	res = res ? do_lsa_open_policy(&cli, srv_name, &pol, False) : False;
+	res = res ? lsa_open_policy(&cli, srv_name, &pol, False) : False;
 
 	if (sid3 != NULL)
 	{
 		/* send client info query, level 3.  receive domain name and sid */
-		res = res ? do_lsa_query_info_pol(&cli, &pol, 3, dom3, sid3) : False;
+		res = res ? lsa_query_info_pol(&cli, &pol, 3, dom3, sid3) : False;
 	}
 
 	if (sid5 != NULL)
 	{
 		/* send client info query, level 5.  receive domain name and sid */
-		res = res ? do_lsa_query_info_pol(&cli, &pol, 5, dom5, sid5) : False;
+		res = res ? lsa_query_info_pol(&cli, &pol, 5, dom5, sid5) : False;
 	}
 
 	/* close policy handle */
-	res = res ? do_lsa_close(&cli, &pol) : False;
+	res = res ? lsa_close(&cli, &pol) : False;
 
 	/* close the session */
 	cli_nt_session_close(&cli);
