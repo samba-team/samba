@@ -201,7 +201,7 @@ char *dos_unistr2_to_str(UNISTR2 *str)
 	char *lbuf = lbufs[nexti];
 	char *p;
 	uint16 *src = str->buffer;
-	int max_size = MIN(sizeof(str->buffer)-3, str->uni_str_len);
+	int max_size = MIN(MAXUNI-3, str->uni_str_len);
 
 	nexti = (nexti+1)%8;
 
