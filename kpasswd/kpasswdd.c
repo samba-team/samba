@@ -37,7 +37,7 @@
  */
 
 #include "kpasswd_locl.h"
-#include <admin.h>
+#include <kadm5/admin.h>
 RCSID("$Id$");
 
 static krb5_context context;
