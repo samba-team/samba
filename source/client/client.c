@@ -3643,10 +3643,9 @@ static BOOL list_servers(char *wk_grp)
 	for (i=0;i<count;i++) {
 	  char *sname = p2;
 	  int comment_offset = IVAL(p2,22) & 0xFFFF;
-	  uint32 stype = IVAL(p2,18);
-	  printf("\t%-16.16s     %s %8x\n",
+	  printf("\t%-16.16s     %s\n",
 		 sname,
-		 comment_offset?rdata+comment_offset-converter:"", stype);
+		 comment_offset?rdata+comment_offset-converter:"");
 
 	  ok=True;
 	  p2 += 26;
@@ -3682,10 +3681,9 @@ static BOOL list_servers(char *wk_grp)
 	for (i=0;i<count;i++) {
 	  char *sname = p2;
 	  int comment_offset = IVAL(p2,22) & 0xFFFF;
-	  uint32 stype =IVAL(p2,18);
-	  printf("\t%-16.16s     %s %8x\n",
+	  printf("\t%-16.16s     %s\n",
 		 sname,
-		 comment_offset?rdata+comment_offset-converter:"",stype);
+		 comment_offset?rdata+comment_offset-converter:"");
 	  
 	  ok=True;
 	  p2 += 26;
