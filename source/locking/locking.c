@@ -210,6 +210,9 @@ void locking_close_file(files_struct *fsp)
 	}
 }
 
+#if 0
+/* Not currently used. JRA */
+
 /****************************************************************************
  Delete a record if it is for a dead process, if check_self is true, then
  delete any records belonging to this pid also (there shouldn't be any).
@@ -266,6 +269,7 @@ static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *stat
 	tdb_chainunlock(tdb, kbuf);
 	return ret;
 }
+#endif
 
 /****************************************************************************
  Initialise the locking functions.

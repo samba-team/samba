@@ -88,9 +88,8 @@ int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len
 
 /****************************************************************************
 copy a string from a unicode or dos codepage source (depending on
-cli->capabilities) to a char* destination
+cli->capabilities) to a unix char* destination
 flags can have:
-  STR_CONVERT   means convert from dos to unix codepage
   STR_TERMINATE means the string in src is null terminated
   STR_UNICODE   means to force as unicode
   STR_NOALIGN   means don't do alignment
@@ -124,8 +123,7 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 			memcpy(dest, src, len);
 			dest[len] = 0;
 		}
-		if (flags & STR_CONVERT) 
-			safe_strcpy(dest,dos_to_unix(dest,False),dest_len);
+		safe_strcpy(dest,dos_to_unix(dest,False),dest_len);
 		return len;
 	}
 
@@ -135,10 +133,7 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 			const smb_ucs2_t c = (const smb_ucs2_t)SVAL(src, i);
 			if (c == (smb_ucs2_t)0 || (dest_len - i < 3))
 				break;
-			if (flags & STR_CONVERT)
-				dest += unicode_to_unix_char(dest, c);
-			else
-				dest += unicode_to_dos_char(dest, c);
+			dest += unicode_to_unix_char(dest, c);
 		}
 		*dest++ = 0;
 		len = strlen_w(src) + 2;
@@ -148,10 +143,7 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 			src_len = 2*dest_len;
 		for (i=0; i < src_len; i += 2) {
 			const smb_ucs2_t c = (const smb_ucs2_t)SVAL(src, i);
-			if (flags & STR_CONVERT)
-				dest += unicode_to_unix_char(dest, c);
-			else
-				dest += unicode_to_dos_char(dest, c);
+			dest += unicode_to_unix_char(dest, c);
 		}
 		*dest++ = 0;
 		len = src_len;
