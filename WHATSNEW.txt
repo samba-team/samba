@@ -10,10 +10,10 @@ new pieces of code in the current Samba 3.0 development tree. We have
 officially ceased development on the 2.2.x release of Samba and are
 concentrating on Samba 3.0. To reduce the time before the final 
 Samba 3.0 release we need as many people as possible to start testing 
-these beta releases, and hopefully giving us some high quality feedback 
-on what needs fixing.
+these beta releases, and to provide high quality feedback on what 
+needs fixing.
 
-Samba 3.0 is feature complete yet. However there is still some final 
+Samba 3.0 is feature complete. However there is still some final 
 work to be done on certain pieces of functionality.  Please refer to 
 the section on "Known Issues" for more details.
 
@@ -58,7 +58,7 @@ Major new features:
 11) Support for establishing trust relationships with Windows NT 4.0
     domain controllers
   
-12) Initial support for a distributed winbind architecture using
+12) Initial support for a distributed Winbind architecture using
     an LDAP directory for storing SID to uid/gid mappings
   
 13) Major updates to the Samba documentation tree.
@@ -89,12 +89,12 @@ Building
 --------
 
 Many of the options to the GNU autoconf script have been modified 
-in the 3.0 release.  The most noticible are
+in the 3.0 release.  The most noticeable are
 
   * removal of --with-tdbsam (is now included by default; see section
     on passdb backends and authentication for more details)
     
-  * --with-ldapsam is now on used to provided backwards compatible
+  * --with-ldapsam is now on used to provided backward compatible
     parameters for LDAP enabled Samba 2.2 servers.  Refer to the passdb 
     backend and authentication section for more details
   
@@ -106,7 +106,7 @@ in the 3.0 release.  The most noticible are
   
   * removal of --with-ssl (no longer supported)
   
-  * --with-utmp now defaults to 'yes' on support ed systems
+  * --with-utmp now defaults to 'yes' on supported systems
   
   * --with-sendfile-support is now enabled by default on supported 
     systems
@@ -145,7 +145,7 @@ New Parameters (new parameters have been grouped by function):
 
   Remote management
   -----------------
-  * abortshutdownscript
+  * abort shutdown script
   * shutdown script
 
   User and Group Account Management
@@ -185,7 +185,7 @@ New Parameters (new parameters have been grouped by function):
   * hide special files
   * hide unwriteable files
   * hostname lookups
-  * kernelchange notify
+  * kernel change notify
   * mangle prefix
   * msdfs proxy
   * set quota command
@@ -228,7 +228,7 @@ New Parameters (new parameters have been grouped by function):
 Modified Parameters (changes in behavior):
 
   * encrypt passwords (enabled by default)
-  * mangling method (set to 'hash2' by deault)
+  * mangling method (set to 'hash2' by default)
   * passwd chat
   * passwd program
   * restrict anonymous (integer value)
@@ -272,7 +272,7 @@ registry	Read-only samba registry skeleton	no
 Changes in Behavior
 -------------------
 
-The following issues are known changes in bahavior between Samba 2.2 and 
+The following issues are known changes in behavior between Samba 2.2 and 
 Samba 3.0 that may affect certain installations of Samba.
 
   1)  When operating as a member of a Windows domain, Samba 2.2 would 
@@ -297,7 +297,7 @@ There have been a few new changes that Samba administrators should be
 aware of when moving to Samba 3.0.
 
   1) encrypted passwords have been enabled by default in order to 
-     interoperate better with out-of-the-box Windows client 
+     inter-operate better with out-of-the-box Windows client 
      installations.  This does mean that either (a) a samba account
      must be created for each user, or (b) 'encrypt passwords = no'
      must be explicitly defined in smb.conf.
@@ -308,24 +308,24 @@ aware of when moving to Samba 3.0.
 
 Samba 3.0 also includes the possibility of setting up chains
 of authentication methods (auth methods) and account storage 
-backends (passdb backend).  Pleas erefer to the smb.conf(5) 
+backends (passdb backend).  Please refer to the smb.conf(5) 
 man page for details.  While both parameters assume sane default 
 values, it is likely that you will need to understand what the 
 values actually mean in order to ensure Samba operates correctly.
 
 The recommended passdb backends at this time are
 
-  * smbpasswd - 2.2 comatible flat file format
+  * smbpasswd - 2.2 compatible flat file format
   * tdbsam - attribute rich database intended as an smbpasswd
     replacement for stand alone servers
   * ldapsam - attribute rich account storage and retrieval 
     backend utilizing an LDAP directory.  
-  * ldapsam_compat - a 2.2 backwards compatible LDAP account 
+  * ldapsam_compat - a 2.2 backward compatible LDAP account 
     backend
     
 Certain functions of the smbpasswd(8) tool have been split between the 
 new smbpasswd(8) utility, the net(8) tool, and the new pdbedit(8) 
-utility.
+utility.  See the respective man pages for details.
     
      
 ######################################################################
@@ -334,42 +334,109 @@ LDAP
 
 This section outlines the new features affecting Samba / LDAP integration.
 
-  New Schema
-  ----------
+New Schema
+----------
   
-  A new objectclass (sambaSamAccount) has been introduced to replace 
-  the old sambaAccount.  This change aids us in the renaming of attributes 
-  to prevent clashes with attributes from other vendors.  There is a 
-  conversion script (examples/LDAP/convertSambaAccount) to modify and LDIF 
-  file to the new schema.
+A new object class (sambaSamAccount) has been introduced to replace 
+the old sambaAccount.  This change aids us in the renaming of attributes 
+to prevent clashes with attributes from other vendors.  There is a 
+conversion script (examples/LDAP/convertSambaAccount) to modify and LDIF 
+file to the new schema.
   
-  Example:
+Example:
   
-  	$ ldapsearch .... -b "ou=people,dc=..." > old.ldif
+	$ ldapsearch .... -b "ou=people,dc=..." > old.ldif
 	$ convertSambaAccount <DOM SID> old.ldif new.ldif
 	
-  The <DOM SID> can be obtained by running 'net getlocalsid <DOMAINNAME>' 
-  on the Samba PDC as root.
+The <DOM SID> can be obtained by running 'net getlocalsid <DOMAINNAME>' 
+on the Samba PDC as root.
+    
+The old sambaAccount schema may still be used by specifying the 
+"ldapsam_compat" passdb backend.  However, the sambaAccount and
+associated attributes have been moved to the historical section of
+the schema file and must be uncommented before use if needed.
+The 2.2 object class declaration for a sambaAccount has not changed
+in the 3.0 samba.schema file. 
   
-  The sambaDomain and sambaGroupMapping objects have also been modified
-  to use the new attribute naming conventions as well.  There are no 
-  conversion scripts for this data since the old schema was never published 
-  in a stable release.
+Other new object classes and their uses include:
   
-  The old sambaAccount schema may still be used by specifying the 
-  "ldapsam_compat" passdb backend.
+  * sambaDomain - domain information used to allocate rids 
+    for users and groups as necessary.  The attributes are added
+    in 'ldap suffix' directory entry automatically if 
+    an idmap uid/gid range has been set and the 'ldapsam'
+    passdb backend has been selected.
+      
+  * sambaGroupMapping - an object representing the 
+    relationship between a posixGroup and a Windows
+    group/SID.  These entries are stored in the 'ldap 
+    group suffix' and managed by the 'net groupmap' command.
+    
+  * sambaUnixIdPool - created in the 'ldap idmap suffix' entry 
+    automatically and contains the next available 'idmap uid' and 
+    'idmap gid'
+    
+  * sambaIdmapEntry - object storing a mapping between a 
+    SID and a UNIX uid/gid.  These objects are created by the 
+    idmap_ldap module as needed.
+
+    
+New Suffix for Searching
+------------------------
   
+The following new smb.conf parameters have been added to aid in directing
+certain LDAP queries when 'passdb backend = ldapsam://...' has been
+specified.
+
+  * ldap suffix         - used to search for user and computer accounts
+  * ldap user suffix     - used to store user accounts
+  * ldap machine suffix - used to store machine trust accounts
+  * ldap group suffix   - location of posixGroup/sambaGroupMapping entries
+  * ldap idmap suffix   - location of sambaIdmapEntry objects
+
+In an 'ldap suffix' is defined, it will be appended to all of the 
+remaining sub-suffix parameters.  In this case, the order of the suffix
+listings in smb.conf is important.  Always place the 'ldap suffix' first
+in the list.  
+
+Due to a limitation in Samba's smb.conf parsing, you should not surround 
+the DN's with quotation marks.
+
+
+IdMap LDAP support
+------------------
+
+Samba 3.0 supports an ldap backend for the idmap subsystem.  The 
+following options would inform Samba that the idmap table should be
+stored on the directory server onterose in the "ou=idmap,dc=plainjoe,
+dc=org" partition.
+
+ [global]
+    ...
+    idmap backend     = ldap:ldap://onterose/
+    ldap idmap suffix = ou=idmap,dc=plainjoe,dc=org
+    idmap uid         = 40000-50000
+    idmap gid         = 40000-50000
+
+This configuration allows winbind installations on multiple servers to
+share a uid/gid number space, thus avoiding the interoperability problems
+with NFS that were present in Samba 2.2.
+    
 
 ######################################################################
 Known Issues
 ############
 
-One such limitation that is worth mentioning (and will be corrected 
-before the actual stable 3.0.0 release is the dead lock problem with
-running winbindd on a Samba PDC in order to allocate uids and gids for 
-users and groups in a trusted domain.  When the Samba domain is acting 
-as the trusted domain to a Windows NT 4.0 domain, there are no known 
-issues.
+* One such limitation that is worth mentioning (and will be corrected 
+  before the actual stable 3.0.0 release is the dead lock problem with
+  running winbindd on a Samba PDC in order to allocate uids and gids for 
+  users and groups in a trusted domain.  When the Samba domain is acting 
+  as the trusted domain to a Windows NT 4.0 domain, there are no known 
+  issues.
+
+* The smbldap perl script for managing user entries in an LDAP 
+  directory have not be updated to function with the Samba 3.0
+  schema changes.  This (or an equivalent solution) work is planned
+  to be completed prior to the stable 3.0.0 release.
 
 Please refer to https://bugzilla.samba.org/ for a current list of bugs 
 filed against the Samba 3.0 codebase.
@@ -390,3 +457,4 @@ A new bugzilla installation has been established to help support the
 Samba 3.0 community of users.  This server, located at 
 https://bugzilla.samba.org/, will replace the existing jitterbug server 
 and the old http://bugs.samba.org now points to the new bugzilla server.
+
