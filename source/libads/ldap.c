@@ -228,7 +228,7 @@ got_connection:
 	if (!ads->auth.user_name) {
 		/* by default use the machine account */
 		fstring myname;
-		fstrcpy(myname, global_myname());
+		fstrcpy(myname, lp_netbios_name());
 		strlower_m(myname);
 		asprintf(&ads->auth.user_name, "HOST/%s", myname);
 	}

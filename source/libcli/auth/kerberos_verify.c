@@ -230,7 +230,7 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
            like. We have to go through all this to allow us to store
            the secret internally, instead of using /etc/krb5.keytab */
 
-	myname = name_to_fqdn(mem_ctx, global_myname());
+	myname = name_to_fqdn(mem_ctx, lp_netbios_name());
 	strlower_m(myname);
 	asprintf(&host_princ_s, "host/%s@%s", myname, lp_realm());
 	ret = krb5_parse_name(context, host_princ_s, &host_princ);

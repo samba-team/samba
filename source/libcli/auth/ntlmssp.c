@@ -915,7 +915,7 @@ NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state)
 	(*ntlmssp_state)->set_challenge = set_challenge;
 	(*ntlmssp_state)->may_set_challenge = may_set_challenge;
 
-	(*ntlmssp_state)->get_global_myname = global_myname;
+	(*ntlmssp_state)->get_global_myname = lp_netbios_name;
 	(*ntlmssp_state)->get_domain = lp_workgroup;
 	(*ntlmssp_state)->server_role = ROLE_DOMAIN_MEMBER; /* a good default */
 
@@ -1268,7 +1268,7 @@ NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state)
 
 	(*ntlmssp_state)->mem_ctx = mem_ctx;
 
-	(*ntlmssp_state)->get_global_myname = global_myname;
+	(*ntlmssp_state)->get_global_myname = lp_netbios_name;
 	(*ntlmssp_state)->get_domain = lp_workgroup;
 
 	(*ntlmssp_state)->unicode = lp_parm_bool(-1, "ntlmssp_client", "unicode", True);

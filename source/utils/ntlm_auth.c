@@ -533,7 +533,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			if (!NT_STATUS_IS_OK(
 				    local_pw_check_specified(username, 
 							      domain, 
-							      global_myname(),
+							      lp_netbios_name(),
 							      &challenge, 
 							      &lm_response, 
 							      &nt_response, 
