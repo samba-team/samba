@@ -1,3 +1,8 @@
+2003-04-23  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* common.c, kafs.h: drop the int argument (the error code) from
+	the logging function
+
 2003-04-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* afskrb5.c (v5_convert): better match what other functions do
