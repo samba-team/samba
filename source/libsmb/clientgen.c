@@ -2853,10 +2853,10 @@ check for existance of a dir
 ****************************************************************************/
 BOOL cli_chkpath(struct cli_state *cli, char *path)
 {
-	fstring path2;
+	pstring path2;
 	char *p;
 	
-	fstrcpy(path2,path);
+	safe_strcpy(path2,path,sizeof(pstring));
 	trim_string(path2,NULL,"\\");
 	if (!*path2) *path2 = '\\';
 	
@@ -2865,10 +2865,9 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 	SCVAL(cli->outbuf,smb_com,SMBchkpth);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
-	
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
-	fstrcpy(p,path2);
+	safe_strcpy(p,path2,strlen(path2));
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli)) {
