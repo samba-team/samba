@@ -412,13 +412,18 @@ static PyObject *py_auth_plaintext(PyObject *self, PyObject *args)
 
 /* Challenge/response authentication */
 
-static PyObject *py_auth_crap(PyObject *self, PyObject *args)
+static PyObject *py_auth_crap(PyObject *self, PyObject *args, PyObject *kw)
 {
+	static char *kwlist[] = 
+		{"username", "password", "use_lm_hash", "use_nt_hash", NULL };
 	struct winbindd_request request;
 	struct winbindd_response response;
 	char *username, *password;
+	int use_lm_hash = 1, use_nt_hash = 1;
 
-	if (!PyArg_ParseTuple(args, "ss", &username, &password))
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "ss|ii", kwlist, &username, &password, 
+		    &use_lm_hash, &use_nt_hash))
 		return NULL;
 
 	ZERO_STRUCT(request);
@@ -428,13 +433,17 @@ static PyObject *py_auth_crap(PyObject *self, PyObject *args)
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
         
-        SMBencrypt((uchar *)password, request.data.auth_crap.chal, 
-                   (uchar *)request.data.auth_crap.lm_resp);
-        SMBNTencrypt((uchar *)password, request.data.auth_crap.chal,
-                     (uchar *)request.data.auth_crap.nt_resp);
+	if (use_lm_hash) {
+		SMBencrypt((uchar *)password, request.data.auth_crap.chal, 
+			   (uchar *)request.data.auth_crap.lm_resp);
+		request.data.auth_crap.lm_resp_len = 24;
+	}
 
-        request.data.auth_crap.lm_resp_len = 24;
-        request.data.auth_crap.nt_resp_len = 24;
+	if (use_nt_hash) {
+		SMBNTencrypt((uchar *)password, request.data.auth_crap.chal,
+			     (uchar *)request.data.auth_crap.nt_resp);
+		request.data.auth_crap.nt_resp_len = 24;
+	}
 
 	if (winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response) 
 	    != NSS_STATUS_SUCCESS) {
