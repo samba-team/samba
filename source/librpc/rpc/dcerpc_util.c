@@ -335,6 +335,8 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	b->authservice = NULL;
+
 	p = strchr(s, '@');
 
 	if (p && PTR_DIFF(p, s) == 36) { /* 36 is the length of a UUID */
