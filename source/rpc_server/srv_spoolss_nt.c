@@ -811,6 +811,18 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		if (printer_default->access_required == 0x0)
 			printer_default->access_required = PRINTER_ACCESS_USE;
 
+		/*
+		 * If we are not serving the printer driver for this printer,
+		 * map PRINTER_ACCESS_ADMINISTER to PRINTER_ACCESS_USE.  This
+		 * will keep NT clients happy  --jerry	
+		 */
+		 
+		if (lp_use_client_driver(snum) 
+			&& (printer_default->access_required & PRINTER_ACCESS_ADMINISTER))
+		{
+			printer_default->access_required = PRINTER_ACCESS_USE;
+		}
+
 		if (!print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
