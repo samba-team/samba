@@ -249,6 +249,26 @@ and
 Modifies certain attributes of a principal. If run without command
 line options, you will be prompted. With command line options, it will
 only change the ones specified.
+.Pp
+Possible attributes are:
+.Li new-princ ,
+.Li support-desmd5 ,
+.Li pwchange-service ,
+.Li disallow-svr ,
+.Li requires-pw-change ,
+.Li requires-hw-auth ,
+.Li requires-pre-auth ,
+.Li disallow-all-tix ,
+.Li disallow-dup-skey ,
+.Li disallow-proxiable ,
+.Li disallow-renewable ,
+.Li disallow-tgt-based ,
+.Li disallow-forwardable ,
+.Li disallow-postdated
+.Pp
+Attributes may be negated with a "-", e.g., 
+.Pp 
+kadmin -l modify -a -disallow-proxiable user
 .Ed
 .Pp
 .Nm passwd
