@@ -740,7 +740,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
  Process any timeout housekeeping. Return False if the caler should exit.
 ****************************************************************************/
 
-static BOOL timeout_processing(int deadtime)
+static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_timeout_processing_time)
 {
   extern int Client;
   static time_t last_smb_conf_reload_time = 0;
@@ -763,7 +763,7 @@ static BOOL timeout_processing(int deadtime)
     return False;
   }
 
-  t = time(NULL);
+  *last_timeout_processing_time = t = time(NULL);
 
   if(last_smb_conf_reload_time == 0)
     last_smb_conf_reload_time = t;
@@ -891,6 +891,14 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
    */
   process_pending_change_notify_queue(t);
 
+  /*
+   * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
+   * have removed any blocking locks. JRA.
+   */
+
+  *select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
+                                              SMBD_SELECT_TIMEOUT*1000;
+
   return True;
 }
 
@@ -901,6 +909,8 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
 void smbd_process(void)
 {
   extern int smb_echo_count;
+  time_t last_timeout_processing_time = time(NULL);
+  unsigned int num_smbs = 0;
 
   InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -945,14 +955,9 @@ void smbd_process(void)
 
     while(!receive_message_or_smb(InBuffer,BUFFER_SIZE,select_timeout,&got_smb))
     {
-      if(!timeout_processing(deadtime))
+      if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
         return;
-      /*
-       * Increase the select timeout back to SMBD_SELECT_TIMEOUT if we
-       * have removed any blocking locks. JRA.
-       */
-      select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
-                                                  SMBD_SELECT_TIMEOUT*1000;
+      num_smbs = 0; /* Reset smb counter. */
     }
 
     if(got_smb) {
@@ -970,16 +975,28 @@ void smbd_process(void)
       process_smb(InBuffer, OutBuffer);
 
       if(smb_echo_count != num_echos) {
-        if(!timeout_processing(deadtime))
+        if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
           return;
+        num_smbs = 0; /* Reset smb counter. */
+      }
+
+      num_smbs++;
 
       /*
-       * Lower the select timeout to SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS if we
-       * now have any blocking locks pending. JRA.
+       * If we are getting smb requests in a constant stream
+       * with no echos, make sure we attempt timeout processing
+       * every select_timeout milliseconds - but only check for this
+       * every 200 smb requests.
        */
 
-      select_timeout = blocking_locks_pending() ? SMBD_SELECT_TIMEOUT_WITH_PENDING_LOCKS*1000 :
-                                                  SMBD_SELECT_TIMEOUT*1000;
+      if((num_smbs % 200) == 0) {
+        time_t new_check_time = time(NULL);
+        if(last_timeout_processing_time - new_check_time >= (select_timeout/1000)) {
+          if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+            return;
+          num_smbs = 0; /* Reset smb counter. */
+          last_timeout_processing_time = new_check_time; /* Reset time. */
+        }
       }
     }
     else
