@@ -799,7 +799,7 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
  Convert a SID to uid - locally.
 ****************************************************************************/
 
-BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
+BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
 	fstring str;
 	SAM_ACCOUNT *sam_user = NULL;
@@ -879,7 +879,7 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
  Convert a SID to gid - locally.
 ****************************************************************************/
 
-BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
+BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
 	fstring str;
 	GROUP_MAP map;
