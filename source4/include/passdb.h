@@ -58,29 +58,9 @@ typedef struct pdb_context
 	
 	NTSTATUS (*pdb_delete_sam_account)(struct pdb_context *, SAM_ACCOUNT *username);
 
-	NTSTATUS (*pdb_getgrsid)(struct pdb_context *context, GROUP_MAP *map,
-				 DOM_SID sid, BOOL with_priv);
-	
-	NTSTATUS (*pdb_getgrgid)(struct pdb_context *context, GROUP_MAP *map,
-				 gid_t gid, BOOL with_priv);
-	
-	NTSTATUS (*pdb_getgrnam)(struct pdb_context *context, GROUP_MAP *map,
-				 char *name, BOOL with_priv);
-	
-	NTSTATUS (*pdb_add_group_mapping_entry)(struct pdb_context *context,
-						GROUP_MAP *map);
-	
-	NTSTATUS (*pdb_update_group_mapping_entry)(struct pdb_context *context,
-						   GROUP_MAP *map);
-	
 	NTSTATUS (*pdb_delete_group_mapping_entry)(struct pdb_context *context,
 						   DOM_SID sid);
 	
-	NTSTATUS (*pdb_enum_group_mapping)(struct pdb_context *context,
-					   enum SID_NAME_USE sid_name_use,
-					   GROUP_MAP **rmap, int *num_entries,
-					   BOOL unix_only, BOOL with_priv);
-
 	void (*free_fn)(struct pdb_context **);
 	
 	TALLOC_CTX *mem_ctx;
@@ -112,28 +92,8 @@ typedef struct pdb_methods
 	
 	NTSTATUS (*delete_sam_account)(struct pdb_methods *, SAM_ACCOUNT *username);
 	
-	NTSTATUS (*getgrsid)(struct pdb_methods *methods, GROUP_MAP *map,
-			     DOM_SID sid, BOOL with_priv);
-
-	NTSTATUS (*getgrgid)(struct pdb_methods *methods, GROUP_MAP *map,
-			     gid_t gid, BOOL with_priv);
-
-	NTSTATUS (*getgrnam)(struct pdb_methods *methods, GROUP_MAP *map,
-			     char *name, BOOL with_priv);
-
-	NTSTATUS (*add_group_mapping_entry)(struct pdb_methods *methods,
-					    GROUP_MAP *map);
-
-	NTSTATUS (*update_group_mapping_entry)(struct pdb_methods *methods,
-					       GROUP_MAP *map);
-
 	NTSTATUS (*delete_group_mapping_entry)(struct pdb_methods *methods,
 					       DOM_SID sid);
-
-	NTSTATUS (*enum_group_mapping)(struct pdb_methods *methods,
-				       enum SID_NAME_USE sid_name_use,
-				       GROUP_MAP **rmap, int *num_entries,
-				       BOOL unix_only, BOOL with_priv);
 
 	void *private_data;  /* Private data of some kind */
 	
