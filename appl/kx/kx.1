@@ -14,6 +14,7 @@ securely forward X conections
 .Op Fl d
 .Op Fl t
 .Op Fl p Ar port
+.Op Fl P
 .Ar host
 .Sh DESCRIPTION
 The
@@ -34,6 +35,8 @@ Listen not only on a UNIX-domain socket but on a TCP socket as well.
 .It Fl p
 Use the port
 .Ar port .
+.It Fl P
+Force passive mode.
 .El
 .Pp
 This program is used by
