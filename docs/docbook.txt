@@ -5,6 +5,7 @@
 !== Updates:	Gerald (Jerry) Carter, jerry@samba.org, Feb. 2001
 !== Updates:	Jelmer Vernooij, jelmer@samba.org,		Aug, 2002
 !== Updates:	Jelmer Vernooij, jelmer@samba.org,		Jun, 2003
+!== Updates: 	Jelmer Vernooij, jelmer@samba.org,		May, 2004
 
 What are DocBook documents doing in the Samba Distribution ?
 -----------------------------------------------------------
@@ -65,3 +66,6 @@ This directory now contains a ./configure script and Makefile to
 support the automated building of man pages (including HTML versions), and 
 the building of the Samba-HOWTO-Collection and the 
 Samba Developers Guide (HTML,DVI,TeX,PDF,PS,Text versions).
+
+The configure script detects which of the required utilities are installed 
+and builds as much docs as it can using these tools.
