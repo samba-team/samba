@@ -23,43 +23,61 @@
 
 extern int DEBUGLEVEL;
 
+
+/* this is like vsnprintf but the 'n' limit does not include
+   the terminating null. So if you have a 1024 byte buffer then
+   pass 1023 for n */
 int vslprintf(char *str, int n, char *format, va_list ap)
 {
 #ifdef HAVE_VSNPRINTF
 	int ret = vsnprintf(str, n, format, ap);
-	if (ret >= 0) str[ret] = 0;
+	if (ret > n || ret < 0) {
+		str[n] = 0;
+		return -1;
+	}
+	str[ret] = 0;
 	return ret;
 #else
 	static char *buf;
-	static int len;
-	static int pagesize;
+	static int len=8000;
 	int ret;
 
-#ifndef PROT_READ
-#define PROT_READ 1
-#endif
+	/* this code is NOT a proper vsnprintf() implementation. It
+	   relies on the fact that all calls to slprintf() in Samba
+	   pass strings which have already been through pstrcpy() or
+	   fstrcpy() and never more than 2 strings are
+	   concatenated. This means the above buffer is absolutely
+	   ample and can never be overflowed.
 
-	if (!len || !buf || (len-pagesize) < n) {
-		pagesize = getpagesize();
-		len = (2+(n/pagesize))*pagesize;
-		/* note: we don't free the old memory (if any) as we don't 
-		   want a malloc lib to reuse the memory as it will
-		   have the wrong permissions */
-		buf = memalign(pagesize, len);
-		if (buf) {
-			if (mprotect(buf+(len-pagesize), pagesize, PROT_READ) != 0) {
-				exit(1);
-				return -1;
-			}
+	   In the future we would like to replace this with a proper
+	   vsnprintf() implementation but right now we need a solution
+	   that is secure and portable. This is it.  */
+
+	if (!buf) {
+		buf = malloc(len);
+		if (!buf) {
+			/* can't call debug or we would recurse */
+			exit(1);
 		}
 	}
 
-	if (!buf) {
-		exit(1);
+	ret = vsprintf(buf, format, ap);
+
+	if (ret < 0) {
+		str[0] = 0;
+		return -1;
 	}
 
-	ret = vsprintf(str, format, ap);
-	/* we will have got a seg fault here if we overflowed the buffer */
+	if (ret < n) {
+		n = ret;
+	} else if (ret > n) {
+		ret = -1;
+	}
+
+	buf[n] = 0;
+	
+	memcpy(str, buf, n+1);
+
 	return ret;
 #endif
 }
