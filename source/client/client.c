@@ -1475,7 +1475,7 @@ static void cmd_open(void)
 	pstrcpy(mask,cur_dir);
 	
 	if (!next_token(NULL,buf,NULL,sizeof(buf))) {
-		DEBUG(0,("del <filename>\n"));
+		DEBUG(0,("open <filename>\n"));
 		return;
 	}
 	pstrcat(mask,buf);
