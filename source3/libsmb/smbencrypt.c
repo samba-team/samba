@@ -299,8 +299,6 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32 *new_pw_len)
 {
 	int byte_len=0;
-	char unicode_passwd[514];
-	char lm_ascii_passwd[514];
 
 	/*
 	  Warning !!! : This function is called from some rpc call.
