@@ -2000,7 +2000,9 @@ void sync_file(connection_struct *conn, files_struct *fsp);
 
 BOOL fname_equal(char *name1, char *name2);
 BOOL mangled_equal(char *name1, char *name2);
-BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, BOOL *bad_path);
+void print_stat_cache_statistics(void);
+BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, 
+                  BOOL *bad_path, struct stat *pst);
 BOOL check_name(char *name,connection_struct *conn);
 BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache);
 

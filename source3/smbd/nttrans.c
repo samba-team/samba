@@ -490,7 +490,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 	set_posix_case_semantics(file_attributes);
 		
-	unix_convert(fname,conn,0,&bad_path);
+	unix_convert(fname,conn,0,&bad_path,NULL);
 		
 	fsp = file_new();
 	if (!fsp) {
@@ -743,7 +743,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
     set_posix_case_semantics(file_attributes);
 
-    unix_convert(fname,conn,0,&bad_path);
+    unix_convert(fname,conn,0,&bad_path,NULL);
     
     fsp = file_new();
     if (!fsp) {

@@ -419,6 +419,10 @@ union semun {
 #define HAVE_NETGROUP 1
 #endif
 
+#if defined (HAVE_NETGROUP) && defined(HAVE_RPCSVC_YPCLNT_H)
+#include "rpcsvc/ypclnt.h"
+#endif
+
 #ifndef ALLOW_CHANGE_PASSWORD
 #if (defined(HAVE_TERMIOS_H) && defined(HAVE_DUP2) && defined(HAVE_SETSID))
 #define ALLOW_CHANGE_PASSWORD 1

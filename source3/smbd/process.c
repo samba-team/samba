@@ -723,6 +723,10 @@ void smbd_process(void)
         DEBUG(0,("Reloading services after SIGHUP\n"));
         reload_services(False);
         reload_after_sighup = False;
+        /*
+         * Use this as an excuse to print some stats.
+         */
+        print_stat_cache_statistics();
       }
 
       /* automatic timeout if all connections are closed */      
