@@ -49,7 +49,7 @@
 
   caller frees the data buffer after use
 */
-int ltdb_pack_data(struct ldb_context *ctx,
+int ltdb_pack_data(struct ldb_context *ldb,
 		   const struct ldb_message *message,
 		   struct TDB_DATA *data)
 {
@@ -74,7 +74,7 @@ int ltdb_pack_data(struct ldb_context *ctx,
 	}
 
 	/* allocate it */
-	data->dptr = malloc(size);
+	data->dptr = ldb_malloc(ldb, size);
 	if (!data->dptr) {
 		errno = ENOMEM;
 		return -1;
@@ -116,14 +116,15 @@ int ltdb_pack_data(struct ldb_context *ctx,
 /*
   free the memory allocated from a ltdb_unpack_data()
 */
-void ltdb_unpack_data_free(struct ldb_message *message)
+void ltdb_unpack_data_free(struct ldb_context *ldb,
+			   struct ldb_message *message)
 {
 	int i;
 
 	for (i=0;i<message->num_elements;i++) {
-		if (message->elements[i].values) free(message->elements[i].values);
+		if (message->elements[i].values) ldb_free(ldb, message->elements[i].values);
 	}
-	if (message->elements) free(message->elements);
+	if (message->elements) ldb_free(ldb, message->elements);
 }
 
 
@@ -137,7 +138,7 @@ void ltdb_unpack_data_free(struct ldb_message *message)
   TDB_DATA data. This means the caller only has to free the elements
   and values arrays. This can be done with ltdb_unpack_data_free()
 */
-int ltdb_unpack_data(struct ldb_context *ctx,
+int ltdb_unpack_data(struct ldb_context *ldb,
 		     const struct TDB_DATA *data,
 		     struct ldb_message *message)
 {
@@ -192,8 +193,8 @@ int ltdb_unpack_data(struct ldb_context *ctx,
 		goto failed;
 	}
 
-	message->elements = malloc_array_p(struct ldb_message_element,
-					   message->num_elements);
+	message->elements = ldb_malloc_array_p(ldb, struct ldb_message_element,
+					       message->num_elements);
 				     
 	if (!message->elements) {
 		errno = ENOMEM;
@@ -217,8 +218,9 @@ int ltdb_unpack_data(struct ldb_context *ctx,
 		message->elements[i].num_values = IVAL(p, 0);
 		message->elements[i].values = NULL;
 		if (message->elements[i].num_values != 0) {
-			message->elements[i].values = malloc_array_p(struct ldb_val, 
-								     message->elements[i].num_values);
+			message->elements[i].values = ldb_malloc_array_p(ldb,
+									 struct ldb_val, 
+									 message->elements[i].num_values);
 			if (!message->elements[i].values) {
 				errno = ENOMEM;
 				goto failed;
@@ -242,7 +244,7 @@ int ltdb_unpack_data(struct ldb_context *ctx,
 	return 0;
 
 failed:
-	ltdb_unpack_data_free(message);
+	ltdb_unpack_data_free(ldb, message);
 
 	return -1;
 }

@@ -38,27 +38,27 @@
 /*
   free a message that has all parts separately allocated
 */
-static void msg_free_all_parts(struct ldb_message *msg)
+static void msg_free_all_parts(struct ldb_context *ldb, struct ldb_message *msg)
 {
 	int i, j;
-	if (msg->dn) free(msg->dn);
+	ldb_free(ldb, msg->dn);
 	for (i=0;i<msg->num_elements;i++) {
-		if (msg->elements[i].name) free(msg->elements[i].name);
+		ldb_free(ldb, msg->elements[i].name);
 		for (j=0;j<msg->elements[i].num_values;j++) {
-			if (msg->elements[i].values[j].data) 
-				free(msg->elements[i].values[j].data);
+			ldb_free(ldb, msg->elements[i].values[j].data);
 		}
-		if (msg->elements[i].values) free(msg->elements[i].values);
+		ldb_free(ldb, msg->elements[i].values);
 	}
-	free(msg->elements);
-	free(msg);
+	ldb_free(ldb, msg->elements);
+	ldb_free(ldb, msg);
 }
 
 
 /*
   duplicate a ldb_val structure
 */
-struct ldb_val ldb_val_dup(const struct ldb_val *v)
+struct ldb_val ldb_val_dup(struct ldb_context *ldb,
+			   const struct ldb_val *v)
 {
 	struct ldb_val v2;
 	v2.length = v->length;
@@ -69,7 +69,7 @@ struct ldb_val ldb_val_dup(const struct ldb_val *v)
 
 	/* the +1 is to cope with buggy C library routines like strndup
 	   that look one byte beyond */
-	v2.data = malloc(v->length+1);
+	v2.data = ldb_malloc(ldb, v->length+1);
 	if (!v2.data) {
 		v2.length = 0;
 		return v2;
@@ -85,12 +85,13 @@ struct ldb_val ldb_val_dup(const struct ldb_val *v)
 /*
   add one element to a message
 */
-static int msg_add_element(struct ldb_message *ret, const struct ldb_message_element *el)
+static int msg_add_element(struct ldb_context *ldb, 
+			   struct ldb_message *ret, const struct ldb_message_element *el)
 {
 	int i;
 	struct ldb_message_element *e2, *elnew;
 
-	e2 = realloc_p(ret->elements, struct ldb_message_element, ret->num_elements+1);
+	e2 = ldb_realloc_p(ldb, ret->elements, struct ldb_message_element, ret->num_elements+1);
 	if (!e2) {
 		return -1;
 	}
@@ -98,13 +99,13 @@ static int msg_add_element(struct ldb_message *ret, const struct ldb_message_ele
 	
 	elnew = &e2[ret->num_elements];
 
-	elnew->name = strdup(el->name);
+	elnew->name = ldb_strdup(ldb, el->name);
 	if (!elnew->name) {
 		return -1;
 	}
 
 	if (el->num_values) {
-		elnew->values = malloc_array_p(struct ldb_val, el->num_values);
+		elnew->values = ldb_malloc_array_p(ldb, struct ldb_val, el->num_values);
 		if (!elnew->values) {
 			return -1;
 		}
@@ -113,7 +114,7 @@ static int msg_add_element(struct ldb_message *ret, const struct ldb_message_ele
 	}
 
 	for (i=0;i<el->num_values;i++) {
-		elnew->values[i] = ldb_val_dup(&el->values[i]);
+		elnew->values[i] = ldb_val_dup(ldb, &el->values[i]);
 		if (elnew->values[i].length != el->values[i].length) {
 			return -1;
 		}
@@ -129,12 +130,12 @@ static int msg_add_element(struct ldb_message *ret, const struct ldb_message_ele
 /*
   add all elements from one message into another
  */
-static int msg_add_all_elements(struct ldb_message *ret,
+static int msg_add_all_elements(struct ldb_context *ldb, struct ldb_message *ret,
 				const struct ldb_message *msg)
 {
 	int i;
 	for (i=0;i<msg->num_elements;i++) {
-		if (msg_add_element(ret, &msg->elements[i]) != 0) {
+		if (msg_add_element(ldb, ret, &msg->elements[i]) != 0) {
 			return -1;
 		}
 	}
@@ -153,14 +154,14 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 	struct ldb_message *ret;
 	int i;
 
-	ret = malloc_p(struct ldb_message);
+	ret = ldb_malloc_p(ldb, struct ldb_message);
 	if (!ret) {
 		return NULL;
 	}
 
-	ret->dn = strdup(msg->dn);
+	ret->dn = ldb_strdup(ldb, msg->dn);
 	if (!ret->dn) {
-		free(ret);
+		ldb_free(ldb, ret);
 		return NULL;
 	}
 
@@ -169,8 +170,8 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 	ret->private_data = NULL;
 
 	if (!attrs) {
-		if (msg_add_all_elements(ret, msg) != 0) {
-			msg_free_all_parts(ret);
+		if (msg_add_all_elements(ldb, ret, msg) != 0) {
+			msg_free_all_parts(ldb, ret);
 			return NULL;
 		}
 		return ret;
@@ -180,8 +181,8 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 		struct ldb_message_element *el;
 
 		if (strcmp(attrs[i], "*") == 0) {
-			if (msg_add_all_elements(ret, msg) != 0) {
-				msg_free_all_parts(ret);
+			if (msg_add_all_elements(ldb, ret, msg) != 0) {
+				msg_free_all_parts(ldb, ret);
 				return NULL;
 			}
 			continue;
@@ -191,8 +192,8 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_context *ldb,
 		if (!el) {
 			continue;
 		}
-		if (msg_add_element(ret, el) != 0) {
-			msg_free_all_parts(ret);
+		if (msg_add_element(ldb, ret, el) != 0) {
+			msg_free_all_parts(ldb, ret);
 			return NULL;				
 		}
 	}
@@ -235,11 +236,11 @@ int ltdb_has_wildcard(struct ldb_context *ldb, const char *attr_name,
 void ltdb_search_dn1_free(struct ldb_context *ldb, struct ldb_message *msg)
 {
 	int i;
-	if (msg->private_data) free(msg->private_data);
+	ldb_free(ldb, msg->private_data);
 	for (i=0;i<msg->num_elements;i++) {
-		if (msg->elements[i].values) free(msg->elements[i].values);
+		ldb_free(ldb, msg->elements[i].values);
 	}
-	if (msg->elements) free(msg->elements);
+	ldb_free(ldb, msg->elements);
 	memset(msg, 0, sizeof(*msg));
 }
 
@@ -254,7 +255,7 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
 {
 	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
-	TDB_DATA tdb_key, tdb_data;
+	TDB_DATA tdb_key, tdb_data, tdb_data2;
 
 	/* form the key */
 	tdb_key = ltdb_key(ldb, dn);
@@ -263,26 +264,35 @@ int ltdb_search_dn1(struct ldb_context *ldb, const char *dn, struct ldb_message 
 	}
 
 	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
-	free(tdb_key.dptr);
+	ldb_free(ldb, tdb_key.dptr);
 	if (!tdb_data.dptr) {
 		return 0;
 	}
 
-	msg->private_data = tdb_data.dptr;
+	tdb_data2.dptr = ldb_malloc(ldb, tdb_data.dsize);
+	if (!tdb_data2.dptr) {
+		free(tdb_data.dptr);
+		return -1;
+	}
+	memcpy(tdb_data2.dptr, tdb_data.dptr, tdb_data.dsize);
+	free(tdb_data.dptr);
+	tdb_data2.dsize = tdb_data.dsize;
+
+	msg->private_data = tdb_data2.dptr;
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
-	ret = ltdb_unpack_data(ldb, &tdb_data, msg);
+	ret = ltdb_unpack_data(ldb, &tdb_data2, msg);
 	if (ret == -1) {
-		free(tdb_data.dptr);
+		free(tdb_data2.dptr);
 		return -1;		
 	}
 
 	if (!msg->dn) {
-		msg->dn = strdup(dn);
+		msg->dn = ldb_strdup(ldb, dn);
 	}
 	if (!msg->dn) {
-		free(tdb_data.dptr);
+		ldb_free(ldb, tdb_data2.dptr);
 		return -1;
 	}
 
@@ -312,9 +322,9 @@ int ltdb_search_dn(struct ldb_context *ldb, char *dn,
 		return -1;		
 	}
 
-	*res = malloc_array_p(struct ldb_message *, 2);
+	*res = ldb_malloc_array_p(ldb, struct ldb_message *, 2);
 	if (! *res) {
-		msg_free_all_parts(msg2);
+		msg_free_all_parts(ldb, msg2);
 		return -1;		
 	}
 
@@ -344,9 +354,9 @@ int ltdb_add_attr_results(struct ldb_context *ldb, struct ldb_message *msg,
 	}
 
 	/* add to the results list */
-	res2 = realloc_p(*res, struct ldb_message *, (*count)+2);
+	res2 = ldb_realloc_p(ldb, *res, struct ldb_message *, (*count)+2);
 	if (!res2) {
-		msg_free_all_parts(msg2);
+		msg_free_all_parts(ldb, msg2);
 		return -1;
 	}
 
@@ -403,7 +413,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	/* see if it matches the given expression */
 	if (!ldb_message_match(sinfo->ldb, &msg, sinfo->tree, 
 			       sinfo->base, sinfo->scope)) {
-		ltdb_unpack_data_free(&msg);
+		ltdb_unpack_data_free(sinfo->ldb, &msg);
 		return 0;
 	}
 
@@ -413,7 +423,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 		sinfo->failures++;
 	}
 
-	ltdb_unpack_data_free(&msg);
+	ltdb_unpack_data_free(sinfo->ldb, &msg);
 
 	return ret;
 }
@@ -424,15 +434,18 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 */
 int ltdb_search_free(struct ldb_context *ldb, struct ldb_message **msgs)
 {
+	struct ltdb_private *ltdb = ldb->private_data;
 	int i;
 
+	ltdb->last_err_string = NULL;
+	
 	if (!msgs) return 0;
 
 	for (i=0;msgs[i];i++) {
-		msg_free_all_parts(msgs[i]);
+		msg_free_all_parts(ldb, msgs[i]);
 	}
 
-	free(msgs);
+	ldb_free(ldb, msgs);
 
 	return 0;
 }
@@ -480,8 +493,11 @@ int ltdb_search(struct ldb_context *ldb, const char *base,
 		enum ldb_scope scope, const char *expression,
 		char * const attrs[], struct ldb_message ***res)
 {
+	struct ltdb_private *ltdb = ldb->private_data;
 	struct ldb_parse_tree *tree;
 	int ret;
+
+	ltdb->last_err_string = NULL;
 
 	if (ltdb_cache_load(ldb) != 0) {
 		return -1;
@@ -490,8 +506,9 @@ int ltdb_search(struct ldb_context *ldb, const char *base,
 	*res = NULL;
 
 	/* form a parse tree for the expression */
-	tree = ldb_parse_tree(expression);
+	tree = ldb_parse_tree(ldb, expression);
 	if (!tree) {
+		ltdb->last_err_string = "expression parse failed";
 		return -1;
 	}
 
@@ -507,7 +524,7 @@ int ltdb_search(struct ldb_context *ldb, const char *base,
 		}
 	}
 
-	ldb_parse_tree_free(tree);
+	ldb_parse_tree_free(ldb, tree);
 
 	return ret;
 }

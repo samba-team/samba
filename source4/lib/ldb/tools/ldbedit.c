@@ -60,7 +60,7 @@ static int modify_record(struct ldb_context *ldb,
 			continue;
 		}
 
-		if (ldb_msg_add(&mod, 
+		if (ldb_msg_add(ldb, &mod, 
 				&msg2->elements[i],
 				el?LDB_FLAG_MOD_REPLACE:LDB_FLAG_MOD_ADD) != 0) {
 			return -1;
@@ -72,7 +72,7 @@ static int modify_record(struct ldb_context *ldb,
 	for (i=0;i<msg1->num_elements;i++) {
 		el = ldb_msg_find_element(msg2, msg1->elements[i].name);
 		if (!el) {
-			if (ldb_msg_add_empty(&mod, 
+			if (ldb_msg_add_empty(ldb, &mod, 
 					      msg1->elements[i].name,
 					      LDB_FLAG_MOD_DELETE) != 0) {
 				return -1;
@@ -159,7 +159,8 @@ static int merge_edits(struct ldb_context *ldb,
 /*
   save a set of messages as ldif to a file
 */
-static int save_ldif(FILE *f, struct ldb_message **msgs, int count)
+static int save_ldif(struct ldb_context *ldb, 
+		     FILE *f, struct ldb_message **msgs, int count)
 {
 	int i;
 
@@ -172,7 +173,7 @@ static int save_ldif(FILE *f, struct ldb_message **msgs, int count)
 		ldif.changetype = LDB_CHANGETYPE_NONE;
 		ldif.msg = *msgs[i];
 
-		ldif_write_file(f, &ldif);
+		ldif_write_file(ldb, f, &ldif);
 	}
 
 	return 0;
@@ -211,13 +212,13 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 		return -1;
 	}
 
-	if (save_ldif(f, msgs1, count1) != 0) {
+	if (save_ldif(ldb, f, msgs1, count1) != 0) {
 		return -1;
 	}
 
 	fclose(f);
 
-	asprintf(&cmd, "%s %s", editor, template);
+	ldb_asprintf(ldb, &cmd, "%s %s", editor, template);
 
 	if (!cmd) {
 		unlink(template);
@@ -242,8 +243,8 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 		return -1;
 	}
 
-	while ((ldif = ldif_read_file(f))) {
-		msgs2 = realloc_p(msgs2, struct ldb_message *, count2+1);
+	while ((ldif = ldif_read_file(ldb, f))) {
+		msgs2 = ldb_realloc_p(ldb, msgs2, struct ldb_message *, count2+1);
 		if (!msgs2) {
 			fprintf(stderr, "out of memory");
 			return -1;

@@ -32,6 +32,8 @@
  *  Author: Andrew Tridgell
  */
 
+#ifndef _LDB_PARSE_H
+#define _LDB_PARSE_H 1
 
 enum ldb_parse_op {LDB_OP_SIMPLE, LDB_OP_AND, LDB_OP_OR, LDB_OP_NOT};
 
@@ -51,3 +53,5 @@ struct ldb_parse_tree {
 		} not;
 	} u;
 };
+
+#endif

@@ -77,13 +77,15 @@ static int lldb_close(struct ldb_context *ldb)
 		ret = -1;
 	}
 
+	ldb_set_alloc(ldb, NULL, NULL);
+
 	if (lldb->options) {
 		for (i=0;lldb->options[i];i++) {
-			free(lldb->options[i]);
+			ldb_free(ldb, lldb->options[i]);
 		}
-		free(lldb->options);
+		ldb_free(ldb, lldb->options);
 	}
-	free(lldb);
+	ldb_free(ldb, lldb);
 	free(ldb);
 
 	return ret;
@@ -116,18 +118,18 @@ static int lldb_delete(struct ldb_context *ldb, const char *dn)
 static int lldb_msg_free(struct ldb_context *ldb, struct ldb_message *msg)
 {
 	int i, j;
-	free(msg->dn);
+	ldb_free(ldb, msg->dn);
 	for (i=0;i<msg->num_elements;i++) {
-		free(msg->elements[i].name);
+		ldb_free(ldb, msg->elements[i].name);
 		for (j=0;j<msg->elements[i].num_values;j++) {
 			if (msg->elements[i].values[j].data) {
-				free(msg->elements[i].values[j].data);
+				ldb_free(ldb, msg->elements[i].values[j].data);
 			}
 		}
-		free(msg->elements[i].values);
+		ldb_free(ldb, msg->elements[i].values);
 	}
-	if (msg->elements) free(msg->elements);
-	free(msg);
+	if (msg->elements) ldb_free(ldb, msg->elements);
+	ldb_free(ldb, msg);
 	return 0;
 }
 
@@ -142,7 +144,7 @@ static int lldb_search_free(struct ldb_context *ldb, struct ldb_message **res)
 			return -1;
 		}
 	}
-	free(res);
+	ldb_free(ldb, res);
 	return 0;
 }
 
@@ -150,7 +152,8 @@ static int lldb_search_free(struct ldb_context *ldb, struct ldb_message **res)
 /*
   add a single set of ldap message values to a ldb_message
 */
-static int lldb_add_msg_attr(struct ldb_message *msg, 
+static int lldb_add_msg_attr(struct ldb_context *ldb,
+			     struct ldb_message *msg, 
 			     const char *attr, struct berval **bval)
 {
 	int count, i;
@@ -162,8 +165,8 @@ static int lldb_add_msg_attr(struct ldb_message *msg,
 		return -1;
 	}
 
-	el = realloc_p(msg->elements, struct ldb_message_element, 
-		       msg->num_elements + 1);
+	el = ldb_realloc_p(ldb, msg->elements, struct ldb_message_element, 
+			   msg->num_elements + 1);
 	if (!el) {
 		errno = ENOMEM;
 		return -1;
@@ -173,7 +176,7 @@ static int lldb_add_msg_attr(struct ldb_message *msg,
 
 	el = &msg->elements[msg->num_elements];
 
-	el->name = strdup(attr);
+	el->name = ldb_strdup(ldb, attr);
 	if (!el->name) {
 		errno = ENOMEM;
 		return -1;
@@ -181,14 +184,14 @@ static int lldb_add_msg_attr(struct ldb_message *msg,
 	el->flags = 0;
 
 	el->num_values = 0;
-	el->values = malloc_array_p(struct ldb_val, count);
+	el->values = ldb_malloc_array_p(ldb, struct ldb_val, count);
 	if (!el->values) {
 		errno = ENOMEM;
 		return -1;
 	}
 
 	for (i=0;i<count;i++) {
-		el->values[i].data = malloc(bval[i]->bv_len);
+		el->values[i].data = ldb_malloc(ldb, bval[i]->bv_len);
 		if (!el->values[i].data) {
 			return -1;
 		}
@@ -225,7 +228,7 @@ static int lldb_search(struct ldb_context *ldb, const char *base,
 		return count;
 	}
 
-	(*res) = malloc_array_p(struct ldb_message *, count+1);
+	(*res) = ldb_malloc_array_p(ldb, struct ldb_message *, count+1);
 	if (! *res) {
 		ldap_msgfree(ldapres);
 		errno = ENOMEM;
@@ -249,7 +252,7 @@ static int lldb_search(struct ldb_context *ldb, const char *base,
 			break;
 		}
 
-		(*res)[msg_count] = malloc_p(struct ldb_message);
+		(*res)[msg_count] = ldb_malloc_p(ldb, struct ldb_message);
 		if (!(*res)[msg_count]) {
 			goto failed;
 		}
@@ -260,7 +263,7 @@ static int lldb_search(struct ldb_context *ldb, const char *base,
 			goto failed;
 		}
 
-		(*res)[msg_count]->dn = strdup(dn);
+		(*res)[msg_count]->dn = ldb_strdup(ldb, dn);
 		ldap_memfree(dn);
 		if (!(*res)[msg_count]->dn) {
 			goto failed;
@@ -279,7 +282,7 @@ static int lldb_search(struct ldb_context *ldb, const char *base,
 			bval = ldap_get_values_len(lldb->ldap, msg, attr);
 
 			if (bval) {
-				lldb_add_msg_attr((*res)[msg_count], attr, bval);
+				lldb_add_msg_attr(ldb, (*res)[msg_count], attr, bval);
 				ldap_value_free_len(bval);
 			}					  
 			
@@ -303,7 +306,7 @@ failed:
 /*
   free a set of mods from lldb_msg_to_mods()
 */
-static void lldb_mods_free(LDAPMod **mods)
+static void lldb_mods_free(struct ldb_context *ldb, LDAPMod **mods)
 {
 	int i, j;
 
@@ -312,13 +315,13 @@ static void lldb_mods_free(LDAPMod **mods)
 	for (i=0;mods[i];i++) {
 		if (mods[i]->mod_vals.modv_bvals) {
 			for (j=0;mods[i]->mod_vals.modv_bvals[j];j++) {
-				free(mods[i]->mod_vals.modv_bvals[j]);
+				ldb_free(ldb, mods[i]->mod_vals.modv_bvals[j]);
 			}
-			free(mods[i]->mod_vals.modv_bvals);
+			ldb_free(ldb, mods[i]->mod_vals.modv_bvals);
 		}
-		free(mods[i]);
+		ldb_free(ldb, mods[i]);
 	}
-	free(mods);
+	ldb_free(ldb, mods);
 }
 
 
@@ -326,13 +329,14 @@ static void lldb_mods_free(LDAPMod **mods)
   convert a ldb_message structure to a list of LDAPMod structures
   ready for ldap_add() or ldap_modify()
 */
-static LDAPMod **lldb_msg_to_mods(const struct ldb_message *msg, int use_flags)
+static LDAPMod **lldb_msg_to_mods(struct ldb_context *ldb,
+				  const struct ldb_message *msg, int use_flags)
 {
 	LDAPMod **mods;
 	int i, j, num_mods = 0;
 
 	/* allocate maximum number of elements needed */
-	mods = malloc_array_p(LDAPMod *, msg->num_elements+1);
+	mods = ldb_malloc_array_p(ldb, LDAPMod *, msg->num_elements+1);
 	if (!mods) {
 		errno = ENOMEM;
 		return NULL;
@@ -342,7 +346,7 @@ static LDAPMod **lldb_msg_to_mods(const struct ldb_message *msg, int use_flags)
 	for (i=0;i<msg->num_elements;i++) {
 		const struct ldb_message_element *el = &msg->elements[i];
 
-		mods[num_mods] = malloc_p(LDAPMod);
+		mods[num_mods] = ldb_malloc_p(ldb, LDAPMod);
 		if (!mods[num_mods]) {
 			goto failed;
 		}
@@ -362,14 +366,15 @@ static LDAPMod **lldb_msg_to_mods(const struct ldb_message *msg, int use_flags)
 			}
 		}
 		mods[num_mods]->mod_type = el->name;
-		mods[num_mods]->mod_vals.modv_bvals = malloc_array_p(struct berval *, 
-								     1+el->num_values);
+		mods[num_mods]->mod_vals.modv_bvals = ldb_malloc_array_p(ldb, 
+									 struct berval *,
+									 1+el->num_values);
 		if (!mods[num_mods]->mod_vals.modv_bvals) {
 			goto failed;
 		}
 
 		for (j=0;j<el->num_values;j++) {
-			mods[num_mods]->mod_vals.modv_bvals[j] = malloc_p(struct berval);
+			mods[num_mods]->mod_vals.modv_bvals[j] = ldb_malloc_p(ldb, struct berval);
 			if (!mods[num_mods]->mod_vals.modv_bvals[j]) {
 				goto failed;
 			}
@@ -383,7 +388,7 @@ static LDAPMod **lldb_msg_to_mods(const struct ldb_message *msg, int use_flags)
 	return mods;
 
 failed:
-	lldb_mods_free(mods);
+	lldb_mods_free(ldb, mods);
 	return NULL;
 }
 
@@ -402,14 +407,14 @@ static int lldb_add(struct ldb_context *ldb, const struct ldb_message *msg)
 		return 0;
 	}
 
-	mods = lldb_msg_to_mods(msg, 0);
+	mods = lldb_msg_to_mods(ldb, msg, 0);
 
 	lldb->last_rc = ldap_add_s(lldb->ldap, msg->dn, mods);
 	if (lldb->last_rc != LDAP_SUCCESS) {
 		ret = -1;
 	}
 
-	lldb_mods_free(mods);
+	lldb_mods_free(ldb, mods);
 
 	return ret;
 }
@@ -429,14 +434,14 @@ static int lldb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
 		return 0;
 	}
 
-	mods = lldb_msg_to_mods(msg, 1);
+	mods = lldb_msg_to_mods(ldb, msg, 1);
 
 	lldb->last_rc = ldap_modify_s(lldb->ldap, msg->dn, mods);
 	if (lldb->last_rc != LDAP_SUCCESS) {
 		ret = -1;
 	}
 
-	lldb_mods_free(mods);
+	lldb_mods_free(ldb, mods);
 
 	return ret;
 }
@@ -474,15 +479,15 @@ struct ldb_context *lldb_connect(const char *url,
 	struct lldb_private *lldb = NULL;
 	int i;
 
-	ldb = malloc_p(struct ldb_context);
+	ldb = calloc(1, sizeof(struct ldb_context));
 	if (!ldb) {
 		errno = ENOMEM;
 		goto failed;
 	}
 
-	lldb = malloc_p(struct lldb_private);
+	lldb = ldb_malloc_p(ldb, struct lldb_private);
 	if (!lldb) {
-		free(ldb);
+		ldb_free(ldb, ldb);
 		errno = ENOMEM;
 		goto failed;
 	}
@@ -503,14 +508,14 @@ struct ldb_context *lldb_connect(const char *url,
 		   on the caller keeping it around (it might be dynamic) */
 		for (i=0;options[i];i++) ;
 
-		lldb->options = malloc_array_p(char *, i+1);
+		lldb->options = ldb_malloc_array_p(ldb, char *, i+1);
 		if (!lldb->options) {
 			goto failed;
 		}
 		
 		for (i=0;options[i];i++) {
 			lldb->options[i+1] = NULL;
-			lldb->options[i] = strdup(options[i]);
+			lldb->options[i] = ldb_strdup(ldb, options[i]);
 			if (!lldb->options[i]) {
 				goto failed;
 			}
@@ -522,14 +527,14 @@ struct ldb_context *lldb_connect(const char *url,
 failed:
 	if (lldb && lldb->options) {
 		for (i=0;lldb->options[i];i++) {
-			free(lldb->options[i]);
+			ldb_free(ldb, lldb->options[i]);
 		}
-		free(lldb->options);
+		ldb_free(ldb, lldb->options);
 	}
 	if (lldb && lldb->ldap) {
 		ldap_unbind(lldb->ldap);
 	}
-	if (lldb) free(lldb);
+	ldb_free(ldb, lldb);
 	if (ldb) free(ldb);
 	return NULL;
 }

@@ -38,10 +38,10 @@
   TODO:
   a simple case folding function - will be replaced by a UTF8 aware function later
 */
-char *ldb_casefold(const char *s)
+char *ldb_casefold(struct ldb_context *ldb, const char *s)
 {
 	int i;
-	char *ret = strdup(s);
+	char *ret = ldb_strdup(ldb, s);
 	if (!s) {
 		errno = ENOMEM;
 		return NULL;
