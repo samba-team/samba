@@ -953,6 +953,13 @@ LDAP_rename(krb5_context context, HDB * db, const char *new_name)
 static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
 {
     int rc, version = LDAP_VERSION3;
+    /*
+     * Empty credentials to do a SASL bind with LDAP. Note that empty
+     * different from NULL credentials. If you provide NULL
+     * credentials instead of empty credentials you will get a SASL
+     * bind in progress message.
+     */
+    struct berval bv = { 0, "" };
 
     if (db->db != NULL) {
 	/* connection has been opened. ping server. */
@@ -981,6 +988,14 @@ static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
     rc = ldap_set_option((LDAP *) db->db, LDAP_OPT_PROTOCOL_VERSION, (const void *)&version);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_set_option: %s", ldap_err2string(rc));
+	ldap_unbind_ext((LDAP *) db->db, NULL, NULL);
+	db->db = NULL;
+	return HDB_ERR_BADVERSION;
+    }
+
+    rc = ldap_sasl_bind_s((LDAP *) db->db, NULL, "EXTERNAL", &bv, NULL, NULL, NULL);
+    if (rc != LDAP_SUCCESS) {
+	krb5_set_error_string(context, "ldap_sasl_bind_s: %s", ldap_err2string(rc));
 	ldap_unbind_ext((LDAP *) db->db, NULL, NULL);
 	db->db = NULL;
 	return HDB_ERR_BADVERSION;
@@ -1104,7 +1119,7 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
 	    ret = asprintf(&dn, "cn=%s,%s", name, db->name);
 	} else {
 	    /* A bit bogus, but we don't have a search base */
-	    ret = asprintf(&dn, "cn=%s", name, db->name);
+	    ret = asprintf(&dn, "cn=%s", name);
 	}
 	if (ret < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
