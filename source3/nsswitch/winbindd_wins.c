@@ -87,7 +87,6 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
 	int fd;
 	struct in_addr *ret = NULL;
-	struct in_addr  p;
 	int j, flags = 0;
 
 	*count = 0;
@@ -111,7 +110,6 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		if (ret) break;
 	}
 
- out:
 	close(fd);
 	return ret;
 }

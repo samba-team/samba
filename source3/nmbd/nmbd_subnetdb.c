@@ -267,45 +267,14 @@ BOOL create_subnets(void)
     if (!make_normal_subnet(iface)) return False;
   }
 
-  /* 
-   * If we have been configured to use a WINS server, then try and
-   * get the ip address of it here. If we are the WINS server then
-   * set the unicast subnet address to be the first of our own real
-   * addresses.
-   *
-   * NOTE: I'm not sure of the implications of WINS server failover
-   *       on this bit of code.  Because of failover, the WINS
-   *       server address can change.  crh
-   */
-
-  if( wins_srv_count() )
-  {
-    struct in_addr real_wins_ip;
-    real_wins_ip = wins_srv_ip();
-
-    if (!is_zero_ip(real_wins_ip))
-    {
-      unicast_ip = real_wins_ip;
-    }
-    else
-    {
-      /* wins_srv_ip() can return a zero IP if all servers are
-       * either down or incorrectly entered in smb.conf.  crh
-       */
-      DEBUG(0,("No 'live' WINS servers found.  Check 'wins server' parameter.\n"));
-      return False;
-    }
-  } 
-  else if(lp_we_are_a_wins_server())
-  {
-    /* Pick the first interface ip address as the WINS server ip. */
-    unicast_ip = *iface_n_ip(0);
-  }
-  else
-  {
-    /* We should not be using a WINS server at all. Set the
-      ip address of the subnet to be zero. */
-    zero_ip(&unicast_ip);
+  if (lp_we_are_a_wins_server()) {
+	  /* Pick the first interface ip address as the WINS server ip. */
+	  unicast_ip = *iface_n_ip(0);
+  } else {
+	  /* note that we do not set the wins server IP here. We just
+	     set it at zero and let the wins registration code cope
+	     with getting the IPs right for each packet */
+	  zero_ip(&unicast_ip);
   }
 
   /*
@@ -346,16 +315,13 @@ BOOL create_subnets(void)
 /*******************************************************************
 Function to tell us if we can use the unicast subnet.
 ******************************************************************/
-
 BOOL we_are_a_wins_client(void)
 {
-  static int cache_we_are_a_wins_client = -1;
+	if (wins_srv_count() > 0) {
+		return True;
+	}
 
-  if(cache_we_are_a_wins_client == -1)
-    cache_we_are_a_wins_client = (is_zero_ip(unicast_subnet->myip) ? 
-                                  False : True);
-
-  return cache_we_are_a_wins_client;
+	return False;
 }
 
 /*******************************************************************

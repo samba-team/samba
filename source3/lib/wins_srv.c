@@ -60,12 +60,18 @@
 /* how long a server is marked dead for */
 #define DEATH_TIME 600
 
-/* a list of wins server that are marked dead. */
+/* a list of wins server that are marked dead from the point of view
+   of a given source address. We keep a separate dead list for each src address
+   to cope with multiple interfaces that are not routable to each other
+  */
 static struct wins_dead {
-	struct in_addr ip;
+	struct in_addr dest_ip;
+	struct in_addr src_ip;
 	time_t revival; /* when it will be revived */
 	struct wins_dead *next, *prev;
 } *dead_servers;
+
+extern BOOL global_in_nmbd;
 
 
 /* an internal convenience structure for an IP with a short string tag
@@ -78,14 +84,17 @@ struct tagged_ip {
 /*
   see if an ip is on the dead list
 */
-BOOL wins_srv_is_dead(struct in_addr ip)
+BOOL wins_srv_is_dead(struct in_addr wins_ip, struct in_addr src_ip)
 {
 	struct wins_dead *d;
 	for (d=dead_servers; d; d=d->next) {
-		if (ip_equal(ip, d->ip)) {
+		if (ip_equal(wins_ip, d->dest_ip) && ip_equal(src_ip, d->src_ip)) {
 			/* it might be due for revival */
 			if (d->revival <= time(NULL)) {
-				DEBUG(4,("Reviving wins server %s\n", inet_ntoa(ip)));
+				fstring src_name;
+				fstrcpy(src_name, inet_ntoa(src_ip));
+				DEBUG(4,("Reviving wins server %s for source %s\n", 
+					 inet_ntoa(wins_ip), src_name));
 				DLIST_REMOVE(dead_servers, d);
 				free(d);
 				return False;
@@ -96,24 +105,49 @@ BOOL wins_srv_is_dead(struct in_addr ip)
 	return False;
 }
 
+
+/*
+  mark a wins server as being alive (for the moment)
+*/
+void wins_srv_alive(struct in_addr wins_ip, struct in_addr src_ip)
+{
+	struct wins_dead *d;
+	for (d=dead_servers; d; d=d->next) {
+		if (ip_equal(wins_ip, d->dest_ip) && ip_equal(src_ip, d->src_ip)) {
+			fstring src_name;
+			fstrcpy(src_name, inet_ntoa(src_ip));
+			DEBUG(4,("Reviving wins server %s for source %s\n", 
+				 inet_ntoa(wins_ip), src_name));
+			DLIST_REMOVE(dead_servers, d);
+			return;
+		}
+	}
+}
+
+
 /*
   mark a wins server as temporarily dead
 */
-void wins_srv_died(struct in_addr ip)
+void wins_srv_died(struct in_addr wins_ip, struct in_addr src_ip)
 {
 	struct wins_dead *d;
+	fstring src_name;
 
-	if (is_zero_ip(ip) || wins_srv_is_dead(ip)) {
+	if (is_zero_ip(wins_ip) || wins_srv_is_dead(wins_ip, src_ip)) {
 		return;
 	}
 
 	d = (struct wins_dead *)malloc(sizeof(*d));
 	if (!d) return;
 
-	d->ip = ip;
+	d->dest_ip = wins_ip;
+	d->src_ip = src_ip;
 	d->revival = time(NULL) + DEATH_TIME;
 
-	DEBUG(4,("Marking wins server %s dead for %u seconds\n", inet_ntoa(ip), DEATH_TIME));
+	fstrcpy(src_name, inet_ntoa(src_ip));
+
+	DEBUG(4,("Marking wins server %s dead for %u seconds from source %s\n", 
+		 inet_ntoa(wins_ip), DEATH_TIME, src_name));
 
 	DLIST_ADD(dead_servers, d);
 }
@@ -127,6 +161,8 @@ unsigned wins_srv_count(void)
 	int count = 0;
 
 	if (lp_wins_support()) {
+		if (global_in_nmbd) return 0;
+
 		/* simple - just talk to ourselves */
 		return 1;
 	}
@@ -134,7 +170,6 @@ unsigned wins_srv_count(void)
 	list = lp_wins_server_list();
 	for (count=0; list && list[count]; count++) /* nop */ ;
 
-	DEBUG(6,("Found %u wins servers in list\n", count));
 	return count;
 }
 
@@ -160,42 +195,6 @@ static void parse_ip(struct tagged_ip *ip, const char *str)
 }
 
 
-/*
-  return the IP of the currently active wins server, or the zero IP otherwise
-*/
-struct in_addr wins_srv_ip(void)
-{
-	char **list;
-	int i;
-	struct tagged_ip t_ip;
-
-	/* if we are a wins server then we always just talk to ourselves */
-	if (lp_wins_support()) {
-		extern struct in_addr loopback_ip;
-		return loopback_ip;
-	}
-
-	list = lp_wins_server_list();
-	if (!list || !list[0]) {
-		zero_ip(&t_ip.ip);
-		return t_ip.ip;
-	}
-
-	/* find the first live one */
-	for (i=0; list[i]; i++) {
-		parse_ip(&t_ip, list[i]);
-		if (!wins_srv_is_dead(t_ip.ip)) {
-			DEBUG(6,("Current wins server is %s\n", inet_ntoa(t_ip.ip)));
-			return t_ip.ip;
-		}
-	}
-
-	/* damn, they are all dead. Keep trying the primary until they revive */
-	parse_ip(&t_ip, list[0]);
-
-	return t_ip.ip;
-}
-
 
 /*
   return the list of wins server tags. A 'tag' is used to distinguish
@@ -211,6 +210,7 @@ char **wins_srv_tags(void)
 	char **list;
 
 	if (lp_wins_support()) {
+		if (global_in_nmbd) return NULL;
 		/* give the caller something to chew on. This makes
 		   the rest of the logic simpler (ie. less special cases) */
 		ret = (char **)malloc(sizeof(char *)*2);
@@ -272,7 +272,7 @@ void wins_srv_tags_free(char **list)
   return the IP of the currently active wins server for the given tag,
   or the zero IP otherwise
 */
-struct in_addr wins_srv_ip_tag(const char *tag)
+struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip)
 {
 	char **list;
 	int i;
@@ -298,8 +298,13 @@ struct in_addr wins_srv_ip_tag(const char *tag)
 			/* not for the right tag. Move along */
 			continue;
 		}
-		if (!wins_srv_is_dead(t_ip.ip)) {
-			DEBUG(6,("Current wins server for tag '%s' is %s\n", tag, inet_ntoa(t_ip.ip)));
+		if (!wins_srv_is_dead(t_ip.ip, src_ip)) {
+			fstring src_name;
+			fstrcpy(src_name, inet_ntoa(src_ip));
+			DEBUG(6,("Current wins server for tag '%s' with source %s is %s\n", 
+				 tag, 
+				 src_name,
+				 inet_ntoa(t_ip.ip)));
 			return t_ip.ip;
 		}
 	}
@@ -330,6 +335,7 @@ unsigned wins_srv_count_tag(const char *tag)
 
 	/* if we are a wins server then we always just talk to ourselves */
 	if (lp_wins_support()) {
+		if (global_in_nmbd) return 0;
 		return 1;
 	}
 

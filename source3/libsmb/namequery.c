@@ -637,12 +637,12 @@ BOOL name_resolve_bcast(const char *name, int name_type,
 /********************************************************
  Resolve via "wins" method.
 *********************************************************/
-
 BOOL resolve_wins(const char *name, int name_type,
 		  struct in_addr **return_iplist, int *return_count)
 {
 	int sock, t, i;
 	char **wins_tags;
+	struct in_addr src_ip;
 
 	*return_iplist = NULL;
 	*return_count = 0;
@@ -662,15 +662,19 @@ BOOL resolve_wins(const char *name, int name_type,
 		return False;
 	}
 
+	/* the address we will be sending from */
+	src_ip = *interpret_addr2(lp_socket_address());
+
 	/* in the worst case we will try every wins server with every
 	   tag! */
 	for (t=0; wins_tags && wins_tags[t]; t++) {
-		for (i=0; i<wins_srv_count_tag(wins_tags[t]); i++) {
+		int srv_count = wins_srv_count_tag(wins_tags[t]);
+		for (i=0; i<srv_count; i++) {
 			struct in_addr wins_ip;
 			int flags;
 			BOOL timed_out;
 
-			wins_ip = wins_srv_ip_tag(wins_tags[t]);
+			wins_ip = wins_srv_ip_tag(wins_tags[t], src_ip);
 
 			if (global_in_nmbd && ismyip(wins_ip)) {
 				/* yikes! we'll loop forever */
@@ -678,13 +682,13 @@ BOOL resolve_wins(const char *name, int name_type,
 			}
 
 			/* skip any that have been unresponsive lately */
-			if (wins_srv_is_dead(wins_ip)) {
+			if (wins_srv_is_dead(wins_ip, src_ip)) {
 				continue;
 			}
 
 			DEBUG(3,("resolve_wins: using WINS server %s and tag '%s'\n", inet_ntoa(wins_ip), wins_tags[t]));
 
-			sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
+			sock = open_socket_in(SOCK_DGRAM, 0, 3, src_ip.s_addr, True);
 			if (sock == -1) {
 				continue;
 			}
@@ -699,7 +703,7 @@ BOOL resolve_wins(const char *name, int name_type,
 
 			if (timed_out) {
 				/* Timed out wating for WINS server to respond.  Mark it dead. */
-				wins_srv_died(wins_ip);
+				wins_srv_died(wins_ip, src_ip);
 			} else {
 				/* The name definately isn't in this
 				   group of WINS servers. goto the next group  */

@@ -53,8 +53,8 @@ static void terminate(void)
 	/* Write out wins.dat file if samba is a WINS server */
 	wins_write_database(False);
   
-	/* Remove all SELF registered names. */
-	release_my_names();
+	/* Remove all SELF registered names from WINS */
+	release_wins_names();
   
 	/* Announce all server entries as 0 time-to-live, 0 type. */
 	announce_my_servers_removed();
@@ -291,15 +291,6 @@ static BOOL reload_nmbd_services(BOOL test)
 	if ( !test ) {
 		DEBUG( 3, ( "services not loaded\n" ) );
 		reload_nmbd_services( True );
-	}
-
-	/* Do a sanity check for a misconfigured nmbd */
-	if( lp_wins_support() && wins_srv_count() ) {
-		if( DEBUGLVL(0) ) {
-			dbgtext( "ERROR: 'wins support = true' and 'wins server = <server>'\n" );
-			dbgtext( "are conflicting settings.  nmbd aborting.\n" );
-		}
-		exit(10);
 	}
 
 	return(ret);
