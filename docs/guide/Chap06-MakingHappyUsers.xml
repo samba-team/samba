@@ -1218,7 +1218,7 @@ index default               sub
 <example id="ch6-nss01">
 <title>Configuration File for NSS LDAP Support &smbmdash; <filename>/etc/ldap.conf</filename></title>
 <screen>
-SIZELIMIT	12
+SIZELIMIT	200
 TIMELIMIT	15
 DEREF		never
 
@@ -1238,7 +1238,7 @@ nss_base_group  ou=Groups,dc=abmas,dc=biz?one
 <example id="ch6-nss02">
 <title>Configuration File for NSS LDAP Clients Support &smbmdash; <filename>/etc/ldap.conf</filename></title>
 <screen>
-SIZELIMIT	12
+SIZELIMIT	200
 TIMELIMIT	15
 DEREF		never
 
