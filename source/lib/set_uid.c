@@ -23,9 +23,6 @@
 
 extern int DEBUGLEVEL;
 
-static uid_t initial_uid;
-static gid_t initial_gid;
-
 /* what user is current? */
 extern struct current_user current_user;
 
