@@ -22,6 +22,8 @@
 
 #include "includes.h"
 #include "rpc_server/common/common.h"
+#include "rpc_server/spoolss/dcesrv_spoolss.h"
+
 
 /* 
   spoolss_EnumPrinters 
@@ -32,6 +34,17 @@ static WERROR spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CT
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+
+/*
+  destroy an open connection. This closes the database connection
+*/
+static void spoolss_OpenPrinter_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
+{
+#if 0
+	struct samr_connect_state *c_state = h->data;
+	samr_Connect_close(c_state);
+#endif
+}
 
 /* 
   spoolss_OpenPrinter 
@@ -319,7 +332,20 @@ static WERROR spoolss_WaitForPrinterChange(struct dcesrv_call_state *dce_call, T
 static WERROR spoolss_ClosePrinter(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_ClosePrinter *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+
+	*r->out.handle = *r->in.handle;
+
+	DCESRV_PULL_HANDLE_WERR(h, r->in.handle, DCESRV_HANDLE_ANY);
+
+	/* this causes the callback spoolss_XXX_destroy() to be called by
+	   the handle destroy code which destroys the state associated
+	   with the handle */
+	dcesrv_handle_destroy(dce_call->conn, h);
+
+	ZERO_STRUCTP(r->out.handle);
+
+	return WERR_OK;
 }
 
 
@@ -719,7 +745,44 @@ static WERROR spoolss_44(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx
 static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_OpenPrinterEx *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct spoolss_openprinter_state *state;
+	struct dcesrv_handle *handle;
+	TALLOC_CTX *op_mem_ctx;
+
+	ZERO_STRUCTP(r->out.handle);
+
+	/* Check printername is either \\\\SERVER, \\\\SERVERIP or
+	   \\\\SERVER.FQ.DN */
+
+	if (!strequal(r->in.printername, lp_netbios_name())) {
+		return WERR_INVALID_PRINTER_NAME;
+	}
+
+	op_mem_ctx = talloc_init("spoolss_OpenPrinter");
+	if (!op_mem_ctx) {
+		return WERR_OK;
+	}
+
+	state = talloc_p(op_mem_ctx, struct spoolss_openprinter_state);
+	if (!state) {
+		return WERR_OK;
+	}
+	state->mem_ctx = op_mem_ctx;
+
+	handle = dcesrv_handle_new(dce_call->conn, SPOOLSS_HANDLE_SERVER);
+	if (!handle) {
+		talloc_destroy(state->mem_ctx);
+		return WERR_NOMEM;
+	}
+
+	handle->data = state;
+	handle->destroy = spoolss_OpenPrinter_destroy;
+
+	state->reference_count = 1;
+	state->access_mask = r->in.access_required;
+	*r->out.handle = handle->wire_handle;
+
+	return WERR_OK;
 }
 
 

@@ -23,7 +23,17 @@
 /*
   this type allows us to distinguish handle types
 */
-enum samr_handle {
+enum spoolss_handle {
 	SPOOLSS_HANDLE_SERVER,
 	SPOOLSS_HANDLE_PRINTER
+};
+
+/*
+  state asscoiated with a spoolss_OpenPrinter{,Ex}() operation
+*/
+struct spoolss_openprinter_state {
+	int reference_count;
+	void *openprinter_ctx;
+	TALLOC_CTX *mem_ctx;
+	uint32_t access_mask;
 };
