@@ -87,7 +87,8 @@ install-build-headers:: $(include_HEADERS) $(build_HEADERZ)
 all-local: install-build-headers
 
 check-local::
-	@if test '$(CHECK_LOCAL)'; then \
+	@if test '$(CHECK_LOCAL)' = "no-check-local"; then \
+	  foo=''; elif test '$(CHECK_LOCAL)'; then \
 	  foo='$(CHECK_LOCAL)'; else \
 	  foo='$(PROGRAMS)'; fi; \
 	  if test "$$foo"; then \
@@ -204,6 +205,7 @@ if KRB5
 LIB_krb5 = $(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la
 LIB_gssapi = $(top_builddir)/lib/gssapi/libgssapi.la
+LIB_tsasl = $(top_builddir)/lib/tsasl/libtsasl.la
 endif
 
 if DCE
