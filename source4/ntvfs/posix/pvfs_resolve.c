@@ -159,6 +159,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			       uint_t flags, struct pvfs_filename *name)
 {
 	char *ret, *p;
+	size_t len;
 
 	name->original_name = talloc_strdup(name, cifs_name);
 	name->stream_name = NULL;
@@ -183,8 +184,13 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 
 	p = ret + strlen(pvfs->base_directory) + 1;
 
-	if (p[strlen(cifs_name)-1] == '\\') {
-		p[strlen(cifs_name)-1] = 0;
+	len = strlen(cifs_name);
+	if (len>0 && p[len-1] == '\\') {
+		p[len-1] = 0;
+		len--;
+	}
+	if (len>1 && p[len-1] == '.' && p[len-2] == '\\') {
+		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
 	/* now do an in-place conversion of '\' to '/', checking
