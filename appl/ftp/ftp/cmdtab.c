@@ -33,16 +33,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)cmdtab.c	8.4 (Berkeley) 10/9/94";
-#else
-static char rcsid[] = "$NetBSD: cmdtab.c,v 1.6 1995/09/08 01:06:10 tls Exp $";
-#endif
-#endif /* not lint */
-
-#include <stdio.h>
-#include "ftp_var.h"
+#include "ftp_locl.h"
 
 /*
  * User FTP -- Command Tables.

@@ -1,8 +1,13 @@
-#	@(#)Makefile	8.2 (Berkeley) 4/3/94
-#       $NetBSD: Makefile,v 1.6 1995/11/22 21:52:48 cgd Exp $
+CC=cc -std1
+#CC=gcc
+CFLAGS=-g -DHAVE_CONFIG_H -I.. -I../libmissing -I$(ATHENA)/include -I.
 
-PROG=	ftp
-SRCS=	cmds.c cmdtab.c ftp.c main.c ruserpass.c domacro.c
-CFLAGS+= -Dunix
+ATHENA = /usr/athena
 
-.include <bsd.prog.mk>
+ftp_OBJS = cmds.o cmdtab.o ftp.o main.o ruserpass.o domacro.o globals.o
+
+ftp: $(ftp_OBJS)
+	$(CC) -o ftp $(ftp_OBJS) ../libmissing/libmissing.a -L$(ATHENA)/lib -lkrb -ldes
+
+clean:
+	rm -f *~ *.o core ftpd ftpcmd.c \#*

@@ -33,44 +33,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)ftp.c	8.6 (Berkeley) 10/27/94";
-#else
-static char rcsid[] = "$NetBSD: ftp.c,v 1.13 1995/09/16 22:32:59 pk Exp $";
-#endif
-#endif /* not lint */
-
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/file.h>
-
-#include <netinet/in.h>
-#include <netinet/in_systm.h>
-#include <netinet/ip.h>
-#include <arpa/inet.h>
-#include <arpa/ftp.h>
-#include <arpa/telnet.h>
-
-#include <ctype.h>
-#include <err.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <netdb.h>
-#include <pwd.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <varargs.h>
-
-#include "ftp_var.h"
-
-extern int h_errno;
+#include "ftp_locl.h"
 
 struct	sockaddr_in hisctladdr;
 struct	sockaddr_in data_addr;
@@ -85,10 +48,10 @@ off_t	restart_point = 0;
 
 FILE	*cin, *cout;
 
+typedef void (*sighand)(int);
+
 char *
-hookup(host, port)
-	char *host;
-	int port;
+hookup(char *host, int port)
 {
 	struct hostent *hp = 0;
 	int s, len, tos;
@@ -195,8 +158,7 @@ bad:
 }
 
 int
-login(host)
-	char *host;
+login(char *host)
 {
 	char tmp[80];
 	char *user, *pass, *acct;
@@ -258,7 +220,7 @@ login(host)
 }
 
 void
-cmdabort()
+cmdabort(int sig)
 {
 
 	printf("\n");
@@ -268,39 +230,34 @@ cmdabort()
 		longjmp(ptabort,1);
 }
 
-/*VARARGS*/
 int
-command(va_alist)
-va_dcl
+command(char *fmt, ...)
 {
 	va_list ap;
-	char *fmt;
 	int r;
-	sig_t oldintr;
+	sighand oldintr;
 
 	abrtflag = 0;
-	if (debug) {
+	if (debug)
 		printf("---> ");
-		va_start(ap);
-		fmt = va_arg(ap, char *);
-		if (strncmp("PASS ", fmt, 5) == 0)
-			printf("PASS XXXX");
-		else 
-			vfprintf(stdout, fmt, ap);
-		va_end(ap);
-		printf("\n");
-		(void) fflush(stdout);
-	}
 	if (cout == NULL) {
 		warn("No control connection for command");
 		code = -1;
 		return (0);
 	}
 	oldintr = signal(SIGINT, cmdabort);
-	va_start(ap);
-	fmt = va_arg(ap, char *);
+	va_start(ap, fmt);
+	if(debug)
+	    if (strncmp("PASS ", fmt, 5) == 0)
+		printf("PASS XXXX");
+	    else 
+		vfprintf(stdout, fmt, ap);
 	vfprintf(cout, fmt, ap);
 	va_end(ap);
+	if(debug){
+	    printf("\n");
+	    (void) fflush(stdout);
+	}
 	fprintf(cout, "\r\n");
 	(void) fflush(cout);
 	cpend = 1;
@@ -314,13 +271,12 @@ va_dcl
 char reply_string[BUFSIZ];		/* last line of previous reply */
 
 int
-getreply(expecteof)
-	int expecteof;
+getreply(int expecteof)
 {
 	int c, n;
 	int dig;
 	int originalcode = 0, continuation = 0;
-	sig_t oldintr;
+	sighand oldintr;
 	int pflag = 0;
 	char *cp, *pt = pasv;
 
@@ -355,7 +311,7 @@ getreply(expecteof)
 					code = 221;
 					return (0);
 				}
-				lostpeer();
+				lostpeer(0);
 				if (verbose) {
 					printf("421 Service not available, remote server has closed connection\n");
 					(void) fflush(stdout);
@@ -408,7 +364,7 @@ getreply(expecteof)
 			cpend = 0;
 		(void) signal(SIGINT,oldintr);
 		if (code == 421 || originalcode == 421)
-			lostpeer();
+			lostpeer(0);
 		if (abrtflag && oldintr != cmdabort && oldintr != SIG_IGN)
 			(*oldintr)(SIGINT);
 		return (n - '0');
@@ -416,9 +372,7 @@ getreply(expecteof)
 }
 
 int
-empty(mask, sec)
-	struct fd_set *mask;
-	int sec;
+empty(struct fd_set *mask, int sec)
 {
 	struct timeval t;
 
@@ -430,7 +384,7 @@ empty(mask, sec)
 jmp_buf	sendabort;
 
 void
-abortsend()
+abortsend(int sig)
 {
 
 	mflag = 0;
@@ -443,16 +397,14 @@ abortsend()
 #define HASHBYTES 1024
 
 void
-sendrequest(cmd, local, remote, printnames)
-	char *cmd, *local, *remote;
-	int printnames;
+sendrequest(char *cmd, char *local, char *remote, int printnames)
 {
 	struct stat st;
 	struct timeval start, stop;
 	int c, d;
-	FILE *fin, *dout = 0, *popen();
+	FILE *fin, *dout = 0, *popen(const char *, const char *);
 	int (*closefunc) __P((FILE *));
-	sig_t oldintr, oldintp;
+	sighand oldintr, oldintp;
 	long bytes = 0, hashbytes = HASHBYTES;
 	char *lmode, buf[BUFSIZ], *bufp;
 
@@ -689,7 +641,7 @@ abort:
 jmp_buf	recvabort;
 
 void
-abortrecv()
+abortrecv(int sig)
 {
 
 	mflag = 0;
@@ -700,13 +652,11 @@ abortrecv()
 }
 
 void
-recvrequest(cmd, local, remote, lmode, printnames)
-	char *cmd, *local, *remote, *lmode;
-	int printnames;
+recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 {
 	FILE *fout, *din = 0;
 	int (*closefunc) __P((FILE *));
-	sig_t oldintr, oldintp;
+	sighand oldintr, oldintp;
 	int c, d, is_retr, tcrflag, bare_lfs = 0;
 	static int bufsize;
 	static char *buf;
@@ -1001,7 +951,7 @@ abort:
  * otherwise the server's connect may fail.
  */
 int
-initconn()
+initconn(void)
 {
 	char *p, *a;
 	int result, len, tmpno = 0;
@@ -1038,7 +988,7 @@ initconn()
 			goto bad;
 		}
 
-		bzero(&data_addr, sizeof(data_addr));
+		bzero((char*)&data_addr, sizeof(data_addr));
 		data_addr.sin_family = AF_INET;
 		a = (char *)&data_addr.sin_addr.s_addr;
 		a[0] = a0 & 0xff;
@@ -1126,8 +1076,7 @@ bad:
 }
 
 FILE *
-dataconn(lmode)
-	char *lmode;
+dataconn(char *lmode)
 {
 	struct sockaddr_in from;
 	int s, fromlen = sizeof (from), tos;
@@ -1152,37 +1101,38 @@ dataconn(lmode)
 }
 
 void
-ptransfer(direction, bytes, t0, t1)
-	char *direction;
-	long bytes;
-	struct timeval *t0, *t1;
+ptransfer(char *direction, long int bytes, 
+	  struct timeval *t0, struct timeval *t1)
 {
-	struct timeval td;
-	float s;
-	long bs;
+    struct timeval td;
+    float s;
+    long bs;
 
-	if (verbose) {
-		timersub(t1, t0, &td);
-		s = td.tv_sec + (td.tv_usec / 1000000.);
-#define	nz(x)	((x) == 0 ? 1 : (x))
-		bs = bytes / nz(s);
-		printf("%ld bytes %s in %.3g seconds (%ld bytes/s)\n",
-		    bytes, direction, s, bs);
+    if (verbose) {
+	td.tv_sec = t0->tv_sec - t1->tv_sec;
+	td.tv_usec = t0->tv_usec - t1->tv_usec;
+	if(td.tv_usec < 0){
+	    td.tv_sec--;
+	    td.tv_usec += 1000000;
 	}
+	s = td.tv_sec + (td.tv_usec / 1000000.);
+	bs = bytes / (s?s:1);
+	printf("%ld bytes %s in %.3g seconds (%ld bytes/s)\n",
+	       bytes, direction, s, bs);
+    }
 }
 
 void
-psabort()
+psabort(int sig)
 {
 
 	abrtflag++;
 }
 
 void
-pswitch(flag)
-	int flag;
+pswitch(int flag)
 {
-	sig_t oldintr;
+	sighand oldintr;
 	static struct comvars {
 		int connect;
 		char name[MAXHOSTNAMELEN];
@@ -1272,7 +1222,7 @@ pswitch(flag)
 }
 
 void
-abortpt()
+abortpt(int sig)
 {
 
 	printf("\n");
@@ -1284,10 +1234,9 @@ abortpt()
 }
 
 void
-proxtrans(cmd, local, remote)
-	char *cmd, *local, *remote;
+proxtrans(char *cmd, char *local, char *remote)
 {
-	sig_t oldintr;
+	sighand oldintr;
 	int secndflag = 0, prox_type, nfnd;
 	char *cmd2;
 	struct fd_set mask;
@@ -1389,7 +1338,7 @@ abort:
 			}
 			if (ptabflg)
 				code = -1;
-			lostpeer();
+			lostpeer(0);
 		}
 		(void) getreply(0);
 		(void) getreply(0);
@@ -1403,9 +1352,7 @@ abort:
 }
 
 void
-reset(argc, argv)
-	int argc;
-	char *argv[];
+reset(int argc, char **argv)
 {
 	struct fd_set mask;
 	int nfnd = 1;
@@ -1416,7 +1363,7 @@ reset(argc, argv)
 		if ((nfnd = empty(&mask,0)) < 0) {
 			warn("reset");
 			code = -1;
-			lostpeer();
+			lostpeer(0);
 		}
 		else if (nfnd) {
 			(void) getreply(0);
@@ -1425,8 +1372,7 @@ reset(argc, argv)
 }
 
 char *
-gunique(local)
-	char *local;
+gunique(char *local)
 {
 	static char new[MAXPATHLEN];
 	char *cp = strrchr(local, '/');
@@ -1471,8 +1417,7 @@ gunique(local)
 }
 
 void
-abort_remote(din)
-	FILE *din;
+abort_remote(FILE *din)
 {
 	char buf[BUFSIZ];
 	int nfnd;
@@ -1498,7 +1443,7 @@ abort_remote(din)
 		}
 		if (ptabflg)
 			code = -1;
-		lostpeer();
+		lostpeer(0);
 	}
 	if (din && FD_ISSET(fileno(din), &mask)) {
 		while (read(fileno(din), buf, BUFSIZ) > 0)

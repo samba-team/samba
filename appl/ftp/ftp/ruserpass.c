@@ -33,22 +33,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char sccsid[] = "@(#)ruserpass.c	8.4 (Berkeley) 4/27/95";
-#endif /* not lint */
-
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <ctype.h>
-#include <err.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include "ftp_var.h"
+#include "ftp_locl.h"
 
 static	int token __P((void));
 static	FILE *cfile;
@@ -78,8 +63,7 @@ static struct toktab {
 };
 
 int
-ruserpass(host, aname, apass, aacct)
-	char *host, **aname, **apass, **aacct;
+ruserpass(char *host, char **aname, char **apass, char **aacct)
 {
 	char *hdir, buf[BUFSIZ], *tmp;
 	char myname[MAXHOSTNAMELEN], *mydomain;
@@ -244,7 +228,7 @@ bad:
 }
 
 static int
-token()
+token(void)
 {
 	char *cp;
 	int c;

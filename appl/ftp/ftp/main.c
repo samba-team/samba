@@ -31,45 +31,18 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static char copyright[] =
-"@(#) Copyright (c) 1985, 1989, 1993, 1994\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
-
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)main.c	8.6 (Berkeley) 10/9/94";
-#else
-static char rcsid[] = "$NetBSD: main.c,v 1.10 1995/09/15 00:32:33 pk Exp $";
-#endif
-#endif /* not lint */
-
 /*
  * FTP User Program -- Command Interface.
  */
-/*#include <sys/ioctl.h>*/
-#include <sys/types.h>
-#include <sys/socket.h>
 
-#include <arpa/ftp.h>
+#include "ftp_locl.h"
 
-#include <ctype.h>
-#include <err.h>
-#include <netdb.h>
-#include <pwd.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include "ftp_var.h"
+#ifndef HAVE___PROGNAME
+char *__progname;
+#endif
 
 int
-main(argc, argv)
-	int argc;
-	char *argv[];
+main(int argc, char **argv)
 {
 	int ch, top;
 	struct passwd *pw = NULL;
@@ -81,6 +54,10 @@ main(argc, argv)
 	doglob = 1;
 	interactive = 1;
 	autologin = 1;
+
+#ifndef HAVE___PROGNAME
+	__progname = argv[0];
+#endif
 
 	while ((ch = getopt(argc, argv, "dgintv")) != EOF) {
 		switch (ch) {
@@ -141,7 +118,6 @@ main(argc, argv)
 	}
 	if (argc > 0) {
 		char *xargv[5];
-		extern char *__progname;
 
 		if (setjmp(toplevel))
 			exit(0);
@@ -166,14 +142,14 @@ main(argc, argv)
 }
 
 void
-intr()
+intr(int sig)
 {
 
 	longjmp(toplevel, 1);
 }
 
 void
-lostpeer()
+lostpeer(int sig)
 {
 
 	if (connected) {
@@ -225,8 +201,7 @@ tail(filename)
  * Command parser.
  */
 void
-cmdscanner(top)
-	int top;
+cmdscanner(int top)
 {
 	struct cmd *c;
 	int l;
@@ -281,8 +256,7 @@ cmdscanner(top)
 }
 
 struct cmd *
-getcmd(name)
-	char *name;
+getcmd(char *name)
 {
 	char *p, *q;
 	struct cmd *c, *found;
@@ -316,7 +290,7 @@ getcmd(name)
 int slrflag;
 
 void
-makeargv()
+makeargv(void)
 {
 	char **argp;
 
@@ -349,7 +323,7 @@ makeargv()
  * handle quoting and strings
  */
 char *
-slurpstring()
+slurpstring(void)
 {
 	int got_one = 0;
 	char *sb = stringbase;
@@ -473,9 +447,7 @@ OUT:
  * Call each command handler with argc == 0 and argv[0] == name.
  */
 void
-help(argc, argv)
-	int argc;
-	char *argv[];
+help(int argc, char **argv)
 {
 	struct cmd *c;
 

@@ -33,25 +33,10 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)domacro.c	8.3 (Berkeley) 4/2/94";
-#else
-static char rcsid[] = "$NetBSD: domacro.c,v 1.5 1995/09/08 01:06:14 tls Exp $";
-#endif
-#endif /* not lint */
-
-#include <ctype.h>
-#include <signal.h>
-#include <stdio.h>
-#include <strings.h>
-
-#include "ftp_var.h"
+#include "ftp_locl.h"
 
 void
-domacro(argc, argv)
-	int argc;
-	char *argv[];
+domacro(int argc, char **argv)
 {
 	int i, j, count = 2, loopflg = 0;
 	char *cp1, *cp2, line2[200];

@@ -47,64 +47,64 @@
 /*
  * Options and other state info.
  */
-int	trace;			/* trace packets exchanged */
-int	hash;			/* print # for each buffer transferred */
-int	sendport;		/* use PORT cmd for each data connection */
-int	verbose;		/* print messages coming back from server */
-int	connected;		/* connected to server */
-int	fromatty;		/* input is from a terminal */
-int	interactive;		/* interactively prompt on m* cmds */
-int	debug;			/* debugging level */
-int	bell;			/* ring bell on cmd completion */
-int	doglob;			/* glob local file names */
-int	autologin;		/* establish user account on connection */
-int	proxy;			/* proxy server connection active */
-int	proxflag;		/* proxy connection exists */
-int	sunique;		/* store files on server with unique name */
-int	runique;		/* store local files with unique name */
-int	mcase;			/* map upper to lower case for mget names */
-int	ntflag;			/* use ntin ntout tables for name translation */
-int	mapflag;		/* use mapin mapout templates on file names */
-int	code;			/* return/reply code for ftp command */
-int	crflag;			/* if 1, strip car. rets. on ascii gets */
-char	pasv[64];		/* passive port for proxy data connection */
-int	passivemode;		/* passive mode enabled */
-char	*altarg;		/* argv[1] with no shell-like preprocessing  */
-char	ntin[17];		/* input translation table */
-char	ntout[17];		/* output translation table */
-char	mapin[MAXPATHLEN];	/* input map template */
-char	mapout[MAXPATHLEN];	/* output map template */
-char	typename[32];		/* name of file transfer type */
-int	type;			/* requested file transfer type */
-int	curtype;		/* current file transfer type */
-char	structname[32];		/* name of file transfer structure */
-int	stru;			/* file transfer structure */
-char	formname[32];		/* name of file transfer format */
-int	form;			/* file transfer format */
-char	modename[32];		/* name of file transfer mode */
-int	mode;			/* file transfer mode */
-char	bytename[32];		/* local byte size in ascii */
-int	bytesize;		/* local byte size in binary */
+extern int	trace;			/* trace packets exchanged */
+extern int	hash;			/* print # for each buffer transferred */
+extern int	sendport;		/* use PORT cmd for each data connection */
+extern int	verbose;		/* print messages coming back from server */
+extern int	connected;		/* connected to server */
+extern int	fromatty;		/* input is from a terminal */
+extern int	interactive;		/* interactively prompt on m* cmds */
+extern int	debug;			/* debugging level */
+extern int	bell;			/* ring bell on cmd completion */
+extern int	doglob;			/* glob local file names */
+extern int	autologin;		/* establish user account on connection */
+extern int	proxy;			/* proxy server connection active */
+extern int	proxflag;		/* proxy connection exists */
+extern int	sunique;		/* store files on server with unique name */
+extern int	runique;		/* store local files with unique name */
+extern int	mcase;			/* map upper to lower case for mget names */
+extern int	ntflag;			/* use ntin ntout tables for name translation */
+extern int	mapflag;		/* use mapin mapout templates on file names */
+extern int	code;			/* return/reply code for ftp command */
+extern int	crflag;			/* if 1, strip car. rets. on ascii gets */
+extern char	pasv[64];		/* passive port for proxy data connection */
+extern int	passivemode;		/* passive mode enabled */
+extern char	*altarg;		/* argv[1] with no shell-like preprocessing  */
+extern char	ntin[17];		/* input translation table */
+extern char	ntout[17];		/* output translation table */
+extern char	mapin[MAXPATHLEN];	/* input map template */
+extern char	mapout[MAXPATHLEN];	/* output map template */
+extern char	typename[32];		/* name of file transfer type */
+extern int	type;			/* requested file transfer type */
+extern int	curtype;		/* current file transfer type */
+extern char	structname[32];		/* name of file transfer structure */
+extern int	stru;			/* file transfer structure */
+extern char	formname[32];		/* name of file transfer format */
+extern int	form;			/* file transfer format */
+extern char	modename[32];		/* name of file transfer mode */
+extern int	mode;			/* file transfer mode */
+extern char	bytename[32];		/* local byte size in ascii */
+extern int	bytesize;		/* local byte size in binary */
 
-char	*hostname;		/* name of host connected to */
-int	unix_server;		/* server is unix, can use binary for ascii */
-int	unix_proxy;		/* proxy is unix, can use binary for ascii */
+extern char	*hostname;		/* name of host connected to */
+extern int	unix_server;		/* server is unix, can use binary for ascii */
+extern int	unix_proxy;		/* proxy is unix, can use binary for ascii */
 
-struct	servent *sp;		/* service spec for tcp/ftp */
+extern struct	servent *sp;		/* service spec for tcp/ftp */
 
-jmp_buf	toplevel;		/* non-local goto stuff for cmd scanner */
+extern jmp_buf	toplevel;		/* non-local goto stuff for cmd scanner */
 
-char	line[200];		/* input line buffer */
-char	*stringbase;		/* current scan point in line buffer */
-char	argbuf[200];		/* argument storage buffer */
-char	*argbase;		/* current storage point in arg buffer */
-int	margc;			/* count of arguments on input line */
-char	**margv;		/* args parsed from input line */
-int	margvlen;		/* how large margv is currently */
-int     cpend;                  /* flag: if != 0, then pending server reply */
-int	mflag;			/* flag: if != 0, then active multi command */
+extern char	line[200];		/* input line buffer */
+extern char	*stringbase;		/* current scan point in line buffer */
+extern char	argbuf[200];		/* argument storage buffer */
+extern char	*argbase;		/* current storage point in arg buffer */
+extern int	margc;			/* count of arguments on input line */
+extern char	**margv;		/* args parsed from input line */
+extern int	margvlen;		/* how large margv is currently */
+extern int     cpend;                  /* flag: if != 0, then pending server reply */
+extern int	mflag;			/* flag: if != 0, then active multi command */
 
-int	options;		/* used during socket creation */
+extern int	options;		/* used during socket creation */
 
 /*
  * Format of command table.
@@ -124,6 +124,6 @@ struct macel {
 	char *mac_end;		/* end of macro in macbuf */
 };
 
-int macnum;			/* number of defined macros */
-struct macel macros[16];
-char macbuf[4096];
+extern int macnum;			/* number of defined macros */
+extern struct macel macros[16];
+extern char macbuf[4096];

@@ -35,22 +35,32 @@
  *	@(#)extern.h	8.3 (Berkeley) 10/9/94
  */
 
-struct timeval;
-struct fd_set;
+#include <setjmp.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <sys/select.h>
+
+#ifndef __P
+#ifdef __STDC__
+#define __P(X) X
+#else
+#define __P(X)
+#endif
+#endif
 
 void    abort_remote __P((FILE *));
-void    abortpt __P(());
-void    abortrecv __P(());
-void    abortsend __P(());
+void    abortpt __P((int));
+void    abortrecv __P((int));
+void    abortsend __P((int));
 void	account __P((int, char **));
 int	another __P((int *, char ***, char *));
 void	blkfree __P((char **));
 void	cd __P((int, char **));
 void	cdup __P((int, char **));
 void	changetype __P((int, int));
-void	cmdabort __P(());
+void	cmdabort __P((int));
 void	cmdscanner __P((int));
-int	command __P(());
+int	command __((char *fmt, ...));
 int	confirm __P((char *, char *));
 FILE   *dataconn __P((char *));
 void	delete __P((int, char **));
@@ -73,10 +83,10 @@ void	help __P((int, char **));
 char   *hookup __P((char *, int));
 void	idle __P((int, char **));
 int     initconn __P((void));
-void	intr __P(());
+void	intr __P((int));
 void	lcd __P((int, char **));
 int	login __P((char *));
-void	lostpeer __P(());
+void	lostpeer __P((int));
 void	ls __P((int, char **));
 void	mabort __P((int));
 void	macdef __P((int, char **));
@@ -89,9 +99,9 @@ void	modtime __P((int, char **));
 void	mput __P((int, char **));
 char   *onoff __P((int));
 void	newer __P((int, char **));
-void	proxabort __P(());
+void	proxabort __P((int));
 void    proxtrans __P((char *, char *, char *));
-void    psabort __P(());
+void    psabort __P((int));
 void    pswitch __P((int));
 void    ptransfer __P((char *, long, struct timeval *, struct timeval *));
 void	put __P((int, char **));
