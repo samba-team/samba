@@ -8,7 +8,7 @@ man_MANS = ktutil.8
 
 sbin_PROGRAMS = ktutil
 
-ktutil_SOURCES = ktutil.c srvconvert.c
+ktutil_SOURCES = ktutil.c srvconvert.c srvcreate.c
 
 LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5clnt.la \
