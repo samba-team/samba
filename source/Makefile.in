@@ -850,7 +850,7 @@ check:
 #      install the program before running the tests.  You should not
 #      assume that `$(bindir)' is in the search path.
 
-installcheck:
+dangerous-installcheck:
 	mkdir -p $(BASEDIR)/lib
 	mkdir -p $(BASEDIR)/var
 	PATH=$(BINDIR):$(SBINDIR):$(PATH) \
