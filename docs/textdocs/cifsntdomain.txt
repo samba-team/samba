@@ -2,7 +2,9 @@ NT Domain Authentication
 ------------------------
 
 Authors:	- Luke Kenneth Casson Leighton (lkcl@switchboard.net)
+		Copyright (C) 1997 Luke Kenneth Casson Leighton
 		- Paul Ashton                  (paul@argo.demon.co.uk)
+		Copyright (C) 1997 Paul Ashton
 
 Version:		0.017 (20oct97)
 
