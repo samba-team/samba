@@ -62,21 +62,21 @@ static void display_account_info(uint32 rid, SAM_ACCOUNT_INFO *a)
 	
 	if (memcmp(a->pass.buf_lm_pwd, zero_buf, 16) != 0) {
 		sam_pwd_hash(a->user_rid, a->pass.buf_lm_pwd, lm_passwd, 0);
-		smbpasswd_sethexpwd(hex_lm_passwd, lm_passwd, a->acb_info);
+		pdb_sethexpwd(hex_lm_passwd, lm_passwd, a->acb_info);
 	} else {
-		smbpasswd_sethexpwd(hex_lm_passwd, NULL, 0);
+		pdb_sethexpwd(hex_lm_passwd, NULL, 0);
 	}
 
 	if (memcmp(a->pass.buf_nt_pwd, zero_buf, 16) != 0) {
 		sam_pwd_hash(a->user_rid, a->pass.buf_nt_pwd, nt_passwd, 0);
-		smbpasswd_sethexpwd(hex_nt_passwd, nt_passwd, a->acb_info);
+		pdb_sethexpwd(hex_nt_passwd, nt_passwd, a->acb_info);
 	} else {
-		smbpasswd_sethexpwd(hex_nt_passwd, NULL, 0);
+		pdb_sethexpwd(hex_nt_passwd, NULL, 0);
 	}
 	
 	printf("%s:%d:%s:%s:%s:LCT-0\n", unistr2_static(&a->uni_acct_name),
 	       a->user_rid, hex_lm_passwd, hex_nt_passwd,
-	       smbpasswd_encode_acb_info(a->acb_info));
+	       pdb_encode_acct_ctrl(a->acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 }
 
 static void display_domain_info(SAM_DOMAIN_INFO *a)
@@ -432,7 +432,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 			pstrcpy(add_script, lp_addmachine_script());
 		} else {
 			DEBUG(1, ("Unknown user type: %s\n",
-				  smbpasswd_encode_acb_info(delta->acb_info)));
+				  pdb_encode_acct_ctrl(delta->acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN)));
 			nt_ret = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
