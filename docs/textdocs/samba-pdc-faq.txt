@@ -101,9 +101,6 @@ David Bannon
                       
    5. Miscellaneous
           
-              What editor can I use in DOS/Windows that won't mess with
-                      my unix EOF
-                      
               How do I get 'User Manager' and 'Server Manager'
               The time setting from a Samba server does not work.
               "trust account xxx should be in DOMAIN_GROUP_RID_USERS"
@@ -604,18 +601,6 @@ How do I get remote password (unix and SMB) changing working ?
    
 Chapter 5. Miscellaneous
 
-What editor can I use in DOS/Windows that won't mess with my unix EOF
-
-   There are a number of Windows or DOS based editors that will
-   understand, and leave intact, the unix eof (as opposed to a DOS
-   CL/LF). List members suggested :
-   
-     * UltraEdit at www.ultraedit.com
-     * VI for windows at home.snafu.de/ramo/WinViEn.htm
-     * The author prefers PFE at www.lancs.ac.uk/people/cpaap/pfe/ but
-       its no longer being developed...
-     _________________________________________________________________
-   
 How do I get 'User Manager' and 'Server Manager'
 
    Since I don't need to buy an NT Server CD now, how do I get the 'User
@@ -750,10 +735,6 @@ and where can I find them?
    idle timeout) So, in between pressing ctrl alt delete, and actually
    typing in your password, you can gdb attach and continue.
    
-   Some usefull samba commands worth investigating:
-     * testparam | more
-     * smbclient -L //{netbios name of server}
-       
    An SMB enabled version of tcpdump is available from
    ftp://samba.org/pub/samba/tcpdump-smb/ 
    

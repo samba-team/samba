@@ -333,26 +333,21 @@ HREF="#AEN303"
 ><DT
 ><A
 HREF="#AEN305"
->What editor can I use in DOS/Windows that won't mess with my unix EOF</A
-></DT
-><DT
-><A
-HREF="#AEN318"
 >How do I get 'User Manager' and 'Server Manager'</A
 ></DT
 ><DT
 ><A
-HREF="#AEN333"
+HREF="#AEN320"
 >The time setting from a Samba server does not work.</A
 ></DT
 ><DT
 ><A
-HREF="#AEN337"
+HREF="#AEN324"
 >"trust account xxx should be in DOMAIN_GROUP_RID_USERS"</A
 ></DT
 ><DT
 ><A
-HREF="#AEN341"
+HREF="#AEN328"
 >How do I get my samba server to become a member ( not PDC ) of an NT domain?</A
 ></DT
 ></DL
@@ -361,51 +356,51 @@ HREF="#AEN341"
 ></DD
 ><DT
 >6. <A
-HREF="#AEN376"
+HREF="#AEN363"
 >Troubleshooting and Bug Reporting</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN378"
+HREF="#AEN365"
 >Diagnostic tools</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN380"
+HREF="#AEN367"
 >What are some diagnostics tools I can use to debug the domain logon process and where can I
 	find them?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN394"
+HREF="#AEN375"
 >How do I install 'Network Monitor' on an NT Workstation or a Windows 9x box?</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN423"
+HREF="#AEN404"
 >What other help can I get ?</A
 ></DT
 ><DD
 ><DL
 ><DT
 ><A
-HREF="#AEN426"
+HREF="#AEN407"
 >URLs and similar</A
 ></DT
 ><DT
 ><A
-HREF="#AEN472"
+HREF="#AEN453"
 >How do I get help from the mailing lists ?</A
 ></DT
 ><DT
 ><A
-HREF="#AEN501"
+HREF="#AEN482"
 >How do I get off the mailing lists ?</A
 ></DT
 ></DL
@@ -1144,7 +1139,7 @@ CLASS="COMMAND"
 >net time  \\server /set /yes</B
 > replacing server with the 
 	name of your PDC (or another synchronized SMB server). See <A
-HREF="#AEN333"
+HREF="#AEN320"
 >    about Setting Time</A
 ></P
 ><P
@@ -1447,46 +1442,6 @@ CLASS="SECT2"
 CLASS="SECT2"
 ><A
 NAME="AEN305"
->What editor can I use in DOS/Windows that won't mess with my unix EOF</A
-></H2
-><P
->There are a number of Windows or DOS based editors that will understand, and
-    leave intact, the unix eof (as opposed to a DOS CL/LF). List members suggested :</P
-><P
-></P
-><UL
-><LI
-><P
->UltraEdit at <A
-HREF="http://www.ultraedit.com"
-TARGET="_top"
->www.ultraedit.com</A
-></P
-></LI
-><LI
-><P
->VI for windows at <A
-HREF="http://home.snafu.de/ramo/WinViEn.htm"
-TARGET="_top"
->        home.snafu.de/ramo/WinViEn.htm</A
-></P
-></LI
-><LI
-><P
->The author prefers PFE at <A
-HREF="http://www.lancs.ac.uk/people/cpaap/pfe/"
-TARGET="_top"
->            www.lancs.ac.uk/people/cpaap/pfe/</A
-> but its no longer being developed...</P
-></LI
-></UL
-></DIV
-><DIV
-CLASS="SECT2"
-><HR><H2
-CLASS="SECT2"
-><A
-NAME="AEN318"
 >How do I get 'User Manager' and 'Server Manager'</A
 ></H2
 ><P
@@ -1534,7 +1489,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN333"
+NAME="AEN320"
 >The time setting from a Samba server does not work.</A
 ></H2
 ><P
@@ -1551,7 +1506,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN337"
+NAME="AEN324"
 >"trust account xxx should be in DOMAIN_GROUP_RID_USERS"</A
 ></H2
 ><P
@@ -1566,7 +1521,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN341"
+NAME="AEN328"
 >How do I get my samba server to become a member ( not PDC ) of an NT domain?</A
 ></H2
 ><P
@@ -1707,7 +1662,7 @@ CLASS="PROGRAMLISTING"
 CLASS="CHAPTER"
 ><HR><H1
 ><A
-NAME="AEN376"
+NAME="AEN363"
 >Chapter 6. Troubleshooting and Bug Reporting</A
 ></H1
 ><DIV
@@ -1715,7 +1670,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN378"
+NAME="AEN365"
 >Diagnostic tools</A
 ></H1
 ><DIV
@@ -1723,7 +1678,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN380"
+NAME="AEN367"
 >What are some diagnostics tools I can use to debug the domain logon process and where can I
 	find them?</A
 ></H2
@@ -1742,22 +1697,6 @@ NAME="AEN380"
 	connection, and therefore there will be an smbd process running (assuming that you 
 	haven't set a really short smbd idle timeout)  So, in between pressing ctrl alt 
 	delete, and actually typing in your password, you can gdb attach and continue.</P
-><P
-></P
-><P
-><B
->Some usefull samba commands worth investigating:</B
-></P
-><UL
-><LI
-><P
->testparam | more</P
-></LI
-><LI
-><P
->smbclient -L //{netbios name of server}</P
-></LI
-></UL
 ><P
 >An SMB enabled version of tcpdump is available from 
     <A
@@ -1788,7 +1727,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN394"
+NAME="AEN375"
 >How do I install 'Network Monitor' on an NT Workstation or a Windows 9x box?</A
 ></H2
 ><P
@@ -1873,7 +1812,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN423"
+NAME="AEN404"
 >What other help can I get ?</A
 ></H1
 ><P
@@ -1885,7 +1824,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN426"
+NAME="AEN407"
 >URLs and similar</A
 ></H2
 ><P
@@ -2019,7 +1958,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN472"
+NAME="AEN453"
 >How do I get help from the mailing lists ?</A
 ></H2
 ><P
@@ -2122,7 +2061,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN501"
+NAME="AEN482"
 >How do I get off the mailing lists ?</A
 ></H2
 ><P
