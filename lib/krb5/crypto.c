@@ -1402,7 +1402,6 @@ static struct encryption_type etypes[] = {
 	0,
  	DES3_CBC_encrypt,
     },
-#if NEW_DES3_CODE
     {
 	ETYPE_DES3_CBC_SHA1,
 	"des3-cbc-sha1",
@@ -1414,21 +1413,9 @@ static struct encryption_type etypes[] = {
 	F_DERIVED,
  	DES3_CBC_encrypt,
     },
-#else
     {
-	ETYPE_NEW_DES3_CBC_SHA1,
-	"new-des3-cbc-sha1",
-	8,
-	8,
-	&keytype_des3_derived,
-	&checksum_sha1,
-	&checksum_hmac_sha1_des3,
-	F_DERIVED,
- 	DES3_CBC_encrypt,
-    },
-    {
-	ETYPE_DES3_CBC_SHA1,
-	"des3-cbc-sha1",
+	ETYPE_OLD_DES3_CBC_SHA1,
+	"old-des3-cbc-sha1",
 	8,
 	8,
 	&keytype_des3,
@@ -1437,7 +1424,6 @@ static struct encryption_type etypes[] = {
 	0,
  	DES3_CBC_encrypt,
     },
-#endif
     {
 	ETYPE_DES_CBC_NONE,
 	"des-cbc-none",
