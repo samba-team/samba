@@ -1128,8 +1128,8 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 			posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
 
 		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type)) {
-			DEBUG(5,("set_posix_lock: Lock fail !: Type = %s: offset = %.0f, count = %.0f\n",
-				posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
+			DEBUG(5,("set_posix_lock: Lock fail !: Type = %s: offset = %.0f, count = %.0f. Errno = %s\n",
+				posix_lock_type_name(posix_lock_type), (double)offset, (double)count, strerror(errno) ));
 			ret = False;
 			break;
 		}
@@ -1211,7 +1211,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 
 	if (num_overlapped_entries > 0 && deleted_lock.lock_type == F_WRLCK) {
 		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_RDLCK)) {
-			DEBUG(0,("release_posix_lock: downgrade of lock failed !\n"));
+			DEBUG(0,("release_posix_lock: downgrade of lock failed with error %s !\n", strerror(errno) ));
 			return False;
 		}
 	}
