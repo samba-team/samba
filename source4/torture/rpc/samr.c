@@ -26,21 +26,27 @@ static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryUserInfo r;
+	uint16 levels[] = {1, 2, 3};
+	int i;
+	BOOL ret = True;
 
-	printf("Testing QueryUserInfo\n");
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing QueryUserInfo level %u\n", levels[i]);
 
-	r.in.handle = handle;
-	r.in.level = 1;
+		r.in.handle = handle;
+		r.in.level = levels[i];
 
-	status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("QueryUserInfo failed - %s\n", nt_errstr(status));
-		return False;
+		status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryUserInfo level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+
+		NDR_PRINT_UNION_DEBUG(samr_UserInfo, r.in.level, r.out.info);
 	}
 
-	NDR_PRINT_UNION_DEBUG(samr_UserInfo, r.in.level, r.out.info);
-
-	return True;
+	return ret;
 }
 
 static BOOL test_OpenUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 

@@ -483,6 +483,24 @@ void ndr_print_array_uint32(struct ndr_print *ndr, const char *name,
 	ndr->depth--;	
 }
 
+void ndr_print_array_uint8(struct ndr_print *ndr, const char *name, 
+			   uint8 *data, uint32 count)
+{
+	int i;
+
+	ndr->print(ndr, "%s: ARRAY(%d)", name, count);
+	ndr->depth++;
+	for (i=0;i<count;i++) {
+		char *idx=NULL;
+		asprintf(&idx, "[%d]", i);
+		if (idx) {
+			ndr_print_uint8(ndr, idx, data[i]);
+			free(idx);
+		}
+	}
+	ndr->depth--;	
+}
+
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, struct GUID *guid)
 {
 	ndr->print(ndr, "%-25s: %08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x", 
