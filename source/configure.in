@@ -25,6 +25,16 @@ AC_CANONICAL_SYSTEM
 AC_VALIDATE_CACHE_SYSTEM_TYPE
 SAMBA_MAINTAINER_MODE
 
+# try to work out if this compiler uses the HPUX -Ae flag.
+case "$host_os" in
+     *hpux*)
+        AC_PROG_CC_FLAG(Ae)
+        if test $ac_cv_prog_cc_Ae = yes; then
+           CPPFLAGS="$CPPFLAGS -Ae"
+        fi
+    ;;
+esac
+
 AC_INLINE
 AC_HEADER_STDC
 AC_HEADER_DIRENT
@@ -203,6 +213,15 @@ fi
 if test x"$ac_cv_func_set_auth_parameters" = x"no"; then
     AC_CHECK_LIB(security, set_auth_parameters, [LIBS="$LIBS -lsecurity";
       AC_DEFINE(HAVE_SET_AUTH_PARAMETERS)])
+fi
+
+#
+# This next check is needed for HPUX,
+# again, shouldn't hurt anywhere else.
+#
+if test x"$ac_cv_func_getspnam" = x"no"; then
+    AC_CHECK_LIB(sec, getspnam, [LIBS="$LIBS -lsec";
+      AC_DEFINE(HAVE_GETSPNAM)])
 fi
 
 # this bit needs to be modified for each OS that is suported by

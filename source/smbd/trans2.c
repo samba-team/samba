@@ -1502,9 +1502,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     return(ERROR(ERRSRV,ERRaccess));
 
   if (tran_call == TRANSACT2_SETFILEINFO) {
-    info_level = SVAL(params,2);    
-
     fsp = file_fsp(params,0);
+    info_level = SVAL(params,2);    
 
     if(fsp && fsp->open && fsp->is_directory) {
       /*
