@@ -30,26 +30,13 @@ sub ParseProperties($)
 # parse an array - called in buffers context
 sub ParseArray($)
 {
-    my($elt) = shift;
-
-    $res .= "\tfor (i = 0; i < count; i++) {\n";
-    if (util::is_scalar_type($elt)) {
-	$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, NULL, \"$elt->{NAME});\n";
-	$res .= "\t}\n\n";
-    } else {
-	$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"PARSE_SCALARS\", \"$elt->{NAME}\");\n";
-	$res .= "\t}\n\n";
-
-	$res .= "\tfor (i = 0; i < count; i++) {\n";
-	$res .= "\t\toffset = prs_$elt->{TYPE}(tvb, offset, pinfo, tree, \"PARSE_BUFFERS\", \"$elt->{NAME}\");\n";
-	$res .= "\t}\n\n";
-    }
+	die "arrays not done";
 }
 
 
 #####################################################################
 # parse scalars in a structure element
-sub ParseElementScalars($$)
+sub ParseElementPushScalars($$)
 {
 	my($elt) = shift;
 	my($var_prefix) = shift;
@@ -66,7 +53,7 @@ sub ParseElementScalars($$)
 
 #####################################################################
 # parse buffers in a structure element
-sub ParseElementBuffers($$)
+sub ParseElementPushBuffers($$)
 {
 	my($elt) = shift;
 	my($var_prefix) = shift;
@@ -100,7 +87,7 @@ sub ParseElementBuffers($$)
 
 #####################################################################
 # parse a struct
-sub ParseStruct($)
+sub ParseStructPush($)
 {
 	my($struct) = shift;
 	my($struct_len);
@@ -127,18 +114,18 @@ sub ParseStruct($)
 			$res .= "\tNDR_CHECK(ndr_push_align_$e->{TYPE}(ndr));\n";
 			$res .= "\tndr_push_save(ndr, &len_save2);\n";
 		}
-		ParseElementScalars($e, "r->");
+		ParseElementPushScalars($e, "r->");
 	}	
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementBuffers($e, "r->");
+		ParseElementPushBuffers($e, "r->");
 	}
 
 	if (defined $struct_len) {
 		$res .= "\tndr_push_save(ndr, &len_save3);\n";
 		$res .= "\tndr_push_restore(ndr, &len_save2);\n";
 		$struct_len->{VALUE} = "len_save3.offset - len_save1.offset";
-		ParseElementScalars($struct_len, "r->");
+		ParseElementPushScalars($struct_len, "r->");
 		$res .= "\tndr_push_restore(ndr, &len_save3);\n";
 	}
 }
@@ -146,42 +133,29 @@ sub ParseStruct($)
 
 #####################################################################
 # parse a union element
-sub ParseUnionElement($)
+sub ParseUnionElementPush($)
 {
-    my($element) = shift;
-    
-    $res .= "\tcase $element->{DATA}->{NAME}: \n";
-    $res .= "\t\toffset = prs_$element->{DATA}->{TYPE}(tvb, offset, pinfo, tree, \"$element->{DATA}->{NAME}\");\n\t\tbreak;\n";
-
+	die "unions not done";
 }
 
 #####################################################################
 # parse a union
-sub ParseUnion($)
+sub ParseUnionPush($)
 {
-    my($union) = shift;
-
-    $res .= "\tswitch (level) {\n";
-
-    (defined $union->{PROPERTIES}) && ParseProperties($union->{PROPERTIES});
-    foreach my $e (@{$union->{DATA}}) {
-	ParseUnionElement($e);
-    }
-    
-    $res .= "\t}\n";
+	die "unions not done";	
 }
 
 #####################################################################
 # parse a type
-sub ParseType($)
+sub ParseTypePush($)
 {
     my($data) = shift;
 
     if (ref($data) eq "HASH") {
 	($data->{TYPE} eq "STRUCT") &&
-	    ParseStruct($data);
+	    ParseStructPush($data);
 	($data->{TYPE} eq "UNION") &&
-	    ParseUnion($data);
+	    ParseUnionPush($data);
     } else {
 	$res .= "$data";
     }
@@ -189,20 +163,20 @@ sub ParseType($)
 
 #####################################################################
 # parse a typedef
-sub ParseTypedef($)
+sub ParseTypedefPush($)
 {
     my($typedef) = shift;
 
     $res .= "static NTSTATUS ndr_push_$typedef->{NAME}(struct ndr_push *ndr, struct $typedef->{NAME} *r)";
     $res .= "\n{\n";
-    ParseType($typedef->{DATA});
+    ParseTypePush($typedef->{DATA});
     $res .= "\treturn NT_STATUS_OK;\n";
     $res .= "}\n\n";
 }
 
 #####################################################################
 # parse a function
-sub ParseFunctionArg($$)
+sub ParseFunctionPushArg($$)
 { 
 	my($arg) = shift;
 	my($io) = shift;		# "in" or "out"
@@ -211,8 +185,8 @@ sub ParseFunctionArg($$)
 		return;
 	}
 
-	ParseElementScalars($arg, "r->in.");
-	ParseElementBuffers($arg, "r->in.");
+	ParseElementPushScalars($arg, "r->in.");
+	ParseElementPushBuffers($arg, "r->in.");
 }
     
 #####################################################################
@@ -225,7 +199,7 @@ sub ParseFunctionPush($)
     $res .= "NTSTATUS ndr_push_$function->{NAME}(struct ndr_push *ndr, struct $function->{NAME} *r)\n{\n";
 
     foreach my $arg (@{$function->{DATA}}) {
-	ParseFunctionArg($arg, "in");
+	ParseFunctionPushArg($arg, "in");
     }
     
     $res .= "\n\treturn NT_STATUS_OK;\n}\n\n";
@@ -254,7 +228,7 @@ sub ParseInterface($)
     my($data) = $interface->{DATA};
     foreach my $d (@{$data}) {
 	($d->{TYPE} eq "TYPEDEF") &&
-	    ParseTypedef($d);
+	    ParseTypedefPush($d);
 	($d->{TYPE} eq "FUNCTION") && 
 	    ParseFunction($d);
     }
