@@ -2027,6 +2027,76 @@ AC_ARG_WITH(swatdir,
 )
 
 #################################################
+# check for i18n'ed SWAT compiling
+AC_MSG_CHECKING(whether to use i18n'ed SWAT)
+AC_ARG_WITH(i18n-swat,
+[  --with-i18n-swat        Use i18n'ed SWAT
+  --without-i18n-swat     Don't use i18n'ed SWAT (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(I18N_SWAT)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
+# set SWAT default language for old web browsers.
+AC_MSG_CHECKING(whether to use default SWAT language)
+AC_ARG_WITH(swat-def-lang,
+[  --with-swat-def-lang=LN default SWAT language for old web browsers (empty)],
+[
+  default_pref_lang=""
+  case "$withval" in
+  yes)
+    AC_MSG_WARN([--with-swat-def-lang called without argument - will use default])
+  ;;
+  no)
+    AC_MSG_RESULT(no)
+  ;;
+  *)
+    default_pref_lang="$withval"
+    AC_MSG_RESULT($withval)
+    ;;
+  esac
+  AC_DEFINE_UNQUOTED(I18N_DEFAULT_PREF_LANG, "$default_pref_lang")
+],
+[
+  default_pref_lang=""
+  AC_MSG_RESULT(no)
+  AC_DEFINE_UNQUOTED(I18N_DEFAULT_PREF_LANG, "$default_pref_lang")
+]
+)
+
+#################################################
+# choose native language(s) of man pages
+AC_MSG_CHECKING(chosen man pages' language(s))
+AC_ARG_WITH(manpages-langs,
+[  --with-manpages-langs={en,ja,pl}  Choose man pages' language(s). (en)],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_WARN(--with-manpages-langs called without argument - will use default)
+    manlangs="en"
+  ;;
+  *)
+    manlangs="$withval"
+  ;;
+  esac
+
+  AC_MSG_RESULT($manlangs)
+  manlangs=${manlangs//,/ }   # replacing commas with spaces to produce a list
+  AC_SUBST(manlangs)],
+
+  [manlangs="en"
+  AC_MSG_RESULT($manlangs)
+  AC_SUBST(manlangs)]
+)
+
+#################################################
 # these tests are taken from the GNU fileutils package
 AC_CHECKING(how to get filesystem space usage)
 space=no
@@ -2394,6 +2464,15 @@ AC_SUBST(WINBIND_LTARGETS)
 AC_SUBST(WINBIND_PAM_PROGS)
 
 #################################################
+# Check for SWAT i18n support
+
+PACKAGE=i18n_swat
+AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE")
+AC_SUBST(PACKAGE)
+ALL_LINGUAS="en ja pl tr"
+AM_GNU_GETTEXT
+
+#################################################
 # final configure stuff
 
 echo "checking configure summary"
@@ -2404,4 +2483,4 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
-AC_OUTPUT(include/stamp-h Makefile)
+AC_OUTPUT(include/stamp-h Makefile intl/Makefile po/Makefile.in)
