@@ -69,8 +69,8 @@ interface netlogon
 	} netr_Credential;
 
 	typedef struct {
-		[value(strlen_m(r->string)*2)] uint16 size;
-		[value(r->size)]               uint16 length;
+		[value(strlen_m(r->string)*2)]  uint16 size;
+		[value(r->size)]                uint16 length;
 		unistr_noterm *string;
 	} netr_String;
 	
@@ -127,6 +127,7 @@ interface netlogon
 		[case(1)] netr_PasswordInfo *interactive;
 		[case(2)] netr_NetworkInfo  *network;
 		[case(3)] netr_PasswordInfo *service;
+		[case(6)] netr_NetworkInfo  *network;
 	} netr_LogonLevel;
 
 	typedef struct {
