@@ -210,12 +210,13 @@ install -m644 docs/manpages/$i $RPM_BUILD_ROOT/usr/share/man/man1
 done
 
 # Install codepage source files
-cd source/codepages
-for i in codepage* CP*.TXT
+for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
-install -m644 $i $RPM_BUILD_ROOT/etc/codepages/src
+install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/srcdone
+for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 \      ISO8859-7 KOI8-R
+do
+install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROOT/etc/codepages/src
 done
-cd ../..
 
 # Install the nsswitch library extension file
 install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
@@ -298,15 +299,7 @@ for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
 /usr/bin/make_smbcodepage c $i /etc/codepages/src/codepage_def.$i /etc/codepages/codepage.$i
 done
-for i in 437 737 850 852 861 866 932 936 949 950
-do
-/usr/bin/make_unicodemap CP$i.TXT /etc/codepages/src/CP$i.TXT /etc/codepages/unicode_map.$i
-done
-for i in 1251
-do
-/usr/bin/make_smbcodepage c $i /etc/codepages/src/codepage_def.$i /etc/codepages/codepage.$i
-done
-for i in ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
+for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
 do
 /usr/bin/make_unicodemap CP$i.TXT /etc/codepages/src/CP$i.TXT /etc/codepages/unicode_map.$i
 done
